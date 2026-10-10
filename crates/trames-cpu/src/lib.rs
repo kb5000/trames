@@ -2,6 +2,8 @@
 //! Reference AArch64 interpreter. Unsupported encodings fault explicitly.
 use std::fmt;
 use trames_memory::{Memory, MemoryError};
+mod extended;
+mod load_store;
 
 #[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Flags {
@@ -17,6 +19,9 @@ pub struct Cpu {
     pub sp: u64,
     pub pc: u64,
     pub flags: Flags,
+    pub tpidr_el0: u64,
+    vectors: [u128; 32],
+    exclusive: Option<(u64, usize, u64)>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -278,40 +283,8 @@ impl Cpu {
             if self.condition(ins & 15) {
                 next = pc.wrapping_add(sign_extend((((ins >> 5) & 0x7ffff) as u64) << 2, 21));
             }
-        } else if ins & 0x3b000000 == 0x39000000 && ins & (1 << 26) == 0 {
-            // unsigned-immediate integer LDR/STR
-            let size = 1usize << (ins >> 30);
-            let opc = (ins >> 22) & 3;
-            if opc > 1 {
-                return Err(invalid());
-            }
-            let address = self
-                .reg(rn, true)
-                .wrapping_add(((ins >> 10) & 0xfff) as u64 * size as u64);
-            if opc == 0 {
-                memory
-                    .write(address, &self.x(rd).to_le_bytes()[..size])
-                    .map_err(memory_fault)?;
-            } else {
-                let mut bytes = [0; 8];
-                memory
-                    .read(address, &mut bytes[..size])
-                    .map_err(memory_fault)?;
-                self.set_x(rd, u64::from_le_bytes(bytes));
-            }
-        } else if ins & 0x3b000000 == 0x18000000 && ins & (1 << 26) == 0 {
-            // integer LDR literal
-            let opc = ins >> 30;
-            if opc > 1 {
-                return Err(invalid());
-            }
-            let address = pc.wrapping_add(sign_extend((((ins >> 5) & 0x7ffff) as u64) << 2, 21));
-            let size = if opc == 0 { 4 } else { 8 };
-            let mut bytes = [0; 8];
-            memory
-                .read(address, &mut bytes[..size])
-                .map_err(memory_fault)?;
-            self.set_x(rd, u64::from_le_bytes(bytes));
+        } else if let Some(target) = self.execute_extended(ins, memory)? {
+            next = target;
         } else {
             return Err(invalid());
         }

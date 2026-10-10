@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! ELF, initial Linux stack, CPU slices, and syscall dispatch composition.
-use std::fmt;
+use std::{fmt, io::Read};
 use trames_cpu::{Cpu, CpuFault, SliceOutcome};
 use trames_elf::{ElfError, LoadedElf};
-use trames_linux::{GuestOutput, SyscallOutcome};
+use trames_linux::{GuestOutput, Linux, SyscallOutcome};
 use trames_memory::{Memory, MemoryError, Permissions, DEFAULT_MEMORY_LIMIT, PAGE_SIZE};
 
 pub const STACK_TOP: u64 = 0x0000_7fff_fff0_0000;
@@ -44,6 +44,7 @@ impl From<MemoryError> for RuntimeError {
 pub struct Runtime {
     pub cpu: Cpu,
     pub memory: Memory,
+    pub linux: Linux,
 }
 #[derive(Debug, PartialEq, Eq)]
 pub struct Exit {
@@ -92,7 +93,13 @@ fn initial_stack(
     for value in envp {
         environment.push(push_string(&mut elf.memory, &mut cursor, value)?);
     }
-    // Linux-compatible scalar auxv for static M0 binaries; no fabricated entropy.
+    cursor -= 16;
+    let mut entropy = [0; 16];
+    std::fs::File::open("/dev/urandom")
+        .and_then(|mut file| file.read_exact(&mut entropy))
+        .map_err(|_| RuntimeError::Arguments("host entropy source unavailable"))?;
+    elf.memory.write(cursor, &entropy)?;
+    // Static Linux auxv, including real host entropy for the guest stack guard.
     let mut auxv = vec![
         (6u64, PAGE_SIZE),
         (9, elf.entry),
@@ -102,6 +109,7 @@ fn initial_stack(
         (14, 1000),
         (23, 0),
         (31, arguments[0]),
+        (25, cursor),
     ];
     if let Some(phdr) = elf.phdr {
         auxv.extend([(3, phdr), (4, 56), (5, elf.phnum as u64)]);
@@ -130,11 +138,13 @@ fn initial_stack(
 impl Runtime {
     pub fn load(bytes: &[u8], argv: &[String], envp: &[String]) -> Result<Self, RuntimeError> {
         let mut elf = trames_elf::load(bytes, DEFAULT_MEMORY_LIMIT)?;
+        let linux = Linux::new(elf.memory.highest_mapped_end());
         let sp = initial_stack(&mut elf, argv, envp)?;
         let cpu = Cpu::new(elf.entry, sp);
         Ok(Self {
             cpu,
             memory: elf.memory,
+            linux,
         })
     }
 
@@ -158,7 +168,7 @@ impl Runtime {
                 } => {
                     instructions += count;
                     if let SyscallOutcome::Exit(code) =
-                        trames_linux::dispatch(&mut self.cpu, &self.memory, output)
+                        self.linux.dispatch(&mut self.cpu, &mut self.memory, output)
                     {
                         return Ok(Exit { code, instructions });
                     }
@@ -216,7 +226,11 @@ mod tests {
         memory.protect(0x1000, PAGE_SIZE, Permissions::RX).unwrap();
         let mut cpu = Cpu::default();
         cpu.pc = 0x1000;
-        let mut runtime = Runtime { cpu, memory };
+        let mut runtime = Runtime {
+            cpu,
+            memory,
+            linux: Linux::new(0x2000),
+        };
         let mut out = trames_linux::CapturedOutput::default();
         assert!(matches!(
             runtime.run(&mut out, 17),

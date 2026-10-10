@@ -32,6 +32,7 @@ def generated(seed):
     for register in range(8):
         for index in range(4):
             lines.append(f"{'movz' if index == 0 else 'movk'} x{register}, #{rng.randrange(65536)}, lsl #{16 * index}")
+    lines.append("cmp xzr, xzr")  # Explicit flags: Linux process entry does not define NZCV.
     # Independently assembled instruction encodings, reproducible operands and shifts.
     for _ in range(64):
         rd, rn, rm = (rng.randrange(8) for _ in range(3))

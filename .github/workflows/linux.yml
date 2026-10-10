@@ -1,4 +1,4 @@
-name: Linux M0
+name: Linux runtime
 on:
   push:
   pull_request:
@@ -17,9 +17,18 @@ jobs:
       - name: Install independent AArch64 oracle and cross assembler
         run: |
           sudo apt-get update
-          sudo apt-get install --yes binutils-aarch64-linux-gnu qemu-user
+          sudo apt-get install --yes binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu qemu-user build-essential curl bzip2
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo build --workspace --locked
       - run: cargo test --workspace --locked
       - run: python3 tests/differential/run.py
+      - run: python3 tests/differential/m1.py
+      - name: Cross-build pinned musl and static BusyBox
+        run: |
+          if ! bash scripts/build-busybox.sh > target/busybox-build.log 2>&1; then
+            tail -100 target/busybox-build.log
+            exit 1
+          fi
+          tail -10 target/busybox-build.log
+      - run: python3 tests/integration/busybox.py
