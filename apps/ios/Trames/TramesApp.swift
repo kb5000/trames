@@ -21,6 +21,7 @@ struct WorkspaceView: View {
     @State private var sshSheet = false
     @State private var filesSheet = false
     @State private var settingsSheet = false
+    @State private var sessionActions = false
     var body: some View {
         VStack(spacing: 0) {
             HStack {
@@ -39,14 +40,14 @@ struct WorkspaceView: View {
                         }
                     }
                 }
-                Menu {
+                Button { sessionActions = true } label: {
+                    Label("新建或管理会话", systemImage: "plus")
+                        .labelStyle(.iconOnly).frame(minWidth: 44, minHeight: 44)
+                }.confirmationDialog("新建或管理会话", isPresented: $sessionActions, titleVisibility: .visible) {
                     Button("本地 Alpine", systemImage: "terminal") { workspace.openLocal() }
                     Button("SSH 连接", systemImage: "network") { sshSheet = true }
                     Button("Files / SFTP", systemImage: "folder") { filesSheet = true }
                     Button("设置", systemImage: "gear") { settingsSheet = true }
-                } label: {
-                    Label("新建或管理会话", systemImage: "plus")
-                        .labelStyle(.iconOnly).frame(minWidth: 44, minHeight: 44)
                 }
                 if let current = workspace.current { Button { workspace.close(current) } label: {
                     Label("关闭当前终端", systemImage: "xmark")
