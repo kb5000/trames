@@ -9,7 +9,10 @@ mod terminal;
 use trames_memory::{Memory, MemoryError, Permissions, DEFAULT_MEMORY_LIMIT, PAGE_SIZE};
 
 pub const STACK_TOP: u64 = 0x0000_7fff_fff0_0000;
-pub const STACK_SIZE: u64 = 64 * 1024;
+// Alpine BusyBox's interactive line editor probes a >64 KiB stack frame.
+// This mapping still counts against the existing per-process memory quota.
+pub const STACK_SIZE: u64 = 1024 * 1024;
+const INITIAL_ARGUMENT_BYTES: u64 = 64 * 1024;
 pub const DEFAULT_INSTRUCTION_LIMIT: u64 = 10_000_000;
 
 #[derive(Debug)]
@@ -20,6 +23,7 @@ pub enum RuntimeError {
     Cpu(CpuFault),
     BudgetExceeded(u64),
     Deadlock,
+    Cancelled,
 }
 impl fmt::Display for RuntimeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -33,6 +37,7 @@ impl fmt::Display for RuntimeError {
                 f,
                 "all virtual processes are blocked without an event source"
             ),
+            Self::Cancelled => write!(f, "session cancelled by its host"),
         }
     }
 }
@@ -71,7 +76,7 @@ fn push_string(memory: &mut Memory, cursor: &mut u64, string: &[u8]) -> Result<u
         .ok_or(RuntimeError::Arguments("string size"))?;
     *cursor = cursor
         .checked_sub(len as u64)
-        .filter(|&address| address >= STACK_TOP - STACK_SIZE)
+        .filter(|&address| address >= STACK_TOP - INITIAL_ARGUMENT_BYTES)
         .ok_or(RuntimeError::Arguments("stack exceeds 64 KiB"))?;
     memory.write(*cursor, string)?;
     memory.write(*cursor + string.len() as u64, &[0])?;
@@ -153,7 +158,7 @@ fn initial_stack_bytes(
     let sp = cursor
         .checked_sub(words.len() as u64 * 8)
         .map(|v| v & !15)
-        .filter(|&v| v >= STACK_TOP - STACK_SIZE)
+        .filter(|&v| v >= STACK_TOP - INITIAL_ARGUMENT_BYTES)
         .ok_or(RuntimeError::Arguments("stack exceeds 64 KiB"))?;
     for (index, word) in words.iter().enumerate() {
         elf.memory

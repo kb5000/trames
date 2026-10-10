@@ -24,7 +24,7 @@ jobs:
       - run: cargo build --workspace --locked
       - run: cargo test --workspace --locked
       - name: Compile core and both network backends for iOS (no SDK link or device test)
-        run: cargo check -p trames-core -p trames-distro --target aarch64-apple-ios --locked
+        run: cargo check -p trames-core -p trames-distro -p trames-ffi --target aarch64-apple-ios --locked
       - run: python3 tests/differential/run.py
       - run: python3 tests/differential/m1.py
       - run: python3 tests/differential/floating.py
@@ -64,3 +64,8 @@ jobs:
         run: python3 tests/integration/m3.py
       - name: Validate virtual packet fabric, guest ABI and Alpine HTTPS gateway
         run: python3 tests/integration/virtual-network.py
+
+      - name: Exercise the embedding ABI with real Alpine PTY and disk streams
+        run: |
+          cargo build -p trames-ffi --release --locked
+          python3 tests/integration/embedding.py

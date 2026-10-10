@@ -13,7 +13,7 @@ establish general Linux userspace compatibility or an iPadOS build.
 | Network | Delivered M3 subset: nonblocking IPv4/IPv6 TCP/UDP, shared descriptors, real musl DNS including TCP fallback, 36 QEMU comparisons and iOS target compile check |
 | M3 | Delivered: PT_INTERP, dynamic PIE/ET_EXEC, file-backed private mmap, verified Alpine 3.22.6, authenticated HTTPS apk update/add, successful trigger and installed tree execution |
 | Virtual network (after M3) | Delivered: isolated IPv4/IPv6 and loopback, smoltcp TCP/UDP/ICMP packets, bounded two-family fragmentation, UDP/TCP DNS, native egress gateway, 27 QEMU comparisons and actual Alpine HTTPS apk |
-| M4 | SwiftUI terminal, native SSH/SFTP, Files and keyboard; signed build and actual iPad validation |
+| M4 | Frontend implementation in progress: SwiftUI/SwiftTerm, native SSH/SFTP, Files, keyboard and embedding ABI; Apple CI, signed build and actual iPad acceptance tracked in issue #8 |
 | M5 | Versioned Bridge RPC and C ABI, scoped storage, accelerator registry and profiled C++ backend |
 | M6 | Verified Git/Python/GCC/Clang/Make/CMake workflows; Debian after ABI coverage supports it |
 

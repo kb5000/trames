@@ -1,0 +1,37 @@
+name: iPad frontend
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  apple-build:
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.90.0
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim
+      - name: Build native Rust embedding library
+        run: cargo build -p trames-ffi --release --locked
+      - name: Test native SSH PTY and SFTP against OpenSSH
+        env:
+          TRAMES_RUST_LIB_DIR: ${{ github.workspace }}/target/release
+        run: bash scripts/test-swift-ssh.sh
+      - name: Generate Xcode project
+        run: brew install xcodegen
+      - name: Link unsigned iPad simulator app
+        run: bash scripts/build-ios.sh simulator
+      - name: Link unsigned iPad device app
+        run: bash scripts/build-ios.sh device
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unsigned-ipad-build-and-project
+          path: |
+            apps/ios/Trames.xcodeproj
+            apps/ios/build/*/Logs/Build
+            apps/ios/build/*/Build/Products/Debug-*/*.app
+          retention-days: 7

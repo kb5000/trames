@@ -1291,6 +1291,13 @@ impl Kernel {
     }
     fn drive(&mut self, io: &mut impl GuestOutput, limit: u64) -> Result<Exit, RuntimeError> {
         loop {
+            if let Some(root) = self.processes.get_mut(&1) {
+                match io.control(&mut root.linux.vfs) {
+                    Ok(true) => {}
+                    Ok(false) => return Err(RuntimeError::Cancelled),
+                    Err(_) => return Err(RuntimeError::Arguments("host session control failed")),
+                }
+            }
             let mut progress = self.pump_terminal(io)?;
             let ids: Vec<u32> = self.processes.keys().copied().collect();
             for id in ids {

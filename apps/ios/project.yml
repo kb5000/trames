@@ -1,0 +1,45 @@
+name: Trames
+options:
+  bundleIdPrefix: org.trames
+  deploymentTarget:
+    iOS: '17.0'
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    TARGETED_DEVICE_FAMILY: '2'
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    GENERATE_INFOPLIST_FILE: YES
+    INFOPLIST_KEY_CFBundleDisplayName: Trames
+    INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
+    INFOPLIST_KEY_NSLocalNetworkUsageDescription: Connect to SSH servers and development services on your local network.
+    INFOPLIST_KEY_UILaunchScreen_Generation: YES
+    INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+    CODE_SIGN_STYLE: Automatic
+packages:
+  TramesKit:
+    path: TramesKit
+  SwiftTerm:
+    url: https://github.com/migueldeicaza/SwiftTerm.git
+    exactVersion: 1.20.0
+targets:
+  Trames:
+    type: application
+    platform: iOS
+    sources: [Trames]
+    dependencies:
+      - package: TramesKit
+      - package: SwiftTerm
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.trames.Trames
+        LIBRARY_SEARCH_PATHS: ['$(inherited)', '$(SRCROOT)/../../target/$(TRAMES_RUST_TARGET)/release']
+        'TRAMES_RUST_TARGET[sdk=iphoneos*]': aarch64-apple-ios
+        'TRAMES_RUST_TARGET[sdk=iphonesimulator*]': aarch64-apple-ios-sim
+        OTHER_LDFLAGS: ['$(inherited)', '-ltrames_ffi', '-lresolv']
+schemes:
+  Trames:
+    build:
+      targets:
+        Trames: all
+    run:
+      config: Debug

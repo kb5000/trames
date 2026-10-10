@@ -147,3 +147,7 @@ M1 再加入 64 个生成程序，对照位域、扩展寄存器运算、乘除�
 ## 许可证
 
 Copyright (C) 2026 Trames contributors. 本项目使用 **GNU GPL version 3 or later**（`GPL-3.0-or-later`），完整文本见 [LICENSE](LICENSE)。引入 GPL、LGPL、AGPL 或其他依赖时需分别核对许可证和组合方式；网络使用 socket2/nix 的安全接口，依赖许可记录见 [dependencies](docs/security/dependencies.md)。GNU Binutils、Rust 和 QEMU 为开发工具，不随运行器链接发布。
+
+The iPad frontend is in [apps/ios](apps/ios/README.md), with build scripts and a
+[device acceptance record](docs/validation/m4.md). M4 is not accepted until an
+ordinary developer-signed physical iPad run is validated.

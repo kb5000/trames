@@ -1,0 +1,77 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+import SwiftUI
+import UniformTypeIdentifiers
+import TramesKit
+struct ExportFile: Identifiable { let id = UUID(); let url: URL }
+struct TransferView: View {
+    @ObservedObject var session: TerminalSession
+    @Environment(\.dismiss) private var dismiss
+    @State private var path = "/home/user/imported-file", selected: URL?
+    @State private var chooser = false, busy = false
+    @State private var message = "", exportFile: ExportFile?
+    @State private var task: Task<Void,Never>?
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section(session.ssh == nil ? "本地 Linux 文件" : "远端 SFTP 文件") {
+                    TextField("文件路径", text: $path).textInputAutocapitalization(.never).autocorrectionDisabled()
+                    if let selected { Text(selected.lastPathComponent) }
+                    Button("选择 Files 文件") { chooser = true }.disabled(busy)
+                    Button(session.ssh == nil ? "导入到 Linux" : "上传到远端") { transfer(upload: true) }.disabled(busy || selected == nil)
+                    Button(session.ssh == nil ? "导出到 Files" : "从远端下载到 Files") { transfer(upload: false) }.disabled(busy)
+                }
+                Section { Text(message.isEmpty ? "传输使用文件副本；目标已存在时会报错。上传取消或失败时会尝试清理远端的部分文件。" : message).font(.caption) }
+                if busy { Button("取消传输", role: .destructive) { task?.cancel(); message = "取消中…" } }
+            }.navigationTitle(session.ssh == nil ? "Files" : "SFTP")
+                .toolbar { Button("完成") { task?.cancel(); dismiss() } }
+                .fileImporter(isPresented: $chooser, allowedContentTypes: [.data, .item]) { result in
+                    switch result {
+                    case .success(let url): selected = url
+                        if path == "/home/user/imported-file" { path = "/home/user/" + url.lastPathComponent }
+                    case .failure(let error): message = error.localizedDescription
+                    }
+                }
+                .sheet(item: $exportFile) { file in
+                    FileExportPicker(url: file.url) { exportFile = nil; try? FileManager.default.removeItem(at: file.url) }
+                }
+                .onDisappear { task?.cancel() }
+        }
+    }
+    private func transfer(upload: Bool) {
+        guard !path.isEmpty else { message = "请输入文件路径"; return }
+        busy = true; message = "传输中…"
+        task = Task {
+            let stage = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+            var keep = false
+            defer { busy = false; if !keep { try? FileManager.default.removeItem(at: stage) } }
+            do {
+                if upload, let selected { try await ScopedFiles.stage(selected: selected, destination: stage) }
+                try Task.checkCancellation()
+                if let local = session.local {
+                    try await Task.detached { try local.transfer(guest: path, host: stage, export: !upload) }.value
+                } else if let ssh = session.ssh {
+                    try await ssh.transfer(remote: path, local: stage, upload: upload)
+                } else { throw TramesError.message("会话已关闭") }
+                try Task.checkCancellation()
+                if upload { message = "传输完成" }
+                else { keep = true; exportFile = ExportFile(url: stage); message = "请选择导出位置" }
+            } catch { message = error.localizedDescription }
+        }
+    }
+}
+struct FileExportPicker: UIViewControllerRepresentable {
+    let url: URL
+    let finished: () -> Void
+    func makeCoordinator() -> Coordinator { Coordinator(finished: finished) }
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        let picker = UIDocumentPickerViewController(forExporting: [url], asCopy: true)
+        picker.delegate = context.coordinator; return picker
+    }
+    func updateUIViewController(_ view: UIDocumentPickerViewController, context: Context) {}
+    final class Coordinator: NSObject, UIDocumentPickerDelegate {
+        let finished: () -> Void
+        init(finished: @escaping () -> Void) { self.finished = finished }
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) { finished() }
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) { finished() }
+    }
+}

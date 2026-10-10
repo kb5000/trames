@@ -82,3 +82,35 @@ Preserve upstream source/license notices in redistribution. Existing cfg-if and
 getrandom licenses are recorded above. Optional defmt/proc-macro packages in
 Cargo.lock are not in the compiled Linux/iOS feature closure. This review does
 not substitute for an upstream security audit.
+
+## iPad frontend and embedding ABI
+
+The native Swift closure is pinned in apps/ios/TramesKit/Package.resolved.
+
+| Package | Version | License |
+| --- | --- | --- |
+| bigint | 5.7.0 | MIT |
+| citadel | 0.12.1 | MIT |
+| swift-asn1 | 1.6.0 | Apache-2.0 (with upstream notices/exceptions) |
+| swift-atomics | 1.3.1 | Apache-2.0 (with upstream notices/exceptions) |
+| swift-collections | 1.6.0 | Apache-2.0 (with upstream notices/exceptions) |
+| swift-crypto | 3.12.3 | Apache-2.0 (with upstream notices/exceptions) |
+| swift-log | 1.11.0 | Apache-2.0 (with upstream notices/exceptions) |
+| swift-nio | 2.81.0 | Apache-2.0 (with upstream notices/exceptions) |
+| swift-nio-ssh | 0.3.4 | Apache-2.0 (with upstream notices/exceptions) |
+| swift-system | 1.6.6 | Apache-2.0 (with upstream notices/exceptions) |
+| SwiftTerm | 1.20.0 | MIT |
+
+Upstream license/notice files are included in the app resources under Notices.
+Citadel is used for Ed25519 OpenSSH key parsing (including its BSD bcrypt/blowfish
+C code); its terminal/SFTP convenience streams are not used. SwiftNIO SSH uses
+the pinned Wellz26 fork. Swift crypto includes BoringSSL with the notices and
+exceptions retained by its upstream license. The selected MIT/BSD/Apache-2.0
+terms are compatible with GPL-3.0-or-later. Apple system frameworks are platform
+system libraries. No signing credentials are repository dependencies.
+
+The embedding JSON boundary adds serde/serde_core/serde_derive 1.0.229,
+serde_json 1.0.151, itoa 1.0.18 (MIT OR Apache-2.0), memchr 2.8.3
+(selected MIT) and zmij 1.0.23 (MIT). Existing proc-macro dependencies retain
+their previously recorded terms. Only the isolated caller-buffer boundary permits
+unsafe code; C buffer validity is a native caller contract.

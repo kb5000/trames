@@ -1,0 +1,4 @@
+module CTrames [system] {
+    header "../../../../../crates/trames-ffi/include/trames.h"
+    export *
+}
