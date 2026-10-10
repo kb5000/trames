@@ -31,7 +31,16 @@ jobs:
           device_id=$(xcrun simctl list devices available --json | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for rows in devices.values() for d in rows if d["name"].startswith("iPad")))')
           xcodebuild -project apps/ios/Trames.xcodeproj -scheme Trames -configuration Debug \
             -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath apps/ios/build/simulator \
-            CODE_SIGNING_ALLOWED=NO -skipPackagePluginValidation -resultBundlePath apps/ios/build/ipad-smoke.xcresult test
+            CODE_SIGNING_ALLOWED=NO -skipPackagePluginValidation -resultBundlePath apps/ios/build/ipad-smoke.xcresult test \
+            2>&1 | tee apps/ios/build/ipad-smoke.log
+      - name: Export simulator test summary
+        if: always()
+        run: |
+          if [[ -d apps/ios/build/ipad-smoke.xcresult ]]; then
+            xcrun xcresulttool get test-results summary --path apps/ios/build/ipad-smoke.xcresult \
+              > apps/ios/build/ipad-smoke-summary.json
+            cat apps/ios/build/ipad-smoke-summary.json
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -40,5 +49,7 @@ jobs:
             apps/ios/Trames.xcodeproj
             apps/ios/build/*/Logs/Build
             apps/ios/build/ipad-smoke.xcresult
+            apps/ios/build/ipad-smoke.log
+            apps/ios/build/ipad-smoke-summary.json
             apps/ios/build/*/Build/Products/Debug-*/*.app
           retention-days: 7

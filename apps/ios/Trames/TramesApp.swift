@@ -25,13 +25,17 @@ struct WorkspaceView: View {
         VStack(spacing: 0) {
             HStack {
                 Text("TRAMES").font(.system(.headline, design: .monospaced)).foregroundStyle(.mint)
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack {
-                        ForEach(workspace.sessions) { session in
-                            Button { workspace.selected = session.id } label: {
-                                Text(session.title).lineLimit(1).padding(8)
-                                    .background(workspace.selected == session.id ? Color.white.opacity(0.12) : .clear).clipShape(RoundedRectangle(cornerRadius: 6))
-                            }.contextMenu { Button("关闭终端", role: .destructive) { workspace.close(session) } }
+                if workspace.sessions.isEmpty {
+                    Spacer(minLength: 8)
+                } else {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack {
+                            ForEach(workspace.sessions) { session in
+                                Button { workspace.selected = session.id } label: {
+                                    Text(session.title).lineLimit(1).padding(8)
+                                        .background(workspace.selected == session.id ? Color.white.opacity(0.12) : .clear).clipShape(RoundedRectangle(cornerRadius: 6))
+                                }.contextMenu { Button("关闭终端", role: .destructive) { workspace.close(session) } }
+                            }
                         }
                     }
                 }
@@ -40,8 +44,14 @@ struct WorkspaceView: View {
                     Button("SSH 连接", systemImage: "network") { sshSheet = true }
                     Button("Files / SFTP", systemImage: "folder") { filesSheet = true }
                     Button("设置", systemImage: "gear") { settingsSheet = true }
-                } label: { Image(systemName: "plus").padding(8) }.accessibilityLabel("新建或管理会话")
-                if let current = workspace.current { Button { workspace.close(current) } label: { Image(systemName: "xmark").padding(8) }.accessibilityLabel("关闭当前终端") }
+                } label: {
+                    Label("新建或管理会话", systemImage: "plus")
+                        .labelStyle(.iconOnly).frame(minWidth: 44, minHeight: 44)
+                }
+                if let current = workspace.current { Button { workspace.close(current) } label: {
+                    Label("关闭当前终端", systemImage: "xmark")
+                        .labelStyle(.iconOnly).frame(minWidth: 44, minHeight: 44)
+                } }
             }.padding(.horizontal, 12).padding(.vertical, 6)
             if let current = workspace.current {
                 SessionView(session: current).id(current.id)
