@@ -59,3 +59,26 @@ retain their notices and satisfy relevant source obligations when redistributing
 a rootfs. tree 2.2.1 declares GPL-2.0-or-later. OpenSSL in the guest is Alpine's
 unmodified separately distributed package. A Trames project license does not
 replace the guest distribution's package licenses.
+
+## Userspace packet stack
+
+smoltcp 0.12.0 is pinned with default features disabled. Only std, Medium::Ip,
+IPv4/IPv6, TCP/UDP/ICMP, bounded fragmentation/storage and four logical IP-address
+slots are enabled. Native raw-socket and TUN device features are not enabled.
+Reviewed manifests for its compiled Linux/iOS closure:
+
+| Crate | Version | Declared license |
+| --- | --- | --- |
+| smoltcp | 0.12.0 | 0BSD |
+| managed | 0.8.0 | 0BSD |
+| heapless | 0.8.0 | MIT OR Apache-2.0 |
+| hash32 | 0.3.1 | MIT OR Apache-2.0 |
+| byteorder | 1.5.0 | Unlicense OR MIT |
+| stable_deref_trait | 1.2.1 | MIT OR Apache-2.0 |
+| bitflags | 1.3.2 | MIT/Apache-2.0 |
+
+The selected 0BSD/MIT/Apache-2.0 terms are compatible with GPL-3.0-or-later.
+Preserve upstream source/license notices in redistribution. Existing cfg-if and
+getrandom licenses are recorded above. Optional defmt/proc-macro packages in
+Cargo.lock are not in the compiled Linux/iOS feature closure. This review does
+not substitute for an upstream security audit.

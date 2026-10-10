@@ -101,15 +101,15 @@ The library starts with networking off; the CLI defaults to outbound networking
 and loopback listeners. Non-loopback listeners require --network full. Socket
 operations translate structures, flags and errno, preflight all guest buffers,
 and keep native descriptors nonblocking. Loopback accesses native loopback, and
-wildcard ephemeral UDP sockets can receive inbound traffic. These are coarse
-capabilities, not a private IP stack or complete egress sandbox. Host policy and
+wildcard ephemeral UDP sockets can receive inbound traffic. These native-backend modes are coarse
+capabilities; the optional virtual backend is described below. Host policy and
 OS permissions still apply. The instruction budget is not a network deadline.
 
 Host SIGPIPE is suppressed; guest SIGPIPE follows the virtual signal model.
 Session exit and CLI faults release all socket owners. Socket objects are not
 persisted. Unsupported raw/Unix sockets, ancillary messages, socket timeouts and
-other options fail explicitly. Guest TLS, certificates, apk signatures and iPad
-network permissions need separate validation in subsequent stages. See
+other options fail explicitly. Guest TLS/certificates/apk signatures are validated in M3 and through the virtual
+gateway; iPad network permissions still need device validation. See
 [network architecture](../architecture/network.md) and the
 [dependency/license record](dependencies.md).
 
@@ -122,3 +122,16 @@ rootfs owner maps to virtual user 1000 and privilege bits are stripped. Guest
 HTTPS uses explicit CA/proxy configuration; Alpine signatures remain required.
 See [dynamic userspace](../architecture/dynamic-userspace.md) and
 [M3 validation](../validation/m3.md).
+
+The delivered optional virtual backend uses an isolated userspace packet fabric:
+private IPs, loopback and ports, no host virtual interface or native raw socket.
+Only a trusted gateway opens ordinary nonblocking native TCP/UDP sockets. It
+preserves guest TLS and host policy. Trusted host mappings require an explicit
+embedder/CLI choice and cannot be requested by a guest. Private subnet addresses
+never fall through to native hosts. New bounds per fabric are 16 environments,
+256 stack handles/reservations, 64 native flows and 96 frames per port/direction;
+reassembly uses at most two bounded datagrams per node, with overlap poisoning
+and expiry. DNS uses two bounded workers and request tokens; namespace generations
+prevent reused IDs from receiving late work. See the precise buffer/time limits
+in [virtual-network architecture](../architecture/virtual-network.md) and the
+[executable validation](../validation/virtual-network.md).

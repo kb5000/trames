@@ -212,11 +212,13 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     let mut disk_budget = None;
     let mut storage_info = false;
     let mut network = NetworkMode::Outbound;
+    let mut virtual_network = None;
+    let mut host_mappings = Vec::new();
     let mut rootfs = None;
     let mut guest_path = false;
     let mut extra_env = Vec::new();
     if args.peek().is_some_and(|a| a == "--help" || a == "-h") {
-        println!("Usage: trames-run [--rootfs VERIFIED_ALPINE_TAR_GZ] [--guest] [--env KEY=VALUE] [--network off|loopback|outbound|full] [--storage DIR | --memory] [--storage-budget BYTES|16GiB|auto] [--storage-info] [--max-instructions N] [--trace-syscalls] [--file /GUEST=HOST] [--exec-file /GUEST=HOST] [--export /GUEST=HOST] [--install-busybox] [--pty] [--] ELF [ARG ...]\nDefault network: outbound connections and loopback listeners; full also allows non-loopback listeners.\nDefault storage: .trames/storage in the current directory, 16 GiB logical file budget on first creation.\nImports copy selected host files; exports create new host files after guest exit.\n--memory selects the ephemeral 16 MiB test backend. auto uses the storage volume's total capacity.");
+        println!("Usage: trames-run [--rootfs VERIFIED_ALPINE_TAR_GZ] [--guest] [--env KEY=VALUE] [--virtual-network ID] [--host-map VIRTUAL_IP=HOST_IP] [--network off|loopback|outbound|full] [--storage DIR | --memory] [--storage-budget BYTES|16GiB|auto] [--storage-info] [--max-instructions N] [--trace-syscalls] [--file /GUEST=HOST] [--exec-file /GUEST=HOST] [--export /GUEST=HOST] [--install-busybox] [--pty] [--] ELF [ARG ...]\nDefault native network: outbound connections and loopback listeners; full also allows non-loopback listeners.\n--virtual-network ID selects isolated 10.0.0.ID / fd00::ID and private loopback; ID must be 2..254.\n--host-map explicitly forwards a logical external IP to a trusted host service.\nDefault storage: .trames/storage in the current directory, 16 GiB logical file budget on first creation.\nImports copy selected host files; exports create new host files after guest exit.\n--memory selects the ephemeral 16 MiB test backend. auto uses the storage volume's total capacity.");
         return Ok(0);
     }
     while let Some(option) = args.peek() {
@@ -240,6 +242,25 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
                     return Err("invalid environment name".into());
                 }
                 extra_env.push(value);
+            }
+            "--virtual-network" => {
+                args.next();
+                virtual_network = Some(
+                    args.next()
+                        .ok_or("missing virtual environment ID")?
+                        .parse::<u8>()?,
+                );
+            }
+            "--host-map" => {
+                args.next();
+                let value = args.next().ok_or("missing host mapping")?;
+                let (virtual_ip, host_ip) = value
+                    .split_once('=')
+                    .ok_or("host mapping requires VIRTUAL_IP=HOST_IP")?;
+                host_mappings.push((
+                    virtual_ip.parse::<std::net::IpAddr>()?,
+                    host_ip.parse::<std::net::IpAddr>()?,
+                ));
             }
             "--network" => {
                 args.next();
@@ -338,9 +359,34 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
         }
         vfs.set_volume_space(volume)?;
     }
-    vfs.configure_network(network)?;
+    if let Some(id) = virtual_network {
+        let fabric = trames_net::Fabric::new()?;
+        for (virtual_ip, host_ip) in host_mappings {
+            fabric.map_host_ip(virtual_ip, host_ip)?;
+        }
+        vfs.configure_virtual_network(&fabric, id, network)?;
+    } else {
+        if !host_mappings.is_empty() {
+            return Err("--host-map requires --virtual-network".into());
+        }
+        vfs.configure_network(network)?;
+    }
     if let Some(archive) = rootfs {
         trames_distro::install_alpine(&mut File::open(archive)?, &mut vfs)?;
+    }
+    if virtual_network.is_some()
+        && vfs
+            .stat_at(-100, b"/etc/resolv.conf")
+            .is_err_and(|e| e.0 == 2)
+    {
+        if vfs.stat_at(-100, b"/etc").is_err_and(|e| e.0 == 2) {
+            vfs.mkdir_at(-100, b"/etc", 0o755)?;
+        }
+        vfs.import_reader(
+            b"/etc/resolv.conf",
+            &mut &b"nameserver 10.0.0.1\n"[..],
+            false,
+        )?;
     }
     for (guest, host, executable) in files {
         vfs.import_reader(guest.as_bytes(), &mut File::open(host)?, executable)?;

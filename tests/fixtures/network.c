@@ -34,12 +34,12 @@ static void setup(int ipv6, unsigned port) {
     if (ipv6) {
         struct sockaddr_in6 *v = (void *)&peer;
         v->sin6_family = AF_INET6; v->sin6_port = htons(port);
-        CHECK(inet_pton(AF_INET6, "::1", &v->sin6_addr) == 1);
+        CHECK(inet_pton(AF_INET6, getenv("TRAMES_TEST_PEER") ? getenv("TRAMES_TEST_PEER") : "::1", &v->sin6_addr) == 1);
         peer_size = sizeof *v;
     } else {
         struct sockaddr_in *v = (void *)&peer;
         v->sin_family = AF_INET; v->sin_port = htons(port);
-        CHECK(inet_pton(AF_INET, "127.0.0.1", &v->sin_addr) == 1);
+        CHECK(inet_pton(AF_INET, getenv("TRAMES_TEST_PEER") ? getenv("TRAMES_TEST_PEER") : "127.0.0.1", &v->sin_addr) == 1);
         peer_size = sizeof *v;
     }
 }

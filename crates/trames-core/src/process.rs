@@ -1365,6 +1365,9 @@ impl Kernel {
                 if id == 1 {
                     if let Some(status) = status {
                         // Session teardown is explicit: root exit cancels remaining virtual children.
+                        if let Some(root) = self.processes.get(&1) {
+                            root.linux.vfs.finish_network();
+                        }
                         while self
                             .terminal
                             .as_ref()

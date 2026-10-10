@@ -23,7 +23,8 @@ not a claim that the complete dependency graph contains no unsafe code.
 Blocking host IO would stall all virtual processes. One worker thread per socket
 would require additional queues, cancellation ownership and partial-transfer
 accounting. A nonblocking poll backend needs neither. Per-call readiness queries
-use zero timeout; idle waits batch and deduplicate up to 64 socket handles.
+use zero timeout; each native namespace has at most 64 socket handles. The later shared-fabric
+scheduler permits a bounded aggregate wait of 1024 native/gateway handles.
 Level-triggered polling also avoids edge-triggered rearm hazards in this first
 backend. An epoll/kqueue reactor can replace this when profiling warrants it.
 
@@ -43,3 +44,5 @@ Unsupported control messages, raw sockets, Unix-domain sockets, interface scopes
 timeouts and message flags fail explicitly. Linux execution is validated; an
 iOS target compile check does not replace signed-build or device validation.
 See [network.md](../architecture/network.md) for behavior and remaining work.
+
+The post-M3 userspace fabric and native gateway are recorded in [ADR-006](ADR-006-userspace-network.md).

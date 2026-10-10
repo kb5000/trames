@@ -10,6 +10,7 @@ name = "trames-run"
 path = "src/main.rs"
 
 [dependencies]
+trames-net = { path = "../trames-net" }
 trames-core = { path = "../trames-core" }
 trames-elf = { path = "../trames-elf" }
 trames-linux = { path = "../trames-linux" }

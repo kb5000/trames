@@ -2,7 +2,7 @@
 
 面向 iPadOS 的终端优先开发环境：原生 SSH，加上运行未修改 AArch64 Linux 用户态程序的兼容运行时。使用普通开发者签名，架构不依赖越狱、JIT 权限、私有 API 或硬件虚拟化。
 
-**当前交付：M0–M3 和磁盘持久化。** `trames-run` 执行实际静态／动态 AArch64 ELF，支持 32/64 位标量及选定 SIMD 浮点、虚拟进程、管道、信号和一个虚拟 PTY。交互式 BusyBox `ash` 已在内存和磁盘两种后端验证。Linux CLI 默认保存文件到磁盘，新存储目录的文件预算为 16 GiB。IPv4/IPv6 TCP/UDP 和真实 musl DNS 已验证；Alpine 3.22.6、动态 musl、经过证书和包签名验证的 HTTPS apk update/add，以及安装后 tree 执行已验证。iPad App、原生 Files 授权界面和 SSH 属于后续里程碑。
+**当前交付：M0–M3、磁盘持久化和用户态虚拟网络。** `trames-run` 执行实际静态／动态 AArch64 ELF，支持 32/64 位标量及选定 SIMD 浮点、虚拟进程、管道、信号和一个虚拟 PTY。交互式 BusyBox `ash` 已在内存和磁盘两种后端验证。Linux CLI 默认保存文件到磁盘，新存储目录的文件预算为 16 GiB。IPv4/IPv6 TCP/UDP、真实 musl DNS，以及具有独立 IP 和回环地址的用户态网络栈已验证；Alpine 3.22.6、动态 musl、经过证书和包签名验证的 HTTPS apk update/add，以及安装后 tree 执行已验证。iPad App、原生 Files 授权界面和 SSH 属于后续里程碑。
 
 ## 快速运行
 
@@ -74,6 +74,14 @@ python3 tests/integration/m3.py
 
 CLI 默认 `--network outbound`：允许出站连接、本机监听及 UDP 客户端的临时端口。`--network off` 关闭网络，`--network loopback` 限定本机，`--network full` 还允许非本机地址和通配监听。loopback 指宿主本机；这不是独立的 guest 网络命名空间。guest 不能绑定 1024 以下端口。模式仍受宿主网络策略和系统权限约束。
 
+使用 `--virtual-network 2` 可进入独立 IP 网络：环境 2 的地址为 `10.0.0.2`／`fd00::2`，网关与 DNS 为 `10.0.0.1`／`fd00::1`，`127.0.0.1`／`::1` 只指向该环境。不同环境拥有独立端口空间，可监听私有 80／53 端口。库的共享 `Fabric` API 可同时连接多个环境；CLI 每次创建一个环境。TCP／UDP 经 smoltcp 数据包栈处理，外网流量再由网关桥接原生 socket，TLS 始终由 guest 库处理。无需 TUN／VPN 权限。虚拟模式在缺少 `/etc/resolv.conf` 时写入虚拟 DNS，保留已有配置。
+
+~~~sh
+target/release/trames-run --storage target/alpine --virtual-network 2 --guest --max-instructions 100000000 /bin/sh
+~~~
+
+已验证 IPv4／IPv6 大数据报分片重组、TCP 丢包重传、内部 ICMP echo 和 DNS，以及通过网关的真实 Alpine HTTPS apk 安装。当前上限为每个 Fabric 16 个环境、256 个栈句柄（含 backlog）和 64 个原生网关流，每环境 64 个 guest socket。外部 ICMP、raw／packet socket、组播、DHCP、netlink 和完整 Linux 网络控制接口仍未支持。详细行为和资源策略见 [虚拟网络架构](docs/architecture/virtual-network.md) 与 [验证记录](docs/validation/virtual-network.md)。
+
 DNS 由真实 musl 读取 guest 的 `/etc/resolv.conf`；可用 `--file /etc/resolv.conf=HOST_FILE` 显式导入。已验证 A/AAAA 查询和 UDP 截断后的 TCP 回退。HTTP/TLS 由 guest 程序自己的库处理，运行时不继承宿主代理凭据。已验证原版 Alpine HTTPS 和 apk 的证书、主机名及包签名校验；网络/core/distro 已通过 iOS 目标编译检查，尚无签名 App 或真机验证。详细设计、行为和缺口见 [网络架构](docs/architecture/network.md)。
 
 ## 验证
@@ -99,6 +107,11 @@ bash scripts/build-storage-fixtures.sh
 python3 tests/integration/storage.py
 bash scripts/build-network-fixtures.sh
 python3 tests/integration/network.py
+bash scripts/build-virtual-network-fixtures.sh
+bash scripts/prepare-alpine.sh
+cargo build --release --workspace --locked
+python3 tests/integration/m3.py
+python3 tests/integration/virtual-network.py
 rustup target add aarch64-apple-ios --toolchain 1.90.0
 cargo check -p trames-core -p trames-distro --target aarch64-apple-ios --locked
 TRAMES_TEST_STORAGE=disk python3 tests/integration/m2.py
@@ -109,7 +122,7 @@ TRAMES_TEST_STORAGE=disk python3 tests/integration/terminal.py
 
 差分脚本独立运行同一个静态 ELF，比较 Trames 与 QEMU 的 stdout、stderr 和退出码。六组固定程序检查初始栈、BSS、跨页读写、分支、系统调用错误和二进制输出；64 个确定性生成程序比较八个寄存器及 NZCV 的 72 字节内存快照。另有执行预算、非法指令、代码页写保护检查，以及改名并改变 ELF 内容的验证。
 
-M1 再加入 64 个生成程序，对照位域、扩展寄存器运算、乘除、进位、条件选择及 NZCV；固定程序验证成对访存、符号扩展、SIMD 数据传送、exclusive monitor、匿名内存和文件创建/读写。M2 加入 6,860 个浮点用例、159 个结构访存变体、22 个 shell 场景和两个静态 C 程序。存储阶段增加真实文件 ABI、文件管理 applet、48 个整数 SIMD 快照，以及磁盘后端的完整 M2 重跑。网络基础再加入内存/磁盘两种后端的 36 次网络对照、16 项能力/缓冲区预检/会话清理结果，以及 iOS 目标编译检查。M3 再加入 36 次动态程序／TLS／包管理对照和 72 个 widening SIMD 快照。当前共 527 次 QEMU 程序/场景比较、两种后端各 9 项终端结果、89 个单元测试；另验证配额、损坏元数据、提交失败回滚、流式复制、宿主范围及强制结束后的恢复。详见 [存储验证](docs/validation/storage.md) 和 [网络验证](docs/validation/network.md)。
+M1 再加入 64 个生成程序，对照位域、扩展寄存器运算、乘除、进位、条件选择及 NZCV；固定程序验证成对访存、符号扩展、SIMD 数据传送、exclusive monitor、匿名内存和文件创建/读写。M2 加入 6,860 个浮点用例、159 个结构访存变体、22 个 shell 场景和两个静态 C 程序。存储阶段增加真实文件 ABI、文件管理 applet、48 个整数 SIMD 快照，以及磁盘后端的完整 M2 重跑。网络基础再加入内存/磁盘两种后端的 36 次网络对照、16 项能力/缓冲区预检/会话清理结果，以及 iOS 目标编译检查。M3 再加入 36 次动态程序／TLS／包管理对照和 72 个 widening SIMD 快照。虚拟网络再加入 27 次对照和协议／隔离测试。当前共 554 次 QEMU 程序/场景比较、两种后端各 9 项终端结果、91 个单元测试及 11 个 Rust 网络集成测试；另验证配额、损坏元数据、提交失败回滚、流式复制、宿主范围及强制结束后的恢复。详见 [存储验证](docs/validation/storage.md) 和 [网络验证](docs/validation/network.md)。
 
 可通过 `AARCH64_AS`、`AARCH64_LD`、`QEMU_AARCH64` 覆盖工具路径，BusyBox 构建另支持 `AARCH64_CC`、`AARCH64_AR`、`AARCH64_RANLIB`；`--runner` 选择运行器，`--seeds` 调整生成程序数量。QEMU 是独立参考，测试通过只证明已测行为。
 

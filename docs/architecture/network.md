@@ -1,8 +1,12 @@
-# M3 network foundation
+# Native network backend (M3 foundation)
 
 This stage implements real native IPv4/IPv6 TCP and UDP for interpreted AArch64
 Linux programs. Dynamic musl/Alpine and authenticated HTTPS/apk are now validated
 in [M3](../validation/m3.md); native iPad device validation remains later work.
+
+The delivered isolated packet backend is described in
+[virtual-network.md](virtual-network.md), selected with --virtual-network. The
+policies below describe the native backend.
 
 ## Boundaries
 

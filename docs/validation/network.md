@@ -1,7 +1,9 @@
 # M3 network foundation validation
 
 Date: 10 October 2026. This validates the native socket stage independently of
-dynamic loading/Alpine/apk; M3 remains in progress.
+dynamic loading/Alpine/apk. Completed later stages are recorded in
+[M3](m3.md) and [virtual network](virtual-network.md); the counts below are the
+historical native-foundation snapshot.
 
 ## Reproduction
 

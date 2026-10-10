@@ -23,7 +23,7 @@ jobs:
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo build --workspace --locked
       - run: cargo test --workspace --locked
-      - name: Compile core and native network for iOS (no SDK link or device test)
+      - name: Compile core and both network backends for iOS (no SDK link or device test)
         run: cargo check -p trames-core -p trames-distro --target aarch64-apple-ios --locked
       - run: python3 tests/differential/run.py
       - run: python3 tests/differential/m1.py
@@ -46,6 +46,7 @@ jobs:
       - run: bash scripts/build-storage-fixtures.sh
       - run: python3 tests/integration/storage.py
       - run: bash scripts/build-network-fixtures.sh
+      - run: bash scripts/build-virtual-network-fixtures.sh
       - name: Compare native loopback sockets and real musl DNS with QEMU
         # The deterministic DNS peer binds host loopback port 53. The guest's
         # port restriction still applies even when this test harness is root.
@@ -61,3 +62,5 @@ jobs:
       - run: cargo build --release --workspace --locked
       - name: Validate dynamic Alpine, HTTPS trust and signed apk installation
         run: python3 tests/integration/m3.py
+      - name: Validate virtual packet fabric, guest ABI and Alpine HTTPS gateway
+        run: python3 tests/integration/virtual-network.py
