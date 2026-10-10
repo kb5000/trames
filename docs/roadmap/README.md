@@ -2,7 +2,9 @@
 
 M0, the selected static-userspace M1 foundation, M2 ash/FP, the storage follow-up and M3 are implemented, with records
 in [m0.md](../validation/m0.md), [m1.md](../validation/m1.md), [m2.md](../validation/m2.md), [storage.md](../validation/storage.md) and [network.md](../validation/network.md) and [m3.md](../validation/m3.md). This does not
-establish general Linux userspace compatibility or an iPadOS build.
+establish general Linux userspace compatibility. M4's software and unsigned
+Apple builds are validated in [m4.md](../validation/m4.md); signed physical
+iPad acceptance remains pending.
 
 | Milestone | Work and completion evidence |
 | --- | --- |
@@ -13,8 +15,8 @@ establish general Linux userspace compatibility or an iPadOS build.
 | Network | Delivered M3 subset: nonblocking IPv4/IPv6 TCP/UDP, shared descriptors, real musl DNS including TCP fallback, 36 QEMU comparisons and iOS target compile check |
 | M3 | Delivered: PT_INTERP, dynamic PIE/ET_EXEC, file-backed private mmap, verified Alpine 3.22.6, authenticated HTTPS apk update/add, successful trigger and installed tree execution |
 | Virtual network (after M3) | Delivered: isolated IPv4/IPv6 and loopback, smoltcp TCP/UDP/ICMP packets, bounded two-family fragmentation, UDP/TCP DNS, native egress gateway, 27 QEMU comparisons and actual Alpine HTTPS apk |
-| M4 | Frontend implementation in progress: SwiftUI/SwiftTerm, native SSH/SFTP, Files, keyboard and embedding ABI; Apple CI, signed build and actual iPad acceptance tracked in issue #8 |
-| M5 | Versioned Bridge RPC and C ABI, scoped storage, accelerator registry and profiled C++ backend |
+| M4 | Software validated: SwiftUI/SwiftTerm, native SSH/SFTP, Files, keyboard and embedding ABI; Apple device/simulator linking and actual simulator operations passed. Developer signing and physical iPad acceptance remain in issue #8 |
+| M5 | Versioned guest Bridge RPC, native capability consent, scoped storage, accelerator registry and profiled C++ backend; extend the embedding ABI |
 | M6 | Verified Git/Python/GCC/Clang/Make/CMake workflows; Debian after ABI coverage supports it |
 
 M3 is validated with unmodified Alpine binaries, a deterministic native HTTPS
@@ -28,9 +30,10 @@ packet stack handles internal protocols; native TCP/UDP supplies Internet egress
 within host policy. No host route changes or VPN entitlement are required.
 
 The Linux CLI now defaults to a disk-backed store, with an initial 16 GiB logical
-budget and capacity snapshots. VolumeSpace and stream APIs let the future iPad
-frontend report native capacity and coordinate authorized Files resources. Native
-Files UI, security-scoped bookmarks and provider coordination still belong to M4/M5.
+budget and capacity snapshots. VolumeSpace and stream APIs now supply the iPad
+frontend's capacity display and coordinated, security-scoped Files copies.
+Persistent provider bookmarks remain future work; selected resources are not live
+guest mounts.
 Mapped-memory quotas remain unchanged. Installing a package is not proof that its programs can execute.
 
 Repository policy clarification: the original charter proposed confirming private

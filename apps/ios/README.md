@@ -54,7 +54,10 @@ Build the matching Rust target first with the script. Build settings select
 its library by SDK; no developer team or credential is committed to the repo.
 
 macOS CI tests the native SSH PTY, window changes and a 1 MiB SFTP roundtrip
-against an actual local OpenSSH server, then links both unsigned Apple targets.
+against an actual local OpenSSH server, then links both unsigned Apple targets
+and runs the app on an iPad simulator through installation, rotation, exit and
+persistent-store reopening. Both the test exit status and xcresult summary must
+pass. Validated revisions are recorded in docs/validation/m4.md.
 Unsigned builds are not developer-signed or device-validated builds. Complete
 the device checklist in docs/validation/m4.md before marking M4 accepted.
 
