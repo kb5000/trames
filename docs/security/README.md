@@ -1,14 +1,18 @@
-# Runtime security and compatibility limits (M0 + M1)
+# Runtime security and compatibility limits (M0–M2)
 
 ELF files, instructions, addresses and argv/envp are untrusted. Parsers validate
 lengths, offset arithmetic, architecture, flags, alignment, entry permissions and
 segment ranges. Dynamic executables and overlapping PT_LOAD pages are explicitly
 rejected in M0. Guest faults are errors, not host pointer dereferences.
 
-| Resource | M0 bound |
+| Resource | Current bound |
 | --- | --- |
 | Input ELF | 64 MiB (the CLI reads at most the limit plus one byte) |
-| Mapped guest memory including stack | 64 MiB |
+| Mapped guest memory including stack | 64 MiB per process; 256 MiB aggregate logical mappings |
+| Virtual processes including zombies | 32 |
+| Pipe buffer / atomic write | 64 KiB / 4096 bytes |
+| PTY input, output and echo | 64 KiB each; empty EOF records also consume input budget |
+| Nested signal frames | 8 |
 | Program headers | 1024 |
 | Initial stack | 64 KiB, non-executable, unmapped page below it |
 | argv/envp entries combined | 4096 |
@@ -48,6 +52,12 @@ output is preflighted and invokes the sink once; partial side effects are never
 retried automatically. Anonymous fixed mappings are checked against resource
 limits before replacing data. Real host entropy supplies AT_RANDOM.
 
-Nonblocking console I/O, threads and blocking waits are unsupported rather than
-simulated as completed operations. No hardware isolation, full Linux security
+M2 virtual pipe/terminal waits suspend processes. Input adapters must implement
+nonblocking poll_stdin/stdin_ready; terminal master events scope signals to guest
+jobs. No host PID, host exec or guest-named host device is forwarded. Nonblocking
+plain console I/O, shared-VM threads, vfork, alternate signal stacks and blocking
+futex remain unsupported rather than simulated as completed operations.
+Session-root exit drops remaining virtual children; no daemon is retained.
+Disk persistence, 16 GiB file budgeting and iPad Files access are deferred.
+Existing file and memory limits are unchanged. No hardware isolation, full Linux security
 semantics or audited sandbox is claimed.

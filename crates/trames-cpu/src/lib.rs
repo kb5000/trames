@@ -3,7 +3,10 @@
 use std::fmt;
 use trames_memory::{Memory, MemoryError};
 mod extended;
+mod floating;
 mod load_store;
+mod soft_float;
+mod vector_float;
 
 #[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Flags {
@@ -20,6 +23,8 @@ pub struct Cpu {
     pub pc: u64,
     pub flags: Flags,
     pub tpidr_el0: u64,
+    pub fpcr: u32,
+    pub fpsr: u32,
     vectors: [u128; 32],
     exclusive: Option<(u64, usize, u64)>,
 }

@@ -37,7 +37,11 @@ fi
 from pathlib import Path
 enabled = {'STATIC', 'BUSYBOX', 'ECHO', 'FEATURE_FANCY_ECHO', 'TRUE', 'FALSE',
            'CAT', 'WC', 'HEAD', 'TAIL', 'PWD', 'LS', 'FEATURE_LS_SORTFILES',
-           'BASENAME', 'DIRNAME', 'PRINTF'}
+           'BASENAME', 'DIRNAME', 'PRINTF', 'ASH', 'ASH_JOB_CONTROL', 'ASH_ALIAS',
+           'ASH_ECHO', 'ASH_PRINTF', 'ASH_TEST', 'ASH_GETOPTS', 'ASH_CMDCMD',
+           'FEATURE_SH_MATH', 'FEATURE_SH_MATH_64', 'FEATURE_EDITING',
+           'FEATURE_EDITING_WINCH', 'SLEEP', 'KILL', 'SEQ', 'ENV', 'TEST',
+           'MKDIR', 'RM', 'TOUCH'}
 p = Path('.config')
 lines = p.read_text().splitlines()
 for index, line in enumerate(lines):

@@ -17,6 +17,74 @@ impl Cpu {
         let rt = (ins & 31) as usize;
         let rn = ((ins >> 5) & 31) as usize;
         let vector = ins & (1 << 26) != 0;
+        if ins & 0xbf200000 == 0x0c000000 {
+            // AdvSIMD LD1/ST1 and interleaved LD2/3/4/ST2/3/4 multiple structures.
+            let (repeat, structures) = match (ins >> 12) & 15 {
+                0 => (1, 4),
+                2 => (4, 1),
+                4 => (1, 3),
+                6 => (3, 1),
+                7 => (1, 1),
+                8 => (1, 2),
+                10 => (2, 1),
+                _ => return Err(invalid()),
+            };
+            let vector_bytes = if ins & (1 << 30) != 0 { 16 } else { 8 };
+            let element = 1usize << ((ins >> 10) & 3);
+            if vector_bytes == 8 && element == 8 && structures != 1 {
+                return Err(invalid());
+            }
+            let post = ins & (1 << 23) != 0;
+            let rm = ((ins >> 16) & 31) as usize;
+            if !post && rm != 0 {
+                return Err(invalid());
+            }
+            let size = vector_bytes * repeat * structures;
+            let address = self.reg(rn, true);
+            let load = ins & (1 << 22) != 0;
+            let mut bytes = [0; 64];
+            if load {
+                memory.read(address, &mut bytes[..size]).map_err(fault)?;
+            } else {
+                memory
+                    .check(address, size, trames_memory::Access::Write)
+                    .map_err(fault)?;
+            }
+            let mut values = [0u128; 4];
+            for r in 0..repeat {
+                for lane in 0..vector_bytes / element {
+                    for s in 0..structures {
+                        let index = r * structures + s;
+                        let offset =
+                            (r * (vector_bytes / element) * structures + lane * structures + s)
+                                * element;
+                        if load {
+                            let mut value = [0; 16];
+                            value[..element].copy_from_slice(&bytes[offset..offset + element]);
+                            values[index] |= u128::from_le_bytes(value) << (lane * element * 8);
+                        } else {
+                            let value = self.vectors[(rt + index) & 31] >> (lane * element * 8);
+                            bytes[offset..offset + element]
+                                .copy_from_slice(&value.to_le_bytes()[..element]);
+                        }
+                    }
+                }
+            }
+            if load {
+                for (i, &value) in values.iter().enumerate().take(repeat * structures) {
+                    self.vectors[(rt + i) & 31] = value;
+                }
+            } else {
+                memory.write(address, &bytes[..size]).map_err(fault)?;
+            }
+            if post {
+                self.sp_or_x(
+                    rn,
+                    address.wrapping_add(if rm == 31 { size as u64 } else { self.x(rm) }),
+                );
+            }
+            return Ok(true);
+        }
         if matches!(ins & 0x3ffffc00, 0x085f7c00 | 0x085ffc00 | 0x08dffc00) {
             // LDXR/LDAXR/LDAR
             let size = 1usize << (ins >> 30);
@@ -320,5 +388,24 @@ mod tests {
         c.pc = 0x1000;
         c.set_x(1, 0x2001);
         assert!(c.step(&mut m).is_err());
+    }
+}
+
+#[cfg(test)]
+mod structure_tests {
+    use super::*;
+    use trames_memory::{Permissions, PAGE_SIZE};
+    #[test]
+    fn structure_fault_preserves_all_destination_registers_and_base() {
+        let mut memory = Memory::default();
+        memory.map(0x1000, PAGE_SIZE, Permissions::RW).unwrap();
+        let mut cpu = Cpu::default();
+        cpu.set_x(2, 0x1ff0);
+        cpu.set_vector(30, 1);
+        cpu.set_vector(31, 2);
+        assert!(cpu.execute_memory(0x4cdfa05e, &mut memory).is_err());
+        assert_eq!(cpu.vector(30), 1);
+        assert_eq!(cpu.vector(31), 2);
+        assert_eq!(cpu.x(2), 0x1ff0);
     }
 }

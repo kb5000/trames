@@ -41,7 +41,7 @@ fn logical_mask(n: u32, imms: u32, immr: u32, wide: bool) -> Option<u64> {
 }
 
 impl Cpu {
-    fn set_nzcv(&mut self, value: u32) {
+    pub(crate) fn set_nzcv(&mut self, value: u32) {
         self.flags = Flags {
             n: value & 8 != 0,
             z: value & 4 != 0,
@@ -62,6 +62,9 @@ impl Cpu {
     ) -> Result<Option<u64>, CpuFault> {
         let pc = self.pc;
         let mut next = pc.wrapping_add(4);
+        if self.execute_floating(ins)? {
+            return Ok(Some(next));
+        }
         let invalid = || CpuFault::Instruction {
             pc,
             instruction: ins,

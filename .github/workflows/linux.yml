@@ -24,6 +24,9 @@ jobs:
       - run: cargo test --workspace --locked
       - run: python3 tests/differential/run.py
       - run: python3 tests/differential/m1.py
+      - run: python3 tests/differential/floating.py
+      - run: python3 tests/differential/vector_floating.py
+      - run: python3 tests/differential/structures.py
       - name: Cross-build pinned musl and static BusyBox
         run: |
           if ! bash scripts/build-busybox.sh > target/busybox-build.log 2>&1; then
@@ -32,3 +35,6 @@ jobs:
           fi
           tail -10 target/busybox-build.log
       - run: python3 tests/integration/busybox.py
+      - run: bash scripts/build-m2-fixtures.sh
+      - run: python3 tests/integration/m2.py
+      - run: python3 tests/integration/terminal.py

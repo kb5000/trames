@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! ELF, initial Linux stack, CPU slices, and syscall dispatch composition.
 use std::{fmt, io::Read};
-use trames_cpu::{Cpu, CpuFault, SliceOutcome};
+use trames_cpu::{Cpu, CpuFault};
 use trames_elf::{ElfError, LoadedElf};
-use trames_linux::{GuestOutput, Linux, SyscallOutcome};
+use trames_linux::{GuestOutput, Linux};
+mod process;
+mod terminal;
 use trames_memory::{Memory, MemoryError, Permissions, DEFAULT_MEMORY_LIMIT, PAGE_SIZE};
 
 pub const STACK_TOP: u64 = 0x0000_7fff_fff0_0000;
@@ -17,6 +19,7 @@ pub enum RuntimeError {
     Arguments(&'static str),
     Cpu(CpuFault),
     BudgetExceeded(u64),
+    Deadlock,
 }
 impl fmt::Display for RuntimeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -26,6 +29,10 @@ impl fmt::Display for RuntimeError {
             Self::Cpu(e) => e.fmt(f),
             Self::Arguments(s) => write!(f, "initial stack: {s}"),
             Self::BudgetExceeded(n) => write!(f, "guest instruction limit exceeded ({n})"),
+            Self::Deadlock => write!(
+                f,
+                "all virtual processes are blocked without an event source"
+            ),
         }
     }
 }
@@ -45,15 +52,17 @@ pub struct Runtime {
     pub cpu: Cpu,
     pub memory: Memory,
     pub linux: Linux,
+    pub terminal: Option<terminal::Terminal>,
 }
+pub use terminal::Terminal;
 #[derive(Debug, PartialEq, Eq)]
 pub struct Exit {
     pub code: u8,
     pub instructions: u64,
 }
 
-fn push_string(memory: &mut Memory, cursor: &mut u64, string: &str) -> Result<u64, RuntimeError> {
-    if string.as_bytes().contains(&0) {
+fn push_string(memory: &mut Memory, cursor: &mut u64, string: &[u8]) -> Result<u64, RuntimeError> {
+    if string.contains(&0) {
         return Err(RuntimeError::Arguments("NUL in argv or envp"));
     }
     let len = string
@@ -64,7 +73,7 @@ fn push_string(memory: &mut Memory, cursor: &mut u64, string: &str) -> Result<u6
         .checked_sub(len as u64)
         .filter(|&address| address >= STACK_TOP - STACK_SIZE)
         .ok_or(RuntimeError::Arguments("stack exceeds 64 KiB"))?;
-    memory.write(*cursor, string.as_bytes())?;
+    memory.write(*cursor, string)?;
     memory.write(*cursor + string.len() as u64, &[0])?;
     Ok(*cursor)
 }
@@ -73,6 +82,23 @@ fn initial_stack(
     elf: &mut LoadedElf,
     argv: &[String],
     envp: &[String],
+) -> Result<u64, RuntimeError> {
+    initial_stack_bytes(
+        elf,
+        &argv
+            .iter()
+            .map(|s| s.as_bytes().to_vec())
+            .collect::<Vec<_>>(),
+        &envp
+            .iter()
+            .map(|s| s.as_bytes().to_vec())
+            .collect::<Vec<_>>(),
+    )
+}
+fn initial_stack_bytes(
+    elf: &mut LoadedElf,
+    argv: &[Vec<u8>],
+    envp: &[Vec<u8>],
 ) -> Result<u64, RuntimeError> {
     if argv.is_empty() {
         return Err(RuntimeError::Arguments("argv[0] is required"));
@@ -132,10 +158,37 @@ fn initial_stack(
         elf.memory
             .write(sp + index as u64 * 8, &word.to_le_bytes())?;
     }
+    let trampoline = 0x0000_7fff_ffd0_0000;
+    elf.memory.map(trampoline, PAGE_SIZE, Permissions::RW)?;
+    elf.memory.write(
+        trampoline,
+        &[0x68, 0x11, 0x80, 0xd2, 0x01, 0x00, 0x00, 0xd4],
+    )?;
+    elf.memory.protect(trampoline, PAGE_SIZE, Permissions::RX)?;
     Ok(sp)
 }
 
 impl Runtime {
+    pub fn enable_terminal(&mut self, terminal: Terminal) -> Result<(), trames_vfs::Errno> {
+        self.linux.vfs.enable_terminal()?;
+        self.terminal = Some(terminal);
+        Ok(())
+    }
+    pub(crate) fn load_guest(
+        bytes: &[u8],
+        argv: &[Vec<u8>],
+        envp: &[Vec<u8>],
+    ) -> Result<Self, RuntimeError> {
+        let mut elf = trames_elf::load(bytes, DEFAULT_MEMORY_LIMIT)?;
+        let linux = Linux::new(elf.memory.highest_mapped_end());
+        let sp = initial_stack_bytes(&mut elf, argv, envp)?;
+        Ok(Self {
+            cpu: Cpu::new(elf.entry, sp),
+            memory: elf.memory,
+            linux,
+            terminal: None,
+        })
+    }
     pub fn load(bytes: &[u8], argv: &[String], envp: &[String]) -> Result<Self, RuntimeError> {
         let mut elf = trames_elf::load(bytes, DEFAULT_MEMORY_LIMIT)?;
         let linux = Linux::new(elf.memory.highest_mapped_end());
@@ -145,6 +198,7 @@ impl Runtime {
             cpu,
             memory: elf.memory,
             linux,
+            terminal: None,
         })
     }
 
@@ -153,29 +207,7 @@ impl Runtime {
         output: &mut impl GuestOutput,
         instruction_limit: u64,
     ) -> Result<Exit, RuntimeError> {
-        let mut instructions = 0;
-        while instructions < instruction_limit {
-            match self.cpu.run_slice(
-                &mut self.memory,
-                (instruction_limit - instructions).min(4096),
-            ) {
-                SliceOutcome::Fault(e) => return Err(RuntimeError::Cpu(e)),
-                SliceOutcome::Yield {
-                    instructions: count,
-                } => instructions += count,
-                SliceOutcome::Syscall {
-                    instructions: count,
-                } => {
-                    instructions += count;
-                    if let SyscallOutcome::Exit(code) =
-                        self.linux.dispatch(&mut self.cpu, &mut self.memory, output)
-                    {
-                        return Ok(Exit { code, instructions });
-                    }
-                }
-            }
-        }
-        Err(RuntimeError::BudgetExceeded(instruction_limit))
+        process::run(self, output, instruction_limit)
     }
 }
 
@@ -230,6 +262,7 @@ mod tests {
             cpu,
             memory,
             linux: Linux::new(0x2000),
+            terminal: None,
         };
         let mut out = trames_linux::CapturedOutput::default();
         assert!(matches!(
