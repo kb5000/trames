@@ -14,7 +14,8 @@ directives are listed before connection; Match is rejected. Load the canonical
 inside that environment; no guest path grants native file access.
 
 SFTP v3 supports file upload/download with exclusive creation, 32 KiB chunks,
-64 KiB frame limits, bounded queues and 20-second reply deadlines. It shares the
+64 KiB frame limits, bounded queues and 20-second handshake/request deadlines,
+including writes stalled by SSH flow control. It shares the
 native SSH connection but uses its own session channel. Directory browsing,
 forwarding, agents, jump hosts and arbitrary SSH config execution are future work.
 
@@ -56,3 +57,16 @@ macOS CI tests the native SSH PTY, window changes and a 1 MiB SFTP roundtrip
 against an actual local OpenSSH server, then links both unsigned Apple targets.
 Unsigned builds are not developer-signed or device-validated builds. Complete
 the device checklist in docs/validation/m4.md before marking M4 accepted.
+
+## If you only have an iPad
+
+GitHub Actions supplies the Mac for Apple builds and simulator testing; a local
+Mac is not needed for these checks. Its artifact contains unsigned apps, the
+generated Xcode project and test reports. An unsigned `.app` cannot be installed
+directly on a physical iPad.
+
+Device installation still needs your Apple signing identity and provisioning
+profile. A cloud Mac can perform that signing once configured with your own
+developer assets. TestFlight additionally requires Apple Developer Program
+membership and App Store Connect setup. This repository has no signing assets,
+configured distribution or completed physical device acceptance yet.

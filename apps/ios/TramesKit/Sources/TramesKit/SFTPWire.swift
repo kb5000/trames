@@ -14,8 +14,6 @@ final class SFTPWire: @unchecked Sendable {
     }
     static func open(parent: Channel) async throws -> SFTPWire {
         let (stream, continuation) = AsyncThrowingStream<ByteBuffer,Error>.makeStream(bufferingPolicy: .bufferingOldest(4))
-        let handler = SFTPPackets(continuation: continuation)
-        let ssh = try await parent.pipeline.handler(type: NIOSSHHandler.self).get()
         // Opening an unanswered channel is also bounded. Before a child
         // exists, cancelling/expiry must close the containing SSH connection.
         let openingTimeout = parent.eventLoop.scheduleTask(in: .seconds(20)) { parent.close(promise: nil) }
@@ -24,14 +22,23 @@ final class SFTPWire: @unchecked Sendable {
             channel = try await withTaskCancellationHandler(operation: {
                 try await parent.eventLoop.flatSubmit {
                     let promise = parent.eventLoop.makePromise(of: Channel.self)
-                    ssh.createChannel(promise) { child,_ in child.pipeline.addHandler(handler) }
+                    do {
+                        let ssh = try parent.pipeline.syncOperations.handler(type: NIOSSHHandler.self)
+                        ssh.createChannel(promise) { child,_ in
+                            child.pipeline.addHandler(SFTPPackets(continuation: continuation))
+                        }
+                    } catch { promise.fail(error) }
                     return promise.futureResult
                 }.get()
             }, onCancel: { parent.close(promise: nil) })
             openingTimeout.cancel()
         } catch { openingTimeout.cancel(); throw error }
         let wire = SFTPWire(channel: channel, stream: stream)
+        let setupTimeout = channel.eventLoop.scheduleTask(in: .seconds(20)) { channel.close(promise: nil) }
+        defer { setupTimeout.cancel() }
+        return try await withTaskCancellationHandler(operation: {
         do {
+            try Task.checkCancellation()
             try await channel.triggerUserOutboundEvent(SSHChannelRequestEvent.SubsystemRequest(subsystem: "sftp", wantReply: true))
             var hello = ByteBuffer(); hello.writeInteger(UInt8(1)); hello.writeInteger(UInt32(3))
             try await wire.send(hello)
@@ -39,11 +46,18 @@ final class SFTPWire: @unchecked Sendable {
             guard reply.readInteger(as: UInt8.self) == 2, reply.readInteger(as: UInt32.self) == 3 else { throw TramesError.message("SFTP v3 is required") }
             return wire
         } catch { wire.close(); throw error }
+        }, onCancel: { wire.close() })
     }
     func close() { channel.close(promise: nil) }
     private func send(_ payload: ByteBuffer) async throws {
         var frame = ByteBuffer(); frame.writeInteger(UInt32(payload.readableBytes)); frame.writeImmutableBuffer(payload)
-        try await channel.writeAndFlush(SSHChannelData(type: .channel, data: .byteBuffer(frame)))
+        let channel = channel
+        let timeout = channel.eventLoop.scheduleTask(in: .seconds(20)) { channel.close(promise: nil) }
+        defer { timeout.cancel() }
+        try await withTaskCancellationHandler(operation: {
+            try Task.checkCancellation()
+            try await channel.writeAndFlush(SSHChannelData(type: .channel, data: .byteBuffer(frame)))
+        }, onCancel: { channel.close(promise: nil) })
     }
     private func receive() async throws -> ByteBuffer {
         let channel = channel
@@ -57,6 +71,9 @@ final class SFTPWire: @unchecked Sendable {
     private func request(_ type: UInt8, payload: ByteBuffer) async throws -> (UInt8,ByteBuffer) {
         guard requestID < UInt32.max else { throw TramesError.message("SFTP request limit reached") }
         requestID += 1
+        let channel = channel
+        let timeout = channel.eventLoop.scheduleTask(in: .seconds(20)) { channel.close(promise: nil) }
+        defer { timeout.cancel() }
         var frame = ByteBuffer(); frame.writeInteger(type); frame.writeInteger(requestID); frame.writeImmutableBuffer(payload)
         try await send(frame)
         var reply = try await receive()

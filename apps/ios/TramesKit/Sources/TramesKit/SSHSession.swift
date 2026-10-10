@@ -45,11 +45,14 @@ public actor SSHSession {
         defer { deadline.cancel() }
         do {
             let (stream, continuation) = AsyncThrowingStream<Data,Error>.makeStream(bufferingPolicy: .bufferingOldest(64))
-            let handler = BoundedTerminalHandler(continuation: continuation)
-            let sshHandler = try await channel.pipeline.handler(type: NIOSSHHandler.self).get()
             let child = try await channel.eventLoop.flatSubmit {
                 let promise = channel.eventLoop.makePromise(of: Channel.self)
-                sshHandler.createChannel(promise) { child,_ in child.pipeline.addHandler(handler) }
+                do {
+                    let sshHandler = try channel.pipeline.syncOperations.handler(type: NIOSSHHandler.self)
+                    sshHandler.createChannel(promise) { child,_ in
+                        child.pipeline.addHandler(BoundedTerminalHandler(continuation: continuation))
+                    }
+                } catch { promise.fail(error) }
                 return promise.futureResult
             }.get()
             if allocatePTY {

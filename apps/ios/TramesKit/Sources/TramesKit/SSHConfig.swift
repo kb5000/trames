@@ -62,14 +62,17 @@ public struct SSHConfig: Sendable {
         return positive
     }
     private static func tokens(_ line: String) throws -> [String] {
-        var tokens: [String] = [], token = "", quote: Character?, escaped = false
+        var tokens: [String] = [], token = "", quote: Character?, escaped = false, separatorConsumed = false
         for c in line {
             if escaped { token.append(c); escaped = false; continue }
             if c == "\\" { escaped = true; continue }
             if let q = quote { if c == q { quote = nil } else { token.append(c) } }
             else if c == "\"" || c == "'" { quote = c }
             else if c == "#" { break }
-            else if c.isWhitespace || (c == "=" && tokens.isEmpty) {
+            else if c == "=" && !separatorConsumed && (tokens.isEmpty || (tokens.count == 1 && token.isEmpty)) {
+                if !token.isEmpty { tokens.append(token); token = "" }
+                separatorConsumed = true
+            } else if c.isWhitespace {
                 if !token.isEmpty { tokens.append(token); token = "" }
             } else { token.append(c) }
         }

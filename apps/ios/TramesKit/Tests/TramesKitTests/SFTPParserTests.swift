@@ -32,4 +32,18 @@ final class SFTPParserTests: XCTestCase {
             _ = try? channel.finish()
         }
     }
+    func testUnsolicitedReplyFloodClosesInsteadOfDroppingSilently() async throws {
+        let (stream,c) = AsyncThrowingStream<ByteBuffer,Error>.makeStream(bufferingPolicy: .bufferingOldest(4))
+        let channel = EmbeddedChannel(handler: SFTPPackets(continuation: c))
+        defer { _ = try? channel.finish() }
+        var packet = ByteBuffer()
+        for _ in 0..<5 { packet.writeInteger(UInt32(1)); packet.writeInteger(UInt8(101)) }
+        _ = try channel.writeInbound(SSHChannelData(type: .channel, data: .byteBuffer(packet)))
+        XCTAssertFalse(channel.isActive)
+        var iterator = stream.makeAsyncIterator()
+        do {
+            while try await iterator.next() != nil {}
+            XCTFail("reply flood ended without a visible error")
+        } catch { XCTAssertTrue(error.localizedDescription.contains("queue overflow")) }
+    }
 }

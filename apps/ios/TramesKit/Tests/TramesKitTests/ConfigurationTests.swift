@@ -32,6 +32,14 @@ final class ConfigurationTests: XCTestCase {
         XCTAssertThrowsError(try SSHConfig("Host x\nIdentityFile %d/key").resolve("x"))
         XCTAssertThrowsError(try SSHConfig(String(repeating: "x", count: 65537)))
     }
+    func testSSHOptionalEqualsSeparatorPreservesValueEquals() throws {
+        for separator in [" ", "=", " =", "= ", " = "] {
+            let host = try SSHConfig("Host build\nPort\(separator)2222\nIdentityFile\(separator)\"~/.ssh/key=work\"").resolve("build")
+            XCTAssertEqual(host.port, 2222)
+            XCTAssertEqual(host.identityFile, "~/.ssh/key=work")
+        }
+        XCTAssertThrowsError(try SSHConfig("Host build\nPort = =2222").resolve("build"))
+    }
     func testHostKeysRequireExplicitTrustAndRejectChangesAfterReload() throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }

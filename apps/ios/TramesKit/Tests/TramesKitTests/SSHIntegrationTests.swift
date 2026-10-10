@@ -48,6 +48,21 @@ final class SSHIntegrationTests: XCTestCase {
             catch {}
             try await session.transfer(remote: remote, local: destination, upload: false)
             XCTAssertEqual(try Data(contentsOf: destination),bytes)
+            // /dev/zero never reaches EOF: cancellation must remove the native
+            // partial copy and leave the separate terminal channel usable.
+            let cancelledTarget = temporary.appendingPathComponent("cancelled-copy")
+            let download = Task { try await session.transfer(remote: "/dev/zero", local: cancelledTarget, upload: false) }
+            do {
+                try await wait {
+                    let size = try? cancelledTarget.resourceValues(forKeys: [.fileSizeKey]).fileSize
+                    return (size ?? 0) > 0
+                }
+            } catch { download.cancel(); _ = try? await download.value; throw error }
+            download.cancel()
+            do { try await download.value; XCTFail("cancelled copy continued to completion") } catch {}
+            XCTAssertFalse(FileManager.default.fileExists(atPath: cancelledTarget.path))
+            try await session.send(Data("printf 'AFTER_SFTP_CANCEL\\n'\n".utf8))
+            try await wait { await capture.contains(pty ? "AFTER_SFTP_CANCEL\r\n" : "AFTER_SFTP_CANCEL\n") }
             try await session.send(Data("rm '\(remote)'\nexit\n".utf8))
             try await task.value
             await session.close()
