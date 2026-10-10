@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import XCTest
 final class LaunchTests: XCTestCase {
+    override func setUpWithError() throws { continueAfterFailure = false }
     func testLaunchAlpineRotateExitAndReopenPersistentStore() {
         let app = XCUIApplication()
         app.launch()
         XCTAssertTrue(app.staticTexts["TRAMES"].waitForExistence(timeout: 20))
         let state = app.staticTexts["session-state"]
         let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", "Alpine · 本地"), object: state)
-        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 120), .completed)
+        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 120), .completed,
+            "Alpine state: \(state.exists ? state.label : "missing")")
         XCUIDevice.shared.orientation = .landscapeLeft
         XCTAssertTrue(app.buttons["Ctrl-D"].waitForExistence(timeout: 10))
         app.buttons["Ctrl-D"].tap()

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Foundation
 import CTrames
-public struct LocalStatus: Decodable, Sendable {
+public struct LocalStatus: Decodable, Sendable, Equatable {
     public let phase: String
     public let error: String?
     public let exit_code: UInt8?

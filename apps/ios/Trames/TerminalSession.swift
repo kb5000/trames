@@ -48,7 +48,8 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
                 let count = try local.send(pendingInput)
                 pendingInput.removeFirst(count)
             }
-            let status = try local.status(); capacity = status
+            let status = try local.status()
+            if status != capacity { capacity = status }
             if status.phase != lastPhase {
                 lastPhase = status.phase
                 state = status.phase == "running" ? "Alpine · 本地" : status.phase
