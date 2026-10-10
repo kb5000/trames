@@ -17,6 +17,7 @@ def main():
     qemu=shutil.which(os.getenv('QEMU_AARCH64','qemu-aarch64'))
     if not qemu:raise RuntimeError('QEMU unavailable')
     comparisons=0
+    disk=os.getenv('TRAMES_TEST_STORAGE')=='disk'
     cases=[
         ('builtins','for v in 1 2 3; do echo $((v*7)); done',b'',0),
         ('floating printf',"printf '%.2f %e %g\\n' 1.25 -0.001 1e20",b'',0),
@@ -47,26 +48,28 @@ def main():
             wrapper=bin_/name;wrapper.write_text('#!/bin/sh\nexec '+shlex.join([qemu,'-cpu','cortex-a53',busybox,name])+' "$@"\n');wrapper.chmod(0o755)
         env={'PATH':str(bin_),'LANG':'C'}
         for name,script,input_,code in cases:
+            storage=['--storage',str(folder/f'store-{comparisons}')] if disk else ['--memory']
             refdir=folder/'reference';refdir.mkdir();(refdir/'data').mkdir()
             imports=[]
             fixtures={'a.txt':b'a\n','b.txt':b'b\n','input.bin':b'\0\xff\n'*200,'script':b'#!/usr/bin/env sh\nprintf "script:%s\\n" "$1"\n'}
             for file,content in fixtures.items():
                 path=refdir/'data'/file;path.write_bytes(content);path.chmod(0o755 if file=='script' else 0o644)
                 imports += ['--exec-file' if file=='script' else '--file',f'/data/{file}={path}']
-            actual=run([runner,'--install-busybox',*imports,busybox,'ash','-c',script],refdir,input_)
+            actual=run([runner,*storage,'--install-busybox',*imports,busybox,'ash','-c',script],refdir,input_)
             reference=run([qemu,'-cpu','cortex-a53',busybox,'ash','-c',script],refdir,input_,env)
             # Normalize exactly the reference cwd, not arbitrary diagnostics or bytes.
             if name=='subshell cwd': reference=(reference[0],reference[1].replace(str(refdir).encode()+b'/sub\n',b'/sub\n').replace(str(refdir).encode()+b'\n',b'/\n'),reference[2])
             if reference[0]!=code or actual!=reference:raise AssertionError(f'{name}: Trames {actual!r} != QEMU {reference!r}, expected exit {code}')
             comparisons+=1;shutil.rmtree(refdir)
         for name in ['m2-libm','m2-process']:
+            storage=['--storage',str(folder/f'store-{comparisons}')] if disk else ['--memory']
             exe=str(ROOT/'tests/fixtures/bin'/name);refdir=folder/'reference';refdir.mkdir()
             if name=='m2-process':
                 wrapper=bin_/'probe';wrapper.write_text('#!/bin/sh\nexec '+shlex.join([qemu,'-cpu','cortex-a53',exe])+' "$@"\n');wrapper.chmod(0o755)
-                actual=run([runner,'--exec-file',f'/data/probe={exe}',exe,'/data/probe'],refdir)
+                actual=run([runner,*storage,'--exec-file',f'/data/probe={exe}',exe,'/data/probe'],refdir)
                 reference=run([qemu,'-cpu','cortex-a53',exe,str(wrapper)],refdir)
-            else:actual=run([runner,exe],refdir);reference=run([qemu,'-cpu','cortex-a53',exe],refdir)
+            else:actual=run([runner,*storage,exe],refdir);reference=run([qemu,'-cpu','cortex-a53',exe],refdir)
             if actual!=reference or actual[0]!=0 or not actual[1]:raise AssertionError(f'{name}: Trames {actual!r} != QEMU {reference!r}')
             comparisons+=1;shutil.rmtree(refdir)
-    print(f'M2 integration passed: {comparisons} QEMU comparisons (22 shell cases, process ABI and musl libm)')
+    print(f'M2 integration passed ({"disk" if disk else "memory"}): {comparisons} QEMU comparisons (22 shell cases, process ABI and musl libm)')
 if __name__=='__main__':main()

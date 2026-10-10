@@ -17,7 +17,7 @@ def execute(command):
 
 
 def compare(runner, qemu, binary, args=(), expected=None):
-    actual = execute([runner, str(binary), *args])
+    actual = execute([runner, "--memory", str(binary), *args])
     reference = execute([qemu, str(binary), *args])
     if actual != reference:
         raise AssertionError(f"{binary.name}: Trames {actual!r} != QEMU {reference!r}")
@@ -98,7 +98,7 @@ def main():
         ("unsupported", [], b"unsupported or unallocated instruction"),
         ("write-text", [], b"Permission"),
     ]:
-        code, stdout, stderr = execute([runner, *options, str(fixtures / name)])
+        code, stdout, stderr = execute([runner, "--memory", *options, str(fixtures / name)])
         if code != 125 or stdout or diagnostic not in stderr:
             raise AssertionError(f"{name}: incorrect fault: {(code, stdout, stderr)!r}")
         print(f"PASS {name}: bounded execution or typed fault", flush=True)

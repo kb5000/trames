@@ -451,6 +451,37 @@ impl Cpu {
             let lane_mask = (ones(size) as u128) << offset;
             self.vectors[rd] =
                 (self.vectors[rd] & !lane_mask) | (((self.x(rn) & ones(size)) as u128) << offset);
+        } else if matches!(
+            ins & 0xbf20fc00,
+            0x0e20a400 | 0x0e20ac00 | 0x2e20a400 | 0x2e20ac00
+        ) {
+            // SMAXP/SMINP/UMAXP/UMINP, integer pairwise reductions.
+            let size = (ins >> 22) & 3;
+            if size == 3 {
+                return Err(invalid());
+            }
+            let bits = 8 << size;
+            let vector_bits = if ins & (1 << 30) != 0 { 128 } else { 64 };
+            let lanes = vector_bits / bits;
+            let signed = ins & (1 << 29) == 0;
+            let maximum = ins & 0x800 == 0;
+            let mut result = 0u128;
+            for (source_index, source) in
+                [self.vectors[rn], self.vectors[rm]].into_iter().enumerate()
+            {
+                for pair in 0..lanes / 2 {
+                    let a = ((source >> (2 * pair * bits)) as u64) & ones(bits);
+                    let b = ((source >> ((2 * pair + 1) * bits)) as u64) & ones(bits);
+                    let less = if signed {
+                        (sign_extend(a, bits) as i64) < (sign_extend(b, bits) as i64)
+                    } else {
+                        a < b
+                    };
+                    let value = if less == maximum { b } else { a };
+                    result |= (value as u128) << ((source_index as u32 * lanes / 2 + pair) * bits);
+                }
+            }
+            self.vectors[rd] = result;
         } else if matches!(ins & 0xbfe0fc00, 0x0e201c00 | 0x0ea01c00 | 0x2e201c00) {
             // vector AND/ORR/EOR
             let value = match ins & 0xbfe0fc00 {
@@ -477,6 +508,18 @@ impl Cpu {
 mod tests {
     use super::*;
     use trames_memory::{Permissions, PAGE_SIZE};
+    #[test]
+    fn reserved_pairwise_integer_size_faults_without_changing_registers() {
+        let mut cpu = Cpu::default();
+        cpu.vectors[0] = 0x1234;
+        cpu.vectors[1] = 0x5678;
+        let before = cpu.vectors;
+        assert!(matches!(
+            cpu.execute_extended(0x6ee1a400, &mut Memory::default()),
+            Err(CpuFault::Instruction { .. })
+        ));
+        assert_eq!(cpu.vectors, before);
+    }
     fn execute(ins: u32, a: u64, b: u64) -> Cpu {
         let mut m = Memory::default();
         m.map(0x1000, PAGE_SIZE, Permissions::RW).unwrap();

@@ -85,7 +85,8 @@ def main():
             p = bin_ / name
             p.write_text('#!/bin/sh\nexec ' + shlex.join([qemu, '-cpu', 'cortex-a53', busybox, name]) + ' "$@"\n')
             p.chmod(0o755)
-        actual = exercise([runner, '--install-busybox', '--pty', busybox, 'ash', '-i'],
+        storage = ['--storage', str(Path(folder) / 'store')] if os.getenv('TRAMES_TEST_STORAGE') == 'disk' else ['--memory']
+        actual = exercise([runner, *storage, '--install-busybox', '--pty', busybox, 'ash', '-i'],
                           {'PATH': '/usr/bin:/bin', 'LANG': 'C', 'TERM': 'xterm'})
         reference = exercise([qemu, '-cpu', 'cortex-a53', busybox, 'ash', '-i'],
                              {'PATH': str(bin_), 'LANG': 'C', 'TERM': 'xterm'})

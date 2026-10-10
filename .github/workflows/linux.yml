@@ -27,6 +27,7 @@ jobs:
       - run: python3 tests/differential/floating.py
       - run: python3 tests/differential/vector_floating.py
       - run: python3 tests/differential/structures.py
+      - run: python3 tests/differential/pairwise_integer.py
       - name: Cross-build pinned musl and static BusyBox
         run: |
           if ! bash scripts/build-busybox.sh > target/busybox-build.log 2>&1; then
@@ -38,3 +39,11 @@ jobs:
       - run: bash scripts/build-m2-fixtures.sh
       - run: python3 tests/integration/m2.py
       - run: python3 tests/integration/terminal.py
+      - run: bash scripts/build-storage-fixtures.sh
+      - run: python3 tests/integration/storage.py
+      - run: python3 tests/integration/m2.py
+        env:
+          TRAMES_TEST_STORAGE: disk
+      - run: python3 tests/integration/terminal.py
+        env:
+          TRAMES_TEST_STORAGE: disk

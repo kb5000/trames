@@ -74,14 +74,14 @@ def main():
             source.write_text(generated(seed))
             subprocess.run([assembler, "-o", str(obj), str(source)], check=True)
             subprocess.run([linker, "-static", "--build-id=none", "-z", "noexecstack", "-o", str(binary), str(obj)], check=True)
-            actual = execute([runner, str(binary)])
+            actual = execute([runner, "--memory", str(binary)])
             reference = execute([qemu, "-cpu", "cortex-a53", str(binary)])
             if actual != reference or actual[0] != 0 or len(actual[1]) != 72:
                 raise AssertionError(f"M1 seed {seed}: Trames {actual!r} != QEMU {reference!r}")
         print(f"PASS {args.seeds} M1 generated programs: integer/register/NZCV snapshots matched", flush=True)
         for name in ["m1-memory", "m1-exclusive", "m1-files"]:
             binary = ROOT / "tests/fixtures/bin" / name
-            actual = subprocess.run([runner, str(binary)], cwd=folder, capture_output=True, timeout=10)
+            actual = subprocess.run([runner, "--memory", str(binary)], cwd=folder, capture_output=True, timeout=10)
             reference = subprocess.run([qemu, "-cpu", "cortex-a53", str(binary)], cwd=folder, capture_output=True, timeout=10)
             a = actual.returncode, actual.stdout, actual.stderr
             r = reference.returncode, reference.stdout, reference.stderr

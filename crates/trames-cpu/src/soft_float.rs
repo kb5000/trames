@@ -305,7 +305,7 @@ impl Format {
         let bnorm = self.frac as i32 - (127 - b.sig.leading_zeros() as i32);
         let numerator = (a.sig << anorm) << 70;
         let denominator = b.sig << bnorm;
-        let result = (numerator / denominator) | u128::from(numerator % denominator != 0);
+        let result = (numerator / denominator) | u128::from(!numerator.is_multiple_of(denominator));
         self.pack(
             sign,
             result,

@@ -13,7 +13,7 @@ integrity checking, not an assertion that release signatures were verified.
 
 The script builds static musl with an explicit GCC wrapper and uses BusyBox
 allnoconfig plus the original twelve applets and M2 ash, job control, editing
-and selected shell helpers. Source code is not
+and selected shell helpers. Storage adds chmod, cp, mv, ln, sync and dd. Source code is not
 patched. Both builds use `-O2 -fno-tree-vectorize -fno-tree-slp-vectorize`; musl's
 upstream AArch64 assembly memcpy/memset still execute normally. The retained
 `.config` and unstripped executable are under `target/busybox-build`. Compiler
@@ -39,7 +39,11 @@ and static ash. Run scripts/build-m2-fixtures.sh, tests/integration/m2.py and
 tests/integration/terminal.py for the additional validation. M2 covers 22 shell
 cases, two C fixtures and 9 interactive outcomes; broad BusyBox/Alpine
 compatibility is not claimed. Reference exec wrappers and normalization are
-explained in docs/validation/m2.md. Source archives remain unchanged.
+explained in docs/validation/m2.md. The original comparisons explicitly select
+--memory; TRAMES_TEST_STORAGE=disk repeats the full M2 and interactive acceptance
+on disk. Storage tests independently compare the file ABI and selected cp/mv/ln/
+chmod/touch/sync operations; enabling an applet does not validate every flag.
+See docs/validation/storage.md. Source archives remain unchanged.
 
 BusyBox uses GPLv2 and musl uses MIT, with individual source notices preserved
 in their downloaded source trees. These are separately built guest programs;

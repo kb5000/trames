@@ -41,7 +41,7 @@ enabled = {'STATIC', 'BUSYBOX', 'ECHO', 'FEATURE_FANCY_ECHO', 'TRUE', 'FALSE',
            'ASH_ECHO', 'ASH_PRINTF', 'ASH_TEST', 'ASH_GETOPTS', 'ASH_CMDCMD',
            'FEATURE_SH_MATH', 'FEATURE_SH_MATH_64', 'FEATURE_EDITING',
            'FEATURE_EDITING_WINCH', 'SLEEP', 'KILL', 'SEQ', 'ENV', 'TEST',
-           'MKDIR', 'RM', 'TOUCH'}
+           'MKDIR', 'RM', 'TOUCH', 'CHMOD', 'CP', 'MV', 'LN', 'SYNC', 'DD'}
 p = Path('.config')
 lines = p.read_text().splitlines()
 for index, line in enumerate(lines):

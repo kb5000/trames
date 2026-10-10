@@ -63,7 +63,7 @@ def main():
             batch=all_cases[offset:offset+32];src.write_text(program(batch))
             subprocess.run([as_,'-o',str(obj),str(src)],check=True,capture_output=True)
             subprocess.run([ld,'-static','--build-id=none','-z','noexecstack','-o',str(exe),str(obj)],check=True,capture_output=True)
-            actual=subprocess.run([runner,str(exe)],capture_output=True,timeout=15)
+            actual=subprocess.run([runner, "--memory",str(exe)],capture_output=True,timeout=15)
             ref=subprocess.run([qemu,'-cpu','cortex-a53',str(exe)],capture_output=True,timeout=15)
             if actual.returncode or ref.returncode: raise AssertionError((offset,actual,ref))
             if len(actual.stdout)!=len(batch)*24 or len(ref.stdout)!=len(batch)*24: raise AssertionError('short FP snapshot')

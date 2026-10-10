@@ -89,7 +89,7 @@ impl Cpu {
             // LDXR/LDAXR/LDAR
             let size = 1usize << (ins >> 30);
             let address = self.reg(rn, true);
-            if address % size as u64 != 0 {
+            if !address.is_multiple_of(size as u64) {
                 return Err(fault(MemoryError::InvalidRange));
             }
             let mut bytes = [0; 8];
@@ -108,7 +108,7 @@ impl Cpu {
             if status != 31 && (status == rt || status == rn) {
                 return Err(invalid());
             }
-            if address % size as u64 != 0 {
+            if !address.is_multiple_of(size as u64) {
                 return Err(fault(MemoryError::InvalidRange));
             }
             let succeeds = self.exclusive.take() == Some((address, size, memory.revision()));
@@ -124,7 +124,7 @@ impl Cpu {
             // STLR
             let size = 1usize << (ins >> 30);
             let address = self.reg(rn, true);
-            if address % size as u64 != 0 {
+            if !address.is_multiple_of(size as u64) {
                 return Err(fault(MemoryError::InvalidRange));
             }
             memory

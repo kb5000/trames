@@ -10,6 +10,58 @@ use std::{
 use trames_core::{Runtime, DEFAULT_INSTRUCTION_LIMIT};
 use trames_elf::MAX_ELF_SIZE;
 use trames_linux::{GuestOutput, OutputFd};
+use trames_vfs::{DiskOptions, StorageLimits, Vfs, VolumeSpace};
+
+fn volume_space(path: &str) -> io::Result<VolumeSpace> {
+    let path = std::fs::canonicalize(path)?;
+    let output = Command::new("df")
+        .arg("-Pk")
+        .arg(path)
+        .env("LC_ALL", "C")
+        .output()?;
+    if !output.status.success() {
+        return Err(io::Error::other("cannot query storage volume"));
+    }
+    let text = String::from_utf8(output.stdout).map_err(io::Error::other)?;
+    let fields: Vec<_> = text
+        .lines()
+        .last()
+        .unwrap_or("")
+        .split_whitespace()
+        .collect();
+    let index = fields
+        .iter()
+        .position(|s| s.ends_with('%'))
+        .filter(|&i| i >= 3)
+        .ok_or_else(|| io::Error::other("invalid df capacity response"))?;
+    let number = |s: &str| {
+        s.parse::<u64>()
+            .ok()
+            .and_then(|n| n.checked_mul(1024))
+            .ok_or_else(|| io::Error::other("invalid volume size"))
+    };
+    Ok(VolumeSpace {
+        total_bytes: number(fields[index - 3])?,
+        available_bytes: number(fields[index - 1])?,
+    })
+}
+fn storage_budget(value: &str) -> Result<u64, Box<dyn std::error::Error>> {
+    let (number, scale) = [
+        ("TiB", 1u64 << 40),
+        ("GiB", 1 << 30),
+        ("MiB", 1 << 20),
+        ("KiB", 1 << 10),
+    ]
+    .into_iter()
+    .find_map(|(suffix, scale)| value.strip_suffix(suffix).map(|n| (n, scale)))
+    .unwrap_or((value, 1));
+    let bytes = number
+        .parse::<u64>()?
+        .checked_mul(scale)
+        .filter(|&n| n != 0 && n <= i64::MAX as u64)
+        .ok_or("invalid storage budget")?;
+    Ok(bytes)
+}
 
 struct HostOutput {
     input: Receiver<io::Result<Vec<u8>>>,
@@ -154,12 +206,33 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     let mut pty = false;
     let mut install_busybox = false;
     let mut files = Vec::new();
+    let mut exports = Vec::new();
+    let mut storage = None;
+    let mut memory_only = false;
+    let mut disk_budget = None;
+    let mut storage_info = false;
     if args.peek().is_some_and(|a| a == "--help" || a == "-h") {
-        println!("Usage: trames-run [--max-instructions N] [--trace-syscalls] [--file /GUEST=HOST] [--exec-file /GUEST=HOST] [--install-busybox] [--pty] [--] ELF [ARG ...]\nStatic ELF64/AArch64 interpreter with virtual processes, files and a PTY.");
+        println!("Usage: trames-run [--storage DIR | --memory] [--storage-budget BYTES|16GiB|auto] [--storage-info] [--max-instructions N] [--trace-syscalls] [--file /GUEST=HOST] [--exec-file /GUEST=HOST] [--export /GUEST=HOST] [--install-busybox] [--pty] [--] ELF [ARG ...]\nDefault storage: .trames/storage in the current directory, 16 GiB logical file budget on first creation.\nImports copy selected host files; exports create new host files after guest exit.\n--memory selects the ephemeral 16 MiB test backend. auto uses the storage volume's total capacity.");
         return Ok(0);
     }
     while let Some(option) = args.peek() {
         match option.as_str() {
+            "--memory" => {
+                args.next();
+                memory_only = true;
+            }
+            "--storage" => {
+                args.next();
+                storage = Some(args.next().ok_or("missing storage directory")?);
+            }
+            "--storage-budget" => {
+                args.next();
+                disk_budget = Some(args.next().ok_or("missing storage budget")?);
+            }
+            "--storage-info" => {
+                args.next();
+                storage_info = true;
+            }
             "--pty" => {
                 args.next();
                 pty = true;
@@ -179,14 +252,19 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
                 args.next();
                 trace = true;
             }
-            "--file" | "--exec-file" => {
+            "--file" | "--exec-file" | "--export" => {
                 let executable = option == "--exec-file";
+                let export = option == "--export";
                 args.next();
                 let mapping = args.next().ok_or("missing /GUEST=HOST mapping")?;
                 let (guest, host) = mapping
                     .split_once('=')
                     .ok_or("file mapping requires /GUEST=HOST")?;
-                files.push((guest.to_string(), host.to_string(), executable));
+                if export {
+                    exports.push((guest.to_string(), host.to_string()));
+                } else {
+                    files.push((guest.to_string(), host.to_string(), executable));
+                }
             }
             _ => break,
         }
@@ -208,49 +286,97 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     // A deterministic guest environment; host secrets are never inherited.
     let envp = vec!["PATH=/usr/bin:/bin".into(), "LANG=C".into()];
     let mut runtime = Runtime::load(&bytes, &argv, &envp)?;
+    if memory_only && (storage.is_some() || disk_budget.is_some()) {
+        return Err("--memory cannot be combined with disk options".into());
+    }
+    if !memory_only {
+        let directory = storage.as_deref().unwrap_or(".trames/storage");
+        let mut vfs = Vfs::open_disk(directory, DiskOptions::default())?;
+        let volume = volume_space(directory)?;
+        if let Some(budget) = disk_budget {
+            let file_bytes = if budget == "auto" {
+                volume.total_bytes
+            } else {
+                storage_budget(&budget)?
+            };
+            vfs.set_storage_limits(StorageLimits {
+                file_bytes,
+                nodes: vfs.capacity().node_limit,
+            })?;
+        }
+        vfs.set_volume_space(volume)?;
+        runtime.linux.vfs = vfs;
+    }
     runtime.linux.trace = trace;
     if install_busybox {
-        runtime.linux.vfs.import_file(b"/bin/busybox", bytes)?;
-        runtime.linux.vfs.mkdir_at(-100, b"/usr", 0o755)?;
-        runtime.linux.vfs.mkdir_at(-100, b"/usr/bin", 0o755)?;
+        runtime
+            .linux
+            .vfs
+            .install_executable(b"/bin/busybox", &bytes)?;
+        for directory in [b"/usr".as_slice(), b"/usr/bin".as_slice()] {
+            match runtime.linux.vfs.mkdir_at(-100, directory, 0o755) {
+                Ok(()) | Err(trames_vfs::Errno(17)) => {}
+                Err(e) => return Err(e.into()),
+            }
+        }
         for applet in [
             "sh", "ash", "busybox", "echo", "printf", "true", "false", "cat", "wc", "head", "tail",
             "pwd", "ls", "basename", "dirname", "sleep", "kill", "seq", "env", "test", "mkdir",
-            "rm", "touch",
+            "rm", "touch", "chmod", "cp", "mv", "ln", "sync", "dd",
         ] {
             for directory in ["/bin", "/usr/bin"] {
                 let alias = format!("{directory}/{applet}");
                 if alias != "/bin/busybox" {
-                    runtime
-                        .linux
-                        .vfs
-                        .import_alias(b"/bin/busybox", alias.as_bytes(), true)?;
+                    let expected = runtime.linux.vfs.stat_at(-100, b"/bin/busybox")?;
+                    match runtime.linux.vfs.stat_at(-100, alias.as_bytes()) {
+                        Ok(stat) if stat[8..16] == expected[8..16] => {}
+                        Ok(_) => {
+                            return Err(format!(
+                                "BusyBox alias already belongs to another inode: {alias}"
+                            )
+                            .into())
+                        }
+                        Err(trames_vfs::Errno(2)) => runtime.linux.vfs.import_alias(
+                            b"/bin/busybox",
+                            alias.as_bytes(),
+                            true,
+                        )?,
+                        Err(e) => return Err(e.into()),
+                    }
                 }
             }
         }
     }
     for (guest, host, executable) in files {
-        let mut content = Vec::new();
-        File::open(host)?
-            .take(trames_vfs::MAX_FILE_BYTES as u64 + 1)
-            .read_to_end(&mut content)?;
-        if content.len() > trames_vfs::MAX_FILE_BYTES {
-            return Err("imported file exceeds 16 MiB limit".into());
-        }
-        if executable {
-            runtime
-                .linux
-                .vfs
-                .import_executable(guest.as_bytes(), content)?;
-        } else {
-            runtime.linux.vfs.import_file(guest.as_bytes(), content)?;
-        }
+        runtime
+            .linux
+            .vfs
+            .import_reader(guest.as_bytes(), &mut File::open(host)?, executable)?;
+    }
+    if storage_info {
+        eprintln!("trames storage: {:?}", runtime.linux.vfs.capacity());
     }
     if pty {
         runtime.enable_terminal(trames_core::Terminal::default())?;
     }
     let _host_terminal = RawTerminal::enter(pty)?;
-    let exit = runtime.run(&mut HostOutput::new(), budget)?;
+    let result = runtime.run(&mut HostOutput::new(), budget);
+    let synced = runtime.linux.vfs.sync();
+    let exit = result?;
+    synced?;
+    for (guest, host) in exports {
+        let stat = runtime.linux.vfs.stat_at(-100, guest.as_bytes())?;
+        let mode = u32::from_le_bytes(stat[16..20].try_into().expect("stat mode"));
+        if mode & 0o170000 != 0o100000 || mode & 0o400 == 0 {
+            return Err("export requires a readable regular guest file".into());
+        }
+        let mut file = File::options().write(true).create_new(true).open(host)?;
+        runtime
+            .linux
+            .vfs
+            .export_writer(guest.as_bytes(), &mut file)?;
+        file.sync_all()?;
+    }
     io::stdout().flush()?;
     io::stderr().flush()?;
     Ok(exit.code)

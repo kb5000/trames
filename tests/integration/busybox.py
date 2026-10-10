@@ -48,7 +48,7 @@ def main():
         (folder / "data/second.bin").write_bytes(b"\0\xff")
         imports = ["--file", f"/data/input.txt={source}", "--file", f"/data/second.bin={folder / 'data/second.bin'}"]
         for guest_args, stdin in cases:
-            actual = execute([runner, *imports, busybox, *guest_args], folder, stdin)
+            actual = execute([runner, "--memory", *imports, busybox, *guest_args], folder, stdin)
             reference = execute([qemu, busybox, *guest_args], folder, stdin)
             expected_code = 1 if guest_args in [["false"], ["cat", "data/missing"]] else 0
             if reference[0] != expected_code:
@@ -61,7 +61,7 @@ def main():
             print(f"PASS {' '.join(guest_args)}: exit/stdout/stderr matched", flush=True)
         # Guest absolute paths cannot acquire host file access by naming it.
         host_only = folder / "host-only"; host_only.write_bytes(b"must stay outside guest")
-        code, out, err = execute([runner, busybox, "cat", str(host_only)], folder)
+        code, out, err = execute([runner, "--memory", busybox, "cat", str(host_only)], folder)
         if code != 1 or out or b"No such file" not in err:
             raise AssertionError("guest acquired a host path without explicit import")
         print("PASS host path is unavailable without explicit file import", flush=True)
