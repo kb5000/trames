@@ -14,6 +14,7 @@ jobs:
         with:
           toolchain: 1.90.0
           components: rustfmt, clippy
+          targets: aarch64-apple-ios
       - name: Install independent AArch64 oracle and cross assembler
         run: |
           sudo apt-get update
@@ -22,6 +23,8 @@ jobs:
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo build --workspace --locked
       - run: cargo test --workspace --locked
+      - name: Compile core and native network for iOS (no SDK link or device test)
+        run: cargo check -p trames-core --target aarch64-apple-ios --locked
       - run: python3 tests/differential/run.py
       - run: python3 tests/differential/m1.py
       - run: python3 tests/differential/floating.py
@@ -41,6 +44,11 @@ jobs:
       - run: python3 tests/integration/terminal.py
       - run: bash scripts/build-storage-fixtures.sh
       - run: python3 tests/integration/storage.py
+      - run: bash scripts/build-network-fixtures.sh
+      - name: Compare native loopback sockets and real musl DNS with QEMU
+        # The deterministic DNS peer binds host loopback port 53. The guest's
+        # port restriction still applies even when this test harness is root.
+        run: sudo env PATH="$PATH" python3 tests/integration/network.py
       - run: python3 tests/integration/m2.py
         env:
           TRAMES_TEST_STORAGE: disk

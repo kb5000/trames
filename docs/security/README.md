@@ -1,4 +1,4 @@
-# Runtime security and compatibility limits (M0–M2 and storage)
+# Runtime security and compatibility limits (M0–M2, storage and M3 network foundation)
 
 ELF files, instructions, addresses and argv/envp are untrusted. Parsers validate
 lengths, offset arithmetic, architecture, flags, alignment, entry permissions and
@@ -20,7 +20,11 @@ rejected in M0. Guest faults are errors, not host pointer dereferences.
 | VFS live nodes / namespace entries | Disk: 16,384; memory: 1024 |
 | Serialized manifest input | 128 MiB, checksummed and structurally validated |
 | Import/export buffer | 64 KiB |
-| File descriptors | 256 |
+| File descriptors | 256 per process |
+| Native sockets | 64 per session, shared across fork/dup, including accepted sockets |
+| Socket buffer requests | 64 KiB initial send/receive each; guest requests at most 256 KiB each; actual OS sizes may differ |
+| UDP scratch buffer / TCP transfer | 64 KiB / at most 1 MiB |
+| Listen backlog | at most 128 |
 | Virtual path / component | 4095 / 255 bytes |
 | Guest address domain | below 2^48 |
 | Single output syscall | at most 1 MiB copied; larger requests may return short writes |
@@ -88,3 +92,19 @@ Native iPad Files access still requires the frontend to authorize, coordinate,
 cancel and release resources. Core stream APIs grant no security-scoped permission
 by themselves. No hardware isolation, full Linux security semantics or audited
 sandbox is claimed.
+
+The library starts with networking off; the CLI defaults to outbound networking
+and loopback listeners. Non-loopback listeners require --network full. Socket
+operations translate structures, flags and errno, preflight all guest buffers,
+and keep native descriptors nonblocking. Loopback accesses native loopback, and
+wildcard ephemeral UDP sockets can receive inbound traffic. These are coarse
+capabilities, not a private IP stack or complete egress sandbox. Host policy and
+OS permissions still apply. The instruction budget is not a network deadline.
+
+Host SIGPIPE is suppressed; guest SIGPIPE follows the virtual signal model.
+Session exit and CLI faults release all socket owners. Socket objects are not
+persisted. Unsupported raw/Unix sockets, ancillary messages, socket timeouts and
+other options fail explicitly. Guest TLS, certificates, apk signatures and iPad
+network permissions need separate validation in subsequent stages. See
+[network architecture](../architecture/network.md) and the
+[dependency/license record](dependencies.md).

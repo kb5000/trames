@@ -2,7 +2,7 @@
 
 面向 iPadOS 的终端优先开发环境：原生 SSH，加上运行未修改 AArch64 Linux 用户态程序的兼容运行时。使用普通开发者签名，架构不依赖越狱、JIT 权限、私有 API 或硬件虚拟化。
 
-**当前交付：M0–M2，加上磁盘持久化。** `trames-run` 执行实际静态 AArch64 ELF，支持 32/64 位标量及选定 SIMD 浮点、虚拟进程、管道、信号和一个虚拟 PTY。交互式 BusyBox `ash` 已在内存和磁盘两种后端验证。Linux CLI 默认保存文件到磁盘，新存储目录的文件预算为 16 GiB。iPad App、原生 Files 授权界面、SSH、动态链接、Alpine 和包管理属于后续里程碑。
+**当前交付：M0–M2、磁盘持久化，以及 M3 网络基础。** `trames-run` 执行实际静态 AArch64 ELF，支持 32/64 位标量及选定 SIMD 浮点、虚拟进程、管道、信号和一个虚拟 PTY。交互式 BusyBox `ash` 已在内存和磁盘两种后端验证。Linux CLI 默认保存文件到磁盘，新存储目录的文件预算为 16 GiB。IPv4/IPv6 TCP/UDP 和真实 musl DNS 已验证；iPad App、原生 Files 授权界面、SSH、动态链接、Alpine 和包管理属于后续里程碑。
 
 ## 快速运行
 
@@ -55,6 +55,14 @@ target/debug/trames-run --storage target/my-system --install-busybox --export /n
 
 默认最多执行 10,000,000 条指令，可使用 `trames-run --max-instructions 1000 ELF [ARG ...]` 调整。运行器传递 guest 退出码；加载失败、CPU 故障或超出预算时返回 125，诊断写入 stderr。guest 也能主动返回 125，调用方应同时查看诊断。
 
+## 网络
+
+网络支持实际 IPv4/IPv6 TCP 和 UDP。宿主 socket 始终非阻塞，guest 阻塞调用挂起当前虚拟进程；fork/dup 共享连接，最后一个持有者关闭后释放。每会话最多 64 个 socket，单次复制最多 1 MiB，UDP 数据报保持完整或显式报告截断。
+
+CLI 默认 `--network outbound`：允许出站连接、本机监听及 UDP 客户端的临时端口。`--network off` 关闭网络，`--network loopback` 限定本机，`--network full` 还允许非本机地址和通配监听。loopback 指宿主本机；这不是独立的 guest 网络命名空间。guest 不能绑定 1024 以下端口。模式仍受宿主网络策略和系统权限约束。
+
+DNS 由真实 musl 读取 guest 的 `/etc/resolv.conf`；可用 `--file /etc/resolv.conf=HOST_FILE` 显式导入。已验证 A/AAAA 查询和 UDP 截断后的 TCP 回退。HTTP/TLS 由 guest 程序自己的库处理，运行时不继承宿主代理凭据。当前没有验证 HTTPS 或 apk；网络/core 已通过 iOS 目标编译检查，尚无签名 App 或真机验证。详细设计、行为和缺口见 [网络架构](docs/architecture/network.md)。
+
 ## 验证
 
 ```sh
@@ -75,13 +83,19 @@ python3 tests/integration/m2.py
 python3 tests/integration/terminal.py
 bash scripts/build-storage-fixtures.sh
 python3 tests/integration/storage.py
+bash scripts/build-network-fixtures.sh
+python3 tests/integration/network.py
+rustup target add aarch64-apple-ios --toolchain 1.90.0
+cargo check -p trames-core --target aarch64-apple-ios --locked
 TRAMES_TEST_STORAGE=disk python3 tests/integration/m2.py
 TRAMES_TEST_STORAGE=disk python3 tests/integration/terminal.py
 ```
 
+网络测试的本机 DNS peer 需要绑定宿主 53 端口的权限；没有权限时，可参照 [网络验证](docs/validation/network.md) 使用 sudo 运行测试。它不改变宿主 DNS 配置。iOS 目标检查只做编译，不链接 Apple SDK。
+
 差分脚本独立运行同一个静态 ELF，比较 Trames 与 QEMU 的 stdout、stderr 和退出码。六组固定程序检查初始栈、BSS、跨页读写、分支、系统调用错误和二进制输出；64 个确定性生成程序比较八个寄存器及 NZCV 的 72 字节内存快照。另有执行预算、非法指令、代码页写保护检查，以及改名并改变 ELF 内容的验证。
 
-M1 再加入 64 个生成程序，对照位域、扩展寄存器运算、乘除、进位、条件选择及 NZCV；固定程序验证成对访存、符号扩展、SIMD 数据传送、exclusive monitor、匿名内存和文件创建/读写。M2 加入 6,860 个浮点用例、159 个结构访存变体、22 个 shell 场景和两个静态 C 程序。存储阶段增加真实文件 ABI、文件管理 applet、48 个整数 SIMD 快照，以及磁盘后端的完整 M2 重跑。当前共 454 次 QEMU 程序/场景比较、两种后端各 9 项终端结果、77 个单元测试；另验证配额、损坏元数据、提交失败回滚、流式复制、宿主范围及强制结束后的恢复。详见 [存储验证](docs/validation/storage.md)。
+M1 再加入 64 个生成程序，对照位域、扩展寄存器运算、乘除、进位、条件选择及 NZCV；固定程序验证成对访存、符号扩展、SIMD 数据传送、exclusive monitor、匿名内存和文件创建/读写。M2 加入 6,860 个浮点用例、159 个结构访存变体、22 个 shell 场景和两个静态 C 程序。存储阶段增加真实文件 ABI、文件管理 applet、48 个整数 SIMD 快照，以及磁盘后端的完整 M2 重跑。网络基础再加入内存/磁盘两种后端的 36 次网络对照、16 项能力/缓冲区预检/会话清理结果，以及 iOS 目标编译检查。当前共 490 次 QEMU 程序/场景比较、两种后端各 9 项终端结果、83 个单元测试；另验证配额、损坏元数据、提交失败回滚、流式复制、宿主范围及强制结束后的恢复。详见 [存储验证](docs/validation/storage.md) 和 [网络验证](docs/validation/network.md)。
 
 可通过 `AARCH64_AS`、`AARCH64_LD`、`QEMU_AARCH64` 覆盖工具路径，BusyBox 构建另支持 `AARCH64_CC`、`AARCH64_AR`、`AARCH64_RANLIB`；`--runner` 选择运行器，`--seeds` 调整生成程序数量。QEMU 是独立参考，测试通过只证明已测行为。
 
@@ -93,6 +107,7 @@ M1 再加入 64 个生成程序，对照位域、扩展寄存器运算、乘除�
 | `trames-elf` | 静态 ELF64/AArch64 ET_EXEC 校验，PT_LOAD 加载及 BSS 清零 |
 | `trames-cpu` | 整数/访存/原子操作、标量与 SIMD 浮点、FPCR/FPSR、TLS/NZCV |
 | `trames-linux` | 有状态文件描述符、读写/目录/stat、匿名 mmap/brk、负 errno、字节流 |
+| `trames-net` | 有界非阻塞 TCP/UDP、网络能力、宿主错误翻译和就绪等待 |
 | `trames-vfs` | 共享虚拟命名空间、磁盘/内存文件、配额与容量、打开描述与管道 |
 | `trames-core` | ELF/初始栈、进程调度、exec/wait、信号帧、虚拟 PTY |
 | `trames-cli` | `trames-run`，宿主字节流输出和退出码 |
@@ -103,4 +118,4 @@ M1 再加入 64 个生成程序，对照位域、扩展寄存器运算、乘除�
 
 ## 许可证
 
-Copyright (C) 2026 Trames contributors. 本项目使用 **GNU GPL version 3 or later**（`GPL-3.0-or-later`），完整文本见 [LICENSE](LICENSE)。引入 GPL、LGPL、AGPL 或其他依赖时需分别核对许可证和组合方式；当前 Rust 工作区无第三方 crate 依赖。GNU Binutils、Rust 和 QEMU 为开发工具，不随运行器链接发布。
+Copyright (C) 2026 Trames contributors. 本项目使用 **GNU GPL version 3 or later**（`GPL-3.0-or-later`），完整文本见 [LICENSE](LICENSE)。引入 GPL、LGPL、AGPL 或其他依赖时需分别核对许可证和组合方式；网络使用 socket2/nix 的安全接口，依赖许可记录见 [dependencies](docs/security/dependencies.md)。GNU Binutils、Rust 和 QEMU 为开发工具，不随运行器链接发布。

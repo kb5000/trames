@@ -11,6 +11,7 @@ trames-elf = { path = "../trames-elf" }
 trames-memory = { path = "../trames-memory" }
 trames-linux = { path = "../trames-linux" }
 trames-vfs = { path = "../trames-vfs" }
+trames-net = { path = "../trames-net" }
 
 [lints]
 workspace = true

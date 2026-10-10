@@ -10,7 +10,7 @@ use std::{
 use trames_core::{Runtime, DEFAULT_INSTRUCTION_LIMIT};
 use trames_elf::MAX_ELF_SIZE;
 use trames_linux::{GuestOutput, OutputFd};
-use trames_vfs::{DiskOptions, StorageLimits, Vfs, VolumeSpace};
+use trames_vfs::{DiskOptions, NetworkMode, StorageLimits, Vfs, VolumeSpace};
 
 fn volume_space(path: &str) -> io::Result<VolumeSpace> {
     let path = std::fs::canonicalize(path)?;
@@ -211,12 +211,23 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     let mut memory_only = false;
     let mut disk_budget = None;
     let mut storage_info = false;
+    let mut network = NetworkMode::Outbound;
     if args.peek().is_some_and(|a| a == "--help" || a == "-h") {
-        println!("Usage: trames-run [--storage DIR | --memory] [--storage-budget BYTES|16GiB|auto] [--storage-info] [--max-instructions N] [--trace-syscalls] [--file /GUEST=HOST] [--exec-file /GUEST=HOST] [--export /GUEST=HOST] [--install-busybox] [--pty] [--] ELF [ARG ...]\nDefault storage: .trames/storage in the current directory, 16 GiB logical file budget on first creation.\nImports copy selected host files; exports create new host files after guest exit.\n--memory selects the ephemeral 16 MiB test backend. auto uses the storage volume's total capacity.");
+        println!("Usage: trames-run [--network off|loopback|outbound|full] [--storage DIR | --memory] [--storage-budget BYTES|16GiB|auto] [--storage-info] [--max-instructions N] [--trace-syscalls] [--file /GUEST=HOST] [--exec-file /GUEST=HOST] [--export /GUEST=HOST] [--install-busybox] [--pty] [--] ELF [ARG ...]\nDefault network: outbound connections and loopback listeners; full also allows non-loopback listeners.\nDefault storage: .trames/storage in the current directory, 16 GiB logical file budget on first creation.\nImports copy selected host files; exports create new host files after guest exit.\n--memory selects the ephemeral 16 MiB test backend. auto uses the storage volume's total capacity.");
         return Ok(0);
     }
     while let Some(option) = args.peek() {
         match option.as_str() {
+            "--network" => {
+                args.next();
+                network = match args.next().ok_or("missing network mode")?.as_str() {
+                    "off" => NetworkMode::Off,
+                    "loopback" => NetworkMode::Loopback,
+                    "outbound" => NetworkMode::Outbound,
+                    "full" => NetworkMode::Full,
+                    _ => return Err("network mode must be off, loopback, outbound or full".into()),
+                };
+            }
             "--memory" => {
                 args.next();
                 memory_only = true;
@@ -307,6 +318,7 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
         vfs.set_volume_space(volume)?;
         runtime.linux.vfs = vfs;
     }
+    runtime.linux.vfs.configure_network(network)?;
     runtime.linux.trace = trace;
     if install_busybox {
         runtime

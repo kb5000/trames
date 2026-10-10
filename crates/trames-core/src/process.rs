@@ -266,7 +266,12 @@ impl Kernel {
                     p.mask = mask;
                 }
                 p.poll_deadline = None;
-                if action.flags & 0x10000000 != 0 && matches!(number, 63 | 64 | 66 | 260) {
+                if action.flags & 0x10000000 != 0
+                    && matches!(
+                        number,
+                        63 | 64 | 66 | 260 | 202 | 242 | 206 | 207 | 211 | 212
+                    )
+                {
                     put_args(&mut p.cpu, a);
                     p.cpu.pc = p.cpu.pc.wrapping_sub(4);
                 } else {
@@ -797,6 +802,9 @@ impl Kernel {
                 Ok(Some(0))
             }
             124 => Ok(Some(0)),
+            203 if matches!(p.state, State::Blocked(203, _)) => {
+                Ok(p.linux.resume_connect(a[0] as u32)?.then_some(0))
+            }
             63 | 64 | 66 | 29
                 if self.terminal.is_some()
                     && p.linux.vfs.fd_kind(a[0] as u32)? == FdKind::Terminal =>
@@ -813,8 +821,15 @@ impl Kernel {
                     return Ok(None);
                 }
                 let raw = p.cpu.x(0);
-                if raw == error(Errno(11))
-                    && matches!(number, 63 | 64 | 66)
+                let per_call_nonblock = match number {
+                    206 | 207 => a[3] & 0x40 != 0,
+                    211 | 212 => a[2] & 0x40 != 0,
+                    _ => false,
+                };
+                if ((raw == error(Errno(11))
+                    && matches!(number, 63 | 64 | 66 | 202 | 242 | 206 | 207 | 211 | 212)
+                    && !per_call_nonblock)
+                    || (raw == error(Errno(115)) && number == 203))
                     && p.linux.vfs.flags(a[0] as u32)? & O_NONBLOCK == 0
                 {
                     Ok(None)
@@ -865,7 +880,13 @@ impl Kernel {
                 Some(raw)
             }
         };
-        if (number == 64 || number == 66) && raw == Some(error(Errno(32))) {
+        let signal_pipe = match number {
+            64 | 66 => true,
+            206 => a[3] & 0x4000 == 0,
+            211 => a[2] & 0x4000 == 0,
+            _ => false,
+        };
+        if signal_pipe && raw == Some(error(Errno(32))) {
             Self::queue_one(pid, p, 13, pid);
         }
         if p.linux.trace && !(raw.is_none() && matches!(p.state, State::Blocked(..)) && was_blocked)
@@ -1362,12 +1383,94 @@ impl Kernel {
                 }
             }
             if !progress {
-                let external=self.processes.values().any(|p|p.poll_deadline.is_some()) || self.terminal.is_some() || self.processes.values().any(|p|matches!(p.state,State::Sleep(..)) || matches!(p.state,State::Blocked(63,a) if p.linux.vfs.fd_kind(a[0] as u32).ok()==Some(FdKind::Stdin)));
+                let external = self.processes.values().any(|p| {
+                    p.poll_deadline.is_some()
+                        || matches!(p.state, State::Sleep(..))
+                        || matches!(p.state, State::Blocked(63, a)
+                        if p.linux.vfs.fd_kind(a[0] as u32).ok() == Some(FdKind::Stdin))
+                        || matches!(p.state, State::Blocked(number, a)
+                        if matches!(number, 63 | 64 | 66 | 202 | 203 | 242 | 206 | 207 | 211 | 212)
+                        && p.linux.vfs.fd_kind(a[0] as u32).ok() == Some(FdKind::Socket))
+                        || (matches!(p.state, State::Blocked(72 | 73, _))
+                            && p.linux.vfs.live_sockets() != 0)
+                }) || self.terminal.is_some();
                 if !external {
                     return Err(RuntimeError::Deadlock);
                 }
-                std::thread::sleep(Duration::from_millis(1));
+                self.wait_external();
             }
+        }
+    }
+    fn wait_external(&self) {
+        let mut sockets = Vec::new();
+        let now = Instant::now();
+        let mut timeout = Duration::from_millis(20);
+        if self.terminal.is_some() {
+            timeout = Duration::from_millis(1);
+        }
+        for p in self.processes.values() {
+            if let Some(deadline) = p.poll_deadline {
+                timeout = timeout.min(deadline.saturating_duration_since(now));
+            }
+            if let State::Sleep(deadline, _) = p.state {
+                timeout = timeout.min(deadline.saturating_duration_since(now));
+            }
+            let State::Blocked(number, a) = p.state else {
+                continue;
+            };
+            let mut add = |fd, events| {
+                if let Ok(socket) = p.linux.vfs.socket_fd(fd) {
+                    sockets.push((socket, events));
+                }
+            };
+            match number {
+                63 | 202 | 242 | 207 | 212 => {
+                    add(a[0] as u32, 1);
+                    if p.linux.vfs.fd_kind(a[0] as u32).ok() == Some(FdKind::Stdin) {
+                        timeout = timeout.min(Duration::from_millis(1));
+                    }
+                }
+                64 | 66 | 203 | 206 | 211 => add(a[0] as u32, 4),
+                73 => {
+                    for i in 0..a[1].min(256) {
+                        if let (Ok(fd), Ok(events)) = (
+                            read_u32(&p.memory, a[0] + i * 8),
+                            read_u32(&p.memory, a[0] + i * 8 + 4),
+                        ) {
+                            if fd < i32::MAX as u32 {
+                                add(fd, events as u16);
+                            }
+                            if p.linux.vfs.fd_kind(fd).ok() == Some(FdKind::Stdin) {
+                                timeout = timeout.min(Duration::from_millis(1));
+                            }
+                        }
+                    }
+                }
+                72 => {
+                    for (index, event) in [(1, 1), (2, 4), (3, 2)] {
+                        if a[index] == 0 {
+                            continue;
+                        }
+                        for fd in 0..a[0].min(256) as u32 {
+                            if let Ok(bits) = read_u64(&p.memory, a[index] + (fd as u64 / 64) * 8) {
+                                if bits & (1 << (fd % 64)) != 0 {
+                                    add(fd, event);
+                                    if p.linux.vfs.fd_kind(fd).ok() == Some(FdKind::Stdin) {
+                                        timeout = timeout.min(Duration::from_millis(1));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        if sockets.is_empty() || timeout < Duration::from_millis(1) {
+            std::thread::sleep(timeout.min(Duration::from_millis(1)));
+        } else if trames_net::wait(&sockets, timeout).is_err() {
+            // Native adapter failures are surfaced by the next guest IO/poll.
+            std::thread::sleep(Duration::from_millis(1));
         }
     }
 }
