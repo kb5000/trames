@@ -1,0 +1,18 @@
+[package]
+name = "trames-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "trames-run"
+path = "src/main.rs"
+
+[dependencies]
+trames-core = { path = "../trames-core" }
+trames-elf = { path = "../trames-elf" }
+trames-linux = { path = "../trames-linux" }
+
+[lints]
+workspace = true

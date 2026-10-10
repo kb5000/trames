@@ -1,0 +1,15 @@
+[package]
+name = "trames-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+trames-cpu = { path = "../trames-cpu" }
+trames-elf = { path = "../trames-elf" }
+trames-memory = { path = "../trames-memory" }
+trames-linux = { path = "../trames-linux" }
+
+[lints]
+workspace = true
