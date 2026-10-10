@@ -371,7 +371,7 @@ impl Cpu {
             self.vectors[rd] = (self.x(rn) & width_mask(ins >> 31 != 0)) as u128;
         } else if ins & 0xfffffc00 == 0x1e604000 {
             self.vectors[rd] = self.vectors[rn] & u64::MAX as u128;
-        } else if ins & 0x9f80fc00 == 0x0f00a400 {
+        } else if ins & 0x9f80fc00 == 0x0f00a400 && ins & 0x00780000 != 0 {
             // SSHLL/USHLL, including SXTL/UXTL and the upper-half forms.
             let immh = (ins >> 19) & 15;
             if immh == 0 || immh & 8 != 0 {
