@@ -4,9 +4,16 @@ import TramesKit
 struct SSHConnectView: View {
     @ObservedObject var workspace: WorkspaceModel
     @Environment(\.dismiss) private var dismiss
-    @State private var alias = "", user = "user", password = "", passphrase = "", configText = ""
-    @State private var remember = false, useKey = false, loading = false
-    @State private var error: String?, warnings: [String] = []
+    @State private var alias = ""
+    @State private var user = "user"
+    @State private var password = ""
+    @State private var passphrase = ""
+    @State private var configText = ""
+    @State private var remember = false
+    @State private var useKey = false
+    @State private var loading = false
+    @State private var error: String?
+    @State private var warnings: [String] = []
     var body: some View {
         NavigationStack {
             Form {

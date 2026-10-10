@@ -34,7 +34,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: org.trames.Trames
         ARCHS: arm64
         ONLY_ACTIVE_ARCH: YES
-        LIBRARY_SEARCH_PATHS: ['$(inherited)', '$(SRCROOT)/../../target/$(TRAMES_RUST_TARGET)/release']
+        LIBRARY_SEARCH_PATHS: ['$(inherited)', '$(SRCROOT)/../../target/ios-link/$(TRAMES_RUST_TARGET)']
         'TRAMES_RUST_TARGET[sdk=iphoneos*]': aarch64-apple-ios
         'TRAMES_RUST_TARGET[sdk=iphonesimulator*]': aarch64-apple-ios-sim
         OTHER_LDFLAGS: ['$(inherited)', '-ltrames_ffi', '-lresolv']

@@ -10,7 +10,7 @@ use std::{
         atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
         mpsc, Arc, Mutex,
     },
-    time::Duration,
+    time::{Duration, Instant},
 };
 use trames_core::{Runtime, RuntimeError, Terminal};
 use trames_linux::{GuestOutput, OutputFd, TerminalEvent};
@@ -353,6 +353,7 @@ fn run(
     let mut io = Adapter {
         session: session.clone(),
         commands,
+        snapshot_at: Instant::now(),
     };
     io.snapshot(&runtime.linux.vfs);
     session
@@ -373,6 +374,7 @@ fn run(
 struct Adapter {
     session: Arc<Session>,
     commands: mpsc::Receiver<Transfer>,
+    snapshot_at: Instant,
 }
 impl Adapter {
     fn snapshot(&self, vfs: &Vfs) {
@@ -478,6 +480,10 @@ impl GuestOutput for Adapter {
             let result = self.transfer(vfs, command.options, &command.cancelled);
             self.snapshot(vfs);
             let _ = command.result.send(result);
+        }
+        if self.snapshot_at.elapsed() >= Duration::from_secs(1) {
+            self.snapshot(vfs);
+            self.snapshot_at = Instant::now();
         }
         while self.session.paused.load(Ordering::Acquire) {
             if self.session.cancelled.load(Ordering::Acquire) {

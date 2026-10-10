@@ -18,7 +18,9 @@ struct TramesApp: App {
 }
 struct WorkspaceView: View {
     @ObservedObject var workspace: WorkspaceModel
-    @State private var sshSheet = false, filesSheet = false, settingsSheet = false
+    @State private var sshSheet = false
+    @State private var filesSheet = false
+    @State private var settingsSheet = false
     var body: some View {
         VStack(spacing: 0) {
             HStack {

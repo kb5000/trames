@@ -6,9 +6,12 @@ struct ExportFile: Identifiable { let id = UUID(); let url: URL }
 struct TransferView: View {
     @ObservedObject var session: TerminalSession
     @Environment(\.dismiss) private var dismiss
-    @State private var path = "/home/user/imported-file", selected: URL?
-    @State private var chooser = false, busy = false
-    @State private var message = "", exportFile: ExportFile?
+    @State private var path = "/home/user/imported-file"
+    @State private var selected: URL?
+    @State private var chooser = false
+    @State private var busy = false
+    @State private var message = ""
+    @State private var exportFile: ExportFile?
     @State private var task: Task<Void,Never>?
     var body: some View {
         NavigationStack {
