@@ -212,12 +212,35 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     let mut disk_budget = None;
     let mut storage_info = false;
     let mut network = NetworkMode::Outbound;
+    let mut rootfs = None;
+    let mut guest_path = false;
+    let mut extra_env = Vec::new();
     if args.peek().is_some_and(|a| a == "--help" || a == "-h") {
-        println!("Usage: trames-run [--network off|loopback|outbound|full] [--storage DIR | --memory] [--storage-budget BYTES|16GiB|auto] [--storage-info] [--max-instructions N] [--trace-syscalls] [--file /GUEST=HOST] [--exec-file /GUEST=HOST] [--export /GUEST=HOST] [--install-busybox] [--pty] [--] ELF [ARG ...]\nDefault network: outbound connections and loopback listeners; full also allows non-loopback listeners.\nDefault storage: .trames/storage in the current directory, 16 GiB logical file budget on first creation.\nImports copy selected host files; exports create new host files after guest exit.\n--memory selects the ephemeral 16 MiB test backend. auto uses the storage volume's total capacity.");
+        println!("Usage: trames-run [--rootfs VERIFIED_ALPINE_TAR_GZ] [--guest] [--env KEY=VALUE] [--network off|loopback|outbound|full] [--storage DIR | --memory] [--storage-budget BYTES|16GiB|auto] [--storage-info] [--max-instructions N] [--trace-syscalls] [--file /GUEST=HOST] [--exec-file /GUEST=HOST] [--export /GUEST=HOST] [--install-busybox] [--pty] [--] ELF [ARG ...]\nDefault network: outbound connections and loopback listeners; full also allows non-loopback listeners.\nDefault storage: .trames/storage in the current directory, 16 GiB logical file budget on first creation.\nImports copy selected host files; exports create new host files after guest exit.\n--memory selects the ephemeral 16 MiB test backend. auto uses the storage volume's total capacity.");
         return Ok(0);
     }
     while let Some(option) = args.peek() {
         match option.as_str() {
+            "--rootfs" => {
+                args.next();
+                rootfs = Some(args.next().ok_or("missing rootfs archive")?);
+            }
+            "--guest" => {
+                args.next();
+                guest_path = true;
+            }
+            "--env" => {
+                args.next();
+                let value = args.next().ok_or("missing environment assignment")?;
+                let (name, _) = value
+                    .split_once('=')
+                    .ok_or("environment requires KEY=VALUE")?;
+                if name.is_empty() || !name.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_')
+                {
+                    return Err("invalid environment name".into());
+                }
+                extra_env.push(value);
+            }
             "--network" => {
                 args.next();
                 network = match args.next().ok_or("missing network mode")?.as_str() {
@@ -288,21 +311,19 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
         .ok_or("Usage: trames-run [--max-instructions N] [--] ELF [ARG ...]")?;
     let mut argv = vec![path.clone()];
     argv.extend(args);
-    let file = File::open(&path)?;
-    let mut bytes = Vec::new();
-    file.take(MAX_ELF_SIZE as u64 + 1).read_to_end(&mut bytes)?;
-    if bytes.len() > MAX_ELF_SIZE {
-        return Err("ELF exceeds 64 MiB file limit".into());
+    let mut envp = vec!["PATH=/usr/sbin:/usr/bin:/sbin:/bin".into(), "LANG=C".into()];
+    for value in extra_env {
+        let name = value.split_once('=').expect("validated env").0;
+        envp.retain(|e: &String| e.split_once('=').is_none_or(|(key, _)| key != name));
+        envp.push(value);
     }
-    // A deterministic guest environment; host secrets are never inherited.
-    let envp = vec!["PATH=/usr/bin:/bin".into(), "LANG=C".into()];
-    let mut runtime = Runtime::load(&bytes, &argv, &envp)?;
+    let mut vfs = Vfs::default();
     if memory_only && (storage.is_some() || disk_budget.is_some()) {
         return Err("--memory cannot be combined with disk options".into());
     }
     if !memory_only {
         let directory = storage.as_deref().unwrap_or(".trames/storage");
-        let mut vfs = Vfs::open_disk(directory, DiskOptions::default())?;
+        vfs = Vfs::open_disk(directory, DiskOptions::default())?;
         let volume = volume_space(directory)?;
         if let Some(budget) = disk_budget {
             let file_bytes = if budget == "auto" {
@@ -316,9 +337,27 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
             })?;
         }
         vfs.set_volume_space(volume)?;
-        runtime.linux.vfs = vfs;
     }
-    runtime.linux.vfs.configure_network(network)?;
+    vfs.configure_network(network)?;
+    if let Some(archive) = rootfs {
+        trames_distro::install_alpine(&mut File::open(archive)?, &mut vfs)?;
+    }
+    for (guest, host, executable) in files {
+        vfs.import_reader(guest.as_bytes(), &mut File::open(host)?, executable)?;
+    }
+    let bytes = if guest_path {
+        vfs.executable(path.as_bytes())?
+    } else {
+        let mut bytes = Vec::new();
+        File::open(&path)?
+            .take(MAX_ELF_SIZE as u64 + 1)
+            .read_to_end(&mut bytes)?;
+        if bytes.len() > MAX_ELF_SIZE {
+            return Err("ELF exceeds 64 MiB file limit".into());
+        }
+        bytes
+    };
+    let mut runtime = Runtime::load_with_vfs(&bytes, &argv, &envp, vfs)?;
     runtime.linux.trace = trace;
     if install_busybox {
         runtime
@@ -358,12 +397,6 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
                 }
             }
         }
-    }
-    for (guest, host, executable) in files {
-        runtime
-            .linux
-            .vfs
-            .import_reader(guest.as_bytes(), &mut File::open(host)?, executable)?;
     }
     if storage_info {
         eprintln!("trames storage: {:?}", runtime.linux.vfs.capacity());

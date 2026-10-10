@@ -2,7 +2,7 @@
 
 面向 iPadOS 的终端优先开发环境：原生 SSH，加上运行未修改 AArch64 Linux 用户态程序的兼容运行时。使用普通开发者签名，架构不依赖越狱、JIT 权限、私有 API 或硬件虚拟化。
 
-**当前交付：M0–M2、磁盘持久化，以及 M3 网络基础。** `trames-run` 执行实际静态 AArch64 ELF，支持 32/64 位标量及选定 SIMD 浮点、虚拟进程、管道、信号和一个虚拟 PTY。交互式 BusyBox `ash` 已在内存和磁盘两种后端验证。Linux CLI 默认保存文件到磁盘，新存储目录的文件预算为 16 GiB。IPv4/IPv6 TCP/UDP 和真实 musl DNS 已验证；iPad App、原生 Files 授权界面、SSH、动态链接、Alpine 和包管理属于后续里程碑。
+**当前交付：M0–M3 和磁盘持久化。** `trames-run` 执行实际静态／动态 AArch64 ELF，支持 32/64 位标量及选定 SIMD 浮点、虚拟进程、管道、信号和一个虚拟 PTY。交互式 BusyBox `ash` 已在内存和磁盘两种后端验证。Linux CLI 默认保存文件到磁盘，新存储目录的文件预算为 16 GiB。IPv4/IPv6 TCP/UDP 和真实 musl DNS 已验证；Alpine 3.22.6、动态 musl、经过证书和包签名验证的 HTTPS apk update/add，以及安装后 tree 执行已验证。iPad App、原生 Files 授权界面和 SSH 属于后续里程碑。
 
 ## 快速运行
 
@@ -42,7 +42,7 @@ cargo run -p trames-cli --bin trames-run -- --storage target/my-system --install
 
 `--install-busybox` 将该 ELF 安装为 `/bin/busybox` 并建立选定 applet 的硬链接，可在已有存储中重复运行；更新二进制时一并替换其硬链接，已经打开的旧 inode 仍有效。`--exec-file /GUEST=HOST` 导入可执行文件，供虚拟 `execve` 加载。guest 的 fork/exec 均在运行时内部完成。`--pty` 支持 Ctrl-C、Ctrl-Z、Ctrl-D 和作业控制；当前虚拟窗口默认 24×80。
 
-未指定 `--storage` 时，CLI 使用当前宿主目录下的 `.trames/storage`。文件、目录、权限、时间戳和硬链接在重启后恢复；存储目录由一个运行实例独占。新目录默认使用 16 GiB 逻辑文件预算，已有目录保留保存的预算；`--storage-budget 16GiB` 可显式设置，`--storage-budget auto` 则取存储卷总容量。可用容量同时受卷剩余空间快照限制，宿主磁盘不足时会返回错误。`--storage-info` 显示启动时的容量。
+未指定 `--storage` 时，CLI 使用当前宿主目录下的 `.trames/storage`。文件、目录、权限、时间戳、硬链接和符号链接在重启后恢复；存储目录由一个运行实例独占。新目录默认使用 16 GiB 逻辑文件预算，已有目录保留保存的预算；`--storage-budget 16GiB` 可显式设置，`--storage-budget auto` 则取存储卷总容量。可用容量同时受卷剩余空间快照限制，宿主磁盘不足时会返回错误。`--storage-info` 显示启动时的容量。
 
 16 GiB 是配额，不会预分配同等内存或磁盘。普通文件按需读写；导入导出使用 64 KiB 缓冲区。单进程映射内存仍为 64 MiB。`--memory` 可选择临时内存后端，其文件配额仍为 16 MiB。平台 API 已提供容量报告和文件流接口，供后续 iPad Files 授权与文件协调接入；当前尚未完成原生 iPad UI 或设备验证。详见 [存储架构](docs/architecture/storage.md)。
 
@@ -55,13 +55,26 @@ target/debug/trames-run --storage target/my-system --install-busybox --export /n
 
 默认最多执行 10,000,000 条指令，可使用 `trames-run --max-instructions 1000 ELF [ARG ...]` 调整。运行器传递 guest 退出码；加载失败、CPU 故障或超出预算时返回 125，诊断写入 stderr。guest 也能主动返回 125，调用方应同时查看诊断。
 
+## Alpine 和 apk
+
+~~~sh
+bash scripts/build-busybox.sh
+bash scripts/prepare-alpine.sh
+cargo build --release --workspace --locked
+target/release/trames-run --storage target/alpine --rootfs target/alpine-download/alpine-minirootfs-3.22.6-aarch64.tar.gz --guest --max-instructions 100000000 /bin/sh -c 'cat /etc/alpine-release; apk --version'
+target/release/trames-run --storage target/alpine --guest --max-instructions 100000000 /bin/sh
+python3 tests/integration/m3.py
+~~~
+
+`--rootfs` 只接受固定 SHA-256 的上述 Alpine 归档，用于初始化新存储；后续启动仅使用 `--guest`。动态程序的解释器和共享库来自 guest VFS。符号链接持久化，文件私有 mmap 支持 musl 加载库，TLS 使用真实宿主熵源。`--env KEY=VALUE` 显式设置 guest 环境，适用于代理、CA 和库搜索路径。使用公网仓库还需按宿主策略配置 guest DNS／代理及可信 CA；测试套件通过本机 HTTPS 镜像验证原版 TLS 和 Alpine 签名，不会关闭校验。详见 [动态用户态架构](docs/architecture/dynamic-userspace.md) 和 [M3 验证](docs/validation/m3.md)。
+
 ## 网络
 
 网络支持实际 IPv4/IPv6 TCP 和 UDP。宿主 socket 始终非阻塞，guest 阻塞调用挂起当前虚拟进程；fork/dup 共享连接，最后一个持有者关闭后释放。每会话最多 64 个 socket，单次复制最多 1 MiB，UDP 数据报保持完整或显式报告截断。
 
 CLI 默认 `--network outbound`：允许出站连接、本机监听及 UDP 客户端的临时端口。`--network off` 关闭网络，`--network loopback` 限定本机，`--network full` 还允许非本机地址和通配监听。loopback 指宿主本机；这不是独立的 guest 网络命名空间。guest 不能绑定 1024 以下端口。模式仍受宿主网络策略和系统权限约束。
 
-DNS 由真实 musl 读取 guest 的 `/etc/resolv.conf`；可用 `--file /etc/resolv.conf=HOST_FILE` 显式导入。已验证 A/AAAA 查询和 UDP 截断后的 TCP 回退。HTTP/TLS 由 guest 程序自己的库处理，运行时不继承宿主代理凭据。当前没有验证 HTTPS 或 apk；网络/core 已通过 iOS 目标编译检查，尚无签名 App 或真机验证。详细设计、行为和缺口见 [网络架构](docs/architecture/network.md)。
+DNS 由真实 musl 读取 guest 的 `/etc/resolv.conf`；可用 `--file /etc/resolv.conf=HOST_FILE` 显式导入。已验证 A/AAAA 查询和 UDP 截断后的 TCP 回退。HTTP/TLS 由 guest 程序自己的库处理，运行时不继承宿主代理凭据。已验证原版 Alpine HTTPS 和 apk 的证书、主机名及包签名校验；网络/core/distro 已通过 iOS 目标编译检查，尚无签名 App 或真机验证。详细设计、行为和缺口见 [网络架构](docs/architecture/network.md)。
 
 ## 验证
 
@@ -76,6 +89,7 @@ python3 tests/differential/floating.py
 python3 tests/differential/vector_floating.py
 python3 tests/differential/structures.py
 python3 tests/differential/pairwise_integer.py
+python3 tests/differential/widening_integer.py
 bash scripts/build-busybox.sh
 python3 tests/integration/busybox.py
 bash scripts/build-m2-fixtures.sh
@@ -86,7 +100,7 @@ python3 tests/integration/storage.py
 bash scripts/build-network-fixtures.sh
 python3 tests/integration/network.py
 rustup target add aarch64-apple-ios --toolchain 1.90.0
-cargo check -p trames-core --target aarch64-apple-ios --locked
+cargo check -p trames-core -p trames-distro --target aarch64-apple-ios --locked
 TRAMES_TEST_STORAGE=disk python3 tests/integration/m2.py
 TRAMES_TEST_STORAGE=disk python3 tests/integration/terminal.py
 ```
@@ -95,7 +109,7 @@ TRAMES_TEST_STORAGE=disk python3 tests/integration/terminal.py
 
 差分脚本独立运行同一个静态 ELF，比较 Trames 与 QEMU 的 stdout、stderr 和退出码。六组固定程序检查初始栈、BSS、跨页读写、分支、系统调用错误和二进制输出；64 个确定性生成程序比较八个寄存器及 NZCV 的 72 字节内存快照。另有执行预算、非法指令、代码页写保护检查，以及改名并改变 ELF 内容的验证。
 
-M1 再加入 64 个生成程序，对照位域、扩展寄存器运算、乘除、进位、条件选择及 NZCV；固定程序验证成对访存、符号扩展、SIMD 数据传送、exclusive monitor、匿名内存和文件创建/读写。M2 加入 6,860 个浮点用例、159 个结构访存变体、22 个 shell 场景和两个静态 C 程序。存储阶段增加真实文件 ABI、文件管理 applet、48 个整数 SIMD 快照，以及磁盘后端的完整 M2 重跑。网络基础再加入内存/磁盘两种后端的 36 次网络对照、16 项能力/缓冲区预检/会话清理结果，以及 iOS 目标编译检查。当前共 490 次 QEMU 程序/场景比较、两种后端各 9 项终端结果、83 个单元测试；另验证配额、损坏元数据、提交失败回滚、流式复制、宿主范围及强制结束后的恢复。详见 [存储验证](docs/validation/storage.md) 和 [网络验证](docs/validation/network.md)。
+M1 再加入 64 个生成程序，对照位域、扩展寄存器运算、乘除、进位、条件选择及 NZCV；固定程序验证成对访存、符号扩展、SIMD 数据传送、exclusive monitor、匿名内存和文件创建/读写。M2 加入 6,860 个浮点用例、159 个结构访存变体、22 个 shell 场景和两个静态 C 程序。存储阶段增加真实文件 ABI、文件管理 applet、48 个整数 SIMD 快照，以及磁盘后端的完整 M2 重跑。网络基础再加入内存/磁盘两种后端的 36 次网络对照、16 项能力/缓冲区预检/会话清理结果，以及 iOS 目标编译检查。M3 再加入 36 次动态程序／TLS／包管理对照和 72 个 widening SIMD 快照。当前共 527 次 QEMU 程序/场景比较、两种后端各 9 项终端结果、89 个单元测试；另验证配额、损坏元数据、提交失败回滚、流式复制、宿主范围及强制结束后的恢复。详见 [存储验证](docs/validation/storage.md) 和 [网络验证](docs/validation/network.md)。
 
 可通过 `AARCH64_AS`、`AARCH64_LD`、`QEMU_AARCH64` 覆盖工具路径，BusyBox 构建另支持 `AARCH64_CC`、`AARCH64_AR`、`AARCH64_RANLIB`；`--runner` 选择运行器，`--seeds` 调整生成程序数量。QEMU 是独立参考，测试通过只证明已测行为。
 
@@ -104,15 +118,16 @@ M1 再加入 64 个生成程序，对照位域、扩展寄存器运算、乘除�
 | crate | 当前职责 |
 | --- | --- |
 | `trames-memory` | 4 KiB 稀疏页面、fork 写时复制、内存上限、R/W/X 及映射保护 |
-| `trames-elf` | 静态 ELF64/AArch64 ET_EXEC 校验，PT_LOAD 加载及 BSS 清零 |
+| `trames-elf` | ELF64/AArch64 ET_EXEC/ET_DYN、PT_INTERP、PT_LOAD、BSS 和加载偏移校验 |
 | `trames-cpu` | 整数/访存/原子操作、标量与 SIMD 浮点、FPCR/FPSR、TLS/NZCV |
-| `trames-linux` | 有状态文件描述符、读写/目录/stat、匿名 mmap/brk、负 errno、字节流 |
+| `trames-linux` | 有状态文件描述符、读写/目录/stat、私有文件／匿名 mmap/brk、flock/getrandom、负 errno、字节流 |
 | `trames-net` | 有界非阻塞 TCP/UDP、网络能力、宿主错误翻译和就绪等待 |
 | `trames-vfs` | 共享虚拟命名空间、磁盘/内存文件、配额与容量、打开描述与管道 |
 | `trames-core` | ELF/初始栈、进程调度、exec/wait、信号帧、虚拟 PTY |
+| `trames-distro` | 固定 SHA-256 Alpine rootfs、受限归档解析与 VFS 导入 |
 | `trames-cli` | `trames-run`，宿主字节流输出和退出码 |
 
-尚不支持 ET_DYN、PT_INTERP、PT_DYNAMIC、重叠 PT_LOAD 页面、完整 AArch64/SIMD、FP16/SVE、线程/共享地址空间/vfork、阻塞 futex、备用信号栈、多个 PTY、非零 VTIME、符号链接或文件映射 mmap。未实现的指令明确报告故障，未知系统调用返回 `-ENOSYS`。安全限制及其兼容性影响见 [security](docs/security/README.md)。
+尚不支持重叠 PT_LOAD 页面、完整 AArch64/SIMD、FP16/SVE、线程/共享地址空间/vfork、阻塞 futex、备用信号栈、多个 PTY、非零 VTIME、共享文件 mmap 或映射超过 EOF 的 SIGBUS 语义。未实现的指令明确报告故障，未知系统调用返回 `-ENOSYS`。安全限制及其兼容性影响见 [security](docs/security/README.md)。
 
 [工程章程](docs/charter.md) · [存储架构](docs/architecture/storage.md) · [路线图](docs/roadmap/README.md) · [存储验证](docs/validation/storage.md) · [BusyBox 构建](docs/testing/busybox.md)
 

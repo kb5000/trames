@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! ELF, initial Linux stack, CPU slices, and syscall dispatch composition.
-use std::{fmt, io::Read};
+use std::fmt;
 use trames_cpu::{Cpu, CpuFault};
 use trames_elf::{ElfError, LoadedElf};
 use trames_linux::{GuestOutput, Linux};
@@ -78,6 +78,7 @@ fn push_string(memory: &mut Memory, cursor: &mut u64, string: &[u8]) -> Result<u
     Ok(*cursor)
 }
 
+#[cfg(test)]
 fn initial_stack(
     elf: &mut LoadedElf,
     argv: &[String],
@@ -121,14 +122,14 @@ fn initial_stack_bytes(
     }
     cursor -= 16;
     let mut entropy = [0; 16];
-    std::fs::File::open("/dev/urandom")
-        .and_then(|mut file| file.read_exact(&mut entropy))
+    trames_linux::fill_entropy(&mut entropy)
         .map_err(|_| RuntimeError::Arguments("host entropy source unavailable"))?;
     elf.memory.write(cursor, &entropy)?;
     // Static Linux auxv, including real host entropy for the guest stack guard.
     let mut auxv = vec![
         (6u64, PAGE_SIZE),
         (9, elf.entry),
+        (7, elf.interpreter_base),
         (11, 1000),
         (12, 1000),
         (13, 1000),
@@ -178,28 +179,34 @@ impl Runtime {
         bytes: &[u8],
         argv: &[Vec<u8>],
         envp: &[Vec<u8>],
+        vfs: &trames_vfs::Vfs,
     ) -> Result<Self, RuntimeError> {
-        let mut elf = trames_elf::load(bytes, DEFAULT_MEMORY_LIMIT)?;
-        let linux = Linux::new(elf.memory.highest_mapped_end());
+        let mut elf = trames_elf::load_with_interpreter(bytes, DEFAULT_MEMORY_LIMIT, |path| {
+            vfs.executable(path).map_err(|e| ElfError::Interpreter(e.0))
+        })?;
+        let linux = Linux::new(elf.brk_base);
         let sp = initial_stack_bytes(&mut elf, argv, envp)?;
         Ok(Self {
-            cpu: Cpu::new(elf.entry, sp),
+            cpu: Cpu::new(elf.start_entry, sp),
             memory: elf.memory,
             linux,
             terminal: None,
         })
     }
     pub fn load(bytes: &[u8], argv: &[String], envp: &[String]) -> Result<Self, RuntimeError> {
-        let mut elf = trames_elf::load(bytes, DEFAULT_MEMORY_LIMIT)?;
-        let linux = Linux::new(elf.memory.highest_mapped_end());
-        let sp = initial_stack(&mut elf, argv, envp)?;
-        let cpu = Cpu::new(elf.entry, sp);
-        Ok(Self {
-            cpu,
-            memory: elf.memory,
-            linux,
-            terminal: None,
-        })
+        Self::load_with_vfs(bytes, argv, envp, trames_vfs::Vfs::default())
+    }
+    pub fn load_with_vfs(
+        bytes: &[u8],
+        argv: &[String],
+        envp: &[String],
+        vfs: trames_vfs::Vfs,
+    ) -> Result<Self, RuntimeError> {
+        let argv: Vec<_> = argv.iter().map(|s| s.as_bytes().to_vec()).collect();
+        let envp: Vec<_> = envp.iter().map(|s| s.as_bytes().to_vec()).collect();
+        let mut runtime = Self::load_guest(bytes, &argv, &envp, &vfs)?;
+        runtime.linux.vfs = vfs;
+        Ok(runtime)
     }
 
     pub fn run(
@@ -220,6 +227,9 @@ mod tests {
             entry: 0x4000,
             phdr: Some(0x4040),
             phnum: 2,
+            start_entry: 0x4000,
+            interpreter_base: 0,
+            brk_base: 0x5000,
         }
     }
     #[test]

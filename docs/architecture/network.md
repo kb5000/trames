@@ -1,8 +1,8 @@
 # M3 network foundation
 
 This stage implements real native IPv4/IPv6 TCP and UDP for interpreted AArch64
-Linux programs. Dynamic ELF, an Alpine rootfs, apk and native iPad networking
-validation remain subsequent work; this is not completion of M3.
+Linux programs. Dynamic musl/Alpine and authenticated HTTPS/apk are now validated
+in [M3](../validation/m3.md); native iPad device validation remains later work.
 
 ## Boundaries
 
@@ -153,9 +153,9 @@ explicit resolver configuration; importing it does not import credentials.
 
 HTTP and TLS run inside the actual guest program. Guest proxy variables/config
 are explicit distribution/application data and are not inherited from host
-environment secrets. A future apk stage must install a verified certificate
-bundle and validate TLS and package signatures. TCP success alone is not HTTPS
-or apk validation.
+environment secrets. M3 validates unmodified guest OpenSSL, hostname/CA checks and Alpine signatures
+against a deterministic HTTPS peer; explicit guest CA/proxy configuration remains
+required for other deployments. TCP success alone is not HTTPS or apk validation.
 
 Ordinary BSD sockets and poll are available to the planned iPad app without JIT,
 TUN, virtualization or a downloaded native plugin. The network/core code passes
@@ -172,5 +172,5 @@ implemented here. Native SSH host-key verification remains separate from guest
 sockets. Network.framework can supply native session/path integration without
 changing guest TLS behavior.
 
-Next: PT_INTERP/file-backed private mmap, verified Alpine files and dynamic
-program execution, then HTTPS/apk operations and execution of installed binaries.
+Next: the user-requested isolated virtual subnet and userspace packet stack,
+with native egress subject to the same host network policy.

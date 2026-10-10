@@ -1,9 +1,9 @@
-# Runtime security and compatibility limits (M0–M2, storage and M3 network foundation)
+# Runtime security and compatibility limits (M0–M3 and storage)
 
 ELF files, instructions, addresses and argv/envp are untrusted. Parsers validate
 lengths, offset arithmetic, architecture, flags, alignment, entry permissions and
-segment ranges. Dynamic executables and overlapping PT_LOAD pages are explicitly
-rejected in M0. Guest faults are errors, not host pointer dereferences.
+segment ranges. Dynamic ET_DYN/PT_INTERP are supported; overlapping PT_LOAD
+pages remain rejected. Interpreter files come only from the checked guest VFS. Guest faults are errors, not host pointer dereferences.
 
 | Resource | Current bound |
 | --- | --- |
@@ -13,7 +13,10 @@ rejected in M0. Guest faults are errors, not host pointer dereferences.
 | Pipe buffer / atomic write | 64 KiB / 4096 bytes |
 | PTY input, output and echo | 64 KiB each; empty EOF records also consume input budget |
 | Nested signal frames | 8 |
-| Program headers | 1024 |
+| Program headers | 1024 per ELF |
+| Symlink traversal | 40; targets at most 4095 bytes |
+| Rootfs compressed / expanded input | 16 MiB / 128 MiB, pinned SHA-256 |
+| Rootfs entries / individual file | 16,384 / 64 MiB |
 | Initial stack | 64 KiB, non-executable, unmapped page below it |
 | argv/envp entries combined | 4096 |
 | Virtual file data (all live files) | Disk: 16 GiB initial logical budget, configurable and volume-bounded; memory: 16 MiB |
@@ -54,11 +57,12 @@ fixed inode-object names beneath an app-owned storage directory, never guest
 path components as host names. Explicit imports authorize reading selected host
 streams; exports authorize new host destinations. Neither grants a general host
 path adapter. Copies do not automatically write back to their sources. There are
-no symbolic links or general host directory mounts.
+guest symbolic links cannot leave this namespace; there are no general host
+directory mounts.
 New file reads validate destination buffers before consuming positions. Vectored
 output is preflighted and invokes the sink once; partial side effects are never
 retried automatically. Anonymous fixed mappings are checked against resource
-limits before replacing data. Real host entropy supplies AT_RANDOM.
+limits before replacing data. Supported native entropy supplies AT_RANDOM and checked guest getrandom.
 
 M2 virtual pipe/terminal waits suspend processes. Input adapters must implement
 nonblocking poll_stdin/stdin_ready; terminal master events scope signals to guest
@@ -108,3 +112,13 @@ other options fail explicitly. Guest TLS, certificates, apk signatures and iPad
 network permissions need separate validation in subsequent stages. See
 [network architecture](../architecture/network.md) and the
 [dependency/license record](dependencies.md).
+
+M3 dynamic linking executes the guest musl loader and guest OpenSSL/apk unchanged.
+Private mmap copies bounded file snapshots and validates before fixed replacement;
+shared mappings, page-cache coherence and SIGBUS beyond EOF are not implemented.
+Archive paths and content are validated before initialization writes; IO failure
+can leave a partial initial store, which must be replaced for retry. The pinned
+rootfs owner maps to virtual user 1000 and privilege bits are stripped. Guest
+HTTPS uses explicit CA/proxy configuration; Alpine signatures remain required.
+See [dynamic userspace](../architecture/dynamic-userspace.md) and
+[M3 validation](../validation/m3.md).

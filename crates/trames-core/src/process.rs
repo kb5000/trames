@@ -269,7 +269,7 @@ impl Kernel {
                 if action.flags & 0x10000000 != 0
                     && matches!(
                         number,
-                        63 | 64 | 66 | 260 | 202 | 242 | 206 | 207 | 211 | 212
+                        32 | 63 | 64 | 66 | 260 | 202 | 242 | 206 | 207 | 211 | 212
                     )
                 {
                     put_args(&mut p.cpu, a);
@@ -432,11 +432,13 @@ impl Kernel {
                 path = interpreter.to_vec();
                 continue;
             }
-            let mut runtime = Runtime::load_guest(&bytes, &argv, &envp).map_err(|e| match e {
-                RuntimeError::Arguments(_) => Errno(7),
-                RuntimeError::Memory(_) => Errno(12),
-                _ => Errno(8),
-            })?;
+            let mut runtime =
+                Runtime::load_guest(&bytes, &argv, &envp, &p.linux.vfs).map_err(|e| match e {
+                    RuntimeError::Arguments(_) => Errno(7),
+                    RuntimeError::Memory(_) => Errno(12),
+                    RuntimeError::Elf(trames_elf::ElfError::Interpreter(n)) => Errno(n),
+                    _ => Errno(8),
+                })?;
             if runtime.memory.mapped_bytes() > budget {
                 return Err(Errno(12));
             }
@@ -829,8 +831,9 @@ impl Kernel {
                 if ((raw == error(Errno(11))
                     && matches!(number, 63 | 64 | 66 | 202 | 242 | 206 | 207 | 211 | 212)
                     && !per_call_nonblock)
-                    || (raw == error(Errno(115)) && number == 203))
-                    && p.linux.vfs.flags(a[0] as u32)? & O_NONBLOCK == 0
+                    || (raw == error(Errno(115)) && number == 203)
+                    || (raw == error(Errno(11)) && number == 32 && a[1] & 4 == 0))
+                    && (number == 32 || p.linux.vfs.flags(a[0] as u32)? & O_NONBLOCK == 0)
                 {
                     Ok(None)
                 } else {

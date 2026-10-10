@@ -371,6 +371,27 @@ impl Cpu {
             self.vectors[rd] = (self.x(rn) & width_mask(ins >> 31 != 0)) as u128;
         } else if ins & 0xfffffc00 == 0x1e604000 {
             self.vectors[rd] = self.vectors[rn] & u64::MAX as u128;
+        } else if ins & 0x9f80fc00 == 0x0f00a400 {
+            // SSHLL/USHLL, including SXTL/UXTL and the upper-half forms.
+            let immh = (ins >> 19) & 15;
+            if immh == 0 || immh & 8 != 0 {
+                return Err(invalid());
+            }
+            let size = 8u32 << (31 - immh.leading_zeros());
+            let shift = ((ins >> 16) & 127) - size;
+            let source = self.vectors[rn] >> (if ins & (1 << 30) != 0 { 64 } else { 0 });
+            let mut result = 0u128;
+            for lane in 0..64 / size {
+                let value = ((source >> (lane * size)) as u64) & ones(size);
+                let value = if ins & (1 << 29) == 0 {
+                    sign_extend(value, size)
+                } else {
+                    value
+                };
+                result |=
+                    ((value.wrapping_shl(shift) & ones(size * 2)) as u128) << (lane * size * 2);
+            }
+            self.vectors[rd] = result;
         } else if ins & 0x9ff80c00 == 0x0f000400 {
             // AdvSIMD modified immediate (integer modes)
             let imm = ((((ins >> 16) & 7) << 5) | ((ins >> 5) & 31)) as u64;
