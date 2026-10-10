@@ -2,12 +2,12 @@
 #![forbid(unsafe_code)]
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::VecDeque,
+    collections::{BTreeMap, VecDeque},
     fs::{self, File, OpenOptions},
-    io::{self, Read},
+    io::{self, Read, Write},
     path::PathBuf,
     sync::{
-        atomic::{AtomicBool, AtomicUsize, Ordering},
+        atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
         mpsc, Arc, Mutex,
     },
     time::Duration,
@@ -87,6 +87,8 @@ pub struct Session {
     pub cancelled: AtomicBool,
     pub paused: AtomicBool,
     commands: mpsc::SyncSender<Transfer>,
+    transfers: Mutex<BTreeMap<u64, TransferTicket>>,
+    next_transfer: AtomicU64,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -94,10 +96,18 @@ pub struct TransferOptions {
     pub guest: String,
     pub host: PathBuf,
     pub export: bool,
+    #[serde(default)]
+    pub token: u64,
+    pub maximum_bytes: Option<u64>,
 }
 struct Transfer {
     options: TransferOptions,
     result: mpsc::SyncSender<Result<(), String>>,
+    cancelled: Arc<AtomicBool>,
+}
+struct TransferTicket {
+    cancelled: Arc<AtomicBool>,
+    claimed: bool,
 }
 struct WorkerPermit;
 impl Drop for WorkerPermit {
@@ -148,6 +158,8 @@ impl Session {
             cancelled: AtomicBool::new(false),
             paused: AtomicBool::new(false),
             commands,
+            transfers: Mutex::new(BTreeMap::new()),
+            next_transfer: AtomicU64::new(1),
         });
         let worker_session = session.clone();
         std::thread::Builder::new()
@@ -182,7 +194,60 @@ impl Session {
             .map_err(|e| e.to_string())?;
         Ok(session)
     }
+    pub fn begin_transfer(&self) -> Result<u64, String> {
+        let mut transfers = self.transfers.lock().map_err(|_| "transfer lock failed")?;
+        if transfers.len() >= 8 {
+            return Err("transfer limit reached".into());
+        }
+        let token = self
+            .next_transfer
+            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| n.checked_add(1))
+            .map_err(|_| "transfer tokens exhausted")?;
+        transfers.insert(
+            token,
+            TransferTicket {
+                cancelled: Arc::new(AtomicBool::new(false)),
+                claimed: false,
+            },
+        );
+        Ok(token)
+    }
+    pub fn cancel_transfer(&self, token: u64) -> Result<(), String> {
+        let transfers = self.transfers.lock().map_err(|_| "transfer lock failed")?;
+        let flag = transfers.get(&token).ok_or("invalid transfer token")?;
+        flag.cancelled.store(true, Ordering::Release);
+        Ok(())
+    }
     pub fn transfer(&self, options: TransferOptions) -> Result<(), String> {
+        let token = options.token;
+        let flag = if token == 0 {
+            Arc::new(AtomicBool::new(false))
+        } else {
+            let mut transfers = self.transfers.lock().map_err(|_| "transfer lock failed")?;
+            let ticket = transfers.get_mut(&token).ok_or("invalid transfer token")?;
+            if ticket.claimed {
+                return Err("transfer token already used".into());
+            }
+            ticket.claimed = true;
+            ticket.cancelled.clone()
+        };
+        let result = self.transfer_inner(options, flag);
+        if token != 0 {
+            self.transfers
+                .lock()
+                .map_err(|_| "transfer lock failed")?
+                .remove(&token);
+        }
+        result
+    }
+    fn transfer_inner(
+        &self,
+        options: TransferOptions,
+        cancelled: Arc<AtomicBool>,
+    ) -> Result<(), String> {
+        if cancelled.load(Ordering::Acquire) {
+            return Err("transfer cancelled".into());
+        }
         if !options.guest.starts_with('/')
             || options.guest.len() > 4096
             || options.guest.contains('\0')
@@ -193,10 +258,14 @@ impl Session {
         }
         let (result, response) = mpsc::sync_channel(1);
         self.commands
-            .try_send(Transfer { options, result })
+            .try_send(Transfer {
+                options,
+                result,
+                cancelled: cancelled.clone(),
+            })
             .map_err(|_| "local session is busy or closed")?;
         loop {
-            if self.cancelled.load(Ordering::Acquire) {
+            if self.cancelled.load(Ordering::Acquire) || cancelled.load(Ordering::Acquire) {
                 return Err("session cancelled".into());
             }
             match response.recv_timeout(Duration::from_millis(50)) {
@@ -317,15 +386,39 @@ impl Adapter {
         b.status.used_bytes = capacity.used_bytes;
         b.status.available_bytes = capacity.available_bytes;
     }
-    fn transfer(&self, vfs: &mut Vfs, o: TransferOptions) -> Result<(), String> {
+    fn transfer(
+        &self,
+        vfs: &mut Vfs,
+        o: TransferOptions,
+        cancelled: &AtomicBool,
+    ) -> Result<(), String> {
+        if cancelled.load(Ordering::Acquire) || self.session.cancelled.load(Ordering::Acquire) {
+            return Err("transfer cancelled".into());
+        }
         if o.export {
+            if let Some(maximum) = o.maximum_bytes {
+                let stat = vfs
+                    .stat_at(trames_vfs::AT_FDCWD, o.guest.as_bytes())
+                    .map_err(|e| e.to_string())?;
+                let size = u64::from_le_bytes(stat[48..56].try_into().expect("stat size"));
+                if size > maximum {
+                    return Err("guest file exceeds transfer size limit".into());
+                }
+            }
             let mut file = OpenOptions::new()
                 .write(true)
                 .create_new(true)
                 .open(&o.host)
                 .map_err(|e| e.to_string())?;
             let result = vfs
-                .export_writer(o.guest.as_bytes(), &mut file)
+                .export_writer(
+                    o.guest.as_bytes(),
+                    &mut CancelWriter {
+                        file: &mut file,
+                        session: &self.session.cancelled,
+                        cancelled,
+                    },
+                )
                 .map_err(|e| e.to_string());
             if result.is_err() {
                 let _ = fs::remove_file(o.host);
@@ -337,7 +430,8 @@ impl Adapter {
                 o.guest.as_bytes(),
                 &mut CancelReader {
                     file,
-                    cancelled: &self.session.cancelled,
+                    session: &self.session.cancelled,
+                    cancelled,
                 },
                 false,
             )
@@ -348,14 +442,31 @@ impl Adapter {
 }
 struct CancelReader<'a> {
     file: File,
+    session: &'a AtomicBool,
     cancelled: &'a AtomicBool,
 }
 impl Read for CancelReader<'_> {
     fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
-        if self.cancelled.load(Ordering::Acquire) {
+        if self.cancelled.load(Ordering::Acquire) || self.session.load(Ordering::Acquire) {
             return Err(io::ErrorKind::Interrupted.into());
         }
         self.file.read(bytes)
+    }
+}
+struct CancelWriter<'a> {
+    file: &'a mut File,
+    session: &'a AtomicBool,
+    cancelled: &'a AtomicBool,
+}
+impl Write for CancelWriter<'_> {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        if self.cancelled.load(Ordering::Acquire) || self.session.load(Ordering::Acquire) {
+            return Err(io::ErrorKind::Interrupted.into());
+        }
+        self.file.write(bytes)
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        self.file.flush()
     }
 }
 impl GuestOutput for Adapter {
@@ -364,7 +475,7 @@ impl GuestOutput for Adapter {
             return Ok(false);
         }
         if let Ok(command) = self.commands.try_recv() {
-            let result = self.transfer(vfs, command.options);
+            let result = self.transfer(vfs, command.options, &command.cancelled);
             self.snapshot(vfs);
             let _ = command.result.send(result);
         }

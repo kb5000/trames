@@ -18,6 +18,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     private var timer: Timer?
     private var lastPhase: String?
     private var closed = false
+    private var paused = false
     init(title: String) {
         self.title = title; super.init()
         terminal.terminalDelegate = self
@@ -30,6 +31,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
                 let local = try await environment.start(useVolumeBudget: useVolumeBudget)
                 guard let self, !self.closed else { local.close(); return }
                 self.local = local
+                try local.pause(paused)
                 try local.resize(columns: max(1,terminal.getTerminal().cols), rows: max(1,terminal.getTerminal().rows))
                 timer = Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) { [weak self] _ in
                     Task { @MainActor in self?.pollLocal() }
@@ -86,7 +88,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
             }
         }
     }
-    func pause(_ paused: Bool) { try? local?.pause(paused) }
+    func pause(_ paused: Bool) { self.paused = paused; try? local?.pause(paused) }
     func close() {
         guard !closed else { return }; closed = true
         timer?.invalidate(); timer = nil; task?.cancel(); sender?.cancel()

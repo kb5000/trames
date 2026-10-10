@@ -26,6 +26,12 @@ jobs:
         run: bash scripts/build-ios.sh simulator
       - name: Link unsigned iPad device app
         run: bash scripts/build-ios.sh device
+      - name: Launch the actual app in an iPad simulator
+        run: |
+          device_id=$(xcrun simctl list devices available --json | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for rows in devices.values() for d in rows if d["name"].startswith("iPad")))')
+          xcodebuild -project apps/ios/Trames.xcodeproj -scheme Trames -configuration Debug \
+            -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath apps/ios/build/simulator \
+            CODE_SIGNING_ALLOWED=NO -skipPackagePluginValidation -resultBundlePath apps/ios/build/ipad-smoke.xcresult test
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -33,5 +39,6 @@ jobs:
           path: |
             apps/ios/Trames.xcodeproj
             apps/ios/build/*/Logs/Build
+            apps/ios/build/ipad-smoke.xcresult
             apps/ios/build/*/Build/Products/Debug-*/*.app
           retention-days: 7

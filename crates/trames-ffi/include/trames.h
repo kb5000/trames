@@ -22,6 +22,12 @@ int32_t trames_session_output(uint64_t handle, uint8_t *bytes, uint32_t capacity
 int32_t trames_session_status(uint64_t handle, uint8_t *json, uint32_t capacity);
 int32_t trames_session_resize(uint64_t handle, uint16_t rows, uint16_t columns);
 int32_t trames_session_pause(uint64_t handle, uint32_t paused);
+/* Reserve a single-use transfer token before dispatching/cancelling a copy.
+ * Cancel affects only that copy, including one not yet enqueued. Token 0 in a
+ * transfer request preserves the synchronous ABI. At most 8 reserved tickets.
+ * A request consumes its ticket even on path/cancellation errors. */
+uint64_t trames_session_transfer_begin(uint64_t handle);
+int32_t trames_session_transfer_cancel(uint64_t handle, uint64_t token);
 int32_t trames_session_transfer(uint64_t handle, const uint8_t *json, uint32_t length);
 int32_t trames_session_close(uint64_t handle);
 int32_t trames_last_error(uint8_t *bytes, uint32_t capacity);

@@ -37,8 +37,9 @@ crypto/auth/channel state. The PTY has at most 64 queued chunks of at most 64 Ki
 overflow closes the channel with a visible error. The SFTP v3 copy subset accepts
 at most a 64 KiB frame, four queued responses and one outstanding request per
 transfer. It handles fragmentation, request-ID checks, EOF/status, exclusive
-creation and 20-second timeouts. A cancellation closes the SFTP channel while
-leaving the PTY open. Citadel is used for Ed25519 OpenSSH key parsing, not its
+creation and 20-second timeouts. Cancelling a file copy closes its SFTP channel and leaves the PTY open.
+If cancellation or timeout happens before a child channel is created, the
+containing SSH connection is closed to release the pending operation. Citadel is used for Ed25519 OpenSSH key parsing, not its
 unbounded convenience terminal streams or internal object layouts.
 
 SSH host identity is keyed by normalized hostname and port, with exact public
@@ -53,7 +54,8 @@ an explicit warning acknowledgement. Proxy/agent/command directives never run.
 Provider access is held only around a coordinated bounded copy to private
 staging. No provider bookmark or guest-accessible native path is stored. An
 export is staged then copied by UIDocumentPicker. Cloud provider failures and
-limited free capacity remain explicit errors. Closing a local session cancels
-its copy; file-provider/SFTP tasks have their own cancellation. This establishes
+limited free capacity remain explicit errors. File transfers use single-use cancellation tickets, checked before dispatch
+and between 64 KiB copies. Closing a local session also cancels its copies.
+Configuration/key exports have a 64 KiB preflight size limit. This establishes
 a small embedding ABI; the permission-brokered versioned asynchronous Bridge RPC
 and accelerator registry remain M5 work.

@@ -54,7 +54,7 @@ final class WorkspaceModel: ObservableObject {
         guard let local = local?.local else { throw TramesError.message("请先启动本地 Alpine 环境") }
         let stage = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: stage) }
-        try await Task.detached { try local.transfer(guest: path, host: stage, export: true) }.value
+        try await local.transferAsync(guest: path, host: stage, export: true, maximumBytes: 65536)
         let size = try stage.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? Int.max
         guard size <= 65536 else { throw TramesError.message("SSH 配置或密钥超过 64 KiB") }
         return try String(contentsOf: stage, encoding: .utf8)

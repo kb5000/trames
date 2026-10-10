@@ -22,6 +22,9 @@ for name in ('trames_session_input', 'trames_session_transfer'):
 for name in ('trames_session_output', 'trames_session_status'):
     getattr(api,name).argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_uint32]
     getattr(api,name).restype = ctypes.c_int32
+api.trames_session_transfer_begin.argtypes = [ctypes.c_uint64]
+api.trames_session_transfer_begin.restype = ctypes.c_uint64
+api.trames_session_transfer_cancel.argtypes = [ctypes.c_uint64,ctypes.c_uint64]
 api.trames_session_resize.argtypes = [ctypes.c_uint64,ctypes.c_uint16,ctypes.c_uint16]
 api.trames_session_pause.argtypes = [ctypes.c_uint64,ctypes.c_uint32]
 api.trames_session_close.argtypes = [ctypes.c_uint64]
@@ -80,6 +83,16 @@ with tempfile.TemporaryDirectory(prefix='trames-embedding-') as directory:
     target=temporary/'output.bin'
     assert request(api.trames_session_transfer,handle,payload={'host':str(target),'guest':'/home/user/copied.bin','export':True})==0,error()
     assert target.read_bytes()==data
+    # Cancellation before dispatch must consume its token and have no VFS effect.
+    token=api.trames_session_transfer_begin(handle)
+    assert token and api.trames_session_transfer_cancel(handle,token)==0
+    assert request(api.trames_session_transfer,handle,payload={'host':str(source),'guest':'/home/user/cancelled.bin','export':False,'token':token})==-1
+    cancelled_target=temporary/'cancelled-export'
+    assert request(api.trames_session_transfer,handle,payload={'host':str(cancelled_target),'guest':'/home/user/cancelled.bin','export':True})==-1
+    assert not cancelled_target.exists()
+    limited=temporary/'limited'
+    assert request(api.trames_session_transfer,handle,payload={'host':str(limited),'guest':'/home/user/copied.bin','export':True,'maximum_bytes':65536})==-1
+    assert not limited.exists()
     assert request(api.trames_session_transfer,handle,payload={'host':str(source),'guest':'/home/user/copied.bin','export':True})==-1
     assert source.read_bytes()==data # Never truncate an existing host file.
     assert api.trames_session_pause(handle,1)==0
@@ -102,8 +115,15 @@ with tempfile.TemporaryDirectory(prefix='trames-embedding-') as directory:
         if status(replacement)['phase']=='running': return True
         api.trames_session_close(replacement); return False
     wait(reopen)
-    send(replacement,b"exit 7\n")
-    wait(lambda:status(replacement)['phase']=='exited')
+    # Exit while the renderer is slow: the final output must not be discarded.
+    expected=b'X'*100000
+    text_source=temporary/'final-output'; text_source.write_bytes(expected)
+    assert request(api.trames_session_transfer,replacement,payload={'host':str(text_source),'guest':'/home/user/final-output','export':False})==0,error()
+    send(replacement,b"stty -opost; cat /home/user/final-output; exit 7\n")
+    final=bytearray()
+    wait(lambda:(final.extend(drain(replacement)) or status(replacement)['phase']=='exited'))
+    final.extend(drain(replacement))
+    assert expected in final, (len(final),status(replacement))
     assert status(replacement)['exit_code']==7
     api.trames_session_close(replacement)
     # A bad rootfs must never be accepted/promoted.

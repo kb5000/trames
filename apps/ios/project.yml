@@ -32,14 +32,29 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: org.trames.Trames
+        ARCHS: arm64
+        ONLY_ACTIVE_ARCH: YES
         LIBRARY_SEARCH_PATHS: ['$(inherited)', '$(SRCROOT)/../../target/$(TRAMES_RUST_TARGET)/release']
         'TRAMES_RUST_TARGET[sdk=iphoneos*]': aarch64-apple-ios
         'TRAMES_RUST_TARGET[sdk=iphonesimulator*]': aarch64-apple-ios-sim
         OTHER_LDFLAGS: ['$(inherited)', '-ltrames_ffi', '-lresolv']
+  TramesUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [TramesUITests]
+    dependencies:
+      - target: Trames
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.trames.TramesUITests
+        ARCHS: arm64
+        ONLY_ACTIVE_ARCH: YES
 schemes:
   Trames:
     build:
       targets:
         Trames: all
+    test:
+      targets: [TramesUITests]
     run:
       config: Debug

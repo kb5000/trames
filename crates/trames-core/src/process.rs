@@ -1380,8 +1380,18 @@ impl Kernel {
                             .as_ref()
                             .is_some_and(|t| !t.output_queue.is_empty())
                         {
+                            if let Some(root) = self.processes.get_mut(&1) {
+                                if !io.control(&mut root.linux.vfs).map_err(|_| {
+                                    RuntimeError::Arguments("host session control failed")
+                                })? {
+                                    return Err(RuntimeError::Cancelled);
+                                }
+                            }
                             if !self.pump_terminal(io)? {
-                                break;
+                                // A native renderer can legitimately be full.
+                                // Preserve final output until it drains or the
+                                // embedding app explicitly cancels the session.
+                                self.wait_external();
                             }
                         }
                         return Ok(Exit {

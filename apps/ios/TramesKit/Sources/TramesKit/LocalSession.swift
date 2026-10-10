@@ -18,7 +18,7 @@ public final class LocalSession: @unchecked Sendable {
         guard trames_abi_version() == 1 else { throw TramesError.message("Unsupported Trames ABI") }
         var options: [String:Any] = ["store": store.path, "volume_total":total, "volume_available":available, "network":network]
         if let rootfs { options["rootfs"] = rootfs.path }
-        if useVolumeBudget { options["budget_bytes"] = total }
+        options["budget_bytes"] = useVolumeBudget ? total : UInt64(16) << 30
         let data = try JSONSerialization.data(withJSONObject: options)
         handle = data.withUnsafeBytes { trames_session_open($0.bindMemory(to: UInt8.self).baseAddress, UInt32($0.count)) }
         guard handle != 0 else { throw Self.lastError() }
@@ -64,12 +64,32 @@ public final class LocalSession: @unchecked Sendable {
         if trames_session_pause(try currentHandle(), value ? 1 : 0) < 0 { throw Self.lastError() }
     }
     /// Blocking transfer; caller coordinates the selected URL on a background queue.
-    public func transfer(guest: String, host: URL, export: Bool) throws {
+    public func transfer(guest: String, host: URL, export: Bool, maximumBytes: UInt64? = nil) throws {
         let h = try currentHandle()
-        let data = try JSONSerialization.data(withJSONObject: ["guest":guest, "host":host.path, "export":export])
+        var options: [String:Any] = ["guest":guest, "host":host.path, "export":export]
+        if let maximumBytes { options["maximum_bytes"] = maximumBytes }
+        let data = try JSONSerialization.data(withJSONObject: options)
         guard data.count <= 65536 else { throw TramesError.message("Transfer request too large") }
         let result = data.withUnsafeBytes { trames_session_transfer(h, $0.bindMemory(to: UInt8.self).baseAddress, UInt32($0.count)) }
         if result < 0 { throw Self.lastError() }
+    }
+    public func transferAsync(guest: String, host: URL, export: Bool, maximumBytes: UInt64? = nil) async throws {
+        guard guest.utf8.count <= 4096, host.path.utf8.count <= 4096 else { throw TramesError.message("Transfer path exceeds 4 KiB") }
+        let h = try currentHandle()
+        let token = trames_session_transfer_begin(h)
+        guard token != 0 else { throw Self.lastError() }
+        var options: [String:Any] = ["guest":guest, "host":host.path, "export":export, "token":token]
+        if let maximumBytes { options["maximum_bytes"] = maximumBytes }
+        let data = try JSONSerialization.data(withJSONObject: options)
+        try await withTaskCancellationHandler(operation: {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void,Error>) in
+                DispatchQueue.global(qos: .userInitiated).async {
+                    let result = data.withUnsafeBytes { trames_session_transfer(h, $0.bindMemory(to: UInt8.self).baseAddress, UInt32($0.count)) }
+                    if result < 0 { continuation.resume(throwing: Self.lastError()) }
+                    else { continuation.resume() }
+                }
+            }
+        }, onCancel: { _ = trames_session_transfer_cancel(h, token) })
     }
     private static func lastError() -> Error {
         var bytes = [UInt8](repeating: 0, count: 8192)

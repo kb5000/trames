@@ -16,11 +16,20 @@ final class SFTPWire: @unchecked Sendable {
         let (stream, continuation) = AsyncThrowingStream<ByteBuffer,Error>.makeStream(bufferingPolicy: .bufferingOldest(4))
         let handler = SFTPPackets(continuation: continuation)
         let ssh = try await parent.pipeline.handler(type: NIOSSHHandler.self).get()
-        let channel = try await parent.eventLoop.flatSubmit {
-            let promise = parent.eventLoop.makePromise(of: Channel.self)
-            ssh.createChannel(promise) { child,_ in child.pipeline.addHandler(handler) }
-            return promise.futureResult
-        }.get()
+        // Opening an unanswered channel is also bounded. Before a child
+        // exists, cancelling/expiry must close the containing SSH connection.
+        let openingTimeout = parent.eventLoop.scheduleTask(in: .seconds(20)) { parent.close(promise: nil) }
+        let channel: Channel
+        do {
+            channel = try await withTaskCancellationHandler(operation: {
+                try await parent.eventLoop.flatSubmit {
+                    let promise = parent.eventLoop.makePromise(of: Channel.self)
+                    ssh.createChannel(promise) { child,_ in child.pipeline.addHandler(handler) }
+                    return promise.futureResult
+                }.get()
+            }, onCancel: { parent.close(promise: nil) })
+            openingTimeout.cancel()
+        } catch { openingTimeout.cancel(); throw error }
         let wire = SFTPWire(channel: channel, stream: stream)
         do {
             try await channel.triggerUserOutboundEvent(SSHChannelRequestEvent.SubsystemRequest(subsystem: "sftp", wantReply: true))

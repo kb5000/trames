@@ -38,8 +38,8 @@ struct WorkspaceView: View {
                     Button("SSH 连接", systemImage: "network") { sshSheet = true }
                     Button("Files / SFTP", systemImage: "folder") { filesSheet = true }
                     Button("设置", systemImage: "gear") { settingsSheet = true }
-                } label: { Image(systemName: "plus").padding(8) }
-                if let current = workspace.current { Button { workspace.close(current) } label: { Image(systemName: "xmark").padding(8) } }
+                } label: { Image(systemName: "plus").padding(8) }.accessibilityLabel("新建或管理会话")
+                if let current = workspace.current { Button { workspace.close(current) } label: { Image(systemName: "xmark").padding(8) }.accessibilityLabel("关闭当前终端") }
             }.padding(.horizontal, 12).padding(.vertical, 6)
             if let current = workspace.current {
                 SessionView(session: current).id(current.id)
@@ -78,7 +78,7 @@ struct SessionView: View {
                 }.padding(6)
             }
             HStack {
-                Text(session.state).lineLimit(2)
+                Text(session.state).lineLimit(2).accessibilityIdentifier("session-state")
                 Spacer()
                 if let capacity = session.capacity {
                     Text("\(ByteCountFormatter.string(fromByteCount: Int64(capacity.used_bytes), countStyle: .binary)) / \(ByteCountFormatter.string(fromByteCount: Int64(capacity.budget_bytes), countStyle: .binary))")

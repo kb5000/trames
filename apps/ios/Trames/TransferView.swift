@@ -48,7 +48,7 @@ struct TransferView: View {
                 if upload, let selected { try await ScopedFiles.stage(selected: selected, destination: stage) }
                 try Task.checkCancellation()
                 if let local = session.local {
-                    try await Task.detached { try local.transfer(guest: path, host: stage, export: !upload) }.value
+                    try await local.transferAsync(guest: path, host: stage, export: !upload)
                 } else if let ssh = session.ssh {
                     try await ssh.transfer(remote: path, local: stage, upload: upload)
                 } else { throw TramesError.message("会话已关闭") }
@@ -68,10 +68,13 @@ struct FileExportPicker: UIViewControllerRepresentable {
         picker.delegate = context.coordinator; return picker
     }
     func updateUIViewController(_ view: UIDocumentPickerViewController, context: Context) {}
+    static func dismantleUIViewController(_ controller: UIDocumentPickerViewController, coordinator: Coordinator) { coordinator.cleanup() }
     final class Coordinator: NSObject, UIDocumentPickerDelegate {
         let finished: () -> Void
+        private var done = false
+        func cleanup() { guard !done else { return }; done = true; finished() }
         init(finished: @escaping () -> Void) { self.finished = finished }
-        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) { finished() }
-        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) { finished() }
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) { cleanup() }
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) { cleanup() }
     }
 }

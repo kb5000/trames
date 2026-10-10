@@ -186,6 +186,32 @@ pub extern "C" fn trames_session_pause(handle: u64, paused: u32) -> i32 {
         Err(e) => error(e),
     })
 }
+#[no_mangle]
+pub extern "C" fn trames_session_transfer_begin(handle: u64) -> u64 {
+    match catch_unwind(AssertUnwindSafe(|| {
+        session(handle).map_err(str::to_string)?.begin_transfer()
+    })) {
+        Ok(Ok(token)) => token,
+        Ok(Err(e)) => {
+            error(e);
+            0
+        }
+        Err(_) => {
+            error("embedding ABI panicked");
+            0
+        }
+    }
+}
+#[no_mangle]
+pub extern "C" fn trames_session_transfer_cancel(handle: u64, token: u64) -> i32 {
+    boundary(|| {
+        session(handle)
+            .map_err(str::to_string)
+            .and_then(|s| s.cancel_transfer(token))
+            .map(|_| 0)
+            .unwrap_or_else(error)
+    })
+}
 /// # Safety
 /// See `copy`. Status is UTF-8 JSON, without a trailing NUL. Does not drain output.
 #[no_mangle]
