@@ -38,13 +38,16 @@ become the active store. Guest stack mapping is now 1 MiB because Alpine's line
 editor probes a >64 KiB frame; initial argv/envp remain capped at 64 KiB and the
 64 MiB process/256 MiB aggregate memory quotas still apply.
 
-Version 0.2.0 configures each local worker with its own private Fabric/environment
-2 and virtual DNS. It upgrades only the exact resolver configuration written by
-prior Trames versions, preserving a user's custom file. Linux guest root is an
-inode/ABI identity, not host root. Manifest v1/v2 data remains readable and the
-next checkpoint persists v3 ownership. HOME/cwd remain /home/user to retain the
-owner's existing files and configuration. Additional local tabs sharing one
-fabric still require a future coordinated scheduler.
+Each local worker uses its own private Fabric/environment 2 and virtual DNS.
+Version 0.3.0 accepts only manifest v3; the owner chose fresh development data,
+so historical manifest/default-resolver/quota migrations are removed. An existing
+current-format resolver file remains part of normal persistence. Linux guest root
+is an inode/ABI identity, not host root. HOME/cwd use /home/user. Settings can
+explicitly reset the private Linux environment after its worker releases the
+store lock. Additional local tabs sharing one fabric still require a future
+coordinated scheduler. Initial downloads wait for Apple network connectivity and
+retry transient connection failures; cancellation/generation checks prevent a
+reset download from subsequently promoting a stale installation.
 
 Native SSH is separate from the guest's sockets. SwiftNIO SSH implements SSH
 crypto/auth/channel state. The PTY has at most 64 queued chunks of at most 64 KiB;

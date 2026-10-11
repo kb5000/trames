@@ -1,4 +1,4 @@
-# Runtime security and compatibility limits (M0–M3 and storage)
+# Runtime security and compatibility limits (M0–M5)
 
 ELF files, instructions, addresses and argv/envp are untrusted. Parsers validate
 lengths, offset arithmetic, architecture, flags, alignment, entry permissions and
@@ -17,7 +17,7 @@ pages remain rejected. Interpreter files come only from the checked guest VFS. G
 | Symlink traversal | 40; targets at most 4095 bytes |
 | Rootfs compressed / expanded input | 16 MiB / 128 MiB, pinned SHA-256 |
 | Rootfs entries / individual file | 16,384 / 64 MiB |
-| Initial stack | 64 KiB, non-executable, unmapped page below it |
+| Initial stack | 1 MiB mapping, non-executable, unmapped page below it; argv/envp use at most 64 KiB |
 | argv/envp entries combined | 4096 |
 | Virtual file data (all live files) | Disk: 16 GiB initial logical budget, configurable and volume-bounded; memory: 16 MiB |
 | VFS live nodes / namespace entries | Disk: 131,072 by default, configurable up to 262,144; memory: 1024 |

@@ -41,12 +41,22 @@ enum LocalNetworkProbe {
             throw TramesError.message("Alpine network probe input was incomplete")
         }
         var output=Data()
-        while Date().timeIntervalSince(began)<180 {
+        // Both full upstream indexes require ~1.7 billion interpreted
+        // instructions; this is deliberately longer than a small TLS fixture.
+        while Date().timeIntervalSince(began)<600 {
+            let status=try session.status()
+            guard status.phase=="running" else {
+                throw TramesError.message(status.error ?? "Alpine network probe stopped: \(status.phase)")
+            }
             output.append(try session.receive())
             if String(decoding:output,as:UTF8.self).contains("\r\nNETWORK_RESULT:") {break}
             try await Task.sleep(for:.milliseconds(20))
         }
-        return String(decoding:output,as:UTF8.self)
+        let text=String(decoding:output,as:UTF8.self)
+        guard text.contains("\r\nNETWORK_RESULT:") else {
+            throw TramesError.message("Alpine network probe timed out after 600 seconds: \(text.suffix(2048))")
+        }
+        return text
     }
 }
 #endif

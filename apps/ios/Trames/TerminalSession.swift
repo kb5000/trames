@@ -25,6 +25,11 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         terminal.terminalDelegate = self
         terminal.backgroundColor = .black
         terminal.getTerminal().changeScrollback(1000)
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--ui-acceptance") {
+            terminal.getTerminal().setCursorStyle(.steadyBlock)
+        }
+        #endif
     }
     func startLocal(_ environment: EnvironmentStore, useVolumeBudget: Bool) {
         state="正在准备 Alpine…"

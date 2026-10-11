@@ -28,6 +28,8 @@ fchownat returned ENOSYS and inode owner metadata was fixed at 1000. The fix sto
 and enforces virtual ownership; installing the upstream signed Vim package set
 into a fresh disk store finishes successfully without these errors. Older disk
 manifests remain readable; tests cover metadata persistence and legacy migration.
+This records 0.2.0 behavior. Version 0.3.0 removes those historical conversion
+branches at the owner's request and offers explicit reset; see [M5](m5.md).
 
 Vim's timeout initialization uses musl SIGEV_THREAD. Its pthread clone flags were
 previously rejected, so libc returned EAGAIN. Actual shared-VM clone, futex waits,

@@ -3,7 +3,7 @@ import XCTest
 final class LaunchTests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
     func testGuestNativeRequestRequiresVisibleConsent() {
-        let app=XCUIApplication(); app.launch()
+        let app=XCUIApplication(); app.launchArguments=["--ui-acceptance"]; app.launch()
         let ready=XCTNSPredicateExpectation(predicate:NSPredicate(format:"label == %@","Alpine · 本地"),object:app.staticTexts["session-state"])
         XCTAssertEqual(XCTWaiter.wait(for:[ready],timeout:120),.completed)
         app.buttons["terminal-keyboard"].tap()
