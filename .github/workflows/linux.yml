@@ -60,7 +60,7 @@ jobs:
       - name: Compare native loopback sockets and real musl DNS with QEMU
         # The deterministic DNS peer binds host loopback port 53. The guest's
         # port restriction still applies even when this test harness is root.
-        run: sudo env PATH="$PATH" python3 tests/integration/network.py
+        run: sudo env PATH="$PATH" TRAMES_BACKEND="$TRAMES_BACKEND" python3 tests/integration/network.py
       - run: python3 tests/integration/m2.py
         env:
           TRAMES_TEST_STORAGE: disk

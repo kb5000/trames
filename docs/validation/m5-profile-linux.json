@@ -1,0 +1,114 @@
+{
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+  "machine": "x86_64",
+  "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+  "profile": "Cargo release, cpp feature",
+  "max_rss_kib": 11392,
+  "runs": [
+    {
+      "run": 1,
+      "results": [
+        {
+          "workload": "integer",
+          "backend": "Reference",
+          "instructions": 12000000,
+          "seconds": 0.318821865,
+          "instructions_per_second": 37638572.87516965
+        },
+        {
+          "workload": "integer",
+          "backend": "Cpp",
+          "instructions": 12000000,
+          "seconds": 0.056783475,
+          "instructions_per_second": 211329088.26027292
+        },
+        {
+          "workload": "memory",
+          "backend": "Reference",
+          "instructions": 1000000,
+          "seconds": 0.062009773,
+          "instructions_per_second": 16126490.2550119
+        },
+        {
+          "workload": "memory",
+          "backend": "Cpp",
+          "instructions": 1000000,
+          "seconds": 0.061839445,
+          "instructions_per_second": 16170908.390267733
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "results": [
+        {
+          "workload": "integer",
+          "backend": "Reference",
+          "instructions": 12000000,
+          "seconds": 0.567766529,
+          "instructions_per_second": 21135448.088381413
+        },
+        {
+          "workload": "integer",
+          "backend": "Cpp",
+          "instructions": 12000000,
+          "seconds": 0.10292675,
+          "instructions_per_second": 116587767.51427594
+        },
+        {
+          "workload": "memory",
+          "backend": "Reference",
+          "instructions": 1000000,
+          "seconds": 0.104064497,
+          "instructions_per_second": 9609425.200988574
+        },
+        {
+          "workload": "memory",
+          "backend": "Cpp",
+          "instructions": 1000000,
+          "seconds": 0.12817011,
+          "instructions_per_second": 7802131.0896900995
+        }
+      ]
+    },
+    {
+      "run": 3,
+      "results": [
+        {
+          "workload": "integer",
+          "backend": "Reference",
+          "instructions": 12000000,
+          "seconds": 0.547905993,
+          "instructions_per_second": 21901567.336935483
+        },
+        {
+          "workload": "integer",
+          "backend": "Cpp",
+          "instructions": 12000000,
+          "seconds": 0.057695361,
+          "instructions_per_second": 207988992.3905667
+        },
+        {
+          "workload": "memory",
+          "backend": "Reference",
+          "instructions": 1000000,
+          "seconds": 0.060350271,
+          "instructions_per_second": 16569933.878175957
+        },
+        {
+          "workload": "memory",
+          "backend": "Cpp",
+          "instructions": 1000000,
+          "seconds": 0.054751023,
+          "instructions_per_second": 18264498.91173723
+        }
+      ]
+    }
+  ],
+  "date": "2026-10-11",
+  "revision": "e62885e11f68e9b3b9610bd1647d49ce73c27050",
+  "rustc": "1.90.0 (1159e78c4 2025-09-14)",
+  "cxx": "GCC 14.2.0, C++17, no exceptions or RTTI",
+  "flags": "Cargo release opt-level=3, thin LTO, overflow checks; cpp feature; computed-goto dispatch",
+  "notes": "Shared Linux cloud host; short loops show scheduling variance. RSS is child process launch high-water mark, not app RSS. No iPad performance claim."
+}

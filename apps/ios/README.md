@@ -130,9 +130,9 @@ checklist are still pending.
 The combined 0.2.0 (build 3) update includes it plus Linux runtime endpoints,
 ownership, musl thread/timer support and ICMP. Local sessions now use their own
 virtual fabric as environment 2. Existing upstream/default resolver configurations
-migrate to virtual DNS; explicit custom resolvers remain intact. Install with the
-same Apple ID/effective Sideloadly bundle ID and overwrite the existing app to keep
-its private disk. Manifest v1/v2 stores migrate without resetting guest files.
+migrated to virtual DNS in 0.2.0; explicit custom resolvers remained intact.
+That release also converted manifest v1/v2 to v3. These historical conversion
+branches are removed in 0.3.0 at the owner's request; see the reset guidance below.
 
 To package an existing device build yourself:
 

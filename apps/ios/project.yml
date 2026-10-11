@@ -52,7 +52,6 @@ targets:
     dependencies:
       - target: Trames
       - package: SwiftTerm
-      - package: TramesKit
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: org.trames.TramesTests
