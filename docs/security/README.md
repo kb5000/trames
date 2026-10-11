@@ -1,4 +1,4 @@
-# Runtime security and compatibility limits (M0–M5)
+# Runtime security and compatibility limits (M0–M6)
 
 ELF files, instructions, addresses and argv/envp are untrusted. Parsers validate
 lengths, offset arithmetic, architecture, flags, alignment, entry permissions and

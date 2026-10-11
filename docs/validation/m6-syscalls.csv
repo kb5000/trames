@@ -21,14 +21,14 @@ number,name,status,dispatch_source,probe_return,notes,baseline_status
 19,eventfd2,implemented_subset,crates/trames-linux/src/state.rs:386,,"Bounded shared event counter; semaphore/nonblocking/cloexec, overflow and fault preflight.",missing
 20,epoll_create1,implemented_subset,crates/trames-linux/src/state.rs:387,,Guest epoll open description; no host epoll descriptor.,missing
 21,epoll_ctl,implemented_subset,crates/trames-linux/src/state.rs:388,,"Level-triggered and oneshot watches with dup identity, weak lifetime and fairness; nested/edge/exclusive modes explicitly unsupported.",missing
-22,epoll_pwait,implemented_subset,crates/trames-core/src/process.rs:1018,,"Cooperative epoll wait with timeout, temporary signal mask and EINTR restoration.",missing
+22,epoll_pwait,implemented_subset,crates/trames-core/src/process.rs:1044,,"Cooperative epoll wait with timeout, temporary signal mask and EINTR restoration.",missing
 23,dup,implemented_subset,crates/trames-linux/src/state.rs:548,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 24,dup3,implemented_subset,crates/trames-linux/src/state.rs:549,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 25,fcntl,implemented_subset,crates/trames-linux/src/state.rs:639,,"Selected descriptor/status operations plus POSIX GETLK/SETLK/SETLKW byte-range locks; TGID ownership, split/merge, close and deadlock detection. No OFD locks.",implemented_subset
 26,inotify_init1,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 27,inotify_add_watch,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 28,inotify_rm_watch,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
-29,ioctl,implemented_subset,crates/trames-core/src/process.rs:1306,,"Selected PTY/network ioctls; one PTY, no general device ABI.",implemented_subset
+29,ioctl,implemented_subset,crates/trames-core/src/process.rs:1332,,"Selected PTY/network ioctls; one PTY, no general device ABI.",implemented_subset
 30,ioprio_set,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 31,ioprio_get,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 32,flock,implemented_subset,crates/trames-linux/src/state.rs:404,,Virtual whole-file flock locks; distinct from missing fcntl record locks.,implemented_subset
@@ -62,17 +62,17 @@ number,name,status,dispatch_source,probe_return,notes,baseline_status
 60,quotactl,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 61,getdents64,implemented_subset,crates/trames-linux/src/state.rs:590,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 62,lseek,implemented_subset,crates/trames-linux/src/state.rs:589,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
-63,read,implemented_subset,crates/trames-core/src/process.rs:1306,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
-64,write,implemented_subset,crates/trames-core/src/process.rs:1306,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
-65,readv,implemented_subset,crates/trames-core/src/process.rs:1306,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
-66,writev,implemented_subset,crates/trames-core/src/process.rs:1306,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
+63,read,implemented_subset,crates/trames-core/src/process.rs:1332,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
+64,write,implemented_subset,crates/trames-core/src/process.rs:1332,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
+65,readv,implemented_subset,crates/trames-core/src/process.rs:1332,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
+66,writev,implemented_subset,crates/trames-core/src/process.rs:1332,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 67,pread64,implemented_subset,crates/trames-linux/src/state.rs:493,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 68,pwrite64,implemented_subset,crates/trames-linux/src/state.rs:493,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 69,preadv,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 70,pwritev,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 71,sendfile,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
-72,pselect6,implemented_subset,crates/trames-core/src/process.rs:1017,,Virtual pselect6 bounded by 256 descriptors.,implemented_subset
-73,ppoll,implemented_subset,crates/trames-core/src/process.rs:1017,,Virtual ppoll bounded by 256 descriptors.,implemented_subset
+72,pselect6,implemented_subset,crates/trames-core/src/process.rs:1043,,Virtual pselect6 bounded by 256 descriptors.,implemented_subset
+73,ppoll,implemented_subset,crates/trames-core/src/process.rs:1043,,Virtual ppoll bounded by 256 descriptors.,implemented_subset
 74,signalfd4,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 75,vmsplice,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 76,splice,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
@@ -84,37 +84,37 @@ number,name,status,dispatch_source,probe_return,notes,baseline_status
 82,fsync,implemented_subset,crates/trames-linux/src/state.rs:516,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 83,fdatasync,implemented_subset,crates/trames-linux/src/state.rs:516,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 84,sync_file_range,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
-85,timerfd_create,implemented_subset,crates/trames-core/src/process.rs:1019,,"Guest timerfd, realtime/monotonic/virtual boottime; nonblocking/cloexec. Alarm clocks unsupported.",missing
-86,timerfd_settime,implemented_subset,crates/trames-core/src/process.rs:1019,,"Relative/absolute timerfd arm/disarm, periodic expiration count and old-value preflight. CANCEL_ON_SET explicitly unsupported.",missing
-87,timerfd_gettime,implemented_subset,crates/trames-core/src/process.rs:1019,,Timerfd interval/remaining time; shared open-description state.,missing
+85,timerfd_create,implemented_subset,crates/trames-core/src/process.rs:1045,,"Guest timerfd, realtime/monotonic/virtual boottime; nonblocking/cloexec. Alarm clocks unsupported.",missing
+86,timerfd_settime,implemented_subset,crates/trames-core/src/process.rs:1045,,"Relative/absolute timerfd arm/disarm, periodic expiration count and old-value preflight. CANCEL_ON_SET explicitly unsupported.",missing
+87,timerfd_gettime,implemented_subset,crates/trames-core/src/process.rs:1045,,Timerfd interval/remaining time; shared open-description state.,missing
 88,utimensat,implemented_subset,crates/trames-linux/src/state.rs:524,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 89,acct,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 90,capget,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 91,capset,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 92,personality,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
-93,exit,implemented_subset,crates/trames-core/src/process.rs:889,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
-94,exit_group,implemented_subset,crates/trames-core/src/process.rs:889,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
+93,exit,implemented_subset,crates/trames-core/src/process.rs:911,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
+94,exit_group,implemented_subset,crates/trames-core/src/process.rs:911,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 95,waitid,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
-96,set_tid_address,implemented_subset,crates/trames-core/src/process.rs:900,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
+96,set_tid_address,implemented_subset,crates/trames-core/src/process.rs:922,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 97,unshare,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
-98,futex,implemented_subset,crates/trames-core/src/process.rs:1015,,"WAIT/WAKE, BITSET, REQUEUE/CMP_REQUEUE; no PI, robust recovery or WAKE_OP.",implemented_subset
+98,futex,implemented_subset,crates/trames-core/src/process.rs:1041,,"WAIT/WAKE, BITSET, REQUEUE/CMP_REQUEUE; no PI, robust recovery or WAKE_OP.",implemented_subset
 99,set_robust_list,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 100,get_robust_list,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
-101,nanosleep,implemented_subset,crates/trames-core/src/process.rs:1175,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
-102,getitimer,implemented_subset,crates/trames-core/src/process.rs:1015,,ITIMER_REAL only; VIRTUAL/PROF rejected.,implemented_subset
-103,setitimer,implemented_subset,crates/trames-core/src/process.rs:1015,,ITIMER_REAL only; VIRTUAL/PROF rejected.,implemented_subset
+101,nanosleep,implemented_subset,crates/trames-core/src/process.rs:1201,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
+102,getitimer,implemented_subset,crates/trames-core/src/process.rs:1041,,ITIMER_REAL only; VIRTUAL/PROF rejected.,implemented_subset
+103,setitimer,implemented_subset,crates/trames-core/src/process.rs:1041,,ITIMER_REAL only; VIRTUAL/PROF rejected.,implemented_subset
 104,kexec_load,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 105,init_module,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 106,delete_module,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
-107,timer_create,implemented_subset,crates/trames-core/src/process.rs:1015,,CLOCK_REALTIME/MONOTONIC only; signal/none/thread-ID subset.,implemented_subset
-108,timer_gettime,implemented_subset,crates/trames-core/src/process.rs:1015,,Implemented POSIX timer subset.,implemented_subset
-109,timer_getoverrun,implemented_subset,crates/trames-core/src/process.rs:1015,,Implemented POSIX timer subset.,implemented_subset
-110,timer_settime,implemented_subset,crates/trames-core/src/process.rs:1015,,Implemented POSIX timer subset.,implemented_subset
-111,timer_delete,implemented_subset,crates/trames-core/src/process.rs:1015,,Implemented POSIX timer subset.,implemented_subset
+107,timer_create,implemented_subset,crates/trames-core/src/process.rs:1041,,CLOCK_REALTIME/MONOTONIC only; signal/none/thread-ID subset.,implemented_subset
+108,timer_gettime,implemented_subset,crates/trames-core/src/process.rs:1041,,Implemented POSIX timer subset.,implemented_subset
+109,timer_getoverrun,implemented_subset,crates/trames-core/src/process.rs:1041,,Implemented POSIX timer subset.,implemented_subset
+110,timer_settime,implemented_subset,crates/trames-core/src/process.rs:1041,,Implemented POSIX timer subset.,implemented_subset
+111,timer_delete,implemented_subset,crates/trames-core/src/process.rs:1041,,Implemented POSIX timer subset.,implemented_subset
 112,clock_settime,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
-113,clock_gettime,implemented_subset,crates/trames-core/src/process.rs:1209,,Selected clocks; no CPU-time clock; some values approximate runtime elapsed or host realtime.,implemented_subset
-114,clock_getres,implemented_subset,crates/trames-core/src/process.rs:1225,,Selected clocks; fixed 1ns resolution.,implemented_subset
-115,clock_nanosleep,implemented_subset,crates/trames-core/src/process.rs:1175,,CLOCK_REALTIME/MONOTONIC only.,implemented_subset
+113,clock_gettime,implemented_subset,crates/trames-core/src/process.rs:1235,,Selected clocks; no CPU-time clock; some values approximate runtime elapsed or host realtime.,implemented_subset
+114,clock_getres,implemented_subset,crates/trames-core/src/process.rs:1251,,Selected clocks; fixed 1ns resolution.,implemented_subset
+115,clock_nanosleep,implemented_subset,crates/trames-core/src/process.rs:1201,,CLOCK_REALTIME/MONOTONIC only.,implemented_subset
 116,syslog,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 117,ptrace,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 118,sched_setparam,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
@@ -123,22 +123,22 @@ number,name,status,dispatch_source,probe_return,notes,baseline_status
 121,sched_getparam,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 122,sched_setaffinity,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 123,sched_getaffinity,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
-124,sched_yield,implemented_subset,crates/trames-core/src/process.rs:1302,,Cooperative scheduler; no host scheduler operation.,implemented_subset
+124,sched_yield,implemented_subset,crates/trames-core/src/process.rs:1328,,Cooperative scheduler; no host scheduler operation.,implemented_subset
 125,sched_get_priority_max,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 126,sched_get_priority_min,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 127,sched_rr_get_interval,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 128,restart_syscall,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
-129,kill,implemented_subset,crates/trames-core/src/process.rs:1112,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
-130,tkill,implemented_subset,crates/trames-core/src/process.rs:1113,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
-131,tgkill,implemented_subset,crates/trames-core/src/process.rs:1116,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
+129,kill,implemented_subset,crates/trames-core/src/process.rs:1138,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
+130,tkill,implemented_subset,crates/trames-core/src/process.rs:1139,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
+131,tgkill,implemented_subset,crates/trames-core/src/process.rs:1142,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 132,sigaltstack,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
-133,rt_sigsuspend,implemented_subset,crates/trames-core/src/process.rs:1098,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
-134,rt_sigaction,implemented_subset,crates/trames-core/src/process.rs:1020,,Selected rt_sigaction flags and virtual signal frames; SA_ONSTACK uses the ordinary stack while the alternate stack is disabled. No sigaltstack registration.,implemented_subset
-135,rt_sigprocmask,implemented_subset,crates/trames-core/src/process.rs:1062,,Selected virtual signal masks.,implemented_subset
-136,rt_sigpending,implemented_subset,crates/trames-core/src/process.rs:1090,,Virtual pending-signal set; no full realtime queue.,implemented_subset
-137,rt_sigtimedwait,implemented_subset,crates/trames-core/src/process.rs:1015,,Consumes matching virtual pending signals; no full realtime queue.,implemented_subset
+133,rt_sigsuspend,implemented_subset,crates/trames-core/src/process.rs:1124,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
+134,rt_sigaction,implemented_subset,crates/trames-core/src/process.rs:1046,,Selected rt_sigaction flags and virtual signal frames; SA_ONSTACK uses the ordinary stack while the alternate stack is disabled. No sigaltstack registration.,implemented_subset
+135,rt_sigprocmask,implemented_subset,crates/trames-core/src/process.rs:1088,,Selected virtual signal masks.,implemented_subset
+136,rt_sigpending,implemented_subset,crates/trames-core/src/process.rs:1116,,Virtual pending-signal set; no full realtime queue.,implemented_subset
+137,rt_sigtimedwait,implemented_subset,crates/trames-core/src/process.rs:1041,,Consumes matching virtual pending signals; no full realtime queue.,implemented_subset
 138,rt_sigqueueinfo,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
-139,rt_sigreturn,implemented_subset,crates/trames-core/src/process.rs:1108,,Checked virtual signal frame; no alternate-stack implementation.,implemented_subset
+139,rt_sigreturn,implemented_subset,crates/trames-core/src/process.rs:1134,,Checked virtual signal frame; no alternate-stack implementation.,implemented_subset
 140,setpriority,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 141,getpriority,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 142,reboot,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
@@ -153,17 +153,17 @@ number,name,status,dispatch_source,probe_return,notes,baseline_status
 151,setfsuid,implemented_subset,crates/trames-linux/src/state.rs:910,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 152,setfsgid,implemented_subset,crates/trames-linux/src/state.rs:910,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 153,times,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
-154,setpgid,implemented_subset,crates/trames-core/src/process.rs:1123,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
-155,getpgid,implemented_subset,crates/trames-core/src/process.rs:1157,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
-156,getsid,implemented_subset,crates/trames-core/src/process.rs:1157,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
-157,setsid,implemented_subset,crates/trames-core/src/process.rs:1167,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
+154,setpgid,implemented_subset,crates/trames-core/src/process.rs:1149,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
+155,getpgid,implemented_subset,crates/trames-core/src/process.rs:1183,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
+156,getsid,implemented_subset,crates/trames-core/src/process.rs:1183,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
+157,setsid,implemented_subset,crates/trames-core/src/process.rs:1193,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 158,getgroups,implemented_subset,crates/trames-linux/src/state.rs:928,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 159,setgroups,implemented_subset,crates/trames-linux/src/state.rs:928,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 160,uname,implemented_subset,crates/trames-linux/src/state.rs:796,,"Virtual runtime identity, not host uname.",implemented_subset
 161,sethostname,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 162,setdomainname,missing,,-38,No dispatcher entry; returns ENOSYS. The prior incorrect VFS sync dispatch was removed.,missing
-163,getrlimit,implemented_subset,crates/trames-core/src/process.rs:1256,,Queries fixed runtime limits.,implemented_subset
-164,setrlimit,implemented_subset,crates/trames-core/src/process.rs:1256,,Only unchanged fixed limits accepted; no general dynamic limit updates.,implemented_subset
+163,getrlimit,implemented_subset,crates/trames-core/src/process.rs:1282,,Queries fixed runtime limits.,implemented_subset
+164,setrlimit,implemented_subset,crates/trames-core/src/process.rs:1282,,Only unchanged fixed limits accepted; no general dynamic limit updates.,implemented_subset
 165,getrusage,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 166,umask,implemented_subset,crates/trames-linux/src/state.rs:965,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 167,prctl,implemented_subset,crates/trames-linux/src/state.rs:815,,Only PR_SET_NAME/PR_GET_NAME (15/16).,implemented_subset
@@ -171,14 +171,14 @@ number,name,status,dispatch_source,probe_return,notes,baseline_status
 169,gettimeofday,implemented_subset,crates/trames-linux/src/state.rs:836,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 170,settimeofday,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 171,adjtimex,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
-172,getpid,implemented_subset,crates/trames-core/src/process.rs:897,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
-173,getppid,implemented_subset,crates/trames-core/src/process.rs:899,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
+172,getpid,implemented_subset,crates/trames-core/src/process.rs:919,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
+173,getppid,implemented_subset,crates/trames-core/src/process.rs:921,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 174,getuid,implemented_subset,crates/trames-linux/src/state.rs:787,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 175,geteuid,implemented_subset,crates/trames-linux/src/state.rs:787,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 176,getgid,implemented_subset,crates/trames-linux/src/state.rs:787,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 177,getegid,implemented_subset,crates/trames-linux/src/state.rs:787,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
-178,gettid,implemented_subset,crates/trames-core/src/process.rs:898,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
-179,sysinfo,implemented_subset,crates/trames-core/src/process.rs:1236,,Bounded virtual runtime memory/task/load snapshot.,implemented_subset
+178,gettid,implemented_subset,crates/trames-core/src/process.rs:920,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
+179,sysinfo,implemented_subset,crates/trames-core/src/process.rs:1262,,Bounded virtual runtime memory/task/load snapshot.,implemented_subset
 180,mq_open,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 181,mq_unlink,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 182,mq_timedsend,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
@@ -202,7 +202,7 @@ number,name,status,dispatch_source,probe_return,notes,baseline_status
 200,bind,implemented_subset,crates/trames-linux/src/state.rs:419,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 201,listen,implemented_subset,crates/trames-linux/src/state.rs:419,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 202,accept,implemented_subset,crates/trames-linux/src/state.rs:419,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
-203,connect,implemented_subset,crates/trames-core/src/process.rs:1303,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
+203,connect,implemented_subset,crates/trames-core/src/process.rs:1329,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 204,getsockname,implemented_subset,crates/trames-linux/src/state.rs:419,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 205,getpeername,implemented_subset,crates/trames-linux/src/state.rs:419,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 206,sendto,implemented_subset,crates/trames-linux/src/state.rs:419,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
@@ -219,8 +219,8 @@ number,name,status,dispatch_source,probe_return,notes,baseline_status
 217,add_key,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 218,request_key,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 219,keyctl,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
-220,clone,implemented_subset,crates/trames-core/src/process.rs:904,,Selected fork/thread/vfork flags; cooperative execution and bounded tasks.,implemented_subset
-221,execve,implemented_subset,crates/trames-core/src/process.rs:986,,Exec preserves UID/GID/groups and set-ID results; auxv uses the same credentials.,implemented_subset
+220,clone,implemented_subset,crates/trames-core/src/process.rs:926,,Selected fork/thread/vfork flags; cooperative execution and bounded tasks.,implemented_subset
+221,execve,implemented_subset,crates/trames-core/src/process.rs:1008,,Exec preserves UID/GID/groups and set-ID results; auxv uses the same credentials.,implemented_subset
 222,mmap,implemented_subset,crates/trames-linux/src/state.rs:971,,"MAP_PRIVATE only; eager file copy, no MAP_SHARED or full page-cache/SIGBUS semantics.",implemented_subset
 223,fadvise64,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 224,swapon,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
@@ -243,8 +243,8 @@ number,name,status,dispatch_source,probe_return,notes,baseline_status
 241,perf_event_open,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 242,accept4,implemented_subset,crates/trames-linux/src/state.rs:419,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 243,recvmmsg,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
-260,wait4,implemented_subset,crates/trames-core/src/process.rs:1016,,Basic child wait statuses/options; rusage output zeroed.,implemented_subset
-261,prlimit64,implemented_subset,crates/trames-core/src/process.rs:1256,,Fixed runtime limits; current thread-group only; no general dynamic updates.,implemented_subset
+260,wait4,implemented_subset,crates/trames-core/src/process.rs:1042,,Basic child wait statuses/options; rusage output zeroed.,implemented_subset
+261,prlimit64,implemented_subset,crates/trames-core/src/process.rs:1282,,Fixed runtime limits; current thread-group only; no general dynamic updates.,implemented_subset
 262,fanotify_init,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 263,fanotify_mark,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 264,name_to_handle_at,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
@@ -295,7 +295,7 @@ number,name,status,dispatch_source,probe_return,notes,baseline_status
 438,pidfd_getfd,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 439,faccessat2,implemented_subset,crates/trames-linux/src/state.rs:722,,AT_EACCESS/AT_SYMLINK_NOFOLLOW subset; AT_EMPTY_PATH rejected.,implemented_subset
 440,process_madvise,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
-441,epoll_pwait2,implemented_subset,crates/trames-core/src/process.rs:1018,,"Timespec epoll wait; not dispatched by the pinned QEMU 10.0.13 oracle, independently checked by M6 fixtures.",missing
+441,epoll_pwait2,implemented_subset,crates/trames-core/src/process.rs:1044,,"Timespec epoll wait; not dispatched by the pinned QEMU 10.0.13 oracle, independently checked by M6 fixtures.",missing
 442,mount_setattr,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 443,quotactl_fd,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 444,landlock_create_ruleset,missing,,-38,No dispatcher entry; returns ENOSYS.,missing

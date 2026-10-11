@@ -90,8 +90,8 @@ host IO can still fail if other applications use space.
 Logical lengths, including holes and open-unlinked files, count once per inode.
 Aliases add no content charge. Large ordinary files are not loaded wholesale:
 guest transfers are at most 1 MiB and import/export buffers are 64 KiB. Executable
-loading still has its separate 64 MiB limit. Guest mapped-memory bounds remain
-64 MiB per process and 256 MiB aggregate. `--memory` retains the 16 MiB file and
+loading of the main ELF still has its separate 64 MiB limit. M6 mapped-memory
+bounds are 512 MiB per process and 1 GiB aggregate. `--memory` retains the 16 MiB file and
 1024 node/entry bounds; 16 GiB is never granted to that Vec-backed backend.
 
 ## Files interoperability
@@ -101,6 +101,10 @@ CLI already copies selected native files using `--file` / `--exec-file` and
 `--export`. Exports create a new destination and refuse existing files. Guest
 modifications do not automatically change the source. No general host directory
 mount or access inferred from a guest path is provided.
+
+M6 persists named FIFO inode metadata as kind 5 in the current v3 manifest.
+Its live bounded byte queue belongs to the virtual runtime and is recreated
+empty after reopening a store. No host FIFO or device node is created.
 
 For iPadOS, the app should keep its private store in the app container, report
 the authorized volume's capacity, and wrap selected Files streams in the native

@@ -64,8 +64,8 @@ TID/TGID, shared files/cwd/signal actions as requested by clone flags, and
 clear_child_tid futex wake on exit. Fork still creates an independent COW address
 space. vfork blocks its parent until child exec/exit. Nonleader exec and group
 exit preserve thread-group identity/lifetime. Everything runs cooperatively;
-guest threads create no host threads. Limits are 32 tasks, 64 MiB per distinct
-address space and 256 MiB aggregate; shared memory is charged once.
+guest threads create no host threads. M6 limits are 32 tasks, 512 MiB per distinct
+address space and 1 GiB aggregate; shared memory is charged once.
 
 Futex WAIT/WAKE, bitsets and selected requeue operations have actual wait queues,
 value checks and monotonic/realtime deadlines. POSIX timers support realtime and
@@ -76,6 +76,10 @@ Unsupported operations and CPU-time timers return errors. Robust futex recovery,
 PI futex, alternate signal stacks and full realtime-signal queuing are not claimed.
 Thread signals check TID/TGID and guest UID permissions; ordinary process-directed
 signals are queued once per group. This is still a selected Linux signal ABI.
+M6 accepts SA_ONSTACK with the alternate stack disabled, using the ordinary
+stack as Linux does. It also adds cooperative epoll/eventfd/timerfd, Unix socket
+pairs, named FIFOs and TGID-owned POSIX record locks; see
+[M6 scope](../roadmap/compatibility-m6.md) for limits and remaining operations.
 
 Readv validates every destination before consuming input; supported blocking
 reads resume through the scheduler. sysinfo and getrlimit/prlimit report actual

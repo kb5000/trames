@@ -312,6 +312,28 @@ impl Kernel {
             });
         }
     }
+    fn close_exit_files(&self, p: &mut Process) {
+        p.linux.vfs.set_lock_owner(p.tgid);
+        let live = |t: &&Process| !matches!(t.state, State::Zombie(_));
+        if !self
+            .processes
+            .values()
+            .filter(live)
+            .any(|t| t.tgid == p.tgid)
+        {
+            p.linux.vfs.release_process_locks();
+        }
+        if self
+            .processes
+            .values()
+            .filter(live)
+            .any(|t| t.files_id == p.files_id)
+        {
+            p.linux.vfs.detach_file_table();
+        } else {
+            p.linux.vfs.close_all();
+        }
+    }
     fn exit_one(&mut self, pid: u32, p: &mut Process, status: i32) {
         let address = p.linux.clear_tid_address();
         p.linux.exit_tid(&mut p.memory);
@@ -320,7 +342,7 @@ impl Kernel {
         if pid != p.tgid {
             p.state = State::Zombie(status);
             p.auto_reap = true;
-            p.linux.vfs.close_all();
+            self.close_exit_files(p);
             p.memory = Memory::default();
             self.finish_group(p.tgid);
             return;
@@ -332,7 +354,7 @@ impl Kernel {
             p.memory = Memory::default();
         }
         p.state = State::Zombie(status);
-        p.linux.vfs.close_all();
+        self.close_exit_files(p);
         p.pending.clear();
         p.wait_event = None;
         if !self
@@ -404,7 +426,7 @@ impl Kernel {
                 let address = thread.linux.clear_tid_address();
                 thread.linux.exit_tid(&mut thread.memory);
                 self.wake_futex(thread.vm_id, address, u32::MAX, u32::MAX);
-                thread.linux.vfs.close_all();
+                self.close_exit_files(&mut thread);
             }
         }
         if pid != p.tgid {
@@ -997,7 +1019,11 @@ impl Kernel {
                         let address = t.linux.clear_tid_address();
                         t.linux.exit_tid(&mut t.memory);
                         self.wake_futex(t.vm_id, address, u32::MAX, u32::MAX);
-                        t.linux.vfs.close_all();
+                        if t.files_id == p.files_id {
+                            t.linux.vfs.detach_file_table();
+                        } else {
+                            t.linux.vfs.close_all();
+                        }
                     }
                 }
                 self.timers.retain(|_, t| t.tgid != p.tgid);
@@ -2161,6 +2187,13 @@ pub(super) fn run(
         next_timer: 1,
     };
     let result = kernel.drive(io, limit);
+    // Session teardown cancels forked children, including their process locks.
+    // Root-thread locks are already released on normal group exit; preserve
+    // the root's state when returning a resumable runtime error.
+    for p in kernel.processes.values_mut().filter(|p| p.tgid != 1) {
+        p.linux.vfs.set_lock_owner(p.tgid);
+        p.linux.vfs.release_process_locks();
+    }
     if let Some(p) = kernel.processes.remove(&1) {
         runtime.cpu = p.cpu;
         runtime.memory = p.memory;

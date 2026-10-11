@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -186,6 +187,29 @@ static void locks(void) {
     puts("POSIX locks conflict/query/wait/close/split/fork/deadlock: ok");
 }
 
+static void *worker(void *argument) { return argument; }
+static void threaded_locks(void) {
+    char path[] = "/tmp/trames-thread-lock-XXXXXX";
+    int fd = mkstemp(path); assert(fd >= 0);
+    struct flock lock = { .l_type = F_WRLCK, .l_whence = SEEK_SET, .l_len = 1 };
+    assert(fcntl(fd, F_SETLK, &lock) == 0);
+    pthread_t thread; assert(pthread_create(&thread, NULL, worker, NULL) == 0);
+    assert(pthread_join(thread, NULL) == 0);
+    pid_t killed = fork(); assert(killed >= 0);
+    if (!killed) { for (;;) { __asm__ volatile("" ::: "memory"); } }
+    assert(kill(killed, SIGKILL) == 0);
+    int killed_status; assert(waitpid(killed, &killed_status, 0) == killed && WIFSIGNALED(killed_status) && WTERMSIG(killed_status) == SIGKILL);
+    pid_t parent = getpid(), child = fork(); assert(child >= 0);
+    if (!child) {
+        struct flock query = lock;
+        assert(fcntl(fd, F_GETLK, &query) == 0 && query.l_type == F_WRLCK && query.l_pid == parent);
+        close(fd); _exit(0);
+    }
+    int status; assert(waitpid(child, &status, 0) == child && status == 0);
+    close(fd); unlink(path);
+    puts("POSIX locks survive shared pthread exit and killed fork: ok");
+}
+
 static void paths(void) {
     char path[] = "/tmp/trames-path-XXXXXX";
     assert(mkdtemp(path));
@@ -283,5 +307,5 @@ static void sockets(void) {
 
 int main(void) {
     if (mkdir("/tmp", 01777) == -1) { assert(errno == EEXIST); }
-    events(); epoll_tests(); timers(); sockets(); locks(); paths(); fifos(); return 0;
+    events(); epoll_tests(); timers(); sockets(); locks(); threaded_locks(); paths(); fifos(); return 0;
 }
