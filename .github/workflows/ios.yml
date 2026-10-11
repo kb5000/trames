@@ -2,6 +2,7 @@ name: iPad frontend
 on:
   push:
   pull_request:
+  workflow_dispatch:
 permissions:
   contents: read
 defaults:
@@ -49,6 +50,17 @@ jobs:
             cat apps/ios/build/ipad-smoke-summary.json
             python3 -c 'import json; s=json.load(open("apps/ios/build/ipad-smoke-summary.json")); assert s["failedTests"] == 0 and s["passedTests"] > 0, "The actual simulator test report did not pass"'
           fi
+      - name: Package unsigned device IPA for sideload signing
+        run: |
+          python3 scripts/package-ios.py \
+            apps/ios/build/device/Build/Products/Debug-iphoneos/Trames.app \
+            apps/ios/build/sideload/Trames-unsigned.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Trames-unsigned-sideload
+          path: apps/ios/build/sideload/Trames-unsigned.ipa*
+          if-no-files-found: error
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         if: always()
         with:

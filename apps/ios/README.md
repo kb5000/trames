@@ -73,3 +73,44 @@ profile. A cloud Mac can perform that signing once configured with your own
 developer assets. TestFlight additionally requires Apple Developer Program
 membership and App Store Connect setup. This repository has no signing assets,
 configured distribution or completed physical device acceptance yet.
+
+## Sideloadly on Windows
+
+You can use a Windows PC and a free Apple ID instead of a paid developer
+membership. The [Sideloadly documentation](https://sideloadly.io/faq) describes
+signing, device trust, Developer Mode and automatic refresh. The current app
+requires iPadOS 17 or newer and does not need JIT activation.
+
+1. Open a successful **iPad frontend** run in the repository's GitHub Actions.
+   Download the **Trames-unsigned-sideload** artifact and unzip it on Windows.
+   Use `Trames-unsigned.ipa`, not the artifact ZIP or the simulator `.app`.
+   Artifacts are retained for 14 days; run the workflow manually if you need a
+   fresh build after that period.
+2. Install Sideloadly from its official website. Follow its Windows setup links
+   for the web versions of iTunes and iCloud, rather than Microsoft Store builds.
+3. Connect the unlocked iPad by USB, tap **Trust** on the iPad, and select it in
+   Sideloadly. Drop the IPA into Sideloadly, enter your Apple ID and click **Start**.
+   Complete sign-in and two-factor prompts locally; no Apple account credential
+   belongs in this repository or its CI configuration.
+4. If prompted, trust your developer identity under **Settings > General > VPN &
+   Device Management**, and enable **Settings > Privacy & Security > Developer
+   Mode**, including its restart and confirmation prompts.
+5. Launch Trames with Internet access for the initial Alpine download. The
+   installed private Linux environment can subsequently reopen offline.
+
+Free signing normally lasts seven days. Sideloadly's automatic refresh requires
+the Windows PC to be running and able to reach the iPad over USB or configured
+Wi-Fi pairing. For updates or renewal, keep the same Apple ID and bundle ID and
+install over the existing app. Deleting the app also deletes its private Linux
+store; export important files before deleting it.
+
+CI packages only the arm64 iPhoneOS device app after the simulator checks pass,
+retains its executable permissions and bundled resources, and includes a SHA-256
+checksum. The IPA is unsigned until Sideloadly signs it with your account.
+Sideloadly installation and physical iPad acceptance have not yet been verified.
+
+To package an existing device build yourself:
+
+    python3 scripts/package-ios.py \
+      apps/ios/build/device/Build/Products/Debug-iphoneos/Trames.app \
+      apps/ios/build/sideload/Trames-unsigned.ipa
