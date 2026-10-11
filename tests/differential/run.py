@@ -49,7 +49,9 @@ def generated(seed):
     lines.extend(["adrp x9, snapshot", "add x9, x9, :lo12:snapshot"])
     lines.extend(f"str x{r}, [x9, #{r * 8}]" for r in range(8))
     lines.extend(["str x10, [x9, #64]", "mov x0, #1", "mov x1, x9", "mov x2, #72", "mov x8, #64", "svc #0", "mov x0, #0", "mov x8, #93", "svc #0", ".bss", ".balign 8", "snapshot: .skip 72"])
-    return "\n".join(lines) + "\n"
+    # Linux AArch64 takes the syscall number from x8 for every SVC immediate.
+    immediate = [0, 1, 65535][seed % 3]
+    return "\n".join(lines).replace("svc #0", f"svc #{immediate}") + "\n"
 
 
 def main():

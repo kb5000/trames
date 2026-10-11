@@ -153,7 +153,156 @@ impl Cpu {
             }
             return Ok(true);
         }
-        if matches!(ins & 0x3ffffc00, 0x085f7c00 | 0x085ffc00 | 0x08dffc00) {
+        if ins & 0xbfa07c00 == 0x08207c00 || ins & 0x3fa07c00 == 0x08a07c00 {
+            // LSE CAS/CASP. The cooperative memory model orders these atomically.
+            let pair = ins & 0x3fa07c00 == 0x08207c00;
+            if pair && ins >> 31 != 0 {
+                return Err(invalid());
+            }
+            let size = if pair {
+                4usize << ((ins >> 30) & 1)
+            } else {
+                1usize << (ins >> 30)
+            };
+            let count = if pair { 2 } else { 1 };
+            let compare = ((ins >> 16) & 31) as usize;
+            if pair && (!compare.is_multiple_of(2) || !rt.is_multiple_of(2)) {
+                return Err(invalid());
+            }
+            let address = self.reg(rn, true);
+            if !address.is_multiple_of((size * count) as u64) {
+                return Err(fault(MemoryError::InvalidRange));
+            }
+            memory
+                .check(address, size * count, trames_memory::Access::Write)
+                .map_err(fault)?;
+            let mut bytes = [0u8; 16];
+            memory
+                .read(address, &mut bytes[..size * count])
+                .map_err(fault)?;
+            let mut expected = [0u8; 16];
+            let mut replacement = [0u8; 16];
+            for i in 0..count {
+                expected[i * size..(i + 1) * size]
+                    .copy_from_slice(&self.x(compare + i).to_le_bytes()[..size]);
+                replacement[i * size..(i + 1) * size]
+                    .copy_from_slice(&self.x(rt + i).to_le_bytes()[..size]);
+            }
+            if bytes[..size * count] == expected[..size * count] {
+                memory
+                    .write(address, &replacement[..size * count])
+                    .map_err(fault)?;
+            }
+            for i in 0..count {
+                let mut value = [0; 8];
+                value[..size].copy_from_slice(&bytes[i * size..(i + 1) * size]);
+                self.set_x(compare + i, u64::from_le_bytes(value));
+            }
+            return Ok(true);
+        }
+        if ins & 0x3f200c00 == 0x38200000 && ins & 0x3ffffc00 != 0x38bfc000 {
+            // LSE read-modify-write and store aliases; no unchecked host pointer.
+            let size = 1usize << (ins >> 30);
+            let operation = (ins >> 12) & 15;
+            if operation > 8 {
+                return Err(invalid());
+            }
+            let address = self.reg(rn, true);
+            if !address.is_multiple_of(size as u64) {
+                return Err(fault(MemoryError::InvalidRange));
+            }
+            memory
+                .check(address, size, trames_memory::Access::Write)
+                .map_err(fault)?;
+            let mut bytes = [0; 8];
+            memory.read(address, &mut bytes[..size]).map_err(fault)?;
+            let old = u64::from_le_bytes(bytes);
+            let operand = self.x(((ins >> 16) & 31) as usize)
+                & if size == 8 {
+                    u64::MAX
+                } else {
+                    (1u64 << (size * 8)) - 1
+                };
+            let old_signed = sign_extend(old, (size * 8) as u32) as i64;
+            let operand_signed = sign_extend(operand, (size * 8) as u32) as i64;
+            let new = match operation {
+                0 => old.wrapping_add(operand),
+                1 => old & !operand,
+                2 => old ^ operand,
+                3 => old | operand,
+                4 => {
+                    if old_signed > operand_signed {
+                        old
+                    } else {
+                        operand
+                    }
+                }
+                5 => {
+                    if old_signed < operand_signed {
+                        old
+                    } else {
+                        operand
+                    }
+                }
+                6 => old.max(operand),
+                7 => old.min(operand),
+                _ => operand,
+            };
+            memory
+                .write(address, &new.to_le_bytes()[..size])
+                .map_err(fault)?;
+            self.set_x(rt, old);
+            return Ok(true);
+        }
+        if matches!(ins & 0x3f600000, 0x08600000 | 0x08200000) {
+            // Pair exclusives use one reservation for the complete 64/128-bit pair.
+            let load = ins & (1 << 22) != 0;
+            let size = 4usize << ((ins >> 30) & 1);
+            if ins >> 31 == 0 || ins & (1 << 23) != 0 {
+                return Err(invalid());
+            }
+            let second = ((ins >> 10) & 31) as usize;
+            let status = ((ins >> 16) & 31) as usize;
+            if status != 31 && (load || status == rn || status == rt || status == second) {
+                return Err(invalid());
+            }
+            let address = self.reg(rn, true);
+            if !address.is_multiple_of((size * 2) as u64) {
+                return Err(fault(MemoryError::InvalidRange));
+            }
+            if load {
+                if rt == second {
+                    return Err(invalid());
+                }
+                let mut bytes = [0; 16];
+                memory
+                    .read(address, &mut bytes[..size * 2])
+                    .map_err(fault)?;
+                for (i, reg) in [rt, second].into_iter().enumerate() {
+                    let mut value = [0; 8];
+                    value[..size].copy_from_slice(&bytes[i * size..(i + 1) * size]);
+                    self.set_x(reg, u64::from_le_bytes(value));
+                }
+                self.exclusive = Some((address, size * 2, memory.revision()));
+            } else {
+                let succeeds =
+                    self.exclusive.take() == Some((address, size * 2, memory.revision()));
+                if succeeds {
+                    let mut bytes = [0; 16];
+                    for (i, reg) in [rt, second].into_iter().enumerate() {
+                        bytes[i * size..(i + 1) * size]
+                            .copy_from_slice(&self.x(reg).to_le_bytes()[..size]);
+                    }
+                    memory.write(address, &bytes[..size * 2]).map_err(fault)?;
+                }
+                self.set_x(status, (!succeeds) as u64);
+            }
+            return Ok(true);
+        }
+        if matches!(
+            ins & 0x3ffffc00,
+            0x085f7c00 | 0x085ffc00 | 0x08dffc00 | 0x38bfc000
+        ) {
             // LDXR/LDAXR/LDAR
             let size = 1usize << (ins >> 30);
             let address = self.reg(rn, true);
@@ -163,7 +312,7 @@ impl Cpu {
             let mut bytes = [0; 8];
             memory.read(address, &mut bytes[..size]).map_err(fault)?;
             self.set_x(rt, u64::from_le_bytes(bytes));
-            if ins & 0x3ffffc00 != 0x08dffc00 {
+            if matches!(ins & 0x3ffffc00, 0x085f7c00 | 0x085ffc00) {
                 self.exclusive = Some((address, size, memory.revision()));
             }
             return Ok(true);
@@ -307,10 +456,10 @@ impl Cpu {
             } else {
                 let offset = sign_extend(((ins >> 12) & 511) as u64, 9);
                 let mode = (ins >> 10) & 3;
-                if mode == 2 {
+                if mode == 2 && vector {
                     return Err(invalid());
                 }
-                if mode != 0 {
+                if mode != 0 && mode != 2 {
                     if !vector && rn != 31 && rn == rt {
                         return Err(invalid());
                     }

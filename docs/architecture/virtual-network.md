@@ -24,7 +24,7 @@ flowchart LR
 | Gateway and DNS | 10.0.0.1, fd00::1; DNS UDP/TCP port 53 |
 | Environment ID 2–254 | 10.0.0.ID, fd00::ID (IPv6 ID is the numeric value) |
 | Private loopback in each environment | 127.0.0.1, ::1 |
-| Logical interfaces | lo (index 1), trames0 (index 2), MTU 1500 |
+| Logical interfaces | lo (index 1), eth0 (index 2), MTU 1500 |
 
 One Fabric supports at most 16 simultaneous environments. Distinct fabrics are
 isolated, even if their IDs coincide. Environments share a fabric only when the

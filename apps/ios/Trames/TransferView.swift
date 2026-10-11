@@ -6,7 +6,7 @@ struct ExportFile: Identifiable { let id = UUID(); let url: URL }
 struct TransferView: View {
     @ObservedObject var session: TerminalSession
     @Environment(\.dismiss) private var dismiss
-    @State private var path = "/home/user/imported-file"
+    @State private var path = "/root/imported-file"
     @State private var selected: URL?
     @State private var chooser = false
     @State private var busy = false
@@ -30,7 +30,7 @@ struct TransferView: View {
                 .fileImporter(isPresented: $chooser, allowedContentTypes: [.data, .item]) { result in
                     switch result {
                     case .success(let url): selected = url
-                        if path == "/home/user/imported-file" { path = "/home/user/" + url.lastPathComponent }
+                        if path == "/root/imported-file" { path = "/root/" + url.lastPathComponent }
                     case .failure(let error): message = error.localizedDescription
                     }
                 }

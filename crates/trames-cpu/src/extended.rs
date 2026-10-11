@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 use super::{shifted, sign_extend, width_mask, Cpu, CpuFault, Flags};
+use std::{sync::OnceLock, time::Instant};
 use trames_memory::Memory;
+static COUNTER_ORIGIN: OnceLock<Instant> = OnceLock::new();
 
 fn ones(bits: u32) -> u64 {
     if bits == 64 {
@@ -62,7 +64,14 @@ impl Cpu {
     ) -> Result<Option<u64>, CpuFault> {
         let pc = self.pc;
         let mut next = pc.wrapping_add(4);
-        if self.execute_floating(ins)? {
+        // A64 primary encoding groups 0111/1111 contain SIMD and FP.
+        // Integer, load/store and system fallbacks need no vector decoding.
+        if ins & 0x0e000000 == 0x0e000000
+            && (self.execute_crypto(ins)
+                || self.execute_half_vector(ins)?
+                || self.execute_vector_integer(ins)?
+                || self.execute_floating(ins)?)
+        {
             return Ok(Some(next));
         }
         let invalid = || CpuFault::Instruction {
@@ -74,6 +83,25 @@ impl Cpu {
         let rm = ((ins >> 16) & 31) as usize;
         let left = self.vectors[rn] as u64;
         let right = self.vectors[rm] as u64;
+        if ins == 0xd500401f {
+            self.flags.c = !self.flags.c;
+            return Ok(Some(next));
+        }
+        if ins & 0xffe07c10 == 0xba000400 {
+            let mask = ins & 15;
+            let bits = self.x(rn).rotate_right((ins >> 15) & 63) as u32;
+            self.set_nzcv((self.nzcv() & !mask) | (bits & mask));
+            return Ok(Some(next));
+        }
+        if ins & 0xffffbc1f == 0x3a00080d {
+            let width = if ins & 0x4000 != 0 { 16 } else { 8 };
+            let value = self.x(rn) as u32;
+            let sign = value >> (width - 1) & 1;
+            self.flags.n = sign != 0;
+            self.flags.z = value & ((1 << width) - 1) == 0;
+            self.flags.v = sign ^ ((value >> width) & 1) != 0;
+            return Ok(Some(next));
+        }
         if ins & 0xffe0fc00 == 0x5e000400 {
             // DUP scalar from a vector lane (MOV alias), clearing upper bits.
             let imm5 = (ins >> 16) & 31;
@@ -359,10 +387,34 @@ impl Cpu {
             self.set_x(rd, self.tpidr_el0);
         } else if ins & 0xffffffe0 == 0xd51bd040 {
             self.tpidr_el0 = self.x(rd);
+        } else if ins & 0xffffffe0 == 0xd53bd060 {
+            self.set_x(rd, 0); // Linux virtual read-only TLS register.
+        } else if ins & 0xffffffe0 == 0xd53b0020 {
+            // Virtual 64-byte I/D lines, with automatic instruction coherence.
+            self.set_x(rd, 0xb4448004);
+        } else if ins & 0xffffffe0 == 0xd53be000 {
+            self.set_x(rd, 1_000_000_000);
+        } else if ins & 0xffffffe0 == 0xd53be040 {
+            self.set_x(
+                rd,
+                COUNTER_ORIGIN
+                    .get_or_init(Instant::now)
+                    .elapsed()
+                    .as_nanos() as u64,
+            );
         } else if ins & 0xffffffe0 == 0xd53b4200 {
             self.set_x(rd, (self.nzcv() as u64) << 28);
         } else if ins & 0xffffffe0 == 0xd51b4200 {
             self.set_nzcv((self.x(rd) >> 28) as u32 & 15);
+        } else if ins & 0xffffffe0 == 0xd53b4400 {
+            self.set_x(rd, self.fpcr as u64);
+        } else if ins & 0xffffffe0 == 0xd53b4420 {
+            self.set_x(rd, self.fpsr as u64);
+        } else if ins & 0xffffffe0 == 0xd51b4400 {
+            // RMode, FZ, DN, AHP and FZ16; trap enables remain RAZ/WI.
+            self.fpcr = self.x(rd) as u32 & 0x07c80000;
+        } else if ins & 0xffffffe0 == 0xd51b4420 {
+            self.fpsr = self.x(rd) as u32 & 0x0800009f;
         } else if ins & 0xffffffe0 == 0xd53b00e0 {
             self.set_x(rd, 4);
         }
@@ -372,10 +424,32 @@ impl Cpu {
             memory
                 .write(address, &[0; 64])
                 .map_err(|error| CpuFault::Memory { pc, error })?;
+        } else if matches!(
+            ins & 0xffffffe0,
+            0xd50b7b20 | 0xd50b7a20 | 0xd50b7e20 | 0xd50b7520
+        ) {
+            // CVAU/CVAC/CIVAC/IVAU: guest code writes are already coherent;
+            // preserve address-translation faults without touching host caches.
+            memory
+                .check_translation(self.x(rd))
+                .map_err(|error| CpuFault::Memory { pc, error })?;
         } else if matches!(ins & 0xfffff0ff, 0xd503309f | 0xd50330bf | 0xd50330df)
             || matches!(
                 ins,
                 0xd503203f
+                    | 0xd503205f
+                    | 0xd503209f
+                    | 0xd50320bf
+                    | 0xd503221f
+                    | 0xd503229f
+                    | 0xd503211f
+                    | 0xd503215f
+                    | 0xd503219f
+                    | 0xd50321df
+                    | 0xd503231f
+                    | 0xd503235f
+                    | 0xd503239f
+                    | 0xd50323df
                     | 0xd503241f
                     | 0xd503245f
                     | 0xd503249f
@@ -424,12 +498,29 @@ impl Cpu {
                 result |= value << offset;
             }
             self.vectors[rd] = result;
-        } else if matches!(ins & 0xfffffc00, 0x9e660000 | 0x1e260000) {
+        } else if matches!(
+            ins & 0xfffffc00,
+            0x9e660000 | 0x1e260000 | 0x1ee60000 | 0x9ee60000
+        ) {
             // FMOV GPR <- scalar bits
-            self.put(rd, self.vectors[rn] as u64, ins >> 31 != 0, false);
-        } else if matches!(ins & 0xfffffc00, 0x9e670000 | 0x1e270000) {
+            let bits = self.vectors[rn] as u64
+                & if ins & (1 << 23) != 0 {
+                    0xffff
+                } else {
+                    u64::MAX
+                };
+            self.put(rd, bits, ins >> 31 != 0, false);
+        } else if matches!(
+            ins & 0xfffffc00,
+            0x9e670000 | 0x1e270000 | 0x1ee70000 | 0x9ee70000
+        ) {
             // FMOV scalar <- GPR bits
-            self.vectors[rd] = (self.x(rn) & width_mask(ins >> 31 != 0)) as u128;
+            self.vectors[rd] = (self.x(rn)
+                & if ins & (1 << 23) != 0 {
+                    0xffff
+                } else {
+                    width_mask(ins >> 31 != 0)
+                }) as u128;
         } else if ins & 0xfffffc00 == 0x1e604000 {
             self.vectors[rd] = self.vectors[rn] & u64::MAX as u128;
         } else if matches!(

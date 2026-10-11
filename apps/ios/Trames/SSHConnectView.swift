@@ -45,7 +45,7 @@ struct SSHConnectView: View {
         loading = true
         Task {
             defer { loading = false }
-            do { configText = try await workspace.guestText("/home/user/.ssh/config"); error = nil }
+            do { configText = try await workspace.guestText("/root/.ssh/config"); error = nil }
             catch { self.error = error.localizedDescription }
         }
     }
@@ -63,7 +63,7 @@ struct SSHConnectView: View {
                     var key = try Secrets.load(account)
                     if key == nil {
                         guard let identity = host.identityFile else { throw TramesError.message("请在 ~/.ssh/config 中指定 Ed25519 IdentityFile") }
-                        let path = identity.hasPrefix("~/") ? "/home/user/" + identity.dropFirst(2) : identity
+                        let path = identity.hasPrefix("~/") ? "/root/" + identity.dropFirst(2) : identity
                         guard path.hasPrefix("/") else { throw TramesError.message("IdentityFile 需要绝对路径或 ~/ 路径") }
                         key = try await workspace.guestText(path)
                     }

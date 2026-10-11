@@ -42,7 +42,7 @@ Each local worker uses its own private Fabric/environment 2 and virtual DNS.
 Version 0.3.0 accepts only manifest v3; the owner chose fresh development data,
 so historical manifest/default-resolver/quota migrations are removed. An existing
 current-format resolver file remains part of normal persistence. Linux guest root
-is an inode/ABI identity, not host root. HOME/cwd use /home/user. Settings can
+is an inode/ABI identity, not host root. HOME/cwd use /root. Settings can
 explicitly reset the private Linux environment after its worker releases the
 store lock. Additional local tabs sharing one fabric still require a future
 coordinated scheduler. Initial downloads wait for Apple network connectivity and

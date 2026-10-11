@@ -342,7 +342,13 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
         .ok_or("Usage: trames-run [--max-instructions N] [--] ELF [ARG ...]")?;
     let mut argv = vec![path.clone()];
     argv.extend(args);
-    let mut envp = vec!["PATH=/usr/sbin:/usr/bin:/sbin:/bin".into(), "LANG=C".into()];
+    let mut envp = vec![
+        "PATH=/usr/sbin:/usr/bin:/sbin:/bin".into(),
+        "LANG=C".into(),
+        "HOME=/root".into(),
+        "USER=root".into(),
+        "LOGNAME=root".into(),
+    ];
     for value in extra_env {
         let name = value.split_once('=').expect("validated env").0;
         envp.retain(|e: &String| e.split_once('=').is_none_or(|(key, _)| key != name));
@@ -400,6 +406,12 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     }
     for (guest, host, executable) in files {
         vfs.import_reader(guest.as_bytes(), &mut File::open(host)?, executable)?;
+    }
+    if guest_path {
+        if vfs.stat_at(-100, b"/root").is_err_and(|e| e.0 == 2) {
+            vfs.mkdir_at(-100, b"/root", 0o700)?;
+        }
+        vfs.chdir(b"/root")?;
     }
     let bytes = if guest_path {
         vfs.executable(path.as_bytes())?

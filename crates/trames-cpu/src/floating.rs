@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 use super::{Cpu, CpuFault};
-use crate::soft_float::{Format, DOUBLE, INEXACT, SINGLE};
+use crate::soft_float::{Format, ALTERNATIVE_HALF, DOUBLE, HALF, INEXACT, SINGLE};
 
 impl Cpu {
     pub fn vector(&self, index: usize) -> u128 {
@@ -10,6 +10,9 @@ impl Cpu {
         self.vectors[index] = bits;
     }
     pub(crate) fn execute_floating(&mut self, ins: u32) -> Result<bool, CpuFault> {
+        if self.execute_vector_extra_float(ins)? {
+            return Ok(true);
+        }
         if self.execute_vector_float(ins)? {
             return Ok(true);
         }
@@ -20,6 +23,57 @@ impl Cpu {
         let rd = (ins & 31) as usize;
         let rn = ((ins >> 5) & 31) as usize;
         let rm = ((ins >> 16) & 31) as usize;
+        if ins & 0xfffffc00 == 0x1e7e0000 {
+            // JavaScript truncation wraps modulo 2^32, with exactness in NZCV.Z.
+            let mut flags = 0;
+            let x = DOUBLE.unpack(self.vectors[rn] as u64, self.fpcr, &mut flags);
+            let mut value = 0u32;
+            if x.nan || x.inf {
+                flags |= crate::soft_float::INVALID;
+            } else {
+                let limit = if x.sign {
+                    1u128 << 31
+                } else {
+                    (1u128 << 31) - 1
+                };
+                let overflow;
+                if x.exp >= 0 {
+                    value = if x.exp < 32 {
+                        (x.sig as u32).wrapping_shl(x.exp as u32)
+                    } else {
+                        0
+                    };
+                    overflow = x.sig != 0 && (x.exp >= 32 || x.sig > (limit >> x.exp));
+                } else {
+                    let distance = (-x.exp) as u32;
+                    let magnitude = x.sig.checked_shr(distance).unwrap_or(0);
+                    let lost = if distance >= 128 {
+                        x.sig != 0
+                    } else {
+                        x.sig & ((1u128 << distance) - 1) != 0
+                    };
+                    value = magnitude as u32;
+                    overflow = magnitude > limit;
+                    if lost {
+                        flags |= INEXACT;
+                    }
+                }
+                if overflow {
+                    flags = (flags & !INEXACT) | crate::soft_float::INVALID;
+                }
+                if x.sign {
+                    value = value.wrapping_neg();
+                }
+            }
+            self.set_x(rd, value as u64);
+            self.set_nzcv(if flags == 0 && x.raw != 0x8000000000000000 {
+                4
+            } else {
+                0
+            });
+            self.fpsr |= flags;
+            return Ok(true);
+        }
         let scalar_conversion = ins & 0xffbffc00;
         if matches!(
             scalar_conversion,
@@ -83,26 +137,6 @@ impl Cpu {
             self.vectors[rd] = value as u128;
             return Ok(true);
         }
-        match ins & 0xffffffe0 {
-            0xd53b4400 => {
-                self.set_x(rd, self.fpcr as u64);
-                return Ok(true);
-            }
-            0xd53b4420 => {
-                self.set_x(rd, self.fpsr as u64);
-                return Ok(true);
-            }
-            // No exception trap extension or FP16 feature is advertised: those bits are RAZ/WI.
-            0xd51b4400 => {
-                self.fpcr = self.x(rd) as u32 & 0x03c00000;
-                return Ok(true);
-            }
-            0xd51b4420 => {
-                self.fpsr = self.x(rd) as u32 & 0x0800009f;
-                return Ok(true);
-            }
-            _ => {}
-        }
         if ins & 0xfffffc00 == 0x9eae0000 {
             self.set_x(rd, (self.vectors[rn] >> 64) as u64);
             return Ok(true);
@@ -114,6 +148,7 @@ impl Cpu {
         let fmt: Format = match (ins >> 22) & 3 {
             0 => SINGLE,
             1 => DOUBLE,
+            3 => HALF,
             _ => return Ok(false),
         };
         let fpcr = self.fpcr;
@@ -152,8 +187,29 @@ impl Cpu {
                         & (fmt.sign_bit() | (fmt.sign_bit() - 1))
                 }
                 3 => fmt.sqrt(a, mode, fpcr, &mut flags),
-                4 if fmt.frac == 52 => SINGLE.convert(fmt, a, mode, fpcr, &mut flags),
-                5 if fmt.frac == 23 => DOUBLE.convert(fmt, a, mode, fpcr, &mut flags),
+                4 | 5 | 7
+                    if (op == 4 && fmt.frac != 23)
+                        || (op == 5 && fmt.frac != 52)
+                        || (op == 7 && fmt.frac != 10) =>
+                {
+                    let half = if fpcr & (1 << 26) != 0 {
+                        ALTERNATIVE_HALF
+                    } else {
+                        HALF
+                    };
+                    let from = if fmt.frac == 10 { half } else { fmt };
+                    let to = match op {
+                        4 => SINGLE,
+                        5 => DOUBLE,
+                        _ => half,
+                    };
+                    // Conversions never flush half subnormals. AHP only affects
+                    // format conversions; FP16 arithmetic always uses IEEE.
+                    let control = fpcr & !(1 << 19);
+                    flags = 0;
+                    let input = from.unpack(self.vectors[rn] as u64, control, &mut flags);
+                    to.convert(from, input, mode, control, &mut flags)
+                }
                 8..=12 | 14..=15 => {
                     let round = match op {
                         8 => 0,

@@ -1,9 +1,12 @@
 # Delivery roadmap
 
-The current instruction and syscall gaps are recorded in the
-[0.3.0 CPU/Linux ABI audit](compatibility-gaps.md), including partial semantics,
-representative instruction probes and the complete Linux 6.12 AArch64 number
-inventory. This audit changes documentation only.
+Current instruction coverage and remaining Linux ABI work are recorded in
+[0.4.0 compatibility](compatibility-0.4.md). Historical gaps are recorded for the
+[released 0.3.0](compatibility-gaps.md) and the
+[pre-implementation worktree snapshot](compatibility-gaps-worktree.md), including partial
+semantics, representative instruction probes and the complete Linux 6.12 AArch64
+number inventory. These older snapshots are retained as evidence of their own
+source revisions, not descriptions of current code.
 
 M0, the selected static-userspace M1 foundation, M2 ash/FP, the storage follow-up and M3 are implemented, with records
 in [m0.md](../validation/m0.md), [m1.md](../validation/m1.md), [m2.md](../validation/m2.md), [storage.md](../validation/storage.md) and [network.md](../validation/network.md) and [m3.md](../validation/m3.md). This does not
@@ -24,6 +27,7 @@ Windows/Sideloadly signing, installation and startup on a physical iPad on
 | M4 | Software validated: SwiftUI/SwiftTerm, native SSH/SFTP, Files, keyboard and embedding ABI; Apple builds and simulator operations passed. Owner-confirmed Sideloadly installation/startup; remaining physical acceptance in issue #8 |
 | Linux compatibility, 0.2.0 | Runtime proc/sys/dev views, virtual ownership and v3 persistence migration, musl threads/futex/timers, read-only route netlink, ICMP raw guest packets and native datagram echo egress, actual Alpine tools and default Vim editing; [record](../validation/linux-compat.md) |
 | M5 | Software validated: versioned Bridge RPC, native consent, persistent scoped Files, built-in accelerator registry, optional profiled C++ backend and embedding ABI 2; signed-provider/device acceptance remains open |
+| CPU reference, 0.4.0 | Broad AArch64 EL0/NEON and tested optional extensions, shared auxv/proc capability profile, standard root/device/interface names, checked memory/decoder acceleration; [scope](compatibility-0.4.md), [validation](../validation/reference-0.4.md) |
 | M6 | Verified Git/Python/GCC/Clang/Make/CMake workflows; Debian after ABI coverage supports it |
 
 The owner requested on 2026-10-11 that future feature changes be grouped into a

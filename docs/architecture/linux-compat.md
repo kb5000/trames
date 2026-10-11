@@ -1,4 +1,4 @@
-# Linux userspace compatibility, 0.2.0
+# Linux userspace compatibility
 
 This release follows the owner's physical iPad reports: missing runtime files,
 failed `ps`/`mount`/`df`/`ip`/`ping`, 88 apk directory ownership errors, and Vim
@@ -12,15 +12,18 @@ addresses or files. Unmodified Alpine executables exercise the implementation.
 | `/proc` | self/thread-self, numeric process and task directories, stat/status/statm, cmdline/environ/comm, maps/auxv, cwd/root/exe links, fd/fdinfo, limits, mounts/mountinfo |
 | System `/proc` | uptime, meminfo, cpuinfo, version, stat, loadavg, filesystems, swaps, partitions, devices, diskstats, selected read-only sysctl values |
 | Network `/proc` | dev, route, if_inet6, tcp/tcp6, udp/udp6, raw/raw6, icmp/icmp6; empty unix table while AF_UNIX is unsupported |
-| `/sys` | class/net links to devices/virtual/net, logical interfaces and address/MTU/state/index/flags attributes, packet/byte/drop counters |
-| `/dev` | null, zero, full, random/urandom, tty, pts/0, fd/stdin/stdout/stderr links, ptmx endpoint with unsupported allocation reported explicitly |
+| `/sys` | class/net links to devices/virtual/net, logical interfaces and address/MTU/state/index/flags attributes, packet/byte/drop counters; block/class/dev aliases for vda/vda1, partition and queue metadata |
+| `/dev` | null, zero, full, random/urandom, tty, pts/0, fd/stdin/stdout/stderr links, logical vda/vda1 block identities, ptmx endpoint with unsupported allocation reported explicitly |
 
 Files are generated from bounded scheduler/VFS/network snapshots; command names
 are not intercepted. Process state, IDs, masks, memory maps and descriptor
 positions reflect guest objects. Link counters reflect fabric packets rather than
 host NICs. Socket tables deduplicate shared descriptions and show actual virtual
 addresses/state/queued bytes; native backend queue sizes unavailable through the
-safe adapter are zero. There are no block/swap devices. CPU/load/uptime describe
+safe adapter are zero. `/dev/vda1` identifies the logical root filesystem, with
+consistent major/minor 253:1 in stat, mountinfo and sysfs. It is backed by private
+inode objects, not a raw disk image; raw block I/O returns EOPNOTSUPP. There is no
+swap device. CPU/load/uptime describe
 the cooperative interpreter, not host-wide telemetry.
 
 Volatile inode IDs occupy a separate range, are excluded from persistent
@@ -36,7 +39,8 @@ There is one controlling PTY, not an allocator for multiple PTY pairs.
 
 ## Ownership and persistence
 
-Guest sessions default to root for ordinary Alpine administration. This changes
+Guest sessions default to root, `/root` as their working directory and HOME,
+and root as USER/LOGNAME for ordinary Alpine administration. This changes
 no host UID or app entitlement. Real/effective/saved/fs UID/GID and supplementary
 groups are modeled, with owner/group/other access, root execute checks, sticky
 directories, SGID inheritance, set-ID executable credentials and privileged-mode
@@ -44,9 +48,11 @@ clearing on ownership changes/non-root writes. `chown`/`fchown`/`fchownat`, chmo
 access and identity syscall subsets operate on virtual inode metadata. Imported
 tar ownership and 07777 mode bits are retained.
 
-Manifest version 3 stores inode UID/GID; versions 1 and 2 remain readable and
-their historical owner 1000 is preserved rather than silently rewritten. The next
-checkpoint writes v3. Ownership, modes and symlinks survive reopening. No install
+Manifest version 3 stores inode UID/GID. Historical formats are rejected; automatic
+v1/v2 migration was removed at the owner's request in 0.3.0. Ownership, modes and
+symlinks survive reopening. AArch64 `sync` uses syscall 81 and flushes live file
+contents, the manifest and its directory; syscall 162 is unsupported setdomainname.
+No install
 step resets an existing store; the app keeps `org.trames.Trames` for an overwrite
 update. Linux capabilities, ACLs, xattrs and complete namespace semantics remain
 outside this implementation.
@@ -82,7 +88,7 @@ same checked interpreter, verified independently against QEMU.
 AF_NETLINK/NETLINK_ROUTE is a guest-only read-only adapter supporting link,
 address and route dumps for `ip a`/`ip route`, multipart replies, sequence numbers,
 acknowledgments, bounded queues and explicit errors for mutations. It opens no
-host netlink socket. Logical interfaces are lo and trames0 in virtual mode; native
+host netlink socket. Logical interfaces are lo and eth0 in virtual mode; native
 mode exposes the supported loopback view rather than host interface metadata.
 
 The virtual stack supports bounded SOCK_RAW ICMP/ICMPv6 plus existing ICMP

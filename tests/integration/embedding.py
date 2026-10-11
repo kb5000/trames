@@ -121,21 +121,21 @@ with tempfile.TemporaryDirectory(prefix='trames-embedding-') as directory:
     send(handle,b"stty size\n")
     wait(lambda:(output.extend(drain(handle)) or b'37 103' in output))
     source=temporary/'input.bin'; data=bytes(range(256))*4096; source.write_bytes(data)
-    assert request(api.trames_session_transfer,handle,payload={'host':str(source),'guest':'/home/user/copied.bin','export':False})==0,error()
+    assert request(api.trames_session_transfer,handle,payload={'host':str(source),'guest':'/root/copied.bin','export':False})==0,error()
     target=temporary/'output.bin'
-    assert request(api.trames_session_transfer,handle,payload={'host':str(target),'guest':'/home/user/copied.bin','export':True})==0,error()
+    assert request(api.trames_session_transfer,handle,payload={'host':str(target),'guest':'/root/copied.bin','export':True})==0,error()
     assert target.read_bytes()==data
     # Cancellation before dispatch must consume its token and have no VFS effect.
     token=api.trames_session_transfer_begin(handle)
     assert token and api.trames_session_transfer_cancel(handle,token)==0
-    assert request(api.trames_session_transfer,handle,payload={'host':str(source),'guest':'/home/user/cancelled.bin','export':False,'token':token})==-1
+    assert request(api.trames_session_transfer,handle,payload={'host':str(source),'guest':'/root/cancelled.bin','export':False,'token':token})==-1
     cancelled_target=temporary/'cancelled-export'
-    assert request(api.trames_session_transfer,handle,payload={'host':str(cancelled_target),'guest':'/home/user/cancelled.bin','export':True})==-1
+    assert request(api.trames_session_transfer,handle,payload={'host':str(cancelled_target),'guest':'/root/cancelled.bin','export':True})==-1
     assert not cancelled_target.exists()
     limited=temporary/'limited'
-    assert request(api.trames_session_transfer,handle,payload={'host':str(limited),'guest':'/home/user/copied.bin','export':True,'maximum_bytes':65536})==-1
+    assert request(api.trames_session_transfer,handle,payload={'host':str(limited),'guest':'/root/copied.bin','export':True,'maximum_bytes':65536})==-1
     assert not limited.exists()
-    assert request(api.trames_session_transfer,handle,payload={'host':str(source),'guest':'/home/user/copied.bin','export':True})==-1
+    assert request(api.trames_session_transfer,handle,payload={'host':str(source),'guest':'/root/copied.bin','export':True})==-1
     assert source.read_bytes()==data # Never truncate an existing host file.
     assert api.trames_session_pause(handle,1)==0
     time.sleep(.05); drain(handle)
@@ -160,8 +160,8 @@ with tempfile.TemporaryDirectory(prefix='trames-embedding-') as directory:
     # Exit while the renderer is slow: the final output must not be discarded.
     expected=b'X'*100000
     text_source=temporary/'final-output'; text_source.write_bytes(expected)
-    assert request(api.trames_session_transfer,replacement,payload={'host':str(text_source),'guest':'/home/user/final-output','export':False})==0,error()
-    send(replacement,b"stty -opost; cat /home/user/final-output; exit 7\n")
+    assert request(api.trames_session_transfer,replacement,payload={'host':str(text_source),'guest':'/root/final-output','export':False})==0,error()
+    send(replacement,b"stty -opost; cat /root/final-output; exit 7\n")
     final=bytearray()
     wait(lambda:(final.extend(drain(replacement)) or status(replacement)['phase']=='exited'))
     final.extend(drain(replacement))

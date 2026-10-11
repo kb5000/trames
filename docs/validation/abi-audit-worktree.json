@@ -1,0 +1,160 @@
+{
+  "date": "2026-10-11",
+  "git_head": "4631b0a1ff0e9f092ddd36b4a1a78eabb7647489",
+  "snapshot": "uncommitted_worktree",
+  "runtime_modified_by_this_audit": false,
+  "scope": "AArch64 EL0; native Linux v6.12 numbered entries; not complete ISA or Linux conformance coverage",
+  "syscalls": {
+    "numbered_entries": 318,
+    "statuses": {
+      "missing": 192,
+      "implemented_subset": 123,
+      "obsolete_stub": 2,
+      "unsupported": 1
+    },
+    "no_dispatch_probes": 194,
+    "unhandled_return": -38,
+    "socketpair_return": -97,
+    "sync_return": 0,
+    "backends": [
+      "reference",
+      "cpp"
+    ],
+    "arguments": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "cpu": {
+    "representatives": 418,
+    "results": {
+      "decoded": 301,
+      "syscall": 1,
+      "unsupported": 116
+    },
+    "baseline_same_sample_count": 317,
+    "baseline_sample_current_results": {
+      "decoded": 250,
+      "syscall": 1,
+      "unsupported": 66
+    },
+    "assembler_failures": [],
+    "backends": [
+      "reference",
+      "cpp"
+    ],
+    "sli": {
+      "reference": 9,
+      "cpp": 9,
+      "qemu": 9
+    }
+  },
+  "source_sha256": {
+    "crates/trames-core/src/lib.rs": "8410974cdc58f2dd3b05528b7d35ee99b70eab3ea43c739b7d6634fe2e58abf8",
+    "crates/trames-core/src/process.rs": "2f5138b6cb4bf301d5fe644f6fc0b0e04713949e8598b757bc05e814c38dba99",
+    "crates/trames-core/src/process_events.rs": "e58fba548cd24884def84cf46bb1ada37857b0dc70eb1e8035af67565c10ca96",
+    "crates/trames-core/src/terminal.rs": "cc814e36ec3305b514af7d7660a0af2971fa58d42735bbe89e05a9b9b0d5c8d6",
+    "crates/trames-cpu/src/cpp.rs": "90573d1680294fe3f25a0a9a1821218ba5a441e4afbedccb04ba54a5fe77699c",
+    "crates/trames-cpu/src/extended.rs": "70d4cd213c75c3b60ee950e1e2277421730bfcf79656106140aa4ed5f398a233",
+    "crates/trames-cpu/src/floating.rs": "dfb4c5be7464255692cddf2dda2964a909eb227aaa4753e3ebaf221e49df11d3",
+    "crates/trames-cpu/src/lib.rs": "afdfc810788161b1343ce86c5b3eb4235e1643b259f6d29d8637d436cdc2a855",
+    "crates/trames-cpu/src/load_store.rs": "19e5cb38dd2bef353703b667dc80cc054f405668d31f6e1766a4eb82e0b30c89",
+    "crates/trames-cpu/src/soft_float.rs": "8e875385b89d154d174543fcfcc5466dd59287d429f3d97ceb9c668ddbcd95b3",
+    "crates/trames-cpu/src/vector_extra_float.rs": "cb7e301bbb316c12afe8364487442dc2ab044d7aac4afc0235f96fb56f5e3bf3",
+    "crates/trames-cpu/src/vector_float.rs": "a68c7719c07321b68a7e5f49b2ff33d2f4bd01ee891e6761a3aa94af8e3b45bf",
+    "crates/trames-cpu/src/vector_integer.rs": "78a85bb3ab5ecf17c5a150e0cda1547eff278b5e5385ad34a43aa6985786ce07",
+    "crates/trames-interpreter-cpp/src/lib.rs": "caec17bfcd33f06fb1081a497db6943e8838a8174688ef2c8730c4b4285005e1",
+    "crates/trames-linux/src/lib.rs": "65802aeb67a03cbd2ae9c9c296a928d7148b08100e33c07918f0fdec6bf6d42d",
+    "crates/trames-linux/src/network.rs": "dee550271ba57b032073889c062116fff4fc627f0a6a8ce56fb8bbdc17ea384f",
+    "crates/trames-linux/src/state.rs": "b3880e89707fba31bfc9f08af320f90763ec3cd147c2379f70148658a40105e5",
+    "crates/trames-memory/src/lib.rs": "3bb918a4b17832119eaddf6bb9689415f667a6092372d65264a63ccc9c16b217",
+    "crates/trames-net/src/lib.rs": "110f8b9467e1197a1e1a800a68e218e457a0be826ddccc6edf50f4f08d287cb9",
+    "crates/trames-net/src/native.rs": "e0f1e786b48c8f2a760ac1894e590d8ad3d37478ff82a84f572d6405635c4659",
+    "crates/trames-net/src/netlink.rs": "37ee305e9e29ce6add2f4ebcab604a30d7d44178b82b6e97023ee0853e9b48f0",
+    "crates/trames-vfs/src/credentials.rs": "9562a2e4eff0b695ed712b22bcdbb9983df30d24ac84c9253edd2e768ac8ead1",
+    "crates/trames-vfs/src/lib.rs": "259e325bcc99dc228e4246c2d1d14b6e4823e63139ed4d746a1ee75e0d006c1d",
+    "crates/trames-vfs/src/namespace.rs": "f361ce20e9716d92f86bd71363cb439f2a272bac4bdb86e39c2db5e5785b90fb",
+    "crates/trames-vfs/src/network.rs": "4189423458236dec977568eb968cfd37d55c3e08695536d13db61824e8d94e9a",
+    "crates/trames-vfs/src/pseudo.rs": "42390293ccc3e1f4711a60ac648bd46e07ba07fcaac81511348414ec301b64e5",
+    "crates/trames-vfs/src/storage.rs": "131384302e86d7060fa9b8cf656dac676781b0e66e1d98cbf46aeb465a815dcf",
+    "crates/trames-vfs/src/storage_tests.rs": "b8be04956b47757527ff66edd4e89b8ce52a54ffc34088213e19fabbd0506a4b",
+    "crates/trames-net/src/virtualnet/gateway.rs": "d8f52a12e133a00d536cc8f9206404ebd9e9ff4ccb3fb4ea0042b91bb02eb629",
+    "crates/trames-net/src/virtualnet/packet.rs": "30a429b41994a44c3b9823536ed49492c95d4b5d38b9edce1abfc2bcee4efed7",
+    "crates/trames-net/src/virtualnet/mod.rs": "4fe5f087c94e0ac70afc97767709e34e9c7e977639947d574230875a948009e0",
+    "crates/trames-net/src/virtualnet/dns.rs": "e04df3ac3236251f0466e0aeffeedf921a1db8eb1cc2ff42bd0e8719ccf435e7",
+    "crates/trames-net/src/virtualnet/icmp_gateway.rs": "db37f136a8c6b02b63b8eae9f6c300e3756665faa34c119b6021efee8e010991",
+    "crates/trames-net/src/virtualnet/sockets.rs": "9b908a86d654542304663ae2e4ede18d18d3c03e11ffb7f10c17e0b3dc963d92"
+  },
+  "limits": "Decode acceptance is not semantic validation. No physical iPad acceptance or new IPA. In-progress implementation files were left untouched.",
+  "confirmed_incomplete_implementation": {
+    "ldapr": {
+      "assembly": ".global _start\n.text\n_start:\n  adrp x1,value\n  add x1,x1,:lo12:value\n  ldapr x0,[x1]\n  mov x8,#93\n  svc #0\n.data\n.balign 8\nvalue: .quad 7\n",
+      "results": {
+        "reference": {
+          "exit_code": 125,
+          "stderr": "trames-run: unsupported or unallocated instruction 0xf8bfc020 at PC 0x4000b8"
+        },
+        "cpp": {
+          "exit_code": 125,
+          "stderr": "trames-run: unsupported or unallocated instruction 0xf8bfc020 at PC 0x4000b8"
+        },
+        "qemu_max": {
+          "exit_code": 7,
+          "stderr": ""
+        }
+      },
+      "reason": "The earlier LSE RMW mask 0x3f200c00 == 0x38200000 captures LDAPR, then rejects operation 12 before reaching the dedicated load branch."
+    }
+  },
+  "current_floating_differential": {
+    "cases": 14828,
+    "qemu_program_comparisons": 618,
+    "qemu_cpu": "cortex-a53",
+    "result": "pass",
+    "checked": "Full destination Q register and cumulative FPSR, including new S/D reciprocal estimates and refinements. This is not a full FP or ISA conformance result."
+  },
+  "harness": {
+    "source": "/tmp/trames-audit-current/run.py",
+    "helper_source": "/tmp/trames-abi-audit/probe/src/main.rs",
+    "helper_binary": "/tmp/trames-abi-audit/probe/target/release/trames-abi-audit-probe",
+    "cli_binary": "/workspace/trames/target/debug/trames-run",
+    "instructions_per_cpu_case": 1,
+    "initial_registers": "x0..x30=0x2000; SP=0x2800; V0..V31=0; PC=0x1000; mapped writable data at0x2000",
+    "syscall_arguments": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "runtime_options": [
+      "--memory",
+      "--network off"
+    ],
+    "assembler_flags": "-march=armv8.7-a+sve2+fp16+memtag+rng+flagm+crypto+pauth+ls64 for added representatives; baseline encodings reused from abi-audit-cpu.csv",
+    "tools": {
+      "assembler": "GNU assembler (GNU Binutils for Debian) 2.44",
+      "qemu": "qemu-aarch64 version 10.0.13 (Debian 1:10.0.13+ds-0+deb13u1)",
+      "rustc": "rustc 1.90.0 (1159e78c4 2025-09-14)"
+    },
+    "helper_source_text": "use std::io::{self, BufRead};\nuse trames_cpu::{Backend, Cpu, CpuFault, SliceOutcome};\nuse trames_memory::{Memory, Permissions, PAGE_SIZE};\nfn main() {\n    for line in io::stdin().lock().lines() {\n        let line = line.unwrap();\n        let (id, hex) = line.split_once(' ').unwrap();\n        let word = u32::from_str_radix(hex, 16).unwrap();\n        let mut results = Vec::new();\n        for backend in [Backend::Reference, Backend::Cpp] {\n            let mut memory = Memory::default();\n            memory.map(0x1000, PAGE_SIZE, Permissions::RW).unwrap();\n            memory.write(0x1000, &word.to_le_bytes()).unwrap();\n            memory.protect(0x1000, PAGE_SIZE, Permissions::RX).unwrap();\n            memory.map(0x2000, PAGE_SIZE, Permissions::RW).unwrap();\n            let mut cpu = Cpu::new(0x1000, 0x2800);\n            for reg in 0..31 { cpu.set_x(reg, 0x2000); }\n            cpu.set_backend(backend).unwrap();\n            let result = match cpu.run_slice(&mut memory, 1) {\n                SliceOutcome::Fault(CpuFault::Instruction { .. }) => \"unsupported\",\n                SliceOutcome::Fault(CpuFault::Memory { .. }) => \"decoded-memory-fault\",\n                SliceOutcome::Syscall { .. } => \"syscall\",\n                SliceOutcome::Yield { .. } => \"decoded\",\n            };\n            results.push(result);\n        }\n        assert_eq!(results[0], results[1], \"{id}\");\n        println!(\"{id} {hex} {}\", results[0]);\n    }\n}\n",
+    "helper_dependencies": {
+      "trames-cpu": "worktree path dependency, feature cpp",
+      "trames-memory": "worktree path dependency"
+    }
+  },
+  "evidence_sha256": {
+    "abi-audit-worktree-cpu.csv": "70835121961ff0a05010e549134306436bccf64714e8b25eb3a5124d74cafa57",
+    "abi-audit-worktree-syscalls.csv": "8ca45b00457047a14aead4d088ec182129562a3a81e0ecd11e3ef636311602bb"
+  },
+  "half_format_conversion_scope_check": {
+    "assembler_flags": "-march=armv8-a",
+    "assembly": "fcvt h0,s1\nfcvt d0,h1\nfcvtl v0.4s,v1.4h\nfcvtn v0.4h,v1.4s\n",
+    "result": "accepted; base format conversion distinct from optional FP16 arithmetic"
+  }
+}

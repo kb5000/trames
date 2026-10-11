@@ -13,10 +13,10 @@
 #define CHECK(x) do { if (!(x)) { fprintf(stderr,"virtual network line %d errno %d\n",__LINE__,errno);exit(2); } } while(0)
 int main(void) {
     int fd=socket(AF_INET,SOCK_DGRAM,0);CHECK(fd>=0);
-    struct ifreq req={0};strcpy(req.ifr_name,"trames0");CHECK(ioctl(fd,SIOCGIFADDR,&req)==0);
+    struct ifreq req={0};strcpy(req.ifr_name,"eth0");CHECK(ioctl(fd,SIOCGIFADDR,&req)==0);
     char ip[64];CHECK(inet_ntop(AF_INET,&((struct sockaddr_in*)&req.ifr_addr)->sin_addr,ip,sizeof ip));CHECK(!strcmp(ip,"10.0.0.2"));
     CHECK(ioctl(fd,SIOCGIFMTU,&req)==0 && req.ifr_mtu==1500);CHECK(ioctl(fd,SIOCGIFINDEX,&req)==0 && req.ifr_ifindex==2);
-    struct ifreq entries[2];struct ifconf interfaces={.ifc_len=sizeof entries,.ifc_req=entries};CHECK(ioctl(fd,SIOCGIFCONF,&interfaces)==0 && interfaces.ifc_len==sizeof entries);CHECK(!strcmp(entries[0].ifr_name,"lo") && !strcmp(entries[1].ifr_name,"trames0"));
+    struct ifreq entries[2];struct ifconf interfaces={.ifc_len=sizeof entries,.ifc_req=entries};CHECK(ioctl(fd,SIOCGIFCONF,&interfaces)==0 && interfaces.ifc_len==sizeof entries);CHECK(!strcmp(entries[0].ifr_name,"lo") && !strcmp(entries[1].ifr_name,"eth0"));
     close(fd);
     struct addrinfo hints={.ai_family=AF_UNSPEC,.ai_socktype=SOCK_STREAM},*answers=NULL;CHECK(getaddrinfo("env2.trames","80",&hints,&answers)==0);int v4=0,v6=0;
     for (struct addrinfo *a=answers;a;a=a->ai_next) {if(a->ai_family==AF_INET){CHECK(inet_ntop(AF_INET,&((struct sockaddr_in*)a->ai_addr)->sin_addr,ip,sizeof ip));CHECK(!strcmp(ip,"10.0.0.2"));v4++;}else if(a->ai_family==AF_INET6){CHECK(inet_ntop(AF_INET6,&((struct sockaddr_in6*)a->ai_addr)->sin6_addr,ip,sizeof ip));CHECK(!strcmp(ip,"fd00::2"));v6++;}}

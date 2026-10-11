@@ -2,13 +2,35 @@
 //! Reference AArch64 interpreter. Unsupported encodings fault explicitly.
 use std::fmt;
 use trames_memory::{Memory, MemoryError};
+/// Capabilities of the virtual CPU, independent of the host and selected backend.
+pub const HWCAP: u64 = (1 << 0)
+    | (1 << 1)
+    | (1 << 3)
+    | (1 << 4)
+    | (1 << 5)
+    | (1 << 6)
+    | (1 << 7)
+    | (1 << 8)
+    | (1 << 9)
+    | (1 << 10)
+    | (1 << 12)
+    | (1 << 13)
+    | (1 << 15)
+    | (1 << 20)
+    | (1 << 27);
+pub const HWCAP2: u64 = 1 << 13; // I8MM
+pub const FEATURE_NAMES: &str = "fp asimd aes pmull sha1 sha2 crc32 atomics fphp asimdhp asimdrdm jscvt lrcpc asimddp flagm i8mm";
 #[cfg(feature = "cpp")]
 mod cpp;
+mod crypto;
 mod extended;
 mod floating;
+mod half_vector;
 mod load_store;
 mod soft_float;
+mod vector_extra_float;
 mod vector_float;
+mod vector_integer;
 #[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Backend {
     #[default]
@@ -206,9 +228,28 @@ impl Cpu {
         let mut next = pc.wrapping_add(4);
         let mut event = Event::Continue;
         if ins == 0xd503201f { // NOP
-        } else if ins == 0xd4000001 {
+        } else if ins & 0xffe0001f == 0xd4000001 {
             // SVC #0; the syscall dispatcher owns guest-visible effects.
             event = Event::Syscall;
+        } else if ins & 0x7fe0e000 == 0x1ac04000 {
+            // CRC32/CRC32C operate on the little-endian bytes of B/H/W/X.
+            let bytes = 1 << ((ins >> 10) & 3);
+            if wide != (bytes == 8) {
+                return Err(invalid());
+            }
+            let polynomial = if ins & (1 << 12) != 0 {
+                0x82f63b78
+            } else {
+                0xedb88320
+            };
+            let mut crc = self.x(rn) as u32;
+            for byte in 0..bytes {
+                crc ^= ((self.x(rm) >> (byte * 8)) & 255) as u32;
+                for _ in 0..8 {
+                    crc = (crc >> 1) ^ if crc & 1 != 0 { polynomial } else { 0 };
+                }
+            }
+            self.set_x(rd, crc as u64);
         } else if ins & 0x1f800000 == 0x12800000 {
             // MOVN/MOVZ/MOVK
             let opc = (ins >> 29) & 3;
@@ -419,7 +460,7 @@ mod tests {
     }
     #[test]
     fn invalid_encodings_and_memory_faults_keep_pc() {
-        for instruction in [0, 0x52c00000, 0xd4000021, 0x0bc00000] {
+        for instruction in [0, 0x52c00000, 0xd4000003, 0x0bc00000] {
             let mut m = code(&[instruction]);
             let mut c = Cpu {
                 pc: 0x1000,
@@ -436,5 +477,149 @@ mod tests {
         c.set_x(1, u64::MAX);
         assert!(matches!(c.step(&mut m), Err(CpuFault::Memory { .. })));
         assert_eq!(c.pc, 0x1000);
+    }
+
+    #[test]
+    fn reserved_new_encodings_have_no_architectural_effects() {
+        // Invalid RDM widths, scalar vector-only FADD, odd CASP pair, an
+        // unallocated atomic operation and the reserved indexed FP type.
+        for instruction in [
+            0x6e028420, 0x6ec28420, 0x5e421420, 0x48217c82, 0xf8209022, 0x4f729820,
+        ] {
+            for backend in [Backend::Reference, Backend::Cpp] {
+                if backend == Backend::Cpp && !Cpu::cpp_available() {
+                    continue;
+                }
+                let mut memory = code(&[instruction]);
+                memory.map(0x2000, PAGE_SIZE, Permissions::RW).unwrap();
+                memory.write(0x2000, &[0x5a; 32]).unwrap();
+                let mut cpu = Cpu::new(0x1000, 0x2800);
+                cpu.set_backend(backend).unwrap();
+                for i in 0..31 {
+                    cpu.set_x(i, 0x2000);
+                }
+                for i in 0..32 {
+                    cpu.set_vector(i, u128::MAX);
+                }
+                cpu.set_nzcv(9);
+                cpu.fpcr = 0x07c80000;
+                cpu.fpsr = 0x9f;
+                let before = cpu.clone();
+                let revision = memory.revision();
+                assert!(
+                    matches!(
+                        cpu.run_slice(&mut memory, 1),
+                        SliceOutcome::Fault(CpuFault::Instruction { .. })
+                    ),
+                    "{instruction:08x} {backend:?}"
+                );
+                assert_eq!(cpu.registers, before.registers);
+                assert_eq!(cpu.vectors, before.vectors);
+                assert_eq!(
+                    (
+                        cpu.pc,
+                        cpu.sp,
+                        cpu.nzcv(),
+                        cpu.fpcr,
+                        cpu.fpsr,
+                        cpu.exclusive
+                    ),
+                    (
+                        before.pc,
+                        before.sp,
+                        before.nzcv(),
+                        before.fpcr,
+                        before.fpsr,
+                        before.exclusive
+                    )
+                );
+                assert_eq!(memory.revision(), revision);
+            }
+        }
+    }
+
+    #[test]
+    fn failed_atomic_write_preflight_keeps_memory_and_registers() {
+        for instruction in [0xf8208022, 0x48207c82] {
+            // SWP / CASP
+            for backend in [Backend::Reference, Backend::Cpp] {
+                if backend == Backend::Cpp && !Cpu::cpp_available() {
+                    continue;
+                }
+                let mut memory = code(&[instruction]);
+                memory.map(0x2000, PAGE_SIZE, Permissions::RW).unwrap();
+                memory.write(0x2000, &[0xa5; 16]).unwrap();
+                memory.protect(0x2000, PAGE_SIZE, Permissions::R).unwrap();
+                let mut cpu = Cpu::new(0x1000, 0x2800);
+                cpu.set_backend(backend).unwrap();
+                for i in 0..31 {
+                    cpu.set_x(i, 0x2000);
+                }
+                let before = cpu.clone();
+                let revision = memory.revision();
+                assert!(matches!(
+                    cpu.run_slice(&mut memory, 1),
+                    SliceOutcome::Fault(CpuFault::Memory { .. })
+                ));
+                assert_eq!(cpu.registers, before.registers);
+                assert_eq!(cpu.pc, before.pc);
+                assert_eq!(memory.revision(), revision);
+                let mut contents = [0; 16];
+                memory.read(0x2000, &mut contents).unwrap();
+                assert_eq!(contents, [0xa5; 16]);
+            }
+        }
+    }
+
+    #[test]
+    fn rcpc_load_does_not_create_an_exclusive_reservation() {
+        let mut memory = code(&[0xf8bfc020, 0xc8037c24]); // LDAPR X0 / STXR W3,X4
+        memory.map(0x2000, PAGE_SIZE, Permissions::RW).unwrap();
+        memory.write(0x2000, &7u64.to_le_bytes()).unwrap();
+        let mut cpu = Cpu::new(0x1000, 0x2800);
+        cpu.set_x(1, 0x2000);
+        cpu.set_x(4, 99);
+        cpu.step(&mut memory).unwrap();
+        assert_eq!(cpu.x(0), 7);
+        cpu.step(&mut memory).unwrap();
+        assert_eq!(cpu.x(3), 1);
+        assert_eq!(memory.read_u64(0x2000).unwrap(), 7);
+    }
+
+    #[test]
+    fn virtual_counter_and_cache_maintenance_preserve_guest_state() {
+        let mut memory = code(&[0xd53be000, 0xd53be041, 0xd53be042]);
+        let mut cpu = Cpu::new(0x1000, 0x2800);
+        cpu.step(&mut memory).unwrap();
+        cpu.step(&mut memory).unwrap();
+        cpu.step(&mut memory).unwrap();
+        assert_eq!(cpu.x(0), 1_000_000_000);
+        assert!(cpu.x(2) >= cpu.x(1));
+        for instruction in [0xd50b7b21, 0xd50b7a21, 0xd50b7e21, 0xd50b7521] {
+            memory = code(&[instruction]);
+            memory
+                .map(
+                    0x2000,
+                    PAGE_SIZE,
+                    Permissions {
+                        read: false,
+                        write: false,
+                        execute: false,
+                    },
+                )
+                .unwrap();
+            cpu = Cpu::new(0x1000, 0x2800);
+            cpu.set_x(1, 0x2001);
+            let revision = memory.instruction_revision();
+            cpu.step(&mut memory).unwrap();
+            assert_eq!(memory.instruction_revision(), revision);
+            cpu.pc = 0x1000;
+            cpu.set_x(1, 0x3000);
+            assert!(matches!(
+                cpu.step(&mut memory),
+                Err(CpuFault::Memory { .. })
+            ));
+            assert_eq!(cpu.pc, 0x1000);
+        }
     }
 }

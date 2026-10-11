@@ -337,7 +337,7 @@ fn run(
         return Err("session cancelled".into());
     }
     for (path, bytes) in [
-        (b"/home/user/.trames".as_slice(), b"Trames\n".as_slice()),
+        (b"/root/.trames".as_slice(), b"Trames\n".as_slice()),
         (
             b"/etc/resolv.conf".as_slice(),
             b"nameserver 10.0.0.1\nnameserver fd00::1\n".as_slice(),
@@ -348,7 +348,7 @@ fn run(
                 .map_err(|e| e.to_string())?;
         }
     }
-    vfs.chdir(b"/home/user").map_err(|e| e.to_string())?;
+    vfs.chdir(b"/root").map_err(|e| e.to_string())?;
     vfs.configure_local_fabric(match options.network.as_str() {
         "off" => NetworkMode::Off,
         "loopback" => NetworkMode::Loopback,
@@ -360,8 +360,9 @@ fn run(
         &bytes,
         &["/bin/ash".into(), "-i".into()],
         &[
-            "HOME=/home/user".into(),
+            "HOME=/root".into(),
             "USER=root".into(),
+            "LOGNAME=root".into(),
             "PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin".into(),
             "TERM=xterm-256color".into(),
             "LANG=C.UTF-8".into(),

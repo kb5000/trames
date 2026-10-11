@@ -139,6 +139,8 @@ fn initial_stack_bytes(
     // Static Linux auxv, including real host entropy for the guest stack guard.
     let mut auxv = vec![
         (6u64, PAGE_SIZE),
+        (16, trames_cpu::HWCAP),
+        (26, trames_cpu::HWCAP2),
         (9, elf.entry),
         (7, elf.interpreter_base),
         (11, credentials.uid as u64),
@@ -296,6 +298,24 @@ mod tests {
         assert_eq!(e.memory.read_u64(sp + 40).unwrap(), 0);
         assert_eq!(e.memory.read_u64(sp + 48).unwrap(), 6);
         assert_eq!(e.memory.read_u64(sp + 56).unwrap(), PAGE_SIZE);
+        let mut capabilities = [None, None];
+        for i in 0..32 {
+            let key = e.memory.read_u64(sp + 48 + i * 16).unwrap();
+            let value = e.memory.read_u64(sp + 56 + i * 16).unwrap();
+            match key {
+                16 => capabilities[0] = Some(value),
+                26 => capabilities[1] = Some(value),
+                0 => break,
+                _ => {}
+            }
+        }
+        assert_eq!(
+            capabilities,
+            [Some(trames_cpu::HWCAP), Some(trames_cpu::HWCAP2)]
+        );
+        // PAC, SVE, MTE and BF16 are not implemented or advertised.
+        assert_eq!(trames_cpu::HWCAP & ((1 << 22) | (1 << 30) | (1 << 31)), 0);
+        assert_eq!(trames_cpu::HWCAP2 & ((1 << 14) | (1 << 18)), 0);
         assert!(e.memory.fetch_u32(sp).is_err());
         assert!(e.memory.read_u64(STACK_TOP - STACK_SIZE - 8).is_err());
     }

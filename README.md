@@ -104,6 +104,17 @@ guest root、UID/GID、目录权限及持久化所有权修复了安装 Vim 的 
 
 虚拟 DNS 的 `10.0.0.1` 是网关，guest 本机是 `10.0.0.2`。所有者报告的 iPad DNS 错误仍在验证；实际 Apple DNS/HTTPS 已加入测试。手动修改的 resolver 配置不会在重开时改写。
 
+## CPU 参考实现与加速（0.4.0 / build 5）
+
+补齐大量 AArch64 用户态整数 NEON、S/D/FP16 浮点形式、CRC/LSE/RCpc、AES/SHA、
+DotProd/RDM/I8MM 和 FlagM；新增六组独立 QEMU 差分共 253,038 个状态快照。
+auxv 和 `/proc/cpuinfo` 共用已实现的 CPU 能力，未实现的扩展不公布。
+默认 root 会话改用 `/root`，根磁盘标识为 `vda1`，虚拟网络接口为 `eth0`。
+
+正确性验证后优化取指、单页访存与解码分组；Rust 参考后端仍为默认。
+[当前能力与剩余缺口](docs/roadmap/compatibility-0.4.md)和
+[验证与前后跑分](docs/validation/reference-0.4.md)记录具体范围。
+
 ## 验证
 
 ```sh
@@ -119,6 +130,11 @@ python3 tests/differential/structures.py
 python3 tests/differential/pairwise_integer.py
 python3 tests/differential/widening_integer.py
 python3 tests/differential/vector_copy_shift.py
+python3 tests/differential/vector_integer.py
+python3 tests/differential/atomics_crc.py
+python3 tests/differential/half_floating.py
+python3 tests/differential/crypto.py
+python3 tests/differential/modern.py
 bash scripts/build-busybox.sh
 python3 tests/integration/busybox.py
 bash scripts/build-m2-fixtures.sh

@@ -10,7 +10,7 @@ explicit first-use fingerprint prompt. Password and Ed25519 OpenSSH keys are
 supported; encrypted Ed25519 parsing comes from Citadel 0.12.1. Optional saved
 credentials use WhenUnlockedThisDeviceOnly Keychain items. Unsupported config
 directives are listed before connection; Match is rejected. Load the canonical
-/home/user/.ssh/config from the local environment. IdentityFile paths resolve
+/root/.ssh/config from the local environment. IdentityFile paths resolve
 inside that environment; no guest path grants native file access.
 
 SFTP v3 supports file upload/download with exclusive creation, 32 KiB chunks,

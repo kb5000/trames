@@ -7,8 +7,8 @@ from run import ROOT
 
 def cases():
     rng=random.Random(19284)
-    binary=['fadd','fsub','fmul','fdiv','fmla','fmls','fmax','fmin','fmaxnm','fminnm','fcmeq','fcmge','fcmgt','facge','facgt','faddp']
-    unary=['fabs','fneg','fsqrt','frintn','frintp','frintm','frintz','frinta','frintx','frinti','scvtf','ucvtf','fcvtzs','fcvtzu']
+    binary=['fadd','fsub','fmul','fdiv','fmla','fmls','fmax','fmin','fmaxnm','fminnm','fcmeq','fcmge','fcmgt','facge','facgt','faddp','fmulx','fabd','fmaxp','fminp','fmaxnmp','fminnmp','frecps','frsqrts']
+    unary=['fabs','fneg','fsqrt','frintn','frintp','frintm','frintz','frinta','frintx','frinti','scvtf','ucvtf','fcvtzs','fcvtzu','fcvtns','fcvtnu','fcvtps','fcvtpu','fcvtms','fcvtmu','fcvtas','fcvtau','frecpe','frsqrte']
     for width,lanes,arr in [(32,2,'2s'),(32,4,'4s'),(64,2,'2d')]:
         frac=23 if width==32 else 52;inf=(255 if width==32 else 2047)<<frac;sign=1<<(width-1)
         edge=[0,sign,1,sign|1,(1<<frac)-1,1<<frac,inf-1,inf,sign|inf,inf|1,inf|(1<<(frac-1)),sign|inf|123]
@@ -18,6 +18,43 @@ def cases():
                 for op in binary+unary:
                     line=f'{op} v0.{arr}, v1.{arr}'+(f', v2.{arr}' if op in binary else '')
                     for _ in range(2): yield line,vector(),vector(),vector(),control|(mode<<22)
+    for arr,width in [('2s',32),('4s',32),('2d',64)]:
+        for mode in range(4):
+            for control in [0,1<<24,1<<25,(1<<24)|(1<<25)]:
+                state=control|(mode<<22)
+                for op in ['fcmgt','fcmge','fcmeq','fcmle','fcmlt']:
+                    for _ in range(4):yield f'{op} v0.{arr},v1.{arr},#0.0',rng.getrandbits(128),0,0,state
+                for op in ['scvtf','ucvtf','fcvtzs','fcvtzu']:
+                    for scale in [1,width]:yield f'{op} v0.{arr},v1.{arr},#{scale}',rng.getrandbits(128),0,0,state
+                for op in ['fmul','fmulx','fmla','fmls']:
+                    for index in range(128//width):
+                        yield f'{op} v0.{arr},v1.{arr},v2.{"s" if width==32 else "d"}[{index}]',rng.getrandbits(128),rng.getrandbits(128),rng.getrandbits(128),state
+                if arr=='4s':
+                    for op in ['fmaxv','fminv','fmaxnmv','fminnmv']:
+                        for _ in range(4):yield f'{op} s0,v1.4s',rng.getrandbits(128),0,0,state
+    for reg,width in [('s',32),('d',64)]:
+        frac=23 if width==32 else 52;inf=((1<<(8 if width==32 else 11))-1)<<frac;sign=1<<(width-1)
+        values=[0,sign,1,sign|1,(1<<frac)-1,1<<frac,1<<(frac-2),inf-1,inf,sign|inf,inf|1,inf|(1<<(frac-1)),sign|inf|123]
+        for control in [0,1<<24,1<<25,(1<<24)|(1<<25)]:
+            for mode in range(4):
+                for op in ['frecpe','frsqrte','frecpx']:
+                    for value in values+[rng.getrandbits(width) for _ in range(16)]:yield f'{op} {reg}0,{reg}1',value,0,0,control|(mode<<22)
+                for op in ['frecps','frsqrts']:
+                    for _ in range(32):yield f'{op} {reg}0,{reg}1,{reg}2',rng.choice(values),rng.choice(values),0,control|(mode<<22)
+    for arr in ['2s','4s']:
+        for op in ['urecpe','ursqrte']:
+            for _ in range(64):yield f'{op} v0.{arr},v1.{arr}',rng.getrandbits(128),0,0,0
+    for op in ['fcvtl','fcvtl2','fcvtn','fcvtn2','fcvtxn','fcvtxn2']:
+        for mode in range(4):
+            for control in [0,1<<24,1<<25,(1<<24)|(1<<25)]:
+                for _ in range(16):
+                    operands='v0.2d,v1.4s' if op=='fcvtl2' else 'v0.2d,v1.2s' if op=='fcvtl' else ('v0.4s,v1.2d' if op.endswith('2') else 'v0.2s,v1.2d')
+                    yield f'{op} {operands}',rng.getrandbits(128),0,rng.getrandbits(128),control|(mode<<22)
+    for control in [0,1<<24,1<<25,(1<<24)|(1<<25)]:
+        for _ in range(64):yield 'fcvtxn s0,d1',rng.getrandbits(128),0,rng.getrandbits(128),control
+    for reg,arr in [('s','2s'),('d','2d')]:
+        for op in ['fmaxp','fminp','fmaxnmp','fminnmp']:
+            for _ in range(32):yield f'{op} {reg}0,v1.{arr}',rng.getrandbits(128),0,0,0
     for arr in ['2s','4s','2d']:
         for val in ['1.0','-2.0','0.125','31.0']:yield f'fmov v0.{arr}, #{val}',0,0,0,0
     for reg,arr in [('s','2s'),('d','2d')]:

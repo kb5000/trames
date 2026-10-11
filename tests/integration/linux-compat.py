@@ -44,12 +44,14 @@ def main():
         run([*base, '--rootfs', ARCHIVE, '--guest', '/bin/busybox', 'true'])
         def busybox(*args):
             return run([*base, '--guest', '/bin/busybox', *args])
+        out, err = busybox('ash', '-c', 'id -u; pwd; printf "%s %s %s\\n" "$HOME" "$USER" "$LOGNAME"; sync')
+        assert (out, err) == (b'0\n/root\n/root root root\n', b''), (out, err)
         out, err = busybox('ps')
         assert not err and b'root' in out and b'/bin/busybox ps' in out, (out, err)
         out, err = busybox('mount')
-        assert not err and b'/proc' in out and b'/sys' in out and b'tramesfs' in out
+        assert not err and b'/proc' in out and b'/sys' in out and b'/dev/vda1' in out and b'rootfs' in out
         out, err = busybox('df', '-h')
-        assert not err and b'trames' in out and b'Filesystem' in out
+        assert not err and b'/dev/vda1' in out and b'Filesystem' in out
         out, err = busybox('free')
         assert not err and b'Mem:' in out and b'Swap:' in out
         out, err = busybox('top', '-b', '-n', '1')
@@ -57,7 +59,7 @@ def main():
         out, err = busybox('ip', 'a')
         assert not err and b'127.0.0.1/8' in out and b'10.0.0.2/24' in out and b'fd00::2/64' in out, (out, err)
         out, err = busybox('ip', 'route')
-        assert not err and b'default via 10.0.0.1 dev trames0' in out
+        assert not err and b'default via 10.0.0.1 dev eth0' in out
         for applet, destination in [('ping', '127.0.0.1'), ('ping6', '::1'), ('ping', '10.0.0.1'), ('ping6', 'fd00::1')]:
             out, err = busybox(applet, '-c', '2', '-W', '1', destination)
             assert not err and b'2 packets received, 0% packet loss' in out, (out, err)
@@ -76,8 +78,8 @@ def main():
                 assert p.returncode == 0 and not p.stderr and b'2 packets received, 0% packet loss' in p.stdout, (p.returncode, p.stdout, p.stderr)
             count += 1
         print('Native ICMP egress: real replies or explicit host permission denial verified', flush=True)
-        out, err = busybox('ash', '-c', 'head -c 8 /dev/zero | od -An -tx1; head -c 32 /dev/urandom | wc -c; cat /proc/net/dev; cat /sys/class/net/trames0/statistics/tx_packets')
-        assert not err and b'00 00 00 00 00 00 00 00' in out and b'32\n' in out and b'trames0:' in out, (out, err)
+        out, err = busybox('ash', '-c', 'head -c 8 /dev/zero | od -An -tx1; head -c 32 /dev/urandom | wc -c; cat /proc/net/dev; cat /sys/class/net/eth0/statistics/tx_packets')
+        assert not err and b'00 00 00 00 00 00 00 00' in out and b'32\n' in out and b'eth0:' in out, (out, err)
         count += 12
         # Serve the official index and packages, retaining Alpine signatures.
         repo = tmp / 'repo' / 'aarch64'; repo.mkdir(parents=True)

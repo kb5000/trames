@@ -279,6 +279,7 @@ impl Kernel {
         p.linux.vfs.set_runtime_info(
             pid,
             trames_vfs::RuntimeInfo {
+                cpu_features: trames_cpu::FEATURE_NAMES,
                 processes,
                 uptime: self.started.elapsed(),
                 idle: self.idle,

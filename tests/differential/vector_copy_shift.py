@@ -6,6 +6,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 def main():
     source=['.text','.global _start','_start:','adr x9, input','adr x10, output']; cases=0
+    for instruction in ['movi v31.16b,#2', 'movi v0.8b,#255', 'movi v0.8h,#17,lsl #8', 'movi v0.4s,#19,lsl #24', 'movi v0.4s,#23,msl #16', 'movi v0.2d,#0xff00ff00ff00ff00', 'mvni v0.8h,#31', 'mvni v0.4s,#29,msl #8', 'orr v0.4s,#41,lsl #16', 'bic v0.8h,#43,lsl #8', 'fmov v0.4s,#1.5', 'fmov v0.2d,#-2.0']:
+        destination = 31 if instruction.startswith('movi v31.') else 0
+        source += ['ldr q0,[x9]', instruction, f'str q{destination},[x10],#16']; cases += 1
     for bits,letter in [(8,'b'),(16,'h'),(32,'s'),(64,'d')]:
         for destination in range(128//bits):
             for origin in range(128//bits):

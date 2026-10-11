@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Integer-only IEEE binary32/binary64 arithmetic. No host floating environment.
+//! Integer-only IEEE binary16/binary32/binary64 arithmetic.
 use std::cmp::Ordering;
 
 pub const INVALID: u32 = 1;
@@ -14,16 +14,29 @@ pub struct Format {
     pub frac: u32,
     pub ebits: u32,
     pub bias: i32,
+    alternative: bool,
 }
+pub const HALF: Format = Format {
+    frac: 10,
+    ebits: 5,
+    bias: 15,
+    alternative: false,
+};
+pub const ALTERNATIVE_HALF: Format = Format {
+    alternative: true,
+    ..HALF
+};
 pub const SINGLE: Format = Format {
     frac: 23,
     ebits: 8,
     bias: 127,
+    alternative: false,
 };
 pub const DOUBLE: Format = Format {
     frac: 52,
     ebits: 11,
     bias: 1023,
+    alternative: false,
 };
 #[derive(Clone, Copy)]
 pub struct Number {
@@ -92,15 +105,17 @@ impl Format {
         let sign = raw & self.sign_bit() != 0;
         let field = ((raw & self.exp_mask()) >> self.frac) as i32;
         let frac = raw & ((1u64 << self.frac) - 1);
-        let special = field == (1 << self.ebits) - 1;
+        let special = !self.alternative && field == (1 << self.ebits) - 1;
         let nan = special && frac != 0;
         let mut sig = frac as u128;
         if field != 0 {
             sig |= 1u128 << self.frac;
         }
-        if field == 0 && frac != 0 && fpcr & (1 << 24) != 0 {
+        if field == 0 && frac != 0 && self.flush(fpcr) {
             sig = 0;
-            *flags |= DENORMAL;
+            if self.frac != 10 {
+                *flags |= DENORMAL;
+            }
         }
         Number {
             sign,
@@ -111,6 +126,9 @@ impl Format {
             snan: nan && frac & self.quiet() == 0,
             inf: special && frac == 0,
         }
+    }
+    fn flush(self, fpcr: u32) -> bool {
+        fpcr & (1 << if self.frac == 10 { 19 } else { 24 }) != 0
     }
     pub fn nan_result(self, values: &[Number], fpcr: u32, flags: &mut u32) -> Option<u64> {
         let signaling = values.iter().find(|v| v.snan);
@@ -143,9 +161,9 @@ impl Format {
         }
         let top = 127 - mag.leading_zeros() as i32;
         let emin = 1 - self.bias;
-        let emax = self.bias;
+        let emax = self.bias + i32::from(self.alternative);
         let tiny = top + exp < emin;
-        if tiny && fpcr & (1 << 24) != 0 {
+        if tiny && self.flush(fpcr) {
             *flags |= UNDERFLOW;
             return signbits;
         }
@@ -180,6 +198,10 @@ impl Format {
             result_exp += 1;
         }
         if result_exp > emax {
+            if self.alternative {
+                *flags |= INVALID;
+                return signbits | (self.sign_bit() - 1);
+            }
             *flags |= OVERFLOW | INEXACT;
             return if mode == 0 || mode == 4 || (mode == 1 && !sign) || (mode == 2 && sign) {
                 self.infinity(sign)
@@ -484,6 +506,11 @@ impl Format {
         }
     }
     pub fn convert(self, source: Format, a: Number, mode: u32, fpcr: u32, flags: &mut u32) -> u64 {
+        if self.alternative && (a.nan || a.inf) {
+            *flags |= INVALID;
+            return (if a.sign { self.sign_bit() } else { 0 })
+                | if a.inf { self.sign_bit() - 1 } else { 0 };
+        }
         if a.nan {
             if a.snan {
                 *flags |= INVALID;
