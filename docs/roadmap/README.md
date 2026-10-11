@@ -17,6 +17,7 @@ Windows/Sideloadly signing, installation and startup on a physical iPad on
 | M3 | Delivered: PT_INTERP, dynamic PIE/ET_EXEC, file-backed private mmap, verified Alpine 3.22.6, authenticated HTTPS apk update/add, successful trigger and installed tree execution |
 | Virtual network (after M3) | Delivered: isolated IPv4/IPv6 and loopback, smoltcp TCP/UDP/ICMP packets, bounded two-family fragmentation, UDP/TCP DNS, native egress gateway, 27 QEMU comparisons and actual Alpine HTTPS apk |
 | M4 | Software validated: SwiftUI/SwiftTerm, native SSH/SFTP, Files, keyboard and embedding ABI; Apple builds and simulator operations passed. Owner-confirmed Sideloadly installation/startup; remaining physical acceptance in issue #8 |
+| Linux compatibility, 0.2.0 | Runtime proc/sys/dev views, virtual ownership and v3 persistence migration, musl threads/futex/timers, read-only route netlink, ICMP raw guest packets and native datagram echo egress, actual Alpine tools and default Vim editing; [record](../validation/linux-compat.md) |
 | M5 | Versioned guest Bridge RPC, native capability consent, scoped storage, accelerator registry and profiled C++ backend; extend the embedding ABI |
 | M6 | Verified Git/Python/GCC/Clang/Make/CMake workflows; Debian after ABI coverage supports it |
 
@@ -24,6 +25,8 @@ The owner requested on 2026-10-11 that future feature changes be grouped into a
 larger release, with M5 explained before implementation. Keep the app's bundle
 identifier stable across updates; internal CI builds do not require a new device
 installation. The terminal viewport fix will also be included in that release.
+Linux compatibility takes priority over M5. Version 0.2.0/build 3 combines it
+with the viewport fix; M5 has not started.
 
 M3 is validated with unmodified Alpine binaries, a deterministic native HTTPS
 peer and upstream Alpine-signed index/packages. The subsequent virtual network

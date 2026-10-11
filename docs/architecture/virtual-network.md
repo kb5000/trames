@@ -71,7 +71,7 @@ Each port has at most 96 incoming and 96 outgoing frames, each at most 1500
 bytes. Reassembled packets are bounded by the IP length limit. The stack permits
 256 aggregate handles/reservations per fabric, including gateway sockets,
 backlog entries and pending native connections; 64 guest socket objects per
-environment; and 64 native TCP/UDP flows per fabric. Listener backlog is capped
+environment; and 64 native TCP/UDP/ICMP flows per fabric. Listener backlog is capped
 at eight per addressed IP. Wildcard listeners cover assigned and loopback
 addresses, plus IPv4 when explicitly dual stack, so a backlog consumes several
 handles. Quota checks precede allocations/accept side effects.
@@ -127,13 +127,17 @@ can finish it without delivering to a ended session. This is ordinary system
 DNS, with no encrypted-DNS or full authoritative DNS claim.
 
 ICMP echo operates inside the fabric and at the gateway. The guest API supports
-SOCK_DGRAM/IPPROTO_ICMP or ICMPV6 with bounded echo payloads (8–1400 bytes), an
-assigned identifier, PEEK/TRUNC and private-peer replies. External ICMP and raw/
-packet sockets remain unsupported because native raw ICMP would need additional
-host privileges. This does not provide a complete Linux ping/raw-socket ABI.
-Read-only SIOCGIFCONF/NAME/INDEX/ADDR/NETMASK/MTU/FLAGS report logical interfaces;
-network configuration changes, netlink and the full Linux interface ABI remain
-unsupported.
+SOCK_DGRAM/IPPROTO_ICMP or ICMPV6 and bounded guest SOCK_RAW ICMP packets, including
+the raw ABI used by Alpine BusyBox ping. Payloads are 8–1400 bytes. External echo
+uses native unprivileged ICMP datagram sockets, never native raw sockets. At most
+32 echo flows share the 64-flow limit and expire after 60 idle seconds. Replies
+retain guest identifiers and logical remote addresses; unavailable host permission
+or routing returns actual errors. Non-echo external raw ICMP and packet sockets
+remain unsupported. iPad ICMP behavior still requires physical acceptance.
+Read-only SIOCGIFCONF/NAME/INDEX/ADDR/NETMASK/MTU/FLAGS and NETLINK_ROUTE link/address/
+route dumps report guest interfaces; proc/sys views expose runtime statistics.
+Network configuration changes, multicast subscriptions and the full Linux
+interface ABI remain unsupported. See [Linux compatibility](linux-compat.md).
 
 HTTP/TLS stays end-to-end in the guest. The gateway neither terminates TLS nor
 rewrites certificates or application requests. It opens no route unavailable to

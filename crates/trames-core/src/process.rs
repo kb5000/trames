@@ -14,6 +14,8 @@ use trames_vfs::{Errno, FdKind, O_NONBLOCK};
 const MAX_PROCESSES: usize = 32;
 const TOTAL_MAPPED_LIMIT: usize = 256 * 1024 * 1024;
 const UNBLOCKABLE: u64 = (1 << 8) | (1 << 18);
+#[path = "process_events.rs"]
+mod events;
 #[derive(Clone, Copy, Default)]
 struct Action {
     handler: u64,
@@ -26,6 +28,7 @@ struct Info {
     sender: u32,
     status: i32,
     code: i32,
+    timer: Option<(i32, i32, u64)>,
 }
 #[derive(Clone)]
 enum State {
@@ -33,6 +36,17 @@ enum State {
     Blocked(u32, [u64; 6]),
     Sleep(Instant, u64),
     Suspend(u64),
+    Vfork(u32),
+    Futex {
+        address: u64,
+        bits: u32,
+        deadline: Option<Instant>,
+    },
+    Sigwait {
+        mask: u64,
+        info: u64,
+        deadline: Option<Instant>,
+    },
     Stopped,
     Zombie(i32),
 }
@@ -53,6 +67,14 @@ struct Process {
     poll_mask: Option<u64>,
     stopped_state: Option<Box<State>>,
     auto_reap: bool,
+    tgid: u32,
+    started: Instant,
+    cpu_time: Duration,
+    vm_id: u64,
+    files_id: u64,
+    fs_id: u64,
+    actions_id: u64,
+    rekey: Option<u32>,
 }
 impl Process {
     fn fork(&self) -> Self {
@@ -73,6 +95,14 @@ impl Process {
             poll_mask: None,
             stopped_state: None,
             auto_reap: false,
+            tgid: self.tgid,
+            started: Instant::now(),
+            cpu_time: Duration::ZERO,
+            vm_id: self.vm_id,
+            files_id: self.files_id,
+            fs_id: self.fs_id,
+            actions_id: self.actions_id,
+            rekey: None,
         }
     }
 }
@@ -82,6 +112,12 @@ struct Kernel {
     terminal: Option<Terminal>,
     started: Instant,
     instructions: u64,
+    idle: Duration,
+    load: [f64; 3],
+    load_sample: Instant,
+    next_resource: u64,
+    timers: BTreeMap<i32, events::Timer>,
+    next_timer: i32,
 }
 fn error(e: Errno) -> u64 {
     0u64.wrapping_sub(e.0 as u64)
@@ -126,6 +162,133 @@ fn strings(m: &Memory, address: u64) -> Result<Vec<Vec<u8>>, Errno> {
     Err(Errno(7))
 }
 impl Kernel {
+    fn resource_id(&mut self) -> u64 {
+        let id = self.next_resource;
+        self.next_resource += 1;
+        id
+    }
+    fn other_memory(&self, vm_id: u64) -> usize {
+        let mut spaces = BTreeMap::new();
+        for p in self
+            .processes
+            .values()
+            .filter(|p| p.vm_id != vm_id && !matches!(p.state, State::Zombie(_)))
+        {
+            spaces.entry(p.vm_id).or_insert(p.memory.mapped_bytes());
+        }
+        spaces.values().sum()
+    }
+    fn sync_resources(&mut self, p: &Process) {
+        if matches!(p.state, State::Zombie(_)) {
+            return;
+        }
+        for other in self
+            .processes
+            .values_mut()
+            .filter(|o| !matches!(o.state, State::Zombie(_)))
+        {
+            if other.vm_id == p.vm_id {
+                other.linux.share_heap_from(&p.linux);
+            }
+            if other.files_id == p.files_id {
+                other.linux.vfs.share_descriptors_from(&p.linux.vfs);
+            }
+            if other.fs_id == p.fs_id {
+                other.linux.vfs.share_context_from(&p.linux.vfs);
+            }
+            if other.actions_id == p.actions_id {
+                other.actions = p.actions;
+            }
+        }
+    }
+    fn process_info(&self, pid: u32, p: &Process) -> trames_vfs::ProcessInfo {
+        let mut maps = String::new();
+        for (start, end, access) in p.memory.regions() {
+            use std::fmt::Write;
+            let _ = writeln!(
+                maps,
+                "{start:012x}-{end:012x} {}{}{}p 00000000 00:00 0",
+                if access.read { 'r' } else { '-' },
+                if access.write { 'w' } else { '-' },
+                if access.execute { 'x' } else { '-' }
+            );
+            if maps.len() >= 1024 * 1024 {
+                break;
+            }
+        }
+        let arguments = p
+            .linux
+            .argument_pointers
+            .iter()
+            .enumerate()
+            .map(|(i, pointer)| {
+                p.memory
+                    .read_c_string(
+                        *pointer,
+                        p.linux.arguments.get(i).map_or(65536, |a| a.len() + 1),
+                    )
+                    .unwrap_or_else(|_| p.linux.arguments.get(i).cloned().unwrap_or_default())
+            })
+            .collect();
+        trames_vfs::ProcessInfo {
+            pid,
+            tgid: p.tgid,
+            parent: p.parent,
+            group: p.group,
+            session: p.session,
+            state: match p.state {
+                State::Ready => 'R',
+                State::Stopped => 'T',
+                State::Zombie(_) => 'Z',
+                _ => 'S',
+            },
+            credentials: p.linux.vfs.credentials.clone(),
+            command: p.linux.command_name.clone(),
+            arguments,
+            environment: p.linux.environment.clone(),
+            executable: p.linux.executable_path.clone(),
+            cwd: p.linux.vfs.cwd().unwrap_or_else(|_| b"/".to_vec()),
+            mapped_bytes: p.memory.mapped_bytes(),
+            maps: maps.into_bytes(),
+            user_ticks: (p.cpu_time.as_millis() / 10) as u64,
+            start_ticks: (p
+                .started
+                .saturating_duration_since(self.started)
+                .as_millis()
+                / 10) as u64,
+            terminal: p.linux.vfs.fd_kind(0).ok() == Some(FdKind::Terminal),
+            fds: p.linux.vfs.fd_snapshot(),
+            auxiliary: p.linux.auxiliary.clone(),
+            pending: p.pending.keys().fold(0, |v, s| v | (1 << (s - 1))),
+            blocked: p.mask,
+            ignored: (1..=64)
+                .filter(|s| p.actions[*s].handler == 1)
+                .fold(0, |v, s| v | (1 << (s - 1))),
+            caught: (1..=64)
+                .filter(|s| p.actions[*s].handler > 1)
+                .fold(0, |v, s| v | (1 << (s - 1))),
+        }
+    }
+    fn refresh_proc(&self, pid: u32, p: &mut Process) {
+        let mut processes: Vec<_> = self
+            .processes
+            .iter()
+            .map(|(&id, other)| self.process_info(id, other))
+            .collect();
+        processes.push(self.process_info(pid, p));
+        p.linux.vfs.set_runtime_info(
+            pid,
+            trames_vfs::RuntimeInfo {
+                processes,
+                uptime: self.started.elapsed(),
+                idle: self.idle,
+                memory_limit: TOTAL_MAPPED_LIMIT,
+                load: self.load,
+                processes_created: self.next_pid - 1,
+                used_memory: self.other_memory(p.vm_id) + p.memory.mapped_bytes(),
+            },
+        );
+    }
     fn notify(&mut self, parent: u32, child: u32, status: i32, code: i32) {
         if let Some(p) = self.processes.get_mut(&parent) {
             if p.actions[17].handler == 1 || (matches!(code, 5 | 6) && p.actions[17].flags & 1 != 0)
@@ -136,14 +299,26 @@ impl Kernel {
                 sender: child,
                 status,
                 code,
+                timer: None,
             });
         }
     }
-    fn exit(&mut self, pid: u32, p: &mut Process, status: i32) {
+    fn exit_one(&mut self, pid: u32, p: &mut Process, status: i32) {
+        let address = p.linux.clear_tid_address();
+        p.linux.exit_tid(&mut p.memory);
+        self.wake_futex(p.vm_id, address, u32::MAX, u32::MAX);
+        self.wake_vfork(pid);
+        if pid != p.tgid {
+            p.state = State::Zombie(status);
+            p.auto_reap = true;
+            p.linux.vfs.close_all();
+            p.memory = Memory::default();
+            self.finish_group(p.tgid);
+            return;
+        }
         p.auto_reap = self.processes.get(&p.parent).is_some_and(|parent| {
             parent.actions[17].handler == 1 || parent.actions[17].flags & 2 != 0
         });
-        p.linux.exit_tid(&mut p.memory);
         if pid != 1 {
             p.memory = Memory::default();
         }
@@ -151,19 +326,90 @@ impl Kernel {
         p.linux.vfs.close_all();
         p.pending.clear();
         p.wait_event = None;
-        self.notify(
-            p.parent,
-            pid,
-            if status & 127 == 0 {
-                status >> 8
-            } else {
-                status & 127
-            },
-            if status & 127 == 0 { 1 } else { 2 },
-        );
+        if !self
+            .processes
+            .values()
+            .any(|t| t.tgid == p.tgid && !matches!(t.state, State::Zombie(_)))
+        {
+            self.timers.retain(|_, t| t.tgid != p.tgid);
+            self.notify(
+                p.parent,
+                pid,
+                if status & 127 == 0 {
+                    status >> 8
+                } else {
+                    status & 127
+                },
+                if status & 127 == 0 { 1 } else { 2 },
+            );
+        } else {
+            p.auto_reap = false;
+        }
         for child in self.processes.values_mut() {
             if child.parent == pid {
                 child.parent = 1;
+            }
+        }
+    }
+    fn finish_group(&mut self, tgid: u32) {
+        if self
+            .processes
+            .values()
+            .any(|t| t.tgid == tgid && !matches!(t.state, State::Zombie(_)))
+        {
+            return;
+        }
+        self.timers.retain(|_, t| t.tgid != tgid);
+        if let Some(leader) = self.processes.get(&tgid) {
+            if let State::Zombie(status) = leader.state {
+                let parent = leader.parent;
+                self.notify(
+                    parent,
+                    tgid,
+                    if status & 127 == 0 {
+                        status >> 8
+                    } else {
+                        status & 127
+                    },
+                    if status & 127 == 0 { 1 } else { 2 },
+                );
+                let auto = self
+                    .processes
+                    .get(&parent)
+                    .is_some_and(|p| p.actions[17].handler == 1 || p.actions[17].flags & 2 != 0);
+                if auto && tgid != 1 {
+                    self.processes.remove(&tgid);
+                }
+            }
+        }
+    }
+    fn exit(&mut self, pid: u32, p: &mut Process, status: i32) {
+        let members: Vec<_> = self
+            .processes
+            .iter()
+            .filter(|(_, t)| t.tgid == p.tgid)
+            .map(|(&id, _)| id)
+            .collect();
+        for id in members.iter().copied().filter(|id| *id != p.tgid) {
+            if let Some(mut thread) = self.processes.remove(&id) {
+                let address = thread.linux.clear_tid_address();
+                thread.linux.exit_tid(&mut thread.memory);
+                self.wake_futex(thread.vm_id, address, u32::MAX, u32::MAX);
+                thread.linux.vfs.close_all();
+            }
+        }
+        if pid != p.tgid {
+            if let Some(mut leader) = self.processes.remove(&p.tgid) {
+                self.exit_one(p.tgid, &mut leader, status);
+                self.processes.insert(p.tgid, leader);
+            }
+        }
+        self.exit_one(pid, p, status);
+    }
+    fn wake_vfork(&mut self, child: u32) {
+        for parent in self.processes.values_mut() {
+            if matches!(parent.state, State::Vfork(id) if id == child) {
+                parent.state = State::Ready;
             }
         }
     }
@@ -189,40 +435,119 @@ impl Kernel {
             sender,
             status: 0,
             code: 0,
+            timer: None,
         });
+    }
+    fn may_signal(source: &Process, target: &Process, sig: u32) -> bool {
+        let a = &source.linux.vfs.credentials;
+        let b = &target.linux.vfs.credentials;
+        a.euid == 0
+            || [a.uid, a.euid]
+                .iter()
+                .any(|id| *id == b.uid || *id == b.suid)
+            || sig == 18 && source.session == target.session
+    }
+    fn thread_signal(
+        &mut self,
+        pid: u32,
+        p: &mut Process,
+        tid: u32,
+        tgid: Option<u32>,
+        sig: u32,
+    ) -> Result<u64, Errno> {
+        if sig > 64 {
+            return Err(Errno(22));
+        }
+        if tid == 0 || tid > i32::MAX as u32 {
+            return Err(Errno(22));
+        }
+        let allowed = if tid == pid {
+            if tgid.is_some_and(|id| id != p.tgid) {
+                return Err(Errno(3));
+            }
+            Self::may_signal(p, p, sig)
+        } else {
+            let target = self.processes.get(&tid).ok_or(Errno(3))?;
+            if tgid.is_some_and(|id| id != target.tgid) {
+                return Err(Errno(3));
+            }
+            Self::may_signal(p, target, sig)
+        };
+        if !allowed {
+            return Err(Errno(1));
+        }
+        let sender = p.tgid;
+        let target = if tid == pid {
+            p
+        } else {
+            self.processes.get_mut(&tid).ok_or(Errno(3))?
+        };
+        Self::queue_one(tid, target, sig, sender);
+        if let Some(info) = target.pending.get_mut(&sig) {
+            info.code = -6;
+        }
+        Ok(0)
     }
     fn signal(&mut self, pid: u32, p: &mut Process, target: i32, sig: u32) -> Result<u64, Errno> {
         if sig > 64 {
             return Err(Errno(22));
         }
-        let mut found = false;
-        let current_group = p.group;
+        let positive = if target > 0 {
+            if target as u32 == pid {
+                p.tgid
+            } else {
+                self.processes.get(&(target as u32)).ok_or(Errno(3))?.tgid
+            }
+        } else {
+            0
+        };
         let matches = |id: u32, group: u32| {
             if target > 0 {
-                id == target as u32
+                id == positive
             } else if target == 0 {
-                group == current_group
+                group == p.group
             } else if target == -1 {
-                true
+                id != 1 && id != p.tgid
             } else {
                 group == target.unsigned_abs()
             }
         };
-        if matches(pid, p.group) {
+        // One process-directed pending signal per thread group; stop/continue
+        // state changes must reach every member, not just the group leader.
+        let mut groups = Vec::new();
+        let mut found = false;
+        if pid == p.tgid && matches(p.tgid, p.group) {
             found = true;
-            Self::queue_one(pid, p, sig, pid);
-        }
-        for (&id, other) in &mut self.processes {
-            if matches(id, other.group) {
-                found = true;
-                Self::queue_one(id, other, sig, pid);
+            if Self::may_signal(p, p, sig) {
+                groups.push(p.tgid);
             }
         }
-        if found {
-            Ok(0)
-        } else {
-            Err(Errno(3))
+        for (&id, other) in &self.processes {
+            if id == other.tgid && matches(other.tgid, other.group) {
+                found = true;
+                if Self::may_signal(p, other, sig) {
+                    groups.push(other.tgid);
+                }
+            }
         }
+        if groups.is_empty() {
+            return Err(Errno(if found { 1 } else { 3 }));
+        }
+        let sender = p.tgid;
+        let queue = |id: u32, other: &mut Process| {
+            if groups.contains(&other.tgid)
+                && (id == other.tgid
+                    || sig == 18
+                    || matches!(sig, 19..=22) && other.actions[sig as usize].handler == 0)
+            {
+                Self::queue_one(id, other, sig, sender);
+            }
+        };
+        queue(pid, p);
+        for (&id, other) in &mut self.processes {
+            queue(id, other);
+        }
+        Ok(0)
     }
     fn deliver(&mut self, pid: u32, p: &mut Process) -> Result<bool, Errno> {
         let stopped = matches!(p.state, State::Stopped);
@@ -269,7 +594,7 @@ impl Kernel {
                 if action.flags & 0x10000000 != 0
                     && matches!(
                         number,
-                        32 | 63 | 64 | 66 | 260 | 202 | 242 | 206 | 207 | 211 | 212
+                        32 | 63 | 64 | 65 | 66 | 260 | 202 | 242 | 206 | 207 | 211 | 212
                     )
                 {
                     put_args(&mut p.cpu, a);
@@ -292,6 +617,9 @@ impl Kernel {
                 p.mask = old;
                 p.cpu.set_x(0, error(Errno(4)));
             }
+            State::Futex { .. } | State::Sigwait { .. } => {
+                p.cpu.set_x(0, error(Errno(4)));
+            }
             _ => {}
         }
         let sp = p.cpu.sp.checked_sub(4688).ok_or(Errno(14))? & !15;
@@ -299,9 +627,7 @@ impl Kernel {
         let mut frame = vec![0; 4688];
         frame[0..4].copy_from_slice(&sig.to_le_bytes());
         frame[8..12].copy_from_slice(&info.code.to_le_bytes());
-        frame[16..20].copy_from_slice(&info.sender.to_le_bytes());
-        frame[20..24].copy_from_slice(&1000u32.to_le_bytes());
-        frame[24..28].copy_from_slice(&info.status.to_le_bytes());
+        events::write_siginfo(&mut frame[..128], sig, info);
         frame[168..176].copy_from_slice(&p.mask.to_le_bytes());
         for r in 0..31 {
             frame[312 + r * 8..320 + r * 8].copy_from_slice(&p.cpu.x(r).to_le_bytes());
@@ -432,8 +758,10 @@ impl Kernel {
                 path = interpreter.to_vec();
                 continue;
             }
+            let mut execute_vfs = p.linux.vfs.clone();
+            execute_vfs.apply_exec_credentials(&path)?;
             let mut runtime =
-                Runtime::load_guest(&bytes, &argv, &envp, &p.linux.vfs).map_err(|e| match e {
+                Runtime::load_guest(&bytes, &argv, &envp, &execute_vfs).map_err(|e| match e {
                     RuntimeError::Arguments(_) => Errno(7),
                     RuntimeError::Memory(_) => Errno(12),
                     RuntimeError::Elf(trames_elf::ElfError::Interpreter(n)) => Errno(n),
@@ -442,8 +770,19 @@ impl Kernel {
             if runtime.memory.mapped_bytes() > budget {
                 return Err(Errno(12));
             }
+            runtime.linux.executable_path = p.linux.vfs.resolve(trames_vfs::AT_FDCWD, &path)?;
+            runtime.linux.command_name = path
+                .rsplit(|b| *b == b'/')
+                .next()
+                .unwrap_or_default()
+                .iter()
+                .copied()
+                .take(15)
+                .collect();
             p.linux.vfs.close_exec();
+            let credentials = runtime.linux.vfs.credentials.clone();
             std::mem::swap(&mut runtime.linux.vfs, &mut p.linux.vfs);
+            runtime.linux.vfs.credentials = credentials;
             runtime.linux.trace = p.linux.trace;
             p.linux = runtime.linux;
             p.cpu = runtime.cpu;
@@ -459,7 +798,7 @@ impl Kernel {
         }
         Err(Errno(40))
     }
-    fn wait(&mut self, pid: u32, p: &mut Process, a: [u64; 6]) -> Result<Option<u64>, Errno> {
+    fn wait(&mut self, _pid: u32, p: &mut Process, a: [u64; 6]) -> Result<Option<u64>, Errno> {
         if a[2] & !11 != 0 {
             return Err(Errno(22));
         }
@@ -474,7 +813,8 @@ impl Kernel {
             .processes
             .iter()
             .filter(|(id, c)| {
-                c.parent == pid
+                c.parent == p.tgid
+                    && **id == c.tgid
                     && (target == -1
                         || (target == 0 && c.group == p.group)
                         || (target < -1 && c.group == target.unsigned_abs())
@@ -488,7 +828,14 @@ impl Kernel {
         for child in matching {
             let c = &self.processes[&child];
             let status = match c.state {
-                State::Zombie(s) => Some(s),
+                State::Zombie(s)
+                    if !self
+                        .processes
+                        .values()
+                        .any(|t| t.tgid == c.tgid && !matches!(t.state, State::Zombie(_))) =>
+                {
+                    Some(s)
+                }
                 State::Stopped if a[2] & 2 != 0 => c.wait_event,
                 _ if a[2] & 8 != 0 && c.wait_event == Some(0xffff) => Some(0xffff),
                 _ => None,
@@ -526,27 +873,35 @@ impl Kernel {
     ) -> Result<Option<u64>, Errno> {
         match number {
             93 | 94 => {
-                self.exit(pid, p, (a[0] as u8 as i32) << 8);
+                if number == 93 {
+                    self.exit_one(pid, p, (a[0] as u8 as i32) << 8);
+                } else {
+                    self.exit(pid, p, (a[0] as u8 as i32) << 8);
+                }
                 Ok(None)
             }
-            172 | 178 => Ok(Some(pid as u64)),
+            172 => Ok(Some(p.tgid as u64)),
+            178 => Ok(Some(pid as u64)),
             173 => Ok(Some(p.parent as u64)),
             96 => {
                 p.linux.dispatch(&mut p.cpu, &mut p.memory, io);
                 Ok(Some(pid as u64))
             }
             220 => {
-                const ALLOWED: u64 = 0xff | 0x80000 | 0x100000 | 0x1000000 | 0x200000;
-                if a[0] & !ALLOWED != 0 || a[0] & 255 != 17 {
+                const ALLOWED: u64 =
+                    0xff | 0xf00 | 0x4000 | 0x8000 | 0x10000 | 0xfc0000 | 0x1000000;
+                let threaded = a[0] & 0x10000 != 0;
+                let shared_vm = a[0] & 0x100 != 0;
+                if a[0] & !ALLOWED != 0
+                    || (!threaded && a[0] & 255 != 17)
+                    || (threaded && (a[0] & 0x900 != 0x900 || a[0] & 255 != 0))
+                    || (a[0] & 0x800 != 0 && !shared_vm)
+                {
                     return Err(Errno(22));
                 }
                 if self.processes.len() + 1 >= MAX_PROCESSES
-                    || self
-                        .processes
-                        .values()
-                        .map(|p| p.memory.mapped_bytes())
-                        .sum::<usize>()
-                        + p.memory.mapped_bytes() * 2
+                    || self.other_memory(p.vm_id)
+                        + p.memory.mapped_bytes() * if shared_vm { 1 } else { 2 }
                         > TOTAL_MAPPED_LIMIT
                 {
                     return Err(Errno(11));
@@ -564,10 +919,30 @@ impl Kernel {
                     .filter(|v| *v < i32::MAX as u32)
                     .ok_or(Errno(11))?;
                 let mut child = p.fork();
+                let resource = self.resource_id();
+                if shared_vm {
+                    child.memory = p.memory.share();
+                } else {
+                    child.vm_id = resource;
+                }
+                if a[0] & 0x400 == 0 {
+                    child.files_id = resource;
+                }
+                if a[0] & 0x200 == 0 {
+                    child.fs_id = resource;
+                }
+                if a[0] & 0x800 == 0 {
+                    child.actions_id = resource;
+                }
+                child.tgid = if threaded { p.tgid } else { id };
                 child
                     .linux
                     .fork_tid(if a[0] & 0x200000 != 0 { a[4] } else { 0 });
-                child.parent = pid;
+                child.parent = if threaded || a[0] & 0x8000 != 0 {
+                    p.parent
+                } else {
+                    p.tgid
+                };
                 child.cpu.set_x(0, 0);
                 if a[1] != 0 {
                     child.cpu.sp = a[1];
@@ -587,17 +962,43 @@ impl Kernel {
                         .map_err(|_| Errno(14))?;
                 }
                 self.processes.insert(id, child);
+                if a[0] & 0x4000 != 0 {
+                    p.state = State::Vfork(id);
+                    p.cpu.set_x(0, id as u64);
+                    return Ok(None);
+                }
                 Ok(Some(id as u64))
             }
             221 => {
-                let others = self
-                    .processes
-                    .values()
-                    .map(|p| p.memory.mapped_bytes())
-                    .sum::<usize>();
+                let others = self.other_memory(p.vm_id);
                 Self::exec(p, a, TOTAL_MAPPED_LIMIT.saturating_sub(others))?;
+                let ids: Vec<_> = self
+                    .processes
+                    .iter()
+                    .filter(|(_, t)| t.tgid == p.tgid)
+                    .map(|(&id, _)| id)
+                    .collect();
+                for id in ids {
+                    if let Some(mut t) = self.processes.remove(&id) {
+                        let address = t.linux.clear_tid_address();
+                        t.linux.exit_tid(&mut t.memory);
+                        self.wake_futex(t.vm_id, address, u32::MAX, u32::MAX);
+                        t.linux.vfs.close_all();
+                    }
+                }
+                self.timers.retain(|_, t| t.tgid != p.tgid);
+                self.wake_vfork(pid);
+                if pid != p.tgid {
+                    p.rekey = Some(p.tgid);
+                }
+                let resource = self.resource_id();
+                p.vm_id = resource;
+                p.files_id = resource;
+                p.fs_id = resource;
+                p.actions_id = resource;
                 Ok(None)
             }
+            98 | 102 | 103 | 107..=111 | 137 => self.event_call(pid, p, number, a),
             260 => self.wait(pid, p, a),
             72 | 73 => self.poll(p, number, a, io),
             134 => {
@@ -694,12 +1095,15 @@ impl Kernel {
                 Ok(None)
             }
             129 => self.signal(pid, p, a[0] as i32, a[1] as u32).map(Some),
-            130 => self.signal(pid, p, a[0] as i32, a[1] as u32).map(Some),
+            130 => self
+                .thread_signal(pid, p, a[0] as u32, None, a[1] as u32)
+                .map(Some),
             131 => {
-                if a[0] as u32 != a[1] as u32 {
-                    return Err(Errno(3));
+                if a[0] == 0 || a[0] > i32::MAX as u64 {
+                    return Err(Errno(22));
                 }
-                self.signal(pid, p, a[0] as i32, a[2] as u32).map(Some)
+                self.thread_signal(pid, p, a[1] as u32, Some(a[0] as u32), a[2] as u32)
+                    .map(Some)
             }
             154 => {
                 let target = if a[0] == 0 { pid } else { a[0] as u32 };
@@ -803,11 +1207,88 @@ impl Kernel {
                 write_u64(&mut p.memory, a[1] + 8, elapsed.subsec_nanos() as u64)?;
                 Ok(Some(0))
             }
+            114 => {
+                if !matches!(a[0], 0 | 1 | 4 | 6 | 7) {
+                    return Err(Errno(22));
+                }
+                if a[1] != 0 {
+                    Linux::check(&p.memory, a[1], 16, Access::Write)?;
+                    write_u64(&mut p.memory, a[1], 0)?;
+                    write_u64(&mut p.memory, a[1] + 8, 1)?;
+                }
+                Ok(Some(0))
+            }
+            179 => {
+                Linux::check(&p.memory, a[0], 112, Access::Write)?;
+                let used = self.other_memory(p.vm_id) + p.memory.mapped_bytes();
+                let mut out = [0; 112];
+                for (offset, value) in [
+                    (0, self.started.elapsed().as_secs()),
+                    (32, TOTAL_MAPPED_LIMIT as u64),
+                    (40, TOTAL_MAPPED_LIMIT.saturating_sub(used) as u64),
+                ] {
+                    out[offset..offset + 8].copy_from_slice(&value.to_le_bytes());
+                }
+                for (i, load) in self.load.iter().enumerate() {
+                    out[8 + i * 8..16 + i * 8]
+                        .copy_from_slice(&((load * 65536.0) as u64).to_le_bytes());
+                }
+                out[80..82].copy_from_slice(&((self.processes.len() + 1) as u16).to_le_bytes());
+                out[104..108].copy_from_slice(&1u32.to_le_bytes());
+                p.memory.write(a[0], &out).map_err(|_| Errno(14))?;
+                Ok(Some(0))
+            }
+            163 | 164 | 261 => {
+                let (resource, new, old) = if number == 261 {
+                    if a[0] != 0 && a[0] != p.tgid as u64 {
+                        return Err(Errno(3));
+                    }
+                    (a[1], a[2], a[3])
+                } else {
+                    (
+                        a[0],
+                        if number == 164 { a[1] } else { 0 },
+                        if number == 163 { a[1] } else { 0 },
+                    )
+                };
+                let value = match resource {
+                    0 | 10 | 15 => u64::MAX,
+                    1 => p.linux.vfs.capacity().budget_bytes,
+                    2 | 5 | 9 => trames_memory::DEFAULT_MEMORY_LIMIT as u64,
+                    3 => super::STACK_SIZE,
+                    4 | 8 | 12 | 13 | 14 => 0,
+                    6 => MAX_PROCESSES as u64,
+                    7 => trames_vfs::MAX_FDS as u64,
+                    11 => 64,
+                    _ => return Err(Errno(22)),
+                };
+                if old != 0 {
+                    Linux::check(&p.memory, old, 16, Access::Write)?;
+                }
+                if new != 0 {
+                    let soft = read_u64(&p.memory, new)?;
+                    let hard = read_u64(&p.memory, new + 8)?;
+                    if soft > hard {
+                        return Err(Errno(22));
+                    }
+                    if hard > value {
+                        return Err(Errno(1));
+                    }
+                    if soft != value || hard != value {
+                        return Err(Errno(95));
+                    }
+                }
+                if old != 0 {
+                    write_u64(&mut p.memory, old, value)?;
+                    write_u64(&mut p.memory, old + 8, value)?;
+                }
+                Ok(Some(0))
+            }
             124 => Ok(Some(0)),
             203 if matches!(p.state, State::Blocked(203, _)) => {
                 Ok(p.linux.resume_connect(a[0] as u32)?.then_some(0))
             }
-            63 | 64 | 66 | 29
+            63 | 64 | 65 | 66 | 29
                 if self.terminal.is_some()
                     && p.linux.vfs.fd_kind(a[0] as u32)? == FdKind::Terminal =>
             {
@@ -829,7 +1310,10 @@ impl Kernel {
                     _ => false,
                 };
                 if ((raw == error(Errno(11))
-                    && matches!(number, 63 | 64 | 66 | 202 | 242 | 206 | 207 | 211 | 212)
+                    && matches!(
+                        number,
+                        63 | 64 | 65 | 66 | 202 | 242 | 206 | 207 | 211 | 212
+                    )
                     && !per_call_nonblock)
                     || (raw == error(Errno(115)) && number == 203)
                     || (raw == error(Errno(11)) && number == 32 && a[1] & 4 == 0))
@@ -850,12 +1334,19 @@ impl Kernel {
         a: [u64; 6],
         io: &mut impl GuestOutput,
     ) {
-        let other_bytes = self
-            .processes
-            .values()
-            .filter(|p| !matches!(p.state, State::Zombie(_)))
-            .map(|p| p.memory.mapped_bytes())
-            .sum::<usize>();
+        p.linux.vfs.set_process_context(pid);
+        if matches!(
+            number,
+            17 | 43 | 44 | 48 | 56 | 61 | 67 | 78 | 79 | 80 | 221 | 439
+        ) || (matches!(number, 63 | 65)
+            && p.linux
+                .vfs
+                .fd_kind(a[0] as u32)
+                .is_ok_and(|k| matches!(k, FdKind::Node(path) if path.starts_with(b"/proc/"))))
+        {
+            self.refresh_proc(pid, p);
+        }
+        let other_bytes = self.other_memory(p.vm_id);
         let _ = p.memory.set_limit(
             trames_memory::DEFAULT_MEMORY_LIMIT.min(TOTAL_MAPPED_LIMIT.saturating_sub(other_bytes)),
         );
@@ -863,6 +1354,7 @@ impl Kernel {
         p.cpu.set_x(8, number as u64);
         put_args(&mut p.cpu, a);
         let result = self.syscall(pid, p, number, a, io);
+        self.sync_resources(p);
         let raw = match result {
             Ok(Some(raw)) => {
                 p.cpu.set_x(0, raw);
@@ -1054,9 +1546,17 @@ impl Kernel {
         io: &mut impl GuestOutput,
     ) -> Result<Option<u64>, Errno> {
         let tty = self.terminal.as_mut().expect("terminal");
-        if number == 63 {
-            let count = a[2].min(MAX_WRITE as u64) as usize;
-            Linux::check(&p.memory, a[1], count, Access::Write)?;
+        if number == 63 || number == 65 {
+            let (parts, count) = if number == 65 {
+                Linux::readv_parts(&p.memory, a)?
+            } else {
+                let count = a[2].min(MAX_WRITE as u64) as usize;
+                Linux::check(&p.memory, a[1], count, Access::Write)?;
+                (vec![(a[1], count)], count)
+            };
+            if count == 0 {
+                return Ok(Some(0));
+            }
             if p.session == tty.session && p.group != tty.foreground {
                 if p.mask & (1 << 20) != 0 || p.actions[21].handler == 1 {
                     return Err(Errno(5));
@@ -1067,7 +1567,7 @@ impl Kernel {
             }
             match tty.read(count) {
                 Ok(bytes) => {
-                    p.memory.write(a[1], &bytes).map_err(|_| Errno(14))?;
+                    Linux::scatter(&mut p.memory, &parts, &bytes)?;
                     Ok(Some(bytes.len() as u64))
                 }
                 Err(Errno(11)) if p.linux.vfs.flags(a[0] as u32)? & O_NONBLOCK == 0 => Ok(None),
@@ -1291,6 +1791,20 @@ impl Kernel {
     }
     fn drive(&mut self, io: &mut impl GuestOutput, limit: u64) -> Result<Exit, RuntimeError> {
         loop {
+            self.tick_timers();
+            let elapsed = self.load_sample.elapsed().as_secs_f64();
+            if elapsed >= 5.0 {
+                let running = self
+                    .processes
+                    .values()
+                    .filter(|p| matches!(p.state, State::Ready))
+                    .count() as f64;
+                for (load, seconds) in self.load.iter_mut().zip([60.0, 300.0, 900.0]) {
+                    let decay = (-elapsed / seconds).exp();
+                    *load = *load * decay + running * (1.0 - decay);
+                }
+                self.load_sample = Instant::now();
+            }
             if let Some(root) = self.processes.get_mut(&1) {
                 match io.control(&mut root.linux.vfs) {
                     Ok(true) => {}
@@ -1305,6 +1819,7 @@ impl Kernel {
                     continue;
                 };
                 if !matches!(p.state, State::Zombie(_)) {
+                    progress |= self.resume_event(&mut p);
                     match self.deliver(id, &mut p) {
                         Ok(changed) => progress |= changed,
                         Err(_) => {
@@ -1312,6 +1827,7 @@ impl Kernel {
                             progress = true;
                         }
                     }
+                    self.sync_resources(&p);
                     match p.state.clone() {
                         State::Blocked(number, a) => {
                             self.call(id, &mut p, number, a, io);
@@ -1329,10 +1845,12 @@ impl Kernel {
                             self.processes.insert(id, p);
                             return Err(RuntimeError::BudgetExceeded(limit));
                         }
-                        match p
+                        let began = Instant::now();
+                        let outcome = p
                             .cpu
-                            .run_slice(&mut p.memory, (limit - self.instructions).min(4096))
-                        {
+                            .run_slice(&mut p.memory, (limit - self.instructions).min(4096));
+                        p.cpu_time += began.elapsed();
+                        match outcome {
                             SliceOutcome::Fault(e) => {
                                 if p.linux.trace {
                                     eprintln!("trames pid {id}: {e}");
@@ -1361,16 +1879,23 @@ impl Kernel {
                         progress = true;
                     }
                 }
-                let status = if let State::Zombie(s) = p.state {
-                    Some(s)
-                } else {
-                    None
-                };
-                if !p.auto_reap || id == 1 {
-                    self.processes.insert(id, p);
+                let actual_id = p.rekey.take().unwrap_or(id);
+                if !p.auto_reap || actual_id == 1 {
+                    self.processes.insert(actual_id, p);
                 }
-                if id == 1 {
-                    if let Some(status) = status {
+                let root_status = self.processes.get(&1).and_then(|root| {
+                    if let State::Zombie(s) = root.state {
+                        Some(s)
+                    } else {
+                        None
+                    }
+                });
+                if let Some(status) = root_status {
+                    if !self
+                        .processes
+                        .values()
+                        .any(|t| t.tgid == 1 && !matches!(t.state, State::Zombie(_)))
+                    {
                         // Session teardown is explicit: root exit cancels remaining virtual children.
                         if let Some(root) = self.processes.get(&1) {
                             root.linux.vfs.finish_network();
@@ -1408,15 +1933,16 @@ impl Kernel {
             if !progress {
                 let external = self.processes.values().any(|p| {
                     p.poll_deadline.is_some()
+                        || matches!(p.state, State::Futex { deadline: Some(_), .. } | State::Sigwait { deadline: Some(_), .. })
                         || matches!(p.state, State::Sleep(..))
-                        || matches!(p.state, State::Blocked(63, a)
+                        || matches!(p.state, State::Blocked(63 | 65, a)
                         if p.linux.vfs.fd_kind(a[0] as u32).ok() == Some(FdKind::Stdin))
                         || matches!(p.state, State::Blocked(number, a)
-                        if matches!(number, 63 | 64 | 66 | 202 | 203 | 242 | 206 | 207 | 211 | 212)
+                        if matches!(number, 63 | 64 | 65 | 66 | 202 | 203 | 242 | 206 | 207 | 211 | 212)
                         && p.linux.vfs.fd_kind(a[0] as u32).ok() == Some(FdKind::Socket))
                         || (matches!(p.state, State::Blocked(72 | 73, _))
                             && p.linux.vfs.live_sockets() != 0)
-                }) || self.terminal.is_some();
+                }) || self.terminal.is_some() || self.timers.values().any(|t| t.deadline.is_some());
                 if !external {
                     return Err(RuntimeError::Deadlock);
                 }
@@ -1424,14 +1950,29 @@ impl Kernel {
             }
         }
     }
-    fn wait_external(&self) {
+    fn wait_external(&mut self) {
+        let began = Instant::now();
         let mut sockets = Vec::new();
         let now = Instant::now();
         let mut timeout = Duration::from_millis(20);
         if self.terminal.is_some() {
             timeout = Duration::from_millis(1);
         }
+        for timer in self.timers.values() {
+            if let Some(d) = timer.deadline {
+                timeout = timeout.min(d.saturating_duration_since(now));
+            }
+        }
         for p in self.processes.values() {
+            if let State::Futex {
+                deadline: Some(d), ..
+            }
+            | State::Sigwait {
+                deadline: Some(d), ..
+            } = p.state
+            {
+                timeout = timeout.min(d.saturating_duration_since(now));
+            }
             if let Some(deadline) = p.poll_deadline {
                 timeout = timeout.min(deadline.saturating_duration_since(now));
             }
@@ -1447,7 +1988,7 @@ impl Kernel {
                 }
             };
             match number {
-                63 | 202 | 242 | 207 | 212 => {
+                63 | 65 | 202 | 242 | 207 | 212 => {
                     add(a[0] as u32, 1);
                     if p.linux.vfs.fd_kind(a[0] as u32).ok() == Some(FdKind::Stdin) {
                         timeout = timeout.min(Duration::from_millis(1));
@@ -1495,6 +2036,7 @@ impl Kernel {
             // Native adapter failures are surfaced by the next guest IO/poll.
             std::thread::sleep(Duration::from_millis(1));
         }
+        self.idle += began.elapsed();
     }
 }
 pub(super) fn run(
@@ -1519,6 +2061,14 @@ pub(super) fn run(
         poll_mask: None,
         stopped_state: None,
         auto_reap: false,
+        tgid: 1,
+        started: Instant::now(),
+        cpu_time: Duration::ZERO,
+        vm_id: 1,
+        files_id: 1,
+        fs_id: 1,
+        actions_id: 1,
+        rekey: None,
     };
     let mut kernel = Kernel {
         processes: BTreeMap::from([(1, root)]),
@@ -1526,6 +2076,12 @@ pub(super) fn run(
         terminal: runtime.terminal.take(),
         started: Instant::now(),
         instructions: 0,
+        idle: Duration::ZERO,
+        load: [0.0; 3],
+        load_sample: Instant::now(),
+        next_resource: 2,
+        timers: BTreeMap::new(),
+        next_timer: 1,
     };
     let result = kernel.drive(io, limit);
     if let Some(p) = kernel.processes.remove(&1) {
@@ -1561,6 +2117,14 @@ mod tests {
             poll_mask: None,
             stopped_state: None,
             auto_reap: false,
+            tgid: 1,
+            started: Instant::now(),
+            cpu_time: Duration::ZERO,
+            vm_id: 1,
+            files_id: 1,
+            fs_id: 1,
+            actions_id: 1,
+            rekey: None,
         }
     }
     pub(super) fn kernel() -> Kernel {
@@ -1570,7 +2134,36 @@ mod tests {
             terminal: None,
             started: Instant::now(),
             instructions: 0,
+            idle: Duration::ZERO,
+            load: [0.0; 3],
+            load_sample: Instant::now(),
+            next_resource: 2,
+            timers: BTreeMap::new(),
+            next_timer: 1,
         }
+    }
+    #[test]
+    fn process_signals_are_single_delivery_and_thread_signals_check_identity_and_permissions() {
+        let mut p = process();
+        let mut k = kernel();
+        let mut thread = p.fork();
+        thread.tgid = 1;
+        k.processes.insert(2, thread);
+        assert_eq!(k.signal(1, &mut p, 0, 10), Ok(0));
+        assert!(p.pending.contains_key(&10));
+        assert!(k.processes[&2].pending.is_empty());
+        assert_eq!(k.thread_signal(1, &mut p, 2, Some(3), 10), Err(Errno(3)));
+        assert_eq!(k.thread_signal(1, &mut p, 2, Some(1), 10), Ok(0));
+        assert_eq!(k.processes[&2].pending[&10].code, -6);
+        p.linux.vfs.credentials = trames_vfs::Credentials {
+            uid: 1000,
+            euid: 1000,
+            suid: 1000,
+            ..Default::default()
+        };
+        assert_eq!(k.thread_signal(1, &mut p, 2, None, 0), Err(Errno(1)));
+        assert_eq!(k.thread_signal(1, &mut p, 2, None, 18), Ok(0));
+        assert_eq!(k.thread_signal(1, &mut p, 0, None, 10), Err(Errno(22)));
     }
     #[test]
     fn signal_frame_restores_integer_vector_fp_state_and_accepts_guest_context_edits() {

@@ -20,6 +20,49 @@ impl Cpu {
         let rd = (ins & 31) as usize;
         let rn = ((ins >> 5) & 31) as usize;
         let rm = ((ins >> 16) & 31) as usize;
+        let scalar_conversion = ins & 0xffbffc00;
+        if matches!(
+            scalar_conversion,
+            0x5e21d800 | 0x7e21d800 | 0x5ea1b800 | 0x7ea1b800
+        ) {
+            let width = if ins & (1 << 22) != 0 { 64 } else { 32 };
+            let fmt = if width == 64 { DOUBLE } else { SINGLE };
+            let mut flags = 0;
+            let raw = self.vectors[rn] as u64;
+            let unsigned = ins & (1 << 29) != 0;
+            let value = if scalar_conversion & 0x00800000 != 0 {
+                let input = fmt.unpack(raw, self.fpcr, &mut flags);
+                fmt.to_integer(input, width, unsigned, 0, 3, &mut flags)
+            } else {
+                let integer = if width == 32 { raw as u32 as u64 } else { raw };
+                let signed = if width == 32 {
+                    integer as i32 as i64
+                } else {
+                    integer as i64
+                };
+                let sign = !unsigned && signed < 0;
+                let magnitude = if unsigned {
+                    integer as u128
+                } else {
+                    signed.unsigned_abs() as u128
+                };
+                fmt.pack(
+                    sign,
+                    magnitude,
+                    0,
+                    (self.fpcr >> 22) & 3,
+                    self.fpcr,
+                    &mut flags,
+                )
+            };
+            self.vectors[rd] = (if width == 32 {
+                value & u32::MAX as u64
+            } else {
+                value
+            }) as u128;
+            self.fpsr |= flags;
+            return Ok(true);
+        }
         if matches!(ins & 0xdf80fc00, 0x5f005400 | 0x5f000400) {
             let immediate = (ins >> 16) & 127;
             if immediate < 64 {

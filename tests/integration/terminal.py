@@ -39,23 +39,23 @@ class Session:
 def exercise(cmd, env):
     s = Session(cmd, env); facts = []
     try:
-        s.until(b'$ '); facts.append('prompt')
-        s.send(b'echo EDIX\x7fT\n'); out = s.until(b'$ ')
+        s.until(b'trames-test> '); facts.append('prompt')
+        s.send(b'echo EDIX\x7fT\n'); out = s.until(b'trames-test> ')
         assert b'EDIT\r\n' in out, (out, 'erase'); facts.append('editing')
-        s.send(b'echo PIPE | cat\n'); out = s.until(b'$ ')
+        s.send(b'echo PIPE | cat\n'); out = s.until(b'trames-test> ')
         assert b'PIPE\r\n' in out, (out, 'pipeline'); facts.append('pipeline')
-        s.send(b'sleep 20\n'); time.sleep(.2); s.send(b'\x03'); s.until(b'$ ')
-        s.send(b'echo RC:$?\n'); out = s.until(b'$ ')
+        s.send(b'sleep 20\n'); time.sleep(.2); s.send(b'\x03'); s.until(b'trames-test> ')
+        s.send(b'echo RC:$?\n'); out = s.until(b'trames-test> ')
         assert b'RC:130\r\n' in out, (out, 'interrupt'); facts.append('Ctrl-C 130')
-        s.send(b'sleep 20\n'); time.sleep(.2); s.send(b'\x1a'); out = s.until(b'$ ')
+        s.send(b'sleep 20\n'); time.sleep(.2); s.send(b'\x1a'); out = s.until(b'trames-test> ')
         assert b'Stopped' in out, (out, 'stop'); facts.append('Ctrl-Z stopped')
-        s.send(b'jobs\n'); out = s.until(b'$ ')
+        s.send(b'jobs\n'); out = s.until(b'trames-test> ')
         assert b'Stopped' in out, (out, 'jobs'); facts.append('jobs stopped')
-        s.send(b'bg\n'); out = s.until(b'$ ')
+        s.send(b'bg\n'); out = s.until(b'trames-test> ')
         assert b'Done' not in out and b'No current job' not in out, (out, 'bg')
         facts.append('bg resumed')
-        s.send(b'fg\n'); time.sleep(.2); s.send(b'\x03'); s.until(b'$ ')
-        s.send(b'echo FG:$?\n'); out = s.until(b'$ ')
+        s.send(b'fg\n'); time.sleep(.2); s.send(b'\x03'); s.until(b'trames-test> ')
+        s.send(b'echo FG:$?\n'); out = s.until(b'trames-test> ')
         assert b'FG:130\r\n' in out, (out, 'fg'); facts.append('fg interrupt 130')
         s.send(b'\x04'); end = time.monotonic() + 5
         while time.monotonic() < end:
@@ -86,10 +86,10 @@ def main():
             p.write_text('#!/bin/sh\nexec ' + shlex.join([qemu, '-cpu', 'cortex-a53', busybox, name]) + ' "$@"\n')
             p.chmod(0o755)
         storage = ['--storage', str(Path(folder) / 'store')] if os.getenv('TRAMES_TEST_STORAGE') == 'disk' else ['--memory']
-        actual = exercise([runner, *storage, '--install-busybox', '--pty', busybox, 'ash', '-i'],
+        actual = exercise([runner, *storage, '--install-busybox', '--env', 'PS1=trames-test> ', '--pty', busybox, 'ash', '-i'],
                           {'PATH': '/usr/bin:/bin', 'LANG': 'C', 'TERM': 'xterm'})
-        reference = exercise([qemu, '-cpu', 'cortex-a53', busybox, 'ash', '-i'],
-                             {'PATH': str(bin_), 'LANG': 'C', 'TERM': 'xterm'})
+        reference = exercise([qemu, '-cpu', 'cortex-a53', '-E', 'PS1=trames-test> ', busybox, 'ash', '-i'],
+                             {'PATH': str(bin_), 'LANG': 'C', 'TERM': 'xterm', 'PS1': 'trames-test> '})
         if actual != reference:
             raise AssertionError((actual, reference))
     print(f'PTY integration passed: {len(actual)} interactive outcomes matched QEMU ash')

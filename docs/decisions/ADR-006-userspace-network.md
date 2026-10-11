@@ -23,10 +23,16 @@ an old session's work. Poll native write readiness only when needed.
 
 This provides packet-level isolation and transport behavior without adding a
 host virtual interface or route. Ethernet, ARP/DHCP, multicast, host inbound
-forwarding, external/raw ICMP, netlink and full Linux socket controls remain
+forwarding, AF_PACKET and full Linux socket controls remain
 outside this delivery. HTTPS/apk, two-family transports and failure/lifecycle
 behavior have executable validation; signed iPad builds/device checks belong
 to M4.
+
+The 0.2.0 follow-up implements guest SOCK_RAW ICMP through the userspace stack,
+read-only NETLINK_ROUTE and runtime proc/sys interface views. External echo uses
+unprivileged native ICMP datagram sockets rather than privileged host raw sockets;
+actual OS errors remain visible. No TUN/VPN entitlement or host route change is
+added. See [Linux compatibility](../architecture/linux-compat.md).
 
 Details: [architecture](../architecture/virtual-network.md),
 [validation](../validation/virtual-network.md),

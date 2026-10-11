@@ -316,7 +316,7 @@ fn run(
         (b"/home/user/.trames".as_slice(), b"Trames\n".as_slice()),
         (
             b"/etc/resolv.conf".as_slice(),
-            b"nameserver 1.1.1.1\nnameserver 2606:4700:4700::1111\n".as_slice(),
+            b"nameserver 10.0.0.1\nnameserver fd00::1\n".as_slice(),
         ),
     ] {
         if vfs.stat_at(trames_vfs::AT_FDCWD, path).is_err() {
@@ -324,8 +324,23 @@ fn run(
                 .map_err(|e| e.to_string())?;
         }
     }
+    // Upgrade only the exact resolver configuration installed by earlier Trames.
+    // A user's edited resolver file remains their choice.
+    let resolver = vfs
+        .open_at(trames_vfs::AT_FDCWD, b"/etc/resolv.conf", 0, 0)
+        .map_err(|e| e.to_string())?;
+    let old_resolver = vfs.read(resolver, 4096).map_err(|e| e.to_string())?;
+    vfs.close(resolver).map_err(|e| e.to_string())?;
+    if old_resolver == b"nameserver 1.1.1.1\nnameserver 2606:4700:4700::1111\n" {
+        let fd = vfs
+            .open_at(trames_vfs::AT_FDCWD, b"/etc/resolv.conf", 1 | 0x200, 0)
+            .map_err(|e| e.to_string())?;
+        vfs.write(fd, b"nameserver 10.0.0.1\nnameserver fd00::1\n")
+            .map_err(|e| e.to_string())?;
+        vfs.close(fd).map_err(|e| e.to_string())?;
+    }
     vfs.chdir(b"/home/user").map_err(|e| e.to_string())?;
-    vfs.configure_network(match options.network.as_str() {
+    vfs.configure_local_fabric(match options.network.as_str() {
         "off" => NetworkMode::Off,
         "loopback" => NetworkMode::Loopback,
         _ => NetworkMode::Outbound,
@@ -337,7 +352,7 @@ fn run(
         &["/bin/ash".into(), "-i".into()],
         &[
             "HOME=/home/user".into(),
-            "USER=user".into(),
+            "USER=root".into(),
             "PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin".into(),
             "TERM=xterm-256color".into(),
             "LANG=C.UTF-8".into(),

@@ -67,8 +67,12 @@ limits before replacing data. Supported native entropy supplies AT_RANDOM and ch
 M2 virtual pipe/terminal waits suspend processes. Input adapters must implement
 nonblocking poll_stdin/stdin_ready; terminal master events scope signals to guest
 jobs. No host PID, host exec or guest-named host device is forwarded. Nonblocking
-plain console I/O, shared-VM threads, vfork, alternate signal stacks and blocking
-futex remain unsupported rather than simulated as completed operations.
+plain console I/O and alternate signal stacks remain limited/unsupported.
+The 0.2.0 follow-up implements selected cooperative shared-VM threads, vfork,
+futex queues and POSIX timers; it creates no guest-directed host thread. Shared
+memory is charged once per address space; task count remains bounded at 32.
+Volatile proc/sys/dev views expose guest state and never host processes/FDs.
+Virtual ownership and guest root change no host identity or app permission.
 Session-root exit drops remaining virtual children; no daemon is retained.
 Disk persistence and 16 GiB initial file budgeting are implemented. File bytes,
 including sparse logical ranges and open-unlinked files, consume the budget once
@@ -107,7 +111,7 @@ OS permissions still apply. The instruction budget is not a network deadline.
 
 Host SIGPIPE is suppressed; guest SIGPIPE follows the virtual signal model.
 Session exit and CLI faults release all socket owners. Socket objects are not
-persisted. Unsupported raw/Unix sockets, ancillary messages, socket timeouts and
+persisted. Unsupported host raw/Unix sockets, ancillary messages, socket timeouts and
 other options fail explicitly. Guest TLS/certificates/apk signatures are validated in M3 and through the virtual
 gateway; iPad network permissions still need device validation. See
 [network architecture](../architecture/network.md) and the
@@ -135,3 +139,9 @@ and expiry. DNS uses two bounded workers and request tokens; namespace generatio
 prevent reused IDs from receiving late work. See the precise buffer/time limits
 in [virtual-network architecture](../architecture/virtual-network.md) and the
 [executable validation](../validation/virtual-network.md).
+
+The 0.2.0 guest raw ICMP API is handled by the userspace stack. External echo
+uses unprivileged native ICMP datagram sockets, with actual OS errors and bounded
+flows; no host raw socket, route mutation or VPN entitlement is added. Route
+netlink queries are synthesized from the guest namespace, never host netlink.
+See [Linux compatibility](../architecture/linux-compat.md) for exact scope.

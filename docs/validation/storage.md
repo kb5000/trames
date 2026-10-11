@@ -47,3 +47,8 @@ Scope is app-private storage on the tested Linux filesystem. No physical
 power-loss test, hostile concurrent host mutation test, parser fuzz campaign,
 audit, iPad/APFS/device run, native Files-provider integration, direct host mount,
 symlinks, dynamic linking, networking or package execution is established.
+
+This record describes the original milestone checks. The subsequent 0.2.0
+[Linux compatibility record](linux-compat.md) adds runtime files, ownership
+migration, shared-VM threads/futex/timers and ICMP/netlink support and replaces
+those earlier unsupported-feature statements for the documented subset.

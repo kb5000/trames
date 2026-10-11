@@ -17,7 +17,7 @@ objects/<inode>.dat regular file contents; names are fixed-width hexadecimal IDs
 
 Guest paths remain byte vectors in a shared virtual namespace. They never become
 host path components. The manifest preserves non-UTF-8 paths, inode identity,
-hard links, directories, 0777 permission bits and atime/mtime/ctime. Links are
+hard links, directories, 07777 permission bits and UID/GID and atime/mtime/ctime. Links are
 reconstructed from validated namespace entries. `/dev/null` and the selected
 virtual terminal remain runtime devices; no host device forwarding is added.
 
@@ -55,7 +55,8 @@ readable and charged until the final description closes. Atomic file replacement
 keeps old descriptions alive. Directory renames update path lookup by inode, so
 other processes' cwd and directory descriptors follow the moved subtree. A
 removed cwd returns ENOENT. Rename supports normal replacement and NOREPLACE;
-exchange, symlinks and cross-filesystem mounts are not implemented.
+exchange and arbitrary cross-filesystem mounts are not implemented. M3 added
+virtual symlinks and file-backed private mappings.
 
 The explicit executable installer replaces all existing aliases in one commit,
 while preserving old open descriptions. Import copies, in contrast, require a
@@ -65,10 +66,11 @@ remain if a later individual host operation fails.
 
 The guest ABI adds statfs/fstatfs, truncate/ftruncate, pread64/pwrite64,
 fsync/fdatasync/sync, linkat, renameat/selected renameat2, fchmod/fchmodat and
-utimensat. Metadata belongs to virtual uid/gid 1000. This is not complete POSIX
-ownership, timestamp, mount, locking or filesystem semantics; set-ID modes,
-symlinks, mmap file backing, xattrs and provider POSIX emulation remain out of
-scope. Enabled BusyBox applets are validated only for the recorded cases.
+utimensat. The 0.2.0 follow-up adds virtual UID/GID/ownership syscalls, sticky/
+SGID/set-ID behavior and real owner/group/other permission checks. Existing v1/v2
+metadata keeps owner 1000; v3 stores UID/GID without discarding guest data.
+Complete timestamp, mount, locking, ACL/xattr and provider POSIX semantics remain
+out of scope. Enabled BusyBox applets are validated only for the recorded cases.
 
 ## Capacity
 
@@ -104,9 +106,9 @@ mount or access inferred from a guest path is provided.
 For iPadOS, the app should keep its private store in the app container, report
 the authorized volume's capacity, and wrap selected Files streams in the native
 security-scope, coordination, cancellation and resource-release lifecycle.
-Native Files UI, bookmarks, provider integration, C ABI plumbing and a signed
-iPad build are not implemented here. The storage API provides the portable
-data/capacity interface for those later milestones.
+M4 subsequently supplies native Files copying, C ABI plumbing and Apple builds;
+the owner installed the first signed app. Persistent provider bookmarks and
+complete provider behavior remain pending. Copies remain separate guest data.
 
 ## Durability and evidence
 
@@ -114,7 +116,7 @@ fsync/fdatasync flush the selected inode and current namespace; sync flushes
 all live files and the manifest directory. Normal CLI teardown requests sync
 even after a runtime error. SIGKILL recovery is tested after a guest sync point.
 The tests do not establish physical power-loss durability, APFS behavior,
-provider consistency, device performance or a security audit. There is no
-manifest migration or multi-instance concurrent-write protocol yet.
+provider consistency, device performance or a security audit. Manifest v1/v2 recovery and migration to ownership-bearing v3 are implemented.
+There is no multi-instance concurrent-write protocol.
 
 See [validation](../validation/storage.md) and [limits](../security/README.md).

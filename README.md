@@ -80,9 +80,15 @@ CLI 默认 `--network outbound`：允许出站连接、本机监听及 UDP 客�
 target/release/trames-run --storage target/alpine --virtual-network 2 --guest --max-instructions 100000000 /bin/sh
 ~~~
 
-已验证 IPv4／IPv6 大数据报分片重组、TCP 丢包重传、内部 ICMP echo 和 DNS，以及通过网关的真实 Alpine HTTPS apk 安装。当前上限为每个 Fabric 16 个环境、256 个栈句柄（含 backlog）和 64 个原生网关流，每环境 64 个 guest socket。外部 ICMP、raw／packet socket、组播、DHCP、netlink 和完整 Linux 网络控制接口仍未支持。详细行为和资源策略见 [虚拟网络架构](docs/architecture/virtual-network.md) 与 [验证记录](docs/validation/virtual-network.md)。
+已验证 IPv4／IPv6 大数据报分片重组、TCP 丢包重传、内部 ICMP echo 和 DNS，以及通过网关的真实 Alpine HTTPS apk 安装。当前上限为每个 Fabric 16 个环境、256 个栈句柄（含 backlog）和 64 个原生网关流，每环境 64 个 guest socket。0.2.0 补上 guest raw ICMP、通过原生 ICMP datagram socket 的真实 echo 转发和只读 NETLINK_ROUTE 查询；实际平台权限仍会返回错误。AF_PACKET、组播、DHCP、网络配置修改和完整 Linux 网络控制接口仍未支持。详细行为和资源策略见 [虚拟网络架构](docs/architecture/virtual-network.md) 与 [验证记录](docs/validation/virtual-network.md)。
 
-DNS 由真实 musl 读取 guest 的 `/etc/resolv.conf`；可用 `--file /etc/resolv.conf=HOST_FILE` 显式导入。已验证 A/AAAA 查询和 UDP 截断后的 TCP 回退。HTTP/TLS 由 guest 程序自己的库处理，运行时不继承宿主代理凭据。已验证原版 Alpine HTTPS 和 apk 的证书、主机名及包签名校验；网络/core/distro 已通过 iOS 目标编译检查，尚无签名 App 或真机验证。详细设计、行为和缺口见 [网络架构](docs/architecture/network.md)。
+DNS 由真实 musl 读取 guest 的 `/etc/resolv.conf`；可用 `--file /etc/resolv.conf=HOST_FILE` 显式导入。已验证 A/AAAA 查询和 UDP 截断后的 TCP 回退。HTTP/TLS 由 guest 程序自己的库处理，运行时不继承宿主代理凭据。已验证原版 Alpine HTTPS 和 apk 的证书、主机名及包签名校验；网络/core/distro 已通过 iOS 目标编译检查，Apple 已构建 IPA，用户已在 iPad 上通过 Sideloadly 安装并启动 0.1.0；新功能仍待真机验收。详细设计、行为和缺口见 [网络架构](docs/architecture/network.md)。
+
+## Linux 兼容性更新（0.2.0）
+
+增加运行时生成的 `/proc`、`/sys`、`/dev`：进程、内存、挂载、文件描述符、设备、逻辑接口和数据包统计来自实际 guest 状态。原版 Alpine 的 `ps`、`mount`、`df`、`free`、`top`、`ip a`、`ip route` 和 IPv4／IPv6 `ping` 已纳入执行测试。`mount` 可列出内置挂载，任意文件系统挂载与额外 PTY 分配仍未实现。
+
+guest root、UID/GID、目录权限及持久化所有权修复了安装 Vim 的 88 个目录权限更新错误；旧磁盘格式保留文件并迁移。共享内存线程、futex 和 POSIX 定时器支持 musl 的 SIGEV_THREAD，默认配置 Vim 已验证编辑、保存、退出和新会话读取。终端横移修复也合入本次大版本。详细范围与限制见 [Linux 兼容性架构](docs/architecture/linux-compat.md) 和 [验证记录](docs/validation/linux-compat.md)。
 
 ## 验证
 
@@ -108,10 +114,13 @@ python3 tests/integration/storage.py
 bash scripts/build-network-fixtures.sh
 python3 tests/integration/network.py
 bash scripts/build-virtual-network-fixtures.sh
+bash scripts/build-linux-compat-fixtures.sh
 bash scripts/prepare-alpine.sh
 cargo build --release --workspace --locked
 python3 tests/integration/m3.py
 python3 tests/integration/virtual-network.py
+python3 tests/integration/linux-compat.py
+python3 tests/integration/embedding.py
 rustup target add aarch64-apple-ios --toolchain 1.90.0
 cargo check -p trames-core -p trames-distro --target aarch64-apple-ios --locked
 TRAMES_TEST_STORAGE=disk python3 tests/integration/m2.py
@@ -122,7 +131,7 @@ TRAMES_TEST_STORAGE=disk python3 tests/integration/terminal.py
 
 差分脚本独立运行同一个静态 ELF，比较 Trames 与 QEMU 的 stdout、stderr 和退出码。六组固定程序检查初始栈、BSS、跨页读写、分支、系统调用错误和二进制输出；64 个确定性生成程序比较八个寄存器及 NZCV 的 72 字节内存快照。另有执行预算、非法指令、代码页写保护检查，以及改名并改变 ELF 内容的验证。
 
-M1 再加入 64 个生成程序，对照位域、扩展寄存器运算、乘除、进位、条件选择及 NZCV；固定程序验证成对访存、符号扩展、SIMD 数据传送、exclusive monitor、匿名内存和文件创建/读写。M2 加入 6,860 个浮点用例、159 个结构访存变体、22 个 shell 场景和两个静态 C 程序。存储阶段增加真实文件 ABI、文件管理 applet、48 个整数 SIMD 快照，以及磁盘后端的完整 M2 重跑。网络基础再加入内存/磁盘两种后端的 36 次网络对照、16 项能力/缓冲区预检/会话清理结果，以及 iOS 目标编译检查。M3 再加入 36 次动态程序／TLS／包管理对照和 72 个 widening SIMD 快照。虚拟网络再加入 27 次对照和协议／隔离测试。当前共 554 次 QEMU 程序/场景比较、两种后端各 9 项终端结果、91 个单元测试及 11 个 Rust 网络集成测试；另验证配额、损坏元数据、提交失败回滚、流式复制、宿主范围及强制结束后的恢复。详见 [存储验证](docs/validation/storage.md) 和 [网络验证](docs/validation/network.md)。
+M1 再加入 64 个生成程序，对照位域、扩展寄存器运算、乘除、进位、条件选择及 NZCV；固定程序验证成对访存、符号扩展、SIMD 数据传送、exclusive monitor、匿名内存和文件创建/读写。M2 加入 6,860 个浮点用例、159 个结构访存变体、22 个 shell 场景和两个静态 C 程序。存储阶段增加真实文件 ABI、文件管理 applet、48 个整数 SIMD 快照，以及磁盘后端的完整 M2 重跑。网络基础再加入内存/磁盘两种后端的 36 次网络对照、16 项能力/缓冲区预检/会话清理结果，以及 iOS 目标编译检查。M3 再加入 36 次动态程序／TLS／包管理对照和 72 个 widening SIMD 快照。虚拟网络再加入 27 次对照和协议／隔离测试。上述早期阶段共有 554 次 QEMU 程序/场景比较；0.2.0 再增加 musl 线程/定时器比较、CPU 指令快照、完整运行时端点与默认 Vim 编辑验证。当前 Rust 单元/集成测试共 115 项，终端交互仍在两种后端各验证 9 项结果；另验证配额、损坏元数据、提交失败回滚、流式复制、宿主范围及强制结束后的恢复。详见 [存储验证](docs/validation/storage.md) 和 [网络验证](docs/validation/network.md)。
 
 可通过 `AARCH64_AS`、`AARCH64_LD`、`QEMU_AARCH64` 覆盖工具路径，BusyBox 构建另支持 `AARCH64_CC`、`AARCH64_AR`、`AARCH64_RANLIB`；`--runner` 选择运行器，`--seeds` 调整生成程序数量。QEMU 是独立参考，测试通过只证明已测行为。
 

@@ -72,6 +72,36 @@ impl Cpu {
         let rd = (ins & 31) as usize;
         let rn = ((ins >> 5) & 31) as usize;
         let rm = ((ins >> 16) & 31) as usize;
+        let left = self.vectors[rn] as u64;
+        let right = self.vectors[rm] as u64;
+        let scalar = match ins & 0xffe0fc00 {
+            0x5ee08400 => Some(left.wrapping_add(right)),
+            0x7ee08400 => Some(left.wrapping_sub(right)),
+            0x7ee08c00 => Some(if left == right { u64::MAX } else { 0 }),
+            0x5ee03400 => Some(if (left as i64) > (right as i64) {
+                u64::MAX
+            } else {
+                0
+            }),
+            0x5ee03c00 => Some(if (left as i64) >= (right as i64) {
+                u64::MAX
+            } else {
+                0
+            }),
+            0x7ee03400 => Some(if left > right { u64::MAX } else { 0 }),
+            0x7ee03c00 => Some(if left >= right { u64::MAX } else { 0 }),
+            0x5ee08c00 => Some(if left & right != 0 { u64::MAX } else { 0 }),
+            _ => match ins & 0xfffffc00 {
+                0x5ee0b800 => Some((left as i64).wrapping_abs() as u64),
+                0x7ee0b800 => Some(left.wrapping_neg()),
+                0x5ef1b800 => Some(left.wrapping_add((self.vectors[rn] >> 64) as u64)),
+                _ => None,
+            },
+        };
+        if let Some(value) = scalar {
+            self.vectors[rd] = value as u128;
+            return Ok(Some(next));
+        }
         let wide = ins >> 31 != 0;
         let bits = if wide { 64 } else { 32 };
         let mask = width_mask(wide);

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Integer reductions emitted by GCC's fixed-size memcmp expansion."""
-import os, subprocess, tempfile
+import os, random, subprocess, tempfile
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 def main():
@@ -14,7 +14,15 @@ def main():
                     arrangement = f'{width // bits}{letter}'
                     source += ['ldp q0, q1, [x9]', f'{operation} v{destination}.{arrangement}, v0.{arrangement}, v1.{arrangement}', f'str q{destination}, [x10], #16']
                     cases += 1
-    source += ['adr x1, output', f'mov x2, #{cases * 16}', 'mov x0, #1', 'mov x8, #64', 'svc #0', 'mov x0, #0', 'mov x8, #93', 'svc #0', '.data', '.balign 16', 'input:', '.byte 0,255,128,127,1,254,129,126,254,1,255,0,127,128,126,129', '.byte 255,0,127,128,254,1,126,129,1,254,0,255,128,127,129,126', '.bss', '.balign 16', f'output: .skip {cases * 16}']
+    rng=random.Random(55190)
+    edges=[0,1,(1<<64)-1,1<<63,(1<<63)-1,(1<<63)+1]
+    for operation in ['add','sub','cmeq','cmgt','cmge','cmhi','cmhs','cmtst','abs','neg','addp']:
+        for a,b in [(v,v) for v in edges]+[(rng.getrandbits(64),rng.getrandbits(64)) for _ in range(8)]:
+            for destination in [0,2]:
+                source+=['ldp q0, q1, [x9]',f'ldr x5, ={a}',f'fmov d0, x5',f'ldr x5, ={b}',f'fmov v0.d[1], x5','fmov d1, x5','ldr q2, [x9]']
+                operands='v0.2d' if operation=='addp' else 'd0' if operation in ['abs','neg'] else 'd0, d1'
+                source+=[f'{operation} d{destination}, {operands}',f'str q{destination}, [x10], #16'];cases+=1
+    source += ['adr x1, output', f'mov x2, #{cases * 16}', 'mov x0, #1', 'mov x8, #64', 'svc #0', 'mov x0, #0', 'mov x8, #93', 'svc #0', '.ltorg', '.data', '.balign 16', 'input:', '.byte 0,255,128,127,1,254,129,126,254,1,255,0,127,128,126,129', '.byte 255,0,127,128,254,1,126,129,1,254,0,255,128,127,129,126', '.bss', '.balign 16', f'output: .skip {cases * 16}']
     with tempfile.TemporaryDirectory(prefix='trames-pairwise-') as folder:
         p = Path(folder); (p/'case.S').write_text('\n'.join(source)+'\n')
         subprocess.run([os.getenv('AARCH64_AS', 'aarch64-linux-gnu-as'), '-o', str(p/'case.o'), str(p/'case.S')], check=True)

@@ -77,3 +77,8 @@ behavior is subject to the host's actual routing, proxy policy, sandbox and
 local-network consent. External ICMP/raw sockets, netlink, Ethernet/DHCP,
 multicast, host inbound forwarding and full Linux tuning/options are outside
 this delivery. The subsequent app/SSH/Files milestone remains M4.
+
+This record describes the original milestone checks. The subsequent 0.2.0
+[Linux compatibility record](linux-compat.md) adds runtime files, ownership
+migration, shared-VM threads/futex/timers and ICMP/netlink support and replaces
+those earlier unsupported-feature statements for the documented subset.

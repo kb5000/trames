@@ -117,9 +117,15 @@ CI packages only the arm64 iPhoneOS device app after the simulator checks pass,
 retains its executable permissions and bundled resources, and includes a SHA-256
 checksum. The IPA is unsigned until Sideloadly signs it with your account.
 The owner confirmed Sideloadly installation and launch of 0.1.0 on 2026-10-11.
-The reported horizontal shift during `apk add vim` has a viewport fix in 0.1.1;
+The reported horizontal shift during `apk add vim` has a viewport fix first built in 0.1.1;
 verification of that fix on the owner's iPad and the remaining physical device
 checklist are still pending.
+The combined 0.2.0 (build 3) update includes it plus Linux runtime endpoints,
+ownership, musl thread/timer support and ICMP. Local sessions now use their own
+virtual fabric as environment 2. Existing upstream/default resolver configurations
+migrate to virtual DNS; explicit custom resolvers remain intact. Install with the
+same Apple ID/effective Sideloadly bundle ID and overwrite the existing app to keep
+its private disk. Manifest v1/v2 stores migrate without resetting guest files.
 
 To package an existing device build yourself:
 

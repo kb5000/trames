@@ -47,6 +47,7 @@ jobs:
       - run: python3 tests/integration/storage.py
       - run: bash scripts/build-network-fixtures.sh
       - run: bash scripts/build-virtual-network-fixtures.sh
+      - run: bash scripts/build-linux-compat-fixtures.sh
       - name: Compare native loopback sockets and real musl DNS with QEMU
         # The deterministic DNS peer binds host loopback port 53. The guest's
         # port restriction still applies even when this test harness is root.
@@ -64,6 +65,14 @@ jobs:
         run: python3 tests/integration/m3.py
       - name: Validate virtual packet fabric, guest ABI and Alpine HTTPS gateway
         run: python3 tests/integration/virtual-network.py
+      - name: Validate Linux endpoints, musl threads, ICMP and real Vim editing
+        # Allow unprivileged ICMP datagram sockets on this disposable runner.
+        # The guest still has no host raw socket or host sysctl interface.
+        run: |
+          sudo sysctl -w net.ipv4.ping_group_range='0 2147483647'
+          python3 tests/integration/linux-compat.py
+        env:
+          TRAMES_REQUIRE_ICMP_EGRESS: '1'
 
       - name: Exercise the embedding ABI with real Alpine PTY and disk streams
         run: |

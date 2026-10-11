@@ -22,6 +22,12 @@ def cases():
         for val in ['1.0','-2.0','0.125','31.0']:yield f'fmov v0.{arr}, #{val}',0,0,0,0
     for reg,arr in [('s','2s'),('d','2d')]:
         for _ in range(32): yield f'faddp {reg}0, v1.{arr}',rng.getrandbits(128),0,0,0
+    for reg,width in [('s',32),('d',64)]:
+        for op in ['scvtf','ucvtf','fcvtzs','fcvtzu']:
+            for mode in range(4):
+                for control in [0,1<<24,1<<25,(1<<24)|(1<<25)]:
+                    for raw in [0,1,1<<(width-1),(1<<width)-1,*[rng.getrandbits(width) for _ in range(4)]]:
+                        yield f'{op} {reg}0, {reg}1',raw,0,0,control|(mode<<22)
 
 def program(batch):
     code=['.global _start','.text','_start:','adrp x20,results','add x20,x20,:lo12:results']

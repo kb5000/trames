@@ -99,12 +99,14 @@ fn initial_stack(
             .iter()
             .map(|s| s.as_bytes().to_vec())
             .collect::<Vec<_>>(),
+        &trames_vfs::Credentials::default(),
     )
 }
 fn initial_stack_bytes(
     elf: &mut LoadedElf,
     argv: &[Vec<u8>],
     envp: &[Vec<u8>],
+    credentials: &trames_vfs::Credentials,
 ) -> Result<u64, RuntimeError> {
     if argv.is_empty() {
         return Err(RuntimeError::Arguments("argv[0] is required"));
@@ -135,11 +137,14 @@ fn initial_stack_bytes(
         (6u64, PAGE_SIZE),
         (9, elf.entry),
         (7, elf.interpreter_base),
-        (11, 1000),
-        (12, 1000),
-        (13, 1000),
-        (14, 1000),
-        (23, 0),
+        (11, credentials.uid as u64),
+        (12, credentials.euid as u64),
+        (13, credentials.gid as u64),
+        (14, credentials.egid as u64),
+        (
+            23,
+            u64::from(credentials.uid != credentials.euid || credentials.gid != credentials.egid),
+        ),
         (31, arguments[0]),
         (25, cursor),
     ];
@@ -189,8 +194,39 @@ impl Runtime {
         let mut elf = trames_elf::load_with_interpreter(bytes, DEFAULT_MEMORY_LIMIT, |path| {
             vfs.executable(path).map_err(|e| ElfError::Interpreter(e.0))
         })?;
-        let linux = Linux::new(elf.brk_base);
-        let sp = initial_stack_bytes(&mut elf, argv, envp)?;
+        let mut linux = Linux::new(elf.brk_base);
+        linux.arguments = argv.to_vec();
+        linux.environment = envp.to_vec();
+        linux.executable_path = argv.first().cloned().unwrap_or_default();
+        linux.command_name = linux
+            .executable_path
+            .rsplit(|b| *b == b'/')
+            .next()
+            .unwrap_or_default()
+            .iter()
+            .copied()
+            .take(15)
+            .collect();
+        if let Ok(path) = vfs.resolve(trames_vfs::AT_FDCWD, &linux.executable_path) {
+            linux.executable_path = path;
+        }
+        let sp = initial_stack_bytes(&mut elf, argv, envp, &vfs.credentials)?;
+        for i in 0..argv.len() {
+            linux
+                .argument_pointers
+                .push(elf.memory.read_u64(sp + 8 + i as u64 * 8)?);
+        }
+        let mut aux = sp + 8 * (2 + argv.len() + envp.len() + 1) as u64;
+        loop {
+            let key = elf.memory.read_u64(aux)?;
+            let value = elf.memory.read_u64(aux + 8)?;
+            linux.auxiliary.extend(key.to_le_bytes());
+            linux.auxiliary.extend(value.to_le_bytes());
+            aux += 16;
+            if key == 0 {
+                break;
+            }
+        }
         Ok(Self {
             cpu: Cpu::new(elf.start_entry, sp),
             memory: elf.memory,

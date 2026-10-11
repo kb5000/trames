@@ -132,7 +132,7 @@ grant a route unavailable to the host. It does not tunnel around host restrictio
 | --- | --- |
 | Families/type/protocol | AF_INET/AF_INET6; SOCK_STREAM TCP and SOCK_DGRAM UDP; protocol 0/6/17; NONBLOCK/CLOEXEC |
 | Lifecycle | socket, bind, listen, accept/accept4, connect, getsockname/getpeername, shutdown, close |
-| Payload | read/write/writev, sendto/recvfrom, sendmsg/recvmsg with bounded iovecs |
+| Payload | read/readv/write/writev, sendto/recvfrom, sendmsg/recvmsg with bounded iovecs |
 | Flags | send DONTWAIT/NOSIGNAL; receive DONTWAIT/PEEK/TRUNC (TRUNC for UDP) |
 | Readiness | ppoll/pselect; errors and hangups; no epoll yet |
 | Options | REUSEADDR, KEEPALIVE, SNDBUF/RCVBUF, TYPE, DOMAIN, PROTOCOL, ACCEPTCONN, ERROR, TCP_NODELAY, IPV6_V6ONLY |
@@ -140,7 +140,7 @@ grant a route unavailable to the host. It does not tunnel around host restrictio
 
 Not yet supported: Unix-domain/socketpair IPC, raw/packet sockets, multicast and
 broadcast controls, IPv6 interface scopes, ancillary/SCM_RIGHTS messages,
-WAITALL/OOB/MORE, socket timeouts, accept filters, epoll, readv, sendmmsg/recvmmsg,
+WAITALL/OOB/MORE, socket timeouts, accept filters, epoll, sendmmsg/recvmmsg,
 IP/TCP tuning options outside the table, or full Linux interface enumeration.
 Nonzero ancillary sends fail EOPNOTSUPP. Receives produce no ancillary messages
 and report zero control length. Unknown options fail ENOPROTOOPT; unsupported
@@ -176,5 +176,8 @@ implemented here. Native SSH host-key verification remains separate from guest
 sockets. Network.framework can supply native session/path integration without
 changing guest TLS behavior.
 
-Next: the user-requested isolated virtual subnet and userspace packet stack,
-with native egress subject to the same host network policy.
+The subsequent isolated fabric is delivered in [virtual-network.md](virtual-network.md).
+The 0.2.0 follow-up adds ICMP datagram sockets for echo egress under OS policy
+and guest-only read-only route netlink/proc views; it does not enumerate host NICs.
+M4 links Apple builds and the owner has installed 0.1.0; new ICMP behavior still
+requires device acceptance. Earlier M3 validation claims above are historical.
