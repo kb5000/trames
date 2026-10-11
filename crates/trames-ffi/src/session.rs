@@ -32,6 +32,8 @@ pub struct Options {
     #[serde(default = "default_network")]
     pub network: String,
     pub budget_bytes: Option<u64>,
+    #[serde(default = "default_backend")]
+    pub backend: String,
 }
 pub fn install(options: Options) -> Result<(), String> {
     if !options.store.is_absolute() || options.store.exists() {
@@ -66,6 +68,9 @@ fn default_columns() -> u16 {
 fn default_network() -> String {
     "outbound".into()
 }
+fn default_backend() -> String {
+    "reference".into()
+}
 #[derive(Clone, Serialize)]
 pub struct Status {
     pub phase: &'static str,
@@ -75,6 +80,8 @@ pub struct Status {
     pub used_bytes: u64,
     pub available_bytes: u64,
     pub volume_total_bytes: u64,
+    pub node_limit: usize,
+    pub nodes_used: usize,
 }
 pub struct Buffers {
     pub input: VecDeque<u8>,
@@ -83,6 +90,7 @@ pub struct Buffers {
     pub status: Status,
 }
 pub struct Session {
+    pub bridge: trames_bridge::Broker,
     pub buffers: Mutex<Buffers>,
     pub cancelled: AtomicBool,
     pub paused: AtomicBool,
@@ -130,6 +138,8 @@ impl Session {
             || options.volume_total == 0
             || options.volume_available > options.volume_total
             || !matches!(options.network.as_str(), "off" | "loopback" | "outbound")
+            || !matches!(options.backend.as_str(), "reference" | "cpp")
+            || (options.backend == "cpp" && !trames_core::cpp_available())
         {
             return Err("invalid session configuration".into());
         }
@@ -141,6 +151,7 @@ impl Session {
         let permit = WorkerPermit;
         let (commands, receiver) = mpsc::sync_channel(8);
         let session = Arc::new(Self {
+            bridge: trames_bridge::Broker::default(),
             buffers: Mutex::new(Buffers {
                 input: VecDeque::new(),
                 output: VecDeque::new(),
@@ -153,6 +164,8 @@ impl Session {
                     used_bytes: 0,
                     available_bytes: 0,
                     volume_total_bytes: options.volume_total,
+                    node_limit: 0,
+                    nodes_used: 0,
                 },
             }),
             cancelled: AtomicBool::new(false),
@@ -297,6 +310,17 @@ fn run(
         limits.file_bytes = budget;
         vfs.set_storage_limits(limits).map_err(|e| e.to_string())?;
     }
+    vfs.attach_bridge(session.bridge.clone());
+    if vfs
+        .stat_at(trames_vfs::AT_FDCWD, b"/usr/local/bin/trames")
+        .is_err()
+    {
+        vfs.import_executable(
+            b"/usr/local/bin/trames",
+            include_bytes!("../../../resources/guest/trames").to_vec(),
+        )
+        .map_err(|e| e.to_string())?;
+    }
     // First installation uses a new store chosen by the native adapter. A partial
     // failed installation is never promoted to the active environment directory.
     if vfs.executable(b"/bin/ash").is_err() {
@@ -324,21 +348,6 @@ fn run(
                 .map_err(|e| e.to_string())?;
         }
     }
-    // Upgrade only the exact resolver configuration installed by earlier Trames.
-    // A user's edited resolver file remains their choice.
-    let resolver = vfs
-        .open_at(trames_vfs::AT_FDCWD, b"/etc/resolv.conf", 0, 0)
-        .map_err(|e| e.to_string())?;
-    let old_resolver = vfs.read(resolver, 4096).map_err(|e| e.to_string())?;
-    vfs.close(resolver).map_err(|e| e.to_string())?;
-    if old_resolver == b"nameserver 1.1.1.1\nnameserver 2606:4700:4700::1111\n" {
-        let fd = vfs
-            .open_at(trames_vfs::AT_FDCWD, b"/etc/resolv.conf", 1 | 0x200, 0)
-            .map_err(|e| e.to_string())?;
-        vfs.write(fd, b"nameserver 10.0.0.1\nnameserver fd00::1\n")
-            .map_err(|e| e.to_string())?;
-        vfs.close(fd).map_err(|e| e.to_string())?;
-    }
     vfs.chdir(b"/home/user").map_err(|e| e.to_string())?;
     vfs.configure_local_fabric(match options.network.as_str() {
         "off" => NetworkMode::Off,
@@ -361,6 +370,14 @@ fn run(
     )
     .map_err(|e| e.to_string())?;
     let mut terminal = Terminal::default();
+    runtime
+        .cpu
+        .set_backend(if options.backend == "cpp" {
+            trames_core::Backend::Cpp
+        } else {
+            trames_core::Backend::Reference
+        })
+        .map_err(str::to_string)?;
     terminal.resize(options.rows, options.columns);
     runtime
         .enable_terminal(terminal)
@@ -402,6 +419,8 @@ impl Adapter {
         b.status.budget_bytes = capacity.budget_bytes;
         b.status.used_bytes = capacity.used_bytes;
         b.status.available_bytes = capacity.available_bytes;
+        b.status.node_limit = capacity.node_limit;
+        b.status.nodes_used = capacity.nodes_used;
     }
     fn transfer(
         &self,
@@ -443,12 +462,20 @@ impl Adapter {
             result.map(|_| ())
         } else {
             let file = File::open(o.host).map_err(|e| e.to_string())?;
+            let metadata = file.metadata().map_err(|e| e.to_string())?;
+            if !metadata.is_file()
+                || o.maximum_bytes
+                    .is_some_and(|maximum| metadata.len() > maximum)
+            {
+                return Err("source is not a regular file or exceeds transfer size limit".into());
+            }
             vfs.import_reader(
                 o.guest.as_bytes(),
                 &mut CancelReader {
                     file,
                     session: &self.session.cancelled,
                     cancelled,
+                    remaining: o.maximum_bytes.unwrap_or(u64::MAX),
                 },
                 false,
             )
@@ -461,13 +488,32 @@ struct CancelReader<'a> {
     file: File,
     session: &'a AtomicBool,
     cancelled: &'a AtomicBool,
+    remaining: u64,
 }
 impl Read for CancelReader<'_> {
     fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
         if self.cancelled.load(Ordering::Acquire) || self.session.load(Ordering::Acquire) {
             return Err(io::ErrorKind::Interrupted.into());
         }
-        self.file.read(bytes)
+        if bytes.is_empty() {
+            return Ok(0);
+        }
+        if self.remaining == 0 {
+            let mut extra = [0];
+            return match self.file.read(&mut extra)? {
+                0 => Ok(0),
+                _ => Err(io::Error::new(
+                    io::ErrorKind::FileTooLarge,
+                    "source exceeds transfer size limit",
+                )),
+            };
+        }
+        let length = bytes
+            .len()
+            .min(self.remaining.min(usize::MAX as u64) as usize);
+        let count = self.file.read(&mut bytes[..length])?;
+        self.remaining -= count as u64;
+        Ok(count)
     }
 }
 struct CancelWriter<'a> {

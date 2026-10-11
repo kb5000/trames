@@ -25,8 +25,9 @@ The owner requested on 2026-10-11 that future feature changes be grouped into a
 larger release, with M5 explained before implementation. Keep the app's bundle
 identifier stable across updates; internal CI builds do not require a new device
 installation. The terminal viewport fix will also be included in that release.
-Linux compatibility takes priority over M5. Version 0.2.0/build 3 combines it
-with the viewport fix; M5 has not started.
+Version 0.2.0/build 3 delivered Linux compatibility and the viewport fix. The
+0.3.0/build 4 follow-up implements M5 with package-creation fixes and an explicit
+Linux reset. Software verification is recorded in [M5](../validation/m5.md).
 
 M3 is validated with unmodified Alpine binaries, a deterministic native HTTPS
 peer and upstream Alpine-signed index/packages. The subsequent virtual network
@@ -41,8 +42,7 @@ within host policy. No host route changes or VPN entitlement are required.
 The Linux CLI now defaults to a disk-backed store, with an initial 16 GiB logical
 budget and capacity snapshots. VolumeSpace and stream APIs now supply the iPad
 frontend's capacity display and coordinated, security-scoped Files copies.
-Persistent provider bookmarks remain future work; selected resources are not live
-guest mounts.
+M5 adds persistent provider bookmarks; selected resources are not live guest mounts.
 Mapped-memory quotas remain unchanged. Installing a package is not proof that its programs can execute.
 
 Repository policy clarification: the original charter proposed confirming private

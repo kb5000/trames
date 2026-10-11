@@ -114,3 +114,11 @@ serde_json 1.0.151, itoa 1.0.18 (MIT OR Apache-2.0), memchr 2.8.3
 (selected MIT) and zmij 1.0.23 (MIT). Existing proc-macro dependencies retain
 their previously recorded terms. Only the isolated caller-buffer boundary permits
 unsafe code; C buffer validity is a native caller contract.
+
+## M5 build tooling
+
+The optional C++ interpreter adds build-only cc 1.7.0, find-msvc-tools 0.1.14 and
+shlex 2.0.1, each MIT OR Apache-2.0 (selected MIT). They compile project-owned
+GPL-3.0-or-later source and are not linked runtime plugins. Bridge uses the already
+reviewed serde/serde_json/sha2 dependency closure. No dynamic native dependency
+or downloaded native plugin is introduced.

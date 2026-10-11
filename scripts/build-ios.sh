@@ -12,7 +12,7 @@ case "$platform" in
   *) echo 'usage: scripts/build-ios.sh [simulator|device]' >&2; exit 2 ;;
 esac
 rustup target add "$rust_target"
-cargo build -p trames-ffi --release --target "$rust_target" --locked
+cargo build -p trames-ffi --features cpp --release --target "$rust_target" --locked
 # Keep only the static archive in the app linker search directory. Cargo also
 # produces a host-style dylib, which must never become an unembedded dependency.
 mkdir -p "target/ios-link/$rust_target"

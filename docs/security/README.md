@@ -20,7 +20,7 @@ pages remain rejected. Interpreter files come only from the checked guest VFS. G
 | Initial stack | 64 KiB, non-executable, unmapped page below it |
 | argv/envp entries combined | 4096 |
 | Virtual file data (all live files) | Disk: 16 GiB initial logical budget, configurable and volume-bounded; memory: 16 MiB |
-| VFS live nodes / namespace entries | Disk: 16,384; memory: 1024 |
+| VFS live nodes / namespace entries | Disk: 131,072 by default, configurable up to 262,144; memory: 1024 |
 | Serialized manifest input | 128 MiB, checksummed and structurally validated |
 | Import/export buffer | 64 KiB |
 | File descriptors | 256 per process |
@@ -145,3 +145,13 @@ uses unprivileged native ICMP datagram sockets, with actual OS errors and bounde
 flows; no host raw socket, route mutation or VPN entitlement is added. Route
 netlink queries are synthesized from the guest namespace, never host netlink.
 See [Linux compatibility](../architecture/linux-compat.md) for exact scope.
+
+## M5 native boundary
+
+Bridge native resource methods require per-request consent; frames, queues,
+connections and deadlines are bounded. Guest UID 0 grants no native authority.
+Provider copies stay inside explicit directory bookmarks, reject symlinks and
+traversal, obey streaming limits and revocation, and create destinations
+exclusively. The optional C++ engine has one checked POD boundary, no guest
+memory pointers, bounded dispatch/cache and Rust fallback. See [M5](../architecture/m5.md).
+Software sanitizers and integration checks do not constitute a security audit.

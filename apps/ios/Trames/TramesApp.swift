@@ -63,7 +63,7 @@ struct WorkspaceView: View {
         .background(.black)
         .sheet(isPresented: $sshSheet) { SSHConnectView(workspace: workspace) }
         .sheet(isPresented: $filesSheet) { if let session = workspace.current { TransferView(session: session) } }
-        .sheet(isPresented: $settingsSheet) { SettingsView() }
+        .sheet(isPresented: $settingsSheet) { SettingsView(workspace: workspace) }
         .alert("验证 SSH 主机指纹", isPresented: Binding(get: { workspace.challenge != nil }, set: { if !$0 { workspace.challenge = nil } })) {
             Button("信任此密钥") { workspace.trust() }
             Button("取消", role: .cancel) { workspace.challenge = nil }
@@ -88,6 +88,7 @@ struct SessionView: View {
                             .background(Color.white.opacity(0.08)).clipShape(RoundedRectangle(cornerRadius: 5))
                     }
                     Button { session.terminal.becomeFirstResponder() } label: { Image(systemName: "keyboard") }
+                        .accessibilityLabel("显示终端键盘").accessibilityIdentifier("terminal-keyboard")
                 }.padding(6)
             }
             HStack {
@@ -97,13 +98,17 @@ struct SessionView: View {
                     Text("\(ByteCountFormatter.string(fromByteCount: Int64(capacity.used_bytes), countStyle: .binary)) / \(ByteCountFormatter.string(fromByteCount: Int64(capacity.budget_bytes), countStyle: .binary))")
                 }
             }.font(.caption).foregroundStyle(.secondary).padding(.horizontal, 12).padding(.vertical, 6)
-        }
+        }.background(BridgeConsentPresenter(controller: session.bridge))
     }
 }
 struct SettingsView: View {
+    @ObservedObject var workspace: WorkspaceModel
     @Environment(\.dismiss) private var dismiss
     @AppStorage("extraKeys") private var keys = "Esc,Tab,Ctrl-C,Ctrl-D,↑,↓,←,→"
     @AppStorage("useVolumeBudget") private var volume = false
+    @AppStorage("bridgeEnabled") private var bridge = true
+    @AppStorage("useCppBackend") private var cpp = false
+    @State private var resetConfirmation = false
     var body: some View {
         NavigationStack {
             Form {
@@ -111,9 +116,27 @@ struct SettingsView: View {
                 Section("本地磁盘") {
                     Toggle("使用设备卷容量作为存储预算", isOn: $volume)
                     Text("默认预算 16 GiB；启用后按应用所在卷的总容量计算。实际可用空间仍受系统剩余容量限制，下次打开本地终端生效。").font(.caption)
+                    Button("重置 Linux 环境",role:.destructive) {resetConfirmation=true}.disabled(workspace.resetting)
+                }
+                Section("Linux 与 iPad") {
+                    Toggle("允许 Linux 发起原生访问请求", isOn: $bridge)
+                    Text("剪贴板、打开链接、设备信息及 Files 复制均需逐次允许。关闭后新请求会被拒绝。").font(.caption)
+                    if let directories = workspace.directories {
+                        NavigationLink("Files 目录授权") { FolderGrantsView(store: directories) }
+                    }
+                }
+                if LocalSession.cppAvailable {
+                    Section("执行后端") {
+                        Toggle("试验性 C++ 整数指令后端", isOn: $cpp)
+                        Text("默认使用 Rust。C++ 只批量执行支持的整数指令，其余由 Rust 解释；部分工作负载可能更慢，下次打开本地终端生效。").font(.caption)
+                    }
                 }
                 Section("后台行为") { Text("进入后台后暂停本地 Linux 并断开 SSH；返回前台后继续本地会话。Files 采用独立副本导入和导出。").font(.caption) }
             }.navigationTitle("设置").toolbar { Button("完成") { dismiss() } }
+                .alert("重置 Linux 环境？",isPresented:$resetConfirmation) {
+                    Button("删除并重新初始化",role:.destructive) {dismiss(); workspace.resetLocal()}
+                    Button("取消",role:.cancel) {}
+                } message: {Text("将删除 Linux 中所有软件、文件和配置，并重新下载 Alpine。SSH 设置和 Files 目录授权会保留。")}
         }
     }
 }

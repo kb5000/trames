@@ -11,7 +11,7 @@ scrollback stays with SwiftTerm. Rejected horizontal adjustments invalidate the
 visible drawing region so UIKit cannot retain a shifted backing store. The
 terminal grid still resizes normally on rotation and keyboard layout changes.
 
-The ABI is version 1: integer opaque handles, bounded byte buffers, UTF-8 JSON
+The ABI is version 2: integer opaque handles, bounded byte buffers, UTF-8 JSON
 configuration/status and explicit status codes. Only crates/trames-ffi/src/lib.rs
 permits unsafe code for copying caller-owned buffers. No pointers are retained;
 all other runtime crates and the worker retain the safe-Rust policy. Read the
@@ -71,5 +71,4 @@ export is staged then copied by UIDocumentPicker. Cloud provider failures and
 limited free capacity remain explicit errors. File transfers use single-use cancellation tickets, checked before dispatch
 and between 64 KiB copies. Closing a local session also cancels its copies.
 Configuration/key exports have a 64 KiB preflight size limit. This establishes
-a small embedding ABI; the permission-brokered versioned asynchronous Bridge RPC
-and accelerator registry remain M5 work.
+the versioned asynchronous Bridge RPC, per-request native consent, persistent Files directory authorizations and built-in accelerator registry described in [M5](m5.md).

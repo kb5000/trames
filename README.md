@@ -88,7 +88,17 @@ DNS 由真实 musl 读取 guest 的 `/etc/resolv.conf`；可用 `--file /etc/res
 
 增加运行时生成的 `/proc`、`/sys`、`/dev`：进程、内存、挂载、文件描述符、设备、逻辑接口和数据包统计来自实际 guest 状态。原版 Alpine 的 `ps`、`mount`、`df`、`free`、`top`、`ip a`、`ip route` 和 IPv4／IPv6 `ping` 已纳入执行测试。`mount` 可列出内置挂载，任意文件系统挂载与额外 PTY 分配仍未实现。
 
-guest root、UID/GID、目录权限及持久化所有权修复了安装 Vim 的 88 个目录权限更新错误；旧磁盘格式保留文件并迁移。共享内存线程、futex 和 POSIX 定时器支持 musl 的 SIGEV_THREAD，默认配置 Vim 已验证编辑、保存、退出和新会话读取。终端横移修复也合入本次大版本。详细范围与限制见 [Linux 兼容性架构](docs/architecture/linux-compat.md) 和 [验证记录](docs/validation/linux-compat.md)。
+guest root、UID/GID、目录权限及持久化所有权修复了安装 Vim 的 88 个目录权限更新错误；0.2.0 曾保留旧格式迁移；按项目所有者要求，0.3.0 只接受当前 v3 格式，提供显式重置。共享内存线程、futex 和 POSIX 定时器支持 musl 的 SIGEV_THREAD，默认配置 Vim 已验证编辑、保存、退出和新会话读取。终端横移修复也合入本次大版本。详细范围与限制见 [Linux 兼容性架构](docs/architecture/linux-compat.md) 和 [验证记录](docs/validation/linux-compat.md)。
+
+## M5 更新（0.3.0 / build 4）
+
+`/dev/trames-bridge` 和 `trames bridge 'JSON'` 提供版本化异步 RPC。剪贴板、打开网页、设备信息和 Files 复制都要在 iPad 上逐次允许。设置可保存、撤销 Files 目录授权，默认只允许导入；复制限制为单文件 1 GiB，拒绝路径穿越、符号链接和覆盖现有文件。
+
+修复磁盘文件一直占用宿主句柄导致的 `I/O error`：关闭的 guest 文件不再保留宿主文件句柄。新环境默认 16 GiB、131,072 个文件/路径，`/usr` 可写。按所有者选择删除未使用的历史迁移，设置增加“重置 Linux 环境”。真实签名的 `apk add python3`、pycache 修复和实际 Python 执行在低句柄上限下验证。
+
+可选 C++ 后端静态编译，设置开关默认关闭；支持的整数块批量执行，访存/浮点/SIMD/系统调用由 Rust 处理。内置 SHA-256 注册表可显式启用/停用，并记录调用指标。尚无动态原生插件加载。设计、资源边界及验证见 [M5 架构](docs/architecture/m5.md) 和 [M5 验证](docs/validation/m5.md)。
+
+虚拟 DNS 的 `10.0.0.1` 是网关，guest 本机是 `10.0.0.2`。所有者报告的 iPad DNS 错误仍在验证；实际 Apple DNS/HTTPS 已加入测试。手动修改的 resolver 配置不会在重开时改写。
 
 ## 验证
 
@@ -104,6 +114,7 @@ python3 tests/differential/vector_floating.py
 python3 tests/differential/structures.py
 python3 tests/differential/pairwise_integer.py
 python3 tests/differential/widening_integer.py
+python3 tests/differential/vector_copy_shift.py
 bash scripts/build-busybox.sh
 python3 tests/integration/busybox.py
 bash scripts/build-m2-fixtures.sh
@@ -121,6 +132,9 @@ python3 tests/integration/m3.py
 python3 tests/integration/virtual-network.py
 python3 tests/integration/linux-compat.py
 python3 tests/integration/embedding.py
+python3 tests/integration/python.py
+bash scripts/test-cpp.sh
+cargo run -p trames-cpu --features cpp --example backend_profile --release --locked
 rustup target add aarch64-apple-ios --toolchain 1.90.0
 cargo check -p trames-core -p trames-distro --target aarch64-apple-ios --locked
 TRAMES_TEST_STORAGE=disk python3 tests/integration/m2.py
@@ -131,7 +145,7 @@ TRAMES_TEST_STORAGE=disk python3 tests/integration/terminal.py
 
 差分脚本独立运行同一个静态 ELF，比较 Trames 与 QEMU 的 stdout、stderr 和退出码。六组固定程序检查初始栈、BSS、跨页读写、分支、系统调用错误和二进制输出；64 个确定性生成程序比较八个寄存器及 NZCV 的 72 字节内存快照。另有执行预算、非法指令、代码页写保护检查，以及改名并改变 ELF 内容的验证。
 
-M1 再加入 64 个生成程序，对照位域、扩展寄存器运算、乘除、进位、条件选择及 NZCV；固定程序验证成对访存、符号扩展、SIMD 数据传送、exclusive monitor、匿名内存和文件创建/读写。M2 加入 6,860 个浮点用例、159 个结构访存变体、22 个 shell 场景和两个静态 C 程序。存储阶段增加真实文件 ABI、文件管理 applet、48 个整数 SIMD 快照，以及磁盘后端的完整 M2 重跑。网络基础再加入内存/磁盘两种后端的 36 次网络对照、16 项能力/缓冲区预检/会话清理结果，以及 iOS 目标编译检查。M3 再加入 36 次动态程序／TLS／包管理对照和 72 个 widening SIMD 快照。虚拟网络再加入 27 次对照和协议／隔离测试。上述早期阶段共有 554 次 QEMU 程序/场景比较；0.2.0 再增加 musl 线程/定时器比较、CPU 指令快照、完整运行时端点与默认 Vim 编辑验证。当前 Rust 单元/集成测试共 115 项，终端交互仍在两种后端各验证 9 项结果；另验证配额、损坏元数据、提交失败回滚、流式复制、宿主范围及强制结束后的恢复。详见 [存储验证](docs/validation/storage.md) 和 [网络验证](docs/validation/network.md)。
+M1 再加入 64 个生成程序，对照位域、扩展寄存器运算、乘除、进位、条件选择及 NZCV；固定程序验证成对访存、符号扩展、SIMD 数据传送、exclusive monitor、匿名内存和文件创建/读写。M2 加入 6,860 个浮点用例、159 个结构访存变体、22 个 shell 场景和两个静态 C 程序。存储阶段增加真实文件 ABI、文件管理 applet、48 个整数 SIMD 快照，以及磁盘后端的完整 M2 重跑。网络基础再加入内存/磁盘两种后端的 36 次网络对照、16 项能力/缓冲区预检/会话清理结果，以及 iOS 目标编译检查。M3 再加入 36 次动态程序／TLS／包管理对照和 72 个 widening SIMD 快照。虚拟网络再加入 27 次对照和协议／隔离测试。上述早期阶段共有 554 次 QEMU 程序/场景比较；0.2.0 再增加 musl 线程/定时器比较、CPU 指令快照、完整运行时端点与默认 Vim 编辑验证。0.2.0 时 Rust 单元/集成测试共 115 项，终端交互仍在两种后端各验证 9 项结果；另验证配额、损坏元数据、提交失败回滚、流式复制、宿主范围及强制结束后的恢复。详见 [存储验证](docs/validation/storage.md) 和 [网络验证](docs/validation/network.md)。
 
 可通过 `AARCH64_AS`、`AARCH64_LD`、`QEMU_AARCH64` 覆盖工具路径，BusyBox 构建另支持 `AARCH64_CC`、`AARCH64_AR`、`AARCH64_RANLIB`；`--runner` 选择运行器，`--seeds` 调整生成程序数量。QEMU 是独立参考，测试通过只证明已测行为。
 

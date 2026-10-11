@@ -2,6 +2,23 @@
 import XCTest
 final class LaunchTests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
+    func testGuestNativeRequestRequiresVisibleConsent() {
+        let app=XCUIApplication(); app.launch()
+        let ready=XCTNSPredicateExpectation(predicate:NSPredicate(format:"label == %@","Alpine · 本地"),object:app.staticTexts["session-state"])
+        XCTAssertEqual(XCTWaiter.wait(for:[ready],timeout:120),.completed)
+        app.buttons["terminal-keyboard"].tap()
+        app.typeText("trames bridge '{\"version\":1,\"id\":1,\"method\":\"device.info\",\"params\":{}}'\n")
+        XCTAssertTrue(app.buttons["bridge-deny"].waitForExistence(timeout:20))
+        app.buttons["bridge-deny"].tap()
+        let gone=XCTNSPredicateExpectation(predicate:NSPredicate(format:"exists == false"),object:app.buttons["bridge-deny"])
+        XCTAssertEqual(XCTWaiter.wait(for:[gone],timeout:10),.completed)
+        app.buttons["terminal-keyboard"].tap()
+        app.typeText("trames bridge '{\"version\":1,\"id\":2,\"method\":\"device.info\",\"params\":{}}'\n")
+        XCTAssertTrue(app.buttons["bridge-allow"].waitForExistence(timeout:20))
+        app.buttons["bridge-allow"].tap()
+        let accepted=XCTNSPredicateExpectation(predicate:NSPredicate(format:"exists == false"),object:app.buttons["bridge-allow"])
+        XCTAssertEqual(XCTWaiter.wait(for:[accepted],timeout:10),.completed)
+    }
     func testLaunchAlpineRotateExitAndReopenPersistentStore() {
         let app = XCUIApplication()
         app.launch()

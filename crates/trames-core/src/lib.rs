@@ -60,6 +60,10 @@ pub struct Runtime {
     pub terminal: Option<terminal::Terminal>,
 }
 pub use terminal::Terminal;
+pub use trames_cpu::Backend;
+pub fn cpp_available() -> bool {
+    Cpu::cpp_available()
+}
 #[derive(Debug, PartialEq, Eq)]
 pub struct Exit {
     pub code: u8,

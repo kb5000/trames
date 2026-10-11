@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def execute(command, cwd, data=b""):
     result = subprocess.run(command, input=data, capture_output=True, cwd=cwd,
-                            env={"PATH": "/usr/bin:/bin", "LANG": "C"}, timeout=15)
+                            env={"PATH": "/usr/bin:/bin", "LANG": "C", "TRAMES_BACKEND": os.getenv("TRAMES_BACKEND","reference")}, timeout=15)
     return result.returncode, result.stdout, result.stderr
 
 

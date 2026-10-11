@@ -17,6 +17,74 @@ impl Cpu {
         let rt = (ins & 31) as usize;
         let rn = ((ins >> 5) & 31) as usize;
         let vector = ins & (1 << 26) != 0;
+        if ins & 0xbf000000 == 0x0d000000 {
+            // AdvSIMD single structures: lane LD/ST1..4 and LD1R..LD4R.
+            let q = ((ins >> 30) & 1) as usize;
+            let s = ((ins >> 12) & 1) as usize;
+            let size = ((ins >> 10) & 3) as usize;
+            let opcode = ((ins >> 13) & 7) as usize;
+            let structures = (((opcode & 1) << 1) | ((ins >> 21) & 1) as usize) + 1;
+            let load = ins & (1 << 22) != 0;
+            let replicate = opcode >> 1 == 3;
+            let (element, lane) = match opcode >> 1 {
+                0 => (1, (q << 3) | (s << 2) | size),
+                1 if size & 1 == 0 => (2, (q << 2) | (s << 1) | (size >> 1)),
+                2 if size == 0 => (4, (q << 1) | s),
+                2 if size == 1 && s == 0 => (8, q),
+                3 if load && s == 0 => (1 << size, 0),
+                _ => return Err(invalid()),
+            };
+            let post = ins & (1 << 23) != 0;
+            let rm = ((ins >> 16) & 31) as usize;
+            if !post && rm != 0 {
+                return Err(invalid());
+            }
+            let length = element * structures;
+            let address = self.reg(rn, true);
+            let mut bytes = [0; 32];
+            if load {
+                memory.read(address, &mut bytes[..length]).map_err(fault)?;
+            } else {
+                memory
+                    .check(address, length, trames_memory::Access::Write)
+                    .map_err(fault)?;
+            }
+            for index in 0..structures {
+                let register = (rt + index) & 31;
+                let offset = index * element;
+                if load {
+                    let mut data = [0; 16];
+                    data[..element].copy_from_slice(&bytes[offset..offset + element]);
+                    let value = u128::from_le_bytes(data);
+                    if replicate {
+                        let mut vector = 0;
+                        for lane in 0..(8 << q) / element {
+                            vector |= value << (lane * element * 8);
+                        }
+                        self.vectors[register] = vector;
+                    } else {
+                        let bits = element * 8;
+                        let mask = ((1u128 << bits) - 1) << (lane * bits);
+                        self.vectors[register] =
+                            (self.vectors[register] & !mask) | (value << (lane * bits));
+                    }
+                } else {
+                    let value = self.vectors[register] >> (lane * element * 8);
+                    bytes[offset..offset + element]
+                        .copy_from_slice(&value.to_le_bytes()[..element]);
+                }
+            }
+            if !load {
+                memory.write(address, &bytes[..length]).map_err(fault)?;
+            }
+            if post {
+                self.sp_or_x(
+                    rn,
+                    address.wrapping_add(if rm == 31 { length as u64 } else { self.x(rm) }),
+                );
+            }
+            return Ok(true);
+        }
         if ins & 0xbf200000 == 0x0c000000 {
             // AdvSIMD LD1/ST1 and interleaved LD2/3/4/ST2/3/4 multiple structures.
             let (repeat, structures) = match (ins >> 12) & 15 {

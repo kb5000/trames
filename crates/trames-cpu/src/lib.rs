@@ -2,11 +2,19 @@
 //! Reference AArch64 interpreter. Unsupported encodings fault explicitly.
 use std::fmt;
 use trames_memory::{Memory, MemoryError};
+#[cfg(feature = "cpp")]
+mod cpp;
 mod extended;
 mod floating;
 mod load_store;
 mod soft_float;
 mod vector_float;
+#[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Backend {
+    #[default]
+    Reference,
+    Cpp,
+}
 
 #[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Flags {
@@ -27,6 +35,9 @@ pub struct Cpu {
     pub fpsr: u32,
     vectors: [u128; 32],
     exclusive: Option<(u64, usize, u64)>,
+    backend: Backend,
+    #[cfg(feature = "cpp")]
+    cache: cpp::Cache,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -84,6 +95,19 @@ fn shifted(value: u64, kind: u32, amount: u32, wide: bool) -> u64 {
 }
 
 impl Cpu {
+    pub fn cpp_available() -> bool {
+        cfg!(feature = "cpp")
+    }
+    pub fn backend(&self) -> Backend {
+        self.backend
+    }
+    pub fn set_backend(&mut self, backend: Backend) -> Result<(), &'static str> {
+        if backend == Backend::Cpp && !Self::cpp_available() {
+            return Err("C++ backend was not compiled in");
+        }
+        self.backend = backend;
+        Ok(())
+    }
     pub fn new(pc: u64, sp: u64) -> Self {
         Self {
             pc,
@@ -299,6 +323,13 @@ impl Cpu {
 
     /// Bounded calls form the execution backend boundary; never a per-instruction FFI call.
     pub fn run_slice(&mut self, memory: &mut Memory, budget: u64) -> SliceOutcome {
+        #[cfg(feature = "cpp")]
+        if self.backend == Backend::Cpp {
+            return self.run_cpp(memory, budget);
+        }
+        self.run_reference(memory, budget)
+    }
+    fn run_reference(&mut self, memory: &mut Memory, budget: u64) -> SliceOutcome {
         for executed in 0..budget {
             match self.step(memory) {
                 Ok(Event::Continue) => {}

@@ -10,6 +10,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     @Published var state = "连接中…"
     @Published var capacity: LocalStatus?
     var local: LocalSession?
+    let bridge = BridgeController()
     var ssh: SSHSession?
     var onChallenge: ((HostKeyChallenge) -> Void)?
     private var task: Task<Void,Never>?
@@ -28,9 +29,10 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     func startLocal(_ environment: EnvironmentStore, useVolumeBudget: Bool) {
         task = Task { [weak self] in
             do {
-                let local = try await environment.start(useVolumeBudget: useVolumeBudget)
+                let local = try await environment.start(useVolumeBudget: useVolumeBudget, useCppBackend: UserDefaults.standard.bool(forKey: "useCppBackend"))
                 guard let self, !self.closed else { local.close(); return }
                 self.local = local
+                bridge.attach(local)
                 try local.pause(paused)
                 try local.resize(columns: max(1,terminal.getTerminal().cols), rows: max(1,terminal.getTerminal().rows))
                 timer = Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) { [weak self] _ in
@@ -43,6 +45,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         guard let local, !closed else { return }
         do {
             let output = try local.receive()
+            try bridge.poll()
             if !output.isEmpty { terminal.feed(byteArray: Array(output)[...]) }
             if !pendingInput.isEmpty {
                 let count = try local.send(pendingInput)
@@ -93,6 +96,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     func close() {
         guard !closed else { return }; closed = true
         timer?.invalidate(); timer = nil; task?.cancel(); sender?.cancel()
+        bridge.close()
         local?.close(); local = nil
         if let ssh { Task { await ssh.close() } }; ssh = nil; pendingInput.removeAll()
         state = "已关闭"

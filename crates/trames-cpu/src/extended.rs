@@ -74,6 +74,18 @@ impl Cpu {
         let rm = ((ins >> 16) & 31) as usize;
         let left = self.vectors[rn] as u64;
         let right = self.vectors[rm] as u64;
+        if ins & 0xffe0fc00 == 0x5e000400 {
+            // DUP scalar from a vector lane (MOV alias), clearing upper bits.
+            let imm5 = (ins >> 16) & 31;
+            if imm5 == 0 || imm5.trailing_zeros() > 3 {
+                return Err(invalid());
+            }
+            let power = imm5.trailing_zeros();
+            let bits = 8 << power;
+            let lane = imm5 >> (power + 1);
+            self.vectors[rd] = (self.vectors[rn] >> (lane * bits)) & ones(bits) as u128;
+            return Ok(Some(next));
+        }
         let scalar = match ins & 0xffe0fc00 {
             0x5ee08400 => Some(left.wrapping_add(right)),
             0x7ee08400 => Some(left.wrapping_sub(right)),
@@ -376,6 +388,25 @@ impl Cpu {
             )
         {
             // Single-thread memory barriers and architecturally compatible hints.
+        } else if ins & 0xbfe0fc00 == 0x0e000400 {
+            // DUP vector from a selected vector lane, including source aliases.
+            let imm5 = (ins >> 16) & 31;
+            if imm5 == 0 || imm5.trailing_zeros() > 3 {
+                return Err(invalid());
+            }
+            let power = imm5.trailing_zeros();
+            let bits = 8 << power;
+            let width = if ins & (1 << 30) != 0 { 128 } else { 64 };
+            if bits == 64 && width == 64 {
+                return Err(invalid());
+            }
+            let lane = imm5 >> (power + 1);
+            let value = (self.vectors[rn] >> (lane * bits)) & ones(bits) as u128;
+            let mut result = 0;
+            for index in 0..width / bits {
+                result |= value << (index * bits);
+            }
+            self.vectors[rd] = result;
         } else if ins & 0xbfe0fc00 == 0x0e000c00 {
             // DUP vector from GPR
             let imm5 = (ins >> 16) & 31;
@@ -401,6 +432,64 @@ impl Cpu {
             self.vectors[rd] = (self.x(rn) & width_mask(ins >> 31 != 0)) as u128;
         } else if ins & 0xfffffc00 == 0x1e604000 {
             self.vectors[rd] = self.vectors[rn] & u64::MAX as u128;
+        } else if matches!(
+            ins & 0x9f80fc00,
+            0x0f000400 | 0x0f001400 | 0x0f002400 | 0x0f003400 | 0x0f004400 | 0x0f005400
+        ) && ins & 0x00780000 != 0
+        {
+            // Integer shift-immediate, rounded/accumulating and bit insertion.
+            let immediate = (ins >> 16) & 127;
+            let bits = 1 << (31 - immediate.leading_zeros());
+            let width = if ins & (1 << 30) != 0 { 128 } else { 64 };
+            let unsigned = ins & (1 << 29) != 0;
+            let opcode = (ins >> 12) & 7;
+            if bits == 64 && width == 64 || opcode == 4 && !unsigned {
+                return Err(invalid());
+            }
+            let mask = ones(bits);
+            let shift = if opcode == 5 {
+                immediate - bits
+            } else {
+                2 * bits - immediate
+            };
+            let source = self.vectors[rn];
+            let destination = self.vectors[rd];
+            let mut result = 0;
+            for lane in 0..width / bits {
+                let offset = lane * bits;
+                let a = (source >> offset) as u64 & mask;
+                let old = (destination >> offset) as u64 & mask;
+                let value = if opcode == 5 {
+                    let value = a.wrapping_shl(shift);
+                    if unsigned {
+                        value | (old & ones(shift))
+                    } else {
+                        value
+                    }
+                } else if opcode == 4 {
+                    let lower = if shift == bits { 0 } else { a >> shift };
+                    lower | (old & !ones(bits - shift))
+                } else {
+                    let rounding = if opcode & 2 != 0 {
+                        1i128 << (shift - 1)
+                    } else {
+                        0
+                    };
+                    let value = if unsigned {
+                        a as i128
+                    } else {
+                        sign_extend(a, bits) as i64 as i128
+                    };
+                    let shifted = ((value + rounding) >> shift) as u64;
+                    if opcode & 1 != 0 {
+                        shifted.wrapping_add(old)
+                    } else {
+                        shifted
+                    }
+                } & mask;
+                result |= (value as u128) << offset;
+            }
+            self.vectors[rd] = result;
         } else if ins & 0x9f80fc00 == 0x0f00a400 && ins & 0x00780000 != 0 {
             // SSHLL/USHLL, including SXTL/UXTL and the upper-half forms.
             let immh = (ins >> 19) & 15;
@@ -486,6 +575,225 @@ impl Cpu {
                 value = sign_extend(value, size);
             }
             self.put(rd, value, x, false);
+        } else if ins & 0xbfe08c00 == 0x0e000000 {
+            // TBL/TBX, one to four 128-bit tables, with register-number wrap.
+            let bytes = if ins & (1 << 30) != 0 { 16 } else { 8 };
+            let tables = ((ins >> 13) & 3) + 1;
+            let mut result = if ins & 0x1000 != 0 {
+                self.vectors[rd]
+            } else {
+                0
+            };
+            if bytes == 8 {
+                result &= u64::MAX as u128;
+            }
+            for lane in 0..bytes {
+                let index = ((self.vectors[rm] >> (lane * 8)) & 255) as u32;
+                if index < tables * 16 {
+                    let source = (rn + (index / 16) as usize) & 31;
+                    let value = (self.vectors[source] >> ((index % 16) * 8)) & 255;
+                    result = (result & !(255u128 << (lane * 8))) | (value << (lane * 8));
+                }
+            }
+            self.vectors[rd] = result;
+        } else if matches!(
+            ins & 0xbf20fc00,
+            0x0e208400
+                | 0x2e208400
+                | 0x2e208c00
+                | 0x0e203400
+                | 0x0e203c00
+                | 0x2e203400
+                | 0x2e203c00
+                | 0x0e208c00
+                | 0x0e20bc00
+        ) || matches!(ins & 0xbf3ffc00, 0x0e20b800 | 0x2e20b800)
+        {
+            let size = (ins >> 22) & 3;
+            let width = if ins & (1 << 30) != 0 { 128 } else { 64 };
+            if size == 3 && width == 64 {
+                return Err(invalid());
+            }
+            let bits = 8 << size;
+            let lanes = width / bits;
+            let mask = ones(bits);
+            let operation = ins & 0xbf20fc00;
+            let mut result = 0u128;
+            for lane in 0..lanes {
+                let (a, b) = if operation == 0x0e20bc00 {
+                    let source = if lane < lanes / 2 {
+                        self.vectors[rn]
+                    } else {
+                        self.vectors[rm]
+                    };
+                    let offset = (lane % (lanes / 2)) * 2 * bits;
+                    (
+                        (source >> offset) as u64 & mask,
+                        (source >> (offset + bits)) as u64 & mask,
+                    )
+                } else {
+                    (
+                        (self.vectors[rn] >> (lane * bits)) as u64 & mask,
+                        (self.vectors[rm] >> (lane * bits)) as u64 & mask,
+                    )
+                };
+                let a_signed = sign_extend(a, bits) as i64;
+                let b_signed = sign_extend(b, bits) as i64;
+                let value = match operation {
+                    0x0e208400 | 0x0e20bc00 => a.wrapping_add(b),
+                    0x2e208400 => a.wrapping_sub(b),
+                    0x2e208c00 => {
+                        if a == b {
+                            mask
+                        } else {
+                            0
+                        }
+                    }
+                    0x0e203400 => {
+                        if a_signed > b_signed {
+                            mask
+                        } else {
+                            0
+                        }
+                    }
+                    0x0e203c00 => {
+                        if a_signed >= b_signed {
+                            mask
+                        } else {
+                            0
+                        }
+                    }
+                    0x2e203400 => {
+                        if a > b {
+                            mask
+                        } else {
+                            0
+                        }
+                    }
+                    0x2e203c00 => {
+                        if a >= b {
+                            mask
+                        } else {
+                            0
+                        }
+                    }
+                    0x0e208c00 => {
+                        if a & b != 0 {
+                            mask
+                        } else {
+                            0
+                        }
+                    }
+                    0x0e20b800 => a_signed.wrapping_abs() as u64,
+                    0x2e20b800 => a.wrapping_neg(),
+                    _ => unreachable!(),
+                } & mask;
+                result |= (value as u128) << (lane * bits);
+            }
+            self.vectors[rd] = result;
+        } else if ins & 0xbf3ffc00 == 0x0e212800 {
+            // XTN/XTN2 truncates each wide lane; XTN2 retains the low half.
+            let size = (ins >> 22) & 3;
+            if size == 3 {
+                return Err(invalid());
+            }
+            let bits = 8 << size;
+            let mut result = 0u128;
+            for lane in 0..64 / bits {
+                result |=
+                    ((self.vectors[rn] >> (lane * bits * 2)) & ones(bits) as u128) << (lane * bits);
+            }
+            self.vectors[rd] = if ins & (1 << 30) != 0 {
+                (self.vectors[rd] & u64::MAX as u128) | (result << 64)
+            } else {
+                result
+            };
+        } else if matches!(
+            ins & 0xbf20fc00,
+            0x0e001800 | 0x0e005800 | 0x0e002800 | 0x0e006800 | 0x0e003800 | 0x0e007800
+        ) {
+            // UZP1/2, TRN1/2 and ZIP1/2, with alias-safe source snapshots.
+            let size = (ins >> 22) & 3;
+            let vector_bits = if ins & (1 << 30) != 0 { 128 } else { 64 };
+            if size == 3 && vector_bits == 64 {
+                return Err(invalid());
+            }
+            let element_bits = 8 << size;
+            let lanes = vector_bits / element_bits;
+            let part = (ins >> 14) & 1;
+            let operation = (ins >> 12) & 3;
+            let lane_mask = ones(element_bits) as u128;
+            let mut result = 0;
+            for lane in 0..lanes {
+                let (source, index) = match operation {
+                    1 => (
+                        if lane < lanes / 2 { rn } else { rm },
+                        (lane % (lanes / 2)) * 2 + part,
+                    ),
+                    2 => (if lane % 2 == 0 { rn } else { rm }, (lane / 2) * 2 + part),
+                    3 => (
+                        if lane % 2 == 0 { rn } else { rm },
+                        lane / 2 + part * (lanes / 2),
+                    ),
+                    _ => unreachable!(),
+                };
+                result |= ((self.vectors[source] >> (index * element_bits)) & lane_mask)
+                    << (lane * element_bits);
+            }
+            self.vectors[rd] = result;
+        } else if matches!(ins & 0xbf20fc00, 0x0e204400 | 0x2e204400) {
+            // SSHL/USHL: shift distance is the signed low byte of each lane.
+            let size = (ins >> 22) & 3;
+            let vector_bits = if ins & (1 << 30) != 0 { 128 } else { 64 };
+            if size == 3 && vector_bits == 64 {
+                return Err(invalid());
+            }
+            let element_bits = 8 << size;
+            let signed = ins & (1 << 29) == 0;
+            let lane_mask = ones(element_bits);
+            let mut result = 0u128;
+            for lane in 0..vector_bits / element_bits {
+                let offset = lane * element_bits;
+                let value = (self.vectors[rn] >> offset) as u64 & lane_mask;
+                let shift = (self.vectors[rm] >> offset) as u8 as i8 as i32;
+                let value = if shift >= element_bits as i32 {
+                    0
+                } else if shift >= 0 {
+                    value.wrapping_shl(shift as u32) & lane_mask
+                } else if signed {
+                    (sign_extend(value, element_bits) as i64
+                        >> ((-shift) as u32).min(element_bits - 1)) as u64
+                        & lane_mask
+                } else if -shift >= element_bits as i32 {
+                    0
+                } else {
+                    value >> (-shift as u32)
+                };
+                result |= (value as u128) << offset;
+            }
+            self.vectors[rd] = result;
+        } else if ins & 0xffe08400 == 0x6e000400 {
+            // INS element from another vector; both operands are read before
+            // modifying the destination, including overlapping source lanes.
+            let imm5 = (ins >> 16) & 31;
+            if imm5 == 0 {
+                return Err(invalid());
+            }
+            let power = imm5.trailing_zeros();
+            if power > 3 {
+                return Err(invalid());
+            }
+            let element_bits = 8u32 << power;
+            let destination = imm5 >> (power + 1);
+            let imm4 = (ins >> 11) & 15;
+            if imm4 & ((1 << power) - 1) != 0 {
+                return Err(invalid());
+            }
+            let source = imm4 >> power;
+            let lane_mask = (1u128 << element_bits) - 1;
+            let value = (self.vectors[rn] >> (source * element_bits)) & lane_mask;
+            let shift = destination * element_bits;
+            self.vectors[rd] = (self.vectors[rd] & !(lane_mask << shift)) | (value << shift);
         } else if ins & 0xffe0fc00 == 0x4e001c00 {
             // INS vector lane from GPR
             let imm5 = (ins >> 16) & 31;

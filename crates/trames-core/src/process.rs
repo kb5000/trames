@@ -785,7 +785,9 @@ impl Kernel {
             runtime.linux.vfs.credentials = credentials;
             runtime.linux.trace = p.linux.trace;
             p.linux = runtime.linux;
+            let backend = p.cpu.backend();
             p.cpu = runtime.cpu;
+            p.cpu.set_backend(backend).map_err(|_| Errno(95))?;
             p.memory = runtime.memory;
             for action in &mut p.actions {
                 if action.handler != 1 {
@@ -1942,6 +1944,7 @@ impl Kernel {
                         && p.linux.vfs.fd_kind(a[0] as u32).ok() == Some(FdKind::Socket))
                         || (matches!(p.state, State::Blocked(72 | 73, _))
                             && p.linux.vfs.live_sockets() != 0)
+                        || p.linux.vfs.has_bridge_descriptors()
                 }) || self.terminal.is_some() || self.timers.values().any(|t| t.deadline.is_some());
                 if !external {
                     return Err(RuntimeError::Deadlock);

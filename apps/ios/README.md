@@ -139,3 +139,16 @@ To package an existing device build yourself:
     python3 scripts/package-ios.py \
       apps/ios/build/device/Build/Products/Debug-iphoneos/Trames.app \
       apps/ios/build/sideload/Trames-unsigned.ipa
+
+## M5 / 0.3.0 build 4
+
+The next combined update adds per-request Bridge consent, persistent Files folder
+authorizations, an optional C++ backend and an explicit Linux environment reset.
+The owner chose fresh development data; no historical v1/v2 store conversion or
+old-default DNS/quota migrations remain. Settings > Reset Linux waits for the
+store lock and deletes only the private Linux environment. The current released
+app can instead be deleted and reinstalled with the same Sideloadly signing ID;
+deleting the whole app also removes native settings, so retain anything needed
+before doing so. Public DNS can be selected by editing the guest resolv.conf;
+10.0.0.1 itself is the virtual gateway. Apple DNS/HTTPS is covered by the new
+simulator regression; physical device verification remains required.

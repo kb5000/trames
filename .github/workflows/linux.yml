@@ -8,6 +8,12 @@ jobs:
   reference-runtime:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        backend: [reference, cpp]
+    env:
+      TRAMES_BACKEND: ${{ matrix.backend }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -20,9 +26,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu qemu-user build-essential curl bzip2 openssl
       - run: cargo fmt --all --check
-      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
-      - run: cargo build --workspace --locked
-      - run: cargo test --workspace --locked
+      - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+      - run: cargo build --workspace --all-features --locked
+      - run: cargo test --workspace --all-features --locked
       - name: Compile core and both network backends for iOS (no SDK link or device test)
         run: cargo check -p trames-core -p trames-distro -p trames-ffi --target aarch64-apple-ios --locked
       - run: python3 tests/differential/run.py
@@ -32,6 +38,9 @@ jobs:
       - run: python3 tests/differential/structures.py
       - run: python3 tests/differential/pairwise_integer.py
       - run: python3 tests/differential/widening_integer.py
+      - run: python3 tests/differential/vector_copy_shift.py
+      - name: Check computed-goto and portable C++ with ASan/UBSan
+        run: bash scripts/test-cpp.sh
       - name: Cross-build pinned musl and static BusyBox
         run: |
           if ! bash scripts/build-busybox.sh > target/busybox-build.log 2>&1; then
@@ -60,7 +69,7 @@ jobs:
           TRAMES_TEST_STORAGE: disk
       - name: Prepare pinned Alpine and dynamic fixtures
         run: bash scripts/prepare-alpine.sh
-      - run: cargo build --release --workspace --locked
+      - run: cargo build --release --workspace --all-features --locked
       - name: Validate dynamic Alpine, HTTPS trust and signed apk installation
         run: python3 tests/integration/m3.py
       - name: Validate virtual packet fabric, guest ABI and Alpine HTTPS gateway
@@ -76,5 +85,17 @@ jobs:
 
       - name: Exercise the embedding ABI with real Alpine PTY and disk streams
         run: |
-          cargo build -p trames-ffi --release --locked
+          cargo build -p trames-ffi --features cpp --release --locked
           python3 tests/integration/embedding.py
+
+      - name: Signed Python install, repair and execution with 128 host descriptors
+        run: python3 tests/integration/python.py
+      - name: Profile both interpreters with matching final CPU/memory state
+        run: cargo run -p trames-cpu --features cpp --example backend_profile --release --locked | tee target/cpu-profile.jsonl
+      - uses: actions/upload-artifact@v4
+        with:
+          name: runtime-evidence-${{ matrix.backend }}
+          path: |
+            target/cpu-profile.jsonl
+            target/cpp-sanitizers/*.txt
+          if-no-files-found: error

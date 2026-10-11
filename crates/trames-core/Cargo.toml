@@ -5,6 +5,9 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 
+[features]
+cpp = ["trames-cpu/cpp"]
+
 [dependencies]
 trames-cpu = { path = "../trames-cpu" }
 trames-elf = { path = "../trames-elf" }

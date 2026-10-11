@@ -67,14 +67,13 @@ remain if a later individual host operation fails.
 The guest ABI adds statfs/fstatfs, truncate/ftruncate, pread64/pwrite64,
 fsync/fdatasync/sync, linkat, renameat/selected renameat2, fchmod/fchmodat and
 utimensat. The 0.2.0 follow-up adds virtual UID/GID/ownership syscalls, sticky/
-SGID/set-ID behavior and real owner/group/other permission checks. Existing v1/v2
-metadata keeps owner 1000; v3 stores UID/GID without discarding guest data.
+SGID/set-ID behavior and real owner/group/other permission checks. Manifest v3 stores UID/GID. Version 0.3.0 accepts only v3; historical format migration was removed at the owner's request.
 Complete timestamp, mount, locking, ACL/xattr and provider POSIX semantics remain
 out of scope. Enabled BusyBox applets are validated only for the recorded cases.
 
 ## Capacity
 
-New disk stores default to a 16 GiB logical file budget and 16,384 live inode /
+New disk stores default to a 16 GiB logical file budget and 131,072 live inode /
 namespace-entry limits. Existing stores keep their recorded limits unless the
 embedding app or CLI explicitly changes them. `--storage-budget 16GiB` accepts
 bytes or integer KiB/MiB/GiB/TiB units. `--storage-budget auto` records the selected
@@ -107,8 +106,8 @@ For iPadOS, the app should keep its private store in the app container, report
 the authorized volume's capacity, and wrap selected Files streams in the native
 security-scope, coordination, cancellation and resource-release lifecycle.
 M4 subsequently supplies native Files copying, C ABI plumbing and Apple builds;
-the owner installed the first signed app. Persistent provider bookmarks and
-complete provider behavior remain pending. Copies remain separate guest data.
+the owner installed the first signed app. M5 adds persistent provider bookmarks;
+physical provider acceptance remains pending. Copies remain separate guest data.
 
 ## Durability and evidence
 
@@ -116,7 +115,13 @@ fsync/fdatasync flush the selected inode and current namespace; sync flushes
 all live files and the manifest directory. Normal CLI teardown requests sync
 even after a runtime error. SIGKILL recovery is tested after a guest sync point.
 The tests do not establish physical power-loss durability, APFS behavior,
-provider consistency, device performance or a security audit. Manifest v1/v2 recovery and migration to ownership-bearing v3 are implemented.
+provider consistency, device performance or a security audit. Only manifest v3 is accepted in 0.3.0.
 There is no multi-instance concurrent-write protocol.
 
 See [validation](../validation/storage.md) and [limits](../security/README.md).
+
+Host file handles are opened for each inode IO operation and then closed. Guest
+open-unlinked files retain the private object and store lock until their final
+reference closes. The number of closed stored files does not consume host FDs.
+Explicit native reset checks the lock before deleting an environment; it is not
+a guest syscall or an automatic response to unsupported metadata.

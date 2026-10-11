@@ -7,11 +7,14 @@ final class WorkspaceModel: ObservableObject {
     @Published var selected: UUID?
     @Published var challenge: HostKeyChallenge?
     @Published var error: String?
+    @Published var resetting = false
     private(set) var environment: EnvironmentStore?
     private(set) var knownHosts: KnownHosts?
+    private(set) var directories: ScopedDirectories?
     init() {
         do {
             let environment = try EnvironmentStore(); self.environment = environment
+            directories = try ScopedDirectories(file: environment.root.appendingPathComponent("folder-grants.json"))
             Task {
                 do { knownHosts = try await environment.knownHosts(); openLocal() }
                 catch { self.error = error.localizedDescription }
@@ -21,11 +24,22 @@ final class WorkspaceModel: ObservableObject {
     var current: TerminalSession? { sessions.first { $0.id == selected } }
     var local: TerminalSession? { sessions.first { $0.local != nil || $0.title == "Alpine" } }
     func openLocal() {
+        guard !resetting else { return }
         if let local { selected = local.id; return }
         guard let environment else { return }
         let session = TerminalSession(title: "Alpine")
+        session.bridge.directories = directories
         sessions.append(session); selected = session.id
         session.startLocal(environment, useVolumeBudget: UserDefaults.standard.bool(forKey: "useVolumeBudget"))
+    }
+    func resetLocal() {
+        guard let environment, !resetting else {return}
+        resetting=true
+        if let local {close(local)}
+        Task {
+            do { try await environment.reset(); resetting=false; openLocal() }
+            catch {resetting=false; error=error.localizedDescription}
+        }
     }
     func connect(host: SSHHost, credential: SSHCredential) {
         guard sessions.count < 8, let knownHosts else { error = "最多同时打开 8 个终端"; return }

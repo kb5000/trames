@@ -1,0 +1,10 @@
+[package]
+name = "trames-interpreter-cpp"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+[build-dependencies]
+cc = "1.2"
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"

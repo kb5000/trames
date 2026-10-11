@@ -8,8 +8,9 @@ and verified instruction fusion, with compiler feature checks and a portable
 fallback. Both must obey the same architectural and memory semantics.
 
 M0 delivers the Rust backend with bounded slice outcomes and independent QEMU
-checks. There is no C++ implementation, C++ performance claim or Rust/C++
-differential result yet. The planned location is `native/interpreter-cpp`.
+checks. M5 implements the optional C++ integer-block backend in `native/interpreter-cpp`,
+with Rust fallback and independent QEMU checks; see [M5](../architecture/m5.md).
+The Rust backend remains the default after workload-dependent profiling.
 
 The C++ backend will accept validated blocks, guard every opcode index and block
 bound, validate guest memory accesses, and return syscall/fault/yield/exit events.

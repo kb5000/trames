@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Version 1 embedding ABI. Integer handles prevent use-after-free of Rust objects.
+//! Version 2 embedding ABI. All v1 functions retain their signatures/semantics.
 //! All runtime/VFS objects stay on their owning worker. Only bounded byte copies
 //! require unsafe code; callers own and keep their C buffers valid for each call.
 mod session;
@@ -68,7 +68,92 @@ unsafe fn copy(pointer: *mut u8, capacity: u32, source: &[u8]) -> Result<i32, &'
 }
 #[no_mangle]
 pub extern "C" fn trames_abi_version() -> u32 {
-    1
+    2
+}
+#[no_mangle]
+pub extern "C" fn trames_execution_backend_available(backend: u32) -> u32 {
+    u32::from(backend == 0 || (backend == 1 && trames_core::cpp_available()))
+}
+/// # Safety
+/// See `bytes`. Native-authorized store path only. Serialize against new opens.
+/// Returns 1 while a cancelled/live worker holds the store, 0 after deletion.
+#[no_mangle]
+pub unsafe extern "C" fn trames_environment_reset(pointer: *const u8, length: u32) -> i32 {
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Reset {
+        store: std::path::PathBuf,
+    }
+    boundary(|| {
+        let result = (|| {
+            let options: Reset =
+                serde_json::from_slice(unsafe { bytes(pointer, length) }.map_err(str::to_string)?)
+                    .map_err(|e| e.to_string())?;
+            if !options.store.is_absolute() || options.store.as_os_str().len() > 4096 {
+                return Err("invalid store path".into());
+            }
+            match trames_vfs::Vfs::reset_disk(options.store) {
+                Ok(()) => Ok(0),
+                Err(trames_vfs::Errno(16)) => Ok(1),
+                Err(e) => Err(e.to_string()),
+            }
+        })();
+        result.unwrap_or_else(error)
+    })
+}
+/// # Safety
+/// See `copy`. Returns one JSON request, 0 if none, -1 on error. A small buffer
+/// never consumes a request. Call from the native consent broker, not the guest.
+#[no_mangle]
+pub unsafe extern "C" fn trames_session_bridge_poll(
+    handle: u64,
+    pointer: *mut u8,
+    capacity: u32,
+) -> i32 {
+    boundary(|| {
+        let result = (|| {
+            // Validate the destination before claiming a request.
+            unsafe { copy(pointer, capacity, &[]) }.map_err(str::to_string)?;
+            let data = session(handle)
+                .map_err(str::to_string)?
+                .bridge
+                .poll(capacity as usize)
+                .map_err(|e| format!("Bridge errno {e}"))?;
+            match data {
+                Some(data) => unsafe { copy(pointer, capacity, &data) }.map_err(str::to_string),
+                None => Ok(0),
+            }
+        })();
+        result.unwrap_or_else(error)
+    })
+}
+/// # Safety
+/// See `bytes`. Completing a stale, cancelled or expired ticket fails. Exactly
+/// one of result/error is required. Replies contain no retained native pointers.
+#[no_mangle]
+pub unsafe extern "C" fn trames_session_bridge_reply(
+    handle: u64,
+    pointer: *const u8,
+    length: u32,
+) -> i32 {
+    boundary(|| {
+        let result = (|| {
+            session(handle)
+                .map_err(str::to_string)?
+                .bridge
+                .reply(unsafe { bytes(pointer, length) }.map_err(str::to_string)?)
+                .map_err(|e| format!("Bridge errno {e}"))
+        })();
+        result.map(|_| 0).unwrap_or_else(error)
+    })
+}
+#[no_mangle]
+pub extern "C" fn trames_session_bridge_active(handle: u64, ticket: u64) -> i32 {
+    boundary(|| {
+        session(handle)
+            .map(|s| i32::from(s.bridge.active(ticket)))
+            .unwrap_or_else(error)
+    })
 }
 /// # Safety
 /// See `bytes`. Blocking installation into an absent staging store; the native
@@ -279,7 +364,7 @@ mod tests {
     use super::*;
     #[test]
     fn abi_rejects_invalid_buffers_config_and_closed_handles() {
-        assert_eq!(trames_abi_version(), 1);
+        assert_eq!(trames_abi_version(), 2);
         unsafe {
             assert_eq!(trames_session_open(std::ptr::null(), 1), 0);
             assert_eq!(trames_session_input(u64::MAX, std::ptr::null(), 0), -1);

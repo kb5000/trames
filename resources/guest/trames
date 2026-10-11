@@ -1,0 +1,13 @@
+#!/bin/ash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# One connection per invocation; the protocol also supports multiplexed clients.
+case "$1" in
+  info) request='{"version":1,"id":1,"method":"bridge.info","params":{}}' ;;
+  bridge) [ "$#" -eq 2 ] || { echo 'Usage: trames bridge JSON' >&2; exit 2; }; request=$2 ;;
+  *) echo 'Usage: trames info | trames bridge JSON' >&2; exit 2 ;;
+esac
+exec 3<>/dev/trames-bridge || exit 1
+printf '%s\n' "$request" >&3 || exit 1
+IFS= read -r response <&3 || exit 1
+printf '%s\n' "$response"
+case "$response" in *'"error":'*) exit 1;; esac

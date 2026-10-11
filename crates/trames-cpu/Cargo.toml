@@ -7,6 +7,9 @@ license.workspace = true
 
 [dependencies]
 trames-memory = { path = "../trames-memory" }
+trames-interpreter-cpp = { path = "../trames-interpreter-cpp", optional = true }
+[features]
+cpp = ["dep:trames-interpreter-cpp"]
 
 [lints]
 workspace = true
