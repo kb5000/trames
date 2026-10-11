@@ -1,0 +1,103 @@
+{
+  "date": "2026-10-11",
+  "baseline_commit": "00050665cfaf4868c5d21d6f4211d111e586059d",
+  "validated_code_commit": "5df2938ffada4135b3735457d7d437337ee8633f",
+  "runtime_changed": false,
+  "syscall_reference": {
+    "kernel_tag": "v6.12",
+    "abis": [
+      "common",
+      "64",
+      "renameat",
+      "rlimit",
+      "memfd_secret"
+    ],
+    "sources": [
+      {
+        "url": "https://raw.githubusercontent.com/torvalds/linux/v6.12/scripts/syscall.tbl",
+        "sha256": "8872daa692005172eccfee147ee38591ce2c005103026ea33a049f044418d41d"
+      },
+      {
+        "url": "https://raw.githubusercontent.com/torvalds/linux/v6.12/arch/arm64/kernel/Makefile.syscalls",
+        "sha256": "27e95d7bd10c3ab67c8a3f16c7dfe5da30c586c2fda3993c42025109a22098c5"
+      },
+      {
+        "url": "https://raw.githubusercontent.com/torvalds/linux/v6.12/arch/arm64/tools/syscall_64.tbl",
+        "sha256": "e0a5d9a188af7952060d69e4e248675df79a583610ae535e68787bb5481a30db"
+      }
+    ],
+    "numbered_entries": 318,
+    "statuses": {
+      "missing": 192,
+      "implemented_subset": 122,
+      "obsolete_stub": 2,
+      "incorrect_dispatch": 1,
+      "unsupported": 1
+    },
+    "unhandled_probe_count": 194,
+    "unhandled_probe_return": -38,
+    "unhandled_probe_backends": [
+      "reference",
+      "cpp"
+    ],
+    "probe_arguments": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "notes": "Includes two upstream sys_ni_syscall entries and configuration/architecture-dependent numbered calls; excludes unassigned slots, 32-bit/time64 and post-6.12 entries."
+  },
+  "cpu_decode_probes": {
+    "count": 317,
+    "results": {
+      "decoded": 60,
+      "syscall": 1,
+      "unsupported": 256
+    },
+    "assembler_flags": "-march=armv8.6-a+sve2+fp16+memtag+rng+flagm+crypto+pauth",
+    "backends": [
+      "reference",
+      "cpp"
+    ],
+    "instructions_per_case": 1,
+    "code_address": "0x1000",
+    "data_address": "0x2000",
+    "gpr_initial_value": "0x2000",
+    "sp_initial_value": "0x2800",
+    "vector_initial_value": 0,
+    "tools": {
+      "assembler": "GNU assembler (GNU Binutils for Debian) 2.44",
+      "qemu": "qemu-aarch64 version 10.0.13 (Debian 1:10.0.13+ds-0+deb13u1)",
+      "rustc": "rustc 1.90.0 (1159e78c4 2025-09-14)"
+    },
+    "notes": "One legal representative per listed form; gap-focused selection, not ISA coverage percentage. Accepted encodings are not validated for all semantics; no performance claim.",
+    "helper_source": "/tmp/trames-abi-audit/probe/src/main.rs",
+    "helper_build": "cargo build --release --offline; trames-cpu feature cpp; source baseline unchanged"
+  },
+  "confirmed_errors": {
+    "syscall_sync_number": {
+      "correct_number": 81,
+      "actual_return": -38,
+      "wrong_dispatch_number": 162,
+      "wrong_dispatch_name": "setdomainname",
+      "wrong_dispatch_return": 0,
+      "backends": [
+        "reference",
+        "cpp"
+      ]
+    },
+    "scalar_sli": {
+      "source": ".global _start\n.text\n_start:\n mov x0,#5\n fmov d0,x0\n mov x1,#4\n fmov d1,x1\n sli d0,d1,#1\n fmov x0,d0\n mov x8,#93\n svc #0\n",
+      "results": {
+        "reference": 8,
+        "cpp": 8,
+        "qemu_cortex_a53": 9
+      }
+    }
+  },
+  "temporary_audit_harness": "/tmp/trames-abi-audit/probes.py and /tmp/trames-abi-audit/probe/src/main.rs; generated fixtures use --memory --network off; all 317 CPU cases and 196 syscall entries run with both backends.",
+  "limits": "Static dispatch audit plus representative execution. Not a complete Linux conformance suite, exhaustive ARM encoding sweep, physical iPad test or new release."
+}

@@ -1,5 +1,10 @@
 # Delivery roadmap
 
+The current instruction and syscall gaps are recorded in the
+[0.3.0 CPU/Linux ABI audit](compatibility-gaps.md), including partial semantics,
+representative instruction probes and the complete Linux 6.12 AArch64 number
+inventory. This audit changes documentation only.
+
 M0, the selected static-userspace M1 foundation, M2 ash/FP, the storage follow-up and M3 are implemented, with records
 in [m0.md](../validation/m0.md), [m1.md](../validation/m1.md), [m2.md](../validation/m2.md), [storage.md](../validation/storage.md) and [network.md](../validation/network.md) and [m3.md](../validation/m3.md). This does not
 establish general Linux userspace compatibility. M4's software and unsigned
