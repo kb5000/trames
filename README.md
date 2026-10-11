@@ -174,6 +174,17 @@ M1 再加入 64 个生成程序，对照位域、扩展寄存器运算、乘除�
 
 可通过 `AARCH64_AS`、`AARCH64_LD`、`QEMU_AARCH64` 覆盖工具路径，BusyBox 构建另支持 `AARCH64_CC`、`AARCH64_AR`、`AARCH64_RANLIB`；`--runner` 选择运行器，`--seeds` 调整生成程序数量。QEMU 是独立参考，测试通过只证明已测行为。
 
+## M6 开发工具与系统调用（0.5.0 / build 6）
+
+补齐 epoll/eventfd/timerfd、Unix socketpair、POSIX 文件锁、命名 FIFO 和管道非阻塞设置。
+修复 `adduser` 的 passwd 锁、`su` 后执行程序时身份被重置，以及 `htop` 所需的 `/proc/stat` btime。
+Git 的目录创建也按 Linux 的尾部斜杠语义修正。
+
+验证流程覆盖真实 Alpine Git 提交/合并/克隆、GCC/Clang 编译链接执行、Make 并行构建、
+CMake/CTest，以及 Python asyncio/线程/SQLite/venv。Clang 包的命令为 `clang-19`。
+每进程映射额度为 512 MiB，所有地址空间合计 1 GiB，以容纳 LLVM 和编译子进程。
+[能力与剩余缺口](docs/roadmap/compatibility-m6.md) · [验证记录](docs/validation/m6.md)。
+
 ## 结构与范围
 
 | crate | 当前职责 |
@@ -188,7 +199,7 @@ M1 再加入 64 个生成程序，对照位域、扩展寄存器运算、乘除�
 | `trames-distro` | 固定 SHA-256 Alpine rootfs、受限归档解析与 VFS 导入 |
 | `trames-cli` | `trames-run`，宿主字节流输出和退出码 |
 
-尚不支持重叠 PT_LOAD 页面、完整 AArch64/SIMD、FP16/SVE、线程/共享地址空间/vfork、阻塞 futex、备用信号栈、多个 PTY、非零 VTIME、共享文件 mmap 或映射超过 EOF 的 SIGBUS 语义。未实现的指令明确报告故障，未知系统调用返回 `-ENOSYS`。安全限制及其兼容性影响见 [security](docs/security/README.md)。
+尚不支持重叠 PT_LOAD 页面、完整 AArch64、SVE、备用信号栈、多个 PTY、非零 VTIME、共享文件 mmap 或映射超过 EOF 的 SIGBUS 语义。线程、vfork 和 futex 已有选定实现；其余 Linux 缺口见 M6 能力记录。未实现的指令明确报告故障，未知系统调用返回 `-ENOSYS`。安全限制及其兼容性影响见 [security](docs/security/README.md)。
 
 [工程章程](docs/charter.md) · [存储架构](docs/architecture/storage.md) · [路线图](docs/roadmap/README.md) · [存储验证](docs/validation/storage.md) · [BusyBox 构建](docs/testing/busybox.md)
 

@@ -9,10 +9,10 @@ use std::{
 use trames_cpu::{Cpu, SliceOutcome};
 use trames_linux::{GuestOutput, Linux, OutputFd, SyscallOutcome, TerminalEvent, MAX_WRITE};
 use trames_memory::{Access, Memory};
-use trames_vfs::{Errno, FdKind, O_NONBLOCK};
+use trames_vfs::{Errno, FdKind, MAX_FDS, O_NONBLOCK};
 
 const MAX_PROCESSES: usize = 32;
-const TOTAL_MAPPED_LIMIT: usize = 256 * 1024 * 1024;
+const TOTAL_MAPPED_LIMIT: usize = 1024 * 1024 * 1024;
 const UNBLOCKABLE: u64 = (1 << 8) | (1 << 18);
 #[path = "process_events.rs"]
 mod events;
@@ -65,6 +65,7 @@ struct Process {
     wait_event: Option<i32>,
     poll_deadline: Option<Instant>,
     poll_mask: Option<u64>,
+    pending_open: Option<u32>,
     stopped_state: Option<Box<State>>,
     auto_reap: bool,
     tgid: u32,
@@ -93,6 +94,7 @@ impl Process {
             wait_event: None,
             poll_deadline: None,
             poll_mask: None,
+            pending_open: None,
             stopped_state: None,
             auto_reap: false,
             tgid: self.tgid,
@@ -112,6 +114,9 @@ struct Kernel {
     terminal: Option<Terminal>,
     started: Instant,
     instructions: u64,
+    boot_time: u64,
+    context_switches: u64,
+    cpu_total: Duration,
     idle: Duration,
     load: [f64; 3],
     load_sample: Instant,
@@ -282,6 +287,9 @@ impl Kernel {
                 cpu_features: trames_cpu::FEATURE_NAMES,
                 processes,
                 uptime: self.started.elapsed(),
+                boot_time: self.boot_time,
+                context_switches: self.context_switches,
+                cpu_user_ticks: (self.cpu_total.as_millis() / 10) as u64,
                 idle: self.idle,
                 memory_limit: TOTAL_MAPPED_LIMIT,
                 load: self.load,
@@ -588,6 +596,9 @@ impl Kernel {
         }
         match p.state.clone() {
             State::Blocked(number, a) => {
+                if let Some(fd) = p.pending_open.take() {
+                    p.linux.vfs.cancel_fifo_open(fd);
+                }
                 if let Some(mask) = p.poll_mask.take() {
                     p.mask = mask;
                 }
@@ -595,7 +606,7 @@ impl Kernel {
                 if action.flags & 0x10000000 != 0
                     && matches!(
                         number,
-                        32 | 63 | 64 | 65 | 66 | 260 | 202 | 242 | 206 | 207 | 211 | 212
+                        25 | 32 | 56 | 63 | 64 | 65 | 66 | 260 | 202 | 242 | 206 | 207 | 211 | 212
                     )
                 {
                     put_args(&mut p.cpu, a);
@@ -781,7 +792,7 @@ impl Kernel {
                 .take(15)
                 .collect();
             p.linux.vfs.close_exec();
-            let credentials = runtime.linux.vfs.credentials.clone();
+            let credentials = execute_vfs.credentials.clone();
             std::mem::swap(&mut runtime.linux.vfs, &mut p.linux.vfs);
             runtime.linux.vfs.credentials = credentials;
             runtime.linux.trace = p.linux.trace;
@@ -1004,6 +1015,8 @@ impl Kernel {
             98 | 102 | 103 | 107..=111 | 137 => self.event_call(pid, p, number, a),
             260 => self.wait(pid, p, a),
             72 | 73 => self.poll(p, number, a, io),
+            22 | 441 => self.epoll(p, number, a, io),
+            85..=87 => self.timerfd(p, number, a),
             134 => {
                 let sig = a[0] as u32;
                 if sig == 0 || sig > 64 || sig == 9 || sig == 19 || a[3] != 8 {
@@ -1015,10 +1028,9 @@ impl Kernel {
                 let new = if a[1] != 0 {
                     Linux::check(&p.memory, a[1], 32, Access::Read)?;
                     let flags = read_u64(&p.memory, a[1] + 8)?;
-                    if flags & 0x08000000 != 0 {
-                        return Err(Errno(95));
-                    } // Alternate signal stacks are not enabled in M2.
-                    if flags & !0xd4000007 != 0 {
+                    // Linux uses the ordinary stack for SA_ONSTACK while
+                    // the alternate stack is disabled (our current state).
+                    if flags & !0xdc000007 != 0 {
                         return Err(Errno(22));
                     }
                     Some(Action {
@@ -1293,11 +1305,21 @@ impl Kernel {
             }
             63 | 64 | 65 | 66 | 29
                 if self.terminal.is_some()
+                    && (number != 29 || a[1] as u32 != 0x5421)
                     && p.linux.vfs.fd_kind(a[0] as u32)? == FdKind::Terminal =>
             {
                 self.terminal_call(pid, p, number, a, io)
             }
             _ => {
+                if number == 56 {
+                    if let Some(fd) = p.pending_open {
+                        if p.linux.vfs.fifo_open_ready(fd)? {
+                            p.pending_open = None;
+                            return Ok(Some(fd as u64));
+                        }
+                        return Ok(None);
+                    }
+                }
                 let trace = p.linux.trace;
                 p.linux.trace = false;
                 let outcome = p.linux.dispatch(&mut p.cpu, &mut p.memory, io);
@@ -1307,6 +1329,40 @@ impl Kernel {
                     return Ok(None);
                 }
                 let raw = p.cpu.x(0);
+                if number == 56
+                    && raw < MAX_FDS as u64
+                    && !p.linux.vfs.fifo_open_ready(raw as u32)?
+                {
+                    p.pending_open = Some(raw as u32);
+                    return Ok(None);
+                }
+                if number == 25 && a[1] == 7 && raw == error(Errno(11)) {
+                    let mut owner = p.linux.record_lock_holder(&p.memory, a)?;
+                    let mut visited = Vec::new();
+                    while let Some(id) = owner {
+                        if id == p.tgid {
+                            return Err(Errno(35));
+                        }
+                        if visited.contains(&id) {
+                            break;
+                        }
+                        visited.push(id);
+                        owner = self.processes.values().find_map(|other| {
+                            if other.tgid == id {
+                                if let State::Blocked(25, a) = other.state {
+                                    if a[1] == 7 {
+                                        return other
+                                            .linux
+                                            .record_lock_holder(&other.memory, a)
+                                            .ok()
+                                            .flatten();
+                                    }
+                                }
+                            }
+                            None
+                        });
+                    }
+                }
                 let per_call_nonblock = match number {
                     206 | 207 => a[3] & 0x40 != 0,
                     211 | 212 => a[2] & 0x40 != 0,
@@ -1319,8 +1375,10 @@ impl Kernel {
                     )
                     && !per_call_nonblock)
                     || (raw == error(Errno(115)) && number == 203)
-                    || (raw == error(Errno(11)) && number == 32 && a[1] & 4 == 0))
-                    && (number == 32 || p.linux.vfs.flags(a[0] as u32)? & O_NONBLOCK == 0)
+                    || (raw == error(Errno(11)) && number == 32 && a[1] & 4 == 0)
+                    || (raw == error(Errno(11)) && number == 25 && a[1] == 7))
+                    && (matches!(number, 25 | 32)
+                        || p.linux.vfs.flags(a[0] as u32)? & O_NONBLOCK == 0)
                 {
                     Ok(None)
                 } else {
@@ -1338,6 +1396,7 @@ impl Kernel {
         io: &mut impl GuestOutput,
     ) {
         p.linux.vfs.set_process_context(pid);
+        p.linux.vfs.set_lock_owner(p.tgid);
         if matches!(
             number,
             17 | 43 | 44 | 48 | 56 | 61 | 67 | 78 | 79 | 80 | 221 | 439
@@ -1852,7 +1911,10 @@ impl Kernel {
                         let outcome = p
                             .cpu
                             .run_slice(&mut p.memory, (limit - self.instructions).min(4096));
-                        p.cpu_time += began.elapsed();
+                        let elapsed = began.elapsed();
+                        p.cpu_time += elapsed;
+                        self.cpu_total += elapsed;
+                        self.context_switches += 1;
                         match outcome {
                             SliceOutcome::Fault(e) => {
                                 if p.linux.trace {
@@ -1936,6 +1998,7 @@ impl Kernel {
             if !progress {
                 let external = self.processes.values().any(|p| {
                     p.poll_deadline.is_some()
+                        || p.linux.vfs.next_timerfd_deadline().is_some()
                         || matches!(p.state, State::Futex { deadline: Some(_), .. } | State::Sigwait { deadline: Some(_), .. })
                         || matches!(p.state, State::Sleep(..))
                         || matches!(p.state, State::Blocked(63 | 65, a)
@@ -1943,7 +2006,7 @@ impl Kernel {
                         || matches!(p.state, State::Blocked(number, a)
                         if matches!(number, 63 | 64 | 65 | 66 | 202 | 203 | 242 | 206 | 207 | 211 | 212)
                         && p.linux.vfs.fd_kind(a[0] as u32).ok() == Some(FdKind::Socket))
-                        || (matches!(p.state, State::Blocked(72 | 73, _))
+                        || (matches!(p.state, State::Blocked(22 | 72 | 73 | 441, _))
                             && p.linux.vfs.live_sockets() != 0)
                         || p.linux.vfs.has_bridge_descriptors()
                 }) || self.terminal.is_some() || self.timers.values().any(|t| t.deadline.is_some());
@@ -1968,6 +2031,9 @@ impl Kernel {
             }
         }
         for p in self.processes.values() {
+            if let Some(deadline) = p.linux.vfs.next_timerfd_deadline() {
+                timeout = timeout.min(deadline.saturating_duration_since(now));
+            }
             if let State::Futex {
                 deadline: Some(d), ..
             }
@@ -2063,6 +2129,7 @@ pub(super) fn run(
         wait_event: None,
         poll_deadline: None,
         poll_mask: None,
+        pending_open: None,
         stopped_state: None,
         auto_reap: false,
         tgid: 1,
@@ -2080,6 +2147,12 @@ pub(super) fn run(
         terminal: runtime.terminal.take(),
         started: Instant::now(),
         instructions: 0,
+        boot_time: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs(),
+        context_switches: 0,
+        cpu_total: Duration::ZERO,
         idle: Duration::ZERO,
         load: [0.0; 3],
         load_sample: Instant::now(),
@@ -2119,6 +2192,7 @@ mod tests {
             wait_event: None,
             poll_deadline: None,
             poll_mask: None,
+            pending_open: None,
             stopped_state: None,
             auto_reap: false,
             tgid: 1,
@@ -2138,6 +2212,12 @@ mod tests {
             terminal: None,
             started: Instant::now(),
             instructions: 0,
+            boot_time: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs(),
+            context_switches: 0,
+            cpu_total: Duration::ZERO,
             idle: Duration::ZERO,
             load: [0.0; 3],
             load_sample: Instant::now(),

@@ -38,6 +38,142 @@ fn put_timespec(m: &mut Memory, address: u64, d: Duration) -> Result<(), Errno> 
     write_u64(m, address + 8, d.subsec_nanos() as u64)
 }
 impl Kernel {
+    pub(super) fn timerfd(
+        &self,
+        p: &mut Process,
+        number: u32,
+        a: [u64; 6],
+    ) -> Result<Option<u64>, Errno> {
+        if number == 85 {
+            return p
+                .linux
+                .vfs
+                .timerfd(a[0] as u32, a[1] as u32)
+                .map(|fd| Some(fd as u64));
+        }
+        let clock = p.linux.vfs.timerfd_clock(a[0] as u32)?;
+        let output = if number == 87 { a[1] } else { a[3] };
+        if number == 87 || output != 0 {
+            Linux::check(&p.memory, output, 32, Access::Write)?;
+        }
+        let new = if number == 86 {
+            if a[1] & !3 != 0 {
+                return Err(Errno(22));
+            }
+            if a[1] & 2 != 0 {
+                return Err(Errno(95));
+            }
+            let interval = timespec(&p.memory, a[2])?;
+            let value = timespec(&p.memory, a[2].checked_add(16).ok_or(Errno(14))?)?;
+            let duration = if a[1] & 1 == 0 {
+                value
+            } else {
+                let now = if clock == 0 {
+                    std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map_err(|_| Errno(5))?
+                } else {
+                    self.started.elapsed()
+                };
+                value.saturating_sub(now)
+            };
+            let deadline = if value.is_zero() {
+                None
+            } else {
+                Some(Instant::now().checked_add(duration).ok_or(Errno(22))?)
+            };
+            Some((interval, deadline))
+        } else {
+            None
+        };
+        let (interval, remaining) = p.linux.vfs.timerfd_get(a[0] as u32)?;
+        if number == 87 || output != 0 {
+            put_timespec(&mut p.memory, output, interval)?;
+            put_timespec(&mut p.memory, output + 16, remaining)?;
+        }
+        if let Some((interval, deadline)) = new {
+            p.linux.vfs.timerfd_set(a[0] as u32, interval, deadline)?;
+        }
+        Ok(Some(0))
+    }
+    pub(super) fn epoll(
+        &self,
+        p: &mut Process,
+        number: u32,
+        a: [u64; 6],
+        io: &mut impl GuestOutput,
+    ) -> Result<Option<u64>, Errno> {
+        if a[2] == 0 || a[2] > (MAX_WRITE / 16) as u64 {
+            return Err(Errno(22));
+        }
+        Linux::check(&p.memory, a[1], a[2] as usize * 16, Access::Write)?;
+        let timeout = if number == 441 {
+            if a[3] == 0 {
+                None
+            } else {
+                Some(timespec(&p.memory, a[3])?)
+            }
+        } else {
+            let ms = a[3] as i32;
+            if ms < 0 {
+                None
+            } else {
+                Some(Duration::from_millis(ms as u64))
+            }
+        };
+        let mask = if a[4] == 0 {
+            None
+        } else {
+            if a[5] != 8 {
+                return Err(Errno(22));
+            }
+            Some(read_u64(&p.memory, a[4])? & !UNBLOCKABLE)
+        };
+        let ready = p
+            .linux
+            .vfs
+            .epoll_wait(a[0] as u32, a[2] as usize, |kind, events| {
+                Ok(match kind {
+                    FdKind::Stdin => Some(if io.stdin_ready().map_err(|_| Errno(5))? {
+                        events & 1
+                    } else {
+                        0
+                    }),
+                    FdKind::Terminal => {
+                        let t = self.terminal.as_ref().ok_or(Errno(25))?;
+                        Some((events & 4) | if t.readable() { events & 1 } else { 0 })
+                    }
+                    _ => None,
+                })
+            })?;
+        if let Some(timeout) = timeout {
+            if p.poll_deadline.is_none() {
+                p.poll_deadline = Some(Instant::now().checked_add(timeout).ok_or(Errno(22))?);
+            }
+        }
+        if !ready.is_empty() || p.poll_deadline.is_some_and(|d| Instant::now() >= d) {
+            for (i, (events, data)) in ready.iter().enumerate() {
+                let address = a[1] + i as u64 * 16;
+                let mut bytes = [0; 16];
+                bytes[..4].copy_from_slice(&events.to_le_bytes());
+                bytes[8..].copy_from_slice(&data.to_le_bytes());
+                p.memory.write(address, &bytes).map_err(|_| Errno(14))?;
+            }
+            if let Some(mask) = p.poll_mask.take() {
+                p.mask = mask;
+            }
+            p.poll_deadline = None;
+            Ok(Some(ready.len() as u64))
+        } else {
+            if let Some(mask) = mask {
+                if p.poll_mask.is_none() {
+                    p.poll_mask = Some(p.mask);
+                }
+                p.mask = mask;
+            }
+            Ok(None)
+        }
+    }
     pub(super) fn wake_futex(&mut self, vm: u64, address: u64, count: u32, bits: u32) -> u64 {
         if address == 0 {
             return 0;

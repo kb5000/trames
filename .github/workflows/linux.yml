@@ -7,7 +7,7 @@ permissions:
 jobs:
   reference-runtime:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -103,6 +103,12 @@ jobs:
 
       - name: Signed Python install, repair and execution with 128 host descriptors
         run: python3 tests/integration/python.py
+      - name: Compare M6 events, local IPC, POSIX locks and FIFO semantics with QEMU
+        run: |
+          bash scripts/build-m6-fixtures.sh
+          python3 tests/integration/m6-abi.py
+      - name: Signed developer tools and complete guest workflows on a fresh persistent store
+        run: python3 tests/integration/m6.py | tee target/m6-tools.log
       - name: Profile both interpreters with matching final CPU/memory state
         run: cargo run -p trames-cpu --features cpp --example backend_profile --release --locked | tee target/cpu-profile.jsonl
       - uses: actions/upload-artifact@v4
@@ -111,4 +117,6 @@ jobs:
           path: |
             target/cpu-profile.jsonl
             target/cpp-sanitizers/*.txt
+            target/m6-tools.log
+            target/m6-workflow.log
           if-no-files-found: error

@@ -1,7 +1,7 @@
 # Delivery roadmap
 
-Current instruction coverage and remaining Linux ABI work are recorded in
-[0.4.0 compatibility](compatibility-0.4.md). Historical gaps are recorded for the
+Current Linux ABI work is recorded in [M6 compatibility](compatibility-m6.md);
+the CPU profile remains [0.4.0 compatibility](compatibility-0.4.md). Historical gaps are recorded for the
 [released 0.3.0](compatibility-gaps.md) and the
 [pre-implementation worktree snapshot](compatibility-gaps-worktree.md), including partial
 semantics, representative instruction probes and the complete Linux 6.12 AArch64
@@ -28,7 +28,7 @@ Windows/Sideloadly signing, installation and startup on a physical iPad on
 | Linux compatibility, 0.2.0 | Runtime proc/sys/dev views, virtual ownership and v3 persistence migration, musl threads/futex/timers, read-only route netlink, ICMP raw guest packets and native datagram echo egress, actual Alpine tools and default Vim editing; [record](../validation/linux-compat.md) |
 | M5 | Software validated: versioned Bridge RPC, native consent, persistent scoped Files, built-in accelerator registry, optional profiled C++ backend and embedding ABI 2; signed-provider/device acceptance remains open |
 | CPU reference, 0.4.0 | Broad AArch64 EL0/NEON and tested optional extensions, shared auxv/proc capability profile, standard root/device/interface names, checked memory/decoder acceleration; [scope](compatibility-0.4.md), [validation](../validation/reference-0.4.md) |
-| M6 | Verified Git/Python/GCC/Clang/Make/CMake workflows; Debian after ABI coverage supports it |
+| M6 | Event descriptors, local IPC, record locks/FIFOs, credentials and proc fixes; actual Git/Python/GCC/Clang/Make/CMake workflows; [validation](../validation/m6.md). Debian after ABI coverage supports it |
 
 The owner requested on 2026-10-11 that future feature changes be grouped into a
 larger release, with M5 explained before implementation. Keep the app's bundle
@@ -52,7 +52,8 @@ The Linux CLI now defaults to a disk-backed store, with an initial 16 GiB logica
 budget and capacity snapshots. VolumeSpace and stream APIs now supply the iPad
 frontend's capacity display and coordinated, security-scoped Files copies.
 M5 adds persistent provider bookmarks; selected resources are not live guest mounts.
-Mapped-memory quotas remain unchanged. Installing a package is not proof that its programs can execute.
+M6 permits 512 MiB mapped per process and 1 GiB across address spaces for LLVM
+and compiler subprocesses. Installing a package is not proof that its programs can execute.
 
 Repository policy clarification: the original charter proposed confirming private
 visibility. During kickoff the owner explicitly selected public `kb5000/trames`,
