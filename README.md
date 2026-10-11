@@ -176,6 +176,10 @@ M1 再加入 64 个生成程序，对照位域、扩展寄存器运算、乘除�
 
 ## M6 开发工具与系统调用（0.5.0 / build 6）
 
+[下载经验证的 0.5.0/build 6 unsigned IPA](https://github.com/kb5000/trames/actions/runs/38170280417/artifacts/11713803470)，
+解压后用 Windows Sideloadly 签名更新。两种 Linux 后端的完整 CI 与七项 iPad 模拟器测试通过；
+包内校验和、设备平台和应用标识已核验，具体记录见下方验证文档。
+
 补齐 epoll/eventfd/timerfd、Unix socketpair、POSIX 文件锁、命名 FIFO 和管道非阻塞设置。
 修复 `adduser` 的 passwd 锁、`su` 后执行程序时身份被重置，以及 `htop` 所需的 `/proc/stat` btime。
 Git 的目录创建也按 Linux 的尾部斜杠语义修正。

@@ -39,6 +39,9 @@ Remaining work includes named AF_UNIX endpoints and SCM_RIGHTS, EPOLLET,
 nested epoll and exclusive watches, timer clock-change cancellation, OFD
 locks, broader shared-memory/robust-futex behavior and synchronous CPU fault
 recovery into guest signal handlers. Unsupported operations return an error.
+Record-lock ownership is tested for fork and ordinary pthreads sharing a file
+table; unusual clone combinations that share tables across TGIDs or give
+threads private tables are not fully modeled.
 Non-root su back to root requires Alpine's normal setuid applet setup; the
 base minirootfs BusyBox is not a setuid authentication installation.
 
