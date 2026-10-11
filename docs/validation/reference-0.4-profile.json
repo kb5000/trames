@@ -1,0 +1,272 @@
+{
+  "date": "2026-10-12",
+  "timezone": "Asia/Shanghai",
+  "code_commit": "ddc10bd83ed6d4c14a3b6ad4bd5678fe04584992",
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+  "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+  "pinned_logical_cpu": 0,
+  "rust": "1.90.0",
+  "cxx": "GCC 14.2.0, C++17",
+  "profile": "Cargo release opt-level 3, thin LTO, overflow checks, cpp feature",
+  "scope": "CPU-only fixed instruction budgets. Before is the same-round completed reference implementation before memory/primary-decoder optimization; not the published 0.3.0 binary. Both binaries assert matching final CPU/memory state between reference and C++ backends. Shared cloud host; not iPad performance.",
+  "before_sha256": "9785718ddde335963509a47877385539582c3ab3f3c9eb8a486fc98932d38637",
+  "after_sha256": "79d1538b762a46acd4b391465b1fbe0ad969d104ffbaff9e4817d2897177cf65",
+  "profile_source_sha256": "15060fbb4656cd02bdbd315e5bb8f70caea05a28f477b9b770a09e245999492f",
+  "runs": [
+    {
+      "trial": 1,
+      "order": [
+        "before",
+        "after"
+      ],
+      "before": [
+        {
+          "workload": "integer",
+          "backend": "Reference",
+          "instructions": 12000000,
+          "seconds": 0.262587534,
+          "instructions_per_second": 45699046.77957789
+        },
+        {
+          "workload": "integer",
+          "backend": "Cpp",
+          "instructions": 12000000,
+          "seconds": 0.051502747,
+          "instructions_per_second": 232997280.70815328
+        },
+        {
+          "workload": "memory",
+          "backend": "Reference",
+          "instructions": 1000000,
+          "seconds": 0.075400254,
+          "instructions_per_second": 13262554.791924175
+        },
+        {
+          "workload": "memory",
+          "backend": "Cpp",
+          "instructions": 1000000,
+          "seconds": 0.075004607,
+          "instructions_per_second": 13332514.361417826
+        }
+      ],
+      "after": [
+        {
+          "workload": "integer",
+          "backend": "Reference",
+          "instructions": 12000000,
+          "seconds": 0.17923651,
+          "instructions_per_second": 66950645.26752948
+        },
+        {
+          "workload": "integer",
+          "backend": "Cpp",
+          "instructions": 12000000,
+          "seconds": 0.053317892,
+          "instructions_per_second": 225065161.99102545
+        },
+        {
+          "workload": "memory",
+          "backend": "Reference",
+          "instructions": 1000000,
+          "seconds": 0.042558822,
+          "instructions_per_second": 23496890.961878594
+        },
+        {
+          "workload": "memory",
+          "backend": "Cpp",
+          "instructions": 1000000,
+          "seconds": 0.039925463,
+          "instructions_per_second": 25046672.59588198
+        }
+      ]
+    },
+    {
+      "trial": 2,
+      "order": [
+        "after",
+        "before"
+      ],
+      "after": [
+        {
+          "workload": "integer",
+          "backend": "Reference",
+          "instructions": 12000000,
+          "seconds": 0.189456659,
+          "instructions_per_second": 63339024.678990036
+        },
+        {
+          "workload": "integer",
+          "backend": "Cpp",
+          "instructions": 12000000,
+          "seconds": 0.058592831,
+          "instructions_per_second": 204803212.18819416
+        },
+        {
+          "workload": "memory",
+          "backend": "Reference",
+          "instructions": 1000000,
+          "seconds": 0.038787877,
+          "instructions_per_second": 25781251.188354548
+        },
+        {
+          "workload": "memory",
+          "backend": "Cpp",
+          "instructions": 1000000,
+          "seconds": 0.036950171,
+          "instructions_per_second": 27063474.21233856
+        }
+      ],
+      "before": [
+        {
+          "workload": "integer",
+          "backend": "Reference",
+          "instructions": 12000000,
+          "seconds": 0.257571663,
+          "instructions_per_second": 46588975.89988383
+        },
+        {
+          "workload": "integer",
+          "backend": "Cpp",
+          "instructions": 12000000,
+          "seconds": 0.049413668,
+          "instructions_per_second": 242847788.59160993
+        },
+        {
+          "workload": "memory",
+          "backend": "Reference",
+          "instructions": 1000000,
+          "seconds": 0.077989094,
+          "instructions_per_second": 12822305.641863208
+        },
+        {
+          "workload": "memory",
+          "backend": "Cpp",
+          "instructions": 1000000,
+          "seconds": 0.077007528,
+          "instructions_per_second": 12985743.41978618
+        }
+      ]
+    },
+    {
+      "trial": 3,
+      "order": [
+        "before",
+        "after"
+      ],
+      "before": [
+        {
+          "workload": "integer",
+          "backend": "Reference",
+          "instructions": 12000000,
+          "seconds": 0.253976989,
+          "instructions_per_second": 47248374.93053357
+        },
+        {
+          "workload": "integer",
+          "backend": "Cpp",
+          "instructions": 12000000,
+          "seconds": 0.058511067,
+          "instructions_per_second": 205089406.41947275
+        },
+        {
+          "workload": "memory",
+          "backend": "Reference",
+          "instructions": 1000000,
+          "seconds": 0.080023271,
+          "instructions_per_second": 12496364.963636639
+        },
+        {
+          "workload": "memory",
+          "backend": "Cpp",
+          "instructions": 1000000,
+          "seconds": 0.094231266,
+          "instructions_per_second": 10612188.95223163
+        }
+      ],
+      "after": [
+        {
+          "workload": "integer",
+          "backend": "Reference",
+          "instructions": 12000000,
+          "seconds": 0.188532385,
+          "instructions_per_second": 63649542.22586215
+        },
+        {
+          "workload": "integer",
+          "backend": "Cpp",
+          "instructions": 12000000,
+          "seconds": 0.051193884,
+          "instructions_per_second": 234403000.17087978
+        },
+        {
+          "workload": "memory",
+          "backend": "Reference",
+          "instructions": 1000000,
+          "seconds": 0.036442436,
+          "instructions_per_second": 27440536.63152485
+        },
+        {
+          "workload": "memory",
+          "backend": "Cpp",
+          "instructions": 1000000,
+          "seconds": 0.038420571,
+          "instructions_per_second": 26027723.533832956
+        }
+      ]
+    }
+  ],
+  "summary": [
+    {
+      "workload": "integer",
+      "backend": "Reference",
+      "instructions": 12000000,
+      "before_median_seconds": 0.257571663,
+      "after_median_seconds": 0.188532385,
+      "median_paired_speedup": 1.3595281599471254,
+      "paired_speedups": [
+        1.4650337367091115,
+        1.3595281599471254,
+        1.3471265904794023
+      ]
+    },
+    {
+      "workload": "integer",
+      "backend": "Cpp",
+      "instructions": 12000000,
+      "before_median_seconds": 0.051502747,
+      "after_median_seconds": 0.053317892,
+      "median_paired_speedup": 0.9659561747114834,
+      "paired_speedups": [
+        0.9659561747114834,
+        0.8433398277000816,
+        1.1429308039999466
+      ]
+    },
+    {
+      "workload": "memory",
+      "backend": "Reference",
+      "instructions": 1000000,
+      "before_median_seconds": 0.077989094,
+      "after_median_seconds": 0.038787877,
+      "median_paired_speedup": 2.0106564223661945,
+      "paired_speedups": [
+        1.7716715467359505,
+        2.0106564223661945,
+        2.1958814992499405
+      ]
+    },
+    {
+      "workload": "memory",
+      "backend": "Cpp",
+      "instructions": 1000000,
+      "before_median_seconds": 0.077007528,
+      "after_median_seconds": 0.038420571,
+      "median_paired_speedup": 2.0840912481839395,
+      "paired_speedups": [
+        1.8786158347117978,
+        2.0840912481839395,
+        2.4526253396910733
+      ]
+    }
+  ]
+}

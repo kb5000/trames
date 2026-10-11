@@ -1,7 +1,9 @@
 # 0.4.0 reference correctness and acceleration
 
-Validation date: 2026-10-12 (Asia/Shanghai). This record will include the final
-code/CI/artifact references once those checks finish. The reference backend stays
+Validation date: 2026-10-12 (Asia/Shanghai). Runtime implementation:
+[`ddc10bd`](https://github.com/kb5000/trames/commit/ddc10bd83ed6d4c14a3b6ad4bd5678fe04584992).
+Local fmt/clippy, all 137 Rust tests, the iOS target check, both complete QEMU
+matrices and computed-goto/portable ASan/UBSan passed. The reference backend stays
 the default; Linux syscall expansion is deliberately incremental.
 
 ## Independent CPU checks
@@ -27,6 +29,17 @@ scalar FP, structure, pairwise, widening and copy/shift suites remain in the
 matrix. New modified-immediate regressions cover ordinary MOVI/MVNI/ORR/BIC and
 S/D FMOV sharing an encoding class with FP16 fixed-point conversion. Actual
 Alpine shell startup caught that decode overlap before publishing.
+
+The oracle is pinned to QEMU 10.0.13. Ubuntu's earlier QEMU incorrectly writes
+scalar FP16 fixed-point conversion through `write_fp_sreg`, allowing sign-extended
+bits 31:16 to leak into the destination (FCVTZS H,H,#16, input -infinity:
+`0xffff8000` instead of `0x8000`). The newer decoder clears the vector and writes
+the actual element width. See the independent upstream
+[8.2 translator](https://github.com/qemu/qemu/blob/v8.2.2/target/arm/tcg/translate-a64.c#L8485)
+and [10.0 translator](https://github.com/qemu/qemu/blob/v10.0.0/target/arm/tcg/translate-a64.c#L9249).
+The CI failure matched that source-level oracle defect; the runtime is unchanged.
+`build-qemu-oracle.sh` builds the upstream 10.0.13 source archive verified by
+SHA-256 `4a59b74dac7ead8b162a7c4595dcbbeebe989b90c89cfe6bb4dec5447342f6fa`.
 
 Invalid encodings and readonly/cross-page memory failures are checked for no
 architectural side effects. Tests also check pair alignment, source aliases,
@@ -55,8 +68,27 @@ selection rather than only isolated opcodes.
 Correctness checks precede acceleration. Before/after measurements use matched
 Cargo release binaries and identical fixed instruction budgets. Each profile
 asserts equal final CPU and memory state between the two backends. Only one final
-batch of three paired samples is used; shared-host timing variance and CPU-only
-scope will be recorded with the results. These are not iPad app measurements.
+batch of three paired samples was used, alternating process order and pinning both
+binaries to the same allowed logical CPU after local tests ended. The baseline
+includes this round's completed CPU implementation before memory and decode
+optimization; it is not the published 0.3.0 binary.
+
+| Backend / workload | Before median | After median | Median paired speedup |
+| --- | ---: | ---: | ---: |
+| Reference integer, 12M instructions | 0.2576 s | 0.1885 s | 1.36× |
+| Reference load/store, 1M instructions | 0.0780 s | 0.0388 s | 2.01× |
+| C++ integer, 12M instructions | 0.0515 s | 0.0533 s | 0.97× |
+| C++ load/store, 1M instructions | 0.0770 s | 0.0384 s | 2.08× |
+
+Optimizations remove duplicate page lookups for aligned fetches and single-page
+accesses, and skip SIMD/FP decoders for other primary instruction classes. FPCR/
+FPSR remain in the system-instruction decoder. Cross-page preflight, permission
+checks, COW, shared pages and instruction invalidation keep their semantics.
+The C++ integer path is unchanged and shows timing variance, not an improvement.
+Rust remains default. Linux x86_64/Xeon Platinum 8573C, Rust 1.90.0/GCC 14.2.0,
+release/thin-LTO/overflow checks and cpp feature; raw samples, binary hashes and
+profile source hash are in [reference-0.4-profile.json](reference-0.4-profile.json).
+Short shared-host CPU loops do not establish general application or iPad speed.
 
 ## Reproduction
 

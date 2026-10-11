@@ -24,7 +24,15 @@ jobs:
       - name: Install independent AArch64 oracle and cross assembler
         run: |
           sudo apt-get update
-          sudo apt-get install --yes binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu qemu-user build-essential curl bzip2 openssl
+          sudo apt-get install --yes binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu qemu-user build-essential curl bzip2 openssl ninja-build pkg-config libglib2.0-dev python3-venv ripgrep
+      - uses: actions/cache@v4
+        with:
+          path: target/qemu-oracle
+          key: qemu-10.0.13-aarch64-user-ubuntu24.04-4a59b74d-v1
+      - name: Build pinned independent QEMU oracle
+        run: |
+          bash scripts/build-qemu-oracle.sh
+          echo "$GITHUB_WORKSPACE/target/qemu-oracle/bin" >> "$GITHUB_PATH"
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
       - run: cargo build --workspace --all-features --locked
