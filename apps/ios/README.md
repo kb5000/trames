@@ -83,6 +83,13 @@ membership. The [Sideloadly documentation](https://sideloadly.io/faq) describes
 signing, device trust, Developer Mode and automatic refresh. The current app
 requires iPadOS 17 or newer and does not need JIT activation.
 
+Validated combined update: [0.2.0 (build 3) unsigned IPA artifact](https://github.com/kb5000/trames/actions/runs/38134473648/artifacts/11700379801).
+Unzip it and sign `Trames-unsigned.ipa` with the same Sideloadly Apple ID/effective
+bundle ID as before, installing over the existing app. Linux checks and five
+simulator tests passed; device behavior remains owner acceptance work. The
+artifact is retained until 25 October 2026. The validation record also identifies
+an intermittent native SSH library teardown issue in [#9](https://github.com/kb5000/trames/issues/9).
+
 1. Open a successful **iPad frontend** run in the repository's GitHub Actions.
    Download the **Trames-unsigned-sideload** artifact and unzip it on Windows.
    Use `Trames-unsigned.ipa`, not the artifact ZIP or the simulator `.app`.

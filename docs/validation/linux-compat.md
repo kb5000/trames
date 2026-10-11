@@ -5,6 +5,24 @@ subsequent software checks run unmodified AArch64 Alpine 3.22.6 executables;
 new-release physical acceptance remains pending. No command-output fixtures or
 shell wrappers replace the guest tools.
 
+Validated revision: `6a0e1b2f675e6ebd7e1b74058d51ce93ce986ab4`, 11 October 2026.
+
+- [Linux CI](https://github.com/kb5000/trames/actions/runs/38134473671) passed all
+  115 Rust tests, 600 QEMU comparisons, both nine-outcome PTY backends, storage/
+  native/virtual network/TLS checks, the 20 new compatibility checks and the
+  real embedding ABI. Required native ICMP egress succeeded in both families.
+- [Apple CI, attempt 2](https://github.com/kb5000/trames/actions/runs/38134473648/attempts/2)
+  passed native SSH/SFTP, device/simulator links and the simulator tests. Attempt 1
+  trapped in NIOSSH window adjustment; the intermittent native transport defect
+  is recorded in [issue #9](https://github.com/kb5000/trames/issues/9), not claimed fixed.
+- Downloaded xcresult summary and transcript independently confirm five passed,
+  zero failed/skipped: four viewport regressions and launch/rotate/exit/reopen.
+- Downloaded [0.2.0/build 3 IPA](https://github.com/kb5000/trames/actions/runs/38134473648/artifacts/11700379801)
+  is iPhoneOS arm64, minimum iPadOS 17, stable `org.trames.Trames`; executable
+  permissions and all 36 files match the actual device build. IPA SHA-256:
+  `931ca87aa2b48e0e3548bca66918dc2b5c44b497218d9b950caa5e939deba576`.
+  Artifact expires 25 October; physical acceptance on the owner's iPad is pending.
+
 Baseline `apk add vim` reproduced exactly 88 directory permission update errors:
 fchownat returned ENOSYS and inode owner metadata was fixed at 1000. The fix stores
 and enforces virtual ownership; installing the upstream signed Vim package set
