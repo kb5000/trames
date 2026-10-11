@@ -1,0 +1,26 @@
+{
+  "bundle_id": "org.trames.Trames",
+  "version": "0.4.0",
+  "build": "5",
+  "supported_platforms": [
+    "iPhoneOS"
+  ],
+  "device_family": [
+    1,
+    2
+  ],
+  "minimum_os": "17.0",
+  "architecture": "arm64",
+  "macho_platform": "iOS device",
+  "executable_permission": true,
+  "bytes": 9367789,
+  "sha256": "55d958bb6255a1baccc91d332d8cc438c67db8c2ae9c70784f1e0c062f04ca79",
+  "files": 36,
+  "ci_commit": "2b78baf1624c6ae24e69d1337b027b0ac1e67367",
+  "apple_run": "https://github.com/kb5000/trames/actions/runs/38162066629",
+  "artifact_url": "https://github.com/kb5000/trames/actions/runs/38162066629/artifacts/11711540648",
+  "artifact_expires": "2026-10-25T18:20:28Z",
+  "device_app_all_files_match": true,
+  "simulator_passed_tests": 7,
+  "simulator_failed_tests": 0
+}

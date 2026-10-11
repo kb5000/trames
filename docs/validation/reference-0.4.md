@@ -6,6 +6,35 @@ Local fmt/clippy, all 137 Rust tests, the iOS target check, both complete QEMU
 matrices and computed-goto/portable ASan/UBSan passed. The reference backend stays
 the default; Linux syscall expansion is deliberately incremental.
 
+[Linux reference/C++ CI](https://github.com/kb5000/trames/actions/runs/38162066667)
+passed at `2b78baf`, which changes only oracle/validation files after the runtime
+commit above. Both jobs include the pinned oracle, all differential suites,
+sanitizers, BusyBox/PTY/disk/native and virtual networking, actual signed
+Vim/Python and embedding/Bridge checks. The source fingerprints in
+[compatibility-0.4.json](compatibility-0.4.json) match the published runtime.
+
+[Apple CI](https://github.com/kb5000/trames/actions/runs/38162066629) passed at the
+same revision: native Swift/OpenSSH checks, unsigned simulator/device builds and
+all seven actual iPad simulator tests (0 failed or skipped). The downloaded
+[xcresult summary](reference-0.4-simulator.json) reports Passed on iPad Pro
+11-inch (M4), iOS 18.5 arm64, macOS 15.7.9. This is software/simulator evidence,
+not physical iPad acceptance.
+
+[0.4.0/build 5 unsigned IPA](https://github.com/kb5000/trames/actions/runs/38162066629/artifacts/11711540648)
+was downloaded and independently checked: iPhoneOS/arm64 device Mach-O, iPad
+support, minimum iPadOS 17, stable org.trames.Trames, executable permissions,
+matching packaged checksum, and byte-for-byte agreement with all 36 files of the
+actual device app. Size 9,367,789 bytes; SHA-256
+`55d958bb6255a1baccc91d332d8cc438c67db8c2ae9c70784f1e0c062f04ca79`.
+The IPA artifact expires 25 October 2026 at 18:20 UTC, and build reports expire
+18 October. [Verification metadata](reference-0.4-ipa.json) records the details.
+
+The first Apple attempt hit the previously tracked NIOSSH close/window-adjust
+trap in [issue #9](https://github.com/kb5000/trames/issues/9). The subsequent
+native OpenSSH test passed; that intermittent dependency issue is not fixed by
+this CPU update. Physical device acceptance remains in
+[issue #8](https://github.com/kb5000/trames/issues/8).
+
 ## Independent CPU checks
 
 The same assembled ELF executes in Trames and independent QEMU. New suites

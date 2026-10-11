@@ -1,7 +1,6 @@
 {
   "date": "2026-10-12",
-  "git_head": "4631b0a1ff0e9f092ddd36b4a1a78eabb7647489",
-  "snapshot": "0.4.0-build5-release-candidate",
+  "snapshot": "validated-0.4.0-build5-runtime",
   "runtime_modified_by_this_audit": false,
   "scope": "AArch64 EL0; native Linux v6.12 numbered entries; not complete ISA or Linux conformance coverage",
   "syscalls": {
@@ -93,5 +92,9 @@
     "crates/trames-net/src/virtualnet/icmp_gateway.rs": "db37f136a8c6b02b63b8eae9f6c300e3756665faa34c119b6021efee8e010991",
     "crates/trames-net/src/virtualnet/sockets.rs": "9b908a86d654542304663ae2e4ede18d18d3c03e11ffb7f10c17e0b3dc963d92"
   },
-  "limits": "Decode acceptance is not semantic validation. No physical iPad acceptance; software validation recorded separately in reference-0.4.md."
+  "limits": "Decode acceptance is not semantic validation. No physical iPad acceptance; software validation recorded separately in reference-0.4.md.",
+  "implementation_base_commit": "4631b0a1ff0e9f092ddd36b4a1a78eabb7647489",
+  "runtime_commit": "ddc10bd83ed6d4c14a3b6ad4bd5678fe04584992",
+  "linux_ci_commit": "2b78baf1624c6ae24e69d1337b027b0ac1e67367",
+  "linux_ci": "https://github.com/kb5000/trames/actions/runs/38162066667"
 }

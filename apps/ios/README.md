@@ -83,7 +83,9 @@ membership. The [Sideloadly documentation](https://sideloadly.io/faq) describes
 signing, device trust, Developer Mode and automatic refresh. The current app
 requires iPadOS 17 or newer and does not need JIT activation.
 
-Validated combined update: [0.3.0 (build 4) unsigned IPA artifact](https://github.com/kb5000/trames/actions/runs/38145322045/artifacts/11704499330).
+Validated combined update: [0.4.0 (build 5) unsigned IPA artifact](https://github.com/kb5000/trames/actions/runs/38162066629/artifacts/11711540648).
+Reference CPU coverage, standard /root/vda1/eth0 names and checked interpreter
+acceleration are recorded in [0.4.0 validation](../../docs/validation/reference-0.4.md).
 Unzip it and sign `Trames-unsigned.ipa` with the same Sideloadly Apple ID/effective
 bundle ID as before. The owner chose fresh Linux data: use Settings > Reset Linux
 after updating, or delete/reinstall the app to clear its private environment and

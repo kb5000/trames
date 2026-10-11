@@ -115,6 +115,11 @@ auxv 和 `/proc/cpuinfo` 共用已实现的 CPU 能力，未实现的扩展不�
 [当前能力与剩余缺口](docs/roadmap/compatibility-0.4.md)和
 [验证与前后跑分](docs/validation/reference-0.4.md)记录具体范围。
 
+[下载 0.4.0/build 5 IPA](https://github.com/kb5000/trames/actions/runs/38162066629/artifacts/11711540648)，
+解压后用 Sideloadly 签名安装。两种 Linux 后端和七项 iPad 模拟器测试通过。
+本轮三组前后对照：参考后端整数吞吐约 1.36×、访存约 2.01×；这是 Linux
+CPU 基准，尚不是 iPad 实测速率。
+
 ## 验证
 
 ```sh
