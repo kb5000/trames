@@ -2,7 +2,7 @@
 
 面向 iPadOS 的终端优先开发环境：原生 SSH，加上运行未修改 AArch64 Linux 用户态程序的兼容运行时。使用普通开发者签名，架构不依赖越狱、JIT 权限、私有 API 或硬件虚拟化。
 
-**当前交付：M0–M3、磁盘持久化和用户态虚拟网络。** `trames-run` 执行实际静态／动态 AArch64 ELF，支持 32/64 位标量及选定 SIMD 浮点、虚拟进程、管道、信号和一个虚拟 PTY。交互式 BusyBox `ash` 已在内存和磁盘两种后端验证。Linux CLI 默认保存文件到磁盘，新存储目录的文件预算为 16 GiB。IPv4/IPv6 TCP/UDP、真实 musl DNS，以及具有独立 IP 和回环地址的用户态网络栈已验证；Alpine 3.22.6、动态 musl、经过证书和包签名验证的 HTTPS apk update/add，以及安装后 tree 执行已验证。iPad App、原生 Files 授权界面和 SSH 属于后续里程碑。
+**当前交付：M0–M5 软件实现；完整 iPad 真机验收待完成。** `trames-run` 执行实际静态／动态 AArch64 ELF，支持 32/64 位标量及选定 SIMD 浮点、虚拟进程、管道、信号和一个虚拟 PTY。交互式 BusyBox `ash` 已在内存和磁盘两种后端验证。Linux CLI 默认保存文件到磁盘，新存储目录的文件预算为 16 GiB。IPv4/IPv6 TCP/UDP、真实 musl DNS，以及具有独立 IP 和回环地址的用户态网络栈已验证；Alpine 3.22.6、动态 musl、经过证书和包签名验证的 HTTPS apk update/add，以及安装后 tree 执行已验证。iPad App、原生 SSH/SFTP、Files 授权和 Bridge 已实现并通过软件验证。
 
 ## 快速运行
 
@@ -91,6 +91,8 @@ DNS 由真实 musl 读取 guest 的 `/etc/resolv.conf`；可用 `--file /etc/res
 guest root、UID/GID、目录权限及持久化所有权修复了安装 Vim 的 88 个目录权限更新错误；0.2.0 曾保留旧格式迁移；按项目所有者要求，0.3.0 只接受当前 v3 格式，提供显式重置。共享内存线程、futex 和 POSIX 定时器支持 musl 的 SIGEV_THREAD，默认配置 Vim 已验证编辑、保存、退出和新会话读取。终端横移修复也合入本次大版本。详细范围与限制见 [Linux 兼容性架构](docs/architecture/linux-compat.md) 和 [验证记录](docs/validation/linux-compat.md)。
 
 ## M5 更新（0.3.0 / build 4）
+
+[下载经验证的 unsigned IPA](https://github.com/kb5000/trames/actions/runs/38145322045/artifacts/11704499330)，解压后用 Windows Sideloadly 签名安装。两种 Linux 后端和七项 iPad 模拟器测试通过；[验证记录](docs/validation/m5.md) 包含校验和及验收范围。
 
 首次 Alpine 下载会等待网络授权生效，并对暂时的连接／DNS 错误最多尝试三次；界面在此期间显示正在准备环境。
 

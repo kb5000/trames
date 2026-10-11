@@ -18,7 +18,7 @@ Windows/Sideloadly signing, installation and startup on a physical iPad on
 | Virtual network (after M3) | Delivered: isolated IPv4/IPv6 and loopback, smoltcp TCP/UDP/ICMP packets, bounded two-family fragmentation, UDP/TCP DNS, native egress gateway, 27 QEMU comparisons and actual Alpine HTTPS apk |
 | M4 | Software validated: SwiftUI/SwiftTerm, native SSH/SFTP, Files, keyboard and embedding ABI; Apple builds and simulator operations passed. Owner-confirmed Sideloadly installation/startup; remaining physical acceptance in issue #8 |
 | Linux compatibility, 0.2.0 | Runtime proc/sys/dev views, virtual ownership and v3 persistence migration, musl threads/futex/timers, read-only route netlink, ICMP raw guest packets and native datagram echo egress, actual Alpine tools and default Vim editing; [record](../validation/linux-compat.md) |
-| M5 | Versioned guest Bridge RPC, native capability consent, scoped storage, accelerator registry and profiled C++ backend; extend the embedding ABI |
+| M5 | Software validated: versioned Bridge RPC, native consent, persistent scoped Files, built-in accelerator registry, optional profiled C++ backend and embedding ABI 2; signed-provider/device acceptance remains open |
 | M6 | Verified Git/Python/GCC/Clang/Make/CMake workflows; Debian after ABI coverage supports it |
 
 The owner requested on 2026-10-11 that future feature changes be grouped into a

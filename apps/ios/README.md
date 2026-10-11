@@ -83,10 +83,12 @@ membership. The [Sideloadly documentation](https://sideloadly.io/faq) describes
 signing, device trust, Developer Mode and automatic refresh. The current app
 requires iPadOS 17 or newer and does not need JIT activation.
 
-Validated combined update: [0.2.0 (build 3) unsigned IPA artifact](https://github.com/kb5000/trames/actions/runs/38134473648/artifacts/11700379801).
+Validated combined update: [0.3.0 (build 4) unsigned IPA artifact](https://github.com/kb5000/trames/actions/runs/38145322045/artifacts/11704499330).
 Unzip it and sign `Trames-unsigned.ipa` with the same Sideloadly Apple ID/effective
-bundle ID as before, installing over the existing app. Linux checks and five
-simulator tests passed; device behavior remains owner acceptance work. The
+bundle ID as before. The owner chose fresh Linux data: use Settings > Reset Linux
+after updating, or delete/reinstall the app to clear its private environment and
+native settings. Linux checks and seven simulator tests passed; device behavior
+remains owner acceptance work. The
 artifact is retained until 25 October 2026. The validation record also identifies
 an intermittent native SSH library teardown issue in [#9](https://github.com/kb5000/trames/issues/9).
 
@@ -142,15 +144,15 @@ To package an existing device build yourself:
 
 ## M5 / 0.3.0 build 4
 
-The next combined update adds per-request Bridge consent, persistent Files folder
+The validated combined update adds per-request Bridge consent, persistent Files folder
 authorizations, an optional C++ backend and an explicit Linux environment reset.
 First-install downloads wait for Apple network connectivity and automatically
 retry transient connection/DNS failures up to three times. Allowing the initial
 network prompt can therefore resume preparation without restarting the app.
 The owner chose fresh development data; no historical v1/v2 store conversion or
 old-default DNS/quota migrations remain. Settings > Reset Linux waits for the
-store lock and deletes only the private Linux environment. The current released
-app can instead be deleted and reinstalled with the same Sideloadly signing ID;
+store lock and deletes only the private Linux environment. The app
+can instead be deleted and reinstalled with the same Sideloadly signing ID;
 deleting the whole app also removes native settings, so retain anything needed
 before doing so. Public DNS can be selected by editing the guest resolv.conf;
 10.0.0.1 itself is the virtual gateway. Apple DNS/HTTPS is covered by the new
