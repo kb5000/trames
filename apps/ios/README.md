@@ -72,7 +72,9 @@ Device installation still needs your Apple signing identity and provisioning
 profile. A cloud Mac can perform that signing once configured with your own
 developer assets. TestFlight additionally requires Apple Developer Program
 membership and App Store Connect setup. This repository has no signing assets,
-configured distribution or completed physical device acceptance yet.
+configured App Store Connect distribution or completed physical device acceptance
+yet. The owner confirmed Windows/Sideloadly installation and launch on a physical
+iPad on 2026-10-11; the full device checklist remains open.
 
 ## Sideloadly on Windows
 
@@ -104,10 +106,20 @@ Wi-Fi pairing. For updates or renewal, keep the same Apple ID and bundle ID and
 install over the existing app. Deleting the app also deletes its private Linux
 store; export important files before deleting it.
 
+The free-account limit of ten App IDs per seven days concerns newly registered
+identifiers, not ten versions of the same app. Keep Sideloadly's effective signed
+bundle ID stable (including any custom override) to update the existing app.
+The repository's bundle ID is `org.trames.Trames`. Future feature changes will be
+grouped into a larger release at the owner's request; each CI build is not an
+installation request.
+
 CI packages only the arm64 iPhoneOS device app after the simulator checks pass,
 retains its executable permissions and bundled resources, and includes a SHA-256
 checksum. The IPA is unsigned until Sideloadly signs it with your account.
-Sideloadly installation and physical iPad acceptance have not yet been verified.
+The owner confirmed Sideloadly installation and launch of 0.1.0 on 2026-10-11.
+The reported horizontal shift during `apk add vim` has a viewport fix in 0.1.1;
+verification of that fix on the owner's iPad and the remaining physical device
+checklist are still pending.
 
 To package an existing device build yourself:
 
