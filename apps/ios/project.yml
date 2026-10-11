@@ -9,8 +9,8 @@ settings:
     TARGETED_DEVICE_FAMILY: '2'
     ENABLE_USER_SCRIPT_SANDBOXING: NO
     GENERATE_INFOPLIST_FILE: YES
-    MARKETING_VERSION: '0.1.0'
-    CURRENT_PROJECT_VERSION: '1'
+    MARKETING_VERSION: '0.1.1'
+    CURRENT_PROJECT_VERSION: '2'
     INFOPLIST_KEY_CFBundleShortVersionString: '$(MARKETING_VERSION)'
     INFOPLIST_KEY_CFBundleVersion: '$(CURRENT_PROJECT_VERSION)'
     INFOPLIST_KEY_CFBundleDisplayName: Trames
@@ -42,6 +42,18 @@ targets:
         'TRAMES_RUST_TARGET[sdk=iphoneos*]': aarch64-apple-ios
         'TRAMES_RUST_TARGET[sdk=iphonesimulator*]': aarch64-apple-ios-sim
         OTHER_LDFLAGS: ['$(inherited)', '-ltrames_ffi', '-lresolv']
+  TramesTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [TramesTests]
+    dependencies:
+      - target: Trames
+      - package: SwiftTerm
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.trames.TramesTests
+        ARCHS: arm64
+        ONLY_ACTIVE_ARCH: YES
   TramesUITests:
     type: bundle.ui-testing
     platform: iOS
@@ -59,6 +71,6 @@ schemes:
       targets:
         Trames: all
     test:
-      targets: [TramesUITests]
+      targets: [TramesTests, TramesUITests]
     run:
       config: Debug

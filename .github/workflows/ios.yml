@@ -30,7 +30,7 @@ jobs:
         run: bash scripts/build-ios.sh simulator
       - name: Link unsigned iPad device app
         run: bash scripts/build-ios.sh device
-      - name: Launch the actual app in an iPad simulator
+      - name: Test terminal viewport and launch the app in an iPad simulator
         timeout-minutes: 12
         run: |
           device_id=$(xcrun simctl list devices available --json | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for rows in devices.values() for d in rows if d["name"].startswith("iPad")))')

@@ -5,6 +5,12 @@ Files authorization and app lifecycle. Rust owns the interpreted local Linux
 session and its private disk store. No instruction is translated into native
 executable code.
 
+The UIKit terminal viewport has one scrolling axis: its content width follows
+the visible width, and horizontal offsets/bounds origins remain zero. Vertical
+scrollback stays with SwiftTerm. Rejected horizontal adjustments invalidate the
+visible drawing region so UIKit cannot retain a shifted backing store. The
+terminal grid still resizes normally on rotation and keyboard layout changes.
+
 The ABI is version 1: integer opaque handles, bounded byte buffers, UTF-8 JSON
 configuration/status and explicit status codes. Only crates/trames-ffi/src/lib.rs
 permits unsafe code for copying caller-owned buffers. No pointers are retained;

@@ -5,7 +5,7 @@ import TramesKit
 @MainActor
 final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalViewDelegate {
     let id = UUID()
-    let terminal = TerminalView(frame: .zero, font: .monospacedSystemFont(ofSize: 14, weight: .regular))
+    let terminal = TerminalViewport(frame: .zero, font: .monospacedSystemFont(ofSize: 14, weight: .regular))
     @Published var title: String
     @Published var state = "连接中…"
     @Published var capacity: LocalStatus?
