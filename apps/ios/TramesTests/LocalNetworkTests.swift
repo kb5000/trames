@@ -4,7 +4,7 @@ import TramesKit
 @testable import Trames
 final class LocalNetworkTests: XCTestCase {
     func testRealAlpineGatewayDNSAndHTTPSOnAppleRuntime() async throws {
-        let (archive,response) = try await URLSession.shared.download(from: EnvironmentStore.archiveURL)
+        let (archive,response) = try await ConnectivityRetry.download(from: EnvironmentStore.archiveURL)
         defer { try? FileManager.default.removeItem(at: archive) }
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode,200)
         let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

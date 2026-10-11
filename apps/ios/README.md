@@ -144,6 +144,9 @@ To package an existing device build yourself:
 
 The next combined update adds per-request Bridge consent, persistent Files folder
 authorizations, an optional C++ backend and an explicit Linux environment reset.
+First-install downloads wait for Apple network connectivity and automatically
+retry transient connection/DNS failures up to three times. Allowing the initial
+network prompt can therefore resume preparation without restarting the app.
 The owner chose fresh development data; no historical v1/v2 store conversion or
 old-default DNS/quota migrations remain. Settings > Reset Linux waits for the
 store lock and deletes only the private Linux environment. The current released

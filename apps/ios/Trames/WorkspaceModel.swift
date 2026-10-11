@@ -38,7 +38,7 @@ final class WorkspaceModel: ObservableObject {
         if let local {close(local)}
         Task {
             do { try await environment.reset(); resetting=false; openLocal() }
-            catch {resetting=false; error=error.localizedDescription}
+            catch {resetting=false; self.error=error.localizedDescription}
         }
     }
     func connect(host: SSHHost, credential: SSHCredential) {

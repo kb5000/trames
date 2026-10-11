@@ -27,6 +27,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         terminal.getTerminal().changeScrollback(1000)
     }
     func startLocal(_ environment: EnvironmentStore, useVolumeBudget: Bool) {
+        state="正在准备 Alpine…"
         task = Task { [weak self] in
             do {
                 let local = try await environment.start(useVolumeBudget: useVolumeBudget, useCppBackend: UserDefaults.standard.bool(forKey: "useCppBackend"))

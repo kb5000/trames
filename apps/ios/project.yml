@@ -9,6 +9,9 @@ settings:
     TARGETED_DEVICE_FAMILY: '2'
     ENABLE_USER_SCRIPT_SANDBOXING: NO
     GENERATE_INFOPLIST_FILE: YES
+    LIBRARY_SEARCH_PATHS: ['$(inherited)', '$(SRCROOT)/../../target/ios-link/$(TRAMES_RUST_TARGET)']
+    'TRAMES_RUST_TARGET[sdk=iphoneos*]': aarch64-apple-ios
+    'TRAMES_RUST_TARGET[sdk=iphonesimulator*]': aarch64-apple-ios-sim
     MARKETING_VERSION: '0.3.0'
     CURRENT_PROJECT_VERSION: '4'
     INFOPLIST_KEY_CFBundleShortVersionString: '$(MARKETING_VERSION)'
@@ -49,6 +52,7 @@ targets:
     dependencies:
       - target: Trames
       - package: SwiftTerm
+      - package: TramesKit
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: org.trames.TramesTests

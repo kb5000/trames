@@ -19,8 +19,10 @@ actor EnvironmentStore {
             throw TramesError.message("Cannot determine device storage capacity")
         }
         if !FileManager.default.fileExists(atPath: active.path) {
-            let (download, response) = try await URLSession.shared.download(from: Self.archiveURL)
+            let (download, response) = try await ConnectivityRetry.download(from: Self.archiveURL)
             defer { try? FileManager.default.removeItem(at: download) }
+            try Task.checkCancellation()
+            guard generation == startedGeneration && !resetting else { throw CancellationError() }
             guard (response as? HTTPURLResponse)?.statusCode == 200,
                 (try download.resourceValues(forKeys: [.fileSizeKey])).fileSize ?? Int.max <= 16*1024*1024 else { throw TramesError.message("Invalid Alpine rootfs download") }
             let staging = root.appendingPathComponent("install-\(UUID().uuidString)", isDirectory: true)
