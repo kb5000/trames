@@ -7,7 +7,13 @@ version=10.0.13
 digest=4a59b74dac7ead8b162a7c4595dcbbeebe989b90c89cfe6bb4dec5447342f6fa
 prefix="$(pwd)/target/qemu-oracle"
 if [[ -x "$prefix/bin/qemu-aarch64" ]]; then
-    "$prefix/bin/qemu-aarch64" --version | head -1 | rg "^qemu-aarch64 version $version "
+    oracle_banner=$("$prefix/bin/qemu-aarch64" --version)
+    oracle_line=${oracle_banner%%$'\n'*}
+    case "$oracle_line" in
+        "qemu-aarch64 version $version"|"qemu-aarch64 version $version ("*)
+            printf '%s\n' "$oracle_line" ;;
+        *) printf 'Unexpected cached oracle: %s\n' "$oracle_line" >&2; exit 1 ;;
+    esac
     exit 0
 fi
 work="$(pwd)/target/qemu-oracle-build"
