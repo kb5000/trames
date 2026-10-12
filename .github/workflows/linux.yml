@@ -109,12 +109,18 @@ jobs:
 
       - name: Signed Python install, repair and execution with 128 host descriptors
         run: python3 tests/integration/python.py
+        # Large package/tool workflows use the development-host executor;
+        # strict instruction/libm comparisons above execute ARM64 compute.
+        env:
+          TRAMES_RUNNER: ${{ github.workspace }}/target/release/trames-run
       - name: Compare M6 events, local IPC, POSIX locks and FIFO semantics with QEMU
         run: |
           bash scripts/build-m6-fixtures.sh
           python3 tests/integration/m6-abi.py
       - name: Signed developer tools and complete guest workflows on a fresh persistent store
         run: python3 tests/integration/m6.py | tee target/m6-tools.log
+        env:
+          TRAMES_RUNNER: ${{ github.workspace }}/target/release/trames-run
       - uses: actions/upload-artifact@v4
         with:
           name: runtime-evidence

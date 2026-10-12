@@ -13,7 +13,7 @@ def run(cmd,cwd,data=b'',env=None):
     return r.returncode,r.stdout,r.stderr
 
 def main():
-    runner=str(ROOT/'target/debug/trames-run');busybox=str(ROOT/'target/busybox-build/busybox')
+    runner=os.getenv('TRAMES_RUNNER',str(ROOT/'target/debug/trames-run'));busybox=str(ROOT/'target/busybox-build/busybox')
     qemu=shutil.which(os.getenv('QEMU_AARCH64','qemu-aarch64'))
     if not qemu:raise RuntimeError('QEMU unavailable')
     comparisons=0
