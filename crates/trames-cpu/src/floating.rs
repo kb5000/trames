@@ -246,11 +246,7 @@ impl Cpu {
                 0 => fmt.mul(a, b, mode, fpcr, &mut flags),
                 1 => fmt.div(a, b, mode, fpcr, &mut flags),
                 2 => fmt.add(a, b, mode, fpcr, &mut flags),
-                3 => {
-                    let mut negative = b;
-                    negative.sign = !b.sign;
-                    fmt.add(a, negative, mode, fpcr, &mut flags)
-                }
+                3 => fmt.sub(a, b, mode, fpcr, &mut flags),
                 4..=7 => {
                     let op = (ins >> 12) & 15;
                     fmt.minmax(a, b, op & 1 != 0, op >= 6, fpcr, &mut flags)

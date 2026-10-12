@@ -1,10 +1,35 @@
-# Static interpreter acceleration (0.7.0 / build 8)
+# Static interpreter and native compute
 
-The default local backend is now `cached`: a Rust interpreter with bounded,
-data-only lazily decoded AArch64 code pages. `reference` keeps the single-step decoder
-as an architectural oracle, and `cpp` remains the optional static integer-block
-interpreter. All three run the same CPU feature profile and virtual Linux ABI.
-None allocates executable memory, emits native code, or needs a JIT entitlement.
+The runtime has one Rust interpreter with bounded, data-only lazily decoded
+AArch64 code pages. The single-step decoder is also exercised as a test oracle;
+there is no production backend selector. The optional C++ executor and the
+unsuccessful tail-dispatch experiment have been removed. No path allocates
+executable memory, emits native code, or needs a JIT entitlement.
+
+Both the Linux guest ABI and the shipping iPad host are ARM64. The x86_64 code in
+`trames-compute` supports the current Linux development/CI host only: it does not
+decode x86 guest instructions, and conditional compilation excludes it from the
+ARM64 app. A separate ARM64 Linux build runs under QEMU to execute and check the
+actual ARM64 helper instructions, rather than only compiling them.
+
+## Native arithmetic
+
+`trames-compute` accepts numeric values, never guest pointers. It uses static ARM
+floating-point, NEON, AES and SHA instructions where the host supports them;
+optional FP16 and crypto families are checked before execution. Packed SIMD
+operations use whole vectors rather than per-lane IEEE arithmetic. Some guest
+operations require several host instructions. Instruction decoding, register
+selection, guest memory, privilege checks and Linux behavior still require the
+interpreter: native arithmetic is not a direct guest-code execution mode.
+
+An execution slice installs supported guest FPCR/FPSR controls once and restores
+the caller's floating-point state on return, faults and unwinding. A scope cannot
+move between threads. Guest FPCR/FPSR writes and reads synchronize native state,
+including clearing sticky flags. Unsupported host operations and format conversion
+retain bounded semantic fallbacks. Native execution takes priority over software
+reproduction of every rounding, NaN payload and exception detail; the x86_64 test
+host's floating-point flags are not an ARM64 conformance claim. ARM64 differential
+checks still compare value and state snapshots against the independent oracle.
 
 ## Decoded execution
 
@@ -22,10 +47,9 @@ allocation. Fork copies architectural state and starts with an empty cache.
 Common arithmetic, logical masks, bitfields, conditionals, shifts, multiply/divide,
 and scalar/vector loads and stores are decoded once. Immediates, scaled offsets,
 register roles and reserved-field validation are cached. Other instructions use
-the complete reference semantics without copying CPU state or crossing an FFI
-boundary. Floating-point/SIMD exceptions, atomics and syscalls retain their
-reference behavior. The reference implementation now also supports FRINTTS and
-LRCPC2; all backends advertise the same tested `frint` and `ilrcpc` features.
+the instruction semantics without copying CPU state or crossing an FFI boundary.
+FRINTTS and LRCPC2 remain supported; the single virtual CPU advertises the tested
+`frint` and `ilrcpc` features. The native compute helper is not an execution backend.
 
 An executed flags-setting ADD/SUB (including CMP aliases) followed by an executed
 conditional branch can form a two-instruction operation within the same page.
@@ -84,6 +108,32 @@ Disk durability, manifest format, quotas and host-handle policy are preserved.
 This release does not trade fsync/recovery correctness for package-install speed.
 The M5 descriptor-exhaustion fix remains in place.
 
+## Functional extensions and faults
+
+The expanded scalar, SIMD, crypto and memory profile is recorded in
+[the instruction inventory](../validation/instruction-coverage.md). Optional
+BF16/FHM/complex/SHA512/SHA3/SM3/SM4 compute uses static host instructions first.
+Fallbacks retain functional execution; optional floating-point fallback rounding
+is not guaranteed bit-identical to hardware.
+
+MOPS copy/move/set stages use Option A. A main stage processes at most 64 KiB
+before yielding at the same guest PC with its architectural progress registers.
+The partially executed instruction is not retired or charged twice. Page-local
+checked transfers permit restart after a data fault, and keep cancellation and
+other guest threads responsive.
+
+Data accesses ignore the top address byte; instruction fetch and mapping APIs
+retain their address validation. PAC/BTI authentication and allocation-tag checks
+are disabled in the explicit compatibility profile, while branch/link, load,
+writeback and zeroing effects execute. LS64 transfers use normal virtual RAM;
+physical Device-memory/ACCDATA semantics are not modeled. Those protection and
+LS64 capabilities are not advertised as complete hardware features.
+
+Undefined instructions, BRK/HLT, alignment and mapping/permission faults become
+Linux SIGILL/SIGTRAP/SIGBUS/SIGSEGV with fault addresses in siginfo/ucontext.
+Registered guest handlers may edit PC and return through rt_sigreturn.
+Ignored or blocked synchronous faults terminate instead of looping indefinitely.
+
 ## Measurement and limits
 
 `--metrics` reports total instructions/time, CPU slice time, syscall time, idle
@@ -97,8 +147,7 @@ spawn to successful Python/compiler exit, so loading is included in those times.
 
 Run [the comparison harness](../../tests/performance/nonjit.py) only for material
 changes, using a preserved baseline binary and identical signed-package stores.
-It alternates the selected baseline backend and candidate cached order (optionally including
-the candidate reference backend for attribution),
+It alternates the preserved baseline binary and current interpreter order,
 restores a fresh copy before every run, retains Vim's defaults/plugins/history,
 and validates Python and GCC results. Timing has no CI pass/fail threshold.
 

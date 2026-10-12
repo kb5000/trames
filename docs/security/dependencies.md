@@ -21,7 +21,10 @@ supported Trames target.
 
 This records license compatibility, not a security audit of dependencies. Native
 FFI and platform-specific unsafe implementations live in the dependencies.
-Trames crates continue to forbid unsafe code. GNU licensing does not automatically
+The CPU, memory, core and other value-level Rust crates forbid unsafe code.
+The isolated C caller-buffer boundary and static native compute helpers permit
+reviewed unsafe operations; compute accepts values, never guest memory pointers.
+GNU licensing does not automatically
 make every possible library compatible; each added dependency needs its own
 license review.
 
@@ -112,13 +115,21 @@ system libraries. No signing credentials are repository dependencies.
 The embedding JSON boundary adds serde/serde_core/serde_derive 1.0.229,
 serde_json 1.0.151, itoa 1.0.18 (MIT OR Apache-2.0), memchr 2.8.3
 (selected MIT) and zmij 1.0.23 (MIT). Existing proc-macro dependencies retain
-their previously recorded terms. Only the isolated caller-buffer boundary permits
+their previously recorded terms. The isolated caller-buffer boundary permits
 unsafe code; C buffer validity is a native caller contract.
 
-## M5 build tooling
+## Historical M5 build tooling
 
-The optional C++ interpreter adds build-only cc 1.7.0, find-msvc-tools 0.1.14 and
+The removed optional C++ interpreter used build-only cc 1.7.0, find-msvc-tools 0.1.14 and
 shlex 2.0.1, each MIT OR Apache-2.0 (selected MIT). They compile project-owned
 GPL-3.0-or-later source and are not linked runtime plugins. Bridge uses the already
 reviewed serde/serde_json/sha2 dependency closure. No dynamic native dependency
 or downloaded native plugin is introduced.
+
+## Static native compute
+
+`trames-compute` is project-owned GPL-3.0-or-later Rust with static ARM64 inline
+assembly, plus an x86_64 development-host implementation excluded from ARM64
+builds. It adds no runtime library dependency. Optional host instructions use
+Rust feature detection. Architectural entropy reads reuse the reviewed
+getrandom dependency; they do not synthesize random data with a PRNG.

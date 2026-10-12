@@ -20,5 +20,3 @@ trames-distro = { path = "../trames-distro" }
 
 [lints]
 workspace = true
-[features]
-cpp = ["trames-core/cpp"]

@@ -5,7 +5,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-/* ABI v2 (all v1 functions preserved): caller-owned byte buffers, max 65536 bytes, no retained pointers.
+/* ABI v3 (single production interpreter): caller-owned byte buffers, max 65536 bytes, no retained pointers.
  * Null allowed only with length/capacity 0. UTF-8 JSON and errors have no NUL.
  * Session handles are process-wide, thread-safe, monotonic and never reused.
  * All fallible int32 calls return -1 on failure; read trames_last_error on the
@@ -15,9 +15,6 @@ extern "C" {
  * Only transfer blocks; run it on a background queue. No callbacks into Swift.
  */
 uint32_t trames_abi_version(void);
-/* 0=reference Rust, 1=optional statically compiled C++ integer blocks,
- * 2=cached Rust (default). All interpreters are static; none uses JIT. */
-uint32_t trames_execution_backend_available(uint32_t backend);
 int32_t trames_environment_install(const uint8_t *json, uint32_t length);
 /* Destructive native-only store reset, {"store":"/authorized/private/store"}.
  * Serialize against new opens; returns 1 while a worker owns the lock, 0 after

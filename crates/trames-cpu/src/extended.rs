@@ -64,10 +64,21 @@ impl Cpu {
     ) -> Result<Option<u64>, CpuFault> {
         let pc = self.pc;
         let mut next = pc.wrapping_add(4);
+        if let Some(next) = self.execute_compatibility(ins, memory)? {
+            return Ok(Some(next));
+        }
+        if let Some(next) = self.execute_modern_memory(ins, memory)? {
+            return Ok(Some(next));
+        }
+        if self.execute_modern_scalar(ins) {
+            return Ok(Some(next));
+        }
         // A64 primary encoding groups 0111/1111 contain SIMD and FP.
         // Integer, load/store and system fallbacks need no vector decoding.
         if ins & 0x0e000000 == 0x0e000000
-            && (self.execute_crypto(ins)
+            && (self.execute_vector_extensions(ins)?
+                || self.execute_modern_crypto(ins)
+                || self.execute_crypto(ins)
                 || self.execute_half_vector(ins)?
                 || self.execute_vector_integer(ins)?
                 || self.execute_floating(ins)?)
@@ -394,7 +405,10 @@ impl Cpu {
             self.set_x(rd, 0xb4448004);
         } else if ins & 0xffffffe0 == 0xd53be000 {
             self.set_x(rd, 1_000_000_000);
-        } else if ins & 0xffffffe0 == 0xd53be040 {
+        } else if matches!(
+            ins & 0xffffffe0,
+            0xd53be040 | 0xd53be020 | 0xd53be0c0 | 0xd53be0a0
+        ) {
             self.set_x(
                 rd,
                 COUNTER_ORIGIN
@@ -402,6 +416,10 @@ impl Cpu {
                     .elapsed()
                     .as_nanos() as u64,
             );
+        } else if ins & 0xffffffe0 == 0xd53bd0a0 {
+            self.set_x(rd, self.tpidr2_el0);
+        } else if ins & 0xffffffe0 == 0xd51bd0a0 {
+            self.tpidr2_el0 = self.x(rd);
         } else if ins & 0xffffffe0 == 0xd53b4200 {
             self.set_x(rd, (self.nzcv() as u64) << 28);
         } else if ins & 0xffffffe0 == 0xd51b4200 {
@@ -409,12 +427,15 @@ impl Cpu {
         } else if ins & 0xffffffe0 == 0xd53b4400 {
             self.set_x(rd, self.fpcr as u64);
         } else if ins & 0xffffffe0 == 0xd53b4420 {
+            self.fpsr |= trames_compute::status();
             self.set_x(rd, self.fpsr as u64);
         } else if ins & 0xffffffe0 == 0xd51b4400 {
             // RMode, FZ, DN, AHP and FZ16; trap enables remain RAZ/WI.
             self.fpcr = self.x(rd) as u32 & 0x07c80000;
+            trames_compute::set_control(self.fpcr);
         } else if ins & 0xffffffe0 == 0xd51b4420 {
             self.fpsr = self.x(rd) as u32 & 0x0800009f;
+            trames_compute::set_status(self.fpsr);
         } else if ins & 0xffffffe0 == 0xd53b00e0 {
             self.set_x(rd, 4);
         }
@@ -709,6 +730,32 @@ impl Cpu {
             let lanes = width / bits;
             let mask = ones(bits);
             let operation = ins & 0xbf20fc00;
+            use trames_compute::IntegerOp as I;
+            let native = match operation {
+                0x0e208400 => I::Add,
+                0x2e208400 => I::Sub,
+                0x0e20bc00 => I::PairAdd,
+                0x2e208c00 => I::Equal,
+                0x0e208c00 => I::Test,
+                0x0e203400 => I::SignedGreater,
+                0x0e203c00 => I::SignedGreaterEqual,
+                0x2e203400 => I::UnsignedGreater,
+                0x2e203c00 => I::UnsignedGreaterEqual,
+                0x0e20b800 => I::Abs,
+                0x2e20b800 => I::Neg,
+                _ => unreachable!(),
+            };
+            if let Some(value) = trames_compute::vector_integer(
+                bits,
+                width == 128,
+                native,
+                self.vectors[rn],
+                self.vectors[rm],
+                self.vectors[rd],
+            ) {
+                self.vectors[rd] = value;
+                return Ok(Some(next));
+            }
             let mut result = 0u128;
             for lane in 0..lanes {
                 let (a, b) = if operation == 0x0e20bc00 {

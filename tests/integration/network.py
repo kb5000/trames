@@ -275,7 +275,7 @@ def main():
             for mode in ('cancel', 'cancel-fault'):
                 with echo_server(socket.SOCK_STREAM) as port:
                     outcome = result([*base, FIXTURE, mode, port],
-                                     expected=125 if mode == 'cancel-fault' else 0)
+                                     expected=132 if mode == 'cancel-fault' else 0)
                     if mode == 'cancel' and outcome[1:] != (b'cancel-ok\n', b''):
                         raise AssertionError(('session cancellation', outcome))
                     if mode == 'cancel-fault' and b'unsupported or unallocated instruction' not in outcome[2]:

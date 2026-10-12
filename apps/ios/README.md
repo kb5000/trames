@@ -146,6 +146,17 @@ To package an existing device build yourself:
       apps/ios/build/device/Build/Products/Debug-iphoneos/Trames.app \
       apps/ios/build/sideload/Trames-unsigned.ipa
 
+## Current source architecture
+
+The local runtime now has one Rust interpreter and no execution-backend switch.
+Native arithmetic helpers compile only the ARM64 implementation into the iPad
+app. The x86_64 helper supports the development/CI host; Linux guests remain
+AArch64. See [the interpreter design](../../docs/architecture/nonjit.md).
+Current source is 0.8.0/build 9 with embedding ABI 3. The released 0.7 artifact
+described above predates this source change. The expanded CPU profile and explicit
+PAC/BTI/tag compatibility are recorded in
+[the coverage evidence](../../docs/validation/instruction-coverage.md).
+
 ## M5 / 0.3.0 build 4
 
 The validated combined update adds per-request Bridge consent, persistent Files folder

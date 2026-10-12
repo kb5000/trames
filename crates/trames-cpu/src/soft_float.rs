@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Integer-only IEEE binary16/binary32/binary64 arithmetic.
+//! Host-native arithmetic first; format/unsupported-operation fallbacks.
 use std::cmp::Ordering;
 
 pub const INVALID: u32 = 1;
@@ -85,6 +85,56 @@ fn integer_sqrt(v: u128) -> u128 {
 }
 
 impl Format {
+    #[inline]
+    fn native(
+        self,
+        op: trames_compute::FloatOp,
+        fpcr: u32,
+        a: Number,
+        b: Option<Number>,
+        c: Option<Number>,
+    ) -> Option<u64> {
+        let bits = match self.frac {
+            10 if !self.alternative => 16,
+            23 => 32,
+            52 => 64,
+            _ => return None,
+        };
+        // Some refinement fallbacks rescale Number.exp without changing raw.
+        // Never feed an unscaled operand to native arithmetic.
+        for n in [Some(a), b, c].into_iter().flatten() {
+            let field = ((n.raw & self.exp_mask()) >> self.frac) as i32;
+            if !n.nan
+                && !n.inf
+                && n.sig != 0
+                && n.exp != field.max(1) - self.bias - self.frac as i32
+            {
+                return None;
+            }
+        }
+        let raw = |n: Number| {
+            let magnitude = if n.sig == 0 && !n.nan && !n.inf {
+                0
+            } else {
+                n.raw & !self.sign_bit()
+            };
+            magnitude | if n.sign { self.sign_bit() } else { 0 }
+        };
+        let value = trames_compute::scalar(
+            bits,
+            op,
+            raw(a),
+            b.map(raw).unwrap_or(0),
+            c.map(raw).unwrap_or(0),
+        )?;
+        Some(
+            if self.frac == 10 && self.flush(fpcr) && value & 0x7c00 == 0 {
+                value & 0x8000
+            } else {
+                value
+            },
+        )
+    }
     pub fn sign_bit(self) -> u64 {
         1u64 << (self.frac + self.ebits)
     }
@@ -222,7 +272,20 @@ impl Format {
         };
         signbits | (field << self.frac) | (sig as u64 & ((1u64 << self.frac) - 1))
     }
+    pub fn sub(self, a: Number, mut b: Number, mode: u32, fpcr: u32, flags: &mut u32) -> u64 {
+        if let Some(value) = self.native(trames_compute::FloatOp::Sub, fpcr, a, Some(b), None) {
+            return value;
+        }
+        if let Some(value) = self.nan_result(&[a, b], fpcr, flags) {
+            return value;
+        }
+        b.sign = !b.sign;
+        self.add(a, b, mode, fpcr, flags)
+    }
     pub fn add(self, a: Number, b: Number, mode: u32, fpcr: u32, flags: &mut u32) -> u64 {
+        if let Some(value) = self.native(trames_compute::FloatOp::Add, fpcr, a, Some(b), None) {
+            return value;
+        }
         if let Some(n) = self.nan_result(&[a, b], fpcr, flags) {
             return n;
         }
@@ -282,6 +345,9 @@ impl Format {
         self.pack(sign, mag, common, mode, fpcr, flags)
     }
     pub fn mul(self, a: Number, b: Number, mode: u32, fpcr: u32, flags: &mut u32) -> u64 {
+        if let Some(value) = self.native(trames_compute::FloatOp::Mul, fpcr, a, Some(b), None) {
+            return value;
+        }
         if let Some(n) = self.nan_result(&[a, b], fpcr, flags) {
             return n;
         }
@@ -302,6 +368,9 @@ impl Format {
         )
     }
     pub fn div(self, a: Number, b: Number, mode: u32, fpcr: u32, flags: &mut u32) -> u64 {
+        if let Some(value) = self.native(trames_compute::FloatOp::Div, fpcr, a, Some(b), None) {
+            return value;
+        }
         if let Some(n) = self.nan_result(&[a, b], fpcr, flags) {
             return n;
         }
@@ -338,6 +407,9 @@ impl Format {
         )
     }
     pub fn sqrt(self, a: Number, mode: u32, fpcr: u32, flags: &mut u32) -> u64 {
+        if let Some(value) = self.native(trames_compute::FloatOp::Sqrt, fpcr, a, None, None) {
+            return value;
+        }
         if let Some(n) = self.nan_result(&[a], fpcr, flags) {
             return n;
         }
@@ -389,6 +461,9 @@ impl Format {
         if neg_c {
             c.sign = !c.sign;
             c.raw ^= self.sign_bit();
+        }
+        if let Some(value) = self.native(trames_compute::FloatOp::Fma, fpcr, a, Some(b), Some(c)) {
+            return value;
         }
         // ARM processes NaNs in addend, first multiplicand, second multiplicand order.
         let bad_product =
@@ -476,6 +551,16 @@ impl Format {
         fpcr: u32,
         flags: &mut u32,
     ) -> u64 {
+        use trames_compute::FloatOp as F;
+        let op = match (min, numeric) {
+            (true, false) => F::Min,
+            (false, false) => F::Max,
+            (true, true) => F::MinNumber,
+            (false, true) => F::MaxNumber,
+        };
+        if let Some(value) = self.native(op, fpcr, a, Some(b), None) {
+            return value;
+        }
         let chosen = if numeric && !a.snan && !b.snan && a.nan != b.nan {
             Some(if a.nan { b } else { a })
         } else {
@@ -506,6 +591,31 @@ impl Format {
         }
     }
     pub fn convert(self, source: Format, a: Number, mode: u32, fpcr: u32, flags: &mut u32) -> u64 {
+        if cfg!(target_arch = "aarch64") || !self.alternative && !source.alternative {
+            let width = |fmt: Format| fmt.frac + fmt.ebits + 1;
+            if let Some(value) = trames_compute::convert(width(source), width(self), a.raw) {
+                return value;
+            }
+        }
+        self.convert_software(source, a, mode, fpcr, flags)
+    }
+    pub fn convert_odd(self, source: Format, a: Number, fpcr: u32, flags: &mut u32) -> u64 {
+        if let Some(value) = trames_compute::convert_odd(a.raw) {
+            return value as u64;
+        }
+        let mut local = 0;
+        let value = self.convert_software(source, a, 3, fpcr, &mut local);
+        *flags |= local;
+        value | u64::from(local & INEXACT != 0)
+    }
+    fn convert_software(
+        self,
+        source: Format,
+        a: Number,
+        mode: u32,
+        fpcr: u32,
+        flags: &mut u32,
+    ) -> u64 {
         if self.alternative && (a.nan || a.inf) {
             *flags |= INVALID;
             return (if a.sign { self.sign_bit() } else { 0 })

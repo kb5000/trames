@@ -203,7 +203,7 @@ impl Cpu {
             }
             let address = self.reg(rn, true);
             if !address.is_multiple_of((size * count) as u64) {
-                return Err(fault(MemoryError::InvalidRange));
+                return Err(fault(MemoryError::Alignment(address)));
             }
             memory
                 .check(address, size * count, trames_memory::Access::Write)
@@ -241,7 +241,7 @@ impl Cpu {
             }
             let address = self.reg(rn, true);
             if !address.is_multiple_of(size as u64) {
-                return Err(fault(MemoryError::InvalidRange));
+                return Err(fault(MemoryError::Alignment(address)));
             }
             memory
                 .check(address, size, trames_memory::Access::Write)
@@ -300,7 +300,7 @@ impl Cpu {
             }
             let address = self.reg(rn, true);
             if !address.is_multiple_of((size * 2) as u64) {
-                return Err(fault(MemoryError::InvalidRange));
+                return Err(fault(MemoryError::Alignment(address)));
             }
             if load {
                 if rt == second {
@@ -333,13 +333,13 @@ impl Cpu {
         }
         if matches!(
             ins & 0x3ffffc00,
-            0x085f7c00 | 0x085ffc00 | 0x08dffc00 | 0x38bfc000
+            0x085f7c00 | 0x085ffc00 | 0x08dffc00 | 0x08df7c00 | 0x38bfc000
         ) {
-            // LDXR/LDAXR/LDAR
+            // LDXR/LDAXR/LDAR/LDLAR
             let size = 1usize << (ins >> 30);
             let address = self.reg(rn, true);
             if !address.is_multiple_of(size as u64) {
-                return Err(fault(MemoryError::InvalidRange));
+                return Err(fault(MemoryError::Alignment(address)));
             }
             let mut bytes = [0; 8];
             memory.read(address, &mut bytes[..size]).map_err(fault)?;
@@ -358,7 +358,7 @@ impl Cpu {
                 return Err(invalid());
             }
             if !address.is_multiple_of(size as u64) {
-                return Err(fault(MemoryError::InvalidRange));
+                return Err(fault(MemoryError::Alignment(address)));
             }
             let succeeds = self.exclusive.take() == Some((address, size, memory.revision()));
             if succeeds {
@@ -369,12 +369,12 @@ impl Cpu {
             self.set_x(status, (!succeeds) as u64);
             return Ok(true);
         }
-        if ins & 0x3ffffc00 == 0x089ffc00 {
-            // STLR
+        if matches!(ins & 0x3ffffc00, 0x089ffc00 | 0x089f7c00) {
+            // STLR/STLLR
             let size = 1usize << (ins >> 30);
             let address = self.reg(rn, true);
             if !address.is_multiple_of(size as u64) {
-                return Err(fault(MemoryError::InvalidRange));
+                return Err(fault(MemoryError::Alignment(address)));
             }
             memory
                 .write(address, &self.x(rt).to_le_bytes()[..size])
@@ -393,7 +393,7 @@ impl Cpu {
             let offset = sign_extend(((ins >> 12) & 511) as u64, 9);
             let address = self.reg(rn, true).wrapping_add(offset);
             if !address.is_multiple_of(size as u64) {
-                return Err(fault(MemoryError::InvalidRange));
+                return Err(fault(MemoryError::Alignment(address)));
             }
             if opc == 0 {
                 write_operand(memory, address, size, self.x(rt) as u128).map_err(fault)?;
@@ -596,7 +596,7 @@ impl Cpu {
         // Exclusive and acquire/release operations are not silently reduced to normal loads.
         Ok(false)
     }
-    fn sp_or_x(&mut self, reg: usize, value: u64) {
+    pub(super) fn sp_or_x(&mut self, reg: usize, value: u64) {
         if reg == 31 {
             self.sp = value;
         } else {

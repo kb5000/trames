@@ -16,11 +16,9 @@ public struct LocalStatus: Decodable, Sendable, Equatable {
 public final class LocalSession: @unchecked Sendable {
     private let lock = NSLock()
     private var handle: UInt64
-    public static var cppAvailable: Bool { trames_execution_backend_available(1) == 1 }
-    public init(store: URL, rootfs: URL?, total: UInt64, available: UInt64, network: String = "outbound", useVolumeBudget: Bool = false, useCppBackend: Bool = false) throws {
-        guard trames_abi_version() == 2 else { throw TramesError.message("Unsupported Trames ABI") }
+    public init(store: URL, rootfs: URL?, total: UInt64, available: UInt64, network: String = "outbound", useVolumeBudget: Bool = false) throws {
+        guard trames_abi_version() == 3 else { throw TramesError.message("Unsupported Trames ABI") }
         var options: [String:Any] = ["store": store.path, "volume_total":total, "volume_available":available, "network":network]
-        options["backend"] = useCppBackend ? "cpp" : "cached"
         if let rootfs { options["rootfs"] = rootfs.path }
         options["budget_bytes"] = useVolumeBudget ? total : UInt64(16) << 30
         let data = try JSONSerialization.data(withJSONObject: options)

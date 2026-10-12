@@ -10,7 +10,7 @@ actor EnvironmentStore {
         root = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true).appendingPathComponent("Trames", isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
     }
-    func start(useVolumeBudget: Bool, useCppBackend: Bool) async throws -> LocalSession {
+    func start(useVolumeBudget: Bool) async throws -> LocalSession {
         guard !resetting else { throw CancellationError() }
         let startedGeneration = generation
         let active = root.appendingPathComponent("environment", isDirectory: true)
@@ -35,7 +35,7 @@ actor EnvironmentStore {
                 try FileManager.default.moveItem(at: staging, to: active)
             } catch { try? FileManager.default.removeItem(at: staging); throw error }
         }
-        return try LocalSession(store: active, rootfs: nil, total: UInt64(total), available: UInt64(available), useVolumeBudget: useVolumeBudget, useCppBackend: useCppBackend)
+        return try LocalSession(store: active, rootfs: nil, total: UInt64(total), available: UInt64(available), useVolumeBudget: useVolumeBudget)
     }
     func reset() async throws {
         guard !resetting else {throw TramesError.message("Linux 环境正在重置")}

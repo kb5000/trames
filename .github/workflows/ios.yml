@@ -19,7 +19,7 @@ jobs:
           toolchain: 1.90.0
           targets: aarch64-apple-ios,aarch64-apple-ios-sim
       - name: Build native Rust embedding library
-        run: cargo build -p trames-ffi --features cpp --release --locked
+        run: cargo build -p trames-ffi --release --locked
       - name: Test native SSH PTY and SFTP against OpenSSH
         env:
           TRAMES_RUST_LIB_DIR: ${{ github.workspace }}/target/release

@@ -3,6 +3,7 @@
 """Independent QEMU checks for integer AdvSIMD, including aliasing and FPSR.QC."""
 import os, random, struct, subprocess, tempfile
 from pathlib import Path
+from run import RUNNER
 ROOT=Path(__file__).resolve().parents[2]
 
 def instructions():
@@ -105,7 +106,7 @@ def main():
             (p/'case.S').write_text('\n'.join(source)+'\n')
             subprocess.run([os.getenv('AARCH64_AS','aarch64-linux-gnu-as'),'-o',str(p/'case.o'),str(p/'case.S')],check=True,capture_output=True)
             subprocess.run([os.getenv('AARCH64_LD','aarch64-linux-gnu-ld'),'-o',str(p/'case'),str(p/'case.o')],check=True,capture_output=True)
-            actual=subprocess.run([str(ROOT/'target/debug/trames-run'),'--memory',str(p/'case')],capture_output=True,timeout=20)
+            actual=subprocess.run([RUNNER,'--memory',str(p/'case')],capture_output=True,timeout=20)
             oracle=subprocess.run([os.getenv('QEMU_AARCH64','qemu-aarch64'),'-cpu','cortex-a53',str(p/'case')],capture_output=True,timeout=20)
             assert not actual.returncode and not oracle.returncode,(offset,actual.stderr,oracle.stderr)
             assert len(actual.stdout)==len(oracle.stdout)==len(batch)*24,(offset,len(actual.stdout),len(oracle.stdout))

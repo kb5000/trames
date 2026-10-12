@@ -92,6 +92,57 @@ impl Cpu {
         if double && !q {
             return Err(invalid());
         }
+        if !scalar_pair {
+            use trames_compute::VectorFloatOp as V;
+            let native = match binary {
+                0x0e20d400 => Some(V::Add),
+                0x0ea0d400 => Some(V::Sub),
+                0x2e20dc00 => Some(V::Mul),
+                0x2e20fc00 => Some(V::Div),
+                0x0e20cc00 => Some(V::MultiplyAdd),
+                0x0ea0cc00 => Some(V::MultiplySub),
+                0x2e20d400 => Some(V::PairAdd),
+                0x0e20f400 => Some(V::Max),
+                0x0ea0f400 => Some(V::Min),
+                0x0e20c400 => Some(V::MaxNumber),
+                0x0ea0c400 => Some(V::MinNumber),
+                0x0e20e400 => Some(V::Equal),
+                0x2e20e400 => Some(V::GreaterEqual),
+                0x2ea0e400 => Some(V::Greater),
+                0x2e20ec00 => Some(V::AbsoluteGreaterEqual),
+                0x2ea0ec00 => Some(V::AbsoluteGreater),
+                _ => match unary {
+                    0x2ea1f800 => Some(V::Sqrt),
+                    0x0ea0f800 => Some(V::Abs),
+                    0x2ea0f800 => Some(V::Neg),
+                    0x0e218800 => Some(V::RoundNearest),
+                    0x0ea18800 => Some(V::RoundPositive),
+                    0x0e219800 => Some(V::RoundNegative),
+                    0x0ea19800 => Some(V::RoundZero),
+                    0x2e218800 => Some(V::RoundAway),
+                    0x2e219800 => Some(V::RoundExact),
+                    0x2ea19800 => Some(V::RoundCurrent),
+                    0x0e21d800 => Some(V::SignedToFloat),
+                    0x2e21d800 => Some(V::UnsignedToFloat),
+                    0x0ea1b800 => Some(V::FloatToSignedZero),
+                    0x2ea1b800 => Some(V::FloatToUnsignedZero),
+                    _ => None,
+                },
+            };
+            if let Some(op) = native {
+                if let Some(result) = trames_compute::vector_float(
+                    if double { 64 } else { 32 },
+                    q,
+                    op,
+                    self.vectors[rn],
+                    self.vectors[rm],
+                    self.vectors[rd],
+                ) {
+                    self.vectors[rd] = result;
+                    return Ok(true);
+                }
+            }
+        }
         let width = if double { 64 } else { 32 };
         let fmt = if double { DOUBLE } else { SINGLE };
         let lane_mask = if double { u64::MAX } else { u32::MAX as u64 };
@@ -140,11 +191,7 @@ impl Cpu {
             } else if binary_valid {
                 match binary {
                     0x0e20d400 | 0x2e20d400 => fmt.add(a, b, mode, fpcr, &mut lane_flags),
-                    0x0ea0d400 => {
-                        let mut n = b;
-                        n.sign = !n.sign;
-                        fmt.add(a, n, mode, fpcr, &mut lane_flags)
-                    }
+                    0x0ea0d400 => fmt.sub(a, b, mode, fpcr, &mut lane_flags),
                     0x2e20dc00 => fmt.mul(a, b, mode, fpcr, &mut lane_flags),
                     0x2e20fc00 => fmt.div(a, b, mode, fpcr, &mut lane_flags),
                     0x0e20cc00 | 0x0ea0cc00 => {

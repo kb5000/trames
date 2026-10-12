@@ -152,6 +152,18 @@ Bridge native resource methods require per-request consent; frames, queues,
 connections and deadlines are bounded. Guest UID 0 grants no native authority.
 Provider copies stay inside explicit directory bookmarks, reject symlinks and
 traversal, obey streaming limits and revocation, and create destinations
-exclusively. The optional C++ engine has one checked POD boundary, no guest
-memory pointers, bounded dispatch/cache and Rust fallback. See [M5](../architecture/m5.md).
+exclusively. See [M5](../architecture/m5.md).
 Software sanitizers and integration checks do not constitute a security audit.
+
+## CPU compatibility profile
+
+The single Rust interpreter retains checked guest memory and bounded dispatch.
+The isolated native compute crate accepts values and uses static instructions;
+it never receives guest pointers or creates executable memory.
+
+By the owner's compatibility policy, PAC authentication and BTI landing checks
+are disabled, and MTE allocation tags read as zero. Branch, link, authenticated
+load, address arithmetic, writeback and zeroing effects still execute with
+ordinary virtual mapping and data-permission checks. PAC/BTI/MTE are not advertised
+as full Linux hardware capabilities. This profile provides no authentication or
+tag-based memory-error protection. See [the exact scope](../validation/instruction-coverage.md).

@@ -90,11 +90,10 @@ with tempfile.TemporaryDirectory(prefix='trames-syscalls-') as directory:
     (tmp / 'probe.S').write_text('\n'.join(assembly) + '\n')
     subprocess.run([os.getenv('AARCH64_AS', 'aarch64-linux-gnu-as'), '-o', str(tmp / 'probe.o'), str(tmp / 'probe.S')], check=True)
     subprocess.run([os.getenv('AARCH64_LD', 'aarch64-linux-gnu-ld'), '-o', str(tmp / 'probe'), str(tmp / 'probe.o')], check=True)
-    for backend in ('reference', 'cached', 'cpp'):
-        result = subprocess.run([runner, '--memory', '--backend', backend, str(tmp / 'probe')], capture_output=True, timeout=30)
-        assert result.returncode == 0 and not result.stderr, (backend, result.returncode, result.stderr)
-        returns = struct.unpack('<' + 'q' * len(missing), result.stdout)
-        assert all(value == -38 for value in returns), (backend, list(zip(missing, returns)))
+    result = subprocess.run([runner, '--memory', str(tmp / 'probe')], capture_output=True, timeout=30)
+    assert result.returncode == 0 and not result.stderr, (result.returncode, result.stderr)
+    returns = struct.unpack('<' + 'q' * len(missing), result.stdout)
+    assert all(value == -38 for value in returns), list(zip(missing, returns))
     for row in rows:
         if not row['dispatch_source']:
             row['probe_return'] = -38
@@ -107,7 +106,7 @@ metadata = {
     'entries': len(rows),
     'statuses': dict(collections.Counter(row['status'] for row in rows)),
     'undispatched_probes_per_backend': len(missing),
-    'backends': ['reference', 'cached', 'cpp'],
+    'backends': ['cached'],
     'unhandled_return': -38,
     'source_sha256': {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in (
         'crates/trames-core/src/process.rs', 'crates/trames-core/src/process_events.rs',

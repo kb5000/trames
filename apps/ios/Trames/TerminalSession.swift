@@ -35,7 +35,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         state="正在准备 Alpine…"
         task = Task { [weak self] in
             do {
-                let local = try await environment.start(useVolumeBudget: useVolumeBudget, useCppBackend: UserDefaults.standard.bool(forKey: "useCppBackend"))
+                let local = try await environment.start(useVolumeBudget: useVolumeBudget)
                 guard let self, !self.closed else { local.close(); return }
                 self.local = local
                 bridge.attach(local)

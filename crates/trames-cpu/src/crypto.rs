@@ -42,10 +42,10 @@ const fn tables() -> ([u8; 256], [u8; 256]) {
     (forward, inverse)
 }
 const SBOX: ([u8; 256], [u8; 256]) = tables();
-fn words(value: u128) -> [u32; 4] {
+pub(super) fn words(value: u128) -> [u32; 4] {
     std::array::from_fn(|i| (value >> (i * 32)) as u32)
 }
-fn packed(value: [u32; 4]) -> u128 {
+pub(super) fn packed(value: [u32; 4]) -> u128 {
     value
         .iter()
         .enumerate()
@@ -68,6 +68,30 @@ impl Cpu {
         let b = self.vectors[rm];
         let two = ins & 0xfffffc00;
         let three = ins & 0xffe0fc00;
+        use trames_compute::CryptoOp as C;
+        let native = match (two, three) {
+            (0x4e284800, _) => Some(C::AesEncrypt),
+            (0x4e285800, _) => Some(C::AesDecrypt),
+            (0x4e286800, _) => Some(C::AesMix),
+            (0x4e287800, _) => Some(C::AesInverseMix),
+            (0x5e280800, _) => Some(C::Sha1Hash),
+            (0x5e281800, _) => Some(C::Sha1Schedule1),
+            (0x5e282800, _) => Some(C::Sha256Schedule0),
+            (_, 0x5e000000) => Some(C::Sha1Choose),
+            (_, 0x5e001000) => Some(C::Sha1Parity),
+            (_, 0x5e002000) => Some(C::Sha1Majority),
+            (_, 0x5e003000) => Some(C::Sha1Schedule0),
+            (_, 0x5e004000) => Some(C::Sha256Hash),
+            (_, 0x5e005000) => Some(C::Sha256Hash2),
+            (_, 0x5e006000) => Some(C::Sha256Schedule1),
+            _ => None,
+        };
+        if let Some(op) = native {
+            if let Some(value) = trames_compute::crypto(op, old, a, b) {
+                self.vectors[rd] = value;
+                return true;
+            }
+        }
         let result;
         if matches!(two, 0x4e284800 | 0x4e285800 | 0x4e286800 | 0x4e287800) {
             let mut output = [0u8; 16];

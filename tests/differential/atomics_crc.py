@@ -3,6 +3,7 @@
 """AArch64 CRC, LSE and paired exclusive accesses against independent QEMU."""
 import os,random,subprocess,tempfile
 from pathlib import Path
+from run import RUNNER
 ROOT=Path(__file__).resolve().parents[2]
 
 def cases():
@@ -61,7 +62,7 @@ def main():
             (p/'case.S').write_text('\n'.join(src)+'\n')
             subprocess.run([os.getenv('AARCH64_AS','aarch64-linux-gnu-as'),'-march=armv8.3-a','-o',str(p/'case.o'),str(p/'case.S')],check=True,capture_output=True)
             subprocess.run([os.getenv('AARCH64_LD','aarch64-linux-gnu-ld'),'-o',str(p/'case'),str(p/'case.o')],check=True,capture_output=True)
-            a=subprocess.run([str(ROOT/'target/debug/trames-run'),'--memory',str(p/'case')],capture_output=True,timeout=20)
+            a=subprocess.run([RUNNER,'--memory',str(p/'case')],capture_output=True,timeout=20)
             b=subprocess.run([os.getenv('QEMU_AARCH64','qemu-aarch64'),'-cpu','max',str(p/'case')],capture_output=True,timeout=20)
             assert a.returncode==b.returncode==0,(offset,a.stderr,b.stderr)
             assert len(a.stdout)==len(b.stdout)==len(batch)*64,(len(a.stdout),len(b.stdout))

@@ -1,0 +1,43 @@
+{
+  "scope": "893 representative encodings; decode acceptance, not exhaustive ISA conformance",
+  "statuses": {
+    "decoded": 877,
+    "syscall": 2,
+    "decoded-exception": 2,
+    "unsupported": 12
+  },
+  "profiles": {
+    "execution": 802,
+    "compatibility": 75,
+    "remaining": 12,
+    "virtual-memory-profile": 4
+  },
+  "hwcap": 750761979,
+  "hwcap2": 8813273014656,
+  "feature_names": "fp asimd aes pmull sha1 sha2 crc32 atomics fphp asimdhp asimdrdm jscvt lrcpc fcma sha3 sm3 sm4 asimddp sha512 asimdfhm ilrcpc flagm sb flagm2 frint i8mm bf16 dgh rng cssc mops",
+  "source_sha256": {
+    "crates/trames-cpu/src/cached.rs": "a9219923fcdc18663a38f1157e60a89dc7cdde33929814bbb9c3cc0bf9d9ef86",
+    "crates/trames-cpu/src/compatibility.rs": "a20b25d9dd922fe447bb3bf75436aece24c553a74e124306d1ca51e97073ef48",
+    "crates/trames-cpu/src/crypto.rs": "9242d5e341f7ec5d2246d32e6f2215cbd7b46888426540101c23eaf3f0e2558a",
+    "crates/trames-cpu/src/extended.rs": "41c0e7fcc84ff58eda30b82c163c9044451b77daab7142005599d56d1a2af85b",
+    "crates/trames-cpu/src/floating.rs": "1b68a62fbffcd9b3ee6b2adfc716da1aabdbac87805e02974fb30ee58262cdfc",
+    "crates/trames-cpu/src/half_vector.rs": "6b58f896f2deb68458f9714f1e04cb0054c14faafc18a65ad3bc34174ab86ad8",
+    "crates/trames-cpu/src/lib.rs": "76e4ca5ad76e628ffc0b8e19f0092c917cd3c2715c74ab205d2941fed4b0b85b",
+    "crates/trames-cpu/src/load_store.rs": "2564274229c118df90d398a381d268bc8d7f219abf8a22709f78b454f177557d",
+    "crates/trames-cpu/src/modern_crypto.rs": "ef554a2cd833b319d19a6569223743e0a96e597cf398ab367552c52b7c0fc3ac",
+    "crates/trames-cpu/src/modern_memory.rs": "35de7f63b766a1b4d5d0a12fb7b38697bf15b71876f86578df341d025865fbbe",
+    "crates/trames-cpu/src/modern_scalar.rs": "a0c52109adeb803fdd1b1cce57d2faa104dfdf41d40981409d94ca67e0e21678",
+    "crates/trames-cpu/src/soft_float.rs": "dd9756709ce1129cf9d0420c0fb5114408a8e26c46dcded19153a3382b98b771",
+    "crates/trames-cpu/src/vector_extensions.rs": "4f04b1b44f355ba15fd89c4f8a10b19cb2e862e25f2bfbfc8feb079fdd98744e",
+    "crates/trames-cpu/src/vector_extra_float.rs": "e80dbe1228aa38019da00fce4e91f080d3187c991b8b4075f5da9c44bb1454e5",
+    "crates/trames-cpu/src/vector_float.rs": "6fcc0ecfbda1d4e7220629053fa573430b40ceb8439430068cc9ec852e4a4a78",
+    "crates/trames-cpu/src/vector_integer.rs": "c98780bff525c37c1a70eced7c34ae0e7ce24b22f5102e5bce22823d582687cf",
+    "crates/trames-compute/src/arm.rs": "8db8e7dd09132ab299f68e153838b4a25d50ade7d54197414470e03915198fb6",
+    "crates/trames-compute/src/lib.rs": "a4ae43536977bb85d96a7da7c28564667c5bdb0ba8c98395fbf76e2db6749a2d",
+    "crates/trames-compute/src/x86.rs": "62168f148b1ffe4fadf89bceabd2441ee4fd1026b1873acd66779e2fbdf1cba2",
+    "crates/trames-memory/src/lib.rs": "391c2b5902955facfd8a3a57b57e7196c9eddaa9b2f694ca3c179cb8d72789f9",
+    "crates/trames-core/src/process_events.rs": "c51f233022e6ff734ac09bc2e07950f00040d760031ec03ccb11d7d35176cb47",
+    "crates/trames-core/src/process.rs": "4a7a1379f3c3690467c9492fe96fe79acee28c89a70f7c559e332a390cfd456a",
+    "crates/trames-core/src/lib.rs": "b12f2142173745125492cdcbac160d7cfb24975a7598e33eebf1f927abb4f592"
+  }
+}

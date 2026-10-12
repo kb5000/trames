@@ -32,8 +32,6 @@ pub struct Options {
     #[serde(default = "default_network")]
     pub network: String,
     pub budget_bytes: Option<u64>,
-    #[serde(default = "default_backend")]
-    pub backend: String,
 }
 pub fn install(options: Options) -> Result<(), String> {
     if !options.store.is_absolute() || options.store.exists() {
@@ -67,9 +65,6 @@ fn default_columns() -> u16 {
 }
 fn default_network() -> String {
     "outbound".into()
-}
-fn default_backend() -> String {
-    "cached".into()
 }
 #[derive(Clone, Serialize)]
 pub struct Status {
@@ -138,8 +133,6 @@ impl Session {
             || options.volume_total == 0
             || options.volume_available > options.volume_total
             || !matches!(options.network.as_str(), "off" | "loopback" | "outbound")
-            || !matches!(options.backend.as_str(), "reference" | "cached" | "cpp")
-            || (options.backend == "cpp" && !trames_core::cpp_available())
         {
             return Err("invalid session configuration".into());
         }
@@ -371,14 +364,6 @@ fn run(
     )
     .map_err(|e| e.to_string())?;
     let mut terminal = Terminal::default();
-    runtime
-        .cpu
-        .set_backend(match options.backend.as_str() {
-            "cpp" => trames_core::Backend::Cpp,
-            "reference" => trames_core::Backend::Reference,
-            _ => trames_core::Backend::Cached,
-        })
-        .map_err(str::to_string)?;
     terminal.resize(options.rows, options.columns);
     runtime
         .enable_terminal(terminal)

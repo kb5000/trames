@@ -3,6 +3,7 @@
 """Binary16 results, exceptions, conversions and AHP against independent QEMU."""
 import os, random, struct, subprocess, tempfile
 from pathlib import Path
+from run import RUNNER
 ROOT = Path(__file__).resolve().parents[2]
 
 def cases():
@@ -97,7 +98,7 @@ def main():
             (p/'case.S').write_text('\n'.join(code)+'\n')
             subprocess.run([os.getenv('AARCH64_AS','aarch64-linux-gnu-as'),'-march=armv8.2-a+fp16','-o',str(p/'case.o'),str(p/'case.S')],check=True,capture_output=True)
             subprocess.run([os.getenv('AARCH64_LD','aarch64-linux-gnu-ld'),'-o',str(p/'case'),str(p/'case.o')],check=True,capture_output=True)
-            actual=subprocess.run([str(ROOT/'target/debug/trames-run'),'--memory',str(p/'case')],capture_output=True,timeout=20)
+            actual=subprocess.run([RUNNER,'--memory',str(p/'case')],capture_output=True,timeout=20)
             oracle=subprocess.run([os.getenv('QEMU_AARCH64','qemu-aarch64'),'-cpu','max',str(p/'case')],capture_output=True,timeout=20)
             assert actual.returncode==oracle.returncode==0,(offset,actual.stderr,oracle.stderr)
             assert len(actual.stdout)==len(oracle.stdout)==len(batch)*40,(offset,len(actual.stdout),len(oracle.stdout))

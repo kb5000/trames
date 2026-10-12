@@ -3,6 +3,7 @@
 """Vector INS aliases and variable shifts, including negative/oversize shifts."""
 import os, subprocess, tempfile
 from pathlib import Path
+from run import RUNNER
 ROOT = Path(__file__).resolve().parents[2]
 def main():
     source=['.text','.global _start','_start:','adr x9, input','adr x10, output']; cases=0
@@ -56,7 +57,7 @@ def main():
         p=Path(directory); (p/'case.S').write_text('\n'.join(source)+'\n')
         subprocess.run([os.getenv('AARCH64_AS','aarch64-linux-gnu-as'),'-o',str(p/'case.o'),str(p/'case.S')],check=True)
         subprocess.run([os.getenv('AARCH64_LD','aarch64-linux-gnu-ld'),'-o',str(p/'case'),str(p/'case.o')],check=True)
-        a=subprocess.run([str(ROOT/'target/debug/trames-run'),'--memory',str(p/'case')],capture_output=True,timeout=30)
+        a=subprocess.run([RUNNER,'--memory',str(p/'case')],capture_output=True,timeout=30)
         b=subprocess.run([os.getenv('QEMU_AARCH64','qemu-aarch64'),'-cpu','cortex-a53',str(p/'case')],capture_output=True,timeout=30)
         assert a.returncode==0 and b.returncode==0 and len(b.stdout)==cases*16,(a.returncode,a.stderr,b.returncode,b.stderr,len(b.stdout),cases)
         assert (a.stdout,a.stderr)==(b.stdout,b.stderr),next((i,a.stdout[i*16:(i+1)*16].hex(),b.stdout[i*16:(i+1)*16].hex()) for i in range(cases) if a.stdout[i*16:(i+1)*16]!=b.stdout[i*16:(i+1)*16])

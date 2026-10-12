@@ -30,6 +30,9 @@ fn saturate(value: i128, bits: u32, unsigned: bool, qc: &mut bool) -> u64 {
     value.clamp(low, high) as u64 & mask(bits)
 }
 fn polynomial(a: u64, b: u64, bits: u32) -> u128 {
+    if let Some(result) = trames_compute::polynomial_product(bits, a, b) {
+        return result;
+    }
     let mut result = 0;
     for bit in 0..bits {
         if b & (1u64 << bit) != 0 {
@@ -265,6 +268,27 @@ impl Cpu {
             }
             if matches!(key, 0x0e204800 | 0x2e204800) && (scalar || size == 3) {
                 return Err(invalid());
+            }
+            if !scalar {
+                use trames_compute::IntegerOp as I;
+                let op = match key {
+                    0x0e205800 => Some(I::Popcount),
+                    0x2e205800 if size == 1 => Some(I::ReverseBits),
+                    0x2e205800 => Some(I::Not),
+                    0x2e204800 => Some(I::LeadingZeros),
+                    0x0e204800 => Some(I::LeadingSign),
+                    0x0e207800 => Some(I::SaturatingAbs),
+                    0x2e207800 => Some(I::SaturatingNeg),
+                    _ => None,
+                };
+                if let Some(op) = op {
+                    if let Some(value) =
+                        trames_compute::vector_integer(element_bits, upper, op, a, b, old)
+                    {
+                        self.vectors[rd] = value;
+                        return Ok(true);
+                    }
+                }
             }
             for i in 0..width / element_bits {
                 let value = lane(a, i, element_bits);
@@ -635,6 +659,50 @@ impl Cpu {
             }
             if key == 0x0e209c00 && unsigned && size != 0 {
                 return Err(invalid());
+            }
+            if !scalar {
+                use trames_compute::IntegerOp as I;
+                let op = match (key, unsigned) {
+                    (0x0e200400, false) => Some(I::SignedHalvingAdd),
+                    (0x0e200400, true) => Some(I::UnsignedHalvingAdd),
+                    (0x0e202400, false) => Some(I::SignedHalvingSub),
+                    (0x0e202400, true) => Some(I::UnsignedHalvingSub),
+                    (0x0e201400, false) => Some(I::SignedRoundingHalvingAdd),
+                    (0x0e201400, true) => Some(I::UnsignedRoundingHalvingAdd),
+                    (0x0e200c00, false) => Some(I::SignedSaturatingAdd),
+                    (0x0e200c00, true) => Some(I::UnsignedSaturatingAdd),
+                    (0x0e202c00, false) => Some(I::SignedSaturatingSub),
+                    (0x0e202c00, true) => Some(I::UnsignedSaturatingSub),
+                    (0x0e206400, false) => Some(I::SignedMax),
+                    (0x0e206400, true) => Some(I::UnsignedMax),
+                    (0x0e206c00, false) => Some(I::SignedMin),
+                    (0x0e206c00, true) => Some(I::UnsignedMin),
+                    (0x0e207400, false) => Some(I::SignedAbsoluteDifference),
+                    (0x0e207400, true) => Some(I::UnsignedAbsoluteDifference),
+                    (0x0e207c00, false) => Some(I::SignedAbsoluteDifferenceAccumulate),
+                    (0x0e207c00, true) => Some(I::UnsignedAbsoluteDifferenceAccumulate),
+                    (0x0e209c00, false) => Some(I::Mul),
+                    (0x0e209400, false) => Some(I::MultiplyAdd),
+                    (0x0e209400, true) => Some(I::MultiplySub),
+                    (0x0e20b400, false) => Some(I::SaturatingMultiplyHigh),
+                    (0x0e20b400, true) => Some(I::RoundingSaturatingMultiplyHigh),
+                    (0x0e204400, false) => Some(I::SignedShift),
+                    (0x0e204400, true) => Some(I::UnsignedShift),
+                    (0x0e205400, false) => Some(I::SignedRoundingShift),
+                    (0x0e205400, true) => Some(I::UnsignedRoundingShift),
+                    (0x0e204c00, false) => Some(I::SignedSaturatingShift),
+                    (0x0e204c00, true) => Some(I::UnsignedSaturatingShift),
+                    (0x0e205c00, false) => Some(I::SignedRoundingSaturatingShift),
+                    (0x0e205c00, true) => Some(I::UnsignedRoundingSaturatingShift),
+                    _ => None,
+                };
+                if let Some(op) = op {
+                    if let Some(value) = trames_compute::vector_integer(bits, upper, op, a, b, old)
+                    {
+                        self.vectors[rd] = value;
+                        return Ok(true);
+                    }
+                }
             }
             for i in 0..width / bits {
                 let raw_a = lane(a, i, bits);

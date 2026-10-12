@@ -203,7 +203,7 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
         .peekable();
     let mut budget = DEFAULT_INSTRUCTION_LIMIT;
     let mut trace = false;
-    let mut backend = env::var("TRAMES_BACKEND").unwrap_or_else(|_| "cached".into());
+    let backend = "cached";
     let mut metrics = false;
     let mut pty = false;
     let mut install_busybox = false;
@@ -220,7 +220,7 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     let mut guest_path = false;
     let mut extra_env = Vec::new();
     if args.peek().is_some_and(|a| a == "--help" || a == "-h") {
-        println!("Usage: trames-run [--rootfs VERIFIED_ALPINE_TAR_GZ] [--guest] [--env KEY=VALUE] [--virtual-network ID] [--host-map VIRTUAL_IP=HOST_IP] [--network off|loopback|outbound|full] [--storage DIR | --memory] [--storage-budget BYTES|16GiB|auto] [--storage-info] [--max-instructions N] [--trace-syscalls] [--backend reference|cached|cpp] [--metrics] [--file /GUEST=HOST] [--exec-file /GUEST=HOST] [--export /GUEST=HOST] [--install-busybox] [--pty] [--] ELF [ARG ...]\nDefault native network: outbound connections and loopback listeners; full also allows non-loopback listeners.\n--virtual-network ID selects isolated 10.0.0.ID / fd00::ID and private loopback; ID must be 2..254.\n--host-map explicitly forwards a logical external IP to a trusted host service.\nDefault storage: .trames/storage in the current directory, 16 GiB logical file budget on first creation.\nImports copy selected host files; exports create new host files after guest exit.\n--memory selects the ephemeral 16 MiB test backend. auto uses the storage volume's total capacity.");
+        println!("Usage: trames-run [--rootfs VERIFIED_ALPINE_TAR_GZ] [--guest] [--env KEY=VALUE] [--virtual-network ID] [--host-map VIRTUAL_IP=HOST_IP] [--network off|loopback|outbound|full] [--storage DIR | --memory] [--storage-budget BYTES|16GiB|auto] [--storage-info] [--max-instructions N] [--trace-syscalls] [--metrics] [--file /GUEST=HOST] [--exec-file /GUEST=HOST] [--export /GUEST=HOST] [--install-busybox] [--pty] [--] ELF [ARG ...]\nDefault native network: outbound connections and loopback listeners; full also allows non-loopback listeners.\n--virtual-network ID selects isolated 10.0.0.ID / fd00::ID and private loopback; ID must be 2..254.\n--host-map explicitly forwards a logical external IP to a trusted host service.\nDefault storage: .trames/storage in the current directory, 16 GiB logical file budget on first creation.\nImports copy selected host files; exports create new host files after guest exit.\n--memory selects the ephemeral 16 MiB test backend. auto uses the storage volume's total capacity.");
         return Ok(0);
     }
     while let Some(option) = args.peek() {
@@ -232,10 +232,6 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
             "--guest" => {
                 args.next();
                 guest_path = true;
-            }
-            "--backend" => {
-                args.next();
-                backend = args.next().ok_or("missing backend")?;
             }
             "--metrics" => {
                 args.next();
@@ -469,12 +465,6 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     if storage_info {
         eprintln!("trames storage: {:?}", runtime.linux.vfs.capacity());
     }
-    runtime.cpu.set_backend(match backend.as_str() {
-        "reference" => trames_core::Backend::Reference,
-        "cached" => trames_core::Backend::Cached,
-        "cpp" => trames_core::Backend::Cpp,
-        _ => return Err("backend must be reference, cached or cpp".into()),
-    })?;
     if pty {
         runtime.enable_terminal(trames_core::Terminal::default())?;
     }

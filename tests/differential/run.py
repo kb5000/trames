@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
+RUNNER = os.getenv("TRAMES_RUNNER", str(ROOT / "target/debug/trames-run"))
 
 
 def execute(command):
@@ -56,7 +57,7 @@ def generated(seed):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--runner", default=str(ROOT / "target/debug/trames-run"))
+    parser.add_argument("--runner", default=RUNNER)
     parser.add_argument("--seeds", type=int, default=64)
     args = parser.parse_args()
     if args.seeds < 1:
@@ -95,13 +96,13 @@ def main():
             if count != 72:
                 raise AssertionError(f"seed {seed}: missing register snapshot")
         print(f"PASS {args.seeds} generated programs: register/NZCV snapshots matched", flush=True)
-    for name, options, diagnostic in [
-        ("loop", ["--max-instructions", "17"], b"instruction limit exceeded"),
-        ("unsupported", [], b"unsupported or unallocated instruction"),
-        ("write-text", [], b"Permission"),
+    for name, options, expected_code, diagnostic in [
+        ("loop", ["--max-instructions", "17"], 125, b"instruction limit exceeded"),
+        ("unsupported", [], 132, b"unsupported or unallocated instruction"),
+        ("write-text", [], 139, b"Permission"),
     ]:
         code, stdout, stderr = execute([runner, "--memory", *options, str(fixtures / name)])
-        if code != 125 or stdout or diagnostic not in stderr:
+        if code != expected_code or stdout or diagnostic not in stderr:
             raise AssertionError(f"{name}: incorrect fault: {(code, stdout, stderr)!r}")
         print(f"PASS {name}: bounded execution or typed fault", flush=True)
     # A filename change cannot change execution; a payload change must change output.

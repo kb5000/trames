@@ -1,0 +1,466 @@
+{
+  "scope": "Linux host; real unmodified guest programs; warm host caches; no physical iPad claim",
+  "host": {
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+    "machine": "x86_64",
+    "logical_cpus": 5
+  },
+  "inputs": {
+    "baseline_sha256": "98c7cd35d115996bf63aaf24cbd5ee055f492b984044910b2e11261247d73c50",
+    "candidate_sha256": "1c8b9b45755f1bc320d8e9044b7c7a372abcec3470adef60a3dcae95c03a6d5a",
+    "baseline_backend": "cached",
+    "vim_manifest_sha256": "4c4e85f8bdcb2163852cb1637960e4f065997708453cae146fb5b936ad5b9a5d",
+    "developer_manifest_sha256": "f61a833634d1e6ba666d9e662dbe80dc3ab5bcfa499c1249db8930fb289da03e",
+    "python_source_sha256": "74dee90e9a9afce2317d9b921856dd0dda5aab43b9436f0563a07ff9d2418f73",
+    "c_source_sha256": "5dd61000855cc4faf46c54115c50b838f08caba6539a1fa2580ed1c000688b52"
+  },
+  "samples": 3,
+  "results": [
+    {
+      "workload": "vim-default",
+      "sample": 1,
+      "configuration": "baseline-cached",
+      "seconds": 1.9734577799972612,
+      "endpoint": "process spawn to first visible cursor",
+      "metrics": {
+        "backend": "cached",
+        "instructions": 88688447,
+        "seconds": 2.06744979,
+        "instructions_per_second": 42897509.49647005,
+        "cpu_seconds": 1.8281032210000001,
+        "syscall_seconds": 0.067792105,
+        "idle_seconds": 0.1005994,
+        "syscalls": 9407,
+        "proc_refreshes": 2,
+        "context_switches": 28051,
+        "decode_lookups": 5058147,
+        "decode_misses": 50809,
+        "instructions_decoded": 2704575
+      }
+    },
+    {
+      "workload": "vim-default",
+      "sample": 1,
+      "configuration": "candidate-cached",
+      "seconds": 1.8434019749984145,
+      "endpoint": "process spawn to first visible cursor",
+      "metrics": {
+        "backend": "cached",
+        "instructions": 88688447,
+        "seconds": 1.938325777,
+        "instructions_per_second": 45755181.121960595,
+        "cpu_seconds": 1.736239001,
+        "syscall_seconds": 0.044284536,
+        "idle_seconds": 0.100522931,
+        "syscalls": 9398,
+        "proc_refreshes": 2,
+        "context_switches": 28051,
+        "decode_lookups": 5058147,
+        "decode_misses": 50809,
+        "instructions_decoded": 2704575
+      }
+    },
+    {
+      "workload": "vim-default",
+      "sample": 2,
+      "configuration": "candidate-cached",
+      "seconds": 2.0020045319979545,
+      "endpoint": "process spawn to first visible cursor",
+      "metrics": {
+        "backend": "cached",
+        "instructions": 88688447,
+        "seconds": 2.089192924,
+        "instructions_per_second": 42451056.56886669,
+        "cpu_seconds": 1.845321553,
+        "syscall_seconds": 0.07470823,
+        "idle_seconds": 0.10046289,
+        "syscalls": 9406,
+        "proc_refreshes": 2,
+        "context_switches": 28051,
+        "decode_lookups": 5058147,
+        "decode_misses": 50809,
+        "instructions_decoded": 2704575
+      }
+    },
+    {
+      "workload": "vim-default",
+      "sample": 2,
+      "configuration": "baseline-cached",
+      "seconds": 2.003277492010966,
+      "endpoint": "process spawn to first visible cursor",
+      "metrics": {
+        "backend": "cached",
+        "instructions": 88688447,
+        "seconds": 2.092778865,
+        "instructions_per_second": 42378317.405264884,
+        "cpu_seconds": 1.864874875,
+        "syscall_seconds": 0.056743676,
+        "idle_seconds": 0.100707562,
+        "syscalls": 9407,
+        "proc_refreshes": 2,
+        "context_switches": 28051,
+        "decode_lookups": 5058147,
+        "decode_misses": 50809,
+        "instructions_decoded": 2704575
+      }
+    },
+    {
+      "workload": "vim-default",
+      "sample": 3,
+      "configuration": "baseline-cached",
+      "seconds": 1.896434602997033,
+      "endpoint": "process spawn to first visible cursor",
+      "metrics": {
+        "backend": "cached",
+        "instructions": 88688447,
+        "seconds": 1.993454069,
+        "instructions_per_second": 44489837.20226362,
+        "cpu_seconds": 1.77965491,
+        "syscall_seconds": 0.049631798,
+        "idle_seconds": 0.10055504,
+        "syscalls": 9407,
+        "proc_refreshes": 2,
+        "context_switches": 28051,
+        "decode_lookups": 5058147,
+        "decode_misses": 50809,
+        "instructions_decoded": 2704575
+      }
+    },
+    {
+      "workload": "vim-default",
+      "sample": 3,
+      "configuration": "candidate-cached",
+      "seconds": 1.8821416260034312,
+      "endpoint": "process spawn to first visible cursor",
+      "metrics": {
+        "backend": "cached",
+        "instructions": 88688447,
+        "seconds": 1.9772382990000001,
+        "instructions_per_second": 44854708.228570476,
+        "cpu_seconds": 1.760625971,
+        "syscall_seconds": 0.054081888,
+        "idle_seconds": 0.100953733,
+        "syscalls": 9407,
+        "proc_refreshes": 2,
+        "context_switches": 28051,
+        "decode_lookups": 5058147,
+        "decode_misses": 50809,
+        "instructions_decoded": 2704575
+      }
+    },
+    {
+      "workload": "python-imports",
+      "sample": 1,
+      "configuration": "baseline-cached",
+      "seconds": 7.330205370992189,
+      "endpoint": "process spawn to successful exit (including final sync)",
+      "metrics": {
+        "backend": "cached",
+        "instructions": 322096246,
+        "seconds": 7.271602111,
+        "instructions_per_second": 44295086.70623686,
+        "cpu_seconds": 6.903730224,
+        "syscall_seconds": 0.186837165,
+        "idle_seconds": 0,
+        "syscalls": 3905,
+        "proc_refreshes": 1,
+        "context_switches": 81145,
+        "decode_lookups": 22701491,
+        "decode_misses": 397747,
+        "instructions_decoded": 23844369
+      }
+    },
+    {
+      "workload": "python-imports",
+      "sample": 1,
+      "configuration": "candidate-cached",
+      "seconds": 7.25937642500503,
+      "endpoint": "process spawn to successful exit (including final sync)",
+      "metrics": {
+        "backend": "cached",
+        "instructions": 322275639,
+        "seconds": 7.203524949,
+        "instructions_per_second": 44738602.45944433,
+        "cpu_seconds": 6.915093169,
+        "syscall_seconds": 0.117273566,
+        "idle_seconds": 0,
+        "syscalls": 3905,
+        "proc_refreshes": 1,
+        "context_switches": 81204,
+        "decode_lookups": 22703099,
+        "decode_misses": 397716,
+        "instructions_decoded": 23844267
+      }
+    },
+    {
+      "workload": "python-imports",
+      "sample": 2,
+      "configuration": "candidate-cached",
+      "seconds": 7.158712486998411,
+      "endpoint": "process spawn to successful exit (including final sync)",
+      "metrics": {
+        "backend": "cached",
+        "instructions": 321822695,
+        "seconds": 7.100655197,
+        "instructions_per_second": 45322957.68085864,
+        "cpu_seconds": 6.833255043,
+        "syscall_seconds": 0.102241011,
+        "idle_seconds": 0,
+        "syscalls": 3905,
+        "proc_refreshes": 1,
+        "context_switches": 81085,
+        "decode_lookups": 22701650,
+        "decode_misses": 397747,
+        "instructions_decoded": 23844922
+      }
+    },
+    {
+      "workload": "python-imports",
+      "sample": 2,
+      "configuration": "baseline-cached",
+      "seconds": 6.990001693018712,
+      "endpoint": "process spawn to successful exit (including final sync)",
+      "metrics": {
+        "backend": "cached",
+        "instructions": 322220409,
+        "seconds": 6.936614873,
+        "instructions_per_second": 46452111.714347444,
+        "cpu_seconds": 6.69371269,
+        "syscall_seconds": 0.079626627,
+        "idle_seconds": 0,
+        "syscalls": 3905,
+        "proc_refreshes": 1,
+        "context_switches": 81184,
+        "decode_lookups": 22702625,
+        "decode_misses": 397716,
+        "instructions_decoded": 23844288
+      }
+    },
+    {
+      "workload": "python-imports",
+      "sample": 3,
+      "configuration": "baseline-cached",
+      "seconds": 7.485014231002424,
+      "endpoint": "process spawn to successful exit (including final sync)",
+      "metrics": {
+        "backend": "cached",
+        "instructions": 321967183,
+        "seconds": 7.408438764,
+        "instructions_per_second": 43459518.699748546,
+        "cpu_seconds": 7.09935729,
+        "syscall_seconds": 0.142867539,
+        "idle_seconds": 0,
+        "syscalls": 3905,
+        "proc_refreshes": 1,
+        "context_switches": 81122,
+        "decode_lookups": 22701314,
+        "decode_misses": 397752,
+        "instructions_decoded": 23845232
+      }
+    },
+    {
+      "workload": "python-imports",
+      "sample": 3,
+      "configuration": "candidate-cached",
+      "seconds": 7.359789925976656,
+      "endpoint": "process spawn to successful exit (including final sync)",
+      "metrics": {
+        "backend": "cached",
+        "instructions": 321764311,
+        "seconds": 7.245102901,
+        "instructions_per_second": 44411282.40643604,
+        "cpu_seconds": 6.974796792,
+        "syscall_seconds": 0.111952045,
+        "idle_seconds": 0,
+        "syscalls": 3905,
+        "proc_refreshes": 1,
+        "context_switches": 81070,
+        "decode_lookups": 22701601,
+        "decode_misses": 397727,
+        "instructions_decoded": 23844661
+      }
+    },
+    {
+      "workload": "gcc-build-run",
+      "sample": 1,
+      "configuration": "baseline-cached",
+      "seconds": 2.7784525489842054,
+      "endpoint": "process spawn to successful exit (including final sync)",
+      "metrics": {
+        "backend": "cached",
+        "instructions": 127283245,
+        "seconds": 2.722187836,
+        "instructions_per_second": 46757701.03617494,
+        "cpu_seconds": 2.164138068,
+        "syscall_seconds": 0.311548672,
+        "idle_seconds": 0,
+        "syscalls": 74108,
+        "proc_refreshes": 1,
+        "context_switches": 33375,
+        "decode_lookups": 5643695,
+        "decode_misses": 66228,
+        "instructions_decoded": 4645084
+      }
+    },
+    {
+      "workload": "gcc-build-run",
+      "sample": 1,
+      "configuration": "candidate-cached",
+      "seconds": 2.6699885900015943,
+      "endpoint": "process spawn to successful exit (including final sync)",
+      "metrics": {
+        "backend": "cached",
+        "instructions": 127283245,
+        "seconds": 2.610363431,
+        "instructions_per_second": 48760737.10212806,
+        "cpu_seconds": 2.168873214,
+        "syscall_seconds": 0.195752078,
+        "idle_seconds": 0,
+        "syscalls": 74108,
+        "proc_refreshes": 1,
+        "context_switches": 33375,
+        "decode_lookups": 5643695,
+        "decode_misses": 66228,
+        "instructions_decoded": 4645084
+      }
+    },
+    {
+      "workload": "gcc-build-run",
+      "sample": 2,
+      "configuration": "candidate-cached",
+      "seconds": 2.714719587005675,
+      "endpoint": "process spawn to successful exit (including final sync)",
+      "metrics": {
+        "backend": "cached",
+        "instructions": 127283245,
+        "seconds": 2.650016561,
+        "instructions_per_second": 48031113.040278085,
+        "cpu_seconds": 2.198132651,
+        "syscall_seconds": 0.208493541,
+        "idle_seconds": 0,
+        "syscalls": 74108,
+        "proc_refreshes": 1,
+        "context_switches": 33375,
+        "decode_lookups": 5643695,
+        "decode_misses": 66228,
+        "instructions_decoded": 4645084
+      }
+    },
+    {
+      "workload": "gcc-build-run",
+      "sample": 2,
+      "configuration": "baseline-cached",
+      "seconds": 2.7357373230042867,
+      "endpoint": "process spawn to successful exit (including final sync)",
+      "metrics": {
+        "backend": "cached",
+        "instructions": 127283245,
+        "seconds": 2.677222571,
+        "instructions_per_second": 47543019.53776558,
+        "cpu_seconds": 2.241632582,
+        "syscall_seconds": 0.187552783,
+        "idle_seconds": 0,
+        "syscalls": 74108,
+        "proc_refreshes": 1,
+        "context_switches": 33375,
+        "decode_lookups": 5643695,
+        "decode_misses": 66228,
+        "instructions_decoded": 4645084
+      }
+    },
+    {
+      "workload": "gcc-build-run",
+      "sample": 3,
+      "configuration": "baseline-cached",
+      "seconds": 2.703836165019311,
+      "endpoint": "process spawn to successful exit (including final sync)",
+      "metrics": {
+        "backend": "cached",
+        "instructions": 127283245,
+        "seconds": 2.644657421,
+        "instructions_per_second": 48128443.40038248,
+        "cpu_seconds": 2.184819576,
+        "syscall_seconds": 0.215430936,
+        "idle_seconds": 0,
+        "syscalls": 74108,
+        "proc_refreshes": 1,
+        "context_switches": 33375,
+        "decode_lookups": 5643695,
+        "decode_misses": 66228,
+        "instructions_decoded": 4645084
+      }
+    },
+    {
+      "workload": "gcc-build-run",
+      "sample": 3,
+      "configuration": "candidate-cached",
+      "seconds": 2.637631830002647,
+      "endpoint": "process spawn to successful exit (including final sync)",
+      "metrics": {
+        "backend": "cached",
+        "instructions": 127283245,
+        "seconds": 2.57670886,
+        "instructions_per_second": 49397604.4309484,
+        "cpu_seconds": 2.146661983,
+        "syscall_seconds": 0.187265447,
+        "idle_seconds": 0,
+        "syscalls": 74108,
+        "proc_refreshes": 1,
+        "context_switches": 33375,
+        "decode_lookups": 5643695,
+        "decode_misses": 66228,
+        "instructions_decoded": 4645084
+      }
+    }
+  ],
+  "summaries": [
+    {
+      "workload": "vim-default",
+      "configuration": "baseline-cached",
+      "median_seconds": 1.9734577799972612,
+      "min_seconds": 1.896434602997033,
+      "max_seconds": 2.003277492010966,
+      "speedup": 1.0
+    },
+    {
+      "workload": "vim-default",
+      "configuration": "candidate-cached",
+      "median_seconds": 1.8821416260034312,
+      "min_seconds": 1.8434019749984145,
+      "max_seconds": 2.0020045319979545,
+      "speedup": 1.048517153402389
+    },
+    {
+      "workload": "python-imports",
+      "configuration": "baseline-cached",
+      "median_seconds": 7.330205370992189,
+      "min_seconds": 6.990001693018712,
+      "max_seconds": 7.485014231002424,
+      "speedup": 1.0
+    },
+    {
+      "workload": "python-imports",
+      "configuration": "candidate-cached",
+      "median_seconds": 7.25937642500503,
+      "min_seconds": 7.158712486998411,
+      "max_seconds": 7.359789925976656,
+      "speedup": 1.0097568912039314
+    },
+    {
+      "workload": "gcc-build-run",
+      "configuration": "baseline-cached",
+      "median_seconds": 2.7357373230042867,
+      "min_seconds": 2.703836165019311,
+      "max_seconds": 2.7784525489842054,
+      "speedup": 1.0
+    },
+    {
+      "workload": "gcc-build-run",
+      "configuration": "candidate-cached",
+      "median_seconds": 2.6699885900015943,
+      "min_seconds": 2.637631830002647,
+      "max_seconds": 2.714719587005675,
+      "speedup": 1.0246250988670529
+    }
+  ]
+}

@@ -75,10 +75,6 @@ pub struct RuntimeMetrics {
     pub decode_misses: u64,
 }
 pub use terminal::Terminal;
-pub use trames_cpu::Backend;
-pub fn cpp_available() -> bool {
-    Cpu::cpp_available()
-}
 #[derive(Debug, PartialEq, Eq)]
 pub struct Exit {
     pub code: u8,
@@ -371,9 +367,10 @@ mod tests {
             capabilities,
             [Some(trames_cpu::HWCAP), Some(trames_cpu::HWCAP2)]
         );
-        // PAC, SVE, MTE and BF16 are not implemented or advertised.
+        // PAC, SVE and MTE are not advertised; BF16 has functional execution.
         assert_eq!(trames_cpu::HWCAP & ((1 << 22) | (1 << 30) | (1 << 31)), 0);
-        assert_eq!(trames_cpu::HWCAP2 & ((1 << 14) | (1 << 18)), 0);
+        assert_eq!(trames_cpu::HWCAP2 & (1 << 18), 0);
+        assert_ne!(trames_cpu::HWCAP2 & (1 << 14), 0);
         assert!(e.memory.fetch_u32(sp).is_err());
         assert!(e.memory.read_u64(STACK_TOP - STACK_SIZE - 8).is_err());
     }

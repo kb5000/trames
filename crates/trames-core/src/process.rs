@@ -29,6 +29,7 @@ struct Info {
     status: i32,
     code: i32,
     timer: Option<(i32, i32, u64)>,
+    fault: Option<u64>,
 }
 #[derive(Clone)]
 enum State {
@@ -316,6 +317,7 @@ impl Kernel {
                 status,
                 code,
                 timer: None,
+                fault: None,
             });
         }
     }
@@ -474,6 +476,7 @@ impl Kernel {
             status: 0,
             code: 0,
             timer: None,
+            fault: None,
         });
     }
     fn may_signal(source: &Process, target: &Process, sig: u32) -> bool {
@@ -587,10 +590,56 @@ impl Kernel {
         }
         Ok(0)
     }
+    fn synchronous_fault(&mut self, pid: u32, p: &mut Process, fault: &trames_cpu::CpuFault) {
+        use trames_cpu::CpuFault as F;
+        use trames_memory::MemoryError as M;
+        let (sig, code, address) = match fault {
+            F::Trap {
+                pc, signal, code, ..
+            } => (*signal, *code, *pc),
+            F::Instruction { pc, .. } => (4, 1, *pc),
+            F::Memory {
+                error: M::Alignment(address),
+                ..
+            } => (7, 1, *address),
+            F::Memory {
+                error: M::Permission { address, .. },
+                ..
+            } => (11, 2, *address),
+            F::Memory {
+                error: M::Unmapped(address) | M::AddressRange(address),
+                ..
+            } => (11, 1, *address),
+            F::Memory { pc, .. } => (11, 1, *pc),
+        };
+        // Forced synchronous faults cannot be ignored or left masked forever.
+        if p.actions[sig as usize].handler <= 1 || p.mask & (1 << (sig - 1)) != 0 {
+            if pid == 1 {
+                eprintln!("trames: {fault}");
+            }
+            self.exit(pid, p, sig as i32);
+            return;
+        }
+        p.pending.insert(
+            sig,
+            Info {
+                sender: 0,
+                status: 0,
+                code,
+                timer: None,
+                fault: Some(address & 0x00ffffffffffffff),
+            },
+        );
+        if self.deliver(pid, p).is_err() {
+            self.exit(pid, p, 11);
+        }
+    }
     fn deliver(&mut self, pid: u32, p: &mut Process) -> Result<bool, Errno> {
         let stopped = matches!(p.state, State::Stopped);
         let sig = if p.pending.contains_key(&9) {
             Some(9)
+        } else if let Some((&sig, _)) = p.pending.iter().find(|(_, info)| info.fault.is_some()) {
+            Some(sig)
         } else {
             p.pending
                 .keys()
@@ -670,6 +719,7 @@ impl Kernel {
         frame[8..12].copy_from_slice(&info.code.to_le_bytes());
         events::write_siginfo(&mut frame[..128], sig, info);
         frame[168..176].copy_from_slice(&p.mask.to_le_bytes());
+        frame[304..312].copy_from_slice(&info.fault.unwrap_or(0).to_le_bytes());
         for r in 0..31 {
             frame[312 + r * 8..320 + r * 8].copy_from_slice(&p.cpu.x(r).to_le_bytes());
         }
@@ -826,9 +876,7 @@ impl Kernel {
             runtime.linux.vfs.credentials = credentials;
             runtime.linux.trace = p.linux.trace;
             p.linux = runtime.linux;
-            let backend = p.cpu.backend();
             p.cpu = runtime.cpu;
-            p.cpu.set_backend(backend).map_err(|_| Errno(95))?;
             p.memory = runtime.memory;
             for action in &mut p.actions {
                 if action.handler != 1 {
@@ -1970,16 +2018,8 @@ impl Kernel {
                                 if p.linux.trace {
                                     eprintln!("trames pid {id}: {e}");
                                 }
-                                if id == 1 {
-                                    self.processes.insert(id, p);
-                                    return Err(RuntimeError::Cpu(e));
-                                }
-                                let sig = if matches!(e, trames_cpu::CpuFault::Memory { .. }) {
-                                    11
-                                } else {
-                                    4
-                                };
-                                self.exit(id, &mut p, sig);
+                                self.instructions += p.cpu.fault_retired();
+                                self.synchronous_fault(id, &mut p, &e);
                             }
                             SliceOutcome::Yield { instructions } => {
                                 self.instructions += instructions
@@ -2503,5 +2543,87 @@ mod boundary_tests {
         assert_eq!(&k.terminal.as_ref().unwrap().window[..4], &[40, 0, 120, 0]);
         assert!(k.processes[&1].pending.contains_key(&28));
         assert!(!k.processes[&2].pending.contains_key(&28));
+    }
+}
+
+#[cfg(test)]
+mod cpu_fault_tests {
+    use super::tests::{kernel, process};
+    use super::*;
+    use trames_cpu::CpuFault;
+    use trames_memory::{MemoryError, Permissions};
+    #[test]
+    fn synchronous_signal_contains_fault_address_and_resumes_from_edited_context() {
+        let mut k = kernel();
+        let mut p = process();
+        p.actions[11] = Action {
+            handler: 0x2000,
+            flags: 4,
+            restorer: 0,
+            mask: 0,
+        };
+        p.cpu.pc = 0x1330;
+        p.cpu.set_x(7, 0x123456);
+        let fault = CpuFault::Memory {
+            pc: 0x1330,
+            error: MemoryError::Permission {
+                address: 0x3456,
+                access: Access::Write,
+            },
+        };
+        k.synchronous_fault(1, &mut p, &fault);
+        assert!(matches!(p.state, State::Ready));
+        assert_eq!(p.cpu.x(0), 11);
+        assert_eq!(p.cpu.pc, 0x2000);
+        let frame = p.cpu.sp;
+        assert_eq!(
+            p.memory.read_array::<4>(frame + 8).unwrap(),
+            2i32.to_le_bytes()
+        );
+        assert_eq!(p.memory.read_u64(frame + 16).unwrap(), 0x3456);
+        assert_eq!(p.memory.read_u64(frame + 304).unwrap(), 0x3456);
+        assert_eq!(p.memory.read_u64(frame + 568).unwrap(), 0x1330);
+        p.memory
+            .write_array(frame + 568, 0x1334u64.to_le_bytes())
+            .unwrap();
+        Kernel::sigreturn(&mut p).unwrap();
+        assert_eq!(p.cpu.pc, 0x1334);
+        assert_eq!(p.cpu.x(7), 0x123456);
+        assert_eq!(p.frames, 0);
+    }
+    #[test]
+    fn masked_or_ignored_synchronous_faults_terminate_instead_of_looping() {
+        for (blocked, handler) in [(false, 1), (true, 0x2000)] {
+            let mut k = kernel();
+            let mut p = process();
+            p.actions[5].handler = handler;
+            if blocked {
+                p.mask |= 1 << 4;
+            }
+            let fault = CpuFault::Trap {
+                pc: 0x1000,
+                instruction: 0xd4200020,
+                signal: 5,
+                code: 1,
+            };
+            k.synchronous_fault(2, &mut p, &fault);
+            assert!(matches!(p.state, State::Zombie(5)));
+        }
+    }
+    #[test]
+    fn data_top_byte_tags_work_across_pages_and_fork_copy_on_write() {
+        let mut m = Memory::default();
+        m.map(0x1000, 8192, Permissions::RW).unwrap();
+        let tagged = 0xab00000000001ffc;
+        m.write_array(tagged, 12345u64.to_le_bytes()).unwrap();
+        assert_eq!(m.read_u64(0x1ffc).unwrap(), 12345);
+        let mut child = m.clone();
+        child.write_array(tagged, 6789u64.to_le_bytes()).unwrap();
+        assert_eq!(m.read_u64(tagged).unwrap(), 12345);
+        assert_eq!(child.read_u64(tagged).unwrap(), 6789);
+        assert!(
+            m.fetch_u32(tagged).is_err(),
+            "data tags do not authorize tagged code addresses"
+        );
     }
 }

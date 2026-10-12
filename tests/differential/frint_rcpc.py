@@ -3,6 +3,7 @@
 """FRINTTS scalar/vector and LRCPC2 memory semantics against pinned QEMU."""
 import os
 from pathlib import Path
+from run import RUNNER
 import random
 import struct
 import subprocess
@@ -20,7 +21,7 @@ def compare(folder, code, length, cases, stride):
                     str(folder / 'case.S')], check=True, capture_output=True)
     subprocess.run([LD, '-o', str(folder / 'case'), str(folder / 'case.o')],
                    check=True, capture_output=True)
-    actual = subprocess.run([str(ROOT / 'target/debug/trames-run'), '--memory',
+    actual = subprocess.run([RUNNER, '--memory',
                              str(folder / 'case')], capture_output=True, timeout=30)
     oracle = subprocess.run([QEMU, '-cpu', 'max', str(folder / 'case')],
                             capture_output=True, timeout=30)
@@ -123,9 +124,9 @@ def alignment_faults(folder):
         subprocess.run([AS, '-march=armv8.5-a', '-o', str(folder / 'case.o'), str(folder / 'case.S')],
                        check=True, capture_output=True)
         subprocess.run([LD, '-o', str(folder / 'case'), str(folder / 'case.o')], check=True, capture_output=True)
-        actual = subprocess.run([str(ROOT / 'target/debug/trames-run'), '--memory', str(folder / 'case')], capture_output=True)
+        actual = subprocess.run([RUNNER, '--memory', str(folder / 'case')], capture_output=True)
         oracle = subprocess.run([QEMU, '-cpu', 'max', str(folder / 'case')], capture_output=True)
-        assert actual.returncode != 0 and b'InvalidRange' in actual.stderr, (instruction, actual.stderr)
+        assert actual.returncode == 128 + 7 and b'Alignment' in actual.stderr, (instruction, actual.stderr)
         assert oracle.returncode in [-7, 128 + 7], (instruction, oracle.returncode, oracle.stderr)
 
 

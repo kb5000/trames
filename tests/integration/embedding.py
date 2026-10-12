@@ -68,7 +68,7 @@ assert archive.is_file(), 'run scripts/prepare-alpine.sh first'
 with tempfile.TemporaryDirectory(prefix='trames-embedding-') as directory:
     temporary=Path(directory)
     store=temporary/'staging'
-    options={'store':str(store),'rootfs':str(archive),'volume_total':64<<30,'volume_available':32<<30,'network':'off','backend':os.getenv('TRAMES_BACKEND','reference')}
+    options={'store':str(store),'rootfs':str(archive),'volume_total':64<<30,'volume_available':32<<30,'network':'off'}
     assert request(api.trames_environment_install,payload=options)==0,error()
     active=temporary/'environment'
     store.rename(active) # All Rust file owners/locks must already be released.

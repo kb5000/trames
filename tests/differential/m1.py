@@ -7,7 +7,7 @@ from pathlib import Path
 import random
 import subprocess
 import tempfile
-from run import ROOT, execute
+from run import ROOT, RUNNER, execute
 
 
 def generated(seed):
@@ -57,7 +57,7 @@ def generated(seed):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--runner", default=str(ROOT / "target/debug/trames-run"))
+    parser.add_argument("--runner", default=RUNNER)
     parser.add_argument("--seeds", type=int, default=64)
     args = parser.parse_args()
     if args.seeds < 1:

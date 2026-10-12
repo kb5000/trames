@@ -84,10 +84,32 @@ impl Cpu {
             if double && !q && !scalar {
                 return Err(invalid());
             }
+            if !scalar {
+                let op = if binary == 0x0ea0fc00 {
+                    trames_compute::VectorFloatOp::ReciprocalSqrtStep
+                } else {
+                    trames_compute::VectorFloatOp::ReciprocalStep
+                };
+                if let Some(value) = trames_compute::vector_float(bits, q, op, a, b, old) {
+                    self.vectors[rd] = value;
+                    return Ok(true);
+                }
+            }
             let square = binary == 0x0ea0fc00;
             for i in 0..width / bits {
-                let mut x = fmt.unpack(lane(a, i, bits), fpcr, &mut flags);
-                let y = fmt.unpack(lane(b, i, bits), fpcr, &mut flags);
+                let left = lane(a, i, bits);
+                let right = lane(b, i, bits);
+                let op = if square {
+                    trames_compute::FloatOp::ReciprocalSqrtStep
+                } else {
+                    trames_compute::FloatOp::ReciprocalStep
+                };
+                if let Some(value) = trames_compute::scalar(bits, op, left, right, 0) {
+                    result |= (value as u128) << (i * bits);
+                    continue;
+                }
+                let mut x = fmt.unpack(left, fpcr, &mut flags);
+                let y = fmt.unpack(right, fpcr, &mut flags);
                 let special = x.inf && !y.inf && !y.nan && y.sig == 0
                     || y.inf && !x.inf && !x.nan && x.sig == 0;
                 let value = if special {
@@ -151,6 +173,23 @@ impl Cpu {
         ) {
             if double && !q && !scalar {
                 return Err(invalid());
+            }
+            if !scalar {
+                use trames_compute::VectorFloatOp as V;
+                let op = match unary {
+                    0x0e21a800 => V::FloatToSignedNearest,
+                    0x2e21a800 => V::FloatToUnsignedNearest,
+                    0x0ea1a800 => V::FloatToSignedPositive,
+                    0x2ea1a800 => V::FloatToUnsignedPositive,
+                    0x0e21b800 => V::FloatToSignedNegative,
+                    0x2e21b800 => V::FloatToUnsignedNegative,
+                    0x0e21c800 => V::FloatToSignedAway,
+                    _ => V::FloatToUnsignedAway,
+                };
+                if let Some(value) = trames_compute::vector_float(bits, q, op, a, b, old) {
+                    self.vectors[rd] = value;
+                    return Ok(true);
+                }
             }
             let round = match unary & !(1 << 29) {
                 0x0e21a800 => 0,
@@ -230,11 +269,11 @@ impl Cpu {
                     &mut flags,
                 );
                 let mut local = 0;
-                let mut value =
-                    to.convert(from, x, if odd { 3 } else { mode }, control, &mut local);
-                if odd && local & crate::soft_float::INEXACT != 0 {
-                    value |= 1;
-                }
+                let value = if odd {
+                    to.convert_odd(from, x, control, &mut local)
+                } else {
+                    to.convert(from, x, mode, control, &mut local)
+                };
                 flags |= local;
                 result |= (value as u128) << (i * output_bits);
             }
@@ -326,12 +365,11 @@ impl Cpu {
             }
             for i in 0..width / bits {
                 let x = fmt.unpack(lane(a, i, bits), fpcr, &mut flags);
-                let mut y = fmt.unpack(lane(b, i, bits), fpcr, &mut flags);
+                let y = fmt.unpack(lane(b, i, bits), fpcr, &mut flags);
                 let value = if binary == 0x0e20dc00 {
                     multiply_extended(fmt, x, y, mode, fpcr, &mut flags)
                 } else {
-                    y.sign = !y.sign;
-                    fmt.add(x, y, mode, fpcr, &mut flags) & !fmt.sign_bit()
+                    fmt.sub(x, y, mode, fpcr, &mut flags) & !fmt.sign_bit()
                 };
                 result |= (value as u128) << (i * bits);
             }

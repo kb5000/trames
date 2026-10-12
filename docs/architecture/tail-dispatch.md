@@ -1,5 +1,8 @@
 # Explicit tail-call research
 
+The experiment files have been removed from the active tree after they showed
+no benefit. The linked 0.7 sources and measurements remain available as history.
+
 The 0.7 investigation keeps the production interpreter on stable Rust 1.90.0.
 Rust's `become` syntax requires the incomplete `explicit_tail_calls` feature;
 the pinned compiler rejects it on the stable channel (E0554). Ordinary recursive
@@ -7,14 +10,14 @@ Rust calls are not a guarantee of bounded stack usage. Neither nightly nor
 `RUSTC_BOOTSTRAP` is enabled for production.
 
 Clang 17 accepts `[[clang::musttail]]` under both the Linux x86_64 and iOS arm64
-ABIs. [The freestanding prototype](../../tests/performance/dispatch.cpp) gives
+ABIs. [The freestanding prototype](https://github.com/kb5000/trames/blob/35d83cd670f08c2a3f0152666930dab67f4c8f43/tests/performance/dispatch.cpp) gives
 each handler exactly the same signature and uses compiler-enforced tail calls
 between handlers. It builds without Apple SDK headers for arm64 iOS 17.
 Ten million steps at `-O0` complete with a 256 KiB stack and match the ordinary
 loop's checksum and final PC. This verifies stack boundedness for the prototype,
 not compatibility of a complete Trames backend.
 
-[The harness](../../tests/performance/dispatch.py) compares switch, computed-goto
+[The harness](https://github.com/kb5000/trames/blob/35d83cd670f08c2a3f0152666930dab67f4c8f43/tests/performance/dispatch.py) compares switch, computed-goto
 and musttail dispatch on the same predecoded synthetic ADD/mix/branch stream.
 All three execute 100 million operations per sample and finish with the same
 checksum and state. Three interleaved warm-host samples with Clang 17 gave median
@@ -32,7 +35,7 @@ including checked memory and all fallbacks without a per-instruction FFI bounce.
 Its fault states, budgets, cancellation and code-store invalidation must pass
 the same tests, then show a benefit on actual programs and iPad hardware.
 
-Reproduce the isolated experiment on a POSIX host with Clang:
+To reproduce the archived experiment, check out commit `35d83cd670f08c2a3f0152666930dab67f4c8f43` on a POSIX host with Clang:
 
 ```sh
 python3 tests/performance/dispatch.py --clang clang++ --output /tmp/dispatch.json

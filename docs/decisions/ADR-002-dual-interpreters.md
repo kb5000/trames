@@ -1,6 +1,7 @@
 # ADR-002 — Reference Rust and optional C++ interpreters
 
 Status: Accepted in Engineering Charter v0.2, 2026-10-10.
+Superseded by [ADR-003](ADR-003-static-native-compute.md) at the owner's request.
 
 The Rust reference interpreter prioritizes correctness and diagnostics. An
 optional C++ backend may later use computed goto, validated predecoded blocks

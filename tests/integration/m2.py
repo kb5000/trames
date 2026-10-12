@@ -46,7 +46,7 @@ def main():
         folder=Path(directory);bin_=folder/'bin';bin_.mkdir()
         for name in ['sh','ash','echo','printf','true','false','cat','wc','head','tail','pwd','ls','basename','dirname','sleep','kill','seq','env','test','mkdir','rm','touch']:
             wrapper=bin_/name;wrapper.write_text('#!/bin/sh\nexec '+shlex.join([qemu,'-cpu','cortex-a53',busybox,name])+' "$@"\n');wrapper.chmod(0o755)
-        env={'PATH':str(bin_),'LANG':'C','TRAMES_BACKEND':os.getenv('TRAMES_BACKEND','reference')}
+        env={'PATH':str(bin_),'LANG':'C'}
         for name,script,input_,code in cases:
             storage=['--storage',str(folder/f'store-{comparisons}')] if disk else ['--memory']
             refdir=folder/'reference';refdir.mkdir();(refdir/'data').mkdir()

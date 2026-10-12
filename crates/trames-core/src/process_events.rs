@@ -16,7 +16,9 @@ pub(super) fn write_siginfo(out: &mut [u8], sig: u32, info: Info) {
     out[..128].fill(0);
     out[..4].copy_from_slice(&sig.to_le_bytes());
     out[8..12].copy_from_slice(&info.code.to_le_bytes());
-    if let Some((id, overrun, value)) = info.timer {
+    if let Some(address) = info.fault {
+        out[16..24].copy_from_slice(&address.to_le_bytes());
+    } else if let Some((id, overrun, value)) = info.timer {
         out[16..20].copy_from_slice(&id.to_le_bytes());
         out[20..24].copy_from_slice(&overrun.to_le_bytes());
         out[24..32].copy_from_slice(&value.to_le_bytes());
@@ -272,6 +274,7 @@ impl Kernel {
                     sender: 0,
                     status: 0,
                     code: if id < 0 { 128 } else { -2 },
+                    fault: None,
                     timer: if id < 0 {
                         None
                     } else {

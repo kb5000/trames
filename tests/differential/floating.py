@@ -3,7 +3,7 @@
 """Scalar ARMv8 FP bit results, FPSR and NZCV against independent QEMU."""
 import os, random, struct, subprocess, tempfile
 from pathlib import Path
-from run import ROOT
+from run import ROOT, RUNNER
 
 
 def cases(seed):
@@ -55,7 +55,7 @@ def program(batch):
 
 
 def main():
-    runner=str(ROOT/'target/debug/trames-run'); as_=os.getenv('AARCH64_AS','aarch64-linux-gnu-as'); ld=os.getenv('AARCH64_LD','aarch64-linux-gnu-ld'); qemu=os.getenv('QEMU_AARCH64','qemu-aarch64')
+    runner=RUNNER; as_=os.getenv('AARCH64_AS','aarch64-linux-gnu-as'); ld=os.getenv('AARCH64_LD','aarch64-linux-gnu-ld'); qemu=os.getenv('QEMU_AARCH64','qemu-aarch64')
     all_cases=list(cases(73281)); count=0
     with tempfile.TemporaryDirectory(prefix='trames-fp-') as folder:
         path=Path(folder); src=path/'fp.S'; obj=path/'fp.o'; exe=path/'fp'

@@ -3,6 +3,7 @@
 """Integer reductions emitted by GCC's fixed-size memcmp expansion."""
 import os, random, subprocess, tempfile
 from pathlib import Path
+from run import RUNNER
 ROOT = Path(__file__).resolve().parents[2]
 def main():
     source = ['.text', '.global _start', '_start:', 'adr x9, input', 'adr x10, output']
@@ -27,7 +28,7 @@ def main():
         p = Path(folder); (p/'case.S').write_text('\n'.join(source)+'\n')
         subprocess.run([os.getenv('AARCH64_AS', 'aarch64-linux-gnu-as'), '-o', str(p/'case.o'), str(p/'case.S')], check=True)
         subprocess.run([os.getenv('AARCH64_LD', 'aarch64-linux-gnu-ld'), '-o', str(p/'case'), str(p/'case.o')], check=True)
-        a = subprocess.run([str(ROOT/'target/debug/trames-run'), '--memory', str(p/'case')], capture_output=True, timeout=15)
+        a = subprocess.run([RUNNER, '--memory', str(p/'case')], capture_output=True, timeout=15)
         b = subprocess.run([os.getenv('QEMU_AARCH64', 'qemu-aarch64'), '-cpu', 'cortex-a53', str(p/'case')], capture_output=True, timeout=15)
         if a.returncode != 0 or len(b.stdout) != cases * 16 or (a.returncode, a.stdout, a.stderr) != (b.returncode, b.stdout, b.stderr):
             raise AssertionError((a.returncode, a.stderr, b.returncode, b.stderr, a.stdout.hex(), b.stdout.hex()))

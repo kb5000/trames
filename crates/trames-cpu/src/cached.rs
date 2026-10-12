@@ -607,22 +607,30 @@ impl Cpu {
         let mut executed = 0;
         while executed < budget {
             if self.pc & 3 != 0 {
-                return SliceOutcome::Fault(CpuFault::Memory {
-                    pc: self.pc,
-                    error: trames_memory::MemoryError::InvalidRange,
-                });
+                return self.slice_fault(
+                    CpuFault::Memory {
+                        pc: self.pc,
+                        error: trames_memory::MemoryError::Alignment(self.pc),
+                    },
+                    executed,
+                );
             }
             let (page, stats) = match cache.page(memory, self.pc) {
                 Ok(page) => page,
-                Err(error) => return SliceOutcome::Fault(CpuFault::Memory { pc: self.pc, error }),
+                Err(error) => {
+                    return self.slice_fault(CpuFault::Memory { pc: self.pc, error }, executed)
+                }
             };
             while executed < budget && self.pc & !(PAGE_SIZE - 1) == page.base {
                 let pc = self.pc;
                 if pc & 3 != 0 {
-                    return SliceOutcome::Fault(CpuFault::Memory {
-                        pc,
-                        error: trames_memory::MemoryError::InvalidRange,
-                    });
+                    return self.slice_fault(
+                        CpuFault::Memory {
+                            pc,
+                            error: trames_memory::MemoryError::Alignment(pc),
+                        },
+                        executed,
+                    );
                 }
                 let slot = ((pc - page.base) / 4) as usize;
                 let entry = &mut page.instructions[slot];
@@ -633,7 +641,9 @@ impl Cpu {
                     // early faults, or decoding of never-executed page contents.
                     let word = match memory.fetch_u32(pc) {
                         Ok(word) => word,
-                        Err(error) => return SliceOutcome::Fault(CpuFault::Memory { pc, error }),
+                        Err(error) => {
+                            return self.slice_fault(CpuFault::Memory { pc, error }, executed)
+                        }
                     };
                     let instruction = Instruction::decode(word);
                     entry.instruction = instruction;
@@ -658,12 +668,17 @@ impl Cpu {
                 };
                 match self.execute_decoded(instruction, memory, budget - executed) {
                     Ok((Event::Continue, count)) => executed += count,
+                    Ok((Event::Yield, _)) => {
+                        return SliceOutcome::Yield {
+                            instructions: executed,
+                        }
+                    }
                     Ok((Event::Syscall, _)) => {
                         return SliceOutcome::Syscall {
                             instructions: executed + 1,
                         }
                     }
-                    Err(error) => return SliceOutcome::Fault(error),
+                    Err(error) => return self.slice_fault(error, executed),
                 }
                 // A successful self-modifying store must leave this borrowed
                 // code page before the next instruction is read from it.
@@ -1110,7 +1125,6 @@ impl Cpu {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Backend;
     use trames_memory::Permissions;
 
     fn memory(words: &[u32]) -> Memory {
@@ -1174,11 +1188,11 @@ mod tests {
                     cpu.set_x(0, u64::MAX);
                     cpu.set_x(1, 0x8000000000000001);
                     let mut oracle = cpu.clone();
-                    oracle.set_backend(Backend::Reference).unwrap();
+
                     let mut other = memory.clone();
                     assert_eq!(
                         format!("{:?}", cpu.run_slice(&mut memory, budget)),
-                        format!("{:?}", oracle.run_slice(&mut other, budget))
+                        format!("{:?}", oracle.run_reference(&mut other, budget))
                     );
                     equal(&cpu, &oracle);
                     assert!(matches!(
@@ -1206,7 +1220,7 @@ mod tests {
                     oracle.pc = 0x1000;
                     assert_eq!(
                         format!("{:?}", cpu.run_slice(&mut memory, 3)),
-                        format!("{:?}", oracle.run_slice(&mut other, 3))
+                        format!("{:?}", oracle.run_reference(&mut other, 3))
                     );
                     equal(&cpu, &oracle);
                 }
@@ -1220,11 +1234,11 @@ mod tests {
         memory.unmap(0x2000, PAGE_SIZE).unwrap();
         let mut cpu = Cpu::new(0x1ffc, 0);
         let mut oracle = cpu.clone();
-        oracle.set_backend(Backend::Reference).unwrap();
+
         let mut other = memory.clone();
         assert_eq!(
             format!("{:?}", cpu.run_slice(&mut memory, 2)),
-            format!("{:?}", oracle.run_slice(&mut other, 2))
+            format!("{:?}", oracle.run_reference(&mut other, 2))
         );
         equal(&cpu, &oracle);
     }
@@ -1294,7 +1308,7 @@ mod tests {
             cpu.run_slice(&mut memory, 2),
             SliceOutcome::Fault(CpuFault::Memory {
                 pc: 0x1005,
-                error: trames_memory::MemoryError::InvalidRange
+                error: trames_memory::MemoryError::Alignment(0x1005)
             })
         ));
         memory
@@ -1412,9 +1426,9 @@ mod tests {
                 };
                 let mut oracle = cpu.clone();
                 let mut expected_memory = memory.clone();
-                oracle.set_backend(Backend::Reference).unwrap();
+
                 let actual = cpu.run_slice(&mut memory, 1);
-                let expected = oracle.run_slice(&mut expected_memory, 1);
+                let expected = oracle.run_reference(&mut expected_memory, 1);
                 assert_eq!(format!("{actual:?}"), format!("{expected:?}"), "{word:08x}");
                 equal(&cpu, &oracle);
                 let mut actual = [0; 4096];
@@ -1438,10 +1452,10 @@ mod tests {
             let mut other = memory.clone();
             let mut cpu = Cpu::new(0x1000, 0x9000);
             let mut oracle = cpu.clone();
-            oracle.set_backend(Backend::Reference).unwrap();
+
             assert_eq!(
                 format!("{:?}", cpu.run_slice(&mut memory, budget)),
-                format!("{:?}", oracle.run_slice(&mut other, budget))
+                format!("{:?}", oracle.run_reference(&mut other, budget))
             );
             equal(&cpu, &oracle);
         }

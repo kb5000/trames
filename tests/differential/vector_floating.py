@@ -3,7 +3,7 @@
 """Packed binary32/binary64 FP results and cumulative exceptions against QEMU."""
 import os,random,struct,subprocess,tempfile
 from pathlib import Path
-from run import ROOT
+from run import ROOT, RUNNER
 
 def cases():
     rng=random.Random(19284)
@@ -83,7 +83,7 @@ def main():
         for offset in range(0,len(all_cases),24):
             batch=all_cases[offset:offset+24];src.write_text(program(batch))
             subprocess.run([as_,'-o',str(obj),str(src)],check=True,capture_output=True);subprocess.run([ld,'-static','--build-id=none','-z','noexecstack','-o',str(exe),str(obj)],check=True,capture_output=True)
-            a=subprocess.run([str(ROOT/'target/debug/trames-run'),'--memory',str(exe)],capture_output=True,timeout=15);b=subprocess.run([qemu,'-cpu','cortex-a53',str(exe)],capture_output=True,timeout=15)
+            a=subprocess.run([RUNNER,'--memory',str(exe)],capture_output=True,timeout=15);b=subprocess.run([qemu,'-cpu','cortex-a53',str(exe)],capture_output=True,timeout=15)
             if a.returncode or b.returncode:raise AssertionError((offset,a,b))
             if len(a.stdout)!=len(batch)*24 or len(b.stdout)!=len(batch)*24:raise AssertionError('short vector snapshot')
             for i,case in enumerate(batch):

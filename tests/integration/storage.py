@@ -34,7 +34,7 @@ def main():
         store = folder/'shell'
         actual = run([RUNNER, '--storage', str(store), '--install-busybox', BUSYBOX, 'ash', '-c', script])
         p = subprocess.run([qemu, '-cpu', 'cortex-a53', BUSYBOX, 'ash', '-c', script], cwd=ref,
-                           env={'PATH': str(bin_), 'LANG': 'C', 'TRAMES_BACKEND': os.getenv('TRAMES_BACKEND','reference')}, capture_output=True, timeout=45)
+                           env={'PATH': str(bin_), 'LANG': 'C'}, capture_output=True, timeout=45)
         reference = p.returncode, p.stdout, p.stderr
         if actual != reference: raise AssertionError(('storage applets', actual, reference))
         comparisons += 1

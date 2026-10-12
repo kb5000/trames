@@ -5,22 +5,20 @@ on:
 permissions:
   contents: read
 jobs:
-  reference-runtime:
+  runtime:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
-    strategy:
-      fail-fast: false
-      matrix:
-        backend: [reference, cached, cpp]
     env:
-      TRAMES_BACKEND: ${{ matrix.backend }}
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-linux-gnu-gcc
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUNNER: qemu-aarch64 -cpu max
+      TRAMES_RUNNER: ${{ github.workspace }}/tests/differential/arm-runner.sh
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.90.0
           components: rustfmt, clippy
-          targets: aarch64-apple-ios
+          targets: aarch64-apple-ios,aarch64-unknown-linux-musl
       - name: Install independent AArch64 oracle and cross assembler
         run: |
           sudo apt-get update
@@ -39,6 +37,10 @@ jobs:
       - run: cargo test --workspace --all-features --locked
       - name: Compile core and both network backends for iOS (no SDK link or device test)
         run: cargo check -p trames-core -p trames-distro -p trames-ffi --target aarch64-apple-ios --locked
+      - name: Execute ARM64 native compute helpers under the independent oracle
+        run: |
+          cargo test -p trames-compute --target aarch64-unknown-linux-musl --locked
+          cargo build -p trames-cli --target aarch64-unknown-linux-musl --release --locked
       - run: python3 tests/differential/run.py
       - run: python3 tests/differential/m1.py
       - run: python3 tests/differential/floating.py
@@ -53,8 +55,7 @@ jobs:
       - run: python3 tests/differential/crypto.py
       - run: python3 tests/differential/modern.py
       - run: python3 tests/differential/frint_rcpc.py
-      - name: Check computed-goto and portable C++ with ASan/UBSan
-        run: bash scripts/test-cpp.sh
+      - run: python3 tests/differential/coverage_extensions.py
       - name: Cross-build pinned musl and static BusyBox
         run: |
           if ! bash scripts/build-busybox.sh > target/busybox-build.log 2>&1; then
@@ -62,6 +63,10 @@ jobs:
             exit 1
           fi
           tail -10 target/busybox-build.log
+      - name: Compare actual musl CPU fault handlers and context recovery
+        run: |
+          bash scripts/build-cpu-fixtures.sh
+          python3 tests/integration/cpu-signals.py
       - run: python3 tests/integration/busybox.py
       - run: bash scripts/build-m2-fixtures.sh
       - run: python3 tests/integration/m2.py
@@ -74,7 +79,7 @@ jobs:
       - name: Compare native loopback sockets and real musl DNS with QEMU
         # The deterministic DNS peer binds host loopback port 53. The guest's
         # port restriction still applies even when this test harness is root.
-        run: sudo env PATH="$PATH" TRAMES_BACKEND="$TRAMES_BACKEND" python3 tests/integration/network.py
+        run: sudo env PATH="$PATH" python3 tests/integration/network.py
       - run: python3 tests/integration/m2.py
         env:
           TRAMES_TEST_STORAGE: disk
@@ -99,7 +104,7 @@ jobs:
 
       - name: Exercise the embedding ABI with real Alpine PTY and disk streams
         run: |
-          cargo build -p trames-ffi --features cpp --release --locked
+          cargo build -p trames-ffi --release --locked
           python3 tests/integration/embedding.py
 
       - name: Signed Python install, repair and execution with 128 host descriptors
@@ -110,14 +115,10 @@ jobs:
           python3 tests/integration/m6-abi.py
       - name: Signed developer tools and complete guest workflows on a fresh persistent store
         run: python3 tests/integration/m6.py | tee target/m6-tools.log
-      - name: Profile static interpreters with matching final CPU/memory state
-        run: cargo run -p trames-cpu --features cpp --example backend_profile --release --locked | tee target/cpu-profile.jsonl
       - uses: actions/upload-artifact@v4
         with:
-          name: runtime-evidence-${{ matrix.backend }}
+          name: runtime-evidence
           path: |
-            target/cpu-profile.jsonl
-            target/cpp-sanitizers/*.txt
             target/m6-tools.log
             target/m6-workflow.log
           if-no-files-found: error

@@ -30,20 +30,21 @@ physical memory for every build.
 
 The Linux v6.12 inventory contains 318 numbered entries: 133 implemented
 subsets, 183 missing entries and 2 obsolete entries. All 185 undispatched
-numbers return ENOSYS in both backends. Entry presence is not proof of every
+numbers return ENOSYS in the single interpreter. Entry presence is not proof of every
 flag, argument, concurrency pattern or Linux conformance.
 [CSV](../validation/m6-syscalls.csv) and
 [metadata](../validation/m6-syscalls.json) record the source fingerprints.
 
 Remaining work includes named AF_UNIX endpoints and SCM_RIGHTS, EPOLLET,
 nested epoll and exclusive watches, timer clock-change cancellation, OFD
-locks, broader shared-memory/robust-futex behavior and synchronous CPU fault
-recovery into guest signal handlers. Unsupported operations return an error.
+locks and broader shared-memory/robust-futex behavior. Synchronous CPU fault
+delivery and recovery are now implemented; see [CPU coverage](../validation/instruction-coverage.md).
+Unsupported operations return an error.
 Record-lock ownership is tested for fork and ordinary pthreads sharing a file
 table; unusual clone combinations that share tables across TGIDs or give
 threads private tables are not fully modeled.
 Non-root su back to root requires Alpine's normal setuid applet setup; the
 base minirootfs BusyBox is not a setuid authentication installation.
 
-The reference backend stays the default. Debian, arbitrary packages and
+The cached Rust interpreter is the sole production executor. Debian, arbitrary packages and
 physical iPad compiler workloads remain subsequent acceptance work.

@@ -3,7 +3,7 @@
 """AdvSIMD structure registers, memory and writeback, including register wrap."""
 import os,subprocess,tempfile
 from pathlib import Path
-from run import ROOT
+from run import ROOT, RUNNER
 
 def program():
     code=['.global _start','.text','_start:','adrp x20,snapshot','add x20,x20,:lo12:snapshot'];count=0
@@ -42,7 +42,7 @@ def main():
         p=Path(folder);(p/'m.S').write_text(source)
         subprocess.run([os.getenv('AARCH64_AS','aarch64-linux-gnu-as'),'-o',str(p/'m.o'),str(p/'m.S')],check=True)
         subprocess.run([os.getenv('AARCH64_LD','aarch64-linux-gnu-ld'),'-static','--build-id=none','-z','noexecstack','-o',str(p/'m'),str(p/'m.o')],check=True)
-        a=subprocess.run([str(ROOT/'target/debug/trames-run'),'--memory',str(p/'m')],capture_output=True,timeout=15)
+        a=subprocess.run([RUNNER,'--memory',str(p/'m')],capture_output=True,timeout=15)
         b=subprocess.run([os.getenv('QEMU_AARCH64','qemu-aarch64'),'-cpu','cortex-a53',str(p/'m')],capture_output=True,timeout=15)
         if a.returncode or b.returncode or len(a.stdout)!=count*144 or a.stdout!=b.stdout or a.stderr!=b.stderr:raise AssertionError((a,b))
     print(f'Structure memory differential passed: {count} load/store variants in 1 QEMU comparison')

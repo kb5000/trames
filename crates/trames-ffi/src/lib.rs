@@ -68,11 +68,7 @@ unsafe fn copy(pointer: *mut u8, capacity: u32, source: &[u8]) -> Result<i32, &'
 }
 #[no_mangle]
 pub extern "C" fn trames_abi_version() -> u32 {
-    2
-}
-#[no_mangle]
-pub extern "C" fn trames_execution_backend_available(backend: u32) -> u32 {
-    u32::from(backend == 0 || backend == 2 || (backend == 1 && trames_core::cpp_available()))
+    3
 }
 /// # Safety
 /// See `bytes`. Native-authorized store path only. Serialize against new opens.
@@ -364,7 +360,7 @@ mod tests {
     use super::*;
     #[test]
     fn abi_rejects_invalid_buffers_config_and_closed_handles() {
-        assert_eq!(trames_abi_version(), 2);
+        assert_eq!(trames_abi_version(), 3);
         unsafe {
             assert_eq!(trames_session_open(std::ptr::null(), 1), 0);
             assert_eq!(trames_session_input(u64::MAX, std::ptr::null(), 0), -1);

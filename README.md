@@ -158,8 +158,12 @@ python3 tests/integration/virtual-network.py
 python3 tests/integration/linux-compat.py
 python3 tests/integration/embedding.py
 python3 tests/integration/python.py
-bash scripts/test-cpp.sh
-cargo run -p trames-cpu --features cpp --example backend_profile --release --locked
+python3 tests/differential/frint_rcpc.py
+python3 tests/differential/coverage_extensions.py
+bash scripts/build-cpu-fixtures.sh
+python3 tests/integration/cpu-signals.py
+cargo build -p trames-cpu --example instruction_probe --release --locked
+python3 scripts/audit-instructions.py
 rustup target add aarch64-apple-ios --toolchain 1.90.0
 cargo check -p trames-core -p trames-distro --target aarch64-apple-ios --locked
 TRAMES_TEST_STORAGE=disk python3 tests/integration/m2.py
@@ -209,11 +213,19 @@ LDAPUR/STLUR 等带偏移的 acquire/release 访存。单步参考实现继续�
 
 ## 结构与范围
 
+当前 0.8.0/build 9 源码已统一为一个 Rust 缓存解释器，移除 C++ 与尾调用原型。
+浮点、SIMD 和密码运算优先执行静态 ARM64 原生指令，仍无需 JIT。
+本轮增加 CSSC、BF16、复数与扩展乘加、SHA512/SHA3/SM3/SM4、MOPS 和更多访存指令；
+PAC/BTI/MTE 按功能兼容策略处理，实际跳转、访存、写回和清零仍执行。
+CPU 故障可交给 Linux 信号处理器恢复。新安装包验证尚未完成；上面的 0.7 下载仍是历史版本。
+[指令范围与验证](docs/validation/instruction-coverage.md) · [当前编码清单](docs/validation/instruction-coverage-current.csv)。
+
 | crate | 当前职责 |
 | --- | --- |
 | `trames-memory` | 4 KiB 稀疏页面、fork 写时复制、内存上限、R/W/X 及映射保护 |
 | `trames-elf` | ELF64/AArch64 ET_EXEC/ET_DYN、PT_INTERP、PT_LOAD、BSS 和加载偏移校验 |
 | `trames-cpu` | 整数/访存/原子操作、标量与 SIMD 浮点、FPCR/FPSR、TLS/NZCV |
+| `trames-compute` | 数值输入的静态 ARM64 原生运算、可选特性检测、宿主浮点状态恢复 |
 | `trames-linux` | 有状态文件描述符、读写/目录/stat、私有文件／匿名 mmap/brk、flock/getrandom、负 errno、字节流 |
 | `trames-net` | 有界非阻塞 TCP/UDP、网络能力、宿主错误翻译和就绪等待 |
 | `trames-vfs` | 共享虚拟命名空间、磁盘/内存文件、配额与容量、打开描述与管道 |

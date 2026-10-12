@@ -7,7 +7,7 @@ RUNNER=ROOT/'target/release/trames-run'
 BUILD=ROOT/'target/alpine-build'
 ARCHIVE=pathlib.Path(os.getenv('TRAMES_ALPINE_CACHE',str(ROOT/'target/alpine-download')))/'alpine-minirootfs-3.22.6-aarch64.tar.gz'
 QEMU=os.getenv('QEMU_AARCH64','qemu-aarch64')
-ENV={'PATH':os.environ.get('PATH','/usr/bin:/bin'),'LANG':'C','LC_ALL':'C','TRAMES_BACKEND':os.getenv('TRAMES_BACKEND','reference')}
+ENV={'PATH':os.environ.get('PATH','/usr/bin:/bin'),'LANG':'C','LC_ALL':'C'}
 comparisons=0
 
 def run(command,expected=0,env=None,cwd=None):

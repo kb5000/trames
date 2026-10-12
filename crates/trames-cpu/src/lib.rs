@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Reference AArch64 interpreter. Unsupported encodings fault explicitly.
+//! AArch64 virtual CPU with a single bounded cached interpreter.
 use std::fmt;
 use trames_memory::{Memory, MemoryError};
-/// Capabilities of the virtual CPU, independent of the host and selected backend.
+/// Capabilities of the virtual CPU, independent of the host.
 pub const HWCAP: u64 = (1 << 0)
     | (1 << 1)
     | (1 << 3)
@@ -16,30 +16,34 @@ pub const HWCAP: u64 = (1 << 0)
     | (1 << 12)
     | (1 << 13)
     | (1 << 15)
+    | (1 << 16) // FCMA
+    | (1 << 17) // SHA3
+    | (1 << 18) // SM3
+    | (1 << 19) // SM4
     | (1 << 20)
+    | (1 << 21) // SHA512
+    | (1 << 23) // FHM
+    | (1 << 29) // SB: architectural ordering is provided by the interpreter
     | (1 << 26)
     | (1 << 27);
-pub const HWCAP2: u64 = (1 << 8) | (1 << 13); // FRINTTS, I8MM
-pub const FEATURE_NAMES: &str = "fp asimd aes pmull sha1 sha2 crc32 atomics fphp asimdhp asimdrdm jscvt lrcpc asimddp ilrcpc flagm frint i8mm";
+pub const HWCAP2: u64 =
+    (1 << 7) | (1 << 8) | (1 << 13) | (1 << 14) | (1 << 15) | (1 << 16) | (1 << 34) | (1 << 43); // FlagM2, FRINTTS, I8MM, BF16, DGH, RNG, CSSC, MOPS
+pub const FEATURE_NAMES: &str = "fp asimd aes pmull sha1 sha2 crc32 atomics fphp asimdhp asimdrdm jscvt lrcpc fcma sha3 sm3 sm4 asimddp sha512 asimdfhm ilrcpc flagm sb flagm2 frint i8mm bf16 dgh rng cssc mops";
 mod cached;
-#[cfg(feature = "cpp")]
-mod cpp;
+mod compatibility;
 mod crypto;
 mod extended;
 mod floating;
 mod half_vector;
 mod load_store;
+mod modern_crypto;
+mod modern_memory;
+mod modern_scalar;
 mod soft_float;
+mod vector_extensions;
 mod vector_extra_float;
 mod vector_float;
 mod vector_integer;
-#[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Backend {
-    Reference,
-    #[default]
-    Cached,
-    Cpp,
-}
 
 #[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Flags {
@@ -63,31 +67,54 @@ pub struct Cpu {
     pub pc: u64,
     pub flags: Flags,
     pub tpidr_el0: u64,
+    pub tpidr2_el0: u64,
     pub fpcr: u32,
     pub fpsr: u32,
     vectors: [u128; 32],
     exclusive: Option<(u64, usize, u64)>,
-    backend: Backend,
     decoded: cached::Cache,
-    #[cfg(feature = "cpp")]
-    cache: cpp::Cache,
+    yield_current: bool,
+    fault_retired: u64,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Event {
     Continue,
     Syscall,
+    /// A bounded long instruction has made progress but has not retired.
+    Yield,
 }
 
 #[derive(Debug)]
 pub enum CpuFault {
-    Memory { pc: u64, error: MemoryError },
-    Instruction { pc: u64, instruction: u32 },
+    Memory {
+        pc: u64,
+        error: MemoryError,
+    },
+    Instruction {
+        pc: u64,
+        instruction: u32,
+    },
+    Trap {
+        pc: u64,
+        instruction: u32,
+        signal: u32,
+        code: i32,
+    },
 }
 impl fmt::Display for CpuFault {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Memory { pc, error } => write!(f, "CPU fault at PC {pc:#x}: {error}"),
+            Self::Trap {
+                pc,
+                instruction,
+                signal,
+                ..
+            } => write!(
+                f,
+                "CPU exception {instruction:#010x} at PC {pc:#x} (signal {signal})"
+            ),
             Self::Instruction { pc, instruction } => write!(
                 f,
                 "unsupported or unallocated instruction {instruction:#010x} at PC {pc:#x}"
@@ -128,21 +155,8 @@ fn shifted(value: u64, kind: u32, amount: u32, wide: bool) -> u64 {
 }
 
 impl Cpu {
-    pub fn cpp_available() -> bool {
-        cfg!(feature = "cpp")
-    }
-    pub fn backend(&self) -> Backend {
-        self.backend
-    }
     pub fn decode_stats(&self) -> DecodeStats {
         self.decoded.stats
-    }
-    pub fn set_backend(&mut self, backend: Backend) -> Result<(), &'static str> {
-        if backend == Backend::Cpp && !Self::cpp_available() {
-            return Err("C++ backend was not compiled in");
-        }
-        self.backend = backend;
-        Ok(())
     }
     pub fn new(pc: u64, sp: u64) -> Self {
         Self {
@@ -231,9 +245,14 @@ impl Cpu {
         let pc = self.pc;
         let memory_fault = |error| CpuFault::Memory { pc, error };
         let ins = memory.fetch_u32(pc).map_err(memory_fault)?;
-        self.execute_instruction(ins, memory)
+        let scope = trames_compute::Scope::new(self.fpcr, self.fpsr);
+        let result = self.execute_instruction(ins, memory);
+        self.fpsr |= trames_compute::status();
+        drop(scope);
+        result
     }
     fn execute_instruction(&mut self, ins: u32, memory: &mut Memory) -> Result<Event, CpuFault> {
+        self.yield_current = false;
         let pc = self.pc;
         let invalid = || CpuFault::Instruction {
             pc,
@@ -245,7 +264,14 @@ impl Cpu {
         let wide = ins >> 31 != 0;
         let mut next = pc.wrapping_add(4);
         let mut event = Event::Continue;
-        if ins == 0xd503201f { // NOP
+        if matches!(ins & 0xffe0001f, 0xd4200000 | 0xd4400000) {
+            return Err(CpuFault::Trap {
+                pc,
+                instruction: ins,
+                signal: if ins & 0xffe0001f == 0xd4200000 { 5 } else { 4 },
+                code: 1,
+            });
+        } else if ins == 0xd503201f { // NOP
         } else if ins & 0xffe0001f == 0xd4000001 {
             // SVC #0; the syscall dispatcher owns guest-visible effects.
             event = Event::Syscall;
@@ -260,11 +286,17 @@ impl Cpu {
             } else {
                 0xedb88320
             };
+            let native =
+                trames_compute::crc(bytes, ins & (1 << 12) != 0, self.x(rn) as u32, self.x(rm));
             let mut crc = self.x(rn) as u32;
-            for byte in 0..bytes {
-                crc ^= ((self.x(rm) >> (byte * 8)) & 255) as u32;
-                for _ in 0..8 {
-                    crc = (crc >> 1) ^ if crc & 1 != 0 { polynomial } else { 0 };
+            if let Some(value) = native {
+                crc = value;
+            } else {
+                for byte in 0..bytes {
+                    crc ^= ((self.x(rm) >> (byte * 8)) & 255) as u32;
+                    for _ in 0..8 {
+                        crc = (crc >> 1) ^ if crc & 1 != 0 { polynomial } else { 0 };
+                    }
                 }
             }
             self.set_x(rd, crc as u64);
@@ -377,24 +409,40 @@ impl Cpu {
             return Err(invalid());
         }
         self.pc = next;
-        Ok(event)
+        Ok(if std::mem::take(&mut self.yield_current) {
+            Event::Yield
+        } else {
+            event
+        })
     }
 
-    /// Bounded calls form the execution backend boundary; never a per-instruction FFI call.
-    pub fn run_slice(&mut self, memory: &mut Memory, budget: u64) -> SliceOutcome {
-        if self.backend == Backend::Cached {
-            return self.run_cached(memory, budget);
-        }
-        #[cfg(feature = "cpp")]
-        if self.backend == Backend::Cpp {
-            return self.run_cpp(memory, budget);
-        }
-        self.run_reference(memory, budget)
+    /// Completed instructions before the most recent fault, for scheduler
+    /// accounting when a signal handler recovers from the failed instruction.
+    pub fn fault_retired(&self) -> u64 {
+        self.fault_retired
     }
+    pub(crate) fn slice_fault(&mut self, error: CpuFault, instructions: u64) -> SliceOutcome {
+        self.fault_retired = instructions;
+        SliceOutcome::Fault(error)
+    }
+    pub fn run_slice(&mut self, memory: &mut Memory, budget: u64) -> SliceOutcome {
+        self.fault_retired = 0;
+        let scope = trames_compute::Scope::new(self.fpcr, self.fpsr);
+        let result = self.run_cached(memory, budget);
+        self.fpsr |= trames_compute::status();
+        drop(scope);
+        result
+    }
+    #[cfg(test)]
     fn run_reference(&mut self, memory: &mut Memory, budget: u64) -> SliceOutcome {
         for executed in 0..budget {
             match self.step(memory) {
                 Ok(Event::Continue) => {}
+                Ok(Event::Yield) => {
+                    return SliceOutcome::Yield {
+                        instructions: executed,
+                    }
+                }
                 Ok(Event::Syscall) => {
                     return SliceOutcome::Syscall {
                         instructions: executed + 1,
@@ -507,15 +555,11 @@ mod tests {
         for instruction in [
             0x6e028420, 0x6ec28420, 0x5e421420, 0x48217c82, 0xf8209022, 0x4f729820,
         ] {
-            for backend in [Backend::Reference, Backend::Cached, Backend::Cpp] {
-                if backend == Backend::Cpp && !Cpu::cpp_available() {
-                    continue;
-                }
+            for cached in [false, true] {
                 let mut memory = code(&[instruction]);
                 memory.map(0x2000, PAGE_SIZE, Permissions::RW).unwrap();
                 memory.write(0x2000, &[0x5a; 32]).unwrap();
                 let mut cpu = Cpu::new(0x1000, 0x2800);
-                cpu.set_backend(backend).unwrap();
                 for i in 0..31 {
                     cpu.set_x(i, 0x2000);
                 }
@@ -529,10 +573,14 @@ mod tests {
                 let revision = memory.revision();
                 assert!(
                     matches!(
-                        cpu.run_slice(&mut memory, 1),
+                        if cached {
+                            cpu.run_slice(&mut memory, 1)
+                        } else {
+                            cpu.run_reference(&mut memory, 1)
+                        },
                         SliceOutcome::Fault(CpuFault::Instruction { .. })
                     ),
-                    "{instruction:08x} {backend:?}"
+                    "{instruction:08x} cached={cached}"
                 );
                 assert_eq!(cpu.registers, before.registers);
                 assert_eq!(cpu.vectors, before.vectors);
@@ -563,23 +611,23 @@ mod tests {
     fn failed_atomic_write_preflight_keeps_memory_and_registers() {
         for instruction in [0xf8208022, 0x48207c82] {
             // SWP / CASP
-            for backend in [Backend::Reference, Backend::Cached, Backend::Cpp] {
-                if backend == Backend::Cpp && !Cpu::cpp_available() {
-                    continue;
-                }
+            for cached in [false, true] {
                 let mut memory = code(&[instruction]);
                 memory.map(0x2000, PAGE_SIZE, Permissions::RW).unwrap();
                 memory.write(0x2000, &[0xa5; 16]).unwrap();
                 memory.protect(0x2000, PAGE_SIZE, Permissions::R).unwrap();
                 let mut cpu = Cpu::new(0x1000, 0x2800);
-                cpu.set_backend(backend).unwrap();
                 for i in 0..31 {
                     cpu.set_x(i, 0x2000);
                 }
                 let before = cpu.clone();
                 let revision = memory.revision();
                 assert!(matches!(
-                    cpu.run_slice(&mut memory, 1),
+                    if cached {
+                        cpu.run_slice(&mut memory, 1)
+                    } else {
+                        cpu.run_reference(&mut memory, 1)
+                    },
                     SliceOutcome::Fault(CpuFault::Memory { .. })
                 ));
                 assert_eq!(cpu.registers, before.registers);

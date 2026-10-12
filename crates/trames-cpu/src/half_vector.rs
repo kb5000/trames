@@ -189,6 +189,44 @@ impl Cpu {
             {
                 return Err(invalid());
             }
+            if !scalar {
+                use trames_compute::VectorFloatOp as V;
+                let op = match unary {
+                    0x0ef8f800 => Some(V::Abs),
+                    0x2ef8f800 => Some(V::Neg),
+                    0x2ef9f800 => Some(V::Sqrt),
+                    0x0ef9d800 => Some(V::ReciprocalEstimate),
+                    0x2ef9d800 => Some(V::ReciprocalSqrtEstimate),
+                    0x0e798800 => Some(V::RoundNearest),
+                    0x0ef98800 => Some(V::RoundPositive),
+                    0x0e799800 => Some(V::RoundNegative),
+                    0x0ef99800 => Some(V::RoundZero),
+                    0x2e798800 => Some(V::RoundAway),
+                    0x2e799800 => Some(V::RoundExact),
+                    0x2ef99800 => Some(V::RoundCurrent),
+                    0x0e79d800 => Some(V::SignedToFloat),
+                    0x2e79d800 => Some(V::UnsignedToFloat),
+                    0x0ef9b800 => Some(V::FloatToSignedZero),
+                    0x2ef9b800 => Some(V::FloatToUnsignedZero),
+                    0x0e79a800 => Some(V::FloatToSignedNearest),
+                    0x2e79a800 => Some(V::FloatToUnsignedNearest),
+                    0x0ef9a800 => Some(V::FloatToSignedPositive),
+                    0x2ef9a800 => Some(V::FloatToUnsignedPositive),
+                    0x0e79b800 => Some(V::FloatToSignedNegative),
+                    0x2e79b800 => Some(V::FloatToUnsignedNegative),
+                    0x0e79c800 => Some(V::FloatToSignedAway),
+                    0x2e79c800 => Some(V::FloatToUnsignedAway),
+                    _ => None,
+                };
+                if let Some(op) = op {
+                    if cfg!(target_arch = "aarch64") || fpcr & (1 << 19) == 0 {
+                        if let Some(value) = trames_compute::vector_float(16, q, op, a, b, old) {
+                            self.vectors[rd] = value;
+                            return Ok(true);
+                        }
+                    }
+                }
+            }
             for i in 0..count {
                 let raw = lane(a, i);
                 let x = HALF.unpack(raw, fpcr, &mut flags);
@@ -319,6 +357,44 @@ impl Cpu {
             {
                 return Err(invalid());
             }
+            if !scalar {
+                use trames_compute::VectorFloatOp as V;
+                let op = match binary {
+                    0x0e401400 => Some(V::Add),
+                    0x0ec01400 => Some(V::Sub),
+                    0x2e401c00 => Some(V::Mul),
+                    0x2e403c00 => Some(V::Div),
+                    0x0e400c00 => Some(V::MultiplyAdd),
+                    0x0ec00c00 => Some(V::MultiplySub),
+                    0x0e403c00 => Some(V::ReciprocalStep),
+                    0x0ec03c00 => Some(V::ReciprocalSqrtStep),
+                    0x0e401c00 => Some(V::MultiplyExtended),
+                    0x2ec01400 => Some(V::AbsoluteDifference),
+                    0x0e403400 => Some(V::Max),
+                    0x0ec03400 => Some(V::Min),
+                    0x0e400400 => Some(V::MaxNumber),
+                    0x0ec00400 => Some(V::MinNumber),
+                    0x2e401400 => Some(V::PairAdd),
+                    0x2e403400 => Some(V::PairMax),
+                    0x2ec03400 => Some(V::PairMin),
+                    0x2e400400 => Some(V::PairMaxNumber),
+                    0x2ec00400 => Some(V::PairMinNumber),
+                    0x0e402400 => Some(V::Equal),
+                    0x2e402400 => Some(V::GreaterEqual),
+                    0x2ec02400 => Some(V::Greater),
+                    0x2e402c00 => Some(V::AbsoluteGreaterEqual),
+                    0x2ec02c00 => Some(V::AbsoluteGreater),
+                    _ => None,
+                };
+                if let Some(op) = op {
+                    if cfg!(target_arch = "aarch64") || fpcr & (1 << 19) == 0 {
+                        if let Some(value) = trames_compute::vector_float(16, q, op, a, b, old) {
+                            self.vectors[rd] = value;
+                            return Ok(true);
+                        }
+                    }
+                }
+            }
             let paired = matches!(
                 binary,
                 0x2e401400 | 0x2e403400 | 0x2ec03400 | 0x2e400400 | 0x2ec00400
@@ -338,8 +414,7 @@ impl Cpu {
                 let value = match binary {
                     0x0e401400 | 0x2e401400 => HALF.add(x, y, mode, fpcr, &mut flags),
                     0x0ec01400 | 0x2ec01400 => {
-                        y.sign = !y.sign;
-                        let value = HALF.add(x, y, mode, fpcr, &mut flags);
+                        let value = HALF.sub(x, y, mode, fpcr, &mut flags);
                         if binary == 0x2ec01400 {
                             value & 0x7fff
                         } else {
@@ -363,6 +438,15 @@ impl Cpu {
                         )
                     }
                     0x0e403c00 | 0x0ec03c00 => {
+                        let op = if binary == 0x0ec03c00 {
+                            trames_compute::FloatOp::ReciprocalSqrtStep
+                        } else {
+                            trames_compute::FloatOp::ReciprocalStep
+                        };
+                        if let Some(value) = trames_compute::scalar(16, op, left, right, 0) {
+                            result |= (value as u128) << (16 * i);
+                            continue;
+                        }
                         let square = binary == 0x0ec03c00;
                         if x.inf && !y.inf && !y.nan && y.sig == 0
                             || y.inf && !x.inf && !x.nan && x.sig == 0

@@ -99,23 +99,19 @@ def main():
     parser.add_argument('--baseline', type=Path, required=True)
     parser.add_argument('--candidate', type=Path, required=True)
     parser.add_argument('--baseline-backend', choices=('reference', 'cached', 'cpp'),
-                        default='reference', help='Backend used by the preserved baseline binary')
+                        default='cached', help='Backend used by the preserved baseline binary')
     parser.add_argument('--vim-store', type=Path, required=True)
     parser.add_argument('--developer-store', type=Path, required=True)
     parser.add_argument('--samples', type=int, default=3)
     parser.add_argument('--workloads', nargs='+', choices=('vim-default', 'python-imports', 'gcc-build-run'),
                         default=['vim-default', 'python-imports', 'gcc-build-run'])
-    parser.add_argument('--include-reference', action='store_true',
-                        help='Also measure the candidate reference backend for attribution')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     assert args.samples >= 1
     configurations = [
         ('baseline-' + args.baseline_backend, args.baseline.resolve(), args.baseline_backend),
-        ('candidate-cached', args.candidate.resolve(), 'cached'),
+        ('candidate-cached', args.candidate.resolve(), None),
     ]
-    if args.include_reference:
-        configurations.insert(1, ('candidate-reference', args.candidate.resolve(), 'reference'))
     results = []
     with tempfile.TemporaryDirectory(prefix='trames-nonjit-') as directory:
         temporary = Path(directory)
@@ -131,8 +127,10 @@ def main():
                     original = args.vim_store if workload == 'vim-default' else args.developer_store
                     shutil.copytree(original, store)
                     command = [str(runner), '--storage', str(store), '--network', 'off',
-                               '--backend', backend, '--metrics', '--max-instructions', '100000000000',
+                               '--metrics', '--max-instructions', '100000000000',
                                '--env', 'HOME=/root', '--env', 'TERM=xterm-256color']
+                    if backend is not None:
+                        command += ['--backend', backend]
                     if workload == 'vim-default':
                         command += ['--pty', '--guest', '/usr/bin/vim', '/tmp/performance-empty.txt']
                         seconds, profile = vim(command)

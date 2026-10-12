@@ -107,7 +107,6 @@ struct SettingsView: View {
     @AppStorage("extraKeys") private var keys = "Esc,Tab,Ctrl-C,Ctrl-D,↑,↓,←,→"
     @AppStorage("useVolumeBudget") private var volume = false
     @AppStorage("bridgeEnabled") private var bridge = true
-    @AppStorage("useCppBackend") private var cpp = false
     @State private var resetConfirmation = false
     var body: some View {
         NavigationStack {
@@ -123,12 +122,6 @@ struct SettingsView: View {
                     Text("剪贴板、打开链接、设备信息及 Files 复制均需逐次允许。关闭后新请求会被拒绝。").font(.caption)
                     if let directories = workspace.directories {
                         NavigationLink("Files 目录授权") { FolderGrantsView(store: directories) }
-                    }
-                }
-                if LocalSession.cppAvailable {
-                    Section("执行后端") {
-                        Toggle("试验性 C++ 整数指令后端", isOn: $cpp)
-                        Text("默认使用 Rust 缓存解释器，无需启用 JIT。C++ 只批量执行支持的整数指令，其余由 Rust 解释；部分工作负载可能更慢，下次打开本地终端生效。").font(.caption)
                     }
                 }
                 Section("后台行为") { Text("进入后台后暂停本地 Linux 并断开 SSH；返回前台后继续本地会话。Files 采用独立副本导入和导出。").font(.caption) }

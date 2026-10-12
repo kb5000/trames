@@ -2,6 +2,10 @@
 
 Version 0.2  •  Rust-first hybrid architecture  •  10 October 2026
 
+The original charter is preserved below. Its dual-executor choice is superseded
+by [ADR-003](decisions/ADR-003-static-native-compute.md), following the owner's
+direction to retain one interpreter and prioritize static native arithmetic.
+
 ## 1. Mission
 
 Trames is a terminal-first iPadOS development environment combining native SSH and an unmodified AArch64 Linux userspace. It targets ordinary developer signing, without jailbreak, JIT entitlements, private APIs or hardware virtualization. It is a userspace compatibility runtime, not a Linux kernel or full-system VM. Product principle: Native where it matters. Compatible by default. Extensible by design.
