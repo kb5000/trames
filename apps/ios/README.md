@@ -83,16 +83,17 @@ membership. The [Sideloadly documentation](https://sideloadly.io/faq) describes
 signing, device trust, Developer Mode and automatic refresh. The current app
 requires iPadOS 17 or newer and does not need JIT activation.
 
-Validated combined update: [0.4.0 (build 5) unsigned IPA artifact](https://github.com/kb5000/trames/actions/runs/38162066629/artifacts/11711540648).
-Reference CPU coverage, standard /root/vda1/eth0 names and checked interpreter
-acceleration are recorded in [0.4.0 validation](../../docs/validation/reference-0.4.md).
+Validated combined update: [0.6.0 (build 7) unsigned IPA artifact](https://github.com/kb5000/trames/actions/runs/38198782482/artifacts/11723974238).
+The default local backend now uses Rust's bounded, generation-tagged decoded code
+pages. No JIT activation is required. [Validation and host benchmarks](../../docs/validation/nonjit-0.6.md)
+record all three Linux backends, seven simulator tests and independent IPA checks.
 Unzip it and sign `Trames-unsigned.ipa` with the same Sideloadly Apple ID/effective
-bundle ID as before. The owner chose fresh Linux data: use Settings > Reset Linux
-after updating, or delete/reinstall the app to clear its private environment and
-native settings. Linux checks and seven simulator tests passed; device behavior
-remains owner acceptance work. The
-artifact is retained until 25 October 2026. The validation record also identifies
-an intermittent native SSH library teardown issue in [#9](https://github.com/kb5000/trames/issues/9).
+bundle ID as before to retain the current Linux environment. No data reset is
+needed for this update. Turn off the optional C++ switch to use the new default
+Rust interpreter; physical iPad performance remains owner acceptance work.
+The IPA artifact is retained until 26 October 2026, 03:23 UTC. The known intermittent
+NIOSSH dependency issue in [#9](https://github.com/kb5000/trames/issues/9) remains open;
+this release's native SSH test passed on its first attempt.
 
 1. Open a successful **iPad frontend** run in the repository's GitHub Actions.
    Download the **Trames-unsigned-sideload** artifact and unzip it on Windows.

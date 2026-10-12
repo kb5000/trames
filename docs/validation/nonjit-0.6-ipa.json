@@ -1,0 +1,26 @@
+{
+  "bundle_id": "org.trames.Trames",
+  "version": "0.6.0",
+  "build": "7",
+  "supported_platforms": [
+    "iPhoneOS"
+  ],
+  "device_family": [
+    1,
+    2
+  ],
+  "minimum_os": "17.0",
+  "architecture": "arm64",
+  "macho_platform": "iOS device",
+  "executable_permission": true,
+  "bytes": 9409356,
+  "sha256": "6cd5633db6ef00b346e0a7fa308b73a64425110d2c91d91371a808f5cdab7277",
+  "files": 36,
+  "device_app_all_files_match": true,
+  "simulator_passed_tests": 7,
+  "simulator_failed_tests": 0,
+  "runtime_commit": "bebc59f9f35d2a129ae60708e08ac26e88dcf917",
+  "apple_run_id": 38198782482,
+  "ipa_artifact_id": 11723974238,
+  "ipa_artifact_expires_at": "2026-10-26T03:23:55Z"
+}

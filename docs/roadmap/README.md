@@ -1,5 +1,7 @@
 # Delivery roadmap
 
+The current static-interpreter update is [0.6.0 non-JIT acceleration](../validation/nonjit-0.6.md),
+with generation-tagged code pages, fast checked memory access and measured real-program improvements.
 Current Linux ABI work is recorded in [M6 compatibility](compatibility-m6.md);
 the CPU profile remains [0.4.0 compatibility](compatibility-0.4.md). Historical gaps are recorded for the
 [released 0.3.0](compatibility-gaps.md) and the

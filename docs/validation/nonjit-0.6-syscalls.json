@@ -1,0 +1,29 @@
+{
+  "scope": "Linux v6.12 native AArch64 numbered entries; entry presence is not full ABI conformance",
+  "entries": 318,
+  "statuses": {
+    "missing": 183,
+    "implemented_subset": 133,
+    "obsolete_stub": 2
+  },
+  "undispatched_probes_per_backend": 185,
+  "backends": [
+    "reference",
+    "cached",
+    "cpp"
+  ],
+  "unhandled_return": -38,
+  "source_sha256": {
+    "crates/trames-core/src/process.rs": "0985a82a7976b40f447d0deba92b2ff20ee0fa518075a1d0e61129617b7e6ebf",
+    "crates/trames-core/src/process_events.rs": "dec56ae21d569c45b56fea987ef297de204b18d875d505ddf878e240ec0ffc63",
+    "crates/trames-linux/src/state.rs": "209db9e53337b723f96fc6809d4c37f3f75eef244aee56bc42c63da56e421b78",
+    "crates/trames-linux/src/network.rs": "88ee4fad4624c0ade1818c77c90b32deafb9ca5293830b8e564b0e6f14255052",
+    "crates/trames-vfs/src/events.rs": "1d9acdcc1936ab773c217917cccbfde1472787cf09802428685510d1bc6a3f46",
+    "crates/trames-vfs/src/ipc.rs": "0be5d6f217b9d36de1d3c7bdac6a4cc56e1b05218cb918af5a307d74ef23435a",
+    "crates/trames-vfs/src/locks.rs": "bfd76ae2d7a69185cfaa863e5de60732e6ed1f0bf954746a2a06f72aca812d9b",
+    "crates/trames-vfs/src/lib.rs": "8b27e7efc9c0e5a3807045316f59d82801484b6aac5c3b0e44a3e8646687faf9",
+    "crates/trames-vfs/src/pseudo.rs": "dca293ac8e6219a8194588e930796f9993e91161899ac6d75bdeac4d69e6be3b",
+    "crates/trames-vfs/src/storage.rs": "0383c2f879de2dc9e0678353128dbe864c0c4cf9e02ba542ae782472da680e90",
+    "crates/trames-memory/src/lib.rs": "77d0576e49e507a9df59f126f3f696fd4fc18a057512bedc13afa1bf998b6b80"
+  }
+}
