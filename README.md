@@ -241,9 +241,11 @@ IPA 已核验 ARM64 设备目标、版本、执行权限及全部 36 个文件�
 补充 statx、preadv/pwritev、close_range（含 CLOEXEC/UNSHARE）及 syslog。
 `dmesg` 可查看未实现系统调用的名称/编号、参数和 PC，以及 CPU 故障的指令编码。
 `/dev/kmsg` 提供共享、有界的会话日志与独立读取游标；日志不写入磁盘，有限流。
-目前已实现子集增至 138 个，未实现降至 178 个，另有 2 个废弃条目。
+进一步补齐共享文件/匿名 mmap、EOF/truncate SIGBUS、msync/mremap/mincore/madvise、
+memfd 与 classic seals、文件复制/批量 I/O，以及单 CPU 的调度/亲和性接口。
+目前已实现子集增至 161 个，未实现降至 155 个，另有 2 个废弃条目。
 这些源码将并入下一次合并更新，已有 0.8.0/build 9 IPA 不包含它们。
-[实现、命令与验证](docs/validation/compatibility-log.md)。
+[系统日志](docs/validation/compatibility-log.md) · [共享映射与 ABI 验证](docs/validation/mmap-coverage.md)。
 
 ## 结构与范围
 
@@ -253,14 +255,14 @@ IPA 已核验 ARM64 设备目标、版本、执行权限及全部 36 个文件�
 | `trames-elf` | ELF64/AArch64 ET_EXEC/ET_DYN、PT_INTERP、PT_LOAD、BSS 和加载偏移校验 |
 | `trames-cpu` | 整数/访存/原子操作、标量与 SIMD 浮点、FPCR/FPSR、TLS/NZCV |
 | `trames-compute` | 数值输入的静态 ARM64 原生运算、可选特性检测、宿主浮点状态恢复 |
-| `trames-linux` | 有状态文件描述符、读写/目录/stat、私有文件／匿名 mmap/brk、flock/getrandom、负 errno、字节流 |
+| `trames-linux` | 有状态文件描述符、读写/目录/stat、私有/共享文件与匿名 mmap/brk、flock/getrandom、负 errno、字节流 |
 | `trames-net` | 有界非阻塞 TCP/UDP、网络能力、宿主错误翻译和就绪等待 |
 | `trames-vfs` | 共享虚拟命名空间、磁盘/内存文件、配额与容量、打开描述与管道 |
 | `trames-core` | ELF/初始栈、进程调度、exec/wait、信号帧、虚拟 PTY |
 | `trames-distro` | 固定 SHA-256 Alpine rootfs、受限归档解析与 VFS 导入 |
 | `trames-cli` | `trames-run`，宿主字节流输出和退出码 |
 
-尚不支持重叠 PT_LOAD 页面、完整 AArch64、SVE、备用信号栈、多个 PTY、非零 VTIME、共享文件 mmap 或映射超过 EOF 的 SIGBUS 语义。线程、vfork 和 futex 已有选定实现；其余 Linux 缺口见[当前清单](docs/roadmap/compatibility-current.md)。未实现的指令明确报告故障，未知系统调用返回 `-ENOSYS`。安全限制及其兼容性影响见 [security](docs/security/README.md)。
+尚不支持重叠 PT_LOAD 页面、完整 AArch64、SVE、备用信号栈、多个 PTY、非零 VTIME、完整需求分页/回收与所有映射扩展。线程、vfork 和 futex 已有选定实现；其余 Linux 缺口见[当前清单](docs/roadmap/compatibility-current.md)。未实现的指令明确报告故障，未知系统调用返回 `-ENOSYS`。安全限制及其兼容性影响见 [security](docs/security/README.md)。
 
 [工程章程](docs/charter.md) · [存储架构](docs/architecture/storage.md) · [路线图](docs/roadmap/README.md) · [存储验证](docs/validation/storage.md) · [BusyBox 构建](docs/testing/busybox.md)
 

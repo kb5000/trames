@@ -490,8 +490,8 @@ impl Default for Entry {
 #[derive(Debug)]
 struct CodePage {
     base: u64,
-    identity: (u64, u64),
-    checked: (u64, u64),
+    identity: (u64, u64, u64),
+    checked: (u64, u64, u64),
     generation: u64,
     instructions: Box<[Entry]>,
 }

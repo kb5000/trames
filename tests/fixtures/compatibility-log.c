@@ -61,7 +61,7 @@ static void log_test(void) {
     CHECK(write(fd,"guest-log-marker",16)==16);
     pid_t child=fork(); CHECK(child>=0);
     if (!child) {
-        CHECK(syscall(SYS_memfd_create,"unimplemented-probe",0)==-1&&errno==ENOSYS);
+        CHECK(syscall(SYS_open_tree,-100,"unimplemented-probe",0)==-1&&errno==ENOSYS);
         CHECK(syscall(10000,1,2,3,4,5,6)==-1&&errno==ENOSYS);
 #ifdef __aarch64__
         __asm__ volatile(".inst 0x2518e3e0" ::: "memory"); // PTRUE: unsupported SVE.
@@ -73,7 +73,7 @@ static void log_test(void) {
     int status; CHECK(waitpid(child,&status,0)==child); CHECK(WIFSIGNALED(status)&&WTERMSIG(status)==SIGILL);
     char data[8192]; int n=klogctl(3,data,sizeof(data)-1); CHECK(n>0); data[n]=0;
     CHECK(strstr(data,"guest-log-marker")&&strstr(data,"syscall=10000(unknown)")&&strstr(data,"0x2518e3e0"));
-    CHECK(strstr(data,"pid=2")&&strstr(data,"syscall=279(memfd_create)"));
+    CHECK(strstr(data,"pid=2")&&strstr(data,"syscall=428(open_tree)"));
     // Linux READ_CLEAR changes snapshots, while /dev/kmsg retains its own cursor.
     CHECK(klogctl(4,data,sizeof(data))>0); CHECK(klogctl(3,data,sizeof(data))==0);
     CHECK(read(fd,data,sizeof(data))>0);

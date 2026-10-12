@@ -1,0 +1,74 @@
+{
+  "date": "2026-10-12",
+  "delivery": "Source follow-up to 0.8.0/build 9; queued for next combined app update, no new IPA",
+  "added_numbered_syscalls": 23,
+  "workspace_tests_passed": 185,
+  "checks": [
+    "fmt",
+    "clippy with warnings denied",
+    "ARM64 release build",
+    "iOS target check"
+  ],
+  "guest_runtime": "actual ARM64 Rust cached interpreter under QEMU 10.0.13",
+  "storage_modes": [
+    "memory",
+    "disk"
+  ],
+  "oracles": {
+    "memory_file_abi": "QEMU aarch64 user 10.0.13 -cpu max",
+    "scheduler": "native Linux kernel; direct syscalls bypass musl public wrapper stubs"
+  },
+  "integration": [
+    "shared file/fd aliases and COW",
+    "shared anonymous and file fork",
+    "EOF/truncate SIGBUS, BUS_ADRERR and exact address",
+    "close/unlink lifetime",
+    "private discard and page remap",
+    "shared-write persistence across store reopen",
+    "memfd and classic seals",
+    "executable aliases and fd-write decoder invalidation",
+    "selected file copy/vector/metadata/scheduler calls",
+    "real BusyBox dmesg diagnostics",
+    "seven existing musl fault handler scenarios",
+    "Python mmap, fork, flush, resize and SQLite"
+  ],
+  "python_installation": "Reused copy of earlier installed signed-package store; fresh install not retested locally. Added to M6 future fresh-install CI workflow.",
+  "regressions": {
+    "m1_qemu_comparisons": 67,
+    "vector_copy_shift_snapshots": 6573,
+    "structure_variants": 615,
+    "m2_qemu_comparisons_per_storage_mode": 24
+  },
+  "binary_sha256": {
+    "target/aarch64-unknown-linux-musl/release/trames-run": "5a3c24b3c69a3857ac83601f4b6dee6fabadbd69a6e831f1921bf5658fa1b043",
+    "tests/fixtures/bin/mmap-coverage": "3a4c6069ac9b4438c6ab2d75d9289304e444311f2e3c70cc0be771560297424a",
+    "tests/fixtures/bin/mmap-coverage-host": "fd8e017aa5eefef188972460623d26d39faef08a312f4888ea3de8ddfea7f9c2"
+  },
+  "source_sha256": {
+    "crates/trames-core/src/process.rs": "8f48b41031b010f6b4f7b2fb4f0cc39fe794b33350c8aa21ed34eba77147538c",
+    "crates/trames-core/src/process_events.rs": "c51f233022e6ff734ac09bc2e07950f00040d760031ec03ccb11d7d35176cb47",
+    "crates/trames-linux/src/state.rs": "8d82b0ad667f1b28b963cb2e4f2c23359c0583c045059e61ad76ecf4e73bdbc5",
+    "crates/trames-linux/src/network.rs": "88ee4fad4624c0ade1818c77c90b32deafb9ca5293830b8e564b0e6f14255052",
+    "crates/trames-linux/src/file_calls.rs": "f0f3ec111b45a9514e205aa62af462f5faea4a45c13daf01e67e6f47af00c940",
+    "crates/trames-vfs/src/events.rs": "9f0497186e118a9cc947f8b9637f4af78142221bf557dd93fff7f8cc52e5c873",
+    "crates/trames-vfs/src/ipc.rs": "70359a41d4fcb60dc16f533878bff4297af9f9ada07fe2243d444766354c9dea",
+    "crates/trames-vfs/src/locks.rs": "bfd76ae2d7a69185cfaa863e5de60732e6ed1f0bf954746a2a06f72aca812d9b",
+    "crates/trames-vfs/src/lib.rs": "dad864b4e7d6ca745d863770c0292753efe3b56b5d3d1ef2eaee3cbb72a78236",
+    "crates/trames-vfs/src/pseudo.rs": "e66d5cfd5c0a4126b8c57efaf820cae1665a53b90d7bd4576cd77002b727cf89",
+    "crates/trames-vfs/src/storage.rs": "8c421897e2c195d69029ec898c417ad65dc9d3bc176dbdaef63631cf9e1927b7",
+    "crates/trames-vfs/src/kernel_log.rs": "6968f1aed1efa9688c0e2ffd122fd381e56ee7514788e7b2eaf047429069f190",
+    "crates/trames-vfs/src/syscall_names.rs": "3fa0cb4f8a3cc71f32f37dcfff68b70fb1da60ec36b9a005024559a3bcb363bc",
+    "crates/trames-memory/src/lib.rs": "0ee83f7d94e18560b1af43d2f47147abe2a7b379c4dc950b6f777d22292ace2c",
+    "crates/trames-memory/src/backing.rs": "e62e610a390114876d944e1efc06014ddc726437f154b51714f992df34bfce9a",
+    "crates/trames-vfs/src/mapped.rs": "2f9ca132edb4342200002dab32e29e81efe97e05fee48d659f1f376d1ba24016",
+    "crates/trames-vfs/src/memfd.rs": "f3e7baf02c28e450483bd1e51d47c5c2b0da1181c9342a4605e6e2c2aedc3752",
+    "crates/trames-vfs/src/namespace.rs": "ed19a408f92d982b444edb7e768f8ede03d4b48c2f3ad65952257fa5069fe93e",
+    "crates/trames-vfs/src/credentials.rs": "9562a2e4eff0b695ed712b22bcdbb9983df30d24ac84c9253edd2e768ac8ead1"
+  },
+  "syscall_inventory": {
+    "missing": 155,
+    "implemented_subset": 161,
+    "obsolete_stub": 2
+  },
+  "physical_ipad_tested": false
+}

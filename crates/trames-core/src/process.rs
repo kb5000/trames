@@ -602,6 +602,14 @@ impl Kernel {
             } => (*signal, *code, *pc),
             F::Instruction { pc, .. } => (4, 1, *pc),
             F::Memory {
+                error: M::Bus(address),
+                ..
+            } => (7, 2, *address),
+            F::Memory {
+                error: M::BackingIo(_),
+                pc,
+            } => (7, 3, *pc),
+            F::Memory {
                 error: M::Alignment(address),
                 ..
             } => (7, 1, *address),
@@ -973,6 +981,62 @@ impl Kernel {
                     self.exit(pid, p, (a[0] as u8 as i32) << 8);
                 }
                 Ok(None)
+            }
+            118..=123 => {
+                if (a[0] as u32 as i32) < 0 {
+                    return Err(Errno(22));
+                }
+                let target = if a[0] as u32 == 0 || a[0] as u32 == pid {
+                    &*p
+                } else {
+                    self.processes
+                        .get(&(a[0] as u32))
+                        .filter(|p| !matches!(p.state, State::Zombie(_)))
+                        .ok_or(Errno(3))?
+                };
+                if matches!(number, 118 | 119 | 122)
+                    && p.linux.vfs.credentials.euid != 0
+                    && p.linux.vfs.credentials.euid != target.linux.vfs.credentials.uid
+                    && p.linux.vfs.credentials.euid != target.linux.vfs.credentials.euid
+                {
+                    return Err(Errno(1));
+                }
+                match number {
+                    118 | 119 => {
+                        let pointer = if number == 118 { a[1] } else { a[2] };
+                        let priority = read_u32(&p.memory, pointer)? as i32;
+                        if number == 119 && a[1] as u32 != 0 {
+                            return Err(Errno(95));
+                        }
+                        if priority != 0 {
+                            return Err(Errno(22));
+                        }
+                        Ok(Some(0)) // The single virtual CPU runs SCHED_OTHER only.
+                    }
+                    120 => Ok(Some(0)),
+                    121 => {
+                        Linux::check(&p.memory, a[1], 4, Access::Write)?;
+                        p.memory.write(a[1], &[0; 4]).map_err(|_| Errno(14))?;
+                        Ok(Some(0))
+                    }
+                    122 => {
+                        if a[1] == 0 {
+                            return Err(Errno(22));
+                        }
+                        Linux::check(&p.memory, a[2], a[1].min(8) as usize, Access::Read)?;
+                        if p.memory.read_array::<1>(a[2]).map_err(|_| Errno(14))?[0] & 1 == 0 {
+                            return Err(Errno(22));
+                        }
+                        Ok(Some(0))
+                    }
+                    _ => {
+                        if a[1] < 8 {
+                            return Err(Errno(22));
+                        }
+                        write_u64(&mut p.memory, a[2], 1)?;
+                        Ok(Some(8))
+                    }
+                }
             }
             436 => {
                 let (first, last, flags) = (a[0] as u32, a[1] as u32, a[2] as u32);
@@ -1469,7 +1533,7 @@ impl Kernel {
                 if ((raw == error(Errno(11))
                     && matches!(
                         number,
-                        63 | 64 | 65 | 66 | 202 | 242 | 206 | 207 | 211 | 212
+                        63 | 64 | 65 | 66 | 71 | 202 | 242 | 206 | 207 | 211 | 212
                     )
                     && !per_call_nonblock)
                     || (raw == error(Errno(115)) && number == 203)
@@ -1499,7 +1563,7 @@ impl Kernel {
         p.linux.vfs.set_lock_owner(p.tgid);
         let proc_path = match number {
             43 | 221 => Some((trames_vfs::AT_FDCWD, a[0])),
-            48 | 56 | 78 | 79 | 291 | 439 => Some((a[0] as i32, a[1])),
+            48 | 56 | 78 | 79 | 291 | 437 | 439 | 452 => Some((a[0] as i32, a[1])),
             _ => None,
         };
         let reads_proc = proc_path.is_some_and(|(dirfd, address)| {
@@ -1549,7 +1613,7 @@ impl Kernel {
             }
         };
         let signal_pipe = match number {
-            64 | 66 => true,
+            64 | 66 | 71 => true,
             206 => a[3] & 0x4000 == 0,
             211 => a[2] & 0x4000 == 0,
             _ => false,

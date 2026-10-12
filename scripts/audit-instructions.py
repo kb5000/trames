@@ -186,7 +186,7 @@ def main():
         writer.writerows(rows)
     hwcap, hwcap2, features = subprocess.check_output([str(args.probe), '--features'], text=True).strip().split(' ', 2)
     sources = sorted((ROOT/'crates/trames-cpu/src').glob('*.rs')) + sorted((ROOT/'crates/trames-compute/src').glob('*.rs'))
-    sources += [ROOT/'crates/trames-memory/src/lib.rs', ROOT/'crates/trames-core/src/process_events.rs',
+    sources += [ROOT/'crates/trames-memory/src/lib.rs', ROOT/'crates/trames-memory/src/backing.rs', ROOT/'crates/trames-core/src/process_events.rs',
                 ROOT/'crates/trames-core/src/process.rs', ROOT/'crates/trames-core/src/lib.rs']
     report = dict(scope=f'{len(rows)} representative encodings; decode acceptance, not exhaustive ISA conformance',
                   statuses=dict(Counter(r['cached'] for r in rows)), profiles=dict(Counter(r['profile'] for r in rows)),

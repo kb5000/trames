@@ -61,8 +61,9 @@ EL1/EL2 and full-system emulation remain outside this userspace runtime.
 
 [CSV](instruction-coverage-current.csv) and
 [metadata](instruction-coverage-current.json) are regenerated for current source,
-including runtime fingerprints changed by the [file/log follow-up](compatibility-log.md);
-the CPU decode counts and implementation are unchanged by that follow-up. They contain representative encodings,
+including runtime fingerprints changed by the [file/log follow-up](compatibility-log.md)
+and [shared mapping/ABI work](mmap-coverage.md). Decode counts and arithmetic instructions
+are unchanged; shared-file code coherence extends decoder page tokens. They contain representative encodings,
 decode results, compatibility profiles, hardware capability constants and source
 SHA-256 fingerprints. They extend the preserved 418-sample 0.7 inventory and
 compare single-step acceptance with the cached executor. MOPS probes supply a

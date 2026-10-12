@@ -17,10 +17,11 @@ Unix ancillary messages or SVE architectural state.
 | close_range (436) | Inclusive fd range, CLOEXEC and UNSHARE; the scheduler separates CLONE_FILES views before changing the caller's descriptor table. Work is bounded by existing guest fds, including when last is UINT_MAX |
 | syslog/klogctl (116) | CLOSE/OPEN, READ, READ_ALL, READ_CLEAR, CLEAR, SIZE_UNREAD, SIZE_BUFFER. Effective guest UID 0 required. Console-control actions are unsupported; this never accesses the host kernel log |
 
-The refreshed Linux v6.12 AArch64 inventory has 138 implemented subsets, 178
+That batch had 138 implemented subsets in the Linux v6.12 AArch64 inventory, 178
 missing entries and 2 obsolete entries. All 180 undispatched numbers returned
 ENOSYS on the actual ARM64 release build. Entry presence is not full ABI conformance.
-See [CSV](compatibility-current-syscalls.csv) and [source fingerprints](compatibility-current-syscalls.json).
+The subsequent [shared mapping/ABI batch](mmap-coverage.md) updates those totals.
+See the regenerated [CSV](compatibility-current-syscalls.csv) and [source fingerprints](compatibility-current-syscalls.json).
 
 ## Guest log behavior
 

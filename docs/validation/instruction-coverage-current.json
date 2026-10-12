@@ -16,7 +16,7 @@
   "hwcap2": 8813273014656,
   "feature_names": "fp asimd aes pmull sha1 sha2 crc32 atomics fphp asimdhp asimdrdm jscvt lrcpc fcma sha3 sm3 sm4 asimddp sha512 asimdfhm ilrcpc flagm sb flagm2 frint i8mm bf16 dgh rng cssc mops",
   "source_sha256": {
-    "crates/trames-cpu/src/cached.rs": "a9219923fcdc18663a38f1157e60a89dc7cdde33929814bbb9c3cc0bf9d9ef86",
+    "crates/trames-cpu/src/cached.rs": "a3ab3f5e09d7eadd11fb4f2969557c6e0c790cdfe45fefca89adb4184137d0d5",
     "crates/trames-cpu/src/compatibility.rs": "a20b25d9dd922fe447bb3bf75436aece24c553a74e124306d1ca51e97073ef48",
     "crates/trames-cpu/src/crypto.rs": "9242d5e341f7ec5d2246d32e6f2215cbd7b46888426540101c23eaf3f0e2558a",
     "crates/trames-cpu/src/extended.rs": "41c0e7fcc84ff58eda30b82c163c9044451b77daab7142005599d56d1a2af85b",
@@ -35,9 +35,10 @@
     "crates/trames-compute/src/arm.rs": "8db8e7dd09132ab299f68e153838b4a25d50ade7d54197414470e03915198fb6",
     "crates/trames-compute/src/lib.rs": "a4ae43536977bb85d96a7da7c28564667c5bdb0ba8c98395fbf76e2db6749a2d",
     "crates/trames-compute/src/x86.rs": "62168f148b1ffe4fadf89bceabd2441ee4fd1026b1873acd66779e2fbdf1cba2",
-    "crates/trames-memory/src/lib.rs": "391c2b5902955facfd8a3a57b57e7196c9eddaa9b2f694ca3c179cb8d72789f9",
+    "crates/trames-memory/src/lib.rs": "0ee83f7d94e18560b1af43d2f47147abe2a7b379c4dc950b6f777d22292ace2c",
+    "crates/trames-memory/src/backing.rs": "e62e610a390114876d944e1efc06014ddc726437f154b51714f992df34bfce9a",
     "crates/trames-core/src/process_events.rs": "c51f233022e6ff734ac09bc2e07950f00040d760031ec03ccb11d7d35176cb47",
-    "crates/trames-core/src/process.rs": "ebaa42716445fdc0cdcfac6752811163c7fb9b80001992e330ebf52a139f9c6f",
+    "crates/trames-core/src/process.rs": "8f48b41031b010f6b4f7b2fb4f0cc39fe794b33350c8aa21ed34eba77147538c",
     "crates/trames-core/src/lib.rs": "b12f2142173745125492cdcbac160d7cfb24975a7598e33eebf1f927abb4f592"
   }
 }

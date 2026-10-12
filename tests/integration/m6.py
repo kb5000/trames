@@ -137,6 +137,10 @@ def main():
             for executable in ('git', 'python3', 'gcc', 'clang-19', 'make', 'cmake'):
                 out, err = run(['--guest', '/usr/bin/' + executable, '--version'])
                 print(executable, out.splitlines()[0].decode(), flush=True)
+            mmap_script = '/mmap-check-' + tmp.name + '.py'
+            out, err = run(['--file', mmap_script + '=' + str(ROOT / 'tests/fixtures/mmap-python.py'), '--guest', '/usr/bin/python3', mmap_script])
+            assert out == b'python-mmap-sqlite-ok\n' and not err, (out, err)
+            print('Python mmap/fork/resize and SQLite mmap workflow: ok', flush=True)
             out, err = run(['--guest', '/bin/sh', '-c', '''
 if ! id developer >/dev/null 2>&1; then adduser -D -h /home/developer developer; fi
 printf private >/root/m6-private; chmod 600 /root/m6-private
