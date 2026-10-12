@@ -122,11 +122,21 @@ CPU 基准，尚不是 iPad 实测速率。
 
 ## 验证
 
+以下 Linux 流程需要 AArch64 交叉 GCC/Binutils 和 QEMU 10.0.13。
+浮点、SIMD、libm 差分使用实际 ARM64 构建，避免把 x86 开发机的原生 NaN/异常差异
+当作 ARM 指令错误；完整包安装和开发工具流程使用开发主机构建。
+
 ```sh
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo build --workspace --locked
 cargo test --workspace --locked
+bash scripts/build-qemu-oracle.sh
+export PATH="$PWD/target/qemu-oracle/bin:$PATH"
+rustup target add aarch64-unknown-linux-musl --toolchain 1.90.0
+CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-gnu-gcc \
+  cargo build -p trames-cli --target aarch64-unknown-linux-musl --release --locked
+export TRAMES_RUNNER="$PWD/tests/differential/arm-runner.sh"
 python3 tests/differential/run.py
 python3 tests/differential/m1.py
 python3 tests/differential/floating.py
@@ -157,7 +167,7 @@ python3 tests/integration/m3.py
 python3 tests/integration/virtual-network.py
 python3 tests/integration/linux-compat.py
 python3 tests/integration/embedding.py
-python3 tests/integration/python.py
+TRAMES_RUNNER="$PWD/target/release/trames-run" python3 tests/integration/python.py
 python3 tests/differential/frint_rcpc.py
 python3 tests/differential/coverage_extensions.py
 bash scripts/build-cpu-fixtures.sh
@@ -211,14 +221,20 @@ LDAPUR/STLUR 等带偏移的 acquire/release 访存。单步参考实现继续�
 显式尾调用已做 Clang/iOS arm64 原型；合成测试较慢，因此默认后端继续使用 Rust 循环分派。
 [设计](docs/architecture/nonjit.md) · [尾调用研究](docs/architecture/tail-dispatch.md) · [性能与发布验证](docs/validation/nonjit-0.7.md)。
 
-## 结构与范围
+## 指令扩展与原生运算（0.8.0 / build 9）
+
+[下载已核验的 0.8.0/build 9 unsigned IPA](https://github.com/kb5000/trames/actions/runs/38236217045/artifacts/11741258008)，
+解压后使用相同 Apple ID／有效 bundle ID 的 Windows Sideloadly 覆盖安装，保留 Linux 数据。
 
 当前 0.8.0/build 9 源码已统一为一个 Rust 缓存解释器，移除 C++ 与尾调用原型。
 浮点、SIMD 和密码运算优先执行静态 ARM64 原生指令，仍无需 JIT。
 本轮增加 CSSC、BF16、复数与扩展乘加、SHA512/SHA3/SM3/SM4、MOPS 和更多访存指令；
 PAC/BTI/MTE 按功能兼容策略处理，实际跳转、访存、写回和清零仍执行。
-CPU 故障可交给 Linux 信号处理器恢复。新安装包验证尚未完成；上面的 0.7 下载仍是历史版本。
+CPU 故障可交给 Linux 信号处理器恢复。完整 Linux CI 与七项 iPad 模拟器测试通过；
+IPA 已核验 ARM64 设备目标、版本、执行权限及全部 36 个文件。真机速度仍需实际测量。
 [指令范围与验证](docs/validation/instruction-coverage.md) · [当前编码清单](docs/validation/instruction-coverage-current.csv)。
+
+## 结构与范围
 
 | crate | 当前职责 |
 | --- | --- |

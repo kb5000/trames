@@ -1,0 +1,22 @@
+{
+  "bundle_id": "org.trames.Trames",
+  "version": "0.8.0",
+  "build": "9",
+  "supported_platforms": [
+    "iPhoneOS"
+  ],
+  "device_family": [
+    1,
+    2
+  ],
+  "minimum_os": "17.0",
+  "architecture": "arm64",
+  "macho_platform": "iOS device",
+  "executable_permission": true,
+  "bytes": 9427233,
+  "sha256": "d9c8513c286f89962f58d48f0343579a69ed58c487d7a7df61e3e176cc51a675",
+  "files": 36,
+  "device_app_all_files_match": true,
+  "simulator_passed_tests": 7,
+  "simulator_failed_tests": 0
+}

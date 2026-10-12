@@ -5,7 +5,7 @@ Rust cached interpreter. Floating-point, SIMD and crypto compute uses static
 ARM64 instructions first, without JIT. The optional C++ executor, tail-dispatch
 prototype, runtime selectors and build features are removed. Embedding ABI is
 now 3; Cargo/iOS version is 0.8.0, iOS build 9. The earlier 0.7/build 8 artifact
-does not contain these changes. New device-artifact validation is pending.
+does not contain these changes. Both complete CI workflows and new device-artifact validation pass.
 
 ## Implemented additions
 
@@ -131,3 +131,37 @@ These are Linux x86_64 development-host timings with warm host caches and the
 host-specific compute helper. They are a small regression/performance observation,
 not proof of ARM64 iPad gains or maximum non-JIT throughput. No physical iPad
 measurements were made. This batch prioritizes instruction functionality.
+
+## Verified combined delivery
+
+Runtime source: `5d6f1076297385a0d120ff68b02a8c759d3a0db2`.
+[Linux CI](https://github.com/kb5000/trames/actions/runs/38236217253) and
+[Apple CI](https://github.com/kb5000/trames/actions/runs/38236217045) both pass
+on that exact commit. [CI and artifact metadata](instruction-0.8-ci.json).
+
+The complete Linux run includes actual ARM64 instruction/libm/fault/ABI checks,
+network/storage/PTY endpoints, signed apk authentication, fresh Python install
+and repair with 128 host descriptors, and fresh signed Git/Python/GCC/Clang/
+Make/CMake/htop installation plus complete developer workflows. The long package
+and tool workflows use the x86_64 development-host executable; strict numerical
+and instruction comparisons use the ARM64 build under QEMU. Guest-produced
+AArch64 binaries also execute independently under QEMU. No ISA criterion was
+relaxed to accommodate native x86 NaN differences.
+
+The simulator report records seven passes, zero failures/skips on arm64 iPad Pro
+11-inch (M4), iOS 18.5; [actual test summary](instruction-0.8-simulator.json).
+Native SSH PTY/SFTP checks also pass. The known intermittent upstream NIOSSH
+issue and physical-device acceptance remain separate work.
+
+[Download 0.8.0/build 9 unsigned IPA](https://github.com/kb5000/trames/actions/runs/38236217045/artifacts/11741258008).
+The extracted IPA is 9,427,233 bytes with SHA-256
+`d9c8513c286f89962f58d48f0343579a69ed58c487d7a7df61e3e176cc51a675`.
+It retains `org.trames.Trames`, iPadOS minimum 17, and v3 disk data. The ARM64
+Mach-O targets the iOS device platform and retains executable permission.
+All 36 IPA files match the actual device `.app` artifact, and the artifact/IPA
+checksums match. [Verification](instruction-0.8-ipa.json).
+
+Unzip the artifact and use Windows Sideloadly with the same Apple ID/effective
+bundle ID to preserve data. This is one combined install update. No data reset,
+new signing entitlement or JIT activation is required. Simulator tests and Linux
+host measurements do not establish physical iPad throughput.

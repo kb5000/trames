@@ -1,0 +1,527 @@
+{
+  "runtime_commit": "5d6f1076297385a0d120ff68b02a8c759d3a0db2",
+  "runtime_tree": "e3d3e0692efcade18368d053db08b1d5264c07ec",
+  "workflows": [
+    {
+      "id": 38236217253,
+      "name": "Linux runtime",
+      "head_sha": "5d6f1076297385a0d120ff68b02a8c759d3a0db2",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1,
+      "url": "https://github.com/kb5000/trames/actions/runs/38236217253",
+      "created_at": "2026-10-12T10:25:21Z",
+      "updated_at": "2026-10-12T10:37:46Z",
+      "jobs": [
+        {
+          "id": 114767428954,
+          "name": "runtime",
+          "status": "completed",
+          "conclusion": "success",
+          "run_id": 38236217253,
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2
+            },
+            {
+              "name": "Run dtolnay/rust-toolchain@stable",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3
+            },
+            {
+              "name": "Install independent AArch64 oracle and cross assembler",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4
+            },
+            {
+              "name": "Run actions/cache@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5
+            },
+            {
+              "name": "Build pinned independent QEMU oracle",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 6
+            },
+            {
+              "name": "Run cargo fmt --all --check",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 7
+            },
+            {
+              "name": "Run cargo clippy --workspace --all-targets --all-features --locked -- -D warnings",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8
+            },
+            {
+              "name": "Run cargo build --workspace --all-features --locked",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 9
+            },
+            {
+              "name": "Run cargo test --workspace --all-features --locked",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 10
+            },
+            {
+              "name": "Compile core and both network backends for iOS (no SDK link or device test)",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 11
+            },
+            {
+              "name": "Execute ARM64 native compute helpers under the independent oracle",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 12
+            },
+            {
+              "name": "Run python3 tests/differential/run.py",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 13
+            },
+            {
+              "name": "Run python3 tests/differential/m1.py",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 14
+            },
+            {
+              "name": "Run python3 tests/differential/floating.py",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 15
+            },
+            {
+              "name": "Run python3 tests/differential/vector_floating.py",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 16
+            },
+            {
+              "name": "Run python3 tests/differential/structures.py",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 17
+            },
+            {
+              "name": "Run python3 tests/differential/pairwise_integer.py",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 18
+            },
+            {
+              "name": "Run python3 tests/differential/widening_integer.py",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 19
+            },
+            {
+              "name": "Run python3 tests/differential/vector_copy_shift.py",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 20
+            },
+            {
+              "name": "Run python3 tests/differential/vector_integer.py",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 21
+            },
+            {
+              "name": "Run python3 tests/differential/atomics_crc.py",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 22
+            },
+            {
+              "name": "Run python3 tests/differential/half_floating.py",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 23
+            },
+            {
+              "name": "Run python3 tests/differential/crypto.py",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 24
+            },
+            {
+              "name": "Run python3 tests/differential/modern.py",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 25
+            },
+            {
+              "name": "Run python3 tests/differential/frint_rcpc.py",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 26
+            },
+            {
+              "name": "Run python3 tests/differential/coverage_extensions.py",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 27
+            },
+            {
+              "name": "Cross-build pinned musl and static BusyBox",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 28
+            },
+            {
+              "name": "Compare actual musl CPU fault handlers and context recovery",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 29
+            },
+            {
+              "name": "Run python3 tests/integration/busybox.py",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 30
+            },
+            {
+              "name": "Run bash scripts/build-m2-fixtures.sh",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 31
+            },
+            {
+              "name": "Run python3 tests/integration/m2.py",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 32
+            },
+            {
+              "name": "Run python3 tests/integration/terminal.py",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 33
+            },
+            {
+              "name": "Run bash scripts/build-storage-fixtures.sh",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 34
+            },
+            {
+              "name": "Run python3 tests/integration/storage.py",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 35
+            },
+            {
+              "name": "Run bash scripts/build-network-fixtures.sh",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 36
+            },
+            {
+              "name": "Run bash scripts/build-virtual-network-fixtures.sh",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 37
+            },
+            {
+              "name": "Run bash scripts/build-linux-compat-fixtures.sh",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 38
+            },
+            {
+              "name": "Compare native loopback sockets and real musl DNS with QEMU",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 39
+            },
+            {
+              "name": "Run python3 tests/integration/m2.py",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 40
+            },
+            {
+              "name": "Run python3 tests/integration/terminal.py",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 41
+            },
+            {
+              "name": "Prepare pinned Alpine and dynamic fixtures",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 42
+            },
+            {
+              "name": "Run cargo build --release --workspace --all-features --locked",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 43
+            },
+            {
+              "name": "Validate dynamic Alpine, HTTPS trust and signed apk installation",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 44
+            },
+            {
+              "name": "Validate virtual packet fabric, guest ABI and Alpine HTTPS gateway",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 45
+            },
+            {
+              "name": "Validate Linux endpoints, musl threads, ICMP and real Vim editing",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 46
+            },
+            {
+              "name": "Exercise the embedding ABI with real Alpine PTY and disk streams",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 47
+            },
+            {
+              "name": "Signed Python install, repair and execution with 128 host descriptors",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 48
+            },
+            {
+              "name": "Compare M6 events, local IPC, POSIX locks and FIFO semantics with QEMU",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 49
+            },
+            {
+              "name": "Signed developer tools and complete guest workflows on a fresh persistent store",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 50
+            },
+            {
+              "name": "Run actions/upload-artifact@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 51
+            },
+            {
+              "name": "Post Run actions/cache@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 101
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 102
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 103
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 38236217045,
+      "name": "iPad frontend",
+      "head_sha": "5d6f1076297385a0d120ff68b02a8c759d3a0db2",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1,
+      "url": "https://github.com/kb5000/trames/actions/runs/38236217045",
+      "created_at": "2026-10-12T10:25:21Z",
+      "updated_at": "2026-10-12T10:39:57Z",
+      "jobs": [
+        {
+          "id": 114767428032,
+          "name": "apple-build",
+          "status": "completed",
+          "conclusion": "success",
+          "run_id": 38236217045,
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2
+            },
+            {
+              "name": "Run dtolnay/rust-toolchain@stable",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3
+            },
+            {
+              "name": "Build native Rust embedding library",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4
+            },
+            {
+              "name": "Test native SSH PTY and SFTP against OpenSSH",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5
+            },
+            {
+              "name": "Generate Xcode project",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 6
+            },
+            {
+              "name": "Link unsigned iPad simulator app",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 7
+            },
+            {
+              "name": "Link unsigned iPad device app",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8
+            },
+            {
+              "name": "Test viewport, native consent, real gateway DNS/HTTPS and lifecycle in iPad simulator",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 9
+            },
+            {
+              "name": "Export simulator test summary",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 10
+            },
+            {
+              "name": "Package unsigned device IPA for sideload signing",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 11
+            },
+            {
+              "name": "Run actions/upload-artifact@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 12
+            },
+            {
+              "name": "Run actions/upload-artifact@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 13
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 26
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 27
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": 11741258008,
+      "name": "Trames-unsigned-sideload",
+      "size_in_bytes": 9292115,
+      "url": "https://api.github.com/repos/kb5000/trames/actions/artifacts/11741258008",
+      "archive_download_url": "https://api.github.com/repos/kb5000/trames/actions/artifacts/11741258008/zip",
+      "expired": false,
+      "created_at": "2026-10-12T10:39:32Z",
+      "expires_at": "2026-10-26T10:39:30Z",
+      "updated_at": "2026-10-12T10:39:32Z",
+      "digest": "sha256:9babf851d154fffb2ecf04d5bb8f942dff3887c8f73dabb7f35133dcf4d006eb",
+      "workflow_run": {
+        "id": 38236217045,
+        "repository_id": 1413044949,
+        "head_repository_id": 1413044949,
+        "head_branch": "main",
+        "head_sha": "5d6f1076297385a0d120ff68b02a8c759d3a0db2"
+      }
+    },
+    {
+      "id": 11741078296,
+      "name": "unsigned-ipad-build-and-project",
+      "size_in_bytes": 31964682,
+      "url": "https://api.github.com/repos/kb5000/trames/actions/artifacts/11741078296",
+      "archive_download_url": "https://api.github.com/repos/kb5000/trames/actions/artifacts/11741078296/zip",
+      "expired": false,
+      "created_at": "2026-10-12T10:39:36Z",
+      "expires_at": "2026-10-19T10:39:32Z",
+      "updated_at": "2026-10-12T10:39:36Z",
+      "digest": "sha256:19e4f3592f9d143812cad95311f1e25693c7573a4941caeeef68dad04bafc014",
+      "workflow_run": {
+        "id": 38236217045,
+        "repository_id": 1413044949,
+        "head_repository_id": 1413044949,
+        "head_branch": "main",
+        "head_sha": "5d6f1076297385a0d120ff68b02a8c759d3a0db2"
+      }
+    },
+    {
+      "id": 11741352545,
+      "name": "runtime-evidence",
+      "size_in_bytes": 1647,
+      "url": "https://api.github.com/repos/kb5000/trames/actions/artifacts/11741352545",
+      "archive_download_url": "https://api.github.com/repos/kb5000/trames/actions/artifacts/11741352545/zip",
+      "expired": false,
+      "created_at": "2026-10-12T10:37:43Z",
+      "expires_at": "2027-01-10T10:25:22Z",
+      "updated_at": "2026-10-12T10:37:43Z",
+      "digest": "sha256:93f0f9196b7e912261e4f18959800f3c4474c8ddc6c02d7d4c4dd6d5936383ba",
+      "workflow_run": {
+        "id": 38236217253,
+        "repository_id": 1413044949,
+        "head_repository_id": 1413044949,
+        "head_branch": "main",
+        "head_sha": "5d6f1076297385a0d120ff68b02a8c759d3a0db2"
+      }
+    }
+  ],
+  "validation_configuration_corrections": [
+    "Explicit +cssc for Ubuntu Binutils 2.42; all new differential tests and identical decode inventory verified with that exact assembler.",
+    "M2 strict libm comparisons use the ARM64 runner. Long package/tool workflows use the development-host executable. Runtime and iPad source files did not change."
+  ]
+}

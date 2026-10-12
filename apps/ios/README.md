@@ -83,18 +83,21 @@ membership. The [Sideloadly documentation](https://sideloadly.io/faq) describes
 signing, device trust, Developer Mode and automatic refresh. The current app
 requires iPadOS 17 or newer and does not need JIT activation.
 
-Validated combined update: [0.7.0 (build 8) unsigned IPA artifact](https://github.com/kb5000/trames/actions/runs/38205290951/artifacts/11727840985).
-The default local backend uses Rust's bounded two-way decoded code pages, page
-tokens and warmed flags/branch pairs. FRINTTS and LRCPC2 are supported in every
-backend. No JIT activation is required. [Validation and host benchmarks](../../docs/validation/nonjit-0.7.md)
-record all three Linux backends, seven simulator tests and independent IPA checks.
+Validated combined update: [0.8.0 (build 9) unsigned IPA artifact](https://github.com/kb5000/trames/actions/runs/38236217045/artifacts/11741258008).
+The local runtime now has one Rust cached interpreter with static ARM64 native
+compute and embedding ABI 3. No JIT activation is required. Expanded CPU coverage,
+explicit PAC/BTI/zero-tag compatibility, synchronous Linux CPU signals and the
+removed C++/tail-dispatch executors are recorded in
+[the coverage and delivery evidence](../../docs/validation/instruction-coverage.md).
+Both Linux and Apple CI passed on the delivered source; all seven simulator tests
+passed, and all 36 IPA files match the actual device app build.
 Unzip it and sign `Trames-unsigned.ipa` with the same Sideloadly Apple ID/effective
 bundle ID as before to retain the current Linux environment. No data reset is
-needed for this update. Turn off the optional C++ switch to use the new default
-Rust interpreter; physical iPad performance remains owner acceptance work.
-The IPA artifact is retained until 26 October 2026, 05:05 UTC. The known intermittent
-NIOSSH dependency issue in [#9](https://github.com/kb5000/trames/issues/9) remains open;
-this release's native SSH test passed on its first attempt.
+needed. Physical iPad performance remains owner acceptance work.
+Artifacts are retained for 14 days. The known intermittent NIOSSH dependency
+issue in [#9](https://github.com/kb5000/trames/issues/9) remains open; this build's
+native SSH test passed. Historical 0.7 measurements are preserved in
+[the earlier record](../../docs/validation/nonjit-0.7.md).
 
 1. Open a successful **iPad frontend** run in the repository's GitHub Actions.
    Download the **Trames-unsigned-sideload** artifact and unzip it on Windows.
@@ -152,8 +155,7 @@ The local runtime now has one Rust interpreter and no execution-backend switch.
 Native arithmetic helpers compile only the ARM64 implementation into the iPad
 app. The x86_64 helper supports the development/CI host; Linux guests remain
 AArch64. See [the interpreter design](../../docs/architecture/nonjit.md).
-Current source is 0.8.0/build 9 with embedding ABI 3. The released 0.7 artifact
-described above predates this source change. The expanded CPU profile and explicit
+Current source is 0.8.0/build 9 with embedding ABI 3. The historical 0.7 release predates this source architecture. The expanded CPU profile and explicit
 PAC/BTI/tag compatibility are recorded in
 [the coverage evidence](../../docs/validation/instruction-coverage.md).
 
