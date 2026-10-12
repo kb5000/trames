@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Version 2 embedding ABI. All v1 functions retain their signatures/semantics.
+//! Version 3 embedding ABI. Retained v1 functions keep their signatures/semantics.
 //! All runtime/VFS objects stay on their owning worker. Only bounded byte copies
 //! require unsafe code; callers own and keep their C buffers valid for each call.
 mod session;

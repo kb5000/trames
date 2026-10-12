@@ -236,7 +236,7 @@ IPA 已核验 ARM64 设备目标、版本、执行权限及全部 36 个文件�
 [当前 CPU/Linux 剩余缺口](docs/roadmap/compatibility-current.md) ·
 [系统调用清单](docs/validation/compatibility-current-syscalls.csv)。
 
-## 后续源码：文件接口与系统日志
+## 文件接口、共享映射与系统日志（0.9.0 / build 10）
 
 补充 statx、preadv/pwritev、close_range（含 CLOEXEC/UNSHARE）及 syslog。
 `dmesg` 可查看未实现系统调用的名称/编号、参数和 PC，以及 CPU 故障的指令编码。
@@ -244,8 +244,13 @@ IPA 已核验 ARM64 设备目标、版本、执行权限及全部 36 个文件�
 进一步补齐共享文件/匿名 mmap、EOF/truncate SIGBUS、msync/mremap/mincore/madvise、
 memfd 与 classic seals、文件复制/批量 I/O，以及单 CPU 的调度/亲和性接口。
 目前已实现子集增至 161 个，未实现降至 155 个，另有 2 个废弃条目。
-这些源码将并入下一次合并更新，已有 0.8.0/build 9 IPA 不包含它们。
+0.9.0/build 10 合并这些功能，目前正在完成发布验证。磁盘格式和 bundle ID 保持稳定，
+继续使用相同 Sideloadly Apple ID／有效 bundle ID 覆盖安装。
+[发布记录](docs/validation/release-0.9.md)。
 [系统日志](docs/validation/compatibility-log.md) · [共享映射与 ABI 验证](docs/validation/mmap-coverage.md)。
+
+后续方案：[Trames Accelerator RFC](docs/architecture/accelerator.md)，基于 guest ELF 桩库
+和应用内置原生后端；这是设计提案，本次版本不实现。
 
 ## 结构与范围
 

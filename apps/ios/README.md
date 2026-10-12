@@ -83,7 +83,9 @@ membership. The [Sideloadly documentation](https://sideloadly.io/faq) describes
 signing, device trust, Developer Mode and automatic refresh. The current app
 requires iPadOS 17 or newer and does not need JIT activation.
 
-Validated combined update: [0.8.0 (build 9) unsigned IPA artifact](https://github.com/kb5000/trames/actions/runs/38236217045/artifacts/11741258008).
+The 0.9.0/build 10 combined update is undergoing validation; see [release status](../../docs/validation/release-0.9.md).
+
+Previously validated update: [0.8.0 (build 9) unsigned IPA artifact](https://github.com/kb5000/trames/actions/runs/38236217045/artifacts/11741258008).
 The local runtime now has one Rust cached interpreter with static ARM64 native
 compute and embedding ABI 3. No JIT activation is required. Expanded CPU coverage,
 explicit PAC/BTI/zero-tag compatibility, synchronous Linux CPU signals and the
@@ -155,7 +157,7 @@ The local runtime now has one Rust interpreter and no execution-backend switch.
 Native arithmetic helpers compile only the ARM64 implementation into the iPad
 app. The x86_64 helper supports the development/CI host; Linux guests remain
 AArch64. See [the interpreter design](../../docs/architecture/nonjit.md).
-Current source is 0.8.0/build 9 with embedding ABI 3. The historical 0.7 release predates this source architecture. The expanded CPU profile and explicit
+Current source is 0.9.0/build 10 with embedding ABI 3. The historical 0.7 release predates this source architecture. The expanded CPU profile and explicit
 PAC/BTI/tag compatibility are recorded in
 [the coverage evidence](../../docs/validation/instruction-coverage.md).
 

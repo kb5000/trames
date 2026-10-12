@@ -1,17 +1,21 @@
 # Delivery roadmap
 
-The current release is [0.8.0 CPU/native compute](../validation/instruction-coverage.md),
+The current release candidate is [0.9.0 Linux ABI/logging](../validation/release-0.9.md),
 with one Rust cached interpreter, static ARM64 compute and recoverable guest CPU faults.
 The C++ executor and tail-dispatch prototype have been removed.
 The [source follow-up](../validation/compatibility-log.md) adds bounded runtime
 logs and selected file syscalls; [shared mapping/ABI work](../validation/mmap-coverage.md)
-adds coherent mappings, memfd and further file/scheduler entries for the next combined app update. The canonical
+adds coherent mappings, memfd and further file/scheduler entries included in 0.9.0. The canonical
 [current CPU/Linux gaps](compatibility-current.md) links regenerated instruction
 and Linux v6.12 syscall inventories, distinguishing missing entries from partial semantics.
 [M6 compatibility](compatibility-m6.md) records the implemented Linux ABI subsets.
 The [0.3 release](compatibility-gaps.md), [pre-implementation worktree](compatibility-gaps-worktree.md),
 [0.4 profile](compatibility-0.4.md) and [0.7 performance](../validation/nonjit-0.7.md)
 remain historical evidence for their own revisions.
+
+The owner-provided [Trames Accelerator RFC](../architecture/accelerator.md) describes
+future guest library stubs and precompiled native backends. It remains proposed;
+no native-call transport, replacement libc or new JIT ships in 0.9.0.
 
 M0, the selected static-userspace M1 foundation, M2 ash/FP, the storage follow-up and M3 are implemented, with records
 in [m0.md](../validation/m0.md), [m1.md](../validation/m1.md), [m2.md](../validation/m2.md), [storage.md](../validation/storage.md) and [network.md](../validation/network.md) and [m3.md](../validation/m3.md). This does not
@@ -33,6 +37,7 @@ Windows/Sideloadly signing, installation and startup on a physical iPad on
 | Linux compatibility, 0.2.0 | Runtime proc/sys/dev views, virtual ownership and v3 persistence migration, musl threads/futex/timers, read-only route netlink, ICMP raw guest packets and native datagram echo egress, actual Alpine tools and default Vim editing; [record](../validation/linux-compat.md) |
 | M5 | Software validated: versioned Bridge RPC, native consent, persistent scoped Files, built-in accelerator registry, optional profiled C++ backend and embedding ABI 2; signed-provider/device acceptance remains open |
 | CPU reference, 0.4.0 | Broad AArch64 EL0/NEON and tested optional extensions, shared auxv/proc capability profile, standard root/device/interface names, checked memory/decoder acceleration; [scope](compatibility-0.4.md), [validation](../validation/reference-0.4.md) |
+| Linux ABI/logging, 0.9.0 | Combined shared mmap/memfd, file/scheduler interfaces and dmesg; [release record](../validation/release-0.9.md) |
 | CPU/native compute, 0.8.0 | Single Rust cached interpreter, ABI 3, native optional compute, expanded EL0 instructions and recoverable synchronous faults; [validation](../validation/instruction-coverage.md) |
 | M6 | Event descriptors, local IPC, record locks/FIFOs, credentials and proc fixes; actual Git/Python/GCC/Clang/Make/CMake workflows; [validation](../validation/m6.md). Debian after ABI coverage supports it |
 

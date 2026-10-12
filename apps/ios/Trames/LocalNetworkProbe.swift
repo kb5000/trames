@@ -36,7 +36,7 @@ enum LocalNetworkProbe {
             throw TramesError.message("Alpine network probe did not start")
         }
         _ = try session.receive()
-        let command="cat /etc/resolv.conf; nslookup -type=A dl-cdn.alpinelinux.org; apk update; printf '\\nNETWORK_RESULT:%d\\n' $?\n"
+        let command="printf ios-runtime-log-0.9 > /dev/kmsg; dmesg | grep -F ios-runtime-log-0.9; printf '\\nLOG_RESULT:%d\\n' $?; cat /etc/resolv.conf; nslookup -type=A dl-cdn.alpinelinux.org; apk update; printf '\\nNETWORK_RESULT:%d\\n' $?\n"
         guard try session.send(Data(command.utf8))==command.utf8.count else {
             throw TramesError.message("Alpine network probe input was incomplete")
         }

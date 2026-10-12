@@ -14,26 +14,26 @@ the main image; AT_BASE describes the interpreter. The main image's mapped end
 sets the initial brk, independently of the interpreter and stack. Musl itself
 loads dependencies, relocates symbols including RELR and TLSDESC, initializes
 TLS and applies RELRO with mprotect. Trames does not emulate dynamic linking by
-substituting library functions. No host executable pages or JIT are involved.
+substituting library functions. An optional [Trames Accelerator design](accelerator.md)
+is proposed separately and is not implemented. No host executable pages or JIT are involved.
 Exec constructs the entire new image before closing CLOEXEC descriptors or
 replacing the old process. Missing/unreadable interpreter errno is preserved.
 
-Private regular-file mmap validates the backing fd, read access, alignment and
-range before changing pages, including MAP_FIXED. A bounded snapshot is read
-with pread, so it neither changes the shared file offset nor writes private
-memory changes back to the file. Remaining bytes are zero-filled. Protection,
-unmap, anonymous remapping and fork COW apply to these pages. MAP_DENYWRITE is
-accepted as an ignored Linux compatibility flag; MAP_SHARED remains rejected.
-This is not page-cache coherency: file edits after a private mapping do not alter
-that snapshot, and pages wholly beyond EOF do not currently raise SIGBUS.
+The 0.9.0 mapping model provides coherent private/shared regular-file and anonymous
+pages. Clean private pages read the file view; writes take per-page COW copies.
+Shared fd/map aliases and forked shared mappings use the same inode page buffers;
+msync flushes backing data. Full pages beyond EOF and truncation raise precise
+SIGBUS, while partial last-page tails remain zero-filled without extending the
+file. Mapped inodes survive close/unlink. Bounded imports, protections, remap,
+quotas and cache invalidation are recorded in [shared mapping validation](../validation/mmap-coverage.md).
 
 Symbolic links are byte strings in private inodes. Resolution follows at most
 40 links, expands relative targets against the containing directory, roots
 absolute targets in the guest namespace, and clamps .. at that root. No host
 symlinks are followed. Intermediate links follow normally; lstat/readlink,
 unlink, rename and O_NOFOLLOW treat the final link explicitly. Targets ending
-in / require a directory. Disk manifest version 2 stores bounded link targets;
-version 1 stores remain readable and upgrade on their next checkpoint.
+in / require a directory. Disk manifest version 3 stores bounded link targets and virtual metadata.
+Unsupported historical manifest versions are rejected; no migration is provided.
 
 Advisory flock belongs to the shared open description: fork/dup share a lock,
 and the last close releases it. Shared/exclusive conflicts return EAGAIN for

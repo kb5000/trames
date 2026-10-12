@@ -24,6 +24,8 @@ jobs:
         env:
           TRAMES_RUST_LIB_DIR: ${{ github.workspace }}/target/release
         run: bash scripts/test-swift-ssh.sh
+      - name: Validate shared mapping and guest ABI core on native Apple ARM64
+        run: cargo test -p trames-memory -p trames-vfs -p trames-core --locked
       - name: Generate Xcode project
         run: brew install xcodegen
       - name: Link unsigned iPad simulator app
