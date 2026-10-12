@@ -1,0 +1,27 @@
+{
+  "local_unit_tests": 192,
+  "local_clippy": "pass",
+  "arm_native_canaries": "pass",
+  "arm_guest_static_dynamic_storage_and_activation_cases": 8,
+  "ordinary_alpine_busybox_preload_modes": 2,
+  "existing_arm_mmap_signals_log_regressions": "pass",
+  "ios_macho_rlib_codegen": "pass",
+  "ios_embedding_target_check": "pass",
+  "full_remote_ci": "pending",
+  "source_sha256": {
+    "crates/trames-cpu/src/lib.rs": "4ee2d10f076e753c88d991f929c306b50d70c91c2a901552721438902d417313",
+    "crates/trames-cpu/src/cached.rs": "ec69219c4e3c521dfcc3b116f006195e6229ce1900f66956ca940fb22a2085c4",
+    "crates/trames-core/src/lib.rs": "d1f8cec362f4ce518b082db9ef43dd5499b4bbda5b41f7018bea1172053c2415",
+    "crates/trames-core/src/process.rs": "02afeb62bbac6b2b3be88e70665a229eb052ff6ae986d05770f9323eecd05afe",
+    "crates/trames-accel/src/native.rs": "ca8ae5c574ae1b8cfd90b764a023f6480cb4a3c92a05904f359d123fea9edccc",
+    "crates/trames-native/src/lib.rs": "b3eac762ffb563a88bf1642df318c9dd63df968b3d05bc1d2774465f015e1be7",
+    "crates/trames-native/build.rs": "15715b803cb52cc74d5cd60fad39867bbce1cc781747ed1eed9666ae80cc4394",
+    "accelerator/guest/pure.c": "275dc8285a0038966bbf7f25a336419e649a3dff39c52629a35a90668d2b96e3",
+    "accelerator/guest/calls.S": "af617d2b22771d69ab39daefc9ec61d6949bb1b1d143623cca2c2b54d41f2905",
+    "accelerator/guest/exports.map": "70b0975e787249736347b1486541bae9589be0f6bc76df5adbc37d231f979b51",
+    "tests/fixtures/accelerator.c": "7bf356d9e4dc569011fce408f57c59f1cc6e1cc147d00c2ddb755b6934891f61",
+    "tests/integration/accelerator.py": "21437592fba408e2479ef4961a7bc607f7d25dd167012de80b0b6a7173a19588",
+    "scripts/build-accelerator-guest.sh": "679d916d24a3bdb4a0be8ce9f136047d84365d29752b519c06912880cbc7b497",
+    "scripts/build-accelerator-fixtures.sh": "6a1fddb70b61ad1243f41f20f8b2d176bf29c8be517675951d994783c0b0b1df"
+  }
+}

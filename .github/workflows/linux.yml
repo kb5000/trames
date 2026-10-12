@@ -39,7 +39,7 @@ jobs:
         run: cargo check -p trames-core -p trames-distro -p trames-ffi --target aarch64-apple-ios --locked
       - name: Execute ARM64 native compute helpers under the independent oracle
         run: |
-          cargo test -p trames-compute --target aarch64-unknown-linux-musl --locked
+          cargo test -p trames-compute -p trames-native --target aarch64-unknown-linux-musl --locked
           cargo build -p trames-cli --target aarch64-unknown-linux-musl --release --locked
       - run: python3 tests/differential/run.py
       - run: python3 tests/differential/m1.py
@@ -93,6 +93,16 @@ jobs:
       - name: Prepare pinned Alpine and dynamic fixtures
         run: bash scripts/prepare-alpine.sh
       - run: cargo build --release --workspace --all-features --locked
+      - name: Build and compare opt-in NativeCall guest ELF stubs on ARM64
+        run: |
+          bash scripts/build-accelerator-fixtures.sh
+          python3 tests/integration/accelerator.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: accelerator-guest-library-and-source
+          path: target/accelerator-guest/libtrames-pure-v1.tar.gz
+          if-no-files-found: error
+          retention-days: 14
       - name: Validate dynamic Alpine, HTTPS trust and signed apk installation
         run: python3 tests/integration/m3.py
       - name: Validate virtual packet fabric, guest ABI and Alpine HTTPS gateway

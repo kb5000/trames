@@ -133,3 +133,21 @@ assembly, plus an x86_64 development-host implementation excluded from ARM64
 builds. It adds no runtime library dependency. Optional host instructions use
 Rust feature detection. Architectural entropy reads reuse the reviewed
 getrandom dependency; they do not synthesize random data with a PRNG.
+
+## NativeCall pure-memory backend
+
+`trames-native/upstream/musl-1.2.5` vendors original string routines from the
+SHA-256-pinned musl 1.2.5 release, with byte-level provenance and the full
+[COPYRIGHT](../../crates/trames-native/upstream/musl-1.2.5/COPYRIGHT). They are MIT
+licensed, including the Arm AArch64 memcpy/memset notices. Original upstream
+bytes stay intact. The build script expands register aliases, prefixes private
+symbols and adapts ELF directives for Mach-O, without changing the algorithms.
+Native memcmp/strlen use safe Rust translations; guest fallbacks compile the
+original C/assembly. These MIT terms are compatible with GPL-3.0-or-later.
+
+The app bundles `Trames-native-musl-COPYRIGHT.txt`. Redistributed guest libraries
+must retain that notice and the GPL notice for the Trames wrapper; corresponding
+wrapper/upstream sources and build instructions are in this repository. No
+additional downloaded host library or executable code is used. Only the isolated
+`trames-native` slice boundary permits unsafe operations; guest address
+validation and the dispatcher remain in safe Rust.

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Signed-in, pure accelerators. Disabled calls have no effect and can fall back.
+pub mod native;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::time::Instant;

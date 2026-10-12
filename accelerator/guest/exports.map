@@ -1,0 +1,4 @@
+{
+  global: memcpy; memmove; memset; memcmp; strlen;
+  local: *;
+};

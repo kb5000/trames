@@ -1,0 +1,106 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! Signed-in pure host routines. No guest addresses, runtime code or host state.
+#[cfg(target_arch = "aarch64")]
+core::arch::global_asm!(
+    include_str!(concat!(env!("OUT_DIR"), "/memcpy.s")),
+    options(raw)
+);
+#[cfg(target_arch = "aarch64")]
+core::arch::global_asm!(
+    include_str!(concat!(env!("OUT_DIR"), "/memset.s")),
+    options(raw)
+);
+#[cfg(target_arch = "aarch64")]
+unsafe extern "C" {
+    fn trames_native_memcpy(dst: *mut u8, src: *const u8, len: usize) -> *mut u8;
+    fn trames_native_memset(dst: *mut u8, value: i32, len: usize) -> *mut u8;
+}
+pub fn copy(dst: &mut [u8], src: &[u8]) {
+    assert_eq!(dst.len(), src.len());
+    #[cfg(target_arch = "aarch64")]
+    // SAFETY: Rust slices validate both complete allocations and enforce no alias.
+    // The original Arm memcpy touches only this range and preserves the C ABI.
+    unsafe {
+        trames_native_memcpy(dst.as_mut_ptr(), src.as_ptr(), dst.len());
+    }
+    #[cfg(not(target_arch = "aarch64"))]
+    dst.copy_from_slice(src);
+}
+pub fn fill(dst: &mut [u8], value: u8) {
+    #[cfg(target_arch = "aarch64")]
+    // SAFETY: The complete exclusive slice is valid. Upstream checks DCZID before
+    // its bounded zeroing path; writes remain within the supplied allocation.
+    unsafe {
+        trames_native_memset(dst.as_mut_ptr(), value.into(), dst.len());
+    }
+    #[cfg(not(target_arch = "aarch64"))]
+    dst.fill(value);
+}
+/// Safe translation of pinned musl memcmp.c; unsigned-byte result, no host errno.
+pub fn compare(left: &[u8], right: &[u8]) -> i32 {
+    assert_eq!(left.len(), right.len());
+    for (&a, &b) in left.iter().zip(right) {
+        if a != b {
+            return i32::from(a) - i32::from(b);
+        }
+    }
+    0
+}
+/// Pinned musl strlen.c's HASZERO word algorithm on a validated bounded slice.
+pub fn first_zero(bytes: &[u8]) -> Option<usize> {
+    const ONES: u64 = u64::MAX / 255;
+    const HIGHS: u64 = ONES * 128;
+    let mut words = bytes.chunks_exact(8);
+    for (index, word) in words.by_ref().enumerate() {
+        let value = u64::from_ne_bytes(word.try_into().unwrap());
+        if value.wrapping_sub(ONES) & !value & HIGHS != 0 {
+            return word.iter().position(|&b| b == 0).map(|i| index * 8 + i);
+        }
+    }
+    words
+        .remainder()
+        .iter()
+        .position(|&b| b == 0)
+        .map(|i| bytes.len() / 8 * 8 + i)
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn original_arm_routines_preserve_canaries_for_every_length_and_alignment() {
+        for len in (0usize..260).chain([511, 512, 4095, 4096, 65536]) {
+            for align in 0..16 {
+                let src: Vec<_> = (0..len + 32)
+                    .map(|i| (i.wrapping_mul(73) % 255 + 1) as u8)
+                    .collect();
+                let mut dst = vec![0xac; len + 32];
+                copy(
+                    &mut dst[align..align + len],
+                    &src[15 - align..15 - align + len],
+                );
+                assert_eq!(&dst[align..align + len], &src[15 - align..15 - align + len]);
+                assert!(dst[..align]
+                    .iter()
+                    .chain(&dst[align + len..])
+                    .all(|&b| b == 0xac));
+                for value in [0, 0x80, 255] {
+                    dst.fill(0xac);
+                    fill(&mut dst[align..align + len], value);
+                    assert!(dst[align..align + len].iter().all(|&b| b == value));
+                    assert!(dst[..align]
+                        .iter()
+                        .chain(&dst[align + len..])
+                        .all(|&b| b == 0xac));
+                }
+                assert_eq!(first_zero(&src), None);
+                assert_eq!(compare(&src, &src), 0);
+            }
+        }
+        for index in 0..64 {
+            let mut bytes = [0x80; 64];
+            bytes[index] = 0;
+            assert_eq!(first_zero(&bytes), Some(index));
+        }
+        assert_eq!(compare(&[255], &[1]), 254);
+    }
+}

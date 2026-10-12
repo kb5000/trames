@@ -52,6 +52,16 @@ fn main() {
                     Ok(Event::Continue) => SliceOutcome::Yield { instructions: 1 },
                     Ok(Event::Yield) => SliceOutcome::Yield { instructions: 0 },
                     Ok(Event::Syscall) => SliceOutcome::Syscall { instructions: 1 },
+                    Ok(Event::NativeCall {
+                        pc,
+                        module,
+                        function,
+                    }) => SliceOutcome::NativeCall {
+                        instructions: 0,
+                        pc,
+                        module,
+                        function,
+                    },
                     Err(error) => SliceOutcome::Fault(error),
                 }
             } else {
@@ -62,6 +72,7 @@ fn main() {
                 SliceOutcome::Fault(CpuFault::Memory { .. }) => "decoded-memory-fault",
                 SliceOutcome::Fault(CpuFault::Trap { .. }) => "decoded-exception",
                 SliceOutcome::Syscall { .. } => "syscall",
+                SliceOutcome::NativeCall { .. } => "native-call",
                 SliceOutcome::Yield { .. } => "decoded",
             };
             results.push(result);

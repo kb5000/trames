@@ -131,6 +131,7 @@ struct Kernel {
     next_resource: u64,
     timers: BTreeMap<i32, events::Timer>,
     next_timer: i32,
+    native: trames_accel::native::Registry,
 }
 fn error(e: Errno) -> u64 {
     0u64.wrapping_sub(e.0 as u64)
@@ -862,13 +863,21 @@ impl Kernel {
             }
             let mut execute_vfs = p.linux.vfs.clone();
             execute_vfs.apply_exec_credentials(&path)?;
-            let mut runtime =
-                Runtime::load_guest(&bytes, &argv, &envp, &execute_vfs).map_err(|e| match e {
-                    RuntimeError::Arguments(_) => Errno(7),
-                    RuntimeError::Memory(_) => Errno(12),
-                    RuntimeError::Elf(trames_elf::ElfError::Interpreter(n)) => Errno(n),
-                    _ => Errno(8),
-                })?;
+            let mut runtime = Runtime::load_guest(
+                &bytes,
+                &argv,
+                &envp,
+                &execute_vfs,
+                super::RuntimeOptions {
+                    pure_accelerator: p.cpu.native_calls_enabled(),
+                },
+            )
+            .map_err(|e| match e {
+                RuntimeError::Arguments(_) => Errno(7),
+                RuntimeError::Memory(_) => Errno(12),
+                RuntimeError::Elf(trames_elf::ElfError::Interpreter(n)) => Errno(n),
+                _ => Errno(8),
+            })?;
             if runtime.memory.mapped_bytes() > budget {
                 return Err(Errno(12));
             }
@@ -2110,6 +2119,45 @@ impl Kernel {
                             SliceOutcome::Yield { instructions } => {
                                 self.instructions += instructions
                             }
+                            SliceOutcome::NativeCall {
+                                instructions,
+                                pc,
+                                module,
+                                function,
+                            } => {
+                                self.instructions += instructions;
+                                let began = Instant::now();
+                                let a = [p.cpu.x(0), p.cpu.x(1), p.cpu.x(2)];
+                                match self.native.invoke(&mut p.memory, pc, module, function, a) {
+                                    Ok(value) => {
+                                        p.cpu.set_x(0, value.value);
+                                        p.cpu.set_x(1, u64::from(value.fallback));
+                                        p.cpu.pc = pc + 4;
+                                        self.instructions += 1;
+                                    }
+                                    Err(error) => {
+                                        use trames_accel::native::Error;
+                                        let fault = match error {
+                                            Error::Memory(error) => {
+                                                trames_cpu::CpuFault::Memory { pc, error }
+                                            }
+                                            Error::InvalidEntry => {
+                                                p.linux.vfs.log(4, &format!("pid={id} NativeCall rejected module={module:#x} function={function} pc={pc:#x}"));
+                                                trames_cpu::CpuFault::Trap {
+                                                    pc,
+                                                    instruction: trames_accel::native::INSTRUCTION,
+                                                    signal: 4,
+                                                    code: 1,
+                                                }
+                                            }
+                                        };
+                                        self.synchronous_fault(id, &mut p, &fault);
+                                    }
+                                }
+                                let elapsed = began.elapsed();
+                                p.cpu_time += elapsed;
+                                self.cpu_total += elapsed;
+                            }
                             SliceOutcome::Syscall { instructions } => {
                                 self.instructions += instructions;
                                 let number = p.cpu.x(8) as u32;
@@ -2342,6 +2390,7 @@ pub(super) fn run(
         next_resource: 2,
         timers: BTreeMap::new(),
         next_timer: 1,
+        native: trames_accel::native::Registry::default(),
     };
     // Enable all virtual mounts once, including /dev and /sys for programs
     // that never touch /proc. Subsequent full snapshots are demand-driven.
@@ -2359,6 +2408,7 @@ pub(super) fn run(
         decode_lookups: kernel.decode_lookups,
         instructions_decoded: kernel.instructions_decoded,
         decode_misses: kernel.decode_misses,
+        native: kernel.native.metrics,
     };
     // Session teardown cancels forked children, including their process locks.
     // Root-thread locks are already released on normal group exit; preserve
@@ -2437,6 +2487,7 @@ mod tests {
             next_resource: 2,
             timers: BTreeMap::new(),
             next_timer: 1,
+            native: trames_accel::native::Registry::default(),
         }
     }
     #[test]

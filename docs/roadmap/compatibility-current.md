@@ -91,3 +91,10 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 M6 的具体边界见 [能力记录](compatibility-m6.md)与[程序验证](../validation/m6.md)。
 后续完善可优先按实际程序需求补文件元数据/批量 I/O、备用信号栈、更多内存操作、
 Unix 具名端点/FD 传递和文件通知，再扩展内核管理类范围；本页只记录现状，不新增实现承诺。
+
+## NativeCall 开发
+
+[NativeCall v1 pure profile](../architecture/accelerator-v1.md) 使用显式宿主启用、
+私有 auxv 协商和固定 guest 桩库协议。它不是 Linux 系统调用或普通 AArch64 ISA
+扩展，不增加本页的已实现系统调用/CPU 样本数；默认关闭时 HLT 保留原有异常行为。
+当前 0.9.0 IPA 尚不包含这批后续代码。

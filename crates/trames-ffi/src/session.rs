@@ -32,6 +32,8 @@ pub struct Options {
     #[serde(default = "default_network")]
     pub network: String,
     pub budget_bytes: Option<u64>,
+    #[serde(default)]
+    pub pure_accelerator: bool,
 }
 pub fn install(options: Options) -> Result<(), String> {
     if !options.store.is_absolute() || options.store.exists() {
@@ -349,7 +351,7 @@ fn run(
     })
     .map_err(|e| e.to_string())?;
     let bytes = vfs.executable(b"/bin/ash").map_err(|e| e.to_string())?;
-    let mut runtime = Runtime::load_with_vfs(
+    let mut runtime = Runtime::load_with_options(
         &bytes,
         &["/bin/ash".into(), "-i".into()],
         &[
@@ -361,6 +363,9 @@ fn run(
             "LANG=C.UTF-8".into(),
         ],
         vfs,
+        trames_core::RuntimeOptions {
+            pure_accelerator: options.pure_accelerator,
+        },
     )
     .map_err(|e| e.to_string())?;
     let mut terminal = Terminal::default();

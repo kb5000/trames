@@ -12,7 +12,7 @@
   ],
   "unhandled_return": -38,
   "source_sha256": {
-    "crates/trames-core/src/process.rs": "8f48b41031b010f6b4f7b2fb4f0cc39fe794b33350c8aa21ed34eba77147538c",
+    "crates/trames-core/src/process.rs": "02afeb62bbac6b2b3be88e70665a229eb052ff6ae986d05770f9323eecd05afe",
     "crates/trames-core/src/process_events.rs": "c51f233022e6ff734ac09bc2e07950f00040d760031ec03ccb11d7d35176cb47",
     "crates/trames-linux/src/state.rs": "8d82b0ad667f1b28b963cb2e4f2c23359c0583c045059e61ad76ecf4e73bdbc5",
     "crates/trames-linux/src/network.rs": "88ee4fad4624c0ade1818c77c90b32deafb9ca5293830b8e564b0e6f14255052",

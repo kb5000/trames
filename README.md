@@ -250,8 +250,11 @@ memfd 与 classic seals、文件复制/批量 I/O，以及单 CPU 的调度/亲�
 [发布记录](docs/validation/release-0.9.md)。
 [系统日志](docs/validation/compatibility-log.md) · [共享映射与 ABI 验证](docs/validation/mmap-coverage.md)。
 
-后续方案：[Trames Accelerator RFC](docs/architecture/accelerator.md)，基于 guest ELF 桩库
-和应用内置原生后端；这是设计提案，本次版本不实现。
+后续开发：[NativeCall v1 纯函数加速](docs/architecture/accelerator-v1.md) 已打通 guest ELF 桩库和应用内置原生后端，
+覆盖 `memcpy`、`memmove`、`memset`、`memcmp`、`strlen`，默认关闭；CLI 用 `--accelerator pure` 显式启用。
+直接复用固定版本的 musl / Arm 原始实现，保留 GPL 与上游许可记录。
+[完整 Accelerator RFC](docs/architecture/accelerator.md) 的有状态 libc、GPU/video/ML 仍在后续计划中。
+当前 0.9.0 安装包早于这批开发代码，后续合并发布再提供新 IPA。
 
 ## 结构与范围
 

@@ -678,6 +678,21 @@ impl Cpu {
                             instructions: executed + 1,
                         }
                     }
+                    Ok((
+                        Event::NativeCall {
+                            pc,
+                            module,
+                            function,
+                        },
+                        _,
+                    )) => {
+                        return SliceOutcome::NativeCall {
+                            instructions: executed,
+                            pc,
+                            module,
+                            function,
+                        }
+                    }
                     Err(error) => return self.slice_fault(error, executed),
                 }
                 // A successful self-modifying store must leave this borrowed

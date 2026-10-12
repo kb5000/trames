@@ -14,8 +14,10 @@ The [0.3 release](compatibility-gaps.md), [pre-implementation worktree](compatib
 remain historical evidence for their own revisions.
 
 The owner-provided [Trames Accelerator RFC](../architecture/accelerator.md) describes
-future guest library stubs and precompiled native backends. It remains proposed;
-no native-call transport, replacement libc or new JIT ships in 0.9.0.
+guest library stubs and precompiled native backends. Development now includes the
+[NativeCall v1 pure profile](../architecture/accelerator-v1.md), the initial bounded
+transport and five functions from phases A/B. Stateful libc, GPU/video/ML and JIT
+remain proposed. The immutable 0.9.0 IPA predates this source follow-up.
 
 M0, the selected static-userspace M1 foundation, M2 ash/FP, the storage follow-up and M3 are implemented, with records
 in [m0.md](../validation/m0.md), [m1.md](../validation/m1.md), [m2.md](../validation/m2.md), [storage.md](../validation/storage.md) and [network.md](../validation/network.md) and [m3.md](../validation/m3.md). This does not

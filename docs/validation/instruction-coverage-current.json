@@ -16,13 +16,13 @@
   "hwcap2": 8813273014656,
   "feature_names": "fp asimd aes pmull sha1 sha2 crc32 atomics fphp asimdhp asimdrdm jscvt lrcpc fcma sha3 sm3 sm4 asimddp sha512 asimdfhm ilrcpc flagm sb flagm2 frint i8mm bf16 dgh rng cssc mops",
   "source_sha256": {
-    "crates/trames-cpu/src/cached.rs": "a3ab3f5e09d7eadd11fb4f2969557c6e0c790cdfe45fefca89adb4184137d0d5",
+    "crates/trames-cpu/src/cached.rs": "ec69219c4e3c521dfcc3b116f006195e6229ce1900f66956ca940fb22a2085c4",
     "crates/trames-cpu/src/compatibility.rs": "a20b25d9dd922fe447bb3bf75436aece24c553a74e124306d1ca51e97073ef48",
     "crates/trames-cpu/src/crypto.rs": "9242d5e341f7ec5d2246d32e6f2215cbd7b46888426540101c23eaf3f0e2558a",
     "crates/trames-cpu/src/extended.rs": "41c0e7fcc84ff58eda30b82c163c9044451b77daab7142005599d56d1a2af85b",
     "crates/trames-cpu/src/floating.rs": "1b68a62fbffcd9b3ee6b2adfc716da1aabdbac87805e02974fb30ee58262cdfc",
     "crates/trames-cpu/src/half_vector.rs": "6b58f896f2deb68458f9714f1e04cb0054c14faafc18a65ad3bc34174ab86ad8",
-    "crates/trames-cpu/src/lib.rs": "76e4ca5ad76e628ffc0b8e19f0092c917cd3c2715c74ab205d2941fed4b0b85b",
+    "crates/trames-cpu/src/lib.rs": "4ee2d10f076e753c88d991f929c306b50d70c91c2a901552721438902d417313",
     "crates/trames-cpu/src/load_store.rs": "2564274229c118df90d398a381d268bc8d7f219abf8a22709f78b454f177557d",
     "crates/trames-cpu/src/modern_crypto.rs": "ef554a2cd833b319d19a6569223743e0a96e597cf398ab367552c52b7c0fc3ac",
     "crates/trames-cpu/src/modern_memory.rs": "35de7f63b766a1b4d5d0a12fb7b38697bf15b71876f86578df341d025865fbbe",
@@ -38,7 +38,7 @@
     "crates/trames-memory/src/lib.rs": "0ee83f7d94e18560b1af43d2f47147abe2a7b379c4dc950b6f777d22292ace2c",
     "crates/trames-memory/src/backing.rs": "e62e610a390114876d944e1efc06014ddc726437f154b51714f992df34bfce9a",
     "crates/trames-core/src/process_events.rs": "c51f233022e6ff734ac09bc2e07950f00040d760031ec03ccb11d7d35176cb47",
-    "crates/trames-core/src/process.rs": "8f48b41031b010f6b4f7b2fb4f0cc39fe794b33350c8aa21ed34eba77147538c",
-    "crates/trames-core/src/lib.rs": "b12f2142173745125492cdcbac160d7cfb24975a7598e33eebf1f927abb4f592"
+    "crates/trames-core/src/process.rs": "02afeb62bbac6b2b3be88e70665a229eb052ff6ae986d05770f9323eecd05afe",
+    "crates/trames-core/src/lib.rs": "d1f8cec362f4ce518b082db9ef43dd5499b4bbda5b41f7018bea1172053c2415"
   }
 }

@@ -62,6 +62,7 @@ pub struct DecodeStats {
 
 #[derive(Default, Clone, Debug)]
 pub struct Cpu {
+    native_calls: bool,
     registers: [u64; 31],
     pub sp: u64,
     pub pc: u64,
@@ -81,6 +82,12 @@ pub struct Cpu {
 pub enum Event {
     Continue,
     Syscall,
+    /// Typed virtual native call; PC is held until the dispatcher commits.
+    NativeCall {
+        pc: u64,
+        module: u64,
+        function: u64,
+    },
     /// A bounded long instruction has made progress but has not retired.
     Yield,
 }
@@ -126,8 +133,19 @@ impl std::error::Error for CpuFault {}
 
 #[derive(Debug)]
 pub enum SliceOutcome {
-    Syscall { instructions: u64 },
-    Yield { instructions: u64 },
+    Syscall {
+        instructions: u64,
+    },
+    /// Instructions before the pending HLT; it retires only on a committed return.
+    NativeCall {
+        instructions: u64,
+        pc: u64,
+        module: u64,
+        function: u64,
+    },
+    Yield {
+        instructions: u64,
+    },
     Fault(CpuFault),
 }
 
@@ -155,6 +173,12 @@ fn shifted(value: u64, kind: u32, amount: u32, wide: bool) -> u64 {
 }
 
 impl Cpu {
+    pub fn set_native_calls(&mut self, enabled: bool) {
+        self.native_calls = enabled;
+    }
+    pub fn native_calls_enabled(&self) -> bool {
+        self.native_calls
+    }
     pub fn decode_stats(&self) -> DecodeStats {
         self.decoded.stats
     }
@@ -264,7 +288,14 @@ impl Cpu {
         let wide = ins >> 31 != 0;
         let mut next = pc.wrapping_add(4);
         let mut event = Event::Continue;
-        if matches!(ins & 0xffe0001f, 0xd4200000 | 0xd4400000) {
+        if self.native_calls && ins == 0xd44a8a40 {
+            next = pc;
+            event = Event::NativeCall {
+                pc,
+                module: self.x(16),
+                function: self.x(17),
+            };
+        } else if matches!(ins & 0xffe0001f, 0xd4200000 | 0xd4400000) {
             return Err(CpuFault::Trap {
                 pc,
                 instruction: ins,
@@ -446,6 +477,18 @@ impl Cpu {
                 Ok(Event::Syscall) => {
                     return SliceOutcome::Syscall {
                         instructions: executed + 1,
+                    }
+                }
+                Ok(Event::NativeCall {
+                    pc,
+                    module,
+                    function,
+                }) => {
+                    return SliceOutcome::NativeCall {
+                        instructions: executed,
+                        pc,
+                        module,
+                        function,
                     }
                 }
                 Err(e) => return SliceOutcome::Fault(e),
@@ -690,5 +733,66 @@ mod tests {
             ));
             assert_eq!(cpu.pc, 0x1000);
         }
+    }
+}
+
+#[cfg(test)]
+mod native_tests {
+    use super::*;
+    use trames_memory::{Permissions, PAGE_SIZE};
+    #[test]
+    fn native_exit_gating_pc_and_budget_match_reference() {
+        let mut m = Memory::default();
+        m.map(0x1000, PAGE_SIZE, Permissions::RW).unwrap();
+        m.write(0x1000, &0xd503201fu32.to_le_bytes()).unwrap();
+        m.write(0x1004, &0xd44a8a40u32.to_le_bytes()).unwrap();
+        m.protect(0x1000, PAGE_SIZE, Permissions::RX).unwrap();
+        let mut disabled = Cpu::new(0x1004, 0);
+        assert!(matches!(
+            disabled.run_slice(&mut m, 1),
+            SliceOutcome::Fault(CpuFault::Trap {
+                pc: 0x1004,
+                signal: 4,
+                ..
+            })
+        ));
+        for budget in [0, 1, 2, 3] {
+            let mut c = Cpu::new(0x1000, 0);
+            c.set_native_calls(true);
+            c.set_x(16, 0x10001);
+            c.set_x(17, 3);
+            let mut reference = c.clone();
+            let mut reference_memory = m.clone();
+            let a = c.run_slice(&mut m, budget);
+            let b = reference.run_reference(&mut reference_memory, budget);
+            assert_eq!(format!("{a:?}"), format!("{b:?}"));
+            assert_eq!(c.pc, reference.pc);
+            if budget >= 2 {
+                assert!(matches!(
+                    a,
+                    SliceOutcome::NativeCall {
+                        instructions: 1,
+                        pc: 0x1004,
+                        module: 0x10001,
+                        function: 3
+                    }
+                ));
+            }
+        }
+        let mut c = Cpu::new(0x1004, 0);
+        c.set_native_calls(true);
+        assert!(matches!(
+            c.step(&mut m),
+            Ok(Event::NativeCall { pc: 0x1004, .. })
+        ));
+        assert_eq!(c.pc, 0x1004);
+        // Every other HLT and every BRK retains its normal architectural fault.
+        m.protect(0x1000, PAGE_SIZE, Permissions::RW).unwrap();
+        m.write(0x1004, &0xd4400000u32.to_le_bytes()).unwrap();
+        m.protect(0x1000, PAGE_SIZE, Permissions::RX).unwrap();
+        assert!(matches!(
+            c.run_slice(&mut m, 1),
+            SliceOutcome::Fault(CpuFault::Trap { signal: 4, .. })
+        ));
     }
 }

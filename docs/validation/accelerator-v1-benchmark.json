@@ -1,0 +1,635 @@
+{
+  "host": "Linux-6.18.44-x86_64-with-glibc2.41",
+  "host_cpu": "x86_64",
+  "runner": "tests/differential/arm-runner.sh",
+  "guest_arch": "aarch64",
+  "description": "Three runs per mode; medians. Whole guest run includes startup. ARM runner is itself executed by pinned QEMU; these are interpreter microbenchmarks, not physical-iPad or whole-application performance.",
+  "rows": [
+    {
+      "workload": "copy",
+      "bytes_per_call": 32,
+      "iterations": 256,
+      "modes": {
+        "False": {
+          "samples": [
+            {
+              "seconds": 0.061684976,
+              "instructions": 22144,
+              "cpu_seconds": 0.019324152,
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              }
+            },
+            {
+              "seconds": 0.058921037,
+              "instructions": 22144,
+              "cpu_seconds": 0.015149528,
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              }
+            },
+            {
+              "seconds": 0.061851716,
+              "instructions": 22144,
+              "cpu_seconds": 0.014773681,
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              }
+            }
+          ],
+          "median_seconds": 0.061684976,
+          "median_instructions": 22144
+        },
+        "True": {
+          "samples": [
+            {
+              "seconds": 0.070638758,
+              "instructions": 19542,
+              "cpu_seconds": 0.016820305,
+              "native": {
+                "calls": 260,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 9260,
+                "bytes_written": 8244,
+                "nanoseconds": 1690957
+              }
+            },
+            {
+              "seconds": 0.062539884,
+              "instructions": 19542,
+              "cpu_seconds": 0.016391706,
+              "native": {
+                "calls": 260,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 9260,
+                "bytes_written": 8244,
+                "nanoseconds": 1420838
+              }
+            },
+            {
+              "seconds": 0.07742153,
+              "instructions": 19542,
+              "cpu_seconds": 0.022129999,
+              "native": {
+                "calls": 260,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 9260,
+                "bytes_written": 8244,
+                "nanoseconds": 1775177
+              }
+            }
+          ],
+          "median_seconds": 0.070638758,
+          "median_instructions": 19542
+        }
+      },
+      "speedup": 0.8732454780702685
+    },
+    {
+      "workload": "copy",
+      "bytes_per_call": 4096,
+      "iterations": 256,
+      "modes": {
+        "False": {
+          "samples": [
+            {
+              "seconds": 0.107555116,
+              "instructions": 217799,
+              "cpu_seconds": 0.065678241,
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              }
+            },
+            {
+              "seconds": 0.109058201,
+              "instructions": 217799,
+              "cpu_seconds": 0.066695087,
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              }
+            },
+            {
+              "seconds": 0.107039067,
+              "instructions": 217799,
+              "cpu_seconds": 0.067400382,
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              }
+            }
+          ],
+          "median_seconds": 0.107555116,
+          "median_instructions": 217799
+        },
+        "True": {
+          "samples": [
+            {
+              "seconds": 0.069712491,
+              "instructions": 19614,
+              "cpu_seconds": 0.024028562,
+              "native": {
+                "calls": 260,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 1057772,
+                "bytes_written": 1052692,
+                "nanoseconds": 3051162
+              }
+            },
+            {
+              "seconds": 0.071809561,
+              "instructions": 19614,
+              "cpu_seconds": 0.018403471,
+              "native": {
+                "calls": 260,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 1057772,
+                "bytes_written": 1052692,
+                "nanoseconds": 3222963
+              }
+            },
+            {
+              "seconds": 0.075439884,
+              "instructions": 19614,
+              "cpu_seconds": 0.023131514,
+              "native": {
+                "calls": 260,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 1057772,
+                "bytes_written": 1052692,
+                "nanoseconds": 2834574
+              }
+            }
+          ],
+          "median_seconds": 0.071809561,
+          "median_instructions": 19614
+        }
+      },
+      "speedup": 1.4977826699149437
+    },
+    {
+      "workload": "copy",
+      "bytes_per_call": 65536,
+      "iterations": 256,
+      "modes": {
+        "False": {
+          "samples": [
+            {
+              "seconds": 0.926017843,
+              "instructions": 3170773,
+              "cpu_seconds": 0.850572771,
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              }
+            },
+            {
+              "seconds": 0.894114874,
+              "instructions": 3170773,
+              "cpu_seconds": 0.831424347,
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              }
+            },
+            {
+              "seconds": 0.885277871,
+              "instructions": 3170773,
+              "cpu_seconds": 0.818945183,
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              }
+            }
+          ],
+          "median_seconds": 0.894114874,
+          "median_instructions": 3170773
+        },
+        "True": {
+          "samples": [
+            {
+              "seconds": 0.099756154,
+              "instructions": 19628,
+              "cpu_seconds": 0.050587306,
+              "native": {
+                "calls": 260,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 16909292,
+                "bytes_written": 16842772,
+                "nanoseconds": 33847230
+              }
+            },
+            {
+              "seconds": 0.098242716,
+              "instructions": 19628,
+              "cpu_seconds": 0.05111895,
+              "native": {
+                "calls": 260,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 16909292,
+                "bytes_written": 16842772,
+                "nanoseconds": 34099487
+              }
+            },
+            {
+              "seconds": 0.102781211,
+              "instructions": 19628,
+              "cpu_seconds": 0.053725858,
+              "native": {
+                "calls": 260,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 16909292,
+                "bytes_written": 16842772,
+                "nanoseconds": 35174648
+              }
+            }
+          ],
+          "median_seconds": 0.099756154,
+          "median_instructions": 19628
+        }
+      },
+      "speedup": 8.963004668363618
+    },
+    {
+      "workload": "copy-compare",
+      "bytes_per_call": 32,
+      "iterations": 256,
+      "modes": {
+        "False": {
+          "samples": [
+            {
+              "seconds": 0.075627272,
+              "instructions": 93824,
+              "cpu_seconds": 0.026081314,
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              }
+            },
+            {
+              "seconds": 0.069987041,
+              "instructions": 93824,
+              "cpu_seconds": 0.02779093,
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              }
+            },
+            {
+              "seconds": 0.078616175,
+              "instructions": 93824,
+              "cpu_seconds": 0.026047991,
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              }
+            }
+          ],
+          "median_seconds": 0.075627272,
+          "median_instructions": 93824
+        },
+        "True": {
+          "samples": [
+            {
+              "seconds": 0.089064202,
+              "instructions": 25942,
+              "cpu_seconds": 0.023269514,
+              "native": {
+                "calls": 516,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 25644,
+                "bytes_written": 8244,
+                "nanoseconds": 2386251
+              }
+            },
+            {
+              "seconds": 0.070814706,
+              "instructions": 25942,
+              "cpu_seconds": 0.020695217,
+              "native": {
+                "calls": 516,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 25644,
+                "bytes_written": 8244,
+                "nanoseconds": 2198322
+              }
+            },
+            {
+              "seconds": 0.091107374,
+              "instructions": 25942,
+              "cpu_seconds": 0.030142998,
+              "native": {
+                "calls": 516,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 25644,
+                "bytes_written": 8244,
+                "nanoseconds": 4682813
+              }
+            }
+          ],
+          "median_seconds": 0.089064202,
+          "median_instructions": 25942
+        }
+      },
+      "speedup": 0.8491320901297695
+    },
+    {
+      "workload": "copy-compare",
+      "bytes_per_call": 4096,
+      "iterations": 256,
+      "modes": {
+        "False": {
+          "samples": [
+            {
+              "seconds": 1.2846532,
+              "instructions": 8612551,
+              "cpu_seconds": 1.194532782,
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              }
+            },
+            {
+              "seconds": 1.365113014,
+              "instructions": 8612551,
+              "cpu_seconds": 1.260293576,
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              }
+            },
+            {
+              "seconds": 1.2895127020000001,
+              "instructions": 8612551,
+              "cpu_seconds": 1.196529553,
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              }
+            }
+          ],
+          "median_seconds": 1.2895127020000001,
+          "median_instructions": 8612551
+        },
+        "True": {
+          "samples": [
+            {
+              "seconds": 0.088908621,
+              "instructions": 26014,
+              "cpu_seconds": 0.029000321,
+              "native": {
+                "calls": 516,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 3154924,
+                "bytes_written": 1052692,
+                "nanoseconds": 7649857
+              }
+            },
+            {
+              "seconds": 0.093621887,
+              "instructions": 26014,
+              "cpu_seconds": 0.030825331,
+              "native": {
+                "calls": 516,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 3154924,
+                "bytes_written": 1052692,
+                "nanoseconds": 8235559
+              }
+            },
+            {
+              "seconds": 0.091909718,
+              "instructions": 26014,
+              "cpu_seconds": 0.028995772,
+              "native": {
+                "calls": 516,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 3154924,
+                "bytes_written": 1052692,
+                "nanoseconds": 8431730
+              }
+            }
+          ],
+          "median_seconds": 0.091909718,
+          "median_instructions": 26014
+        }
+      },
+      "speedup": 14.030210624735027
+    },
+    {
+      "workload": "copy-compare",
+      "bytes_per_call": 65536,
+      "iterations": 256,
+      "modes": {
+        "False": {
+          "samples": [
+            {
+              "seconds": 19.68941884,
+              "instructions": 137394645,
+              "cpu_seconds": 18.822098816,
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              }
+            },
+            {
+              "seconds": 20.45681275,
+              "instructions": 137394645,
+              "cpu_seconds": 19.549969402,
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              }
+            },
+            {
+              "seconds": 19.616615784,
+              "instructions": 137394645,
+              "cpu_seconds": 18.755950868,
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              }
+            }
+          ],
+          "median_seconds": 19.68941884,
+          "median_instructions": 137394645
+        },
+        "True": {
+          "samples": [
+            {
+              "seconds": 0.176947055,
+              "instructions": 26028,
+              "cpu_seconds": 0.121763158,
+              "native": {
+                "calls": 516,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 50463724,
+                "bytes_written": 16842772,
+                "nanoseconds": 100318011
+              }
+            },
+            {
+              "seconds": 0.187233305,
+              "instructions": 26028,
+              "cpu_seconds": 0.122178754,
+              "native": {
+                "calls": 516,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 50463724,
+                "bytes_written": 16842772,
+                "nanoseconds": 101937401
+              }
+            },
+            {
+              "seconds": 0.170722716,
+              "instructions": 26028,
+              "cpu_seconds": 0.118865,
+              "native": {
+                "calls": 516,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 50463724,
+                "bytes_written": 16842772,
+                "nanoseconds": 99142870
+              }
+            }
+          ],
+          "median_seconds": 0.176947055,
+          "median_instructions": 26028
+        }
+      },
+      "speedup": 111.27293890254347
+    }
+  ],
+  "fixture_sha256": "0943f4ea1d77e562238bdad793de5d853cccad9412a315097a25a02d2e25383a",
+  "arm_runner_binary_sha256": "ade32e7f9a4d66c36a1e84a561d4d4f4232a3d978550fbf66bf45dabb1522f39"
+}

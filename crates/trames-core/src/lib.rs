@@ -8,6 +8,12 @@ mod process;
 mod terminal;
 use trames_memory::{Memory, MemoryError, Permissions, DEFAULT_MEMORY_LIMIT, PAGE_SIZE};
 
+#[derive(Default, Clone, Copy)]
+pub struct RuntimeOptions {
+    /// Explicit host opt-in to the bounded NativeCall v1 pure profile.
+    pub pure_accelerator: bool,
+}
+
 pub const STACK_TOP: u64 = 0x0000_7fff_fff0_0000;
 // Alpine BusyBox's interactive line editor probes a >64 KiB stack frame.
 // This mapping still counts against the existing per-process memory quota.
@@ -73,6 +79,7 @@ pub struct RuntimeMetrics {
     pub decode_lookups: u64,
     pub instructions_decoded: u64,
     pub decode_misses: u64,
+    pub native: trames_accel::native::Metrics,
 }
 pub use terminal::Terminal;
 #[derive(Debug, PartialEq, Eq)]
@@ -115,6 +122,7 @@ fn initial_stack(
             .map(|s| s.as_bytes().to_vec())
             .collect::<Vec<_>>(),
         &trames_vfs::Credentials::default(),
+        RuntimeOptions::default(),
     )
 }
 fn initial_stack_bytes(
@@ -122,6 +130,7 @@ fn initial_stack_bytes(
     argv: &[Vec<u8>],
     envp: &[Vec<u8>],
     credentials: &trames_vfs::Credentials,
+    options: RuntimeOptions,
 ) -> Result<u64, RuntimeError> {
     if argv.is_empty() {
         return Err(RuntimeError::Arguments("argv[0] is required"));
@@ -150,6 +159,14 @@ fn initial_stack_bytes(
     // Static Linux auxv, including real host entropy for the guest stack guard.
     let mut auxv = vec![
         (6u64, PAGE_SIZE),
+        (
+            trames_accel::native::AUXV_KEY,
+            if options.pure_accelerator {
+                trames_accel::native::PROFILE
+            } else {
+                0
+            },
+        ),
         (16, trames_cpu::HWCAP),
         (26, trames_cpu::HWCAP2),
         (9, elf.entry),
@@ -207,6 +224,7 @@ impl Runtime {
         argv: &[Vec<u8>],
         envp: &[Vec<u8>],
         vfs: &trames_vfs::Vfs,
+        options: RuntimeOptions,
     ) -> Result<Self, RuntimeError> {
         let mut elf = trames_elf::load_with_interpreter(bytes, DEFAULT_MEMORY_LIMIT, |path| {
             vfs.executable(path).map_err(|e| ElfError::Interpreter(e.0))
@@ -227,7 +245,7 @@ impl Runtime {
         if let Ok(path) = vfs.resolve(trames_vfs::AT_FDCWD, &linux.executable_path) {
             linux.executable_path = path;
         }
-        let sp = initial_stack_bytes(&mut elf, argv, envp, &vfs.credentials)?;
+        let sp = initial_stack_bytes(&mut elf, argv, envp, &vfs.credentials, options)?;
         for i in 0..argv.len() {
             linux
                 .argument_pointers
@@ -244,8 +262,10 @@ impl Runtime {
                 break;
             }
         }
+        let mut cpu = Cpu::new(elf.start_entry, sp);
+        cpu.set_native_calls(options.pure_accelerator);
         Ok(Self {
-            cpu: Cpu::new(elf.start_entry, sp),
+            cpu,
             memory: elf.memory,
             linux,
             terminal: None,
@@ -262,9 +282,18 @@ impl Runtime {
         envp: &[String],
         vfs: trames_vfs::Vfs,
     ) -> Result<Self, RuntimeError> {
+        Self::load_with_options(bytes, argv, envp, vfs, RuntimeOptions::default())
+    }
+    pub fn load_with_options(
+        bytes: &[u8],
+        argv: &[String],
+        envp: &[String],
+        vfs: trames_vfs::Vfs,
+        options: RuntimeOptions,
+    ) -> Result<Self, RuntimeError> {
         let argv: Vec<_> = argv.iter().map(|s| s.as_bytes().to_vec()).collect();
         let envp: Vec<_> = envp.iter().map(|s| s.as_bytes().to_vec()).collect();
-        let mut runtime = Self::load_guest(bytes, &argv, &envp, &vfs)?;
+        let mut runtime = Self::load_guest(bytes, &argv, &envp, &vfs, options)?;
         runtime.linux.vfs = vfs;
         Ok(runtime)
     }
@@ -401,5 +430,103 @@ mod tests {
             runtime.run(&mut out, 17),
             Err(RuntimeError::BudgetExceeded(17))
         ));
+    }
+}
+
+#[cfg(test)]
+mod accelerator_tests {
+    use super::*;
+    fn runtime(len: u64, permissions: Permissions) -> Runtime {
+        let mut memory = Memory::default();
+        memory.map(0x1000, PAGE_SIZE, Permissions::RW).unwrap();
+        memory.map(0x2000, PAGE_SIZE, permissions).unwrap();
+        let words = [
+            0xd2800030u32,
+            0xf2a00030,
+            0xd2800071,
+            trames_accel::native::INSTRUCTION,
+            0xd65f03c0,
+            0xd503201f,
+            0xd503201f,
+            0xd503201f,
+            0xd2800000,
+            0xd2800ba8,
+            0xd4000001,
+        ];
+        for (i, word) in words.into_iter().enumerate() {
+            memory
+                .write(0x1000 + i as u64 * 4, &word.to_le_bytes())
+                .unwrap();
+        }
+        memory.protect(0x1000, PAGE_SIZE, Permissions::RX).unwrap();
+        let mut cpu = Cpu::new(0x1000, 0x3000);
+        cpu.set_native_calls(true);
+        cpu.set_x(0, 0x2000);
+        cpu.set_x(1, 0x91);
+        cpu.set_x(2, len);
+        cpu.set_x(19, 0xabcdef);
+        cpu.set_x(30, 0x1020);
+        cpu.tpidr_el0 = 0x9988;
+        Runtime {
+            cpu,
+            memory,
+            linux: Linux::new(0),
+            terminal: None,
+            metrics: RuntimeMetrics::default(),
+            profile_syscalls: false,
+        }
+    }
+    #[test]
+    fn committed_call_retires_once_and_preserves_guest_context() {
+        let mut r = runtime(32, Permissions::RW);
+        let exit = r
+            .run(&mut trames_linux::CapturedOutput::default(), 20)
+            .unwrap();
+        assert_eq!(
+            exit,
+            Exit {
+                code: 0,
+                instructions: 8
+            }
+        );
+        assert_eq!(r.memory.read_array::<32>(0x2000).unwrap(), [0x91; 32]);
+        assert_eq!(r.cpu.x(19), 0xabcdef);
+        assert_eq!(r.cpu.sp, 0x3000);
+        assert_eq!(r.cpu.tpidr_el0, 0x9988);
+        assert_eq!(r.metrics.native.calls, 1);
+    }
+    #[test]
+    fn budget_checkpoint_fallback_and_fault_do_not_fake_retirement() {
+        let mut r = runtime(32, Permissions::RW);
+        assert!(matches!(
+            r.run(&mut trames_linux::CapturedOutput::default(), 3),
+            Err(RuntimeError::BudgetExceeded(3))
+        ));
+        assert_eq!(r.metrics.native.calls, 0);
+        assert_eq!(r.cpu.pc, 0x100c);
+        assert_eq!(r.memory.read_array::<32>(0x2000).unwrap(), [0; 32]);
+        let mut r = runtime(65537, Permissions::R);
+        assert!(matches!(
+            r.run(&mut trames_linux::CapturedOutput::default(), 4),
+            Err(RuntimeError::BudgetExceeded(4))
+        ));
+        assert_eq!(r.metrics.native.fallbacks, 1);
+        assert_eq!(r.cpu.pc, 0x1010);
+        assert_eq!(r.cpu.x(0), 0x2000);
+        assert_eq!(r.cpu.x(1), 1);
+        let mut r = runtime(32, Permissions::R);
+        let exit = r
+            .run(&mut trames_linux::CapturedOutput::default(), 4)
+            .unwrap();
+        assert_eq!(
+            exit,
+            Exit {
+                code: 139,
+                instructions: 3
+            }
+        );
+        assert_eq!(r.cpu.pc, 0x100c);
+        assert_eq!(r.cpu.x(1), 0x91);
+        assert_eq!(r.metrics.native.faults, 1);
     }
 }

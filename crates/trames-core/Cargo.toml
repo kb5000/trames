@@ -7,6 +7,7 @@ license.workspace = true
 
 
 [dependencies]
+trames-accel = { path = "../trames-accel" }
 trames-cpu = { path = "../trames-cpu" }
 trames-elf = { path = "../trames-elf" }
 trames-memory = { path = "../trames-memory" }

@@ -13,9 +13,10 @@ The initial PC is the interpreter's entry. AT_ENTRY and AT_PHDR/PHNUM describe
 the main image; AT_BASE describes the interpreter. The main image's mapped end
 sets the initial brk, independently of the interpreter and stack. Musl itself
 loads dependencies, relocates symbols including RELR and TLSDESC, initializes
-TLS and applies RELRO with mprotect. Trames does not emulate dynamic linking by
-substituting library functions. An optional [Trames Accelerator design](accelerator.md)
-is proposed separately and is not implemented. No host executable pages or JIT are involved.
+TLS and applies RELRO with mprotect. Trames leaves dynamic linking to the guest. The opt-in
+[NativeCall v1 pure profile](accelerator-v1.md) uses an explicitly installed guest
+shared library for five memory/string functions. Full libc/loader replacement
+remains an [RFC](accelerator.md). No host executable pages or JIT are involved.
 Exec constructs the entire new image before closing CLOEXEC descriptors or
 replacing the old process. Missing/unreadable interpreter errno is preserved.
 

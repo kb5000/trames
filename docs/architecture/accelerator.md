@@ -1,13 +1,15 @@
 # Trames Accelerator — Guest ABI-Compatible Native Acceleration
 
-> **Status:** Proposed design / RFC (not implemented)  
+> **Status:** RFC; initial opt-in phases A/B implemented in development; later phases proposed
 > **Date:** 2026-10-12  
 > **Repository path:** `docs/architecture/accelerator.md`  
 > **Scope:** Linux AArch64 guest; portable host backends; no-JIT baseline; optional future JIT  
 > **Naming:** “Trames Accelerator” is the umbrella name; “Guest Native Library” denotes a guest-side stub ELF; “Native Backend” denotes precompiled host implementation.
 
-Repository integration note: this owner-provided RFC is a future proposal, not an
-accepted runtime ABI or a feature of the 0.9.0 release. The source document SHA-256
+Repository integration note: this owner-provided RFC was added as a future proposal
+in 0.9.0. Subsequent development implements the limited [NativeCall v1 pure profile](accelerator-v1.md);
+the full libc/device design remains proposed. The immutable 0.9.0 IPA does not
+contain this follow-up. The source document SHA-256
 is `c89ea4adf4bbe89e6dbfbdb34328d222dd73cd8b7bbe51a2e4f93b51e2842b31`.
 
 ## 1. Summary
@@ -142,6 +144,10 @@ This is a source-reuse policy for future work, not a new implementation in 0.9.0
 
 ### 5.1 Virtual instruction selection
 
+The first [pure v1 implementation](accelerator-v1.md) allocates HLT #0x5452
+under ADR-007 and defines its narrow scalar/aggregate ABI. The wider protocol
+below remains a proposal for later profiles.
+
 The guest stub emits a designated **AArch64 trap instruction**, decoded as `NativeCall` by Trames, rather than causing a real host CPU trap. An `HLT #imm16` encoding is a **candidate**, not a finalized instruction allocation. Exact encoding, immediate, feature gating, trap precedence, and guest exception compatibility require a separate instruction-encoding review. Reserve a fixed namespace or explicitly validated stub entrypoint; do not reinterpret all guest `HLT` instructions as accelerators.
 
 **Current code** handles `BRK`/`HLT` as guest traps in `crates/trames-cpu/src/lib.rs`; the new operation needs explicit decoder, cached-interpreter, and scheduler support. On unregistered/general guest code, `HLT` retains its guest fault semantics. If the executable is run under an ordinary Linux kernel rather than Trames, the stub is not expected to work unless a separately designed fallback is present.
@@ -269,7 +275,7 @@ The two interfaces are versioned separately:
 7. **Profile toolchain:** generation of stub ELF symbols, Build-ID allowlist and ABI layout tests from pinned upstream/distribution sources.
 8. **Device resource model:** common capability/handle/async primitives without forcing GPU/video/NPU state into guest-owned libc memory.
 
-## 12. Documentation integration (recorded; implementation still proposed)
+## 12. Initial documentation integration (historical 0.9.0; full design still proposed)
 
 - This RFC is linked from [`docs/roadmap/README.md`](../roadmap/README.md) as a **future proposal**, without claiming implementation in 0.9.0.
 - A short forward-reference under [`docs/architecture/m5.md`](m5.md) states that the historic SHA-256 Bridge accelerator is separate from the proposed guest library accelerator.
