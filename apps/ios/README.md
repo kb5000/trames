@@ -83,7 +83,13 @@ membership. The [Sideloadly documentation](https://sideloadly.io/faq) describes
 signing, device trust, Developer Mode and automatic refresh. The current app
 requires iPadOS 17 or newer and does not need JIT activation.
 
-The 0.9.0/build 10 combined update is undergoing validation; see [release status](../../docs/validation/release-0.9.md).
+Current validated update: [0.9.0 (build 10) unsigned IPA artifact](https://github.com/kb5000/trames/actions/runs/38251377309/artifacts/11749317346).
+Both Linux and Apple CI passed for the same source; seven simulator tests passed,
+and all 36 IPA files match the actual ARM64 device app. This includes the shared
+mapping, memfd, file/scheduler ABI and dmesg update. See the
+[release record and verification](../../docs/validation/release-0.9.md).
+Unzip and sign `Trames-unsigned.ipa` with the same Sideloadly Apple ID/effective
+bundle ID as before to retain Linux data. No data reset or JIT activation is required.
 
 Previously validated update: [0.8.0 (build 9) unsigned IPA artifact](https://github.com/kb5000/trames/actions/runs/38236217045/artifacts/11741258008).
 The local runtime now has one Rust cached interpreter with static ARM64 native
@@ -91,7 +97,7 @@ compute and embedding ABI 3. No JIT activation is required. Expanded CPU coverag
 explicit PAC/BTI/zero-tag compatibility, synchronous Linux CPU signals and the
 removed C++/tail-dispatch executors are recorded in
 [the coverage and delivery evidence](../../docs/validation/instruction-coverage.md).
-Both Linux and Apple CI passed on the delivered source; all seven simulator tests
+For that historical 0.8 build, both Linux and Apple CI passed; all seven simulator tests
 passed, and all 36 IPA files match the actual device app build.
 Unzip it and sign `Trames-unsigned.ipa` with the same Sideloadly Apple ID/effective
 bundle ID as before to retain the current Linux environment. No data reset is

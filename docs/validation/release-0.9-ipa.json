@@ -1,0 +1,34 @@
+{
+  "bundle_id": "org.trames.Trames",
+  "version": "0.9.0",
+  "build": "10",
+  "supported_platforms": [
+    "iPhoneOS"
+  ],
+  "device_family": [
+    1,
+    2
+  ],
+  "minimum_os": "17.0",
+  "architecture": "arm64",
+  "macho_platform": "iOS device",
+  "executable_permission": true,
+  "bytes": 9473976,
+  "sha256": "8c03880e65ac2726c32a57c29ee7e03f1f4e9b7c993cebaffc6bf656456cf85b",
+  "files": 36,
+  "device_app_all_files_match": true,
+  "simulator_passed_tests": 7,
+  "simulator_failed_tests": 0,
+  "ipa_zip_crc_verified": true,
+  "artifact_zip_digests_verified": true,
+  "sha256_sidecar_verified": true,
+  "simulator_cases": [
+    "TramesTests.LocalNetworkTests testRealAlpineGatewayDNSAndHTTPSOnAppleRuntime",
+    "TramesTests.TerminalViewportTests testGestureAndProgrammaticOffsetsKeepTheLeftEdgeAndVerticalScroll",
+    "TramesTests.TerminalViewportTests testProgressRedrawAtRightmostColumnPreservesOldAndNewLeftEdges",
+    "TramesTests.TerminalViewportTests testRotationKeyboardAndFractionalResizesKeepColumnsInsideViewport",
+    "TramesTests.TerminalViewportTests testWideOutputAndContentSizeChangesCannotEnableHorizontalScrolling",
+    "TramesUITests.LaunchTests testGuestNativeRequestRequiresVisibleConsent",
+    "TramesUITests.LaunchTests testLaunchAlpineRotateExitAndReopenPersistentStore"
+  ]
+}

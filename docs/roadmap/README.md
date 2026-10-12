@@ -1,6 +1,6 @@
 # Delivery roadmap
 
-The current release candidate is [0.9.0 Linux ABI/logging](../validation/release-0.9.md),
+The current verified release is [0.9.0 Linux ABI/logging](../validation/release-0.9.md),
 with one Rust cached interpreter, static ARM64 compute and recoverable guest CPU faults.
 The C++ executor and tail-dispatch prototype have been removed.
 The [source follow-up](../validation/compatibility-log.md) adds bounded runtime

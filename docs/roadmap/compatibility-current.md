@@ -3,7 +3,7 @@
 审计日期：2026-10-12。运行时代码基于已验证的
 [0.8.0/build 9](https://github.com/kb5000/trames/tree/5d6f1076297385a0d120ff68b02a8c759d3a0db2)。
 本页已纳入后续文件接口与系统日志实现，并重新生成清单和探测结果。
-0.9.0/build 10 正在整理发布，安装包及完整 CI 状态见[发布记录](../validation/release-0.9.md)；具体范围见
+0.9.0/build 10 已通过 Linux / Apple CI 和七项 iPad 模拟器测试，安装包及证据见[发布记录](../validation/release-0.9.md)；具体范围见
 [系统日志记录](../validation/compatibility-log.md)和[共享映射与 ABI 扩展](../validation/mmap-coverage.md)。
 旧版审计保留各自的历史状态；本页作为当前剩余缺口的入口。
 

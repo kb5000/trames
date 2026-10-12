@@ -1,0 +1,41 @@
+Signed repository inputs: git=2.49.1-r0, python3=3.12.15-r0, build-base=0.5-r3, clang19=19.1.7-r6, cmake=3.31.7-r1, htop=3.4.1-r1
+Fresh signed developer package installation: passed
+git git version 2.49.1
+python3 Python 3.12.15
+gcc gcc (Alpine 14.2.0) 14.2.0
+clang-19 Alpine clang version 19.1.7
+make GNU Make 4.4.1
+cmake cmake version 3.31.7
+Python mmap/fork/resize and SQLite mmap workflow: ok
+adduser locks, su identity/home/exec and permissions: ok
+Unmodified interactive htop: renders processes and exits cleanly
+git init/commit/branch/merge/gc/fsck/clone: ok
+gcc/clang compile/link/execute: ok
+cc -O2 hello.c -o make-gcc
+clang-19 -O2 hello.c -o make-clang
+-- The C compiler identification is GNU 14.2.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/gcc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Configuring done (11.5s)
+-- Generating done (0.3s)
+-- Build files have been written to: /root/m6/cmake-build
+[ 50%] Building C object CMakeFiles/cmake-app.dir/hello.c.o
+[100%] Linking C executable cmake-app
+[100%] Built target cmake-app
+Internal ctest changing into directory: /root/m6/cmake-build
+Test project /root/m6/cmake-build
+    Start 1: guest-binary
+1/1 Test #1: guest-binary .....................   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.05 sec
+make parallel build, cmake configure/build/ctest: ok
+python selectors/asyncio/subprocess/threads/sqlite/venv: ok
+
+Guest-produced GCC/Clang AArch64 ELF binaries independently execute under QEMU
+Actual Git HTTP clone through the virtual egress gateway: passed
+Reopened store: compiled binaries, Git repository and owner data retained

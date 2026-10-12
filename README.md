@@ -226,7 +226,7 @@ LDAPUR/STLUR 等带偏移的 acquire/release 访存。单步参考实现继续�
 [下载已核验的 0.8.0/build 9 unsigned IPA](https://github.com/kb5000/trames/actions/runs/38236217045/artifacts/11741258008)，
 解压后使用相同 Apple ID／有效 bundle ID 的 Windows Sideloadly 覆盖安装，保留 Linux 数据。
 
-当前 0.8.0/build 9 源码已统一为一个 Rust 缓存解释器，移除 C++ 与尾调用原型。
+0.8.0/build 9 开始，源码已统一为一个 Rust 缓存解释器，移除 C++ 与尾调用原型。
 浮点、SIMD 和密码运算优先执行静态 ARM64 原生指令，仍无需 JIT。
 本轮增加 CSSC、BF16、复数与扩展乘加、SHA512/SHA3/SM3/SM4、MOPS 和更多访存指令；
 PAC/BTI/MTE 按功能兼容策略处理，实际跳转、访存、写回和清零仍执行。
@@ -244,7 +244,8 @@ IPA 已核验 ARM64 设备目标、版本、执行权限及全部 36 个文件�
 进一步补齐共享文件/匿名 mmap、EOF/truncate SIGBUS、msync/mremap/mincore/madvise、
 memfd 与 classic seals、文件复制/批量 I/O，以及单 CPU 的调度/亲和性接口。
 目前已实现子集增至 161 个，未实现降至 155 个，另有 2 个废弃条目。
-0.9.0/build 10 合并这些功能，目前正在完成发布验证。磁盘格式和 bundle ID 保持稳定，
+[下载已核验的 0.9.0/build 10 unsigned IPA](https://github.com/kb5000/trames/actions/runs/38251377309/artifacts/11749317346)。完整 Linux / Apple CI 与七项 iPad 模拟器测试通过。
+解压后用 Windows Sideloadly 签名。磁盘格式和 bundle ID 保持稳定，
 继续使用相同 Sideloadly Apple ID／有效 bundle ID 覆盖安装。
 [发布记录](docs/validation/release-0.9.md)。
 [系统日志](docs/validation/compatibility-log.md) · [共享映射与 ABI 验证](docs/validation/mmap-coverage.md)。
