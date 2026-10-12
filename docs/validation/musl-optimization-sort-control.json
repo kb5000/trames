@@ -1,0 +1,41 @@
+{
+  "description": "Single diagnostic pair with acceleration off in both runtimes; same full ELF and unmodified BusyBox. Not a repeated benchmark.",
+  "rows": [
+    {
+      "runtime": "previous",
+      "metrics": {
+        "backend": "cached",
+        "instructions": 62934388,
+        "seconds": 25.653560704,
+        "instructions_per_second": 2453241.821911569,
+        "cpu_seconds": 24.0036529,
+        "syscall_seconds": 0.102385403,
+        "idle_seconds": 0,
+        "syscalls": 297,
+        "proc_refreshes": 1,
+        "context_switches": 15543,
+        "decode_lookups": 2580828,
+        "decode_misses": 57,
+        "instructions_decoded": 6901
+      }
+    },
+    {
+      "runtime": "current",
+      "metrics": {
+        "backend": "cached",
+        "instructions": 62934445,
+        "seconds": 19.226834017,
+        "instructions_per_second": 3273260.9510413706,
+        "cpu_seconds": 18.530883016,
+        "syscall_seconds": 0.052835335,
+        "idle_seconds": 0,
+        "syscalls": 297,
+        "proc_refreshes": 1,
+        "context_switches": 15543,
+        "decode_lookups": 2580829,
+        "decode_misses": 57,
+        "instructions_decoded": 6902
+      }
+    }
+  ]
+}

@@ -52,6 +52,8 @@ This is a queue of candidates worth measuring, not a claim that each host call
 will be faster. Related public aliases should share implementations. Retain exact
 original musl sources and notices for fallback; prefer its algorithms or Arm
 assembly when translating native code. Avoid replacing musl with host Darwin libc.
+[Current validation and measured limits](../validation/musl-optimization.md)
+include both the bulk-copy gain and the sort regression/host timing variation.
 
 | Priority | Calls or mechanism | Benefit and required work | State |
 | --- | --- | --- | --- |
@@ -64,6 +66,7 @@ assembly when translating native code. Avoid replacing musl with host Darwin lib
 | P1 | memccpy, bcopy, bzero, explicit_bzero | Reuse copy/fill, exact stopping pointer and non-elidable zeroing contract | Queued; tiny aliases may remain local |
 | P1 | Shared anonymous/file page borrowing | Remove remaining staging; pinned resident spans, EOF and backing revision hooks, alias-safe moves | Queued; preserve a snapshot when needed |
 | P1 | Checked multi-page spans and native NEON scans | Reduce per-page dispatch; speed bulk compare/search/fill with bounded SIMD tails | Queued; sparse mappings and COW prohibit a universal contiguous pointer |
+| P1 | Operations beyond 64 KiB | Keep large copies/scans native while retaining scheduling checkpoints | Currently original fallback; cooperative chunks need overlap direction, alias coherence and a continuation that never restarts partially moved data |
 | P1 | Call thresholds and prefix policy | Avoid spending more on validation than the guest operation saves | Current 128/64 policy retained; tune from occasional device/application measurements |
 | P1 | Linux pathname/string reads | Use checked page borrows while constructing the necessary owned syscall argument; avoid copying/allocating an entire page for a short name | Queued for the generic Memory/VFS boundary |
 | P2 | strspn, strcspn, strpbrk | Character-set tables and native bulk scans; small sets can stay local | Queued; no shared global scratch |
@@ -85,7 +88,8 @@ assembly when translating native code. Avoid replacing musl with host Darwin lib
 
 ## Implementation order and acceptance
 
-1. Finish this batch's ARM64/ordinary-musl comparisons and direct/staged metrics.
+1. Completed: this batch's ARM64/ordinary-musl comparisons, direct/staged metrics,
+   Linux/Apple CI and actual simulator tests; [evidence](../validation/musl-optimization.md).
 2. Add P1 string search/copy functions in small groups. Verify zero sizes, unsigned
    characters, guards, NUL/truncation, tags, errno preservation and fallback.
 3. Borrow coherent resident backing pages where the storage abstraction supports

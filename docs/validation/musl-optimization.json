@@ -1,0 +1,204 @@
+{
+  "source_commit": "96cf231ecd8fe9e39e5af6998e55b5f041308fb8",
+  "date": "2026-10-13",
+  "timezone": "Asia/Shanghai",
+  "state": "verified local, Linux CI and Apple CI (retry attempt 2)",
+  "source_sha256": {
+    "accelerator/guest/pure.c": "81cf03027237c88edbc968157785c4d1a7c44beb950bee93352e4c1ed22eb18a",
+    "accelerator/guest/calls.S": "1b82bec28b1170f9ed4259e4e93e4be9e766172c708f46f33b5004cc0670eef9",
+    "accelerator/musl/init.c": "fa8e52cef8d9c599b4f841d4aa36cc32afe6d7aad50f1f1a9c1055cb4597eb79",
+    "accelerator/musl/symbols.h": "3f00187c3ba50fba9420ccf211d79d26731af6162581a1a030784b2873e1c44a",
+    "crates/trames-memory/src/native_access.rs": "f4f573fcc61722c46a454a55769b4b45f0cd28dc4b633e411aeb3440f93645f7",
+    "crates/trames-accel/src/native.rs": "8c6ea1940f641c7432d94f53f27210cc3cece079d40a21705ec5729acc9461ec",
+    "crates/trames-native/src/lib.rs": "3deb961e2bbe8629ed81b9e3e8730291aca654be737c39abc12f95a51912a131",
+    "crates/trames-core/src/lib.rs": "0743cc92afd5804075252367f1b35dc18015cc06a7f9f802b08394d5ac525918",
+    "scripts/build-musl-hybrid.sh": "8606b1ba36abdc1178b70b4f51b9392db2f27508e589f322e18e17d5fa1d5fbd",
+    "scripts/prepare-musl-hybrid.py": "2911b9bc233a67dbd02837cdacea9f7039a805417c82be6376094bf15b5290d2",
+    "tests/fixtures/accelerator.c": "9ae574af6e3f390b0717e06f7d49d9dda9747ce2c300fea06ad6a9d5d33ce64a",
+    "tests/integration/musl-hybrid.py": "8a536c20b20dfbe9f493c32503a4b4b3603f83df250deef1bc34397775490217",
+    "tests/performance/musl-hybrid.py": "2ba400e7255dbf2311de8f61417afa05aa3d213d90e4d2d92229574a5c9b7ec7"
+  },
+  "local_musl_manifest": {
+    "upstream": "musl-1.2.5",
+    "upstream_archive_sha256": "a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4",
+    "libc_sha256": "60d7e1d995f9d59b64ce502c401737288681e475567932b5735a0deb08f2ba5c",
+    "guest_loader": "/lib/ld-musl-aarch64.so.1",
+    "guest_libc_alias": "/lib/libc.musl-aarch64.so.1",
+    "native_profile": 65537,
+    "native_features": 1023,
+    "native_functions": [
+      "memcpy",
+      "memmove",
+      "memset",
+      "memcmp",
+      "strlen",
+      "memchr",
+      "memrchr",
+      "strnlen",
+      "strcmp",
+      "strncmp"
+    ],
+    "short_operation_threshold": 128,
+    "strlen_prefix_bytes": 64,
+    "strnlen_prefix_bytes": 64,
+    "compiler": "aarch64-linux-gnu-gcc-14 (Debian 14.2.0-19) 14.2.0"
+  },
+  "workspace_tests": 200,
+  "arm64_qemu_memory_native_accel_tests": 27,
+  "full_musl_public_exports": 1642,
+  "new_functions": [
+    "memchr",
+    "memrchr",
+    "strnlen",
+    "strcmp",
+    "strncmp"
+  ],
+  "total_functions": 10,
+  "previous_runtime_commit": "2317af01b1be8bfaea2b343e28d5c304ced3cdda",
+  "previous_runtime_binary_sha256": "d22458c66fce0dacce43799ef1de0e8b0ac82b707e3ccb546beed4cb85c2f616",
+  "current_runtime_binary_sha256": "fb24f8b2e661521af7d60541109220033a15d555fa61b0191eefab52f3499f9f",
+  "pure_fixture_sha256": "34726a5787480374b63129c481da93971836a4658baf08bd5b445eb4b4ea694b",
+  "current_fixture_metrics": {
+    "trames native metrics": {
+      "calls": 2127,
+      "function_calls": [
+        78,
+        65,
+        1008,
+        138,
+        5,
+        331,
+        330,
+        74,
+        49,
+        49
+      ],
+      "fallbacks": 454,
+      "rejected": 1,
+      "faults": 2,
+      "bytes_read": 21313901,
+      "bytes_written": 3091422,
+      "direct_bytes_read": 21305709,
+      "direct_bytes_written": 3081182,
+      "buffered_bytes_read": 8192,
+      "buffered_bytes_written": 10240,
+      "nanoseconds": 36012855
+    },
+    "trames metrics": {
+      "backend": "cached",
+      "instructions": 51955369,
+      "seconds": 9.090364694,
+      "instructions_per_second": 5715432.851037605,
+      "cpu_seconds": 8.579037816,
+      "syscall_seconds": 0.061470848,
+      "idle_seconds": 0,
+      "syscalls": 103,
+      "proc_refreshes": 1,
+      "context_switches": 14585,
+      "decode_lookups": 31509,
+      "decode_misses": 102,
+      "instructions_decoded": 9521
+    }
+  },
+  "old_host_same_library_fixture_metrics": {
+    "trames native metrics": {
+      "calls": 1294,
+      "fallbacks": 420,
+      "rejected": 1,
+      "faults": 2,
+      "bytes_read": 5180528,
+      "bytes_written": 3091422,
+      "nanoseconds": 48232952
+    },
+    "trames metrics": {
+      "backend": "cached",
+      "instructions": 104529542,
+      "seconds": 19.047681423,
+      "instructions_per_second": 5487782.984115903,
+      "cpu_seconds": 18.110051463,
+      "syscall_seconds": 0.061482846,
+      "idle_seconds": 0,
+      "syscalls": 103,
+      "proc_refreshes": 1,
+      "context_switches": 26592,
+      "decode_lookups": 44305,
+      "decode_misses": 102,
+      "instructions_decoded": 9395
+    }
+  },
+  "local_checks": [
+    "format and strict Clippy",
+    "complete-musl 12 mode/store/fixture combinations plus persistent installation/loader checks",
+    "current pure fixture with private page EOF probe",
+    "previous host with new library and exact current fixture",
+    "legacy prototype 10 comparisons",
+    "mmap memory/disk comparisons",
+    "M3 authenticated HTTPS/apk and 36 comparisons",
+    "Linux endpoint/Vim 20 checks",
+    "signed Python installation, repair and execution",
+    "embedding PTY, bridge, files and lifecycle",
+    "full source-package ELF and build-input byte identity"
+  ],
+  "benchmark": "musl-optimization-benchmark.json",
+  "sort_diagnostic": "musl-optimization-sort-control.json",
+  "ci": {
+    "linux_run_id": 38281357445,
+    "apple_run_id": 38281357373,
+    "apple_first_attempt_failure": "Pinned NIOSSH 0.3.4 sends channel window adjust in closing state in native OpenSSH test; retry of only failed job passes SSH with no source changes.",
+    "full_musl_artifact": {
+      "artifact_id": 11761247890,
+      "zip_sha256": "983ac5d94e0ffaf574e354e23f61c9ec5cc5acfca141ee9a52b4154903c5eff4",
+      "manifest": {
+        "upstream": "musl-1.2.5",
+        "upstream_archive_sha256": "a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4",
+        "libc_sha256": "3ba1ede9a7f77fd92934c1b51f9604be86e286651dcd126bf8ad6304fa3183c6",
+        "guest_loader": "/lib/ld-musl-aarch64.so.1",
+        "guest_libc_alias": "/lib/libc.musl-aarch64.so.1",
+        "native_profile": 65537,
+        "native_features": 1023,
+        "native_functions": [
+          "memcpy",
+          "memmove",
+          "memset",
+          "memcmp",
+          "strlen",
+          "memchr",
+          "memrchr",
+          "strnlen",
+          "strcmp",
+          "strncmp"
+        ],
+        "short_operation_threshold": 128,
+        "strlen_prefix_bytes": 64,
+        "strnlen_prefix_bytes": 64,
+        "compiler": "aarch64-linux-gnu-gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0"
+      },
+      "source_package_checked": "ZIP CRC, ELF digest, all five patch-input hashes/bytes and source-package ELF match the current committed source"
+    },
+    "apple_build_artifact": {
+      "artifact_id": 11762341626,
+      "zip_sha256": "910e60041dbe87900242cc6ee4ed6e610d60cefdfe328379c09b117afab94480",
+      "checked": "ZIP CRC and actual simulator test summary: 7 passed, 0 failed"
+    },
+    "simulator_tests": {
+      "passed": 7,
+      "failed": 0,
+      "raw_summary": "musl-optimization-simulator.json"
+    },
+    "linux": {
+      "run_id": 38281357445,
+      "job_id": 114919139358,
+      "attempt": 1,
+      "conclusion": "success",
+      "url": "https://github.com/kb5000/trames/actions/runs/38281357445"
+    },
+    "apple": {
+      "run_id": 38281357373,
+      "job_id": 114922158560,
+      "attempt": 2,
+      "conclusion": "success",
+      "url": "https://github.com/kb5000/trames/actions/runs/38281357373"
+    }
+  },
+  "device_release": "development follow-up; retain immutable shipped 0.10.0/build 11; grouped future signing update"
+}
