@@ -86,6 +86,14 @@ include both the bulk-copy gain and the sort regression/host timing variation.
 | P3 | time/calendar conversion, getaddrinfo and other I/O glue | Some pure calendar loops qualify; networking already has native egress | Separate pure conversion from guest errno/TLS, DNS/files and scheduling |
 | Keep local | ctype tests, abs/ffs/clz, simple byte swaps, small wrappers | Usually only a handful of instructions; transport can cost more than work | Optimize decoder/native compute if profiling shows a cost; no blanket NativeCall wrapper |
 
+The [callback measurements](../validation/native-callbacks.md) make numeric
+parsing a concrete follow-up: native qsort removes about 54% of guest instructions
+in the integer fixture, but only about 2.5% in unchanged BusyBox `sort -n`.
+Its comparator still calls guest atof/strtod. Evaluate that path next, alongside
+boundary cost, rather than treating reduced continuation bytes as a speed result.
+Guest callbacks can now nest another pure native conversion; end pointers,
+errno/TLS, locale and the ARM64 long-double ABI still need explicit contracts.
+
 ## Implementation order and acceptance
 
 1. Completed: this batch's ARM64/ordinary-musl comparisons, direct/staged metrics,

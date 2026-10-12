@@ -60,6 +60,8 @@ Public sort routing starts at 32 elements. The first profile accepts at most
 shared/backed arrays and read-only arrays select original musl before native
 array writes; read-only already-sorted arrays retain original behavior. Private
 file copies continue to check live EOF. Larger arrays also select original code.
+An initially unsupported continuation backing, including a legitimate shared
+pthread stack, also selects original code before array mutation.
 After a native array modification there is no original-function restart.
 Changing active array mappings into unsupported backing is rejected rather than
 restarting a partially sorted array. Comparators must satisfy the standard sort
@@ -74,8 +76,10 @@ runs while native slices are borrowed.
 Immediate successful native returns can reuse the remaining 4,096-instruction
 quantum. A fault or syscall returns to the outer scheduler, including blocking
 callbacks. At most 32 native returns or two milliseconds pass before the next
-outer control/signal/timer sweep, apart from the duration of one bounded native
-step. Native guest instruction retirement remains one HLT per committed result;
+outer control/signal/timer sweep. The elapsed-time check runs after a guest slice
+and native step, so their duration can exceed the time target; this is a
+cooperative limit rather than a hard real-time deadline.
+Native guest instruction retirement remains one HLT per committed result;
 internal native work is bounded separately, not reported as fictitious guest
 instructions. This removes repeated full scheduler sweeps at each comparison.
 
@@ -98,6 +102,7 @@ continuation runtime.
 Report comparator and serialization costs separately from end-to-end sort gains.
 Numeric BusyBox sort still executes its application comparator and atof/strtod
 as guest code. Native qsort alone does not establish a whole-command speedup.
+See [functional checks and measured limits](../validation/native-callbacks.md).
 
 Validation includes identical original/native comparator traces, varied record
 widths and duplicates, nested sort/search/string calls, two guest threads,
