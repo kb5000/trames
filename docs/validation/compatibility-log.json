@@ -1,0 +1,58 @@
+{
+  "date": "2026-10-12",
+  "delivery": "Source follow-up to 0.8.0/build 9; no new IPA",
+  "workspace_tests_passed": 178,
+  "checks": [
+    "fmt",
+    "clippy warnings denied",
+    "iOS target check",
+    "ARM64 release build"
+  ],
+  "new_abi_oracle": "QEMU aarch64 user 10.0.13 -cpu max",
+  "shared_fds_oracle": "native Linux kernel; QEMU rejects CLONE_FILES-only clone",
+  "guest_runtime": "actual ARM64 Rust cached interpreter under QEMU",
+  "storage_modes": [
+    "memory",
+    "disk"
+  ],
+  "integration": [
+    "real musl statx/preadv/pwritev/close_range",
+    "CLONE_FILES closure with and without UNSHARE",
+    "named and unknown ENOSYS log",
+    "child PTRUE SIGILL opcode and PC log",
+    "kmsg independent cursors and clear semantics",
+    "blocking kmsg follower",
+    "actual BusyBox dmesg after exec",
+    "M2 24 QEMU comparisons per storage mode",
+    "BusyBox 18 comparisons plus host-path isolation",
+    "actual musl CPU signal recovery seven scenarios"
+  ],
+  "binary_sha256": {
+    "target/aarch64-unknown-linux-musl/release/trames-run": "7e340197462adcbd7916a3d39c925ec31ebfc830fe011413fd1da4a685b36437",
+    "tests/fixtures/bin/compatibility-log": "bac0335f3ac9892daa8436bbd3dee118655dc42863b4b4693b626e689611b0b8",
+    "tests/fixtures/bin/compatibility-log-host": "ce728a18f6dfb7b5ae7756d33b51bedc779b8d7ca2d931ab6e1fa1ffc1271ab5",
+    "target/busybox-build/busybox": "58ee781107cb1a65049252b5ec78b6eb9cf6db76a6bbdfd228b62791cf010b93"
+  },
+  "runtime_source_sha256": {
+    "crates/trames-core/src/process.rs": "ebaa42716445fdc0cdcfac6752811163c7fb9b80001992e330ebf52a139f9c6f",
+    "crates/trames-core/src/process_events.rs": "c51f233022e6ff734ac09bc2e07950f00040d760031ec03ccb11d7d35176cb47",
+    "crates/trames-linux/src/state.rs": "6466c2f0bf2995d17612c7fcbb5867f4d8ecea506d81df8108a69c4157cafb49",
+    "crates/trames-linux/src/network.rs": "88ee4fad4624c0ade1818c77c90b32deafb9ca5293830b8e564b0e6f14255052",
+    "crates/trames-vfs/src/events.rs": "9f0497186e118a9cc947f8b9637f4af78142221bf557dd93fff7f8cc52e5c873",
+    "crates/trames-vfs/src/ipc.rs": "70359a41d4fcb60dc16f533878bff4297af9f9ada07fe2243d444766354c9dea",
+    "crates/trames-vfs/src/locks.rs": "bfd76ae2d7a69185cfaa863e5de60732e6ed1f0bf954746a2a06f72aca812d9b",
+    "crates/trames-vfs/src/lib.rs": "5e5635acd89f57eaf0b65b3b3e67da75be70c45107c1260fae3a90523f782f7e",
+    "crates/trames-vfs/src/pseudo.rs": "75b52231405a5edebfe2dd28220676b64e50078021ae8c156c20da3269908dce",
+    "crates/trames-vfs/src/storage.rs": "0383c2f879de2dc9e0678353128dbe864c0c4cf9e02ba542ae782472da680e90",
+    "crates/trames-vfs/src/kernel_log.rs": "6968f1aed1efa9688c0e2ffd122fd381e56ee7514788e7b2eaf047429069f190",
+    "crates/trames-vfs/src/syscall_names.rs": "3fa0cb4f8a3cc71f32f37dcfff68b70fb1da60ec36b9a005024559a3bcb363bc",
+    "crates/trames-memory/src/lib.rs": "391c2b5902955facfd8a3a57b57e7196c9eddaa9b2f694ca3c179cb8d72789f9"
+  },
+  "syscall_inventory": {
+    "missing": 178,
+    "implemented_subset": 138,
+    "obsolete_stub": 2
+  },
+  "cpu_decode_changed": false,
+  "device_validation": "Not packaged or tested on a physical iPad in this batch"
+}

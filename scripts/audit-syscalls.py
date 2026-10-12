@@ -53,6 +53,11 @@ for source in ('crates/trames-core/src/process.rs', 'crates/trames-linux/src/sta
                 found.setdefault(number, f'{source}:{i + 1}')
 rows = list(csv.DictReader((OUT / 'compatibility-0.4-syscalls.csv').open()))
 notes = {
+    69: 'Positioned vectored reads, bounded to 1024 iovecs and 1 MiB per transfer; full native ARM64 offset, destination preflight and unchanged shared file position.',
+    70: 'Positioned vectored writes with all-input preflight, bounded transfer and existing Linux O_APPEND behavior; shared file position unchanged.',
+    116: 'Session-scoped bounded runtime log; privileged READ/READ_ALL/READ_CLEAR/CLEAR and buffer size queries, independent /dev/kmsg cursors. No host kernel log or console control.',
+    291: 'BASIC_STATS and virtual MNT_ID, symlink/no-follow/empty-path handling, device numbers and timestamps. No invented birth time, DIO alignment or newer optional statx fields.',
+    436: 'Bounded descriptor range, CLOSE_RANGE_CLOEXEC and scheduler-mediated CLOSE_RANGE_UNSHARE with CLONE_FILES separation.',
     19: 'Bounded shared event counter; semaphore/nonblocking/cloexec, overflow and fault preflight.',
     20: 'Guest epoll open description; no host epoll descriptor.',
     21: 'Level-triggered and oneshot watches with dup identity, weak lifetime and fairness; nested/edge/exclusive modes explicitly unsupported.',
@@ -113,6 +118,7 @@ metadata = {
         'crates/trames-linux/src/state.rs', 'crates/trames-linux/src/network.rs',
         'crates/trames-vfs/src/events.rs', 'crates/trames-vfs/src/ipc.rs', 'crates/trames-vfs/src/locks.rs',
         'crates/trames-vfs/src/lib.rs', 'crates/trames-vfs/src/pseudo.rs', 'crates/trames-vfs/src/storage.rs',
+        'crates/trames-vfs/src/kernel_log.rs', 'crates/trames-vfs/src/syscall_names.rs',
         'crates/trames-memory/src/lib.rs')},
 }
 (OUT / (args.prefix + '-syscalls.json')).write_text(json.dumps(metadata, indent=2) + '\n')

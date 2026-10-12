@@ -2,7 +2,9 @@
 
 The current release is [0.8.0 CPU/native compute](../validation/instruction-coverage.md),
 with one Rust cached interpreter, static ARM64 compute and recoverable guest CPU faults.
-The C++ executor and tail-dispatch prototype have been removed. The canonical
+The C++ executor and tail-dispatch prototype have been removed.
+The [source follow-up](../validation/compatibility-log.md) adds bounded runtime
+logs and selected file syscalls for the next combined app update. The canonical
 [current CPU/Linux gaps](compatibility-current.md) links regenerated instruction
 and Linux v6.12 syscall inventories, distinguishing missing entries from partial semantics.
 [M6 compatibility](compatibility-m6.md) records the implemented Linux ABI subsets.

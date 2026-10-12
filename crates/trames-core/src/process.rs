@@ -591,6 +591,9 @@ impl Kernel {
         Ok(0)
     }
     fn synchronous_fault(&mut self, pid: u32, p: &mut Process, fault: &trames_cpu::CpuFault) {
+        p.linux
+            .vfs
+            .log(4, &format!("pid={pid} tgid={} {fault}", p.tgid));
         use trames_cpu::CpuFault as F;
         use trames_memory::MemoryError as M;
         let (sig, code, address) = match fault {
@@ -970,6 +973,17 @@ impl Kernel {
                     self.exit(pid, p, (a[0] as u8 as i32) << 8);
                 }
                 Ok(None)
+            }
+            436 => {
+                let (first, last, flags) = (a[0] as u32, a[1] as u32, a[2] as u32);
+                if first > last || flags & !6 != 0 {
+                    return Err(Errno(22));
+                }
+                if flags & 2 != 0 {
+                    p.files_id = self.resource_id();
+                }
+                p.linux.vfs.close_range(first, last, flags)?;
+                Ok(Some(0))
             }
             172 => Ok(Some(p.tgid as u64)),
             178 => Ok(Some(pid as u64)),
@@ -1449,6 +1463,9 @@ impl Kernel {
                     211 | 212 => a[2] & 0x40 != 0,
                     _ => false,
                 };
+                if number == 116 && a[0] as u32 == 2 && raw == error(Errno(11)) {
+                    return Ok(None);
+                }
                 if ((raw == error(Errno(11))
                     && matches!(
                         number,
@@ -1482,14 +1499,14 @@ impl Kernel {
         p.linux.vfs.set_lock_owner(p.tgid);
         let proc_path = match number {
             43 | 221 => Some((trames_vfs::AT_FDCWD, a[0])),
-            48 | 56 | 78 | 79 | 439 => Some((a[0] as i32, a[1])),
+            48 | 56 | 78 | 79 | 291 | 439 => Some((a[0] as i32, a[1])),
             _ => None,
         };
         let reads_proc = proc_path.is_some_and(|(dirfd, address)| {
             p.memory.read_c_string(address, 4096).is_ok_and(|path| {
                 p.linux.vfs.accesses_proc(dirfd, &path)
             })
-        }) || (matches!(number, 44 | 61 | 63 | 65 | 67 | 80)
+        }) || (matches!(number, 44 | 61 | 63 | 65 | 67 | 69 | 80)
             && p.linux.vfs.fd_kind(a[0] as u32).is_ok_and(|kind| {
                 matches!(kind, FdKind::Node(path) if path == b"/proc" || path.starts_with(b"/proc/"))
             }));
@@ -1520,6 +1537,11 @@ impl Kernel {
                 None
             }
             Err(e) => {
+                if matches!(e.0, 38 | 95) {
+                    p.linux
+                        .vfs
+                        .log_syscall(number as u64, p.cpu.pc.saturating_sub(4), a, e.0);
+                }
                 let raw = error(e);
                 p.cpu.set_x(0, raw);
                 p.state = State::Ready;
@@ -2352,6 +2374,65 @@ mod tests {
             timers: BTreeMap::new(),
             next_timer: 1,
         }
+    }
+    #[test]
+    fn close_range_unshare_detaches_only_callers_shared_table() {
+        let mut k = kernel();
+        let mut p = process();
+        let mut io = trames_linux::CapturedOutput::default();
+        let fd = p.linux.vfs.open_at(-100, b"/file", 0x42, 0o600).unwrap();
+        k.processes.insert(2, p.fork());
+        assert_eq!(
+            k.syscall(
+                1,
+                &mut p,
+                436,
+                [fd as u64, u32::MAX as u64, 8, 0, 0, 0],
+                &mut io
+            ),
+            Err(Errno(22))
+        );
+        assert_eq!(p.files_id, 1);
+        assert_eq!(
+            k.syscall(
+                1,
+                &mut p,
+                436,
+                [fd as u64, u32::MAX as u64, 2, 0, 0, 0],
+                &mut io
+            ),
+            Ok(Some(0))
+        );
+        k.sync_resources(&p);
+        assert_ne!(p.files_id, k.processes[&2].files_id);
+        assert_eq!(p.linux.vfs.fd_kind(fd), Err(Errno(9)));
+        assert!(k.processes[&2].linux.vfs.fd_kind(fd).is_ok());
+        let fd = p.linux.vfs.open_at(-100, b"/file", 0, 0).unwrap();
+        assert_eq!(
+            k.syscall(1, &mut p, 436, [fd as u64, fd as u64, 4, 0, 0, 0], &mut io),
+            Ok(Some(0))
+        );
+        assert!(p.linux.vfs.fd_kind(fd).is_ok());
+        p.linux.vfs.close_exec();
+        assert_eq!(p.linux.vfs.fd_kind(fd), Err(Errno(9)));
+    }
+    #[test]
+    fn unsupported_instruction_log_survives_child_exit() {
+        let mut k = kernel();
+        let parent = process();
+        let mut child = parent.fork();
+        k.synchronous_fault(
+            2,
+            &mut child,
+            &trames_cpu::CpuFault::Instruction {
+                pc: 0x4560,
+                instruction: 0x2518e3e0,
+            },
+        );
+        let text = String::from_utf8(parent.linux.vfs.syslog(3, 4096).unwrap()).unwrap();
+        assert!(text.contains("pid=2"));
+        assert!(text.contains("0x2518e3e0"));
+        assert!(text.contains("0x4560"));
     }
     #[test]
     fn process_signals_are_single_delivery_and_thread_signals_check_identity_and_permissions() {

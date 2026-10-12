@@ -236,6 +236,15 @@ IPA 已核验 ARM64 设备目标、版本、执行权限及全部 36 个文件�
 [当前 CPU/Linux 剩余缺口](docs/roadmap/compatibility-current.md) ·
 [系统调用清单](docs/validation/compatibility-current-syscalls.csv)。
 
+## 后续源码：文件接口与系统日志
+
+补充 statx、preadv/pwritev、close_range（含 CLOEXEC/UNSHARE）及 syslog。
+`dmesg` 可查看未实现系统调用的名称/编号、参数和 PC，以及 CPU 故障的指令编码。
+`/dev/kmsg` 提供共享、有界的会话日志与独立读取游标；日志不写入磁盘，有限流。
+目前已实现子集增至 138 个，未实现降至 178 个，另有 2 个废弃条目。
+这些源码将并入下一次合并更新，已有 0.8.0/build 9 IPA 不包含它们。
+[实现、命令与验证](docs/validation/compatibility-log.md)。
+
 ## 结构与范围
 
 | crate | 当前职责 |

@@ -67,6 +67,8 @@ jobs:
         run: |
           bash scripts/build-cpu-fixtures.sh
           python3 tests/integration/cpu-signals.py
+      - run: bash scripts/build-compatibility-log-fixtures.sh
+      - run: python3 tests/integration/compatibility-log.py
       - run: python3 tests/integration/busybox.py
       - run: bash scripts/build-m2-fixtures.sh
       - run: python3 tests/integration/m2.py

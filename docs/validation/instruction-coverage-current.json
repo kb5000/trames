@@ -37,7 +37,7 @@
     "crates/trames-compute/src/x86.rs": "62168f148b1ffe4fadf89bceabd2441ee4fd1026b1873acd66779e2fbdf1cba2",
     "crates/trames-memory/src/lib.rs": "391c2b5902955facfd8a3a57b57e7196c9eddaa9b2f694ca3c179cb8d72789f9",
     "crates/trames-core/src/process_events.rs": "c51f233022e6ff734ac09bc2e07950f00040d760031ec03ccb11d7d35176cb47",
-    "crates/trames-core/src/process.rs": "4a7a1379f3c3690467c9492fe96fe79acee28c89a70f7c559e332a390cfd456a",
+    "crates/trames-core/src/process.rs": "ebaa42716445fdc0cdcfac6752811163c7fb9b80001992e330ebf52a139f9c6f",
     "crates/trames-core/src/lib.rs": "b12f2142173745125492cdcbac160d7cfb24975a7598e33eebf1f927abb4f592"
   }
 }

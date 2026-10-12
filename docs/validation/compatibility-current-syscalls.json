@@ -2,26 +2,28 @@
   "scope": "Linux v6.12 native AArch64 numbered entries; entry presence is not full ABI conformance",
   "entries": 318,
   "statuses": {
-    "missing": 183,
-    "implemented_subset": 133,
+    "missing": 178,
+    "implemented_subset": 138,
     "obsolete_stub": 2
   },
-  "undispatched_probes_per_backend": 185,
+  "undispatched_probes_per_backend": 180,
   "backends": [
     "cached"
   ],
   "unhandled_return": -38,
   "source_sha256": {
-    "crates/trames-core/src/process.rs": "4a7a1379f3c3690467c9492fe96fe79acee28c89a70f7c559e332a390cfd456a",
+    "crates/trames-core/src/process.rs": "ebaa42716445fdc0cdcfac6752811163c7fb9b80001992e330ebf52a139f9c6f",
     "crates/trames-core/src/process_events.rs": "c51f233022e6ff734ac09bc2e07950f00040d760031ec03ccb11d7d35176cb47",
-    "crates/trames-linux/src/state.rs": "209db9e53337b723f96fc6809d4c37f3f75eef244aee56bc42c63da56e421b78",
+    "crates/trames-linux/src/state.rs": "6466c2f0bf2995d17612c7fcbb5867f4d8ecea506d81df8108a69c4157cafb49",
     "crates/trames-linux/src/network.rs": "88ee4fad4624c0ade1818c77c90b32deafb9ca5293830b8e564b0e6f14255052",
-    "crates/trames-vfs/src/events.rs": "1d9acdcc1936ab773c217917cccbfde1472787cf09802428685510d1bc6a3f46",
-    "crates/trames-vfs/src/ipc.rs": "0be5d6f217b9d36de1d3c7bdac6a4cc56e1b05218cb918af5a307d74ef23435a",
+    "crates/trames-vfs/src/events.rs": "9f0497186e118a9cc947f8b9637f4af78142221bf557dd93fff7f8cc52e5c873",
+    "crates/trames-vfs/src/ipc.rs": "70359a41d4fcb60dc16f533878bff4297af9f9ada07fe2243d444766354c9dea",
     "crates/trames-vfs/src/locks.rs": "bfd76ae2d7a69185cfaa863e5de60732e6ed1f0bf954746a2a06f72aca812d9b",
-    "crates/trames-vfs/src/lib.rs": "8b27e7efc9c0e5a3807045316f59d82801484b6aac5c3b0e44a3e8646687faf9",
-    "crates/trames-vfs/src/pseudo.rs": "dca293ac8e6219a8194588e930796f9993e91161899ac6d75bdeac4d69e6be3b",
+    "crates/trames-vfs/src/lib.rs": "5e5635acd89f57eaf0b65b3b3e67da75be70c45107c1260fae3a90523f782f7e",
+    "crates/trames-vfs/src/pseudo.rs": "75b52231405a5edebfe2dd28220676b64e50078021ae8c156c20da3269908dce",
     "crates/trames-vfs/src/storage.rs": "0383c2f879de2dc9e0678353128dbe864c0c4cf9e02ba542ae782472da680e90",
+    "crates/trames-vfs/src/kernel_log.rs": "6968f1aed1efa9688c0e2ffd122fd381e56ee7514788e7b2eaf047429069f190",
+    "crates/trames-vfs/src/syscall_names.rs": "3fa0cb4f8a3cc71f32f37dcfff68b70fb1da60ec36b9a005024559a3bcb363bc",
     "crates/trames-memory/src/lib.rs": "391c2b5902955facfd8a3a57b57e7196c9eddaa9b2f694ca3c179cb8d72789f9"
   }
 }

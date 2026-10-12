@@ -1,8 +1,10 @@
-# 当前 CPU 指令与 Linux 系统调用缺口（0.8.0）
+# 当前 CPU 指令与 Linux 系统调用缺口（0.8 后续源码）
 
-审计日期：2026-10-12。运行时代码对应已验证的
+审计日期：2026-10-12。运行时代码基于已验证的
 [0.8.0/build 9](https://github.com/kb5000/trames/tree/5d6f1076297385a0d120ff68b02a8c759d3a0db2)。
-本次重新生成清单和探测结果，没有修改运行时或生成新的 IPA。
+本页已纳入后续文件接口与系统日志实现，并重新生成清单和探测结果。
+这些后续源码尚未进入已有 IPA，将并入下一次合并更新；具体范围见
+[实现与验证记录](../validation/compatibility-log.md)。
 旧版审计保留各自的历史状态；本页作为当前剩余缺口的入口。
 
 ## CPU：尚未实现与兼容替代
@@ -38,8 +40,8 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 ## Linux：尚无入口的系统调用
 
 固定参照仍为 Linux v6.12 原生 AArch64 的 318 个编号，不是最新版内核的全部接口。
-当前有 **133 个已实现子集、183 个未实现条目、2 个废弃条目**。
-本轮使用实际 ARM64 构建，在唯一缓存解释器上逐个调用全部 185 个未分派编号，
+当前有 **138 个已实现子集、178 个未实现条目、2 个废弃条目**。
+本轮使用实际 ARM64 构建，在唯一缓存解释器上逐个调用全部 180 个未分派编号，
 均返回 `-ENOSYS`（-38）。这验证的是无入口行为，不能代替已有入口的 ABI 完整性测试。
 
 完整的编号、名称、状态、当前源码位置和探测返回值见
@@ -47,12 +49,12 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 单后端、统计及源码指纹见 [审计 JSON](../validation/compatibility-current-syscalls.json)。
 可运行 `python3 scripts/audit-syscalls.py` 更新当前报告，历史报告不会被默认覆盖。
 
-以下按用途列出主要缺口；每行列举代表接口，完整 183 项以 CSV 中 `missing` 行为准。
+以下按用途列出主要缺口；每行列举代表接口，完整 178 项以 CSV 中 `missing` 行为准。
 
 | 用途 | 尚未实现的代表接口 |
 | --- | --- |
-| 文件元数据与路径 | statx、openat2、fchmodat2、execveat、close_range；set/get/list/remove xattr 的路径、链接及 fd 变体 |
-| 文件数据与批量 I/O | preadv/pwritev/v2、sendfile、splice/vmsplice/tee、copy_file_range、fallocate、syncfs、sync_file_range、readahead、fadvise64 |
+| 文件元数据与路径 | openat2、fchmodat2、execveat；set/get/list/remove xattr 的路径、链接及 fd 变体 |
+| 文件数据与批量 I/O | preadv2/pwritev2、sendfile、splice/vmsplice/tee、copy_file_range、fallocate、syncfs、sync_file_range、readahead、fadvise64 |
 | 文件通知和异步 I/O | inotify、fanotify、旧 AIO、io_uring、signalfd4 |
 | 内存 | mremap、msync、madvise、mincore、memfd_create/secret、mlock/munlock 系列、userfaultfd、mseal、内存策略与 pkey 系列 |
 | 进程与调度 | clone3、waitid、pidfd 系列、sched 参数/亲和性、get/setpriority、getrusage、times、getcpu、rseq、membarrier |
@@ -61,13 +63,18 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 | 内核管理与隔离 | mount/umount/pivot_root 及新挂载 API、chroot、unshare/setns、capget/capset、ptrace/seccomp、process_vm_readv/writev、bpf/perf、landlock、模块/重启/交换分区等 |
 
 2 个废弃条目是 `lookup_dcookie`（18）与 `nfsservctl`（42），同样返回 ENOSYS，
-不计入 183 个未实现条目。内核管理类接口需要结合用户态虚拟化目标选择范围，
+不计入 178 个未实现条目。内核管理类接口需要结合用户态虚拟化目标选择范围，
 不能把完整内核功能视为普通文件/进程接口的自然延伸。
+
+本轮新增 statx、preadv/pwritev、close_range 和 syslog；它们仍按已实现子集标注。
+`dmesg` 可读取当前会话的未实现调用和 CPU 故障；`/dev/kmsg` 提供独立读取游标，
+具体边界及命令见[系统日志记录](../validation/compatibility-log.md)。
 
 ## Linux：已有入口但语义仍有缺口
 
 | 已有接口或设施 | 仍缺少的行为 |
 | --- | --- |
+| statx / syslog | statx 不报告未有依据的 birth time、DIO 对齐等可选字段；syslog 不接管宿主内核日志或控制台 |
 | mmap / 文件映射 | 共享文件 MAP_SHARED、一致写回、超过 EOF 的 SIGBUS 语义；目前支持已验证的私有文件映射和匿名映射 |
 | rt_sigaction / 信号帧 | SA_ONSTACK 在未启用备用栈时使用普通栈；sigaltstack 注册、完整实时排队、SVE/SME 信号上下文仍缺失；同步 CPU 故障恢复已有实现 |
 | socket / socketpair | Unix socketpair 已实现；具名 AF_UNIX 端点、SCM_RIGHTS 等辅助消息传递仍缺失 |
