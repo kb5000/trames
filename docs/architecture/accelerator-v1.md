@@ -36,7 +36,7 @@ The guest flag/manifest cannot enable a host-disabled CPU or grant host access.
 | Field | Meaning |
 | --- | --- |
 | x16 | `(protocol << 16) | module`, currently `0x10001` |
-| x17 | 1 memcpy, 2 memmove, 3 memset, 4 memcmp, 5 strlen |
+| x17 | 1 memcpy, 2 memmove, 3 memset, 4 memcmp, 5 strlen; full musl adds 6 memchr, 7 memrchr, 8 strnlen, 9 strcmp, 10 strncmp |
 | x0/x1/x2 | Normal LP64 C arguments; memset takes the low unsigned byte |
 | x0/x1 result | Internal aggregate: value, fallback (0 success / 1 original guest implementation) |
 | Virtual encoding | `HLT #0x5452` (`0xd44a8a40`) |
@@ -58,9 +58,14 @@ larger work uses a typed return, then the original interpreted guest function.
 
 ## Memory and original code
 
-`trames-accel::native` validates guest memory in safe Rust. Copy/move read a bounded
-snapshot, call the native routine on independent host slices, then write through
-Memory. This supports overlap, COW, shared aliases and code-cache invalidation.
+`trames-accel::native` validates guest memory in safe Rust. The development
+follow-up uses scoped direct page slices for ordinary guest memory; directional
+copy and host within-page memmove preserve overlap. Backed copies retain one
+bounded source snapshot, and shared backing writes retain coherent staging.
+This supports COW, shared aliases and code-cache invalidation. The complete
+[optimization queue](../roadmap/musl-optimization.md) describes the direct and
+buffered cases. New full-musl entries require function bits from private auxv
+key `0x54520002`; old hosts without it retain original fallback for new calls.
 Copies/fills preflight the complete bounded data ranges. Ordinary pointer/protection/
 EOF faults therefore precede writes; backing I/O errors may expose prior page writes.
 This does not promise the exact partial-store order of every upstream instruction.
@@ -73,7 +78,8 @@ Zero-size operations do not dereference pointers; same-pointer memmove is a no-o
 The original musl 1.2.5 Arm memcpy/memset assembly is statically assembled into
 `trames-native` for ARM64, with only macro/symbol/object-format adaptation, including Mach-O local-label
 prefixes for ThinLTO. Safe
-Rust translations retain musl memcmp and strlen's algorithms. Development hosts
+Rust translations retain musl unsigned comparison and HASZERO scan algorithms,
+extended to bounded forward/reverse search and string comparisons. Development hosts
 use Rust slice operations. Guest fallback compiles the original musl C and Arm
 sources, privately renamed to avoid recursion. Original upstream bytes, archive
 SHA-256, per-file fingerprints and full MIT/Arm notices are kept under
@@ -85,7 +91,8 @@ The new wrapper and integration remain GPL-3.0-or-later.
 [First implementation evidence](../validation/accelerator-v1.md) records actual
 ARM64 comparisons, native canaries, protocol/budget/fault checks and the one-shot
 benchmark. Native metrics report calls, fallbacks, rejected entries, faults, guest
-bytes copied and body nanoseconds. Total CLI CPU/wall metrics also include entry
-validation/dispatch. The first bridge uses temporary buffers rather than a
-zero-copy borrow; measurements include that cost. No new benchmark is run on
+bytes supplied and body nanoseconds. Current development also reports per-ID
+entry counts and direct/buffered bytes. Total CLI CPU/wall metrics include entry
+validation/dispatch. Historical first-bridge measurements include its temporary
+buffers; follow-up measurements are recorded separately. No new benchmark is run on
 every CI push. The existing Linux syscall and ordinary ISA counts are unchanged.

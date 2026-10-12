@@ -50,7 +50,11 @@ with tempfile.TemporaryDirectory(prefix='trames-full-musl-') as folder:
                 actual=run(cmd);assert actual.stdout==expected.stdout,actual
                 native,_=metrics(actual)
                 assert native['calls']>0 if enabled else native['calls']==0,native
-                if name=='accelerator-full-musl' and enabled:assert native['fallbacks']>0 and native['rejected']==1 and native['faults']>=1,native
+                if name=='accelerator-full-musl' and enabled:
+                    assert native['fallbacks']>0 and native['rejected']==1 and native['faults']>=1,native
+                    assert all(native['function_calls'][5:]),native
+                    assert native['direct_bytes_read']>1000000 and native['direct_bytes_written']>1000000,native
+                    assert native['buffered_bytes_read']>0 and native['buffered_bytes_written']>0,native
                 if name!='accelerator-full-musl':assert native['faults']==0 and native['rejected']==0,native
                 print('PASS',name,'memory='+str(memory),'enabled='+str(enabled),flush=True)
     # Upgrade an existing environment, preserve user data, reopen idempotently,

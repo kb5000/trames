@@ -22,7 +22,7 @@ for source,target in [('accelerator/guest/pure.c','pure.c'),('accelerator/guest/
 make=tree/'Makefile'
 with make.open('a') as f:
     f.write('\n# Trames pure profile: only these original objects are privately renamed.\n')
-    for name in ['aarch64/memcpy','aarch64/memset','memmove','memcmp','strlen']:
+    for name in ['aarch64/memcpy','aarch64/memset','memmove','memcmp','strlen','memchr','memrchr','strnlen','strcmp','strncmp']:
         f.write(f'obj/src/string/{name}.o obj/src/string/{name}.lo: CPPFLAGS += -include $(srcdir)/src/trames/symbols.h\n')
     f.write('obj/src/trames/pure.o obj/src/trames/pure.lo: CPPFLAGS += -DTRAMES_FULL_MUSL\n')
     f.write('obj/src/trames/pure.o obj/src/trames/pure.lo obj/src/trames/init.o obj/src/trames/init.lo: CFLAGS += -fno-stack-protector -fno-builtin\n')

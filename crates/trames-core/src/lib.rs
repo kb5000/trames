@@ -167,6 +167,14 @@ fn initial_stack_bytes(
                 0
             },
         ),
+        (
+            trames_accel::native::FEATURES_AUXV_KEY,
+            if options.pure_accelerator {
+                trames_accel::native::FEATURES
+            } else {
+                0
+            },
+        ),
         (16, trames_cpu::HWCAP),
         (26, trames_cpu::HWCAP2),
         (9, elf.entry),

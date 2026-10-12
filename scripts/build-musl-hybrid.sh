@@ -30,7 +30,7 @@ cp "$source_tree/trames-patch.json" "$output/trames-patch.json"
 cp LICENSE "$output/GPL-3.0.txt"
 python3 - "$output" "$compiler" <<'PY'
 import hashlib,json,pathlib,subprocess,sys
-p=pathlib.Path(sys.argv[1]);v={'upstream':'musl-1.2.5','upstream_archive_sha256':'a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4','libc_sha256':hashlib.sha256((p/'libc.so').read_bytes()).hexdigest(),'guest_loader':'/lib/ld-musl-aarch64.so.1','guest_libc_alias':'/lib/libc.musl-aarch64.so.1','native_profile':65537,'short_operation_threshold':128,'strlen_prefix_bytes':64,'compiler':subprocess.check_output([sys.argv[2],'--version']).decode().splitlines()[0]}
+p=pathlib.Path(sys.argv[1]);v={'upstream':'musl-1.2.5','upstream_archive_sha256':'a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4','libc_sha256':hashlib.sha256((p/'libc.so').read_bytes()).hexdigest(),'guest_loader':'/lib/ld-musl-aarch64.so.1','guest_libc_alias':'/lib/libc.musl-aarch64.so.1','native_profile':65537,'native_features':1023,'native_functions':['memcpy','memmove','memset','memcmp','strlen','memchr','memrchr','strnlen','strcmp','strncmp'],'short_operation_threshold':128,'strlen_prefix_bytes':64,'strnlen_prefix_bytes':64,'compiler':subprocess.check_output([sys.argv[2],'--version']).decode().splitlines()[0]}
 (p/'manifest.json').write_text(json.dumps(v,indent=2)+'\n')
 PY
 # Exact original archive plus complete patches/build scripts provide the source.

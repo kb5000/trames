@@ -32,3 +32,10 @@ Measure activation on/off using identical guest binaries. Record small-call
 regressions as well as bulk gains. Follow-up zero-copy borrows or size-based guest
 fallback policy need their own correctness/performance evidence; this decision
 makes no physical-iPad or whole-application speed claim.
+
+Owner-directed follow-up, 2026-10-13: scoped direct guest-page borrows replace
+temporary buffers where ownership/coherence allow them. Live backing aliases
+retain bounded source snapshots and write-through staging. Add IDs 6–10 behind
+optional auxv function bitmap `0x54520002`, keeping the original profile/IDs
+and fallback on older hosts. This pure ABI needs no internal libc layout;
+stateful profiles still require one. See the [queue and constraints](../roadmap/musl-optimization.md).

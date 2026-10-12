@@ -10,6 +10,11 @@
     "src/string/memcmp.c": "826b1b5e84d3c0fb68be827c051f6dc0d67da17ee3a444e94be0e5360586916f",
     "src/string/strlen.c": "cf9359c1bcee96df1f3a7ef0fb969339b7ed87b202d80dc7e7fcd6d1239b7484",
     "src/string/aarch64/memcpy.S": "1ead3716276e8a58e2e015e89fd565d9f33c10b2bc482c303b68b90c9d0f7cef",
-    "src/string/aarch64/memset.S": "4eacce5e57f178a284fd5a48925f4398d593df6cb2b6f727bb495a78fd3cbabf"
+    "src/string/aarch64/memset.S": "4eacce5e57f178a284fd5a48925f4398d593df6cb2b6f727bb495a78fd3cbabf",
+    "src/string/memchr.c": "9c641c12fbcc6acd2cc18f6d969d9ccdcf11b27fdfb1f47b8804206bbef05581",
+    "src/string/memrchr.c": "3926a6c6ef783c440c65f762a1693cc83a53035abfe80059586b7bc7b1e8a97f",
+    "src/string/strnlen.c": "3a72ef5250b314ca0d8ff0fed2f6aa10c8b2b26605806c759faf0d1a9b835a9e",
+    "src/string/strcmp.c": "3e1793ea2dd358e5c884c4dd232083605d0f6775f7ebe19d03d64fe97068a78f",
+    "src/string/strncmp.c": "df801c43304b27dcda67f219a7a3ca34a8fb06f4e63d21e8a6bcb36b03c3c012"
   }
 }

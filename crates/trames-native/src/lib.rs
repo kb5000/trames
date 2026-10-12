@@ -36,10 +36,65 @@ pub fn fill(dst: &mut [u8], value: u8) {
     #[cfg(not(target_arch = "aarch64"))]
     dst.fill(value);
 }
+/// musl memchr's HASZERO scan, on a checked slice rather than a guest pointer.
+pub fn first_byte(bytes: &[u8], byte: u8) -> Option<usize> {
+    let repeated = u64::from_ne_bytes([byte; 8]);
+    for (i, chunk) in bytes.chunks_exact(8).enumerate() {
+        let value = u64::from_ne_bytes(chunk.try_into().unwrap()) ^ repeated;
+        if value.wrapping_sub(0x0101_0101_0101_0101) & !value & 0x8080_8080_8080_8080 != 0 {
+            return chunk.iter().position(|&b| b == byte).map(|n| i * 8 + n);
+        }
+    }
+    let offset = bytes.len() / 8 * 8;
+    bytes[offset..]
+        .iter()
+        .position(|&b| b == byte)
+        .map(|n| offset + n)
+}
+
+/// Reverse bounded search, with word skips and exact unsigned-byte matching.
+pub fn last_byte(bytes: &[u8], byte: u8) -> Option<usize> {
+    let repeated = u64::from_ne_bytes([byte; 8]);
+    let mut end = bytes.len();
+    while end >= 8 {
+        let chunk = &bytes[end - 8..end];
+        let value = u64::from_ne_bytes(chunk.try_into().unwrap()) ^ repeated;
+        if value.wrapping_sub(0x0101_0101_0101_0101) & !value & 0x8080_8080_8080_8080 != 0 {
+            return chunk.iter().rposition(|&b| b == byte).map(|n| end - 8 + n);
+        }
+        end -= 8;
+    }
+    bytes[..end].iter().rposition(|&b| b == byte)
+}
+
+/// Compare string fragments, returning None when both need another page.
+pub fn compare_strings(left: &[u8], right: &[u8]) -> Option<i32> {
+    assert_eq!(left.len(), right.len());
+    let mut offset = 0;
+    while offset + 8 <= left.len() {
+        let a = u64::from_ne_bytes(left[offset..offset + 8].try_into().unwrap());
+        let b = u64::from_ne_bytes(right[offset..offset + 8].try_into().unwrap());
+        if a != b || a.wrapping_sub(0x0101_0101_0101_0101) & !a & 0x8080_8080_8080_8080 != 0 {
+            break;
+        }
+        offset += 8;
+    }
+    for (&a, &b) in left[offset..].iter().zip(&right[offset..]) {
+        if a != b || a == 0 {
+            return Some(i32::from(a) - i32::from(b));
+        }
+    }
+    None
+}
+
 /// Safe translation of pinned musl memcmp.c; unsigned-byte result, no host errno.
 pub fn compare(left: &[u8], right: &[u8]) -> i32 {
     assert_eq!(left.len(), right.len());
-    for (&a, &b) in left.iter().zip(right) {
+    let mut offset = 0;
+    while offset + 8 <= left.len() && left[offset..offset + 8] == right[offset..offset + 8] {
+        offset += 8;
+    }
+    for (&a, &b) in left[offset..].iter().zip(&right[offset..]) {
         if a != b {
             return i32::from(a) - i32::from(b);
         }
@@ -66,6 +121,41 @@ pub fn first_zero(bytes: &[u8]) -> Option<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn word_search_and_string_compare_match_unsigned_byte_references() {
+        for byte in 0..=255 {
+            for len in 0usize..=80 {
+                let mut bytes: Vec<_> = (0..len).map(|i| (i * 13 + 1) as u8).collect();
+                for position in [0, len / 2, len.saturating_sub(1)] {
+                    if len != 0 {
+                        bytes[position] = byte;
+                    }
+                    assert_eq!(
+                        first_byte(&bytes, byte),
+                        bytes.iter().position(|&b| b == byte)
+                    );
+                    assert_eq!(
+                        last_byte(&bytes, byte),
+                        bytes.iter().rposition(|&b| b == byte)
+                    );
+                }
+            }
+        }
+        for position in 0..80 {
+            let mut a = [0xff; 80];
+            let mut b = a;
+            b[position] = 1;
+            assert_eq!(compare_strings(&a, &b), Some(254));
+            assert_eq!(compare_strings(&b, &a), Some(-254));
+            a[position] = 0;
+            b[position] = 0;
+            if position + 1 < 80 {
+                b[position + 1] = 17;
+            }
+            assert_eq!(compare_strings(&a, &b), Some(0));
+        }
+        assert_eq!(compare_strings(&[1; 64], &[1; 64]), None);
+    }
     #[test]
     fn original_arm_routines_preserve_canaries_for_every_length_and_alignment() {
         for len in (0usize..260).chain([511, 512, 4095, 4096, 65536]) {

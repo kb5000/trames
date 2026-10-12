@@ -22,4 +22,9 @@ ENTRY 2
 ENTRY 3
 ENTRY 4
 ENTRY 5
+ENTRY 6
+ENTRY 7
+ENTRY 8
+ENTRY 9
+ENTRY 10
 .section .note.GNU-stack,"",%progbits

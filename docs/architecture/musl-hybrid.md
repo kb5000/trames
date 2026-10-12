@@ -11,8 +11,11 @@ as musl 1.2.5.
 ## Startup and implementation
 
 Original musl source supplies the allocator, TLS, pthreads, loader, I/O, math,
-locale and all other libc functions. Only memcpy/memmove/memset/memcmp/strlen
-are wrapped. Original fallback source bytes stay intact: selected object files
+locale and all other libc functions. The 0.10.0 release wraps
+memcpy/memmove/memset/memcmp/strlen. The development follow-up also wraps
+memchr/memrchr/strnlen/strcmp/strncmp, with a function capability bitmap and
+[direct guest-page access](../roadmap/musl-optimization.md).
+Original fallback source bytes stay intact: selected object files
 are privately renamed through a compilation header. The original Arm assembly
 remains the memcpy/memset fallback.
 
@@ -30,7 +33,7 @@ cross a page. Larger work uses NativeCall v1, including its 64 KiB limit and
 typed original-code fallback. Disabled Trames sessions and ordinary Linux/QEMU
 use original routines and never execute the virtual HLT.
 
-This is a complete hybrid libc/loader, with five adapted pure functions. Stateful
+This is a complete hybrid libc/loader; current development adapts ten pure functions. Stateful
 native allocator/TLS/I/O profiles remain future work requiring exact layout and
 build identity contracts. Statically linked existing programs retain their
 embedded libc; replacing a shared library cannot accelerate them automatically.
