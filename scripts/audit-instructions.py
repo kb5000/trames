@@ -12,7 +12,7 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-ARCH = 'armv9.4-a+sve2+sme+crypto+sha3+sm4+lse128+memtag+ls64'
+ARCH = 'armv9.4-a+cssc+sve2+sme+crypto+sha3+sm4+lse128+memtag+ls64'
 
 
 def additional_samples():

@@ -17,7 +17,14 @@ from run import RUNNER
 AS = os.getenv('AARCH64_AS', 'aarch64-linux-gnu-as')
 LD = os.getenv('AARCH64_LD', 'aarch64-linux-gnu-ld')
 QEMU = os.getenv('QEMU_AARCH64', 'qemu-aarch64')
-ARCH = 'armv9.4-a+crypto+sha3+sm4+lse128+memtag+ls64'
+ARCH = 'armv9.4-a+cssc+crypto+sha3+sm4+lse128+memtag+ls64'
+
+
+def checked_tool(command):
+    try:
+        subprocess.run(command, check=True, capture_output=True)
+    except subprocess.CalledProcessError as error:
+        raise RuntimeError(error.stderr.decode(errors='replace')) from error
 
 
 def write_output(length):
@@ -28,14 +35,14 @@ def write_output(length):
 
 def compare(folder, code, name, stride=None, cases=None, oracle_code=None):
     (folder/'case.S').write_text('\n'.join(code)+'\n')
-    subprocess.run([AS, '-march='+ARCH, '-o', str(folder/'case.o'), str(folder/'case.S')], check=True, capture_output=True)
-    subprocess.run([LD, '-static', '--build-id=none', '-z', 'noexecstack', '-o', str(folder/'case'), str(folder/'case.o')], check=True, capture_output=True)
+    checked_tool([AS, '-march='+ARCH, '-o', str(folder/'case.o'), str(folder/'case.S')])
+    checked_tool([LD, '-static', '--build-id=none', '-z', 'noexecstack', '-o', str(folder/'case'), str(folder/'case.o')])
     actual = subprocess.run([RUNNER, '--memory', '--max-instructions', '100000000', str(folder/'case')], capture_output=True, timeout=45)
     oracle_binary = folder / 'case'
     if oracle_code is not None:
         (folder/'oracle.S').write_text('\n'.join(oracle_code)+'\n')
-        subprocess.run([AS, '-march=armv8.5-a', '-o', str(folder/'oracle.o'), str(folder/'oracle.S')], check=True, capture_output=True)
-        subprocess.run([LD, '-static', '--build-id=none', '-z', 'noexecstack', '-o', str(folder/'oracle'), str(folder/'oracle.o')], check=True, capture_output=True)
+        checked_tool([AS, '-march=armv8.5-a', '-o', str(folder/'oracle.o'), str(folder/'oracle.S')])
+        checked_tool([LD, '-static', '--build-id=none', '-z', 'noexecstack', '-o', str(folder/'oracle'), str(folder/'oracle.o')])
         oracle_binary = folder/'oracle'
     oracle = subprocess.run([QEMU, '-cpu', 'max', str(oracle_binary)], capture_output=True, timeout=45)
     assert actual.returncode == oracle.returncode == 0, (name, actual.returncode, actual.stderr, oracle.returncode, oracle.stderr)
