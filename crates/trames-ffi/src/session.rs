@@ -23,6 +23,7 @@ static WORKERS: AtomicUsize = AtomicUsize::new(0);
 pub struct Options {
     pub store: PathBuf,
     pub rootfs: Option<PathBuf>,
+    pub musl_libc: Option<PathBuf>,
     pub volume_total: u64,
     pub volume_available: u64,
     #[serde(default = "default_rows")]
@@ -56,6 +57,10 @@ pub fn install(options: Options) -> Result<(), String> {
         &mut vfs,
     )
     .map_err(|e| e.to_string())?;
+    if let Some(libc) = options.musl_libc {
+        trames_distro::install_musl(&mut File::open(libc).map_err(|e| e.to_string())?, &mut vfs)
+            .map_err(|e| e.to_string())?;
+    }
     vfs.executable(b"/bin/ash").map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -126,6 +131,10 @@ impl Session {
             || options.store.as_os_str().len() > 4096
             || options
                 .rootfs
+                .as_ref()
+                .is_some_and(|p| !p.is_absolute() || p.as_os_str().len() > 4096)
+            || options
+                .musl_libc
                 .as_ref()
                 .is_some_and(|p| !p.is_absolute() || p.as_os_str().len() > 4096)
             || options.rows == 0
@@ -330,6 +339,10 @@ fn run(
     }
     if session.cancelled.load(Ordering::Acquire) {
         return Err("session cancelled".into());
+    }
+    if let Some(libc) = options.musl_libc {
+        trames_distro::install_musl(&mut File::open(libc).map_err(|e| e.to_string())?, &mut vfs)
+            .map_err(|e| e.to_string())?;
     }
     for (path, bytes) in [
         (b"/root/.trames".as_slice(), b"Trames\n".as_slice()),

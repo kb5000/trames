@@ -218,10 +218,11 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     let mut virtual_network = None;
     let mut host_mappings = Vec::new();
     let mut rootfs = None;
+    let mut musl_libc = None;
     let mut guest_path = false;
     let mut extra_env = Vec::new();
     if args.peek().is_some_and(|a| a == "--help" || a == "-h") {
-        println!("Usage: trames-run [--rootfs VERIFIED_ALPINE_TAR_GZ] [--guest] [--env KEY=VALUE] [--virtual-network ID] [--host-map VIRTUAL_IP=HOST_IP] [--network off|loopback|outbound|full] [--storage DIR | --memory] [--storage-budget BYTES|16GiB|auto] [--storage-info] [--max-instructions N] [--trace-syscalls] [--metrics] [--accelerator pure] [--file /GUEST=HOST] [--exec-file /GUEST=HOST] [--export /GUEST=HOST] [--install-busybox] [--pty] [--] ELF [ARG ...]\nDefault native network: outbound connections and loopback listeners; full also allows non-loopback listeners.\n--virtual-network ID selects isolated 10.0.0.ID / fd00::ID and private loopback; ID must be 2..254.\n--host-map explicitly forwards a logical external IP to a trusted host service.\nDefault storage: .trames/storage in the current directory, 16 GiB logical file budget on first creation.\nImports copy selected host files; exports create new host files after guest exit.\n--memory selects the ephemeral 16 MiB test backend. auto uses the storage volume's total capacity.");
+        println!("Usage: trames-run [--rootfs VERIFIED_ALPINE_TAR_GZ] [--guest] [--env KEY=VALUE] [--virtual-network ID] [--host-map VIRTUAL_IP=HOST_IP] [--network off|loopback|outbound|full] [--storage DIR | --memory] [--storage-budget BYTES|16GiB|auto] [--storage-info] [--max-instructions N] [--trace-syscalls] [--metrics] [--accelerator pure|off] [--musl-libc HOST_ELF] [--file /GUEST=HOST] [--exec-file /GUEST=HOST] [--export /GUEST=HOST] [--install-busybox] [--pty] [--] ELF [ARG ...]\nDefault native network: outbound connections and loopback listeners; full also allows non-loopback listeners.\n--virtual-network ID selects isolated 10.0.0.ID / fd00::ID and private loopback; ID must be 2..254.\n--host-map explicitly forwards a logical external IP to a trusted host service.\nDefault storage: .trames/storage in the current directory, 16 GiB logical file budget on first creation.\nImports copy selected host files; exports create new host files after guest exit.\n--memory selects the ephemeral 16 MiB test backend. auto uses the storage volume's total capacity.");
         return Ok(0);
     }
     while let Some(option) = args.peek() {
@@ -234,12 +235,17 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
                 args.next();
                 guest_path = true;
             }
+            "--musl-libc" => {
+                args.next();
+                musl_libc = Some(args.next().ok_or("missing musl ELF")?);
+            }
             "--accelerator" => {
                 args.next();
-                if args.next().as_deref() != Some("pure") {
-                    return Err("--accelerator supports only the pure v1 profile".into());
-                }
-                pure_accelerator = true;
+                pure_accelerator = match args.next().as_deref() {
+                    Some("pure") => true,
+                    Some("off") => false,
+                    _ => return Err("--accelerator supports pure or off".into()),
+                };
             }
             "--metrics" => {
                 args.next();
@@ -410,6 +416,9 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     }
     for (guest, host, executable) in files {
         vfs.import_reader(guest.as_bytes(), &mut File::open(host)?, executable)?;
+    }
+    if let Some(libc) = musl_libc {
+        trames_distro::install_musl(&mut File::open(libc)?, &mut vfs)?;
     }
     if guest_path {
         if vfs.stat_at(-100, b"/root").is_err_and(|e| e.0 == 2) {

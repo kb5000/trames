@@ -41,6 +41,8 @@ def main():
                 count += 1
         store = tmp / 'alpine'
         base = [RUNNER, '--storage', store, '--virtual-network', '2', '--max-instructions', '2000000000']
+        if os.getenv("TRAMES_TEST_MUSL"):
+            base += ["--musl-libc", os.environ["TRAMES_TEST_MUSL"], "--accelerator", "pure"]
         run([*base, '--rootfs', ARCHIVE, '--guest', '/bin/busybox', 'true'])
         def busybox(*args):
             return run([*base, '--guest', '/bin/busybox', *args])

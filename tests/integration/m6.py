@@ -113,6 +113,8 @@ def main():
             config = tmp / 'repositories'
             config.write_text(''.join(f'http://198.18.0.1:{server.server_port}/{name}\n' for name in ('main', 'community')))
             base = [str(RUNNER), '--storage', str(store), '--virtual-network', '2', '--host-map', '198.18.0.1=127.0.0.1', '--max-instructions', '100000000000']
+            if os.getenv("TRAMES_TEST_MUSL"):
+                base += ["--musl-libc", os.environ["TRAMES_TEST_MUSL"], "--accelerator", "pure"]
             config_path = '/m6-repositories-' + tmp.name
 
             def run(args, *, timeout=2400, log=None):

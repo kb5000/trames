@@ -70,6 +70,8 @@ def main():
             config = tmp/'repositories'
             config.write_text('http://198.18.0.1:'+str(server.server_port)+'\n')
             base = [RUNNER,'--storage',tmp/'store','--virtual-network','2','--host-map','198.18.0.1=127.0.0.1','--max-instructions','4000000000']
+            if os.getenv("TRAMES_TEST_MUSL"):
+                base += ["--musl-libc", os.environ["TRAMES_TEST_MUSL"], "--accelerator", "pure"]
             apk = ['--guest','/sbin/apk','--repositories-file','/test-repositories','--no-progress']
             out,err = run([*base,'--rootfs',CACHE/'alpine-minirootfs-3.22.6-aarch64.tar.gz','--file','/test-repositories='+str(config),*apk,'add','python3'])
             assert b'OK:' in out and b'ERROR:' not in out+err,(out[-3500:],err[-3500:])

@@ -97,6 +97,12 @@ jobs:
       - name: Prepare pinned Alpine and dynamic fixtures
         run: bash scripts/prepare-alpine.sh
       - run: cargo build --release --workspace --all-features --locked
+      - name: Build complete hybrid musl from pinned original source
+        run: bash scripts/build-musl-hybrid.sh > /tmp/musl-build.log 2>&1 || { tail -30 /tmp/musl-build.log; exit 1; }
+      - name: Compare full musl loader, startup, TLS, threads and pure functions
+        run: |
+          bash scripts/build-musl-hybrid-fixtures.sh
+          python3 tests/integration/musl-hybrid.py
       - name: Build and compare opt-in NativeCall guest ELF stubs on ARM64
         run: |
           bash scripts/build-accelerator-fixtures.sh
@@ -109,6 +115,8 @@ jobs:
           retention-days: 14
       - name: Validate dynamic Alpine, HTTPS trust and signed apk installation
         run: python3 tests/integration/m3.py
+        env:
+          TRAMES_TEST_MUSL: ${{ github.workspace }}/target/musl-hybrid/libc.so
       - name: Validate virtual packet fabric, guest ABI and Alpine HTTPS gateway
         run: python3 tests/integration/virtual-network.py
       - name: Validate Linux endpoints, musl threads, ICMP and real Vim editing
@@ -119,11 +127,12 @@ jobs:
           python3 tests/integration/linux-compat.py
         env:
           TRAMES_REQUIRE_ICMP_EGRESS: '1'
+          TRAMES_TEST_MUSL: ${{ github.workspace }}/target/musl-hybrid/libc.so
 
       - name: Exercise the embedding ABI with real Alpine PTY and disk streams
         run: |
           cargo build -p trames-ffi --release --locked
-          python3 tests/integration/embedding.py
+          TRAMES_TEST_MUSL="$GITHUB_WORKSPACE/target/musl-hybrid/libc.so" python3 tests/integration/embedding.py
 
       - name: Signed Python install, repair and execution with 128 host descriptors
         run: python3 tests/integration/python.py
@@ -131,6 +140,7 @@ jobs:
         # strict instruction/libm comparisons above execute ARM64 compute.
         env:
           TRAMES_RUNNER: ${{ github.workspace }}/target/release/trames-run
+          TRAMES_TEST_MUSL: ${{ github.workspace }}/target/musl-hybrid/libc.so
       - name: Compare M6 events, local IPC, POSIX locks and FIFO semantics with QEMU
         run: |
           bash scripts/build-m6-fixtures.sh
@@ -139,6 +149,7 @@ jobs:
         run: python3 tests/integration/m6.py | tee target/m6-tools.log
         env:
           TRAMES_RUNNER: ${{ github.workspace }}/target/release/trames-run
+          TRAMES_TEST_MUSL: ${{ github.workspace }}/target/musl-hybrid/libc.so
       - uses: actions/upload-artifact@v4
         with:
           name: runtime-evidence

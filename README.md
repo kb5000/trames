@@ -282,3 +282,8 @@ Copyright (C) 2026 Trames contributors. 本项目使用 **GNU GPL version 3 or l
 The iPad frontend is in [apps/ios](apps/ios/README.md), with build scripts and a
 [device acceptance record](docs/validation/m4.md). M4 is not accepted until an
 ordinary developer-signed physical iPad run is validated.
+
+0.10.0/build 11 将 NativeCall 接入完整 musl，直接使用原来的加载器/libc 路径。
+iPad 启动时安装随包提供的库并启用五个纯函数加速，保留现有 Linux 用户数据；
+前一轮的备用信号栈、membarrier、进程 I/O 优先级查询、文件大小限制和进程名日志一起包含。
+[完整 musl 实现](docs/architecture/musl-hybrid.md) · [验证与安装包记录](docs/validation/musl-hybrid.md)。

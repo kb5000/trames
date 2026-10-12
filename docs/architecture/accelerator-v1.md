@@ -9,15 +9,16 @@ predates this work. Embedding ABI 3 and Bridge SHA-256 registry ABI 1 stay uncha
 
 `RuntimeOptions { pure_accelerator: true }`, CLI `--accelerator pure`, or optional
 embedding JSON `pure_accelerator: true` enables the profile for a session, including
-fork/threads and exec. The default is false. App UI/package activation is future
-work; setting the host option alone does not install or interpose a guest library.
+fork/threads and exec. The default is false. The [complete hybrid musl integration](musl-hybrid.md) now supplies the iPad
+resource and normal-path installation. Setting a host option alone still does
+not install a guest library.
 
 Build `libtrames-pure.so` with `scripts/build-accelerator-guest.sh`, using the
 repository's pinned musl compiler. Install it in guest `/lib` and either call its
 symbols through dlopen/dlsym or explicitly select it with guest
 `LD_PRELOAD=/lib/libtrames-pure.so`. The guest loader performs ordinary linking.
-This separate library is a temporary validation artifact. The next integration
-builds a complete hybrid musl from pinned upstream source, preserving ordinary
+This separate library is a temporary validation artifact. [Complete hybrid musl](musl-hybrid.md) now builds from pinned upstream source,
+preserving ordinary
 `libc.so` / `ld-musl-aarch64.so.1` paths and loader behavior: adapted pure routines
 use NativeCall and all remaining libc/loader code retains the original guest
 implementation. Installing that full ELF does not require native adaptation of

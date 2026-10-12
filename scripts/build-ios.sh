@@ -11,6 +11,14 @@ case "$platform" in
   device) rust_target=aarch64-apple-ios; sdk=iphoneos; destination='generic/platform=iOS' ;;
   *) echo 'usage: scripts/build-ios.sh [simulator|device]' >&2; exit 2 ;;
 esac
+# The guest ELF is data, built by the Linux prerequisite job, never linked by Xcode.
+[[ -f target/musl-hybrid/libc.so && -f target/musl-hybrid/manifest.json ]]
+mkdir -p apps/ios/Trames/GuestMusl
+cp target/musl-hybrid/libc.so target/musl-hybrid/manifest.json target/musl-hybrid/musl-COPYRIGHT.txt target/musl-hybrid/GPL-3.0.txt apps/ios/Trames/GuestMusl/
+python3 - <<'PYCODE'
+import hashlib,json,pathlib
+p=pathlib.Path('apps/ios/Trames/GuestMusl');m=json.loads((p/'manifest.json').read_text());assert hashlib.sha256((p/'libc.so').read_bytes()).hexdigest()==m['libc_sha256']
+PYCODE
 rustup target add "$rust_target"
 cargo build -p trames-ffi --release --target "$rust_target" --locked
 # Keep only the static archive in the app linker search directory. Cargo also

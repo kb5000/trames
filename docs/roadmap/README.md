@@ -74,8 +74,8 @@ overriding that proposal, and requested a GNU license. The initial concrete
 license choice is GPL-3.0-or-later. License compatibility is reviewed separately
 for each future dependency.
 
-Next accelerator integration targets a complete hybrid musl built from the pinned
+Version 0.10.0 integrates a [complete hybrid musl](../architecture/musl-hybrid.md) built from the pinned
 original source, installed at normal libc/loader filenames. Adapted pure functions
 use NativeCall; the remaining original libc/loader functions keep running as guest
-code. The separate pure-profile library is only the initial validation tool.
+code. The separate pure-profile library remains the initial validation tool.
 Stateful allocator, TLS and I/O profiles follow after the full ELF integration.

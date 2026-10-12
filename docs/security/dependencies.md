@@ -151,3 +151,10 @@ wrapper/upstream sources and build instructions are in this repository. No
 additional downloaded host library or executable code is used. Only the isolated
 `trames-native` slice boundary permits unsafe operations; guest address
 validation and the dispatcher remain in safe Rust.
+
+Complete guest musl 1.2.5 is built from archive SHA-256
+`a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4`.
+Original fallback files are unchanged and MIT/Arm notices retained; two checked
+startup hooks and Trames wrappers are GPL-3.0-or-later. The full-library artifact
+contains the original archive, all adaptations/build files and notices. iPad
+bundles the Linux ELF as interpreted guest data. [Integration](../architecture/musl-hybrid.md).

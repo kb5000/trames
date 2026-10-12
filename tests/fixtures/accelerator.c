@@ -30,7 +30,11 @@ static void *thread(void *unused) {
 }
 int main(int argc, char **argv) {
 #ifdef TRAMES_DYNAMIC
+#ifdef TRAMES_FULL_LIBRARY
+    void *library=dlopen("libc.so",RTLD_NOW|RTLD_LOCAL);
+#else
     void *library=dlopen("/lib/libtrames-pure.so",RTLD_NOW|RTLD_LOCAL);
+#endif
     assert(library);
     cp=dlsym(library,"memcpy"); mv=dlsym(library,"memmove"); st=dlsym(library,"memset"); cmp=dlsym(library,"memcmp"); len=dlsym(library,"strlen");
     assert(cp && mv && st && cmp && len);
@@ -79,6 +83,10 @@ int main(int argc, char **argv) {
     assert(fault_signal==SIGSEGV && fault_address==(uintptr_t)pages+8192);
     if(!sigsetjmp(jump,1)) { cp(b,pages+8191,2); assert(0); }
     assert(fault_signal==SIGSEGV && fault_address==(uintptr_t)pages+8192);
+#ifdef TRAMES_FULL_LIBRARY
+    if(!sigsetjmp(jump,1)) { cp(b,pages+8191,128); assert(0); }
+    assert(fault_signal==SIGSEGV && fault_address==(uintptr_t)pages+8192);
+#endif
     // Native writes preserve fork COW and shared mappings.
     char *shared=mmap(0,4096,PROT_READ|PROT_WRITE,MAP_SHARED|MAP_ANONYMOUS,-1,0); assert(shared!=MAP_FAILED);
     pages[0]=7; pid_t child=fork(); assert(child>=0);

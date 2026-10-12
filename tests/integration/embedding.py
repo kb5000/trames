@@ -69,6 +69,8 @@ with tempfile.TemporaryDirectory(prefix='trames-embedding-') as directory:
     temporary=Path(directory)
     store=temporary/'staging'
     options={'store':str(store),'rootfs':str(archive),'volume_total':64<<30,'volume_available':32<<30,'network':'off'}
+    if os.getenv('TRAMES_TEST_MUSL'):
+        options.update(musl_libc=os.environ['TRAMES_TEST_MUSL'],pure_accelerator=True)
     assert request(api.trames_environment_install,payload=options)==0,error()
     active=temporary/'environment'
     store.rename(active) # All Rust file owners/locks must already be released.

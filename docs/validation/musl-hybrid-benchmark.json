@@ -1,0 +1,533 @@
+{
+  "host": "Linux-6.18.44-x86_64-with-glibc2.41",
+  "runner": "/workspace/trames/tests/differential/arm-runner.sh",
+  "description": "Three runs per mode; median guest runtime includes loader/startup, excludes host rootfs import. ARM64 runtime itself runs under QEMU on this x86_64 host. No physical-iPad or general application performance claim. Same full musl ELF and guest program in both modes; not a comparison against stock Alpine libc.",
+  "source_sha256": {
+    "accelerator/guest/pure.c": "ed1b5e5124cf4dbf1c3de5f9bb36e43c9ee3382d4cf3af213542520468cac18e",
+    "accelerator/musl/init.c": "a403049b15f8e74e9b744f3efc488acd5cf35c5a3fb331e67538bd238af21b77",
+    "scripts/build-musl-hybrid.sh": "9f349322dcb1d42fe7e9881f0ef3813e16a65faa36eeb2c4f079a79c6a98ee30",
+    "crates/trames-distro/src/lib.rs": "eca4f68a5cd693443754997af94145fe6f74dafb6a2aa9ecaf936ee4c9f43472",
+    "crates/trames-cli/src/main.rs": "72e7883b48722c1896743378b71a92851ca93a9db254a82ae35018083ff4eb2d"
+  },
+  "libc_sha256": "bd7432f7df7a6f308606e271577cd1eb165af049077a6f91bf7cc204c7c5ed94",
+  "runner_binary_sha256": "d22458c66fce0dacce43799ef1de0e8b0ac82b707e3ccb546beed4cb85c2f616",
+  "fixture_sha256": "86df8227ec309dfb0dffa5f776472751c461f517d8b56c49a761991656bdca35",
+  "rows": [
+    {
+      "workload": "copy-32",
+      "modes": {
+        "False": {
+          "samples": [
+            {
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              },
+              "runtime": {
+                "backend": "cached",
+                "instructions": 59754,
+                "seconds": 0.070157154,
+                "instructions_per_second": 851716.4193975143,
+                "cpu_seconds": 0.029027666,
+                "syscall_seconds": 0.006602862,
+                "idle_seconds": 0,
+                "syscalls": 8,
+                "proc_refreshes": 1,
+                "context_switches": 21,
+                "decode_lookups": 2086,
+                "decode_misses": 32,
+                "instructions_decoded": 3683
+              }
+            },
+            {
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              },
+              "runtime": {
+                "backend": "cached",
+                "instructions": 59754,
+                "seconds": 0.121643325,
+                "instructions_per_second": 491223.0079209032,
+                "cpu_seconds": 0.047153634,
+                "syscall_seconds": 0.00866235,
+                "idle_seconds": 0,
+                "syscalls": 8,
+                "proc_refreshes": 1,
+                "context_switches": 21,
+                "decode_lookups": 2086,
+                "decode_misses": 32,
+                "instructions_decoded": 3683
+              }
+            },
+            {
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              },
+              "runtime": {
+                "backend": "cached",
+                "instructions": 59754,
+                "seconds": 0.073924049,
+                "instructions_per_second": 808316.1137453387,
+                "cpu_seconds": 0.029276695,
+                "syscall_seconds": 0.007871008,
+                "idle_seconds": 0,
+                "syscalls": 8,
+                "proc_refreshes": 1,
+                "context_switches": 21,
+                "decode_lookups": 2086,
+                "decode_misses": 32,
+                "instructions_decoded": 3683
+              }
+            }
+          ],
+          "median_seconds": 0.073924049
+        },
+        "True": {
+          "samples": [
+            {
+              "native": {
+                "calls": 6,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 7736,
+                "nanoseconds": 1085708
+              },
+              "runtime": {
+                "backend": "cached",
+                "instructions": 59195,
+                "seconds": 0.072190443,
+                "instructions_per_second": 819983.8862326969,
+                "cpu_seconds": 0.028381603,
+                "syscall_seconds": 0.006587806,
+                "idle_seconds": 0,
+                "syscalls": 8,
+                "proc_refreshes": 1,
+                "context_switches": 25,
+                "decode_lookups": 2089,
+                "decode_misses": 32,
+                "instructions_decoded": 3664
+              }
+            },
+            {
+              "native": {
+                "calls": 6,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 7736,
+                "nanoseconds": 1768358
+              },
+              "runtime": {
+                "backend": "cached",
+                "instructions": 59195,
+                "seconds": 0.123378289,
+                "instructions_per_second": 479784.5753883003,
+                "cpu_seconds": 0.062305093,
+                "syscall_seconds": 0.009441765,
+                "idle_seconds": 0,
+                "syscalls": 8,
+                "proc_refreshes": 1,
+                "context_switches": 25,
+                "decode_lookups": 2089,
+                "decode_misses": 32,
+                "instructions_decoded": 3664
+              }
+            },
+            {
+              "native": {
+                "calls": 6,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 7736,
+                "nanoseconds": 1170392
+              },
+              "runtime": {
+                "backend": "cached",
+                "instructions": 59195,
+                "seconds": 0.079103743,
+                "instructions_per_second": 748321.1003049501,
+                "cpu_seconds": 0.038450632,
+                "syscall_seconds": 0.006735976,
+                "idle_seconds": 0,
+                "syscalls": 8,
+                "proc_refreshes": 1,
+                "context_switches": 25,
+                "decode_lookups": 2089,
+                "decode_misses": 32,
+                "instructions_decoded": 3664
+              }
+            }
+          ],
+          "median_seconds": 0.079103743
+        }
+      },
+      "speedup": 0.9345202413493885
+    },
+    {
+      "workload": "copy-65536",
+      "modes": {
+        "False": {
+          "samples": [
+            {
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              },
+              "runtime": {
+                "backend": "cached",
+                "instructions": 3208536,
+                "seconds": 0.968728117,
+                "instructions_per_second": 3312111.9782672725,
+                "cpu_seconds": 0.892517134,
+                "syscall_seconds": 0.008803758,
+                "idle_seconds": 0,
+                "syscalls": 10,
+                "proc_refreshes": 1,
+                "context_switches": 792,
+                "decode_lookups": 2861,
+                "decode_misses": 31,
+                "instructions_decoded": 3676
+              }
+            },
+            {
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              },
+              "runtime": {
+                "backend": "cached",
+                "instructions": 3208536,
+                "seconds": 0.912411378,
+                "instructions_per_second": 3516545.3625020445,
+                "cpu_seconds": 0.848855697,
+                "syscall_seconds": 0.00781232,
+                "idle_seconds": 0,
+                "syscalls": 10,
+                "proc_refreshes": 1,
+                "context_switches": 792,
+                "decode_lookups": 2861,
+                "decode_misses": 31,
+                "instructions_decoded": 3676
+              }
+            },
+            {
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              },
+              "runtime": {
+                "backend": "cached",
+                "instructions": 3208536,
+                "seconds": 1.351464163,
+                "instructions_per_second": 2374118.447120081,
+                "cpu_seconds": 1.2642407119999999,
+                "syscall_seconds": 0.00895334,
+                "idle_seconds": 0,
+                "syscalls": 10,
+                "proc_refreshes": 1,
+                "context_switches": 792,
+                "decode_lookups": 2861,
+                "decode_misses": 31,
+                "instructions_decoded": 3676
+              }
+            }
+          ],
+          "median_seconds": 0.968728117
+        },
+        "True": {
+          "samples": [
+            {
+              "native": {
+                "calls": 264,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 16908288,
+                "bytes_written": 16850488,
+                "nanoseconds": 33549682
+              },
+              "runtime": {
+                "backend": "cached",
+                "instructions": 56867,
+                "seconds": 0.119620312,
+                "instructions_per_second": 475395.85083175503,
+                "cpu_seconds": 0.065328907,
+                "syscall_seconds": 0.007961666,
+                "idle_seconds": 0,
+                "syscalls": 10,
+                "proc_refreshes": 1,
+                "context_switches": 280,
+                "decode_lookups": 2605,
+                "decode_misses": 31,
+                "instructions_decoded": 3605
+              }
+            },
+            {
+              "native": {
+                "calls": 264,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 16908288,
+                "bytes_written": 16850488,
+                "nanoseconds": 35145216
+              },
+              "runtime": {
+                "backend": "cached",
+                "instructions": 56867,
+                "seconds": 0.107396809,
+                "instructions_per_second": 529503.627989543,
+                "cpu_seconds": 0.062110774,
+                "syscall_seconds": 0.006201147,
+                "idle_seconds": 0,
+                "syscalls": 10,
+                "proc_refreshes": 1,
+                "context_switches": 280,
+                "decode_lookups": 2605,
+                "decode_misses": 31,
+                "instructions_decoded": 3605
+              }
+            },
+            {
+              "native": {
+                "calls": 264,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 16908288,
+                "bytes_written": 16850488,
+                "nanoseconds": 31174434
+              },
+              "runtime": {
+                "backend": "cached",
+                "instructions": 56867,
+                "seconds": 0.106136242,
+                "instructions_per_second": 535792.4769938623,
+                "cpu_seconds": 0.05786696,
+                "syscall_seconds": 0.00811867,
+                "idle_seconds": 0,
+                "syscalls": 10,
+                "proc_refreshes": 1,
+                "context_switches": 280,
+                "decode_lookups": 2605,
+                "decode_misses": 31,
+                "instructions_decoded": 3605
+              }
+            }
+          ],
+          "median_seconds": 0.107396809
+        }
+      },
+      "speedup": 9.020082868570146
+    },
+    {
+      "workload": "alpine-sort-2048",
+      "modes": {
+        "False": {
+          "samples": [
+            {
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              },
+              "runtime": {
+                "backend": "cached",
+                "instructions": 62902284,
+                "seconds": 20.145426993,
+                "instructions_per_second": 3122410.0646691117,
+                "cpu_seconds": 19.529729867,
+                "syscall_seconds": 0.038710462,
+                "idle_seconds": 0,
+                "syscalls": 297,
+                "proc_refreshes": 1,
+                "context_switches": 15543,
+                "decode_lookups": 2223490,
+                "decode_misses": 54,
+                "instructions_decoded": 6848
+              }
+            },
+            {
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              },
+              "runtime": {
+                "backend": "cached",
+                "instructions": 62902284,
+                "seconds": 17.594999769,
+                "instructions_per_second": 3575009.0835934696,
+                "cpu_seconds": 17.002698719,
+                "syscall_seconds": 0.036290926,
+                "idle_seconds": 0,
+                "syscalls": 297,
+                "proc_refreshes": 1,
+                "context_switches": 15543,
+                "decode_lookups": 2223490,
+                "decode_misses": 54,
+                "instructions_decoded": 6848
+              }
+            },
+            {
+              "native": {
+                "calls": 0,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 0,
+                "bytes_written": 0,
+                "nanoseconds": 0
+              },
+              "runtime": {
+                "backend": "cached",
+                "instructions": 62902284,
+                "seconds": 17.825397916,
+                "instructions_per_second": 3528801.1126831104,
+                "cpu_seconds": 17.174848392,
+                "syscall_seconds": 0.035221796,
+                "idle_seconds": 0,
+                "syscalls": 297,
+                "proc_refreshes": 1,
+                "context_switches": 15543,
+                "decode_lookups": 2223490,
+                "decode_misses": 54,
+                "instructions_decoded": 6848
+              }
+            }
+          ],
+          "median_seconds": 17.825397916
+        },
+        "True": {
+          "samples": [
+            {
+              "native": {
+                "calls": 52,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 88680,
+                "bytes_written": 112048,
+                "nanoseconds": 4573718
+              },
+              "runtime": {
+                "backend": "cached",
+                "instructions": 62886350,
+                "seconds": 16.981123945,
+                "instructions_per_second": 3703309.0509015773,
+                "cpu_seconds": 16.418964969,
+                "syscall_seconds": 0.035009651,
+                "idle_seconds": 0,
+                "syscalls": 297,
+                "proc_refreshes": 1,
+                "context_switches": 15583,
+                "decode_lookups": 2223531,
+                "decode_misses": 54,
+                "instructions_decoded": 6804
+              }
+            },
+            {
+              "native": {
+                "calls": 52,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 88680,
+                "bytes_written": 112048,
+                "nanoseconds": 5195126
+              },
+              "runtime": {
+                "backend": "cached",
+                "instructions": 62886350,
+                "seconds": 17.937587113,
+                "instructions_per_second": 3505842.2074184134,
+                "cpu_seconds": 17.316039578,
+                "syscall_seconds": 0.043920718,
+                "idle_seconds": 0,
+                "syscalls": 297,
+                "proc_refreshes": 1,
+                "context_switches": 15583,
+                "decode_lookups": 2223531,
+                "decode_misses": 54,
+                "instructions_decoded": 6804
+              }
+            },
+            {
+              "native": {
+                "calls": 52,
+                "fallbacks": 0,
+                "rejected": 0,
+                "faults": 0,
+                "bytes_read": 88680,
+                "bytes_written": 112048,
+                "nanoseconds": 13524894
+              },
+              "runtime": {
+                "backend": "cached",
+                "instructions": 62886350,
+                "seconds": 17.065042973,
+                "instructions_per_second": 3685097.664242489,
+                "cpu_seconds": 16.477756861,
+                "syscall_seconds": 0.054217482,
+                "idle_seconds": 0,
+                "syscalls": 297,
+                "proc_refreshes": 1,
+                "context_switches": 15583,
+                "decode_lookups": 2223531,
+                "decode_misses": 54,
+                "instructions_decoded": 6804
+              }
+            }
+          ],
+          "median_seconds": 17.065042973
+        }
+      },
+      "speedup": 1.0445562864507882
+    }
+  ]
+}

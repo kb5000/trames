@@ -3,6 +3,12 @@ import Foundation
 import TramesKit
 actor EnvironmentStore {
     static let archiveURL = URL(string: "https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz")!
+    static func muslLibrary() throws -> URL {
+        guard let url = Bundle.main.url(forResource: "libc", withExtension: "so", subdirectory: "GuestMusl") else {
+            throw TramesError.message("Missing bundled Linux library")
+        }
+        return url
+    }
     let root: URL
     private var generation: UInt64 = 0
     private var resetting = false
@@ -13,6 +19,7 @@ actor EnvironmentStore {
     func start(useVolumeBudget: Bool) async throws -> LocalSession {
         guard !resetting else { throw CancellationError() }
         let startedGeneration = generation
+        let musl = try Self.muslLibrary()
         let active = root.appendingPathComponent("environment", isDirectory: true)
         let values = try root.resourceValues(forKeys: [.volumeTotalCapacityKey, .volumeAvailableCapacityForImportantUsageKey])
         guard let total = values.volumeTotalCapacity, let available = values.volumeAvailableCapacityForImportantUsage, total > 0, available >= 0 else {
@@ -28,14 +35,14 @@ actor EnvironmentStore {
             let staging = root.appendingPathComponent("install-\(UUID().uuidString)", isDirectory: true)
             do {
                 try await Task.detached(priority: .userInitiated) {
-                    try LocalSession.install(store: staging, rootfs: download, total: UInt64(total), available: UInt64(available))
+                    try LocalSession.install(store: staging, rootfs: download, total: UInt64(total), available: UInt64(available), muslLibc: musl)
                 }.value
                 try Task.checkCancellation()
                 guard generation == startedGeneration && !resetting else { throw CancellationError() }
                 try FileManager.default.moveItem(at: staging, to: active)
             } catch { try? FileManager.default.removeItem(at: staging); throw error }
         }
-        return try LocalSession(store: active, rootfs: nil, total: UInt64(total), available: UInt64(available), useVolumeBudget: useVolumeBudget)
+        return try LocalSession(store: active, rootfs: nil, total: UInt64(total), available: UInt64(available), useVolumeBudget: useVolumeBudget, muslLibc: musl, pureAccelerator: true)
     }
     func reset() async throws {
         guard !resetting else {throw TramesError.message("Linux 环境正在重置")}

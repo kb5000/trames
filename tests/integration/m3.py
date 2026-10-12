@@ -9,6 +9,7 @@ ARCHIVE=pathlib.Path(os.getenv('TRAMES_ALPINE_CACHE',str(ROOT/'target/alpine-dow
 QEMU=os.getenv('QEMU_AARCH64','qemu-aarch64')
 ENV={'PATH':os.environ.get('PATH','/usr/bin:/bin'),'LANG':'C','LC_ALL':'C'}
 comparisons=0
+MUSL_ARGS=['--musl-libc',os.environ['TRAMES_TEST_MUSL'],'--accelerator','pure'] if os.getenv('TRAMES_TEST_MUSL') else []
 
 def run(command,expected=0,env=None,cwd=None):
     p=subprocess.run(list(map(str,command)),capture_output=True,timeout=300,env=env or ENV,cwd=cwd)
@@ -21,7 +22,7 @@ def equal(a,b):
     comparisons+=1
 
 def guest(store,*args,imports=(),env=(),initialize=False,memory=False):
-    cmd=[RUNNER,'--max-instructions','1000000000']
+    cmd=[RUNNER,'--max-instructions','1000000000',*MUSL_ARGS]
     cmd+=['--memory'] if memory else ['--storage',store]
     if initialize:cmd+=['--rootfs',ARCHIVE]
     for target,source in imports:cmd+=['--file',f'{target}={source}']
@@ -74,7 +75,7 @@ def main():
             for mode in ['dynamic','mapping','links','locks']:
                 b=run(oracle(prefix,f'/test/m3-{kind}',mode),cwd=prefix/'tmp')
                 for memory in [True,False]:
-                    a=run([RUNNER,'--max-instructions','100000000',*(['--memory'] if memory else ['--storage',tmp/f'{kind}-{mode}']),'--rootfs',ARCHIVE,'--file',f'/test/libm3probe.so={ROOT}/tests/fixtures/bin/libm3probe.so',fixture,mode])
+                    a=run([RUNNER,*MUSL_ARGS,'--max-instructions','100000000',*(['--memory'] if memory else ['--storage',tmp/f'{kind}-{mode}']),'--rootfs',ARCHIVE,'--file',f'/test/libm3probe.so={ROOT}/tests/fixtures/bin/libm3probe.so',fixture,mode])
                     equal(a,b)
         print('Dynamic PIE/ET_EXEC, dlopen/TLS/fork and Linux ABI: 16 QEMU comparisons',flush=True)
         simple=[('/bin/busybox',['echo','dynamic Alpine']),('/bin/busybox',['printf','%s:%d\n','musl',42]),('/bin/busybox',['cat','/etc/alpine-release']),('/sbin/apk',['--version']),('/sbin/apk',['version','-t','2.1','2.0']),('/bin/busybox',['readlink','/lib/libc.musl-aarch64.so.1'])]
