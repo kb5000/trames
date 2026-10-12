@@ -1,16 +1,14 @@
 # Delivery roadmap
 
-The current static-interpreter update is [0.7.0 non-JIT refinement](../validation/nonjit-0.7.md),
-with page-local invalidation, two-way code reuse, flags/branch pairs and measured real-program results.
-FRINTTS/LRCPC2 extend the reference CPU profile; [explicit tail-call research](../architecture/tail-dispatch.md)
-retains a reproducible static prototype without changing the production dispatch.
-Current Linux ABI work is recorded in [M6 compatibility](compatibility-m6.md);
-the base CPU scope is [0.4.0 compatibility](compatibility-0.4.md), with additions recorded in 0.7.0. Historical gaps are recorded for the
-[released 0.3.0](compatibility-gaps.md) and the
-[pre-implementation worktree snapshot](compatibility-gaps-worktree.md), including partial
-semantics, representative instruction probes and the complete Linux 6.12 AArch64
-number inventory. These older snapshots are retained as evidence of their own
-source revisions, not descriptions of current code.
+The current release is [0.8.0 CPU/native compute](../validation/instruction-coverage.md),
+with one Rust cached interpreter, static ARM64 compute and recoverable guest CPU faults.
+The C++ executor and tail-dispatch prototype have been removed. The canonical
+[current CPU/Linux gaps](compatibility-current.md) links regenerated instruction
+and Linux v6.12 syscall inventories, distinguishing missing entries from partial semantics.
+[M6 compatibility](compatibility-m6.md) records the implemented Linux ABI subsets.
+The [0.3 release](compatibility-gaps.md), [pre-implementation worktree](compatibility-gaps-worktree.md),
+[0.4 profile](compatibility-0.4.md) and [0.7 performance](../validation/nonjit-0.7.md)
+remain historical evidence for their own revisions.
 
 M0, the selected static-userspace M1 foundation, M2 ash/FP, the storage follow-up and M3 are implemented, with records
 in [m0.md](../validation/m0.md), [m1.md](../validation/m1.md), [m2.md](../validation/m2.md), [storage.md](../validation/storage.md) and [network.md](../validation/network.md) and [m3.md](../validation/m3.md). This does not
@@ -32,6 +30,7 @@ Windows/Sideloadly signing, installation and startup on a physical iPad on
 | Linux compatibility, 0.2.0 | Runtime proc/sys/dev views, virtual ownership and v3 persistence migration, musl threads/futex/timers, read-only route netlink, ICMP raw guest packets and native datagram echo egress, actual Alpine tools and default Vim editing; [record](../validation/linux-compat.md) |
 | M5 | Software validated: versioned Bridge RPC, native consent, persistent scoped Files, built-in accelerator registry, optional profiled C++ backend and embedding ABI 2; signed-provider/device acceptance remains open |
 | CPU reference, 0.4.0 | Broad AArch64 EL0/NEON and tested optional extensions, shared auxv/proc capability profile, standard root/device/interface names, checked memory/decoder acceleration; [scope](compatibility-0.4.md), [validation](../validation/reference-0.4.md) |
+| CPU/native compute, 0.8.0 | Single Rust cached interpreter, ABI 3, native optional compute, expanded EL0 instructions and recoverable synchronous faults; [validation](../validation/instruction-coverage.md) |
 | M6 | Event descriptors, local IPC, record locks/FIFOs, credentials and proc fixes; actual Git/Python/GCC/Clang/Make/CMake workflows; [validation](../validation/m6.md). Debian after ABI coverage supports it |
 
 The owner requested on 2026-10-11 that future feature changes be grouped into a

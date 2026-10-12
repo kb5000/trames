@@ -1,6 +1,8 @@
 # M6 Linux userspace compatibility
 
-M6 keeps the AArch64 EL0 CPU profile from [0.4.0](compatibility-0.4.md).
+This page records the M6 ABI scope. The current CPU profile and regenerated
+Linux syscall inventory are linked in [current 0.8 gaps](compatibility-current.md).
+M6 originally kept the AArch64 EL0 CPU profile from [0.4.0](compatibility-0.4.md).
 This release extends the virtual Linux ABI for ordinary developer workflows.
 It does not boot a Linux kernel. See [validation](../validation/m6.md) for
 the tested binaries, inputs and delivery evidence.

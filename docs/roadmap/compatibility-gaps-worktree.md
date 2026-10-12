@@ -1,7 +1,7 @@
 # CPU / Linux ABI 剩余缺口（实现前的历史工作区快照）
 
 此页保留恢复实现前的审计结果。后续代码已改变，当前能力和剩余范围见
-[0.4.0 兼容性清单](compatibility-0.4.md)。
+[0.8.0 CPU/Linux 剩余缺口](compatibility-current.md)。
 
 审计日期：2026-10-11。基线提交：
 [`4631b0a1`](https://github.com/kb5000/trames/tree/4631b0a1ff0e9f092ddd36b4a1a78eabb7647489)，

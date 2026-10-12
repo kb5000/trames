@@ -1,7 +1,8 @@
 # CPU / Linux ABI 缺口清单（0.3.0）
 
-这是已发布 0.3.0 的历史基线；尚未发布代码的后续状态见
-[工作区剩余缺口](compatibility-gaps-worktree.md)。两份清单不能混作同一版本的能力。
+这是已发布 0.3.0 的历史基线；当前状态见
+[0.8.0 CPU/Linux 剩余缺口](compatibility-current.md)。
+[实现前工作区快照](compatibility-gaps-worktree.md)同样是历史记录，不能混作当前版本能力。
 
 审计日期：2026-10-11。代码基线：
 [`00050665`](https://github.com/kb5000/trames/tree/00050665cfaf4868c5d21d6f4211d111e586059d)。

@@ -20,7 +20,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'docs/validation'
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument('--prefix', default='nonjit-0.6', help='Output basename; historical reports are kept when explicitly named')
+parser.add_argument('--prefix', default='compatibility-current', help='Output basename; historical reports are kept when explicitly named')
 args = parser.parse_args()
 assert re.fullmatch(r'[a-z0-9][a-z0-9.-]*', args.prefix), 'invalid report prefix'
 found = {}
@@ -66,7 +66,7 @@ notes = {
     86: 'Relative/absolute timerfd arm/disarm, periodic expiration count and old-value preflight. CANCEL_ON_SET explicitly unsupported.',
     87: 'Timerfd interval/remaining time; shared open-description state.',
     199: 'Bounded AF_UNIX stream/datagram/seqpacket pairs; dup/fork, shutdown, peek/trunc and fault preflight. No named endpoints or ancillary FD passing.',
-    134: 'Selected rt_sigaction flags and virtual signal frames; SA_ONSTACK uses the ordinary stack while the alternate stack is disabled. No sigaltstack registration.',
+    134: 'Selected rt_sigaction flags, virtual signal frames and synchronous CPU-fault delivery/context recovery; SA_ONSTACK uses the ordinary stack while the alternate stack is disabled. No sigaltstack registration.',
     221: 'Exec preserves UID/GID/groups and set-ID results; auxv uses the same credentials.',
     441: 'Timespec epoll wait; not dispatched by the pinned QEMU 10.0.13 oracle, independently checked by M6 fixtures.',
 }

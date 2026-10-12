@@ -112,7 +112,7 @@ auxv 和 `/proc/cpuinfo` 共用已实现的 CPU 能力，未实现的扩展不�
 默认 root 会话改用 `/root`，根磁盘标识为 `vda1`，虚拟网络接口为 `eth0`。
 
 正确性验证后优化取指、单页访存与解码分组；Rust 参考后端仍为默认。
-[当前能力与剩余缺口](docs/roadmap/compatibility-0.4.md)和
+[0.4.0 历史能力范围](docs/roadmap/compatibility-0.4.md)和
 [验证与前后跑分](docs/validation/reference-0.4.md)记录具体范围。
 
 [下载 0.4.0/build 5 IPA](https://github.com/kb5000/trames/actions/runs/38162066629/artifacts/11711540648)，
@@ -232,7 +232,9 @@ LDAPUR/STLUR 等带偏移的 acquire/release 访存。单步参考实现继续�
 PAC/BTI/MTE 按功能兼容策略处理，实际跳转、访存、写回和清零仍执行。
 CPU 故障可交给 Linux 信号处理器恢复。完整 Linux CI 与七项 iPad 模拟器测试通过；
 IPA 已核验 ARM64 设备目标、版本、执行权限及全部 36 个文件。真机速度仍需实际测量。
-[指令范围与验证](docs/validation/instruction-coverage.md) · [当前编码清单](docs/validation/instruction-coverage-current.csv)。
+[指令范围与验证](docs/validation/instruction-coverage.md) · [当前编码清单](docs/validation/instruction-coverage-current.csv) ·
+[当前 CPU/Linux 剩余缺口](docs/roadmap/compatibility-current.md) ·
+[系统调用清单](docs/validation/compatibility-current-syscalls.csv)。
 
 ## 结构与范围
 
@@ -249,7 +251,7 @@ IPA 已核验 ARM64 设备目标、版本、执行权限及全部 36 个文件�
 | `trames-distro` | 固定 SHA-256 Alpine rootfs、受限归档解析与 VFS 导入 |
 | `trames-cli` | `trames-run`，宿主字节流输出和退出码 |
 
-尚不支持重叠 PT_LOAD 页面、完整 AArch64、SVE、备用信号栈、多个 PTY、非零 VTIME、共享文件 mmap 或映射超过 EOF 的 SIGBUS 语义。线程、vfork 和 futex 已有选定实现；其余 Linux 缺口见 M6 能力记录。未实现的指令明确报告故障，未知系统调用返回 `-ENOSYS`。安全限制及其兼容性影响见 [security](docs/security/README.md)。
+尚不支持重叠 PT_LOAD 页面、完整 AArch64、SVE、备用信号栈、多个 PTY、非零 VTIME、共享文件 mmap 或映射超过 EOF 的 SIGBUS 语义。线程、vfork 和 futex 已有选定实现；其余 Linux 缺口见[当前清单](docs/roadmap/compatibility-current.md)。未实现的指令明确报告故障，未知系统调用返回 `-ENOSYS`。安全限制及其兼容性影响见 [security](docs/security/README.md)。
 
 [工程章程](docs/charter.md) · [存储架构](docs/architecture/storage.md) · [路线图](docs/roadmap/README.md) · [存储验证](docs/validation/storage.md) · [BusyBox 构建](docs/testing/busybox.md)
 

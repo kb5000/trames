@@ -7,6 +7,9 @@ prototype, runtime selectors and build features are removed. Embedding ABI is
 now 3; Cargo/iOS version is 0.8.0, iOS build 9. The earlier 0.7/build 8 artifact
 does not contain these changes. Both complete CI workflows and new device-artifact validation pass.
 
+Current CPU and Linux omissions are tracked together in the
+[current gaps inventory](../roadmap/compatibility-current.md).
+
 ## Implemented additions
 
 | Family | Scope |
