@@ -83,15 +83,16 @@ membership. The [Sideloadly documentation](https://sideloadly.io/faq) describes
 signing, device trust, Developer Mode and automatic refresh. The current app
 requires iPadOS 17 or newer and does not need JIT activation.
 
-Validated combined update: [0.6.0 (build 7) unsigned IPA artifact](https://github.com/kb5000/trames/actions/runs/38198782482/artifacts/11723974238).
-The default local backend now uses Rust's bounded, generation-tagged decoded code
-pages. No JIT activation is required. [Validation and host benchmarks](../../docs/validation/nonjit-0.6.md)
+Validated combined update: [0.7.0 (build 8) unsigned IPA artifact](https://github.com/kb5000/trames/actions/runs/38205290951/artifacts/11727840985).
+The default local backend uses Rust's bounded two-way decoded code pages, page
+tokens and warmed flags/branch pairs. FRINTTS and LRCPC2 are supported in every
+backend. No JIT activation is required. [Validation and host benchmarks](../../docs/validation/nonjit-0.7.md)
 record all three Linux backends, seven simulator tests and independent IPA checks.
 Unzip it and sign `Trames-unsigned.ipa` with the same Sideloadly Apple ID/effective
 bundle ID as before to retain the current Linux environment. No data reset is
 needed for this update. Turn off the optional C++ switch to use the new default
 Rust interpreter; physical iPad performance remains owner acceptance work.
-The IPA artifact is retained until 26 October 2026, 03:23 UTC. The known intermittent
+The IPA artifact is retained until 26 October 2026, 05:05 UTC. The known intermittent
 NIOSSH dependency issue in [#9](https://github.com/kb5000/trames/issues/9) remains open;
 this release's native SSH test passed on its first attempt.
 

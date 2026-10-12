@@ -1,0 +1,88 @@
+{
+  "scope": "Synthetic integer dispatch only; no guest memory or real programs; no iPad timing",
+  "compiler": "clang version 17.0.0 (https://github.com/swiftlang/llvm-project.git 2e6139970eda445d9c6872c0ca293088b4e63dd2)",
+  "stack_limit_bytes": 262144,
+  "debug_tail": {
+    "style": 2,
+    "checksum": 7210167697113459148,
+    "pc": 128,
+    "remaining": 0,
+    "seconds": 0.045726983
+  },
+  "ios_arm64_musttail_compile": true,
+  "results": [
+    {
+      "sample": 1,
+      "style": 0,
+      "checksum": 7581987707642826958,
+      "pc": 0,
+      "remaining": 0,
+      "seconds": 0.106741323
+    },
+    {
+      "sample": 1,
+      "style": 1,
+      "checksum": 7581987707642826958,
+      "pc": 0,
+      "remaining": 0,
+      "seconds": 0.190252806
+    },
+    {
+      "sample": 1,
+      "style": 2,
+      "checksum": 7581987707642826958,
+      "pc": 0,
+      "remaining": 0,
+      "seconds": 0.182756481
+    },
+    {
+      "sample": 2,
+      "style": 2,
+      "checksum": 7581987707642826958,
+      "pc": 0,
+      "remaining": 0,
+      "seconds": 0.177542945
+    },
+    {
+      "sample": 2,
+      "style": 1,
+      "checksum": 7581987707642826958,
+      "pc": 0,
+      "remaining": 0,
+      "seconds": 0.190632472
+    },
+    {
+      "sample": 2,
+      "style": 0,
+      "checksum": 7581987707642826958,
+      "pc": 0,
+      "remaining": 0,
+      "seconds": 0.114475586
+    },
+    {
+      "sample": 3,
+      "style": 0,
+      "checksum": 7581987707642826958,
+      "pc": 0,
+      "remaining": 0,
+      "seconds": 0.104621549
+    },
+    {
+      "sample": 3,
+      "style": 1,
+      "checksum": 7581987707642826958,
+      "pc": 0,
+      "remaining": 0,
+      "seconds": 0.218965203
+    },
+    {
+      "sample": 3,
+      "style": 2,
+      "checksum": 7581987707642826958,
+      "pc": 0,
+      "remaining": 0,
+      "seconds": 0.177498586
+    }
+  ],
+  "source_sha256": "eb8430a682db14436dc32e896175bb1c568b181679bd213a1681590292a646fa"
+}

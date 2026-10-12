@@ -1,0 +1,36 @@
+{
+  "scope": "418 historical representative encodings; not an exhaustive ISA corpus",
+  "statuses": {
+    "decoded": 388,
+    "syscall": 2,
+    "unsupported": 28
+  },
+  "backends": [
+    "reference",
+    "cached",
+    "cpp"
+  ],
+  "semantic_new_cases": {
+    "frint_fpsr_vectors": 44800,
+    "rcpc2_memory_registers": 960,
+    "ordered_alignment_faults": 6
+  },
+  "source_sha256": {
+    "crates/trames-cpu/src/cached.rs": "9aa0b1c12ac113b51c2a1579f1df57186b8a045fdde4c181e95015931f64db88",
+    "crates/trames-cpu/src/cpp.rs": "29a5b5cf0fa7f5e143593be8f725431c0934db9a75094b7106895c7fb7a473a5",
+    "crates/trames-cpu/src/crypto.rs": "33bb68c74fb0f03cd7178135b1e2e13c7b3a604475b373054a61fc5f41d08536",
+    "crates/trames-cpu/src/extended.rs": "29e2b1afbeeff0208b22a67735701b27edf0a901842868b0b8d026ca21a328ac",
+    "crates/trames-cpu/src/floating.rs": "d7e2724bc2ac6bb8c5d03c818b613d60a4e984afc3abd00b6f7852cfa825f850",
+    "crates/trames-cpu/src/half_vector.rs": "db8583dedb6b9376bedcf2d5dd5c3a577faf00c73390da21aa412641e9286be3",
+    "crates/trames-cpu/src/lib.rs": "8be3142cad1b4c7312bd905457a74153f6b7f63566eef5ee446dd7ec6d043f30",
+    "crates/trames-cpu/src/load_store.rs": "3f4eb3a695a818c2b3d5d46a77d2882e44f91a53ff419473cade0bbdf887535f",
+    "crates/trames-cpu/src/soft_float.rs": "fc627a479f240308d2981692ae47b837d4eb58a4cffd898a575caa62a608eede",
+    "crates/trames-cpu/src/vector_extra_float.rs": "1abeaa9ade357ab108c71dd6f25f5f6276baed12bdefcc9ab0bc184ab0a1e96a",
+    "crates/trames-cpu/src/vector_float.rs": "f9e5dde20780c78b35ee9f956844bfbcc3fd0df5deee7ba0ca81e07c6123d40d",
+    "crates/trames-cpu/src/vector_integer.rs": "dfa9cf8fcb17f5c1004bb8586f0335f338cc6a009337b9f3919f08090463c4a5"
+  },
+  "memory_sha256": "c89eb1655e902642cbf0c302870a6633b84d29a28c5cd025ce9f5a8f1a27ddc3",
+  "feature_names": "fp asimd aes pmull sha1 sha2 crc32 atomics fphp asimdhp asimdrdm jscvt lrcpc asimddp ilrcpc flagm frint i8mm",
+  "hwcap": 202422267,
+  "hwcap2": 8448
+}

@@ -189,20 +189,23 @@ CMake/CTest，以及 Python asyncio/线程/SQLite/venv。Clang 包的命令为 `
 每进程映射额度为 512 MiB，所有地址空间合计 1 GiB，以容纳 LLVM 和编译子进程。
 [能力与剩余缺口](docs/roadmap/compatibility-m6.md) · [验证记录](docs/validation/m6.md)。
 
-## 非 JIT 提速（0.6.0 / build 7）
+## 非 JIT 提速（0.7.0 / build 8）
 
-[下载经验证的 0.6.0/build 7 unsigned IPA](https://github.com/kb5000/trames/actions/runs/38198782482/artifacts/11723974238)，
+[下载经验证的 0.7.0/build 8 unsigned IPA](https://github.com/kb5000/trames/actions/runs/38205290951/artifacts/11727840985)，
 解压后用相同 Apple ID／有效 bundle ID 的 Windows Sideloadly 覆盖安装，保留当前 Linux 数据。
 默认使用 Rust 缓存解释器，无需启用 JIT；若此前打开了试验性 C++ 开关，关闭它后重新打开本地终端。
 三个 Linux 后端的完整 CI 与七项 iPad 模拟器测试通过；安装包已与实际设备构建逐文件核验。
 
-在相同磁盘数据上交错测量三组，默认 Vim 启动从 5.71 秒降至 2.16 秒（2.64×）；
-Python 标准库导入／SQLite／JSON／hash 工作负载快 3.34×，GCC 编译链接运行快 3.30×。
+相对 0.6.0 的缓存后端，在相同磁盘数据上交错测量三组，默认 Vim 启动从 1.94 秒降至 1.78 秒，
+GCC 编译链接运行约快 3%；Python 标准库／SQLite／JSON／hash 工作负载无明显变化。
 这些是 Linux 主机的中位数，iPad 速度仍需真机测量。Vim 保留正常配置与插件，未使用最小启动参数。
+[上一轮 0.5→0.6 的较大提速](docs/validation/nonjit-0.6.md)保留为独立批次。
 
-加速来自惰性指令解码、可重用的代码页缓存、软件页表缓存、固定尺寸访存和按需生成 `/proc` 快照。
-单步参考实现继续用于对照，自修改代码、共享内存、权限变化、跨页故障及指令预算均有回归验证。
-[设计](docs/architecture/nonjit.md) · [性能与发布验证](docs/validation/nonjit-0.6.md)。
+本轮加入代码页的两路缓存、逐页失效校验和比较／跳转合并，并补齐 FRINT32/64 浮点取整、
+LDAPUR/STLUR 等带偏移的 acquire/release 访存。单步参考实现继续用于对照；14 组 QEMU 差分、
+自修改代码、共享内存、权限变化、跨页故障及精确指令预算验证通过。
+显式尾调用已做 Clang/iOS arm64 原型；合成测试较慢，因此默认后端继续使用 Rust 循环分派。
+[设计](docs/architecture/nonjit.md) · [尾调用研究](docs/architecture/tail-dispatch.md) · [性能与发布验证](docs/validation/nonjit-0.7.md)。
 
 ## 结构与范围
 

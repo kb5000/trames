@@ -1,9 +1,11 @@
 # Delivery roadmap
 
-The current static-interpreter update is [0.6.0 non-JIT acceleration](../validation/nonjit-0.6.md),
-with generation-tagged code pages, fast checked memory access and measured real-program improvements.
+The current static-interpreter update is [0.7.0 non-JIT refinement](../validation/nonjit-0.7.md),
+with page-local invalidation, two-way code reuse, flags/branch pairs and measured real-program results.
+FRINTTS/LRCPC2 extend the reference CPU profile; [explicit tail-call research](../architecture/tail-dispatch.md)
+retains a reproducible static prototype without changing the production dispatch.
 Current Linux ABI work is recorded in [M6 compatibility](compatibility-m6.md);
-the CPU profile remains [0.4.0 compatibility](compatibility-0.4.md). Historical gaps are recorded for the
+the base CPU scope is [0.4.0 compatibility](compatibility-0.4.md), with additions recorded in 0.7.0. Historical gaps are recorded for the
 [released 0.3.0](compatibility-gaps.md) and the
 [pre-implementation worktree snapshot](compatibility-gaps-worktree.md), including partial
 semantics, representative instruction probes and the complete Linux 6.12 AArch64
