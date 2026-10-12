@@ -58,6 +58,21 @@ pub struct Runtime {
     pub memory: Memory,
     pub linux: Linux,
     pub terminal: Option<terminal::Terminal>,
+    pub metrics: RuntimeMetrics,
+    pub profile_syscalls: bool,
+}
+/// Host monotonic timings; these are diagnostics, never guest clock values.
+#[derive(Default, Debug)]
+pub struct RuntimeMetrics {
+    pub cpu_time: std::time::Duration,
+    pub syscall_time: std::time::Duration,
+    pub idle_time: std::time::Duration,
+    pub syscalls: u64,
+    pub proc_refreshes: u64,
+    pub context_switches: u64,
+    pub decode_lookups: u64,
+    pub instructions_decoded: u64,
+    pub decode_misses: u64,
 }
 pub use terminal::Terminal;
 pub use trames_cpu::Backend;
@@ -238,6 +253,8 @@ impl Runtime {
             memory: elf.memory,
             linux,
             terminal: None,
+            metrics: RuntimeMetrics::default(),
+            profile_syscalls: false,
         })
     }
     pub fn load(bytes: &[u8], argv: &[String], envp: &[String]) -> Result<Self, RuntimeError> {
@@ -268,6 +285,47 @@ impl Runtime {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn virtual_devices_work_without_any_proc_access_or_snapshot_refresh() {
+        // openat(AT_FDCWD,"/dev/zero",0); read(fd,path,8); exit(0)
+        let words = [
+            0x92800c60u32,
+            0xd2800708,
+            0xd4000001,
+            0xd2800102,
+            0xd28007e8,
+            0xd4000001,
+            0xd2800000,
+            0xd2800ba8,
+            0xd4000001,
+        ];
+        let mut memory = Memory::default();
+        memory.map(0x1000, PAGE_SIZE, Permissions::RW).unwrap();
+        memory.map(0x2000, PAGE_SIZE, Permissions::RW).unwrap();
+        for (i, word) in words.iter().enumerate() {
+            memory
+                .write(0x1000 + i as u64 * 4, &word.to_le_bytes())
+                .unwrap();
+        }
+        memory.protect(0x1000, PAGE_SIZE, Permissions::RX).unwrap();
+        memory.write(0x2100, b"/dev/zero\0").unwrap();
+        let mut cpu = Cpu::new(0x1000, 0);
+        cpu.set_x(1, 0x2100);
+        let mut runtime = Runtime {
+            cpu,
+            memory,
+            linux: Linux::new(0),
+            terminal: None,
+            metrics: RuntimeMetrics::default(),
+            profile_syscalls: false,
+        };
+        let exit = runtime
+            .run(&mut trames_linux::CapturedOutput::default(), 100)
+            .unwrap();
+        assert_eq!(exit.code, 0);
+        assert_eq!(runtime.memory.read_array::<8>(0x2100).unwrap(), [0; 8]);
+        assert_eq!(runtime.metrics.proc_refreshes, 1); // initial mount setup only
+    }
     fn elf() -> LoadedElf {
         LoadedElf {
             memory: Memory::default(),
@@ -338,6 +396,8 @@ mod tests {
             memory,
             linux: Linux::new(0x2000),
             terminal: None,
+            metrics: RuntimeMetrics::default(),
+            profile_syscalls: false,
         };
         let mut out = trames_linux::CapturedOutput::default();
         assert!(matches!(

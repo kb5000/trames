@@ -72,7 +72,7 @@ pub extern "C" fn trames_abi_version() -> u32 {
 }
 #[no_mangle]
 pub extern "C" fn trames_execution_backend_available(backend: u32) -> u32 {
-    u32::from(backend == 0 || (backend == 1 && trames_core::cpp_available()))
+    u32::from(backend == 0 || backend == 2 || (backend == 1 && trames_core::cpp_available()))
 }
 /// # Safety
 /// See `bytes`. Native-authorized store path only. Serialize against new opens.

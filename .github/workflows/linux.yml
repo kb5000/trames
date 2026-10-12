@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        backend: [reference, cpp]
+        backend: [reference, cached, cpp]
     env:
       TRAMES_BACKEND: ${{ matrix.backend }}
     steps:
@@ -109,7 +109,7 @@ jobs:
           python3 tests/integration/m6-abi.py
       - name: Signed developer tools and complete guest workflows on a fresh persistent store
         run: python3 tests/integration/m6.py | tee target/m6-tools.log
-      - name: Profile both interpreters with matching final CPU/memory state
+      - name: Profile static interpreters with matching final CPU/memory state
         run: cargo run -p trames-cpu --features cpp --example backend_profile --release --locked | tee target/cpu-profile.jsonl
       - uses: actions/upload-artifact@v4
         with:

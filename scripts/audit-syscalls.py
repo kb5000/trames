@@ -5,6 +5,7 @@
 Input numbers are retained from the published 0.4 audit. Matching a dispatch arm
 establishes an implementation entry, not conformance of every argument/flag.
 """
+import argparse
 import collections
 import csv
 import hashlib
@@ -18,6 +19,10 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'docs/validation'
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--prefix', default='nonjit-0.6', help='Output basename; historical reports are kept when explicitly named')
+args = parser.parse_args()
+assert re.fullmatch(r'[a-z0-9][a-z0-9.-]*', args.prefix), 'invalid report prefix'
 found = {}
 for source in ('crates/trames-core/src/process.rs', 'crates/trames-linux/src/state.rs'):
     lines = (ROOT / source).read_text().splitlines()
@@ -85,7 +90,7 @@ with tempfile.TemporaryDirectory(prefix='trames-syscalls-') as directory:
     (tmp / 'probe.S').write_text('\n'.join(assembly) + '\n')
     subprocess.run([os.getenv('AARCH64_AS', 'aarch64-linux-gnu-as'), '-o', str(tmp / 'probe.o'), str(tmp / 'probe.S')], check=True)
     subprocess.run([os.getenv('AARCH64_LD', 'aarch64-linux-gnu-ld'), '-o', str(tmp / 'probe'), str(tmp / 'probe.o')], check=True)
-    for backend in ('reference', 'cpp'):
+    for backend in ('reference', 'cached', 'cpp'):
         result = subprocess.run([runner, '--memory', '--backend', backend, str(tmp / 'probe')], capture_output=True, timeout=30)
         assert result.returncode == 0 and not result.stderr, (backend, result.returncode, result.stderr)
         returns = struct.unpack('<' + 'q' * len(missing), result.stdout)
@@ -93,7 +98,7 @@ with tempfile.TemporaryDirectory(prefix='trames-syscalls-') as directory:
     for row in rows:
         if not row['dispatch_source']:
             row['probe_return'] = -38
-with (OUT / 'm6-syscalls.csv').open('w', newline='') as output:
+with (OUT / (args.prefix + '-syscalls.csv')).open('w', newline='') as output:
     writer = csv.DictWriter(output, fieldnames=list(rows[0]), lineterminator='\n')
     writer.writeheader()
     writer.writerows(rows)
@@ -102,7 +107,7 @@ metadata = {
     'entries': len(rows),
     'statuses': dict(collections.Counter(row['status'] for row in rows)),
     'undispatched_probes_per_backend': len(missing),
-    'backends': ['reference', 'cpp'],
+    'backends': ['reference', 'cached', 'cpp'],
     'unhandled_return': -38,
     'source_sha256': {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in (
         'crates/trames-core/src/process.rs', 'crates/trames-core/src/process_events.rs',
@@ -111,5 +116,5 @@ metadata = {
         'crates/trames-vfs/src/lib.rs', 'crates/trames-vfs/src/pseudo.rs', 'crates/trames-vfs/src/storage.rs',
         'crates/trames-memory/src/lib.rs')},
 }
-(OUT / 'm6-syscalls.json').write_text(json.dumps(metadata, indent=2) + '\n')
+(OUT / (args.prefix + '-syscalls.json')).write_text(json.dumps(metadata, indent=2) + '\n')
 print(json.dumps({key: value for key, value in metadata.items() if key != 'source_sha256'}))

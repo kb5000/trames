@@ -203,7 +203,7 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
         .peekable();
     let mut budget = DEFAULT_INSTRUCTION_LIMIT;
     let mut trace = false;
-    let mut backend = env::var("TRAMES_BACKEND").unwrap_or_else(|_| "reference".into());
+    let mut backend = env::var("TRAMES_BACKEND").unwrap_or_else(|_| "cached".into());
     let mut metrics = false;
     let mut pty = false;
     let mut install_busybox = false;
@@ -220,7 +220,7 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     let mut guest_path = false;
     let mut extra_env = Vec::new();
     if args.peek().is_some_and(|a| a == "--help" || a == "-h") {
-        println!("Usage: trames-run [--rootfs VERIFIED_ALPINE_TAR_GZ] [--guest] [--env KEY=VALUE] [--virtual-network ID] [--host-map VIRTUAL_IP=HOST_IP] [--network off|loopback|outbound|full] [--storage DIR | --memory] [--storage-budget BYTES|16GiB|auto] [--storage-info] [--max-instructions N] [--trace-syscalls] [--backend reference|cpp] [--metrics] [--file /GUEST=HOST] [--exec-file /GUEST=HOST] [--export /GUEST=HOST] [--install-busybox] [--pty] [--] ELF [ARG ...]\nDefault native network: outbound connections and loopback listeners; full also allows non-loopback listeners.\n--virtual-network ID selects isolated 10.0.0.ID / fd00::ID and private loopback; ID must be 2..254.\n--host-map explicitly forwards a logical external IP to a trusted host service.\nDefault storage: .trames/storage in the current directory, 16 GiB logical file budget on first creation.\nImports copy selected host files; exports create new host files after guest exit.\n--memory selects the ephemeral 16 MiB test backend. auto uses the storage volume's total capacity.");
+        println!("Usage: trames-run [--rootfs VERIFIED_ALPINE_TAR_GZ] [--guest] [--env KEY=VALUE] [--virtual-network ID] [--host-map VIRTUAL_IP=HOST_IP] [--network off|loopback|outbound|full] [--storage DIR | --memory] [--storage-budget BYTES|16GiB|auto] [--storage-info] [--max-instructions N] [--trace-syscalls] [--backend reference|cached|cpp] [--metrics] [--file /GUEST=HOST] [--exec-file /GUEST=HOST] [--export /GUEST=HOST] [--install-busybox] [--pty] [--] ELF [ARG ...]\nDefault native network: outbound connections and loopback listeners; full also allows non-loopback listeners.\n--virtual-network ID selects isolated 10.0.0.ID / fd00::ID and private loopback; ID must be 2..254.\n--host-map explicitly forwards a logical external IP to a trusted host service.\nDefault storage: .trames/storage in the current directory, 16 GiB logical file budget on first creation.\nImports copy selected host files; exports create new host files after guest exit.\n--memory selects the ephemeral 16 MiB test backend. auto uses the storage volume's total capacity.");
         return Ok(0);
     }
     while let Some(option) = args.peek() {
@@ -471,20 +471,23 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     }
     runtime.cpu.set_backend(match backend.as_str() {
         "reference" => trames_core::Backend::Reference,
+        "cached" => trames_core::Backend::Cached,
         "cpp" => trames_core::Backend::Cpp,
-        _ => return Err("backend must be reference or cpp".into()),
+        _ => return Err("backend must be reference, cached or cpp".into()),
     })?;
     if pty {
         runtime.enable_terminal(trames_core::Terminal::default())?;
     }
     let _host_terminal = RawTerminal::enter(pty)?;
+    runtime.profile_syscalls = metrics;
     let began = std::time::Instant::now();
     let result = runtime.run(&mut HostOutput::new(), budget);
     let synced = runtime.linux.vfs.sync();
     let exit = result?;
     if metrics {
         let seconds = began.elapsed().as_secs_f64();
-        eprintln!("trames metrics: {{\"backend\":\"{backend}\",\"instructions\":{},\"seconds\":{seconds},\"instructions_per_second\":{}}}",exit.instructions,exit.instructions as f64/seconds);
+        let profile = &runtime.metrics;
+        eprintln!("trames metrics: {{\"backend\":\"{backend}\",\"instructions\":{},\"seconds\":{seconds},\"instructions_per_second\":{},\"cpu_seconds\":{},\"syscall_seconds\":{},\"idle_seconds\":{},\"syscalls\":{},\"proc_refreshes\":{},\"context_switches\":{},\"decode_lookups\":{},\"decode_misses\":{},\"instructions_decoded\":{}}}",exit.instructions,exit.instructions as f64/seconds, profile.cpu_time.as_secs_f64(),profile.syscall_time.as_secs_f64(),profile.idle_time.as_secs_f64(),profile.syscalls,profile.proc_refreshes,profile.context_switches,profile.decode_lookups,profile.decode_misses,profile.instructions_decoded);
     }
     synced?;
     for (guest, host) in exports {

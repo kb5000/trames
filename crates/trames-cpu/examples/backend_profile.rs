@@ -17,7 +17,7 @@ fn main() {
         ),
     ] {
         let mut expected = None;
-        for backend in [Backend::Reference, Backend::Cpp] {
+        for backend in [Backend::Reference, Backend::Cached, Backend::Cpp] {
             if backend == Backend::Cpp && !Cpu::cpp_available() {
                 continue;
             }

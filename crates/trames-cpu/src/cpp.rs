@@ -10,7 +10,7 @@ struct Block {
 }
 #[derive(Default, Clone, Debug)]
 pub(super) struct Cache {
-    revision: Option<u64>,
+    revision: Option<(u64, u64)>,
     blocks: BTreeMap<u64, Block>,
 }
 impl Cpu {
@@ -18,7 +18,7 @@ impl Cpu {
         let mut executed = 0;
         let mut fallbacks = 0;
         while executed < budget {
-            let revision = memory.instruction_revision();
+            let revision = memory.instruction_identity();
             if self.cache.revision != Some(revision) {
                 self.cache.blocks.clear();
                 self.cache.revision = Some(revision);
@@ -137,6 +137,7 @@ mod tests {
                 v: false,
             };
             let mut reference = cpu.clone();
+            reference.set_backend(Backend::Reference).unwrap();
             let mut other = m.clone();
             cpu.set_backend(Backend::Cpp).unwrap();
             let a = cpu.run_slice(&mut m, budget);

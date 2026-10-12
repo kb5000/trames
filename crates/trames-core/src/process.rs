@@ -116,7 +116,14 @@ struct Kernel {
     instructions: u64,
     boot_time: u64,
     context_switches: u64,
+    decode_lookups: u64,
+    instructions_decoded: u64,
+    decode_misses: u64,
     cpu_total: Duration,
+    syscall_total: Duration,
+    syscalls: u64,
+    proc_refreshes: u64,
+    profile_syscalls: bool,
     idle: Duration,
     load: [f64; 3],
     load_sample: Instant,
@@ -1421,17 +1428,25 @@ impl Kernel {
         a: [u64; 6],
         io: &mut impl GuestOutput,
     ) {
+        let began = self.profile_syscalls.then(Instant::now);
+        self.syscalls += 1;
         p.linux.vfs.set_process_context(pid);
         p.linux.vfs.set_lock_owner(p.tgid);
-        if matches!(
-            number,
-            17 | 43 | 44 | 48 | 56 | 61 | 67 | 78 | 79 | 80 | 221 | 439
-        ) || (matches!(number, 63 | 65)
-            && p.linux
-                .vfs
-                .fd_kind(a[0] as u32)
-                .is_ok_and(|k| matches!(k, FdKind::Node(path) if path.starts_with(b"/proc/"))))
-        {
+        let proc_path = match number {
+            43 | 221 => Some((trames_vfs::AT_FDCWD, a[0])),
+            48 | 56 | 78 | 79 | 439 => Some((a[0] as i32, a[1])),
+            _ => None,
+        };
+        let reads_proc = proc_path.is_some_and(|(dirfd, address)| {
+            p.memory.read_c_string(address, 4096).is_ok_and(|path| {
+                p.linux.vfs.accesses_proc(dirfd, &path)
+            })
+        }) || (matches!(number, 44 | 61 | 63 | 65 | 67 | 80)
+            && p.linux.vfs.fd_kind(a[0] as u32).is_ok_and(|kind| {
+                matches!(kind, FdKind::Node(path) if path == b"/proc" || path.starts_with(b"/proc/"))
+            }));
+        if reads_proc {
+            self.proc_refreshes += 1;
             self.refresh_proc(pid, p);
         }
         let other_bytes = self.other_memory(p.vm_id);
@@ -1481,6 +1496,9 @@ impl Kernel {
                 a[2],
                 raw.map_or_else(|| "suspended/replaced".into(), |v| (v as i64).to_string())
             );
+        }
+        if let Some(began) = began {
+            self.syscall_total += began.elapsed();
         }
     }
     fn readiness(
@@ -1934,10 +1952,16 @@ impl Kernel {
                             return Err(RuntimeError::BudgetExceeded(limit));
                         }
                         let began = Instant::now();
+                        let decode_before = p.cpu.decode_stats();
                         let outcome = p
                             .cpu
                             .run_slice(&mut p.memory, (limit - self.instructions).min(4096));
                         let elapsed = began.elapsed();
+                        let decode_after = p.cpu.decode_stats();
+                        self.decode_lookups += decode_after.lookups - decode_before.lookups;
+                        self.decode_misses += decode_after.misses - decode_before.misses;
+                        self.instructions_decoded +=
+                            decode_after.instructions - decode_before.instructions;
                         p.cpu_time += elapsed;
                         self.cpu_total += elapsed;
                         self.context_switches += 1;
@@ -2140,7 +2164,7 @@ pub(super) fn run(
     io: &mut impl GuestOutput,
     limit: u64,
 ) -> Result<Exit, RuntimeError> {
-    let root = Process {
+    let mut root = Process {
         cpu: std::mem::take(&mut runtime.cpu),
         memory: std::mem::take(&mut runtime.memory),
         linux: std::mem::replace(&mut runtime.linux, Linux::new(0)),
@@ -2168,7 +2192,7 @@ pub(super) fn run(
         rekey: None,
     };
     let mut kernel = Kernel {
-        processes: BTreeMap::from([(1, root)]),
+        processes: BTreeMap::new(),
         next_pid: 2,
         terminal: runtime.terminal.take(),
         started: Instant::now(),
@@ -2178,7 +2202,14 @@ pub(super) fn run(
             .unwrap_or_default()
             .as_secs(),
         context_switches: 0,
+        decode_lookups: 0,
+        instructions_decoded: 0,
+        decode_misses: 0,
         cpu_total: Duration::ZERO,
+        syscall_total: Duration::ZERO,
+        syscalls: 0,
+        proc_refreshes: 0,
+        profile_syscalls: runtime.profile_syscalls,
         idle: Duration::ZERO,
         load: [0.0; 3],
         load_sample: Instant::now(),
@@ -2186,7 +2217,23 @@ pub(super) fn run(
         timers: BTreeMap::new(),
         next_timer: 1,
     };
+    // Enable all virtual mounts once, including /dev and /sys for programs
+    // that never touch /proc. Subsequent full snapshots are demand-driven.
+    kernel.refresh_proc(1, &mut root);
+    kernel.proc_refreshes += 1;
+    kernel.processes.insert(1, root);
     let result = kernel.drive(io, limit);
+    runtime.metrics = super::RuntimeMetrics {
+        cpu_time: kernel.cpu_total,
+        syscall_time: kernel.syscall_total,
+        idle_time: kernel.idle,
+        syscalls: kernel.syscalls,
+        proc_refreshes: kernel.proc_refreshes,
+        context_switches: kernel.context_switches,
+        decode_lookups: kernel.decode_lookups,
+        instructions_decoded: kernel.instructions_decoded,
+        decode_misses: kernel.decode_misses,
+    };
     // Session teardown cancels forked children, including their process locks.
     // Root-thread locks are already released on normal group exit; preserve
     // the root's state when returning a resumable runtime error.
@@ -2250,7 +2297,14 @@ mod tests {
                 .unwrap_or_default()
                 .as_secs(),
             context_switches: 0,
+            decode_lookups: 0,
+            instructions_decoded: 0,
+            decode_misses: 0,
             cpu_total: Duration::ZERO,
+            syscall_total: Duration::ZERO,
+            syscalls: 0,
+            proc_refreshes: 0,
+            profile_syscalls: false,
             idle: Duration::ZERO,
             load: [0.0; 3],
             load_sample: Instant::now(),

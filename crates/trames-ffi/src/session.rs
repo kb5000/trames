@@ -69,7 +69,7 @@ fn default_network() -> String {
     "outbound".into()
 }
 fn default_backend() -> String {
-    "reference".into()
+    "cached".into()
 }
 #[derive(Clone, Serialize)]
 pub struct Status {
@@ -138,7 +138,7 @@ impl Session {
             || options.volume_total == 0
             || options.volume_available > options.volume_total
             || !matches!(options.network.as_str(), "off" | "loopback" | "outbound")
-            || !matches!(options.backend.as_str(), "reference" | "cpp")
+            || !matches!(options.backend.as_str(), "reference" | "cached" | "cpp")
             || (options.backend == "cpp" && !trames_core::cpp_available())
         {
             return Err("invalid session configuration".into());
@@ -373,10 +373,10 @@ fn run(
     let mut terminal = Terminal::default();
     runtime
         .cpu
-        .set_backend(if options.backend == "cpp" {
-            trames_core::Backend::Cpp
-        } else {
-            trames_core::Backend::Reference
+        .set_backend(match options.backend.as_str() {
+            "cpp" => trames_core::Backend::Cpp,
+            "reference" => trames_core::Backend::Reference,
+            _ => trames_core::Backend::Cached,
         })
         .map_err(str::to_string)?;
     terminal.resize(options.rows, options.columns);

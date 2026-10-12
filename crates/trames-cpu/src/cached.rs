@@ -1,0 +1,1281 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! Bounded, lazily decoded code pages. No executable memory or host guest pointers.
+use super::{
+    extended::{logical_mask, ones, rotate},
+    shifted, sign_extend, width_mask, Cpu, CpuFault, Event, Flags, SliceOutcome,
+};
+use trames_memory::{Memory, PAGE_SIZE};
+
+const SLOTS: usize = 128;
+const PAGE_WORDS: usize = PAGE_SIZE as usize / 4;
+
+#[derive(Clone, Copy, Debug)]
+enum Addressing {
+    Offset(u64),
+    Pre(u64),
+    Post(u64),
+    Register { option: u8, shift: u8 },
+}
+
+#[derive(Clone, Copy, Debug)]
+enum Op {
+    Nop,
+    Svc,
+    Move {
+        opc: u8,
+        shift: u8,
+        value: u64,
+    },
+    Address {
+        immediate: u64,
+    },
+    AddImmediate {
+        sub: bool,
+        flags: bool,
+        value: u64,
+    },
+    AddShift {
+        sub: bool,
+        flags: bool,
+        kind: u8,
+        amount: u8,
+    },
+    LogicalShift {
+        opc: u8,
+        invert: bool,
+        kind: u8,
+        amount: u8,
+    },
+    LogicalImmediate {
+        opc: u8,
+        value: u64,
+    },
+    Bitfield {
+        opc: u8,
+        r: u8,
+        s: u8,
+        wmask: u64,
+        tmask: u64,
+    },
+    Select {
+        condition: u8,
+        invert: bool,
+        increment: bool,
+    },
+    AddExtended {
+        sub: bool,
+        flags: bool,
+        signed: bool,
+        bits: u8,
+        amount: u8,
+    },
+    Compare {
+        condition: u8,
+        immediate: bool,
+        sub: bool,
+        nzcv: u8,
+    },
+    Multiply {
+        kind: u8,
+        ra: u8,
+        sub: bool,
+    },
+    ShiftVariable {
+        kind: u8,
+    },
+    Divide {
+        signed: bool,
+    },
+    Branch {
+        offset: u64,
+        link: bool,
+    },
+    RegisterBranch {
+        link: bool,
+    },
+    CompareBranch {
+        offset: u64,
+        nonzero: bool,
+    },
+    TestBranch {
+        offset: u64,
+        bit: u8,
+        nonzero: bool,
+    },
+    ConditionalBranch {
+        offset: u64,
+        condition: u8,
+    },
+    // Size/kind validation and scaled offsets are done once. Other memory
+    // encodings retain the complete checked reference implementation.
+    MemoryImmediate {
+        addressing: Addressing,
+        size: u8,
+        opc: u8,
+        vector: bool,
+    },
+    Pair {
+        offset: u64,
+        size: u8,
+        second: u8,
+        load: bool,
+        vector: bool,
+        signed: bool,
+        writeback: bool,
+        post: bool,
+    },
+    Memory {
+        writes: bool,
+    },
+    Fallback,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct Instruction {
+    word: u32,
+    rd: u8,
+    rn: u8,
+    rm: u8,
+    wide: bool,
+    op: Op,
+}
+impl Instruction {
+    fn decode(word: u32) -> Self {
+        let wide = word >> 31 != 0;
+        let opc = ((word >> 29) & 3) as u8;
+        let kind = ((word >> 22) & 3) as u8;
+        let amount = ((word >> 10) & 63) as u8;
+        let branch_offset = sign_extend((((word >> 5) & 0x7ffff) as u64) << 2, 21);
+        let op = if word == 0xd503201f {
+            Op::Nop
+        } else if word & 0xffe0001f == 0xd4000001 {
+            Op::Svc
+        } else if word & 0x1f800000 == 0x12800000 {
+            let shift = ((word >> 21) & 3) as u8 * 16;
+            if opc == 1 || (!wide && shift >= 32) {
+                Op::Fallback
+            } else {
+                Op::Move {
+                    opc,
+                    shift,
+                    value: (((word >> 5) & 0xffff) as u64) << shift,
+                }
+            }
+        } else if word & 0x1f000000 == 0x10000000 {
+            Op::Address {
+                immediate: sign_extend(
+                    ((((word >> 5) & 0x7ffff) as u64) << 2) | ((word >> 29) & 3) as u64,
+                    21,
+                ),
+            }
+        } else if word & 0x1f800000 == 0x11000000 {
+            Op::AddImmediate {
+                sub: word & (1 << 30) != 0,
+                flags: word & (1 << 29) != 0,
+                value: (((word >> 10) & 0xfff) as u64)
+                    << if word & (1 << 22) != 0 { 12 } else { 0 },
+            }
+        } else if word & 0x1f200000 == 0x0b000000 {
+            if kind == 3 || (!wide && amount >= 32) {
+                Op::Fallback
+            } else {
+                Op::AddShift {
+                    sub: word & (1 << 30) != 0,
+                    flags: word & (1 << 29) != 0,
+                    kind,
+                    amount,
+                }
+            }
+        } else if word & 0x1f000000 == 0x0a000000 {
+            if !wide && amount >= 32 {
+                Op::Fallback
+            } else {
+                Op::LogicalShift {
+                    opc,
+                    invert: word & (1 << 21) != 0,
+                    kind,
+                    amount,
+                }
+            }
+        } else if word & 0x7c000000 == 0x14000000 {
+            Op::Branch {
+                offset: sign_extend(((word & 0x03ffffff) as u64) << 2, 28),
+                link: wide,
+            }
+        } else if matches!(word & 0xfffffc1f, 0xd61f0000 | 0xd63f0000 | 0xd65f0000) {
+            Op::RegisterBranch {
+                link: word & 0xfffffc1f == 0xd63f0000,
+            }
+        } else if word & 0x7e000000 == 0x34000000 {
+            Op::CompareBranch {
+                offset: branch_offset,
+                nonzero: word & (1 << 24) != 0,
+            }
+        } else if word & 0xff000010 == 0x54000000 {
+            Op::ConditionalBranch {
+                offset: branch_offset,
+                condition: (word & 15) as u8,
+            }
+        } else if word & 0x1f800000 == 0x12000000 {
+            let n = (word >> 22) & 1;
+            match logical_mask(n, (word >> 10) & 63, (word >> 16) & 63, wide) {
+                Some(value) if wide || n == 0 => Op::LogicalImmediate { opc, value },
+                _ => Op::Fallback,
+            }
+        } else if word & 0x1f800000 == 0x13000000 {
+            let r = ((word >> 16) & 63) as u8;
+            let bits = if wide { 64 } else { 32 };
+            if opc == 3 || ((word >> 22) & 1) != wide as u32 || r >= bits || amount >= bits {
+                Op::Fallback
+            } else {
+                Op::Bitfield {
+                    opc,
+                    r,
+                    s: amount,
+                    wmask: rotate(ones(amount as u32 + 1), r as u32, bits as u32),
+                    tmask: ones((((amount.wrapping_sub(r)) & (bits - 1)) + 1) as u32),
+                }
+            }
+        } else if word & 0x1fe00800 == 0x1a800000 && word & (1 << 29) == 0 {
+            Op::Select {
+                condition: ((word >> 12) & 15) as u8,
+                invert: word & (1 << 30) != 0,
+                increment: word & (1 << 10) != 0,
+            }
+        } else if word & 0x7e000000 == 0x36000000 {
+            Op::TestBranch {
+                offset: sign_extend((((word >> 5) & 0x3fff) as u64) << 2, 16),
+                bit: (((word >> 31) << 5) | ((word >> 19) & 31)) as u8,
+                nonzero: word & (1 << 24) != 0,
+            }
+        } else if word & 0x1f200000 == 0x0b200000 && (word >> 10) & 7 <= 4 && word & (3 << 22) == 0
+        {
+            let option = ((word >> 13) & 7) as u8;
+            Op::AddExtended {
+                sub: word & (1 << 30) != 0,
+                flags: word & (1 << 29) != 0,
+                signed: option & 4 != 0,
+                bits: 8 << (option & 3),
+                amount: ((word >> 10) & 7) as u8,
+            }
+        } else if word & 0x1fe00410 == 0x1a400000 && word & (1 << 29) != 0 {
+            Op::Compare {
+                condition: ((word >> 12) & 15) as u8,
+                immediate: word & (1 << 11) != 0,
+                sub: word & (1 << 30) != 0,
+                nzcv: (word & 15) as u8,
+            }
+        } else if word & 0x1f000000 == 0x1b000000 && word & 0x60000000 == 0 {
+            let kind = ((word >> 21) & 7) as u8;
+            let ra = ((word >> 10) & 31) as u8;
+            let sub = word & (1 << 15) != 0;
+            if kind == 0
+                || (wide && matches!(kind, 1 | 5))
+                || (wide && !sub && ra == 31 && matches!(kind, 2 | 6))
+            {
+                Op::Multiply { kind, ra, sub }
+            } else {
+                Op::Fallback
+            }
+        } else if word & 0x5fe00000 == 0x1ac00000 && word & (1 << 29) == 0 {
+            match (word >> 10) & 63 {
+                2 | 3 => Op::Divide {
+                    signed: word & (1 << 10) != 0,
+                },
+                kind @ 8..=11 => Op::ShiftVariable {
+                    kind: kind as u8 - 8,
+                },
+                _ => Op::Fallback,
+            }
+        } else if matches!(word & 0x3b000000, 0x39000000 | 0x38000000) {
+            let vector = word & (1 << 26) != 0;
+            let opc = ((word >> 22) & 3) as u8;
+            let size_field = word >> 30;
+            let size: u8 = if vector && opc >= 2 {
+                16
+            } else {
+                1 << size_field
+            };
+            let addressing = if word & 0x3b000000 == 0x39000000 {
+                Some(Addressing::Offset(
+                    ((word >> 10) & 4095) as u64 * size as u64,
+                ))
+            } else if word & (1 << 21) != 0 {
+                let option = ((word >> 13) & 7) as u8;
+                if (word >> 10) & 3 != 2 || !matches!(option, 2 | 3 | 6 | 7) {
+                    None
+                } else {
+                    Some(Addressing::Register {
+                        option,
+                        shift: if word & (1 << 12) != 0 {
+                            size.trailing_zeros() as u8
+                        } else {
+                            0
+                        },
+                    })
+                }
+            } else {
+                let mode = (word >> 10) & 3;
+                let offset = sign_extend(((word >> 12) & 511) as u64, 9);
+                if (mode == 2 && vector)
+                    || (matches!(mode, 1 | 3)
+                        && !vector
+                        && (word >> 5) & 31 != 31
+                        && (word >> 5) & 31 == word & 31)
+                {
+                    None
+                } else {
+                    Some(match mode {
+                        1 => Addressing::Post(offset),
+                        3 => Addressing::Pre(offset),
+                        _ => Addressing::Offset(offset),
+                    })
+                }
+            };
+            if (vector && opc >= 2 && size_field != 0) || (!vector && size >= 4 && opc == 3) {
+                Op::Fallback
+            } else if let Some(addressing) = addressing {
+                Op::MemoryImmediate {
+                    addressing,
+                    size,
+                    opc,
+                    vector,
+                }
+            } else {
+                Op::Fallback
+            }
+        } else if word & 0x3a000000 == 0x28000000 {
+            let vector = word & (1 << 26) != 0;
+            let load = word & (1 << 22) != 0;
+            let opc = word >> 30;
+            let size = if vector {
+                (opc != 3).then_some(4u8 << opc)
+            } else {
+                match opc {
+                    0 => Some(4),
+                    2 => Some(8),
+                    1 if load => Some(4),
+                    _ => None,
+                }
+            };
+            let second = ((word >> 10) & 31) as u8;
+            let mode = (word >> 23) & 3;
+            let writeback = matches!(mode, 1 | 3);
+            let rn = ((word >> 5) & 31) as u8;
+            let rt = (word & 31) as u8;
+            if !vector
+                && ((writeback && rn != 31 && (rn == rt || rn == second)) || (load && rt == second))
+            {
+                Op::Fallback
+            } else if let Some(size) = size {
+                Op::Pair {
+                    offset: sign_extend(((word >> 15) & 127) as u64, 7).wrapping_mul(size as u64),
+                    size,
+                    second,
+                    load,
+                    vector,
+                    signed: opc == 1,
+                    writeback,
+                    post: mode == 1,
+                }
+            } else {
+                Op::Fallback
+            }
+        } else if word & 0x3b000000 == 0x18000000 {
+            Op::Memory { writes: false }
+        } else {
+            Op::Fallback
+        };
+        Self {
+            word,
+            rd: (word & 31) as u8,
+            rn: ((word >> 5) & 31) as u8,
+            rm: ((word >> 16) & 31) as u8,
+            wide,
+            op,
+        }
+    }
+    fn may_write_code(self) -> bool {
+        matches!(
+            self.op,
+            Op::Memory { writes: true }
+                | Op::MemoryImmediate { opc: 0, .. }
+                | Op::MemoryImmediate {
+                    opc: 2,
+                    vector: true,
+                    ..
+                }
+                | Op::Pair { load: false, .. }
+                // Atomics, DC ZVA and other reference fallbacks can also write.
+                | Op::Fallback
+        )
+    }
+}
+
+#[derive(Debug)]
+struct Entry {
+    generation: u64,
+    instruction: Instruction,
+}
+impl Clone for Entry {
+    fn clone(&self) -> Self {
+        Self {
+            generation: self.generation,
+            instruction: self.instruction,
+        }
+    }
+}
+impl Default for Entry {
+    fn default() -> Self {
+        Self {
+            generation: 0,
+            instruction: Instruction {
+                word: 0,
+                rd: 0,
+                rn: 0,
+                rm: 0,
+                wide: false,
+                op: Op::Fallback,
+            },
+        }
+    }
+}
+#[derive(Debug)]
+struct CodePage {
+    base: u64,
+    identity: (u64, u64),
+    generation: u64,
+    instructions: Box<[Entry]>,
+}
+#[derive(Debug)]
+pub(super) struct Cache {
+    slots: Vec<Option<Box<CodePage>>>,
+    pub(super) stats: super::DecodeStats,
+}
+impl Default for Cache {
+    fn default() -> Self {
+        Self {
+            slots: (0..SLOTS).map(|_| None).collect(),
+            stats: super::DecodeStats::default(),
+        }
+    }
+}
+impl Clone for Cache {
+    fn clone(&self) -> Self {
+        Self::default()
+    } // fork copies state, not derived code
+}
+impl Cache {
+    fn page(&mut self, memory: &Memory, pc: u64) -> (&mut CodePage, &mut super::DecodeStats) {
+        let base = pc & !(PAGE_SIZE - 1);
+        // Use every virtual address bit, including high library addresses.
+        let slot =
+            (((base >> 12).wrapping_mul(0x9e3779b97f4a7c15)) >> (64 - SLOTS.ilog2())) as usize;
+        let identity = memory.instruction_identity();
+        self.stats.lookups += 1;
+        if !self.slots[slot]
+            .as_ref()
+            .is_some_and(|p| p.base == base && p.identity == identity)
+        {
+            self.stats.misses += 1;
+            if let Some(page) = &mut self.slots[slot] {
+                page.base = base;
+                page.identity = identity;
+                page.generation = page.generation.wrapping_add(1);
+                if page.generation == 0 {
+                    // Epoch wrap must never expose a stale or empty entry.
+                    for entry in &mut page.instructions {
+                        entry.generation = 0;
+                    }
+                    page.generation = 1;
+                }
+            } else {
+                self.slots[slot] = Some(Box::new(CodePage {
+                    base,
+                    identity,
+                    generation: 1,
+                    instructions: vec![Entry::default(); PAGE_WORDS].into_boxed_slice(),
+                }));
+            }
+        }
+        (
+            self.slots[slot].as_deref_mut().expect("decoded code page"),
+            &mut self.stats,
+        )
+    }
+}
+
+impl Cpu {
+    pub(super) fn run_cached(&mut self, memory: &mut Memory, budget: u64) -> SliceOutcome {
+        // Move the derived cache out once per slice; architectural state stays
+        // directly accessible throughout execution, with no copy or FFI bounce.
+        let mut cache = std::mem::replace(
+            &mut self.decoded,
+            Cache {
+                slots: Vec::new(),
+                stats: super::DecodeStats::default(),
+            },
+        );
+        let result = self.cached_slice(memory, budget, &mut cache);
+        self.decoded = cache;
+        result
+    }
+    fn cached_slice(
+        &mut self,
+        memory: &mut Memory,
+        budget: u64,
+        cache: &mut Cache,
+    ) -> SliceOutcome {
+        let mut executed = 0;
+        while executed < budget {
+            let (page, stats) = cache.page(memory, self.pc);
+            while executed < budget && self.pc & !(PAGE_SIZE - 1) == page.base {
+                let pc = self.pc;
+                if pc & 3 != 0 {
+                    return SliceOutcome::Fault(CpuFault::Memory {
+                        pc,
+                        error: trames_memory::MemoryError::InvalidRange,
+                    });
+                }
+                let slot = ((pc - page.base) / 4) as usize;
+                let entry = &mut page.instructions[slot];
+                let instruction = if entry.generation == page.generation {
+                    entry.instruction
+                } else {
+                    // Decode only the reached PC: no speculative page reads,
+                    // early faults, or decoding of never-executed page contents.
+                    let word = match memory.fetch_u32(pc) {
+                        Ok(word) => word,
+                        Err(error) => return SliceOutcome::Fault(CpuFault::Memory { pc, error }),
+                    };
+                    let instruction = Instruction::decode(word);
+                    entry.instruction = instruction;
+                    entry.generation = page.generation;
+                    stats.instructions += 1;
+                    instruction
+                };
+                match self.execute_decoded(instruction, memory) {
+                    Ok(Event::Continue) => executed += 1,
+                    Ok(Event::Syscall) => {
+                        return SliceOutcome::Syscall {
+                            instructions: executed + 1,
+                        }
+                    }
+                    Err(error) => return SliceOutcome::Fault(error),
+                }
+                // A successful self-modifying store must leave this borrowed
+                // code page before the next instruction is read from it.
+                if instruction.may_write_code() && memory.instruction_identity() != page.identity {
+                    break;
+                }
+            }
+        }
+        SliceOutcome::Yield {
+            instructions: executed,
+        }
+    }
+    fn execute_decoded(
+        &mut self,
+        ins: Instruction,
+        memory: &mut Memory,
+    ) -> Result<Event, CpuFault> {
+        let pc = self.pc;
+        let mut next = pc.wrapping_add(4);
+        let (rd, rn, rm) = (ins.rd as usize, ins.rn as usize, ins.rm as usize);
+        let wide = ins.wide;
+        let mask = width_mask(wide);
+        match ins.op {
+            Op::Nop => {}
+            Op::Svc => {
+                self.pc = next;
+                return Ok(Event::Syscall);
+            }
+            Op::Move { opc, shift, value } => {
+                let value = match opc {
+                    0 => !value,
+                    2 => value,
+                    _ => (self.x(rd) & !(0xffffu64 << shift)) | value,
+                };
+                self.put(rd, value, wide, false);
+            }
+            Op::Address { immediate } => self.set_x(
+                rd,
+                if wide {
+                    (pc & !4095).wrapping_add(immediate << 12)
+                } else {
+                    pc.wrapping_add(immediate)
+                },
+            ),
+            Op::AddImmediate { sub, flags, value } => {
+                let value = self.arithmetic(self.reg(rn, true), value, sub, flags, wide);
+                self.put(rd, value, wide, !flags);
+            }
+            Op::AddShift {
+                sub,
+                flags,
+                kind,
+                amount,
+            } => {
+                let value = self.arithmetic(
+                    self.x(rn),
+                    shifted(self.x(rm), kind as u32, amount as u32, wide),
+                    sub,
+                    flags,
+                    wide,
+                );
+                self.put(rd, value, wide, false);
+            }
+            Op::LogicalShift {
+                opc,
+                invert,
+                kind,
+                amount,
+            } => {
+                let rhs = shifted(self.x(rm), kind as u32, amount as u32, wide);
+                self.decoded_logical(rd, rn, if invert { !rhs } else { rhs }, opc, wide, false);
+            }
+            Op::LogicalImmediate { opc, value } => {
+                self.decoded_logical(rd, rn, value, opc, wide, opc != 3)
+            }
+            Op::Bitfield {
+                opc,
+                r,
+                s,
+                wmask,
+                tmask,
+            } => {
+                let value = rotate(self.x(rn) & mask, r as u32, if wide { 64 } else { 32 });
+                let value = match opc {
+                    0 => {
+                        let top = if self.x(rn) & (1 << s) != 0 { mask } else { 0 };
+                        (top & !tmask) | (value & wmask & tmask)
+                    }
+                    1 => {
+                        (self.x(rd) & !tmask) | (((self.x(rd) & !wmask) | (value & wmask)) & tmask)
+                    }
+                    _ => value & wmask & tmask,
+                };
+                self.put(rd, value, wide, false);
+            }
+            Op::Select {
+                condition,
+                invert,
+                increment,
+            } => {
+                let value = if self.condition(condition as u32) {
+                    self.x(rn)
+                } else {
+                    let value = if invert { !self.x(rm) } else { self.x(rm) };
+                    if increment {
+                        value.wrapping_add(1)
+                    } else {
+                        value
+                    }
+                };
+                self.put(rd, value, wide, false);
+            }
+            Op::AddExtended {
+                sub,
+                flags,
+                signed,
+                bits,
+                amount,
+            } => {
+                let rhs = self.x(rm) & ones(bits as u32);
+                let rhs = if signed {
+                    sign_extend(rhs, bits as u32)
+                } else {
+                    rhs
+                };
+                let value = self.arithmetic(
+                    self.reg(rn, true),
+                    rhs.wrapping_shl(amount as u32),
+                    sub,
+                    flags,
+                    wide,
+                );
+                self.put(rd, value, wide, !flags);
+            }
+            Op::Compare {
+                condition,
+                immediate,
+                sub,
+                nzcv,
+            } => {
+                if self.condition(condition as u32) {
+                    self.arithmetic(
+                        self.x(rn),
+                        if immediate { rm as u64 } else { self.x(rm) },
+                        sub,
+                        true,
+                        wide,
+                    );
+                } else {
+                    self.set_nzcv(nzcv as u32);
+                }
+            }
+            Op::Multiply { kind, ra, sub } => {
+                let product = match kind {
+                    0 => self.x(rn).wrapping_mul(self.x(rm)),
+                    1 => (self.x(rn) as u32 as i32 as i64)
+                        .wrapping_mul(self.x(rm) as u32 as i32 as i64)
+                        as u64,
+                    5 => (self.x(rn) as u32 as u64) * (self.x(rm) as u32 as u64),
+                    2 => ((self.x(rn) as i64 as i128 * self.x(rm) as i64 as i128) >> 64) as u64,
+                    _ => ((self.x(rn) as u128 * self.x(rm) as u128) >> 64) as u64,
+                };
+                let value = if matches!(kind, 2 | 6) {
+                    product
+                } else if sub {
+                    self.x(ra as usize).wrapping_sub(product)
+                } else {
+                    self.x(ra as usize).wrapping_add(product)
+                };
+                self.put(rd, value, wide, false);
+            }
+            Op::ShiftVariable { kind } => {
+                let amount = (self.x(rm) & if wide { 63 } else { 31 }) as u32;
+                self.put(
+                    rd,
+                    shifted(self.x(rn), kind as u32, amount, wide),
+                    wide,
+                    false,
+                );
+            }
+            Op::Divide { signed } => {
+                let a = self.x(rn) & mask;
+                let b = self.x(rm) & mask;
+                let value = if b == 0 {
+                    0
+                } else if !signed {
+                    a / b
+                } else if wide {
+                    (a as i64).wrapping_div(b as i64) as u64
+                } else {
+                    (a as u32 as i32).wrapping_div(b as u32 as i32) as u32 as u64
+                };
+                self.put(rd, value, wide, false);
+            }
+            Op::Branch { offset, link } => {
+                if link {
+                    self.set_x(30, next);
+                }
+                next = pc.wrapping_add(offset);
+            }
+            Op::RegisterBranch { link } => {
+                let target = self.x(rn);
+                if link {
+                    self.set_x(30, next);
+                }
+                next = target;
+            }
+            Op::CompareBranch { offset, nonzero } => {
+                if (self.x(rd) & mask != 0) == nonzero {
+                    next = pc.wrapping_add(offset);
+                }
+            }
+            Op::TestBranch {
+                offset,
+                bit,
+                nonzero,
+            } => {
+                if (self.x(rd) & (1 << bit) != 0) == nonzero {
+                    next = pc.wrapping_add(offset);
+                }
+            }
+            Op::ConditionalBranch { offset, condition } => {
+                if self.condition(condition as u32) {
+                    next = pc.wrapping_add(offset);
+                }
+            }
+            Op::MemoryImmediate {
+                addressing,
+                size,
+                opc,
+                vector,
+            } => {
+                if !vector && size == 8 && opc == 2 {
+                    self.pc = next;
+                    return Ok(Event::Continue);
+                }
+                let base = self.reg(rn, true);
+                let (address, writeback) = match addressing {
+                    Addressing::Offset(offset) => (base.wrapping_add(offset), None),
+                    Addressing::Pre(offset) => {
+                        let address = base.wrapping_add(offset);
+                        (address, Some(address))
+                    }
+                    Addressing::Post(offset) => (base, Some(base.wrapping_add(offset))),
+                    Addressing::Register { option, shift } => {
+                        let index = match option {
+                            2 => self.x(rm) as u32 as u64,
+                            6 => self.x(rm) as u32 as i32 as i64 as u64,
+                            _ => self.x(rm),
+                        };
+                        (base.wrapping_add(index.wrapping_shl(shift as u32)), None)
+                    }
+                };
+                let size = size as usize;
+                let fault = |error| CpuFault::Memory { pc, error };
+                if if vector { opc & 1 != 0 } else { opc != 0 } {
+                    let raw =
+                        super::load_store::read_operand(memory, address, size).map_err(fault)?;
+                    if vector {
+                        self.vectors[rd] = raw;
+                    } else {
+                        let mut value = raw as u64;
+                        if opc >= 2 {
+                            value = sign_extend(value, size as u32 * 8);
+                        }
+                        if opc == 3 {
+                            value &= u32::MAX as u64;
+                        }
+                        self.set_x(rd, value);
+                    }
+                } else {
+                    let value = if vector {
+                        self.vectors[rd]
+                    } else {
+                        self.x(rd) as u128
+                    };
+                    super::load_store::write_operand(memory, address, size, value)
+                        .map_err(fault)?;
+                }
+                if let Some(value) = writeback {
+                    self.put(rn, value, true, true);
+                }
+            }
+            Op::Pair {
+                offset,
+                size,
+                second,
+                load,
+                vector,
+                signed,
+                writeback,
+                post,
+            } => {
+                let base = self.reg(rn, true);
+                let address = if post {
+                    base
+                } else {
+                    base.wrapping_add(offset)
+                };
+                let second = second as usize;
+                let fault = |error| CpuFault::Memory { pc, error };
+                if load {
+                    let (first, other) = match size {
+                        4 => {
+                            let pair =
+                                u64::from_le_bytes(memory.read_array(address).map_err(fault)?);
+                            (pair as u32 as u128, (pair >> 32) as u128)
+                        }
+                        8 => {
+                            let pair =
+                                u128::from_le_bytes(memory.read_array(address).map_err(fault)?);
+                            (pair as u64 as u128, pair >> 64)
+                        }
+                        _ => {
+                            let pair = memory.read_array::<32>(address).map_err(fault)?;
+                            (
+                                u128::from_le_bytes(pair[..16].try_into().expect("first vector")),
+                                u128::from_le_bytes(pair[16..].try_into().expect("second vector")),
+                            )
+                        }
+                    };
+                    if vector {
+                        self.vectors[rd] = first;
+                        self.vectors[second] = other;
+                    } else {
+                        self.set_x(
+                            rd,
+                            if signed {
+                                sign_extend(first as u64, 32)
+                            } else {
+                                first as u64
+                            },
+                        );
+                        self.set_x(
+                            second,
+                            if signed {
+                                sign_extend(other as u64, 32)
+                            } else {
+                                other as u64
+                            },
+                        );
+                    }
+                } else {
+                    let first = if vector {
+                        self.vectors[rd]
+                    } else {
+                        self.x(rd) as u128
+                    };
+                    let other = if vector {
+                        self.vectors[second]
+                    } else {
+                        self.x(second) as u128
+                    };
+                    match size {
+                        4 => memory
+                            .write_array(
+                                address,
+                                ((first as u32 as u64) | ((other as u32 as u64) << 32))
+                                    .to_le_bytes(),
+                            )
+                            .map_err(fault)?,
+                        8 => memory
+                            .write_array(
+                                address,
+                                ((first as u64 as u128) | ((other as u64 as u128) << 64))
+                                    .to_le_bytes(),
+                            )
+                            .map_err(fault)?,
+                        _ => {
+                            let mut bytes = [0; 32];
+                            bytes[..16].copy_from_slice(&first.to_le_bytes());
+                            bytes[16..].copy_from_slice(&other.to_le_bytes());
+                            memory.write_array(address, bytes).map_err(fault)?;
+                        }
+                    }
+                }
+                if writeback {
+                    self.put(rn, base.wrapping_add(offset), true, true);
+                }
+            }
+            Op::Memory { .. } => {
+                if !self.execute_memory(ins.word, memory)? {
+                    return Err(CpuFault::Instruction {
+                        pc,
+                        instruction: ins.word,
+                    });
+                }
+            }
+            Op::Fallback => return self.execute_instruction(ins.word, memory),
+        }
+        self.pc = next;
+        Ok(Event::Continue)
+    }
+    fn decoded_logical(&mut self, rd: usize, rn: usize, rhs: u64, opc: u8, wide: bool, sp: bool) {
+        let value = match opc {
+            0 | 3 => self.x(rn) & rhs,
+            1 => self.x(rn) | rhs,
+            _ => self.x(rn) ^ rhs,
+        } & width_mask(wide);
+        if opc == 3 {
+            self.flags = Flags {
+                n: value & (if wide { 1 << 63 } else { 1 << 31 }) != 0,
+                z: value == 0,
+                c: false,
+                v: false,
+            };
+        }
+        self.put(rd, value, wide, sp);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Backend;
+    use trames_memory::Permissions;
+
+    fn memory(words: &[u32]) -> Memory {
+        let mut memory = Memory::default();
+        memory
+            .map(
+                0x1000,
+                PAGE_SIZE,
+                Permissions {
+                    read: true,
+                    write: true,
+                    execute: true,
+                },
+            )
+            .unwrap();
+        memory.map(0x2000, PAGE_SIZE, Permissions::RW).unwrap();
+        for (i, word) in words.iter().enumerate() {
+            memory
+                .write(0x1000 + i as u64 * 4, &word.to_le_bytes())
+                .unwrap();
+        }
+        memory
+    }
+    fn equal(a: &Cpu, b: &Cpu) {
+        assert_eq!(a.registers, b.registers);
+        assert_eq!(
+            (
+                a.pc,
+                a.sp,
+                a.flags,
+                a.fpcr,
+                a.fpsr,
+                a.tpidr_el0,
+                a.exclusive
+            ),
+            (
+                b.pc,
+                b.sp,
+                b.flags,
+                b.fpcr,
+                b.fpsr,
+                b.tpidr_el0,
+                b.exclusive
+            )
+        );
+        assert_eq!(a.vectors, b.vectors);
+    }
+    #[test]
+    fn page_cache_is_bounded_and_warm_words_do_not_hide_branch_alignment_faults() {
+        let mut memory = memory(&[0xd61f0000, 0xd503201f]); // br x0; nop
+        let mut cpu = Cpu::new(0x1004, 0);
+        cpu.run_slice(&mut memory, 1);
+        cpu.pc = 0x1000;
+        cpu.set_x(0, 0x1005);
+        assert!(matches!(
+            cpu.run_slice(&mut memory, 2),
+            SliceOutcome::Fault(CpuFault::Memory {
+                pc: 0x1005,
+                error: trames_memory::MemoryError::InvalidRange
+            })
+        ));
+        memory
+            .map(
+                0x100000,
+                PAGE_SIZE * 256,
+                Permissions {
+                    read: true,
+                    write: true,
+                    execute: true,
+                },
+            )
+            .unwrap();
+        for page in 0..256u64 {
+            let word = 0xd2800000u32 | ((page as u32) << 5);
+            memory
+                .write(0x100000 + page * PAGE_SIZE, &word.to_le_bytes())
+                .unwrap();
+        }
+        for page in (0..256u64).chain(0..256) {
+            cpu.pc = 0x100000 + page * PAGE_SIZE;
+            assert!(matches!(
+                cpu.run_slice(&mut memory, 1),
+                SliceOutcome::Yield { instructions: 1 }
+            ));
+            assert_eq!(cpu.x(0), page);
+        }
+        assert_eq!(cpu.decoded.slots.len(), SLOTS);
+        assert!(cpu.decoded.slots.iter().filter(|p| p.is_some()).count() <= SLOTS);
+        assert!(cpu
+            .decoded
+            .slots
+            .iter()
+            .flatten()
+            .all(|p| p.instructions.len() == PAGE_WORDS));
+    }
+    #[test]
+    fn page_epoch_wrap_invalidates_stale_words_without_reallocating() {
+        let mut memory = memory(&[0xd2800020]);
+        let mut cpu = Cpu::new(0x1000, 0);
+        cpu.run_slice(&mut memory, 1);
+        let page = cpu
+            .decoded
+            .slots
+            .iter_mut()
+            .flatten()
+            .find(|p| p.base == 0x1000)
+            .unwrap();
+        let address = page.instructions.as_ptr();
+        page.generation = u64::MAX;
+        page.instructions[0].generation = u64::MAX;
+        memory.write(0x1000, &0xd28000e0u32.to_le_bytes()).unwrap();
+        cpu.pc = 0x1000;
+        cpu.run_slice(&mut memory, 1);
+        assert_eq!(cpu.x(0), 7);
+        let page = cpu
+            .decoded
+            .slots
+            .iter()
+            .flatten()
+            .find(|p| p.base == 0x1000)
+            .unwrap();
+        assert_eq!(page.generation, 1);
+        assert_eq!(page.instructions.as_ptr(), address);
+    }
+    #[test]
+    fn cached_random_operands_and_reserved_words_match_single_step_oracle() {
+        let families = [
+            (0x12800000, 0x1f800000),
+            (0x10000000, 0x1f000000),
+            (0x11000000, 0x1f800000),
+            (0x0b000000, 0x1f200000),
+            (0x0a000000, 0x1f000000),
+            (0x12000000, 0x1f800000),
+            (0x13000000, 0x1f800000),
+            (0x1a800000, 0x1fe00800),
+            (0x39000000, 0x3b000000),
+            (0x38000000, 0x3b000000),
+            (0x28000000, 0x3a000000),
+            (0x18000000, 0x3b000000),
+            (0x0b200000, 0x1f200000),
+            (0x1a400000, 0x1fe00410),
+            (0x1b000000, 0x1f000000),
+            (0x1ac00000, 0x5fe00000),
+            (0x34000000, 0x7e000000),
+            (0x36000000, 0x7e000000),
+            (0x54000000, 0xff000010),
+            (0x14000000, 0x7c000000),
+        ];
+        let mut seed = 0x71b7a32c9d11u64;
+        for &(base, mask) in &families {
+            for _ in 0..256 {
+                seed ^= seed << 13;
+                seed ^= seed >> 7;
+                seed ^= seed << 17;
+                let word = base | (seed as u32 & !mask);
+                let mut memory = memory(&[word]);
+                let mut cpu = Cpu::new(0x1000, 0x2ff8);
+                for reg in 0..31 {
+                    cpu.set_x(
+                        reg,
+                        if reg % 3 == 0 {
+                            0x2000 + (seed & 63)
+                        } else {
+                            seed.rotate_left(reg as u32)
+                        },
+                    );
+                    cpu.vectors[reg] = (seed as u128) << 64 | (!seed as u128);
+                }
+                cpu.flags = Flags {
+                    n: seed & 1 != 0,
+                    z: seed & 2 != 0,
+                    c: seed & 4 != 0,
+                    v: seed & 8 != 0,
+                };
+                let mut oracle = cpu.clone();
+                let mut expected_memory = memory.clone();
+                oracle.set_backend(Backend::Reference).unwrap();
+                let actual = cpu.run_slice(&mut memory, 1);
+                let expected = oracle.run_slice(&mut expected_memory, 1);
+                assert_eq!(format!("{actual:?}"), format!("{expected:?}"), "{word:08x}");
+                equal(&cpu, &oracle);
+                let mut actual = [0; 4096];
+                let mut expected = [0; 4096];
+                for address in [0x1000, 0x2000] {
+                    memory.read(address, &mut actual).unwrap();
+                    expected_memory.read(address, &mut expected).unwrap();
+                    assert_eq!(actual, expected, "memory {word:08x}");
+                }
+                assert_eq!(memory.revision(), expected_memory.revision());
+            }
+        }
+    }
+    #[test]
+    fn budgets_syscalls_and_page_boundary_faults_match_reference() {
+        let words = [
+            0xd2800060, 0x91000400, 0xf100041f, 0x54ffffc1, 0xd503201f, 0xd4000001,
+        ];
+        for budget in [0, 1, 2, 3, 17, 4096, 9000] {
+            let mut memory = memory(&words);
+            let mut other = memory.clone();
+            let mut cpu = Cpu::new(0x1000, 0x9000);
+            let mut oracle = cpu.clone();
+            oracle.set_backend(Backend::Reference).unwrap();
+            assert_eq!(
+                format!("{:?}", cpu.run_slice(&mut memory, budget)),
+                format!("{:?}", oracle.run_slice(&mut other, budget))
+            );
+            equal(&cpu, &oracle);
+        }
+        let mut memory = memory(&[]);
+        memory.write(0x1ffc, &0xd503201fu32.to_le_bytes()).unwrap();
+        memory.unmap(0x2000, PAGE_SIZE).unwrap();
+        let mut cpu = Cpu::new(0x1ffc, 0);
+        assert!(matches!(
+            cpu.run_slice(&mut memory, 1),
+            SliceOutcome::Yield { instructions: 1 }
+        ));
+        assert_eq!(cpu.pc, 0x2000);
+        assert!(matches!(
+            cpu.run_slice(&mut memory, 1),
+            SliceOutcome::Fault(CpuFault::Memory { pc: 0x2000, .. })
+        ));
+    }
+    #[test]
+    fn self_modification_invalidates_the_next_instruction_inside_a_cached_page() {
+        let mut memory = memory(&[0xb9000041, 0xd2800020, 0xd4000001]); // str w1,[x2]; mov x0,1; svc
+        let mut cpu = Cpu::new(0x1000, 0);
+        cpu.pc = 0x1004;
+        cpu.run_slice(&mut memory, 1); // warm the word about to be overwritten
+        cpu.pc = 0x1000;
+        cpu.set_x(1, 0xd2800120);
+        cpu.set_x(2, 0x1004); // replace next word by mov x0,9
+        assert!(matches!(
+            cpu.run_slice(&mut memory, 2),
+            SliceOutcome::Yield { instructions: 2 }
+        ));
+        assert_eq!(cpu.x(0), 9);
+        let mut thread = memory.share();
+        thread.write(0x1004, &0xd28000e0u32.to_le_bytes()).unwrap();
+        cpu.pc = 0x1004;
+        cpu.run_slice(&mut memory, 1);
+        assert_eq!(cpu.x(0), 7);
+        thread.protect(0x1000, PAGE_SIZE, Permissions::R).unwrap();
+        cpu.pc = 0x1004;
+        assert!(matches!(
+            cpu.run_slice(&mut memory, 1),
+            SliceOutcome::Fault(CpuFault::Memory { .. })
+        ));
+    }
+    #[test]
+    fn reference_fallback_code_stores_invalidate_a_warmed_next_word() {
+        for words in [
+            vec![0xb821805f, 0xd2800020],
+            vec![0x885ffc44, 0x8803fc41, 0xd2800020],
+        ] {
+            let target = 0x1000 + (words.len() as u64 - 1) * 4;
+            let mut memory = memory(&words);
+            let mut cpu = Cpu::new(target, 0);
+            cpu.run_slice(&mut memory, 1);
+            assert_eq!(cpu.x(0), 1);
+            cpu.pc = 0x1000;
+            cpu.set_x(1, 0xd2800120);
+            cpu.set_x(2, target);
+            assert!(matches!(
+                cpu.run_slice(&mut memory, words.len() as u64),
+                SliceOutcome::Yield { .. }
+            ));
+            assert_eq!(cpu.x(0), 9);
+        }
+        let mut memory = memory(&[0xd50b7422, 0xd503201f]); // dc zva,x2; nop
+        let mut cpu = Cpu::new(0x1004, 0);
+        cpu.run_slice(&mut memory, 1);
+        cpu.pc = 0x1000;
+        cpu.set_x(2, 0x1000);
+        assert!(matches!(
+            cpu.run_slice(&mut memory, 2),
+            SliceOutcome::Fault(CpuFault::Instruction {
+                pc: 0x1004,
+                instruction: 0
+            })
+        ));
+    }
+    #[test]
+    fn independent_spaces_with_equal_epochs_do_not_reuse_decoded_code() {
+        let mut a = memory(&[0xd2800020]);
+        let mut b = memory(&[0xd28000e0]);
+        assert_eq!(a.instruction_revision(), b.instruction_revision());
+        let mut cpu = Cpu::new(0x1000, 0);
+        cpu.run_slice(&mut a, 1);
+        assert_eq!(cpu.x(0), 1);
+        cpu.pc = 0x1000;
+        cpu.run_slice(&mut b, 1);
+        assert_eq!(cpu.x(0), 7);
+        b.unmap(0x1000, PAGE_SIZE).unwrap();
+        b.map(0x1000, PAGE_SIZE, Permissions::RW).unwrap();
+        b.write(0x1000, &0xd28000a0u32.to_le_bytes()).unwrap();
+        b.protect(0x1000, PAGE_SIZE, Permissions::RX).unwrap();
+        cpu.pc = 0x1000;
+        cpu.run_slice(&mut b, 1);
+        assert_eq!(cpu.x(0), 5);
+    }
+}

@@ -10,7 +10,7 @@ fn main() {
         let (id, hex) = line.split_once(' ').unwrap();
         let word = u32::from_str_radix(hex, 16).unwrap();
         let mut results = Vec::new();
-        for backend in [Backend::Reference, Backend::Cpp] {
+        for backend in [Backend::Reference, Backend::Cached, Backend::Cpp] {
             let mut memory = Memory::default();
             memory.map(0x1000, PAGE_SIZE, Permissions::RW).unwrap();
             memory.write(0x1000, &word.to_le_bytes()).unwrap();
@@ -29,7 +29,7 @@ fn main() {
             };
             results.push(result);
         }
-        assert_eq!(results[0], results[1], "{id}");
+        assert!(results.iter().all(|value| value == &results[0]), "{id}");
         println!("{id} {hex} {}", results[0]);
     }
 }

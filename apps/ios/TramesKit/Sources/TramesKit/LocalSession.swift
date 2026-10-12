@@ -20,7 +20,7 @@ public final class LocalSession: @unchecked Sendable {
     public init(store: URL, rootfs: URL?, total: UInt64, available: UInt64, network: String = "outbound", useVolumeBudget: Bool = false, useCppBackend: Bool = false) throws {
         guard trames_abi_version() == 2 else { throw TramesError.message("Unsupported Trames ABI") }
         var options: [String:Any] = ["store": store.path, "volume_total":total, "volume_available":available, "network":network]
-        options["backend"] = useCppBackend ? "cpp" : "reference"
+        options["backend"] = useCppBackend ? "cpp" : "cached"
         if let rootfs { options["rootfs"] = rootfs.path }
         options["budget_bytes"] = useVolumeBudget ? total : UInt64(16) << 30
         let data = try JSONSerialization.data(withJSONObject: options)

@@ -2,6 +2,38 @@
 use super::{sign_extend, Cpu, CpuFault};
 use trames_memory::{Memory, MemoryError};
 
+#[inline]
+pub(super) fn read_operand(
+    memory: &Memory,
+    address: u64,
+    size: usize,
+) -> Result<u128, MemoryError> {
+    Ok(match size {
+        1 => memory.read_array::<1>(address)?[0] as u128,
+        2 => u16::from_le_bytes(memory.read_array(address)?) as u128,
+        4 => u32::from_le_bytes(memory.read_array(address)?) as u128,
+        8 => u64::from_le_bytes(memory.read_array(address)?) as u128,
+        16 => u128::from_le_bytes(memory.read_array(address)?),
+        _ => unreachable!("validated scalar size"),
+    })
+}
+#[inline]
+pub(super) fn write_operand(
+    memory: &mut Memory,
+    address: u64,
+    size: usize,
+    value: u128,
+) -> Result<(), MemoryError> {
+    match size {
+        1 => memory.write_array(address, [value as u8]),
+        2 => memory.write_array(address, (value as u16).to_le_bytes()),
+        4 => memory.write_array(address, (value as u32).to_le_bytes()),
+        8 => memory.write_array(address, (value as u64).to_le_bytes()),
+        16 => memory.write_array(address, value.to_le_bytes()),
+        _ => unreachable!("validated scalar size"),
+    }
+}
+
 impl Cpu {
     pub(super) fn execute_memory(
         &mut self,
@@ -475,13 +507,11 @@ impl Cpu {
                 return Ok(true);
             } // PRFM hint, no architected memory read
             if load {
-                let mut bytes = [0; 16];
-                memory.read(address, &mut bytes[..size]).map_err(fault)?;
+                let raw = read_operand(memory, address, size).map_err(fault)?;
                 if vector {
-                    self.vectors[rt] = u128::from_le_bytes(bytes);
+                    self.vectors[rt] = raw;
                 } else {
-                    let mut value =
-                        u64::from_le_bytes(bytes[..8].try_into().expect("integer load"));
+                    let mut value = raw as u64;
                     if opc >= 2 {
                         value = sign_extend(value, size as u32 * 8);
                     }
@@ -496,9 +526,7 @@ impl Cpu {
                 } else {
                     self.x(rt) as u128
                 };
-                memory
-                    .write(address, &value.to_le_bytes()[..size])
-                    .map_err(fault)?;
+                write_operand(memory, address, size, value).map_err(fault)?;
             }
             if let Some(value) = writeback {
                 self.sp_or_x(rn, value);
@@ -522,12 +550,11 @@ impl Cpu {
                 4
             };
             let address = pc.wrapping_add(sign_extend((((ins >> 5) & 0x7ffff) as u64) << 2, 21));
-            let mut bytes = [0; 16];
-            memory.read(address, &mut bytes[..size]).map_err(fault)?;
+            let value = read_operand(memory, address, size).map_err(fault)?;
             if vector {
-                self.vectors[rt] = u128::from_le_bytes(bytes);
+                self.vectors[rt] = value;
             } else {
-                let value = u64::from_le_bytes(bytes[..8].try_into().expect("integer literal"));
+                let value = value as u64;
                 self.set_x(
                     rt,
                     if opc == 2 {

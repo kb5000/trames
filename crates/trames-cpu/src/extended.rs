@@ -4,14 +4,14 @@ use std::{sync::OnceLock, time::Instant};
 use trames_memory::Memory;
 static COUNTER_ORIGIN: OnceLock<Instant> = OnceLock::new();
 
-fn ones(bits: u32) -> u64 {
+pub(super) fn ones(bits: u32) -> u64 {
     if bits == 64 {
         u64::MAX
     } else {
         (1u64 << bits) - 1
     }
 }
-fn rotate(value: u64, amount: u32, bits: u32) -> u64 {
+pub(super) fn rotate(value: u64, amount: u32, bits: u32) -> u64 {
     if amount == 0 {
         value & ones(bits)
     } else {
@@ -19,7 +19,7 @@ fn rotate(value: u64, amount: u32, bits: u32) -> u64 {
     }
 }
 
-fn logical_mask(n: u32, imms: u32, immr: u32, wide: bool) -> Option<u64> {
+pub(super) fn logical_mask(n: u32, imms: u32, immr: u32, wide: bool) -> Option<u64> {
     let encoded = (n << 6) | (!imms & 63);
     if encoded < 2 {
         return None;

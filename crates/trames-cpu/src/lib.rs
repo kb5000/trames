@@ -20,6 +20,7 @@ pub const HWCAP: u64 = (1 << 0)
     | (1 << 27);
 pub const HWCAP2: u64 = 1 << 13; // I8MM
 pub const FEATURE_NAMES: &str = "fp asimd aes pmull sha1 sha2 crc32 atomics fphp asimdhp asimdrdm jscvt lrcpc asimddp flagm i8mm";
+mod cached;
 #[cfg(feature = "cpp")]
 mod cpp;
 mod crypto;
@@ -33,8 +34,9 @@ mod vector_float;
 mod vector_integer;
 #[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Backend {
-    #[default]
     Reference,
+    #[default]
+    Cached,
     Cpp,
 }
 
@@ -44,6 +46,13 @@ pub struct Flags {
     pub z: bool,
     pub c: bool,
     pub v: bool,
+}
+
+#[derive(Default, Clone, Copy, Debug)]
+pub struct DecodeStats {
+    pub lookups: u64,
+    pub misses: u64,
+    pub instructions: u64,
 }
 
 #[derive(Default, Clone, Debug)]
@@ -58,6 +67,7 @@ pub struct Cpu {
     vectors: [u128; 32],
     exclusive: Option<(u64, usize, u64)>,
     backend: Backend,
+    decoded: cached::Cache,
     #[cfg(feature = "cpp")]
     cache: cpp::Cache,
 }
@@ -122,6 +132,9 @@ impl Cpu {
     }
     pub fn backend(&self) -> Backend {
         self.backend
+    }
+    pub fn decode_stats(&self) -> DecodeStats {
+        self.decoded.stats
     }
     pub fn set_backend(&mut self, backend: Backend) -> Result<(), &'static str> {
         if backend == Backend::Cpp && !Self::cpp_available() {
@@ -217,6 +230,10 @@ impl Cpu {
         let pc = self.pc;
         let memory_fault = |error| CpuFault::Memory { pc, error };
         let ins = memory.fetch_u32(pc).map_err(memory_fault)?;
+        self.execute_instruction(ins, memory)
+    }
+    fn execute_instruction(&mut self, ins: u32, memory: &mut Memory) -> Result<Event, CpuFault> {
+        let pc = self.pc;
         let invalid = || CpuFault::Instruction {
             pc,
             instruction: ins,
@@ -364,6 +381,9 @@ impl Cpu {
 
     /// Bounded calls form the execution backend boundary; never a per-instruction FFI call.
     pub fn run_slice(&mut self, memory: &mut Memory, budget: u64) -> SliceOutcome {
+        if self.backend == Backend::Cached {
+            return self.run_cached(memory, budget);
+        }
         #[cfg(feature = "cpp")]
         if self.backend == Backend::Cpp {
             return self.run_cpp(memory, budget);
@@ -486,7 +506,7 @@ mod tests {
         for instruction in [
             0x6e028420, 0x6ec28420, 0x5e421420, 0x48217c82, 0xf8209022, 0x4f729820,
         ] {
-            for backend in [Backend::Reference, Backend::Cpp] {
+            for backend in [Backend::Reference, Backend::Cached, Backend::Cpp] {
                 if backend == Backend::Cpp && !Cpu::cpp_available() {
                     continue;
                 }
@@ -542,7 +562,7 @@ mod tests {
     fn failed_atomic_write_preflight_keeps_memory_and_registers() {
         for instruction in [0xf8208022, 0x48207c82] {
             // SWP / CASP
-            for backend in [Backend::Reference, Backend::Cpp] {
+            for backend in [Backend::Reference, Backend::Cached, Backend::Cpp] {
                 if backend == Backend::Cpp && !Cpu::cpp_available() {
                     continue;
                 }

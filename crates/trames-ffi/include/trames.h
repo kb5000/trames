@@ -15,7 +15,8 @@ extern "C" {
  * Only transfer blocks; run it on a background queue. No callbacks into Swift.
  */
 uint32_t trames_abi_version(void);
-/* 0=reference Rust, 1=optional statically compiled C++ integer blocks. */
+/* 0=reference Rust, 1=optional statically compiled C++ integer blocks,
+ * 2=cached Rust (default). All interpreters are static; none uses JIT. */
 uint32_t trames_execution_backend_available(uint32_t backend);
 int32_t trames_environment_install(const uint8_t *json, uint32_t length);
 /* Destructive native-only store reset, {"store":"/authorized/private/store"}.
