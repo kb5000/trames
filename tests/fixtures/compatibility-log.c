@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/klog.h>
+#include <sys/prctl.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/uio.h>
@@ -61,6 +62,7 @@ static void log_test(void) {
     CHECK(write(fd,"guest-log-marker",16)==16);
     pid_t child=fork(); CHECK(child>=0);
     if (!child) {
+        CHECK(prctl(PR_SET_NAME,"probe-task",0,0,0)==0);
         CHECK(syscall(SYS_open_tree,-100,"unimplemented-probe",0)==-1&&errno==ENOSYS);
         CHECK(syscall(10000,1,2,3,4,5,6)==-1&&errno==ENOSYS);
 #ifdef __aarch64__
@@ -73,7 +75,7 @@ static void log_test(void) {
     int status; CHECK(waitpid(child,&status,0)==child); CHECK(WIFSIGNALED(status)&&WTERMSIG(status)==SIGILL);
     char data[8192]; int n=klogctl(3,data,sizeof(data)-1); CHECK(n>0); data[n]=0;
     CHECK(strstr(data,"guest-log-marker")&&strstr(data,"syscall=10000(unknown)")&&strstr(data,"0x2518e3e0"));
-    CHECK(strstr(data,"pid=2")&&strstr(data,"syscall=428(open_tree)"));
+    CHECK(strstr(data,"pid=2")&&strstr(data,"syscall=428(open_tree)")&&strstr(data,"comm=\"probe-task\""));
     // Linux READ_CLEAR changes snapshots, while /dev/kmsg retains its own cursor.
     CHECK(klogctl(4,data,sizeof(data))>0); CHECK(klogctl(3,data,sizeof(data))==0);
     CHECK(read(fd,data,sizeof(data))>0);

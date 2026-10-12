@@ -69,6 +69,10 @@ jobs:
           python3 tests/integration/cpu-signals.py
       - run: bash scripts/build-compatibility-log-fixtures.sh
       - run: python3 tests/integration/compatibility-log.py
+      - name: Compare altstack, memory barriers and process file limits
+        run: |
+          bash scripts/build-runtime-compat-fixtures.sh
+          python3 tests/integration/runtime-compat.py
       - run: bash scripts/build-mmap-fixtures.sh
       - run: python3 tests/integration/mmap.py
       - run: python3 tests/integration/busybox.py

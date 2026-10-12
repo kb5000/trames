@@ -631,5 +631,7 @@
     }
   ],
   "fixture_sha256": "0943f4ea1d77e562238bdad793de5d853cccad9412a315097a25a02d2e25383a",
-  "arm_runner_binary_sha256": "ade32e7f9a4d66c36a1e84a561d4d4f4232a3d978550fbf66bf45dabb1522f39"
+  "arm_runner_binary_sha256": "ade32e7f9a4d66c36a1e84a561d4d4f4232a3d978550fbf66bf45dabb1522f39",
+  "source_checkpoint": "5db1e08e2bf870db1df076625e6cfd2e9b291c70",
+  "source_checkpoint_tree": "a9ef89251287c39462effc7b7b6377a31207763e"
 }

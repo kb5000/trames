@@ -1,5 +1,5 @@
 {
-  "local_unit_tests": 192,
+  "local_unit_tests": 194,
   "local_clippy": "pass",
   "arm_native_canaries": "pass",
   "arm_guest_static_dynamic_storage_and_activation_cases": 8,
@@ -12,7 +12,7 @@
     "crates/trames-cpu/src/lib.rs": "4ee2d10f076e753c88d991f929c306b50d70c91c2a901552721438902d417313",
     "crates/trames-cpu/src/cached.rs": "ec69219c4e3c521dfcc3b116f006195e6229ce1900f66956ca940fb22a2085c4",
     "crates/trames-core/src/lib.rs": "d1f8cec362f4ce518b082db9ef43dd5499b4bbda5b41f7018bea1172053c2415",
-    "crates/trames-core/src/process.rs": "02afeb62bbac6b2b3be88e70665a229eb052ff6ae986d05770f9323eecd05afe",
+    "crates/trames-core/src/process.rs": "ec18dfdd510484b5e8bb55fa318594560cffb638a9b2fa009f2e2162a8db370d",
     "crates/trames-accel/src/native.rs": "ca8ae5c574ae1b8cfd90b764a023f6480cb4a3c92a05904f359d123fea9edccc",
     "crates/trames-native/src/lib.rs": "b3eac762ffb563a88bf1642df318c9dd63df968b3d05bc1d2774465f015e1be7",
     "crates/trames-native/build.rs": "15715b803cb52cc74d5cd60fad39867bbce1cc781747ed1eed9666ae80cc4394",
@@ -22,6 +22,17 @@
     "tests/fixtures/accelerator.c": "7bf356d9e4dc569011fce408f57c59f1cc6e1cc147d00c2ddb755b6934891f61",
     "tests/integration/accelerator.py": "21437592fba408e2479ef4961a7bc607f7d25dd167012de80b0b6a7173a19588",
     "scripts/build-accelerator-guest.sh": "679d916d24a3bdb4a0be8ce9f136047d84365d29752b519c06912880cbc7b497",
-    "scripts/build-accelerator-fixtures.sh": "6a1fddb70b61ad1243f41f20f8b2d176bf29c8be517675951d994783c0b0b1df"
-  }
+    "scripts/build-accelerator-fixtures.sh": "6a1fddb70b61ad1243f41f20f8b2d176bf29c8be517675951d994783c0b0b1df",
+    "crates/trames-core/src/process_compat.rs": "59c2f360b5e23ffa2b6061b4193bda3d48fde4354caa5255bac72f5506d12027",
+    "crates/trames-vfs/src/lib.rs": "76dd4b1aee64891331e70f01636eb393b83e5185053a909a682f8695a5cdd254",
+    "crates/trames-vfs/src/pseudo.rs": "b04d05b16dab99edfb5c53e73c080d1d825c37e9eca76188e5cc598eb542a7ef",
+    "crates/trames-vfs/src/kernel_log.rs": "90d101f578f93223ec3484fa00e4c4f912147a3de76d5bbd56d313a2178e4ca3",
+    "crates/trames-linux/src/state.rs": "e44d1b51177cf711edfbb3cabd57f680d62a2ad79abd1a63516804d944c5341e",
+    "tests/fixtures/runtime-compat.c": "08204a478778c4dfd15608ac084cdbf8bb9947f2361f82bd41631d7f0b4aadad",
+    "tests/integration/runtime-compat.py": "4fab7f16ed19b8e56a2a81c818bf37183362460885fad9ca66b45669de11c96d",
+    "scripts/build-runtime-compat-fixtures.sh": "9d670904013df7dea3816dae615ba8fbafcbb8506575dc8ed5eb024ea6f39475"
+  },
+  "arm_runtime_compat_storage_cases": 4,
+  "process_name_log_regression": "pass",
+  "source_checkpoint_before_compat": "5db1e08e2bf870db1df076625e6cfd2e9b291c70"
 }

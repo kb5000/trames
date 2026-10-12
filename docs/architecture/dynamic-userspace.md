@@ -16,7 +16,9 @@ loads dependencies, relocates symbols including RELR and TLSDESC, initializes
 TLS and applies RELRO with mprotect. Trames leaves dynamic linking to the guest. The opt-in
 [NativeCall v1 pure profile](accelerator-v1.md) uses an explicitly installed guest
 shared library for five memory/string functions. Full libc/loader replacement
-remains an [RFC](accelerator.md). No host executable pages or JIT are involved.
+remains an [RFC](accelerator.md). The next hybrid musl integration retains
+normal libc/loader paths, using original guest code for all functions not yet
+adapted to NativeCall. No host executable pages or JIT are involved.
 Exec constructs the entire new image before closing CLOEXEC descriptors or
 replacing the old process. Missing/unreadable interpreter errno is preserved.
 

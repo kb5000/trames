@@ -53,6 +53,12 @@ for source in ('crates/trames-core/src/process.rs', 'crates/trames-linux/src/sta
                 found.setdefault(number, f'{source}:{i + 1}')
 rows = list(csv.DictReader((OUT / 'compatibility-0.4-syscalls.csv').open()))
 notes = {
+    31: 'IOPRIO_WHO_PROCESS query for current/existing virtual task; default CLASS_NONE/data 0. No host PID, priority setter, process-group or user query.',
+    132: '24-byte AArch64 stack_t, SS_DISABLE/AUTODISARM, actual SA_ONSTACK delivery, nesting and ucontext restore; inherited by fork, cleared by exec and non-vfork CLONE_VM. 2048-byte ABI minimum; delivery still needs room for the signal frame.',
+    283: 'Single cooperative virtual CPU GLOBAL and registered PRIVATE_EXPEDITED fences, QUERY/GET_REGISTRATIONS. Registration inherited by fork/shared by CLONE_VM, cleared by exec. No SYNC_CORE/RSEQ modes.',
+    163: 'Query selected process resource limits; RLIMIT_FSIZE soft/hard is independent of storage quota and defaults to unlimited.',
+    164: 'Update RLIMIT_FSIZE with hard-limit privilege checks and real write/truncate EFBIG/SIGXFSZ enforcement; other resources retain fixed selected limits.',
+    261: 'Current process prlimit64 old/new preflight, including overlapping pointers; RLIMIT_FSIZE updates inherited by fork/shared by threads/preserved by exec. Other-PID changes and broader resource controls unsupported.',
     71: 'Bounded file-to-output sendfile; optional source offset, partial output and source-position updates. No zero-copy implementation.',
     118: 'Single virtual CPU SCHED_OTHER parameter set; priority must be zero, target lifetime and owner permissions checked.',
     119: 'SCHED_OTHER only; realtime and other scheduling policies explicitly unsupported.',
@@ -95,7 +101,7 @@ notes = {
     86: 'Relative/absolute timerfd arm/disarm, periodic expiration count and old-value preflight. CANCEL_ON_SET explicitly unsupported.',
     87: 'Timerfd interval/remaining time; shared open-description state.',
     199: 'Bounded AF_UNIX stream/datagram/seqpacket pairs; dup/fork, shutdown, peek/trunc and fault preflight. No named endpoints or ancillary FD passing.',
-    134: 'Selected rt_sigaction flags, virtual signal frames and synchronous CPU-fault delivery/context recovery; SA_ONSTACK uses the ordinary stack while the alternate stack is disabled. No sigaltstack registration.',
+    134: 'Selected rt_sigaction flags, actual alternate-stack delivery, nested virtual signal frames and synchronous CPU-fault context recovery. No SVE/SME signal context or full realtime signal queue.',
     221: 'Exec preserves UID/GID/groups and set-ID results; auxv uses the same credentials.',
     441: 'Timespec epoll wait; not dispatched by the pinned QEMU 10.0.13 oracle, independently checked by M6 fixtures.',
 }
@@ -138,7 +144,7 @@ metadata = {
     'backends': ['cached'],
     'unhandled_return': -38,
     'source_sha256': {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in (
-        'crates/trames-core/src/process.rs', 'crates/trames-core/src/process_events.rs',
+        'crates/trames-core/src/process.rs', 'crates/trames-core/src/process_events.rs', 'crates/trames-core/src/process_compat.rs',
         'crates/trames-linux/src/state.rs', 'crates/trames-linux/src/network.rs', 'crates/trames-linux/src/file_calls.rs',
         'crates/trames-vfs/src/events.rs', 'crates/trames-vfs/src/ipc.rs', 'crates/trames-vfs/src/locks.rs',
         'crates/trames-vfs/src/lib.rs', 'crates/trames-vfs/src/pseudo.rs', 'crates/trames-vfs/src/storage.rs',

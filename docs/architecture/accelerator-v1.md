@@ -16,8 +16,13 @@ Build `libtrames-pure.so` with `scripts/build-accelerator-guest.sh`, using the
 repository's pinned musl compiler. Install it in guest `/lib` and either call its
 symbols through dlopen/dlsym or explicitly select it with guest
 `LD_PRELOAD=/lib/libtrames-pure.so`. The guest loader performs ordinary linking.
-No whole libc or loader is overwritten; static programs need an explicitly linked
-wrapper to use this facility. Stateful malloc/TLS/I/O are future RFC phases.
+This separate library is a temporary validation artifact. The next integration
+builds a complete hybrid musl from pinned upstream source, preserving ordinary
+`libc.so` / `ld-musl-aarch64.so.1` paths and loader behavior: adapted pure routines
+use NativeCall and all remaining libc/loader code retains the original guest
+implementation. Installing that full ELF does not require native adaptation of
+every function first. Stateful malloc/TLS/I/O adaptation follows incrementally,
+with exact source/layout contracts. Static programs need rebuilding to adopt it.
 
 The guest constructor reads private auxv key `0x54520001`; `0x10001` selects the
 signed-in protocol 1/module 1. It preserves errno. On ordinary Linux/QEMU or a

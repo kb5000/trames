@@ -6,7 +6,7 @@ The immutable 0.9.0/build 10 IPA predates this source; next app delivery will be
 combined after more accelerator work. Complete CI source/run evidence is recorded
 below once the new workflows finish.
 
-- 192 workspace unit tests passed; fmt and Clippy with denied warnings passed.
+- 194 workspace unit tests passed; fmt and Clippy with denied warnings passed.
 - Original pinned Arm memcpy/memset execute in the actual ARM64 native crate under
   QEMU 10.0.13. Lengths 0..259 plus 511/512/4095/4096/65536, 16 source/destination
   alignments and fill values 0/128/255 preserve surrounding canaries.
@@ -27,10 +27,15 @@ below once the new workflows finish.
   retirement, exact budget checkpoints and no-effect invalid/over-limit calls passed.
 - Existing real ARM64 mmap, CPU signal/context and dmesg fixtures passed. Current
   audits retain 893 representative CPU encodings (877 decoded, 2 SVC, 2 exceptions,
-  12 unsupported) and 161 Linux syscall subsets / 155 missing / 2 obsolete entries.
+  12 unsupported) and 164 Linux syscall subsets / 152 missing / 2 obsolete entries.
   NativeCall is a private software protocol, not an added ISA/Linux ABI count.
 - iOS ARM64 native rlib is actually code-generated as Mach-O, and the linked
   embedding closure passes the iOS target check. Apple linking/runtime CI follows.
+
+The first accelerator source checkpoint is
+[`5db1e08`](https://github.com/kb5000/trames/commit/5db1e08e2bf870db1df076625e6cfd2e9b291c70).
+Subsequent [runtime compatibility additions](runtime-compat.md) also pass the
+NativeCall regressions; the benchmark below belongs to that initial checkpoint.
 
 ## One-shot performance baseline
 

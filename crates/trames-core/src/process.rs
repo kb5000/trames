@@ -3,7 +3,9 @@
 use super::{Exit, Runtime, RuntimeError};
 use crate::terminal::Terminal;
 use std::{
+    cell::Cell,
     collections::BTreeMap,
+    rc::Rc,
     time::{Duration, Instant},
 };
 use trames_cpu::{Cpu, SliceOutcome};
@@ -14,8 +16,11 @@ use trames_vfs::{Errno, FdKind, MAX_FDS, O_NONBLOCK};
 const MAX_PROCESSES: usize = 32;
 const TOTAL_MAPPED_LIMIT: usize = 1024 * 1024 * 1024;
 const UNBLOCKABLE: u64 = (1 << 8) | (1 << 18);
+#[path = "process_compat.rs"]
+mod compat;
 #[path = "process_events.rs"]
 mod events;
+use compat::AltStack;
 #[derive(Clone, Copy, Default)]
 struct Action {
     handler: u64,
@@ -77,6 +82,9 @@ struct Process {
     fs_id: u64,
     actions_id: u64,
     rekey: Option<u32>,
+    alt_stack: AltStack,
+    membarrier_registered: Rc<Cell<bool>>,
+    file_size_limit: Rc<Cell<(u64, u64)>>,
 }
 impl Process {
     fn fork(&self) -> Self {
@@ -106,6 +114,9 @@ impl Process {
             fs_id: self.fs_id,
             actions_id: self.actions_id,
             rekey: None,
+            alt_stack: self.alt_stack,
+            membarrier_registered: Rc::new(Cell::new(self.membarrier_registered.get())),
+            file_size_limit: Rc::new(Cell::new(self.file_size_limit.get())),
         }
     }
 }
@@ -273,6 +284,7 @@ impl Kernel {
             terminal: p.linux.vfs.fd_kind(0).ok() == Some(FdKind::Terminal),
             fds: p.linux.vfs.fd_snapshot(),
             auxiliary: p.linux.auxiliary.clone(),
+            file_size_limits: Some(p.file_size_limit.get()),
             pending: p.pending.keys().fold(0, |v, s| v | (1 << (s - 1))),
             blocked: p.mask,
             ignored: (1..=64)
@@ -592,9 +604,14 @@ impl Kernel {
         Ok(0)
     }
     fn synchronous_fault(&mut self, pid: u32, p: &mut Process, fault: &trames_cpu::CpuFault) {
-        p.linux
-            .vfs
-            .log(4, &format!("pid={pid} tgid={} {fault}", p.tgid));
+        p.linux.vfs.log(
+            4,
+            &format!(
+                "pid={pid} tgid={} {fault} comm={:?}",
+                p.tgid,
+                String::from_utf8_lossy(&p.linux.command_name)
+            ),
+        );
         use trames_cpu::CpuFault as F;
         use trames_memory::MemoryError as M;
         let (sig, code, address) = match fault {
@@ -724,12 +741,26 @@ impl Kernel {
             }
             _ => {}
         }
-        let sp = p.cpu.sp.checked_sub(4688).ok_or(Errno(14))? & !15;
+        let old_alt = p.alt_stack;
+        let use_alt =
+            action.flags & 0x08000000 != 0 && old_alt.flags & 2 == 0 && !old_alt.on_stack(p.cpu.sp);
+        let top = if use_alt {
+            old_alt.sp.checked_add(old_alt.size).ok_or(Errno(14))?
+        } else {
+            p.cpu.sp
+        };
+        let sp = top.checked_sub(4688).ok_or(Errno(14))? & !15;
+        if (use_alt || old_alt.contains(p.cpu.sp)) && sp < old_alt.sp {
+            return Err(Errno(14));
+        }
         Linux::check(&p.memory, sp, 4688, Access::Write)?;
         let mut frame = vec![0; 4688];
         frame[0..4].copy_from_slice(&sig.to_le_bytes());
         frame[8..12].copy_from_slice(&info.code.to_le_bytes());
         events::write_siginfo(&mut frame[..128], sig, info);
+        frame[144..152].copy_from_slice(&old_alt.sp.to_le_bytes());
+        frame[152..156].copy_from_slice(&old_alt.reported_flags(p.cpu.sp).to_le_bytes());
+        frame[160..168].copy_from_slice(&old_alt.size.to_le_bytes());
         frame[168..176].copy_from_slice(&p.mask.to_le_bytes());
         frame[304..312].copy_from_slice(&info.fault.unwrap_or(0).to_le_bytes());
         for r in 0..31 {
@@ -746,6 +777,9 @@ impl Kernel {
             frame[608 + r * 16..624 + r * 16].copy_from_slice(&p.cpu.vector(r).to_le_bytes());
         }
         p.memory.write(sp, &frame).map_err(|_| Errno(14))?;
+        if old_alt.flags & 0x80000000 != 0 {
+            p.alt_stack = AltStack::default();
+        }
         p.mask |= action.mask;
         if action.flags & 0x40000000 == 0 {
             p.mask |= 1u64 << (sig - 1);
@@ -788,6 +822,7 @@ impl Kernel {
         if read_u32(&p.memory, sp + 592)? != 0x46508001 || read_u32(&p.memory, sp + 596)? != 528 {
             return Err(Errno(14));
         }
+        let restored_alt = AltStack::restore(&p.memory, sp + 144)?;
         for r in 0..31 {
             p.cpu.set_x(r, u64_at(312 + r * 8));
         }
@@ -812,6 +847,7 @@ impl Kernel {
             );
         }
         p.mask = u64_at(168) & !UNBLOCKABLE;
+        p.alt_stack = restored_alt;
         p.frames -= 1;
         p.state = State::Ready;
         Ok(())
@@ -904,6 +940,8 @@ impl Kernel {
                 }
             }
             p.frames = 0;
+            p.alt_stack = AltStack::default();
+            p.membarrier_registered = Rc::new(Cell::new(false));
             p.state = State::Ready;
             return Ok(());
         }
@@ -1100,6 +1138,10 @@ impl Kernel {
                 let resource = self.resource_id();
                 if shared_vm {
                     child.memory = p.memory.share();
+                    child.membarrier_registered = p.membarrier_registered.clone();
+                    if a[0] & 0x4000 == 0 {
+                        child.alt_stack = AltStack::default();
+                    }
                 } else {
                     child.vm_id = resource;
                 }
@@ -1113,6 +1155,9 @@ impl Kernel {
                     child.actions_id = resource;
                 }
                 child.tgid = if threaded { p.tgid } else { id };
+                if threaded {
+                    child.file_size_limit = p.file_size_limit.clone();
+                }
                 child
                     .linux
                     .fork_tid(if a[0] & 0x200000 != 0 { a[4] } else { 0 });
@@ -1197,7 +1242,7 @@ impl Kernel {
                     Linux::check(&p.memory, a[1], 32, Access::Read)?;
                     let flags = read_u64(&p.memory, a[1] + 8)?;
                     // Linux uses the ordinary stack for SA_ONSTACK while
-                    // the alternate stack is disabled (our current state).
+                    // the alternate stack is disabled.
                     if flags & !0xdc000007 != 0 {
                         return Err(Errno(22));
                     }
@@ -1421,52 +1466,10 @@ impl Kernel {
                 p.memory.write(a[0], &out).map_err(|_| Errno(14))?;
                 Ok(Some(0))
             }
-            163 | 164 | 261 => {
-                let (resource, new, old) = if number == 261 {
-                    if a[0] != 0 && a[0] != p.tgid as u64 {
-                        return Err(Errno(3));
-                    }
-                    (a[1], a[2], a[3])
-                } else {
-                    (
-                        a[0],
-                        if number == 164 { a[1] } else { 0 },
-                        if number == 163 { a[1] } else { 0 },
-                    )
-                };
-                let value = match resource {
-                    0 | 10 | 15 => u64::MAX,
-                    1 => p.linux.vfs.capacity().budget_bytes,
-                    2 | 5 | 9 => trames_memory::DEFAULT_MEMORY_LIMIT as u64,
-                    3 => super::STACK_SIZE,
-                    4 | 8 | 12 | 13 | 14 => 0,
-                    6 => MAX_PROCESSES as u64,
-                    7 => trames_vfs::MAX_FDS as u64,
-                    11 => 64,
-                    _ => return Err(Errno(22)),
-                };
-                if old != 0 {
-                    Linux::check(&p.memory, old, 16, Access::Write)?;
-                }
-                if new != 0 {
-                    let soft = read_u64(&p.memory, new)?;
-                    let hard = read_u64(&p.memory, new + 8)?;
-                    if soft > hard {
-                        return Err(Errno(22));
-                    }
-                    if hard > value {
-                        return Err(Errno(1));
-                    }
-                    if soft != value || hard != value {
-                        return Err(Errno(95));
-                    }
-                }
-                if old != 0 {
-                    write_u64(&mut p.memory, old, value)?;
-                    write_u64(&mut p.memory, old + 8, value)?;
-                }
-                Ok(Some(0))
-            }
+            31 => self.ioprio_get(pid, a[0], a[1]).map(Some),
+            132 => Self::sigaltstack(p, a[0], a[1]).map(Some),
+            283 => Self::membarrier(p, a[0], a[1]).map(Some),
+            163 | 164 | 261 => Self::rlimit(p, number, a).map(Some),
             124 => Ok(Some(0)),
             203 if matches!(p.state, State::Blocked(203, _)) => {
                 Ok(p.linux.resume_connect(a[0] as u32)?.then_some(0))
@@ -1570,6 +1573,7 @@ impl Kernel {
         self.syscalls += 1;
         p.linux.vfs.set_process_context(pid);
         p.linux.vfs.set_lock_owner(p.tgid);
+        p.linux.vfs.set_file_size_limit(p.file_size_limit.get().0);
         let proc_path = match number {
             43 | 221 => Some((trames_vfs::AT_FDCWD, a[0])),
             48 | 56 | 78 | 79 | 291 | 437 | 439 | 452 => Some((a[0] as i32, a[1])),
@@ -1611,9 +1615,13 @@ impl Kernel {
             }
             Err(e) => {
                 if matches!(e.0, 38 | 95) {
-                    p.linux
-                        .vfs
-                        .log_syscall(number as u64, p.cpu.pc.saturating_sub(4), a, e.0);
+                    p.linux.vfs.log_syscall(
+                        number as u64,
+                        p.cpu.pc.saturating_sub(4),
+                        a,
+                        e.0,
+                        &p.linux.command_name,
+                    );
                 }
                 let raw = error(e);
                 p.cpu.set_x(0, raw);
@@ -1629,6 +1637,9 @@ impl Kernel {
         };
         if signal_pipe && raw == Some(error(Errno(32))) {
             Self::queue_one(pid, p, 13, pid);
+        }
+        if p.linux.vfs.take_file_size_signal() {
+            Self::queue_one(pid, p, 25, pid);
         }
         if p.linux.trace && !(raw.is_none() && matches!(p.state, State::Blocked(..)) && was_blocked)
         {
@@ -2142,7 +2153,7 @@ impl Kernel {
                                                 trames_cpu::CpuFault::Memory { pc, error }
                                             }
                                             Error::InvalidEntry => {
-                                                p.linux.vfs.log(4, &format!("pid={id} NativeCall rejected module={module:#x} function={function} pc={pc:#x}"));
+                                                p.linux.vfs.log(4, &format!("pid={id} NativeCall rejected module={module:#x} function={function} pc={pc:#x} comm={:?}", String::from_utf8_lossy(&p.linux.command_name)));
                                                 trames_cpu::CpuFault::Trap {
                                                     pc,
                                                     instruction: trames_accel::native::INSTRUCTION,
@@ -2364,6 +2375,9 @@ pub(super) fn run(
         fs_id: 1,
         actions_id: 1,
         rekey: None,
+        alt_stack: AltStack::default(),
+        membarrier_registered: Rc::new(Cell::new(false)),
+        file_size_limit: Rc::new(Cell::new((u64::MAX, u64::MAX))),
     };
     let mut kernel = Kernel {
         processes: BTreeMap::new(),
@@ -2459,6 +2473,9 @@ mod tests {
             fs_id: 1,
             actions_id: 1,
             rekey: None,
+            alt_stack: AltStack::default(),
+            membarrier_registered: Rc::new(Cell::new(false)),
+            file_size_limit: Rc::new(Cell::new((u64::MAX, u64::MAX))),
         }
     }
     pub(super) fn kernel() -> Kernel {
