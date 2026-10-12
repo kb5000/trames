@@ -1,0 +1,61 @@
+{
+  "version": "0.10.0",
+  "build": 11,
+  "delivery_date": "2026-10-13",
+  "delivery_timezone": "Asia/Shanghai",
+  "runtime_commit": "0fe3193463a515817313e7e35b2b80152b95cc5a",
+  "runtime_tree": "04701a0057bdbdcbfb02a6ee9dbc73b15e174a34",
+  "linux_ci": {
+    "run_id": 38273859447,
+    "job_id": 114894454185,
+    "conclusion": "success"
+  },
+  "apple_ci": {
+    "run_id": 38273859458,
+    "guest_source_job_id": 114894453866,
+    "apple_job_id": 114894633355,
+    "conclusion": "success"
+  },
+  "artifacts": {
+    "ipa": {
+      "artifact_id": 11758852727,
+      "artifact_zip_sha256": "35f1a281e7f6bccc837beae59d9d1b06c11c5539a6fcbe6a5e45b9d4f13f7719",
+      "ipa_sha256": "03b79c06237af6ff19f867d285b9d2ce49aa126fff6e71240eed7b9476123f64",
+      "version": "0.10.0",
+      "build": 11,
+      "bundle": "org.trames.Trames",
+      "arm64_device_macho": "verified",
+      "bundled_full_musl_sha256": "4748da65e9942d06aa7767180f1c15075609570c3dbb99ae12d1553f5f4e542b",
+      "license_notices": "verified",
+      "built_device_files_verified": 41,
+      "zip_crc": "pass",
+      "sha256_sidecar": "pass",
+      "executable_permission": "verified"
+    },
+    "simulator": {
+      "artifact_id": 11758284999,
+      "artifact_zip_sha256": "8dcda1fda1c38e4dcdc58f0e2f51744ce9bcf2fc6cb61d4fb3ffbf27f6cf9b82",
+      "passed_tests": 7,
+      "failed_tests": 0
+    }
+  },
+  "full_musl_source": {
+    "artifact_id": 11757977500,
+    "zip_sha256": "b5b70719ee5c0ff6b8ec18eead46c0f54bf5371fc0f30303205ba943abe0aafe",
+    "ci_manifest": {
+      "upstream": "musl-1.2.5",
+      "upstream_archive_sha256": "a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4",
+      "libc_sha256": "4748da65e9942d06aa7767180f1c15075609570c3dbb99ae12d1553f5f4e542b",
+      "guest_loader": "/lib/ld-musl-aarch64.so.1",
+      "guest_libc_alias": "/lib/libc.musl-aarch64.so.1",
+      "native_profile": 65537,
+      "short_operation_threshold": 128,
+      "strlen_prefix_bytes": 64,
+      "compiler": "aarch64-linux-gnu-gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0"
+    },
+    "adaptation_source_files_verified": 7,
+    "complete_upstream_archive": "verified",
+    "gpl_and_original_notices": "verified"
+  },
+  "physical_ipad_acceptance": "owner pending"
+}

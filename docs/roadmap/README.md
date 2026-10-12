@@ -1,6 +1,6 @@
 # Delivery roadmap
 
-The current verified release is [0.9.0 Linux ABI/logging](../validation/release-0.9.md),
+The current verified release is [0.10.0 complete hybrid musl](../validation/release-0.10.md),
 with one Rust cached interpreter, static ARM64 compute and recoverable guest CPU faults.
 The C++ executor and tail-dispatch prototype have been removed.
 The [source follow-up](../validation/compatibility-log.md) adds bounded runtime
@@ -17,7 +17,8 @@ The owner-provided [Trames Accelerator RFC](../architecture/accelerator.md) desc
 guest library stubs and precompiled native backends. Development now includes the
 [NativeCall v1 pure profile](../architecture/accelerator-v1.md), the initial bounded
 transport and five functions from phases A/B. Stateful libc, GPU/video/ML and JIT
-remain proposed. The immutable 0.9.0 IPA predates this source follow-up.
+remain proposed. Version 0.10.0/build 11 integrates the full shared musl ELF and
+activates the pure profile in the iPad application.
 
 M0, the selected static-userspace M1 foundation, M2 ash/FP, the storage follow-up and M3 are implemented, with records
 in [m0.md](../validation/m0.md), [m1.md](../validation/m1.md), [m2.md](../validation/m2.md), [storage.md](../validation/storage.md) and [network.md](../validation/network.md) and [m3.md](../validation/m3.md). This does not

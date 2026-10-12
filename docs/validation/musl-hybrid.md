@@ -21,7 +21,7 @@ paths, wraps five pure functions and keeps the rest of original musl as guest co
   sibling staging file leave the current library and user staging file intact.
 - Real embedding ABI runs the full library through Alpine PTY, Bridge consent,
   disk transfer, resize, pause/cancel, reopen and explicit reset operations.
-- Workspace tests, Clippy and iOS target checks pass. Complete CI also exercises
+- 195 workspace tests, Clippy and iOS target checks pass. Complete CI also exercises
   the full replacement in authenticated HTTPS/apk, Vim, Python and developer tools,
   and in the actual iPad simulator network/lifecycle path.
 
@@ -49,6 +49,21 @@ record the single baseline: 32-byte copy 0.93×, 64 KiB copy 9.02× and unmodifi
 Alpine sort on 2,048 lines 1.04×. Small-call overhead remains; the modest sort
 difference is not evidence of a broad application speedup.
 
-Full CI source/run IDs and the verified unsigned device IPA will be added after
-the workflows complete. A physical-iPad acceptance run still depends on owner
-installation through Sideloadly; simulator evidence is recorded separately.
+Verified runtime commit
+[`0fe3193`](https://github.com/kb5000/trames/commit/0fe3193463a515817313e7e35b2b80152b95cc5a),
+tree `04701a0057bdbdcbfb02a6ee9dbc73b15e174a34`:
+
+- [Linux CI](https://github.com/kb5000/trames/actions/runs/38273859447): all steps passed,
+  including full musl fixtures, HTTPS/apk, Vim, Python, GCC/Clang, Git and CMake.
+- [Apple CI](https://github.com/kb5000/trames/actions/runs/38273859458): Linux guest
+  library build, native ARM64 tests, simulator/device linking and seven actual
+  simulator tests passed with zero failures, including the full-library DNS/HTTPS path.
+- [Unsigned device IPA](https://github.com/kb5000/trames/actions/runs/38273859458/artifacts/11758852727):
+  downloaded artifact digest and IPA SHA verified; metadata is 0.10.0/build 11,
+  org.trames.Trames. Device ARM64 Mach-O and bundled guest ELF/notices verified.
+- [Complete library/source package](https://github.com/kb5000/trames/actions/runs/38273859458/artifacts/11757977500):
+  upstream archive and all seven adaptation/license files match the repository;
+  the package's ELF is byte-identical to the library bundled in the IPA.
+
+[Machine-readable artifact hashes and source fingerprints](musl-hybrid.json)
+record these checks. Physical-iPad acceptance remains owner-run via Sideloadly.
