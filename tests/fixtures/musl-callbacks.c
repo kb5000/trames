@@ -45,6 +45,11 @@ static int nested(const void *a, const void *b) {
     inside=0;return plain(a,b);
 }
 static void *thread(void *unused) { (void)unused;int a[48];make(a,48);qsort(a,48,4,nested);sorted(a,48);return 0; }
+static void *shared_stack_thread(void *unused) {
+    (void)unused;int *a=malloc(128*4);assert(a);make(a,128);
+    // The heap array is private; only the callback continuation stack is shared.
+    qsort(a,128,4,plain);sorted(a,128);free(a);return 0;
+}
 static sigjmp_buf escape;
 static int jump_count;
 static int jumping(const void *a,const void *b) { (void)a;(void)b;if(++jump_count==7)siglongjmp(escape,1);return plain(a,b); }
@@ -107,6 +112,9 @@ int main(int argc,char **argv) {
         assert(waitpid(child,&status,0)==child&&status==0);
     }
     pthread_t first,second;assert(!pthread_create(&first,0,thread,0));assert(!pthread_create(&second,0,thread,0));assert(!pthread_join(first,0));assert(!pthread_join(second,0));
+    void *shared_stack=mmap(0,131072,PROT_READ|PROT_WRITE,MAP_SHARED|MAP_ANONYMOUS,-1,0);assert(shared_stack!=MAP_FAILED);
+    pthread_attr_t attr;assert(!pthread_attr_init(&attr));assert(!pthread_attr_setstack(&attr,shared_stack,131072));
+    assert(!pthread_create(&first,&attr,shared_stack_thread,0));assert(!pthread_join(first,0));assert(!pthread_attr_destroy(&attr));assert(!munmap(shared_stack,131072));
     printf("musl-callbacks-ok %u %016llx\n",calls,(unsigned long long)trace);
     return 0;
 }

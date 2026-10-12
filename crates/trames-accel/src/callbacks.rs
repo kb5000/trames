@@ -396,6 +396,19 @@ pub(crate) fn step(
     };
     memory.check(address, length, Access::Write)?;
     if !memory.native_writable_range(address, length)? {
+        // A valid guest thread can use a shared/backed stack. Choose original
+        // code before array effects, just as for unsupported array backing.
+        // Once progress has begun, restarting the original sort is forbidden.
+        let phase_address = address.checked_add(16).ok_or(Error::InvalidEntry)?;
+        if u64::from_le_bytes(header[..8].try_into().unwrap()) == VERSION
+            && a[2] == 0
+            && u64::from_le_bytes(memory.read_array(phase_address)?) == 0
+        {
+            return Ok(Return {
+                value: 0,
+                fallback: true,
+            });
+        }
         return Err(Error::InvalidEntry);
     }
     // Only mutable header/path words cross the boundary on each comparison.
@@ -728,5 +741,20 @@ mod tests {
         m.map_shared_anonymous(0x4000, PAGE_SIZE, Permissions::RW, true)
             .unwrap();
         assert!(step(&mut m, [0x1000, 0, 0], &mut metrics).unwrap().fallback);
+        let (mut m, mut metrics) = setup(1, 32, 8);
+        let frame = m.read_array::<FRAME_BYTES>(0x1000).unwrap();
+        m.map_shared_anonymous(0x1000, PAGE_SIZE, Permissions::RW, true)
+            .unwrap();
+        m.write(0x1000, &frame).unwrap();
+        m.write_array(0x4000, [17; 8]).unwrap();
+        assert!(step(&mut m, [0x1000, 0, 0], &mut metrics).unwrap().fallback);
+        assert_eq!(m.read_array::<8>(0x4000).unwrap(), [17; 8]);
+        m.write_array(0x1000 + PC as u64 * 8, 1u64.to_le_bytes())
+            .unwrap();
+        assert!(matches!(
+            step(&mut m, [0x1000, 0, 0], &mut metrics),
+            Err(Error::InvalidEntry)
+        ));
+        assert_eq!(m.read_array::<8>(0x4000).unwrap(), [17; 8]);
     }
 }
