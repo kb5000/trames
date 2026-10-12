@@ -43,3 +43,8 @@ This increases the numbered Linux 6.12 inventory to 164 implemented subsets,
 conformance or native acceleration of the complete musl library. The next full
 hybrid musl build preserves the ordinary libc/loader filenames and retains
 original guest implementations for functions not yet adapted to NativeCall.
+
+Complete [Linux CI](https://github.com/kb5000/trames/actions/runs/38267059628)
+and [Apple CI](https://github.com/kb5000/trames/actions/runs/38267059618) passed on
+runtime commit `8911abc58268b80080a0e24908634bce8b5b010a`; detailed artifact and
+seven-test simulator evidence is recorded in [NativeCall validation](accelerator-v1.md).

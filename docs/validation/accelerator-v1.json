@@ -7,7 +7,7 @@
   "existing_arm_mmap_signals_log_regressions": "pass",
   "ios_macho_rlib_codegen": "pass",
   "ios_embedding_target_check": "pass",
-  "full_remote_ci": "pending",
+  "full_remote_ci": "pass",
   "source_sha256": {
     "crates/trames-cpu/src/lib.rs": "4ee2d10f076e753c88d991f929c306b50d70c91c2a901552721438902d417313",
     "crates/trames-cpu/src/cached.rs": "ec69219c4e3c521dfcc3b116f006195e6229ce1900f66956ca940fb22a2085c4",
@@ -34,5 +34,44 @@
   },
   "arm_runtime_compat_storage_cases": 4,
   "process_name_log_regression": "pass",
-  "source_checkpoint_before_compat": "5db1e08e2bf870db1df076625e6cfd2e9b291c70"
+  "source_checkpoint_before_compat": "5db1e08e2bf870db1df076625e6cfd2e9b291c70",
+  "verified_source_commit": "8911abc58268b80080a0e24908634bce8b5b010a",
+  "verified_source_tree": "45db233468516d2fba65097041c1d1350798a1d4",
+  "linux_ci": {
+    "run_id": 38267059628,
+    "job_id": 114871754797,
+    "conclusion": "success"
+  },
+  "apple_ci": {
+    "run_id": 38267059618,
+    "job_id": 114871759040,
+    "conclusion": "success"
+  },
+  "guest_artifact": {
+    "ci_run": 38267059628,
+    "artifact_id": 11754943610,
+    "zip_sha256": "144cfdb5463839bfe305bed2f2a0c9626dbf916875107e86bd46a9d2755dbbac",
+    "guest_library_sha256": "d5b47a81d9a8771c60e930a371b95697e0869391f7a4b74d3b09836ff83aaafd",
+    "source_files_verified": 14,
+    "copyright": "pass",
+    "gpl": "pass"
+  },
+  "apple_artifact": {
+    "development_ipa": {
+      "artifact_id": 11755328907,
+      "zip_sha256": "0b0b7c4a156d003483dc35b83f5f304624509617d7ae4c49037c65e27c64ff3d",
+      "ipa_sha256": "811178ccfd4f5fbb488200c034b50ff63a93c7715c87f6963b8c1936caf3e1a5",
+      "native_musl_notice": "verified",
+      "version": "0.9.0",
+      "build": "10",
+      "bundle": "org.trames.Trames",
+      "delivery": "internal development CI; not a new named release"
+    },
+    "simulator": {
+      "artifact_id": 11755348841,
+      "zip_sha256": "4032d8947c8b35441d8640f3f63f1b390754be743cd3bcc1285f442591d28d2d",
+      "passed_tests": 7,
+      "failed_tests": 0
+    }
+  }
 }

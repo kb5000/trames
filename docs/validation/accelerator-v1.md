@@ -3,8 +3,7 @@
 Local verification, 2026-10-12. Implements the initial bounded transport and five
 pure functions described in [the v1 contract](../architecture/accelerator-v1.md).
 The immutable 0.9.0/build 10 IPA predates this source; next app delivery will be
-combined after more accelerator work. Complete CI source/run evidence is recorded
-below once the new workflows finish.
+combined after more accelerator work. Complete Linux and Apple CI passed on the source recorded below.
 
 - 194 workspace unit tests passed; fmt and Clippy with denied warnings passed.
 - Original pinned Arm memcpy/memset execute in the actual ARM64 native crate under
@@ -30,12 +29,34 @@ below once the new workflows finish.
   12 unsupported) and 164 Linux syscall subsets / 152 missing / 2 obsolete entries.
   NativeCall is a private software protocol, not an added ISA/Linux ABI count.
 - iOS ARM64 native rlib is actually code-generated as Mach-O, and the linked
-  embedding closure passes the iOS target check. Apple linking/runtime CI follows.
+  embedding closure passes the iOS target check. Native Apple ARM64 tests, simulator/device linking and seven iPad simulator
+  tests passed in the complete Apple workflow.
 
 The first accelerator source checkpoint is
 [`5db1e08`](https://github.com/kb5000/trames/commit/5db1e08e2bf870db1df076625e6cfd2e9b291c70).
 Subsequent [runtime compatibility additions](runtime-compat.md) also pass the
 NativeCall regressions; the benchmark below belongs to that initial checkpoint.
+
+## Complete CI and artifact evidence
+
+Verified runtime commit
+[`8911abc`](https://github.com/kb5000/trames/commit/8911abc58268b80080a0e24908634bce8b5b010a),
+tree `45db233468516d2fba65097041c1d1350798a1d4`:
+
+- [Linux runtime run 38267059628](https://github.com/kb5000/trames/actions/runs/38267059628)
+  passed all steps, including ARM64 NativeCall/compatibility fixtures, existing
+  ISA comparisons, Alpine/Vim/Python and complete developer-tool workflows.
+- [Apple run 38267059618](https://github.com/kb5000/trames/actions/runs/38267059618)
+  passed native ARM64 Rust tests, simulator/device linking and seven simulator
+  tests (zero failures), verified from the actual exported test summary.
+- Guest library/source artifact `11754943610`: downloaded ZIP digest verified;
+  14 corresponding source files match the repository, and GPL/musl/Arm notices
+  match byte-for-byte. The development IPA's bundled native-musl notice was also
+  verified. Full digests and artifact IDs are in [machine-readable evidence](accelerator-v1.json).
+
+The development CI IPA retains 0.9.0/build 10 metadata and is not a new named
+release. The immutable original 0.9.0 release record remains unchanged. New app
+installation will be grouped with subsequent full musl integration.
 
 ## One-shot performance baseline
 
