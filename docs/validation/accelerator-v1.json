@@ -15,7 +15,7 @@
     "crates/trames-core/src/process.rs": "ec18dfdd510484b5e8bb55fa318594560cffb638a9b2fa009f2e2162a8db370d",
     "crates/trames-accel/src/native.rs": "ca8ae5c574ae1b8cfd90b764a023f6480cb4a3c92a05904f359d123fea9edccc",
     "crates/trames-native/src/lib.rs": "b3eac762ffb563a88bf1642df318c9dd63df968b3d05bc1d2774465f015e1be7",
-    "crates/trames-native/build.rs": "15715b803cb52cc74d5cd60fad39867bbce1cc781747ed1eed9666ae80cc4394",
+    "crates/trames-native/build.rs": "e13c860e3f7dea4baaafefd57ba75d0b7ff13c5b6774c652c800ad465e609de8",
     "accelerator/guest/pure.c": "275dc8285a0038966bbf7f25a336419e649a3dff39c52629a35a90668d2b96e3",
     "accelerator/guest/calls.S": "af617d2b22771d69ab39daefc9ec61d6949bb1b1d143623cca2c2b54d41f2905",
     "accelerator/guest/exports.map": "70b0975e787249736347b1486541bae9589be0f6bc76df5adbc37d231f979b51",

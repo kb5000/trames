@@ -70,7 +70,8 @@ produce SIGBUS. Return pointers retain tags; data accesses use the Memory TBI po
 Zero-size operations do not dereference pointers; same-pointer memmove is a no-op.
 
 The original musl 1.2.5 Arm memcpy/memset assembly is statically assembled into
-`trames-native` for ARM64, with only macro/symbol/object-format adaptation. Safe
+`trames-native` for ARM64, with only macro/symbol/object-format adaptation, including Mach-O local-label
+prefixes for ThinLTO. Safe
 Rust translations retain musl memcmp and strlen's algorithms. Development hosts
 use Rust slice operations. Guest fallback compiles the original musl C and Arm
 sources, privately renamed to avoid recursion. Original upstream bytes, archive

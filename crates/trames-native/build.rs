@@ -48,6 +48,11 @@ fn main() {
                 }
             }
         }
+        if apple {
+            // Mach-O's assembler-local prefix is L, not ELF's .L. Keeping
+            // .L makes ThinLTO treat conditional targets as external symbols.
+            asm = asm.replace(".L", &format!("Ltrames_native_{name}_"));
+        }
         fs::write(
             Path::new(&env::var_os("OUT_DIR").unwrap()).join(format!("{name}.s")),
             asm,
