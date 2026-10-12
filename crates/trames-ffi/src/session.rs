@@ -35,6 +35,8 @@ pub struct Options {
     pub budget_bytes: Option<u64>,
     #[serde(default)]
     pub pure_accelerator: bool,
+    #[serde(default)]
+    pub native_bsearch: bool,
 }
 pub fn install(options: Options) -> Result<(), String> {
     if !options.store.is_absolute() || options.store.exists() {
@@ -378,6 +380,7 @@ fn run(
         vfs,
         trames_core::RuntimeOptions {
             pure_accelerator: options.pure_accelerator,
+            native_bsearch: options.native_bsearch,
         },
     )
     .map_err(|e| e.to_string())?;

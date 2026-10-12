@@ -906,6 +906,10 @@ impl Kernel {
                 &execute_vfs,
                 super::RuntimeOptions {
                     pure_accelerator: p.cpu.native_calls_enabled(),
+                    native_bsearch: p.linux.auxiliary.chunks_exact(16).any(|pair| {
+                        pair[..8] == trames_accel::callbacks::SEARCH_AUXV_KEY.to_le_bytes()
+                            && pair[8..] == 1u64.to_le_bytes()
+                    }),
                 },
             )
             .map_err(|e| match e {
@@ -2100,16 +2104,25 @@ impl Kernel {
                         }
                         _ => {}
                     }
-                    if matches!(p.state, State::Ready) {
+                    // Immediate pure/callback returns keep the current quantum.
+                    // No native borrow survives; blocking syscalls/faults still
+                    // return to the scheduler. Bound work/time between control,
+                    // signal and timer polls independently of guest retirement.
+                    let mut quantum = 4096u64;
+                    let quantum_started = Instant::now();
+                    let mut native_returns = 0;
+                    while matches!(p.state, State::Ready) && quantum != 0 {
                         if self.instructions >= limit {
                             self.processes.insert(id, p);
                             return Err(RuntimeError::BudgetExceeded(limit));
                         }
+                        let instructions_before = self.instructions;
+                        let mut immediate_return = false;
                         let began = Instant::now();
                         let decode_before = p.cpu.decode_stats();
                         let outcome = p
                             .cpu
-                            .run_slice(&mut p.memory, (limit - self.instructions).min(4096));
+                            .run_slice(&mut p.memory, (limit - self.instructions).min(quantum));
                         let elapsed = began.elapsed();
                         let decode_after = p.cpu.decode_stats();
                         self.decode_lookups += decode_after.lookups - decode_before.lookups;
@@ -2145,6 +2158,8 @@ impl Kernel {
                                         p.cpu.set_x(1, u64::from(value.fallback));
                                         p.cpu.pc = pc + 4;
                                         self.instructions += 1;
+                                        immediate_return = true;
+                                        native_returns += 1;
                                     }
                                     Err(error) => {
                                         use trames_accel::native::Error;
@@ -2177,6 +2192,13 @@ impl Kernel {
                             }
                         }
                         progress = true;
+                        quantum = quantum.saturating_sub(self.instructions - instructions_before);
+                        if !immediate_return
+                            || native_returns >= 32
+                            || quantum_started.elapsed() >= Duration::from_millis(2)
+                        {
+                            break;
+                        }
                     }
                 }
                 let actual_id = p.rekey.take().unwrap_or(id);

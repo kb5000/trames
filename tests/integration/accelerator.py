@@ -14,7 +14,7 @@ QEMU=os.getenv('QEMU_AARCH64','qemu-aarch64')
 UPSTREAM=ROOT/'crates/trames-native/upstream/musl-1.2.5'
 provenance=json.loads((UPSTREAM/'provenance.json').read_text())
 for name,digest in provenance['files'].items():
-    assert hashlib.sha256((UPSTREAM/name.removeprefix('src/string/')).read_bytes()).hexdigest()==digest,name
+    assert hashlib.sha256((UPSTREAM/name.removeprefix('src/string/').removeprefix('src/')).read_bytes()).hexdigest()==digest,name
 
 def run(args):
     r=subprocess.run(args,capture_output=True,timeout=180)

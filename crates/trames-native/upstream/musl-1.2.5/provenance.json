@@ -15,6 +15,10 @@
     "src/string/memrchr.c": "3926a6c6ef783c440c65f762a1693cc83a53035abfe80059586b7bc7b1e8a97f",
     "src/string/strnlen.c": "3a72ef5250b314ca0d8ff0fed2f6aa10c8b2b26605806c759faf0d1a9b835a9e",
     "src/string/strcmp.c": "3e1793ea2dd358e5c884c4dd232083605d0f6775f7ebe19d03d64fe97068a78f",
-    "src/string/strncmp.c": "df801c43304b27dcda67f219a7a3ca34a8fb06f4e63d21e8a6bcb36b03c3c012"
+    "src/string/strncmp.c": "df801c43304b27dcda67f219a7a3ca34a8fb06f4e63d21e8a6bcb36b03c3c012",
+    "src/stdlib/qsort.c": "3a838cc7f83f4746df6063f567be1ebb2f7d204243342122acd43f44d2434ec6",
+    "src/stdlib/qsort_nr.c": "ba6ce7460e7b4b22d70c8d7acab2bdb5d3916f428d50b42bb29e4da5eec484d9",
+    "src/stdlib/bsearch.c": "91d170a3505dff3d9605e241122ba60d0c4e98b0d0fd6b30ee6a726f70045189",
+    "src/internal/atomic.h": "6d780523ff80c51479c7f848447abb28f3283e1b319f2ebe62b0ace9031d1c36"
   }
 }

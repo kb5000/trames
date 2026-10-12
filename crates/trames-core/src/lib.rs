@@ -12,6 +12,8 @@ use trames_memory::{Memory, MemoryError, Permissions, DEFAULT_MEMORY_LIMIT, PAGE
 pub struct RuntimeOptions {
     /// Explicit host opt-in to the bounded NativeCall v1 pure profile.
     pub pure_accelerator: bool,
+    /// Experimental bsearch wrapper routing; default retains original musl.
+    pub native_bsearch: bool,
 }
 
 pub const STACK_TOP: u64 = 0x0000_7fff_fff0_0000;
@@ -174,6 +176,18 @@ fn initial_stack_bytes(
             } else {
                 0
             },
+        ),
+        (
+            trames_accel::callbacks::AUXV_KEY,
+            if options.pure_accelerator {
+                trames_accel::callbacks::PROFILE
+            } else {
+                0
+            },
+        ),
+        (
+            trames_accel::callbacks::SEARCH_AUXV_KEY,
+            u64::from(options.pure_accelerator && options.native_bsearch),
         ),
         (16, trames_cpu::HWCAP),
         (26, trames_cpu::HWCAP2),

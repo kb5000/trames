@@ -21,7 +21,7 @@ remain proposed. Version 0.10.0/build 11 integrates the full shared musl ELF and
 activates the pure profile in the iPad application.
 The subsequent [musl optimization queue](musl-optimization.md) records direct
 guest-page access, ten adapted functions, capability negotiation and the next
-pure/stateful candidates. App signing is grouped at a later milestone.
+pure/stateful candidates. [Guest callbacks and native sorting](../architecture/native-callbacks.md) add nested resumable qsort/qsort_r and experimental bsearch. App signing is grouped at a later milestone.
 
 M0, the selected static-userspace M1 foundation, M2 ash/FP, the storage follow-up and M3 are implemented, with records
 in [m0.md](../validation/m0.md), [m1.md](../validation/m1.md), [m2.md](../validation/m2.md), [storage.md](../validation/storage.md) and [network.md](../validation/network.md) and [m3.md](../validation/m3.md). This does not

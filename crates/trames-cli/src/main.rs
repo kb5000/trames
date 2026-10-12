@@ -206,6 +206,7 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     let backend = "cached";
     let mut metrics = false;
     let mut pure_accelerator = false;
+    let mut native_bsearch = false;
     let mut pty = false;
     let mut install_busybox = false;
     let mut files = Vec::new();
@@ -222,7 +223,7 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     let mut guest_path = false;
     let mut extra_env = Vec::new();
     if args.peek().is_some_and(|a| a == "--help" || a == "-h") {
-        println!("Usage: trames-run [--rootfs VERIFIED_ALPINE_TAR_GZ] [--guest] [--env KEY=VALUE] [--virtual-network ID] [--host-map VIRTUAL_IP=HOST_IP] [--network off|loopback|outbound|full] [--storage DIR | --memory] [--storage-budget BYTES|16GiB|auto] [--storage-info] [--max-instructions N] [--trace-syscalls] [--metrics] [--accelerator pure|off] [--musl-libc HOST_ELF] [--file /GUEST=HOST] [--exec-file /GUEST=HOST] [--export /GUEST=HOST] [--install-busybox] [--pty] [--] ELF [ARG ...]\nDefault native network: outbound connections and loopback listeners; full also allows non-loopback listeners.\n--virtual-network ID selects isolated 10.0.0.ID / fd00::ID and private loopback; ID must be 2..254.\n--host-map explicitly forwards a logical external IP to a trusted host service.\nDefault storage: .trames/storage in the current directory, 16 GiB logical file budget on first creation.\nImports copy selected host files; exports create new host files after guest exit.\n--memory selects the ephemeral 16 MiB test backend. auto uses the storage volume's total capacity.");
+        println!("Usage: trames-run [--rootfs VERIFIED_ALPINE_TAR_GZ] [--guest] [--env KEY=VALUE] [--virtual-network ID] [--host-map VIRTUAL_IP=HOST_IP] [--network off|loopback|outbound|full] [--storage DIR | --memory] [--storage-budget BYTES|16GiB|auto] [--storage-info] [--max-instructions N] [--trace-syscalls] [--metrics] [--accelerator pure|off] [--native-bsearch] [--musl-libc HOST_ELF] [--file /GUEST=HOST] [--exec-file /GUEST=HOST] [--export /GUEST=HOST] [--install-busybox] [--pty] [--] ELF [ARG ...]\nDefault native network: outbound connections and loopback listeners; full also allows non-loopback listeners.\n--virtual-network ID selects isolated 10.0.0.ID / fd00::ID and private loopback; ID must be 2..254.\n--host-map explicitly forwards a logical external IP to a trusted host service.\nDefault storage: .trames/storage in the current directory, 16 GiB logical file budget on first creation.\nImports copy selected host files; exports create new host files after guest exit.\n--memory selects the ephemeral 16 MiB test backend. auto uses the storage volume's total capacity.");
         return Ok(0);
     }
     while let Some(option) = args.peek() {
@@ -246,6 +247,10 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
                     Some("off") => false,
                     _ => return Err("--accelerator supports pure or off".into()),
                 };
+            }
+            "--native-bsearch" => {
+                args.next();
+                native_bsearch = true;
             }
             "--metrics" => {
                 args.next();
@@ -443,7 +448,10 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
         &argv,
         &envp,
         vfs,
-        trames_core::RuntimeOptions { pure_accelerator },
+        trames_core::RuntimeOptions {
+            pure_accelerator,
+            native_bsearch,
+        },
     )?;
     runtime.linux.trace = trace;
     if install_busybox {

@@ -15,6 +15,12 @@ pub const MAX_BYTES: usize = 64 * 1024;
 pub struct Metrics {
     pub calls: u64,
     pub function_calls: [u64; 10],
+    pub callback_calls: u64,
+    pub callback_requests: u64,
+    pub callback_yields: u64,
+    pub callback_sorts: u64,
+    pub callback_searches: u64,
+    pub callback_state_bytes: u64,
     pub fallbacks: u64,
     pub rejected: u64,
     pub faults: u64,
@@ -49,11 +55,13 @@ impl Registry {
     /// Verify the immutable v1 stub contract in currently executable memory.
     /// This is rechecked on every entry, including fork, remap and self-modification.
     fn valid(memory: &Memory, pc: u64, module: u64, function: u64) -> bool {
-        if module != PROFILE || !(1..=10).contains(&function) || pc < 12 {
+        let allowed = (module == PROFILE && (1..=10).contains(&function))
+            || (module == crate::callbacks::PROFILE && function == 1);
+        if !allowed || pc < 12 {
             return false;
         }
         let words = [
-            0xd2800030,
+            0xd2800010 | ((module as u32 & 0xffff) << 5),
             0xf2a00030,
             0xd2800011 | (function as u32) << 5,
             INSTRUCTION,
@@ -77,10 +85,15 @@ impl Registry {
             return Err(Error::InvalidEntry);
         }
         self.metrics.calls = self.metrics.calls.saturating_add(1);
-        let count = &mut self.metrics.function_calls[function as usize - 1];
-        *count = count.saturating_add(1);
         let began = Instant::now();
-        let result = self.execute(memory, function, a);
+        let result = if module == crate::callbacks::PROFILE {
+            self.metrics.callback_calls = self.metrics.callback_calls.saturating_add(1);
+            crate::callbacks::step(memory, a, &mut self.metrics)
+        } else {
+            let count = &mut self.metrics.function_calls[function as usize - 1];
+            *count = count.saturating_add(1);
+            self.execute(memory, function, a)
+        };
         self.metrics.nanoseconds = self
             .metrics
             .nanoseconds

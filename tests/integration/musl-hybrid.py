@@ -39,14 +39,16 @@ with tempfile.TemporaryDirectory(prefix='trames-full-musl-') as folder:
     assert original<=hybrid,sorted(original-hybrid)
     assert not any('trames' in name for name in hybrid)
     print('PASS full musl public exports:',len(hybrid),'all Alpine exports retained; private helpers hidden',flush=True)
-    for name,args,wanted in [('accelerator-full-musl',[],b'accelerator-pure-ok\n'),('musl-startup',[],b'musl-startup-ok\n'),('runtime-compat-dynamic',[],b'runtime-compat-ok\n')]:
+    for name,args,wanted in [('accelerator-full-musl',[],b'accelerator-pure-ok\n'),('musl-startup',[],b'musl-startup-ok\n'),('runtime-compat-dynamic',[],b'runtime-compat-ok\n'),('musl-callbacks',[],None)]:
         fixture=ROOT/'tests/fixtures/bin'/name
         expected=run([QEMU,'-cpu','max','-E','TRAMES_ORACLE_SKIP_EXEC=1','-L',oracle,fixture,*args],cwd=oracle/'tmp')
-        assert expected.stdout==wanted,expected
+        if wanted is not None: assert expected.stdout==wanted,expected
+        else: assert expected.stdout.startswith(b'musl-callbacks-ok '),expected
         for memory in (True,False):
             for enabled in (False,True):
                 store=tmp/f'{name}-{memory}-{enabled}'
                 cmd=[RUNNER,*(['--memory'] if memory else ['--storage',store]),'--rootfs',ARCHIVE,'--musl-libc',LIBC,'--accelerator','pure' if enabled else 'off','--metrics','--max-instructions','2000000000','--exec-file','/bin/accelerator-test='+str(fixture),'--exec-file','/bin/runtime-compat='+str(fixture),'--exec-file','/test/libm3probe.so='+str(ROOT/'tests/fixtures/bin/libm3probe.so'),'--guest','/bin/accelerator-test',*args]
+                if name=='musl-callbacks' and enabled: cmd.insert(1,'--native-bsearch')
                 actual=run(cmd);assert actual.stdout==expected.stdout,actual
                 native,_=metrics(actual)
                 assert native['calls']>0 if enabled else native['calls']==0,native
@@ -56,6 +58,9 @@ with tempfile.TemporaryDirectory(prefix='trames-full-musl-') as folder:
                     assert native['direct_bytes_read']>1000000 and native['direct_bytes_written']>1000000,native
                     assert native['buffered_bytes_read']>0 and native['buffered_bytes_written']>0,native
                 if name!='accelerator-full-musl':assert native['faults']==0 and native['rejected']==0,native
+                if name=='musl-callbacks' and enabled:
+                    assert native['callback_requests']>1000 and native['callback_sorts']>30 and native['callback_searches']>100,native
+                    assert native['fallbacks']>0 and native['function_calls'][8]>0,native
                 print('PASS',name,'memory='+str(memory),'enabled='+str(enabled),flush=True)
     # Upgrade an existing environment, preserve user data, reopen idempotently,
     # keep ordinary libc alias and execute the loader directly at its normal path.
