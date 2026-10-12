@@ -1,4 +1,4 @@
-# Static interpreter acceleration (0.6.0 / build 7)
+# Static interpreter acceleration (0.7.0 / build 8)
 
 The default local backend is now `cached`: a Rust interpreter with bounded,
 data-only lazily decoded AArch64 code pages. `reference` keeps the single-step decoder
@@ -8,8 +8,9 @@ None allocates executable memory, emits native code, or needs a JIT entitlement.
 
 ## Decoded execution
 
-Each CPU owns 128 direct-mapped code-page slots, each containing at most
+Each CPU owns 128 code-page slots arranged as 64 two-way sets, each containing at most
 1,024 generation-tagged decoded instructions. The full virtual page number is hashed;
+the most recently used way is probed first and the least recent way is replaced.
 replacing one slot advances its generation without allocating or clearing the
 backing array. Generation wrap explicitly clears tags before reuse. Only reached PCs are fetched
 and decoded, so cold or inaccessible instructions are never speculatively read.
@@ -23,15 +24,29 @@ and scalar/vector loads and stores are decoded once. Immediates, scaled offsets,
 register roles and reserved-field validation are cached. Other instructions use
 the complete reference semantics without copying CPU state or crossing an FFI
 boundary. Floating-point/SIMD exceptions, atomics and syscalls retain their
-existing behavior; the cache does not advertise additional CPU capabilities.
+reference behavior. The reference implementation now also supports FRINTTS and
+LRCPC2; all backends advertise the same tested `frint` and `ilrcpc` features.
 
-A code page is keyed by address-space identity, virtual base and code epoch.
+An executed flags-setting ADD/SUB (including CMP aliases) followed by an executed
+conditional branch can form a two-instruction operation within the same page.
+This combines dispatch and PC updates without allocating native code. It preserves
+both register and NZCV results and counts both guest instructions. With only one
+instruction left in a slice, it executes the arithmetic alone; the branch is
+reached in the next slice. Cold words are fetched only when reached. No pair spans
+a page or includes a memory operation, faulting instruction, or syscall.
+
+A code page is keyed by address-space identity, virtual base and page code token.
 Independent spaces cannot reuse code merely because their revision counters
-match. Mapping/protection changes and successful stores to executable pages
-invalidate decoded entries. A possible code store checks the epoch before the
+match. Mapping/replacement/protection changes and successful stores to executable
+pages invalidate only the affected page tokens. Other pages retain decoded entries.
+The global code epoch remains a cheap invalidation signal: a previously checked
+page needs no translation check until that epoch changes. On a change, the reached
+page's execute permission and token are revalidated before reuse. A possible code store checks the epoch before the
 next cached instruction, including self-modification inside a page. CLONE_VM
 threads observe the same identity, epoch, mappings and bytes. Ordinary data
 stores preserve decoded pages.
+Global epoch wrap assigns a fresh address-space identity before repeated page
+tokens can expose old decoded words. Per-slot generation wrap clears entry tags.
 
 Execution reports a fault only at the PC actually reached, checks branch-target
 alignment even within a warmed page, preserves the single-step fault state, stops at
@@ -82,7 +97,7 @@ spawn to successful Python/compiler exit, so loading is included in those times.
 
 Run [the comparison harness](../../tests/performance/nonjit.py) only for material
 changes, using a preserved baseline binary and identical signed-package stores.
-It alternates baseline reference and candidate cached order (optionally including
+It alternates the selected baseline backend and candidate cached order (optionally including
 the candidate reference backend for attribution),
 restores a fresh copy before every run, retains Vim's defaults/plugins/history,
 and validates Python and GCC results. Timing has no CI pass/fail threshold.

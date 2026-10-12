@@ -52,6 +52,7 @@ jobs:
       - run: python3 tests/differential/half_floating.py
       - run: python3 tests/differential/crypto.py
       - run: python3 tests/differential/modern.py
+      - run: python3 tests/differential/frint_rcpc.py
       - name: Check computed-goto and portable C++ with ASan/UBSan
         run: bash scripts/test-cpp.sh
       - name: Cross-build pinned musl and static BusyBox

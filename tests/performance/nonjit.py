@@ -98,16 +98,20 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--baseline', type=Path, required=True)
     parser.add_argument('--candidate', type=Path, required=True)
+    parser.add_argument('--baseline-backend', choices=('reference', 'cached', 'cpp'),
+                        default='reference', help='Backend used by the preserved baseline binary')
     parser.add_argument('--vim-store', type=Path, required=True)
     parser.add_argument('--developer-store', type=Path, required=True)
     parser.add_argument('--samples', type=int, default=3)
+    parser.add_argument('--workloads', nargs='+', choices=('vim-default', 'python-imports', 'gcc-build-run'),
+                        default=['vim-default', 'python-imports', 'gcc-build-run'])
     parser.add_argument('--include-reference', action='store_true',
                         help='Also measure the candidate reference backend for attribution')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     assert args.samples >= 1
     configurations = [
-        ('baseline-reference', args.baseline.resolve(), 'reference'),
+        ('baseline-' + args.baseline_backend, args.baseline.resolve(), args.baseline_backend),
         ('candidate-cached', args.candidate.resolve(), 'cached'),
     ]
     if args.include_reference:
@@ -117,7 +121,7 @@ def main():
         temporary = Path(directory)
         source = temporary / 'performance.c'
         source.write_text(C_SOURCE)
-        for workload in ('vim-default', 'python-imports', 'gcc-build-run'):
+        for workload in args.workloads:
             for sample in range(args.samples):
                 # Alternate order; every run starts from the identical fixture,
                 # including viminfo, pycache, package files and inode metadata.
@@ -154,9 +158,9 @@ def main():
                     print(json.dumps(result), flush=True)
                     shutil.rmtree(store)
     summaries = []
-    for workload in ('vim-default', 'python-imports', 'gcc-build-run'):
+    for workload in args.workloads:
         baseline = statistics.median(r['seconds'] for r in results
-                                     if r['workload'] == workload and r['configuration'] == 'baseline-reference')
+                                     if r['workload'] == workload and r['configuration'] == configurations[0][0])
         for label, _, _ in configurations:
             values = [r['seconds'] for r in results if r['workload'] == workload and r['configuration'] == label]
             median = statistics.median(values)
@@ -166,6 +170,7 @@ def main():
     report = dict(scope='Linux host; real unmodified guest programs; warm host caches; no physical iPad claim',
                   host=dict(platform=platform.platform(), machine=platform.machine(), logical_cpus=os.cpu_count()),
                   inputs=dict(baseline_sha256=sha256(args.baseline), candidate_sha256=sha256(args.candidate),
+                              baseline_backend=args.baseline_backend,
                               vim_manifest_sha256=sha256(args.vim_store / 'manifest'),
                               developer_manifest_sha256=sha256(args.developer_store / 'manifest'),
                               python_source_sha256=hashlib.sha256(PYTHON.encode()).hexdigest(),

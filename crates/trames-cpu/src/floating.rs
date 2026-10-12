@@ -231,6 +231,13 @@ impl Cpu {
                         fmt.pack(a.sign, mag, 0, 0, fpcr, &mut flags)
                     }
                 }
+                16..=19 if fmt.frac != 10 => fmt.round_integer_size(
+                    a,
+                    if op & 2 == 0 { 32 } else { 64 },
+                    if op & 1 == 0 { 3 } else { mode },
+                    fpcr,
+                    &mut flags,
+                ),
                 _ => return Err(invalid()),
             };
         } else if ins & 0xff200c00 == 0x1e200800 {

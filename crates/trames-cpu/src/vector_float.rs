@@ -79,6 +79,10 @@ impl Cpu {
                 | 0x2e21d800
                 | 0x0ea1b800
                 | 0x2ea1b800
+                | 0x0e21e800
+                | 0x2e21e800
+                | 0x0e21f800
+                | 0x2e21f800
         );
         if !binary_valid && !unary_valid && !scalar_pair {
             return Ok(false);
@@ -222,6 +226,13 @@ impl Cpu {
                         fmt.to_integer(a, width, unary == 0x2ea1b800, 0, 3, &mut lane_flags)
                             & lane_mask
                     }
+                    0x0e21e800 | 0x2e21e800 | 0x0e21f800 | 0x2e21f800 => fmt.round_integer_size(
+                        a,
+                        if unary & 0x1000 == 0 { 32 } else { 64 },
+                        if unary & (1 << 29) == 0 { 3 } else { mode },
+                        fpcr,
+                        &mut lane_flags,
+                    ),
                     _ => {
                         let round = match unary {
                             0x0e218800 => 0,

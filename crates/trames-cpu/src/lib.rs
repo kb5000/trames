@@ -17,9 +17,10 @@ pub const HWCAP: u64 = (1 << 0)
     | (1 << 13)
     | (1 << 15)
     | (1 << 20)
+    | (1 << 26)
     | (1 << 27);
-pub const HWCAP2: u64 = 1 << 13; // I8MM
-pub const FEATURE_NAMES: &str = "fp asimd aes pmull sha1 sha2 crc32 atomics fphp asimdhp asimdrdm jscvt lrcpc asimddp flagm i8mm";
+pub const HWCAP2: u64 = (1 << 8) | (1 << 13); // FRINTTS, I8MM
+pub const FEATURE_NAMES: &str = "fp asimd aes pmull sha1 sha2 crc32 atomics fphp asimdhp asimdrdm jscvt lrcpc asimddp ilrcpc flagm frint i8mm";
 mod cached;
 #[cfg(feature = "cpp")]
 mod cpp;

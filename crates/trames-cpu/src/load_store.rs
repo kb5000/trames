@@ -381,6 +381,33 @@ impl Cpu {
                 .map_err(fault)?;
             return Ok(true);
         }
+        if ins & 0x3f200c00 == 0x19000000 {
+            // FEAT_LRCPC2: unscaled RCpc acquire loads and release stores.
+            // Ordering is provided by the cooperative interpreter; these loads
+            // do not create or clear an exclusive reservation.
+            let size = 1usize << (ins >> 30);
+            let opc = (ins >> 22) & 3;
+            if (opc == 2 && size == 8) || (opc == 3 && size >= 4) {
+                return Err(invalid());
+            }
+            let offset = sign_extend(((ins >> 12) & 511) as u64, 9);
+            let address = self.reg(rn, true).wrapping_add(offset);
+            if !address.is_multiple_of(size as u64) {
+                return Err(fault(MemoryError::InvalidRange));
+            }
+            if opc == 0 {
+                write_operand(memory, address, size, self.x(rt) as u128).map_err(fault)?;
+            } else {
+                let value = read_operand(memory, address, size).map_err(fault)? as u64;
+                let value = if opc >= 2 {
+                    sign_extend(value, size as u32 * 8)
+                } else {
+                    value
+                };
+                self.put(rt, value, opc != 3, false);
+            }
+            return Ok(true);
+        }
         if ins & 0x3a000000 == 0x28000000 {
             // pair loads/stores, all address modes
             let opc = ins >> 30;
@@ -591,6 +618,26 @@ mod tests {
         m.protect(0x1000, PAGE_SIZE, Permissions::RX).unwrap();
         m.map(0x2000, PAGE_SIZE, Permissions::RW).unwrap();
         (Cpu::new(0x1000, 0x2ff8), m)
+    }
+    #[test]
+    fn rcpc2_faults_and_reserved_encodings_preserve_state() {
+        for word in [
+            0xd9400020, 0xd9000020, 0x59400020, 0x59000020, 0x99800020, 0xd9c00020, 0x99c00020,
+            0x19200020,
+        ] {
+            let (mut cpu, mut memory) = state(&[word]);
+            cpu.set_x(0, 0x12345678);
+            cpu.set_x(1, 0x2fff);
+            cpu.exclusive = Some((0x2000, 8, memory.revision()));
+            let before = (cpu.registers, cpu.sp, cpu.exclusive, memory.revision());
+            assert!(cpu.step(&mut memory).is_err(), "{word:08x}");
+            assert_eq!(cpu.pc, 0x1000);
+            assert_eq!(
+                (cpu.registers, cpu.sp, cpu.exclusive, memory.revision()),
+                before
+            );
+            assert_eq!(memory.read_u64(0x2000).unwrap(), 0);
+        }
     }
     #[test]
     fn pair_access_faults_do_not_partially_change_memory_or_registers() {

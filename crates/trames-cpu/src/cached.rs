@@ -7,6 +7,8 @@ use super::{
 use trames_memory::{Memory, PAGE_SIZE};
 
 const SLOTS: usize = 128;
+const WAYS: usize = 2;
+const SETS: usize = SLOTS / WAYS;
 const PAGE_WORDS: usize = PAGE_SIZE as usize / 4;
 
 #[derive(Clone, Copy, Debug)]
@@ -37,6 +39,15 @@ enum Op {
     AddShift {
         sub: bool,
         flags: bool,
+        kind: u8,
+        amount: u8,
+    },
+    FlagsBranch {
+        value: u64,
+        offset: u64,
+        condition: u8,
+        sub: bool,
+        immediate: bool,
         kind: u8,
         amount: u8,
     },
@@ -410,6 +421,42 @@ impl Instruction {
                 | Op::Fallback
         )
     }
+    fn followed_by(mut self, branch: Self) -> Self {
+        let Op::ConditionalBranch { offset, condition } = branch.op else {
+            return self;
+        };
+        self.op = match self.op {
+            Op::AddImmediate {
+                sub,
+                flags: true,
+                value,
+            } => Op::FlagsBranch {
+                value,
+                offset,
+                condition,
+                sub,
+                immediate: true,
+                kind: 0,
+                amount: 0,
+            },
+            Op::AddShift {
+                sub,
+                flags: true,
+                kind,
+                amount,
+            } => Op::FlagsBranch {
+                value: 0,
+                offset,
+                condition,
+                sub,
+                immediate: false,
+                kind,
+                amount,
+            },
+            op => op,
+        };
+        self
+    }
 }
 
 #[derive(Debug)]
@@ -444,18 +491,21 @@ impl Default for Entry {
 struct CodePage {
     base: u64,
     identity: (u64, u64),
+    checked: (u64, u64),
     generation: u64,
     instructions: Box<[Entry]>,
 }
 #[derive(Debug)]
 pub(super) struct Cache {
     slots: Vec<Option<Box<CodePage>>>,
+    recent: [u8; SETS],
     pub(super) stats: super::DecodeStats,
 }
 impl Default for Cache {
     fn default() -> Self {
         Self {
             slots: (0..SLOTS).map(|_| None).collect(),
+            recent: [0; SETS],
             stats: super::DecodeStats::default(),
         }
     }
@@ -466,13 +516,40 @@ impl Clone for Cache {
     } // fork copies state, not derived code
 }
 impl Cache {
-    fn page(&mut self, memory: &Memory, pc: u64) -> (&mut CodePage, &mut super::DecodeStats) {
+    fn page(
+        &mut self,
+        memory: &Memory,
+        pc: u64,
+    ) -> Result<(&mut CodePage, &mut super::DecodeStats), trames_memory::MemoryError> {
         let base = pc & !(PAGE_SIZE - 1);
         // Use every virtual address bit, including high library addresses.
-        let slot =
-            (((base >> 12).wrapping_mul(0x9e3779b97f4a7c15)) >> (64 - SLOTS.ilog2())) as usize;
-        let identity = memory.instruction_identity();
+        let set = (((base >> 12).wrapping_mul(0x9e3779b97f4a7c15)) >> (64 - SETS.ilog2())) as usize;
+        let first = set * WAYS + self.recent[set] as usize;
+        let second = set * WAYS + (self.recent[set] as usize ^ 1);
+        // Probe the most recently used way first. Reuse the same virtual page
+        // on an epoch change; otherwise replace the empty or least recent way.
+        let slot = if self.slots[first].as_ref().is_some_and(|p| p.base == base) {
+            first
+        } else if self.slots[second].as_ref().is_some_and(|p| p.base == base) {
+            second
+        } else if self.slots[first].is_none() {
+            first
+        } else {
+            second
+        };
+        self.recent[set] = (slot % WAYS) as u8;
+        let checked = memory.instruction_identity();
         self.stats.lookups += 1;
+        if self.slots[slot]
+            .as_ref()
+            .is_some_and(|p| p.base == base && p.checked == checked)
+        {
+            return Ok((
+                self.slots[slot].as_deref_mut().expect("decoded code page"),
+                &mut self.stats,
+            ));
+        }
+        let identity = memory.instruction_page_identity(pc)?;
         if !self.slots[slot]
             .as_ref()
             .is_some_and(|p| p.base == base && p.identity == identity)
@@ -493,15 +570,15 @@ impl Cache {
                 self.slots[slot] = Some(Box::new(CodePage {
                     base,
                     identity,
+                    checked,
                     generation: 1,
                     instructions: vec![Entry::default(); PAGE_WORDS].into_boxed_slice(),
                 }));
             }
         }
-        (
-            self.slots[slot].as_deref_mut().expect("decoded code page"),
-            &mut self.stats,
-        )
+        let page = self.slots[slot].as_deref_mut().expect("decoded code page");
+        page.checked = checked;
+        Ok((page, &mut self.stats))
     }
 }
 
@@ -513,6 +590,7 @@ impl Cpu {
             &mut self.decoded,
             Cache {
                 slots: Vec::new(),
+                recent: [0; SETS],
                 stats: super::DecodeStats::default(),
             },
         );
@@ -528,7 +606,16 @@ impl Cpu {
     ) -> SliceOutcome {
         let mut executed = 0;
         while executed < budget {
-            let (page, stats) = cache.page(memory, self.pc);
+            if self.pc & 3 != 0 {
+                return SliceOutcome::Fault(CpuFault::Memory {
+                    pc: self.pc,
+                    error: trames_memory::MemoryError::InvalidRange,
+                });
+            }
+            let (page, stats) = match cache.page(memory, self.pc) {
+                Ok(page) => page,
+                Err(error) => return SliceOutcome::Fault(CpuFault::Memory { pc: self.pc, error }),
+            };
             while executed < budget && self.pc & !(PAGE_SIZE - 1) == page.base {
                 let pc = self.pc;
                 if pc & 3 != 0 {
@@ -552,11 +639,26 @@ impl Cpu {
                     entry.instruction = instruction;
                     entry.generation = page.generation;
                     stats.instructions += 1;
-                    instruction
+                    // Form pairs only from words that have actually executed.
+                    // No lookahead fetch can move a fault before its reached PC.
+                    if slot != 0 && page.instructions[slot - 1].generation == page.generation {
+                        let previous = &mut page.instructions[slot - 1];
+                        previous.instruction = previous.instruction.followed_by(instruction);
+                    }
+                    if slot + 1 < PAGE_WORDS
+                        && page.instructions[slot + 1].generation == page.generation
+                    {
+                        let instruction =
+                            instruction.followed_by(page.instructions[slot + 1].instruction);
+                        page.instructions[slot].instruction = instruction;
+                        instruction
+                    } else {
+                        instruction
+                    }
                 };
-                match self.execute_decoded(instruction, memory) {
-                    Ok(Event::Continue) => executed += 1,
-                    Ok(Event::Syscall) => {
+                match self.execute_decoded(instruction, memory, budget - executed) {
+                    Ok((Event::Continue, count)) => executed += count,
+                    Ok((Event::Syscall, _)) => {
                         return SliceOutcome::Syscall {
                             instructions: executed + 1,
                         }
@@ -565,7 +667,7 @@ impl Cpu {
                 }
                 // A successful self-modifying store must leave this borrowed
                 // code page before the next instruction is read from it.
-                if instruction.may_write_code() && memory.instruction_identity() != page.identity {
+                if instruction.may_write_code() && memory.instruction_identity() != page.checked {
                     break;
                 }
             }
@@ -578,9 +680,11 @@ impl Cpu {
         &mut self,
         ins: Instruction,
         memory: &mut Memory,
-    ) -> Result<Event, CpuFault> {
+        remaining: u64,
+    ) -> Result<(Event, u64), CpuFault> {
         let pc = self.pc;
         let mut next = pc.wrapping_add(4);
+        let mut count = 1;
         let (rd, rn, rm) = (ins.rd as usize, ins.rn as usize, ins.rm as usize);
         let wide = ins.wide;
         let mask = width_mask(wide);
@@ -588,7 +692,7 @@ impl Cpu {
             Op::Nop => {}
             Op::Svc => {
                 self.pc = next;
-                return Ok(Event::Syscall);
+                return Ok((Event::Syscall, 1));
             }
             Op::Move { opc, shift, value } => {
                 let value = match opc {
@@ -624,6 +728,32 @@ impl Cpu {
                     wide,
                 );
                 self.put(rd, value, wide, false);
+            }
+            Op::FlagsBranch {
+                value,
+                offset,
+                condition,
+                sub,
+                immediate,
+                kind,
+                amount,
+            } => {
+                let left = self.reg(rn, immediate);
+                let right = if immediate {
+                    value
+                } else {
+                    shifted(self.x(rm), kind as u32, amount as u32, wide)
+                };
+                let value = self.arithmetic(left, right, sub, true, wide);
+                self.put(rd, value, wide, false);
+                if remaining >= 2 {
+                    next = if self.condition(condition as u32) {
+                        next.wrapping_add(offset)
+                    } else {
+                        next.wrapping_add(4)
+                    };
+                    count = 2;
+                }
             }
             Op::LogicalShift {
                 opc,
@@ -796,7 +926,7 @@ impl Cpu {
             } => {
                 if !vector && size == 8 && opc == 2 {
                     self.pc = next;
-                    return Ok(Event::Continue);
+                    return Ok((Event::Continue, 1));
                 }
                 let base = self.reg(rn, true);
                 let (address, writeback) = match addressing {
@@ -950,10 +1080,14 @@ impl Cpu {
                     });
                 }
             }
-            Op::Fallback => return self.execute_instruction(ins.word, memory),
+            Op::Fallback => {
+                return self
+                    .execute_instruction(ins.word, memory)
+                    .map(|event| (event, 1))
+            }
         }
         self.pc = next;
-        Ok(Event::Continue)
+        Ok((Event::Continue, count))
     }
     fn decoded_logical(&mut self, rd: usize, rn: usize, rhs: u64, opc: u8, wide: bool, sp: bool) {
         let value = match opc {
@@ -1023,6 +1157,131 @@ mod tests {
             )
         );
         assert_eq!(a.vectors, b.vectors);
+    }
+    #[test]
+    fn fused_flags_branches_preserve_budgets_conditions_and_invalidations() {
+        for arithmetic in [
+            0xf100041f, 0xf10007ff, 0xb1000420, 0x31000420, 0xeb01001f, 0x6b817c1f,
+        ] {
+            for condition in 0..16 {
+                let branch = 0x54000000u32 | (3 << 5) | condition;
+                for budget in [1, 2, 3, 4, 4096] {
+                    let mut memory =
+                        memory(&[arithmetic, branch, 0xd4000001, 0xd503201f, 0xd4000001]);
+                    let mut cpu = Cpu::new(0x1004, 1);
+                    cpu.run_slice(&mut memory, 1); // warm branch independently
+                    cpu.pc = 0x1000;
+                    cpu.set_x(0, u64::MAX);
+                    cpu.set_x(1, 0x8000000000000001);
+                    let mut oracle = cpu.clone();
+                    oracle.set_backend(Backend::Reference).unwrap();
+                    let mut other = memory.clone();
+                    assert_eq!(
+                        format!("{:?}", cpu.run_slice(&mut memory, budget)),
+                        format!("{:?}", oracle.run_slice(&mut other, budget))
+                    );
+                    equal(&cpu, &oracle);
+                    assert!(matches!(
+                        cpu.decoded
+                            .slots
+                            .iter()
+                            .flatten()
+                            .find(|p| p.base == 0x1000)
+                            .unwrap()
+                            .instructions[0]
+                            .instruction
+                            .op,
+                        Op::FlagsBranch { .. }
+                    ));
+                    // Replace the branch via another thread. A warmed pair must
+                    // not skip the newly reached SVC or use the old target.
+                    let mut thread = memory.share();
+                    thread
+                        .write_array(0x1004, 0xd4000001u32.to_le_bytes())
+                        .unwrap();
+                    other
+                        .write_array(0x1004, 0xd4000001u32.to_le_bytes())
+                        .unwrap();
+                    cpu.pc = 0x1000;
+                    oracle.pc = 0x1000;
+                    assert_eq!(
+                        format!("{:?}", cpu.run_slice(&mut memory, 3)),
+                        format!("{:?}", oracle.run_slice(&mut other, 3))
+                    );
+                    equal(&cpu, &oracle);
+                }
+            }
+        }
+        // No pair spans a page: the branch's execute fault follows the compare.
+        let mut memory = memory(&[]);
+        memory
+            .write_array(0x1ffc, 0xf100041fu32.to_le_bytes())
+            .unwrap();
+        memory.unmap(0x2000, PAGE_SIZE).unwrap();
+        let mut cpu = Cpu::new(0x1ffc, 0);
+        let mut oracle = cpu.clone();
+        oracle.set_backend(Backend::Reference).unwrap();
+        let mut other = memory.clone();
+        assert_eq!(
+            format!("{:?}", cpu.run_slice(&mut memory, 2)),
+            format!("{:?}", oracle.run_slice(&mut other, 2))
+        );
+        equal(&cpu, &oracle);
+    }
+    #[test]
+    fn unrelated_epochs_keep_decodes_but_exec_remapping_and_collisions_do_not() {
+        let mut memory = memory(&[0xd2800020]);
+        let mut cpu = Cpu::new(0x1000, 0);
+        cpu.run_slice(&mut memory, 1);
+        let decoded = cpu.decode_stats().instructions;
+        memory.map(0x9000, PAGE_SIZE, Permissions::RW).unwrap();
+        memory.protect(0x9000, PAGE_SIZE, Permissions::RX).unwrap();
+        cpu.pc = 0x1000;
+        cpu.run_slice(&mut memory, 1);
+        assert_eq!(cpu.decode_stats().instructions, decoded);
+        memory
+            .map_fixed(0x1000, PAGE_SIZE, Permissions::RW)
+            .unwrap();
+        memory
+            .write_array(0x1000, 0xd28000e0u32.to_le_bytes())
+            .unwrap();
+        cpu.pc = 0x1000;
+        assert!(matches!(
+            cpu.run_slice(&mut memory, 1),
+            SliceOutcome::Fault(CpuFault::Memory { .. })
+        ));
+        memory.protect(0x1000, PAGE_SIZE, Permissions::RX).unwrap();
+        cpu.run_slice(&mut memory, 1);
+        assert_eq!(cpu.x(0), 7);
+        assert_eq!(cpu.decode_stats().instructions, decoded + 1);
+        // Find two conflicting pages and exercise both ways, including eviction.
+        let set = |base: u64| {
+            ((base >> 12).wrapping_mul(0x9e3779b97f4a7c15) >> (64 - SETS.ilog2())) as usize
+        };
+        let aliases: Vec<_> = (3..1024u64)
+            .map(|n| n * PAGE_SIZE)
+            .filter(|&base| set(base) == set(0x1000))
+            .take(2)
+            .collect();
+        for (i, &base) in aliases.iter().enumerate() {
+            memory.map(base, PAGE_SIZE, Permissions::RW).unwrap();
+            memory
+                .write_array(base, (0xd2800000u32 | ((i as u32 + 10) << 5)).to_le_bytes())
+                .unwrap();
+            memory.protect(base, PAGE_SIZE, Permissions::RX).unwrap();
+        }
+        for (base, value) in [
+            (0x1000, 7),
+            (aliases[0], 10),
+            (0x1000, 7),
+            (aliases[0], 10),
+            (aliases[1], 11),
+            (0x1000, 7),
+        ] {
+            cpu.pc = base;
+            cpu.run_slice(&mut memory, 1);
+            assert_eq!(cpu.x(0), value);
+        }
     }
     #[test]
     fn page_cache_is_bounded_and_warm_words_do_not_hide_branch_alignment_faults() {

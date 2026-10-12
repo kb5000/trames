@@ -599,4 +599,27 @@ impl Format {
             mag as u64
         }
     }
+
+    /// FEAT_FRINTTS returns an integral FP value, or the signed integer
+    /// indefinite value. Both Z and X forms signal inexact on a valid rounding.
+    pub fn round_integer_size(
+        self,
+        a: Number,
+        width: u32,
+        mode: u32,
+        fpcr: u32,
+        flags: &mut u32,
+    ) -> u64 {
+        let (mag, lost) = self.rounded_integer(a, mode);
+        let limit = (1u128 << (width - 1)) - u128::from(!a.sign);
+        let exceeds = a.exp >= 0 && 127 - a.sig.leading_zeros() as i32 + a.exp >= 128;
+        if a.nan || a.inf || exceeds || mag > limit {
+            *flags |= INVALID;
+            return self.pack(true, 1u128 << (width - 1), 0, 0, fpcr, flags);
+        }
+        if lost {
+            *flags |= INEXACT;
+        }
+        self.pack(a.sign, mag, 0, 0, fpcr, flags)
+    }
 }
