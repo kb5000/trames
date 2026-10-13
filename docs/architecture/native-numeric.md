@@ -71,3 +71,5 @@ subnormal/overflow edges, locale aliases, tagged pointers, guard/page boundaries
 non-nearest fallback, shared stacks, signals, threads, fork and native sort → guest
 comparison → native conversion. The optional `tests/performance/numeric.py` runs
 one alternating batch against the preceding published ARM64 runtime.
+
+[Functional checks, measured gains and actual simulator evidence](../validation/native-numeric.md) record this batch.
