@@ -1,0 +1,515 @@
+{
+  "source_commit": "dc1fb217055da77b10c2beeea89b6944470fb910",
+  "source_tree": "c1202c6ae2fe9b8540c3a54a81d99848c08a0162",
+  "baseline_source_commit": "c45c8b94a932c7ea943ee5501d4184fde1cb10d3",
+  "tests": {
+    "workspace": 214,
+    "arm-tests": 41
+  },
+  "strict_clippy": true,
+  "ios_compile": true,
+  "full_musl_modes": 16,
+  "full_musl_exports": 1642,
+  "floating_rows": 712,
+  "floating_differences": 0,
+  "integer_rows": 476,
+  "stdlib_modes": 4,
+  "legacy_transport_modes": 10,
+  "mmap_memory_disk": true,
+  "python_signed_install_repair": true,
+  "embedding": true,
+  "unsafe_policy": "Audited production boundaries allowed; unsafe_op_in_unsafe_fn denied; explicit operations and contracts.",
+  "runtime_sha256": "df23cb403cc9638cd57a150b847cea5aadb1ab542942f279d2f71a6f967ebf13",
+  "libc_sha256": "62b9a42e9b95317e70980156d6f639310418f04388926943e341a8116b6a8184",
+  "fixture_sha256": "72fd4d71a5be3d9dfa83cd1d13d42bd0459b775bded7599ec6faa6d93942c52c",
+  "ci_initial_failures": [
+    {
+      "run_id": 38339472276,
+      "job_id": 115106988454,
+      "step": "Compare native loopback sockets and real musl DNS with QEMU",
+      "reason": "DNS test fixture could not bind 127.0.0.1:53 (EADDRINUSE); failure before guest DNS comparison."
+    },
+    {
+      "run_id": 38339472266,
+      "job_id": 115107197883,
+      "step": "Test native SSH PTY and SFTP against OpenSSH",
+      "reason": "Pinned NIOSSH ChildChannelStateMachine.swift:432 fatal window-adjust in invalid/closing channel state; failure before native core or app tests."
+    }
+  ],
+  "ci_retry": "Only failed jobs retried once without source changes; both final workflows passed on attempt 2.",
+  "full_musl_ci_artifact": {
+    "artifact_id": 11786501479,
+    "zip_sha256": "baf30e3e4f85855632ae236cbd820f942d7c08f0844dbfc5a0fd6a7f5f6f3503",
+    "libc_sha256": "ca4c92f5fe3cef2fcb86cd914d0319c2173e274c4d95a0c2f626e6c088775746",
+    "source_inputs": 17,
+    "crc_verified": true,
+    "source_package_verified": true
+  },
+  "benchmark_report": "native-boundary-cost-benchmark.json",
+  "benchmark_medians": [
+    {
+      "workload": "strtoull-4096",
+      "speedup": 1.1731353875116084,
+      "seconds": {
+        "previous-pure": 1.120596728,
+        "current-pure": 0.955215178
+      }
+    },
+    {
+      "workload": "strings-8191x256",
+      "speedup": 1.0479749462747563,
+      "seconds": {
+        "previous-pure": 0.10031791,
+        "current-pure": 0.095725485
+      }
+    },
+    {
+      "workload": "vim-default",
+      "speedup": 1.011111954832045,
+      "seconds": {
+        "previous-pure": 22.606244891998358,
+        "current-pure": 22.35780596200493
+      }
+    },
+    {
+      "workload": "python-imports",
+      "speedup": 0.9947901515786141,
+      "seconds": {
+        "previous-pure": 104.01104373901035,
+        "current-pure": 104.55576341800042
+      }
+    }
+  ],
+  "apple_ci_artifact": {
+    "artifact_id": 11785684822,
+    "zip_sha256": "6e40c65fde58c1c2fbd2f8cfe54bdc998cbdb05165f9c28b8ec90723b882b0ac",
+    "passed_tests": 7,
+    "failed_tests": 0,
+    "crc_verified": true,
+    "bundled_libc": {
+      "build/device/Build/Products/Debug-iphoneos/Trames.app/GuestMusl/libc.so": "ca4c92f5fe3cef2fcb86cd914d0319c2173e274c4d95a0c2f626e6c088775746",
+      "build/simulator/Build/Products/Debug-iphonesimulator/Trames.app/GuestMusl/libc.so": "ca4c92f5fe3cef2fcb86cd914d0319c2173e274c4d95a0c2f626e6c088775746"
+    }
+  },
+  "ci": {
+    "source": "dc1fb217055da77b10c2beeea89b6944470fb910",
+    "initial_failures": [
+      {
+        "run_id": 38339472276,
+        "job_id": 115106988454,
+        "step": "Compare native loopback sockets and real musl DNS with QEMU",
+        "reason": "DNS test fixture could not bind 127.0.0.1:53 (EADDRINUSE); failure before guest DNS comparison."
+      },
+      {
+        "run_id": 38339472266,
+        "job_id": 115107197883,
+        "step": "Test native SSH PTY and SFTP against OpenSSH",
+        "reason": "Pinned NIOSSH ChildChannelStateMachine.swift:432 fatal window-adjust in invalid/closing channel state; failure before native core or app tests."
+      }
+    ],
+    "retry": "Only failed jobs retried once without source changes; both final workflows passed on attempt 2.",
+    "linux": {
+      "run_id": 38339472276,
+      "attempt": 2,
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 115109258154,
+          "name": "runtime",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run dtolnay/rust-toolchain@stable",
+              "conclusion": "success"
+            },
+            {
+              "name": "Install independent AArch64 oracle and cross assembler",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/cache@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build pinned independent QEMU oracle",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run cargo fmt --all --check",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run cargo clippy --workspace --all-targets --all-features --locked -- -D warnings",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run cargo build --workspace --all-features --locked",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run cargo test --workspace --all-features --locked",
+              "conclusion": "success"
+            },
+            {
+              "name": "Compile core and both network backends for iOS (no SDK link or device test)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Execute ARM64 native compute helpers under the independent oracle",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/run.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/m1.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/floating.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/vector_floating.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/structures.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/pairwise_integer.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/widening_integer.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/vector_copy_shift.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/vector_integer.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/atomics_crc.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/half_floating.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/crypto.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/modern.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/frint_rcpc.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/coverage_extensions.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Cross-build pinned musl and static BusyBox",
+              "conclusion": "success"
+            },
+            {
+              "name": "Compare actual musl CPU fault handlers and context recovery",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run bash scripts/build-compatibility-log-fixtures.sh",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/integration/compatibility-log.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Compare altstack, memory barriers and process file limits",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run bash scripts/build-mmap-fixtures.sh",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/integration/mmap.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/integration/busybox.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run bash scripts/build-m2-fixtures.sh",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/integration/m2.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/integration/terminal.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run bash scripts/build-storage-fixtures.sh",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/integration/storage.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run bash scripts/build-network-fixtures.sh",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run bash scripts/build-virtual-network-fixtures.sh",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run bash scripts/build-linux-compat-fixtures.sh",
+              "conclusion": "success"
+            },
+            {
+              "name": "Compare native loopback sockets and real musl DNS with QEMU",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/integration/m2.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/integration/terminal.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Prepare pinned Alpine and dynamic fixtures",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run cargo build --release --workspace --all-features --locked",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build complete hybrid musl from pinned original source",
+              "conclusion": "success"
+            },
+            {
+              "name": "Compare full musl loader, startup, TLS, threads and pure functions",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build and compare opt-in NativeCall guest ELF stubs on ARM64",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Validate dynamic Alpine, HTTPS trust and signed apk installation",
+              "conclusion": "success"
+            },
+            {
+              "name": "Validate virtual packet fabric, guest ABI and Alpine HTTPS gateway",
+              "conclusion": "success"
+            },
+            {
+              "name": "Validate Linux endpoints, musl threads, ICMP and real Vim editing",
+              "conclusion": "success"
+            },
+            {
+              "name": "Exercise the embedding ABI with real Alpine PTY and disk streams",
+              "conclusion": "success"
+            },
+            {
+              "name": "Signed Python install, repair and execution with 128 host descriptors",
+              "conclusion": "success"
+            },
+            {
+              "name": "Compare M6 events, local IPC, POSIX locks and FIFO semantics with QEMU",
+              "conclusion": "success"
+            },
+            {
+              "name": "Signed developer tools and complete guest workflows on a fresh persistent store",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/cache@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    },
+    "apple": {
+      "run_id": 38339472266,
+      "attempt": 2,
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 115109246098,
+          "name": "apple-build",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run dtolnay/rust-toolchain@stable",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/download-artifact@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build native Rust embedding library",
+              "conclusion": "success"
+            },
+            {
+              "name": "Test native SSH PTY and SFTP against OpenSSH",
+              "conclusion": "success"
+            },
+            {
+              "name": "Validate shared mapping and guest ABI core on native Apple ARM64",
+              "conclusion": "success"
+            },
+            {
+              "name": "Generate Xcode project",
+              "conclusion": "success"
+            },
+            {
+              "name": "Link unsigned iPad simulator app",
+              "conclusion": "success"
+            },
+            {
+              "name": "Link unsigned iPad device app",
+              "conclusion": "success"
+            },
+            {
+              "name": "Test viewport, native consent, real gateway DNS/HTTPS and lifecycle in iPad simulator",
+              "conclusion": "success"
+            },
+            {
+              "name": "Export simulator test summary",
+              "conclusion": "success"
+            },
+            {
+              "name": "Package unsigned device IPA for sideload signing",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 115109276018,
+          "name": "guest-musl",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Install AArch64 source toolchain",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run bash scripts/build-musl-hybrid.sh > /tmp/musl-build.log 2>&1 || { tail -30 /tmp/musl-build.log; exit 1; }",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    },
+    "artifacts": [
+      {
+        "id": 11786559023,
+        "name": "Trames-unsigned-sideload",
+        "digest": "sha256:f7206e26418ab01478dcc4dfc6b1cba83353cb501c164315fbdb089ad3493185",
+        "size_in_bytes": 9870821
+      },
+      {
+        "id": 11786501479,
+        "name": "full-musl-library-and-source",
+        "digest": "sha256:baf30e3e4f85855632ae236cbd820f942d7c08f0844dbfc5a0fd6a7f5f6f3503",
+        "size_in_bytes": 2090305
+      },
+      {
+        "id": 11785684822,
+        "name": "unsigned-ipad-build-and-project",
+        "digest": "sha256:6e40c65fde58c1c2fbd2f8cfe54bdc998cbdb05165f9c28b8ec90723b882b0ac",
+        "size_in_bytes": 33116415
+      }
+    ]
+  }
+}
