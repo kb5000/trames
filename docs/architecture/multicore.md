@@ -27,8 +27,9 @@ at most one guest per eligible virtual CPU, and collects every result before any
 kernel operation. Worker slices retire at most 32,768 instructions and stop at
 syscalls, NativeCall, faults or explicit yields. The total instruction budget is
 reserved across a batch, including instructions from peers subsequently killed
-by another peer's exit_group or exec. Selection rotates between ready tasks;
-narrow affinity masks precede flexible tasks. `sched_setaffinity` is enforced,
+by another peer's exit_group or exec. Selection rotates between ready tasks. An affinity matching pass keeps queue
+priority and can relocate an earlier flexible task to admit a pinned peer; pinned
+spinners cannot permanently starve the flexible task that releases them. `sched_setaffinity` is enforced,
 `getcpu` reports the assigned virtual CPU, and proc/sys CPU views report this same
 topology. Virtual affinity does not pin a worker to a physical host core.
 

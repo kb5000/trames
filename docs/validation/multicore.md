@@ -1,6 +1,8 @@
 # Host multicore execution: development validation
 
-Date: 2026-10-13. Delivery tracker: [#11](https://github.com/kb5000/trames/issues/11).
+Date: 2026-10-13. Initial implementation: `0b19861a2d8ba40d79a30af8054d52f982f855f2`.
+The final follow-up corrects affinity fairness and uses explicit Bash pipefail for CI evidence.
+Delivery tracker: [#11](https://github.com/kb5000/trames/issues/11).
 This source change introduces real host CPU workers using the existing cached
 AArch64 interpreter, with no JIT. The immutable 0.11.0/build 12 release is still
 recorded separately in [release-0.11.md](release-0.11.md). Physical acceptance
@@ -8,9 +10,9 @@ remains in [#8](https://github.com/kb5000/trames/issues/8).
 
 ## Correctness and compatibility
 
-The final local source passes 229 workspace tests, rustfmt and Clippy with all
+The final local source passes 230 workspace tests, rustfmt and Clippy with all
 features and warnings denied. Actual AArch64 compute/memory/CPU/VFS/core binaries
-run under pinned QEMU 10.0.13 pass 154 tests, including two concurrent CPU workers
+run under pinned QEMU 10.0.13 pass 155 tests, including two concurrent CPU workers
 and independent per-host-thread floating environments. Core/distro/FFI also pass
 an aarch64-apple-ios target check; this is not an SDK link or device test.
 
@@ -27,7 +29,8 @@ CPU counts 1, 2 and 4, on both development-host and actual AArch64 runtime build
 - Concurrent fork preserves private COW while other tasks write; shared-process
   atomics remain coherent. Exec and exit_group retire a running peer at a joined
   checkpoint before replacing or removing its CPU/address-space state.
-- CPU topology, enforced affinity, sysconf CPU counts and getcpu agree. Metrics
+- Two pinned spinners wait for a flexible task without starving it. CPU topology,
+  enforced affinity, sysconf CPU counts and getcpu agree. Metrics
   verify actual overlapping worker execution, rather than only reporting CPUs.
 
 Unit coverage additionally checks 16-byte reservation granules, ABA writes,
@@ -35,7 +38,7 @@ coordinator/native invalidation, remapped identities, permissions before effects
 shared aliases, readonly dirty-writeback aliases, file descriptor mutation,
 truncation/SIGBUS and executable cache invalidation.
 
-The full signed Node.js 22.23.2/npm 11.6.4 workflow is being verified with four
+The final full signed Node.js 22.23.2/npm 11.6.4 workflow passes with four
 virtual CPUs, including three SharedArrayBuffer workers, Atomics.wait/notify and
 3,000 exact atomic increments, default V8, libuv/fs/crypto, HTTP/fetch, child
 processes, offline dependency installation and retained data after reopening.
@@ -63,32 +66,35 @@ iPad measurement. Rust 1.90.0 release/all-features and one cached interpreter ar
 used throughout.
 
 Four guest threads each execute 10,000,000 fixed integer-compute loop iterations
-(280,008,962 retired guest instructions). The memory control executes 13,000,020
+(280,008,963 retired guest instructions). The memory control executes 13,000,020
 instructions, with three subprocess runs averaged per sample. Runtime seconds,
 wall seconds, host CPU consumption, binary/fixture hashes and source fingerprints
 are retained in the raw report.
 
 | Workload | Old cooperative runtime | New 1 CPU | New 2 CPUs | New 4 CPUs |
 | --- | ---: | ---: | ---: | ---: |
-| Four-thread compute, median seconds | 3.255 | 3.403 | 2.788 | 2.621 |
-| Speedup against new 1 CPU | — | 1.00× | 1.22× | 1.30× |
-| Single-thread memory, median seconds | 0.259 | 0.272 | — | — |
+| Four-thread compute, median seconds | 3.116 | 3.405 | 2.439 | 2.038 |
+| Speedup against new 1 CPU | — | 1.00× | 1.40× | 1.67× |
+| Single-thread memory, median seconds | 0.282 | 0.246 | — | — |
 
-New single-CPU compute and memory medians are respectively 4.5% and 5.1% slower
-than the old baseline. Multicore compute medians improve 14.4%/19.5% in elapsed
-time against that baseline, but sample ranges overlap: four-CPU compute spans
-1.982–3.574 seconds. Host CPU/wall ratios above one and worker overlap counters
-establish actual parallel execution; they do not establish linear scaling or
-universal application gains. No new Vim/Python/Node startup timing is claimed.
+New single-CPU compute is 9.3% slower than the old baseline in this batch;
+single-thread memory is 12.7% faster. Multicore compute medians reduce elapsed
+time 21.7%/34.6% against that baseline. Four-CPU compute spans 1.922–2.064 seconds,
+while the memory baseline spans 0.250–1.081 seconds and overlaps candidate samples.
+Host CPU/wall ratios above one and worker overlap counters establish actual
+parallel execution; they do not establish linear scaling or universal application
+gains. No new Vim/Python/Node startup timing is claimed.
 
-Preserved [initial](multicore-benchmark-initial.json) and
-[intermediate](multicore-benchmark-intermediate.json) batches use shorter loops and
-fewer memory repeats. The intermediate memory regression prompted CPU-scope
-borrows and avoiding live code-epoch loads for immutable executable snapshots;
-the final batch reports the remaining overhead instead of omitting regressions.
-After the final timed batch, changes to Rust sources are a test and a public type
-re-export; the musl correctness fixture subsequently gained peer exec/exit tests.
-The raw timing fingerprints describe exactly the measured binaries/fixtures.
+Preserved [initial](multicore-benchmark-initial.json),
+[intermediate](multicore-benchmark-intermediate.json) and
+[before-affinity-fix](multicore-benchmark-before-affinity.json) batches expose the
+variation and regressions. The shorter intermediate batch's memory regression
+prompted CPU-scope borrows and avoiding live code-epoch loads for immutable code.
+The before-affinity batch measured 1.22×/1.30× scaling and a 5.1% memory regression;
+the final repeat follows the correctness fix for pinned-task starvation. Do not
+attribute the differences between cloud batches to that scheduler fix alone.
+The final raw fingerprints match the tested Rust source and measured fixture;
+there are no subsequent runtime edits in this validation follow-up.
 
 Mutable staging adds host memory beyond guest VmRSS/commit accounting. Short
 slices, page contention, worker queues and serialized syscalls/native/backing

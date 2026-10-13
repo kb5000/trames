@@ -4,6 +4,9 @@ on:
   pull_request:
 permissions:
   contents: read
+defaults:
+  run:
+    shell: bash
 jobs:
   runtime:
     runs-on: ubuntu-24.04
@@ -149,6 +152,7 @@ jobs:
           python3 tests/integration/m6-abi.py
       - name: Compare ARM64 pthread, multicore atomics, memory barriers and shared futexes
         run: |
+          set -o pipefail
           bash scripts/build-smp-fixtures.sh
           python3 tests/integration/smp.py | tee target/smp-workflow.log
       - name: Signed Node.js, default V8, libuv workers, HTTP and offline npm

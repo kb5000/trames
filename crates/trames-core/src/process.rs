@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Cooperative virtual processes. Guest fork/exec never create a host process.
+//! Virtual processes and parallel CPU slices. Guest fork/exec stay virtual.
 use super::{Exit, Runtime, RuntimeError};
 use crate::terminal::Terminal;
 use std::{
@@ -16,6 +16,54 @@ use trames_vfs::{Errno, FdKind, MAX_FDS, O_NONBLOCK};
 const MAX_PROCESSES: usize = 32;
 const TOTAL_MAPPED_LIMIT: usize = 1024 * 1024 * 1024;
 const UNBLOCKABLE: u64 = (1 << 8) | (1 << 18);
+/// Preserve round-robin queue priority while relocating an earlier flexible
+/// task when a later pinned task needs its slot. Mask width is at most 32 CPUs.
+fn assign_cpus(ready: impl IntoIterator<Item = (u32, u64)>, count: usize) -> Vec<(u32, usize)> {
+    fn place(pid: u32, mask: u64, slots: &mut [Option<(u32, u64)>], visited: &mut u64) -> bool {
+        let eligible = mask & !*visited;
+        // Equal/full masks take the same lowest-free-slot fast path as before.
+        if let Some(slot) = slots
+            .iter()
+            .enumerate()
+            .find_map(|(i, p)| (eligible & (1 << i) != 0 && p.is_none()).then_some(i))
+        {
+            slots[slot] = Some((pid, mask));
+            return true;
+        }
+        for slot in 0..slots.len() {
+            if eligible & (1 << slot) == 0 {
+                continue;
+            }
+            *visited |= 1 << slot;
+            let (previous, previous_mask) = slots[slot].expect("occupied eligible slot");
+            if place(previous, previous_mask, slots, visited) {
+                slots[slot] = Some((pid, mask));
+                return true;
+            }
+        }
+        false
+    }
+    let mut slots = vec![None; count];
+    let mut selected = Vec::new();
+    for (pid, mask) in ready {
+        if place(pid, mask, &mut slots, &mut 0) {
+            selected.push(pid);
+            if selected.len() == count {
+                break;
+            }
+        }
+    }
+    selected
+        .into_iter()
+        .map(|pid| {
+            let slot = slots
+                .iter()
+                .position(|p| p.is_some_and(|p| p.0 == pid))
+                .expect("assigned task");
+            (pid, slot)
+        })
+        .collect()
+}
 #[path = "process_compat.rs"]
 mod compat;
 #[path = "process_events.rs"]
@@ -2250,24 +2298,12 @@ impl Kernel {
             .collect();
         let rotate = ready.partition_point(|id| *id <= self.next_parallel_pid);
         ready.rotate_left(rotate);
-        // Place pinned tasks before flexible ones, retaining round-robin order
-        // among equal masks; otherwise a flexible task could occupy their core.
-        ready.sort_by_key(|id| self.processes[id].affinity.count_ones());
-        let mut chosen = Vec::new();
-        let mut occupied = 0u64;
-        for id in ready {
-            let p = &self.processes[&id];
-            let available = p.affinity & !occupied;
-            if available == 0 {
-                continue;
-            }
-            let slot = available.trailing_zeros() as usize;
-            occupied |= 1 << slot;
-            chosen.push((id, slot));
-            if chosen.len() == self.cpu_count {
-                break;
-            }
-        }
+        let mut chosen = assign_cpus(
+            ready
+                .into_iter()
+                .map(|id| (id, self.processes[&id].affinity)),
+            self.cpu_count,
+        );
         let remaining = limit.saturating_sub(self.instructions);
         chosen.truncate(remaining.min(chosen.len() as u64) as usize);
         if chosen.len() < 2 {
@@ -2762,6 +2798,22 @@ pub(super) fn run(
 mod tests {
     use super::*;
     use trames_memory::{Permissions, PAGE_SIZE};
+    #[test]
+    fn affinity_assignment_keeps_flexible_tasks_fair_and_relocates_for_pinned_peers() {
+        assert_eq!(
+            assign_cpus([(1, 3), (2, 1), (3, 2)], 2),
+            vec![(1, 1), (2, 0)]
+        );
+        assert_eq!(
+            assign_cpus([(3, 2), (1, 3), (2, 1)], 2),
+            vec![(3, 1), (1, 0)]
+        );
+        assert_eq!(
+            assign_cpus([(1, 1), (2, 1), (3, 2)], 2),
+            vec![(1, 0), (3, 1)]
+        );
+        assert_eq!(assign_cpus([(1, 3), (2, 3)], 2), vec![(1, 0), (2, 1)]);
+    }
     pub(super) fn process() -> Process {
         let mut memory = Memory::default();
         memory.map(0x1000, 8 * PAGE_SIZE, Permissions::RW).unwrap();

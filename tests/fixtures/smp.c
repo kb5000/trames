@@ -169,6 +169,32 @@ static void metadata(void){
     CPU_ZERO(&cpus);for(int i=0;i<n;i++)CPU_SET(i,&cpus);assert(!sched_setaffinity(0,sizeof cpus,&cpus));
     puts("smp: topology, affinity and getcpu: passed");
 }
+static int pinned_cpus[2];
+static _Atomic int fairness_release;
+static _Atomic int fairness_ready;
+static void *pinned_waiter(void *arg){
+    int id=(int)(uintptr_t)arg;cpu_set_t mask;
+    CPU_ZERO(&mask);CPU_SET(pinned_cpus[id],&mask);assert(!sched_setaffinity(0,sizeof mask,&mask));
+    pthread_barrier_wait(&begin);
+    atomic_fetch_or_explicit(&fairness_ready,1<<id,memory_order_release);
+    while(!atomic_load_explicit(&fairness_release,memory_order_acquire)){}
+    return NULL;
+}
+static void affinity_fairness(void){
+    cpu_set_t mask;assert(!sched_getaffinity(0,sizeof mask,&mask));
+    int found=0;for(int i=0;i<CPU_SETSIZE&&found<2;i++)if(CPU_ISSET(i,&mask))pinned_cpus[found++]=i;
+    if(found==1)pinned_cpus[1]=pinned_cpus[0];
+    assert(found);atomic_store(&fairness_release,0);atomic_store(&fairness_ready,0);
+    assert(!pthread_barrier_init(&begin,NULL,3));pthread_t threads[2];
+    for(uintptr_t i=0;i<2;i++)assert(!pthread_create(&threads[i],NULL,pinned_waiter,(void*)i));
+    pthread_barrier_wait(&begin);
+    /* Both pinned peers spin until this flexible task can run. */
+    while(atomic_load_explicit(&fairness_ready,memory_order_acquire)!=3){}
+    atomic_store_explicit(&fairness_release,1,memory_order_release);
+    for(int i=0;i<2;i++)assert(!pthread_join(threads[i],NULL));
+    assert(!pthread_barrier_destroy(&begin));
+    puts("smp: pinned peers cannot starve a flexible waiter: passed");
+}
 static int loops;
 static uint64_t results[16];
 static void *compute(void *arg){
@@ -178,13 +204,14 @@ static void *compute(void *arg){
 }
 int main(int argc,char **argv){
     if(argc==2&&!strcmp(argv[1],"exec-child"))return 42;
+    if(argc==2&&!strcmp(argv[1],"fairness")){metadata();affinity_fairness();return 0;}
     if(argc==4&&!strcmp(argv[1],"work")){
         int count=atoi(argv[2]);loops=atoi(argv[3]);assert(count>0&&count<=16&&loops>0);
         pthread_t threads[16];for(uintptr_t i=0;i<(uintptr_t)count;i++)assert(!pthread_create(&threads[i],NULL,compute,(void*)i));
         for(int i=0;i<count;i++)assert(!pthread_join(threads[i],NULL));
         uint64_t result=0;for(int i=0;i<count;i++)result^=results[i];printf("smp work: %016llx\n",(unsigned long long)result);return 0;
     }
-    assert(argc==1);metadata();atomic_tests();publication();barrier_test();futex_test();fork_test();
+    assert(argc==1);metadata();affinity_fairness();atomic_tests();publication();barrier_test();futex_test();fork_test();
     const char *executable=getenv("TRAMES_SMP_EXEC_PATH");
     thread_teardown(executable?executable:argv[0]);return 0;
 }
