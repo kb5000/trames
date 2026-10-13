@@ -30,7 +30,7 @@ with make.open('a') as f:
         f.write(f'obj/src/stdlib/{name}.o obj/src/stdlib/{name}.lo: CPPFLAGS += -include $(srcdir)/src/trames/sort-symbols.h\n')
     f.write('obj/src/stdlib/strtod.o obj/src/stdlib/strtod.lo: CPPFLAGS += -include $(srcdir)/src/trames/numeric-symbols.h\n')
     f.write('obj/src/stdlib/strtol.o obj/src/stdlib/strtol.lo: CPPFLAGS += -include $(srcdir)/src/trames/integer-symbols.h\n')
-    for name in ['strchr','strrchr','strchrnul','strcpy','stpcpy','strncpy','stpncpy']:
+    for name in ['strchr','strrchr','strchrnul','strcpy','stpcpy','strncpy','stpncpy','strcat','strncat']:
         f.write(f'obj/src/string/{name}.o obj/src/string/{name}.lo: CPPFLAGS += -include $(srcdir)/src/trames/strings-symbols.h\n')
     f.write('obj/src/trames/integer.o obj/src/trames/integer.lo obj/src/trames/strings.o obj/src/trames/strings.lo: CFLAGS += -fno-stack-protector -fno-builtin\n')
     f.write('obj/src/trames/numeric.o obj/src/trames/numeric.lo: CFLAGS += -fno-stack-protector -fno-builtin\n')

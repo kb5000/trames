@@ -56,7 +56,7 @@ with tempfile.TemporaryDirectory(prefix='trames-full-musl-') as folder:
                     assert native['fallbacks']>0 and native['rejected']==1 and native['faults']>=1,native
                     assert all(native['function_calls'][5:10]),native
                     assert native['direct_bytes_read']>1000000 and native['direct_bytes_written']>1000000,native
-                    assert native['buffered_bytes_read']>0 and native['buffered_bytes_written']>0,native
+                    assert native['buffered_bytes_read']>0,native
                 if name!='accelerator-full-musl':assert native['faults']==0 and native['rejected']==0,native
                 if name=='musl-callbacks' and enabled:
                     assert native['callback_requests']>1000 and native['callback_sorts']>30 and native['callback_searches']>100,native

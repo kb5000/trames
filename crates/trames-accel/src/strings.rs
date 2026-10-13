@@ -8,6 +8,9 @@ pub(crate) fn execute(
     function: u64,
     a: [u64; 3],
 ) -> Result<Return, Error> {
+    if matches!(function, 18 | 19) {
+        return concatenate(registry, memory, function == 19, a);
+    }
     let [dst, src, length] = a;
     let fallback = || {
         Ok(Return {
@@ -98,6 +101,65 @@ pub(crate) fn execute(
         dst
     })
 }
+/// Concatenation preflights both scans and the entire output before effects.
+fn concatenate(
+    registry: &mut Registry,
+    memory: &mut Memory,
+    bounded: bool,
+    [dst, src, length]: [u64; 3],
+) -> Result<Return, Error> {
+    let fallback = || {
+        Ok(Return {
+            value: dst,
+            fallback: true,
+        })
+    };
+    if bounded && length > MAX_BYTES as u64 {
+        return fallback();
+    }
+    let mut scan = |address: u64, limit: usize| -> Result<(usize, bool), Error> {
+        let mut offset = 0;
+        while offset < limit {
+            let at = (address & 0x00ff_ffff_ffff_ffff) + offset as u64;
+            let count = (limit - offset).min((PAGE_SIZE - at % PAGE_SIZE) as usize);
+            let (nul, direct) = memory.with_read_chunk(at, count, trames_native::first_zero)?;
+            registry.record_read(count, direct);
+            if let Some(index) = nul {
+                return Ok((offset + index, true));
+            }
+            offset += count;
+        }
+        Ok((offset, false))
+    };
+    let (end, terminated) = scan(dst, MAX_BYTES)?;
+    if !terminated {
+        return fallback();
+    }
+    let (copied, terminated) = scan(src, if bounded { length as usize } else { MAX_BYTES })?;
+    if !terminated && !bounded {
+        return fallback();
+    }
+    let output = dst.wrapping_add(end as u64);
+    memory.check(output, copied + 1, Access::Write)?;
+    match memory.native_writable_range(output, copied + 1) {
+        Ok(true) => {}
+        Ok(false)
+        | Err(MemoryError::Permission {
+            access: Access::Read,
+            ..
+        }) => return fallback(),
+        Err(error) => return Err(error.into()),
+    }
+    registry.record_transfer(memory.copy_with(output, src, copied, trames_native::copy)?);
+    registry.record_transfer(
+        memory.fill_with(output.wrapping_add(copied as u64), 1, |bytes| bytes.fill(0))?,
+    );
+    Ok(Return {
+        value: dst,
+        fallback: false,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -107,6 +169,44 @@ mod tests {
         m.map(0x1000, PAGE_SIZE * 4, Permissions::RW).unwrap();
         m
     }
+    #[test]
+    fn concat_handles_page_splits_bounds_zero_guard_cow_and_no_partial_fallback() {
+        let mut m = memory();
+        let mut r = Registry::default();
+        m.write(0x1ffe, b"ab\0").unwrap();
+        m.write(0x3ffe, b"cde\0").unwrap();
+        let parent = m.clone();
+        let tagged = 0xab00_0000_0000_1ffe;
+        assert_eq!(
+            execute(&mut r, &mut m, 18, [tagged, 0x3ffe, 0])
+                .unwrap()
+                .value,
+            tagged
+        );
+        assert_eq!(m.read_array::<6>(tagged).unwrap(), *b"abcde\0");
+        assert_eq!(parent.read_array::<3>(tagged).unwrap(), *b"ab\0");
+        assert!(
+            !execute(&mut r, &mut m, 19, [tagged, 1, 0])
+                .unwrap()
+                .fallback
+        );
+        m.write(0x1ffe, b"ab\0").unwrap();
+        assert!(
+            !execute(&mut r, &mut m, 19, [tagged, 0x3ffe, 2])
+                .unwrap()
+                .fallback
+        );
+        assert_eq!(m.read_array::<5>(tagged).unwrap(), *b"abcd\0");
+        m.write(0x4ffd, b"ab\0").unwrap();
+        assert!(execute(&mut r, &mut m, 18, [0x4ffd, 0x3ffe, 0]).is_err());
+        assert_eq!(m.read_array::<3>(0x4ffd).unwrap(), *b"ab\0");
+        assert!(
+            execute(&mut r, &mut m, 19, [1, 1, MAX_BYTES as u64 + 1])
+                .unwrap()
+                .fallback
+        );
+    }
+
     #[test]
     fn searches_stop_at_nul_before_guard_and_preserve_unsigned_matches_and_tags() {
         let mut m = memory();

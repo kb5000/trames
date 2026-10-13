@@ -3,14 +3,14 @@
 Owner direction, 2026-10-13 (Asia/Shanghai): operate directly on guest memory,
 use native implementations in more cases, then extend worthwhile musl calls in
 small verified batches. No JIT; preserve one cached Rust interpreter. The shipped
-0.10.0/build 11 remains an immutable release. This is its development follow-up.
+0.13.0/build 14 remains an immutable release. This is its development follow-up.
 
 ## Current batch
 
-The full standard-path musl now adapts seventeen pure functions. IDs 1–5 remain
+The full standard-path musl now adapts nineteen pure functions. IDs 1–5 remain
 memcpy, memmove, memset, memcmp and strlen; IDs 6–10 add memchr, memrchr, strnlen,
 strcmp and strncmp. IDs 11–17 add strchr, strrchr, strchrnul, strcpy, stpcpy, strncpy
-and stpncpy. [Integer parsing](../architecture/native-stdlib.md) adds six public
+and stpncpy. IDs 18–19 add strcat and strncat. [Integer parsing](../architecture/native-stdlib.md) adds six public
 conversions and their existing internal aliases. Existing static binaries keep their embedded libc. The old
 separate five-function library remains a transport test fixture.
 
@@ -25,8 +25,8 @@ Copy/move iterates in the correct direction for overlapping anonymous ranges.
 Within one page, Rust's host memmove handles overlap; between pages, the pinned
 original Arm memcpy assembly operates on disjoint slices. Copy involving a file
 or shared backing takes one complete bounded source snapshot to preserve aliases,
-then writes through the backing contract. Shared backing reads/writes still stage
-bounded fragments. These paths preserve coherence rather than claim all mappings
+then writes through the backing contract. Resident shared anonymous/file backing reads and writes now borrow scoped
+fragments with dirty/version hooks; other backing implementations retain bounded staging. These paths preserve coherence rather than claim all mappings
 are directly borrowable. Fork's first write may allocate a COW page.
 
 memcmp, string scans and searches borrow reached readable fragments directly;
@@ -42,7 +42,10 @@ functions. Early loader stages and ordinary Linux use original routines. Known
 sizes below 128 bytes stay local; strcmp/strncmp and strnlen stop locally within
 a 64-byte prefix. strnlen can terminate within the native ceiling even with a larger bound;
 exhausting the ceiling returns a typed original-code fallback. No partial writes
-occur on a ceiling fallback. The ceiling remains 64 KiB per native operation.
+occur on a ceiling fallback. Bulk memcpy/memmove/memset/memcmp/memchr/memrchr now accept up to 1 MiB.
+String scans/copies/concatenation retain 64 KiB per scan/input and original fallback
+before effects. Calls remain synchronous joined checkpoints; this is a bounded
+expansion, not a resumable unlimited operation.
 
 Metrics add per-function entry counts, direct/buffered read/write bytes and retain
 calls/fallbacks/faults/body time. Byte counts describe supplied fragments, not
@@ -64,11 +67,11 @@ include both the bulk-copy gain and the sort regression/host timing variation.
 | P0 | memchr, memrchr, strnlen, strcmp, strncmp | Bulk text, parser and path workloads; bounded unsigned-byte results and early termination | Implemented, gated IDs 6–10 |
 | P1 | strchr, strchrnul, strrchr | Reuse forward/reverse search with NUL termination and pointer results | Implemented, gated IDs 11–13 |
 | P1 | strcpy, stpcpy, strncpy, stpncpy | Reuse checked scans/copies; distinguish terminator pointer, padding and bounded truncation | Implemented, gated IDs 14–17; preflight and original fallback before effects |
-| P1 | strcat, strncat | Compose destination-end scan and bounded copy; preserve zero-bound semantics | Queued after string copy |
+| P1 | strcat, strncat | Compose destination-end scan and bounded copy; preserve zero-bound semantics | Implemented, gated IDs 18–19; complete preflight and original fallback |
 | P1 | memccpy, bcopy, bzero, explicit_bzero | Reuse copy/fill, exact stopping pointer and non-elidable zeroing contract | Queued; tiny aliases may remain local |
-| P1 | Shared anonymous/file page borrowing | Remove remaining staging; pinned resident spans, EOF and backing revision hooks, alias-safe moves | Queued; preserve a snapshot when needed |
-| P1 | Checked multi-page spans and native NEON scans | Reduce per-page dispatch; speed bulk compare/search/fill with bounded SIMD tails | Queued; sparse mappings and COW prohibit a universal contiguous pointer |
-| P1 | Operations beyond 64 KiB | Keep large copies/scans native while retaining scheduling checkpoints | Currently original fallback; cooperative chunks need overlap direction, alias coherence and a continuation that never restarts partially moved data |
+| P1 | Shared anonymous/file page borrowing | Remove remaining staging; pinned resident spans, EOF and backing revision hooks, alias-safe moves | Resident anonymous/file borrowing implemented; source snapshots retained for live aliases |
+| P1 | Checked multi-page spans and native NEON scans | Reduce per-page dispatch; speed bulk compare/search/fill with bounded SIMD tails | NEON page-fragment search/compare implemented; multi-page spans queued because sparse mappings/COW are not universally contiguous |
+| P1 | Operations beyond 64 KiB | Keep large copies/scans native while retaining scheduling checkpoints | Bulk operations up to 1 MiB implemented; larger work remains original fallback, future continuation must never replay partial moves |
 | P1 | Call thresholds and prefix policy | Avoid spending more on validation than the guest operation saves | Current 128/64 policy retained; tune from occasional device/application measurements |
 | P1 | Linux pathname/string reads | Use checked page borrows while constructing the necessary owned syscall argument; avoid copying/allocating an entire page for a short name | Implemented at the checked Memory/VFS boundary |
 | P2 | strspn, strcspn, strpbrk | Character-set tables and native bulk scans; small sets can stay local | Queued; no shared global scratch |
@@ -141,3 +144,8 @@ The [continuous-worker follow-up](../validation/continuous-workers.md) removes
 per-chunk dispatch/return and startup barriers. Workers retain CPU/view state across
 local interrupt polls; kernel/native/mapping events still require a joined checkpoint.
 Its measured limits are kept separately from the released 0.12 multicore batch.
+
+The [coherent backing/bulk follow-up](../validation/bulk-native.md) records 19 pure
+entries, scoped resident backing access, bounded 1 MiB memory operations and NEON
+fragment scans. Timings retain short-copy regression and small real-program change;
+no universal application speed or physical-iPad claim.

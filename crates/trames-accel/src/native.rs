@@ -7,11 +7,14 @@ use trames_memory::{Memory, MemoryError, Transfer, PAGE_SIZE};
 pub const AUXV_KEY: u64 = 0x5452_0001;
 /// Optional function bitmap: bit (id - 1). Absent on old hosts.
 pub const FEATURES_AUXV_KEY: u64 = 0x5452_0002;
-pub const FUNCTION_COUNT: usize = 17;
+pub const FUNCTION_COUNT: usize = 19;
 pub const FEATURES: u64 = (1 << FUNCTION_COUNT) - 1;
 pub const PROFILE: u64 = 0x0001_0001; // protocol 1, pure module 1
 pub const INSTRUCTION: u32 = 0xd44a8a40; // HLT #0x5452, opt-in virtual encoding
 pub const MAX_BYTES: usize = 64 * 1024;
+/// Bulk operations remain bounded inside a joined NativeCall checkpoint.
+/// Larger operations fall back before any effects; no partial replay.
+pub const MAX_BULK_BYTES: usize = 1024 * 1024;
 #[derive(Default, Debug, Serialize)]
 pub struct Metrics {
     pub calls: u64,
@@ -234,7 +237,12 @@ impl Registry {
                 fallback: false,
             })
         };
-        if matches!(function, 1..=4 | 6 | 7 | 10) && length > MAX_BYTES as u64 {
+        let ceiling = if matches!(function, 1..=4 | 6 | 7) {
+            MAX_BULK_BYTES
+        } else {
+            MAX_BYTES
+        };
+        if matches!(function, 1..=4 | 6 | 7 | 10) && length > ceiling as u64 {
             return fallback();
         }
         let len = length as usize;
@@ -344,7 +352,7 @@ impl Registry {
                 }
                 done(0)
             }
-            11..=17 => crate::strings::execute(self, memory, function, a),
+            11..=19 => crate::strings::execute(self, memory, function, a),
             _ => unreachable!("signed-in pure profile"),
         }
     }
@@ -372,20 +380,88 @@ mod tests {
         m
     }
     #[test]
+    fn bulk_ceiling_copy_move_fill_search_and_first_invalid_page() {
+        let mut m = memory(1);
+        let mut r = Registry::default();
+        m.map(0x10000, MAX_BULK_BYTES as u64 * 2, Permissions::RW)
+            .unwrap();
+        let data: Vec<_> = (0..MAX_BULK_BYTES).map(|i| (i * 73) as u8).collect();
+        m.write(0x10000, &data).unwrap();
+        assert!(
+            !r.invoke(
+                &mut m,
+                0x100c,
+                PROFILE,
+                1,
+                [0x110000, 0x10000, MAX_BULK_BYTES as u64]
+            )
+            .unwrap()
+            .fallback
+        );
+        let mut out = vec![0; MAX_BULK_BYTES];
+        m.read(0x110000, &mut out).unwrap();
+        assert_eq!(out, data);
+        assert!(
+            !r.execute(&mut m, 2, [0x10001, 0x10000, MAX_BULK_BYTES as u64 - 1])
+                .unwrap()
+                .fallback
+        );
+        m.read(0x10001, &mut out[..MAX_BULK_BYTES - 1]).unwrap();
+        assert_eq!(&out[..MAX_BULK_BYTES - 1], &data[..MAX_BULK_BYTES - 1]);
+        assert!(
+            !r.execute(&mut m, 3, [0x110000, 7, MAX_BULK_BYTES as u64])
+                .unwrap()
+                .fallback
+        );
+        assert_eq!(
+            r.execute(&mut m, 6, [0x110000, 7, MAX_BULK_BYTES as u64])
+                .unwrap()
+                .value,
+            0x110000
+        );
+        assert_eq!(
+            r.execute(&mut m, 7, [0x110000, 7, MAX_BULK_BYTES as u64])
+                .unwrap()
+                .value,
+            0x20ffff
+        );
+        assert!(
+            r.execute(&mut m, 1, [1, 1, MAX_BULK_BYTES as u64 + 1])
+                .unwrap()
+                .fallback
+        );
+        m.unmap(0x200000, PAGE_SIZE).unwrap();
+        assert!(r
+            .execute(&mut m, 3, [0x110000, 0, MAX_BULK_BYTES as u64])
+            .is_err());
+        assert_eq!(m.read_array::<1>(0x110000).unwrap(), [7]);
+    }
+
+    #[test]
     fn rejection_and_limit_fallback_have_no_memory_effects() {
         let mut m = memory(1);
         let mut r = Registry::default();
         m.write(0x2000, b"before").unwrap();
-        for (module, function) in [(PROFILE + 1, 1), (PROFILE, 18), (PROFILE, 0)] {
+        for (module, function) in [
+            (PROFILE + 1, 1),
+            (PROFILE, FUNCTION_COUNT as u64 + 1),
+            (PROFILE, 0),
+        ] {
             assert!(matches!(
                 r.invoke(&mut m, 0x100c, module, function, [0x2000, 1, 6]),
                 Err(Error::InvalidEntry)
             ));
         }
         assert!(
-            r.invoke(&mut m, 0x100c, PROFILE, 1, [1, 2, MAX_BYTES as u64 + 1])
-                .unwrap()
-                .fallback
+            r.invoke(
+                &mut m,
+                0x100c,
+                PROFILE,
+                1,
+                [1, 2, MAX_BULK_BYTES as u64 + 1]
+            )
+            .unwrap()
+            .fallback
         );
         assert_eq!(m.read_array::<6>(0x2000).unwrap(), *b"before");
         // Caller bytes are revalidated after executable mutation, not just once.
@@ -632,7 +708,7 @@ mod tests {
                     0x100c,
                     PROFILE,
                     function,
-                    [1, 1, MAX_BYTES as u64 + 1]
+                    [1, 1, MAX_BULK_BYTES as u64 + 1]
                 )
                 .unwrap()
                 .fallback

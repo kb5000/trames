@@ -53,7 +53,7 @@ for separately. A committed result advances PC by four and retires exactly one
 HLT; a backend memory fault leaves PC/input registers unchanged and uses existing
 Linux signals with the precise guest data address. Callee-saved GPRs, SP, TLS,
 flags and guest FP/vector state are retained. Calls are synchronous and at most
-64 KiB of requested work; scheduling/cancellation resumes between calls. Unsupported
+1 MiB of requested bulk work (64 KiB for strings/callbacks); scheduling/cancellation resumes between calls. Unsupported
 larger work uses a typed return, then the original interpreted guest function.
 
 ## Memory and original code
@@ -61,7 +61,8 @@ larger work uses a typed return, then the original interpreted guest function.
 `trames-accel::native` validates guest memory in safe Rust. The development
 follow-up uses scoped direct page slices for ordinary guest memory; directional
 copy and host within-page memmove preserve overlap. Backed copies retain one
-bounded source snapshot, and shared backing writes retain coherent staging.
+bounded source snapshot, and resident shared writes borrow coherent fragments with backing hooks.
+Unknown backings retain bounded staging.
 This supports COW, shared aliases and code-cache invalidation. The complete
 [optimization queue](../roadmap/musl-optimization.md) describes the direct and
 buffered cases. New full-musl entries require function bits from private auxv

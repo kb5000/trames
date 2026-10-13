@@ -32,12 +32,20 @@ with tempfile.TemporaryDirectory(prefix='trames-stdlib-') as folder:
             native,runtime=[json.loads(s.split(': ',1)[1]) for s in result.stderr.decode().splitlines()]
             assert native['faults']==0 and native['rejected']==0,native
             if enabled:
-                assert native['integer_conversions']>2500 and all(native['function_calls'][10:17]),native
+                assert native['integer_conversions']>2500 and all(native['function_calls'][10:19]),native
                 assert native['fallbacks']>0 and native['callback_sorts']>0,native
                 assert native['validation_hits']>0 and native['validation_misses']>0,native
             else:assert native['calls']==0,native
             report.append(dict(memory=memory,enabled=enabled,native=native,runtime=runtime))
-            print(f'PASS stdlib memory={memory} enabled={enabled}: {len(expected.splitlines())-1} exact integer rows, aliases, string search/copy/padding/truncation/guard/COW/shared stack/threads/signals/fork/nested qsort',flush=True)
+            print(f'PASS stdlib memory={memory} enabled={enabled}: {len(expected.splitlines())-1} exact integer rows, aliases, string search/copy/concatenation/padding/truncation/guard/COW/shared stack/threads/signals/fork/nested qsort',flush=True)
+    previous=os.getenv('TRAMES_STDLIB_BASELINE_RUNNER')
+    if previous:
+        result=run([previous,'--memory','--rootfs',ARCHIVE,'--musl-libc',LIBC,'--accelerator','pure','--metrics','--max-instructions','2000000000','--exec-file','/bin/stdlib='+str(FIXTURE),'--guest','/bin/stdlib'])
+        assert result.stdout==expected
+        native=json.loads(result.stderr.decode().splitlines()[0].split(': ',1)[1])
+        assert len(native['function_calls'])==17 and native['rejected']==0 and native['faults']==0,native
+        print('PASS previous 17-function host + new libc: concatenation falls back to original musl',flush=True)
+        report.append(dict(previous_17_function_host=True,native=native))
     baseline=os.getenv('TRAMES_STDLIB_BASELINE_BINARY')
     if baseline:
         result=run([QEMU,'-cpu','max',baseline,'--memory','--rootfs',ARCHIVE,'--musl-libc',LIBC,'--accelerator','pure','--metrics','--max-instructions','2000000000','--exec-file','/bin/stdlib='+str(FIXTURE),'--guest','/bin/stdlib'])

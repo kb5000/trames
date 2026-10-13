@@ -39,39 +39,110 @@ pub fn fill(dst: &mut [u8], value: u8) {
 }
 /// musl memchr's HASZERO scan, on a checked slice rather than a guest pointer.
 pub fn first_byte(bytes: &[u8], byte: u8) -> Option<usize> {
-    let repeated = u64::from_ne_bytes([byte; 8]);
-    for (i, chunk) in bytes.chunks_exact(8).enumerate() {
-        let value = u64::from_ne_bytes(chunk.try_into().unwrap()) ^ repeated;
-        if value.wrapping_sub(0x0101_0101_0101_0101) & !value & 0x8080_8080_8080_8080 != 0 {
-            return chunk.iter().position(|&b| b == byte).map(|n| i * 8 + n);
+    #[cfg(target_arch = "aarch64")]
+    {
+        let mut offset = 0;
+        while offset + 16 <= bytes.len() {
+            // SAFETY: AArch64 baseline NEON; the unaligned load stays entirely
+            // inside this checked slice. No pointer or vector escapes the call.
+            let found = unsafe {
+                use core::arch::aarch64::*;
+                vmaxvq_u8(vceqq_u8(
+                    vld1q_u8(bytes.as_ptr().add(offset)),
+                    vdupq_n_u8(byte),
+                )) != 0
+            };
+            if found {
+                return bytes[offset..offset + 16]
+                    .iter()
+                    .position(|&b| b == byte)
+                    .map(|i| offset + i);
+            }
+            offset += 16;
         }
+        return bytes[offset..]
+            .iter()
+            .position(|&b| b == byte)
+            .map(|i| offset + i);
     }
-    let offset = bytes.len() / 8 * 8;
-    bytes[offset..]
-        .iter()
-        .position(|&b| b == byte)
-        .map(|n| offset + n)
+    #[cfg(not(target_arch = "aarch64"))]
+    let repeated = u64::from_ne_bytes([byte; 8]);
+    #[cfg(not(target_arch = "aarch64"))]
+    {
+        for (i, chunk) in bytes.chunks_exact(8).enumerate() {
+            let value = u64::from_ne_bytes(chunk.try_into().unwrap()) ^ repeated;
+            if value.wrapping_sub(0x0101_0101_0101_0101) & !value & 0x8080_8080_8080_8080 != 0 {
+                return chunk.iter().position(|&b| b == byte).map(|n| i * 8 + n);
+            }
+        }
+        let offset = bytes.len() / 8 * 8;
+        bytes[offset..]
+            .iter()
+            .position(|&b| b == byte)
+            .map(|n| offset + n)
+    }
 }
 
 /// Reverse bounded search, with word skips and exact unsigned-byte matching.
 pub fn last_byte(bytes: &[u8], byte: u8) -> Option<usize> {
-    let repeated = u64::from_ne_bytes([byte; 8]);
-    let mut end = bytes.len();
-    while end >= 8 {
-        let chunk = &bytes[end - 8..end];
-        let value = u64::from_ne_bytes(chunk.try_into().unwrap()) ^ repeated;
-        if value.wrapping_sub(0x0101_0101_0101_0101) & !value & 0x8080_8080_8080_8080 != 0 {
-            return chunk.iter().rposition(|&b| b == byte).map(|n| end - 8 + n);
+    #[cfg(target_arch = "aarch64")]
+    {
+        let mut end = bytes.len();
+        while end >= 16 {
+            // SAFETY: Baseline NEON and a complete checked 16-byte slice.
+            let found = unsafe {
+                use core::arch::aarch64::*;
+                vmaxvq_u8(vceqq_u8(
+                    vld1q_u8(bytes.as_ptr().add(end - 16)),
+                    vdupq_n_u8(byte),
+                )) != 0
+            };
+            if found {
+                return bytes[end - 16..end]
+                    .iter()
+                    .rposition(|&b| b == byte)
+                    .map(|i| end - 16 + i);
+            }
+            end -= 16;
         }
-        end -= 8;
+        return bytes[..end].iter().rposition(|&b| b == byte);
     }
-    bytes[..end].iter().rposition(|&b| b == byte)
+    #[cfg(not(target_arch = "aarch64"))]
+    {
+        let repeated = u64::from_ne_bytes([byte; 8]);
+        let mut end = bytes.len();
+        while end >= 8 {
+            let chunk = &bytes[end - 8..end];
+            let value = u64::from_ne_bytes(chunk.try_into().unwrap()) ^ repeated;
+            if value.wrapping_sub(0x0101_0101_0101_0101) & !value & 0x8080_8080_8080_8080 != 0 {
+                return chunk.iter().rposition(|&b| b == byte).map(|n| end - 8 + n);
+            }
+            end -= 8;
+        }
+        bytes[..end].iter().rposition(|&b| b == byte)
+    }
 }
 
 /// Compare string fragments, returning None when both need another page.
 pub fn compare_strings(left: &[u8], right: &[u8]) -> Option<i32> {
     assert_eq!(left.len(), right.len());
     let mut offset = 0;
+    #[cfg(target_arch = "aarch64")]
+    while offset + 16 <= left.len() {
+        // SAFETY: Both equal-length slices contain the full unaligned vector;
+        // equality and zero reductions return only values, retaining no pointer.
+        let stop = unsafe {
+            use core::arch::aarch64::*;
+            let a = vld1q_u8(left.as_ptr().add(offset));
+            let b = vld1q_u8(right.as_ptr().add(offset));
+            vminvq_u8(vceqq_u8(a, b)) != 255 || vminvq_u8(a) == 0
+        };
+        if stop {
+            break;
+        }
+        offset += 16;
+    }
+    #[cfg(not(target_arch = "aarch64"))]
     while offset + 8 <= left.len() {
         let a = u64::from_ne_bytes(left[offset..offset + 8].try_into().unwrap());
         let b = u64::from_ne_bytes(right[offset..offset + 8].try_into().unwrap());
@@ -92,6 +163,22 @@ pub fn compare_strings(left: &[u8], right: &[u8]) -> Option<i32> {
 pub fn compare(left: &[u8], right: &[u8]) -> i32 {
     assert_eq!(left.len(), right.len());
     let mut offset = 0;
+    #[cfg(target_arch = "aarch64")]
+    while offset + 16 <= left.len() {
+        // SAFETY: Complete checked vectors on baseline AArch64 NEON.
+        let equal = unsafe {
+            use core::arch::aarch64::*;
+            vminvq_u8(vceqq_u8(
+                vld1q_u8(left.as_ptr().add(offset)),
+                vld1q_u8(right.as_ptr().add(offset)),
+            )) == 255
+        };
+        if !equal {
+            break;
+        }
+        offset += 16;
+    }
+    #[cfg(not(target_arch = "aarch64"))]
     while offset + 8 <= left.len() && left[offset..offset + 8] == right[offset..offset + 8] {
         offset += 8;
     }
@@ -104,20 +191,27 @@ pub fn compare(left: &[u8], right: &[u8]) -> i32 {
 }
 /// Pinned musl strlen.c's HASZERO word algorithm on a validated bounded slice.
 pub fn first_zero(bytes: &[u8]) -> Option<usize> {
-    const ONES: u64 = u64::MAX / 255;
-    const HIGHS: u64 = ONES * 128;
-    let mut words = bytes.chunks_exact(8);
-    for (index, word) in words.by_ref().enumerate() {
-        let value = u64::from_ne_bytes(word.try_into().unwrap());
-        if value.wrapping_sub(ONES) & !value & HIGHS != 0 {
-            return word.iter().position(|&b| b == 0).map(|i| index * 8 + i);
-        }
+    #[cfg(target_arch = "aarch64")]
+    {
+        first_byte(bytes, 0)
     }
-    words
-        .remainder()
-        .iter()
-        .position(|&b| b == 0)
-        .map(|i| bytes.len() / 8 * 8 + i)
+    #[cfg(not(target_arch = "aarch64"))]
+    {
+        const ONES: u64 = u64::MAX / 255;
+        const HIGHS: u64 = ONES * 128;
+        let mut words = bytes.chunks_exact(8);
+        for (index, word) in words.by_ref().enumerate() {
+            let value = u64::from_ne_bytes(word.try_into().unwrap());
+            if value.wrapping_sub(ONES) & !value & HIGHS != 0 {
+                return word.iter().position(|&b| b == 0).map(|i| index * 8 + i);
+            }
+        }
+        words
+            .remainder()
+            .iter()
+            .position(|&b| b == 0)
+            .map(|i| bytes.len() / 8 * 8 + i)
+    }
 }
 #[cfg(test)]
 mod tests {

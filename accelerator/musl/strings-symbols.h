@@ -24,3 +24,8 @@ PRIVATE char *trames_orig___stpncpy(char *,const char *,size_t);
 #define strncpy trames_orig_strncpy
 #define stpncpy trames_orig_stpncpy
 #define __stpncpy trames_orig___stpncpy
+
+PRIVATE char *trames_orig_strcat(char *,const char *);
+PRIVATE char *trames_orig_strncat(char *,const char *,size_t);
+#define strcat trames_orig_strcat
+#define strncat trames_orig_strncat

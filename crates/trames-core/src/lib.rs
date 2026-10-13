@@ -572,7 +572,10 @@ mod accelerator_tests {
         assert_eq!(r.metrics.native.calls, 0);
         assert_eq!(r.cpu.pc, 0x100c);
         assert_eq!(r.memory.read_array::<32>(0x2000).unwrap(), [0; 32]);
-        let mut r = runtime(65537, Permissions::R);
+        let mut r = runtime(
+            trames_accel::native::MAX_BULK_BYTES as u64 + 1,
+            Permissions::R,
+        );
         assert!(matches!(
             r.run(&mut trames_linux::CapturedOutput::default(), 4),
             Err(RuntimeError::BudgetExceeded(4))

@@ -34,4 +34,6 @@ ENTRY 14
 ENTRY 15
 ENTRY 16
 ENTRY 17
+ENTRY 18
+ENTRY 19
 .section .note.GNU-stack,"",%progbits

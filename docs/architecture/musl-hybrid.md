@@ -29,11 +29,11 @@ the original implementation. The wrappers/initializer have no stack protector.
 Known-size operations below 128 bytes stay in the original guest implementation.
 Enabled strlen first scans a bounded 64-byte aligned-word prefix using musl's
 HASZERO algorithm; an early NUL returns without host entry. Aligned words cannot
-cross a page. Larger work uses NativeCall v1, including its 64 KiB limit and
+cross a page. Larger work uses NativeCall v1, including its 1 MiB bulk/64 KiB string limits and
 typed original-code fallback. Disabled Trames sessions and ordinary Linux/QEMU
 use original routines and never execute the virtual HLT.
 
-This is a complete hybrid libc/loader; current development adapts ten pure functions and adds [resumable sort/search callbacks](native-callbacks.md). Stateful
+This is a complete hybrid libc/loader; current development adapts nineteen pure functions and adds [resumable sort/search callbacks](native-callbacks.md). Stateful
 native allocator/TLS/I/O profiles remain future work requiring exact layout and
 build identity contracts. Statically linked existing programs retain their
 embedded libc; replacing a shared library cannot accelerate them automatically.
@@ -87,3 +87,6 @@ limits](../validation/musl-hybrid.md) describe the actual tested scope.
 [Native integer parsing and string search/copy](native-stdlib.md) extends the
 function bitmap and uses a separately negotiated integer module, preserving
 original fallback on earlier hosts.
+
+[Coherent backing and bulk memory](bulk-native.md) adds gated strcat/strncat,
+resident shared page borrows and bounded NEON fragment scans/comparisons.

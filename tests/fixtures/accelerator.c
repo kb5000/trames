@@ -89,9 +89,15 @@ int main(int argc, char **argv) {
 #endif
     if(argc>1 && !strcmp(argv[1],"exec-child")) { char a[32],b[32]; st(a,0x62,32); cp(b,a,32); assert(!cmp(a,b,32)); return 0; }
     if (argc>1) {
-        size_t n=(size_t)strtoul(argv[1],0,10); assert(n && n<=65536);
+        size_t n=(size_t)strtoul(argv[1],0,10); assert(n && n<=1048576);
         unsigned char *a=malloc(n),*b=malloc(n); assert(a && b); st(a,0x51,n);
-        for (int i=0;i<256;i++) { assert(cp(b,a,n)==b); if(argc<3 || strcmp(argv[2],"copy")) assert(!cmp(a,b,n)); }
+        if(argc>2 && !strcmp(argv[2],"shared-fill")) {
+            unsigned char *shared=mmap(0,n,PROT_READ|PROT_WRITE,MAP_SHARED|MAP_ANONYMOUS,-1,0);assert(shared!=MAP_FAILED);
+            for(int i=0;i<256;i++)assert(st(shared,i,n)==shared);
+            for(size_t i=0;i<n;i++)assert(shared[i]==255);
+            assert(!munmap(shared,n));puts("accelerator-bench-ok");return 0;
+        }
+        for (int i=0;i<(n>65536?16:256);i++) { assert(cp(b,a,n)==b); if(argc<3 || strcmp(argv[2],"copy")) assert(!cmp(a,b,n)); }
         assert(!cmp(a,b,n));
         puts("accelerator-bench-ok"); return 0;
     }

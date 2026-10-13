@@ -27,6 +27,14 @@ static void number(const char *s,int base) {
 static void copies(char *s,size_t len,char *d) {
     memset(d,17,len+145);assert(strcpy(d+1,s)==d+1);assert(!memcmp(d+1,s,len+1));assert(d[0]==17 && d[len+2]==17);
     memset(d,17,len+145);assert(stpcpy(d+1,s)==d+len+1);assert(!memcmp(d+1,s,len+1));assert(d[0]==17 && d[len+2]==17);
+    memset(d,17,len+145);memcpy(d,"prefix",7);assert(strcat(d,s)==d);
+    assert(!memcmp(d,"prefix",6) && !memcmp(d+6,s,len+1) && d[len+7]==17);
+    size_t bounds[]={0,1,63,128,len,len+1};
+    for(unsigned k=0;k<sizeof(bounds)/sizeof(*bounds);k++){
+        size_t n=bounds[k],used=len<n?len:n;memset(d,17,len+145);memcpy(d,"prefix",7);
+        assert(strncat(d,s,n)==d);assert(!memcmp(d,"prefix",6) && !memcmp(d+6,s,used));
+        assert(d[used+6]==0 && d[used+7]==17);
+    }
     size_t sizes[]={0,1,63,64,127,128,129,len,len+1,len+8};
     for(unsigned k=0;k<sizeof(sizes)/sizeof(*sizes);k++){
         size_t n=sizes[k];for(int ending=0;ending<2;ending++){

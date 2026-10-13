@@ -7,7 +7,7 @@ extern PRIVATE unsigned __trames_native_features;
 #define available(id) (__trames_native_features & (1u<<((id)-1)))
 struct result { uintptr_t value, fallback; };
 #define DECLARE(id) extern PRIVATE struct result trames_call_##id(uintptr_t,uintptr_t,size_t)
-DECLARE(11);DECLARE(12);DECLARE(13);DECLARE(14);DECLARE(15);DECLARE(16);DECLARE(17);
+DECLARE(11);DECLARE(12);DECLARE(13);DECLARE(14);DECLARE(15);DECLARE(16);DECLARE(17);DECLARE(18);DECLARE(19);
 extern PRIVATE char *trames_orig_strchr(const char *,int);
 extern PRIVATE char *trames_orig_strrchr(const char *,int);
 extern PRIVATE char *trames_orig___strchrnul(const char *,int);
@@ -72,3 +72,14 @@ char *__stpncpy(char *restrict d,const char *restrict s,size_t n) {
     return trames_orig___stpncpy(d,s,n);
 }
 weak_alias(__stpncpy,stpncpy);
+
+extern PRIVATE char *trames_orig_strcat(char *,const char *);
+extern PRIVATE char *trames_orig_strncat(char *,const char *,size_t);
+char *strcat(char *restrict d,const char *restrict s) {
+    if(available(18) && (!prefix_stop(d,0) || !prefix_stop(s,0))){struct result r=trames_call_18((uintptr_t)d,(uintptr_t)s,0);if(!r.fallback)return (char *)r.value;}
+    return trames_orig_strcat(d,s);
+}
+char *strncat(char *restrict d,const char *restrict s,size_t n) {
+    if(available(19) && (n>=128 || !prefix_stop(d,0))){struct result r=trames_call_19((uintptr_t)d,(uintptr_t)s,n);if(!r.fallback)return (char *)r.value;}
+    return trames_orig_strncat(d,s,n);
+}
