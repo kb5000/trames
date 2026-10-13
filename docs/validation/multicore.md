@@ -46,8 +46,7 @@ Existing mmap/runtime-compat comparisons pass on both memory and disk backends.
 Regenerated audits retain 893 instruction samples (877 decoded, two syscalls, two
 synchronous exceptions, 12 unsupported) and 318 Linux entries (164 implemented
 subsets, 152 missing, two obsolete), with all 154 undispatched numbers returning
-ENOSYS on the actual ARM64 runtime. Exact-source Linux and native Apple CI references
-will be recorded after publication.
+ENOSYS on the actual ARM64 runtime. Exact-source Linux and native Apple CI evidence is recorded below.
 
 See [architecture](../architecture/multicore.md) for ownership, fence, backing,
 code-token and checkpoint contracts. Ordinary guest accesses may race; page-local
@@ -101,3 +100,40 @@ slices, page contention, worker queues and serialized syscalls/native/backing
 operations constrain speedup. Further optimization should reduce those costs
 while preserving byte aliases, permissions/EOF, COW, atomicity and memory ordering.
 Do not infer whole-system or physical-iPad acceleration from this fixture.
+
+## Exact-source continuous integration
+
+Final runtime source: `912b04059866c6d8cc739cf53d9b1ca848d1c6c1`.
+Both workflows execute this SHA; the final evidence-only commit changes no runtime
+source. The initial implementation `0b19861a2d8ba40d79a30af8054d52f982f855f2` also
+passed both complete workflows on their first attempts, before affinity hardening.
+
+- [Linux runtime, run 38369325408](https://github.com/kb5000/trames/actions/runs/38369325408):
+  success on attempt 1, job `115202085478`. Workspace/target checks, all instruction
+  comparisons, musl/NativeCall, mmap, signals, network, signed Python, actual
+  ARM64 pthread SMP at 1/2/4 CPUs, forced-four-CPU Node/npm, and retained
+  Git/GCC/Clang/Make/CMake workflows pass.
+- [Apple, run 38369325421](https://github.com/kb5000/trames/actions/runs/38369325421):
+  success on attempt 1, Apple job `115202533803`. Native ARM64 compute/CPU/memory/
+  VFS/core/native/accelerator tests, actual OpenSSH PTY/SFTP, simulator/device links
+  and seven iPad simulator tests pass (zero failures).
+
+The [Linux runtime evidence archive](https://github.com/kb5000/trames/actions/runs/38369325408/artifacts/11799670006)
+contains five transcripts. Artifact `11799670006` belongs to the exact runtime SHA;
+its downloaded 3,690-byte ZIP passes CRC and SHA-256 verification:
+`82abaebe455792f681fa457ea64f126ff1557331e82ac8ba92d7bbe5651cb612`.
+The [SMP transcript](multicore-ci-smp.txt) is retained in the repository independently
+of artifact expiry. All promised output markers, including pinned-task fairness,
+shared Atomics, offline npm and retained compiled/owner data, were inspected.
+
+The [Apple build/project evidence](https://github.com/kb5000/trames/actions/runs/38369325421/artifacts/11799296734)
+archive belongs to the same runtime SHA. Its 33,338,679-byte ZIP passes CRC and
+SHA-256 verification:
+`54ea78f69d2fee65e6e36227c692b7b3bacdf79e1bac148c8dff7733c5ccbd55`.
+The [actual simulator summary](multicore-ipad-summary.json) is retained locally in
+the repository: seven passed, zero failed. Full decoded Apple job logs could not
+be fetched because the connector closed the transport; the completed job/step
+metadata and downloaded simulator report are the inspected evidence.
+These are development builds, not a new numbered device release or a physical
+iPad multicore/performance acceptance. The next signed device update remains a
+grouped delivery; no runtime change follows the verified source in this record.

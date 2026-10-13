@@ -1,0 +1,11 @@
+1 CPU: {"backend": "cached", "context_switches": 3741, "cpu_count": 1, "cpu_seconds": 1.342224634, "decode_lookups": 21874, "decode_misses": 778, "idle_seconds": 0.009571457, "instructions": 5363263, "instructions_decoded": 33772, "instructions_per_second": 3599713.618600141, "memory_seconds": 0.0, "parallel_rounds": 0, "peak_parallel_cpus": 0, "proc_refreshes": 1, "seconds": 1.489913801, "syscall_seconds": 0.050781805, "syscalls": 2629, "worker_slices": 0}
+2 CPU: {"backend": "cached", "context_switches": 2238, "cpu_count": 2, "cpu_seconds": 0.428101412, "decode_lookups": 17826, "decode_misses": 1020, "idle_seconds": 0.009452454, "instructions": 1710301, "instructions_decoded": 39163, "instructions_per_second": 2758494.585403127, "memory_seconds": 0.06846875, "parallel_rounds": 742, "peak_parallel_cpus": 2, "proc_refreshes": 1, "seconds": 0.620012455, "syscall_seconds": 0.051552053, "syscalls": 2230, "worker_slices": 1484}
+4 CPU: {"backend": "cached", "context_switches": 2241, "cpu_count": 4, "cpu_seconds": 0.441480997, "decode_lookups": 17959, "decode_misses": 1020, "idle_seconds": 0.009528665, "instructions": 1650078, "instructions_decoded": 39086, "instructions_per_second": 2878614.6776376897, "memory_seconds": 0.068349528, "parallel_rounds": 717, "peak_parallel_cpus": 4, "proc_refreshes": 1, "seconds": 0.573219477, "syscall_seconds": 0.051648163, "syscalls": 2235, "worker_slices": 1466}
+smp: pinned peers cannot starve a flexible waiter: passed
+smp: LSE, LL/SC, CASP and pair exclusives; TLS/errno: passed
+smp: acquire/release publication across pages: passed
+smp: DMB store-buffering forbidden outcome: passed
+smp: futex compare/enqueue/wake races: passed
+smp: concurrent fork COW and shared process atomics: passed
+smp: exec and exit_group with a running pthread peer: passed
+SMP: native Linux/QEMU and interpreter 1/2/4 CPU workflows agree
