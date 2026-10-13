@@ -104,6 +104,7 @@ jobs:
           bash scripts/build-musl-hybrid-fixtures.sh
           python3 tests/integration/musl-hybrid.py
           python3 tests/integration/numeric.py
+          python3 tests/integration/stdlib.py
       - name: Build and compare opt-in NativeCall guest ELF stubs on ARM64
         run: |
           bash scripts/build-accelerator-fixtures.sh

@@ -25,6 +25,16 @@
     "src/internal/shgetc.c": "0b076498bc7e64f0756692f431bf5d39ea3964a175b9eba4ce6cfe23d4c76dd2",
     "src/internal/shgetc.h": "8bf68f99a81d25c7a7b17b3f862498c94e5dbd6d2daa2a94765ef7a5d950563d",
     "src/stdlib/strtod.c": "4b1945084cb6bf53a6d5684ca3bfd0c824eab9cbdb2b2fdfc9811fb526dd67ab",
-    "src/stdlib/atof.c": "2d5733fbc1ae1b50b0b0b5bd6533551a6e69dae5491b0150f3b4c459dd722e45"
+    "src/stdlib/atof.c": "2d5733fbc1ae1b50b0b0b5bd6533551a6e69dae5491b0150f3b4c459dd722e45",
+    "src/internal/intscan.c": "ed96c758c94666f2557059bd8fca26db8340b9e6b417852f1599e7c30f67deca",
+    "src/internal/intscan.h": "0fda860250bd54a01384bb693be886e5f64fe01316d2be8e21b4db72244220f9",
+    "src/stdlib/strtol.c": "2291cd02a25622bd31de831d7dfaff5c618ed7846b3123033a714188de78e61e",
+    "src/string/strchr.c": "629d401b95d07ddff9560eb5a9cfbda1652caaec273dc6a79013a56b1790af53",
+    "src/string/strrchr.c": "a39143d07d79906d370d268bb7934a203918d7b7b54bae0a81da277a41bb9960",
+    "src/string/strchrnul.c": "dbb7756732bb4241681ab2c8e0a1a7953ba5caf21851678ac9034a7f4a616c55",
+    "src/string/strcpy.c": "3785cd5bc3e08049617db754a3677f7485e5e7bc4a7901102af1604cee290b71",
+    "src/string/stpcpy.c": "05231b57f01b5d192d6ac50bf376e1adb987feda4ea79c22248b8bba3d64f04a",
+    "src/string/strncpy.c": "88301f7a48004250e1833e9155c7d2fa607ffdddca3b1b1804774d93c82acb96",
+    "src/string/stpncpy.c": "12f0e4fd1005104a6c1200af5b90e1694d75ad0fb2586305b560341be0ef6481"
   }
 }

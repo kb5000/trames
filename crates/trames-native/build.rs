@@ -28,6 +28,15 @@ fn compile_parser() {
         source = source.replace(old, new);
     }
     fs::write(out.join("floatscan.c"), source).unwrap();
+    let integer = "upstream/musl-1.2.5/internal/intscan.c";
+    println!("cargo:rerun-if-changed={integer}");
+    fs::write(
+        out.join("intscan.c"),
+        fs::read_to_string(integer)
+            .unwrap()
+            .replace("__intscan", "trames_native_intscan"),
+    )
+    .unwrap();
     let compiler_key = format!("CC_{}", target.replace('-', "_"));
     let compiler = env::var(&compiler_key).unwrap_or_else(|_| {
         if apple {
@@ -41,6 +50,7 @@ fn compile_parser() {
     println!("cargo:rerun-if-env-changed={compiler_key}");
     for (name, path) in [
         ("floatscan", out.join("floatscan.c")),
+        ("intscan", out.join("intscan.c")),
         ("driver", Path::new("parse/driver.c").to_owned()),
     ] {
         let mut command = Command::new(&compiler);
@@ -83,6 +93,7 @@ fn compile_parser() {
         .arg("crs")
         .arg(out.join("libtrames_parse.a"))
         .arg(out.join("floatscan.o"))
+        .arg(out.join("intscan.o"))
         .arg(out.join("driver.o"))
         .status()
         .expect("native parser archiver")

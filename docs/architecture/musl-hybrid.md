@@ -83,3 +83,7 @@ each build avoids mixing stale patched/configured trees. [Validation and measure
 limits](../validation/musl-hybrid.md) describe the actual tested scope.
 
 [Native floating conversion](native-numeric.md) adds a separate gated module over checked guest bytes; atof and locale aliases retain their original forwarding code.
+
+[Native integer parsing and string search/copy](native-stdlib.md) extends the
+function bitmap and uses a separately negotiated integer module, preserving
+original fallback on earlier hosts.

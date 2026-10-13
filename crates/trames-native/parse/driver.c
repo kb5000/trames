@@ -3,6 +3,13 @@
 #include "shim/stdint.h"
 #include "shim/floatscan.h"
 struct trames_parse_result { uint64_t bits, consumed; int error, exhausted; };
+extern unsigned long long trames_native_intscan(FILE *, unsigned, int, unsigned long long);
+void trames_native_parse_integer(const unsigned char *bytes, size_t len, unsigned base, int is_signed, struct trames_parse_result *result) {
+    FILE f={.bytes=bytes,.len=len};
+    result->bits=trames_native_intscan(&f,base,1,is_signed ? 1ULL<<63 : ~(uint64_t)0);
+    result->consumed=f.pos>=f.origin ? f.pos-f.origin : 0;
+    result->error=f.error; result->exhausted=f.exhausted;
+}
 #ifdef __APPLE__
 extern int *__error(void);
 #define host_errno (*__error())

@@ -14,6 +14,22 @@ pub(crate) fn parse(
     if precision > 1 {
         return Err(Error::InvalidEntry);
     }
+    let result = parse_with(memory, source, output, metrics, false, |bytes| {
+        trames_native::parse::floating(bytes, precision == 0)
+    })?;
+    if !result.fallback {
+        metrics.numeric_conversions = metrics.numeric_conversions.saturating_add(1);
+    }
+    Ok(result)
+}
+pub(crate) fn parse_with(
+    memory: &mut Memory,
+    source: u64,
+    output: u64,
+    metrics: &mut Metrics,
+    no_input: bool,
+    parser: impl Fn(&[u8]) -> trames_native::parse::ParsedFloat,
+) -> Result<Return, Error> {
     let fallback = || {
         Ok(Return {
             value: 0,
@@ -24,14 +40,16 @@ pub(crate) fn parse(
     if !memory.native_writable_range(output, OUTPUT_BYTES)? {
         return fallback();
     }
+    // Invalid integer bases finish without dereferencing even a null input.
+    if no_input {
+        return commit(memory, source, output, parser(&[]), 0, metrics);
+    }
     let base = source & 0x00ff_ffff_ffff_ffff;
     let page_limit = (PAGE_SIZE - base % PAGE_SIZE) as usize;
     let mut first = 64.min(page_limit);
     let mut parsed;
     loop {
-        let (result, direct) = memory.with_read_chunk(base, first, |bytes| {
-            trames_native::parse::floating(bytes, precision == 0)
-        })?;
+        let (result, direct) = memory.with_read_chunk(base, first, &parser)?;
         record_read(metrics, first, direct);
         parsed = result;
         if !parsed.needs_more || first == page_limit {
@@ -62,9 +80,19 @@ pub(crate) fn parse(
             memory.with_read_chunk(at, count, |bytes| input.extend_from_slice(bytes))?;
         record_read(metrics, count, direct);
         supplied += count;
-        parsed = trames_native::parse::floating(&input, precision == 0);
+        parsed = parser(&input);
         metrics.numeric_replays = metrics.numeric_replays.saturating_add(1);
     }
+    commit(memory, source, output, parsed, supplied, metrics)
+}
+fn commit(
+    memory: &mut Memory,
+    source: u64,
+    output: u64,
+    parsed: trames_native::parse::ParsedFloat,
+    supplied: usize,
+    metrics: &mut Metrics,
+) -> Result<Return, Error> {
     if parsed.consumed > supplied || !matches!(parsed.errno, 0 | 22 | 34) {
         return Err(Error::InvalidEntry);
     }
@@ -75,7 +103,6 @@ pub(crate) fn parse(
     bytes[..8].copy_from_slice(&end.to_le_bytes());
     bytes[8..].copy_from_slice(&(parsed.errno as u64).to_le_bytes());
     memory.write(output, &bytes)?;
-    metrics.numeric_conversions = metrics.numeric_conversions.saturating_add(1);
     metrics.numeric_result_bytes = metrics
         .numeric_result_bytes
         .saturating_add(OUTPUT_BYTES as u64);

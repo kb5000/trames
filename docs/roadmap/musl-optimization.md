@@ -7,9 +7,11 @@ small verified batches. No JIT; preserve one cached Rust interpreter. The shippe
 
 ## Current batch
 
-The full standard-path musl now adapts ten public functions. IDs 1–5 remain
+The full standard-path musl now adapts seventeen pure functions. IDs 1–5 remain
 memcpy, memmove, memset, memcmp and strlen; IDs 6–10 add memchr, memrchr, strnlen,
-strcmp and strncmp. Existing static binaries keep their embedded libc. The old
+strcmp and strncmp. IDs 11–17 add strchr, strrchr, strchrnul, strcpy, stpcpy, strncpy
+and stpncpy. [Integer parsing](../architecture/native-stdlib.md) adds six public
+conversions and their existing internal aliases. Existing static binaries keep their embedded libc. The old
 separate five-function library remains a transport test fixture.
 
 Checked, scoped page borrows let native routines work directly on anonymous
@@ -34,7 +36,7 @@ assembly on directly writable pages. Matching stubs still authorize only these
 pure operations, not arbitrary native execution or stateful host libc calls.
 
 The new auxv key `0x54520002` supplies a function bitmap, bit `(id - 1)`; current
-value `0x3ff`. Activation key/profile `0x54520001`/`0x10001` stay unchanged. New
+value `0x1ffff`. Activation key/profile `0x54520001`/`0x10001` stay unchanged. New
 wrappers require their bit; an old host with no bitmap uses original musl for new
 functions. Early loader stages and ordinary Linux use original routines. Known
 sizes below 128 bytes stay local; strcmp/strncmp and strnlen stop locally within
@@ -60,8 +62,8 @@ include both the bulk-copy gain and the sort regression/host timing variation.
 | P0 | memcpy, memmove, memset | Remove extra full-range allocations/copies; COW, alias and code-write correctness | Direct anonymous/private write path implemented; shared staging retained |
 | P0 | memcmp, strlen | Remove page copies; native word equality/HASZERO scans | Implemented |
 | P0 | memchr, memrchr, strnlen, strcmp, strncmp | Bulk text, parser and path workloads; bounded unsigned-byte results and early termination | Implemented, gated IDs 6–10 |
-| P1 | strchr, strchrnul, strrchr | Reuse forward/reverse search with NUL termination and pointer results | Next small pure batch |
-| P1 | strcpy, stpcpy, strncpy, stpncpy | Reuse checked scans/copies; distinguish terminator pointer, padding and bounded truncation | Queued; validate scanned source before writes and fallback without effects |
+| P1 | strchr, strchrnul, strrchr | Reuse forward/reverse search with NUL termination and pointer results | Implemented, gated IDs 11–13 |
+| P1 | strcpy, stpcpy, strncpy, stpncpy | Reuse checked scans/copies; distinguish terminator pointer, padding and bounded truncation | Implemented, gated IDs 14–17; preflight and original fallback before effects |
 | P1 | strcat, strncat | Compose destination-end scan and bounded copy; preserve zero-bound semantics | Queued after string copy |
 | P1 | memccpy, bcopy, bzero, explicit_bzero | Reuse copy/fill, exact stopping pointer and non-elidable zeroing contract | Queued; tiny aliases may remain local |
 | P1 | Shared anonymous/file page borrowing | Remove remaining staging; pinned resident spans, EOF and backing revision hooks, alias-safe moves | Queued; preserve a snapshot when needed |
@@ -73,7 +75,7 @@ include both the bulk-copy gain and the sort regression/host timing variation.
 | P2 | strstr, memmem | Long searches benefit from original musl's linear-time algorithms | Queued; cap scanned work and retain continuation/fallback semantics |
 | P2 | strcasecmp, strncasecmp and `_l` forms | Text matching; unsigned-byte folding | Start with C locale; guest locale objects need a checked contract |
 | P2 | strdup, strndup | Compose native scans/copies with guest allocator ownership | Defer until allocation handoff is explicit; never return a host malloc pointer |
-| P2 | strtol/strtoul/strtoll/strtoull, strtoimax/strtoumax | Long numeric parsing using original algorithms | End pointers, overflow/errno and locale must update guest state |
+| P2 | strtol/strtoul/strtoll/strtoull, strtoimax/strtoumax | Long numeric parsing using original algorithms | Implemented from unchanged original intscan; exact bits/end/errno and independent capability |
 | P2 | strtod/strtof/strtold and related parsing | Often instruction-heavy; reuse original musl conversion code | [Native strtod/strtof, atof and locale aliases](../architecture/native-numeric.md) implemented; strtold stays original binary128, errno/end exact and non-nearest fallback |
 | P2 | sin/cos/tan, exp/log/pow, sqrt/hypot, remainder/fmod, rounding and float variants | Native FP already accelerates interpreted arithmetic; library-level calls can remove control-flow cost | Guest FP state/errno and exceptional values need an explicit profile; avoid duplicating cheap one-instruction operations |
 | P2 | Integer/float formatting within snprintf/sprintf | Accelerate costly conversion loops | Begin with pure internal conversion pieces; guest varargs and formatting must keep musl semantics |

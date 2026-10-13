@@ -51,7 +51,7 @@ def metrics(stderr):
     return records[0]
 
 
-def vim(command):
+def vim(command, read_metrics=metrics):
     # First cursor visibility follows Vim's normal startup/config/plugin work.
     # The terminal responses prevent probing delays from dominating CPU time.
     start = time.monotonic()
@@ -87,7 +87,7 @@ def vim(command):
         output.extend(remaining)
         assert process.returncode == 0 and ready is not None and b'E1286' not in output, (
             process.returncode, stderr[-4000:], output[-4000:])
-        return ready, metrics(stderr)
+        return ready, read_metrics(stderr)
     finally:
         if process.poll() is None:
             process.kill()

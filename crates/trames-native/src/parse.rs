@@ -9,12 +9,39 @@ struct RawResult {
     exhausted: i32,
 }
 unsafe extern "C" {
+    fn trames_native_parse_integer(
+        bytes: *const u8,
+        len: usize,
+        base: u32,
+        signed: i32,
+        result: *mut RawResult,
+    );
     fn trames_native_parse_float(
         bytes: *const u8,
         len: usize,
         precision: i32,
         result: *mut RawResult,
     );
+}
+pub fn integer(bytes: &[u8], base: u32, signed: bool) -> ParsedFloat {
+    let mut raw = RawResult::default();
+    // SAFETY: Same bounded private cursor/result layout as floating. The
+    // original intscan performs only integer arithmetic and cursor-local errno.
+    unsafe {
+        trames_native_parse_integer(
+            bytes.as_ptr(),
+            bytes.len(),
+            base,
+            i32::from(signed),
+            &mut raw,
+        );
+    }
+    ParsedFloat {
+        bits: raw.bits,
+        consumed: raw.consumed as usize,
+        errno: raw.error,
+        needs_more: raw.exhausted != 0,
+    }
 }
 #[derive(Debug)]
 pub struct ParsedFloat {
@@ -41,6 +68,44 @@ pub fn floating(bytes: &[u8], single: bool) -> ParsedFloat {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn original_integer_limits_prefixes_and_unsigned_negation() {
+        for (input, base, signed, value, end, error) in [
+            ("-9223372036854775808!", 10, true, 1u64 << 63, 20, 0),
+            ("9223372036854775808!", 10, true, i64::MAX as u64, 19, 34),
+            ("18446744073709551615!", 10, false, u64::MAX, 20, 0),
+            ("18446744073709551616!", 10, false, u64::MAX, 20, 34),
+            ("-1!", 10, false, u64::MAX, 2, 0),
+            ("0x!", 0, true, 0, 1, 0),
+            ("  -0x7f!", 0, true, (-127i64) as u64, 7, 0),
+            ("09!", 0, true, 0, 1, 0),
+            ("0b11!", 0, true, 0, 1, 0),
+            ("xyz!", 10, true, 0, 0, 22),
+            ("z!", 36, true, 35, 1, 0),
+        ] {
+            let result = integer(input.as_bytes(), base, signed);
+            assert!(!result.needs_more, "{input}");
+            assert_eq!(
+                (result.bits, result.consumed, result.errno),
+                (value, end, error),
+                "{input}"
+            );
+        }
+        for base in [1, 37, u32::MAX] {
+            let result = integer(&[], base, true);
+            assert_eq!(
+                (
+                    result.bits,
+                    result.consumed,
+                    result.errno,
+                    result.needs_more
+                ),
+                (0, 0, 22, false)
+            );
+        }
+        assert!(integer(b"0x", 0, true).needs_more);
+        assert!(integer(b"123", 10, false).needs_more);
+    }
     #[test]
     fn restores_ambient_host_rounding_status_and_errno() {
         #[cfg(target_vendor = "apple")]

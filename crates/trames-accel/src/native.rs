@@ -7,14 +7,17 @@ use trames_memory::{Memory, MemoryError, Transfer, PAGE_SIZE};
 pub const AUXV_KEY: u64 = 0x5452_0001;
 /// Optional function bitmap: bit (id - 1). Absent on old hosts.
 pub const FEATURES_AUXV_KEY: u64 = 0x5452_0002;
-pub const FEATURES: u64 = (1 << 10) - 1;
+pub const FUNCTION_COUNT: usize = 17;
+pub const FEATURES: u64 = (1 << FUNCTION_COUNT) - 1;
 pub const PROFILE: u64 = 0x0001_0001; // protocol 1, pure module 1
 pub const INSTRUCTION: u32 = 0xd44a8a40; // HLT #0x5452, opt-in virtual encoding
 pub const MAX_BYTES: usize = 64 * 1024;
 #[derive(Default, Debug, Serialize)]
 pub struct Metrics {
     pub calls: u64,
-    pub function_calls: [u64; 10],
+    pub function_calls: [u64; FUNCTION_COUNT],
+    pub integer_calls: u64,
+    pub integer_conversions: u64,
     pub callback_calls: u64,
     pub callback_requests: u64,
     pub callback_yields: u64,
@@ -60,9 +63,10 @@ impl Registry {
     /// Verify the immutable v1 stub contract in currently executable memory.
     /// This is rechecked on every entry, including fork, remap and self-modification.
     fn valid(memory: &Memory, pc: u64, module: u64, function: u64) -> bool {
-        let allowed = (module == PROFILE && (1..=10).contains(&function))
+        let allowed = (module == PROFILE && (1..=FUNCTION_COUNT as u64).contains(&function))
             || (module == crate::callbacks::PROFILE && function == 1)
-            || (module == crate::numeric::PROFILE && function == 1);
+            || (module == crate::numeric::PROFILE && function == 1)
+            || (module == crate::integer::PROFILE && function == 1);
         if !allowed || pc < 12 {
             return false;
         }
@@ -95,6 +99,9 @@ impl Registry {
         let result = if module == crate::callbacks::PROFILE {
             self.metrics.callback_calls = self.metrics.callback_calls.saturating_add(1);
             crate::callbacks::step(memory, a, &mut self.metrics)
+        } else if module == crate::integer::PROFILE {
+            self.metrics.integer_calls = self.metrics.integer_calls.saturating_add(1);
+            crate::integer::parse(memory, a, &mut self.metrics)
         } else if module == crate::numeric::PROFILE {
             self.metrics.numeric_calls = self.metrics.numeric_calls.saturating_add(1);
             crate::numeric::parse(memory, a, &mut self.metrics)
@@ -116,7 +123,7 @@ impl Registry {
         }
         result
     }
-    fn record_transfer(&mut self, transfer: Transfer) {
+    pub(crate) fn record_transfer(&mut self, transfer: Transfer) {
         self.metrics.bytes_read = self
             .metrics
             .bytes_read
@@ -142,7 +149,7 @@ impl Registry {
             .buffered_bytes_written
             .saturating_add(transfer.buffered_write);
     }
-    fn record_read(&mut self, count: usize, direct: bool) {
+    pub(crate) fn record_read(&mut self, count: usize, direct: bool) {
         self.record_transfer(Transfer {
             direct_read: if direct { count as u64 } else { 0 },
             buffered_read: if direct { 0 } else { count as u64 },
@@ -278,6 +285,7 @@ impl Registry {
                 }
                 done(0)
             }
+            11..=17 => crate::strings::execute(self, memory, function, a),
             _ => unreachable!("signed-in pure profile"),
         }
     }
@@ -309,7 +317,7 @@ mod tests {
         let mut m = memory(1);
         let mut r = Registry::default();
         m.write(0x2000, b"before").unwrap();
-        for (module, function) in [(PROFILE + 1, 1), (PROFILE, 11), (PROFILE, 0)] {
+        for (module, function) in [(PROFILE + 1, 1), (PROFILE, 18), (PROFILE, 0)] {
             assert!(matches!(
                 r.invoke(&mut m, 0x100c, module, function, [0x2000, 1, 6]),
                 Err(Error::InvalidEntry)
