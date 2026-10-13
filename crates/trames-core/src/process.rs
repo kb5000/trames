@@ -1727,6 +1727,15 @@ impl Kernel {
                 None
             }
             Err(e) => {
+                if matches!(number, 22 | 72 | 73 | 441) {
+                    // A failed poll ends its wait just as a successful return
+                    // does. Do not leak its deadline or temporary signal mask
+                    // into a later read, poll, or runnable CPU epoch.
+                    p.poll_deadline = None;
+                    if let Some(mask) = p.poll_mask.take() {
+                        p.mask = mask;
+                    }
+                }
                 if matches!(e.0, 38 | 95) {
                     p.linux.vfs.log_syscall(
                         number as u64,
@@ -2449,7 +2458,7 @@ impl Kernel {
             let timerfd = p.linux.vfs.next_timerfd_deadline().filter(|d| *d > now);
             // A failed/restarted poll can leave a saved deadline on a runnable
             // or stopped task. Only an active blocked poll needs a wakeup poll.
-            let poll = matches!(p.state, State::Blocked(..))
+            let poll = matches!(p.state, State::Blocked(22 | 72 | 73 | 441, _))
                 .then_some(p.poll_deadline)
                 .flatten();
             for deadline in [poll, timerfd].into_iter().flatten() {
@@ -3086,11 +3095,35 @@ mod tests {
             .unwrap();
         p.poll_deadline = Some(Instant::now());
         assert_eq!(k.parallel_timeout(), Duration::from_millis(10));
+        k.processes.get_mut(&1).unwrap().state = State::Blocked(63, [0; 6]);
+        assert_eq!(k.parallel_timeout(), Duration::from_millis(10));
         k.processes.get_mut(&1).unwrap().state = State::Blocked(22, [0; 6]);
         assert_eq!(k.parallel_timeout(), Duration::ZERO);
         k.processes.get_mut(&1).unwrap().state =
             State::Sleep(Instant::now() + Duration::from_millis(1), 0);
         assert!(k.parallel_timeout() <= Duration::from_millis(1));
+    }
+    #[test]
+    fn failed_blocked_epoll_clears_deadline_and_restores_its_temporary_signal_mask() {
+        let mut p = process();
+        let mut k = kernel();
+        p.poll_deadline = Some(Instant::now());
+        p.poll_mask = Some(0x200);
+        p.mask = 0x400;
+        let a = [999, 0x4800, 1, u64::MAX, 0, 8];
+        p.state = State::Blocked(22, a);
+        k.call(
+            1,
+            &mut p,
+            22,
+            a,
+            &mut trames_linux::CapturedOutput::default(),
+        );
+        assert!(matches!(p.state, State::Ready));
+        assert_eq!(p.cpu.x(0), error(Errno(9)));
+        assert!(p.poll_deadline.is_none());
+        assert!(p.poll_mask.is_none());
+        assert_eq!(p.mask, 0x200);
     }
     #[test]
     fn stdio_eagain_blocks_only_without_nonblocking_flag() {
