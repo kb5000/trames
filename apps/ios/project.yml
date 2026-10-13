@@ -12,8 +12,8 @@ settings:
     LIBRARY_SEARCH_PATHS: ['$(inherited)', '$(SRCROOT)/../../target/ios-link/$(TRAMES_RUST_TARGET)']
     'TRAMES_RUST_TARGET[sdk=iphoneos*]': aarch64-apple-ios
     'TRAMES_RUST_TARGET[sdk=iphonesimulator*]': aarch64-apple-ios-sim
-    MARKETING_VERSION: '0.12.0'
-    CURRENT_PROJECT_VERSION: '13'
+    MARKETING_VERSION: '0.13.0'
+    CURRENT_PROJECT_VERSION: '14'
     INFOPLIST_KEY_CFBundleShortVersionString: '$(MARKETING_VERSION)'
     INFOPLIST_KEY_CFBundleVersion: '$(CURRENT_PROJECT_VERSION)'
     INFOPLIST_KEY_CFBundleDisplayName: Trames
