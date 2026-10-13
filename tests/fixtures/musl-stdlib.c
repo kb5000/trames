@@ -37,6 +37,14 @@ static void copies(char *s,size_t len,char *d) {
     }
 }
 static void strings(void) {
+    for(unsigned align=0;align<8;align++) {
+        char storage[96],*s=storage+align;memset(storage,1,sizeof(storage));
+        for(unsigned i=0;i<61;i++)s[i]=(char)(i*37%255+1);s[61]=0;
+        for(int c=0;c<256;c++) {
+            char *first=0,*last=0;for(unsigned i=0;i<=61;i++)if((unsigned char)s[i]==c){if(!first)first=s+i;last=s+i;}
+            assert(strchr(s,c)==first && strrchr(s,c)==last && strchrnul(s,c)==(first?first:s+61));
+        }
+    }
     size_t lengths[]={0,1,7,63,64,65,127,128,129,4095,4096,4097,65535,65536,70000};
     int chars[]={0,'a','z',255,511,-1};
     for(unsigned k=0;k<sizeof(lengths)/sizeof(*lengths);k++){
@@ -54,6 +62,9 @@ static void strings(void) {
     memset(s,'a',4096);assert(stpncpy(d,s,4096)==d+4096 && !memcmp(s,d,4096));free(d);assert(!munmap(s,8192));
     char *shared=mmap(0,8192,PROT_READ|PROT_WRITE,MAP_SHARED|MAP_ANONYMOUS,-1,0);assert(shared!=MAP_FAILED);
     char text[512];memset(text,'x',511);text[511]=0;assert(stpcpy(shared,text)==shared+511 && !strcmp(shared,text));assert(stpncpy(shared,"hi",512)==shared+2);assert(!munmap(shared,8192));
+    char *writeonly=mmap(0,4096,PROT_WRITE,MAP_PRIVATE|MAP_ANONYMOUS,-1,0);assert(writeonly!=MAP_FAILED);
+    assert(stpcpy(writeonly,text)==writeonly+511);assert(stpncpy(writeonly,"hi",512)==writeonly+2);
+    assert(!mprotect(writeonly,4096,PROT_READ));assert(!strcmp(writeonly,"hi"));for(int i=3;i<512;i++)assert(!writeonly[i]);assert(!munmap(writeonly,4096));
 }
 static void *thread(void *ignored){(void)ignored;char *e;errno=EACCES;assert(strtoll("123!",&e,10)==123 && *e=='!' && errno==EACCES);assert(strtoull("18446744073709551616",0,10)==ULLONG_MAX && errno==ERANGE);return 0;}
 static volatile sig_atomic_t handled;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Checked, bounded string search/copy; original fallback before any writes.
 use crate::native::{Error, Registry, Return, MAX_BYTES};
-use trames_memory::{Access, Memory, PAGE_SIZE};
+use trames_memory::{Access, Memory, MemoryError, PAGE_SIZE};
 pub(crate) fn execute(
     registry: &mut Registry,
     memory: &mut Memory,
@@ -74,8 +74,14 @@ pub(crate) fn execute(
     // All source reads and destination permissions are checked before effects.
     // Shared/live output selects original; no partially completed restart.
     memory.check(dst, total, Access::Write)?;
-    if !memory.native_writable_range(dst, total)? {
-        return fallback();
+    match memory.native_writable_range(dst, total) {
+        Ok(true) => {}
+        Ok(false)
+        | Err(MemoryError::Permission {
+            access: Access::Read,
+            ..
+        }) => return fallback(),
+        Err(error) => return Err(error.into()),
     }
     let copied = if terminated { offset + 1 } else { offset };
     registry.record_transfer(memory.copy_with(dst, src, copied, trames_native::copy)?);
@@ -162,6 +168,21 @@ mod tests {
                 .fallback
         );
         assert_eq!(m.read_array::<8>(0x1000).unwrap(), [17; 8]);
+        m.protect(
+            0x4000,
+            PAGE_SIZE,
+            Permissions {
+                read: false,
+                write: true,
+                execute: false,
+            },
+        )
+        .unwrap();
+        assert!(
+            execute(&mut r, &mut m, 16, [0x4000, 0x2ffe, 8])
+                .unwrap()
+                .fallback
+        );
         assert!(
             execute(&mut r, &mut m, 16, [0, 0, MAX_BYTES as u64 + 1])
                 .unwrap()

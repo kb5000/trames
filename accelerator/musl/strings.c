@@ -15,46 +15,51 @@ extern PRIVATE char *trames_orig_strcpy(char *,const char *);
 extern PRIVATE char *trames_orig___stpcpy(char *,const char *);
 extern PRIVATE char *trames_orig_strncpy(char *,const char *,size_t);
 extern PRIVATE char *trames_orig___stpncpy(char *,const char *,size_t);
-// Short searches remain ordinary guest instructions. A prefix stops at the
-// first match/NUL; it never probes beyond a terminator at a guard page.
+extern PRIVATE void *trames_orig_memrchr(const void *,int,size_t);
+// Original musl's aligned-word HASZERO search, capped at a 64-byte prefix.
+// Little-endian AArch64: the first set byte is the first actual NUL/match.
+static const char *prefix_stop(const char *s,int c) {
+    typedef size_t __attribute__((__may_alias__)) word;
+    const unsigned char *p=(const void *)s,*start=p;
+    const size_t ones=(size_t)-1/255,highs=ones*128,k=ones*(unsigned char)c;
+    while((uintptr_t)p & (sizeof(word)-1)){if(!*p || *p==(unsigned char)c)return (const char *)p;p++;}
+    while((size_t)(p-start)+sizeof(word)<=64){
+        size_t v=*(const word *)p,x=v^k;
+        size_t stop=((v-ones)&~v&highs)|((x-ones)&~x&highs);
+        if(stop)return (const char *)p+(size_t)__builtin_ctzl(stop)/8;
+        p+=sizeof(word);
+    }
+    while(p-start<64){if(!*p || *p==(unsigned char)c)return (const char *)p;p++;}
+    return 0;
+}
 char *strchr(const char *s,int c) {
-    if (available(11)) {
-        for(unsigned i=0;i<64;i++){unsigned char b=s[i];if(b==(unsigned char)c)return (char *)s+i;if(!b)return 0;}
+    if(available(11)) {
+        const char *p=prefix_stop(s,c);if(p)return *(const unsigned char *)p==(unsigned char)c?(char *)p:0;
         struct result r=trames_call_11((uintptr_t)s,(uintptr_t)c,0);if(!r.fallback)return (char *)r.value;
     }
     return trames_orig_strchr(s,c);
 }
 char *strrchr(const char *s,int c) {
-    if (available(12)) {
-        char *last=0;for(unsigned i=0;i<64;i++){unsigned char b=s[i];if(b==(unsigned char)c)last=(char *)s+i;if(!b)return last;}
+    if(available(12)) {
+        const char *end=prefix_stop(s,0);if(end)return trames_orig_memrchr(s,c,end-s+1);
         struct result r=trames_call_12((uintptr_t)s,(uintptr_t)c,0);if(!r.fallback)return (char *)r.value;
     }
     return trames_orig_strrchr(s,c);
 }
 char *__strchrnul(const char *s,int c) {
-    if (available(13)) {
-        for(unsigned i=0;i<64;i++){unsigned char b=s[i];if(!b || b==(unsigned char)c)return (char *)s+i;}
+    if(available(13)) {
+        const char *p=prefix_stop(s,c);if(p)return (char *)p;
         struct result r=trames_call_13((uintptr_t)s,(uintptr_t)c,0);if(!r.fallback)return (char *)r.value;
     }
     return trames_orig___strchrnul(s,c);
 }
 weak_alias(__strchrnul,strchrnul);
-// Probe only the source. Once a terminator appears, use original musl's
-// aligned copy locally; long copies get a preflighted native entry.
-static int long_source(const char *s) {
-    typedef size_t __attribute__((__may_alias__)) word;
-    const unsigned char *p=(const void *)s,*start=p;
-    const size_t ones=(size_t)-1/255, highs=ones*128;
-    while((uintptr_t)p & (sizeof(word)-1)){if(!*p)return 0;p++;}
-    while((size_t)(p-start)+sizeof(word)<=64){size_t v=*(const word *)p;if((v-ones)&~v&highs)return 0;p+=sizeof(word);}
-    while(p-start<64){if(!*p)return 0;p++;}return 1;
-}
 char *strcpy(char *restrict d,const char *restrict s) {
-    if(available(14) && long_source(s)){struct result r=trames_call_14((uintptr_t)d,(uintptr_t)s,0);if(!r.fallback)return (char *)r.value;}
+    if(available(14) && !prefix_stop(s,0)){struct result r=trames_call_14((uintptr_t)d,(uintptr_t)s,0);if(!r.fallback)return (char *)r.value;}
     return trames_orig_strcpy(d,s);
 }
 char *__stpcpy(char *restrict d,const char *restrict s) {
-    if(available(15) && long_source(s)){struct result r=trames_call_15((uintptr_t)d,(uintptr_t)s,0);if(!r.fallback)return (char *)r.value;}
+    if(available(15) && !prefix_stop(s,0)){struct result r=trames_call_15((uintptr_t)d,(uintptr_t)s,0);if(!r.fallback)return (char *)r.value;}
     return trames_orig___stpcpy(d,s);
 }
 weak_alias(__stpcpy,stpcpy);

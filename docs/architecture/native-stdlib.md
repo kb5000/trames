@@ -44,14 +44,15 @@ entry points route the same operations, with the existing weak public aliases.
 Searches inspect reached, checked page fragments using native word scans. strchr
 stops on a match or NUL, strchrnul returns the first of those, and strrchr retains
 the last unsigned-byte match before or at NUL. Returned pointers preserve guest
-TBI tags. A bounded original-style local prefix keeps short searches in guest code.
+TBI tags. A bounded local prefix uses original musl's aligned-word HASZERO method; short
+reverse searches use the pinned original memrchr after locating NUL.
 
 Unbounded copies first scan through NUL, then preflight the entire destination.
 Bounded copies read at most n bytes, copy the exact reached source, and zero-pad
 through n after early NUL. strcpy/strncpy return the destination; stpcpy/stpncpy
 return the terminator/truncation pointer. n=0 dereferences neither pointer. An
 unbounded string reaching the ceiling, or n>64 KiB, falls back before effects.
-Directly writable output is required; shared/live mappings select original before
+Directly writable output is required; shared/live or write-only mappings select original before
 writes. Original source objects and private fallbacks remain byte-for-byte pinned.
 
 Copy/fill uses the existing checked memory API and original Arm native assembly.
