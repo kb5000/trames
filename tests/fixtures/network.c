@@ -106,6 +106,16 @@ static void tcp(void) {
     socklen_t size = sizeof value;
     CHECK(setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof yes) == 0);
     CHECK(getsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &value, &size) == 0 && value == 1);
+    for (int option=TCP_KEEPIDLE; option<=TCP_KEEPCNT; ++option) {
+        int selected=option==TCP_KEEPCNT?3:17;
+        CHECK(setsockopt(fd,IPPROTO_TCP,option,&selected,sizeof selected)==0);
+        value=0;size=sizeof value;
+        CHECK(getsockopt(fd,IPPROTO_TCP,option,&value,&size)==0&&value==selected);
+        selected=0;CHECK(setsockopt(fd,IPPROTO_TCP,option,&selected,sizeof selected)==-1&&errno==EINVAL);
+        CHECK(getsockopt(fd,IPPROTO_TCP,option,&value,&size)==0&&value==(option==TCP_KEEPCNT?3:17));
+    }
+    value=1;size=sizeof value;
+    CHECK(getsockopt(fd,SOL_SOCKET,SO_KEEPALIVE,&value,&size)==0&&value==0);
     CHECK(fcntl(fd, F_SETFL, 0) == 0);
     CHECK(recv(fd, response, 1, MSG_DONTWAIT) == -1 && errno == EAGAIN);
     for (size_t i=0; i<sizeof pattern; i++) pattern[i] = (i*37+11) & 255;

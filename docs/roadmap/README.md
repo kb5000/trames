@@ -3,6 +3,10 @@
 The current verified release is [0.10.0 complete hybrid musl](../validation/release-0.10.md),
 with one Rust cached interpreter, static ARM64 compute and recoverable guest CPU faults.
 The C++ executor and tail-dispatch prototype have been removed.
+The [Node.js and memory follow-up](../architecture/nodejs-memory.md) adds sparse
+PROT_NONE reservations, canonical argv/env packing, standard-stream nonblocking
+behavior and selected TCP keepalive options. Signed Node.js/npm workflows join
+Linux CI; interpreter memory cost has a reproducible old/new benchmark.
 The [source follow-up](../validation/compatibility-log.md) adds bounded runtime
 logs and selected file syscalls; [shared mapping/ABI work](../validation/mmap-coverage.md)
 adds coherent mappings, memfd and further file/scheduler entries included in 0.9.0. The canonical

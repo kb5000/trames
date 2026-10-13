@@ -46,6 +46,13 @@ static void check_exec(void) {
 }
 int main(int argc,char **argv) {
     if (argc>1 && !strcmp(argv[1],"exec-child")) { check_exec(); return 0; }
+    // musl sign-extends SA_RESETHAND's signed int into the kernel flags word.
+    struct sigaction reset={.sa_handler=SIG_IGN,.sa_flags=SA_RESETHAND}, queried;
+    CHECK(sigaction(SIGUSR2,&reset,NULL)==0);
+    CHECK(sigaction(SIGUSR2,NULL,&queried)==0 && queried.sa_handler==SIG_IGN);
+    CHECK((queried.sa_flags & SA_RESETHAND)==SA_RESETHAND);
+    reset.sa_handler=SIG_DFL; reset.sa_flags=0;
+    CHECK(sigaction(SIGUSR2,&reset,NULL)==0);
     stack_t current, installed={.ss_sp=alt,.ss_size=sizeof alt};
     CHECK(sigaltstack(NULL,&current)==0 && (current.ss_flags&SS_DISABLE));
     stack_t bad=installed; bad.ss_size=1;

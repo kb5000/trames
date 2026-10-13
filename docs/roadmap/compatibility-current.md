@@ -7,6 +7,11 @@
 [系统日志记录](../validation/compatibility-log.md)和[共享映射与 ABI 扩展](../validation/mmap-coverage.md)。
 旧版审计保留各自的历史状态；本页作为当前剩余缺口的入口。
 
+[Node.js 兼容与内存模型](../architecture/nodejs-memory.md)补充了匿名私有
+PROT_NONE 地址预留、提交计费、argv/env 排布、musl 信号标志和标准流非阻塞行为。
+TCP 保活选项属于已有 setsockopt/getsockopt 的子集扩展；虚拟网络的探测间隔和
+次数仍是兼容参数，不等同于 Linux 的完整超时策略。系统调用入口数量保持不变。
+
 ## CPU：尚未实现与兼容替代
 
 范围是 AArch64 EL0 用户态。应用只保留一个 Rust 缓存解释器；计算优先使用

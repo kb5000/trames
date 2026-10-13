@@ -17,10 +17,32 @@
 #include <unistd.h>
 #define CHECK(x) do {if(!(x)){fprintf(stderr,"line %d: %s errno=%d\n",__LINE__,#x,errno);exit(1);}} while(0)
 #define P 4096
-static volatile void *expected_bus;
+static volatile void *volatile expected_bus;
 static void bus_handler(int signal,siginfo_t *info,void *context){(void)context;_exit(!(signal==SIGBUS&&info->si_code==BUS_ADRERR&&info->si_addr==expected_bus));}
 static void child_status(pid_t pid,int sig){int status;CHECK(waitpid(pid,&status,0)==pid);if(sig)CHECK(WIFSIGNALED(status)&&WTERMSIG(status)==sig);else CHECK(WIFEXITED(status)&&WEXITSTATUS(status)==0);}
+static void reserved_fault(int signal,siginfo_t *info,void *context){(void)context;_exit(!(signal==SIGSEGV&&info->si_code==SEGV_ACCERR&&info->si_addr==expected_bus));}
+static void reservations(void){
+ size_t size=(size_t)4*1024*1024*1024;
+ unsigned char *p=mmap(NULL,size,PROT_NONE,MAP_PRIVATE|MAP_ANONYMOUS,-1,0);CHECK(p!=MAP_FAILED);
+ CHECK(mmap(p+P,P,PROT_READ,MAP_PRIVATE|MAP_ANONYMOUS|MAP_FIXED_NOREPLACE,-1,0)==MAP_FAILED&&errno==EEXIST);
+ unsigned char state=1;CHECK(mincore(p,P,&state)==0&&state==0);
+ CHECK(madvise(p,size,MADV_NORMAL)==0&&msync(p,size,MS_SYNC)==0);
+ pid_t child=fork();CHECK(child>=0);if(!child){struct sigaction sa={.sa_sigaction=reserved_fault,.sa_flags=SA_SIGINFO};CHECK(sigaction(SIGSEGV,&sa,NULL)==0);expected_bus=p;unsigned char byte=*(volatile unsigned char *)p;(void)byte;_exit(1);}child_status(child,0);
+ CHECK(mprotect(p+P,P,PROT_READ|PROT_WRITE)==0);p[P]=42;
+ CHECK(mincore(p+P,P,&state)==0&&(state&1));
+ CHECK(mmap(p+2*P,P,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANONYMOUS|MAP_FIXED,-1,0)==p+2*P);p[2*P]=17;
+ CHECK(munmap(p+3*P,P)==0);
+ CHECK(mprotect(p+2*P,2*P,PROT_READ)==-1&&errno==ENOMEM);
+ // Linux may change the mapped prefix before failing at a hole.
+ CHECK(mprotect(p+2*P,P,PROT_READ|PROT_WRITE)==0);p[2*P]=18;CHECK(p[P]==42);
+ CHECK(munmap(p,size)==0);
+ p=mmap(NULL,size,PROT_NONE,MAP_PRIVATE|MAP_ANONYMOUS,-1,0);CHECK(p!=MAP_FAILED);
+ void *moved=mremap(p,size,size+P,MREMAP_MAYMOVE);CHECK(moved!=MAP_FAILED);
+ CHECK(mprotect(moved,P,PROT_READ|PROT_WRITE)==0&&*(unsigned char *)moved==0);
+ CHECK(munmap(moved,size+P)==0);
+}
 static void mappings(void){
+ reservations();
  int fd=open("mapped-file",O_CREAT|O_TRUNC|O_RDWR,0600);CHECK(fd>=0&&ftruncate(fd,P*2)==0);
  volatile unsigned char *a=mmap(0,P*3,PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);CHECK(a!=MAP_FAILED);
  volatile unsigned char *b=mmap(0,P*2,PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);CHECK(b!=MAP_FAILED);

@@ -8,7 +8,7 @@ pages remain rejected. Interpreter files come only from the checked guest VFS. G
 | Resource | Current bound |
 | --- | --- |
 | Input ELF | 64 MiB (the CLI reads at most the limit plus one byte) |
-| Mapped guest memory including stack | 64 MiB per process; 256 MiB aggregate logical mappings |
+| Committed guest page objects including stack | 512 MiB per address space; 1 GiB scheduler aggregate |
 | Virtual processes including zombies | 32 |
 | Pipe buffer / atomic write | 64 KiB / 4096 bytes |
 | PTY input, output and echo | 64 KiB each; empty EOF records also consume input budget |
@@ -18,6 +18,7 @@ pages remain rejected. Interpreter files come only from the checked guest VFS. G
 | Rootfs compressed / expanded input | 16 MiB / 128 MiB, pinned SHA-256 |
 | Rootfs entries / individual file | 16,384 / 64 MiB |
 | Initial stack | 1 MiB mapping, non-executable, unmapped page below it; argv/envp use at most 64 KiB |
+| Private anonymous PROT_NONE | Sparse virtual ranges within the 48-bit guest space; at most 65,536 reservation intervals. Accessible pages still count against the memory budget |
 | argv/envp entries combined | 4096 |
 | Virtual file data (all live files) | Disk: 16 GiB initial logical budget, configurable and volume-bounded; memory: 16 MiB |
 | VFS live nodes / namespace entries | Disk: 131,072 by default, configurable up to 262,144; memory: 1024 |

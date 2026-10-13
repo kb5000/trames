@@ -53,6 +53,8 @@ for source in ('crates/trames-core/src/process.rs', 'crates/trames-linux/src/sta
                 found.setdefault(number, f'{source}:{i + 1}')
 rows = list(csv.DictReader((OUT / 'compatibility-0.4-syscalls.csv').open()))
 notes = {
+    29: 'Selected tty/network ioctls and FIONBIO, including standard streams, dup-shared status flags, output/input backpressure and descriptor-only CLOEXEC.',
+    208: 'Selected socket options including TCP_KEEPIDLE/KEEPINTVL/KEEPCNT with Linux bounds. Native sockets use translated host options; virtual TCP uses the idle interval and retains interval/count as compatibility hints, not Linux probe/expiry timing.',
     31: 'IOPRIO_WHO_PROCESS query for current/existing virtual task; default CLASS_NONE/data 0. No host PID, priority setter, process-group or user query.',
     132: '24-byte AArch64 stack_t, SS_DISABLE/AUTODISARM, actual SA_ONSTACK delivery, nesting and ucontext restore; inherited by fork, cleared by exec and non-vfork CLONE_VM. 2048-byte ABI minimum; delivery still needs room for the signal frame.',
     283: 'Single cooperative virtual CPU GLOBAL and registered PRIVATE_EXPEDITED fences, QUERY/GET_REGISTRATIONS. Registration inherited by fork/shared by CLONE_VM, cleared by exec. No SYNC_CORE/RSEQ modes.',
@@ -71,10 +73,10 @@ notes = {
     168: 'Virtual CPU 0 and NUMA node 0, with both output pointers checked before writing.',
     213: 'Validated regular-file readahead hint; no host prefetch guarantee.',
     216: 'Shrink, grow, MAYMOVE and non-overlapping FIXED page-table remap; retain COW/shared backing. No zero-size alias duplication or DONTUNMAP.',
-    222: 'Private and coherent shared file/anonymous mappings, checked maximum write rights and live EOF/truncation SIGBUS. Bounded eager page objects.',
+    222: 'Private and coherent shared file/anonymous mappings, checked maximum write rights and live EOF/truncation SIGBUS. Private anonymous PROT_NONE uses sparse reservations; mprotect commits within the page budget. Reservation metadata capped at 65536 intervals.',
     223: 'Validate regular-file offset/length and six Linux advice values; prefetch/eviction remains an optional hint.',
     227: 'Flush shared backing with MS_SYNC/ASYNC/INVALIDATE argument checks; no host eviction or pinning model.',
-    232: 'Return residency of eagerly allocated valid page objects; absent mappings fail, pages beyond file EOF report zero.',
+    232: 'Return residency of allocated valid page objects; inaccessible uncommitted reservations and pages beyond file EOF report zero. Absent mappings fail; output capped to the selected 512 MiB range.',
     233: 'Selected memory access/huge-page/dump hints and real private-page DONTNEED discard. No DONTFORK, FREE, REMOVE or paging model.',
     267: 'Sync the virtual filesystem selected by a valid guest descriptor.',
     279: 'Anonymous memfd with CLOEXEC/ALLOW_SEALING and four classic fcntl seals; shared mapping coherence, lifetime and write-seal busy checks. Aggregate RAM budget 128 MiB.',
@@ -101,7 +103,7 @@ notes = {
     86: 'Relative/absolute timerfd arm/disarm, periodic expiration count and old-value preflight. CANCEL_ON_SET explicitly unsupported.',
     87: 'Timerfd interval/remaining time; shared open-description state.',
     199: 'Bounded AF_UNIX stream/datagram/seqpacket pairs; dup/fork, shutdown, peek/trunc and fault preflight. No named endpoints or ancillary FD passing.',
-    134: 'Selected rt_sigaction flags, actual alternate-stack delivery, nested virtual signal frames and synchronous CPU-fault context recovery. No SVE/SME signal context or full realtime signal queue.',
+    134: 'Selected rt_sigaction flags including musl sign-extended SA_RESETHAND, actual alternate-stack delivery, nested virtual signal frames and synchronous CPU-fault context recovery. No SVE/SME signal context or full realtime signal queue.',
     221: 'Exec preserves UID/GID/groups and set-ID results; auxv uses the same credentials.',
     441: 'Timespec epoll wait; not dispatched by the pinned QEMU 10.0.13 oracle, independently checked by M6 fixtures.',
 }
@@ -150,6 +152,8 @@ metadata = {
         'crates/trames-vfs/src/lib.rs', 'crates/trames-vfs/src/pseudo.rs', 'crates/trames-vfs/src/storage.rs',
         'crates/trames-vfs/src/kernel_log.rs', 'crates/trames-vfs/src/syscall_names.rs',
         'crates/trames-memory/src/lib.rs', 'crates/trames-memory/src/backing.rs',
+        'crates/trames-memory/src/reservations.rs', 'crates/trames-core/src/lib.rs',
+        'crates/trames-net/src/native.rs', 'crates/trames-net/src/virtualnet/sockets.rs',
         'crates/trames-vfs/src/mapped.rs', 'crates/trames-vfs/src/memfd.rs',
         'crates/trames-vfs/src/namespace.rs', 'crates/trames-vfs/src/credentials.rs')},
 }

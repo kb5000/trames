@@ -147,12 +147,17 @@ fn initial_stack_bytes(
     let mut cursor = STACK_TOP;
     let mut arguments = Vec::new();
     let mut environment = Vec::new();
-    for value in argv {
-        arguments.push(push_string(&mut elf.memory, &mut cursor, value)?);
-    }
-    for value in envp {
+    // Linux places argv[0..] then envp[0..] in increasing address order.
+    // libuv uses that contiguous region for process.title. Packing forwards
+    // onto a descending stack reverses it and can underflow its area length.
+    for value in envp.iter().rev() {
         environment.push(push_string(&mut elf.memory, &mut cursor, value)?);
     }
+    environment.reverse();
+    for value in argv.iter().rev() {
+        arguments.push(push_string(&mut elf.memory, &mut cursor, value)?);
+    }
+    arguments.reverse();
     cursor -= 16;
     let mut entropy = [0; 16];
     trames_linux::fill_entropy(&mut entropy)
@@ -415,6 +420,11 @@ mod tests {
         let mut name = [0; 8];
         e.memory.read(arg0, &mut name).unwrap();
         assert_eq!(&name, b"program\0");
+        let arg1 = e.memory.read_u64(sp + 16).unwrap();
+        let env0 = e.memory.read_u64(sp + 32).unwrap();
+        assert_eq!(arg1, arg0 + 8);
+        assert_eq!(env0, arg1 + 6);
+        assert_eq!(env0 + 6, STACK_TOP);
         assert_eq!(e.memory.read_u64(sp + 24).unwrap(), 0);
         assert_eq!(e.memory.read_u64(sp + 40).unwrap(), 0);
         assert_eq!(e.memory.read_u64(sp + 48).unwrap(), 6);

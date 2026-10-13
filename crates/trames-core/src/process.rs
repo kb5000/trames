@@ -274,6 +274,7 @@ impl Kernel {
             executable: p.linux.executable_path.clone(),
             cwd: p.linux.vfs.cwd().unwrap_or_else(|_| b"/".to_vec()),
             mapped_bytes: p.memory.mapped_bytes(),
+            virtual_bytes: p.memory.virtual_bytes(),
             maps: maps.into_bytes(),
             user_ticks: (p.cpu_time.as_millis() / 10) as u64,
             start_ticks: (p
@@ -1244,7 +1245,10 @@ impl Kernel {
                 }
                 let new = if a[1] != 0 {
                     Linux::check(&p.memory, a[1], 32, Access::Read)?;
-                    let flags = read_u64(&p.memory, a[1] + 8)?;
+                    // musl sign-extends its signed int sa_flags into the
+                    // kernel's unsigned long. SA_RESETHAND sets bit 31;
+                    // Linux accepts this representation and uses the low bits.
+                    let flags = read_u64(&p.memory, a[1] + 8)? as u32 as u64;
                     // Linux uses the ordinary stack for SA_ONSTACK while
                     // the alternate stack is disabled.
                     if flags & !0xdc000007 != 0 {
@@ -2529,6 +2533,35 @@ mod tests {
             native: trames_accel::native::Registry::default(),
         }
     }
+    #[test]
+    fn stdio_eagain_blocks_only_without_nonblocking_flag() {
+        struct Pending;
+        impl GuestOutput for Pending {
+            fn write(&mut self, _: OutputFd, _: &[u8]) -> std::io::Result<usize> {
+                Err(std::io::ErrorKind::WouldBlock.into())
+            }
+            fn poll_stdin(&mut self, _: &mut [u8]) -> std::io::Result<usize> {
+                Err(std::io::ErrorKind::WouldBlock.into())
+            }
+        }
+        let mut k = kernel();
+        let mut p = process();
+        p.memory.write(0x1000, b"a").unwrap();
+        let mut io = Pending;
+        for (number, fd, flags) in [(64, 1, 1), (63, 0, 0)] {
+            let args = [fd, 0x1000, 1, 0, 0, 0];
+            k.call(1, &mut p, number, args, &mut io);
+            assert!(matches!(p.state, State::Blocked(n, _) if n == number));
+            p.linux
+                .vfs
+                .set_status_flags(fd as u32, flags | O_NONBLOCK)
+                .unwrap();
+            k.call(1, &mut p, number, args, &mut io);
+            assert!(matches!(p.state, State::Ready));
+            assert_eq!(p.cpu.x(0), error(Errno(11)));
+        }
+    }
+
     #[test]
     fn close_range_unshare_detaches_only_callers_shared_table() {
         let mut k = kernel();
