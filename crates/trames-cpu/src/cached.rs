@@ -4,7 +4,7 @@ use super::{
     extended::{logical_mask, ones, rotate},
     shifted, sign_extend, width_mask, Cpu, CpuFault, Event, Flags, SliceOutcome,
 };
-use trames_memory::{Memory, PAGE_SIZE};
+use trames_memory::{CpuMemory, PAGE_SIZE};
 
 const SLOTS: usize = 128;
 const WAYS: usize = 2;
@@ -518,7 +518,7 @@ impl Clone for Cache {
 impl Cache {
     fn page(
         &mut self,
-        memory: &Memory,
+        memory: &impl CpuMemory,
         pc: u64,
     ) -> Result<(&mut CodePage, &mut super::DecodeStats), trames_memory::MemoryError> {
         let base = pc & !(PAGE_SIZE - 1);
@@ -583,7 +583,7 @@ impl Cache {
 }
 
 impl Cpu {
-    pub(super) fn run_cached(&mut self, memory: &mut Memory, budget: u64) -> SliceOutcome {
+    pub(super) fn run_cached(&mut self, memory: &mut impl CpuMemory, budget: u64) -> SliceOutcome {
         // Move the derived cache out once per slice; architectural state stays
         // directly accessible throughout execution, with no copy or FFI bounce.
         let mut cache = std::mem::replace(
@@ -600,7 +600,7 @@ impl Cpu {
     }
     fn cached_slice(
         &mut self,
-        memory: &mut Memory,
+        memory: &mut impl CpuMemory,
         budget: u64,
         cache: &mut Cache,
     ) -> SliceOutcome {
@@ -709,7 +709,7 @@ impl Cpu {
     fn execute_decoded(
         &mut self,
         ins: Instruction,
-        memory: &mut Memory,
+        memory: &mut impl CpuMemory,
         remaining: u64,
     ) -> Result<(Event, u64), CpuFault> {
         let pc = self.pc;
@@ -1137,6 +1137,8 @@ impl Cpu {
     }
 }
 
+#[cfg(test)]
+use trames_memory::Memory;
 #[cfg(test)]
 mod tests {
     use super::*;

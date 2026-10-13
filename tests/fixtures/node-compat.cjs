@@ -32,6 +32,38 @@ async function main() {
   const value = await new Promise((resolve, reject) => { worker.once('message', resolve); worker.once('error', reject); });
   assert.equal(value, 42);
   await worker.terminate();
+  if (process.env.TRAMES_SMP_WORKERS === '1') {
+    const buffer = new SharedArrayBuffer(8);
+    const state = new Int32Array(buffer);
+    const workers = [];
+    const ready = [], done = [];
+    for (let i = 0; i < 3; ++i) {
+      const thread = new Worker(`
+        const { parentPort, workerData } = require('node:worker_threads');
+        const state = new Int32Array(workerData);
+        parentPort.postMessage('ready');
+        while (Atomics.load(state, 0) === 0) Atomics.wait(state, 0, 0);
+        for (let i = 0; i < 1000; ++i) Atomics.add(state, 1, 1);
+        parentPort.postMessage('done');
+      `, { eval: true, workerData: buffer });
+      workers.push(thread);
+      let readyResolve, doneResolve, readyReject, doneReject;
+      ready.push(new Promise((resolve, reject) => { readyResolve = resolve; readyReject = reject; }));
+      done.push(new Promise((resolve, reject) => { doneResolve = resolve; doneReject = reject; }));
+      thread.on('message', value => {
+        if (value === 'ready') readyResolve();
+        else if (value === 'done') doneResolve();
+      });
+      thread.on('error', error => { readyReject(error); doneReject(error); });
+    }
+    await Promise.all(ready);
+    Atomics.store(state, 0, 1);
+    Atomics.notify(state, 0);
+    await Promise.all(done);
+    assert.equal(Atomics.load(state, 1), 3000);
+    await Promise.all(workers.map(thread => thread.terminate()));
+    console.log('node SharedArrayBuffer/Atomics wait, notify and concurrent add: ok');
+  }
   const child = await promisify(execFile)('/bin/sh', ['-c', 'printf child-ok']);
   assert.equal(child.stdout, 'child-ok');
   assert.equal(child.stderr, '');

@@ -213,6 +213,36 @@ pub fn vector_integer(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn concurrent_scopes_keep_each_threads_status_and_rounding() {
+        let gate = std::sync::Arc::new(std::sync::Barrier::new(4));
+        let workers: Vec<_> = (0..4)
+            .map(|index| {
+                let gate = gate.clone();
+                std::thread::spawn(move || {
+                    let before = host::save();
+                    for _ in 0..100 {
+                        {
+                            let _scope =
+                                Scope::new(index << 22, if index % 2 == 0 { 0 } else { 2 });
+                            let own = host::save();
+                            gate.wait();
+                            assert_eq!(host::save(), own);
+                            assert_eq!(status() & 2, if index % 2 == 0 { 0 } else { 2 });
+                            let value = scalar(64, FloatOp::Add, 2f64.to_bits(), 3f64.to_bits(), 0)
+                                .unwrap();
+                            assert_eq!(value, 5f64.to_bits());
+                            gate.wait();
+                        }
+                        assert_eq!(host::save(), before);
+                    }
+                })
+            })
+            .collect();
+        for worker in workers {
+            worker.join().unwrap();
+        }
+    }
 
     #[test]
     fn scope_restores_control_and_status_on_unwind() {

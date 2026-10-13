@@ -70,7 +70,7 @@ include both the bulk-copy gain and the sort regression/host timing variation.
 | P1 | Checked multi-page spans and native NEON scans | Reduce per-page dispatch; speed bulk compare/search/fill with bounded SIMD tails | Queued; sparse mappings and COW prohibit a universal contiguous pointer |
 | P1 | Operations beyond 64 KiB | Keep large copies/scans native while retaining scheduling checkpoints | Currently original fallback; cooperative chunks need overlap direction, alias coherence and a continuation that never restarts partially moved data |
 | P1 | Call thresholds and prefix policy | Avoid spending more on validation than the guest operation saves | Current 128/64 policy retained; tune from occasional device/application measurements |
-| P1 | Linux pathname/string reads | Use checked page borrows while constructing the necessary owned syscall argument; avoid copying/allocating an entire page for a short name | Queued for the generic Memory/VFS boundary |
+| P1 | Linux pathname/string reads | Use checked page borrows while constructing the necessary owned syscall argument; avoid copying/allocating an entire page for a short name | Implemented at the checked Memory/VFS boundary |
 | P2 | strspn, strcspn, strpbrk | Character-set tables and native bulk scans; small sets can stay local | Queued; no shared global scratch |
 | P2 | strstr, memmem | Long searches benefit from original musl's linear-time algorithms | Queued; cap scanned work and retain continuation/fallback semantics |
 | P2 | strcasecmp, strncasecmp and `_l` forms | Text matching; unsigned-byte folding | Start with C locale; guest locale objects need a checked contract |
@@ -127,3 +127,12 @@ version-checked stub reuse, direct resident pathname reads and single-page write
 validation. Application benefit is determined by the recorded before/after batch.
 Owner policy permits audited unsafe Rust boundaries with explicit operations,
 rather than a blanket production ban.
+
+The owner prioritized [multicore execution](../architecture/multicore.md) before
+further memory/native work. Host workers now execute guest CPU slices concurrently;
+NativeCall, syscalls and backing hooks initially retain joined checkpoints. Ordinary
+guest data races can interleave, while host mutable accesses remain race-free and
+ARM atomic/fence constraints remain enforced. Subsequent borrowing/SIMD work should
+reduce these measured boundaries without transporting mutable Rc/VFS objects or
+unvalidated host pointers to CPU workers. [Measurements](../validation/multicore.md)
+include both multicore scaling and single-core overhead.

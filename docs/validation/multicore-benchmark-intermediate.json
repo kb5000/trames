@@ -1,0 +1,531 @@
+{
+  "baseline_commit": "3744ad66fd3950a9875ef5ac7c50cfc9769d8b20",
+  "baseline_sha256": "6bd0ad6642d6bf5091c631d74f8872b686b4e51da4281c8913fd0c2d59b97e23",
+  "candidate_sha256": "7e7cec956220c087a13322d708ddd5e56a47f91a72e6ea879916931fa041bd1e",
+  "fixture_sha256": "8e85139e8ca476c45b7cb3a33d495ce1288c85b55a56d8e1a394a69a7a9c7b7a",
+  "memory_fixture_sha256": "1bad035693af4c9dcf92e91c5938a3fbdda44dc2087088cc6dcfc374dd73365a",
+  "host": "x86_64",
+  "cpu_quota": "400000 100000",
+  "cpu_affinity": 5,
+  "guest": "aarch64",
+  "compiler": "Rust 1.90.0 release/all-features",
+  "loops_per_guest_thread": 2000000,
+  "guest_threads": 4,
+  "rows": [
+    {
+      "workload": "four-thread-compute",
+      "samples": {
+        "baseline": [
+          {
+            "runtime": {
+              "backend": "cached",
+              "instructions": 56008954,
+              "seconds": 0.764798527,
+              "instructions_per_second": 73233606.00562455,
+              "cpu_seconds": 0.69357978,
+              "syscall_seconds": 0.002597113,
+              "idle_seconds": 0,
+              "syscalls": 53,
+              "proc_refreshes": 1,
+              "context_switches": 13721,
+              "decode_lookups": 14009,
+              "decode_misses": 30,
+              "instructions_decoded": 2460
+            },
+            "wall_seconds": 0.7728174759831745,
+            "host_cpu_seconds": 0.7725879999999999
+          },
+          {
+            "runtime": {
+              "backend": "cached",
+              "instructions": 56008954,
+              "seconds": 0.652627802,
+              "instructions_per_second": 85820668.11796656,
+              "cpu_seconds": 0.590617152,
+              "syscall_seconds": 0.000794803,
+              "idle_seconds": 0,
+              "syscalls": 53,
+              "proc_refreshes": 1,
+              "context_switches": 13721,
+              "decode_lookups": 14009,
+              "decode_misses": 30,
+              "instructions_decoded": 2460
+            },
+            "wall_seconds": 0.659492623002734,
+            "host_cpu_seconds": 0.65909
+          },
+          {
+            "runtime": {
+              "backend": "cached",
+              "instructions": 56008954,
+              "seconds": 0.639611455,
+              "instructions_per_second": 87567152.78027658,
+              "cpu_seconds": 0.58185374,
+              "syscall_seconds": 0.000539546,
+              "idle_seconds": 0,
+              "syscalls": 53,
+              "proc_refreshes": 1,
+              "context_switches": 13721,
+              "decode_lookups": 14009,
+              "decode_misses": 30,
+              "instructions_decoded": 2460
+            },
+            "wall_seconds": 0.6463014679902699,
+            "host_cpu_seconds": 0.6442430000000003
+          }
+        ],
+        "1": [
+          {
+            "runtime": {
+              "backend": "cached",
+              "context_switches": 13721,
+              "cpu_count": 1,
+              "cpu_seconds": 0.614919929,
+              "decode_lookups": 14009,
+              "decode_misses": 30,
+              "idle_seconds": 0.0,
+              "instructions": 56008954,
+              "instructions_decoded": 2460,
+              "instructions_per_second": 83610970.67957647,
+              "memory_seconds": 0.0,
+              "parallel_rounds": 0,
+              "peak_parallel_cpus": 0,
+              "proc_refreshes": 1,
+              "seconds": 0.669875658,
+              "syscall_seconds": 0.001949938,
+              "syscalls": 53,
+              "worker_slices": 0
+            },
+            "wall_seconds": 0.6773411050089635,
+            "host_cpu_seconds": 0.6770189999999999
+          },
+          {
+            "runtime": {
+              "backend": "cached",
+              "context_switches": 13721,
+              "cpu_count": 1,
+              "cpu_seconds": 0.730798841,
+              "decode_lookups": 14009,
+              "decode_misses": 30,
+              "idle_seconds": 0.0,
+              "instructions": 56008954,
+              "instructions_decoded": 2460,
+              "instructions_per_second": 70153222.96137702,
+              "memory_seconds": 0.0,
+              "parallel_rounds": 0,
+              "peak_parallel_cpus": 0,
+              "proc_refreshes": 1,
+              "seconds": 0.79838034,
+              "syscall_seconds": 0.001246118,
+              "syscalls": 53,
+              "worker_slices": 0
+            },
+            "wall_seconds": 0.8042053600074723,
+            "host_cpu_seconds": 0.8039810000000005
+          },
+          {
+            "runtime": {
+              "backend": "cached",
+              "context_switches": 13721,
+              "cpu_count": 1,
+              "cpu_seconds": 0.631185717,
+              "decode_lookups": 14009,
+              "decode_misses": 30,
+              "idle_seconds": 0.0,
+              "instructions": 56008954,
+              "instructions_decoded": 2460,
+              "instructions_per_second": 81527700.7290308,
+              "memory_seconds": 0.0,
+              "parallel_rounds": 0,
+              "peak_parallel_cpus": 0,
+              "proc_refreshes": 1,
+              "seconds": 0.68699293,
+              "syscall_seconds": 0.000558663,
+              "syscalls": 53,
+              "worker_slices": 0
+            },
+            "wall_seconds": 0.6931364200136159,
+            "host_cpu_seconds": 0.6920360000000004
+          }
+        ],
+        "2": [
+          {
+            "runtime": {
+              "backend": "cached",
+              "context_switches": 1769,
+              "cpu_count": 2,
+              "cpu_seconds": 1.193220086,
+              "decode_lookups": 2057,
+              "decode_misses": 43,
+              "idle_seconds": 0.0,
+              "instructions": 56008954,
+              "instructions_decoded": 2900,
+              "instructions_per_second": 57079759.20929305,
+              "memory_seconds": 0.020216728,
+              "parallel_rounds": 874,
+              "peak_parallel_cpus": 2,
+              "proc_refreshes": 1,
+              "seconds": 0.981240194,
+              "syscall_seconds": 0.000745781,
+              "syscalls": 53,
+              "worker_slices": 1748
+            },
+            "wall_seconds": 0.9860823580238502,
+            "host_cpu_seconds": 1.3987530000000001
+          },
+          {
+            "runtime": {
+              "backend": "cached",
+              "context_switches": 1769,
+              "cpu_count": 2,
+              "cpu_seconds": 0.664998048,
+              "decode_lookups": 2057,
+              "decode_misses": 43,
+              "idle_seconds": 0.0,
+              "instructions": 56008954,
+              "instructions_decoded": 2900,
+              "instructions_per_second": 85061977.57856221,
+              "memory_seconds": 0.027873391,
+              "parallel_rounds": 874,
+              "peak_parallel_cpus": 2,
+              "proc_refreshes": 1,
+              "seconds": 0.658448764,
+              "syscall_seconds": 0.000850065,
+              "syscalls": 53,
+              "worker_slices": 1748
+            },
+            "wall_seconds": 0.6638188579818234,
+            "host_cpu_seconds": 0.8208600000000004
+          },
+          {
+            "runtime": {
+              "backend": "cached",
+              "context_switches": 1769,
+              "cpu_count": 2,
+              "cpu_seconds": 0.68192298,
+              "decode_lookups": 2057,
+              "decode_misses": 43,
+              "idle_seconds": 0.0,
+              "instructions": 56008954,
+              "instructions_decoded": 2900,
+              "instructions_per_second": 83826268.36036287,
+              "memory_seconds": 0.018209989,
+              "parallel_rounds": 874,
+              "peak_parallel_cpus": 2,
+              "proc_refreshes": 1,
+              "seconds": 0.668155163,
+              "syscall_seconds": 0.002673617,
+              "syscalls": 53,
+              "worker_slices": 1748
+            },
+            "wall_seconds": 0.6787483080115635,
+            "host_cpu_seconds": 0.8300410000000003
+          }
+        ],
+        "4": [
+          {
+            "runtime": {
+              "backend": "cached",
+              "context_switches": 1762,
+              "cpu_count": 4,
+              "cpu_seconds": 0.949753917,
+              "decode_lookups": 2050,
+              "decode_misses": 43,
+              "idle_seconds": 0.0,
+              "instructions": 56008954,
+              "instructions_decoded": 2900,
+              "instructions_per_second": 71061254.35167278,
+              "memory_seconds": 0.033503801,
+              "parallel_rounds": 445,
+              "peak_parallel_cpus": 4,
+              "proc_refreshes": 1,
+              "seconds": 0.788178516,
+              "syscall_seconds": 0.000835742,
+              "syscalls": 53,
+              "worker_slices": 1749
+            },
+            "wall_seconds": 0.7952667349891271,
+            "host_cpu_seconds": 1.2376590000000005
+          },
+          {
+            "runtime": {
+              "backend": "cached",
+              "context_switches": 1762,
+              "cpu_count": 4,
+              "cpu_seconds": 0.804615182,
+              "decode_lookups": 2050,
+              "decode_misses": 43,
+              "idle_seconds": 0.0,
+              "instructions": 56008954,
+              "instructions_decoded": 2900,
+              "instructions_per_second": 133436758.56014699,
+              "memory_seconds": 0.01095664,
+              "parallel_rounds": 445,
+              "peak_parallel_cpus": 4,
+              "proc_refreshes": 1,
+              "seconds": 0.419741566,
+              "syscall_seconds": 0.000559425,
+              "syscalls": 53,
+              "worker_slices": 1749
+            },
+            "wall_seconds": 0.4260092950135004,
+            "host_cpu_seconds": 0.9376399999999995
+          },
+          {
+            "runtime": {
+              "backend": "cached",
+              "context_switches": 1762,
+              "cpu_count": 4,
+              "cpu_seconds": 0.779916244,
+              "decode_lookups": 2050,
+              "decode_misses": 43,
+              "idle_seconds": 0.0,
+              "instructions": 56008954,
+              "instructions_decoded": 2900,
+              "instructions_per_second": 143382146.64582178,
+              "memory_seconds": 0.010611355,
+              "parallel_rounds": 445,
+              "peak_parallel_cpus": 4,
+              "proc_refreshes": 1,
+              "seconds": 0.390627113,
+              "syscall_seconds": 0.000587573,
+              "syscalls": 53,
+              "worker_slices": 1749
+            },
+            "wall_seconds": 0.39575287100160494,
+            "host_cpu_seconds": 0.9134210000000008
+          }
+        ]
+      },
+      "median_seconds": {
+        "baseline": 0.652627802,
+        "1": 0.68699293,
+        "2": 0.668155163,
+        "4": 0.419741566
+      },
+      "speedup_vs_current_1": {
+        "baseline": 1.0526565492531683,
+        "1": 1.0,
+        "2": 1.0281937011687807,
+        "4": 1.636704547864578
+      },
+      "baseline_over_current_1": 0.9499774648335901
+    },
+    {
+      "workload": "single-thread-memory",
+      "samples": {
+        "baseline": [
+          {
+            "runtime": {
+              "backend": "cached",
+              "instructions": 13000020,
+              "seconds": 0.253776657,
+              "instructions_per_second": 51226224.482892446,
+              "cpu_seconds": 0.249116094,
+              "syscall_seconds": 6.5363e-05,
+              "idle_seconds": 0,
+              "syscalls": 2,
+              "proc_refreshes": 1,
+              "context_switches": 3175,
+              "decode_lookups": 3175,
+              "decode_misses": 1,
+              "instructions_decoded": 33
+            },
+            "wall_seconds": 0.25683638398186304,
+            "host_cpu_seconds": 0.2563959999999995
+          },
+          {
+            "runtime": {
+              "backend": "cached",
+              "instructions": 13000020,
+              "seconds": 0.233796803,
+              "instructions_per_second": 55603925.430922166,
+              "cpu_seconds": 0.228891835,
+              "syscall_seconds": 6.3554e-05,
+              "idle_seconds": 0,
+              "syscalls": 2,
+              "proc_refreshes": 1,
+              "context_switches": 3175,
+              "decode_lookups": 3175,
+              "decode_misses": 1,
+              "instructions_decoded": 33
+            },
+            "wall_seconds": 0.23752845500712283,
+            "host_cpu_seconds": 0.2372320000000011
+          },
+          {
+            "runtime": {
+              "backend": "cached",
+              "instructions": 13000020,
+              "seconds": 0.25128445,
+              "instructions_per_second": 51734279.61817773,
+              "cpu_seconds": 0.246567095,
+              "syscall_seconds": 6.1191e-05,
+              "idle_seconds": 0,
+              "syscalls": 2,
+              "proc_refreshes": 1,
+              "context_switches": 3175,
+              "decode_lookups": 3175,
+              "decode_misses": 1,
+              "instructions_decoded": 33
+            },
+            "wall_seconds": 0.2548345240065828,
+            "host_cpu_seconds": 0.254482
+          }
+        ],
+        "1": [
+          {
+            "runtime": {
+              "backend": "cached",
+              "context_switches": 3175,
+              "cpu_count": 1,
+              "cpu_seconds": 0.323591341,
+              "decode_lookups": 3175,
+              "decode_misses": 1,
+              "idle_seconds": 0.0,
+              "instructions": 13000020,
+              "instructions_decoded": 33,
+              "instructions_per_second": 38931468.553198084,
+              "memory_seconds": 0.0,
+              "parallel_rounds": 0,
+              "peak_parallel_cpus": 0,
+              "proc_refreshes": 1,
+              "seconds": 0.333920617,
+              "syscall_seconds": 5.3459e-05,
+              "syscalls": 2,
+              "worker_slices": 0
+            },
+            "wall_seconds": 0.3377316169789992,
+            "host_cpu_seconds": 0.3372640000000019
+          },
+          {
+            "runtime": {
+              "backend": "cached",
+              "context_switches": 3175,
+              "cpu_count": 1,
+              "cpu_seconds": 0.254604242,
+              "decode_lookups": 3175,
+              "decode_misses": 1,
+              "idle_seconds": 0.0,
+              "instructions": 13000020,
+              "instructions_decoded": 33,
+              "instructions_per_second": 49910753.56706232,
+              "memory_seconds": 0.0,
+              "parallel_rounds": 0,
+              "peak_parallel_cpus": 0,
+              "proc_refreshes": 1,
+              "seconds": 0.260465312,
+              "syscall_seconds": 5.0961e-05,
+              "syscalls": 2,
+              "worker_slices": 0
+            },
+            "wall_seconds": 0.26457999998820014,
+            "host_cpu_seconds": 0.263160999999999
+          },
+          {
+            "runtime": {
+              "backend": "cached",
+              "context_switches": 3175,
+              "cpu_count": 1,
+              "cpu_seconds": 0.323896284,
+              "decode_lookups": 3175,
+              "decode_misses": 1,
+              "idle_seconds": 0.0,
+              "instructions": 13000020,
+              "instructions_decoded": 33,
+              "instructions_per_second": 39363948.3689682,
+              "memory_seconds": 0.0,
+              "parallel_rounds": 0,
+              "peak_parallel_cpus": 0,
+              "proc_refreshes": 1,
+              "seconds": 0.330251932,
+              "syscall_seconds": 5.1028e-05,
+              "syscalls": 2,
+              "worker_slices": 0
+            },
+            "wall_seconds": 0.3339111440000124,
+            "host_cpu_seconds": 0.33327500000000054
+          }
+        ]
+      },
+      "median_seconds": {
+        "baseline": 0.25128445,
+        "1": 0.330251932
+      },
+      "speedup_vs_current_1": {
+        "baseline": 1.3142553468788063,
+        "1": 1.0
+      },
+      "baseline_over_current_1": 0.7608871459985886
+    }
+  ],
+  "source_sha256": {
+    "crates/trames-accel/src/callbacks.rs": "5063a46ba75a3e0c222e5347d54d19ac5f7b06d74697070b56c9d7be41964d3f",
+    "crates/trames-accel/src/integer.rs": "575d4f76c0efb9bf8e6605d7e1f2ccb8386f64c3fc1a9ce28b4bf9e65d8af81e",
+    "crates/trames-accel/src/lib.rs": "56d649a679caa698c22b9a4fd881ddf8f7a821029bca793b48afded17e092ef0",
+    "crates/trames-accel/src/native.rs": "d3b075b5aa43cdd1231ae24f43a78cb948d700f835856f0c2cbff19e11bee799",
+    "crates/trames-accel/src/numeric.rs": "4175156a7fa6877fb5e2987495e7d1993f20285da44bdd68840c43091cb6be06",
+    "crates/trames-accel/src/strings.rs": "c3c2bbd395c858a8e6076321c637c8acf1d152dcf9583992d9f85445944a81f4",
+    "crates/trames-bridge/src/lib.rs": "acc608c609aefdb783d95b9eebd537fccdc9585b41997ac6c277443b7cb52576",
+    "crates/trames-cli/src/main.rs": "76f8089fccf3c31a7537ba44a3053bf7f713403c416db3070afc8625fc337679",
+    "crates/trames-compute/src/arm.rs": "8db8e7dd09132ab299f68e153838b4a25d50ade7d54197414470e03915198fb6",
+    "crates/trames-compute/src/lib.rs": "746ab3eb4428521436d43ed89214a97bb71d1b4959cc3a74b27eea522e769af9",
+    "crates/trames-compute/src/x86.rs": "62168f148b1ffe4fadf89bceabd2441ee4fd1026b1873acd66779e2fbdf1cba2",
+    "crates/trames-core/src/lib.rs": "8ae8003b1766a13f8b0720df68a3741d86666377dba11aa8a1ba943fbf73d264",
+    "crates/trames-core/src/process.rs": "558f8db5cf43f4c1c996c5fdf1e3aa6381da246f173768f70c28c0c234762265",
+    "crates/trames-core/src/process_compat.rs": "1218611aa789f4d28c243fafeb9fcaa3ed453684777995b8e5c76ccd6e42c454",
+    "crates/trames-core/src/process_events.rs": "8aefd9dd1d3ceddfa1d1ca3d1c21c2529803922de0a3bb5feda30f2ddd2a2d1f",
+    "crates/trames-core/src/terminal.rs": "cc814e36ec3305b514af7d7660a0af2971fa58d42735bbe89e05a9b9b0d5c8d6",
+    "crates/trames-core/src/workers.rs": "0b2055c3c2847f4a30c247fbc2ccd86889a5b006cc8cf724a3899417dc1da531",
+    "crates/trames-cpu/src/cached.rs": "33820931d34c9758eeed161f855ecbf1b6422dad3e899547da63702c4f16557e",
+    "crates/trames-cpu/src/compatibility.rs": "b5af18d9d7dea017c0a6fdc532aac0ec31c9503b901c8ad88be076f21d73dea3",
+    "crates/trames-cpu/src/crypto.rs": "9242d5e341f7ec5d2246d32e6f2215cbd7b46888426540101c23eaf3f0e2558a",
+    "crates/trames-cpu/src/extended.rs": "29c6028bbe390d082d9a0b21a1849bca11d2a8beac75ed07f87d34197d1f5c01",
+    "crates/trames-cpu/src/floating.rs": "1b68a62fbffcd9b3ee6b2adfc716da1aabdbac87805e02974fb30ee58262cdfc",
+    "crates/trames-cpu/src/half_vector.rs": "6b58f896f2deb68458f9714f1e04cb0054c14faafc18a65ad3bc34174ab86ad8",
+    "crates/trames-cpu/src/lib.rs": "0c7e3c292ed0a6e4cb9af57b316549a0cde95b1c138e53e8217faf66487d02ed",
+    "crates/trames-cpu/src/load_store.rs": "097d94820bd9b5d5f7a02cc62be96db716246511707afeac4731e8359de19573",
+    "crates/trames-cpu/src/modern_crypto.rs": "ef554a2cd833b319d19a6569223743e0a96e597cf398ab367552c52b7c0fc3ac",
+    "crates/trames-cpu/src/modern_memory.rs": "af2fa7bbf6fac9e873ab282e4e853437ff62c53894d1596736cc6573a9ac8b43",
+    "crates/trames-cpu/src/modern_scalar.rs": "a0c52109adeb803fdd1b1cce57d2faa104dfdf41d40981409d94ca67e0e21678",
+    "crates/trames-cpu/src/soft_float.rs": "dd9756709ce1129cf9d0420c0fb5114408a8e26c46dcded19153a3382b98b771",
+    "crates/trames-cpu/src/vector_extensions.rs": "4f04b1b44f355ba15fd89c4f8a10b19cb2e862e25f2bfbfc8feb079fdd98744e",
+    "crates/trames-cpu/src/vector_extra_float.rs": "e80dbe1228aa38019da00fce4e91f080d3187c991b8b4075f5da9c44bb1454e5",
+    "crates/trames-cpu/src/vector_float.rs": "6fcc0ecfbda1d4e7220629053fa573430b40ceb8439430068cc9ec852e4a4a78",
+    "crates/trames-cpu/src/vector_integer.rs": "c98780bff525c37c1a70eced7c34ae0e7ce24b22f5102e5bce22823d582687cf",
+    "crates/trames-distro/src/lib.rs": "eca4f68a5cd693443754997af94145fe6f74dafb6a2aa9ecaf936ee4c9f43472",
+    "crates/trames-elf/src/lib.rs": "c734993528e2e6d2c086492de9ebc25f5b02d7c6efa7291603837071b9b8a983",
+    "crates/trames-ffi/src/lib.rs": "3c8720f2b876cc58a8bc8119a6121966a2488632bad390e4a4fa1b4cc3e8b440",
+    "crates/trames-ffi/src/session.rs": "848eafa2fad40c67dfe5be593b002ed52b4f3905f603cb5ea238bbfb3322cd58",
+    "crates/trames-linux/src/file_calls.rs": "f0f3ec111b45a9514e205aa62af462f5faea4a45c13daf01e67e6f47af00c940",
+    "crates/trames-linux/src/lib.rs": "f3eb6a7626d1317740fcde6ad9b3f8acc78a6e9398ecc04cb1d77b09a5d43da0",
+    "crates/trames-linux/src/network.rs": "88ee4fad4624c0ade1818c77c90b32deafb9ca5293830b8e564b0e6f14255052",
+    "crates/trames-linux/src/state.rs": "d67dbe33414d8905c42f6e0053cd473e528359a35f94bd77ab7b310382ef3c39",
+    "crates/trames-memory/src/backing.rs": "3750df8936f0baa6fb6d330ca63a0c8ceca57c075ca4ab97a499579b97b93b7d",
+    "crates/trames-memory/src/cpu_memory.rs": "3e5324049fb9b2d11ae4d8eb2fd2575a4981f766618062c2004f53696da5e7b3",
+    "crates/trames-memory/src/lib.rs": "f0ff787136c974688d1f766bfb6cd722072e6bb4f6b98bd71665ddf74b91a5a8",
+    "crates/trames-memory/src/native_access.rs": "248f67444009ad6384f8fbf22d8905ce81a8d4483b07858f912387cc0a0fe010",
+    "crates/trames-memory/src/parallel.rs": "0ee3f75fe7e54692336db65ad73d95f09c06452152e13435f0bba5c12ede27f2",
+    "crates/trames-memory/src/reservations.rs": "de7483b835ddb8fd664e9af80bb1e0a047c2143aea06c400e7d5e9a0ef9c7d39",
+    "crates/trames-native/src/lib.rs": "2be6997f55f01a3c687b81f4fe38799c318fcc33c1549b4c9e81c64ef0f64c09",
+    "crates/trames-native/src/parse.rs": "ee3fc1886688786664736939a76df69db68e8158c5f292d2d3ed088e8c09294c",
+    "crates/trames-net/src/lib.rs": "110f8b9467e1197a1e1a800a68e218e457a0be826ddccc6edf50f4f08d287cb9",
+    "crates/trames-net/src/native.rs": "d2e3a0ea6680087697e68897c9b796fc7d2c22bf3a0c85efbc41b183132631ef",
+    "crates/trames-net/src/netlink.rs": "37ee305e9e29ce6add2f4ebcab604a30d7d44178b82b6e97023ee0853e9b48f0",
+    "crates/trames-vfs/src/credentials.rs": "9562a2e4eff0b695ed712b22bcdbb9983df30d24ac84c9253edd2e768ac8ead1",
+    "crates/trames-vfs/src/events.rs": "9f0497186e118a9cc947f8b9637f4af78142221bf557dd93fff7f8cc52e5c873",
+    "crates/trames-vfs/src/ipc.rs": "70359a41d4fcb60dc16f533878bff4297af9f9ada07fe2243d444766354c9dea",
+    "crates/trames-vfs/src/kernel_log.rs": "90d101f578f93223ec3484fa00e4c4f912147a3de76d5bbd56d313a2178e4ca3",
+    "crates/trames-vfs/src/lib.rs": "431240adb4b83e51233a58b2018d9efa8f167dfe89ac8a4da605bee1c03f0796",
+    "crates/trames-vfs/src/locks.rs": "bfd76ae2d7a69185cfaa863e5de60732e6ed1f0bf954746a2a06f72aca812d9b",
+    "crates/trames-vfs/src/mapped.rs": "45589c6e8e2b9ff474546d271900f6ae251604bc37d6be0930fbca20e4adeaf2",
+    "crates/trames-vfs/src/memfd.rs": "f3e7baf02c28e450483bd1e51d47c5c2b0da1181c9342a4605e6e2c2aedc3752",
+    "crates/trames-vfs/src/namespace.rs": "ed19a408f92d982b444edb7e768f8ede03d4b48c2f3ad65952257fa5069fe93e",
+    "crates/trames-vfs/src/network.rs": "fd7605b245fbcb7b4b907f6e8573adf24c1a00fc391d0f9e9a35db6ebb8d1957",
+    "crates/trames-vfs/src/pseudo.rs": "fa5ee84fe1850c5e9cb3367160e607a4d4e8e0ab41b31649978afc57888bf4e3",
+    "crates/trames-vfs/src/storage.rs": "8c421897e2c195d69029ec898c417ad65dc9d3bc176dbdaef63631cf9e1927b7",
+    "crates/trames-vfs/src/storage_tests.rs": "148ca9d136c79fdf287f4388fb11d5ca71c767f18ecf426dc1435d58db54bed1",
+    "crates/trames-vfs/src/syscall_names.rs": "3fa0cb4f8a3cc71f32f37dcfff68b70fb1da60ec36b9a005024559a3bcb363bc"
+  },
+  "limits": "Development x86_64 host with four-core cgroup quota; no physical iPad timing or general application speedup claim."
+}

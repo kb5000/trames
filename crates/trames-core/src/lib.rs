@@ -6,6 +6,7 @@ use trames_elf::{ElfError, LoadedElf};
 use trames_linux::{GuestOutput, Linux};
 mod process;
 mod terminal;
+mod workers;
 use trames_memory::{Memory, MemoryError, Permissions, DEFAULT_MEMORY_LIMIT, PAGE_SIZE};
 
 #[derive(Default, Clone, Copy)]
@@ -68,10 +69,17 @@ pub struct Runtime {
     pub terminal: Option<terminal::Terminal>,
     pub metrics: RuntimeMetrics,
     pub profile_syscalls: bool,
+    /// Virtual CPU worker limit; 1 retains the existing local fast path.
+    pub cpu_count: usize,
 }
 /// Host monotonic timings; these are diagnostics, never guest clock values.
 #[derive(Default, Debug)]
 pub struct RuntimeMetrics {
+    pub cpu_count: usize,
+    pub parallel_rounds: u64,
+    pub worker_slices: u64,
+    pub peak_parallel_cpus: usize,
+    pub parallel_memory_time: std::time::Duration,
     pub cpu_time: std::time::Duration,
     pub syscall_time: std::time::Duration,
     pub idle_time: std::time::Duration,
@@ -314,6 +322,9 @@ impl Runtime {
             terminal: None,
             metrics: RuntimeMetrics::default(),
             profile_syscalls: false,
+            cpu_count: std::thread::available_parallelism()
+                .map_or(1, |n| n.get())
+                .min(32),
         })
     }
     pub fn load(bytes: &[u8], argv: &[String], envp: &[String]) -> Result<Self, RuntimeError> {
@@ -386,6 +397,7 @@ mod tests {
             terminal: None,
             metrics: RuntimeMetrics::default(),
             profile_syscalls: false,
+            cpu_count: 1,
         };
         let exit = runtime
             .run(&mut trames_linux::CapturedOutput::default(), 100)
@@ -472,6 +484,7 @@ mod tests {
             terminal: None,
             metrics: RuntimeMetrics::default(),
             profile_syscalls: false,
+            cpu_count: 1,
         };
         let mut out = trames_linux::CapturedOutput::default();
         assert!(matches!(
@@ -522,6 +535,7 @@ mod accelerator_tests {
             terminal: None,
             metrics: RuntimeMetrics::default(),
             profile_syscalls: false,
+            cpu_count: 1,
         }
     }
     #[test]

@@ -1,6 +1,6 @@
-# 当前 CPU 指令与 Linux 系统调用缺口（0.10.0）
+# 当前 CPU 指令与 Linux 系统调用缺口（开发分支）
 
-审计日期：2026-10-12。运行时代码基于已验证的
+审计日期：2026-10-13。运行时代码基于已验证的
 [0.8.0/build 9](https://github.com/kb5000/trames/tree/5d6f1076297385a0d120ff68b02a8c759d3a0db2)。
 本页已纳入后续文件接口与系统日志实现，并重新生成清单和探测结果。
 0.9.0/build 10 已通过 Linux / Apple CI 和七项 iPad 模拟器测试，安装包及证据见[发布记录](../validation/release-0.9.md)；具体范围见
@@ -11,6 +11,11 @@
 PROT_NONE 地址预留、提交计费、argv/env 排布、musl 信号标志和标准流非阻塞行为。
 TCP 保活选项属于已有 setsockopt/getsockopt 的子集扩展；虚拟网络的探测间隔和
 次数仍是兼容参数，不等同于 Linux 的完整超时策略。系统调用入口数量保持不变。
+
+[多核执行](../architecture/multicore.md)已实现宿主 CPU 工作线程、共享访存事务、
+ARM 独占/原子/acquire-release/屏障及共享 futex 键；内核和 NativeCall 初期仍集中处理。
+采用 ARM 允许结果的较强子集，不复现所有弱内存交错；普通读写之间仍允许竞争。
+这次扩大已有接口语义，系统调用入口数与指令审计样本数保持不变。
 
 ## CPU：尚未实现与兼容替代
 
@@ -82,7 +87,7 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 | --- | --- |
 | statx / syslog | statx 不报告未有依据的 birth time、DIO 对齐等可选字段；syslog 不接管宿主内核日志或控制台 |
 | mmap / 内存管理 | 已有共享文件/匿名映射、写回、EOF/truncate SIGBUS、选定 remap/discard；仍缺需求分页/回收、MAP_SYNC、huge pages、DONTUNMAP、跨不同映射段 remap 等 |
-| memfd / 文件接口 / 调度 | memfd 的新 sealing/huge/no-exec 模式、openat2 的非零 resolve 要求、更多 RWF flags、实时策略仍缺失；目前单个虚拟 CPU |
+| memfd / 文件接口 / 调度 | memfd 的新 sealing/huge/no-exec 模式、openat2 的非零 resolve 要求、更多 RWF flags、实时策略仍缺失；已支持 1–32 个虚拟 CPU、实际宿主并行、affinity 与 getcpu |
 | rt_sigaction / 信号帧 | 备用信号栈、嵌套及 AUTODISARM 已实现；完整实时排队、SVE/SME 信号上下文仍缺失；同步 CPU 故障恢复已有实现 |
 | socket / socketpair | Unix socketpair 已实现；具名 AF_UNIX 端点、SCM_RIGHTS 等辅助消息传递仍缺失 |
 | epoll | level-triggered 和 ONESHOT 已实现；EPOLLET、嵌套 epoll、EXCLUSIVE 不支持 |

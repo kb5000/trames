@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Paired LSE atomics, functional LS64 transfers and bounded MOPS operations.
 use super::{Cpu, CpuFault};
-use trames_memory::{Access, Memory, MemoryError, PAGE_SIZE};
+use trames_memory::{CpuMemory, MemoryError, PAGE_SIZE};
 
 const WORK_LIMIT: u64 = 64 * 1024;
 fn page_remaining(address: u64, reverse: bool) -> u64 {
@@ -15,7 +15,7 @@ impl Cpu {
     pub(super) fn execute_modern_memory(
         &mut self,
         ins: u32,
-        memory: &mut Memory,
+        memory: &mut impl CpuMemory,
     ) -> Result<Option<u64>, CpuFault> {
         let rd = (ins & 31) as usize;
         let rn = ((ins >> 5) & 31) as usize;
@@ -38,16 +38,24 @@ impl Cpu {
             }
             // Two arbitrary registers contain both the input and the output pair.
             let input = self.x(rd) as u128 | (self.x(rs) as u128) << 64;
-            memory.check(address, 16, Access::Write).map_err(fault)?;
-            let old = u128::from_le_bytes(memory.read_array(address).map_err(fault)?);
-            let value = match pair {
-                0x19201000 => old & !input,
-                0x19203000 => old | input,
-                _ => input,
-            };
-            memory
-                .write_array(address, value.to_le_bytes())
+            if ins & (1 << 22) != 0 {
+                memory.fence(std::sync::atomic::Ordering::Release);
+            }
+            let old = memory
+                .atomic_update(address, 16, |data| {
+                    let old = u128::from_le_bytes(data.try_into().unwrap());
+                    let value = match pair {
+                        0x19201000 => old & !input,
+                        0x19203000 => old | input,
+                        _ => input,
+                    };
+                    data.copy_from_slice(&value.to_le_bytes());
+                    (old, true)
+                })
                 .map_err(fault)?;
+            if ins & (1 << 23) != 0 {
+                memory.fence(std::sync::atomic::Ordering::Acquire);
+            }
             self.set_x(rd, old as u64);
             self.set_x(rs, (old >> 64) as u64);
             return Ok(Some(next));
@@ -251,6 +259,8 @@ impl Cpu {
     }
 }
 
+#[cfg(test)]
+use trames_memory::Memory;
 #[cfg(test)]
 mod tests {
     use super::*;

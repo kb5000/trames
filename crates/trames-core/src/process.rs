@@ -45,6 +45,7 @@ enum State {
     Vfork(u32),
     Futex {
         address: u64,
+        key: (u64, u64, u64),
         bits: u32,
         deadline: Option<Instant>,
     },
@@ -58,6 +59,8 @@ enum State {
 }
 struct Process {
     cpu: Cpu,
+    affinity: u64,
+    last_cpu: usize,
     memory: Memory,
     linux: Linux,
     parent: u32,
@@ -90,6 +93,8 @@ impl Process {
     fn fork(&self) -> Self {
         Self {
             cpu: self.cpu.clone(),
+            affinity: self.affinity,
+            last_cpu: self.last_cpu,
             memory: self.memory.clone(),
             linux: self.linux.clone(),
             parent: 0,
@@ -121,6 +126,14 @@ impl Process {
     }
 }
 struct Kernel {
+    cpu_count: usize,
+    workers: crate::workers::Pool,
+    parallel_memory: trames_memory::parallel::Registry,
+    parallel_rounds: u64,
+    worker_slices: u64,
+    parallel_memory_time: Duration,
+    next_parallel_pid: u32,
+    per_cpu: Vec<Duration>,
     processes: BTreeMap<u32, Process>,
     next_pid: u32,
     terminal: Option<Terminal>,
@@ -276,6 +289,8 @@ impl Kernel {
             mapped_bytes: p.memory.mapped_bytes(),
             virtual_bytes: p.memory.virtual_bytes(),
             maps: maps.into_bytes(),
+            affinity: p.affinity,
+            processor: p.last_cpu as u32,
             user_ticks: (p.cpu_time.as_millis() / 10) as u64,
             start_ticks: (p
                 .started
@@ -306,6 +321,12 @@ impl Kernel {
         p.linux.vfs.set_runtime_info(
             pid,
             trames_vfs::RuntimeInfo {
+                cpu_count: self.cpu_count,
+                per_cpu_ticks: self
+                    .per_cpu
+                    .iter()
+                    .map(|t| (t.as_millis() / 10) as u64)
+                    .collect(),
                 cpu_features: trames_cpu::FEATURE_NAMES,
                 processes,
                 uptime: self.started.elapsed(),
@@ -360,7 +381,7 @@ impl Kernel {
     fn exit_one(&mut self, pid: u32, p: &mut Process, status: i32) {
         let address = p.linux.clear_tid_address();
         p.linux.exit_tid(&mut p.memory);
-        self.wake_futex(p.vm_id, address, u32::MAX, u32::MAX);
+        self.wake_futex(p, address, u32::MAX, u32::MAX);
         self.wake_vfork(pid);
         if pid != p.tgid {
             p.state = State::Zombie(status);
@@ -448,7 +469,7 @@ impl Kernel {
             if let Some(mut thread) = self.processes.remove(&id) {
                 let address = thread.linux.clear_tid_address();
                 thread.linux.exit_tid(&mut thread.memory);
-                self.wake_futex(thread.vm_id, address, u32::MAX, u32::MAX);
+                self.wake_futex(&thread, address, u32::MAX, u32::MAX);
                 self.close_exit_files(&mut thread);
             }
         }
@@ -1063,7 +1084,7 @@ impl Kernel {
                         if priority != 0 {
                             return Err(Errno(22));
                         }
-                        Ok(Some(0)) // The single virtual CPU runs SCHED_OTHER only.
+                        Ok(Some(0)) // Virtual CPUs currently run SCHED_OTHER only.
                     }
                     120 => Ok(Some(0)),
                     121 => {
@@ -1076,8 +1097,21 @@ impl Kernel {
                             return Err(Errno(22));
                         }
                         Linux::check(&p.memory, a[2], a[1].min(8) as usize, Access::Read)?;
-                        if p.memory.read_array::<1>(a[2]).map_err(|_| Errno(14))?[0] & 1 == 0 {
+                        let mut bytes = [0; 8];
+                        p.memory
+                            .read(a[2], &mut bytes[..a[1].min(8) as usize])
+                            .map_err(|_| Errno(14))?;
+                        let mask = u64::from_le_bytes(bytes) & ((1u64 << self.cpu_count) - 1);
+                        if mask == 0 {
                             return Err(Errno(22));
+                        }
+                        if a[0] as u32 == 0 || a[0] as u32 == pid {
+                            p.affinity = mask;
+                        } else {
+                            self.processes
+                                .get_mut(&(a[0] as u32))
+                                .ok_or(Errno(3))?
+                                .affinity = mask;
                         }
                         Ok(Some(0))
                     }
@@ -1085,7 +1119,8 @@ impl Kernel {
                         if a[1] < 8 {
                             return Err(Errno(22));
                         }
-                        write_u64(&mut p.memory, a[2], 1)?;
+                        let mask = target.affinity;
+                        write_u64(&mut p.memory, a[2], mask)?;
                         Ok(Some(8))
                     }
                 }
@@ -1099,6 +1134,25 @@ impl Kernel {
                     p.files_id = self.resource_id();
                 }
                 p.linux.vfs.close_range(first, last, flags)?;
+                Ok(Some(0))
+            }
+            168 => {
+                if a[0] != 0 {
+                    Linux::check(&p.memory, a[0], 4, Access::Write)?;
+                }
+                if a[1] != 0 {
+                    Linux::check(&p.memory, a[1], 4, Access::Write)?;
+                }
+                if a[0] != 0 {
+                    p.memory
+                        .write(a[0], &(p.last_cpu as u32).to_le_bytes())
+                        .map_err(|_| Errno(14))?;
+                }
+                if a[1] != 0 {
+                    p.memory
+                        .write(a[1], &0u32.to_le_bytes())
+                        .map_err(|_| Errno(14))?;
+                }
                 Ok(Some(0))
             }
             172 => Ok(Some(p.tgid as u64)),
@@ -1210,7 +1264,7 @@ impl Kernel {
                     if let Some(mut t) = self.processes.remove(&id) {
                         let address = t.linux.clear_tid_address();
                         t.linux.exit_tid(&mut t.memory);
-                        self.wake_futex(t.vm_id, address, u32::MAX, u32::MAX);
+                        self.wake_futex(&t, address, u32::MAX, u32::MAX);
                         if t.files_id == p.files_id {
                             t.linux.vfs.detach_file_table();
                         } else {
@@ -2057,6 +2111,276 @@ impl Kernel {
         }
         Ok(progress)
     }
+    fn finish_slice(
+        &mut self,
+        id: u32,
+        p: &mut Process,
+        outcome: SliceOutcome,
+        io: &mut impl GuestOutput,
+        account: bool,
+    ) -> bool {
+        let mut immediate_return = false;
+        match outcome {
+            SliceOutcome::Fault(e) => {
+                if p.linux.trace {
+                    eprintln!("trames pid {id}: {e}");
+                }
+                if account {
+                    self.instructions += p.cpu.fault_retired();
+                }
+                self.synchronous_fault(id, p, &e);
+            }
+            SliceOutcome::Yield { instructions } => {
+                if account {
+                    self.instructions += instructions
+                }
+            }
+            SliceOutcome::NativeCall {
+                instructions,
+                pc,
+                module,
+                function,
+            } => {
+                p.cpu.clear_exclusive();
+                if account {
+                    self.instructions += instructions
+                };
+                let began = Instant::now();
+                let a = [p.cpu.x(0), p.cpu.x(1), p.cpu.x(2)];
+                match self.native.invoke(&mut p.memory, pc, module, function, a) {
+                    Ok(value) => {
+                        p.cpu.set_x(0, value.value);
+                        p.cpu.set_x(1, u64::from(value.fallback));
+                        p.cpu.pc = pc + 4;
+                        self.instructions += 1;
+                        immediate_return = true;
+                    }
+                    Err(error) => {
+                        use trames_accel::native::Error;
+                        let fault = match error {
+                            Error::Memory(error) => trames_cpu::CpuFault::Memory { pc, error },
+                            Error::InvalidEntry => {
+                                p.linux.vfs.log(4, &format!("pid={id} NativeCall rejected module={module:#x} function={function} pc={pc:#x} comm={:?}", String::from_utf8_lossy(&p.linux.command_name)));
+                                trames_cpu::CpuFault::Trap {
+                                    pc,
+                                    instruction: trames_accel::native::INSTRUCTION,
+                                    signal: 4,
+                                    code: 1,
+                                }
+                            }
+                        };
+                        self.synchronous_fault(id, p, &fault);
+                    }
+                }
+                let elapsed = began.elapsed();
+                p.cpu_time += elapsed;
+                self.cpu_total += elapsed;
+                self.per_cpu[p.last_cpu] += elapsed;
+            }
+            SliceOutcome::Syscall { instructions } => {
+                p.cpu.clear_exclusive();
+                if account {
+                    self.instructions += instructions
+                };
+                let number = p.cpu.x(8) as u32;
+                let a = args(&p.cpu);
+                self.call(id, p, number, a, io);
+            }
+        }
+        immediate_return
+    }
+    fn parallel_round(
+        &mut self,
+        io: &mut impl GuestOutput,
+        limit: u64,
+    ) -> Result<bool, RuntimeError> {
+        if self
+            .processes
+            .get(&1)
+            .is_some_and(|p| matches!(p.state, State::Zombie(_)))
+            && !self
+                .processes
+                .values()
+                .any(|p| p.tgid == 1 && !matches!(p.state, State::Zombie(_)))
+        {
+            return Ok(false);
+        }
+        if self.cpu_count < 2
+            || self
+                .processes
+                .values()
+                .filter(|p| matches!(p.state, State::Ready))
+                .count()
+                < 2
+        {
+            return Ok(false);
+        }
+        // All kernel effects precede dispatch. No syscall/signal/native callback
+        // can change mappings or borrowed bytes until every CPU has returned.
+        let ids: Vec<_> = self.processes.keys().copied().collect();
+        for id in ids {
+            let Some(mut p) = self.processes.remove(&id) else {
+                continue;
+            };
+            if !matches!(p.state, State::Zombie(_)) {
+                self.resume_event(&mut p);
+                if self.deliver(id, &mut p).is_err() {
+                    self.exit(id, &mut p, 11);
+                }
+                self.sync_resources(&p);
+                match p.state.clone() {
+                    State::Blocked(number, a) => self.call(id, &mut p, number, a, io),
+                    State::Sleep(deadline, _) if Instant::now() >= deadline => {
+                        p.state = State::Ready;
+                        p.cpu.set_x(0, 0);
+                    }
+                    _ => {}
+                }
+            }
+            let actual = p.rekey.take().unwrap_or(id);
+            if !p.auto_reap || actual == 1 {
+                self.processes.insert(actual, p);
+            }
+        }
+        let mut ready: Vec<_> = self
+            .processes
+            .iter()
+            .filter(|(_, p)| matches!(p.state, State::Ready))
+            .map(|(&id, _)| id)
+            .collect();
+        let rotate = ready.partition_point(|id| *id <= self.next_parallel_pid);
+        ready.rotate_left(rotate);
+        // Place pinned tasks before flexible ones, retaining round-robin order
+        // among equal masks; otherwise a flexible task could occupy their core.
+        ready.sort_by_key(|id| self.processes[id].affinity.count_ones());
+        let mut chosen = Vec::new();
+        let mut occupied = 0u64;
+        for id in ready {
+            let p = &self.processes[&id];
+            let available = p.affinity & !occupied;
+            if available == 0 {
+                continue;
+            }
+            let slot = available.trailing_zeros() as usize;
+            occupied |= 1 << slot;
+            chosen.push((id, slot));
+            if chosen.len() == self.cpu_count {
+                break;
+            }
+        }
+        let remaining = limit.saturating_sub(self.instructions);
+        chosen.truncate(remaining.min(chosen.len() as u64) as usize);
+        if chosen.len() < 2 {
+            return Ok(false);
+        }
+        let budget = (remaining / chosen.len() as u64).min(32768);
+        let began = Instant::now();
+        let mut views = Vec::new();
+        for &(id, slot) in &chosen {
+            let p = self.processes.get_mut(&id).expect("ready process");
+            let Some(view) = p.memory.parallel_view(&mut self.parallel_memory) else {
+                return Ok(false);
+            };
+            views.push((id, slot, view));
+        }
+        self.parallel_memory_time += began.elapsed();
+        for &(_, slot) in &chosen {
+            self.workers
+                .ensure(slot)
+                .map_err(|_| RuntimeError::Arguments("cannot start CPU worker"))?;
+        }
+        let start = std::sync::Arc::new(std::sync::Barrier::new(chosen.len()));
+        for (id, slot, view) in views {
+            let p = self.processes.get_mut(&id).expect("ready process");
+            if p.last_cpu != slot {
+                p.cpu.clear_exclusive();
+            }
+            let cpu = std::mem::take(&mut p.cpu);
+            self.workers
+                .dispatch(
+                    slot,
+                    crate::workers::Work {
+                        pid: id,
+                        cpu,
+                        memory: view,
+                        budget,
+                        start: start.clone(),
+                    },
+                )
+                .map_err(|_| RuntimeError::Arguments("CPU worker disconnected"))?;
+        }
+        let mut completed = Vec::new();
+        for _ in &chosen {
+            completed.push(
+                self.workers
+                    .complete()
+                    .map_err(|_| RuntimeError::Arguments("CPU worker failed"))?,
+            );
+        }
+        if completed.iter().any(|r| r.outcome.is_none()) {
+            for done in completed {
+                self.processes
+                    .get_mut(&done.pid)
+                    .expect("dispatched process")
+                    .cpu = done.cpu;
+            }
+            return Err(RuntimeError::Arguments("CPU worker panicked"));
+        }
+        // First restore *all* CPUs and bytes, then handle exits/exec/fork, which
+        // may remove peers. This also makes FUTEX_WAIT compare+enqueue indivisible
+        // with respect to guest stores and all FUTEX_WAKE operations.
+        let began = Instant::now();
+        for &(id, _) in &chosen {
+            self.processes
+                .get_mut(&id)
+                .expect("dispatched process")
+                .memory
+                .commit_parallel()?;
+        }
+        self.parallel_memory_time += began.elapsed();
+        let mut outcomes = Vec::new();
+        for done in completed {
+            let p = self
+                .processes
+                .get_mut(&done.pid)
+                .expect("dispatched process");
+            p.cpu = done.cpu;
+            p.last_cpu = done.worker;
+            p.cpu_time += done.elapsed;
+            self.cpu_total += done.elapsed;
+            self.per_cpu[done.worker] += done.elapsed;
+            self.decode_lookups += done.after.lookups - done.before.lookups;
+            self.decode_misses += done.after.misses - done.before.misses;
+            self.instructions_decoded += done.after.instructions - done.before.instructions;
+            let outcome = done.outcome.expect("checked worker completion");
+            self.instructions += match &outcome {
+                SliceOutcome::Fault(_) => p.cpu.fault_retired(),
+                SliceOutcome::Yield { instructions }
+                | SliceOutcome::NativeCall { instructions, .. }
+                | SliceOutcome::Syscall { instructions } => *instructions,
+            };
+            outcomes.push((done.pid, outcome));
+        }
+        self.parallel_rounds += 1;
+        self.worker_slices += chosen.len() as u64;
+        self.context_switches += chosen.len() as u64;
+        self.next_parallel_pid = chosen.last().expect("two workers").0;
+        outcomes.sort_by_key(|v| v.0);
+        for (id, outcome) in outcomes {
+            let Some(mut p) = self.processes.remove(&id) else {
+                continue;
+            };
+            // A preceding exit_group/exec may have killed this returned peer.
+            if !matches!(p.state, State::Zombie(_)) {
+                self.finish_slice(id, &mut p, outcome, io, false);
+            }
+            let actual = p.rekey.take().unwrap_or(id);
+            if !p.auto_reap || actual == 1 {
+                self.processes.insert(actual, p);
+            }
+        }
+        Ok(true)
+    }
     fn drive(&mut self, io: &mut impl GuestOutput, limit: u64) -> Result<Exit, RuntimeError> {
         loop {
             self.tick_timers();
@@ -2081,6 +2405,9 @@ impl Kernel {
                 }
             }
             let mut progress = self.pump_terminal(io)?;
+            if self.parallel_round(io, limit)? {
+                continue;
+            }
             let ids: Vec<u32> = self.processes.keys().copied().collect();
             for id in ids {
                 let Some(mut p) = self.processes.remove(&id) else {
@@ -2121,7 +2448,6 @@ impl Kernel {
                             return Err(RuntimeError::BudgetExceeded(limit));
                         }
                         let instructions_before = self.instructions;
-                        let mut immediate_return = false;
                         let began = Instant::now();
                         let decode_before = p.cpu.decode_stats();
                         let outcome = p
@@ -2135,65 +2461,12 @@ impl Kernel {
                             decode_after.instructions - decode_before.instructions;
                         p.cpu_time += elapsed;
                         self.cpu_total += elapsed;
+                        p.last_cpu = p.affinity.trailing_zeros() as usize;
+                        self.per_cpu[p.last_cpu] += elapsed;
                         self.context_switches += 1;
-                        match outcome {
-                            SliceOutcome::Fault(e) => {
-                                if p.linux.trace {
-                                    eprintln!("trames pid {id}: {e}");
-                                }
-                                self.instructions += p.cpu.fault_retired();
-                                self.synchronous_fault(id, &mut p, &e);
-                            }
-                            SliceOutcome::Yield { instructions } => {
-                                self.instructions += instructions
-                            }
-                            SliceOutcome::NativeCall {
-                                instructions,
-                                pc,
-                                module,
-                                function,
-                            } => {
-                                self.instructions += instructions;
-                                let began = Instant::now();
-                                let a = [p.cpu.x(0), p.cpu.x(1), p.cpu.x(2)];
-                                match self.native.invoke(&mut p.memory, pc, module, function, a) {
-                                    Ok(value) => {
-                                        p.cpu.set_x(0, value.value);
-                                        p.cpu.set_x(1, u64::from(value.fallback));
-                                        p.cpu.pc = pc + 4;
-                                        self.instructions += 1;
-                                        immediate_return = true;
-                                        native_returns += 1;
-                                    }
-                                    Err(error) => {
-                                        use trames_accel::native::Error;
-                                        let fault = match error {
-                                            Error::Memory(error) => {
-                                                trames_cpu::CpuFault::Memory { pc, error }
-                                            }
-                                            Error::InvalidEntry => {
-                                                p.linux.vfs.log(4, &format!("pid={id} NativeCall rejected module={module:#x} function={function} pc={pc:#x} comm={:?}", String::from_utf8_lossy(&p.linux.command_name)));
-                                                trames_cpu::CpuFault::Trap {
-                                                    pc,
-                                                    instruction: trames_accel::native::INSTRUCTION,
-                                                    signal: 4,
-                                                    code: 1,
-                                                }
-                                            }
-                                        };
-                                        self.synchronous_fault(id, &mut p, &fault);
-                                    }
-                                }
-                                let elapsed = began.elapsed();
-                                p.cpu_time += elapsed;
-                                self.cpu_total += elapsed;
-                            }
-                            SliceOutcome::Syscall { instructions } => {
-                                self.instructions += instructions;
-                                let number = p.cpu.x(8) as u32;
-                                let a = args(&p.cpu);
-                                self.call(id, &mut p, number, a, io);
-                            }
+                        let immediate_return = self.finish_slice(id, &mut p, outcome, io, true);
+                        if immediate_return {
+                            native_returns += 1;
                         }
                         progress = true;
                         quantum = quantum.saturating_sub(self.instructions - instructions_before);
@@ -2377,6 +2650,8 @@ pub(super) fn run(
 ) -> Result<Exit, RuntimeError> {
     let mut root = Process {
         cpu: std::mem::take(&mut runtime.cpu),
+        affinity: (1u64 << runtime.cpu_count.clamp(1, 32)) - 1,
+        last_cpu: 0,
         memory: std::mem::take(&mut runtime.memory),
         linux: std::mem::replace(&mut runtime.linux, Linux::new(0)),
         parent: 0,
@@ -2405,7 +2680,16 @@ pub(super) fn run(
         membarrier_registered: Rc::new(Cell::new(false)),
         file_size_limit: Rc::new(Cell::new((u64::MAX, u64::MAX))),
     };
+    let count = runtime.cpu_count.clamp(1, 32);
     let mut kernel = Kernel {
+        cpu_count: count,
+        workers: crate::workers::Pool::new(count),
+        parallel_memory: trames_memory::parallel::Registry::default(),
+        parallel_rounds: 0,
+        worker_slices: 0,
+        parallel_memory_time: Duration::ZERO,
+        next_parallel_pid: 0,
+        per_cpu: vec![Duration::ZERO; count],
         processes: BTreeMap::new(),
         next_pid: 2,
         terminal: runtime.terminal.take(),
@@ -2439,6 +2723,14 @@ pub(super) fn run(
     kernel.processes.insert(1, root);
     let result = kernel.drive(io, limit);
     runtime.metrics = super::RuntimeMetrics {
+        cpu_count: kernel.cpu_count,
+        parallel_rounds: kernel.parallel_rounds,
+        worker_slices: kernel.worker_slices,
+        peak_parallel_cpus: kernel
+            .workers
+            .peak
+            .load(std::sync::atomic::Ordering::Relaxed),
+        parallel_memory_time: kernel.parallel_memory_time,
         cpu_time: kernel.cpu_total,
         syscall_time: kernel.syscall_total,
         idle_time: kernel.idle,
@@ -2475,6 +2767,8 @@ mod tests {
         memory.map(0x1000, 8 * PAGE_SIZE, Permissions::RW).unwrap();
         Process {
             cpu: Cpu::new(0x4000, 0x9000),
+            affinity: 1,
+            last_cpu: 0,
             memory,
             linux: Linux::new(0xa000),
             parent: 0,
@@ -2506,6 +2800,14 @@ mod tests {
     }
     pub(super) fn kernel() -> Kernel {
         Kernel {
+            cpu_count: 1,
+            workers: crate::workers::Pool::new(1),
+            parallel_memory: trames_memory::parallel::Registry::default(),
+            parallel_rounds: 0,
+            worker_slices: 0,
+            parallel_memory_time: Duration::ZERO,
+            next_parallel_pid: 0,
+            per_cpu: vec![Duration::ZERO; 1],
             processes: BTreeMap::new(),
             next_pid: 2,
             terminal: None,
@@ -2532,6 +2834,71 @@ mod tests {
             next_timer: 1,
             native: trames_accel::native::Registry::default(),
         }
+    }
+    #[test]
+    fn native_workers_execute_shared_atomic_guest_loops_and_account_the_budget() {
+        let mut p = process();
+        p.memory = Memory::default();
+        p.memory
+            .map(
+                0x4000,
+                trames_memory::PAGE_SIZE,
+                trames_memory::Permissions::RW,
+            )
+            .unwrap();
+        p.memory
+            .map(
+                0x8000,
+                trames_memory::PAGE_SIZE,
+                trames_memory::Permissions::RW,
+            )
+            .unwrap();
+        // ldaddal x1,x3,[x0]; subs x2,x2,#1; b.ne -8; exit(0).
+        let code = [
+            0xf8e10003u32,
+            0xf1000442,
+            0x54ffffc1,
+            0xd2800ba8,
+            0xd2800000,
+            0xd4000001,
+        ];
+        for (i, word) in code.iter().enumerate() {
+            p.memory
+                .write(0x4000 + i as u64 * 4, &word.to_le_bytes())
+                .unwrap();
+        }
+        p.memory
+            .protect(
+                0x4000,
+                trames_memory::PAGE_SIZE,
+                trames_memory::Permissions::RX,
+            )
+            .unwrap();
+        p.cpu = Cpu::new(0x4000, 0);
+        p.cpu.set_x(0, 0x8000);
+        p.cpu.set_x(1, 1);
+        p.cpu.set_x(2, 50000);
+        p.affinity = 3;
+        let mut peer = p.fork();
+        peer.memory = p.memory.share();
+        peer.tgid = 1;
+        peer.parent = 1;
+        peer.auto_reap = false;
+        let mut k = kernel();
+        k.cpu_count = 2;
+        k.workers = crate::workers::Pool::new(2);
+        k.per_cpu = vec![Duration::ZERO; 2];
+        k.next_pid = 3;
+        k.processes.insert(1, p);
+        k.processes.insert(2, peer);
+        let exit = k
+            .drive(&mut trames_linux::CapturedOutput::default(), 400000)
+            .unwrap();
+        assert_eq!(exit.code, 0);
+        assert_eq!(k.processes[&1].memory.read_u64(0x8000).unwrap(), 100000);
+        assert_eq!(exit.instructions, 300006);
+        assert!(k.parallel_rounds > 0);
+        assert_eq!(k.workers.peak.load(std::sync::atomic::Ordering::Relaxed), 2);
     }
     #[test]
     fn stdio_eagain_blocks_only_without_nonblocking_flag() {

@@ -4,6 +4,8 @@
 
 **当前交付：M0–M5 软件实现；完整 iPad 真机验收待完成。** `trames-run` 执行实际静态／动态 AArch64 ELF，支持 32/64 位标量及选定 SIMD 浮点、虚拟进程、管道、信号和一个虚拟 PTY。交互式 BusyBox `ash` 已在内存和磁盘两种后端验证。Linux CLI 默认保存文件到磁盘，新存储目录的文件预算为 16 GiB。IPv4/IPv6 TCP/UDP、真实 musl DNS，以及具有独立 IP 和回环地址的用户态网络栈已验证；Alpine 3.22.6、动态 musl、经过证书和包签名验证的 HTTPS apk update/add，以及安装后 tree 执行已验证。iPad App、原生 SSH/SFTP、Files 授权和 Bridge 已实现并通过软件验证。
 
+当前开发分支加入[宿主多核执行](docs/architecture/multicore.md)：`--cpus auto|1..32` 控制虚拟 CPU 数，默认自动选择。真实 musl pthread 和 Node.js Worker 可并行执行；ARM 原子、独占访问、acquire/release 和屏障已有同步实现。内核及 NativeCall 初期仍集中处理。[验证和跑分](docs/validation/multicore.md)记录了收益、单核开销和限制；下一次设备更新会按完整里程碑打包。
+
 ## 快速运行
 
 需要 Rust 1.90.0；交叉构建 BusyBox 和运行差分测试还需要 Python 3、GNU AArch64 GCC/Binutils、Make、curl、bzip2 和 QEMU user-mode。Debian/Ubuntu 可安装：

@@ -90,8 +90,8 @@ impl Kernel {
         if flags != 0 {
             return Err(Errno(22));
         }
-        // One cooperative virtual CPU. Every transition is a scheduling boundary;
-        // the host fence also orders backing storage/native helper accesses.
+        // Every CPU has returned before coordinator syscalls. The joined
+        // checkpoint and host fence order guest, backing and native accesses.
         match command {
             0 => Ok(1 | 8 | 16 | 512),
             16 => {

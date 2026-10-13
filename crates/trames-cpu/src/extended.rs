@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 use super::{shifted, sign_extend, width_mask, Cpu, CpuFault, Flags};
 use std::{sync::OnceLock, time::Instant};
-use trames_memory::Memory;
+use trames_memory::CpuMemory;
 static COUNTER_ORIGIN: OnceLock<Instant> = OnceLock::new();
 
 pub(super) fn ones(bits: u32) -> u64 {
@@ -60,10 +60,13 @@ impl Cpu {
     pub(super) fn execute_extended(
         &mut self,
         ins: u32,
-        memory: &mut Memory,
+        memory: &mut impl CpuMemory,
     ) -> Result<Option<u64>, CpuFault> {
         let pc = self.pc;
         let mut next = pc.wrapping_add(4);
+        if ins == 0xd50330ff {
+            memory.fence(std::sync::atomic::Ordering::SeqCst);
+        }
         if let Some(next) = self.execute_compatibility(ins, memory)? {
             return Ok(Some(next));
         }
@@ -482,7 +485,11 @@ impl Cpu {
                     | 0xd50320ff
             )
         {
-            // Single-thread memory barriers and architecturally compatible hints.
+            // Conservatively use a full host fence for all architectural DMB/DSB
+            // domains/types and ISB. Hints do not receive an invented barrier.
+            if matches!(ins & 0xfffff0ff, 0xd503309f | 0xd50330bf | 0xd50330df) {
+                memory.fence(std::sync::atomic::Ordering::SeqCst);
+            }
         } else if ins & 0xbfe0fc00 == 0x0e000400 {
             // DUP vector from a selected vector lane, including source aliases.
             let imm5 = (ins >> 16) & 31;
@@ -1001,6 +1008,8 @@ impl Cpu {
     }
 }
 
+#[cfg(test)]
+use trames_memory::Memory;
 #[cfg(test)]
 mod tests {
     use super::*;

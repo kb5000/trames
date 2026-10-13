@@ -147,9 +147,14 @@ jobs:
         run: |
           bash scripts/build-m6-fixtures.sh
           python3 tests/integration/m6-abi.py
+      - name: Compare ARM64 pthread, multicore atomics, memory barriers and shared futexes
+        run: |
+          bash scripts/build-smp-fixtures.sh
+          python3 tests/integration/smp.py | tee target/smp-workflow.log
       - name: Signed Node.js, default V8, libuv workers, HTTP and offline npm
         run: python3 tests/integration/nodejs.py | tee target/nodejs-tools.log
         env:
+          TRAMES_CPUS: 4
           TRAMES_RUNNER: ${{ github.workspace }}/target/release/trames-run
           TRAMES_TEST_MUSL: ${{ github.workspace }}/target/musl-hybrid/libc.so
       - name: Signed developer tools and complete guest workflows on a fresh persistent store
@@ -165,4 +170,5 @@ jobs:
             target/m6-workflow.log
             target/nodejs-tools.log
             target/nodejs-workflow.log
+            target/smp-workflow.log
           if-no-files-found: error

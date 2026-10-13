@@ -205,6 +205,7 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     let mut trace = false;
     let backend = "cached";
     let mut metrics = false;
+    let mut cpu_count = None;
     let mut pure_accelerator = false;
     let mut native_bsearch = false;
     let mut pty = false;
@@ -223,11 +224,24 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     let mut guest_path = false;
     let mut extra_env = Vec::new();
     if args.peek().is_some_and(|a| a == "--help" || a == "-h") {
-        println!("Usage: trames-run [--rootfs VERIFIED_ALPINE_TAR_GZ] [--guest] [--env KEY=VALUE] [--virtual-network ID] [--host-map VIRTUAL_IP=HOST_IP] [--network off|loopback|outbound|full] [--storage DIR | --memory] [--storage-budget BYTES|16GiB|auto] [--storage-info] [--max-instructions N] [--trace-syscalls] [--metrics] [--accelerator pure|off] [--native-bsearch] [--musl-libc HOST_ELF] [--file /GUEST=HOST] [--exec-file /GUEST=HOST] [--export /GUEST=HOST] [--install-busybox] [--pty] [--] ELF [ARG ...]\nDefault native network: outbound connections and loopback listeners; full also allows non-loopback listeners.\n--virtual-network ID selects isolated 10.0.0.ID / fd00::ID and private loopback; ID must be 2..254.\n--host-map explicitly forwards a logical external IP to a trusted host service.\nDefault storage: .trames/storage in the current directory, 16 GiB logical file budget on first creation.\nImports copy selected host files; exports create new host files after guest exit.\n--memory selects the ephemeral 16 MiB test backend. auto uses the storage volume's total capacity.");
+        println!("Usage: trames-run [--rootfs VERIFIED_ALPINE_TAR_GZ] [--guest] [--env KEY=VALUE] [--virtual-network ID] [--host-map VIRTUAL_IP=HOST_IP] [--network off|loopback|outbound|full] [--storage DIR | --memory] [--storage-budget BYTES|16GiB|auto] [--storage-info] [--max-instructions N] [--trace-syscalls] [--metrics] [--cpus auto|1..32] [--accelerator pure|off] [--native-bsearch] [--musl-libc HOST_ELF] [--file /GUEST=HOST] [--exec-file /GUEST=HOST] [--export /GUEST=HOST] [--install-busybox] [--pty] [--] ELF [ARG ...]\nDefault native network: outbound connections and loopback listeners; full also allows non-loopback listeners.\n--virtual-network ID selects isolated 10.0.0.ID / fd00::ID and private loopback; ID must be 2..254.\n--host-map explicitly forwards a logical external IP to a trusted host service.\nDefault storage: .trames/storage in the current directory, 16 GiB logical file budget on first creation.\nImports copy selected host files; exports create new host files after guest exit.\n--memory selects the ephemeral 16 MiB test backend. auto uses the storage volume's total capacity.");
         return Ok(0);
     }
     while let Some(option) = args.peek() {
         match option.as_str() {
+            "--cpus" => {
+                args.next();
+                let value = args.next().ok_or("missing CPU count")?;
+                cpu_count = if value == "auto" {
+                    None
+                } else {
+                    let n = value.parse::<usize>()?;
+                    if !(1..=32).contains(&n) {
+                        return Err("CPU count must be 1..32".into());
+                    }
+                    Some(n)
+                };
+            }
             "--rootfs" => {
                 args.next();
                 rootfs = Some(args.next().ok_or("missing rootfs archive")?);
@@ -501,6 +515,9 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     }
     let _host_terminal = RawTerminal::enter(pty)?;
     runtime.profile_syscalls = metrics;
+    if let Some(count) = cpu_count {
+        runtime.cpu_count = count;
+    }
     let began = std::time::Instant::now();
     let result = runtime.run(&mut HostOutput::new(), budget);
     let synced = runtime.linux.vfs.sync();
@@ -512,7 +529,19 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
             "trames native metrics: {}",
             serde_json::to_string(&profile.native)?
         );
-        eprintln!("trames metrics: {{\"backend\":\"{backend}\",\"instructions\":{},\"seconds\":{seconds},\"instructions_per_second\":{},\"cpu_seconds\":{},\"syscall_seconds\":{},\"idle_seconds\":{},\"syscalls\":{},\"proc_refreshes\":{},\"context_switches\":{},\"decode_lookups\":{},\"decode_misses\":{},\"instructions_decoded\":{}}}",exit.instructions,exit.instructions as f64/seconds, profile.cpu_time.as_secs_f64(),profile.syscall_time.as_secs_f64(),profile.idle_time.as_secs_f64(),profile.syscalls,profile.proc_refreshes,profile.context_switches,profile.decode_lookups,profile.decode_misses,profile.instructions_decoded);
+        eprintln!(
+            "trames metrics: {}",
+            serde_json::json!({
+                "backend":backend,"instructions":exit.instructions,"seconds":seconds,
+                "instructions_per_second":exit.instructions as f64/seconds,
+                "cpu_seconds":profile.cpu_time.as_secs_f64(),"syscall_seconds":profile.syscall_time.as_secs_f64(),
+                "idle_seconds":profile.idle_time.as_secs_f64(),"syscalls":profile.syscalls,
+                "proc_refreshes":profile.proc_refreshes,"context_switches":profile.context_switches,
+                "decode_lookups":profile.decode_lookups,"decode_misses":profile.decode_misses,"instructions_decoded":profile.instructions_decoded,
+                "cpu_count":profile.cpu_count,"parallel_rounds":profile.parallel_rounds,"worker_slices":profile.worker_slices,
+                "peak_parallel_cpus":profile.peak_parallel_cpus,"memory_seconds":profile.parallel_memory_time.as_secs_f64()
+            })
+        );
     }
     synced?;
     for (guest, host) in exports {

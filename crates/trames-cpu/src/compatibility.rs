@@ -3,14 +3,14 @@
 //! and branch landing checks are disabled by project policy, not delegated to
 //! host PAC keys. Branch, load and address arithmetic effects still execute.
 use super::{sign_extend, Cpu, CpuFault};
-use trames_memory::{Memory, MemoryError};
+use trames_memory::{CpuMemory, MemoryError};
 
 const POINTER: u64 = (1 << 48) - 1;
 impl Cpu {
     pub(super) fn execute_compatibility(
         &mut self,
         ins: u32,
-        memory: &mut Memory,
+        memory: &mut impl CpuMemory,
     ) -> Result<Option<u64>, CpuFault> {
         let rd = (ins & 31) as usize;
         let rn = ((ins >> 5) & 31) as usize;
@@ -181,6 +181,8 @@ impl Cpu {
     }
 }
 
+#[cfg(test)]
+use trames_memory::Memory;
 #[cfg(test)]
 mod tests {
     use super::*;

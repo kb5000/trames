@@ -29,7 +29,10 @@ The default logical budget is 16 GiB, constrained by native free capacity.
 Settings can select the app volume's total capacity on the next local launch.
 One local environment owns its exclusive persistent-store lock. Other tabs are
 native SSH sessions. The multi-environment virtual Fabric remains a Rust host
-API; sharing it among iPad sessions requires a future single-thread scheduler.
+API; sharing it among iPad sessions requires coordinated environment scheduling.
+Within the local environment, guest threads now use the [multicore CPU pool](../../docs/architecture/multicore.md),
+with the host-reported available CPU count capped at 32. Linux/VFS and NativeCall
+remain coordinator-owned. Physical-device performance is not established.
 
 Entering the background pauses the local interpreter and closes SSH sessions.
 Returning to the foreground resumes the local session. Initial download/install

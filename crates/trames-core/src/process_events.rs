@@ -176,18 +176,27 @@ impl Kernel {
             Ok(None)
         }
     }
-    pub(super) fn wake_futex(&mut self, vm: u64, address: u64, count: u32, bits: u32) -> u64 {
+    pub(super) fn wake_futex(&mut self, p: &Process, address: u64, count: u32, bits: u32) -> u64 {
         if address == 0 {
             return 0;
         }
+        Self::futex_key(p, address, false).map_or(0, |key| self.wake_futex_key(key, count, bits))
+    }
+    fn futex_key(p: &Process, address: u64, private: bool) -> Result<(u64, u64, u64), Errno> {
+        if !private {
+            if let Some(key) = p.memory.shared_futex_key(address).map_err(|_| Errno(14))? {
+                return Ok(key);
+            }
+        }
+        Ok((0, p.vm_id, address & 0x00ffffffffffffff))
+    }
+    fn wake_futex_key(&mut self, key: (u64, u64, u64), count: u32, bits: u32) -> u64 {
         let mut woke = 0;
         for p in self.processes.values_mut() {
             if woke >= count as u64 {
                 break;
             }
-            if p.vm_id == vm
-                && matches!(p.state, State::Futex { address: a, bits: b, .. } if a == address && b & bits != 0)
-            {
+            if matches!(p.state, State::Futex { key:k, bits:b, .. } if k==key && b & bits != 0) {
                 p.state = State::Ready;
                 p.cpu.set_x(0, 0);
                 woke += 1;
@@ -308,6 +317,7 @@ impl Kernel {
                 }
                 let op = a[1] & 127;
                 Linux::check(&p.memory, a[0], 4, Access::Read)?;
+                let key = Self::futex_key(p, a[0], a[1] & 128 != 0)?;
                 match op {
                     0 | 9 => {
                         let bits = if op == 9 { a[5] as u32 } else { u32::MAX };
@@ -337,6 +347,7 @@ impl Kernel {
                         }
                         p.state = State::Futex {
                             address: a[0],
+                            key,
                             bits,
                             deadline,
                         };
@@ -350,7 +361,7 @@ impl Kernel {
                         if bits == 0 {
                             return Err(Errno(22));
                         }
-                        Ok(Some(self.wake_futex(p.vm_id, a[0], a[2] as u32, bits)))
+                        Ok(Some(self.wake_futex_key(key, a[2] as u32, bits)))
                     }
                     3 | 4 => {
                         if a[4] & 3 != 0 || a[2] > i32::MAX as u64 || a[3] > i32::MAX as u64 {
@@ -360,15 +371,22 @@ impl Kernel {
                         if op == 4 && read_u32(&p.memory, a[0])? != a[5] as u32 {
                             return Err(Errno(11));
                         }
-                        let woke = self.wake_futex(p.vm_id, a[0], a[2] as u32, u32::MAX);
+                        let new_key = Self::futex_key(p, a[4], a[1] & 128 != 0)?;
+                        let woke = self.wake_futex_key(key, a[2] as u32, u32::MAX);
                         let mut moved = 0;
-                        for other in self.processes.values_mut().filter(|t| t.vm_id == p.vm_id) {
+                        for other in self.processes.values_mut() {
                             if moved >= a[3] {
                                 break;
                             }
-                            if let State::Futex { address, .. } = &mut other.state {
-                                if *address == a[0] {
+                            if let State::Futex {
+                                address,
+                                key: old_key,
+                                ..
+                            } = &mut other.state
+                            {
+                                if *old_key == key {
                                     *address = a[4];
+                                    *old_key = new_key;
                                     moved += 1;
                                 }
                             }

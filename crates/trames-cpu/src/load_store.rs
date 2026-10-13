@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 use super::{sign_extend, Cpu, CpuFault};
-use trames_memory::{Memory, MemoryError};
+use std::sync::atomic::Ordering;
+use trames_memory::{CpuMemory, MemoryError};
 
 #[inline]
 pub(super) fn read_operand(
-    memory: &Memory,
+    memory: &impl CpuMemory,
     address: u64,
     size: usize,
 ) -> Result<u128, MemoryError> {
@@ -19,7 +20,7 @@ pub(super) fn read_operand(
 }
 #[inline]
 pub(super) fn write_operand(
-    memory: &mut Memory,
+    memory: &mut impl CpuMemory,
     address: u64,
     size: usize,
     value: u128,
@@ -38,7 +39,7 @@ impl Cpu {
     pub(super) fn execute_memory(
         &mut self,
         ins: u32,
-        memory: &mut Memory,
+        memory: &mut impl CpuMemory,
     ) -> Result<bool, CpuFault> {
         let pc = self.pc;
         let invalid = || CpuFault::Instruction {
@@ -186,7 +187,7 @@ impl Cpu {
             return Ok(true);
         }
         if ins & 0xbfa07c00 == 0x08207c00 || ins & 0x3fa07c00 == 0x08a07c00 {
-            // LSE CAS/CASP. The cooperative memory model orders these atomically.
+            // LSE CAS/CASP: one checked transaction, including both 128-bit words.
             let pair = ins & 0x3fa07c00 == 0x08207c00;
             if pair && ins >> 31 != 0 {
                 return Err(invalid());
@@ -205,13 +206,6 @@ impl Cpu {
             if !address.is_multiple_of((size * count) as u64) {
                 return Err(fault(MemoryError::Alignment(address)));
             }
-            memory
-                .check(address, size * count, trames_memory::Access::Write)
-                .map_err(fault)?;
-            let mut bytes = [0u8; 16];
-            memory
-                .read(address, &mut bytes[..size * count])
-                .map_err(fault)?;
             let mut expected = [0u8; 16];
             let mut replacement = [0u8; 16];
             for i in 0..count {
@@ -220,10 +214,22 @@ impl Cpu {
                 replacement[i * size..(i + 1) * size]
                     .copy_from_slice(&self.x(rt + i).to_le_bytes()[..size]);
             }
-            if bytes[..size * count] == expected[..size * count] {
-                memory
-                    .write(address, &replacement[..size * count])
-                    .map_err(fault)?;
+            if ins & (1 << 15) != 0 {
+                memory.fence(Ordering::Release);
+            }
+            let bytes = memory
+                .atomic_update(address, size * count, |data| {
+                    let mut old = [0; 16];
+                    old[..data.len()].copy_from_slice(data);
+                    let matched = data == &expected[..data.len()];
+                    if matched {
+                        data.copy_from_slice(&replacement[..data.len()]);
+                    }
+                    (old, matched)
+                })
+                .map_err(fault)?;
+            if ins & (1 << 22) != 0 {
+                memory.fence(Ordering::Acquire);
             }
             for i in 0..count {
                 let mut value = [0; 8];
@@ -243,46 +249,52 @@ impl Cpu {
             if !address.is_multiple_of(size as u64) {
                 return Err(fault(MemoryError::Alignment(address)));
             }
-            memory
-                .check(address, size, trames_memory::Access::Write)
+            if ins & (1 << 22) != 0 {
+                memory.fence(Ordering::Release);
+            }
+            let old = memory
+                .atomic_update(address, size, |data| {
+                    let mut bytes = [0; 8];
+                    bytes[..size].copy_from_slice(data);
+                    let old = u64::from_le_bytes(bytes);
+                    let operand = self.x(((ins >> 16) & 31) as usize)
+                        & if size == 8 {
+                            u64::MAX
+                        } else {
+                            (1u64 << (size * 8)) - 1
+                        };
+                    let old_signed = sign_extend(old, (size * 8) as u32) as i64;
+                    let operand_signed = sign_extend(operand, (size * 8) as u32) as i64;
+                    let new = match operation {
+                        0 => old.wrapping_add(operand),
+                        1 => old & !operand,
+                        2 => old ^ operand,
+                        3 => old | operand,
+                        4 => {
+                            if old_signed > operand_signed {
+                                old
+                            } else {
+                                operand
+                            }
+                        }
+                        5 => {
+                            if old_signed < operand_signed {
+                                old
+                            } else {
+                                operand
+                            }
+                        }
+                        6 => old.max(operand),
+                        7 => old.min(operand),
+                        _ => operand,
+                    };
+                    data.copy_from_slice(&new.to_le_bytes()[..size]);
+                    (old, true)
+                })
                 .map_err(fault)?;
-            let mut bytes = [0; 8];
-            memory.read(address, &mut bytes[..size]).map_err(fault)?;
-            let old = u64::from_le_bytes(bytes);
-            let operand = self.x(((ins >> 16) & 31) as usize)
-                & if size == 8 {
-                    u64::MAX
-                } else {
-                    (1u64 << (size * 8)) - 1
-                };
-            let old_signed = sign_extend(old, (size * 8) as u32) as i64;
-            let operand_signed = sign_extend(operand, (size * 8) as u32) as i64;
-            let new = match operation {
-                0 => old.wrapping_add(operand),
-                1 => old & !operand,
-                2 => old ^ operand,
-                3 => old | operand,
-                4 => {
-                    if old_signed > operand_signed {
-                        old
-                    } else {
-                        operand
-                    }
-                }
-                5 => {
-                    if old_signed < operand_signed {
-                        old
-                    } else {
-                        operand
-                    }
-                }
-                6 => old.max(operand),
-                7 => old.min(operand),
-                _ => operand,
-            };
-            memory
-                .write(address, &new.to_le_bytes()[..size])
-                .map_err(fault)?;
+            if ins & (1 << 23) != 0 && rt != 31 {
+                memory.fence(Ordering::Acquire);
+            }
             self.set_x(rt, old);
             return Ok(true);
         }
@@ -307,26 +319,35 @@ impl Cpu {
                     return Err(invalid());
                 }
                 let mut bytes = [0; 16];
-                memory
-                    .read(address, &mut bytes[..size * 2])
+                let token = memory
+                    .exclusive_read(address, &mut bytes[..size * 2])
                     .map_err(fault)?;
+                if ins & (1 << 15) != 0 {
+                    memory.fence(Ordering::Acquire);
+                }
                 for (i, reg) in [rt, second].into_iter().enumerate() {
                     let mut value = [0; 8];
                     value[..size].copy_from_slice(&bytes[i * size..(i + 1) * size]);
                     self.set_x(reg, u64::from_le_bytes(value));
                 }
-                self.exclusive = Some((address, size * 2, memory.revision()));
+                self.exclusive = Some((address, size * 2, token));
             } else {
-                let succeeds =
-                    self.exclusive.take() == Some((address, size * 2, memory.revision()));
-                if succeeds {
-                    let mut bytes = [0; 16];
-                    for (i, reg) in [rt, second].into_iter().enumerate() {
-                        bytes[i * size..(i + 1) * size]
-                            .copy_from_slice(&self.x(reg).to_le_bytes()[..size]);
-                    }
-                    memory.write(address, &bytes[..size * 2]).map_err(fault)?;
+                let token = self
+                    .exclusive
+                    .take()
+                    .filter(|r| r.0 == address && r.1 == size * 2)
+                    .map(|r| r.2);
+                let mut bytes = [0; 16];
+                for (i, reg) in [rt, second].into_iter().enumerate() {
+                    bytes[i * size..(i + 1) * size]
+                        .copy_from_slice(&self.x(reg).to_le_bytes()[..size]);
                 }
+                if ins & (1 << 15) != 0 {
+                    memory.fence(Ordering::Release);
+                }
+                let succeeds = memory
+                    .exclusive_write(address, &bytes[..size * 2], token)
+                    .map_err(fault)?;
                 self.set_x(status, (!succeeds) as u64);
             }
             return Ok(true);
@@ -342,11 +363,18 @@ impl Cpu {
                 return Err(fault(MemoryError::Alignment(address)));
             }
             let mut bytes = [0; 8];
-            memory.read(address, &mut bytes[..size]).map_err(fault)?;
-            self.set_x(rt, u64::from_le_bytes(bytes));
             if matches!(ins & 0x3ffffc00, 0x085f7c00 | 0x085ffc00) {
-                self.exclusive = Some((address, size, memory.revision()));
+                let token = memory
+                    .exclusive_read(address, &mut bytes[..size])
+                    .map_err(fault)?;
+                self.exclusive = Some((address, size, token));
+            } else {
+                memory.read(address, &mut bytes[..size]).map_err(fault)?;
             }
+            if ins & 0x3ffffc00 != 0x085f7c00 {
+                memory.fence(Ordering::Acquire);
+            }
+            self.set_x(rt, u64::from_le_bytes(bytes));
             return Ok(true);
         }
         if matches!(ins & 0x3fe0fc00, 0x08007c00 | 0x0800fc00) {
@@ -360,12 +388,17 @@ impl Cpu {
             if !address.is_multiple_of(size as u64) {
                 return Err(fault(MemoryError::Alignment(address)));
             }
-            let succeeds = self.exclusive.take() == Some((address, size, memory.revision()));
-            if succeeds {
-                memory
-                    .write(address, &self.x(rt).to_le_bytes()[..size])
-                    .map_err(fault)?;
+            let token = self
+                .exclusive
+                .take()
+                .filter(|r| r.0 == address && r.1 == size)
+                .map(|r| r.2);
+            if ins & (1 << 15) != 0 {
+                memory.fence(Ordering::Release);
             }
+            let succeeds = memory
+                .exclusive_write(address, &self.x(rt).to_le_bytes()[..size], token)
+                .map_err(fault)?;
             self.set_x(status, (!succeeds) as u64);
             return Ok(true);
         }
@@ -376,6 +409,7 @@ impl Cpu {
             if !address.is_multiple_of(size as u64) {
                 return Err(fault(MemoryError::Alignment(address)));
             }
+            memory.fence(Ordering::Release);
             memory
                 .write(address, &self.x(rt).to_le_bytes()[..size])
                 .map_err(fault)?;
@@ -383,7 +417,7 @@ impl Cpu {
         }
         if ins & 0x3f200c00 == 0x19000000 {
             // FEAT_LRCPC2: unscaled RCpc acquire loads and release stores.
-            // Ordering is provided by the cooperative interpreter; these loads
+            // RCpc is conservatively implemented with acquire/release; these loads
             // do not create or clear an exclusive reservation.
             let size = 1usize << (ins >> 30);
             let opc = (ins >> 22) & 3;
@@ -396,9 +430,11 @@ impl Cpu {
                 return Err(fault(MemoryError::Alignment(address)));
             }
             if opc == 0 {
+                memory.fence(Ordering::Release);
                 write_operand(memory, address, size, self.x(rt) as u128).map_err(fault)?;
             } else {
                 let value = read_operand(memory, address, size).map_err(fault)? as u64;
+                memory.fence(Ordering::Acquire);
                 let value = if opc >= 2 {
                     sign_extend(value, size as u32 * 8)
                 } else {
@@ -606,6 +642,8 @@ impl Cpu {
 }
 
 #[cfg(test)]
+use trames_memory::Memory;
+#[cfg(test)]
 mod tests {
     use super::*;
     use trames_memory::{Permissions, PAGE_SIZE};
@@ -628,7 +666,7 @@ mod tests {
             let (mut cpu, mut memory) = state(&[word]);
             cpu.set_x(0, 0x12345678);
             cpu.set_x(1, 0x2fff);
-            cpu.exclusive = Some((0x2000, 8, memory.revision()));
+            cpu.exclusive = Some((0x2000, 8, memory.revision() as u128));
             let before = (cpu.registers, cpu.sp, cpu.exclusive, memory.revision());
             assert!(cpu.step(&mut memory).is_err(), "{word:08x}");
             assert_eq!(cpu.pc, 0x1000);

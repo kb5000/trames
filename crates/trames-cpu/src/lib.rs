@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! AArch64 virtual CPU with a single bounded cached interpreter.
 use std::fmt;
-use trames_memory::{Memory, MemoryError};
+use trames_memory::{CpuMemory, MemoryError};
 /// Capabilities of the virtual CPU, independent of the host.
 pub const HWCAP: u64 = (1 << 0)
     | (1 << 1)
@@ -72,7 +72,7 @@ pub struct Cpu {
     pub fpcr: u32,
     pub fpsr: u32,
     vectors: [u128; 32],
-    exclusive: Option<(u64, usize, u64)>,
+    exclusive: Option<(u64, usize, u128)>,
     decoded: cached::Cache,
     yield_current: bool,
     fault_retired: u64,
@@ -202,6 +202,10 @@ impl Cpu {
             self.registers[index] = value;
         }
     }
+    /// Exception entry and virtual CPU migration may clear the local monitor.
+    pub fn clear_exclusive(&mut self) {
+        self.exclusive = None;
+    }
     fn reg(&self, index: usize, sp: bool) -> u64 {
         if sp && index == 31 {
             self.sp
@@ -265,7 +269,7 @@ impl Cpu {
         }
     }
 
-    pub fn step(&mut self, memory: &mut Memory) -> Result<Event, CpuFault> {
+    pub fn step(&mut self, memory: &mut impl CpuMemory) -> Result<Event, CpuFault> {
         let pc = self.pc;
         let memory_fault = |error| CpuFault::Memory { pc, error };
         let ins = memory.fetch_u32(pc).map_err(memory_fault)?;
@@ -275,7 +279,11 @@ impl Cpu {
         drop(scope);
         result
     }
-    fn execute_instruction(&mut self, ins: u32, memory: &mut Memory) -> Result<Event, CpuFault> {
+    fn execute_instruction(
+        &mut self,
+        ins: u32,
+        memory: &mut impl CpuMemory,
+    ) -> Result<Event, CpuFault> {
         self.yield_current = false;
         let pc = self.pc;
         let invalid = || CpuFault::Instruction {
@@ -456,16 +464,16 @@ impl Cpu {
         self.fault_retired = instructions;
         SliceOutcome::Fault(error)
     }
-    pub fn run_slice(&mut self, memory: &mut Memory, budget: u64) -> SliceOutcome {
+    pub fn run_slice(&mut self, memory: &mut impl CpuMemory, budget: u64) -> SliceOutcome {
         self.fault_retired = 0;
         let scope = trames_compute::Scope::new(self.fpcr, self.fpsr);
-        let result = self.run_cached(memory, budget);
+        let result = self.run_cached(&mut *memory.cpu_slice(), budget);
         self.fpsr |= trames_compute::status();
         drop(scope);
         result
     }
     #[cfg(test)]
-    fn run_reference(&mut self, memory: &mut Memory, budget: u64) -> SliceOutcome {
+    fn run_reference(&mut self, memory: &mut impl CpuMemory, budget: u64) -> SliceOutcome {
         for executed in 0..budget {
             match self.step(memory) {
                 Ok(Event::Continue) => {}
@@ -500,6 +508,8 @@ impl Cpu {
     }
 }
 
+#[cfg(test)]
+use trames_memory::Memory;
 #[cfg(test)]
 mod tests {
     use super::*;
