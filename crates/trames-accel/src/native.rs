@@ -31,6 +31,8 @@ pub struct Metrics {
     pub numeric_result_bytes: u64,
     pub fallbacks: u64,
     pub rejected: u64,
+    pub validation_hits: u64,
+    pub validation_misses: u64,
     pub faults: u64,
     pub bytes_read: u64,
     pub bytes_written: u64,
@@ -55,14 +57,33 @@ pub struct Return {
     pub value: u64,
     pub fallback: bool,
 }
-#[derive(Default, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct CheckedStub {
+    pc: u64,
+    module: u64,
+    function: u64,
+    first: (u64, u64, u64),
+    last: (u64, u64, u64),
+}
+const VALIDATION_SLOTS: usize = 64;
+#[derive(Debug)]
 pub struct Registry {
     pub metrics: Metrics,
+    checked: [Option<CheckedStub>; VALIDATION_SLOTS],
+}
+impl Default for Registry {
+    fn default() -> Self {
+        Self {
+            metrics: Metrics::default(),
+            checked: [None; VALIDATION_SLOTS],
+        }
+    }
 }
 impl Registry {
-    /// Verify the immutable v1 stub contract in currently executable memory.
-    /// This is rechecked on every entry, including fork, remap and self-modification.
-    fn valid(memory: &Memory, pc: u64, module: u64, function: u64) -> bool {
+    /// Recheck executable page permissions, identity, code revision and live
+    /// backing version on every entry. Only identical page tokens can reuse the
+    /// exact five-word check; no host pointers or borrows are cached.
+    fn valid(&mut self, memory: &Memory, pc: u64, module: u64, function: u64) -> bool {
         let allowed = (module == PROFILE && (1..=FUNCTION_COUNT as u64).contains(&function))
             || (module == crate::callbacks::PROFILE && function == 1)
             || (module == crate::numeric::PROFILE && function == 1)
@@ -70,6 +91,34 @@ impl Registry {
         if !allowed || pc < 12 {
             return false;
         }
+        let start = pc - 12;
+        let Some(end) = pc.checked_add(4) else {
+            return false;
+        };
+        let Ok(first) = memory.instruction_page_identity(start) else {
+            return false;
+        };
+        let last = if start / PAGE_SIZE == end / PAGE_SIZE {
+            first
+        } else {
+            let Ok(last) = memory.instruction_page_identity(end) else {
+                return false;
+            };
+            last
+        };
+        let key = CheckedStub {
+            pc,
+            module,
+            function,
+            first,
+            last,
+        };
+        let slot = ((pc / 4) as usize) & (VALIDATION_SLOTS - 1);
+        if self.checked[slot] == Some(key) {
+            self.metrics.validation_hits = self.metrics.validation_hits.saturating_add(1);
+            return true;
+        }
+        self.metrics.validation_misses = self.metrics.validation_misses.saturating_add(1);
         let words = [
             0xd2800010 | ((module as u32 & 0xffff) << 5),
             0xf2a00030,
@@ -77,10 +126,20 @@ impl Registry {
             INSTRUCTION,
             0xd65f03c0,
         ];
-        words
+        let valid = words
             .into_iter()
             .enumerate()
-            .all(|(i, word)| memory.fetch_u32(pc - 12 + i as u64 * 4) == Ok(word))
+            .all(|(i, word)| memory.fetch_u32(start + i as u64 * 4) == Ok(word));
+        // Read-through backing versions may change during a fetch. Store only
+        // a coherent observation; the next entry still checks the live tokens.
+        if valid
+            && memory.instruction_page_identity(start) == Ok(first)
+            && (start / PAGE_SIZE == end / PAGE_SIZE
+                || memory.instruction_page_identity(end) == Ok(last))
+        {
+            self.checked[slot] = Some(key);
+        }
+        valid
     }
     pub fn invoke(
         &mut self,
@@ -90,7 +149,7 @@ impl Registry {
         function: u64,
         a: [u64; 3],
     ) -> Result<Return, Error> {
-        if !Self::valid(memory, pc, module, function) {
+        if !self.valid(memory, pc, module, function) {
             self.metrics.rejected = self.metrics.rejected.saturating_add(1);
             return Err(Error::InvalidEntry);
         }
@@ -372,6 +431,162 @@ mod tests {
             Err(Error::Memory(MemoryError::Unmapped(0x4000)))
         ));
         assert_eq!(m.read_array::<6>(0x2000).unwrap(), *b"before");
+    }
+    #[test]
+    fn cached_stubs_recheck_pages_across_fork_remap_protection_and_cross_page_mutation() {
+        let mut registry = Registry::default();
+        let mut m = memory(3);
+        let call =
+            |r: &mut Registry, m: &mut Memory, pc| r.invoke(m, pc, PROFILE, 3, [0x3800, 7, 128]);
+        call(&mut registry, &mut m, 0x100c).unwrap();
+        call(&mut registry, &mut m, 0x100c).unwrap();
+        assert_eq!(
+            (
+                registry.metrics.validation_hits,
+                registry.metrics.validation_misses
+            ),
+            (1, 1)
+        );
+        m.map(0x9000, PAGE_SIZE, Permissions::RW).unwrap();
+        m.write(0x9000, &[8]).unwrap();
+        call(&mut registry, &mut m, 0x100c).unwrap();
+        assert_eq!(registry.metrics.validation_hits, 2);
+        let mut child = m.clone();
+        call(&mut registry, &mut child, 0x100c).unwrap();
+        assert_eq!(registry.metrics.validation_misses, 2);
+        m.protect(0x1000, PAGE_SIZE, Permissions::R).unwrap();
+        assert!(call(&mut registry, &mut m, 0x100c).is_err());
+        m.map_fixed(0x1000, PAGE_SIZE, Permissions::RX).unwrap();
+        assert!(call(&mut registry, &mut m, 0x100c).is_err());
+        let mut crossing = Memory::default();
+        crossing
+            .map(0x1000, PAGE_SIZE * 3, Permissions::RW)
+            .unwrap();
+        let code = [
+            0xd2800030u32,
+            0xf2a00030,
+            0xd2800071,
+            INSTRUCTION,
+            0xd65f03c0,
+        ];
+        for (i, word) in code.iter().enumerate() {
+            crossing
+                .write(0x1ff4 + i as u64 * 4, &word.to_le_bytes())
+                .unwrap();
+        }
+        crossing
+            .protect(0x1000, PAGE_SIZE * 2, Permissions::RX)
+            .unwrap();
+        call(&mut registry, &mut crossing, 0x2000).unwrap();
+        call(&mut registry, &mut crossing, 0x2000).unwrap();
+        crossing
+            .protect(
+                0x2000,
+                PAGE_SIZE,
+                Permissions {
+                    execute: true,
+                    ..Permissions::RW
+                },
+            )
+            .unwrap();
+        call(&mut registry, &mut crossing, 0x2000).unwrap();
+        crossing
+            .fill_with(0x2004, 4, |bytes| {
+                bytes.copy_from_slice(&0xd503201fu32.to_le_bytes())
+            })
+            .unwrap();
+        assert!(matches!(
+            call(&mut registry, &mut crossing, 0x2000),
+            Err(Error::InvalidEntry)
+        ));
+    }
+    #[test]
+    fn cached_stub_tokens_follow_live_backing_aliases_and_eof_checks() {
+        use std::{
+            cell::{Cell, RefCell},
+            rc::Rc,
+        };
+        use trames_memory::{backing_changed, PageBacking};
+        struct Backing {
+            bytes: RefCell<[u8; PAGE_SIZE as usize]>,
+            version: Cell<u64>,
+            valid: Cell<bool>,
+        }
+        impl PageBacking for Backing {
+            fn check(&self, address: u64) -> Result<(), MemoryError> {
+                if self.valid.get() {
+                    Ok(())
+                } else {
+                    Err(MemoryError::Bus(address))
+                }
+            }
+            fn read(&self, offset: usize, out: &mut [u8]) -> Result<(), MemoryError> {
+                out.copy_from_slice(&self.bytes.borrow()[offset..offset + out.len()]);
+                Ok(())
+            }
+            fn write(&self, offset: usize, bytes: &[u8]) -> Result<(), MemoryError> {
+                self.bytes.borrow_mut()[offset..offset + bytes.len()].copy_from_slice(bytes);
+                self.version.set(self.version.get() + 1);
+                backing_changed();
+                Ok(())
+            }
+            fn sync(&self) -> Result<(), MemoryError> {
+                Ok(())
+            }
+            fn version(&self) -> u64 {
+                self.version.get()
+            }
+            fn writable(&self) -> bool {
+                true
+            }
+            fn next_page(&self, _: u64) -> Result<Rc<dyn PageBacking>, MemoryError> {
+                Err(MemoryError::InvalidRange)
+            }
+        }
+        let backing = Rc::new(Backing {
+            bytes: RefCell::new([0; PAGE_SIZE as usize]),
+            version: Cell::new(1),
+            valid: Cell::new(true),
+        });
+        for (i, word) in [
+            0xd2800030u32,
+            0xf2a00030,
+            0xd2800071,
+            INSTRUCTION,
+            0xd65f03c0,
+        ]
+        .iter()
+        .enumerate()
+        {
+            backing.write(i * 4, &word.to_le_bytes()).unwrap();
+        }
+        let mut m = Memory::default();
+        m.map_backed(0x1000, vec![backing.clone()], true, Permissions::RX, false)
+            .unwrap();
+        m.map_backed(0x3000, vec![backing.clone()], true, Permissions::RW, false)
+            .unwrap();
+        m.map(0x5000, PAGE_SIZE, Permissions::RW).unwrap();
+        let mut r = Registry::default();
+        for _ in 0..2 {
+            r.invoke(&mut m, 0x100c, PROFILE, 3, [0x5000, 1, 128])
+                .unwrap();
+        }
+        assert_eq!(r.metrics.validation_hits, 1);
+        backing.valid.set(false);
+        assert!(matches!(
+            r.invoke(&mut m, 0x100c, PROFILE, 3, [0x5000, 1, 128]),
+            Err(Error::InvalidEntry)
+        ));
+        backing.valid.set(true);
+        m.fill_with(0x3000, 4, |bytes| {
+            bytes.copy_from_slice(&0xd503201fu32.to_le_bytes())
+        })
+        .unwrap();
+        assert!(matches!(
+            r.invoke(&mut m, 0x100c, PROFILE, 3, [0x5000, 1, 128]),
+            Err(Error::InvalidEntry)
+        ));
+        assert_eq!(r.metrics.validation_hits, 1);
     }
     #[test]
     fn copy_overlap_cow_and_tagged_return_are_preserved() {

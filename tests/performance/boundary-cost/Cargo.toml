@@ -1,0 +1,17 @@
+[package]
+name = "trames-boundary-cost-probe"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.90"
+license = "GPL-3.0-or-later"
+
+# Isolated allocation-counting process with reproducible old/new dependencies.
+[workspace]
+[dependencies]
+trames-accel = { path = "../../../crates/trames-accel" }
+trames-memory = { path = "../../../crates/trames-memory" }
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+[profile.release]
+lto = "thin"
+codegen-units = 1

@@ -121,3 +121,9 @@ Keep original fallback selectable. Use occasional same-binary before/after
 benchmarks, state the host and workload, report regressions, and avoid claiming
 QEMU results are physical-iPad or whole-system speedups. Bundle device releases
 at a meaningful milestone because of the owner's signing limits.
+
+The [entry/memory follow-up](../architecture/native-boundary-cost.md) adds
+version-checked stub reuse, direct resident pathname reads and single-page write
+validation. Application benefit is determined by the recorded before/after batch.
+Owner policy permits audited unsafe Rust boundaries with explicit operations,
+rather than a blanket production ban.

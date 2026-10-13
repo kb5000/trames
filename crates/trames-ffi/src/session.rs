@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#![forbid(unsafe_code)]
+#![deny(unsafe_op_in_unsafe_fn)]
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, VecDeque},

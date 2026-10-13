@@ -17,7 +17,7 @@ Use the safe interfaces of socket2 0.6.1 and nix 0.31.3. Socket2/std provide RAI
 connect/accept/options/receives; nix provides borrowed-descriptor poll. Trames
 uses these without unsafe code in this project. Their selected licenses and locked transitive dependencies are recorded
 in [dependencies.md](../security/dependencies.md). Dependencies contain their
-own platform FFI; the project's unsafe_code prohibition applies to Trames sources,
+own platform FFI; Trames initially prohibited unsafe code in its value-level sources,
 not a claim that the complete dependency graph contains no unsafe code.
 
 Blocking host IO would stall all virtual processes. One worker thread per socket
@@ -46,3 +46,8 @@ iOS target compile check does not replace signed-build or device validation.
 See [network.md](../architecture/network.md) for behavior and remaining work.
 
 The post-M3 userspace fabric and native gateway are recorded in [ADR-006](ADR-006-userspace-network.md).
+
+Owner-directed update, 2026-10-13: audited unsafe boundaries are permitted;
+explicit unsafe operations and documented ownership/aliasing/permissions are
+required. The socket capability restrictions of this decision remain in force.
+See [current boundary policy](../security/dependencies.md).

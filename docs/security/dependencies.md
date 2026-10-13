@@ -21,7 +21,14 @@ supported Trames target.
 
 This records license compatibility, not a security audit of dependencies. Native
 FFI and platform-specific unsafe implementations live in the dependencies.
-The CPU, memory, core and other value-level Rust crates forbid unsafe code.
+Owner direction, 2026-10-13: unsafe Rust is permitted at small, audited boundaries.
+The workspace denies `unsafe_op_in_unsafe_fn`, requiring each unsafe operation to
+be explicit even inside an unsafe function. Document pointer validity/lifetime,
+alignment, aliasing, permission checks, thread ownership and failure behavior.
+Prefer checked/scoped interfaces that contain the unsafe implementation; a guest
+virtual address is never sufficient evidence for a valid host pointer. Tests must
+exercise the relevant remap, COW, shared mapping and executable-code invalidation
+boundaries. This replaces the initial blanket unsafe-code prohibition.
 The isolated C caller-buffer boundary and static native compute helpers permit
 reviewed unsafe operations; compute accepts values, never guest memory pointers.
 GNU licensing does not automatically
