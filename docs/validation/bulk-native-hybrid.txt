@@ -1,0 +1,18 @@
+PASS full musl public exports: 1642 all Alpine exports retained; private helpers hidden
+PASS accelerator-full-musl memory=True enabled=False
+PASS accelerator-full-musl memory=True enabled=True
+PASS accelerator-full-musl memory=False enabled=False
+PASS accelerator-full-musl memory=False enabled=True
+PASS musl-startup memory=True enabled=False
+PASS musl-startup memory=True enabled=True
+PASS musl-startup memory=False enabled=False
+PASS musl-startup memory=False enabled=True
+PASS runtime-compat-dynamic memory=True enabled=False
+PASS runtime-compat-dynamic memory=True enabled=True
+PASS runtime-compat-dynamic memory=False enabled=False
+PASS runtime-compat-dynamic memory=False enabled=True
+PASS musl-callbacks memory=True enabled=False
+PASS musl-callbacks memory=True enabled=True
+PASS musl-callbacks memory=False enabled=False
+PASS musl-callbacks memory=False enabled=True
+PASS standard-path upgrade, user data, idempotent reopen, pipe/exec, direct loader and invalid ELF rollback

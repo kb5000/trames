@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Bounded musl floating conversion over checked guest pages.
 use crate::native::{Error, Metrics, Return, MAX_BYTES};
-use trames_memory::{Access, Memory, PAGE_SIZE};
+use trames_memory::{Memory, PAGE_SIZE};
 pub const AUXV_KEY: u64 = 0x5452_0005;
 pub const PROFILE: u64 = 0x0001_0003;
 const OUTPUT_BYTES: usize = 16; // tagged end pointer, Linux errno (zero: unchanged)
@@ -36,8 +36,7 @@ pub(crate) fn parse_with(
             fallback: true,
         })
     };
-    memory.check(output, OUTPUT_BYTES, Access::Write)?;
-    if !memory.native_writable_range(output, OUTPUT_BYTES)? {
+    if !memory.native_output_range(output, OUTPUT_BYTES)? {
         return fallback();
     }
     // Invalid integer bases finish without dereferencing even a null input.
@@ -149,7 +148,7 @@ mod tests {
         assert_eq!(r.value, 1f64.to_bits());
     }
     #[test]
-    fn ceilings_and_shared_output_fall_back_without_publishing_partial_results() {
+    fn ceilings_do_not_publish_partial_results_and_resident_shared_output_succeeds() {
         let mut m = Memory::default();
         m.map(0x1000, PAGE_SIZE, Permissions::RW).unwrap();
         m.map(0x4000, MAX_BYTES as u64, Permissions::RW).unwrap();
@@ -171,5 +170,10 @@ mod tests {
                 .fallback
         );
         assert_eq!(m.read_array::<16>(0x1000).unwrap(), [17; 16]);
+        m.write(0x4000, b"12.5!\0").unwrap();
+        let result = parse(&mut m, [0x4000, 0x1000, 1], &mut metrics).unwrap();
+        assert!(!result.fallback);
+        assert_eq!(result.value, 12.5f64.to_bits());
+        assert_eq!(m.read_u64(0x1000).unwrap(), 0x4004);
     }
 }

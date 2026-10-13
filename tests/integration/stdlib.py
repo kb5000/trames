@@ -34,6 +34,7 @@ with tempfile.TemporaryDirectory(prefix='trames-stdlib-') as folder:
             if enabled:
                 assert native['integer_conversions']>2500 and all(native['function_calls'][10:19]),native
                 assert native['fallbacks']>0 and native['callback_sorts']>0,native
+                assert not any(native['function_fallbacks']),native
                 assert native['validation_hits']>0 and native['validation_misses']>0,native
             else:assert native['calls']==0,native
             report.append(dict(memory=memory,enabled=enabled,native=native,runtime=runtime))

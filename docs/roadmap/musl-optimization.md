@@ -43,7 +43,7 @@ sizes below 128 bytes stay local; strcmp/strncmp and strnlen stop locally within
 a 64-byte prefix. strnlen can terminate within the native ceiling even with a larger bound;
 exhausting the ceiling returns a typed original-code fallback. No partial writes
 occur on a ceiling fallback. Bulk memcpy/memmove/memset/memcmp/memchr/memrchr now accept up to 1 MiB.
-String scans/copies/concatenation retain 64 KiB per scan/input and original fallback
+String scans/copies/concatenation now accept 1 MiB per scan/input with original fallback
 before effects. Calls remain synchronous joined checkpoints; this is a bounded
 expansion, not a resumable unlimited operation.
 
@@ -149,3 +149,12 @@ The [coherent backing/bulk follow-up](../validation/bulk-native.md) records 19 p
 entries, scoped resident backing access, bounded 1 MiB memory operations and NEON
 fragment scans. Timings retain short-copy regression and small real-program change;
 no universal application speed or physical-iPad claim.
+
+The reduced-fallback follow-up extends pure string scans to 1 MiB and permits
+resident shared/write-only one-shot outputs (including numeric result frames).
+Callback state keeps its stricter private/readable gate. Huge forward scan/compare
+bounds can stop natively before exhausting the ceiling. `function_fallbacks` makes
+remaining pure fallbacks visible; the expanded stdlib fixture has zero such
+fallbacks, six long integer-input fallbacks, versus 169 total fallbacks on the
+saved 17-function host using the same new libc/fixture. This is fixture evidence,
+not a claim that every application or arbitrary input avoids fallback.

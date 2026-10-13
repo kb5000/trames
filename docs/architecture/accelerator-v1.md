@@ -53,7 +53,7 @@ for separately. A committed result advances PC by four and retires exactly one
 HLT; a backend memory fault leaves PC/input registers unchanged and uses existing
 Linux signals with the precise guest data address. Callee-saved GPRs, SP, TLS,
 flags and guest FP/vector state are retained. Calls are synchronous and at most
-1 MiB of requested bulk work (64 KiB for strings/callbacks); scheduling/cancellation resumes between calls. Unsupported
+1 MiB per bulk range/string scan (64 KiB for callback/numeric parsing); scheduling/cancellation resumes between calls. Unsupported
 larger work uses a typed return, then the original interpreted guest function.
 
 ## Memory and original code

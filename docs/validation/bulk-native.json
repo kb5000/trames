@@ -1,0 +1,64 @@
+{
+  "baseline_release": "0.13.0/build14",
+  "initial_benchmark_source": "deeb56d3b52f22216a691df6b3655a853f0e0898",
+  "host_tests": 244,
+  "arm64_tests": 189,
+  "workspace_clippy_warnings_denied": true,
+  "pure_function_count": 19,
+  "pure_features": 524287,
+  "max_bulk_bytes": 1048576,
+  "max_string_bytes": 1048576,
+  "max_numeric_input_bytes": 65536,
+  "max_callback_sort_bytes": 65536,
+  "stdlib_enabled_native_calls": 5825,
+  "stdlib_enabled_fallbacks": 6,
+  "stdlib_pure_function_fallbacks": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "previous_host_same_libc_fixture_fallbacks": 169,
+  "logs": {
+    "final-workspace": {
+      "sha256": "8446a69929d925c077c7a179e7f513bd7f9198319f513ce3bf93f42634dfa44f",
+      "bytes": 25878
+    },
+    "final-arm": {
+      "sha256": "5642ff77bbe055ec0e25e5c1432021a69fd31cf588059f846ab91c8ccf5592d6",
+      "bytes": 19373
+    },
+    "final-clippy": {
+      "sha256": "b0da09e2eb94d9a5e97d076f19256a9623b60556497f18bce60ce610383fd054",
+      "bytes": 870
+    },
+    "final-build": {
+      "sha256": "fe71468c95019cdba7522e4632c09d5208eb7af20087787b431b32210290d802",
+      "bytes": 791
+    },
+    "final-stdlib": {
+      "sha256": "b4166cba548bfbb9d115e6e079c66509eecd090fbd9345c7c57706e9082356bc",
+      "bytes": 809
+    },
+    "final-hybrid": {
+      "sha256": "eb6a158a1a4427ade958a0518d6dc1111244915e2c38c8fc7356ec9541422203",
+      "bytes": 984
+    }
+  },
+  "ci_status": "pending"
+}

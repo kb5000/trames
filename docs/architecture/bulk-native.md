@@ -29,13 +29,22 @@ scalar exact-byte resolution and bounded tails. Unaligned loads stay inside the
 slice. Non-AArch64 development hosts retain the existing word routines. Original
 Arm memcpy/memset assembly remains in use, with musl/Arm notices retained.
 
+A separate one-shot output preflight permits resident shared, undetached private
+file and write-only outputs without relaxing the private/readable contract for
+resumable sort/callback state. Unknown I/O backing remains original fallback.
+Integer/floating conversion result frames use the same one-shot preflight.
+
 Pure IDs 18/19 add strcat/strncat; feature bitmap is now 0x7ffff. Existing IDs,
 activation key and profile stay unchanged. Wrappers keep short work local and
 check their individual feature bit. Original upstream functions are privately
 renamed and retained unchanged; old 17-function hosts and ordinary Linux use
 them. Concatenation scans destination/source, preflights output, preserves tagged
 return pointers and writes one final NUL without strncpy padding. Zero bounds
-never access the source. Shared/live or unreadable output retains original
-fallback before writes. Each string scan/input remains limited to 64 KiB.
+never access the source. Unknown I/O output retains original fallback before writes. Each string scan/input
+is now bounded at 1 MiB; callback/numeric parsing retains 64 KiB. Huge bounds for
+forward compare/search or strncat may finish natively on early mismatch/NUL;
+exhausting the scan ceiling selects original before effects. Fixed copies/padding
+and reverse search beyond the ceiling still fall back. Metrics now expose a
+per-function fallback count.
 
 [Validation and occasional measurement](../validation/bulk-native.md).

@@ -29,7 +29,7 @@ the original implementation. The wrappers/initializer have no stack protector.
 Known-size operations below 128 bytes stay in the original guest implementation.
 Enabled strlen first scans a bounded 64-byte aligned-word prefix using musl's
 HASZERO algorithm; an early NUL returns without host entry. Aligned words cannot
-cross a page. Larger work uses NativeCall v1, including its 1 MiB bulk/64 KiB string limits and
+cross a page. Larger work uses NativeCall v1, including its 1 MiB pure memory/string limits and
 typed original-code fallback. Disabled Trames sessions and ordinary Linux/QEMU
 use original routines and never execute the virtual HLT.
 

@@ -101,6 +101,10 @@ int main(int argc, char **argv) {
         assert(!cmp(a,b,n));
         puts("accelerator-bench-ok"); return 0;
     }
+    // Keep exercising the typed untouched-original fallback above the new cap.
+    size_t over=1048577;unsigned char *large_a=malloc(over),*large_b=malloc(over);assert(large_a && large_b);
+    st(large_a,0x51,over);assert(cp(large_b,large_a,over)==large_b);assert(!cmp(large_a,large_b,over));
+    free(large_a);free(large_b);
     size_t sizes[]={0,1,3,7,8,15,16,31,32,63,64,95,127,128,129,511,4095,4096,65535,65536,65537,80000};
     unsigned char *a=malloc(100032),*b=malloc(100032),*expected=malloc(100032);
     assert(a && b && expected);

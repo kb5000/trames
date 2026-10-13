@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Checked, bounded string search/copy; original fallback before any writes.
-use crate::native::{Error, Registry, Return, MAX_BYTES};
-use trames_memory::{Access, Memory, MemoryError, PAGE_SIZE};
+use crate::native::{Error, Registry, Return, MAX_STRING_BYTES as MAX_BYTES};
+use trames_memory::{Memory, PAGE_SIZE};
 pub(crate) fn execute(
     registry: &mut Registry,
     memory: &mut Memory,
@@ -75,15 +75,11 @@ pub(crate) fn execute(
     }
     let total = if bounded { limit } else { offset + 1 };
     // All source reads and destination permissions are checked before effects.
-    // Shared/live output selects original; no partially completed restart.
-    memory.check(dst, total, Access::Write)?;
-    match memory.native_writable_range(dst, total) {
+    // Unknown I/O backings select original; resident shared/write-only output
+    // is supported without granting the callback continuation this permission.
+    match memory.native_output_range(dst, total) {
         Ok(true) => {}
-        Ok(false)
-        | Err(MemoryError::Permission {
-            access: Access::Read,
-            ..
-        }) => return fallback(),
+        Ok(false) => return fallback(),
         Err(error) => return Err(error.into()),
     }
     let copied = if terminated { offset + 1 } else { offset };
@@ -114,9 +110,6 @@ fn concatenate(
             fallback: true,
         })
     };
-    if bounded && length > MAX_BYTES as u64 {
-        return fallback();
-    }
     let mut scan = |address: u64, limit: usize| -> Result<(usize, bool), Error> {
         let mut offset = 0;
         while offset < limit {
@@ -135,19 +128,21 @@ fn concatenate(
     if !terminated {
         return fallback();
     }
-    let (copied, terminated) = scan(src, if bounded { length as usize } else { MAX_BYTES })?;
-    if !terminated && !bounded {
+    let (copied, terminated) = scan(
+        src,
+        if bounded {
+            length.min(MAX_BYTES as u64) as usize
+        } else {
+            MAX_BYTES
+        },
+    )?;
+    if !terminated && (!bounded || length > MAX_BYTES as u64) {
         return fallback();
     }
     let output = dst.wrapping_add(end as u64);
-    memory.check(output, copied + 1, Access::Write)?;
-    match memory.native_writable_range(output, copied + 1) {
+    match memory.native_output_range(output, copied + 1) {
         Ok(true) => {}
-        Ok(false)
-        | Err(MemoryError::Permission {
-            access: Access::Read,
-            ..
-        }) => return fallback(),
+        Ok(false) => return fallback(),
         Err(error) => return Err(error.into()),
     }
     registry.record_transfer(memory.copy_with(output, src, copied, trames_native::copy)?);
@@ -197,11 +192,18 @@ mod tests {
                 .fallback
         );
         assert_eq!(m.read_array::<5>(tagged).unwrap(), *b"abcd\0");
+        m.write(0x1ffe, b"ab\0").unwrap();
+        assert!(
+            !execute(&mut r, &mut m, 19, [tagged, 0x3ffe, u64::MAX])
+                .unwrap()
+                .fallback
+        );
+        assert_eq!(m.read_array::<6>(tagged).unwrap(), *b"abcde\0");
         m.write(0x4ffd, b"ab\0").unwrap();
         assert!(execute(&mut r, &mut m, 18, [0x4ffd, 0x3ffe, 0]).is_err());
         assert_eq!(m.read_array::<3>(0x4ffd).unwrap(), *b"ab\0");
         assert!(
-            execute(&mut r, &mut m, 19, [1, 1, MAX_BYTES as u64 + 1])
+            execute(&mut r, &mut m, 16, [1, 1, MAX_BYTES as u64 + 1])
                 .unwrap()
                 .fallback
         );
@@ -232,7 +234,7 @@ mod tests {
         ));
     }
     #[test]
-    fn copies_preflight_whole_output_cow_padding_truncation_and_shared_fallback() {
+    fn copies_preflight_whole_output_cow_padding_truncation_shared_and_writeonly() {
         let mut m = memory();
         let mut r = Registry::default();
         m.write(0x2ffe, b"abc\0").unwrap();
@@ -263,11 +265,11 @@ mod tests {
             .unwrap();
         m.write(0x1000, &[17; 8]).unwrap();
         assert!(
-            execute(&mut r, &mut m, 16, [0x1000, 0x2ffe, 8])
+            !execute(&mut r, &mut m, 16, [0x1000, 0x2ffe, 8])
                 .unwrap()
                 .fallback
         );
-        assert_eq!(m.read_array::<8>(0x1000).unwrap(), [17; 8]);
+        assert_eq!(m.read_array::<8>(0x1000).unwrap(), *b"abc\0\0\0\0\0");
         m.protect(
             0x4000,
             PAGE_SIZE,
@@ -279,7 +281,7 @@ mod tests {
         )
         .unwrap();
         assert!(
-            execute(&mut r, &mut m, 16, [0x4000, 0x2ffe, 8])
+            !execute(&mut r, &mut m, 16, [0x4000, 0x2ffe, 8])
                 .unwrap()
                 .fallback
         );

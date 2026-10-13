@@ -29,7 +29,7 @@ static void copies(char *s,size_t len,char *d) {
     memset(d,17,len+145);assert(stpcpy(d+1,s)==d+len+1);assert(!memcmp(d+1,s,len+1));assert(d[0]==17 && d[len+2]==17);
     memset(d,17,len+145);memcpy(d,"prefix",7);assert(strcat(d,s)==d);
     assert(!memcmp(d,"prefix",6) && !memcmp(d+6,s,len+1) && d[len+7]==17);
-    size_t bounds[]={0,1,63,128,len,len+1};
+    size_t bounds[]={0,1,63,128,len,len+1,SIZE_MAX};
     for(unsigned k=0;k<sizeof(bounds)/sizeof(*bounds);k++){
         size_t n=bounds[k],used=len<n?len:n;memset(d,17,len+145);memcpy(d,"prefix",7);
         assert(strncat(d,s,n)==d);assert(!memcmp(d,"prefix",6) && !memcmp(d+6,s,used));
