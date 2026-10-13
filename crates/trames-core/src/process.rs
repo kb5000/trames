@@ -2447,7 +2447,12 @@ impl Kernel {
             // An unread expired timerfd remains readable until a guest read or
             // poll updates it. It must not force zero-length CPU epochs forever.
             let timerfd = p.linux.vfs.next_timerfd_deadline().filter(|d| *d > now);
-            for deadline in [p.poll_deadline, timerfd].into_iter().flatten() {
+            // A failed/restarted poll can leave a saved deadline on a runnable
+            // or stopped task. Only an active blocked poll needs a wakeup poll.
+            let poll = matches!(p.state, State::Blocked(..))
+                .then_some(p.poll_deadline)
+                .flatten();
+            for deadline in [poll, timerfd].into_iter().flatten() {
                 timeout = timeout.min(deadline.saturating_duration_since(now));
             }
             if let State::Futex {
@@ -3079,7 +3084,10 @@ mod tests {
             .vfs
             .timerfd_set(fd, Duration::ZERO, Some(Instant::now()))
             .unwrap();
+        p.poll_deadline = Some(Instant::now());
         assert_eq!(k.parallel_timeout(), Duration::from_millis(10));
+        k.processes.get_mut(&1).unwrap().state = State::Blocked(22, [0; 6]);
+        assert_eq!(k.parallel_timeout(), Duration::ZERO);
         k.processes.get_mut(&1).unwrap().state =
             State::Sleep(Instant::now() + Duration::from_millis(1), 0);
         assert!(k.parallel_timeout() <= Duration::from_millis(1));
