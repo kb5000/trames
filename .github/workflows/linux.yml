@@ -22,7 +22,7 @@ jobs:
       - name: Install independent AArch64 oracle and cross assembler
         run: |
           sudo apt-get update
-          sudo apt-get install --yes binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu qemu-user build-essential curl bzip2 openssl ninja-build pkg-config libglib2.0-dev python3-venv ripgrep
+          sudo apt-get install --yes binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu qemu-user build-essential curl bzip2 openssl ninja-build pkg-config clang llvm libglib2.0-dev python3-venv ripgrep
       - uses: actions/cache@v4
         with:
           path: target/qemu-oracle
@@ -103,6 +103,7 @@ jobs:
         run: |
           bash scripts/build-musl-hybrid-fixtures.sh
           python3 tests/integration/musl-hybrid.py
+          python3 tests/integration/numeric.py
       - name: Build and compare opt-in NativeCall guest ELF stubs on ARM64
         run: |
           bash scripts/build-accelerator-fixtures.sh

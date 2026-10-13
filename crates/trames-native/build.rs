@@ -1,7 +1,100 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Assemble the original pinned Arm routines, with symbol/object-format adaptation.
-use std::{collections::BTreeMap, env, fs, path::Path};
+use std::{collections::BTreeMap, env, fs, path::Path, process::Command};
+fn compile_parser() {
+    let target = env::var("TARGET").unwrap();
+    let host = env::var("HOST").unwrap();
+    let apple = target.contains("apple");
+    let out = env::var_os("OUT_DIR").unwrap();
+    let out = Path::new(&out);
+    let input = "upstream/musl-1.2.5/internal/floatscan.c";
+    println!("cargo:rerun-if-changed={input}");
+    println!("cargo:rerun-if-changed=parse");
+    let original = fs::read_to_string(input).expect("pinned floatscan");
+    assert_eq!(original.matches("1000000000.0L").count(), 1);
+    // Retain the original algorithm; select its 53-bit intermediate branch on
+    // every host. ARM64 GNU long double otherwise invokes software binary128.
+    let mut source = original
+        .replace("long double", "double")
+        .replace("LDBL_", "DBL_")
+        .replace("1000000000.0L", "1000000000.0")
+        .replace("__floatscan", "trames_native_floatscan");
+    for (old, new) in [
+        ("scalbnl", "scalbn"),
+        ("fmodl", "fmod"),
+        ("copysignl", "copysign"),
+        ("fabsl", "fabs"),
+    ] {
+        source = source.replace(old, new);
+    }
+    fs::write(out.join("floatscan.c"), source).unwrap();
+    let compiler_key = format!("CC_{}", target.replace('-', "_"));
+    let compiler = env::var(&compiler_key).unwrap_or_else(|_| {
+        if apple {
+            "clang".into()
+        } else if target != host && target.starts_with("aarch64") {
+            "aarch64-linux-gnu-gcc".into()
+        } else {
+            "cc".into()
+        }
+    });
+    println!("cargo:rerun-if-env-changed={compiler_key}");
+    for (name, path) in [
+        ("floatscan", out.join("floatscan.c")),
+        ("driver", Path::new("parse/driver.c").to_owned()),
+    ] {
+        let mut command = Command::new(&compiler);
+        if apple && target != host {
+            command.arg(if target.ends_with("-sim") {
+                "--target=arm64-apple-ios17.0-simulator"
+            } else {
+                "--target=arm64-apple-ios17.0"
+            });
+        }
+        command.args([
+            "-O2",
+            "-fPIC",
+            "-ffreestanding",
+            "-fno-builtin",
+            "-fno-stack-protector",
+            "-fvisibility=hidden",
+            "-ffp-contract=off",
+            "-Iparse/shim",
+            "-c",
+        ]);
+        assert!(command
+            .arg(path)
+            .arg("-o")
+            .arg(out.join(format!("{name}.o")))
+            .status()
+            .expect("C compiler for signed-in native parser")
+            .success());
+    }
+    let archive_key = format!("AR_{}", target.replace('-', "_"));
+    let archive = env::var(&archive_key).unwrap_or_else(|_| {
+        if apple && !host.contains("apple") {
+            "llvm-ar".into()
+        } else {
+            "ar".into()
+        }
+    });
+    println!("cargo:rerun-if-env-changed={archive_key}");
+    assert!(Command::new(archive)
+        .arg("crs")
+        .arg(out.join("libtrames_parse.a"))
+        .arg(out.join("floatscan.o"))
+        .arg(out.join("driver.o"))
+        .status()
+        .expect("native parser archiver")
+        .success());
+    println!("cargo:rustc-link-search=native={}", out.display());
+    println!("cargo:rustc-link-lib=static=trames_parse");
+    if !apple && env::var("CARGO_CFG_TARGET_ENV").as_deref() != Ok("musl") {
+        println!("cargo:rustc-link-lib=m");
+    }
+}
 fn main() {
+    compile_parser();
     if env::var("CARGO_CFG_TARGET_ARCH").as_deref() != Ok("aarch64") {
         return;
     }

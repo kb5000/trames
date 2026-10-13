@@ -19,6 +19,12 @@
     "src/stdlib/qsort.c": "3a838cc7f83f4746df6063f567be1ebb2f7d204243342122acd43f44d2434ec6",
     "src/stdlib/qsort_nr.c": "ba6ce7460e7b4b22d70c8d7acab2bdb5d3916f428d50b42bb29e4da5eec484d9",
     "src/stdlib/bsearch.c": "91d170a3505dff3d9605e241122ba60d0c4e98b0d0fd6b30ee6a726f70045189",
-    "src/internal/atomic.h": "6d780523ff80c51479c7f848447abb28f3283e1b319f2ebe62b0ace9031d1c36"
+    "src/internal/atomic.h": "6d780523ff80c51479c7f848447abb28f3283e1b319f2ebe62b0ace9031d1c36",
+    "src/internal/floatscan.c": "13a007ee0be8682efa12c80e088a1758a425d8be1842980609f20c0f9d6d9ad5",
+    "src/internal/floatscan.h": "84b09ffb83d5bf7d0751f8cf21b7a1ab241576057b275339807b6a3af0f07f6b",
+    "src/internal/shgetc.c": "0b076498bc7e64f0756692f431bf5d39ea3964a175b9eba4ce6cfe23d4c76dd2",
+    "src/internal/shgetc.h": "8bf68f99a81d25c7a7b17b3f862498c94e5dbd6d2daa2a94765ef7a5d950563d",
+    "src/stdlib/strtod.c": "4b1945084cb6bf53a6d5684ca3bfd0c824eab9cbdb2b2fdfc9811fb526dd67ab",
+    "src/stdlib/atof.c": "2d5733fbc1ae1b50b0b0b5bd6533551a6e69dae5491b0150f3b4c459dd722e45"
   }
 }

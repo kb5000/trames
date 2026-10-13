@@ -182,7 +182,7 @@ int main(int argc, char **argv) {
     assert(fault_signal==SIGBUS && fault_address==(uintptr_t)private);
 #endif
     // Correctly encoded HLT outside the signed-in entry contract stays SIGILL.
-    uint32_t malformed[]={0xd2800070,0xf2a00030,0xd2800031,0xd44a8a40,0xd65f03c0};
+    uint32_t malformed[]={0xd2800090,0xf2a00030,0xd2800031,0xd44a8a40,0xd65f03c0};
     cp(code,malformed,sizeof(malformed)); __builtin___clear_cache((char*)code,(char*)code+sizeof(malformed));
     if(!sigsetjmp(jump,1)) { ((void(*)(void))code)(); assert(0); }
     assert(fault_signal==SIGILL && fault_address==(uintptr_t)code+12);

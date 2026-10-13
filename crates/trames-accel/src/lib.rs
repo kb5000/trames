@@ -2,6 +2,7 @@
 //! Signed-in, pure accelerators. Disabled calls have no effect and can fall back.
 pub mod callbacks;
 pub mod native;
+pub mod numeric;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::time::Instant;

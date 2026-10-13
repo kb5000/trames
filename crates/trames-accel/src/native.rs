@@ -21,6 +21,11 @@ pub struct Metrics {
     pub callback_sorts: u64,
     pub callback_searches: u64,
     pub callback_state_bytes: u64,
+    pub numeric_calls: u64,
+    pub numeric_conversions: u64,
+    pub numeric_replays: u64,
+    pub numeric_input_bytes: u64,
+    pub numeric_result_bytes: u64,
     pub fallbacks: u64,
     pub rejected: u64,
     pub faults: u64,
@@ -56,7 +61,8 @@ impl Registry {
     /// This is rechecked on every entry, including fork, remap and self-modification.
     fn valid(memory: &Memory, pc: u64, module: u64, function: u64) -> bool {
         let allowed = (module == PROFILE && (1..=10).contains(&function))
-            || (module == crate::callbacks::PROFILE && function == 1);
+            || (module == crate::callbacks::PROFILE && function == 1)
+            || (module == crate::numeric::PROFILE && function == 1);
         if !allowed || pc < 12 {
             return false;
         }
@@ -89,6 +95,9 @@ impl Registry {
         let result = if module == crate::callbacks::PROFILE {
             self.metrics.callback_calls = self.metrics.callback_calls.saturating_add(1);
             crate::callbacks::step(memory, a, &mut self.metrics)
+        } else if module == crate::numeric::PROFILE {
+            self.metrics.numeric_calls = self.metrics.numeric_calls.saturating_add(1);
+            crate::numeric::parse(memory, a, &mut self.metrics)
         } else {
             let count = &mut self.metrics.function_calls[function as usize - 1];
             *count = count.saturating_add(1);

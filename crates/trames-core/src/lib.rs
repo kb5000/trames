@@ -189,6 +189,14 @@ fn initial_stack_bytes(
             trames_accel::callbacks::SEARCH_AUXV_KEY,
             u64::from(options.pure_accelerator && options.native_bsearch),
         ),
+        (
+            trames_accel::numeric::AUXV_KEY,
+            if options.pure_accelerator {
+                trames_accel::numeric::PROFILE
+            } else {
+                0
+            },
+        ),
         (16, trames_cpu::HWCAP),
         (26, trames_cpu::HWCAP2),
         (9, elf.entry),

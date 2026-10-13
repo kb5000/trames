@@ -81,3 +81,5 @@ all adaptation/build files, GPL text, original COPYRIGHT, checked startup hashes
 compiler identity and the resulting ELF SHA-256. Pinned-source re-extraction on
 each build avoids mixing stale patched/configured trees. [Validation and measured
 limits](../validation/musl-hybrid.md) describe the actual tested scope.
+
+[Native floating conversion](native-numeric.md) adds a separate gated module over checked guest bytes; atof and locale aliases retain their original forwarding code.
