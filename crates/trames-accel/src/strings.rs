@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Checked, bounded string search/copy; original fallback before any writes.
 use crate::native::{Error, Registry, Return, MAX_STRING_BYTES as MAX_BYTES};
-use trames_memory::{Memory, PAGE_SIZE};
+#[cfg(test)]
+use trames_memory::Memory;
+use trames_memory::{NativeMemory, PAGE_SIZE};
 pub(crate) fn execute(
     registry: &mut Registry,
-    memory: &mut Memory,
+    memory: &mut impl NativeMemory,
     function: u64,
     a: [u64; 3],
 ) -> Result<Return, Error> {
@@ -100,7 +102,7 @@ pub(crate) fn execute(
 /// Concatenation preflights both scans and the entire output before effects.
 fn concatenate(
     registry: &mut Registry,
-    memory: &mut Memory,
+    memory: &mut impl NativeMemory,
     bounded: bool,
     [dst, src, length]: [u64; 3],
 ) -> Result<Return, Error> {

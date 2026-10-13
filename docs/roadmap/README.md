@@ -1,5 +1,13 @@
 # Delivery roadmap
 
+Current development adds [worker-side NativeCall](../architecture/parallel-nativecalls.md)
+after the [bulk native batch](../validation/bulk-native.md). Pure functions, parsers
+and callback steps continue on their owning CPU through checked resident page
+guards; kernel/live private backing effects still join. [Evidence and fixed-work
+measurements](../validation/parallel-nativecalls.md) accompany issue #16.
+The latest delivered device release is [0.13.0/build 14](../validation/release-0.13.md);
+historical release and benchmark records below retain their original scope.
+
 The current grouped release includes [host multicore execution](../architecture/multicore.md),
 introduced before further shared-memory/native optimization. Persistent CPU workers
 execute the same cached interpreter; syscalls/native/backing changes use joined

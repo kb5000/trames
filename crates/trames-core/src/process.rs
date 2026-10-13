@@ -2207,7 +2207,17 @@ impl Kernel {
                 };
                 let began = Instant::now();
                 let a = [p.cpu.x(0), p.cpu.x(1), p.cpu.x(2)];
-                match self.native.invoke(&mut p.memory, pc, module, function, a) {
+                // Views can defer before effects when code changes during
+                // validation or backing writes need coordinator authority. A
+                // joined coordinator revalidates with a bounded retry.
+                let mut result = self.native.invoke(&mut p.memory, pc, module, function, a);
+                for _ in 0..2 {
+                    if !matches!(result, Err(trames_accel::native::Error::Checkpoint)) {
+                        break;
+                    }
+                    result = self.native.invoke(&mut p.memory, pc, module, function, a);
+                }
+                match result {
                     Ok(value) => {
                         p.cpu.set_x(0, value.value);
                         p.cpu.set_x(1, u64::from(value.fallback));
@@ -2219,7 +2229,7 @@ impl Kernel {
                         use trames_accel::native::Error;
                         let fault = match error {
                             Error::Memory(error) => trames_cpu::CpuFault::Memory { pc, error },
-                            Error::InvalidEntry => {
+                            Error::InvalidEntry | Error::Checkpoint => {
                                 p.linux.vfs.log(4, &format!("pid={id} NativeCall rejected module={module:#x} function={function} pc={pc:#x} comm={:?}", String::from_utf8_lossy(&p.linux.command_name)));
                                 trames_cpu::CpuFault::Trap {
                                     pc,
@@ -2402,11 +2412,15 @@ impl Kernel {
         self.parallel_memory_time += began.elapsed();
         let mut outcomes = Vec::new();
         for done in completed {
+            self.native.metrics.merge(done.native);
             let p = self
                 .processes
                 .get_mut(&done.pid)
                 .expect("dispatched process");
             p.cpu = done.cpu;
+            if let Some((pc, module, function)) = done.rejected_native {
+                p.linux.vfs.log(4,&format!("pid={} NativeCall rejected module={module:#x} function={function} pc={pc:#x} comm={:?}",done.pid,String::from_utf8_lossy(&p.linux.command_name)));
+            }
             p.last_cpu = done.worker;
             p.cpu_time += done.elapsed;
             self.cpu_total += done.elapsed;
@@ -2829,6 +2843,10 @@ pub(super) fn run(
         parallel_rounds: kernel.parallel_rounds,
         worker_slices: kernel.worker_slices,
         worker_chunks: kernel.worker_chunks,
+        peak_parallel_native_calls: kernel
+            .workers
+            .peak_native
+            .load(std::sync::atomic::Ordering::Relaxed),
         peak_parallel_cpus: kernel
             .workers
             .peak

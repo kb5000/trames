@@ -3,7 +3,9 @@
 //! bounded pure operations; matching guest code never grants host privileges.
 use serde::Serialize;
 use std::time::Instant;
-use trames_memory::{Memory, MemoryError, Transfer, PAGE_SIZE};
+#[cfg(test)]
+use trames_memory::Memory;
+use trames_memory::{MemoryError, NativeAccessError, NativeMemory, Transfer, PAGE_SIZE};
 pub const AUXV_KEY: u64 = 0x5452_0001;
 /// Optional function bitmap: bit (id - 1). Absent on old hosts.
 pub const FEATURES_AUXV_KEY: u64 = 0x5452_0002;
@@ -19,6 +21,8 @@ pub const MAX_STRING_BYTES: usize = 1024 * 1024;
 #[derive(Default, Debug, Serialize)]
 pub struct Metrics {
     pub calls: u64,
+    pub worker_calls: u64,
+    pub checkpoint_retries: u64,
     pub function_calls: [u64; FUNCTION_COUNT],
     pub function_fallbacks: [u64; FUNCTION_COUNT],
     pub integer_calls: u64,
@@ -47,10 +51,90 @@ pub struct Metrics {
     pub buffered_bytes_written: u64,
     pub nanoseconds: u64,
 }
+impl Metrics {
+    /// Worker-local counters join here after every view user has stopped.
+    pub fn merge(&mut self, other: Self) {
+        self.calls = self.calls.saturating_add(other.calls);
+        self.worker_calls = self.worker_calls.saturating_add(other.worker_calls);
+        self.checkpoint_retries = self
+            .checkpoint_retries
+            .saturating_add(other.checkpoint_retries);
+        self.integer_calls = self.integer_calls.saturating_add(other.integer_calls);
+        self.integer_conversions = self
+            .integer_conversions
+            .saturating_add(other.integer_conversions);
+        self.callback_calls = self.callback_calls.saturating_add(other.callback_calls);
+        self.callback_requests = self
+            .callback_requests
+            .saturating_add(other.callback_requests);
+        self.callback_yields = self.callback_yields.saturating_add(other.callback_yields);
+        self.callback_sorts = self.callback_sorts.saturating_add(other.callback_sorts);
+        self.callback_searches = self
+            .callback_searches
+            .saturating_add(other.callback_searches);
+        self.callback_state_bytes = self
+            .callback_state_bytes
+            .saturating_add(other.callback_state_bytes);
+        self.numeric_calls = self.numeric_calls.saturating_add(other.numeric_calls);
+        self.numeric_conversions = self
+            .numeric_conversions
+            .saturating_add(other.numeric_conversions);
+        self.numeric_replays = self.numeric_replays.saturating_add(other.numeric_replays);
+        self.numeric_input_bytes = self
+            .numeric_input_bytes
+            .saturating_add(other.numeric_input_bytes);
+        self.numeric_result_bytes = self
+            .numeric_result_bytes
+            .saturating_add(other.numeric_result_bytes);
+        self.fallbacks = self.fallbacks.saturating_add(other.fallbacks);
+        self.rejected = self.rejected.saturating_add(other.rejected);
+        self.validation_hits = self.validation_hits.saturating_add(other.validation_hits);
+        self.validation_misses = self
+            .validation_misses
+            .saturating_add(other.validation_misses);
+        self.faults = self.faults.saturating_add(other.faults);
+        self.bytes_read = self.bytes_read.saturating_add(other.bytes_read);
+        self.bytes_written = self.bytes_written.saturating_add(other.bytes_written);
+        self.direct_bytes_read = self
+            .direct_bytes_read
+            .saturating_add(other.direct_bytes_read);
+        self.direct_bytes_written = self
+            .direct_bytes_written
+            .saturating_add(other.direct_bytes_written);
+        self.buffered_bytes_read = self
+            .buffered_bytes_read
+            .saturating_add(other.buffered_bytes_read);
+        self.buffered_bytes_written = self
+            .buffered_bytes_written
+            .saturating_add(other.buffered_bytes_written);
+        self.nanoseconds = self.nanoseconds.saturating_add(other.nanoseconds);
+        for (a, b) in self.function_calls.iter_mut().zip(other.function_calls) {
+            *a = a.saturating_add(b);
+        }
+        for (a, b) in self
+            .function_fallbacks
+            .iter_mut()
+            .zip(other.function_fallbacks)
+        {
+            *a = a.saturating_add(b);
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum Error {
     InvalidEntry,
+    /// No body effects: revalidate at a joined checkpoint or perform backing I/O.
+    Checkpoint,
     Memory(MemoryError),
+}
+impl From<NativeAccessError> for Error {
+    fn from(error: NativeAccessError) -> Self {
+        match error {
+            NativeAccessError::Memory(error) => Self::Memory(error),
+            NativeAccessError::Checkpoint => Self::Checkpoint,
+        }
+    }
 }
 impl From<MemoryError> for Error {
     fn from(value: MemoryError) -> Self {
@@ -88,26 +172,32 @@ impl Registry {
     /// Recheck executable page permissions, identity, code revision and live
     /// backing version on every entry. Only identical page tokens can reuse the
     /// exact five-word check; no host pointers or borrows are cached.
-    fn valid(&mut self, memory: &Memory, pc: u64, module: u64, function: u64) -> bool {
+    fn valid(
+        &mut self,
+        memory: &impl NativeMemory,
+        pc: u64,
+        module: u64,
+        function: u64,
+    ) -> Result<bool, Error> {
         let allowed = (module == PROFILE && (1..=FUNCTION_COUNT as u64).contains(&function))
             || (module == crate::callbacks::PROFILE && function == 1)
             || (module == crate::numeric::PROFILE && function == 1)
             || (module == crate::integer::PROFILE && function == 1);
         if !allowed || pc < 12 {
-            return false;
+            return Ok(false);
         }
         let start = pc - 12;
         let Some(end) = pc.checked_add(4) else {
-            return false;
+            return Ok(false);
         };
         let Ok(first) = memory.instruction_page_identity(start) else {
-            return false;
+            return Ok(false);
         };
         let last = if start / PAGE_SIZE == end / PAGE_SIZE {
             first
         } else {
             let Ok(last) = memory.instruction_page_identity(end) else {
-                return false;
+                return Ok(false);
             };
             last
         };
@@ -121,7 +211,7 @@ impl Registry {
         let slot = ((pc / 4) as usize) & (VALIDATION_SLOTS - 1);
         if self.checked[slot] == Some(key) {
             self.metrics.validation_hits = self.metrics.validation_hits.saturating_add(1);
-            return true;
+            return Ok(true);
         }
         self.metrics.validation_misses = self.metrics.validation_misses.saturating_add(1);
         let words = [
@@ -137,28 +227,51 @@ impl Registry {
             .all(|(i, word)| memory.fetch_u32(start + i as u64 * 4) == Ok(word));
         // Read-through backing versions may change during a fetch. Store only
         // a coherent observation; the next entry still checks the live tokens.
-        if valid
-            && memory.instruction_page_identity(start) == Ok(first)
-            && (start / PAGE_SIZE == end / PAGE_SIZE
-                || memory.instruction_page_identity(end) == Ok(last))
+        if memory.instruction_page_identity(start) != Ok(first)
+            || (start / PAGE_SIZE != end / PAGE_SIZE
+                && memory.instruction_page_identity(end) != Ok(last))
         {
+            return Err(Error::Checkpoint);
+        }
+        if valid {
             self.checked[slot] = Some(key);
         }
-        valid
+        Ok(valid)
     }
     pub fn invoke(
         &mut self,
-        memory: &mut Memory,
+        memory: &mut impl NativeMemory,
         pc: u64,
         module: u64,
         function: u64,
         a: [u64; 3],
     ) -> Result<Return, Error> {
-        if !self.valid(memory, pc, module, function) {
+        self.invoke_scoped(memory, pc, module, function, a, || ())
+    }
+    /// Enter a worker-local tracking scope only after authorization. The scope
+    /// may hold timing/counter guards, never guest memory or kernel authority.
+    pub fn invoke_scoped<T>(
+        &mut self,
+        memory: &mut impl NativeMemory,
+        pc: u64,
+        module: u64,
+        function: u64,
+        a: [u64; 3],
+        scope: impl FnOnce() -> T,
+    ) -> Result<Return, Error> {
+        let valid = match self.valid(memory, pc, module, function) {
+            Ok(valid) => valid,
+            Err(error) => {
+                self.metrics.checkpoint_retries = self.metrics.checkpoint_retries.saturating_add(1);
+                return Err(error);
+            }
+        };
+        if !valid {
             self.metrics.rejected = self.metrics.rejected.saturating_add(1);
             return Err(Error::InvalidEntry);
         }
         self.metrics.calls = self.metrics.calls.saturating_add(1);
+        let _scope = scope();
         let began = Instant::now();
         let result = if module == crate::callbacks::PROFILE {
             self.metrics.callback_calls = self.metrics.callback_calls.saturating_add(1);
@@ -185,6 +298,9 @@ impl Registry {
                     let counter = &mut self.metrics.function_fallbacks[function as usize - 1];
                     *counter = counter.saturating_add(1);
                 }
+            }
+            Err(Error::Checkpoint) => {
+                self.metrics.checkpoint_retries = self.metrics.checkpoint_retries.saturating_add(1)
             }
             Err(_) => self.metrics.faults = self.metrics.faults.saturating_add(1),
             _ => {}
@@ -226,7 +342,7 @@ impl Registry {
     }
     fn execute(
         &mut self,
-        memory: &mut Memory,
+        memory: &mut impl NativeMemory,
         function: u64,
         a: [u64; 3],
     ) -> Result<Return, Error> {
@@ -277,17 +393,14 @@ impl Registry {
                     let count = (limit - offset)
                         .min((PAGE_SIZE - la % PAGE_SIZE) as usize)
                         .min((PAGE_SIZE - ra % PAGE_SIZE) as usize);
-                    let (right, ld) = memory.with_read_chunk(la, count, |left| {
-                        memory.with_read_chunk(ra, count, |right| {
-                            if function == 4 {
-                                let value = trames_native::compare(left, right);
-                                (value != 0).then_some(value)
-                            } else {
-                                trames_native::compare_strings(left, right)
-                            }
-                        })
+                    let (value, ld, rd) = memory.with_read_pair(la, ra, count, |left, right| {
+                        if function == 4 {
+                            let value = trames_native::compare(left, right);
+                            (value != 0).then_some(value)
+                        } else {
+                            trames_native::compare_strings(left, right)
+                        }
                     })?;
-                    let (value, rd) = right?;
                     self.record_read(count, ld);
                     self.record_read(count, rd);
                     if let Some(value) = value {
@@ -389,6 +502,64 @@ mod tests {
         m.protect(0x1000, PAGE_SIZE, Permissions::RX).unwrap();
         m
     }
+    #[test]
+    fn all_pure_entries_match_coordinator_on_parallel_views() {
+        let mut seed = Memory::default();
+        seed.map(0x1000, PAGE_SIZE, Permissions::RW).unwrap();
+        seed.map(0x4000, PAGE_SIZE * 4, Permissions::RW).unwrap();
+        for function in 1..=FUNCTION_COUNT as u64 {
+            let base = 0x1000 + (function - 1) * 32;
+            for (i, word) in [
+                0xd2800030u32,
+                0xf2a00030,
+                0xd2800011 | (function as u32) << 5,
+                INSTRUCTION,
+                0xd65f03c0,
+            ]
+            .iter()
+            .enumerate()
+            {
+                seed.write(base + i as u64 * 4, &word.to_le_bytes())
+                    .unwrap();
+            }
+        }
+        seed.protect(0x1000, PAGE_SIZE, Permissions::RX).unwrap();
+        seed.write(0x5ff0, &[b'a'; 300]).unwrap();
+        seed.write(0x5ff0 + 150, &[0]).unwrap();
+        seed.write(0x4100, &[b'p'; 300]).unwrap();
+        seed.write(0x4100 + 128, &[0]).unwrap();
+        for function in 1..=FUNCTION_COUNT as u64 {
+            let args = match function {
+                1 | 4 | 9 | 10 | 14..=19 => [0x4100, 0x5ff0, 256],
+                2 => [0x5ff1, 0x5ff0, 256],
+                3 => [0x4100, 255, 256],
+                5 => [0x5ff0, 0, 0],
+                6 | 7 => [0x5ff0, b'a' as u64, 256],
+                8 => [0x5ff0, u64::MAX, 0],
+                11..=13 => [0x5ff0, b'z' as u64, 0],
+                _ => unreachable!(),
+            };
+            let pc = 0x100c + (function - 1) * 32;
+            let mut owned = seed.clone();
+            let mut parallel = seed.clone();
+            let mut view = parallel.parallel_view(&mut Default::default()).unwrap();
+            let reference = Registry::default()
+                .invoke(&mut owned, pc, PROFILE, function, args)
+                .unwrap();
+            let actual = Registry::default()
+                .invoke(&mut view, pc, PROFILE, function, args)
+                .unwrap();
+            assert_eq!(actual, reference, "function {function}");
+            drop(view);
+            parallel.commit_parallel().unwrap();
+            let mut a = vec![0; PAGE_SIZE as usize * 4];
+            let mut b = a.clone();
+            owned.read(0x4000, &mut a).unwrap();
+            parallel.read(0x4000, &mut b).unwrap();
+            assert_eq!(a, b, "function {function}");
+        }
+    }
+
     #[test]
     fn huge_compare_search_bounds_stop_early_or_fall_back_only_at_ceiling() {
         let mut m = memory(10);

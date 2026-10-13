@@ -40,9 +40,9 @@ jobs:
       - run: cargo test --workspace --all-features --locked
       - name: Compile core and both network backends for iOS (no SDK link or device test)
         run: cargo check -p trames-core -p trames-distro -p trames-ffi --target aarch64-apple-ios --locked
-      - name: Execute ARM64 native compute helpers under the independent oracle
+      - name: Execute ARM64 compute, memory and native worker tests under the independent oracle
         run: |
-          cargo test -p trames-compute -p trames-native --target aarch64-unknown-linux-musl --locked
+          cargo test -p trames-compute -p trames-native -p trames-cpu -p trames-memory -p trames-accel -p trames-vfs -p trames-core --target aarch64-unknown-linux-musl --locked
           cargo build -p trames-cli --target aarch64-unknown-linux-musl --release --locked
       - run: python3 tests/differential/run.py
       - run: python3 tests/differential/m1.py
@@ -108,6 +108,7 @@ jobs:
           python3 tests/integration/musl-hybrid.py
           python3 tests/integration/numeric.py
           python3 tests/integration/stdlib.py
+          python3 tests/integration/native-parallel.py | tee target/native-parallel-workflow.log
       - name: Build and compare opt-in NativeCall guest ELF stubs on ARM64
         run: |
           bash scripts/build-accelerator-fixtures.sh
@@ -175,4 +176,6 @@ jobs:
             target/nodejs-tools.log
             target/nodejs-workflow.log
             target/smp-workflow.log
+            target/native-parallel-workflow.log
+            target/musl-hybrid/native-parallel-validation.json
           if-no-files-found: error

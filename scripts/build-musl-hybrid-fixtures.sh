@@ -10,3 +10,4 @@ flags=(-O2 -fno-builtin -fno-tree-vectorize -fno-tree-slp-vectorize -L"$(pwd)/ta
 "$compiler" "${flags[@]}" tests/fixtures/musl-callbacks.c -pthread -o tests/fixtures/bin/musl-callbacks
 "$compiler" "${flags[@]}" tests/fixtures/musl-numeric.c -pthread -lm -o tests/fixtures/bin/musl-numeric
 "$compiler" "${flags[@]}" tests/fixtures/musl-stdlib.c -pthread -ldl -o tests/fixtures/bin/musl-stdlib
+"$compiler" "${flags[@]}" tests/fixtures/native-parallel.c -pthread -o tests/fixtures/bin/native-parallel

@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Original musl intscan, using the numeric module's checked page transport.
 use crate::native::{Error, Metrics, Return};
+#[cfg(test)]
 use trames_memory::Memory;
+use trames_memory::NativeMemory;
 pub const AUXV_KEY: u64 = 0x5452_0006;
 pub const PROFILE: u64 = 0x0001_0004;
 pub(crate) fn parse(
-    memory: &mut Memory,
+    memory: &mut impl NativeMemory,
     a: [u64; 3],
     metrics: &mut Metrics,
 ) -> Result<Return, Error> {

@@ -1,109 +1,115 @@
-# Worker-side NativeCall: reviewed next implementation
+# NativeCall on persistent CPU workers
 
-Owner direction: inspect parallelism next, particularly NativeCall serialization.
-This is a concrete implementation plan; worker-side NativeCall is not implemented
-by the coherent backing/fallback batch. The delivered 0.13 IPA also retains joined
-native execution. No new backend, JIT, host-native thread pool or copied guest
-callback pointer is proposed.
-
-## Actual bottleneck
-
-`workers.rs` ends an assignment on every NativeCall, reserves one HLT retirement
-credit and requests `Control.stop()`. `process.rs::parallel_round` joins peers,
-commits their snapshots and calls `finish_slice`, which invokes the single
-coordinator-owned native registry. Even independent memcpy operations therefore
-stop each other. The persistent CPU workers already exist; scheduling a separate
-native pool would add another round trip rather than remove this boundary.
-
-The inspected native catalog has no required kernel effect: all 19 memory/string
-entries use checked guest memory. Integer/floating parsers use bounded slices,
-cursor-owned results and thread-local host errno/FP save/restore. qsort/bsearch
-steps manipulate guest-owned continuation frames and return a guest comparison
-request; they never call a guest address as a host callback. These operations can
-ultimately run on the owning CPU worker. Actual guest syscalls, mapping changes,
-signal delivery and VFS effects still require coordinator checkpoints.
+Implemented development follow-up to the coherent backing/bulk batch, tracked in
+[Issue #16](https://github.com/kb5000/trames/issues/16). Persistent workers execute
+the same checked native algorithms as coordinator Memory. Independent native
+operations continue on their owning CPU without requesting a global stop. This
+includes all 19 pure memory/string entries, integer/floating conversion and
+guest-owned qsort/bsearch continuation steps. One cached interpreter remains;
+there is no JIT, additional interpreter backend or separate native thread pool.
+The delivered 0.13 IPA keeps its original runtime; group device updates later.
 
 ```mermaid
 flowchart LR
     W[CPU worker] --> N[Checked native call]
-    N <--> P[Scoped page guards]
+    N <--> P[Scoped resident page guards]
     N --> W
-    W -->|Syscall, mapping or fault| K[Join, commit, kernel]
+    W -->|Syscall, fault, deferred backing or timed stop| K[Join, commit, kernel]
     K --> W
 ```
 
-## Shared engine and memory boundary
+## Memory ownership
 
-Introduce one checked NativeMemory contract, extending CpuMemory with scoped
-read/write fragments, copy/fill and separate one-shot-output/retryable-state
-preflight. Implement it for coordinator Memory and worker parallel::View.
-Generalize the existing registry/strings/parser/callback algorithms over this
-contract; do not create a second accelerator implementation.
+`NativeMemory: CpuMemory` provides scoped read fragments, alias-safe pair reads,
+copy/fill, checked control reads and separate one-shot output/retryable-state
+gates. Memory and parallel::View implement it; existing registry/string/parser/
+callback algorithms are generic over this transport, with one implementation.
+Guest addresses are checked virtual addresses, never cast to host pointers.
 
-View borrows only Arc-owned resident snapshot pages. Rc PageBacking, VFS, inode
-timestamps and persistence remain on the coordinator. Preserve per-frame flags
-for resident one-shot output and private/readable callback state; a view must not
-erase the stricter continuation gate. Existing mapping/protection/EOF snapshots
-stay valid while kernel mutation is prohibited; commit dirty fragments before
-any kernel operation observes bytes. File aliases share ConcurrentPage identities
-and observe worker writes immediately; backing dirty/mtime/writeback hooks run at
-the next joined commit. Unknown backing or unsupported snapshot paths retain the
-existing interpreter/coordinator path.
+View borrows Arc-owned resident snapshot pages. Rc PageBacking, VFS, timestamps,
+mapping/protection/EOF mutation and persistence stay on the coordinator. Anonymous
+pages, resident shared backing and detached private pages support worker native
+access. **Undetached private file mappings defer before guest writes**: their frozen
+private snapshot cannot guarantee the latest bytes of a concurrently writable
+file alias. A typed checkpoint returns the pending HLT to the joined coordinator,
+where live reads/private detachment use the original backing path. Unsupported
+custom backing retains local execution. This does not add dynamic worker-side
+file COW or change the older CPU-view snapshot semantics.
 
-Mutable page guards cannot survive a call, CPU poll or returned event. When two
-pages are needed, acquire locks in stable physical identity order; same-page
-overlap uses one guard. Prevent nested read/write callbacks from deadlocking on
-an alias. Copy uses directional fragments for virtual overlap and a bounded
-source snapshot for non-virtual backing aliases; disjoint ranges should not pay
-for a full snapshot. Preserve ConcurrentPage.changed, reservation-granule
-versions, dirty-fragment masks and executable code epochs for every native write.
-Page locks permit stronger ARM outcomes; this is not a global native lock or a
-promise of whole-operation atomicity. Ordinary guest data races remain possible.
+Every write operation checks its full source/output range before effects.
+Callback control reads use the native transport, and a resumed sort rechecks its
+complete array before any cycle writes: a comparator may have changed mappings
+through a syscall. Shared/read-only continuation state retains the original
+fallback-before-progress or rejection rule. Numeric result frames permit checked
+resident one-shot output, including a shared guest stack.
 
-Stub validation needs a coherent exact five-word observation and page token
-checks before/after concurrent code reads. An unstable observation must be
-revalidated or deferred, never cached or silently accepted as a stable stub.
-CPU instruction-cache invalidation and executable permissions remain mandatory.
+Mutable page guards end inside a call. Two-page reads/copies acquire locks in
+stable physical identity order; aliases of the same page acquire one guard.
+Virtual overlap uses directional fragments. Non-virtual physical aliases require
+a bounded source snapshot; disjoint snapshots avoid that allocation and alias
+table scan. Shared file aliases observe writes through one ConcurrentPage;
+dirty/mtime/writeback hooks run after joined commit.
 
-## Worker event and budget accounting
+Native writes preserve dirty 64-byte fragments, reservation-granule versions and
+executable epochs. Full-page writes use a lazy reservation epoch plus explicit
+partial-granule bits, avoiding a redundant 2 KiB version-table store per 4 KiB
+copy. This handles version wrap and preserves unaffected partial reservations.
+Page locks permit stronger ARM outcomes without promising whole-call atomicity.
+Ordinary unsynchronized guest races can still interleave between fragments.
 
-Give each persistent worker its own registry/cache and call metrics. On a
-supported NativeCall, clear the guest exclusive reservation, run the bounded
-operation against View, set x0/value and x1/fallback, advance PC by four and retire
-exactly one HLT. Continue on that worker without requesting a peer stop. Original
-fallback is an ordinary committed return; its guest function continues locally.
+Code authorization checks the exact five words and executable page tokens before
+and after a cold observation. Unstable observations defer without entering the
+body or populating the cache; warm entries still recheck tokens. Each worker owns
+its registry/cache. Snapshot reuse also validates registry/code-domain identity,
+so a resumed runtime and fork peers rejoin the same alias domain.
 
-Preserve the existing shared budget credit: an executed native HLT spends the
-reserved instruction once; a native fault does not retire it and refunds the
-credit. No peer may spend the same credit. Cancellation/fairness waits for the
-bounded call to return; page fragments are not implicit scheduler yields and a
-partially completed move must never restart. Unsupported stateful operations,
-syscalls and faults request the normal checkpoint. Queue rejected-entry logging
-for the coordinator, retaining pid/comm/module/function/PC and precise fault
-addresses rather than transporting a VFS handle.
+## Retirement and checkpoints
 
-Return and merge worker metrics only at joined checkpoints, including calls,
-per-function fallbacks, byte transport, body time and validation reuse. CPU
-elapsed time already includes native body time; avoid charging it again on the
-coordinator. Add worker-native call counts and observed peak overlap to distinguish
-real concurrency from a nominal CPU count. Do not retain a metrics mutex inside
-the hot path. Stable cache identity must include the address space and code tokens.
+An authorized native call clears the guest exclusive monitor. A committed return
+sets x0/value and x1/fallback, advances PC by four, and retires exactly one HLT.
+An original-code fallback is a committed return and continues locally. A fault
+keeps precise PC/arguments and refunds its HLT credit. A typed defer has no guest
+write effects, reserves the pending HLT once and uses the coordinator path after
+joining. Cold stub instability is revalidated with bounded coordinator retries.
+Rejected entries retain pid/comm/module/function/PC logging on the coordinator.
 
-## Staged implementation and acceptance
+Workers keep local instruction credits across native returns and refund unused
+credits when an assignment ends. This removes shared budget claim/refund RMWs per
+libc call without overspending the common session limit. Syscalls, mapping changes,
+faults, explicit yields and timer/control/fairness deadlines still join workers.
+Cancellation waits for a bounded native call to finish; fragments are not implicit
+scheduler yields, and partially executed moves cannot restart.
 
-1. Generalize the memory/native contract and validate Memory/View equivalence
-   for existing pure functions, output gates, aliases, guards and code tokens.
-2. Execute the 19 pure entries directly on CPU workers. Test exact budget,
-   fallback/fault retirement, cancellation and peer progress during native work.
-3. Generalize integer/float result transport and guest-owned callback steps;
-   keep their bounds and continuation preflight unchanged. Validate per-thread
-   host FP/errno restoration, nested guest callbacks, signals and shared stacks.
-4. Run real musl pthread workloads mixing copy/fill/compare/parsing on independent
-   buffers, overlapping shared memory and executable aliases. Check checksum,
-   futex/atomics, COW, file truncation/writeback and public libc compatibility.
-5. One occasional fixed-work 1/2/4 CPU before/after batch, plus one unchanged
-   application. Report native overlap and global checkpoint counts as well as
-   wall time, host CPU occupancy, byte transport and dispatch/stop/memory cost.
-   Shared-page contention and memory bandwidth can limit scaling; no expected
-   4x gain or development-host-to-iPad extrapolation. Run Linux/Apple CI and
-   inspect the actual simulator report before a grouped device release.
+Integer/floating parser host errno/FP scopes stay on the executing host thread.
+Guest FPCR/FPSR, TLS, SP and callee-saved registers remain guest CPU state. Sorting
+returns a guest comparison request; nested callbacks run as ordinary guest code.
+No guest callback address becomes a host function pointer.
+
+## Diagnostics and evidence
+
+Worker-local metrics merge once at joined checkpoints. `worker_calls` counts
+authorized worker body attempts and `checkpoint_retries` identifies typed defers;
+attempts are not identical to retired HLTs. `peak_parallel_native_calls` records
+observed body overlap with scoped atomic counters, without a global native or
+metrics mutex. Short calls need not overlap in every host schedule. `worker_slices`
+counts assignments, `worker_chunks` counts local CPU slices including native
+returns, and `parallel_rounds` counts global checkpoints.
+
+Worker elapsed CPU timing already includes its native body, so the coordinator
+does not charge it twice. `cpu_seconds` is summed assignment elapsed including
+lock waits, not host CPU occupancy. The benchmark separately records actual child
+user/system CPU and host wall time, which include startup/rootfs import.
+
+Deterministic tests hold one worker's data page while a peer completes native
+work on a disjoint page, and require two simultaneous native scopes. Further
+tests cover equivalence of all 19 entries, exact budgets/fault/fallback/defer,
+unstable executable observations, aliases/COW/code epochs, opposite lock order
+and reservation wrap. Real full-musl pthread tests mix every pure entry, FP/errno,
+parsing, nested sorting/searching and shared stacks at 1/2/4 CPUs, with off/on and
+persistent storage controls. Linux and Apple CI run native worker tests; Linux
+also executes actual ARM64 binaries under the independent QEMU oracle.
+
+[Validation and the occasional before/after batch](../validation/parallel-nativecalls.md)
+retain fixed work, fingerprints, raw samples, native overlap and checkpoint
+counts. Memory bandwidth, shared-page contention, short calls and kernel effects
+still limit scaling. Development-host measurements do not establish iPad speed.

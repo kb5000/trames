@@ -159,7 +159,10 @@ fallbacks, six long integer-input fallbacks, versus 169 total fallbacks on the
 saved 17-function host using the same new libc/fixture. This is fixture evidence,
 not a claim that every application or arbitrary input avoids fallback.
 
-Next owner priority: [worker-side NativeCall concurrency](../architecture/parallel-nativecalls.md),
-tracked in [#16](https://github.com/kb5000/trames/issues/16). The reviewed design
-removes the current global stop per call through a common Memory/View native
-contract; its implementation and measurements remain the next iteration.
+The [worker-side NativeCall implementation](../architecture/parallel-nativecalls.md),
+tracked in [#16](https://github.com/kb5000/trames/issues/16), removes the global stop
+per admitted native call through one Memory/View transport. The 19 pure entries,
+integer/floating parsers and guest-owned sorting/search steps continue on their
+owning CPU. Live private file backing defers before writes; syscalls and persistence
+remain joined. [Validation and measurements](../validation/parallel-nativecalls.md)
+record the supported concurrency boundary and residual bandwidth/checkpoint costs.

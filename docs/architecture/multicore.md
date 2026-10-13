@@ -17,25 +17,28 @@ flowchart LR
   K -->|Dirty fragments, COW and backing hooks| M[Guest memory and VFS]
 ```
 
-Linux, VFS, signals, timers, mapping changes, live backing objects and NativeCall
-remain coordinator-owned. Neither Rc/RefCell objects nor native guest slice borrows
-cross to workers. CPU/decode state travels with the guest task; translation caches
-belong to each CPU-only memory view. No unsafe Send/Sync assertion is added.
+Linux, VFS, signals, timers, mapping changes and live backing objects remain
+coordinator-owned. [Checked native calls](parallel-nativecalls.md) now execute on
+workers through callback-scoped resident page guards. Rc/RefCell objects stay on
+the coordinator. CPU/decode state travels with the guest task; translation caches
+belong to each CPU/native memory view. No unsafe Send/Sync assertion is added.
 
 The coordinator prepares ready tasks and immutable mapping metadata and dispatches
 at most one guest per eligible virtual CPU. Each worker retains its CPU and view
 and runs continuously across 16,384-instruction local interrupt polls. A full poll
 does not send a message, wait for peers, or return to the scheduler. There is no
-startup barrier. Syscalls, NativeCall, faults and explicit guest yields immediately
-request a global stop; the coordinator collects every result before kernel work.
+startup barrier. Admitted NativeCall returns continue on that worker. Syscalls,
+deferred native backing, faults and explicit yields request a global stop;
+the coordinator collects every result before kernel work.
 A timed checkpoint bounds host control and affinity fairness to 10 ms plus a local
 poll and host scheduling delay (2 ms for an interactive terminal, 1 ms for blocked
 socket work). Earlier sleep, futex, signal, poll and timer deadlines shorten that
 interval. An unread expired timerfd cannot force repeated zero-length epochs.
 
 A shared atomic counter reserves exact instruction credits at each local poll;
-unused credits return to the counter. A pending native trap reserves one extra
-credit, retired only after a committed coordinator return. Earlier polls and a
+unused credits return to the counter when an assignment ends. Credits stay local
+across native returns, which retire one HLT each. A deferred native trap reserves
+one credit, retired only after a committed coordinator return. Earlier polls and a
 fault's retired prefix are accounted once. This includes instructions from peers
 subsequently killed by another peer's exit_group or exec. Selection rotates between ready tasks. An affinity matching pass keeps queue
 priority and can relocate an earlier flexible task to admit a pinned peer; pinned
@@ -101,7 +104,7 @@ exposing concurrently mutable host slices or mapping barriers to no-ops is inval
 Parallel views stage mutable/undetached file pages and require additional host
 memory beyond guest committed-page accounting. Guest limits remain 512 MiB per
 address space and 1 GiB aggregate; VmRSS is not a measure of these host buffers.
-Native operations, syscalls and backing writeback are initially serialized. Page
+Syscalls, deferred live private backing and writeback remain serialized. Page
 contention, metadata changes and short slices can limit or reverse speedups. A
 single ready guest avoids worker queues and mutable-page locks; multicore mainly
 helps genuinely parallel work rather than automatically shortening single-thread

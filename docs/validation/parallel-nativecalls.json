@@ -1,0 +1,49 @@
+{
+  "baseline_commit": "a0648eb00941745c59b3c94b25f7deaca0877bc5",
+  "host_tests": 254,
+  "arm64_tests": 199,
+  "workspace_clippy_warnings_denied": true,
+  "ios_compile_check": true,
+  "pure_functions": 19,
+  "native_worker_entries": [
+    "pure-memory-strings",
+    "integer-parsing",
+    "floating-parsing",
+    "qsort-step",
+    "bsearch-step"
+  ],
+  "native_private_live": "typed checkpoint before writes; coordinator live read/COW",
+  "logs": {
+    "tests": {
+      "sha256": "973594872aa52f0eaa2c4341204a0cb60c2becff69b909a38f20ba6e7f8e0a07",
+      "bytes": 26854
+    },
+    "arm": {
+      "sha256": "72d4b48b48c1cbe559423056f8fad4a6eca922614c5da3177ab0f73bed0401d3",
+      "bytes": 20351
+    },
+    "clippy": {
+      "sha256": "7afc915444961a9b7ee63ae1e314d6989f17573f43b9790fd2a507ed2c019288",
+      "bytes": 871
+    },
+    "ios": {
+      "sha256": "0775f34352ba5a5c40a96e78bfcf51f34c0328a407c9810890bbc2e83ef118e5",
+      "bytes": 1024
+    },
+    "integration": {
+      "sha256": "71388441e6029376b87ce58ff9021412384edd378241434e7cd357c87db1a1f7",
+      "bytes": 1135
+    },
+    "hybrid": {
+      "sha256": "eb6a158a1a4427ade958a0518d6dc1111244915e2c38c8fc7356ec9541422203",
+      "bytes": 984
+    },
+    "smp": {
+      "sha256": "69c76d51c9d6f7decf889e1b6c9f1716914d1b38ec056cc2baa408b5669e02c0",
+      "bytes": 3959
+    }
+  },
+  "ci_status": "pending exact-source Linux and Apple verification",
+  "physical_ipad_performance": "not measured",
+  "delivered_ipa": "0.13.0/build14 unchanged"
+}

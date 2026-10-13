@@ -4,7 +4,9 @@
 //! Guest-owned resumable Smoothsort/bsearch. See pinned musl sources and notices.
 //! The callback is executed by ordinary guest code; no host frame or borrow survives.
 use crate::native::{Error, Metrics, Return, MAX_BYTES};
-use trames_memory::{Access, Memory};
+#[cfg(test)]
+use trames_memory::Memory;
+use trames_memory::{Access, NativeMemory};
 pub const AUXV_KEY: u64 = 0x5452_0003;
 /// Public bsearch routing is experimental: generic callback entry costs more
 /// than its short interpreted loop. The backend remains available for testing.
@@ -134,7 +136,7 @@ impl Frame {
     }
     fn run_sort(
         &mut self,
-        memory: &mut Memory,
+        memory: &mut impl NativeMemory,
         cmp: i32,
         metrics: &mut Metrics,
     ) -> Result<u64, Error> {
@@ -147,6 +149,12 @@ impl Frame {
             || self.0[SHIFT] >= 96
             || self.0[SUBSHIFT] >= 96
         {
+            return Self::invalid();
+        }
+        // A guest comparator can issue a mapping syscall between steps. Gate
+        // the complete array again before any cycle writes, so a worker defer
+        // cannot occur after partially moving another resident fragment.
+        if !memory.native_writable_range(self.0[BASE], size as usize)? {
             return Self::invalid();
         }
         // Limit native control-flow and copied bytes independently of comparisons.
@@ -347,7 +355,7 @@ impl Frame {
                         }
                     }
                     let mut temp = [0; 256];
-                    memory.read(addresses[0], &mut temp[..len])?;
+                    memory.native_read(addresses[0], &mut temp[..len])?;
                     for i in 0..count - 1 {
                         let t = memory.copy_with(
                             addresses[i],
@@ -382,12 +390,12 @@ impl Frame {
 }
 
 pub(crate) fn step(
-    memory: &mut Memory,
+    memory: &mut impl NativeMemory,
     a: [u64; 3],
     metrics: &mut Metrics,
 ) -> Result<Return, Error> {
     let address = a[0];
-    let header = memory.read_array::<16>(address)?;
+    let header = memory.native_read_array::<16>(address)?;
     let kind = u64::from_le_bytes(header[8..].try_into().unwrap());
     let length = match kind {
         1 => FRAME_BYTES,
@@ -402,7 +410,7 @@ pub(crate) fn step(
         let phase_address = address.checked_add(16).ok_or(Error::InvalidEntry)?;
         if u64::from_le_bytes(header[..8].try_into().unwrap()) == VERSION
             && a[2] == 0
-            && u64::from_le_bytes(memory.read_array(phase_address)?) == 0
+            && u64::from_le_bytes(memory.native_read_array(phase_address)?) == 0
         {
             return Ok(Return {
                 value: 0,
@@ -416,7 +424,7 @@ pub(crate) fn step(
     // registers rather than repeatedly copying the whole reserved LP table.
     let header_bytes = if kind == 1 { 24 * 8 } else { length };
     let mut bytes = [0; FRAME_BYTES];
-    memory.read(address, &mut bytes[..header_bytes])?;
+    memory.native_read(address, &mut bytes[..header_bytes])?;
     let mut frame = Frame([0; WORDS]);
     for (value, bytes) in frame
         .0
@@ -435,7 +443,7 @@ pub(crate) fn step(
         let path_address = address
             .checked_add((AR * 8) as u64)
             .ok_or(Error::InvalidEntry)?;
-        memory.read(path_address, &mut bytes[AR * 8..AR * 8 + path_bytes])?;
+        memory.native_read(path_address, &mut bytes[AR * 8..AR * 8 + path_bytes])?;
         for (value, bytes) in frame.0[AR..]
             .iter_mut()
             .zip(bytes[AR * 8..AR * 8 + path_bytes].chunks_exact(8))

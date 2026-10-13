@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Bounded musl floating conversion over checked guest pages.
 use crate::native::{Error, Metrics, Return, MAX_BYTES};
-use trames_memory::{Memory, PAGE_SIZE};
+#[cfg(test)]
+use trames_memory::Memory;
+use trames_memory::{NativeMemory, PAGE_SIZE};
 pub const AUXV_KEY: u64 = 0x5452_0005;
 pub const PROFILE: u64 = 0x0001_0003;
 const OUTPUT_BYTES: usize = 16; // tagged end pointer, Linux errno (zero: unchanged)
 pub(crate) fn parse(
-    memory: &mut Memory,
+    memory: &mut impl NativeMemory,
     a: [u64; 3],
     metrics: &mut Metrics,
 ) -> Result<Return, Error> {
@@ -23,7 +25,7 @@ pub(crate) fn parse(
     Ok(result)
 }
 pub(crate) fn parse_with(
-    memory: &mut Memory,
+    memory: &mut impl NativeMemory,
     source: u64,
     output: u64,
     metrics: &mut Metrics,
@@ -85,7 +87,7 @@ pub(crate) fn parse_with(
     commit(memory, source, output, parsed, supplied, metrics)
 }
 fn commit(
-    memory: &mut Memory,
+    memory: &mut impl NativeMemory,
     source: u64,
     output: u64,
     parsed: trames_native::parse::ParsedFloat,
