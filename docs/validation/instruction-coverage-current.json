@@ -35,9 +35,9 @@
     "crates/trames-compute/src/arm.rs": "8db8e7dd09132ab299f68e153838b4a25d50ade7d54197414470e03915198fb6",
     "crates/trames-compute/src/lib.rs": "a4ae43536977bb85d96a7da7c28564667c5bdb0ba8c98395fbf76e2db6749a2d",
     "crates/trames-compute/src/x86.rs": "62168f148b1ffe4fadf89bceabd2441ee4fd1026b1873acd66779e2fbdf1cba2",
-    "crates/trames-memory/src/lib.rs": "8bc09d730f04b2205d458520f0c29822b1acb0675b398e48d1dbdd04c69602c4",
+    "crates/trames-memory/src/lib.rs": "4765ba3f9f342eb93e8968604ce9261b41f5aec24fc9a825fb0239672b724680",
     "crates/trames-memory/src/backing.rs": "1f5e382f41e12b32ddcd405ea0e7659c49e31d5729cf76d4d47851a60d449d98",
-    "crates/trames-memory/src/reservations.rs": "0c18b4a744fda1253049d8be90950e18604843a95b60149a24faf6490833fed3",
+    "crates/trames-memory/src/reservations.rs": "de7483b835ddb8fd664e9af80bb1e0a047c2143aea06c400e7d5e9a0ef9c7d39",
     "crates/trames-core/src/process_events.rs": "c51f233022e6ff734ac09bc2e07950f00040d760031ec03ccb11d7d35176cb47",
     "crates/trames-core/src/process.rs": "697b497a4eb4bbd4a863c54cbc6eb4f8d82b081f5d9dad7b02345d8d3f512722",
     "crates/trames-core/src/lib.rs": "c8da5ffca90bc6adebd980e0b41b18b9520e539194af0a0aa18c58097af66993"

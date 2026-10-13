@@ -26,14 +26,16 @@ Windows 继续使用 Sideloadly 签名。版本构建和安装包的精确证据
 
 功能实现 [49ad262](https://github.com/kb5000/trames/commit/49ad26209ae7b86cad01e6cfd2faaebbbcaeda30)
 的 Linux/Apple CI 首次均通过；实际下载的模拟器报告为 7 passed / 0 failed。
-本地通过 218 项 Rust 测试、43 项 ARM64 内存/原生加速测试、指令和 mmap/信号/网络回归。
+本地最终通过 219 项 Rust 测试、43 项 ARM64 内存/原生加速测试、指令和 mmap/信号/网络回归。
 原始 musl 与 hybrid musl 的全新 Node/npm 存储均通过；实际 ARM64 Node 的标题、SHA256
 和 Worker 通信/退出也通过，无 NativeCall fault/rejection。
 
 一组最终代码的 ARM64/QEMU 前后对比中，访存循环约 1.280×，Vim 启动中位数
 约 1.072×。Python 中位数约 1.098×，但样本范围重叠，收益不稳定。
 这些结果不代表物理 iPad 上的速度，也不代表所有程序的普遍提升。
-[详细验证与原始跑分](nodejs-memory.md)。版本元数据改动会另行执行完整构建和 CI。
+[详细验证与原始跑分](nodejs-memory.md)。版本元数据提交 [75390f7](https://github.com/kb5000/trames/commit/75390f77413cb9e0a5788cb51fc43e8d785167a2)
+首先验证版本元数据；最终构建还补充了预留区间元数据耗尽时的 munmap ENOMEM
+传播和保留状态回归，已有热路径实现保持一致。
 
 仍有选定 Linux ABI 和 CPU 扩展缺口；Node native addons 和通用 demand paging
 不属于已验证范围。虚拟 TCP KEEPINTVL/KEEPCNT 保留为兼容参数，未实现独立的 Linux
@@ -42,3 +44,7 @@ Windows 继续使用 Sideloadly 签名。版本构建和安装包的精确证据
 本版交付在 [#10](https://github.com/kb5000/trames/issues/10) 跟踪。
 
 项目保持 GPL-3.0-or-later；musl/Arm 原始声明及完整对应源码随构建产物提供。
+
+版本构建的已知失败记录：Apple 首次 job 115138139877 在原有 NIOSSH
+窗口调整状态检查处退出，发生在本轮应用/内核测试之前。失败 job 在源码不变的
+情况下仅重试一次；#9 继续记录该问题，本版不宣称修复 SSH 偶发崩溃。
