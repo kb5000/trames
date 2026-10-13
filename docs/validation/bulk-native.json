@@ -60,5 +60,70 @@
       "bytes": 984
     }
   },
-  "ci_status": "pending"
+  "ci_status": "success",
+  "source_commit": "0e1f6b4e647673854a098450dc8e0ff7b6011b89",
+  "simulator_passed": 7,
+  "simulator_failed": 0,
+  "musl_source_verification": {
+    "source_commit": "0e1f6b4e647673854a098450dc8e0ff7b6011b89",
+    "libc_sha256": "864a8ae0badcf781995e7e4dc7c882ca60100047b6a67dde098af437abe3bad8",
+    "native_features": 524287,
+    "native_functions": [
+      "memcpy",
+      "memmove",
+      "memset",
+      "memcmp",
+      "strlen",
+      "memchr",
+      "memrchr",
+      "strnlen",
+      "strcmp",
+      "strncmp",
+      "strchr",
+      "strrchr",
+      "strchrnul",
+      "strcpy",
+      "stpcpy",
+      "strncpy",
+      "stpncpy",
+      "strcat",
+      "strncat"
+    ],
+    "source_inputs_verified": 17,
+    "original_upstream_archive_verified": true,
+    "licenses_verified": true,
+    "archive_crc_verified": true,
+    "limits": {
+      "native_max_bulk_bytes": 1048576,
+      "native_max_string_bytes": 1048576,
+      "numeric_max_input_bytes": 65536,
+      "callback_max_sort_bytes": 65536
+    }
+  },
+  "apple_build_verification": {
+    "source_commit": "0e1f6b4e647673854a098450dc8e0ff7b6011b89",
+    "build_archive_crc_verified": true,
+    "simulator_passed": 7,
+    "simulator_failed": 0,
+    "device_and_simulator_libc_manifest_match_paired_source_artifact": true,
+    "libc_sha256": "864a8ae0badcf781995e7e4dc7c882ca60100047b6a67dde098af437abe3bad8",
+    "development_version": "0.13.0/build14",
+    "new_numbered_release_delivered": false
+  },
+  "runtime_evidence_verification": {
+    "sha256": "4b65c094f54c5873d65c9b47c6ff080e6be62e67b276b6c24f356c3a7cf482c9",
+    "zip_crc_verified": true,
+    "logs": 5,
+    "markers": [
+      "1 CPU:",
+      "2 CPU:",
+      "4 CPU:",
+      "smp: pinned peers cannot starve a flexible waiter: passed",
+      "node SharedArrayBuffer/Atomics wait, notify and concurrent add: ok",
+      "npm offline local dependency, lockfile and CommonJS import: passed",
+      "node reopen: ok",
+      "gcc/clang compile/link/execute: ok",
+      "make parallel build, cmake configure/build/ctest: ok"
+    ]
+  }
 }

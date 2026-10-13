@@ -158,3 +158,8 @@ remaining pure fallbacks visible; the expanded stdlib fixture has zero such
 fallbacks, six long integer-input fallbacks, versus 169 total fallbacks on the
 saved 17-function host using the same new libc/fixture. This is fixture evidence,
 not a claim that every application or arbitrary input avoids fallback.
+
+Next owner priority: [worker-side NativeCall concurrency](../architecture/parallel-nativecalls.md),
+tracked in [#16](https://github.com/kb5000/trames/issues/16). The reviewed design
+removes the current global stop per call through a common Memory/View native
+contract; its implementation and measurements remain the next iteration.

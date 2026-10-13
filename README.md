@@ -8,7 +8,7 @@
 
 后续开发加入[持续 CPU 工作线程](docs/validation/continuous-workers.md)：执行段结束后保留 CPU 状态和内存视图继续运行，系统调用、异常及定时调度点再统一停顿；移除每段的消息往返和启动屏障。对应 [Issue #13](https://github.com/kb5000/trames/issues/13)，已打包为 [0.13.0/build 14 IPA](docs/validation/release-0.13.md)，0.12.0 保留历史记录。
 
-后续 [guest memory／批量原生优化](docs/validation/bulk-native.md)加入共享驻留页直接借用、1 MiB 有界批量路径、ARM64 NEON 扫描比较，以及 musl strcat/strncat；对应 [Issue #15](https://github.com/kb5000/trames/issues/15)。0.13.0 安装包保持已交付版本。
+后续 [guest memory／批量原生优化](docs/validation/bulk-native.md)加入共享驻留页直接借用、1 MiB 有界批量路径、ARM64 NEON 扫描比较，以及 musl strcat/strncat；对应 [Issue #15](https://github.com/kb5000/trames/issues/15)。0.13.0 安装包保持已交付版本。 下一轮 [NativeCall 工作线程并行方案](docs/architecture/parallel-nativecalls.md)已记录在 [Issue #16](https://github.com/kb5000/trames/issues/16)，本轮仍通过协调器执行原生调用。
 
 ## 快速运行
 

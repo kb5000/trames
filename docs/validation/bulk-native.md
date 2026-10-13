@@ -58,4 +58,30 @@ preserve coverage and boundaries; different fixture revisions are not mixed.
 The memory fault no-effect assertion uses the address space's own revision,
 avoiding unrelated parallel tests advancing the process-wide backing counter.
 
-Linux/Apple final exact-source CI and actual simulator verification are pending publication.
+## Final exact-source CI
+
+Final source [0e1f6b4](https://github.com/kb5000/trames/commit/0e1f6b4e647673854a098450dc8e0ff7b6011b89)
+passed [Linux runtime](https://github.com/kb5000/trames/actions/runs/38405954158) and
+[Apple frontend](https://github.com/kb5000/trames/actions/runs/38405953789) on their
+first attempts. All jobs passed. [Normalized jobs/steps/artifacts](bulk-native-ci.json).
+Actual downloaded simulator report: [7 passed / 0 failed](bulk-native-simulator.json).
+Downloaded Apple build and musl archives passed CRC/SHA-256 checks; device/simulator
+libc and manifest match the paired complete library/source artifact. Its 17 build
+inputs and original upstream archive are verified with retained GPL/musl notices.
+[Machine-readable local/artifact proof](bulk-native.json).
+
+[Corresponding full musl/source](https://github.com/kb5000/trames/actions/runs/38405953789/artifacts/11816818874),
+[fixed repository source](https://github.com/kb5000/trames/archive/0e1f6b4e647673854a098450dc8e0ff7b6011b89.tar.gz),
+and [runtime evidence](https://github.com/kb5000/trames/actions/runs/38405954158/artifacts/11820981532)
+retain actual build inputs and regression transcripts. Runtime ZIP was downloaded
+and checked against its API digest/CRC and all nine required SMP/affinity/Node/npm/
+reopen/compiler/CMake markers. [SMP transcript](bulk-native-smp.txt) and
+[Node transcript](bulk-native-nodejs.txt) are saved. Node/developer-tool integrations
+use the x86_64 development executor interpreting ARM64 guests; selected core tests
+and pthread SMP also exercise an ARM64 runtime, and Apple CI tests native ARM64.
+No physical iPad performance/installation acceptance is claimed.
+
+NativeCall remains joined/coordinator-owned in this source. The reviewed next
+[worker-side concurrency plan](../architecture/parallel-nativecalls.md) and
+[Issue #16](https://github.com/kb5000/trames/issues/16) address that remaining global
+serialization. No worker-side NativeCall implementation is claimed by this batch.
