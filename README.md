@@ -283,7 +283,9 @@ The iPad frontend is in [apps/ios](apps/ios/README.md), with build scripts and a
 [device acceptance record](docs/validation/m4.md). M4 is not accepted until an
 ordinary developer-signed physical iPad run is validated.
 
-0.10.0/build 11 将 NativeCall 接入完整 musl，直接使用原来的加载器/libc 路径。
-iPad 启动时安装随包提供的库并启用五个纯函数加速，保留现有 Linux 用户数据；
-前一轮的备用信号栈、membarrier、进程 I/O 优先级查询、文件大小限制和进程名日志一起包含。
-[完整 musl 实现](docs/architecture/musl-hybrid.md) · [验证与安装包记录](docs/validation/musl-hybrid.md)。
+0.11.0/build 12 汇总完整标准路径 musl 的 17 个纯函数、整数/浮点解析、
+可嵌套比较器的排序调用、直接 guest 页访问与解释器访存优化。新增真实 Node.js/npm
+兼容测试，并补齐地址预留、进程参数排布、信号与标准流行为；仍使用单一缓存解释器，无宿主 JIT。
+iPad 启动时原子更新随包的标准 libc，保留 Linux 用户数据。
+[0.11.0 安装包与发布记录](docs/validation/release-0.11.md) ·
+[Node.js 和内存验证](docs/validation/nodejs-memory.md) · [完整 musl 架构](docs/architecture/musl-hybrid.md)。

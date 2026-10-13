@@ -134,7 +134,7 @@ dependencies = [
 
 [[package]]
 name = "trames-accel"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "serde",
  "sha2",
@@ -152,11 +152,11 @@ dependencies = [
 
 [[package]]
 name = "trames-memory"
-version = "0.10.0"
+version = "0.11.0"
 
 [[package]]
 name = "trames-native"
-version = "0.10.0"
+version = "0.11.0"
 
 [[package]]
 name = "typenum"
