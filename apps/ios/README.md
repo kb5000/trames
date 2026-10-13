@@ -86,13 +86,12 @@ membership. The [Sideloadly documentation](https://sideloadly.io/faq) describes
 signing, device trust, Developer Mode and automatic refresh. The current app
 requires iPadOS 17 or newer and does not need JIT activation.
 
-Current validated update: [0.12.0 (build 13) unsigned IPA artifact](https://github.com/kb5000/trames/actions/runs/38373085151/artifacts/11800896022).
-Both exact-source CI workflows passed; seven simulator tests passed, and all 41
-IPA files match the actual ARM64 device app. This delivers host multicore execution,
-ARM synchronization and shared futexes, affinity fairness, host CPU topology and
-concurrent Node.js SharedArrayBuffer/Atomics validation, on the prior complete
-musl/native-callback and memory implementation. See the
-[release record, source and verification](../../docs/validation/release-0.12.md).
+Current validated update: [0.13.0 (build 14) unsigned IPA artifact](https://github.com/kb5000/trames/actions/runs/38390633418/artifacts/11810826287).
+Seven simulator tests passed and all 41 IPA files match the actual ARM64 device app.
+This delivers continuous CPU workers and poll deadline cleanup, reducing coordinator
+barriers while preserving the existing multicore memory and synchronization boundaries.
+See the [release record, source and verification](../../docs/validation/release-0.13.md).
+The [0.12.0 release](../../docs/validation/release-0.12.md) retains its historical evidence.
 Unzip and sign `Trames-unsigned.ipa` with the same Sideloadly Apple ID/effective
 bundle ID as before to retain Linux data. No data reset or JIT activation is required.
 

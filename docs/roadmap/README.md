@@ -100,3 +100,7 @@ original source, installed at normal libc/loader filenames. Adapted pure functio
 use NativeCall; the remaining original libc/loader functions keep running as guest
 code. The separate pure-profile library remains the initial validation tool.
 Stateful allocator, TLS and I/O profiles follow after the full ELF integration.
+
+Version 0.13.0/build 14 packages [continuous CPU workers](../validation/continuous-workers.md)
+and poll deadline cleanup. [IPA and exact-source verification](../validation/release-0.13.md)
+retain the previous release history; physical iPad performance remains pending.

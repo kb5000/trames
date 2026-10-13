@@ -6,7 +6,7 @@
 
 0.12.0/build 13 加入[宿主多核执行](docs/architecture/multicore.md)：`--cpus auto|1..32` 控制虚拟 CPU 数，默认自动选择。真实 musl pthread 和 Node.js Worker 可并行执行；ARM 原子、独占访问、acquire/release 和屏障已有同步实现。内核及 NativeCall 初期仍集中处理。[验证和跑分](docs/validation/multicore.md)记录了收益、单核开销和限制；[下载多核 IPA 与安装说明](docs/validation/release-0.12.md)。
 
-后续开发加入[持续 CPU 工作线程](docs/validation/continuous-workers.md)：执行段结束后保留 CPU 状态和内存视图继续运行，系统调用、异常及定时调度点再统一停顿；移除每段的消息往返和启动屏障。对应 [Issue #13](https://github.com/kb5000/trames/issues/13)，现有 0.12.0 安装包保持独立。
+后续开发加入[持续 CPU 工作线程](docs/validation/continuous-workers.md)：执行段结束后保留 CPU 状态和内存视图继续运行，系统调用、异常及定时调度点再统一停顿；移除每段的消息往返和启动屏障。对应 [Issue #13](https://github.com/kb5000/trames/issues/13)，已打包为 [0.13.0/build 14 IPA](docs/validation/release-0.13.md)，0.12.0 保留历史记录。
 
 ## 快速运行
 

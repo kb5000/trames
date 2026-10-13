@@ -1,0 +1,47 @@
+{
+  "source_commit": "5f88d845027ee257603892024e25fa98d0a9fdd4",
+  "ipa_sha256": "58ade7b80ab04f7917fcc9abca13fb002f5a173e32579d3023b69a8cba107559",
+  "ipa_bytes": 10112808,
+  "bundle_id": "org.trames.Trames",
+  "version": "0.13.0",
+  "build": "14",
+  "minimum_os": "17.0",
+  "device_families": [
+    1,
+    2
+  ],
+  "device_architecture": "arm64",
+  "mach_o_platform": 2,
+  "all_packaged_files_match_device_build": 41,
+  "executable_permission_verified": true,
+  "zip_crc_and_sha256_sidecar_verified": true,
+  "libc_sha256": "ca4c92f5fe3cef2fcb86cd914d0319c2173e274c4d95a0c2f626e6c088775746",
+  "musl_native_functions": 17,
+  "source_inputs_verified": 17,
+  "license_notices_verified": true,
+  "simulator_passed": 7,
+  "simulator_failed": 0,
+  "artifacts": {
+    "sideload": {
+      "id": 11810826287,
+      "name": "Trames-unsigned-sideload",
+      "digest": "sha256:3e574ced1b5018767e1e76bb6b8deed8c99344e3cb83deddf7c426fe2baf3cdf",
+      "expires_at": "2026-10-27T11:49:31Z",
+      "url": "https://github.com/kb5000/trames/actions/runs/38390633418/artifacts/11810826287"
+    },
+    "build": {
+      "id": 11810721370,
+      "name": "unsigned-ipad-build-and-project",
+      "digest": "sha256:fad02915d48ec2eb7b034a93ebcd02abb02cd886e6d36698e92e0e5fb8aac809",
+      "expires_at": "2026-10-20T11:49:35Z",
+      "url": "https://github.com/kb5000/trames/actions/runs/38390633418/artifacts/11810721370"
+    },
+    "musl": {
+      "id": 11808582762,
+      "name": "full-musl-library-and-source",
+      "digest": "sha256:1252a283a6c0619ff0ff720814184ac6a8c83350dc162167fd073ab2dfffe1a8",
+      "expires_at": "2026-10-27T11:30:58Z",
+      "url": "https://github.com/kb5000/trames/actions/runs/38390633418/artifacts/11808582762"
+    }
+  }
+}
