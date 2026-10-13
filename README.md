@@ -4,7 +4,7 @@
 
 **当前交付：M0–M5 软件实现；完整 iPad 真机验收待完成。** `trames-run` 执行实际静态／动态 AArch64 ELF，支持 32/64 位标量及选定 SIMD 浮点、虚拟进程、管道、信号和一个虚拟 PTY。交互式 BusyBox `ash` 已在内存和磁盘两种后端验证。Linux CLI 默认保存文件到磁盘，新存储目录的文件预算为 16 GiB。IPv4/IPv6 TCP/UDP、真实 musl DNS，以及具有独立 IP 和回环地址的用户态网络栈已验证；Alpine 3.22.6、动态 musl、经过证书和包签名验证的 HTTPS apk update/add，以及安装后 tree 执行已验证。iPad App、原生 SSH/SFTP、Files 授权和 Bridge 已实现并通过软件验证。
 
-当前开发分支加入[宿主多核执行](docs/architecture/multicore.md)：`--cpus auto|1..32` 控制虚拟 CPU 数，默认自动选择。真实 musl pthread 和 Node.js Worker 可并行执行；ARM 原子、独占访问、acquire/release 和屏障已有同步实现。内核及 NativeCall 初期仍集中处理。[验证和跑分](docs/validation/multicore.md)记录了收益、单核开销和限制；下一次设备更新会按完整里程碑打包。
+0.12.0/build 13 加入[宿主多核执行](docs/architecture/multicore.md)：`--cpus auto|1..32` 控制虚拟 CPU 数，默认自动选择。真实 musl pthread 和 Node.js Worker 可并行执行；ARM 原子、独占访问、acquire/release 和屏障已有同步实现。内核及 NativeCall 初期仍集中处理。[验证和跑分](docs/validation/multicore.md)记录了收益、单核开销和限制；[下载多核 IPA 与安装说明](docs/validation/release-0.12.md)。
 
 ## 快速运行
 
@@ -291,3 +291,7 @@ ordinary developer-signed physical iPad run is validated.
 iPad 启动时原子更新随包的标准 libc，保留 Linux 用户数据。
 [0.11.0 安装包与发布记录](docs/validation/release-0.11.md) ·
 [Node.js 和内存验证](docs/validation/nodejs-memory.md) · [完整 musl 架构](docs/architecture/musl-hybrid.md)。
+
+0.12.0/build 13 将[宿主多核执行](docs/architecture/multicore.md)打包为一次更新，
+默认按宿主可用逻辑 CPU 数运行，补齐并行原子/屏障、共享 futex 与绑核公平性。
+[0.12.0 安装包、源码与 CI 核验](docs/validation/release-0.12.md)。

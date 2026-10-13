@@ -1,13 +1,14 @@
 # Delivery roadmap
 
-Current development priority is [host multicore execution](../architecture/multicore.md),
+The current grouped release includes [host multicore execution](../architecture/multicore.md),
 introduced before further shared-memory/native optimization. Persistent CPU workers
 execute the same cached interpreter; syscalls/native/backing changes use joined
 coordinator checkpoints. [Validation and measured limits](../validation/multicore.md)
-cover ARM synchronization, musl pthreads and Node workers. This is source development
-for a future grouped update; the existing 0.11.0 delivery record remains immutable.
+cover ARM synchronization, musl pthreads and Node workers. The [0.12.0/build 13 delivery](../validation/release-0.12.md) provides the
+verified unsigned IPA; the existing 0.11.0 delivery record remains immutable.
 
-The current verified release is [0.11.0 accelerator, interpreter memory and Node.js](../validation/release-0.11.md),
+The current verified release is [0.12.0 multicore](../validation/release-0.12.md),
+building on [0.11.0 accelerator, interpreter memory and Node.js](../validation/release-0.11.md),
 with one Rust cached interpreter, static ARM64 compute and recoverable guest CPU faults.
 The C++ executor and tail-dispatch prototype have been removed.
 The [Node.js and memory follow-up](../architecture/nodejs-memory.md) adds sparse
