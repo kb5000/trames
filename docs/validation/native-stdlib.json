@@ -1,0 +1,795 @@
+{
+  "cases": 476,
+  "fixture_sha256": "72fd4d71a5be3d9dfa83cd1d13d42bd0459b775bded7599ec6faa6d93942c52c",
+  "libc_sha256": "62b9a42e9b95317e70980156d6f639310418f04388926943e341a8116b6a8184",
+  "runs": [
+    {
+      "memory": true,
+      "enabled": false,
+      "native": {
+        "calls": 0,
+        "function_calls": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "integer_calls": 0,
+        "integer_conversions": 0,
+        "callback_calls": 0,
+        "callback_requests": 0,
+        "callback_yields": 0,
+        "callback_sorts": 0,
+        "callback_searches": 0,
+        "callback_state_bytes": 0,
+        "numeric_calls": 0,
+        "numeric_conversions": 0,
+        "numeric_replays": 0,
+        "numeric_input_bytes": 0,
+        "numeric_result_bytes": 0,
+        "fallbacks": 0,
+        "rejected": 0,
+        "faults": 0,
+        "bytes_read": 0,
+        "bytes_written": 0,
+        "direct_bytes_read": 0,
+        "direct_bytes_written": 0,
+        "buffered_bytes_read": 0,
+        "buffered_bytes_written": 0,
+        "nanoseconds": 0
+      },
+      "runtime": {
+        "backend": "cached",
+        "instructions": 49049196,
+        "seconds": 9.373187883,
+        "instructions_per_second": 5232925.725191078,
+        "cpu_seconds": 8.995645046,
+        "syscall_seconds": 0.031209994,
+        "idle_seconds": 0,
+        "syscalls": 117,
+        "proc_refreshes": 1,
+        "context_switches": 12068,
+        "decode_lookups": 219626,
+        "decode_misses": 98,
+        "instructions_decoded": 9508
+      }
+    },
+    {
+      "memory": true,
+      "enabled": true,
+      "native": {
+        "calls": 5606,
+        "function_calls": [
+          0,
+          0,
+          374,
+          111,
+          16,
+          0,
+          0,
+          0,
+          1,
+          0,
+          45,
+          67,
+          46,
+          12,
+          14,
+          61,
+          64
+        ],
+        "integer_calls": 4175,
+        "integer_conversions": 4167,
+        "callback_calls": 620,
+        "callback_requests": 619,
+        "callback_yields": 0,
+        "callback_sorts": 1,
+        "callback_searches": 0,
+        "callback_state_bytes": 271192,
+        "numeric_calls": 0,
+        "numeric_conversions": 0,
+        "numeric_replays": 180,
+        "numeric_input_bytes": 776272,
+        "numeric_result_bytes": 66672,
+        "fallbacks": 140,
+        "rejected": 0,
+        "faults": 0,
+        "bytes_read": 8677688,
+        "bytes_written": 1266644,
+        "direct_bytes_read": 8677112,
+        "direct_bytes_written": 1264886,
+        "buffered_bytes_read": 576,
+        "buffered_bytes_written": 1758,
+        "nanoseconds": 64260911
+      },
+      "runtime": {
+        "backend": "cached",
+        "instructions": 33352249,
+        "seconds": 5.862246063,
+        "instructions_per_second": 5689329.421107925,
+        "cpu_seconds": 5.576675665,
+        "syscall_seconds": 0.034572949,
+        "idle_seconds": 0,
+        "syscalls": 117,
+        "proc_refreshes": 1,
+        "context_switches": 13822,
+        "decode_lookups": 200405,
+        "decode_misses": 95,
+        "instructions_decoded": 8609
+      }
+    },
+    {
+      "memory": false,
+      "enabled": false,
+      "native": {
+        "calls": 0,
+        "function_calls": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "integer_calls": 0,
+        "integer_conversions": 0,
+        "callback_calls": 0,
+        "callback_requests": 0,
+        "callback_yields": 0,
+        "callback_sorts": 0,
+        "callback_searches": 0,
+        "callback_state_bytes": 0,
+        "numeric_calls": 0,
+        "numeric_conversions": 0,
+        "numeric_replays": 0,
+        "numeric_input_bytes": 0,
+        "numeric_result_bytes": 0,
+        "fallbacks": 0,
+        "rejected": 0,
+        "faults": 0,
+        "bytes_read": 0,
+        "bytes_written": 0,
+        "direct_bytes_read": 0,
+        "direct_bytes_written": 0,
+        "buffered_bytes_read": 0,
+        "buffered_bytes_written": 0,
+        "nanoseconds": 0
+      },
+      "runtime": {
+        "backend": "cached",
+        "instructions": 49049196,
+        "seconds": 12.095121112,
+        "instructions_per_second": 4055287.7102930825,
+        "cpu_seconds": 11.575124252,
+        "syscall_seconds": 0.051298475,
+        "idle_seconds": 0,
+        "syscalls": 117,
+        "proc_refreshes": 1,
+        "context_switches": 12068,
+        "decode_lookups": 219626,
+        "decode_misses": 98,
+        "instructions_decoded": 9508
+      }
+    },
+    {
+      "memory": false,
+      "enabled": true,
+      "native": {
+        "calls": 5606,
+        "function_calls": [
+          0,
+          0,
+          374,
+          111,
+          16,
+          0,
+          0,
+          0,
+          1,
+          0,
+          45,
+          67,
+          46,
+          12,
+          14,
+          61,
+          64
+        ],
+        "integer_calls": 4175,
+        "integer_conversions": 4167,
+        "callback_calls": 620,
+        "callback_requests": 619,
+        "callback_yields": 0,
+        "callback_sorts": 1,
+        "callback_searches": 0,
+        "callback_state_bytes": 271192,
+        "numeric_calls": 0,
+        "numeric_conversions": 0,
+        "numeric_replays": 180,
+        "numeric_input_bytes": 776272,
+        "numeric_result_bytes": 66672,
+        "fallbacks": 140,
+        "rejected": 0,
+        "faults": 0,
+        "bytes_read": 8677688,
+        "bytes_written": 1266644,
+        "direct_bytes_read": 8677112,
+        "direct_bytes_written": 1264886,
+        "buffered_bytes_read": 576,
+        "buffered_bytes_written": 1758,
+        "nanoseconds": 61480273
+      },
+      "runtime": {
+        "backend": "cached",
+        "instructions": 33352249,
+        "seconds": 5.858792689,
+        "instructions_per_second": 5692682.907626944,
+        "cpu_seconds": 5.56606297,
+        "syscall_seconds": 0.025685309,
+        "idle_seconds": 0,
+        "syscalls": 117,
+        "proc_refreshes": 1,
+        "context_switches": 13818,
+        "decode_lookups": 200401,
+        "decode_misses": 95,
+        "instructions_decoded": 8609
+      }
+    },
+    {
+      "previous_host": true,
+      "native": {
+        "calls": 1201,
+        "function_calls": [
+          0,
+          0,
+          380,
+          111,
+          89,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        "callback_calls": 620,
+        "callback_requests": 619,
+        "callback_yields": 0,
+        "callback_sorts": 1,
+        "callback_searches": 0,
+        "callback_state_bytes": 271192,
+        "numeric_calls": 0,
+        "numeric_conversions": 0,
+        "numeric_replays": 0,
+        "numeric_input_bytes": 0,
+        "numeric_result_bytes": 0,
+        "fallbacks": 94,
+        "rejected": 0,
+        "faults": 0,
+        "bytes_read": 3985772,
+        "bytes_written": 596524,
+        "direct_bytes_read": 3985212,
+        "direct_bytes_written": 594766,
+        "buffered_bytes_read": 560,
+        "buffered_bytes_written": 1758,
+        "nanoseconds": 14226068
+      }
+    }
+  ],
+  "source_commit": "5dc763bda8033946d8460d2534363a7b78e5d6f3",
+  "source_tree": "965d04b0d43d1924cdc61a9e45beaca5d59a0dca",
+  "baseline_source_commit": "d976f34c496086a222ac45f8185fcc778192d5d3",
+  "workspace_tests": 211,
+  "arm64_memory_native_accel_tests": 38,
+  "strict_clippy": true,
+  "rustfmt": true,
+  "ios_compile": true,
+  "full_musl_exports": 1642,
+  "full_musl_regression_modes": 16,
+  "floating_regression_cases": 712,
+  "floating_differing_rows": 0,
+  "short_string_byte_alignment_combinations": 2048,
+  "write_only_destination": true,
+  "python_signed_install_and_repair": true,
+  "embedding": true,
+  "legacy_transport_modes": 10,
+  "source_package_inputs": 17,
+  "current_runtime_sha256": "b3165f242af641b93e0dfd5a998521da23197db37a01e4939eef9c136e7bfcc6",
+  "full_musl_ci_artifact": {
+    "artifact_id": 11784241173,
+    "zip_sha256": "dcd362124388131ecd432dd7dea2dba95f5ccf2b9b9d0fe9909e3f83c26e452a",
+    "libc_sha256": "ca4c92f5fe3cef2fcb86cd914d0319c2173e274c4d95a0c2f626e6c088775746",
+    "source_inputs": 17,
+    "crc_verified": true,
+    "source_package_verified": true
+  },
+  "local_source_package_sha256": "ea9638a80e7fd01509071ad46ae84d525c7fc02ef9d57860ecd5c238d8370f87",
+  "linux_ci": {
+    "run_id": 38333554548,
+    "job_id": 115088488046,
+    "attempt": 1,
+    "status": "completed",
+    "conclusion": "success",
+    "url": "https://github.com/kb5000/trames/actions/runs/38333554548"
+  },
+  "ci": {
+    "source": "5dc763bda8033946d8460d2534363a7b78e5d6f3",
+    "linux": {
+      "run_id": 38333554548,
+      "attempt": 1,
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 115088488046,
+          "name": "runtime",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run dtolnay/rust-toolchain@stable",
+              "conclusion": "success"
+            },
+            {
+              "name": "Install independent AArch64 oracle and cross assembler",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/cache@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build pinned independent QEMU oracle",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run cargo fmt --all --check",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run cargo clippy --workspace --all-targets --all-features --locked -- -D warnings",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run cargo build --workspace --all-features --locked",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run cargo test --workspace --all-features --locked",
+              "conclusion": "success"
+            },
+            {
+              "name": "Compile core and both network backends for iOS (no SDK link or device test)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Execute ARM64 native compute helpers under the independent oracle",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/run.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/m1.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/floating.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/vector_floating.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/structures.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/pairwise_integer.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/widening_integer.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/vector_copy_shift.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/vector_integer.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/atomics_crc.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/half_floating.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/crypto.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/modern.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/frint_rcpc.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/differential/coverage_extensions.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Cross-build pinned musl and static BusyBox",
+              "conclusion": "success"
+            },
+            {
+              "name": "Compare actual musl CPU fault handlers and context recovery",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run bash scripts/build-compatibility-log-fixtures.sh",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/integration/compatibility-log.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Compare altstack, memory barriers and process file limits",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run bash scripts/build-mmap-fixtures.sh",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/integration/mmap.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/integration/busybox.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run bash scripts/build-m2-fixtures.sh",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/integration/m2.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/integration/terminal.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run bash scripts/build-storage-fixtures.sh",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/integration/storage.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run bash scripts/build-network-fixtures.sh",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run bash scripts/build-virtual-network-fixtures.sh",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run bash scripts/build-linux-compat-fixtures.sh",
+              "conclusion": "success"
+            },
+            {
+              "name": "Compare native loopback sockets and real musl DNS with QEMU",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/integration/m2.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/integration/terminal.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Prepare pinned Alpine and dynamic fixtures",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run cargo build --release --workspace --all-features --locked",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build complete hybrid musl from pinned original source",
+              "conclusion": "success"
+            },
+            {
+              "name": "Compare full musl loader, startup, TLS, threads and pure functions",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build and compare opt-in NativeCall guest ELF stubs on ARM64",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Validate dynamic Alpine, HTTPS trust and signed apk installation",
+              "conclusion": "success"
+            },
+            {
+              "name": "Validate virtual packet fabric, guest ABI and Alpine HTTPS gateway",
+              "conclusion": "success"
+            },
+            {
+              "name": "Validate Linux endpoints, musl threads, ICMP and real Vim editing",
+              "conclusion": "success"
+            },
+            {
+              "name": "Exercise the embedding ABI with real Alpine PTY and disk streams",
+              "conclusion": "success"
+            },
+            {
+              "name": "Signed Python install, repair and execution with 128 host descriptors",
+              "conclusion": "success"
+            },
+            {
+              "name": "Compare M6 events, local IPC, POSIX locks and FIFO semantics with QEMU",
+              "conclusion": "success"
+            },
+            {
+              "name": "Signed developer tools and complete guest workflows on a fresh persistent store",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/cache@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    },
+    "apple": {
+      "run_id": 38333554315,
+      "attempt": 1,
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 115088486209,
+          "name": "guest-musl",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Install AArch64 source toolchain",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run bash scripts/build-musl-hybrid.sh > /tmp/musl-build.log 2>&1 || { tail -30 /tmp/musl-build.log; exit 1; }",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 115088726933,
+          "name": "apple-build",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run dtolnay/rust-toolchain@stable",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/download-artifact@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build native Rust embedding library",
+              "conclusion": "success"
+            },
+            {
+              "name": "Test native SSH PTY and SFTP against OpenSSH",
+              "conclusion": "success"
+            },
+            {
+              "name": "Validate shared mapping and guest ABI core on native Apple ARM64",
+              "conclusion": "success"
+            },
+            {
+              "name": "Generate Xcode project",
+              "conclusion": "success"
+            },
+            {
+              "name": "Link unsigned iPad simulator app",
+              "conclusion": "success"
+            },
+            {
+              "name": "Link unsigned iPad device app",
+              "conclusion": "success"
+            },
+            {
+              "name": "Test viewport, native consent, real gateway DNS/HTTPS and lifecycle in iPad simulator",
+              "conclusion": "success"
+            },
+            {
+              "name": "Export simulator test summary",
+              "conclusion": "success"
+            },
+            {
+              "name": "Package unsigned device IPA for sideload signing",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    },
+    "artifacts": [
+      {
+        "id": 11784241173,
+        "name": "full-musl-library-and-source",
+        "digest": "sha256:dcd362124388131ecd432dd7dea2dba95f5ccf2b9b9d0fe9909e3f83c26e452a",
+        "size_in_bytes": 2090270
+      },
+      {
+        "id": 11784223450,
+        "name": "Trames-unsigned-sideload",
+        "digest": "sha256:e9069cd0aad6a4a39f579967f248668ea47f8202c7b618031b2d0ac6b860d8b0",
+        "size_in_bytes": 9867725
+      },
+      {
+        "id": 11784193525,
+        "name": "unsigned-ipad-build-and-project",
+        "digest": "sha256:e2f4e653138337fe67730926d1583cd1671c202771c4c3f2a15640e54d9c1cc5",
+        "size_in_bytes": 33106222
+      }
+    ]
+  },
+  "apple_ci_artifact": {
+    "artifact_id": 11784193525,
+    "zip_sha256": "e2f4e653138337fe67730926d1583cd1671c202771c4c3f2a15640e54d9c1cc5",
+    "passed_tests": 7,
+    "failed_tests": 0,
+    "crc_verified": true,
+    "bundled_libc": {
+      "build/device/Build/Products/Debug-iphoneos/Trames.app/GuestMusl/libc.so": "ca4c92f5fe3cef2fcb86cd914d0319c2173e274c4d95a0c2f626e6c088775746",
+      "build/simulator/Build/Products/Debug-iphonesimulator/Trames.app/GuestMusl/libc.so": "ca4c92f5fe3cef2fcb86cd914d0319c2173e274c4d95a0c2f626e6c088775746"
+    }
+  },
+  "benchmark_report": "native-stdlib-benchmark.json",
+  "benchmark_description": "Actual ARM64 runtime under pinned QEMU on shared x86_64 Linux; three alternating samples; identical full libc and program/store per mode; warm host caches. Previous published runtime advertises floating but no new integer/string entries. No physical iPad timing or general speedup claim.",
+  "benchmark_medians": [
+    {
+      "workload": "strtoull-4096",
+      "previous_current_speedup": 1.036006798189727,
+      "seconds": {
+        "previous-pure": 0.984373446,
+        "current-pure": 0.950161184,
+        "current-off": 1.032271109
+      }
+    },
+    {
+      "workload": "strings-8191x256",
+      "previous_current_speedup": 8.186717132117458,
+      "seconds": {
+        "previous-pure": 0.811765546,
+        "current-pure": 0.099156418,
+        "current-off": 1.083410961
+      }
+    },
+    {
+      "workload": "vim-default",
+      "previous_current_speedup": 0.8969166212934161,
+      "seconds": {
+        "previous-pure": 20.998868759023026,
+        "current-pure": 23.412286337988917,
+        "current-off": 21.141175214987015
+      }
+    },
+    {
+      "workload": "python-imports",
+      "previous_current_speedup": 0.9902712636885145,
+      "seconds": {
+        "previous-pure": 100.23232769599417,
+        "current-pure": 101.21704160398804,
+        "current-off": 103.3185476110084
+      }
+    }
+  ]
+}

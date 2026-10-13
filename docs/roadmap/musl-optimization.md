@@ -88,20 +88,26 @@ include both the bulk-copy gain and the sort regression/host timing variation.
 | P3 | time/calendar conversion, getaddrinfo and other I/O glue | Some pure calendar loops qualify; networking already has native egress | Separate pure conversion from guest errno/TLS, DNS/files and scheduling |
 | Keep local | ctype tests, abs/ffs/clz, simple byte swaps, small wrappers | Usually only a handful of instructions; transport can cost more than work | Optimize decoder/native compute if profiling shows a cost; no blanket NativeCall wrapper |
 
-The [callback measurements](../validation/native-callbacks.md) make numeric
-parsing a concrete follow-up: native qsort removes about 54% of guest instructions
-in the integer fixture, but only about 2.5% in unchanged BusyBox `sort -n`.
-Its comparator still calls guest atof/strtod. Evaluate that path next, alongside
-boundary cost, rather than treating reduced continuation bytes as a speed result.
-Guest callbacks can now nest another pure native conversion; end pointers,
-errno/TLS, locale and the ARM64 long-double ABI still need explicit contracts.
+The [numeric measurements](../validation/native-numeric.md) completed the
+sort-comparator follow-up: native floating parsing improves the unchanged
+BusyBox sort-n workload in that measured batch. The subsequent
+[integer/string batch](../validation/native-stdlib.md) completes the next pure
+coverage group and includes actual Vim startup and Python imports/SQLite/hash
+workflows. Function-level wins do not establish application-level gains.
+
+The next priority is entry/return and checked-memory cost: retain exact executable
+stub validation and invalidation, but investigate repeated checks, guest frame
+transport and short-call routing. Then address coherent shared/multi-page spans.
+Measure these costs before adding formatting/math or stateful allocator/stdio
+contracts. No JIT or additional interpreter backend is planned.
 
 ## Implementation order and acceptance
 
 1. Completed: this batch's ARM64/ordinary-musl comparisons, direct/staged metrics,
    Linux/Apple CI and actual simulator tests; [evidence](../validation/musl-optimization.md).
-2. Add P1 string search/copy functions in small groups. Verify zero sizes, unsigned
-   characters, guards, NUL/truncation, tags, errno preservation and fallback.
+2. Completed: P1 string search/copy and native integer parsing, with zero sizes,
+   unsigned bytes, guards, NUL/truncation, tags, errno, write-only/shared fallback
+   and old-host capability negotiation. Reduce boundary and memory costs next.
 3. Borrow coherent resident backing pages where the storage abstraction supports
    it; measure bulk data movement and one unchanged real-program workload.
 4. Add native SIMD or contiguous-span paths only when measurements identify a
