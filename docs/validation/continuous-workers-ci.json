@@ -1,0 +1,838 @@
+{
+  "runtime_source": "7eebd3de4c93db214e1d45481cb42d0d9c0d626b",
+  "runs": [
+    {
+      "id": 38386157824,
+      "name": "iPad frontend",
+      "head_sha": "7eebd3de4c93db214e1d45481cb42d0d9c0d626b",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "url": "https://github.com/kb5000/trames/actions/runs/38386157824",
+      "created_at": "2026-10-13T10:50:58Z",
+      "updated_at": "2026-10-13T11:10:22Z",
+      "jobs": [
+        {
+          "id": 115258353278,
+          "name": "guest-musl",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/kb5000/trames/actions/runs/38386157824/job/115258353278",
+          "started_at": "2026-10-13T10:51:00Z",
+          "completed_at": "2026-10-13T10:51:57Z",
+          "steps": [
+            {
+              "number": 1,
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:51:01Z",
+              "completed_at": "2026-10-13T10:51:02Z"
+            },
+            {
+              "number": 2,
+              "name": "Run actions/checkout@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:51:02Z",
+              "completed_at": "2026-10-13T10:51:03Z"
+            },
+            {
+              "number": 3,
+              "name": "Install AArch64 source toolchain",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:51:03Z",
+              "completed_at": "2026-10-13T10:51:15Z"
+            },
+            {
+              "number": 4,
+              "name": "Run bash scripts/build-musl-hybrid.sh > /tmp/musl-build.log 2>&1 || { tail -30 /tmp/musl-build.log; exit 1; }",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:51:15Z",
+              "completed_at": "2026-10-13T10:51:54Z"
+            },
+            {
+              "number": 5,
+              "name": "Run actions/upload-artifact@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:51:54Z",
+              "completed_at": "2026-10-13T10:51:55Z"
+            },
+            {
+              "number": 10,
+              "name": "Post Run actions/checkout@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:51:55Z",
+              "completed_at": "2026-10-13T10:51:55Z"
+            },
+            {
+              "number": 11,
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:51:55Z",
+              "completed_at": "2026-10-13T10:51:55Z"
+            }
+          ]
+        },
+        {
+          "id": 115258723395,
+          "name": "apple-build",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/kb5000/trames/actions/runs/38386157824/job/115258723395",
+          "started_at": "2026-10-13T10:52:04Z",
+          "completed_at": "2026-10-13T11:10:21Z",
+          "steps": [
+            {
+              "number": 1,
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:52:04Z",
+              "completed_at": "2026-10-13T10:52:05Z"
+            },
+            {
+              "number": 2,
+              "name": "Run actions/checkout@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:52:05Z",
+              "completed_at": "2026-10-13T10:52:07Z"
+            },
+            {
+              "number": 3,
+              "name": "Run dtolnay/rust-toolchain@stable",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:52:07Z",
+              "completed_at": "2026-10-13T10:52:18Z"
+            },
+            {
+              "number": 4,
+              "name": "Run actions/download-artifact@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:52:18Z",
+              "completed_at": "2026-10-13T10:52:19Z"
+            },
+            {
+              "number": 5,
+              "name": "Build native Rust embedding library",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:52:19Z",
+              "completed_at": "2026-10-13T10:52:47Z"
+            },
+            {
+              "number": 6,
+              "name": "Test native SSH PTY and SFTP against OpenSSH",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:52:47Z",
+              "completed_at": "2026-10-13T10:54:53Z"
+            },
+            {
+              "number": 7,
+              "name": "Validate shared mapping and guest ABI core on native Apple ARM64",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:54:53Z",
+              "completed_at": "2026-10-13T10:55:09Z"
+            },
+            {
+              "number": 8,
+              "name": "Generate Xcode project",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:55:09Z",
+              "completed_at": "2026-10-13T10:55:11Z"
+            },
+            {
+              "number": 9,
+              "name": "Link unsigned iPad simulator app",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:55:11Z",
+              "completed_at": "2026-10-13T10:59:43Z"
+            },
+            {
+              "number": 10,
+              "name": "Link unsigned iPad device app",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:59:43Z",
+              "completed_at": "2026-10-13T11:03:18Z"
+            },
+            {
+              "number": 11,
+              "name": "Test viewport, native consent, real gateway DNS/HTTPS and lifecycle in iPad simulator",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:03:18Z",
+              "completed_at": "2026-10-13T11:09:29Z"
+            },
+            {
+              "number": 12,
+              "name": "Export simulator test summary",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:09:29Z",
+              "completed_at": "2026-10-13T11:09:39Z"
+            },
+            {
+              "number": 13,
+              "name": "Package unsigned device IPA for sideload signing",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:09:39Z",
+              "completed_at": "2026-10-13T11:09:42Z"
+            },
+            {
+              "number": 14,
+              "name": "Run actions/upload-artifact@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:09:42Z",
+              "completed_at": "2026-10-13T11:09:44Z"
+            },
+            {
+              "number": 15,
+              "name": "Run actions/upload-artifact@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:09:44Z",
+              "completed_at": "2026-10-13T11:09:53Z"
+            },
+            {
+              "number": 30,
+              "name": "Post Run actions/checkout@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:09:53Z",
+              "completed_at": "2026-10-13T11:09:55Z"
+            },
+            {
+              "number": 31,
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:09:55Z",
+              "completed_at": "2026-10-13T11:10:19Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 38386157698,
+      "name": "Linux runtime",
+      "head_sha": "7eebd3de4c93db214e1d45481cb42d0d9c0d626b",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "url": "https://github.com/kb5000/trames/actions/runs/38386157698",
+      "created_at": "2026-10-13T10:50:58Z",
+      "updated_at": "2026-10-13T11:17:36Z",
+      "jobs": [
+        {
+          "id": 115258353235,
+          "name": "runtime",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/kb5000/trames/actions/runs/38386157698/job/115258353235",
+          "started_at": "2026-10-13T10:51:00Z",
+          "completed_at": "2026-10-13T11:17:35Z",
+          "steps": [
+            {
+              "number": 1,
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:51:01Z",
+              "completed_at": "2026-10-13T10:51:02Z"
+            },
+            {
+              "number": 2,
+              "name": "Run actions/checkout@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:51:02Z",
+              "completed_at": "2026-10-13T10:51:03Z"
+            },
+            {
+              "number": 3,
+              "name": "Run dtolnay/rust-toolchain@stable",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:51:03Z",
+              "completed_at": "2026-10-13T10:51:15Z"
+            },
+            {
+              "number": 4,
+              "name": "Install independent AArch64 oracle and cross assembler",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:51:15Z",
+              "completed_at": "2026-10-13T10:51:32Z"
+            },
+            {
+              "number": 5,
+              "name": "Run actions/cache@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:51:32Z",
+              "completed_at": "2026-10-13T10:51:32Z"
+            },
+            {
+              "number": 6,
+              "name": "Build pinned independent QEMU oracle",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:51:32Z",
+              "completed_at": "2026-10-13T10:51:32Z"
+            },
+            {
+              "number": 7,
+              "name": "Run cargo fmt --all --check",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:51:32Z",
+              "completed_at": "2026-10-13T10:51:33Z"
+            },
+            {
+              "number": 8,
+              "name": "Run cargo clippy --workspace --all-targets --all-features --locked -- -D warnings",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:51:33Z",
+              "completed_at": "2026-10-13T10:51:43Z"
+            },
+            {
+              "number": 9,
+              "name": "Run cargo build --workspace --all-features --locked",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:51:43Z",
+              "completed_at": "2026-10-13T10:51:53Z"
+            },
+            {
+              "number": 10,
+              "name": "Run cargo test --workspace --all-features --locked",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:51:53Z",
+              "completed_at": "2026-10-13T10:52:05Z"
+            },
+            {
+              "number": 11,
+              "name": "Compile core and both network backends for iOS (no SDK link or device test)",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:52:05Z",
+              "completed_at": "2026-10-13T10:52:15Z"
+            },
+            {
+              "number": 12,
+              "name": "Execute ARM64 native compute helpers under the independent oracle",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:52:15Z",
+              "completed_at": "2026-10-13T10:52:44Z"
+            },
+            {
+              "number": 13,
+              "name": "Run python3 tests/differential/run.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:52:44Z",
+              "completed_at": "2026-10-13T10:52:50Z"
+            },
+            {
+              "number": 14,
+              "name": "Run python3 tests/differential/m1.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:52:50Z",
+              "completed_at": "2026-10-13T10:52:55Z"
+            },
+            {
+              "number": 15,
+              "name": "Run python3 tests/differential/floating.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:52:55Z",
+              "completed_at": "2026-10-13T10:53:05Z"
+            },
+            {
+              "number": 16,
+              "name": "Run python3 tests/differential/vector_floating.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:53:05Z",
+              "completed_at": "2026-10-13T10:53:57Z"
+            },
+            {
+              "number": 17,
+              "name": "Run python3 tests/differential/structures.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:53:57Z",
+              "completed_at": "2026-10-13T10:53:57Z"
+            },
+            {
+              "number": 18,
+              "name": "Run python3 tests/differential/pairwise_integer.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:53:57Z",
+              "completed_at": "2026-10-13T10:53:57Z"
+            },
+            {
+              "number": 19,
+              "name": "Run python3 tests/differential/widening_integer.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:53:57Z",
+              "completed_at": "2026-10-13T10:53:57Z"
+            },
+            {
+              "number": 20,
+              "name": "Run python3 tests/differential/vector_copy_shift.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:53:57Z",
+              "completed_at": "2026-10-13T10:53:58Z"
+            },
+            {
+              "number": 21,
+              "name": "Run python3 tests/differential/vector_integer.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:53:58Z",
+              "completed_at": "2026-10-13T10:54:17Z"
+            },
+            {
+              "number": 22,
+              "name": "Run python3 tests/differential/atomics_crc.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:54:17Z",
+              "completed_at": "2026-10-13T10:54:21Z"
+            },
+            {
+              "number": 23,
+              "name": "Run python3 tests/differential/half_floating.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:54:21Z",
+              "completed_at": "2026-10-13T10:56:31Z"
+            },
+            {
+              "number": 24,
+              "name": "Run python3 tests/differential/crypto.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:56:31Z",
+              "completed_at": "2026-10-13T10:56:36Z"
+            },
+            {
+              "number": 25,
+              "name": "Run python3 tests/differential/modern.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:56:36Z",
+              "completed_at": "2026-10-13T10:56:54Z"
+            },
+            {
+              "number": 26,
+              "name": "Run python3 tests/differential/frint_rcpc.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:56:54Z",
+              "completed_at": "2026-10-13T10:57:37Z"
+            },
+            {
+              "number": 27,
+              "name": "Run python3 tests/differential/coverage_extensions.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:57:37Z",
+              "completed_at": "2026-10-13T10:58:16Z"
+            },
+            {
+              "number": 28,
+              "name": "Cross-build pinned musl and static BusyBox",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:58:16Z",
+              "completed_at": "2026-10-13T10:59:05Z"
+            },
+            {
+              "number": 29,
+              "name": "Compare actual musl CPU fault handlers and context recovery",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:59:05Z",
+              "completed_at": "2026-10-13T10:59:05Z"
+            },
+            {
+              "number": 30,
+              "name": "Run bash scripts/build-compatibility-log-fixtures.sh",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:59:05Z",
+              "completed_at": "2026-10-13T10:59:05Z"
+            },
+            {
+              "number": 31,
+              "name": "Run python3 tests/integration/compatibility-log.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:59:05Z",
+              "completed_at": "2026-10-13T10:59:06Z"
+            },
+            {
+              "number": 32,
+              "name": "Compare altstack, memory barriers and process file limits",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:59:06Z",
+              "completed_at": "2026-10-13T10:59:07Z"
+            },
+            {
+              "number": 33,
+              "name": "Run bash scripts/build-mmap-fixtures.sh",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:59:07Z",
+              "completed_at": "2026-10-13T10:59:08Z"
+            },
+            {
+              "number": 34,
+              "name": "Run python3 tests/integration/mmap.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:59:08Z",
+              "completed_at": "2026-10-13T10:59:09Z"
+            },
+            {
+              "number": 35,
+              "name": "Run python3 tests/integration/busybox.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:59:09Z",
+              "completed_at": "2026-10-13T10:59:10Z"
+            },
+            {
+              "number": 36,
+              "name": "Run bash scripts/build-m2-fixtures.sh",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:59:10Z",
+              "completed_at": "2026-10-13T10:59:10Z"
+            },
+            {
+              "number": 37,
+              "name": "Run python3 tests/integration/m2.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:59:10Z",
+              "completed_at": "2026-10-13T10:59:14Z"
+            },
+            {
+              "number": 38,
+              "name": "Run python3 tests/integration/terminal.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:59:14Z",
+              "completed_at": "2026-10-13T10:59:16Z"
+            },
+            {
+              "number": 39,
+              "name": "Run bash scripts/build-storage-fixtures.sh",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:59:16Z",
+              "completed_at": "2026-10-13T10:59:16Z"
+            },
+            {
+              "number": 40,
+              "name": "Run python3 tests/integration/storage.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:59:16Z",
+              "completed_at": "2026-10-13T10:59:17Z"
+            },
+            {
+              "number": 41,
+              "name": "Run bash scripts/build-network-fixtures.sh",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:59:17Z",
+              "completed_at": "2026-10-13T10:59:18Z"
+            },
+            {
+              "number": 42,
+              "name": "Run bash scripts/build-virtual-network-fixtures.sh",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:59:18Z",
+              "completed_at": "2026-10-13T10:59:18Z"
+            },
+            {
+              "number": 43,
+              "name": "Run bash scripts/build-linux-compat-fixtures.sh",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:59:18Z",
+              "completed_at": "2026-10-13T10:59:18Z"
+            },
+            {
+              "number": 44,
+              "name": "Compare native loopback sockets and real musl DNS with QEMU",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:59:18Z",
+              "completed_at": "2026-10-13T10:59:23Z"
+            },
+            {
+              "number": 45,
+              "name": "Run python3 tests/integration/m2.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:59:23Z",
+              "completed_at": "2026-10-13T10:59:30Z"
+            },
+            {
+              "number": 46,
+              "name": "Run python3 tests/integration/terminal.py",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:59:30Z",
+              "completed_at": "2026-10-13T10:59:31Z"
+            },
+            {
+              "number": 47,
+              "name": "Prepare pinned Alpine and dynamic fixtures",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:59:31Z",
+              "completed_at": "2026-10-13T10:59:32Z"
+            },
+            {
+              "number": 48,
+              "name": "Run cargo build --release --workspace --all-features --locked",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T10:59:32Z",
+              "completed_at": "2026-10-13T11:00:05Z"
+            },
+            {
+              "number": 49,
+              "name": "Build complete hybrid musl from pinned original source",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:00:05Z",
+              "completed_at": "2026-10-13T11:00:20Z"
+            },
+            {
+              "number": 50,
+              "name": "Compare full musl loader, startup, TLS, threads and pure functions",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:00:20Z",
+              "completed_at": "2026-10-13T11:03:27Z"
+            },
+            {
+              "number": 51,
+              "name": "Build and compare opt-in NativeCall guest ELF stubs on ARM64",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:03:27Z",
+              "completed_at": "2026-10-13T11:04:30Z"
+            },
+            {
+              "number": 52,
+              "name": "Run actions/upload-artifact@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:04:30Z",
+              "completed_at": "2026-10-13T11:04:30Z"
+            },
+            {
+              "number": 53,
+              "name": "Validate dynamic Alpine, HTTPS trust and signed apk installation",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:04:30Z",
+              "completed_at": "2026-10-13T11:05:02Z"
+            },
+            {
+              "number": 54,
+              "name": "Validate virtual packet fabric, guest ABI and Alpine HTTPS gateway",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:05:02Z",
+              "completed_at": "2026-10-13T11:05:19Z"
+            },
+            {
+              "number": 55,
+              "name": "Validate Linux endpoints, musl threads, ICMP and real Vim editing",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:05:19Z",
+              "completed_at": "2026-10-13T11:06:01Z"
+            },
+            {
+              "number": 56,
+              "name": "Exercise the embedding ABI with real Alpine PTY and disk streams",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:06:01Z",
+              "completed_at": "2026-10-13T11:06:03Z"
+            },
+            {
+              "number": 57,
+              "name": "Signed Python install, repair and execution with 128 host descriptors",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:06:03Z",
+              "completed_at": "2026-10-13T11:07:06Z"
+            },
+            {
+              "number": 58,
+              "name": "Compare M6 events, local IPC, POSIX locks and FIFO semantics with QEMU",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:07:06Z",
+              "completed_at": "2026-10-13T11:07:07Z"
+            },
+            {
+              "number": 59,
+              "name": "Compare ARM64 pthread, multicore atomics, memory barriers and shared futexes",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:07:07Z",
+              "completed_at": "2026-10-13T11:07:14Z"
+            },
+            {
+              "number": 60,
+              "name": "Signed Node.js, default V8, libuv workers, HTTP and offline npm",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:07:14Z",
+              "completed_at": "2026-10-13T11:11:00Z"
+            },
+            {
+              "number": 61,
+              "name": "Signed developer tools and complete guest workflows on a fresh persistent store",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:11:00Z",
+              "completed_at": "2026-10-13T11:17:33Z"
+            },
+            {
+              "number": 62,
+              "name": "Run actions/upload-artifact@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:17:33Z",
+              "completed_at": "2026-10-13T11:17:34Z"
+            },
+            {
+              "number": 123,
+              "name": "Post Run actions/cache@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:17:34Z",
+              "completed_at": "2026-10-13T11:17:34Z"
+            },
+            {
+              "number": 124,
+              "name": "Post Run actions/checkout@v4",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:17:34Z",
+              "completed_at": "2026-10-13T11:17:34Z"
+            },
+            {
+              "number": 125,
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-13T11:17:34Z",
+              "completed_at": "2026-10-13T11:17:34Z"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "apple_artifacts": [
+    {
+      "id": 11807455035,
+      "node_id": "MDg6QXJ0aWZhY3QxMTgwNzQ1NTAzNQ==",
+      "name": "full-musl-library-and-source",
+      "size_in_bytes": 2090269,
+      "url": "https://api.github.com/repos/kb5000/trames/actions/artifacts/11807455035",
+      "archive_download_url": "https://api.github.com/repos/kb5000/trames/actions/artifacts/11807455035/zip",
+      "expired": false,
+      "digest": "sha256:708991d37f1371e31fa14985e366c4fe3edc59c3b8f34858daa78265559bec57",
+      "created_at": "2026-10-13T10:51:55Z",
+      "updated_at": "2026-10-13T10:51:55Z",
+      "expires_at": "2026-10-27T10:51:54Z",
+      "workflow_run": {
+        "id": 38386157824,
+        "repository_id": 1413044949,
+        "head_repository_id": 1413044949,
+        "head_branch": "main",
+        "head_sha": "7eebd3de4c93db214e1d45481cb42d0d9c0d626b"
+      }
+    },
+    {
+      "id": 11806494322,
+      "node_id": "MDg6QXJ0aWZhY3QxMTgwNjQ5NDMyMg==",
+      "name": "unsigned-ipad-build-and-project",
+      "size_in_bytes": 33334591,
+      "url": "https://api.github.com/repos/kb5000/trames/actions/artifacts/11806494322",
+      "archive_download_url": "https://api.github.com/repos/kb5000/trames/actions/artifacts/11806494322/zip",
+      "expired": false,
+      "digest": "sha256:2f21cf240ae063c0d4138baa2b1064f214bbba7817995f1ee644557e7645ee8c",
+      "created_at": "2026-10-13T11:09:53Z",
+      "updated_at": "2026-10-13T11:09:53Z",
+      "expires_at": "2026-10-20T11:09:45Z",
+      "workflow_run": {
+        "id": 38386157824,
+        "repository_id": 1413044949,
+        "head_repository_id": 1413044949,
+        "head_branch": "main",
+        "head_sha": "7eebd3de4c93db214e1d45481cb42d0d9c0d626b"
+      }
+    },
+    {
+      "id": 11806289400,
+      "node_id": "MDg6QXJ0aWZhY3QxMTgwNjI4OTQwMA==",
+      "name": "Trames-unsigned-sideload",
+      "size_in_bytes": 9974592,
+      "url": "https://api.github.com/repos/kb5000/trames/actions/artifacts/11806289400",
+      "archive_download_url": "https://api.github.com/repos/kb5000/trames/actions/artifacts/11806289400/zip",
+      "expired": false,
+      "digest": "sha256:52d43391eb7eb2354de94cc8133171cbe97eddc957f3e9aac636b6da5e8d576c",
+      "created_at": "2026-10-13T11:09:44Z",
+      "updated_at": "2026-10-13T11:09:44Z",
+      "expires_at": "2026-10-27T11:09:43Z",
+      "workflow_run": {
+        "id": 38386157824,
+        "repository_id": 1413044949,
+        "head_repository_id": 1413044949,
+        "head_branch": "main",
+        "head_sha": "7eebd3de4c93db214e1d45481cb42d0d9c0d626b"
+      }
+    }
+  ]
+}
