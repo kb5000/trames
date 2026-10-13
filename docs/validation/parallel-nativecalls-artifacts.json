@@ -1,0 +1,135 @@
+{
+  "source_commit": "6bbe185d98872a8e1b59b26f91ce21e9d55a7396",
+  "musl_source_verification": {
+    "libc_sha256": "864a8ae0badcf781995e7e4dc7c882ca60100047b6a67dde098af437abe3bad8",
+    "native_features": 524287,
+    "native_functions": [
+      "memcpy",
+      "memmove",
+      "memset",
+      "memcmp",
+      "strlen",
+      "memchr",
+      "memrchr",
+      "strnlen",
+      "strcmp",
+      "strncmp",
+      "strchr",
+      "strrchr",
+      "strchrnul",
+      "strcpy",
+      "stpcpy",
+      "strncpy",
+      "stpncpy",
+      "strcat",
+      "strncat"
+    ],
+    "source_inputs_verified": 17,
+    "original_upstream_archive_verified": true,
+    "licenses_verified": true,
+    "archive_crc_verified": true
+  },
+  "apple_build_verification": {
+    "build_archive_crc_verified": true,
+    "simulator_passed": 7,
+    "simulator_failed": 0,
+    "device_and_simulator_libc_manifest_match_paired_source_artifact": true,
+    "development_version": "0.13.0/build14",
+    "new_numbered_release_delivered": false
+  },
+  "runtime_evidence_verification": {
+    "zip_crc_verified": true,
+    "logs": 6,
+    "markers": [
+      "1 CPU:",
+      "2 CPU:",
+      "4 CPU:",
+      "smp: pinned peers cannot starve a flexible waiter: passed",
+      "node SharedArrayBuffer/Atomics wait, notify and concurrent add: ok",
+      "npm offline local dependency, lockfile and CommonJS import: passed",
+      "node reopen: ok",
+      "gcc/clang compile/link/execute: ok",
+      "make parallel build, cmake configure/build/ctest: ok",
+      "PASS native pthread cpus=4 enabled=True shared_stack=True",
+      "PASS native pthread cpus=4 enabled=True shared_stack=False memory=False"
+    ],
+    "actual_arm64_native_pthread_matrix": [
+      {
+        "enabled": false,
+        "cpus": 1,
+        "shared_stack": false,
+        "memory": true,
+        "worker_calls": 0,
+        "native_overlap": 0
+      },
+      {
+        "enabled": false,
+        "cpus": 4,
+        "shared_stack": false,
+        "memory": true,
+        "worker_calls": 0,
+        "native_overlap": 0
+      },
+      {
+        "enabled": true,
+        "cpus": 1,
+        "shared_stack": false,
+        "memory": true,
+        "worker_calls": 0,
+        "native_overlap": 0
+      },
+      {
+        "enabled": true,
+        "cpus": 2,
+        "shared_stack": false,
+        "memory": true,
+        "worker_calls": 10645,
+        "native_overlap": 2
+      },
+      {
+        "enabled": true,
+        "cpus": 4,
+        "shared_stack": false,
+        "memory": true,
+        "worker_calls": 10626,
+        "native_overlap": 4
+      },
+      {
+        "enabled": true,
+        "cpus": 4,
+        "shared_stack": true,
+        "memory": true,
+        "worker_calls": 7752,
+        "native_overlap": 4
+      },
+      {
+        "enabled": true,
+        "cpus": 4,
+        "shared_stack": false,
+        "memory": false,
+        "worker_calls": 10664,
+        "native_overlap": 4
+      }
+    ]
+  },
+  "artifacts": {
+    "musl": {
+      "id": 11828815777,
+      "name": "full-musl-library-and-source",
+      "digest": "sha256:834198ea2e8db6c82438c62fb82484435aba0190eb884aa25b2fd31bae9a8288",
+      "artifact_url": "https://github.com/kb5000/trames/actions/runs/38425810993/artifacts/11828815777"
+    },
+    "build": {
+      "id": 11829577820,
+      "name": "unsigned-ipad-build-and-project",
+      "digest": "sha256:718c3ad686e09bb37d9521eed56df432b5c1ea3b6488bba0f72ecd9f729afc42",
+      "artifact_url": "https://github.com/kb5000/trames/actions/runs/38425810993/artifacts/11829577820"
+    },
+    "runtime": {
+      "id": 11829173280,
+      "name": "runtime-evidence",
+      "digest": "sha256:9ab6e49f558f16a97483524bb1d28acadb1fdc1159381ac06afbf86c0674f0b6",
+      "artifact_url": "https://github.com/kb5000/trames/actions/runs/38425811033/artifacts/11829173280"
+    }
+  }
+}

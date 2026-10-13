@@ -35,10 +35,12 @@ Apple CI runs these tests on native Apple ARM64 and verifies the simulator repor
 Local validation passes 254 workspace tests and 199 selected actual ARM64 tests
 under QEMU, strict Clippy and the iOS compilation check. Full-musl startup,
 callbacks/persistence and the existing SMP 1/2/4 CPU comparisons also pass.
+The final numeric/stdlib regressions cover 712 original-musl floating cases and
+476 exact integer rows, including signals/fork/nested callbacks and memory/disk.
 [Pthread report](parallel-nativecalls-pthread.json), [transcript](parallel-nativecalls-integration.txt),
 [SMP transcript](parallel-nativecalls-smp.txt) and [check fingerprints](parallel-nativecalls.json)
-retain local evidence. Exact-source CI/artifact verification follows the source
-commit; this batch does not claim physical iPad acceptance.
+retain local evidence. Exact-source CI/artifact verification is recorded below;
+this batch does not claim physical iPad acceptance.
 
 ## One fixed-work performance batch
 
@@ -74,3 +76,37 @@ startup and import; `cpu_seconds` is summed worker elapsed including lock waits,
 not host CPU utilization. This is the x86_64 development interpreter with a
 four-core cgroup quota; it measures ARM64 guest execution without measuring NEON
 host speed. It is not physical-iPad timing or a general 4x scaling claim.
+
+## Exact-source CI and downloaded artifacts
+
+Final runtime source:
+[`6bbe185`](https://github.com/kb5000/trames/commit/6bbe185d98872a8e1b59b26f91ce21e9d55a7396).
+[Linux 38425811033](https://github.com/kb5000/trames/actions/runs/38425811033) and
+[Apple 38425810993](https://github.com/kb5000/trames/actions/runs/38425810993) both
+pass on attempt 1 at that exact SHA. [Run/job evidence](parallel-nativecalls-ci.json)
+includes all required steps and the Linux host 254/actual-ARM64 199 test counts;
+the deterministic native peer/defer/guard tests pass in both Linux environments.
+Apple's native ARM64 core, SSH/SFTP, device/simulator link and simulator steps pass.
+
+The actual [simulator summary](parallel-nativecalls-simulator.json) has **7 passed,
+0 failed, 0 skipped**. Downloaded build/source/runtime ZIPs were checked against
+their API SHA256 and CRC. [Artifact verification](parallel-nativecalls-artifacts.json)
+checks device and simulator GuestMusl ELF/manifest equality with the paired full
+musl artifact, all 17 original/adapted source input hashes, the original upstream
+archive, 19 features/functions, 1 MiB limits and license notices. The source
+[archive at this SHA](https://github.com/kb5000/trames/archive/6bbe185d98872a8e1b59b26f91ce21e9d55a7396.tar.gz)
+also preserves the host runtime and tests.
+
+[Actual ARM64 pthread report](parallel-nativecalls-arm-pthread.json) records
+native overlap 2 at two CPUs and 4 in the four-CPU/private-stack/shared-stack/disk
+cases, with all pure entries exercised, zero pure fallbacks/faults/rejections and
+unchanged oracle output. [Native transcript](parallel-nativecalls-ci-native-parallel-workflow.txt),
+[SMP transcript](parallel-nativecalls-ci-smp-workflow.txt) and
+[Node transcript](parallel-nativecalls-ci-nodejs-workflow.txt) are retained.
+Downloaded runtime evidence also verifies Node SharedArrayBuffer/Atomics,
+offline npm/reopen, GCC/Clang, Make/CMake/CTest and affinity fairness markers.
+Node/developer tools use the development host interpreting ARM64 guests; the
+native pthread matrix executes the actual ARM64 runtime under independent QEMU.
+
+CI artifacts retain development metadata 0.13.0/build14. This batch does not
+replace the immutable delivered IPA or constitute a new numbered device release.

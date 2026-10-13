@@ -41,9 +41,134 @@
     "smp": {
       "sha256": "69c76d51c9d6f7decf889e1b6c9f1716914d1b38ec056cc2baa408b5669e02c0",
       "bytes": 3959
+    },
+    "numeric": {
+      "sha256": "bac5b41cc8c265af0a0bcb4775cc8255d2915fcbe00b51224e84db8e67a9789c",
+      "bytes": 628
+    },
+    "stdlib": {
+      "sha256": "7f19b86f4d445a109e8333b0e002ace8b2df5a407e3100ac875e46fdaf5416ac",
+      "bytes": 724
     }
   },
-  "ci_status": "pending exact-source Linux and Apple verification",
+  "ci_status": "success",
   "physical_ipad_performance": "not measured",
-  "delivered_ipa": "0.13.0/build14 unchanged"
+  "delivered_ipa": "0.13.0/build14 unchanged",
+  "numeric_oracle_cases": 712,
+  "stdlib_exact_integer_cases": 476,
+  "source_commit": "6bbe185d98872a8e1b59b26f91ce21e9d55a7396",
+  "simulator_passed": 7,
+  "simulator_failed": 0,
+  "musl_source_verification": {
+    "libc_sha256": "864a8ae0badcf781995e7e4dc7c882ca60100047b6a67dde098af437abe3bad8",
+    "native_features": 524287,
+    "native_functions": [
+      "memcpy",
+      "memmove",
+      "memset",
+      "memcmp",
+      "strlen",
+      "memchr",
+      "memrchr",
+      "strnlen",
+      "strcmp",
+      "strncmp",
+      "strchr",
+      "strrchr",
+      "strchrnul",
+      "strcpy",
+      "stpcpy",
+      "strncpy",
+      "stpncpy",
+      "strcat",
+      "strncat"
+    ],
+    "source_inputs_verified": 17,
+    "original_upstream_archive_verified": true,
+    "licenses_verified": true,
+    "archive_crc_verified": true
+  },
+  "apple_build_verification": {
+    "build_archive_crc_verified": true,
+    "simulator_passed": 7,
+    "simulator_failed": 0,
+    "device_and_simulator_libc_manifest_match_paired_source_artifact": true,
+    "development_version": "0.13.0/build14",
+    "new_numbered_release_delivered": false
+  },
+  "runtime_evidence_verification": {
+    "zip_crc_verified": true,
+    "logs": 6,
+    "markers": [
+      "1 CPU:",
+      "2 CPU:",
+      "4 CPU:",
+      "smp: pinned peers cannot starve a flexible waiter: passed",
+      "node SharedArrayBuffer/Atomics wait, notify and concurrent add: ok",
+      "npm offline local dependency, lockfile and CommonJS import: passed",
+      "node reopen: ok",
+      "gcc/clang compile/link/execute: ok",
+      "make parallel build, cmake configure/build/ctest: ok",
+      "PASS native pthread cpus=4 enabled=True shared_stack=True",
+      "PASS native pthread cpus=4 enabled=True shared_stack=False memory=False"
+    ],
+    "actual_arm64_native_pthread_matrix": [
+      {
+        "enabled": false,
+        "cpus": 1,
+        "shared_stack": false,
+        "memory": true,
+        "worker_calls": 0,
+        "native_overlap": 0
+      },
+      {
+        "enabled": false,
+        "cpus": 4,
+        "shared_stack": false,
+        "memory": true,
+        "worker_calls": 0,
+        "native_overlap": 0
+      },
+      {
+        "enabled": true,
+        "cpus": 1,
+        "shared_stack": false,
+        "memory": true,
+        "worker_calls": 0,
+        "native_overlap": 0
+      },
+      {
+        "enabled": true,
+        "cpus": 2,
+        "shared_stack": false,
+        "memory": true,
+        "worker_calls": 10645,
+        "native_overlap": 2
+      },
+      {
+        "enabled": true,
+        "cpus": 4,
+        "shared_stack": false,
+        "memory": true,
+        "worker_calls": 10626,
+        "native_overlap": 4
+      },
+      {
+        "enabled": true,
+        "cpus": 4,
+        "shared_stack": true,
+        "memory": true,
+        "worker_calls": 7752,
+        "native_overlap": 4
+      },
+      {
+        "enabled": true,
+        "cpus": 4,
+        "shared_stack": false,
+        "memory": false,
+        "worker_calls": 10664,
+        "native_overlap": 4
+      }
+    ]
+  }
 }
