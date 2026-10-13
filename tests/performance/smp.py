@@ -7,16 +7,21 @@ ROOT=Path(__file__).resolve().parents[2]
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--baseline',type=Path,required=True)
 p.add_argument('--baseline-commit',required=True)
+p.add_argument('--baseline-cpus',type=int,nargs='+',choices=(1,2,4),
+    help='Explicit old-runtime CPU modes; omit for historical cooperative baselines')
 p.add_argument('--output',type=Path,required=True)
 p.add_argument('--loops',type=int,default=10000000)
 a=p.parse_args()
+if a.baseline_cpus and 1 not in a.baseline_cpus:p.error('--baseline-cpus must include 1 for the single-core control')
 current=ROOT/'target/release/trames-run';fixture=ROOT/'tests/fixtures/bin/smp';memory=ROOT/'tests/fixtures/bin/cpu-memory'
 h=lambda path:hashlib.sha256(path.read_bytes()).hexdigest()
 expected=subprocess.run([os.getenv('QEMU_AARCH64','qemu-aarch64'),'-cpu','max',str(fixture),'work','4',str(a.loops)],capture_output=True,timeout=60)
 assert expected.returncode==0 and not expected.stderr,expected
 rows=[]
 for workload in ('four-thread-compute','single-thread-memory'):
-    modes=[('baseline',a.baseline,None),('1',current,1)]
+    old_modes=a.baseline_cpus or [None]
+    if workload=='single-thread-memory' and a.baseline_cpus:old_modes=[1]
+    modes=[('baseline' if n is None else f'baseline-{n}',a.baseline,n) for n in old_modes]+[('1',current,1)]
     if workload=='four-thread-compute':modes+=[('2',current,2),('4',current,4)]
     samples={name:[] for name,_,_ in modes}
     for sample in range(3):
@@ -42,12 +47,16 @@ for workload in ('four-thread-compute','single-thread-memory'):
     medians={name:statistics.median(x['runtime']['seconds'] for x in values) for name,values in samples.items()}
     rows.append(dict(workload=workload,samples=samples,median_seconds=medians,
         speedup_vs_current_1={name:medians['1']/seconds for name,seconds in medians.items()},
-        baseline_over_current_1=medians['baseline']/medians['1']))
+        baseline_over_current_1=medians.get('baseline',medians.get('baseline-1'))/medians['1'],
+        speedup_over_same_cpu_baseline={name:medians['baseline-'+name]/seconds
+            for name,seconds in medians.items() if 'baseline-'+name in medians}))
 report=dict(baseline_commit=a.baseline_commit,baseline_sha256=h(a.baseline),candidate_sha256=h(current),fixture_sha256=h(fixture),memory_fixture_sha256=h(memory),
     host=platform.machine(),cpu_quota=Path('/sys/fs/cgroup/cpu.max').read_text().strip(),
     cpu_affinity=len(os.sched_getaffinity(0)),guest='aarch64',compiler='Rust 1.90.0 release/all-features',
-    loops_per_guest_thread=a.loops,guest_threads=4,memory_runs_per_sample=3,rows=rows,
+    loops_per_guest_thread=a.loops,guest_threads=4,memory_runs_per_sample=3,baseline_cpus=a.baseline_cpus,rows=rows,
     source_sha256={str(path.relative_to(ROOT)):h(path) for path in sorted((ROOT/'crates').glob('*/src/*.rs'))},
     limits='Development x86_64 host with four-core cgroup quota; no physical iPad timing or general application speedup claim.')
 a.output.write_text(json.dumps(report,indent=2)+'\n')
-print(json.dumps([{'workload':r['workload'],'medians':r['median_seconds'],'speedup':r['speedup_vs_current_1'],'baseline_over_current_1':r['baseline_over_current_1']} for r in rows],indent=2))
+print(json.dumps([{'workload':r['workload'],'medians':r['median_seconds'],'speedup':r['speedup_vs_current_1'],
+    'speedup_over_same_cpu_baseline':r['speedup_over_same_cpu_baseline'],
+    'baseline_over_current_1':r['baseline_over_current_1']} for r in rows],indent=2))

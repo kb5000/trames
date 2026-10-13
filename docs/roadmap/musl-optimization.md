@@ -136,3 +136,8 @@ ARM atomic/fence constraints remain enforced. Subsequent borrowing/SIMD work sho
 reduce these measured boundaries without transporting mutable Rc/VFS objects or
 unvalidated host pointers to CPU workers. [Measurements](../validation/multicore.md)
 include both multicore scaling and single-core overhead.
+
+The [continuous-worker follow-up](../validation/continuous-workers.md) removes
+per-chunk dispatch/return and startup barriers. Workers retain CPU/view state across
+local interrupt polls; kernel/native/mapping events still require a joined checkpoint.
+Its measured limits are kept separately from the released 0.12 multicore batch.

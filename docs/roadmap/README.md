@@ -7,6 +7,11 @@ coordinator checkpoints. [Validation and measured limits](../validation/multicor
 cover ARM synchronization, musl pthreads and Node workers. The [0.12.0/build 13 delivery](../validation/release-0.12.md) provides the
 verified unsigned IPA; the existing 0.11.0 delivery record remains immutable.
 
+The next development follow-up introduces [continuous CPU workers](../validation/continuous-workers.md):
+local instruction polls keep CPU/view ownership without returning to the coordinator;
+kernel/native events and bounded timer/control/fairness checkpoints still join all CPUs.
+The preserved 0.12.0 IPA is unchanged. Tracker: [#13](https://github.com/kb5000/trames/issues/13).
+
 The current verified release is [0.12.0 multicore](../validation/release-0.12.md),
 building on [0.11.0 accelerator, interpreter memory and Node.js](../validation/release-0.11.md),
 with one Rust cached interpreter, static ARM64 compute and recoverable guest CPU faults.

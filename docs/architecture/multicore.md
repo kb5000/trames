@@ -22,12 +22,22 @@ remain coordinator-owned. Neither Rc/RefCell objects nor native guest slice borr
 cross to workers. CPU/decode state travels with the guest task; translation caches
 belong to each CPU-only memory view. No unsafe Send/Sync assertion is added.
 
-The coordinator prepares ready tasks and immutable mapping metadata, dispatches
-at most one guest per eligible virtual CPU, and collects every result before any
-kernel operation. Worker slices retire at most 32,768 instructions and stop at
-syscalls, NativeCall, faults or explicit yields. The total instruction budget is
-reserved across a batch, including instructions from peers subsequently killed
-by another peer's exit_group or exec. Selection rotates between ready tasks. An affinity matching pass keeps queue
+The coordinator prepares ready tasks and immutable mapping metadata and dispatches
+at most one guest per eligible virtual CPU. Each worker retains its CPU and view
+and runs continuously across 16,384-instruction local interrupt polls. A full poll
+does not send a message, wait for peers, or return to the scheduler. There is no
+startup barrier. Syscalls, NativeCall, faults and explicit guest yields immediately
+request a global stop; the coordinator collects every result before kernel work.
+A timed checkpoint bounds host control and affinity fairness to 10 ms plus a local
+poll and host scheduling delay (2 ms for an interactive terminal, 1 ms for blocked
+socket work). Earlier sleep, futex, signal, poll and timer deadlines shorten that
+interval. An unread expired timerfd cannot force repeated zero-length epochs.
+
+A shared atomic counter reserves exact instruction credits at each local poll;
+unused credits return to the counter. A pending native trap reserves one extra
+credit, retired only after a committed coordinator return. Earlier polls and a
+fault's retired prefix are accounted once. This includes instructions from peers
+subsequently killed by another peer's exit_group or exec. Selection rotates between ready tasks. An affinity matching pass keeps queue
 priority and can relocate an earlier flexible task to admit a pinned peer; pinned
 spinners cannot permanently starve the flexible task that releases them. `sched_setaffinity` is enforced,
 `getcpu` reports the assigned virtual CPU, and proc/sys CPU views report this same
@@ -102,3 +112,6 @@ DMB tests, shared futexes, concurrent fork, file aliases/truncation, executable
 tokens, Node SharedArrayBuffer/Atomics and independent host FP scopes. See
 [measurements and exact-source evidence](../validation/multicore.md) and
 [delivery tracker #11](https://github.com/kb5000/trames/issues/11).
+The continuous-worker follow-up is tracked in
+[#13](https://github.com/kb5000/trames/issues/13) and
+[its separate validation record](../validation/continuous-workers.md).

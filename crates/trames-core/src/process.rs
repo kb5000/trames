@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Virtual processes and parallel CPU slices. Guest fork/exec stay virtual.
+//! Virtual processes and continuous parallel CPU execution. Guest fork/exec stay virtual.
 use super::{Exit, Runtime, RuntimeError};
 use crate::terminal::Terminal;
 use std::{
@@ -179,7 +179,10 @@ struct Kernel {
     parallel_memory: trames_memory::parallel::Registry,
     parallel_rounds: u64,
     worker_slices: u64,
+    worker_chunks: u64,
     parallel_memory_time: Duration,
+    parallel_dispatch_time: Duration,
+    parallel_stop_time: Duration,
     next_parallel_pid: u32,
     per_cpu: Vec<Duration>,
     processes: BTreeMap<u32, Process>,
@@ -2309,7 +2312,10 @@ impl Kernel {
         if chosen.len() < 2 {
             return Ok(false);
         }
-        let budget = (remaining / chosen.len() as u64).min(32768);
+        // Resolve deadlines while kernel/backing objects are quiescent. Workers
+        // then run continuously; only an event, a fairness/timer/control poll,
+        // or the shared session budget asks all CPUs to return.
+        let timeout = self.parallel_timeout();
         let began = Instant::now();
         let mut views = Vec::new();
         for &(id, slot) in &chosen {
@@ -2325,7 +2331,8 @@ impl Kernel {
                 .ensure(slot)
                 .map_err(|_| RuntimeError::Arguments("cannot start CPU worker"))?;
         }
-        let start = std::sync::Arc::new(std::sync::Barrier::new(chosen.len()));
+        let control = std::sync::Arc::new(crate::workers::Control::new(remaining));
+        let began = Instant::now();
         for (id, slot, view) in views {
             let p = self.processes.get_mut(&id).expect("ready process");
             if p.last_cpu != slot {
@@ -2339,20 +2346,30 @@ impl Kernel {
                         pid: id,
                         cpu,
                         memory: view,
-                        budget,
-                        start: start.clone(),
+                        control: control.clone(),
                     },
                 )
                 .map_err(|_| RuntimeError::Arguments("CPU worker disconnected"))?;
         }
+        self.parallel_dispatch_time += began.elapsed();
         let mut completed = Vec::new();
-        for _ in &chosen {
+        if let Some(done) = self
+            .workers
+            .complete_timeout(timeout)
+            .map_err(|_| RuntimeError::Arguments("CPU worker failed"))?
+        {
+            completed.push(done);
+        }
+        control.stop();
+        let began = Instant::now();
+        for _ in completed.len()..chosen.len() {
             completed.push(
                 self.workers
                     .complete()
                     .map_err(|_| RuntimeError::Arguments("CPU worker failed"))?,
             );
         }
+        self.parallel_stop_time += began.elapsed();
         if completed.iter().any(|r| r.outcome.is_none()) {
             for done in completed {
                 self.processes
@@ -2389,12 +2406,8 @@ impl Kernel {
             self.decode_misses += done.after.misses - done.before.misses;
             self.instructions_decoded += done.after.instructions - done.before.instructions;
             let outcome = done.outcome.expect("checked worker completion");
-            self.instructions += match &outcome {
-                SliceOutcome::Fault(_) => p.cpu.fault_retired(),
-                SliceOutcome::Yield { instructions }
-                | SliceOutcome::NativeCall { instructions, .. }
-                | SliceOutcome::Syscall { instructions } => *instructions,
-            };
+            self.instructions += done.instructions;
+            self.worker_chunks += done.chunks;
             outcomes.push((done.pid, outcome));
         }
         self.parallel_rounds += 1;
@@ -2416,6 +2429,42 @@ impl Kernel {
             }
         }
         Ok(true)
+    }
+    fn parallel_timeout(&self) -> Duration {
+        let now = Instant::now();
+        // Bounded host control and affinity fairness even when every guest spins
+        // forever. A local instruction poll does not yield to the coordinator.
+        let mut timeout = Duration::from_millis(10);
+        if self.terminal.is_some() {
+            timeout = Duration::from_millis(2);
+        }
+        for timer in self.timers.values() {
+            if let Some(deadline) = timer.deadline {
+                timeout = timeout.min(deadline.saturating_duration_since(now));
+            }
+        }
+        for p in self.processes.values() {
+            // An unread expired timerfd remains readable until a guest read or
+            // poll updates it. It must not force zero-length CPU epochs forever.
+            let timerfd = p.linux.vfs.next_timerfd_deadline().filter(|d| *d > now);
+            for deadline in [p.poll_deadline, timerfd].into_iter().flatten() {
+                timeout = timeout.min(deadline.saturating_duration_since(now));
+            }
+            if let State::Futex {
+                deadline: Some(d), ..
+            }
+            | State::Sigwait {
+                deadline: Some(d), ..
+            }
+            | State::Sleep(d, _) = p.state
+            {
+                timeout = timeout.min(d.saturating_duration_since(now));
+            }
+            if matches!(p.state, State::Blocked(..)) && p.linux.vfs.live_sockets() != 0 {
+                timeout = timeout.min(Duration::from_millis(1));
+            }
+        }
+        timeout
     }
     fn drive(&mut self, io: &mut impl GuestOutput, limit: u64) -> Result<Exit, RuntimeError> {
         loop {
@@ -2723,7 +2772,10 @@ pub(super) fn run(
         parallel_memory: trames_memory::parallel::Registry::default(),
         parallel_rounds: 0,
         worker_slices: 0,
+        worker_chunks: 0,
         parallel_memory_time: Duration::ZERO,
+        parallel_dispatch_time: Duration::ZERO,
+        parallel_stop_time: Duration::ZERO,
         next_parallel_pid: 0,
         per_cpu: vec![Duration::ZERO; count],
         processes: BTreeMap::new(),
@@ -2762,11 +2814,14 @@ pub(super) fn run(
         cpu_count: kernel.cpu_count,
         parallel_rounds: kernel.parallel_rounds,
         worker_slices: kernel.worker_slices,
+        worker_chunks: kernel.worker_chunks,
         peak_parallel_cpus: kernel
             .workers
             .peak
             .load(std::sync::atomic::Ordering::Relaxed),
         parallel_memory_time: kernel.parallel_memory_time,
+        parallel_dispatch_time: kernel.parallel_dispatch_time,
+        parallel_stop_time: kernel.parallel_stop_time,
         cpu_time: kernel.cpu_total,
         syscall_time: kernel.syscall_total,
         idle_time: kernel.idle,
@@ -2857,7 +2912,10 @@ mod tests {
             parallel_memory: trames_memory::parallel::Registry::default(),
             parallel_rounds: 0,
             worker_slices: 0,
+            worker_chunks: 0,
             parallel_memory_time: Duration::ZERO,
+            parallel_dispatch_time: Duration::ZERO,
+            parallel_stop_time: Duration::ZERO,
             next_parallel_pid: 0,
             per_cpu: vec![Duration::ZERO; 1],
             processes: BTreeMap::new(),
@@ -2950,7 +3008,81 @@ mod tests {
         assert_eq!(k.processes[&1].memory.read_u64(0x8000).unwrap(), 100000);
         assert_eq!(exit.instructions, 300006);
         assert!(k.parallel_rounds > 0);
-        assert_eq!(k.workers.peak.load(std::sync::atomic::Ordering::Relaxed), 2);
+        // Without a startup barrier the host may schedule these finite tasks
+        // consecutively. Real SMP publication fixtures require overlapping work.
+        assert!(k.workers.peak.load(std::sync::atomic::Ordering::Relaxed) > 0);
+    }
+    fn spinning_peers() -> Kernel {
+        let mut p = process();
+        // add x0,x0,#1; b -4. No guest syscall can bring these CPUs back.
+        for (i, word) in [0x91000400u32, 0x17ffffff].into_iter().enumerate() {
+            p.memory
+                .write(0x4000 + i as u64 * 4, &word.to_le_bytes())
+                .unwrap();
+        }
+        p.memory
+            .protect(
+                0x4000,
+                trames_memory::PAGE_SIZE,
+                trames_memory::Permissions::RX,
+            )
+            .unwrap();
+        p.affinity = 3;
+        let mut peer = p.fork();
+        peer.memory = p.memory.share();
+        peer.parent = 1;
+        let mut k = kernel();
+        k.cpu_count = 2;
+        k.workers = crate::workers::Pool::new(2);
+        k.per_cpu = vec![Duration::ZERO; 2];
+        k.processes.insert(1, p);
+        k.processes.insert(2, peer);
+        k
+    }
+    #[test]
+    fn continuous_peers_cancel_at_control_checkpoints_and_commit_the_exact_budget() {
+        struct CancelAfterTwoPolls(usize);
+        impl GuestOutput for CancelAfterTwoPolls {
+            fn control(&mut self, _: &mut trames_vfs::Vfs) -> std::io::Result<bool> {
+                self.0 += 1;
+                Ok(self.0 < 3)
+            }
+            fn write(&mut self, _: OutputFd, bytes: &[u8]) -> std::io::Result<usize> {
+                Ok(bytes.len())
+            }
+        }
+        let mut k = spinning_peers();
+        assert!(matches!(
+            k.drive(&mut CancelAfterTwoPolls(0), u64::MAX),
+            Err(RuntimeError::Cancelled)
+        ));
+        assert!(k.instructions > 0);
+        assert!(k.worker_chunks > 0);
+        for limit in [1, 17, 65_539] {
+            let mut k = spinning_peers();
+            assert!(
+                matches!(k.drive(&mut trames_linux::CapturedOutput::default(), limit), Err(RuntimeError::BudgetExceeded(n)) if n == limit)
+            );
+            assert_eq!(k.instructions, limit);
+            assert_eq!(
+                k.processes.values().map(|p| p.cpu.x(0)).sum::<u64>(),
+                limit.div_ceil(2)
+            );
+        }
+    }
+    #[test]
+    fn continuous_deadlines_include_sleep_and_do_not_spin_on_unread_expired_timerfd() {
+        let mut k = spinning_peers();
+        let p = k.processes.get_mut(&1).unwrap();
+        let fd = p.linux.vfs.timerfd(1, 0).unwrap();
+        p.linux
+            .vfs
+            .timerfd_set(fd, Duration::ZERO, Some(Instant::now()))
+            .unwrap();
+        assert_eq!(k.parallel_timeout(), Duration::from_millis(10));
+        k.processes.get_mut(&1).unwrap().state =
+            State::Sleep(Instant::now() + Duration::from_millis(1), 0);
+        assert!(k.parallel_timeout() <= Duration::from_millis(1));
     }
     #[test]
     fn stdio_eagain_blocks_only_without_nonblocking_flag() {

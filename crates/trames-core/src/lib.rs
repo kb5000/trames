@@ -78,8 +78,13 @@ pub struct RuntimeMetrics {
     pub cpu_count: usize,
     pub parallel_rounds: u64,
     pub worker_slices: u64,
+    /// Worker-local instruction polls, without scheduler messages or barriers.
+    pub worker_chunks: u64,
     pub peak_parallel_cpus: usize,
     pub parallel_memory_time: std::time::Duration,
+    pub parallel_dispatch_time: std::time::Duration,
+    /// Time to drain peers after the first exit or a requested timed checkpoint.
+    pub parallel_stop_time: std::time::Duration,
     pub cpu_time: std::time::Duration,
     pub syscall_time: std::time::Duration,
     pub idle_time: std::time::Duration,
