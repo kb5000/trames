@@ -20,7 +20,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.90.0
-          components: rustfmt, clippy
+          components: rustfmt, clippy, rust-src
           targets: aarch64-apple-ios,aarch64-unknown-linux-musl
       - name: Install independent AArch64 oracle and cross assembler
         run: |
@@ -38,6 +38,12 @@ jobs:
       - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
       - run: cargo build --workspace --all-features --locked
       - run: cargo test --workspace --all-features --locked
+      - name: Check region guard races with fully instrumented Rust standard library
+        env:
+          RUSTC_BOOTSTRAP: 1
+          RUSTFLAGS: -Zsanitizer=thread
+          CARGO_TARGET_DIR: target/thread-sanitizer
+        run: cargo test -Zbuild-std -p trames-memory --target x86_64-unknown-linux-gnu --locked --lib
       - name: Compile core and both network backends for iOS (no SDK link or device test)
         run: cargo check -p trames-core -p trames-distro -p trames-ffi --target aarch64-apple-ios --locked
       - name: Execute ARM64 compute, memory and native worker tests under the independent oracle
@@ -109,6 +115,7 @@ jobs:
           python3 tests/integration/numeric.py
           python3 tests/integration/stdlib.py
           python3 tests/integration/native-parallel.py | tee target/native-parallel-workflow.log
+          python3 tests/integration/region-memory.py | tee target/region-memory-workflow.log
       - name: Build and compare opt-in NativeCall guest ELF stubs on ARM64
         run: |
           bash scripts/build-accelerator-fixtures.sh
@@ -177,5 +184,6 @@ jobs:
             target/nodejs-workflow.log
             target/smp-workflow.log
             target/native-parallel-workflow.log
+            target/region-memory-workflow.log
             target/musl-hybrid/native-parallel-validation.json
           if-no-files-found: error

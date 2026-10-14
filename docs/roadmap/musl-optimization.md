@@ -166,3 +166,9 @@ integer/floating parsers and guest-owned sorting/search steps continue on their
 owning CPU. Live private file backing defers before writes; syscalls and persistence
 remain joined. [Validation and measurements](../validation/parallel-nativecalls.md)
 record the supported concurrency boundary and residual bandwidth/checkpoint costs.
+
+The [region-memory follow-up](../architecture/region-memory.md) narrows CPU/native
+transactions to touched 64-byte regions, coalesces dirty commits and reduces
+mapping/borrow overhead. [Qualified before/after measurements](../validation/region-memory.md)
+retain the diagnostic regressions and the final accepted source's results;
+full-std ThreadSanitizer joins Linux CI for the audited unsafe byte-cell boundary.

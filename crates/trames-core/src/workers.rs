@@ -501,64 +501,66 @@ mod tests {
 
     #[test]
     fn a_peer_completes_native_work_while_another_native_body_is_blocked_on_its_page() {
-        let mut pool = Pool::new(2);
-        pool.ensure(0).unwrap();
-        pool.ensure(1).unwrap();
-        let control = Arc::new(Control::new(POLL_INSTRUCTIONS * 4));
-        let (first, mut memory) =
-            native_work(3, [0x2000, 0x6b, 128], Permissions::RW, control.clone());
-        let mut held_view = first.memory.clone();
-        let mut peer_cpu = first.cpu.clone();
-        peer_cpu.set_x(0, 0x3000);
-        peer_cpu.set_x(1, 0x52);
-        let peer = Work {
-            pid: 2,
-            cpu: peer_cpu,
-            memory: first.memory.clone(),
-            control: control.clone(),
-        };
-        let (held_tx, held_rx) = mpsc::channel();
-        let (release_tx, release_rx) = mpsc::channel();
-        let held = thread::spawn(move || {
-            held_view
-                .fill_with(0x2000, 4096, |bytes| {
-                    held_tx.send(()).unwrap();
-                    release_rx.recv_timeout(Duration::from_secs(5)).unwrap();
-                    bytes.fill(0);
-                })
+        for (peer_address, held_length) in [(0x3000, 4096), (0x2100, 128)] {
+            let mut pool = Pool::new(2);
+            pool.ensure(0).unwrap();
+            pool.ensure(1).unwrap();
+            let control = Arc::new(Control::new(POLL_INSTRUCTIONS * 4));
+            let (first, mut memory) =
+                native_work(3, [0x2000, 0x6b, 128], Permissions::RW, control.clone());
+            let mut held_view = first.memory.clone();
+            let mut peer_cpu = first.cpu.clone();
+            peer_cpu.set_x(0, peer_address);
+            peer_cpu.set_x(1, 0x52);
+            let peer = Work {
+                pid: 2,
+                cpu: peer_cpu,
+                memory: first.memory.clone(),
+                control: control.clone(),
+            };
+            let (held_tx, held_rx) = mpsc::channel();
+            let (release_tx, release_rx) = mpsc::channel();
+            let held = thread::spawn(move || {
+                held_view
+                    .fill_with(0x2000, held_length, |bytes| {
+                        held_tx.send(()).unwrap();
+                        release_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+                        bytes.fill(0);
+                    })
+                    .unwrap()
+            });
+            held_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+            pool.dispatch(0, first).unwrap();
+            let began = Instant::now();
+            while pool.active_native.load(Ordering::Relaxed) == 0
+                && began.elapsed() < Duration::from_secs(5)
+            {
+                thread::yield_now();
+            }
+            assert_eq!(pool.active_native.load(Ordering::Relaxed), 1);
+            pool.dispatch(1, peer).unwrap();
+            let peer = pool
+                .complete_timeout(Duration::from_secs(5))
                 .unwrap()
-        });
-        held_rx.recv_timeout(Duration::from_secs(5)).unwrap();
-        pool.dispatch(0, first).unwrap();
-        let began = Instant::now();
-        while pool.active_native.load(Ordering::Relaxed) == 0
-            && began.elapsed() < Duration::from_secs(5)
-        {
-            thread::yield_now();
+                .unwrap();
+            assert_eq!(peer.pid, 2);
+            assert_eq!(peer.instructions, 6);
+            assert_eq!(peer.native.worker_calls, 1);
+            assert!(matches!(peer.outcome, Some(SliceOutcome::Syscall { .. })));
+            assert_eq!(pool.peak_native.load(Ordering::Relaxed), 2);
+            release_tx.send(()).unwrap();
+            held.join().unwrap();
+            let first = pool
+                .complete_timeout(Duration::from_secs(5))
+                .unwrap()
+                .unwrap();
+            assert_eq!(first.pid, 1);
+            assert_eq!(first.native.worker_calls, 1);
+            assert_eq!(pool.active_native.load(Ordering::Relaxed), 0);
+            memory.commit_parallel().unwrap();
+            assert_eq!(memory.read_array::<128>(0x2000).unwrap(), [0x6b; 128]);
+            assert_eq!(memory.read_array::<128>(peer_address).unwrap(), [0x52; 128]);
         }
-        assert_eq!(pool.active_native.load(Ordering::Relaxed), 1);
-        pool.dispatch(1, peer).unwrap();
-        let peer = pool
-            .complete_timeout(Duration::from_secs(5))
-            .unwrap()
-            .unwrap();
-        assert_eq!(peer.pid, 2);
-        assert_eq!(peer.instructions, 6);
-        assert_eq!(peer.native.worker_calls, 1);
-        assert!(matches!(peer.outcome, Some(SliceOutcome::Syscall { .. })));
-        assert_eq!(pool.peak_native.load(Ordering::Relaxed), 2);
-        release_tx.send(()).unwrap();
-        held.join().unwrap();
-        let first = pool
-            .complete_timeout(Duration::from_secs(5))
-            .unwrap()
-            .unwrap();
-        assert_eq!(first.pid, 1);
-        assert_eq!(first.native.worker_calls, 1);
-        assert_eq!(pool.active_native.load(Ordering::Relaxed), 0);
-        memory.commit_parallel().unwrap();
-        assert_eq!(memory.read_array::<128>(0x2000).unwrap(), [0x6b; 128]);
-        assert_eq!(memory.read_array::<128>(0x3000).unwrap(), [0x52; 128]);
     }
 
     #[test]

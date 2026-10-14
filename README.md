@@ -10,6 +10,8 @@
 
 后续 [guest memory／批量原生优化](docs/validation/bulk-native.md)加入共享驻留页直接借用、1 MiB 有界批量路径、ARM64 NEON 扫描比较，以及 musl strcat/strncat；对应 [Issue #15](https://github.com/kb5000/trames/issues/15)。当前开发继续实现 [NativeCall 工作线程并行](docs/architecture/parallel-nativecalls.md)：19 个纯函数、整数/浮点解析和排序步骤可在所属 CPU 上执行并继续 guest 代码，独立原生调用不再要求全局停顿；[验证与跑分](docs/validation/parallel-nativecalls.md)，[Issue #16](https://github.com/kb5000/trames/issues/16)。0.13.0 安装包保持已交付版本。
 
+进一步的[访存优化](docs/architecture/region-memory.md)将同步范围缩到实际触及的 64 字节区段，允许同页独立访问并行；合并脏区段提交、减少映射检查，并为内置后备对象减少单核线程的重复借用。受控 unsafe 保留 ARM 允许的运行结果差异；[验证和原始跑分](docs/validation/region-memory.md)，[Issue #17](https://github.com/kb5000/trames/issues/17)。
+
 ## 快速运行
 
 需要 Rust 1.90.0；交叉构建 BusyBox 和运行差分测试还需要 Python 3、GNU AArch64 GCC/Binutils、Make、curl、bzip2 和 QEMU user-mode。Debian/Ubuntu 可安装：

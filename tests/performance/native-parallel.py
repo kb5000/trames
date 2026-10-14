@@ -19,6 +19,8 @@ parser.add_argument('--baseline', type=Path, required=True)
 parser.add_argument('--baseline-commit', required=True)
 parser.add_argument('--output', type=Path, required=True)
 parser.add_argument('--iterations', type=int, default=128)
+parser.add_argument('--region-fixture', type=Path)
+parser.add_argument('--region-iterations', type=int, default=400000)
 args = parser.parse_args()
 current = ROOT / 'target/release/trames-run'
 fixture = ROOT / 'tests/fixtures/bin/native-parallel'
@@ -29,13 +31,20 @@ oracle = subprocess.run([os.getenv('QEMU_AARCH64', 'qemu-aarch64'), '-cpu', 'max
     '-L', str(ROOT / 'target/alpine-build/rootfs'), str(fixture), 'bench', str(args.iterations)],
     capture_output=True, timeout=60)
 assert oracle.returncode == 0 and not oracle.stderr, oracle
+region_oracle = None
+if args.region_fixture:
+    region_oracle = subprocess.run([os.getenv('QEMU_AARCH64', 'qemu-aarch64'), '-cpu', 'max',
+        '-L', str(ROOT / 'target/alpine-build/rootfs'), str(args.region_fixture), str(args.region_iterations)], capture_output=True, timeout=60)
+    assert region_oracle.returncode == 0 and not region_oracle.stderr, region_oracle
 rows = []
 with tempfile.TemporaryDirectory(prefix='trames-native-parallel-bench-') as folder:
     data = Path(folder) / 'sort-input'
     data.write_text(''.join(f'{i:05d} ' + 'payload' * 8 + '\n' for i in range(2048, 0, -1)))
     sort_expected = b''.join(sorted(data.read_bytes().splitlines(keepends=True)))
-    for workload in ('four-thread-native-copy', 'alpine-sort-2048'):
-        cpus = (1, 2, 4) if workload == 'four-thread-native-copy' else (1,)
+    workloads = ['four-thread-native-copy', 'alpine-sort-2048']
+    if args.region_fixture: workloads.insert(1, 'same-page-independent-regions')
+    for workload in workloads:
+        cpus = (1,) if workload == 'alpine-sort-2048' else (1, 2, 4)
         modes = [(f'{name}-{count}', binary, count) for count in cpus
             for name, binary in [('baseline', args.baseline), ('current', current)]]
         samples = {name: [] for name, _, _ in modes}
@@ -43,6 +52,9 @@ with tempfile.TemporaryDirectory(prefix='trames-native-parallel-bench-') as fold
             if workload == 'four-thread-native-copy' else \
             ['--file', '/root/sort-input=' + str(data), '--guest', '/bin/busybox', 'sort', '-n', '/root/sort-input']
         expected = oracle.stdout if workload == 'four-thread-native-copy' else sort_expected
+        if workload == 'same-page-independent-regions':
+            guest = ['--exec-file', '/bin/regions=' + str(args.region_fixture), '--guest', '/bin/regions', str(args.region_iterations)]
+            expected = region_oracle.stdout
         for sample in range(3):
             for name, binary, count in modes if sample % 2 == 0 else list(reversed(modes)):
                 cmd = [str(binary), '--memory', '--network', 'off', '--cpus', str(count), '--rootfs', str(archive),
@@ -70,6 +82,8 @@ report = dict(baseline_commit=args.baseline_commit, baseline_binary_sha256=diges
     host_architecture=platform.machine(), cpu_quota=Path('/sys/fs/cgroup/cpu.max').read_text().strip(),
     cpu_affinity=len(os.sched_getaffinity(0)), guest_threads=4, bytes_per_copy=1048576,
     copies_per_thread=args.iterations, rows=rows,
+    region_iterations=args.region_iterations if args.region_fixture else None,
+    region_fixture_sha256=digest(args.region_fixture) if args.region_fixture else None,
     source_sha256={str(path.relative_to(ROOT)): digest(path) for path in sorted((ROOT / 'crates').rglob('*.rs'))},
     limits='Three alternating samples, fixed work and identical full musl/guest ELF on both runtimes. Runtime seconds exclude rootfs import; host wall/CPU include startup/import. cpu_seconds is summed worker elapsed, includes lock waits, and is not host CPU occupancy. x86_64 development interpreter, no physical iPad or NEON timing claim.')
 args.output.parent.mkdir(parents=True, exist_ok=True)

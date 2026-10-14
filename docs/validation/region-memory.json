@@ -1,0 +1,69 @@
+{
+  "baseline_commit": "2b7759f8412a979d3194fd9a6cbbcaf516d43b1a",
+  "host_tests": 259,
+  "arm64_tests": 204,
+  "sanitizer_memory_tests": 41,
+  "sanitizer_standard_library_instrumented": true,
+  "sanitizer_reports": 0,
+  "sanitizer_suppressions": false,
+  "region_bytes": 64,
+  "reservation_granule_bytes": 16,
+  "custom_backing_cpu_borrow_default": false,
+  "workspace_clippy_warnings_denied": true,
+  "ios_compile_check": true,
+  "numeric_oracle_cases": 712,
+  "stdlib_integer_oracle_rows": 476,
+  "logs": {
+    "tests": {
+      "sha256": "163f2ab69d3a0e557276bd53480dbc83638137d8745341c54f0c4144d79ce890",
+      "bytes": 27339
+    },
+    "arm": {
+      "sha256": "beff79ac84ef11c133826c559093a244056a1eda1aed7a10b6c677f8c2888dd2",
+      "bytes": 20834
+    },
+    "clippy": {
+      "sha256": "f666e81c6a75c327989f1edcd6e745fb74f9a814c7e2fc10fbedc65318a5d0c2",
+      "bytes": 870
+    },
+    "ios": {
+      "sha256": "10989502445860f89633fff2c3427867b6219cace595a55136c5b9bc7518316b",
+      "bytes": 800
+    },
+    "tsan-full": {
+      "sha256": "802a2795e51b72edd63821604e79e8fa8ba4c38b01f999a2ceaa98428df751dc",
+      "bytes": 4031
+    },
+    "pthread": {
+      "sha256": "5fb7990aa59ef6cda8942c1c192f912de71dac163159b3b7c53b0fecd78bba39",
+      "bytes": 1137
+    },
+    "regions": {
+      "sha256": "0494bf2095ec4648b4c27b8807a105eae1694bee2f26cae63b25f2954b1c7461",
+      "bytes": 219
+    },
+    "smp": {
+      "sha256": "85135a4d8a216f9e9bf7410a1b7d90cf1cdd7f051b738cf54f77c87df4da945b",
+      "bytes": 3963
+    },
+    "hybrid": {
+      "sha256": "eb6a158a1a4427ade958a0518d6dc1111244915e2c38c8fc7356ec9541422203",
+      "bytes": 984
+    },
+    "numeric": {
+      "sha256": "bac5b41cc8c265af0a0bcb4775cc8255d2915fcbe00b51224e84db8e67a9789c",
+      "bytes": 628
+    },
+    "stdlib": {
+      "sha256": "7f19b86f4d445a109e8333b0e002ace8b2df5a407e3100ac875e46fdaf5416ac",
+      "bytes": 724
+    },
+    "mmap": {
+      "sha256": "453725a63be7753442ba43c54f3339c3669e83cea185e4c5e2886c4134abdc3b",
+      "bytes": 325
+    }
+  },
+  "ci_status": "pending exact-source Linux/Apple",
+  "delivered_ipa": "0.13/build14 unchanged",
+  "physical_ipad_performance": "not measured"
+}

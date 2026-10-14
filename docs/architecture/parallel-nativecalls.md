@@ -45,6 +45,9 @@ resident one-shot output, including a shared guest stack.
 
 Mutable page guards end inside a call. Two-page reads/copies acquire locks in
 stable physical identity order; aliases of the same page acquire one guard.
+The [region-guard follow-up](region-memory.md) narrows mutable exclusion to the
+actual touched 64-byte regions. CPU, native and atomic accesses use the same
+audited byte-cell boundary, allowing disjoint regions of one page to overlap.
 Virtual overlap uses directional fragments. Non-virtual physical aliases require
 a bounded source snapshot; disjoint snapshots avoid that allocation and alias
 table scan. Shared file aliases observe writes through one ConcurrentPage;
@@ -54,6 +57,9 @@ Native writes preserve dirty 64-byte fragments, reservation-granule versions and
 executable epochs. Full-page writes use a lazy reservation epoch plus explicit
 partial-granule bits, avoiding a redundant 2 KiB version-table store per 4 KiB
 copy. This handles version wrap and preserves unaffected partial reservations.
+Hierarchical per-region bases also compress full 64-byte writes, including
+unaligned bulk-copy interiors, while retaining precise 16-byte reservations.
+Adjacent dirty fragments commit as one run; clean holes remain unpublished.
 Page locks permit stronger ARM outcomes without promising whole-call atomicity.
 Ordinary unsynchronized guest races can still interleave between fragments.
 

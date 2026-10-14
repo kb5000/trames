@@ -1,0 +1,49 @@
+   Compiling trames-memory v0.13.0 (/workspace/trames/crates/trames-memory)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.33s
+     Running unittests src/lib.rs (/tmp/trames-granular-tsan-full/x86_64-unknown-linux-gnu/debug/deps/trames_memory-dec5678779cc5d7a)
+
+running 41 tests
+test backing::tests::failed_remap_is_atomic_and_success_preserves_bytes_and_zero_grows ... ok
+test backing::tests::fork_shares_anonymous_bytes_but_not_protections_or_mapping_table ... ok
+test cpu_memory::tests::trusted_backings_borrow_once_and_unknown_read_callbacks_can_reenter ... ok
+test fork_tests::instruction_revision_tracks_shared_code_but_not_data_writes ... ok
+test fork_tests::fork_copies_pages_on_write_and_keeps_protection_independent ... ok
+test fork_tests::shared_vm_updates_mappings_bytes_and_revision_but_fork_is_private ... ok
+test native_access::tests::backing_aliases_snapshot_source_and_private_pages_detach_on_write ... ok
+test native_access::tests::scoped_borrows_reach_real_pages_and_preserve_cow_shared_vm_and_code_tokens ... ok
+test native_access::tests::direct_shared_borrows_preserve_alias_fork_code_and_parallel_visibility ... ok
+test parallel::native::tests::a_new_coordinator_registry_rejoins_cached_fork_shared_aliases ... ok
+test parallel::native::tests::backing_alias_moves_snapshot_source_and_pair_reads_lock_once ... ok
+test parallel::native::tests::full_page_reservation_epochs_preserve_partial_granules_and_wrap ... ok
+test parallel::native::tests::disjoint_native_page_guards_overlap_and_opposite_pair_orders_finish ... ok
+test parallel::native::tests::directional_moves_code_tokens_and_fork_cow_match_owned_memory ... ok
+test parallel::page::tests::disjoint_regions_progress_while_a_peer_borrows_the_same_page ... ok
+test parallel::page::tests::overlapping_masks_publish_bytes_and_unwind_releases_the_guard ... ok
+test parallel::tests::acquire_release_publication_and_page_code_tokens_reach_peers ... ok
+test parallel::tests::coordinator_aba_and_native_stores_invalidate_a_worker_reservation ... ok
+test parallel::tests::commit_coalesces_dirty_runs_and_preserves_clean_backing_alias_holes ... ok
+test parallel::tests::immutable_code_ignores_unrelated_live_code_epochs ... ok
+test parallel::tests::exclusives_detect_aba_but_allow_an_unrelated_granule ... ok
+test parallel::tests::remapping_changes_reservation_identity_and_cross_page_faults_have_no_effect ... ok
+test parallel::native::tests::independent_atomic_pairs_share_one_page_without_torn_reads ... ok
+test parallel::tests::shared_backing_aliases_are_one_transaction_domain_and_fork_cow_stays_private ... ok
+test reservations::tests::large_reservation_commit_split_fork_share_and_failed_commit_are_atomic ... ok
+test tests::borrowed_c_strings_keep_page_boundaries_tags_and_shared_vm_permissions ... ok
+test tests::c_strings_obey_bounds_and_accept_non_utf8 ... ok
+test tests::cached_frames_reuse_slots_without_stale_bytes_permissions_or_false_cow ... ok
+test tests::cross_page_write_is_atomic_on_fault ... ok
+test tests::fixed_mapping_failure_preserves_existing_bytes ... ok
+test native_access::tests::direct_moves_match_a_snapshot_for_overlapping_and_unaligned_page_ranges ... ok
+test tests::free_range_search_skips_only_conflicting_pages ... ok
+test tests::mapped_pages_are_zeroed_and_reads_cross_boundaries ... ok
+test tests::optimized_access_preserves_fault_atomicity_and_execute_only_pages ... ok
+test tests::overflow_overlap_and_limit_are_rejected ... ok
+test tests::fixed_operands_match_generic_access_across_pages_and_faults ... ok
+test tests::permissions_are_separate_and_protection_is_atomic ... ok
+test tests::page_code_tokens_preserve_unrelated_code_and_track_wrap_shared_and_failed_writes ... ok
+test tests::unmap_holes_and_remapping_zeroes_old_data ... ok
+test parallel::tests::racing_rmw_and_shared_vm_publish_every_increment ... ok
+test reservations::tests::metadata_budget_and_commit_failures_preserve_reservations ... ok
+
+test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.13s
+

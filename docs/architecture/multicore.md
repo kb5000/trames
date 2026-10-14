@@ -21,7 +21,9 @@ Linux, VFS, signals, timers, mapping changes and live backing objects remain
 coordinator-owned. [Checked native calls](parallel-nativecalls.md) now execute on
 workers through callback-scoped resident page guards. Rc/RefCell objects stay on
 the coordinator. CPU/decode state travels with the guest task; translation caches
-belong to each CPU/native memory view. No unsafe Send/Sync assertion is added.
+belong to each CPU/native memory view. An audited UnsafeCell/Sync boundary now
+protects mutable bytes and reservation rows with guards for touched 64-byte
+regions; no Rc/VFS object is declared thread-safe.
 
 The coordinator prepares ready tasks and immutable mapping metadata and dispatches
 at most one guest per eligible virtual CPU. Each worker retains its CPU and view
@@ -47,7 +49,7 @@ spinners cannot permanently starve the flexible task that releases them. `sched_
 topology. Virtual affinity does not pin a worker to a physical host core.
 
 Immutable pages allow unlocked code/data reads. Mutable pages use independent
-page-local transactions, not one global memory lock. Each shared backing page has
+64-byte region transactions, not one global memory lock. Each shared backing page has
 an opaque identity, so aliases, different virtual addresses and forked shared
 mappings use one transaction domain. Private mappings remain independent COW
 domains. Unsupported custom backing types retain local execution rather than
@@ -57,9 +59,10 @@ A batch containing only immutable executable pages reuses its frozen code epoch,
 avoiding an unnecessary atomic counter load for every interpreted instruction.
 Writable executable pages and shared executable aliases retain acquire checks
 of the live code epoch and per-page versions.
-Local CLONE_VM spaces without live backings borrow their owned inner memory once
-per CPU slice; backed spaces retain individual access borrows to preserve callback
-boundaries. No such borrow survives a syscall or NativeCall outcome.
+Local CLONE_VM spaces with built-in non-reentrant backing methods borrow their
+owned inner memory once per CPU slice; custom backings retain individual access
+borrows to preserve reentrant reads. No such borrow survives a syscall or
+NativeCall outcome.
 
 Workers publish 64-byte dirty fragments through the original memory write paths
 after they return; these paths retain COW, file write-through and executable
@@ -92,7 +95,7 @@ including readonly file snapshots replaced after descriptor writes.
   and restoring the worker's prior environment. FP/SIMD computation stays native.
 
 The implementation permits a **stronger subset of ARM's allowed memory ordering**:
-page-local transactions, RCpc-as-acquire and checkpoint synchronization can exclude
+region transactions, RCpc-as-acquire and checkpoint synchronization can exclude
 weak outcomes that physical hardware permits. It does not attempt to reproduce
 every allowed ARM litmus outcome. It must never allow a forbidden synchronized
 outcome. Future relaxed word/stripe paths need to preserve byte aliasing, mixed
