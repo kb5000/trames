@@ -86,14 +86,17 @@ membership. The [Sideloadly documentation](https://sideloadly.io/faq) describes
 signing, device trust, Developer Mode and automatic refresh. The current app
 requires iPadOS 17 or newer and does not need JIT activation.
 
-Current validated update: [0.13.0 (build 14) unsigned IPA artifact](https://github.com/kb5000/trames/actions/runs/38390633418/artifacts/11810826287).
+Current validated update: [0.14.0 (build 15) GitHub Release](https://github.com/kb5000/trames/releases/tag/v0.14.0).
 Seven simulator tests passed and all 41 IPA files match the actual ARM64 device app.
-This delivers continuous CPU workers and poll deadline cleanup, reducing coordinator
-barriers while preserving the existing multicore memory and synchronization boundaries.
-See the [release record, source and verification](../../docs/validation/release-0.13.md).
-The [0.12.0 release](../../docs/validation/release-0.12.md) retains its historical evidence.
-Unzip and sign `Trames-unsigned.ipa` with the same Sideloadly Apple ID/effective
-bundle ID as before to retain Linux data. No data reset or JIT activation is required.
+This delivers parallel NativeCalls, 19 pure functions, 64-byte region access and sparse
+checkpoint publication. Experimental native malloc/free remains disabled by default.
+See the [release record, source and verification](../../docs/validation/release-0.14.md).
+The [0.13.0](../../docs/validation/release-0.13.md) and
+[0.12.0](../../docs/validation/release-0.12.md) releases retain their historical evidence.
+Download and sign `Trames-0.14.0-build15-unsigned.ipa` directly with the same
+Sideloadly Apple ID/effective bundle ID as before to retain Linux data. No data reset
+or JIT activation is required. Public Release assets retain a fixed tag and paired
+source; Actions artifact retention does not apply to them.
 
 Previously validated update: [0.8.0 (build 9) unsigned IPA artifact](https://github.com/kb5000/trames/actions/runs/38236217045/artifacts/11741258008).
 The local runtime now has one Rust cached interpreter with static ARM64 native
@@ -111,11 +114,12 @@ issue in [#9](https://github.com/kb5000/trames/issues/9) remains open; this buil
 native SSH test passed. Historical 0.7 measurements are preserved in
 [the earlier record](../../docs/validation/nonjit-0.7.md).
 
-1. Open a successful **iPad frontend** run in the repository's GitHub Actions.
-   Download the **Trames-unsigned-sideload** artifact and unzip it on Windows.
-   Use `Trames-unsigned.ipa`, not the artifact ZIP or the simulator `.app`.
-   Artifacts are retained for 14 days; run the workflow manually if you need a
-   fresh build after that period.
+1. Open the [GitHub Release](https://github.com/kb5000/trames/releases/tag/v0.14.0)
+   and download `Trames-0.14.0-build15-unsigned.ipa` directly. It needs no extraction.
+   Alternatively, download **Trames-unsigned-sideload** from a successful
+   **iPad frontend** Actions run and unzip it on Windows to obtain
+   `Trames-unsigned.ipa`. Use the IPA, not the artifact ZIP or simulator `.app`.
+   Actions artifacts expire after 14 days; public Release assets remain available.
 2. Install Sideloadly from its official website. Follow its Windows setup links
    for the web versions of iTunes and iCloud, rather than Microsoft Store builds.
 3. Connect the unlocked iPad by USB, tap **Trust** on the iPad, and select it in

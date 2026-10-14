@@ -105,5 +105,15 @@ be added to reconstruct a total or establish host CPU occupancy. Raw child
 user/system CPU and host wall times are retained separately. These data establish
 no physical-iPad/ARM performance result or timing guarantee.
 
-Functional commit `02ed2b7529002e5927ae2e47f8483e628cc19b1a`: [Linux CI](https://github.com/kb5000/trames/actions/runs/38562393039) and [Apple CI](https://github.com/kb5000/trames/actions/runs/38562392925) are running. This optimization batch itself creates no release/tag.
-The owner subsequently requested an IPA, tracked in [0.14.0 packaging](release-0.14.md).
+Functional commit `02ed2b7529002e5927ae2e47f8483e628cc19b1a`:
+[Linux CI](https://github.com/kb5000/trames/actions/runs/38562393039) passed;
+[Apple CI](https://github.com/kb5000/trames/actions/runs/38562392925) failed in the
+native OpenSSH test. The unchanged SSH dependency's failure is retained as evidence.
+This optimization commit itself creates no release/tag.
+
+The owner subsequently requested a combined IPA and public GitHub Release.
+Both complete Linux/Apple workflows passed on actual packaged source `29464a8`;
+the independently verified [0.14.0/build 15 release](release-0.14.md) is published
+with a fixed tag, unsigned IPA, checksum and paired source. It retains the known
+intermittent SSH defect; the later deterministic source fix is recorded separately
+in [the SSH evidence](niossh-close.md).

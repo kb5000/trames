@@ -1,0 +1,70 @@
+{
+  "source_commit": "29464a8d7ec774ba4d9fb4e51c147c2ebe999340",
+  "version": "0.14.0",
+  "build": "15",
+  "ipa_sha256": "6c4dd9e055639f52405b30f10a16b961a08fba6e97d2b439009e094c2b335681",
+  "ipa_bytes": 10171287,
+  "bundle_id": "org.trames.Trames",
+  "minimum_os": "17.0",
+  "device_families": [
+    1,
+    2
+  ],
+  "device_architecture": "arm64",
+  "mach_o_platform": 2,
+  "all_packaged_files_match_device_build": 41,
+  "executable_permission_verified": true,
+  "zip_crc_and_sha256_sidecar_verified": true,
+  "libc_sha256": "885b308b75e36bb402b311fba1d3f1284e6dd8d3a0bfbf88686bff1b629f9b23",
+  "musl_native_functions": 19,
+  "source_inputs_verified": 19,
+  "license_notices_verified": true,
+  "simulator_passed": 7,
+  "simulator_failed": 0,
+  "artifacts": {
+    "sideload": {
+      "id": 11896392654,
+      "name": "Trames-unsigned-sideload",
+      "digest": "sha256:4bb02f0eab4a4bb577bc36a88b7212aab58ec92639bf4d0402411b64e190d23f",
+      "expires_at": "2026-10-28T12:58:39Z"
+    },
+    "build": {
+      "id": 11895793079,
+      "name": "unsigned-ipad-build-and-project",
+      "digest": "sha256:8ff37446eef5bfb1edf3e690b29aaf5a7c239d5be064886db3f8e575192fa20c",
+      "expires_at": "2026-10-21T12:58:41Z"
+    },
+    "musl": {
+      "id": 11895195682,
+      "name": "full-musl-library-and-source",
+      "digest": "sha256:087dcc3eb4e7f1eb5fcb9a3a636c2e36b520f576a808ddf65d07d1965b79729c",
+      "expires_at": "2026-10-28T12:38:31Z"
+    }
+  },
+  "ci": {
+    "iPad frontend": {
+      "id": 38565242158,
+      "attempt": 1,
+      "url": "https://github.com/kb5000/trames/actions/runs/38565242158",
+      "head_sha": "29464a8d7ec774ba4d9fb4e51c147c2ebe999340",
+      "conclusion": "success"
+    },
+    "Linux runtime": {
+      "id": 38565242134,
+      "attempt": 1,
+      "url": "https://github.com/kb5000/trames/actions/runs/38565242134",
+      "head_sha": "29464a8d7ec774ba4d9fb4e51c147c2ebe999340",
+      "conclusion": "success"
+    }
+  },
+  "release": {
+    "url": "https://github.com/kb5000/trames/releases/tag/v0.14.0",
+    "id": 412729862,
+    "tag": "v0.14.0",
+    "published_at": "2026-10-14T13:08:27Z",
+    "tag_commit": "29464a8d7ec774ba4d9fb4e51c147c2ebe999340",
+    "ipa_url": "https://github.com/kb5000/trames/releases/download/v0.14.0/Trames-0.14.0-build15-unsigned.ipa",
+    "public_asset_sha256_verified": true,
+    "public_asset_matches_actions_ipa": true
+  }
+}

@@ -25,5 +25,13 @@ the Mac job remains the reference for PTY and resize. All eight remaining remote
 Swift dependency pins match the preceding lockfile. Original Apache-2.0/MIT
 licenses and per-file upstream hashes are retained.
 
-Exact-source Mac/App and physical iPad acceptance are recorded when available;
-physical transport acceptance remains in [Issue #8](https://github.com/kb5000/trames/issues/8).
+The exact-source `6596b68` [Mac run](https://github.com/kb5000/trames/actions/runs/38569532812)
+passed its native OpenSSH PTY/resize and SFTP step on the first attempt on
+2026-10-14 (13:12:03–13:14:02 UTC). The complete App/simulator job was still running
+when this record was written. Physical transport acceptance remains in
+[Issue #8](https://github.com/kb5000/trames/issues/8).
+
+Meanwhile, the automatic publisher had already released the preceding
+`29464a8` source as [0.14.0/build 15](release-0.14.md), after both of its complete
+workflows passed. Its immutable tag and IPA do not contain this later SSH patch.
+The patch remains on main for a subsequent grouped update.
