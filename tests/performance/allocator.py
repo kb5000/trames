@@ -25,6 +25,7 @@ def metrics(stderr):
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--baseline',type=Path,required=True);p.add_argument('--baseline-commit',required=True)
+    p.add_argument('--baseline-native-allocator',action='store_true',help='Enable allocator routing on the baseline for an adapter-only comparison')
     p.add_argument('--vim-store',type=Path,required=True);p.add_argument('--python-store',type=Path,required=True)
     p.add_argument('--output',type=Path,required=True);a=p.parse_args()
     current=ROOT/'target/release/trames-run';libc=ROOT/'target/musl-hybrid/libc.so';fixture=ROOT/'tests/fixtures/bin/musl-allocator'
@@ -37,7 +38,7 @@ def main():
                 if sample%2:choices.reverse()
                 for mode,binary in choices:
                     command=[str(binary),'--network','off','--cpus',str(cpus),'--musl-libc',str(libc),'--accelerator','pure','--metrics','--max-instructions','100000000000','--env','HOME=/root','--env','TERM=xterm-256color']
-                    if mode=='current':command+=['--native-allocator']
+                    if mode=='current' or a.baseline_native_allocator:command+=['--native-allocator']
                     if name=='allocator':
                         command+=['--memory','--rootfs',str(ROOT/'target/alpine-download/alpine-minirootfs-3.22.6-aarch64.tar.gz'),'--exec-file','/bin/allocator='+str(fixture),'--guest','/bin/allocator','bench','96']
                     else:
@@ -51,14 +52,14 @@ def main():
                         expected=b'musl-allocator-ok\n' if name=='allocator' else b'python: 42\n'
                         assert (result.returncode,result.stdout)==(0,expected),(name,mode,result.returncode,result.stdout[-1000:],result.stderr[-4000:])
                         profile=metrics(result.stderr);seconds=profile['runtime']['seconds']
-                    if mode=='baseline':assert not profile['native'].get('allocator_calls',0),profile
+                    if mode=='baseline' and not a.baseline_native_allocator:assert not profile['native'].get('allocator_calls',0),profile
                     else:assert profile['native']['allocator_allocations']>0,profile
                     modes.setdefault(mode,[]).append(dict(seconds=seconds,**profile))
                     print(name,cpus,sample,mode,round(seconds,6),flush=True)
                     if name!='allocator':shutil.rmtree(store)
             medians={mode:statistics.median(x['seconds'] for x in samples) for mode,samples in modes.items()}
             rows.append(dict(workload=name,cpus=cpus,samples=modes,median_seconds=medians,speedup=medians['baseline']/medians['current']))
-    report=dict(baseline_commit=a.baseline_commit,baseline_sha256=digest(a.baseline),current_sha256=digest(current),libc_sha256=digest(libc),fixture_sha256=digest(fixture),host=platform.platform(),host_arch=platform.machine(),cpu_affinity=len(os.sched_getaffinity(0)),cpu_quota=Path('/sys/fs/cgroup/cpu.max').read_text().strip(),rows=rows,limits='Three alternating samples, identical guest ELF/libc/stores on both runtimes. x86_64 development interpreter; no physical iPad or NEON timing claim. Allocator benchmark uses four threads, 96 rounds of 192 allocations/thread, cross-thread frees and sampled payload checks. Vim measures spawn to normal first cursor visibility; others use runtime guest execution seconds, excluding rootfs import.')
+    report=dict(baseline_commit=a.baseline_commit,baseline_native_allocator=a.baseline_native_allocator,baseline_sha256=digest(a.baseline),current_sha256=digest(current),libc_sha256=digest(libc),fixture_sha256=digest(fixture),host=platform.platform(),host_arch=platform.machine(),cpu_affinity=len(os.sched_getaffinity(0)),cpu_quota=Path('/sys/fs/cgroup/cpu.max').read_text().strip(),rows=rows,limits='Three alternating samples, identical guest ELF/libc/stores on both runtimes. x86_64 development interpreter; no physical iPad or NEON timing claim. Allocator benchmark uses four threads, 96 rounds of 192 allocations/thread, cross-thread frees and sampled payload checks. Vim measures spawn to normal first cursor visibility; others use runtime guest execution seconds, excluding rootfs import.')
     a.output.write_text(json.dumps(report,indent=2)+'\n')
     print([(row['workload'],row['cpus'],round(row['speedup'],3)) for row in rows],flush=True)
 if __name__=='__main__':main()

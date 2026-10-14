@@ -30,6 +30,18 @@ struct Transport<'a, M> {
     frame: Option<u64>,
 }
 impl<M: NativeMemory> Transport<'_, M> {
+    #[inline]
+    fn read_value<const N: usize>(&mut self, address: u64) -> Result<u64, AccessFailure> {
+        let result = if self.committed {
+            self.memory.read_array::<N>(address).map_err(Into::into)
+        } else {
+            self.memory.native_read_array::<N>(address)
+        };
+        let value = self.failed(result)?;
+        let mut bytes = [0; 8];
+        bytes[..N].copy_from_slice(&value);
+        Ok(u64::from_le_bytes(bytes))
+    }
     fn failed<T>(&mut self, result: Result<T, NativeAccessError>) -> Result<T, AccessFailure> {
         result.map_err(|error| {
             self.failure = Some(Failure::Access(error));
@@ -54,9 +66,19 @@ impl<M: NativeMemory> Transport<'_, M> {
         self.committed = true;
         for i in 0..self.count {
             let w = self.writes[i];
-            let result = self
-                .memory
-                .write(w.address, &w.value.to_le_bytes()[..w.width]);
+            let bytes = w.value.to_le_bytes();
+            // Use the same fixed-width stores as interpreted ARM operands.
+            let result = match w.width {
+                1 => self.memory.write_array(w.address, [bytes[0]]),
+                2 => self
+                    .memory
+                    .write_array::<2>(w.address, bytes[..2].try_into().unwrap()),
+                4 => self
+                    .memory
+                    .write_array::<4>(w.address, bytes[..4].try_into().unwrap()),
+                8 => self.memory.write_array(w.address, bytes),
+                _ => unreachable!("validated scalar width"),
+            };
             self.failed(result.map_err(Into::into))?;
         }
         self.count = 0;
@@ -65,19 +87,20 @@ impl<M: NativeMemory> Transport<'_, M> {
 }
 impl<M: NativeMemory> Access for Transport<'_, M> {
     fn load(&mut self, address: u64, width: usize) -> Result<u64, AccessFailure> {
-        if !matches!(width, 1 | 2 | 4 | 8) {
-            self.failure = Some(Failure::Fallback);
-            return Err(AccessFailure);
-        }
-        let mut bytes = [0; 8];
-        let result = if self.committed {
-            self.memory
-                .read(address, &mut bytes[..width])
-                .map_err(Into::into)
-        } else {
-            self.memory.native_read(address, &mut bytes[..width])
+        let value = match width {
+            1 => self.read_value::<1>(address)?,
+            2 => self.read_value::<2>(address)?,
+            4 => self.read_value::<4>(address)?,
+            8 => self.read_value::<8>(address)?,
+            _ => {
+                self.failure = Some(Failure::Fallback);
+                return Err(AccessFailure);
+            }
         };
-        self.failed(result)?;
+        if self.count == 0 {
+            return Ok(value);
+        }
+        let mut bytes = value.to_le_bytes();
         for w in &self.writes[..self.count] {
             for (i, b) in bytes[..width].iter_mut().enumerate() {
                 let a = address.wrapping_add(i as u64);

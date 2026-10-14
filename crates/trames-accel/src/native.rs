@@ -276,6 +276,12 @@ impl Registry {
         a: [u64; 3],
         scope: impl FnOnce() -> T,
     ) -> Result<Return, Error> {
+        // Reuse the interpreter's slice-scoped shared-address-space borrow.
+        // Live/reentrant backings keep cpu_slice's original conservative path.
+        // Neither this borrow nor the tracking scope survives a guest callback
+        // or a scheduler/mapping checkpoint.
+        let mut slice = memory.cpu_slice();
+        let memory = &mut *slice;
         let valid = match self.valid(memory, pc, module, function) {
             Ok(valid) => valid,
             Err(error) => {

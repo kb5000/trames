@@ -77,3 +77,25 @@ guest metadata ownership and original synchronization boundaries.
 
 Exact-commit Linux/Apple CI is recorded separately when complete. No new release
 tag or signed device build is produced by this development batch.
+
+## Shared memory access follow-up
+
+The next implementation makes worker native reads share the interpreter's
+translation/permission/byte-access path, uses fixed-width allocator operands and
+borrows safe local CLONE_VM memory once per native entry. See the
+[shared memory contract](../architecture/native-allocator.md#shared-interpreternative-memory-access).
+It also fixes the old standalone accelerator provenance test to locate the
+newly vendored mallocng sources. That test-path error stopped Linux CI on
+`fc7c084`; the same commit's Apple SDK builds and iPad simulator tests passed
+in [run 38529011015](https://github.com/kb5000/trames/actions/runs/38529011015).
+
+The follow-up passes 264 host workspace tests, 209 ARM64 tests under QEMU and
+65 ThreadSanitizer tests, strict Clippy and the iOS compilation check. Allocator
+matrix, parallel native/nested callbacks, full-musl upgrade/loader/TLS tests,
+standalone accelerator entries and same-page independent CPU regions pass.
+The ARM64 socket-lifetime test was rerun with sandbox network access enabled;
+its first run was blocked by the sandbox rather than a guest-memory fault.
+
+A separate paired batch compares allocator-enabled runtimes on both sides, so
+the result measures the memory-adapter change instead of allocator activation.
+Exact-commit CI and timing data will be recorded after they complete.

@@ -16,6 +16,8 @@ provenance=json.loads((UPSTREAM/'provenance.json').read_text())
 for name,digest in provenance['files'].items():
     source=UPSTREAM/name.removeprefix('src/')
     if not source.is_file(): source=UPSTREAM/name.removeprefix('src/string/')
+    if not source.is_file() and name.startswith('src/malloc/mallocng/'):
+        source=UPSTREAM/'mallocng'/name.removeprefix('src/malloc/mallocng/')
     assert hashlib.sha256(source.read_bytes()).hexdigest()==digest,name
 
 def run(args):
