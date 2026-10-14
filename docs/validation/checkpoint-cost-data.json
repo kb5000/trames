@@ -12828,6 +12828,16 @@
     }
   },
   "ci": {
-    "status": "awaiting_functional_commit_workflows"
-  }
+    "linux": {
+      "run_id": 38562393039,
+      "url": "https://github.com/kb5000/trames/actions/runs/38562393039",
+      "status": "in_progress"
+    },
+    "apple": {
+      "run_id": 38562392925,
+      "url": "https://github.com/kb5000/trames/actions/runs/38562392925",
+      "status": "in_progress"
+    }
+  },
+  "implementation_commit": "02ed2b7529002e5927ae2e47f8483e628cc19b1a"
 }

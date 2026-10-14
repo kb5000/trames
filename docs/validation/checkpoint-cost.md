@@ -105,5 +105,5 @@ be added to reconstruct a total or establish host CPU occupancy. Raw child
 user/system CPU and host wall times are retained separately. These data establish
 no physical-iPad/ARM performance result or timing guarantee.
 
-Exact-source Linux/Apple CI will be recorded after publication. No new release,
-tag or signed-device version is produced.
+Functional commit `02ed2b7529002e5927ae2e47f8483e628cc19b1a`: [Linux CI](https://github.com/kb5000/trames/actions/runs/38562393039) and [Apple CI](https://github.com/kb5000/trames/actions/runs/38562392925) are running. This optimization batch itself creates no release/tag.
+The owner subsequently requested an IPA, tracked in [0.14.0 packaging](release-0.14.md).

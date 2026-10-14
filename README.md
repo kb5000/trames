@@ -12,6 +12,8 @@
 
 进一步的[访存优化](docs/architecture/region-memory.md)将同步范围缩到实际触及的 64 字节区段，允许同页独立访问并行；合并脏区段提交、减少映射检查，并为内置后备对象减少单核线程的重复借用。受控 unsafe 保留 ARM 允许的运行结果差异；[验证和原始跑分](docs/validation/region-memory.md)，[Issue #17](https://github.com/kb5000/trames/issues/17)。
 
+[0.14.0/build 15](docs/validation/release-0.14.md)正在整合这些更新与[稀疏脏页提交优化](docs/validation/checkpoint-cost.md)构建新版 IPA。原生 malloc/free 保持实验性、默认关闭；普通分配器与并行原生函数使用统一的 guest 访存模型。
+
 ## 快速运行
 
 需要 Rust 1.90.0；交叉构建 BusyBox 和运行差分测试还需要 Python 3、GNU AArch64 GCC/Binutils、Make、curl、bzip2 和 QEMU user-mode。Debian/Ubuntu 可安装：
