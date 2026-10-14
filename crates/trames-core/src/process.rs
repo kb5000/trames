@@ -2406,7 +2406,14 @@ impl Kernel {
         // may remove peers. This also makes FUTEX_WAIT compare+enqueue indivisible
         // with respect to guest stores and all FUTEX_WAKE operations.
         let began = Instant::now();
-        for &(id, _) in &chosen {
+        for (index, &(id, _)) in chosen.iter().enumerate() {
+            let vm_id = self.processes[&id].vm_id;
+            if chosen[..index]
+                .iter()
+                .any(|&(peer, _)| self.processes[&peer].vm_id == vm_id)
+            {
+                continue;
+            }
             self.processes
                 .get_mut(&id)
                 .expect("dispatched process")

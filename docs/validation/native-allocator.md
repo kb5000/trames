@@ -183,4 +183,4 @@ speedup. Original allocator contention, entry/return boundaries and repeated
 cold-path fallback remain substantial costs. Measurements use the shared x86_64
 development host and establish no physical-iPad or ARM performance claim.
 
-Final functional-commit verification: [Linux CI](https://github.com/kb5000/trames/actions/runs/38545024356) and [Apple CI](https://github.com/kb5000/trames/actions/runs/38545024339) are running. No release/tag or signed-device version is added.
+Final functional-commit verification: [Linux CI](https://github.com/kb5000/trames/actions/runs/38545024356) and [Apple CI](https://github.com/kb5000/trames/actions/runs/38545024339) passed. No release/tag or signed-device version is added.

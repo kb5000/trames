@@ -8779,12 +8779,14 @@
     "linux": {
       "run_id": 38545024356,
       "url": "https://github.com/kb5000/trames/actions/runs/38545024356",
-      "status": "pending"
+      "status": "completed",
+      "conclusion": "success"
     },
     "apple": {
       "run_id": 38545024339,
       "url": "https://github.com/kb5000/trames/actions/runs/38545024339",
-      "status": "pending"
+      "status": "completed",
+      "conclusion": "success"
     }
   }
 }

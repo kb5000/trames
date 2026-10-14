@@ -504,7 +504,8 @@ pub(super) struct Cache {
 impl Default for Cache {
     fn default() -> Self {
         Self {
-            slots: (0..SLOTS).map(|_| None).collect(),
+            // Dispatch placeholders and fork state need no decoded pages yet.
+            slots: Vec::new(),
             recent: [0; SETS],
             stats: super::DecodeStats::default(),
         }
@@ -594,6 +595,10 @@ impl Cpu {
                 stats: super::DecodeStats::default(),
             },
         );
+        // Initialize once per execution slice, outside hot code-page lookups.
+        if cache.slots.is_empty() && budget != 0 {
+            cache.slots.resize_with(SLOTS, || None);
+        }
         let result = self.cached_slice(memory, budget, &mut cache);
         self.decoded = cache;
         result
