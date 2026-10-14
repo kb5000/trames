@@ -3,7 +3,7 @@
 //! All runtime/VFS objects stay on their owning worker. Only bounded byte copies
 //! require unsafe code; callers own and keep their C buffers valid for each call.
 mod session;
-use session::{Options, Session, TransferOptions, QUEUE_LIMIT};
+use session::{HostTimezone, Options, Session, TransferOptions, QUEUE_LIMIT};
 use std::{
     cell::RefCell,
     collections::BTreeMap,
@@ -282,6 +282,26 @@ pub extern "C" fn trames_session_transfer_begin(handle: u64) -> u64 {
             0
         }
     }
+}
+/// # Safety
+/// JSON is a caller-owned readable buffer; see `bytes`. Runs on the guest coordinator.
+#[no_mangle]
+pub unsafe extern "C" fn trames_session_timezone(
+    handle: u64,
+    pointer: *const u8,
+    length: u32,
+) -> i32 {
+    boundary(|| {
+        let result = (|| {
+            let timezone: HostTimezone =
+                serde_json::from_slice(unsafe { bytes(pointer, length) }.map_err(str::to_string)?)
+                    .map_err(|e| e.to_string())?;
+            session(handle)
+                .map_err(str::to_string)?
+                .synchronize_timezone(timezone)
+        })();
+        result.map(|_| 0).unwrap_or_else(error)
+    })
 }
 #[no_mangle]
 pub extern "C" fn trames_session_transfer_cancel(handle: u64, token: u64) -> i32 {

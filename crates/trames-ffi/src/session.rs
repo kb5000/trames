@@ -39,6 +39,17 @@ pub struct Options {
     pub native_bsearch: bool,
     #[serde(default)]
     pub native_allocator: bool,
+    pub timezone: Option<HostTimezone>,
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct HostTimezone {
+    pub identifier: String,
+    pub data: Vec<u8>,
+}
+enum Command {
+    Transfer(Transfer),
+    Timezone(HostTimezone, mpsc::SyncSender<Result<(), String>>),
 }
 pub fn install(options: Options) -> Result<(), String> {
     if !options.store.is_absolute() || options.store.exists() {
@@ -100,7 +111,7 @@ pub struct Session {
     pub buffers: Mutex<Buffers>,
     pub cancelled: AtomicBool,
     pub paused: AtomicBool,
-    commands: mpsc::SyncSender<Transfer>,
+    commands: mpsc::SyncSender<Command>,
     transfers: Mutex<BTreeMap<u64, TransferTicket>>,
     next_transfer: AtomicU64,
 }
@@ -233,6 +244,22 @@ impl Session {
         );
         Ok(token)
     }
+    pub fn synchronize_timezone(&self, timezone: HostTimezone) -> Result<(), String> {
+        let (response, receiver) = mpsc::sync_channel(1);
+        self.commands
+            .try_send(Command::Timezone(timezone, response))
+            .map_err(|_| "local session is busy or closed")?;
+        loop {
+            if self.cancelled.load(Ordering::Acquire) {
+                return Err("session cancelled".into());
+            }
+            match receiver.recv_timeout(Duration::from_millis(50)) {
+                Ok(result) => return result,
+                Err(mpsc::RecvTimeoutError::Timeout) => {}
+                Err(_) => return Err("local session closed".into()),
+            }
+        }
+    }
     pub fn cancel_transfer(&self, token: u64) -> Result<(), String> {
         let transfers = self.transfers.lock().map_err(|_| "transfer lock failed")?;
         let flag = transfers.get(&token).ok_or("invalid transfer token")?;
@@ -279,11 +306,11 @@ impl Session {
         }
         let (result, response) = mpsc::sync_channel(1);
         self.commands
-            .try_send(Transfer {
+            .try_send(Command::Transfer(Transfer {
                 options,
                 result,
                 cancelled: cancelled.clone(),
-            })
+            }))
             .map_err(|_| "local session is busy or closed")?;
         loop {
             if self.cancelled.load(Ordering::Acquire) || cancelled.load(Ordering::Acquire) {
@@ -300,7 +327,7 @@ impl Session {
 fn run(
     options: Options,
     session: Arc<Session>,
-    commands: mpsc::Receiver<Transfer>,
+    commands: mpsc::Receiver<Command>,
 ) -> Result<u8, String> {
     let mut vfs = Vfs::open_disk(
         &options.store,
@@ -361,6 +388,10 @@ fn run(
         }
     }
     vfs.chdir(b"/root").map_err(|e| e.to_string())?;
+    if let Some(timezone) = options.timezone {
+        trames_distro::synchronize_timezone(&mut vfs, &timezone.identifier, &timezone.data)
+            .map_err(|e| e.to_string())?;
+    }
     vfs.configure_local_fabric(match options.network.as_str() {
         "off" => NetworkMode::Off,
         "loopback" => NetworkMode::Loopback,
@@ -415,7 +446,7 @@ fn run(
 }
 struct Adapter {
     session: Arc<Session>,
-    commands: mpsc::Receiver<Transfer>,
+    commands: mpsc::Receiver<Command>,
     snapshot_at: Instant,
 }
 impl Adapter {
@@ -548,9 +579,19 @@ impl GuestOutput for Adapter {
             return Ok(false);
         }
         if let Ok(command) = self.commands.try_recv() {
-            let result = self.transfer(vfs, command.options, &command.cancelled);
+            let (result, response) = match command {
+                Command::Transfer(command) => (
+                    self.transfer(vfs, command.options, &command.cancelled),
+                    command.result,
+                ),
+                Command::Timezone(timezone, response) => (
+                    trames_distro::synchronize_timezone(vfs, &timezone.identifier, &timezone.data)
+                        .map_err(|e| e.to_string()),
+                    response,
+                ),
+            };
             self.snapshot(vfs);
-            let _ = command.result.send(result);
+            let _ = response.send(result);
         }
         if self.snapshot_at.elapsed() >= Duration::from_secs(1) {
             self.snapshot(vfs);

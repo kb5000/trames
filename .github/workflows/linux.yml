@@ -150,6 +150,19 @@ jobs:
           cargo build -p trames-ffi --release --locked
           TRAMES_TEST_MUSL="$GITHUB_WORKSPACE/target/musl-hybrid/libc.so" python3 tests/integration/embedding.py
 
+      - name: Compare guest-created PTYs, hangups and sudo IPC with Linux and QEMU
+        run: |
+          bash scripts/build-pty-fixtures.sh
+          python3 tests/integration/guest-pty.py
+      - name: Validate signed sudo escalation, passwords, nested PTYs and interactive relay
+        run: python3 tests/integration/sudo.py
+        env:
+          TRAMES_TEST_MUSL: ${{ github.workspace }}/target/musl-hybrid/libc.so
+      - name: Validate host timezone rules, guest date and Python daylight saving time
+        run: python3 tests/integration/timezone.py
+        env:
+          TRAMES_TEST_MUSL: ${{ github.workspace }}/target/musl-hybrid/libc.so
+
       - name: Signed Python install, repair and execution with 128 host descriptors
         run: python3 tests/integration/python.py
         # Large package/tool workflows use the development-host executor;

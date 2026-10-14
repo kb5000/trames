@@ -23,6 +23,7 @@ public final class LocalSession: @unchecked Sendable {
         if let muslLibc { options["musl_libc"] = muslLibc.path }
         options["pure_accelerator"] = pureAccelerator
         options["budget_bytes"] = useVolumeBudget ? total : UInt64(16) << 30
+        options["timezone"] = try LocalTimezone().options
         let data = try JSONSerialization.data(withJSONObject: options)
         handle = data.withUnsafeBytes { trames_session_open($0.bindMemory(to: UInt8.self).baseAddress, UInt32($0.count)) }
         guard handle != 0 else { throw Self.lastError() }
@@ -82,6 +83,16 @@ public final class LocalSession: @unchecked Sendable {
     }
     public func pause(_ value: Bool) throws {
         if trames_session_pause(try currentHandle(), value ? 1 : 0) < 0 { throw Self.lastError() }
+    }
+    /// Blocking coordinator update; caller runs it off the main queue after resuming.
+    public func synchronizeTimezone(_ zone: TimeZone = .current) throws {
+        let data = try JSONSerialization.data(withJSONObject: LocalTimezone(zone).options)
+        guard data.count <= 65536 else { throw TramesError.message("Timezone request exceeds 64 KiB") }
+        let h = try currentHandle()
+        let result = data.withUnsafeBytes {
+            trames_session_timezone(h, $0.bindMemory(to: UInt8.self).baseAddress, UInt32($0.count))
+        }
+        if result < 0 { throw Self.lastError() }
     }
     /// Blocking transfer; caller coordinates the selected URL on a background queue.
     public func transfer(guest: String, host: URL, export: Bool, maximumBytes: UInt64? = nil) throws {

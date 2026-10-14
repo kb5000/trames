@@ -14,6 +14,8 @@
 
 [0.14.0/build 15](docs/validation/release-0.14.md)已将这些更新与[稀疏脏页提交优化](docs/validation/checkpoint-cost.md)打包发布到 [GitHub Release](https://github.com/kb5000/trames/releases/tag/v0.14.0)，可直接下载 unsigned IPA 用 Sideloadly 覆盖安装。原生 malloc/free 保持实验性、默认关闭；普通分配器与并行原生函数使用统一的 guest 访存模型。
 
+后续 main 已补齐[sudo 伪终端与宿主时区同步](docs/validation/sudo-timezone.md)：原版 sudo 的默认 `use_pty`、密码认证、提权和嵌套运行通过实际测试；本地 Linux 在启动、回到前台及系统时区变化时接收 iPad 的原始时区规则，保留显式 `TZ` 覆盖。这些更新尚未包含在上述 0.14.0 IPA 中，将随下一次合并版本交付。
+
 ## 快速运行
 
 需要 Rust 1.90.0；交叉构建 BusyBox 和运行差分测试还需要 Python 3、GNU AArch64 GCC/Binutils、Make、curl、bzip2 和 QEMU user-mode。Debian/Ubuntu 可安装：

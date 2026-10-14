@@ -1,0 +1,112 @@
+{
+  "date": "2026-10-14",
+  "base_commit": "b85ce9ef6719806656a763b1a498e03a2b3be422",
+  "rust_tests_passed": 273,
+  "swift_tests_executed": 56,
+  "swift_skipped": [
+    "native SSH: fixture not provided in this local run"
+  ],
+  "swift_failed": 0,
+  "pty_cpu_counts": [
+    1,
+    4
+  ],
+  "oracles": [
+    "native Linux (all PTY checks)",
+    "QEMU 10.0.13 (only TIOCGPTLCK queries omitted: ioctl translator returns ENOTTY)"
+  ],
+  "package_inputs": {
+    "sudo-1.9.17_p2-r0.apk": "9e111cc57c991554e0ad582c4f2f8e07cd0b72bbdf70ece7e1ec5804c228b773"
+  },
+  "runtime_sha256": "b8dcc0dea349ee998369cd8d7ed87f7a7d5a86bc8f7b4caf4e09c467cf3b5ad4",
+  "ffi_sha256": "593aedb7d4a0f0146efde29402bb525c423a0f6895db17a3f41b23cd6b265868",
+  "validation": {
+    "workspace": {
+      "log_sha256": "25830f248af45861ee7ab6b4cfcee540769af59b2d9c70eabae25a6a8030e563",
+      "tail": [
+        "running 0 tests",
+        "",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        ""
+      ]
+    },
+    "clippy": {
+      "log_sha256": "1c582320d554abac5ffad72ffaea9f71151c1d771aedb72fbe6d60e8454cfb4b",
+      "tail": [
+        "    Checking trames-core v0.14.0 (/workspace/trames/crates/trames-core)",
+        "    Checking trames-ffi v0.14.0 (/workspace/trames/crates/trames-ffi)",
+        "    Checking trames-cli v0.14.0 (/workspace/trames/crates/trames-cli)",
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.27s"
+      ]
+    },
+    "ios": {
+      "log_sha256": "46a0ef88a87f7c25ef9dc6be600076e211f575eb5f44ce8ae5f4ad64dc39c658",
+      "tail": [
+        "    Checking trames-core v0.14.0 (/workspace/trames/crates/trames-core)",
+        "    Checking trames-ffi v0.14.0 (/workspace/trames/crates/trames-ffi)",
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.64s"
+      ]
+    },
+    "swift": {
+      "log_sha256": "f20717ee124b6504c31bd2a8db478f17a772e2ff4cf30d934dde9601b9ec68e5",
+      "tail": [
+        "\t Executed 56 tests, with 1 test skipped and 0 failures (0 unexpected) in 0.365 (0.365) seconds",
+        "\u25c7 Test run started.",
+        "\u21b3 Testing Library Version: 6.0.3 (18c42c19cac3faf)",
+        "\u2714 Test run with 0 tests passed after 0.001 seconds."
+      ]
+    },
+    "pty": {
+      "log_sha256": "fffc9cecd607a4473b4c7a8b9c87eb565ec4d92b380e307bc9ecb65b54e08cbc",
+      "tail": [
+        "4-CPU PTY/IPC outcomes match independent Linux/QEMU",
+        "pty allocation/lock/canonical/raw/resize/isolation/packet/alias/hangup/reopen: ok",
+        "Unix MSG_WAITALL split record and __WALL child wait: ok",
+        "PTY session/controlling tty/last-master SIGHUP: ok"
+      ]
+    },
+    "sudo": {
+      "log_sha256": "e8d2fc240bb97d727fe335e3b1a5e6e0d8bc03cb32b6a2bd62caf70c006eea64",
+      "tail": [
+        "Real passwd authentication and no password echo: passed",
+        "Interactive input/output and command exit status: passed",
+        "Ctrl-C reaches the foreground command: passed",
+        "Non-PTY invocation and persistent reopen: passed"
+      ]
+    },
+    "timezone": {
+      "log_sha256": "6a340b7485dca9063b0768b65a239043b27827401ce679af9202462b4fc71719",
+      "tail": [
+        "Real FFI initial/resume synchronization, date, historical epoch, DST and explicit TZ: passed",
+        "Signed repository inputs: python3=3.12.15-r0",
+        "Signed Python localtime/datetime, winter/summer DST, TZ override and store reopen: passed"
+      ]
+    },
+    "terminal": {
+      "log_sha256": "1a5b1221fa0ac5a1221af477583d02f694ee90f113632a652b50bdfccb438c57",
+      "tail": [
+        "PTY integration passed: 9 interactive outcomes matched QEMU ash"
+      ]
+    },
+    "embedding": {
+      "log_sha256": "f8f2a28ec110a9f5c9b4fecc2f5e8e98c720ae092f917f5b9b9edb6d4eb67474",
+      "tail": [
+        "Embedding Bridge: actual Alpine CLI, claimed native consent/denial, stale reply rejection and disabled/enabled/disabled SHA-256 passed",
+        "Explicit environment reset: live-store refusal, asynchronous worker close and deletion passed",
+        "C ABI: Alpine PTY, color bytes, resize, 1 MiB disk roundtrip, exclusive export, pause/resume, busy cancellation, reopen and rootfs rejection passed"
+      ]
+    },
+    "timezone_unit": {
+      "log_sha256": "4c6faf4714c10a7f273b7a2c42834f0502462c50dcf85b6a5d47795760ee9bb1",
+      "tail": [
+        "running 0 tests",
+        "",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        ""
+      ]
+    }
+  },
+  "release": "No new version/tag/IPA; keep v0.14.0 immutable and group device delivery later.",
+  "issue": "https://github.com/kb5000/trames/issues/19",
+  "pty_fixture_sha256": "ab68f5d1444dca432103ef58211622a7625722c91b4f73752ebbf2100028b1aa"
+}

@@ -74,7 +74,7 @@ def exercise(cmd, env):
     return facts
 
 def main():
-    runner = str(ROOT / 'target/debug/trames-run')
+    runner = os.getenv('TRAMES_RUNNER', str(ROOT / 'target/debug/trames-run'))
     busybox = str(ROOT / 'target/busybox-build/busybox')
     qemu = shutil.which(os.getenv('QEMU_AARCH64', 'qemu-aarch64'))
     if not qemu:

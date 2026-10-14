@@ -11,7 +11,7 @@ use std::{
 use trames_cpu::{Cpu, SliceOutcome};
 use trames_linux::{GuestOutput, Linux, OutputFd, SyscallOutcome, TerminalEvent, MAX_WRITE};
 use trames_memory::{Access, Memory};
-use trames_vfs::{Errno, FdKind, MAX_FDS, O_NONBLOCK};
+use trames_vfs::{Errno, FdKind, AT_FDCWD, MAX_FDS, O_NONBLOCK};
 
 const MAX_PROCESSES: usize = 32;
 const TOTAL_MAPPED_LIMIT: usize = 1024 * 1024 * 1024;
@@ -230,6 +230,9 @@ fn read_u64(m: &Memory, a: u64) -> Result<u64, Errno> {
 fn write_u64(m: &mut Memory, a: u64, v: u64) -> Result<(), Errno> {
     m.write(a, &v.to_le_bytes()).map_err(|_| Errno(14))
 }
+fn write_u32(m: &mut Memory, a: u64, v: u32) -> Result<(), Errno> {
+    m.write(a, &v.to_le_bytes()).map_err(|_| Errno(14))
+}
 fn strings(m: &Memory, address: u64) -> Result<Vec<Vec<u8>>, Errno> {
     if address == 0 {
         return Ok(Vec::new());
@@ -348,7 +351,8 @@ impl Kernel {
                 .saturating_duration_since(self.started)
                 .as_millis()
                 / 10) as u64,
-            terminal: p.linux.vfs.fd_kind(0).ok() == Some(FdKind::Terminal),
+            terminal: p.linux.vfs.controlling_terminal.is_some(),
+            terminal_number: p.linux.vfs.controlling_terminal.unwrap_or(0),
             fds: p.linux.vfs.fd_snapshot(),
             auxiliary: p.linux.auxiliary.clone(),
             file_size_limits: Some(p.file_size_limit.get()),
@@ -1029,7 +1033,9 @@ impl Kernel {
         Err(Errno(40))
     }
     fn wait(&mut self, _pid: u32, p: &mut Process, a: [u64; 6]) -> Result<Option<u64>, Errno> {
-        if a[2] & !11 != 0 {
+        // __WALL includes all waitable clone children. Non-thread guest clones
+        // currently all use SIGCHLD, so this preserves the ordinary selection.
+        if a[2] & !(11 | 0x40000000) != 0 {
             return Err(Errno(22));
         }
         if a[1] != 0 {
@@ -1500,6 +1506,7 @@ impl Kernel {
                 }
                 p.session = pid;
                 p.group = pid;
+                p.linux.vfs.set_controlling_terminal(None)?;
                 Ok(Some(pid as u64))
             }
             101 | 115 => {
@@ -1592,8 +1599,7 @@ impl Kernel {
                 Ok(p.linux.resume_connect(a[0] as u32)?.then_some(0))
             }
             63 | 64 | 65 | 66 | 29
-                if self.terminal.is_some()
-                    && (number != 29 || a[1] as u32 != 0x5421)
+                if (number != 29 || a[1] as u32 != 0x5421)
                     && p.linux.vfs.fd_kind(a[0] as u32)? == FdKind::Terminal =>
             {
                 self.terminal_call(pid, p, number, a, io)
@@ -1617,6 +1623,21 @@ impl Kernel {
                     return Ok(None);
                 }
                 let raw = p.cpu.x(0);
+                if number == 56
+                    && raw < MAX_FDS as u64
+                    && a[2] & 0x100 == 0
+                    && pid == p.session
+                    && p.linux.vfs.controlling_terminal.is_none()
+                {
+                    if let Some(end) = p.linux.vfs.pty(raw as u32)?.filter(|end| !end.master) {
+                        let mut tty = end.pair.terminal.borrow_mut();
+                        if tty.session == 0 {
+                            tty.session = p.session;
+                            tty.foreground = p.group;
+                            p.linux.vfs.set_controlling_terminal(Some(end.pair.id))?;
+                        }
+                    }
+                }
                 if number == 56
                     && raw < MAX_FDS as u64
                     && !p.linux.vfs.fifo_open_ready(raw as u32)?
@@ -1798,6 +1819,9 @@ impl Kernel {
                 }
             }
             Ok(FdKind::Terminal) => {
+                if let Some(end) = p.linux.vfs.pty(fd)? {
+                    return Ok(end.pair.poll(end.master, events));
+                }
                 let t = self.terminal.as_ref().ok_or(Errno(25))?;
                 (events & 4) | if t.readable() { events & 1 } else { 0 }
             }
@@ -1923,6 +1947,26 @@ impl Kernel {
             Ok(None)
         }
     }
+    fn terminal_signal(
+        &mut self,
+        pid: u32,
+        p: &mut Process,
+        session: u32,
+        group: u32,
+        signal: u32,
+    ) {
+        if session == 0 || group == 0 {
+            return;
+        }
+        if p.session == session && p.group == group {
+            Self::queue_one(pid, p, signal, 0);
+        }
+        for (&id, other) in self.processes.iter_mut() {
+            if other.session == session && other.group == group {
+                Self::queue_one(id, other, signal, 0);
+            }
+        }
+    }
     fn terminal_call(
         &mut self,
         pid: u32,
@@ -1931,7 +1975,56 @@ impl Kernel {
         a: [u64; 6],
         io: &mut impl GuestOutput,
     ) -> Result<Option<u64>, Errno> {
-        let tty = self.terminal.as_mut().expect("terminal");
+        let flags = p.linux.vfs.flags(a[0] as u32)?;
+        if matches!(number, 63 | 65) && flags & 3 == 1
+            || matches!(number, 64 | 66) && flags & 3 == 0
+        {
+            return Err(Errno(9));
+        }
+        let endpoint = p.linux.vfs.pty(a[0] as u32)?;
+        let master = endpoint.as_ref().is_some_and(|end| end.master);
+        let id = endpoint.as_ref().map_or(0, |end| end.pair.id);
+        if number == 29 {
+            let request = a[1] as u32;
+            if matches!(
+                request,
+                0x80045430 | 0x40045431 | 0x80045439 | 0x5420 | 0x80045438 | 0x5441
+            ) {
+                let end = endpoint
+                    .as_ref()
+                    .filter(|end| end.master)
+                    .ok_or(Errno(25))?;
+                match request {
+                    0x80045430 => write_u32(&mut p.memory, a[2], id)?,
+                    0x40045431 => end.pair.locked.set(read_u32(&p.memory, a[2])? != 0),
+                    0x80045439 => write_u32(&mut p.memory, a[2], u32::from(end.pair.locked.get()))?,
+                    0x5420 => {
+                        end.pair.packet.set(read_u32(&p.memory, a[2])? != 0);
+                        end.pair.packet_status.set(0);
+                    }
+                    0x80045438 => write_u32(&mut p.memory, a[2], u32::from(end.pair.packet.get()))?,
+                    0x5441 => {
+                        return p
+                            .linux
+                            .vfs
+                            .open_at(
+                                AT_FDCWD,
+                                format!("/dev/pts/{id}").as_bytes(),
+                                a[2] as u32,
+                                0,
+                            )
+                            .map(|fd| Some(fd as u64))
+                    }
+                    _ => unreachable!(),
+                }
+                return Ok(Some(0));
+            }
+        }
+        let mut dynamic = endpoint.as_ref().map(|end| end.pair.terminal.borrow_mut());
+        let tty = match dynamic.as_mut() {
+            Some(tty) => &mut **tty,
+            None => self.terminal.as_mut().ok_or(Errno(25))?,
+        };
         if number == 63 || number == 65 {
             let (parts, count) = if number == 65 {
                 Linux::readv_parts(&p.memory, a)?
@@ -1943,12 +2036,33 @@ impl Kernel {
             if count == 0 {
                 return Ok(Some(0));
             }
-            if p.session == tty.session && p.group != tty.foreground {
+            if master {
+                drop(dynamic);
+                return match endpoint.as_ref().expect("master").pair.master_read(count) {
+                    Ok(bytes) => {
+                        Linux::scatter(&mut p.memory, &parts, &bytes)?;
+                        Ok(Some(bytes.len() as u64))
+                    }
+                    Err(Errno(11)) if p.linux.vfs.flags(a[0] as u32)? & O_NONBLOCK == 0 => Ok(None),
+                    Err(e) => Err(e),
+                };
+            }
+            if endpoint
+                .as_ref()
+                .is_some_and(|end| !end.pair.master_alive.get())
+            {
+                return Ok(Some(0));
+            }
+            if p.linux.vfs.controlling_terminal == Some(id)
+                && p.session == tty.session
+                && p.group != tty.foreground
+            {
                 if p.mask & (1 << 20) != 0 || p.actions[21].handler == 1 {
                     return Err(Errno(5));
                 }
                 let group = p.group;
-                let _ = self.signal(pid, p, -(group as i32), 21)?;
+                let session = tty.session;
+                self.terminal_signal(pid, p, session, group, 21);
                 return Ok(None);
             }
             match tty.read(count) {
@@ -1992,32 +2106,78 @@ impl Kernel {
                         .map_err(|_| Errno(14))?;
                 }
             }
-            if p.session == tty.session
+            if master {
+                let count = bytes.len().min(tty.input_capacity());
+                if count == 0 && !bytes.is_empty() {
+                    return if p.linux.vfs.flags(a[0] as u32)? & O_NONBLOCK != 0 {
+                        Err(Errno(11))
+                    } else {
+                        Ok(None)
+                    };
+                }
+                let stopped = tty.flow_stopped;
+                let signals = tty.input(&bytes[..count]);
+                let group = tty.foreground;
+                let session = tty.session;
+                if stopped != tty.flow_stopped {
+                    let pair = &endpoint.as_ref().expect("master").pair;
+                    pair.packet_status
+                        .set(pair.packet_status.get() | if tty.flow_stopped { 4 } else { 8 });
+                }
+                drop(dynamic);
+                endpoint.as_ref().expect("master").pair.flush_echo();
+                for sig in signals {
+                    if group != 0 {
+                        self.terminal_signal(pid, p, session, group, sig);
+                    }
+                }
+                return Ok(Some(count as u64));
+            }
+            if endpoint
+                .as_ref()
+                .is_some_and(|end| !end.pair.master_alive.get())
+            {
+                return Err(Errno(5));
+            }
+            if p.linux.vfs.controlling_terminal == Some(id)
+                && p.session == tty.session
                 && tty.lflag() & 256 != 0
                 && p.group != tty.foreground
                 && p.mask & (1 << 21) == 0
                 && p.actions[22].handler != 1
             {
                 let group = p.group;
-                self.signal(pid, p, -(group as i32), 22)?;
+                let session = tty.session;
+                self.terminal_signal(pid, p, session, group, 22);
                 return Ok(None);
             }
-            let count = tty.queue_output(&bytes)?;
+            let count = match tty.queue_output(&bytes) {
+                Err(Errno(11)) if p.linux.vfs.flags(a[0] as u32)? & O_NONBLOCK == 0 => {
+                    return Ok(None)
+                }
+                result => result?,
+            };
             let _ = io;
             Ok(Some(count as u64))
         } else {
             let request = a[1] as u32;
-            if matches!(request, 0x540f | 0x5410) && p.session != tty.session {
+            if matches!(request, 0x540f | 0x5410 | 0x5429)
+                && !master
+                && (p.session != tty.session || p.linux.vfs.controlling_terminal != Some(id))
+            {
                 return Err(Errno(25));
             }
-            if p.session == tty.session
+            if !master
+                && p.linux.vfs.controlling_terminal == Some(id)
+                && p.session == tty.session
                 && p.group != tty.foreground
                 && matches!(request, 0x5402..=0x5404 | 0x5410)
                 && p.mask & (1 << 21) == 0
                 && p.actions[22].handler != 1
             {
                 let group = p.group;
-                self.signal(pid, p, -(group as i32), 22)?;
+                let session = tty.session;
+                self.terminal_signal(pid, p, session, group, 22);
                 return Ok(None);
             }
             match request {
@@ -2068,19 +2228,56 @@ impl Kernel {
                     tty.window = window;
                     if changed {
                         let group = tty.foreground;
-                        self.signal(pid, p, -(group as i32), 28)?;
+                        let session = tty.session;
+                        self.terminal_signal(pid, p, session, group, 28);
                     }
                 }
                 0x541b => {
                     p.memory
-                        .write(a[2], &(tty.available() as u32).to_le_bytes())
+                        .write(
+                            a[2],
+                            &(if master {
+                                tty.output_queue.len()
+                            } else {
+                                tty.available()
+                            } as u32)
+                                .to_le_bytes(),
+                        )
                         .map_err(|_| Errno(14))?;
                 }
                 0x540e => {
-                    if pid != p.session {
+                    if master
+                        || pid != p.session
+                        || p.linux
+                            .vfs
+                            .controlling_terminal
+                            .is_some_and(|old| old != id)
+                    {
+                        return Err(Errno(1));
+                    }
+                    if tty.session != 0
+                        && tty.session != p.session
+                        && self.processes.values().any(|other| {
+                            other.session == tty.session
+                                && other.linux.vfs.controlling_terminal == Some(id)
+                        })
+                        && !(a[2] == 1 && p.linux.vfs.credentials.euid == 0)
+                    {
                         return Err(Errno(1));
                     }
                     tty.session = p.session;
+                    tty.foreground = p.group;
+                    p.linux.vfs.set_controlling_terminal(Some(id))?;
+                }
+                0x5429 => write_u32(&mut p.memory, a[2], tty.session)?,
+                0x5422 => {
+                    if p.linux.vfs.controlling_terminal != Some(id) {
+                        return Err(Errno(25));
+                    }
+                    p.linux.vfs.set_controlling_terminal(None)?;
+                    if pid == tty.session {
+                        tty.session = 0;
+                    }
                 }
                 0x540b => {
                     if a[2] > 2 {
@@ -2096,6 +2293,43 @@ impl Kernel {
                 _ => return Err(Errno(25)),
             }
             Ok(Some(0))
+        }
+    }
+    fn pump_guest_ptys(&mut self) {
+        let pairs = self
+            .processes
+            .values()
+            .next()
+            .map(|p| p.linux.vfs.live_ptys())
+            .unwrap_or_default();
+        for pair in pairs {
+            pair.flush_echo();
+            if pair.master_alive.get() || pair.hangup_notified.replace(true) {
+                continue;
+            }
+            let mut tty = pair.terminal.borrow_mut();
+            let (session, group) = (tty.session, tty.foreground);
+            tty.flush_input();
+            tty.eof = true;
+            tty.session = 0;
+            tty.foreground = 0;
+            drop(tty);
+            for (&pid, process) in self.processes.iter_mut() {
+                if process.linux.vfs.controlling_terminal == Some(pair.id) {
+                    process
+                        .linux
+                        .vfs
+                        .set_controlling_terminal(None)
+                        .expect("detach");
+                }
+                if session != 0
+                    && process.session == session
+                    && (pid == session || process.group == group)
+                {
+                    Self::queue_one(pid, process, 1, 0);
+                    Self::queue_one(pid, process, 18, 0);
+                }
+            }
         }
     }
     fn pump_terminal(&mut self, io: &mut impl GuestOutput) -> Result<bool, RuntimeError> {
@@ -2507,6 +2741,7 @@ impl Kernel {
     }
     fn drive(&mut self, io: &mut impl GuestOutput, limit: u64) -> Result<Exit, RuntimeError> {
         loop {
+            self.pump_guest_ptys();
             self.tick_timers();
             let elapsed = self.load_sample.elapsed().as_secs_f64();
             if elapsed >= 5.0 {
@@ -2947,6 +3182,24 @@ mod tests {
             membarrier_registered: Rc::new(Cell::new(false)),
             file_size_limit: Rc::new(Cell::new((u64::MAX, u64::MAX))),
         }
+    }
+    #[test]
+    fn terminal_control_signals_use_kernel_authority_and_the_foreground_session() {
+        let mut k = kernel();
+        let mut sender = process();
+        sender.linux.vfs.credentials = trames_vfs::Credentials::user(1000, 1000);
+        let mut root_command = process();
+        root_command.session = 9;
+        root_command.group = 3;
+        assert!(!Kernel::may_signal(&sender, &root_command, 2));
+        let mut another_session = root_command.fork();
+        another_session.session = 10;
+        k.processes.insert(3, root_command);
+        k.processes.insert(4, another_session);
+        k.terminal_signal(1, &mut sender, 9, 3, 2);
+        assert!(k.processes[&3].pending.contains_key(&2));
+        assert!(!k.processes[&4].pending.contains_key(&2));
+        assert!(!sender.pending.contains_key(&2));
     }
     pub(super) fn kernel() -> Kernel {
         Kernel {

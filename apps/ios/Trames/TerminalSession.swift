@@ -20,10 +20,14 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     private var lastPhase: String?
     private var closed = false
     private var paused = false
+    private var timezoneObserver: NSObjectProtocol?
     init(title: String) {
         self.title = title; super.init()
         terminal.terminalDelegate = self
         terminal.backgroundColor = .black
+        timezoneObserver = NotificationCenter.default.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.synchronizeTimezone() }
+        }
         terminal.getTerminal().changeScrollback(1000)
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--ui-acceptance") {
@@ -98,9 +102,23 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
             }
         }
     }
-    func pause(_ paused: Bool) { self.paused = paused; try? local?.pause(paused) }
+    func pause(_ paused: Bool) {
+        self.paused = paused; try? local?.pause(paused)
+        if !paused { synchronizeTimezone() }
+    }
+    private func synchronizeTimezone() {
+        if !paused, let local {
+            Task { [weak self] in
+                do {
+                    try await Task.detached(priority: .utility) { try local.synchronizeTimezone() }.value
+                } catch { self?.fail(error) }
+            }
+        }
+    }
     func close() {
         guard !closed else { return }; closed = true
+        if let timezoneObserver { NotificationCenter.default.removeObserver(timezoneObserver) }
+        timezoneObserver = nil
         timer?.invalidate(); timer = nil; task?.cancel(); sender?.cancel()
         bridge.close()
         local?.close(); local = nil
