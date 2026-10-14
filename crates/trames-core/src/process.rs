@@ -983,6 +983,10 @@ impl Kernel {
                         pair[..8] == trames_accel::callbacks::SEARCH_AUXV_KEY.to_le_bytes()
                             && pair[8..] == 1u64.to_le_bytes()
                     }),
+                    native_allocator: p.linux.auxiliary.chunks_exact(16).any(|pair| {
+                        pair[..8] == trames_accel::allocator::AUXV_KEY.to_le_bytes()
+                            && pair[8..] == trames_accel::allocator::PROFILE.to_le_bytes()
+                    }),
                 },
             )
             .map_err(|e| match e {

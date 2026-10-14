@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! NativeCall v1, pure-memory profile. The signed-in catalog authorizes only
-//! bounded pure operations; matching guest code never grants host privileges.
+//! NativeCall v1 catalog: bounded guest-memory operations and versioned musl
+//! adapters. Matching guest code never grants host pointers or kernel authority.
 use serde::Serialize;
 use std::time::Instant;
 #[cfg(test)]
@@ -27,6 +27,11 @@ pub struct Metrics {
     pub function_fallbacks: [u64; FUNCTION_COUNT],
     pub integer_calls: u64,
     pub integer_conversions: u64,
+    pub allocator_calls: u64,
+    pub allocator_allocations: u64,
+    pub allocator_slot_reservations: u64,
+    pub allocator_frees: u64,
+    pub allocator_free_resumes: u64,
     pub callback_calls: u64,
     pub callback_requests: u64,
     pub callback_yields: u64,
@@ -54,6 +59,17 @@ pub struct Metrics {
 impl Metrics {
     /// Worker-local counters join here after every view user has stopped.
     pub fn merge(&mut self, other: Self) {
+        self.allocator_calls = self.allocator_calls.saturating_add(other.allocator_calls);
+        self.allocator_allocations = self
+            .allocator_allocations
+            .saturating_add(other.allocator_allocations);
+        self.allocator_slot_reservations = self
+            .allocator_slot_reservations
+            .saturating_add(other.allocator_slot_reservations);
+        self.allocator_frees = self.allocator_frees.saturating_add(other.allocator_frees);
+        self.allocator_free_resumes = self
+            .allocator_free_resumes
+            .saturating_add(other.allocator_free_resumes);
         self.calls = self.calls.saturating_add(other.calls);
         self.worker_calls = self.worker_calls.saturating_add(other.worker_calls);
         self.checkpoint_retries = self
@@ -182,7 +198,8 @@ impl Registry {
         let allowed = (module == PROFILE && (1..=FUNCTION_COUNT as u64).contains(&function))
             || (module == crate::callbacks::PROFILE && function == 1)
             || (module == crate::numeric::PROFILE && function == 1)
-            || (module == crate::integer::PROFILE && function == 1);
+            || (module == crate::integer::PROFILE && function == 1)
+            || (module == crate::allocator::PROFILE && (1..=3).contains(&function));
         if !allowed || pc < 12 {
             return Ok(false);
         }
@@ -276,6 +293,9 @@ impl Registry {
         let result = if module == crate::callbacks::PROFILE {
             self.metrics.callback_calls = self.metrics.callback_calls.saturating_add(1);
             crate::callbacks::step(memory, a, &mut self.metrics)
+        } else if module == crate::allocator::PROFILE {
+            self.metrics.allocator_calls = self.metrics.allocator_calls.saturating_add(1);
+            crate::allocator::step(memory, function, a, &mut self.metrics)
         } else if module == crate::integer::PROFILE {
             self.metrics.integer_calls = self.metrics.integer_calls.saturating_add(1);
             crate::integer::parse(memory, a, &mut self.metrics)

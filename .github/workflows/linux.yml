@@ -43,7 +43,9 @@ jobs:
           RUSTC_BOOTSTRAP: 1
           RUSTFLAGS: -Zsanitizer=thread
           CARGO_TARGET_DIR: target/thread-sanitizer
-        run: cargo test -Zbuild-std -p trames-memory --target x86_64-unknown-linux-gnu --locked --lib
+        run: cargo test -Zbuild-std -p trames-memory -p trames-accel --target x86_64-unknown-linux-gnu --locked --lib
+      - name: Check original-source native allocator C with address and undefined behavior sanitizers
+        run: bash scripts/check-native-allocator.sh
       - name: Compile core and both network backends for iOS (no SDK link or device test)
         run: cargo check -p trames-core -p trames-distro -p trames-ffi --target aarch64-apple-ios --locked
       - name: Execute ARM64 compute, memory and native worker tests under the independent oracle
@@ -114,6 +116,7 @@ jobs:
           python3 tests/integration/musl-hybrid.py
           python3 tests/integration/numeric.py
           python3 tests/integration/stdlib.py
+          python3 tests/integration/allocator.py | tee target/allocator-workflow.log
           python3 tests/integration/native-parallel.py | tee target/native-parallel-workflow.log
           python3 tests/integration/region-memory.py | tee target/region-memory-workflow.log
       - name: Build and compare opt-in NativeCall guest ELF stubs on ARM64
@@ -167,6 +170,7 @@ jobs:
         run: python3 tests/integration/nodejs.py | tee target/nodejs-tools.log
         env:
           TRAMES_CPUS: 4
+          TRAMES_NATIVE_ALLOCATOR: 1
           TRAMES_RUNNER: ${{ github.workspace }}/target/release/trames-run
           TRAMES_TEST_MUSL: ${{ github.workspace }}/target/musl-hybrid/libc.so
       - name: Signed developer tools and complete guest workflows on a fresh persistent store
@@ -185,5 +189,7 @@ jobs:
             target/smp-workflow.log
             target/native-parallel-workflow.log
             target/region-memory-workflow.log
+            target/allocator-workflow.log
+            target/musl-hybrid/allocator-validation.json
             target/musl-hybrid/native-parallel-validation.json
           if-no-files-found: error

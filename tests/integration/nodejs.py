@@ -38,6 +38,8 @@ def main():
                 base += ['--cpus', os.environ['TRAMES_CPUS'], '--env', 'TRAMES_SMP_WORKERS=1']
             if os.getenv('TRAMES_TEST_MUSL'):
                 base += ['--musl-libc', os.environ['TRAMES_TEST_MUSL'], '--accelerator', 'pure']
+            if os.getenv('TRAMES_NATIVE_ALLOCATOR')=='1':
+                base += ['--native-allocator']
 
             def run(args, timeout=900):
                 # Keep guest stage markers visible while a later operation is

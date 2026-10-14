@@ -35,6 +35,15 @@
     "src/string/strcpy.c": "3785cd5bc3e08049617db754a3677f7485e5e7bc4a7901102af1604cee290b71",
     "src/string/stpcpy.c": "05231b57f01b5d192d6ac50bf376e1adb987feda4ea79c22248b8bba3d64f04a",
     "src/string/strncpy.c": "88301f7a48004250e1833e9155c7d2fa607ffdddca3b1b1804774d93c82acb96",
-    "src/string/stpncpy.c": "12f0e4fd1005104a6c1200af5b90e1694d75ad0fb2586305b560341be0ef6481"
+    "src/string/stpncpy.c": "12f0e4fd1005104a6c1200af5b90e1694d75ad0fb2586305b560341be0ef6481",
+    "src/malloc/mallocng/malloc.c": "ea50e97cccc60331d7306f6226949d2af94797ce2d39d474d226aa53cfb830d3",
+    "src/malloc/mallocng/free.c": "c8c06d9847b3cfce57fd1067e8c886370bdfb81c0d198573871721b20a7e817b",
+    "src/malloc/mallocng/meta.h": "42865d840d0724b6925d79dc5bc5a8595a67b19466cfd16dff903586211d0fe7",
+    "src/malloc/mallocng/glue.h": "499ad5e0167cb56b6491bf049e6d01ca54113a71d9f99e7045e171063f35cfa4",
+    "src/malloc/mallocng/realloc.c": "b8ef6d11c48a1c188b8ba888b6d857c46f151f615612c014a2195944fbcbc858",
+    "src/malloc/mallocng/aligned_alloc.c": "8a1c955672db354c52fe3d743725d3a1dffd4d758ec792ff7a38c35fb9762348",
+    "src/malloc/mallocng/malloc_usable_size.c": "03ae4274f35aa0fb93771414ddf3f55b64f82a96484b8fbf4194c57f3b192c63",
+    "src/malloc/calloc.c": "df5ae020c1babce30975f16831eeafed47bc2e9e3e5a60799bf31f1054c18b1d",
+    "src/malloc/posix_memalign.c": "5e3faebd5d1c7e4931d55ea5ba3206efa604e8f9b1c6f5ad8fe00d7406a2e566"
   }
 }

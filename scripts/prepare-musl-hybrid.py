@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Apply two checked startup hooks; original fallback bytes stay unchanged."""
+"""Apply checked startup/library entry hooks; retain pinned original algorithms."""
 import hashlib
 import json
 from pathlib import Path
@@ -17,9 +17,56 @@ for name,marker in [
     text=text.replace('#include "libc.h"','#include "libc.h"\nhidden void __trames_native_init(const size_t *);',1)
     text=text.replace(marker,marker+'\n\t__trames_native_init(auxv);',1);p.write_text(text)
 dest=tree/'src/trames';(dest/'aarch64').mkdir(parents=True,exist_ok=True)
+allocator_inputs=[('accelerator/musl/allocator.h','allocator.h'),('accelerator/musl/allocator-calls.S','aarch64/allocator-calls.S')]
 inputs=[('accelerator/musl/integer.c','integer.c'),('accelerator/musl/integer-symbols.h','integer-symbols.h'),('accelerator/musl/integer-calls.S','aarch64/integer-calls.S'),('accelerator/musl/strings.c','strings.c'),('accelerator/musl/strings-symbols.h','strings-symbols.h'),('accelerator/guest/pure.c','pure.c'),('accelerator/guest/calls.S','aarch64/calls.S'),('accelerator/musl/init.c','init.c'),('accelerator/musl/symbols.h','symbols.h'),('accelerator/musl/callbacks.c','callbacks.c'),('accelerator/musl/callbacks.h','callbacks.h'),('accelerator/musl/callback-calls.S','aarch64/callback-calls.S'),('accelerator/musl/sort-symbols.h','sort-symbols.h'),('accelerator/musl/numeric.c','numeric.c'),('accelerator/musl/numeric-symbols.h','numeric-symbols.h'),('accelerator/musl/numeric-calls.S','aarch64/numeric-calls.S')]
+inputs += allocator_inputs
 for source,target in inputs:
     shutil.copyfile(ROOT/source,dest/target)
+# Hash-check source and add only the native entry/continuation boundaries.
+for name in ['malloc.c','free.c']:
+    path=tree/'src/malloc/mallocng'/name
+    data=path.read_bytes()
+    assert data==(ROOT/'crates/trames-native/upstream/musl-1.2.5/mallocng'/name).read_bytes(),name
+    before['src/malloc/mallocng/'+name]=hashlib.sha256(data).hexdigest()
+    text=data.decode().replace('#include "meta.h"','#include "meta.h"\n#include "../../trames/allocator.h"',1)
+    if name=='malloc.c':
+        marker='\tsc = size_to_class(n);\n\n\trdlock();'
+        assert text.count(marker)==1
+        text=text.replace(marker,marker+'''
+\tif (__trames_allocator_enabled && !__malloc_replaced && trames_allocator_layout_supported()) {
+\t\tstruct trames_allocator_result r=trames_malloc_step(n,(uintptr_t)&ctx,TRAMES_ALLOCATOR_COOKIE);
+\t\tif (!r.fallback) {
+\t\t\tg=(struct meta *)(r.value & UINT64_C(0x0000ffffffffffff));
+\t\t\tidx=(r.value>>48)&31; ctr=(r.value>>53)&255;
+\t\t\tunlock();
+\t\t\tuintptr_t state[5]={TRAMES_ALLOCATOR_COOKIE,n,(uintptr_t)g,idx,ctr};
+\t\t\tr=trames_enframe_step((uintptr_t)state,0,0);
+\t\t\tif (!r.fallback) return (void *)r.value;
+\t\t\treturn enframe((struct meta *)state[2],state[3],n,state[4]);
+\t\t}
+\t}''',1)
+    else:
+        marker='\tif (!p) return;\n\n\tstruct meta *g = get_meta(p);\n\tint idx = get_slot_index(p);'
+        assert text.count(marker)==1
+        text=text.replace(marker,'''
+\tif (!p) return;
+\tstruct meta *g;
+\tint idx;
+\tif (__trames_allocator_enabled && !__malloc_replaced && trames_allocator_layout_supported()) {
+\t\tuintptr_t state[4]={TRAMES_ALLOCATOR_COOKIE,MT,0,0};
+\t\tstruct trames_allocator_result r=trames_free_step((uintptr_t)p,(uintptr_t)&ctx,(uintptr_t)state);
+\t\tif (!r.fallback) {
+\t\t\tif (!r.value) return;
+\t\t\tg=(struct meta *)state[2]; idx=state[3];
+\t\t\tgoto trames_native_slow;
+\t\t}
+\t}
+\tg = get_meta(p);
+\tidx = get_slot_index(p);''',1)
+        start=text.index('void free(void *p)')
+        marker='\twrlock();'
+        text=text[:start]+text[start:].replace(marker,'trames_native_slow:\n'+marker,1)
+    path.write_text(text)
 make=tree/'Makefile'
 with make.open('a') as f:
     f.write('\n# Trames pure profile: only these original objects are privately renamed.\n')

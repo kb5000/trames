@@ -7,10 +7,11 @@ PRIVATE unsigned __trames_callback_enabled;
 PRIVATE unsigned __trames_bsearch_enabled;
 PRIVATE unsigned __trames_numeric_enabled;
 PRIVATE unsigned __trames_integer_enabled;
+PRIVATE unsigned __trames_allocator_enabled;
 // Called only after dynamic self-relocation (or during static __init_libc).
 // No TLS, errno, libc calls, allocation, syscalls or constructors are needed.
 PRIVATE void __trames_native_init(const size_t *auxv) {
-    unsigned enabled=0, features=0, callbacks=0, search=0, numeric=0, integer=0;
+    unsigned enabled=0, features=0, callbacks=0, search=0, numeric=0, integer=0, allocator=0;
     for (size_t i=0; auxv[i]; i+=2) {
         if (auxv[i]==0x54520001UL) enabled=auxv[i+1]==0x10001UL;
         if (auxv[i]==0x54520002UL) features=(unsigned)auxv[i+1];
@@ -18,6 +19,7 @@ PRIVATE void __trames_native_init(const size_t *auxv) {
         if (auxv[i]==0x54520004UL) search=auxv[i+1]==1;
         if (auxv[i]==0x54520005UL) numeric=auxv[i+1]==0x10003UL;
         if (auxv[i]==0x54520006UL) integer=auxv[i+1]==0x10004UL;
+        if (auxv[i]==0x54520007UL) allocator=auxv[i+1]==0x10005UL;
     }
     __trames_native_enabled=enabled;
     __trames_native_features=enabled ? features : 0;
@@ -25,4 +27,5 @@ PRIVATE void __trames_native_init(const size_t *auxv) {
     __trames_bsearch_enabled=enabled && callbacks && search;
     __trames_numeric_enabled=enabled && numeric;
     __trames_integer_enabled=enabled && integer;
+    __trames_allocator_enabled=enabled && allocator;
 }

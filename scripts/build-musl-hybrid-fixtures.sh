@@ -12,3 +12,4 @@ flags=(-O2 -fno-builtin -fno-tree-vectorize -fno-tree-slp-vectorize -L"$(pwd)/ta
 "$compiler" "${flags[@]}" tests/fixtures/musl-stdlib.c -pthread -ldl -o tests/fixtures/bin/musl-stdlib
 "$compiler" "${flags[@]}" tests/fixtures/native-parallel.c -pthread -o tests/fixtures/bin/native-parallel
 "$compiler" "${flags[@]}" tests/fixtures/region-memory.c -pthread -o tests/fixtures/bin/region-memory
+"$compiler" "${flags[@]}" tests/fixtures/musl-allocator.c -pthread -o tests/fixtures/bin/musl-allocator

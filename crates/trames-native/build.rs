@@ -37,6 +37,15 @@ fn compile_parser() {
             .replace("__intscan", "trames_native_intscan"),
     )
     .unwrap();
+    println!("cargo:rerun-if-changed=allocator");
+    println!("cargo:rerun-if-changed=upstream/musl-1.2.5/mallocng");
+    println!("cargo:rerun-if-changed=upstream/musl-1.2.5/provenance.json");
+    assert!(Command::new("python3")
+        .arg("allocator/generate.py")
+        .arg(out.join("allocator.c"))
+        .status()
+        .expect("checked original mallocng lowering")
+        .success());
     let compiler_key = format!("CC_{}", target.replace('-', "_"));
     let compiler = env::var(&compiler_key).unwrap_or_else(|_| {
         if apple {
@@ -52,6 +61,7 @@ fn compile_parser() {
         ("floatscan", out.join("floatscan.c")),
         ("intscan", out.join("intscan.c")),
         ("driver", Path::new("parse/driver.c").to_owned()),
+        ("allocator", out.join("allocator.c")),
     ] {
         let mut command = Command::new(&compiler);
         if apple && target != host {
@@ -69,9 +79,11 @@ fn compile_parser() {
             "-fno-stack-protector",
             "-fvisibility=hidden",
             "-ffp-contract=off",
-            "-Iparse/shim",
             "-c",
         ]);
+        if name != "allocator" {
+            command.arg("-Iparse/shim");
+        }
         assert!(command
             .arg(path)
             .arg("-o")
@@ -95,6 +107,7 @@ fn compile_parser() {
         .arg(out.join("floatscan.o"))
         .arg(out.join("intscan.o"))
         .arg(out.join("driver.o"))
+        .arg(out.join("allocator.o"))
         .status()
         .expect("native parser archiver")
         .success());

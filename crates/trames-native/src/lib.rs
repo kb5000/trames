@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Signed-in pure host routines. No guest addresses, runtime code or host state.
+pub mod allocator;
 pub mod parse;
 #[cfg(target_arch = "aarch64")]
 core::arch::global_asm!(

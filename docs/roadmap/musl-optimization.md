@@ -36,7 +36,7 @@ assembly on directly writable pages. Matching stubs still authorize only these
 pure operations, not arbitrary native execution or stateful host libc calls.
 
 The new auxv key `0x54520002` supplies a function bitmap, bit `(id - 1)`; current
-value `0x1ffff`. Activation key/profile `0x54520001`/`0x10001` stay unchanged. New
+value `0x7ffff`. Activation key/profile `0x54520001`/`0x10001` stay unchanged. New
 wrappers require their bit; an old host with no bitmap uses original musl for new
 functions. Early loader stages and ordinary Linux use original routines. Known
 sizes below 128 bytes stay local; strcmp/strncmp and strnlen stop locally within
@@ -50,6 +50,24 @@ expansion, not a resumable unlimited operation.
 Metrics add per-function entry counts, direct/buffered read/write bytes and retain
 calls/fallbacks/faults/body time. Byte counts describe supplied fragments, not
 exact physical loads or COW allocations. This makes hidden staging visible.
+
+## Original-source implementation principle
+
+Owner direction, 2026-10-14 (UTC): native acceleration should move the original
+musl implementation from guest execution to signed-in, ahead-of-time host code.
+Preserve the original algorithm and data layout, with the smallest explicit
+adaptation for guest memory, syscalls, errno/TLS, locks and callbacks. Prefer
+compiling pinned original C/assembly over independently reimplementing it in
+Rust or substituting Darwin libc. Retain original source bytes, notices and a
+reviewable adaptation diff; record intentional semantic changes separately.
+The existing native intscan and adapted floatscan illustrate source reuse.
+
+The owner identified malloc/free as a worthwhile next candidate. Move the
+allocator from the distant stateful queue to an original-source batch:
+[native mallocng design](../architecture/native-allocator.md). The original
+guest heap, allocator metadata and synchronization remain authoritative, so
+original and native paths can exchange allocations. The first hot-path profile
+is implemented; cold paths and full realloc/calloc bodies remain guest code.
 
 ## Prioritized candidates
 
@@ -84,7 +102,7 @@ include both the bulk-copy gain and the sort regression/host timing variation.
 | P2 | Integer/float formatting within snprintf/sprintf | Accelerate costly conversion loops | Begin with pure internal conversion pieces; guest varargs and formatting must keep musl semantics |
 | P2 | qsort/qsort_r, bsearch | Native sorting/search loops for large arrays | Implemented [guest-owned callback steps](../architecture/native-callbacks.md); qsort routes supported arrays, bsearch is explicit after entry-cost measurements |
 | P2 | fnmatch, glob, regex compilation/matching | Large loops/tables may pay for native entry | fnmatch can start pure; regex-owned pointers/allocator and glob filesystem effects need exact contracts |
-| P3 | malloc, calloc, realloc, free, aligned_alloc, posix_memalign | Large allocator bookkeeping could run natively | Guest heap pointers, musl metadata layout, locks, fork and mmap/brk authority; exact build/layout gating |
+| P1 | malloc/free, followed by calloc, realloc, aligned_alloc, posix_memalign and malloc_usable_size | Compile original mallocng with minimal guest-memory and runtime adapters | [Existing-group allocation and atomic fast free implemented](../architecture/native-allocator.md), experimental opt-in after measured regressions; original unlock boundary/shared heap preserved; cold paths and complete remaining bodies queued |
 | P3 | fread/fwrite, fgets/fputs, getline/getdelim, printf family | Copy/format buffering and syscall batching | Guest FILE layout, errno/TLS, descriptor ownership and cancellation; no host FILE substitution |
 | P3 | pthread mutex/cond/rwlock, semaphores, atomics/futex helpers | Reduce repeated interpreter/syscall glue | Guest scheduler/futex authority, cancellation and robust ownership remain mandatory |
 | P3 | locale, iconv, multibyte/wide string operations | Conversion loops and larger text workloads | Guest locale/TLS, restartable conversion state and wchar ABI first |
@@ -101,8 +119,9 @@ workflows. Function-level wins do not establish application-level gains.
 The next priority is entry/return and checked-memory cost: retain exact executable
 stub validation and invalidation, but investigate repeated checks, guest frame
 transport and short-call routing. Then address coherent shared/multi-page spans.
-Measure these costs before adding formatting/math or stateful allocator/stdio
-contracts. No JIT or additional interpreter backend is planned.
+Continue measuring these costs alongside the original-source allocator
+feasibility batch; formatting/math and stateful stdio remain later candidates.
+No JIT or additional interpreter backend is planned.
 
 ## Implementation order and acceptance
 
@@ -115,8 +134,10 @@ contracts. No JIT or additional interpreter backend is planned.
    it; measure bulk data movement and one unchanged real-program workload.
 4. Add native SIMD or contiguous-span paths only when measurements identify a
    remaining bottleneck. Preserve permission/EOF preflight and code tokens.
-5. Select P2 work from actual application profiles. Stateful P3 needs its own
-   versioned layout/ownership contract and should not hold up useful pure calls.
+5. Prototype original-source malloc/free with a versioned layout/ownership
+   contract and mixed original/native allocation tests before enabling it.
+   Select remaining P2 work from actual application profiles. Other stateful P3
+   work needs its own contract and should not hold up useful pure calls.
 
 For each implemented group, check off/on and ordinary Linux, fork/shared VM,
 file aliases/truncation, signal recovery and self-modifying executable pages.

@@ -34,8 +34,11 @@ typed original-code fallback. Disabled Trames sessions and ordinary Linux/QEMU
 use original routines and never execute the virtual HLT.
 
 This is a complete hybrid libc/loader; current development adapts nineteen pure functions and adds [resumable sort/search callbacks](native-callbacks.md). Stateful
-native allocator/TLS/I/O profiles remain future work requiring exact layout and
-build identity contracts. Statically linked existing programs retain their
+native TLS/I/O and allocator cold paths remain future work requiring exact layout
+and ownership contracts. The [original-source mallocng profile](native-allocator.md)
+implements existing-group allocation and atomic fast free while preserving the
+guest heap, original lock boundaries and source-reuse principle.
+Statically linked existing programs retain their
 embedded libc; replacing a shared library cannot accelerate them automatically.
 
 ## Installation and iPad integration

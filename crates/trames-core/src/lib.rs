@@ -15,6 +15,8 @@ pub struct RuntimeOptions {
     pub pure_accelerator: bool,
     /// Experimental bsearch wrapper routing; default retains original musl.
     pub native_bsearch: bool,
+    /// Experimental original-source allocator routing; default stays guest.
+    pub native_allocator: bool,
 }
 
 pub const STACK_TOP: u64 = 0x0000_7fff_fff0_0000;
@@ -226,6 +228,14 @@ fn initial_stack_bytes(
             },
         ),
         (16, trames_cpu::HWCAP),
+        (
+            trames_accel::allocator::AUXV_KEY,
+            if options.pure_accelerator && options.native_allocator {
+                trames_accel::allocator::PROFILE
+            } else {
+                0
+            },
+        ),
         (26, trames_cpu::HWCAP2),
         (9, elf.entry),
         (7, elf.interpreter_base),
