@@ -2587,14 +2587,15 @@
   "ci": {
     "linux": {
       "run_id": 38532793511,
-      "status": "pending",
-      "url": "https://github.com/kb5000/trames/actions/runs/38532793511"
+      "status": "completed",
+      "url": "https://github.com/kb5000/trames/actions/runs/38532793511",
+      "conclusion": "success"
     },
     "apple": {
       "run_id": 38532793548,
-      "status": "pending",
-      "url": "https://github.com/kb5000/trames/actions/runs/38532793548"
-    },
-    "pending_as_of_utc": "2026-10-14 08:14:30 UTC"
+      "status": "completed",
+      "url": "https://github.com/kb5000/trames/actions/runs/38532793548",
+      "conclusion": "success"
+    }
   }
 }

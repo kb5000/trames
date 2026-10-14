@@ -123,6 +123,64 @@ Reducing body time alone cannot remove those transitions, repeated cold-path
 fallback or original allocator contention. Default-off routing remains justified.
 None of these shared x86_64-host measurements establishes iPad/ARM performance.
 
-Exact-commit verification is running in
+Exact-commit verification passed in
 [Linux CI](https://github.com/kb5000/trames/actions/runs/38532793511) and
 [Apple CI](https://github.com/kb5000/trames/actions/runs/38532793548).
+
+
+## Batched scalar transport and scoped page reads
+
+A further implementation moves the bounded write journal and overlapping-write
+forwarding into generated native C. At CAS or return it transfers only the
+initialized records; `MaybeUninit` avoids clearing the unused buffer. Checked
+coordinator page borrows reuse translated addresses within a call, without Arc
+clones or per-field permission checks. The native cache is invalidated before
+any publication, and scalar read helpers are inlined. Parallel workers continue
+using CPU scalar/atomic region access; no function-wide lock or additional
+thread-safety guarantee is added. The original musl algorithms, guest ABI,
+heap ownership, source cookie and default-off activation stay intact.
+
+Local validation passes 267 host workspace tests, 212 ARM64/QEMU tests and
+67 ThreadSanitizer tests, strict Clippy, ASan/UBSan and the iOS compilation
+check. The eight allocator rows explicitly check direct-read callback reduction
+at one CPU and ordinary load callbacks on parallel workers. Tests verify no
+false COW, real fork COW, failed-CAS descriptor invalidation/slow continuation,
+permissions, cross-page fault priority and shared-backing fallback. Full-musl
+loader/startup/TLS/upgrades, all 19 parallel native functions and nested callbacks,
+476 integer oracle rows, standalone stubs and independent CPU regions pass. Four-CPU opt-in Node.js/npm passes signed
+installation, default V8, Atomics/workers, network, offline dependencies and
+retained-data reopening. Functional commit: `10765d2`.
+
+[Complete evidence](native-allocator-batch-data.json) retains three modes on
+identical ELF/libc/stores: previous native runtime `37e99d6`, current native,
+and current runtime with the original guest allocator. Mode order rotates
+across three samples. The initial Arc-pin/out-of-line-read diagnostic is retained
+separately; it reduced callbacks but did not improve time, prompting removal
+of reference-count overhead and inlining. The following final medians are not a
+stable overall performance claim:
+
+| Workload | Previous native | Current native | Current original allocator |
+| --- | --- | --- | --- |
+| Allocation, 1 CPU | 1.500 s | 2.121 s | 1.441 s |
+| Allocation, 4 CPUs | 16.243 s | 15.251 s | 11.815 s |
+| Vim startup, 1 CPU | 2.090 s | 2.148 s | 1.973 s |
+| Python imports/SQLite/hash, 1 CPU | 9.487 s | 9.155 s | 9.927 s |
+
+Current one-CPU allocation samples were 3.818/2.121/1.500 s; original samples
+were 23.689/1.441/1.424 s, and current four-CPU samples included 34.934 s.
+These outliers and mode-dependent variability limit conclusions. Vim NativeCall
+body medians improved from 68.12 to 60.27 ms, but its whole-startup median did
+not improve. Do not report a blanket speedup or enable allocator routing by
+default on this evidence.
+
+The deterministic callback counts are more useful here: one-CPU allocation
+records 1,859,389 direct field loads, 632,792 page resolutions and 571,210 staged
+stores. The equivalent former field-load/store transport would cross C/Rust
+2,430,599 times, compared with 632,792 read-page callbacks now, about 74% fewer;
+CAS callbacks are excluded from both sides. No scalar load callback is needed
+in that eligible one-CPU row. This is a transport comparison, not a wall-time
+speedup. Original allocator contention, entry/return boundaries and repeated
+cold-path fallback remain substantial costs. Measurements use the shared x86_64
+development host and establish no physical-iPad or ARM performance claim.
+
+Final functional-commit verification: [Linux CI](https://github.com/kb5000/trames/actions/runs/38545024356) and [Apple CI](https://github.com/kb5000/trames/actions/runs/38545024339) are running. No release/tag or signed-device version is added.
