@@ -63,7 +63,146 @@
       "bytes": 325
     }
   },
-  "ci_status": "pending exact-source Linux/Apple",
+  "ci_status": "success",
   "delivered_ipa": "0.13/build14 unchanged",
-  "physical_ipad_performance": "not measured"
+  "physical_ipad_performance": "not measured",
+  "source_commit": "dd492dde61523503533de0c57b356be969735e3c",
+  "simulator_passed": 7,
+  "simulator_failed": 0,
+  "artifact_verification": {
+    "source_commit": "dd492dde61523503533de0c57b356be969735e3c",
+    "musl_source_verification": {
+      "libc_sha256": "864a8ae0badcf781995e7e4dc7c882ca60100047b6a67dde098af437abe3bad8",
+      "native_features": 524287,
+      "native_functions": [
+        "memcpy",
+        "memmove",
+        "memset",
+        "memcmp",
+        "strlen",
+        "memchr",
+        "memrchr",
+        "strnlen",
+        "strcmp",
+        "strncmp",
+        "strchr",
+        "strrchr",
+        "strchrnul",
+        "strcpy",
+        "stpcpy",
+        "strncpy",
+        "stpncpy",
+        "strcat",
+        "strncat"
+      ],
+      "source_inputs_verified": 17,
+      "original_upstream_archive_verified": true,
+      "licenses_verified": true,
+      "archive_crc_verified": true
+    },
+    "apple_build_verification": {
+      "build_archive_crc_verified": true,
+      "simulator_passed": 7,
+      "simulator_failed": 0,
+      "device_and_simulator_libc_manifest_match_paired_source_artifact": true,
+      "development_version": "0.13.0/build14",
+      "new_numbered_release_delivered": false
+    },
+    "runtime_evidence_verification": {
+      "zip_crc_verified": true,
+      "logs": 7,
+      "markers": [
+        "1 CPU:",
+        "2 CPU:",
+        "4 CPU:",
+        "smp: pinned peers cannot starve a flexible waiter: passed",
+        "node SharedArrayBuffer/Atomics wait, notify and concurrent add: ok",
+        "npm offline local dependency, lockfile and CommonJS import: passed",
+        "node reopen: ok",
+        "gcc/clang compile/link/execute: ok",
+        "make parallel build, cmake configure/build/ctest: ok",
+        "PASS native pthread cpus=4 enabled=True shared_stack=True",
+        "PASS native pthread cpus=4 enabled=True shared_stack=False memory=False",
+        "PASS same-page independent CPU regions cpus=4"
+      ],
+      "actual_arm64_native_pthread_matrix": [
+        {
+          "enabled": false,
+          "cpus": 1,
+          "shared_stack": false,
+          "memory": true,
+          "worker_calls": 0,
+          "native_overlap": 0
+        },
+        {
+          "enabled": false,
+          "cpus": 4,
+          "shared_stack": false,
+          "memory": true,
+          "worker_calls": 0,
+          "native_overlap": 0
+        },
+        {
+          "enabled": true,
+          "cpus": 1,
+          "shared_stack": false,
+          "memory": true,
+          "worker_calls": 0,
+          "native_overlap": 0
+        },
+        {
+          "enabled": true,
+          "cpus": 2,
+          "shared_stack": false,
+          "memory": true,
+          "worker_calls": 10612,
+          "native_overlap": 2
+        },
+        {
+          "enabled": true,
+          "cpus": 4,
+          "shared_stack": false,
+          "memory": true,
+          "worker_calls": 10618,
+          "native_overlap": 4
+        },
+        {
+          "enabled": true,
+          "cpus": 4,
+          "shared_stack": true,
+          "memory": true,
+          "worker_calls": 7430,
+          "native_overlap": 4
+        },
+        {
+          "enabled": true,
+          "cpus": 4,
+          "shared_stack": false,
+          "memory": false,
+          "worker_calls": 10664,
+          "native_overlap": 4
+        }
+      ]
+    },
+    "artifacts": {
+      "musl": {
+        "id": 11870771126,
+        "name": "full-musl-library-and-source",
+        "digest": "sha256:73fb4cfd12f4ea0d74b62801628485814235bf6af4841ba919bdf152a67f5f6a",
+        "artifact_url": "https://github.com/kb5000/trames/actions/runs/38512362055/artifacts/11870771126"
+      },
+      "build": {
+        "id": 11870223560,
+        "name": "unsigned-ipad-build-and-project",
+        "digest": "sha256:f449d3d3849f2caa439d0b456685e005e074903161dba62e3dc5b6c2ae75d17f",
+        "artifact_url": "https://github.com/kb5000/trames/actions/runs/38512362055/artifacts/11870223560"
+      },
+      "runtime": {
+        "id": 11871870260,
+        "name": "runtime-evidence",
+        "digest": "sha256:6d2b4858a3acc9a69e36cb0cc93b5e27c4c4329b72e66d99ac4abeb4b3f352e0",
+        "artifact_url": "https://github.com/kb5000/trames/actions/runs/38512362267/artifacts/11871870260"
+      }
+    }
+  }
 }

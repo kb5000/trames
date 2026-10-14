@@ -55,8 +55,8 @@ The new ordinary-access fixture increments four disjoint 64-byte counters in
 one guest page, comparing exact output with original-musl QEMU at 1/2/4 CPUs.
 Linux CI additionally runs full-std ThreadSanitizer and the actual ARM64 fixture.
 
-Exact-source CI and downloaded simulator/source/runtime verification follow the
-source commit. No new physical-iPad acceptance or speed claim is made.
+Exact-source CI and downloaded simulator/source/runtime verification are
+recorded below. No new physical-iPad acceptance or speed claim is made.
 
 ## Fixed-work performance
 
@@ -102,3 +102,33 @@ Runtime seconds exclude rootfs import. Host child user/system CPU and wall time
 include import/startup; summed worker `cpu_seconds` includes lock waits and is
 not host CPU utilization. This x86_64 development executor interprets ARM64
 guests under a four-core cgroup quota; NEON/iPad hardware speed is not measured.
+
+## Exact-source acceptance
+
+Runtime source [`dd492dd`](https://github.com/kb5000/trames/commit/dd492dde61523503533de0c57b356be969735e3c)
+passes [Linux 38512362267](https://github.com/kb5000/trames/actions/runs/38512362267)
+and [Apple 38512362055](https://github.com/kb5000/trames/actions/runs/38512362055)
+on attempt 1. [Run/job evidence](region-memory-ci.json) records all required steps;
+the actual Linux transcript confirms host 259, full-std sanitizer 41 with zero
+reports, and actual ARM64 204 tests. Apple native core, SSH/SFTP, device/simulator
+link, real gateway DNS/HTTPS and lifecycle steps pass at this same SHA.
+
+The downloaded [simulator report](region-memory-simulator.json) records **7 passed,
+0 failed, 0 skipped**. [Artifact verification](region-memory-artifacts.json)
+checks ZIP SHA256/CRC, both app GuestMusl ELF/manifest files against the paired
+19-entry library/source artifact, all 17 adapted/original input hashes, original
+upstream archive and GPL/MIT notices. The [full source archive](https://github.com/kb5000/trames/archive/dd492dde61523503533de0c57b356be969735e3c.tar.gz)
+preserves the audited host boundary and tests alongside the guest source package.
+
+Downloaded runtime evidence includes actual ARM64 [native pthread results](region-memory-arm-pthread.json),
+[same-page ordinary CPU transcript](region-memory-ci-region-memory-workflow.txt),
+[native transcript](region-memory-ci-native-parallel-workflow.txt),
+[SMP transcript](region-memory-ci-smp-workflow.txt) and
+[Node transcript](region-memory-ci-nodejs-workflow.txt). Checks cover 1/2/4 CPU
+ordinary counters, all native entries/shared stacks/disk, affinity/futex/ARM
+publication, Node Atomics/offline npm/reopen and GCC/Clang/Make/CMake/CTest markers.
+The native/region fixtures use actual ARM64 Trames under QEMU; Node and developer
+tools use the development host interpreting ARM64 guests.
+
+This validates the development source. It does not replace the immutable
+delivered 0.13/build14 IPA or establish new physical-device performance.
