@@ -20,6 +20,8 @@ main 进一步修复[匿名 ELF 与 fd 执行](docs/validation/fd-exec.md)：`/p
 
 ## 快速运行
 
+开发分支已加入[实验性 Vulkan 计算桥](docs/architecture/vulkan-compute.md)：原版 Linux loader 通过标准 guest ICD 调用原生 Vulkan；iPad 构建静态链接 MoltenVK／Metal。计算、buffer、映射、pipeline、descriptor、命令缓冲和 fence 的选定接口已打通，默认关闭；[验证](docs/validation/vulkan-compute.md)使用真实软件 Vulkan 驱动，Metal 模拟器与真机验收待完成。图形呈现后续加入，端口转发暂缓；[Issue #21](https://github.com/kb5000/trames/issues/21)。
+
 需要 Rust 1.90.0；交叉构建 BusyBox 和运行差分测试还需要 Python 3、GNU AArch64 GCC/Binutils、Make、curl、bzip2 和 QEMU user-mode。Debian/Ubuntu 可安装：
 
 ```sh

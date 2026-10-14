@@ -3,7 +3,7 @@
 use super::{Exit, Runtime, RuntimeError};
 use crate::terminal::Terminal;
 use std::{
-    cell::Cell,
+    cell::{Cell, RefCell},
     collections::BTreeMap,
     rc::Rc,
     time::{Duration, Instant},
@@ -207,9 +207,17 @@ struct Kernel {
     timers: BTreeMap<i32, events::Timer>,
     next_timer: i32,
     native: trames_accel::native::Registry,
+    gpu: RefCell<BTreeMap<u64, trames_vulkan::Backend>>,
+    gpu_budget: trames_vulkan::Budget,
 }
 fn error(e: Errno) -> u64 {
     0u64.wrapping_sub(e.0 as u64)
+}
+fn accelerated(p: &Process, key: u64, profile: u64) -> bool {
+    p.linux
+        .auxiliary
+        .chunks_exact(16)
+        .any(|pair| pair[..8] == key.to_le_bytes() && pair[8..] == profile.to_le_bytes())
 }
 fn args(cpu: &Cpu) -> [u64; 6] {
     std::array::from_fn(|i| cpu.x(i))
@@ -254,6 +262,46 @@ fn strings(m: &Memory, address: u64) -> Result<Vec<Vec<u8>>, Errno> {
     Err(Errno(7))
 }
 impl Kernel {
+    fn native_call(
+        &mut self,
+        p: &mut Process,
+        pc: u64,
+        module: u64,
+        function: u64,
+        a: [u64; 3],
+    ) -> Result<trames_accel::native::Return, trames_accel::native::Error> {
+        if module != trames_vulkan::PROFILE {
+            return self.native.invoke(&mut p.memory, pc, module, function, a);
+        }
+        if !accelerated(p, trames_vulkan::AUXV_KEY, trames_vulkan::PROFILE) {
+            return Err(trames_accel::native::Error::InvalidEntry);
+        }
+        self.native
+            .authorize_stateful(&p.memory, pc, module, function)?;
+        let value = self
+            .gpu
+            .borrow_mut()
+            .entry(p.vm_id)
+            .or_insert_with(|| trames_vulkan::Backend::with_budget(self.gpu_budget.clone()))
+            .invoke(&mut p.memory, a[0], a[1], a[2])
+            .map_err(trames_accel::native::Error::Memory)?;
+        if (value as i64) < 0 {
+            p.linux.vfs.log(
+                4,
+                &format!(
+                    "pid={} Vulkan op={} result={} pc={pc:#x} comm={:?}",
+                    p.tgid,
+                    a[0],
+                    value as i64,
+                    String::from_utf8_lossy(&p.linux.command_name)
+                ),
+            );
+        }
+        Ok(trames_accel::native::Return {
+            value,
+            fallback: false,
+        })
+    }
     fn resource_id(&mut self) -> u64 {
         let id = self.next_resource;
         self.next_resource += 1;
@@ -417,6 +465,13 @@ impl Kernel {
     }
     fn close_exit_files(&self, p: &mut Process) {
         p.linux.executable_file = None;
+        if !self
+            .processes
+            .values()
+            .any(|other| other.vm_id == p.vm_id && !matches!(other.state, State::Zombie(_)))
+        {
+            self.gpu.borrow_mut().remove(&p.vm_id);
+        }
         p.linux.vfs.set_lock_owner(p.tgid);
         let live = |t: &&Process| !matches!(t.state, State::Zombie(_));
         if !self
@@ -1023,7 +1078,16 @@ impl Kernel {
                 &envp,
                 &execute_vfs,
                 super::RuntimeOptions {
-                    pure_accelerator: p.cpu.native_calls_enabled(),
+                    pure_accelerator: accelerated(
+                        p,
+                        trames_accel::native::AUXV_KEY,
+                        trames_accel::native::PROFILE,
+                    ),
+                    vulkan_accelerator: accelerated(
+                        p,
+                        trames_vulkan::AUXV_KEY,
+                        trames_vulkan::PROFILE,
+                    ),
                     native_bsearch: p.linux.auxiliary.chunks_exact(16).any(|pair| {
                         pair[..8] == trames_accel::callbacks::SEARCH_AUXV_KEY.to_le_bytes()
                             && pair[8..] == 1u64.to_le_bytes()
@@ -1356,6 +1420,7 @@ impl Kernel {
                 Ok(Some(id as u64))
             }
             221 | 281 => {
+                let old_vm = p.vm_id;
                 let others = self.other_memory(p.vm_id);
                 if number == 221 {
                     Self::exec(p, a, TOTAL_MAPPED_LIMIT.saturating_sub(others))?;
@@ -1396,6 +1461,13 @@ impl Kernel {
                 p.files_id = resource;
                 p.fs_id = resource;
                 p.actions_id = resource;
+                if !self
+                    .processes
+                    .values()
+                    .any(|other| other.vm_id == old_vm && !matches!(other.state, State::Zombie(_)))
+                {
+                    self.gpu.borrow_mut().remove(&old_vm);
+                }
                 Ok(None)
             }
             98 | 102 | 103 | 107..=111 | 137 => self.event_call(pid, p, number, a),
@@ -2504,12 +2576,12 @@ impl Kernel {
                 // Views can defer before effects when code changes during
                 // validation or backing writes need coordinator authority. A
                 // joined coordinator revalidates with a bounded retry.
-                let mut result = self.native.invoke(&mut p.memory, pc, module, function, a);
+                let mut result = self.native_call(p, pc, module, function, a);
                 for _ in 0..2 {
                     if !matches!(result, Err(trames_accel::native::Error::Checkpoint)) {
                         break;
                     }
-                    result = self.native.invoke(&mut p.memory, pc, module, function, a);
+                    result = self.native_call(p, pc, module, function, a);
                 }
                 match result {
                     Ok(value) => {
@@ -3133,6 +3205,8 @@ pub(super) fn run(
         timers: BTreeMap::new(),
         next_timer: 1,
         native: trames_accel::native::Registry::default(),
+        gpu: RefCell::new(BTreeMap::new()),
+        gpu_budget: trames_vulkan::Budget::default(),
     };
     // Enable all virtual mounts once, including /dev and /sys for programs
     // that never touch /proc. Subsequent full snapshots are demand-driven.
@@ -3295,6 +3369,8 @@ mod tests {
             timers: BTreeMap::new(),
             next_timer: 1,
             native: trames_accel::native::Registry::default(),
+            gpu: RefCell::new(BTreeMap::new()),
+            gpu_budget: trames_vulkan::Budget::default(),
         }
     }
     #[test]

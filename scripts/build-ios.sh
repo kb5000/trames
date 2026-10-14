@@ -15,6 +15,21 @@ esac
 [[ -f target/musl-hybrid/libc.so && -f target/musl-hybrid/manifest.json ]]
 mkdir -p apps/ios/Trames/GuestMusl
 cp target/musl-hybrid/libc.so target/musl-hybrid/manifest.json target/musl-hybrid/musl-COPYRIGHT.txt target/musl-hybrid/GPL-3.0.txt apps/ios/Trames/GuestMusl/
+[[ -f target/vulkan-guest/libtrames_vulkan_icd.so && -f target/vulkan-guest/manifest.json ]]
+mkdir -p apps/ios/Trames/GuestVulkan
+cp target/vulkan-guest/libtrames_vulkan_icd.so target/vulkan-guest/manifest.json target/vulkan-guest/GPL-3.0.txt apps/ios/Trames/GuestVulkan/
+cp -R target/vulkan-guest/acceptance apps/ios/Trames/GuestVulkan/
+if [[ -d target/vulkan-guest/Notices ]]; then cp -R target/vulkan-guest/Notices apps/ios/Trames/GuestVulkan/; fi
+python3 - <<'PYCODE'
+import hashlib,json,pathlib
+p=pathlib.Path('apps/ios/Trames/GuestVulkan');m=json.loads((p/'manifest.json').read_text());assert hashlib.sha256((p/'libtrames_vulkan_icd.so').read_bytes()).hexdigest()==m['icd_sha256']
+PYCODE
+python3 scripts/prepare-vulkan.py --apple
+mvk="$PWD/target/vulkan-upstream/moltenvk-all/MoltenVK/MoltenVK/static/MoltenVK.xcframework"
+case "$platform" in
+  device) export TRAMES_MOLTENVK_STATIC_DIR="$mvk/ios-arm64" ;;
+  simulator) export TRAMES_MOLTENVK_STATIC_DIR="$mvk/ios-arm64_x86_64-simulator" ;;
+esac
 python3 - <<'PYCODE'
 import hashlib,json,pathlib
 p=pathlib.Path('apps/ios/Trames/GuestMusl');m=json.loads((p/'manifest.json').read_text());assert hashlib.sha256((p/'libc.so').read_bytes()).hexdigest()==m['libc_sha256']

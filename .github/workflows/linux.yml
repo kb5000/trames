@@ -166,6 +166,15 @@ jobs:
         run: |
           bash scripts/build-fd-exec-fixtures.sh
           python3 tests/integration/fd-exec.py
+      - name: Compare standard guest Vulkan compute with the native software driver
+        run: |
+          sudo apt-get install --yes libvulkan-dev mesa-vulkan-drivers glslang-tools
+          bash scripts/build-vulkan-fixtures.sh
+          export VK_DRIVER_FILES="$(find /usr/share/vulkan/icd.d -name '*lvp*' -print -quit)"
+          test -n "$VK_DRIVER_FILES"
+          python3 tests/integration/vulkan-compute.py
+        env:
+          TRAMES_RUNNER: ${{ github.workspace }}/target/release/trames-run
       - name: Validate signed Python anonymous ELF, pass_fds and libc fexecve
         run: python3 tests/integration/memfd-python.py
         env:

@@ -16,7 +16,7 @@ actor EnvironmentStore {
         root = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true).appendingPathComponent("Trames", isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
     }
-    func start(useVolumeBudget: Bool) async throws -> LocalSession {
+    func start(useVolumeBudget: Bool, vulkan: Bool = false) async throws -> LocalSession {
         guard !resetting else { throw CancellationError() }
         let startedGeneration = generation
         let musl = try Self.muslLibrary()
@@ -42,7 +42,9 @@ actor EnvironmentStore {
                 try FileManager.default.moveItem(at: staging, to: active)
             } catch { try? FileManager.default.removeItem(at: staging); throw error }
         }
-        return try LocalSession(store: active, rootfs: nil, total: UInt64(total), available: UInt64(available), useVolumeBudget: useVolumeBudget, muslLibc: musl, pureAccelerator: true)
+        let icd = vulkan ? Bundle.main.url(forResource: "libtrames_vulkan_icd", withExtension: "so", subdirectory: "GuestVulkan") : nil
+        if vulkan, icd == nil { throw TramesError.message("Missing bundled Vulkan compute driver") }
+        return try LocalSession(store: active, rootfs: nil, total: UInt64(total), available: UInt64(available), useVolumeBudget: useVolumeBudget, muslLibc: musl, pureAccelerator: true, vulkanICD: icd)
     }
     func reset() async throws {
         guard !resetting else {throw TramesError.message("Linux 环境正在重置")}

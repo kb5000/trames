@@ -13,6 +13,7 @@ pub const FUNCTION_COUNT: usize = 19;
 pub const FEATURES: u64 = (1 << FUNCTION_COUNT) - 1;
 pub const PROFILE: u64 = 0x0001_0001; // protocol 1, pure module 1
 pub const INSTRUCTION: u32 = 0xd44a8a40; // HLT #0x5452, opt-in virtual encoding
+pub const VULKAN_PROFILE: u64 = 0x0001_0006;
 pub const MAX_BYTES: usize = 64 * 1024;
 /// Bulk operations remain bounded inside a joined NativeCall checkpoint.
 /// Larger operations fall back before any effects; no partial replay.
@@ -215,7 +216,8 @@ impl Registry {
             || (module == crate::callbacks::PROFILE && function == 1)
             || (module == crate::numeric::PROFILE && function == 1)
             || (module == crate::integer::PROFILE && function == 1)
-            || (module == crate::allocator::PROFILE && (1..=3).contains(&function));
+            || (module == crate::allocator::PROFILE && (1..=3).contains(&function))
+            || (module == VULKAN_PROFILE && function == 1);
         if !allowed || pc < 12 {
             return Ok(false);
         }
@@ -271,6 +273,22 @@ impl Registry {
         }
         Ok(valid)
     }
+    /// Stateful device calls execute on the owning coordinator after all
+    /// worker views join. This authorizes only the transport, never a resource.
+    pub fn authorize_stateful(
+        &mut self,
+        memory: &impl NativeMemory,
+        pc: u64,
+        module: u64,
+        function: u64,
+    ) -> Result<(), Error> {
+        if module != VULKAN_PROFILE || function != 1 || !self.valid(memory, pc, module, function)? {
+            self.metrics.rejected = self.metrics.rejected.saturating_add(1);
+            return Err(Error::InvalidEntry);
+        }
+        self.metrics.calls = self.metrics.calls.saturating_add(1);
+        Ok(())
+    }
     pub fn invoke(
         &mut self,
         memory: &mut impl NativeMemory,
@@ -279,6 +297,9 @@ impl Registry {
         function: u64,
         a: [u64; 3],
     ) -> Result<Return, Error> {
+        if module == VULKAN_PROFILE {
+            return Err(Error::Checkpoint);
+        }
         self.invoke_scoped(memory, pc, module, function, a, || ())
     }
     /// Enter a worker-local tracking scope only after authorization. The scope
@@ -292,6 +313,10 @@ impl Registry {
         a: [u64; 3],
         scope: impl FnOnce() -> T,
     ) -> Result<Return, Error> {
+        if module == VULKAN_PROFILE {
+            self.metrics.checkpoint_retries = self.metrics.checkpoint_retries.saturating_add(1);
+            return Err(Error::Checkpoint);
+        }
         // Reuse the interpreter's slice-scoped shared-address-space borrow.
         // Live/reentrant backings keep cpu_slice's original conservative path.
         // Neither this borrow nor the tracking scope survives a guest callback
@@ -543,6 +568,29 @@ mod tests {
         }
         m.protect(0x1000, PAGE_SIZE, Permissions::RX).unwrap();
         m
+    }
+    #[test]
+    fn device_transport_defers_without_effects_and_rechecks_code_before_authorization() {
+        let mut m = memory(1);
+        let mut registry = Registry::default();
+        m.protect(0x1000, PAGE_SIZE, Permissions::RW).unwrap();
+        m.write(0x1000, &0xd28000d0u32.to_le_bytes()).unwrap();
+        m.protect(0x1000, PAGE_SIZE, Permissions::RX).unwrap();
+        assert!(matches!(
+            registry.invoke(&mut m, 0x100c, VULKAN_PROFILE, 1, [0, 0, 0]),
+            Err(Error::Checkpoint)
+        ));
+        assert_eq!(registry.metrics.calls, 0);
+        registry
+            .authorize_stateful(&m, 0x100c, VULKAN_PROFILE, 1)
+            .unwrap();
+        m.protect(0x1000, PAGE_SIZE, Permissions::RW).unwrap();
+        m.write(0x1000, &0xd28000f0u32.to_le_bytes()).unwrap();
+        m.protect(0x1000, PAGE_SIZE, Permissions::RX).unwrap();
+        assert!(matches!(
+            registry.authorize_stateful(&m, 0x100c, VULKAN_PROFILE, 1),
+            Err(Error::InvalidEntry)
+        ));
     }
     #[test]
     fn all_pure_entries_match_coordinator_on_parallel_views() {

@@ -17,6 +17,8 @@ pub struct RuntimeOptions {
     pub native_bsearch: bool,
     /// Experimental original-source allocator routing; default stays guest.
     pub native_allocator: bool,
+    /// Experimental standard Vulkan ICD compute bridge; host opt-in only.
+    pub vulkan_accelerator: bool,
 }
 
 pub const STACK_TOP: u64 = 0x0000_7fff_fff0_0000;
@@ -188,6 +190,14 @@ fn initial_stack_bytes(
     // Static Linux auxv, including real host entropy for the guest stack guard.
     let mut auxv = vec![
         (6u64, PAGE_SIZE),
+        (
+            trames_vulkan::AUXV_KEY,
+            if options.vulkan_accelerator {
+                trames_vulkan::PROFILE
+            } else {
+                0
+            },
+        ),
         (
             trames_accel::native::AUXV_KEY,
             if options.pure_accelerator {
@@ -361,6 +371,7 @@ impl Runtime {
         }
         let mut cpu = Cpu::new(elf.start_entry, sp);
         cpu.set_native_calls(options.pure_accelerator);
+        cpu.set_vulkan_calls(options.vulkan_accelerator);
         Ok(Self {
             cpu,
             memory: elf.memory,

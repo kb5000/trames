@@ -1,0 +1,68 @@
+{
+  "header_version": "1.3.281",
+  "moltenvk_version": "1.4.2",
+  "moltenvk_commit": "db66022459ffb663aa2b50f6b018bc2e124f5edf",
+  "archives": {
+    "headers.tar.gz": {
+      "url": "https://codeload.github.com/KhronosGroup/Vulkan-Headers/tar.gz/cfebfc96b2b0bce93da7d12f2c14cc01793ae25c",
+      "sha256": "1a8fef6a5718e84b67530f736c9e5bb5c6fa51be5d7c0e2a2349cc5d31156ea1"
+    },
+    "moltenvk-all.tar": {
+      "url": "https://github.com/KhronosGroup/MoltenVK/releases/download/v1.4.2/MoltenVK-all.tar",
+      "sha256": "562a15a29bc358446a56a4091c5f7e08f604184187c1d34f712148b61ef17276"
+    },
+    "moltenvk-source.tar.gz": {
+      "url": "https://codeload.github.com/KhronosGroup/MoltenVK/tar.gz/db66022459ffb663aa2b50f6b018bc2e124f5edf",
+      "sha256": "c6ced1eb31827be7f10e2d8d77087486c75e595ab068e665a712d73b99a8ff06"
+    },
+    "moltenvk-dependency-SPIRV-Cross.tar.gz": {
+      "url": "https://codeload.github.com/KhronosGroup/SPIRV-Cross/tar.gz/6c09849fe88c48eaed08413aa022aaa136a3a057",
+      "sha256": "b81b9956289950570953738e666a031ca32ff64e4fc925eba89f227c42109518",
+      "repository": "KhronosGroup/SPIRV-Cross",
+      "commit": "6c09849fe88c48eaed08413aa022aaa136a3a057",
+      "destination": "External/SPIRV-Cross"
+    },
+    "moltenvk-dependency-SPIRV-Headers.tar.gz": {
+      "url": "https://codeload.github.com/KhronosGroup/SPIRV-Headers/tar.gz/29981f65241605e08b0ede4cfeb999fe3b723c6a",
+      "sha256": "232899f1ad4104fb5bc377b94596c7621575eee62ad9a9e8f929b63a7dd8a7ad",
+      "repository": "KhronosGroup/SPIRV-Headers",
+      "commit": "29981f65241605e08b0ede4cfeb999fe3b723c6a",
+      "destination": "External/SPIRV-Headers"
+    },
+    "moltenvk-dependency-SPIRV-Tools.tar.gz": {
+      "url": "https://codeload.github.com/KhronosGroup/SPIRV-Tools/tar.gz/0d6fd73ca73830ccab5fa1f00ed5ed40124e2c55",
+      "sha256": "20219c0962dffb0d7644bb3116a5923cfcf0526a569baa0b2a17343dd2fa6e5d",
+      "repository": "KhronosGroup/SPIRV-Tools",
+      "commit": "0d6fd73ca73830ccab5fa1f00ed5ed40124e2c55",
+      "destination": "External/SPIRV-Tools"
+    },
+    "moltenvk-dependency-Volk.tar.gz": {
+      "url": "https://codeload.github.com/zeux/volk/tar.gz/776893306c5d3b22b6185b5d4a258b81d94572bf",
+      "sha256": "ff5b63e1b7104b34955eb4a993b94882a55f8561e971b92119069e496e3496b5",
+      "repository": "zeux/volk",
+      "commit": "776893306c5d3b22b6185b5d4a258b81d94572bf",
+      "destination": "External/Volk"
+    },
+    "moltenvk-dependency-Vulkan-Headers.tar.gz": {
+      "url": "https://codeload.github.com/KhronosGroup/Vulkan-Headers/tar.gz/e3b1eec08173d6b825cd3ac88c885a63b621504a",
+      "sha256": "f492279345cbc10708b64fcd432b3ff6c8246a5837c4db2b649abba00cf82208",
+      "repository": "KhronosGroup/Vulkan-Headers",
+      "commit": "e3b1eec08173d6b825cd3ac88c885a63b621504a",
+      "destination": "External/Vulkan-Headers"
+    },
+    "moltenvk-dependency-Vulkan-Tools.tar.gz": {
+      "url": "https://codeload.github.com/KhronosGroup/Vulkan-Tools/tar.gz/8c66b352925cb771f793a4d3220b1321ae0febf1",
+      "sha256": "170eaa9086812c0a8d5275e0fa320b96af4a00fa4e84eee0437650bdd54ed2a8",
+      "repository": "KhronosGroup/Vulkan-Tools",
+      "commit": "8c66b352925cb771f793a4d3220b1321ae0febf1",
+      "destination": "External/Vulkan-Tools"
+    },
+    "moltenvk-dependency-cereal.tar.gz": {
+      "url": "https://codeload.github.com/USCiLab/cereal/tar.gz/a56bad8bbb770ee266e930c95d37fff2a5be7fea",
+      "sha256": "12e10fb541270632f6683286ce8c7e8c321fe4addb53fa91ed498b95c1758f93",
+      "repository": "USCiLab/cereal",
+      "commit": "a56bad8bbb770ee266e930c95d37fff2a5be7fea",
+      "destination": "External/cereal"
+    }
+  }
+}

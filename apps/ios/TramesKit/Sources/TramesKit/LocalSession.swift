@@ -16,12 +16,13 @@ public struct LocalStatus: Decodable, Sendable, Equatable {
 public final class LocalSession: @unchecked Sendable {
     private let lock = NSLock()
     private var handle: UInt64
-    public init(store: URL, rootfs: URL?, total: UInt64, available: UInt64, network: String = "outbound", useVolumeBudget: Bool = false, muslLibc: URL? = nil, pureAccelerator: Bool = false) throws {
+    public init(store: URL, rootfs: URL?, total: UInt64, available: UInt64, network: String = "outbound", useVolumeBudget: Bool = false, muslLibc: URL? = nil, pureAccelerator: Bool = false, vulkanICD: URL? = nil) throws {
         guard trames_abi_version() == 3 else { throw TramesError.message("Unsupported Trames ABI") }
         var options: [String:Any] = ["store": store.path, "volume_total":total, "volume_available":available, "network":network]
         if let rootfs { options["rootfs"] = rootfs.path }
         if let muslLibc { options["musl_libc"] = muslLibc.path }
         options["pure_accelerator"] = pureAccelerator
+        if let vulkanICD { options["vulkan_accelerator"] = true; options["vulkan_icd"] = vulkanICD.path }
         options["budget_bytes"] = useVolumeBudget ? total : UInt64(16) << 30
         options["timezone"] = try LocalTimezone().options
         let data = try JSONSerialization.data(withJSONObject: options)

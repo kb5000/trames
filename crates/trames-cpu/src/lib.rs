@@ -63,6 +63,7 @@ pub struct DecodeStats {
 #[derive(Default, Clone, Debug)]
 pub struct Cpu {
     native_calls: bool,
+    vulkan_calls: bool,
     registers: [u64; 31],
     pub sp: u64,
     pub pc: u64,
@@ -176,8 +177,11 @@ impl Cpu {
     pub fn set_native_calls(&mut self, enabled: bool) {
         self.native_calls = enabled;
     }
+    pub fn set_vulkan_calls(&mut self, enabled: bool) {
+        self.vulkan_calls = enabled;
+    }
     pub fn native_calls_enabled(&self) -> bool {
-        self.native_calls
+        self.native_calls || self.vulkan_calls
     }
     pub fn decode_stats(&self) -> DecodeStats {
         self.decoded.stats
@@ -296,7 +300,9 @@ impl Cpu {
         let wide = ins >> 31 != 0;
         let mut next = pc.wrapping_add(4);
         let mut event = Event::Continue;
-        if self.native_calls && ins == 0xd44a8a40 {
+        if (self.native_calls || self.vulkan_calls && self.x(16) == 0x0001_0006)
+            && ins == 0xd44a8a40
+        {
             next = pc;
             event = Event::NativeCall {
                 pc,
@@ -750,6 +756,32 @@ mod tests {
 mod native_tests {
     use super::*;
     use trames_memory::{Permissions, PAGE_SIZE};
+    #[test]
+    fn vulkan_opt_in_does_not_activate_the_pure_memory_profile() {
+        let mut m = Memory::default();
+        m.map(0x1000, PAGE_SIZE, Permissions::RW).unwrap();
+        m.write(0x1000, &0xd44a8a40u32.to_le_bytes()).unwrap();
+        m.protect(0x1000, PAGE_SIZE, Permissions::RX).unwrap();
+        let mut gpu = Cpu::new(0x1000, 0);
+        gpu.set_vulkan_calls(true);
+        gpu.set_x(16, 0x10006);
+        gpu.set_x(17, 1);
+        assert!(matches!(
+            gpu.run_slice(&mut m, 1),
+            SliceOutcome::NativeCall {
+                module: 0x10006,
+                ..
+            }
+        ));
+        let mut pure = Cpu::new(0x1000, 0);
+        pure.set_vulkan_calls(true);
+        pure.set_x(16, 0x10001);
+        pure.set_x(17, 1);
+        assert!(matches!(
+            pure.run_slice(&mut m, 1),
+            SliceOutcome::Fault(CpuFault::Trap { signal: 4, .. })
+        ));
+    }
     #[test]
     fn native_exit_gating_pc_and_budget_match_reference() {
         let mut m = Memory::default();

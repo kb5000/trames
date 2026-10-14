@@ -15,8 +15,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install AArch64 source toolchain
-        run: sudo apt-get update && sudo apt-get install --yes gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+        run: sudo apt-get update && sudo apt-get install --yes gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu libvulkan-dev glslang-tools
       - run: bash scripts/build-musl-hybrid.sh > /tmp/musl-build.log 2>&1 || { tail -30 /tmp/musl-build.log; exit 1; }
+      - name: Build standard guest Vulkan ICD and retain original native GPU sources
+        run: |
+          bash scripts/build-vulkan-fixtures.sh > /tmp/vulkan-build.log 2>&1 || { tail -30 /tmp/vulkan-build.log; exit 1; }
+          python3 scripts/prepare-vulkan.py --apple
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vulkan-compute-driver-and-native-source
+          path: |
+            target/vulkan-guest
+          if-no-files-found: error
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         with:
           name: full-musl-library-and-source
@@ -42,6 +53,10 @@ jobs:
         with:
           name: full-musl-library-and-source
           path: target/musl-hybrid
+      - uses: actions/download-artifact@v4
+        with:
+          name: vulkan-compute-driver-and-native-source
+          path: target/vulkan-guest
       - name: Build native Rust embedding library
         run: cargo build -p trames-ffi --release --locked
       - name: Test native SSH PTY and SFTP against OpenSSH

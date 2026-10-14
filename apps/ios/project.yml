@@ -34,8 +34,11 @@ targets:
     platform: iOS
     sources:
       - path: Trames
-        excludes: [GuestMusl]
+        excludes: [GuestMusl, GuestVulkan]
       - path: Trames/GuestMusl
+        type: folder
+        buildPhase: resources
+      - path: Trames/GuestVulkan
         type: folder
         buildPhase: resources
     dependencies:

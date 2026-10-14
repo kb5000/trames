@@ -106,6 +106,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("extraKeys") private var keys = "Esc,Tab,Ctrl-C,Ctrl-D,↑,↓,←,→"
     @AppStorage("useVolumeBudget") private var volume = false
+    @AppStorage("vulkanCompute") private var vulkan = false
     @AppStorage("bridgeEnabled") private var bridge = true
     @State private var resetConfirmation = false
     var body: some View {
@@ -125,6 +126,10 @@ struct SettingsView: View {
                     }
                 }
                 Section("后台行为") { Text("进入后台后暂停本地 Linux 并断开 SSH；返回前台后继续本地会话。Files 采用独立副本导入和导出。").font(.caption) }
+                Section("GPU 计算") {
+                    Toggle("Vulkan 计算（实验）", isOn: $vulkan)
+                    Text("下次打开本地终端生效。需在 Linux 安装 vulkan-loader；当前支持选定计算接口，图形显示后续加入。").font(.caption)
+                }
             }.navigationTitle("设置").toolbar { Button("完成") { dismiss() } }
                 .alert("重置 Linux 环境？",isPresented:$resetConfirmation) {
                     Button("删除并重新初始化",role:.destructive) {dismiss(); workspace.resetLocal()}
