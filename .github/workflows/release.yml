@@ -10,9 +10,6 @@ on:
         description: Successful iPad frontend run to publish
         required: true
         type: string
-  push:
-    branches: [main]
-    paths: [.github/workflows/release.yml, scripts/publish-ios-release.py]
 permissions:
   contents: read
 concurrency:
@@ -37,7 +34,7 @@ jobs:
       - name: Verify both workflows and publish the requested version
         env:
           GH_TOKEN: ${{ github.token }}
-          APPLE_RUN: ${{ github.event.workflow_run.id || inputs.apple_run || '38563169660' }}
+          APPLE_RUN: ${{ github.event.workflow_run.id || inputs.apple_run }}
         run: >-
           python3 scripts/publish-ios-release.py --repository "$GITHUB_REPOSITORY"
           --apple-run "$APPLE_RUN" --allow-version 0.14.0

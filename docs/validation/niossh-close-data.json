@@ -1,0 +1,20 @@
+{
+  "red": {
+    "sha256": "c0dae04f18663ac1e8677fafb669a6940bd10929df6b618497c6a08d6528bfe0",
+    "upstream_revision": "b93961a2988607a756cbc21a811f406f27aa9ab6",
+    "signal": 4,
+    "fatal": "Sent channel window adjust on channel in invalid state",
+    "test": "ChildChannelMultiplexerTests.testLocalCloseDrainsReadWithoutWindowAdjustment"
+  },
+  "green": {
+    "sha256": "f421c97cfd0879e843010fb09377bf956d4a51563060c1d7018e7a316bdae8e2",
+    "passed": 54,
+    "ssh_skipped": 1
+  },
+  "real": {
+    "sha256": "6e36d33197bc725fd9553e370ccb1455f28768f8101987ab6cfcf268a8ab1001",
+    "passed": 55,
+    "ssh_skipped": 0,
+    "linux_pty": false
+  }
+}

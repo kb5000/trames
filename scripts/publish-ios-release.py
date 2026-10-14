@@ -189,7 +189,7 @@ Windows 下载 `Trames-{version}-build15-unsigned.ipa`，用 Sideloadly 和原 A
 
 Linux 与 Apple 工作流均通过，实际模拟器 {summary['passedTests']} passed / 0 failed，IPA 文件与 ARM64 设备构建逐字节一致。已核对 ZIP CRC、SHA-256、可执行权限、设备平台、19 项原生功能、原始源码及许可证。
 
-GPL-3.0-or-later：完整仓库源码对应此 Release 的固定 tag；`musl-hybrid-1.2.5-source.tar.gz` 提供 guest libc 与配套源码。NIOSSH 关闭通道的已知间歇性问题继续在 Issue #9 跟踪，发布所用完整 SSH 检查通过。
+GPL-3.0-or-later：完整仓库源码对应此 Release 的固定 tag；`musl-hybrid-1.2.5-source.tar.gz` 提供 guest libc 与配套源码。基于固定 NIOSSH 源码修复关闭期间的窗口调整崩溃；确定性复现与原始测试保留，真实 OpenSSH PTY/SFTP 检查通过。物理 iPad 验收继续在 Issue #8 跟踪。
 
 Source commit: `{commit}`
 IPA SHA-256: `{sha(data)}`
