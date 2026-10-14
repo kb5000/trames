@@ -93,9 +93,36 @@ The follow-up passes 264 host workspace tests, 209 ARM64 tests under QEMU and
 65 ThreadSanitizer tests, strict Clippy and the iOS compilation check. Allocator
 matrix, parallel native/nested callbacks, full-musl upgrade/loader/TLS tests,
 standalone accelerator entries and same-page independent CPU regions pass.
+Four-CPU opt-in Node.js/npm additionally passes signed installation, default V8,
+Atomics/workers, network, offline dependencies and retained-data reopening.
 The ARM64 socket-lifetime test was rerun with sandbox network access enabled;
 its first run was blocked by the sandbox rather than a guest-memory fault.
 
 A separate paired batch compares allocator-enabled runtimes on both sides, so
 the result measures the memory-adapter change instead of allocator activation.
-Exact-commit CI and timing data will be recorded after they complete.
+Three alternating samples use identical guest ELF/libc/stores. Both binaries,
+input hashes, all samples and instruction/native-body counts are recorded in
+[the memory-access evidence](native-memory-data.json). The original binary is
+`fc7c084`; the implementation is `986e1fb`. This fixture includes the later exec
+probe, so its times must not be directly compared with the earlier prototype
+fixture/table above.
+
+| Workload | Previous adapter median | Shared access median | Previous/current ratio |
+| --- | --- | --- | --- |
+| Four allocation threads, 1 guest CPU | 1.754 s | 1.671 s | 1.05× |
+| Four allocation threads, 4 guest CPUs | 23.365 s | 18.352 s | 1.27× |
+| Normal Vim startup, 1 guest CPU | 2.195 s | 2.227 s | 0.99× |
+| Python imports/SQLite/hash, 1 guest CPU | 9.453 s | 10.393 s | 0.91× |
+
+The allocation medians improved in this batch, but four-CPU samples ranged from
+16.55–26.38 s before and 15.91–24.14 s after. Python's current samples were
+10.39, 42.07 and 9.03 s. That variation prevents a stable whole-system speedup
+claim. Single-CPU allocation NativeCall body medians were 127.85→105.11 ms;
+that counter covers all profiles and excludes interpreter/scheduler transitions.
+Reducing body time alone cannot remove those transitions, repeated cold-path
+fallback or original allocator contention. Default-off routing remains justified.
+None of these shared x86_64-host measurements establishes iPad/ARM performance.
+
+Exact-commit verification is running in
+[Linux CI](https://github.com/kb5000/trames/actions/runs/38532793511) and
+[Apple CI](https://github.com/kb5000/trames/actions/runs/38532793548).
