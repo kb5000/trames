@@ -35,6 +35,11 @@ with tempfile.TemporaryDirectory(prefix='trames-allocator-') as directory:
         if enabled is True:
             assert native['allocator_allocations']>3000 and native['allocator_frees']>1000,native
             assert native['allocator_calls']>native['allocator_allocations']+native['allocator_frees'],native
+            assert native['allocator_journal_writes']>native['allocator_frees'],native
+            if cpus==1:
+                assert native['allocator_load_callbacks']==0,native
+                assert native['allocator_direct_loads']>2*native['allocator_page_callbacks'],native
+            else:assert native['allocator_load_callbacks']>0,native
             if cpus>1:assert native['worker_calls']>3000,native
         elif enabled=='default':assert native['calls']>0 and native['allocator_calls']==0,native
         else:assert native['calls']==0,native

@@ -3,7 +3,7 @@
 use crate::native::{Error, Metrics, Return};
 use std::sync::atomic::Ordering;
 use trames_memory::{MemoryError, NativeAccessError, NativeMemory};
-use trames_native::allocator::{Access, AccessFailure};
+use trames_native::allocator::{Access, AccessFailure, ReadPage, Write};
 
 pub const AUXV_KEY: u64 = 0x5452_0007;
 pub const PROFILE: u64 = 0x0001_0005;
@@ -11,20 +11,12 @@ pub const PROFILE: u64 = 0x0001_0005;
 pub const COOKIE: u64 = 0x1250_0040_03a0_0012;
 const MMAP_THRESHOLD: u64 = 131052;
 
-#[derive(Clone, Copy, Default)]
-struct Write {
-    address: u64,
-    width: usize,
-    value: u64,
-}
 enum Failure {
     Access(NativeAccessError),
     Fallback,
 }
 struct Transport<'a, M> {
     memory: &'a mut M,
-    writes: [Write; 16],
-    count: usize,
     committed: bool,
     failure: Option<Failure>,
     frame: Option<u64>,
@@ -56,16 +48,20 @@ impl<M: NativeMemory> Transport<'_, M> {
         }
         Ok(())
     }
-    fn flush(&mut self) -> Result<(), AccessFailure> {
+    fn flush(&mut self, writes: &[Write]) -> Result<(), AccessFailure> {
         // Check every output before the first guest mutation. Mapping changes
         // require coordinated checkpoints; admitted resident writes cannot I/O.
-        for i in 0..self.count {
-            let w = self.writes[i];
-            self.admit(w.address, w.width)?;
+        for w in writes {
+            if !matches!(w.width, 1 | 2 | 4 | 8) {
+                self.failure = Some(Failure::Fallback);
+                return Err(AccessFailure);
+            }
+            self.admit(w.address, w.width as usize)?;
         }
+        // C invalidates borrowed descriptors before CAS; after execute returns
+        // none is live. Only then may these CPU writes detach/mutate guest pages.
         self.committed = true;
-        for i in 0..self.count {
-            let w = self.writes[i];
+        for w in writes {
             let bytes = w.value.to_le_bytes();
             // Use the same fixed-width stores as interpreted ARM operands.
             let result = match w.width {
@@ -81,7 +77,6 @@ impl<M: NativeMemory> Transport<'_, M> {
             };
             self.failed(result.map_err(Into::into))?;
         }
-        self.count = 0;
         Ok(())
     }
 }
@@ -97,41 +92,39 @@ impl<M: NativeMemory> Access for Transport<'_, M> {
                 return Err(AccessFailure);
             }
         };
-        if self.count == 0 {
-            return Ok(value);
-        }
-        let mut bytes = value.to_le_bytes();
-        for w in &self.writes[..self.count] {
-            for (i, b) in bytes[..width].iter_mut().enumerate() {
-                let a = address.wrapping_add(i as u64);
-                if a >= w.address && a - w.address < (w.width as u64) {
-                    *b = w.value.to_le_bytes()[(a - w.address) as usize];
-                }
-            }
-        }
-        Ok(u64::from_le_bytes(bytes))
+        Ok(value)
     }
-    fn store(&mut self, address: u64, width: usize, value: u64) -> Result<(), AccessFailure> {
-        if !matches!(width, 1 | 2 | 4 | 8) || self.count == self.writes.len() {
-            self.failure = Some(Failure::Fallback);
-            return Err(AccessFailure);
-        }
-        self.writes[self.count] = Write {
-            address,
-            width,
-            value,
-        };
-        self.count += 1;
-        Ok(())
+    fn read_pages_enabled(&self) -> bool {
+        self.memory.native_read_pages_enabled()
     }
-    fn cas(&mut self, address: u64, old: u32, new: u32) -> Result<u32, AccessFailure> {
+    fn read_page(&mut self, address: u64, width: usize) -> Result<Option<ReadPage>, AccessFailure> {
+        let base = (address & 0x00ffffffffffffff) & !4095;
+        let result = self.memory.native_read_page(address, width);
+        let descriptor = result.map(|page| {
+            page.map(|bytes| {
+                // SAFETY: The checked page is owned by this quiescent Memory. Load
+                // callbacks do not mutate it; the C cache is invalidated before CAS
+                // and no descriptor survives execute. No Rust slice or extra owner
+                // is retained across callbacks, so publication does not force COW.
+                unsafe { ReadPage::new(base, bytes.as_ptr()) }
+            })
+        });
+        self.failed(descriptor)
+    }
+    fn cas(
+        &mut self,
+        address: u64,
+        old: u32,
+        new: u32,
+        writes: &[Write],
+    ) -> Result<u32, AccessFailure> {
         if !self.committed {
             self.admit(address, 4)?;
             if let Some(frame) = self.frame {
                 self.admit(frame + 16, 16)?;
             }
-            self.flush()?;
         }
+        self.flush(writes)?;
         self.memory.fence(Ordering::SeqCst);
         let result = self.memory.atomic_update(address, 4, |bytes| {
             let value = u32::from_le_bytes(bytes.try_into().expect("four-byte CAS"));
@@ -197,8 +190,6 @@ pub(crate) fn step(
     };
     let mut transport = Transport {
         memory,
-        writes: [Write::default(); 16],
-        count: 0,
         committed: false,
         failure: None,
         frame,
@@ -212,6 +203,18 @@ pub(crate) fn step(
         index,
         counter,
     );
+    metrics.allocator_load_callbacks = metrics
+        .allocator_load_callbacks
+        .saturating_add(u64::from(result.load_callbacks));
+    metrics.allocator_page_callbacks = metrics
+        .allocator_page_callbacks
+        .saturating_add(u64::from(result.page_callbacks));
+    metrics.allocator_direct_loads = metrics
+        .allocator_direct_loads
+        .saturating_add(u64::from(result.direct_loads));
+    metrics.allocator_journal_writes = metrics
+        .allocator_journal_writes
+        .saturating_add(u64::from(result.journal_writes));
     if let Some(failure) = transport.failure.take() {
         return match failure {
             Failure::Fallback if !transport.committed => Ok(fallback()),
@@ -246,7 +249,7 @@ pub(crate) fn step(
     if function == 1 && (result.meta >= (1u64 << 48) || result.index > 31) {
         return Ok(fallback());
     }
-    if transport.flush().is_err() {
+    if transport.flush(result.pending_writes()).is_err() {
         return match transport.failure.take() {
             Some(Failure::Fallback) if !transport.committed => Ok(fallback()),
             Some(Failure::Access(error)) if !transport.committed => Err(error.into()),
@@ -330,6 +333,16 @@ mod tests {
         }
     }
     impl NativeMemory for Conflict {
+        fn native_read_pages_enabled(&self) -> bool {
+            self.memory.native_read_pages_enabled()
+        }
+        fn native_read_page(
+            &self,
+            a: u64,
+            n: usize,
+        ) -> Result<Option<&[u8; PAGE_SIZE as usize]>, NativeAccessError> {
+            self.memory.native_read_page(a, n)
+        }
         fn native_writable_range(&self, a: u64, n: usize) -> Result<bool, NativeAccessError> {
             NativeMemory::native_writable_range(&self.memory, a, n)
         }
@@ -414,6 +427,16 @@ mod tests {
     #[test]
     fn original_enframe_and_atomic_free_share_guest_headers_and_masks() {
         let mut memory = heap();
+        let page_ids = |memory: &Memory| {
+            [0x1000, 0x3000, 0x4000].map(|address| {
+                memory
+                    .native_read_page(address, 1)
+                    .unwrap()
+                    .unwrap()
+                    .as_ptr() as usize
+            })
+        };
+        let original_pages = page_ids(&memory);
         let mut metrics = Metrics::default();
         let result = allocate(&mut memory, &mut metrics);
         assert_eq!(
@@ -438,6 +461,25 @@ mod tests {
             (metrics.allocator_allocations, metrics.allocator_frees),
             (1, 1)
         );
+        // Read borrows must end before writes; a unique guest allocation
+        // does not need a COW copy merely because the native call read it.
+        assert_eq!(page_ids(&memory), original_pages);
+        assert_eq!(metrics.allocator_load_callbacks, 0);
+        assert!(metrics.allocator_page_callbacks < metrics.allocator_direct_loads);
+        assert!(metrics.allocator_journal_writes > 0);
+    }
+
+    #[test]
+    fn borrowed_native_reads_preserve_real_fork_cow_and_do_not_reuse_parent_headers() {
+        let mut memory = heap();
+        let child = memory.clone();
+        let mut metrics = Metrics::default();
+        let pointer = allocate(&mut memory, &mut metrics).value;
+        step(&mut memory, 2, [pointer, 0x1000, 0x2000], &mut metrics).unwrap();
+        assert_eq!(child.read_array::<4>(0x3030).unwrap(), 12u32.to_le_bytes());
+        assert_eq!(child.read_array::<4>(0x3034).unwrap(), 1u32.to_le_bytes());
+        assert_eq!(child.read_array::<4>(pointer - 4).unwrap(), [0; 4]);
+        assert_eq!(memory.read_array::<3>(pointer - 3).unwrap(), [255, 0, 0]);
     }
     #[test]
     fn failed_cas_resumes_original_slow_free_with_saved_metadata_and_index() {

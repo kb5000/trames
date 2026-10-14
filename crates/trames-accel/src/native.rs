@@ -28,6 +28,10 @@ pub struct Metrics {
     pub integer_calls: u64,
     pub integer_conversions: u64,
     pub allocator_calls: u64,
+    pub allocator_load_callbacks: u64,
+    pub allocator_page_callbacks: u64,
+    pub allocator_direct_loads: u64,
+    pub allocator_journal_writes: u64,
     pub allocator_allocations: u64,
     pub allocator_slot_reservations: u64,
     pub allocator_frees: u64,
@@ -60,6 +64,18 @@ impl Metrics {
     /// Worker-local counters join here after every view user has stopped.
     pub fn merge(&mut self, other: Self) {
         self.allocator_calls = self.allocator_calls.saturating_add(other.allocator_calls);
+        self.allocator_load_callbacks = self
+            .allocator_load_callbacks
+            .saturating_add(other.allocator_load_callbacks);
+        self.allocator_page_callbacks = self
+            .allocator_page_callbacks
+            .saturating_add(other.allocator_page_callbacks);
+        self.allocator_direct_loads = self
+            .allocator_direct_loads
+            .saturating_add(other.allocator_direct_loads);
+        self.allocator_journal_writes = self
+            .allocator_journal_writes
+            .saturating_add(other.allocator_journal_writes);
         self.allocator_allocations = self
             .allocator_allocations
             .saturating_add(other.allocator_allocations);

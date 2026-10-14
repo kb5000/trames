@@ -133,30 +133,89 @@ typedef __SIZE_TYPE__ size_t;
 #define MMAP_THRESHOLD 131052
 #define a_clz_32(x) __builtin_clz((unsigned)(x))
 #define a_ctz_32(x) __builtin_ctz((unsigned)(x))
+struct write { uint64_t address, value; uint32_t width, padding; };
+struct read_page { uint64_t base; const uint8_t *bytes; };
 struct callbacks {
     void *opaque;
     int (*load)(void *, uint64_t, unsigned, uint64_t *);
-    int (*store)(void *, uint64_t, unsigned, uint64_t);
-    int (*cas)(void *, uint64_t, uint32_t, uint32_t, uint32_t *);
+    int (*cas)(void *, uint64_t, uint32_t, uint32_t, const struct write *, unsigned, uint32_t *);
+    int (*read_page)(void *, uint64_t, unsigned, struct read_page *);
 };
-struct result { uint64_t value, meta, index, counter; int status; };
+struct result {
+    uint64_t value, meta, index, counter;
+    int status;
+    unsigned write_count;
+    struct write writes[16];
+    unsigned load_callbacks, page_callbacks, direct_loads, journal_writes;
+};
+_Static_assert(sizeof(struct write)==24, "journal ABI");
+_Static_assert(__builtin_offsetof(struct result,writes)==40, "result journal ABI");
+_Static_assert(__builtin_offsetof(struct result,load_callbacks)==424, "result metrics ABI");
+_Static_assert(sizeof(struct result)==440, "result ABI");
 struct access {
     const struct callbacks *cb;
+    struct result *out;
     uintptr_t context, meta, index, counter;
     int mt, status;
     uintptr_t field_address[4];
     uint64_t field_value[4];
     unsigned field_count;
+    struct read_page pages[4];
 };
 #define assert(x) do { if (!(x)) { a->status=2; return 0; } } while (0)
-/* GNU statement expressions are supported by both pinned GCC and Apple Clang.
- * Error returns stay inside C; callbacks have already returned to this frame. */
-#define load(a,p,n) ({ uint64_t tr_value=0; if((a)->status || (a)->cb->load((a)->cb->opaque,(p),(n),&tr_value)) { (a)->status=1; return 0; } tr_value; })
-/* mem and bitfields are nonvolatile and stable while the original lock or
- * live slot owns the group. Never cache volatile avail/freed masks. */
+/* Checked coordinator page borrows are reusable until publication. Worker views
+ * disable this capability; every scalar still enters the ordinary CPU transport.
+ * Use memcpy for unaligned loads, without creating fabricated C guest pointers. */
+static inline __attribute__((always_inline)) int read_scalar(struct access *a, uintptr_t address, unsigned width, uint64_t *out) {
+    uint64_t value=0;
+    uintptr_t untagged=address & 0x00ffffffffffffffULL;
+    uintptr_t base=untagged & -4096ULL;
+    unsigned offset=untagged & 4095;
+    int direct=0;
+    if(a->cb->read_page && width && width<=8 && offset<=4096-width) {
+        unsigned slot=(base>>12)&3;
+        if(a->pages[slot].base!=base) {
+            a->out->page_callbacks++;
+            if(a->cb->read_page(a->cb->opaque,address,width,&a->pages[slot])) return 1;
+            if(a->pages[slot].base!=base) return 1;
+        }
+        if(a->pages[slot].bytes) {
+            __builtin_memcpy(&value,a->pages[slot].bytes+offset,width);
+            a->out->direct_loads++;
+            direct=1;
+        }
+    }
+    if(!direct) {
+        a->out->load_callbacks++;
+        if(a->cb->load(a->cb->opaque,address,width,&value)) return 1;
+    }
+    /* Preserve original read-after-write behavior without a Rust callback for
+     * each staged store. Values remain guest endian; no whole-heap snapshot. */
+    for(unsigned w=0;w<a->out->write_count;w++) {
+        const struct write *pending=&a->out->writes[w];
+        for(unsigned i=0;i<width;i++) {
+            uint64_t at=address+i;
+            if(at>=pending->address && at-pending->address<pending->width) {
+                unsigned shift=8*i;
+                uint64_t byte=(pending->value>>(8*(at-pending->address)))&255;
+                value=(value & ~(255ULL<<shift)) | (byte<<shift);
+            }
+        }
+    }
+    *out=value;
+    return 0;
+}
+/* GNU statement expressions are supported by pinned GCC and Apple Clang.
+ * Failures propagate only after callbacks return, without longjmp across Rust. */
+#define load(a,p,n) ({ uint64_t tr_value=0; if((a)->status || read_scalar((a),(p),(n),&tr_value)) { (a)->status=1; return 0; } tr_value; })
+/* Only nonvolatile mem/control fields may cache values under original musl
+ * lifetime/lock rules. Volatile avail/freed masks always read live guest bytes. */
 #define field(a,p,o,n) ({ uintptr_t tr_address=(p)+(o); uint64_t tr_result; if((o)==16 || (o)==32) { unsigned tr_i; for(tr_i=0;tr_i<(a)->field_count;tr_i++) if((a)->field_address[tr_i]==tr_address) break; if(tr_i<(a)->field_count) tr_result=(a)->field_value[tr_i]; else { tr_result=load(a,tr_address,n); if((a)->field_count<4) { tr_i=(a)->field_count++; (a)->field_address[tr_i]=tr_address; (a)->field_value[tr_i]=tr_result; } } } else tr_result=load(a,tr_address,n); tr_result; })
-#define store(a,p,n,v) do { (a)->field_count=0; if((a)->status || (a)->cb->store((a)->cb->opaque,(p),(n),(v))) { (a)->status=1; return 0; } } while (0)
-#define cas(a,p,o,n) ({ uint32_t tr_value=0; if((a)->status || (a)->cb->cas((a)->cb->opaque,(p),(o),(n),&tr_value)) { (a)->status=1; return 0; } tr_value; })
+#define store(a,p,n,v) do { (a)->field_count=0; unsigned tr_width=(n); if((a)->status || (a)->out->write_count==16 || !(tr_width==1 || tr_width==2 || tr_width==4 || tr_width==8)) { (a)->status=3; return 0; } uint64_t tr_store_address=(p),tr_store_value=(v); (a)->out->writes[(a)->out->write_count]=(struct write){tr_store_address,tr_store_value,tr_width,0}; (a)->out->write_count++; (a)->out->journal_writes++; } while (0)
+/* Drop every cached read descriptor before the callback can publish pending
+ * headers, detach COW bytes or mutate the freed mask. The callback owner drops
+ * its borrows at that same boundary; retries then retranslate current pages. */
+#define cas(a,p,o,n) ({ uint32_t tr_value=0; for(unsigned tr_i=0;tr_i<4;tr_i++) (a)->pages[tr_i].base=~0ULL; if((a)->status || (a)->cb->cas((a)->cb->opaque,(p),(o),(n),(a)->out->writes,(a)->out->write_count,&tr_value)) { (a)->status=1; return 0; } (a)->out->write_count=0; tr_value; })
 '''
 suffix = r'''
 static uintptr_t allocate(struct access *a, size_t n) {
@@ -176,7 +235,12 @@ static uintptr_t checked_enframe(struct access *a, uintptr_t g, int index, size_
 void trames_native_allocator(const struct callbacks *cb, unsigned op,
         uint64_t pointer_or_size, uint64_t context, int mt, uint64_t index,
         uint64_t counter, struct result *out) {
-    struct access a={.cb=cb,.context=context,.mt=mt};
+    struct access a;
+    a.cb=cb; a.out=out; a.context=context; a.mt=mt;
+    a.meta=a.index=a.counter=0; a.status=0; a.field_count=0;
+    for(unsigned i=0;i<4;i++) a.pages[i].base=~0ULL;
+    out->write_count=0;
+    out->load_callbacks=out->page_callbacks=out->direct_loads=out->journal_writes=0;
     if((op==1 || op==3) && pointer_or_size>=MMAP_THRESHOLD) { out->status=3; return; }
     if(op==3 && index>31) { out->status=3; return; }
     if(op==1) { out->value=allocate(&a,pointer_or_size); out->meta=a.meta; out->index=a.index; out->counter=a.counter; out->status=a.status?a.status:(out->value?0:3); }
