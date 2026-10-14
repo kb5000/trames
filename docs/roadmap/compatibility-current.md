@@ -1,6 +1,6 @@
 # 当前 CPU 指令与 Linux 系统调用缺口（开发分支）
 
-审计日期：2026-10-13。运行时代码基于已验证的
+系统调用审计更新：2026-10-14；CPU 编码清单沿用 2026-10-13 的结果。运行时代码基于已验证的
 [0.8.0/build 9](https://github.com/kb5000/trames/tree/5d6f1076297385a0d120ff68b02a8c759d3a0db2)。
 本页已纳入后续文件接口与系统日志实现，并重新生成清单和探测结果。
 0.9.0/build 10 已通过 Linux / Apple CI 和七项 iPad 模拟器测试，安装包及证据见[发布记录](../validation/release-0.9.md)；具体范围见
@@ -50,8 +50,8 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 ## Linux：尚无入口的系统调用
 
 固定参照仍为 Linux v6.12 原生 AArch64 的 318 个编号，不是最新版内核的全部接口。
-当前有 **164 个已实现子集、152 个未实现条目、2 个废弃条目**。
-本轮使用实际 ARM64 构建，在唯一缓存解释器上逐个调用全部 154 个未分派编号，
+当前有 **165 个已实现子集、151 个未实现条目、2 个废弃条目**。
+本轮使用实际 ARM64 探测 ELF，在唯一缓存解释器上逐个调用全部 153 个未分派编号，
 均返回 `-ENOSYS`（-38）。这验证的是无入口行为，不能代替已有入口的 ABI 完整性测试。
 
 完整的编号、名称、状态、当前源码位置和探测返回值见
@@ -59,11 +59,11 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 单后端、统计及源码指纹见 [审计 JSON](../validation/compatibility-current-syscalls.json)。
 可运行 `python3 scripts/audit-syscalls.py` 更新当前报告，历史报告不会被默认覆盖。
 
-以下按用途列出主要缺口；每行列举代表接口，完整 152 项以 CSV 中 `missing` 行为准。
+以下按用途列出主要缺口；每行列举代表接口，完整 151 项以 CSV 中 `missing` 行为准。
 
 | 用途 | 尚未实现的代表接口 |
 | --- | --- |
-| 文件元数据与路径 | execveat；set/get/list/remove xattr 的路径、链接及 fd 变体 |
+| 文件元数据与路径 | set/get/list/remove xattr 的路径、链接及 fd 变体 |
 | 文件数据与批量 I/O | splice/vmsplice/tee、fallocate、sync_file_range |
 | 文件通知和异步 I/O | inotify、fanotify、旧 AIO、io_uring、signalfd4 |
 | 内存 | memfd_secret、mlock/munlock 系列、userfaultfd、mseal、内存策略与 pkey 系列 |
@@ -73,13 +73,18 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 | 内核管理与隔离 | mount/umount/pivot_root 及新挂载 API、chroot、unshare/setns、capget/capset、ptrace/seccomp、process_vm_readv/writev、bpf/perf、landlock、模块/重启/交换分区等 |
 
 2 个废弃条目是 `lookup_dcookie`（18）与 `nfsservctl`（42），同样返回 ENOSYS，
-不计入 152 个未实现条目。内核管理类接口需要结合用户态虚拟化目标选择范围，
+不计入 151 个未实现条目。内核管理类接口需要结合用户态虚拟化目标选择范围，
 不能把完整内核功能视为普通文件/进程接口的自然延伸。
 
 先前的 statx、preadv/pwritev、close_range 和 syslog 已扩展为本轮包含 23 个新入口的
 [内存/文件/调度实现](../validation/mmap-coverage.md)；所有接口仍按已实现子集标注。
 `dmesg` 可读取当前会话的未实现调用和 CPU 故障；`/dev/kmsg` 提供独立读取游标，
 日志包含限长转义的进程 `comm`；新增接口见[兼容性补充](../validation/runtime-compat.md)。具体边界及命令见[系统日志记录](../validation/compatibility-log.md)。
+
+`execveat` 已加入入口，支持匿名 memfd、取消链接的文件、`AT_EMPTY_PATH`、
+目录 fd 相对路径和选定 `O_PATH` 引用。执行按 inode 处理 `/proc/self/fd` 和
+`/proc/self/exe`；`(deleted)` 是显示标记，单独出现不阻止执行。Python 复现和
+23 项原生 Linux 对照见[fd 执行验证](../validation/fd-exec.md)。
 
 ## Linux：已有入口但语义仍有缺口
 
@@ -94,7 +99,7 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 | timerfd | 普通 realtime/monotonic/虚拟 boottime 定时器已有实现；alarm 时钟和 CANCEL_ON_SET 不支持 |
 | fcntl / futex | POSIX 记录锁已有实现；OFD 锁、完整 robust/shared futex 语义仍缺失 |
 | mknodat / mount / 虚拟设备 | 普通 inode 和 FIFO 已有实现；动态设备节点、真实挂载和完整 Linux 驱动模型不支持；现有 /dev、/proc、/sys 为虚拟端点 |
-| PTY / termios | 多 PTY 和非零 VTIME 不支持；不能以默认 Vim/htop 已运行推断全部终端模式 |
+| PTY / termios | 已支持独立多 PTY、控制终端、关闭/hangup、原版 sudo 默认 use_pty；非零 VTIME 和更多驱动 ioctl 仍不支持，见[sudo 验证](../validation/sudo-timezone.md) |
 | membarrier / I/O 优先级 | 已有 GLOBAL、PRIVATE_EXPEDITED、注册查询和单任务 ioprio_get；SYNC_CORE/RSEQ 屏障、ioprio_set 和组/用户优先级查询仍缺失 |
 | ELF / 资源限制 | 重叠 PT_LOAD 页面不支持；映射预算每进程 512 MiB、所有地址空间合计 1 GiB，guest fd 表 256 项，RLIMIT_FSIZE 已有软硬限制与写入/截断约束，其他资源修改及其他 PID 的 prlimit 仍不完整 |
 

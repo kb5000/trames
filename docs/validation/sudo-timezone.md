@@ -78,3 +78,12 @@ default rules. No guest tzdata package download is required for the current zone
 The [published 0.14.0/build 15](release-0.14.md) predates these changes. Its tag and
 IPA remain immutable. This source update is intended for the next grouped device
 release; actual iPad installation/notification acceptance remains to be checked.
+
+The preceding source `817a8c7` passed Apple workflow
+[38579896565](https://github.com/kb5000/trames/actions/runs/38579896565). Its Linux
+workflow [38579895402](https://github.com/kb5000/trames/actions/runs/38579895402)
+failed on the PTY fixture's `pause()` lost-wakeup race, not a sudo timeout. The
+follow-up [fd execution change](fd-exec.md) fixes that fixture with a blocked
+SIGHUP and atomic `sigsuspend` wait, retaining the failed CI evidence. Three
+independent native Linux/QEMU/Trames rounds then passed; full CI for the next
+source is still required before delivery.

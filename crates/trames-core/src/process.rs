@@ -338,7 +338,11 @@ impl Kernel {
             command: p.linux.command_name.clone(),
             arguments,
             environment: p.linux.environment.clone(),
-            executable: p.linux.executable_path.clone(),
+            executable: p.linux.executable_file.as_ref().map_or_else(
+                || p.linux.executable_path.clone(),
+                |file| p.linux.vfs.executable_display(file),
+            ),
+            executable_file: p.linux.executable_file.as_ref().map(Rc::downgrade),
             cwd: p.linux.vfs.cwd().unwrap_or_else(|_| b"/".to_vec()),
             mapped_bytes: p.memory.mapped_bytes(),
             virtual_bytes: p.memory.virtual_bytes(),
@@ -412,6 +416,7 @@ impl Kernel {
         }
     }
     fn close_exit_files(&self, p: &mut Process) {
+        p.linux.executable_file = None;
         p.linux.vfs.set_lock_owner(p.tgid);
         let live = |t: &&Process| !matches!(t.state, State::Zombie(_));
         if !self
@@ -930,15 +935,46 @@ impl Kernel {
         Ok(())
     }
     fn exec(p: &mut Process, a: [u64; 6], budget: usize) -> Result<(), Errno> {
+        Self::exec_at(p, AT_FDCWD, a, 0, budget)
+    }
+    fn exec_at(
+        p: &mut Process,
+        dirfd: i32,
+        a: [u64; 6],
+        flags: u32,
+        budget: usize,
+    ) -> Result<(), Errno> {
         let mut path = Linux::path(&p.memory, a[0])?;
+        if path.is_empty() && flags & 0x1000 == 0 {
+            return Err(Errno(2));
+        }
+        if flags & !0x1100 != 0 {
+            return Err(Errno(22));
+        }
+        let via_fd = path.is_empty() || !path.starts_with(b"/") && dirfd != AT_FDCWD;
+        let filename = if via_fd {
+            let mut name = format!("/dev/fd/{dirfd}").into_bytes();
+            if !path.is_empty() {
+                name.push(b'/');
+                name.extend_from_slice(&path);
+            }
+            name
+        } else {
+            path.clone()
+        };
+        let mut file = p.linux.vfs.executable_file_at(dirfd, &path, flags)?;
+        let inaccessible = via_fd && p.linux.vfs.flags(dirfd as u32)? & trames_vfs::O_CLOEXEC != 0;
         let mut argv = strings(&p.memory, a[1])?;
         let envp = strings(&p.memory, a[2])?;
         if argv.is_empty() {
             argv.push(Vec::new());
         }
         for depth in 0..5 {
-            let bytes = p.linux.vfs.executable(&path)?;
+            let bytes = file.bytes()?;
             if bytes.starts_with(b"#!") {
+                if depth == 0 && inaccessible {
+                    return Err(Errno(2));
+                }
                 if depth == 4 {
                     return Err(Errno(40));
                 }
@@ -968,15 +1004,20 @@ impl Kernel {
                         next.push(trimmed.to_vec());
                     }
                 }
-                next.push(path);
+                next.push(if depth == 0 {
+                    filename.clone()
+                } else {
+                    path.clone()
+                });
                 next.extend(argv.into_iter().skip(1));
                 argv = next;
                 path = interpreter.to_vec();
+                file = p.linux.vfs.executable_file_at(AT_FDCWD, &path, 0)?;
                 continue;
             }
             let mut execute_vfs = p.linux.vfs.clone();
-            execute_vfs.apply_exec_credentials(&path)?;
-            let mut runtime = Runtime::load_guest(
+            execute_vfs.apply_exec_file_credentials(&file)?;
+            let mut runtime = Runtime::load_guest_execfn(
                 &bytes,
                 &argv,
                 &envp,
@@ -992,6 +1033,7 @@ impl Kernel {
                             && pair[8..] == trames_accel::allocator::PROFILE.to_le_bytes()
                     }),
                 },
+                Some(&filename),
             )
             .map_err(|e| match e {
                 RuntimeError::Arguments(_) => Errno(7),
@@ -1002,8 +1044,9 @@ impl Kernel {
             if runtime.memory.mapped_bytes() > budget {
                 return Err(Errno(12));
             }
-            runtime.linux.executable_path = p.linux.vfs.resolve(trames_vfs::AT_FDCWD, &path)?;
-            runtime.linux.command_name = path
+            runtime.linux.executable_path = p.linux.vfs.executable_display(&file);
+            runtime.linux.executable_file = Some(file);
+            runtime.linux.command_name = filename
                 .rsplit(|b| *b == b'/')
                 .next()
                 .unwrap_or_default()
@@ -1312,9 +1355,19 @@ impl Kernel {
                 }
                 Ok(Some(id as u64))
             }
-            221 => {
+            221 | 281 => {
                 let others = self.other_memory(p.vm_id);
-                Self::exec(p, a, TOTAL_MAPPED_LIMIT.saturating_sub(others))?;
+                if number == 221 {
+                    Self::exec(p, a, TOTAL_MAPPED_LIMIT.saturating_sub(others))?;
+                } else {
+                    Self::exec_at(
+                        p,
+                        a[0] as i32,
+                        [a[1], a[2], a[3], 0, 0, 0],
+                        a[4] as u32,
+                        TOTAL_MAPPED_LIMIT.saturating_sub(others),
+                    )?;
+                }
                 let ids: Vec<_> = self
                     .processes
                     .iter()
@@ -1714,7 +1767,7 @@ impl Kernel {
         p.linux.vfs.set_file_size_limit(p.file_size_limit.get().0);
         let proc_path = match number {
             43 | 221 => Some((trames_vfs::AT_FDCWD, a[0])),
-            48 | 56 | 78 | 79 | 291 | 437 | 439 | 452 => Some((a[0] as i32, a[1])),
+            48 | 56 | 78 | 79 | 281 | 291 | 437 | 439 | 452 => Some((a[0] as i32, a[1])),
             _ => None,
         };
         let reads_proc = proc_path.is_some_and(|(dirfd, address)| {
@@ -1745,7 +1798,7 @@ impl Kernel {
                 Some(raw)
             }
             Ok(None) => {
-                if matches!(p.state, State::Ready) && !matches!(number, 221 | 139 | 93 | 94) {
+                if matches!(p.state, State::Ready) && !matches!(number, 221 | 281 | 139 | 93 | 94) {
                     p.state = State::Blocked(number, a);
                     put_args(&mut p.cpu, a);
                 }
@@ -1976,6 +2029,9 @@ impl Kernel {
         io: &mut impl GuestOutput,
     ) -> Result<Option<u64>, Errno> {
         let flags = p.linux.vfs.flags(a[0] as u32)?;
+        if flags & trames_vfs::O_PATH != 0 {
+            return Err(Errno(9));
+        }
         if matches!(number, 63 | 65) && flags & 3 == 1
             || matches!(number, 64 | 66) && flags & 3 == 0
         {

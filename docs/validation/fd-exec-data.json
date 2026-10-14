@@ -1,0 +1,221 @@
+{
+  "date": "2026-10-14",
+  "base_commit": "817a8c79e798cdef683e08118cce77fe09ef1a6a",
+  "issue": "https://github.com/kb5000/trames/issues/20",
+  "rust_tests_passed": 275,
+  "fd_exec_cases_per_cpu_count": 23,
+  "cpu_counts": [
+    1,
+    4
+  ],
+  "fd_execution_oracle": "native Linux host ELF; same C cases built as static AArch64 musl ELF for Trames",
+  "python": {
+    "signed_package": "python3=3.12.15-r0",
+    "musl": "full hybrid; pure accelerator selected",
+    "checks_passed": 3,
+    "subprocess_timeout_seconds": 5
+  },
+  "commands": [
+    "cargo fmt --all --check",
+    "cargo test --workspace --locked",
+    "cargo clippy --workspace --all-targets --locked -- -D warnings",
+    "cargo check -p trames-ffi --target aarch64-apple-ios --locked",
+    "cargo build --release -p trames-cli -p trames-ffi --locked",
+    "bash scripts/build-fd-exec-fixtures.sh",
+    "TRAMES_RUNNER=target/release/trames-run python3 tests/integration/fd-exec.py",
+    "TRAMES_RUNNER=target/release/trames-run TRAMES_TEST_MUSL=target/musl-hybrid/libc.so python3 tests/integration/memfd-python.py",
+    "TRAMES_RUNNER=target/release/trames-run python3 scripts/audit-syscalls.py"
+  ],
+  "binaries_sha256": {
+    "target/release/trames-run": "86d7d6352c34939ae63be19fb3a93510da5b848f95cbb2b11bd1abf93ff5f845",
+    "target/release/libtrames_ffi.so": "ffd345b5d399c77f20d2af301714d210f2f0a39b9486c7175481409d94b571b4",
+    "target/musl-hybrid/libc.so": "0350f31621b7abb66764e951318db85ba6606fb6be688be651d779465afff6e6",
+    "tests/fixtures/bin/fd-exec": "ed07db69cf696cc2ac32f3cc797e770a089aaef3e44d2ab2f3db1a64709c9fe5",
+    "tests/fixtures/bin/fd-exec-child": "c14d013596f621e50638946cd4bca3eaba643a1cbd923414df9ee0513257669c",
+    "tests/fixtures/bin/fd-exec-host": "eed18d7d0962c36b024c439d8904eb7be73f3b5dca69e49648a0924f60bb785e",
+    "tests/fixtures/bin/fd-exec-child-host": "b8f5a029d5ea14005be1d267b33d267934f2d6de3a61fd8906d2956b700d9bd9"
+  },
+  "inputs_sha256": {
+    "target/alpine-download/alpine-minirootfs-3.22.6-aarch64.tar.gz": "821565fa8f3953eefd12497b166b4b50add2f7c57fb312e75862f5867e06fefe",
+    "target/alpine-download/python3-3.12.15-r0.apk": "553d2d36b845d9c1174f9bfa3fccd9d17f51c3df79375971a4c94ab3d3b11887",
+    "target/alpine-download/python3-pyc-3.12.15-r0.apk": "026183e54cc16f69c2a2862fffdd06ee78fe08c0998d5491902abf87017f78f7",
+    "target/alpine-download/python3-pycache-pyc0-3.12.15-r0.apk": "77cdaeec5d316189bf9f258c0e753ce69e96b0d0176a8cf94d46da90b27b29d8",
+    "target/alpine-download/sudo-1.9.17_p2-r0.apk": "9e111cc57c991554e0ad582c4f2f8e07cd0b72bbdf70ece7e1ec5804c228b773"
+  },
+  "source_sha256": {
+    "crates/trames-vfs/src/executable.rs": "47dbe9f0d66a3f778187951f6c2e608db53faf6a2a6b19052e177bfb742371b4",
+    "scripts/build-fd-exec-fixtures.sh": "6058e3170ae96eb8fe21af7b72b9e070fa5305136e5c080bcfa687caa5a94701",
+    "tests/fixtures/fd-exec-child.c": "c7c0ce69117270c7b2f38c9280a87742befb2d0f0b51992c350f6170b6dfa667",
+    "tests/fixtures/fd-exec.c": "12607d8b0d03f126a9ff9633d7dea51a1c0ab7fb6c44e848d90487450e1a21f6",
+    "tests/fixtures/memfd-lab.py": "7d42423be4f40ddcf3af521d32f1eb3204a360c60537b73e16738a6e684ddb47",
+    "tests/integration/fd-exec.py": "d07cd6c337cec6f3919d26a1cd2b8210c36e71e0c277bdb6b3734f62fe0ce442",
+    "tests/integration/memfd-python.py": "5ef47d049810e3b0fd7614b8e52fece2f5c81bf50e7845271cab8becefd0d4d7",
+    ".github/workflows/linux.yml": "ecdcd4609d54e65dc8d8bebe948021abecb89cb11ec6176da7f11b38eeac481f",
+    "crates/trames-core/src/lib.rs": "503db2e0726243ac85b5b0ca03e7a70f22363a1fd8a2583304c60d1a3f963893",
+    "crates/trames-core/src/process.rs": "3ba754aa7d63637f6e892f3e3ae2e223f8f95f0d8c3444f678655382aa022cd0",
+    "crates/trames-linux/src/file_calls.rs": "cc975d99c07251b0bdc79e7829702ffdf5d0786856aa48b5f08f044cc6e42aa5",
+    "crates/trames-linux/src/state.rs": "6493d16374d9dfa5194d20d1a276766a98e6be2950d9f1e2bbffa1814bac330d",
+    "crates/trames-vfs/src/credentials.rs": "c905c0494485a519db2eb401b104ac8b4833b92ac29f0f64de7355b1b6f6f294",
+    "crates/trames-vfs/src/lib.rs": "6c59350d9d6803c598faf847a8f68cd7ae236fede23c80486bb1ffac7027191f",
+    "crates/trames-vfs/src/mapped.rs": "819c480340339fd3e8e40e4eaa0072a36b5b2b49881ab109d6fa8532bf45adb0",
+    "crates/trames-vfs/src/memfd.rs": "231a851fdcd6723939aec3b405a944da8b506abeb75276f2225f272381c4f668",
+    "crates/trames-vfs/src/namespace.rs": "e12039c2ab6f518c95063d8c813dee185dc822da89172bd1f51fe7c286e82bdb",
+    "crates/trames-vfs/src/pseudo.rs": "748f0fd1792a06afc7a0554e4b770ad558f4b6b0d05dd688fb4da2ffedf48209",
+    "scripts/audit-syscalls.py": "ec0ff30772d3d4a08e7a2a1de3659aaa07be3428520f629e9a2dcfde91862b39",
+    "tests/fixtures/pty.c": "f9aaa5f7f29eeae0f52a7550529010c7b578ebe42847a555e5802912a4a41754"
+  },
+  "validation": {
+    "workspace": {
+      "log_sha256": "100c55063e083968234570f00ea393c3e4f43575640acfd7e54cbf4f96026400",
+      "tail": [
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "",
+        "   Doc-tests trames_vfs",
+        "",
+        "running 0 tests",
+        "",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        ""
+      ]
+    },
+    "clippy": {
+      "log_sha256": "106c77831816073d30e38351a1019c70ba7188dfa7baf49b998531a8bee558b7",
+      "tail": [
+        "    Checking trames-vfs v0.14.0 (/workspace/trames/crates/trames-vfs)",
+        "    Checking trames-linux v0.14.0 (/workspace/trames/crates/trames-linux)",
+        "    Checking trames-distro v0.14.0 (/workspace/trames/crates/trames-distro)",
+        "    Checking trames-core v0.14.0 (/workspace/trames/crates/trames-core)",
+        "    Checking trames-ffi v0.14.0 (/workspace/trames/crates/trames-ffi)",
+        "    Checking trames-cli v0.14.0 (/workspace/trames/crates/trames-cli)",
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.05s"
+      ]
+    },
+    "ios_compile": {
+      "log_sha256": "00e467a38f51e85ef73b8185b51efe88b93de7e3a45ed67cc2e3c56fcdb4ef77",
+      "tail": [
+        "    Checking trames-vfs v0.14.0 (/workspace/trames/crates/trames-vfs)",
+        "    Checking trames-linux v0.14.0 (/workspace/trames/crates/trames-linux)",
+        "    Checking trames-distro v0.14.0 (/workspace/trames/crates/trames-distro)",
+        "    Checking trames-core v0.14.0 (/workspace/trames/crates/trames-core)",
+        "    Checking trames-ffi v0.14.0 (/workspace/trames/crates/trames-ffi)",
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.96s"
+      ]
+    },
+    "release_build": {
+      "log_sha256": "1e84965f75b7ae2259ef9493f56835a3fa95bb34b45e155c0740ef95d678d0bb",
+      "tail": [
+        "   Compiling trames-vfs v0.14.0 (/workspace/trames/crates/trames-vfs)",
+        "   Compiling trames-linux v0.14.0 (/workspace/trames/crates/trames-linux)",
+        "   Compiling trames-distro v0.14.0 (/workspace/trames/crates/trames-distro)",
+        "   Compiling trames-core v0.14.0 (/workspace/trames/crates/trames-core)",
+        "   Compiling trames-cli v0.14.0 (/workspace/trames/crates/trames-cli)",
+        "   Compiling trames-ffi v0.14.0 (/workspace/trames/crates/trames-ffi)",
+        "    Finished `release` profile [optimized] target(s) in 34.66s"
+      ]
+    },
+    "fd_exec_native_linux": {
+      "log_sha256": "26892998beb93fd8e388c2dff0d67182e4850a8a99ec5a06e2c70fba2f4df222",
+      "tail": [
+        "empty path precedes unknown flags: ok",
+        "empty pathname without flag: ok",
+        "invalid fd with empty path: ok",
+        "regular fd cannot be a dirfd: ok",
+        "fd shebang interpreter: ok",
+        "CLOEXEC script returns ENOENT: ok",
+        "relative dirfd shebang: ok",
+        "CLOEXEC dirfd script returns ENOENT: ok"
+      ]
+    },
+    "signed_python": {
+      "log_sha256": "6ca8f59e548ac65cee96d7a156fb5f1aec389e61724ffecf09de7994502ce618",
+      "tail": [
+        "Signed repository inputs: python3=3.12.15-r0",
+        "[PASS] Anonymous ELF execution!",
+        "[PASS] Python os.execve(fd) / libc fexecve!",
+        "[PASS] Closed fd returns ENOENT!"
+      ]
+    },
+    "signed_sudo": {
+      "log_sha256": "e8d2fc240bb97d727fe335e3b1a5e6e0d8bc03cb32b6a2bd62caf70c006eea64",
+      "tail": [
+        "Signed repository inputs: sudo=1.9.17_p2-r0",
+        "Signed sudo install: passed",
+        "Root/run-as/user escalation and nested PTYs: passed",
+        "Denied user cannot execute or read root-only files: passed",
+        "Real passwd authentication and no password echo: passed",
+        "Interactive input/output and command exit status: passed",
+        "Ctrl-C reaches the foreground command: passed",
+        "Non-PTY invocation and persistent reopen: passed"
+      ]
+    },
+    "mmap": {
+      "log_sha256": "453725a63be7753442ba43c54f3339c3669e83cea185e4c5e2886c4134abdc3b",
+      "tail": [
+        "PASS --memory shared/private/anonymous mmap, fork, EOF/truncate SIGBUS, COW discard, remap, memfd/seals, code alias invalidation, file APIs and virtual scheduler",
+        "PASS --storage shared/private/anonymous mmap, fork, EOF/truncate SIGBUS, COW discard, remap, memfd/seals, code alias invalidation, file APIs and virtual scheduler"
+      ]
+    },
+    "embedding": {
+      "log_sha256": "f8f2a28ec110a9f5c9b4fecc2f5e8e98c720ae092f917f5b9b9edb6d4eb67474",
+      "tail": [
+        "Embedding Bridge: actual Alpine CLI, claimed native consent/denial, stale reply rejection and disabled/enabled/disabled SHA-256 passed",
+        "Explicit environment reset: live-store refusal, asynchronous worker close and deletion passed",
+        "C ABI: Alpine PTY, color bytes, resize, 1 MiB disk roundtrip, exclusive export, pause/resume, busy cancellation, reopen and rootfs rejection passed"
+      ]
+    },
+    "runtime_compat": {
+      "log_sha256": "f89ebbbab6524bdda5a7388984de0a8011413d56cdaf0913b544c8f1c9adc40f",
+      "tail": [
+        "PASS --memory altstack/nesting/autodisarm/fork/thread/exec, membarrier, ioprio_get, RLIMIT_FSIZE/partial write/SIGXFSZ",
+        "PASS --storage altstack/nesting/autodisarm/fork/thread/exec, membarrier, ioprio_get, RLIMIT_FSIZE/partial write/SIGXFSZ"
+      ]
+    },
+    "pty": {
+      "log_sha256": "fffc9cecd607a4473b4c7a8b9c87eb565ec4d92b380e307bc9ecb65b54e08cbc",
+      "tail": [
+        "1-CPU PTY/IPC outcomes match independent Linux/QEMU",
+        "4-CPU PTY/IPC outcomes match independent Linux/QEMU",
+        "pty allocation/lock/canonical/raw/resize/isolation/packet/alias/hangup/reopen: ok",
+        "Unix MSG_WAITALL split record and __WALL child wait: ok",
+        "PTY session/controlling tty/last-master SIGHUP: ok"
+      ]
+    },
+    "pty_wait_fix_three_rounds": {
+      "log_sha256": "be89b8a904b4687286d75e247315fd58889c56649ef26fe4754e13be638c7b9d",
+      "tail": [
+        "pty allocation/lock/canonical/raw/resize/isolation/packet/alias/hangup/reopen: ok",
+        "Unix MSG_WAITALL split record and __WALL child wait: ok",
+        "PTY session/controlling tty/last-master SIGHUP: ok",
+        "1-CPU PTY/IPC outcomes match independent Linux/QEMU",
+        "4-CPU PTY/IPC outcomes match independent Linux/QEMU",
+        "pty allocation/lock/canonical/raw/resize/isolation/packet/alias/hangup/reopen: ok",
+        "Unix MSG_WAITALL split record and __WALL child wait: ok",
+        "PTY session/controlling tty/last-master SIGHUP: ok"
+      ]
+    },
+    "syscall_audit": {
+      "log_sha256": "3f79e2ba1a651b615effa3f8b74ae1bc30efa6f8307cf8a704a5360622a982e4",
+      "tail": [
+        "{\"scope\": \"Linux v6.12 native AArch64 numbered entries; entry presence is not full ABI conformance\", \"entries\": 318, \"statuses\": {\"missing\": 151, \"implemented_subset\": 165, \"obsolete_stub\": 2}, \"undispatched_probes_per_backend\": 153, \"backends\": [\"cached\"], \"unhandled_return\": -38}"
+      ]
+    }
+  },
+  "before_fix": {
+    "log_sha256": "8bf4c8eec31d39ece45490fd5fd3aeb875484d9c1de29f3922fff62234141b00",
+    "observed": [
+      "duplicate (deleted) label",
+      "FileNotFoundError errno=2 executing /proc/self/fd/3"
+    ]
+  },
+  "previous_source_ci": {
+    "commit": "817a8c79e798cdef683e08118cce77fe09ef1a6a",
+    "apple_success": "https://github.com/kb5000/trames/actions/runs/38579896565",
+    "linux_failure": "https://github.com/kb5000/trames/actions/runs/38579895402",
+    "failure": "QEMU PTY fixture timed out waiting for SIGHUP; check/pause lost wakeup fixed by signal masking and sigsuspend"
+  },
+  "acceptance": {
+    "exact_source_ci": "pending push and workflows",
+    "ipad_device": "pending next grouped IPA",
+    "published_ipa_unchanged": "v0.14.0/build15"
+  }
+}

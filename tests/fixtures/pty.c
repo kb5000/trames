@@ -122,9 +122,15 @@ int main(void) {
         assert(ioctl(s, TIOCSCTTY, 0) == 0);
         assert(tcgetsid(s) == getpid() && tcgetpgrp(s) == getpid());
         int tty = open("/dev/tty", O_RDWR); assert(tty >= 0);
+        sigset_t blocked, previous;
+        sigemptyset(&blocked); sigaddset(&blocked, SIGHUP);
+        assert(sigprocmask(SIG_BLOCK, &blocked, &previous) == 0);
         signal(SIGHUP, on_hangup);
         assert(write(sync[1], "r", 1) == 1);
-        while (!hungup) pause();
+        // HUP may arrive after the ready byte but before waiting. Atomically
+        // unblock and suspend; a check followed by pause() loses that wakeup.
+        while (!hungup) sigsuspend(&previous);
+        assert(sigprocmask(SIG_SETMASK, &previous, NULL) == 0);
         close(tty); close(s); close(sync[1]); _exit(0);
     }
     close(sync[1]);

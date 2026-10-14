@@ -80,6 +80,8 @@ notes = {
     233: 'Selected memory access/huge-page/dump hints and real private-page DONTNEED discard. No DONTFORK, FREE, REMOVE or paging model.',
     267: 'Sync the virtual filesystem selected by a valid guest descriptor.',
     279: 'Anonymous memfd with CLOEXEC/ALLOW_SEALING and four classic fcntl seals; shared mapping coherence, lifetime and write-seal busy checks. Aggregate RAM budget 128 MiB.',
+    281: 'Inode-based execveat: absolute/dirfd-relative paths, AT_EMPTY_PATH, final AT_SYMLINK_NOFOLLOW, O_PATH executable references, original ELF/shebang loader, credentials and private close-on-exec table. FD script names use /dev/fd; inaccessible CLOEXEC script paths return ENOENT. No new mount/security/ptrace model.',
+    221: 'Inode-based execve including proc fd/exe magic links, unlinked regular files and anonymous memfd. Retain executed inode after CLOEXEC closure, separate AT_EXECFN from argv[0], reuse existing ELF/interpreter/thread teardown and credential checks.',
     285: 'Bounded same-runtime regular-file copy with offset-pointer preflight, partial counts, overlap and append checks; no zero-copy path.',
     286: 'preadv2 selected RWF_DSYNC/SYNC flags, full ARM64 position and -1 current-position semantics; other flags unsupported.',
     287: 'pwritev2 selected RWF_DSYNC/SYNC and position semantics; RWF_APPEND/NOWAIT/HIPRI and newer flags unsupported.',
@@ -96,7 +98,7 @@ notes = {
     22: 'Cooperative epoll wait with timeout, temporary signal mask and EINTR restoration.',
     25: 'Selected descriptor/status operations plus POSIX GETLK/SETLK/SETLKW byte-range locks; TGID ownership, split/merge, close and deadlock detection. Classic memfd GET_SEALS/ADD_SEALS, busy-map checks and shrink/grow/write enforcement. No OFD locks.',
     33: 'Persistent named FIFO and regular inode creation; umask and permissions. Device creation explicitly unsupported.',
-    56: 'Selected openat flags, trailing-slash semantics and named FIFO blocking/nonblocking handshake; signal interruption/restart.',
+    56: 'Selected openat flags including O_PATH metadata/exec references, trailing-slash semantics and named FIFO blocking/nonblocking handshake; signal interruption/restart.',
     72: 'Virtual pselect6 bounded by 256 descriptors.',
     73: 'Virtual ppoll bounded by 256 descriptors.',
     85: 'Guest timerfd, realtime/monotonic/virtual boottime; nonblocking/cloexec. Alarm clocks unsupported.',
@@ -104,7 +106,6 @@ notes = {
     87: 'Timerfd interval/remaining time; shared open-description state.',
     199: 'Bounded AF_UNIX stream/datagram/seqpacket pairs; dup/fork, shutdown, peek/trunc and fault preflight. No named endpoints or ancillary FD passing.',
     134: 'Selected rt_sigaction flags including musl sign-extended SA_RESETHAND, actual alternate-stack delivery, nested virtual signal frames and synchronous CPU-fault context recovery. No SVE/SME signal context or full realtime signal queue.',
-    221: 'Exec preserves UID/GID/groups and set-ID results; auxv uses the same credentials.',
     441: 'Timespec epoll wait; not dispatched by the pinned QEMU 10.0.13 oracle, independently checked by M6 fixtures.',
 }
 for row in rows:
@@ -155,7 +156,7 @@ metadata = {
         'crates/trames-memory/src/reservations.rs', 'crates/trames-core/src/lib.rs',
         'crates/trames-memory/src/cpu_memory.rs', 'crates/trames-memory/src/parallel.rs', 'crates/trames-core/src/workers.rs',
         'crates/trames-net/src/native.rs', 'crates/trames-net/src/virtualnet/sockets.rs',
-        'crates/trames-vfs/src/mapped.rs', 'crates/trames-vfs/src/memfd.rs',
+        'crates/trames-vfs/src/mapped.rs', 'crates/trames-vfs/src/memfd.rs', 'crates/trames-vfs/src/executable.rs',
         'crates/trames-vfs/src/namespace.rs', 'crates/trames-vfs/src/credentials.rs')},
 }
 (OUT / (args.prefix + '-syscalls.json')).write_text(json.dumps(metadata, indent=2) + '\n')

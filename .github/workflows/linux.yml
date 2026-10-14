@@ -162,6 +162,14 @@ jobs:
         run: python3 tests/integration/timezone.py
         env:
           TRAMES_TEST_MUSL: ${{ github.workspace }}/target/musl-hybrid/libc.so
+      - name: Compare inode-based execve and execveat with native Linux
+        run: |
+          bash scripts/build-fd-exec-fixtures.sh
+          python3 tests/integration/fd-exec.py
+      - name: Validate signed Python anonymous ELF, pass_fds and libc fexecve
+        run: python3 tests/integration/memfd-python.py
+        env:
+          TRAMES_TEST_MUSL: ${{ github.workspace }}/target/musl-hybrid/libc.so
 
       - name: Signed Python install, repair and execution with 128 host descriptors
         run: python3 tests/integration/python.py

@@ -16,6 +16,8 @@
 
 后续 main 已补齐[sudo 伪终端与宿主时区同步](docs/validation/sudo-timezone.md)：原版 sudo 的默认 `use_pty`、密码认证、提权和嵌套运行通过实际测试；本地 Linux 在启动、回到前台及系统时区变化时接收 iPad 的原始时区规则，保留显式 `TZ` 覆盖。这些更新尚未包含在上述 0.14.0 IPA 中，将随下一次合并版本交付。
 
+main 进一步修复[匿名 ELF 与 fd 执行](docs/validation/fd-exec.md)：`/proc/self/fd/N` 按实际 inode 执行，加入 `execveat`、`AT_EMPTY_PATH` 和 `O_PATH`；关闭原 fd 后仍保留 `/proc/self/exe`。`(deleted)` 只显示一次，仍表示有效的匿名或已取消链接文件。Python `pass_fds` 与 `os.execve(fd)`、23 项原生 Linux 对照通过，随下一次合并版本交付。
+
 ## 快速运行
 
 需要 Rust 1.90.0；交叉构建 BusyBox 和运行差分测试还需要 Python 3、GNU AArch64 GCC/Binutils、Make、curl、bzip2 和 QEMU user-mode。Debian/Ubuntu 可安装：

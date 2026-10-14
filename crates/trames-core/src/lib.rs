@@ -142,6 +142,7 @@ fn initial_stack(
             .collect::<Vec<_>>(),
         &trames_vfs::Credentials::default(),
         RuntimeOptions::default(),
+        None,
     )
 }
 fn initial_stack_bytes(
@@ -150,6 +151,7 @@ fn initial_stack_bytes(
     envp: &[Vec<u8>],
     credentials: &trames_vfs::Credentials,
     options: RuntimeOptions,
+    exec_filename: Option<&[u8]>,
 ) -> Result<u64, RuntimeError> {
     if argv.is_empty() {
         return Err(RuntimeError::Arguments("argv[0] is required"));
@@ -164,6 +166,9 @@ fn initial_stack_bytes(
     let mut cursor = STACK_TOP;
     let mut arguments = Vec::new();
     let mut environment = Vec::new();
+    let execfn = exec_filename
+        .map(|name| push_string(&mut elf.memory, &mut cursor, name))
+        .transpose()?;
     // Linux places argv[0..] then envp[0..] in increasing address order.
     // libuv uses that contiguous region for process.title. Packing forwards
     // onto a descending stack reverses it and can underflow its area length.
@@ -247,7 +252,7 @@ fn initial_stack_bytes(
             23,
             u64::from(credentials.uid != credentials.euid || credentials.gid != credentials.egid),
         ),
-        (31, arguments[0]),
+        (31, execfn.unwrap_or(arguments[0])),
         (25, cursor),
     ];
     if let Some(phdr) = elf.phdr {
@@ -294,6 +299,16 @@ impl Runtime {
         vfs: &trames_vfs::Vfs,
         options: RuntimeOptions,
     ) -> Result<Self, RuntimeError> {
+        Self::load_guest_execfn(bytes, argv, envp, vfs, options, None)
+    }
+    pub(crate) fn load_guest_execfn(
+        bytes: &[u8],
+        argv: &[Vec<u8>],
+        envp: &[Vec<u8>],
+        vfs: &trames_vfs::Vfs,
+        options: RuntimeOptions,
+        exec_filename: Option<&[u8]>,
+    ) -> Result<Self, RuntimeError> {
         let mut elf = trames_elf::load_with_interpreter(bytes, DEFAULT_MEMORY_LIMIT, |path| {
             vfs.executable(path).map_err(|e| ElfError::Interpreter(e.0))
         })?;
@@ -310,10 +325,24 @@ impl Runtime {
             .copied()
             .take(15)
             .collect();
-        if let Ok(path) = vfs.resolve(trames_vfs::AT_FDCWD, &linux.executable_path) {
-            linux.executable_path = path;
+        if exec_filename.is_none() {
+            if let Ok(file) =
+                vfs.executable_file_at(trames_vfs::AT_FDCWD, &linux.executable_path, 0)
+            {
+                linux.executable_path = vfs.executable_display(&file);
+                linux.executable_file = Some(file);
+            } else if let Ok(path) = vfs.resolve(trames_vfs::AT_FDCWD, &linux.executable_path) {
+                linux.executable_path = path;
+            }
         }
-        let sp = initial_stack_bytes(&mut elf, argv, envp, &vfs.credentials, options)?;
+        let sp = initial_stack_bytes(
+            &mut elf,
+            argv,
+            envp,
+            &vfs.credentials,
+            options,
+            exec_filename,
+        )?;
         for i in 0..argv.len() {
             linux
                 .argument_pointers
