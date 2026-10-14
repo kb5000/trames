@@ -85,5 +85,6 @@ that change. No runtime retry or kernel synchronization workaround was added.
 Full exact-source CI for this follow-up remains tracked on GitHub.
 
 The published [0.14.0/build 15](release-0.14.md) IPA predates this fix. This work
-joins sudo/timezone changes for the next grouped IPA; no new IPA is produced by
-this source update. Actual device testing remains pending.
+joins sudo/timezone changes for the next grouped IPA. This source update does
+not publish a new device release; Apple CI may produce unsigned IPA artifacts
+as part of its build verification. Actual device testing remains pending.
