@@ -181,6 +181,11 @@ def main():
         linux = next(r for r in runs if r['path'] == '.github/workflows/linux.yml')
         linux = wait_run(args.repository, linux['id'])
         assert linux['head_sha'] == commit and linux['event'] == 'push'
+        tag_commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+        changed = set(subprocess.check_output(['git', '-C', str(source), 'diff',
+                      '--name-only', commit, tag_commit], text=True).splitlines())
+        publication_only = {'scripts/publish-ios-release.py', '.github/workflows/release.yml'}
+        assert changed <= publication_only, 'The release tag must have identical application/build sources'
         tag = 'v' + version
         existing = subprocess.run(['gh', 'release', 'view', tag, '--repo', args.repository,
                                    '--json', 'url,isDraft,targetCommitish,assets'], capture_output=True)
@@ -195,7 +200,7 @@ def main():
             print('Existing release is immutable; assets and tag retained.')
             return
         if release:
-            assert release['targetCommitish'] == commit, 'Draft belongs to another source commit'
+            assert release['targetCommitish'] == tag_commit, 'Draft belongs to another release commit'
         expected = {'sideload': 'Trames-unsigned-sideload', 'build': 'unsigned-ipad-build-and-project',
                     'musl': 'full-musl-library-and-source',
                     'vulkan': 'vulkan-compute-driver-and-native-source'}
@@ -211,7 +216,10 @@ def main():
             metadata[kind] = {k: artifact[k] for k in ('id', 'name', 'digest', 'expires_at')}
         data, report, summary = verify(archives, source, commit)
         report['artifacts'] = metadata
-        report['publisher_source_commit'] = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+        report['publisher_source_commit'] = tag_commit
+        report['tag_commit'] = tag_commit
+        report['application_identical_at_tag'] = True
+        report['publication_only_changed_paths'] = sorted(changed)
         report['ci'] = {r['name']: {'id': r['id'], 'attempt': r['run_attempt'],
                         'url': r['html_url'], 'head_sha': r['head_sha'], 'conclusion': r['conclusion']}
                         for r in (apple, linux)}
@@ -232,7 +240,8 @@ def main():
 
 实际模拟器 {summary['passedTests']} passed / 0 failed / 0 skipped。IPA 与 ARM64 设备构建逐字节一致；ZIP、SHA-256、执行权限、平台、原始源码及许可证均通过核验。
 
-Source commit: `{commit}`
+Application source commit: `{commit}`
+Release tag commit: `{tag_commit}` (only publication workflow/script differ; application/build sources are identical)
 IPA SHA-256: `{sha(data)}`
 Apple CI: {apple['html_url']}
 Linux CI: {linux['html_url']}
@@ -250,7 +259,7 @@ Linux CI: {linux['html_url']}
                     gh('release', 'upload', tag, asset, '--repo', args.repository)
         else:
             gh('release', 'create', tag, *assets, '--repo', args.repository, '--draft',
-               '--target', commit, '--title', f'Trames {version} (build 16)', '--notes-file', notes)
+               '--target', tag_commit, '--title', f'Trames {version} (build 16)', '--notes-file', notes)
         # The public release appears only after every verified asset uploaded.
         gh('release', 'edit', tag, '--repo', args.repository, '--draft=false')
         print(f'https://github.com/{args.repository}/releases/tag/{tag}')
