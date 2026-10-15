@@ -78,3 +78,12 @@ python3 scripts/audit-syscalls.py
 [验证日志](guest-signalfd.log) · [源码/二进制指纹](guest-signalfd-data.json) ·
 [原版 crun 配置、输出与包指纹](guest-signalfd-crun.json) ·
 [当前实现范围](../architecture/guest-containers.md)
+
+## CI 补充修复
+
+上一批 e42637f 的 Apple CI 已成功；Linux CI 38761015787 在宿主编译设备 fixture 时
+失败：diagnostic 分支没有检查 readlink 返回值，强化 glibc 头的 warn_unused_result
+被 -Werror 升为错误。现在保留长度检查和显式 NUL 结尾，并用
+`-O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 -Wall -Wextra -Werror` 重新编译设备与
+signalfd 原生 oracle；两者通过，设备单核/四核集成测试再次通过。此补丁只改测试。
+新提交的完整云端 CI 尚待结果，不将本地修复验证写作云端成功。

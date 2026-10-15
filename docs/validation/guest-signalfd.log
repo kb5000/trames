@@ -676,3 +676,35 @@ Signed original capsh: query, drop, keepcaps/setuid, ambient exec and no_new_pri
 
 === audit ===
 {"scope": "Linux v6.12 native AArch64 numbered entries; entry presence is not full ABI conformance", "entries": 318, "statuses": {"missing": 139, "implemented_subset": 177, "obsolete_stub": 2}, "undispatched_probes_per_backend": 141, "backends": ["cached"], "unhandled_return": -38}
+
+=== strengthened native compilation and device CI regression ===
+device I/O: null EOF, zero/full reads, full ENOSPC, random lengths and discarded writes: ok
+parameters, flags and proc metadata: ok
+standard coalescing and pending bits: ok
+realtime queue multiplicity: ok
+realtime priority and sender FIFO: ok
+private before shared delivery: ok
+Linux synchronous-class priority: ok
+vectored and whole-record reads: ok
+copy faults and partial success: ok
+dup-shared masks and independent descriptor flags: ok
+epoll readiness, oneshot and last-close lifetime: ok
+pselect readiness: ok
+fork reader-local pending signals: ok
+exec pending and CLOEXEC: ok
+SIGCHLD metadata and wait coexistence: ok
+thread-private and process-shared queues: ok
+blocking read wakeup: ok
+interrupted read: ok
+SA_RESTART read: ok
+blocked epoll wakeup: ok
+blocked ppoll wakeup: ok
+blocked ignored signal: ok
+disposition changes discard pending signals: ok
+ordinary handler consumption: ok
+sigtimedwait and close coexistence: ok
+POSIX timer metadata and overrun: ok
+1-CPU guest mknodat, device I/O vs native Linux, permission/mount checks and persistent reopen: passed
+4-CPU guest mknodat, device I/O vs native Linux, permission/mount checks and persistent reopen: passed
+1-CPU openat2: 30 native Linux comparisons plus tmpfs/bind traversal and cached-lookup checks passed
+4-CPU openat2: 30 native Linux comparisons plus tmpfs/bind traversal and cached-lookup checks passed

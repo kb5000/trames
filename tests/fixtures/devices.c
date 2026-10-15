@@ -55,7 +55,7 @@ int main(int argc,char **argv) {
         int meta=syscall(SYS_openat2,dir,names[i],how,sizeof how); assert(meta>=0);
         char via[64]; snprintf(via,sizeof via,"/proc/self/fd/%d",meta);
         int changed=chmod(via,0666);
-        if(changed) { int error=errno; char target[256]={0}; readlink(via,target,sizeof target-1); fprintf(stderr,"chmod %s -> %s: errno=%d\n",via,target,error); }
+        if(changed) { int error=errno; char target[256]={0}; ssize_t n=readlink(via,target,sizeof target-1); if(n>=0) target[n]=0; fprintf(stderr,"chmod %s -> %s: errno=%d\n",via,target,error); }
         assert(changed==0 && chown(via,0,0)==0); close(meta);
     }
     io("/nodes");

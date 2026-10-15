@@ -25,7 +25,8 @@
       "devices",
       "fd-exec",
       "capabilities"
-    ]
+    ],
+    "fortified_native_devices_and_signalfd": "passed: -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 -Wall -Wextra -Werror"
   },
   "syscalls": {
     "implemented_subset": 177,
@@ -48,7 +49,8 @@
     "tests/fixtures/mount-namespaces.c": "221a9b8b2a0b404225aa03b755ea44ef32e19507928a0b7e7ceb6fc3cd21345f",
     "tests/fixtures/signalfd.c": "67381e8fa0aaf87867c54110525d745cb199c5cc839f217caf277c9cb7ebdd7f",
     "tests/integration/containers.py": "a953f2f55de28c8e6991cdd3ed6dfe08f1557db40c2482300231ce2bd164340a",
-    "tests/integration/signalfd.py": "11bb4a0c3b5673cdfb5156f54da9020efc3cbf3a6ff3f082af4d64876e08496e"
+    "tests/integration/signalfd.py": "11bb4a0c3b5673cdfb5156f54da9020efc3cbf3a6ff3f082af4d64876e08496e",
+    "tests/fixtures/devices.c": "a9f526f777890e9c5041dae3e4acfddc6462e3698d1db0471f46963ba619b1a0"
   },
   "artifacts_sha256": {
     "target/release/trames-run": "8bacc0e6b694878860943dc43be003fcaee33969d985caf78a16430844a5adc3",
@@ -56,7 +58,8 @@
     "tests/fixtures/bin/mount-namespaces": "4fe45dc25d90935303a9d94ccc9daa625499cbf504dc7580ca42b382d84961d2",
     "tests/fixtures/bin/pid-namespaces": "9fe34e8f79db7086ded15095c3c56c792d8151b69ac6ac9d35715352a56a9cec",
     "target/busybox-build/busybox": "58ee781107cb1a65049252b5ec78b6eb9cf6db76a6bbdfd228b62791cf010b93",
-    "target/alpine-download/alpine-minirootfs-3.22.6-aarch64.tar.gz": "821565fa8f3953eefd12497b166b4b50add2f7c57fb312e75862f5867e06fefe"
+    "target/alpine-download/alpine-minirootfs-3.22.6-aarch64.tar.gz": "821565fa8f3953eefd12497b166b4b50add2f7c57fb312e75862f5867e06fefe",
+    "tests/fixtures/bin/devices": "f6e8089f3f7b3410bd2851176c7bbbac4844a9cd8320c4fe04908ed6729e1f74"
   },
   "oracle": "native Linux C compiler for signalfd ABI, separate AArch64 musl guest build; no privileged host namespace oracle",
   "remaining_limits": [
@@ -64,5 +67,9 @@
     "Fixed 4096 queue budget with standard signals exempt",
     "Inherited epoll across fork does not model original signal wait-queue registration; recreate/register epoll in child",
     "Cgroup managers, resource controls, private devpts, full OCI and container engines not accepted"
-  ]
+  ],
+  "previous_batch_ci": {
+    "ios": "38761015300 success",
+    "linux": "38761015787 failed: devices.c readlink unused result; fixed in follow-up fixture patch"
+  }
 }
