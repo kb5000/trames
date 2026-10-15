@@ -82,6 +82,23 @@ int main(void) {
         assert(strstr(buf, " /proc ") && !strstr(buf, " /old "));
         _exit(0);
     }
+    waited(child); contents("/source/data");
+    child=fork(); assert(child>=0);
+    if(!child) {
+        assert(unshare(CLONE_NEWNS)==0);
+        assert(mount("/source","/newroot",NULL,MS_BIND,NULL)==0);
+        int oldroot=open("/",O_PATH|O_DIRECTORY), newroot=open("/newroot",O_RDONLY|O_DIRECTORY);
+        assert(oldroot>=0 && newroot>=0 && fchdir(newroot)==0);
+        // Original crun stacks the old root on the new root, then detaches it
+        // through a retained old-root FD rather than creating a put_old folder.
+        assert(syscall(SYS_pivot_root,".",".")==0 && fchdir(oldroot)==0);
+        assert(mount(NULL,".",NULL,MS_REC|MS_PRIVATE,NULL)==0 && umount2(".",MNT_DETACH)==0);
+        assert(umount2(".",MNT_DETACH)==-1 && errno==EINVAL);
+        assert(chdir("/")==0); contents("/data");
+        assert(access("/source/data",F_OK)==-1 && errno==ENOENT);
+        int retained=openat(oldroot,"source/data",O_RDONLY); assert(retained>=0); close(retained);
+        close(oldroot); close(newroot); _exit(0);
+    }
     waited(child); contents("/source/data"); close(original);
     puts("mount: pivot_root, mounted proc, old-root detach, parent root preserved: ok");
     return 0;

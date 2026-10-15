@@ -44,7 +44,9 @@ static void *thread(void *unused) {
 }
 static int nested(void *unused) {
     (void)unused;
-    assert(getpid() == 1 && getppid() == 0 && getpgrp() == 1 && getsid(0) == 1);
+    assert(getpid() == 1 && getppid() == 0 && getpgrp() == 0 && getsid(0) == 0);
+    assert(setsid()==1 && getpgrp()==1 && getsid(0)==1);
+    assert(setsid()==-1 && errno==EPERM);
     char before[128]; ssize_t n = readlink("/proc/self", before, sizeof before-1); assert(n > 0); before[n] = 0;
     assert(atoi(before) > 1); // inherited proc belongs to parent namespace
     assert(unshare(CLONE_NEWNS) == 0); mount_proc();
@@ -60,7 +62,8 @@ static int isolated(void *unused) {
     (void)unused;
     assert(getpid() == 1 && syscall(SYS_gettid) == 1 && getppid() == 0);
     char comm[16]; assert(prctl(PR_SET_NAME, "pid-init") == 0 && prctl(PR_GET_NAME, comm) == 0 && !strcmp(comm, "pid-init"));
-    assert(getpgrp() == 1 && getsid(0) == 1);
+    assert(getpgrp() == 0 && getsid(0) == 0);
+    assert(setsid()==1 && getpgrp()==1 && getsid(0)==1);
     assert(setns(rootns, CLONE_NEWPID) == -1 && errno == EINVAL);
     assert(setpgid(0, -1) == -1 && errno == EINVAL);
     assert(syscall(SYS_ioprio_get, 1, -1) == -1 && errno == EINVAL);

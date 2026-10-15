@@ -77,11 +77,37 @@ KILL、SYS_NICE、SYS_RESOURCE、SYSLOG 和 NET_RAW。既有 proc 敏感路径�
 权限层级、完整 ptrace、seccomp 仍缺。不冒充宿主 Linux 权限，也不更改 iPad 凭据。
 
 原版签名 Alpine capsh 2.78 已可查询/丢弃/保留能力并测试 ambient/NNP 跨 exec。
-crun 1.23.1 已通过 `/sys/fs/cgroup` 查询和 PR_SET_DUMPABLE，创建 PID/mount/UTS
-namespace 后停止于 `mknodat /dev/null: Not supported`。探测显式禁用 cgroup
-manager，采用 private 传播配置；还没有执行容器里的 `/bin/true`。open_tree 和
-keyctl 的 ENOSYS 走了运行时自身回退，不是这次终止原因。下一步补标准设备节点
-创建、持久化和权限，再继续原版运行时的实际路径。
+crun 1.23.1 已通过 cgroup 查询、dumpable、设备创建与权限设置、根目录切换和
+setsid，走到 `Writing container status`，随后因 signalfd4 ENOSYS 退出 1。
+探测显式禁用 cgroup manager，采用 private 传播配置；尚未完成容器运行验收。
+open_tree 和 keyctl 的 ENOSYS 走了运行时自身回退，不是这次终止原因。
+下一步接入 signalfd 与现有信号队列、阻塞读取及 poll/epoll。
+
+## 设备节点与容器路径
+
+mknodat 可创建字符/块设备 inode，需要 CAP_MKNOD，并执行目录权限、umask、
+只读挂载检查。null/zero/full/random/urandom/tty/ptmx/kmsg 按 Linux 设备号
+复用 guest 驱动；未注册的设备号可以 stat、O_PATH 查询和持久化，数据打开返回
+ENXIO。不打开宿主设备，也不提供块驱动或独立 devpts；PTY 仍使用会话内共享池。
+设备支持硬链接、改名、chmod/chown、unlink 后的 FD 保活；getdents 区分字符与
+块类型。合成的易失 `/dev` 端点不能硬链接进持久 inode 表，仍可用 mknodat 创建
+相同设备号的节点。磁盘 v3 manifest 新增设备类型和 32 位设备号，不保存活跃终端状态。
+已有常规文件和 FIFO 的 dev 参数被忽略；socket inode mknod 仍不支持。
+
+openat2 支持 NO_XDEV、NO_MAGICLINKS、NO_SYMLINKS、BENEATH、IN_ROOT。
+检查发生在 mount/inode 遍历中：BENEATH 拒绝越界和绝对链接，IN_ROOT 将绝对
+路径、绝对链接和根部的 `..` 限定在 dirfd；NO_XDEV 同时识别 bind mount。
+最终 O_PATH|O_NOFOLLOW 可以引用链接自身。CACHED 返回 EAGAIN，不宣称无 I/O
+查找保证。路径元数据变更由现有 syscall 边界串行处理，没有增加访存热路径锁。
+
+chmod/chown 通过 `/proc/PID/fd/N` 操作实际 inode 与挂载，不按显示路径重新打开；
+包括取消链接后同名重建。相关元数据调用会刷新 proc 快照，避免 FD 复用时取到旧对象。
+支持原版 crun 的 `pivot_root(".", ".")`，随后通过旧根 FD 执行 MNT_DETACH；
+父 mount namespace 和显式保留的旧根 FD 保持各自语义。
+
+新 PID namespace 的 PID 1 继承父 PGID/SID/控制终端，不提前建立新会话。
+祖先组/会话编号在新 namespace 内显示为 0，首次 setsid 可建立编号 1 的会话。
+这一行为按 Linux v6.12 `copy_process` 校正，普通会话首领再次 setsid 仍返回 EPERM。
 
 ## Cgroup v2 域成员与 dumpable
 
@@ -160,7 +186,7 @@ namespace 归属，setns 只影响后续创建。私有 loopback、端口空间�
 
 ## 后续顺序
 
-1. 标准设备节点创建、User namespace、IPC/net namespace 和进程控制；用真实
+1. signalfd 与信号/事件等待，随后 User namespace、IPC/net namespace；用真实
    容器工具探测结果排序，未知限制明确报错。
 2. 原版 guest runc/crun 的最小 rootfs、多个隔离进程和生命周期测试；之后
    扩展完整容器引擎、overlayfs、cgroup 控制器及更广的安全接口。
@@ -175,6 +201,8 @@ bash scripts/build-capability-fixtures.sh
 python3 tests/integration/capabilities.py
 bash scripts/build-cgroup-fixtures.sh
 python3 tests/integration/cgroups.py
+bash scripts/build-device-fixtures.sh
+python3 tests/integration/devices.py
 ```
 
 namespace 集成测试覆盖 1/4 CPU 下 UTS、chroot、mount 和 PID ABI，包括嵌套、
@@ -185,3 +213,4 @@ unshare/nsenter/chroot/mount/umount/df/ps。
 
 权限批次见[capability 与原版工具验证](../validation/guest-capabilities.md)，
 cgroup/dumpable 批次见[成员生命周期与原版 crun 阻塞验证](../validation/guest-cgroups.md)。
+设备与启动路径批次见[设备、openat2 与原版运行时验证](../validation/guest-devices.md)。

@@ -88,7 +88,7 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 
 首批新增 chroot、unshare、setns、sethostname、setdomainname 五个入口；
 UTS 对象和 namespace FD 具备实际共享/隔离及保活语义，clone 增加 NEWUTS。
-后续增加 mount/umount2/pivot_root、mount namespace、tmpfs、bind/rbind，以及 waitid、child subreaper、PID namespace 层级、init 生命周期和 proc 挂载视图。后续新增 capget/capset 和 capability prctl 子集，接入实际权限判断及 UID/exec 转换；本批补 cgroup v2 域成员生命周期和 dumpable/敏感 proc 访问。user/IPC/net namespace、cgroup 资源控制与委派仍未实现，详见[guest 内容器基础](../architecture/guest-containers.md)。
+后续增加 mount/umount2/pivot_root、mount namespace、tmpfs、bind/rbind，以及 waitid、child subreaper、PID namespace 层级、init 生命周期和 proc 挂载视图。后续新增 capget/capset 和 capability prctl 子集，接入实际权限判断及 UID/exec 转换；后续补 cgroup v2 域成员生命周期和 dumpable/敏感 proc 访问。本批增加设备 inode/持久化、openat2 路径约束、proc FD chmod/chown、同点 pivot_root，并校正 PID init 的会话继承。user/IPC/net namespace、cgroup 资源控制与委派仍未实现，详见[guest 内容器基础](../architecture/guest-containers.md)。
 默认网络改为[宿主原生直连](../architecture/direct-network.md)，不改变系统调用编号数。
 
 ## Linux：已有入口但语义仍有缺口
@@ -99,13 +99,13 @@ UTS 对象和 namespace FD 具备实际共享/隔离及保活语义，clone 增�
 | capability / prctl | 初始 guest user namespace 的 E/P/I/bounding/ambient、securebits、no_new_privs、dumpable 0/1 与选定 proc 访问检查已有；file capability xattr、user namespace 映射/权限层级、完整 ptrace、core 文件写出、seccomp 仍缺 |
 | statx / syslog | statx 不报告未有依据的 birth time、DIO 对齐等可选字段；syslog 不接管宿主内核日志或控制台 |
 | mmap / 内存管理 | 已有共享文件/匿名映射、写回、EOF/truncate SIGBUS、选定 remap/discard；仍缺需求分页/回收、MAP_SYNC、huge pages、DONTUNMAP、跨不同映射段 remap 等 |
-| memfd / 文件接口 / 调度 | memfd 的新 sealing/huge/no-exec 模式、openat2 的非零 resolve 要求、更多 RWF flags、实时策略仍缺失；已支持 1–32 个虚拟 CPU、实际宿主并行、affinity 与 getcpu |
+| memfd / 文件接口 / 调度 | memfd 的新 sealing/huge/no-exec 模式、更多 RWF flags、实时策略仍缺失；openat2 已支持路径/链接/跨挂载约束，CACHED 返回 EAGAIN；已支持 1–32 个虚拟 CPU、实际宿主并行、affinity 与 getcpu |
 | rt_sigaction / 信号帧 | 备用信号栈、嵌套及 AUTODISARM 已实现；完整实时排队、SVE/SME 信号上下文仍缺失；同步 CPU 故障恢复已有实现 |
 | socket / socketpair | Unix socketpair 已实现；具名 AF_UNIX 端点、SCM_RIGHTS 等辅助消息传递仍缺失 |
 | epoll | level-triggered 和 ONESHOT 已实现；EPOLLET、嵌套 epoll、EXCLUSIVE 不支持 |
 | timerfd | 普通 realtime/monotonic/虚拟 boottime 定时器已有实现；alarm 时钟和 CANCEL_ON_SET 不支持 |
 | fcntl / futex | POSIX 记录锁已有实现；OFD 锁、完整 robust/shared futex 语义仍缺失 |
-| mknodat / mount / 虚拟设备 | 普通 inode 和 FIFO 已有实现；动态设备节点、块设备文件系统和完整 Linux 驱动模型不支持；已有 guest 虚拟挂载对象，/dev、/proc、/sys 仍为选定端点 |
+| mknodat / mount / 虚拟设备 | 普通/FIFO/字符/块 inode 与设备号持久化已有；标准字符设备复用 guest 驱动，未注册设备打开 ENXIO；socket inode mknod、块驱动/文件系统、独立 devpts 和完整 Linux 驱动模型仍缺 |
 | PTY / termios | 已支持独立多 PTY、控制终端、关闭/hangup、原版 sudo 默认 use_pty；非零 VTIME 和更多驱动 ioctl 仍不支持，见[sudo 验证](../validation/sudo-timezone.md) |
 | membarrier / I/O 优先级 | 已有 GLOBAL、PRIVATE_EXPEDITED、注册查询和单任务 ioprio_get；SYNC_CORE/RSEQ 屏障、ioprio_set 和组/用户优先级查询仍缺失 |
 | ELF / 资源限制 | 重叠 PT_LOAD 页面不支持；映射预算每进程 512 MiB、所有地址空间合计 1 GiB，guest fd 表 256 项，RLIMIT_FSIZE 已有软硬限制与写入/截断约束，其他资源修改及其他 PID 的 prlimit 仍不完整 |

@@ -1652,11 +1652,9 @@ impl Kernel {
                 child.linux.vfs.activate_child_pid(id)?;
                 let parent_tid = p.linux.vfs.visible_pid(id);
                 let child_tid = child.linux.vfs.visible_pid(id);
-                if child_tid == 1 {
-                    child.group = id;
-                    child.session = id;
-                    child.linux.vfs.set_controlling_terminal(None)?;
-                }
+                // PID namespace init inherits its parent's PGID/SID/tty, as
+                // Linux copy_process does. Ancestor-only IDs appear as zero
+                // inside the new namespace; init can then establish setsid().
                 let resource = self.resource_id();
                 if shared_vm {
                     child.memory = p.memory.share();
@@ -2189,8 +2187,10 @@ impl Kernel {
         p.linux.vfs.set_lock_owner(p.tgid);
         p.linux.vfs.set_file_size_limit(p.file_size_limit.get().0);
         let proc_path = match number {
-            43 | 221 => Some((trames_vfs::AT_FDCWD, a[0])),
-            48 | 56 | 78 | 79 | 281 | 291 | 437 | 439 | 452 => Some((a[0] as i32, a[1])),
+            43 | 45 | 221 => Some((trames_vfs::AT_FDCWD, a[0])),
+            48 | 53 | 54 | 56 | 78 | 79 | 88 | 281 | 291 | 437 | 439 | 452 => {
+                Some((a[0] as i32, a[1]))
+            }
             _ => None,
         };
         let reads_proc = proc_path.is_some_and(|(dirfd, address)| {
