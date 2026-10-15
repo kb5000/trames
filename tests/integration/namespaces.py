@@ -27,6 +27,15 @@ with tempfile.TemporaryDirectory(prefix='trames-namespaces-') as folder:
             b'mount: namespace isolation, setns, tmpfs quota, bind identity/readonly/noexec, detached fd: ok\n'
             b'mount: pivot_root, mounted proc, old-root detach, parent root preserved: ok\n'), (cpus, result.returncode, result.stdout, result.stderr[-8000:])
         print(f'{cpus}-CPU guest mount namespace, tmpfs/bind/pivot_root and mount FD lifetime passed', flush=True)
+    for cpus in ('1', '4'):
+        result = subprocess.run([RUNNER, '--storage', str(Path(folder)/('pid-'+cpus)), '--cpus', cpus,
+            '--network', 'off', '--max-instructions', '1000000000',
+            '--exec-file', f"/pid-namespaces={ROOT/'tests/fixtures/bin/pid-namespaces'}", '--guest', '/pid-namespaces'],
+            capture_output=True, timeout=90)
+        assert result.returncode == 0 and result.stdout == (
+            b'pid: clone hierarchy, proc mount views, signals/waitid, threads, orphan adoption and init shutdown: ok\n'
+            b'pid: unshare/setns child-only semantics, dead namespace rejection and subreaper: ok\n'), (cpus, result.returncode, result.stdout, result.stderr[-8000:])
+        print(f'{cpus}-CPU guest PID hierarchy, proc views, signals/waits, threads, init shutdown and subreaper passed', flush=True)
     command = [RUNNER, '--storage', str(Path(folder)/'busybox'), '--network', 'off',
                '--rootfs', str(ROOT/'target/alpine-download/alpine-minirootfs-3.22.6-aarch64.tar.gz'),
                '--exec-file', f"/jail/bin/sh={ROOT/'target/busybox-build/busybox'}",
@@ -47,3 +56,10 @@ with tempfile.TemporaryDirectory(prefix='trames-namespaces-') as folder:
         "test ! -e /m-target/inside; echo BUSYBOX_MOUNTS_PASS"], capture_output=True, timeout=60)
     assert result.returncode == 0 and b'BUSYBOX_MOUNTS_PASS\n' in result.stdout, (result.returncode, result.stdout, result.stderr[-8000:])
     print('Real BusyBox unshare -m, mount tmpfs/bind/remount, df and umount passed', flush=True)
+
+    result = subprocess.run([RUNNER, '--storage', str(Path(folder)/'busybox'), '--network', 'off',
+        '--max-instructions', '300000000', '--guest', '/bin/sh', '-ec',
+        "unshare -pf --mount-proc /bin/sh -ec 'test \"$$\" = 1; test \"$(readlink /proc/self)\" -gt 1; "
+        "sleep 0.01 & wait; ps; test -r /proc/1/status'; echo BUSYBOX_PID_PASS"], capture_output=True, timeout=60)
+    assert result.returncode == 0 and b'BUSYBOX_PID_PASS\n' in result.stdout, (result.returncode, result.stdout, result.stderr[-8000:])
+    print('Real BusyBox unshare -pf --mount-proc, shell PID 1, background wait and ps passed', flush=True)

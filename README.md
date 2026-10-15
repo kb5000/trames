@@ -104,7 +104,7 @@ DNS 由真实 musl 读取 guest 的 `/etc/resolv.conf`；可用 `--file /etc/res
 
 ## Guest 内容器（开发中）
 
-已支持 UTS 和 mount namespace：`unshare/clone/setns`、可保活的 `/proc/PID/ns/{uts,mnt}` FD、`chroot`、tmpfs、bind/rbind、只读重挂载、umount2 和 pivot_root。挂载身份贯穿路径、FD、exec/mmap 与 proc mountinfo；1/4 CPU guest ABI 和原版 BusyBox 命令用于验证。PID/net/user/IPC namespace、传播挂载、cgroup 等仍待实现，尚不能运行完整容器。下一批先实现 PID 层级和生命周期，再验证原版 guest runc/crun；见[设计与顺序](docs/architecture/guest-containers.md)。
+已支持 UTS、mount 和 PID namespace：`unshare/clone/setns`、可保活的 namespace FD、`chroot`、tmpfs、bind/rbind、umount2 和 pivot_root。PID 层级覆盖线程、exec、wait/kill、PID 1 退出清理与孤儿收养；proc 挂载绑定创建时的 PID 视图。1/4 CPU fixture 和原版 BusyBox `unshare -pf --mount-proc` 用于验证。User/capability、IPC/net namespace、传播挂载、cgroup 等仍待实现，尚不能运行完整容器；下一步按原版 guest runc/crun 的实际依赖推进，见[设计与顺序](docs/architecture/guest-containers.md)。
 
 ## Linux 兼容性更新（0.2.0）
 

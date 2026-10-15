@@ -68,6 +68,8 @@ fn assign_cpus(ready: impl IntoIterator<Item = (u32, u64)>, count: usize) -> Vec
 mod compat;
 #[path = "process_events.rs"]
 mod events;
+#[path = "process_pid.rs"]
+mod pid_namespace;
 use compat::AltStack;
 #[derive(Clone, Copy, Default)]
 struct Action {
@@ -140,6 +142,7 @@ struct Process {
     fs_id: u64,
     actions_id: u64,
     rekey: Option<u32>,
+    subreaper: bool,
     alt_stack: AltStack,
     membarrier_registered: Rc<Cell<bool>>,
     file_size_limit: Rc<Cell<(u64, u64)>>,
@@ -174,6 +177,7 @@ impl Process {
             fs_id: self.fs_id,
             actions_id: self.actions_id,
             rekey: None,
+            subreaper: false,
             alt_stack: self.alt_stack,
             membarrier_registered: Rc::new(Cell::new(self.membarrier_registered.get())),
             file_size_limit: Rc::new(Cell::new(self.file_size_limit.get())),
@@ -478,6 +482,8 @@ impl Kernel {
             },
             credentials: p.linux.vfs.credentials.clone(),
             namespaces: p.linux.vfs.namespace_snapshot(),
+            namespace_ids: [p.tgid, pid, p.group, p.session]
+                .map(|id| p.linux.vfs.pid_namespace().hierarchy(id)),
             command: p.linux.command_name.clone(),
             arguments,
             environment: p.linux.environment.clone(),
@@ -626,6 +632,7 @@ impl Kernel {
             .values()
             .any(|t| t.tgid == p.tgid && !matches!(t.state, State::Zombie(_)))
         {
+            self.reap_namespace_children(pid, p.linux.vfs.pid_namespace(), p.parent);
             self.timers.retain(|_, t| t.tgid != p.tgid);
             self.notify(
                 p.parent,
@@ -640,11 +647,6 @@ impl Kernel {
         } else {
             p.auto_reap = false;
         }
-        for child in self.processes.values_mut() {
-            if child.parent == pid {
-                child.parent = 1;
-            }
-        }
     }
     fn finish_group(&mut self, tgid: u32) {
         if self
@@ -658,6 +660,8 @@ impl Kernel {
         if let Some(leader) = self.processes.get(&tgid) {
             if let State::Zombie(status) = leader.state {
                 let parent = leader.parent;
+                let namespace = leader.linux.vfs.pid_namespace().clone();
+                self.reap_namespace_children(tgid, &namespace, parent);
                 self.notify(
                     parent,
                     tgid,
@@ -722,6 +726,15 @@ impl Kernel {
         if matches!(sig, 19..=22) {
             p.pending.remove(&18);
         }
+        // A namespace init accepts only installed handlers. Ancestor SIGKILL
+        // and SIGSTOP are the Linux exceptions; synchronous faults are separate.
+        if p.linux.vfs.pid_namespace().is_nested()
+            && p.linux.vfs.visible_pid(p.tgid) == 1
+            && p.actions[sig as usize].handler <= 1
+            && !(matches!(sig, 9 | 19) && p.linux.vfs.visible_pid(sender) == 0)
+        {
+            return;
+        }
         if sig != 9 && sig != 19 && p.actions[sig as usize].handler == 1 {
             return;
         }
@@ -757,6 +770,8 @@ impl Kernel {
         if tid == 0 || tid > i32::MAX as u32 {
             return Err(Errno(22));
         }
+        let tid = p.linux.vfs.global_pid(tid)?;
+        let tgid = tgid.map(|id| p.linux.vfs.global_pid(id)).transpose()?;
         let allowed = if tid == pid {
             if tgid.is_some_and(|id| id != p.tgid) {
                 return Err(Errno(3));
@@ -789,23 +804,27 @@ impl Kernel {
             return Err(Errno(22));
         }
         let positive = if target > 0 {
-            if target as u32 == pid {
+            let target = p.linux.vfs.global_pid(target as u32)?;
+            if target == pid {
                 p.tgid
             } else {
-                self.processes.get(&(target as u32)).ok_or(Errno(3))?.tgid
+                self.processes.get(&target).ok_or(Errno(3))?.tgid
             }
         } else {
             0
         };
         let matches = |id: u32, group: u32| {
+            if p.linux.vfs.visible_pid(id) == 0 {
+                return false;
+            }
             if target > 0 {
                 id == positive
             } else if target == 0 {
                 group == p.group
             } else if target == -1 {
-                id != 1 && id != p.tgid
+                p.linux.vfs.visible_pid(id) != 1 && id != p.tgid
             } else {
-                group == target.unsigned_abs()
+                p.linux.vfs.visible_pid(group) == target.unsigned_abs()
             }
         };
         // One process-directed pending signal per thread group; stop/continue
@@ -924,8 +943,20 @@ impl Kernel {
         if matches!(p.state, State::Stopped) && sig != 9 && sig != 18 {
             return Ok(false);
         }
-        let info = p.pending.remove(&sig).expect("pending");
+        let mut info = p.pending.remove(&sig).expect("pending");
+        info.sender = p.linux.vfs.visible_pid(info.sender);
         let action = p.actions[sig as usize];
+        // Timer-generated signals also reach this queue without queue_one.
+        // Namespace init ignores default dispositions, except forced ancestor
+        // KILL/STOP and synchronous faults, which must still make progress.
+        if p.linux.vfs.pid_namespace().is_nested()
+            && p.linux.vfs.visible_pid(p.tgid) == 1
+            && action.handler == 0
+            && info.fault.is_none()
+            && !(matches!(sig, 9 | 19) && info.timer.is_none())
+        {
+            return Ok(true);
+        }
         if sig == 9 || (action.handler == 0 && !matches!(sig, 17 | 18 | 23 | 28 | 19..=22)) {
             self.exit(pid, p, sig as i32);
             return Ok(true);
@@ -958,7 +989,20 @@ impl Kernel {
                 if action.flags & 0x10000000 != 0
                     && matches!(
                         number,
-                        25 | 32 | 56 | 63 | 64 | 65 | 66 | 260 | 202 | 242 | 206 | 207 | 211 | 212
+                        25 | 32
+                            | 56
+                            | 63
+                            | 64
+                            | 65
+                            | 66
+                            | 95
+                            | 260
+                            | 202
+                            | 242
+                            | 206
+                            | 207
+                            | 211
+                            | 212
                     )
                 {
                     put_args(&mut p.cpu, a);
@@ -1268,8 +1312,9 @@ impl Kernel {
                     && **id == c.tgid
                     && (target == -1
                         || (target == 0 && c.group == p.group)
-                        || (target < -1 && c.group == target.unsigned_abs())
-                        || (target > 0 && **id == target as u32))
+                        || (target < -1
+                            && p.linux.vfs.visible_pid(c.group) == target.unsigned_abs())
+                        || (target > 0 && p.linux.vfs.visible_pid(**id) == target as u32))
             })
             .map(|(&id, _)| id)
             .collect();
@@ -1305,7 +1350,7 @@ impl Kernel {
                 } else {
                     self.processes.get_mut(&child).expect("child").wait_event = None;
                 }
-                return Ok(Some(child as u64));
+                return Ok(Some(p.linux.vfs.visible_pid(child) as u64));
             }
         }
         if a[2] & 1 != 0 {
@@ -1335,11 +1380,16 @@ impl Kernel {
                 if (a[0] as u32 as i32) < 0 {
                     return Err(Errno(22));
                 }
-                let target = if a[0] as u32 == 0 || a[0] as u32 == pid {
+                let target_id = if a[0] as u32 == 0 {
+                    pid
+                } else {
+                    p.linux.vfs.global_pid(a[0] as u32)?
+                };
+                let target = if target_id == pid {
                     &*p
                 } else {
                     self.processes
-                        .get(&(a[0] as u32))
+                        .get(&target_id)
                         .filter(|p| !matches!(p.state, State::Zombie(_)))
                         .ok_or(Errno(3))?
                 };
@@ -1381,13 +1431,10 @@ impl Kernel {
                         if mask == 0 {
                             return Err(Errno(22));
                         }
-                        if a[0] as u32 == 0 || a[0] as u32 == pid {
+                        if target_id == pid {
                             p.affinity = mask;
                         } else {
-                            self.processes
-                                .get_mut(&(a[0] as u32))
-                                .ok_or(Errno(3))?
-                                .affinity = mask;
+                            self.processes.get_mut(&target_id).ok_or(Errno(3))?.affinity = mask;
                         }
                         Ok(Some(0))
                     }
@@ -1438,12 +1485,27 @@ impl Kernel {
                 Ok(Some(0))
             }
             97 => {
-                const ALLOWED: u64 =
-                    trames_vfs::CLONE_NEWUTS | trames_vfs::CLONE_NEWNS | 0x200 | 0x400;
+                const ALLOWED: u64 = trames_vfs::CLONE_NEWUTS
+                    | trames_vfs::CLONE_NEWNS
+                    | trames_vfs::CLONE_NEWPID
+                    | 0x200
+                    | 0x400;
                 if a[0] & !ALLOWED != 0 {
                     return Err(Errno(22));
                 }
+                if a[0] & trames_vfs::CLONE_NEWPID != 0
+                    && (pid != p.tgid
+                        || self
+                            .processes
+                            .values()
+                            .any(|t| t.tgid == p.tgid && !matches!(t.state, State::Zombie(_))))
+                {
+                    return Err(Errno(22));
+                }
                 let mut view = p.linux.vfs.clone();
+                if a[0] & trames_vfs::CLONE_NEWPID != 0 {
+                    view.unshare_pid()?;
+                }
                 if a[0] & trames_vfs::CLONE_NEWUTS != 0 {
                     view.unshare_uts()?;
                 }
@@ -1500,12 +1562,12 @@ impl Kernel {
                 }
                 Ok(Some(0))
             }
-            172 => Ok(Some(p.tgid as u64)),
-            178 => Ok(Some(pid as u64)),
-            173 => Ok(Some(p.parent as u64)),
+            172 => Ok(Some(p.linux.vfs.visible_pid(p.tgid) as u64)),
+            178 => Ok(Some(p.linux.vfs.visible_pid(pid) as u64)),
+            173 => Ok(Some(p.linux.vfs.visible_pid(p.parent) as u64)),
             96 => {
                 p.linux.dispatch(&mut p.cpu, &mut p.memory, io);
-                Ok(Some(pid as u64))
+                Ok(Some(p.linux.vfs.visible_pid(pid) as u64))
             }
             220 => {
                 const ALLOWED: u64 = 0xff
@@ -1516,10 +1578,16 @@ impl Kernel {
                     | 0xfc0000
                     | 0x1000000
                     | trames_vfs::CLONE_NEWUTS
-                    | trames_vfs::CLONE_NEWNS;
+                    | trames_vfs::CLONE_NEWNS
+                    | trames_vfs::CLONE_NEWPID;
                 let threaded = a[0] & 0x10000 != 0;
                 let shared_vm = a[0] & 0x100 != 0;
                 if a[0] & !ALLOWED != 0
+                    || (a[0] & trames_vfs::CLONE_NEWPID != 0 && a[0] & (0x10000 | 0x8000) != 0)
+                    || (threaded
+                        && p.linux.vfs.pid_namespace().id()
+                            != p.linux.vfs.pid_children_namespace().id())
+                    || (a[0] & 0x8000 != 0 && p.linux.vfs.visible_pid(p.tgid) == 1)
                     || (a[0] & trames_vfs::CLONE_NEWNS != 0 && a[0] & 0x200 != 0)
                     || (!threaded && a[0] & 255 != 17)
                     || (threaded && (a[0] & 0x900 != 0x900 || a[0] & 255 != 0))
@@ -1546,12 +1614,35 @@ impl Kernel {
                     .checked_add(1)
                     .filter(|v| *v < i32::MAX as u32)
                     .ok_or(Errno(11))?;
+                let live = self
+                    .processes
+                    .iter()
+                    .flat_map(|(&id, t)| {
+                        [id, t.tgid, t.group, t.session]
+                            .into_iter()
+                            .chain(t.pending.values().map(|i| i.sender))
+                    })
+                    .chain([pid, p.tgid, p.group, p.session])
+                    .chain(p.pending.values().map(|i| i.sender))
+                    .collect();
+                p.linux.vfs.pid_namespace().retain_ids(&live);
                 let mut child = p.fork();
+                if a[0] & trames_vfs::CLONE_NEWPID != 0 {
+                    child.linux.vfs.unshare_pid()?;
+                }
                 if a[0] & trames_vfs::CLONE_NEWUTS != 0 {
                     child.linux.vfs.unshare_uts()?;
                 }
                 if a[0] & trames_vfs::CLONE_NEWNS != 0 {
                     child.linux.vfs.unshare_mounts()?;
+                }
+                child.linux.vfs.activate_child_pid(id)?;
+                let parent_tid = p.linux.vfs.visible_pid(id);
+                let child_tid = child.linux.vfs.visible_pid(id);
+                if child_tid == 1 {
+                    child.group = id;
+                    child.session = id;
+                    child.linux.vfs.set_controlling_terminal(None)?;
                 }
                 let resource = self.resource_id();
                 if shared_vm {
@@ -1574,6 +1665,7 @@ impl Kernel {
                 }
                 child.tgid = if threaded { p.tgid } else { id };
                 if threaded {
+                    child.subreaper = p.subreaper;
                     child.file_size_limit = p.file_size_limit.clone();
                 }
                 child
@@ -1593,22 +1685,22 @@ impl Kernel {
                 }
                 if a[0] & 0x100000 != 0 {
                     p.memory
-                        .write(a[2], &id.to_le_bytes())
+                        .write(a[2], &parent_tid.to_le_bytes())
                         .map_err(|_| Errno(14))?;
                 }
                 if a[0] & 0x1000000 != 0 {
                     child
                         .memory
-                        .write(a[4], &id.to_le_bytes())
+                        .write(a[4], &child_tid.to_le_bytes())
                         .map_err(|_| Errno(14))?;
                 }
                 self.processes.insert(id, child);
                 if a[0] & 0x4000 != 0 {
                     p.state = State::Vfork(id);
-                    p.cpu.set_x(0, id as u64);
+                    p.cpu.set_x(0, parent_tid as u64);
                     return Ok(None);
                 }
-                Ok(Some(id as u64))
+                Ok(Some(parent_tid as u64))
             }
             221 | 281 => {
                 let old_vm = p.vm_id;
@@ -1663,6 +1755,22 @@ impl Kernel {
             }
             98 | 102 | 103 | 107..=111 | 137 => self.event_call(pid, p, number, a),
             260 => self.wait(pid, p, a),
+            95 => self.waitid(p, a),
+            167 if matches!(a[0], 36 | 37) => match a[0] {
+                36 => {
+                    p.subreaper = a[1] != 0;
+                    for t in self.processes.values_mut().filter(|t| t.tgid == p.tgid) {
+                        t.subreaper = p.subreaper;
+                    }
+                    Ok(Some(0))
+                }
+                37 => {
+                    write_u32(&mut p.memory, a[1], u32::from(p.subreaper))?;
+                    Ok(Some(0))
+                }
+                _ => Err(Errno(22)),
+            },
+            167 if !matches!(a[0], 15 | 16) => Err(Errno(22)),
             72 | 73 => self.poll(p, number, a, io),
             22 | 441 => self.epoll(p, number, a, io),
             85..=87 => self.timerfd(p, number, a),
@@ -1773,18 +1881,30 @@ impl Kernel {
                     .map(Some)
             }
             154 => {
-                let target = if a[0] == 0 { pid } else { a[0] as u32 };
-                let group = if a[1] == 0 { target } else { a[1] as u32 };
                 if a[1] > i32::MAX as u64 {
                     return Err(Errno(22));
                 }
-                let (session, parent) = if target == pid {
+                let target = if a[0] == 0 {
+                    p.tgid
+                } else {
+                    p.linux.vfs.global_pid(a[0] as u32)?
+                };
+                let group = if a[1] == 0 {
+                    target
+                } else {
+                    p.linux.vfs.global_pid(a[1] as u32).map_err(|_| Errno(1))?
+                };
+                let (session, parent) = if target == p.tgid {
                     (p.session, p.parent)
                 } else {
-                    let c = self.processes.get(&target).ok_or(Errno(3))?;
+                    let c = self
+                        .processes
+                        .get(&target)
+                        .filter(|c| c.tgid == target)
+                        .ok_or(Errno(3))?;
                     (c.session, c.parent)
                 };
-                if target != pid && parent != pid {
+                if target != p.tgid && parent != p.tgid {
                     return Err(Errno(3));
                 }
                 if session != p.session || target == session {
@@ -1799,31 +1919,46 @@ impl Kernel {
                 {
                     return Err(Errno(1));
                 }
-                if target == pid {
+                if target == p.tgid {
                     p.group = group;
-                } else {
-                    self.processes.get_mut(&target).expect("target").group = group;
+                }
+                for other in self.processes.values_mut().filter(|t| t.tgid == target) {
+                    other.group = group;
                 }
                 Ok(Some(0))
             }
             155 | 156 => {
-                let id = if a[0] == 0 { pid } else { a[0] as u32 };
+                let id = if a[0] == 0 {
+                    p.tgid
+                } else {
+                    p.linux.vfs.global_pid(a[0] as u32)?
+                };
                 let (group, session) = if id == pid {
                     (p.group, p.session)
                 } else {
                     let c = self.processes.get(&id).ok_or(Errno(3))?;
                     (c.group, c.session)
                 };
-                Ok(Some(if number == 155 { group } else { session } as u64))
+                Ok(Some(
+                    p.linux
+                        .vfs
+                        .visible_pid(if number == 155 { group } else { session })
+                        as u64,
+                ))
             }
             157 => {
-                if p.group == pid || self.processes.values().any(|c| c.group == pid) {
+                if p.group == p.tgid || self.processes.values().any(|c| c.group == p.tgid) {
                     return Err(Errno(1));
                 }
-                p.session = pid;
-                p.group = pid;
+                p.session = p.tgid;
+                p.group = p.tgid;
                 p.linux.vfs.set_controlling_terminal(None)?;
-                Ok(Some(pid as u64))
+                for t in self.processes.values_mut().filter(|t| t.tgid == p.tgid) {
+                    t.session = p.session;
+                    t.group = p.group;
+                    t.linux.vfs.set_controlling_terminal(None)?;
+                }
+                Ok(Some(p.linux.vfs.visible_pid(p.tgid) as u64))
             }
             101 | 115 => {
                 if number == 115 && (!matches!(a[0], 0 | 1) || a[1] & !1 != 0) {
@@ -1906,7 +2041,7 @@ impl Kernel {
                 p.memory.write(a[0], &out).map_err(|_| Errno(14))?;
                 Ok(Some(0))
             }
-            31 => self.ioprio_get(pid, a[0], a[1]).map(Some),
+            31 => self.ioprio_get(pid, p, a[0], a[1]).map(Some),
             132 => Self::sigaltstack(p, a[0], a[1]).map(Some),
             283 => Self::membarrier(p, a[0], a[1]).map(Some),
             163 | 164 | 261 => Self::rlimit(p, number, a).map(Some),
@@ -2522,7 +2657,7 @@ impl Kernel {
                 }
                 0x540f => {
                     p.memory
-                        .write(a[2], &tty.foreground.to_le_bytes())
+                        .write(a[2], &p.linux.vfs.visible_pid(tty.foreground).to_le_bytes())
                         .map_err(|_| Errno(14))?;
                 }
                 0x5410 => {
@@ -2530,6 +2665,7 @@ impl Kernel {
                     if group == 0 || group > i32::MAX as u32 {
                         return Err(Errno(22));
                     }
+                    let group = p.linux.vfs.global_pid(group).map_err(|_| Errno(1))?;
                     if group != p.group
                         && !self
                             .processes
@@ -2591,7 +2727,7 @@ impl Kernel {
                     tty.foreground = p.group;
                     p.linux.vfs.set_controlling_terminal(Some(id))?;
                 }
-                0x5429 => write_u32(&mut p.memory, a[2], tty.session)?,
+                0x5429 => write_u32(&mut p.memory, a[2], p.linux.vfs.visible_pid(tty.session))?,
                 0x5422 => {
                     if p.linux.vfs.controlling_terminal != Some(id) {
                         return Err(Errno(25));
@@ -3370,6 +3506,7 @@ pub(super) fn run(
         fs_id: 1,
         actions_id: 1,
         rekey: None,
+        subreaper: false,
         alt_stack: AltStack::default(),
         membarrier_registered: Rc::new(Cell::new(false)),
         file_size_limit: Rc::new(Cell::new((u64::MAX, u64::MAX))),
@@ -3526,6 +3663,7 @@ mod tests {
             fs_id: 1,
             actions_id: 1,
             rekey: None,
+            subreaper: false,
             alt_stack: AltStack::default(),
             membarrier_registered: Rc::new(Cell::new(false)),
             file_size_limit: Rc::new(Cell::new((u64::MAX, u64::MAX))),

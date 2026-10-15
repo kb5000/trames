@@ -9,3 +9,5 @@ mkdir -p tests/fixtures/bin
 "$compiler" -static -O2 -Wall -Wextra -Werror tests/fixtures/direct-network.c -o tests/fixtures/bin/direct-network
 
 "$compiler" -static -O2 -Wall -Wextra -Werror tests/fixtures/mount-namespaces.c -o tests/fixtures/bin/mount-namespaces
+
+"$compiler" -static -O2 -Wall -Wextra -Werror -pthread tests/fixtures/pid-namespaces.c -o tests/fixtures/bin/pid-namespaces

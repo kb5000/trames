@@ -224,7 +224,8 @@ impl Kernel {
                     .copied()
                     .find(|s| mask & (1 << (s - 1)) != 0)
                 {
-                    let value = p.pending.remove(&sig).expect("pending signal");
+                    let mut value = p.pending.remove(&sig).expect("pending signal");
+                    value.sender = p.linux.vfs.visible_pid(value.sender);
                     if info != 0 {
                         let mut bytes = [0; 128];
                         write_siginfo(&mut bytes, sig, value);
@@ -513,7 +514,11 @@ impl Kernel {
                             if signal == 0 || signal > 64 {
                                 return Err(Errno(22));
                             }
-                            let target = read_u32(&p.memory, a[1] + 16)?;
+                            let target = p
+                                .linux
+                                .vfs
+                                .global_pid(read_u32(&p.memory, a[1] + 16)?)
+                                .map_err(|_| Errno(22))?;
                             if target != pid
                                 && !self.processes.get(&target).is_some_and(|t| {
                                     t.tgid == p.tgid && !matches!(t.state, State::Zombie(_))

@@ -107,14 +107,24 @@ impl Kernel {
             _ => Err(Errno(22)),
         }
     }
-    pub(super) fn ioprio_get(&self, pid: u32, which: u64, who: u64) -> Result<u64, Errno> {
+    pub(super) fn ioprio_get(
+        &self,
+        pid: u32,
+        p: &Process,
+        which: u64,
+        who: u64,
+    ) -> Result<u64, Errno> {
         if !(1..=3).contains(&which) || (who as i32) < 0 {
             return Err(Errno(22));
         }
         if which != 1 {
             return Err(Errno(95));
         }
-        let target = who as u32;
+        let target = if who as u32 == 0 {
+            0
+        } else {
+            p.linux.vfs.global_pid(who as u32)?
+        };
         if target == 0 || target == pid || self.processes.contains_key(&target) {
             // No explicit I/O priority is installed (CLASS_NONE, data 0).
             // This describes the virtual scheduler; no host PID is consulted.
@@ -125,7 +135,7 @@ impl Kernel {
     }
     pub(super) fn rlimit(p: &mut Process, number: u32, a: [u64; 6]) -> Result<u64, Errno> {
         let (resource, new, old) = if number == 261 {
-            if a[0] != 0 && a[0] != p.tgid as u64 {
+            if a[0] != 0 && a[0] != p.linux.vfs.visible_pid(p.tgid) as u64 {
                 return Err(Errno(3));
             }
             (a[1], a[2], a[3])
@@ -208,9 +218,9 @@ mod tests {
         assert_eq!(Kernel::membarrier(&p.fork(), 512, 0), Ok(16));
         assert_eq!(Kernel::membarrier(&p, 32, 0), Err(Errno(22)));
         let k = kernel();
-        assert_eq!(k.ioprio_get(1, 1, 1), Ok(0));
-        assert_eq!(k.ioprio_get(1, 1, 200), Err(Errno(3)));
-        assert_eq!(k.ioprio_get(1, 3, 0), Err(Errno(95)));
+        assert_eq!(k.ioprio_get(1, &p, 1, 1), Ok(0));
+        assert_eq!(k.ioprio_get(1, &p, 1, 200), Err(Errno(3)));
+        assert_eq!(k.ioprio_get(1, &p, 3, 0), Err(Errno(95)));
     }
     #[test]
     fn file_size_limit_changes_are_atomic_and_hard_limit_is_privileged() {

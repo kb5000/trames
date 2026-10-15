@@ -1,0 +1,65 @@
+[pid-guest.log]
+1-CPU guest UTS namespace, namespace FD lifetime, chroot/exec passed
+4-CPU guest UTS namespace, namespace FD lifetime, chroot/exec passed
+1-CPU guest mount namespace, tmpfs/bind/pivot_root and mount FD lifetime passed
+4-CPU guest mount namespace, tmpfs/bind/pivot_root and mount FD lifetime passed
+1-CPU guest PID hierarchy, proc views, signals/waits, threads, init shutdown and subreaper passed
+4-CPU guest PID hierarchy, proc views, signals/waits, threads, init shutdown and subreaper passed
+Real BusyBox unshare/nsenter/chroot passed
+Real BusyBox unshare -m, mount tmpfs/bind/remount, df and umount passed
+Real BusyBox unshare -pf --mount-proc, shell PID 1, background wait and ps passed
+
+[pid-fd-exec.log]
+1-CPU ARM64 fd execution: 23 cases match native Linux
+4-CPU ARM64 fd execution: 23 cases match native Linux
+proc memfd at EOF offset: ok
+execveat memfd empty path: ok
+original libc fexecve: ok
+nofollow rejects proc magic link: ok
+fd execute permission is required: ok
+CLOEXEC ELF and proc exe inode pin: ok
+directory fd is not executable: ok
+cwd empty path is a directory: ok
+relative dirfd ELF: ok
+absolute path ignores invalid dirfd: ok
+nofollow rejects final symlink: ok
+O_PATH ELF fd: ok
+unlinked regular ELF through proc fd: ok
+symlink to deleted inode magic link: ok
+invalid execveat flag: ok
+empty path precedes unknown flags: ok
+empty pathname without flag: ok
+invalid fd with empty path: ok
+regular fd cannot be a dirfd: ok
+fd shebang interpreter: ok
+CLOEXEC script returns ENOENT: ok
+relative dirfd shebang: ok
+CLOEXEC dirfd script returns ENOENT: ok
+
+[pid-runtime-compat.log]
+PASS --memory altstack/nesting/autodisarm/fork/thread/exec, membarrier, ioprio_get, RLIMIT_FSIZE/partial write/SIGXFSZ
+PASS --storage altstack/nesting/autodisarm/fork/thread/exec, membarrier, ioprio_get, RLIMIT_FSIZE/partial write/SIGXFSZ
+
+[pid-m6-abi.log]
+eventfd semaphore/overflow/shared blocking: ok
+epoll fault preflight/oneshot/dup lifetime/fairness: ok
+timerfd relative/absolute/fault, epoll_pwait2/signal mask: ok
+AF_UNIX pairs stream/datagram/peek/trunc/fault/fork EOF: ok
+POSIX locks conflict/query/wait/close/split/fork/deadlock: ok
+POSIX locks survive shared pthread exit and killed fork: ok
+trailing slash mkdir/stat/open/symlink semantics: ok
+named FIFO nonblocking/open handshake/fork/EOF/dup/unlink: ok
+QEMU comparisons passed; epoll_pwait2 independently required (QEMU has no entry)
+
+[pid-cpu-signals.log]
+Actual musl handlers: BRK, UDF, HLT, unmapped load/fetch, write protection, ordered-access alignment and edited context passed
+
+[pid-pty.log]
+1-CPU PTY/IPC outcomes match independent Linux/QEMU
+4-CPU PTY/IPC outcomes match independent Linux/QEMU
+pty allocation/lock/canonical/raw/resize/isolation/packet/alias/hangup/reopen: ok
+Unix MSG_WAITALL split record and __WALL child wait: ok
+PTY session/controlling tty/last-master SIGHUP: ok
+
+[pid-audit.log]
+{"scope": "Linux v6.12 native AArch64 numbered entries; entry presence is not full ABI conformance", "entries": 318, "statuses": {"missing": 142, "implemented_subset": 174, "obsolete_stub": 2}, "undispatched_probes_per_backend": 144, "backends": ["cached"], "unhandled_return": -38}

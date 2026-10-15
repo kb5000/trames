@@ -1,0 +1,53 @@
+{
+  "recorded_utc": "2026-10-15T12:50:29.037494+00:00",
+  "parent_commit": "37d57e0fe8fc8ad0c05d4e11b41a2aa851472011",
+  "scope": "Guest hierarchical PID namespaces, namespace-bound proc mounts, init lifecycle, waitid and child subreaper",
+  "workspace_all_feature_tests": 315,
+  "guest_cpus": [
+    1,
+    4
+  ],
+  "fd_exec_native_cases_per_cpu": 23,
+  "syscalls": {
+    "implemented_subset": 174,
+    "missing": 142,
+    "obsolete_stub": 2,
+    "undispatched_enosys_probes": 144
+  },
+  "apple": "ARM64 iOS compilation checked; no local SDK/simulator/device test",
+  "performance": "No new performance claim; no CPU/native memory hot-path lock added",
+  "source_sha256": {
+    ".github/workflows/linux.yml": "8bc11dd2909dee91e279d4e7324108162d43b877eabee48c6b9d8d978558af35",
+    "crates/trames-core/src/process.rs": "7d4b533f3170b3212b9a2401ba955d96c4e39c68943878a2ac3febaeb74fbe48",
+    "crates/trames-core/src/process_compat.rs": "6a04a5297c0fbe91dff7bbc20388180004825b7b00888c5efa3d9d8262a115cd",
+    "crates/trames-core/src/process_events.rs": "c51a6b907b41728ac77a03c02308791d03d0ad82beeaa91c2b2bbcc87d4e98f6",
+    "crates/trames-core/src/process_pid.rs": "b38dde934cfa946f1b416d8c8b738fb8698618bb0da3428fbb2e0455faa34dce",
+    "crates/trames-linux/src/state.rs": "607a34e78c3f84cfd9cd7152b735816721545438fc100ab2d7990eeba2f1c1c7",
+    "crates/trames-vfs/src/lib.rs": "5a7207248b261e1813bcd18feba9938774088223308b3aaa2ec9c333d607a96b",
+    "crates/trames-vfs/src/linux_namespace.rs": "e37bb62b3d905e9daedee2376648ab825597d24f9a4a08d0b69529fa31dc3c73",
+    "crates/trames-vfs/src/mounts.rs": "d614a85bdc99eed108603050b4a7abe8de1a289f90daedaf083535804fa67091",
+    "crates/trames-vfs/src/pid_namespace.rs": "0e4168ac0da1566ab1772a266a00520e1cda2a6c3ff559f079a18180be09a4fe",
+    "crates/trames-vfs/src/pseudo.rs": "d613550eb6a5f88b4a2ee2ba642d8f3800f0e5c6da982102c5135110389019ba",
+    "crates/trames-vfs/src/pty.rs": "ad30d003c215702717af5b61114bc6469fc940d95adfa0bd56d719bc96fd025c",
+    "scripts/audit-syscalls.py": "078b0dfa0d79905a6b7edfe47f2a8408dbaf687394114a77615914e4ee32dd11",
+    "scripts/build-namespace-fixtures.sh": "2c3742529a1f85a69a7dc8aabe453a87629b6206585721d9f6e7dd1afa11508e",
+    "tests/fixtures/pid-namespaces.c": "f5d4b485bc6dbcbae07a8e69ccc398001d99626b69cd097164e759a5b512fa2a",
+    "tests/integration/namespaces.py": "fd773531cb0efc6e025cda2a4c51b7ec249bfee3a1cec8617f61b630962c7a51"
+  },
+  "input_sha256": {
+    "tests/fixtures/bin/pid-namespaces": "5df983d4b943cf9568d990fc0303b50668b4461a1bb8679a3007acbaa30c992f",
+    "tests/fixtures/bin/namespaces": "8bf70a1acf49814ae6f7941371444b680f4cbe97c282a82030a34ce858199e89",
+    "tests/fixtures/bin/mount-namespaces": "68e5d97e1a9dd3cad217add7009cc12bad44fd8f5a8346a3928897e1fcdbcafe",
+    "target/alpine-download/alpine-minirootfs-3.22.6-aarch64.tar.gz": "821565fa8f3953eefd12497b166b4b50add2f7c57fb312e75862f5867e06fefe",
+    "target/busybox-build/busybox": "58ee781107cb1a65049252b5ec78b6eb9cf6db76a6bbdfd228b62791cf010b93",
+    "target/release/trames-run": "f18b86028dccf030927d8a6847c2be44cb771beb7da0ae8842d4e6fa6147fc0d"
+  },
+  "retained_log_sha256": "1f75363b077c62bce15b84238018eb646cf87593a5e3c4126bc4d937487039db",
+  "check_log_sha256": {
+    "pid-workspace.log": "5f2efbe445d18b8168454780699d9de5d2825914a9247159ff713fcc609af664",
+    "pid-clippy.log": "56c7c21a900a78222fb838974280867ca92833aaaaad4d73e0f0e7033fdab210",
+    "pid-ios.log": "843b9eeaead01096b78e81f7c215f6d34fd80bd39c2a127f9e23909a0ccc54f4",
+    "pid-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "pid-build.log": "16f7a1df0631fdb28e25df5b52a057b799b1d213112de762d4543a75fc289f1b"
+  }
+}
