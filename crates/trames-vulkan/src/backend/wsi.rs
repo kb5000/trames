@@ -25,8 +25,9 @@ pub(super) struct Swapchain {
     device: Arc<Device>,
     surface: Rc<Surface>,
     raw: vk::SwapchainKHR,
-    // Semaphores used by presentation remain live until the same image is
-    // reacquired, or the native swapchain has been destroyed after queue idle.
+    // Current acquisition/present objects survive native swapchain teardown.
+    // Previous presentation objects move into an acquisition-fence submission:
+    // acquire may return before that image's previous presentation completes.
     retained: RefCell<BTreeMap<u32, Vec<Rc<Object>>>>,
     budget: crate::Budget,
     bytes: u64,
@@ -407,6 +408,9 @@ impl Backend {
                 if chain.retired {
                     return Err(vk::Result::ERROR_OUT_OF_DATE_KHR.into());
                 }
+                if chain.acquired.iter().all(|acquired| *acquired) {
+                    return Err(vk::Result::NOT_READY.into());
+                }
                 if !self.display.current(&chain.native.surface.target) {
                     return Err(vk::Result::ERROR_SURFACE_LOST_KHR.into());
                 }
@@ -433,6 +437,14 @@ impl Backend {
                         return invalid();
                     }
                 }
+                // A successful acquire can precede availability (including in
+                // original MoltenVK). Only its fence completion proves that old
+                // present waits are finished. Never free them just on API return.
+                let completion = if let Some(fence) = &fence {
+                    fence.clone()
+                } else {
+                    self.private_fence(device.clone())?
+                };
                 let chain = self.wsi.swapchains.get_mut(&a[1]).unwrap();
                 let (index, suboptimal) = unsafe {
                     loader.acquire_next_image(
@@ -441,9 +453,7 @@ impl Backend {
                         semaphore
                             .as_ref()
                             .map_or(vk::Semaphore::null(), |s| vk::Semaphore::from_raw(s.raw)),
-                        fence
-                            .as_ref()
-                            .map_or(vk::Fence::null(), |f| vk::Fence::from_raw(f.raw)),
+                        vk::Fence::from_raw(completion.raw),
                     )
                 }?;
                 if index as usize >= chain.images.len() {
@@ -455,10 +465,23 @@ impl Backend {
                     s.state.set(1);
                     retained.push(s);
                 }
-                if let Some(f) = fence {
-                    retained.push(f);
-                }
-                chain.native.retained.borrow_mut().insert(index, retained);
+                retained.push(completion.clone());
+                let previous = chain
+                    .native
+                    .retained
+                    .borrow_mut()
+                    .insert(index, retained)
+                    .unwrap_or_default();
+                let image = self.objects[&chain.images[index as usize]].clone();
+                let mut resources = previous;
+                resources.push(image);
+                // The image keeps the swapchain alive, and its current retained
+                // set keeps completion/semaphore objects through final cleanup.
+                self.submissions.push(Submission {
+                    fence: completion,
+                    commands: Vec::new(),
+                    _resources: resources,
+                });
                 if let Err(error) = write(m, a[4], &index.to_le_bytes()) {
                     // Native acquisition happened: do not reuse an unpublished index.
                     chain.retired = true;
@@ -510,6 +533,9 @@ impl Backend {
                         // dependent. Retire rather than reuse ambiguous semaphore state.
                         let chain = self.wsi.swapchains.get_mut(&a[2]).unwrap();
                         chain.retired = true;
+                        for semaphore in &dependencies {
+                            semaphore.state.set(2);
+                        }
                         chain
                             .native
                             .retained

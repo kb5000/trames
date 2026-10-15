@@ -434,25 +434,7 @@ impl Backend {
             }
             f
         } else {
-            let raw = unsafe { d.create_fence(&vk::FenceCreateInfo::default(), None) }?;
-            Rc::new(Object {
-                kind: Kind::Fence,
-                raw: raw.as_raw(),
-                device: dev.clone(),
-                deps: RefCell::new(Vec::new()),
-                bindings: RefCell::new(BTreeMap::new()),
-                bound_buffers: RefCell::new(BTreeMap::new()),
-                push_ranges: RefCell::new(Vec::new()),
-                size: 0,
-                flags: 0,
-                state: Cell::new(0),
-                mapped: Cell::new(0),
-                image: Cell::new(None),
-                pass: Cell::new(None),
-                recording: RefCell::new(Recording::default()),
-                swapchain: RefCell::new(None),
-                budget: self.budget.clone(),
-            })
+            self.private_fence(dev.clone())?
         };
         let infos: Vec<_> = batches
             .iter()
@@ -487,6 +469,28 @@ impl Backend {
             _resources: resources,
         });
         Ok(())
+    }
+    fn private_fence(&self, device: Arc<Device>) -> Result<Rc<Object>> {
+        let d = &device.native;
+        let raw = unsafe { d.create_fence(&vk::FenceCreateInfo::default(), None) }?;
+        Ok(Rc::new(Object {
+            kind: Kind::Fence,
+            raw: raw.as_raw(),
+            device,
+            deps: RefCell::new(Vec::new()),
+            bindings: RefCell::new(BTreeMap::new()),
+            bound_buffers: RefCell::new(BTreeMap::new()),
+            push_ranges: RefCell::new(Vec::new()),
+            size: 0,
+            flags: 0,
+            state: Cell::new(0),
+            mapped: Cell::new(0),
+            image: Cell::new(None),
+            pass: Cell::new(None),
+            recording: RefCell::new(Recording::default()),
+            swapchain: RefCell::new(None),
+            budget: self.budget.clone(),
+        }))
     }
     fn collect(&mut self) {
         self.reap_abandoned();

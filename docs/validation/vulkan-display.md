@@ -11,7 +11,9 @@ It renders 24 frames across two swapchains, checks old-chain acquire fails after
 recreation, checks a second producer is rejected, destroys the device/surface,
 then creates a fresh surface to check producer lease release. Per-image render
 semaphores are reused only after reacquire; acquire semaphore reuse follows the
-submission fence. Continuous mode keeps drawing while the UI test moves, resizes,
+submission fence. A fence-only acquire path is also exercised. Prior-present
+resource retirement waits for acquisition fence completion, including when
+MoltenVK returns an index before availability. Continuous mode keeps drawing while the UI test moves, resizes,
 hides/reopens the window, then closes the session during ongoing submissions.
 
 The fixed Metal bounds/drawable extent and window clamping have explicit unit

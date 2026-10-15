@@ -120,8 +120,10 @@ waits by retrying with guest nanosleep, allowing peer guest threads and the
 coordinator to run. Submission consumes acquire semaphores, signals render
 semaphores, and `vkQueuePresentKHR` submits the original native swapchain image.
 Borrowed images are never passed to `vkDestroyImage` or rebound to memory.
-Present semaphores/fences remain retained until that image is acquired again or
-the native swapchain is destroyed after queue idle. Recreating with
+Previous present semaphores remain retained until that image’s next acquisition
+fence signals (acquire can return its index earlier). A private native fence is
+used when the guest supplies only a semaphore; polling suspends no guest thread.
+Current acquire/present objects also survive until native swapchain teardown. Recreating with
 `oldSwapchain` retires the old acquire path while retaining outstanding work.
 Failed output publication rolls back owned resources; ambiguous native present
 errors retire the affected chain. The display registry lock only protects target
