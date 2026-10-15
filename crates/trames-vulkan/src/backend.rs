@@ -602,7 +602,13 @@ impl Backend {
             0,
         );
         pipeline.raw = vk::Pipeline::null();
-        m.write(c.output, &id.to_le_bytes())?;
+        if let Err(error) = m.write(c.output, &id.to_le_bytes()) {
+            // A live backing provider can still fail after permission preflight.
+            // Remove the unpublished object, releasing its native pipeline and
+            // dependencies; a consumed opaque ID is never reused.
+            self.objects.remove(&id);
+            return Err(error);
+        }
         Ok(Some(0))
     }
     fn call(&mut self, m: &mut Memory, op: u64, a: [u64; 16]) -> Result<()> {

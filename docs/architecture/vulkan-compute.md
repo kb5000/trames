@@ -111,7 +111,8 @@ compiler work lock; capacity exhaustion returns out-of-host-memory. Polling is
 bounded at 1 ms while tasks wait. Driver-internal synchronization stays unchanged.
 
 Completion checks the current guest output mapping before publishing an ID.
-Failure destroys the unpublished pipeline. Caught guest signal handlers wait for
+A fallible backing write can still fail after preflight; that failure rolls back
+the unpublished resource and destroys its native pipeline. Caught guest signal handlers wait for
 the active native call to return; stop/continue preserves the waiting call.
 Killed callers abandon results, which the coordinator reaps after native work
 finishes. Final context teardown joins compiler tasks and GPU work before dropping

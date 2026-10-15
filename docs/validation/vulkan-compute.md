@@ -47,6 +47,17 @@ transfers 147328 bytes; the previous two-copy path would copy these payloads twi
 These counts demonstrate scheduler progress and removed staging, not an iPad GPU
 speed measurement. Actual run counters are recorded in the evidence file.
 
+The [actual-driver lifecycle regression](../../crates/trames-vulkan/examples/lifecycle.rs)
+repeats 260 compiler completions after unmapping the guest output. Each completion
+faults, publishes no ID and leaves capacity for the next request. A further 260
+backing I/O failures after successful permission preflight verify rollback of
+unpublished native output. The regression also removes
+a shader ID during compilation to check host dependency retention, then abandons
+a compile and destroys its device to check teardown/result disposal. The latter
+cases exercise the emulator boundary against premature guest destruction, rather
+than assert valid Vulkan application synchronization. This passes on the native
+software reference and runs in the Linux GPU CI step.
+
 Apple CI builds device/simulator apps and runs `LocalVulkanTests` through the
 real embedding ABI. It installs the original signed loader from bundled packages,
 interprets the same ARM64 fixture, requires correct third-round results and
@@ -84,6 +95,7 @@ bash scripts/build-vulkan-fixtures.sh
 cargo build --release -p trames-cli -p trames-ffi --locked
 export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json
 python3 tests/integration/vulkan-compute.py
+cargo run --release --locked -p trames-vulkan --example lifecycle -- tests/fixtures/bin/vulkan-compute.spv
 ```
 
 Select the actual `lvp` manifest filename on your distribution. The guest gets

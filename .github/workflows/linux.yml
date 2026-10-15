@@ -173,6 +173,7 @@ jobs:
           export VK_DRIVER_FILES="$(find /usr/share/vulkan/icd.d -name '*lvp*' -print -quit)"
           test -n "$VK_DRIVER_FILES"
           python3 tests/integration/vulkan-compute.py
+          cargo run --release --locked -p trames-vulkan --example lifecycle -- tests/fixtures/bin/vulkan-compute.spv
         env:
           TRAMES_RUNNER: ${{ github.workspace }}/target/release/trames-run
       - name: Validate signed Python anonymous ELF, pass_fds and libc fexecve
