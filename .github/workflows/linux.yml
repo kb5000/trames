@@ -216,6 +216,10 @@ jobs:
         run: |
           bash scripts/build-signalfd-fixtures.sh
           python3 tests/integration/signalfd.py
+      - name: Compare Unix sockets, ET, xattrs, FIFO reopen and parent death signals
+        run: |
+          bash scripts/build-unix-fixtures.sh
+          python3 tests/integration/unix-sockets.py
       - name: Validate guest cgroup domains and dumpable against native Linux
         run: |
           bash scripts/build-cgroup-fixtures.sh
@@ -232,6 +236,16 @@ jobs:
         run: python3 tests/integration/containers.py
         env:
           TRAMES_RUNNER: ${{ github.workspace }}/target/release/trames-run
+      - name: Validate original Docker daemon and image lifecycle; record container-start blocker
+        run: python3 tests/integration/docker.py
+        env:
+          TRAMES_RUNNER: ${{ github.workspace }}/target/release/trames-run
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: guest-docker-diagnostics
+          path: target/docker-lifecycle/
+          retention-days: 7
       - name: Compare M6 events, local IPC, POSIX locks and FIFO semantics with QEMU
         run: |
           bash scripts/build-m6-fixtures.sh

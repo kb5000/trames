@@ -35,6 +35,7 @@ int main(void) {
     if (!child) {
         assert(unshare(CLONE_NEWNS) == 0);
         assert(mount(NULL, "/", NULL, MS_PRIVATE | MS_REC, NULL) == 0);
+        assert(mount(NULL, "/", NULL, MS_SLAVE | MS_REC, NULL) == 0);
         assert(mount("tmpfs", "/isolated", "tmpfs", MS_NOSUID | MS_NODEV, "size=4k,mode=0700") == 0);
         int fd = file("/isolated/inside"); assert(ftruncate(fd, 4096) == 0);
         assert(pwrite(fd, "x", 1, 4096) == -1 && errno == ENOSPC);

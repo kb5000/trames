@@ -3,7 +3,8 @@
 目标是在同一个 Trames guest 内运行原版 Linux 容器工具。容器共享解释器、
 调度器和 guest 内核对象；当前不做宿主多实例管理器或自己的 OCI 启动器。
 原版 Alpine `crun` 已通过下述 rootful 场景；使用方法见[容器入门](../guides/guest-containers.md)。
-未宣称完整 OCI、rootless 或 Docker/Podman 兼容。
+Docker 的守护进程/镜像/创建阶段见[Docker 指南](../guides/guest-docker.md)；
+启动仍被 shim 的 proc OOM 接口阻塞。未宣称完整 OCI、rootless 或 Docker/Podman 兼容。
 
 ## 已实现
 
@@ -13,7 +14,7 @@
 | `clone` | UTS/mount/PID namespace；NEWNS 与 CLONE_FS、NEWPID 与 THREAD/PARENT 冲突返回 EINVAL；PID 1 不接受 CLONE_PARENT |
 | `setns` | UTS/mount/PID namespace FD，类型 0 或对应 CLONE 标志；mount 拒绝共享 fs context；PID 仅接受当前或后代 namespace，影响后续子进程 |
 | `uname`、`sethostname`、`setdomainname` | 调用者 UTS，名称最长 64 字节；按 guest CAP_SYS_ADMIN 授权 |
-| namespace FD | `/proc/PID/ns/{uts,mnt,pid,pid_for_children}`、task/TID 形式、dup、O_PATH、stat、nsfs statfs、`NS_GET_NSTYPE`；FD 保持 namespace 存活 |
+| namespace FD | `/proc/PID/ns/{uts,mnt,pid,pid_for_children,net}`、task/TID 形式、dup、O_PATH、stat、nsfs statfs、`NS_GET_NSTYPE`；FD 保持 namespace 存活 |
 | `chroot` | 独立 `(mount,inode)` fs.root，绝对路径/绝对符号链接从新根解析，根内 `..` 不能向上；保留 cwd/dirfd |
 | `mount` | tmpfs、proc、sysfs、独立 devpts、bind/rbind、选定 remount；所有挂载初始为 private，支持 make-private/recursive-private |
 | `umount2` | 普通卸载检查子挂载和 FD/cwd/root/exec/mmap 引用；MNT_DETACH 断开整个子树，已有能力仍能访问；UMOUNT_NOFOLLOW |
@@ -112,7 +113,8 @@ SIGCHLD 的 CPU 时间字段保持零。epoll 仍按调用者快照检查 readin
 Linux 跨 fork 继承 epoll 时绑定原注册进程信号等待队列的细节；子进程应新建并注册
 epoll。PTY/嵌入终端已支持 EPOLLET，按输入/输出队列代次和 readiness 检查；
 重复 wait 不重复通知，排空后同样长度的新数据不会丢边缘，MOD/ONESHOT 可重新启用。
-其他 FD 的 EPOLLET、EXCLUSIVE/嵌套 epoll、完整异步 I/O 信号来源仍未实现。
+Unix socket、pipe/FIFO、eventfd 和 NETLINK_ROUTE 回复队列也已支持 EPOLLET。
+宿主 TCP/UDP、timerfd/signalfd 的 ET、EXCLUSIVE/嵌套 epoll 仍未实现。
 
 ## 设备节点与容器路径
 
@@ -159,8 +161,37 @@ MSG_CMSG_CLOEXEC、控制区/FD 表不足的 MSG_CTRUNC、部分 stream 读取�
 
 暂不传递 AF_UNIX socket FD：需要实现 in-flight 图的循环垃圾回收，当前明确
 返回 EOPNOTSUPP。普通文件、pipe、PTY、namespace 等句柄可传递。具名/抽象
-AF_UNIX 和 SCM_CREDENTIALS 尚缺；因此外部 console-socket 场景未验收，前台
+AF_UNIX stream/seqpacket 已有，SCM_CREDENTIALS 尚缺；外部 console-socket 场景未验收，前台
 crun 内部 socketpair 终端通道已验收。
+
+## Docker 所需的进程与本地通信
+
+AF_UNIX stream/seqpacket 支持 filesystem/abstract bind、listen、connect、accept4、
+getsockname/getpeername 和 SO_PEERCRED。路径使用 guest inode、DAC/umask；抽象
+地址保留内部 NUL，最后一个 endpoint 引用关闭后释放名字。backlog 有限，满时
+阻塞重试或非阻塞 EAGAIN；EMFILE 不消费待接受连接。路径 unlink 与活跃连接独立，
+过期 inode 返回 ECONNREFUSED。具名 datagram 的定址发送尚缺。
+SO_REUSEADDR/REUSEPORT 保存请求值，不允许复用已绑定 Unix 名称。
+队列代次驱动 ET，peek/失败读取不产生假写事件；普通文件注册 epoll 返回 EPERM。
+FIFO 经 O_PATH 与 `/proc/self/fd` 重新打开会按新 flags 建立独立管道端点，
+保留 unlink 后的 inode，正确计数 reader/writer、等待对端和释放 EOF。
+
+PR_SET/GET_PDEATHSIG 记录实际创建线程，在线程退出时投递进程信号并保留发送者
+身份；fork 清零，普通 exec 保留，effective/fs UID/GID 变化清零，孤儿继续采用
+既有 subreaper/init 规则。线程总额度从 32 提升到 256，threads-max/rlimit/proc
+一致；不是预分配线程。Go 守护进程的 ELF 输入上限提升为 256 MiB，映射预算仍
+为每地址空间 512 MiB / 全会话 1 GiB。
+
+每个 guest 当前根网络具有唯一的 `ns/net` 对象。FD、task/TID 路径、nsfs bind
+mount 和同一网络的 setns 保持真实引用；不会创建新网络或改变宿主 namespace。
+UTS/PID 句柄也可 bind；mount namespace 句柄的挂载循环回收尚缺，明确拒绝。
+CLONE_NEWNET 仍不支持。NETLINK_ROUTE 支持按接口名查询及对已经 UP 的 lo 的
+精确幂等 LinkSetUp；后者检查 CAP_NET_ADMIN。关接口、改地址、路由与 MTU 仍失败。
+private mount 请求 MS_SLAVE/REC 时继续保持 private（没有 shared master）；
+这不代表已实现跨 namespace 挂载传播。
+
+12 个 xattr syscall 已有路径/链接/FD 变体，持久化 `user.*`；缺失的文件 capability
+与 ACL 查询返回 ENODATA，设置返回 EOPNOTSUPP，详见[存储](storage.md)。
 
 ## Cgroup v2 域成员与 dumpable
 
@@ -187,7 +218,7 @@ pids 是当前唯一公布的 controller。通过 cgroup.subtree_control 的 +pi
 返回 EAGAIN；退出释放名额，迁入/降低限额允许 current 超过 max，已有任务不被杀。
 peak、限制组及其祖先的 events 统计来自实际成员/拒绝事件；失败的子级预检查可以
 提高 peak，与 Linux 的宽松峰值含义一致。max 支持 max 或 0..4194304。整个 guest
-仍有 32 个任务的总额度；该总额度失败不会伪计为某组 pids 限额事件。
+有 256 个任务的总额度；该总额度失败不会伪计为某组 pids 限额事件。
 
 这是 domain 子集：没有 CPU/memory/io 配额、threaded 模式、事件文件 poll 通知、
 cgroup namespace 或非 root 委派。非根内部组启用子控制器时不得有任务；迁入这样
@@ -225,7 +256,7 @@ exec 凭据；`MS_NODEV` 拒绝设备打开；`MS_NOEXEC` 拒绝 exec、可执�
 
 - 每个 guest 会话最多 128 个存活挂载对象，含 namespace 副本和被 FD/映射保留的
   挂载；耗尽 ENOSPC，释放后可再创建。UTS 和 PID 谱系各有 128 个存活对象额度。
-  PID 最多嵌套 32 层，每会话仍最多 32 个任务；编号不循环复用，fork 前回收无引用映射。
+  PID 最多嵌套 32 层，每会话最多 256 个任务；编号不循环复用，fork 前回收无引用映射。
 - tmpfs 独立于磁盘 manifest，默认 16 MiB / 1024 inode；`size`、`nr_inodes` 可降低
   上限，`mode` 设置根目录权限。卸载/会话结束后内容不持久化。这里的内存上限
   与根磁盘默认 16 GiB 预算无关；尚未接入统一的 tmpfs/guest RAM 回收机制。

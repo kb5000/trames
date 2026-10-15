@@ -1,0 +1,55 @@
+=== unix-final.log ===
+1-CPU Unix IPC / ET / xattr / FIFO outcomes match native Linux
+4-CPU Unix IPC / ET / xattr / FIFO outcomes match native Linux
+filesystem Unix stream: inode, stale path, backlog, credentials, ET: ok
+abstract Unix stream: binary names, lifecycle, backlog, credentials, ET: ok
+eventfd ET: repeated writes and drain/refill: ok
+pipe ET: repeated writes, drain/refill and peer close: ok
+archive timestamps: dangling symlink nofollow: ok
+inode xattrs: paths, fds, symlinks, binary values, flags and unlink: ok
+netlink ET: repeated responses and drain: ok
+FIFO proc reopen: O_PATH, unlinked inode, independent endpoint lifetime: ok
+1-CPU parent death signal outcomes match native Linux
+4-CPU parent death signal outcomes match native Linux
+parent death signal: validation, fork reset and exec preservation: ok
+parent death signal: process exit delivers sender metadata: ok
+parent death signal: creating thread exit while process stays alive: ok
+
+=== namespaces.log ===
+1-CPU guest UTS namespace, namespace FD lifetime, chroot/exec passed
+4-CPU guest UTS namespace, namespace FD lifetime, chroot/exec passed
+1-CPU guest mount namespace, tmpfs/bind/pivot_root and mount FD lifetime passed
+4-CPU guest mount namespace, tmpfs/bind/pivot_root and mount FD lifetime passed
+1-CPU guest PID hierarchy, proc views, signals/waits, threads, init shutdown and subreaper passed
+4-CPU guest PID hierarchy, proc views, signals/waits, threads, init shutdown and subreaper passed
+Real BusyBox unshare/nsenter/chroot passed
+Real BusyBox unshare -m, mount tmpfs/bind/remount, df and umount passed
+Real BusyBox unshare -pf --mount-proc, shell PID 1, background wait and ps passed
+
+=== crun.log ===
+Signed repository inputs: crun=1.23.1-r0
+1-CPU original crun: payload/exit 7, private PID/mount/UTS, proc, cgroupfs, pause/resume/kill, two Alpine rootfs containers and foreground PTY passed
+4-CPU original crun: payload/exit 7, private PID/mount/UTS, proc, cgroupfs, pause/resume/kill, two Alpine rootfs containers and foreground PTY passed
+Evidence: /workspace/trames/target/container-lifecycle
+
+=== m6-abi.log ===
+eventfd semaphore/overflow/shared blocking: ok
+epoll fault preflight/oneshot/dup lifetime/fairness: ok
+timerfd relative/absolute/fault, epoll_pwait2/signal mask: ok
+AF_UNIX pairs stream/datagram/peek/trunc/fault/fork EOF: ok
+POSIX locks conflict/query/wait/close/split/fork/deadlock: ok
+POSIX locks survive shared pthread exit and killed fork: ok
+trailing slash mkdir/stat/open/symlink semantics: ok
+named FIFO nonblocking/open handshake/fork/EOF/dup/unlink: ok
+QEMU comparisons passed; epoll_pwait2 independently required (QEMU has no entry)
+
+=== pty-final.log ===
+1-CPU PTY/IPC outcomes match independent Linux/QEMU
+4-CPU PTY/IPC outcomes match independent Linux/QEMU
+PTY epoll edges: queue wakeups, no duplicate readiness, drain/refill and ONESHOT rearm: ok
+pty allocation/lock/canonical/raw/resize/isolation/packet/alias/hangup/reopen: ok
+Unix MSG_WAITALL split record and __WALL child wait: ok
+PTY session/controlling tty/last-master SIGHUP: ok
+1-CPU SCM_RIGHTS outcomes match independent native Linux
+4-CPU SCM_RIGHTS outcomes match independent native Linux
+SCM_RIGHTS: stream/datagram/seqpacket, shared offsets, fork, CLOEXEC, PEEK, truncation, barriers and descriptor lifetime: ok

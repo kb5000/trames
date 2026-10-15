@@ -26,7 +26,7 @@ crun --root /run/crun --cgroup-manager cgroupfs run alpine
 原版 crun 的普通 OCI 配置，Trames 没有另写一个 OCI 启动器。
 
 示例使用 8 个任务的 pids 限额，包括所有线程。可修改 `linux.resources.pids.limit`，
-但整个 Trames 会话目前总计仍最多 32 个任务，运行时和外部 shell 也占名额。
+但整个 Trames 会话目前总计仍最多 256 个任务，运行时和外部 shell 也占名额。
 两个 bundle 应使用不同的容器 ID、`linux.cgroupsPath`、hostname 和 rootfs 路径。
 
 ## 生命周期

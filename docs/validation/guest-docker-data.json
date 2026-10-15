@@ -1,0 +1,67 @@
+{
+  "baseline": "77d20ce53e76a510342148b40ac029777550e503",
+  "rust_tests_passed": 332,
+  "guest_cpus": [
+    1,
+    4
+  ],
+  "checks": [
+    "fmt",
+    "strict all-target/all-feature Clippy",
+    "all-feature workspace tests",
+    "ARM64 iOS core/distro/FFI compile",
+    "native Linux Unix/ET/xattr/FIFO/PDEATHSIG at 1/4 CPUs",
+    "original signed crun complete lifecycle, concurrent Alpine, PTY, cgroupfs, pids/freezer",
+    "namespace/BusyBox, M6 ABI, PTY/SCM_RIGHTS regression",
+    "fresh signed Docker daemon/image/create/inspect/remove at 1/4 CPUs; run blocked in original shim OOM score lookup"
+  ],
+  "source_sha256": {
+    ".github/workflows/linux.yml": "29da3b8e42787bb5675e59ebd260168d2a9e7c55026f8e21d5b5cae2f2a924f5",
+    "crates/trames-core/src/process.rs": "bd44138e33f014619e8f583a70e3052e3216644ed4775f9e16af676e702e005d",
+    "crates/trames-core/src/process_pid.rs": "859b2304706207058489cc69b5965540dcbada2f8b1d4e2d233cd488b9a18f3b",
+    "crates/trames-elf/src/lib.rs": "c2c002fe9976f23b402c7d9be4813244a73f3bd80df9b62b79dc65987e3e0141",
+    "crates/trames-linux/src/lib.rs": "2fe5b39089daa54e4831407072d43fe8853f5fab1426b46533ac5d5b7e05c328",
+    "crates/trames-linux/src/network.rs": "24518dcf18429a4ee4970a655336fd588f1a1fc6850390be4e622725e56af533",
+    "crates/trames-linux/src/state.rs": "657eda8ad22fbdd2afd7f45d14c89ce30bcbbeb6a228a4d8e9d0c7eb1b8339b5",
+    "crates/trames-linux/src/xattr.rs": "dbc5db95c0fc2a291c89bd2b9f4e9a0262106a6a3b7f6d583ff3fefb4cdcbac8",
+    "crates/trames-net/src/lib.rs": "4005ba47a350bef1b0aee41b1468b8c0ffe8ab9d39d99568e392695f44c29b52",
+    "crates/trames-net/src/netlink.rs": "dcd1f52d4b7607d7bba055405e7a2c22eeef2b8ecbe8775e2f587b1f0f2a4e21",
+    "crates/trames-vfs/src/capabilities.rs": "ee0332c9a2a0ec9a8d9a3261039c02f7eb206db1b8f0f02ac15fe6ac826e67c9",
+    "crates/trames-vfs/src/cgroup.rs": "c991e2f38168ea4ddabcc050eec09cf836f4694e834355ca21cd09cf9970a97d",
+    "crates/trames-vfs/src/events.rs": "eb013ffe0305172f149283810ddcf847f73dae45785d50ab073bc4096819a68b",
+    "crates/trames-vfs/src/ipc.rs": "3548260212202c62df34e0c6fa221d95446632b611a709ba7c6752debb7a757a",
+    "crates/trames-vfs/src/lib.rs": "c298c0607d7c18de74c1d3e0c1f923e00c2d4305867dc8ce9b660934c6abc67c",
+    "crates/trames-vfs/src/linux_namespace.rs": "6d930c37d7fa51a5c6c0ffb08290fa145c2b37139d97f7bac087fb4ca21a64f3",
+    "crates/trames-vfs/src/memfd.rs": "e02501e430d651d91a5b342ee94037ddcbdde14ee62d0eb65cdc34aeccb0f8e5",
+    "crates/trames-vfs/src/mounts.rs": "3662b5a12d12021ae144cd6433e355376d574e1c46355fa37b53b4b7b55f2389",
+    "crates/trames-vfs/src/namespace.rs": "e6362e46cc32532ec9349d237c051146943d2052930b5a943564b205b359b750",
+    "crates/trames-vfs/src/network.rs": "bd6722caa5252cce499a43797d4743240256c205de019473539b971b5ebc489d",
+    "crates/trames-vfs/src/pseudo.rs": "48f3379adae1d9cc5081b9c0f6313bc5c6f2a59abe13153e9e6b3d0320f2ca6b",
+    "crates/trames-vfs/src/pty.rs": "9b734f5b4b9380d6ec354631351c93d28e3d8956e9bc7ded80917b44794d9c13",
+    "crates/trames-vfs/src/storage.rs": "4eecdc855778e1282340239cd2941a75467d7ee156f98c66dc83f20f150db377",
+    "crates/trames-vfs/src/storage_tests.rs": "a450c9b01aa00277071687d7ca08a4ab48f472a926304e2c89c9f47b7fa678f5",
+    "crates/trames-vfs/src/xattr.rs": "1027452c45e7d55cbbcbe9c555c651a9992066fee0879a86f527019f5d579e8c",
+    "examples/docker/containerd.toml": "7bfb997229b25ebc9eb74680731e6c24e1a7a7a7609c74c73e5b0f067481132e",
+    "examples/docker/daemon.json": "6db79a0dc72970a31d8c47b0b48fe03339832323deb9dfee01a3a060181f4ad4",
+    "scripts/audit-syscalls.py": "4faf845990073e8b10a9361274a7b530fae6130ed81c3162f9f6cc5f5e8797c3",
+    "scripts/build-unix-fixtures.sh": "87e6b6bef4c27b26e0b44dfdaf6cd9b139bf98db52a2217cf98b91d78f1c323f",
+    "tests/fixtures/mount-namespaces.c": "7d0080174c7c0a609e7e4973438f23b5d20c7c7d52502fc85072b77928359caa",
+    "tests/fixtures/pdeathsig.c": "eb99a46c9dd810428ec23ee8d810b56ff38a8955ac60173d0edcb1bab1df92a8",
+    "tests/fixtures/unix-sockets.c": "0cb9f4af2bb839c0a20f4e754fab84bd3d834ac456db140c34c41b7c3feebf61",
+    "tests/integration/docker.py": "1f4e162283e985e5f59016d619ab728ba0fcd7d081f833eaafdb42ee0625d7e7",
+    "tests/integration/unix-sockets.py": "3d2100620a8c4fddddd5d83b58676faaacc98d441ecc0205e44c410267acd823"
+  },
+  "artifact_sha256": {
+    "target/release/trames-run": "d9bea9e62d321bb679c93ce9058856f65e27661d74d1bbb39daee1fb237cf869",
+    "tests/fixtures/bin/unix-sockets": "0c6f3d618934ed8224d14e3ed081c0a7e3d81f928300dca7c03cde308630c623",
+    "tests/fixtures/bin/unix-sockets-host": "db88b96d57a07879c9c3e7fa1f3a94ba238013b0c70b72b54f672f23f0681006",
+    "tests/fixtures/bin/pdeathsig": "59d94f5c2804d2fa4c79b0fb3ccf6b45a734c7aba20cbbc99d17fc11ea6245ca",
+    "tests/fixtures/bin/pdeathsig-host": "37d3314f9c62a66c841924738cc8a2d0990b2bf37ec46beb72b3578691227be9"
+  },
+  "behavior_sources": [
+    "https://github.com/moby/moby/blob/v28.3.3/daemon/daemon_unix.go",
+    "https://github.com/moby/moby/blob/v28.3.3/libnetwork/osl/namespace_linux.go",
+    "https://github.com/containerd/fifo/blob/v1.1.0/fifo.go"
+  ],
+  "limits": "No privileged host namespace oracle, Docker payload execution, full OCI, isolated network namespaces or physical iPad validation. Original upstream executables unchanged. No new CPU/native-memory hot-path locks or performance claim."
+}

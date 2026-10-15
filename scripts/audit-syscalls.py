@@ -59,20 +59,20 @@ notes = {
     90: 'Guest capget v1/v2/v3, version negotiation including NULL-data query, namespace-local task lookup and per-thread E/P/I sets; bounded output preflight.',
     91: 'Guest capset self/own TID only; effective/permitted/inheritable subset and bounding/SETPCAP rules, ambient reduction, high-bit masking. No cross-task capset or file capability xattrs.',
     95: 'waitid P_ALL/P_PID/P_PGID, EXITED/STOPPED/CONTINUED, NOHANG/NOWAIT and WALL; namespace-local siginfo IDs, fault preflight, nohang zero info. No P_PIDFD/clone-signal variants; rusage is currently zero as with wait4.',
-    167: 'Task-local KEEPCAPS, SECUREBITS/locks, CAPBSET_READ/DROP, irreversible NO_NEW_PRIVS and ambient query/raise/lower/clear; enforced capset/UID/exec semantics. GET/SET_DUMPABLE 0/1 shares with CLONE_VM, copies on fork, resets on exec/credential transitions and protects sensitive proc reads/links. Retains NAME and thread-group CHILD_SUBREAPER; no core-file writer, full ptrace or seccomp, other options EINVAL.',
+    167: 'Task-local KEEPCAPS, SECUREBITS/locks, CAPBSET_READ/DROP, irreversible NO_NEW_PRIVS and ambient query/raise/lower/clear; enforced capset/UID/exec semantics. GET/SET_DUMPABLE 0/1 shares with CLONE_VM, copies on fork, resets on exec/credential transitions and protects sensitive proc reads/links. PDEATHSIG GET/SET, creator-thread exit and sender metadata, fork reset, ordinary exec preservation and effective/fs UID/GID reset. Retains NAME and thread-group CHILD_SUBREAPER; no core-file writer, full ptrace or seccomp, other options EINVAL.',
     129: 'PID namespace visibility for process/group/broadcast kill; guest credentials, namespace init handler protection, ancestor KILL/STOP, exported signal sender translation. Standard pending signals coalesce; RT signals from kill queue FIFO by number, process-wide pending is shared by threads. Fixed 4096-entry queue budget, not per-UID RLIMIT_SIGPENDING.',
     130: 'tkill namespace-local TID lookup, credentials, init protection, private thread queue and SI_TKILL sender identity; stop/continue group effects.',
     131: 'tgkill namespace-local TGID/TID checks, credentials, init protection, private thread queue and SI_TKILL sender identity; stop/continue group effects.',
     260: 'wait4 namespace-local PID/PGID selection and returned child ID, exit/stop/continue and WALL; current rusage fields remain zero.',
     157: 'Create guest session/process group for a non-group-leader, detach controlling tty, update shared thread group and return namespace-local SID. New PID namespace init inherits ancestor PGID/SID/tty (IDs appear as zero inside) until it calls setsid; no premature session creation at clone.',
     39: 'Guest umount2: normal EBUSY for live capabilities/submounts, MNT_DETACH subtree lifetime, UMOUNT_NOFOLLOW. CAP_SYS_ADMIN authorization; force/expire unsupported.',
-    40: 'Guest private mount namespace: tmpfs, proc/sysfs/private devpts with newinstance and uid/gid/mode/ptmxmode/max, shared cgroup2 hierarchy, bind/rbind, selected remount readonly/nosuid/nodev/noexec attributes, MS_PRIVATE/REC, MS_RELATIME and MS_SILENT. Bound mount lifetime and tmpfs memory/inode quotas. Cgroup membership, hierarchical freeze/kill and pids controller fork/thread quotas; no CPU/memory/io controllers, delegation or cgroup namespaces. No shared/slave propagation, block FS/overlayfs or modern mount API.',
+    40: 'Guest private mount namespace: tmpfs, proc/sysfs/private devpts with newinstance and uid/gid/mode/ptmxmode/max, shared cgroup2 hierarchy, bind/rbind, selected remount readonly/nosuid/nodev/noexec attributes, MS_PRIVATE/REC and private-to-slave with no shared master, MS_RELATIME and MS_SILENT. Bound mount lifetime and tmpfs memory/inode quotas. Cgroup membership, hierarchical freeze/kill and pids controller fork/thread quotas; no CPU/memory/io controllers, delegation or cgroup namespaces. Net/UTS/PID namespace FD bind pins nsfs objects; mount-namespace bind remains unsupported pending cycle collection. No shared/slave event propagation, block FS/overlayfs or modern mount API.',
     41: 'Guest pivot_root between mount roots with directory/ancestry validation, old-root attachment and shared-namespace root/cwd updates. Includes same-location pivot_root(dot,dot) stacking and retained-old-root detach. Selected private mount model.',
     51: 'Guest chroot fs.root with CAP_SYS_CHROOT, absolute symlink/dotdot handling, fork/CLONE_FS inheritance and unshare separation. Retains cwd/dirfd capabilities as Linux does. Mount/inode fs.root capability retained; complete cross-process proc root magic-link views still pending.',
     97: 'CLONE_NEWUTS, CLONE_NEWNS, CLONE_NEWPID, CLONE_FS and CLONE_FILES; transactional flag/quota checks. NEWNS implies private fs context; NEWPID changes only future children and rejects multithreaded callers/repeated unshare. Network/user/IPC namespaces remain unsupported.',
     161: 'Set current guest UTS hostname, 0..64 bytes; CAP_SYS_ADMIN in initial guest user namespace; no user namespaces yet.',
     162: 'Set current guest UTS domain name, 0..64 bytes; same CAP_SYS_ADMIN authorization as sethostname.',
-    268: 'Join UTS/mount or select a PID namespace for future children through retained namespace fd; type 0 or matching CLONE flag. PID setns accepts current/descendant namespaces only. Mount setns rejects shared fs contexts; other namespace types unsupported.',
+    268: 'Join UTS/mount or select a PID namespace for future children through retained namespace fd; type 0 or matching CLONE flag. PID setns accepts current/descendant namespaces only. Mount setns rejects shared fs contexts. The single guest root network has net/task handles, nsfs bind and same-network setns; CLONE_NEWNET and isolated routing remain unsupported.',
     220: 'Fork/threads/resource sharing plus CLONE_NEWUTS/CLONE_NEWNS/CLONE_NEWPID. Hierarchical IDs, namespace init lifecycle, orphan reparenting, parent/child TID writes and nonleader exec. Hierarchical cgroup pids checks precede clone commit and include threads. Reject NEWNS with CLONE_FS and NEWPID with THREAD/PARENT; no NEWNET/NEWUSER/NEWIPC or clone3.',
     29: 'Selected tty/network ioctls and FIONBIO, including standard streams, dup-shared status flags, output/input backpressure and descriptor-only CLOEXEC. TIOCGPTN uses devpts-local numbering and TIOCGPTPEER follows the retained master instance across chroot/detach.',
     208: 'Selected socket options including TCP_KEEPIDLE/KEEPINTVL/KEEPCNT with Linux bounds. Native sockets use translated host options; virtual TCP uses the idle interval and retains interval/count as compatibility hints, not Linux probe/expiry timing.',
@@ -114,7 +114,7 @@ notes = {
     291: 'BASIC_STATS and virtual MNT_ID, symlink/no-follow/empty-path handling, device numbers and timestamps. No invented birth time, DIO alignment or newer optional statx fields.',
     436: 'Bounded descriptor range, CLOSE_RANGE_CLOEXEC and scheduler-mediated CLOSE_RANGE_UNSHARE with CLONE_FILES separation.',
     19: 'Bounded shared event counter; semaphore/nonblocking/cloexec, overflow and fault preflight.',
-    21: 'ADD/MOD/DEL, dup registration identity, level/ONESHOT and PTY/embedding-terminal EPOLLET with queue generations. Other sources still reject ET; no nested epoll or EXCLUSIVE.',
+    21: 'ADD/MOD/DEL, dup registration identity, level/ONESHOT and PTY/embedding-terminal, Unix sockets, pipes/FIFOs, eventfd and NETLINK_ROUTE EPOLLET with queue generations. Native TCP/UDP and timerfd/signalfd still reject ET; no nested epoll or EXCLUSIVE.',
     20: 'Guest epoll open description; no host epoll descriptor.',
     22: 'Cooperative epoll wait with timeout, temporary signal mask and EINTR restoration.',
     25: 'Selected descriptor/status operations plus POSIX GETLK/SETLK/SETLKW byte-range locks; TGID ownership, split/merge, close and deadlock detection. Classic memfd GET_SEALS/ADD_SEALS, busy-map checks and shrink/grow/write enforcement. No OFD locks.',
@@ -125,12 +125,22 @@ notes = {
     85: 'Guest timerfd, realtime/monotonic/virtual boottime; nonblocking/cloexec. Alarm clocks unsupported.',
     86: 'Relative/absolute timerfd arm/disarm, periodic expiration count and old-value preflight. CANCEL_ON_SET explicitly unsupported.',
     87: 'Timerfd interval/remaining time; shared open-description state.',
-    211: 'Selected flags/iovecs; AF_UNIX socketpair SCM_RIGHTS for files, pipes, PTYs and other non-UNIX-socket open descriptions. Invalid FDs/headers fail before queueing. No UNIX-socket FD cycles, SCM_CREDENTIALS or named endpoints.',
-    212: 'Selected receive ancillary plus AF_UNIX socketpair SCM_RIGHTS, PEEK, CMSG_CLOEXEC, control-space/FD-table truncation and shared description lifetime. No SCM_CREDENTIALS.',
-    199: 'Bounded AF_UNIX stream/datagram/seqpacket pairs; dup/fork, shutdown, peek/trunc and fault preflight. SCM_RIGHTS for non-UNIX-socket open descriptions, CLOEXEC/PEEK/truncation and lifetime; no named endpoints, UNIX-socket in-flight GC or SCM_CREDENTIALS.',
+    211: 'Selected flags/iovecs; AF_UNIX SCM_RIGHTS for files, pipes, PTYs and other non-UNIX-socket open descriptions. Invalid FDs/headers fail before queueing. No UNIX-socket FD cycles or SCM_CREDENTIALS.',
+    212: 'Selected receive ancillary plus AF_UNIX SCM_RIGHTS, PEEK, CMSG_CLOEXEC, control-space/FD-table truncation and shared description lifetime. No SCM_CREDENTIALS.',
+    199: 'Bounded AF_UNIX stream/datagram/seqpacket pairs; dup/fork, shutdown, peek/trunc and fault preflight. SCM_RIGHTS for non-UNIX-socket open descriptions, CLOEXEC/PEEK/truncation and lifetime; no UNIX-socket in-flight GC or SCM_CREDENTIALS.',
     134: 'Selected rt_sigaction flags including musl sign-extended SA_RESETHAND, actual alternate-stack delivery, nested virtual signal frames and synchronous CPU-fault context recovery. No SVE/SME signal context or full realtime signal queue.',
     441: 'Timespec epoll wait; not dispatched by the pinned QEMU 10.0.13 oracle, independently checked by M6 fixtures.',
 }
+for number in range(5, 17):
+    notes[number] = 'Bounded user.* inode xattrs: path/follow, link/nofollow and fd set/get/list/remove, binary values, size queries/ERANGE, CREATE/REPLACE, DAC/sticky/readonly checks, hardlink/unlinked identity and v4 persistence with rollback. 128 attrs/64 KiB per inode, 1 MiB per filesystem. Absent security/system attributes return ENODATA; capability/ACL writes remain EOPNOTSUPP.'
+for number in (198, 200, 201, 202, 203, 204, 205, 242):
+    notes[number] = notes.get(number, '') + ' Guest AF_UNIX filesystem/abstract stream and seqpacket endpoints, bounded backlog, accept4, binary names, retained socket inode lifetime, nonblocking flags and SO_PEERCRED. Named datagram delivery and SCM_CREDENTIALS remain unsupported; existing IP/Netlink subset retained.'
+notes[208] += ' Unix reuse flags retained without name reuse.'
+notes[209] = notes.get(209, '') + ' Unix SO_TYPE, SO_ACCEPTCONN, SO_PEERCRED connect/listen credential snapshots and selected buffer/reuse queries.'
+notes[206] = notes.get(206, '') + ' NETLINK_ROUTE accepts only CAP_NET_ADMIN-authorized idempotent loopback UP, rejecting actual link/address/route mutations.'
+notes[211] += notes[206]
+notes[56] += ' Reopen FIFO O_PATH handles through proc with independent requested read/write endpoints, retained unlinked inode and open rendezvous.'
+notes[88] = 'utimensat follows normal paths and honors AT_SYMLINK_NOFOLLOW including dangling symlinks; NULL path supports fd, selected NOW/OMIT and existing guest permission checks.'
 for row in rows:
     number = int(row['number'])
     row['baseline_status'] = row['status']
@@ -171,8 +181,8 @@ metadata = {
     'unhandled_return': -38,
     'source_sha256': {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in (
         'crates/trames-core/src/process.rs', 'crates/trames-core/src/process_caps.rs', 'crates/trames-vfs/src/capabilities.rs', 'crates/trames-vfs/src/cgroup.rs', 'crates/trames-core/src/process_pid.rs', 'crates/trames-core/src/process_events.rs', 'crates/trames-core/src/process_signals.rs', 'crates/trames-core/src/process_compat.rs',
-        'crates/trames-linux/src/state.rs', 'crates/trames-linux/src/network.rs', 'crates/trames-linux/src/file_calls.rs',
-        'crates/trames-vfs/src/events.rs', 'crates/trames-vfs/src/ipc.rs', 'crates/trames-vfs/src/locks.rs',
+        'crates/trames-linux/src/state.rs', 'crates/trames-linux/src/network.rs', 'crates/trames-linux/src/xattr.rs', 'crates/trames-linux/src/file_calls.rs',
+        'crates/trames-vfs/src/events.rs', 'crates/trames-vfs/src/ipc.rs', 'crates/trames-vfs/src/xattr.rs', 'crates/trames-net/src/netlink.rs', 'crates/trames-net/src/lib.rs', 'crates/trames-vfs/src/locks.rs',
         'crates/trames-vfs/src/lib.rs', 'crates/trames-vfs/src/pseudo.rs', 'crates/trames-vfs/src/storage.rs',
         'crates/trames-vfs/src/kernel_log.rs', 'crates/trames-vfs/src/syscall_names.rs',
         'crates/trames-memory/src/lib.rs', 'crates/trames-memory/src/backing.rs',

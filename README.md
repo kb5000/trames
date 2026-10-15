@@ -104,7 +104,7 @@ DNS 由真实 musl 读取 guest 的 `/etc/resolv.conf`；可用 `--file /etc/res
 
 ## Guest 内容器（开发中）
 
-原版 Alpine `crun` 已可在 guest 内运行配置范围内的 rootful 容器：独立 PID/mount/UTS、tmpfs 和 devpts、前台终端、cgroupfs、pause/resume/kill、pids 进程数限制，以及多个 Alpine rootfs 并行运行；1/4 CPU 自动验收通过。网络共享当前 guest 的直连网络。使用方法见[容器入门](docs/guides/guest-containers.md)，接口和限制见[架构说明](docs/architecture/guest-containers.md)。user/IPC/net namespace、CPU/memory/io 配额、overlayfs、rootless 与 Docker/Podman 仍待扩展。
+原版 Alpine `crun` 已可在 guest 内运行配置范围内的 rootful 容器：独立 PID/mount/UTS、tmpfs 和 devpts、前台终端、cgroupfs、pause/resume/kill、pids 进程数限制，以及多个 Alpine rootfs 并行运行；1/4 CPU 自动验收通过。网络共享当前 guest 的直连网络。使用方法见[容器入门](docs/guides/guest-containers.md)，接口和限制见[架构说明](docs/architecture/guest-containers.md)。[原版 Docker 基础支持](docs/guides/guest-docker.md)已推进到守护进程、镜像导入和容器创建；启动仍缺 shim 所需的 proc OOM 接口。独立 user/IPC/net namespace、CPU/memory/io 配额、overlayfs、rootless 与完整 Docker/Podman 支持仍待扩展。
 
 ## Linux 兼容性更新（0.2.0）
 

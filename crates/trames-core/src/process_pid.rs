@@ -2,6 +2,40 @@
 //! PID namespace lifecycle and waitid, using stable scheduler identities.
 use super::*;
 impl Kernel {
+    pub(super) fn parent_thread_exited(
+        &mut self,
+        tid: u32,
+        parent: &Process,
+        survivor: Option<u32>,
+    ) {
+        let successor = survivor.or_else(|| {
+            self.processes.iter().find_map(|(&id, t)| {
+                (id != tid && t.tgid == parent.tgid && !matches!(t.state, State::Zombie(_)))
+                    .then_some(id)
+            })
+        });
+        for child in self.processes.values_mut() {
+            if child.parent_thread != tid || matches!(child.state, State::Zombie(_)) {
+                continue;
+            }
+            let sig = child.pdeath_signal;
+            if sig != 0 && Self::prepare_signal(child, sig, parent.tgid) {
+                let _ = child.shared_pending.borrow_mut().enqueue(
+                    sig,
+                    Info {
+                        sender: parent.tgid,
+                        uid: parent.linux.vfs.credentials.uid,
+                        status: 0,
+                        code: 0,
+                        timer: None,
+                        fault: None,
+                    },
+                );
+            }
+            child.parent_thread = successor.unwrap_or(0);
+        }
+    }
+
     pub(super) fn reap_namespace_children(
         &mut self,
         pid: u32,
@@ -62,6 +96,7 @@ impl Kernel {
         for (&id, child) in &mut self.processes {
             if child.parent == pid {
                 child.parent = reaper;
+                child.parent_thread = reaper;
                 if id == child.tgid {
                     if let State::Zombie(s) = child.state {
                         zombies.push((id, s));

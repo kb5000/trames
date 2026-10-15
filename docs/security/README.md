@@ -7,9 +7,9 @@ pages remain rejected. Interpreter files come only from the checked guest VFS. G
 
 | Resource | Current bound |
 | --- | --- |
-| Input ELF | 64 MiB (the CLI reads at most the limit plus one byte) |
+| Input ELF | 256 MiB (the CLI reads at most the limit plus one byte) |
 | Committed guest page objects including stack | 512 MiB per address space; 1 GiB scheduler aggregate |
-| Virtual processes including zombies | 32 |
+| Virtual tasks including threads and zombies | 256 |
 | Pipe buffer / atomic write | 64 KiB / 4096 bytes |
 | PTY input, output and echo | 64 KiB each; empty EOF records also consume input budget |
 | Nested signal frames | 8 |
@@ -25,6 +25,8 @@ pages remain rejected. Interpreter files come only from the checked guest VFS. G
 | Serialized manifest input | 128 MiB, checksummed and structurally validated |
 | Import/export buffer | 64 KiB |
 | File descriptors | 256 per process |
+| Guest Unix sockets | 1024 live endpoints, including queued accepts; 64 KiB / 128 queued messages per direction |
+| Inode xattrs | user.* only; 128 attributes and 64 KiB per inode, 1 MiB per filesystem |
 | Native sockets | 64 per session, shared across fork/dup, including accepted sockets |
 | Socket buffer requests | 64 KiB initial send/receive each; guest requests at most 256 KiB each; actual OS sizes may differ |
 | UDP scratch buffer / TCP transfer | 64 KiB / at most 1 MiB |

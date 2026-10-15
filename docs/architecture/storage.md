@@ -68,8 +68,23 @@ The guest ABI adds statfs/fstatfs, truncate/ftruncate, pread64/pwrite64,
 fsync/fdatasync/sync, linkat, renameat/selected renameat2, fchmod/fchmodat and
 utimensat. The 0.2.0 follow-up adds virtual UID/GID/ownership syscalls, sticky/
 SGID/set-ID behavior and real owner/group/other permission checks. Manifest v3 stores UID/GID. Version 0.3.0 accepts only v3; historical format migration was removed at the owner's request.
-Complete timestamp, mount, locking, ACL/xattr and provider POSIX semantics remain
+Complete timestamp, mount, locking, ACL and provider POSIX semantics remain
 out of scope. Enabled BusyBox applets are validated only for the recorded cases.
+
+The Docker compatibility batch writes manifest v4 with bounded inode-keyed `user.*`
+attributes. Path, nofollow and fd set/get/list/remove share attributes across hard
+links and open-unlinked references. CREATE/REPLACE, DAC, readonly mounts and sticky
+directories are checked; failed quota or manifest commits restore attributes and
+ctime. Limits: 128 names / 64 KiB per inode and 1 MiB per filesystem. File capability
+and ACL writes return EOPNOTSUPP; their absent queries return ENODATA. A v3 store
+opens with empty attributes and becomes v4 on its next checkpoint. Old binaries
+cannot read v4. Decode validates names, inode types, duplicates and total budgets.
+
+Named Unix sockets persist only their inode, mode and ownership (tag 8). Queue and
+endpoint state belongs to the kernel session; reopening yields a stale endpoint
+that returns ECONNREFUSED until unlinked and rebound. No host Unix path is opened.
+`utimensat(AT_SYMLINK_NOFOLLOW)` now updates the symlink itself, including dangling
+links unpacked by Docker's archive code.
 
 ## Capacity
 
@@ -90,7 +105,7 @@ host IO can still fail if other applications use space.
 Logical lengths, including holes and open-unlinked files, count once per inode.
 Aliases add no content charge. Large ordinary files are not loaded wholesale:
 guest transfers are at most 1 MiB and import/export buffers are 64 KiB. Executable
-loading of the main ELF still has its separate 64 MiB limit. M6 mapped-memory
+loading of the main ELF still has its separate 256 MiB limit. M6 mapped-memory
 bounds are 512 MiB per process and 1 GiB aggregate. `--memory` retains the 16 MiB file and
 1024 node/entry bounds; 16 GiB is never granted to that Vec-backed backend.
 

@@ -50,8 +50,8 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 ## Linux：尚无入口的系统调用
 
 固定参照仍为 Linux v6.12 原生 AArch64 的 318 个编号，不是最新版内核的全部接口。
-当前有 **177 个已实现子集、139 个未实现条目、2 个废弃条目**。
-本轮使用实际 ARM64 探测 ELF，在唯一缓存解释器上逐个调用全部 141 个未分派编号，
+当前有 **189 个已实现子集、127 个未实现条目、2 个废弃条目**。
+本轮使用实际 ARM64 探测 ELF，在唯一缓存解释器上逐个调用全部 129 个未分派编号，
 均返回 `-ENOSYS`（-38）。这验证的是无入口行为，不能代替已有入口的 ABI 完整性测试。
 
 完整的编号、名称、状态、当前源码位置和探测返回值见
@@ -59,11 +59,10 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 单后端、统计及源码指纹见 [审计 JSON](../validation/compatibility-current-syscalls.json)。
 可运行 `python3 scripts/audit-syscalls.py` 更新当前报告，历史报告不会被默认覆盖。
 
-以下按用途列出主要缺口；每行列举代表接口，完整 139 项以 CSV 中 `missing` 行为准。
+以下按用途列出主要缺口；每行列举代表接口，完整 127 项以 CSV 中 `missing` 行为准。
 
 | 用途 | 尚未实现的代表接口 |
 | --- | --- |
-| 文件元数据与路径 | set/get/list/remove xattr 的路径、链接及 fd 变体 |
 | 文件数据与批量 I/O | splice/vmsplice/tee、fallocate、sync_file_range |
 | 文件通知和异步 I/O | inotify、fanotify、旧 AIO、io_uring |
 | 内存 | memfd_secret、mlock/munlock 系列、userfaultfd、mseal、内存策略与 pkey 系列 |
@@ -73,7 +72,7 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 | 内核管理与隔离 | 新挂载 API、传播挂载/overlayfs、ptrace/seccomp、process_vm_readv/writev、bpf/perf、landlock、模块/重启/交换分区等 |
 
 2 个废弃条目是 `lookup_dcookie`（18）与 `nfsservctl`（42），同样返回 ENOSYS，
-不计入 139 个未实现条目。内核管理类接口需要结合用户态虚拟化目标选择范围，
+不计入 127 个未实现条目。内核管理类接口需要结合用户态虚拟化目标选择范围，
 不能把完整内核功能视为普通文件/进程接口的自然延伸。
 
 先前的 statx、preadv/pwritev、close_range 和 syslog 已扩展为本轮包含 23 个新入口的
@@ -89,23 +88,25 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 首批新增 chroot、unshare、setns、sethostname、setdomainname 五个入口；
 UTS 对象和 namespace FD 具备实际共享/隔离及保活语义，clone 增加 NEWUTS。
 后续增加 mount/umount2/pivot_root、mount namespace、tmpfs、bind/rbind，以及 waitid、child subreaper、PID namespace 层级、init 生命周期和 proc 挂载视图。后续新增 capget/capset 和 capability prctl 子集，接入实际权限判断及 UID/exec 转换；后续补 cgroup v2 域成员生命周期和 dumpable/敏感 proc 访问。本批增加设备 inode/持久化、openat2 路径约束、proc FD chmod/chown、同点 pivot_root，并校正 PID init 的会话继承。最新批次补齐 signalfd4、线程私有/进程共享信号队列和 proc FD 挂载目标，原版 crun 的选定启动、exec、TERM 和删除生命周期已通过；新批次通过 cgroupfs、pause/resume/kill、pids 限额、并发 Alpine rootfs 和独立 devpts 前台终端；补 SCM_RIGHTS 子集及 PTY EPOLLET。user/IPC/net namespace、CPU/memory/io 控制与委派仍未实现，详见[guest 内容器基础](../architecture/guest-containers.md)。
+Docker 批次新增 12 个 xattr 入口、具名 Unix socket、PDEATHSIG 和更多 ET 来源。
 默认网络改为[宿主原生直连](../architecture/direct-network.md)，不改变系统调用编号数。
 
 ## Linux：已有入口但语义仍有缺口
 
 | 已有接口或设施 | 仍缺少的行为 |
 | --- | --- |
-| namespace / chroot | UTS/mount/PID、fs/files unshare、fs.root、tmpfs/bind/umount/pivot_root 已有；proc 按挂载绑定 PID 视图，NSpid 等显示层级；net/user/IPC、跨进程 proc root/cwd magic link 尚缺；cgroup2 支持域成员、freeze/kill 和 pids 限额，其他控制器/委派仍缺；原版 crun 选定生命周期已通过，完整 OCI/容器引擎仍未验收 |
+| namespace / chroot | UTS/mount/PID、fs/files unshare、fs.root、tmpfs/bind/umount/pivot_root 已有；proc 按挂载绑定 PID 视图，NSpid 等显示层级；当前根网络 ns/net 句柄、bind/setns 已有，独立 net/user/IPC、跨进程 proc root/cwd magic link 尚缺；cgroup2 支持域成员、freeze/kill 和 pids 限额，其他控制器/委派仍缺；原版 crun 选定生命周期已通过，完整 OCI/容器引擎仍未验收 |
 | capability / prctl | 初始 guest user namespace 的 E/P/I/bounding/ambient、securebits、no_new_privs、dumpable 0/1 与选定 proc 访问检查已有；file capability xattr、user namespace 映射/权限层级、完整 ptrace、core 文件写出、seccomp 仍缺 |
+| xattr | 路径/链接/fd 的 12 个入口及持久化 user.* 已有；security.capability/ACL 设置仍明确拒绝 |
 | statx / syslog | statx 不报告未有依据的 birth time、DIO 对齐等可选字段；syslog 不接管宿主内核日志或控制台 |
 | mmap / 内存管理 | 已有共享文件/匿名映射、写回、EOF/truncate SIGBUS、选定 remap/discard；仍缺需求分页/回收、MAP_SYNC、huge pages、DONTUNMAP、跨不同映射段 remap 等 |
 | memfd / 文件接口 / 调度 | memfd 的新 sealing/huge/no-exec 模式、更多 RWF flags、实时策略仍缺失；openat2 已支持路径/链接/跨挂载约束，CACHED 返回 EAGAIN；已支持 1–32 个虚拟 CPU、实际宿主并行、affinity 与 getcpu |
 | rt_sigaction / 信号帧 | 备用信号栈、嵌套及 AUTODISARM 已实现；kill/tkill/tgkill 的实时排队已有；rt_sigqueueinfo/rt_tgsigqueueinfo、每 UID 的 RLIMIT_SIGPENDING、SVE/SME 信号上下文仍缺失；同步 CPU 故障恢复已有实现 |
-| socket / socketpair | Unix socketpair 已实现；SCM_RIGHTS 支持文件/pipe/PTY 等 FD，Unix socket FD 的循环回收、具名 AF_UNIX 与 SCM_CREDENTIALS 仍缺 |
-| signalfd4 / epoll | 128 字节 read/readv、私有/共享队列、level-triggered 和 ONESHOT 已实现；PTY/嵌入终端 EPOLLET 已有；其他 FD 的 EPOLLET、嵌套 epoll、EXCLUSIVE、跨 fork 继承 epoll 的 Linux 信号等待队列绑定仍缺，子进程应新建并注册 epoll |
+| socket / socketpair | Unix socketpair 已实现；SCM_RIGHTS 支持文件/pipe/PTY 等 FD，具名/抽象 stream/seqpacket 已有；Unix socket FD 的循环回收、具名 datagram 定址发送与 SCM_CREDENTIALS 仍缺 |
+| signalfd4 / epoll | 128 字节 read/readv、私有/共享队列、level-triggered 和 ONESHOT 已实现；PTY/嵌入终端、Unix socket、pipe/FIFO、eventfd、Netlink EPOLLET 已有；宿主 socket 和 timerfd/signalfd 的 EPOLLET、嵌套 epoll、EXCLUSIVE、跨 fork 继承 epoll 的 Linux 信号等待队列绑定仍缺，子进程应新建并注册 epoll |
 | timerfd | 普通 realtime/monotonic/虚拟 boottime 定时器已有实现；alarm 时钟和 CANCEL_ON_SET 不支持 |
 | fcntl / futex | POSIX 记录锁已有实现；OFD 锁、完整 robust/shared futex 语义仍缺失 |
-| mknodat / mount / 虚拟设备 | 普通/FIFO/字符/块 inode 与设备号持久化已有；标准字符设备复用 guest 驱动，未注册设备打开 ENXIO；socket inode mknod、独立 devpts 已有；块驱动/文件系统和完整 Linux 驱动模型仍缺 |
+| mknodat / mount / 虚拟设备 | 普通/FIFO/字符/块 inode 与设备号持久化已有；标准字符设备复用 guest 驱动，未注册设备打开 ENXIO；socket inode 由 bind 创建，socket mknod 仍缺；独立 devpts 已有；块驱动/文件系统和完整 Linux 驱动模型仍缺 |
 | PTY / termios | 已支持独立多 PTY、控制终端、关闭/hangup、原版 sudo 默认 use_pty；非零 VTIME 和更多驱动 ioctl 仍不支持，见[sudo 验证](../validation/sudo-timezone.md) |
 | membarrier / I/O 优先级 | 已有 GLOBAL、PRIVATE_EXPEDITED、注册查询和单任务 ioprio_get；SYNC_CORE/RSEQ 屏障、ioprio_set 和组/用户优先级查询仍缺失 |
 | ELF / 资源限制 | 重叠 PT_LOAD 页面不支持；映射预算每进程 512 MiB、所有地址空间合计 1 GiB，guest fd 表 256 项，RLIMIT_FSIZE 已有软硬限制与写入/截断约束，其他资源修改及其他 PID 的 prlimit 仍不完整 |

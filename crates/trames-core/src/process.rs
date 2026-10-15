@@ -14,7 +14,7 @@ use trames_memory::{Access, Memory};
 use trames_vfs::capabilities;
 use trames_vfs::{Errno, FdKind, AT_FDCWD, MAX_FDS, O_NONBLOCK};
 
-const MAX_PROCESSES: usize = 32;
+const MAX_PROCESSES: usize = trames_vfs::MAX_TASKS;
 const TOTAL_MAPPED_LIMIT: usize = 1024 * 1024 * 1024;
 const UNBLOCKABLE: u64 = (1 << 8) | (1 << 18);
 /// Preserve round-robin queue priority while relocating an earlier flexible
@@ -128,6 +128,8 @@ struct Process {
     memory: Memory,
     linux: Linux,
     parent: u32,
+    parent_thread: u32,
+    pdeath_signal: u32,
     group: u32,
     session: u32,
     state: State,
@@ -167,6 +169,8 @@ impl Process {
             memory: self.memory.clone(),
             linux: self.linux.clone(),
             parent: 0,
+            parent_thread: 0,
+            pdeath_signal: 0,
             group: self.group,
             session: self.session,
             state: State::Ready,
@@ -614,6 +618,7 @@ impl Kernel {
         }
     }
     fn exit_one(&mut self, pid: u32, p: &mut Process, status: i32) {
+        self.parent_thread_exited(pid, p, None);
         p.linux.vfs.cgroup_exit(pid);
         let state = if matches!(p.state, State::Stopped) {
             p.stopped_state.as_deref()
@@ -1783,6 +1788,11 @@ impl Kernel {
                 } else {
                     p.tgid
                 };
+                child.parent_thread = if threaded || a[0] & 0x8000 != 0 {
+                    p.parent_thread
+                } else {
+                    pid
+                };
                 child.cpu.set_x(0, 0);
                 if a[1] != 0 {
                     child.cpu.sp = a[1];
@@ -1832,6 +1842,7 @@ impl Kernel {
                     .collect();
                 for id in ids {
                     if let Some(mut t) = self.processes.remove(&id) {
+                        self.parent_thread_exited(id, &t, Some(p.tgid));
                         t.linux.vfs.cgroup_exit(id);
                         let address = t.linux.clear_tid_address();
                         t.linux.exit_tid(&mut t.memory);
@@ -1848,6 +1859,11 @@ impl Kernel {
                 if pid != p.tgid {
                     p.linux.vfs.cgroup_exec_rekey(pid, p.tgid);
                     p.rekey = Some(p.tgid);
+                    for child in self.processes.values_mut() {
+                        if child.parent_thread == pid {
+                            child.parent_thread = p.tgid;
+                        }
+                    }
                 }
                 let resource = self.resource_id();
                 p.vm_id = resource;
@@ -1866,6 +1882,17 @@ impl Kernel {
             98 | 102 | 103 | 107..=111 | 137 => self.event_call(pid, p, number, a),
             260 => self.wait(pid, p, a),
             95 => self.waitid(p, a),
+            167 if a[0] == 1 => {
+                if a[1] > 64 {
+                    return Err(Errno(22));
+                }
+                p.pdeath_signal = a[1] as u32;
+                Ok(Some(0))
+            }
+            167 if a[0] == 2 => {
+                write_u32(&mut p.memory, a[1], p.pdeath_signal)?;
+                Ok(Some(0))
+            }
             167 if a[0] == 3 => Ok(Some(p.linux.vfs.dumpable())),
             167 if a[0] == 4 => p.linux.vfs.set_dumpable(a[1]).map(|()| Some(0)),
             167 if matches!(a[0], 36 | 37) => match a[0] {
@@ -2166,7 +2193,9 @@ impl Kernel {
             283 => Self::membarrier(p, a[0], a[1]).map(Some),
             163 | 164 | 261 => Self::rlimit(p, number, a).map(Some),
             124 => Ok(Some(0)),
-            203 if matches!(p.state, State::Blocked(203, _)) => {
+            203 if matches!(p.state, State::Blocked(203, _))
+                && p.linux.vfs.local_socket(a[0] as u32)?.is_none() =>
+            {
                 Ok(p.linux.resume_connect(a[0] as u32)?.then_some(0))
             }
             63 | 65 if p.linux.vfs.signalfd_mask(a[0] as u32)?.is_some() => {
@@ -2260,7 +2289,7 @@ impl Kernel {
                 if ((raw == error(Errno(11))
                     && matches!(
                         number,
-                        63 | 64 | 65 | 66 | 71 | 202 | 242 | 206 | 207 | 211 | 212
+                        63 | 64 | 65 | 66 | 71 | 202 | 203 | 242 | 206 | 207 | 211 | 212
                     )
                     && !per_call_nonblock)
                     || (raw == error(Errno(115)) && number == 203)
@@ -2315,7 +2344,12 @@ impl Kernel {
         let was_blocked = matches!(p.state, State::Blocked(..));
         p.cpu.set_x(8, number as u64);
         put_args(&mut p.cpu, a);
+        let ids = |c: &trames_vfs::Credentials| [c.euid, c.egid, c.fsuid, c.fsgid];
+        let before_ids = ids(&p.linux.vfs.credentials);
         let result = self.syscall(pid, p, number, a, io);
+        if ids(&p.linux.vfs.credentials) != before_ids {
+            p.pdeath_signal = 0;
+        }
         self.sync_resources(p);
         let raw = match result {
             Ok(Some(raw)) => {
@@ -3625,6 +3659,8 @@ pub(super) fn run(
         memory: std::mem::take(&mut runtime.memory),
         linux: std::mem::replace(&mut runtime.linux, Linux::new(0)),
         parent: 0,
+        parent_thread: 0,
+        pdeath_signal: 0,
         group: 1,
         session: 1,
         state: State::Ready,
@@ -3783,6 +3819,8 @@ mod tests {
             memory,
             linux: Linux::new(0xa000),
             parent: 0,
+            parent_thread: 0,
+            pdeath_signal: 0,
             group: 1,
             session: 1,
             state: State::Ready,
@@ -4341,7 +4379,7 @@ mod boundary_tests {
     fn process_limit_rejects_fork_without_changing_parent_memory() {
         let mut p = process();
         let mut k = kernel();
-        for id in 2..=32 {
+        for id in 2..=MAX_PROCESSES as u32 {
             k.processes.insert(id, process());
         }
         let before = p.memory.mapped_bytes();
