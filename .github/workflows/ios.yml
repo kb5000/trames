@@ -96,6 +96,22 @@ jobs:
           python3 scripts/package-ios.py \
             apps/ios/build/device/Build/Products/Debug-iphoneos/Trames.app \
             apps/ios/build/sideload/Trames-unsigned.ipa
+      - name: Export simulator crash diagnostics
+        if: always()
+        run: |
+          if [[ -d apps/ios/build/ipad-smoke.xcresult ]]; then
+            xcrun xcresulttool export diagnostics --path apps/ios/build/ipad-smoke.xcresult \
+              --output-path apps/ios/build/ipad-diagnostics
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ipad-smoke-diagnostics
+          path: |
+            apps/ios/build/ipad-smoke-summary.json
+            apps/ios/build/ipad-smoke.log
+            apps/ios/build/ipad-diagnostics
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         with:
           name: Trames-unsigned-sideload

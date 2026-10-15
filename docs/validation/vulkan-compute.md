@@ -61,8 +61,17 @@ software reference and runs in the Linux GPU CI step.
 Apple CI builds device/simulator apps and runs `LocalVulkanTests` through the
 real embedding ABI. It installs the original signed loader from bundled packages,
 interprets the same ARM64 fixture, requires correct third-round results and
-rejects the llvmpipe software reference. Exact-source CI and physical iPad
-acceptance remain pending on the issue. The initial-source Apple run
+rejects the llvmpipe software reference. Exact runtime
+[`0ce4921`](https://github.com/kb5000/trames/commit/0ce4921ee0e10b814f13aae94f3bf4e8837222c8)
+passed [Apple CI 38673755415](https://github.com/kb5000/trames/actions/runs/38673755415):
+both device/simulator apps linked, and all eight simulator tests passed with
+zero failures or skips. This includes the standard-loader Vulkan test, two
+pipeline callers with an active CPU peer, default/specialized results and binary
+semaphore chains on native MoltenVK/Metal. The arm64 iOS 18.5 simulator identifies
+as iPad Pro 11-inch (M4); this is simulator execution on the runner's Metal GPU,
+not physical iPad acceptance or an iPad performance measurement. The exported
+[test summary](vulkan-metal-summary.json) records that distinction. Physical iPad
+acceptance remains pending on the issue. The initial-source Apple run
 [38614884248](https://github.com/kb5000/trames/actions/runs/38614884248)
 stopped before Apple compilation because the Linux prerequisite lacked `rg`;
 the ICD dependency check now uses portable awk. Static Rust library dependency
@@ -82,14 +91,14 @@ other seven simulator tests, but its compute pipeline failed because upstream
 SPIRV-Cross preserved `bias`, colliding with the Metal standard type of that name.
 Shader ingress now strips nonsemantic debug names and retains executable words,
 entrypoint strings and specialization decorations; a word-level regression and
-the unchanged named-shader native/guest lab verify that normalization. Actual
-Metal computation must pass the corrected source.
+the unchanged named-shader native/guest lab verify that normalization.
 That source progressed past compilation, but the simulator's `SimMetalHost`
 aborted in `MTLDeserializer::argumentEncoderSetValues`, taking Trames down via
 its interrupted XPC connection. The Trames stack was in MoltenVK descriptor-set
 allocation, outside guest memory access. Simulator instances now select original
-MoltenVK direct bindings through scoped layer settings; corrected Metal execution
-remains required.
+MoltenVK direct bindings through scoped layer settings; the corrected runtime
+passed the real Metal compute test above. Future runs also export a separate
+always-uploaded simulator diagnostics artifact for native failure investigation.
 
 ## Reproduction
 

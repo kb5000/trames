@@ -1,6 +1,6 @@
 {
   "date": "2026-10-15",
-  "base_commit": "44599c799c455674217e5ced798206e3519078a7",
+  "base_commit": "0ce4921ee0e10b814f13aae94f3bf4e8837222c8",
   "issue": "https://github.com/kb5000/trames/issues/21",
   "scope": "experimental headless Vulkan compute subset; not Vulkan 1.0 conformance",
   "public_entrypoints": 68,
@@ -26,13 +26,18 @@
     "version": "MoltenVK 1.4.2",
     "commit": "db66022459ffb663aa2b50f6b018bc2e124f5edf",
     "public_api_static_archive": true,
-    "ios_compile": "current Apple SDK linking running in CI; earlier local device archive check predates compiler-rt dependency",
-    "sdk_link_simulator_gpu": "e70a85b compiled shaders, then Apple SimMetalHost argument-encoder assertion aborted its XPC connection; simulator direct-binding correction pending",
+    "ios_compile": "Both unsigned device/simulator apps linked in Apple CI 38673755415 at exact runtime 0ce4921",
+    "sdk_link_simulator_gpu": "Passed actual MoltenVK/Metal standard-loader compute; all 8 simulator tests passed, 0 failed/skipped",
     "physical_ipad": "pending",
     "shader_normalization": "remove OpName/OpMemberName; preserve IDs, entrypoint strings, decorations and executable instructions",
     "failed_run_summary_sha256": "0fbbe7e1d4a7c28d04ce52d58630fd6e5d1822d0c54895e3d945f25f5b457a18",
     "simulator_binding_mode": "MoltenVK per-instance layer setting USE_METAL_ARGUMENT_BUFFERS=false; original native direct bindings",
-    "simulator_crash_sha256": "2a1adeb136aed6d03cfae519d87dd8630d94d58e35e9057881c0a27cb97cbe90"
+    "simulator_crash_sha256": "2a1adeb136aed6d03cfae519d87dd8630d94d58e35e9057881c0a27cb97cbe90",
+    "successful_run": "https://github.com/kb5000/trames/actions/runs/38673755415",
+    "successful_runtime_commit": "0ce4921ee0e10b814f13aae94f3bf4e8837222c8",
+    "simulator": "arm64 iOS 18.5 (22F77), iPad Pro 11-inch (M4) simulator; native runner Metal GPU, not physical iPad",
+    "test_summary": "docs/validation/vulkan-metal-summary.json",
+    "test_summary_sha256": "10a4ddb6a51b263ebcaec430e2dd24818473b0f37574dd264bbc6fc0fe9a94f2"
   },
   "budget": {
     "session_allocated_memory_bytes": 134217728,
@@ -75,7 +80,7 @@
     "tests/fixtures/vulkan-compute.c": "de7df94161be5e704fb1ebda48bf6753f26b448ef850f37198fc76e6de839854",
     "tests/fixtures/vulkan-compute.comp": "ac868149a64254d563119e7cb937416add43b42b9e1aeed96f901e8f6ab3ea75",
     "tests/integration/vulkan-compute.py": "fc25630a15c83394cae6521026e7ae44951988aa8b1dd2fa52e680607b4101f2",
-    ".github/workflows/ios.yml": "ce71799f9f8cbc969e50c9748514abd79405b578337de8927d3eac4bcfbb0f97",
+    ".github/workflows/ios.yml": "33a956a82259bfda067d44173ddbed5049c9e8132443a55bbc62677e922507e7",
     ".github/workflows/linux.yml": "37fce29cb4bccc7acc82608482587c9c2a7fba05e2f533329a0b2e4a9c40ce49",
     "Cargo.toml": "911a35abdaa6eb92e4b43bc9697c107e7e7eee549e6fd8f17e1d852dda2cea1e",
     "apps/ios/Trames/EnvironmentStore.swift": "90d5a929d58efde45ce32da361bdc6d5fe0ad0bb022537796c022c8014d70fe2",
@@ -262,16 +267,16 @@
       ]
     },
     "clippy": {
-      "sha256": "9c06a2d602add53f7f3f315dbabdca8c3caabd24b0b41d7a9a272ae376dcb66f",
+      "sha256": "c97ffdc0292c1b4726ab9284275832075486444b970fdaba2dc047f5d2679e81",
       "tail": [
         "    Checking trames-bridge v0.14.0 (/workspace/trames/crates/trames-bridge)",
         "    Checking trames-vfs v0.14.0 (/workspace/trames/crates/trames-vfs)",
         "    Checking trames-linux v0.14.0 (/workspace/trames/crates/trames-linux)",
         "    Checking trames-distro v0.14.0 (/workspace/trames/crates/trames-distro)",
         "    Checking trames-core v0.14.0 (/workspace/trames/crates/trames-core)",
-        "    Checking trames-cli v0.14.0 (/workspace/trames/crates/trames-cli)",
         "    Checking trames-ffi v0.14.0 (/workspace/trames/crates/trames-ffi)",
-        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.47s"
+        "    Checking trames-cli v0.14.0 (/workspace/trames/crates/trames-cli)",
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.39s"
       ]
     },
     "m6_qemu": {
@@ -426,5 +431,10 @@
     "260 post-preflight backing I/O failures roll back native output",
     "in-flight shader ID removal retains native dependency",
     "abandoned compiler/device teardown disposes native output"
-  ]
+  ],
+  "linux_ci_current": {
+    "run": "https://github.com/kb5000/trames/actions/runs/38673755292",
+    "runtime_commit": "0ce4921ee0e10b814f13aae94f3bf4e8837222c8",
+    "status": "in_progress; local Rust/Vulkan/lifecycle and core compatibility regressions passed"
+  }
 }

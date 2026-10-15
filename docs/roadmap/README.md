@@ -7,7 +7,9 @@ binary semaphore chains, preserved batch ordering, specialization constants and
 partial/unaligned mapping now extend that verified subset.
 Owned native pipeline compilation allows other guest threads to continue, and
 direct page transfer removes the full-range upload/readback staging buffer.
-Apple builds select original MoltenVK and include real Metal simulator acceptance.
+Apple device/simulator builds link original MoltenVK; the exact runtime passes
+all eight simulator tests, including real Metal compute (no skips). Physical iPad
+acceptance remains for a grouped release.
 Follow-up stages extend compute/memory/concurrency, then offscreen graphics and
 host-owned surfaces. [Issue #21](https://github.com/kb5000/trames/issues/21) and
 [validation](../validation/vulkan-compute.md) track hardware acceptance and gaps.
