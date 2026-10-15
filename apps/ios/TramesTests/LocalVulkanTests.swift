@@ -39,6 +39,18 @@ final class LocalVulkanTests: XCTestCase {
         attachment.lifetime = .keepAlways
         add(attachment)
     }
+    func testIndexedTexturesUseNativeMetalSamplersAndGraphicsDescriptors() async throws {
+        let result = try await LocalVulkanProbe.texture()
+        for expected in ["uint16 indexed nearest", "uint32 indexed linear", "non-indexed nearest", "vulkan-texture-ok"] {
+            XCTAssertTrue(result.text.contains(expected), result.text)
+        }
+        XCTAssertFalse(result.text.contains("llvmpipe"), result.text)
+        let log = XCTAttachment(string: result.text)
+        log.name = "native-vulkan-texture-log"; log.lifetime = .keepAlways; add(log)
+        let image = try XCTUnwrap(result.image.pngData())
+        let attachment = XCTAttachment(data: image, uniformTypeIdentifier: "public.png")
+        attachment.name = "native-metal-vulkan-texture"; attachment.lifetime = .keepAlways; add(attachment)
+    }
     func testIncompleteOrUnexpectedImageCannotBeDisplayed() {
         for ppm in [Data(), Data("P6\n256 192\n255\n".utf8), Data(repeating: 0, count: 256 * 192 * 3 + 15)] {
             XCTAssertThrowsError(try VulkanRenderResult(text: "", ppm: ppm))

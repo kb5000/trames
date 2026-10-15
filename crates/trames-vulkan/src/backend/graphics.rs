@@ -18,8 +18,28 @@ pub(super) struct PassInfo {
 pub(super) struct Recording {
     pub pass: Option<Rc<Object>>,
     pub pipeline: Option<Rc<Object>>,
+    pub compute_pipeline: Option<Rc<Object>>,
+    vertices: BTreeMap<u32, (Rc<Object>, u64)>,
+    index: Option<(Rc<Object>, u64, u32)>,
     viewport: bool,
     scissor: bool,
+}
+#[derive(Clone)]
+pub(super) struct VertexBinding {
+    binding: u32,
+    stride: u32,
+    instance: bool,
+    extent: u32,
+}
+// A selected set of common native vertex formats. Image formats remain RGBA8/BGRA8.
+fn vertex_size(raw: u64) -> Option<u32> {
+    match raw {
+        37 | 38 | 41 | 42 | 98..=100 => Some(4),
+        101..=103 => Some(8),
+        104..=106 => Some(12),
+        107..=109 => Some(16),
+        _ => None,
+    }
 }
 const DIMENSION: u32 = 4096;
 fn format(raw: u64) -> Result<vk::Format> {
@@ -32,7 +52,8 @@ fn format(raw: u64) -> Result<vk::Format> {
 fn usage(raw: u64) -> Result<vk::ImageUsageFlags> {
     let allowed = vk::ImageUsageFlags::COLOR_ATTACHMENT
         | vk::ImageUsageFlags::TRANSFER_SRC
-        | vk::ImageUsageFlags::TRANSFER_DST;
+        | vk::ImageUsageFlags::TRANSFER_DST
+        | vk::ImageUsageFlags::SAMPLED;
     if raw == 0 || raw & !(allowed.as_raw() as u64) != 0 {
         return unsupported();
     }
@@ -43,6 +64,7 @@ fn layout(raw: u64, initial: bool) -> Result<vk::ImageLayout> {
         0 if initial => Ok(vk::ImageLayout::UNDEFINED),
         1 => Ok(vk::ImageLayout::GENERAL),
         2 => Ok(vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL),
+        5 => Ok(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL),
         6 => Ok(vk::ImageLayout::TRANSFER_SRC_OPTIMAL),
         7 => Ok(vk::ImageLayout::TRANSFER_DST_OPTIMAL),
         1000001002 => Ok(vk::ImageLayout::PRESENT_SRC_KHR),
@@ -64,7 +86,7 @@ fn shape(object: &Object) -> Result<ImageShape> {
 impl Backend {
     // New native resources are owned before the final fallible guest write.
     // A backing I/O failure after preflight must not leak an unpublished object.
-    fn publish(&mut self, m: &mut Memory, output: u64, id: u64) -> Result<()> {
+    pub(super) fn publish(&mut self, m: &mut Memory, output: u64, id: u64) -> Result<()> {
         if let Err(error) = write(m, output, &id.to_le_bytes()) {
             self.objects.remove(&id);
             return Err(error);
@@ -80,8 +102,23 @@ impl Backend {
                 let flags = p.optimal_tiling_features
                     & (vk::FormatFeatureFlags::COLOR_ATTACHMENT
                         | vk::FormatFeatureFlags::TRANSFER_SRC
-                        | vk::FormatFeatureFlags::TRANSFER_DST);
+                        | vk::FormatFeatureFlags::TRANSFER_DST
+                        | vk::FormatFeatureFlags::SAMPLED_IMAGE
+                        | vk::FormatFeatureFlags::SAMPLED_IMAGE_FILTER_LINEAR);
                 bytes[4..8].copy_from_slice(&flags.as_raw().to_le_bytes());
+            }
+            if vertex_size(a[1]).is_some() {
+                let p = unsafe {
+                    instance.get_physical_device_format_properties(
+                        self.physical,
+                        vk::Format::from_raw(a[1] as i32),
+                    )
+                };
+                bytes[8..12].copy_from_slice(
+                    &(p.buffer_features & vk::FormatFeatureFlags::VERTEX_BUFFER)
+                        .as_raw()
+                        .to_le_bytes(),
+                );
             }
             return write(m, a[2], &bytes);
         }
@@ -133,13 +170,6 @@ impl Backend {
         self.room(1)?;
         output(m, a[7], 8)?;
         let pipeline_layout = self.object(a[1], Kind::PipelineLayout)?;
-        // First profile has generated vertices and no graphics descriptors or
-        // push constants. Reject rather than silently ignore those layouts.
-        if !pipeline_layout.deps.borrow().is_empty()
-            || !pipeline_layout.push_ranges.borrow().is_empty()
-        {
-            return unsupported();
-        }
         let vertex = self.object(a[2], Kind::Shader)?;
         let fragment = self.object(a[3], Kind::Shader)?;
         let name = |p| {
@@ -153,6 +183,77 @@ impl Backend {
         if !matches!(state[1], 3 | 4) || state[2] & !3 != 0 || state[3] > 1 || state[4] & !15 != 0 {
             return unsupported();
         }
+        let limits = unsafe {
+            device
+                .instance
+                .native
+                .get_physical_device_properties(self.physical)
+        }
+        .limits;
+        let binding_wire = words64(m, a[8], bounded(a[9], 16)? * 3)?;
+        let attribute_wire = words64(m, a[10], bounded(a[11], 16)? * 4)?;
+        let mut bindings = Vec::new();
+        let mut attributes = Vec::new();
+        let mut inputs = BTreeMap::new();
+        let mut locations = std::collections::BTreeSet::new();
+        for x in binding_wire.chunks_exact(3) {
+            if x[0] >= 16.min(limits.max_vertex_input_bindings) as u64
+                || x[1] > 2048.min(limits.max_vertex_input_binding_stride) as u64
+                || x[2] > 1
+                || inputs.contains_key(&(x[0] as u32))
+            {
+                return unsupported();
+            }
+            bindings.push(vk::VertexInputBindingDescription {
+                binding: x[0] as u32,
+                stride: x[1] as u32,
+                input_rate: vk::VertexInputRate::from_raw(x[2] as i32),
+            });
+            inputs.insert(
+                x[0] as u32,
+                VertexBinding {
+                    binding: x[0] as u32,
+                    stride: x[1] as u32,
+                    instance: x[2] == 1,
+                    extent: 0,
+                },
+            );
+        }
+        for x in attribute_wire.chunks_exact(4) {
+            let size =
+                vertex_size(x[2]).ok_or(Failure::Vk(vk::Result::ERROR_FORMAT_NOT_SUPPORTED))?;
+            if x[0] >= 16.min(limits.max_vertex_input_attributes) as u64
+                || x[1] > u32::MAX as u64
+                || x[3] > 2047.min(limits.max_vertex_input_attribute_offset) as u64
+                || !locations.insert(x[0])
+            {
+                return unsupported();
+            }
+            let input = inputs
+                .get_mut(&(x[1] as u32))
+                .ok_or(Failure::Vk(vk::Result::ERROR_UNKNOWN))?;
+            let format = vk::Format::from_raw(x[2] as i32);
+            let features = unsafe {
+                device
+                    .instance
+                    .native
+                    .get_physical_device_format_properties(self.physical, format)
+            };
+            if !features
+                .buffer_features
+                .contains(vk::FormatFeatureFlags::VERTEX_BUFFER)
+            {
+                return Err(vk::Result::ERROR_FORMAT_NOT_SUPPORTED.into());
+            }
+            input.extent = input.extent.max(x[3] as u32 + size);
+            attributes.push(vk::VertexInputAttributeDescription {
+                location: x[0] as u32,
+                binding: x[1] as u32,
+                format,
+                offset: x[3] as u32,
+            });
+        }
+        let inputs = inputs.into_values().collect();
         let (raw_layout, raw_vertex, raw_fragment, raw_pass) = (
             vk::PipelineLayout::from_raw(pipeline_layout.raw),
             vk::ShaderModule::from_raw(vertex.raw),
@@ -175,7 +276,9 @@ impl Backend {
                     .module(raw_fragment)
                     .name(&fragment_name),
             ];
-            let vertex = vk::PipelineVertexInputStateCreateInfo::default();
+            let vertex = vk::PipelineVertexInputStateCreateInfo::default()
+                .vertex_binding_descriptions(&bindings)
+                .vertex_attribute_descriptions(&attributes);
             let assembly = vk::PipelineInputAssemblyStateCreateInfo::default()
                 .topology(vk::PrimitiveTopology::from_raw(state[1] as i32));
             let viewport = vk::PipelineViewportStateCreateInfo::default()
@@ -230,6 +333,7 @@ impl Backend {
                 task,
                 dependencies: vec![pipeline_layout, pass, vertex, fragment],
                 bind_point: vk::PipelineBindPoint::GRAPHICS,
+                vertex_inputs: inputs,
                 output: a[7],
                 abandoned: false,
             },
@@ -455,7 +559,7 @@ impl Backend {
                 self.publish(m, a[5], id)?;
             }
             69 => self.remove(a[1], Kind::Framebuffer)?,
-            71..=76 => {
+            71..=76 | 94..=97 => {
                 let c = self.object(a[1], Kind::CommandBuffer)?;
                 if c.state.get() != 1 {
                     return invalid();
@@ -517,7 +621,7 @@ impl Backend {
                         }
                         c.recording.borrow_mut().pass = None;
                     }
-                    73 => {
+                    73 | 97 => {
                         let r = c.recording.borrow();
                         let pass = r
                             .pass
@@ -531,15 +635,73 @@ impl Backend {
                             || !r.viewport
                             || !r.scissor
                             || !Rc::ptr_eq(&p.deps.borrow()[1], pass)
-                            || a[2..6].iter().any(|&x| x > u32::MAX as u64)
+                            || a[2..5].iter().any(|&x| x > u32::MAX as u64)
+                            || (op == 73 && a[5] > u32::MAX as u64)
+                            || (op == 97
+                                && ((a[5] as i64) != (a[5] as i32 as i64)
+                                    || a[6] > u32::MAX as u64))
                         {
                             return invalid();
                         }
-                        unsafe {
-                            d.cmd_draw(raw, a[2] as u32, a[3] as u32, a[4] as u32, a[5] as u32);
+                        let active = a[2] != 0 && a[3] != 0;
+                        for input in p.vertex_inputs.borrow().iter().filter(|x| x.extent != 0) {
+                            let (buffer, offset) = r
+                                .vertices
+                                .get(&input.binding)
+                                .ok_or(Failure::Vk(vk::Result::ERROR_UNKNOWN))?;
+                            // GPU-resident index values stay on the GPU. Check the index
+                            // range below; as on Vulkan, indexed vertex values are the
+                            // application's responsibility, not a CPU readback/scan.
+                            let last = if !active || op == 97 && !input.instance {
+                                0
+                            } else if input.instance {
+                                (if op == 97 { a[6] } else { a[5] })
+                                    .checked_add(a[3] - 1)
+                                    .ok_or(Failure::Vk(vk::Result::ERROR_UNKNOWN))?
+                            } else {
+                                a[4].checked_add(a[2] - 1)
+                                    .ok_or(Failure::Vk(vk::Result::ERROR_UNKNOWN))?
+                            };
+                            if active
+                                && last
+                                    .checked_mul(input.stride as u64)
+                                    .and_then(|n| n.checked_add(*offset))
+                                    .and_then(|n| n.checked_add(input.extent as u64))
+                                    .is_none_or(|n| n > buffer.size)
+                            {
+                                return invalid();
+                            }
+                        }
+                        if op == 97 {
+                            let (buffer, offset, size) = r
+                                .index
+                                .as_ref()
+                                .ok_or(Failure::Vk(vk::Result::ERROR_UNKNOWN))?;
+                            if a[4]
+                                .checked_add(a[2])
+                                .and_then(|n| n.checked_mul(*size as u64))
+                                .and_then(|n| n.checked_add(*offset))
+                                .is_none_or(|n| n > buffer.size)
+                            {
+                                return invalid();
+                            }
+                            unsafe {
+                                d.cmd_draw_indexed(
+                                    raw,
+                                    a[2] as u32,
+                                    a[3] as u32,
+                                    a[4] as u32,
+                                    a[5] as i32,
+                                    a[6] as u32,
+                                );
+                            }
+                        } else {
+                            unsafe {
+                                d.cmd_draw(raw, a[2] as u32, a[3] as u32, a[4] as u32, a[5] as u32);
+                            }
                         }
                     }
-                    74 => {
+                    74 | 94 => {
                         if c.recording.borrow().pass.is_some() {
                             return invalid();
                         }
@@ -548,9 +710,24 @@ impl Backend {
                         let s = shape(&image)?;
                         if image.deps.borrow().is_empty() && image.swapchain.borrow().is_none()
                             || buffer.deps.borrow().is_empty()
-                            || image.flags & vk::ImageUsageFlags::TRANSFER_SRC.as_raw() == 0
-                            || buffer.flags & vk::BufferUsageFlags::TRANSFER_DST.as_raw() == 0
-                            || !matches!(a[3], 1 | 6)
+                            || image.flags
+                                & (if op == 94 {
+                                    vk::ImageUsageFlags::TRANSFER_DST
+                                } else {
+                                    vk::ImageUsageFlags::TRANSFER_SRC
+                                })
+                                .as_raw()
+                                == 0
+                            || buffer.flags
+                                & (if op == 94 {
+                                    vk::BufferUsageFlags::TRANSFER_SRC
+                                } else {
+                                    vk::BufferUsageFlags::TRANSFER_DST
+                                })
+                                .as_raw()
+                                == 0
+                            || a[3] != 1 && a[3] != if op == 94 { 7 } else { 6 }
+                            || a[6] == 0
                         {
                             return invalid();
                         }
@@ -581,16 +758,81 @@ impl Backend {
                             );
                         }
                         unsafe {
-                            d.cmd_copy_image_to_buffer(
-                                raw,
-                                vk::Image::from_raw(image.raw),
-                                layout(a[3], false)?,
-                                vk::Buffer::from_raw(buffer.raw),
-                                &regions,
-                            );
+                            if op == 94 {
+                                d.cmd_copy_buffer_to_image(
+                                    raw,
+                                    vk::Buffer::from_raw(buffer.raw),
+                                    vk::Image::from_raw(image.raw),
+                                    layout(a[3], false)?,
+                                    &regions,
+                                );
+                            } else {
+                                d.cmd_copy_image_to_buffer(
+                                    raw,
+                                    vk::Image::from_raw(image.raw),
+                                    layout(a[3], false)?,
+                                    vk::Buffer::from_raw(buffer.raw),
+                                    &regions,
+                                );
+                            }
                         }
                         c.retain(image);
                         c.retain(buffer);
+                    }
+                    95 => {
+                        if a[3] == 0 || a[2].checked_add(a[3]).is_none_or(|n| n > 16) {
+                            return unsupported();
+                        }
+                        let ids = words64(m, a[4], bounded(a[3], 16)?)?;
+                        let offsets = words64(m, a[5], ids.len())?;
+                        let mut buffers = Vec::new();
+                        let mut objects = Vec::new();
+                        for (&id, &offset) in ids.iter().zip(&offsets) {
+                            let b = self.object(id, Kind::Buffer)?;
+                            if b.flags & vk::BufferUsageFlags::VERTEX_BUFFER.as_raw() == 0
+                                || b.deps.borrow().is_empty()
+                                || offset >= b.size
+                            {
+                                return invalid();
+                            }
+                            buffers.push(vk::Buffer::from_raw(b.raw));
+                            objects.push(b);
+                        }
+                        unsafe {
+                            d.cmd_bind_vertex_buffers(raw, a[2] as u32, &buffers, &offsets);
+                        }
+                        for (i, (b, offset)) in objects.into_iter().zip(offsets).enumerate() {
+                            c.recording
+                                .borrow_mut()
+                                .vertices
+                                .insert(a[2] as u32 + i as u32, (b.clone(), offset));
+                            c.retain(b);
+                        }
+                    }
+                    96 => {
+                        let b = self.object(a[2], Kind::Buffer)?;
+                        let size = match a[4] {
+                            0 => 2,
+                            1 => 4,
+                            _ => return unsupported(),
+                        };
+                        if b.flags & vk::BufferUsageFlags::INDEX_BUFFER.as_raw() == 0
+                            || b.deps.borrow().is_empty()
+                            || a[3] >= b.size
+                            || !a[3].is_multiple_of(size as u64)
+                        {
+                            return invalid();
+                        }
+                        unsafe {
+                            d.cmd_bind_index_buffer(
+                                raw,
+                                vk::Buffer::from_raw(b.raw),
+                                a[3],
+                                vk::IndexType::from_raw(a[4] as i32),
+                            );
+                        }
+                        c.recording.borrow_mut().index = Some((b.clone(), a[3], size));
+                        c.retain(b);
                     }
                     75 => {
                         let v = words32(m, a[2], 6)?;
@@ -730,7 +972,7 @@ mod tests {
         assert!(format(44).is_ok());
         assert!(format(126).is_err());
         assert!(usage(vk::ImageUsageFlags::COLOR_ATTACHMENT.as_raw() as u64).is_ok());
-        assert!(usage(vk::ImageUsageFlags::SAMPLED.as_raw() as u64).is_err());
+        assert!(usage(vk::ImageUsageFlags::SAMPLED.as_raw() as u64).is_ok());
         assert!(usage(0).is_err());
         assert!(usage(1 << 40).is_err());
         assert!(layout(0, true).is_ok());

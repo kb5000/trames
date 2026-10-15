@@ -38,6 +38,16 @@ done
   tests/fixtures/vulkan-render.c -lvulkan -lm -o tests/fixtures/bin/vulkan-render
 cp tests/fixtures/bin/vulkan-render tests/fixtures/bin/vulkan-render.*.spv target/vulkan-guest/acceptance/
 
+for stage in vert frag; do
+  "${GLSLANG_VALIDATOR:-glslangValidator}" -V --target-env vulkan1.0 "tests/fixtures/vulkan-texture.$stage" -o "tests/fixtures/bin/vulkan-texture.$stage.spv"
+done
+"${HOST_CC:-cc}" -O2 -Wall -Wextra -Werror -I "$headers" tests/fixtures/vulkan-texture.c \
+  "${VULKAN_HOST_LINK:--lvulkan}" -lm -o tests/fixtures/bin/vulkan-texture-host
+"${MUSL_CC:-$PWD/target/busybox-build/musl/bin/musl-gcc}" -O2 -mno-outline-atomics -Wall -Wextra -Werror \
+  -I "$headers" -L "$PWD/target/vulkan-loader-sdk" -L "$PWD/target/alpine-build/lib" \
+  tests/fixtures/vulkan-texture.c -lvulkan -lm -o tests/fixtures/bin/vulkan-texture
+cp tests/fixtures/bin/vulkan-texture tests/fixtures/bin/vulkan-texture.*.spv target/vulkan-guest/acceptance/
+
 "${MUSL_CC:-$PWD/target/busybox-build/musl/bin/musl-gcc}" -O2 -mno-outline-atomics -Wall -Wextra -Werror \
   -I "$headers" -L "$PWD/target/vulkan-loader-sdk" -L "$PWD/target/alpine-build/lib" \
   tests/fixtures/vulkan-present.c -lvulkan -o tests/fixtures/bin/vulkan-present

@@ -13,6 +13,7 @@ use std::{
 use trames_memory::{Access, Memory, MemoryError};
 use vk::Handle;
 mod graphics;
+mod textures;
 mod wsi;
 use graphics::{ImageShape, PassInfo, Recording};
 
@@ -72,6 +73,7 @@ enum Kind {
     Image,
     SwapchainImage,
     ImageView,
+    Sampler,
     RenderPass,
     Framebuffer,
     Memory,
@@ -86,14 +88,15 @@ enum Kind {
     Fence,
     Semaphore,
 }
+type DescriptorResources = BTreeMap<(u32, u32), Vec<Rc<Object>>>;
 struct Object {
     kind: Kind,
     raw: u64,
     device: Arc<Device>,
     deps: RefCell<Vec<Rc<Object>>>,
-    bindings: RefCell<BTreeMap<u32, (u32, u32)>>,
-    bound_buffers: RefCell<BTreeMap<(u32, u32), Rc<Object>>>,
-    push_ranges: RefCell<Vec<(u32, u32)>>,
+    bindings: RefCell<BTreeMap<u32, (u32, u32, u32)>>,
+    bound_resources: RefCell<DescriptorResources>,
+    push_ranges: RefCell<Vec<(u32, u32, u32)>>,
     size: u64,
     flags: u32,
     state: Cell<u8>,
@@ -101,6 +104,7 @@ struct Object {
     image: Cell<Option<ImageShape>>,
     pass: Cell<Option<PassInfo>>,
     recording: RefCell<Recording>,
+    vertex_inputs: RefCell<Vec<graphics::VertexBinding>>,
     swapchain: RefCell<Option<Rc<wsi::Swapchain>>>,
     // Acquire backing is private per use. Original MoltenVK can re-signal an
     // acquire fence at presentation completion, after the guest has reset it.
@@ -126,6 +130,7 @@ impl Drop for Object {
                 Kind::Buffer => d.destroy_buffer(vk::Buffer::from_raw(self.raw), None),
                 Kind::SwapchainImage => {}
                 Kind::Image => d.destroy_image(vk::Image::from_raw(self.raw), None),
+                Kind::Sampler => d.destroy_sampler(vk::Sampler::from_raw(self.raw), None),
                 Kind::ImageView => d.destroy_image_view(vk::ImageView::from_raw(self.raw), None),
                 Kind::RenderPass => d.destroy_render_pass(vk::RenderPass::from_raw(self.raw), None),
                 Kind::Framebuffer => {
@@ -221,6 +226,7 @@ struct Compile {
     task: crate::task::Task<std::result::Result<CompiledPipeline, vk::Result>>,
     dependencies: Vec<Rc<Object>>,
     bind_point: vk::PipelineBindPoint,
+    vertex_inputs: Vec<graphics::VertexBinding>,
     output: u64,
     abandoned: bool,
 }
@@ -328,7 +334,7 @@ impl Backend {
             device: self.device.as_ref().unwrap().clone(),
             deps: RefCell::new(deps),
             bindings: RefCell::new(BTreeMap::new()),
-            bound_buffers: RefCell::new(BTreeMap::new()),
+            bound_resources: RefCell::new(BTreeMap::new()),
             push_ranges: RefCell::new(Vec::new()),
             size,
             flags,
@@ -337,6 +343,7 @@ impl Backend {
             image: Cell::new(None),
             pass: Cell::new(None),
             recording: RefCell::new(Recording::default()),
+            vertex_inputs: RefCell::new(Vec::new()),
             swapchain: RefCell::new(None),
             acquisition: RefCell::new(None),
             budget: self.budget.clone(),
@@ -495,7 +502,7 @@ impl Backend {
             device,
             deps: RefCell::new(Vec::new()),
             bindings: RefCell::new(BTreeMap::new()),
-            bound_buffers: RefCell::new(BTreeMap::new()),
+            bound_resources: RefCell::new(BTreeMap::new()),
             push_ranges: RefCell::new(Vec::new()),
             size: 0,
             flags: 0,
@@ -504,6 +511,7 @@ impl Backend {
             image: Cell::new(None),
             pass: Cell::new(None),
             recording: RefCell::new(Recording::default()),
+            vertex_inputs: RefCell::new(Vec::new()),
             swapchain: RefCell::new(None),
             acquisition: RefCell::new(None),
             budget: self.budget.clone(),
@@ -622,6 +630,7 @@ impl Backend {
                 task,
                 dependencies: vec![layout, shader],
                 bind_point: vk::PipelineBindPoint::COMPUTE,
+                vertex_inputs: Vec::new(),
                 output: a[4],
                 abandoned: false,
             },
@@ -676,6 +685,7 @@ impl Backend {
             0,
             c.bind_point.as_raw() as u32,
         );
+        *self.objects[&id].vertex_inputs.borrow_mut() = c.vertex_inputs;
         pipeline.raw = vk::Pipeline::null();
         if let Err(error) = m.write(c.output, &id.to_le_bytes()) {
             // A live backing provider can still fail after permission preflight.
@@ -1022,9 +1032,11 @@ impl Backend {
                 }
                 let allowed = vk::BufferUsageFlags::STORAGE_BUFFER
                     | vk::BufferUsageFlags::UNIFORM_BUFFER
+                    | vk::BufferUsageFlags::VERTEX_BUFFER
+                    | vk::BufferUsageFlags::INDEX_BUFFER
                     | vk::BufferUsageFlags::TRANSFER_SRC
                     | vk::BufferUsageFlags::TRANSFER_DST;
-                if a[2] as u32 & !allowed.as_raw() != 0 {
+                if a[2] == 0 || a[2] & !(allowed.as_raw() as u64) != 0 {
                     return unsupported();
                 }
                 let info = vk::BufferCreateInfo::default()
@@ -1238,16 +1250,16 @@ impl Backend {
                 let mut bindings = Vec::new();
                 let mut metadata = BTreeMap::new();
                 for b in wire.chunks_exact(4) {
-                    if b[1] != 6 && b[1] != 7
+                    if !matches!(b[1], 0..=2 | 6 | 7)
                         || b[2] == 0
                         || b[2] > 64
-                        || b[3] != vk::ShaderStageFlags::COMPUTE.as_raw() as u64
+                        || shader_stages(b[3]).is_err()
                     {
                         return unsupported();
                     }
                     if b[0] > u32::MAX as u64
                         || metadata
-                            .insert(b[0] as u32, (b[1] as u32, b[2] as u32))
+                            .insert(b[0] as u32, (b[1] as u32, b[2] as u32, b[3] as u32))
                             .is_some()
                     {
                         return invalid();
@@ -1257,7 +1269,7 @@ impl Backend {
                             .binding(b[0] as u32)
                             .descriptor_type(vk::DescriptorType::from_raw(b[1] as i32))
                             .descriptor_count(b[2] as u32)
-                            .stage_flags(vk::ShaderStageFlags::COMPUTE),
+                            .stage_flags(shader_stages(b[3])?),
                     );
                 }
                 let info = vk::DescriptorSetLayoutCreateInfo::default().bindings(&bindings);
@@ -1281,12 +1293,20 @@ impl Backend {
                 let wire = words64(m, a[3], bounded(a[4], 8)? * 3)?;
                 let mut ranges = Vec::new();
                 for r in wire.chunks_exact(3) {
-                    if r[0] != 32 || r[1] % 4 != 0 || r[2] % 4 != 0 || r[1] + r[2] > 128 {
+                    if shader_stages(r[0]).is_err()
+                        || r[1] % 4 != 0
+                        || r[2] == 0
+                        || r[2] % 4 != 0
+                        || r[1].checked_add(r[2]).is_none_or(|n| n > 128)
+                        || ranges.iter().any(|p: &vk::PushConstantRange| {
+                            p.stage_flags.as_raw() as u64 & r[0] != 0
+                        })
+                    {
                         return unsupported();
                     }
                     ranges.push(
                         vk::PushConstantRange::default()
-                            .stage_flags(vk::ShaderStageFlags::COMPUTE)
+                            .stage_flags(shader_stages(r[0])?)
                             .offset(r[1] as u32)
                             .size(r[2] as u32),
                     );
@@ -1296,8 +1316,10 @@ impl Backend {
                     .push_constant_ranges(&ranges);
                 let raw = unsafe { d.create_pipeline_layout(&info, None) }?;
                 let id = self.put(Kind::PipelineLayout, raw.as_raw(), deps, 0, 0);
-                *self.objects[&id].push_ranges.borrow_mut() =
-                    ranges.iter().map(|r| (r.offset, r.size)).collect();
+                *self.objects[&id].push_ranges.borrow_mut() = ranges
+                    .iter()
+                    .map(|r| (r.offset, r.size, r.stage_flags.as_raw()))
+                    .collect();
                 write(m, a[5], &id.to_le_bytes())?;
             }
             26 => self.remove(a[1], Kind::PipelineLayout)?,
@@ -1308,7 +1330,7 @@ impl Backend {
                 let wire = words64(m, a[1], bounded(a[2], 64)? * 2)?;
                 let mut sizes = Vec::new();
                 for x in wire.chunks_exact(2) {
-                    if x[0] != 6 && x[0] != 7 || x[1] == 0 || x[1] > 256 {
+                    if !matches!(x[0], 0..=2 | 6 | 7) || x[1] == 0 || x[1] > 256 {
                         return unsupported();
                     }
                     sizes.push(
@@ -1373,69 +1395,7 @@ impl Backend {
                     self.remove(id, Kind::DescriptorSet)?;
                 }
             }
-            33 => {
-                let set = self.object(a[1], Kind::DescriptorSet)?;
-                if a[5] != 6 && a[5] != 7 {
-                    return unsupported();
-                }
-                let layout = set.deps.borrow()[1].clone();
-                let shape = layout
-                    .bindings
-                    .borrow()
-                    .get(&(a[2] as u32))
-                    .copied()
-                    .ok_or(Failure::Vk(vk::Result::ERROR_UNKNOWN))?;
-                if shape.0 as u64 != a[5]
-                    || a[3].checked_add(a[4]).is_none_or(|n| n > shape.1 as u64)
-                {
-                    return invalid();
-                }
-                let wire = words64(m, a[6], bounded(a[4], 64)? * 3)?;
-                let mut buffers = Vec::new();
-                let mut deps = Vec::new();
-                for x in wire.chunks_exact(3) {
-                    let b = self.object(x[0], Kind::Buffer)?;
-                    let usage = if a[5] == 6 {
-                        vk::BufferUsageFlags::UNIFORM_BUFFER
-                    } else {
-                        vk::BufferUsageFlags::STORAGE_BUFFER
-                    };
-                    if b.flags & usage.as_raw() == 0 {
-                        return invalid();
-                    }
-                    if b.deps.borrow().is_empty()
-                        || x[1] >= b.size
-                        || x[2] != u64::MAX && x[1].checked_add(x[2]).is_none_or(|n| n > b.size)
-                    {
-                        return invalid();
-                    }
-                    buffers.push(
-                        vk::DescriptorBufferInfo::default()
-                            .buffer(vk::Buffer::from_raw(b.raw))
-                            .offset(x[1])
-                            .range(x[2]),
-                    );
-                    deps.push(b);
-                }
-                let writes = [vk::WriteDescriptorSet::default()
-                    .dst_set(vk::DescriptorSet::from_raw(set.raw))
-                    .dst_binding(a[2] as u32)
-                    .dst_array_element(a[3] as u32)
-                    .descriptor_type(vk::DescriptorType::from_raw(a[5] as i32))
-                    .buffer_info(&buffers)];
-                unsafe {
-                    d.update_descriptor_sets(&writes, &[]);
-                }
-                set.deps.borrow_mut().truncate(2);
-                for (i, b) in deps.into_iter().enumerate() {
-                    set.bound_buffers
-                        .borrow_mut()
-                        .insert((a[2] as u32, a[3] as u32 + i as u32), b);
-                }
-                for b in set.bound_buffers.borrow().values() {
-                    set.retain(b.clone());
-                }
-            }
+            33 => self.write_descriptors(m, a)?,
             34 => {
                 self.room(1)?;
                 output(m, a[3], 8)?;
@@ -1526,11 +1486,18 @@ impl Backend {
                                 vk::Pipeline::from_raw(p.raw),
                             );
                         }
-                        c.recording.borrow_mut().pipeline = Some(p.clone());
+                        if p.flags == vk::PipelineBindPoint::GRAPHICS.as_raw() as u32 {
+                            c.recording.borrow_mut().pipeline = Some(p.clone());
+                        } else {
+                            c.recording.borrow_mut().compute_pipeline = Some(p.clone());
+                        }
                         c.retain(p);
                     }
                     42 => {
                         let layout = self.object(a[2], Kind::PipelineLayout)?;
+                        if a[6] > 1 {
+                            return unsupported();
+                        }
                         if a[3]
                             .checked_add(a[5])
                             .is_none_or(|n| n > layout.deps.borrow().len() as u64)
@@ -1552,7 +1519,11 @@ impl Backend {
                         unsafe {
                             d.cmd_bind_descriptor_sets(
                                 raw,
-                                vk::PipelineBindPoint::COMPUTE,
+                                if a[6] == 1 {
+                                    vk::PipelineBindPoint::GRAPHICS
+                                } else {
+                                    vk::PipelineBindPoint::COMPUTE
+                                },
                                 vk::PipelineLayout::from_raw(layout.raw),
                                 a[3] as u32,
                                 &sets,
@@ -1562,7 +1533,9 @@ impl Backend {
                         c.retain(layout);
                     }
                     43 => {
-                        if c.recording.borrow().pass.is_some() {
+                        if c.recording.borrow().pass.is_some()
+                            || c.recording.borrow().compute_pipeline.is_none()
+                        {
                             return invalid();
                         }
                         let lim = unsafe {
@@ -1673,15 +1646,22 @@ impl Backend {
                     }
                     47 => {
                         let layout = self.object(a[2], Kind::PipelineLayout)?;
-                        if !layout.push_ranges.borrow().iter().any(|&(offset, size)| {
-                            a[3] >= offset as u64
+                        let stages = shader_stages(if a[6] == 0 { 32 } else { a[6] })?;
+                        let mut covered = 0;
+                        for &(offset, size, flags) in layout.push_ranges.borrow().iter() {
+                            if a[3] >= offset as u64
                                 && a[3]
                                     .checked_add(a[4])
                                     .is_some_and(|end| end <= (offset as u64 + size as u64))
-                        }) {
+                            {
+                                covered |= flags;
+                            }
+                        }
+                        if covered & stages.as_raw() != stages.as_raw() {
                             return invalid();
                         }
                         if !a[3].is_multiple_of(4)
+                            || a[4] == 0
                             || !a[4].is_multiple_of(4)
                             || a[3].checked_add(a[4]).is_none_or(|n| n > 128)
                         {
@@ -1693,7 +1673,7 @@ impl Backend {
                             d.cmd_push_constants(
                                 raw,
                                 vk::PipelineLayout::from_raw(layout.raw),
-                                vk::ShaderStageFlags::COMPUTE,
+                                stages,
                                 a[3] as u32,
                                 &bytes,
                             );
@@ -1775,7 +1755,8 @@ impl Backend {
                     *c.recording.borrow_mut() = Recording::default();
                 }
             }
-            60..=76 => self.graphics_call(m, op, a)?,
+            60..=76 | 94..=97 => self.graphics_call(m, op, a)?,
+            92..=93 => self.sampler_call(m, op, a)?,
             87..=91 => self.wsi_device(m, op, a)?,
             _ => return unsupported(),
         }
@@ -1855,6 +1836,12 @@ unsafe fn transfer_pages(
         offset += n;
     }
     Ok(transferred)
+}
+fn shader_stages(raw: u64) -> Result<vk::ShaderStageFlags> {
+    if raw == 0 || raw & !0x31 != 0 {
+        return unsupported();
+    }
+    Ok(vk::ShaderStageFlags::from_raw(raw as u32))
 }
 fn compute_stage(stage: u32) -> Result<vk::PipelineStageFlags> {
     let allowed = vk::PipelineStageFlags::TOP_OF_PIPE

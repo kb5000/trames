@@ -13,6 +13,13 @@ enum LocalVulkanProbe {
         }
         return try VulkanRenderResult(text: result.text, ppm: ppm)
     }
+    static func texture() async throws -> VulkanRenderResult {
+        let result = try await execute(render: true, texture: true)
+        guard let ppm = result.ppm, result.text.contains("vulkan-texture-ok"), result.text.contains("\r\nVULKAN_RESULT:0\r\n") else {
+            throw TramesError.message("GPU 纹理渲染未完成：\(result.text.suffix(2048))")
+        }
+        return try VulkanRenderResult(text: result.text, ppm: ppm)
+    }
     static func present() async throws -> String {
         let previous = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).first { $0.isKeyWindow }
         guard let scene = previous?.windowScene else { throw TramesError.message("Missing test window scene") }
@@ -45,14 +52,15 @@ enum LocalVulkanProbe {
         let packages = try FileManager.default.contentsOfDirectory(at: inputs, includingPropertiesForKeys: nil).filter { $0.pathExtension == "apk" }.sorted { $0.lastPathComponent < $1.lastPathComponent }
         guard !packages.isEmpty else { throw TramesError.message("Missing signed Vulkan loader packages") }
         for file in packages { try session.transfer(guest: "/tmp/" + file.lastPathComponent, host: file, export: false) }
-        let shaders = program == "vulkan-compute" ? ["vulkan-compute.spv"] : ["vulkan-render.vert.spv", "vulkan-render.frag.spv"]
+        let graphics = program == "vulkan-texture" ? "vulkan-texture" : "vulkan-render"
+        let shaders = program == "vulkan-compute" ? ["vulkan-compute.spv"] : [graphics + ".vert.spv", graphics + ".frag.spv"]
         for name in [program] + shaders { try session.transfer(guest: "/tmp/" + name, host: inputs.appendingPathComponent(name), export: false) }
         let names = packages.map { "/tmp/" + $0.lastPathComponent }.joined(separator: " ")
         let command = "apk --repositories-file /dev/null --no-progress add \(names) && chmod 755 /tmp/\(program) && VK_DRIVER_FILES=/usr/share/vulkan/icd.d/trames.json /tmp/\(program) \(arguments); printf '\\nVULKAN_RESULT:%d\\n' $?\n"
         let data = Data(command.utf8)
         guard try session.send(data) == data.count else { throw TramesError.message("Vulkan acceptance input was incomplete") }
     }
-    private static func execute(render: Bool, display: VulkanCanvas? = nil) async throws -> (text: String, ppm: Data?) {
+    private static func execute(render: Bool, texture: Bool = false, display: VulkanCanvas? = nil) async throws -> (text: String, ppm: Data?) {
         guard let resources=Bundle.main.resourceURL?.appendingPathComponent("GuestVulkan"),
               let icd=Bundle.main.url(forResource:"libtrames_vulkan_icd",withExtension:"so",subdirectory:"GuestVulkan") else {
             throw TramesError.message("Missing bundled Vulkan acceptance resources")
@@ -73,8 +81,9 @@ enum LocalVulkanProbe {
             if status.phase != "starting" && status.phase != "running" || Date().timeIntervalSince(began)>30 {throw TramesError.message(status.error ?? "Vulkan session did not start")}
             try await Task.sleep(for:.milliseconds(10))
         }
-        let program = display != nil ? "vulkan-present" : render ? "vulkan-render" : "vulkan-compute"
-        let arguments = display != nil ? "/tmp/vulkan-render.vert.spv /tmp/vulkan-render.frag.spv" : render ? "/tmp/vulkan-render.vert.spv /tmp/vulkan-render.frag.spv /tmp/render.ppm" : "/tmp/vulkan-compute.spv"
+        let program = display != nil ? "vulkan-present" : render ? (texture ? "vulkan-texture" : "vulkan-render") : "vulkan-compute"
+        let graphics = texture ? "vulkan-texture" : "vulkan-render"
+        let arguments = display != nil ? "/tmp/vulkan-render.vert.spv /tmp/vulkan-render.frag.spv" : render ? "/tmp/\(graphics).vert.spv /tmp/\(graphics).frag.spv /tmp/render.ppm" : "/tmp/vulkan-compute.spv"
         try prepare(session, inputs: inputs, program: program, arguments: arguments)
         while text.range(of:"\r\nVULKAN_RESULT:[0-9]+\r\n",options:.regularExpression)==nil {
             text+=String(decoding:try session.receive(),as:UTF8.self)

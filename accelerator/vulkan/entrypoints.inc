@@ -81,9 +81,15 @@
     if(!strcmp(name,"vkCmdBeginRenderPass"))return (PFN_vkVoidFunction)vkCmdBeginRenderPass;
     if(!strcmp(name,"vkCmdEndRenderPass"))return (PFN_vkVoidFunction)vkCmdEndRenderPass;
     if(!strcmp(name,"vkCmdDraw"))return (PFN_vkVoidFunction)vkCmdDraw;
-    if(!strcmp(name,"vkCmdCopyImageToBuffer"))return (PFN_vkVoidFunction)vkCmdCopyImageToBuffer;
     if(!strcmp(name,"vkCmdSetViewport"))return (PFN_vkVoidFunction)vkCmdSetViewport;
     if(!strcmp(name,"vkCmdSetScissor"))return (PFN_vkVoidFunction)vkCmdSetScissor;
+    if(!strcmp(name,"vkCmdCopyImageToBuffer"))return (PFN_vkVoidFunction)vkCmdCopyImageToBuffer;
+    if(!strcmp(name,"vkCmdCopyBufferToImage"))return (PFN_vkVoidFunction)vkCmdCopyBufferToImage;
+    if(!strcmp(name,"vkCreateSampler"))return (PFN_vkVoidFunction)vkCreateSampler;
+    if(!strcmp(name,"vkDestroySampler"))return (PFN_vkVoidFunction)vkDestroySampler;
+    if(!strcmp(name,"vkCmdBindVertexBuffers"))return (PFN_vkVoidFunction)vkCmdBindVertexBuffers;
+    if(!strcmp(name,"vkCmdBindIndexBuffer"))return (PFN_vkVoidFunction)vkCmdBindIndexBuffer;
+    if(!strcmp(name,"vkCmdDrawIndexed"))return (PFN_vkVoidFunction)vkCmdDrawIndexed;
     if(!strcmp(name,"vkGetPhysicalDeviceDisplayPropertiesKHR"))return (PFN_vkVoidFunction)vkGetPhysicalDeviceDisplayPropertiesKHR;
     if(!strcmp(name,"vkGetPhysicalDeviceDisplayPlanePropertiesKHR"))return (PFN_vkVoidFunction)vkGetPhysicalDeviceDisplayPlanePropertiesKHR;
     if(!strcmp(name,"vkGetDisplayPlaneSupportedDisplaysKHR"))return (PFN_vkVoidFunction)vkGetDisplayPlaneSupportedDisplaysKHR;

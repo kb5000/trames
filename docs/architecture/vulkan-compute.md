@@ -44,7 +44,7 @@ Install the ordinary `vulkan-loader` package with apk.
 
 ## Supported compute operations
 
-The [catalog](../../accelerator/vulkan/entrypoints.inc) contains 102 public
+The [catalog](../../accelerator/vulkan/entrypoints.inc) contains 108 public
 functions plus ICD negotiation exports. The profile supports one instance,
 compute-capable physical device, logical device and queue per address space;
 property queries; buffers and memory; SPIR-V modules; storage/uniform buffer
@@ -74,20 +74,44 @@ Timeline semaphore extensions remain unavailable.
 Core graphics now includes native 2D optimal-tiled RGBA8/BGRA8 UNORM images,
 binding/memory requirements, color image views, a single-color render pass and
 framebuffer, vertex/fragment graphics pipelines, dynamic viewport/scissor, draw,
-image layout barriers and image-to-buffer copy. Queue queries retain native
+image layout barriers, buffer-to-image uploads and image-to-buffer copy. Queue queries retain native
 graphics/compute/transfer flags. Image format queries expose only this profile:
 one mip/layer/sample and dimensions up to 4096; allocation/session budgets still
 apply. Device memory remains explicit and noncoherent at the guest boundary.
 
-The first pipeline profile generates vertices in the vertex shader, uses triangle
-list/strip topology and an empty graphics layout. Vertex/index buffers, graphics
-descriptors/textures, depth/stencil, blending, multisampling and graphics
-specialization are not implemented. Dynamic viewport/scissor must both be set;
-draw checks recording/render-pass/pipeline compatibility. Buffer transfers remain
-outside render passes. Framebuffers/views/images retain their memory and render
-pass; recorded commands and in-flight snapshots retain the complete graph.
-Graphics compilation uses the same owned, bounded native tasks and fallible
-output rollback as compute. No guest pointer or Rc crosses native worker threads.
+Pipelines accept generated vertices or vertex/instance buffers (up to 16 bindings
+and attributes), triangle list/strip topology, 16/32-bit index buffers and indexed
+or ordinary draws. Selected vertex formats are R32 scalar/vector SFLOAT/SINT/UINT
+and RGBA8 UNORM/SNORM/SINT/UINT, subject to native `VERTEX_BUFFER` format features.
+Binding stride is at most 2048, attribute offset at most 2047; native limits also
+apply. Non-indexed and instance fetch extents and index-buffer ranges are checked.
+Indexed vertex values remain on the GPU and follow Vulkan's application validity
+rules; the bridge does not read GPU indices back to the CPU for scanning.
+
+Graphics and compute descriptor layouts accept uniform/storage buffers, samplers,
+sampled images and combined image samplers, including descriptor arrays. Vertex,
+fragment and compute visibility is preserved. Graphics descriptor binding and up
+to 128 bytes of stage-aware push constants use the original native commands.
+Each descriptor slot retains all its resources, including both view and sampler;
+updates replace those slots, while submission snapshots retain prior dependencies
+until GPU completion. Graphics and compute pipeline bindings are independent.
+
+RGBA8/BGRA8 textures support optimal 2D, one mip/layer/sample, explicit uploads,
+`SHADER_READ_ONLY_OPTIMAL`/GENERAL layouts, nearest/linear filtering, and normalized
+repeat/mirrored-repeat/clamp-to-edge/clamp-to-border sampling. Native format
+properties bound sampling/filter support. Buffer/image copies check offsets,
+padded row/image pitches, subresources and buffer/image extents. Anisotropy,
+comparison, unnormalized coordinates, immutable samplers, storage images, mipmap
+chains, depth/stencil, blending, multisampling and graphics specialization remain
+unavailable. Unsupported options fail explicitly.
+
+Dynamic viewport/scissor must both be set; draw checks recording/render-pass/
+pipeline compatibility. Buffer transfers remain outside render passes.
+Framebuffers/views/images retain their memory and render pass; recorded commands
+and in-flight snapshots retain the complete graph. Graphics compilation uses the
+same owned, bounded native tasks and fallible output rollback as compute. Vertex
+input arrays are copied before the task starts; no guest pointer or Rc crosses
+native worker threads. See [texture verification](../validation/vulkan-textures.md).
 
 The [offscreen regression](../validation/vulkan-render.md) continues to check
 GPU pixels through a readback buffer and independent barycentric equations.

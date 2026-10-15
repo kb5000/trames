@@ -213,6 +213,7 @@ fn graphics(b: &mut Backend, m: &mut Memory, device: u64, vertex: &str, fragment
     let args = [
         device, layout, modules[0], modules[1], 0x3300, 0x3300, 0x3400, RESULT,
     ];
+    words(m, 0x3600, &[0, 0]);
     for _ in 0..260 {
         m.write(RESULT, &[0; 8]).unwrap();
         let Invocation::Pending(job) = request(b, m, 70, &args) else {
@@ -243,8 +244,12 @@ fn graphics(b: &mut Backend, m: &mut Memory, device: u64, vertex: &str, fragment
             try_request(b, m, 60, &[device, 37, 32, 32, 0x11, RESULT]),
             Err(MemoryError::BackingIo(5))
         );
+        assert_eq!(
+            try_request(b, m, 92, &[device, 0, 0, 0, 2, 2, 2, 0, 0x3600, RESULT]),
+            Err(MemoryError::BackingIo(5))
+        );
     }
-    println!("260 graphics pipeline and 260 image backing failures: unpublished native outputs rolled back");
+    println!("260 graphics pipeline, 260 image and 260 sampler backing failures: unpublished native outputs rolled back");
     output.fail.set(false);
     m.unmap(RESULT, PAGE_SIZE).unwrap();
     m.map(RESULT, PAGE_SIZE, Permissions::RW).unwrap();

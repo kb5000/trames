@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Core graphics frontend: single color attachment, generated vertices, dynamic
-// viewport/scissor, no optional raster/depth/blend features. Wire op 58..76.
+// Core graphics frontend: single color attachment, vertex/index input, sampled textures, dynamic
+// viewport/scissor, no optional raster/depth/blend features. Wire op 58..76 and 92..97.
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateImage(VkDevice d,const VkImageCreateInfo *info,const VkAllocationCallbacks *allocator,VkImage *out) {
     CHECK(info,VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);ALLOCATOR(allocator);
     if(info->flags || info->imageType!=VK_IMAGE_TYPE_2D || info->extent.depth!=1 || info->mipLevels!=1 || info->arrayLayers!=1 || info->samples!=VK_SAMPLE_COUNT_1_BIT || info->tiling!=VK_IMAGE_TILING_OPTIMAL || info->sharingMode!=VK_SHARING_MODE_EXCLUSIVE || info->initialLayout!=VK_IMAGE_LAYOUT_UNDEFINED)return VK_ERROR_FEATURE_NOT_PRESENT;
@@ -37,7 +37,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateGraphicsPipelines(VkDevice d,VkPipelineCa
     if(info->flags || info->stageCount!=2 || info->pTessellationState || info->subpass || info->basePipelineHandle)return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkPipelineShaderStageCreateInfo *vertex=NULL,*fragment=NULL;
     for(unsigned i=0;i<2;i++){const VkPipelineShaderStageCreateInfo *s=&info->pStages[i];CHECK(s,VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);if(s->flags || s->pSpecializationInfo)return VK_ERROR_FEATURE_NOT_PRESENT;if(s->stage==VK_SHADER_STAGE_VERTEX_BIT && !vertex)vertex=s;else if(s->stage==VK_SHADER_STAGE_FRAGMENT_BIT && !fragment)fragment=s;else return VK_ERROR_FEATURE_NOT_PRESENT;}
-    const VkPipelineVertexInputStateCreateInfo *v=info->pVertexInputState;CHECK(v,VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);if(v->flags || v->vertexBindingDescriptionCount || v->vertexAttributeDescriptionCount)return VK_ERROR_FEATURE_NOT_PRESENT;
+    const VkPipelineVertexInputStateCreateInfo *v=info->pVertexInputState;CHECK(v,VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);if(v->flags || v->vertexBindingDescriptionCount>16 || v->vertexAttributeDescriptionCount>16)return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkPipelineInputAssemblyStateCreateInfo *a=info->pInputAssemblyState;CHECK(a,VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);if(a->flags || a->primitiveRestartEnable)return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkPipelineViewportStateCreateInfo *p=info->pViewportState;CHECK(p,VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO);if(p->flags || p->viewportCount!=1 || p->scissorCount!=1)return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkPipelineRasterizationStateCreateInfo *r=info->pRasterizationState;CHECK(r,VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);if(r->flags || r->depthClampEnable || r->rasterizerDiscardEnable || r->polygonMode!=VK_POLYGON_MODE_FILL || r->depthBiasEnable || r->lineWidth!=1.0f)return VK_ERROR_FEATURE_NOT_PRESENT;
@@ -47,7 +47,10 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateGraphicsPipelines(VkDevice d,VkPipelineCa
     const VkPipelineDynamicStateCreateInfo *dynamic=info->pDynamicState;CHECK(dynamic,VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);if(dynamic->flags || dynamic->dynamicStateCount!=2)return VK_ERROR_FEATURE_NOT_PRESENT;
     unsigned states=0;for(unsigned i=0;i<2;i++){if(dynamic->pDynamicStates[i]==VK_DYNAMIC_STATE_VIEWPORT)states|=1;else if(dynamic->pDynamicStates[i]==VK_DYNAMIC_STATE_SCISSOR)states|=2;}if(states!=3)return VK_ERROR_FEATURE_NOT_PRESENT;
     uint64_t state[5]={(uint64_t)info->renderPass,a->topology,r->cullMode,r->frontFace,b->pAttachments[0].colorWriteMask};
-    return CALL(70,KEY(d),(uint64_t)info->layout,(uint64_t)vertex->module,(uint64_t)fragment->module,PTR(vertex->pName),PTR(fragment->pName),PTR(state),PTR(out));
+    uint64_t bindings[16][3],attributes[16][4];
+    for(uint32_t i=0;i<v->vertexBindingDescriptionCount;i++){const VkVertexInputBindingDescription *x=&v->pVertexBindingDescriptions[i];bindings[i][0]=x->binding;bindings[i][1]=x->stride;bindings[i][2]=x->inputRate;}
+    for(uint32_t i=0;i<v->vertexAttributeDescriptionCount;i++){const VkVertexInputAttributeDescription *x=&v->pVertexAttributeDescriptions[i];attributes[i][0]=x->location;attributes[i][1]=x->binding;attributes[i][2]=x->format;attributes[i][3]=x->offset;}
+    return CALL(70,KEY(d),(uint64_t)info->layout,(uint64_t)vertex->module,(uint64_t)fragment->module,PTR(vertex->pName),PTR(fragment->pName),PTR(state),PTR(out),PTR(bindings),v->vertexBindingDescriptionCount,PTR(attributes),v->vertexAttributeDescriptionCount);
 }
 VKAPI_ATTR void VKAPI_CALL vkCmdBeginRenderPass(VkCommandBuffer c,const VkRenderPassBeginInfo *info,VkSubpassContents contents) {
     if(!VALID(info,VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO) || contents!=VK_SUBPASS_CONTENTS_INLINE || info->clearValueCount>1)checked(VK_ERROR_FEATURE_NOT_PRESENT);
@@ -55,10 +58,25 @@ VKAPI_ATTR void VKAPI_CALL vkCmdBeginRenderPass(VkCommandBuffer c,const VkRender
 }
 VKAPI_ATTR void VKAPI_CALL vkCmdEndRenderPass(VkCommandBuffer c) {checked(CALL(72,DEVKEY(c),KEY(c)));}
 VKAPI_ATTR void VKAPI_CALL vkCmdDraw(VkCommandBuffer c,uint32_t vertices,uint32_t instances,uint32_t firstVertex,uint32_t firstInstance) {checked(CALL(73,DEVKEY(c),KEY(c),vertices,instances,firstVertex,firstInstance));}
-VKAPI_ATTR void VKAPI_CALL vkCmdCopyImageToBuffer(VkCommandBuffer c,VkImage image,VkImageLayout layout,VkBuffer buffer,uint32_t count,const VkBufferImageCopy *regions) {
+static void buffer_image_copy(VkCommandBuffer c,VkImage image,VkImageLayout layout,VkBuffer buffer,uint32_t count,const VkBufferImageCopy *regions,unsigned op) {
     if(count>64)checked(VK_ERROR_FEATURE_NOT_PRESENT);uint64_t data[64][13];
     for(uint32_t i=0;i<count;i++){const VkBufferImageCopy *x=&regions[i];uint64_t *v=data[i];v[0]=x->bufferOffset;v[1]=x->bufferRowLength;v[2]=x->bufferImageHeight;v[3]=x->imageSubresource.aspectMask;v[4]=x->imageSubresource.mipLevel;v[5]=x->imageSubresource.baseArrayLayer;v[6]=x->imageSubresource.layerCount;v[7]=x->imageOffset.x;v[8]=x->imageOffset.y;v[9]=x->imageOffset.z;v[10]=x->imageExtent.width;v[11]=x->imageExtent.height;v[12]=x->imageExtent.depth;}
-    checked(CALL(74,DEVKEY(c),KEY(c),(uint64_t)image,layout,(uint64_t)buffer,PTR(data),count));
+    checked(CALL(op,DEVKEY(c),KEY(c),(uint64_t)image,layout,(uint64_t)buffer,PTR(data),count));
 }
 VKAPI_ATTR void VKAPI_CALL vkCmdSetViewport(VkCommandBuffer c,uint32_t first,uint32_t count,const VkViewport *viewports) {if(first || count!=1)checked(VK_ERROR_FEATURE_NOT_PRESENT);checked(CALL(75,DEVKEY(c),KEY(c),PTR(viewports)));}
 VKAPI_ATTR void VKAPI_CALL vkCmdSetScissor(VkCommandBuffer c,uint32_t first,uint32_t count,const VkRect2D *scissors) {if(first || count!=1)checked(VK_ERROR_FEATURE_NOT_PRESENT);checked(CALL(76,DEVKEY(c),KEY(c),scissors[0].offset.x,scissors[0].offset.y,scissors[0].extent.width,scissors[0].extent.height));}
+
+VKAPI_ATTR void VKAPI_CALL vkCmdCopyImageToBuffer(VkCommandBuffer c,VkImage image,VkImageLayout layout,VkBuffer buffer,uint32_t count,const VkBufferImageCopy *regions) {buffer_image_copy(c,image,layout,buffer,count,regions,74);}
+VKAPI_ATTR void VKAPI_CALL vkCmdCopyBufferToImage(VkCommandBuffer c,VkBuffer buffer,VkImage image,VkImageLayout layout,uint32_t count,const VkBufferImageCopy *regions) {buffer_image_copy(c,image,layout,buffer,count,regions,94);}
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateSampler(VkDevice d,const VkSamplerCreateInfo *info,const VkAllocationCallbacks *allocator,VkSampler *out) {
+    CHECK(info,VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);ALLOCATOR(allocator);
+    if(info->flags || info->anisotropyEnable || info->compareEnable || info->unnormalizedCoordinates)return VK_ERROR_FEATURE_NOT_PRESENT;
+    float lod[3]={info->mipLodBias,info->minLod,info->maxLod};
+    return CALL(92,KEY(d),info->magFilter,info->minFilter,info->mipmapMode,info->addressModeU,info->addressModeV,info->addressModeW,info->borderColor,PTR(lod),PTR(out));
+}
+VKAPI_ATTR void VKAPI_CALL vkDestroySampler(VkDevice d,VkSampler sampler,const VkAllocationCallbacks *allocator) {if(sampler)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(93,KEY(d),(uint64_t)sampler));}
+VKAPI_ATTR void VKAPI_CALL vkCmdBindVertexBuffers(VkCommandBuffer c,uint32_t first,uint32_t count,const VkBuffer *buffers,const VkDeviceSize *offsets) {
+    if(count>16)checked(VK_ERROR_FEATURE_NOT_PRESENT);checked(CALL(95,DEVKEY(c),KEY(c),first,count,PTR(buffers),PTR(offsets)));
+}
+VKAPI_ATTR void VKAPI_CALL vkCmdBindIndexBuffer(VkCommandBuffer c,VkBuffer buffer,VkDeviceSize offset,VkIndexType type) {checked(CALL(96,DEVKEY(c),KEY(c),(uint64_t)buffer,offset,type));}
+VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexed(VkCommandBuffer c,uint32_t indices,uint32_t instances,uint32_t firstIndex,int32_t vertexOffset,uint32_t firstInstance) {checked(CALL(97,DEVKEY(c),KEY(c),indices,instances,firstIndex,(uint64_t)(int64_t)vertexOffset,firstInstance));}

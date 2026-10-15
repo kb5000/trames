@@ -174,6 +174,7 @@ jobs:
           test -n "$VK_DRIVER_FILES"
           python3 tests/integration/vulkan-compute.py
           python3 tests/integration/vulkan-render.py
+          python3 tests/integration/vulkan-texture.py
           cargo run --release --locked -p trames-vulkan --example lifecycle -- tests/fixtures/bin/vulkan-compute.spv tests/fixtures/bin/vulkan-render.vert.spv tests/fixtures/bin/vulkan-render.frag.spv
         env:
           TRAMES_RUNNER: ${{ github.workspace }}/target/release/trames-run
@@ -181,7 +182,9 @@ jobs:
         if: always()
         with:
           name: vulkan-render-pixels
-          path: target/vulkan-render/*.ppm
+          path: |
+            target/vulkan-render/*.ppm
+            target/vulkan-texture/*.ppm
           retention-days: 7
       - name: Validate signed Python anonymous ELF, pass_fds and libc fexecve
         run: python3 tests/integration/memfd-python.py

@@ -29,7 +29,7 @@ from pathlib import Path
 import hashlib,json
 p=Path('target/vulkan-guest')
 (p/'trames.json').write_text(json.dumps({'file_format_version':'1.0.0','ICD':{'api_version':'1.0.0','library_path':'/usr/lib/libtrames_vulkan_icd.so'}},indent=2)+'\n')
-v={'profile':65542,'auxv_key':'0x54520008','wire_revision':2,'experimental':True,'scope':'selected compute, graphics and fixed-display WSI API; not Vulkan conformance','icd_sha256':hashlib.sha256((p/'libtrames_vulkan_icd.so').read_bytes()).hexdigest(),'loader':'unmodified distro libvulkan.so.1','headers':'1.3.281','native_moltenvk':'1.4.2','default_enabled':False}
+v={'profile':65542,'auxv_key':'0x54520008','wire_revision':3,'experimental':True,'scope':'selected compute, graphics and fixed-display WSI API; not Vulkan conformance','icd_sha256':hashlib.sha256((p/'libtrames_vulkan_icd.so').read_bytes()).hexdigest(),'loader':'unmodified distro libvulkan.so.1','headers':'1.3.281','native_moltenvk':'1.4.2','default_enabled':False}
 (p/'manifest.json').write_text(json.dumps(v,indent=2)+'\n')
 PY
 cp LICENSE "$output/GPL-3.0.txt"
