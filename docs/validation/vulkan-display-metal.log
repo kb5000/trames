@@ -1,0 +1,13 @@
+~ # [6napk --repositories-file /dev/null --no-progress add /tmp/musl-1.2.5-r12.apk 
+/tmp/vulkan-loader-1.4.313.0-r0.apk && chmod 755 /tmp/vulkan-present && VK_DRIVE
+R_FILES=/usr/share/vulkan/icd.d/trames.json /tmp/vulkan-present /tmp/vulkan-rend
+er.vert.spv /tmp/vulkan-render.frag.spv; printf '\nVULKAN_RESULT:%d\n' $?
+(1/1) Installing vulkan-loader (1.4.313.0-r0)
+OK: 8 MiB in 17 packages
+Vulkan present driver: Apple iOS simulator GPU
+present round 1: 1024x768 native swapchain active
+present round 2: 1024x768 native swapchain active
+vulkan-present-ok frames=24
+
+VULKAN_RESULT:0
+~ # [6n

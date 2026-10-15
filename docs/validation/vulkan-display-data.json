@@ -1,0 +1,53 @@
+{
+  "source_commit": "234db1858def4512073cb907b279d01c736ad2ac",
+  "native_runtime_commit": "c4e1be4a0ec0dad6aa4c86d97417b2d9428e6e1d",
+  "apple_run": 38692467698,
+  "apple_job": 116281924139,
+  "result": "success",
+  "artifact": {
+    "id": 11953108575,
+    "name": "unsigned-ipad-build-and-project",
+    "bytes": 47383189,
+    "sha256": "4a1eb87a0417cb6ef0024f1242b655eb0b93aa3e42d98810c6044af00ec4ba58"
+  },
+  "summary": "vulkan-display-metal-summary.json",
+  "screenshot": {
+    "file": "assets/vulkan-display-window.png",
+    "attachment": "native-vulkan-swapchain-window",
+    "source": "build/ipad-smoke.xcresult/Data/data.0~hvmtt7u76Y8gjUM3dnBi3F842V6tK_lm1u11DxSuZ72R6SCTaEWB8YLT27wusrl6Hjv23f7VtrG5QdHCcQMj9w==",
+    "width": 1668,
+    "height": 2420,
+    "sha256": "eab88931f1f48fa44eea4165414f26cdd282b2d087be4081d3c362a9b78cfcff",
+    "original_png_bytes": true
+  },
+  "fixture_log": {
+    "file": "vulkan-display-metal.log",
+    "attachment": "native-vulkan-display-log",
+    "source": "build/ipad-smoke.xcresult/Data/data.0~oczxIZc2RSyAtvS3JMbB34eK95PCgeHMZinSZtaBH43j1nluUre0LDjR5VsqLibd78_1WHcX2PUDPTbSWYbwnQ==",
+    "bytes": 607,
+    "sha256": "666c85dac296bdb9901734bc8cd8d84b3d7451135454a7fdfc04f50ad2249bd9",
+    "original_bytes": true
+  },
+  "checks": [
+    "24 native frames across 2 swapchains",
+    "logical acquire fence wait/reset/NOT_READY/reuse across recreation",
+    "lazy loader surface producer exclusion and release",
+    "retired swapchain acquire",
+    "live fixed 1024x768 pixel extent while dragging and resizing",
+    "actual canvas screenshot sampled at128x96: >1000 colorful pixels",
+    "continued native present after hide/reopen",
+    "close session during continuous rendering"
+  ],
+  "local": {
+    "rust_tests": 294,
+    "clippy": "strict workspace/all-targets",
+    "driver": "Mesa25 Lavapipe LLVM19 software reference",
+    "compute_graphics_guest_cpus": [
+      1,
+      4
+    ],
+    "lifecycle_fault_cases": 1300
+  },
+  "native_runtime_linux_run": 38689824431,
+  "limitations": "arm64 iOS18.5 simulator on runner Metal GPU; physical iPad acceptance and iPad performance remain separate. Selected Vulkan subset, one display/session; no pointer input or window manager."
+}
