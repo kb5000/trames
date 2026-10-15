@@ -63,3 +63,11 @@ python3 scripts/audit-syscalls.py
 单元测试/网络集成需要宿主允许本机 socket；网络策略错误不应通过伪造回复掩盖。
 [原始集成日志](guest-namespaces.log)与[源码/输入/日志指纹](guest-namespaces-data.json)
 保留本地验证来源。
+
+## 首批提交的 CI 结果
+
+提交 `1105b1f179421ab103925f50b29d450a61b60b6e` 的
+[Linux CI](https://github.com/kb5000/trames/actions/runs/38724508590) 与
+[Apple CI](https://github.com/kb5000/trames/actions/runs/38724508564) 后续均已通过。
+Linux 的原生 ICMP 必需测试通过；Apple 包括 guest-musl 和 apple-build 两个任务。
+这补齐该提交的云端验收，不代表物理 iPad 已验收，也不代替后续挂载改动的 CI。

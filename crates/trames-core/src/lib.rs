@@ -350,7 +350,7 @@ impl Runtime {
                 linux.executable_path = vfs.executable_display(&file);
                 linux.executable_file = Some(file);
             } else if let Ok(path) = vfs.resolve(trames_vfs::AT_FDCWD, &linux.executable_path) {
-                linux.executable_path = path;
+                linux.executable_path = path.into_bytes();
             }
         }
         let sp = initial_stack_bytes(

@@ -18,6 +18,15 @@ with tempfile.TemporaryDirectory(prefix='trames-namespaces-') as folder:
         result = subprocess.run(command, capture_output=True, timeout=90)
         assert result.returncode == 0 and result.stdout == EXPECTED, (cpus, result.returncode, result.stdout, result.stderr[-8000:])
         print(f'{cpus}-CPU guest UTS namespace, namespace FD lifetime, chroot/exec passed', flush=True)
+    for cpus in ('1', '4'):
+        result = subprocess.run([RUNNER, '--storage', str(Path(folder)/('mount-'+cpus)), '--cpus', cpus,
+            '--network', 'off', '--max-instructions', '1000000000',
+            '--exec-file', f"/mount-namespaces={ROOT/'tests/fixtures/bin/mount-namespaces'}", '--guest', '/mount-namespaces'],
+            capture_output=True, timeout=90)
+        assert result.returncode == 0 and result.stdout == (
+            b'mount: namespace isolation, setns, tmpfs quota, bind identity/readonly/noexec, detached fd: ok\n'
+            b'mount: pivot_root, mounted proc, old-root detach, parent root preserved: ok\n'), (cpus, result.returncode, result.stdout, result.stderr[-8000:])
+        print(f'{cpus}-CPU guest mount namespace, tmpfs/bind/pivot_root and mount FD lifetime passed', flush=True)
     command = [RUNNER, '--storage', str(Path(folder)/'busybox'), '--network', 'off',
                '--rootfs', str(ROOT/'target/alpine-download/alpine-minirootfs-3.22.6-aarch64.tar.gz'),
                '--exec-file', f"/jail/bin/sh={ROOT/'target/busybox-build/busybox'}",
@@ -28,3 +37,13 @@ with tempfile.TemporaryDirectory(prefix='trames-namespaces-') as folder:
     result = subprocess.run(command, capture_output=True, timeout=60)
     assert result.returncode == 0 and b'BUSYBOX_NAMESPACE_PASS\n' in result.stdout, (result.returncode, result.stdout, result.stderr[-8000:])
     print('Real BusyBox unshare/nsenter/chroot passed', flush=True)
+
+    result = subprocess.run([RUNNER, '--storage', str(Path(folder)/'busybox'), '--network', 'off',
+        '--max-instructions', '300000000', '--guest', '/bin/sh', '-ec',
+        "mkdir -p /m-source /m-target; echo guest > /m-source/data; "
+        "unshare -m /bin/sh -ec 'mount -t tmpfs -o size=64k tmpfs /m-target; echo private > /m-target/inside; "
+        "df /m-target; umount /m-target; mount -o bind /m-source /m-target; test \"$(cat /m-target/data)\" = guest; "
+        "mount -o remount,bind,ro /m-target; umount /m-target'; "
+        "test ! -e /m-target/inside; echo BUSYBOX_MOUNTS_PASS"], capture_output=True, timeout=60)
+    assert result.returncode == 0 and b'BUSYBOX_MOUNTS_PASS\n' in result.stdout, (result.returncode, result.stdout, result.stderr[-8000:])
+    print('Real BusyBox unshare -m, mount tmpfs/bind/remount, df and umount passed', flush=True)

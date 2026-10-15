@@ -1,0 +1,61 @@
+{
+  "recorded_utc": "2026-10-15T11:59:01.845768+00:00",
+  "parent_commit": "1105b1f179421ab103925f50b29d450a61b60b6e",
+  "scope": "Guest private mount namespaces and filesystem capabilities; PID namespaces remain next",
+  "workspace_all_feature_tests": 312,
+  "guest_cpus": [
+    1,
+    4
+  ],
+  "fd_exec_native_cases_per_cpu": 23,
+  "storage_qemu_cases": 2,
+  "syscalls": {
+    "implemented_subset": 173,
+    "missing": 143,
+    "obsolete_stub": 2,
+    "undispatched_enosys_probes": 145
+  },
+  "apple": "ARM64 iOS compile checked; this batch SDK/simulator/physical tests not locally performed",
+  "performance": "No new benchmark claim",
+  "source_sha256": {
+    ".github/workflows/linux.yml": "b6789886a45c8cb630d473dc80de429d60e3ecf09b3841c7f60ed99c7fe2691d",
+    "crates/trames-core/src/lib.rs": "e9581b6c98b27ec633480c4705fae924c21d562f5b953bda74c2f8cc43507cdd",
+    "crates/trames-core/src/process.rs": "9ec014915e6ff7be4bd8031fbb2958bc4eba44d98cc8450175e4e49843946d87",
+    "crates/trames-linux/src/state.rs": "c129d188e4f714f1c7749414ee9a54272890fb604daf0fa9d0ef924ce8561ce1",
+    "crates/trames-memory/src/backing.rs": "81878739c5ddcd72bd13ac5645b1005d2a86d30846d3d7c866c764673538f402",
+    "crates/trames-memory/src/lib.rs": "4267d3e7d3b2529cf86db894f99679c7e19f38b75608aeb67788a96700b1f2da",
+    "crates/trames-vfs/src/credentials.rs": "bf8061b0ca995ab99a128c2a0d8f5365a70da4e171580fc08c438da7b8e10b81",
+    "crates/trames-vfs/src/events.rs": "6e7b4d8fc52e55625ea9b97f380a1cc163445e8a14a7b04ba9e9cd029eb50b44",
+    "crates/trames-vfs/src/executable.rs": "e3046233a9077dc4ac04cbccbbe8e24f5c3a84735f64524250ab93ebbdc40fb2",
+    "crates/trames-vfs/src/ipc.rs": "7dd5b2c38d7deddd04d79d4d611b7c2ddfda8041580fea7bbddd03b70e605743",
+    "crates/trames-vfs/src/lib.rs": "9158934daa4c77eb642d8b2441e60976005f446f1dc848a04a9c166c5ed024c6",
+    "crates/trames-vfs/src/linux_namespace.rs": "910d57091d0e4e6b6e2e0f4503f3c6b81212e2cace077de84225fd287858c5eb",
+    "crates/trames-vfs/src/mapped.rs": "a7854d02a58f5b92780e28ee04f64d13f0beb4d2cc0caf34fe969fb316d3ccf9",
+    "crates/trames-vfs/src/memfd.rs": "e319c306194a41164945ef4be45b3fbf5b8348a581120b0b6e1ca0dcb801aa73",
+    "crates/trames-vfs/src/mounts.rs": "66c552d83c49c4b3c782dc193d737a39cfefe1649c09f86f67b43867c5169ee6",
+    "crates/trames-vfs/src/namespace.rs": "a9fc03246e038b8a83758c070e1d925883519ef252d497ce9b34d687502d0dc8",
+    "crates/trames-vfs/src/network.rs": "45c819f881ee72dd3fc3dfee3b8ebb5eabb37018209b9b8b27cf0663549d8e1e",
+    "crates/trames-vfs/src/pseudo.rs": "715a355887710f45154e25d2cf219117cbb11f06496513aef46a48086ab2eaba",
+    "crates/trames-vfs/src/storage.rs": "03b8211b74b93e26c9b76660ba34f3a559e4bd013713616b0b3476ce5faf51cc",
+    "scripts/audit-syscalls.py": "632559edc781713b3062daf59526ec69e9fd973be7e32ab46a569cc51041fdb1",
+    "scripts/build-namespace-fixtures.sh": "0610dc77705e1bae49e3218379ea14613a1f43c808cc019fc78b4254fd73f60b",
+    "tests/fixtures/mount-namespaces.c": "f49740b1e515c99ba00251a964038f4963ed666ace371d43725c68b536731643",
+    "tests/integration/namespaces.py": "5bc941f9a0cda3870b9f96ad890bb015cd2fabae20a1e409d55a91781f1d110e"
+  },
+  "input_sha256": {
+    "tests/fixtures/bin/mount-namespaces": "68e5d97e1a9dd3cad217add7009cc12bad44fd8f5a8346a3928897e1fcdbcafe",
+    "tests/fixtures/bin/namespaces": "8bf70a1acf49814ae6f7941371444b680f4cbe97c282a82030a34ce858199e89",
+    "target/alpine-download/alpine-minirootfs-3.22.6-aarch64.tar.gz": "821565fa8f3953eefd12497b166b4b50add2f7c57fb312e75862f5867e06fefe",
+    "target/busybox-build/busybox": "58ee781107cb1a65049252b5ec78b6eb9cf6db76a6bbdfd228b62791cf010b93",
+    "target/release/trames-run": "1a57be36ce47c21cceb18d56e14fa8988e61874f75ae32d900475065edb554db"
+  },
+  "retained_log_sha256": "b1f1f5ea6a0d68cab2059c6394b1496bd3317bc41108c170170e6995ebbd63d1",
+  "check_log_sha256": {
+    "mount-workspace-all.log": "75d93be2089db519ead0fb46664426645e54724e9e2640705c0a6d54cf2bd7dd",
+    "mount-clippy.log": "702ad12b2b8d4f48911d08863a111aa6293535d5e14262e69d2dff8c44cdd3b5",
+    "mount-ios.log": "65bf6757b2a872cd064b86784d4a8b6b6e1033b58d21f2bfa24cf2cfd10cd3e2",
+    "mount-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "mount-build-final.log": "0af5086063b916d036cde17b0a32cf66753cd2875af429ad17c38ed569fb1ac7",
+    "mount-debug-build.log": "e354fe9fce7b769af3627de7d2fd744e615585c50ef93e0c7c86c22a5303da4c"
+  }
+}

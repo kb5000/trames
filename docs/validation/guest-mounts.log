@@ -1,0 +1,44 @@
+=== mount-guest.log ===
+1-CPU guest UTS namespace, namespace FD lifetime, chroot/exec passed
+4-CPU guest UTS namespace, namespace FD lifetime, chroot/exec passed
+1-CPU guest mount namespace, tmpfs/bind/pivot_root and mount FD lifetime passed
+4-CPU guest mount namespace, tmpfs/bind/pivot_root and mount FD lifetime passed
+Real BusyBox unshare/nsenter/chroot passed
+Real BusyBox unshare -m, mount tmpfs/bind/remount, df and umount passed
+
+=== mount-fd-exec.log ===
+1-CPU ARM64 fd execution: 23 cases match native Linux
+4-CPU ARM64 fd execution: 23 cases match native Linux
+proc memfd at EOF offset: ok
+execveat memfd empty path: ok
+original libc fexecve: ok
+nofollow rejects proc magic link: ok
+fd execute permission is required: ok
+CLOEXEC ELF and proc exe inode pin: ok
+directory fd is not executable: ok
+cwd empty path is a directory: ok
+relative dirfd ELF: ok
+absolute path ignores invalid dirfd: ok
+nofollow rejects final symlink: ok
+O_PATH ELF fd: ok
+unlinked regular ELF through proc fd: ok
+symlink to deleted inode magic link: ok
+invalid execveat flag: ok
+empty path precedes unknown flags: ok
+empty pathname without flag: ok
+invalid fd with empty path: ok
+regular fd cannot be a dirfd: ok
+fd shebang interpreter: ok
+CLOEXEC script returns ENOENT: ok
+relative dirfd shebang: ok
+CLOEXEC dirfd script returns ENOENT: ok
+
+=== mount-mmap.log ===
+PASS --memory shared/private/anonymous mmap, fork, EOF/truncate SIGBUS, COW discard, remap, memfd/seals, code alias invalidation, file APIs and virtual scheduler
+PASS --storage shared/private/anonymous mmap, fork, EOF/truncate SIGBUS, COW discard, remap, memfd/seals, code alias invalidation, file APIs and virtual scheduler
+
+=== mount-storage.log ===
+Storage integration passed: 2 QEMU comparisons; restart/append, >20 MiB streamed binary copy, default/auto budgets, host scope, export preflight/refusal, runtime-error teardown, exclusive lock and SIGKILL recovery
+
+=== mount-audit.log ===
+{"scope": "Linux v6.12 native AArch64 numbered entries; entry presence is not full ABI conformance", "entries": 318, "statuses": {"missing": 143, "implemented_subset": 173, "obsolete_stub": 2}, "undispatched_probes_per_backend": 145, "backends": ["cached"], "unhandled_return": -38}

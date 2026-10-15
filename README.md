@@ -104,11 +104,11 @@ DNS 由真实 musl 读取 guest 的 `/etc/resolv.conf`；可用 `--file /etc/res
 
 ## Guest 内容器（开发中）
 
-第一批支持 UTS namespace：`unshare(CLONE_NEWUTS)`、`clone(CLONE_NEWUTS)`、`setns`、hostname/domainname、可保活的 `/proc/PID/ns/uts` FD；同时加入 `chroot` 和 fs/files unshare。原版 BusyBox 的 unshare/nsenter/chroot 和 1/4 CPU 集成测试覆盖这些行为。mount/PID/net/user namespace、pivot_root、cgroup 等仍待实现，当前还不能宣称能运行完整容器。目标是在 guest 内运行原版 runc/crun，后续再扩展容器引擎；见[设计与顺序](docs/architecture/guest-containers.md)。
+已支持 UTS 和 mount namespace：`unshare/clone/setns`、可保活的 `/proc/PID/ns/{uts,mnt}` FD、`chroot`、tmpfs、bind/rbind、只读重挂载、umount2 和 pivot_root。挂载身份贯穿路径、FD、exec/mmap 与 proc mountinfo；1/4 CPU guest ABI 和原版 BusyBox 命令用于验证。PID/net/user/IPC namespace、传播挂载、cgroup 等仍待实现，尚不能运行完整容器。下一批先实现 PID 层级和生命周期，再验证原版 guest runc/crun；见[设计与顺序](docs/architecture/guest-containers.md)。
 
 ## Linux 兼容性更新（0.2.0）
 
-增加运行时生成的 `/proc`、`/sys`、`/dev`：进程、内存、挂载、文件描述符、设备、逻辑接口和数据包统计来自实际 guest 状态。原版 Alpine 的 `ps`、`mount`、`df`、`free`、`top`、`ip a`、`ip route` 和 IPv4／IPv6 `ping` 已纳入执行测试。`mount` 可列出内置挂载，任意文件系统挂载与额外 PTY 分配仍未实现。
+增加运行时生成的 `/proc`、`/sys`、`/dev`：进程、内存、挂载、文件描述符、设备、逻辑接口和数据包统计来自实际 guest 状态。原版 Alpine 的 `ps`、`mount`、`df`、`free`、`top`、`ip a`、`ip route` 和 IPv4／IPv6 `ping` 已纳入执行测试。当前挂载与 PTY 能力已在后续迭代扩展，最新范围见[容器基础](docs/architecture/guest-containers.md)与[兼容性清单](docs/roadmap/compatibility-current.md)。
 
 guest root、UID/GID、目录权限及持久化所有权修复了安装 Vim 的 88 个目录权限更新错误；0.2.0 曾保留旧格式迁移；按项目所有者要求，0.3.0 只接受当前 v3 格式，提供显式重置。共享内存线程、futex 和 POSIX 定时器支持 musl 的 SIGEV_THREAD，默认配置 Vim 已验证编辑、保存、退出和新会话读取。终端横移修复也合入本次大版本。详细范围与限制见 [Linux 兼容性架构](docs/architecture/linux-compat.md) 和 [验证记录](docs/validation/linux-compat.md)。
 

@@ -1401,15 +1401,57 @@ impl Kernel {
                     }
                 }
             }
+            39 => {
+                p.linux.vfs.umount(&Linux::path(&p.memory, a[0])?, a[1])?;
+                Ok(Some(0))
+            }
+            40 => {
+                let optional = |ptr| {
+                    if ptr == 0 {
+                        Ok(None)
+                    } else {
+                        Linux::path(&p.memory, ptr).map(Some)
+                    }
+                };
+                let source = optional(a[0])?;
+                let target = Linux::path(&p.memory, a[1])?;
+                let kind = optional(a[2])?;
+                let data = optional(a[4])?;
+                p.linux.vfs.mount(
+                    source.as_deref(),
+                    &target,
+                    kind.as_deref(),
+                    a[3],
+                    data.as_deref(),
+                )?;
+                Ok(Some(0))
+            }
+            41 => {
+                let before = p.linux.vfs.clone();
+                p.linux.vfs.pivot_root(
+                    &Linux::path(&p.memory, a[0])?,
+                    &Linux::path(&p.memory, a[1])?,
+                )?;
+                for other in self.processes.values_mut() {
+                    other.linux.vfs.sync_pivot_from(&before, &p.linux.vfs);
+                }
+                Ok(Some(0))
+            }
             97 => {
-                const ALLOWED: u64 = trames_vfs::CLONE_NEWUTS | 0x200 | 0x400;
+                const ALLOWED: u64 =
+                    trames_vfs::CLONE_NEWUTS | trames_vfs::CLONE_NEWNS | 0x200 | 0x400;
                 if a[0] & !ALLOWED != 0 {
                     return Err(Errno(22));
                 }
+                let mut view = p.linux.vfs.clone();
                 if a[0] & trames_vfs::CLONE_NEWUTS != 0 {
-                    p.linux.vfs.unshare_uts()?;
+                    view.unshare_uts()?;
                 }
-                if a[0] & 0x200 != 0 {
+                if a[0] & trames_vfs::CLONE_NEWNS != 0 {
+                    view.unshare_mounts()?;
+                }
+                p.linux.vfs = view;
+                if a[0] & (0x200 | trames_vfs::CLONE_NEWNS) != 0 {
                     p.fs_id = self.resource_id();
                 }
                 if a[0] & 0x400 != 0 {
@@ -1418,6 +1460,13 @@ impl Kernel {
                 Ok(Some(0))
             }
             268 => {
+                if p.linux.vfs.namespace_type(a[0] as u32)? == Some(trames_vfs::CLONE_NEWNS)
+                    && self.processes.values().any(|other| {
+                        other.fs_id == p.fs_id && !matches!(other.state, State::Zombie(_))
+                    })
+                {
+                    return Err(Errno(22));
+                }
                 p.linux.vfs.setns(a[0] as u32, a[1])?;
                 Ok(Some(0))
             }
@@ -1466,10 +1515,12 @@ impl Kernel {
                     | 0x10000
                     | 0xfc0000
                     | 0x1000000
-                    | trames_vfs::CLONE_NEWUTS;
+                    | trames_vfs::CLONE_NEWUTS
+                    | trames_vfs::CLONE_NEWNS;
                 let threaded = a[0] & 0x10000 != 0;
                 let shared_vm = a[0] & 0x100 != 0;
                 if a[0] & !ALLOWED != 0
+                    || (a[0] & trames_vfs::CLONE_NEWNS != 0 && a[0] & 0x200 != 0)
                     || (!threaded && a[0] & 255 != 17)
                     || (threaded && (a[0] & 0x900 != 0x900 || a[0] & 255 != 0))
                     || (a[0] & 0x800 != 0 && !shared_vm)
@@ -1498,6 +1549,9 @@ impl Kernel {
                 let mut child = p.fork();
                 if a[0] & trames_vfs::CLONE_NEWUTS != 0 {
                     child.linux.vfs.unshare_uts()?;
+                }
+                if a[0] & trames_vfs::CLONE_NEWNS != 0 {
+                    child.linux.vfs.unshare_mounts()?;
                 }
                 let resource = self.resource_id();
                 if shared_vm {

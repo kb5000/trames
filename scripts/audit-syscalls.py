@@ -53,12 +53,15 @@ for source in ('crates/trames-core/src/process.rs', 'crates/trames-linux/src/sta
                 found.setdefault(number, f'{source}:{i + 1}')
 rows = list(csv.DictReader((OUT / 'compatibility-0.4-syscalls.csv').open()))
 notes = {
-    51: 'Guest chroot fs.root with root privilege, absolute symlink/dotdot handling, fork/CLONE_FS inheritance and unshare separation. Retains cwd/dirfd capabilities as Linux does. No mount tree or complete proc root view.',
-    97: 'CLONE_NEWUTS, CLONE_FS and CLONE_FILES only; validate all flags before changing state. No mount/PID/network/user/IPC namespace.',
+    39: 'Guest umount2: normal EBUSY for live capabilities/submounts, MNT_DETACH subtree lifetime, UMOUNT_NOFOLLOW. Root authorization; force/expire unsupported.',
+    40: 'Guest private mount namespace: tmpfs, proc/sysfs/shared devpts, bind/rbind, selected remount readonly/nosuid/nodev/noexec attributes, MS_PRIVATE/REC, MS_RELATIME and MS_SILENT. Bound mount lifetime and tmpfs memory/inode quotas. No shared/slave propagation, block FS/overlayfs, new devpts instances or modern mount API.',
+    41: 'Guest pivot_root between mount roots with directory/ancestry validation, old-root attachment and shared-namespace root/cwd updates. Selected private mount model.',
+    51: 'Guest chroot fs.root with root privilege, absolute symlink/dotdot handling, fork/CLONE_FS inheritance and unshare separation. Retains cwd/dirfd capabilities as Linux does. Mount/inode fs.root capability retained; complete cross-process proc root magic-link views still pending.',
+    97: 'CLONE_NEWUTS, CLONE_NEWNS, CLONE_FS and CLONE_FILES; transactional flag/quota checks. NEWNS implies private fs context. PID/network/user/IPC namespace remains unsupported.',
     161: 'Set current guest UTS hostname, 0..64 bytes; current authorization requires guest euid 0, without a capability/user-namespace model.',
     162: 'Set current guest UTS domain name, 0..64 bytes; same selected root authorization as sethostname.',
-    268: 'Join UTS object through retained namespace fd, type 0 or CLONE_NEWUTS; fd pins namespace after original task exit. Other namespace types unsupported.',
-    220: 'Existing fork/threads/resource-sharing clone flags plus CLONE_NEWUTS; UTS sharing or copy at clone. No NEWNS/NEWPID/NEWNET/NEWUSER/NEWIPC or clone3.',
+    268: 'Join UTS or mount object through retained namespace fd; type 0 or matching CLONE flag. Namespace fd pins lifetime; mount setns rejects shared fs contexts. Other namespace types unsupported.',
+    220: 'Existing fork/threads/resource-sharing clone flags plus CLONE_NEWUTS/CLONE_NEWNS; reject NEWNS with CLONE_FS. No NEWPID/NEWNET/NEWUSER/NEWIPC or clone3.',
     29: 'Selected tty/network ioctls and FIONBIO, including standard streams, dup-shared status flags, output/input backpressure and descriptor-only CLOEXEC.',
     208: 'Selected socket options including TCP_KEEPIDLE/KEEPINTVL/KEEPCNT with Linux bounds. Native sockets use translated host options; virtual TCP uses the idle interval and retains interval/count as compatibility hints, not Linux probe/expiry timing.',
     31: 'IOPRIO_WHO_PROCESS query for current/existing virtual task; default CLASS_NONE/data 0. No host PID, priority setter, process-group or user query.',
@@ -86,7 +89,7 @@ notes = {
     233: 'Selected memory access/huge-page/dump hints and real private-page DONTNEED discard. No DONTFORK, FREE, REMOVE or paging model.',
     267: 'Sync the virtual filesystem selected by a valid guest descriptor.',
     279: 'Anonymous memfd with CLOEXEC/ALLOW_SEALING and four classic fcntl seals; shared mapping coherence, lifetime and write-seal busy checks. Aggregate RAM budget 128 MiB.',
-    281: 'Inode-based execveat: absolute/dirfd-relative paths, AT_EMPTY_PATH, final AT_SYMLINK_NOFOLLOW, O_PATH executable references, original ELF/shebang loader, credentials and private close-on-exec table. FD script names use /dev/fd; inaccessible CLOEXEC script paths return ENOENT. No new mount/security/ptrace model.',
+    281: 'Inode-based execveat: absolute/dirfd-relative paths, AT_EMPTY_PATH, final AT_SYMLINK_NOFOLLOW, O_PATH executable references, original ELF/shebang loader, credentials and private close-on-exec table. FD script names use /dev/fd; inaccessible CLOEXEC script paths return ENOENT. Mount noexec/nosuid are enforced; full security/ptrace and cross-process proc root views remain incomplete.',
     221: 'Inode-based execve including proc fd/exe magic links, unlinked regular files and anonymous memfd. Retain executed inode after CLOEXEC closure, separate AT_EXECFN from argv[0], reuse existing ELF/interpreter/thread teardown and credential checks.',
     285: 'Bounded same-runtime regular-file copy with offset-pointer preflight, partial counts, overlap and append checks; no zero-copy path.',
     286: 'preadv2 selected RWF_DSYNC/SYNC flags, full ARM64 position and -1 current-position semantics; other flags unsupported.',

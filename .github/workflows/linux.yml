@@ -166,7 +166,7 @@ jobs:
         run: |
           bash scripts/build-fd-exec-fixtures.sh
           python3 tests/integration/fd-exec.py
-      - name: Validate guest UTS namespaces, chroot and direct native listeners
+      - name: Validate guest UTS/mount namespaces, chroot/pivot_root and direct listeners
         run: |
           bash scripts/build-namespace-fixtures.sh
           python3 tests/integration/namespaces.py

@@ -50,8 +50,8 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 ## Linux：尚无入口的系统调用
 
 固定参照仍为 Linux v6.12 原生 AArch64 的 318 个编号，不是最新版内核的全部接口。
-当前有 **170 个已实现子集、146 个未实现条目、2 个废弃条目**。
-本轮使用实际 ARM64 探测 ELF，在唯一缓存解释器上逐个调用全部 148 个未分派编号，
+当前有 **173 个已实现子集、143 个未实现条目、2 个废弃条目**。
+本轮使用实际 ARM64 探测 ELF，在唯一缓存解释器上逐个调用全部 145 个未分派编号，
 均返回 `-ENOSYS`（-38）。这验证的是无入口行为，不能代替已有入口的 ABI 完整性测试。
 
 完整的编号、名称、状态、当前源码位置和探测返回值见
@@ -59,7 +59,7 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 单后端、统计及源码指纹见 [审计 JSON](../validation/compatibility-current-syscalls.json)。
 可运行 `python3 scripts/audit-syscalls.py` 更新当前报告，历史报告不会被默认覆盖。
 
-以下按用途列出主要缺口；每行列举代表接口，完整 146 项以 CSV 中 `missing` 行为准。
+以下按用途列出主要缺口；每行列举代表接口，完整 143 项以 CSV 中 `missing` 行为准。
 
 | 用途 | 尚未实现的代表接口 |
 | --- | --- |
@@ -70,10 +70,10 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 | 进程与调度 | clone3、waitid、pidfd 系列、实时调度、sched_rr_get_interval、sched_setattr/getattr、get/setpriority、getrusage、times、rseq |
 | 信号与同步 | rt_sigqueueinfo/rt_tgsigqueueinfo、get/set_robust_list、futex_waitv、独立 futex_wait/wake/requeue、restart_syscall |
 | IPC 与网络批处理 | SysV shm/sem/msg、POSIX mq、sendmmsg/recvmmsg |
-| 内核管理与隔离 | mount/umount/pivot_root 及新挂载 API、capget/capset、ptrace/seccomp、process_vm_readv/writev、bpf/perf、landlock、模块/重启/交换分区等 |
+| 内核管理与隔离 | 新挂载 API、传播挂载/overlayfs、capget/capset、ptrace/seccomp、process_vm_readv/writev、bpf/perf、landlock、模块/重启/交换分区等 |
 
 2 个废弃条目是 `lookup_dcookie`（18）与 `nfsservctl`（42），同样返回 ENOSYS，
-不计入 146 个未实现条目。内核管理类接口需要结合用户态虚拟化目标选择范围，
+不计入 143 个未实现条目。内核管理类接口需要结合用户态虚拟化目标选择范围，
 不能把完整内核功能视为普通文件/进程接口的自然延伸。
 
 先前的 statx、preadv/pwritev、close_range 和 syslog 已扩展为本轮包含 23 个新入口的
@@ -86,16 +86,16 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 `/proc/self/exe`；`(deleted)` 是显示标记，单独出现不阻止执行。Python 复现和
 23 项原生 Linux 对照见[fd 执行验证](../validation/fd-exec.md)。
 
-本批新增 chroot、unshare、setns、sethostname、setdomainname 五个入口；
+首批新增 chroot、unshare、setns、sethostname、setdomainname 五个入口；
 UTS 对象和 namespace FD 具备实际共享/隔离及保活语义，clone 增加 NEWUTS。
-mount/PID/net/user/IPC namespace 仍未实现，详见[guest 内容器基础](../architecture/guest-containers.md)。
+本批新增 mount/umount2/pivot_root 三个入口；mount namespace、tmpfs、bind/rbind 与实际挂载视图已实现选定子集。PID/net/user/IPC namespace 仍未实现，详见[guest 内容器基础](../architecture/guest-containers.md)。
 默认网络改为[宿主原生直连](../architecture/direct-network.md)，不改变系统调用编号数。
 
 ## Linux：已有入口但语义仍有缺口
 
 | 已有接口或设施 | 仍缺少的行为 |
 | --- | --- |
-| namespace / chroot | UTS、fs/files unshare 和 fs.root 已有；mount/PID/net/user/IPC、完整 proc 隔离视图和 capability 模型尚缺，不能运行完整容器 |
+| namespace / chroot | UTS/mount、fs/files unshare、fs.root、tmpfs/bind/umount/pivot_root 已有；PID/net/user/IPC、完整 proc 隔离视图和 capability 模型尚缺，不能运行完整容器 |
 | statx / syslog | statx 不报告未有依据的 birth time、DIO 对齐等可选字段；syslog 不接管宿主内核日志或控制台 |
 | mmap / 内存管理 | 已有共享文件/匿名映射、写回、EOF/truncate SIGBUS、选定 remap/discard；仍缺需求分页/回收、MAP_SYNC、huge pages、DONTUNMAP、跨不同映射段 remap 等 |
 | memfd / 文件接口 / 调度 | memfd 的新 sealing/huge/no-exec 模式、openat2 的非零 resolve 要求、更多 RWF flags、实时策略仍缺失；已支持 1–32 个虚拟 CPU、实际宿主并行、affinity 与 getcpu |
@@ -104,7 +104,7 @@ mount/PID/net/user/IPC namespace 仍未实现，详见[guest 内容器基础](..
 | epoll | level-triggered 和 ONESHOT 已实现；EPOLLET、嵌套 epoll、EXCLUSIVE 不支持 |
 | timerfd | 普通 realtime/monotonic/虚拟 boottime 定时器已有实现；alarm 时钟和 CANCEL_ON_SET 不支持 |
 | fcntl / futex | POSIX 记录锁已有实现；OFD 锁、完整 robust/shared futex 语义仍缺失 |
-| mknodat / mount / 虚拟设备 | 普通 inode 和 FIFO 已有实现；动态设备节点、真实挂载和完整 Linux 驱动模型不支持；现有 /dev、/proc、/sys 为虚拟端点 |
+| mknodat / mount / 虚拟设备 | 普通 inode 和 FIFO 已有实现；动态设备节点、块设备文件系统和完整 Linux 驱动模型不支持；已有 guest 虚拟挂载对象，/dev、/proc、/sys 仍为选定端点 |
 | PTY / termios | 已支持独立多 PTY、控制终端、关闭/hangup、原版 sudo 默认 use_pty；非零 VTIME 和更多驱动 ioctl 仍不支持，见[sudo 验证](../validation/sudo-timezone.md) |
 | membarrier / I/O 优先级 | 已有 GLOBAL、PRIVATE_EXPEDITED、注册查询和单任务 ioprio_get；SYNC_CORE/RSEQ 屏障、ioprio_set 和组/用户优先级查询仍缺失 |
 | ELF / 资源限制 | 重叠 PT_LOAD 页面不支持；映射预算每进程 512 MiB、所有地址空间合计 1 GiB，guest fd 表 256 项，RLIMIT_FSIZE 已有软硬限制与写入/截断约束，其他资源修改及其他 PID 的 prlimit 仍不完整 |
