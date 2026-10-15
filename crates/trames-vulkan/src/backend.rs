@@ -1081,10 +1081,11 @@ impl Backend {
                 if a[2] == 0 || a[2] > 1 << 20 || !a[2].is_multiple_of(4) {
                     return invalid();
                 }
-                let code = words32(m, a[1], a[2] as usize / 4)?;
+                let mut code = words32(m, a[1], a[2] as usize / 4)?;
                 if code.first() != Some(&0x07230203) {
                     return invalid();
                 }
+                strip_debug_names(&mut code)?;
                 let info = vk::ShaderModuleCreateInfo::default().code(&code);
                 let raw = unsafe { d.create_shader_module(&info, None) }?;
                 let id = self.put(Kind::Shader, raw.as_raw(), vec![], 0, 0);
@@ -1702,6 +1703,32 @@ fn compute_stage(stage: u32) -> Result<vk::PipelineStageFlags> {
     }
     Ok(vk::PipelineStageFlags::from_raw(stage))
 }
+fn strip_debug_names(code: &mut Vec<u32>) -> Result<()> {
+    // OpName/OpMemberName are nonsemantic debug annotations. MoltenVK 1.4.2's
+    // bundled SPIRV-Cross can preserve a valid GLSL name such as `bias`, then
+    // collide with metal::bias in generated MSL. Let it generate ID-based names;
+    // keep OpEntryPoint strings, IDs, decorations and executable words unchanged.
+    if code.len() < 5 {
+        return invalid();
+    }
+    let (mut read, mut write) = (5, 5);
+    while read < code.len() {
+        let count = (code[read] >> 16) as usize;
+        if count == 0 || count > code.len() - read {
+            return invalid();
+        }
+        let opcode = code[read] & 0xffff;
+        if opcode != 5 && opcode != 6 {
+            if read != write {
+                code.copy_within(read..read + count, write);
+            }
+            write += count;
+        }
+        read += count;
+    }
+    code.truncate(write);
+    Ok(())
+}
 fn specialization_entries(wire: &[u64], size: usize) -> Result<Vec<vk::SpecializationMapEntry>> {
     let mut entries = Vec::new();
     for e in wire.chunks_exact(3) {
@@ -1759,6 +1786,25 @@ fn write_words(m: &mut Memory, p: u64, b: &[u64], n: usize) -> Result<()> {
 mod tests {
     use super::*;
     use trames_memory::{Permissions, PAGE_SIZE};
+    #[test]
+    fn spirv_debug_names_do_not_change_entrypoints_or_specialization_decorations() {
+        let header = [0x07230203, 0x10000, 0, 10, 0];
+        let entry = [5 << 16 | 15, 5, 1, 0x6e69616d, 0];
+        let decoration = [4 << 16 | 71, 3, 1, 0];
+        let mut code = [
+            header.as_slice(),
+            &entry,
+            &[4 << 16 | 5, 2, 0x73616962, 0],
+            &[5 << 16 | 6, 4, 0, 0x6c616373, 0x65],
+            &decoration,
+        ]
+        .concat();
+        strip_debug_names(&mut code).unwrap();
+        assert_eq!(code, [header.as_slice(), &entry, &decoration].concat());
+        for mut malformed in [vec![0; 4], vec![0; 6], vec![0, 0, 0, 0, 0, 3 << 16 | 15]] {
+            assert!(strip_debug_names(&mut malformed).is_err());
+        }
+    }
     #[test]
     fn native_transfers_cross_pages_keep_cow_and_preflight_permissions() {
         let mut memory = Memory::new(3 * PAGE_SIZE as usize);

@@ -51,6 +51,12 @@ binary semaphores, resets and idle waits. Compute pipeline specialization copies
 up to 64 map entries and 64 KiB of constant data into owned host records, checks
 IDs/offsets/sizes, and passes them to the original driver/compiler.
 
+Shader ingress removes only SPIR-V `OpName`/`OpMemberName` debug annotations.
+MoltenVK 1.4.2's original SPIRV-Cross can otherwise preserve a valid GLSL variable
+such as `bias` and collide with `metal::bias` during MSL compilation. Header IDs,
+entrypoint strings, decorations/specialization IDs and executable instructions
+are retained verbatim; original native compiler algorithms remain unchanged.
+
 Queue submission preserves every `VkSubmitInfo` boundary and wait-stage mask.
 One call supports up to 64 records and 64 waits, command buffers and signals in
 each category across the batch. The original driver performs semaphore waits and

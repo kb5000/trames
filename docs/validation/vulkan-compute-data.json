@@ -1,6 +1,6 @@
 {
   "date": "2026-10-15",
-  "base_commit": "f5a2d4b38fc1ce01d835e74035fe58f81aae391b",
+  "base_commit": "1b44a272b26764de52d25a97d4c1c0bbee01a709",
   "issue": "https://github.com/kb5000/trames/issues/21",
   "scope": "experimental headless Vulkan compute subset; not Vulkan 1.0 conformance",
   "public_entrypoints": 68,
@@ -19,7 +19,7 @@
   "operation": "uint32 value=value*3+7",
   "original_guest_loader": "Alpine-signed vulkan-loader=1.4.313.0-r0",
   "native_local_reference": "Mesa 25.0.7 Lavapipe/llvmpipe, LLVM 19.1.7, CPU software Vulkan",
-  "rust_tests_passed": 289,
+  "rust_tests_passed": 290,
   "embedding_gpu_test": "automatic ICD installation, signed loader, default/specialized compute, binary semaphore reuse/empty submits, mapped memory and teardown passed",
   "activation_off_test": "original loader returns incompatible driver with ICD still installed; passed at 1/4 CPUs",
   "apple_backend": {
@@ -27,8 +27,10 @@
     "commit": "db66022459ffb663aa2b50f6b018bc2e124f5edf",
     "public_api_static_archive": true,
     "ios_compile": "current Apple SDK linking running in CI; earlier local device archive check predates compiler-rt dependency",
-    "sdk_link_simulator_gpu": "device and simulator app links passed in workflow 38668624356; actual simulator tests running; final async-source run pending",
-    "physical_ipad": "pending"
+    "sdk_link_simulator_gpu": "both app links passed on f5a2d4b; actual Metal exposed upstream bias name collision in 38668624356; stripped nonsemantic debug names; corrected-source compute pending",
+    "physical_ipad": "pending",
+    "shader_normalization": "remove OpName/OpMemberName; preserve IDs, entrypoint strings, decorations and executable instructions",
+    "failed_run_summary_sha256": "0fbbe7e1d4a7c28d04ce52d58630fd6e5d1822d0c54895e3d945f25f5b457a18"
   },
   "budget": {
     "session_allocated_memory_bytes": 134217728,
@@ -46,8 +48,8 @@
     "tests/fixtures/bin/vulkan-compute.spv": "46a8dfd85c78c7ef9f39212b0699503b4800184a04b1e8a4bd81b07143a44072"
   },
   "binaries_sha256": {
-    "target/release/trames-run": "f1ce79cc88a46cc4027da236536d90d51ffb2f915308156f560d1241921cb2c9",
-    "target/release/libtrames_ffi.so": "b531dc99b631a11962e61461e0e71c06af07224ca9899ce6d8137ae5b692ff51",
+    "target/release/trames-run": "805a1cf7dcda1502d48e2e85b8a041158cd018242732be2dc3d29b74c8cac538",
+    "target/release/libtrames_ffi.so": "2f8532e0e734583c58bb61e770279b43ff57eec2580ffe58d17c74de58b65ca4",
     "target/vulkan-guest/libtrames_vulkan_icd.so": "a53a3515542ef3859837caf6ef77848d3663469250a4120f32e05994f0445b14",
     "tests/fixtures/bin/vulkan-compute": "00021efe8f239ee40b38a3a53075a915d7a746c1d9d38a0fbc5adda4244b1b7d",
     "tests/fixtures/bin/vulkan-compute-host": "23796ffa69c2c7960bd4daeb82e43bba843611cc312859ce203787d58a7b8dd4"
@@ -61,7 +63,7 @@
     "apps/ios/TramesTests/LocalVulkanTests.swift": "32115975d4b12d6024e32955703b511f7b266111276e1a58f0db1bbb2f1d6243",
     "crates/trames-vulkan/Cargo.toml": "02020e9db3635cae03a30cc71d756162a0ffa72477ec7063adc4fd57cc5a5c96",
     "crates/trames-vulkan/build.rs": "99a55acd2681e496b17b123374094cc7f2baaaa87c92d8974404f6898cce3e37",
-    "crates/trames-vulkan/src/backend.rs": "5e527381ca057d7de1a6f2a110dd32cf84c40f878e2e5e31a65144b4ca5e9fbb",
+    "crates/trames-vulkan/src/backend.rs": "fc3495de1641b49d0f90ec29e3f493e32a7ba81776e8f5f55944a15229c48ef3",
     "crates/trames-vulkan/src/budget.rs": "f8d40f2a9fe5140593a8e3aa9ce90b2d4e0c7338e55f402930fa01f702c846a1",
     "crates/trames-vulkan/src/lib.rs": "21a3d9a7bdf700abcdb013c564f4851ae3d77dc497fcbe3a1fa88ea419646676",
     "scripts/build-vulkan-fixtures.sh": "f313222481a17a8c7cae3e579acf8b291489c54f2b8d3174f6ca59ea309e9d46",
@@ -70,7 +72,7 @@
     "tests/fixtures/vulkan-compute.c": "de7df94161be5e704fb1ebda48bf6753f26b448ef850f37198fc76e6de839854",
     "tests/fixtures/vulkan-compute.comp": "ac868149a64254d563119e7cb937416add43b42b9e1aeed96f901e8f6ab3ea75",
     "tests/integration/vulkan-compute.py": "fc25630a15c83394cae6521026e7ae44951988aa8b1dd2fa52e680607b4101f2",
-    ".github/workflows/ios.yml": "4787b2a6744628f0578943b9fd1faf91793171e0d3683da2aa8423133955a35f",
+    ".github/workflows/ios.yml": "ce71799f9f8cbc969e50c9748514abd79405b578337de8927d3eac4bcfbb0f97",
     ".github/workflows/linux.yml": "0c0e4f1993bacbe67eddc40ce810b86163dea456e5bd384cdf3e35687919a9d3",
     "Cargo.toml": "911a35abdaa6eb92e4b43bc9697c107e7e7eee549e6fd8f17e1d852dda2cea1e",
     "apps/ios/Trames/EnvironmentStore.swift": "90d5a929d58efde45ce32da361bdc6d5fe0ad0bb022537796c022c8014d70fe2",
@@ -84,7 +86,7 @@
     "crates/trames-core/src/process.rs": "27f169982c1443f568bff7c281dc450633ebc9b3d35bf5f8bf6d579cd57bf70e",
     "crates/trames-cpu/src/lib.rs": "e4560ae1d721c7ec8b7d8c3eb36b30b349982c0a668e863aba35a4c903e2a845",
     "crates/trames-ffi/src/session.rs": "d11e3ddef93fed772f4396d8ab57a72de993000e583650647a676d706f44c3c9",
-    "scripts/build-ios.sh": "b42c3c7a0b462b14a8d32858d6749213ff330671c6329a79e4a893915f56a0ad",
+    "scripts/build-ios.sh": "52d4e146ff7008cff9c3b84bd1ec43c95ce122255dc9a37395d153a6b8d36daa",
     "apps/ios/project.yml": "d42e4355ac2158a41198da8c4722c6a22c8e44deab27471802005647cb99a7ac",
     "crates/trames-vulkan/src/task.rs": "c0554d0087877d911c91cfab66e97c1a246d2720f858a3f445f8a6783d1a13c5"
   },
@@ -230,7 +232,7 @@
   },
   "current_logs": {
     "integration": {
-      "sha256": "2673f12f64be15cd67640e448b3f939cc70cc6279819bbe766a3f67594dedc80",
+      "sha256": "ba9b535f35b33bdabd13d96a0511a0a6490883ac3b1521bfb9460f3f6ebe5ab3",
       "tail": [
         "compute round 2: 4096 uint32 values correct",
         "compute round 3: 4096 uint32 values correct",
@@ -243,7 +245,7 @@
       ]
     },
     "workspace": {
-      "sha256": "def082e117ccaa148679abcd8b4a9a5fd329f99bb7a071ada09ad8f53f912d88",
+      "sha256": "8ade3cbe1b9bfd5ea207a666332e297447664adf2e5d1cdc90d0df120c39bcf2",
       "tail": [
         "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
         "",
@@ -256,7 +258,7 @@
       ]
     },
     "clippy": {
-      "sha256": "13f2f0540bccb1ab486153c8a1f47817e00a3e57a3b29a2b7452cd50346ca0b4",
+      "sha256": "9c06a2d602add53f7f3f315dbabdca8c3caabd24b0b41d7a9a272ae376dcb66f",
       "tail": [
         "    Checking trames-bridge v0.14.0 (/workspace/trames/crates/trames-bridge)",
         "    Checking trames-vfs v0.14.0 (/workspace/trames/crates/trames-vfs)",
@@ -265,7 +267,7 @@
         "    Checking trames-core v0.14.0 (/workspace/trames/crates/trames-core)",
         "    Checking trames-cli v0.14.0 (/workspace/trames/crates/trames-cli)",
         "    Checking trames-ffi v0.14.0 (/workspace/trames/crates/trames-ffi)",
-        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.49s"
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.47s"
       ]
     },
     "m6_qemu": {
@@ -297,12 +299,13 @@
       ]
     },
     "release_build": {
-      "sha256": "6987255ed106353d1fad4b24369ea2cb191683cc1f6169ef219a7f885935647e",
+      "sha256": "3f2b4ba133b368d03853c6514e74af27a4f0e5b52f0760616dd83cfa9134a7b9",
       "tail": [
+        "   Compiling trames-vulkan v0.14.0 (/workspace/trames/crates/trames-vulkan)",
         "   Compiling trames-core v0.14.0 (/workspace/trames/crates/trames-core)",
-        "   Compiling trames-cli v0.14.0 (/workspace/trames/crates/trames-cli)",
         "   Compiling trames-ffi v0.14.0 (/workspace/trames/crates/trames-ffi)",
-        "    Finished `release` profile [optimized] target(s) in 33.52s"
+        "   Compiling trames-cli v0.14.0 (/workspace/trames/crates/trames-cli)",
+        "    Finished `release` profile [optimized] target(s) in 38.26s"
       ]
     },
     "sudo": {
@@ -369,7 +372,7 @@
         "gpu_peak_pending": 2,
         "gpu_peer_instructions": 12570,
         "gpu_upload_bytes": 32704,
-        "gpu_wait_seconds": 0.001248441
+        "gpu_wait_seconds": 0.002738297
       },
       "4": {
         "gpu_buffered_bytes": 0,
@@ -377,9 +380,9 @@
         "gpu_direct_bytes": 147328,
         "gpu_download_bytes": 114624,
         "gpu_peak_pending": 2,
-        "gpu_peer_instructions": 24640,
+        "gpu_peer_instructions": 16448,
         "gpu_upload_bytes": 32704,
-        "gpu_wait_seconds": 0.001323771
+        "gpu_wait_seconds": 0.001409012
       }
     }
   },

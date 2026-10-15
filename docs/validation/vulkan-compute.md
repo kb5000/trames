@@ -25,7 +25,7 @@ regressions pass with the final runtime.
 
 The local reference is Mesa Lavapipe/llvmpipe using LLVM 19.1.7, a software
 Vulkan driver. This verifies protocol and compute behavior, not iPad GPU speed.
-The workspace passes 289 Rust tests covering malformed transport, object domains,
+The workspace passes 290 Rust tests covering malformed transport, object domains,
 shared allocation accounting, code mutation and independent CPU gating as well
 as existing functionality. Formatting and strict Clippy pass. Native task tests
 verify another task can finish while one waits, teardown ordering and shared
@@ -66,7 +66,13 @@ run [38664087992](https://github.com/kb5000/trames/actions/runs/38664087992)
 subsequently passed the full workflow. Apple run 38664087827 exposed the universal
 MoltenVK simulator archive; run 38667877962 then exposed the omitted native
 availability runtime. Target archive thinning and original Apple compiler-rt
-linking address those failures; actual Metal acceptance is required.
+linking address those failures. Run 38668624356 linked both apps and passed the
+other seven simulator tests, but its compute pipeline failed because upstream
+SPIRV-Cross preserved `bias`, colliding with the Metal standard type of that name.
+Shader ingress now strips nonsemantic debug names and retains executable words,
+entrypoint strings and specialization decorations; a word-level regression and
+the unchanged named-shader native/guest lab verify that normalization. Actual
+Metal computation must pass the corrected source.
 
 ## Reproduction
 
