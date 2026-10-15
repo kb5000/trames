@@ -1,0 +1,48 @@
+{
+  "baseline": "cafab11c7b78dbe1bfe6a2e3e6aad7ee626ef630",
+  "rust_tests_passed": 324,
+  "guest_cpus": [
+    1,
+    4
+  ],
+  "source_sha256": {
+    "crates/trames-core/src/process.rs": "4768c3e7460db2554a382fccb3ffc0201dd581bc490e53b07e07f99429c908ae",
+    "crates/trames-core/src/process_events.rs": "dc2a2e3ea919dcf242da6397a2539d2fb362d204d6415f7db6c5b32a78740b79",
+    "crates/trames-linux/src/network.rs": "7cee7084f9bbd5e35a52fc6d9b53cde02c0967ab20fb6175c0b64f76ff1bf869",
+    "crates/trames-vfs/src/cgroup.rs": "8f0118a6a9c2ccc00514df8eee014acff65020c96016299371f03f4b3f8e0241",
+    "crates/trames-vfs/src/events.rs": "15e41a9cf8cd689880cc45e2136af467d97db243e6f378f259f68d1a72c0214b",
+    "crates/trames-vfs/src/ipc.rs": "18da13e5d298e40aaa5083cc572edf64b66cc26310ac8a071070b28dcabd6062",
+    "crates/trames-vfs/src/lib.rs": "75c421b2b92a2374e3494c2328fd042331cd5523b7daed90bf68d44c55150838",
+    "crates/trames-vfs/src/mounts.rs": "6c45f930c9e72b490d6b42a5e9e2dabb81ba5cc9314a2dcdc988452dbbb0dc04",
+    "crates/trames-vfs/src/pseudo.rs": "ffb841e065fb69ad4bf0d8f4a437c33fdee855cd871b024005d3821655ad7410",
+    "crates/trames-vfs/src/pty.rs": "01d8162352ccc79af727e8256958f8035d29be7a73e161fa0d728e1345652596",
+    "crates/trames-vfs/src/terminal.rs": "cc5e21fc5c365433fb398ccae43763eee691dd4064ba23c8d217938ee538bac3",
+    "scripts/audit-syscalls.py": "cdd4a9822e49f41b702c76f089b9dde3fd90af8d3adb0e6621bbd2f32ffb331c",
+    "scripts/build-cgroup-fixtures.sh": "68ab6598e384f8000dbd19fb7db415e691b9e667c10d5d67c4ae50ae8e418a4f",
+    "scripts/build-pty-fixtures.sh": "cbb27123c331ca45bd41745effdeb81523069c5ba35a256cce6376dc5826427d",
+    "tests/fixtures/cgroups.c": "09273c06884b3c3a7b1aa2543283ac2e686345b203028d15647a57923a6577b3",
+    "tests/fixtures/pty.c": "292a4acb3bacd96489f5ec40491eec2b13e2833f04008eec230253a0ba3b1184",
+    "tests/integration/cgroups.py": "d559151e12b768ab66ec0a0064ffde96d7e4e578ed084aad05175b4e3f96a427",
+    "tests/integration/containers.py": "898af5aaa962a22ab6c0f7ab0f272395eb20f3f5e115b157164305137d52dd19",
+    "tests/integration/guest-pty.py": "981709481b3f59829a5486c2888ce8063571a40cea08491e2aec01fc6a2c4c72",
+    "tests/fixtures/cgroup-control.c": "0d2c856fd16bd1f9710ba7a7adf3ce74219d39a8808567ce0e6bc037034065ca",
+    "tests/fixtures/cgroup-pids.c": "52038f57cfe0a0694285d9462decfb39127a3fede251c5ee6c4fd189ae6a0dd8",
+    "tests/fixtures/scm-rights.c": "c181d0aca978725f358e14f14753c4496fa1db71e93e162500393a8f201d62e5",
+    "examples/containers/alpine.json": "f7f6890cdec17ca2a84f403a9a2bf8759de41a405f996475a44a5c72f30dd4db"
+  },
+  "artifact_sha256": {
+    "target/release/trames-run": "6a6da6a5019440fb39aaac234527e5da6f3af7ab379779371bb23b7e5f308a80",
+    "tests/fixtures/bin/cgroup-control": "4bf2aeca768ff915b173b7091cd38bd538145666d54b16c8292f97abad2d9b05",
+    "tests/fixtures/bin/cgroup-pids": "5afc40810b48add5dcff46b5110e527986f5dfbc37405b9794a5e4481bf0e641",
+    "tests/fixtures/bin/scm-rights": "fad869b37428c7935d64fa6da0d212d4e28b9e28dabd8032a630a0f08f2b8dbf",
+    "tests/fixtures/bin/scm-rights-host": "455361a85056bc70659b58ae99277e1f26f5e8666d5b4b8e42badea7371f2d89",
+    "tests/fixtures/bin/pty": "5e269962208c323e9f00d5012dc2bc1162c7390a867d63b90242bd9db61d4b10",
+    "tests/fixtures/bin/pty-host": "81fa3ca8ce74419c17047cce26a31fbc995aae23330a113dbf51077377a6a376"
+  },
+  "behavior_sources": [
+    "https://github.com/torvalds/linux/blob/v6.12/kernel/cgroup/pids.c",
+    "https://github.com/torvalds/linux/blob/v6.12/Documentation/admin-guide/cgroup-v2.rst",
+    "https://github.com/containers/crun/blob/d20b23dba05e822b93b82f2f34fd5dada433e0c2/src/libcrun/cgroup.c"
+  ],
+  "native_comparison": "SCM_RIGHTS non-UNIX-socket transfers and PTY terminal edges; existing signalfd/dumpable/device suites. Privileged cgroup/devpts mount behavior verified inside guest, not host namespace differential."
+}

@@ -156,6 +156,9 @@ struct Process {
     file_size_limit: Rc<Cell<(u64, u64)>>,
 }
 impl Process {
+    fn frozen(&self, pid: u32) -> bool {
+        self.linux.vfs.cgroup_frozen(pid) && self.pending_bits() & (1 << 8) == 0
+    }
     fn fork(&self) -> Self {
         Self {
             cpu: self.cpu.clone(),
@@ -1712,6 +1715,7 @@ impl Kernel {
                     Linux::check(&p.memory, a[4], 4, Access::Write)?;
                 }
                 let id = self.next_pid;
+                p.linux.vfs.cgroup_can_fork(pid)?;
                 self.next_pid = self
                     .next_pid
                     .checked_add(1)
@@ -2363,6 +2367,13 @@ impl Kernel {
         if p.linux.vfs.take_file_size_signal() {
             Self::queue_one(pid, p, 25, pid);
         }
+        for target in p.linux.vfs.take_cgroup_kills() {
+            if target == pid {
+                Self::queue_one(pid, p, 9, 0);
+            } else if let Some(task) = self.processes.get_mut(&target) {
+                Self::queue_one(target, task, 9, 0);
+            }
+        }
         if p.linux.trace && !(raw.is_none() && matches!(p.state, State::Blocked(..)) && was_blocked)
         {
             eprintln!(
@@ -2573,7 +2584,7 @@ impl Kernel {
                     .filter(|end| end.master)
                     .ok_or(Errno(25))?;
                 match request {
-                    0x80045430 => write_u32(&mut p.memory, a[2], id)?,
+                    0x80045430 => write_u32(&mut p.memory, a[2], end.pair.number)?,
                     0x40045431 => end.pair.locked.set(read_u32(&p.memory, a[2])? != 0),
                     0x80045439 => write_u32(&mut p.memory, a[2], u32::from(end.pair.locked.get()))?,
                     0x5420 => {
@@ -2585,12 +2596,7 @@ impl Kernel {
                         return p
                             .linux
                             .vfs
-                            .open_at(
-                                AT_FDCWD,
-                                format!("/dev/pts/{id}").as_bytes(),
-                                a[2] as u32,
-                                0,
-                            )
+                            .open_pty_peer(a[0] as u32, a[2] as u32)
                             .map(|fd| Some(fd as u64))
                     }
                     _ => unreachable!(),
@@ -2698,6 +2704,7 @@ impl Kernel {
                 let group = tty.foreground;
                 let session = tty.session;
                 if stopped != tty.flow_stopped {
+                    tty.output_epoch = tty.output_epoch.wrapping_add(1);
                     let pair = &endpoint.as_ref().expect("master").pair;
                     pair.packet_status
                         .set(pair.packet_status.get() | if tty.flow_stopped { 4 } else { 8 });
@@ -2972,7 +2979,7 @@ impl Kernel {
         if !bytes.is_empty() {
             match io.write(OutputFd::Stdout, &bytes) {
                 Ok(n) if n <= bytes.len() => {
-                    tty.output_queue.drain(..n);
+                    tty.drain_output(n);
                     progress |= n != 0;
                 }
                 Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
@@ -3096,8 +3103,8 @@ impl Kernel {
         if self.cpu_count < 2
             || self
                 .processes
-                .values()
-                .filter(|p| matches!(p.state, State::Ready))
+                .iter()
+                .filter(|(id, p)| matches!(p.state, State::Ready) && !p.frozen(**id))
                 .count()
                 < 2
         {
@@ -3110,7 +3117,7 @@ impl Kernel {
             let Some(mut p) = self.processes.remove(&id) else {
                 continue;
             };
-            if !matches!(p.state, State::Zombie(_)) {
+            if !matches!(p.state, State::Zombie(_)) && !p.frozen(id) {
                 self.resume_gpu(id, &mut p);
                 self.resume_event(&mut p);
                 if self.deliver(id, &mut p).is_err() {
@@ -3134,7 +3141,7 @@ impl Kernel {
         let mut ready: Vec<_> = self
             .processes
             .iter()
-            .filter(|(_, p)| matches!(p.state, State::Ready))
+            .filter(|(id, p)| matches!(p.state, State::Ready) && !p.frozen(**id))
             .map(|(&id, _)| id)
             .collect();
         let rotate = ready.partition_point(|id| *id <= self.next_parallel_pid);
@@ -3270,7 +3277,13 @@ impl Kernel {
             };
             // A preceding exit_group/exec may have killed this returned peer.
             if !matches!(p.state, State::Zombie(_)) {
-                self.finish_slice(id, &mut p, outcome, io, false);
+                // KILL queued by a preceding cgroup.kill cannot permit an
+                // uncommitted fork to create a survivor outside its snapshot.
+                if p.pending_bits() & (1 << 8) != 0 {
+                    let _ = self.deliver(id, &mut p);
+                } else {
+                    self.finish_slice(id, &mut p, outcome, io, false);
+                }
             }
             let actual = p.rekey.take().unwrap_or(id);
             if !p.auto_reap || actual == 1 {
@@ -3292,7 +3305,10 @@ impl Kernel {
                 timeout = timeout.min(deadline.saturating_duration_since(now));
             }
         }
-        for p in self.processes.values() {
+        for (&id, p) in &self.processes {
+            if p.frozen(id) {
+                continue;
+            }
             if matches!(p.state, State::Gpu { .. }) {
                 timeout = timeout.min(Duration::from_millis(1));
             }
@@ -3359,7 +3375,7 @@ impl Kernel {
                 let Some(mut p) = self.processes.remove(&id) else {
                     continue;
                 };
-                if !matches!(p.state, State::Zombie(_)) {
+                if !matches!(p.state, State::Zombie(_)) && !p.frozen(id) {
                     progress |= self.resume_gpu(id, &mut p);
                     progress |= self.resume_event(&mut p);
                     match self.deliver(id, &mut p) {
@@ -3512,7 +3528,10 @@ impl Kernel {
                 timeout = timeout.min(d.saturating_duration_since(now));
             }
         }
-        for p in self.processes.values() {
+        for (&id, p) in &self.processes {
+            if p.frozen(id) {
+                continue;
+            }
             if matches!(p.state, State::Gpu { .. }) {
                 timeout = timeout.min(Duration::from_millis(1));
             }

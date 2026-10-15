@@ -21,3 +21,13 @@ with tempfile.TemporaryDirectory(prefix='trames-pty-abi-') as folder:
         assert actual.returncode == 0 and actual.stdout == reference.stdout, (cpus, actual.returncode, actual.stdout, actual.stderr[-5000:])
         print(f'{cpus}-CPU PTY/IPC outcomes match independent Linux/QEMU', flush=True)
 print(reference.stdout.decode(), end='')
+
+rights = fixture.with_name('scm-rights')
+native = subprocess.run([str(rights.with_name('scm-rights-host'))], capture_output=True, timeout=30, check=True)
+with tempfile.TemporaryDirectory(prefix='trames-rights-abi-') as folder:
+    for cpus in ('1', '4'):
+        actual = subprocess.run([runner, '--storage', str(Path(folder)/cpus), '--cpus', cpus,
+            '--max-instructions', '1000000000', str(rights)], capture_output=True, timeout=60)
+        assert actual.returncode == 0 and actual.stdout == native.stdout, (cpus, actual.returncode, actual.stdout, actual.stderr[-5000:])
+        print(f'{cpus}-CPU SCM_RIGHTS outcomes match independent native Linux', flush=True)
+print(native.stdout.decode(), end='')

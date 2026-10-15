@@ -139,14 +139,20 @@ impl Kernel {
             p.pending_bits(),
             |kind, events| {
                 Ok(match kind {
-                    FdKind::Stdin => Some(if io.stdin_ready().map_err(|_| Errno(5))? {
-                        events & 1
-                    } else {
-                        0
-                    }),
+                    FdKind::Stdin => Some((
+                        if io.stdin_ready().map_err(|_| Errno(5))? {
+                            events & 1
+                        } else {
+                            0
+                        },
+                        [0; 2],
+                    )),
                     FdKind::Terminal => {
                         let t = self.terminal.as_ref().ok_or(Errno(25))?;
-                        Some((events & 4) | if t.readable() { events & 1 } else { 0 })
+                        Some((
+                            (events & 4) | if t.readable() { events & 1 } else { 0 },
+                            [t.input_epoch, t.output_space_epoch],
+                        ))
                     }
                     _ => None,
                 })

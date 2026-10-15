@@ -1,0 +1,123 @@
+{
+  "ociVersion": "1.0.2",
+  "root": {
+    "path": "rootfs",
+    "readonly": false
+  },
+  "process": {
+    "terminal": true,
+    "user": {
+      "uid": 0,
+      "gid": 0
+    },
+    "args": [
+      "/bin/sh"
+    ],
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "HOME=/root",
+      "TERM=xterm-256color"
+    ],
+    "cwd": "/",
+    "noNewPrivileges": true,
+    "capabilities": {
+      "bounding": [
+        "CAP_CHOWN",
+        "CAP_SETUID",
+        "CAP_SETGID"
+      ],
+      "effective": [
+        "CAP_CHOWN",
+        "CAP_SETUID",
+        "CAP_SETGID"
+      ],
+      "permitted": [
+        "CAP_CHOWN",
+        "CAP_SETUID",
+        "CAP_SETGID"
+      ]
+    },
+    "consoleSize": {
+      "height": 31,
+      "width": 97
+    }
+  },
+  "hostname": "alpine",
+  "mounts": [
+    {
+      "destination": "/proc",
+      "type": "proc",
+      "source": "proc",
+      "options": [
+        "nosuid",
+        "noexec",
+        "nodev"
+      ]
+    },
+    {
+      "destination": "/dev",
+      "type": "tmpfs",
+      "source": "tmpfs",
+      "options": [
+        "nosuid",
+        "mode=0755",
+        "size=1m"
+      ]
+    },
+    {
+      "destination": "/dev/pts",
+      "type": "devpts",
+      "source": "devpts",
+      "options": [
+        "nosuid",
+        "noexec",
+        "newinstance",
+        "mode=0620",
+        "ptmxmode=0666",
+        "gid=5"
+      ]
+    },
+    {
+      "destination": "/dev/shm",
+      "type": "tmpfs",
+      "source": "tmpfs",
+      "options": [
+        "nosuid",
+        "nodev",
+        "mode=1777",
+        "size=1m"
+      ]
+    },
+    {
+      "destination": "/sys",
+      "type": "sysfs",
+      "source": "sysfs",
+      "options": [
+        "nosuid",
+        "noexec",
+        "nodev",
+        "ro"
+      ]
+    }
+  ],
+  "linux": {
+    "rootfsPropagation": "private",
+    "namespaces": [
+      {
+        "type": "pid"
+      },
+      {
+        "type": "mount"
+      },
+      {
+        "type": "uts"
+      }
+    ],
+    "cgroupsPath": "/alpine",
+    "resources": {
+      "pids": {
+        "limit": 8
+      }
+    }
+  }
+}

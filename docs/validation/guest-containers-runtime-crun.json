@@ -1,0 +1,605 @@
+{
+  "scope": "Original guest crun selected lifecycle, private PID/mount/UTS and proc mount; cgroupfs manager with freezer and subtree kill. Not full OCI conformance.",
+  "config": {
+    "ociVersion": "1.0.2",
+    "root": {
+      "path": "rootfs",
+      "readonly": false
+    },
+    "process": {
+      "terminal": false,
+      "user": {
+        "uid": 0,
+        "gid": 0
+      },
+      "args": [
+        "/bin/busybox",
+        "sh",
+        "-ec",
+        "test \"$$\" = 1; read host < /proc/sys/kernel/hostname; test \"$host\" = container; test -r /proc/1/status; echo CONTAINER_PAYLOAD; exit 7"
+      ],
+      "env": [
+        "PATH=/bin",
+        "HOME=/root"
+      ],
+      "cwd": "/",
+      "noNewPrivileges": true,
+      "capabilities": {
+        "bounding": [
+          "CAP_CHOWN",
+          "CAP_SETUID",
+          "CAP_SETGID"
+        ],
+        "effective": [
+          "CAP_CHOWN",
+          "CAP_SETUID",
+          "CAP_SETGID"
+        ],
+        "permitted": [
+          "CAP_CHOWN",
+          "CAP_SETUID",
+          "CAP_SETGID"
+        ]
+      }
+    },
+    "hostname": "container",
+    "mounts": [
+      {
+        "destination": "/proc",
+        "type": "proc",
+        "source": "proc",
+        "options": [
+          "nosuid",
+          "noexec",
+          "nodev"
+        ]
+      }
+    ],
+    "linux": {
+      "rootfsPropagation": "private",
+      "namespaces": [
+        {
+          "type": "pid"
+        },
+        {
+          "type": "mount"
+        },
+        {
+          "type": "uts"
+        }
+      ],
+      "cgroupsPath": "/test-payload"
+    }
+  },
+  "lifecycle_config": {
+    "ociVersion": "1.0.2",
+    "root": {
+      "path": "rootfs",
+      "readonly": false
+    },
+    "process": {
+      "terminal": false,
+      "user": {
+        "uid": 0,
+        "gid": 0
+      },
+      "args": [
+        "/bin/busybox",
+        "sh",
+        "-ec",
+        "trap \"echo TERM_RECEIVED > /terminated; exit 0\" TERM; echo RUNNING > /ready; read line < /tmp/stop"
+      ],
+      "env": [
+        "PATH=/bin",
+        "HOME=/root"
+      ],
+      "cwd": "/",
+      "noNewPrivileges": true,
+      "capabilities": {
+        "bounding": [
+          "CAP_CHOWN",
+          "CAP_SETUID",
+          "CAP_SETGID"
+        ],
+        "effective": [
+          "CAP_CHOWN",
+          "CAP_SETUID",
+          "CAP_SETGID"
+        ],
+        "permitted": [
+          "CAP_CHOWN",
+          "CAP_SETUID",
+          "CAP_SETGID"
+        ]
+      }
+    },
+    "hostname": "container",
+    "mounts": [
+      {
+        "destination": "/proc",
+        "type": "proc",
+        "source": "proc",
+        "options": [
+          "nosuid",
+          "noexec",
+          "nodev"
+        ]
+      }
+    ],
+    "linux": {
+      "rootfsPropagation": "private",
+      "namespaces": [
+        {
+          "type": "pid"
+        },
+        {
+          "type": "mount"
+        },
+        {
+          "type": "uts"
+        }
+      ],
+      "cgroupsPath": "/test-lifecycle"
+    }
+  },
+  "full_configs": {
+    "alpha": {
+      "ociVersion": "1.0.2",
+      "root": {
+        "path": "rootfs",
+        "readonly": false
+      },
+      "process": {
+        "terminal": false,
+        "user": {
+          "uid": 0,
+          "gid": 0
+        },
+        "args": [
+          "/bin/sh",
+          "-ec",
+          "test \"$$\" = 1; read host < /proc/sys/kernel/hostname; echo \"$host\" > /ready; echo shm > /dev/shm/marker; trap \"echo TERM_RECEIVED > /terminated; exit 0\" TERM; read line < /tmp/stop"
+        ],
+        "env": [
+          "PATH=/bin",
+          "HOME=/root"
+        ],
+        "cwd": "/",
+        "noNewPrivileges": true,
+        "capabilities": {
+          "bounding": [
+            "CAP_CHOWN",
+            "CAP_SETUID",
+            "CAP_SETGID"
+          ],
+          "effective": [
+            "CAP_CHOWN",
+            "CAP_SETUID",
+            "CAP_SETGID"
+          ],
+          "permitted": [
+            "CAP_CHOWN",
+            "CAP_SETUID",
+            "CAP_SETGID"
+          ]
+        }
+      },
+      "hostname": "alpha",
+      "mounts": [
+        {
+          "destination": "/proc",
+          "type": "proc",
+          "source": "proc",
+          "options": [
+            "nosuid",
+            "noexec",
+            "nodev"
+          ]
+        },
+        {
+          "destination": "/dev",
+          "type": "tmpfs",
+          "source": "tmpfs",
+          "options": [
+            "nosuid",
+            "mode=0755",
+            "size=1m"
+          ]
+        },
+        {
+          "destination": "/dev/pts",
+          "type": "devpts",
+          "source": "devpts",
+          "options": [
+            "nosuid",
+            "noexec",
+            "newinstance",
+            "mode=0620",
+            "ptmxmode=0666",
+            "gid=5"
+          ]
+        },
+        {
+          "destination": "/dev/shm",
+          "type": "tmpfs",
+          "source": "tmpfs",
+          "options": [
+            "nosuid",
+            "nodev",
+            "mode=1777",
+            "size=1m"
+          ]
+        },
+        {
+          "destination": "/sys",
+          "type": "sysfs",
+          "source": "sysfs",
+          "options": [
+            "nosuid",
+            "noexec",
+            "nodev",
+            "ro"
+          ]
+        }
+      ],
+      "linux": {
+        "rootfsPropagation": "private",
+        "namespaces": [
+          {
+            "type": "pid"
+          },
+          {
+            "type": "mount"
+          },
+          {
+            "type": "uts"
+          }
+        ],
+        "cgroupsPath": "/test-alpha",
+        "resources": {
+          "pids": {
+            "limit": 8
+          }
+        }
+      }
+    },
+    "beta": {
+      "ociVersion": "1.0.2",
+      "root": {
+        "path": "rootfs",
+        "readonly": false
+      },
+      "process": {
+        "terminal": false,
+        "user": {
+          "uid": 0,
+          "gid": 0
+        },
+        "args": [
+          "/bin/sh",
+          "-ec",
+          "test \"$$\" = 1; read host < /proc/sys/kernel/hostname; echo \"$host\" > /ready; echo shm > /dev/shm/marker; trap \"echo TERM_RECEIVED > /terminated; exit 0\" TERM; read line < /tmp/stop"
+        ],
+        "env": [
+          "PATH=/bin",
+          "HOME=/root"
+        ],
+        "cwd": "/",
+        "noNewPrivileges": true,
+        "capabilities": {
+          "bounding": [
+            "CAP_CHOWN",
+            "CAP_SETUID",
+            "CAP_SETGID"
+          ],
+          "effective": [
+            "CAP_CHOWN",
+            "CAP_SETUID",
+            "CAP_SETGID"
+          ],
+          "permitted": [
+            "CAP_CHOWN",
+            "CAP_SETUID",
+            "CAP_SETGID"
+          ]
+        }
+      },
+      "hostname": "beta",
+      "mounts": [
+        {
+          "destination": "/proc",
+          "type": "proc",
+          "source": "proc",
+          "options": [
+            "nosuid",
+            "noexec",
+            "nodev"
+          ]
+        },
+        {
+          "destination": "/dev",
+          "type": "tmpfs",
+          "source": "tmpfs",
+          "options": [
+            "nosuid",
+            "mode=0755",
+            "size=1m"
+          ]
+        },
+        {
+          "destination": "/dev/pts",
+          "type": "devpts",
+          "source": "devpts",
+          "options": [
+            "nosuid",
+            "noexec",
+            "newinstance",
+            "mode=0620",
+            "ptmxmode=0666",
+            "gid=5"
+          ]
+        },
+        {
+          "destination": "/dev/shm",
+          "type": "tmpfs",
+          "source": "tmpfs",
+          "options": [
+            "nosuid",
+            "nodev",
+            "mode=1777",
+            "size=1m"
+          ]
+        },
+        {
+          "destination": "/sys",
+          "type": "sysfs",
+          "source": "sysfs",
+          "options": [
+            "nosuid",
+            "noexec",
+            "nodev",
+            "ro"
+          ]
+        }
+      ],
+      "linux": {
+        "rootfsPropagation": "private",
+        "namespaces": [
+          {
+            "type": "pid"
+          },
+          {
+            "type": "mount"
+          },
+          {
+            "type": "uts"
+          }
+        ],
+        "cgroupsPath": "/test-beta",
+        "resources": {
+          "pids": {
+            "limit": 8
+          }
+        }
+      }
+    },
+    "terminal": {
+      "ociVersion": "1.0.2",
+      "root": {
+        "path": "rootfs",
+        "readonly": false
+      },
+      "process": {
+        "terminal": true,
+        "user": {
+          "uid": 0,
+          "gid": 0
+        },
+        "args": [
+          "/bin/sh",
+          "-ec",
+          "test -t 0; test -t 1; test -t 2; test \"$$\" = 1; test \"$(/bin/busybox readlink /proc/self/fd/0)\" = /dev/pts/0; test \"$(/bin/busybox stty size)\" = \"31 97\"; echo CONTAINER_TERMINAL_PASS; exit 7"
+        ],
+        "env": [
+          "PATH=/bin",
+          "HOME=/root"
+        ],
+        "cwd": "/",
+        "noNewPrivileges": true,
+        "capabilities": {
+          "bounding": [
+            "CAP_CHOWN",
+            "CAP_SETUID",
+            "CAP_SETGID"
+          ],
+          "effective": [
+            "CAP_CHOWN",
+            "CAP_SETUID",
+            "CAP_SETGID"
+          ],
+          "permitted": [
+            "CAP_CHOWN",
+            "CAP_SETUID",
+            "CAP_SETGID"
+          ]
+        },
+        "consoleSize": {
+          "height": 31,
+          "width": 97
+        }
+      },
+      "hostname": "terminal",
+      "mounts": [
+        {
+          "destination": "/proc",
+          "type": "proc",
+          "source": "proc",
+          "options": [
+            "nosuid",
+            "noexec",
+            "nodev"
+          ]
+        },
+        {
+          "destination": "/dev",
+          "type": "tmpfs",
+          "source": "tmpfs",
+          "options": [
+            "nosuid",
+            "mode=0755",
+            "size=1m"
+          ]
+        },
+        {
+          "destination": "/dev/pts",
+          "type": "devpts",
+          "source": "devpts",
+          "options": [
+            "nosuid",
+            "noexec",
+            "newinstance",
+            "mode=0620",
+            "ptmxmode=0666",
+            "gid=5"
+          ]
+        },
+        {
+          "destination": "/dev/shm",
+          "type": "tmpfs",
+          "source": "tmpfs",
+          "options": [
+            "nosuid",
+            "nodev",
+            "mode=1777",
+            "size=1m"
+          ]
+        },
+        {
+          "destination": "/sys",
+          "type": "sysfs",
+          "source": "sysfs",
+          "options": [
+            "nosuid",
+            "noexec",
+            "nodev",
+            "ro"
+          ]
+        }
+      ],
+      "linux": {
+        "rootfsPropagation": "private",
+        "namespaces": [
+          {
+            "type": "pid"
+          },
+          {
+            "type": "mount"
+          },
+          {
+            "type": "uts"
+          }
+        ],
+        "cgroupsPath": "/test-terminal",
+        "resources": {
+          "pids": {
+            "limit": 8
+          }
+        }
+      }
+    }
+  },
+  "checks": [
+    {
+      "cpus": 1,
+      "label": "signed install",
+      "exit_code": 0,
+      "stdout": "(1/4) Installing libcap2 (2.78-r0)\n(2/4) Installing libseccomp (2.6.1-r0)\n(3/4) Installing yajl (2.1.0-r9)\n(4/4) Installing crun (1.23.1-r0)\nExecuting busybox-1.37.0-r20.trigger\nOK: 9 MiB in 20 packages\n",
+      "stderr": ""
+    },
+    {
+      "cpus": 1,
+      "label": "version",
+      "exit_code": 0,
+      "stdout": "crun version 1.23.1\ncommit: d20b23dba05e822b93b82f2f34fd5dada433e0c2\nrundir: /run/crun\nspec: 1.0.0\n+SELINUX +APPARMOR +CAP +SECCOMP +EBPF +YAJL\n",
+      "stderr": ""
+    },
+    {
+      "cpus": 1,
+      "label": "payload exit and namespace isolation",
+      "exit_code": 0,
+      "stdout": "CONTAINER_PAYLOAD\nPAYLOAD_EXIT_AND_NAMESPACE_PASS\n",
+      "stderr": ""
+    },
+    {
+      "cpus": 1,
+      "label": "create start state exec TERM stop delete",
+      "exit_code": 0,
+      "stdout": "{\n    \"ociVersion\": \"1.0.0\",\n    \"id\": \"lifecycle\",\n    \"pid\": 6,\n    \"status\": \"created\",\n    \"bundle\": \"/bundle\",\n    \"rootfs\": \"rootfs\",\n    \"created\": \"2026-10-15T16:57:35.686794Z\",\n    \"systemd-scope\": \"\",\n    \"owner\": \"root\"\n}\n    \"status\": \"created\",\n{\n    \"ociVersion\": \"1.0.0\",\n    \"id\": \"lifecycle\",\n    \"pid\": 6,\n    \"status\": \"running\",\n    \"bundle\": \"/bundle\",\n    \"rootfs\": \"rootfs\",\n    \"created\": \"2026-10-15T16:57:35.686794Z\",\n    \"systemd-scope\": \"\",\n    \"owner\": \"root\"\n}\n    \"status\": \"running\",\n    \"status\": \"paused\",\nfrozen 1\n    \"status\": \"running\",\nEXEC_PAYLOAD\n{\n    \"ociVersion\": \"1.0.0\",\n    \"id\": \"lifecycle\",\n    \"pid\": 0,\n    \"status\": \"stopped\",\n    \"bundle\": \"/bundle\",\n    \"rootfs\": \"rootfs\",\n    \"created\": \"2026-10-15T16:57:35.686794Z\",\n    \"systemd-scope\": \"\",\n    \"owner\": \"root\"\n}\n    \"status\": \"stopped\",\nNAME PID       STATUS   BUNDLE PATH                             CREATED                        OWNER\nCONTAINER_LIFECYCLE_PASS\n[0.047886] pid=5 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa60, d] unsupported errno=38 comm=\"crun\"\n[0.078879] pid=5 syscall=219(keyctl) pc=0x7003d434 args=[1, 7fffffefff61, 0, 3fe, 3fc, 2] unsupported errno=38 comm=\"3\"\n[0.079736] pid=5 syscall=435(clone3) pc=0x7003d434 args=[7fffffeff750, 58, 24020000, 0, 0, 0] unsupported errno=38 comm=\"3\"\n[0.104058] pid=7 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.145597] pid=10 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.219198] pid=13 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.257397] pid=16 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.317561] pid=17 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.392078] pid=20 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.437626] pid=21 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.489510] pid=23 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeff9e0, a0] unsupported errno=38 comm=\"crun\"\n[0.517902] pid=23 syscall=435(clone3) pc=0x7003d434 args=[7fffffeff788, 58, 7fffffeff788, 7fffffeff7e0, 170, 7fff] unsupported errno=38 comm=\"3\"\n[0.518218] pid=24 syscall=434(pidfd_open) pc=0x7003d434 args=[6, 0, 0, 3, 0, 0] unsupported errno=38 comm=\"3\"\n[0.556601] pid=26 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 80] unsupported errno=38 comm=\"crun\"\n[0.582304] pid=26 syscall=434(pidfd_open) pc=0x7003d434 args=[6, 0, 700c2338, 0, 0, 1d] unsupported errno=38 comm=\"3\"\n[0.658691] pid=30 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.733930] pid=35 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.886295] pid=36 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffaa0, 81] unsupported errno=38 comm=\"crun\"\n",
+      "stderr": "sh: can't open /tmp/stop: Interrupted system call\n"
+    },
+    {
+      "cpus": 1,
+      "label": "concurrent signed Alpine rootfs and freezer",
+      "exit_code": 0,
+      "stdout": "    \"status\": \"running\",\n27 25 0:26 / /dev/pts rw,nosuid,noexec - devpts devpts rw\nEXEC_ALPINE_PASS\n    \"status\": \"running\",\n43 41 0:42 / /dev/pts rw,nosuid,noexec - devpts devpts rw\nEXEC_ALPINE_PASS\n    \"status\": \"paused\",\nSIBLING_PROGRESS_PASS\nCONCURRENT_ALPINE_PASS\n",
+      "stderr": "/bin/sh: can't open /tmp/stop: Interrupted system call\n"
+    },
+    {
+      "cpus": 1,
+      "label": "original crun foreground terminal and exit status",
+      "exit_code": 0,
+      "stdout": "CONTAINER_TERMINAL_PASS\r\nTERMINAL_EXIT_PASS\r\n",
+      "stderr": ""
+    },
+    {
+      "cpus": 4,
+      "label": "signed install",
+      "exit_code": 0,
+      "stdout": "(1/4) Installing libcap2 (2.78-r0)\n(2/4) Installing libseccomp (2.6.1-r0)\n(3/4) Installing yajl (2.1.0-r9)\n(4/4) Installing crun (1.23.1-r0)\nExecuting busybox-1.37.0-r20.trigger\nOK: 9 MiB in 20 packages\n",
+      "stderr": ""
+    },
+    {
+      "cpus": 4,
+      "label": "version",
+      "exit_code": 0,
+      "stdout": "crun version 1.23.1\ncommit: d20b23dba05e822b93b82f2f34fd5dada433e0c2\nrundir: /run/crun\nspec: 1.0.0\n+SELINUX +APPARMOR +CAP +SECCOMP +EBPF +YAJL\n",
+      "stderr": ""
+    },
+    {
+      "cpus": 4,
+      "label": "payload exit and namespace isolation",
+      "exit_code": 0,
+      "stdout": "CONTAINER_PAYLOAD\nPAYLOAD_EXIT_AND_NAMESPACE_PASS\n",
+      "stderr": ""
+    },
+    {
+      "cpus": 4,
+      "label": "create start state exec TERM stop delete",
+      "exit_code": 0,
+      "stdout": "{\n    \"ociVersion\": \"1.0.0\",\n    \"id\": \"lifecycle\",\n    \"pid\": 6,\n    \"status\": \"created\",\n    \"bundle\": \"/bundle\",\n    \"rootfs\": \"rootfs\",\n    \"created\": \"2026-10-15T16:58:04.573241Z\",\n    \"systemd-scope\": \"\",\n    \"owner\": \"root\"\n}\n    \"status\": \"created\",\n{\n    \"ociVersion\": \"1.0.0\",\n    \"id\": \"lifecycle\",\n    \"pid\": 6,\n    \"status\": \"running\",\n    \"bundle\": \"/bundle\",\n    \"rootfs\": \"rootfs\",\n    \"created\": \"2026-10-15T16:58:04.573241Z\",\n    \"systemd-scope\": \"\",\n    \"owner\": \"root\"\n}\n    \"status\": \"running\",\n    \"status\": \"paused\",\nfrozen 1\n    \"status\": \"running\",\nEXEC_PAYLOAD\n{\n    \"ociVersion\": \"1.0.0\",\n    \"id\": \"lifecycle\",\n    \"pid\": 0,\n    \"status\": \"stopped\",\n    \"bundle\": \"/bundle\",\n    \"rootfs\": \"rootfs\",\n    \"created\": \"2026-10-15T16:58:04.573241Z\",\n    \"systemd-scope\": \"\",\n    \"owner\": \"root\"\n}\n    \"status\": \"stopped\",\nNAME PID       STATUS   BUNDLE PATH                             CREATED                        OWNER\nCONTAINER_LIFECYCLE_PASS\n[0.055997] pid=5 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa60, d] unsupported errno=38 comm=\"crun\"\n[0.070257] pid=5 syscall=219(keyctl) pc=0x7003d434 args=[1, 7fffffefff61, 0, 3fe, 3fc, 2] unsupported errno=38 comm=\"3\"\n[0.071074] pid=5 syscall=435(clone3) pc=0x7003d434 args=[7fffffeff750, 58, 24020000, 0, 0, 0] unsupported errno=38 comm=\"3\"\n[0.111525] pid=7 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.166720] pid=10 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.235062] pid=13 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.279335] pid=16 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.317869] pid=17 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.361415] pid=20 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.399809] pid=21 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.443844] pid=23 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeff9e0, a0] unsupported errno=38 comm=\"crun\"\n[0.461967] pid=23 syscall=435(clone3) pc=0x7003d434 args=[7fffffeff788, 58, 7fffffeff788, 7fffffeff7e0, 170, 7fff] unsupported errno=38 comm=\"3\"\n[0.465263] pid=24 syscall=434(pidfd_open) pc=0x7003d434 args=[6, 0, 0, 3, 0, 0] unsupported errno=38 comm=\"3\"\n[0.499256] pid=26 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 80] unsupported errno=38 comm=\"crun\"\n[0.508945] pid=26 syscall=434(pidfd_open) pc=0x7003d434 args=[6, 0, 700c2338, 0, 0, 1d] unsupported errno=38 comm=\"3\"\n[0.558448] pid=30 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.617091] pid=35 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.644137] pid=36 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffaa0, 81] unsupported errno=38 comm=\"crun\"\n",
+      "stderr": "sh: can't open /tmp/stop: Interrupted system call\n"
+    },
+    {
+      "cpus": 4,
+      "label": "concurrent signed Alpine rootfs and freezer",
+      "exit_code": 0,
+      "stdout": "    \"status\": \"running\",\n27 25 0:26 / /dev/pts rw,nosuid,noexec - devpts devpts rw\nEXEC_ALPINE_PASS\n    \"status\": \"running\",\n43 41 0:42 / /dev/pts rw,nosuid,noexec - devpts devpts rw\nEXEC_ALPINE_PASS\n    \"status\": \"paused\",\nSIBLING_PROGRESS_PASS\nCONCURRENT_ALPINE_PASS\n",
+      "stderr": "/bin/sh: can't open /tmp/stop: Interrupted system call\n"
+    },
+    {
+      "cpus": 4,
+      "label": "original crun foreground terminal and exit status",
+      "exit_code": 0,
+      "stdout": "CONTAINER_TERMINAL_PASS\r\nTERMINAL_EXIT_PASS\r\n",
+      "stderr": ""
+    }
+  ],
+  "packages_sha256": {
+    "crun-1.23.1-r0.apk": "64c9b516fc7f8cdde7b666db5832fa93952c71545832292fcd9845401ca7bcca",
+    "libcap2-2.78-r0.apk": "de209aee8b76946849bff6bd97151c6af20889be5a96a2e28f9899255e252e3f",
+    "libseccomp-2.6.1-r0.apk": "ee817c130535b72e5b0a63b211f9d2fbbaa493a319f78e9da5e30359991e5180",
+    "musl-1.2.5-r12.apk": "ac281d1e7f9e9c447c51e309317b975f48be6edaf3ab91ae73b959cf86703782",
+    "yajl-2.1.0-r9.apk": "34a2fb7671a29f19166d051318c866e60f4687184fe73939b6b08325d11b68a8"
+  },
+  "passed": true
+}

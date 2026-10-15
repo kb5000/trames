@@ -1,8 +1,9 @@
-# Guest 内容器：namespace 基础
+# Guest 内容器：原版 crun rootful 运行
 
 目标是在同一个 Trames guest 内运行原版 Linux 容器工具。容器共享解释器、
 调度器和 guest 内核对象；当前不做宿主多实例管理器或自己的 OCI 启动器。
-后续用未经修改的 guest `runc` / `crun` 验证 Linux ABI，再考虑 Docker/Podman。
+原版 Alpine `crun` 已通过下述 rootful 场景；使用方法见[容器入门](../guides/guest-containers.md)。
+未宣称完整 OCI、rootless 或 Docker/Podman 兼容。
 
 ## 已实现
 
@@ -14,7 +15,7 @@
 | `uname`、`sethostname`、`setdomainname` | 调用者 UTS，名称最长 64 字节；按 guest CAP_SYS_ADMIN 授权 |
 | namespace FD | `/proc/PID/ns/{uts,mnt,pid,pid_for_children}`、task/TID 形式、dup、O_PATH、stat、nsfs statfs、`NS_GET_NSTYPE`；FD 保持 namespace 存活 |
 | `chroot` | 独立 `(mount,inode)` fs.root，绝对路径/绝对符号链接从新根解析，根内 `..` 不能向上；保留 cwd/dirfd |
-| `mount` | tmpfs、proc、sysfs、共享 devpts、bind/rbind、选定 remount；所有挂载初始为 private，支持 make-private/recursive-private |
+| `mount` | tmpfs、proc、sysfs、独立 devpts、bind/rbind、选定 remount；所有挂载初始为 private，支持 make-private/recursive-private |
 | `umount2` | 普通卸载检查子挂载和 FD/cwd/root/exec/mmap 引用；MNT_DETACH 断开整个子树，已有能力仍能访问；UMOUNT_NOFOLLOW |
 | `pivot_root` | 挂载根和 put_old 目录/祖先关系检查，旧根接到新根下，同 namespace 内位于旧根的 fs.root/cwd 一并切换 |
 | 挂载视图 | `/proc/PID/{mounts,mountinfo}` 来自实际挂载树，按该进程 chroot 过滤/显示路径并转义字段；statfs/statx MNT_ID/fdinfo 使用实际挂载身份 |
@@ -24,7 +25,8 @@
 调度器保留稳定的全 guest 任务编号，只在系统调用、信号信息和 proc 边界转换。
 每个子 namespace 独立分配 PID，祖先可以看见后代，反向与兄弟之间不可见。
 `unshare(CLONE_NEWPID)` 和 PID `setns` 设置 `pid_for_children`，调用者本身不迁移；
-进入新 namespace 的首个子进程成为 PID 1，并建立自己的进程组/会话。
+进入新 namespace 的首个子进程成为 PID 1，继承的外部 PGID/SID 显示为 0，
+可随后调用 setsid 建立自己的会话。
 多线程调用 NEWPID unshare、NEWPID 与 THREAD/PARENT 冲突组合明确拒绝。
 
 `getpid/gettid/getppid`、clone 返回值与 TID 内存写入、wait4/waitid、kill/tkill/tgkill、
@@ -80,7 +82,9 @@ KILL、SYS_NICE、SYS_RESOURCE、SYSLOG 和 NET_RAW。既有 proc 敏感路径�
 crun 1.23.1 现在通过单核/四核下的选定生命周期验收：实际 shell 输出和退出码 7、
 PID 1、独立 UTS/private mount namespace、proc 挂载，以及 create/start/state/exec、
 TERM trap、stopped 和 delete。原版签名 APK 在 guest 内安装，OCI JSON 只是原版
-运行时的测试输入。显式禁用 cgroup manager；没有验证完整 OCI 或 Docker/Podman。
+运行时的测试输入。使用 cgroupfs manager；pause/resume、冻结后 force delete、两个完整 Alpine rootfs
+并行运行、私有 devpts/临时设备与 shm、前台终端和 OCI pids.limit 已通过 1/4 CPU
+验收。没有验证完整 OCI 或 Docker/Podman。
 open_tree、keyctl、pidfd_open 等探测仍由原版运行时自行回退。
 
 ## 信号描述符与待处理信号
@@ -106,14 +110,16 @@ read、poll/ppoll、pselect、epoll 的 level/ONESHOT readiness 使用当前调�
 没有实现每 UID 的 RLIMIT_SIGPENDING 或 rt_sigqueueinfo/rt_tgsigqueueinfo。
 SIGCHLD 的 CPU 时间字段保持零。epoll 仍按调用者快照检查 readiness，尚未模拟
 Linux 跨 fork 继承 epoll 时绑定原注册进程信号等待队列的细节；子进程应新建并注册
-epoll。EPOLLET/EXCLUSIVE/嵌套 epoll、完整异步 I/O 信号来源仍未实现。
+epoll。PTY/嵌入终端已支持 EPOLLET，按输入/输出队列代次和 readiness 检查；
+重复 wait 不重复通知，排空后同样长度的新数据不会丢边缘，MOD/ONESHOT 可重新启用。
+其他 FD 的 EPOLLET、EXCLUSIVE/嵌套 epoll、完整异步 I/O 信号来源仍未实现。
 
 ## 设备节点与容器路径
 
 mknodat 可创建字符/块设备 inode，需要 CAP_MKNOD，并执行目录权限、umask、
 只读挂载检查。null/zero/full/random/urandom/tty/ptmx/kmsg 按 Linux 设备号
 复用 guest 驱动；未注册的设备号可以 stat、O_PATH 查询和持久化，数据打开返回
-ENXIO。不打开宿主设备，也不提供块驱动或独立 devpts；PTY 仍使用会话内共享池。
+ENXIO。不打开宿主设备，也不提供块驱动。独立 devpts 见下文。
 设备支持硬链接、改名、chmod/chown、unlink 后的 FD 保活；getdents 区分字符与
 块类型。合成的易失 `/dev` 端点不能硬链接进持久 inode 表，仍可用 mknodat 创建
 相同设备号的节点。磁盘 v3 manifest 新增设备类型和 32 位设备号，不保存活跃终端状态。
@@ -136,6 +142,26 @@ mount/umount 的 proc FD 目标也使用实际 mount/inode 能力；挂载调用
 祖先组/会话编号在新 namespace 内显示为 0，首次 setsid 可建立编号 1 的会话。
 这一行为按 Linux v6.12 `copy_process` 校正，普通会话首领再次 setsid 仍返回 EPERM。
 
+## 容器终端和描述符传递
+
+新 devpts 挂载拥有自己的 inode 表、slave 编号、uid/gid/mode/ptmxmode/max 选项；
+接受 newinstance，现代 Linux 语义下新挂载均独立。bind 和 namespace 复制保留
+实例身份。每个实例从 /dev/pts/0 开始，调度器内部终端身份保持唯一，避免控制
+终端混淆。最后一个 master 关闭时删除对应 slave 节点；旧 FD 不跟随编号重用。
+根会话原有终端不出现在新实例中。TIOCGPTPEER 使用 master 保留的实例，即使
+调用者 chroot 或 lazy unmount 后仍能打开同一 slave。会话总 PTY 预算仍为 4095。
+
+Unix socketpair 的 stream/datagram/seqpacket 支持 SCM_RIGHTS，传递相同 open
+file description，保留共享偏移、状态和 inode/PTY 生命周期。支持 MSG_PEEK、
+MSG_CMSG_CLOEXEC、控制区/FD 表不足的 MSG_CTRUNC、部分 stream 读取时的辅助
+消息边界。关闭接收端或不接收辅助消息时释放未接收的描述符，发送方关闭不会
+提前销毁队列中的文件。每次最多 253 个 FD，消息队列仍有字节/条目额度。
+
+暂不传递 AF_UNIX socket FD：需要实现 in-flight 图的循环垃圾回收，当前明确
+返回 EOPNOTSUPP。普通文件、pipe、PTY、namespace 等句柄可传递。具名/抽象
+AF_UNIX 和 SCM_CREDENTIALS 尚缺；因此外部 console-socket 场景未验收，前台
+crun 内部 socketpair 终端通道已验收。
+
 ## Cgroup v2 域成员与 dumpable
 
 `/sys/fs/cgroup` 是独立的 cgroup2 挂载，具有自己的 inode、设备号和 statfs magic；
@@ -149,10 +175,24 @@ mount/umount 的 proc FD 目标也使用实际 mount/inode 能力；挂载调用
 删除后重建同一路径不会将旧 FD 或 bind mount 重定向到新组。只读重挂载实际限制
 写入。状态仅在现有 syscall/调度边界修改，没有加入 CPU/guest memory 热路径锁。
 
-这是域成员子集：controllers 为空，非空 subtree_control 请求显式拒绝；没有
-CPU/memory/pids 限额、threaded 模式、freeze/kill、事件通知、cgroup namespace
-或向非 root 用户委派。组管理和迁移要求 CAP_SYS_ADMIN；节点由 root 持有，
-不开放 chmod/chown 委派。不能把 populated/frozen 文本或目录存在视为资源隔离。
+cgroup.freeze 保存本组请求，cgroup.events 的 frozen 包含祖先冻结状态。调度器在
+CPU worker 全部返回后停止分发被冻结的任务，保留阻塞调用、SIGSTOP 和待处理信号。
+解冻或迁出冻结树后继续；普通信号等待解冻，SIGKILL 与 cgroup.kill 可直接终止。
+cgroup.kill 对写入时的整个后代树记录终止请求；同一并行批次尚未提交的 fork
+在 KILL 前不会再产生逃逸子进程。没有借用宿主进程/信号设施。
+
+pids 是当前唯一公布的 controller。通过 cgroup.subtree_control 的 +pids/-pids
+为子组安装/移除 pids.current/max/peak/events/events.local，旧控制 FD 失效且不
+跟随同名重建。fork/clone 同时检查所有启用的祖先限额，线程也占一个名额，超限
+返回 EAGAIN；退出释放名额，迁入/降低限额允许 current 超过 max，已有任务不被杀。
+peak、限制组及其祖先的 events 统计来自实际成员/拒绝事件；失败的子级预检查可以
+提高 peak，与 Linux 的宽松峰值含义一致。max 支持 max 或 0..4194304。整个 guest
+仍有 32 个任务的总额度；该总额度失败不会伪计为某组 pids 限额事件。
+
+这是 domain 子集：没有 CPU/memory/io 配额、threaded 模式、事件文件 poll 通知、
+cgroup namespace 或非 root 委派。非根内部组启用子控制器时不得有任务；迁入这样
+的组返回 EBUSY。组管理和迁移要求 CAP_SYS_ADMIN；节点由 root 持有，不开放
+chmod/chown 委派。资源和冻结检查只在 syscall/调度边界执行。
 
 PR_GET/SET_DUMPABLE 支持 0/1，CLONE_VM 共享，fork 复制，exec 建立新的状态；
 有效/fs UID/GID 变化清零，普通 exec 恢复，能力增加、不可读 ELF 或 ID 不匹配
@@ -191,11 +231,11 @@ exec 凭据；`MS_NODEV` 拒绝设备打开；`MS_NOEXEC` 拒绝 exec、可执�
   与根磁盘默认 16 GiB 预算无关；尚未接入统一的 tmpfs/guest RAM 回收机制。
 - 所有挂载均为 private；shared/slave/unbindable 传播、MS_MOVE、overlayfs、块设备
   文件系统及 open_tree/move_mount/fsopen 等新挂载 API 尚缺。
-- proc/sysfs 保持当前只读端点；devpts 挂载共享现有 PTY 池，明确不接受
-  `newinstance`，不能宣称容器已有独立终端或设备隔离。
+- proc/sysfs 保持当前只读端点。独立 devpts 支持初始挂载选项，重挂载修改
+  uid/gid/mode/max 尚未实现，明确返回 EOPNOTSUPP。
 - 跨进程 `/proc/PID/root`、cwd 等完整 magic-link 能力、user namespace、
-  IPC/net namespace、cgroup 资源控制与委派、seccomp
-  仍缺。现在不能运行一般意义上的完整容器，也不构成完整隔离边界。
+  IPC/net namespace、CPU/memory/io 资源控制、委派、seccomp
+  仍缺。当前运行范围为文档配置的 rootful 容器，不构成完整安全隔离边界。
 
 `chroot` 不自动 chdir/关闭既有目录描述符；根外 cwd/dirfd 继续是可用能力。
 程序应自行 `chdir("/")`。本批没有开放可写 sysctl 或模拟成功的安全控制接口。
@@ -213,9 +253,8 @@ namespace 归属，setns 只影响后续创建。私有 loopback、端口空间�
 
 ## 后续顺序
 
-1. 扩展原版 crun 的 cgroupfs、并发容器、终端和更常见 rootfs 配置；当前自动验收
-   显式禁用 cgroup manager。随后按真实工具缺口实现 user/IPC/net namespace。
-2. 再扩展完整容器引擎、overlayfs、cgroup 控制器、独立 devpts 及更广的安全接口。
+1. 按真实工具缺口扩展 user/IPC/net namespace、具名 AF_UNIX 和更广的 epoll 事件源。
+2. 再扩展完整容器引擎、overlayfs、CPU/memory/io 控制器和安全接口。
 
 ## 验证
 

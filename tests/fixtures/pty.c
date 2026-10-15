@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -33,7 +34,32 @@ static void raw(int fd) {
 static volatile sig_atomic_t hungup;
 static void on_hangup(int s) { (void)s; hungup = 1; }
 
+static void edge_terminal(void) {
+    int m=posix_openpt(O_RDWR|O_NOCTTY|O_NONBLOCK); assert(m>=0);
+    int s=slave_for(m); raw(s);
+    int ep=epoll_create1(EPOLL_CLOEXEC); assert(ep>=0);
+    struct epoll_event event={.events=EPOLLIN|EPOLLET,.data.u64=42}, out;
+    assert(epoll_ctl(ep,EPOLL_CTL_ADD,m,&event)==0);
+    assert(write(s,"one",3)==3);
+    assert(epoll_wait(ep,&out,1,1000)==1 && out.data.u64==42 && (out.events&EPOLLIN));
+    assert(epoll_wait(ep,&out,1,0)==0);
+    assert(write(s,"two",3)==3);
+    assert(epoll_wait(ep,&out,1,1000)==1 && (out.events&EPOLLIN));
+    char b[32]; assert(read(m,b,sizeof b)==6 && !memcmp(b,"onetwo",6));
+    assert(write(s,"same!!",6)==6); // drain/refill between waits, same queue size
+    assert(epoll_wait(ep,&out,1,1000)==1 && (out.events&EPOLLIN));
+    assert(epoll_wait(ep,&out,1,0)==0);
+    event.events|=EPOLLONESHOT; assert(epoll_ctl(ep,EPOLL_CTL_MOD,m,&event)==0);
+    assert(epoll_wait(ep,&out,1,1000)==1);
+    assert(read(m,b,sizeof b)==6); assert(write(s,"again",5)==5);
+    assert(epoll_wait(ep,&out,1,0)==0);
+    assert(epoll_ctl(ep,EPOLL_CTL_MOD,m,&event)==0);
+    assert(epoll_wait(ep,&out,1,1000)==1);
+    close(ep); close(s); close(m);
+    puts("PTY epoll edges: queue wakeups, no duplicate readiness, drain/refill and ONESHOT rearm: ok");
+}
 int main(void) {
+    edge_terminal();
     int m = posix_openpt(O_RDWR | O_NOCTTY | O_NONBLOCK | O_CLOEXEC);
     assert(m >= 0);
     int number, lock;

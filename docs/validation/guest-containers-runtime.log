@@ -1,0 +1,73 @@
+=== trames-containers-quota.log ===
+Signed repository inputs: crun=1.23.1-r0
+1-CPU original crun: payload/exit 7, private PID/mount/UTS, proc, cgroupfs, pause/resume/kill, two Alpine rootfs containers and foreground PTY passed
+4-CPU original crun: payload/exit 7, private PID/mount/UTS, proc, cgroupfs, pause/resume/kill, two Alpine rootfs containers and foreground PTY passed
+Evidence: /workspace/trames/target/container-lifecycle
+
+=== trames-pids-race.log ===
+1-CPU cgroup hierarchy, lifecycle, PID/mount views and control validation: passed
+1-CPU cgroup freezer and subtree kill: passed
+1-CPU pids controller quotas and lifecycle: passed
+1-CPU cgroup session state reset with root disk preserved: passed
+1-CPU dumpable behavior matches native Linux; UID transitions passed
+4-CPU cgroup hierarchy, lifecycle, PID/mount views and control validation: passed
+4-CPU cgroup freezer and subtree kill: passed
+4-CPU pids controller quotas and lifecycle: passed
+4-CPU cgroup session state reset with root disk preserved: passed
+4-CPU dumpable behavior matches native Linux; UID transitions passed
+
+=== trames-containers-regression.log ===
+1-CPU PTY/IPC outcomes match independent Linux/QEMU
+4-CPU PTY/IPC outcomes match independent Linux/QEMU
+PTY epoll edges: queue wakeups, no duplicate readiness, drain/refill and ONESHOT rearm: ok
+pty allocation/lock/canonical/raw/resize/isolation/packet/alias/hangup/reopen: ok
+Unix MSG_WAITALL split record and __WALL child wait: ok
+PTY session/controlling tty/last-master SIGHUP: ok
+1-CPU SCM_RIGHTS outcomes match independent native Linux
+4-CPU SCM_RIGHTS outcomes match independent native Linux
+SCM_RIGHTS: stream/datagram/seqpacket, shared offsets, fork, CLOEXEC, PEEK, truncation, barriers and descriptor lifetime: ok
+1-CPU signalfd: 25 native Linux signal queue/read/poll/epoll/lifetime comparisons passed
+4-CPU signalfd: 25 native Linux signal queue/read/poll/epoll/lifetime comparisons passed
+Signed repository inputs: sudo=1.9.17_p2-r0
+Signed sudo install: passed
+Root/run-as/user escalation and nested PTYs: passed
+Denied user cannot execute or read root-only files: passed
+Real passwd authentication and no password echo: passed
+Interactive input/output and command exit status: passed
+Ctrl-C reaches the foreground command: passed
+Non-PTY invocation and persistent reopen: passed
+1-CPU guest UTS namespace, namespace FD lifetime, chroot/exec passed
+4-CPU guest UTS namespace, namespace FD lifetime, chroot/exec passed
+1-CPU guest mount namespace, tmpfs/bind/pivot_root and mount FD lifetime passed
+4-CPU guest mount namespace, tmpfs/bind/pivot_root and mount FD lifetime passed
+1-CPU guest PID hierarchy, proc views, signals/waits, threads, init shutdown and subreaper passed
+4-CPU guest PID hierarchy, proc views, signals/waits, threads, init shutdown and subreaper passed
+Real BusyBox unshare/nsenter/chroot passed
+Real BusyBox unshare -m, mount tmpfs/bind/remount, df and umount passed
+Real BusyBox unshare -pf --mount-proc, shell PID 1, background wait and ps passed
+1-CPU guest mknodat, device I/O vs native Linux, permission/mount checks and persistent reopen: passed
+4-CPU guest mknodat, device I/O vs native Linux, permission/mount checks and persistent reopen: passed
+1-CPU openat2: 30 native Linux comparisons plus tmpfs/bind traversal and cached-lookup checks passed
+4-CPU openat2: 30 native Linux comparisons plus tmpfs/bind traversal and cached-lookup checks passed
+
+=== trames-container-clippy-final.log ===
+    Checking trames-vfs v0.15.0 (/workspace/trames/crates/trames-vfs)
+    Checking trames-linux v0.15.0 (/workspace/trames/crates/trames-linux)
+    Checking trames-distro v0.15.0 (/workspace/trames/crates/trames-distro)
+    Checking trames-core v0.15.0 (/workspace/trames/crates/trames-core)
+    Checking trames-cli v0.15.0 (/workspace/trames/crates/trames-cli)
+    Checking trames-ffi v0.15.0 (/workspace/trames/crates/trames-ffi)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.30s
+
+=== trames-container-ios-final.log ===
+    Checking trames-vfs v0.15.0 (/workspace/trames/crates/trames-vfs)
+    Checking trames-linux v0.15.0 (/workspace/trames/crates/trames-linux)
+    Checking trames-distro v0.15.0 (/workspace/trames/crates/trames-distro)
+    Checking trames-core v0.15.0 (/workspace/trames/crates/trames-core)
+    Checking trames-ffi v0.15.0 (/workspace/trames/crates/trames-ffi)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.55s
+
+=== trames-container-audit.log ===
+{"scope": "Linux v6.12 native AArch64 numbered entries; entry presence is not full ABI conformance", "entries": 318, "statuses": {"missing": 139, "implemented_subset": 177, "obsolete_stub": 2}, "undispatched_probes_per_backend": 141, "backends": ["cached"], "unhandled_return": -38}
+
+workspace all features: 324 Rust tests passed; fmt --check passed
