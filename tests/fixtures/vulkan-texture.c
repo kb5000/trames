@@ -121,6 +121,8 @@ int main(int argc,char **argv) {
             VkBufferImageCopy uploadCopy={.bufferOffset=16,.bufferRowLength=4,.bufferImageHeight=3,.imageSubresource={VK_IMAGE_ASPECT_COLOR_BIT,0,0,1},.imageExtent={2,2,1}};vkCmdCopyBufferToImage(command,extra[4],texture,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,1,&uploadCopy);
             toUpload.srcAccessMask=VK_ACCESS_TRANSFER_WRITE_BIT;toUpload.dstAccessMask=VK_ACCESS_SHADER_READ_BIT;toUpload.oldLayout=VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;toUpload.newLayout=VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;vkCmdPipelineBarrier(command,VK_PIPELINE_STAGE_TRANSFER_BIT,VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,0,0,NULL,0,NULL,1,&toUpload);
         }
+        VkMemoryBarrier vertexReady={.sType=VK_STRUCTURE_TYPE_MEMORY_BARRIER,.srcAccessMask=VK_ACCESS_HOST_WRITE_BIT,.dstAccessMask=VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT|VK_ACCESS_INDEX_READ_BIT};
+        vkCmdPipelineBarrier(command,VK_PIPELINE_STAGE_HOST_BIT,VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,0,1,&vertexReady,0,NULL,0,NULL);
         VkClearValue clear={.color={{8.0f/255,12.0f/255,20.0f/255,1}}};VkRenderPassBeginInfo rp={.sType=VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,.renderPass=pass,.framebuffer=framebuffer,.renderArea={{0,0},{W,H}},.clearValueCount=1,.pClearValues=&clear};vkCmdBeginRenderPass(command,&rp,VK_SUBPASS_CONTENTS_INLINE);vkCmdBindPipeline(command,VK_PIPELINE_BIND_POINT_GRAPHICS,pipeline);
         VkViewport vp={0,0,W,H,0,1};vkCmdSetViewport(command,0,1,&vp);VkRect2D scissor={{0,0},{W,H}};vkCmdSetScissor(command,0,1,&scissor);
         VkDeviceSize offsets[2]={16,shifted?8:16};vkCmdBindVertexBuffers(command,0,2,extra,offsets);vkCmdBindDescriptorSets(command,VK_PIPELINE_BIND_POINT_GRAPHICS,layout,0,1,&set,0,NULL);

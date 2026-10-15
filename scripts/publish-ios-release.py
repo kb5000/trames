@@ -159,6 +159,11 @@ def main():
         if version != args.allow_version:
             print(f'Skipping {version}; only {args.allow_version} is authorized by this release job.')
             return
+        # A newer authorized source can arrive while an older build is running.
+        # Never let that older run claim this release version first.
+        if api(f'repos/{args.repository}/git/ref/heads/main')['object']['sha'] != commit:
+            print('Skipping superseded source; wait for the current main build.')
+            return
         runs = api(f'repos/{args.repository}/actions/runs?head_sha={commit}')['workflow_runs']
         linux = next(r for r in runs if r['path'] == '.github/workflows/linux.yml')
         linux = wait_run(args.repository, linux['id'])
@@ -219,6 +224,9 @@ Apple CI: {apple['html_url']}
 Linux CI: {linux['html_url']}
 """)
         assets = [ipa, checksum, proof, simulator, musl, native_source]
+        if api(f'repos/{args.repository}/git/ref/heads/main')['object']['sha'] != commit:
+            print('Source superseded during verification; no release published.')
+            return
         if release:
             present = {a['name'] for a in release['assets']}
             for asset in assets:

@@ -21,7 +21,7 @@ It covers:
   (in the Linux `base-offsets` variant) positive/negative `vertexOffset`, then a non-indexed draw.
 - Combined sampler descriptor arrays, separate sampled-image and sampler
   descriptors, per-stage uniform buffers and shared vertex/fragment push constants.
-- Padded staging rows, explicit upload/layout transitions, nearest and linear
+- Padded staging rows, `VERTEX_INPUT` host-write/read barriers, explicit upload/layout transitions, nearest and linear
   filtering, descriptor replacement between completed submissions, readback and
   explicit noncoherent memory flush/invalidate.
 

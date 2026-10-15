@@ -1845,6 +1845,7 @@ fn shader_stages(raw: u64) -> Result<vk::ShaderStageFlags> {
 }
 fn compute_stage(stage: u32) -> Result<vk::PipelineStageFlags> {
     let allowed = vk::PipelineStageFlags::TOP_OF_PIPE
+        | vk::PipelineStageFlags::VERTEX_INPUT
         | vk::PipelineStageFlags::COMPUTE_SHADER
         | vk::PipelineStageFlags::VERTEX_SHADER
         | vk::PipelineStageFlags::FRAGMENT_SHADER
@@ -2028,6 +2029,7 @@ mod tests {
     #[test]
     fn wait_stages_support_selected_graphics_but_reject_unknown_extension_bits() {
         assert!(compute_stage(vk::PipelineStageFlags::COMPUTE_SHADER.as_raw()).is_ok());
+        assert!(compute_stage(vk::PipelineStageFlags::VERTEX_INPUT.as_raw()).is_ok());
         assert!(compute_stage(vk::PipelineStageFlags::ALL_COMMANDS.as_raw()).is_ok());
         for stage in [
             0,
