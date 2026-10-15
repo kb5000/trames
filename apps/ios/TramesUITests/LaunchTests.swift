@@ -9,14 +9,18 @@ final class LaunchTests: XCTestCase {
         XCTAssertTrue(canvas.waitForExistence(timeout: 120), app.debugDescription)
         let active = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value MATCHES %@", "1024x768 frames=[1-9][0-9]+"), object: canvas)
         XCTAssertEqual(XCTWaiter.wait(for: [active], timeout: 180), .completed, app.debugDescription)
+        let initial = XCTAttachment(screenshot: app.screenshot())
+        initial.name = "native-vulkan-swapchain-window-initial"; initial.lifetime = .keepAlways; add(initial)
         let frameCount = canvas.value as? String ?? ""
         let title = app.descendants(matching: .any).matching(identifier: "vulkan-display-title").firstMatch
         let before = canvas.frame
         title.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.5)).press(forDuration: 0.1, thenDragTo: title.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.5)).withOffset(CGVector(dx: 45, dy: 45)))
-        XCTAssertGreaterThan(canvas.frame.minX, before.minX + 20)
+        let moved = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in canvas.frame.minX > before.minX + 20 }, object: canvas)
+        XCTAssertEqual(XCTWaiter.wait(for: [moved], timeout: 5), .completed, "Global drag must move the window by the finger displacement")
         let resize = app.descendants(matching: .any).matching(identifier: "vulkan-display-resize").firstMatch
         resize.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 0.1, thenDragTo: resize.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).withOffset(CGVector(dx: -90, dy: -70)))
-        XCTAssertLessThan(canvas.frame.width, before.width - 40)
+        let resized = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in canvas.frame.width < before.width - 40 }, object: canvas)
+        XCTAssertEqual(XCTWaiter.wait(for: [resized], timeout: 5), .completed, "Resize must change the window while keeping the Metal pixel extent fixed")
         let continued = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value != %@ AND value BEGINSWITH %@", frameCount, "1024x768 frames="), object: canvas)
         XCTAssertEqual(XCTWaiter.wait(for: [continued], timeout: 20), .completed)
         // Verify the actual screen contains rasterized colors, rather than

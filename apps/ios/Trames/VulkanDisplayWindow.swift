@@ -73,22 +73,34 @@ struct VulkanDisplayWindow: View {
                     .accessibilityLabel("隐藏显示窗口")
             }.padding(.horizontal, 12).frame(height: 44).background(Color(white: 0.16))
                 .accessibilityIdentifier("vulkan-display-title")
-                .gesture(DragGesture().onChanged { value in
+                .gesture(DragGesture(coordinateSpace: .global).onChanged { value in
                     if dragOrigin == nil { dragOrigin = geometry.origin }
                     geometry.origin = CGPoint(x: dragOrigin!.x + value.translation.width, y: dragOrigin!.y + value.translation.height)
                     geometry.constrain(to: viewport)
-                }.onEnded { _ in dragOrigin = nil })
+                }.onEnded { value in
+                    if let start = dragOrigin {
+                        geometry.origin = CGPoint(x: start.x + value.translation.width, y: start.y + value.translation.height)
+                        geometry.constrain(to: viewport)
+                    }
+                    dragOrigin = nil
+                })
             VulkanCanvasPane(canvas: session.displayCanvas)
                 .accessibilityIdentifier("vulkan-display-canvas")
             HStack {
                 Spacer()
                 Image(systemName: "arrow.down.right.and.arrow.up.left").frame(width: 44, height: 32)
                     .contentShape(Rectangle()).accessibilityIdentifier("vulkan-display-resize")
-                    .gesture(DragGesture().onChanged { value in
+                    .gesture(DragGesture(coordinateSpace: .global).onChanged { value in
                         if resizeOrigin == nil { resizeOrigin = geometry.size }
                         geometry.size = CGSize(width: resizeOrigin!.width + value.translation.width, height: resizeOrigin!.height + value.translation.height)
                         geometry.constrain(to: viewport)
-                    }.onEnded { _ in resizeOrigin = nil })
+                    }.onEnded { value in
+                        if let start = resizeOrigin {
+                            geometry.size = CGSize(width: start.width + value.translation.width, height: start.height + value.translation.height)
+                            geometry.constrain(to: viewport)
+                        }
+                        resizeOrigin = nil
+                    })
             }.background(Color(white: 0.16))
         }.frame(width: geometry.size.width, height: geometry.size.height)
             .background(.black).clipShape(RoundedRectangle(cornerRadius: 10))
