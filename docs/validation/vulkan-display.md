@@ -8,7 +8,8 @@ per-frame GPU-to-guest readback, file export or UIImage reconstruction.
 The [standard C fixture](../../tests/fixtures/vulkan-present.c) queries the display,
 plane, mode, surface capabilities/formats/present modes and graphics queue support.
 It renders 24 frames across two swapchains, checks old-chain acquire fails after
-recreation, checks a second producer is rejected, destroys the device/surface,
+recreation, checks a second producer is rejected when the original loader lazily
+materializes its native surface, destroys the device/surface,
 then creates a fresh surface to check producer lease release. Per-image render
 semaphores are reused only after reacquire; acquire semaphore reuse follows the
 submission fence. A fence-only acquire path is also exercised. Prior-present

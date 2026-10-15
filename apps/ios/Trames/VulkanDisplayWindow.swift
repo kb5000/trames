@@ -7,6 +7,11 @@ import QuartzCore
 final class VulkanCanvas: UIView {
     let metal = CAMetalLayer()
     let pixels: CGSize
+    var frameCount: (() -> UInt64)?
+    override var accessibilityValue: String? {
+        get { "\(Int(pixels.width))x\(Int(pixels.height)) frames=\(frameCount?() ?? 0)" }
+        set { super.accessibilityValue = newValue }
+    }
     init(width: Int = 1024, height: Int = 768) {
         pixels = CGSize(width: width, height: height)
         super.init(frame: .zero)
@@ -39,12 +44,8 @@ final class VulkanCanvas: UIView {
 }
 struct VulkanCanvasPane: UIViewRepresentable {
     let canvas: VulkanCanvas
-    let frames: UInt64
     func makeUIView(context: Context) -> VulkanCanvas { canvas }
-    func updateUIView(_ view: VulkanCanvas, context: Context) {
-        view.accessibilityValue = "1024x768 frames=\(frames)"
-        view.setNeedsLayout()
-    }
+    func updateUIView(_ view: VulkanCanvas, context: Context) { view.setNeedsLayout() }
 }
 struct DisplayWindowGeometry {
     var origin = CGPoint(x: 32, y: 90)
@@ -77,9 +78,8 @@ struct VulkanDisplayWindow: View {
                     geometry.origin = CGPoint(x: dragOrigin!.x + value.translation.width, y: dragOrigin!.y + value.translation.height)
                     geometry.constrain(to: viewport)
                 }.onEnded { _ in dragOrigin = nil })
-            VulkanCanvasPane(canvas: session.displayCanvas, frames: session.displayFrames)
+            VulkanCanvasPane(canvas: session.displayCanvas)
                 .accessibilityIdentifier("vulkan-display-canvas")
-                .accessibilityValue("1024x768 frames=\(session.displayFrames)")
             HStack {
                 Spacer()
                 Image(systemName: "arrow.down.right.and.arrow.up.left").frame(width: 44, height: 32)
@@ -94,7 +94,6 @@ struct VulkanDisplayWindow: View {
             .background(.black).clipShape(RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.white.opacity(0.3)))
             .shadow(radius: 14).offset(x: geometry.origin.x, y: geometry.origin.y)
-            .accessibilityIdentifier("vulkan-display-window")
             .opacity(session.displayVisible ? 1 : 0).allowsHitTesting(session.displayVisible)
             .onAppear { geometry.constrain(to: viewport) }
             .onChange(of: viewport) { _, value in geometry.constrain(to: value) }

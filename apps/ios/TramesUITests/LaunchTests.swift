@@ -14,7 +14,7 @@ final class LaunchTests: XCTestCase {
         let before = canvas.frame
         title.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.5)).press(forDuration: 0.1, thenDragTo: title.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.5)).withOffset(CGVector(dx: 45, dy: 45)))
         XCTAssertGreaterThan(canvas.frame.minX, before.minX + 20)
-        let resize = app.images["vulkan-display-resize"]
+        let resize = app.descendants(matching: .any).matching(identifier: "vulkan-display-resize").firstMatch
         resize.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 0.1, thenDragTo: resize.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).withOffset(CGVector(dx: -90, dy: -70)))
         XCTAssertLessThan(canvas.frame.width, before.width - 40)
         let continued = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value != %@ AND value BEGINSWITH %@", frameCount, "1024x768 frames="), object: canvas)
@@ -26,7 +26,7 @@ final class LaunchTests: XCTestCase {
         let colored = pixels.withUnsafeMutableBytes { bytes -> Int in
             let context = CGContext(data: bytes.baseAddress, width: 128, height: 96,
                 bitsPerComponent: 8, bytesPerRow: 128 * 4, space: CGColorSpaceCreateDeviceRGB(),
-                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue)!
             context.draw(image, in: CGRect(x: 0, y: 0, width: 128, height: 96))
             let raw = bytes.bindMemory(to: UInt8.self)
             return stride(from: 0, to: raw.count, by: 4).filter { i in

@@ -12,7 +12,6 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     lazy var displayCanvas = VulkanCanvas()
     @Published var displayEnabled = false
     @Published var displayVisible = true
-    @Published var displayFrames: UInt64 = 0
     var local: LocalSession?
     let bridge = BridgeController()
     var ssh: SSHSession?
@@ -48,6 +47,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
                 guard let self, !self.closed else { local.close(); return }
                 if gpu {
                     try local.attachDisplay(layer: Unmanaged.passUnretained(self.displayCanvas.metal).toOpaque(), width: 1024, height: 768)
+                    self.displayCanvas.frameCount = { [weak local] in (try? local?.displayStatus().presented) ?? 0 }
                     self.displayEnabled = true
                 }
                 self.local = local
@@ -68,7 +68,6 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     private func pollLocal() {
         guard let local, !closed else { return }
         do {
-            if displayEnabled { displayFrames = try local.displayStatus().presented }
             let output = try local.receive()
             try bridge.poll()
             if !output.isEmpty { terminal.feed(byteArray: Array(output)[...]) }

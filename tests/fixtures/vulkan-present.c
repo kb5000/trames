@@ -32,9 +32,14 @@ int main(int argc,char **argv) {
     VkDisplayModeCreateInfoKHR modeInfo={.sType=VK_STRUCTURE_TYPE_DISPLAY_MODE_CREATE_INFO_KHR,.parameters=mode.parameters};VkDisplayModeKHR createdMode;OK(vkCreateDisplayModeKHR(physical,display.display,&modeInfo,NULL,&createdMode));assert(createdMode==mode.displayMode);
     VkDisplaySurfaceCreateInfoKHR si={.sType=VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR,.displayMode=mode.displayMode,.transform=VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,.globalAlpha=1,.alphaMode=VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR,.imageExtent=mode.parameters.visibleRegion};
     VkSurfaceKHR surface;OK(vkCreateDisplayPlaneSurfaceKHR(instance,&si,NULL,&surface));
-    VkSurfaceKHR duplicate;assert(vkCreateDisplayPlaneSurfaceKHR(instance,&si,NULL,&duplicate)==VK_ERROR_NATIVE_WINDOW_IN_USE_KHR);
+    // The original loader may defer ICD surface creation until first query.
+    // Producer exclusivity is enforced when it materializes the native surface.
     vkGetPhysicalDeviceQueueFamilyProperties(physical,&n,NULL);VkQueueFamilyProperties *families=calloc(n,sizeof(*families));assert(families);vkGetPhysicalDeviceQueueFamilyProperties(physical,&n,families);uint32_t family=0;while(family<n && !(families[family].queueFlags&VK_QUEUE_GRAPHICS_BIT))family++;assert(family<n);free(families);
     VkBool32 support=VK_FALSE;OK(vkGetPhysicalDeviceSurfaceSupportKHR(physical,family,surface,&support));assert(support);
+    VkSurfaceKHR duplicate;OK(vkCreateDisplayPlaneSurfaceKHR(instance,&si,NULL,&duplicate));VkSurfaceCapabilitiesKHR duplicateCaps;
+    VkResult duplicateResult=vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical,duplicate,&duplicateCaps);
+    if(duplicateResult!=VK_ERROR_NATIVE_WINDOW_IN_USE_KHR){fprintf(stderr,"duplicate native surface query: %d\n",duplicateResult);abort();}
+    vkDestroySurfaceKHR(instance,duplicate,NULL);
     VkSurfaceCapabilitiesKHR caps;OK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical,surface,&caps));assert(caps.currentExtent.width==1024 && caps.currentExtent.height==768);
     n=1;VkSurfaceFormatKHR format;OK(vkGetPhysicalDeviceSurfaceFormatsKHR(physical,surface,&n,&format));assert(format.format==VK_FORMAT_B8G8R8A8_UNORM);
     n=1;VkPresentModeKHR presentMode;OK(vkGetPhysicalDeviceSurfacePresentModesKHR(physical,surface,&n,&presentMode));assert(presentMode==VK_PRESENT_MODE_FIFO_KHR);
@@ -72,5 +77,5 @@ int main(int argc,char **argv) {
     }
     vkDestroySwapchainKHR(device,previous,NULL);vkDestroySemaphore(device,acquired,NULL);vkDestroyFence(device,acquireFence,NULL);vkDestroyFence(device,fence,NULL);vkDestroyCommandPool(device,pool,NULL);vkDestroyPipeline(device,pipeline,NULL);vkDestroyPipelineLayout(device,layout,NULL);vkDestroyRenderPass(device,pass,NULL);vkDestroyDevice(device,NULL);vkDestroySurfaceKHR(instance,surface,NULL);
     // Releasing the producer permits a fresh standard surface on the same layer.
-    OK(vkCreateDisplayPlaneSurfaceKHR(instance,&si,NULL,&surface));vkDestroySurfaceKHR(instance,surface,NULL);vkDestroyInstance(instance,NULL);printf("vulkan-present-ok frames=%u\n",frames);return 0;
+    OK(vkCreateDisplayPlaneSurfaceKHR(instance,&si,NULL,&surface));VkSurfaceCapabilitiesKHR freshCaps;OK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical,surface,&freshCaps));vkDestroySurfaceKHR(instance,surface,NULL);vkDestroyInstance(instance,NULL);printf("vulkan-present-ok frames=%u\n",frames);return 0;
 }

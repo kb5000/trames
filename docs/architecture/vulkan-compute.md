@@ -103,7 +103,8 @@ pointer can select a host layer or Objective-C object. Objective-C retain leases
 keep the target alive through surface, swapchain, view, recorded-command and
 in-flight work lifetimes. Detach invalidates that target generation with
 `VK_ERROR_SURFACE_LOST_KHR`; cleanup retains resources until native work ends.
-A surface claims the display exclusively; a second live producer receives
+The original Linux loader creates ICD surfaces lazily on first query/use. Once
+materialized, a surface claims the display exclusively; a second live producer receives
 `VK_ERROR_NATIVE_WINDOW_IN_USE_KHR`.
 
 The ordinary Linux application enables `VK_KHR_surface` and `VK_KHR_display`,
