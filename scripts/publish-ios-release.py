@@ -113,7 +113,18 @@ def verify(archives, source, source_commit):
     for name in ['vulkan-texture', 'vulkan-texture.vert.spv', 'vulkan-texture.frag.spv', 'vulkan-present']:
         assert files['GuestVulkan/acceptance/' + name] == vulkan.read('acceptance/' + name)
     notices = [n for n in vulkan.namelist() if n.startswith('Notices/') and not n.endswith('/')]
-    assert len(notices) >= 10
+    required_notices = {
+        'Notices/Trames-Vulkan-GPL-3.0.txt',
+        'Notices/moltenvk-source-LICENSE.txt',
+        'Notices/moltenvk-dependency-SPIRV-Cross-LICENSE.txt',
+        'Notices/moltenvk-dependency-SPIRV-Headers-LICENSE.txt',
+        'Notices/moltenvk-dependency-SPIRV-Tools-LICENSE.txt',
+        'Notices/moltenvk-dependency-Volk-LICENSE.md.txt',
+        'Notices/moltenvk-dependency-Vulkan-Headers-LICENSE.md.txt',
+        'Notices/moltenvk-dependency-Vulkan-Tools-LICENSE.txt.txt',
+        'Notices/moltenvk-dependency-cereal-LICENSE.txt',
+    }
+    assert required_notices <= set(notices)
     for name in notices:
         assert files['GuestVulkan/' + name] == vulkan.read(name)
     with tarfile.open(fileobj=io.BytesIO(vulkan.read('vulkan-native-upstream-source.tar.gz'))) as archive:
@@ -142,8 +153,10 @@ def main():
     parser.add_argument('--repository', required=True)
     parser.add_argument('--apple-run', type=int, required=True)
     parser.add_argument('--allow-version', choices=['0.15.0'], required=True)
+    parser.add_argument('--allow-source', required=True, help='Exact authorized application source commit')
     args = parser.parse_args()
     assert re.fullmatch(r'[\w.-]+/[\w.-]+', args.repository)
+    assert re.fullmatch(r'[0-9a-f]{40}', args.allow_source)
     apple = wait_run(args.repository, args.apple_run)
     assert apple['path'] == '.github/workflows/ios.yml' and apple['head_branch'] == 'main'
     assert apple['event'] == 'push' and apple['head_repository']['full_name'] == args.repository
@@ -159,10 +172,10 @@ def main():
         if version != args.allow_version:
             print(f'Skipping {version}; only {args.allow_version} is authorized by this release job.')
             return
-        # A newer authorized source can arrive while an older build is running.
-        # Never let that older run claim this release version first.
-        if api(f'repos/{args.repository}/git/ref/heads/main')['object']['sha'] != commit:
-            print('Skipping superseded source; wait for the current main build.')
+        # Pin the tested app independently of later publication-only repairs.
+        # Both successful workflows below must still match this exact source.
+        if commit != args.allow_source:
+            print('Skipping a build outside the authorized application source.')
             return
         runs = api(f'repos/{args.repository}/actions/runs?head_sha={commit}')['workflow_runs']
         linux = next(r for r in runs if r['path'] == '.github/workflows/linux.yml')
@@ -198,6 +211,7 @@ def main():
             metadata[kind] = {k: artifact[k] for k in ('id', 'name', 'digest', 'expires_at')}
         data, report, summary = verify(archives, source, commit)
         report['artifacts'] = metadata
+        report['publisher_source_commit'] = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
         report['ci'] = {r['name']: {'id': r['id'], 'attempt': r['run_attempt'],
                         'url': r['html_url'], 'head_sha': r['head_sha'], 'conclusion': r['conclusion']}
                         for r in (apple, linux)}
@@ -224,9 +238,6 @@ Apple CI: {apple['html_url']}
 Linux CI: {linux['html_url']}
 """)
         assets = [ipa, checksum, proof, simulator, musl, native_source]
-        if api(f'repos/{args.repository}/git/ref/heads/main')['object']['sha'] != commit:
-            print('Source superseded during verification; no release published.')
-            return
         if release:
             present = {a['name'] for a in release['assets']}
             for asset in assets:

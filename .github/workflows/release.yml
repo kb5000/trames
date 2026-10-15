@@ -1,5 +1,8 @@
 name: Publish iPad release
 on:
+  push:
+    branches: [main]
+    paths: ['scripts/publish-ios-release.py', '.github/workflows/release.yml']
   workflow_run:
     workflows: [iPad frontend]
     types: [completed]
@@ -34,7 +37,8 @@ jobs:
       - name: Verify both workflows and publish the requested version
         env:
           GH_TOKEN: ${{ github.token }}
-          APPLE_RUN: ${{ github.event.workflow_run.id || inputs.apple_run }}
+          APPLE_RUN: ${{ github.event.workflow_run.id || inputs.apple_run || '38705917216' }}
         run: >-
           python3 scripts/publish-ios-release.py --repository "$GITHUB_REPOSITORY"
           --apple-run "$APPLE_RUN" --allow-version 0.15.0
+          --allow-source 18f74153732a8010b611f441accfbed7ab337c28
