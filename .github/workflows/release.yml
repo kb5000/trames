@@ -13,7 +13,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: trames-ipad-release-0.14
+  group: trames-ipad-release-0.15
   cancel-in-progress: false
 jobs:
   publish:
@@ -37,4 +37,4 @@ jobs:
           APPLE_RUN: ${{ github.event.workflow_run.id || inputs.apple_run }}
         run: >-
           python3 scripts/publish-ios-release.py --repository "$GITHUB_REPOSITORY"
-          --apple-run "$APPLE_RUN" --allow-version 0.14.0
+          --apple-run "$APPLE_RUN" --allow-version 0.15.0

@@ -56,7 +56,7 @@ def verify(archives, source, source_commit):
     info = plistlib.loads(app.read(prefix + 'Info.plist'))
     version = tomllib.loads((source / 'Cargo.toml').read_text())['workspace']['package']['version']
     assert info['CFBundleShortVersionString'] == version
-    assert info['CFBundleVersion'] == '15' and version == '0.14.0'
+    assert info['CFBundleVersion'] == '16' and version == '0.15.0'
     assert info['CFBundleIdentifier'] == 'org.trames.Trames'
     assert info['CFBundleSupportedPlatforms'] == ['iPhoneOS']
     assert info['MinimumOSVersion'] == '17.0' and 2 in info['UIDeviceFamily']
@@ -98,17 +98,42 @@ def verify(archives, source, source_commit):
     summaries = [n for n in build.namelist() if n.endswith('ipad-smoke-summary.json')]
     assert len(summaries) == 1
     summary = json.loads(build.read(summaries[0]))
-    assert summary['passedTests'] > 0 and summary['failedTests'] == 0
+    assert summary['passedTests'] >= 14 and summary['failedTests'] == 0 and summary['skippedTests'] == 0
     sim = 'build/simulator/Build/Products/Debug-iphonesimulator/Trames.app/GuestMusl/libc.so'
     assert build.read(sim) == libc
-    report = dict(source_commit=source_commit, version=version, build='15',
+    vulkan = archives['vulkan']
+    gpu = json.loads(vulkan.read('manifest.json'))
+    icd = vulkan.read('libtrames_vulkan_icd.so')
+    assert files['GuestVulkan/libtrames_vulkan_icd.so'] == icd
+    assert files['GuestVulkan/manifest.json'] == vulkan.read('manifest.json')
+    assert sha(icd) == gpu['icd_sha256'] and gpu['profile'] == 65542
+    assert gpu['wire_revision'] == 3 and gpu['default_enabled'] is False
+    assert gpu['native_moltenvk'] == '1.4.2'
+    assert len(re.findall(r'if\(!strcmp\(name,', (source / 'accelerator/vulkan/entrypoints.inc').read_text())) == 108
+    for name in ['vulkan-texture', 'vulkan-texture.vert.spv', 'vulkan-texture.frag.spv', 'vulkan-present']:
+        assert files['GuestVulkan/acceptance/' + name] == vulkan.read('acceptance/' + name)
+    notices = [n for n in vulkan.namelist() if n.startswith('Notices/') and not n.endswith('/')]
+    assert len(notices) >= 10
+    for name in notices:
+        assert files['GuestVulkan/' + name] == vulkan.read(name)
+    with tarfile.open(fileobj=io.BytesIO(vulkan.read('vulkan-native-upstream-source.tar.gz'))) as archive:
+        upstream = json.load(archive.extractfile('vulkan-upstream.json'))
+        assert upstream == json.loads((source / 'scripts/vulkan-upstream.json').read_text())
+        for name, record in upstream['archives'].items():
+            if name != 'moltenvk-all.tar':
+                assert sha(archive.extractfile('upstream/' + name).read()) == record['sha256'], name
+        assert archive.extractfile('prepare-vulkan.py').read() == (source / 'scripts/prepare-vulkan.py').read_bytes()
+        assert archive.extractfile('TRAMES-GPL-3.0.txt').read() == (source / 'LICENSE').read_bytes()
+    report = dict(source_commit=source_commit, version=version, build='16',
         ipa_sha256=sha(data), ipa_bytes=len(data), bundle_id=info['CFBundleIdentifier'],
         minimum_os=info['MinimumOSVersion'], device_families=info['UIDeviceFamily'],
         device_architecture='arm64', mach_o_platform=2,
         all_packaged_files_match_device_build=len(files), executable_permission_verified=True,
         zip_crc_and_sha256_sidecar_verified=True, libc_sha256=sha(libc),
         musl_native_functions=19, source_inputs_verified=len(patch['inputs_sha256']),
-        license_notices_verified=True, simulator_passed=summary['passedTests'], simulator_failed=0)
+        license_notices_verified=True, vulkan_icd_sha256=sha(icd), vulkan_profile=gpu['profile'],
+        vulkan_public_entrypoints=108, moltenvk_version='1.4.2', vulkan_default_enabled=False,
+        vulkan_source_and_notices_verified=True, simulator_passed=summary['passedTests'], simulator_failed=0)
     return data, report, summary
 
 
@@ -116,7 +141,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--repository', required=True)
     parser.add_argument('--apple-run', type=int, required=True)
-    parser.add_argument('--allow-version', choices=['0.14.0'], required=True)
+    parser.add_argument('--allow-version', choices=['0.15.0'], required=True)
     args = parser.parse_args()
     assert re.fullmatch(r'[\w.-]+/[\w.-]+', args.repository)
     apple = wait_run(args.repository, args.apple_run)
@@ -124,10 +149,6 @@ def main():
     assert apple['event'] == 'push' and apple['head_repository']['full_name'] == args.repository
     commit = apple['head_sha']
     assert re.fullmatch(r'[0-9a-f]{40}', commit)
-    runs = api(f'repos/{args.repository}/actions/runs?head_sha={commit}')['workflow_runs']
-    linux = next(r for r in runs if r['path'] == '.github/workflows/linux.yml')
-    linux = wait_run(args.repository, linux['id'])
-    assert linux['head_sha'] == commit and linux['event'] == 'push'
     with tempfile.TemporaryDirectory(prefix='trames-release-') as folder:
         directory = Path(folder)
         source = directory / 'source'
@@ -138,14 +159,18 @@ def main():
         if version != args.allow_version:
             print(f'Skipping {version}; only {args.allow_version} is authorized by this release job.')
             return
+        runs = api(f'repos/{args.repository}/actions/runs?head_sha={commit}')['workflow_runs']
+        linux = next(r for r in runs if r['path'] == '.github/workflows/linux.yml')
+        linux = wait_run(args.repository, linux['id'])
+        assert linux['head_sha'] == commit and linux['event'] == 'push'
         tag = 'v' + version
         existing = subprocess.run(['gh', 'release', 'view', tag, '--repo', args.repository,
                                    '--json', 'url,isDraft,targetCommitish,assets'], capture_output=True)
         release = json.loads(existing.stdout) if existing.returncode == 0 else None
-        asset_names = {f'Trames-{version}-build15-unsigned.ipa',
-                       f'Trames-{version}-build15-unsigned.ipa.sha256',
+        asset_names = {f'Trames-{version}-build16-unsigned.ipa',
+                       f'Trames-{version}-build16-unsigned.ipa.sha256',
                        f'Trames-{version}-verification.json', f'Trames-{version}-simulator.json',
-                       'musl-hybrid-1.2.5-source.tar.gz'}
+                       'musl-hybrid-1.2.5-source.tar.gz', 'vulkan-native-upstream-source.tar.gz'}
         if release and not release['isDraft']:
             assert asset_names <= {a['name'] for a in release['assets']}, 'Published release is incomplete'
             print(release['url'])
@@ -154,7 +179,8 @@ def main():
         if release:
             assert release['targetCommitish'] == commit, 'Draft belongs to another source commit'
         expected = {'sideload': 'Trames-unsigned-sideload', 'build': 'unsigned-ipad-build-and-project',
-                    'musl': 'full-musl-library-and-source'}
+                    'musl': 'full-musl-library-and-source',
+                    'vulkan': 'vulkan-compute-driver-and-native-source'}
         artifacts = api(f'repos/{args.repository}/actions/runs/{args.apple_run}/artifacts')['artifacts']
         archives, metadata = {}, {}
         for kind, name in expected.items():
@@ -170,7 +196,7 @@ def main():
         report['ci'] = {r['name']: {'id': r['id'], 'attempt': r['run_attempt'],
                         'url': r['html_url'], 'head_sha': r['head_sha'], 'conclusion': r['conclusion']}
                         for r in (apple, linux)}
-        ipa = directory / f'Trames-{version}-build15-unsigned.ipa'
+        ipa = directory / f'Trames-{version}-build16-unsigned.ipa'
         ipa.write_bytes(data)
         checksum = ipa.with_suffix('.ipa.sha256')
         checksum.write_text(f'{sha(data)}  {ipa.name}\n')
@@ -181,22 +207,18 @@ def main():
         musl = directory / 'musl-hybrid-1.2.5-source.tar.gz'
         musl.write_bytes(archives['musl'].read(musl.name))
         notes = directory / 'release-notes.md'
-        notes.write_text(f'''0.14.0/build 15 合并原生工作线程并行、19 项纯函数、64 字节区域访存与稀疏脏页提交。未使用 JIT，实验性原生 malloc/free 默认关闭。
+        native_source = directory / 'vulkan-native-upstream-source.tar.gz'
+        native_source.write_bytes(archives['vulkan'].read(native_source.name))
+        notes.write_text((source / 'docs/validation/release-0.15-notes.md').read_text() + f"""
 
-Windows 下载 `Trames-{version}-build15-unsigned.ipa`，用 Sideloadly 和原 Apple ID/实际 Bundle ID 覆盖安装，无需清数据。最低 iPadOS 17，Bundle ID 为 `org.trames.Trames`。
-
-四核分配负载本次中位数耗时降低约 14%～18%；其他负载有回退和宿主波动，不能视作整体或物理 iPad 提速。完整证据见仓库 `docs/validation/checkpoint-cost.md`。
-
-Linux 与 Apple 工作流均通过，实际模拟器 {summary['passedTests']} passed / 0 failed，IPA 文件与 ARM64 设备构建逐字节一致。已核对 ZIP CRC、SHA-256、可执行权限、设备平台、19 项原生功能、原始源码及许可证。
-
-GPL-3.0-or-later：完整仓库源码对应此 Release 的固定 tag；`musl-hybrid-1.2.5-source.tar.gz` 提供 guest libc 与配套源码。基于固定 NIOSSH 源码修复关闭期间的窗口调整崩溃；确定性复现与原始测试保留，真实 OpenSSH PTY/SFTP 检查通过。物理 iPad 验收继续在 Issue #8 跟踪。
+实际模拟器 {summary['passedTests']} passed / 0 failed / 0 skipped。IPA 与 ARM64 设备构建逐字节一致；ZIP、SHA-256、执行权限、平台、原始源码及许可证均通过核验。
 
 Source commit: `{commit}`
 IPA SHA-256: `{sha(data)}`
 Apple CI: {apple['html_url']}
 Linux CI: {linux['html_url']}
-''')
-        assets = [ipa, checksum, proof, simulator, musl]
+""")
+        assets = [ipa, checksum, proof, simulator, musl, native_source]
         if release:
             present = {a['name'] for a in release['assets']}
             for asset in assets:
@@ -209,7 +231,7 @@ Linux CI: {linux['html_url']}
                     gh('release', 'upload', tag, asset, '--repo', args.repository)
         else:
             gh('release', 'create', tag, *assets, '--repo', args.repository, '--draft',
-               '--target', commit, '--title', f'Trames {version} (build 15)', '--notes-file', notes)
+               '--target', commit, '--title', f'Trames {version} (build 16)', '--notes-file', notes)
         # The public release appears only after every verified asset uploaded.
         gh('release', 'edit', tag, '--repo', args.repository, '--draft=false')
         print(f'https://github.com/{args.repository}/releases/tag/{tag}')

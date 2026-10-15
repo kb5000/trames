@@ -14,9 +14,9 @@
 
 [0.14.0/build 15](docs/validation/release-0.14.md)已将这些更新与[稀疏脏页提交优化](docs/validation/checkpoint-cost.md)打包发布到 [GitHub Release](https://github.com/kb5000/trames/releases/tag/v0.14.0)，可直接下载 unsigned IPA 用 Sideloadly 覆盖安装。原生 malloc/free 保持实验性、默认关闭；普通分配器与并行原生函数使用统一的 guest 访存模型。
 
-后续 main 已补齐[sudo 伪终端与宿主时区同步](docs/validation/sudo-timezone.md)：原版 sudo 的默认 `use_pty`、密码认证、提权和嵌套运行通过实际测试；本地 Linux 在启动、回到前台及系统时区变化时接收 iPad 的原始时区规则，保留显式 `TZ` 覆盖。这些更新尚未包含在上述 0.14.0 IPA 中，将随下一次合并版本交付。
+后续 main 已补齐[sudo 伪终端与宿主时区同步](docs/validation/sudo-timezone.md)：原版 sudo 的默认 `use_pty`、密码认证、提权和嵌套运行通过实际测试；本地 Linux 在启动、回到前台及系统时区变化时接收 iPad 的原始时区规则，保留显式 `TZ` 覆盖。这些更新随正在打包的 [0.15.0/build 16](docs/validation/release-0.15.md) 交付。
 
-main 进一步修复[匿名 ELF 与 fd 执行](docs/validation/fd-exec.md)：`/proc/self/fd/N` 按实际 inode 执行，加入 `execveat`、`AT_EMPTY_PATH` 和 `O_PATH`；关闭原 fd 后仍保留 `/proc/self/exe`。`(deleted)` 只显示一次，仍表示有效的匿名或已取消链接文件。Python `pass_fds` 与 `os.execve(fd)`、23 项原生 Linux 对照通过，随下一次合并版本交付。
+main 进一步修复[匿名 ELF 与 fd 执行](docs/validation/fd-exec.md)：`/proc/self/fd/N` 按实际 inode 执行，加入 `execveat`、`AT_EMPTY_PATH` 和 `O_PATH`；关闭原 fd 后仍保留 `/proc/self/exe`。`(deleted)` 只显示一次，仍表示有效的匿名或已取消链接文件。Python `pass_fds` 与 `os.execve(fd)`、23 项原生 Linux 对照通过，同样纳入 0.15.0。
 
 ## 快速运行
 
