@@ -71,6 +71,9 @@ mod caps;
 mod compat;
 #[path = "process_events.rs"]
 mod events;
+#[path = "process_signals.rs"]
+mod signals;
+use signals::Pending;
 #[path = "process_pid.rs"]
 mod pid_namespace;
 use compat::AltStack;
@@ -84,6 +87,7 @@ struct Action {
 #[derive(Clone, Copy)]
 struct Info {
     sender: u32,
+    uid: u32,
     status: i32,
     code: i32,
     timer: Option<(i32, i32, u64)>,
@@ -129,7 +133,8 @@ struct Process {
     state: State,
     actions: [Action; 65],
     mask: u64,
-    pending: BTreeMap<u32, Info>,
+    pending: Pending,
+    shared_pending: Rc<RefCell<Pending>>,
     frames: u32,
     wait_event: Option<i32>,
     poll_deadline: Option<Instant>,
@@ -164,7 +169,8 @@ impl Process {
             state: State::Ready,
             actions: self.actions,
             mask: self.mask,
-            pending: BTreeMap::new(),
+            pending: Pending::default(),
+            shared_pending: Rc::new(RefCell::new(Pending::default())),
             frames: self.frames,
             wait_event: None,
             poll_deadline: None,
@@ -514,7 +520,8 @@ impl Kernel {
             fds: p.linux.vfs.fd_snapshot(),
             auxiliary: p.linux.auxiliary.clone(),
             file_size_limits: Some(p.file_size_limit.get()),
-            pending: p.pending.keys().fold(0, |v, s| v | (1 << (s - 1))),
+            pending: p.pending.bits(),
+            shared_pending: p.shared_pending.borrow().bits(),
             blocked: p.mask,
             ignored: (1..=64)
                 .filter(|s| p.actions[*s].handler == 1)
@@ -554,19 +561,23 @@ impl Kernel {
             },
         );
     }
-    fn notify(&mut self, parent: u32, child: u32, status: i32, code: i32) {
+    fn notify(&mut self, parent: u32, child: u32, uid: u32, status: i32, code: i32) {
         if let Some(p) = self.processes.get_mut(&parent) {
             if p.actions[17].handler == 1 || (matches!(code, 5 | 6) && p.actions[17].flags & 1 != 0)
             {
                 return;
             }
-            p.pending.entry(17).or_insert(Info {
-                sender: child,
-                status,
-                code,
-                timer: None,
-                fault: None,
-            });
+            let _ = p.shared_pending.borrow_mut().enqueue(
+                17,
+                Info {
+                    sender: child,
+                    uid,
+                    status,
+                    code,
+                    timer: None,
+                    fault: None,
+                },
+            );
         }
     }
     fn close_exit_files(&self, p: &mut Process) {
@@ -643,6 +654,7 @@ impl Kernel {
             self.notify(
                 p.parent,
                 pid,
+                p.linux.vfs.credentials.uid,
                 if status & 127 == 0 {
                     status >> 8
                 } else {
@@ -666,11 +678,13 @@ impl Kernel {
         if let Some(leader) = self.processes.get(&tgid) {
             if let State::Zombie(status) = leader.state {
                 let parent = leader.parent;
+                let uid = leader.linux.vfs.credentials.uid;
                 let namespace = leader.linux.vfs.pid_namespace().clone();
                 self.reap_namespace_children(tgid, &namespace, parent);
                 self.notify(
                     parent,
                     tgid,
+                    uid,
                     if status & 127 == 0 {
                         status >> 8
                     } else {
@@ -719,40 +733,58 @@ impl Kernel {
             }
         }
     }
-    fn queue_one(pid: u32, p: &mut Process, sig: u32, sender: u32) {
+    fn prepare_signal(p: &mut Process, sig: u32, sender: u32) -> bool {
         if sig == 0 || matches!(p.state, State::Zombie(_)) {
-            return;
+            return false;
         }
         if sig == 18 {
-            p.pending.retain(|s, _| !matches!(s, 19..=22));
+            for s in 19..=22 {
+                p.pending.discard(s);
+                p.shared_pending.borrow_mut().discard(s);
+            }
             if matches!(p.state, State::Stopped) {
                 p.state = p.stopped_state.take().map_or(State::Ready, |s| *s);
                 p.wait_event = Some(0xffff);
             }
         }
         if matches!(sig, 19..=22) {
-            p.pending.remove(&18);
+            p.pending.discard(18);
+            p.shared_pending.borrow_mut().discard(18);
         }
-        // A namespace init accepts only installed handlers. Ancestor SIGKILL
-        // and SIGSTOP are the Linux exceptions; synchronous faults are separate.
+        // Unblocked default dispositions are ignored by namespace init. Blocked
+        // signals remain available to signalfd/sigwait. Ancestor KILL/STOP and
+        // synchronous faults retain their forced-delivery behavior.
         if p.linux.vfs.pid_namespace().is_nested()
             && p.linux.vfs.visible_pid(p.tgid) == 1
             && p.actions[sig as usize].handler <= 1
+            && p.mask & (1 << (sig - 1)) == 0
             && !(matches!(sig, 9 | 19) && p.linux.vfs.visible_pid(sender) == 0)
         {
-            return;
+            return false;
         }
-        if sig != 9 && sig != 19 && p.actions[sig as usize].handler == 1 {
-            return;
+        if sig != 9
+            && sig != 19
+            && p.actions[sig as usize].handler == 1
+            && p.mask & (1 << (sig - 1)) == 0
+        {
+            return false;
         }
-        let _ = pid;
-        p.pending.entry(sig).or_insert(Info {
-            sender,
-            status: 0,
-            code: 0,
-            timer: None,
-            fault: None,
-        });
+        true
+    }
+    fn queue_one(_pid: u32, p: &mut Process, sig: u32, sender: u32) {
+        if Self::prepare_signal(p, sig, sender) {
+            let _ = p.pending.enqueue(
+                sig,
+                Info {
+                    sender,
+                    uid: 0,
+                    status: 0,
+                    code: 0,
+                    timer: None,
+                    fault: None,
+                },
+            );
+        }
     }
     fn may_signal(source: &Process, target: &Process, sig: u32) -> bool {
         let a = &source.linux.vfs.credentials;
@@ -795,14 +827,43 @@ impl Kernel {
             return Err(Errno(1));
         }
         let sender = p.tgid;
+        let uid = p.linux.vfs.credentials.uid;
+        if matches!(sig, 18..=22) {
+            // Stop/continue cancellation and group resume apply to every member
+            // even when tgkill selects one thread for the pending signal.
+            let group = if tid == pid {
+                p.tgid
+            } else {
+                self.processes[&tid].tgid
+            };
+            if p.tgid == group {
+                Self::prepare_signal(p, sig, sender);
+            }
+            for other in self
+                .processes
+                .values_mut()
+                .filter(|other| other.tgid == group)
+            {
+                Self::prepare_signal(other, sig, sender);
+            }
+        }
         let target = if tid == pid {
             p
         } else {
             self.processes.get_mut(&tid).ok_or(Errno(3))?
         };
-        Self::queue_one(tid, target, sig, sender);
-        if let Some(info) = target.pending.get_mut(&sig) {
-            info.code = -6;
+        if Self::prepare_signal(target, sig, sender) {
+            target.pending.enqueue(
+                sig,
+                Info {
+                    sender,
+                    uid,
+                    status: 0,
+                    code: -6,
+                    timer: None,
+                    fault: None,
+                },
+            )?;
         }
         Ok(0)
     }
@@ -856,18 +917,31 @@ impl Kernel {
             return Err(Errno(if found { 1 } else { 3 }));
         }
         let sender = p.tgid;
-        let queue = |id: u32, other: &mut Process| {
+        let uid = p.linux.vfs.credentials.uid;
+        let mut queued = Vec::new();
+        let mut queue = |other: &mut Process| -> Result<(), Errno> {
             if groups.contains(&other.tgid)
-                && (id == other.tgid
-                    || sig == 18
-                    || matches!(sig, 19..=22) && other.actions[sig as usize].handler == 0)
+                && Self::prepare_signal(other, sig, sender)
+                && !queued.contains(&other.tgid)
             {
-                Self::queue_one(id, other, sig, sender);
+                other.shared_pending.borrow_mut().enqueue(
+                    sig,
+                    Info {
+                        sender,
+                        uid,
+                        status: 0,
+                        code: 0,
+                        timer: None,
+                        fault: None,
+                    },
+                )?;
+                queued.push(other.tgid);
             }
+            Ok(())
         };
-        queue(pid, p);
-        for (&id, other) in &mut self.processes {
-            queue(id, other);
+        queue(p)?;
+        for other in self.processes.values_mut() {
+            queue(other)?;
         }
         Ok(0)
     }
@@ -917,10 +991,14 @@ impl Kernel {
             self.exit(pid, p, sig as i32);
             return;
         }
-        p.pending.insert(
+        // A CPU fault must retain its precise address/context even if an
+        // asynchronous signal of the same number was already pending.
+        p.pending.discard(sig);
+        let _ = p.pending.enqueue(
             sig,
             Info {
                 sender: 0,
+                uid: 0,
                 status: 0,
                 code,
                 timer: None,
@@ -933,25 +1011,31 @@ impl Kernel {
     }
     fn deliver(&mut self, pid: u32, p: &mut Process) -> Result<bool, Errno> {
         let stopped = matches!(p.state, State::Stopped);
-        let sig = if p.pending.contains_key(&9) {
-            Some(9)
+        let selected = if p.pending_bits() & (1 << 8) != 0 {
+            p.next_signal(1 << 8)
         } else if let Some((&sig, _)) = p.pending.iter().find(|(_, info)| info.fault.is_some()) {
-            Some(sig)
+            Some((sig, false))
         } else {
-            p.pending
-                .keys()
-                .copied()
-                .find(|s| (!stopped || *s == 18) && (p.mask & (1u64 << (s - 1)) == 0 || *s == 19)
-                    // A native C function returns once its compile has finished;
-                    // defer caught handlers without rerunning this operation.
-                    && (!matches!(p.state, State::Gpu { .. }) || p.actions[*s as usize].handler <= 1))
+            let mut allowed = !p.mask | UNBLOCKABLE;
+            if stopped {
+                allowed &= 1 << 17;
+            }
+            if matches!(p.state, State::Gpu { .. }) {
+                for sig in 1..=64 {
+                    if p.actions[sig].handler > 1 {
+                        allowed &= !(1 << (sig - 1));
+                    }
+                }
+            }
+            p.next_signal(allowed)
         };
-        let Some(sig) = sig else { return Ok(false) };
-        if matches!(p.state, State::Stopped) && sig != 9 && sig != 18 {
+        let Some((sig, shared)) = selected else {
+            return Ok(false);
+        };
+        if stopped && sig != 9 && sig != 18 {
             return Ok(false);
         }
-        let mut info = p.pending.remove(&sig).expect("pending");
-        info.sender = p.linux.vfs.visible_pid(info.sender);
+        let info = p.take_signal(sig, shared);
         let action = p.actions[sig as usize];
         // Timer-generated signals also reach this queue without queue_one.
         // Namespace init ignores default dispositions, except forced ancestor
@@ -973,8 +1057,14 @@ impl Kernel {
                 p.stopped_state = Some(Box::new(p.state.clone()));
             }
             p.state = State::Stopped;
+            for other in self.processes.values_mut().filter(|other| {
+                other.tgid == p.tgid && !matches!(other.state, State::Zombie(_) | State::Stopped)
+            }) {
+                other.stopped_state = Some(Box::new(other.state.clone()));
+                other.state = State::Stopped;
+            }
             p.wait_event = Some(((sig as i32) << 8) | 0x7f);
-            self.notify(p.parent, pid, sig as i32, 5);
+            self.notify(p.parent, p.tgid, p.linux.vfs.credentials.uid, sig as i32, 5);
             return Ok(true);
         }
         if action.handler <= 1 {
@@ -1633,10 +1723,10 @@ impl Kernel {
                     .flat_map(|(&id, t)| {
                         [id, t.tgid, t.group, t.session]
                             .into_iter()
-                            .chain(t.pending.values().map(|i| i.sender))
+                            .chain(t.signal_senders())
                     })
                     .chain([pid, p.tgid, p.group, p.session])
-                    .chain(p.pending.values().map(|i| i.sender))
+                    .chain(p.signal_senders())
                     .collect();
                 p.linux.vfs.pid_namespace().retain_ids(&live);
                 let mut child = p.fork();
@@ -1677,6 +1767,7 @@ impl Kernel {
                 }
                 child.tgid = if threaded { p.tgid } else { id };
                 if threaded {
+                    child.shared_pending = p.shared_pending.clone();
                     child.subreaper = p.subreaper;
                     child.file_size_limit = p.file_size_limit.clone();
                 }
@@ -1793,6 +1884,7 @@ impl Kernel {
             167 if !matches!(a[0], 15 | 16) => Err(Errno(22)),
             72 | 73 => self.poll(p, number, a, io),
             22 | 441 => self.epoll(p, number, a, io),
+            74 => self.signalfd(p, a),
             85..=87 => self.timerfd(p, number, a),
             134 => {
                 let sig = a[0] as u32;
@@ -1833,8 +1925,12 @@ impl Kernel {
                 }
                 if let Some(action) = new {
                     p.actions[sig as usize] = action;
-                    if action.handler == 1 {
-                        p.pending.remove(&sig);
+                    if action.handler == 1 || action.handler == 0 && matches!(sig, 17 | 23 | 28) {
+                        p.pending.discard(sig);
+                        p.shared_pending.borrow_mut().discard(sig);
+                        for other in self.processes.values_mut().filter(|o| o.tgid == p.tgid) {
+                            other.pending.discard(sig);
+                        }
                     }
                 }
                 Ok(Some(0))
@@ -1871,7 +1967,7 @@ impl Kernel {
                 if a[1] != 8 {
                     return Err(Errno(22));
                 }
-                let bits = p.pending.keys().fold(0, |v, s| v | (1u64 << (s - 1)));
+                let bits = p.pending_bits() & p.mask;
                 write_u64(&mut p.memory, a[0], bits)?;
                 Ok(Some(0))
             }
@@ -2069,6 +2165,9 @@ impl Kernel {
             203 if matches!(p.state, State::Blocked(203, _)) => {
                 Ok(p.linux.resume_connect(a[0] as u32)?.then_some(0))
             }
+            63 | 65 if p.linux.vfs.signalfd_mask(a[0] as u32)?.is_some() => {
+                self.read_signalfd(p, number, a)
+            }
             63 | 64 | 65 | 66 | 29
                 if (number != 29 || a[1] as u32 != 0x5421)
                     && p.linux.vfs.fd_kind(a[0] as u32)? == FdKind::Terminal =>
@@ -2193,7 +2292,7 @@ impl Kernel {
             }
             _ => None,
         };
-        let reads_proc = proc_path.is_some_and(|(dirfd, address)| {
+        let reads_proc = matches!(number, 39..=41) || proc_path.is_some_and(|(dirfd, address)| {
             p.memory.read_c_string(address, 4096).is_ok_and(|path| {
                 p.linux.vfs.accesses_proc(dirfd, &path)
             })
@@ -2301,7 +2400,7 @@ impl Kernel {
                 let t = self.terminal.as_ref().ok_or(Errno(25))?;
                 (events & 4) | if t.readable() { events & 1 } else { 0 }
             }
-            _ => p.linux.vfs.poll(fd, events),
+            _ => p.linux.vfs.poll_signals(fd, events, p.pending_bits()),
         };
         Ok(ready)
     }
@@ -3512,7 +3611,8 @@ pub(super) fn run(
         state: State::Ready,
         actions: [Action::default(); 65],
         mask: 0,
-        pending: BTreeMap::new(),
+        pending: Pending::default(),
+        shared_pending: Rc::new(RefCell::new(Pending::default())),
         frames: 0,
         wait_event: None,
         poll_deadline: None,
@@ -3669,7 +3769,8 @@ mod tests {
             state: State::Ready,
             actions: [Action::default(); 65],
             mask: 0,
-            pending: BTreeMap::new(),
+            pending: Pending::default(),
+            shared_pending: Rc::new(RefCell::new(Pending::default())),
             frames: 0,
             wait_event: None,
             poll_deadline: None,
@@ -4080,6 +4181,25 @@ mod tests {
         assert!(text.contains("0x4560"));
     }
     #[test]
+    fn thread_directed_stop_and_continue_change_the_entire_group() {
+        let mut k = kernel();
+        let leader = process();
+        let mut thread = leader.fork();
+        thread.shared_pending = leader.shared_pending.clone();
+        k.processes.insert(1, leader);
+        Kernel::queue_one(2, &mut thread, 19, 1);
+        assert!(k.deliver(2, &mut thread).unwrap());
+        assert!(matches!(thread.state, State::Stopped));
+        assert!(matches!(k.processes[&1].state, State::Stopped));
+        k.processes.insert(2, thread);
+        let mut caller = process();
+        caller.tgid = 3;
+        assert_eq!(k.thread_signal(3, &mut caller, 2, Some(1), 18), Ok(0));
+        assert!(matches!(k.processes[&1].state, State::Ready));
+        assert!(matches!(k.processes[&2].state, State::Ready));
+        assert_eq!(k.processes[&1].wait_event, Some(0xffff));
+    }
+    #[test]
     fn process_signals_are_single_delivery_and_thread_signals_check_identity_and_permissions() {
         let mut p = process();
         let mut k = kernel();
@@ -4087,7 +4207,7 @@ mod tests {
         thread.tgid = 1;
         k.processes.insert(2, thread);
         assert_eq!(k.signal(1, &mut p, 0, 10), Ok(0));
-        assert!(p.pending.contains_key(&10));
+        assert!(p.shared_pending.borrow().contains_key(&10));
         assert!(k.processes[&2].pending.is_empty());
         assert_eq!(k.thread_signal(1, &mut p, 2, Some(3), 10), Err(Errno(3)));
         assert_eq!(k.thread_signal(1, &mut p, 2, Some(1), 10), Ok(0));
@@ -4292,6 +4412,7 @@ mod cpu_fault_tests {
                 access: Access::Write,
             },
         };
+        Kernel::queue_one(1, &mut p, 11, 2);
         k.synchronous_fault(1, &mut p, &fault);
         assert!(matches!(p.state, State::Ready));
         assert_eq!(p.cpu.x(0), 11);

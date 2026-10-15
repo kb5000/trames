@@ -64,6 +64,16 @@ int main(void) {
     assert(umount2("/target", MNT_DETACH) == 0);
     assert(access("/target/data", F_OK) == -1 && errno == ENOENT);
     fd = openat(dir, "data", O_RDONLY); assert(fd >= 0); close(fd); close(dir);
+    // Reuse a number previously visible in a proc snapshot: mount must refresh
+    // it and follow the actual directory capability through /proc/self/fd.
+    fd=open("/source/data",O_RDONLY); assert(fd>=0);
+    char procfd[80], label[128]; snprintf(procfd,sizeof procfd,"/proc/self/fd/%d",fd);
+    assert(readlink(procfd,label,sizeof label)>0); close(fd);
+    dir=open("/target",O_PATH|O_DIRECTORY); assert(dir==fd);
+    assert(rename("/target","/moved-target")==0); directory("/target");
+    assert(mount("tmpfs",procfd,"tmpfs",MS_NOSUID,NULL)==0);
+    fd=file("/moved-target/magic"); close(fd); assert(access("/target/magic",F_OK)==-1 && errno==ENOENT);
+    close(dir); assert(umount2("/moved-target",MNT_DETACH)==0);
     puts("mount: namespace isolation, setns, tmpfs quota, bind identity/readonly/noexec, detached fd: ok");
 
     child = fork(); assert(child >= 0);

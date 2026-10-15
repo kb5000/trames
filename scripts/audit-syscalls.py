@@ -53,13 +53,16 @@ for source in ('crates/trames-core/src/process.rs', 'crates/trames-linux/src/sta
                 found.setdefault(number, f'{source}:{i + 1}')
 rows = list(csv.DictReader((OUT / 'compatibility-0.4-syscalls.csv').open()))
 notes = {
+    74: 'Guest signalfd4 mask/create/update, NONBLOCK/CLOEXEC, read/readv whole 128-byte records, short reads/EFAULT dequeue, dup/fork/exec, proc fdinfo and selected poll/pselect/epoll level/ONESHOT readiness. Private task and shared process pending queues, standard coalescing, bounded RT FIFO for implemented producers, sender PID/UID and child/timer metadata. No rt_sigqueueinfo/rt_tgsigqueueinfo or complete Linux cross-fork epoll wake-queue binding.',
+    136: 'Blocked pending bits from both private thread and shared process queues; proc exposes separate SigPnd/ShdPnd.',
+    137: 'rt_sigtimedwait consumes private then shared queues with Linux signal priority, sender namespace translation and UID, timeout and interruption.',
     90: 'Guest capget v1/v2/v3, version negotiation including NULL-data query, namespace-local task lookup and per-thread E/P/I sets; bounded output preflight.',
     91: 'Guest capset self/own TID only; effective/permitted/inheritable subset and bounding/SETPCAP rules, ambient reduction, high-bit masking. No cross-task capset or file capability xattrs.',
     95: 'waitid P_ALL/P_PID/P_PGID, EXITED/STOPPED/CONTINUED, NOHANG/NOWAIT and WALL; namespace-local siginfo IDs, fault preflight, nohang zero info. No P_PIDFD/clone-signal variants; rusage is currently zero as with wait4.',
     167: 'Task-local KEEPCAPS, SECUREBITS/locks, CAPBSET_READ/DROP, irreversible NO_NEW_PRIVS and ambient query/raise/lower/clear; enforced capset/UID/exec semantics. GET/SET_DUMPABLE 0/1 shares with CLONE_VM, copies on fork, resets on exec/credential transitions and protects sensitive proc reads/links. Retains NAME and thread-group CHILD_SUBREAPER; no core-file writer, full ptrace or seccomp, other options EINVAL.',
-    129: 'PID namespace visibility for process/group/broadcast kill; guest credentials, namespace init handler protection, ancestor KILL/STOP, exported signal sender translation. Standard pending signals coalesce.',
-    130: 'tkill namespace-local TID lookup, credentials and init protection.',
-    131: 'tgkill namespace-local TGID/TID checks, credentials and init protection.',
+    129: 'PID namespace visibility for process/group/broadcast kill; guest credentials, namespace init handler protection, ancestor KILL/STOP, exported signal sender translation. Standard pending signals coalesce; RT signals from kill queue FIFO by number, process-wide pending is shared by threads. Fixed 4096-entry queue budget, not per-UID RLIMIT_SIGPENDING.',
+    130: 'tkill namespace-local TID lookup, credentials, init protection, private thread queue and SI_TKILL sender identity; stop/continue group effects.',
+    131: 'tgkill namespace-local TGID/TID checks, credentials, init protection, private thread queue and SI_TKILL sender identity; stop/continue group effects.',
     260: 'wait4 namespace-local PID/PGID selection and returned child ID, exit/stop/continue and WALL; current rusage fields remain zero.',
     157: 'Create guest session/process group for a non-group-leader, detach controlling tty, update shared thread group and return namespace-local SID. New PID namespace init inherits ancestor PGID/SID/tty (IDs appear as zero inside) until it calls setsid; no premature session creation at clone.',
     39: 'Guest umount2: normal EBUSY for live capabilities/submounts, MNT_DETACH subtree lifetime, UMOUNT_NOFOLLOW. CAP_SYS_ADMIN authorization; force/expire unsupported.',
@@ -165,7 +168,7 @@ metadata = {
     'backends': ['cached'],
     'unhandled_return': -38,
     'source_sha256': {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in (
-        'crates/trames-core/src/process.rs', 'crates/trames-core/src/process_caps.rs', 'crates/trames-vfs/src/capabilities.rs', 'crates/trames-vfs/src/cgroup.rs', 'crates/trames-core/src/process_pid.rs', 'crates/trames-core/src/process_events.rs', 'crates/trames-core/src/process_compat.rs',
+        'crates/trames-core/src/process.rs', 'crates/trames-core/src/process_caps.rs', 'crates/trames-vfs/src/capabilities.rs', 'crates/trames-vfs/src/cgroup.rs', 'crates/trames-core/src/process_pid.rs', 'crates/trames-core/src/process_events.rs', 'crates/trames-core/src/process_signals.rs', 'crates/trames-core/src/process_compat.rs',
         'crates/trames-linux/src/state.rs', 'crates/trames-linux/src/network.rs', 'crates/trames-linux/src/file_calls.rs',
         'crates/trames-vfs/src/events.rs', 'crates/trames-vfs/src/ipc.rs', 'crates/trames-vfs/src/locks.rs',
         'crates/trames-vfs/src/lib.rs', 'crates/trames-vfs/src/pseudo.rs', 'crates/trames-vfs/src/storage.rs',

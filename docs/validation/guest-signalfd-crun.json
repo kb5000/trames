@@ -1,0 +1,209 @@
+{
+  "scope": "Original guest crun selected lifecycle, private PID/mount/UTS and proc mount; cgroup manager disabled. Not full OCI conformance.",
+  "config": {
+    "ociVersion": "1.0.2",
+    "root": {
+      "path": "rootfs",
+      "readonly": false
+    },
+    "process": {
+      "terminal": false,
+      "user": {
+        "uid": 0,
+        "gid": 0
+      },
+      "args": [
+        "/bin/busybox",
+        "sh",
+        "-ec",
+        "test \"$$\" = 1; read host < /proc/sys/kernel/hostname; test \"$host\" = container; test -r /proc/1/status; echo CONTAINER_PAYLOAD; exit 7"
+      ],
+      "env": [
+        "PATH=/bin",
+        "HOME=/root"
+      ],
+      "cwd": "/",
+      "noNewPrivileges": true,
+      "capabilities": {
+        "bounding": [
+          "CAP_CHOWN",
+          "CAP_SETUID",
+          "CAP_SETGID"
+        ],
+        "effective": [
+          "CAP_CHOWN",
+          "CAP_SETUID",
+          "CAP_SETGID"
+        ],
+        "permitted": [
+          "CAP_CHOWN",
+          "CAP_SETUID",
+          "CAP_SETGID"
+        ]
+      }
+    },
+    "hostname": "container",
+    "mounts": [
+      {
+        "destination": "/proc",
+        "type": "proc",
+        "source": "proc",
+        "options": [
+          "nosuid",
+          "noexec",
+          "nodev"
+        ]
+      }
+    ],
+    "linux": {
+      "rootfsPropagation": "private",
+      "namespaces": [
+        {
+          "type": "pid"
+        },
+        {
+          "type": "mount"
+        },
+        {
+          "type": "uts"
+        }
+      ]
+    }
+  },
+  "lifecycle_config": {
+    "ociVersion": "1.0.2",
+    "root": {
+      "path": "rootfs",
+      "readonly": false
+    },
+    "process": {
+      "terminal": false,
+      "user": {
+        "uid": 0,
+        "gid": 0
+      },
+      "args": [
+        "/bin/busybox",
+        "sh",
+        "-ec",
+        "trap \"echo TERM_RECEIVED > /terminated; exit 0\" TERM; echo RUNNING > /ready; read line < /tmp/stop"
+      ],
+      "env": [
+        "PATH=/bin",
+        "HOME=/root"
+      ],
+      "cwd": "/",
+      "noNewPrivileges": true,
+      "capabilities": {
+        "bounding": [
+          "CAP_CHOWN",
+          "CAP_SETUID",
+          "CAP_SETGID"
+        ],
+        "effective": [
+          "CAP_CHOWN",
+          "CAP_SETUID",
+          "CAP_SETGID"
+        ],
+        "permitted": [
+          "CAP_CHOWN",
+          "CAP_SETUID",
+          "CAP_SETGID"
+        ]
+      }
+    },
+    "hostname": "container",
+    "mounts": [
+      {
+        "destination": "/proc",
+        "type": "proc",
+        "source": "proc",
+        "options": [
+          "nosuid",
+          "noexec",
+          "nodev"
+        ]
+      }
+    ],
+    "linux": {
+      "rootfsPropagation": "private",
+      "namespaces": [
+        {
+          "type": "pid"
+        },
+        {
+          "type": "mount"
+        },
+        {
+          "type": "uts"
+        }
+      ]
+    }
+  },
+  "checks": [
+    {
+      "cpus": 1,
+      "label": "signed install",
+      "exit_code": 0,
+      "stdout": "(1/4) Installing libcap2 (2.78-r0)\n(2/4) Installing libseccomp (2.6.1-r0)\n(3/4) Installing yajl (2.1.0-r9)\n(4/4) Installing crun (1.23.1-r0)\nExecuting busybox-1.37.0-r20.trigger\nOK: 9 MiB in 20 packages\n",
+      "stderr": ""
+    },
+    {
+      "cpus": 1,
+      "label": "version",
+      "exit_code": 0,
+      "stdout": "crun version 1.23.1\ncommit: d20b23dba05e822b93b82f2f34fd5dada433e0c2\nrundir: /run/crun\nspec: 1.0.0\n+SELINUX +APPARMOR +CAP +SECCOMP +EBPF +YAJL\n",
+      "stderr": ""
+    },
+    {
+      "cpus": 1,
+      "label": "payload exit and namespace isolation",
+      "exit_code": 0,
+      "stdout": "CONTAINER_PAYLOAD\nPAYLOAD_EXIT_AND_NAMESPACE_PASS\n",
+      "stderr": ""
+    },
+    {
+      "cpus": 1,
+      "label": "create start state exec TERM stop delete",
+      "exit_code": 0,
+      "stdout": "{\n    \"ociVersion\": \"1.0.0\",\n    \"id\": \"lifecycle\",\n    \"pid\": 6,\n    \"status\": \"created\",\n    \"bundle\": \"/bundle\",\n    \"rootfs\": \"rootfs\",\n    \"created\": \"2026-10-15T16:08:41.825081Z\",\n    \"systemd-scope\": \"\",\n    \"owner\": \"root\"\n}\n    \"status\": \"created\",\n{\n    \"ociVersion\": \"1.0.0\",\n    \"id\": \"lifecycle\",\n    \"pid\": 6,\n    \"status\": \"running\",\n    \"bundle\": \"/bundle\",\n    \"rootfs\": \"rootfs\",\n    \"created\": \"2026-10-15T16:08:41.825081Z\",\n    \"systemd-scope\": \"\",\n    \"owner\": \"root\"\n}\n    \"status\": \"running\",\nEXEC_PAYLOAD\n{\n    \"ociVersion\": \"1.0.0\",\n    \"id\": \"lifecycle\",\n    \"pid\": 0,\n    \"status\": \"stopped\",\n    \"bundle\": \"/bundle\",\n    \"rootfs\": \"rootfs\",\n    \"created\": \"2026-10-15T16:08:41.825081Z\",\n    \"systemd-scope\": \"\",\n    \"owner\": \"root\"\n}\n    \"status\": \"stopped\",\nNAME PID       STATUS   BUNDLE PATH                             CREATED                        OWNER\nCONTAINER_LIFECYCLE_PASS\n[0.036805] pid=5 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa60, d] unsupported errno=38 comm=\"crun\"\n[0.051603] pid=5 syscall=219(keyctl) pc=0x7003d434 args=[1, 7fffffefff61, 0, ffffffff, 10, 3ff] unsupported errno=38 comm=\"3\"\n[0.077719] pid=7 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.121800] pid=10 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.169988] pid=13 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.206547] pid=16 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeff9e0, a0] unsupported errno=38 comm=\"crun\"\n[0.226923] pid=16 syscall=435(clone3) pc=0x7003d434 args=[7fffffeff788, 58, 7fffffeff788, 7fffffeff7e0, 36, 7fff] unsupported errno=38 comm=\"3\"\n[0.227130] pid=17 syscall=434(pidfd_open) pc=0x7003d434 args=[6, 0, 0, 3, 0, 0] unsupported errno=38 comm=\"3\"\n[0.247815] pid=19 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 80] unsupported errno=38 comm=\"crun\"\n[0.257090] pid=19 syscall=434(pidfd_open) pc=0x7003d434 args=[6, 0, 700c2338, 0, 0, 1d] unsupported errno=38 comm=\"3\"\n[0.303366] pid=23 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.343293] pid=28 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.370192] pid=29 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffaa0, 81] unsupported errno=38 comm=\"crun\"\n",
+      "stderr": "sh: can't open /tmp/stop: Interrupted system call\n"
+    },
+    {
+      "cpus": 4,
+      "label": "signed install",
+      "exit_code": 0,
+      "stdout": "(1/4) Installing libcap2 (2.78-r0)\n(2/4) Installing libseccomp (2.6.1-r0)\n(3/4) Installing yajl (2.1.0-r9)\n(4/4) Installing crun (1.23.1-r0)\nExecuting busybox-1.37.0-r20.trigger\nOK: 9 MiB in 20 packages\n",
+      "stderr": ""
+    },
+    {
+      "cpus": 4,
+      "label": "version",
+      "exit_code": 0,
+      "stdout": "crun version 1.23.1\ncommit: d20b23dba05e822b93b82f2f34fd5dada433e0c2\nrundir: /run/crun\nspec: 1.0.0\n+SELINUX +APPARMOR +CAP +SECCOMP +EBPF +YAJL\n",
+      "stderr": ""
+    },
+    {
+      "cpus": 4,
+      "label": "payload exit and namespace isolation",
+      "exit_code": 0,
+      "stdout": "CONTAINER_PAYLOAD\nPAYLOAD_EXIT_AND_NAMESPACE_PASS\n",
+      "stderr": ""
+    },
+    {
+      "cpus": 4,
+      "label": "create start state exec TERM stop delete",
+      "exit_code": 0,
+      "stdout": "{\n    \"ociVersion\": \"1.0.0\",\n    \"id\": \"lifecycle\",\n    \"pid\": 6,\n    \"status\": \"created\",\n    \"bundle\": \"/bundle\",\n    \"rootfs\": \"rootfs\",\n    \"created\": \"2026-10-15T16:08:43.586305Z\",\n    \"systemd-scope\": \"\",\n    \"owner\": \"root\"\n}\n    \"status\": \"created\",\n{\n    \"ociVersion\": \"1.0.0\",\n    \"id\": \"lifecycle\",\n    \"pid\": 6,\n    \"status\": \"running\",\n    \"bundle\": \"/bundle\",\n    \"rootfs\": \"rootfs\",\n    \"created\": \"2026-10-15T16:08:43.586305Z\",\n    \"systemd-scope\": \"\",\n    \"owner\": \"root\"\n}\n    \"status\": \"running\",\nEXEC_PAYLOAD\n{\n    \"ociVersion\": \"1.0.0\",\n    \"id\": \"lifecycle\",\n    \"pid\": 0,\n    \"status\": \"stopped\",\n    \"bundle\": \"/bundle\",\n    \"rootfs\": \"rootfs\",\n    \"created\": \"2026-10-15T16:08:43.586305Z\",\n    \"systemd-scope\": \"\",\n    \"owner\": \"root\"\n}\n    \"status\": \"stopped\",\nNAME PID       STATUS   BUNDLE PATH                             CREATED                        OWNER\nCONTAINER_LIFECYCLE_PASS\n[0.055754] pid=5 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa60, d] unsupported errno=38 comm=\"crun\"\n[0.069495] pid=5 syscall=219(keyctl) pc=0x7003d434 args=[1, 7fffffefff61, 0, ffffffff, 10, 3ff] unsupported errno=38 comm=\"3\"\n[0.102736] pid=7 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.157614] pid=10 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.214923] pid=13 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.256853] pid=16 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeff9e0, a0] unsupported errno=38 comm=\"crun\"\n[0.272052] pid=16 syscall=435(clone3) pc=0x7003d434 args=[7fffffeff788, 58, 7fffffeff788, 7fffffeff7e0, 36, 7fff] unsupported errno=38 comm=\"3\"\n[0.276771] pid=17 syscall=434(pidfd_open) pc=0x7003d434 args=[6, 0, 0, 3, 0, 0] unsupported errno=38 comm=\"3\"\n[0.304178] pid=19 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 80] unsupported errno=38 comm=\"crun\"\n[0.315628] pid=19 syscall=434(pidfd_open) pc=0x7003d434 args=[6, 0, 700c2338, 0, 0, 1d] unsupported errno=38 comm=\"3\"\n[0.371702] pid=23 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.422951] pid=28 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa80, 2] unsupported errno=38 comm=\"crun\"\n[0.448873] pid=29 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffaa0, 81] unsupported errno=38 comm=\"crun\"\n",
+      "stderr": "sh: can't open /tmp/stop: Interrupted system call\n"
+    }
+  ],
+  "packages_sha256": {
+    "crun-1.23.1-r0.apk": "64c9b516fc7f8cdde7b666db5832fa93952c71545832292fcd9845401ca7bcca",
+    "libcap2-2.78-r0.apk": "de209aee8b76946849bff6bd97151c6af20889be5a96a2e28f9899255e252e3f",
+    "libseccomp-2.6.1-r0.apk": "ee817c130535b72e5b0a63b211f9d2fbbaa493a319f78e9da5e30359991e5180",
+    "musl-1.2.5-r12.apk": "ac281d1e7f9e9c447c51e309317b975f48be6edaf3ab91ae73b959cf86703782",
+    "yajl-2.1.0-r9.apk": "34a2fb7671a29f19166d051318c866e60f4687184fe73939b6b08325d11b68a8"
+  },
+  "passed": true
+}

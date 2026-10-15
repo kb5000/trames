@@ -84,6 +84,9 @@ impl Kernel {
             self.notify(
                 reaper,
                 id,
+                self.processes
+                    .get(&id)
+                    .map_or(0, |p| p.linux.vfs.credentials.uid),
                 if status & 127 == 0 {
                     status >> 8
                 } else {
@@ -158,6 +161,7 @@ impl Kernel {
                     17,
                     Info {
                         sender: local,
+                        uid,
                         status: match code {
                             1 | 5 => status >> 8,
                             6 => 18,

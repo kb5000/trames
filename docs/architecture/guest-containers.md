@@ -77,11 +77,36 @@ KILL、SYS_NICE、SYS_RESOURCE、SYSLOG 和 NET_RAW。既有 proc 敏感路径�
 权限层级、完整 ptrace、seccomp 仍缺。不冒充宿主 Linux 权限，也不更改 iPad 凭据。
 
 原版签名 Alpine capsh 2.78 已可查询/丢弃/保留能力并测试 ambient/NNP 跨 exec。
-crun 1.23.1 已通过 cgroup 查询、dumpable、设备创建与权限设置、根目录切换和
-setsid，走到 `Writing container status`，随后因 signalfd4 ENOSYS 退出 1。
-探测显式禁用 cgroup manager，采用 private 传播配置；尚未完成容器运行验收。
-open_tree 和 keyctl 的 ENOSYS 走了运行时自身回退，不是这次终止原因。
-下一步接入 signalfd 与现有信号队列、阻塞读取及 poll/epoll。
+crun 1.23.1 现在通过单核/四核下的选定生命周期验收：实际 shell 输出和退出码 7、
+PID 1、独立 UTS/private mount namespace、proc 挂载，以及 create/start/state/exec、
+TERM trap、stopped 和 delete。原版签名 APK 在 guest 内安装，OCI JSON 只是原版
+运行时的测试输入。显式禁用 cgroup manager；没有验证完整 OCI 或 Docker/Podman。
+open_tree、keyctl、pidfd_open 等探测仍由原版运行时自行回退。
+
+## 信号描述符与待处理信号
+
+signalfd4 支持新建/更新 mask、NONBLOCK/CLOEXEC、dup/fork/exec 和 proc fdinfo。
+read/readv 返回完整的 128 字节记录；无信号时阻塞或 EAGAIN，已有记录后短读，
+小于一条记录返回 EINVAL。与 Linux 一样，复制故障发生前已出队的信号被消费；
+前面的完整记录仍作为短读返回。SIGKILL/SIGSTOP 从 FD mask 中去除。
+
+线程拥有私有 pending 队列，同一线程组共享进程 pending。fork 清空两种队列，
+CLONE_THREAD 共享进程队列，exec 保留本线程与进程 pending。kill、SIGCHLD 和
+普通 POSIX timer 进入进程队列；tkill/tgkill、线程定向 timer 进入私有队列。
+普通信号合并并保留首条信息，实时信号按号码优先级/FIFO 排队；消费时优先私有
+队列，再读共享队列，保持 Linux 对同步类信号号码的优先级。sigwait、普通 handler
+与 signalfd 消费同一来源，proc 分别显示 SigPnd/ShdPnd。
+
+read、poll/ppoll、pselect、epoll 的 level/ONESHOT readiness 使用当前调用线程的
+私有与共享 pending；阻塞 read 保留 EINTR/SA_RESTART 行为。队列只由现有内核
+协调线程访问，没有给 CPU 或原生访存增加锁。一个 signalfd 不占有信号，关闭 FD
+不会丢弃 pending，也不会把别的进程的信号转交给继承此 FD 的子进程。
+
+范围仍有限：实时队列使用固定 4096 条预算，标准信号尤其 KILL 不被该预算挤掉；
+没有实现每 UID 的 RLIMIT_SIGPENDING 或 rt_sigqueueinfo/rt_tgsigqueueinfo。
+SIGCHLD 的 CPU 时间字段保持零。epoll 仍按调用者快照检查 readiness，尚未模拟
+Linux 跨 fork 继承 epoll 时绑定原注册进程信号等待队列的细节；子进程应新建并注册
+epoll。EPOLLET/EXCLUSIVE/嵌套 epoll、完整异步 I/O 信号来源仍未实现。
 
 ## 设备节点与容器路径
 
@@ -104,6 +129,8 @@ chmod/chown 通过 `/proc/PID/fd/N` 操作实际 inode 与挂载，不按显示�
 包括取消链接后同名重建。相关元数据调用会刷新 proc 快照，避免 FD 复用时取到旧对象。
 支持原版 crun 的 `pivot_root(".", ".")`，随后通过旧根 FD 执行 MNT_DETACH；
 父 mount namespace 和显式保留的旧根 FD 保持各自语义。
+mount/umount 的 proc FD 目标也使用实际 mount/inode 能力；挂载调用刷新 proc，
+避免 FD 复用、目标改名或同名重建时跟错显示路径。
 
 新 PID namespace 的 PID 1 继承父 PGID/SID/控制终端，不提前建立新会话。
 祖先组/会话编号在新 namespace 内显示为 0，首次 setsid 可建立编号 1 的会话。
@@ -186,10 +213,9 @@ namespace 归属，setns 只影响后续创建。私有 loopback、端口空间�
 
 ## 后续顺序
 
-1. signalfd 与信号/事件等待，随后 User namespace、IPC/net namespace；用真实
-   容器工具探测结果排序，未知限制明确报错。
-2. 原版 guest runc/crun 的最小 rootfs、多个隔离进程和生命周期测试；之后
-   扩展完整容器引擎、overlayfs、cgroup 控制器及更广的安全接口。
+1. 扩展原版 crun 的 cgroupfs、并发容器、终端和更常见 rootfs 配置；当前自动验收
+   显式禁用 cgroup manager。随后按真实工具缺口实现 user/IPC/net namespace。
+2. 再扩展完整容器引擎、overlayfs、cgroup 控制器、独立 devpts 及更广的安全接口。
 
 ## 验证
 
@@ -203,6 +229,9 @@ bash scripts/build-cgroup-fixtures.sh
 python3 tests/integration/cgroups.py
 bash scripts/build-device-fixtures.sh
 python3 tests/integration/devices.py
+bash scripts/build-signalfd-fixtures.sh
+python3 tests/integration/signalfd.py
+python3 tests/integration/containers.py
 ```
 
 namespace 集成测试覆盖 1/4 CPU 下 UTS、chroot、mount 和 PID ABI，包括嵌套、
@@ -214,3 +243,5 @@ unshare/nsenter/chroot/mount/umount/df/ps。
 权限批次见[capability 与原版工具验证](../validation/guest-capabilities.md)，
 cgroup/dumpable 批次见[成员生命周期与原版 crun 阻塞验证](../validation/guest-cgroups.md)。
 设备与启动路径批次见[设备、openat2 与原版运行时验证](../validation/guest-devices.md)。
+
+信号与原版容器生命周期批次见[signalfd/crun 验证](../validation/guest-signalfd.md)。

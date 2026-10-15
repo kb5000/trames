@@ -1,0 +1,68 @@
+{
+  "date": "2026-10-15",
+  "base_commit": "e42637f1f52436bcfec0c808cfa481622fa2cb0e",
+  "scope": "Guest signalfd and private/shared signal queues; selected original crun lifecycle with cgroup manager disabled; proc-FD mount identity. No complete OCI conformance or speedup claim.",
+  "local_checks": {
+    "workspace_all_feature_rust_tests": 322,
+    "strict_all_target_all_feature_clippy": "passed",
+    "fmt": "passed",
+    "arm64_ios_ffi_check": "passed",
+    "cpus": [
+      1,
+      4
+    ],
+    "native_linux_signalfd_cases_per_cpu": 25,
+    "original_crun": "passed: payload/exit 7, PID/mount/UTS isolation and proc, create/start/state/exec/TERM/stop/delete",
+    "cgroup_manager": "disabled",
+    "regressions": [
+      "namespaces",
+      "runtime-compat",
+      "cpu-signals",
+      "m6-abi",
+      "guest-pty",
+      "sudo",
+      "cgroups",
+      "devices",
+      "fd-exec",
+      "capabilities"
+    ]
+  },
+  "syscalls": {
+    "implemented_subset": 177,
+    "missing": 139,
+    "obsolete_stub": 2,
+    "undispatched_enosys": 141
+  },
+  "source_sha256": {
+    ".github/workflows/linux.yml": "6e49ab3cdd04c6c4d103a6870502491f1aa2678df630e912baa65ab989ed1630",
+    "crates/trames-core/src/process.rs": "61c40afd8b55a2953c753bcb53896b0b54f29ff855fb53ae831fc03b137093a2",
+    "crates/trames-core/src/process_events.rs": "ffbeee71257259346dc828602ea69a7a5955fb716d7b672db128b2f202a1bb84",
+    "crates/trames-core/src/process_pid.rs": "d16f58459ce94a67564f84003dd786154708c57bc084a03ac10c5abeb0c45c07",
+    "crates/trames-core/src/process_signals.rs": "f03effe26f069803590389297374ed5f6d55f079c7cfd5a25072fef49000cc2c",
+    "crates/trames-vfs/src/events.rs": "d4ac37554720a0f2cf300961a86635d0ad82cf5afa8cb9855ebf23e882b2e7c5",
+    "crates/trames-vfs/src/lib.rs": "3e946bd1beb247fec571a15d56e35e83bdcc1e26ed3f156bf078738c04a83b6c",
+    "crates/trames-vfs/src/mounts.rs": "f53914974ac6d0033deedce3c13af4310cede4aae7c828c6e6ff34474faf6f4c",
+    "crates/trames-vfs/src/pseudo.rs": "9da0181e40d44e72a10332e07cc56cf994002c31f47abfe380efb6f07e421a41",
+    "scripts/audit-syscalls.py": "227da1f3a759fa59f3580dd129355b3dcaf44eb5ec8de9868ef6d2370f58c76b",
+    "scripts/build-signalfd-fixtures.sh": "35ed7ff7a886ea7af8618aec0cd86c8099a092d3e7a5eef080d17367122a3014",
+    "tests/fixtures/mount-namespaces.c": "221a9b8b2a0b404225aa03b755ea44ef32e19507928a0b7e7ceb6fc3cd21345f",
+    "tests/fixtures/signalfd.c": "67381e8fa0aaf87867c54110525d745cb199c5cc839f217caf277c9cb7ebdd7f",
+    "tests/integration/containers.py": "a953f2f55de28c8e6991cdd3ed6dfe08f1557db40c2482300231ce2bd164340a",
+    "tests/integration/signalfd.py": "11bb4a0c3b5673cdfb5156f54da9020efc3cbf3a6ff3f082af4d64876e08496e"
+  },
+  "artifacts_sha256": {
+    "target/release/trames-run": "8bacc0e6b694878860943dc43be003fcaee33969d985caf78a16430844a5adc3",
+    "tests/fixtures/bin/signalfd": "0565a5dd23ddbcf521cecd6777ffb128e5280920b2661cbd597658272d2356b1",
+    "tests/fixtures/bin/mount-namespaces": "4fe45dc25d90935303a9d94ccc9daa625499cbf504dc7580ca42b382d84961d2",
+    "tests/fixtures/bin/pid-namespaces": "9fe34e8f79db7086ded15095c3c56c792d8151b69ac6ac9d35715352a56a9cec",
+    "target/busybox-build/busybox": "58ee781107cb1a65049252b5ec78b6eb9cf6db76a6bbdfd228b62791cf010b93",
+    "target/alpine-download/alpine-minirootfs-3.22.6-aarch64.tar.gz": "821565fa8f3953eefd12497b166b4b50add2f7c57fb312e75862f5867e06fefe"
+  },
+  "oracle": "native Linux C compiler for signalfd ABI, separate AArch64 musl guest build; no privileged host namespace oracle",
+  "remaining_limits": [
+    "No rt_sigqueueinfo/rt_tgsigqueueinfo or per-UID RLIMIT_SIGPENDING",
+    "Fixed 4096 queue budget with standard signals exempt",
+    "Inherited epoll across fork does not model original signal wait-queue registration; recreate/register epoll in child",
+    "Cgroup managers, resource controls, private devpts, full OCI and container engines not accepted"
+  ]
+}

@@ -5,6 +5,7 @@ use super::*;
 pub(super) struct Timer {
     pub tgid: u32,
     target: u32,
+    thread: bool,
     clock: u64,
     signal: u32,
     value: u64,
@@ -24,6 +25,7 @@ pub(super) fn write_siginfo(out: &mut [u8], sig: u32, info: Info) {
         out[24..32].copy_from_slice(&value.to_le_bytes());
     } else {
         out[16..20].copy_from_slice(&info.sender.to_le_bytes());
+        out[20..24].copy_from_slice(&info.uid.to_le_bytes());
         out[24..28].copy_from_slice(&info.status.to_le_bytes());
     }
 }
@@ -131,10 +133,11 @@ impl Kernel {
             }
             Some(read_u64(&p.memory, a[4])? & !UNBLOCKABLE)
         };
-        let ready = p
-            .linux
-            .vfs
-            .epoll_wait(a[0] as u32, a[2] as usize, |kind, events| {
+        let ready = p.linux.vfs.epoll_wait_signals(
+            a[0] as u32,
+            a[2] as usize,
+            p.pending_bits(),
+            |kind, events| {
                 Ok(match kind {
                     FdKind::Stdin => Some(if io.stdin_ready().map_err(|_| Errno(5))? {
                         events & 1
@@ -147,7 +150,8 @@ impl Kernel {
                     }
                     _ => None,
                 })
-            })?;
+            },
+        )?;
         if let Some(timeout) = timeout {
             if p.poll_deadline.is_none() {
                 p.poll_deadline = Some(Instant::now().checked_add(timeout).ok_or(Errno(22))?);
@@ -218,14 +222,8 @@ impl Kernel {
                 info,
                 deadline,
             } => {
-                if let Some(sig) = p
-                    .pending
-                    .keys()
-                    .copied()
-                    .find(|s| mask & (1 << (s - 1)) != 0)
-                {
-                    let mut value = p.pending.remove(&sig).expect("pending signal");
-                    value.sender = p.linux.vfs.visible_pid(value.sender);
+                if let Some((sig, shared)) = p.next_signal(mask) {
+                    let value = p.take_signal(sig, shared);
                     if info != 0 {
                         let mut bytes = [0; 128];
                         write_siginfo(&mut bytes, sig, value);
@@ -277,11 +275,19 @@ impl Kernel {
             }
             if let Some(p) = self
                 .processes
-                .get_mut(&timer.target)
-                .filter(|p| !matches!(p.state, State::Zombie(_)))
+                .iter_mut()
+                .find(|(id, p)| {
+                    (if timer.thread {
+                        **id == timer.target
+                    } else {
+                        p.tgid == timer.tgid
+                    }) && !matches!(p.state, State::Zombie(_))
+                })
+                .map(|(_, p)| p)
             {
                 let value = Info {
                     sender: 0,
+                    uid: 0,
                     status: 0,
                     code: if id < 0 { 128 } else { -2 },
                     fault: None,
@@ -291,15 +297,19 @@ impl Kernel {
                         Some((id, timer.overrun, timer.value))
                     },
                 };
-                if let Some(previous) = p.pending.get_mut(&timer.signal) {
-                    if let Some((previous_id, overrun, _)) = &mut previous.timer {
-                        if *previous_id == id {
-                            *overrun = overrun.saturating_add(timer.overrun).saturating_add(1);
-                            timer.overrun = *overrun;
-                        }
+                let mut shared = p.shared_pending.borrow_mut();
+                let pending = if timer.thread {
+                    &mut p.pending
+                } else {
+                    &mut shared
+                };
+                if let Some(previous) = pending.timer_mut(timer.signal, id) {
+                    if let Some((_, overrun, _)) = &mut previous.timer {
+                        *overrun = overrun.saturating_add(timer.overrun).saturating_add(1);
+                        timer.overrun = *overrun;
                     }
                 } else {
-                    p.pending.insert(timer.signal, value);
+                    let _ = pending.enqueue(timer.signal, value);
                 }
             }
         }
@@ -478,6 +488,7 @@ impl Kernel {
                             Timer {
                                 tgid: p.tgid,
                                 target: p.tgid,
+                                thread: false,
                                 clock: 1,
                                 signal: 14,
                                 value: 0,
@@ -496,8 +507,8 @@ impl Kernel {
                 }
                 Linux::check(&p.memory, a[2], 4, Access::Write)?;
                 let id = self.next_timer;
-                let (signal, value, target) = if a[1] == 0 {
-                    (14, id as u64, p.tgid)
+                let (signal, value, target, thread) = if a[1] == 0 {
+                    (14, id as u64, p.tgid, false)
                 } else {
                     let value = read_u64(&p.memory, a[1])?;
                     let signal = read_u32(&p.memory, a[1] + 8)?;
@@ -507,9 +518,9 @@ impl Kernel {
                             if signal == 0 || signal > 64 {
                                 return Err(Errno(22));
                             }
-                            (signal, value, p.tgid)
+                            (signal, value, p.tgid, false)
                         }
-                        1 => (0, value, p.tgid),
+                        1 => (0, value, p.tgid, false),
                         4 => {
                             if signal == 0 || signal > 64 {
                                 return Err(Errno(22));
@@ -526,7 +537,7 @@ impl Kernel {
                             {
                                 return Err(Errno(22));
                             }
-                            (signal, value, target)
+                            (signal, value, target, true)
                         }
                         _ => return Err(Errno(22)),
                     }
@@ -543,6 +554,7 @@ impl Kernel {
                     Timer {
                         tgid: p.tgid,
                         target,
+                        thread,
                         clock: a[0],
                         signal,
                         value,
