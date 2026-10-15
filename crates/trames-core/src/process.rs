@@ -11,6 +11,7 @@ use std::{
 use trames_cpu::{Cpu, SliceOutcome};
 use trames_linux::{GuestOutput, Linux, OutputFd, SyscallOutcome, TerminalEvent, MAX_WRITE};
 use trames_memory::{Access, Memory};
+use trames_vfs::capabilities;
 use trames_vfs::{Errno, FdKind, AT_FDCWD, MAX_FDS, O_NONBLOCK};
 
 const MAX_PROCESSES: usize = 32;
@@ -64,6 +65,8 @@ fn assign_cpus(ready: impl IntoIterator<Item = (u32, u64)>, count: usize) -> Vec
         })
         .collect()
 }
+#[path = "process_caps.rs"]
+mod caps;
 #[path = "process_compat.rs"]
 mod compat;
 #[path = "process_events.rs"]
@@ -750,7 +753,7 @@ impl Kernel {
     fn may_signal(source: &Process, target: &Process, sig: u32) -> bool {
         let a = &source.linux.vfs.credentials;
         let b = &target.linux.vfs.credentials;
-        a.euid == 0
+        a.has_cap(capabilities::KILL)
             || [a.uid, a.euid]
                 .iter()
                 .any(|id| *id == b.uid || *id == b.suid)
@@ -1368,6 +1371,7 @@ impl Kernel {
         io: &mut impl GuestOutput,
     ) -> Result<Option<u64>, Errno> {
         match number {
+            90 | 91 => self.capcall(pid, p, number == 91, a).map(Some),
             93 | 94 => {
                 if number == 93 {
                     self.exit_one(pid, p, (a[0] as u8 as i32) << 8);
@@ -1394,9 +1398,12 @@ impl Kernel {
                         .ok_or(Errno(3))?
                 };
                 if matches!(number, 118 | 119 | 122)
-                    && p.linux.vfs.credentials.euid != 0
-                    && p.linux.vfs.credentials.euid != target.linux.vfs.credentials.uid
-                    && p.linux.vfs.credentials.euid != target.linux.vfs.credentials.euid
+                    && !p.linux.vfs.credentials.has_cap(capabilities::SYS_NICE)
+                    && ((p.linux.vfs.credentials.euid != target.linux.vfs.credentials.uid
+                        && p.linux.vfs.credentials.euid != target.linux.vfs.credentials.euid)
+                        || target.linux.vfs.credentials.caps.permitted
+                            & !p.linux.vfs.credentials.caps.permitted
+                            != 0)
                 {
                     return Err(Errno(1));
                 }
@@ -1770,6 +1777,9 @@ impl Kernel {
                 }
                 _ => Err(Errno(22)),
             },
+            167 if matches!(a[0], 7 | 8 | 23 | 24 | 27 | 28 | 38 | 39 | 47) => {
+                p.linux.vfs.credentials.caps.prctl(a).map(Some)
+            }
             167 if !matches!(a[0], 15 | 16) => Err(Errno(22)),
             72 | 73 => self.poll(p, number, a, io),
             22 | 441 => self.epoll(p, number, a, io),
@@ -2719,7 +2729,7 @@ impl Kernel {
                             other.session == tty.session
                                 && other.linux.vfs.controlling_terminal == Some(id)
                         })
-                        && !(a[2] == 1 && p.linux.vfs.credentials.euid == 0)
+                        && !(a[2] == 1 && p.linux.vfs.credentials.has_cap(capabilities::SYS_ADMIN))
                     {
                         return Err(Errno(1));
                     }
@@ -4070,12 +4080,7 @@ mod tests {
         assert_eq!(k.thread_signal(1, &mut p, 2, Some(3), 10), Err(Errno(3)));
         assert_eq!(k.thread_signal(1, &mut p, 2, Some(1), 10), Ok(0));
         assert_eq!(k.processes[&2].pending[&10].code, -6);
-        p.linux.vfs.credentials = trames_vfs::Credentials {
-            uid: 1000,
-            euid: 1000,
-            suid: 1000,
-            ..Default::default()
-        };
+        p.linux.vfs.credentials = trames_vfs::Credentials::user(1000, 0);
         assert_eq!(k.thread_signal(1, &mut p, 2, None, 0), Err(Errno(1)));
         assert_eq!(k.thread_signal(1, &mut p, 2, None, 18), Ok(0));
         assert_eq!(k.thread_signal(1, &mut p, 0, None, 10), Err(Errno(22)));

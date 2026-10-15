@@ -1,0 +1,201 @@
+=== capability and original capsh ===
+1-CPU capability ABI, authority enforcement, UID/exec and per-thread inheritance passed
+4-CPU capability ABI, authority enforcement, UID/exec and per-thread inheritance passed
+Signed repository inputs: libcap-utils=2.78-r0
+Current: =ep
+Bounding set =cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_linux_immutable,cap_net_bind_service,cap_net_broadcast,cap_net_admin,cap_net_raw,cap_ipc_lock,cap_ipc_owner,cap_sys_module,cap_sys_rawio,cap_sys_chroot,cap_sys_ptrace,cap_sys_pacct,cap_sys_admin,cap_sys_boot,cap_sys_nice,cap_sys_resource,cap_sys_time,cap_sys_tty_config,cap_mknod,cap_lease,cap_audit_write,cap_audit_control,cap_setfcap,cap_mac_override,cap_mac_admin,cap_syslog,cap_wake_alarm,cap_block_suspend,cap_audit_read,cap_perfmon,cap_bpf,cap_checkpoint_restore
+Ambient set =
+Current IAB: 
+Securebits: 00/0x0/1'b0 (no-new-privs=0)
+ secure-noroot: no (unlocked)
+ secure-no-suid-fixup: no (unlocked)
+ secure-keep-caps: no (unlocked)
+ secure-no-ambient-raise: no (unlocked)
+uid=0(root) euid=0(root)
+gid=0(root)
+groups=
+Guessed mode: HYBRID (4)
+Current: =ep
+Bounding set =cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_linux_immutable,cap_net_bind_service,cap_net_broadcast,cap_net_admin,cap_ipc_lock,cap_ipc_owner,cap_sys_module,cap_sys_rawio,cap_sys_chroot,cap_sys_ptrace,cap_sys_pacct,cap_sys_admin,cap_sys_boot,cap_sys_nice,cap_sys_resource,cap_sys_time,cap_sys_tty_config,cap_mknod,cap_lease,cap_audit_write,cap_audit_control,cap_setfcap,cap_mac_override,cap_mac_admin,cap_syslog,cap_wake_alarm,cap_block_suspend,cap_audit_read,cap_perfmon,cap_bpf,cap_checkpoint_restore
+Ambient set =
+Current IAB: !cap_net_raw
+Securebits: 00/0x0/1'b0 (no-new-privs=1)
+ secure-noroot: no (unlocked)
+ secure-no-suid-fixup: no (unlocked)
+ secure-keep-caps: no (unlocked)
+ secure-no-ambient-raise: no (unlocked)
+uid=0(root) euid=0(root)
+gid=0(root)
+groups=
+Guessed mode: HYBRID (4)
+CapInh:	0000000000002000
+CapPrm:	0000000000002000
+CapEff:	0000000000002000
+CapBnd:	000001ffffffffff
+CapAmb:	0000000000002000
+NoNewPrivs:	0
+CAPABILITY_DENIAL_PASS
+NO_NEW_PRIVS_PASS
+40
+Signed original capsh: query, drop, keepcaps/setuid, ambient exec and no_new_privs passed
+
+=== namespace regression ===
+1-CPU guest UTS namespace, namespace FD lifetime, chroot/exec passed
+4-CPU guest UTS namespace, namespace FD lifetime, chroot/exec passed
+1-CPU guest mount namespace, tmpfs/bind/pivot_root and mount FD lifetime passed
+4-CPU guest mount namespace, tmpfs/bind/pivot_root and mount FD lifetime passed
+1-CPU guest PID hierarchy, proc views, signals/waits, threads, init shutdown and subreaper passed
+4-CPU guest PID hierarchy, proc views, signals/waits, threads, init shutdown and subreaper passed
+Real BusyBox unshare/nsenter/chroot passed
+Real BusyBox unshare -m, mount tmpfs/bind/remount, df and umount passed
+Real BusyBox unshare -pf --mount-proc, shell PID 1, background wait and ps passed
+
+=== native Linux fd-exec regression ===
+1-CPU ARM64 fd execution: 23 cases match native Linux
+4-CPU ARM64 fd execution: 23 cases match native Linux
+proc memfd at EOF offset: ok
+execveat memfd empty path: ok
+original libc fexecve: ok
+nofollow rejects proc magic link: ok
+fd execute permission is required: ok
+CLOEXEC ELF and proc exe inode pin: ok
+directory fd is not executable: ok
+cwd empty path is a directory: ok
+relative dirfd ELF: ok
+absolute path ignores invalid dirfd: ok
+nofollow rejects final symlink: ok
+O_PATH ELF fd: ok
+unlinked regular ELF through proc fd: ok
+symlink to deleted inode magic link: ok
+invalid execveat flag: ok
+empty path precedes unknown flags: ok
+empty pathname without flag: ok
+invalid fd with empty path: ok
+regular fd cannot be a dirfd: ok
+fd shebang interpreter: ok
+CLOEXEC script returns ENOENT: ok
+relative dirfd shebang: ok
+CLOEXEC dirfd script returns ENOENT: ok
+
+=== original sudo regression ===
+Signed repository inputs: sudo=1.9.17_p2-r0
+Signed sudo install: passed
+Root/run-as/user escalation and nested PTYs: passed
+Denied user cannot execute or read root-only files: passed
+Real passwd authentication and no password echo: passed
+Interactive input/output and command exit status: passed
+Ctrl-C reaches the foreground command: passed
+Non-PTY invocation and persistent reopen: passed
+
+=== runtime compatibility ===
+PASS --memory altstack/nesting/autodisarm/fork/thread/exec, membarrier, ioprio_get, RLIMIT_FSIZE/partial write/SIGXFSZ
+PASS --storage altstack/nesting/autodisarm/fork/thread/exec, membarrier, ioprio_get, RLIMIT_FSIZE/partial write/SIGXFSZ
+
+=== PTY regression ===
+1-CPU PTY/IPC outcomes match independent Linux/QEMU
+4-CPU PTY/IPC outcomes match independent Linux/QEMU
+pty allocation/lock/canonical/raw/resize/isolation/packet/alias/hangup/reopen: ok
+Unix MSG_WAITALL split record and __WALL child wait: ok
+PTY session/controlling tty/last-master SIGHUP: ok
+
+=== original crun diagnostic (blocked) ===
+Signed repository inputs: crun=1.23.1-r0, libcap-utils=2.78-r0
+=== signed package install ===
+(1/7) Installing libcap2 (2.78-r0)
+(2/7) Installing libseccomp (2.6.1-r0)
+(3/7) Installing yajl (2.1.0-r9)
+(4/7) Installing crun (1.23.1-r0)
+(5/7) Installing libcap-getcap (2.78-r0)
+(6/7) Installing libcap-setcap (2.78-r0)
+(7/7) Installing libcap-utils (2.78-r0)
+Executing busybox-1.37.0-r20.trigger
+OK: 9 MiB in 23 packages
+
+=== version; exit=0 ===
+crun version 1.23.1
+commit: d20b23dba05e822b93b82f2f34fd5dada433e0c2
+rundir: /run/crun
+spec: 1.0.0
++SELINUX +APPARMOR +CAP +SECCOMP +EBPF +YAJL
+
+=== list; exit=0 ===
+NAME PID       STATUS   BUNDLE PATH                             CREATED                        OWNER
+
+=== capsh; exit=0 ===
+Current: =ep
+Bounding set =cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_linux_immutable,cap_net_bind_service,cap_net_broadcast,cap_net_admin,cap_net_raw,cap_ipc_lock,cap_ipc_owner,cap_sys_module,cap_sys_rawio,cap_sys_chroot,cap_sys_ptrace,cap_sys_pacct,cap_sys_admin,cap_sys_boot,cap_sys_nice,cap_sys_resource,cap_sys_time,cap_sys_tty_config,cap_mknod,cap_lease,cap_audit_write,cap_audit_control,cap_setfcap,cap_mac_override,cap_mac_admin,cap_syslog,cap_wake_alarm,cap_block_suspend,cap_audit_read,cap_perfmon,cap_bpf,cap_checkpoint_restore
+Ambient set =
+Current IAB: 
+Securebits: 00/0x0/1'b0 (no-new-privs=0)
+ secure-noroot: no (unlocked)
+ secure-no-suid-fixup: no (unlocked)
+ secure-keep-caps: no (unlocked)
+ secure-no-ambient-raise: no (unlocked)
+uid=0(root) euid=0(root)
+gid=0(root)
+groups=
+Guessed mode: HYBRID (4)
+
+=== run; exit=1 ===
+[0.045682] pid=2 syscall=428(open_tree) pc=0x7003d434 args=[ffffffff, 40063cc9, 80801, 0, 7fffffeffa50, a1] unsupported errno=38 comm="crun"
+Using debug verbosity
+Loading container from config file: `config.json`
+Using bundle: /bundle
+Reading config file: `config.json`
+Writing config file to: `/run/crun/probe/config.json`
+statfs `/sys/fs/cgroup`: No such file or directory
+
+Minimal crun run: BLOCKED (see recorded exit and diagnostics)
+Evidence: /workspace/trames/target/container-probe
+
+=== syscall audit ===
+{"scope": "Linux v6.12 native AArch64 numbered entries; entry presence is not full ABI conformance", "entries": 318, "statuses": {"missing": 140, "implemented_subset": 176, "obsolete_stub": 2}, "undispatched_probes_per_backend": 142, "backends": ["cached"], "unhandled_return": -38}
+
+=== Rust test summaries ===
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.73s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.19s
+test result: ok. 38 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.35s
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.71s
+test result: ok. 45 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.94s
+test result: ok. 82 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.63s
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+=== clippy ===
+    Checking trames-vfs v0.15.0 (/workspace/trames/crates/trames-vfs)
+    Checking trames-linux v0.15.0 (/workspace/trames/crates/trames-linux)
+    Checking trames-distro v0.15.0 (/workspace/trames/crates/trames-distro)
+    Checking trames-core v0.15.0 (/workspace/trames/crates/trames-core)
+    Checking trames-ffi v0.15.0 (/workspace/trames/crates/trames-ffi)
+    Checking trames-cli v0.15.0 (/workspace/trames/crates/trames-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.56s
+
+=== ios ===
+    Checking trames-vfs v0.15.0 (/workspace/trames/crates/trames-vfs)
+    Checking trames-linux v0.15.0 (/workspace/trames/crates/trames-linux)
+    Checking trames-distro v0.15.0 (/workspace/trames/crates/trames-distro)
+    Checking trames-core v0.15.0 (/workspace/trames/crates/trames-core)
+    Checking trames-ffi v0.15.0 (/workspace/trames/crates/trames-ffi)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.35s

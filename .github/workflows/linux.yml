@@ -206,6 +206,12 @@ jobs:
         env:
           TRAMES_RUNNER: ${{ github.workspace }}/target/release/trames-run
           TRAMES_TEST_MUSL: ${{ github.workspace }}/target/musl-hybrid/libc.so
+      - name: Validate guest capability enforcement and original signed libcap tools
+        run: |
+          bash scripts/build-capability-fixtures.sh
+          python3 tests/integration/capabilities.py
+        env:
+          TRAMES_RUNNER: ${{ github.workspace }}/target/release/trames-run
       - name: Compare M6 events, local IPC, POSIX locks and FIFO semantics with QEMU
         run: |
           bash scripts/build-m6-fixtures.sh

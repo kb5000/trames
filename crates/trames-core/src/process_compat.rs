@@ -170,7 +170,8 @@ impl Kernel {
             if limits.0 > limits.1 {
                 return Err(Errno(22));
             }
-            if limits.1 > previous.1 && p.linux.vfs.credentials.euid != 0 {
+            if limits.1 > previous.1 && !p.linux.vfs.credentials.has_cap(capabilities::SYS_RESOURCE)
+            {
                 return Err(Errno(1));
             }
             if resource != 1 && limits.1 > fixed {
@@ -241,7 +242,7 @@ mod tests {
         let child = p.fork();
         child.file_size_limit.set((5, 20));
         assert_eq!(p.file_size_limit.get(), (10, 20));
-        p.linux.vfs.credentials.euid = 1000;
+        p.linux.vfs.credentials = trames_vfs::Credentials::user(1000, 1000);
         write_u64(&mut p.memory, 0x1000, 10).unwrap();
         write_u64(&mut p.memory, 0x1008, 21).unwrap();
         assert_eq!(

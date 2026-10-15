@@ -1,0 +1,58 @@
+{
+  "date": "2026-10-15",
+  "base_commit": "df16b0721620eb50d86b5374165da51738d57dc6",
+  "scope": "Initial guest user namespace capability batch; no complete container acceptance or speedup claim.",
+  "local_checks": {
+    "workspace_all_feature_rust_tests": 315,
+    "strict_all_target_all_feature_clippy": "passed",
+    "fmt": "passed",
+    "arm64_ios_ffi_check": "passed",
+    "cpus": [
+      1,
+      4
+    ],
+    "capability_fixture": "passed",
+    "native_linux_unprivileged_capability_abi": "passed",
+    "signed_original_capsh": "passed",
+    "signed_original_sudo": "passed",
+    "uts_mount_pid_namespace_regression": "passed",
+    "native_fd_exec_cases_per_cpu": 23,
+    "runtime_compatibility": "passed",
+    "guest_pty": "passed",
+    "crun_minimal_run": "blocked: statfs /sys/fs/cgroup ENOENT"
+  },
+  "syscalls": {
+    "implemented_subset": 176,
+    "missing": 140,
+    "obsolete_stub": 2,
+    "undispatched_enosys": 142
+  },
+  "source_sha256": {
+    ".github/workflows/linux.yml": "2bdadc8edde933c719b1a9263a09dcdd6e5152dac70dbbd47668b8e734bffeaf",
+    "crates/trames-core/src/process.rs": "4519fc6be4c0d0628c18a5c84bf7ab3f35264e0eaff41ba860fa2741728f4372",
+    "crates/trames-core/src/process_caps.rs": "4a1bcf7e4568f0c892302fc3b9026d6ba94e079adad35d1b51873b249ab6c31f",
+    "crates/trames-core/src/process_compat.rs": "4010e29c29a3ee3d3b83b85e048ed18522490167a8973931fd3e3dc30a123e19",
+    "crates/trames-linux/src/state.rs": "b2bc3995672b901c8844e5f38f6be42679608245175693911cd3935c43282825",
+    "crates/trames-vfs/src/capabilities.rs": "82ffba39f1156eb823eb8c2253858735dc05df98be2236245a709e26cec424ff",
+    "crates/trames-vfs/src/credentials.rs": "9f40c08cada5ccd236f33f1c57d3ed9d532f681a626f5569507b13d76c90cf66",
+    "crates/trames-vfs/src/kernel_log.rs": "0390b640adb90efb53adfc784c50b2d8891c04e3019e44c1b3a6b0052763b5bf",
+    "crates/trames-vfs/src/lib.rs": "b4a24c67a8f4e5f87e49e24a596b47ee42e2a6957751598690bb209649b41612",
+    "crates/trames-vfs/src/linux_namespace.rs": "ce36b13bdf2bb8957e0680c5f2101d4cc31e601be950550509ca917264d690f8",
+    "crates/trames-vfs/src/mounts.rs": "fe4f6786a6a31d2fbb63df60b94ef2134e706abe3894bcdcb3c0dc51e01f25c5",
+    "crates/trames-vfs/src/namespace.rs": "7c366c462b4901a7e49647192a319a9c8aaf01ee85acd66b3bcec48317d24e17",
+    "crates/trames-vfs/src/network.rs": "21a35e4d03752008f5526b7aaf1c70b8a74a72710734409eaa8889be50cf5f62",
+    "crates/trames-vfs/src/pid_namespace.rs": "0ec1ef818be0fb5e7392180bb8b30ad5fd5feabfb1459073bca4ad9ab85bbd2b",
+    "crates/trames-vfs/src/pseudo.rs": "f03a5d5336773c243e6ca34c487cd19caf231bc5b156be9b42162ef55ebd3e71",
+    "scripts/audit-syscalls.py": "f466681cd98fbb3d8d592e8341c162ecf7212b9e791b4963fb4dfb59ce8a5092",
+    "scripts/build-capability-fixtures.sh": "334be745f9ecc5953ffb75dabb92f3abb6877d31f2dec79ecfb74ad56f828cff",
+    "tests/fixtures/capabilities.c": "62b397b7421f7d50808a286b069a5cbc2ab544b8e6e9b7868f27e26e5ef8abf4",
+    "tests/integration/capabilities.py": "f0c5bd0cc90e98993de0e38ac4952237119151554072015208e4a16d791f1a45",
+    "tests/integration/container-probe.py": "b2438c692f1bed488f550a9649e41e405ab6e8ca7b3bc0bdc3d58fa725bcb3fc"
+  },
+  "artifacts_sha256": {
+    "tests/fixtures/bin/capabilities": "db7ce83e14052a7e959b94f38d671f718ab9c822ed7f1e477a168c012357e768",
+    "target/release/trames-run": "ad02c5be3b83dcbe8dbb947acc25534dd2b91310830df8e316052ca7e87f2a44",
+    "docs/validation/guest-capabilities.log": "5a0bffbcbe0e693f73ecfc199ea6c13f25867ccdf4eaa0d313c1d0a2d92342d7",
+    "docs/validation/guest-capabilities-crun.json": "3ad94f2453fa4a9e4dfb8b9986c90a61ab1d54dd4cd0e3d3e25ecd45ba269076"
+  }
+}
