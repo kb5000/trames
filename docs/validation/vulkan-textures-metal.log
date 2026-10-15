@@ -1,0 +1,15 @@
+~ # [6napk --repositories-file /dev/null --no-progress add /tmp/musl-1.2.5-r12.apk 
+/tmp/vulkan-loader-1.4.313.0-r0.apk && chmod 755 /tmp/vulkan-texture && VK_DRIVE
+R_FILES=/usr/share/vulkan/icd.d/trames.json /tmp/vulkan-texture /tmp/vulkan-text
+ure.vert.spv /tmp/vulkan-texture.frag.spv /tmp/render.ppm; printf '\nVULKAN_RESU
+LT:%d\n' $?
+(1/1) Installing vulkan-loader (1.4.313.0-r0)
+OK: 8 MiB in 17 packages
+Vulkan texture driver: Apple iOS simulator GPU
+texture round 1: uint16 indexed nearest, vertex/instance input, uniforms and push constants correct
+texture round 2: uint32 indexed linear, vertex/instance input, uniforms and push constants correct
+texture round 3: non-indexed nearest, vertex/instance input, uniforms and push constants correct
+vulkan-texture-ok
+
+VULKAN_RESULT:0
+~ # [6n

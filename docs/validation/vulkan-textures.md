@@ -55,7 +55,13 @@ native Linux and 1-/4-CPU guests. No original driver code is patched or CPU vert
 emulation substituted. Triangle-strip primitive restart passes through natively.
 
 Apple acceptance uses the same signed Alpine loader/guest program and original
-MoltenVK over Metal in `LocalVulkanTests`. This iteration's Apple run is pending;
+MoltenVK over Metal in `LocalVulkanTests`. [Final-source Apple CI](https://github.com/kb5000/trames/actions/runs/38705917216)
+passes all 14 tests, with zero failures/skips. Both simulator and physical-device
+apps link. The original [Metal texture PNG](assets/vulkan-metal-texture.png),
+[raw fixture log](vulkan-textures-metal.log), [summary](vulkan-textures-metal-summary.json)
+and [artifact/source/hash record](vulkan-textures-data.json) are retained.
+[Full Linux CI](https://github.com/kb5000/trames/actions/runs/38705917179) also
+passes on the same source. [0.15.0/build16](release-0.15.md) packages this source;
 physical iPad acceptance has not been performed. Existing native swapchain and
 floating-window acceptance remains a separate regression. No speed improvement
 or complete Vulkan conformance is claimed.

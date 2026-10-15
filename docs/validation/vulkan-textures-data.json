@@ -1,0 +1,186 @@
+{
+  "source_commit": "18f74153732a8010b611f441accfbed7ab337c28",
+  "public_entrypoints": 108,
+  "new_entrypoints": [
+    "vkCmdBindVertexBuffers",
+    "vkCmdBindIndexBuffer",
+    "vkCmdDrawIndexed",
+    "vkCmdCopyBufferToImage",
+    "vkCreateSampler",
+    "vkDestroySampler"
+  ],
+  "native_driver": "Mesa25 Lavapipe LLVM19 software reference",
+  "guest_cpus": [
+    1,
+    4
+  ],
+  "rust_tests": 294,
+  "lifecycle_fault_cases": 1560,
+  "validation_layer": "Khronos 1.4.309 API and synchronization; no Validation Error or VUID in original native/guest logs",
+  "pixel_oracle": "three rounds, >90% checked; independent nearest/bilinear equations, <=2/255 channel tolerance; guest/native final PPM byte-identical",
+  "pixel_sha256": {
+    "target/vulkan-texture/basic-native.ppm": "19904e521a2a082b0bf57aa1ddb7f6813b737b294554745dead359cf104dba8f",
+    "target/vulkan-texture/basic-guest-4.ppm": "19904e521a2a082b0bf57aa1ddb7f6813b737b294554745dead359cf104dba8f",
+    "target/vulkan-texture/basic-guest-1.ppm": "19904e521a2a082b0bf57aa1ddb7f6813b737b294554745dead359cf104dba8f",
+    "target/vulkan-texture/base-offsets-native.ppm": "19904e521a2a082b0bf57aa1ddb7f6813b737b294554745dead359cf104dba8f",
+    "target/vulkan-texture/base-offsets-guest-1.ppm": "19904e521a2a082b0bf57aa1ddb7f6813b737b294554745dead359cf104dba8f",
+    "target/vulkan-texture/base-offsets-guest-4.ppm": "19904e521a2a082b0bf57aa1ddb7f6813b737b294554745dead359cf104dba8f"
+  },
+  "source_sha256": {
+    "accelerator/vulkan/icd.c": "8cff1fa3f406601ee6553293c70c8dc1c0ea8d7a1b0b6f612f3f68b74f7d0ea0",
+    "accelerator/vulkan/graphics.inc": "7ee3f69429b25088c5bfea60ada1477408637c6577a6a4cb703b16d3155c38e5",
+    "accelerator/vulkan/entrypoints.inc": "604182e103ecc14e84fc19edcca00fa46daae76de5f2a556d96e4bfbf813a89b",
+    "crates/trames-vulkan/src/backend.rs": "f880bd8931a61487b4d914ed5e1018dfee825c3635fed8a50a8a24ee6026447f",
+    "crates/trames-vulkan/src/backend/graphics.rs": "06ed3d54a9a063e561ce0ab5b69cd28a4eb289d28dcc08fa537ab58314197c72",
+    "crates/trames-vulkan/src/backend/textures.rs": "3ae6ef37fe14a71050e4698e0a4fece2ae0bd26910eec7d1e5f2a54e4261401b",
+    "crates/trames-vulkan/examples/lifecycle.rs": "2e53db6176d7e48e72f182c0c30786d036b335538aff3e33f1715cdd336f4fea",
+    "tests/fixtures/vulkan-texture.c": "6059dd3e1ad2aea8283d0d0af374fda76713c45e19e5eb37dd847fe2b5857a86",
+    "tests/fixtures/vulkan-texture.vert": "c856951506442ffe3792a61cbf3371bd46751367e2ced8a56856bd5b585982fa",
+    "tests/fixtures/vulkan-texture.frag": "0b91080698e126f082aa5ce81c472cfe1c5833fbe664cbbc3bb4c57618fffb66",
+    "tests/integration/vulkan-texture.py": "0523ffb9d6390f8ff88c93ad8520872fbe1d1d192cf3443d6678d533eb5c0f06",
+    "apps/ios/Trames/LocalVulkanProbe.swift": "d0a00a3e4326076f2ee8735fee5d81095e8fc37be9d104af72e305fadfbdb77f",
+    "apps/ios/TramesTests/LocalVulkanTests.swift": "dd8648ad457cfea8a3f05edfa4bfeea3f7937f6d656ff178c083c53dfbbddf62"
+  },
+  "logs": {
+    "texture-validation": {
+      "sha256": "b4b80f684e060d697bcf8beea450813bafc6e6ccd7c409ac590c2b2135010765",
+      "tail": [
+        "vulkan-texture-ok",
+        "Vulkan texture driver: llvmpipe (LLVM 19.1.7, 256 bits)",
+        "Signed repository inputs: vulkan-loader=1.4.313.0-r0",
+        "1-CPU guest: uint16/uint32 indexed and non-indexed draws, padded texture upload, combined/separate samplers, nearest/linear, instance input, graphics uniforms/push constants; pixels match native driver",
+        "4-CPU guest: uint16/uint32 indexed and non-indexed draws, padded texture upload, combined/separate samplers, nearest/linear, instance input, graphics uniforms/push constants; pixels match native driver",
+        "texture round 1: uint16 indexed nearest, vertex/instance input, uniforms and push constants correct",
+        "texture round 2: uint32 indexed linear, vertex/instance input, uniforms and push constants correct",
+        "texture round 3: non-indexed nearest, vertex/instance input, uniforms and push constants correct",
+        "nonzero base vertex/instance: correct",
+        "vulkan-texture-ok"
+      ]
+    },
+    "workspace": {
+      "sha256": "cff29a19f4e9c0d5ca4673e6bdbd47ca13e4690dc5215ce05e2b0437b7fa698f",
+      "tail": [
+        "running 0 tests",
+        "",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "",
+        "   Doc-tests trames_vulkan",
+        "",
+        "running 0 tests",
+        "",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        ""
+      ]
+    },
+    "clippy": {
+      "sha256": "f7190ec40d495f1dab719d5ff0063380ac15a47a7b05cca4163d7de8d62524c7",
+      "tail": [
+        "    Checking trames-vulkan v0.15.0 (/workspace/trames/crates/trames-vulkan)",
+        "    Checking trames-core v0.15.0 (/workspace/trames/crates/trames-core)",
+        "    Checking trames-ffi v0.15.0 (/workspace/trames/crates/trames-ffi)",
+        "    Checking trames-cli v0.15.0 (/workspace/trames/crates/trames-cli)",
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.03s"
+      ]
+    },
+    "compute": {
+      "sha256": "be2dbc8ed7b42351c76e06ea3ac34136cfb1300a25a2ea1b8b63501006c9a11b",
+      "tail": [
+        "parallel pipeline callers preserve default/specialized outputs: ok",
+        "compute round 1: 4096 uint32 values correct",
+        "compute round 2: 4096 uint32 values correct",
+        "compute round 3: 4096 uint32 values correct",
+        "compute semaphore chain 1: 4096 specialized uint32 values correct",
+        "compute semaphore chain 2: 4096 specialized uint32 values correct",
+        "binary semaphore reuse and empty submissions: ok",
+        "partial mapping, offset flush/invalidate and remap persistence: ok",
+        "unaligned map offset preserves Vulkan pointer alignment: ok",
+        "vulkan-compute-ok"
+      ]
+    },
+    "render": {
+      "sha256": "6b60161af27b6be3ecf38394a73a6d9023f0b0de939bad8271b740665101c496",
+      "tail": [
+        "Vulkan render driver: llvmpipe (LLVM 19.1.7, 256 bits)",
+        "Signed repository inputs: vulkan-loader=1.4.313.0-r0",
+        "1-CPU guest: 3 real graphics draws, independent pixel oracle and exported PPM match native driver byte-for-byte",
+        "4-CPU guest: 3 real graphics draws, independent pixel oracle and exported PPM match native driver byte-for-byte",
+        "render round 1: barycentric colors, alpha, background and scissor correct",
+        "render round 2: barycentric colors, alpha, background and scissor correct",
+        "render round 3: barycentric colors, alpha, background and scissor correct",
+        "vulkan-render-ok"
+      ]
+    },
+    "lifecycle": {
+      "sha256": "c9ba64bd9671bb346953390eea30ce7de0961ba3082048c2c0f998360226a1fc",
+      "tail": [
+        "   Compiling trames-vulkan v0.14.0 (/workspace/trames/crates/trames-vulkan)",
+        "    Finished `release` profile [optimized] target(s) in 10.87s",
+        "     Running `target/release/examples/lifecycle tests/fixtures/bin/vulkan-compute.spv tests/fixtures/bin/vulkan-render.vert.spv tests/fixtures/bin/vulkan-render.frag.spv`",
+        "260 live-output unmaps: faults, no ID publication/table exhaustion",
+        "260 post-preflight backing I/O failures: native outputs rolled back",
+        "260 graphics output unmaps: no pipeline publication/table exhaustion",
+        "260 graphics pipeline, 260 image and 260 sampler backing failures: unpublished native outputs rolled back",
+        "in-flight graphics pass/shader removal: dependencies retained until completion",
+        "in-flight shader removal: retained native dependency completes",
+        "abandoned compiler/device teardown: no result publication"
+      ]
+    }
+  },
+  "apple": {
+    "source_commit": "18f74153732a8010b611f441accfbed7ab337c28",
+    "run": 38705917216,
+    "status": "success: 14 passed, 0 failed/skipped; simulator and ARM64 device links pass",
+    "artifact": {
+      "id": 11959597201,
+      "name": "unsigned-ipad-build-and-project",
+      "bytes": 47352457,
+      "sha256": "577db339bf8df3f5b25005b1bba337fcb392bb53704381fd8db4f470a1a4133e"
+    },
+    "job": 116325926907,
+    "summary": "vulkan-textures-metal-summary.json",
+    "fixture_log": {
+      "file": "vulkan-textures-metal.log",
+      "source": "build/ipad-smoke.xcresult/Data/data.0~axHS4FWM13tXDdZBWqQxd6aL7tWWldv01OrgVfq0LA-qdZXGU515QZVnLLkQhbJ9KCxruqqBYz3-atfEtWJ-0w==",
+      "bytes": 815,
+      "sha256": "9d7f5bdc89c2d223cb356ea0f3c412f2b196f41d74631f10d248e7f4c0d7438e",
+      "attachment": "native-vulkan-texture-log",
+      "original_bytes": true
+    },
+    "image": {
+      "file": "assets/vulkan-metal-texture.png",
+      "source": "build/ipad-smoke.xcresult/Data/data.0~YkZokqTmF4nXZN40VIP7WgoTVg3C0p8e0ZWujo2yhygtZDpQS5P2tJxX4_AK9QAf84hpG-i8M0y9kOy9CijpIQ==",
+      "width": 256,
+      "height": 192,
+      "bytes": 1666,
+      "sha256": "e8a7db55859617b72cdc4aa50e0b4626327f0806137508bedaa00aff2fc8fc66",
+      "attachment": "native-metal-vulkan-texture",
+      "original_png_bytes": true
+    }
+  },
+  "linux": {
+    "run": 38705917179,
+    "status": "success"
+  },
+  "physical_ipad": "pending grouped release; simulator Metal evidence is not a physical-device/performance result",
+  "initial_simulator_failure": {
+    "source": "2d60ae05d7b6b085572b4a2c3f7cc5e12fdcff56",
+    "run": 38700948162,
+    "passed": 13,
+    "failed": 1,
+    "reason": "Original MoltenVK iOS simulator rejects nonzero baseVertex/baseInstance; current common base-zero and explicit Linux base-offsets acceptance are separate."
+  },
+  "local_full_workspace_commit": "2d60ae05d7b6b085572b4a2c3f7cc5e12fdcff56",
+  "local_vulkan_recheck_commit": "18f74153732a8010b611f441accfbed7ab337c28",
+  "release": {
+    "tag": "v0.15.0",
+    "source": "18f74153732a8010b611f441accfbed7ab337c28",
+    "url": "https://github.com/kb5000/trames/releases/tag/v0.15.0",
+    "ipa_sha256": "c83b44142042c90d277d01d750d6360e03160694e3f30dcf8e1c1d19063c8d67",
+    "tag_commit": "b77503c1ccff88f8253551c88150dbc0353b4be7",
+    "application_identical_at_tag": true
+  },
+  "modes": [
+    "basic: base-zero indexed/instance draws (also Apple Metal acceptance)",
+    "base-offsets: positive/negative vertex base and nonzero first instance (Linux native and guest)"
+  ]
+}

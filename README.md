@@ -12,15 +12,17 @@
 
 进一步的[访存优化](docs/architecture/region-memory.md)将同步范围缩到实际触及的 64 字节区段，允许同页独立访问并行；合并脏区段提交、减少映射检查，并为内置后备对象减少单核线程的重复借用。受控 unsafe 保留 ARM 允许的运行结果差异；[验证和原始跑分](docs/validation/region-memory.md)，[Issue #17](https://github.com/kb5000/trames/issues/17)。
 
+最新 [0.15.0/build 16](docs/validation/release-0.15.md) 已发布：[下载 unsigned IPA](https://github.com/kb5000/trames/releases/download/v0.15.0/Trames-0.15.0-build16-unsigned.ipa)，用 Sideloadly 覆盖安装可保留数据。本版合并 sudo／时区／匿名 ELF 修复及 Vulkan 原生计算、纹理与浮动显示窗口；同一源码的 Linux CI 与 Apple 14 项模拟器验收均通过。Vulkan 默认关闭，真机验收待实际使用。
+
 [0.14.0/build 15](docs/validation/release-0.14.md)已将这些更新与[稀疏脏页提交优化](docs/validation/checkpoint-cost.md)打包发布到 [GitHub Release](https://github.com/kb5000/trames/releases/tag/v0.14.0)，可直接下载 unsigned IPA 用 Sideloadly 覆盖安装。原生 malloc/free 保持实验性、默认关闭；普通分配器与并行原生函数使用统一的 guest 访存模型。
 
-后续 main 已补齐[sudo 伪终端与宿主时区同步](docs/validation/sudo-timezone.md)：原版 sudo 的默认 `use_pty`、密码认证、提权和嵌套运行通过实际测试；本地 Linux 在启动、回到前台及系统时区变化时接收 iPad 的原始时区规则，保留显式 `TZ` 覆盖。这些更新随正在打包的 [0.15.0/build 16](docs/validation/release-0.15.md) 交付。
+后续 main 已补齐[sudo 伪终端与宿主时区同步](docs/validation/sudo-timezone.md)：原版 sudo 的默认 `use_pty`、密码认证、提权和嵌套运行通过实际测试；本地 Linux 在启动、回到前台及系统时区变化时接收 iPad 的原始时区规则，保留显式 `TZ` 覆盖。这些更新已随 [0.15.0/build 16](docs/validation/release-0.15.md) 交付。
 
 main 进一步修复[匿名 ELF 与 fd 执行](docs/validation/fd-exec.md)：`/proc/self/fd/N` 按实际 inode 执行，加入 `execveat`、`AT_EMPTY_PATH` 和 `O_PATH`；关闭原 fd 后仍保留 `/proc/self/exe`。`(deleted)` 只显示一次，仍表示有效的匿名或已取消链接文件。Python `pass_fds` 与 `os.execve(fd)`、23 项原生 Linux 对照通过，同样纳入 0.15.0。
 
 ## 快速运行
 
-开发分支已加入[实验性 Vulkan 计算、图形与显示桥](docs/architecture/vulkan-compute.md)：原版 Linux loader 通过标准 guest ICD 调用原生 Vulkan；iPad 静态链接原版 MoltenVK／Metal。新增标准 `VK_KHR_display` / `VK_KHR_swapchain`，程序可直接提交 GPU 图像到 App 内可拖动、缩放的显示窗口（固定 1024×768 画布）。新增[顶点／索引缓冲、纹理上传与采样、图形描述符和 push constants](docs/validation/vulkan-textures.md)，采用原生 Vulkan／Metal 执行。[离屏图形](docs/validation/vulkan-render.md)已有真实 Metal 像素验证；[持续显示与窗口验收](docs/validation/vulkan-display.md)已通过 Apple CI 的 13 项测试，含实际画布像素、拖动缩放、隐藏恢复和运行中关闭。当前仍为选定接口子集，真机验收留待后续版本；[Issue #21](https://github.com/kb5000/trames/issues/21)。
+0.15.0 已加入[实验性 Vulkan 计算、图形与显示桥](docs/architecture/vulkan-compute.md)：原版 Linux loader 通过标准 guest ICD 调用原生 Vulkan；iPad 静态链接原版 MoltenVK／Metal。新增标准 `VK_KHR_display` / `VK_KHR_swapchain`，程序可直接提交 GPU 图像到 App 内可拖动、缩放的显示窗口（固定 1024×768 画布）。新增[顶点／索引缓冲、纹理上传与采样、图形描述符和 push constants](docs/validation/vulkan-textures.md)，采用原生 Vulkan／Metal 执行。[离屏图形](docs/validation/vulkan-render.md)已有真实 Metal 像素验证；[持续显示与窗口验收](docs/validation/vulkan-display.md)与新增纹理用例已通过 Apple CI 的 14 项测试，含实际 GPU 像素、拖动缩放、隐藏恢复和运行中关闭。当前仍为选定接口子集，真机验收留待后续版本；[Issue #21](https://github.com/kb5000/trames/issues/21)。
 
 需要 Rust 1.90.0；交叉构建 BusyBox 和运行差分测试还需要 Python 3、GNU AArch64 GCC/Binutils、Make、curl、bzip2 和 QEMU user-mode。Debian/Ubuntu 可安装：
 

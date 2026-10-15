@@ -54,3 +54,8 @@ software reference; it does not validate Apple presentation or iPad speed.
 No release was changed; physical iPad verification remains a later grouped release.
 
 ![Native Vulkan swapchain window after drag and resize](assets/vulkan-display-window.png)
+
+The [0.15.0/build16 release](release-0.15.md) revalidates the live display/window
+alongside indexed textures: [Apple CI 38705917216](https://github.com/kb5000/trames/actions/runs/38705917216)
+passes all 14 tests, zero failures/skips, on source 18f7415. Earlier screenshot
+and display-log provenance above remains unchanged.

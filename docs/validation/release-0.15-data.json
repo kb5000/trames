@@ -1,0 +1,92 @@
+{
+  "source_commit": "18f74153732a8010b611f441accfbed7ab337c28",
+  "version": "0.15.0",
+  "build": "16",
+  "ipa_sha256": "c83b44142042c90d277d01d750d6360e03160694e3f30dcf8e1c1d19063c8d67",
+  "ipa_bytes": 16741917,
+  "bundle_id": "org.trames.Trames",
+  "minimum_os": "17.0",
+  "device_families": [
+    1,
+    2
+  ],
+  "device_architecture": "arm64",
+  "mach_o_platform": 2,
+  "all_packaged_files_match_device_build": 65,
+  "executable_permission_verified": true,
+  "zip_crc_and_sha256_sidecar_verified": true,
+  "libc_sha256": "885b308b75e36bb402b311fba1d3f1284e6dd8d3a0bfbf88686bff1b629f9b23",
+  "musl_native_functions": 19,
+  "source_inputs_verified": 19,
+  "license_notices_verified": true,
+  "vulkan_icd_sha256": "39ac44dd3ee60b993c00130e3d58244e72ba5cd8aa995459372f19da9d328004",
+  "vulkan_profile": 65542,
+  "vulkan_public_entrypoints": 108,
+  "moltenvk_version": "1.4.2",
+  "vulkan_default_enabled": false,
+  "vulkan_source_and_notices_verified": true,
+  "simulator_passed": 14,
+  "simulator_failed": 0,
+  "artifacts": {
+    "sideload": {
+      "id": 11959458745,
+      "name": "Trames-unsigned-sideload",
+      "digest": "sha256:efb5031dc77d99b48cdd4dff26eb88c35e050008d9c553a411664083da57ade3",
+      "expires_at": "2026-10-29T08:52:47Z"
+    },
+    "build": {
+      "id": 11959597201,
+      "name": "unsigned-ipad-build-and-project",
+      "digest": "sha256:577db339bf8df3f5b25005b1bba337fcb392bb53704381fd8db4f470a1a4133e",
+      "expires_at": "2026-10-22T08:52:50Z"
+    },
+    "musl": {
+      "id": 11958826275,
+      "name": "full-musl-library-and-source",
+      "digest": "sha256:b28cc674f05bbcbf37f3b6be86e4fad274052eaf6ca05c1a987070e9a637fe04",
+      "expires_at": "2026-10-29T08:30:24Z"
+    },
+    "vulkan": {
+      "id": 11958606842,
+      "name": "vulkan-compute-driver-and-native-source",
+      "digest": "sha256:a96e6c0fb7045e78b9813f3f3121c22a99df616cc7c28da4172866d950a0cb65",
+      "expires_at": "2026-10-29T08:30:22Z"
+    }
+  },
+  "publisher_source_commit": "b77503c1ccff88f8253551c88150dbc0353b4be7",
+  "tag_commit": "b77503c1ccff88f8253551c88150dbc0353b4be7",
+  "application_identical_at_tag": true,
+  "publication_only_changed_paths": [
+    ".github/workflows/release.yml",
+    "scripts/publish-ios-release.py"
+  ],
+  "ci": {
+    "iPad frontend": {
+      "id": 38705917216,
+      "attempt": 1,
+      "url": "https://github.com/kb5000/trames/actions/runs/38705917216",
+      "head_sha": "18f74153732a8010b611f441accfbed7ab337c28",
+      "conclusion": "success"
+    },
+    "Linux runtime": {
+      "id": 38705917179,
+      "attempt": 1,
+      "url": "https://github.com/kb5000/trames/actions/runs/38705917179",
+      "head_sha": "18f74153732a8010b611f441accfbed7ab337c28",
+      "conclusion": "success"
+    }
+  },
+  "public_release": {
+    "tag": "v0.15.0",
+    "url": "https://github.com/kb5000/trames/releases/tag/v0.15.0",
+    "asset_names": [
+      "musl-hybrid-1.2.5-source.tar.gz",
+      "Trames-0.15.0-build16-unsigned.ipa",
+      "Trames-0.15.0-build16-unsigned.ipa.sha256",
+      "Trames-0.15.0-simulator.json",
+      "Trames-0.15.0-verification.json",
+      "vulkan-native-upstream-source.tar.gz"
+    ],
+    "public_ipa_sha256_verified": "c83b44142042c90d277d01d750d6360e03160694e3f30dcf8e1c1d19063c8d67"
+  }
+}
