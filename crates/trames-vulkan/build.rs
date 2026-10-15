@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-use std::{env, path::Path};
+use std::{
+    env,
+    path::{Path, PathBuf},
+    process::Command,
+};
 fn main() {
     println!("cargo:rustc-check-cfg=cfg(trames_moltenvk)");
     println!("cargo:rerun-if-env-changed=TRAMES_MOLTENVK_STATIC_DIR");
@@ -13,6 +17,32 @@ fn main() {
             Path::new(&directory).join("libMoltenVK.a").is_file(),
             "missing pinned native MoltenVK archive"
         );
+        let archive = Path::new(&directory).join("libMoltenVK.a");
+        println!("cargo:rerun-if-changed={}", archive.display());
+        // Apple's simulator XCFramework contains a fat archive; rustc's native
+        // static bundler needs an ordinary archive for the selected CPU. Keep
+        // the verified upstream bytes unchanged and thin only into OUT_DIR.
+        let bytes = std::fs::read(&archive).expect("read pinned MoltenVK archive");
+        let directory = if bytes.starts_with(b"!<arch>\n") {
+            PathBuf::from(directory)
+        } else {
+            let arch = match env::var("CARGO_CFG_TARGET_ARCH").unwrap().as_str() {
+                "aarch64" => "arm64",
+                "x86_64" => "x86_64",
+                _ => panic!("unsupported MoltenVK target architecture"),
+            };
+            let out = PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("moltenvk");
+            std::fs::create_dir_all(&out).expect("create thin archive directory");
+            let status = Command::new("xcrun")
+                .arg("lipo")
+                .arg(&archive)
+                .args(["-thin", arch, "-output"])
+                .arg(out.join("libMoltenVK.a"))
+                .status()
+                .expect("xcrun lipo is required for universal MoltenVK archives");
+            assert!(status.success(), "failed to thin MoltenVK for {arch}");
+            out
+        };
         println!("cargo:rustc-cfg=trames_moltenvk");
         println!(
             "cargo:rustc-link-search=native={}",
