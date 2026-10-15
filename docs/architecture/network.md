@@ -1,5 +1,9 @@
 # Native network backend (M3 foundation)
 
+Historical M3 design. Current defaults and DNS/interface/ICMP changes are in
+[Direct native networking](direct-network.md). The selected Unix IPC, epoll and
+other later ABI additions are recorded in the current compatibility inventory.
+
 This stage implements real native IPv4/IPv6 TCP and UDP for interpreted AArch64
 Linux programs. Dynamic musl/Alpine and authenticated HTTPS/apk are now validated
 in [M3](../validation/m3.md); native iPad device validation remains later work.
@@ -102,7 +106,7 @@ Listen backlog requests are capped at 128.
 
 ## Capability modes
 
-The library VFS defaults to Off. The CLI selects Outbound unless specified.
+The library VFS defaults to Off. The CLI and iPad LocalSession now select Full unless specified.
 Modes are configured by the embedding app, never guest syscalls. A capability
 cannot be replaced while that VFS network namespace has live socket objects.
 
@@ -113,8 +117,8 @@ cannot be replaced while that VFS network namespace has live socket objects.
 | outbound | ordinary unicast host destinations | loopback TCP/UDP; wildcard UDP port 0 for clients |
 | full | ordinary unicast host destinations | also non-loopback/wildcard listeners |
 
-Ports below 1024 are denied for guest bind in every mode, independent of whether
-the containing host process happens to have privilege. TCP listen must follow an
+Ports below 1024 are denied in Loopback/Outbound. Full delegates bind permission
+to the host OS; guest root does not grant host privileges. TCP listen must follow an
 explicit successful bind; it cannot implicitly open a wildcard endpoint. Full
 mode uses actual native interfaces and ports, and can conflict with host services.
 Loopback addresses access native loopback, including other host services; there

@@ -218,7 +218,7 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     let mut memory_only = false;
     let mut disk_budget = None;
     let mut storage_info = false;
-    let mut network = NetworkMode::Outbound;
+    let mut network = NetworkMode::Full;
     let mut virtual_network = None;
     let mut host_mappings = Vec::new();
     let mut rootfs = None;
@@ -226,7 +226,7 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     let mut guest_path = false;
     let mut extra_env = Vec::new();
     if args.peek().is_some_and(|a| a == "--help" || a == "-h") {
-        println!("Usage: trames-run [--rootfs VERIFIED_ALPINE_TAR_GZ] [--guest] [--env KEY=VALUE] [--virtual-network ID] [--host-map VIRTUAL_IP=HOST_IP] [--network off|loopback|outbound|full] [--storage DIR | --memory] [--storage-budget BYTES|16GiB|auto] [--storage-info] [--max-instructions N] [--trace-syscalls] [--metrics] [--cpus auto|1..32] [--accelerator pure|off] [--native-bsearch] [--native-allocator] [--vulkan] [--musl-libc HOST_ELF] [--file /GUEST=HOST] [--exec-file /GUEST=HOST] [--export /GUEST=HOST] [--install-busybox] [--pty] [--] ELF [ARG ...]\nDefault native network: outbound connections and loopback listeners; full also allows non-loopback listeners.\n--virtual-network ID selects isolated 10.0.0.ID / fd00::ID and private loopback; ID must be 2..254.\n--host-map explicitly forwards a logical external IP to a trusted host service.\nDefault storage: .trames/storage in the current directory, 16 GiB logical file budget on first creation.\nImports copy selected host files; exports create new host files after guest exit.\n--memory selects the ephemeral 16 MiB test backend. auto uses the storage volume's total capacity.");
+        println!("Usage: trames-run [--rootfs VERIFIED_ALPINE_TAR_GZ] [--guest] [--env KEY=VALUE] [--virtual-network ID] [--host-map VIRTUAL_IP=HOST_IP] [--network off|loopback|outbound|full] [--storage DIR | --memory] [--storage-budget BYTES|16GiB|auto] [--storage-info] [--max-instructions N] [--trace-syscalls] [--metrics] [--cpus auto|1..32] [--accelerator pure|off] [--native-bsearch] [--native-allocator] [--vulkan] [--musl-libc HOST_ELF] [--file /GUEST=HOST] [--exec-file /GUEST=HOST] [--export /GUEST=HOST] [--install-busybox] [--pty] [--] ELF [ARG ...]\nDefault native network: full host TCP/UDP access and listeners, subject to host OS permissions; use --network outbound or loopback to restrict it.\n--virtual-network ID selects isolated 10.0.0.ID / fd00::ID and private loopback; ID must be 2..254.\n--host-map explicitly forwards a logical external IP to a trusted host service.\nDefault storage: .trames/storage in the current directory, 16 GiB logical file budget on first creation.\nImports copy selected host files; exports create new host files after guest exit.\n--memory selects the ephemeral 16 MiB test backend. auto uses the storage volume's total capacity.");
         return Ok(0);
     }
     while let Some(option) = args.peek() {
@@ -429,22 +429,25 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     if let Some(archive) = rootfs {
         trames_distro::install_alpine(&mut File::open(archive)?, &mut vfs)?;
     }
-    if virtual_network.is_some()
-        && vfs
-            .stat_at(-100, b"/etc/resolv.conf")
-            .is_err_and(|e| e.0 == 2)
+    for (guest, host, executable) in files {
+        vfs.import_reader(guest.as_bytes(), &mut File::open(host)?, executable)?;
+    }
+    if vfs
+        .stat_at(-100, b"/etc/resolv.conf")
+        .is_err_and(|e| e.0 == 2)
     {
         if vfs.stat_at(-100, b"/etc").is_err_and(|e| e.0 == 2) {
             vfs.mkdir_at(-100, b"/etc", 0o755)?;
         }
         vfs.import_reader(
             b"/etc/resolv.conf",
-            &mut &b"nameserver 10.0.0.1\n"[..],
+            &mut if virtual_network.is_some() {
+                &b"nameserver 10.0.0.1\n"[..]
+            } else {
+                &b"nameserver 127.0.0.53\n"[..]
+            },
             false,
         )?;
-    }
-    for (guest, host, executable) in files {
-        vfs.import_reader(guest.as_bytes(), &mut File::open(host)?, executable)?;
     }
     if let Some(libc) = musl_libc {
         trames_distro::install_musl(&mut File::open(libc)?, &mut vfs)?;

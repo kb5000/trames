@@ -53,6 +53,12 @@ for source in ('crates/trames-core/src/process.rs', 'crates/trames-linux/src/sta
                 found.setdefault(number, f'{source}:{i + 1}')
 rows = list(csv.DictReader((OUT / 'compatibility-0.4-syscalls.csv').open()))
 notes = {
+    51: 'Guest chroot fs.root with root privilege, absolute symlink/dotdot handling, fork/CLONE_FS inheritance and unshare separation. Retains cwd/dirfd capabilities as Linux does. No mount tree or complete proc root view.',
+    97: 'CLONE_NEWUTS, CLONE_FS and CLONE_FILES only; validate all flags before changing state. No mount/PID/network/user/IPC namespace.',
+    161: 'Set current guest UTS hostname, 0..64 bytes; current authorization requires guest euid 0, without a capability/user-namespace model.',
+    162: 'Set current guest UTS domain name, 0..64 bytes; same selected root authorization as sethostname.',
+    268: 'Join UTS object through retained namespace fd, type 0 or CLONE_NEWUTS; fd pins namespace after original task exit. Other namespace types unsupported.',
+    220: 'Existing fork/threads/resource-sharing clone flags plus CLONE_NEWUTS; UTS sharing or copy at clone. No NEWNS/NEWPID/NEWNET/NEWUSER/NEWIPC or clone3.',
     29: 'Selected tty/network ioctls and FIONBIO, including standard streams, dup-shared status flags, output/input backpressure and descriptor-only CLOEXEC.',
     208: 'Selected socket options including TCP_KEEPIDLE/KEEPINTVL/KEEPCNT with Linux bounds. Native sockets use translated host options; virtual TCP uses the idle interval and retains interval/count as compatibility hints, not Linux probe/expiry timing.',
     31: 'IOPRIO_WHO_PROCESS query for current/existing virtual task; default CLASS_NONE/data 0. No host PID, priority setter, process-group or user query.',
@@ -157,6 +163,8 @@ metadata = {
         'crates/trames-memory/src/cpu_memory.rs', 'crates/trames-memory/src/parallel.rs', 'crates/trames-core/src/workers.rs',
         'crates/trames-net/src/native.rs', 'crates/trames-net/src/virtualnet/sockets.rs',
         'crates/trames-vfs/src/mapped.rs', 'crates/trames-vfs/src/memfd.rs', 'crates/trames-vfs/src/executable.rs',
+        'crates/trames-vfs/src/linux_namespace.rs', 'crates/trames-net/src/direct_dns.rs',
+        'crates/trames-net/src/interfaces.rs', 'crates/trames-net/src/native_icmp.rs',
         'crates/trames-vfs/src/namespace.rs', 'crates/trames-vfs/src/credentials.rs')},
 }
 (OUT / (args.prefix + '-syscalls.json')).write_text(json.dumps(metadata, indent=2) + '\n')

@@ -90,7 +90,7 @@ python3 tests/integration/m3.py
 
 网络支持实际 IPv4/IPv6 TCP 和 UDP。宿主 socket 始终非阻塞，guest 阻塞调用挂起当前虚拟进程；fork/dup 共享连接，最后一个持有者关闭后释放。每会话最多 64 个 socket，单次复制最多 1 MiB，UDP 数据报保持完整或显式报告截断。
 
-CLI 默认 `--network outbound`：允许出站连接、本机监听及 UDP 客户端的临时端口。`--network off` 关闭网络，`--network loopback` 限定本机，`--network full` 还允许非本机地址和通配监听。loopback 指宿主本机；这不是独立的 guest 网络命名空间。guest 不能绑定 1024 以下端口。模式仍受宿主网络策略和系统权限约束。
+CLI 与 iPad LocalSession 默认 `--network full` 原生直连：普通 TCP/UDP 不经过 10.0.0.1 网关，允许宿主 loopback 和 LAN 监听；绑定 `0.0.0.0:PORT` 的 guest 服务可通过宿主地址访问。默认 DNS 是仅处理名称解析的 `127.0.0.53`，接入宿主系统 resolver。`off`、`loopback`、`outbound` 可显式收紧权限；所有模式受宿主 OS、网络授权与 App 生命周期约束。端口空间与宿主共享，并不是独占网卡或完整 Linux 网络 namespace。详见[原生直连设计](docs/architecture/direct-network.md)；iPad Safari/LAN 与后台行为仍需真机验收。
 
 使用 `--virtual-network 2` 可进入独立 IP 网络：环境 2 的地址为 `10.0.0.2`／`fd00::2`，网关与 DNS 为 `10.0.0.1`／`fd00::1`，`127.0.0.1`／`::1` 只指向该环境。不同环境拥有独立端口空间，可监听私有 80／53 端口。库的共享 `Fabric` API 可同时连接多个环境；CLI 每次创建一个环境。TCP／UDP 经 smoltcp 数据包栈处理，外网流量再由网关桥接原生 socket，TLS 始终由 guest 库处理。无需 TUN／VPN 权限。虚拟模式在缺少 `/etc/resolv.conf` 时写入虚拟 DNS，保留已有配置。
 
@@ -101,6 +101,10 @@ target/release/trames-run --storage target/alpine --virtual-network 2 --guest --
 已验证 IPv4／IPv6 大数据报分片重组、TCP 丢包重传、内部 ICMP echo 和 DNS，以及通过网关的真实 Alpine HTTPS apk 安装。当前上限为每个 Fabric 16 个环境、256 个栈句柄（含 backlog）和 64 个原生网关流，每环境 64 个 guest socket。0.2.0 补上 guest raw ICMP、通过原生 ICMP datagram socket 的真实 echo 转发和只读 NETLINK_ROUTE 查询；实际平台权限仍会返回错误。AF_PACKET、组播、DHCP、网络配置修改和完整 Linux 网络控制接口仍未支持。详细行为和资源策略见 [虚拟网络架构](docs/architecture/virtual-network.md) 与 [验证记录](docs/validation/virtual-network.md)。
 
 DNS 由真实 musl 读取 guest 的 `/etc/resolv.conf`；可用 `--file /etc/resolv.conf=HOST_FILE` 显式导入。已验证 A/AAAA 查询和 UDP 截断后的 TCP 回退。HTTP/TLS 由 guest 程序自己的库处理，运行时不继承宿主代理凭据。已验证原版 Alpine HTTPS 和 apk 的证书、主机名及包签名校验；网络/core/distro 已通过 iOS 目标编译检查，Apple 已构建 IPA，用户已在 iPad 上通过 Sideloadly 安装并启动 0.1.0；新功能仍待真机验收。详细设计、行为和缺口见 [网络架构](docs/architecture/network.md)。
+
+## Guest 内容器（开发中）
+
+第一批支持 UTS namespace：`unshare(CLONE_NEWUTS)`、`clone(CLONE_NEWUTS)`、`setns`、hostname/domainname、可保活的 `/proc/PID/ns/uts` FD；同时加入 `chroot` 和 fs/files unshare。原版 BusyBox 的 unshare/nsenter/chroot 和 1/4 CPU 集成测试覆盖这些行为。mount/PID/net/user namespace、pivot_root、cgroup 等仍待实现，当前还不能宣称能运行完整容器。目标是在 guest 内运行原版 runc/crun，后续再扩展容器引擎；见[设计与顺序](docs/architecture/guest-containers.md)。
 
 ## Linux 兼容性更新（0.2.0）
 

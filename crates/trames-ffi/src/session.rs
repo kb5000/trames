@@ -89,7 +89,7 @@ fn default_columns() -> u16 {
     80
 }
 fn default_network() -> String {
-    "outbound".into()
+    "full".into()
 }
 #[derive(Clone, Serialize)]
 pub struct Status {
@@ -162,7 +162,10 @@ impl Session {
             || options.columns > 4096
             || options.volume_total == 0
             || options.volume_available > options.volume_total
-            || !matches!(options.network.as_str(), "off" | "loopback" | "outbound")
+            || !matches!(
+                options.network.as_str(),
+                "off" | "loopback" | "outbound" | "full"
+            )
         {
             return Err("invalid session configuration".into());
         }
@@ -384,10 +387,33 @@ fn run(
         (b"/root/.trames".as_slice(), b"Trames\n".as_slice()),
         (
             b"/etc/resolv.conf".as_slice(),
-            b"nameserver 10.0.0.1\nnameserver fd00::1\n".as_slice(),
+            b"nameserver 127.0.0.53\n".as_slice(),
         ),
     ] {
-        if vfs.stat_at(trames_vfs::AT_FDCWD, path).is_err() {
+        let old_managed_dns = path == b"/etc/resolv.conf"
+            && vfs
+                .open_at(trames_vfs::AT_FDCWD, path, 0, 0)
+                .is_ok_and(|fd| {
+                    let data = vfs.read(fd, 256).unwrap_or_default();
+                    let _ = vfs.close(fd);
+                    matches!(
+                        data.as_slice(),
+                        b"nameserver 10.0.0.1\nnameserver fd00::1\n" | b"nameserver 10.0.0.1\n"
+                    )
+                });
+        if old_managed_dns {
+            let fd = vfs
+                .open_at(trames_vfs::AT_FDCWD, path, 1, 0)
+                .map_err(|e| e.to_string())?;
+            let result = vfs.write(fd, bytes).and_then(|written| {
+                if written != bytes.len() {
+                    return Err(trames_vfs::Errno(5));
+                }
+                vfs.truncate_fd(fd, bytes.len() as u64)
+            });
+            let close = vfs.close(fd);
+            result.and(close).map_err(|e| e.to_string())?;
+        } else if vfs.stat_at(trames_vfs::AT_FDCWD, path).is_err() {
             vfs.import_file(path, bytes.to_vec())
                 .map_err(|e| e.to_string())?;
         }
@@ -416,10 +442,12 @@ fn run(
         trames_distro::synchronize_timezone(&mut vfs, &timezone.identifier, &timezone.data)
             .map_err(|e| e.to_string())?;
     }
-    vfs.configure_local_fabric(match options.network.as_str() {
+    vfs.configure_network(match options.network.as_str() {
         "off" => NetworkMode::Off,
         "loopback" => NetworkMode::Loopback,
-        _ => NetworkMode::Outbound,
+        "outbound" => NetworkMode::Outbound,
+        "full" => NetworkMode::Full,
+        _ => return Err("invalid network mode".into()),
     })
     .map_err(|e| e.to_string())?;
     let bytes = vfs.executable(b"/bin/ash").map_err(|e| e.to_string())?;

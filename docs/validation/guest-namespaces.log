@@ -1,0 +1,59 @@
+=== namespace integration ===
+1-CPU guest UTS namespace, namespace FD lifetime, chroot/exec passed
+4-CPU guest UTS namespace, namespace FD lifetime, chroot/exec passed
+Real BusyBox unshare/nsenter/chroot passed
+
+=== native direct network ===
+1-CPU icmp4: host permission denial propagated (echo untested)
+1-CPU icmp6: host permission denial propagated (echo untested)
+1-CPU native DNS, IPv4/IPv6 HTTP and UDP inbound passed; IPv4 host address 172.26.91.251
+1-CPU real BusyBox ip a and ping/ping6 permission/reply behavior passed
+4-CPU icmp4: host permission denial propagated (echo untested)
+4-CPU icmp6: host permission denial propagated (echo untested)
+4-CPU native DNS, IPv4/IPv6 HTTP and UDP inbound passed; IPv4 host address 172.26.91.251
+4-CPU real BusyBox ip a and ping/ping6 permission/reply behavior passed
+
+=== embedding native network ===
+Embedding default full native network: real musl DNS and host loopback/LAN HTTP passed
+Retained resolver: former managed gateway replaced; custom configuration preserved
+
+=== fd execution regression ===
+1-CPU ARM64 fd execution: 23 cases match native Linux
+4-CPU ARM64 fd execution: 23 cases match native Linux
+proc memfd at EOF offset: ok
+execveat memfd empty path: ok
+original libc fexecve: ok
+nofollow rejects proc magic link: ok
+fd execute permission is required: ok
+CLOEXEC ELF and proc exe inode pin: ok
+directory fd is not executable: ok
+cwd empty path is a directory: ok
+relative dirfd ELF: ok
+absolute path ignores invalid dirfd: ok
+nofollow rejects final symlink: ok
+O_PATH ELF fd: ok
+unlinked regular ELF through proc fd: ok
+symlink to deleted inode magic link: ok
+invalid execveat flag: ok
+empty path precedes unknown flags: ok
+empty pathname without flag: ok
+invalid fd with empty path: ok
+regular fd cannot be a dirfd: ok
+fd shebang interpreter: ok
+CLOEXEC script returns ENOENT: ok
+relative dirfd shebang: ok
+CLOEXEC dirfd script returns ENOENT: ok
+
+=== embedding regression ===
+Embedding Bridge: actual Alpine CLI, claimed native consent/denial, stale reply rejection and disabled/enabled/disabled SHA-256 passed
+Explicit environment reset: live-store refusal, asynchronous worker close and deletion passed
+C ABI: Alpine PTY, color bytes, resize, 1 MiB disk roundtrip, exclusive export, pause/resume, busy cancellation, reopen and rootfs rejection passed
+
+=== native network regression ===
+Network integration passed: 36 QEMU comparisons across memory/disk; IPv4/IPv6 TCP/UDP, preflight, binary payloads, short IO, half-close, fork/listen, host peers, refused connections, EINTR/restart, SIGPIPE and real musl DNS UDP/TCP fallback; 8 network policy, 4 receive preflight and 4 session teardown outcomes
+
+=== virtual network regression ===
+Virtual TCP/UDP/refusal/fork/signals: 24 QEMU comparisons; guest interfaces, DNS and ICMP passed
+Actual dynamic Alpine HTTPS apk update/add and CA rejection through packet gateway passed
+Virtual network passed: 27 QEMU comparisons plus ABI/ICMP/DNS/TLS rejection checks; 19.0s
+

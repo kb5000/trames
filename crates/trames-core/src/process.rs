@@ -477,6 +477,7 @@ impl Kernel {
                 _ => 'S',
             },
             credentials: p.linux.vfs.credentials.clone(),
+            namespaces: p.linux.vfs.namespace_snapshot(),
             command: p.linux.command_name.clone(),
             arguments,
             environment: p.linux.environment.clone(),
@@ -1400,6 +1401,26 @@ impl Kernel {
                     }
                 }
             }
+            97 => {
+                const ALLOWED: u64 = trames_vfs::CLONE_NEWUTS | 0x200 | 0x400;
+                if a[0] & !ALLOWED != 0 {
+                    return Err(Errno(22));
+                }
+                if a[0] & trames_vfs::CLONE_NEWUTS != 0 {
+                    p.linux.vfs.unshare_uts()?;
+                }
+                if a[0] & 0x200 != 0 {
+                    p.fs_id = self.resource_id();
+                }
+                if a[0] & 0x400 != 0 {
+                    p.files_id = self.resource_id();
+                }
+                Ok(Some(0))
+            }
+            268 => {
+                p.linux.vfs.setns(a[0] as u32, a[1])?;
+                Ok(Some(0))
+            }
             436 => {
                 let (first, last, flags) = (a[0] as u32, a[1] as u32, a[2] as u32);
                 if first > last || flags & !6 != 0 {
@@ -1438,8 +1459,14 @@ impl Kernel {
                 Ok(Some(pid as u64))
             }
             220 => {
-                const ALLOWED: u64 =
-                    0xff | 0xf00 | 0x4000 | 0x8000 | 0x10000 | 0xfc0000 | 0x1000000;
+                const ALLOWED: u64 = 0xff
+                    | 0xf00
+                    | 0x4000
+                    | 0x8000
+                    | 0x10000
+                    | 0xfc0000
+                    | 0x1000000
+                    | trames_vfs::CLONE_NEWUTS;
                 let threaded = a[0] & 0x10000 != 0;
                 let shared_vm = a[0] & 0x100 != 0;
                 if a[0] & !ALLOWED != 0
@@ -1469,6 +1496,9 @@ impl Kernel {
                     .filter(|v| *v < i32::MAX as u32)
                     .ok_or(Errno(11))?;
                 let mut child = p.fork();
+                if a[0] & trames_vfs::CLONE_NEWUTS != 0 {
+                    child.linux.vfs.unshare_uts()?;
+                }
                 let resource = self.resource_id();
                 if shared_vm {
                     child.memory = p.memory.share();

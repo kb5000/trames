@@ -1,0 +1,60 @@
+{
+  "recorded_utc": "2026-10-15T10:59:20.409940+00:00",
+  "parent_commit": "8d9077667a873a5951b153f095cbd482f04bbeef",
+  "scope": "First UTS namespace/chroot batch and default native networking; not a complete container runtime",
+  "workspace_tests": 301,
+  "guest_cpus": [
+    1,
+    4
+  ],
+  "native_network_qemu_comparisons": 36,
+  "virtual_network_qemu_comparisons": 27,
+  "fd_exec_cases_per_cpu": 23,
+  "icmp": "Host denied ICMP datagrams: rejection path verified locally; real echo required in CI, pending",
+  "apple": "aarch64-apple-ios compile checked; new simulator/device and physical tests pending",
+  "performance": "No new benchmark claim",
+  "source_sha256": {
+    ".github/workflows/linux.yml": "31856cb86f7dcfde3e117e6bcb088ef83c4ecc011f3bc6440f816cf7f6e6f9f7",
+    "apps/ios/TramesKit/Sources/TramesKit/LocalSession.swift": "13592c89b77721902d0767ab3e546ad14ac4d221f6b4557140a38e0ebc22f060",
+    "apps/ios/TramesTests/LocalNetworkTests.swift": "fde7ece9356ab02682b074e13c6ac1ee611d6f5767842fb384b21720b45fda6b",
+    "crates/trames-cli/src/main.rs": "541a9ea27fcd7f9e695525260a95a8f8e079712e5335b0c92a99a35b62e46962",
+    "crates/trames-core/src/process.rs": "d19e69adf70837c2c7737c64a2bedad3adf699d22dcc97a44b4d6c37f3319d04",
+    "crates/trames-ffi/src/session.rs": "943beabf2057919989198134a4adcb4f235cec24cb70d04a06b04fdc78973c01",
+    "crates/trames-linux/src/network.rs": "8978baa4e8b89d061f623779e2e8b8648205b3307ebec135e54b78a613650b93",
+    "crates/trames-linux/src/state.rs": "131397127c382f22e290906ad49c67d11f5fb49f2cb03f3c340d868d6c372bf1",
+    "crates/trames-net/src/direct_dns.rs": "0cd8f75e0bf0e1b9032c848074b43a0fa775a01229cddf7ba2380e9cb83b3944",
+    "crates/trames-net/src/dns.rs": "391e782b3527b06137e6ff1d9c9c7b744f34e042b92294640bf8b7d19bb1f4b4",
+    "crates/trames-net/src/interfaces.rs": "5844f093d45db4df27dc639cbf5167b7c980cb9521f0f792bf99bde9d1b7b3ae",
+    "crates/trames-net/src/lib.rs": "16ef76d431cce7f1192627bc98b6b08c9eba6adf5f06d64169957a88f6076769",
+    "crates/trames-net/src/native.rs": "bd729ecbc9ae46f46c9453caa631618b8b889e9a7d65090839def9a63c1fed10",
+    "crates/trames-net/src/native_icmp.rs": "ab56d7bf3e6785b03c8d438c4aa11e6f3dae0a7c4259c9c912a3aafeb559388e",
+    "crates/trames-net/src/netlink.rs": "700a4afe662c5a1815455bb22cd6ba5b0a9da4ce5762c00b4240b64bc7e6e476",
+    "crates/trames-net/src/virtualnet/mod.rs": "45b8bdac933c1a1487d4909193a51f1d6380619cd05df63b96561025b40b5f05",
+    "crates/trames-vfs/src/events.rs": "54e24f0ceab5dfe00f67864cd5c8eb136fd6c580dcb2a9027f6bb10ecf056819",
+    "crates/trames-vfs/src/ipc.rs": "69c64d90b6a15755c649f8af969f8e9450eb7312b7d685032cf1ed5c5eda4384",
+    "crates/trames-vfs/src/lib.rs": "8eb249244eef20ab7908ebc4fe2873a3aa17b99eb3bef97c16f0e74207fd85e9",
+    "crates/trames-vfs/src/linux_namespace.rs": "15b36c20d46be8a9f3ebfe62358502167bed193c4f01ec62b0668770e4c63975",
+    "crates/trames-vfs/src/memfd.rs": "c9b2b76f3405b2d8f6bb1f8404b634d3761866597d825538cc6fda9ccec04acb",
+    "crates/trames-vfs/src/network.rs": "1a3e2534fa272bb08fc44761e9ef9300bd73163b65b030afbdc0ad1fda5fff1a",
+    "crates/trames-vfs/src/pseudo.rs": "f2f5ce6cee48c5adcd2498f1c4b00898d48f968ffdf13a688768e5d1a43a9f2d",
+    "scripts/audit-syscalls.py": "24c6dad9fd7d92da421f855758f3f660bb003d47bf02b00b9bed0f4e3e7435b3",
+    "scripts/build-namespace-fixtures.sh": "f96a836546f889f2697ea91926bfec16aef1fd6a3c88ff6b3221bfc9bb86a1bc",
+    "tests/fixtures/direct-network.c": "2dbc639a1372c79005fa9e895239aeaeb29df55b69c126713baff3d05b37e397",
+    "tests/fixtures/namespaces.c": "10a831b9056fb2f7439e27e4d01f4c366498ccaa591ddd3230bb46654e8c8665",
+    "tests/integration/direct-network.py": "977a7132e698ade6a8b53c9c859ca92c7411a437a8fc1b1b6ab4d09cbd027cc6",
+    "tests/integration/embedding-network.py": "805e04a7dbde1db57bbc194d4ba506c67e7d6e76af32505f266009f8bf87e2cb",
+    "tests/integration/namespaces.py": "e560f3f8d3c193b36e0b3829c8daca353217301b745715767d9ae55c69881d44"
+  },
+  "input_sha256": {
+    "tests/fixtures/bin/namespaces": "8bf70a1acf49814ae6f7941371444b680f4cbe97c282a82030a34ce858199e89",
+    "tests/fixtures/bin/direct-network": "95509d51e176fa22b1b345da0f9fb7b82fb9d306c6f2e21728350384de4dcc6a",
+    "target/alpine-download/alpine-minirootfs-3.22.6-aarch64.tar.gz": "821565fa8f3953eefd12497b166b4b50add2f7c57fb312e75862f5867e06fefe",
+    "target/busybox-build/busybox": "58ee781107cb1a65049252b5ec78b6eb9cf6db76a6bbdfd228b62791cf010b93"
+  },
+  "retained_log_sha256": "529ee46f5e7c018a7353720b9fe61460be0870d4ff472c497b7895d41d63ca2c",
+  "check_log_sha256": {
+    "trames-ns-final-workspace.log": "a2611191699ccb6d05ffc6806d9250f273fd635b671ec92cff5e666dc0a1c2d4",
+    "trames-ns-final-clippy.log": "024b8d0050f52c19c8abb54b00c8f7c917ee78435fbae7c5f31b224572b3e82c",
+    "trames-ns-final-ios.log": "9e31fd170c96fac3bd3ad7ae4ba54200e3b3636360f909ff25ecdb48b6e95300"
+  }
+}

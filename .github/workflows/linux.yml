@@ -166,6 +166,14 @@ jobs:
         run: |
           bash scripts/build-fd-exec-fixtures.sh
           python3 tests/integration/fd-exec.py
+      - name: Validate guest UTS namespaces, chroot and direct native listeners
+        run: |
+          bash scripts/build-namespace-fixtures.sh
+          python3 tests/integration/namespaces.py
+          python3 tests/integration/direct-network.py
+          python3 tests/integration/embedding-network.py
+        env:
+          TRAMES_REQUIRE_ICMP_EGRESS: '1'
       - name: Compare standard guest Vulkan compute and rasterization with the native software driver
         run: |
           sudo apt-get install --yes libvulkan-dev mesa-vulkan-drivers glslang-tools

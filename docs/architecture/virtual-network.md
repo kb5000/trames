@@ -1,5 +1,9 @@
 # Userspace virtual IP fabric
 
+> The default CLI/iPad session now uses [direct native networking](direct-network.md).
+> This packet fabric remains explicitly selectable with `--virtual-network` and is
+> a building block for future guest network namespaces; it is not CLONE_NEWNET.
+
 Delivered after M3 on 10 October 2026. Each environment has an IP stack and
 independent service ports. TCP/UDP external traffic also traverses packets and
 the stack; a trusted gateway bridges it to supported native nonblocking sockets.
