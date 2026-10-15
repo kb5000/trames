@@ -1,0 +1,109 @@
+[docker-start-workspace]
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.49s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 43 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+test result: ok. 38 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.30s
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.42s
+test result: ok. 45 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.80s
+test result: ok. 106 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.42s
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[docker-start-clippy]
+    Checking trames-vfs v0.15.0 (/workspace/trames/crates/trames-vfs)
+    Checking trames-linux v0.15.0 (/workspace/trames/crates/trames-linux)
+    Checking trames-distro v0.15.0 (/workspace/trames/crates/trames-distro)
+    Checking trames-core v0.15.0 (/workspace/trames/crates/trames-core)
+    Checking trames-ffi v0.15.0 (/workspace/trames/crates/trames-ffi)
+    Checking trames-cli v0.15.0 (/workspace/trames/crates/trames-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.89s
+
+[docker-start-ios]
+    Checking trames-vfs v0.15.0 (/workspace/trames/crates/trames-vfs)
+    Checking trames-linux v0.15.0 (/workspace/trames/crates/trames-linux)
+    Checking trames-distro v0.15.0 (/workspace/trames/crates/trames-distro)
+    Checking trames-core v0.15.0 (/workspace/trames/crates/trames-core)
+    Checking trames-ffi v0.15.0 (/workspace/trames/crates/trames-ffi)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.54s
+
+[docker-start-unix]
+1-CPU Unix IPC / ET / xattr / FIFO outcomes match native Linux
+4-CPU Unix IPC / ET / xattr / FIFO outcomes match native Linux
+filesystem Unix stream: inode, stale path, backlog, credentials, ET: ok
+abstract Unix stream: binary names, lifecycle, backlog, credentials, ET: ok
+eventfd ET: repeated writes and drain/refill: ok
+pipe ET: repeated writes, drain/refill and peer close: ok
+archive timestamps: dangling symlink nofollow: ok
+inode xattrs: paths, fds, symlinks, binary values, flags and unlink: ok
+netlink ET: repeated responses and drain: ok
+FIFO proc reopen: O_PATH, unlinked inode, independent endpoint lifetime: ok
+anonymous pipe inode: permissions, ownership, fork sharing and open access: ok
+1-CPU parent death signal outcomes match native Linux
+4-CPU parent death signal outcomes match native Linux
+parent death signal: validation, fork reset and exec preservation: ok
+parent death signal: process exit delivers sender metadata: ok
+parent death signal: creating thread exit while process stays alive: ok
+1-CPU OOM preference outcomes match native Linux
+4-CPU OOM preference outcomes match native Linux
+oom_score_adj: range, permissions, offsets, threads, fork, exec and dead task: ok
+
+[docker-start-cgroups]
+1-CPU cgroup device BPF enforcement and lifecycle: passed (guest ABI checks)
+1-CPU cgroup hierarchy, lifecycle, PID/mount views and control validation: passed
+1-CPU cgroup freezer and subtree kill: passed
+1-CPU pids controller quotas and lifecycle: passed
+1-CPU cgroup session state reset with root disk preserved: passed
+1-CPU dumpable behavior matches native Linux; UID transitions passed
+4-CPU cgroup device BPF enforcement and lifecycle: passed (guest ABI checks)
+4-CPU cgroup hierarchy, lifecycle, PID/mount views and control validation: passed
+4-CPU cgroup freezer and subtree kill: passed
+4-CPU pids controller quotas and lifecycle: passed
+4-CPU cgroup session state reset with root disk preserved: passed
+4-CPU dumpable behavior matches native Linux; UID transitions passed
+
+[docker-start-namespaces]
+1-CPU guest UTS namespace, namespace FD lifetime, chroot/exec passed
+4-CPU guest UTS namespace, namespace FD lifetime, chroot/exec passed
+1-CPU guest mount namespace, tmpfs/bind/pivot_root and mount FD lifetime passed
+4-CPU guest mount namespace, tmpfs/bind/pivot_root and mount FD lifetime passed
+1-CPU guest PID hierarchy, proc views, signals/waits, threads, init shutdown and subreaper passed
+4-CPU guest PID hierarchy, proc views, signals/waits, threads, init shutdown and subreaper passed
+Real BusyBox unshare/nsenter/chroot passed
+Real BusyBox unshare -m, mount tmpfs/bind/remount, df and umount passed
+Real BusyBox unshare -pf --mount-proc, shell PID 1, background wait and ps passed
+
+[docker-start-crun]
+Signed repository inputs: crun=1.23.1-r0
+1-CPU original crun: payload/exit 7, private PID/mount/UTS, proc, cgroupfs, pause/resume/kill, two Alpine rootfs containers and foreground PTY passed
+4-CPU original crun: payload/exit 7, private PID/mount/UTS, proc, cgroupfs, pause/resume/kill, two Alpine rootfs containers and foreground PTY passed
+Evidence: /workspace/trames/target/container-lifecycle
+
+[docker-start-audit]
+{"scope": "Linux v6.12 native AArch64 numbered entries; entry presence is not full ABI conformance", "entries": 318, "statuses": {"missing": 126, "implemented_subset": 190, "obsolete_stub": 2}, "undispatched_probes_per_backend": 128, "backends": ["cached"], "unhandled_return": -38}
+
+[docker-start-fresh]
+Signed repository inputs: docker-engine=28.3.3-r5, docker-cli=28.3.3-r5, crun=1.23.1-r0, libssl3=3.5.9-r0
+1-CPU original Docker: daemon/image/create/cleanup passed; container run: PASSED
+4-CPU original Docker: daemon/image/create/cleanup passed; container run: PASSED
+Evidence: /workspace/trames/target/docker-lifecycle

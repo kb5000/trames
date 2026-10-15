@@ -50,8 +50,8 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 ## Linux：尚无入口的系统调用
 
 固定参照仍为 Linux v6.12 原生 AArch64 的 318 个编号，不是最新版内核的全部接口。
-当前有 **189 个已实现子集、127 个未实现条目、2 个废弃条目**。
-本轮使用实际 ARM64 探测 ELF，在唯一缓存解释器上逐个调用全部 129 个未分派编号，
+当前有 **190 个已实现子集、126 个未实现条目、2 个废弃条目**。
+本轮使用实际 ARM64 探测 ELF，在唯一缓存解释器上逐个调用全部 128 个未分派编号，
 均返回 `-ENOSYS`（-38）。这验证的是无入口行为，不能代替已有入口的 ABI 完整性测试。
 
 完整的编号、名称、状态、当前源码位置和探测返回值见
@@ -59,7 +59,7 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 单后端、统计及源码指纹见 [审计 JSON](../validation/compatibility-current-syscalls.json)。
 可运行 `python3 scripts/audit-syscalls.py` 更新当前报告，历史报告不会被默认覆盖。
 
-以下按用途列出主要缺口；每行列举代表接口，完整 127 项以 CSV 中 `missing` 行为准。
+以下按用途列出主要缺口；每行列举代表接口，完整 126 项以 CSV 中 `missing` 行为准。
 
 | 用途 | 尚未实现的代表接口 |
 | --- | --- |
@@ -69,10 +69,10 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 | 进程与调度 | clone3、pidfd 系列、实时调度、sched_rr_get_interval、sched_setattr/getattr、get/setpriority、getrusage、times、rseq |
 | 信号与同步 | rt_sigqueueinfo/rt_tgsigqueueinfo、get/set_robust_list、futex_waitv、独立 futex_wait/wake/requeue、restart_syscall |
 | IPC 与网络批处理 | SysV shm/sem/msg、POSIX mq、sendmmsg/recvmmsg |
-| 内核管理与隔离 | 新挂载 API、传播挂载/overlayfs、ptrace/seccomp、process_vm_readv/writev、bpf/perf、landlock、模块/重启/交换分区等 |
+| 内核管理与隔离 | 新挂载 API、传播挂载/overlayfs、ptrace/seccomp、process_vm_readv/writev、perf、landlock、模块/重启/交换分区等 |
 
 2 个废弃条目是 `lookup_dcookie`（18）与 `nfsservctl`（42），同样返回 ENOSYS，
-不计入 127 个未实现条目。内核管理类接口需要结合用户态虚拟化目标选择范围，
+不计入 126 个未实现条目。内核管理类接口需要结合用户态虚拟化目标选择范围，
 不能把完整内核功能视为普通文件/进程接口的自然延伸。
 
 先前的 statx、preadv/pwritev、close_range 和 syslog 已扩展为本轮包含 23 个新入口的
@@ -89,12 +89,16 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 UTS 对象和 namespace FD 具备实际共享/隔离及保活语义，clone 增加 NEWUTS。
 后续增加 mount/umount2/pivot_root、mount namespace、tmpfs、bind/rbind，以及 waitid、child subreaper、PID namespace 层级、init 生命周期和 proc 挂载视图。后续新增 capget/capset 和 capability prctl 子集，接入实际权限判断及 UID/exec 转换；后续补 cgroup v2 域成员生命周期和 dumpable/敏感 proc 访问。本批增加设备 inode/持久化、openat2 路径约束、proc FD chmod/chown、同点 pivot_root，并校正 PID init 的会话继承。最新批次补齐 signalfd4、线程私有/进程共享信号队列和 proc FD 挂载目标，原版 crun 的选定启动、exec、TERM 和删除生命周期已通过；新批次通过 cgroupfs、pause/resume/kill、pids 限额、并发 Alpine rootfs 和独立 devpts 前台终端；补 SCM_RIGHTS 子集及 PTY EPOLLET。user/IPC/net namespace、CPU/memory/io 控制与委派仍未实现，详见[guest 内容器基础](../architecture/guest-containers.md)。
 Docker 批次新增 12 个 xattr 入口、具名 Unix socket、PDEATHSIG 和更多 ET 来源。
+后续增加 cgroup device BPF 入口与实际设备规则执行；补 proc OOM 偏好、匿名 pipe
+权限、strictatime/64 MiB tmpfs、空 mqueue 挂载和明确拒绝限速写入的 io.max 视图。
 默认网络改为[宿主原生直连](../architecture/direct-network.md)，不改变系统调用编号数。
 
 ## Linux：已有入口但语义仍有缺口
 
 | 已有接口或设施 | 仍缺少的行为 |
 | --- | --- |
+| bpf / cgroup devices | 仅选定 CGROUP_DEVICE 向前控制流与 LOAD/ATTACH/DETACH/GET_FD_BY_ID/QUERY；无 map/helper/stack/loop、网络程序、JIT、ALLOW_OVERRIDE 或 host BPF |
+| proc OOM / mqueue / io.max | OOM 偏好不含 victim selector 或非线程 shared-mm 传播；mqueue 仅空挂载视图，mq_* 仍缺；io.max 可读空但非空写入 EOPNOTSUPP，无 IO 限速能力 |
 | namespace / chroot | UTS/mount/PID、fs/files unshare、fs.root、tmpfs/bind/umount/pivot_root 已有；proc 按挂载绑定 PID 视图，NSpid 等显示层级；当前根网络 ns/net 句柄、bind/setns 已有，独立 net/user/IPC、跨进程 proc root/cwd magic link 尚缺；cgroup2 支持域成员、freeze/kill 和 pids 限额，其他控制器/委派仍缺；原版 crun 选定生命周期已通过，完整 OCI/容器引擎仍未验收 |
 | capability / prctl | 初始 guest user namespace 的 E/P/I/bounding/ambient、securebits、no_new_privs、dumpable 0/1 与选定 proc 访问检查已有；file capability xattr、user namespace 映射/权限层级、完整 ptrace、core 文件写出、seccomp 仍缺 |
 | xattr | 路径/链接/fd 的 12 个入口及持久化 user.* 已有；security.capability/ACL 设置仍明确拒绝 |

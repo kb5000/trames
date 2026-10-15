@@ -23,3 +23,11 @@ for cpus in ('1', '4'):
     assert actual.returncode == 0 and actual.stdout == expected.stdout, (cpus, actual.returncode, actual.stdout, actual.stderr)
     print(f'{cpus}-CPU parent death signal outcomes match native Linux', flush=True)
 print(expected.stdout.decode(), end='')
+
+fixture = fixture.with_name('oom-score')
+expected = subprocess.run([str(fixture.with_name('oom-score-host'))], capture_output=True, timeout=30, check=True)
+for cpus in ('1', '4'):
+    actual = subprocess.run([runner, '--memory', '--cpus', cpus, '--max-instructions', '100000000', '--exec-file', '/oom-score='+str(fixture), '--guest', '/oom-score'], capture_output=True, timeout=30)
+    assert actual.returncode == 0 and actual.stdout == expected.stdout, (cpus, actual.returncode, actual.stdout, actual.stderr)
+    print(f'{cpus}-CPU OOM preference outcomes match native Linux', flush=True)
+print(expected.stdout.decode(), end='')

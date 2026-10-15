@@ -216,11 +216,11 @@ jobs:
         run: |
           bash scripts/build-signalfd-fixtures.sh
           python3 tests/integration/signalfd.py
-      - name: Compare Unix sockets, ET, xattrs, FIFO reopen and parent death signals
+      - name: Compare Unix IPC, pipe metadata, parent death signals and OOM preferences
         run: |
           bash scripts/build-unix-fixtures.sh
           python3 tests/integration/unix-sockets.py
-      - name: Validate guest cgroup domains and dumpable against native Linux
+      - name: Validate guest cgroups and device BPF; compare dumpable with native Linux
         run: |
           bash scripts/build-cgroup-fixtures.sh
           python3 tests/integration/cgroups.py
@@ -236,8 +236,8 @@ jobs:
         run: python3 tests/integration/containers.py
         env:
           TRAMES_RUNNER: ${{ github.workspace }}/target/release/trames-run
-      - name: Validate original Docker daemon and image lifecycle; record container-start blocker
-        run: python3 tests/integration/docker.py
+      - name: Validate original Docker container payload, exit status, logs and cleanup
+        run: python3 tests/integration/docker.py --require-run
         env:
           TRAMES_RUNNER: ${{ github.workspace }}/target/release/trames-run
       - uses: actions/upload-artifact@v4

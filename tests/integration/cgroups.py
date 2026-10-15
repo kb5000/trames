@@ -13,6 +13,9 @@ with tempfile.TemporaryDirectory(prefix='trames-cgroup-') as directory:
     oracle=subprocess.run([str(native)],capture_output=True,check=True).stdout
     for cpus in ('1','4'):
         base=[RUNNER,'--storage',str(Path(directory)/cpus),'--network','off','--cpus',cpus,'--max-instructions','1000000000']
+        p=subprocess.run([*base,'--exec-file',f"/cgroup-bpf={ROOT/'tests/fixtures/bin/cgroup-bpf'}",'--guest','/cgroup-bpf'],capture_output=True,timeout=90)
+        assert p.returncode==0 and b'fault and permission checks: ok\n' in p.stdout,(cpus,p.returncode,p.stdout,p.stderr[-8000:])
+        print(f'{cpus}-CPU cgroup device BPF enforcement and lifecycle: passed (guest ABI checks)',flush=True)
         p=subprocess.run([*base,'--exec-file',f"/cgroups={ROOT/'tests/fixtures/bin/cgroups'}",'--guest','/cgroups'],capture_output=True,timeout=90)
         assert p.returncode==0 and p.stdout==b'cgroup v2: hierarchy, membership, threads/exec/exit, PID views, mounts, stale FDs and denied controls: ok\n',(cpus,p.returncode,p.stdout,p.stderr[-8000:])
         print(f'{cpus}-CPU cgroup hierarchy, lifecycle, PID/mount views and control validation: passed',flush=True)

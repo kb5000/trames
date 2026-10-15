@@ -1,9 +1,9 @@
-# Guest Docker：守护进程、镜像与创建阶段
+# 在 guest 内运行 Docker 容器
 
-当前开发版支持原版 Alpine Docker/containerd 的 Unix socket 通信、守护进程启动、
-`docker version/info`、vfs 镜像导入和容器创建/查询/删除。**容器启动尚未验收**：
-containerd shim 在读取 `/proc/PID/oom_score_adj` 时失败，实际 payload 尚未执行。
-需要运行容器时，已有可用范围见[原版 crun 入门](guest-containers.md)。
+当前开发版可通过原版 Alpine Docker → containerd → crun 执行 Alpine 容器：
+镜像导入、create/start、PID 1 payload、退出码、docker logs 与清理均纳入验收。
+使用 vfs、共享 guest 网络/IPC/cgroup namespace、关闭 seccomp 的选定配置，
+保留默认设备过滤，**无需 `--privileged`**。这不是完整 Docker 隔离或功能覆盖。
 
 这批没有升级 App 版本或手动生成 IPA；此前安装包不自动包含这些改动。
 
@@ -27,7 +27,7 @@ containerd shim 在读取 `/proc/PID/oom_score_adj` 时失败，实际 payload �
 mkdir -p /run /dev/shm
 mount -t tmpfs -o mode=755 tmpfs /run
 mount -t tmpfs -o size=16m,mode=1777 tmpfs /dev/shm
-export GOMAXPROCS=2
+export GOMAXPROCS=1
 containerd --config /etc/containerd/config.toml >/tmp/containerd.log 2>&1 &
 ```
 
@@ -39,18 +39,20 @@ dockerd --config-file /etc/docker/daemon.json >/tmp/dockerd.log 2>&1 &
 
 等 `API listen on /var/run/docker.sock` 后，可使用 `docker version`、`docker info`。
 先单独启动 containerd，可避开 dockerd 内置的固定启动期限；解释执行下冷启动
-时间会受宿主负载影响。`GOMAXPROCS=2` 是当前测试设置，不改变 Trames 的 vCPU 数。
+时间会受宿主负载影响。`GOMAXPROCS=1` 是当前测试设置，不改变 Trames 的 vCPU 数。
 
-## 已验证的镜像和容器元数据操作
+## 运行容器
 
 将官方 Alpine minirootfs 的 tar 导入 guest，然后执行：
 
 ```sh
 docker import /tmp/alpine-rootfs.tar trames-alpine:probe
 docker image inspect trames-alpine:probe
-docker create --name smoke --network host --ipc host --cgroupns host \
+docker create --ulimit nofile=256:256 --name smoke --network host --ipc host --cgroupns host \
   --security-opt seccomp=unconfined trames-alpine:probe /bin/sh -ec 'echo hello'
-docker inspect smoke
+docker start -a smoke
+docker inspect smoke --format '{{.State.ExitCode}}'
+docker logs smoke
 docker rm smoke
 docker image rm trames-alpine:probe
 ```
@@ -59,17 +61,23 @@ docker image rm trames-alpine:probe
 后续端口监听仍沿用 guest 的宿主直连设计。`--ipc host`、`--cgroupns host` 和
 关闭 seccomp 是当前选定范围，不构成完整 Docker 隔离配置。
 
-`docker start -a smoke` 是后续启动诊断入口，目前仍被 shim 的 proc OOM 接口阻塞。
-Registry pull、build/buildkit、Compose、rootless、容器 HTTP 服务与交互终端尚未
-通过 Docker 验收。CDI 的 inotify、CPU/memory/io 控制器等警告仍可能出现。
+`--ulimit nofile=256:256` 与当前 guest FD 表上限一致。shim 所需的
+`oom_score_adj`、pipe fchown/fchmod 和 cgroup device BPF 已实现；设备规则真正
+限制新 open/mknod，容器内既有 FD 保持原有访问能力。
+
+冷启动仍较慢，尚未做性能优化。Registry pull、build/buildkit、Compose、rootless、
+Docker 容器 HTTP 服务和交互终端尚未验收。CDI/cgroup 监控的 inotify、pidfd、
+CPU/memory/io 控制器等仍可能产生提示。`io.max` 仅允许空配置，限速写入失败；
+`/dev/mqueue` 只有可挂载的空视图，POSIX 消息队列系统调用尚未实现。
 
 ## 自动验证
 
 ```sh
-python3 tests/integration/docker.py
+python3 tests/integration/docker.py --require-run
 ```
 
-测试使用新磁盘和签名 APK，分别验证 1/4 CPU 的 daemon、image、create/inspect、
-remove；启动诊断单独记录 `DOCKER_RUN_BLOCKED`，不会被解释为容器运行成功。
-`--require-run` 会要求实际 payload 与退出码通过，目前应失败。
-完整日志、配置和输入指纹见[验证记录](../validation/guest-docker.md)。
+测试使用新磁盘和签名 APK，分别验证 1/4 CPU 的 daemon、image、create/start、
+PID 1 payload、退出码 7、日志、remove。CI 使用 `--require-run`，启动失败不能
+通过检查；省略该参数只用于单独记录阻塞的诊断。测试配置未使用 GODEBUG 改写
+Go 抢占行为。完整日志、输入指纹和限制见[启动验证记录](../validation/guest-docker-start.md)；
+之前的 OOM 阻塞保留在[历史基础验收](../validation/guest-docker.md)。

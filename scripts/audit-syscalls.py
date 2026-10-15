@@ -53,6 +53,8 @@ for source in ('crates/trames-core/src/process.rs', 'crates/trames-linux/src/sta
                 found.setdefault(number, f'{source}:{i + 1}')
 rows = list(csv.DictReader((OUT / 'compatibility-0.4-syscalls.csv').open()))
 notes = {
+    52: "FD mode changes include a shared anonymous-pipe inode, ownership/FOWNER/FSETID checks, fork/dup identity; existing pipe endpoint access is retained.",
+    55: "FD ownership changes include shared anonymous-pipe inode metadata, CHOWN checks and -1 preservation. Anonymous pipe metadata is volatile and never checkpoints the disk store.",
     74: 'Guest signalfd4 mask/create/update, NONBLOCK/CLOEXEC, read/readv whole 128-byte records, short reads/EFAULT dequeue, dup/fork/exec, proc fdinfo and selected poll/pselect/epoll level/ONESHOT readiness. Private task and shared process pending queues, standard coalescing, bounded RT FIFO for implemented producers, sender PID/UID and child/timer metadata. No rt_sigqueueinfo/rt_tgsigqueueinfo or complete Linux cross-fork epoll wake-queue binding.',
     136: 'Blocked pending bits from both private thread and shared process queues; proc exposes separate SigPnd/ShdPnd.',
     137: 'rt_sigtimedwait consumes private then shared queues with Linux signal priority, sender namespace translation and UID, timeout and interruption.',
@@ -140,6 +142,9 @@ notes[209] = notes.get(209, '') + ' Unix SO_TYPE, SO_ACCEPTCONN, SO_PEERCRED con
 notes[206] = notes.get(206, '') + ' NETLINK_ROUTE accepts only CAP_NET_ADMIN-authorized idempotent loopback UP, rejecting actual link/address/route mutations.'
 notes[211] += notes[206]
 notes[56] += ' Reopen FIFO O_PATH handles through proc with independent requested read/write endpoints, retained unlinked inode and open rendezvous.'
+notes[280] = 'Guest CGROUP_DEVICE BPF subset: verified forward-only context loads, MOV/AND/RSH and equality branches; LOAD/ATTACH/DETACH/GET_FD_BY_ID/QUERY, MULTI/atomic REPLACE and inherited real device open/mknod checks. CAP_SYS_ADMIN; 4096 instructions, 128 live programs, 16 attachments/group. No maps/helpers/stack/loops/network BPF, native JIT or host BPF.'
+notes[40] += ' MS_STRICTATIME overrides RELATIME; lazy tmpfs size up to 64 MiB (default 16 MiB). Empty mountable mqueue view only, mq_* calls remain unsupported. Non-root io.max permits open/read-empty for empty OCI limits, rejects throttling writes; io controller is not advertised.'
+notes[56] += ' Proc oom_score_adj with per-thread-group preferences, fork copy/exec preservation, range and CAP_SYS_RESOURCE floor checks, weak task lifetime; no OOM killer or host policy changes.'
 notes[88] = 'utimensat follows normal paths and honors AT_SYMLINK_NOFOLLOW including dangling symlinks; NULL path supports fd, selected NOW/OMIT and existing guest permission checks.'
 for row in rows:
     number = int(row['number'])
@@ -181,9 +186,9 @@ metadata = {
     'unhandled_return': -38,
     'source_sha256': {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in (
         'crates/trames-core/src/process.rs', 'crates/trames-core/src/process_caps.rs', 'crates/trames-vfs/src/capabilities.rs', 'crates/trames-vfs/src/cgroup.rs', 'crates/trames-core/src/process_pid.rs', 'crates/trames-core/src/process_events.rs', 'crates/trames-core/src/process_signals.rs', 'crates/trames-core/src/process_compat.rs',
-        'crates/trames-linux/src/state.rs', 'crates/trames-linux/src/network.rs', 'crates/trames-linux/src/xattr.rs', 'crates/trames-linux/src/file_calls.rs',
+        'crates/trames-linux/src/state.rs', 'crates/trames-linux/src/bpf.rs', 'crates/trames-vfs/src/bpf.rs', 'crates/trames-linux/src/network.rs', 'crates/trames-linux/src/xattr.rs', 'crates/trames-linux/src/file_calls.rs',
         'crates/trames-vfs/src/events.rs', 'crates/trames-vfs/src/ipc.rs', 'crates/trames-vfs/src/xattr.rs', 'crates/trames-net/src/netlink.rs', 'crates/trames-net/src/lib.rs', 'crates/trames-vfs/src/locks.rs',
-        'crates/trames-vfs/src/lib.rs', 'crates/trames-vfs/src/pseudo.rs', 'crates/trames-vfs/src/storage.rs',
+        'crates/trames-vfs/src/lib.rs', 'crates/trames-vfs/src/pseudo.rs', 'crates/trames-vfs/src/oom.rs', 'crates/trames-vfs/src/credentials.rs', 'crates/trames-vfs/src/namespace.rs', 'crates/trames-vfs/src/storage.rs',
         'crates/trames-vfs/src/kernel_log.rs', 'crates/trames-vfs/src/syscall_names.rs',
         'crates/trames-memory/src/lib.rs', 'crates/trames-memory/src/backing.rs',
         'crates/trames-memory/src/reservations.rs', 'crates/trames-core/src/lib.rs',

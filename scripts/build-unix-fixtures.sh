@@ -8,3 +8,5 @@ mkdir -p tests/fixtures/bin
 "${HOST_CC:-cc}" -O2 -Wall -Wextra -Werror tests/fixtures/unix-sockets.c -o tests/fixtures/bin/unix-sockets-host
 "$compiler" -static -pthread -O2 -Wall -Wextra -Werror tests/fixtures/pdeathsig.c -o tests/fixtures/bin/pdeathsig
 "${HOST_CC:-cc}" -pthread -O2 -Wall -Wextra -Werror tests/fixtures/pdeathsig.c -o tests/fixtures/bin/pdeathsig-host
+"$compiler" -static -pthread -O2 -Wall -Wextra -Werror tests/fixtures/oom-score.c -o tests/fixtures/bin/oom-score
+"${HOST_CC:-cc}" -pthread -O2 -Wall -Wextra -Werror tests/fixtures/oom-score.c -o tests/fixtures/bin/oom-score-host

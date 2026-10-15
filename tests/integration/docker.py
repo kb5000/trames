@@ -19,6 +19,7 @@ import m6
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--require-run', action='store_true')
+parser.add_argument('--privileged', action='store_true', help='Explicit guest privileged profile with allow-all device policy')
 args = parser.parse_args()
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT/'target/docker-lifecycle'
@@ -64,7 +65,7 @@ echo DOCKER_DAEMON_PASS
 docker import /tmp/alpine-rootfs.tar trames-alpine:probe
 docker image inspect trames-alpine:probe --format '{{.Id}} {{.Architecture}}'
 echo DOCKER_IMAGE_PASS
-docker create --name smoke --network host --ipc host --cgroupns host \
+docker create @PROFILE@ --ulimit nofile=256:256 --name smoke --network host --ipc host --cgroupns host \
   --security-opt seccomp=unconfined trames-alpine:probe /bin/sh -ec \
   'test "$$" = 1; id; hostname; echo DOCKER_GUEST_PAYLOAD; exit 7'
 test "$(docker inspect smoke --format '{{.State.Status}}')" = created
@@ -76,7 +77,9 @@ printf 'DOCKER_START_STATUS=%s\n' "$status"
 docker inspect smoke --format 'container running={{.State.Running}} exit={{.State.ExitCode}} error={{.State.Error}}'
 if grep -q '^DOCKER_GUEST_PAYLOAD$' /tmp/start.log; then
   test "$(docker inspect smoke --format '{{.State.ExitCode}}')" = 7
-  docker logs smoke
+  docker logs smoke >/tmp/container.log 2>&1
+  cat /tmp/container.log
+  grep -q '^DOCKER_GUEST_PAYLOAD$' /tmp/container.log
   echo DOCKER_RUN_PASS
 else
   echo DOCKER_RUN_BLOCKED
@@ -85,7 +88,8 @@ docker rm -f smoke
 docker image rm trames-alpine:probe
 echo DOCKER_CLEANUP_PASS
 '''
-results = {'scope': 'Unmodified signed guest Docker/containerd/crun; mandatory daemon, vfs image import, create/inspect/remove. Container start is a separately recorded diagnostic until explicitly required.',
+script = script.replace('@PROFILE@', '--privileged' if args.privileged else '')
+results = {'profile': 'guest-privileged' if args.privileged else 'default-device-filter', 'gomaxprocs': 1, 'scope': 'Unmodified signed guest Docker/containerd/crun; mandatory daemon, vfs image import, create/inspect/remove. Container start is a separately recorded diagnostic until explicitly required.',
            'script': script, 'checks': []}
 with tempfile.TemporaryDirectory(prefix='trames-docker-') as directory:
     tmp = Path(directory)
@@ -100,7 +104,7 @@ with tempfile.TemporaryDirectory(prefix='trames-docker-') as directory:
         shutil.copyfileobj(src, dest)
     for cpus in ('1', '4'):
         base = [RUNNER, '--storage', str(tmp/('store-'+cpus)), '--network', 'full', '--cpus', cpus,
-                '--env', 'GOMAXPROCS=2', '--max-instructions', '20000000000']
+                '--env', 'GOMAXPROCS=1', '--max-instructions', '20000000000']
         imported = [arg for p in packages for arg in ('--file', '/tmp/'+p.name+'='+str(p))]
         p = subprocess.run([*base, '--rootfs', str(rootfs), *imported,
             '--file', '/tmp/alpine-rootfs.tar='+str(tmp/'alpine.tar'),
@@ -110,7 +114,7 @@ with tempfile.TemporaryDirectory(prefix='trames-docker-') as directory:
         assert p.returncode == 0 and b'ERROR:' not in p.stdout+p.stderr, p
         with (OUT/f'lifecycle-{cpus}.log').open('wb') as log:
             p = subprocess.run([*base, '--guest', '/bin/sh', '-c', script],
-                               stdout=log, stderr=subprocess.STDOUT, timeout=600)
+                               stdout=log, stderr=subprocess.STDOUT, timeout=900)
         output = (OUT/f'lifecycle-{cpus}.log').read_text()
         checks = {name: 'DOCKER_'+name+'_PASS\n' in output
                   for name in ('DAEMON', 'IMAGE', 'CREATE', 'RUN', 'CLEANUP')}

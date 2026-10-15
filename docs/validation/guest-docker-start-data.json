@@ -1,0 +1,96 @@
+{
+  "baseline": "7d96b93f7158c8d9a3b3f321e5fda29dc80fbcf8",
+  "date": "2026-10-15",
+  "rust_tests_passed": 342,
+  "guest_cpus": [
+    1,
+    4
+  ],
+  "source_sha256": {
+    ".github/workflows/linux.yml": "a3e1ee37f7025b000c53f2a0db9d02e90d13e6187a14fe64435d9e72004ea2d8",
+    "crates/trames-core/src/process.rs": "46d594e323ed37a895c7c331b899523f931fc3825ed4dba96e517fcd60136232",
+    "crates/trames-linux/src/bpf.rs": "f7067e57c5ba84f7b5f88995bc7768da1acdbaab73b6ff3054110fe14b7ca60f",
+    "crates/trames-linux/src/lib.rs": "90a1582a192c8ae7d78c01db41e6651219243639c86e036be5011aae1c341a55",
+    "crates/trames-linux/src/state.rs": "1b2d96401aa78d671e436a2d56a43a8dc330930a02fcd980edc04b79de52e5c5",
+    "crates/trames-vfs/src/bpf.rs": "048cb4256d4c3c8829a0bf82b314119e97316bb357a5d013fee6a7de56cf8562",
+    "crates/trames-vfs/src/cgroup.rs": "9c319313bb17f6a27f7118e50067f16253d44adddf7a3af6b9786b1e03ebe103",
+    "crates/trames-vfs/src/credentials.rs": "4b630effceee0c04311ccac05121409be2f5de0fef89f38f90ff10fabb9174b8",
+    "crates/trames-vfs/src/events.rs": "a4ecadd34b73e63a561882fc5d68ac13a939773e98d4d8d3533e09f67a568b68",
+    "crates/trames-vfs/src/ipc.rs": "d765579a1931a52fb8c3187ce1c0d181f513c02654dc77595e61a282fd73ef72",
+    "crates/trames-vfs/src/lib.rs": "669fa49e3b4421a341f6dcb3ebb3c772d17aba30d4825f246d9b223df004a92e",
+    "crates/trames-vfs/src/linux_namespace.rs": "123173c81975acb6368094c482c8667a007540f7dcd4a4de53e909135dca0da1",
+    "crates/trames-vfs/src/mapped.rs": "2080a336d1a565474ad43edc2c3b240a53655d5f625ffb4eacd98e4b62c955d9",
+    "crates/trames-vfs/src/memfd.rs": "d02a6e60fc50f1138b286ef52b175e20a1a95a5b9a3b9c3ac300c5c3c7b7c6d9",
+    "crates/trames-vfs/src/mounts.rs": "9156d3ec801fe69072d3575ae5d75d6918e3e8778e95f161a2ed2ca1d65285c5",
+    "crates/trames-vfs/src/namespace.rs": "ccf1d93d32d7ff380fee5fc30471243e372d9f26a1ad726e189f986f7c8eec5b",
+    "crates/trames-vfs/src/network.rs": "16702cafc82bfec2edec8360bdb2c583f3beaa64f224b0b89c15cc1b218cf861",
+    "crates/trames-vfs/src/oom.rs": "1349853b8b727dc7b3368c085b7281123477b5a3a4643152be6954015cd42cad",
+    "crates/trames-vfs/src/pseudo.rs": "1600ed1a2f86a31fa59f10f1e495ba4c4a4d789bddda8934606f430a2f594cdf",
+    "crates/trames-vfs/src/pty.rs": "143939985fc479dc44d13aa2ca96b251b37c2921af5393a7f40a2e84e75afa26",
+    "scripts/audit-syscalls.py": "ec3e2bc8bf23026929ca5bc41fffe5860be0cb5631d3223fbd21294c7e2f277f",
+    "scripts/build-cgroup-fixtures.sh": "eb681861b3b3df739c437cb128a94408fa78df27c290cdc8d7f8c646f6a4a9fb",
+    "scripts/build-unix-fixtures.sh": "4aa1aca9986c37073a7c168e02c42f76deb7685c638e8a83af648de5d2abd210",
+    "tests/fixtures/cgroup-bpf.c": "7763f04508de3cc327a076830b4eaf207f3c9a43b8bd3a731baf1f2796603426",
+    "tests/fixtures/oom-score.c": "22d94e1f09f9ff09a459887c7201065da776ed77a531cda3df33fed6e482b311",
+    "tests/fixtures/unix-sockets.c": "ab554e8d4f23bb650b8a192984d5864e19bec6a25a355801e7489a4011592d29",
+    "tests/integration/cgroups.py": "5897bc899b66cc44388191b7924d605ac6a40ea3a9c4a69c981d185d082d65d0",
+    "tests/integration/docker.py": "6f206eb2772cbad088e18318cdd48176bec3e287b616b3b8f1a63e9a7e02d138",
+    "tests/integration/unix-sockets.py": "e141da8bb41a3fd7e56bba2dde9be692ae2c8e03007f44f05695f864715d75f3"
+  },
+  "integration_runner_sha256": "7ae4102bf04d7b869f90654d92e48744c48fdee4972fccde3dc03c87d1e39b7f",
+  "final_runner_sha256": "aeaa735d6762bea979b750e15bb55167d88df03a31295a461d6b11788eb36ff5",
+  "integration_build_note": "Final production delta after integration build is readonly mqueue error precedence, covered by final workspace tests; Docker uses read-write mqueue. Final runner rebuilt. Captured Docker script/logs identify the exact integration inputs; final fixture additionally asserts the docker logs marker already observed in both runs.",
+  "fixtures_sha256": {
+    "tests/fixtures/bin/cgroup-bpf": "f6530200466afa5d304188e6633870f35f53b0b59987d2a991a7bd726f308915",
+    "tests/fixtures/bin/oom-score": "5acb9fe46b7b3d31d0a98e5f6fd58c6eefd6d033e383edaa959448fd9c1484f5",
+    "tests/fixtures/bin/oom-score-host": "9ca825064d7badd8f4acd447228f416a6e094b4ba5aeda37e5187e650b87dcb4",
+    "tests/fixtures/bin/unix-sockets": "0423938f56419f76f00d4e3e6a2ab6ddd4f5d283838e24631101a6993a65f747",
+    "tests/fixtures/bin/unix-sockets-host": "92af9a1f04fc799671deb08c918b2192dd2c0d93e79623ff9c800e712d81e9fa"
+  },
+  "behavior_sources": [
+    "https://github.com/containers/crun/blob/1.23.1/src/libcrun/ebpf.c",
+    "https://github.com/containers/crun/blob/1.23.1/src/libcrun/cgroup-resources.c",
+    "https://github.com/containerd/containerd/blob/v2.1.5/cmd/containerd-shim-runc-v2/manager/manager_linux.go"
+  ],
+  "limits": "Selected rootful vfs/host net+IPC+cgroupns/seccomp-unconfined profile; default device filter retained. No native privileged BPF oracle, full OCI, resource IO throttling, POSIX mq, independent IPC/net/user namespaces, iPad device run or speedup claim.",
+  "docker_checks": [
+    {
+      "cpus": 1,
+      "exit_code": 0,
+      "checks": {
+        "DAEMON": true,
+        "IMAGE": true,
+        "CREATE": true,
+        "RUN": true,
+        "CLEANUP": true
+      },
+      "start_exit": 7
+    },
+    {
+      "cpus": 4,
+      "exit_code": 0,
+      "checks": {
+        "DAEMON": true,
+        "IMAGE": true,
+        "CREATE": true,
+        "RUN": true,
+        "CLEANUP": true
+      },
+      "start_exit": 7
+    }
+  ],
+  "checks": [
+    "342 all-feature workspace Rust tests",
+    "fmt and strict Clippy",
+    "ARM64 iOS core/distro/FFI check",
+    "native Linux Unix/pipe/PDEATHSIG/OOM comparison at 1/4 guest CPUs",
+    "guest cgroup BPF policy and lifecycle at 1/4 CPUs",
+    "namespace/BusyBox and cgroup/freezer/pids regression",
+    "original signed crun complete lifecycle at 1/4 CPUs",
+    "fresh signed original Docker default-device-filter payload/exit 7/logs/cleanup at 1/4 CPUs"
+  ],
+  "evidence_sha256": {
+    "guest-docker-start-results.json": "df979c4d9774c2043616b207e8d15834f646c704d0201a22ab9dd432c373c89f",
+    "guest-docker-start.log": "cc313cd8172c746df49280b8f7c0b1db5dc660fe18ea736d63e529b4db6a6f65"
+  }
+}

@@ -3,8 +3,9 @@
 目标是在同一个 Trames guest 内运行原版 Linux 容器工具。容器共享解释器、
 调度器和 guest 内核对象；当前不做宿主多实例管理器或自己的 OCI 启动器。
 原版 Alpine `crun` 已通过下述 rootful 场景；使用方法见[容器入门](../guides/guest-containers.md)。
-Docker 的守护进程/镜像/创建阶段见[Docker 指南](../guides/guest-docker.md)；
-启动仍被 shim 的 proc OOM 接口阻塞。未宣称完整 OCI、rootless 或 Docker/Podman 兼容。
+Docker 的守护进程、镜像与选定容器运行配置见[Docker 指南](../guides/guest-docker.md)。
+原版 shim 所需的 OOM、管道权限和设备 BPF 已补齐；完整 OCI、rootless 与通用
+Docker/Podman 兼容仍待扩展。
 
 ## 已实现
 
@@ -193,6 +194,34 @@ private mount 请求 MS_SLAVE/REC 时继续保持 private（没有 shared master
 12 个 xattr syscall 已有路径/链接/FD 变体，持久化 `user.*`；缺失的文件 capability
 与 ACL 查询返回 ENODATA，设置返回 EOPNOTSUPP，详见[存储](storage.md)。
 
+`/proc/PID/oom_score_adj` 和 task/TID 变体支持读取和写入 -1000..1000，
+权限、最低值与 CAP_SYS_RESOURCE 检查；fork 复制、线程共享、exec 保留。
+打开文件持有弱任务引用，进程回收后返回 ESRCH，避免旧 FD 指向新任务。
+支持 Linux 的数值解析、偏移和短写规则；与原生 Linux 的独立 C 夹具比对。
+这是 OOM 偏好存储，不实现 OOM killer，也不修改宿主策略；非线程 CLONE_VM
+进程间的 Linux shared-mm 传播特例尚缺。匿名 pipe 的两个端点共享实际 inode
+权限与所有者，fchmod/fchown/fstat、dup/fork 与描述符传递保持同一元数据。
+
+## Cgroup 设备 BPF 子集
+
+`bpf(280)` 支持 CGROUP_DEVICE 的 LOAD、ATTACH、DETACH、GET_FD_BY_ID、QUERY。
+支持 ALLOW_MULTI 和原子 REPLACE、程序 FD 关闭后的挂载生命周期、有效规则查询。
+验证器只接受有限的向前控制流、12 字节设备上下文、MOV/AND/RSH、相等/不等跳转
+及 EXIT；未初始化寄存器、越界访问、循环、stack、helper、map 和其他程序类型
+均拒绝。程序在 VFS 内解释，不提交给宿主内核，不使用 JIT。
+
+设备 open、proc FD 重开、PTY peer 打开和 mknod 真正执行规则；祖先和本组的
+程序全部允许才放行，已有 FD 保持原有访问能力。规则随 cgroup 成员迁移生效，
+fork 继承成员关系。要求 guest CAP_SYS_ADMIN；最多 128 个存活程序，每个
+4096 条指令、每组 16 个挂载。ALLOW_OVERRIDE、网络 BPF 等仍不支持。
+只有 syscall 边界增加设备检查，没有新增 CPU/guest memory 热路径锁。
+
+crun 对空 OCI `blockIO: {}` 也会打开 `io.max`。非根组提供空的无限制视图，
+允许打开/读空，但任何非空限速写入返回 EOPNOTSUPP；不公布 io 控制器或假装
+执行资源限制。`mqueue` 可挂载同一 guest IPC 范围内的空文件系统，具有独立
+inode/statfs 身份，禁止用普通文件操作创建队列。`mq_*` 仍为 ENOSYS，尚未支持
+POSIX 消息队列或独立 IPC namespace。
+
 ## Cgroup v2 域成员与 dumpable
 
 `/sys/fs/cgroup` 是独立的 cgroup2 挂载，具有自己的 inode、设备号和 statfs magic；
@@ -247,7 +276,8 @@ exec 凭据；`MS_NODEV` 拒绝设备打开；`MS_NOEXEC` 拒绝 exec、可执�
 并保留映射的最大执行权限供后续 mprotect 检查。已有可写映射使只读重挂载
 返回 EBUSY。这是选定模型，不声称实现 Linux superblock 的全部 remount 语义。
 `MS_RELATIME` 在普通文件 read/pread 时按 mtime/ctime 或 24 小时条件更新 atime；
-`MS_SILENT` 和旧版 mount magic 被兼容。不支持的挂载行为明确返回错误。
+`MS_STRICTATIME` 清除 relatime，普通读取更新 atime；`MS_SILENT` 和旧版 mount
+magic 被兼容。不支持的挂载行为明确返回错误。
 
 这些对象只在现有内核调度边界访问，没有给普通 CPU 指令/访存增加锁或权限检查。
 挂载点使用缓存路径验证，祖先改名后才重新查找 inode，避免每次 lookup 扫描磁盘树。
@@ -257,12 +287,13 @@ exec 凭据；`MS_NODEV` 拒绝设备打开；`MS_NOEXEC` 拒绝 exec、可执�
 - 每个 guest 会话最多 128 个存活挂载对象，含 namespace 副本和被 FD/映射保留的
   挂载；耗尽 ENOSPC，释放后可再创建。UTS 和 PID 谱系各有 128 个存活对象额度。
   PID 最多嵌套 32 层，每会话最多 256 个任务；编号不循环复用，fork 前回收无引用映射。
-- tmpfs 独立于磁盘 manifest，默认 16 MiB / 1024 inode；`size`、`nr_inodes` 可降低
-  上限，`mode` 设置根目录权限。卸载/会话结束后内容不持久化。这里的内存上限
+- tmpfs 独立于磁盘 manifest，默认 16 MiB / 1024 inode；`size` 可设到 64 MiB，
+  按需分配，`nr_inodes` 可降低节点上限，`mode` 设置根目录权限。
+  卸载/会话结束后内容不持久化。这里的内存上限
   与根磁盘默认 16 GiB 预算无关；尚未接入统一的 tmpfs/guest RAM 回收机制。
 - 所有挂载均为 private；shared/slave/unbindable 传播、MS_MOVE、overlayfs、块设备
   文件系统及 open_tree/move_mount/fsopen 等新挂载 API 尚缺。
-- proc/sysfs 保持当前只读端点。独立 devpts 支持初始挂载选项，重挂载修改
+- procfs 支持有权限检查的 `oom_score_adj` 读写；其余 proc 控制端点与 sysfs 保持只读。独立 devpts 支持初始挂载选项，重挂载修改
   uid/gid/mode/max 尚未实现，明确返回 EOPNOTSUPP。
 - 跨进程 `/proc/PID/root`、cwd 等完整 magic-link 能力、user namespace、
   IPC/net namespace、CPU/memory/io 资源控制、委派、seccomp

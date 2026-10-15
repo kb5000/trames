@@ -143,4 +143,21 @@ static void fifo_reopen(void) {
     CHECK(open(proc,O_WRONLY|O_NONBLOCK)==-1 && errno==ENXIO);
     close(anchor); puts("FIFO proc reopen: O_PATH, unlinked inode, independent endpoint lifetime: ok");
 }
-int main(void) { CHECK(mkdir("/tmp",0777)==0 || errno==EEXIST); endpoint(0); endpoint(1); events(); pipes(); symlink_times(); attributes(); netlink_events(); fifo_reopen(); return 0; }
+static void pipe_metadata(void) {
+    int fds[2]; mode_t old=umask(0777); CHECK(pipe(fds)==0); umask(old);
+    struct stat a,b; CHECK(fstat(fds[0],&a)==0 && S_ISFIFO(a.st_mode) && (a.st_mode&0777)==0600);
+    CHECK(fchmod(fds[0],0640)==0); CHECK(fchown(fds[1],getuid(),getgid())==0);
+    CHECK(fstat(fds[1],&b)==0 && b.st_ino==a.st_ino && (b.st_mode&0777)==0640 && b.st_uid==getuid());
+    pid_t child=fork(); CHECK(child>=0);
+    if(!child) { CHECK(fchmod(fds[1],0400)==0); _exit(0); }
+    int status; CHECK(waitpid(child,&status,0)==child && status==0);
+    CHECK(fstat(fds[0],&a)==0 && (a.st_mode&0777)==0400);
+    CHECK(write(fds[1],"p",1)==1); char c; CHECK(read(fds[0],&c,1)==1 && c=='p');
+    if(geteuid()==0) {
+        CHECK(fchown(fds[0],1234,1234)==0); CHECK(fstat(fds[1],&b)==0 && b.st_uid==1234 && b.st_gid==1234);
+        child=fork(); CHECK(child>=0); if(!child) { CHECK(setuid(1235)==0); CHECK(fchmod(fds[1],0600)==-1 && errno==EPERM); CHECK(fchown(fds[1],1235,1235)==-1 && errno==EPERM); _exit(0); }
+        CHECK(waitpid(child,&status,0)==child && status==0);
+    }
+    close(fds[0]);close(fds[1]);puts("anonymous pipe inode: permissions, ownership, fork sharing and open access: ok");
+}
+int main(void) { CHECK(mkdir("/tmp",0777)==0 || errno==EEXIST); endpoint(0); endpoint(1); events(); pipes(); symlink_times(); attributes(); netlink_events(); fifo_reopen(); pipe_metadata(); return 0; }

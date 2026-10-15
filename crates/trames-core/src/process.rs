@@ -156,6 +156,7 @@ struct Process {
     alt_stack: AltStack,
     membarrier_registered: Rc<Cell<bool>>,
     file_size_limit: Rc<Cell<(u64, u64)>>,
+    oom: Rc<trames_vfs::OomTask>,
 }
 impl Process {
     fn frozen(&self, pid: u32) -> bool {
@@ -197,6 +198,7 @@ impl Process {
             alt_stack: self.alt_stack,
             membarrier_registered: Rc::new(Cell::new(self.membarrier_registered.get())),
             file_size_limit: Rc::new(Cell::new(self.file_size_limit.get())),
+            oom: Rc::new(self.oom.fork()),
         }
     }
 }
@@ -527,6 +529,7 @@ impl Kernel {
             fds: p.linux.vfs.fd_snapshot(),
             auxiliary: p.linux.auxiliary.clone(),
             file_size_limits: Some(p.file_size_limit.get()),
+            oom: Rc::downgrade(&p.oom),
             pending: p.pending.bits(),
             shared_pending: p.shared_pending.borrow().bits(),
             blocked: p.mask,
@@ -1776,6 +1779,7 @@ impl Kernel {
                 }
                 child.tgid = if threaded { p.tgid } else { id };
                 if threaded {
+                    child.oom = Rc::new(p.oom.thread());
                     child.shared_pending = p.shared_pending.clone();
                     child.subreaper = p.subreaper;
                     child.file_size_limit = p.file_size_limit.clone();
@@ -3687,6 +3691,7 @@ pub(super) fn run(
         alt_stack: AltStack::default(),
         membarrier_registered: Rc::new(Cell::new(false)),
         file_size_limit: Rc::new(Cell::new((u64::MAX, u64::MAX))),
+        oom: Rc::new(trames_vfs::OomTask::default()),
     };
     let count = runtime.cpu_count.clamp(1, 32);
     let mut kernel = Kernel {
@@ -3847,6 +3852,7 @@ mod tests {
             alt_stack: AltStack::default(),
             membarrier_registered: Rc::new(Cell::new(false)),
             file_size_limit: Rc::new(Cell::new((u64::MAX, u64::MAX))),
+            oom: Rc::new(trames_vfs::OomTask::default()),
         }
     }
     #[test]
