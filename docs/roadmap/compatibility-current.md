@@ -88,15 +88,15 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 
 首批新增 chroot、unshare、setns、sethostname、setdomainname 五个入口；
 UTS 对象和 namespace FD 具备实际共享/隔离及保活语义，clone 增加 NEWUTS。
-后续增加 mount/umount2/pivot_root、mount namespace、tmpfs、bind/rbind，以及 waitid、child subreaper、PID namespace 层级、init 生命周期和 proc 挂载视图。本批新增 capget/capset 和 capability prctl 子集，接入实际权限判断及 UID/exec 转换；user/IPC/net namespace、cgroup 仍未实现，详见[guest 内容器基础](../architecture/guest-containers.md)。
+后续增加 mount/umount2/pivot_root、mount namespace、tmpfs、bind/rbind，以及 waitid、child subreaper、PID namespace 层级、init 生命周期和 proc 挂载视图。后续新增 capget/capset 和 capability prctl 子集，接入实际权限判断及 UID/exec 转换；本批补 cgroup v2 域成员生命周期和 dumpable/敏感 proc 访问。user/IPC/net namespace、cgroup 资源控制与委派仍未实现，详见[guest 内容器基础](../architecture/guest-containers.md)。
 默认网络改为[宿主原生直连](../architecture/direct-network.md)，不改变系统调用编号数。
 
 ## Linux：已有入口但语义仍有缺口
 
 | 已有接口或设施 | 仍缺少的行为 |
 | --- | --- |
-| namespace / chroot | UTS/mount/PID、fs/files unshare、fs.root、tmpfs/bind/umount/pivot_root 已有；proc 按挂载绑定 PID 视图，NSpid 等显示层级；net/user/IPC、跨进程 proc root/cwd magic link、cgroup 尚缺，不能运行完整容器 |
-| capability / prctl | 初始 guest user namespace 的 E/P/I/bounding/ambient、securebits 与 no_new_privs 已实现；file capability xattr、user namespace 映射/权限层级、dumpable/完整 ptrace 检查、seccomp 仍缺 |
+| namespace / chroot | UTS/mount/PID、fs/files unshare、fs.root、tmpfs/bind/umount/pivot_root 已有；proc 按挂载绑定 PID 视图，NSpid 等显示层级；net/user/IPC、跨进程 proc root/cwd magic link 尚缺；cgroup2 仅域成员，无资源控制/委派，不能运行完整容器 |
+| capability / prctl | 初始 guest user namespace 的 E/P/I/bounding/ambient、securebits、no_new_privs、dumpable 0/1 与选定 proc 访问检查已有；file capability xattr、user namespace 映射/权限层级、完整 ptrace、core 文件写出、seccomp 仍缺 |
 | statx / syslog | statx 不报告未有依据的 birth time、DIO 对齐等可选字段；syslog 不接管宿主内核日志或控制台 |
 | mmap / 内存管理 | 已有共享文件/匿名映射、写回、EOF/truncate SIGBUS、选定 remap/discard；仍缺需求分页/回收、MAP_SYNC、huge pages、DONTUNMAP、跨不同映射段 remap 等 |
 | memfd / 文件接口 / 调度 | memfd 的新 sealing/huge/no-exec 模式、openat2 的非零 resolve 要求、更多 RWF flags、实时策略仍缺失；已支持 1–32 个虚拟 CPU、实际宿主并行、affinity 与 getcpu |

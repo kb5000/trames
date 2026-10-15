@@ -24,7 +24,7 @@ config = {
         'capabilities': {key: ['CAP_CHOWN', 'CAP_SETUID', 'CAP_SETGID']
                          for key in ('bounding', 'effective', 'permitted')}},
     'hostname': 'container', 'mounts': [],
-    'linux': {'namespaces': [{'type': key} for key in ('pid', 'mount', 'uts')]},
+    'linux': {'rootfsPropagation': 'private', 'namespaces': [{'type': key} for key in ('pid', 'mount', 'uts')]},
 }
 results = {'config': config, 'checks': []}
 logs = []
@@ -47,7 +47,7 @@ with tempfile.TemporaryDirectory(prefix='trames-crun-probe-') as directory:
     for label, command in (
         ('version', 'crun --version'), ('list', 'crun --root /run/crun list'),
         ('capsh', 'capsh --print'),
-        ('run', 'cd /bundle; crun --debug --root /run/crun --cgroup-manager disabled run probe; status=$?; dmesg; exit "$status"'),
+        ('run', 'mkdir -p /bundle/rootfs/dev /bundle/rootfs/proc /bundle/rootfs/sys /bundle/rootfs/tmp; cd /bundle; crun --debug --root /run/crun --cgroup-manager disabled run probe; status=$?; dmesg; exit "$status"'),
     ):
         extra = []
         if label == 'run':

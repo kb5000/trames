@@ -212,6 +212,12 @@ jobs:
           python3 tests/integration/capabilities.py
         env:
           TRAMES_RUNNER: ${{ github.workspace }}/target/release/trames-run
+      - name: Validate guest cgroup domains and dumpable against native Linux
+        run: |
+          bash scripts/build-cgroup-fixtures.sh
+          python3 tests/integration/cgroups.py
+        env:
+          TRAMES_RUNNER: ${{ github.workspace }}/target/release/trames-run
       - name: Compare M6 events, local IPC, POSIX locks and FIFO semantics with QEMU
         run: |
           bash scripts/build-m6-fixtures.sh

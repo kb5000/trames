@@ -488,6 +488,8 @@ impl Kernel {
             namespace_ids: [p.tgid, pid, p.group, p.session]
                 .map(|id| p.linux.vfs.pid_namespace().hierarchy(id)),
             command: p.linux.command_name.clone(),
+            cgroup: p.linux.vfs.cgroup_path(pid),
+            nondumpable: p.linux.vfs.dumpable() != 1,
             arguments,
             environment: p.linux.environment.clone(),
             executable: p.linux.executable_file.as_ref().map_or_else(
@@ -598,6 +600,7 @@ impl Kernel {
         }
     }
     fn exit_one(&mut self, pid: u32, p: &mut Process, status: i32) {
+        p.linux.vfs.cgroup_exit(pid);
         let state = if matches!(p.state, State::Stopped) {
             p.stopped_state.as_deref()
         } else {
@@ -694,6 +697,7 @@ impl Kernel {
             .collect();
         for id in members.iter().copied().filter(|id| *id != p.tgid) {
             if let Some(mut thread) = self.processes.remove(&id) {
+                thread.linux.vfs.cgroup_exit(id);
                 let address = thread.linux.clear_tid_address();
                 thread.linux.exit_tid(&mut thread.memory);
                 self.wake_futex(&thread, address, u32::MAX, u32::MAX);
@@ -1277,6 +1281,8 @@ impl Kernel {
             let credentials = execute_vfs.credentials.clone();
             std::mem::swap(&mut runtime.linux.vfs, &mut p.linux.vfs);
             runtime.linux.vfs.credentials = credentials;
+            runtime.linux.vfs.unshare_dumpable();
+            runtime.linux.vfs.set_dumpable(execute_vfs.dumpable())?;
             runtime.linux.trace = p.linux.trace;
             p.linux = runtime.linux;
             p.cpu = runtime.cpu;
@@ -1660,6 +1666,7 @@ impl Kernel {
                     }
                 } else {
                     child.vm_id = resource;
+                    child.linux.vfs.unshare_dumpable();
                 }
                 if a[0] & 0x400 == 0 {
                     child.files_id = resource;
@@ -1701,6 +1708,7 @@ impl Kernel {
                         .write(a[4], &child_tid.to_le_bytes())
                         .map_err(|_| Errno(14))?;
                 }
+                child.linux.vfs.cgroup_fork(pid, id, child.tgid);
                 self.processes.insert(id, child);
                 if a[0] & 0x4000 != 0 {
                     p.state = State::Vfork(id);
@@ -1731,6 +1739,7 @@ impl Kernel {
                     .collect();
                 for id in ids {
                     if let Some(mut t) = self.processes.remove(&id) {
+                        t.linux.vfs.cgroup_exit(id);
                         let address = t.linux.clear_tid_address();
                         t.linux.exit_tid(&mut t.memory);
                         self.wake_futex(&t, address, u32::MAX, u32::MAX);
@@ -1744,6 +1753,7 @@ impl Kernel {
                 self.timers.retain(|_, t| t.tgid != p.tgid);
                 self.wake_vfork(pid);
                 if pid != p.tgid {
+                    p.linux.vfs.cgroup_exec_rekey(pid, p.tgid);
                     p.rekey = Some(p.tgid);
                 }
                 let resource = self.resource_id();
@@ -1763,6 +1773,8 @@ impl Kernel {
             98 | 102 | 103 | 107..=111 | 137 => self.event_call(pid, p, number, a),
             260 => self.wait(pid, p, a),
             95 => self.waitid(p, a),
+            167 if a[0] == 3 => Ok(Some(p.linux.vfs.dumpable())),
+            167 if a[0] == 4 => p.linux.vfs.set_dumpable(a[1]).map(|()| Some(0)),
             167 if matches!(a[0], 36 | 37) => match a[0] {
                 36 => {
                     p.subreaper = a[1] != 0;

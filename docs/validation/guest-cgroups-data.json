@@ -1,0 +1,56 @@
+{
+  "date": "2026-10-15",
+  "base_commit": "e869969c1a3dd0959a1856276739b0267323b4b9",
+  "scope": "Guest cgroup v2 domain membership and dumpable; no resource controllers, complete container acceptance or speedup claim.",
+  "local_checks": {
+    "workspace_all_feature_rust_tests": 317,
+    "strict_all_target_all_feature_clippy": "passed",
+    "fmt": "passed",
+    "arm64_ios_ffi_check": "passed",
+    "cpus": [
+      1,
+      4
+    ],
+    "cgroup_hierarchy_membership_lifecycle_quotas": "passed",
+    "native_linux_dumpable_comparison": "passed",
+    "guest_dumpable_credential_and_exec_transitions": "passed",
+    "signed_original_capsh": "passed",
+    "signed_original_sudo": "passed",
+    "uts_mount_pid_namespace_regression": "passed",
+    "native_fd_exec_cases_per_cpu": 23,
+    "runtime_compatibility": "passed",
+    "guest_pty": "passed",
+    "crun_minimal_run": "blocked: mknodat /dev/null EOPNOTSUPP"
+  },
+  "syscalls": {
+    "implemented_subset": 176,
+    "missing": 140,
+    "obsolete_stub": 2,
+    "undispatched_enosys": 142
+  },
+  "source_sha256": {
+    ".github/workflows/linux.yml": "d5bb2eeef21b86537e4c9c0d0012e7ae34dbc340ddf87c2f5db1df04082bdc04",
+    "crates/trames-core/src/process.rs": "84da23989045bad88444909c44bc0376d5486590b630aa5853853ee270332b81",
+    "crates/trames-linux/src/state.rs": "986223ce1c03aa0ca48a1124ede2bebe45ba03c67f8c1ee97ff51946f9259813",
+    "crates/trames-vfs/src/cgroup.rs": "91331b07862c5094efbd6287489063d2d4b1158941dacd6012586d8ddcc5cbc0",
+    "crates/trames-vfs/src/credentials.rs": "bac34d53a43aeb8b877912e4df98fe5d1e9163fc561b09d76a01d12b4274e89e",
+    "crates/trames-vfs/src/lib.rs": "0658dede5246d9a909eb5d5ba819e516ba7ea7e75d12fa1d2be08fbcedadab63",
+    "crates/trames-vfs/src/linux_namespace.rs": "1f587981e7bf97374d7eee46d7e189cfa5de6ad217cc05893c12b5d84462b93c",
+    "crates/trames-vfs/src/mapped.rs": "746f58c29f9f9b50bc1c61b7925b004099cfc8a6820b82722deaad4ea76ed096",
+    "crates/trames-vfs/src/mounts.rs": "084f22a4fc5ae29a7f766365d595c661642986047da0cbe84d5500414bd7a225",
+    "crates/trames-vfs/src/pseudo.rs": "57305b23ae978785c5b291ab3f3c2035d5cced18613381ea240f2a082d8500fa",
+    "scripts/audit-syscalls.py": "cc7b4772e9d41dc2a29b695aedc32490280b8892325e0d00be07d3f8774d7749",
+    "scripts/build-cgroup-fixtures.sh": "16d9823741b87a20d35056c688947c038a6782a53b4a1dfb8276d6e20009d1b0",
+    "tests/fixtures/cgroups.c": "cd737f84b60e48b1495f93a8a10d6566149e0f6c46b38143836c7e73ee0054e8",
+    "tests/fixtures/dumpable.c": "9acf26e21a9983fa9d31097fe61e34f3a9e1c39dc84e299b77bc7efdfd075a5a",
+    "tests/integration/cgroups.py": "2c713e4eb45480301f6f06311fbbb531e3fe7beb2e61ab77e16f596578ab65df",
+    "tests/integration/container-probe.py": "e42dcfeb6ed435011b27db0b8715d27630287c5aae819cc145a63739805590f3"
+  },
+  "artifacts_sha256": {
+    "tests/fixtures/bin/cgroups": "68a8492fe242c2f76a5e378823931bf2ec3ddadd905d5d4dc769c589d87ea0ab",
+    "tests/fixtures/bin/dumpable": "52f143fad3adcd8a53c84cb1a6b948936d635c7a8e5985facc44e6b8e3f0ec20",
+    "target/release/trames-run": "7049a936df48b399bfddc19ff94d0643d552ade910e444431809ea29be4bb523",
+    "docs/validation/guest-cgroups.log": "fc9fa5d2acff65161e1020d6e44211d879f6e354cf0d389c310f07747bd3b2ad",
+    "docs/validation/guest-cgroups-crun.json": "f4766ed049e0fe1e91f87ec6ff80c05f7bd79bba5a275159032fa22e3b4c51cf"
+  }
+}

@@ -69,18 +69,43 @@ NOROOT 禁止这一行为，NNP 阻止新增 permitted 和 set-ID 提权。MS_NO
 实际检查已接入挂载/namespace/UTS 的 SYS_ADMIN、chroot 的 SYS_CHROOT、
 SETUID/SETGID、文件 DAC_OVERRIDE/DAC_READ_SEARCH/CHOWN/FOWNER/FSETID、
 KILL、SYS_NICE、SYS_RESOURCE、SYSLOG 和 NET_RAW。既有 proc 敏感路径的 root
-例外改用 SYS_PTRACE；完整 dumpable/ptrace 凭据检查仍缺。UID 0 不再绕过这些
+例外改用 SYS_PTRACE，并加入下述 dumpable/凭据检查。UID 0 不再绕过这些
 检查。`/proc/PID/status` 显示五组 Cap 字段及 NoNewPrivs，cap_last_cap 为 40。
 
 当前只有初始 guest user namespace；位掩码可表达某项能力不代表该项 Linux
 设施已实现。文件 security.capability xattr、UID/GID 映射、user namespace
-权限层级、dumpable、seccomp 仍缺。不冒充宿主 Linux 权限，也不更改 iPad 凭据。
+权限层级、完整 ptrace、seccomp 仍缺。不冒充宿主 Linux 权限，也不更改 iPad 凭据。
 
 原版签名 Alpine capsh 2.78 已可查询/丢弃/保留能力并测试 ambient/NNP 跨 exec。
-crun 1.23.1 能加载、列状态和读取有效 bundle，但即使禁用 cgroup manager，仍先
-因 `/sys/fs/cgroup` 缺失而停止；尚未启动容器。探测到的 open_tree ENOSYS 是其
-功能探测，不把它与实际终止原因混为一谈。下一步优先补该路径所需的 cgroup
-视图/生命周期，再沿原版运行时继续定位 IPC/进程控制等缺口。
+crun 1.23.1 已通过 `/sys/fs/cgroup` 查询和 PR_SET_DUMPABLE，创建 PID/mount/UTS
+namespace 后停止于 `mknodat /dev/null: Not supported`。探测显式禁用 cgroup
+manager，采用 private 传播配置；还没有执行容器里的 `/bin/true`。open_tree 和
+keyctl 的 ENOSYS 走了运行时自身回退，不是这次终止原因。下一步补标准设备节点
+创建、持久化和权限，再继续原版运行时的实际路径。
+
+## Cgroup v2 域成员与 dumpable
+
+`/sys/fs/cgroup` 是独立的 cgroup2 挂载，具有自己的 inode、设备号和 statfs magic；
+`/proc/filesystems`、`/proc/cgroups`、mountinfo 和 `/proc/PID[/task/TID]/cgroup`
+与它一致。组目录、cgroup.procs/threads、type、events、stat 反映实际任务；
+向 procs 写入 PID 或 0 迁移整个线程组，fork 继承，退出和非主线程 exec 清理旧成员。
+成员读写使用调用者 PID namespace 的编号，可见性与 proc 挂载视图分别处理。
+
+层级在单个 guest 内共享，mount namespace 分离不会复制它；重启 guest 后清空，
+不占持久根磁盘额度。最多 128 个组（包括被打开对象保活的已删除组）、32 层嵌套。
+删除后重建同一路径不会将旧 FD 或 bind mount 重定向到新组。只读重挂载实际限制
+写入。状态仅在现有 syscall/调度边界修改，没有加入 CPU/guest memory 热路径锁。
+
+这是域成员子集：controllers 为空，非空 subtree_control 请求显式拒绝；没有
+CPU/memory/pids 限额、threaded 模式、freeze/kill、事件通知、cgroup namespace
+或向非 root 用户委派。组管理和迁移要求 CAP_SYS_ADMIN；节点由 root 持有，
+不开放 chmod/chown 委派。不能把 populated/frozen 文本或目录存在视为资源隔离。
+
+PR_GET/SET_DUMPABLE 支持 0/1，CLONE_VM 共享，fork 复制，exec 建立新的状态；
+有效/fs UID/GID 变化清零，普通 exec 恢复，能力增加、不可读 ELF 或 ID 不匹配
+保持不可转储。敏感 proc 数据打开、magic link 访问采用选定 READ_FSCREDS 检查：
+同线程组或 SYS_PTRACE 例外，否则检查 dumpable、UID/GID 和 permitted 能力子集。
+普通 stat/lstat/O_PATH 元数据查询仍可用。没有实现 core 文件写出或完整 ptrace。
 
 ## 挂载身份与文件内容
 
@@ -116,7 +141,7 @@ exec 凭据；`MS_NODEV` 拒绝设备打开；`MS_NOEXEC` 拒绝 exec、可执�
 - proc/sysfs 保持当前只读端点；devpts 挂载共享现有 PTY 池，明确不接受
   `newinstance`，不能宣称容器已有独立终端或设备隔离。
 - 跨进程 `/proc/PID/root`、cwd 等完整 magic-link 能力、user namespace、
-  IPC/net namespace、cgroup、seccomp
+  IPC/net namespace、cgroup 资源控制与委派、seccomp
   仍缺。现在不能运行一般意义上的完整容器，也不构成完整隔离边界。
 
 `chroot` 不自动 chdir/关闭既有目录描述符；根外 cwd/dirfd 继续是可用能力。
@@ -135,7 +160,7 @@ namespace 归属，setns 只影响后续创建。私有 loopback、端口空间�
 
 ## 后续顺序
 
-1. User namespace、IPC/net namespace、进程控制和 cgroup 必需子集；用真实
+1. 标准设备节点创建、User namespace、IPC/net namespace 和进程控制；用真实
    容器工具探测结果排序，未知限制明确报错。
 2. 原版 guest runc/crun 的最小 rootfs、多个隔离进程和生命周期测试；之后
    扩展完整容器引擎、overlayfs、cgroup 控制器及更广的安全接口。
@@ -148,6 +173,8 @@ python3 tests/integration/namespaces.py
 python3 tests/integration/direct-network.py
 bash scripts/build-capability-fixtures.sh
 python3 tests/integration/capabilities.py
+bash scripts/build-cgroup-fixtures.sh
+python3 tests/integration/cgroups.py
 ```
 
 namespace 集成测试覆盖 1/4 CPU 下 UTS、chroot、mount 和 PID ABI，包括嵌套、
@@ -156,4 +183,5 @@ unshare/nsenter/chroot/mount/umount/df/ps。
 首批证据见[UTS/直连网络验证](../validation/guest-namespaces.md)，挂载批次见
 [挂载隔离验证](../validation/guest-mounts.md)，本批见[PID 隔离验证](../validation/guest-pid.md)。
 
-权限批次见[capability 与原版工具验证](../validation/guest-capabilities.md)。
+权限批次见[capability 与原版工具验证](../validation/guest-capabilities.md)，
+cgroup/dumpable 批次见[成员生命周期与原版 crun 阻塞验证](../validation/guest-cgroups.md)。
