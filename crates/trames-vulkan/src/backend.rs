@@ -102,6 +102,10 @@ struct Object {
     pass: Cell<Option<PassInfo>>,
     recording: RefCell<Recording>,
     swapchain: RefCell<Option<Rc<wsi::Swapchain>>>,
+    // Acquire backing is private per use. Original MoltenVK can re-signal an
+    // acquire fence at presentation completion, after the guest has reset it.
+    // Keep that signal isolated from a later use of the guest's logical fence.
+    acquisition: RefCell<Option<Rc<Object>>>,
     budget: crate::Budget,
 }
 impl Object {
@@ -334,6 +338,7 @@ impl Backend {
             pass: Cell::new(None),
             recording: RefCell::new(Recording::default()),
             swapchain: RefCell::new(None),
+            acquisition: RefCell::new(None),
             budget: self.budget.clone(),
         });
         let id = self.id();
@@ -427,7 +432,8 @@ impl Backend {
         let d = &dev.native;
         let fence = if a[4] != 0 {
             let f = self.object(a[4], Kind::Fence)?;
-            if unsafe { d.get_fence_status(vk::Fence::from_raw(f.raw)) }?
+            if f.acquisition.borrow().is_some()
+                || unsafe { d.get_fence_status(vk::Fence::from_raw(f.raw)) }?
                 || self.submissions.iter().any(|s| Rc::ptr_eq(&s.fence, &f))
             {
                 return invalid();
@@ -470,6 +476,16 @@ impl Backend {
         });
         Ok(())
     }
+    fn fence_ready(fence: &Object) -> Result<bool> {
+        let binding = fence.acquisition.borrow();
+        let native = binding.as_deref().unwrap_or(fence);
+        Ok(unsafe {
+            native
+                .device
+                .native
+                .get_fence_status(vk::Fence::from_raw(native.raw))
+        }?)
+    }
     fn private_fence(&self, device: Arc<Device>) -> Result<Rc<Object>> {
         let d = &device.native;
         let raw = unsafe { d.create_fence(&vk::FenceCreateInfo::default(), None) }?;
@@ -489,6 +505,7 @@ impl Backend {
             pass: Cell::new(None),
             recording: RefCell::new(Recording::default()),
             swapchain: RefCell::new(None),
+            acquisition: RefCell::new(None),
             budget: self.budget.clone(),
         }))
     }
@@ -1704,11 +1721,15 @@ impl Backend {
                 if self.submissions.iter().any(|s| Rc::ptr_eq(&s.fence, &f)) {
                     return invalid();
                 }
+                if f.acquisition.borrow().is_some() && !Self::fence_ready(&f)? {
+                    return invalid();
+                }
                 unsafe { d.reset_fences(&[vk::Fence::from_raw(f.raw)]) }?;
+                *f.acquisition.borrow_mut() = None;
             }
             51 => {
                 let f = self.object(a[1], Kind::Fence)?;
-                if !unsafe { d.get_fence_status(vk::Fence::from_raw(f.raw)) }? {
+                if !Self::fence_ready(&f)? {
                     return Err(vk::Result::NOT_READY.into());
                 }
             }

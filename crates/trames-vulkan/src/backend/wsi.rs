@@ -431,7 +431,8 @@ impl Backend {
                     return invalid();
                 }
                 if let Some(f) = &fence {
-                    if unsafe { device.native.get_fence_status(vk::Fence::from_raw(f.raw)) }?
+                    if f.acquisition.borrow().is_some()
+                        || unsafe { device.native.get_fence_status(vk::Fence::from_raw(f.raw)) }?
                         || self.submissions.iter().any(|s| Rc::ptr_eq(&s.fence, f))
                     {
                         return invalid();
@@ -440,11 +441,10 @@ impl Backend {
                 // A successful acquire can precede availability (including in
                 // original MoltenVK). Only its fence completion proves that old
                 // present waits are finished. Never free them just on API return.
-                let completion = if let Some(fence) = &fence {
-                    fence.clone()
-                } else {
-                    self.private_fence(device.clone())?
-                };
+                // A guest fence may be reset as soon as acquisition is ready,
+                // while MoltenVK keeps and later re-signals its acquire fence.
+                // Always isolate the original driver's per-use native backing.
+                let completion = self.private_fence(device.clone())?;
                 let chain = self.wsi.swapchains.get_mut(&a[1]).unwrap();
                 let (index, suboptimal) = unsafe {
                     loader.acquire_next_image(
@@ -460,6 +460,9 @@ impl Backend {
                     return Err(vk::Result::ERROR_DEVICE_LOST.into());
                 }
                 chain.acquired[index as usize] = true;
+                if let Some(fence) = fence {
+                    *fence.acquisition.borrow_mut() = Some(completion.clone());
+                }
                 let mut retained = Vec::new();
                 if let Some(s) = semaphore {
                     s.state.set(1);

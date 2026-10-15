@@ -5,6 +5,8 @@ import XCTest
 final class LocalVulkanTests: XCTestCase {
     func testStandardDisplaySwapchainRecreationAndProducerRelease() async throws {
         let text = try await LocalVulkanProbe.present()
+        let log = XCTAttachment(string: text)
+        log.name = "native-vulkan-display-log"; log.lifetime = .keepAlways; add(log)
         XCTAssertTrue(text.contains("present round 2: 1024x768 native swapchain active"), text)
         XCTAssertTrue(text.contains("vulkan-present-ok frames=24"), text)
         XCTAssertTrue(text.contains("\r\nVULKAN_RESULT:0\r\n"), text)

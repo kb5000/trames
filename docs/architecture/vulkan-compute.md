@@ -123,7 +123,10 @@ semaphores, and `vkQueuePresentKHR` submits the original native swapchain image.
 Borrowed images are never passed to `vkDestroyImage` or rebound to memory.
 Previous present semaphores remain retained until that image’s next acquisition
 fence signals (acquire can return its index earlier). A private native fence is
-used when the guest supplies only a semaphore; polling suspends no guest thread.
+used for each acquire; polling suspends no guest thread. A guest acquire fence
+refers to that private backing until reset. This isolates MoltenVK’s later
+presentation-time re-signal from a subsequent use of the guest fence, while
+status/wait still observe the original native fence’s completion.
 Current acquire/present objects also survive until native swapchain teardown. Recreating with
 `oldSwapchain` retires the old acquire path while retaining outstanding work.
 Failed output publication rolls back owned resources; ambiguous native present

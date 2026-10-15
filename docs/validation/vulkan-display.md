@@ -14,7 +14,10 @@ then creates a fresh surface to check producer lease release. Per-image render
 semaphores are reused only after reacquire; acquire semaphore reuse follows the
 submission fence. A fence-only acquire path is also exercised. Prior-present
 resource retirement waits for acquisition fence completion, including when
-MoltenVK returns an index before availability. Continuous mode keeps drawing while the UI test moves, resizes,
+MoltenVK returns an index before availability. Each acquire has private native
+fence backing: reset/reuse of the guest fence is isolated from MoltenVK’s later
+presentation-time re-signal. The fixture checks NOT_READY after reset and reuses
+that fence across swapchain recreation. Continuous mode keeps drawing while the UI test moves, resizes,
 hides/reopens the window, then closes the session during ongoing submissions.
 
 The fixed Metal bounds/drawable extent and window clamping have explicit unit
