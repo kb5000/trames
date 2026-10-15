@@ -16,9 +16,9 @@ against independent nearest/bilinear equations (tolerance two channel values).
 It covers:
 
 - Float vertex attributes, nonzero vertex/instance binding offsets, per-instance
-  input and nonzero `firstInstance`.
-- UINT16 and UINT32 index buffers, nonzero `firstIndex`, positive and negative
-  `vertexOffset`, then a non-indexed draw.
+  input; the Linux `base-offsets` variant also checks nonzero `firstInstance`.
+- UINT16 and UINT32 index buffers, nonzero `firstIndex`, zero base vertex and
+  (in the Linux `base-offsets` variant) positive/negative `vertexOffset`, then a non-indexed draw.
 - Combined sampler descriptor arrays, separate sampled-image and sampler
   descriptors, per-stage uniform buffers and shared vertex/fragment push constants.
 - Padded staging rows, explicit upload/layout transitions, nearest and linear
@@ -45,6 +45,14 @@ cargo run --release --locked -p trames-vulkan --example lifecycle -- \
   tests/fixtures/bin/vulkan-render.vert.spv \
   tests/fixtures/bin/vulkan-render.frag.spv
 ```
+
+Original MoltenVK 1.4.2 disables base vertex/instance draws in the iOS simulator;
+its real end-command failure exposed this in the first Apple run (13 passed,
+texture test failed). The standard acceptance program now defaults to base-zero
+and tests full indexed/instanced texturing there. A separate `base-offsets` variant
+keeps positive/negative vertex offsets and nonzero first instance covered on both
+native Linux and 1-/4-CPU guests. No original driver code is patched or CPU vertex
+emulation substituted. Triangle-strip primitive restart passes through natively.
 
 Apple acceptance uses the same signed Alpine loader/guest program and original
 MoltenVK over Metal in `LocalVulkanTests`. This iteration's Apple run is pending;

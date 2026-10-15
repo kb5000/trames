@@ -8,6 +8,6 @@ Windows 下载 `Trames-0.15.0-build16-unsigned.ipa`，交给 Sideloadly 签名�
 - 标准 display/surface/swapchain 直接向 App 内画布提交 GPU 图像；窗口可拖动、调整大小、隐藏和恢复，画布保持 1024×768。终端菜单可重新显示窗口。
 - 固定 NIOSSH 源码修复通道关闭期间的窗口调整崩溃。
 
-Vulkan 是选定子集，仍缺少深度／混合、多 mip、桌面窗口协议与指针输入。原生 Metal 证据来自 iPad 模拟器，物理 iPad 验收与性能仍需实际使用确认；本版不宣称整体提速。实验性原生 malloc/free 继续默认关闭。
+原版 MoltenVK 的 iOS 模拟器不支持非零 base vertex/instance；基础索引／实例绘制单独验收，非零偏移在 Linux 原生驱动上验证。Vulkan 是选定子集，仍缺少深度／混合、多 mip、桌面窗口协议与指针输入。原生 Metal 证据来自 iPad 模拟器，物理 iPad 验收与性能仍需实际使用确认；本版不宣称整体提速。实验性原生 malloc/free 继续默认关闭。
 
 GPL-3.0-or-later。固定 tag 提供 Trames 完整源码；Release 附带混合 musl 源码、原版 MoltenVK 与其依赖源码归档、校验和及核验报告。历史 Release 和安装包保持不变。

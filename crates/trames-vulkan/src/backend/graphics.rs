@@ -183,6 +183,10 @@ impl Backend {
         if !matches!(state[1], 3 | 4) || state[2] & !3 != 0 || state[3] > 1 || state[4] & !15 != 0 {
             return unsupported();
         }
+        if a[12] > 1 || a[12] != 0 && state[1] != 4 {
+            return unsupported();
+        }
+        let restart = a[12] != 0;
         let limits = unsafe {
             device
                 .instance
@@ -280,7 +284,8 @@ impl Backend {
                 .vertex_binding_descriptions(&bindings)
                 .vertex_attribute_descriptions(&attributes);
             let assembly = vk::PipelineInputAssemblyStateCreateInfo::default()
-                .topology(vk::PrimitiveTopology::from_raw(state[1] as i32));
+                .topology(vk::PrimitiveTopology::from_raw(state[1] as i32))
+                .primitive_restart_enable(restart);
             let viewport = vk::PipelineViewportStateCreateInfo::default()
                 .viewport_count(1)
                 .scissor_count(1);

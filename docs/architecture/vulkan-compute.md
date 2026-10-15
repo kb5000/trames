@@ -80,13 +80,18 @@ one mip/layer/sample and dimensions up to 4096; allocation/session budgets still
 apply. Device memory remains explicit and noncoherent at the guest boundary.
 
 Pipelines accept generated vertices or vertex/instance buffers (up to 16 bindings
-and attributes), triangle list/strip topology, 16/32-bit index buffers and indexed
+and attributes), triangle list/strip topology (including strip primitive restart), 16/32-bit index buffers and indexed
 or ordinary draws. Selected vertex formats are R32 scalar/vector SFLOAT/SINT/UINT
 and RGBA8 UNORM/SNORM/SINT/UINT, subject to native `VERTEX_BUFFER` format features.
 Binding stride is at most 2048, attribute offset at most 2047; native limits also
 apply. Non-indexed and instance fetch extents and index-buffer ranges are checked.
 Indexed vertex values remain on the GPU and follow Vulkan's application validity
 rules; the bridge does not read GPU indices back to the CPU for scanning.
+Nonzero base vertex/instance follows original native driver support: MoltenVK's
+iOS simulator does not support it and reports FEATURE_NOT_PRESENT when ending
+the command buffer. Base-zero indexed/instanced drawing is tested there; the
+nonzero positive/negative cases are independently verified on Linux. Physical
+iPad support remains to be tested.
 
 Graphics and compute descriptor layouts accept uniform/storage buffers, samplers,
 sampled images and combined image samplers, including descriptor arrays. Vertex,
