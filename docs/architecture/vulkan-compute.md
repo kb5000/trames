@@ -1,10 +1,11 @@
-# Vulkan compute accelerator
+# Vulkan compute and offscreen graphics accelerator
 
-Trames implements an experimental headless Vulkan compute profile. An original
+Trames implements an experimental Vulkan compute/offscreen graphics profile. An original
 Linux application uses unmodified `libvulkan.so.1`; its loader discovers the
 guest ELF ICD, which bridges to native Vulkan. iPad device/simulator builds
-statically link original public-API MoltenVK 1.4.2 over Metal. Graphics follows
-compute; host port forwarding is deferred by the owner. Tracker:
+statically link original public-API MoltenVK 1.4.2 over Metal. An iPad preview
+displays the actual rendered pixels; window-system surfaces/swapchains and input
+follow this offscreen stage. Host port forwarding is deferred by the owner. Tracker:
 [Issue #21](https://github.com/kb5000/trames/issues/21).
 
 This selected subset is not complete Vulkan 1.0 conformance. Loader/ICD version
@@ -34,14 +35,14 @@ application `pNext`, allocation callbacks, extensions and flags are rejected.
 The CPU gates Vulkan independently of pure-memory NativeCall. The coordinator
 checks its host-created capability snapshot and exact stub code before invoking
 the backend. Matching instruction bytes alone do not grant GPU access. CLI
-activation is `--vulkan`. iPad's default-off “Vulkan 计算（实验）” switch applies
+activation is `--vulkan`. iPad's default-off “Vulkan 计算与图形（实验）” switch applies
 to the next local session, which receives the verified ICD at
 `/usr/lib/libtrames_vulkan_icd.so` and its JSON under `/usr/share/vulkan/icd.d`.
 Install the ordinary `vulkan-loader` package with apk.
 
 ## Supported compute operations
 
-The [catalog](../../accelerator/vulkan/entrypoints.inc) contains 68 public
+The [catalog](../../accelerator/vulkan/entrypoints.inc) contains 85 public
 functions plus ICD negotiation exports. The profile supports one instance,
 compute-capable physical device, logical device and queue per address space;
 property queries; buffers and memory; SPIR-V modules; storage/uniform buffer
@@ -66,8 +67,39 @@ batch does not consume signals, mark commands pending or submit earlier records.
 Semaphore-only submissions and reuse after a consumed signal are supported.
 Timeline semaphore extensions remain unavailable.
 
-Image capabilities are unavailable, graphics queue flags are masked, optional
-features are zero and extensions are not advertised. Unsupported entrypoints
+## Offscreen graphics and visible preview
+
+Core graphics now includes native 2D optimal-tiled RGBA8/BGRA8 UNORM images,
+binding/memory requirements, color image views, a single-color render pass and
+framebuffer, vertex/fragment graphics pipelines, dynamic viewport/scissor, draw,
+image layout barriers and image-to-buffer copy. Queue queries retain native
+graphics/compute/transfer flags. Image format queries expose only this profile:
+one mip/layer/sample and dimensions up to 4096; allocation/session budgets still
+apply. Device memory remains explicit and noncoherent at the guest boundary.
+
+The first pipeline profile generates vertices in the vertex shader, uses triangle
+list/strip topology and an empty graphics layout. Vertex/index buffers, graphics
+descriptors/textures, depth/stencil, blending, multisampling and graphics
+specialization are not implemented. Dynamic viewport/scissor must both be set;
+draw checks recording/render-pass/pipeline compatibility. Buffer transfers remain
+outside render passes. Framebuffers/views/images retain their memory and render
+pass; recorded commands and in-flight snapshots retain the complete graph.
+Graphics compilation uses the same owned, bounded native tasks and fallible
+output rollback as compute. No guest pointer or Rc crosses native worker threads.
+
+The iPad session menu's “GPU 渲染示例” opens a temporary offline Alpine environment,
+installs the bundled original signed Vulkan loader and runs the same ARM64 C
+program as the native/guest reference. Original MoltenVK compiles the vertex and
+fragment SPIR-V and Metal rasterizes the triangle. After fence completion, a
+native image-to-buffer copy and explicit invalidate populate guest memory. The
+guest independently checks barycentric colors, alpha, background and scissoring,
+then writes a standard P6 PPM. Existing coordinated file transfer exports that
+image; CoreGraphics/UIKit display the bounded pixels without drawing the scene.
+Closing the preview cancels pending work and closes/deletes the temporary
+environment. This is an end-to-end offscreen preview, not a live guest window or
+swapchain; it has readback/file-transfer costs and does not claim zero-copy.
+
+Optional features are zero and extensions are not advertised. Unsupported entrypoints
 return NULL. Unsupported creation parameters return Vulkan failures. Recording
 functions have void signatures; invalid/unsupported recording parameters abort
 the experimental guest ICD with a diagnostic rather than fake success.
@@ -105,7 +137,7 @@ No guest borrow survives a submission or wait. GPU buffers live on the host.
 Fence polling is nonblocking; the guest wait wrapper uses monotonic deadlines
 and nanosleep so other virtual threads can run. Queue idle appends a fence after
 prior work. Lightweight creation and recording still execute at coordinator
-checkpoints. Compute pipeline compilation executes on owned native worker tasks.
+checkpoints. Compute and graphics pipeline compilation execute on owned native worker tasks.
 
 The Vulkan C API remains synchronous for its caller: the interpreter suspends
 only that guest thread until the native result arrives. Other guest threads and

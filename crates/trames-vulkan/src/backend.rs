@@ -12,6 +12,8 @@ use std::{
 };
 use trames_memory::{Access, Memory, MemoryError};
 use vk::Handle;
+mod graphics;
+use graphics::{ImageShape, PassInfo, Recording};
 
 const LIMIT: usize = 256;
 const MAX_ALLOCATION: u64 = 64 << 20;
@@ -66,6 +68,10 @@ impl Drop for Device {
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Kind {
     Buffer,
+    Image,
+    ImageView,
+    RenderPass,
+    Framebuffer,
     Memory,
     Shader,
     DescriptorLayout,
@@ -90,6 +96,9 @@ struct Object {
     flags: u32,
     state: Cell<u8>,
     mapped: Cell<usize>,
+    image: Cell<Option<ImageShape>>,
+    pass: Cell<Option<PassInfo>>,
+    recording: RefCell<Recording>,
     budget: crate::Budget,
 }
 impl Object {
@@ -108,6 +117,12 @@ impl Drop for Object {
         unsafe {
             match self.kind {
                 Kind::Buffer => d.destroy_buffer(vk::Buffer::from_raw(self.raw), None),
+                Kind::Image => d.destroy_image(vk::Image::from_raw(self.raw), None),
+                Kind::ImageView => d.destroy_image_view(vk::ImageView::from_raw(self.raw), None),
+                Kind::RenderPass => d.destroy_render_pass(vk::RenderPass::from_raw(self.raw), None),
+                Kind::Framebuffer => {
+                    d.destroy_framebuffer(vk::Framebuffer::from_raw(self.raw), None)
+                }
                 Kind::Memory => {
                     if self.mapped.get() != 0 {
                         d.unmap_memory(vk::DeviceMemory::from_raw(self.raw));
@@ -196,8 +211,8 @@ impl Drop for CompiledPipeline {
 struct Compile {
     // Task drops first: it must finish before these Rc-owned dependencies drop.
     task: crate::task::Task<std::result::Result<CompiledPipeline, vk::Result>>,
-    layout: Rc<Object>,
-    _shader: Rc<Object>,
+    dependencies: Vec<Rc<Object>>,
+    bind_point: vk::PipelineBindPoint,
     output: u64,
     abandoned: bool,
 }
@@ -301,6 +316,9 @@ impl Backend {
             flags,
             state: Cell::new(0),
             mapped: Cell::new(0),
+            image: Cell::new(None),
+            pass: Cell::new(None),
+            recording: RefCell::new(Recording::default()),
             budget: self.budget.clone(),
         });
         let id = self.id();
@@ -411,6 +429,9 @@ impl Backend {
                 flags: 0,
                 state: Cell::new(0),
                 mapped: Cell::new(0),
+                image: Cell::new(None),
+                pass: Cell::new(None),
+                recording: RefCell::new(Recording::default()),
                 budget: self.budget.clone(),
             })
         };
@@ -490,6 +511,9 @@ impl Backend {
         self.collect();
         let result = if operation == 27 {
             self.start_compile(memory, a).map(Invocation::Pending)
+        } else if operation == 70 {
+            self.start_graphics_compile(memory, a)
+                .map(Invocation::Pending)
         } else {
             self.call(memory, operation, a)
                 .map(|()| Invocation::Complete(0))
@@ -556,8 +580,8 @@ impl Backend {
             job,
             Compile {
                 task,
-                layout,
-                _shader: shader,
+                dependencies: vec![layout, shader],
+                bind_point: vk::PipelineBindPoint::COMPUTE,
                 output: a[4],
                 abandoned: false,
             },
@@ -597,9 +621,20 @@ impl Backend {
         let id = self.put(
             Kind::Pipeline,
             pipeline.raw.as_raw(),
-            vec![c.layout.clone()],
+            // Shaders are needed only until compilation finishes. Keep the
+            // layout and graphics compatibility pass, without pinning deleted
+            // shader modules against the context's retained-object budget.
+            c.dependencies
+                .iter()
+                .take(if c.bind_point == vk::PipelineBindPoint::GRAPHICS {
+                    2
+                } else {
+                    1
+                })
+                .cloned()
+                .collect(),
             0,
-            0,
+            c.bind_point.as_raw() as u32,
         );
         pipeline.raw = vk::Pipeline::null();
         if let Err(error) = m.write(c.output, &id.to_le_bytes()) {
@@ -696,7 +731,7 @@ impl Backend {
             .instance
             .clone()
             .ok_or(Failure::Vk(vk::Result::ERROR_INITIALIZATION_FAILED))?;
-        if (3..=8).contains(&op)
+        if ((3..=8).contains(&op) || (58..=59).contains(&op))
             && a[0]
                 != if op == 3 {
                     self.instance_id
@@ -788,7 +823,11 @@ impl Backend {
                     for (i, q) in props.iter().take(capacity).enumerate() {
                         let mut v = Vec::new();
                         for n in [
-                            q.queue_flags.as_raw() & !vk::QueueFlags::GRAPHICS.as_raw(),
+                            q.queue_flags.as_raw()
+                                & (vk::QueueFlags::GRAPHICS
+                                    | vk::QueueFlags::COMPUTE
+                                    | vk::QueueFlags::TRANSFER)
+                                    .as_raw(),
                             q.queue_count.min(1),
                             q.timestamp_valid_bits,
                             q.min_image_transfer_granularity.width,
@@ -879,6 +918,7 @@ impl Backend {
                 }
                 write(m, a[3], &self.queue_id.to_le_bytes())?;
             }
+            58..=59 => self.format_query(m, op, a)?,
             _ => {
                 self.device(a[0])?;
                 self.device_call(m, op, a)?;
@@ -1375,9 +1415,10 @@ impl Backend {
                             .flags(vk::CommandBufferUsageFlags::from_raw(a[2] as u32));
                         d.begin_command_buffer(raw, &info)?;
                         c.deps.borrow_mut().truncate(1);
+                        *c.recording.borrow_mut() = Recording::default();
                         c.state.set(1);
                     } else if op == 39 {
-                        if c.state.get() != 1 {
+                        if c.state.get() != 1 || c.recording.borrow().pass.is_some() {
                             return invalid();
                         }
                         d.end_command_buffer(raw)?;
@@ -1391,6 +1432,7 @@ impl Backend {
                             vk::CommandBufferResetFlags::from_raw(a[2] as u32),
                         )?;
                         c.deps.borrow_mut().truncate(1);
+                        *c.recording.borrow_mut() = Recording::default();
                         c.state.set(0);
                     }
                 }
@@ -1404,13 +1446,17 @@ impl Backend {
                 match op {
                     41 => {
                         let p = self.object(a[2], Kind::Pipeline)?;
+                        if a[3] != p.flags as u64 || a[3] > 1 {
+                            return invalid();
+                        }
                         unsafe {
                             d.cmd_bind_pipeline(
                                 raw,
-                                vk::PipelineBindPoint::COMPUTE,
+                                vk::PipelineBindPoint::from_raw(p.flags as i32),
                                 vk::Pipeline::from_raw(p.raw),
                             );
                         }
+                        c.recording.borrow_mut().pipeline = Some(p.clone());
                         c.retain(p);
                     }
                     42 => {
@@ -1446,6 +1492,9 @@ impl Backend {
                         c.retain(layout);
                     }
                     43 => {
+                        if c.recording.borrow().pass.is_some() {
+                            return invalid();
+                        }
                         let lim = unsafe {
                             dev.instance
                                 .native
@@ -1461,22 +1510,29 @@ impl Backend {
                         }
                     }
                     44 => {
+                        if c.recording.borrow().pass.is_some() {
+                            return invalid();
+                        }
+                        let images = self.image_barriers(m, &c, a[6], a[7])?;
                         let barriers = [vk::MemoryBarrier::default()
                             .src_access_mask(vk::AccessFlags::from_raw(a[4] as u32))
                             .dst_access_mask(vk::AccessFlags::from_raw(a[5] as u32))];
                         unsafe {
                             d.cmd_pipeline_barrier(
                                 raw,
-                                vk::PipelineStageFlags::from_raw(a[2] as u32),
-                                vk::PipelineStageFlags::from_raw(a[3] as u32),
+                                compute_stage(a[2] as u32)?,
+                                compute_stage(a[3] as u32)?,
                                 vk::DependencyFlags::empty(),
                                 &barriers,
                                 &[],
-                                &[],
+                                &images,
                             );
                         }
                     }
                     45 => {
+                        if c.recording.borrow().pass.is_some() {
+                            return invalid();
+                        }
                         let src = self.object(a[2], Kind::Buffer)?;
                         let dst = self.object(a[3], Kind::Buffer)?;
                         if src.deps.borrow().is_empty()
@@ -1514,6 +1570,9 @@ impl Backend {
                         c.retain(dst);
                     }
                     46 => {
+                        if c.recording.borrow().pass.is_some() {
+                            return invalid();
+                        }
                         let b = self.object(a[2], Kind::Buffer)?;
                         if b.deps.borrow().is_empty()
                             || b.flags & vk::BufferUsageFlags::TRANSFER_DST.as_raw() == 0
@@ -1639,8 +1698,10 @@ impl Backend {
                 for c in children {
                     c.state.set(0);
                     c.deps.borrow_mut().truncate(1);
+                    *c.recording.borrow_mut() = Recording::default();
                 }
             }
+            60..=76 => self.graphics_call(m, op, a)?,
             _ => return unsupported(),
         }
         Ok(())
@@ -1723,6 +1784,10 @@ unsafe fn transfer_pages(
 fn compute_stage(stage: u32) -> Result<vk::PipelineStageFlags> {
     let allowed = vk::PipelineStageFlags::TOP_OF_PIPE
         | vk::PipelineStageFlags::COMPUTE_SHADER
+        | vk::PipelineStageFlags::VERTEX_SHADER
+        | vk::PipelineStageFlags::FRAGMENT_SHADER
+        | vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT
+        | vk::PipelineStageFlags::ALL_GRAPHICS
         | vk::PipelineStageFlags::TRANSFER
         | vk::PipelineStageFlags::BOTTOM_OF_PIPE
         | vk::PipelineStageFlags::HOST
@@ -1899,12 +1964,12 @@ mod tests {
         }
     }
     #[test]
-    fn headless_wait_stages_do_not_enable_graphics_or_unknown_extension_bits() {
+    fn wait_stages_support_selected_graphics_but_reject_unknown_extension_bits() {
         assert!(compute_stage(vk::PipelineStageFlags::COMPUTE_SHADER.as_raw()).is_ok());
         assert!(compute_stage(vk::PipelineStageFlags::ALL_COMMANDS.as_raw()).is_ok());
         for stage in [
             0,
-            vk::PipelineStageFlags::FRAGMENT_SHADER.as_raw(),
+            vk::PipelineStageFlags::GEOMETRY_SHADER.as_raw(),
             u32::MAX,
         ] {
             assert!(compute_stage(stage).is_err());

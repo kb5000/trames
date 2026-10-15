@@ -2,6 +2,10 @@
 
 Tracker: [Issue #21](https://github.com/kb5000/trames/issues/21).
 
+The following compute-only binary/hash snapshot is retained at its recorded
+source. Current development also adds [offscreen graphics and an iPad preview](vulkan-render.md),
+with 292 workspace tests and an expanded actual-driver lifecycle regression.
+
 The standard path uses unmodified signed Alpine Vulkan loader 1.4.313.0-r0,
 the Trames guest ICD and the actual native Vulkan driver. With 1 and 4 virtual
 CPUs, three successive SPIR-V submissions each transform 4096 uint32 values as

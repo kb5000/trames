@@ -3,6 +3,24 @@ import XCTest
 @testable import Trames
 
 final class LocalVulkanTests: XCTestCase {
+    func testStandardGuestGraphicsRendersNativeMetalPixels() async throws {
+        let result = try await LocalVulkanProbe.render()
+        XCTAssertTrue(result.text.contains("render round 3: barycentric colors, alpha, background and scissor correct"), result.text)
+        XCTAssertTrue(result.text.contains("Vulkan render driver:"), result.text)
+        XCTAssertFalse(result.text.contains("llvmpipe"), result.text)
+        XCTAssertEqual(result.image.cgImage?.width, 256)
+        XCTAssertEqual(result.image.cgImage?.height, 192)
+        let image = try XCTUnwrap(result.image.pngData())
+        let attachment = XCTAttachment(data: image, uniformTypeIdentifier: "public.png")
+        attachment.name = "native-metal-vulkan-triangle"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+    func testIncompleteOrUnexpectedImageCannotBeDisplayed() {
+        for ppm in [Data(), Data("P6\n256 192\n255\n".utf8), Data(repeating: 0, count: 256 * 192 * 3 + 15)] {
+            XCTAssertThrowsError(try VulkanRenderResult(text: "", ppm: ppm))
+        }
+    }
     func testStandardGuestVulkanComputeUsesNativeMetal() async throws {
         let text=try await LocalVulkanProbe.run()
         XCTAssertTrue(text.contains("vulkan-compute-ok"),text)

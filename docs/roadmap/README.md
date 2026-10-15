@@ -10,8 +10,12 @@ direct page transfer removes the full-range upload/readback staging buffer.
 Apple device/simulator builds link original MoltenVK; the exact runtime passes
 all eight simulator tests, including real Metal compute (no skips). Physical iPad
 acceptance remains for a grouped release.
-Follow-up stages extend compute/memory/concurrency, then offscreen graphics and
-host-owned surfaces. [Issue #21](https://github.com/kb5000/trames/issues/21) and
+Offscreen graphics now renders a vertex/fragment color triangle through native
+images/render passes, with pixel readback and an iPad preview entry. Native and
+1/4-CPU guest exports match; current-source Metal/UI acceptance is pending.
+[Rendering verification](../validation/vulkan-render.md) records this new scope.
+Follow-up stages extend graphics resources and host-owned surfaces/swapchains.
+[Issue #21](https://github.com/kb5000/trames/issues/21) and
 [validation](../validation/vulkan-compute.md) track hardware acceptance and gaps.
 
 Current development adds [worker-side NativeCall](../architecture/parallel-nativecalls.md)

@@ -69,8 +69,8 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceProperties(VkPhysicalDevice p,VkPh
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceMemoryProperties(VkPhysicalDevice p,VkPhysicalDeviceMemoryProperties *out) {checked(CALL(5,KEY(p),PTR(out)));}
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceQueueFamilyProperties(VkPhysicalDevice p,uint32_t *count,VkQueueFamilyProperties *out) {checked(CALL(6,KEY(p),PTR(count),PTR(out)));}
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFeatures(VkPhysicalDevice p,VkPhysicalDeviceFeatures *out) {checked(CALL(7,KEY(p),PTR(out)));}
-VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties(VkPhysicalDevice p,VkFormat format,VkFormatProperties *out) {(void)p;(void)format;memset(out,0,sizeof(*out));}
-VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties(VkPhysicalDevice p,VkFormat format,VkImageType type,VkImageTiling tiling,VkImageUsageFlags usage,VkImageCreateFlags flags,VkImageFormatProperties *out) {(void)p;(void)format;(void)type;(void)tiling;(void)usage;(void)flags;memset(out,0,sizeof(*out));return VK_ERROR_FORMAT_NOT_SUPPORTED;}
+VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties(VkPhysicalDevice p,VkFormat format,VkFormatProperties *out) {checked(CALL(58,KEY(p),format,PTR(out)));}
+VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties(VkPhysicalDevice p,VkFormat format,VkImageType type,VkImageTiling tiling,VkImageUsageFlags usage,VkImageCreateFlags flags,VkImageFormatProperties *out) {return CALL(59,KEY(p),format,type,tiling,usage,flags,PTR(out));}
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceSparseImageFormatProperties(VkPhysicalDevice p,VkFormat format,VkImageType type,VkSampleCountFlagBits samples,VkImageUsageFlags usage,VkImageTiling tiling,uint32_t *count,VkSparseImageFormatProperties *out) {(void)p;(void)format;(void)type;(void)samples;(void)usage;(void)tiling;(void)out;*count=0;}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(VkPhysicalDevice p,const VkDeviceCreateInfo *info,const VkAllocationCallbacks *allocator,VkDevice *out) {
     CHECK(info,VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);ALLOCATOR(allocator);
@@ -171,14 +171,15 @@ VKAPI_ATTR VkResult VKAPI_CALL vkBeginCommandBuffer(VkCommandBuffer c,const VkCo
 VKAPI_ATTR VkResult VKAPI_CALL vkEndCommandBuffer(VkCommandBuffer c) {return CALL(39,DEVKEY(c),KEY(c));}
 VKAPI_ATTR VkResult VKAPI_CALL vkResetCommandBuffer(VkCommandBuffer c,VkCommandBufferResetFlags flags) {return CALL(40,DEVKEY(c),KEY(c),flags);}
 VKAPI_ATTR VkResult VKAPI_CALL vkResetCommandPool(VkDevice d,VkCommandPool pool,VkCommandPoolResetFlags flags) {return CALL(53,KEY(d),(uint64_t)pool,flags);}
-VKAPI_ATTR void VKAPI_CALL vkCmdBindPipeline(VkCommandBuffer c,VkPipelineBindPoint point,VkPipeline p) {if(point!=VK_PIPELINE_BIND_POINT_COMPUTE)checked(VK_ERROR_FEATURE_NOT_PRESENT);checked(CALL(41,DEVKEY(c),KEY(c),(uint64_t)p));}
+VKAPI_ATTR void VKAPI_CALL vkCmdBindPipeline(VkCommandBuffer c,VkPipelineBindPoint point,VkPipeline p) {if(point!=VK_PIPELINE_BIND_POINT_COMPUTE && point!=VK_PIPELINE_BIND_POINT_GRAPHICS)checked(VK_ERROR_FEATURE_NOT_PRESENT);checked(CALL(41,DEVKEY(c),KEY(c),(uint64_t)p,point));}
 VKAPI_ATTR void VKAPI_CALL vkCmdBindDescriptorSets(VkCommandBuffer c,VkPipelineBindPoint point,VkPipelineLayout layout,uint32_t first,uint32_t count,const VkDescriptorSet *sets,uint32_t offsets,const uint32_t *offset) {(void)offset;if(point!=VK_PIPELINE_BIND_POINT_COMPUTE || offsets)checked(VK_ERROR_FEATURE_NOT_PRESENT);checked(CALL(42,DEVKEY(c),KEY(c),(uint64_t)layout,first,PTR(sets),count));}
 VKAPI_ATTR void VKAPI_CALL vkCmdDispatch(VkCommandBuffer c,uint32_t x,uint32_t y,uint32_t z) {checked(CALL(43,DEVKEY(c),KEY(c),x,y,z));}
 VKAPI_ATTR void VKAPI_CALL vkCmdPipelineBarrier(VkCommandBuffer c,VkPipelineStageFlags src,VkPipelineStageFlags dst,VkDependencyFlags flags,uint32_t count,const VkMemoryBarrier *barriers,uint32_t buffers,const VkBufferMemoryBarrier *buffer,uint32_t images,const VkImageMemoryBarrier *image) {
-    (void)image;if(flags || images)checked(VK_ERROR_FEATURE_NOT_PRESENT);VkAccessFlags sa=0,da=0;
+    if(flags || images>64)checked(VK_ERROR_FEATURE_NOT_PRESENT);VkAccessFlags sa=0,da=0;uint64_t data[64][5];
+    for(uint32_t i=0;i<images;i++){const VkImageMemoryBarrier *b=&image[i];if(!VALID(b,VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER) || b->srcQueueFamilyIndex!=VK_QUEUE_FAMILY_IGNORED || b->dstQueueFamilyIndex!=VK_QUEUE_FAMILY_IGNORED || b->subresourceRange.aspectMask!=VK_IMAGE_ASPECT_COLOR_BIT || b->subresourceRange.baseMipLevel || b->subresourceRange.levelCount!=1 || b->subresourceRange.baseArrayLayer || b->subresourceRange.layerCount!=1)checked(VK_ERROR_FEATURE_NOT_PRESENT);data[i][0]=(uint64_t)b->image;data[i][1]=b->srcAccessMask;data[i][2]=b->dstAccessMask;data[i][3]=b->oldLayout;data[i][4]=b->newLayout;}
     for(uint32_t i=0;i<count;i++){if(!VALID(&barriers[i],VK_STRUCTURE_TYPE_MEMORY_BARRIER))checked(VK_ERROR_FEATURE_NOT_PRESENT);sa|=barriers[i].srcAccessMask;da|=barriers[i].dstAccessMask;}
     for(uint32_t i=0;i<buffers;i++){if(!VALID(&buffer[i],VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER) || buffer[i].srcQueueFamilyIndex!=VK_QUEUE_FAMILY_IGNORED || buffer[i].dstQueueFamilyIndex!=VK_QUEUE_FAMILY_IGNORED)checked(VK_ERROR_FEATURE_NOT_PRESENT);sa|=buffer[i].srcAccessMask;da|=buffer[i].dstAccessMask;}
-    checked(CALL(44,DEVKEY(c),KEY(c),src,dst,sa,da));
+    checked(CALL(44,DEVKEY(c),KEY(c),src,dst,sa,da,PTR(data),images));
 }
 VKAPI_ATTR void VKAPI_CALL vkCmdCopyBuffer(VkCommandBuffer c,VkBuffer src,VkBuffer dst,uint32_t count,const VkBufferCopy *regions) {if(count>64)checked(VK_ERROR_FEATURE_NOT_PRESENT);uint64_t data[192];for(uint32_t i=0;i<count;i++){data[i*3]=regions[i].srcOffset;data[i*3+1]=regions[i].dstOffset;data[i*3+2]=regions[i].size;}checked(CALL(45,DEVKEY(c),KEY(c),(uint64_t)src,(uint64_t)dst,PTR(data),count));}
 VKAPI_ATTR void VKAPI_CALL vkCmdFillBuffer(VkCommandBuffer c,VkBuffer buffer,VkDeviceSize offset,VkDeviceSize size,uint32_t value) {checked(CALL(46,DEVKEY(c),KEY(c),(uint64_t)buffer,offset,size,value));}
@@ -212,6 +213,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(VkQueue queue,uint32_t count,const 
 }
 VKAPI_ATTR VkResult VKAPI_CALL vkQueueWaitIdle(VkQueue q) {VkFence fence;VkFenceCreateInfo f={.sType=VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};VkDevice d=(VkDevice)DEVICE(q);VkResult r=vkCreateFence(d,&f,NULL,&fence);if(r!=VK_SUCCESS)return r;r=vkQueueSubmit(q,0,NULL,fence);if(r==VK_SUCCESS)r=vkWaitForFences(d,1,&fence,VK_TRUE,UINT64_MAX);vkDestroyFence(d,fence,NULL);return r;}
 VKAPI_ATTR VkResult VKAPI_CALL vkDeviceWaitIdle(VkDevice d) {VkQueue q;vkGetDeviceQueue(d,D(d)->family,0,&q);return vkQueueWaitIdle(q);}
+
+#include "graphics.inc"
 
 static PFN_vkVoidFunction find(const char *name) {
     if(!name)return NULL;

@@ -2,6 +2,20 @@
 import XCTest
 final class LaunchTests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
+    func testGPUFrameIsActuallyVisibleInRenderSheet() {
+        let app = XCUIApplication(); app.launch()
+        XCTAssertTrue(app.buttons["新建或管理会话"].waitForExistence(timeout: 20))
+        app.buttons["新建或管理会话"].tap()
+        app.buttons["GPU 渲染示例"].tap()
+        XCTAssertTrue(app.images["gpu-render-image"].waitForExistence(timeout: 180),
+            app.staticTexts["gpu-render-error"].exists ? app.staticTexts["gpu-render-error"].label : app.debugDescription)
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "visible-vulkan-triangle"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        app.buttons["完成"].tap()
+        XCTAssertTrue(app.staticTexts["TRAMES"].exists)
+    }
     func testGuestNativeRequestRequiresVisibleConsent() {
         let app=XCUIApplication(); app.launchArguments=["--ui-acceptance"]; app.launch()
         let ready=XCTNSPredicateExpectation(predicate:NSPredicate(format:"label == %@","Alpine · 本地"),object:app.staticTexts["session-state"])

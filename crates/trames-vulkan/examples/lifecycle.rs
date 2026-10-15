@@ -46,12 +46,20 @@ impl PageBacking for FallibleOutput {
     }
 }
 fn request(b: &mut Backend, m: &mut Memory, op: u64, args: &[u64]) -> Invocation {
+    try_request(b, m, op, args).unwrap()
+}
+fn try_request(
+    b: &mut Backend,
+    m: &mut Memory,
+    op: u64,
+    args: &[u64],
+) -> Result<Invocation, MemoryError> {
     let mut packet = [0; 128];
     for (i, value) in args.iter().enumerate() {
         packet[i * 8..i * 8 + 8].copy_from_slice(&value.to_le_bytes());
     }
     m.write(PACKET, &packet).unwrap();
-    b.invoke(m, op, PACKET, 128).unwrap()
+    b.invoke(m, op, PACKET, 128)
 }
 fn complete(b: &mut Backend, m: &mut Memory, op: u64, args: &[u64]) {
     assert_eq!(request(b, m, op, args), Invocation::Complete(0));
@@ -160,6 +168,9 @@ fn main() {
     m.unmap(RESULT, PAGE_SIZE).unwrap();
     println!("260 post-preflight backing I/O failures: native outputs rolled back");
     m.map(RESULT, PAGE_SIZE, Permissions::RW).unwrap();
+    if let (Some(vertex), Some(fragment)) = (std::env::args().nth(2), std::env::args().nth(3)) {
+        graphics(&mut b, &mut m, device, &vertex, &fragment);
+    }
     let job = start(&mut b, &mut m, device, layout, shader);
     // Host retention protects compilation even if a guest prematurely removes
     // its shader ID; this exercises the emulator boundary, not valid Vulkan use.
@@ -168,6 +179,7 @@ fn main() {
     let pipeline = word(&m, RESULT);
     complete(&mut b, &mut m, 28, &[device, pipeline]);
     println!("in-flight shader removal: retained native dependency completes");
+    m.write(0x4000, &code).unwrap();
     complete(
         &mut b,
         &mut m,
@@ -182,4 +194,73 @@ fn main() {
     assert_eq!(word(&m, RESULT), 0);
     complete(&mut b, &mut m, 2, &[instance]);
     println!("abandoned compiler/device teardown: no result publication");
+}
+
+fn graphics(b: &mut Backend, m: &mut Memory, device: u64, vertex: &str, fragment: &str) {
+    complete(b, m, 25, &[device, 0, 0, 0, 0, OUT]);
+    let layout = word(m, OUT);
+    let mut modules = Vec::new();
+    for path in [vertex, fragment] {
+        let code = std::fs::read(path).unwrap();
+        assert!(code.len() < 4 * PAGE_SIZE as usize);
+        m.write(0x4000, &code).unwrap();
+        complete(b, m, 21, &[device, 0x4000, code.len() as u64, OUT]);
+        modules.push(word(m, OUT));
+    }
+    complete(b, m, 66, &[device, 37, 1, 0, 0, 2, 0, 0, OUT]);
+    let pass = word(m, OUT);
+    words(m, 0x3400, &[pass, 3, 0, 0, 15]);
+    let args = [
+        device, layout, modules[0], modules[1], 0x3300, 0x3300, 0x3400, RESULT,
+    ];
+    for _ in 0..260 {
+        m.write(RESULT, &[0; 8]).unwrap();
+        let Invocation::Pending(job) = request(b, m, 70, &args) else {
+            panic!("graphics must compile asynchronously")
+        };
+        m.unmap(RESULT, PAGE_SIZE).unwrap();
+        assert!(poll(b, m, job).is_err());
+        m.map(RESULT, PAGE_SIZE, Permissions::RW).unwrap();
+    }
+    println!("260 graphics output unmaps: no pipeline publication/table exhaustion");
+    m.unmap(RESULT, PAGE_SIZE).unwrap();
+    let output = Rc::new(FallibleOutput {
+        fail: Cell::new(false),
+        bytes: RefCell::new([0; PAGE_SIZE as usize]),
+    });
+    m.map_backed(RESULT, vec![output.clone()], true, Permissions::RW, false)
+        .unwrap();
+    for _ in 0..260 {
+        output.fail.set(false);
+        m.write(RESULT, &[0; 8]).unwrap();
+        let Invocation::Pending(job) = request(b, m, 70, &args) else {
+            panic!("graphics must compile asynchronously")
+        };
+        output.fail.set(true);
+        assert_eq!(poll(b, m, job), Err(MemoryError::BackingIo(5)));
+        assert_eq!(word(m, RESULT), 0);
+        assert_eq!(
+            try_request(b, m, 60, &[device, 37, 32, 32, 0x11, RESULT]),
+            Err(MemoryError::BackingIo(5))
+        );
+    }
+    println!("260 graphics pipeline and 260 image backing failures: unpublished native outputs rolled back");
+    output.fail.set(false);
+    m.unmap(RESULT, PAGE_SIZE).unwrap();
+    m.map(RESULT, PAGE_SIZE, Permissions::RW).unwrap();
+    m.write(RESULT, &[0; 8]).unwrap();
+    let Invocation::Pending(job) = request(b, m, 70, &args) else {
+        panic!("graphics must compile asynchronously")
+    };
+    // Defensive emulator boundary: retain native dependencies while a caller
+    // violates Vulkan's required creation/destruction synchronization.
+    complete(b, m, 67, &[device, pass]);
+    for shader in modules {
+        complete(b, m, 22, &[device, shader]);
+    }
+    assert_eq!(poll(b, m, job).unwrap(), 0);
+    let pipeline = word(m, RESULT);
+    complete(b, m, 28, &[device, pipeline]);
+    complete(b, m, 26, &[device, layout]);
+    println!("in-flight graphics pass/shader removal: dependencies retained until completion");
 }

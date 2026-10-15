@@ -100,7 +100,7 @@ int main(int argc,char **argv) {
         VkSubmitInfo first={.sType=VK_STRUCTURE_TYPE_SUBMIT_INFO,.commandBufferCount=1,.pCommandBuffers=&chain[0],.signalSemaphoreCount=1,.pSignalSemaphores=&semaphores[0]};
         OK(vkQueueSubmit(queue,1,&first,VK_NULL_HANDLE));
         if(bridge_checks){
-            VkPipelineStageFlags unsupported_stage=VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            VkPipelineStageFlags unsupported_stage=VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
             VkSubmitInfo invalid={.sType=VK_STRUCTURE_TYPE_SUBMIT_INFO,.waitSemaphoreCount=1,.pWaitSemaphores=&semaphores[0],.pWaitDstStageMask=&unsupported_stage};
             assert(vkQueueSubmit(queue,1,&invalid,VK_NULL_HANDLE)==VK_ERROR_FEATURE_NOT_PRESENT);
         }

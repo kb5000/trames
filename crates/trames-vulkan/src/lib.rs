@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Experimental, headless Vulkan compute over a separately negotiated NativeCall.
+//! Experimental Vulkan compute/offscreen graphics over an independent NativeCall.
 pub const PROFILE: u64 = 0x0001_0006;
 pub const AUXV_KEY: u64 = 0x5452_0008;
 mod backend;

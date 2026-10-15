@@ -1,0 +1,132 @@
+{
+  "date": "2026-10-15",
+  "base_commit": "8cbe91e39fa86197b5b16968b847fb336bf7d7f3",
+  "scope": "selected core Vulkan offscreen graphics; not full conformance or WSI",
+  "source_state": "worktree implementation to be committed; exact source hashes below",
+  "rust_tests_passed": 292,
+  "local_driver": "Mesa 25.0.7 Lavapipe/llvmpipe LLVM 19.1.7 software",
+  "dimensions": [
+    256,
+    192
+  ],
+  "draws_per_run": 3,
+  "guest_cpu_counts": [
+    1,
+    4
+  ],
+  "pixel_oracle": "barycentric RGB, opaque alpha, background, half-frame scissor; >90% pixels checked, <=2/255 color tolerance; native/guest image files byte-identical",
+  "fault_regression_cases": 1300,
+  "apple_current": "pending source CI",
+  "physical_ipad": "pending grouped release",
+  "source_sha256": {
+    "accelerator/vulkan/graphics.inc": "892788dd8bca08965312c1fc91fc3013c6ec53d4eb370ed4bbe13f4c9dc1e24b",
+    "apps/ios/Trames/VulkanRenderView.swift": "11d084bebadae568c9aefe1e216ae2bfa2e5b6f43987951db091869e2ca5f4da",
+    "crates/trames-vulkan/src/backend/graphics.rs": "35a3094d659cdfff2e91651e54620c03b67e924cab9dd81f22f258dee6902f84",
+    "docs/validation/vulkan-render.md": "b67c4d71c6dbe7283c5bfc3af5235efab29ab36397a6adebed7833238dbc36dd",
+    "tests/fixtures/vulkan-render.c": "e3e9e351943db72a801f5902247413d661d35189b98078d59aa59390c82c50b6",
+    "tests/fixtures/vulkan-render.frag": "9ae7204b484e12bcf8b16b1917b1dbd882ebbcae925b7b38506ecfd86514efa1",
+    "tests/fixtures/vulkan-render.vert": "ec2201f74382bd77ed0c35d5d9a2a99e6b28d7d331ef9a5e1afd5d6c95f8535f",
+    "tests/integration/vulkan-render.py": "5ec985cb4df458e5de1fc1b374e038ed34fa09e183cdf93ce2602303d21c68b6",
+    ".github/workflows/linux.yml": "41157dfba219e4aa5d2a47f456e3709d1a3aa7185ff42eae836ba07db61aa128",
+    "README.md": "1efbc875c8746c5d2106f150d4a6a04147fbb597328b8905d0d69d1177d22fe3",
+    "accelerator/vulkan/entrypoints.inc": "707b86d70a3327ceaf33d4523be2a91d4a0f643e6b84a62f718b61bd109bf01b",
+    "accelerator/vulkan/icd.c": "9c952c5835cabb3934f3431af7f2a78cd20cf19959ad2a29927b8ac5ff406629",
+    "apps/ios/Trames/LocalVulkanProbe.swift": "a5b7cca33f2c3e58531dbf13920cfc2674a0ae27c41cecdfcdbe61964abeeb64",
+    "apps/ios/Trames/TramesApp.swift": "a878799a6d1b024606a1ca1bd458afb618e46f7c48ec9891c0146c79109cd307",
+    "apps/ios/TramesTests/LocalVulkanTests.swift": "947fcb7e63d880099409d2aaf79e0b5b8f058ccd100c503cea87645e704f21c0",
+    "apps/ios/TramesUITests/LaunchTests.swift": "e6a1e52a772ad24d5067f5071213e36bb8d1e63c88792c50df1828179c42a498",
+    "crates/trames-vulkan/examples/lifecycle.rs": "d068e135873bd369a1dd49ccc6a6a384ac2f390288959eb16429a25c5a2c2311",
+    "crates/trames-vulkan/src/backend.rs": "1f6d4755125477c43627f4fe3b9ed80b9c96a01e112d96ac23a5491387f44fae",
+    "crates/trames-vulkan/src/lib.rs": "eb0ee16d769d49517127d20de308b59aaf0df32c531055c6ba1b350deb00f187",
+    "docs/architecture/vulkan-compute.md": "8a11534bc91fd97444229f376c511fd6e191a6f4260c4bb885725ca403888f06",
+    "docs/roadmap/README.md": "de0c738b1141ad453fb0e0fe59975f01af0059ffceac5b57b30da34c6d5bba0a",
+    "docs/validation/vulkan-compute.md": "fd3c5899e115455beb98e70c402da8bcdf21392a3a97623c976a5862a1fdd06b",
+    "scripts/build-vulkan-fixtures.sh": "8311bfd43e6cc242f016795ac741b82e74bf77ec4d3afdd428eed1aea4da4d45",
+    "scripts/build-vulkan-guest.sh": "998455704fc7ce2f923c3de19548769c7dd7b943ab35d52fc4fe6e66ad1c1220",
+    "tests/fixtures/vulkan-compute.c": "30d71e71e349cc6f846d55b9bf47e104c05bdbe0396bdfbf2c70d76bacb360c8"
+  },
+  "binary_sha256": {
+    "target/release/trames-run": "5aebd3b19df232e02934a3c2f9a1d7ae7eb69d1a773e6c773068c482d42d2423",
+    "target/release/libtrames_ffi.so": "4f4468df715392acc3b047ba2df2a9aa800359c5abe8158ca6e11ab5c826c0a2",
+    "target/vulkan-guest/libtrames_vulkan_icd.so": "ca57f7c73d32436a633c1035eb10135225e05c9450e6ef560940b4f6adcef00e",
+    "tests/fixtures/bin/vulkan-render": "55ece4e3acbcf629e9a5fa684e1d3295809f8fbe2d1078d09fafead471a4080c",
+    "tests/fixtures/bin/vulkan-render-host": "39f9912153ddc207f27c535734ec20725de3b604ef1a4bec7f212ac2479b389d",
+    "tests/fixtures/bin/vulkan-render.vert.spv": "2a710d624169328c6d65cad1c4e55b4ef8e0664e94dbbf650cb2568dc2ea21ef",
+    "tests/fixtures/bin/vulkan-render.frag.spv": "2a5b5fd35bb932901571f73b2bcc199b823e036397df505f748a9d55eb8757ce"
+  },
+  "pixel_sha256": {
+    "target/vulkan-render/native.ppm": "0539c7ad78eb06fa9b5998a6555931a1529aba93036deb9918cbc1faf94adcf7",
+    "target/vulkan-render/guest-1.ppm": "0539c7ad78eb06fa9b5998a6555931a1529aba93036deb9918cbc1faf94adcf7",
+    "target/vulkan-render/guest-4.ppm": "0539c7ad78eb06fa9b5998a6555931a1529aba93036deb9918cbc1faf94adcf7"
+  },
+  "logs": {
+    "unit": {
+      "sha256": "21960ba0efbbcb99615f4e9c22bf158a628897f230f7fae966d983e0666c33bb",
+      "tail": [
+        "running 0 tests",
+        "",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "",
+        "   Doc-tests trames_vulkan",
+        "",
+        "running 0 tests",
+        "",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        ""
+      ]
+    },
+    "strict_clippy": {
+      "sha256": "47dc93e3b4861e8ce345605655d31ec8039a3b95eee26ad5a6445d6c362766ea",
+      "tail": [
+        "    Checking trames-vulkan v0.14.0 (/workspace/trames/crates/trames-vulkan)",
+        "    Checking trames-core v0.14.0 (/workspace/trames/crates/trames-core)",
+        "    Checking trames-ffi v0.14.0 (/workspace/trames/crates/trames-ffi)",
+        "    Checking trames-cli v0.14.0 (/workspace/trames/crates/trames-cli)",
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.71s"
+      ]
+    },
+    "render": {
+      "sha256": "6b60161af27b6be3ecf38394a73a6d9023f0b0de939bad8271b740665101c496",
+      "tail": [
+        "Vulkan render driver: llvmpipe (LLVM 19.1.7, 256 bits)",
+        "Signed repository inputs: vulkan-loader=1.4.313.0-r0",
+        "1-CPU guest: 3 real graphics draws, independent pixel oracle and exported PPM match native driver byte-for-byte",
+        "4-CPU guest: 3 real graphics draws, independent pixel oracle and exported PPM match native driver byte-for-byte",
+        "render round 1: barycentric colors, alpha, background and scissor correct",
+        "render round 2: barycentric colors, alpha, background and scissor correct",
+        "render round 3: barycentric colors, alpha, background and scissor correct",
+        "vulkan-render-ok"
+      ]
+    },
+    "compute": {
+      "sha256": "d138605bec21d6f73538b711b5bf0e2ba9516b650a5a3e09352ea09094303b18",
+      "tail": [
+        "parallel pipeline callers preserve default/specialized outputs: ok",
+        "compute round 1: 4096 uint32 values correct",
+        "compute round 2: 4096 uint32 values correct",
+        "compute round 3: 4096 uint32 values correct",
+        "compute semaphore chain 1: 4096 specialized uint32 values correct",
+        "compute semaphore chain 2: 4096 specialized uint32 values correct",
+        "binary semaphore reuse and empty submissions: ok",
+        "partial mapping, offset flush/invalidate and remap persistence: ok",
+        "unaligned map offset preserves Vulkan pointer alignment: ok",
+        "vulkan-compute-ok"
+      ]
+    },
+    "lifecycle": {
+      "sha256": "f47d5179af00eafffea187d4dc2e16359997c94c7dd0535f5fae982e874e5ee1",
+      "tail": [
+        "   Compiling trames-vulkan v0.14.0 (/workspace/trames/crates/trames-vulkan)",
+        "    Finished `release` profile [optimized] target(s) in 7.01s",
+        "     Running `target/release/examples/lifecycle tests/fixtures/bin/vulkan-compute.spv tests/fixtures/bin/vulkan-render.vert.spv tests/fixtures/bin/vulkan-render.frag.spv`",
+        "260 live-output unmaps: faults, no ID publication/table exhaustion",
+        "260 post-preflight backing I/O failures: native outputs rolled back",
+        "260 graphics output unmaps: no pipeline publication/table exhaustion",
+        "260 graphics pipeline and 260 image backing failures: unpublished native outputs rolled back",
+        "in-flight graphics pass/shader removal: dependencies retained until completion",
+        "in-flight shader removal: retained native dependency completes",
+        "abandoned compiler/device teardown: no result publication"
+      ]
+    }
+  }
+}
