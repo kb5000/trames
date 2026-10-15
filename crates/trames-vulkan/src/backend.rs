@@ -5,7 +5,10 @@ use std::{
     cell::{Cell, RefCell},
     collections::BTreeMap,
     rc::{Rc, Weak},
-    sync::atomic::{AtomicU64, Ordering},
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
 };
 use trames_memory::{Access, Memory, MemoryError};
 use vk::Handle;
@@ -47,7 +50,9 @@ impl Drop for Instance {
 }
 struct Device {
     native: ash::Device,
-    instance: Rc<Instance>,
+    instance: Arc<Instance>,
+    atom: u64,
+    map_alignment: u64,
 }
 impl Drop for Device {
     fn drop(&mut self) {
@@ -76,7 +81,7 @@ enum Kind {
 struct Object {
     kind: Kind,
     raw: u64,
-    device: Rc<Device>,
+    device: Arc<Device>,
     deps: RefCell<Vec<Rc<Object>>>,
     bindings: RefCell<BTreeMap<u32, (u32, u32)>>,
     bound_buffers: RefCell<BTreeMap<(u32, u32), Rc<Object>>>,
@@ -163,24 +168,59 @@ struct SubmitBatch {
     commands: Vec<vk::CommandBuffer>,
     signals: Vec<vk::Semaphore>,
 }
+#[derive(Debug, PartialEq, Eq)]
+pub enum Invocation {
+    Complete(u64),
+    Pending(u64),
+}
+#[derive(Clone, Copy, Debug, Default)]
+pub struct TransferMetrics {
+    pub upload_bytes: u64,
+    pub download_bytes: u64,
+    pub direct_bytes: u64,
+    pub buffered_bytes: u64,
+}
+struct CompiledPipeline {
+    device: Arc<Device>,
+    raw: vk::Pipeline,
+}
+impl Drop for CompiledPipeline {
+    fn drop(&mut self) {
+        if self.raw != vk::Pipeline::null() {
+            unsafe {
+                self.device.native.destroy_pipeline(self.raw, None);
+            }
+        }
+    }
+}
+struct Compile {
+    // Task drops first: it must finish before these Rc-owned dependencies drop.
+    task: crate::task::Task<std::result::Result<CompiledPipeline, vk::Result>>,
+    layout: Rc<Object>,
+    _shader: Rc<Object>,
+    output: u64,
+    abandoned: bool,
+}
 
 pub struct Backend {
     budget: crate::Budget,
     domain: u64,
     next: u64,
-    instance: Option<Rc<Instance>>,
+    instance: Option<Arc<Instance>>,
     physical: vk::PhysicalDevice,
     instance_id: u64,
     physical_id: u64,
     device_id: u64,
     queue_id: u64,
-    device: Option<Rc<Device>>,
+    device: Option<Arc<Device>>,
     queue: vk::Queue,
     family: u32,
     objects: BTreeMap<u64, Rc<Object>>,
     retained: Vec<Weak<Object>>,
     mappings: BTreeMap<u64, Mapping>,
     submissions: Vec<Submission>,
+    compiles: BTreeMap<u64, Compile>,
+    pub transfers: TransferMetrics,
 }
 impl Default for Backend {
     fn default() -> Self {
@@ -209,6 +249,8 @@ impl Backend {
             retained: Vec::new(),
             mappings: BTreeMap::new(),
             submissions: Vec::new(),
+            compiles: BTreeMap::new(),
+            transfers: TransferMetrics::default(),
         }
     }
     fn id(&mut self) -> u64 {
@@ -222,6 +264,7 @@ impl Backend {
             .iter()
             .filter(|x| x.strong_count() != 0)
             .count()
+            + self.compiles.len()
             + n
             > LIMIT
         {
@@ -230,7 +273,7 @@ impl Backend {
             Ok(())
         }
     }
-    fn device(&self, id: u64) -> Result<Rc<Device>> {
+    fn device(&self, id: u64) -> Result<Arc<Device>> {
         if id != self.device_id || id == 0 {
             return invalid();
         }
@@ -279,7 +322,7 @@ impl Backend {
         self.objects.remove(&id);
         Ok(())
     }
-    fn submit(&mut self, m: &Memory, op: u64, a: [u64; 16], dev: Rc<Device>) -> Result<()> {
+    fn submit(&mut self, m: &Memory, op: u64, a: [u64; 16], dev: Arc<Device>) -> Result<()> {
         if a[1] != self.queue_id {
             return invalid();
         }
@@ -406,6 +449,7 @@ impl Backend {
         Ok(())
     }
     fn collect(&mut self) {
+        self.reap_abandoned();
         self.retained.retain(|x| x.strong_count() != 0);
         self.submissions.retain(|s| {
             let done = unsafe {
@@ -422,15 +466,21 @@ impl Backend {
             !done
         });
     }
+    pub fn reap_abandoned(&mut self) {
+        self.compiles
+            .retain(|_, c| !c.abandoned || matches!(c.task.poll(), Ok(None)));
+    }
     pub fn invoke(
         &mut self,
         memory: &mut Memory,
         operation: u64,
         address: u64,
         size: u64,
-    ) -> std::result::Result<u64, MemoryError> {
+    ) -> std::result::Result<Invocation, MemoryError> {
         if size != 128 {
-            return Ok(vk::Result::ERROR_UNKNOWN.as_raw() as i64 as u64);
+            return Ok(Invocation::Complete(
+                vk::Result::ERROR_UNKNOWN.as_raw() as i64 as u64,
+            ));
         }
         let mut bytes = [0; 128];
         memory.read(address, &mut bytes)?;
@@ -438,11 +488,122 @@ impl Backend {
             u64::from_le_bytes(bytes[i * 8..i * 8 + 8].try_into().unwrap())
         });
         self.collect();
-        match self.call(memory, operation, a) {
-            Ok(()) => Ok(0),
-            Err(Failure::Vk(e)) => Ok(e.as_raw() as i64 as u64),
+        let result = if operation == 27 {
+            self.start_compile(memory, a).map(Invocation::Pending)
+        } else {
+            self.call(memory, operation, a)
+                .map(|()| Invocation::Complete(0))
+        };
+        match result {
+            Ok(value) => Ok(value),
+            Err(Failure::Vk(e)) => Ok(Invocation::Complete(e.as_raw() as i64 as u64)),
             Err(Failure::Memory(e)) => Err(e),
         }
+    }
+    fn start_compile(&mut self, m: &Memory, a: [u64; 16]) -> Result<u64> {
+        let device = self.device(a[0])?;
+        self.room(1)?;
+        output(m, a[4], 8)?;
+        let layout = self.object(a[1], Kind::PipelineLayout)?;
+        let shader = self.object(a[2], Kind::Shader)?;
+        let name = std::ffi::CString::new(m.read_c_string(a[3], 256)?)
+            .map_err(|_| Failure::Vk(vk::Result::ERROR_UNKNOWN))?;
+        let wire = words64(m, a[5], bounded(a[6], 64)? * 3)?;
+        let data_size = bounded(a[8], 65536)?;
+        let entries = specialization_entries(&wire, data_size)?;
+        let mut data = vec![0; data_size];
+        if data_size != 0 {
+            m.read(a[7], &mut data)?;
+        }
+        let permit = self
+            .budget
+            .compile()
+            .ok_or(Failure::Vk(vk::Result::ERROR_OUT_OF_HOST_MEMORY))?;
+        let raw_shader = vk::ShaderModule::from_raw(shader.raw);
+        let raw_layout = vk::PipelineLayout::from_raw(layout.raw);
+        let task = crate::task::Task::spawn(move || {
+            let _permit = permit;
+            let specialization = vk::SpecializationInfo::default()
+                .map_entries(&entries)
+                .data(&data);
+            let stage = vk::PipelineShaderStageCreateInfo::default()
+                .stage(vk::ShaderStageFlags::COMPUTE)
+                .module(raw_shader)
+                .name(&name)
+                .specialization_info(&specialization);
+            let info = [vk::ComputePipelineCreateInfo::default()
+                .stage(stage)
+                .layout(raw_layout)];
+            match unsafe {
+                device
+                    .native
+                    .create_compute_pipelines(vk::PipelineCache::null(), &info, None)
+            } {
+                Ok(p) => Ok(CompiledPipeline { device, raw: p[0] }),
+                Err((p, error)) => {
+                    for raw in p {
+                        unsafe {
+                            device.native.destroy_pipeline(raw, None);
+                        }
+                    }
+                    Err(error)
+                }
+            }
+        })
+        .map_err(|_| Failure::Vk(vk::Result::ERROR_OUT_OF_HOST_MEMORY))?;
+        let job = self.id();
+        self.compiles.insert(
+            job,
+            Compile {
+                task,
+                layout,
+                _shader: shader,
+                output: a[4],
+                abandoned: false,
+            },
+        );
+        Ok(job)
+    }
+    pub fn abandon(&mut self, job: u64) {
+        if let Some(c) = self.compiles.get_mut(&job) {
+            c.abandoned = true;
+        }
+    }
+    pub fn poll(
+        &mut self,
+        m: &mut Memory,
+        job: u64,
+    ) -> std::result::Result<Option<u64>, MemoryError> {
+        let result = match self.compiles.get_mut(&job) {
+            Some(c) => c.task.poll(),
+            None => return Ok(Some(vk::Result::ERROR_DEVICE_LOST.as_raw() as i64 as u64)),
+        };
+        if matches!(result, Ok(None)) {
+            return Ok(None);
+        }
+        let c = self.compiles.remove(&job).expect("polled compile");
+        let mut pipeline = match result {
+            Ok(Some(Ok(p))) => p,
+            Ok(Some(Err(e))) => return Ok(Some(e.as_raw() as i64 as u64)),
+            Err(()) => return Ok(Some(vk::Result::ERROR_DEVICE_LOST.as_raw() as i64 as u64)),
+            Ok(None) => unreachable!(),
+        };
+        // Mappings may have changed while another CLONE_VM thread ran. Check
+        // the live output before installing an ID; failure drops native output.
+        output(m, c.output, 8).map_err(|e| match e {
+            Failure::Memory(e) => e,
+            _ => unreachable!(),
+        })?;
+        let id = self.put(
+            Kind::Pipeline,
+            pipeline.raw.as_raw(),
+            vec![c.layout.clone()],
+            0,
+            0,
+        );
+        pipeline.raw = vk::Pipeline::null();
+        m.write(c.output, &id.to_le_bytes())?;
+        Ok(Some(0))
     }
     fn call(&mut self, m: &mut Memory, op: u64, a: [u64; 16]) -> Result<()> {
         if op == 1 {
@@ -469,7 +630,7 @@ impl Backend {
                     vk::InstanceCreateFlags::empty()
                 });
             let native = unsafe { entry.create_instance(&info, None) }?;
-            let instance = Rc::new(Instance {
+            let instance = Arc::new(Instance {
                 native,
                 _entry: entry,
             });
@@ -662,7 +823,18 @@ impl Backend {
                 let native = unsafe { instance.native.create_device(self.physical, &info, None) }?;
                 self.queue = unsafe { native.get_device_queue(a[1] as u32, 0) };
                 self.family = a[1] as u32;
-                self.device = Some(Rc::new(Device { native, instance }));
+                let limits = unsafe {
+                    instance
+                        .native
+                        .get_physical_device_properties(self.physical)
+                }
+                .limits;
+                self.device = Some(Arc::new(Device {
+                    native,
+                    instance,
+                    atom: limits.non_coherent_atom_size,
+                    map_alignment: limits.min_memory_map_alignment as u64,
+                }));
                 self.device_id = self.id();
                 self.queue_id = self.id();
                 write(m, a[2], &self.device_id.to_le_bytes())?;
@@ -686,6 +858,7 @@ impl Backend {
         Ok(())
     }
     fn clear_device(&mut self) {
+        self.compiles.clear();
         if let Some(d) = &self.device {
             unsafe {
                 let _ = d.native.device_wait_idle();
@@ -859,13 +1032,7 @@ impl Backend {
                 } else {
                     a[3]
                 };
-                let atom = unsafe {
-                    dev.instance
-                        .native
-                        .get_physical_device_properties(self.physical)
-                }
-                .limits
-                .non_coherent_atom_size;
+                let atom = dev.atom;
                 if !a[2].is_multiple_of(atom)
                     || a[3] != u64::MAX
                         && !len.is_multiple_of(atom)
@@ -881,7 +1048,6 @@ impl Backend {
                     return invalid();
                 }
                 let guest = map.guest + (a[2] - map.offset);
-                let mut bytes = vec![0; len as usize];
                 let ptr = (map.memory.mapped.get() as *mut u8).wrapping_add(a[2] as usize);
                 // Native mapped storage is retained by Mapping. No Rust slice
                 // or guest-memory guard is kept while the GPU runs.
@@ -890,18 +1056,23 @@ impl Backend {
                     .offset(a[2])
                     .size(a[3])];
                 if op == 19 {
-                    m.read(guest, &mut bytes)?;
+                    // One guest-to-native copy per page, with no full-range Vec.
+                    let transfer = unsafe { transfer_pages(m, guest, ptr, len as usize, true) }?;
+                    self.transfers.upload_bytes += len;
+                    self.transfers.direct_bytes += transfer.direct_bytes;
+                    self.transfers.buffered_bytes += transfer.buffered_bytes;
                     unsafe {
-                        std::ptr::copy_nonoverlapping(bytes.as_ptr(), ptr, bytes.len());
                         d.flush_mapped_memory_ranges(&range)?;
                     }
                 } else {
-                    output(m, guest, bytes.len())?;
+                    output(m, guest, len as usize)?;
                     unsafe {
                         d.invalidate_mapped_memory_ranges(&range)?;
-                        std::ptr::copy_nonoverlapping(ptr, bytes.as_mut_ptr(), bytes.len());
                     }
-                    write(m, guest, &bytes)?;
+                    let transfer = unsafe { transfer_pages(m, guest, ptr, len as usize, false) }?;
+                    self.transfers.download_bytes += len;
+                    self.transfers.direct_bytes += transfer.direct_bytes;
+                    self.transfers.buffered_bytes += transfer.buffered_bytes;
                 }
             }
             21 => {
@@ -990,49 +1161,6 @@ impl Backend {
                 write(m, a[5], &id.to_le_bytes())?;
             }
             26 => self.remove(a[1], Kind::PipelineLayout)?,
-            27 => {
-                self.room(1)?;
-                output(m, a[4], 8)?;
-                let layout = self.object(a[1], Kind::PipelineLayout)?;
-                let shader = self.object(a[2], Kind::Shader)?;
-                let mut name = m.read_c_string(a[3], 256)?;
-                name.push(0);
-                let name = std::ffi::CStr::from_bytes_with_nul(&name)
-                    .map_err(|_| Failure::Vk(vk::Result::ERROR_UNKNOWN))?;
-                let wire = words64(m, a[5], bounded(a[6], 64)? * 3)?;
-                let data_size = bounded(a[8], 65536)?;
-                let entries = specialization_entries(&wire, data_size)?;
-                let mut data = vec![0; data_size];
-                if data_size != 0 {
-                    m.read(a[7], &mut data)?;
-                }
-                let specialization = vk::SpecializationInfo::default()
-                    .map_entries(&entries)
-                    .data(&data);
-                let stage = vk::PipelineShaderStageCreateInfo::default()
-                    .stage(vk::ShaderStageFlags::COMPUTE)
-                    .module(vk::ShaderModule::from_raw(shader.raw))
-                    .name(name)
-                    .specialization_info(&specialization);
-                let info = [vk::ComputePipelineCreateInfo::default()
-                    .stage(stage)
-                    .layout(vk::PipelineLayout::from_raw(layout.raw))];
-                let raw = match unsafe {
-                    d.create_compute_pipelines(vk::PipelineCache::null(), &info, None)
-                } {
-                    Ok(p) => p[0],
-                    Err((p, e)) => {
-                        for x in p {
-                            unsafe {
-                                d.destroy_pipeline(x, None);
-                            }
-                        }
-                        return Err(e.into());
-                    }
-                };
-                let id = self.put(Kind::Pipeline, raw.as_raw(), vec![layout], 0, 0);
-                write(m, a[4], &id.to_le_bytes())?;
-            }
             28 => self.remove(a[1], Kind::Pipeline)?,
             29 => {
                 self.room(1)?;
@@ -1452,13 +1580,7 @@ impl Backend {
             }
             55 => self.remove(a[1], Kind::Semaphore)?,
             57 => {
-                let alignment = unsafe {
-                    dev.instance
-                        .native
-                        .get_physical_device_properties(self.physical)
-                }
-                .limits
-                .min_memory_map_alignment as u64;
+                let alignment = dev.map_alignment;
                 write(m, a[1], &alignment.to_le_bytes())?;
             }
             53 => {
@@ -1527,6 +1649,46 @@ fn bounded(n: u64, limit: usize) -> Result<usize> {
     } else {
         Ok(n as usize)
     }
+}
+/// Native pointer covers a retained, mapped driver allocation disjoint from
+/// guest backing. Only this callback borrows guest pages; nothing escapes it.
+unsafe fn transfer_pages(
+    m: &mut Memory,
+    guest: u64,
+    native: *mut u8,
+    len: usize,
+    upload: bool,
+) -> std::result::Result<TransferMetrics, MemoryError> {
+    m.check(
+        guest,
+        len,
+        if upload { Access::Read } else { Access::Write },
+    )?;
+    let mut transferred = TransferMetrics::default();
+    let mut offset = 0;
+    while offset < len {
+        let address = guest + offset as u64;
+        let n = (len - offset)
+            .min((trames_memory::PAGE_SIZE - address % trames_memory::PAGE_SIZE) as usize);
+        let direct = if upload {
+            m.with_read_chunk(address, n, |bytes| unsafe {
+                std::ptr::copy_nonoverlapping(bytes.as_ptr(), native.add(offset), n);
+            })?
+            .1
+        } else {
+            m.with_write_chunk(address, n, |bytes| unsafe {
+                std::ptr::copy_nonoverlapping(native.add(offset), bytes.as_mut_ptr(), n);
+            })?
+            .1
+        };
+        if direct {
+            transferred.direct_bytes += n as u64;
+        } else {
+            transferred.buffered_bytes += n as u64;
+        }
+        offset += n;
+    }
+    Ok(transferred)
 }
 fn compute_stage(stage: u32) -> Result<vk::PipelineStageFlags> {
     let allowed = vk::PipelineStageFlags::TOP_OF_PIPE
@@ -1598,6 +1760,52 @@ mod tests {
     use super::*;
     use trames_memory::{Permissions, PAGE_SIZE};
     #[test]
+    fn native_transfers_cross_pages_keep_cow_and_preflight_permissions() {
+        let mut memory = Memory::new(3 * PAGE_SIZE as usize);
+        memory.map(0x1000, 3 * PAGE_SIZE, Permissions::RW).unwrap();
+        let mut source: Vec<u8> = (0..5000).map(|i| i as u8).collect();
+        memory.write(0x1ff3, &source).unwrap();
+        let parent = memory.clone();
+        let mut native = vec![0; source.len()];
+        let upload =
+            unsafe { transfer_pages(&mut memory, 0x1ff3, native.as_mut_ptr(), native.len(), true) }
+                .unwrap();
+        assert_eq!(native, source);
+        assert_eq!(upload.direct_bytes, source.len() as u64);
+        source.fill(42);
+        native.copy_from_slice(&source);
+        let download = unsafe {
+            transfer_pages(
+                &mut memory,
+                0x1ff3,
+                native.as_mut_ptr(),
+                native.len(),
+                false,
+            )
+        }
+        .unwrap();
+        let mut current = vec![0; source.len()];
+        memory.read(0x1ff3, &mut current).unwrap();
+        assert_eq!(current, source);
+        parent.read(0x1ff3, &mut current).unwrap();
+        assert_ne!(current, source);
+        assert_eq!(download.direct_bytes, source.len() as u64);
+        memory.protect(0x3000, PAGE_SIZE, Permissions::RX).unwrap();
+        native.fill(7);
+        assert!(unsafe {
+            transfer_pages(
+                &mut memory,
+                0x1ff3,
+                native.as_mut_ptr(),
+                native.len(),
+                false,
+            )
+        }
+        .is_err());
+        memory.read(0x1ff3, &mut current).unwrap();
+        assert_eq!(current, source);
+    }
+    #[test]
     fn specialization_records_keep_offsets_and_reject_overflow_or_duplicate_ids() {
         let entries = specialization_entries(&[1, 4, 4, 0, 8, 4], 16).unwrap();
         assert_eq!(
@@ -1633,7 +1841,7 @@ mod tests {
         let mut memory = Memory::new(PAGE_SIZE as usize);
         assert_eq!(
             b.invoke(&mut memory, 1, 0, 127).unwrap(),
-            vk::Result::ERROR_UNKNOWN.as_raw() as i64 as u64
+            Invocation::Complete(vk::Result::ERROR_UNKNOWN.as_raw() as i64 as u64)
         );
         assert!(b.instance.is_none());
         assert!(b.objects.is_empty());
@@ -1652,7 +1860,7 @@ mod tests {
         let result = left.invoke(&mut memory, 13, 0x1000, 128).unwrap();
         assert_eq!(
             result,
-            vk::Result::ERROR_INITIALIZATION_FAILED.as_raw() as i64 as u64
+            Invocation::Complete(vk::Result::ERROR_INITIALIZATION_FAILED.as_raw() as i64 as u64)
         );
         assert!(left.objects.is_empty());
     }

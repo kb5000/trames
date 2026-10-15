@@ -74,8 +74,12 @@ budgets do not establish an exact RSS or physical GPU capacity.
 ## Memory and lifetime
 
 Mapped memory currently has separate native and guest storage. `vkMapMemory`
-returns a guest anonymous mapping. Flush copies guest bytes to retained native
-storage; invalidate copies them back through the interpreter's guest memory API.
+returns a guest anonymous mapping. Flush/invalidate use the interpreter's scoped
+page access to copy directly between each guest page fragment and retained native
+storage. The full-range intermediate Vec is removed: one copy replaces two for
+resident mappings. Shared/live backing providers retain their original direct
+borrow or bounded page fallback, including COW, permission and code revision
+behavior. Guest and GPU storage remain separate.
 Bounds, mapping identity and noncoherent-atom alignment are checked. The guest
 mapping aligns `pData-offset` to the native `minMemoryMapAlignment`, including
 unaligned mapping offsets; the underlying anonymous mapping is retained
@@ -87,8 +91,26 @@ properties and explicitly flush/invalidate. Shared storage remains future work.
 No guest borrow survives a submission or wait. GPU buffers live on the host.
 Fence polling is nonblocking; the guest wait wrapper uses monotonic deadlines
 and nanosleep so other virtual threads can run. Queue idle appends a fence after
-prior work. Synchronous creation and recording still execute at coordinator
-checkpoints, including shader/pipeline compilation.
+prior work. Lightweight creation and recording still execute at coordinator
+checkpoints. Compute pipeline compilation executes on owned native worker tasks.
+
+The Vulkan C API remains synchronous for its caller: the interpreter suspends
+only that guest thread until the native result arrives. Other guest threads and
+unrelated compiler tasks continue. Native workers receive owned entrypoint names,
+specialization bytes, native handles and Arc-owned driver lifetimes; no guest
+address, memory guard or coordinator Rc crosses threads. The coordinator retains
+the shader/layout and reserves an object slot until completion. A shared session
+admission counter permits eight concurrent native compile tasks without a global
+compiler work lock; capacity exhaustion returns out-of-host-memory. Polling is
+bounded at 1 ms while tasks wait. Driver-internal synchronization stays unchanged.
+
+Completion checks the current guest output mapping before publishing an ID.
+Failure destroys the unpublished pipeline. Caught guest signal handlers wait for
+the active native call to return; stop/continue preserves the waiting call.
+Killed callers abandon results, which the coordinator reaps after native work
+finishes. Final context teardown joins compiler tasks and GPU work before dropping
+dependencies. Final teardown can wait for the original compiler/driver; ordinary
+progress polling does not wait for unfinished compilation.
 
 Objects retain required memory, layouts and pools. Recorded commands retain
 referenced objects; submissions snapshot their dependency graphs and retain
@@ -103,7 +125,11 @@ Final teardown joins native work before freeing dependencies.
 ## Original source and delivery
 
 Rust uses pinned ash 0.38.0 and matching Vulkan 1.3.281 definitions. Native
-MoltenVK algorithms are unchanged. No guest CPU JIT is introduced; the original
+MoltenVK algorithms are unchanged. Universal Apple archives are thinned into the
+target build directory with original upstream bytes retained. Apple's original
+matching compiler-rt provides native platform availability checks. Rust and Xcode
+use the app's iOS 17 deployment target and explicit framework dependencies.
+No guest CPU JIT is introduced; the original
 graphics stack translates SPIR-V and compiles GPU shaders.
 
 [Upstream records](../../scripts/vulkan-upstream.json) pin commits, URLs and
@@ -118,8 +144,8 @@ source with the native-source artifact. Published 0.14.0 stays unchanged.
 Expand compute according to actual applications: pipeline caches, more
 descriptors and `pNext` records, multiple queues and storage
 images. Introduce shared guest/GPU backing with explicit remap, COW and completion
-semantics. Move expensive creation work off the coordinator without retaining
-guest slices or serializing unrelated calls.
+semantics. Extend native task dispatch to other expensive creation operations and
+add a reusable compiler worker pool if measurements justify it.
 
 Then verify offscreen graphics before adding presentation. A host-owned surface
 token can connect a guest swapchain to an iPad Metal view; a guest address never

@@ -79,6 +79,12 @@ pub struct Runtime {
 /// Host monotonic timings; these are diagnostics, never guest clock values.
 #[derive(Default, Debug)]
 pub struct RuntimeMetrics {
+    pub gpu_compiles: u64,
+    pub gpu_peak_pending: usize,
+    /// Sum over pending-call windows; overlapping waits may count retirement twice.
+    pub gpu_peer_instructions: u64,
+    pub gpu_wait_time: std::time::Duration,
+    pub gpu_transfers: trames_vulkan::TransferMetrics,
     pub cpu_count: usize,
     pub parallel_rounds: u64,
     pub worker_slices: u64,

@@ -7,8 +7,23 @@
 #include <stdint.h>
 #include <string.h>
 #include <dlfcn.h>
+#include <pthread.h>
+#include <stdatomic.h>
+#include <sched.h>
 #define OK(expr) do {VkResult result=(expr);if(result!=VK_SUCCESS){fprintf(stderr,"%s: VkResult=%d\n",#expr,result);abort();}}while(0)
 #define N 4096u
+static _Atomic unsigned compile_active,peer_ready,peer_ticks;
+struct compile_args {VkDevice device;VkComputePipelineCreateInfo info;VkPipeline output;};
+static void *compile_pipeline(void *data) {
+    struct compile_args *args=data;
+    OK(vkCreateComputePipelines(args->device,VK_NULL_HANDLE,1,&args->info,NULL,&args->output));
+    return NULL;
+}
+static void *compile_peer(void *unused) {
+    (void)unused;atomic_store(&peer_ready,1);
+    while(atomic_load(&compile_active))atomic_fetch_add(&peer_ticks,1);
+    return NULL;
+}
 int main(int argc,char **argv) {
     assert(argc==2 || argc==3);
     int bridge_checks=argc==3 && !strcmp(argv[2],"bridge-check");
@@ -36,7 +51,9 @@ int main(int argc,char **argv) {
     VkShaderModuleCreateInfo si={.sType=VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,.codeSize=(size_t)size,.pCode=code};VkShaderModule shader;OK(vkCreateShaderModule(device,&si,NULL,&shader));free(code);
     VkDescriptorSetLayoutBinding binding={.binding=0,.descriptorType=VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,.descriptorCount=1,.stageFlags=VK_SHADER_STAGE_COMPUTE_BIT};VkDescriptorSetLayoutCreateInfo li={.sType=VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,.bindingCount=1,.pBindings=&binding};VkDescriptorSetLayout descriptor_layout;OK(vkCreateDescriptorSetLayout(device,&li,NULL,&descriptor_layout));
     VkPushConstantRange push={.stageFlags=VK_SHADER_STAGE_COMPUTE_BIT,.size=4};VkPipelineLayoutCreateInfo pli={.sType=VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,.setLayoutCount=1,.pSetLayouts=&descriptor_layout,.pushConstantRangeCount=1,.pPushConstantRanges=&push};VkPipelineLayout layout;OK(vkCreatePipelineLayout(device,&pli,NULL,&layout));
-    VkComputePipelineCreateInfo pi={.sType=VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,.stage={.sType=VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,.stage=VK_SHADER_STAGE_COMPUTE_BIT,.module=shader,.pName="main"},.layout=layout,.basePipelineIndex=-1};VkPipeline pipeline;OK(vkCreateComputePipelines(device,VK_NULL_HANDLE,1,&pi,NULL,&pipeline));
+    pthread_t peer;atomic_store(&compile_active,1);assert(pthread_create(&peer,NULL,compile_peer,NULL)==0);
+    while(!atomic_load(&peer_ready))sched_yield();
+    VkComputePipelineCreateInfo pi={.sType=VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,.stage={.sType=VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,.stage=VK_SHADER_STAGE_COMPUTE_BIT,.module=shader,.pName="main"},.layout=layout,.basePipelineIndex=-1};VkPipeline pipeline;
     // IDs are deliberately out of order; bytes are not at offset zero.
     uint32_t constants[4]={0xabcdef,2,11,0x123456};VkSpecializationMapEntry entries[2]={{1,4,4},{0,8,4}};
     VkSpecializationInfo special={.mapEntryCount=2,.pMapEntries=entries,.dataSize=sizeof(constants),.pData=constants};
@@ -45,7 +62,13 @@ int main(int argc,char **argv) {
         entries[1].offset=15;assert(vkCreateComputePipelines(device,VK_NULL_HANDLE,1,&pi,NULL,&rejected)==VK_ERROR_UNKNOWN);entries[1].offset=8;
         entries[1].constantID=1;assert(vkCreateComputePipelines(device,VK_NULL_HANDLE,1,&pi,NULL,&rejected)==VK_ERROR_UNKNOWN);entries[1].constantID=0;
     }
-    pi.stage.pSpecializationInfo=&special;VkPipeline specialized;OK(vkCreateComputePipelines(device,VK_NULL_HANDLE,1,&pi,NULL,&specialized));vkDestroyShaderModule(device,shader,NULL);
+    pi.stage.pSpecializationInfo=&special;struct compile_args parallel={.device=device,.info=pi};pthread_t compiler;
+    assert(pthread_create(&compiler,NULL,compile_pipeline,&parallel)==0);
+    pi.stage.pSpecializationInfo=NULL;OK(vkCreateComputePipelines(device,VK_NULL_HANDLE,1,&pi,NULL,&pipeline));
+    assert(pthread_join(compiler,NULL)==0);VkPipeline specialized=parallel.output;vkDestroyShaderModule(device,shader,NULL);
+    atomic_store(&compile_active,0);assert(pthread_join(peer,NULL)==0);assert(atomic_load(&peer_ticks)>0);
+    puts("pipeline compile with active peer: ok");
+    puts("parallel pipeline callers preserve default/specialized outputs: ok");
     VkDescriptorPoolSize poolsize={VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,1};VkDescriptorPoolCreateInfo dpi={.sType=VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,.flags=VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,.maxSets=1,.poolSizeCount=1,.pPoolSizes=&poolsize};VkDescriptorPool descriptor_pool;OK(vkCreateDescriptorPool(device,&dpi,NULL,&descriptor_pool));VkDescriptorSetAllocateInfo dsa={.sType=VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,.descriptorPool=descriptor_pool,.descriptorSetCount=1,.pSetLayouts=&descriptor_layout};VkDescriptorSet set;OK(vkAllocateDescriptorSets(device,&dsa,&set));
     VkDescriptorBufferInfo db={.buffer=buffer,.range=VK_WHOLE_SIZE};VkWriteDescriptorSet write={.sType=VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,.dstSet=set,.descriptorCount=1,.descriptorType=VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,.pBufferInfo=&db};vkUpdateDescriptorSets(device,1,&write,0,NULL);
     VkCommandPoolCreateInfo cpi={.sType=VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,.flags=VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,.queueFamilyIndex=family};VkCommandPool command_pool;OK(vkCreateCommandPool(device,&cpi,NULL,&command_pool));VkCommandBufferAllocateInfo cba={.sType=VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,.commandPool=command_pool,.level=VK_COMMAND_BUFFER_LEVEL_PRIMARY,.commandBufferCount=1};VkCommandBuffer command;OK(vkAllocateCommandBuffers(device,&cba,&command));

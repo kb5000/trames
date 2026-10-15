@@ -545,6 +545,11 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
             "trames metrics: {}",
             serde_json::json!({
                 "backend":backend,"instructions":exit.instructions,"seconds":seconds,
+                "gpu_compiles":profile.gpu_compiles,"gpu_peer_instructions":profile.gpu_peer_instructions,
+                "gpu_peak_pending":profile.gpu_peak_pending,
+                "gpu_wait_seconds":profile.gpu_wait_time.as_secs_f64(),
+                "gpu_upload_bytes":profile.gpu_transfers.upload_bytes,"gpu_download_bytes":profile.gpu_transfers.download_bytes,
+                "gpu_direct_bytes":profile.gpu_transfers.direct_bytes,"gpu_buffered_bytes":profile.gpu_transfers.buffered_bytes,
                 "instructions_per_second":exit.instructions as f64/seconds,
                 "cpu_seconds":profile.cpu_time.as_secs_f64(),"syscall_seconds":profile.syscall_time.as_secs_f64(),
                 "idle_seconds":profile.idle_time.as_secs_f64(),"syscalls":profile.syscalls,

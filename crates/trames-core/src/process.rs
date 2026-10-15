@@ -87,6 +87,13 @@ struct Info {
 #[derive(Clone)]
 enum State {
     Ready,
+    Gpu {
+        job: u64,
+        pc: u64,
+        operation: u64,
+        instructions: u64,
+        began: Instant,
+    },
     Blocked(u32, [u64; 6]),
     Sleep(Instant, u64),
     Suspend(u64),
@@ -209,6 +216,11 @@ struct Kernel {
     native: trames_accel::native::Registry,
     gpu: RefCell<BTreeMap<u64, trames_vulkan::Backend>>,
     gpu_budget: trames_vulkan::Budget,
+    gpu_compiles: u64,
+    gpu_peak_pending: usize,
+    gpu_peer_instructions: u64,
+    gpu_wait_time: Duration,
+    gpu_transfers: trames_vulkan::TransferMetrics,
 }
 fn error(e: Errno) -> u64 {
     0u64.wrapping_sub(e.0 as u64)
@@ -269,22 +281,53 @@ impl Kernel {
         module: u64,
         function: u64,
         a: [u64; 3],
-    ) -> Result<trames_accel::native::Return, trames_accel::native::Error> {
+    ) -> Result<Option<trames_accel::native::Return>, trames_accel::native::Error> {
         if module != trames_vulkan::PROFILE {
-            return self.native.invoke(&mut p.memory, pc, module, function, a);
+            return self
+                .native
+                .invoke(&mut p.memory, pc, module, function, a)
+                .map(Some);
         }
         if !accelerated(p, trames_vulkan::AUXV_KEY, trames_vulkan::PROFILE) {
             return Err(trames_accel::native::Error::InvalidEntry);
         }
         self.native
             .authorize_stateful(&p.memory, pc, module, function)?;
-        let value = self
-            .gpu
-            .borrow_mut()
-            .entry(p.vm_id)
-            .or_insert_with(|| trames_vulkan::Backend::with_budget(self.gpu_budget.clone()))
-            .invoke(&mut p.memory, a[0], a[1], a[2])
-            .map_err(trames_accel::native::Error::Memory)?;
+        let value = {
+            let mut gpu = self.gpu.borrow_mut();
+            let backend = gpu
+                .entry(p.vm_id)
+                .or_insert_with(|| trames_vulkan::Backend::with_budget(self.gpu_budget.clone()));
+            let before = backend.transfers;
+            let result = backend.invoke(&mut p.memory, a[0], a[1], a[2]);
+            self.gpu_transfers.upload_bytes += backend.transfers.upload_bytes - before.upload_bytes;
+            self.gpu_transfers.download_bytes +=
+                backend.transfers.download_bytes - before.download_bytes;
+            self.gpu_transfers.direct_bytes += backend.transfers.direct_bytes - before.direct_bytes;
+            self.gpu_transfers.buffered_bytes +=
+                backend.transfers.buffered_bytes - before.buffered_bytes;
+            result.map_err(trames_accel::native::Error::Memory)?
+        };
+        let value = match value {
+            trames_vulkan::Invocation::Complete(value) => value,
+            trames_vulkan::Invocation::Pending(job) => {
+                self.gpu_compiles += 1;
+                let pending = 1 + self
+                    .processes
+                    .values()
+                    .filter(|other| matches!(other.state, State::Gpu { .. }))
+                    .count();
+                self.gpu_peak_pending = self.gpu_peak_pending.max(pending);
+                p.state = State::Gpu {
+                    job,
+                    pc,
+                    operation: a[0],
+                    instructions: self.instructions,
+                    began: Instant::now(),
+                };
+                return Ok(None);
+            }
+        };
         if (value as i64) < 0 {
             p.linux.vfs.log(
                 4,
@@ -297,10 +340,59 @@ impl Kernel {
                 ),
             );
         }
-        Ok(trames_accel::native::Return {
+        Ok(Some(trames_accel::native::Return {
             value,
             fallback: false,
-        })
+        }))
+    }
+    fn resume_gpu(&mut self, pid: u32, p: &mut Process) -> bool {
+        let State::Gpu {
+            job,
+            pc,
+            operation,
+            instructions,
+            began,
+        } = p.state
+        else {
+            return false;
+        };
+        let result = self
+            .gpu
+            .borrow_mut()
+            .get_mut(&p.vm_id)
+            .map_or(Ok(Some((-4i64) as u64)), |backend| {
+                backend.poll(&mut p.memory, job)
+            });
+        if matches!(result, Ok(None)) {
+            return false;
+        }
+        self.gpu_peer_instructions += self.instructions.saturating_sub(instructions);
+        self.gpu_wait_time += began.elapsed();
+        p.state = State::Ready;
+        match result {
+            Ok(Some(value)) => {
+                if (value as i64) < 0 {
+                    p.linux.vfs.log(
+                        4,
+                        &format!(
+                            "pid={} Vulkan op={operation} result={} pc={pc:#x} comm={:?}",
+                            p.tgid,
+                            value as i64,
+                            String::from_utf8_lossy(&p.linux.command_name)
+                        ),
+                    );
+                }
+                p.cpu.set_x(0, value);
+                p.cpu.set_x(1, 0);
+                p.cpu.pc = pc + 4;
+                self.instructions += 1;
+            }
+            Err(error) => {
+                self.synchronous_fault(pid, p, &trames_cpu::CpuFault::Memory { pc, error })
+            }
+            Ok(None) => unreachable!(),
+        }
+        true
     }
     fn resource_id(&mut self) -> u64 {
         let id = self.next_resource;
@@ -494,6 +586,16 @@ impl Kernel {
         }
     }
     fn exit_one(&mut self, pid: u32, p: &mut Process, status: i32) {
+        let state = if matches!(p.state, State::Stopped) {
+            p.stopped_state.as_deref()
+        } else {
+            Some(&p.state)
+        };
+        if let Some(State::Gpu { job, .. }) = state {
+            if let Some(backend) = self.gpu.borrow_mut().get_mut(&p.vm_id) {
+                backend.abandon(*job);
+            }
+        }
         let address = p.linux.clear_tid_address();
         p.linux.exit_tid(&mut p.memory);
         self.wake_futex(p, address, u32::MAX, u32::MAX);
@@ -810,7 +912,10 @@ impl Kernel {
             p.pending
                 .keys()
                 .copied()
-                .find(|s| (!stopped || *s == 18) && (p.mask & (1u64 << (s - 1)) == 0 || *s == 19))
+                .find(|s| (!stopped || *s == 18) && (p.mask & (1u64 << (s - 1)) == 0 || *s == 19)
+                    // A native C function returns once its compile has finished;
+                    // defer caught handlers without rerunning this operation.
+                    && (!matches!(p.state, State::Gpu { .. }) || p.actions[*s as usize].handler <= 1))
         };
         let Some(sig) = sig else { return Ok(false) };
         if matches!(p.state, State::Stopped) && sig != 9 && sig != 18 {
@@ -2587,13 +2692,14 @@ impl Kernel {
                     result = self.native_call(p, pc, module, function, a);
                 }
                 match result {
-                    Ok(value) => {
+                    Ok(Some(value)) => {
                         p.cpu.set_x(0, value.value);
                         p.cpu.set_x(1, u64::from(value.fallback));
                         p.cpu.pc = pc + 4;
                         self.instructions += 1;
                         immediate_return = true;
                     }
+                    Ok(None) => {}
                     Err(error) => {
                         use trames_accel::native::Error;
                         let fault = match error {
@@ -2662,6 +2768,7 @@ impl Kernel {
                 continue;
             };
             if !matches!(p.state, State::Zombie(_)) {
+                self.resume_gpu(id, &mut p);
                 self.resume_event(&mut p);
                 if self.deliver(id, &mut p).is_err() {
                     self.exit(id, &mut p, 11);
@@ -2843,6 +2950,9 @@ impl Kernel {
             }
         }
         for p in self.processes.values() {
+            if matches!(p.state, State::Gpu { .. }) {
+                timeout = timeout.min(Duration::from_millis(1));
+            }
             // An unread expired timerfd remains readable until a guest read or
             // poll updates it. It must not force zero-length CPU epochs forever.
             let timerfd = p.linux.vfs.next_timerfd_deadline().filter(|d| *d > now);
@@ -2894,6 +3004,9 @@ impl Kernel {
                     Err(_) => return Err(RuntimeError::Arguments("host session control failed")),
                 }
             }
+            for backend in self.gpu.borrow_mut().values_mut() {
+                backend.reap_abandoned();
+            }
             let mut progress = self.pump_terminal(io)?;
             if self.parallel_round(io, limit)? {
                 continue;
@@ -2904,6 +3017,7 @@ impl Kernel {
                     continue;
                 };
                 if !matches!(p.state, State::Zombie(_)) {
+                    progress |= self.resume_gpu(id, &mut p);
                     progress |= self.resume_event(&mut p);
                     match self.deliver(id, &mut p) {
                         Ok(changed) => progress |= changed,
@@ -3022,6 +3136,7 @@ impl Kernel {
             if !progress {
                 let external = self.processes.values().any(|p| {
                     p.poll_deadline.is_some()
+                        || matches!(p.state, State::Gpu { .. })
                         || p.linux.vfs.next_timerfd_deadline().is_some()
                         || matches!(p.state, State::Futex { deadline: Some(_), .. } | State::Sigwait { deadline: Some(_), .. })
                         || matches!(p.state, State::Sleep(..))
@@ -3055,6 +3170,9 @@ impl Kernel {
             }
         }
         for p in self.processes.values() {
+            if matches!(p.state, State::Gpu { .. }) {
+                timeout = timeout.min(Duration::from_millis(1));
+            }
             if let Some(deadline) = p.linux.vfs.next_timerfd_deadline() {
                 timeout = timeout.min(deadline.saturating_duration_since(now));
             }
@@ -3210,6 +3328,11 @@ pub(super) fn run(
         native: trames_accel::native::Registry::default(),
         gpu: RefCell::new(BTreeMap::new()),
         gpu_budget: trames_vulkan::Budget::default(),
+        gpu_compiles: 0,
+        gpu_peak_pending: 0,
+        gpu_peer_instructions: 0,
+        gpu_wait_time: Duration::ZERO,
+        gpu_transfers: trames_vulkan::TransferMetrics::default(),
     };
     // Enable all virtual mounts once, including /dev and /sys for programs
     // that never touch /proc. Subsequent full snapshots are demand-driven.
@@ -3243,6 +3366,11 @@ pub(super) fn run(
         instructions_decoded: kernel.instructions_decoded,
         decode_misses: kernel.decode_misses,
         native: kernel.native.metrics,
+        gpu_compiles: kernel.gpu_compiles,
+        gpu_peak_pending: kernel.gpu_peak_pending,
+        gpu_peer_instructions: kernel.gpu_peer_instructions,
+        gpu_wait_time: kernel.gpu_wait_time,
+        gpu_transfers: kernel.gpu_transfers,
     };
     // Session teardown cancels forked children, including their process locks.
     // Root-thread locks are already released on normal group exit; preserve
@@ -3374,6 +3502,11 @@ mod tests {
             native: trames_accel::native::Registry::default(),
             gpu: RefCell::new(BTreeMap::new()),
             gpu_budget: trames_vulkan::Budget::default(),
+            gpu_compiles: 0,
+            gpu_peak_pending: 0,
+            gpu_peer_instructions: 0,
+            gpu_wait_time: Duration::ZERO,
+            gpu_transfers: trames_vulkan::TransferMetrics::default(),
         }
     }
     #[test]
@@ -3519,6 +3652,52 @@ mod tests {
         k.processes.get_mut(&1).unwrap().state =
             State::Sleep(Instant::now() + Duration::from_millis(1), 0);
         assert!(k.parallel_timeout() <= Duration::from_millis(1));
+    }
+    #[test]
+    fn gpu_wait_defers_caught_handlers_but_preserves_stop_continue() {
+        let mut p = process();
+        let mut k = kernel();
+        p.state = State::Gpu {
+            job: 1,
+            pc: 0x4000,
+            operation: 27,
+            instructions: 0,
+            began: Instant::now(),
+        };
+        p.actions[10].handler = 0x5000;
+        Kernel::queue_one(1, &mut p, 10, 1);
+        assert!(!k.deliver(1, &mut p).unwrap());
+        assert!(p.pending.contains_key(&10));
+        Kernel::queue_one(1, &mut p, 19, 1);
+        assert!(k.deliver(1, &mut p).unwrap());
+        assert!(matches!(p.state, State::Stopped));
+        assert!(matches!(
+            p.stopped_state.as_deref(),
+            Some(State::Gpu { job: 1, .. })
+        ));
+        Kernel::queue_one(1, &mut p, 18, 1);
+        assert!(matches!(p.state, State::Gpu { job: 1, .. }));
+    }
+    #[test]
+    fn a_removed_gpu_context_completes_once_without_reexecuting_the_stub() {
+        let mut p = process();
+        let mut k = kernel();
+        k.instructions = 123;
+        p.state = State::Gpu {
+            job: 1,
+            pc: 0x4000,
+            operation: 27,
+            instructions: 10,
+            began: Instant::now(),
+        };
+        assert!(k.resume_gpu(1, &mut p));
+        assert!(matches!(p.state, State::Ready));
+        assert_eq!(p.cpu.pc, 0x4004);
+        assert_eq!(p.cpu.x(0), (-4i64) as u64);
+        assert_eq!(k.gpu_peer_instructions, 113);
+        assert_eq!(k.instructions, 124);
+        assert!(!k.resume_gpu(1, &mut p));
+        assert_eq!(k.instructions, 124);
     }
     #[test]
     fn session_leader_fifo_open_waits_before_terminal_inspection_and_is_interruptible() {

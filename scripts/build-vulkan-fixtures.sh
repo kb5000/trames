@@ -24,7 +24,7 @@ headers="$PWD/target/vulkan-upstream/headers/Vulkan-Headers-cfebfc96b2b0bce93da7
 "${GLSLANG_VALIDATOR:-glslangValidator}" -V --target-env vulkan1.0 tests/fixtures/vulkan-compute.comp -o tests/fixtures/bin/vulkan-compute.spv
 "${HOST_CC:-cc}" -O2 -Wall -Wextra -Werror -I "$headers" tests/fixtures/vulkan-compute.c \
   "${VULKAN_HOST_LINK:--lvulkan}" -ldl -o tests/fixtures/bin/vulkan-compute-host
-"${MUSL_CC:-$PWD/target/busybox-build/musl/bin/musl-gcc}" -O2 -Wall -Wextra -Werror \
+"${MUSL_CC:-$PWD/target/busybox-build/musl/bin/musl-gcc}" -O2 -mno-outline-atomics -Wall -Wextra -Werror \
   -I "$headers" -L "$PWD/target/vulkan-loader-sdk" -L "$PWD/target/alpine-build/lib" \
   tests/fixtures/vulkan-compute.c -lvulkan -ldl -o tests/fixtures/bin/vulkan-compute
 cp tests/fixtures/bin/vulkan-compute tests/fixtures/bin/vulkan-compute.spv target/vulkan-guest/acceptance/

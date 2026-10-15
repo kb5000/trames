@@ -5,6 +5,8 @@ graphics/presentation and deferred host port forwarding. The first experimental
 standard-loader/ICD path has actual native compute verification at 1/4 CPUs;
 binary semaphore chains, preserved batch ordering, specialization constants and
 partial/unaligned mapping now extend that verified subset.
+Owned native pipeline compilation allows other guest threads to continue, and
+direct page transfer removes the full-range upload/readback staging buffer.
 Apple builds select original MoltenVK and include real Metal simulator acceptance.
 Follow-up stages extend compute/memory/concurrency, then offscreen graphics and
 host-owned surfaces. [Issue #21](https://github.com/kb5000/trames/issues/21) and

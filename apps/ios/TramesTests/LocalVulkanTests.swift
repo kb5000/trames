@@ -6,6 +6,8 @@ final class LocalVulkanTests: XCTestCase {
     func testStandardGuestVulkanComputeUsesNativeMetal() async throws {
         let text=try await LocalVulkanProbe.run()
         XCTAssertTrue(text.contains("vulkan-compute-ok"),text)
+        XCTAssertTrue(text.contains("pipeline compile with active peer: ok"),text)
+        XCTAssertTrue(text.contains("parallel pipeline callers preserve default/specialized outputs: ok"),text)
         XCTAssertTrue(text.contains("compute round 3: 4096 uint32 values correct"),text)
         XCTAssertTrue(text.contains("compute semaphore chain 2: 4096 specialized uint32 values correct"),text)
         XCTAssertTrue(text.contains("binary semaphore reuse and empty submissions: ok"),text)

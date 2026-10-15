@@ -25,11 +25,27 @@ regressions pass with the final runtime.
 
 The local reference is Mesa Lavapipe/llvmpipe using LLVM 19.1.7, a software
 Vulkan driver. This verifies protocol and compute behavior, not iPad GPU speed.
-The workspace passes 283 Rust tests covering malformed transport, object domains,
+The workspace passes 289 Rust tests covering malformed transport, object domains,
 shared allocation accounting, code mutation and independent CPU gating as well
-as existing functionality. Formatting and strict Clippy pass. iOS FFI compiles
-with the actual static MoltenVK device archive selected; that compile check is
-not an Apple SDK link or hardware run.
+as existing functionality. Formatting and strict Clippy pass. Native task tests
+verify another task can finish while one waits, teardown ordering and shared
+admission limits. Kernel tests verify deferred caught signals, stop/continue and
+exactly one completion after context removal. Cross-page transfer tests verify
+COW and permission preflight. Apple SDK link and hardware results are tracked
+separately from local Rust compilation.
+
+The expanded fixture starts two pipeline callers and an active CPU peer. The
+runtime's `gpu_peer_instructions` sums retirement by other guest threads over
+each suspended call's wait window; overlapping windows may count an instruction
+twice. It excludes guest marshalling before the pending state and demonstrates
+progress rather than a unique instruction count. Native and interpreted
+default/specialized outputs remain identical.
+`gpu_peak_pending` is the peak number of suspended compiler callers, not a CPU
+utilization metric. Upload/download/direct/buffered byte counters verify resident
+guest mappings use one direct copy and no full-range staging. The fixed lab
+transfers 147328 bytes; the previous two-copy path would copy these payloads twice.
+These counts demonstrate scheduler progress and removed staging, not an iPad GPU
+speed measurement. Actual run counters are recorded in the evidence file.
 
 Apple CI builds device/simulator apps and runs `LocalVulkanTests` through the
 real embedding ABI. It installs the original signed loader from bundled packages,
@@ -45,7 +61,12 @@ link. The initial-source Linux run
 passed the initial Vulkan integration but exposed an older FIFO open/PTY
 interaction in M6 regression. Pending FIFO descriptors now complete their
 rendezvous before terminal inspection. A signal interruption regression and
-two independent original M6/QEMU comparisons pass locally.
+two independent original M6/QEMU comparisons pass locally. The corrected Linux
+run [38664087992](https://github.com/kb5000/trames/actions/runs/38664087992)
+subsequently passed the full workflow. Apple run 38664087827 exposed the universal
+MoltenVK simulator archive; run 38667877962 then exposed the omitted native
+availability runtime. Target archive thinning and original Apple compiler-rt
+linking address those failures; actual Metal acceptance is required.
 
 ## Reproduction
 
@@ -72,6 +93,7 @@ switch for a new session and install unchanged `vulkan-loader` with apk.
 
 This profile excludes graphics/images/presentation, coherent zero-copy mapping,
 custom allocation callbacks, application extensions, timeline semaphores and
-multiple queues. Synchronous creation remains a coordinator cost.
+multiple queues. Lightweight creation/recording and page transfers still use
+coordinator checkpoints; compute pipeline compilation now runs on native tasks.
 [Architecture](../architecture/vulkan-compute.md) and
 [binary/input/log hashes](vulkan-compute-data.json) define the current scope.

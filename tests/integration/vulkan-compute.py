@@ -26,7 +26,7 @@ with tempfile.TemporaryDirectory(prefix='trames-vulkan-compute-') as directory:
     packages = sorted((tmp / 'repository').rglob('*.apk'))
     for cpus in ('1', '4'):
         base = [runner, '--storage', str(tmp / ('store-' + cpus)), '--cpus', cpus,
-            '--vulkan', '--max-instructions', '10000000000']
+            '--vulkan', '--metrics', '--max-instructions', '10000000000']
         imported = []
         for package in packages:
             imported += ['--file', '/tmp/' + package.name + '=' + str(package)]
@@ -48,6 +48,11 @@ with tempfile.TemporaryDirectory(prefix='trames-vulkan-compute-') as directory:
             print(log.stdout.decode(errors='replace'), flush=True)
         assert p.returncode == 0 and p.stdout == reference.stdout, p
         assert b'Vulkan driver:' in p.stderr and b'ERROR' not in p.stderr, p.stderr
+        metrics=json.loads(next(line.removeprefix('trames metrics: ') for line in p.stderr.decode().splitlines() if line.startswith('trames metrics: ')))
+        assert metrics['gpu_compiles']==2 and metrics['gpu_peer_instructions']>0,metrics
+        assert metrics['gpu_upload_bytes']>0 and metrics['gpu_download_bytes']>0,metrics
+        assert metrics['gpu_direct_bytes']==metrics['gpu_upload_bytes']+metrics['gpu_download_bytes'] and metrics['gpu_buffered_bytes']==0,metrics
+        print(f"{cpus}-CPU asynchronous native compile: peer retirement summed over call wait windows={metrics['gpu_peer_instructions']}; pending callers peak={metrics['gpu_peak_pending']}; direct GPU transfers {metrics['gpu_direct_bytes']} bytes with zero full-range staging",flush=True)
         print(f'{cpus}-CPU guest standard Vulkan: default and specialized compute, binary semaphore chains/reuse, batch boundaries, empty submissions and rejection rollback match native driver', flush=True)
         print(p.stderr.decode(), end='', flush=True)
         disabled = subprocess.run([runner, '--storage', str(tmp / ('store-' + cpus)), '--cpus', cpus,
