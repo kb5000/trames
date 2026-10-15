@@ -1,8 +1,8 @@
 {
   "date": "2026-10-15",
-  "base_commit": "8cbe91e39fa86197b5b16968b847fb336bf7d7f3",
+  "base_commit": "5b7da3a612bc9fc96297574c2dcaca8602aa2467",
   "scope": "selected core Vulkan offscreen graphics; not full conformance or WSI",
-  "source_state": "worktree implementation to be committed; exact source hashes below",
+  "source_state": "Runtime/fixtures from 5b7da3a; documentation updated separately for acceptance evidence",
   "rust_tests_passed": 292,
   "local_driver": "Mesa 25.0.7 Lavapipe/llvmpipe LLVM 19.1.7 software",
   "dimensions": [
@@ -16,19 +16,45 @@
   ],
   "pixel_oracle": "barycentric RGB, opaque alpha, background, half-frame scissor; >90% pixels checked, <=2/255 color tolerance; native/guest image files byte-identical",
   "fault_regression_cases": 1300,
-  "apple_current": "pending source CI",
+  "apple_current": {
+    "run": "https://github.com/kb5000/trames/actions/runs/38680131876",
+    "runtime_commit": "5b7da3a612bc9fc96297574c2dcaca8602aa2467",
+    "status": "success: both app links and all 11 simulator tests passed; 0 failed/skipped",
+    "summary": "docs/validation/vulkan-render-metal-summary.json",
+    "summary_sha256": "36db30a0767662be206c8031bc97591f20678854befc98ad9157ffa68d8edd1d",
+    "artifact_id": 11948995682,
+    "artifact_sha256": "c1d8929fe51bfdc6f61c0216f75a7bd79a32cfda9687f12138f8aabafc4e1af0",
+    "captured_images": [
+      {
+        "file": "docs/validation/assets/vulkan-ipad-preview.png",
+        "size": [
+          1668,
+          2420
+        ],
+        "source": "build/ipad-smoke.xcresult/Data/data.0~OSmYiALSeFnCyiOL-6J8lB9iZ3OaRNVyxeuK2lo1wBBVwbSdTdnMT0jXCuwFVeuW_RffRruoyXR5fDcaN5Z3ZA==",
+        "sha256": "da872c575ea9dbcf9c2920f29e69be5aeb5fc9368c76b0294c8663cd94f098d5"
+      },
+      {
+        "file": "docs/validation/assets/vulkan-metal-triangle.png",
+        "size": [
+          256,
+          192
+        ],
+        "source": "build/ipad-smoke.xcresult/Data/data.0~vF5uukCckN1b5_qLH-_pBRY8E1DiY09zevj6wL_ZDHqbBZtSU6zmvTgMZSu6eUIxfh_hf2zje1PXI7lm_0ZrBA==",
+        "sha256": "4d06b8c1ba4fa73e0d93c24b61979183f91f3e03ff53476bfc4ed2e434d98b87"
+      }
+    ]
+  },
   "physical_ipad": "pending grouped release",
   "source_sha256": {
     "accelerator/vulkan/graphics.inc": "892788dd8bca08965312c1fc91fc3013c6ec53d4eb370ed4bbe13f4c9dc1e24b",
     "apps/ios/Trames/VulkanRenderView.swift": "11d084bebadae568c9aefe1e216ae2bfa2e5b6f43987951db091869e2ca5f4da",
     "crates/trames-vulkan/src/backend/graphics.rs": "35a3094d659cdfff2e91651e54620c03b67e924cab9dd81f22f258dee6902f84",
-    "docs/validation/vulkan-render.md": "b67c4d71c6dbe7283c5bfc3af5235efab29ab36397a6adebed7833238dbc36dd",
     "tests/fixtures/vulkan-render.c": "e3e9e351943db72a801f5902247413d661d35189b98078d59aa59390c82c50b6",
     "tests/fixtures/vulkan-render.frag": "9ae7204b484e12bcf8b16b1917b1dbd882ebbcae925b7b38506ecfd86514efa1",
     "tests/fixtures/vulkan-render.vert": "ec2201f74382bd77ed0c35d5d9a2a99e6b28d7d331ef9a5e1afd5d6c95f8535f",
     "tests/integration/vulkan-render.py": "5ec985cb4df458e5de1fc1b374e038ed34fa09e183cdf93ce2602303d21c68b6",
     ".github/workflows/linux.yml": "41157dfba219e4aa5d2a47f456e3709d1a3aa7185ff42eae836ba07db61aa128",
-    "README.md": "1efbc875c8746c5d2106f150d4a6a04147fbb597328b8905d0d69d1177d22fe3",
     "accelerator/vulkan/entrypoints.inc": "707b86d70a3327ceaf33d4523be2a91d4a0f643e6b84a62f718b61bd109bf01b",
     "accelerator/vulkan/icd.c": "9c952c5835cabb3934f3431af7f2a78cd20cf19959ad2a29927b8ac5ff406629",
     "apps/ios/Trames/LocalVulkanProbe.swift": "a5b7cca33f2c3e58531dbf13920cfc2674a0ae27c41cecdfcdbe61964abeeb64",
@@ -38,9 +64,6 @@
     "crates/trames-vulkan/examples/lifecycle.rs": "d068e135873bd369a1dd49ccc6a6a384ac2f390288959eb16429a25c5a2c2311",
     "crates/trames-vulkan/src/backend.rs": "1f6d4755125477c43627f4fe3b9ed80b9c96a01e112d96ac23a5491387f44fae",
     "crates/trames-vulkan/src/lib.rs": "eb0ee16d769d49517127d20de308b59aaf0df32c531055c6ba1b350deb00f187",
-    "docs/architecture/vulkan-compute.md": "8a11534bc91fd97444229f376c511fd6e191a6f4260c4bb885725ca403888f06",
-    "docs/roadmap/README.md": "de0c738b1141ad453fb0e0fe59975f01af0059ffceac5b57b30da34c6d5bba0a",
-    "docs/validation/vulkan-compute.md": "fd3c5899e115455beb98e70c402da8bcdf21392a3a97623c976a5862a1fdd06b",
     "scripts/build-vulkan-fixtures.sh": "8311bfd43e6cc242f016795ac741b82e74bf77ec4d3afdd428eed1aea4da4d45",
     "scripts/build-vulkan-guest.sh": "998455704fc7ce2f923c3de19548769c7dd7b943ab35d52fc4fe6e66ad1c1220",
     "tests/fixtures/vulkan-compute.c": "30d71e71e349cc6f846d55b9bf47e104c05bdbe0396bdfbf2c70d76bacb360c8"
@@ -128,5 +151,21 @@
         "abandoned compiler/device teardown: no result publication"
       ]
     }
+  },
+  "linux_current": {
+    "run": "https://github.com/kb5000/trames/actions/runs/38680131927",
+    "runtime_commit": "5b7da3a612bc9fc96297574c2dcaca8602aa2467",
+    "status": "in_progress"
+  },
+  "validation_layer": {
+    "name": "VK_LAYER_KHRONOS_validation",
+    "version": "1.4.309.0",
+    "debian_package_sha256": "ff7e18ef011ff448ac799daf16134a676ccf9c5987e1a9f4b779611ed5fc3b0d",
+    "synchronization": "VK_LAYER_ENABLES=VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT",
+    "native_layer_insertion_confirmed": true,
+    "guest_backend_layer_insertions_confirmed": 2,
+    "guest_captured_stderr_sha256": "c1e9294fecefcbe4bf7fd6a290fde270c548a567fc2fa332fbdf62592709847c",
+    "native_log_sha256": "8895b0e7010f06b343d21364f50cb23d9649ef3ce3477ec40cbfe814a1e476c8",
+    "errors": 0
   }
 }

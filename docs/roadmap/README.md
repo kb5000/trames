@@ -8,11 +8,12 @@ partial/unaligned mapping now extend that verified subset.
 Owned native pipeline compilation allows other guest threads to continue, and
 direct page transfer removes the full-range upload/readback staging buffer.
 Apple device/simulator builds link original MoltenVK; the exact runtime passes
-all eight simulator tests, including real Metal compute (no skips). Physical iPad
+all eleven simulator tests, including real Metal compute, rasterization and
+visible preview (no skips). Physical iPad
 acceptance remains for a grouped release.
 Offscreen graphics now renders a vertex/fragment color triangle through native
 images/render passes, with pixel readback and an iPad preview entry. Native and
-1/4-CPU guest exports match; current-source Metal/UI acceptance is pending.
+1/4-CPU guest exports match; exact-source Metal/UI acceptance also passes.
 [Rendering verification](../validation/vulkan-render.md) records this new scope.
 Follow-up stages extend graphics resources and host-owned surfaces/swapchains.
 [Issue #21](https://github.com/kb5000/trames/issues/21) and

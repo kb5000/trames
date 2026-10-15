@@ -20,7 +20,7 @@ main 进一步修复[匿名 ELF 与 fd 执行](docs/validation/fd-exec.md)：`/p
 
 ## 快速运行
 
-开发分支已加入[实验性 Vulkan 计算与离屏图形桥](docs/architecture/vulkan-compute.md)：原版 Linux loader 通过标准 guest ICD 调用原生 Vulkan；iPad 静态链接原版 MoltenVK／Metal。选定计算接口已有 Metal 模拟器验证；新增图像、渲染通道和图形流水线，可从 iPad 会话菜单打开“GPU 渲染示例”，显示 Linux 程序实际绘制的彩色三角形。[离屏渲染验证](docs/validation/vulkan-render.md)已通过本地 1/4 核与原生像素比较，当前图形版本的 Apple CI 待验收。窗口、交换链和更多图形资源继续迭代，真机验收留待后续版本；[Issue #21](https://github.com/kb5000/trames/issues/21)。
+开发分支已加入[实验性 Vulkan 计算与离屏图形桥](docs/architecture/vulkan-compute.md)：原版 Linux loader 通过标准 guest ICD 调用原生 Vulkan；iPad 静态链接原版 MoltenVK／Metal。选定计算接口已有 Metal 模拟器验证；新增图像、渲染通道和图形流水线，可从 iPad 会话菜单打开“GPU 渲染示例”，显示 Linux 程序实际绘制的彩色三角形。[离屏渲染验证](docs/validation/vulkan-render.md)已通过本地 1/4 核与原生像素比较，当前版本已通过 Apple CI 的真实 Metal 渲染与界面截图验收（11 项测试，零失败或跳过）。窗口、交换链和更多图形资源继续迭代，真机验收留待后续版本；[Issue #21](https://github.com/kb5000/trames/issues/21)。
 
 需要 Rust 1.90.0；交叉构建 BusyBox 和运行差分测试还需要 Python 3、GNU AArch64 GCC/Binutils、Make、curl、bzip2 和 QEMU user-mode。Debian/Ubuntu 可安装：
 

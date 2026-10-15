@@ -31,16 +31,34 @@ tests exercise the emulator boundary, not valid Vulkan application concurrency.
 Existing compute default/specialization/semaphore/mapping and real embedding
 regressions still pass.
 
+The same native and 1/4-CPU guest render path also passes with the official
+Khronos validation layer 1.4.309.0 and synchronization validation enabled.
+Loader diagnostics confirm the layer is inserted into both guest host backends;
+captured native/guest logs contain no VUID or synchronization-hazard reports.
+This checks actual native API usage in addition to pixel results.
+
 The iPad menu's “GPU 渲染示例” uses a temporary offline Alpine environment and
 the original signed Vulkan loader. It runs the same guest checks, exports the
 GPU-produced PPM through the real file-transfer ABI and displays it with UIKit.
 The image decoder rejects incomplete/unexpected data. Apple CI additionally
 requires native Metal (rejects llvmpipe), retains a PNG of the actual GPU pixels,
 and runs a UI test that waits for the displayed image and captures a screenshot.
-Current-source Apple acceptance is pending; the earlier compute-only source
-passed [38673755415](https://github.com/kb5000/trames/actions/runs/38673755415),
-and its full Linux workflow
+Exact runtime [`5b7da3a`](https://github.com/kb5000/trames/commit/5b7da3a612bc9fc96297574c2dcaca8602aa2467)
+passed [Apple CI 38680131876](https://github.com/kb5000/trames/actions/runs/38680131876):
+both device/simulator apps link; all 11 tests pass, zero failures or skips,
+including real Metal rasterization and the visible preview screenshot. The
+[exported summary](vulkan-render-metal-summary.json) records arm64 iOS 18.5
+(22F77), iPad Pro 11-inch (M4) **simulator**, on the runner's Metal GPU. This is
+not physical iPad acceptance or an iPad performance claim. The earlier compute-only
+source's full Linux workflow
 [38673755292](https://github.com/kb5000/trames/actions/runs/38673755292) passed.
+The unmodified [Metal pixel PNG](assets/vulkan-metal-triangle.png) and
+[visible iPad simulator screenshot](assets/vulkan-ipad-preview.png) are extracted
+from the retained XCTest attachments; their source IDs and SHA-256 values are
+recorded in [evidence](vulkan-render-data.json).
+
+![Native Metal output](assets/vulkan-metal-triangle.png)
+
 Physical iPad acceptance remains for a grouped release. The current v0.14.0/build
 15 Release is unchanged.
 
@@ -61,4 +79,4 @@ Select the actual native driver manifest for the host. Pixel files are under
 has readback/file-transfer costs. It does not provide WSI surfaces/swapchains,
 continuous presentation, window/input protocols, texture sampling, vertex/index
 buffers, depth/stencil, blending or a full Vulkan conformance claim. Those are
-the following graphics stages, rather than software substitutions for the scene.
+the following graphics stages.
