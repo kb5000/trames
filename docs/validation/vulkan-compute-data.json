@@ -1,6 +1,6 @@
 {
   "date": "2026-10-15",
-  "base_commit": "e70a85bc0a03c16a7ae742425f0eee01866e085c",
+  "base_commit": "44599c799c455674217e5ced798206e3519078a7",
   "issue": "https://github.com/kb5000/trames/issues/21",
   "scope": "experimental headless Vulkan compute subset; not Vulkan 1.0 conformance",
   "public_entrypoints": 68,
@@ -27,10 +27,12 @@
     "commit": "db66022459ffb663aa2b50f6b018bc2e124f5edf",
     "public_api_static_archive": true,
     "ios_compile": "current Apple SDK linking running in CI; earlier local device archive check predates compiler-rt dependency",
-    "sdk_link_simulator_gpu": "both app links passed on f5a2d4b; actual Metal exposed upstream bias name collision in 38668624356; stripped nonsemantic debug names; corrected-source compute pending",
+    "sdk_link_simulator_gpu": "e70a85b compiled shaders, then Apple SimMetalHost argument-encoder assertion aborted its XPC connection; simulator direct-binding correction pending",
     "physical_ipad": "pending",
     "shader_normalization": "remove OpName/OpMemberName; preserve IDs, entrypoint strings, decorations and executable instructions",
-    "failed_run_summary_sha256": "0fbbe7e1d4a7c28d04ce52d58630fd6e5d1822d0c54895e3d945f25f5b457a18"
+    "failed_run_summary_sha256": "0fbbe7e1d4a7c28d04ce52d58630fd6e5d1822d0c54895e3d945f25f5b457a18",
+    "simulator_binding_mode": "MoltenVK per-instance layer setting USE_METAL_ARGUMENT_BUFFERS=false; original native direct bindings",
+    "simulator_crash_sha256": "2a1adeb136aed6d03cfae519d87dd8630d94d58e35e9057881c0a27cb97cbe90"
   },
   "budget": {
     "session_allocated_memory_bytes": 134217728,
@@ -48,12 +50,12 @@
     "tests/fixtures/bin/vulkan-compute.spv": "46a8dfd85c78c7ef9f39212b0699503b4800184a04b1e8a4bd81b07143a44072"
   },
   "binaries_sha256": {
-    "target/release/trames-run": "6fe9828914603851015eb0d5569887d40c5b6af1757f8072eeada1c2f1ad3971",
-    "target/release/libtrames_ffi.so": "776f490c78a7a32a5f42d91d42920f56b61a6b93952c586f2e1da39ae6ec5d6a",
+    "target/release/trames-run": "2e3232696765369a13a868ddcaccd03ff1a7a8aea730b8eadcbf7f966d5ceac2",
+    "target/release/libtrames_ffi.so": "648cbc775ec45babfafd437bf0ee642bcb4cc13bcf0fb25fa90ac14f8a23bc79",
     "target/vulkan-guest/libtrames_vulkan_icd.so": "a53a3515542ef3859837caf6ef77848d3663469250a4120f32e05994f0445b14",
     "tests/fixtures/bin/vulkan-compute": "00021efe8f239ee40b38a3a53075a915d7a746c1d9d38a0fbc5adda4244b1b7d",
     "tests/fixtures/bin/vulkan-compute-host": "23796ffa69c2c7960bd4daeb82e43bba843611cc312859ce203787d58a7b8dd4",
-    "target/release/examples/lifecycle": "4929834804aaf1f5f4f06589234c38b7cc54df680b67b6da9cc369bde50ba68c"
+    "target/release/examples/lifecycle": "9f6c76e4daf5821cf4cd9988ab3626197d34f9db3f80e7422cd0ce0602f5637b"
   },
   "native_source_archive_sha256": "f093ccc56d3acbc168764845bf04fc8a77a9dfb2701f8176572dd35b65205717",
   "source_sha256": {
@@ -64,7 +66,7 @@
     "apps/ios/TramesTests/LocalVulkanTests.swift": "32115975d4b12d6024e32955703b511f7b266111276e1a58f0db1bbb2f1d6243",
     "crates/trames-vulkan/Cargo.toml": "02020e9db3635cae03a30cc71d756162a0ffa72477ec7063adc4fd57cc5a5c96",
     "crates/trames-vulkan/build.rs": "99a55acd2681e496b17b123374094cc7f2baaaa87c92d8974404f6898cce3e37",
-    "crates/trames-vulkan/src/backend.rs": "4d5402a33958fdf44f234434eed26e74e6111d0e00a5aa43c04ee3daf64d98b0",
+    "crates/trames-vulkan/src/backend.rs": "a16548dac88e7d929cf30a5a4403b2d32e79871e4b6c698506c9ff4699cc510b",
     "crates/trames-vulkan/src/budget.rs": "f8d40f2a9fe5140593a8e3aa9ce90b2d4e0c7338e55f402930fa01f702c846a1",
     "crates/trames-vulkan/src/lib.rs": "21a3d9a7bdf700abcdb013c564f4851ae3d77dc497fcbe3a1fa88ea419646676",
     "scripts/build-vulkan-fixtures.sh": "f313222481a17a8c7cae3e579acf8b291489c54f2b8d3174f6ca59ea309e9d46",
@@ -234,7 +236,7 @@
   },
   "current_logs": {
     "integration": {
-      "sha256": "f73f804614dc9de8317693032996df5cf7ae594f2a42169819c0dd8bc72557a4",
+      "sha256": "fb20fa4a70db3cbf57cb39a675ee25085608301e5b51d4a7626b921149a224f9",
       "tail": [
         "compute round 2: 4096 uint32 values correct",
         "compute round 3: 4096 uint32 values correct",
@@ -247,7 +249,7 @@
       ]
     },
     "workspace": {
-      "sha256": "c151448d6c98a24ca35b86fb16bbf73275e240f3bc58a66550655e383640ab97",
+      "sha256": "5c86500fabb906d6d3889dc7f95e8997b6960a17112b10523dac6214ab8c2628",
       "tail": [
         "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
         "",
@@ -301,13 +303,13 @@
       ]
     },
     "release_build": {
-      "sha256": "7c3777fe5b3eddf6467f7986544c5ddfe79f73c7cf525434d2d79a75d3701684",
+      "sha256": "d45d5187b145e1c2f11a476f2aa535d0a2df2c083ce3fb2afa15bfbb55776728",
       "tail": [
         "   Compiling trames-vulkan v0.14.0 (/workspace/trames/crates/trames-vulkan)",
         "   Compiling trames-core v0.14.0 (/workspace/trames/crates/trames-core)",
-        "   Compiling trames-cli v0.14.0 (/workspace/trames/crates/trames-cli)",
         "   Compiling trames-ffi v0.14.0 (/workspace/trames/crates/trames-ffi)",
-        "    Finished `release` profile [optimized] target(s) in 56.84s"
+        "   Compiling trames-cli v0.14.0 (/workspace/trames/crates/trames-cli)",
+        "    Finished `release` profile [optimized] target(s) in 40.54s"
       ]
     },
     "sudo": {
@@ -360,10 +362,10 @@
       ]
     },
     "native_lifecycle": {
-      "sha256": "5e69cc6302d6156c558a0b0fee6d026a673299a63208fcd0778b558e057bdb43",
+      "sha256": "527d985eebfc49804eb4eab440d98d6b9c167d00c3e5109e177dbedeedef5e30",
       "tail": [
         "   Compiling trames-vulkan v0.14.0 (/workspace/trames/crates/trames-vulkan)",
-        "    Finished `release` profile [optimized] target(s) in 11.48s",
+        "    Finished `release` profile [optimized] target(s) in 9.10s",
         "     Running `target/release/examples/lifecycle tests/fixtures/bin/vulkan-compute.spv`",
         "260 live-output unmaps: faults, no ID publication/table exhaustion",
         "260 post-preflight backing I/O failures: native outputs rolled back",
@@ -372,16 +374,16 @@
       ]
     },
     "lifecycle_clippy": {
-      "sha256": "d07d5c2a33970f7bfaa5dfc2189759146bcfb1f6dfe7d869fab842b040ede571",
+      "sha256": "c97ffdc0292c1b4726ab9284275832075486444b970fdaba2dc047f5d2679e81",
       "tail": [
         "    Checking trames-bridge v0.14.0 (/workspace/trames/crates/trames-bridge)",
         "    Checking trames-vfs v0.14.0 (/workspace/trames/crates/trames-vfs)",
         "    Checking trames-linux v0.14.0 (/workspace/trames/crates/trames-linux)",
         "    Checking trames-distro v0.14.0 (/workspace/trames/crates/trames-distro)",
         "    Checking trames-core v0.14.0 (/workspace/trames/crates/trames-core)",
-        "    Checking trames-cli v0.14.0 (/workspace/trames/crates/trames-cli)",
         "    Checking trames-ffi v0.14.0 (/workspace/trames/crates/trames-ffi)",
-        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6.21s"
+        "    Checking trames-cli v0.14.0 (/workspace/trames/crates/trames-cli)",
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.39s"
       ]
     }
   },
@@ -397,9 +399,9 @@
         "gpu_direct_bytes": 147328,
         "gpu_download_bytes": 114624,
         "gpu_peak_pending": 2,
-        "gpu_peer_instructions": 16666,
+        "gpu_peer_instructions": 28954,
         "gpu_upload_bytes": 32704,
-        "gpu_wait_seconds": 0.001776125
+        "gpu_wait_seconds": 0.001383897
       },
       "4": {
         "gpu_buffered_bytes": 0,
@@ -407,9 +409,9 @@
         "gpu_direct_bytes": 147328,
         "gpu_download_bytes": 114624,
         "gpu_peak_pending": 2,
-        "gpu_peer_instructions": 24640,
+        "gpu_peer_instructions": 32832,
         "gpu_upload_bytes": 32704,
-        "gpu_wait_seconds": 0.001113972
+        "gpu_wait_seconds": 0.001712771
       }
     }
   },

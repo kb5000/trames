@@ -77,6 +77,13 @@ Limits include 256 retained native objects per context, 64 in-flight submissions
 contexts. Native driver/pipeline bookkeeping is additional memory; these logical
 budgets do not establish an exact RSS or physical GPU capacity.
 
+iOS simulator instances use MoltenVK's original direct resource-binding path
+through per-instance `VK_EXT_layer_settings`. The iOS 18.5 `SimMetalHost` aborts
+inside argument-encoder buffer deserialization during descriptor allocation;
+`MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS=false` avoids that simulator path while
+executing the same Metal workload. No process-wide environment mutation or
+software GPU replacement is used.
+
 ## Memory and lifetime
 
 Mapped memory currently has separate native and guest storage. `vkMapMemory`

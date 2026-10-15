@@ -84,6 +84,12 @@ Shader ingress now strips nonsemantic debug names and retains executable words,
 entrypoint strings and specialization decorations; a word-level regression and
 the unchanged named-shader native/guest lab verify that normalization. Actual
 Metal computation must pass the corrected source.
+That source progressed past compilation, but the simulator's `SimMetalHost`
+aborted in `MTLDeserializer::argumentEncoderSetValues`, taking Trames down via
+its interrupted XPC connection. The Trames stack was in MoltenVK descriptor-set
+allocation, outside guest memory access. Simulator instances now select original
+MoltenVK direct bindings through scoped layer settings; corrected Metal execution
+remains required.
 
 ## Reproduction
 

@@ -621,13 +621,33 @@ impl Backend {
                 load_entry().map_err(|_| Failure::Vk(vk::Result::ERROR_INITIALIZATION_FAILED))?;
             let extensions = unsafe { entry.enumerate_instance_extension_properties(None) }?;
             let portability=extensions.iter().any(|e| unsafe { std::ffi::CStr::from_ptr(e.extension_name.as_ptr()) }==ash::khr::portability_enumeration::NAME);
-            let names = if portability {
+            let mut names = if portability {
                 vec![ash::khr::portability_enumeration::NAME.as_ptr()]
             } else {
                 Vec::new()
             };
+            let simulator = cfg!(all(target_os = "ios", target_abi = "sim"));
+            if simulator {
+                if !extensions.iter().any(|e| unsafe { std::ffi::CStr::from_ptr(e.extension_name.as_ptr()) } == ash::ext::layer_settings::NAME) {
+                    return Err(vk::Result::ERROR_INITIALIZATION_FAILED.into());
+                }
+                names.push(ash::ext::layer_settings::NAME.as_ptr());
+            }
+            // The iOS 18.5 simulator's SimMetalHost aborts while deserializing
+            // argument-encoder buffer slots. Select MoltenVK's original direct
+            // resource-binding path per instance, without global env mutation.
+            let argument_buffers = vk::FALSE;
+            let settings = [vk::LayerSettingEXT {
+                value_count: 1,
+                p_values: (&argument_buffers as *const vk::Bool32).cast(),
+                ..vk::LayerSettingEXT::default()
+                    .layer_name(c"MoltenVK")
+                    .setting_name(c"MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS")
+                    .ty(vk::LayerSettingTypeEXT::BOOL32)
+            }];
+            let mut layer_settings = vk::LayerSettingsCreateInfoEXT::default().settings(&settings);
             let app = vk::ApplicationInfo::default().api_version(vk::API_VERSION_1_0);
-            let info = vk::InstanceCreateInfo::default()
+            let mut info = vk::InstanceCreateInfo::default()
                 .application_info(&app)
                 .enabled_extension_names(&names)
                 .flags(if portability {
@@ -635,6 +655,9 @@ impl Backend {
                 } else {
                     vk::InstanceCreateFlags::empty()
                 });
+            if simulator {
+                info = info.push_next(&mut layer_settings);
+            }
             let native = unsafe { entry.create_instance(&info, None) }?;
             let instance = Arc::new(Instance {
                 native,
