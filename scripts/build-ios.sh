@@ -6,6 +6,7 @@ if [[ $(uname -s) != Darwin ]]; then
   exit 1
 fi
 platform=${1:-simulator}
+export IPHONEOS_DEPLOYMENT_TARGET=17.0
 case "$platform" in
   simulator) rust_target=aarch64-apple-ios-sim; sdk=iphonesimulator; destination='generic/platform=iOS Simulator' ;;
   device) rust_target=aarch64-apple-ios; sdk=iphoneos; destination='generic/platform=iOS' ;;
