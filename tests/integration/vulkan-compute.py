@@ -40,7 +40,7 @@ with tempfile.TemporaryDirectory(prefix='trames-vulkan-compute-') as directory:
             '--file', '/usr/share/vulkan/icd.d/trames.json=' + str(ROOT / 'target/vulkan-guest/trames.json'),
             '--file', '/tmp/compute.spv=' + str(fixtures / 'vulkan-compute.spv'),
             '--exec-file', '/tmp/vulkan-compute=' + str(fixtures / 'vulkan-compute'),
-            '--guest', '/tmp/vulkan-compute', '/tmp/compute.spv'], capture_output=True, timeout=120)
+            '--guest', '/tmp/vulkan-compute', '/tmp/compute.spv', 'bridge-check'], capture_output=True, timeout=120)
         if p.returncode != 0 or p.stdout != reference.stdout:
             print(p.stdout.decode(errors='replace'), flush=True)
             print(p.stderr.decode(errors='replace'), flush=True)
@@ -48,7 +48,7 @@ with tempfile.TemporaryDirectory(prefix='trames-vulkan-compute-') as directory:
             print(log.stdout.decode(errors='replace'), flush=True)
         assert p.returncode == 0 and p.stdout == reference.stdout, p
         assert b'Vulkan driver:' in p.stderr and b'ERROR' not in p.stderr, p.stderr
-        print(f'{cpus}-CPU guest standard Vulkan: three compute submissions, 4096 values, flush/invalidate, reset, waits and teardown match native driver', flush=True)
+        print(f'{cpus}-CPU guest standard Vulkan: default and specialized compute, binary semaphore chains/reuse, batch boundaries, empty submissions and rejection rollback match native driver', flush=True)
         print(p.stderr.decode(), end='', flush=True)
         disabled = subprocess.run([runner, '--storage', str(tmp / ('store-' + cpus)), '--cpus', cpus,
             '--max-instructions', '1000000000', '--env', 'VK_DRIVER_FILES=/usr/share/vulkan/icd.d/trames.json',
@@ -88,7 +88,7 @@ with tempfile.TemporaryDirectory(prefix='trames-vulkan-compute-') as directory:
             output.extend(buffer.raw[:n]);assert time.monotonic()-began<120,output[-4000:]
             assert b'VULKAN_RESULT:134' not in output and b'VULKAN_RESULT:1\r\n' not in output,output
             time.sleep(.01)
-        assert b'compute round 3: 4096 uint32 values correct' in output and b'vulkan-compute-ok' in output,output
+        assert b'compute round 3: 4096 uint32 values correct' in output and b'compute semaphore chain 2: 4096 specialized uint32 values correct' in output and b'binary semaphore reuse and empty submissions: ok' in output and b'partial mapping, offset flush/invalidate and remap persistence: ok' in output and b'vulkan-compute-ok' in output,output
         print('Real embedding ABI: automatic ICD installation, signed loader, compute and teardown passed',flush=True)
     finally:
         api.trames_session_close(handle)

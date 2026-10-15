@@ -57,6 +57,8 @@
     if(!strcmp(name,"vkCmdPushConstants"))return (PFN_vkVoidFunction)vkCmdPushConstants;
     if(!strcmp(name,"vkCreateFence"))return (PFN_vkVoidFunction)vkCreateFence;
     if(!strcmp(name,"vkDestroyFence"))return (PFN_vkVoidFunction)vkDestroyFence;
+    if(!strcmp(name,"vkCreateSemaphore"))return (PFN_vkVoidFunction)vkCreateSemaphore;
+    if(!strcmp(name,"vkDestroySemaphore"))return (PFN_vkVoidFunction)vkDestroySemaphore;
     if(!strcmp(name,"vkResetFences"))return (PFN_vkVoidFunction)vkResetFences;
     if(!strcmp(name,"vkGetFenceStatus"))return (PFN_vkVoidFunction)vkGetFenceStatus;
     if(!strcmp(name,"vkWaitForFences"))return (PFN_vkVoidFunction)vkWaitForFences;

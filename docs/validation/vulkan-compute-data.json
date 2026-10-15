@@ -1,9 +1,9 @@
 {
-  "date": "2026-10-14",
-  "base_commit": "96b04ffb2a74e74084242983735d161bc80c4945",
+  "date": "2026-10-15",
+  "base_commit": "3b59cd9c3c2536835473058077f4ada1755c3a20",
   "issue": "https://github.com/kb5000/trames/issues/21",
   "scope": "experimental headless Vulkan compute subset; not Vulkan 1.0 conformance",
-  "public_entrypoints": 66,
+  "public_entrypoints": 68,
   "wire": {
     "profile": 65542,
     "function": 1,
@@ -19,15 +19,15 @@
   "operation": "uint32 value=value*3+7",
   "original_guest_loader": "Alpine-signed vulkan-loader=1.4.313.0-r0",
   "native_local_reference": "Mesa 25.0.7 Lavapipe/llvmpipe, LLVM 19.1.7, CPU software Vulkan",
-  "rust_tests_passed": 280,
-  "embedding_gpu_test": "automatic ICD installation, signed loader, three compute rounds, teardown passed",
+  "rust_tests_passed": 283,
+  "embedding_gpu_test": "automatic ICD installation, signed loader, default/specialized compute, binary semaphore reuse/empty submits, mapped memory and teardown passed",
   "activation_off_test": "original loader returns incompatible driver with ICD still installed; passed at 1/4 CPUs",
   "apple_backend": {
     "version": "MoltenVK 1.4.2",
     "commit": "db66022459ffb663aa2b50f6b018bc2e124f5edf",
     "public_api_static_archive": true,
     "ios_compile": "passed with actual device archive configured",
-    "sdk_link_simulator_gpu": "pending exact-source Apple workflow",
+    "sdk_link_simulator_gpu": "pending corrected-source Apple workflow; frameworks explicitly declared for final static app link",
     "physical_ipad": "pending"
   },
   "budget": {
@@ -41,33 +41,33 @@
     "target/alpine-download/alpine-minirootfs-3.22.6-aarch64.tar.gz": "821565fa8f3953eefd12497b166b4b50add2f7c57fb312e75862f5867e06fefe",
     "target/alpine-download/vulkan-loader-1.4.313.0-r0.apk": "8b0a25c122015a5732ad548ef27a1e4dbd040b167c5852559f77b7fe99c08084",
     "target/alpine-download/musl-1.2.5-r12.apk": "ac281d1e7f9e9c447c51e309317b975f48be6edaf3ab91ae73b959cf86703782",
-    "tests/fixtures/bin/vulkan-compute.spv": "9d3279ae21128353aded74647319d3051ce42ecb8c66e8dc6e2acf561e296c9c"
+    "tests/fixtures/bin/vulkan-compute.spv": "46a8dfd85c78c7ef9f39212b0699503b4800184a04b1e8a4bd81b07143a44072"
   },
   "binaries_sha256": {
-    "target/release/trames-run": "6ebf85b77e62cbab4fe55349ef5e56ec038f0a0b23b14e9914c83ab962c26fb5",
-    "target/release/libtrames_ffi.so": "0fc7c631963a32cb4d49975648ba98c32fb1038b3377f9e54f899b8ae9710b59",
-    "target/vulkan-guest/libtrames_vulkan_icd.so": "be224ff7823f0231dfaa710cd713c4d9908c60a08ecc09e50ae7a451e0a621eb",
-    "tests/fixtures/bin/vulkan-compute": "84eb54ec71eee46af7190021c5c719b3f0473fa366f0b3eef9a55e0ee0e23e54",
-    "tests/fixtures/bin/vulkan-compute-host": "1d7cc9a08e2a19bab3ee7adda2dc89bbd015f6950fc8bbf01408c11345160914"
+    "target/release/trames-run": "935eff58e658702a44f59317174ee506c0720c18bfc5fea252a5f12bb32718bd",
+    "target/release/libtrames_ffi.so": "a35743567fec1189d393e030d85416c23cb305c753cb4e29cc93cc42c414f12b",
+    "target/vulkan-guest/libtrames_vulkan_icd.so": "be3dad533e38533fa8c79b341191f0038f91e27b30fd63bb0369423adc00d7bb",
+    "tests/fixtures/bin/vulkan-compute": "184b0202ad798320b986aad5e865a6b388d7e6eba13c30b5bba9a23c79cd5659",
+    "tests/fixtures/bin/vulkan-compute-host": "8bfded0baf3a4e4e155b5875e4cb02440a9aa4271d4e8ff9abee26b5e252a1cd"
   },
   "native_source_archive_sha256": "f093ccc56d3acbc168764845bf04fc8a77a9dfb2701f8176572dd35b65205717",
   "source_sha256": {
     "accelerator/vulkan/calls.S": "6b5a0aa9a39039b059d115b42330646e8eb30312ea9dd75c40a838887b3a08d8",
-    "accelerator/vulkan/entrypoints.inc": "64184cbe0fd7f1d4d8b1cef637cc4de225e660715a219f7bd72eb8836ab1993c",
-    "accelerator/vulkan/icd.c": "9b60bb966c1bcbfdb5cbf873eac341000831a7dc59498ffe04996e894c8da037",
-    "apps/ios/Trames/LocalVulkanProbe.swift": "7ef9870c5a8cc00498a92d44897d563443d245e87b491bf5f9f9584757c329a1",
-    "apps/ios/TramesTests/LocalVulkanTests.swift": "bda40a9e9b7d4d4079e5416f10aff1970d985b552bb4b060f62bc667d7e925df",
+    "accelerator/vulkan/entrypoints.inc": "2e00318209bfaa05f6cc34fbcab4ab86aa8967625851b22c8b6e6f1f9905d255",
+    "accelerator/vulkan/icd.c": "a8109971daa396c1b2576d4c233661bd27bc3908a6063f500f2952766dc2985d",
+    "apps/ios/Trames/LocalVulkanProbe.swift": "939178420044070c7ac4b99cb00ba00dac214fca92053c7dca04613c75eda093",
+    "apps/ios/TramesTests/LocalVulkanTests.swift": "787ab7d935e06b18ab439eb14d0e161850cc34f63948188a8876f5b05581ec46",
     "crates/trames-vulkan/Cargo.toml": "02020e9db3635cae03a30cc71d756162a0ffa72477ec7063adc4fd57cc5a5c96",
     "crates/trames-vulkan/build.rs": "daf684a62dd63e7e6ec01b66af3d25c7297c79fabeb522ddc5eb76c5ae7a3aab",
-    "crates/trames-vulkan/src/backend.rs": "c672ce072ca964f23b61f42aa45b92967ae5c9ca04ea815a0b8c398207d97805",
+    "crates/trames-vulkan/src/backend.rs": "22f3b56b91ae9193fa4f668f0ca4f01448c48a7ce8e22fe169854ace5e302cbc",
     "crates/trames-vulkan/src/budget.rs": "2dce9e983e4956a13beab2c6a5a322367a7b0476ec0d4d65a2eb5c63fd41c5e5",
     "crates/trames-vulkan/src/lib.rs": "8a280d23d5190cd7d634cd6c34b5c46dde92a214cb356151c57a850789c89f46",
     "scripts/build-vulkan-fixtures.sh": "88bcb7f1216b7052cea93106a3ded97cbc8fdeb875e999d132c6bc241ff6710f",
-    "scripts/build-vulkan-guest.sh": "31a260bfe0e436ad33139a562931c05a1dd14517cc947131a1abb10def187cc7",
+    "scripts/build-vulkan-guest.sh": "6edcb3fb86fec3b13a2c2e5e96b6d471b6554d7e4745a0f7a5f54c6f60c0c1f0",
     "scripts/prepare-vulkan.py": "ac913159e7b52fdaaf87e74f4950be5f06a40d2dc15ae985ef1087a0cf089255",
-    "tests/fixtures/vulkan-compute.c": "797a5d736707bbd63a84b1e6ba9ab68dfc503b59b3472d10277d223cc8fe68a7",
-    "tests/fixtures/vulkan-compute.comp": "1e156eebb88f5e2d3b85c8c54fac20b34e16d191baf11358b55ac7256640b16f",
-    "tests/integration/vulkan-compute.py": "b4ebbcc571f23b5dec71602361cccbf7ce353b8c072a88c47e94fd233bd7f1be",
+    "tests/fixtures/vulkan-compute.c": "de20df8743c1f4488307e382e1dc713917a90a5733d7d0cd6bc8b8f44575ffa2",
+    "tests/fixtures/vulkan-compute.comp": "ac868149a64254d563119e7cb937416add43b42b9e1aeed96f901e8f6ab3ea75",
+    "tests/integration/vulkan-compute.py": "81190b07a572e7cc9be78112fa0f16b11d65e3be314616a2d45ab7134ee8bd37",
     ".github/workflows/ios.yml": "4787b2a6744628f0578943b9fd1faf91793171e0d3683da2aa8423133955a35f",
     ".github/workflows/linux.yml": "0c0e4f1993bacbe67eddc40ce810b86163dea456e5bd384cdf3e35687919a9d3",
     "Cargo.toml": "911a35abdaa6eb92e4b43bc9697c107e7e7eee549e6fd8f17e1d852dda2cea1e",
@@ -79,10 +79,11 @@
     "crates/trames-cli/src/main.rs": "b10648ea413d8cf4271affe185f613b906c429a75916d85c9c5869b77f9b0cfc",
     "crates/trames-core/Cargo.toml": "c264557e1c648e542c8b9567d72d3bc566c99c2304dd270377468168e6fe72ba",
     "crates/trames-core/src/lib.rs": "baa7ac4ce2be4c5df9e7674d9dab4bea4007da83b7174db64233c7d49f049659",
-    "crates/trames-core/src/process.rs": "2e2813a5c38708f9dab7d50853b5bfacc1eccfefffcc664780e89a867c7d0ff1",
+    "crates/trames-core/src/process.rs": "fb39a90c62b40999b2a14201b94339309b9c6095e972ac3f81332db4049c6daa",
     "crates/trames-cpu/src/lib.rs": "e4560ae1d721c7ec8b7d8c3eb36b30b349982c0a668e863aba35a4c903e2a845",
     "crates/trames-ffi/src/session.rs": "d11e3ddef93fed772f4396d8ab57a72de993000e583650647a676d706f44c3c9",
-    "scripts/build-ios.sh": "cd58f403c96cd55c8b1f561df15d721c0e0a6c346e518e98cba08e8afead21f5"
+    "scripts/build-ios.sh": "cd58f403c96cd55c8b1f561df15d721c0e0a6c346e518e98cba08e8afead21f5",
+    "apps/ios/project.yml": "d42e4355ac2158a41198da8c4722c6a22c8e44deab27471802005647cb99a7ac"
   },
   "validation": {
     "workspace": {
@@ -203,5 +204,123 @@
       ]
     }
   },
-  "published_ipa": "existing v0.14.0/build15 unchanged; feature needs next grouped release"
+  "published_ipa": "existing v0.14.0/build15 unchanged; feature needs next grouped release",
+  "specialized_chains": {
+    "rounds": 2,
+    "dispatches_per_round": 3,
+    "values_per_dispatch": 4096,
+    "operation": "value=(value*2+11)*2",
+    "constants": "IDs 1/0 at data offsets 4/8",
+    "synchronization": "one submission signals A; two batched submissions wait A/signal B then wait B; reuse each chain"
+  },
+  "additional_cases": [
+    "semaphore-only ordered submissions",
+    "malformed specialization bounds and duplicate IDs rejected",
+    "unsignaled semaphore wait rejected before driver",
+    "invalid wait stage leaves signal available for valid retry",
+    "partial mapping, offset flush/invalidate and remap persistence",
+    "unaligned offset aligns pData-offset"
+  ],
+  "initial_ci_failures": {
+    "apple": "38614884248: prerequisite rg missing; portable awk check fixed",
+    "linux": "38614884471: Vulkan passed; M6 FIFO blocked descriptor queried as PTY produced EBADF; rendezvous ordering fixed and regression added"
+  },
+  "current_logs": {
+    "integration": {
+      "sha256": "0ef17a739f94a1d8cc48d38e4bbd5e25147bff7e7a9f21014f581898f1d155c4",
+      "tail": [
+        "compute round 2: 4096 uint32 values correct",
+        "compute round 3: 4096 uint32 values correct",
+        "compute semaphore chain 1: 4096 specialized uint32 values correct",
+        "compute semaphore chain 2: 4096 specialized uint32 values correct",
+        "binary semaphore reuse and empty submissions: ok",
+        "partial mapping, offset flush/invalidate and remap persistence: ok",
+        "unaligned map offset preserves Vulkan pointer alignment: ok",
+        "vulkan-compute-ok"
+      ]
+    },
+    "workspace": {
+      "sha256": "50f7455ec5137fa13029fdb5c4d1405f4c5e2051cd8a0a7d1a8fb2c7acf7b997",
+      "tail": [
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "",
+        "   Doc-tests trames_vulkan",
+        "",
+        "running 0 tests",
+        "",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        ""
+      ]
+    },
+    "clippy": {
+      "sha256": "52920b4efb3abef18de2a0e0125f7d0f7ac27b0d5dbe308ce14e9dbbb8adf9fd",
+      "tail": [
+        "    Checking trames-bridge v0.14.0 (/workspace/trames/crates/trames-bridge)",
+        "    Checking trames-vfs v0.14.0 (/workspace/trames/crates/trames-vfs)",
+        "    Checking trames-linux v0.14.0 (/workspace/trames/crates/trames-linux)",
+        "    Checking trames-distro v0.14.0 (/workspace/trames/crates/trames-distro)",
+        "    Checking trames-core v0.14.0 (/workspace/trames/crates/trames-core)",
+        "    Checking trames-cli v0.14.0 (/workspace/trames/crates/trames-cli)",
+        "    Checking trames-ffi v0.14.0 (/workspace/trames/crates/trames-ffi)",
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.83s"
+      ]
+    },
+    "ios_compile": {
+      "sha256": "7df83faa6b23840c4474675eba6a5feabedce8a4bfe095bbb5e68e50cc9edc8b",
+      "tail": [
+        "    Checking tar v0.4.46",
+        "    Checking flate2 v1.1.10",
+        "    Checking trames-vfs v0.14.0 (/workspace/trames/crates/trames-vfs)",
+        "    Checking trames-linux v0.14.0 (/workspace/trames/crates/trames-linux)",
+        "    Checking trames-distro v0.14.0 (/workspace/trames/crates/trames-distro)",
+        "    Checking trames-core v0.14.0 (/workspace/trames/crates/trames-core)",
+        "    Checking trames-ffi v0.14.0 (/workspace/trames/crates/trames-ffi)",
+        "    Finished `release` profile [optimized] target(s) in 15.12s"
+      ]
+    },
+    "m6_qemu": {
+      "sha256": "34f367635bd481113793443ca4d510cfdf23ee2faca559dca52904e5a1d55999",
+      "tail": [
+        "epoll fault preflight/oneshot/dup lifetime/fairness: ok",
+        "timerfd relative/absolute/fault, epoll_pwait2/signal mask: ok",
+        "AF_UNIX pairs stream/datagram/peek/trunc/fault/fork EOF: ok",
+        "POSIX locks conflict/query/wait/close/split/fork/deadlock: ok",
+        "POSIX locks survive shared pthread exit and killed fork: ok",
+        "trailing slash mkdir/stat/open/symlink semantics: ok",
+        "named FIFO nonblocking/open handshake/fork/EOF/dup/unlink: ok",
+        "QEMU comparisons passed; epoll_pwait2 independently required (QEMU has no entry)"
+      ]
+    },
+    "fixtures": {
+      "sha256": "9feb9022ffa212d171fa7e5523b192bb8f0ffbb8c8855eae990d502fbf8edffa",
+      "tail": [
+        "Verified headers.tar.gz 1a8fef6a5718e84b67530f736c9e5bb5c6fa51be5d7c0e2a2349cc5d31156ea1",
+        "Signed repository inputs: vulkan-loader=1.4.313.0-r0",
+        "tests/fixtures/vulkan-compute.comp"
+      ]
+    },
+    "release_build": {
+      "sha256": "6636e8f443c6d6409f314eea27ef94380c608ec731b085215fb8e94ed68d5eb3",
+      "tail": [
+        "   Compiling trames-vulkan v0.14.0 (/workspace/trames/crates/trames-vulkan)",
+        "   Compiling trames-core v0.14.0 (/workspace/trames/crates/trames-core)",
+        "   Compiling trames-cli v0.14.0 (/workspace/trames/crates/trames-cli)",
+        "   Compiling trames-ffi v0.14.0 (/workspace/trames/crates/trames-ffi)",
+        "    Finished `release` profile [optimized] target(s) in 38.17s"
+      ]
+    },
+    "sudo": {
+      "sha256": "e8d2fc240bb97d727fe335e3b1a5e6e0d8bc03cb32b6a2bd62caf70c006eea64",
+      "tail": [
+        "Signed repository inputs: sudo=1.9.17_p2-r0",
+        "Signed sudo install: passed",
+        "Root/run-as/user escalation and nested PTYs: passed",
+        "Denied user cannot execute or read root-only files: passed",
+        "Real passwd authentication and no password echo: passed",
+        "Interactive input/output and command exit status: passed",
+        "Ctrl-C reaches the foreground command: passed",
+        "Non-PTY invocation and persistent reopen: passed"
+      ]
+    }
+  }
 }

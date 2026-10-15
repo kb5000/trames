@@ -1748,6 +1748,16 @@ impl Kernel {
                     return Ok(None);
                 }
                 let raw = p.cpu.x(0);
+                // A blocking FIFO open reserves a hidden descriptor. Resolve its
+                // rendezvous before descriptor-based PTY inspection, which must
+                // reject that descriptor while the open is still pending.
+                if number == 56
+                    && raw < MAX_FDS as u64
+                    && !p.linux.vfs.fifo_open_ready(raw as u32)?
+                {
+                    p.pending_open = Some(raw as u32);
+                    return Ok(None);
+                }
                 if number == 56
                     && raw < MAX_FDS as u64
                     && a[2] & 0x100 == 0
@@ -1762,13 +1772,6 @@ impl Kernel {
                             p.linux.vfs.set_controlling_terminal(Some(end.pair.id))?;
                         }
                     }
-                }
-                if number == 56
-                    && raw < MAX_FDS as u64
-                    && !p.linux.vfs.fifo_open_ready(raw as u32)?
-                {
-                    p.pending_open = Some(raw as u32);
-                    return Ok(None);
                 }
                 if number == 25 && a[1] == 7 && raw == error(Errno(11)) {
                     let mut owner = p.linux.record_lock_holder(&p.memory, a)?;
@@ -3516,6 +3519,28 @@ mod tests {
         k.processes.get_mut(&1).unwrap().state =
             State::Sleep(Instant::now() + Duration::from_millis(1), 0);
         assert!(k.parallel_timeout() <= Duration::from_millis(1));
+    }
+    #[test]
+    fn session_leader_fifo_open_waits_before_terminal_inspection_and_is_interruptible() {
+        let mut p = process();
+        let mut k = kernel();
+        let mut io = trames_linux::CapturedOutput::default();
+        p.linux.vfs.mknod_at(-100, b"/fifo", 0o10600, 0).unwrap();
+        p.memory.write(0x1000, b"/fifo\0").unwrap();
+        let args = [(-100i64) as u64, 0x1000, 0, 0, 0, 0];
+        k.call(1, &mut p, 56, args, &mut io);
+        assert!(matches!(p.state, State::Blocked(56, _)));
+        let hidden = p.pending_open.unwrap();
+        assert!(p.linux.vfs.fd_kind(hidden).is_err());
+        p.actions[10].handler = 0x4000;
+        Kernel::queue_one(1, &mut p, 10, 1);
+        assert!(k.deliver(1, &mut p).unwrap());
+        assert!(p.pending_open.is_none());
+        assert!(p.linux.vfs.fifo_open_ready(hidden).is_err());
+        // The handler's saved ucontext contains EINTR, not a reserved fd/EBADF.
+        let mut result = [0; 8];
+        p.memory.read(p.cpu.sp + 312, &mut result).unwrap();
+        assert_eq!(u64::from_le_bytes(result), error(Errno(4)));
     }
     #[test]
     fn failed_blocked_epoll_clears_deadline_and_restores_its_temporary_signal_mask() {

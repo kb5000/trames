@@ -20,7 +20,7 @@ enum LocalVulkanProbe {
         let began=Date()
         while try session.status().phase != "running" {
             let status=try session.status()
-            if status.phase == "fault" || Date().timeIntervalSince(began)>30 {throw TramesError.message(status.error ?? "Vulkan session did not start")}
+            if status.phase != "starting" && status.phase != "running" || Date().timeIntervalSince(began)>30 {throw TramesError.message(status.error ?? "Vulkan session did not start")}
             try await Task.sleep(for:.milliseconds(10))
         }
         let packages=try FileManager.default.contentsOfDirectory(at:inputs,includingPropertiesForKeys:nil).filter {$0.pathExtension=="apk"}.sorted {$0.lastPathComponent<$1.lastPathComponent}

@@ -41,13 +41,24 @@ Install the ordinary `vulkan-loader` package with apk.
 
 ## Supported compute operations
 
-The [catalog](../../accelerator/vulkan/entrypoints.inc) contains 66 public
+The [catalog](../../accelerator/vulkan/entrypoints.inc) contains 68 public
 functions plus ICD negotiation exports. The profile supports one instance,
 compute-capable physical device, logical device and queue per address space;
 property queries; buffers and memory; SPIR-V modules; storage/uniform buffer
 descriptors; pipeline layouts and one compute pipeline per create call; primary
 command buffers, dispatch, push constants, barriers, buffer copy/fill; fences,
-resets and idle waits.
+binary semaphores, resets and idle waits. Compute pipeline specialization copies
+up to 64 map entries and 64 KiB of constant data into owned host records, checks
+IDs/offsets/sizes, and passes them to the original driver/compiler.
+
+Queue submission preserves every `VkSubmitInfo` boundary and wait-stage mask.
+One call supports up to 64 records and 64 waits, command buffers and signals in
+each category across the batch. The original driver performs semaphore waits and
+signals asynchronously. With the single-queue profile, a binary wait consumes a
+previously queued signal. Validation changes temporary state only; a rejected
+batch does not consume signals, mark commands pending or submit earlier records.
+Semaphore-only submissions and reuse after a consumed signal are supported.
+Timeline semaphore extensions remain unavailable.
 
 Image capabilities are unavailable, graphics queue flags are masked, optional
 features are zero and extensions are not advertised. Unsupported entrypoints
@@ -65,7 +76,11 @@ budgets do not establish an exact RSS or physical GPU capacity.
 Mapped memory currently has separate native and guest storage. `vkMapMemory`
 returns a guest anonymous mapping. Flush copies guest bytes to retained native
 storage; invalidate copies them back through the interpreter's guest memory API.
-Bounds, mapping identity and noncoherent-atom alignment are checked. HOST_COHERENT
+Bounds, mapping identity and noncoherent-atom alignment are checked. The guest
+mapping aligns `pData-offset` to the native `minMemoryMapAlignment`, including
+unaligned mapping offsets; the underlying anonymous mapping is retained
+separately for unmap/free. Partial flush/invalidate translates allocation offsets
+to mapping-relative guest addresses. HOST_COHERENT
 is cleared even when the host type has it: applications must follow the reported
 properties and explicitly flush/invalidate. Shared storage remains future work.
 
@@ -76,8 +91,8 @@ prior work. Synchronous creation and recording still execute at coordinator
 checkpoints, including shader/pipeline compilation.
 
 Objects retain required memory, layouts and pools. Recorded commands retain
-referenced objects; submissions snapshot their dependency graphs until native
-fences finish. Descriptor updates can release old bindings without invalidating
+referenced objects; submissions snapshot their dependency graphs and retain
+wait/signal semaphores until native fences finish. Descriptor updates can release old bindings without invalidating
 in-flight resources. Destroying an ID removes lookup access while native
 dependencies finish. Address spaces have separate, non-reused opaque IDs;
 CLONE_VM threads share resources. Fork does not duplicate live native Vulkan
@@ -100,8 +115,8 @@ source with the native-source artifact. Published 0.14.0 stays unchanged.
 
 ## Subsequent stages
 
-Expand compute according to actual applications: specialization constants,
-semaphores, more descriptors and `pNext` records, multiple queues and storage
+Expand compute according to actual applications: pipeline caches, more
+descriptors and `pNext` records, multiple queues and storage
 images. Introduce shared guest/GPU backing with explicit remap, COW and completion
 semantics. Move expensive creation work off the coordinator without retaining
 guest slices or serializing unrelated calls.

@@ -15,11 +15,11 @@
 
 struct result { uint64_t value, fallback; };
 extern struct result trames_vulkan_call(uint64_t, const uint64_t *, size_t);
-typedef struct memory_record { uint64_t key,size; void *mapped; size_t length; struct memory_record *next; } Memory;
+typedef struct memory_record { uint64_t key,size; void *base,*mapped; size_t length; struct memory_record *next; } Memory;
 typedef struct dispatch {
     uintptr_t magic; uint64_t key;
     struct dispatch *device, *physical, *queue, *commands, *next;
-    uint64_t parent; uint32_t family;
+    uint64_t parent,map_alignment; uint32_t family;
     pthread_mutex_t lock; Memory *memories;
 } Dispatch;
 #define D(h) ((Dispatch *)(h))
@@ -79,11 +79,12 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(VkPhysicalDevice p,const VkDeviceC
     if(q->flags || q->queueCount!=1)return VK_ERROR_FEATURE_NOT_PRESENT;
     if(info->pEnabledFeatures){const VkBool32 *v=(const VkBool32 *)info->pEnabledFeatures;for(size_t j=0;j<sizeof(VkPhysicalDeviceFeatures)/sizeof(VkBool32);j++)if(v[j])return VK_ERROR_FEATURE_NOT_PRESENT;}
     Dispatch *d=dispatch(0,NULL);if(!d)return VK_ERROR_OUT_OF_HOST_MEMORY;d->device=d;d->family=q->queueFamilyIndex;
-    VkResult r=CALL(8,KEY(p),q->queueFamilyIndex,PTR(&d->key));if(r!=VK_SUCCESS){free_dispatch(d);return r;}*out=(VkDevice)d;return VK_SUCCESS;
+    VkResult r=CALL(8,KEY(p),q->queueFamilyIndex,PTR(&d->key));if(r!=VK_SUCCESS){free_dispatch(d);return r;}
+    r=CALL(57,d->key,PTR(&d->map_alignment));if(r!=VK_SUCCESS){checked(CALL(9,d->key));free_dispatch(d);return r;}*out=(VkDevice)d;return VK_SUCCESS;
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroyDevice(VkDevice device,const VkAllocationCallbacks *allocator) {
     if(!device)return;Dispatch *d=D(device);checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(9,d->key));
-    while(d->memories){Memory *m=d->memories;d->memories=m->next;if(m->mapped)munmap(m->mapped,m->length);free(m);}
+    while(d->memories){Memory *m=d->memories;d->memories=m->next;if(m->mapped)munmap(m->base,m->length);free(m);}
     while(d->commands){Dispatch *c=d->commands;d->commands=c->next;free_dispatch(c);}if(d->queue)free_dispatch(d->queue);free_dispatch(d);
 }
 VKAPI_ATTR void VKAPI_CALL vkGetDeviceQueue(VkDevice device,uint32_t family,uint32_t index,VkQueue *out) {
@@ -99,18 +100,21 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateMemory(VkDevice device,const VkMemoryAl
 }
 VKAPI_ATTR void VKAPI_CALL vkFreeMemory(VkDevice device,VkDeviceMemory mem,const VkAllocationCallbacks *allocator) {
     if(!mem)return;checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(15,KEY(device),(uint64_t)mem));Dispatch *d=D(device);pthread_mutex_lock(&d->lock);
-    for(Memory **p=&d->memories;*p;p=&(*p)->next)if((*p)->key==(uint64_t)mem){Memory *r=*p;*p=r->next;if(r->mapped)munmap(r->mapped,r->length);free(r);break;}pthread_mutex_unlock(&d->lock);
+    for(Memory **p=&d->memories;*p;p=&(*p)->next)if((*p)->key==(uint64_t)mem){Memory *r=*p;*p=r->next;if(r->mapped)munmap(r->base,r->length);free(r);break;}pthread_mutex_unlock(&d->lock);
 }
 VKAPI_ATTR VkResult VKAPI_CALL vkBindBufferMemory(VkDevice d,VkBuffer b,VkDeviceMemory mem,VkDeviceSize offset) {return CALL(16,KEY(d),(uint64_t)b,(uint64_t)mem,offset);}
 VKAPI_ATTR VkResult VKAPI_CALL vkMapMemory(VkDevice device,VkDeviceMemory mem,VkDeviceSize offset,VkDeviceSize size,VkMemoryMapFlags flags,void **out) {
     if(flags)return VK_ERROR_FEATURE_NOT_PRESENT;Dispatch *d=D(device);pthread_mutex_lock(&d->lock);Memory *r=memory(d,mem);
     if(!r || r->mapped || offset>=r->size){pthread_mutex_unlock(&d->lock);return VK_ERROR_MEMORY_MAP_FAILED;}uint64_t n=size==VK_WHOLE_SIZE?r->size-offset:size;pthread_mutex_unlock(&d->lock);
     if(!n || n>64UL*1024*1024)return VK_ERROR_MEMORY_MAP_FAILED;
-    void *p=mmap(NULL,(size_t)n,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANONYMOUS,-1,0);if(p==MAP_FAILED)return VK_ERROR_OUT_OF_HOST_MEMORY;
-    VkResult v=CALL(17,KEY(d),(uint64_t)mem,offset,n,PTR(p));if(v!=VK_SUCCESS){munmap(p,(size_t)n);return v;}
-    pthread_mutex_lock(&d->lock);r->mapped=p;r->length=(size_t)n;pthread_mutex_unlock(&d->lock);*out=p;return VK_SUCCESS;
+    uint64_t alignment=d->map_alignment;if(!alignment || alignment>1048576)return VK_ERROR_MEMORY_MAP_FAILED;
+    // Align (pData-offset), as Vulkan requires, even for unaligned offsets.
+    size_t allocation=(size_t)(n+alignment-1);void *base=mmap(NULL,allocation,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANONYMOUS,-1,0);if(base==MAP_FAILED)return VK_ERROR_OUT_OF_HOST_MEMORY;
+    size_t padding=(size_t)((offset%alignment+alignment-(uintptr_t)base%alignment)%alignment);void *p=(char *)base+padding;
+    VkResult v=CALL(17,KEY(d),(uint64_t)mem,offset,n,PTR(p));if(v!=VK_SUCCESS){munmap(base,allocation);return v;}
+    pthread_mutex_lock(&d->lock);r->base=base;r->mapped=p;r->length=allocation;pthread_mutex_unlock(&d->lock);*out=p;return VK_SUCCESS;
 }
-VKAPI_ATTR void VKAPI_CALL vkUnmapMemory(VkDevice device,VkDeviceMemory mem) {checked(CALL(18,KEY(device),(uint64_t)mem));Dispatch *d=D(device);pthread_mutex_lock(&d->lock);Memory *r=memory(d,mem);if(r && r->mapped){munmap(r->mapped,r->length);r->mapped=NULL;r->length=0;}pthread_mutex_unlock(&d->lock);}
+VKAPI_ATTR void VKAPI_CALL vkUnmapMemory(VkDevice device,VkDeviceMemory mem) {checked(CALL(18,KEY(device),(uint64_t)mem));Dispatch *d=D(device);pthread_mutex_lock(&d->lock);Memory *r=memory(d,mem);if(r && r->mapped){munmap(r->base,r->length);r->base=NULL;r->mapped=NULL;r->length=0;}pthread_mutex_unlock(&d->lock);}
 VKAPI_ATTR VkResult VKAPI_CALL vkFlushMappedMemoryRanges(VkDevice d,uint32_t count,const VkMappedMemoryRange *ranges) {for(uint32_t i=0;i<count;i++){CHECK(&ranges[i],VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE);VkResult r=CALL(19,KEY(d),(uint64_t)ranges[i].memory,ranges[i].offset,ranges[i].size);if(r!=VK_SUCCESS)return r;}return VK_SUCCESS;}
 VKAPI_ATTR VkResult VKAPI_CALL vkInvalidateMappedMemoryRanges(VkDevice d,uint32_t count,const VkMappedMemoryRange *ranges) {for(uint32_t i=0;i<count;i++){CHECK(&ranges[i],VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE);VkResult r=CALL(20,KEY(d),(uint64_t)ranges[i].memory,ranges[i].offset,ranges[i].size);if(r!=VK_SUCCESS)return r;}return VK_SUCCESS;}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateShaderModule(VkDevice d,const VkShaderModuleCreateInfo *info,const VkAllocationCallbacks *allocator,VkShaderModule *out) {CHECK(info,VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);ALLOCATOR(allocator);if(info->flags)return VK_ERROR_FEATURE_NOT_PRESENT;return CALL(21,KEY(d),PTR(info->pCode),info->codeSize,PTR(out));}
@@ -129,8 +133,11 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreatePipelineLayout(VkDevice d,const VkPipelin
 VKAPI_ATTR void VKAPI_CALL vkDestroyPipelineLayout(VkDevice d,VkPipelineLayout layout,const VkAllocationCallbacks *allocator) {if(layout)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(26,KEY(d),(uint64_t)layout));}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateComputePipelines(VkDevice d,VkPipelineCache cache,uint32_t count,const VkComputePipelineCreateInfo *info,const VkAllocationCallbacks *allocator,VkPipeline *out) {
     ALLOCATOR(allocator);if(cache || count!=1)return VK_ERROR_FEATURE_NOT_PRESENT;CHECK(info,VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO);CHECK(&info->stage,VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
-    if(info->flags || info->stage.flags || info->stage.stage!=VK_SHADER_STAGE_COMPUTE_BIT || info->stage.pSpecializationInfo || info->basePipelineHandle)return VK_ERROR_FEATURE_NOT_PRESENT;
-    return CALL(27,KEY(d),(uint64_t)info->layout,(uint64_t)info->stage.module,PTR(info->stage.pName),PTR(out));
+    if(info->flags || info->stage.flags || info->stage.stage!=VK_SHADER_STAGE_COMPUTE_BIT || info->basePipelineHandle)return VK_ERROR_FEATURE_NOT_PRESENT;
+    const VkSpecializationInfo *s=info->stage.pSpecializationInfo;uint64_t entries[192];
+    if(s){if(s->mapEntryCount>64 || s->dataSize>65536 || (s->mapEntryCount && !s->pMapEntries) || (s->dataSize && !s->pData))return VK_ERROR_FEATURE_NOT_PRESENT;
+        for(uint32_t i=0;i<s->mapEntryCount;i++){entries[i*3]=s->pMapEntries[i].constantID;entries[i*3+1]=s->pMapEntries[i].offset;entries[i*3+2]=s->pMapEntries[i].size;}}
+    return CALL(27,KEY(d),(uint64_t)info->layout,(uint64_t)info->stage.module,PTR(info->stage.pName),PTR(out),PTR(entries),s?s->mapEntryCount:0,s?PTR(s->pData):0,s?s->dataSize:0);
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroyPipeline(VkDevice d,VkPipeline pipeline,const VkAllocationCallbacks *allocator) {if(pipeline)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(28,KEY(d),(uint64_t)pipeline));}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorPool(VkDevice d,const VkDescriptorPoolCreateInfo *info,const VkAllocationCallbacks *allocator,VkDescriptorPool *out) {
@@ -178,6 +185,8 @@ VKAPI_ATTR void VKAPI_CALL vkCmdFillBuffer(VkCommandBuffer c,VkBuffer buffer,VkD
 VKAPI_ATTR void VKAPI_CALL vkCmdPushConstants(VkCommandBuffer c,VkPipelineLayout layout,VkShaderStageFlags stages,uint32_t offset,uint32_t size,const void *values) {if(stages!=VK_SHADER_STAGE_COMPUTE_BIT)checked(VK_ERROR_FEATURE_NOT_PRESENT);checked(CALL(47,DEVKEY(c),KEY(c),(uint64_t)layout,offset,size,PTR(values)));}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateFence(VkDevice d,const VkFenceCreateInfo *info,const VkAllocationCallbacks *allocator,VkFence *out) {CHECK(info,VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);ALLOCATOR(allocator);return CALL(48,KEY(d),info->flags,PTR(out));}
 VKAPI_ATTR void VKAPI_CALL vkDestroyFence(VkDevice d,VkFence f,const VkAllocationCallbacks *allocator) {if(f)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(49,KEY(d),(uint64_t)f));}
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateSemaphore(VkDevice d,const VkSemaphoreCreateInfo *info,const VkAllocationCallbacks *allocator,VkSemaphore *out) {CHECK(info,VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);ALLOCATOR(allocator);if(info->flags)return VK_ERROR_FEATURE_NOT_PRESENT;return CALL(54,KEY(d),PTR(out));}
+VKAPI_ATTR void VKAPI_CALL vkDestroySemaphore(VkDevice d,VkSemaphore s,const VkAllocationCallbacks *allocator) {if(s)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(55,KEY(d),(uint64_t)s));}
 VKAPI_ATTR VkResult VKAPI_CALL vkResetFences(VkDevice d,uint32_t count,const VkFence *fences) {for(uint32_t i=0;i<count;i++){VkResult r=CALL(50,KEY(d),(uint64_t)fences[i]);if(r!=VK_SUCCESS)return r;}return VK_SUCCESS;}
 VKAPI_ATTR VkResult VKAPI_CALL vkGetFenceStatus(VkDevice d,VkFence f) {return CALL(51,KEY(d),(uint64_t)f);}
 static uint64_t now_ns(void) {struct timespec t;clock_gettime(CLOCK_MONOTONIC,&t);return (uint64_t)t.tv_sec*1000000000UL+(uint64_t)t.tv_nsec;}
@@ -190,8 +199,16 @@ VKAPI_ATTR VkResult VKAPI_CALL vkWaitForFences(VkDevice d,uint32_t count,const V
     }
 }
 VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(VkQueue queue,uint32_t count,const VkSubmitInfo *submits,VkFence fence) {
-    uint64_t commands[64];uint32_t n=0;for(uint32_t i=0;i<count;i++){const VkSubmitInfo *s=&submits[i];CHECK(s,VK_STRUCTURE_TYPE_SUBMIT_INFO);if(s->waitSemaphoreCount || s->signalSemaphoreCount || s->commandBufferCount>64-n)return VK_ERROR_FEATURE_NOT_PRESENT;for(uint32_t j=0;j<s->commandBufferCount;j++)commands[n++]=KEY(s->pCommandBuffers[j]);}
-    return CALL(52,DEVKEY(queue),KEY(queue),PTR(commands),n,(uint64_t)fence);
+    if(count>64)return VK_ERROR_FEATURE_NOT_PRESENT;
+    uint64_t records[64][7],commands[64],waits[64],signals[64];uint32_t stages[64],nc=0,nw=0,ns=0;
+    for(uint32_t i=0;i<count;i++){const VkSubmitInfo *s=&submits[i];CHECK(s,VK_STRUCTURE_TYPE_SUBMIT_INFO);
+        if(s->waitSemaphoreCount>64-nw || s->signalSemaphoreCount>64-ns || s->commandBufferCount>64-nc)return VK_ERROR_FEATURE_NOT_PRESENT;
+        records[i][0]=PTR(waits+nw);records[i][1]=s->waitSemaphoreCount;records[i][2]=PTR(stages+nw);records[i][3]=PTR(commands+nc);records[i][4]=s->commandBufferCount;records[i][5]=PTR(signals+ns);records[i][6]=s->signalSemaphoreCount;
+        for(uint32_t j=0;j<s->waitSemaphoreCount;j++){waits[nw]=(uint64_t)s->pWaitSemaphores[j];stages[nw++]=s->pWaitDstStageMask[j];}
+        for(uint32_t j=0;j<s->commandBufferCount;j++)commands[nc++]=KEY(s->pCommandBuffers[j]);
+        for(uint32_t j=0;j<s->signalSemaphoreCount;j++)signals[ns++]=(uint64_t)s->pSignalSemaphores[j];
+    }
+    return CALL(56,DEVKEY(queue),KEY(queue),PTR(records),count,(uint64_t)fence);
 }
 VKAPI_ATTR VkResult VKAPI_CALL vkQueueWaitIdle(VkQueue q) {VkFence fence;VkFenceCreateInfo f={.sType=VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};VkDevice d=(VkDevice)DEVICE(q);VkResult r=vkCreateFence(d,&f,NULL,&fence);if(r!=VK_SUCCESS)return r;r=vkQueueSubmit(q,0,NULL,fence);if(r==VK_SUCCESS)r=vkWaitForFences(d,1,&fence,VK_TRUE,UINT64_MAX);vkDestroyFence(d,fence,NULL);return r;}
 VKAPI_ATTR VkResult VKAPI_CALL vkDeviceWaitIdle(VkDevice d) {VkQueue q;vkGetDeviceQueue(d,D(d)->family,0,&q);return vkQueueWaitIdle(q);}

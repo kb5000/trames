@@ -71,6 +71,7 @@ enum Kind {
     CommandPool,
     CommandBuffer,
     Fence,
+    Semaphore,
 }
 struct Object {
     kind: Kind,
@@ -139,6 +140,7 @@ impl Drop for Object {
                     );
                 }
                 Kind::Fence => d.destroy_fence(vk::Fence::from_raw(self.raw), None),
+                Kind::Semaphore => d.destroy_semaphore(vk::Semaphore::from_raw(self.raw), None),
             }
         }
     }
@@ -153,6 +155,13 @@ struct Mapping {
     guest: u64,
     offset: u64,
     size: u64,
+}
+#[derive(Default)]
+struct SubmitBatch {
+    waits: Vec<vk::Semaphore>,
+    stages: Vec<vk::PipelineStageFlags>,
+    commands: Vec<vk::CommandBuffer>,
+    signals: Vec<vk::Semaphore>,
 }
 
 pub struct Backend {
@@ -268,6 +277,132 @@ impl Backend {
         }
         self.mappings.remove(&id);
         self.objects.remove(&id);
+        Ok(())
+    }
+    fn submit(&mut self, m: &Memory, op: u64, a: [u64; 16], dev: Rc<Device>) -> Result<()> {
+        if a[1] != self.queue_id {
+            return invalid();
+        }
+        if self.submissions.len() >= 64 {
+            return Err(vk::Result::ERROR_OUT_OF_HOST_MEMORY.into());
+        }
+        // Keep operation 52 readable for the initial ICD. Operation 56 retains
+        // each VkSubmitInfo boundary instead of merging semaphore dependencies.
+        let wire = if op == 52 {
+            vec![0, 0, 0, a[2], a[3], 0, 0]
+        } else {
+            words64(m, a[2], bounded(a[3], 64)? * 7)?
+        };
+        let mut batches = Vec::new();
+        let mut commands = Vec::new();
+        let mut semaphores = Vec::new();
+        let mut semaphore_states = BTreeMap::new();
+        let (mut total_waits, mut total_commands, mut total_signals) = (0, 0, 0);
+        for record in wire.chunks_exact(7) {
+            let waits = bounded(record[1], 64)?;
+            let count = bounded(record[4], 64)?;
+            let signals = bounded(record[6], 64)?;
+            total_waits += waits;
+            total_commands += count;
+            total_signals += signals;
+            if total_waits > 64 || total_commands > 64 || total_signals > 64 {
+                return unsupported();
+            }
+            let mut batch = SubmitBatch::default();
+            let stages = words32(m, record[2], waits)?;
+            for (id, stage) in words64(m, record[0], waits)?.into_iter().zip(stages) {
+                let semaphore = self.object(id, Kind::Semaphore)?;
+                let state = semaphore_states.entry(id).or_insert(semaphore.state.get());
+                // There is one queue. A wait consumes an earlier signal, even
+                // if the driver has not completed it yet. Commit only on success.
+                if *state != 1 {
+                    return invalid();
+                }
+                *state = 0;
+                batch.stages.push(compute_stage(stage)?);
+                batch.waits.push(vk::Semaphore::from_raw(semaphore.raw));
+                semaphores.push((id, semaphore));
+            }
+            for id in words64(m, record[3], count)? {
+                let command = self.object(id, Kind::CommandBuffer)?;
+                if command.state.get() != 2 || commands.iter().any(|c| Rc::ptr_eq(c, &command)) {
+                    return invalid();
+                }
+                batch
+                    .commands
+                    .push(vk::CommandBuffer::from_raw(command.raw));
+                commands.push(command);
+            }
+            for id in words64(m, record[5], signals)? {
+                let semaphore = self.object(id, Kind::Semaphore)?;
+                let state = semaphore_states.entry(id).or_insert(semaphore.state.get());
+                if *state != 0 {
+                    return invalid();
+                }
+                *state = 1;
+                batch.signals.push(vk::Semaphore::from_raw(semaphore.raw));
+                semaphores.push((id, semaphore));
+            }
+            batches.push(batch);
+        }
+        let d = &dev.native;
+        let fence = if a[4] != 0 {
+            let f = self.object(a[4], Kind::Fence)?;
+            if unsafe { d.get_fence_status(vk::Fence::from_raw(f.raw)) }?
+                || self.submissions.iter().any(|s| Rc::ptr_eq(&s.fence, &f))
+            {
+                return invalid();
+            }
+            f
+        } else {
+            let raw = unsafe { d.create_fence(&vk::FenceCreateInfo::default(), None) }?;
+            Rc::new(Object {
+                kind: Kind::Fence,
+                raw: raw.as_raw(),
+                device: dev.clone(),
+                deps: RefCell::new(Vec::new()),
+                bindings: RefCell::new(BTreeMap::new()),
+                bound_buffers: RefCell::new(BTreeMap::new()),
+                push_ranges: RefCell::new(Vec::new()),
+                size: 0,
+                flags: 0,
+                state: Cell::new(0),
+                mapped: Cell::new(0),
+                budget: self.budget.clone(),
+            })
+        };
+        let infos: Vec<_> = batches
+            .iter()
+            .map(|batch| {
+                vk::SubmitInfo::default()
+                    .wait_semaphores(&batch.waits)
+                    .wait_dst_stage_mask(&batch.stages)
+                    .command_buffers(&batch.commands)
+                    .signal_semaphores(&batch.signals)
+            })
+            .collect();
+        unsafe { d.queue_submit(self.queue, &infos, vk::Fence::from_raw(fence.raw)) }?;
+        for c in &commands {
+            c.state.set(3);
+        }
+        for (id, semaphore) in &semaphores {
+            semaphore.state.set(semaphore_states[id]);
+        }
+        let mut resources = Vec::new();
+        let mut pending = commands.clone();
+        pending.extend(semaphores.into_iter().map(|(_, s)| s));
+        while let Some(object) = pending.pop() {
+            if resources.iter().any(|other| Rc::ptr_eq(other, &object)) {
+                continue;
+            }
+            pending.extend(object.deps.borrow().iter().cloned());
+            resources.push(object);
+        }
+        self.submissions.push(Submission {
+            fence,
+            commands,
+            _resources: resources,
+        });
         Ok(())
     }
     fn collect(&mut self) {
@@ -864,10 +999,21 @@ impl Backend {
                 name.push(0);
                 let name = std::ffi::CStr::from_bytes_with_nul(&name)
                     .map_err(|_| Failure::Vk(vk::Result::ERROR_UNKNOWN))?;
+                let wire = words64(m, a[5], bounded(a[6], 64)? * 3)?;
+                let data_size = bounded(a[8], 65536)?;
+                let entries = specialization_entries(&wire, data_size)?;
+                let mut data = vec![0; data_size];
+                if data_size != 0 {
+                    m.read(a[7], &mut data)?;
+                }
+                let specialization = vk::SpecializationInfo::default()
+                    .map_entries(&entries)
+                    .data(&data);
                 let stage = vk::PipelineShaderStageCreateInfo::default()
                     .stage(vk::ShaderStageFlags::COMPUTE)
                     .module(vk::ShaderModule::from_raw(shader.raw))
-                    .name(name);
+                    .name(name)
+                    .specialization_info(&specialization);
                 let info = [vk::ComputePipelineCreateInfo::default()
                     .stage(stage)
                     .layout(vk::PipelineLayout::from_raw(layout.raw))];
@@ -1296,68 +1442,24 @@ impl Backend {
                     return Err(vk::Result::NOT_READY.into());
                 }
             }
-            52 => {
-                if a[1] != self.queue_id {
-                    return invalid();
+            52 | 56 => self.submit(m, op, a, dev.clone())?,
+            54 => {
+                self.room(1)?;
+                output(m, a[1], 8)?;
+                let raw = unsafe { d.create_semaphore(&vk::SemaphoreCreateInfo::default(), None) }?;
+                let id = self.put(Kind::Semaphore, raw.as_raw(), vec![], 0, 0);
+                write(m, a[1], &id.to_le_bytes())?;
+            }
+            55 => self.remove(a[1], Kind::Semaphore)?,
+            57 => {
+                let alignment = unsafe {
+                    dev.instance
+                        .native
+                        .get_physical_device_properties(self.physical)
                 }
-                let ids = words64(m, a[2], bounded(a[3], 64)?)?;
-                let mut commands = Vec::new();
-                let mut raws = Vec::new();
-                for id in ids {
-                    let c = self.object(id, Kind::CommandBuffer)?;
-                    if c.state.get() != 2 {
-                        return invalid();
-                    }
-                    raws.push(vk::CommandBuffer::from_raw(c.raw));
-                    commands.push(c);
-                }
-                let fence = if a[4] != 0 {
-                    let f = self.object(a[4], Kind::Fence)?;
-                    if unsafe { d.get_fence_status(vk::Fence::from_raw(f.raw)) }?
-                        || self.submissions.iter().any(|s| Rc::ptr_eq(&s.fence, &f))
-                    {
-                        return invalid();
-                    }
-                    f
-                } else {
-                    let raw = unsafe { d.create_fence(&vk::FenceCreateInfo::default(), None) }?;
-                    Rc::new(Object {
-                        kind: Kind::Fence,
-                        raw: raw.as_raw(),
-                        device: dev.clone(),
-                        deps: RefCell::new(Vec::new()),
-                        bindings: RefCell::new(BTreeMap::new()),
-                        bound_buffers: RefCell::new(BTreeMap::new()),
-                        push_ranges: RefCell::new(Vec::new()),
-                        size: 0,
-                        flags: 0,
-                        state: Cell::new(0),
-                        mapped: Cell::new(0),
-                        budget: self.budget.clone(),
-                    })
-                };
-                if self.submissions.len() >= 64 {
-                    return Err(vk::Result::ERROR_TOO_MANY_OBJECTS.into());
-                }
-                let info = [vk::SubmitInfo::default().command_buffers(&raws)];
-                unsafe { d.queue_submit(self.queue, &info, vk::Fence::from_raw(fence.raw)) }?;
-                for c in &commands {
-                    c.state.set(3);
-                }
-                let mut resources = Vec::new();
-                let mut pending = commands.clone();
-                while let Some(object) = pending.pop() {
-                    if resources.iter().any(|other| Rc::ptr_eq(other, &object)) {
-                        continue;
-                    }
-                    pending.extend(object.deps.borrow().iter().cloned());
-                    resources.push(object);
-                }
-                self.submissions.push(Submission {
-                    fence,
-                    commands,
-                    _resources: resources,
-                });
+                .limits
+                .min_memory_map_alignment as u64;
+                write(m, a[1], &alignment.to_le_bytes())?;
             }
             53 => {
                 let pool = self.object(a[1], Kind::CommandPool)?;
@@ -1426,6 +1528,39 @@ fn bounded(n: u64, limit: usize) -> Result<usize> {
         Ok(n as usize)
     }
 }
+fn compute_stage(stage: u32) -> Result<vk::PipelineStageFlags> {
+    let allowed = vk::PipelineStageFlags::TOP_OF_PIPE
+        | vk::PipelineStageFlags::COMPUTE_SHADER
+        | vk::PipelineStageFlags::TRANSFER
+        | vk::PipelineStageFlags::BOTTOM_OF_PIPE
+        | vk::PipelineStageFlags::HOST
+        | vk::PipelineStageFlags::ALL_COMMANDS;
+    if stage == 0 || stage & !allowed.as_raw() != 0 {
+        return unsupported();
+    }
+    Ok(vk::PipelineStageFlags::from_raw(stage))
+}
+fn specialization_entries(wire: &[u64], size: usize) -> Result<Vec<vk::SpecializationMapEntry>> {
+    let mut entries = Vec::new();
+    for e in wire.chunks_exact(3) {
+        if e[0] > u32::MAX as u64
+            || e[1] > u32::MAX as u64
+            || e[2] == 0
+            || e[1].checked_add(e[2]).is_none_or(|end| end > size as u64)
+            || entries
+                .iter()
+                .any(|entry: &vk::SpecializationMapEntry| entry.constant_id == e[0] as u32)
+        {
+            return invalid();
+        }
+        entries.push(vk::SpecializationMapEntry {
+            constant_id: e[0] as u32,
+            offset: e[1] as u32,
+            size: e[2] as usize,
+        });
+    }
+    Ok(entries)
+}
 fn output(m: &Memory, p: u64, n: usize) -> Result<()> {
     m.check(p, n, Access::Write)?;
     Ok(())
@@ -1462,6 +1597,36 @@ fn write_words(m: &mut Memory, p: u64, b: &[u64], n: usize) -> Result<()> {
 mod tests {
     use super::*;
     use trames_memory::{Permissions, PAGE_SIZE};
+    #[test]
+    fn specialization_records_keep_offsets_and_reject_overflow_or_duplicate_ids() {
+        let entries = specialization_entries(&[1, 4, 4, 0, 8, 4], 16).unwrap();
+        assert_eq!(
+            (entries[0].constant_id, entries[0].offset, entries[0].size),
+            (1, 4, 4)
+        );
+        assert_eq!((entries[1].constant_id, entries[1].offset), (0, 8));
+        for invalid in [
+            vec![0, 12, 8],
+            vec![0, 0, 0],
+            vec![0, 1, u64::MAX],
+            vec![u64::MAX, 0, 4],
+            vec![0, 0, 4, 0, 4, 4],
+        ] {
+            assert!(specialization_entries(&invalid, 16).is_err());
+        }
+    }
+    #[test]
+    fn headless_wait_stages_do_not_enable_graphics_or_unknown_extension_bits() {
+        assert!(compute_stage(vk::PipelineStageFlags::COMPUTE_SHADER.as_raw()).is_ok());
+        assert!(compute_stage(vk::PipelineStageFlags::ALL_COMMANDS.as_raw()).is_ok());
+        for stage in [
+            0,
+            vk::PipelineStageFlags::FRAGMENT_SHADER.as_raw(),
+            u32::MAX,
+        ] {
+            assert!(compute_stage(stage).is_err());
+        }
+    }
     #[test]
     fn malformed_transport_cannot_read_guest_memory_or_create_driver_objects() {
         let mut b = Backend::new();

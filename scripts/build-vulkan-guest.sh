@@ -23,7 +23,7 @@ PY
   -I "$headers" -I accelerator/vulkan -shared -nostdlib \
   accelerator/vulkan/icd.c accelerator/vulkan/calls.S "$PWD/target/alpine-build/lib/libc.so" \
   -Wl,--build-id=sha1 -Wl,-z,noexecstack -o "$output/libtrames_vulkan_icd.so"
-"${AARCH64_READELF:-aarch64-linux-gnu-readelf}" -d "$output/libtrames_vulkan_icd.so" | rg -q 'NEEDED.*libc.musl-aarch64.so.1'
+"${AARCH64_READELF:-aarch64-linux-gnu-readelf}" -d "$output/libtrames_vulkan_icd.so" | awk '/NEEDED.*libc.musl-aarch64.so.1/ { found=1 } END { exit !found }'
 python3 - <<'PY'
 from pathlib import Path
 import hashlib,json
