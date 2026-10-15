@@ -66,7 +66,9 @@ impl From<MemoryError> for RuntimeError {
     }
 }
 
+pub use trames_vulkan::Display as VulkanDisplay;
 pub struct Runtime {
+    pub vulkan_display: VulkanDisplay,
     pub cpu: Cpu,
     pub memory: Memory,
     pub linux: Linux,
@@ -379,6 +381,7 @@ impl Runtime {
         cpu.set_native_calls(options.pure_accelerator);
         cpu.set_vulkan_calls(options.vulkan_accelerator);
         Ok(Self {
+            vulkan_display: VulkanDisplay::default(),
             cpu,
             memory: elf.memory,
             linux,
@@ -461,6 +464,7 @@ mod tests {
             metrics: RuntimeMetrics::default(),
             profile_syscalls: false,
             cpu_count: 1,
+            vulkan_display: VulkanDisplay::default(),
         };
         let exit = runtime
             .run(&mut trames_linux::CapturedOutput::default(), 100)
@@ -548,6 +552,7 @@ mod tests {
             metrics: RuntimeMetrics::default(),
             profile_syscalls: false,
             cpu_count: 1,
+            vulkan_display: VulkanDisplay::default(),
         };
         let mut out = trames_linux::CapturedOutput::default();
         assert!(matches!(
@@ -599,6 +604,7 @@ mod accelerator_tests {
             metrics: RuntimeMetrics::default(),
             profile_syscalls: false,
             cpu_count: 1,
+            vulkan_display: VulkanDisplay::default(),
         }
     }
     #[test]

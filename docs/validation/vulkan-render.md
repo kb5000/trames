@@ -1,6 +1,6 @@
 # Offscreen Vulkan rendering verification
 
-The current graphics slice extends the standard Alpine loader/ICD path with
+The offscreen graphics regression extends the standard Alpine loader/ICD path with
 native images, render passes, graphics pipelines and rasterization. Tracker:
 [Issue #21](https://github.com/kb5000/trames/issues/21). Scope and host/guest
 lifetimes are defined in the [architecture](../architecture/vulkan-compute.md).
@@ -37,12 +37,14 @@ Loader diagnostics confirm the layer is inserted into both guest host backends;
 captured native/guest logs contain no VUID or synchronization-hazard reports.
 This checks actual native API usage in addition to pixel results.
 
-The iPad menu's “GPU 渲染示例” uses a temporary offline Alpine environment and
+The former iPad menu’s “GPU 渲染示例” used a temporary offline Alpine environment and
 the original signed Vulkan loader. It runs the same guest checks, exports the
 GPU-produced PPM through the real file-transfer ABI and displays it with UIKit.
 The image decoder rejects incomplete/unexpected data. Apple CI additionally
 requires native Metal (rejects llvmpipe), retains a PNG of the actual GPU pixels,
 and runs a UI test that waits for the displayed image and captures a screenshot.
+That historical preview has now been replaced by the native
+[swapchain window](vulkan-display.md); readback remains a pixel oracle.
 Exact runtime [`5b7da3a`](https://github.com/kb5000/trames/commit/5b7da3a612bc9fc96297574c2dcaca8602aa2467)
 passed [Apple CI 38680131876](https://github.com/kb5000/trames/actions/runs/38680131876):
 both device/simulator apps link; all 11 tests pass, zero failures or skips,

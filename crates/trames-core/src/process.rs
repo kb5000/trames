@@ -216,6 +216,7 @@ struct Kernel {
     native: trames_accel::native::Registry,
     gpu: RefCell<BTreeMap<u64, trames_vulkan::Backend>>,
     gpu_budget: trames_vulkan::Budget,
+    gpu_display: trames_vulkan::Display,
     gpu_compiles: u64,
     gpu_peak_pending: usize,
     gpu_peer_instructions: u64,
@@ -295,9 +296,10 @@ impl Kernel {
             .authorize_stateful(&p.memory, pc, module, function)?;
         let value = {
             let mut gpu = self.gpu.borrow_mut();
-            let backend = gpu
-                .entry(p.vm_id)
-                .or_insert_with(|| trames_vulkan::Backend::with_budget(self.gpu_budget.clone()));
+            let backend = gpu.entry(p.vm_id).or_insert_with(|| {
+                trames_vulkan::Backend::with_budget(self.gpu_budget.clone())
+                    .with_display(self.gpu_display.clone())
+            });
             let before = backend.transfers;
             let result = backend.invoke(&mut p.memory, a[0], a[1], a[2]);
             self.gpu_transfers.upload_bytes += backend.transfers.upload_bytes - before.upload_bytes;
@@ -3328,6 +3330,7 @@ pub(super) fn run(
         native: trames_accel::native::Registry::default(),
         gpu: RefCell::new(BTreeMap::new()),
         gpu_budget: trames_vulkan::Budget::default(),
+        gpu_display: runtime.vulkan_display.clone(),
         gpu_compiles: 0,
         gpu_peak_pending: 0,
         gpu_peer_instructions: 0,
@@ -3502,6 +3505,7 @@ mod tests {
             native: trames_accel::native::Registry::default(),
             gpu: RefCell::new(BTreeMap::new()),
             gpu_budget: trames_vulkan::Budget::default(),
+            gpu_display: trames_vulkan::Display::default(),
             gpu_compiles: 0,
             gpu_peak_pending: 0,
             gpu_peer_instructions: 0,

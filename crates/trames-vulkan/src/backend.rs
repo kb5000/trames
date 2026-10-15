@@ -13,6 +13,7 @@ use std::{
 use trames_memory::{Access, Memory, MemoryError};
 use vk::Handle;
 mod graphics;
+mod wsi;
 use graphics::{ImageShape, PassInfo, Recording};
 
 const LIMIT: usize = 256;
@@ -69,6 +70,7 @@ impl Drop for Device {
 enum Kind {
     Buffer,
     Image,
+    SwapchainImage,
     ImageView,
     RenderPass,
     Framebuffer,
@@ -99,6 +101,7 @@ struct Object {
     image: Cell<Option<ImageShape>>,
     pass: Cell<Option<PassInfo>>,
     recording: RefCell<Recording>,
+    swapchain: RefCell<Option<Rc<wsi::Swapchain>>>,
     budget: crate::Budget,
 }
 impl Object {
@@ -117,6 +120,7 @@ impl Drop for Object {
         unsafe {
             match self.kind {
                 Kind::Buffer => d.destroy_buffer(vk::Buffer::from_raw(self.raw), None),
+                Kind::SwapchainImage => {}
                 Kind::Image => d.destroy_image(vk::Image::from_raw(self.raw), None),
                 Kind::ImageView => d.destroy_image_view(vk::ImageView::from_raw(self.raw), None),
                 Kind::RenderPass => d.destroy_render_pass(vk::RenderPass::from_raw(self.raw), None),
@@ -236,6 +240,9 @@ pub struct Backend {
     submissions: Vec<Submission>,
     compiles: BTreeMap<u64, Compile>,
     pub transfers: TransferMetrics,
+    display: crate::Display,
+    wsi: wsi::Wsi,
+    wsi_enabled: bool,
 }
 impl Default for Backend {
     fn default() -> Self {
@@ -266,7 +273,14 @@ impl Backend {
             submissions: Vec::new(),
             compiles: BTreeMap::new(),
             transfers: TransferMetrics::default(),
+            display: crate::Display::default(),
+            wsi: wsi::Wsi::default(),
+            wsi_enabled: false,
         }
+    }
+    pub fn with_display(mut self, display: crate::Display) -> Self {
+        self.display = display;
+        self
     }
     fn id(&mut self) -> u64 {
         let id = (self.domain << 32) | self.next;
@@ -299,7 +313,7 @@ impl Backend {
     fn object(&self, id: u64, kind: Kind) -> Result<Rc<Object>> {
         self.objects
             .get(&id)
-            .filter(|x| x.kind == kind)
+            .filter(|x| x.kind == kind || kind == Kind::Image && x.kind == Kind::SwapchainImage)
             .cloned()
             .ok_or(Failure::Vk(vk::Result::ERROR_UNKNOWN))
     }
@@ -319,6 +333,7 @@ impl Backend {
             image: Cell::new(None),
             pass: Cell::new(None),
             recording: RefCell::new(Recording::default()),
+            swapchain: RefCell::new(None),
             budget: self.budget.clone(),
         });
         let id = self.id();
@@ -328,6 +343,9 @@ impl Backend {
     }
     fn remove(&mut self, id: u64, kind: Kind) -> Result<()> {
         let parent = self.object(id, kind)?;
+        if parent.kind == Kind::SwapchainImage {
+            return invalid();
+        }
         if matches!(kind, Kind::CommandPool | Kind::DescriptorPool) {
             self.objects.retain(|_, x| {
                 !x.deps
@@ -432,6 +450,7 @@ impl Backend {
                 image: Cell::new(None),
                 pass: Cell::new(None),
                 recording: RefCell::new(Recording::default()),
+                swapchain: RefCell::new(None),
                 budget: self.budget.clone(),
             })
         };
@@ -647,6 +666,13 @@ impl Backend {
         Ok(Some(0))
     }
     fn call(&mut self, m: &mut Memory, op: u64, a: [u64; 16]) -> Result<()> {
+        if op == 79 {
+            let (w, h, _) = self.display.info();
+            return write_words(m, a[0], &[u64::from(w != 0), w as u64, h as u64], 24);
+        }
+        if (80..=86).contains(&op) {
+            return self.wsi_query(m, op, a);
+        }
         if op == 1 {
             output(m, a[0], 8)?;
             if self.instance.is_some() {
@@ -661,6 +687,18 @@ impl Backend {
             } else {
                 Vec::new()
             };
+            if a[1] > 1 {
+                return unsupported();
+            }
+            if a[1] != 0 {
+                if self.display.target().is_none() {
+                    return Err(vk::Result::ERROR_INITIALIZATION_FAILED.into());
+                }
+                names.extend([
+                    ash::khr::surface::NAME.as_ptr(),
+                    ash::ext::metal_surface::NAME.as_ptr(),
+                ]);
+            }
             let simulator = cfg!(all(target_os = "ios", target_abi = "sim"));
             if simulator {
                 if !extensions.iter().any(|e| unsafe { std::ffi::CStr::from_ptr(e.extension_name.as_ptr()) } == ash::ext::layer_settings::NAME) {
@@ -711,6 +749,7 @@ impl Backend {
                     .any(|q| q.queue_flags.contains(vk::QueueFlags::COMPUTE))
                 })
                 .ok_or(Failure::Vk(vk::Result::ERROR_INITIALIZATION_FAILED))?;
+            self.wsi_enabled = a[1] != 0;
             self.instance = Some(instance);
             self.instance_id = self.id();
             self.physical_id = self.id();
@@ -722,7 +761,9 @@ impl Backend {
                 return invalid();
             }
             self.clear_device();
+            self.wsi.surfaces.clear();
             self.instance = None;
+            self.wsi_enabled = false;
             self.instance_id = 0;
             self.physical_id = 0;
             return Ok(());
@@ -880,11 +921,18 @@ impl Backend {
                         .enumerate_device_extension_properties(self.physical)
                 }?;
                 let subset=ext.iter().any(|e| unsafe { std::ffi::CStr::from_ptr(e.extension_name.as_ptr()) }==ash::khr::portability_subset::NAME);
-                let names = if subset {
+                let mut names = if subset {
                     vec![ash::khr::portability_subset::NAME.as_ptr()]
                 } else {
                     Vec::new()
                 };
+                if a[3] > 1 || a[3] != 0 && !self.wsi_enabled {
+                    return unsupported();
+                }
+                if a[3] != 0 {
+                    names.push(ash::khr::swapchain::NAME.as_ptr());
+                }
+                self.wsi.device_enabled = a[3] != 0;
                 let info = vk::DeviceCreateInfo::default()
                     .queue_create_infos(&queue)
                     .enabled_extension_names(&names);
@@ -934,6 +982,7 @@ impl Backend {
             }
         }
         self.submissions.clear();
+        self.wsi.clear_device();
         self.mappings.clear();
         self.objects.clear();
         self.device = None;
@@ -1702,6 +1751,7 @@ impl Backend {
                 }
             }
             60..=76 => self.graphics_call(m, op, a)?,
+            87..=91 => self.wsi_device(m, op, a)?,
             _ => return unsupported(),
         }
         Ok(())

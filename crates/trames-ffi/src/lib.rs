@@ -71,6 +71,58 @@ pub extern "C" fn trames_abi_version() -> u32 {
     3
 }
 /// # Safety
+/// `layer` is a live native CAMetalLayer configured on the UI main thread.
+/// Its bounds/drawable size remain fixed while attached. Retained natively;
+/// no guest address or arbitrary object may be passed to this entrypoint.
+#[no_mangle]
+pub unsafe extern "C" fn trames_session_display_attach(
+    handle: u64,
+    layer: *mut std::ffi::c_void,
+    width: u32,
+    height: u32,
+) -> i32 {
+    boundary(|| {
+        (|| {
+            let s = session(handle)?;
+            unsafe { s.display.attach(layer, width, height) }?;
+            Ok::<i32, &str>(0)
+        })()
+        .unwrap_or_else(error)
+    })
+}
+#[no_mangle]
+pub extern "C" fn trames_session_display_detach(handle: u64) -> i32 {
+    boundary(|| {
+        session(handle)
+            .map(|s| {
+                s.display.detach();
+                0
+            })
+            .unwrap_or_else(error)
+    })
+}
+/// # Safety
+/// Same caller-owned bounded buffer contract as session_status.
+#[no_mangle]
+pub unsafe extern "C" fn trames_session_display_status(
+    handle: u64,
+    pointer: *mut u8,
+    capacity: u32,
+) -> i32 {
+    boundary(|| {
+        let result = (|| {
+            let s = session(handle).map_err(str::to_string)?;
+            let (width, height, presented) = s.display.info();
+            let bytes = serde_json::to_vec(
+                &serde_json::json!({"width":width,"height":height,"presented":presented}),
+            )
+            .map_err(|e| e.to_string())?;
+            unsafe { copy(pointer, capacity, &bytes) }.map_err(str::to_string)
+        })();
+        result.unwrap_or_else(error)
+    })
+}
+/// # Safety
 /// See `bytes`. Native-authorized store path only. Serialize against new opens.
 /// Returns 1 while a cancelled/live worker holds the store, 0 after deletion.
 #[no_mangle]
@@ -358,6 +410,7 @@ pub extern "C" fn trames_session_close(handle: u64) -> i32 {
     boundary(|| match registry().lock() {
         Ok(mut registry) => match registry.remove(&handle) {
             Some(s) => {
+                s.display.detach();
                 s.cancelled.store(true, Ordering::Release);
                 0
             }

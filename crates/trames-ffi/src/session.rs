@@ -110,6 +110,7 @@ pub struct Buffers {
     pub status: Status,
 }
 pub struct Session {
+    pub display: trames_core::VulkanDisplay,
     pub bridge: trames_bridge::Broker,
     pub buffers: Mutex<Buffers>,
     pub cancelled: AtomicBool,
@@ -173,6 +174,7 @@ impl Session {
         let permit = WorkerPermit;
         let (commands, receiver) = mpsc::sync_channel(8);
         let session = Arc::new(Self {
+            display: trames_core::VulkanDisplay::default(),
             bridge: trames_bridge::Broker::default(),
             buffers: Mutex::new(Buffers {
                 input: VecDeque::new(),
@@ -442,6 +444,7 @@ fn run(
     )
     .map_err(|e| e.to_string())?;
     let mut terminal = Terminal::default();
+    runtime.vulkan_display = session.display.clone();
     terminal.resize(options.rows, options.columns);
     runtime
         .enable_terminal(terminal)

@@ -37,3 +37,8 @@ done
   -I "$headers" -L "$PWD/target/vulkan-loader-sdk" -L "$PWD/target/alpine-build/lib" \
   tests/fixtures/vulkan-render.c -lvulkan -lm -o tests/fixtures/bin/vulkan-render
 cp tests/fixtures/bin/vulkan-render tests/fixtures/bin/vulkan-render.*.spv target/vulkan-guest/acceptance/
+
+"${MUSL_CC:-$PWD/target/busybox-build/musl/bin/musl-gcc}" -O2 -mno-outline-atomics -Wall -Wextra -Werror \
+  -I "$headers" -L "$PWD/target/vulkan-loader-sdk" -L "$PWD/target/alpine-build/lib" \
+  tests/fixtures/vulkan-present.c -lvulkan -o tests/fixtures/bin/vulkan-present
+cp tests/fixtures/bin/vulkan-present target/vulkan-guest/acceptance/

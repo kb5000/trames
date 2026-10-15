@@ -12,6 +12,11 @@ public struct LocalStatus: Decodable, Sendable, Equatable {
     public let node_limit: UInt64
     public let nodes_used: UInt64
 }
+public struct LocalDisplayStatus: Decodable, Sendable {
+    public let width: UInt32
+    public let height: UInt32
+    public let presented: UInt64
+}
 /// Methods are serialized by the frontend; the ABI itself is thread-safe.
 public final class LocalSession: @unchecked Sendable {
     private let lock = NSLock()
@@ -84,6 +89,20 @@ public final class LocalSession: @unchecked Sendable {
     }
     public func pause(_ value: Bool) throws {
         if trames_session_pause(try currentHandle(), value ? 1 : 0) < 0 { throw Self.lastError() }
+    }
+    /// Native CAMetalLayer only, configured and attached by the app main thread.
+    public func attachDisplay(layer: UnsafeMutableRawPointer, width: UInt32, height: UInt32) throws {
+        if trames_session_display_attach(try currentHandle(), layer, width, height) < 0 { throw Self.lastError() }
+    }
+    public func detachDisplay() throws {
+        if trames_session_display_detach(try currentHandle()) < 0 { throw Self.lastError() }
+    }
+    public func displayStatus() throws -> LocalDisplayStatus {
+        var data = Data(count: 512)
+        let h = try currentHandle()
+        let count = data.withUnsafeMutableBytes { trames_session_display_status(h, $0.bindMemory(to: UInt8.self).baseAddress, UInt32($0.count)) }
+        guard count >= 0 else { throw Self.lastError() }; data.count = Int(count)
+        return try JSONDecoder().decode(LocalDisplayStatus.self, from: data)
     }
     /// Blocking coordinator update; caller runs it off the main queue after resuming.
     public func synchronizeTimezone(_ zone: TimeZone = .current) throws {

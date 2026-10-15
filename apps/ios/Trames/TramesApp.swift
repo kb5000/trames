@@ -21,7 +21,6 @@ struct WorkspaceView: View {
     @State private var sshSheet = false
     @State private var filesSheet = false
     @State private var settingsSheet = false
-    @State private var renderSheet = false
     @State private var sessionActions = false
     var body: some View {
         VStack(spacing: 0) {
@@ -48,7 +47,9 @@ struct WorkspaceView: View {
                     Button("本地 Alpine", systemImage: "terminal") { workspace.openLocal() }
                     Button("SSH 连接", systemImage: "network") { sshSheet = true }
                     Button("Files / SFTP", systemImage: "folder") { filesSheet = true }
-                    Button("GPU 渲染示例", systemImage: "triangle") { renderSheet = true }
+                    if let local = workspace.local, local.displayEnabled {
+                        Button("显示窗口", systemImage: "rectangle.on.rectangle") { local.displayVisible = true }
+                    }
                     Button("设置", systemImage: "gear") { settingsSheet = true }
                 }
                 if let current = workspace.current { Button { workspace.close(current) } label: {
@@ -66,7 +67,13 @@ struct WorkspaceView: View {
         .sheet(isPresented: $sshSheet) { SSHConnectView(workspace: workspace) }
         .sheet(isPresented: $filesSheet) { if let session = workspace.current { TransferView(session: session) } }
         .sheet(isPresented: $settingsSheet) { SettingsView(workspace: workspace) }
-        .sheet(isPresented: $renderSheet) { VulkanRenderView() }
+        .overlay(alignment: .topLeading) {
+            GeometryReader { proxy in
+                if let local = workspace.local {
+                    VulkanDisplayWindow(session: local, viewport: proxy.size).id(local.id)
+                }
+            }
+        }
         .alert("验证 SSH 主机指纹", isPresented: Binding(get: { workspace.challenge != nil }, set: { if !$0 { workspace.challenge = nil } })) {
             Button("信任此密钥") { workspace.trust() }
             Button("取消", role: .cancel) { workspace.challenge = nil }
@@ -131,7 +138,7 @@ struct SettingsView: View {
                 Section("后台行为") { Text("进入后台后暂停本地 Linux 并断开 SSH；返回前台后继续本地会话。Files 采用独立副本导入和导出。").font(.caption) }
                 Section("GPU") {
                     Toggle("Vulkan 计算与图形（实验）", isOn: $vulkan)
-                    Text("下次打开本地终端生效。需在 Linux 安装 vulkan-loader；支持选定计算和离屏图形接口；可从会话菜单打开 GPU 渲染示例。窗口和交换链后续加入。").font(.caption)
+                    Text("下次打开本地终端生效。需在 Linux 安装 vulkan-loader；支持选定计算和离屏图形接口；Vulkan 程序可通过标准 display/swapchain 接口提交到 App 内的显示窗口；拖动和缩放窗口不改变画布分辨率。").font(.caption)
                 }
             }.navigationTitle("设置").toolbar { Button("完成") { dismiss() } }
                 .alert("重置 Linux 环境？",isPresented:$resetConfirmation) {

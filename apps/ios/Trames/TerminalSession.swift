@@ -9,6 +9,10 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     @Published var title: String
     @Published var state = "连接中…"
     @Published var capacity: LocalStatus?
+    lazy var displayCanvas = VulkanCanvas()
+    @Published var displayEnabled = false
+    @Published var displayVisible = true
+    @Published var displayFrames: UInt64 = 0
     var local: LocalSession?
     let bridge = BridgeController()
     var ssh: SSHSession?
@@ -39,8 +43,13 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         state="正在准备 Alpine…"
         task = Task { [weak self] in
             do {
-                let local = try await environment.start(useVolumeBudget: useVolumeBudget, vulkan: UserDefaults.standard.bool(forKey: "vulkanCompute"))
+                let gpu = UserDefaults.standard.bool(forKey: "vulkanCompute") || ProcessInfo.processInfo.arguments.contains("--vulkan-display-acceptance")
+                let local = try await environment.start(useVolumeBudget: useVolumeBudget, vulkan: gpu)
                 guard let self, !self.closed else { local.close(); return }
+                if gpu {
+                    try local.attachDisplay(layer: Unmanaged.passUnretained(self.displayCanvas.metal).toOpaque(), width: 1024, height: 768)
+                    self.displayEnabled = true
+                }
                 self.local = local
                 bridge.attach(local)
                 try local.pause(paused)
@@ -48,12 +57,18 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
                 timer = Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) { [weak self] _ in
                     Task { @MainActor in self?.pollLocal() }
                 }
+                #if DEBUG
+                if ProcessInfo.processInfo.arguments.contains("--vulkan-display-acceptance") {
+                    try await LocalVulkanProbe.submitPresentation(to: local)
+                }
+                #endif
             } catch { self?.fail(error) }
         }
     }
     private func pollLocal() {
         guard let local, !closed else { return }
         do {
+            if displayEnabled { displayFrames = try local.displayStatus().presented }
             let output = try local.receive()
             try bridge.poll()
             if !output.isEmpty { terminal.feed(byteArray: Array(output)[...]) }

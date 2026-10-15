@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Selected core 1.0 offscreen graphics. No guest Vulkan structure/pointer is
+//! Selected core 1.0 graphics for allocated and borrowed swapchain images. No guest Vulkan structure/pointer is
 //! handed to the driver; all arrays are decoded to scoped native records.
 use super::*;
 
 #[derive(Clone, Copy)]
 pub(super) struct ImageShape {
-    width: u32,
-    height: u32,
-    format: vk::Format,
+    pub(super) width: u32,
+    pub(super) height: u32,
+    pub(super) format: vk::Format,
 }
 #[derive(Clone, Copy)]
 pub(super) struct PassInfo {
@@ -45,6 +45,7 @@ fn layout(raw: u64, initial: bool) -> Result<vk::ImageLayout> {
         2 => Ok(vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL),
         6 => Ok(vk::ImageLayout::TRANSFER_SRC_OPTIMAL),
         7 => Ok(vk::ImageLayout::TRANSFER_DST_OPTIMAL),
+        1000001002 => Ok(vk::ImageLayout::PRESENT_SRC_KHR),
         _ => unsupported(),
     }
 }
@@ -247,7 +248,10 @@ impl Backend {
         let mut dependencies = Vec::new();
         for b in wire.chunks_exact(5) {
             let image = self.object(b[0], Kind::Image)?;
-            if image.deps.borrow().is_empty() {
+            if image.deps.borrow().is_empty() && image.swapchain.borrow().is_none() {
+                return invalid();
+            }
+            if image.kind != Kind::SwapchainImage && (b[3] == 1000001002 || b[4] == 1000001002) {
                 return invalid();
             }
             barriers.push(
@@ -307,6 +311,9 @@ impl Backend {
             61 => self.remove(a[1], Kind::Image)?,
             62 => {
                 let image = self.object(a[1], Kind::Image)?;
+                if image.kind == Kind::SwapchainImage {
+                    return invalid();
+                }
                 let r = unsafe { d.get_image_memory_requirements(vk::Image::from_raw(image.raw)) };
                 let mut bytes = Vec::new();
                 bytes.extend(r.size.to_le_bytes());
@@ -318,8 +325,12 @@ impl Backend {
             63 => {
                 let image = self.object(a[1], Kind::Image)?;
                 let memory = self.object(a[2], Kind::Memory)?;
+                if image.kind == Kind::SwapchainImage {
+                    return invalid();
+                }
                 let r = unsafe { d.get_image_memory_requirements(vk::Image::from_raw(image.raw)) };
-                if !image.deps.borrow().is_empty()
+                if image.swapchain.borrow().is_some()
+                    || !image.deps.borrow().is_empty()
                     || !a[3].is_multiple_of(r.alignment)
                     || r.memory_type_bits & (1u32 << memory.state.get()) == 0
                     || a[3].checked_add(r.size).is_none_or(|n| n > memory.size)
@@ -340,7 +351,9 @@ impl Backend {
                 output(m, a[3], 8)?;
                 let image = self.object(a[1], Kind::Image)?;
                 let shape = shape(&image)?;
-                if format(a[2])? != shape.format || image.deps.borrow().is_empty() {
+                if format(a[2])? != shape.format
+                    || image.deps.borrow().is_empty() && image.swapchain.borrow().is_none()
+                {
                     return invalid();
                 }
                 let info = vk::ImageViewCreateInfo::default()
@@ -533,7 +546,7 @@ impl Backend {
                         let image = self.object(a[2], Kind::Image)?;
                         let buffer = self.object(a[4], Kind::Buffer)?;
                         let s = shape(&image)?;
-                        if image.deps.borrow().is_empty()
+                        if image.deps.borrow().is_empty() && image.swapchain.borrow().is_none()
                             || buffer.deps.borrow().is_empty()
                             || image.flags & vk::ImageUsageFlags::TRANSFER_SRC.as_raw() == 0
                             || buffer.flags & vk::BufferUsageFlags::TRANSFER_DST.as_raw() == 0
@@ -722,6 +735,6 @@ mod tests {
         assert!(usage(1 << 40).is_err());
         assert!(layout(0, true).is_ok());
         assert!(layout(0, false).is_err());
-        assert!(layout(1000001002, false).is_err());
+        assert!(layout(1000001002, false).is_ok());
     }
 }

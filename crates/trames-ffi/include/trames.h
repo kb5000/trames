@@ -16,6 +16,13 @@ extern "C" {
  * No callbacks into Swift.
  */
 uint32_t trames_abi_version(void);
+/* Native-only Metal target, retained until all native surface/swapchain leases
+ * end. Configure fixed layer bounds/drawableSize on main before attaching.
+ * Window movement/scale uses its parent transform. Pointer is never guest data.
+ * detach invalidates old surfaces; status is {width,height,presented} JSON. */
+int32_t trames_session_display_attach(uint64_t handle, void *metal_layer, uint32_t width, uint32_t height);
+int32_t trames_session_display_detach(uint64_t handle);
+int32_t trames_session_display_status(uint64_t handle, uint8_t *json, uint32_t capacity);
 int32_t trames_environment_install(const uint8_t *json, uint32_t length);
 /* Destructive native-only store reset, {"store":"/authorized/private/store"}.
  * Serialize against new opens; returns 1 while a worker owns the lock, 0 after

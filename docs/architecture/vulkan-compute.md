@@ -1,11 +1,12 @@
-# Vulkan compute and offscreen graphics accelerator
+# Vulkan compute, graphics and display accelerator
 
-Trames implements an experimental Vulkan compute/offscreen graphics profile. An original
+Trames implements an experimental Vulkan compute/graphics profile. An original
 Linux application uses unmodified `libvulkan.so.1`; its loader discovers the
 guest ELF ICD, which bridges to native Vulkan. iPad device/simulator builds
-statically link original public-API MoltenVK 1.4.2 over Metal. An iPad preview
-displays the actual rendered pixels; window-system surfaces/swapchains and input
-follow this offscreen stage. Host port forwarding is deferred by the owner. Tracker:
+statically link original public-API MoltenVK 1.4.2 over Metal. A fixed-resolution
+virtual display exposes standard `VK_KHR_display`, `VK_KHR_surface` and
+`VK_KHR_swapchain`. Applications submit native GPU images directly to an App
+window's `CAMetalLayer`. Host port forwarding remains deferred. Tracker:
 [Issue #21](https://github.com/kb5000/trames/issues/21).
 
 This selected subset is not complete Vulkan 1.0 conformance. Loader/ICD version
@@ -14,11 +15,12 @@ negotiation describes the base ABI; it does not advertise the host's entire API.
 ```mermaid
 flowchart LR
     A[Linux ARM64 application] --> L[Original Vulkan loader]
-    L --> I[Guest compute ICD]
+    L --> I[Guest Vulkan ICD]
     I --> N[NativeCall module 6]
     N --> R[Scoped resources and memory translation]
     R --> M[Native MoltenVK]
     M --> G[Metal GPU]
+    G --> W[Native swapchain / CAMetalLayer]
 ```
 
 ## ABI and activation
@@ -42,7 +44,7 @@ Install the ordinary `vulkan-loader` package with apk.
 
 ## Supported compute operations
 
-The [catalog](../../accelerator/vulkan/entrypoints.inc) contains 85 public
+The [catalog](../../accelerator/vulkan/entrypoints.inc) contains 102 public
 functions plus ICD negotiation exports. The profile supports one instance,
 compute-capable physical device, logical device and queue per address space;
 property queries; buffers and memory; SPIR-V modules; storage/uniform buffer
@@ -67,7 +69,7 @@ batch does not consume signals, mark commands pending or submit earlier records.
 Semaphore-only submissions and reuse after a consumed signal are supported.
 Timeline semaphore extensions remain unavailable.
 
-## Offscreen graphics and visible preview
+## Graphics resources
 
 Core graphics now includes native 2D optimal-tiled RGBA8/BGRA8 UNORM images,
 binding/memory requirements, color image views, a single-color render pass and
@@ -87,19 +89,61 @@ pass; recorded commands and in-flight snapshots retain the complete graph.
 Graphics compilation uses the same owned, bounded native tasks and fallible
 output rollback as compute. No guest pointer or Rc crosses native worker threads.
 
-The iPad session menu's “GPU 渲染示例” opens a temporary offline Alpine environment,
-installs the bundled original signed Vulkan loader and runs the same ARM64 C
-program as the native/guest reference. Original MoltenVK compiles the vertex and
-fragment SPIR-V and Metal rasterizes the triangle. After fence completion, a
-native image-to-buffer copy and explicit invalidate populate guest memory. The
-guest independently checks barycentric colors, alpha, background and scissoring,
-then writes a standard P6 PPM. Existing coordinated file transfer exports that
-image; CoreGraphics/UIKit display the bounded pixels without drawing the scene.
-Closing the preview cancels pending work and closes/deletes the temporary
-environment. This is an end-to-end offscreen preview, not a live guest window or
-swapchain; it has readback/file-transfer costs and does not claim zero-copy.
+The [offscreen regression](../validation/vulkan-render.md) continues to check
+GPU pixels through a readback buffer and independent barycentric equations.
+Readback/file export is a test oracle, not the display path. The former demo
+sheet has been removed from the product UI.
 
-Optional features are zero and extensions are not advertised. Unsupported entrypoints
+## Native display and swapchain
+
+With GPU enabled, each local session owns one 1024 × 768 virtual display, plane
+and mode (60 Hz nominal). The App creates/configures a `CAMetalLayer` on its main
+thread and passes it only through the native embedding capability. No guest
+pointer can select a host layer or Objective-C object. Objective-C retain leases
+keep the target alive through surface, swapchain, view, recorded-command and
+in-flight work lifetimes. Detach invalidates that target generation with
+`VK_ERROR_SURFACE_LOST_KHR`; cleanup retains resources until native work ends.
+A surface claims the display exclusively; a second live producer receives
+`VK_ERROR_NATIVE_WINDOW_IN_USE_KHR`.
+
+The ordinary Linux application enables `VK_KHR_surface` and `VK_KHR_display`,
+queries display/plane/mode and creates a display-plane surface. The bridge makes
+an original native `VK_EXT_metal_surface` on the trusted layer. Device
+`VK_KHR_swapchain` exposes BGRA8 UNORM/SRGB nonlinear, FIFO, exclusive sharing,
+one layer, identity transform, opaque alpha, color attachment and optional
+transfer-source usage; native capabilities bound the image count (at most four).
+Unsupported options fail explicitly. Without an attached display, no WSI
+extensions are advertised; the existing compute/offscreen path remains usable.
+
+Acquire uses a zero-timeout native call. The guest ICD implements finite/infinite
+waits by retrying with guest nanosleep, allowing peer guest threads and the
+coordinator to run. Submission consumes acquire semaphores, signals render
+semaphores, and `vkQueuePresentKHR` submits the original native swapchain image.
+Borrowed images are never passed to `vkDestroyImage` or rebound to memory.
+Present semaphores/fences remain retained until that image is acquired again or
+the native swapchain is destroyed after queue idle. Recreating with
+`oldSwapchain` retires the old acquire path while retaining outstanding work.
+Failed output publication rolls back owned resources; ambiguous native present
+errors retire the affected chain. The display registry lock only protects target
+lookup/attach/detach, never an entire rendering call.
+
+The session menu's “显示窗口” reveals the floating display. Drag its title to
+move it or its bottom-right grip to resize it; the parent transform scales and
+letterboxes the fixed canvas. Metal layer bounds and drawable size remain
+1024 × 768, so window geometry changes do not invalidate guest swapchains.
+Hiding keeps the GPU target attached; closing the local session detaches it and
+cancels guest work. No CPU framebuffer device is added. This is one virtual
+display, not X11/Wayland integration, a desktop window manager or pointer input.
+
+`vulkan-present.c` is an ordinary Vulkan acceptance fixture, not a special
+product rendering API. It exercises continuous native acquire/draw/present,
+semaphore reuse, swapchain recreation, retired acquire and producer release.
+Apple XCTest also moves/resizes/hides/reopens the live window and closes a guest
+that is still submitting. Current acceptance status is tracked in
+[display verification](../validation/vulkan-display.md).
+
+Optional core features remain zero. Only the selected WSI extensions are advertised.
+Unsupported entrypoints
 return NULL. Unsupported creation parameters return Vulkan failures. Recording
 functions have void signatures; invalid/unsupported recording parameters abort
 the experimental guest ICD with a diagnostic rather than fake success.
