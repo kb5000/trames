@@ -5,7 +5,7 @@
 使用 vfs、共享 guest 网络/IPC/cgroup namespace、关闭 seccomp 的选定配置，
 保留默认设备过滤，**无需 `--privileged`**。这不是完整 Docker 隔离或功能覆盖。
 
-这批没有升级 App 版本或手动生成 IPA；此前安装包不自动包含这些改动。
+本批改动纳入 [0.16.0/build 17](../validation/release-0.16.md)；此前的 0.15.0 IPA 不包含这些改动。
 
 ## 配置
 

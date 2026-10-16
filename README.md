@@ -18,6 +18,8 @@ main 新增[通用解释执行优化](docs/validation/execution-efficiency.md)�
 
 [调度与边界检查实验](docs/validation/dispatch-experiments.md)进一步比较固定代码页、unchecked 寄存器索引、状态驻留、紧凑记录，以及真正的 nightly Rust 显式尾调用。按项目决策，完整 `tailhot` 实现现已成为唯一默认解释器，工具链固定为 `nightly-2026-10-16`；没有恢复多后端或引入 JIT。随后加入[权限软 TLB 与 MMU 研究](docs/architecture/soft-tlb.md)，将地址与权限校验合为缓存标签比较，保留文件、COW 和多核语义。
 
+[0.16.0/build 17](docs/validation/release-0.16.md) 正在构建与验收，合并 guest 内容器、默认宿主直连网络和无 JIT 解释器优化。安装前请阅读磁盘 v3 → v4 的升级说明。
+
 最新 [0.15.0/build 16](docs/validation/release-0.15.md) 已发布：[下载 unsigned IPA](https://github.com/kb5000/trames/releases/download/v0.15.0/Trames-0.15.0-build16-unsigned.ipa)，用 Sideloadly 覆盖安装可保留数据。本版合并 sudo／时区／匿名 ELF 修复及 Vulkan 原生计算、纹理与浮动显示窗口；同一源码的 Linux CI 与 Apple 14 项模拟器验收均通过。Vulkan 默认关闭，真机验收待实际使用。
 
 [0.14.0/build 15](docs/validation/release-0.14.md)已将这些更新与[稀疏脏页提交优化](docs/validation/checkpoint-cost.md)打包发布到 [GitHub Release](https://github.com/kb5000/trames/releases/tag/v0.14.0)，可直接下载 unsigned IPA 用 Sideloadly 覆盖安装。原生 malloc/free 保持实验性、默认关闭；普通分配器与并行原生函数使用统一的 guest 访存模型。
