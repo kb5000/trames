@@ -25,6 +25,12 @@ a smaller handler-table-only candidate also remain archived after mixed workload
 results. Production execution is unchanged; new register/boundary regressions
 are retained.
 
+The [fixed-slot follow-up](../validation/fixed-slots.md) removes dynamic operand
+routing with block-local scalar slots, constant folding and dead-write removal.
+Its ARM64 micro-handlers are 3-5 instructions, but short integer-only regions have
+limited coverage and normal entry/exit costs. Both tested admission policies remain
+archived after mixed whole-workload measurements; production runtime is unchanged.
+
 ## Native arithmetic
 
 `trames-compute` accepts numeric values, never guest pointers. It uses static ARM

@@ -1,0 +1,44 @@
+--- a/crates/trames-cpu/src/cached.rs
++++ b/crates/trames-cpu/src/cached.rs
+@@ -579,6 +579,11 @@
+             recent: [0; SETS],
+             stats: super::DecodeStats::default(),
+         }
++    }
++}
++impl Drop for Cache {
++    fn drop(&mut self) {
++        if !self.slots.is_empty() { fixed::dump(); }
+     }
+ }
+ impl Clone for Cache {
+--- a/crates/trames-cpu/src/cached/fixed.rs
++++ b/crates/trames-cpu/src/cached/fixed.rs
+@@ -382,9 +382,19 @@
+     }
+ }
+ 
++use std::sync::atomic::{AtomicU64, Ordering};
++static RUNS: [AtomicU64; 17] = [const { AtomicU64::new(0) }; 17];
++static MICROS: [AtomicU64; 17] = [const { AtomicU64::new(0) }; 17];
++static PREPARED: [AtomicU64; 17] = [const { AtomicU64::new(0) }; 17];
++pub(super) fn dump() {
++    let get = |a: &[AtomicU64; 17]| a.iter().map(|n| n.load(Ordering::Relaxed)).collect::<Vec<_>>();
++    eprintln!("fixed profile: runs={:?} micros={:?} prepared={:?}", get(&RUNS), get(&MICROS), get(&PREPARED));
++}
+ impl Block {
+     #[inline(always)]
+     pub(super) fn run(&self, cpu: &mut Cpu) {
++        RUNS[self.count as usize].fetch_add(1, Ordering::Relaxed);
++        MICROS[self.count as usize].fetch_add(self.steps.len() as u64 - 1, Ordering::Relaxed);
+         let mut values = [0; 4];
+         for (slot, value) in values.iter_mut().enumerate() {
+             if self.input & (1 << slot) != 0 {
+@@ -564,6 +574,7 @@
+             let (count, block) = build(page, start, end);
+             if let Some(block) = block {
+                 let index = page.fixed.blocks.len() as u8;
++                PREPARED[block.count as usize].fetch_add(1, Ordering::Relaxed);
+                 page.fixed.blocks.push(block);
+                 page.instructions[start].instruction.op = Op::Fixed { index };
+             }

@@ -55,6 +55,7 @@ jobs:
       - run: python3 tests/differential/m1.py
       - run: python3 tests/differential/lazy_flags.py
       - run: python3 tests/differential/integer_blocks.py
+      - run: python3 tests/differential/fixed_slots.py
       - run: python3 tests/differential/floating.py
       - run: python3 tests/differential/vector_floating.py
       - run: python3 tests/differential/structures.py

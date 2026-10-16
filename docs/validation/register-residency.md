@@ -186,3 +186,8 @@ or memory-containing superinstructions, and it does not disprove their possible
 benefit. They require exact reconstruction at partial budgets and faulting memory
 operations. A future experiment should measure fixed-slot routing against this
 four-value dynamic-routing result before multiplying handler combinations.
+
+The subsequent [fixed-slot experiment](fixed-slots.md) implements that static
+routing and folding prototype, with independent correctness checks, executed-block
+histograms and whole-workload comparisons. Its archived results identify short
+regions and boundary costs as the next design constraints.
