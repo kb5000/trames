@@ -3,6 +3,7 @@
 //! All runtime/VFS objects stay on their owning worker. Only bounded byte copies
 //! require unsafe code; callers own and keep their C buffers valid for each call.
 mod session;
+mod wayland;
 use session::{HostTimezone, Options, Session, TransferOptions, QUEUE_LIMIT};
 use std::{
     cell::RefCell,

@@ -35,10 +35,22 @@ struct WorkspaceView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack {
                             ForEach(workspace.sessions) { session in
-                                Button { workspace.selected = session.id } label: {
+                                Button { workspace.selected = session.id; if session.local != nil { session.waylandSelected = nil } } label: {
                                     Text(session.title).lineLimit(1).padding(8)
                                         .background(workspace.selected == session.id ? Color.white.opacity(0.12) : .clear).clipShape(RoundedRectangle(cornerRadius: 6))
                                 }.contextMenu { Button("关闭终端", role: .destructive) { workspace.close(session) } }
+                            }
+                            if let local = workspace.local {
+                                ForEach(local.waylandWindows.filter { $0.mode != "floating" }) { window in
+                                    Button {
+                                        workspace.selected = local.id
+                                        if window.mode == "minimized" { local.waylandMode(window.id,"floating") }
+                                        else { local.waylandSelected = window.id }
+                                    } label: {
+                                        Label(window.title.isEmpty ? window.app_id : window.title,systemImage:window.mode == "minimized" ? "minus.rectangle" : "rectangle")
+                                            .lineLimit(1).padding(8)
+                                    }
+                                }
                             }
                         }
                     }
@@ -79,6 +91,10 @@ struct WorkspaceView: View {
             GeometryReader { proxy in
                 if let local = workspace.local {
                     VulkanDisplayWindow(session: local, viewport: proxy.size).id(local.id)
+                    if workspace.selected == local.id {
+                        WaylandWorkspace(session:local,viewport:CGSize(width:proxy.size.width,height:max(1,proxy.size.height-56)))
+                            .offset(y:56).id("wayland-\(local.id)")
+                    }
                 }
             }
         }

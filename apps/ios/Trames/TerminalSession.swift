@@ -12,6 +12,11 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     lazy var displayCanvas = VulkanCanvas()
     @Published var displayEnabled = false
     @Published var displayVisible = true
+    @Published var waylandWindows: [LocalWaylandWindow] = []
+    @Published var waylandText: LocalWaylandText?
+    @Published var waylandSelected: UInt64?
+    @Published var waylandFocus: UInt64?
+    private var waylandRevision: UInt64?
     var local: LocalSession?
     let bridge = BridgeController()
     var ssh: SSHSession?
@@ -77,6 +82,13 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
                 let count = try local.send(pendingInput)
                 pendingInput.removeFirst(count)
             }
+            let wayland = try local.waylandStatus()
+            if wayland.revision != waylandRevision {
+                let newMaximized = wayland.windows.first { w in w.mode == "maximized" && !waylandWindows.contains(where: { $0.id == w.id && $0.mode == "maximized" }) }
+                waylandRevision = wayland.revision; waylandWindows = wayland.windows; waylandText = wayland.text
+                if let selected = waylandSelected, !wayland.windows.contains(where: { $0.id == selected && $0.mode == "maximized" }) { waylandSelected = nil }
+                if let window = newMaximized { waylandSelected = window.id }
+            }
             let status = try local.status()
             if status != capacity { capacity = status }
             if status.phase != lastPhase {
@@ -86,6 +98,14 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
                 if status.phase == "exited" { state = "已退出 · \(status.exit_code ?? 0)"; timer?.invalidate() }
             }
         } catch { fail(error); timer?.invalidate() }
+    }
+    func waylandCommand(_ command: [String:Any]) {
+        do { try local?.waylandCommand(command) } catch { fail(error) }
+    }
+    func waylandMode(_ window: UInt64, _ mode: String) {
+        waylandCommand(["op":"mode","window":window,"mode":mode])
+        if mode == "maximized" { waylandSelected = window }
+        else if waylandSelected == window { waylandSelected = nil }
     }
     func startSSH(host: SSHHost, credential: SSHCredential, knownHosts: KnownHosts) {
         let connection = SSHSession(); ssh = connection
@@ -137,7 +157,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         timezoneObserver = nil
         timer?.invalidate(); timer = nil; task?.cancel(); sender?.cancel()
         bridge.close()
-        local?.close(); local = nil
+        local?.close(); local = nil; waylandWindows = []; waylandSelected = nil
         if let ssh { Task { await ssh.close() } }; ssh = nil; pendingInput.removeAll()
         state = "已关闭"
     }

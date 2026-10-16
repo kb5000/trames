@@ -32,6 +32,7 @@ public final class LocalSession: @unchecked Sendable {
         options["memory_budget_bytes"] = UInt64(memoryBudgetMiB) << 20
         options["process_memory_budget_bytes"] = UInt64(processMemoryBudgetMiB) << 20
         options["pure_accelerator"] = pureAccelerator
+        options["wayland"] = true
         if let vulkanICD { options["vulkan_accelerator"] = true; options["vulkan_icd"] = vulkanICD.path }
         options["budget_bytes"] = useVolumeBudget ? total : UInt64(16) << 30
         options["timezone"] = try LocalTimezone().options

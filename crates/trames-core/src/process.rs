@@ -3417,6 +3417,9 @@ impl Kernel {
                 backend.reap_abandoned();
             }
             let mut progress = self.pump_terminal(io)?;
+            if let Some(root) = self.processes.get(&1) {
+                progress |= root.linux.vfs.pump_native_services();
+            }
             if self.parallel_round(io, limit)? {
                 continue;
             }
@@ -3557,6 +3560,7 @@ impl Kernel {
                         || (matches!(p.state, State::Blocked(22 | 72 | 73 | 441, _))
                             && p.linux.vfs.live_sockets() != 0)
                         || p.linux.vfs.has_bridge_descriptors()
+                        || p.linux.vfs.has_native_services()
                 }) || self.terminal.is_some() || self.timers.values().any(|t| t.deadline.is_some());
                 if !external {
                     return Err(RuntimeError::Deadlock);

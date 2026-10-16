@@ -9,6 +9,7 @@ license.workspace = true
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [dependencies]
+trames-wayland = { path = "../trames-wayland" }
 trames-core = { path = "../trames-core" }
 trames-linux = { path = "../trames-linux" }
 trames-vfs = { path = "../trames-vfs" }

@@ -210,6 +210,7 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     let mut native_bsearch = false;
     let mut native_allocator = false;
     let mut vulkan_accelerator = false;
+    let mut wayland = false;
     let mut pty = false;
     let mut install_busybox = false;
     let mut files = Vec::new();
@@ -272,6 +273,10 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
             "--native-allocator" => {
                 args.next();
                 native_allocator = true;
+            }
+            "--wayland" => {
+                args.next();
+                wayland = true;
             }
             "--vulkan" => {
                 args.next();
@@ -471,6 +476,20 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
             vfs.mkdir_at(-100, b"/root", 0o700)?;
         }
         vfs.chdir(b"/root")?;
+    }
+    if wayland {
+        let directory = envp
+            .iter()
+            .find_map(|s: &String| s.strip_prefix("XDG_RUNTIME_DIR="))
+            .unwrap_or("/run/user/0")
+            .to_owned();
+        vfs.enable_wayland(directory.as_bytes())?;
+        if !envp.iter().any(|s| s.starts_with("XDG_RUNTIME_DIR=")) {
+            envp.push(format!("XDG_RUNTIME_DIR={directory}"));
+        }
+        if !envp.iter().any(|s| s.starts_with("WAYLAND_DISPLAY=")) {
+            envp.push("WAYLAND_DISPLAY=wayland-0".into());
+        }
     }
     let bytes = if guest_path {
         vfs.executable(path.as_bytes())?
