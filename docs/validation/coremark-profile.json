@@ -1,0 +1,964 @@
+{
+  "scope": "Unmodified CoreMark Linux/posix -O2, single thread; shared Linux host with warm caches. CPU architecture/compiler/thermal differences prevent an iPad speedup claim.",
+  "host": {
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+    "machine": "x86_64",
+    "logical_cpus": 5,
+    "cpu_model": "Intel Xeon Platinum 8573C",
+    "cgroup_cpu_max": "400000 100000"
+  },
+  "upstream_commit": "1f483d5b8316753a742cbf5590caf5bd0a4e4777",
+  "runner_sha256": "aeaa735d6762bea979b750e15bb55167d88df03a31295a461d6b11788eb36ff5",
+  "elf_sha256": "7db7b54a9b5de71d6e9ce1fbe8c71d3dc957187358c2f5b328a7a10cdfd4e378",
+  "iterations": 3000,
+  "runs": [
+    {
+      "label": "performance-1",
+      "cpus": 1,
+      "validation_seeds": false,
+      "profiled": false,
+      "score": 272.03482,
+      "coremark_seconds": 11.028,
+      "wall_seconds": 11.214490330996341,
+      "instructions_per_iteration_including_startup": 296641.5113333333,
+      "metrics": {
+        "backend": "cached",
+        "context_switches": 217275,
+        "cpu_count": 1,
+        "cpu_seconds": 10.656482613,
+        "decode_lookups": 1130771,
+        "decode_misses": 38,
+        "dispatch_seconds": 0.0,
+        "gpu_buffered_bytes": 0,
+        "gpu_compiles": 0,
+        "gpu_direct_bytes": 0,
+        "gpu_download_bytes": 0,
+        "gpu_peak_pending": 0,
+        "gpu_peer_instructions": 0,
+        "gpu_upload_bytes": 0,
+        "gpu_wait_seconds": 0.0,
+        "idle_seconds": 0.0,
+        "instructions": 889924534,
+        "instructions_decoded": 6462,
+        "instructions_per_second": 79516474.07165074,
+        "memory_seconds": 0.0,
+        "parallel_rounds": 0,
+        "peak_parallel_cpus": 0,
+        "peak_parallel_native_calls": 0,
+        "proc_refreshes": 1,
+        "seconds": 11.19170014,
+        "stop_seconds": 0.0,
+        "syscall_seconds": 0.000108557,
+        "syscalls": 12,
+        "worker_chunks": 0,
+        "worker_slices": 0
+      },
+      "stdout": "2K performance run parameters for coremark.\nCoreMark Size    : 666\nTotal ticks      : 11028\nTotal time (secs): 11.028000\nIterations/Sec   : 272.034820\nIterations       : 3000\nCompiler version : GCC14.2.0\nCompiler flags   : -O2   -lrt\nMemory location  : Please put data memory location here\n\t\t\t(e.g. code in flash, data on heap etc)\nseedcrc          : 0xe9f5\n[0]crclist       : 0xe714\n[0]crcmatrix     : 0x1fd7\n[0]crcstate      : 0x8e3a\n[0]crcfinal      : 0xcc42\nCorrect operation validated. See README.md for run and reporting rules.\nCoreMark 1.0 : 272.034820 / GCC14.2.0 -O2   -lrt / Heap\n",
+      "command": [
+        "/workspace/trames/target/coremark-profile/trames-run-release",
+        "--network",
+        "off",
+        "--cpus",
+        "1",
+        "--metrics",
+        "--max-instructions",
+        "20000000000",
+        "--storage",
+        "/workspace/trames/target/coremark-profile/alpine-store-2",
+        "--guest",
+        "/root/coremark/coremark.exe",
+        "0",
+        "0",
+        "0x66",
+        "3000",
+        "7",
+        "1",
+        "2000"
+      ]
+    },
+    {
+      "label": "performance-2",
+      "cpus": 1,
+      "validation_seeds": false,
+      "profiled": false,
+      "score": 263.829039,
+      "coremark_seconds": 11.371,
+      "wall_seconds": 11.5828854470019,
+      "instructions_per_iteration_including_startup": 296641.53366666666,
+      "metrics": {
+        "backend": "cached",
+        "context_switches": 217275,
+        "cpu_count": 1,
+        "cpu_seconds": 10.977823223,
+        "decode_lookups": 1130772,
+        "decode_misses": 38,
+        "dispatch_seconds": 0.0,
+        "gpu_buffered_bytes": 0,
+        "gpu_compiles": 0,
+        "gpu_direct_bytes": 0,
+        "gpu_download_bytes": 0,
+        "gpu_peak_pending": 0,
+        "gpu_peer_instructions": 0,
+        "gpu_upload_bytes": 0,
+        "gpu_wait_seconds": 0.0,
+        "idle_seconds": 0.0,
+        "instructions": 889924601,
+        "instructions_decoded": 6487,
+        "instructions_per_second": 76990531.24728042,
+        "memory_seconds": 0.0,
+        "parallel_rounds": 0,
+        "peak_parallel_cpus": 0,
+        "peak_parallel_native_calls": 0,
+        "proc_refreshes": 1,
+        "seconds": 11.558883756,
+        "stop_seconds": 0.0,
+        "syscall_seconds": 0.000118124,
+        "syscalls": 12,
+        "worker_chunks": 0,
+        "worker_slices": 0
+      },
+      "stdout": "2K performance run parameters for coremark.\nCoreMark Size    : 666\nTotal ticks      : 11371\nTotal time (secs): 11.371000\nIterations/Sec   : 263.829039\nIterations       : 3000\nCompiler version : GCC14.2.0\nCompiler flags   : -O2   -lrt\nMemory location  : Please put data memory location here\n\t\t\t(e.g. code in flash, data on heap etc)\nseedcrc          : 0xe9f5\n[0]crclist       : 0xe714\n[0]crcmatrix     : 0x1fd7\n[0]crcstate      : 0x8e3a\n[0]crcfinal      : 0xcc42\nCorrect operation validated. See README.md for run and reporting rules.\nCoreMark 1.0 : 263.829039 / GCC14.2.0 -O2   -lrt / Heap\n",
+      "command": [
+        "/workspace/trames/target/coremark-profile/trames-run-release",
+        "--network",
+        "off",
+        "--cpus",
+        "1",
+        "--metrics",
+        "--max-instructions",
+        "20000000000",
+        "--storage",
+        "/workspace/trames/target/coremark-profile/alpine-store-2",
+        "--guest",
+        "/root/coremark/coremark.exe",
+        "0",
+        "0",
+        "0x66",
+        "3000",
+        "7",
+        "1",
+        "2000"
+      ]
+    },
+    {
+      "label": "performance-3",
+      "cpus": 1,
+      "validation_seeds": false,
+      "profiled": false,
+      "score": 248.221082,
+      "coremark_seconds": 12.086,
+      "wall_seconds": 12.322843098008889,
+      "instructions_per_iteration_including_startup": 296641.50766666664,
+      "metrics": {
+        "backend": "cached",
+        "context_switches": 217275,
+        "cpu_count": 1,
+        "cpu_seconds": 11.660152116999999,
+        "decode_lookups": 1130772,
+        "decode_misses": 38,
+        "dispatch_seconds": 0.0,
+        "gpu_buffered_bytes": 0,
+        "gpu_compiles": 0,
+        "gpu_direct_bytes": 0,
+        "gpu_download_bytes": 0,
+        "gpu_peak_pending": 0,
+        "gpu_peer_instructions": 0,
+        "gpu_upload_bytes": 0,
+        "gpu_wait_seconds": 0.0,
+        "idle_seconds": 0.0,
+        "instructions": 889924523,
+        "instructions_decoded": 6462,
+        "instructions_per_second": 72354369.73188607,
+        "memory_seconds": 0.0,
+        "parallel_rounds": 0,
+        "peak_parallel_cpus": 0,
+        "peak_parallel_native_calls": 0,
+        "proc_refreshes": 1,
+        "seconds": 12.299526985,
+        "stop_seconds": 0.0,
+        "syscall_seconds": 9.0524e-05,
+        "syscalls": 12,
+        "worker_chunks": 0,
+        "worker_slices": 0
+      },
+      "stdout": "2K performance run parameters for coremark.\nCoreMark Size    : 666\nTotal ticks      : 12086\nTotal time (secs): 12.086000\nIterations/Sec   : 248.221082\nIterations       : 3000\nCompiler version : GCC14.2.0\nCompiler flags   : -O2   -lrt\nMemory location  : Please put data memory location here\n\t\t\t(e.g. code in flash, data on heap etc)\nseedcrc          : 0xe9f5\n[0]crclist       : 0xe714\n[0]crcmatrix     : 0x1fd7\n[0]crcstate      : 0x8e3a\n[0]crcfinal      : 0xcc42\nCorrect operation validated. See README.md for run and reporting rules.\nCoreMark 1.0 : 248.221082 / GCC14.2.0 -O2   -lrt / Heap\n",
+      "command": [
+        "/workspace/trames/target/coremark-profile/trames-run-release",
+        "--network",
+        "off",
+        "--cpus",
+        "1",
+        "--metrics",
+        "--max-instructions",
+        "20000000000",
+        "--storage",
+        "/workspace/trames/target/coremark-profile/alpine-store-2",
+        "--guest",
+        "/root/coremark/coremark.exe",
+        "0",
+        "0",
+        "0x66",
+        "3000",
+        "7",
+        "1",
+        "2000"
+      ]
+    },
+    {
+      "label": "validation",
+      "cpus": 1,
+      "validation_seeds": true,
+      "profiled": false,
+      "score": 252.4615,
+      "coremark_seconds": 11.883,
+      "wall_seconds": 12.126224389998242,
+      "instructions_per_iteration_including_startup": 296621.37433333334,
+      "metrics": {
+        "backend": "cached",
+        "context_switches": 217260,
+        "cpu_count": 1,
+        "cpu_seconds": 11.454599255,
+        "decode_lookups": 1130554,
+        "decode_misses": 38,
+        "dispatch_seconds": 0.0,
+        "gpu_buffered_bytes": 0,
+        "gpu_compiles": 0,
+        "gpu_direct_bytes": 0,
+        "gpu_download_bytes": 0,
+        "gpu_peak_pending": 0,
+        "gpu_peer_instructions": 0,
+        "gpu_upload_bytes": 0,
+        "gpu_wait_seconds": 0.0,
+        "idle_seconds": 0.0,
+        "instructions": 889864123,
+        "instructions_decoded": 6422,
+        "instructions_per_second": 73521649.7864241,
+        "memory_seconds": 0.0,
+        "parallel_rounds": 0,
+        "peak_parallel_cpus": 0,
+        "peak_parallel_native_calls": 0,
+        "proc_refreshes": 1,
+        "seconds": 12.103429746,
+        "stop_seconds": 0.0,
+        "syscall_seconds": 9.3662e-05,
+        "syscalls": 12,
+        "worker_chunks": 0,
+        "worker_slices": 0
+      },
+      "stdout": "2K validation run parameters for coremark.\nCoreMark Size    : 666\nTotal ticks      : 11883\nTotal time (secs): 11.883000\nIterations/Sec   : 252.461500\nIterations       : 3000\nCompiler version : GCC14.2.0\nCompiler flags   : -O2   -lrt\nMemory location  : Please put data memory location here\n\t\t\t(e.g. code in flash, data on heap etc)\nseedcrc          : 0x18f2\n[0]crclist       : 0xe3c1\n[0]crcmatrix     : 0x0747\n[0]crcstate      : 0x8d84\n[0]crcfinal      : 0x2717\nCorrect operation validated. See README.md for run and reporting rules.\n",
+      "command": [
+        "/workspace/trames/target/coremark-profile/trames-run-release",
+        "--network",
+        "off",
+        "--cpus",
+        "1",
+        "--metrics",
+        "--max-instructions",
+        "20000000000",
+        "--storage",
+        "/workspace/trames/target/coremark-profile/alpine-store-2",
+        "--guest",
+        "/root/coremark/coremark.exe",
+        "0x3415",
+        "0x3415",
+        "0x66",
+        "3000",
+        "7",
+        "1",
+        "2000"
+      ]
+    },
+    {
+      "label": "single-thread-four-vcpus",
+      "cpus": 4,
+      "validation_seeds": false,
+      "profiled": false,
+      "score": 266.169816,
+      "coremark_seconds": 11.271,
+      "wall_seconds": 11.56031640600122,
+      "instructions_per_iteration_including_startup": 296641.51633333333,
+      "metrics": {
+        "backend": "cached",
+        "context_switches": 217275,
+        "cpu_count": 4,
+        "cpu_seconds": 10.877807238,
+        "decode_lookups": 1130771,
+        "decode_misses": 38,
+        "dispatch_seconds": 0.0,
+        "gpu_buffered_bytes": 0,
+        "gpu_compiles": 0,
+        "gpu_direct_bytes": 0,
+        "gpu_download_bytes": 0,
+        "gpu_peak_pending": 0,
+        "gpu_peer_instructions": 0,
+        "gpu_upload_bytes": 0,
+        "gpu_wait_seconds": 0.0,
+        "idle_seconds": 0.0,
+        "instructions": 889924549,
+        "instructions_decoded": 6461,
+        "instructions_per_second": 77178220.13173093,
+        "memory_seconds": 0.0,
+        "parallel_rounds": 0,
+        "peak_parallel_cpus": 0,
+        "peak_parallel_native_calls": 0,
+        "proc_refreshes": 1,
+        "seconds": 11.530773157,
+        "stop_seconds": 0.0,
+        "syscall_seconds": 9.1587e-05,
+        "syscalls": 12,
+        "worker_chunks": 0,
+        "worker_slices": 0
+      },
+      "stdout": "2K performance run parameters for coremark.\nCoreMark Size    : 666\nTotal ticks      : 11271\nTotal time (secs): 11.271000\nIterations/Sec   : 266.169816\nIterations       : 3000\nCompiler version : GCC14.2.0\nCompiler flags   : -O2   -lrt\nMemory location  : Please put data memory location here\n\t\t\t(e.g. code in flash, data on heap etc)\nseedcrc          : 0xe9f5\n[0]crclist       : 0xe714\n[0]crcmatrix     : 0x1fd7\n[0]crcstate      : 0x8e3a\n[0]crcfinal      : 0xcc42\nCorrect operation validated. See README.md for run and reporting rules.\nCoreMark 1.0 : 266.169816 / GCC14.2.0 -O2   -lrt / Heap\n",
+      "command": [
+        "/workspace/trames/target/coremark-profile/trames-run-release",
+        "--network",
+        "off",
+        "--cpus",
+        "4",
+        "--metrics",
+        "--max-instructions",
+        "20000000000",
+        "--storage",
+        "/workspace/trames/target/coremark-profile/alpine-store-2",
+        "--guest",
+        "/root/coremark/coremark.exe",
+        "0",
+        "0",
+        "0x66",
+        "3000",
+        "7",
+        "1",
+        "2000"
+      ]
+    },
+    {
+      "label": "symbols-only",
+      "cpus": 1,
+      "validation_seeds": false,
+      "profiled": false,
+      "score": 250.208507,
+      "coremark_seconds": 11.99,
+      "wall_seconds": 12.183340906995,
+      "instructions_per_iteration_including_startup": 296641.50766666664,
+      "metrics": {
+        "backend": "cached",
+        "context_switches": 217275,
+        "cpu_count": 1,
+        "cpu_seconds": 11.585163814,
+        "decode_lookups": 1130772,
+        "decode_misses": 38,
+        "dispatch_seconds": 0.0,
+        "gpu_buffered_bytes": 0,
+        "gpu_compiles": 0,
+        "gpu_direct_bytes": 0,
+        "gpu_download_bytes": 0,
+        "gpu_peak_pending": 0,
+        "gpu_peer_instructions": 0,
+        "gpu_upload_bytes": 0,
+        "gpu_wait_seconds": 0.0,
+        "idle_seconds": 0.0,
+        "instructions": 889924523,
+        "instructions_decoded": 6455,
+        "instructions_per_second": 73220441.80353375,
+        "memory_seconds": 0.0,
+        "parallel_rounds": 0,
+        "peak_parallel_cpus": 0,
+        "peak_parallel_native_calls": 0,
+        "proc_refreshes": 1,
+        "seconds": 12.154044705,
+        "stop_seconds": 0.0,
+        "syscall_seconds": 0.000496236,
+        "syscalls": 12,
+        "worker_chunks": 0,
+        "worker_slices": 0
+      },
+      "stdout": "2K performance run parameters for coremark.\nCoreMark Size    : 666\nTotal ticks      : 11990\nTotal time (secs): 11.990000\nIterations/Sec   : 250.208507\nIterations       : 3000\nCompiler version : GCC14.2.0\nCompiler flags   : -O2   -lrt\nMemory location  : Please put data memory location here\n\t\t\t(e.g. code in flash, data on heap etc)\nseedcrc          : 0xe9f5\n[0]crclist       : 0xe714\n[0]crcmatrix     : 0x1fd7\n[0]crcstate      : 0x8e3a\n[0]crcfinal      : 0xcc42\nCorrect operation validated. See README.md for run and reporting rules.\nCoreMark 1.0 : 250.208507 / GCC14.2.0 -O2   -lrt / Heap\n",
+      "command": [
+        "/workspace/trames/target/release/trames-run",
+        "--network",
+        "off",
+        "--cpus",
+        "1",
+        "--metrics",
+        "--max-instructions",
+        "20000000000",
+        "--storage",
+        "/workspace/trames/target/coremark-profile/alpine-store-2",
+        "--guest",
+        "/root/coremark/coremark.exe",
+        "0",
+        "0",
+        "0x66",
+        "3000",
+        "7",
+        "1",
+        "2000"
+      ]
+    },
+    {
+      "label": "pc-sampling",
+      "cpus": 1,
+      "validation_seeds": false,
+      "profiled": true,
+      "score": 237.642586,
+      "coremark_seconds": 12.624,
+      "metrics": {
+        "backend": "cached",
+        "context_switches": 217275,
+        "cpu_count": 1,
+        "cpu_seconds": 12.169558028,
+        "decode_lookups": 1130771,
+        "decode_misses": 38,
+        "dispatch_seconds": 0.0,
+        "gpu_buffered_bytes": 0,
+        "gpu_compiles": 0,
+        "gpu_direct_bytes": 0,
+        "gpu_download_bytes": 0,
+        "gpu_peak_pending": 0,
+        "gpu_peer_instructions": 0,
+        "gpu_upload_bytes": 0,
+        "gpu_wait_seconds": 0.0,
+        "idle_seconds": 0.0,
+        "instructions": 889924589,
+        "instructions_decoded": 6481,
+        "instructions_per_second": 69103226.42704366,
+        "memory_seconds": 0.0,
+        "parallel_rounds": 0,
+        "peak_parallel_cpus": 0,
+        "peak_parallel_native_calls": 0,
+        "proc_refreshes": 1,
+        "seconds": 12.878191584,
+        "stop_seconds": 0.0,
+        "syscall_seconds": 0.001021105,
+        "syscalls": 12,
+        "worker_chunks": 0,
+        "worker_slices": 0
+      },
+      "stdout": "2K performance run parameters for coremark.\nCoreMark Size    : 666\nTotal ticks      : 12624\nTotal time (secs): 12.624000\nIterations/Sec   : 237.642586\nIterations       : 3000\nCompiler version : GCC14.2.0\nCompiler flags   : -O2   -lrt\nMemory location  : Please put data memory location here\n\t\t\t(e.g. code in flash, data on heap etc)\nseedcrc          : 0xe9f5\n[0]crclist       : 0xe714\n[0]crcmatrix     : 0x1fd7\n[0]crcstate      : 0x8e3a\n[0]crcfinal      : 0xcc42\nCorrect operation validated. See README.md for run and reporting rules.\nCoreMark 1.0 : 237.642586 / GCC14.2.0 -O2   -lrt / Heap\n",
+      "command": [
+        "/workspace/trames/target/release/trames-run",
+        "--storage",
+        "/workspace/trames/target/coremark-profile/alpine-store-2",
+        "--network",
+        "off",
+        "--cpus",
+        "1",
+        "--metrics",
+        "--max-instructions",
+        "20000000000",
+        "--guest",
+        "/root/coremark/coremark.exe",
+        "0",
+        "0",
+        "0x66",
+        "3000",
+        "7",
+        "1",
+        "2000"
+      ]
+    }
+  ],
+  "performance_summary": {
+    "median": 263.829039,
+    "min": 248.221082,
+    "max": 272.03482
+  },
+  "profile_runner_sha256": "276d4f43d2af56c0cbae551fa21e3f21da86987811e5663da4923dc38e11a937",
+  "sampling_elapsed_ratio": 1.0528773978315262,
+  "profile": {
+    "method": "Linux ITIMER_PROF saved user PC, requested 1 ms; actual tick resolution applies. Exclusive samples classified using inline source frames; whole process including startup/calibration. Not hardware cycle counters or iPad measurements.",
+    "samples": 3163,
+    "unique_pcs": 562,
+    "header": [
+      "TRAMES-PC-SAMPLES-v1",
+      "requested_interval_us 1000",
+      "samples 3163",
+      "dropped 0"
+    ],
+    "categories": [
+      {
+        "name": "instruction_execution",
+        "samples": 1365,
+        "percent": 43.15523237432817
+      },
+      {
+        "name": "dispatch_and_code_cache",
+        "samples": 1003,
+        "percent": 31.710401517546632
+      },
+      {
+        "name": "guest_memory",
+        "samples": 660,
+        "percent": 20.86626620297186
+      },
+      {
+        "name": "outside_executable",
+        "samples": 118,
+        "percent": 3.730635472652545
+      },
+      {
+        "name": "scheduler_and_kernel",
+        "samples": 12,
+        "percent": 0.37938665823585205
+      },
+      {
+        "name": "other",
+        "samples": 5,
+        "percent": 0.15807777426493835
+      }
+    ],
+    "functions": [
+      {
+        "name": "trames_cpu::cached::<impl trames_cpu::Cpu>::cached_slice",
+        "samples": 932,
+        "percent": 29.46569712298451
+      },
+      {
+        "name": "trames_cpu::cached::<impl trames_cpu::Cpu>::execute_decoded",
+        "samples": 680,
+        "percent": 21.498577300031616
+      },
+      {
+        "name": "trames_memory::backing::<impl trames_memory::Page>::write_bytes",
+        "samples": 125,
+        "percent": 3.951944356623459
+      },
+      {
+        "name": "outside_executable",
+        "samples": 118,
+        "percent": 3.730635472652545
+      },
+      {
+        "name": "trames_memory::Memory::read_array",
+        "samples": 94,
+        "percent": 2.971862156180841
+      },
+      {
+        "name": "core::option::Option<T>::as_ref",
+        "samples": 87,
+        "percent": 2.750553272209927
+      },
+      {
+        "name": "trames_cpu::Cpu::x",
+        "samples": 77,
+        "percent": 2.4343977236800507
+      },
+      {
+        "name": "trames_cpu::shifted",
+        "samples": 76,
+        "percent": 2.4027821688270627
+      },
+      {
+        "name": "trames_cpu::width_mask",
+        "samples": 72,
+        "percent": 2.2763199494151123
+      },
+      {
+        "name": "trames_cpu::load_store::read_operand",
+        "samples": 69,
+        "percent": 2.1814732848561493
+      },
+      {
+        "name": "trames_cpu::Cpu::condition",
+        "samples": 64,
+        "percent": 2.023395510591211
+      },
+      {
+        "name": "trames_cpu::cached::<impl trames_cpu::Cpu>::decoded_logical",
+        "samples": 60,
+        "percent": 1.8969332911792602
+      },
+      {
+        "name": "trames_cpu::cached::Instruction::may_write_code",
+        "samples": 58,
+        "percent": 1.8337021814732848
+      },
+      {
+        "name": "trames_memory::Memory::frame",
+        "samples": 55,
+        "percent": 1.7388555169143218
+      },
+      {
+        "name": "trames_memory::Memory::page_for_access",
+        "samples": 49,
+        "percent": 1.549162187796396
+      },
+      {
+        "name": "trames_cpu::Cpu::arithmetic",
+        "samples": 43,
+        "percent": 1.3594688586784698
+      },
+      {
+        "name": "<core::result::Result<T,E> as core::ops::try_trait::Try>::branch",
+        "samples": 43,
+        "percent": 1.3594688586784698
+      },
+      {
+        "name": "core::num::<impl u64>::wrapping_add",
+        "samples": 43,
+        "percent": 1.3594688586784698
+      },
+      {
+        "name": "core::slice::index::get_offset_len_noubcheck",
+        "samples": 43,
+        "percent": 1.3594688586784698
+      },
+      {
+        "name": "trames_cpu::Cpu::set_x",
+        "samples": 38,
+        "percent": 1.2013910844135314
+      },
+      {
+        "name": "trames_memory::Memory::write_array",
+        "samples": 36,
+        "percent": 1.1381599747075561
+      },
+      {
+        "name": "core::option::Option<T>::expect",
+        "samples": 26,
+        "percent": 0.8220044261776794
+      },
+      {
+        "name": "trames_cpu::Cpu::reg",
+        "samples": 26,
+        "percent": 0.8220044261776794
+      },
+      {
+        "name": "trames_cpu::Cpu::put",
+        "samples": 25,
+        "percent": 0.7903888713246917
+      },
+      {
+        "name": "trames_memory::Memory::end",
+        "samples": 25,
+        "percent": 0.7903888713246917
+      }
+    ],
+    "source_lines": [
+      {
+        "name": "trames_cpu::cached::<impl trames_cpu::Cpu>::cached_slice /workspace/trames/crates/trames-cpu/src/cached.rs:643",
+        "samples": 480,
+        "percent": 15.175466329434082
+      },
+      {
+        "name": "trames_cpu::cached::<impl trames_cpu::Cpu>::execute_decoded /workspace/trames/crates/trames-cpu/src/lib.rs:?",
+        "samples": 174,
+        "percent": 5.501106544419854
+      },
+      {
+        "name": "trames_cpu::cached::<impl trames_cpu::Cpu>::cached_slice /workspace/trames/crates/trames-cpu/src/cached.rs:642",
+        "samples": 133,
+        "percent": 4.20486879544736
+      },
+      {
+        "name": "trames_cpu::cached::<impl trames_cpu::Cpu>::cached_slice /workspace/trames/crates/trames-cpu/src/cached.rs:641",
+        "samples": 133,
+        "percent": 4.20486879544736
+      },
+      {
+        "name": "outside_executable",
+        "samples": 118,
+        "percent": 3.730635472652545
+      },
+      {
+        "name": "trames_cpu::cached::<impl trames_cpu::Cpu>::execute_decoded /workspace/trames/crates/trames-cpu/src/cached.rs:723",
+        "samples": 111,
+        "percent": 3.509326588681631
+      },
+      {
+        "name": "trames_memory::backing::<impl trames_memory::Page>::write_bytes /workspace/trames/crates/trames-memory/src/backing.rs:105",
+        "samples": 103,
+        "percent": 3.25640214985773
+      },
+      {
+        "name": "core::option::Option<T>::as_ref /workspace/.toolchains/rustup/toolchains/1.90.0-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/option.rs:738",
+        "samples": 87,
+        "percent": 2.750553272209927
+      },
+      {
+        "name": "trames_cpu::cached::<impl trames_cpu::Cpu>::execute_decoded /workspace/trames/crates/trames-cpu/src/cached.rs:?",
+        "samples": 77,
+        "percent": 2.4343977236800507
+      },
+      {
+        "name": "trames_cpu::width_mask /workspace/trames/crates/trames-cpu/src/lib.rs:157",
+        "samples": 72,
+        "percent": 2.2763199494151123
+      },
+      {
+        "name": "trames_cpu::cached::<impl trames_cpu::Cpu>::execute_decoded /workspace/trames/crates/trames-cpu/src/cached.rs:726",
+        "samples": 67,
+        "percent": 2.118242175150174
+      },
+      {
+        "name": "trames_cpu::cached::<impl trames_cpu::Cpu>::cached_slice /workspace/trames/crates/trames-cpu/src/cached.rs:629",
+        "samples": 60,
+        "percent": 1.8969332911792602
+      },
+      {
+        "name": "trames_cpu::cached::Instruction::may_write_code /workspace/trames/crates/trames-cpu/src/cached.rs:410",
+        "samples": 49,
+        "percent": 1.549162187796396
+      },
+      {
+        "name": "trames_cpu::cached::<impl trames_cpu::Cpu>::execute_decoded /workspace/trames/crates/trames-cpu/src/cached.rs:724",
+        "samples": 48,
+        "percent": 1.5175466329434082
+      },
+      {
+        "name": "trames_memory::Memory::frame /workspace/trames/crates/trames-memory/src/lib.rs:268",
+        "samples": 48,
+        "percent": 1.5175466329434082
+      },
+      {
+        "name": "trames_cpu::Cpu::x /workspace/trames/crates/trames-cpu/src/lib.rs:201",
+        "samples": 43,
+        "percent": 1.3594688586784698
+      },
+      {
+        "name": "core::num::<impl u64>::wrapping_add /workspace/.toolchains/rustup/toolchains/1.90.0-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/num/uint_macros.rs:2075",
+        "samples": 43,
+        "percent": 1.3594688586784698
+      },
+      {
+        "name": "core::slice::index::get_offset_len_noubcheck /workspace/.toolchains/rustup/toolchains/1.90.0-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/index.rs:97",
+        "samples": 43,
+        "percent": 1.3594688586784698
+      },
+      {
+        "name": "trames_cpu::shifted /workspace/trames/crates/trames-cpu/src/lib.rs:163",
+        "samples": 42,
+        "percent": 1.327853303825482
+      },
+      {
+        "name": "trames_cpu::cached::<impl trames_cpu::Cpu>::cached_slice /workspace/trames/crates/trames-cpu/src/cached.rs:640",
+        "samples": 42,
+        "percent": 1.327853303825482
+      },
+      {
+        "name": "trames_cpu::Cpu::condition /workspace/trames/crates/trames-cpu/src/lib.rs:?",
+        "samples": 41,
+        "percent": 1.2962377489724946
+      },
+      {
+        "name": "trames_cpu::load_store::read_operand /workspace/trames/crates/trames-cpu/src/load_store.rs:12",
+        "samples": 36,
+        "percent": 1.1381599747075561
+      },
+      {
+        "name": "trames_cpu::cached::<impl trames_cpu::Cpu>::cached_slice /workspace/trames/crates/trames-cpu/src/cached.rs:?",
+        "samples": 34,
+        "percent": 1.0749288650015807
+      },
+      {
+        "name": "trames_cpu::cached::<impl trames_cpu::Cpu>::execute_decoded /workspace/trames/crates/trames-cpu/src/cached.rs:785",
+        "samples": 33,
+        "percent": 1.0433133101485932
+      },
+      {
+        "name": "trames_memory::Memory::read_array /workspace/trames/crates/trames-memory/src/lib.rs:812",
+        "samples": 33,
+        "percent": 1.0433133101485932
+      },
+      {
+        "name": "trames_cpu::cached::<impl trames_cpu::Cpu>::cached_slice /workspace/trames/crates/trames-cpu/src/cached.rs:675",
+        "samples": 31,
+        "percent": 0.9800822004426177
+      },
+      {
+        "name": "trames_memory::Memory::read_array /workspace/trames/crates/trames-memory/src/lib.rs:799",
+        "samples": 29,
+        "percent": 0.9168510907366424
+      },
+      {
+        "name": "core::option::Option<T>::expect /workspace/.toolchains/rustup/toolchains/1.90.0-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/option.rs:962",
+        "samples": 26,
+        "percent": 0.8220044261776794
+      },
+      {
+        "name": "trames_cpu::Cpu::x /workspace/trames/crates/trames-cpu/src/lib.rs:?",
+        "samples": 25,
+        "percent": 0.7903888713246917
+      },
+      {
+        "name": "trames_cpu::cached::<impl trames_cpu::Cpu>::execute_decoded /workspace/trames/crates/trames-cpu/src/cached.rs:985",
+        "samples": 25,
+        "percent": 0.7903888713246917
+      },
+      {
+        "name": "trames_memory::Memory::end /workspace/trames/crates/trames-memory/src/lib.rs:?",
+        "samples": 25,
+        "percent": 0.7903888713246917
+      },
+      {
+        "name": "trames_cpu::shifted /workspace/trames/crates/trames-cpu/src/lib.rs:165",
+        "samples": 24,
+        "percent": 0.7587733164717041
+      },
+      {
+        "name": "trames_cpu::cached::<impl trames_cpu::Cpu>::decoded_logical /workspace/trames/crates/trames-cpu/src/cached.rs:1142",
+        "samples": 23,
+        "percent": 0.7271577616187164
+      },
+      {
+        "name": "trames_cpu::cached::<impl trames_cpu::Cpu>::execute_decoded /workspace/trames/crates/trames-cpu/src/cached.rs:720",
+        "samples": 22,
+        "percent": 0.6955422067657288
+      },
+      {
+        "name": "<core::result::Result<T,E> as core::ops::try_trait::Try>::branch /workspace/.toolchains/rustup/toolchains/1.90.0-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/result.rs:2071",
+        "samples": 22,
+        "percent": 0.6955422067657288
+      },
+      {
+        "name": "trames_cpu::load_store::read_operand /workspace/trames/crates/trames-cpu/src/load_store.rs:7",
+        "samples": 22,
+        "percent": 0.6955422067657288
+      },
+      {
+        "name": "trames_cpu::cached::<impl trames_cpu::Cpu>::cached_slice /workspace/trames/crates/trames-cpu/src/cached.rs:631",
+        "samples": 19,
+        "percent": 0.6006955422067657
+      },
+      {
+        "name": "trames_cpu::Cpu::set_x /workspace/trames/crates/trames-cpu/src/lib.rs:206",
+        "samples": 18,
+        "percent": 0.5690799873537781
+      },
+      {
+        "name": "trames_memory::Memory::page_for_access /workspace/trames/crates/trames-memory/src/lib.rs:687",
+        "samples": 18,
+        "percent": 0.5690799873537781
+      },
+      {
+        "name": "trames_cpu::Cpu::reg /workspace/trames/crates/trames-cpu/src/lib.rs:?",
+        "samples": 18,
+        "percent": 0.5690799873537781
+      }
+    ],
+    "pc_samples_sha256": "998400d27dd3f5f1f8718df0cf475d18dff48977597005a4c332c0a529efd297",
+    "sampled_stderr": "trames native metrics: {\"calls\":0,\"worker_calls\":0,\"checkpoint_retries\":0,\"function_calls\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"function_fallbacks\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"integer_calls\":0,\"integer_conversions\":0,\"allocator_calls\":0,\"allocator_load_callbacks\":0,\"allocator_page_callbacks\":0,\"allocator_direct_loads\":0,\"allocator_journal_writes\":0,\"allocator_allocations\":0,\"allocator_slot_reservations\":0,\"allocator_frees\":0,\"allocator_free_resumes\":0,\"callback_calls\":0,\"callback_requests\":0,\"callback_yields\":0,\"callback_sorts\":0,\"callback_searches\":0,\"callback_state_bytes\":0,\"numeric_calls\":0,\"numeric_conversions\":0,\"numeric_replays\":0,\"numeric_input_bytes\":0,\"numeric_result_bytes\":0,\"fallbacks\":0,\"rejected\":0,\"validation_hits\":0,\"validation_misses\":0,\"faults\":0,\"bytes_read\":0,\"bytes_written\":0,\"direct_bytes_read\":0,\"direct_bytes_written\":0,\"buffered_bytes_read\":0,\"buffered_bytes_written\":0,\"nanoseconds\":0}\ntrames metrics: {\"backend\":\"cached\",\"context_switches\":217275,\"cpu_count\":1,\"cpu_seconds\":12.169558028,\"decode_lookups\":1130771,\"decode_misses\":38,\"dispatch_seconds\":0.0,\"gpu_buffered_bytes\":0,\"gpu_compiles\":0,\"gpu_direct_bytes\":0,\"gpu_download_bytes\":0,\"gpu_peak_pending\":0,\"gpu_peer_instructions\":0,\"gpu_upload_bytes\":0,\"gpu_wait_seconds\":0.0,\"idle_seconds\":0.0,\"instructions\":889924589,\"instructions_decoded\":6481,\"instructions_per_second\":69103226.42704366,\"memory_seconds\":0.0,\"parallel_rounds\":0,\"peak_parallel_cpus\":0,\"peak_parallel_native_calls\":0,\"proc_refreshes\":1,\"seconds\":12.878191584,\"stop_seconds\":0.0,\"syscall_seconds\":0.001021105,\"syscalls\":12,\"worker_chunks\":0,\"worker_slices\":0}\n",
+    "collector_sha256": "f478023f00770c38ecf369f4bbf2f9c20998047d4a242e5093ba39086f899d68",
+    "sampler_note": "Sampler filters /proc/self/exe and PID to exclude inherited host timezone helpers. Raw saved PCs are executable-relative; no guest state is sampled."
+  },
+  "discarded_profile_reason": "Initial collector output was created by an inherited host timezone helper; excluded. Collector now restricts executable/PID; corrected independent profile is recorded below.",
+  "runtime_commit": "2d078fd45e93398250e53edcc5d53340ce14444b",
+  "source_archive_sha256": "4067e7f260218df13f2875d8f821a8ff32a84153c6e0759d7c89f96c0a8bf987",
+  "alpine_inputs": {
+    "packages_sha256": {
+      "binutils-2.44-r3.apk": "4e08a500a402ffef9bc9bd4adf4fea5ff72446767b59f0177df6de46708a3b52",
+      "gcc-14.2.0-r6.apk": "0224b985a055ef90324dee9a65c5683f28499f0798db23cae90b40ebba620772",
+      "gmp-6.3.0-r3.apk": "0d2eb1079b1b5692e9e6652ff0e269caeb9c812f483e34c88d461c03bcf75460",
+      "isl26-0.26-r1.apk": "1283f7ec497ea57044a8ca0a55baf687ed8e36467ba91d9c2f3ee8df7de38c23",
+      "jansson-2.14.1-r0.apk": "f57c3bceb823add72ee0ccbf17aa7fc98596ff9eb0c11d0e5a2c28260ea87dcd",
+      "libatomic-14.2.0-r6.apk": "7b4427d24bf2e3418a1a3ea97eef81aedbe7aa060ad186ad5387b3a597931c4e",
+      "libgcc-14.2.0-r6.apk": "ba1835eec3ad8a120efd3d5020e561d53553a0513763a08f509e3ce6d4baa9ca",
+      "libgomp-14.2.0-r6.apk": "97a2f9a89d8b3cc7714e1d5a0ab2e01bce711e8a3b330db36b5f876d9aa4ec8c",
+      "libstdc++-14.2.0-r6.apk": "0d2f054057a4f932e985a129eccb79908b40964185139a0a609aed3032aba064",
+      "make-4.4.1-r3.apk": "5f9be4c947b967b060ea665907b7d0bf159baf78d6972c9e3e617f2061bbe4a7",
+      "mpc1-1.3.1-r1.apk": "20dca4b0a808aef7d5d9e59eaa1dea59b929f65b103107a1396acab81c2ad278",
+      "mpfr4-4.2.1_p1-r0.apk": "258d57fa9c59eee21110a2d3f44a96f893a132e77febb7a5c0abca8512c6fc30",
+      "musl-1.2.5-r12.apk": "ac281d1e7f9e9c447c51e309317b975f48be6edaf3ab91ae73b959cf86703782",
+      "musl-dev-1.2.5-r12.apk": "576f4aabcfa01d10d6baa2d5d87de436b76e58ae76eedf9db7627051365e1fe3",
+      "zlib-1.3.2-r1.apk": "2d274cb1b2a36d0e8347d802e6dea8648cab952ea5fae1989ab72e725842a2c3",
+      "zstd-libs-1.5.7-r0.apk": "a0e92d2225941a514eb0b2325b137fe6444ef9171627aae8129b74a6ad934ac4"
+    },
+    "rootfs_sha256": "821565fa8f3953eefd12497b166b4b50add2f7c57fb312e75862f5867e06fefe",
+    "elf_sha256": "7db7b54a9b5de71d6e9ce1fbe8c71d3dc957187358c2f5b328a7a10cdfd4e378"
+  },
+  "build_output": "gcc (Alpine 14.2.0) 14.2.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\nGNU Make 4.4.1\nBuilt for aarch64-alpine-linux-musl\nCopyright (C) 1988-2023 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\ncc -O2 -Ilinux -Iposix -I. -DFLAGS_STR=\\\"\"-O2   -lrt\"\\\" -DITERATIONS=0  core_list_join.c core_main.c core_matrix.c core_state.c core_util.c posix/core_portme.c -o ./coremark.exe -lrt\n",
+  "rough_guest_ips_at_user_score_370": 109757367.45666666,
+  "summary": {
+    "cpu_fraction": 0.9497303939319934,
+    "syscall_fraction": 1.0219325887647588e-05,
+    "decode_misses": 38,
+    "decode_lookups": 1130772,
+    "native_calls": 0,
+    "note": "Context-switch count includes local 4096-instruction slices, not equivalent to host thread switches. Default CoreMark timed loop is single-threaded and makes almost no libc/syscall calls."
+  },
+  "sampling_elapsed_ratio_note": "One adjacent profiled/unprofiled pair on a shared host; ratio includes scheduler/noise and is not an isolated overhead estimate.",
+  "source_sha256": {
+    "tests/performance/coremark.py": "5a5e3dde3e891655b7465375a818b73a2e5916ea81dd6802e2e58df9749b2395",
+    "tests/performance/pc-sampler.c": "ce1dca0df733a1a83ae28497d10e15622ec0861d57ef7980d637a6b8b5d09534",
+    "crates/trames-cpu/src/cached.rs": "cda089134f3ba68534d5435a3a09403ad17e6bc5b28e5d01419f2633786429d7",
+    "crates/trames-cpu/src/lib.rs": "e4560ae1d721c7ec8b7d8c3eb36b30b349982c0a668e863aba35a4c903e2a845",
+    "crates/trames-memory/src/lib.rs": "4267d3e7d3b2529cf86db894f99679c7e19f38b75608aeb67788a96700b1f2da",
+    "crates/trames-memory/src/backing.rs": "81878739c5ddcd72bd13ac5645b1005d2a86d30846d3d7c866c764673538f402",
+    "crates/trames-core/src/process.rs": "46d594e323ed37a895c7c331b899523f931fc3825ed4dba96e517fcd60136232"
+  },
+  "alternative_build_diagnostic": {
+    "scope": "Same upstream source, Debian GCC 14.2 cross/musl static build; different compiler configuration and linking. One sample only, not a controlled estimate of static-link overhead or an optimization comparison.",
+    "score": 210.452473,
+    "stdout": "2K performance run parameters for coremark.\nCoreMark Size    : 666\nTotal ticks      : 14255\nTotal time (secs): 14.255000\nIterations/Sec   : 210.452473\nIterations       : 3000\nCompiler version : GCC14.2.0\nCompiler flags   : -O2 -static  -lrt\nMemory location  : Please put data memory location here\n\t\t\t(e.g. code in flash, data on heap etc)\nseedcrc          : 0xe9f5\n[0]crclist       : 0xe714\n[0]crcmatrix     : 0x1fd7\n[0]crcstate      : 0x8e3a\n[0]crcfinal      : 0xcc42\nCorrect operation validated. See README.md for run and reporting rules.\nCoreMark 1.0 : 210.452473 / GCC14.2.0 -O2 -static  -lrt / Heap\n",
+    "metrics": {
+      "backend": "cached",
+      "context_switches": 217228,
+      "cpu_count": 1,
+      "cpu_seconds": 13.549843069,
+      "decode_lookups": 14914625,
+      "decode_misses": 12,
+      "dispatch_seconds": 0.0,
+      "gpu_buffered_bytes": 0,
+      "gpu_compiles": 0,
+      "gpu_direct_bytes": 0,
+      "gpu_download_bytes": 0,
+      "gpu_peak_pending": 0,
+      "gpu_peer_instructions": 0,
+      "gpu_upload_bytes": 0,
+      "gpu_wait_seconds": 0.0,
+      "idle_seconds": 0.0,
+      "instructions": 889725164,
+      "instructions_decoded": 4854,
+      "instructions_per_second": 62377419.08716529,
+      "memory_seconds": 0.0,
+      "parallel_rounds": 0,
+      "peak_parallel_cpus": 0,
+      "peak_parallel_native_calls": 0,
+      "proc_refreshes": 1,
+      "seconds": 14.263577702,
+      "stop_seconds": 0.0,
+      "syscall_seconds": 0.001137592,
+      "syscalls": 12,
+      "worker_chunks": 0,
+      "worker_slices": 0
+    }
+  },
+  "native_baseline": {
+    "elf_sha256": "9c647ea3a82892d206c2a4385b2a471fc1c99454358827fd0da2cddb2ce5a706",
+    "build_output": "make: Entering directory '/workspace/trames/target/coremark-profile/coremark-1f483d5b8316753a742cbf5590caf5bd0a4e4777'\ncc -O2 -Ilinux -Iposix -I. -DFLAGS_STR=\\\"\"-O2   -lrt\"\\\" -DITERATIONS=0  core_list_join.c core_main.c core_matrix.c core_state.c core_util.c posix/core_portme.c -o ./coremark.exe -lrt\nmake: Leaving directory '/workspace/trames/target/coremark-profile/coremark-1f483d5b8316753a742cbf5590caf5bd0a4e4777'\n",
+    "runs": [
+      {
+        "sample": 1,
+        "iterations": 300000,
+        "seconds": 13.362,
+        "wall_seconds": 19.515046083994093,
+        "score": 22451.728783,
+        "stdout": "2K performance run parameters for coremark.\nCoreMark Size    : 666\nTotal ticks      : 13362\nTotal time (secs): 13.362000\nIterations/Sec   : 22451.728783\nIterations       : 300000\nCompiler version : GCC14.2.0\nCompiler flags   : -O2   -lrt\nMemory location  : Please put data memory location here\n\t\t\t(e.g. code in flash, data on heap etc)\nseedcrc          : 0xe9f5\n[0]crclist       : 0xe714\n[0]crcmatrix     : 0x1fd7\n[0]crcstate      : 0x8e3a\n[0]crcfinal      : 0xcc42\nCorrect operation validated. See README.md for run and reporting rules.\nCoreMark 1.0 : 22451.728783 / GCC14.2.0 -O2   -lrt / Heap\n"
+      },
+      {
+        "sample": 2,
+        "iterations": 336775,
+        "seconds": 18.39,
+        "wall_seconds": 18.40309606399387,
+        "score": 18312.941816,
+        "stdout": "2K performance run parameters for coremark.\nCoreMark Size    : 666\nTotal ticks      : 18390\nTotal time (secs): 18.390000\nIterations/Sec   : 18312.941816\nIterations       : 336775\nCompiler version : GCC14.2.0\nCompiler flags   : -O2   -lrt\nMemory location  : Please put data memory location here\n\t\t\t(e.g. code in flash, data on heap etc)\nseedcrc          : 0xe9f5\n[0]crclist       : 0xe714\n[0]crcmatrix     : 0x1fd7\n[0]crcstate      : 0x8e3a\n[0]crcfinal      : 0x167f\nCorrect operation validated. See README.md for run and reporting rules.\nCoreMark 1.0 : 18312.941816 / GCC14.2.0 -O2   -lrt / Heap\n"
+      },
+      {
+        "sample": 3,
+        "iterations": 336775,
+        "seconds": 17.046,
+        "wall_seconds": 17.057341950989212,
+        "score": 19756.834448,
+        "stdout": "2K performance run parameters for coremark.\nCoreMark Size    : 666\nTotal ticks      : 17046\nTotal time (secs): 17.046000\nIterations/Sec   : 19756.834448\nIterations       : 336775\nCompiler version : GCC14.2.0\nCompiler flags   : -O2   -lrt\nMemory location  : Please put data memory location here\n\t\t\t(e.g. code in flash, data on heap etc)\nseedcrc          : 0xe9f5\n[0]crclist       : 0xe714\n[0]crcmatrix     : 0x1fd7\n[0]crcstate      : 0x8e3a\n[0]crcfinal      : 0x167f\nCorrect operation validated. See README.md for run and reporting rules.\nCoreMark 1.0 : 19756.834448 / GCC14.2.0 -O2   -lrt / Heap\n"
+      }
+    ],
+    "median": 19756.834448,
+    "min": 18312.941816,
+    "max": 22451.728783,
+    "trames_throughput_fraction": 0.013353811294739459,
+    "slowdown": 74.88498810777232,
+    "scope": "Same source/default -O2/single-thread on this host; guest is AArch64, native is x86_64. Includes ISA and GCC target/patch differences. Timed kernels do not call libc; setup/linkage differ. This is CoreMark throughput, not iPad native efficiency or a guest-instruction/host-cycle ratio.",
+    "sampling_order_note": "Three native samples followed the guest batch, not interleaved; shared host frequency/load variation is visible. Preserve ranges, avoid small speedup claims."
+  }
+}
