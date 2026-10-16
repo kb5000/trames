@@ -15,13 +15,14 @@ final class WaylandCanvas: WaylandInputView {
     private let inFlight = DispatchSemaphore(value: 3)
     weak var session: LocalSession?
     var windowID: UInt64 = 0
+    var sceneOrigin: CGPoint = .zero { didSet { if oldValue != sceneOrigin { lastRevision=nil } } }
     var rendered: UInt64 = 0
     var copiedBytes: UInt64 = 0
     var lastRevision: UInt64?
     private var displayLink: CADisplayLink?
     private var foregroundObserver: NSObjectProtocol?
     private var pressedButton: Int?
-    private final class RefreshTarget: NSObject {
+    @MainActor private final class RefreshTarget: NSObject {
         weak var canvas: WaylandCanvas?
         init(_ canvas: WaylandCanvas) { self.canvas = canvas }
         @objc func tick() { canvas?.renderFrame() }
@@ -77,7 +78,7 @@ final class WaylandCanvas: WaylandInputView {
         }
     }
     private func pointer(_ point:CGPoint) {
-        sendInput?(["op":"pointer","window":windowID,"x":point.x,"y":point.y,"time":UInt32(truncatingIfNeeded:UInt64(ProcessInfo.processInfo.systemUptime*1000))])
+        sendInput?(["op":"pointer","window":windowID,"x":point.x+sceneOrigin.x,"y":point.y+sceneOrigin.y,"time":UInt32(truncatingIfNeeded:UInt64(ProcessInfo.processInfo.systemUptime*1000))])
     }
     override func touchesBegan(_ touches:Set<UITouch>,with event:UIEvent?) {
         guard pressedButton == nil, let touch=touches.first else { return }
@@ -103,6 +104,9 @@ final class WaylandCanvas: WaylandInputView {
     }
     private var inputTime:UInt32 { UInt32(truncatingIfNeeded:UInt64(ProcessInfo.processInfo.systemUptime*1000)) }
     required init?(coder: NSCoder) { fatalError("init(coder:) is unsupported") }
+    override func caretRect(for position:UITextPosition)->CGRect {
+        super.caretRect(for:position).offsetBy(dx:-sceneOrigin.x,dy:-sceneOrigin.y)
+    }
     override func didMoveToWindow() {
         super.didMoveToWindow()
         displayLink?.invalidate(); displayLink = nil
@@ -150,7 +154,7 @@ final class WaylandCanvas: WaylandInputView {
                     source = .texture(texture)
                 } else { continue }
                 let scale = Float(max(1,image.scale))
-                let uniform = ImageUniform(origin: SIMD2(Float(image.x),Float(image.y)),
+                let uniform = ImageUniform(origin: SIMD2(Float(image.x)-Float(sceneOrigin.x),Float(image.y)-Float(sceneOrigin.y)),
                     size: image.transform & 1 == 0 ? SIMD2(Float(image.width)/scale,Float(image.height)/scale) : SIMD2(Float(image.height)/scale,Float(image.width)/scale),
                     viewport: SIMD2(Float(bounds.width),Float(bounds.height)), offset: UInt32(image.offset),
                     stride: image.stride,width: image.width,height: image.height,alpha: image.alpha,transform:image.transform)
@@ -160,7 +164,7 @@ final class WaylandCanvas: WaylandInputView {
             let pass = MTLRenderPassDescriptor()
             pass.colorAttachments[0].texture = drawable.texture
             pass.colorAttachments[0].loadAction = .clear; pass.colorAttachments[0].storeAction = .store
-            pass.colorAttachments[0].clearColor = MTLClearColorMake(0,0,0,1)
+            pass.colorAttachments[0].clearColor = MTLClearColorMake(0,0,0,0)
             guard let encoder = command.makeRenderCommandEncoder(descriptor: pass) else { return }
             for (source, value) in buffers {
                 var uniform = value

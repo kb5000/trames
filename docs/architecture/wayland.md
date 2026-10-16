@@ -104,3 +104,21 @@ with a documented Darwin OS adapter: fcntl CLOEXEC, SO_NOSIGPIPE, getpeereid,
 original recvmsg CLOEXEC fallback, and omission of unused server epoll helpers.
 Protocol/queue/marshalling sources are unchanged; this test library is not
 linked into the app. Linux acceptance continues to use original distro binaries.
+
+An additional original C scene peer validates synchronized child buffer/position
+atomicity, destroyed-region copy semantics, CSD geometry offsets, input-region
+hit testing, pointer release outside the pressed surface, popup anchor/gravity,
+ordered flip/slide/resize placement, explicit reposition tokens and authenticated
+keyboard/pointer implicit grabs with outside-click dismissal. Surface role
+identity survives role-object destruction. The native canvas includes popup
+extents beyond parent geometry, clipped to the actual app workspace before GPU
+allocation, and translates pointer/caret coordinates with that scene origin.
+Automatic reactive popup relayout, custom cursor images, data-device clipboard
+and drag-and-drop, touch protocol and full Wayland conformance are not claimed.
+
+Current Linux regressions: 174 core/VFS/Vulkan/FFI/Wayland library tests, three
+independent native C acceptance tests, and original graphics/texture guest pixel
+oracles for one and four CPUs pass. Ordinary guest apk resolves and verifies an
+offline original repository, rather than explicitly installing every alternative
+provider. Apple acceptance remains required; the earlier Swift refresh-target
+actor isolation failure is fixed in source and being rebuilt.

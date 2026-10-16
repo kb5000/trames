@@ -28,4 +28,7 @@ read -r -a client_libs <<< "${TRAMES_WAYLAND_LIBS:-$(pkg-config --libs wayland-c
 "${CC:-cc}" -O2 -Wall -Wextra -Werror "${client_cflags[@]}" -I"$output/generated" \
     tests/fixtures/wayland-client.c "$output/generated/xdg-shell-protocol.c" \
     "${client_libs[@]}" -o "$output/client-native"
-TRAMES_WAYLAND_C_CLIENT="$output/client-native" cargo test -p trames-wayland --locked --test native_client -- --ignored --nocapture
+"${CC:-cc}" -O2 -Wall -Wextra -Werror "${client_cflags[@]}" -I"$output/generated" \
+    tests/fixtures/wayland-scene.c "$output/generated/xdg-shell-protocol.c" \
+    "${client_libs[@]}" -o "$output/scene-native"
+TRAMES_WAYLAND_C_CLIENT="$output/client-native" TRAMES_WAYLAND_SCENE_CLIENT="$output/scene-native" cargo test -p trames-wayland --locked --test native_client -- --ignored --nocapture

@@ -5,6 +5,7 @@ import TramesKit
 struct WaylandCanvasPane: UIViewRepresentable {
     @ObservedObject var session: TerminalSession
     let window: LocalWaylandWindow
+    let sceneOrigin: CGPoint
     func makeUIView(context: Context) -> UIView {
         do {
             let canvas = try WaylandCanvas()
@@ -17,6 +18,7 @@ struct WaylandCanvasPane: UIViewRepresentable {
     }
     func updateUIView(_ view: UIView, context: Context) {
         guard let canvas = view as? WaylandCanvas else { return }
+        canvas.sceneOrigin=sceneOrigin
         canvas.session = session.local; canvas.windowID = window.id; canvas.revision = window.revision
         canvas.sendInput = { [weak session] command in session?.waylandCommand(command) }
         canvas.onFocus = { [weak session] in session?.waylandFocus = window.id }
@@ -74,8 +76,17 @@ struct WaylandWindow: View {
                     geometry.origin = CGPoint(x:dragOrigin!.x + value.translation.width,y:dragOrigin!.y + value.translation.height)
                     geometry.constrain(to:viewport)
                 }.onEnded { _ in dragOrigin = nil })
-            WaylandCanvasPane(session:session,window:window)
-                .frame(maxWidth:.infinity,maxHeight:.infinity)
+            GeometryReader { proxy in
+                let bounds=window.bounds
+                let scene=bounds.count==4 ? CGRect(x:CGFloat(bounds[0]),y:CGFloat(bounds[1]),width:CGFloat(bounds[2]),height:CGFloat(bounds[3])) : CGRect(origin:.zero,size:proxy.size)
+                let origin=maximized ? CGPoint(x:0,y:40) : CGPoint(x:geometry.origin.x,y:geometry.origin.y+40)
+                let visible=scene.intersection(CGRect(x:-origin.x,y:-origin.y,width:viewport.width,height:viewport.height))
+                if !visible.isNull && !visible.isEmpty {
+                    WaylandCanvasPane(session:session,window:window,sceneOrigin:visible.origin)
+                        .frame(width:visible.width,height:visible.height)
+                        .offset(x:visible.minX,y:visible.minY)
+                }
+            }.frame(maxWidth:.infinity,maxHeight:.infinity)
             if !maximized {
                 HStack {
                     Text("\(window.width) × \(window.height)").font(.caption).foregroundStyle(.secondary)
@@ -90,7 +101,7 @@ struct WaylandWindow: View {
                 }.padding(.leading,12).background(Color(white:0.12))
             }
         }.frame(width:max(1,size.width),height:max(1,size.height))
-            .background(.black).clipShape(RoundedRectangle(cornerRadius:maximized ? 0 : 10))
+            .background(Color.black.clipShape(RoundedRectangle(cornerRadius:maximized ? 0 : 10)))
             .overlay(RoundedRectangle(cornerRadius:maximized ? 0 : 10).stroke(Color.white.opacity(0.3)))
             .shadow(radius:maximized ? 0 : 12)
             .offset(x:maximized ? 0 : geometry.origin.x,y:maximized ? 0 : geometry.origin.y)

@@ -11,6 +11,7 @@ public struct LocalWaylandWindow: Decodable, Identifiable, Sendable, Equatable {
     public let height: UInt32
     public let revision: UInt64
     public let mode: String
+    public let bounds: [Int32]
 }
 public struct LocalWaylandText: Decodable, Sendable, Equatable {
     public let id: UInt64

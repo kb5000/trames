@@ -46,6 +46,8 @@ struct WorkspaceView: View {
                                         workspace.selected = local.id
                                         if window.mode == "minimized" { local.waylandMode(window.id,"floating") }
                                         else { local.waylandSelected = window.id }
+                                        local.waylandFocus=window.id
+                                        local.waylandCommand(["op":"focus","window":window.id])
                                     } label: {
                                         Label(window.title.isEmpty ? window.app_id : window.title,systemImage:window.mode == "minimized" ? "minus.rectangle" : "rectangle")
                                             .lineLimit(1).padding(8)

@@ -86,13 +86,21 @@ enum LocalWaylandProbe {
             if Date().timeIntervalSince(began)>60 { throw TramesError.message("Wayland session did not start") }
             try await Task.sleep(for:.milliseconds(10))
         }
-        for (guest,host) in [("wayland-client","wayland-client"),("weston-assets.apk","weston-assets.apk.input"),("wayland-assets.tar","assets.tar"),("wayland-repository.tar","repository.tar"),("wayland-repositories","repositories")] {
+        let repository=inputs.appendingPathComponent("repository",isDirectory:true)
+        guard let entries=FileManager.default.enumerator(at:repository,includingPropertiesForKeys:[.isRegularFileKey]) else { throw TramesError.message("Missing offline Wayland repository") }
+        for case let file as URL in entries {
+            if try file.resourceValues(forKeys:[.isRegularFileKey]).isRegularFile == true {
+                let relative=String(file.path.dropFirst(repository.path.count+1))
+                try session.transfer(guest:"/tmp/wayland-repo/"+relative,host:file,export:false)
+            }
+        }
+        for (guest,host) in [("wayland-client","wayland-client"),("weston-assets.apk","weston-assets.apk.input"),("wayland-assets.tar","assets.tar"),("wayland-repositories","repositories")] {
             try session.transfer(guest:"/tmp/"+guest,host:inputs.appendingPathComponent(host),export:false)
         }
-        try send("tar -xf /tmp/wayland-repository.tar -C /tmp && apk --repositories-file /tmp/wayland-repositories --no-progress add wayland-utils weston-clients vulkan-tools vulkan-loader font-dejavu breeze-cursors && apk verify /tmp/weston-assets.apk && tar -xf /tmp/wayland-assets.tar -C / && chmod 755 /tmp/wayland-client; printf '\\nWAYLAND_SETUP:%d\\n' $?\n")
+        try send("apk --repositories-file /tmp/wayland-repositories --no-progress add wayland-utils weston-clients vulkan-tools vulkan-loader font-dejavu breeze-cursors && apk verify /tmp/weston-assets.apk && tar -xf /tmp/wayland-assets.tar -C / && chmod 755 /tmp/wayland-client; printf '\\nWAYLAND_SETUP:%d\\n' $?\n")
         while !text.contains("\r\nWAYLAND_SETUP:0\r\n") {
             try receive()
-            if text.range(of:"\r\nWAYLAND_SETUP:[1-9][0-9]*\r\n",options:.regularExpression) != nil || Date().timeIntervalSince(began)>180 { throw TramesError.message("Wayland package setup failed: \(text.suffix(4096))") }
+            if text.range(of:"\r\nWAYLAND_SETUP:[1-9][0-9]*\r\n",options:.regularExpression) != nil || Date().timeIntervalSince(began)>300 { throw TramesError.message("Wayland package setup failed: \(text.suffix(4096))") }
             try await Task.sleep(for:.milliseconds(10))
         }
         var cubeResized=false, textConfirmed=false
