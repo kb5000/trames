@@ -48,6 +48,11 @@ Common arithmetic, logical masks, bitfields, conditionals, shifts, multiply/divi
 and scalar/vector loads and stores are decoded once. Immediates, scaled offsets,
 register roles and reserved-field validation are cached. Other instructions use
 the instruction semantics without copying CPU state or crossing an FFI boundary.
+Hot entries are borrowed rather than copied by value. The decoded executor is
+explicitly inlined at its single dispatch call site per memory specialization,
+so inlining small ALU helpers cannot make LLVM outline the entire executor and
+introduce an ABI call for every guest instruction. Register/width helpers use
+inline hints; arithmetic and condition helpers expose constant modes to callers.
 FRINTTS and LRCPC2 remain supported; the single virtual CPU advertises the tested
 `frint` and `ilrcpc` features. The native compute helper is not an execution backend.
 
@@ -83,9 +88,11 @@ in force.
 An ordered sparse map retains mmap/range/procfs behavior. A reusable frame slab
 and a 256-entry software translation cache make repeated page lookup constant
 time on a hit. Cache entries contain only a page tag and a stable frame index:
-they own no page bytes, expose no native guest pointers, and add no Arc reference
+they own no page bytes, expose no native guest pointers, and add no owning reference
 that could cause false COW. Unmapped frames release their bytes and are reused;
 metadata is bounded by peak mapped pages rather than mapping-operation count.
+Coordinator-local pages use Rc for COW; worker snapshots own separate concurrent
+Arc pages. See [ownership and synchronization](region-memory.md).
 
 Data permissions are checked on every access; execute rights are preserved by
 the code-cache identity/epoch checks. Mapping/protection changes invalidate
@@ -145,7 +152,7 @@ VFS sync; ELF/store loading precedes the runtime timer. The manual program
 benchmark additionally measures process spawn to first visible Vim cursor, or
 spawn to successful Python/compiler exit, so loading is included in those times.
 
-Run [the comparison harness](../../tests/performance/nonjit.py) only for material
+Run [the comparison harness](../../tests/performance/execution.py) only for material
 changes, using a preserved baseline binary and identical signed-package stores.
 It alternates the preserved baseline binary and current interpreter order,
 restores a fresh copy before every run, retains Vim's defaults/plugins/history,

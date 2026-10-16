@@ -406,7 +406,8 @@ impl Instruction {
             op,
         }
     }
-    fn may_write_code(self) -> bool {
+    #[inline]
+    fn may_write_code(&self) -> bool {
         matches!(
             self.op,
             Op::Memory { writes: true }
@@ -638,10 +639,7 @@ impl Cpu {
                     );
                 }
                 let slot = ((pc - page.base) / 4) as usize;
-                let entry = &mut page.instructions[slot];
-                let instruction = if entry.generation == page.generation {
-                    entry.instruction
-                } else {
+                if page.instructions[slot].generation != page.generation {
                     // Decode only the reached PC: no speculative page reads,
                     // early faults, or decoding of never-executed page contents.
                     let word = match memory.fetch_u32(pc) {
@@ -651,8 +649,8 @@ impl Cpu {
                         }
                     };
                     let instruction = Instruction::decode(word);
-                    entry.instruction = instruction;
-                    entry.generation = page.generation;
+                    page.instructions[slot].instruction = instruction;
+                    page.instructions[slot].generation = page.generation;
                     stats.instructions += 1;
                     // Form pairs only from words that have actually executed.
                     // No lookahead fetch can move a fault before its reached PC.
@@ -666,11 +664,12 @@ impl Cpu {
                         let instruction =
                             instruction.followed_by(page.instructions[slot + 1].instruction);
                         page.instructions[slot].instruction = instruction;
-                        instruction
-                    } else {
-                        instruction
                     }
-                };
+                }
+                // Read operands in the selected handler instead of copying every
+                // variant's payload before dispatch. Cache mutation above is
+                // complete; a code-writing instruction still exits on epoch change.
+                let instruction = &page.instructions[slot].instruction;
                 match self.execute_decoded(instruction, memory, budget - executed) {
                     Ok((Event::Continue, count)) => executed += count,
                     Ok((Event::Yield, _)) => {
@@ -711,9 +710,13 @@ impl Cpu {
             instructions: executed,
         }
     }
+    // One call site per CpuMemory specialization. Keep dispatch and execution
+    // in one loop even when small ALU helpers change LLVM's size heuristic;
+    // outlining this function would add an ABI call for every guest instruction.
+    #[inline(always)]
     fn execute_decoded(
         &mut self,
-        ins: Instruction,
+        ins: &Instruction,
         memory: &mut impl CpuMemory,
         remaining: u64,
     ) -> Result<(Event, u64), CpuFault> {
@@ -1124,6 +1127,7 @@ impl Cpu {
         self.pc = next;
         Ok((Event::Continue, count))
     }
+    #[inline]
     fn decoded_logical(&mut self, rd: usize, rn: usize, rhs: u64, opc: u8, wide: bool, sp: bool) {
         let value = match opc {
             0 | 3 => self.x(rn) & rhs,

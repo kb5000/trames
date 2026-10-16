@@ -4,6 +4,7 @@ use std::{sync::OnceLock, time::Instant};
 use trames_memory::CpuMemory;
 static COUNTER_ORIGIN: OnceLock<Instant> = OnceLock::new();
 
+#[inline]
 pub(super) fn ones(bits: u32) -> u64 {
     if bits == 64 {
         u64::MAX
@@ -11,6 +12,7 @@ pub(super) fn ones(bits: u32) -> u64 {
         (1u64 << bits) - 1
     }
 }
+#[inline]
 pub(super) fn rotate(value: u64, amount: u32, bits: u32) -> u64 {
     if amount == 0 {
         value & ones(bits)

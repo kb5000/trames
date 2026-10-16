@@ -150,9 +150,11 @@ pub enum SliceOutcome {
     Fault(CpuFault),
 }
 
+#[inline]
 fn sign_extend(value: u64, bits: u32) -> u64 {
     (((value << (64 - bits)) as i64) >> (64 - bits)) as u64
 }
+#[inline]
 fn width_mask(wide: bool) -> u64 {
     if wide {
         u64::MAX
@@ -160,6 +162,7 @@ fn width_mask(wide: bool) -> u64 {
         u32::MAX as u64
     }
 }
+#[inline]
 fn shifted(value: u64, kind: u32, amount: u32, wide: bool) -> u64 {
     let value = value & width_mask(wide);
     (match kind {
@@ -194,6 +197,7 @@ impl Cpu {
         }
     }
     /// Register 31 denotes ZR here; SP is selected explicitly by instruction semantics.
+    #[inline]
     pub fn x(&self, index: usize) -> u64 {
         if index == 31 {
             0
@@ -201,6 +205,7 @@ impl Cpu {
             self.registers[index]
         }
     }
+    #[inline]
     pub fn set_x(&mut self, index: usize, value: u64) {
         if index != 31 {
             self.registers[index] = value;
@@ -210,6 +215,7 @@ impl Cpu {
     pub fn clear_exclusive(&mut self) {
         self.exclusive = None;
     }
+    #[inline]
     fn reg(&self, index: usize, sp: bool) -> u64 {
         if sp && index == 31 {
             self.sp
@@ -217,6 +223,7 @@ impl Cpu {
             self.x(index)
         }
     }
+    #[inline]
     fn put(&mut self, index: usize, value: u64, wide: bool, sp: bool) {
         let value = value & width_mask(wide);
         if sp && index == 31 {
@@ -225,6 +232,9 @@ impl Cpu {
             self.set_x(index, value);
         }
     }
+    // The decoder supplies constant flag modes at many call sites. Keep
+    // them visible so flag-free ALU operations lose the entire NZCV path.
+    #[inline(always)]
     fn arithmetic(&mut self, a: u64, b: u64, sub: bool, set_flags: bool, wide: bool) -> u64 {
         let mask = width_mask(wide);
         let a = a & mask;
@@ -253,6 +263,7 @@ impl Cpu {
         }
         result
     }
+    #[inline(always)]
     fn condition(&self, condition: u32) -> bool {
         let f = self.flags;
         let basic = match condition >> 1 {
