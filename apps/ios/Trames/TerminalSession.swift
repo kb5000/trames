@@ -43,7 +43,9 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         task = Task { [weak self] in
             do {
                 let gpu = UserDefaults.standard.bool(forKey: "vulkanCompute") || ProcessInfo.processInfo.arguments.contains("--vulkan-display-acceptance")
-                let local = try await environment.start(useVolumeBudget: useVolumeBudget, vulkan: gpu)
+                let memory = UserDefaults.standard.object(forKey: "guestMemoryMiB") as? Int ?? 1024
+                let processMemory = UserDefaults.standard.object(forKey: "guestProcessMemoryMiB") as? Int ?? 512
+                let local = try await environment.start(useVolumeBudget: useVolumeBudget, vulkan: gpu, memoryBudgetMiB: memory, processMemoryBudgetMiB: min(processMemory, memory))
                 guard let self, !self.closed else { local.close(); return }
                 if gpu {
                     try local.attachDisplay(layer: Unmanaged.passUnretained(self.displayCanvas.metal).toOpaque(), width: 1024, height: 768)

@@ -118,11 +118,32 @@ struct SettingsView: View {
     @AppStorage("useVolumeBudget") private var volume = false
     @AppStorage("vulkanCompute") private var vulkan = false
     @AppStorage("bridgeEnabled") private var bridge = true
+    @AppStorage("guestMemoryMiB") private var memoryTotal = 1024
+    @AppStorage("guestProcessMemoryMiB") private var memoryProcess = 512
+    private var memoryChoices: [Int] {
+        [256, 512, 1024, 2048, 3072, 4096, 6144, 8192, 12288, 16384].filter {
+            (UInt64($0) << 20) <= ProcessInfo.processInfo.physicalMemory
+        }
+    }
     @State private var resetConfirmation = false
     var body: some View {
         NavigationStack {
             Form {
                 Section("键盘") { TextField("附加按键，以逗号分隔", text: $keys); Text("支持 Esc、Tab、Ctrl-C、Ctrl-D 和方向键，也可添加常用文本。").font(.caption) }
+                Section("本地内存") {
+                    Picker("Linux 总预算", selection: $memoryTotal) {
+                        ForEach(memoryChoices, id: \.self) { value in
+                            Text(ByteCountFormatter.string(fromByteCount: Int64(value) << 20, countStyle: .binary)).tag(value)
+                        }
+                    }
+                    .onChange(of: memoryTotal) { _, value in memoryProcess = min(memoryProcess, value) }
+                    Picker("单进程预算", selection: $memoryProcess) {
+                        ForEach(memoryChoices.filter { $0 <= memoryTotal }, id: \.self) { value in
+                            Text(ByteCountFormatter.string(fromByteCount: Int64(value) << 20, countStyle: .binary)).tag(value)
+                        }
+                    }
+                    Text("默认总预算 1 GiB、单进程 512 MiB。内存按需使用，不会预先分配；请为 iPadOS 和其他应用留出空间。下次打开本地终端生效。").font(.caption)
+                }
                 Section("本地磁盘") {
                     Toggle("使用设备卷容量作为存储预算", isOn: $volume)
                     Text("默认预算 16 GiB；启用后按应用所在卷的总容量计算。实际可用空间仍受系统剩余容量限制，下次打开本地终端生效。").font(.caption)

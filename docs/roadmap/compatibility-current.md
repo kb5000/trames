@@ -113,7 +113,7 @@ Docker 批次新增 12 个 xattr 入口、具名 Unix socket、PDEATHSIG 和更�
 | mknodat / mount / 虚拟设备 | 普通/FIFO/字符/块 inode 与设备号持久化已有；标准字符设备复用 guest 驱动，未注册设备打开 ENXIO；socket inode 由 bind 创建，socket mknod 仍缺；独立 devpts 已有；块驱动/文件系统和完整 Linux 驱动模型仍缺 |
 | PTY / termios | 已支持独立多 PTY、控制终端、关闭/hangup、原版 sudo 默认 use_pty；非零 VTIME 和更多驱动 ioctl 仍不支持，见[sudo 验证](../validation/sudo-timezone.md) |
 | membarrier / I/O 优先级 | 已有 GLOBAL、PRIVATE_EXPEDITED、注册查询和单任务 ioprio_get；SYNC_CORE/RSEQ 屏障、ioprio_set 和组/用户优先级查询仍缺失 |
-| ELF / 资源限制 | 重叠 PT_LOAD 页面不支持；映射预算每进程 512 MiB、所有地址空间合计 1 GiB，guest fd 表 256 项，RLIMIT_FSIZE 已有软硬限制与写入/截断约束，其他资源修改及其他 PID 的 prlimit 仍不完整 |
+| ELF / 资源限制 | 重叠 PT_LOAD 页面不支持；已提交内存预算可配置，默认每进程 512 MiB、所有地址空间合计 1 GiB；guest fd 表 256 项，RLIMIT_FSIZE 已有软硬限制与写入/截断约束，其他资源修改及其他 PID 的 prlimit 仍不完整 |
 
 已实现子集的 flags、地址族、错误路径和并发行为仍应按具体实现与验证记录核对。
 M6 的具体边界见 [能力记录](compatibility-m6.md)与[程序验证](../validation/m6.md)。

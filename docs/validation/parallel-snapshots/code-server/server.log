@@ -1,0 +1,61 @@
+[2026-10-16T12:14:18.264Z] debug parent:1 spawned child process 12
+[2026-10-16T12:14:59.701Z] debug child:12 initiating handshake
+[2026-10-16T12:15:00.231Z] debug parent:1 got message [38;2;140;140;140m{"message":{"type":"handshake"}}[0m
+[2026-10-16T12:15:00.465Z] debug child:12 got message [38;2;140;140;140m{"message":{"type":"handshake","args":{"bind-addr":"127.0.0.1:49869","auth":"none","password":"<redacted>","config":"/root/.config/code-server/config.yaml","user-data-dir":"/root/code-data","extensions-dir":"/root/code-ext","disable-telemetry":true,"disable-update-check":true,"log":"debug","_":["/root/project"],"session-socket":"/root/code-data/code-server-ipc.sock","verbose":false,"host":"127.0.0.1","port":49869,"proxy-domain":[],"app-name":"code-server","usingEnvPassword":false,"usingEnvHashedPassword":false}}}[0m
+[2026-10-16T12:15:00.604Z] info  code-server 4.141.0 8b41915d25547e2edd553bab03ea4cbd621f98c5
+[2026-10-16T12:15:00.616Z] info  Using user-data-dir /root/code-data
+[2026-10-16T12:15:00.627Z] debug Using extensions-dir /root/code-ext
+[2026-10-16T12:15:04.320Z] info  Using config file /root/.config/code-server/config.yaml
+[2026-10-16T12:15:04.334Z] info  HTTP server listening on http://127.0.0.1:49869/
+[2026-10-16T12:15:04.350Z] info    - Authentication is disabled
+[2026-10-16T12:15:04.366Z] info    - Not serving HTTPS
+[2026-10-16T12:15:04.394Z] info  Session server listening on /root/code-data/code-server-ipc.sock
+[2026-10-16T12:15:10.117Z] debug heartbeat
+[12:16:10] 
+
+
+
+
+[12:16:18] Error: Unable to retrieve mac address (unexpected format)
+    at WF (file:///opt/code-server/lib/vscode/out/server-main.js:83:33935)
+    at dK (file:///opt/code-server/lib/vscode/out/server-main.js:83:34259)
+    at async file:///opt/code-server/lib/vscode/out/server-main.js:83:34178
+    at async Promise.all (index 2)
+    at async Hq (file:///opt/code-server/lib/vscode/out/server-main.js:239:403)
+    at async Kq (file:///opt/code-server/lib/vscode/out/server-main.js:240:1455)
+[2026-10-16T12:16:18.477Z] debug 1 active connection
+[2026-10-16T12:16:18.492Z] debug heartbeat
+[12:16:21] [File Watcher (node.js)] Failed to watch /root/code-data/Machine for changes using fs.watch() (Error: ENOSYS: function not implemented, watch '/root/code-data/Machine')
+[12:16:22] StorageMainService: creating application shared storage
+[reconnection-grace-time] No CLI argument provided, using default: 10800000ms (10800s)
+[12:16:24] [AgentHostChannel] Registered lazy IPC channel 'agentHostProxy' (upstream: /tmp/vscode-ipc-9ab5001a-a3f6-43a7-b019-92e81c0ad8ea.sock)
+[12:16:25] Extension host agent started.
+[12:16:27] Unable to retrieve release information from known identifier paths.
+[12:16:28] [shared storage] Creating shared storage database at '/root/.vscode-oss-shared/sharedStorage/state.vscdb' (wasCreated: true)
+[12:16:28] [shared storage] Initializing fallback application storage (path: /root/code-data/User/globalStorage/state.vscdb)
+[12:16:28] Started initializing default profile extensions in extensions installation folder. file:///root/code-ext
+[12:16:28] [shared storage] Fallback application storage initialized with 3 items
+[12:16:29] [File Watcher (node.js)] Failed to watch /root/code-ext for changes using fs.watch() (Error: ENOSYS: function not implemented, watch '/root/code-ext')
+[12:16:50] ComputeTargetPlatform: alpine-arm64
+[2026-10-16T12:17:24.699Z] debug 3 active connections
+[2026-10-16T12:17:24.755Z] debug heartbeat
+[12:17:27] Completed initializing default profile extensions in extensions installation folder. file:///root/code-ext
+[12:17:29] [File Watcher (node.js)] Failed to watch /root/code-ext/extensions.json for changes using fs.watch() (Error: ENOSYS: function not implemented, watch '/root/code-ext/extensions.json')
+[12:17:35] No extensions are marked as removed.
+[2026-10-16T12:18:24.789Z] debug 1 active connection
+[2026-10-16T12:18:24.823Z] debug heartbeat
+[2026-10-16T12:19:24.859Z] debug 1 active connection
+[2026-10-16T12:19:24.872Z] debug heartbeat
+File not found: /opt/code-server/lib/vscode/node_modules/vsda/rust/web/vsda_bg.wasm
+File not found: /opt/code-server/lib/vscode/node_modules/vsda/rust/web/vsda.js
+[12:20:18] [127.0.0.1][ad487a8f][ManagementConnection] New connection established.
+[12:20:20] [File Watcher (node.js)] Failed to watch /root/code-data/User for changes using fs.watch() (Error: ENOSYS: function not implemented, watch '/root/code-data/User')
+[12:20:21] [File Watcher (node.js)] Failed to watch /root/code-data/Machine for changes using fs.watch() (Error: ENOSYS: function not implemented, watch '/root/code-data/Machine')
+[2026-10-16T12:20:25.139Z] debug 7 active connections
+[2026-10-16T12:20:25.153Z] debug heartbeat
+[12:20:26] [AgentHostChannel] Renderer ctx=[object Object] requested connect to upstream
+[12:20:42] AgentHostStarter was unable to resolve shell environment Error: Unable to resolve your shell environment in a reasonable time. Please review your shell configuration and restart.
+    at Timeout.<anonymous> (file:///opt/code-server/lib/vscode/out/server-main.js:47:9812)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+[12:20:56] [File Watcher (node.js)] Failed to watch /root/project for changes using fs.watch() (Error: ENOSYS: function not implemented, watch '/root/project')

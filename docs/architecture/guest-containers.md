@@ -181,7 +181,8 @@ PR_SET/GET_PDEATHSIG 记录实际创建线程，在线程退出时投递进程�
 身份；fork 清零，普通 exec 保留，effective/fs UID/GID 变化清零，孤儿继续采用
 既有 subreaper/init 规则。线程总额度从 32 提升到 256，threads-max/rlimit/proc
 一致；不是预分配线程。Go 守护进程的 ELF 输入上限提升为 256 MiB，映射预算仍
-为每地址空间 512 MiB / 全会话 1 GiB。
+默认每地址空间 512 MiB / 全会话 1 GiB，现在可通过运行时、CLI 和
+[iPad 设置](../guides/guest-memory.md)调整。
 
 每个 guest 当前根网络具有唯一的 `ns/net` 对象。FD、task/TID 路径、nsfs bind
 mount 和同一网络的 setns 保持真实引用；不会创建新网络或改变宿主 namespace。

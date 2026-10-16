@@ -21,11 +21,16 @@ public struct LocalDisplayStatus: Decodable, Sendable {
 public final class LocalSession: @unchecked Sendable {
     private let lock = NSLock()
     private var handle: UInt64
-    public init(store: URL, rootfs: URL?, total: UInt64, available: UInt64, network: String = "full", useVolumeBudget: Bool = false, muslLibc: URL? = nil, pureAccelerator: Bool = false, vulkanICD: URL? = nil) throws {
+    public init(store: URL, rootfs: URL?, total: UInt64, available: UInt64, network: String = "full", useVolumeBudget: Bool = false, muslLibc: URL? = nil, pureAccelerator: Bool = false, vulkanICD: URL? = nil, memoryBudgetMiB: Int = 1024, processMemoryBudgetMiB: Int = 512) throws {
+        guard memoryBudgetMiB > 0, processMemoryBudgetMiB > 0,
+              processMemoryBudgetMiB <= memoryBudgetMiB,
+              memoryBudgetMiB <= (1 << 28) else { throw TramesError.message("Invalid guest memory budget") }
         guard trames_abi_version() == 3 else { throw TramesError.message("Unsupported Trames ABI") }
         var options: [String:Any] = ["store": store.path, "volume_total":total, "volume_available":available, "network":network]
         if let rootfs { options["rootfs"] = rootfs.path }
         if let muslLibc { options["musl_libc"] = muslLibc.path }
+        options["memory_budget_bytes"] = UInt64(memoryBudgetMiB) << 20
+        options["process_memory_budget_bytes"] = UInt64(processMemoryBudgetMiB) << 20
         options["pure_accelerator"] = pureAccelerator
         if let vulkanICD { options["vulkan_accelerator"] = true; options["vulkan_icd"] = vulkanICD.path }
         options["budget_bytes"] = useVolumeBudget ? total : UInt64(16) << 30

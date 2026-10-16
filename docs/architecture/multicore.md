@@ -104,9 +104,27 @@ exposing concurrently mutable host slices or mapping barriers to no-ops is inval
 
 ## Performance boundaries
 
+Parallel snapshots now maintain mapping metadata incrementally at joined kernel
+checkpoints. Small mmap/munmap/mprotect/discard operations record affected virtual
+pages; code writeback records the changed executable frames. A uniquely owned
+snapshot updates those entries, root-slot positions, alias counts and executable
+page classification in place. It does not walk or recreate every unrelated page.
+Global backing changes check the snapshot's file-backed page index rather than
+anonymous pages. EOF, private COW, shared aliases and fragment writeback retain
+the existing checks and synchronization.
+
+Workers drop their mapping view **before** sending completion. The coordinator
+uses safe `Arc::get_mut`; retained views keep the immutable full-snapshot path,
+and custom backings still conservatively use serial execution. This changes
+metadata preparation, not the guest's atomicity or memory ordering contract.
+CLI `--metrics` exposes snapshot hits, full rebuild/page counts, dirty refreshes,
+incremental updates/pages and source-page reads; metrics are also emitted on a
+runtime error, including instruction-budget exhaustion.
+
 Parallel views stage mutable/undetached file pages and require additional host
-memory beyond guest committed-page accounting. Guest limits remain 512 MiB per
-address space and 1 GiB aggregate; VmRSS is not a measure of these host buffers.
+memory beyond guest committed-page accounting. Guest limits default to 512 MiB per
+address space and 1 GiB aggregate and are now configurable through RuntimeOptions,
+the CLI and iPad settings; VmRSS is not a measure of these host buffers.
 Syscalls, deferred live private backing and writeback remain serialized. Page
 contention, metadata changes and short slices can limit or reverse speedups. A
 single ready guest avoids worker queues and mutable-page locks; multicore mainly

@@ -88,6 +88,10 @@ jobs:
           python3 tests/integration/runtime-compat.py
       - run: bash scripts/build-mmap-fixtures.sh
       - run: python3 tests/integration/mmap.py
+      - name: Validate configurable guest memory across threads, fork and exec
+        run: |
+          bash scripts/build-memory-budget-fixtures.sh
+          python3 tests/integration/memory-budget.py
       - run: python3 tests/integration/busybox.py
       - run: bash scripts/build-m2-fixtures.sh
       - run: python3 tests/integration/m2.py

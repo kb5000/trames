@@ -33,6 +33,8 @@ pub struct Options {
     #[serde(default = "default_network")]
     pub network: String,
     pub budget_bytes: Option<u64>,
+    pub memory_budget_bytes: Option<usize>,
+    pub process_memory_budget_bytes: Option<usize>,
     #[serde(default)]
     pub pure_accelerator: bool,
     #[serde(default)]
@@ -82,9 +84,21 @@ pub fn install(options: Options) -> Result<(), String> {
     vfs.executable(b"/bin/ash").map_err(|e| e.to_string())?;
     Ok(())
 }
+fn memory_limits(options: &Options) -> Result<trames_core::MemoryLimits, String> {
+    let defaults = trames_core::MemoryLimits::default();
+    let limits = trames_core::MemoryLimits {
+        total: options.memory_budget_bytes.unwrap_or(defaults.total),
+        per_process: options
+            .process_memory_budget_bytes
+            .unwrap_or(defaults.per_process),
+    };
+    limits.validate().map_err(|e| e.to_string())?;
+    Ok(limits)
+}
 fn default_rows() -> u16 {
     24
 }
+
 fn default_columns() -> u16 {
     80
 }
@@ -169,6 +183,7 @@ impl Session {
         {
             return Err("invalid session configuration".into());
         }
+        memory_limits(&options)?;
         WORKERS
             .try_update(Ordering::AcqRel, Ordering::Acquire, |n| {
                 (n < 8).then_some(n + 1)
@@ -337,6 +352,7 @@ fn run(
     session: Arc<Session>,
     commands: mpsc::Receiver<Command>,
 ) -> Result<u8, String> {
+    let guest_memory_limits = memory_limits(&options)?;
     let mut vfs = Vfs::open_disk(
         &options.store,
         DiskOptions {
@@ -464,6 +480,7 @@ fn run(
         ],
         vfs,
         trames_core::RuntimeOptions {
+            memory_limits: guest_memory_limits,
             pure_accelerator: options.pure_accelerator,
             native_bsearch: options.native_bsearch,
             native_allocator: options.native_allocator,
@@ -704,5 +721,27 @@ impl GuestOutput for Adapter {
             .size
             .take()
             .map(|(rows, columns)| TerminalEvent::Resize { rows, columns })
+    }
+}
+
+#[cfg(test)]
+mod memory_tests {
+    use super::*;
+    #[test]
+    fn optional_json_budgets_preserve_defaults_and_validate_before_start() {
+        let base = serde_json::json!({"store":"/tmp/trames-memory-options", "volume_total": 1 << 30, "volume_available": 1 << 30});
+        let options: Options = serde_json::from_value(base.clone()).unwrap();
+        assert_eq!(
+            memory_limits(&options).unwrap(),
+            trames_core::MemoryLimits::default()
+        );
+        let mut custom = base;
+        custom["memory_budget_bytes"] = serde_json::json!(4usize << 30);
+        custom["process_memory_budget_bytes"] = serde_json::json!(2usize << 30);
+        let options: Options = serde_json::from_value(custom.clone()).unwrap();
+        assert_eq!(memory_limits(&options).unwrap().per_process, 2 << 30);
+        custom["process_memory_budget_bytes"] = serde_json::json!(8usize << 30);
+        let options: Options = serde_json::from_value(custom).unwrap();
+        assert!(Session::start(options).is_err());
     }
 }

@@ -15,6 +15,7 @@ use trames_vfs::capabilities;
 use trames_vfs::{Errno, FdKind, AT_FDCWD, MAX_FDS, O_NONBLOCK};
 
 const MAX_PROCESSES: usize = trames_vfs::MAX_TASKS;
+#[cfg(test)]
 const TOTAL_MAPPED_LIMIT: usize = 1024 * 1024 * 1024;
 const UNBLOCKABLE: u64 = (1 << 8) | (1 << 18);
 /// Preserve round-robin queue priority while relocating an earlier flexible
@@ -203,6 +204,7 @@ impl Process {
     }
 }
 struct Kernel {
+    memory_limits: super::MemoryLimits,
     cpu_count: usize,
     workers: crate::workers::Pool,
     parallel_memory: trames_memory::parallel::Registry,
@@ -564,7 +566,7 @@ impl Kernel {
                 context_switches: self.context_switches,
                 cpu_user_ticks: (self.cpu_total.as_millis() / 10) as u64,
                 idle: self.idle,
-                memory_limit: TOTAL_MAPPED_LIMIT,
+                memory_limit: self.memory_limits.total,
                 load: self.load,
                 processes_created: self.next_pid - 1,
                 used_memory: self.other_memory(p.vm_id) + p.memory.mapped_bytes(),
@@ -1333,6 +1335,10 @@ impl Kernel {
                 &envp,
                 &execute_vfs,
                 super::RuntimeOptions {
+                    memory_limits: super::MemoryLimits {
+                        per_process: budget,
+                        total: budget,
+                    },
                     pure_accelerator: accelerated(
                         p,
                         trames_accel::native::AUXV_KEY,
@@ -1356,7 +1362,7 @@ impl Kernel {
             )
             .map_err(|e| match e {
                 RuntimeError::Arguments(_) => Errno(7),
-                RuntimeError::Memory(_) => Errno(12),
+                RuntimeError::Memory(_) | RuntimeError::Configuration(_) => Errno(12),
                 RuntimeError::Elf(trames_elf::ElfError::Interpreter(n)) => Errno(n),
                 _ => Errno(8),
             })?;
@@ -1707,7 +1713,7 @@ impl Kernel {
                 if self.processes.len() + 1 >= MAX_PROCESSES
                     || self.other_memory(p.vm_id)
                         + p.memory.mapped_bytes() * if shared_vm { 1 } else { 2 }
-                        > TOTAL_MAPPED_LIMIT
+                        > self.memory_limits.total
                 {
                     return Err(Errno(11));
                 }
@@ -1823,14 +1829,22 @@ impl Kernel {
                 let old_vm = p.vm_id;
                 let others = self.other_memory(p.vm_id);
                 if number == 221 {
-                    Self::exec(p, a, TOTAL_MAPPED_LIMIT.saturating_sub(others))?;
+                    Self::exec(
+                        p,
+                        a,
+                        self.memory_limits
+                            .per_process
+                            .min(self.memory_limits.total.saturating_sub(others)),
+                    )?;
                 } else {
                     Self::exec_at(
                         p,
                         a[0] as i32,
                         [a[1], a[2], a[3], 0, 0, 0],
                         a[4] as u32,
-                        TOTAL_MAPPED_LIMIT.saturating_sub(others),
+                        self.memory_limits
+                            .per_process
+                            .min(self.memory_limits.total.saturating_sub(others)),
                     )?;
                 }
                 let ids: Vec<_> = self
@@ -2173,8 +2187,8 @@ impl Kernel {
                 let mut out = [0; 112];
                 for (offset, value) in [
                     (0, self.started.elapsed().as_secs()),
-                    (32, TOTAL_MAPPED_LIMIT as u64),
-                    (40, TOTAL_MAPPED_LIMIT.saturating_sub(used) as u64),
+                    (32, self.memory_limits.total as u64),
+                    (40, self.memory_limits.total.saturating_sub(used) as u64),
                 ] {
                     out[offset..offset + 8].copy_from_slice(&value.to_le_bytes());
                 }
@@ -2190,7 +2204,7 @@ impl Kernel {
             31 => self.ioprio_get(pid, p, a[0], a[1]).map(Some),
             132 => Self::sigaltstack(p, a[0], a[1]).map(Some),
             283 => Self::membarrier(p, a[0], a[1]).map(Some),
-            163 | 164 | 261 => Self::rlimit(p, number, a).map(Some),
+            163 | 164 | 261 => self.rlimit(p, number, a).map(Some),
             124 => Ok(Some(0)),
             203 if matches!(p.state, State::Blocked(203, _))
                 && p.linux.vfs.local_socket(a[0] as u32)?.is_none() =>
@@ -2338,7 +2352,9 @@ impl Kernel {
         }
         let other_bytes = self.other_memory(p.vm_id);
         let _ = p.memory.set_limit(
-            trames_memory::DEFAULT_MEMORY_LIMIT.min(TOTAL_MAPPED_LIMIT.saturating_sub(other_bytes)),
+            self.memory_limits
+                .per_process
+                .min(self.memory_limits.total.saturating_sub(other_bytes)),
         );
         let was_blocked = matches!(p.state, State::Blocked(..));
         p.cpu.set_x(8, number as u64);
@@ -3651,6 +3667,10 @@ pub(super) fn run(
     io: &mut impl GuestOutput,
     limit: u64,
 ) -> Result<Exit, RuntimeError> {
+    runtime.memory_limits.validate()?;
+    runtime
+        .memory
+        .set_limit(runtime.memory_limits.per_process)?;
     let mut root = Process {
         cpu: std::mem::take(&mut runtime.cpu),
         affinity: (1u64 << runtime.cpu_count.clamp(1, 32)) - 1,
@@ -3690,6 +3710,7 @@ pub(super) fn run(
     };
     let count = runtime.cpu_count.clamp(1, 32);
     let mut kernel = Kernel {
+        memory_limits: runtime.memory_limits,
         cpu_count: count,
         workers: crate::workers::Pool::new(count),
         parallel_memory: trames_memory::parallel::Registry::default(),
@@ -3742,6 +3763,8 @@ pub(super) fn run(
     kernel.processes.insert(1, root);
     let result = kernel.drive(io, limit);
     runtime.metrics = super::RuntimeMetrics {
+        instructions: kernel.instructions,
+        parallel_snapshots: kernel.parallel_memory.metrics,
         cpu_count: kernel.cpu_count,
         parallel_rounds: kernel.parallel_rounds,
         worker_slices: kernel.worker_slices,
@@ -3870,6 +3893,7 @@ mod tests {
     }
     pub(super) fn kernel() -> Kernel {
         Kernel {
+            memory_limits: super::super::MemoryLimits::default(),
             cpu_count: 1,
             workers: crate::workers::Pool::new(1),
             parallel_memory: trames_memory::parallel::Registry::default(),

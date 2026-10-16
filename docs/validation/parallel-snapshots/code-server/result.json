@@ -1,0 +1,11 @@
+{
+  "version_exit": 0,
+  "version_seconds": 38.895179853992886,
+  "http_seconds": 108.1811214699992,
+  "healthz": {
+    "status": "expired",
+    "lastHeartbeat": 0
+  },
+  "url": "http://127.0.0.1:49869",
+  "server_exit_before_cleanup": null
+}

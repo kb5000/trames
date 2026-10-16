@@ -216,6 +216,7 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     let mut exports = Vec::new();
     let mut storage = None;
     let mut memory_only = false;
+    let mut memory_limits = trames_core::MemoryLimits::default();
     let mut disk_budget = None;
     let mut storage_info = false;
     let mut network = NetworkMode::Full;
@@ -226,7 +227,7 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     let mut guest_path = false;
     let mut extra_env = Vec::new();
     if args.peek().is_some_and(|a| a == "--help" || a == "-h") {
-        println!("Usage: trames-run [--rootfs VERIFIED_ALPINE_TAR_GZ] [--guest] [--env KEY=VALUE] [--virtual-network ID] [--host-map VIRTUAL_IP=HOST_IP] [--network off|loopback|outbound|full] [--storage DIR | --memory] [--storage-budget BYTES|16GiB|auto] [--storage-info] [--max-instructions N] [--trace-syscalls] [--metrics] [--cpus auto|1..32] [--accelerator pure|off] [--native-bsearch] [--native-allocator] [--vulkan] [--musl-libc HOST_ELF] [--file /GUEST=HOST] [--exec-file /GUEST=HOST] [--export /GUEST=HOST] [--install-busybox] [--pty] [--] ELF [ARG ...]\nDefault native network: full host TCP/UDP access and listeners, subject to host OS permissions; use --network outbound or loopback to restrict it.\n--virtual-network ID selects isolated 10.0.0.ID / fd00::ID and private loopback; ID must be 2..254.\n--host-map explicitly forwards a logical external IP to a trusted host service.\nDefault storage: .trames/storage in the current directory, 16 GiB logical file budget on first creation.\nImports copy selected host files; exports create new host files after guest exit.\n--memory selects the ephemeral 16 MiB test backend. auto uses the storage volume's total capacity.");
+        println!("Usage: trames-run [--rootfs VERIFIED_ALPINE_TAR_GZ] [--guest] [--env KEY=VALUE] [--virtual-network ID] [--host-map VIRTUAL_IP=HOST_IP] [--network off|loopback|outbound|full] [--storage DIR | --memory] [--storage-budget BYTES|16GiB|auto] [--storage-info] [--memory-budget 1GiB] [--process-memory-budget 512MiB] [--max-instructions N] [--trace-syscalls] [--metrics] [--cpus auto|1..32] [--accelerator pure|off] [--native-bsearch] [--native-allocator] [--vulkan] [--musl-libc HOST_ELF] [--file /GUEST=HOST] [--exec-file /GUEST=HOST] [--export /GUEST=HOST] [--install-busybox] [--pty] [--] ELF [ARG ...]\nDefault native network: full host TCP/UDP access and listeners, subject to host OS permissions; use --network outbound or loopback to restrict it.\n--virtual-network ID selects isolated 10.0.0.ID / fd00::ID and private loopback; ID must be 2..254.\n--host-map explicitly forwards a logical external IP to a trusted host service.\nDefault storage: .trames/storage in the current directory, 16 GiB logical file budget on first creation.\nDefault committed memory: 512 MiB per address space, 1 GiB aggregate; --process-memory-budget and --memory-budget change these limits without preallocation.\nImports copy selected host files; exports create new host files after guest exit.\n--memory selects the ephemeral 16 MiB test backend. auto uses the storage volume's total capacity.");
         return Ok(0);
     }
     while let Some(option) = args.peek() {
@@ -333,6 +334,18 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
                 args.next();
                 disk_budget = Some(args.next().ok_or("missing storage budget")?);
             }
+            "--memory-budget" | "--process-memory-budget" => {
+                let process = args.next().expect("peeked option") == "--process-memory-budget";
+                let value = args.next().ok_or("missing memory budget")?;
+                let bytes = usize::try_from(
+                    storage_budget(&value).map_err(|e| format!("invalid memory budget: {e}"))?,
+                )?;
+                if process {
+                    memory_limits.per_process = bytes;
+                } else {
+                    memory_limits.total = bytes;
+                }
+            }
             "--storage-info" => {
                 args.next();
                 storage_info = true;
@@ -393,6 +406,7 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
         envp.retain(|e: &String| e.split_once('=').is_none_or(|(key, _)| key != name));
         envp.push(value);
     }
+    memory_limits.validate()?;
     let mut vfs = Vfs::default();
     if memory_only && (storage.is_some() || disk_budget.is_some()) {
         return Err("--memory cannot be combined with disk options".into());
@@ -476,6 +490,7 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
         &envp,
         vfs,
         trames_core::RuntimeOptions {
+            memory_limits,
             pure_accelerator,
             native_bsearch,
             native_allocator,
@@ -536,10 +551,15 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     let began = std::time::Instant::now();
     let result = runtime.run(&mut HostOutput::new(), budget);
     let synced = runtime.linux.vfs.sync();
-    let exit = result?;
     if metrics {
         let seconds = began.elapsed().as_secs_f64();
         let profile = &runtime.metrics;
+        let snapshots = serde_json::json!({
+            "cache_hits":profile.parallel_snapshots.cache_hits,"dirty_refreshes":profile.parallel_snapshots.dirty_refreshes,
+            "full_rebuilds":profile.parallel_snapshots.full_rebuilds,"full_rebuild_pages":profile.parallel_snapshots.full_rebuild_pages,
+            "backing_invalidations":profile.parallel_snapshots.backing_invalidations,"code_invalidations":profile.parallel_snapshots.code_invalidations,
+            "source_page_reads":profile.parallel_snapshots.source_page_reads,"incremental_updates":profile.parallel_snapshots.incremental_updates,"incremental_pages":profile.parallel_snapshots.incremental_pages
+        });
         eprintln!(
             "trames native metrics: {}",
             serde_json::to_string(&profile.native)?
@@ -547,23 +567,26 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
         eprintln!(
             "trames metrics: {}",
             serde_json::json!({
-                "backend":backend,"instructions":exit.instructions,"seconds":seconds,
+                "backend":backend,"instructions":profile.instructions,"seconds":seconds,
+                "runtime_error":result.as_ref().err().map(ToString::to_string),
                 "gpu_compiles":profile.gpu_compiles,"gpu_peer_instructions":profile.gpu_peer_instructions,
                 "gpu_peak_pending":profile.gpu_peak_pending,
                 "gpu_wait_seconds":profile.gpu_wait_time.as_secs_f64(),
                 "gpu_upload_bytes":profile.gpu_transfers.upload_bytes,"gpu_download_bytes":profile.gpu_transfers.download_bytes,
                 "gpu_direct_bytes":profile.gpu_transfers.direct_bytes,"gpu_buffered_bytes":profile.gpu_transfers.buffered_bytes,
-                "instructions_per_second":exit.instructions as f64/seconds,
+                "instructions_per_second":profile.instructions as f64/seconds,
                 "cpu_seconds":profile.cpu_time.as_secs_f64(),"syscall_seconds":profile.syscall_time.as_secs_f64(),
                 "idle_seconds":profile.idle_time.as_secs_f64(),"syscalls":profile.syscalls,
                 "proc_refreshes":profile.proc_refreshes,"context_switches":profile.context_switches,
                 "decode_lookups":profile.decode_lookups,"decode_misses":profile.decode_misses,"instructions_decoded":profile.instructions_decoded,
                 "cpu_count":profile.cpu_count,"parallel_rounds":profile.parallel_rounds,"worker_slices":profile.worker_slices,"worker_chunks":profile.worker_chunks,
                 "dispatch_seconds":profile.parallel_dispatch_time.as_secs_f64(),"stop_seconds":profile.parallel_stop_time.as_secs_f64(),
-                "peak_parallel_cpus":profile.peak_parallel_cpus,"peak_parallel_native_calls":profile.peak_parallel_native_calls,"memory_seconds":profile.parallel_memory_time.as_secs_f64()
+                "peak_parallel_cpus":profile.peak_parallel_cpus,"peak_parallel_native_calls":profile.peak_parallel_native_calls,"memory_seconds":profile.parallel_memory_time.as_secs_f64(),
+                "parallel_snapshots":snapshots
             })
         );
     }
+    let exit = result?;
     synced?;
     for (guest, host) in exports {
         let stat = runtime.linux.vfs.stat_at(-100, guest.as_bytes())?;

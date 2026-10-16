@@ -75,6 +75,7 @@ with tempfile.TemporaryDirectory(prefix='trames-embedding-') as directory:
     active=temporary/'environment'
     store.rename(active) # All Rust file owners/locks must already be released.
     options['store']=str(active); options.pop('rootfs')
+    options.update(memory_budget_bytes=64<<20, process_memory_budget_bytes=32<<20)
     handle=request(api.trames_session_open,payload=options)
     assert handle,error()
     wait(lambda:status(handle)['phase']!='starting')
@@ -85,6 +86,8 @@ with tempfile.TemporaryDirectory(prefix='trames-embedding-') as directory:
     output=bytearray()
     send(handle,b"printf '\\033[31mABI_READY\\033[0m\\n'\n")
     wait(lambda:(output.extend(drain(handle)) or b'\x1b[31mABI_READY\x1b[0m' in output))
+    send(handle,b"awk '/MemTotal/ {print \"MEMORY_TOTAL_\" $2}' /proc/meminfo; printf 'MEMORY_PROCESS_%s\\n' \"$(ulimit -v)\"\n")
+    wait(lambda:(output.extend(drain(handle)) or (b'MEMORY_TOTAL_65536\r\n' in output and b'MEMORY_PROCESS_32768\r\n' in output)))
     def bridge_command(method, params):
         output.clear()
         payload=json.dumps({'version':1,'id':1,'method':method,'params':params},separators=(',',':'))

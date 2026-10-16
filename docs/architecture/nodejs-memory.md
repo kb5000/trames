@@ -15,8 +15,9 @@ created by partial operations. Metadata exhaustion returns ENOMEM before effects
 reserved-range remapping is conservative near that cap.
 
 `mprotect` validates the whole range and backing write rights first. Giving a
-reserved range access commits zero-filled page objects under the existing 512 MiB
-per-space and 1 GiB scheduler aggregate budgets. A failed commit preserves bytes,
+reserved range access commits zero-filled page objects under configurable
+per-space and scheduler aggregate budgets (defaults: 512 MiB and 1 GiB).
+A failed commit preserves bytes,
 permissions and reservation ownership. Making an already committed page
 inaccessible retains its page object; this is not a general demand-paging or
 host-RSS model. Shared anonymous and file-backed mappings keep their existing
@@ -30,7 +31,7 @@ and reserved remaps retain the existing single-mapping restriction.
 
 Access to a reservation faults with permission denial, while a removed hole is
 unmapped. mincore returns zero for uncommitted pages; its output range remains
-bounded to 512 MiB. msync and accepted advice hints validate reservation ownership
+bounded to the address space's current committed-memory budget. msync and accepted advice hints validate reservation ownership
 without allocating a residency vector; DONTNEED preserves uncommitted ranges.
 `/proc/PID/maps`, VmSize, statm and stat distinguish virtual ownership from
 committed page accounting. VmRSS describes the emulator's committed pages, not

@@ -9,8 +9,38 @@ mod terminal;
 mod workers;
 use trames_memory::{Memory, MemoryError, Permissions, DEFAULT_MEMORY_LIMIT, PAGE_SIZE};
 
+/// Guest committed-page budgets. Reservations do not preallocate host memory;
+/// fork charges each distinct address space conservatively, CLONE_VM only once.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MemoryLimits {
+    pub per_process: usize,
+    pub total: usize,
+}
+impl Default for MemoryLimits {
+    fn default() -> Self {
+        Self {
+            per_process: DEFAULT_MEMORY_LIMIT,
+            total: 1024 * 1024 * 1024,
+        }
+    }
+}
+impl MemoryLimits {
+    pub fn validate(self) -> Result<(), RuntimeError> {
+        if self.per_process == 0
+            || self.total < self.per_process
+            || self.total as u64 > trames_memory::ADDRESS_LIMIT
+            || !self.per_process.is_multiple_of(PAGE_SIZE as usize)
+            || !self.total.is_multiple_of(PAGE_SIZE as usize)
+        {
+            return Err(RuntimeError::Configuration("memory budgets must be positive page multiples, process <= total <= guest address space"));
+        }
+        Ok(())
+    }
+}
+
 #[derive(Default, Clone, Copy)]
 pub struct RuntimeOptions {
+    pub memory_limits: MemoryLimits,
     /// Explicit host opt-in to the bounded NativeCall v1 pure profile.
     pub pure_accelerator: bool,
     /// Experimental bsearch wrapper routing; default retains original musl.
@@ -33,6 +63,7 @@ pub enum RuntimeError {
     Elf(ElfError),
     Memory(MemoryError),
     Arguments(&'static str),
+    Configuration(&'static str),
     Cpu(CpuFault),
     BudgetExceeded(u64),
     Deadlock,
@@ -45,6 +76,7 @@ impl fmt::Display for RuntimeError {
             Self::Memory(e) => e.fmt(f),
             Self::Cpu(e) => e.fmt(f),
             Self::Arguments(s) => write!(f, "initial stack: {s}"),
+            Self::Configuration(s) => write!(f, "runtime configuration: {s}"),
             Self::BudgetExceeded(n) => write!(f, "guest instruction limit exceeded ({n})"),
             Self::Deadlock => write!(
                 f,
@@ -68,6 +100,7 @@ impl From<MemoryError> for RuntimeError {
 
 pub use trames_vulkan::Display as VulkanDisplay;
 pub struct Runtime {
+    pub memory_limits: MemoryLimits,
     pub vulkan_display: VulkanDisplay,
     pub cpu: Cpu,
     pub memory: Memory,
@@ -81,6 +114,8 @@ pub struct Runtime {
 /// Host monotonic timings; these are diagnostics, never guest clock values.
 #[derive(Default, Debug)]
 pub struct RuntimeMetrics {
+    pub instructions: u64,
+    pub parallel_snapshots: trames_memory::parallel::Metrics,
     pub gpu_compiles: u64,
     pub gpu_peak_pending: usize,
     /// Sum over pending-call windows; overlapping waits may count retirement twice.
@@ -327,9 +362,11 @@ impl Runtime {
         options: RuntimeOptions,
         exec_filename: Option<&[u8]>,
     ) -> Result<Self, RuntimeError> {
-        let mut elf = trames_elf::load_with_interpreter(bytes, DEFAULT_MEMORY_LIMIT, |path| {
-            vfs.executable(path).map_err(|e| ElfError::Interpreter(e.0))
-        })?;
+        options.memory_limits.validate()?;
+        let mut elf =
+            trames_elf::load_with_interpreter(bytes, options.memory_limits.per_process, |path| {
+                vfs.executable(path).map_err(|e| ElfError::Interpreter(e.0))
+            })?;
         let mut linux = Linux::new(elf.brk_base);
         linux.arguments = argv.to_vec();
         linux.environment = envp.to_vec();
@@ -381,6 +418,7 @@ impl Runtime {
         cpu.set_native_calls(options.pure_accelerator);
         cpu.set_vulkan_calls(options.vulkan_accelerator);
         Ok(Self {
+            memory_limits: options.memory_limits,
             vulkan_display: VulkanDisplay::default(),
             cpu,
             memory: elf.memory,
@@ -431,6 +469,41 @@ impl Runtime {
 mod tests {
     use super::*;
     #[test]
+    fn memory_budget_validation_accepts_large_limits_without_preallocation() {
+        let limits = MemoryLimits {
+            per_process: 2 << 30,
+            total: 4 << 30,
+        };
+        limits.validate().unwrap();
+        let memory = Memory::new(limits.per_process);
+        assert_eq!(memory.limit(), 2 << 30);
+        assert_eq!(memory.mapped_bytes(), 0);
+        for limits in [
+            MemoryLimits {
+                per_process: 0,
+                total: 4096,
+            },
+            MemoryLimits {
+                per_process: 8192,
+                total: 4096,
+            },
+            MemoryLimits {
+                per_process: 4097,
+                total: 8192,
+            },
+            MemoryLimits {
+                per_process: 4096,
+                total: 8193,
+            },
+            MemoryLimits {
+                per_process: 4096,
+                total: trames_memory::ADDRESS_LIMIT as usize + 4096,
+            },
+        ] {
+            assert!(limits.validate().is_err());
+        }
+    }
+    #[test]
     fn virtual_devices_work_without_any_proc_access_or_snapshot_refresh() {
         // openat(AT_FDCWD,"/dev/zero",0); read(fd,path,8); exit(0)
         let words = [
@@ -457,6 +530,7 @@ mod tests {
         let mut cpu = Cpu::new(0x1000, 0);
         cpu.set_x(1, 0x2100);
         let mut runtime = Runtime {
+            memory_limits: MemoryLimits::default(),
             cpu,
             memory,
             linux: Linux::new(0),
@@ -545,6 +619,7 @@ mod tests {
         let mut cpu = Cpu::default();
         cpu.pc = 0x1000;
         let mut runtime = Runtime {
+            memory_limits: MemoryLimits::default(),
             cpu,
             memory,
             linux: Linux::new(0x2000),
@@ -597,6 +672,7 @@ mod accelerator_tests {
         cpu.set_x(30, 0x1020);
         cpu.tpidr_el0 = 0x9988;
         Runtime {
+            memory_limits: MemoryLimits::default(),
             cpu,
             memory,
             linux: Linux::new(0),

@@ -1,0 +1,11 @@
+--- a/out/node/wrapper.js
++++ b/out/node/wrapper.js
+@@ -52,7 +52,7 @@
+ const emitter_1 = require("../common/emitter");
+ const cli_1 = require("./cli");
+ const util_1 = require("./util");
+-const timeoutInterval = 10000; // 10s, matches VS Code's timeouts.
++const configuredTimeout = Number(process.env.CODE_SERVER_HANDSHAKE_TIMEOUT_MS); const timeoutInterval = Number.isInteger(configuredTimeout) && configuredTimeout >= 10000 && configuredTimeout <= 600000 ? configuredTimeout : 10000;
+ /**
+  * Listen to a single message from a process. Reject if the process errors,
+  * exits, or times out.

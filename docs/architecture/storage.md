@@ -106,7 +106,8 @@ Logical lengths, including holes and open-unlinked files, count once per inode.
 Aliases add no content charge. Large ordinary files are not loaded wholesale:
 guest transfers are at most 1 MiB and import/export buffers are 64 KiB. Executable
 loading of the main ELF still has its separate 256 MiB limit. M6 mapped-memory
-bounds are 512 MiB per process and 1 GiB aggregate. `--memory` retains the 16 MiB file and
+bounds default to 512 MiB per process and 1 GiB aggregate and are now
+[configurable](../guides/guest-memory.md). `--memory` retains the 16 MiB file and
 1024 node/entry bounds; 16 GiB is never granted to that Vec-backed backend.
 
 ## Files interoperability

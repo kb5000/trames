@@ -133,7 +133,7 @@ impl Kernel {
             Err(Errno(3))
         }
     }
-    pub(super) fn rlimit(p: &mut Process, number: u32, a: [u64; 6]) -> Result<u64, Errno> {
+    pub(super) fn rlimit(&self, p: &mut Process, number: u32, a: [u64; 6]) -> Result<u64, Errno> {
         let (resource, new, old) = if number == 261 {
             if a[0] != 0 && a[0] != p.linux.vfs.visible_pid(p.tgid) as u64 {
                 return Err(Errno(3));
@@ -148,7 +148,7 @@ impl Kernel {
         };
         let fixed = match resource {
             0 | 1 | 10 | 15 => u64::MAX,
-            2 | 5 | 9 => trames_memory::DEFAULT_MEMORY_LIMIT as u64,
+            2 | 5 | 9 => self.memory_limits.per_process as u64,
             3 => super::super::STACK_SIZE,
             4 | 8 | 12 | 13 | 14 => 0,
             6 => MAX_PROCESSES as u64,
@@ -226,17 +226,15 @@ mod tests {
     #[test]
     fn file_size_limit_changes_are_atomic_and_hard_limit_is_privileged() {
         let mut p = process();
+        let k = kernel();
         write_u64(&mut p.memory, 0x1000, 10).unwrap();
         write_u64(&mut p.memory, 0x1008, 20).unwrap();
         assert_eq!(
-            Kernel::rlimit(&mut p, 261, [0, 1, 0x1000, 0xffff, 0, 0]),
+            k.rlimit(&mut p, 261, [0, 1, 0x1000, 0xffff, 0, 0]),
             Err(Errno(14))
         );
         assert_eq!(p.file_size_limit.get(), (u64::MAX, u64::MAX));
-        assert_eq!(
-            Kernel::rlimit(&mut p, 261, [0, 1, 0x1000, 0x1000, 0, 0]),
-            Ok(0)
-        );
+        assert_eq!(k.rlimit(&mut p, 261, [0, 1, 0x1000, 0x1000, 0, 0]), Ok(0));
         assert_eq!(p.file_size_limit.get(), (10, 20));
         assert_eq!(read_u64(&p.memory, 0x1000), Ok(u64::MAX));
         let child = p.fork();
@@ -246,7 +244,7 @@ mod tests {
         write_u64(&mut p.memory, 0x1000, 10).unwrap();
         write_u64(&mut p.memory, 0x1008, 21).unwrap();
         assert_eq!(
-            Kernel::rlimit(&mut p, 164, [1, 0x1000, 0, 0, 0, 0]),
+            k.rlimit(&mut p, 164, [1, 0x1000, 0, 0, 0, 0]),
             Err(Errno(1))
         );
         assert_eq!(p.file_size_limit.get(), (10, 20));

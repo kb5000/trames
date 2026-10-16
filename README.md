@@ -1,5 +1,12 @@
 # Trames
 
+本轮开发：Linux 的总内存/单进程预算已可在 iPad 设置与 CLI 中配置，
+默认仍为 1 GiB / 512 MiB，按需分配。
+[内存配置说明](docs/guides/guest-memory.md)。并行内存视图改为增量维护，
+避免 Node 等程序频繁改变小段映射时反复重建整个页表；保留真正多核执行。
+[code-server 开发验证](docs/guides/code-server.md) 仍需分别验收完整编辑器、
+文件监听和终端，尚未作为 iPad 安装功能发布。
+
 面向 iPadOS 的终端优先开发环境：原生 SSH，加上运行未修改 AArch64 Linux 用户态程序的兼容运行时。使用普通开发者签名，架构不依赖越狱、JIT 权限、私有 API 或硬件虚拟化。
 
 **当前交付：M0–M5 软件实现；完整 iPad 真机验收待完成。** `trames-run` 执行实际静态／动态 AArch64 ELF，支持 32/64 位标量及选定 SIMD 浮点、虚拟进程、管道、信号和一个虚拟 PTY。交互式 BusyBox `ash` 已在内存和磁盘两种后端验证。Linux CLI 默认保存文件到磁盘，新存储目录的文件预算为 16 GiB。IPv4/IPv6 TCP/UDP、真实 musl DNS，以及具有独立 IP 和回环地址的用户态网络栈已验证；Alpine 3.22.6、动态 musl、经过证书和包签名验证的 HTTPS apk update/add，以及安装后 tree 执行已验证。iPad App、原生 SSH/SFTP、Files 授权和 Bridge 已实现并通过软件验证。

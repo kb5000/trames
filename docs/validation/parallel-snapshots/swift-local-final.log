@@ -1,0 +1,166 @@
+[0/1] Planning build
+Building for debugging...
+[0/3] Write sources
+[1/3] Write swift-version-1908758330C52FC6.txt
+[3/5] Emitting module TramesKitTests
+[4/5] Compiling TramesKitTests ConfigurationTests.swift
+[5/14] /workspace/trames/apps/ios/TramesKit/.build/x86_64-unknown-linux-gnu/debug/TramesKitPackageDiscoveredTests.derived/all-discovered-tests.swift
+[6/14] Write sources
+[7/14] Wrapping AST for TramesKitTests for debugging
+[9/18] Compiling TramesKitPackageDiscoveredTests NIOSSHRegressionTests.swift
+[10/18] Compiling TramesKitPackageDiscoveredTests all-discovered-tests.swift
+[11/18] Compiling TramesKitPackageDiscoveredTests TramesKitTests.swift
+[12/18] Emitting module TramesKitPackageDiscoveredTests
+[13/19] /workspace/trames/apps/ios/TramesKit/.build/x86_64-unknown-linux-gnu/debug/TramesKitPackageTests.derived/runner.swift
+[14/19] Write sources
+[15/19] Wrapping AST for TramesKitPackageDiscoveredTests for debugging
+[17/21] Compiling TramesKitPackageTests runner.swift
+[18/21] Emitting module TramesKitPackageTests
+[19/21] Write Objects.LinkFileList
+[20/21] Linking TramesKitPackageTests.xctest
+Build complete! (12.95s)
+Test Suite 'All tests' started at 2026-10-16 11:47:48.447
+Test Suite 'debug.xctest' started at 2026-10-16 11:47:48.454
+Test Suite 'BridgeTests' started at 2026-10-16 11:47:48.454
+Test Case 'BridgeTests.testOnlyWebLinksWithoutCredentialsAreAccepted' started at 2026-10-16 11:47:48.454
+Test Case 'BridgeTests.testOnlyWebLinksWithoutCredentialsAreAccepted' passed (0.002 seconds)
+Test Case 'BridgeTests.testRelativePathsRejectTraversalAndAllSymbolicLinks' started at 2026-10-16 11:47:48.456
+Test Case 'BridgeTests.testRelativePathsRejectTraversalAndAllSymbolicLinks' passed (0.002 seconds)
+Test Case 'BridgeTests.testRevocationCancelsRegisteredAndFutureOperations' started at 2026-10-16 11:47:48.458
+Test Case 'BridgeTests.testRevocationCancelsRegisteredAndFutureOperations' passed (0.0 seconds)
+Test Case 'BridgeTests.testTicketPrecisionAndBoundedParameterValidation' started at 2026-10-16 11:47:48.458
+Test Case 'BridgeTests.testTicketPrecisionAndBoundedParameterValidation' passed (0.001 seconds)
+Test Suite 'BridgeTests' passed at 2026-10-16 11:47:48.459
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.006 (0.006) seconds
+Test Suite 'ConfigurationTests' started at 2026-10-16 11:47:48.459
+Test Case 'ConfigurationTests.testHostKeysRequireExplicitTrustAndRejectChangesAfterReload' started at 2026-10-16 11:47:48.459
+Test Case 'ConfigurationTests.testHostKeysRequireExplicitTrustAndRejectChangesAfterReload' passed (0.003 seconds)
+Test Case 'ConfigurationTests.testLocalMemoryBudgetRejectsInvalidConfigurationBeforeOpeningStore' started at 2026-10-16 11:47:48.462
+Test Case 'ConfigurationTests.testLocalMemoryBudgetRejectsInvalidConfigurationBeforeOpeningStore' passed (0.0 seconds)
+Test Case 'ConfigurationTests.testSSHFirstValuePatternsQuotesNegationAndWarnings' started at 2026-10-16 11:47:48.463
+Test Case 'ConfigurationTests.testSSHFirstValuePatternsQuotesNegationAndWarnings' passed (0.005 seconds)
+Test Case 'ConfigurationTests.testSSHInvalidOrUnsupportedConditionalConfigIsRejected' started at 2026-10-16 11:47:48.468
+Test Case 'ConfigurationTests.testSSHInvalidOrUnsupportedConditionalConfigIsRejected' passed (0.003 seconds)
+Test Case 'ConfigurationTests.testSSHOptionalEqualsSeparatorPreservesValueEquals' started at 2026-10-16 11:47:48.471
+Test Case 'ConfigurationTests.testSSHOptionalEqualsSeparatorPreservesValueEquals' passed (0.001 seconds)
+Test Suite 'ConfigurationTests' passed at 2026-10-16 11:47:48.472
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.012 (0.012) seconds
+Test Suite 'ConnectivityRetryTests' started at 2026-10-16 11:47:48.472
+Test Case 'ConnectivityRetryTests.testCancellationDuringPermissionWaitPreventsAnotherRead' started at 2026-10-16 11:47:48.472
+Test Case 'ConnectivityRetryTests.testCancellationDuringPermissionWaitPreventsAnotherRead' passed (0.001 seconds)
+Test Case 'ConnectivityRetryTests.testOfflineRetriesAreBoundedAndPermanentFailuresAreNotRetried' started at 2026-10-16 11:47:48.473
+Test Case 'ConnectivityRetryTests.testOfflineRetriesAreBoundedAndPermanentFailuresAreNotRetried' passed (0.0 seconds)
+Test Case 'ConnectivityRetryTests.testPermissionBecomesAvailableAndBootstrapReadAutomaticallyRecovers' started at 2026-10-16 11:47:48.473
+Test Case 'ConnectivityRetryTests.testPermissionBecomesAvailableAndBootstrapReadAutomaticallyRecovers' passed (0.0 seconds)
+Test Suite 'ConnectivityRetryTests' passed at 2026-10-16 11:47:48.473
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'LocalTimezoneTests' started at 2026-10-16 11:47:48.473
+Test Case 'LocalTimezoneTests.testSystemRulesArePreservedForNamedAndDaylightSavingZones' started at 2026-10-16 11:47:48.473
+Test Case 'LocalTimezoneTests.testSystemRulesArePreservedForNamedAndDaylightSavingZones' passed (0.014 seconds)
+Test Suite 'LocalTimezoneTests' passed at 2026-10-16 11:47:48.487
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.014 (0.014) seconds
+Test Suite 'SFTPParserTests' started at 2026-10-16 11:47:48.487
+Test Case 'SFTPParserTests.testFragmentedSFTPFrameAndHeader' started at 2026-10-16 11:47:48.487
+Test Case 'SFTPParserTests.testFragmentedSFTPFrameAndHeader' passed (0.003 seconds)
+Test Case 'SFTPParserTests.testUnsolicitedReplyFloodClosesInsteadOfDroppingSilently' started at 2026-10-16 11:47:48.490
+Test Case 'SFTPParserTests.testUnsolicitedReplyFloodClosesInsteadOfDroppingSilently' passed (0.001 seconds)
+Test Case 'SFTPParserTests.testZeroAndOversizedFrameLengthsCloseTheChannel' started at 2026-10-16 11:47:48.491
+Test Case 'SFTPParserTests.testZeroAndOversizedFrameLengthsCloseTheChannel' passed (0.001 seconds)
+Test Suite 'SFTPParserTests' passed at 2026-10-16 11:47:48.491
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.005 (0.005) seconds
+Test Suite 'SSHIntegrationTests' started at 2026-10-16 11:47:48.491
+Test Case 'SSHIntegrationTests.testOpenSSHPTYResizeEd25519AndSFTPRoundtrip' started at 2026-10-16 11:47:48.491
+/workspace/trames/apps/ios/TramesKit/Tests/TramesKitTests/SSHIntegrationTests.swift:13: SSHIntegrationTests.testOpenSSHPTYResizeEd25519AndSFTPRoundtrip : Test skipped - Set TRAMES_SSH_TEST_* to run against a real local OpenSSH server
+Test Case 'SSHIntegrationTests.testOpenSSHPTYResizeEd25519AndSFTPRoundtrip' skipped (0.0 seconds)
+Test Suite 'SSHIntegrationTests' passed at 2026-10-16 11:47:48.492
+	 Executed 1 test, with 1 test skipped and 0 failures (0 unexpected) in 0.0 (0.0) seconds
+Test Suite 'ChildChannelMultiplexerTests' started at 2026-10-16 11:47:48.492
+Test Case 'ChildChannelMultiplexerTests.testAutoReadOnChildChannel' started at 2026-10-16 11:47:48.492
+Test Case 'ChildChannelMultiplexerTests.testAutoReadOnChildChannel' passed (0.001 seconds)
+Test Case 'ChildChannelMultiplexerTests.testBasicInboundChannelCreation' started at 2026-10-16 11:47:48.493
+Test Case 'ChildChannelMultiplexerTests.testBasicInboundChannelCreation' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testBetterOutboundChannelCreation' started at 2026-10-16 11:47:48.493
+Test Case 'ChildChannelMultiplexerTests.testBetterOutboundChannelCreation' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testCannotOpenNewChannelAfterDroppingDelegate' started at 2026-10-16 11:47:48.493
+Test Case 'ChildChannelMultiplexerTests.testCannotOpenNewChannelAfterDroppingDelegate' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testChildChannelMaxMessageLengthOption' started at 2026-10-16 11:47:48.493
+Test Case 'ChildChannelMultiplexerTests.testChildChannelMaxMessageLengthOption' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testChildChannelSupportsSyncOptions' started at 2026-10-16 11:47:48.494
+Test Case 'ChildChannelMultiplexerTests.testChildChannelSupportsSyncOptions' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testCloseBeforeActiveOnOutboundChannelWhenReceivingFailure' started at 2026-10-16 11:47:48.494
+Test Case 'ChildChannelMultiplexerTests.testCloseBeforeActiveOnOutboundChannelWhenReceivingFailure' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testClosingClosedChannelsDoesntHurt' started at 2026-10-16 11:47:48.495
+Test Case 'ChildChannelMultiplexerTests.testClosingClosedChannelsDoesntHurt' passed (0.001 seconds)
+Test Case 'ChildChannelMultiplexerTests.testClosingInputRejected' started at 2026-10-16 11:47:48.496
+Test Case 'ChildChannelMultiplexerTests.testClosingInputRejected' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testDuplicateCloseFails' started at 2026-10-16 11:47:48.496
+Test Case 'ChildChannelMultiplexerTests.testDuplicateCloseFails' passed (0.001 seconds)
+Test Case 'ChildChannelMultiplexerTests.testEOFIsReceivedInOrder' started at 2026-10-16 11:47:48.496
+Test Case 'ChildChannelMultiplexerTests.testEOFIsReceivedInOrder' passed (0.001 seconds)
+Test Case 'ChildChannelMultiplexerTests.testEOFIsSentInOrder' started at 2026-10-16 11:47:48.497
+Test Case 'ChildChannelMultiplexerTests.testEOFIsSentInOrder' passed (0.001 seconds)
+Test Case 'ChildChannelMultiplexerTests.testEOFQueuesWithReads' started at 2026-10-16 11:47:48.498
+Test Case 'ChildChannelMultiplexerTests.testEOFQueuesWithReads' passed (0.101 seconds)
+Test Case 'ChildChannelMultiplexerTests.testErrorGracePeriod' started at 2026-10-16 11:47:48.598
+Test Case 'ChildChannelMultiplexerTests.testErrorGracePeriod' passed (0.001 seconds)
+Test Case 'ChildChannelMultiplexerTests.testFailingOutboundChannelInitializerDoesNotDoIO' started at 2026-10-16 11:47:48.599
+Test Case 'ChildChannelMultiplexerTests.testFailingOutboundChannelInitializerDoesNotDoIO' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testLocalChildChannelsAlwaysGetTheRightChannelType' started at 2026-10-16 11:47:48.600
+Test Case 'ChildChannelMultiplexerTests.testLocalChildChannelsAlwaysGetTheRightChannelType' passed (0.001 seconds)
+Test Case 'ChildChannelMultiplexerTests.testLocalCloseDrainsReadWithoutWindowAdjustment' started at 2026-10-16 11:47:48.600
+Test Case 'ChildChannelMultiplexerTests.testLocalCloseDrainsReadWithoutWindowAdjustment' passed (0.001 seconds)
+Test Case 'ChildChannelMultiplexerTests.testMultiplexerDropsWritesAfterItLosesTheHandler' started at 2026-10-16 11:47:48.601
+Test Case 'ChildChannelMultiplexerTests.testMultiplexerDropsWritesAfterItLosesTheHandler' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testMultiplexerRejectsInboundMessagesForUnknownChannels' started at 2026-10-16 11:47:48.602
+Test Case 'ChildChannelMultiplexerTests.testMultiplexerRejectsInboundMessagesForUnknownChannels' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testNoDataLossOnChannelClose' started at 2026-10-16 11:47:48.602
+Test Case 'ChildChannelMultiplexerTests.testNoDataLossOnChannelClose' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testOutboundChannelCreation' started at 2026-10-16 11:47:48.603
+Test Case 'ChildChannelMultiplexerTests.testOutboundChannelCreation' passed (0.101 seconds)
+Test Case 'ChildChannelMultiplexerTests.testParentChannelInactiveDisablesChildChannels' started at 2026-10-16 11:47:48.704
+Test Case 'ChildChannelMultiplexerTests.testParentChannelInactiveDisablesChildChannels' passed (0.001 seconds)
+Test Case 'ChildChannelMultiplexerTests.testPromiseCompletionDelaysUntilResponse' started at 2026-10-16 11:47:48.704
+Test Case 'ChildChannelMultiplexerTests.testPromiseCompletionDelaysUntilResponse' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testPromiseCompletionDelaysUntilResponseOnFailure' started at 2026-10-16 11:47:48.705
+Test Case 'ChildChannelMultiplexerTests.testPromiseCompletionDelaysUntilResponseOnFailure' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testReadsAreDelayedUntilRead' started at 2026-10-16 11:47:48.705
+Test Case 'ChildChannelMultiplexerTests.testReadsAreDelayedUntilRead' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testRejectInboundChannelCreation' started at 2026-10-16 11:47:48.706
+Test Case 'ChildChannelMultiplexerTests.testRejectInboundChannelCreation' passed (0.001 seconds)
+Test Case 'ChildChannelMultiplexerTests.testRemotelyCreatedChildChannelsGetTheRightChannelType' started at 2026-10-16 11:47:48.706
+Test Case 'ChildChannelMultiplexerTests.testRemotelyCreatedChildChannelsGetTheRightChannelType' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testRespectingMaxMessageSize' started at 2026-10-16 11:47:48.707
+Test Case 'ChildChannelMultiplexerTests.testRespectingMaxMessageSize' passed (0.001 seconds)
+Test Case 'ChildChannelMultiplexerTests.testRespectingMaxMessageSizeOnOutboundChannel' started at 2026-10-16 11:47:48.707
+Test Case 'ChildChannelMultiplexerTests.testRespectingMaxMessageSizeOnOutboundChannel' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testSimpleOutboundFlowControlManagement' started at 2026-10-16 11:47:48.708
+Test Case 'ChildChannelMultiplexerTests.testSimpleOutboundFlowControlManagement' passed (0.101 seconds)
+Test Case 'ChildChannelMultiplexerTests.testTCPCloseBeforeInitializer' started at 2026-10-16 11:47:48.809
+Test Case 'ChildChannelMultiplexerTests.testTCPCloseBeforeInitializer' passed (0.001 seconds)
+Test Case 'ChildChannelMultiplexerTests.testTCPCloseWhileAwaitingChannelSetup' started at 2026-10-16 11:47:48.809
+Test Case 'ChildChannelMultiplexerTests.testTCPCloseWhileAwaitingChannelSetup' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testTCPCloseWhileAwaitingInitializer' started at 2026-10-16 11:47:48.810
+Test Case 'ChildChannelMultiplexerTests.testTCPCloseWhileAwaitingInitializer' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testUserOutboundEventsAreQueuedUntilActivity' started at 2026-10-16 11:47:48.810
+Test Case 'ChildChannelMultiplexerTests.testUserOutboundEventsAreQueuedUntilActivity' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testWeCorrectlySpotWindowSizesOfInboundChannels' started at 2026-10-16 11:47:48.811
+Test Case 'ChildChannelMultiplexerTests.testWeCorrectlySpotWindowSizesOfInboundChannels' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testWeDealWithFlowControlProperly' started at 2026-10-16 11:47:48.811
+Test Case 'ChildChannelMultiplexerTests.testWeDealWithFlowControlProperly' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testWeDontResizeTheWindowOnClose' started at 2026-10-16 11:47:48.811
+Test Case 'ChildChannelMultiplexerTests.testWeDontResizeTheWindowOnClose' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testWeRejectExcessiveWindowSizes' started at 2026-10-16 11:47:48.812
+Test Case 'ChildChannelMultiplexerTests.testWeRejectExcessiveWindowSizes' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testWriteAfterEOFFails' started at 2026-10-16 11:47:48.812
+Test Case 'ChildChannelMultiplexerTests.testWriteAfterEOFFails' passed (0.0 seconds)
+Test Case 'ChildChannelMultiplexerTests.testWritesAreQueuedUntilActivity' started at 2026-10-16 11:47:48.812
+Test Case 'ChildChannelMultiplexerTests.testWritesAreQueuedUntilActivity' passed (0.0 seconds)
+Test Suite 'ChildChannelMultiplexerTests' passed at 2026-10-16 11:47:48.813
+	 Executed 40 tests, with 0 failures (0 unexpected) in 0.32 (0.32) seconds
+Test Suite 'debug.xctest' passed at 2026-10-16 11:47:48.813
+	 Executed 57 tests, with 1 test skipped and 0 failures (0 unexpected) in 0.358 (0.358) seconds
+Test Suite 'All tests' passed at 2026-10-16 11:47:48.813
+	 Executed 57 tests, with 1 test skipped and 0 failures (0 unexpected) in 0.358 (0.358) seconds
+◇ Test run started.
+↳ Testing Library Version: 6.0.3 (18c42c19cac3faf)
+✔ Test run with 0 tests passed after 0.001 seconds.

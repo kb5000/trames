@@ -228,6 +228,11 @@ impl Pool {
                     if running {
                         active.fetch_sub(1, Ordering::Relaxed);
                     }
+                    // Completion publishes that this worker has released its
+                    // immutable mapping view as well as stopped executing it.
+                    // The joined coordinator can then update a uniquely owned
+                    // snapshot without racing the message recipient.
+                    drop(work.memory);
                     if done
                         .send(Done {
                             pid: work.pid,
