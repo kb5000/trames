@@ -23,7 +23,13 @@ retained worker snapshots and native/CPU coherence. Isolated subprocesses check
 unrelated default host faults and previous handlers' masks/NODEFER/one-shot rules.
 The default child explicitly restores SIG_DFL so a sanitizer's crash policy does
 not change that assertion. Linux-user children re-exec through QEMU when binfmt
-is unavailable. The final signal-test-only adjustment also passes host memory tests.
+is unavailable. Signal forwarding now explicitly reconstructs the previous handler mask from the
+interrupted context, including when an interposed dispatcher supplies another
+mask. Default redelivery first unblocks its signal. The host memory suite passes
+these paths; the complete instrumented-standard-library TSan batch passes 88
+tests before the final default-redelivery adjustment. TSan does not instrument
+raw asm bytes; its result checks the Rust-side region/ownership protocol, not
+every native memory instruction.
 
 Real guest mmap/EOF/SIGBUS/COW/code aliases, edited musl signal contexts,
 same-page 1/2/4-CPU regions, 507 independent warmed integer snapshots and all 19
@@ -76,9 +82,25 @@ time; below one means the candidate is slower.
 The first version improves the memory loop but regresses Python and some other
 workloads. Inspection identifies duplicate hardware attempts on fallback and
 uncached missing windows. The retained refinement removes those costs and adds a
-regression for mapping after a cached miss. Its complete follow-up comparison is
-being collected; the first results above are not discarded or treated as a
-universal acceleration claim. No physical iPad result is available for this MMU.
+regression for mapping after a cached miss. A second complete three-pair batch is retained in
+[refined host data](hardware-mmu/refined-host.json) and
+[refined SMP data](hardware-mmu/refined-smp.json): CoreMark 1.063×, memory 1.089×,
+Vim 0.926×, Python 0.848×, GCC 0.717×, SMP 0.933×. This does **not** establish a
+general application improvement. Python/GCC retired instruction counts are equal;
+the added time is mainly CPU execution, rather than snapshot preparation.
+Different batches are separate comparisons on a shared host; do not combine their
+medians to claim an isolated refinement gain.
+
+Assembly inspection also identifies runtime division by the host-page granule.
+The final implementation stores its power-of-two shift at construction and uses
+shifts for hot group indexing. This change and signal-forwarding fixes are being
+validated; their performance is not inferred from the earlier binary's numbers.
+All earlier unfavorable measurements remain. Physical iPad MMU speed is unmeasured.
+
+Initial exact-source CI caught signal-composition issues: Linux/TSan deferred
+signal masks, and Darwin one-shot-handler default redelivery. These failures are
+recorded rather than claimed as passing pipelines. A new early native Apple
+memory-ABI job precedes the app build, while full Linux/Apple validation is rerun.
 
 ## Vulkan cold-start regression
 

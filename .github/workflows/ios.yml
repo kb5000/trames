@@ -9,6 +9,16 @@ defaults:
   run:
     shell: bash
 jobs:
+  memory-abi:
+    runs-on: macos-15
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+      - name: Validate hardware mappings and signal recovery before app builds
+        run: cargo test -p trames-memory --locked
   guest-musl:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -40,7 +50,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
   apple-build:
-    needs: guest-musl
+    needs: [guest-musl, memory-abi]
     runs-on: macos-15
     timeout-minutes: 40
     steps:
