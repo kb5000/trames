@@ -54,6 +54,7 @@ jobs:
           cargo build -p trames-cli --target aarch64-unknown-linux-musl --release --locked
       - run: python3 tests/differential/run.py
       - run: python3 tests/differential/m1.py
+      - run: python3 tests/differential/lazy_flags.py
       - run: python3 tests/differential/floating.py
       - run: python3 tests/differential/vector_floating.py
       - run: python3 tests/differential/structures.py

@@ -64,6 +64,32 @@ instruction left in a slice, it executes the arithmetic alone; the branch is
 reached in the next slice. Cold words are fetched only when reached. No pair spans
 a page or includes a memory operation, faulting instruction, or syscall.
 
+Flag-setting ADD/SUB, including CMP/CMN and the arithmetic arm of CCMP/CCMN,
+retain masked operands for deferred C/V. N/Z remain cheap result predicates so
+EQ/NE/MI/PL can read them without checking a deferred-operation tag. Carry and
+overflow are computed only when needed; subtraction's signed ordering compares
+the saved operands directly. AL/NV inspect no flags. Non-S arithmetic preserves
+the pending state, while an overwriting producer discards pending C/V without
+evaluation. Logical operations, ADC/SBC results, FP comparisons and explicit
+flag writes retain concrete NZCV.
+
+Non-S ADD/SUB immediate have a separate decoded operation. SUB's immediate is
+negated at decode time, leaving one wrapping add and destination-width truncation
+in the hot path, with no flag-setting or subtraction-mode branch. SP/WSP roles
+are preserved. Flag-setting forms retain their original operands and fusion.
+
+Deferred flags are owned architectural CPU state, with no guest memory references
+or host condition-register lifetime assumptions. They survive a slice, syscall,
+CPU clone and worker migration. Public `flags()`/`nzcv()` reads return complete
+architectural values; callers replace them through `set_flags()`/`set_nzcv()`.
+The cached loop carries a separate local flag state, publishing it to `Cpu` on
+every slice exit and before a reference fallback, then reading back fallback
+changes. Common handlers need not repeatedly expose it through the register file.
+ADC/SBC reads deferred carry before replacing any flags; RMIF, CFINV, SETF8/16
+and FlagM2 preserve the required old bits. Signal frames materialize NZCV and
+rt_sigreturn replaces pending state with the edited frame value. No per-slice
+materialization or extra synchronization is needed.
+
 A code page is keyed by address-space identity, virtual base and page code token.
 Independent spaces cannot reuse code merely because their revision counters
 match. Mapping/replacement/protection changes and successful stores to executable

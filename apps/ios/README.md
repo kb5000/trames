@@ -162,10 +162,14 @@ branches are removed in 0.3.0 at the owner's request; see the reset guidance bel
 To package an existing device build yourself:
 
     python3 scripts/package-ios.py \
-      apps/ios/build/device/Build/Products/Debug-iphoneos/Trames.app \
+      apps/ios/build/device/Build/Products/Release-iphoneos/Trames.app \
       apps/ios/build/sideload/Trames-unsigned.ipa
 
 ## Current source architecture
+
+Device packages use Xcode Release for the Swift app and Cargo Release with thin
+LTO for the Rust runtime. Simulator tests keep Xcode Debug; the embedded Rust
+runtime is still Release. No signing or JIT entitlement changes are needed.
 
 The local runtime now has one Rust interpreter and no execution-backend switch.
 Native arithmetic helpers compile only the ARM64 implementation into the iPad

@@ -45,20 +45,6 @@ pub(super) fn logical_mask(n: u32, imms: u32, immr: u32, wide: bool) -> Option<u
 }
 
 impl Cpu {
-    pub(crate) fn set_nzcv(&mut self, value: u32) {
-        self.flags = Flags {
-            n: value & 8 != 0,
-            z: value & 4 != 0,
-            c: value & 2 != 0,
-            v: value & 1 != 0,
-        };
-    }
-    pub fn nzcv(&self) -> u32 {
-        ((self.flags.n as u32) << 3)
-            | ((self.flags.z as u32) << 2)
-            | ((self.flags.c as u32) << 1)
-            | self.flags.v as u32
-    }
     pub(super) fn execute_extended(
         &mut self,
         ins: u32,
@@ -100,7 +86,7 @@ impl Cpu {
         let left = self.vectors[rn] as u64;
         let right = self.vectors[rm] as u64;
         if ins == 0xd500401f {
-            self.flags.c = !self.flags.c;
+            self.set_nzcv(self.nzcv() ^ 2);
             return Ok(Some(next));
         }
         if ins & 0xffe07c10 == 0xba000400 {
@@ -113,9 +99,13 @@ impl Cpu {
             let width = if ins & 0x4000 != 0 { 16 } else { 8 };
             let value = self.x(rn) as u32;
             let sign = value >> (width - 1) & 1;
-            self.flags.n = sign != 0;
-            self.flags.z = value & ((1 << width) - 1) == 0;
-            self.flags.v = sign ^ ((value >> width) & 1) != 0;
+            let c = self.condition_flags.carry();
+            self.set_flags(Flags {
+                n: sign != 0,
+                z: value & ((1 << width) - 1) == 0,
+                c,
+                v: sign ^ ((value >> width) & 1) != 0,
+            });
             return Ok(Some(next));
         }
         if ins & 0xffe0fc00 == 0x5e000400 {
@@ -177,12 +167,12 @@ impl Cpu {
                 _ => unreachable!(),
             } & mask;
             if opc == 3 {
-                self.flags = Flags {
+                self.set_flags(Flags {
                     n: value >> (bits - 1) != 0,
                     z: value == 0,
                     c: false,
                     v: false,
-                };
+                });
             }
             self.put(rd, value, wide, opc != 3);
         } else if ins & 0x1f800000 == 0x13000000 {
@@ -387,16 +377,16 @@ impl Cpu {
             } else {
                 rhs
             };
-            let sum = a as u128 + b as u128 + self.flags.c as u128;
+            let sum = a as u128 + b as u128 + self.condition_flags.carry() as u128;
             let value = sum as u64 & mask;
             if ins & (1 << 29) != 0 {
                 let sign = 1 << (bits - 1);
-                self.flags = Flags {
+                self.set_flags(Flags {
                     n: value & sign != 0,
                     z: value == 0,
                     c: sum > mask as u128,
                     v: !(a ^ b) & (a ^ value) & sign != 0,
-                };
+                });
             }
             self.put(rd, value, wide, false);
         } else if ins & 0xffffffe0 == 0xd53bd040 {

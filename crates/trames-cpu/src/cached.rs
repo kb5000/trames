@@ -2,7 +2,8 @@
 //! Bounded, lazily decoded code pages. No executable memory or host guest pointers.
 use super::{
     extended::{logical_mask, ones, rotate},
-    shifted, sign_extend, width_mask, Cpu, CpuFault, Event, Flags, SliceOutcome,
+    flags::ConditionFlags,
+    shifted, sign_extend, width_mask, Cpu, CpuFault, Event, SliceOutcome,
 };
 use trames_memory::{CpuMemory, PAGE_SIZE};
 
@@ -32,8 +33,10 @@ enum Op {
         immediate: u64,
     },
     AddImmediate {
+        value: u64,
+    },
+    FlagsImmediate {
         sub: bool,
-        flags: bool,
         value: u64,
     },
     AddShift {
@@ -180,11 +183,17 @@ impl Instruction {
                 ),
             }
         } else if word & 0x1f800000 == 0x11000000 {
-            Op::AddImmediate {
-                sub: word & (1 << 30) != 0,
-                flags: word & (1 << 29) != 0,
-                value: (((word >> 10) & 0xfff) as u64)
-                    << if word & (1 << 22) != 0 { 12 } else { 0 },
+            let sub = word & (1 << 30) != 0;
+            let value =
+                (((word >> 10) & 0xfff) as u64) << if word & (1 << 22) != 0 { 12 } else { 0 };
+            if word & (1 << 29) != 0 {
+                Op::FlagsImmediate { sub, value }
+            } else {
+                // Non-S SUB immediate is addition of a decoded negative offset.
+                // Width truncation is only needed at the destination write.
+                Op::AddImmediate {
+                    value: if sub { value.wrapping_neg() } else { value },
+                }
             }
         } else if word & 0x1f200000 == 0x0b000000 {
             if kind == 3 || (!wide && amount >= 32) {
@@ -427,11 +436,7 @@ impl Instruction {
             return self;
         };
         self.op = match self.op {
-            Op::AddImmediate {
-                sub,
-                flags: true,
-                value,
-            } => Op::FlagsBranch {
+            Op::FlagsImmediate { sub, value } => Op::FlagsBranch {
                 value,
                 offset,
                 condition,
@@ -600,7 +605,12 @@ impl Cpu {
         if cache.slots.is_empty() && budget != 0 {
             cache.slots.resize_with(SLOTS, || None);
         }
-        let result = self.cached_slice(memory, budget, &mut cache);
+        // Keep the small pending flag recipe separate from the register file.
+        // Common handlers may retain it in host locals; fallback/exit boundaries
+        // publish it before any architectural observer can see CPU state.
+        let mut flags = self.condition_flags;
+        let result = self.cached_slice(memory, budget, &mut cache, &mut flags);
+        self.condition_flags = flags;
         self.decoded = cache;
         result
     }
@@ -609,6 +619,7 @@ impl Cpu {
         memory: &mut impl CpuMemory,
         budget: u64,
         cache: &mut Cache,
+        flags: &mut ConditionFlags,
     ) -> SliceOutcome {
         let mut executed = 0;
         while executed < budget {
@@ -670,7 +681,7 @@ impl Cpu {
                 // variant's payload before dispatch. Cache mutation above is
                 // complete; a code-writing instruction still exits on epoch change.
                 let instruction = &page.instructions[slot].instruction;
-                match self.execute_decoded(instruction, memory, budget - executed) {
+                match self.execute_decoded(instruction, memory, budget - executed, flags) {
                     Ok((Event::Continue, count)) => executed += count,
                     Ok((Event::Yield, _)) => {
                         return SliceOutcome::Yield {
@@ -719,6 +730,7 @@ impl Cpu {
         ins: &Instruction,
         memory: &mut impl CpuMemory,
         remaining: u64,
+        flags: &mut ConditionFlags,
     ) -> Result<(Event, u64), CpuFault> {
         let pc = self.pc;
         let mut next = pc.wrapping_add(4);
@@ -748,21 +760,24 @@ impl Cpu {
                     pc.wrapping_add(immediate)
                 },
             ),
-            Op::AddImmediate { sub, flags, value } => {
-                let value = self.arithmetic(self.reg(rn, true), value, sub, flags, wide);
-                self.put(rd, value, wide, !flags);
+            Op::AddImmediate { value } => {
+                self.put(rd, self.reg(rn, true).wrapping_add(value), wide, true);
+            }
+            Op::FlagsImmediate { sub, value } => {
+                let value = flags.calculate(self.reg(rn, true), value, sub, true, wide);
+                self.put(rd, value, wide, false);
             }
             Op::AddShift {
                 sub,
-                flags,
+                flags: set_flags,
                 kind,
                 amount,
             } => {
-                let value = self.arithmetic(
+                let value = flags.calculate(
                     self.x(rn),
                     shifted(self.x(rm), kind as u32, amount as u32, wide),
                     sub,
-                    flags,
+                    set_flags,
                     wide,
                 );
                 self.put(rd, value, wide, false);
@@ -782,10 +797,10 @@ impl Cpu {
                 } else {
                     shifted(self.x(rm), kind as u32, amount as u32, wide)
                 };
-                let value = self.arithmetic(left, right, sub, true, wide);
+                let value = flags.calculate(left, right, sub, true, wide);
                 self.put(rd, value, wide, false);
                 if remaining >= 2 {
-                    next = if self.condition(condition as u32) {
+                    next = if flags.condition(condition as u32) {
                         next.wrapping_add(offset)
                     } else {
                         next.wrapping_add(4)
@@ -800,10 +815,10 @@ impl Cpu {
                 amount,
             } => {
                 let rhs = shifted(self.x(rm), kind as u32, amount as u32, wide);
-                self.decoded_logical(rd, rn, if invert { !rhs } else { rhs }, opc, wide, false);
+                self.decoded_logical(ins, if invert { !rhs } else { rhs }, opc, false, flags);
             }
             Op::LogicalImmediate { opc, value } => {
-                self.decoded_logical(rd, rn, value, opc, wide, opc != 3)
+                self.decoded_logical(ins, value, opc, opc != 3, flags)
             }
             Op::Bitfield {
                 opc,
@@ -830,7 +845,7 @@ impl Cpu {
                 invert,
                 increment,
             } => {
-                let value = if self.condition(condition as u32) {
+                let value = if flags.condition(condition as u32) {
                     self.x(rn)
                 } else {
                     let value = if invert { !self.x(rm) } else { self.x(rm) };
@@ -844,7 +859,7 @@ impl Cpu {
             }
             Op::AddExtended {
                 sub,
-                flags,
+                flags: set_flags,
                 signed,
                 bits,
                 amount,
@@ -855,14 +870,14 @@ impl Cpu {
                 } else {
                     rhs
                 };
-                let value = self.arithmetic(
+                let value = flags.calculate(
                     self.reg(rn, true),
                     rhs.wrapping_shl(amount as u32),
                     sub,
-                    flags,
+                    set_flags,
                     wide,
                 );
-                self.put(rd, value, wide, !flags);
+                self.put(rd, value, wide, !set_flags);
             }
             Op::Compare {
                 condition,
@@ -870,8 +885,8 @@ impl Cpu {
                 sub,
                 nzcv,
             } => {
-                if self.condition(condition as u32) {
-                    self.arithmetic(
+                if flags.condition(condition as u32) {
+                    flags.calculate(
                         self.x(rn),
                         if immediate { rm as u64 } else { self.x(rm) },
                         sub,
@@ -879,7 +894,7 @@ impl Cpu {
                         wide,
                     );
                 } else {
-                    self.set_nzcv(nzcv as u32);
+                    flags.set(nzcv as u32);
                 }
             }
             Op::Multiply { kind, ra, sub } => {
@@ -952,7 +967,7 @@ impl Cpu {
                 }
             }
             Op::ConditionalBranch { offset, condition } => {
-                if self.condition(condition as u32) {
+                if flags.condition(condition as u32) {
                     next = pc.wrapping_add(offset);
                 }
             }
@@ -1119,28 +1134,35 @@ impl Cpu {
                 }
             }
             Op::Fallback => {
-                return self
-                    .execute_instruction(ins.word, memory)
-                    .map(|event| (event, 1))
+                self.condition_flags = *flags;
+                let result = self.execute_instruction(ins.word, memory);
+                *flags = self.condition_flags;
+                return result.map(|event| (event, 1));
             }
         }
         self.pc = next;
         Ok((Event::Continue, count))
     }
     #[inline]
-    fn decoded_logical(&mut self, rd: usize, rn: usize, rhs: u64, opc: u8, wide: bool, sp: bool) {
+    fn decoded_logical(
+        &mut self,
+        ins: &Instruction,
+        rhs: u64,
+        opc: u8,
+        sp: bool,
+        flags: &mut ConditionFlags,
+    ) {
+        let (rd, rn, wide) = (ins.rd as usize, ins.rn as usize, ins.wide);
         let value = match opc {
             0 | 3 => self.x(rn) & rhs,
             1 => self.x(rn) | rhs,
             _ => self.x(rn) ^ rhs,
         } & width_mask(wide);
         if opc == 3 {
-            self.flags = Flags {
-                n: value & (if wide { 1 << 63 } else { 1 << 31 }) != 0,
-                z: value == 0,
-                c: false,
-                v: false,
-            };
+            flags.set(
+                ((value & (if wide { 1 << 63 } else { 1 << 31 }) != 0) as u32) << 3
+                    | ((value == 0) as u32) << 2,
+            );
         }
         self.put(rd, value, wide, sp);
     }
@@ -1151,6 +1173,7 @@ use trames_memory::Memory;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Flags;
     use trames_memory::Permissions;
 
     fn memory(words: &[u32]) -> Memory {
@@ -1180,7 +1203,7 @@ mod tests {
             (
                 a.pc,
                 a.sp,
-                a.flags,
+                a.flags(),
                 a.fpcr,
                 a.fpsr,
                 a.tpidr_el0,
@@ -1189,7 +1212,7 @@ mod tests {
             (
                 b.pc,
                 b.sp,
-                b.flags,
+                b.flags(),
                 b.fpcr,
                 b.fpsr,
                 b.tpidr_el0,
@@ -1444,12 +1467,12 @@ mod tests {
                     );
                     cpu.vectors[reg] = (seed as u128) << 64 | (!seed as u128);
                 }
-                cpu.flags = Flags {
+                cpu.set_flags(Flags {
                     n: seed & 1 != 0,
                     z: seed & 2 != 0,
                     c: seed & 4 != 0,
                     v: seed & 8 != 0,
-                };
+                });
                 let mut oracle = cpu.clone();
                 let mut expected_memory = memory.clone();
 

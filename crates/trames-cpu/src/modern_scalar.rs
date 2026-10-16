@@ -11,22 +11,24 @@ impl Cpu {
         let mask = width_mask(wide);
         match ins {
             0xd500405f => {
-                self.flags = Flags {
+                let flags = self.flags();
+                self.set_flags(Flags {
                     n: false,
-                    z: self.flags.z || self.flags.v,
-                    c: self.flags.c && !self.flags.v,
+                    z: flags.z || flags.v,
+                    c: flags.c && !flags.v,
                     v: false,
-                };
+                });
                 return true;
             }
             0xd500403f => {
-                let (c, z) = (self.flags.c, self.flags.z);
-                self.flags = Flags {
+                let flags = self.flags();
+                let (c, z) = (flags.c, flags.z);
+                self.set_flags(Flags {
                     n: !c && !z,
                     z: c && z,
                     c: c || z,
                     v: !c && z,
-                };
+                });
                 return true;
             }
             // Guest execution has no speculative memory accesses; SB enforces

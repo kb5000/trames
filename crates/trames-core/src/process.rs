@@ -1225,12 +1225,7 @@ impl Kernel {
         }
         p.cpu.sp = new_sp;
         p.cpu.pc = new_pc;
-        p.cpu.flags = trames_cpu::Flags {
-            n: u64_at(576) & (1 << 31) != 0,
-            z: u64_at(576) & (1 << 30) != 0,
-            c: u64_at(576) & (1 << 29) != 0,
-            v: u64_at(576) & (1 << 28) != 0,
-        };
+        p.cpu.set_nzcv((u64_at(576) >> 28) as u32);
         p.cpu.fpsr = read_u32(&p.memory, sp + 600)? & 0x0800009f;
         p.cpu.fpcr = read_u32(&p.memory, sp + 604)? & 0x03c00000;
         for r in 0..32 {

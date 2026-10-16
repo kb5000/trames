@@ -14,6 +14,8 @@
 
 main 新增[通用解释执行优化](docs/validation/execution-efficiency.md)：按引用读取解码记录、保持指令执行与派发循环内联，以及协调线程本地 COW，减少普通程序的派发和写入开销。保留多核同步、权限、fork 和代码失效语义；记录 CoreMark、Vim、Python、GCC 与线程负载的前后对照。
 
+继续加入[选择性惰性标志与短路径](docs/validation/lazy-flags.md)：延迟计算算术 C/V，保留 N/Z 的直接读取，解释循环携带局部标志状态，并在解码时简化不更新标志的立即数加减。覆盖条件分支、带进位运算、局部标志修改和信号上下文恢复；设备端 Swift 构建也改为 Release。运行时仍不使用 JIT。
+
 最新 [0.15.0/build 16](docs/validation/release-0.15.md) 已发布：[下载 unsigned IPA](https://github.com/kb5000/trames/releases/download/v0.15.0/Trames-0.15.0-build16-unsigned.ipa)，用 Sideloadly 覆盖安装可保留数据。本版合并 sudo／时区／匿名 ELF 修复及 Vulkan 原生计算、纹理与浮动显示窗口；同一源码的 Linux CI 与 Apple 14 项模拟器验收均通过。Vulkan 默认关闭，真机验收待实际使用。
 
 [0.14.0/build 15](docs/validation/release-0.14.md)已将这些更新与[稀疏脏页提交优化](docs/validation/checkpoint-cost.md)打包发布到 [GitHub Release](https://github.com/kb5000/trames/releases/tag/v0.14.0)，可直接下载 unsigned IPA 用 Sideloadly 覆盖安装。原生 malloc/free 保持实验性、默认关闭；普通分配器与并行原生函数使用统一的 guest 访存模型。

@@ -33,6 +33,7 @@ mod cached;
 mod compatibility;
 mod crypto;
 mod extended;
+mod flags;
 mod floating;
 mod half_vector;
 mod load_store;
@@ -67,7 +68,7 @@ pub struct Cpu {
     registers: [u64; 31],
     pub sp: u64,
     pub pc: u64,
-    pub flags: Flags,
+    condition_flags: flags::ConditionFlags,
     pub tpidr_el0: u64,
     pub tpidr2_el0: u64,
     pub fpcr: u32,
@@ -236,52 +237,11 @@ impl Cpu {
     // them visible so flag-free ALU operations lose the entire NZCV path.
     #[inline(always)]
     fn arithmetic(&mut self, a: u64, b: u64, sub: bool, set_flags: bool, wide: bool) -> u64 {
-        let mask = width_mask(wide);
-        let a = a & mask;
-        let b = b & mask;
-        let result = if sub {
-            a.wrapping_sub(b)
-        } else {
-            a.wrapping_add(b)
-        } & mask;
-        if set_flags {
-            let sign = if wide { 1 << 63 } else { 1 << 31 };
-            self.flags = Flags {
-                n: result & sign != 0,
-                z: result == 0,
-                c: if sub {
-                    a >= b
-                } else {
-                    a as u128 + b as u128 > mask as u128
-                },
-                v: if sub {
-                    (a ^ b) & (a ^ result) & sign != 0
-                } else {
-                    !(a ^ b) & (a ^ result) & sign != 0
-                },
-            };
-        }
-        result
+        self.condition_flags.calculate(a, b, sub, set_flags, wide)
     }
     #[inline(always)]
     fn condition(&self, condition: u32) -> bool {
-        let f = self.flags;
-        let basic = match condition >> 1 {
-            0 => f.z,
-            1 => f.c,
-            2 => f.n,
-            3 => f.v,
-            4 => f.c && !f.z,
-            5 => f.n == f.v,
-            6 => !f.z && f.n == f.v,
-            7 => true,
-            _ => unreachable!(),
-        };
-        if condition & 1 != 0 && condition != 15 {
-            !basic
-        } else {
-            basic
-        }
+        self.condition_flags.condition(condition)
     }
 
     pub fn step(&mut self, memory: &mut impl CpuMemory) -> Result<Event, CpuFault> {
@@ -427,12 +387,12 @@ impl Cpu {
                 _ => unreachable!(),
             } & width_mask(wide);
             if opc == 3 {
-                self.flags = Flags {
+                self.set_flags(Flags {
                     n: value & (if wide { 1 << 63 } else { 1 << 31 }) != 0,
                     z: value == 0,
                     c: false,
                     v: false,
-                };
+                });
             }
             self.put(rd, value, wide, false);
         } else if ins & 0x7c000000 == 0x14000000 {
@@ -557,13 +517,13 @@ mod tests {
     fn arithmetic_flags_cover_carry_and_signed_overflow() {
         let mut c = Cpu::default();
         assert_eq!(c.arithmetic(u64::MAX, 1, false, true, true), 0);
-        assert!(c.flags.z && c.flags.c && !c.flags.v);
+        assert!(c.flags().z && c.flags().c && !c.flags().v);
         assert_eq!(c.arithmetic(0x7fffffff, 1, false, true, false), 0x80000000);
-        assert!(c.flags.n && c.flags.v && !c.flags.c);
+        assert!(c.flags().n && c.flags().v && !c.flags().c);
         c.arithmetic(0, 1, true, true, true);
-        assert!(!c.flags.c && c.flags.n);
+        assert!(!c.flags().c && c.flags().n);
         c.arithmetic(1 << 63, 1, true, true, true);
-        assert!(c.flags.v && c.flags.c);
+        assert!(c.flags().v && c.flags().c);
     }
     #[test]
     fn stack_pointer_and_zero_register_have_distinct_semantics() {
@@ -575,7 +535,7 @@ mod tests {
         c.step(&mut m).unwrap();
         assert_eq!(c.sp, 16);
         c.step(&mut m).unwrap();
-        assert!(c.flags.z);
+        assert!(c.flags().z);
         assert_eq!(c.sp, 16);
     }
     #[test]

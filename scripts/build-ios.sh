@@ -8,8 +8,8 @@ fi
 platform=${1:-simulator}
 export IPHONEOS_DEPLOYMENT_TARGET=17.0
 case "$platform" in
-  simulator) rust_target=aarch64-apple-ios-sim; sdk=iphonesimulator; destination='generic/platform=iOS Simulator' ;;
-  device) rust_target=aarch64-apple-ios; sdk=iphoneos; destination='generic/platform=iOS' ;;
+  simulator) rust_target=aarch64-apple-ios-sim; sdk=iphonesimulator; configuration=Debug; destination='generic/platform=iOS Simulator' ;;
+  device) rust_target=aarch64-apple-ios; sdk=iphoneos; configuration=Release; destination='generic/platform=iOS' ;;
   *) echo 'usage: scripts/build-ios.sh [simulator|device]' >&2; exit 2 ;;
 esac
 # The guest ELF is data, built by the Linux prerequisite job, never linked by Xcode.
@@ -43,12 +43,12 @@ mkdir -p "target/ios-link/$rust_target"
 cp "target/$rust_target/release/libtrames_ffi.a" "target/ios-link/$rust_target/libtrames_ffi.a"
 export TRAMES_RUST_LIB_DIR="$PWD/target/ios-link/$rust_target"
 xcodegen generate --spec apps/ios/project.yml
-xcodebuild -quiet -project apps/ios/Trames.xcodeproj -scheme Trames -configuration Debug \
+xcodebuild -quiet -project apps/ios/Trames.xcodeproj -scheme Trames -configuration "$configuration" \
   -destination "$destination" -derivedDataPath "apps/ios/build/$platform" \
   CODE_SIGNING_ALLOWED=NO \
   TRAMES_RUST_LIB_DIR="$TRAMES_RUST_LIB_DIR" -skipPackagePluginValidation build
 
-app_binary="apps/ios/build/$platform/Build/Products/Debug-$sdk/Trames.app/Trames"
+app_binary="apps/ios/build/$platform/Build/Products/$configuration-$sdk/Trames.app/Trames"
 if otool -L "$app_binary" | grep -F 'libtrames_ffi.dylib'; then
   echo 'The app must link the Rust static archive.' >&2
   exit 1

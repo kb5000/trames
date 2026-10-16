@@ -94,7 +94,7 @@ jobs:
       - name: Package unsigned device IPA for sideload signing
         run: |
           python3 scripts/package-ios.py \
-            apps/ios/build/device/Build/Products/Debug-iphoneos/Trames.app \
+            apps/ios/build/device/Build/Products/Release-iphoneos/Trames.app \
             apps/ios/build/sideload/Trames-unsigned.ipa
       - name: Export simulator crash diagnostics
         if: always()
@@ -129,4 +129,5 @@ jobs:
             apps/ios/build/ipad-smoke.log
             apps/ios/build/ipad-smoke-summary.json
             apps/ios/build/*/Build/Products/Debug-*/*.app
+            apps/ios/build/*/Build/Products/Release-*/*.app
           retention-days: 7
