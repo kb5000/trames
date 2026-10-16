@@ -9,7 +9,7 @@ optimizes translation and permission validation, not the allowed guest results.
 Both coordinator Memory and worker View already had 256 direct-mapped entries
 containing a virtual page and slab index. A hit avoided BTreeMap lookup but still
 loaded the page's permission fields and checked them separately. The new entry
-remains **16 bytes**, and the full cache remains **4 KiB**. Its tag packs the
+now includes a protected CPU page address: **24 bytes**, or **6 KiB** per view. Its tag packs the
 virtual page, read/write/execute bits, a valid bit and a coordinator backing bit
 into otherwise unused low page-offset bits. One masked comparison proves both
 the page identity and requested access. Invalid entries grant no permissions,
@@ -29,8 +29,10 @@ Debug assertions retain these invariants in checked builds. The coordinator is
 local and non-Send/non-Sync; workers use their own Cell cache over a fixed Arc
 snapshot. Mapping changes require joined workers and produce fresh empty views.
 
-No byte pointer or extra Rc is cached. Vec growth cannot invalidate an index;
-COW, discard and file-private copy may replace bytes without changing the frame.
+The optional CPU alias is bounded to its cached guest page; no extra Rc is held.
+Vec growth cannot invalidate an index or alias. Fork retires aliases only after
+flushing the cache. COW promotion, discard and mapping changes invalidate cached
+alias/eligibility facts; special file mappings cache no CPU byte pointer.
 The ordinary Rc::make_mut, version, dirty publication and executable-write hooks
 remain active. File-backed coordinator pages still check live EOF on **every**
 access, including after a private COW copy. Backing methods retain their fallible
@@ -46,8 +48,8 @@ translations; no algorithm lock or global serialization is added.
 ## Hardware MMU integration
 
 [Dedicated hardware-protected mappings](hardware-mmu.md) now implement this
-path for ordinary RAM, including shared native/CPU physical storage, a single-level
-direct-mapped window cache and bounded fault recovery. Mixed iOS subpages and
+path for ordinary RAM, including shared native/CPU physical storage, the single-level
+direct-mapped page TLB and bounded fault recovery. Mixed iOS subpages and
 special backings retain the software TLB. The constraints below explain those
 boundaries; this is still ordinary userspace mmap/mprotect, without privileged
 guest page tables or a JIT.

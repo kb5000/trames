@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Bounded, lazily decoded code pages. No generated code; opaque guarded RAM hints.
+//! Bounded, lazily decoded code pages. No executable memory or host guest pointers.
 use super::{
     extended::{logical_mask, ones, rotate},
     flags::ConditionFlags,
     shifted, sign_extend, width_mask, Cpu, CpuFault, Event, SliceOutcome,
 };
-use trames_memory::{CpuMemory, DirectHint, PAGE_SIZE};
+use trames_memory::{CpuMemory, PAGE_SIZE};
 
 const SLOTS: usize = 128;
 const WAYS: usize = 2;
@@ -702,8 +702,7 @@ impl Cpu {
                 stats,
                 budget,
             };
-            let (owner, window, guest_mem_base) = state.memory.direct_hint().into_parts();
-            match tail_enter(&mut state, 0, executed, owner, window, guest_mem_base) {
+            match tail_enter(&mut state, 0, executed) {
                 TailExit::Page(count) => executed = count,
                 TailExit::Stop(outcome) => return outcome,
             }
@@ -722,7 +721,6 @@ impl Cpu {
         memory: &mut M,
         remaining: u64,
         flags: &mut ConditionFlags,
-        hint: &mut DirectHint,
     ) -> Result<(Event, u64), CpuFault> {
         let pc = self.pc;
         let mut next = pc.wrapping_add(4);
@@ -993,8 +991,8 @@ impl Cpu {
                 let size = size as usize;
                 let fault = |error| CpuFault::Memory { pc, error };
                 if if vector { opc & 1 != 0 } else { opc != 0 } {
-                    let raw = super::load_store::read_operand_hint(memory, hint, address, size)
-                        .map_err(fault)?;
+                    let raw =
+                        super::load_store::read_operand(memory, address, size).map_err(fault)?;
                     if vector {
                         self.vectors[rd] = raw;
                     } else {
@@ -1013,7 +1011,7 @@ impl Cpu {
                     } else {
                         self.x(rd) as u128
                     };
-                    super::load_store::write_operand_hint(memory, hint, address, size, value)
+                    super::load_store::write_operand(memory, address, size, value)
                         .map_err(fault)?;
                 }
                 if let Some(value) = writeback {
@@ -1041,20 +1039,17 @@ impl Cpu {
                 if load {
                     let (first, other) = match size {
                         4 => {
-                            let pair = u64::from_le_bytes(
-                                memory.read_array_hint(address, hint).map_err(fault)?,
-                            );
+                            let pair =
+                                u64::from_le_bytes(memory.read_array(address).map_err(fault)?);
                             (pair as u32 as u128, (pair >> 32) as u128)
                         }
                         8 => {
-                            let pair = u128::from_le_bytes(
-                                memory.read_array_hint(address, hint).map_err(fault)?,
-                            );
+                            let pair =
+                                u128::from_le_bytes(memory.read_array(address).map_err(fault)?);
                             (pair as u64 as u128, pair >> 64)
                         }
                         _ => {
-                            let pair =
-                                memory.read_array_hint::<32>(address, hint).map_err(fault)?;
+                            let pair = memory.read_array::<32>(address).map_err(fault)?;
                             (
                                 u128::from_le_bytes(pair[..16].try_into().expect("first vector")),
                                 u128::from_le_bytes(pair[16..].try_into().expect("second vector")),
@@ -1095,28 +1090,24 @@ impl Cpu {
                     };
                     match size {
                         4 => memory
-                            .write_array_hint(
+                            .write_array(
                                 address,
                                 ((first as u32 as u64) | ((other as u32 as u64) << 32))
                                     .to_le_bytes(),
-                                hint,
                             )
                             .map_err(fault)?,
                         8 => memory
-                            .write_array_hint(
+                            .write_array(
                                 address,
                                 ((first as u64 as u128) | ((other as u64 as u128) << 64))
                                     .to_le_bytes(),
-                                hint,
                             )
                             .map_err(fault)?,
                         _ => {
                             let mut bytes = [0; 32];
                             bytes[..16].copy_from_slice(&first.to_le_bytes());
                             bytes[16..].copy_from_slice(&other.to_le_bytes());
-                            memory
-                                .write_array_hint(address, bytes, hint)
-                                .map_err(fault)?;
+                            memory.write_array(address, bytes).map_err(fault)?;
                         }
                     }
                 }
@@ -1183,7 +1174,7 @@ enum TailExit {
     Stop(SliceOutcome),
 }
 macro_rules! tail_next {
-    ($state:ident, $executed:ident, $owner:ident, $window:ident, $guest_mem_base:ident) => {{
+    ($state:ident, $executed:ident) => {{
         let pc = $state.cpu.pc;
         if $executed >= $state.budget {
             return TailExit::Stop(SliceOutcome::Yield {
@@ -1204,87 +1195,35 @@ macro_rules! tail_next {
         }
         let slot = (pc as usize & (PAGE_SIZE as usize - 1)) / 4;
         if $state.page.instructions[slot].generation != $state.page.generation {
-            become tail_decode($state, slot, $executed, $owner, $window, $guest_mem_base);
+            become tail_decode($state, slot, $executed);
         }
         match $state.page.instructions[slot].instruction.op {
-            Op::Nop => {
-                become tail_op::<M, 0>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::Svc => {
-                become tail_op::<M, 1>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::Move { .. } => {
-                become tail_op::<M, 2>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::Address { .. } => {
-                become tail_op::<M, 3>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::AddImmediate { .. } => {
-                become tail_op::<M, 4>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::FlagsImmediate { .. } => {
-                become tail_op::<M, 5>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::AddShift { .. } => {
-                become tail_op::<M, 6>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::FlagsBranch { .. } => {
-                become tail_op::<M, 7>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::LogicalShift { .. } => {
-                become tail_op::<M, 8>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::LogicalImmediate { .. } => {
-                become tail_op::<M, 9>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::Bitfield { .. } => {
-                become tail_op::<M, 10>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::Select { .. } => {
-                become tail_op::<M, 11>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::AddExtended { .. } => {
-                become tail_op::<M, 12>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::Compare { .. } => {
-                become tail_op::<M, 13>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::Multiply { .. } => {
-                become tail_op::<M, 14>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::ShiftVariable { .. } => {
-                become tail_op::<M, 15>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::Divide { .. } => {
-                become tail_op::<M, 16>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::Branch { .. } => {
-                become tail_op::<M, 17>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::RegisterBranch { .. } => {
-                become tail_op::<M, 18>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::CompareBranch { .. } => {
-                become tail_op::<M, 19>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::TestBranch { .. } => {
-                become tail_op::<M, 20>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::ConditionalBranch { .. } => {
-                become tail_op::<M, 21>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::MemoryImmediate { .. } => {
-                become tail_op::<M, 22>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::Pair { .. } => {
-                become tail_op::<M, 23>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::Memory { .. } => {
-                become tail_op::<M, 24>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
-            Op::Fallback => {
-                become tail_op::<M, 25>($state, slot, $executed, $owner, $window, $guest_mem_base)
-            }
+            Op::Nop => become tail_op::<M, 0>($state, slot, $executed),
+            Op::Svc => become tail_op::<M, 1>($state, slot, $executed),
+            Op::Move { .. } => become tail_op::<M, 2>($state, slot, $executed),
+            Op::Address { .. } => become tail_op::<M, 3>($state, slot, $executed),
+            Op::AddImmediate { .. } => become tail_op::<M, 4>($state, slot, $executed),
+            Op::FlagsImmediate { .. } => become tail_op::<M, 5>($state, slot, $executed),
+            Op::AddShift { .. } => become tail_op::<M, 6>($state, slot, $executed),
+            Op::FlagsBranch { .. } => become tail_op::<M, 7>($state, slot, $executed),
+            Op::LogicalShift { .. } => become tail_op::<M, 8>($state, slot, $executed),
+            Op::LogicalImmediate { .. } => become tail_op::<M, 9>($state, slot, $executed),
+            Op::Bitfield { .. } => become tail_op::<M, 10>($state, slot, $executed),
+            Op::Select { .. } => become tail_op::<M, 11>($state, slot, $executed),
+            Op::AddExtended { .. } => become tail_op::<M, 12>($state, slot, $executed),
+            Op::Compare { .. } => become tail_op::<M, 13>($state, slot, $executed),
+            Op::Multiply { .. } => become tail_op::<M, 14>($state, slot, $executed),
+            Op::ShiftVariable { .. } => become tail_op::<M, 15>($state, slot, $executed),
+            Op::Divide { .. } => become tail_op::<M, 16>($state, slot, $executed),
+            Op::Branch { .. } => become tail_op::<M, 17>($state, slot, $executed),
+            Op::RegisterBranch { .. } => become tail_op::<M, 18>($state, slot, $executed),
+            Op::CompareBranch { .. } => become tail_op::<M, 19>($state, slot, $executed),
+            Op::TestBranch { .. } => become tail_op::<M, 20>($state, slot, $executed),
+            Op::ConditionalBranch { .. } => become tail_op::<M, 21>($state, slot, $executed),
+            Op::MemoryImmediate { .. } => become tail_op::<M, 22>($state, slot, $executed),
+            Op::Pair { .. } => become tail_op::<M, 23>($state, slot, $executed),
+            Op::Memory { .. } => become tail_op::<M, 24>($state, slot, $executed),
+            Op::Fallback => become tail_op::<M, 25>($state, slot, $executed),
         }
     }};
 }
@@ -1294,9 +1233,6 @@ extern "rust-preserve-none" fn tail_decode<M: CpuMemory>(
     state: &mut TailState<'_, M>,
     slot: usize,
     executed: u64,
-    owner: u64,
-    window: usize,
-    guest_mem_base: usize,
 ) -> TailExit {
     let pc = state.cpu.pc;
     if let Err(error) = state.page.decode_slot(state.memory, slot, pc, state.stats) {
@@ -1306,43 +1242,32 @@ extern "rust-preserve-none" fn tail_decode<M: CpuMemory>(
                 .slice_fault(CpuFault::Memory { pc, error }, executed),
         );
     }
-    tail_next!(state, executed, owner, window, guest_mem_base)
+    tail_next!(state, executed)
 }
 #[inline(never)]
 extern "rust-preserve-none" fn tail_enter<M: CpuMemory>(
     state: &mut TailState<'_, M>,
     _slot: usize,
     executed: u64,
-    owner: u64,
-    window: usize,
-    guest_mem_base: usize,
 ) -> TailExit {
-    tail_next!(state, executed, owner, window, guest_mem_base)
+    tail_next!(state, executed)
 }
 #[inline(never)]
 extern "rust-preserve-none" fn tail_op<M: CpuMemory, const TAG: usize>(
     state: &mut TailState<'_, M>,
     slot: usize,
     executed: u64,
-    owner: u64,
-    window: usize,
-    guest_mem_base: usize,
 ) -> TailExit {
     debug_assert!(slot < PAGE_WORDS && executed < state.budget);
     // SAFETY: every entry is reached via tail_next, which checks the budget
     // and derives the slot from the low twelve PC bits, divided by four.
     unsafe { std::hint::assert_unchecked(slot < PAGE_WORDS && executed < state.budget) };
-    // SAFETY: these scalars are passed unchanged from a real opaque hint at
-    // entry or its read/write update. Memory validates the owner generation
-    // before dereferencing it; no hint survives a syscall/native slice exit.
-    let mut hint = unsafe { DirectHint::from_parts(owner, window, guest_mem_base) };
     let instruction = &state.page.instructions[slot].instruction;
     let count = match state.cpu.execute_decoded::<M, TAG>(
         instruction,
         state.memory,
         state.budget - executed,
         state.flags,
-        &mut hint,
     ) {
         Ok((Event::Continue, count)) => count,
         Ok((Event::Yield, _)) => {
@@ -1380,11 +1305,7 @@ extern "rust-preserve-none" fn tail_op<M: CpuMemory, const TAG: usize>(
     {
         return TailExit::Page(executed);
     }
-    if matches!(TAG, 24 | 25) {
-        hint = state.memory.direct_hint();
-    }
-    let (owner, window, guest_mem_base) = hint.into_parts();
-    tail_next!(state, executed, owner, window, guest_mem_base)
+    tail_next!(state, executed)
 }
 
 #[cfg(test)]

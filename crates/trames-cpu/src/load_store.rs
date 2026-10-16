@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 use super::{sign_extend, Cpu, CpuFault};
 use std::sync::atomic::Ordering;
-use trames_memory::{CpuMemory, DirectHint, MemoryError};
+use trames_memory::{CpuMemory, MemoryError};
 
 #[inline]
 pub(super) fn read_operand(
@@ -31,40 +31,6 @@ pub(super) fn write_operand(
         4 => memory.write_array(address, (value as u32).to_le_bytes()),
         8 => memory.write_array(address, (value as u64).to_le_bytes()),
         16 => memory.write_array(address, value.to_le_bytes()),
-        _ => unreachable!("validated scalar size"),
-    }
-}
-
-#[inline]
-pub(super) fn read_operand_hint(
-    memory: &impl CpuMemory,
-    hint: &mut DirectHint,
-    address: u64,
-    size: usize,
-) -> Result<u128, MemoryError> {
-    Ok(match size {
-        1 => memory.read_array_hint::<1>(address, hint)?[0] as u128,
-        2 => u16::from_le_bytes(memory.read_array_hint(address, hint)?) as u128,
-        4 => u32::from_le_bytes(memory.read_array_hint(address, hint)?) as u128,
-        8 => u64::from_le_bytes(memory.read_array_hint(address, hint)?) as u128,
-        16 => u128::from_le_bytes(memory.read_array_hint(address, hint)?),
-        _ => unreachable!("validated scalar size"),
-    })
-}
-#[inline]
-pub(super) fn write_operand_hint(
-    memory: &mut impl CpuMemory,
-    hint: &mut DirectHint,
-    address: u64,
-    size: usize,
-    value: u128,
-) -> Result<(), MemoryError> {
-    match size {
-        1 => memory.write_array_hint(address, [value as u8], hint),
-        2 => memory.write_array_hint(address, (value as u16).to_le_bytes(), hint),
-        4 => memory.write_array_hint(address, (value as u32).to_le_bytes(), hint),
-        8 => memory.write_array_hint(address, (value as u64).to_le_bytes(), hint),
-        16 => memory.write_array_hint(address, value.to_le_bytes(), hint),
         _ => unreachable!("validated scalar size"),
     }
 }

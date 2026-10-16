@@ -16,24 +16,27 @@ Linux uses a RAM-backed memfd and closes its descriptor after mapping both alias
 Darwin uses anonymous memory and same-task `mach_vm_remap(copy=false)`; it requires
 neither another process's task port nor JIT/executable-memory entitlements.
 
-Each coordinator or worker view owns a **16-entry, single-level direct-mapped
-window cache**. An entry is a guest-window tag and a non-owning descriptor pointer
-(16 bytes). Indexing folds high window bits so common code/heap/mmap bases do not
-all collide. Hits avoid the sparse ordered map; misses replace exactly one slot.
-Collisions change lookup work, never data, permissions or mapping ownership. The
-existing 256-entry direct-mapped page/permission TLB remains the fallback for
-special mappings; this window cache is not a second associative page-TLB level.
+Each coordinator or worker view owns a **256-entry, single-level direct-mapped
+page TLB**. Each 24-byte entry caches the guest page/permission tag, a stable frame
+ID, and the protected CPU page address (zero for unsupported mappings). The cache
+uses 6 KiB per view. An operand hit needs one guest-page tag match and the page
+offset; hardware checks its read/write permission. Eligibility and sparse-window
+lookup happen at fill time, rather than once per memory instruction. Special
+mappings retain the same packed permission tag and checked transport.
 
-The interpreter also carries an opaque descriptor, owner generation, and
-`guest_mem_base` bias as explicit preserve-none tail-call arguments. A hit checks
-the owner generation and window range before using `guest_mem_base + guest_va`.
-The owner key changes before retired descriptors are freed. Hints are safe to
-reuse after fork/remap or with another memory object: the generation rejects
-them before any pointer dereference. The raw reconstruction API is unsafe and
-requires unchanged parts from one real hint. Syscall, native-call and slice exits
-retain no hint. Reference/complex instructions use the ordinary memory contract.
-The compiler selects physical argument registers; residency and timing evidence
-belongs in the [validation report](../validation/hardware-mmu.md).
+A separate 16-entry direct-mapped descriptor cache assists cold window lookup
+and mapping/COW preparation; it is not another page-translation level. Descriptor
+collisions and cached absence only change fill work. The interpreter has its
+original three tail-call arguments. It no longer carries an owner/descriptor/base
+hint through ordinary ALU instructions. The earlier resident-base experiment and
+its mixed performance are retained in the [validation report](../validation/hardware-mmu.md).
+
+Cached CPU addresses own no storage. Mapping, protect, unmap, discard and remap
+flush the page TLB; fork flushes before retiring any parent CPU aliases and sharing
+byte owners. Native/CPU COW promotion flushes software-only entries when eligible
+storage changes. Frame slab growth cannot invalidate an alias address. Worker
+views retain the complete immutable snapshot and have private empty caches when
+created/refreshed; an older retained view keeps its older physical mappings.
 
 ## Hardware granularity and fallback
 
@@ -93,7 +96,7 @@ Ordinary worker CPU/native accesses keep the **same 64-byte region guard**;
 atomics, exclusives, acquire/release fences, reservation epochs, dirty-bit commit
 and executable epochs retain their established protocol. Inline asm creates no
 unbounded Rust slice at a possibly inaccessible address. Raw access is bounded
-by the window/group check and lifetime ownership; concurrent access is bounded by
+by the cached guest-page match, fill-time group eligibility and lifetime ownership; concurrent access is bounded by
 the same guard as native code. This changes translation/permission work, not a
 function's original thread-safety contract, and adds no algorithm/global lock.
 Backed mappings retain live EOF, alias, writeback and checkpoint behavior.
