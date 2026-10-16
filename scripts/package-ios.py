@@ -54,7 +54,13 @@ def package(app: Path, output: Path) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
         for path in [app, *sorted(app.rglob("*"))]:
-            name = (Path("Payload") / app.name / path.relative_to(app)).as_posix()
+            relative = path.relative_to(app)
+            # Only DEBUG XCTest probes use this signed offline repository and
+            # original client fixtures. Runtime clients are installed with apk;
+            # the native compositor, ICD and upstream notices stay in the IPA.
+            if relative.parts[:2] == ("GuestVulkan", "wayland-acceptance"):
+                continue
+            name = (Path("Payload") / app.name / relative).as_posix()
             if path.is_symlink():
                 entry = zipfile.ZipInfo(name)
                 entry.create_system = 3
