@@ -74,7 +74,7 @@ back from the client. Weston editor's text-input-v1 is included explicitly.
 - The same ARM64 client and original Alpine libwayland-client/libffi execute
   through the Linux guest VFS bridge successfully.
 - Rust core/bridge/FFI compile for aarch64-apple-ios. Swift parser checks pass;
-  native Apple app build and actual Metal/IME runtime acceptance remain pending.
+  the Apple simulator app now links successfully; actual Metal/IME runtime acceptance remains pending.
 - Synchronized subsurfaces, input regions, buffer transforms, nonzero v4 attach
   offsets, real window-geometry origins, and native IME serial/ready state are
   implemented. Original Alpine vkcube 1.4.313 completes standard Wayland WSI
@@ -87,8 +87,7 @@ back from the client. Weston editor's text-input-v1 is included explicitly.
   ordinary guest apk, then exercises two windows, Weston SHM/editor and vkcube
   against actual CAMetalLayer drawables, including native UITextInput composition
   and configure-driven image recreation. Pixel readback is debug-test-only.
-- Richer independent surface/input acceptance, complete popup policy and actual
-  Apple UI test results are still being completed. This is not a completed release.
+- Actual Apple UI test results are still being completed. This is not a completed release.
 
 Upstream wayland-backend is retained under vendor/ with its MIT license and
 three documented Apple-platform cfg changes. See TRAMES-PATCHES.md there.
@@ -116,9 +115,39 @@ allocation, and translates pointer/caret coordinates with that scene origin.
 Automatic reactive popup relayout, custom cursor images, data-device clipboard
 and drag-and-drop, touch protocol and full Wayland conformance are not claimed.
 
-Current Linux regressions: 174 core/VFS/Vulkan/FFI/Wayland library tests, three
+Current Linux regressions: 180 shared/core/VFS/Vulkan/FFI/Wayland library tests, three
 independent native C acceptance tests, and original graphics/texture guest pixel
 oracles for one and four CPUs pass. Ordinary guest apk resolves and verifies an
 offline original repository, rather than explicitly installing every alternative
-provider. Apple acceptance remains required; the earlier Swift refresh-target
-actor isolation failure is fixed in source and being rebuilt.
+provider. The Apple simulator app links successfully after the refresh-target
+actor isolation correction; actual Metal/IME acceptance remains required.
+
+In-flight descriptor transfers have an explicit export lease, registered before
+sending SCM_RIGHTS. The receiving service retains it until SharedFile import
+acknowledges that FD, or until the client disconnects. The original logical EOF,
+managed backing and physical budget therefore survive the interval after the
+guest closes its last descriptor but before the server imports the FD. Transfer
+backpressure is bounded independently of frame leases; no extra pixel lock is
+introduced. Tests cover cancelled transfers followed by another export of the
+same inode and cancellation on native client disconnect.
+
+A headless production embedding test also drives original wayland-info, the C
+multiwindow peer, Weston SHM/editor and vkcube through the same session/transfer/
+frame API as UIKit. It retains SHM and GPU frames across VM shutdown, queries
+their capabilities afterwards, then releases them. Linux compute regression
+continues to match the independent driver, including mapped-memory transfers,
+semaphore reuse and asynchronous pipeline callers.
+
+To reproduce the signed offline store and production ABI acceptance on Linux
+(with the AArch64 C compiler, Wayland scanner and Vulkan host driver installed):
+
+```sh
+bash scripts/build-vulkan-fixtures.sh
+python3 scripts/prepare-wayland-guest.py
+cargo build -p trames-ffi --release --locked
+TRAMES_WAYLAND_STORE=/tmp/trames-wayland-test python3 tests/integration/wayland.py --prepare
+```
+
+The target store must be absent for --prepare. Omit that flag to repeat the
+client/lifetime checks against the prepared store. This headless test does not
+claim to validate Apple drawable pixels or actual iPad keyboard interaction.
