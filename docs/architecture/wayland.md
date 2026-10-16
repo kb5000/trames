@@ -27,12 +27,27 @@ its buffer leases through command-buffer completion, including session teardown.
 A wl_buffer shared by several surfaces has one common usage lease; its release
 cannot race another surface's continued use.
 
-Vulkan must use VK_KHR_wayland_surface and the existing standard guest Vulkan
-loader/ICD, with authenticated connection/object IDs rather than guest pointers
-as native capabilities. GPU presentation must remain native (no normal pixel
-readback). The intended compositor path uses retained native Metal resources
-and explicit completion/lifetime ownership. D16 depth attachments/testing and
-sRGB textures are part of the original vkcube acceptance scope.
+Vulkan uses VK_KHR_wayland_surface and the original guest loader/libwayland.
+The ICD resolves libwayland through its own library handle, including clients
+that load it RTLD_LOCAL. The bridge authenticates the socket and resolves its
+connection-scoped wl_surface ID; guest pointers are never native capabilities.
+
+Swapchains own a bounded pool of original native Vulkan optimal images. On Apple,
+VK_EXT_metal_objects exports their original MTLTextures, sampled directly by the
+Metal window compositor. A nonblocking producer fence gates publication. A frame
+lease spans producer completion, queued/current scenes and final Metal command
+completion; image reuse follows the final lease, including swapchain replacement
+and session teardown. FIFO presentation pauses while minimized/occluded. Pending
+frames are bounded per surface across pool replacement; image allocations share
+the existing GPU budget. The VM coordinator never waits for a native frame/fence.
+No normal pixel readback or GPU-to-CPU-to-GPU transport is used. Debug acceptance
+alone reads back the final host drawable to verify actual displayed pixels.
+
+The expanded selected graphics path includes sRGB textures, D16 depth attachments,
+depth compare/write, empty native pipeline caches, PREINITIALIZED images and
+SIMULTANEOUS_USE command buffers with per-submission completion accounting.
+Native Wayland and legacy fixed-display WSI are currently separate instance
+routes; enabling both extension routes on one instance is explicitly rejected.
 
 ## Input
 
@@ -62,9 +77,18 @@ back from the client. Weston editor's text-input-v1 is included explicitly.
   native Apple app build and actual Metal/IME runtime acceptance remain pending.
 - Synchronized subsurfaces, input regions, buffer transforms, nonzero v4 attach
   offsets, real window-geometry origins, and native IME serial/ready state are
-  implemented. Richer independent surface/input acceptance, complete popup policy, Wayland
-  Vulkan WSI, original vkcube, and Apple UI tests
-  are still being completed. This branch is not a completed release.
+  implemented. Original Alpine vkcube 1.4.313 completes standard Wayland WSI
+  presentation and native configure-driven 320x240 swapchain recreation on Linux
+  lavapipe. This is protocol/resource validation, not Apple Metal validation.
+- Independent C acceptance also proves producer readiness, FIFO acknowledgement,
+  queue budget recovery and retained image lifetime across native-server teardown.
+- scripts/prepare-wayland-guest.py prepares original signed runtime packages, the
+  C ABI peer and original Weston PNG assets. Apple CI installs them with the
+  ordinary guest apk, then exercises two windows, Weston SHM/editor and vkcube
+  against actual CAMetalLayer drawables, including native UITextInput composition
+  and configure-driven image recreation. Pixel readback is debug-test-only.
+- Richer independent surface/input acceptance, complete popup policy and actual
+  Apple UI test results are still being completed. This is not a completed release.
 
 Upstream wayland-backend is retained under vendor/ with its MIT license and
 three documented Apple-platform cfg changes. See TRAMES-PATCHES.md there.

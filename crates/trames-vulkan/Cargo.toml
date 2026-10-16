@@ -7,6 +7,7 @@ license.workspace = true
 
 [dependencies]
 ash = { version = "=0.38.0", default-features = false, features = ["loaded", "debug", "std"] }
+trames-wayland = { path = "../trames-wayland" }
 trames-memory = { path = "../trames-memory" }
 
 [lints]

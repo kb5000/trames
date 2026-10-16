@@ -259,6 +259,11 @@ impl Backend {
         if !self.wsi.device_enabled {
             return Err(vk::Result::ERROR_EXTENSION_NOT_PRESENT.into());
         }
+        if op == 87 && self.wayland.surfaces.contains_key(&a[1])
+            || (88..=91).contains(&op) && self.wayland.has_chain(if op == 91 { a[2] } else { a[1] })
+        {
+            return self.wayland_device(m, op, a);
+        }
         let device = self.device(a[0])?;
         let loader = ash::khr::swapchain::Device::new(&device.instance.native, &device.native);
         match op {

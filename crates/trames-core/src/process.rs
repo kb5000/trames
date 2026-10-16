@@ -323,7 +323,21 @@ impl Kernel {
             let backend = gpu.entry(p.vm_id).or_insert_with(|| {
                 trames_vulkan::Backend::with_budget(self.gpu_budget.clone())
                     .with_display(self.gpu_display.clone())
+                    .with_wayland(p.linux.vfs.wayland_server())
             });
+            if matches!(a[0], 110 | 111) && a[2] == 128 {
+                let address = a[1]
+                    .checked_add(8)
+                    .ok_or(trames_accel::native::Error::InvalidEntry)?;
+                let fd = p
+                    .memory
+                    .read_u64(address)
+                    .map_err(trames_accel::native::Error::Memory)?;
+                let authenticated = u32::try_from(fd)
+                    .ok()
+                    .and_then(|fd| p.linux.vfs.wayland_connection(fd).ok());
+                backend.authenticate_wayland(authenticated);
+            }
             let before = backend.transfers;
             let result = backend.invoke(&mut p.memory, a[0], a[1], a[2]);
             self.gpu_transfers.upload_bytes += backend.transfers.upload_bytes - before.upload_bytes;

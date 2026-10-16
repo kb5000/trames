@@ -13,6 +13,8 @@ pub(super) struct ImageShape {
 pub(super) struct PassInfo {
     format: vk::Format,
     clear: bool,
+    depth: Option<vk::Format>,
+    depth_clear: bool,
 }
 #[derive(Default)]
 pub(super) struct Recording {
@@ -45,7 +47,10 @@ const DIMENSION: u32 = 4096;
 fn format(raw: u64) -> Result<vk::Format> {
     match raw {
         37 => Ok(vk::Format::R8G8B8A8_UNORM),
+        43 => Ok(vk::Format::R8G8B8A8_SRGB),
         44 => Ok(vk::Format::B8G8R8A8_UNORM),
+        50 => Ok(vk::Format::B8G8R8A8_SRGB),
+        124 => Ok(vk::Format::D16_UNORM),
         _ => Err(vk::Result::ERROR_FORMAT_NOT_SUPPORTED.into()),
     }
 }
@@ -53,7 +58,8 @@ fn usage(raw: u64) -> Result<vk::ImageUsageFlags> {
     let allowed = vk::ImageUsageFlags::COLOR_ATTACHMENT
         | vk::ImageUsageFlags::TRANSFER_SRC
         | vk::ImageUsageFlags::TRANSFER_DST
-        | vk::ImageUsageFlags::SAMPLED;
+        | vk::ImageUsageFlags::SAMPLED
+        | vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT;
     if raw == 0 || raw & !(allowed.as_raw() as u64) != 0 {
         return unsupported();
     }
@@ -62,14 +68,34 @@ fn usage(raw: u64) -> Result<vk::ImageUsageFlags> {
 fn layout(raw: u64, initial: bool) -> Result<vk::ImageLayout> {
     match raw {
         0 if initial => Ok(vk::ImageLayout::UNDEFINED),
+        8 if initial => Ok(vk::ImageLayout::PREINITIALIZED),
         1 => Ok(vk::ImageLayout::GENERAL),
         2 => Ok(vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL),
+        3 => Ok(vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL),
+        4 => Ok(vk::ImageLayout::DEPTH_STENCIL_READ_ONLY_OPTIMAL),
         5 => Ok(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL),
         6 => Ok(vk::ImageLayout::TRANSFER_SRC_OPTIMAL),
         7 => Ok(vk::ImageLayout::TRANSFER_DST_OPTIMAL),
         1000001002 => Ok(vk::ImageLayout::PRESENT_SRC_KHR),
         _ => unsupported(),
     }
+}
+fn image_range(format: vk::Format) -> vk::ImageSubresourceRange {
+    let mut range = color_range();
+    if format == vk::Format::D16_UNORM {
+        range.aspect_mask = vk::ImageAspectFlags::DEPTH;
+    }
+    range
+}
+fn format_usage(format: vk::Format, raw: u64) -> Result<vk::ImageUsageFlags> {
+    let flags = usage(raw)?;
+    if format == vk::Format::D16_UNORM && flags.contains(vk::ImageUsageFlags::COLOR_ATTACHMENT)
+        || format != vk::Format::D16_UNORM
+            && flags.contains(vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT)
+    {
+        return Err(vk::Result::ERROR_FORMAT_NOT_SUPPORTED.into());
+    }
+    Ok(flags)
 }
 fn color_range() -> vk::ImageSubresourceRange {
     vk::ImageSubresourceRange::default()
@@ -84,6 +110,16 @@ fn shape(object: &Object) -> Result<ImageShape> {
         .ok_or(Failure::Vk(vk::Result::ERROR_UNKNOWN))
 }
 impl Backend {
+    fn native_layout(&self, raw: u64, initial: bool) -> Result<vk::ImageLayout> {
+        let value = layout(raw, initial)?;
+        Ok(
+            if self.virtual_wsi && value == vk::ImageLayout::PRESENT_SRC_KHR {
+                vk::ImageLayout::GENERAL
+            } else {
+                value
+            },
+        )
+    }
     // New native resources are owned before the final fallible guest write.
     // A backing I/O failure after preflight must not leak an unpublished object.
     pub(super) fn publish(&mut self, m: &mut Memory, output: u64, id: u64) -> Result<()> {
@@ -101,6 +137,7 @@ impl Backend {
                 let p = unsafe { instance.get_physical_device_format_properties(self.physical, f) };
                 let flags = p.optimal_tiling_features
                     & (vk::FormatFeatureFlags::COLOR_ATTACHMENT
+                        | vk::FormatFeatureFlags::DEPTH_STENCIL_ATTACHMENT
                         | vk::FormatFeatureFlags::TRANSFER_SRC
                         | vk::FormatFeatureFlags::TRANSFER_DST
                         | vk::FormatFeatureFlags::SAMPLED_IMAGE
@@ -135,7 +172,7 @@ impl Backend {
                 format(a[1])?,
                 vk::ImageType::TYPE_2D,
                 vk::ImageTiling::OPTIMAL,
-                usage(a[4])?,
+                format_usage(format(a[1])?, a[4])?,
                 vk::ImageCreateFlags::empty(),
             )
         }?;
@@ -187,6 +224,23 @@ impl Backend {
             return unsupported();
         }
         let restart = a[12] != 0;
+        if a[14] & !0x73 != 0 {
+            return unsupported();
+        }
+        let depth_test = a[14] & 1 != 0;
+        let depth_write = a[14] & 2 != 0;
+        let compare = ((a[14] >> 4) & 7) as i32;
+        if (depth_test || depth_write) && pass.pass.get().unwrap().depth.is_none() {
+            return invalid();
+        }
+        let cache = if a[13] == 0 {
+            None
+        } else {
+            Some(self.object(a[13], Kind::PipelineCache)?)
+        };
+        let raw_cache = cache.as_ref().map_or(vk::PipelineCache::null(), |c| {
+            vk::PipelineCache::from_raw(c.raw)
+        });
         let limits = unsafe {
             device
                 .instance
@@ -296,6 +350,10 @@ impl Backend {
                 .line_width(1.0);
             let multisample = vk::PipelineMultisampleStateCreateInfo::default()
                 .rasterization_samples(vk::SampleCountFlags::TYPE_1);
+            let depth = vk::PipelineDepthStencilStateCreateInfo::default()
+                .depth_test_enable(depth_test)
+                .depth_write_enable(depth_write)
+                .depth_compare_op(vk::CompareOp::from_raw(compare));
             let attachments = [vk::PipelineColorBlendAttachmentState::default()
                 .color_write_mask(vk::ColorComponentFlags::from_raw(state[4] as u32))];
             let blend = vk::PipelineColorBlendStateCreateInfo::default().attachments(&attachments);
@@ -309,6 +367,7 @@ impl Backend {
                 .viewport_state(&viewport)
                 .rasterization_state(&raster)
                 .multisample_state(&multisample)
+                .depth_stencil_state(&depth)
                 .color_blend_state(&blend)
                 .dynamic_state(&dynamic)
                 .layout(raw_layout)
@@ -317,7 +376,7 @@ impl Backend {
             match unsafe {
                 device
                     .native
-                    .create_graphics_pipelines(vk::PipelineCache::null(), &info, None)
+                    .create_graphics_pipelines(raw_cache, &info, None)
             } {
                 Ok(p) => Ok(CompiledPipeline { device, raw: p[0] }),
                 Err((pipelines, error)) => {
@@ -336,7 +395,11 @@ impl Backend {
             job,
             Compile {
                 task,
-                dependencies: vec![pipeline_layout, pass, vertex, fragment],
+                dependencies: {
+                    let mut d = vec![pipeline_layout, pass, vertex, fragment];
+                    d.extend(cache);
+                    d
+                },
                 bind_point: vk::PipelineBindPoint::GRAPHICS,
                 vertex_inputs: inputs,
                 output: a[7],
@@ -351,16 +414,29 @@ impl Backend {
         command: &Rc<Object>,
         address: u64,
         count: u64,
+        stride: u64,
     ) -> Result<Vec<vk::ImageMemoryBarrier<'static>>> {
-        let wire = words64(m, address, bounded(count, 64)? * 5)?;
+        let stride = match stride {
+            0 => 5,
+            6 => 6,
+            _ => return unsupported(),
+        };
+        let wire = words64(m, address, bounded(count, 64)? * stride)?;
         let mut barriers = Vec::new();
         let mut dependencies = Vec::new();
-        for b in wire.chunks_exact(5) {
+        for b in wire.chunks_exact(stride) {
             let image = self.object(b[0], Kind::Image)?;
-            if image.deps.borrow().is_empty() && image.swapchain.borrow().is_none() {
+            if image.deps.borrow().is_empty()
+                && image.swapchain.borrow().is_none()
+                && image.wayland_pool.borrow().is_none()
+            {
                 return invalid();
             }
             if image.kind != Kind::SwapchainImage && (b[3] == 1000001002 || b[4] == 1000001002) {
+                return invalid();
+            }
+            let range = image_range(shape(&image)?.format);
+            if stride == 6 && b[5] != range.aspect_mask.as_raw() as u64 {
                 return invalid();
             }
             barriers.push(
@@ -368,11 +444,11 @@ impl Backend {
                     .image(vk::Image::from_raw(image.raw))
                     .src_access_mask(vk::AccessFlags::from_raw(b[1] as u32))
                     .dst_access_mask(vk::AccessFlags::from_raw(b[2] as u32))
-                    .old_layout(layout(b[3], true)?)
-                    .new_layout(layout(b[4], false)?)
+                    .old_layout(self.native_layout(b[3], true)?)
+                    .new_layout(self.native_layout(b[4], false)?)
                     .src_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
                     .dst_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
-                    .subresource_range(color_range()),
+                    .subresource_range(range),
             );
             dependencies.push(image);
         }
@@ -389,7 +465,7 @@ impl Backend {
                 self.room(1)?;
                 output(m, a[5], 8)?;
                 let f = format(a[1])?;
-                let u = usage(a[4])?;
+                let u = format_usage(f, a[4])?;
                 if a[2] == 0 || a[3] == 0 || a[2] > DIMENSION as u64 || a[3] > DIMENSION as u64 {
                     return invalid();
                 }
@@ -407,7 +483,11 @@ impl Backend {
                     .tiling(vk::ImageTiling::OPTIMAL)
                     .usage(u)
                     .sharing_mode(vk::SharingMode::EXCLUSIVE)
-                    .initial_layout(vk::ImageLayout::UNDEFINED);
+                    .initial_layout(match a[6] {
+                        0 => vk::ImageLayout::UNDEFINED,
+                        8 => vk::ImageLayout::PREINITIALIZED,
+                        _ => return invalid(),
+                    });
                 let raw = unsafe { d.create_image(&info, None) }?;
                 let id = self.put(Kind::Image, raw.as_raw(), vec![], 0, u.as_raw());
                 self.objects[&id].image.set(Some(ImageShape {
@@ -439,6 +519,7 @@ impl Backend {
                 }
                 let r = unsafe { d.get_image_memory_requirements(vk::Image::from_raw(image.raw)) };
                 if image.swapchain.borrow().is_some()
+                    || image.wayland_pool.borrow().is_some()
                     || !image.deps.borrow().is_empty()
                     || !a[3].is_multiple_of(r.alignment)
                     || r.memory_type_bits & (1u32 << memory.state.get()) == 0
@@ -461,7 +542,9 @@ impl Backend {
                 let image = self.object(a[1], Kind::Image)?;
                 let shape = shape(&image)?;
                 if format(a[2])? != shape.format
-                    || image.deps.borrow().is_empty() && image.swapchain.borrow().is_none()
+                    || image.deps.borrow().is_empty()
+                        && image.swapchain.borrow().is_none()
+                        && image.wayland_pool.borrow().is_none()
                 {
                     return invalid();
                 }
@@ -469,7 +552,7 @@ impl Backend {
                     .image(vk::Image::from_raw(image.raw))
                     .view_type(vk::ImageViewType::TYPE_2D)
                     .format(shape.format)
-                    .subresource_range(color_range());
+                    .subresource_range(image_range(shape.format));
                 let raw = unsafe { d.create_image_view(&info, None) }?;
                 let id = self.put(Kind::ImageView, raw.as_raw(), vec![image], 0, 0);
                 self.objects[&id].image.set(Some(shape));
@@ -483,21 +566,51 @@ impl Backend {
                 if a[2] > 2 || a[3] > 1 {
                     return unsupported();
                 }
-                let attachments = [vk::AttachmentDescription::default()
+                let mut attachments = vec![vk::AttachmentDescription::default()
                     .format(f)
                     .samples(vk::SampleCountFlags::TYPE_1)
                     .load_op(vk::AttachmentLoadOp::from_raw(a[2] as i32))
                     .store_op(vk::AttachmentStoreOp::from_raw(a[3] as i32))
                     .stencil_load_op(vk::AttachmentLoadOp::DONT_CARE)
                     .stencil_store_op(vk::AttachmentStoreOp::DONT_CARE)
-                    .initial_layout(layout(a[4], true)?)
-                    .final_layout(layout(a[5], false)?)];
+                    .initial_layout(self.native_layout(a[4], true)?)
+                    .final_layout(self.native_layout(a[5], false)?)];
                 let colors = [vk::AttachmentReference::default()
                     .attachment(0)
                     .layout(vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL)];
-                let subpasses = [vk::SubpassDescription::default()
+                if f == vk::Format::D16_UNORM {
+                    return unsupported();
+                }
+                let mut depth = None;
+                let mut depth_clear = false;
+                let mut subpass = vk::SubpassDescription::default()
                     .pipeline_bind_point(vk::PipelineBindPoint::GRAPHICS)
-                    .color_attachments(&colors)];
+                    .color_attachments(&colors);
+                let reference = vk::AttachmentReference::default()
+                    .attachment(1)
+                    .layout(vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+                if a[9] != 0 {
+                    let x = words64(m, a[9], 5)?;
+                    let df = format(x[0])?;
+                    if df != vk::Format::D16_UNORM || x[1] > 2 || x[2] > 1 {
+                        return unsupported();
+                    }
+                    attachments.push(
+                        vk::AttachmentDescription::default()
+                            .format(df)
+                            .samples(vk::SampleCountFlags::TYPE_1)
+                            .load_op(vk::AttachmentLoadOp::from_raw(x[1] as i32))
+                            .store_op(vk::AttachmentStoreOp::from_raw(x[2] as i32))
+                            .stencil_load_op(vk::AttachmentLoadOp::DONT_CARE)
+                            .stencil_store_op(vk::AttachmentStoreOp::DONT_CARE)
+                            .initial_layout(self.native_layout(x[3], true)?)
+                            .final_layout(self.native_layout(x[4], false)?),
+                    );
+                    depth = Some(df);
+                    depth_clear = x[1] == 1;
+                    subpass = subpass.depth_stencil_attachment(&reference);
+                }
+                let subpasses = [subpass];
                 let wire = words64(m, a[6], bounded(a[7], 8)? * 7)?;
                 let mut dependencies = Vec::new();
                 for x in wire.chunks_exact(7) {
@@ -527,6 +640,8 @@ impl Backend {
                 self.objects[&id].pass.set(Some(PassInfo {
                     format: f,
                     clear: a[2] == 1,
+                    depth,
+                    depth_clear,
                 }));
                 self.publish(m, a[8], id)?;
             }
@@ -547,7 +662,27 @@ impl Backend {
                 {
                     return invalid();
                 }
-                let attachments = [vk::ImageView::from_raw(view.raw)];
+                let mut attachments = vec![vk::ImageView::from_raw(view.raw)];
+                let mut dependencies = vec![pass.clone(), view];
+                let depth = pass.pass.get().unwrap().depth;
+                if depth.is_some() != (a[6] != 0) {
+                    return invalid();
+                }
+                if let Some(format) = depth {
+                    let view = self.object(a[6], Kind::ImageView)?;
+                    let ds = shape(&view)?;
+                    if ds.format != format
+                        || a[3] > ds.width as u64
+                        || a[4] > ds.height as u64
+                        || view.deps.borrow()[0].flags
+                            & vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT.as_raw()
+                            == 0
+                    {
+                        return invalid();
+                    }
+                    attachments.push(vk::ImageView::from_raw(view.raw));
+                    dependencies.push(view);
+                }
                 let info = vk::FramebufferCreateInfo::default()
                     .render_pass(vk::RenderPass::from_raw(pass.raw))
                     .attachments(&attachments)
@@ -555,7 +690,7 @@ impl Backend {
                     .height(a[4] as u32)
                     .layers(1);
                 let raw = unsafe { d.create_framebuffer(&info, None) }?;
-                let id = self.put(Kind::Framebuffer, raw.as_raw(), vec![pass, view], 0, 0);
+                let id = self.put(Kind::Framebuffer, raw.as_raw(), dependencies, 0, 0);
                 self.objects[&id].image.set(Some(ImageShape {
                     width: a[3] as u32,
                     height: a[4] as u32,
@@ -583,19 +718,38 @@ impl Backend {
                             || a[7] == 0
                             || a[4].checked_add(a[6]).is_none_or(|x| x > s.width as u64)
                             || a[5].checked_add(a[7]).is_none_or(|y| y > s.height as u64)
-                            || a[9] > 1
-                            || pass.pass.get().unwrap().clear && a[9] != 1
+                            || a[9]
+                                > if pass.pass.get().unwrap().depth.is_some() {
+                                    2
+                                } else {
+                                    1
+                                }
+                            || pass.pass.get().unwrap().clear && a[9] < 1
+                            || pass.pass.get().unwrap().depth_clear && a[9] < 2
                         {
                             return invalid();
                         }
                         let mut clears = Vec::new();
-                        if a[9] != 0 {
-                            let words = words32(m, a[8], 4)?;
-                            clears.push(vk::ClearValue {
-                                color: vk::ClearColorValue {
-                                    float32: std::array::from_fn(|i| f32::from_bits(words[i])),
-                                },
-                            });
+                        for index in 0..a[9] {
+                            let words = words32(m, a[8] + index * 16, 4)?;
+                            if index == 0 {
+                                clears.push(vk::ClearValue {
+                                    color: vk::ClearColorValue {
+                                        float32: std::array::from_fn(|i| f32::from_bits(words[i])),
+                                    },
+                                });
+                            } else {
+                                let depth = f32::from_bits(words[0]);
+                                if !depth.is_finite()
+                                    || !(0.0..=1.0).contains(&depth)
+                                    || words[1] != 0
+                                {
+                                    return invalid();
+                                }
+                                clears.push(vk::ClearValue {
+                                    depth_stencil: vk::ClearDepthStencilValue { depth, stencil: 0 },
+                                });
+                            }
                         }
                         let info = vk::RenderPassBeginInfo::default()
                             .render_pass(vk::RenderPass::from_raw(pass.raw))
@@ -713,7 +867,9 @@ impl Backend {
                         let image = self.object(a[2], Kind::Image)?;
                         let buffer = self.object(a[4], Kind::Buffer)?;
                         let s = shape(&image)?;
-                        if image.deps.borrow().is_empty() && image.swapchain.borrow().is_none()
+                        if image.deps.borrow().is_empty()
+                            && image.swapchain.borrow().is_none()
+                            && image.wayland_pool.borrow().is_none()
                             || buffer.deps.borrow().is_empty()
                             || image.flags
                                 & (if op == 94 {
@@ -768,14 +924,14 @@ impl Backend {
                                     raw,
                                     vk::Buffer::from_raw(buffer.raw),
                                     vk::Image::from_raw(image.raw),
-                                    layout(a[3], false)?,
+                                    self.native_layout(a[3], false)?,
                                     &regions,
                                 );
                             } else {
                                 d.cmd_copy_image_to_buffer(
                                     raw,
                                     vk::Image::from_raw(image.raw),
-                                    layout(a[3], false)?,
+                                    self.native_layout(a[3], false)?,
                                     vk::Buffer::from_raw(buffer.raw),
                                     &regions,
                                 );
@@ -901,6 +1057,9 @@ impl Backend {
     }
 }
 fn checked_copy(x: &[u64], image: ImageShape, buffer_size: u64) -> Result<()> {
+    if image.format == vk::Format::D16_UNORM {
+        return unsupported();
+    }
     if x[3] != 1
         || x[4] != 0
         || x[5] != 0

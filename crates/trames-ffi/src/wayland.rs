@@ -309,21 +309,39 @@ pub unsafe extern "C" fn trames_wayland_frame_image(
         else {
             return error("invalid frame image");
         };
-        let pixels = &image.buffer.pixels;
-        let map = &pixels.mapping;
-        let info = ImageInfo {
-            kind: 1,
-            address: map.allocation_pointer() as u64,
-            length: map.allocation_len() as u64,
-            offset: map.allocation_offset() as u64,
-            width: pixels.width,
-            height: pixels.height,
-            stride: pixels.stride,
-            alpha: u32::from(pixels.alpha),
-            x: image.x,
-            y: image.y,
-            scale: image.scale,
-            transform: image.transform,
+        let info = match &image.buffer {
+            trames_wayland::ImageBuffer::Shm(buffer) => {
+                let pixels = &buffer.pixels;
+                let map = &pixels.mapping;
+                ImageInfo {
+                    kind: 1,
+                    address: map.allocation_pointer() as u64,
+                    length: map.allocation_len() as u64,
+                    offset: map.allocation_offset() as u64,
+                    width: pixels.width,
+                    height: pixels.height,
+                    stride: pixels.stride,
+                    alpha: u32::from(pixels.alpha),
+                    x: image.x,
+                    y: image.y,
+                    scale: image.scale,
+                    transform: image.transform,
+                }
+            }
+            trames_wayland::ImageBuffer::Gpu(gpu) => {
+                let (width, height) = gpu.dimensions();
+                ImageInfo {
+                    kind: 2,
+                    address: gpu.metal_texture() as u64,
+                    width,
+                    height,
+                    x: image.x,
+                    y: image.y,
+                    scale: image.scale,
+                    transform: image.transform,
+                    ..Default::default()
+                }
+            }
         };
         // SAFETY: same scoped caller-owned native record contract.
         unsafe { output.write_unaligned(info) };

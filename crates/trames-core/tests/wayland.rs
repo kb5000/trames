@@ -20,6 +20,9 @@ struct Sink {
     text_sent: bool,
     text_confirmed: bool,
     editor: bool,
+    vulkan: bool,
+    resized: bool,
+    resize_confirmed: bool,
 }
 impl GuestOutput for Sink {
     fn write(&mut self, fd: OutputFd, bytes: &[u8]) -> io::Result<usize> {
@@ -60,8 +63,21 @@ impl GuestOutput for Sink {
             if window.revision != self.last {
                 self.last = window.revision;
                 self.frames += 1;
+                if self.vulkan {
+                    if !self.resized && !window.scene.is_empty() {
+                        self.server.resize(window.id, 320, 240)?;
+                        self.resized = true;
+                    }
+                    self.resize_confirmed |= window.scene.iter().any(|i| {
+                        matches!(i.buffer, trames_wayland::ImageBuffer::Gpu(_))
+                            && i.buffer.dimensions() == (320, 240)
+                    });
+                }
                 for image in &window.scene {
-                    let map = &image.buffer.pixels.mapping;
+                    let Some(buffer) = image.buffer.shm() else {
+                        continue;
+                    };
+                    let map = &buffer.mapping;
                     // SAFETY: this synchronous headless read retains the scene capability and
                     // accesses only validated buffer pixels while the client grants ownership.
                     unsafe {
@@ -76,7 +92,8 @@ impl GuestOutput for Sink {
                     self.began.elapsed().as_millis() as u32,
                 )?;
             }
-            if (!self.editor && self.frames >= 8 || self.editor && self.text_confirmed)
+            if (!self.editor && !self.vulkan && self.frames >= 8
+                || self.editor && self.text_confirmed)
                 && !self.closed
             {
                 self.server.close(window.id)?;
@@ -109,21 +126,68 @@ impl GuestOutput for Sink {
     }
 }
 fn run(program: &str, editor: bool) -> Sink {
+    run_options(program, editor, false, &[])
+}
+fn run_options(program: &str, editor: bool, vulkan: bool, arguments: &[&str]) -> Sink {
     let path = std::env::var("TRAMES_WAYLAND_STORE")
         .expect("prepare original signed packages in a guest store");
     let mut vfs = trames_vfs::Vfs::open_disk(path, Default::default()).unwrap();
     let server = vfs.enable_wayland(b"/run/user/0").unwrap();
+    if vulkan {
+        for dir in [
+            b"/usr/share/vulkan".as_slice(),
+            b"/usr/share/vulkan/icd.d".as_slice(),
+        ] {
+            match vfs.mkdir_at(trames_vfs::AT_FDCWD, dir, 0o755) {
+                Ok(()) | Err(trames_vfs::Errno(17)) => {}
+                Err(e) => panic!("{e}"),
+            }
+        }
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        for (path, file) in [
+            (
+                "/usr/lib/libtrames_vulkan_icd.so",
+                "target/vulkan-guest/libtrames_vulkan_icd.so",
+            ),
+            (
+                "/usr/share/vulkan/icd.d/trames.json",
+                "target/vulkan-guest/trames.json",
+            ),
+        ] {
+            match vfs.unlink_at(trames_vfs::AT_FDCWD, path.as_bytes(), false) {
+                Ok(()) | Err(trames_vfs::Errno(2)) => {}
+                Err(e) => panic!("{e}"),
+            }
+            vfs.import_reader(
+                path.as_bytes(),
+                &mut std::fs::File::open(root.join(file)).unwrap(),
+                false,
+            )
+            .unwrap();
+        }
+    }
     let bytes = vfs.executable(program.as_bytes()).unwrap();
-    let argv = vec![program.to_owned()];
+    let mut argv = vec![program.to_owned()];
+    argv.extend(arguments.iter().map(|s| (*s).to_owned()));
     let env = [
         "HOME=/root",
+        "VK_DRIVER_FILES=/usr/share/vulkan/icd.d/trames.json",
         "PATH=/usr/bin:/bin",
         "XDG_RUNTIME_DIR=/run/user/0",
         "WAYLAND_DISPLAY=wayland-0",
     ]
     .map(str::to_owned);
-    let mut runtime =
-        Runtime::load_with_options(&bytes, &argv, &env, vfs, RuntimeOptions::default()).unwrap();
+    let mut runtime = Runtime::load_with_options(
+        &bytes,
+        &argv,
+        &env,
+        vfs,
+        RuntimeOptions {
+            vulkan_accelerator: vulkan,
+            ..Default::default()
+        },
+    )
+    .unwrap();
     let mut sink = Sink {
         server,
         began: Instant::now(),
@@ -136,6 +200,9 @@ fn run(program: &str, editor: bool) -> Sink {
         text_sent: false,
         text_confirmed: false,
         editor,
+        vulkan,
+        resized: false,
+        resize_confirmed: false,
     };
     let result = runtime.run(&mut sink, 10_000_000_000);
     if !result.as_ref().is_ok_and(|e| e.code == 0) {
@@ -180,4 +247,20 @@ fn original_weston_simple_shm_inside_guest() {
 fn original_weston_editor_native_ime_inside_guest() {
     let s = run("/usr/bin/weston-editor", true);
     assert!(s.text_sent && s.text_confirmed && s.closed);
+}
+
+#[test]
+#[ignore = "prepare original signed Vulkan tools/loader and current guest ICD; set TRAMES_WAYLAND_STORE"]
+fn original_vkcube_wayland_inside_guest() {
+    let s = run_options(
+        "/usr/bin/vkcube",
+        false,
+        true,
+        &["--wsi", "wayland", "--c", "12"],
+    );
+    assert!(s.frames > 0, "{}", String::from_utf8_lossy(&s.stderr));
+    assert!(
+        s.resized && s.resize_confirmed,
+        "vkcube did not recreate its images after configure"
+    );
 }

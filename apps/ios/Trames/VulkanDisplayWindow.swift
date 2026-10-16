@@ -64,7 +64,7 @@ struct VulkanDisplayWindow: View {
     @State private var dragOrigin: CGPoint?
     @State private var resizeOrigin: CGSize?
     var body: some View {
-        if session.displayEnabled {
+        if session.displayEnabled && session.displayHasFrames {
         VStack(spacing: 0) {
             HStack {
                 Text("显示器 · 1024 × 768").font(.callout).lineLimit(1)

@@ -53,6 +53,7 @@ for source in ('crates/trames-core/src/process.rs', 'crates/trames-linux/src/sta
                 found.setdefault(number, f'{source}:{i + 1}')
 rows = list(csv.DictReader((OUT / 'compatibility-0.4-syscalls.csv').open()))
 notes = {
+    47: "Mode-zero fallocate reserves guest file quota and grows regular/memfd files while preserving bytes and file offset. Enforces writable descriptors, signed range validation, seals and storage limits; KEEP_SIZE, hole punching and physical host block reservation are unsupported.",
     26: 'Guest inode notification instance, NONBLOCK/CLOEXEC, whole-record read, FIONREAD, dup/fork/exec lifetime, poll and level/edge/ONESHOT epoll; bounded/coalesced queue with overflow. No host file notifications.',
     27: 'Inode watches, read/search permissions, ONLYDIR/DONT_FOLLOW/MASK_ADD/MASK_CREATE/ONESHOT/EXCL_UNLINK; VFS create/delete/rename cookies, access/modify/attributes/open/last-close. No automatic recursive watches, IN_UNMOUNT or host Bridge mutations; pathless metadata changes fan out to linked parent directories.',
     28: 'Remove a live watch and queue IN_IGNORED, including shared descriptors; invalid descriptor/watch errors.',

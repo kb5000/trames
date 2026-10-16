@@ -25,7 +25,7 @@ static struct wl_display *display;
 static struct wl_compositor *compositor;
 static struct wl_shm *shm;
 static struct xdg_wm_base *shell;
-static int target_frames=1,closed=0;
+static int target_frames=1,closed=0,hold=0;
 static void draw(struct window *window);
 static void frame_done(void *data,struct wl_callback *callback,uint32_t time) {
     (void)time;struct window *w=data;wl_callback_destroy(callback);w->frames++;
@@ -79,6 +79,7 @@ static void global_remove(void *data,struct wl_registry *registry,uint32_t id){(
 static const struct wl_registry_listener registry_listener={global,global_remove};
 int main(int argc,char **argv) {
     if(argc>1)target_frames=atoi(argv[1]);
+    hold=argc>2&&!strcmp(argv[2],"hold");
     assert(target_frames>0&&target_frames<10000);
     display=wl_display_connect(NULL);assert(display);
     struct wl_registry *registry=wl_display_get_registry(display);wl_registry_add_listener(registry,&registry_listener,NULL);
@@ -92,7 +93,7 @@ int main(int argc,char **argv) {
         wl_surface_commit(w->surface);
     }
     assert(wl_display_roundtrip(display)>=0);assert(wl_display_roundtrip(display)>=0);
-    while(!closed&&target_frames>1&&(windows[0].frames<target_frames||windows[1].frames<target_frames))assert(wl_display_dispatch(display)>=0);
+    while(!closed&&(hold||(target_frames>1&&(windows[0].frames<target_frames||windows[1].frames<target_frames))))assert(wl_display_dispatch(display)>=0);
     printf("wayland-client-ok windows=2 frames=%d sizes=%dx%d,%dx%d\n",target_frames,windows[0].width,windows[0].height,windows[1].width,windows[1].height);
     for(int i=0;i<2;i++){struct window *w=&windows[i];if(w->buffer)wl_buffer_destroy(w->buffer);xdg_toplevel_destroy(w->top);xdg_surface_destroy(w->xdg);wl_surface_destroy(w->surface);}
     xdg_wm_base_destroy(shell);wl_shm_destroy(shm);wl_compositor_destroy(compositor);wl_registry_destroy(registry);wl_display_disconnect(display);return 0;

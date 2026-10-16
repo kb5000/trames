@@ -21,6 +21,11 @@ struct WaylandCanvasPane: UIViewRepresentable {
         canvas.sendInput = { [weak session] command in session?.waylandCommand(command) }
         canvas.onFocus = { [weak session] in session?.waylandFocus = window.id }
         canvas.textContext = session.waylandText?.window == window.id ? session.waylandText : nil
+        if session.waylandFocus == window.id && !canvas.isFirstResponder {
+            _ = canvas.becomeFirstResponder()
+        } else if session.waylandFocus != window.id && canvas.isFirstResponder {
+            canvas.resignFirstResponder()
+        }
     }
 }
 struct WaylandWorkspace: View {
@@ -57,9 +62,14 @@ struct WaylandWindow: View {
                 Button { session.waylandCommand(["op":"close","window":window.id]) } label: { Image(systemName:"xmark") }.accessibilityLabel("关闭窗口")
             }.font(.callout).padding(.horizontal,12).frame(height:40).background(Color(white:0.16))
                 .contentShape(Rectangle())
+                .onTapGesture {
+                    session.waylandFocus = window.id
+                    session.waylandCommand(["op":"focus","window":window.id])
+                }
                 .gesture(DragGesture(coordinateSpace:.global).onChanged { value in
                     guard !maximized else { return }
                     session.waylandFocus = window.id
+                    if dragOrigin == nil { session.waylandCommand(["op":"focus","window":window.id]) }
                     if dragOrigin == nil { dragOrigin = geometry.origin }
                     geometry.origin = CGPoint(x:dragOrigin!.x + value.translation.width,y:dragOrigin!.y + value.translation.height)
                     geometry.constrain(to:viewport)

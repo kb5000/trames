@@ -14,6 +14,7 @@ use trames_memory::{Access, Memory, MemoryError};
 use vk::Handle;
 mod graphics;
 mod textures;
+mod wayland;
 mod wsi;
 use graphics::{ImageShape, PassInfo, Recording};
 
@@ -81,6 +82,7 @@ enum Kind {
     DescriptorLayout,
     PipelineLayout,
     Pipeline,
+    PipelineCache,
     DescriptorPool,
     DescriptorSet,
     CommandPool,
@@ -100,12 +102,15 @@ struct Object {
     size: u64,
     flags: u32,
     state: Cell<u8>,
+    command_usage: Cell<u32>,
+    pending_submissions: Cell<u32>,
     mapped: Cell<usize>,
     image: Cell<Option<ImageShape>>,
     pass: Cell<Option<PassInfo>>,
     recording: RefCell<Recording>,
     vertex_inputs: RefCell<Vec<graphics::VertexBinding>>,
     swapchain: RefCell<Option<Rc<wsi::Swapchain>>>,
+    wayland_pool: RefCell<Option<Rc<wayland::Pool>>>,
     // Acquire backing is private per use. Original MoltenVK can re-signal an
     // acquire fence at presentation completion, after the guest has reset it.
     // Keep that signal isolated from a later use of the guest's logical fence.
@@ -152,6 +157,9 @@ impl Drop for Object {
                     d.destroy_pipeline_layout(vk::PipelineLayout::from_raw(self.raw), None)
                 }
                 Kind::Pipeline => d.destroy_pipeline(vk::Pipeline::from_raw(self.raw), None),
+                Kind::PipelineCache => {
+                    d.destroy_pipeline_cache(vk::PipelineCache::from_raw(self.raw), None)
+                }
                 Kind::DescriptorPool => {
                     d.destroy_descriptor_pool(vk::DescriptorPool::from_raw(self.raw), None)
                 }
@@ -253,6 +261,8 @@ pub struct Backend {
     display: crate::Display,
     wsi: wsi::Wsi,
     wsi_enabled: bool,
+    wayland: wayland::Wayland,
+    virtual_wsi: bool,
 }
 impl Default for Backend {
     fn default() -> Self {
@@ -286,11 +296,20 @@ impl Backend {
             display: crate::Display::default(),
             wsi: wsi::Wsi::default(),
             wsi_enabled: false,
+            wayland: Default::default(),
+            virtual_wsi: false,
         }
     }
     pub fn with_display(mut self, display: crate::Display) -> Self {
         self.display = display;
         self
+    }
+    pub fn with_wayland(mut self, server: Option<trames_wayland::Server>) -> Self {
+        self.wayland.server = server;
+        self
+    }
+    pub fn authenticate_wayland(&mut self, authenticated: Option<(trames_wayland::Server, u64)>) {
+        self.wayland.authenticated = authenticated;
     }
     fn id(&mut self) -> u64 {
         let id = (self.domain << 32) | self.next;
@@ -339,12 +358,15 @@ impl Backend {
             size,
             flags,
             state: Cell::new(0),
+            command_usage: Cell::new(0),
+            pending_submissions: Cell::new(0),
             mapped: Cell::new(0),
             image: Cell::new(None),
             pass: Cell::new(None),
             recording: RefCell::new(Recording::default()),
             vertex_inputs: RefCell::new(Vec::new()),
             swapchain: RefCell::new(None),
+            wayland_pool: RefCell::new(None),
             acquisition: RefCell::new(None),
             budget: self.budget.clone(),
         });
@@ -416,7 +438,10 @@ impl Backend {
             }
             for id in words64(m, record[3], count)? {
                 let command = self.object(id, Kind::CommandBuffer)?;
-                if command.state.get() != 2 || commands.iter().any(|c| Rc::ptr_eq(c, &command)) {
+                let simultaneous = command.command_usage.get() & 4 != 0;
+                if !(command.state.get() == 2 || simultaneous && command.state.get() == 3)
+                    || !simultaneous && commands.iter().any(|c| Rc::ptr_eq(c, &command))
+                {
                     return invalid();
                 }
                 batch
@@ -462,6 +487,7 @@ impl Backend {
         unsafe { d.queue_submit(self.queue, &infos, vk::Fence::from_raw(fence.raw)) }?;
         for c in &commands {
             c.state.set(3);
+            c.pending_submissions.set(c.pending_submissions.get() + 1);
         }
         for (id, semaphore) in &semaphores {
             semaphore.state.set(semaphore_states[id]);
@@ -507,18 +533,22 @@ impl Backend {
             size: 0,
             flags: 0,
             state: Cell::new(0),
+            command_usage: Cell::new(0),
+            pending_submissions: Cell::new(0),
             mapped: Cell::new(0),
             image: Cell::new(None),
             pass: Cell::new(None),
             recording: RefCell::new(Recording::default()),
             vertex_inputs: RefCell::new(Vec::new()),
             swapchain: RefCell::new(None),
+            wayland_pool: RefCell::new(None),
             acquisition: RefCell::new(None),
             budget: self.budget.clone(),
         }))
     }
     fn collect(&mut self) {
         self.reap_abandoned();
+        self.wayland.collect();
         self.retained.retain(|x| x.strong_count() != 0);
         self.submissions.retain(|s| {
             let done = unsafe {
@@ -529,7 +559,11 @@ impl Backend {
             } == Ok(true);
             if done {
                 for command in &s.commands {
-                    command.state.set(2);
+                    let remaining = command.pending_submissions.get() - 1;
+                    command.pending_submissions.set(remaining);
+                    if remaining == 0 {
+                        command.state.set(2);
+                    }
                 }
             }
             !done
@@ -556,6 +590,10 @@ impl Backend {
         let a: [u64; 16] = std::array::from_fn(|i| {
             u64::from_le_bytes(bytes[i * 8..i * 8 + 8].try_into().unwrap())
         });
+        static TRACE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+        if *TRACE.get_or_init(|| std::env::var_os("TRAMES_VULKAN_TRACE").is_some()) {
+            eprintln!("trames-vulkan op={operation} args={a:x?}");
+        }
         self.collect();
         let result = if operation == 27 {
             self.start_compile(memory, a).map(Invocation::Pending)
@@ -593,6 +631,14 @@ impl Backend {
             .ok_or(Failure::Vk(vk::Result::ERROR_OUT_OF_HOST_MEMORY))?;
         let raw_shader = vk::ShaderModule::from_raw(shader.raw);
         let raw_layout = vk::PipelineLayout::from_raw(layout.raw);
+        let cache = if a[9] == 0 {
+            None
+        } else {
+            Some(self.object(a[9], Kind::PipelineCache)?)
+        };
+        let raw_cache = cache.as_ref().map_or(vk::PipelineCache::null(), |c| {
+            vk::PipelineCache::from_raw(c.raw)
+        });
         let task = crate::task::Task::spawn(move || {
             let _permit = permit;
             let specialization = vk::SpecializationInfo::default()
@@ -609,7 +655,7 @@ impl Backend {
             match unsafe {
                 device
                     .native
-                    .create_compute_pipelines(vk::PipelineCache::null(), &info, None)
+                    .create_compute_pipelines(raw_cache, &info, None)
             } {
                 Ok(p) => Ok(CompiledPipeline { device, raw: p[0] }),
                 Err((p, error)) => {
@@ -628,7 +674,11 @@ impl Backend {
             job,
             Compile {
                 task,
-                dependencies: vec![layout, shader],
+                dependencies: {
+                    let mut d = vec![layout, shader];
+                    d.extend(cache);
+                    d
+                },
                 bind_point: vk::PipelineBindPoint::COMPUTE,
                 vertex_inputs: Vec::new(),
                 output: a[4],
@@ -697,6 +747,12 @@ impl Backend {
         Ok(Some(0))
     }
     fn call(&mut self, m: &mut Memory, op: u64, a: [u64; 16]) -> Result<()> {
+        if (109..=111).contains(&op) {
+            return self.wayland_entry(m, op, a);
+        }
+        if (82..=86).contains(&op) && self.wayland.surfaces.contains_key(&a[1]) {
+            return self.wayland_query(m, op, a);
+        }
         if op == 79 {
             let (w, h, _) = self.display.info();
             return write_words(m, a[0], &[u64::from(w != 0), w as u64, h as u64], 24);
@@ -718,10 +774,14 @@ impl Backend {
             } else {
                 Vec::new()
             };
-            if a[1] > 1 {
+            if a[1] > 2 {
                 return unsupported();
             }
-            if a[1] != 0 {
+            self.virtual_wsi = a[1] == 2;
+            if a[1] == 2 && self.wayland.server.is_none() {
+                return unsupported();
+            }
+            if a[1] == 1 {
                 if self.display.target().is_none() {
                     return Err(vk::Result::ERROR_INITIALIZATION_FAILED.into());
                 }
@@ -793,6 +853,7 @@ impl Backend {
             }
             self.clear_device();
             self.wsi.surfaces.clear();
+            self.wayland.surfaces.clear();
             self.instance = None;
             self.wsi_enabled = false;
             self.instance_id = 0;
@@ -960,8 +1021,12 @@ impl Backend {
                 if a[3] > 1 || a[3] != 0 && !self.wsi_enabled {
                     return unsupported();
                 }
-                if a[3] != 0 {
+                if a[3] != 0 && !self.virtual_wsi {
                     names.push(ash::khr::swapchain::NAME.as_ptr());
+                }
+                if self.virtual_wsi && cfg!(target_vendor = "apple") {
+                    if !ext.iter().any(|e|unsafe {std::ffi::CStr::from_ptr(e.extension_name.as_ptr())}==ash::ext::metal_objects::NAME){return unsupported();}
+                    names.push(ash::ext::metal_objects::NAME.as_ptr());
                 }
                 self.wsi.device_enabled = a[3] != 0;
                 let info = vk::DeviceCreateInfo::default()
@@ -1013,6 +1078,7 @@ impl Backend {
             }
         }
         self.submissions.clear();
+        self.wayland.clear_device();
         self.wsi.clear_device();
         self.mappings.clear();
         self.objects.clear();
@@ -1024,6 +1090,16 @@ impl Backend {
         let dev = self.device.as_ref().unwrap().clone();
         let d = &dev.native;
         match op {
+            112 => {
+                self.room(1)?;
+                output(m, a[1], 8)?;
+                let raw = unsafe {
+                    d.create_pipeline_cache(&vk::PipelineCacheCreateInfo::default(), None)
+                }?;
+                let id = self.put(Kind::PipelineCache, raw.as_raw(), vec![], 0, 0);
+                self.publish(m, a[1], id)?;
+            }
+            113 => self.remove(a[1], Kind::PipelineCache)?,
             11 => {
                 self.room(1)?;
                 output(m, a[3], 8)?;
@@ -1438,12 +1514,13 @@ impl Backend {
                 let raw = vk::CommandBuffer::from_raw(c.raw);
                 unsafe {
                     if op == 38 {
-                        if a[2] & !1 != 0 {
+                        if a[2] & !5 != 0 || a[2] == 5 {
                             return unsupported();
                         }
                         let info = vk::CommandBufferBeginInfo::default()
                             .flags(vk::CommandBufferUsageFlags::from_raw(a[2] as u32));
                         d.begin_command_buffer(raw, &info)?;
+                        c.command_usage.set(a[2] as u32);
                         c.deps.borrow_mut().truncate(1);
                         *c.recording.borrow_mut() = Recording::default();
                         c.state.set(1);
@@ -1556,7 +1633,7 @@ impl Backend {
                         if c.recording.borrow().pass.is_some() {
                             return invalid();
                         }
-                        let images = self.image_barriers(m, &c, a[6], a[7])?;
+                        let images = self.image_barriers(m, &c, a[6], a[7], a[8])?;
                         let barriers = [vk::MemoryBarrier::default()
                             .src_access_mask(vk::AccessFlags::from_raw(a[4] as u32))
                             .dst_access_mask(vk::AccessFlags::from_raw(a[5] as u32))];
@@ -1848,6 +1925,8 @@ fn compute_stage(stage: u32) -> Result<vk::PipelineStageFlags> {
         | vk::PipelineStageFlags::VERTEX_INPUT
         | vk::PipelineStageFlags::COMPUTE_SHADER
         | vk::PipelineStageFlags::VERTEX_SHADER
+        | vk::PipelineStageFlags::EARLY_FRAGMENT_TESTS
+        | vk::PipelineStageFlags::LATE_FRAGMENT_TESTS
         | vk::PipelineStageFlags::FRAGMENT_SHADER
         | vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT
         | vk::PipelineStageFlags::ALL_GRAPHICS

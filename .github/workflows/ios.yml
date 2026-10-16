@@ -25,11 +25,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install AArch64 source toolchain
-        run: sudo apt-get update && sudo apt-get install --yes gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu libvulkan-dev glslang-tools
+        run: sudo apt-get update && sudo apt-get install --yes gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu libvulkan-dev glslang-tools libwayland-dev
       - run: bash scripts/build-musl-hybrid.sh > /tmp/musl-build.log 2>&1 || { tail -30 /tmp/musl-build.log; exit 1; }
       - name: Build standard guest Vulkan ICD and retain original native GPU sources
         run: |
           bash scripts/build-vulkan-fixtures.sh > /tmp/vulkan-build.log 2>&1 || { tail -30 /tmp/vulkan-build.log; exit 1; }
+          python3 scripts/prepare-wayland-guest.py
           python3 scripts/prepare-vulkan.py --apple
       - uses: actions/upload-artifact@v4
         with:

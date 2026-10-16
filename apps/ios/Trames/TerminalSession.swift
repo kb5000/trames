@@ -11,6 +11,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     @Published var capacity: LocalStatus?
     lazy var displayCanvas = VulkanCanvas()
     @Published var displayEnabled = false
+    @Published var displayHasFrames = false
     @Published var displayVisible = true
     @Published var waylandWindows: [LocalWaylandWindow] = []
     @Published var waylandText: LocalWaylandText?
@@ -77,6 +78,9 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         guard let local, !closed else { return }
         do {
             let output = try local.receive()
+            if displayEnabled && !displayHasFrames {
+                displayHasFrames = try local.displayStatus().presented > 0
+            }
             try bridge.poll()
             if !output.isEmpty { terminal.feed(byteArray: Array(output)[...]) }
             if !pendingInput.isEmpty {

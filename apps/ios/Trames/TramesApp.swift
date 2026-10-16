@@ -183,7 +183,7 @@ struct SettingsView: View {
                 Section("后台行为") { Text("进入后台后暂停本地 Linux 并断开 SSH；返回前台后继续本地会话。Files 采用独立副本导入和导出。").font(.caption) }
                 Section("GPU") {
                     Toggle("Vulkan 计算与图形（实验）", isOn: $vulkan)
-                    Text("下次打开本地终端生效。需在 Linux 安装 vulkan-loader；支持选定计算和离屏图形接口；Vulkan 程序可通过标准 display/swapchain 接口提交到 App 内的显示窗口；拖动和缩放窗口不改变画布分辨率。").font(.caption)
+                    Text("下次打开本地终端生效。需在 Linux 安装 vulkan-loader；支持选定计算、图形和 Wayland 接口。Wayland 应用各自显示为 App 内窗口，调整窗口大小会请求应用改变分辨率；也保留固定分辨率的 Vulkan 显示设备。").font(.caption)
                 }
             }.navigationTitle("设置").toolbar { Button("完成") { dismiss() } }
                 .alert("重置 Linux 环境？",isPresented:$resetConfirmation) {

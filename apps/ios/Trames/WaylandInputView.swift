@@ -25,6 +25,7 @@ class WaylandInputView: UIView, UITextInput {
     var onFocus: (() -> Void)?
     private var document = ""
     private var selection = NSRange(location:0,length:0)
+    private var cursorOffset = 0
     private var marked: NSRange?
     private var remoteSerial: UInt32?
     private var remoteEpoch: UInt64?
@@ -42,7 +43,7 @@ class WaylandInputView: UIView, UITextInput {
     var hasText: Bool { !document.isEmpty }
     private func synchronizeDocument() {
         guard let context = textContext else {
-            remoteSerial=nil; remoteEpoch=nil; document=""; selection=NSRange(location:0,length:0); marked=nil
+            remoteSerial=nil; remoteEpoch=nil; document=""; selection=NSRange(location:0,length:0); cursorOffset=0; marked=nil
             return
         }
         let changedFocus = remoteEpoch != context.epoch
@@ -52,6 +53,7 @@ class WaylandInputView: UIView, UITextInput {
         remoteSerial=context.serial; remoteEpoch=context.epoch
         document=context.text; marked=nil
         let cursor=utf16Offset(context.cursor,in:document), anchor=utf16Offset(context.anchor,in:document)
+        cursorOffset=cursor
         selection=NSRange(location:min(cursor,anchor),length:abs(cursor-anchor))
         switch context.purpose {
         case 2: keyboardType = .numberPad
@@ -88,6 +90,7 @@ class WaylandInputView: UIView, UITextInput {
         guard let native=Range(range,in:document) else { return }
         document.replaceSubrange(native,with:text)
         selection=NSRange(location:range.location+text.utf16.count,length:0)
+        cursorOffset=selection.location
     }
     var beginningOfDocument: UITextPosition { WaylandTextPosition(0) }
     var endOfDocument: UITextPosition { WaylandTextPosition(document.utf16.count) }
@@ -125,7 +128,7 @@ class WaylandInputView: UIView, UITextInput {
     }
     func replace(_ range:UITextRange,withText text:String) {
         guard let range=(range as? WaylandTextRange)?.value,valid(range),text.utf8.count<=4096 else { return }
-        let cursor=byteOffset(selection.location,in:document)
+        let cursor=byteOffset(cursorOffset,in:document)
         let start=byteOffset(range.location,in:document),end=byteOffset(NSMaxRange(range),in:document)
         // Native replacement must overlap the current cursor/selection. Arbitrary
         // remote document edits are not expressible by text-input-v3.
@@ -138,8 +141,9 @@ class WaylandInputView: UIView, UITextInput {
         let value=text ?? "";guard value.utf8.count<=4096 else { return }
         let range=marked ?? selection
         if marked == nil && selection.length>0 {
-            let cursor=byteOffset(selection.location,in:document),end=byteOffset(NSMaxRange(selection),in:document)
-            edit(["delete_after":end-cursor])
+            let cursor=byteOffset(cursorOffset,in:document)
+            let start=byteOffset(selection.location,in:document),end=byteOffset(NSMaxRange(selection),in:document)
+            edit(["delete_before":cursor-start,"delete_after":end-cursor])
         }
         update(range,with:value);marked=NSRange(location:range.location,length:value.utf16.count)
         let begin=min(max(0,selectedRange.location),value.utf16.count)
