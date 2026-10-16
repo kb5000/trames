@@ -18,6 +18,13 @@ forwarding. Those experimental patches remain archived: their measurements do no
 establish a general speedup over this default interpreter. No runtime selector or
 additional production backend is added.
 
+The follow-up [decode dispatch and register-residency experiment](../validation/register-residency.md)
+confirms four guest values can cross ARM64 tail handlers in host registers, but
+dynamic operand routing offsets that saving. Fourteen extra operand forms and
+a smaller handler-table-only candidate also remain archived after mixed workload
+results. Production execution is unchanged; new register/boundary regressions
+are retained.
+
 ## Native arithmetic
 
 `trames-compute` accepts numeric values, never guest pointers. It uses static ARM

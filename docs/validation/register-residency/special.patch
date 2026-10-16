@@ -1,0 +1,280 @@
+diff --git a/crates/trames-cpu/src/cached.rs b/crates/trames-cpu/src/cached.rs
+index 3798818..c5077b5 100644
+--- a/crates/trames-cpu/src/cached.rs
++++ b/crates/trames-cpu/src/cached.rs
+@@ -169,7 +169,8 @@ struct Instruction {
+     rd: Register,
+     rn: Register,
+     rm: Register,
+-    wide: bool,
++    // Bit 7 is width; low six bits select a precompiled handler.
++    mode: u8,
+     op: Op,
+ }
+ impl Instruction {
+@@ -429,13 +430,65 @@ impl Instruction {
+         } else {
+             Op::Fallback
+         };
+-        Self {
++        let mut instruction = Self {
+             word,
+             rd: Register::decode(word),
+             rn: Register::decode(word >> 5),
+             rm: Register::decode(word >> 16),
+-            wide,
++            mode: (wide as u8) << 7,
+             op,
++        };
++        instruction.mode |= instruction.handler();
++        instruction
++    }
++    #[inline(always)]
++    fn wide(&self) -> bool {
++        self.mode & 128 != 0
++    }
++    fn handler(&self) -> u8 {
++        let wide = self.wide() as u8;
++        let general = self.rd.0 < 31 && self.rn.0 < 31;
++        match self.op {
++            Op::AddImmediate { .. } if general => 26 + wide,
++            Op::AddShift {
++                sub,
++                flags: false,
++                kind: 0,
++                amount: 0,
++            } if general && self.rm.0 < 31 => 28 + (sub as u8) * 2 + wide,
++            Op::LogicalShift {
++                opc: opc @ 0..=2,
++                invert: false,
++                kind: 0,
++                amount: 0,
++            } if general && self.rm.0 < 31 => 32 + opc * 2 + wide,
++            Op::Move { opc: 0 | 2, .. } if self.rd.0 < 31 => 38 + wide,
++            Op::Nop => 0,
++            Op::Svc => 1,
++            Op::Move { .. } => 2,
++            Op::Address { .. } => 3,
++            Op::AddImmediate { .. } => 4,
++            Op::FlagsImmediate { .. } => 5,
++            Op::AddShift { .. } => 6,
++            Op::FlagsBranch { .. } => 7,
++            Op::LogicalShift { .. } => 8,
++            Op::LogicalImmediate { .. } => 9,
++            Op::Bitfield { .. } => 10,
++            Op::Select { .. } => 11,
++            Op::AddExtended { .. } => 12,
++            Op::Compare { .. } => 13,
++            Op::Multiply { .. } => 14,
++            Op::ShiftVariable { .. } => 15,
++            Op::Divide { .. } => 16,
++            Op::Branch { .. } => 17,
++            Op::RegisterBranch { .. } => 18,
++            Op::CompareBranch { .. } => 19,
++            Op::TestBranch { .. } => 20,
++            Op::ConditionalBranch { .. } => 21,
++            Op::MemoryImmediate { .. } => 22,
++            Op::Pair { .. } => 23,
++            Op::Memory { .. } => 24,
++            Op::Fallback => 25,
+         }
+     }
+     #[inline]
+@@ -484,6 +537,7 @@ impl Instruction {
+             },
+             op => op,
+         };
++        self.mode = (self.mode & 128) | self.handler();
+         self
+     }
+ }
+@@ -510,7 +564,7 @@ impl Default for Entry {
+                 rd: Register::decode(0),
+                 rn: Register::decode(0),
+                 rm: Register::decode(0),
+-                wide: false,
++                mode: 25,
+                 op: Op::Fallback,
+             },
+         }
+@@ -724,9 +778,14 @@ impl Cpu {
+     ) -> Result<(Event, u64), CpuFault> {
+         let pc = self.pc;
+         let mut next = pc.wrapping_add(4);
++        if TAG >= 26 {
++            self.execute_special::<TAG>(ins);
++            self.pc = next;
++            return Ok((Event::Continue, 1));
++        }
+         let mut count = 1;
+         let (rd, rn, rm) = (ins.rd.index(), ins.rn.index(), ins.rm.index());
+-        let wide = ins.wide;
++        let wide = ins.wide();
+         let mask = width_mask(wide);
+         match ins.op {
+             Op::Nop if TAG == 0 => {}
+@@ -1136,6 +1195,62 @@ impl Cpu {
+         self.pc = next;
+         Ok((Event::Continue, count))
+     }
++    // Only decode-selected ordinary GPR forms reach this function. Width,
++    // flag policy, shift mode and SP/ZR exclusion are already known.
++    #[inline(always)]
++    fn execute_special<const TAG: usize>(&mut self, ins: &Instruction) {
++        let (rd, rn, rm) = (ins.rd.index(), ins.rn.index(), ins.rm.index());
++        // SAFETY: handler() selects these forms only for GPR operands < 31.
++        // The immutable entry is executed by the exact selected specialization.
++        let value = unsafe {
++            match TAG {
++                26 | 27 => {
++                    let Op::AddImmediate { value } = ins.op else {
++                        std::hint::unreachable_unchecked()
++                    };
++                    self.registers.get_unchecked(rn).wrapping_add(value)
++                }
++                28..=31 => {
++                    let a = *self.registers.get_unchecked(rn);
++                    let b = *self.registers.get_unchecked(rm);
++                    if TAG >= 30 {
++                        a.wrapping_sub(b)
++                    } else {
++                        a.wrapping_add(b)
++                    }
++                }
++                32..=37 => {
++                    let a = *self.registers.get_unchecked(rn);
++                    let b = *self.registers.get_unchecked(rm);
++                    match (TAG - 32) / 2 {
++                        0 => a & b,
++                        1 => a | b,
++                        _ => a ^ b,
++                    }
++                }
++                38 | 39 => {
++                    let Op::Move { opc, value, .. } = ins.op else {
++                        std::hint::unreachable_unchecked()
++                    };
++                    if opc == 0 {
++                        !value
++                    } else {
++                        value
++                    }
++                }
++                _ => std::hint::unreachable_unchecked(),
++            }
++        };
++        // Each pair of forms is W then X. A W write zero-extends exactly once.
++        let value = if TAG & 1 == 0 {
++            value as u32 as u64
++        } else {
++            value
++        };
++        unsafe {
++            *self.registers.get_unchecked_mut(rd) = value;
++        }
++    }
+     #[inline]
+     fn decoded_logical(
+         &mut self,
+@@ -1145,7 +1260,7 @@ impl Cpu {
+         sp: bool,
+         flags: &mut ConditionFlags,
+     ) {
+-        let (rd, rn, wide) = (ins.rd.index(), ins.rn.index(), ins.wide);
++        let (rd, rn, wide) = (ins.rd.index(), ins.rn.index(), ins.wide());
+         let value = match opc {
+             0 | 3 => self.x(rn) & rhs,
+             1 => self.x(rn) | rhs,
+@@ -1169,6 +1284,52 @@ struct TailState<'a, M: CpuMemory> {
+     stats: &'a mut super::DecodeStats,
+     budget: u64,
+ }
++type TailHandler<M> =
++    for<'a, 'b> extern "rust-preserve-none" fn(&'a mut TailState<'b, M>, usize, u64) -> TailExit;
++impl<M: CpuMemory> TailState<'_, M> {
++    const HANDLERS: [TailHandler<M>; 40] = [
++        tail_op::<M, 0>,
++        tail_op::<M, 1>,
++        tail_op::<M, 2>,
++        tail_op::<M, 3>,
++        tail_op::<M, 4>,
++        tail_op::<M, 5>,
++        tail_op::<M, 6>,
++        tail_op::<M, 7>,
++        tail_op::<M, 8>,
++        tail_op::<M, 9>,
++        tail_op::<M, 10>,
++        tail_op::<M, 11>,
++        tail_op::<M, 12>,
++        tail_op::<M, 13>,
++        tail_op::<M, 14>,
++        tail_op::<M, 15>,
++        tail_op::<M, 16>,
++        tail_op::<M, 17>,
++        tail_op::<M, 18>,
++        tail_op::<M, 19>,
++        tail_op::<M, 20>,
++        tail_op::<M, 21>,
++        tail_op::<M, 22>,
++        tail_op::<M, 23>,
++        tail_op::<M, 24>,
++        tail_op::<M, 25>,
++        tail_op::<M, 26>,
++        tail_op::<M, 27>,
++        tail_op::<M, 28>,
++        tail_op::<M, 29>,
++        tail_op::<M, 30>,
++        tail_op::<M, 31>,
++        tail_op::<M, 32>,
++        tail_op::<M, 33>,
++        tail_op::<M, 34>,
++        tail_op::<M, 35>,
++        tail_op::<M, 36>,
++        tail_op::<M, 37>,
++        tail_op::<M, 38>,
++        tail_op::<M, 39>,
++    ];
++}
+ enum TailExit {
+     Page(u64),
+     Stop(SliceOutcome),
+@@ -1197,34 +1358,11 @@ macro_rules! tail_next {
+         if $state.page.instructions[slot].generation != $state.page.generation {
+             become tail_decode($state, slot, $executed);
+         }
+-        match $state.page.instructions[slot].instruction.op {
+-            Op::Nop => become tail_op::<M, 0>($state, slot, $executed),
+-            Op::Svc => become tail_op::<M, 1>($state, slot, $executed),
+-            Op::Move { .. } => become tail_op::<M, 2>($state, slot, $executed),
+-            Op::Address { .. } => become tail_op::<M, 3>($state, slot, $executed),
+-            Op::AddImmediate { .. } => become tail_op::<M, 4>($state, slot, $executed),
+-            Op::FlagsImmediate { .. } => become tail_op::<M, 5>($state, slot, $executed),
+-            Op::AddShift { .. } => become tail_op::<M, 6>($state, slot, $executed),
+-            Op::FlagsBranch { .. } => become tail_op::<M, 7>($state, slot, $executed),
+-            Op::LogicalShift { .. } => become tail_op::<M, 8>($state, slot, $executed),
+-            Op::LogicalImmediate { .. } => become tail_op::<M, 9>($state, slot, $executed),
+-            Op::Bitfield { .. } => become tail_op::<M, 10>($state, slot, $executed),
+-            Op::Select { .. } => become tail_op::<M, 11>($state, slot, $executed),
+-            Op::AddExtended { .. } => become tail_op::<M, 12>($state, slot, $executed),
+-            Op::Compare { .. } => become tail_op::<M, 13>($state, slot, $executed),
+-            Op::Multiply { .. } => become tail_op::<M, 14>($state, slot, $executed),
+-            Op::ShiftVariable { .. } => become tail_op::<M, 15>($state, slot, $executed),
+-            Op::Divide { .. } => become tail_op::<M, 16>($state, slot, $executed),
+-            Op::Branch { .. } => become tail_op::<M, 17>($state, slot, $executed),
+-            Op::RegisterBranch { .. } => become tail_op::<M, 18>($state, slot, $executed),
+-            Op::CompareBranch { .. } => become tail_op::<M, 19>($state, slot, $executed),
+-            Op::TestBranch { .. } => become tail_op::<M, 20>($state, slot, $executed),
+-            Op::ConditionalBranch { .. } => become tail_op::<M, 21>($state, slot, $executed),
+-            Op::MemoryImmediate { .. } => become tail_op::<M, 22>($state, slot, $executed),
+-            Op::Pair { .. } => become tail_op::<M, 23>($state, slot, $executed),
+-            Op::Memory { .. } => become tail_op::<M, 24>($state, slot, $executed),
+-            Op::Fallback => become tail_op::<M, 25>($state, slot, $executed),
+-        }
++        let handler = ($state.page.instructions[slot].instruction.mode & 63) as usize;
++        debug_assert!(handler < 40);
++        // SAFETY: private decode/fusion constructors select one of 40 handlers.
++        let next = unsafe { *TailState::<M>::HANDLERS.get_unchecked(handler) };
++        become next($state, slot, $executed);
+     }};
+ }
+ #[cold]

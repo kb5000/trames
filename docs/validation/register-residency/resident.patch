@@ -1,0 +1,625 @@
+diff --git a/crates/trames-cpu/src/cached.rs b/crates/trames-cpu/src/cached.rs
+index 3798818..70c4c12 100644
+--- a/crates/trames-cpu/src/cached.rs
++++ b/crates/trames-cpu/src/cached.rs
+@@ -169,7 +169,8 @@ struct Instruction {
+     rd: Register,
+     rn: Register,
+     rm: Register,
+-    wide: bool,
++    // Bit 7 is width; low six bits select a precompiled handler.
++    mode: u8,
+     op: Op,
+ }
+ impl Instruction {
+@@ -429,13 +430,65 @@ impl Instruction {
+         } else {
+             Op::Fallback
+         };
+-        Self {
++        let mut instruction = Self {
+             word,
+             rd: Register::decode(word),
+             rn: Register::decode(word >> 5),
+             rm: Register::decode(word >> 16),
+-            wide,
++            mode: (wide as u8) << 7,
+             op,
++        };
++        instruction.mode |= instruction.handler();
++        instruction
++    }
++    #[inline(always)]
++    fn wide(&self) -> bool {
++        self.mode & 128 != 0
++    }
++    fn handler(&self) -> u8 {
++        let wide = self.wide() as u8;
++        let general = self.rd.0 < 31 && self.rn.0 < 31;
++        match self.op {
++            Op::AddImmediate { .. } if general => 26 + wide,
++            Op::AddShift {
++                sub,
++                flags: false,
++                kind: 0,
++                amount: 0,
++            } if general && self.rm.0 < 31 => 28 + (sub as u8) * 2 + wide,
++            Op::LogicalShift {
++                opc: opc @ 0..=2,
++                invert: false,
++                kind: 0,
++                amount: 0,
++            } if general && self.rm.0 < 31 => 32 + opc * 2 + wide,
++            Op::Move { opc: 0 | 2, .. } if self.rd.0 < 31 => 38 + wide,
++            Op::Nop => 0,
++            Op::Svc => 1,
++            Op::Move { .. } => 2,
++            Op::Address { .. } => 3,
++            Op::AddImmediate { .. } => 4,
++            Op::FlagsImmediate { .. } => 5,
++            Op::AddShift { .. } => 6,
++            Op::FlagsBranch { .. } => 7,
++            Op::LogicalShift { .. } => 8,
++            Op::LogicalImmediate { .. } => 9,
++            Op::Bitfield { .. } => 10,
++            Op::Select { .. } => 11,
++            Op::AddExtended { .. } => 12,
++            Op::Compare { .. } => 13,
++            Op::Multiply { .. } => 14,
++            Op::ShiftVariable { .. } => 15,
++            Op::Divide { .. } => 16,
++            Op::Branch { .. } => 17,
++            Op::RegisterBranch { .. } => 18,
++            Op::CompareBranch { .. } => 19,
++            Op::TestBranch { .. } => 20,
++            Op::ConditionalBranch { .. } => 21,
++            Op::MemoryImmediate { .. } => 22,
++            Op::Pair { .. } => 23,
++            Op::Memory { .. } => 24,
++            Op::Fallback => 25,
+         }
+     }
+     #[inline]
+@@ -484,6 +537,7 @@ impl Instruction {
+             },
+             op => op,
+         };
++        self.mode = (self.mode & 128) | self.handler();
+         self
+     }
+ }
+@@ -510,7 +564,7 @@ impl Default for Entry {
+                 rd: Register::decode(0),
+                 rn: Register::decode(0),
+                 rm: Register::decode(0),
+-                wide: false,
++                mode: 25,
+                 op: Op::Fallback,
+             },
+         }
+@@ -702,7 +756,8 @@ impl Cpu {
+                 stats,
+                 budget,
+             };
+-            match tail_enter(&mut state, 0, executed) {
++            let [r0, r1, r2, r3] = state.cpu.registers[..4].try_into().unwrap();
++            match tail_enter(&mut state, 0, executed, r0, r1, r2, r3) {
+                 TailExit::Page(count) => executed = count,
+                 TailExit::Stop(outcome) => return outcome,
+             }
+@@ -711,6 +766,75 @@ impl Cpu {
+             instructions: executed,
+         }
+     }
++}
++
++// A deliberately small, fixed ABI working set. Each field is a separate tail
++// argument, not a pointer into a second register array. x0-x3 are the AArch64
++// integer argument/temporary registers; all other state stays in Cpu.
++struct ResidentCpu<'a> {
++    cpu: &'a mut Cpu,
++    r0: u64,
++    r1: u64,
++    r2: u64,
++    r3: u64,
++}
++impl std::ops::Deref for ResidentCpu<'_> {
++    type Target = Cpu;
++    fn deref(&self) -> &Cpu {
++        self.cpu
++    }
++}
++impl std::ops::DerefMut for ResidentCpu<'_> {
++    fn deref_mut(&mut self) -> &mut Cpu {
++        self.cpu
++    }
++}
++impl ResidentCpu<'_> {
++    #[inline(always)]
++    fn publish(&mut self) {
++        self.cpu.registers[..4].copy_from_slice(&[self.r0, self.r1, self.r2, self.r3]);
++    }
++    #[inline(always)]
++    fn reload(&mut self) {
++        [self.r0, self.r1, self.r2, self.r3] = self.cpu.registers[..4].try_into().unwrap();
++    }
++    #[inline(always)]
++    fn x(&self, index: usize) -> u64 {
++        match index {
++            0 => self.r0,
++            1 => self.r1,
++            2 => self.r2,
++            3 => self.r3,
++            _ => self.cpu.x(index),
++        }
++    }
++    #[inline(always)]
++    fn set_x(&mut self, index: usize, value: u64) {
++        match index {
++            0 => self.r0 = value,
++            1 => self.r1 = value,
++            2 => self.r2 = value,
++            3 => self.r3 = value,
++            _ => self.cpu.set_x(index, value),
++        }
++    }
++    #[inline(always)]
++    fn reg(&self, index: usize, sp: bool) -> u64 {
++        if sp && index == 31 {
++            self.sp
++        } else {
++            self.x(index)
++        }
++    }
++    #[inline(always)]
++    fn put(&mut self, index: usize, value: u64, wide: bool, sp: bool) {
++        let value = value & width_mask(wide);
++        if sp && index == 31 {
++            self.sp = value;
++        } else {
++            self.set_x(index, value);
++        }
++    }
+     // Inline each operation into its tail handler. TAG comes only from the
+     // exhaustive tail_next dispatcher, with no intervening cache mutation.
+     // The specialization removes the redundant second operation dispatch.
+@@ -724,9 +848,14 @@ impl Cpu {
+     ) -> Result<(Event, u64), CpuFault> {
+         let pc = self.pc;
+         let mut next = pc.wrapping_add(4);
++        if TAG >= 26 {
++            self.execute_special::<TAG>(ins);
++            self.pc = next;
++            return Ok((Event::Continue, 1));
++        }
+         let mut count = 1;
+         let (rd, rn, rm) = (ins.rd.index(), ins.rn.index(), ins.rm.index());
+-        let wide = ins.wide;
++        let wide = ins.wide();
+         let mask = width_mask(wide);
+         match ins.op {
+             Op::Nop if TAG == 0 => {}
+@@ -1136,6 +1265,60 @@ impl Cpu {
+         self.pc = next;
+         Ok((Event::Continue, count))
+     }
++    // Only decode-selected ordinary GPR forms reach this function. Width,
++    // flag policy, shift mode and SP/ZR exclusion are already known.
++    #[inline(always)]
++    fn execute_special<const TAG: usize>(&mut self, ins: &Instruction) {
++        let (rd, rn, rm) = (ins.rd.index(), ins.rn.index(), ins.rm.index());
++        // SAFETY: handler() selects these forms only for GPR operands < 31.
++        // The immutable entry is executed by the exact selected specialization.
++        let value = unsafe {
++            match TAG {
++                26 | 27 => {
++                    let Op::AddImmediate { value } = ins.op else {
++                        std::hint::unreachable_unchecked()
++                    };
++                    self.x(rn).wrapping_add(value)
++                }
++                28..=31 => {
++                    let a = self.x(rn);
++                    let b = self.x(rm);
++                    if TAG >= 30 {
++                        a.wrapping_sub(b)
++                    } else {
++                        a.wrapping_add(b)
++                    }
++                }
++                32..=37 => {
++                    let a = self.x(rn);
++                    let b = self.x(rm);
++                    match (TAG - 32) / 2 {
++                        0 => a & b,
++                        1 => a | b,
++                        _ => a ^ b,
++                    }
++                }
++                38 | 39 => {
++                    let Op::Move { opc, value, .. } = ins.op else {
++                        std::hint::unreachable_unchecked()
++                    };
++                    if opc == 0 {
++                        !value
++                    } else {
++                        value
++                    }
++                }
++                _ => std::hint::unreachable_unchecked(),
++            }
++        };
++        // Each pair of forms is W then X. A W write zero-extends exactly once.
++        let value = if TAG & 1 == 0 {
++            value as u32 as u64
++        } else {
++            value
++        };
++        self.set_x(rd, value);
++    }
+     #[inline]
+     fn decoded_logical(
+         &mut self,
+@@ -1145,7 +1328,7 @@ impl Cpu {
+         sp: bool,
+         flags: &mut ConditionFlags,
+     ) {
+-        let (rd, rn, wide) = (ins.rd.index(), ins.rn.index(), ins.wide);
++        let (rd, rn, wide) = (ins.rd.index(), ins.rn.index(), ins.wide());
+         let value = match opc {
+             0 | 3 => self.x(rn) & rhs,
+             1 => self.x(rn) | rhs,
+@@ -1169,22 +1352,82 @@ struct TailState<'a, M: CpuMemory> {
+     stats: &'a mut super::DecodeStats,
+     budget: u64,
+ }
++type TailHandler<M> = for<'a, 'b> extern "rust-preserve-none" fn(
++    &'a mut TailState<'b, M>,
++    usize,
++    u64,
++    u64,
++    u64,
++    u64,
++    u64,
++) -> TailExit;
++impl<M: CpuMemory> TailState<'_, M> {
++    const HANDLERS: [TailHandler<M>; 40] = [
++        tail_op::<M, 0>,
++        tail_op::<M, 1>,
++        tail_op::<M, 2>,
++        tail_op::<M, 3>,
++        tail_op::<M, 4>,
++        tail_op::<M, 5>,
++        tail_op::<M, 6>,
++        tail_op::<M, 7>,
++        tail_op::<M, 8>,
++        tail_op::<M, 9>,
++        tail_op::<M, 10>,
++        tail_op::<M, 11>,
++        tail_op::<M, 12>,
++        tail_op::<M, 13>,
++        tail_op::<M, 14>,
++        tail_op::<M, 15>,
++        tail_op::<M, 16>,
++        tail_op::<M, 17>,
++        tail_op::<M, 18>,
++        tail_op::<M, 19>,
++        tail_op::<M, 20>,
++        tail_op::<M, 21>,
++        tail_op::<M, 22>,
++        tail_op::<M, 23>,
++        tail_op::<M, 24>,
++        tail_op::<M, 25>,
++        tail_op::<M, 26>,
++        tail_op::<M, 27>,
++        tail_op::<M, 28>,
++        tail_op::<M, 29>,
++        tail_op::<M, 30>,
++        tail_op::<M, 31>,
++        tail_op::<M, 32>,
++        tail_op::<M, 33>,
++        tail_op::<M, 34>,
++        tail_op::<M, 35>,
++        tail_op::<M, 36>,
++        tail_op::<M, 37>,
++        tail_op::<M, 38>,
++        tail_op::<M, 39>,
++    ];
++}
+ enum TailExit {
+     Page(u64),
+     Stop(SliceOutcome),
+ }
++#[inline(always)]
++fn publish(cpu: &mut Cpu, r0: u64, r1: u64, r2: u64, r3: u64) {
++    cpu.registers[..4].copy_from_slice(&[r0, r1, r2, r3]);
++}
+ macro_rules! tail_next {
+-    ($state:ident, $executed:ident) => {{
++    ($state:ident, $executed:ident, $r0:ident, $r1:ident, $r2:ident, $r3:ident) => {{
+         let pc = $state.cpu.pc;
+         if $executed >= $state.budget {
++            publish($state.cpu, $r0, $r1, $r2, $r3);
+             return TailExit::Stop(SliceOutcome::Yield {
+                 instructions: $executed,
+             });
+         }
+         if pc & !(PAGE_SIZE - 1) != $state.page.base {
++            publish($state.cpu, $r0, $r1, $r2, $r3);
+             return TailExit::Page($executed);
+         }
+         if pc & 3 != 0 {
++            publish($state.cpu, $r0, $r1, $r2, $r3);
+             return TailExit::Stop($state.cpu.slice_fault(
+                 CpuFault::Memory {
+                     pc,
+@@ -1195,36 +1438,13 @@ macro_rules! tail_next {
+         }
+         let slot = (pc as usize & (PAGE_SIZE as usize - 1)) / 4;
+         if $state.page.instructions[slot].generation != $state.page.generation {
+-            become tail_decode($state, slot, $executed);
+-        }
+-        match $state.page.instructions[slot].instruction.op {
+-            Op::Nop => become tail_op::<M, 0>($state, slot, $executed),
+-            Op::Svc => become tail_op::<M, 1>($state, slot, $executed),
+-            Op::Move { .. } => become tail_op::<M, 2>($state, slot, $executed),
+-            Op::Address { .. } => become tail_op::<M, 3>($state, slot, $executed),
+-            Op::AddImmediate { .. } => become tail_op::<M, 4>($state, slot, $executed),
+-            Op::FlagsImmediate { .. } => become tail_op::<M, 5>($state, slot, $executed),
+-            Op::AddShift { .. } => become tail_op::<M, 6>($state, slot, $executed),
+-            Op::FlagsBranch { .. } => become tail_op::<M, 7>($state, slot, $executed),
+-            Op::LogicalShift { .. } => become tail_op::<M, 8>($state, slot, $executed),
+-            Op::LogicalImmediate { .. } => become tail_op::<M, 9>($state, slot, $executed),
+-            Op::Bitfield { .. } => become tail_op::<M, 10>($state, slot, $executed),
+-            Op::Select { .. } => become tail_op::<M, 11>($state, slot, $executed),
+-            Op::AddExtended { .. } => become tail_op::<M, 12>($state, slot, $executed),
+-            Op::Compare { .. } => become tail_op::<M, 13>($state, slot, $executed),
+-            Op::Multiply { .. } => become tail_op::<M, 14>($state, slot, $executed),
+-            Op::ShiftVariable { .. } => become tail_op::<M, 15>($state, slot, $executed),
+-            Op::Divide { .. } => become tail_op::<M, 16>($state, slot, $executed),
+-            Op::Branch { .. } => become tail_op::<M, 17>($state, slot, $executed),
+-            Op::RegisterBranch { .. } => become tail_op::<M, 18>($state, slot, $executed),
+-            Op::CompareBranch { .. } => become tail_op::<M, 19>($state, slot, $executed),
+-            Op::TestBranch { .. } => become tail_op::<M, 20>($state, slot, $executed),
+-            Op::ConditionalBranch { .. } => become tail_op::<M, 21>($state, slot, $executed),
+-            Op::MemoryImmediate { .. } => become tail_op::<M, 22>($state, slot, $executed),
+-            Op::Pair { .. } => become tail_op::<M, 23>($state, slot, $executed),
+-            Op::Memory { .. } => become tail_op::<M, 24>($state, slot, $executed),
+-            Op::Fallback => become tail_op::<M, 25>($state, slot, $executed),
++            become tail_decode($state, slot, $executed, $r0, $r1, $r2, $r3);
+         }
++        let handler = ($state.page.instructions[slot].instruction.mode & 63) as usize;
++        debug_assert!(handler < 40);
++        // SAFETY: private decode/fusion constructors select one of 40 handlers.
++        let next = unsafe { *TailState::<M>::HANDLERS.get_unchecked(handler) };
++        become next($state, slot, $executed, $r0, $r1, $r2, $r3);
+     }};
+ }
+ #[cold]
+@@ -1233,52 +1453,86 @@ extern "rust-preserve-none" fn tail_decode<M: CpuMemory>(
+     state: &mut TailState<'_, M>,
+     slot: usize,
+     executed: u64,
++    r0: u64,
++    r1: u64,
++    r2: u64,
++    r3: u64,
+ ) -> TailExit {
+     let pc = state.cpu.pc;
+     if let Err(error) = state.page.decode_slot(state.memory, slot, pc, state.stats) {
++        publish(state.cpu, r0, r1, r2, r3);
+         return TailExit::Stop(
+             state
+                 .cpu
+                 .slice_fault(CpuFault::Memory { pc, error }, executed),
+         );
+     }
+-    tail_next!(state, executed)
++    tail_next!(state, executed, r0, r1, r2, r3)
+ }
+ #[inline(never)]
+ extern "rust-preserve-none" fn tail_enter<M: CpuMemory>(
+     state: &mut TailState<'_, M>,
+     _slot: usize,
+     executed: u64,
++    r0: u64,
++    r1: u64,
++    r2: u64,
++    r3: u64,
+ ) -> TailExit {
+-    tail_next!(state, executed)
++    tail_next!(state, executed, r0, r1, r2, r3)
+ }
+ #[inline(never)]
+ extern "rust-preserve-none" fn tail_op<M: CpuMemory, const TAG: usize>(
+     state: &mut TailState<'_, M>,
+     slot: usize,
+     executed: u64,
++    r0: u64,
++    r1: u64,
++    r2: u64,
++    r3: u64,
+ ) -> TailExit {
+     debug_assert!(slot < PAGE_WORDS && executed < state.budget);
+     // SAFETY: every entry is reached via tail_next, which checks the budget
+     // and derives the slot from the low twelve PC bits, divided by four.
+     unsafe { std::hint::assert_unchecked(slot < PAGE_WORDS && executed < state.budget) };
+     let instruction = &state.page.instructions[slot].instruction;
+-    let count = match state.cpu.execute_decoded::<M, TAG>(
+-        instruction,
+-        state.memory,
+-        state.budget - executed,
+-        state.flags,
+-    ) {
++    let (result, r0, r1, r2, r3) = {
++        let mut cpu = ResidentCpu {
++            cpu: state.cpu,
++            r0,
++            r1,
++            r2,
++            r3,
++        };
++        // Complete reference memory/CPU paths observe architectural state.
++        // This includes atomics, native entry and any fault/yield they return.
++        if matches!(TAG, 24 | 25) {
++            cpu.publish();
++        }
++        let result = cpu.execute_decoded::<M, TAG>(
++            instruction,
++            state.memory,
++            state.budget - executed,
++            state.flags,
++        );
++        if matches!(TAG, 24 | 25) {
++            cpu.reload();
++        }
++        (result, cpu.r0, cpu.r1, cpu.r2, cpu.r3)
++    };
++    let count = match result {
+         Ok((Event::Continue, count)) => count,
+         Ok((Event::Yield, _)) => {
++            publish(state.cpu, r0, r1, r2, r3);
+             return TailExit::Stop(SliceOutcome::Yield {
+                 instructions: executed,
+-            })
++            });
+         }
+         Ok((Event::Syscall, _)) => {
++            publish(state.cpu, r0, r1, r2, r3);
+             return TailExit::Stop(SliceOutcome::Syscall {
+                 instructions: executed + 1,
+-            })
++            });
+         }
+         Ok((
+             Event::NativeCall {
+@@ -1288,14 +1542,18 @@ extern "rust-preserve-none" fn tail_op<M: CpuMemory, const TAG: usize>(
+             },
+             _,
+         )) => {
++            publish(state.cpu, r0, r1, r2, r3);
+             return TailExit::Stop(SliceOutcome::NativeCall {
+                 instructions: executed,
+                 pc,
+                 module,
+                 function,
+-            })
++            });
++        }
++        Err(error) => {
++            publish(state.cpu, r0, r1, r2, r3);
++            return TailExit::Stop(state.cpu.slice_fault(error, executed));
+         }
+-        Err(error) => return TailExit::Stop(state.cpu.slice_fault(error, executed)),
+     };
+     debug_assert!(count <= state.budget - executed);
+     let executed = executed.wrapping_add(count);
+@@ -1303,9 +1561,10 @@ extern "rust-preserve-none" fn tail_op<M: CpuMemory, const TAG: usize>(
+         && instruction.may_write_code()
+         && state.memory.instruction_identity() != state.page.checked
+     {
++        publish(state.cpu, r0, r1, r2, r3);
+         return TailExit::Page(executed);
+     }
+-    tail_next!(state, executed)
++    tail_next!(state, executed, r0, r1, r2, r3)
+ }
+ 
+ #[cfg(test)]
+@@ -1361,6 +1620,96 @@ mod tests {
+         );
+         assert_eq!(a.vectors, b.vectors);
+     }
++    #[test]
++    fn decoded_forms_keep_width_roles_and_handler_identity() {
++        assert_eq!(std::mem::size_of::<Instruction>(), 32);
++        assert_eq!(std::mem::size_of::<Entry>(), 40);
++        let mut seen = [false; 40];
++        for base in [
++            0x11001400, 0x0b000000, 0x4b000000, 0x0a000000, 0x2a000000, 0x4a000000, 0x52824680,
++            0x12824680,
++        ] {
++            for wide in [0, 1 << 31] {
++                for rd in [0, 3, 4, 30, 31] {
++                    for rn in [0, 2, 31] {
++                        for rm in [1, 3, 31] {
++                            let word = base | wide | rd | (rn << 5) | (rm << 16);
++                            let ins = Instruction::decode(word);
++                            let handler = (ins.mode & 63) as usize;
++                            assert_eq!(handler, ins.handler() as usize);
++                            seen[handler] = true;
++                            let mut mem = memory(&[word, 0xd4000001]);
++                            let mut cpu = Cpu::new(0x1000, u64::MAX);
++                            for reg in 0..31 {
++                                cpu.set_x(reg, (0x8000_0001_ffff_ffffu64).rotate_left(reg as u32));
++                            }
++                            cpu.set_nzcv(11);
++                            // Repeat with the already decoded entry, observing
++                            // each exact one-instruction state publication.
++                            for _ in 0..2 {
++                                cpu.pc = 0x1000;
++                                let mut oracle = cpu.clone();
++                                let mut other = mem.clone();
++                                assert_eq!(
++                                    format!("{:?}", cpu.run_slice(&mut mem, 1)),
++                                    format!("{:?}", oracle.run_reference(&mut other, 1)),
++                                    "{word:08x}"
++                                );
++                                equal(&cpu, &oracle);
++                            }
++                        }
++                    }
++                }
++            }
++        }
++        assert!(
++            seen[26..].iter().all(|&hit| hit),
++            "every specialized handler executes"
++        );
++    }
++
++    #[test]
++    fn transient_values_publish_on_memory_fallback_and_stop_boundaries() {
++        for ending in [0xd4000001, 0xd503203f, 0xf9400120, 0x00000000] {
++            let words = [
++                0x91000400, // add x0,x0,#1
++                0x8b000021, // add x1,x1,x0
++                0xca010042, // eor x2,x2,x1
++                0x91000463, // add x3,x3,#1
++                0xf9000100, // str x0,[x8]
++                0xf9400101, // ldr x1,[x8]
++                0xa9000d02, // stp x2,x3,[x8]
++                0xa9400500, // ldp x0,x1,[x8]
++                0xdac00002, // rbit x2,x0: reference fallback
++                0x8b020063, // add x3,x3,x2
++                ending,
++            ];
++            for budget in 0..=words.len() as u64 + 1 {
++                let mut mem = memory(&words);
++                let mut cpu = Cpu::new(0x1000, 0x2ff0);
++                cpu.set_x(8, 0x2000);
++                cpu.set_x(9, 0x9000); // unmapped load must preserve prior results
++                for iteration in 0..2 {
++                    cpu.pc = 0x1000;
++                    for reg in 0..4 {
++                        cpu.set_x(reg, u64::MAX - reg as u64 - iteration);
++                    }
++                    let mut oracle = cpu.clone();
++                    let mut other = mem.clone();
++                    assert_eq!(
++                        format!("{:?}", cpu.run_slice(&mut mem, budget)),
++                        format!("{:?}", oracle.run_reference(&mut other, budget))
++                    );
++                    equal(&cpu, &oracle);
++                    assert_eq!(
++                        mem.read_array::<16>(0x2000).unwrap(),
++                        other.read_array::<16>(0x2000).unwrap()
++                    );
++                }
++            }
++        }
++    }
++
+     #[test]
+     fn fused_flags_branches_preserve_budgets_conditions_and_invalidations() {
+         for arithmetic in [

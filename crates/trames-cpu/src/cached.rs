@@ -1362,6 +1362,85 @@ mod tests {
         assert_eq!(a.vectors, b.vectors);
     }
     #[test]
+    fn decoded_forms_keep_width_and_register_roles() {
+        for base in [
+            0x11001400, 0x0b000000, 0x4b000000, 0x0a000000, 0x2a000000, 0x4a000000, 0x52824680,
+            0x12824680,
+        ] {
+            for wide in [0, 1 << 31] {
+                for rd in [0, 3, 4, 30, 31] {
+                    for rn in [0, 2, 31] {
+                        for rm in [1, 3, 31] {
+                            let word = base | wide | rd | (rn << 5) | (rm << 16);
+                            let mut mem = memory(&[word, 0xd4000001]);
+                            let mut cpu = Cpu::new(0x1000, u64::MAX);
+                            for reg in 0..31 {
+                                cpu.set_x(reg, (0x8000_0001_ffff_ffffu64).rotate_left(reg as u32));
+                            }
+                            cpu.set_nzcv(11);
+                            // Repeat with the already decoded entry, observing
+                            // each exact one-instruction state publication.
+                            for _ in 0..2 {
+                                cpu.pc = 0x1000;
+                                let mut oracle = cpu.clone();
+                                let mut other = mem.clone();
+                                assert_eq!(
+                                    format!("{:?}", cpu.run_slice(&mut mem, 1)),
+                                    format!("{:?}", oracle.run_reference(&mut other, 1)),
+                                    "{word:08x}"
+                                );
+                                equal(&cpu, &oracle);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn transient_values_publish_on_memory_fallback_and_stop_boundaries() {
+        for ending in [0xd4000001, 0xd503203f, 0xf9400120, 0x00000000] {
+            let words = [
+                0x91000400, // add x0,x0,#1
+                0x8b000021, // add x1,x1,x0
+                0xca010042, // eor x2,x2,x1
+                0x91000463, // add x3,x3,#1
+                0xf9000100, // str x0,[x8]
+                0xf9400101, // ldr x1,[x8]
+                0xa9000d02, // stp x2,x3,[x8]
+                0xa9400500, // ldp x0,x1,[x8]
+                0xdac00002, // rbit x2,x0: reference fallback
+                0x8b020063, // add x3,x3,x2
+                ending,
+            ];
+            for budget in 0..=words.len() as u64 + 1 {
+                let mut mem = memory(&words);
+                let mut cpu = Cpu::new(0x1000, 0x2ff0);
+                cpu.set_x(8, 0x2000);
+                cpu.set_x(9, 0x9000); // unmapped load must preserve prior results
+                for iteration in 0..2 {
+                    cpu.pc = 0x1000;
+                    for reg in 0..4 {
+                        cpu.set_x(reg, u64::MAX - reg as u64 - iteration);
+                    }
+                    let mut oracle = cpu.clone();
+                    let mut other = mem.clone();
+                    assert_eq!(
+                        format!("{:?}", cpu.run_slice(&mut mem, budget)),
+                        format!("{:?}", oracle.run_reference(&mut other, budget))
+                    );
+                    equal(&cpu, &oracle);
+                    assert_eq!(
+                        mem.read_array::<16>(0x2000).unwrap(),
+                        other.read_array::<16>(0x2000).unwrap()
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
     fn fused_flags_branches_preserve_budgets_conditions_and_invalidations() {
         for arithmetic in [
             0xf100041f, 0xf10007ff, 0xb1000420, 0x31000420, 0xeb01001f, 0x6b817c1f,

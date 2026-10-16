@@ -1,0 +1,292 @@
+diff --git a/crates/trames-cpu/src/cached.rs b/crates/trames-cpu/src/cached.rs
+index 3798818..b223cfc 100644
+--- a/crates/trames-cpu/src/cached.rs
++++ b/crates/trames-cpu/src/cached.rs
+@@ -169,7 +169,8 @@ struct Instruction {
+     rd: Register,
+     rn: Register,
+     rm: Register,
+-    wide: bool,
++    // Bit 7 is width; low six bits select a precompiled handler.
++    mode: u8,
+     op: Op,
+ }
+ impl Instruction {
+@@ -429,13 +430,49 @@ impl Instruction {
+         } else {
+             Op::Fallback
+         };
+-        Self {
++        let mut instruction = Self {
+             word,
+             rd: Register::decode(word),
+             rn: Register::decode(word >> 5),
+             rm: Register::decode(word >> 16),
+-            wide,
++            mode: (wide as u8) << 7,
+             op,
++        };
++        instruction.mode |= instruction.handler();
++        instruction
++    }
++    #[inline(always)]
++    fn wide(&self) -> bool {
++        self.mode & 128 != 0
++    }
++    fn handler(&self) -> u8 {
++        match self.op {
++            Op::Nop => 0,
++            Op::Svc => 1,
++            Op::Move { .. } => 2,
++            Op::Address { .. } => 3,
++            Op::AddImmediate { .. } => 4,
++            Op::FlagsImmediate { .. } => 5,
++            Op::AddShift { .. } => 6,
++            Op::FlagsBranch { .. } => 7,
++            Op::LogicalShift { .. } => 8,
++            Op::LogicalImmediate { .. } => 9,
++            Op::Bitfield { .. } => 10,
++            Op::Select { .. } => 11,
++            Op::AddExtended { .. } => 12,
++            Op::Compare { .. } => 13,
++            Op::Multiply { .. } => 14,
++            Op::ShiftVariable { .. } => 15,
++            Op::Divide { .. } => 16,
++            Op::Branch { .. } => 17,
++            Op::RegisterBranch { .. } => 18,
++            Op::CompareBranch { .. } => 19,
++            Op::TestBranch { .. } => 20,
++            Op::ConditionalBranch { .. } => 21,
++            Op::MemoryImmediate { .. } => 22,
++            Op::Pair { .. } => 23,
++            Op::Memory { .. } => 24,
++            Op::Fallback => 25,
+         }
+     }
+     #[inline]
+@@ -484,6 +521,7 @@ impl Instruction {
+             },
+             op => op,
+         };
++        self.mode = (self.mode & 128) | self.handler();
+         self
+     }
+ }
+@@ -510,7 +548,7 @@ impl Default for Entry {
+                 rd: Register::decode(0),
+                 rn: Register::decode(0),
+                 rm: Register::decode(0),
+-                wide: false,
++                mode: 25,
+                 op: Op::Fallback,
+             },
+         }
+@@ -712,7 +750,7 @@ impl Cpu {
+         }
+     }
+     // Inline each operation into its tail handler. TAG comes only from the
+-    // exhaustive tail_next dispatcher, with no intervening cache mutation.
++    // decode-selected handler table, with no intervening cache mutation.
+     // The specialization removes the redundant second operation dispatch.
+     #[inline(always)]
+     fn execute_decoded<M: CpuMemory, const TAG: usize>(
+@@ -726,7 +764,7 @@ impl Cpu {
+         let mut next = pc.wrapping_add(4);
+         let mut count = 1;
+         let (rd, rn, rm) = (ins.rd.index(), ins.rn.index(), ins.rm.index());
+-        let wide = ins.wide;
++        let wide = ins.wide();
+         let mask = width_mask(wide);
+         match ins.op {
+             Op::Nop if TAG == 0 => {}
+@@ -1129,7 +1167,7 @@ impl Cpu {
+                 *flags = self.condition_flags;
+                 return result.map(|event| (event, 1));
+             }
+-            // SAFETY: tail_next selects this specialization from this exact
++            // SAFETY: decode selects this specialization from this exact
+             // entry's Op. No code-cache mutation occurs before executing it.
+             _ => unsafe { std::hint::unreachable_unchecked() },
+         }
+@@ -1145,7 +1183,7 @@ impl Cpu {
+         sp: bool,
+         flags: &mut ConditionFlags,
+     ) {
+-        let (rd, rn, wide) = (ins.rd.index(), ins.rn.index(), ins.wide);
++        let (rd, rn, wide) = (ins.rd.index(), ins.rn.index(), ins.wide());
+         let value = match opc {
+             0 | 3 => self.x(rn) & rhs,
+             1 => self.x(rn) | rhs,
+@@ -1169,6 +1207,38 @@ struct TailState<'a, M: CpuMemory> {
+     stats: &'a mut super::DecodeStats,
+     budget: u64,
+ }
++type TailHandler<M> =
++    for<'a, 'b> extern "rust-preserve-none" fn(&'a mut TailState<'b, M>, usize, u64) -> TailExit;
++impl<M: CpuMemory> TailState<'_, M> {
++    const HANDLERS: [TailHandler<M>; 26] = [
++        tail_op::<M, 0>,
++        tail_op::<M, 1>,
++        tail_op::<M, 2>,
++        tail_op::<M, 3>,
++        tail_op::<M, 4>,
++        tail_op::<M, 5>,
++        tail_op::<M, 6>,
++        tail_op::<M, 7>,
++        tail_op::<M, 8>,
++        tail_op::<M, 9>,
++        tail_op::<M, 10>,
++        tail_op::<M, 11>,
++        tail_op::<M, 12>,
++        tail_op::<M, 13>,
++        tail_op::<M, 14>,
++        tail_op::<M, 15>,
++        tail_op::<M, 16>,
++        tail_op::<M, 17>,
++        tail_op::<M, 18>,
++        tail_op::<M, 19>,
++        tail_op::<M, 20>,
++        tail_op::<M, 21>,
++        tail_op::<M, 22>,
++        tail_op::<M, 23>,
++        tail_op::<M, 24>,
++        tail_op::<M, 25>,
++    ];
++}
+ enum TailExit {
+     Page(u64),
+     Stop(SliceOutcome),
+@@ -1197,34 +1267,11 @@ macro_rules! tail_next {
+         if $state.page.instructions[slot].generation != $state.page.generation {
+             become tail_decode($state, slot, $executed);
+         }
+-        match $state.page.instructions[slot].instruction.op {
+-            Op::Nop => become tail_op::<M, 0>($state, slot, $executed),
+-            Op::Svc => become tail_op::<M, 1>($state, slot, $executed),
+-            Op::Move { .. } => become tail_op::<M, 2>($state, slot, $executed),
+-            Op::Address { .. } => become tail_op::<M, 3>($state, slot, $executed),
+-            Op::AddImmediate { .. } => become tail_op::<M, 4>($state, slot, $executed),
+-            Op::FlagsImmediate { .. } => become tail_op::<M, 5>($state, slot, $executed),
+-            Op::AddShift { .. } => become tail_op::<M, 6>($state, slot, $executed),
+-            Op::FlagsBranch { .. } => become tail_op::<M, 7>($state, slot, $executed),
+-            Op::LogicalShift { .. } => become tail_op::<M, 8>($state, slot, $executed),
+-            Op::LogicalImmediate { .. } => become tail_op::<M, 9>($state, slot, $executed),
+-            Op::Bitfield { .. } => become tail_op::<M, 10>($state, slot, $executed),
+-            Op::Select { .. } => become tail_op::<M, 11>($state, slot, $executed),
+-            Op::AddExtended { .. } => become tail_op::<M, 12>($state, slot, $executed),
+-            Op::Compare { .. } => become tail_op::<M, 13>($state, slot, $executed),
+-            Op::Multiply { .. } => become tail_op::<M, 14>($state, slot, $executed),
+-            Op::ShiftVariable { .. } => become tail_op::<M, 15>($state, slot, $executed),
+-            Op::Divide { .. } => become tail_op::<M, 16>($state, slot, $executed),
+-            Op::Branch { .. } => become tail_op::<M, 17>($state, slot, $executed),
+-            Op::RegisterBranch { .. } => become tail_op::<M, 18>($state, slot, $executed),
+-            Op::CompareBranch { .. } => become tail_op::<M, 19>($state, slot, $executed),
+-            Op::TestBranch { .. } => become tail_op::<M, 20>($state, slot, $executed),
+-            Op::ConditionalBranch { .. } => become tail_op::<M, 21>($state, slot, $executed),
+-            Op::MemoryImmediate { .. } => become tail_op::<M, 22>($state, slot, $executed),
+-            Op::Pair { .. } => become tail_op::<M, 23>($state, slot, $executed),
+-            Op::Memory { .. } => become tail_op::<M, 24>($state, slot, $executed),
+-            Op::Fallback => become tail_op::<M, 25>($state, slot, $executed),
+-        }
++        let handler = ($state.page.instructions[slot].instruction.mode & 63) as usize;
++        debug_assert!(handler < 26);
++        // SAFETY: private decode/fusion constructors select one of 26 handlers.
++        let next = unsafe { *TailState::<M>::HANDLERS.get_unchecked(handler) };
++        become next($state, slot, $executed);
+     }};
+ }
+ #[cold]
+@@ -1361,6 +1408,93 @@ mod tests {
+         );
+         assert_eq!(a.vectors, b.vectors);
+     }
++    #[test]
++    fn decoded_forms_keep_width_roles_and_handler_identity() {
++        assert_eq!(std::mem::size_of::<Instruction>(), 32);
++        assert_eq!(std::mem::size_of::<Entry>(), 40);
++        let mut seen = [false; 26];
++        for base in [
++            0x11001400, 0x0b000000, 0x4b000000, 0x0a000000, 0x2a000000, 0x4a000000, 0x52824680,
++            0x12824680,
++        ] {
++            for wide in [0, 1 << 31] {
++                for rd in [0, 3, 4, 30, 31] {
++                    for rn in [0, 2, 31] {
++                        for rm in [1, 3, 31] {
++                            let word = base | wide | rd | (rn << 5) | (rm << 16);
++                            let ins = Instruction::decode(word);
++                            let handler = (ins.mode & 63) as usize;
++                            assert_eq!(handler, ins.handler() as usize);
++                            seen[handler] = true;
++                            let mut mem = memory(&[word, 0xd4000001]);
++                            let mut cpu = Cpu::new(0x1000, u64::MAX);
++                            for reg in 0..31 {
++                                cpu.set_x(reg, (0x8000_0001_ffff_ffffu64).rotate_left(reg as u32));
++                            }
++                            cpu.set_nzcv(11);
++                            // Repeat with the already decoded entry, observing
++                            // each exact one-instruction state publication.
++                            for _ in 0..2 {
++                                cpu.pc = 0x1000;
++                                let mut oracle = cpu.clone();
++                                let mut other = mem.clone();
++                                assert_eq!(
++                                    format!("{:?}", cpu.run_slice(&mut mem, 1)),
++                                    format!("{:?}", oracle.run_reference(&mut other, 1)),
++                                    "{word:08x}"
++                                );
++                                equal(&cpu, &oracle);
++                            }
++                        }
++                    }
++                }
++            }
++        }
++        assert!([2, 4, 6, 8].into_iter().all(|tag| seen[tag]));
++    }
++
++    #[test]
++    fn transient_values_publish_on_memory_fallback_and_stop_boundaries() {
++        for ending in [0xd4000001, 0xd503203f, 0xf9400120, 0x00000000] {
++            let words = [
++                0x91000400, // add x0,x0,#1
++                0x8b000021, // add x1,x1,x0
++                0xca010042, // eor x2,x2,x1
++                0x91000463, // add x3,x3,#1
++                0xf9000100, // str x0,[x8]
++                0xf9400101, // ldr x1,[x8]
++                0xa9000d02, // stp x2,x3,[x8]
++                0xa9400500, // ldp x0,x1,[x8]
++                0xdac00002, // rbit x2,x0: reference fallback
++                0x8b020063, // add x3,x3,x2
++                ending,
++            ];
++            for budget in 0..=words.len() as u64 + 1 {
++                let mut mem = memory(&words);
++                let mut cpu = Cpu::new(0x1000, 0x2ff0);
++                cpu.set_x(8, 0x2000);
++                cpu.set_x(9, 0x9000); // unmapped load must preserve prior results
++                for iteration in 0..2 {
++                    cpu.pc = 0x1000;
++                    for reg in 0..4 {
++                        cpu.set_x(reg, u64::MAX - reg as u64 - iteration);
++                    }
++                    let mut oracle = cpu.clone();
++                    let mut other = mem.clone();
++                    assert_eq!(
++                        format!("{:?}", cpu.run_slice(&mut mem, budget)),
++                        format!("{:?}", oracle.run_reference(&mut other, budget))
++                    );
++                    equal(&cpu, &oracle);
++                    assert_eq!(
++                        mem.read_array::<16>(0x2000).unwrap(),
++                        other.read_array::<16>(0x2000).unwrap()
++                    );
++                }
++            }
++        }
++    }
++
+     #[test]
+     fn fused_flags_branches_preserve_budgets_conditions_and_invalidations() {
+         for arithmetic in [
