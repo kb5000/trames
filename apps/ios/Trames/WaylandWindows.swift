@@ -29,7 +29,7 @@ struct WaylandWorkspace: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             ForEach(session.waylandWindows) { window in
-                if window.mode != "minimized" && (window.mode != "maximized" || session.waylandSelected == window.id) {
+                if window.mode != "minimized" && ((window.mode == "floating" && session.waylandSelected == nil) || session.waylandSelected == window.id) {
                     WaylandWindow(session: session, window: window, viewport: viewport)
                         .zIndex(session.waylandFocus == window.id ? 1000 : Double(window.id % 999))
                 }
@@ -85,13 +85,16 @@ struct WaylandWindow: View {
             .shadow(radius:maximized ? 0 : 12)
             .offset(x:maximized ? 0 : geometry.origin.x,y:maximized ? 0 : geometry.origin.y)
             .onAppear {
-                geometry.size = CGSize(width:CGFloat(window.width),height:CGFloat(window.height)+68)
-                geometry.origin = CGPoint(x:CGFloat(24 + Int(window.id % 5)*24),y:CGFloat(60 + Int(window.id % 5)*24))
+                if let saved = session.waylandGeometry[window.id] { geometry = saved }
+                else {
+                    geometry.size = CGSize(width:CGFloat(window.width),height:CGFloat(window.height)+68)
+                    geometry.origin = CGPoint(x:CGFloat(24 + Int(window.id % 5)*24),y:CGFloat(60 + Int(window.id % 5)*24))
+                }
                 geometry.constrain(to:viewport); requestSize()
             }
             .onChange(of:viewport) { _,_ in geometry.constrain(to:viewport); requestSize() }
             .onChange(of:maximized) { _,_ in requestSize() }
-            .onDisappear { resizeTask?.cancel() }
+            .onDisappear { resizeTask?.cancel(); session.waylandGeometry[window.id] = geometry }
     }
     private func requestSize() {
         resizeTask?.cancel()

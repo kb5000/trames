@@ -64,6 +64,7 @@ enum Command {
         time: u32,
     },
     Text {
+        serial: u32,
         context: u64,
         epoch: u64,
         #[serde(default)]
@@ -180,6 +181,7 @@ pub unsafe extern "C" fn trames_session_wayland_command(
                     time,
                 }),
                 Command::Text {
+                    serial,
                     context,
                     epoch,
                     preedit,
@@ -189,6 +191,7 @@ pub unsafe extern "C" fn trames_session_wayland_command(
                     delete_before,
                     delete_after,
                 } => server.edit_text(trames_wayland::TextEdit {
+                    serial,
                     context,
                     epoch,
                     preedit: preedit.map(|s| (s, cursor_begin, cursor_end)),
@@ -227,7 +230,7 @@ pub struct ImageInfo {
     pub x: i32,
     pub y: i32,
     pub scale: i32,
-    pub reserved: u32,
+    pub transform: u32,
 }
 #[no_mangle]
 pub extern "C" fn trames_session_wayland_frame_acquire(handle: u64, window: u64) -> u64 {
@@ -320,7 +323,7 @@ pub unsafe extern "C" fn trames_wayland_frame_image(
             x: image.x,
             y: image.y,
             scale: image.scale,
-            reserved: 0,
+            transform: image.transform,
         };
         // SAFETY: same scoped caller-owned native record contract.
         unsafe { output.write_unaligned(info) };

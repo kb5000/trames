@@ -35,6 +35,7 @@ class WaylandInputView: UIView, UITextInput {
     var autocorrectionType: UITextAutocorrectionType = .no
     var autocapitalizationType: UITextAutocapitalizationType = .none
     var spellCheckingType: UITextSpellCheckingType = .no
+    var isSecureTextEntry: Bool = false
     var keyboardType: UIKeyboardType = .default
     var returnKeyType: UIReturnKeyType = .default
     override var canBecomeFirstResponder: Bool { true }
@@ -53,14 +54,15 @@ class WaylandInputView: UIView, UITextInput {
         let cursor=utf16Offset(context.cursor,in:document), anchor=utf16Offset(context.anchor,in:document)
         selection=NSRange(location:min(cursor,anchor),length:abs(cursor-anchor))
         switch context.purpose {
-        case 2: keyboardType = .decimalPad
-        case 3: keyboardType = .numberPad
+        case 2: keyboardType = .numberPad
+        case 3: keyboardType = .numbersAndPunctuation
         case 4: keyboardType = .phonePad
-        case 6: keyboardType = .URL
-        case 7: keyboardType = .emailAddress
+        case 5: keyboardType = .URL
+        case 6: keyboardType = .emailAddress
         default: keyboardType = .default
         }
         inputDelegate?.textDidChange(self); inputDelegate?.selectionDidChange(self)
+        isSecureTextEntry = (context.hint & 0xc0) != 0 || context.purpose == 8
         if changedFocus { reloadInputViews() }
     }
     private func utf16Offset(_ bytes: UInt32,in text:String)->Int {
@@ -69,7 +71,9 @@ class WaylandInputView: UIView, UITextInput {
         return native.utf16Offset(in:text)
     }
     private func byteOffset(_ offset:Int,in text:String)->Int {
-        let index=String.Index(utf16Offset:max(0,min(offset,text.utf16.count)),in:text)
+        var at=max(0,min(offset,text.utf16.count))
+        while at>0 && Range(NSRange(location:at,length:0),in:text)==nil {at-=1}
+        let index=String.Index(utf16Offset:at,in:text)
         return text[..<index].utf8.count
     }
     private func valid(_ range:NSRange)->Bool {
@@ -77,7 +81,7 @@ class WaylandInputView: UIView, UITextInput {
     }
     private func edit(_ values:[String:Any]) {
         guard let context=textContext else { return }
-        var command=values; command["op"]="text"; command["context"]=context.id;command["epoch"]=context.epoch
+        var command=values; command["op"]="text"; command["context"]=context.id;command["epoch"]=context.epoch;command["serial"]=context.serial
         sendInput?(command)
     }
     private func update(_ range:NSRange,with text:String) {

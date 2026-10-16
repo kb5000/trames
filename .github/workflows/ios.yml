@@ -76,7 +76,7 @@ jobs:
       - name: Validate shared mapping and guest ABI core on native Apple ARM64
         run: cargo test -p trames-shared -p trames-wayland -p trames-native -p trames-compute -p trames-cpu -p trames-accel -p trames-memory -p trames-vfs -p trames-core --locked
       - name: Test original native Wayland clients and shared-FD lifetimes
-        run: brew install wayland pkg-config && bash scripts/test-wayland.sh
+        run: brew install pkg-config libffi expat && bash scripts/test-wayland.sh
       - name: Generate Xcode project
         run: brew install xcodegen
       - name: Link unsigned iPad simulator app

@@ -29,10 +29,10 @@ final class WaylandCanvas: WaylandInputView {
         var width: UInt32
         var height: UInt32
         var alpha: UInt32
-        var reserved: UInt32 = 0
+        var transform: UInt32
     }
-    init() throws {
-        guard let device = MTLCreateSystemDefaultDevice(), let queue = device.makeCommandQueue(),
+    init(sharedDevice: MTLDevice? = MTLCreateSystemDefaultDevice()) throws {
+        guard let device = sharedDevice, let queue = device.makeCommandQueue(),
               let library = device.makeDefaultLibrary() else { throw TramesError.message("Metal compositor unavailable") }
         self.device = device; self.queue = queue
         let descriptor = MTLRenderPipelineDescriptor()
@@ -101,9 +101,9 @@ final class WaylandCanvas: WaylandInputView {
                 } else { throw TramesError.message("Metal shared-buffer import failed") }
                 let scale = Float(max(1,image.scale))
                 let uniform = ImageUniform(origin: SIMD2(Float(image.x),Float(image.y)),
-                    size: SIMD2(Float(image.width)/scale,Float(image.height)/scale),
+                    size: image.transform & 1 == 0 ? SIMD2(Float(image.width)/scale,Float(image.height)/scale) : SIMD2(Float(image.height)/scale,Float(image.width)/scale),
                     viewport: SIMD2(Float(bounds.width),Float(bounds.height)), offset: UInt32(image.offset),
-                    stride: image.stride,width: image.width,height: image.height,alpha: image.alpha)
+                    stride: image.stride,width: image.width,height: image.height,alpha: image.alpha,transform:image.transform)
                 buffers.append((buffer,uniform))
             }
             guard let drawable = metal.nextDrawable(), let command = queue.makeCommandBuffer() else { return }

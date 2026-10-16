@@ -2,6 +2,13 @@
 # Original libwayland client ABI; no generated Rust client shares server code.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+if [[ "$(uname -s)" == Darwin ]]; then
+    export PKG_CONFIG_PATH="$(brew --prefix libffi)/lib/pkgconfig:$(brew --prefix expat)/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+    python3 scripts/build-wayland-client-apple.py
+    export TRAMES_WAYLAND_SCANNER="$PWD/target/wayland/apple-client/wayland-scanner"
+    export TRAMES_WAYLAND_CFLAGS="-I$PWD/target/wayland/apple-client/generated -I$PWD/target/wayland/apple-client/original/wayland-1.23.1/src"
+    export TRAMES_WAYLAND_LIBS="-L$PWD/target/wayland/apple-client -lwayland-client"
+fi
 output="$PWD/target/wayland"
 mkdir -p "$output/generated"
 cargo metadata --locked --format-version 1 > "$output/cargo-metadata.json"

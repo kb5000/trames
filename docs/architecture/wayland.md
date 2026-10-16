@@ -51,13 +51,32 @@ back from the client. Weston editor's text-input-v1 is included explicitly.
   windows, closes its buffer FDs/mappings immediately, changes actual buffer
   resolution after configure, receives frames, and exits on native close.
   Run `bash scripts/test-wayland.sh` with the original development tools installed.
+- Original Alpine-signed wayland-info and weston-simple-shm run in the guest;
+  simple-shm continuously redraws and exits on the native close event. Weston
+  editor completes native text-input-v1 preedit/Chinese/emoji commit roundtrips
+  after installing its original Weston PNG assets. Reproduce with the ignored
+  `trames-core/tests/wayland.rs` acceptance and a prepared signed-package store.
 - The same ARM64 client and original Alpine libwayland-client/libffi execute
   through the Linux guest VFS bridge successfully.
 - Rust core/bridge/FFI compile for aarch64-apple-ios. Swift parser checks pass;
   native Apple app build and actual Metal/IME runtime acceptance remain pending.
-- Subsurfaces, complete popup policy, focused input protocol acceptance, Wayland
-  Vulkan WSI, original wayland-info/Weston applications/vkcube, and Apple UI tests
+- Synchronized subsurfaces, input regions, buffer transforms, nonzero v4 attach
+  offsets, real window-geometry origins, and native IME serial/ready state are
+  implemented. Richer independent surface/input acceptance, complete popup policy, Wayland
+  Vulkan WSI, original vkcube, and Apple UI tests
   are still being completed. This branch is not a completed release.
 
 Upstream wayland-backend is retained under vendor/ with its MIT license and
 three documented Apple-platform cfg changes. See TRAMES-PATCHES.md there.
+
+Mode-zero fallocate now reserves guest storage quota and grows a file while
+preserving existing bytes and file position, so original libwayland/Weston SHM
+allocation works. KEEP_SIZE/hole-punching and physical host-block reservation
+are not claimed. The original Weston CSD PNG assets come from the `weston`
+package; `weston-clients` alone does not include them in Alpine v3.22.
+
+The Apple C acceptance peer builds original Wayland 1.23.1 client/scanner sources
+with a documented Darwin OS adapter: fcntl CLOEXEC, SO_NOSIGPIPE, getpeereid,
+original recvmsg CLOEXEC fallback, and omission of unused server epoll helpers.
+Protocol/queue/marshalling sources are unchanged; this test library is not
+linked into the app. Linux acceptance continues to use original distro binaries.

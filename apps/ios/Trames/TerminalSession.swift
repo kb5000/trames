@@ -16,6 +16,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     @Published var waylandText: LocalWaylandText?
     @Published var waylandSelected: UInt64?
     @Published var waylandFocus: UInt64?
+    var waylandGeometry: [UInt64:DisplayWindowGeometry] = [:]
     private var waylandRevision: UInt64?
     var local: LocalSession?
     let bridge = BridgeController()
@@ -139,7 +140,9 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         }
     }
     func pause(_ paused: Bool) {
-        self.paused = paused; try? local?.pause(paused)
+        self.paused = paused
+        if paused { waylandCommand(["op":"focus","window":NSNull()]) }
+        try? local?.pause(paused)
         if !paused { synchronizeTimezone() }
     }
     private func synchronizeTimezone() {

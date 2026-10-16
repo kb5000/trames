@@ -61,7 +61,7 @@ typedef struct { uint32_t width, height, images, reserved; uint64_t revision; } 
 typedef struct {
     uint64_t kind, address, length, offset;
     uint32_t width, height, stride, alpha;
-    int32_t x, y, scale, reserved;
+    int32_t x, y, scale; uint32_t transform;
 } TramesWaylandImageInfo;
 int32_t trames_session_wayland_status(uint64_t session, uint8_t *output, uint32_t capacity);
 int32_t trames_session_wayland_command(uint64_t session, const uint8_t *json, uint32_t length);

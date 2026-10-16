@@ -35,7 +35,7 @@ struct WorkspaceView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack {
                             ForEach(workspace.sessions) { session in
-                                Button { workspace.selected = session.id; if session.local != nil { session.waylandSelected = nil } } label: {
+                                Button { workspace.selected = session.id; if session.local != nil { session.waylandSelected = nil; session.waylandCommand(["op":"focus","window":NSNull()]) } } label: {
                                     Text(session.title).lineLimit(1).padding(8)
                                         .background(workspace.selected == session.id ? Color.white.opacity(0.12) : .clear).clipShape(RoundedRectangle(cornerRadius: 6))
                                 }.contextMenu { Button("关闭终端", role: .destructive) { workspace.close(session) } }
