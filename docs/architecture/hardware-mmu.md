@@ -56,11 +56,21 @@ Failed operations return to the checked path for the precise guest fault.
 Cross-page operations preflight every page before any store effect.
 
 Unrelated host faults retain default termination or the previously installed
-handler. Its signal mask, NODEFER, RESTART and one-shot disposition are preserved.
+handler. Its signal mask, NODEFER, RESTART and queryable one-shot disposition are preserved.
 The MMU retains its handler after forwarding a returning callback. As with other
 process signal integrations, replacing SIGSEGV/SIGBUS handlers after MMU startup
 must chain this handler too. A registered range alone never authorizes recovery
 from an unrelated host instruction or guest-controlled PC.
+
+Darwin/XNU does not include `ps_sigreset`/`SA_RESETHAND` in its public
+`sigaction(..., old_action)` result, even though setting the flag works. A native
+query-and-restore also loses it. Automatic chaining cannot reconstruct a
+pre-existing hidden one-shot flag: such integrations must supply/preserve the
+original registration separately. This is a documented host-integration limit;
+ordinary default/Rust handlers and observable action flags are covered. The
+[public XNU getter](https://github.com/apple-oss-distributions/xnu/blob/f6217f891ac0bb64f3d375211650a4c1ff8ca1ea/bsd/kern/kern_sig.c)
+and independent original/query-roundtrip subprocesses establish this boundary.
+No platform implementation source is imported by this observation.
 
 ## COW, native code and parallel execution
 

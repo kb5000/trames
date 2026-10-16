@@ -20,7 +20,7 @@ Clippy, and **108 ARM64/QEMU CPU/memory tests** pass. Memory tests include actua
 host access faults for every operand width, simulated 16 KiB mixed-permission
 subpages, COW/remap/discard, cached collisions/absence and stale owner generations,
 retained worker snapshots and native/CPU coherence. Isolated subprocesses check
-unrelated default host faults and previous handlers' masks/NODEFER/one-shot rules.
+unrelated default host faults and previous handlers' queryable masks/NODEFER/one-shot rules.
 The default child explicitly restores SIG_DFL so a sanitizer's crash policy does
 not change that assertion. Linux-user children re-exec through QEMU when binfmt
 is unavailable. Signal forwarding now explicitly reconstructs the previous handler mask from the
@@ -120,3 +120,16 @@ updated-bundle, GPU-disabled and GPU-enabled-again cold processes with exact ICD
 hashes and persistent user data. It is now in Linux CI after ICD fixture creation.
 No data reset is needed; disabling the GPU option is the temporary workaround for
 already installed affected builds.
+
+### Darwin query limitation
+
+Independent native subprocesses reveal a real public-API limit: the original
+one-shot handler terminates on the second signal, but native `sigaction` query
+then restore loses that behavior on Darwin. XNU's getter reconstructs other flags
+but omits `ps_sigreset` / SA_RESETHAND. Automatic chaining cannot recover a flag
+that the query omits; this integration limit is explicit in the architecture.
+The final regression compares forwarding against an independent native
+query/restore and also runs the untouched native control. It does not claim
+preservation of an unobservable pre-existing Darwin flag. The earlier strict
+Linux-style expectation failed on Apple, and that failed comparison is retained
+in CI history. Linux retains the original queried one-shot behavior.
