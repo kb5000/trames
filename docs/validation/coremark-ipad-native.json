@@ -1,0 +1,158 @@
+{
+  "provenance": "User supplied physical iPad output in chat, not independently operated by the development host",
+  "reported_on": "2026-10-16",
+  "device_identifier": "iPad15,4",
+  "os": "iPadOS 26.6.1",
+  "app_version": "0.17.0",
+  "app_build": "18",
+  "application_source_commit": "93ca825ab875c0f2c483cad1a482ca91e6c8c40d",
+  "ipa_sha256": "0df9ea72b41c251eb82c5562d6f47fba35edcf4e9e263402178e7a415674efad",
+  "upstream_commit": "1f483d5b8316753a742cbf5590caf5bd0a4e4777",
+  "compiler": "Apple LLVM 17.0.0 (clang-1700.0.13.5)",
+  "compiler_flags": "-O2 -fno-lto; MULTITHREAD=1; TOTAL_DATA_SIZE=2000",
+  "threads": 1,
+  "total_data_bytes": 2000,
+  "memory_location": "Heap",
+  "timer": "CLOCK_MONOTONIC",
+  "linux_paused": true,
+  "formal_release": false,
+  "runs": [
+    {
+      "input": "performance",
+      "started_at": "2026-10-16T14:16:16Z",
+      "iterations": 600000,
+      "seconds": 16.043,
+      "iterations_per_second": 37399.488874,
+      "ticks": 16043,
+      "crc": {
+        "seedcrc": "0xe9f5",
+        "crclist": "0xe714",
+        "crcmatrix": "0x1fd7",
+        "crcstate": "0x8e3a",
+        "crcfinal": "0xa14c"
+      },
+      "official_validation_passed": true,
+      "low_power_mode": false,
+      "thermal_state_start": 0,
+      "thermal_state_end": 0,
+      "raw_output": "coremark-ipad-native/performance.txt",
+      "raw_output_sha256": "7d146935031b9581623f65be43c63dee6eb35ab6a20cb56aebc2c8abd7543864"
+    },
+    {
+      "input": "validation",
+      "started_at": "2026-10-16T14:17:17Z",
+      "iterations": 600000,
+      "seconds": 16.332,
+      "iterations_per_second": 36737.692873,
+      "ticks": 16332,
+      "crc": {
+        "seedcrc": "0x18f2",
+        "crclist": "0xe3c1",
+        "crcmatrix": "0x0747",
+        "crcstate": "0x8d84",
+        "crcfinal": "0x9c0f"
+      },
+      "official_validation_passed": true,
+      "low_power_mode": false,
+      "thermal_state_start": 0,
+      "thermal_state_end": 0,
+      "raw_output": "coremark-ipad-native/validation.txt",
+      "raw_output_sha256": "c4b3021cf8995980903ac949fac1003c31401cfb3466440959112650b0d56afc"
+    }
+  ],
+  "current_version_guest_pair": {
+    "provenance": "User-provided current guest run1.log/run2.log in the conversation following the native build 18 results; App version association comes from conversation, not embedded guest metadata.",
+    "compiler": "GCC14.2.0",
+    "compiler_flags": "-O2 -DPERFORMANCE_RUN=1  -lrt",
+    "application_source_commit_associated_from_conversation": "93ca825ab875c0f2c483cad1a482ca91e6c8c40d",
+    "app_build_associated_from_conversation": "18",
+    "app_version_embedded_in_log": null,
+    "upstream_commit_independently_verified": null,
+    "guest_elf_sha256": null,
+    "threads": 1,
+    "threads_basis": "Default single-thread CoreMark configuration; no Parallel report; thread count not independently sampled.",
+    "guest_vcpus": null,
+    "total_data_bytes": 2000,
+    "runs": [
+      {
+        "input": "performance",
+        "iterations": 11000,
+        "seconds": 18.653,
+        "iterations_per_second": 589.717472,
+        "ticks": 18653,
+        "crc": {
+          "seedcrc": "0xe9f5",
+          "crclist": "0xe714",
+          "crcmatrix": "0x1fd7",
+          "crcstate": "0x8e3a",
+          "crcfinal": "0x33ff"
+        },
+        "official_validation_passed": true,
+        "started_at": null,
+        "low_power_mode": null,
+        "thermal_state_start": null,
+        "thermal_state_end": null,
+        "raw_output": "coremark-ipad-native/guest-performance.txt",
+        "raw_output_sha256": "fc688121294c7e2344e43342dfcfc431565043c98a121c4515ca4d7acfcaebac"
+      },
+      {
+        "input": "validation",
+        "iterations": 11000,
+        "seconds": 18.61,
+        "iterations_per_second": 591.080064,
+        "ticks": 18610,
+        "crc": {
+          "seedcrc": "0x18f2",
+          "crclist": "0xe3c1",
+          "crcmatrix": "0x0747",
+          "crcstate": "0x8d84",
+          "crcfinal": "0x34c1"
+        },
+        "official_validation_passed": true,
+        "started_at": null,
+        "low_power_mode": null,
+        "thermal_state_start": null,
+        "thermal_state_end": null,
+        "raw_output": "coremark-ipad-native/guest-validation.txt",
+        "raw_output_sha256": "8235a7ca2d4145436cdfa39355fbc710561bcdfee79bc5bea91015993a7ed0c1"
+      }
+    ]
+  },
+  "historical_guest_reference": {
+    "score": 370,
+    "app_version": null,
+    "raw_output_available": false,
+    "illustrative_native_to_guest_ratio": 101.07969965945946,
+    "illustrative_guest_to_native_percent": 0.9893183333241293,
+    "is_current_build_comparison": false,
+    "current_to_historical_guest_score_ratio": 1.5938310054054055,
+    "controlled_before_after_comparison": false
+  },
+  "limitations": [
+    "One sample per input and environment; different seeds are not repetitions of one workload.",
+    "Device output is user reported, not independently captured by the development host.",
+    "Guest build association follows conversation; exact ELF hash/upstream commit, run timestamps, thermal/power state and guest vCPU count were not supplied.",
+    "Apple Clang versus guest GCC, flags, Darwin/Mach-O versus Linux/musl/ELF and generated code contribute to the end-to-end throughput comparison.",
+    "Different iteration counts are normalized by iterations per second; raw elapsed seconds cannot be directly divided.",
+    "No physical device instruction, cycle, branch, cache or function sampling; not a per-instruction overhead estimate.",
+    "Historical guest 370 lacks full configuration and raw output; do not claim a controlled optimization speedup."
+  ],
+  "comparisons": [
+    {
+      "input": "performance",
+      "native_iterations_per_second": 37399.488874,
+      "guest_iterations_per_second": 589.717472,
+      "guest_to_native_throughput_percent": 1.5768062338679973,
+      "guest_to_native_equal_work_time_ratio": 63.4193332396297,
+      "aggregation": "One user-reported observation per input in each environment; no median or confidence interval."
+    },
+    {
+      "input": "validation",
+      "native_iterations_per_second": 36737.692873,
+      "guest_iterations_per_second": 591.080064,
+      "guest_to_native_throughput_percent": 1.6089199342030767,
+      "guest_to_native_equal_work_time_ratio": 62.153496811220485,
+      "aggregation": "One user-reported observation per input in each environment; no median or confidence interval."
+    }
+  ]
+}

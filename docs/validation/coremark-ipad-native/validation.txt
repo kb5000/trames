@@ -1,0 +1,27 @@
+Trames 原生 CoreMark（临时测试包）
+App：0.17.0 build 18
+上游：eembc/coremark @ 1f483d5b8316753a742cbf5590caf5bd0a4e4777
+开始：2026-10-16T14:17:17Z
+系统：iPadOS 26.6.1
+设备型号：iPad15,4
+线程：1；总数据：2000 bytes；seeds：0x3415 0x3415 0x66
+低电量模式：false；热状态：0
+原生 ARM64 C；自动迭代；CLOCK_MONOTONIC；Linux 暂停
+
+2K validation run parameters for coremark.
+CoreMark Size    : 666
+Total ticks      : 16332
+Total time (secs): 16.332000
+Iterations/Sec   : 36737.692873
+Iterations       : 600000
+Compiler version : Apple LLVM 17.0.0 (clang-1700.0.13.5)
+Compiler flags   : -O2 -fno-lto; MULTITHREAD=1; TOTAL_DATA_SIZE=2000
+Memory location  : Heap
+seedcrc          : 0x18f2
+[0]crclist       : 0xe3c1
+[0]crcmatrix     : 0x0747
+[0]crcstate      : 0x8d84
+[0]crcfinal      : 0x9c0f
+Correct operation validated. See README.md for run and reporting rules.
+
+结束热状态：0

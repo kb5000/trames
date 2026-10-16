@@ -4,6 +4,11 @@
 本次只增加手动性能工具和记录，没有修改运行时。完整输出、校验和、编译参数和
 采样分类见 [JSON](coremark-profile.json)。
 
+后续用户提供了 [iPad 原生与 guest 对照](coremark-ipad-native.md)：临时 build 18
+的原生 performance 为 37,399.49 分，当前 guest 为 589.72 分，吞吐比例约
+1.5768%；validation 分别为 36,737.69 与 591.08 分。本文保留最初 Linux
+采样的历史结果，不与新设备/新版本数据合并。
+
 ## 同一台机器上的分数与吞吐效率
 
 | 运行方式 | 三次分数范围 | 中位数 |
@@ -22,7 +27,7 @@ cgroup CPU 配额为 4 核；未固定频率/核亲和，原生与 guest 分批�
 这是相同源码与默认 `-O2` 下的端到端吞吐比较。guest 由 Alpine GCC 14.2 编译
 为 AArch64，原生由 Debian GCC 14.2 编译为 x86_64，包含 ISA、编译目标、GCC
 配置/补丁差异；**不能直接当成 iPad 的原生效率，也不是指令数或周期的比值**。
-iPad 得分 370 与当前解释器量级相符；准确的 iPad 效率需要同一台 iPad 的原生分数。
+最初用户报告 iPad guest 得分 370；后续同机原生与当前 guest 对照见本文开头链接。
 
 ## 输入与计时
 
@@ -142,6 +147,7 @@ python3 tests/performance/coremark.py \
 iterations。原始输出保存在相邻的 `results-runs` 目录；再次采样使用新输出目录。
 不设置 CI 性能阈值。
 
-iPad 内的 guest `perf` 无法看到宿主 Rust 解释器热点。要测 iPad 上的真实效率，
-后续可在 App 内增加明确的原生 CoreMark 对照和运行统计导出；宿主详细函数采样
-则需要设备侧诊断支持或 Mac Instruments。当前记录没有 iPad 原生基线或设备采样。
+iPad 内的 guest `perf` 无法看到宿主 Rust 解释器热点。后续临时 build 18 已增加
+App 内原生 CoreMark 与结果导出，[真机对照](coremark-ipad-native.md)已补齐用户
+提供的原生和当前 guest 分数。宿主详细函数采样仍需要设备侧诊断支持或 Mac
+Instruments；目前没有 iPad 上的函数采样，不能将本文的 x86 热点比例直接套用。
