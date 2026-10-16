@@ -20,6 +20,7 @@ final class WaylandCanvas: WaylandInputView {
     var lastRevision: UInt64?
     private var displayLink: CADisplayLink?
     private var foregroundObserver: NSObjectProtocol?
+    private var pressedButton: Int?
     private final class RefreshTarget: NSObject {
         weak var canvas: WaylandCanvas?
         init(_ canvas: WaylandCanvas) { self.canvas = canvas }
@@ -66,6 +67,11 @@ final class WaylandCanvas: WaylandInputView {
         metal.presentsWithTransaction = false
         backgroundColor = .black; clipsToBounds = true
         isAccessibilityElement = true; accessibilityIdentifier = "wayland-canvas"
+        addGestureRecognizer(UIHoverGestureRecognizer(target:self,action:#selector(hover(_:))))
+        let scroll=UIPanGestureRecognizer(target:self,action:#selector(scroll(_:)))
+        scroll.allowedTouchTypes=[NSNumber(value:UITouch.TouchType.indirectPointer.rawValue)]
+        scroll.allowedScrollTypesMask = .all
+        scroll.cancelsTouchesInView=false; addGestureRecognizer(scroll)
         foregroundObserver = NotificationCenter.default.addObserver(forName:UIApplication.didBecomeActiveNotification,object:nil,queue:.main) { [weak self] _ in
             MainActor.assumeIsolated { self?.lastRevision = nil }
         }
@@ -74,15 +80,28 @@ final class WaylandCanvas: WaylandInputView {
         sendInput?(["op":"pointer","window":windowID,"x":point.x,"y":point.y,"time":UInt32(truncatingIfNeeded:UInt64(ProcessInfo.processInfo.systemUptime*1000))])
     }
     override func touchesBegan(_ touches:Set<UITouch>,with event:UIEvent?) {
-        guard let touch=touches.first else { return }
+        guard pressedButton == nil, let touch=touches.first else { return }
         onFocus?();pointer(touch.location(in:self));becomeFirstResponder()
-        sendInput?(["op":"button","button":0x110,"pressed":true,"time":UInt32(truncatingIfNeeded:UInt64(touch.timestamp*1000))])
+        let button = event?.buttonMask.contains(.secondary) == true ? 0x111 : 0x110
+        pressedButton=button
+        sendInput?(["op":"button","button":button,"pressed":true,"time":UInt32(truncatingIfNeeded:UInt64(touch.timestamp*1000))])
     }
     override func touchesMoved(_ touches:Set<UITouch>,with event:UIEvent?) { if let touch=touches.first {pointer(touch.location(in:self))} }
     override func touchesEnded(_ touches:Set<UITouch>,with event:UIEvent?) {
-        if let touch=touches.first { pointer(touch.location(in:self));sendInput?(["op":"button","button":0x110,"pressed":false,"time":UInt32(truncatingIfNeeded:UInt64(touch.timestamp*1000))]) }
+        if let touch=touches.first, let button=pressedButton { pointer(touch.location(in:self));sendInput?(["op":"button","button":button,"pressed":false,"time":UInt32(truncatingIfNeeded:UInt64(touch.timestamp*1000))]);pressedButton=nil }
     }
     override func touchesCancelled(_ touches:Set<UITouch>,with event:UIEvent?) { touchesEnded(touches,with:event) }
+    @objc private func hover(_ gesture:UIHoverGestureRecognizer) {
+        if gesture.state == .ended || gesture.state == .cancelled {
+            if pressedButton == nil { sendInput?(["op":"pointer","window":0,"x":0,"y":0,"time":inputTime]) }
+        } else { pointer(gesture.location(in:self)) }
+    }
+    @objc private func scroll(_ gesture:UIPanGestureRecognizer) {
+        let delta=gesture.translation(in:self);gesture.setTranslation(.zero,in:self)
+        pointer(gesture.location(in:self))
+        sendInput?(["op":"scroll","horizontal":-delta.x,"vertical":-delta.y,"time":inputTime])
+    }
+    private var inputTime:UInt32 { UInt32(truncatingIfNeeded:UInt64(ProcessInfo.processInfo.systemUptime*1000)) }
     required init?(coder: NSCoder) { fatalError("init(coder:) is unsupported") }
     override func didMoveToWindow() {
         super.didMoveToWindow()

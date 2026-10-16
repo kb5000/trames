@@ -5,6 +5,19 @@ import TramesKit
 
 final class WaylandInputTests: XCTestCase {
     @MainActor
+    func testSelectionReplacementUsesActiveCursorInsteadOfSortedRangeStart() throws {
+        let object:[String:Any] = ["id":7,"epoch":3,"surface":4,"window":4,"serial":8,
+            "text":"a🙂中","cursor":8,"anchor":1,"caret":[0,0,1,20],"hint":0,"purpose":0]
+        let view=WaylandInputView(frame:.zero)
+        var commands:[[String:Any]]=[];view.sendInput={commands.append($0)}
+        view.textContext=try JSONDecoder().decode(LocalWaylandText.self,from:JSONSerialization.data(withJSONObject:object))
+        view.insertText("新")
+        XCTAssertEqual(commands.last?["delete_before"] as? Int,7)
+        XCTAssertEqual(commands.last?["delete_after"] as? Int,0)
+        let all=try XCTUnwrap(view.textRange(from:view.beginningOfDocument,to:view.endOfDocument))
+        XCTAssertEqual(view.text(in:all),"a新")
+    }
+    @MainActor
     func testNativeCompositionAndUTF8OffsetsPreserveEmoji() throws {
         let object:[String:Any] = ["id":7,"epoch":3,"surface":4,"window":4,"serial":8,
             "text":"a🙂中","cursor":5,"anchor":5,"caret":[30,40,1,20],"hint":0,"purpose":0]

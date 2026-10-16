@@ -86,12 +86,10 @@ enum LocalWaylandProbe {
             if Date().timeIntervalSince(began)>60 { throw TramesError.message("Wayland session did not start") }
             try await Task.sleep(for:.milliseconds(10))
         }
-        let packages=try FileManager.default.contentsOfDirectory(at:inputs,includingPropertiesForKeys:nil).filter{$0.pathExtension=="apk"}.sorted{$0.lastPathComponent<$1.lastPathComponent}
-        for file in packages { try session.transfer(guest:"/tmp/"+file.lastPathComponent,host:file,export:false) }
-        for (guest,host) in [("wayland-client","wayland-client"),("weston-assets.apk","weston-assets.apk.input"),("wayland-assets.tar","assets.tar")] {
+        for (guest,host) in [("wayland-client","wayland-client"),("weston-assets.apk","weston-assets.apk.input"),("wayland-assets.tar","assets.tar"),("wayland-repository.tar","repository.tar"),("wayland-repositories","repositories")] {
             try session.transfer(guest:"/tmp/"+guest,host:inputs.appendingPathComponent(host),export:false)
         }
-        try send("apk --repositories-file /dev/null --no-progress add \(packages.map{"/tmp/"+$0.lastPathComponent}.joined(separator:" ")) && apk verify /tmp/weston-assets.apk && tar -xf /tmp/wayland-assets.tar -C / && chmod 755 /tmp/wayland-client; printf '\\nWAYLAND_SETUP:%d\\n' $?\n")
+        try send("tar -xf /tmp/wayland-repository.tar -C /tmp && apk --repositories-file /tmp/wayland-repositories --no-progress add wayland-utils weston-clients vulkan-tools vulkan-loader font-dejavu breeze-cursors && apk verify /tmp/weston-assets.apk && tar -xf /tmp/wayland-assets.tar -C / && chmod 755 /tmp/wayland-client; printf '\\nWAYLAND_SETUP:%d\\n' $?\n")
         while !text.contains("\r\nWAYLAND_SETUP:0\r\n") {
             try receive()
             if text.range(of:"\r\nWAYLAND_SETUP:[1-9][0-9]*\r\n",options:.regularExpression) != nil || Date().timeIntervalSince(began)>180 { throw TramesError.message("Wayland package setup failed: \(text.suffix(4096))") }

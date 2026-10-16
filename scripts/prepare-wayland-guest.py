@@ -61,6 +61,14 @@ with tempfile.TemporaryDirectory(prefix='wayland-acceptance-') as temporary:
         '-l:' + library, '-o', str(output / 'wayland-client')], check=True)
     for package in runtime.rglob('*.apk'):
         shutil.copyfile(package, output / package.name)
+    # Keep indexes and all candidate providers. Explicitly installing every APK
+    # would incorrectly request mutually exclusive /bin/sh and udev providers.
+    # Let the original apk solver choose, just as for a normal repository.
+    with tarfile.open(output / 'repository.tar', 'w') as archive:
+        for path in sorted(runtime.rglob('*')):
+            if path.is_file():
+                archive.add(path, arcname='wayland-repo/' + path.relative_to(runtime).as_posix())
+    (output / 'repositories').write_text('/tmp/wayland-repo/main\n/tmp/wayland-repo/community\n')
     # Weston splits its original CSD assets from weston-clients. Retain the full
     # signed package for guest verification, while installing only its PNG data.
     with tarfile.open(m6.CACHE / 'APKINDEX-community.tar.gz') as index:
