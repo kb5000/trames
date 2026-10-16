@@ -12,6 +12,12 @@ decode x86 guest instructions, and conditional compilation excludes it from the
 ARM64 app. A separate ARM64 Linux build runs under QEMU to execute and check the
 actual ARM64 helper instructions, rather than only compiling them.
 
+The [integer-block investigation](../validation/integer-blocks.md) also tested
+bounded loops, threaded blocks and precompiled integer pairs with local result
+forwarding. Those experimental patches remain archived: their measurements do not
+establish a general speedup over this default interpreter. No runtime selector or
+additional production backend is added.
+
 ## Native arithmetic
 
 `trames-compute` accepts numeric values, never guest pointers. It uses static ARM

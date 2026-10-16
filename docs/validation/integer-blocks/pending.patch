@@ -1,0 +1,1239 @@
+diff --git a/crates/trames-cli/src/main.rs b/crates/trames-cli/src/main.rs
+index 03c19b3..13973d1 100644
+--- a/crates/trames-cli/src/main.rs
++++ b/crates/trames-cli/src/main.rs
+@@ -558,6 +558,7 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
+                 "idle_seconds":profile.idle_time.as_secs_f64(),"syscalls":profile.syscalls,
+                 "proc_refreshes":profile.proc_refreshes,"context_switches":profile.context_switches,
+                 "decode_lookups":profile.decode_lookups,"decode_misses":profile.decode_misses,"instructions_decoded":profile.instructions_decoded,
++                "integer_block_runs":profile.integer_block_runs,"integer_block_instructions":profile.integer_block_instructions,
+                 "cpu_count":profile.cpu_count,"parallel_rounds":profile.parallel_rounds,"worker_slices":profile.worker_slices,"worker_chunks":profile.worker_chunks,
+                 "dispatch_seconds":profile.parallel_dispatch_time.as_secs_f64(),"stop_seconds":profile.parallel_stop_time.as_secs_f64(),
+                 "peak_parallel_cpus":profile.peak_parallel_cpus,"peak_parallel_native_calls":profile.peak_parallel_native_calls,"memory_seconds":profile.parallel_memory_time.as_secs_f64()
+diff --git a/crates/trames-core/src/lib.rs b/crates/trames-core/src/lib.rs
+index 16b77e5..1965942 100644
+--- a/crates/trames-core/src/lib.rs
++++ b/crates/trames-core/src/lib.rs
+@@ -108,6 +108,8 @@ pub struct RuntimeMetrics {
+     pub decode_lookups: u64,
+     pub instructions_decoded: u64,
+     pub decode_misses: u64,
++    pub integer_block_runs: u64,
++    pub integer_block_instructions: u64,
+     pub native: trames_accel::native::Metrics,
+ }
+ pub use terminal::Terminal;
+diff --git a/crates/trames-core/src/process.rs b/crates/trames-core/src/process.rs
+index 2cf4abd..f29559e 100644
+--- a/crates/trames-core/src/process.rs
++++ b/crates/trames-core/src/process.rs
+@@ -224,6 +224,8 @@ struct Kernel {
+     decode_lookups: u64,
+     instructions_decoded: u64,
+     decode_misses: u64,
++    integer_block_runs: u64,
++    integer_block_instructions: u64,
+     cpu_total: Duration,
+     syscall_total: Duration,
+     syscalls: u64,
+@@ -3293,6 +3295,9 @@ impl Kernel {
+             self.per_cpu[done.worker] += done.elapsed;
+             self.decode_lookups += done.after.lookups - done.before.lookups;
+             self.decode_misses += done.after.misses - done.before.misses;
++            self.integer_block_runs += done.after.block_runs - done.before.block_runs;
++            self.integer_block_instructions +=
++                done.after.block_instructions - done.before.block_instructions;
+             self.instructions_decoded += done.after.instructions - done.before.instructions;
+             let outcome = done.outcome.expect("checked worker completion");
+             self.instructions += done.instructions;
+@@ -3453,6 +3458,10 @@ impl Kernel {
+                         let decode_after = p.cpu.decode_stats();
+                         self.decode_lookups += decode_after.lookups - decode_before.lookups;
+                         self.decode_misses += decode_after.misses - decode_before.misses;
++                        self.integer_block_runs +=
++                            decode_after.block_runs - decode_before.block_runs;
++                        self.integer_block_instructions +=
++                            decode_after.block_instructions - decode_before.block_instructions;
+                         self.instructions_decoded +=
+                             decode_after.instructions - decode_before.instructions;
+                         p.cpu_time += elapsed;
+@@ -3714,6 +3723,8 @@ pub(super) fn run(
+         decode_lookups: 0,
+         instructions_decoded: 0,
+         decode_misses: 0,
++        integer_block_runs: 0,
++        integer_block_instructions: 0,
+         cpu_total: Duration::ZERO,
+         syscall_total: Duration::ZERO,
+         syscalls: 0,
+@@ -3766,6 +3777,8 @@ pub(super) fn run(
+         decode_lookups: kernel.decode_lookups,
+         instructions_decoded: kernel.instructions_decoded,
+         decode_misses: kernel.decode_misses,
++        integer_block_runs: kernel.integer_block_runs,
++        integer_block_instructions: kernel.integer_block_instructions,
+         native: kernel.native.metrics,
+         gpu_compiles: kernel.gpu_compiles,
+         gpu_peak_pending: kernel.gpu_peak_pending,
+@@ -3894,6 +3907,8 @@ mod tests {
+             decode_lookups: 0,
+             instructions_decoded: 0,
+             decode_misses: 0,
++            integer_block_runs: 0,
++            integer_block_instructions: 0,
+             cpu_total: Duration::ZERO,
+             syscall_total: Duration::ZERO,
+             syscalls: 0,
+diff --git a/crates/trames-cpu/src/cached.rs b/crates/trames-cpu/src/cached.rs
+index 3798818..abe3915 100644
+--- a/crates/trames-cpu/src/cached.rs
++++ b/crates/trames-cpu/src/cached.rs
+@@ -7,6 +7,8 @@ use super::{
+ };
+ use trames_memory::{CpuMemory, PAGE_SIZE};
+ 
++mod blocks;
++
+ const SLOTS: usize = 128;
+ const WAYS: usize = 2;
+ const SETS: usize = SLOTS / WAYS;
+@@ -161,6 +163,9 @@ enum Op {
+         writes: bool,
+     },
+     Fallback,
++    Block {
++        index: u16,
++    },
+ }
+ 
+ #[derive(Clone, Copy, Debug)]
+@@ -523,6 +528,9 @@ struct CodePage {
+     checked: (u64, u64, u64),
+     generation: u64,
+     instructions: Box<[Entry; PAGE_WORDS]>,
++    blocks: Vec<blocks::Block>,
++    visits: u8,
++    pending_blocks: Vec<usize>,
+ }
+ impl CodePage {
+     #[cold]
+@@ -551,6 +559,7 @@ impl CodePage {
+             let instruction = instruction.followed_by(self.instructions[slot + 1].instruction);
+             self.instructions[slot].instruction = instruction;
+         }
++        self.form_block(slot);
+         Ok(())
+     }
+ }
+@@ -604,10 +613,9 @@ impl Cache {
+             .as_ref()
+             .is_some_and(|p| p.base == base && p.checked == checked)
+         {
+-            return Ok((
+-                self.slots[slot].as_deref_mut().expect("decoded code page"),
+-                &mut self.stats,
+-            ));
++            let page = self.slots[slot].as_deref_mut().expect("decoded code page");
++            page.visit();
++            return Ok((page, &mut self.stats));
+         }
+         let identity = memory.instruction_page_identity(pc)?;
+         if !self.slots[slot]
+@@ -616,6 +624,9 @@ impl Cache {
+         {
+             self.stats.misses += 1;
+             if let Some(page) = &mut self.slots[slot] {
++                page.blocks.clear();
++                page.visits = 0;
++                page.pending_blocks.clear();
+                 page.base = base;
+                 page.identity = identity;
+                 page.generation = page.generation.wrapping_add(1);
+@@ -632,6 +643,9 @@ impl Cache {
+                     identity,
+                     checked,
+                     generation: 1,
++                    blocks: Vec::new(),
++                    visits: 0,
++                    pending_blocks: Vec::new(),
+                     instructions: vec![Entry::default(); PAGE_WORDS]
+                         .into_boxed_slice()
+                         .try_into()
+@@ -641,6 +655,7 @@ impl Cache {
+         }
+         let page = self.slots[slot].as_deref_mut().expect("decoded code page");
+         page.checked = checked;
++        page.visit();
+         Ok((page, &mut self.stats))
+     }
+ }
+@@ -701,6 +716,8 @@ impl Cpu {
+                 page,
+                 stats,
+                 budget,
++                block_length: 0,
++                block_executed: 0,
+             };
+             match tail_enter(&mut state, 0, executed) {
+                 TailExit::Page(count) => executed = count,
+@@ -734,43 +751,23 @@ impl Cpu {
+                 self.pc = next;
+                 return Ok((Event::Syscall, 1));
+             }
+-            Op::Move { opc, shift, value } if TAG == 2 => {
+-                let value = match opc {
+-                    0 => !value,
+-                    2 => value,
+-                    _ => (self.x(rd) & !(0xffffu64 << shift)) | value,
+-                };
+-                self.put(rd, value, wide, false);
+-            }
+-            Op::Address { immediate } if TAG == 3 => self.set_x(
+-                rd,
+-                if wide {
+-                    (pc & !4095).wrapping_add(immediate << 12)
+-                } else {
+-                    pc.wrapping_add(immediate)
+-                },
+-            ),
+-            Op::AddImmediate { value } if TAG == 4 => {
+-                self.put(rd, self.reg(rn, true).wrapping_add(value), wide, true);
+-            }
+-            Op::FlagsImmediate { sub, value } if TAG == 5 => {
+-                let value = flags.calculate(self.reg(rn, true), value, sub, true, wide);
+-                self.put(rd, value, wide, false);
+-            }
+-            Op::AddShift {
+-                sub,
+-                flags: set_flags,
+-                kind,
+-                amount,
+-            } if TAG == 6 => {
+-                let value = flags.calculate(
+-                    self.x(rn),
+-                    shifted(self.x(rm), kind as u32, amount as u32, wide),
+-                    sub,
+-                    set_flags,
+-                    wide,
+-                );
+-                self.put(rd, value, wide, false);
++            Op::Move { .. }
++            | Op::Address { .. }
++            | Op::AddImmediate { .. }
++            | Op::FlagsImmediate { .. }
++            | Op::AddShift { .. }
++            | Op::LogicalShift { .. }
++            | Op::LogicalImmediate { .. }
++            | Op::Bitfield { .. }
++            | Op::Select { .. }
++            | Op::AddExtended { .. }
++            | Op::Compare { .. }
++            | Op::Multiply { .. }
++            | Op::ShiftVariable { .. }
++            | Op::Divide { .. }
++                if matches!(TAG, 2..=6 | 8..=16) =>
++            {
++                blocks::single::<TAG>(self, ins, flags, pc);
+             }
+             Op::FlagsBranch {
+                 value,
+@@ -798,137 +795,6 @@ impl Cpu {
+                     count = 2;
+                 }
+             }
+-            Op::LogicalShift {
+-                opc,
+-                invert,
+-                kind,
+-                amount,
+-            } if TAG == 8 => {
+-                let rhs = shifted(self.x(rm), kind as u32, amount as u32, wide);
+-                self.decoded_logical(ins, if invert { !rhs } else { rhs }, opc, false, flags);
+-            }
+-            Op::LogicalImmediate { opc, value } if TAG == 9 => {
+-                self.decoded_logical(ins, value, opc, opc != 3, flags)
+-            }
+-            Op::Bitfield {
+-                opc,
+-                r,
+-                s,
+-                wmask,
+-                tmask,
+-            } if TAG == 10 => {
+-                let value = rotate(self.x(rn) & mask, r as u32, if wide { 64 } else { 32 });
+-                let value = match opc {
+-                    0 => {
+-                        let top = if self.x(rn) & (1 << s) != 0 { mask } else { 0 };
+-                        (top & !tmask) | (value & wmask & tmask)
+-                    }
+-                    1 => {
+-                        (self.x(rd) & !tmask) | (((self.x(rd) & !wmask) | (value & wmask)) & tmask)
+-                    }
+-                    _ => value & wmask & tmask,
+-                };
+-                self.put(rd, value, wide, false);
+-            }
+-            Op::Select {
+-                condition,
+-                invert,
+-                increment,
+-            } if TAG == 11 => {
+-                let value = if flags.condition(condition as u32) {
+-                    self.x(rn)
+-                } else {
+-                    let value = if invert { !self.x(rm) } else { self.x(rm) };
+-                    if increment {
+-                        value.wrapping_add(1)
+-                    } else {
+-                        value
+-                    }
+-                };
+-                self.put(rd, value, wide, false);
+-            }
+-            Op::AddExtended {
+-                sub,
+-                flags: set_flags,
+-                signed,
+-                bits,
+-                amount,
+-            } if TAG == 12 => {
+-                let rhs = self.x(rm) & ones(bits as u32);
+-                let rhs = if signed {
+-                    sign_extend(rhs, bits as u32)
+-                } else {
+-                    rhs
+-                };
+-                let value = flags.calculate(
+-                    self.reg(rn, true),
+-                    rhs.wrapping_shl(amount as u32),
+-                    sub,
+-                    set_flags,
+-                    wide,
+-                );
+-                self.put(rd, value, wide, !set_flags);
+-            }
+-            Op::Compare {
+-                condition,
+-                immediate,
+-                sub,
+-                nzcv,
+-            } if TAG == 13 => {
+-                if flags.condition(condition as u32) {
+-                    flags.calculate(
+-                        self.x(rn),
+-                        if immediate { rm as u64 } else { self.x(rm) },
+-                        sub,
+-                        true,
+-                        wide,
+-                    );
+-                } else {
+-                    flags.set(nzcv as u32);
+-                }
+-            }
+-            Op::Multiply { kind, ra, sub } if TAG == 14 => {
+-                let product = match kind {
+-                    0 => self.x(rn).wrapping_mul(self.x(rm)),
+-                    1 => (self.x(rn) as u32 as i32 as i64)
+-                        .wrapping_mul(self.x(rm) as u32 as i32 as i64)
+-                        as u64,
+-                    5 => (self.x(rn) as u32 as u64) * (self.x(rm) as u32 as u64),
+-                    2 => ((self.x(rn) as i64 as i128 * self.x(rm) as i64 as i128) >> 64) as u64,
+-                    _ => ((self.x(rn) as u128 * self.x(rm) as u128) >> 64) as u64,
+-                };
+-                let value = if matches!(kind, 2 | 6) {
+-                    product
+-                } else if sub {
+-                    self.x(ra.index()).wrapping_sub(product)
+-                } else {
+-                    self.x(ra.index()).wrapping_add(product)
+-                };
+-                self.put(rd, value, wide, false);
+-            }
+-            Op::ShiftVariable { kind } if TAG == 15 => {
+-                let amount = (self.x(rm) & if wide { 63 } else { 31 }) as u32;
+-                self.put(
+-                    rd,
+-                    shifted(self.x(rn), kind as u32, amount, wide),
+-                    wide,
+-                    false,
+-                );
+-            }
+-            Op::Divide { signed } if TAG == 16 => {
+-                let a = self.x(rn) & mask;
+-                let b = self.x(rm) & mask;
+-                let value = if b == 0 {
+-                    0
+-                } else if !signed {
+-                    a / b
+-                } else if wide {
+-                    (a as i64).wrapping_div(b as i64) as u64
+-                } else {
+-                    (a as u32 as i32).wrapping_div(b as u32 as i32) as u32 as u64
+-                };
+-                self.put(rd, value, wide, false);
+-            }
+             Op::Branch { offset, link } if TAG == 17 => {
+                 if link {
+                     self.set_x(30, next);
+@@ -1136,29 +1002,6 @@ impl Cpu {
+         self.pc = next;
+         Ok((Event::Continue, count))
+     }
+-    #[inline]
+-    fn decoded_logical(
+-        &mut self,
+-        ins: &Instruction,
+-        rhs: u64,
+-        opc: u8,
+-        sp: bool,
+-        flags: &mut ConditionFlags,
+-    ) {
+-        let (rd, rn, wide) = (ins.rd.index(), ins.rn.index(), ins.wide);
+-        let value = match opc {
+-            0 | 3 => self.x(rn) & rhs,
+-            1 => self.x(rn) | rhs,
+-            _ => self.x(rn) ^ rhs,
+-        } & width_mask(wide);
+-        if opc == 3 {
+-            flags.set(
+-                ((value & (if wide { 1 << 63 } else { 1 << 31 }) != 0) as u32) << 3
+-                    | ((value == 0) as u32) << 2,
+-            );
+-        }
+-        self.put(rd, value, wide, sp);
+-    }
+ }
+ 
+ struct TailState<'a, M: CpuMemory> {
+@@ -1168,6 +1011,8 @@ struct TailState<'a, M: CpuMemory> {
+     page: &'a mut CodePage,
+     stats: &'a mut super::DecodeStats,
+     budget: u64,
++    block_length: usize,
++    block_executed: u64,
+ }
+ enum TailExit {
+     Page(u64),
+@@ -1224,6 +1069,7 @@ macro_rules! tail_next {
+             Op::Pair { .. } => become tail_op::<M, 23>($state, slot, $executed),
+             Op::Memory { .. } => become tail_op::<M, 24>($state, slot, $executed),
+             Op::Fallback => become tail_op::<M, 25>($state, slot, $executed),
++            Op::Block { index } => become tail_block($state, index as usize, $executed),
+         }
+     }};
+ }
+@@ -1308,6 +1154,85 @@ extern "rust-preserve-none" fn tail_op<M: CpuMemory, const TAG: usize>(
+     tail_next!(state, executed)
+ }
+ 
++macro_rules! block_next {
++    ($state:ident, $slot:ident, $value:ident) => {{
++        let block = $slot >> 8;
++        let index = $slot & 255;
++        let length = $state.block_length;
++        if index == length {
++            become block_finish($state, $slot, $value);
++        }
++        match $state.page.block(block).instruction(index).op {
++            Op::Move { .. } => become block_op::<M, 2>($state, $slot, $value),
++            Op::Address { .. } => become block_op::<M, 3>($state, $slot, $value),
++            Op::AddImmediate { .. } => become block_op::<M, 4>($state, $slot, $value),
++            Op::FlagsImmediate { .. } => become block_op::<M, 5>($state, $slot, $value),
++            Op::AddShift { .. } => become block_op::<M, 6>($state, $slot, $value),
++            Op::LogicalShift { .. } => become block_op::<M, 8>($state, $slot, $value),
++            Op::LogicalImmediate { .. } => become block_op::<M, 9>($state, $slot, $value),
++            Op::Bitfield { .. } => become block_op::<M, 10>($state, $slot, $value),
++            Op::Select { .. } => become block_op::<M, 11>($state, $slot, $value),
++            Op::AddExtended { .. } => become block_op::<M, 12>($state, $slot, $value),
++            Op::Compare { .. } => become block_op::<M, 13>($state, $slot, $value),
++            Op::Multiply { .. } => become block_op::<M, 14>($state, $slot, $value),
++            Op::ShiftVariable { .. } => become block_op::<M, 15>($state, $slot, $value),
++            Op::Divide { .. } => become block_op::<M, 16>($state, $slot, $value),
++            _ => unreachable!("non-integer block step"),
++        }
++    }};
++}
++#[inline(never)]
++extern "rust-preserve-none" fn tail_block<M: CpuMemory>(
++    state: &mut TailState<'_, M>,
++    block: usize,
++    executed: u64,
++) -> TailExit {
++    state.block_length =
++        (state.budget - executed).min(state.page.block(block).steps.len() as u64) as usize;
++    state.block_executed = executed;
++    let slot = block << 8;
++    let value = 0;
++    block_next!(state, slot, value)
++}
++#[inline(never)]
++extern "rust-preserve-none" fn block_op<M: CpuMemory, const TAG: usize>(
++    state: &mut TailState<'_, M>,
++    slot: usize,
++    value: u64,
++) -> TailExit {
++    let block = slot >> 8;
++    let index = slot & 255;
++    let value = state.page.block(block).step::<TAG>(
++        index,
++        state.block_length,
++        state.cpu,
++        state.flags,
++        value,
++    );
++    let slot = slot + 1;
++    block_next!(state, slot, value)
++}
++
++#[inline(never)]
++extern "rust-preserve-none" fn block_finish<M: CpuMemory>(
++    state: &mut TailState<'_, M>,
++    slot: usize,
++    _value: u64,
++) -> TailExit {
++    let block = slot >> 8;
++    let executed = state.block_executed;
++    let count = state.page.block(block).finish(
++        state.cpu,
++        state.flags,
++        state.block_length,
++        state.budget - executed,
++    );
++    state.stats.block_runs += 1;
++    state.stats.block_instructions += count;
++    let executed = executed + count;
++    tail_next!(state, executed)
++}
++
+ #[cfg(test)]
+ use trames_memory::Memory;
+ #[cfg(test)]
+@@ -1361,6 +1286,131 @@ mod tests {
+         );
+         assert_eq!(a.vectors, b.vectors);
+     }
++    #[test]
++    fn integer_blocks_match_every_budget_and_interior_entry() {
++        // MOVK/old-rd, dependent ALU, SP/XZR, flags, conditional compare/select,
++        // extended/multiply/divide, variable shifts and PC-relative addresses.
++        let arithmetic = [
++            0xd29fdb80, 0xf2d75300, 0x91002c00, 0xca401401, 0x910043ff, 0xd10023ff, 0xb10017ff,
++            0xb2401c1f, 0x91001fe2, 0xcb811c42, 0xeac02c43, 0xb2781c63, 0xb3476463, 0x13032464,
++            0x53027c84, 0x9a830085, 0xda8214a5, 0x8b21c8a5, 0xfa47a8a9, 0xba41d0a3, 0x9b0014a6,
++            0x9b2118c6, 0x9ba118c6, 0x9b407cc6, 0x9bc07cc6, 0x9ac120c6, 0x1ac228c6, 0x9ac32cc6,
++            0x9ac00cc6, 0x1ac008c6, 0x10000007, 0x90000008,
++        ];
++        let mut words = Vec::new();
++        for group in arithmetic.chunks(4) {
++            words.extend_from_slice(group);
++            words.push(0xd503201f); // stop a block, keep executing the program
++        }
++        words.push(0xd4000001);
++        let mut mem = memory(&words);
++        let mut cpu = Cpu::new(0x1000, 0x2ff0);
++        // Reverse-order warming also exercises a terminator decoded first.
++        for slot in (0..words.len()).rev() {
++            cpu.pc = 0x1000 + slot as u64 * 4;
++            cpu.run_slice(&mut mem, 1);
++        }
++        assert_eq!(
++            cpu.decoded
++                .slots
++                .iter()
++                .flatten()
++                .map(|p| p.blocks.len())
++                .sum::<usize>(),
++            8
++        );
++        for seed in [0, 1, u64::MAX, 0x8000000080000000] {
++            for start in 0..words.len() {
++                for budget in 0..=words.len() as u64 + 1 {
++                    for r in 0..31 {
++                        cpu.set_x(r, seed.wrapping_add(r as u64));
++                    }
++                    cpu.pc = 0x1000 + start as u64 * 4;
++                    cpu.sp = seed;
++                    cpu.set_flags(Flags {
++                        n: true,
++                        z: false,
++                        c: true,
++                        v: false,
++                    });
++                    let mut oracle = cpu.clone();
++                    let mut other = mem.clone();
++                    assert_eq!(
++                        format!("{:?}", cpu.run_slice(&mut mem, budget)),
++                        format!("{:?}", oracle.run_reference(&mut other, budget)),
++                        "seed={seed:x} start={start} budget={budget}"
++                    );
++                    equal(&cpu, &oracle);
++                }
++            }
++        }
++        assert!(cpu.decode_stats().block_runs > 0);
++    }
++
++    #[test]
++    fn integer_blocks_flush_before_faults_and_invalidate_with_code() {
++        // Repeated destination permits deferred writes, but each budget cut and
++        // the following unmapped load must see all preceding arithmetic.
++        let words = [0x91000400, 0x91000800, 0x91000c00, 0xf9400121];
++        let mut mem = memory(&words);
++        let mut cpu = Cpu::new(0x1000, 0x2ff0);
++        cpu.set_x(9, 0x9000);
++        for _ in 0..8 {
++            cpu.pc = 0x1000;
++            cpu.run_slice(&mut mem, 4);
++        }
++        assert_eq!(cpu.decode_stats().block_runs, 1); // first hot visit executes the block
++        for budget in 1..=4 {
++            cpu.pc = 0x1000;
++            cpu.set_x(0, 100);
++            let mut oracle = cpu.clone();
++            let mut other = mem.clone();
++            assert_eq!(
++                format!("{:?}", cpu.run_slice(&mut mem, budget)),
++                format!("{:?}", oracle.run_reference(&mut other, budget))
++            );
++            equal(&cpu, &oracle);
++        }
++        assert!(cpu.decode_stats().block_runs > 0);
++        // Rewrite an interior instruction, not the block's start slot.
++        mem.write(0x1004, &0x91002000u32.to_le_bytes()).unwrap();
++        cpu.pc = 0x1000;
++        cpu.set_x(0, 0);
++        cpu.run_slice(&mut mem, 3);
++        assert_eq!(cpu.x(0), 12);
++        assert_eq!(cpu.pc, 0x100c);
++    }
++
++    #[test]
++    fn integer_block_branches_preserve_links_targets_and_partial_budgets() {
++        for branch in [
++            0x17fffffd, 0x97fffffd, 0xd61f0120, 0xd63f0120, 0x34ffffa0, 0xb5ffffa0, 0x3607ffa0,
++            0xb707ffa0, 0x54ffffa0, 0x54ffffae,
++        ] {
++            let mut mem = memory(&[0x91000400, 0x91000800, 0x91000c00, branch]);
++            let mut cpu = Cpu::new(0x1000, 0);
++            cpu.set_x(9, 0x1000);
++            for _ in 0..8 {
++                cpu.pc = 0x1000;
++                cpu.run_slice(&mut mem, 4);
++            }
++            for target in [0x1000, 0x1001, 0x9000] {
++                for budget in 0..=40 {
++                    cpu.pc = 0x1000;
++                    cpu.set_x(0, u64::MAX - 5);
++                    cpu.set_x(9, target);
++                    let mut oracle = cpu.clone();
++                    let mut other = mem.clone();
++                    assert_eq!(
++                        format!("{:?}", cpu.run_slice(&mut mem, budget)),
++                        format!("{:?}", oracle.run_reference(&mut other, budget))
++                    );
++                    equal(&cpu, &oracle);
++                }
++            }
++        }
++    }
++
+     #[test]
+     fn fused_flags_branches_preserve_budgets_conditions_and_invalidations() {
+         for arithmetic in [
+diff --git a/crates/trames-cpu/src/lib.rs b/crates/trames-cpu/src/lib.rs
+index b6b2619..b251a7e 100644
+--- a/crates/trames-cpu/src/lib.rs
++++ b/crates/trames-cpu/src/lib.rs
+@@ -62,6 +62,8 @@ pub struct DecodeStats {
+     pub lookups: u64,
+     pub misses: u64,
+     pub instructions: u64,
++    pub block_runs: u64,
++    pub block_instructions: u64,
+ }
+ 
+ #[derive(Default, Clone, Debug)]
+diff --git a/crates/trames-cpu/src/cached/blocks.rs b/crates/trames-cpu/src/cached/blocks.rs
+new file mode 100644
+index 0000000..213d4d6
+--- /dev/null
++++ b/crates/trames-cpu/src/cached/blocks.rs
+@@ -0,0 +1,578 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++//! Shared scalar semantics for single instructions and bounded integer blocks.
++use super::*;
++
++// Roles are rn, rm, old rd, multiply accumulator. Forwarding is computed when
++// the block is formed, not by comparing guest register numbers on every read.
++struct Operands<'a, const FORWARD: bool> {
++    cpu: &'a mut Cpu,
++    value: u64,
++    forwards: u8,
++    commit: bool,
++}
++impl<const FORWARD: bool> Operands<'_, FORWARD> {
++    #[inline(always)]
++    fn read<const ROLE: u8>(&self, index: usize, sp: bool) -> u64 {
++        if FORWARD && self.forwards & (1 << ROLE) != 0 {
++            self.value
++        } else {
++            self.cpu.reg(index, sp)
++        }
++    }
++    #[inline(always)]
++    fn put(&mut self, index: usize, value: u64, wide: bool, sp: bool) {
++        self.value = value & width_mask(wide);
++        if !FORWARD || self.commit {
++            self.cpu.put(index, value, wide, sp);
++        }
++    }
++}
++
++#[inline(always)]
++fn integer<const TAG: usize, const FORWARD: bool>(
++    ins: &Instruction,
++    bank: &mut Operands<'_, FORWARD>,
++    flags: &mut ConditionFlags,
++    pc: u64,
++) {
++    let (rd, rn, rm) = (ins.rd.index(), ins.rn.index(), ins.rm.index());
++    let wide = ins.wide;
++    let mask = width_mask(wide);
++    match ins.op {
++        Op::Move { opc, shift, value } if TAG == 2 => {
++            let value = match opc {
++                0 => !value,
++                2 => value,
++                _ => (bank.read::<2>(rd, false) & !(0xffffu64 << shift)) | value,
++            };
++            bank.put(rd, value, wide, false);
++        }
++        Op::Address { immediate } if TAG == 3 => bank.put(
++            rd,
++            if wide {
++                (pc & !4095).wrapping_add(immediate << 12)
++            } else {
++                pc.wrapping_add(immediate)
++            },
++            true,
++            false,
++        ),
++        Op::AddImmediate { value } if TAG == 4 => {
++            bank.put(rd, bank.read::<0>(rn, true).wrapping_add(value), wide, true);
++        }
++        Op::FlagsImmediate { sub, value } if TAG == 5 => {
++            let value = flags.calculate(bank.read::<0>(rn, true), value, sub, true, wide);
++            bank.put(rd, value, wide, false);
++        }
++        Op::AddShift {
++            sub,
++            flags: set_flags,
++            kind,
++            amount,
++        } if TAG == 6 => {
++            let value = flags.calculate(
++                bank.read::<0>(rn, false),
++                shifted(bank.read::<1>(rm, false), kind as u32, amount as u32, wide),
++                sub,
++                set_flags,
++                wide,
++            );
++            bank.put(rd, value, wide, false);
++        }
++        Op::LogicalShift {
++            opc,
++            invert,
++            kind,
++            amount,
++        } if TAG == 8 => {
++            let rhs = shifted(bank.read::<1>(rm, false), kind as u32, amount as u32, wide);
++            logical(
++                ins,
++                bank,
++                if invert { !rhs } else { rhs },
++                opc,
++                false,
++                flags,
++            );
++        }
++        Op::LogicalImmediate { opc, value } if TAG == 9 => {
++            logical(ins, bank, value, opc, opc != 3, flags)
++        }
++        Op::Bitfield {
++            opc,
++            r,
++            s,
++            wmask,
++            tmask,
++        } if TAG == 10 => {
++            let value = rotate(
++                bank.read::<0>(rn, false) & mask,
++                r as u32,
++                if wide { 64 } else { 32 },
++            );
++            let value = match opc {
++                0 => {
++                    let top = if bank.read::<0>(rn, false) & (1 << s) != 0 {
++                        mask
++                    } else {
++                        0
++                    };
++                    (top & !tmask) | (value & wmask & tmask)
++                }
++                1 => {
++                    (bank.read::<2>(rd, false) & !tmask)
++                        | (((bank.read::<2>(rd, false) & !wmask) | (value & wmask)) & tmask)
++                }
++                _ => value & wmask & tmask,
++            };
++            bank.put(rd, value, wide, false);
++        }
++        Op::Select {
++            condition,
++            invert,
++            increment,
++        } if TAG == 11 => {
++            let value = if flags.condition(condition as u32) {
++                bank.read::<0>(rn, false)
++            } else {
++                let value = if invert {
++                    !bank.read::<1>(rm, false)
++                } else {
++                    bank.read::<1>(rm, false)
++                };
++                if increment {
++                    value.wrapping_add(1)
++                } else {
++                    value
++                }
++            };
++            bank.put(rd, value, wide, false);
++        }
++        Op::AddExtended {
++            sub,
++            flags: set_flags,
++            signed,
++            bits,
++            amount,
++        } if TAG == 12 => {
++            let rhs = bank.read::<1>(rm, false) & ones(bits as u32);
++            let rhs = if signed {
++                sign_extend(rhs, bits as u32)
++            } else {
++                rhs
++            };
++            let value = flags.calculate(
++                bank.read::<0>(rn, true),
++                rhs.wrapping_shl(amount as u32),
++                sub,
++                set_flags,
++                wide,
++            );
++            bank.put(rd, value, wide, !set_flags);
++        }
++        Op::Compare {
++            condition,
++            immediate,
++            sub,
++            nzcv,
++        } if TAG == 13 => {
++            if flags.condition(condition as u32) {
++                flags.calculate(
++                    bank.read::<0>(rn, false),
++                    if immediate {
++                        rm as u64
++                    } else {
++                        bank.read::<1>(rm, false)
++                    },
++                    sub,
++                    true,
++                    wide,
++                );
++            } else {
++                flags.set(nzcv as u32);
++            }
++        }
++        Op::Multiply { kind, ra, sub } if TAG == 14 => {
++            let product = match kind {
++                0 => bank
++                    .read::<0>(rn, false)
++                    .wrapping_mul(bank.read::<1>(rm, false)),
++                1 => (bank.read::<0>(rn, false) as u32 as i32 as i64)
++                    .wrapping_mul(bank.read::<1>(rm, false) as u32 as i32 as i64)
++                    as u64,
++                5 => {
++                    (bank.read::<0>(rn, false) as u32 as u64)
++                        * (bank.read::<1>(rm, false) as u32 as u64)
++                }
++                2 => {
++                    ((bank.read::<0>(rn, false) as i64 as i128
++                        * bank.read::<1>(rm, false) as i64 as i128)
++                        >> 64) as u64
++                }
++                _ => {
++                    ((bank.read::<0>(rn, false) as u128 * bank.read::<1>(rm, false) as u128) >> 64)
++                        as u64
++                }
++            };
++            let value = if matches!(kind, 2 | 6) {
++                product
++            } else if sub {
++                bank.read::<3>(ra.index(), false).wrapping_sub(product)
++            } else {
++                bank.read::<3>(ra.index(), false).wrapping_add(product)
++            };
++            bank.put(rd, value, wide, false);
++        }
++        Op::ShiftVariable { kind } if TAG == 15 => {
++            let amount = (bank.read::<1>(rm, false) & if wide { 63 } else { 31 }) as u32;
++            bank.put(
++                rd,
++                shifted(bank.read::<0>(rn, false), kind as u32, amount, wide),
++                wide,
++                false,
++            );
++        }
++        Op::Divide { signed } if TAG == 16 => {
++            let a = bank.read::<0>(rn, false) & mask;
++            let b = bank.read::<1>(rm, false) & mask;
++            let value = if b == 0 {
++                0
++            } else if !signed {
++                a / b
++            } else if wide {
++                (a as i64).wrapping_div(b as i64) as u64
++            } else {
++                (a as u32 as i32).wrapping_div(b as u32 as i32) as u32 as u64
++            };
++            bank.put(rd, value, wide, false);
++        }
++        // SAFETY: both dispatchers select TAG from this exact immutable Op.
++        // No cache mutation occurs between dispatch and this specialization.
++        _ => unsafe { std::hint::unreachable_unchecked() },
++    }
++}
++
++#[inline]
++fn logical<const FORWARD: bool>(
++    ins: &Instruction,
++    bank: &mut Operands<'_, FORWARD>,
++    rhs: u64,
++    opc: u8,
++    sp: bool,
++    flags: &mut ConditionFlags,
++) {
++    let (rd, rn, wide) = (ins.rd.index(), ins.rn.index(), ins.wide);
++    let value = match opc {
++        0 | 3 => bank.read::<0>(rn, false) & rhs,
++        1 => bank.read::<0>(rn, false) | rhs,
++        _ => bank.read::<0>(rn, false) ^ rhs,
++    } & width_mask(wide);
++    if opc == 3 {
++        flags.set(
++            ((value & (if wide { 1 << 63 } else { 1 << 31 }) != 0) as u32) << 3
++                | ((value == 0) as u32) << 2,
++        );
++    }
++    bank.put(rd, value, wide, sp);
++}
++
++#[inline(always)]
++pub(super) fn single<const TAG: usize>(
++    cpu: &mut Cpu,
++    ins: &Instruction,
++    flags: &mut ConditionFlags,
++    pc: u64,
++) {
++    integer::<TAG, false>(
++        ins,
++        &mut Operands {
++            cpu,
++            value: 0,
++            forwards: 0,
++            commit: true,
++        },
++        flags,
++        pc,
++    );
++}
++
++const MAX_STEPS: usize = 16;
++const MIN_STEPS: usize = 3;
++const MAX_BLOCKS: usize = 64;
++const HOT_VISITS: u8 = 8;
++
++#[derive(Debug)]
++pub(super) struct Step {
++    pub(super) instruction: Instruction,
++    forwards: u8,
++    commit: bool,
++}
++#[derive(Debug)]
++pub(super) struct Block {
++    pub(super) steps: Box<[Step]>,
++    branch: Option<Instruction>,
++}
++fn integer_op(ins: Instruction) -> bool {
++    matches!(
++        ins.op,
++        Op::Move { .. }
++            | Op::Address { .. }
++            | Op::AddImmediate { .. }
++            | Op::FlagsImmediate { .. }
++            | Op::AddShift { .. }
++            | Op::FlagsBranch { .. }
++            | Op::LogicalShift { .. }
++            | Op::LogicalImmediate { .. }
++            | Op::Bitfield { .. }
++            | Op::Select { .. }
++            | Op::AddExtended { .. }
++            | Op::Compare { .. }
++            | Op::Multiply { .. }
++            | Op::ShiftVariable { .. }
++            | Op::Divide { .. }
++    )
++}
++fn branch_op(ins: Instruction) -> bool {
++    matches!(
++        ins.op,
++        Op::Branch { .. }
++            | Op::RegisterBranch { .. }
++            | Op::CompareBranch { .. }
++            | Op::TestBranch { .. }
++            | Op::ConditionalBranch { .. }
++    )
++}
++// Distinguish SP from XZR before computing data dependencies. XZR never
++// forwards, even when two instructions both encode register number 31.
++fn identity(register: Register, sp: bool) -> u8 {
++    if register.0 == 31 && sp {
++        32
++    } else {
++        register.0
++    }
++}
++fn output(ins: Instruction) -> u8 {
++    if matches!(ins.op, Op::Compare { .. }) {
++        return 31;
++    }
++    identity(
++        ins.rd,
++        matches!(
++            ins.op,
++            Op::AddImmediate { .. }
++                | Op::AddExtended { flags: false, .. }
++                | Op::LogicalImmediate { opc: 0..=2, .. }
++        ),
++    )
++}
++impl CodePage {
++    #[inline(always)]
++    pub(super) fn block(&self, index: usize) -> &Block {
++        debug_assert!(index < self.blocks.len());
++        // SAFETY: the cached Block op is installed with its Vec index. All block
++        // tail transitions preserve it. No decoder, cache mutation or guest
++        // memory operation can run until this bounded integer block finishes.
++        unsafe { self.blocks.get_unchecked(index) }
++    }
++    pub(super) fn visit(&mut self) {
++        if self.visits < HOT_VISITS {
++            self.visits += 1;
++            if self.visits == HOT_VISITS {
++                let mut pending = std::mem::take(&mut self.pending_blocks);
++                for &slot in &pending {
++                    self.form_block(slot);
++                }
++                pending.clear();
++                self.pending_blocks = pending;
++            }
++        }
++    }
++    pub(super) fn form_block(&mut self, slot: usize) {
++        if self.visits < HOT_VISITS {
++            if !integer_op(self.instructions[slot].instruction) || slot + 1 == PAGE_WORDS {
++                self.pending_blocks.push(slot);
++            }
++            return;
++        }
++        if self.blocks.len() == MAX_BLOCKS {
++            return;
++        }
++        let valid = |slot: usize| {
++            slot < PAGE_WORDS && self.instructions[slot].generation == self.generation
++        };
++        let mut end = slot;
++        if integer_op(self.instructions[slot].instruction) {
++            while valid(end)
++                && integer_op(self.instructions[end].instruction)
++                && end - slot < MAX_STEPS
++            {
++                end += 1;
++            }
++            if end < PAGE_WORDS && !valid(end) {
++                return;
++            }
++        }
++        let mut start = end;
++        while start > 0
++            && end - start < MAX_STEPS
++            && valid(start - 1)
++            && integer_op(self.instructions[start - 1].instruction)
++        {
++            start -= 1;
++        }
++        if end - start < MIN_STEPS {
++            return;
++        }
++        let instructions: Vec<_> = (start..end)
++            .map(|slot| {
++                let mut ins = self.instructions[slot].instruction;
++                if matches!(ins.op, Op::FlagsBranch { .. }) {
++                    // The following branch has its own original entry. Count it once.
++                    ins = Instruction::decode(ins.word);
++                }
++                if let Op::Address { immediate } = ins.op {
++                    let pc = self.base + slot as u64 * 4;
++                    let value = if ins.wide {
++                        (pc & !4095).wrapping_add(immediate << 12)
++                    } else {
++                        pc.wrapping_add(immediate)
++                    };
++                    ins.op = Op::Move {
++                        opc: 2,
++                        shift: 0,
++                        value,
++                    };
++                    ins.wide = true;
++                }
++                ins
++            })
++            .collect();
++        let mut previous = 31;
++        let steps = (0..instructions.len())
++            .map(|i| {
++                let ins = instructions[i];
++                let source_sp = matches!(
++                    ins.op,
++                    Op::AddImmediate { .. } | Op::FlagsImmediate { .. } | Op::AddExtended { .. }
++                );
++                let sources = [
++                    identity(ins.rn, source_sp),
++                    ins.rm.0,
++                    ins.rd.0,
++                    if let Op::Multiply { ra, .. } = ins.op {
++                        ra.0
++                    } else {
++                        31
++                    },
++                ];
++                let forwards = sources.iter().enumerate().fold(0, |bits, (role, &source)| {
++                    bits | (u8::from(previous != 31 && source == previous) << role)
++                });
++                let destination = output(ins);
++                let commit = destination == 31
++                    || instructions
++                        .get(i + 1)
++                        .is_none_or(|next| output(*next) != destination);
++                previous = destination;
++                Step {
++                    instruction: ins,
++                    forwards,
++                    commit,
++                }
++            })
++            .collect::<Vec<_>>()
++            .into_boxed_slice();
++        let branch = if valid(end) && branch_op(self.instructions[end].instruction) {
++            Some(self.instructions[end].instruction)
++        } else {
++            None
++        };
++        let index = self.blocks.len() as u16;
++        self.blocks.push(Block { steps, branch });
++        self.instructions[start].instruction.op = Op::Block { index };
++    }
++}
++impl Block {
++    #[inline(always)]
++    pub(super) fn instruction(&self, index: usize) -> &Instruction {
++        debug_assert!(index < self.steps.len());
++        // SAFETY: entry clamps length to steps.len(); transitions increase the
++        // index by one and finish at length, before reading another instruction.
++        &unsafe { self.steps.get_unchecked(index) }.instruction
++    }
++    #[inline(always)]
++    pub(super) fn step<const TAG: usize>(
++        &self,
++        index: usize,
++        length: usize,
++        cpu: &mut Cpu,
++        flags: &mut ConditionFlags,
++        value: u64,
++    ) -> u64 {
++        debug_assert!(index < length && length <= self.steps.len());
++        // SAFETY: the same bounded index was validated by block_next immediately
++        // before selecting this operation; neither the block nor length changes.
++        let step = unsafe { self.steps.get_unchecked(index) };
++        let mut bank = Operands::<true> {
++            cpu,
++            value,
++            forwards: step.forwards,
++            commit: step.commit || index + 1 == length,
++        };
++        integer::<TAG, true>(&step.instruction, &mut bank, flags, 0);
++        bank.value
++    }
++    #[inline]
++    pub(super) fn finish(
++        &self,
++        cpu: &mut Cpu,
++        flags: &mut ConditionFlags,
++        length: usize,
++        remaining: u64,
++    ) -> u64 {
++        let mut count = length as u64;
++        cpu.pc = cpu.pc.wrapping_add(count * 4);
++        if let Some(ins) = self.branch.filter(|_| remaining > count) {
++            let branch_pc = cpu.pc;
++            let mut next = branch_pc.wrapping_add(4);
++            match ins.op {
++                Op::Branch { offset, link } => {
++                    if link {
++                        cpu.set_x(30, next);
++                    }
++                    next = branch_pc.wrapping_add(offset);
++                }
++                Op::RegisterBranch { link } => {
++                    let target = cpu.x(ins.rn.index());
++                    if link {
++                        cpu.set_x(30, next);
++                    }
++                    next = target;
++                }
++                Op::CompareBranch { offset, nonzero } => {
++                    if (cpu.x(ins.rd.index()) & width_mask(ins.wide) != 0) == nonzero {
++                        next = branch_pc.wrapping_add(offset);
++                    }
++                }
++                Op::TestBranch {
++                    offset,
++                    bit,
++                    nonzero,
++                } => {
++                    if (cpu.x(ins.rd.index()) & (1 << bit) != 0) == nonzero {
++                        next = branch_pc.wrapping_add(offset);
++                    }
++                }
++                Op::ConditionalBranch { offset, condition } => {
++                    if flags.condition(condition as u32) {
++                        next = branch_pc.wrapping_add(offset);
++                    }
++                }
++                _ => unreachable!("non-branch block terminator"),
++            }
++            cpu.pc = next;
++            count += 1;
++        }
++        count
++    }
++}
