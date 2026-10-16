@@ -1,0 +1,6 @@
+PASS cold embedding boot first: preserved user data and exact bundled ICD bytes
+Traceback (most recent call last):
+  File "/workspace/trames/tests/integration/embedding-reopen.py", line 96, in <module>
+    assert result.returncode == 0, (phase, result.stdout, result.stderr)
+           ^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('second', b'', b'Traceback (most recent call last):\n  File "/workspace/trames/tests/integration/embedding-reopen.py", line 83, in <module>\n    boot(Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3] == \'first\', sys.argv[4] == \'enabled\')\n  File "/workspace/trames/tests/integration/embedding-reopen.py", line 53, in boot\n    assert state[\'phase\'] == \'starting\' and time.monotonic() < deadline, state\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: {\'phase\': \'failed\', \'error\': \'virtual filesystem errno 17\', \'exit_code\': None, \'budget_bytes\': 0, \'used_bytes\': 0, \'available_bytes\': 0, \'volume_total_bytes\': 17179869184, \'node_limit\': 0, \'nodes_used\': 0}\n')

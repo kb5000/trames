@@ -437,21 +437,11 @@ fn run(
     vfs.chdir(b"/root").map_err(|e| e.to_string())?;
     if options.vulkan_accelerator {
         if let Some(path) = &options.vulkan_icd {
-            let mut file = File::open(path).map_err(|e| e.to_string())?;
-            let mut bytes = Vec::new();
-            Read::by_ref(&mut file)
-                .take(4 * 1024 * 1024 + 1)
-                .read_to_end(&mut bytes)
-                .map_err(|e| e.to_string())?;
-            if bytes.len() > 4 * 1024 * 1024
-                || bytes.get(..6) != Some(b"\x7fELF\x02\x01")
-                || bytes.get(18..20) != Some(&183u16.to_le_bytes())
-            {
-                return Err("invalid bundled AArch64 Vulkan ICD".into());
-            }
-            vfs.import_file(b"/usr/lib/libtrames_vulkan_icd.so", bytes)
-                .map_err(|e| e.to_string())?;
-            vfs.import_file(b"/usr/share/vulkan/icd.d/trames.json",br#"{"file_format_version":"1.0.0","ICD":{"api_version":"1.0.0","library_path":"/usr/lib/libtrames_vulkan_icd.so"}}"#.to_vec()).map_err(|e|e.to_string())?;
+            trames_distro::install_vulkan_icd(
+                &mut File::open(path).map_err(|e| e.to_string())?,
+                &mut vfs,
+            )
+            .map_err(|e| format!("install Vulkan ICD: {e}"))?;
         }
     }
     if let Some(timezone) = options.timezone {

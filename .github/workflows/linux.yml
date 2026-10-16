@@ -188,6 +188,7 @@ jobs:
         run: |
           sudo apt-get install --yes libvulkan-dev mesa-vulkan-drivers glslang-tools
           bash scripts/build-vulkan-fixtures.sh
+          python3 tests/integration/embedding-reopen.py
           export VK_DRIVER_FILES="$(find /usr/share/vulkan/icd.d -name '*lvp*' -print -quit)"
           test -n "$VK_DRIVER_FILES"
           python3 tests/integration/vulkan-compute.py

@@ -1,0 +1,28 @@
+{
+  "baseline_commit": "538232a9243b605e11afae7fe8d87f23c4bf1116",
+  "compiler": "rustc 1.101.0-nightly (4ebd25825 2026-10-15)\nbinary: rustc\ncommit-hash: 4ebd258257737d5b7635c116fa7d281627a7e937\ncommit-date: 2026-10-15\nhost: x86_64-unknown-linux-gnu\nrelease: 1.101.0-nightly\nLLVM version: 23.1.4\n",
+  "files": {
+    "Cargo.lock": "0337861db0bcda3e916fed7c117bdf1fa759bf60f8a323862bbadae7770fcf1a",
+    "crates/trames-cpu/src/cached.rs": "b21af8499f780dbee3c9e94c31cf9a54aa8a3e9b002aea554d240198b973c7f9",
+    "crates/trames-cpu/src/load_store.rs": "2bcb8af3c413a32d032dd75df8fa77dc46e63f613ae5b51ce7b0cd0e7e7d8880",
+    "crates/trames-memory/Cargo.toml": "e2b356e55881afcde4f7d70ec7aa155e9af2c6f7250b7d3aecaf14acf9621604",
+    "crates/trames-memory/src/backing.rs": "faccdee66a021572c8455f37139cd6c5fe48f88a64fe6d053534b900d691ae75",
+    "crates/trames-memory/src/cpu_memory.rs": "77746c557330bebce9a5c9953d64d0d30dc967979bf0c258690d619c401e6030",
+    "crates/trames-memory/src/lib.rs": "560827e31df5e226ba798176dce35fdfac8fbaee5f6d1c8fe8054c808e798abc",
+    "crates/trames-memory/src/mmu/access.rs": "4b954a346af70943f5453338afdb5354013b594d37b18522e6cf82e65a54c7f3",
+    "crates/trames-memory/src/mmu/cache.rs": "213e3b407161954b3662b3dedf3a68fea1740e11495e3271543c4b9a03b43b08",
+    "crates/trames-memory/src/mmu/fault.rs": "da15fa2e7a78b511d9ad7d0fa28a4cd2b99eea41a4fea3fdeab23969ef9ff011",
+    "crates/trames-memory/src/mmu/host.rs": "fa4e3e95a8dcec88bf1b3fc0ab6ef6c5b83727dfe943f546e3b86e7dc87f3a4f",
+    "crates/trames-memory/src/mmu/mod.rs": "ade1893eec429689efe4ce3a1e368ed76753a9f967857e1954eda1aef58f4bc2",
+    "crates/trames-memory/src/mmu/tests.rs": "71a91334fc760026eff0b9ebaba8d8627c706ebde01493a6a568e3551353078c",
+    "crates/trames-memory/src/mmu/worker.rs": "f60442138cf7f9325250140a54f821c8e0e5f169e1cbe70bd4f32caedd9f5025",
+    "crates/trames-memory/src/native_access.rs": "2a92e49c4ecb7040aec9cb31c53e1392775941f4e33e5d32cd5fffb3222c74a8",
+    "crates/trames-memory/src/parallel.rs": "0d136883c685f175d87769056072ed18a7f2fd90b28e02749b271ad018eb08ca",
+    "crates/trames-memory/src/parallel/hardware.rs": "1af128d326f3d1f913a9cf6751fd3d67563437de2d4ce0d9f1035b907798f4db",
+    "crates/trames-memory/src/parallel/native.rs": "b476adc3b6d489a5bf54f1f45a05deb48b40aa753f6081bfce42e3c82a808cd0",
+    "crates/trames-memory/src/parallel/page.rs": "37cf5f1ca433309dc96715aa2b3bb1e20fd3bc67f3a38bc63b37afbde560e7f6",
+    "crates/trames-memory/src/parallel/snapshot.rs": "dc344a6bcf5033e4776bb643fca2aa465ed203c4dafd41f051ab0e8023185ecc"
+  },
+  "baseline_sha256": "eb04f1b529baf6543f61e512ac4ca64c6500816c54dae3e1c09eb8fc1b69e448",
+  "candidate_sha256": "d52ada63514583b8a5bac2f34d03435a66df2ae80ad8eae9e88e894bad8e2518"
+}

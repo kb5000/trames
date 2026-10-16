@@ -1,0 +1,2926 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index fc2cd16..af59afb 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -522,6 +522,9 @@ dependencies = [
+ [[package]]
+ name = "trames-memory"
+ version = "0.16.0"
++dependencies = [
++ "libc",
++]
+ 
+ [[package]]
+ name = "trames-native"
+diff --git a/crates/trames-cpu/src/cached.rs b/crates/trames-cpu/src/cached.rs
+index e525fde..a2d5395 100644
+--- a/crates/trames-cpu/src/cached.rs
++++ b/crates/trames-cpu/src/cached.rs
+@@ -5,7 +5,7 @@ use super::{
+     flags::ConditionFlags,
+     shifted, sign_extend, width_mask, Cpu, CpuFault, Event, SliceOutcome,
+ };
+-use trames_memory::{CpuMemory, PAGE_SIZE};
++use trames_memory::{CpuMemory, DirectHint, PAGE_SIZE};
+ 
+ const SLOTS: usize = 128;
+ const WAYS: usize = 2;
+@@ -702,7 +702,8 @@ impl Cpu {
+                 stats,
+                 budget,
+             };
+-            match tail_enter(&mut state, 0, executed) {
++            let (owner, window, guest_mem_base) = state.memory.direct_hint().into_parts();
++            match tail_enter(&mut state, 0, executed, owner, window, guest_mem_base) {
+                 TailExit::Page(count) => executed = count,
+                 TailExit::Stop(outcome) => return outcome,
+             }
+@@ -721,6 +722,7 @@ impl Cpu {
+         memory: &mut M,
+         remaining: u64,
+         flags: &mut ConditionFlags,
++        hint: &mut DirectHint,
+     ) -> Result<(Event, u64), CpuFault> {
+         let pc = self.pc;
+         let mut next = pc.wrapping_add(4);
+@@ -991,8 +993,8 @@ impl Cpu {
+                 let size = size as usize;
+                 let fault = |error| CpuFault::Memory { pc, error };
+                 if if vector { opc & 1 != 0 } else { opc != 0 } {
+-                    let raw =
+-                        super::load_store::read_operand(memory, address, size).map_err(fault)?;
++                    let raw = super::load_store::read_operand_hint(memory, hint, address, size)
++                        .map_err(fault)?;
+                     if vector {
+                         self.vectors[rd] = raw;
+                     } else {
+@@ -1011,7 +1013,7 @@ impl Cpu {
+                     } else {
+                         self.x(rd) as u128
+                     };
+-                    super::load_store::write_operand(memory, address, size, value)
++                    super::load_store::write_operand_hint(memory, hint, address, size, value)
+                         .map_err(fault)?;
+                 }
+                 if let Some(value) = writeback {
+@@ -1039,17 +1041,20 @@ impl Cpu {
+                 if load {
+                     let (first, other) = match size {
+                         4 => {
+-                            let pair =
+-                                u64::from_le_bytes(memory.read_array(address).map_err(fault)?);
++                            let pair = u64::from_le_bytes(
++                                memory.read_array_hint(address, hint).map_err(fault)?,
++                            );
+                             (pair as u32 as u128, (pair >> 32) as u128)
+                         }
+                         8 => {
+-                            let pair =
+-                                u128::from_le_bytes(memory.read_array(address).map_err(fault)?);
++                            let pair = u128::from_le_bytes(
++                                memory.read_array_hint(address, hint).map_err(fault)?,
++                            );
+                             (pair as u64 as u128, pair >> 64)
+                         }
+                         _ => {
+-                            let pair = memory.read_array::<32>(address).map_err(fault)?;
++                            let pair =
++                                memory.read_array_hint::<32>(address, hint).map_err(fault)?;
+                             (
+                                 u128::from_le_bytes(pair[..16].try_into().expect("first vector")),
+                                 u128::from_le_bytes(pair[16..].try_into().expect("second vector")),
+@@ -1090,24 +1095,28 @@ impl Cpu {
+                     };
+                     match size {
+                         4 => memory
+-                            .write_array(
++                            .write_array_hint(
+                                 address,
+                                 ((first as u32 as u64) | ((other as u32 as u64) << 32))
+                                     .to_le_bytes(),
++                                hint,
+                             )
+                             .map_err(fault)?,
+                         8 => memory
+-                            .write_array(
++                            .write_array_hint(
+                                 address,
+                                 ((first as u64 as u128) | ((other as u64 as u128) << 64))
+                                     .to_le_bytes(),
++                                hint,
+                             )
+                             .map_err(fault)?,
+                         _ => {
+                             let mut bytes = [0; 32];
+                             bytes[..16].copy_from_slice(&first.to_le_bytes());
+                             bytes[16..].copy_from_slice(&other.to_le_bytes());
+-                            memory.write_array(address, bytes).map_err(fault)?;
++                            memory
++                                .write_array_hint(address, bytes, hint)
++                                .map_err(fault)?;
+                         }
+                     }
+                 }
+@@ -1174,7 +1183,7 @@ enum TailExit {
+     Stop(SliceOutcome),
+ }
+ macro_rules! tail_next {
+-    ($state:ident, $executed:ident) => {{
++    ($state:ident, $executed:ident, $owner:ident, $window:ident, $guest_mem_base:ident) => {{
+         let pc = $state.cpu.pc;
+         if $executed >= $state.budget {
+             return TailExit::Stop(SliceOutcome::Yield {
+@@ -1195,35 +1204,87 @@ macro_rules! tail_next {
+         }
+         let slot = (pc as usize & (PAGE_SIZE as usize - 1)) / 4;
+         if $state.page.instructions[slot].generation != $state.page.generation {
+-            become tail_decode($state, slot, $executed);
++            become tail_decode($state, slot, $executed, $owner, $window, $guest_mem_base);
+         }
+         match $state.page.instructions[slot].instruction.op {
+-            Op::Nop => become tail_op::<M, 0>($state, slot, $executed),
+-            Op::Svc => become tail_op::<M, 1>($state, slot, $executed),
+-            Op::Move { .. } => become tail_op::<M, 2>($state, slot, $executed),
+-            Op::Address { .. } => become tail_op::<M, 3>($state, slot, $executed),
+-            Op::AddImmediate { .. } => become tail_op::<M, 4>($state, slot, $executed),
+-            Op::FlagsImmediate { .. } => become tail_op::<M, 5>($state, slot, $executed),
+-            Op::AddShift { .. } => become tail_op::<M, 6>($state, slot, $executed),
+-            Op::FlagsBranch { .. } => become tail_op::<M, 7>($state, slot, $executed),
+-            Op::LogicalShift { .. } => become tail_op::<M, 8>($state, slot, $executed),
+-            Op::LogicalImmediate { .. } => become tail_op::<M, 9>($state, slot, $executed),
+-            Op::Bitfield { .. } => become tail_op::<M, 10>($state, slot, $executed),
+-            Op::Select { .. } => become tail_op::<M, 11>($state, slot, $executed),
+-            Op::AddExtended { .. } => become tail_op::<M, 12>($state, slot, $executed),
+-            Op::Compare { .. } => become tail_op::<M, 13>($state, slot, $executed),
+-            Op::Multiply { .. } => become tail_op::<M, 14>($state, slot, $executed),
+-            Op::ShiftVariable { .. } => become tail_op::<M, 15>($state, slot, $executed),
+-            Op::Divide { .. } => become tail_op::<M, 16>($state, slot, $executed),
+-            Op::Branch { .. } => become tail_op::<M, 17>($state, slot, $executed),
+-            Op::RegisterBranch { .. } => become tail_op::<M, 18>($state, slot, $executed),
+-            Op::CompareBranch { .. } => become tail_op::<M, 19>($state, slot, $executed),
+-            Op::TestBranch { .. } => become tail_op::<M, 20>($state, slot, $executed),
+-            Op::ConditionalBranch { .. } => become tail_op::<M, 21>($state, slot, $executed),
+-            Op::MemoryImmediate { .. } => become tail_op::<M, 22>($state, slot, $executed),
+-            Op::Pair { .. } => become tail_op::<M, 23>($state, slot, $executed),
+-            Op::Memory { .. } => become tail_op::<M, 24>($state, slot, $executed),
+-            Op::Fallback => become tail_op::<M, 25>($state, slot, $executed),
++            Op::Nop => {
++                become tail_op::<M, 0>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::Svc => {
++                become tail_op::<M, 1>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::Move { .. } => {
++                become tail_op::<M, 2>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::Address { .. } => {
++                become tail_op::<M, 3>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::AddImmediate { .. } => {
++                become tail_op::<M, 4>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::FlagsImmediate { .. } => {
++                become tail_op::<M, 5>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::AddShift { .. } => {
++                become tail_op::<M, 6>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::FlagsBranch { .. } => {
++                become tail_op::<M, 7>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::LogicalShift { .. } => {
++                become tail_op::<M, 8>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::LogicalImmediate { .. } => {
++                become tail_op::<M, 9>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::Bitfield { .. } => {
++                become tail_op::<M, 10>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::Select { .. } => {
++                become tail_op::<M, 11>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::AddExtended { .. } => {
++                become tail_op::<M, 12>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::Compare { .. } => {
++                become tail_op::<M, 13>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::Multiply { .. } => {
++                become tail_op::<M, 14>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::ShiftVariable { .. } => {
++                become tail_op::<M, 15>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::Divide { .. } => {
++                become tail_op::<M, 16>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::Branch { .. } => {
++                become tail_op::<M, 17>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::RegisterBranch { .. } => {
++                become tail_op::<M, 18>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::CompareBranch { .. } => {
++                become tail_op::<M, 19>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::TestBranch { .. } => {
++                become tail_op::<M, 20>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::ConditionalBranch { .. } => {
++                become tail_op::<M, 21>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::MemoryImmediate { .. } => {
++                become tail_op::<M, 22>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::Pair { .. } => {
++                become tail_op::<M, 23>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::Memory { .. } => {
++                become tail_op::<M, 24>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
++            Op::Fallback => {
++                become tail_op::<M, 25>($state, slot, $executed, $owner, $window, $guest_mem_base)
++            }
+         }
+     }};
+ }
+@@ -1233,6 +1294,9 @@ extern "rust-preserve-none" fn tail_decode<M: CpuMemory>(
+     state: &mut TailState<'_, M>,
+     slot: usize,
+     executed: u64,
++    owner: u64,
++    window: usize,
++    guest_mem_base: usize,
+ ) -> TailExit {
+     let pc = state.cpu.pc;
+     if let Err(error) = state.page.decode_slot(state.memory, slot, pc, state.stats) {
+@@ -1242,32 +1306,43 @@ extern "rust-preserve-none" fn tail_decode<M: CpuMemory>(
+                 .slice_fault(CpuFault::Memory { pc, error }, executed),
+         );
+     }
+-    tail_next!(state, executed)
++    tail_next!(state, executed, owner, window, guest_mem_base)
+ }
+ #[inline(never)]
+ extern "rust-preserve-none" fn tail_enter<M: CpuMemory>(
+     state: &mut TailState<'_, M>,
+     _slot: usize,
+     executed: u64,
++    owner: u64,
++    window: usize,
++    guest_mem_base: usize,
+ ) -> TailExit {
+-    tail_next!(state, executed)
++    tail_next!(state, executed, owner, window, guest_mem_base)
+ }
+ #[inline(never)]
+ extern "rust-preserve-none" fn tail_op<M: CpuMemory, const TAG: usize>(
+     state: &mut TailState<'_, M>,
+     slot: usize,
+     executed: u64,
++    owner: u64,
++    window: usize,
++    guest_mem_base: usize,
+ ) -> TailExit {
+     debug_assert!(slot < PAGE_WORDS && executed < state.budget);
+     // SAFETY: every entry is reached via tail_next, which checks the budget
+     // and derives the slot from the low twelve PC bits, divided by four.
+     unsafe { std::hint::assert_unchecked(slot < PAGE_WORDS && executed < state.budget) };
++    // SAFETY: these scalars are passed unchanged from a real opaque hint at
++    // entry or its read/write update. Memory validates the owner generation
++    // before dereferencing it; no hint survives a syscall/native slice exit.
++    let mut hint = unsafe { DirectHint::from_parts(owner, window, guest_mem_base) };
+     let instruction = &state.page.instructions[slot].instruction;
+     let count = match state.cpu.execute_decoded::<M, TAG>(
+         instruction,
+         state.memory,
+         state.budget - executed,
+         state.flags,
++        &mut hint,
+     ) {
+         Ok((Event::Continue, count)) => count,
+         Ok((Event::Yield, _)) => {
+@@ -1305,7 +1380,11 @@ extern "rust-preserve-none" fn tail_op<M: CpuMemory, const TAG: usize>(
+     {
+         return TailExit::Page(executed);
+     }
+-    tail_next!(state, executed)
++    if matches!(TAG, 24 | 25) {
++        hint = state.memory.direct_hint();
++    }
++    let (owner, window, guest_mem_base) = hint.into_parts();
++    tail_next!(state, executed, owner, window, guest_mem_base)
+ }
+ 
+ #[cfg(test)]
+diff --git a/crates/trames-cpu/src/load_store.rs b/crates/trames-cpu/src/load_store.rs
+index f9081a3..ed80883 100644
+--- a/crates/trames-cpu/src/load_store.rs
++++ b/crates/trames-cpu/src/load_store.rs
+@@ -1,7 +1,7 @@
+ // SPDX-License-Identifier: GPL-3.0-or-later
+ use super::{sign_extend, Cpu, CpuFault};
+ use std::sync::atomic::Ordering;
+-use trames_memory::{CpuMemory, MemoryError};
++use trames_memory::{CpuMemory, DirectHint, MemoryError};
+ 
+ #[inline]
+ pub(super) fn read_operand(
+@@ -35,6 +35,40 @@ pub(super) fn write_operand(
+     }
+ }
+ 
++#[inline]
++pub(super) fn read_operand_hint(
++    memory: &impl CpuMemory,
++    hint: &mut DirectHint,
++    address: u64,
++    size: usize,
++) -> Result<u128, MemoryError> {
++    Ok(match size {
++        1 => memory.read_array_hint::<1>(address, hint)?[0] as u128,
++        2 => u16::from_le_bytes(memory.read_array_hint(address, hint)?) as u128,
++        4 => u32::from_le_bytes(memory.read_array_hint(address, hint)?) as u128,
++        8 => u64::from_le_bytes(memory.read_array_hint(address, hint)?) as u128,
++        16 => u128::from_le_bytes(memory.read_array_hint(address, hint)?),
++        _ => unreachable!("validated scalar size"),
++    })
++}
++#[inline]
++pub(super) fn write_operand_hint(
++    memory: &mut impl CpuMemory,
++    hint: &mut DirectHint,
++    address: u64,
++    size: usize,
++    value: u128,
++) -> Result<(), MemoryError> {
++    match size {
++        1 => memory.write_array_hint(address, [value as u8], hint),
++        2 => memory.write_array_hint(address, (value as u16).to_le_bytes(), hint),
++        4 => memory.write_array_hint(address, (value as u32).to_le_bytes(), hint),
++        8 => memory.write_array_hint(address, (value as u64).to_le_bytes(), hint),
++        16 => memory.write_array_hint(address, value.to_le_bytes(), hint),
++        _ => unreachable!("validated scalar size"),
++    }
++}
++
+ impl Cpu {
+     pub(super) fn execute_memory(
+         &mut self,
+diff --git a/crates/trames-memory/Cargo.toml b/crates/trames-memory/Cargo.toml
+index 2a4a503..900a7b1 100644
+--- a/crates/trames-memory/Cargo.toml
++++ b/crates/trames-memory/Cargo.toml
+@@ -5,5 +5,8 @@ edition.workspace = true
+ rust-version.workspace = true
+ license.workspace = true
+ 
++[dependencies]
++libc = "=0.2.190"
++
+ [lints]
+ workspace = true
+diff --git a/crates/trames-memory/src/backing.rs b/crates/trames-memory/src/backing.rs
+index 942e68c..85c110d 100644
+--- a/crates/trames-memory/src/backing.rs
++++ b/crates/trames-memory/src/backing.rs
+@@ -98,7 +98,7 @@ impl Page {
+             if !b.private_copy {
+                 let mut page = [0; PAGE_SIZE as usize];
+                 b.object.read(0, &mut page)?;
+-                self.bytes = Rc::new(page);
++                self.bytes = Rc::new(PageBytes::new(page));
+                 b.private_copy = true;
+             }
+         }
+@@ -140,7 +140,7 @@ impl Memory {
+         } else {
+             self.map(address, len, permissions)?;
+         }
+-        let zero = Rc::new([0; PAGE_SIZE as usize]);
++        let zero = Rc::new(PageBytes::new([0; PAGE_SIZE as usize]));
+         for (i, object) in objects.into_iter().enumerate() {
+             let frame = self.pages[&(address + i as u64 * PAGE_SIZE)];
+             let page = self.frames[frame].as_mut().expect("mapped page");
+@@ -151,6 +151,7 @@ impl Memory {
+                 private_copy: false,
+             });
+         }
++        self.refresh_mmu(address, len);
+         self.has_backings = true;
+         self.cpu_borrow_safe &= cpu_safe;
+         Ok(())
+@@ -202,12 +203,13 @@ impl Memory {
+             if self.parallel_cache.is_some() {
+                 self.parallel_mappings.insert(base);
+             }
+-            page.bytes = Rc::new([0; PAGE_SIZE as usize]);
++            page.bytes = Rc::new(PageBytes::new([0; PAGE_SIZE as usize]));
+             if let Some(b) = &mut page.backing {
+                 b.private_copy = false;
+             }
+             page.instruction_revision = self.code_revision;
+         }
++        self.refresh_mmu(address, len);
+         self.revision = self.revision.wrapping_add(1);
+         Ok(())
+     }
+@@ -244,6 +246,7 @@ impl Memory {
+             self.unmap(old, old_len)?;
+             return self.reserve(new, new_len, fixed);
+         }
++        self.mmu.retire();
+         let mut pages = Vec::new();
+         for base in (old..old_end).step_by(PAGE_SIZE as usize) {
+             pages.push(
+@@ -293,7 +296,7 @@ impl Memory {
+             let original_count = pages.len();
+             for i in original_count..count {
+                 let mut page = last.clone();
+-                page.bytes = Rc::new([0; PAGE_SIZE as usize]);
++                page.bytes = Rc::new(PageBytes::new([0; PAGE_SIZE as usize]));
+                 if let Some(b) = &mut page.backing {
+                     b.object = last
+                         .backing
+@@ -321,6 +324,7 @@ impl Memory {
+             let frame = self.pages[&(new + i as u64 * PAGE_SIZE)];
+             self.frames[frame] = Some(page);
+         }
++        self.refresh_mmu(new, new_len);
+         Ok(())
+     }
+ }
+diff --git a/crates/trames-memory/src/cpu_memory.rs b/crates/trames-memory/src/cpu_memory.rs
+index 2f74da6..bb16589 100644
+--- a/crates/trames-memory/src/cpu_memory.rs
++++ b/crates/trames-memory/src/cpu_memory.rs
+@@ -1,6 +1,6 @@
+ // SPDX-License-Identifier: GPL-3.0-or-later
+ //! The interpreter's checked memory contract. Both views use the same CPU engine.
+-use crate::{Access, Memory, MemoryError};
++use crate::{Access, DirectHint, Memory, MemoryError};
+ use std::sync::atomic::Ordering;
+ 
+ pub enum CpuSlice<'a, M> {
+@@ -53,6 +53,29 @@ pub trait CpuMemory {
+     ) -> Result<(), MemoryError> {
+         self.write(address, &bytes)
+     }
++    /// Opaque generation-checked hint, valid only as an acceleration suggestion.
++    /// Mapping mutation, cross-memory reuse, and stale hints remain safe.
++    #[inline]
++    fn direct_hint(&self) -> DirectHint {
++        DirectHint::EMPTY
++    }
++    #[inline(always)]
++    fn read_array_hint<const N: usize>(
++        &self,
++        address: u64,
++        _hint: &mut DirectHint,
++    ) -> Result<[u8; N], MemoryError> {
++        self.read_array(address)
++    }
++    #[inline(always)]
++    fn write_array_hint<const N: usize>(
++        &mut self,
++        address: u64,
++        bytes: [u8; N],
++        _hint: &mut DirectHint,
++    ) -> Result<(), MemoryError> {
++        self.write_array(address, bytes)
++    }
+     fn read_u64(&self, address: u64) -> Result<u64, MemoryError> {
+         Ok(u64::from_le_bytes(self.read_array(address)?))
+     }
+@@ -124,6 +147,50 @@ impl CpuMemory for Memory {
+     fn write_array<const N: usize>(&mut self, a: u64, b: [u8; N]) -> Result<(), MemoryError> {
+         Memory::write_array(self, a, b)
+     }
++    #[inline]
++    fn direct_hint(&self) -> DirectHint {
++        if self.shared.is_none() {
++            self.mmu.hint()
++        } else {
++            DirectHint::EMPTY
++        }
++    }
++    #[inline(always)]
++    fn read_array_hint<const N: usize>(
++        &self,
++        address: u64,
++        hint: &mut DirectHint,
++    ) -> Result<[u8; N], MemoryError> {
++        if self.shared.is_none() {
++            if let Some(bytes) = self.mmu.read_hint(address & 0x00ffffffffffffff, hint) {
++                return Ok(bytes);
++            }
++        }
++        let result = self.read_array(address);
++        *hint = self.direct_hint();
++        result
++    }
++    #[inline(always)]
++    fn write_array_hint<const N: usize>(
++        &mut self,
++        address: u64,
++        bytes: [u8; N],
++        hint: &mut DirectHint,
++    ) -> Result<(), MemoryError> {
++        if self.shared.is_none() {
++            if let Some(frame) = self
++                .mmu
++                .write_hint(address & 0x00ffffffffffffff, bytes, hint)
++            {
++                self.revision = self.revision.wrapping_add(1);
++                self.note_parallel_write(frame);
++                return Ok(());
++            }
++        }
++        let result = self.write_array(address, bytes);
++        *hint = self.direct_hint();
++        result
++    }
+     fn atomic_update<T>(
+         &mut self,
+         a: u64,
+diff --git a/crates/trames-memory/src/lib.rs b/crates/trames-memory/src/lib.rs
+index 4c2861a..0125482 100644
+--- a/crates/trames-memory/src/lib.rs
++++ b/crates/trames-memory/src/lib.rs
+@@ -2,12 +2,15 @@
+ //! Sparse, bounded guest address spaces. Guest addresses are never host pointers.
+ mod backing;
+ mod cpu_memory;
++mod mmu;
++use mmu::PageBytes;
+ mod native_access;
+ pub mod parallel;
+ mod reservations;
+ use backing::Backed;
+ pub use backing::{backing_changed, PageBacking};
+ pub use cpu_memory::{CpuMemory, CpuSlice};
++pub use mmu::DirectHint;
+ pub use native_access::{NativeAccessError, NativeMemory, Transfer};
+ pub use reservations::MAX_RESERVATIONS;
+ use std::{
+@@ -99,7 +102,7 @@ struct Page {
+     // workers get separate Arc<ConcurrentPage> bytes at joined checkpoints.
+     // Rc preserves fork COW without an atomic refcount RMW on every CPU/native
+     // store. Never send this allocation (or a borrowed slice) to a worker.
+-    bytes: Rc<[u8; PAGE_SIZE as usize]>,
++    bytes: Rc<PageBytes>,
+     permissions: Permissions,
+     instruction_revision: u64,
+     backing: Option<Backed>,
+@@ -154,6 +157,7 @@ impl Translation {
+ }
+ 
+ pub struct Memory {
++    mmu: mmu::Arena,
+     // Ordered mappings serve mmap and procfs; stable frame indices serve the
+     // interpreter. The translation cache owns no bytes, so it cannot trigger
+     // false COW or retain an old allocation after a write.
+@@ -181,7 +185,9 @@ impl Clone for Memory {
+         if let Some(shared) = &self.shared {
+             return shared.borrow().clone();
+         }
++        self.mmu.retire();
+         Self {
++            mmu: mmu::Arena::default(),
+             pages: self.pages.clone(),
+             reservations: self.reservations.clone(),
+             frames: self
+@@ -249,6 +255,7 @@ impl Memory {
+     }
+     pub fn new(limit: usize) -> Self {
+         Self {
++            mmu: mmu::Arena::default(),
+             pages: BTreeMap::new(),
+             reservations: BTreeMap::new(),
+             frames: Vec::new(),
+@@ -399,7 +406,10 @@ impl Memory {
+             self.parallel_mappings.insert(base);
+         }
+         let page = Page {
+-            bytes: Rc::new([0; PAGE_SIZE as usize]),
++            bytes: self
++                .mmu
++                .page(base)
++                .unwrap_or_else(|| Rc::new(PageBytes::new([0; PAGE_SIZE as usize]))),
+             permissions,
+             instruction_revision: self.code_revision,
+             backing: None,
+@@ -564,6 +574,7 @@ impl Memory {
+             self.insert_page(base, permissions);
+         }
+         self.revision = self.revision.wrapping_add(1);
++        self.refresh_mmu(address, len);
+         self.invalidate_translations();
+         Ok(())
+     }
+@@ -590,6 +601,7 @@ impl Memory {
+         }
+         self.revision = self.revision.wrapping_add(1);
+         self.advance_code_revision();
++        self.refresh_mmu(address, len);
+         self.invalidate_translations();
+         Ok(())
+     }
+@@ -669,6 +681,7 @@ impl Memory {
+             self.insert_page(base, permissions);
+         }
+         self.revision = self.revision.wrapping_add(1);
++        self.refresh_mmu(address, len as u64);
+         self.invalidate_translations();
+         Ok(())
+     }
+@@ -730,6 +743,7 @@ impl Memory {
+             page.instruction_revision = self.code_revision;
+         }
+         self.revision = self.revision.wrapping_add(1);
++        self.refresh_mmu(address, len);
+         self.invalidate_translations();
+         Ok(())
+     }
+@@ -859,6 +873,7 @@ impl Memory {
+         if input.len() <= PAGE_SIZE as usize - offset {
+             let entry = self.access_translation(address, input.len(), Access::Write)?;
+             let frame = entry.frame;
++            self.prepare_mmu_write(address, input.len());
+             let next_code_revision = self.code_revision.wrapping_add(1);
+             let page = self.translated_page_mut(entry);
+             if entry.tag & Translation::BACKED != 0 {
+@@ -880,6 +895,7 @@ impl Memory {
+         if !input.is_empty() {
+             self.revision = self.revision.wrapping_add(1);
+         }
++        self.prepare_mmu_write(address, input.len());
+         let mut executable = false;
+         while !input.is_empty() {
+             let base = address & !(PAGE_SIZE - 1);
+@@ -928,6 +944,9 @@ impl Memory {
+         if N == 0 {
+             return Ok([0; N]);
+         }
++        if let Some(bytes) = self.mmu.read::<N>(address) {
++            return Ok(bytes);
++        }
+         let offset = (address & (PAGE_SIZE - 1)) as usize;
+         if N <= PAGE_SIZE as usize - offset {
+             let page = self.page_for_access(address, N, Access::Read)?;
+@@ -957,8 +976,14 @@ impl Memory {
+         if N > PAGE_SIZE as usize - offset {
+             return self.write(address, &bytes);
+         }
++        if let Some(frame) = self.mmu.write(address, bytes) {
++            self.revision = self.revision.wrapping_add(1);
++            self.note_parallel_write(frame);
++            return Ok(());
++        }
+         let entry = self.access_translation(address, N, Access::Write)?;
+         let frame = entry.frame;
++        self.prepare_mmu_write(address, N);
+         let next_code_revision = self.code_revision.wrapping_add(1);
+         let page = self.translated_page_mut(entry);
+         if entry.tag & Translation::BACKED != 0 {
+diff --git a/crates/trames-memory/src/mmu/access.rs b/crates/trames-memory/src/mmu/access.rs
+new file mode 100644
+index 0000000..c5c56f0
+--- /dev/null
++++ b/crates/trames-memory/src/mmu/access.rs
+@@ -0,0 +1,187 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++//! Inlined native operands and a signed-in linker fixup table. Faults resume
++//! inside the SAME asm block; no Rust stack frame, guard or destructor is skipped.
++use core::arch::asm;
++
++#[cfg(target_vendor = "apple")]
++macro_rules! table { () => { ".pushsection __DATA,__trames_mmu,regular,no_dead_strip\n.p2align 3\n.quad 2b, 3b\n.popsection" }; }
++#[cfg(not(target_vendor = "apple"))]
++macro_rules! table {
++    () => {
++        ".pushsection trames_mmu_fixups,\"awR\"\n.p2align 3\n.quad 2b, 3b\n.popsection"
++    };
++}
++#[used]
++#[cfg_attr(target_vendor = "apple", unsafe(link_section = "__DATA,__trames_mmu"))]
++#[cfg_attr(
++    not(target_vendor = "apple"),
++    unsafe(link_section = "trames_mmu_fixups")
++)]
++static SENTINEL: [usize; 2] = [0; 2];
++unsafe extern "C" {
++    #[cfg_attr(
++        target_vendor = "apple",
++        link_name = "\u{1}section$start$__DATA$__trames_mmu"
++    )]
++    #[cfg_attr(not(target_vendor = "apple"), link_name = "__start_trames_mmu_fixups")]
++    static START: u8;
++    #[cfg_attr(
++        target_vendor = "apple",
++        link_name = "\u{1}section$end$__DATA$__trames_mmu"
++    )]
++    #[cfg_attr(not(target_vendor = "apple"), link_name = "__stop_trames_mmu_fixups")]
++    static END: u8;
++}
++pub(super) fn recovery(pc: usize) -> Option<usize> {
++    let begin = (&raw const START) as usize;
++    let end = (&raw const END) as usize;
++    if end < begin || !(end - begin).is_multiple_of(16) {
++        return None;
++    }
++    // SAFETY: linker-defined, aligned pairs of native addresses, immutable after
++    // loader relocation. The sentinel ensures the section always exists.
++    let entries =
++        unsafe { std::slice::from_raw_parts(begin as *const [usize; 2], (end - begin) / 16) };
++    entries
++        .iter()
++        .find_map(|entry| (entry[0] == pc && pc != 0).then_some(entry[1]))
++}
++
++#[cfg(target_arch = "aarch64")]
++macro_rules! read_scalar { ($instruction:literal,$target:ident) => {{
++    let value:u64; let ok:u32;
++    // SAFETY: caller validates the complete, registered hardware-page-contained
++    // operand. The failure label initializes ALL output registers.
++    unsafe { asm!(concat!("2: ", $instruction, "\nmov {ok:w}, #1\nb 4f\n3: mov {value:x}, #0\nmov {ok:w}, #0\n4:\n",table!()),
++        pointer=in(reg) $target, value=lateout(reg) value, ok=lateout(reg) ok, options(nostack,readonly)); }
++    (ok!=0,value)
++}}; }
++#[cfg(target_arch = "x86_64")]
++macro_rules! read_scalar { ($instruction:literal,$target:ident) => {{
++    let value:u64; let ok:u32;
++    // SAFETY: same bounded operand and local fixup invariant as AArch64.
++    unsafe { asm!(concat!("2: ",$instruction,"\nmov {ok:e}, 1\njmp 4f\n3: xor {value:e}, {value:e}\nxor {ok:e}, {ok:e}\n4:\n",table!()),
++        pointer=in(reg) $target, value=lateout(reg) value, ok=lateout(reg) ok, options(nostack,readonly)); }
++    (ok!=0,value)
++}}; }
++#[cfg(target_arch = "aarch64")]
++macro_rules! write_scalar { ($instruction:literal,$target:ident,$value:ident) => {{
++    let ok:u32;
++    // SAFETY: caller owns a complete, host-page-contained store; only this
++    // instruction can fault. No Rust reference is manufactured at the target.
++    unsafe { asm!(concat!("2: ",$instruction,"\nmov {ok:w}, #1\nb 4f\n3: mov {ok:w}, #0\n4:\n",table!()),
++        pointer=in(reg) $target,value=in(reg) $value,ok=lateout(reg) ok,options(nostack)); }
++    ok!=0
++}}; }
++#[cfg(target_arch = "x86_64")]
++macro_rules! write_scalar { ($instruction:literal,$target:ident,$value:ident) => {{
++    let ok:u32;
++    // SAFETY: same contained store and fixed recovery site as AArch64.
++    unsafe { asm!(concat!("2: ",$instruction,"\nmov {ok:e}, 1\njmp 4f\n3: xor {ok:e}, {ok:e}\n4:\n",table!()),
++        pointer=in(reg) $target,value=in(reg) $value,ok=lateout(reg) ok,options(nostack)); }
++    ok!=0
++}}; }
++#[inline(always)]
++pub(super) unsafe fn access<const N: usize>(write: bool, target: *mut u8, bytes: *mut u8) -> bool {
++    if N == 16 {
++        // SAFETY: caller provides a complete 16-byte host buffer and a target
++        // wholly within one registered hardware page, with its lifetime guard.
++        return unsafe { vector(write, target, bytes) };
++    }
++    if !matches!(N, 1 | 2 | 4 | 8) {
++        return false;
++    }
++    if write {
++        let mut input = [0; 8];
++        // SAFETY: the input buffer contains N bytes and input has room for N.
++        unsafe {
++            std::ptr::copy_nonoverlapping(bytes, input.as_mut_ptr(), N);
++        }
++        let value = u64::from_le_bytes(input);
++        #[cfg(target_arch = "aarch64")]
++        return match N {
++            1 => write_scalar!("strb {value:w}, [{pointer}]", target, value),
++            2 => write_scalar!("strh {value:w}, [{pointer}]", target, value),
++            4 => write_scalar!("str {value:w}, [{pointer}]", target, value),
++            _ => write_scalar!("str {value:x}, [{pointer}]", target, value),
++        };
++        #[cfg(target_arch = "x86_64")]
++        return match N {
++            1 => write_scalar!("mov byte ptr [{pointer}], {value:l}", target, value),
++            2 => write_scalar!("mov word ptr [{pointer}], {value:x}", target, value),
++            4 => write_scalar!("mov dword ptr [{pointer}], {value:e}", target, value),
++            _ => write_scalar!("mov qword ptr [{pointer}], {value:r}", target, value),
++        };
++    }
++    #[cfg(target_arch = "aarch64")]
++    let (ok, value) = match N {
++        1 => read_scalar!("ldrb {value:w}, [{pointer}]", target),
++        2 => read_scalar!("ldrh {value:w}, [{pointer}]", target),
++        4 => read_scalar!("ldr {value:w}, [{pointer}]", target),
++        _ => read_scalar!("ldr {value:x}, [{pointer}]", target),
++    };
++    #[cfg(target_arch = "x86_64")]
++    let (ok, value) = match N {
++        1 => read_scalar!("movzx {value:e}, byte ptr [{pointer}]", target),
++        2 => read_scalar!("movzx {value:e}, word ptr [{pointer}]", target),
++        4 => read_scalar!("mov {value:e}, dword ptr [{pointer}]", target),
++        _ => read_scalar!("mov {value:r}, qword ptr [{pointer}]", target),
++    };
++    if ok {
++        // SAFETY: output is written only after a successful complete load.
++        unsafe {
++            std::ptr::copy_nonoverlapping(value.to_le_bytes().as_ptr(), bytes, N);
++        }
++    }
++    ok
++}
++#[inline(always)]
++unsafe fn vector(write: bool, target: *mut u8, bytes: *mut u8) -> bool {
++    let ok: u32;
++    #[cfg(target_arch = "aarch64")]
++    {
++        use core::arch::aarch64::uint8x16_t;
++        if write {
++            // SAFETY: the trusted Rust buffer has a complete unaligned vector.
++            let value = unsafe { std::ptr::read_unaligned(bytes.cast::<uint8x16_t>()) };
++            unsafe {
++                asm!(concat!("2: str {value:q}, [{pointer}]\nmov {ok:w}, #1\nb 4f\n3: mov {ok:w}, #0\n4:\n",table!()),
++                pointer=in(reg) target,value=in(vreg) value,ok=lateout(reg) ok,options(nostack));
++            }
++        } else {
++            let value: uint8x16_t;
++            unsafe {
++                asm!(concat!("2: ldr {value:q}, [{pointer}]\nmov {ok:w}, #1\nb 4f\n3: movi {value:v}.16b, #0\nmov {ok:w}, #0\n4:\n",table!()),
++                pointer=in(reg) target,value=lateout(vreg) value,ok=lateout(reg) ok,options(nostack,readonly));
++            }
++            if ok != 0 {
++                unsafe {
++                    std::ptr::write_unaligned(bytes.cast::<uint8x16_t>(), value);
++                }
++            }
++        }
++    }
++    #[cfg(target_arch = "x86_64")]
++    {
++        use core::arch::x86_64::__m128i;
++        if write {
++            let value = unsafe { std::ptr::read_unaligned(bytes.cast::<__m128i>()) };
++            unsafe {
++                asm!(concat!("2: movdqu xmmword ptr [{pointer}], {value}\nmov {ok:e}, 1\njmp 4f\n3: xor {ok:e}, {ok:e}\n4:\n",table!()),
++                pointer=in(reg) target,value=in(xmm_reg) value,ok=lateout(reg) ok,options(nostack));
++            }
++        } else {
++            let value: __m128i;
++            unsafe {
++                asm!(concat!("2: movdqu {value}, xmmword ptr [{pointer}]\nmov {ok:e}, 1\njmp 4f\n3: pxor {value}, {value}\nxor {ok:e}, {ok:e}\n4:\n",table!()),
++                pointer=in(reg) target,value=lateout(xmm_reg) value,ok=lateout(reg) ok,options(nostack,readonly));
++            }
++            if ok != 0 {
++                unsafe {
++                    std::ptr::write_unaligned(bytes.cast::<__m128i>(), value);
++                }
++            }
++        }
++    }
++    ok != 0
++}
+diff --git a/crates/trames-memory/src/mmu/cache.rs b/crates/trames-memory/src/mmu/cache.rs
+new file mode 100644
+index 0000000..585bcc6
+--- /dev/null
++++ b/crates/trames-memory/src/mmu/cache.rs
+@@ -0,0 +1,156 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++//! One direct-mapped level over sparse host mapping windows. No byte ownership,
++//! permission grants, shared atomics, or access-frequency bookkeeping lives here.
++use super::*;
++
++const SLOTS: usize = 16;
++#[derive(Clone, Copy)]
++struct Entry {
++    tag: u64,
++    pointer: usize,
++}
++impl Entry {
++    const EMPTY: Self = Self { tag: 0, pointer: 0 };
++}
++
++pub(crate) struct Cache {
++    entries: [Cell<Entry>; SLOTS],
++    last: Cell<usize>,
++}
++impl Default for Cache {
++    fn default() -> Self {
++        Self {
++            entries: [const { Cell::new(Entry::EMPTY) }; SLOTS],
++            last: Cell::new(0),
++        }
++    }
++}
++impl Cache {
++    #[inline(always)]
++    fn index(base: u64) -> usize {
++        let window = base / WINDOW as u64;
++        // Fold high bits: code, heap and mmap commonly share the low index bits.
++        (window ^ (window >> 4) ^ (window >> 8) ^ (window >> 16)) as usize & (SLOTS - 1)
++    }
++    #[inline(always)]
++    pub fn get(&self, base: u64) -> Option<NonNull<Window>> {
++        let entry = self.entries[Self::index(base)].get();
++        if entry.tag == base | 1 {
++            self.last.set(entry.pointer);
++            NonNull::new(entry.pointer as *mut Window)
++        } else {
++            None
++        }
++    }
++    #[inline]
++    pub fn insert(&self, base: u64, pointer: NonNull<Window>) {
++        let pointer = pointer.as_ptr() as usize;
++        self.entries[Self::index(base)].set(Entry {
++            tag: base | 1,
++            pointer,
++        });
++        self.last.set(pointer);
++    }
++    pub fn clear(&self) {
++        for entry in &self.entries {
++            entry.set(Entry::EMPTY);
++        }
++        self.last.set(0);
++    }
++    #[inline]
++    pub fn hint(&self, owner: u64) -> DirectHint {
++        let pointer = self.last.get();
++        if pointer == 0 {
++            return DirectHint::EMPTY;
++        }
++        // SAFETY: callers clear this cache before dropping their pinned windows;
++        // a worker cache belongs to one retained immutable Snapshot only.
++        let window = unsafe { &*(pointer as *const Window) };
++        DirectHint {
++            owner,
++            window: pointer,
++            bias: (window.mapping.cpu.as_ptr() as usize).wrapping_sub(window.base as usize),
++        }
++    }
++}
++
++/// Opaque, non-owning CPU-slice translation hint. The owner generation is checked
++/// BEFORE dereferencing the window; old hints cannot keep fork/remap aliases alive.
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub struct DirectHint {
++    owner: u64,
++    window: usize,
++    pub(super) bias: usize,
++}
++impl DirectHint {
++    pub const EMPTY: Self = Self {
++        owner: 0,
++        window: 0,
++        bias: 0,
++    };
++    /// Scalars carried explicitly by the interpreter's preserve-none tail ABI.
++    pub fn into_parts(self) -> (u64, usize, usize) {
++        (self.owner, self.window, self.bias)
++    }
++    /// Reconstitute unmodified parts obtained from `into_parts` on a real hint.
++    ///
++    /// # Safety
++    /// All three values must come from the SAME hint, without modification.
++    /// Stale hints are allowed: each memory implementation checks the owner
++    /// generation before accessing their raw window descriptor.
++    #[inline]
++    pub unsafe fn from_parts(owner: u64, window: usize, bias: usize) -> Self {
++        Self {
++            owner,
++            window,
++            bias,
++        }
++    }
++    #[inline(always)]
++    pub(super) fn reached(&self, owner: u64, address: u64) -> Option<(&Window, usize)> {
++        if self.owner != owner || self.window == 0 {
++            return None;
++        }
++        // SAFETY: opaque hints are constructed solely from pinned live windows;
++        // their owner key changes before any of those windows can be freed.
++        let window = unsafe { &*(self.window as *const Window) };
++        if address.wrapping_sub(window.base) >= WINDOW as u64 {
++            return None;
++        }
++        Some((window, self.bias))
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    #[test]
++    fn common_windows_do_not_conflict_and_collisions_replace_only_their_slot() {
++        let common = [0x10000000, 0x40000000, 0x70000000, 0x7fffff000000];
++        let indexes: BTreeSet<_> = common.into_iter().map(Cache::index).collect();
++        assert_eq!(indexes.len(), common.len());
++        let cache = Cache::default();
++        let mut window = 0u8;
++        // No dereference: this verifies replacement/tag lookup only.
++        let pointer = NonNull::from(&mut window).cast::<Window>();
++        for base in common {
++            cache.insert(base, pointer);
++        }
++        for base in common {
++            assert_eq!(cache.get(base), Some(pointer));
++        }
++        let collision = (1..1024)
++            .map(|n| n * WINDOW as u64)
++            .find(|&base| base != common[0] && Cache::index(base) == Cache::index(common[0]))
++            .unwrap();
++        cache.insert(collision, pointer);
++        assert!(cache.get(common[0]).is_none());
++        assert_eq!(cache.get(collision), Some(pointer));
++        for base in common.into_iter().skip(1) {
++            assert_eq!(cache.get(base), Some(pointer));
++        }
++        cache.clear();
++        assert!(cache.get(collision).is_none());
++        assert_eq!(cache.hint(1), DirectHint::EMPTY);
++    }
++}
+diff --git a/crates/trames-memory/src/mmu/fault.rs b/crates/trames-memory/src/mmu/fault.rs
+new file mode 100644
+index 0000000..5372ea3
+--- /dev/null
++++ b/crates/trames-memory/src/mmu/fault.rs
+@@ -0,0 +1,179 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++//! Recover only our exact scalar memory instructions inside a live arena.
++use super::host::WINDOW;
++use std::sync::{
++    atomic::{AtomicBool, AtomicUsize, Ordering},
++    OnceLock,
++};
++
++const MAX_WINDOWS: usize = 2048;
++static WINDOWS: [AtomicUsize; MAX_WINDOWS] = [const { AtomicUsize::new(0) }; MAX_WINDOWS];
++static SEGV_RESET: AtomicBool = AtomicBool::new(false);
++static BUS_RESET: AtomicBool = AtomicBool::new(false);
++static STARTED: OnceLock<bool> = OnceLock::new();
++struct Previous {
++    segv: libc::sigaction,
++    bus: libc::sigaction,
++}
++static PREVIOUS: OnceLock<Previous> = OnceLock::new();
++
++pub(super) fn register(base: usize) -> Option<usize> {
++    WINDOWS.iter().position(|slot| {
++        slot.compare_exchange(0, base, Ordering::Release, Ordering::Relaxed)
++            .is_ok()
++    })
++}
++pub(super) fn unregister(slot: usize) {
++    WINDOWS[slot].store(0, Ordering::Release);
++}
++pub(super) fn install() -> bool {
++    *STARTED.get_or_init(|| {
++        // SAFETY: zero initializes sigsets/unused union fields; sigaction fills
++        // both saved dispositions before any arena or assembly access exists.
++        unsafe {
++            let (mut segv, mut bus): (libc::sigaction, libc::sigaction) = std::mem::zeroed();
++            if libc::sigaction(libc::SIGSEGV, std::ptr::null(), &mut segv) != 0
++                || libc::sigaction(libc::SIGBUS, std::ptr::null(), &mut bus) != 0
++            {
++                return false;
++            }
++            if PREVIOUS.set(Previous { segv, bus }).is_err() {
++                return false;
++            }
++            let mut action: libc::sigaction = std::mem::zeroed();
++            let previous = PREVIOUS.get().expect("saved signal dispositions");
++            action.sa_flags = libc::SA_SIGINFO
++                | libc::SA_ONSTACK
++                | (previous.segv.sa_flags & (libc::SA_NODEFER | libc::SA_RESTART));
++            action.sa_sigaction = handle as *const () as usize;
++            action.sa_mask = previous.segv.sa_mask;
++            if libc::sigaction(libc::SIGSEGV, &action, std::ptr::null_mut()) != 0 {
++                return false;
++            }
++            action.sa_flags = libc::SA_SIGINFO
++                | libc::SA_ONSTACK
++                | (previous.bus.sa_flags & (libc::SA_NODEFER | libc::SA_RESTART));
++            action.sa_mask = previous.bus.sa_mask;
++            if libc::sigaction(libc::SIGBUS, &action, std::ptr::null_mut()) != 0 {
++                libc::sigaction(
++                    libc::SIGSEGV,
++                    &PREVIOUS.get().unwrap().segv,
++                    std::ptr::null_mut(),
++                );
++                return false;
++            }
++            true
++        }
++    })
++}
++
++extern "C" fn handle(signal: i32, info: *mut libc::siginfo_t, context: *mut libc::c_void) {
++    // SAFETY: the kernel supplies this context and siginfo for SA_SIGINFO. No
++    // allocation, Rust panic, locks, TLS, longjmp or unwinding occurs here.
++    unsafe {
++        if !info.is_null() && !context.is_null() && (*info).si_code > 0 {
++            let address = (*info).si_addr() as usize;
++            let pc = context_pc(context);
++            if !pc.is_null() {
++                if let Some(recovery) = super::access::recovery(*pc) {
++                    if WINDOWS.iter().any(|slot| {
++                        let base = slot.load(Ordering::Acquire);
++                        base != 0 && address.wrapping_sub(base) < WINDOW
++                    }) {
++                        *pc = recovery;
++                        return;
++                    }
++                }
++            }
++        }
++        let Some(previous) = PREVIOUS.get() else {
++            libc::_exit(128 + signal);
++        };
++        let old = if signal == libc::SIGBUS {
++            &previous.bus
++        } else {
++            &previous.segv
++        };
++        if old.sa_sigaction == libc::SIG_IGN {
++            return;
++        }
++        let reset = if signal == libc::SIGBUS {
++            &BUS_RESET
++        } else {
++            &SEGV_RESET
++        };
++        let already_reset =
++            old.sa_flags & libc::SA_RESETHAND != 0 && reset.swap(true, Ordering::Relaxed);
++        if old.sa_sigaction == libc::SIG_DFL || already_reset {
++            let mut default: libc::sigaction = std::mem::zeroed();
++            default.sa_sigaction = libc::SIG_DFL;
++            libc::sigemptyset(&mut default.sa_mask);
++            libc::sigaction(signal, &default, std::ptr::null_mut());
++            libc::raise(signal);
++        } else if old.sa_flags & libc::SA_SIGINFO != 0 {
++            let callback: extern "C" fn(i32, *mut libc::siginfo_t, *mut libc::c_void) =
++                std::mem::transmute(old.sa_sigaction);
++            callback(signal, info, context);
++        } else {
++            let callback: extern "C" fn(i32) = std::mem::transmute(old.sa_sigaction);
++            callback(signal);
++        }
++    }
++}
++
++unsafe fn context_pc(context: *mut libc::c_void) -> *mut usize {
++    #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
++    // SAFETY: Linux's SA_SIGINFO ucontext matches this target's libc ABI.
++    unsafe {
++        (&raw mut (*(context.cast::<libc::ucontext_t>())).uc_mcontext.gregs[libc::REG_RIP as usize])
++            .cast()
++    }
++    #[cfg(all(target_os = "linux", target_arch = "aarch64"))]
++    unsafe {
++        (&raw mut (*(context.cast::<libc::ucontext_t>())).uc_mcontext.pc).cast()
++    }
++    #[cfg(target_vendor = "apple")]
++    // Public Darwin ucontext/mcontext prefixes. arm64e is not a build target;
++    // the x86_64 layout permits native development/CI on Intel Macs.
++    unsafe {
++        let context = &mut *context.cast::<DarwinContext>();
++        if context.machine.is_null() || context.size < std::mem::size_of::<DarwinMachine>() {
++            return std::ptr::null_mut();
++        }
++        (&raw mut (*context.machine).pc).cast()
++    }
++}
++#[cfg(target_vendor = "apple")]
++#[repr(C)]
++struct DarwinContext {
++    onstack: i32,
++    mask: libc::sigset_t,
++    stack: libc::stack_t,
++    link: *mut libc::c_void,
++    size: usize,
++    machine: *mut DarwinMachine,
++}
++#[cfg(all(target_vendor = "apple", target_arch = "aarch64"))]
++#[repr(C)]
++struct DarwinMachine {
++    exception: [u8; 16],
++    x: [u64; 29],
++    fp: u64,
++    lr: u64,
++    sp: u64,
++    pc: u64,
++    cpsr: u32,
++    padding: u32,
++}
++
++#[cfg(all(target_vendor = "apple", target_arch = "x86_64"))]
++#[repr(C)]
++struct DarwinMachine {
++    exception: [u8; 16],
++    registers: [u64; 16],
++    pc: u64,
++    flags: u64,
++    cs: u64,
++    fs: u64,
++    gs: u64,
++}
+diff --git a/crates/trames-memory/src/mmu/host.rs b/crates/trames-memory/src/mmu/host.rs
+new file mode 100644
+index 0000000..66c741a
+--- /dev/null
++++ b/crates/trames-memory/src/mmu/host.rs
+@@ -0,0 +1,205 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++//! Two aliases of anonymous RAM. Neither alias is executable host memory.
++use std::ptr::NonNull;
++
++pub(super) const WINDOW: usize = 16 * 1024 * 1024;
++
++pub(crate) struct Mapping {
++    pub cpu: NonNull<u8>,
++    pub kernel: NonNull<u8>,
++    pub registration: usize,
++}
++// SAFETY: ownership is immutable, mappings remain until the final owner drops.
++// Byte access requires the coordinator borrow or worker region guards. Merely
++// owning this handle grants no Rust reference or permission to access bytes.
++unsafe impl Send for Mapping {}
++unsafe impl Sync for Mapping {}
++
++pub(super) fn page_size() -> Option<usize> {
++    // SAFETY: sysconf has no pointer arguments and no memory side effects.
++    let size = unsafe { libc::sysconf(libc::_SC_PAGESIZE) };
++    let size = usize::try_from(size).ok()?;
++    (size.is_power_of_two() && (4096..=65536).contains(&size)).then_some(size)
++}
++
++impl Mapping {
++    /// Replace a range of our CPU alias with a shared view of an existing RAM
++    /// object. Source ownership stays in the frozen frames, never a raw lease.
++    pub fn alias(&self, offset: usize, source: &Mapping, source_offset: usize, len: usize) -> bool {
++        debug_assert!(offset <= WINDOW && len <= WINDOW - offset);
++        debug_assert!(source_offset <= WINDOW && len <= WINDOW - source_offset);
++        // SAFETY: fixed replacement is restricted to our reserved CPU range.
++        // Linux old_size=0 duplicates a MAP_SHARED view instead of moving it.
++        unsafe {
++            let target = self.cpu.as_ptr().add(offset).cast::<libc::c_void>();
++            let source = source
++                .kernel
++                .as_ptr()
++                .add(source_offset)
++                .cast::<libc::c_void>();
++            #[cfg(target_os = "linux")]
++            let ok = libc::mremap(
++                source,
++                0,
++                len,
++                libc::MREMAP_MAYMOVE | libc::MREMAP_FIXED,
++                target,
++            ) == target;
++            #[cfg(target_vendor = "apple")]
++            let ok = {
++                let mut address = target as u64;
++                let (mut current, mut maximum) = (0, 0);
++                mach_vm_remap(
++                    mach_task_self_,
++                    &mut address,
++                    len as u64,
++                    0,
++                    0x4000,
++                    mach_task_self_,
++                    source as u64,
++                    0,
++                    &mut current,
++                    &mut maximum,
++                    2,
++                ) == 0
++                    && address == target as u64
++            };
++            ok
++        }
++    }
++    pub fn new() -> Option<Self> {
++        if !super::fault::install() {
++            return None;
++        }
++        // SAFETY: all mappings use kernel-selected addresses, never MAP_FIXED
++        // over application allocations. Each success is cleaned up on failure.
++        unsafe {
++            #[cfg(target_os = "linux")]
++            let (cpu, kernel) = {
++                let fd = libc::memfd_create(c"trames-ram".as_ptr(), libc::MFD_CLOEXEC);
++                if fd < 0 {
++                    return None;
++                }
++                if libc::ftruncate(fd, WINDOW as libc::off_t) != 0 {
++                    libc::close(fd);
++                    return None;
++                }
++                let kernel = libc::mmap(
++                    std::ptr::null_mut(),
++                    WINDOW,
++                    libc::PROT_READ | libc::PROT_WRITE,
++                    libc::MAP_SHARED,
++                    fd,
++                    0,
++                );
++                let cpu = libc::mmap(
++                    std::ptr::null_mut(),
++                    WINDOW,
++                    libc::PROT_NONE,
++                    libc::MAP_SHARED,
++                    fd,
++                    0,
++                );
++                libc::close(fd);
++                (cpu, kernel)
++            };
++            #[cfg(target_vendor = "apple")]
++            let (cpu, kernel) = {
++                let kernel = libc::mmap(
++                    std::ptr::null_mut(),
++                    WINDOW,
++                    libc::PROT_READ | libc::PROT_WRITE,
++                    libc::MAP_PRIVATE | libc::MAP_ANON,
++                    -1,
++                    0,
++                );
++                let cpu = libc::mmap(
++                    std::ptr::null_mut(),
++                    WINDOW,
++                    libc::PROT_NONE,
++                    libc::MAP_PRIVATE | libc::MAP_ANON,
++                    -1,
++                    0,
++                );
++                if kernel != libc::MAP_FAILED && cpu != libc::MAP_FAILED {
++                    let mut address = cpu as u64;
++                    let (mut current, mut maximum) = (0, 0);
++                    let task = mach_task_self_;
++                    if mach_vm_remap(
++                        task,
++                        &mut address,
++                        WINDOW as u64,
++                        0,
++                        0x4000,
++                        task,
++                        kernel as u64,
++                        0,
++                        &mut current,
++                        &mut maximum,
++                        2,
++                    ) != 0
++                        || address != cpu as u64
++                        || libc::mprotect(cpu, WINDOW, libc::PROT_NONE) != 0
++                    {
++                        libc::munmap(cpu, WINDOW);
++                        libc::munmap(kernel, WINDOW);
++                        return None;
++                    }
++                }
++                (cpu, kernel)
++            };
++            if cpu == libc::MAP_FAILED || kernel == libc::MAP_FAILED {
++                if cpu != libc::MAP_FAILED {
++                    libc::munmap(cpu, WINDOW);
++                }
++                if kernel != libc::MAP_FAILED {
++                    libc::munmap(kernel, WINDOW);
++                }
++                return None;
++            }
++            let Some(registration) = super::fault::register(cpu as usize) else {
++                libc::munmap(cpu, WINDOW);
++                libc::munmap(kernel, WINDOW);
++                return None;
++            };
++            Some(Self {
++                cpu: NonNull::new_unchecked(cpu.cast()),
++                kernel: NonNull::new_unchecked(kernel.cast()),
++                registration,
++            })
++        }
++    }
++    pub fn protect(&self, offset: usize, len: usize, permissions: i32) -> bool {
++        debug_assert!(offset <= WINDOW && len <= WINDOW - offset);
++        // SAFETY: callers provide host-page-aligned ranges within our owned
++        // CPU alias. The kernel alias and unrelated host allocations are intact.
++        unsafe { libc::mprotect(self.cpu.as_ptr().add(offset).cast(), len, permissions) == 0 }
++    }
++}
++impl Drop for Mapping {
++    fn drop(&mut self) {
++        super::fault::unregister(self.registration);
++        // SAFETY: final ownership; no pointer, slice or worker survives this.
++        unsafe {
++            libc::munmap(self.cpu.as_ptr().cast(), WINDOW);
++            libc::munmap(self.kernel.as_ptr().cast(), WINDOW);
++        }
++    }
++}
++#[cfg(target_vendor = "apple")]
++unsafe extern "C" {
++    static mach_task_self_: libc::mach_port_t;
++    fn mach_vm_remap(
++        target: libc::mach_port_t,
++        address: *mut u64,
++        size: u64,
++        mask: u64,
++        flags: i32,
++        source: libc::mach_port_t,
++        source_address: u64,
++        copy: i32,
++        current: *mut i32,
++        maximum: *mut i32,
++        inheritance: i32,
++    ) -> i32;
++}
+diff --git a/crates/trames-memory/src/mmu/mod.rs b/crates/trames-memory/src/mmu/mod.rs
+new file mode 100644
+index 0000000..55c5a16
+--- /dev/null
++++ b/crates/trames-memory/src/mmu/mod.rs
+@@ -0,0 +1,452 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++//! Sparse, non-executable hardware-protected views of ordinary guest RAM.
++mod access;
++mod cache;
++pub(crate) use cache::Cache;
++pub use cache::DirectHint;
++mod fault;
++pub(crate) mod host;
++mod worker;
++use super::*;
++use host::WINDOW;
++use std::sync::atomic::{AtomicBool, AtomicU8, AtomicUsize};
++use std::{
++    ops::{Deref, DerefMut},
++    ptr::NonNull,
++    sync::Arc,
++};
++pub(crate) use worker::{Frozen, Pool, Slot};
++#[cfg(test)]
++mod tests;
++
++const ELIGIBLE: u8 = 4;
++const CODE: u8 = 8;
++const READ: u8 = 1;
++const WRITE: u8 = 2;
++const P: usize = PAGE_SIZE as usize;
++
++/// Kernel/native alias; never changes protection while a Rust slice exists.
++/// A clone copies bytes instead of aliasing writable pages: Rc::make_mut keeps
++/// the existing fork-COW contract even when the physical storage is mapped.
++pub(super) enum PageBytes {
++    Heap(Box<[u8; P]>),
++    Mapped {
++        owner: Arc<host::Mapping>,
++        offset: usize,
++        _lease: Option<Arc<Slot>>,
++    },
++}
++impl PageBytes {
++    pub fn new(bytes: [u8; P]) -> Self {
++        Self::Heap(Box::new(bytes))
++    }
++    pub(super) fn from_slot(slot: Arc<Slot>) -> Self {
++        Self::Mapped {
++            owner: slot.owner.clone(),
++            offset: slot.offset,
++            _lease: Some(slot),
++        }
++    }
++    pub(super) fn physical(&self) -> Option<(&Arc<host::Mapping>, usize)> {
++        if let Self::Mapped { owner, offset, .. } = self {
++            Some((owner, *offset))
++        } else {
++            None
++        }
++    }
++    fn belongs(&self, owner: &Arc<host::Mapping>, offset: usize) -> bool {
++        matches!(self, Self::Mapped { owner: old, offset: at, .. } if Arc::ptr_eq(owner, old) && *at == offset)
++    }
++}
++impl Clone for PageBytes {
++    fn clone(&self) -> Self {
++        Self::new(**self)
++    }
++}
++impl Deref for PageBytes {
++    type Target = [u8; P];
++    fn deref(&self) -> &Self::Target {
++        match self {
++            Self::Heap(bytes) => bytes,
++            // SAFETY: offset denotes one complete, initialized, 4KiB page of
++            // this live RW kernel mapping. Coordinator access is !Send/!Sync;
++            // no direct CPU write occurs while a shared byte borrow is live.
++            Self::Mapped { owner, offset, .. } => unsafe {
++                &*owner.kernel.as_ptr().add(*offset).cast()
++            },
++        }
++    }
++}
++impl DerefMut for PageBytes {
++    fn deref_mut(&mut self) -> &mut Self::Target {
++        match self {
++            Self::Heap(bytes) => bytes,
++            // SAFETY: Rc::make_mut detached any fork peers. Different page
++            // objects cover disjoint subranges; this exclusive borrow excludes
++            // CPU access, native callbacks and mapping mutation on the owner.
++            Self::Mapped { owner, offset, .. } => unsafe {
++                &mut *owner.kernel.as_ptr().add(*offset).cast()
++            },
++        }
++    }
++}
++
++pub(crate) struct Window {
++    base: u64,
++    mapping: Arc<host::Mapping>,
++    flags: Box<[AtomicU8]>,
++    frames: Box<[AtomicUsize]>,
++    initialized: Box<[AtomicBool]>,
++    granule: usize,
++}
++impl Window {
++    fn new(base: u64, granule: usize) -> Option<Self> {
++        Some(Self {
++            base,
++            mapping: Arc::new(host::Mapping::new()?),
++            granule,
++            flags: (0..WINDOW / granule).map(|_| AtomicU8::new(0)).collect(),
++            frames: (0..WINDOW / P)
++                .map(|_| AtomicUsize::new(usize::MAX))
++                .collect(),
++            initialized: (0..WINDOW / P).map(|_| AtomicBool::new(false)).collect(),
++        })
++    }
++    fn page(&self, offset: usize, zero: bool) -> Rc<PageBytes> {
++        if zero && self.initialized[offset / P].swap(true, Ordering::Relaxed) {
++            // SAFETY: a newly installed private anonymous page has no existing
++            // byte borrows. Fork retires the complete CPU arena before sharing.
++            unsafe {
++                std::ptr::write_bytes(self.mapping.kernel.as_ptr().add(offset), 0, P);
++            }
++        } else {
++            self.initialized[offset / P].store(true, Ordering::Relaxed);
++        }
++        Rc::new(PageBytes::Mapped {
++            owner: self.mapping.clone(),
++            offset,
++            _lease: None,
++        })
++    }
++    fn protect_run(&self, begin: usize, end: usize, state: u8) {
++        let protection = (if state & READ != 0 {
++            libc::PROT_READ
++        } else {
++            0
++        }) | if state & WRITE != 0 {
++            libc::PROT_WRITE
++        } else {
++            0
++        };
++        let ok = self.mapping.protect(
++            begin * self.granule,
++            (end - begin) * self.granule,
++            protection,
++        );
++        for index in begin..end {
++            self.flags[index].store(if ok { state } else { 0 }, Ordering::Relaxed);
++        }
++    }
++}
++
++pub(super) struct Arena {
++    windows: RefCell<BTreeMap<u64, Rc<Window>>>,
++    cache: Cache,
++    key: Cell<u64>,
++    granule: usize,
++}
++impl Default for Arena {
++    fn default() -> Self {
++        Self {
++            windows: RefCell::new(BTreeMap::new()),
++            cache: Cache::default(),
++            key: Cell::new(NEXT_SPACE.fetch_add(1, Ordering::Relaxed)),
++            granule: host::page_size().unwrap_or(0),
++        }
++    }
++}
++impl Arena {
++    fn window(&self, address: u64, create: bool) -> Option<Rc<Window>> {
++        if self.granule == 0 {
++            return None;
++        }
++        let base = address & !(WINDOW as u64 - 1);
++        if let Some(window) = self.windows.borrow().get(&base) {
++            return Some(window.clone());
++        }
++        if !create {
++            return None;
++        }
++        let window = Rc::new(Window::new(base, self.granule)?);
++        self.windows.borrow_mut().insert(base, window.clone());
++        Some(window)
++    }
++    #[inline]
++    fn reached(&self, address: u64) -> Option<&Window> {
++        let base = address & !(WINDOW as u64 - 1);
++        if let Some(pointer) = self.cache.get(base) {
++            // SAFETY: retire clears all entries before dropping pinned windows.
++            return Some(unsafe { pointer.as_ref() });
++        }
++        self.reached_slow(base)
++    }
++    #[cold]
++    fn reached_slow(&self, base: u64) -> Option<&Window> {
++        let windows = self.windows.borrow();
++        let pointer = NonNull::from(windows.get(&base)?.as_ref());
++        self.cache.insert(base, pointer);
++        // SAFETY: the map retains this allocation after the temporary RefCell
++        // borrow ends. No callback or map mutation occurs during this access.
++        Some(unsafe { pointer.as_ref() })
++    }
++    pub fn page(&self, base: u64) -> Option<Rc<PageBytes>> {
++        let window = self.window(base, true)?;
++        Some(window.page((base - window.base) as usize, true))
++    }
++    /// Fork stops using the old CPU aliases before sharing any Rc byte owner.
++    /// Retired kernel aliases stay alive through their PageBytes. New mapping
++    /// windows are populated lazily; fork does not eagerly copy guest RAM.
++    pub fn retire(&self) {
++        self.key.set(NEXT_SPACE.fetch_add(1, Ordering::Relaxed));
++        self.cache.clear();
++        for window in self.windows.borrow().values() {
++            for flag in &window.flags {
++                flag.store(0, Ordering::Relaxed);
++            }
++            window.mapping.protect(0, WINDOW, libc::PROT_NONE);
++        }
++        self.windows.borrow_mut().clear();
++    }
++    #[inline]
++    pub fn hint(&self) -> DirectHint {
++        self.cache.hint(self.key.get())
++    }
++    #[inline(always)]
++    pub fn read_hint<const N: usize>(
++        &self,
++        address: u64,
++        hint: &mut DirectHint,
++    ) -> Option<[u8; N]> {
++        if let Some((window, bias)) = hint.reached(self.key.get(), address) {
++            return Self::read_at(window, bias, address);
++        }
++        let result = self.read(address);
++        *hint = self.hint();
++        result
++    }
++    #[inline(always)]
++    pub fn write_hint<const N: usize>(
++        &self,
++        address: u64,
++        bytes: [u8; N],
++        hint: &mut DirectHint,
++    ) -> Option<usize> {
++        if let Some((window, bias)) = hint.reached(self.key.get(), address) {
++            return Self::write_at(window, bias, address, bytes);
++        }
++        let result = self.write(address, bytes);
++        *hint = self.hint();
++        result
++    }
++    #[inline]
++    fn ready(&self, address: u64) -> bool {
++        self.reached(address).is_some_and(|window| {
++            window.flags[(address - window.base) as usize / window.granule].load(Ordering::Relaxed)
++                & ELIGIBLE
++                != 0
++        })
++    }
++    #[inline]
++    pub fn read<const N: usize>(&self, address: u64) -> Option<[u8; N]> {
++        if !matches!(N, 1 | 2 | 4 | 8 | 16) || N > P - (address as usize & (P - 1)) {
++            return None;
++        }
++        let window = self.reached(address)?;
++        Self::read_at(
++            window,
++            (window.mapping.cpu.as_ptr() as usize).wrapping_sub(window.base as usize),
++            address,
++        )
++    }
++    #[inline(always)]
++    fn read_at<const N: usize>(window: &Window, bias: usize, address: u64) -> Option<[u8; N]> {
++        if !matches!(N, 1 | 2 | 4 | 8 | 16) || N > P - (address as usize & (P - 1)) {
++            return None;
++        }
++        let offset = (address - window.base) as usize;
++        if window.flags[offset / window.granule].load(Ordering::Relaxed) & ELIGIBLE == 0 {
++            return None;
++        }
++        let mut bytes = [0; N];
++        // SAFETY: the target remains inside our registered CPU alias and one
++        // host page; the asm fixup returns false without touching the output.
++        if unsafe {
++            access::access::<N>(
++                false,
++                bias.wrapping_add(address as usize) as *mut u8,
++                bytes.as_mut_ptr(),
++            )
++        } {
++            Some(bytes)
++        } else {
++            None
++        }
++    }
++    #[inline]
++    pub fn write<const N: usize>(&self, address: u64, bytes: [u8; N]) -> Option<usize> {
++        if !matches!(N, 1 | 2 | 4 | 8 | 16) || N > P - (address as usize & (P - 1)) {
++            return None;
++        }
++        let window = self.reached(address)?;
++        Self::write_at(
++            window,
++            (window.mapping.cpu.as_ptr() as usize).wrapping_sub(window.base as usize),
++            address,
++            bytes,
++        )
++    }
++    #[inline(always)]
++    fn write_at<const N: usize>(
++        window: &Window,
++        bias: usize,
++        address: u64,
++        mut bytes: [u8; N],
++    ) -> Option<usize> {
++        if !matches!(N, 1 | 2 | 4 | 8 | 16) || N > P - (address as usize & (P - 1)) {
++            return None;
++        }
++        let offset = (address - window.base) as usize;
++        let state = window.flags[offset / window.granule].load(Ordering::Relaxed);
++        if state & (ELIGIBLE | CODE) != ELIGIBLE {
++            return None;
++        }
++        // SAFETY: same bounded target invariant as read. A rejected store is
++        // wholly inside one hardware page, so it has no partial guest effects.
++        if unsafe {
++            access::access::<N>(
++                true,
++                bias.wrapping_add(address as usize) as *mut u8,
++                bytes.as_mut_ptr(),
++            )
++        } {
++            Some(window.frames[offset / P].load(Ordering::Relaxed))
++        } else {
++            None
++        }
++    }
++}
++
++impl Memory {
++    pub(super) fn prepare_mmu_write(&mut self, address: u64, len: usize) {
++        if len <= P - (address as usize & (P - 1)) && self.mmu.ready(address) {
++            return;
++        }
++        self.refresh_mmu(address, len as u64);
++    }
++    /// Called only at quiescent mapping/COW boundaries. Hardware groups with
++    /// holes, mixed permissions or backing I/O stay on the shared software path.
++    pub(super) fn refresh_mmu(&mut self, address: u64, len: u64) {
++        let granule = self.mmu.granule;
++        if granule == 0 || len == 0 {
++            return;
++        }
++        let begin = address & !(granule as u64 - 1);
++        let end = address
++            .saturating_add(len)
++            .saturating_add(granule as u64 - 1)
++            & !(granule as u64 - 1);
++        let mut at = begin;
++        while at < end {
++            let stop = end.min((at & !(WINDOW as u64 - 1)) + WINDOW as u64);
++            let Some(window) = self
++                .mmu
++                .window(at, self.pages.range(at..stop).next().is_some())
++            else {
++                // Huge reserved/hole ranges own no physical windows. Skip the
++                // entire sparse window instead of inspecting every 4KiB page.
++                at = stop;
++                continue;
++            };
++            let mut run: Option<(usize, usize, u8)> = None;
++            while at < stop {
++                let first = (at - window.base) as usize;
++                let group = first / granule;
++                let mut frames = Vec::new();
++                let mut permissions = None;
++                for base in (at..at + granule as u64).step_by(P) {
++                    let Some(&frame) = self.pages.get(&base) else {
++                        break;
++                    };
++                    let page = self.frames[frame].as_ref().expect("mapped page");
++                    if page.backing.is_some() || permissions.is_some_and(|p| p != page.permissions)
++                    {
++                        break;
++                    }
++                    permissions = Some(page.permissions);
++                    frames.push(frame);
++                }
++                let mut state = 0;
++                if frames.len() == granule / P
++                    && permissions.is_some_and(|p: Permissions| p.read || !p.write)
++                {
++                    let permissions = permissions.expect("complete group");
++                    if frames.iter().enumerate().any(|(index, &frame)| {
++                        let page = self.frames[frame].as_ref().expect("mapped page");
++                        Rc::strong_count(&page.bytes) != 1
++                            || !page.bytes.belongs(&window.mapping, first + index * P)
++                    }) {
++                        // Capture the complete group before writing: remap may
++                        // move overlapping ranges within an existing window.
++                        let data: Vec<_> = frames
++                            .iter()
++                            .map(|&frame| **self.frames[frame].as_ref().unwrap().bytes)
++                            .collect();
++                        for (index, (&frame, bytes)) in frames.iter().zip(&data).enumerate() {
++                            let offset = first + index * P;
++                            // SAFETY: private destination, all old sources were
++                            // captured; no Rust references alias this write.
++                            unsafe {
++                                std::ptr::copy_nonoverlapping(
++                                    bytes.as_ptr(),
++                                    window.mapping.kernel.as_ptr().add(offset),
++                                    P,
++                                );
++                            }
++                            self.frames[frame].as_mut().unwrap().bytes = window.page(offset, false);
++                        }
++                    }
++                    for (index, &frame) in frames.iter().enumerate() {
++                        window.frames[first / P + index].store(frame, Ordering::Relaxed);
++                    }
++                    state = ELIGIBLE
++                        | if permissions.read { READ } else { 0 }
++                        | if permissions.write && !permissions.execute {
++                            WRITE
++                        } else {
++                            0
++                        }
++                        | if permissions.execute { CODE } else { 0 };
++                }
++                if state != window.flags[group].load(Ordering::Relaxed) {
++                    match run {
++                        Some((start, last, previous)) if last == group && previous == state => {
++                            run = Some((start, group + 1, state))
++                        }
++                        previous => {
++                            if let Some((start, last, state)) = previous {
++                                window.protect_run(start, last, state);
++                            }
++                            run = Some((group, group + 1, state));
++                        }
++                    }
++                } else if let Some((start, last, state)) = run.take() {
++                    window.protect_run(start, last, state);
++                }
++                at += granule as u64;
++            }
++            if let Some((start, last, state)) = run {
++                window.protect_run(start, last, state);
++            }
++        }
++    }
++}
+diff --git a/crates/trames-memory/src/mmu/tests.rs b/crates/trames-memory/src/mmu/tests.rs
+new file mode 100644
+index 0000000..d20693a
+--- /dev/null
++++ b/crates/trames-memory/src/mmu/tests.rs
+@@ -0,0 +1,318 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++use super::*;
++use std::{os::unix::process::ExitStatusExt, process::Command};
++
++#[test]
++fn actual_cpu_alias_obeys_hardware_protections_and_keeps_kernel_bytes_coherent() {
++    let mut memory = Memory::default();
++    let base = 0x40000;
++    memory.map(base, 65536, Permissions::RW).unwrap();
++    assert!(
++        memory.mmu.read::<8>(base).is_some(),
++        "test requires a real host mapping"
++    );
++    for offset in 0..32 {
++        macro_rules! check {
++            ($n:literal) => {{
++                let address = base + offset;
++                let value = [0xa5; $n];
++                assert!(memory.mmu.write(address, value).is_some());
++                let mut plain = [0; $n];
++                memory.read(address, &mut plain).unwrap();
++                assert_eq!(plain, value);
++                assert_eq!(memory.mmu.read::<$n>(address), Some(value));
++            }};
++        }
++        check!(1);
++        check!(2);
++        check!(4);
++        check!(8);
++        check!(16);
++    }
++    memory.protect(base, 65536, Permissions::R).unwrap();
++    let before = memory.read_array::<8>(base).unwrap();
++    assert_eq!(memory.mmu.write(base, [0; 8]), None);
++    assert_eq!(memory.read_array::<8>(base).unwrap(), before);
++    memory.protect(base, 65536, Permissions::NONE).unwrap();
++    assert_eq!(memory.mmu.read::<8>(base), None);
++    assert_eq!(
++        memory.read_array::<8>(base),
++        Err(MemoryError::Permission {
++            address: base,
++            access: Access::Read
++        })
++    );
++    memory
++        .protect(
++            base,
++            65536,
++            Permissions {
++                read: false,
++                write: true,
++                execute: false,
++            },
++        )
++        .unwrap();
++    memory.write_array(base, [9; 8]).unwrap();
++    assert_eq!(memory.mmu.read::<8>(base), None);
++    assert!(memory.read_array::<8>(base).is_err());
++}
++
++#[test]
++fn sixteen_kib_host_groups_demote_and_recover_without_permission_leaks() {
++    let mut memory = Memory::default();
++    memory.mmu.granule = 16384.max(host::page_size().unwrap());
++    let base = 0x40000;
++    memory.map(base, 65536, Permissions::RW).unwrap();
++    memory.write_array(base, [42; 8]).unwrap();
++    assert_eq!(memory.mmu.read::<8>(base), Some([42; 8]));
++    memory
++        .protect(base + PAGE_SIZE, PAGE_SIZE, Permissions::R)
++        .unwrap();
++    assert_eq!(memory.mmu.read::<8>(base), None);
++    assert_eq!(memory.read_array::<8>(base), Ok([42; 8]));
++    assert!(memory.write_array(base + PAGE_SIZE, [7; 8]).is_err());
++    memory
++        .protect(base + PAGE_SIZE, PAGE_SIZE, Permissions::RW)
++        .unwrap();
++    assert_eq!(memory.mmu.read::<8>(base), Some([42; 8]));
++    memory.unmap(base + PAGE_SIZE, PAGE_SIZE).unwrap();
++    assert_eq!(memory.mmu.read::<8>(base), None);
++    memory
++        .map(base + PAGE_SIZE, PAGE_SIZE, Permissions::RW)
++        .unwrap();
++    assert_eq!(memory.mmu.read::<8>(base), Some([42; 8]));
++    assert_eq!(memory.read_array::<8>(base + PAGE_SIZE), Ok([0; 8]));
++}
++
++#[test]
++fn fork_remap_discard_and_native_calls_never_leave_stale_hardware_aliases() {
++    let mut memory = Memory::default();
++    memory.map(0x40000, 65536, Permissions::RW).unwrap();
++    memory.write_array(0x40000, [11; 8]).unwrap();
++    let mut child = memory.clone();
++    assert!(memory.mmu.windows.borrow().is_empty());
++    assert!(child.mmu.windows.borrow().is_empty());
++    child
++        .with_write_chunk(0x40000, 8, |bytes| bytes.fill(22))
++        .unwrap();
++    assert_eq!(child.mmu.read::<8>(0x40000), Some([22; 8]));
++    assert_eq!(memory.read_array::<8>(0x40000), Ok([11; 8]));
++    memory.write_array(0x40008, [33; 8]).unwrap();
++    assert_eq!(child.read_array::<8>(0x40008), Ok([0; 8]));
++    memory
++        .remap(0x40000, 65536, 0x40000, 131072, false)
++        .unwrap();
++    assert_eq!(memory.read_array::<8>(0x40000), Ok([11; 8]));
++    assert_eq!(memory.read_array::<8>(0x40008), Ok([33; 8]));
++    memory.discard(0x40000, PAGE_SIZE).unwrap();
++    assert_eq!(memory.mmu.read::<8>(0x40000), Some([0; 8]));
++    memory
++        .remap(0x40000, 131072, 0x7fffff000000, 131072, false)
++        .unwrap();
++    assert!(memory.read_array::<8>(0x40000).is_err());
++    assert_eq!(memory.mmu.read::<8>(0x7fffff000000), Some([0; 8]));
++}
++
++#[test]
++fn worker_cpu_aliases_native_bytes_and_dirty_publication_share_one_region_protocol() {
++    let mut memory = Memory::default();
++    memory.map(0x40000, 65536, Permissions::RW).unwrap();
++    let mut registry = parallel::Registry::default();
++    let mut worker = memory.parallel_view(&mut registry).unwrap();
++    let peer = worker.clone();
++    assert_eq!(worker.mmu_read::<8>(0x40000), Some([0; 8]));
++    worker.write_array(0x40000, [7; 8]).unwrap();
++    assert_eq!(peer.mmu_read::<8>(0x40000), Some([7; 8]));
++    worker.fill_with(0x40000, 8, |bytes| bytes.fill(9)).unwrap();
++    assert_eq!(peer.mmu_read::<8>(0x40000), Some([9; 8]));
++    drop(worker);
++    drop(peer);
++    memory.commit_parallel().unwrap();
++    assert_eq!(memory.read_array::<8>(0x40000), Ok([9; 8]));
++    memory.protect(0x40000, 65536, Permissions::R).unwrap();
++    let mut worker = memory.parallel_view(&mut registry).unwrap();
++    assert!(worker.write_array(0x40000, [4; 8]).is_err());
++    assert_eq!(worker.mmu_read::<8>(0x40000), Some([9; 8]));
++}
++
++#[test]
++fn unrelated_host_faults_keep_default_or_preexisting_signal_behavior() {
++    fn probe(mode: &str) -> std::process::ExitStatus {
++        let exe = std::env::current_exe().unwrap();
++        let args = ["--exact", "mmu::tests::signal_probe_child"];
++        let result = Command::new(&exe)
++            .args(args)
++            .env("TRAMES_MMU_SIGNAL_CHILD", mode)
++            .status();
++        #[cfg(all(target_os = "linux", target_arch = "aarch64"))]
++        if result
++            .as_ref()
++            .is_err_and(|error| error.raw_os_error() == Some(libc::ENOEXEC))
++        {
++            // Linux-user QEMU does not register binfmt_misc in every CI/container.
++            // Re-exec the child through the same independent CPU explicitly.
++            return Command::new(
++                std::env::var("QEMU_AARCH64").unwrap_or_else(|_| "qemu-aarch64".into()),
++            )
++            .args(["-cpu", "max"])
++            .arg(exe)
++            .args(args)
++            .env("TRAMES_MMU_SIGNAL_CHILD", mode)
++            .status()
++            .unwrap();
++        }
++        result.unwrap()
++    }
++    assert_eq!(probe("default").signal(), Some(libc::SIGSEGV));
++    assert!(probe("chain").success());
++    assert_eq!(probe("reset").signal(), Some(libc::SIGSEGV));
++}
++#[test]
++fn signal_probe_child() {
++    let Ok(mode) = std::env::var("TRAMES_MMU_SIGNAL_CHILD") else {
++        return;
++    };
++    static SEEN: AtomicUsize = AtomicUsize::new(0);
++    extern "C" fn previous(_: i32) {
++        // SAFETY: sigprocmask/sigismember are async-signal-safe. Record masks
++        // without assertions, formatting, allocation or panic in the callback.
++        unsafe {
++            let mut mask: libc::sigset_t = std::mem::zeroed();
++            libc::sigprocmask(libc::SIG_SETMASK, std::ptr::null(), &mut mask);
++            if libc::sigismember(&mask, libc::SIGUSR1) == 1
++                && libc::sigismember(&mask, libc::SIGSEGV) == 0
++            {
++                SEEN.fetch_add(1, Ordering::Relaxed);
++            }
++        }
++    }
++    // SAFETY: isolated subprocess; the expected crash cannot affect the runner.
++    unsafe {
++        libc::setrlimit(
++            libc::RLIMIT_CORE,
++            &libc::rlimit {
++                rlim_cur: 0,
++                rlim_max: 0,
++            },
++        );
++        if mode == "chain" || mode == "reset" {
++            let mut action: libc::sigaction = std::mem::zeroed();
++            action.sa_sigaction = previous as *const () as usize;
++            libc::sigemptyset(&mut action.sa_mask);
++            libc::sigaddset(&mut action.sa_mask, libc::SIGUSR1);
++            action.sa_flags = libc::SA_NODEFER
++                | if mode == "reset" {
++                    libc::SA_RESETHAND
++                } else {
++                    0
++                };
++            assert_eq!(
++                libc::sigaction(libc::SIGSEGV, &action, std::ptr::null_mut()),
++                0
++            );
++        }
++        let mapping = host::Mapping::new().expect("hardware mapping");
++        let mut bytes = [0; 8];
++        assert!(!access::access::<8>(
++            false,
++            mapping.cpu.as_ptr(),
++            bytes.as_mut_ptr()
++        ));
++        assert_eq!(SEEN.load(Ordering::Relaxed), 0);
++        if mode == "default" {
++            access::access::<8>(false, std::ptr::null_mut(), bytes.as_mut_ptr());
++            panic!("non-arena fault was incorrectly swallowed");
++        } else {
++            libc::raise(libc::SIGSEGV);
++            assert_eq!(SEEN.load(Ordering::Relaxed), 1);
++            assert!(!access::access::<8>(
++                false,
++                mapping.cpu.as_ptr(),
++                bytes.as_mut_ptr()
++            ));
++            if mode == "reset" {
++                libc::raise(libc::SIGSEGV);
++                panic!("one-shot handler was not reset");
++            }
++        }
++    }
++}
++
++#[test]
++fn cached_hints_reject_other_owners_and_retired_or_reused_windows() {
++    let base = 0x40000;
++    let mut first = Memory::default();
++    first.map(base, 65536, Permissions::RW).unwrap();
++    first.write_array(base, [11; 8]).unwrap();
++    let mut hint = first.direct_hint();
++    assert_ne!(hint, DirectHint::EMPTY);
++    let mut second = Memory::default();
++    second.map(base, 65536, Permissions::RW).unwrap();
++    second.write_array(base, [22; 8]).unwrap();
++    assert_eq!(second.read_array_hint::<8>(base, &mut hint), Ok([22; 8]));
++    assert_eq!(first.read_array_hint::<8>(base, &mut hint), Ok([11; 8]));
++    let child = first.clone(); // Retires all parent CPU windows.
++    first.write_array_hint(base, [33; 8], &mut hint).unwrap();
++    assert_eq!(child.read_array_hint::<8>(base, &mut hint), Ok([11; 8]));
++    first.unmap(base, 65536).unwrap();
++    first.map(base, 65536, Permissions::RW).unwrap();
++    assert_eq!(first.read_array_hint::<8>(base, &mut hint), Ok([0; 8]));
++    first.protect(base, 65536, Permissions::R).unwrap();
++    assert!(first.write_array_hint(base, [44; 8], &mut hint).is_err());
++    assert_eq!(first.read_array_hint::<8>(base, &mut hint), Ok([0; 8]));
++    first
++        .remap(base, 65536, 0x7fffff000000, 65536, false)
++        .unwrap();
++    assert!(first.read_array_hint::<8>(base, &mut hint).is_err());
++    assert_eq!(
++        first.read_array_hint::<8>(0xab007fffff000000, &mut hint),
++        Ok([0; 8])
++    );
++    let shared = first.share();
++    assert_eq!(
++        shared.read_array_hint::<8>(0x7fffff000000, &mut hint),
++        Ok([0; 8])
++    );
++    assert_eq!(hint, DirectHint::EMPTY);
++}
++
++#[test]
++fn direct_mapped_windows_and_worker_hints_keep_conflicting_addresses_separate() {
++    let mut memory = Memory::default();
++    let bases: Vec<_> = (0..40).map(|i| 0x10000 + i * WINDOW as u64).collect();
++    for (i, &base) in bases.iter().enumerate() {
++        memory.map(base, 65536, Permissions::RW).unwrap();
++        memory
++            .write_array(base, (i as u64 + 1).to_le_bytes())
++            .unwrap();
++    }
++    let mut hint = memory.direct_hint();
++    for &base in bases.iter().rev().cycle().take(160) {
++        assert_eq!(
++            memory.read_array_hint::<8>(base, &mut hint),
++            memory.read_array::<8>(base)
++        );
++    }
++    let mut registry = parallel::Registry::default();
++    let mut view = memory.parallel_view(&mut registry).unwrap();
++    for (i, &base) in bases.iter().enumerate().rev() {
++        assert_eq!(
++            view.read_array_hint::<8>(base, &mut hint),
++            Ok((i as u64 + 1).to_le_bytes())
++        );
++        view.write_array_hint(base, (i as u64 + 42).to_le_bytes(), &mut hint)
++            .unwrap();
++    }
++    let old_hint = hint;
++    drop(view);
++    memory.commit_parallel().unwrap();
++    memory.protect(bases[39], 65536, Permissions::R).unwrap();
++    let mut view = memory.parallel_view(&mut registry).unwrap();
++    assert!(view.write_array_hint(bases[39], [0; 8], &mut hint).is_err());
++    hint = old_hint;
++    assert_eq!(
++        memory.read_array_hint::<8>(bases[39], &mut hint),
++        Ok(81u64.to_le_bytes())
++    );
++}
+diff --git a/crates/trames-memory/src/mmu/worker.rs b/crates/trames-memory/src/mmu/worker.rs
+new file mode 100644
+index 0000000..ee8b79a
+--- /dev/null
++++ b/crates/trames-memory/src/mmu/worker.rs
+@@ -0,0 +1,213 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++//! Physical slots are shared only inside a frozen worker epoch. Replacing a
++//! still-owned slot advances its physical window, preserving retained views.
++use super::*;
++use std::{marker::PhantomData, sync::Weak};
++
++pub(crate) struct Slot {
++    pub(crate) owner: Arc<host::Mapping>,
++    pub(crate) offset: usize,
++}
++impl Slot {
++    pub fn pointer(&self) -> *mut u8 {
++        self.owner.kernel.as_ptr().wrapping_add(self.offset)
++    }
++    pub fn initialize(&self, bytes: &[u8; P]) {
++        // SAFETY: Pool returns a new slot only when no earlier owner can still
++        // observe its bytes. Initialization finishes before frame publication.
++        unsafe {
++            std::ptr::copy_nonoverlapping(bytes.as_ptr(), self.pointer(), P);
++        }
++    }
++}
++struct PhysicalWindow {
++    owner: Weak<host::Mapping>,
++    slots: Box<[Weak<Slot>]>,
++}
++#[derive(Default)]
++pub(crate) struct Pool {
++    windows: BTreeMap<(u64, u64), PhysicalWindow>,
++}
++impl Pool {
++    pub fn prune(&mut self) {
++        self.windows
++            .retain(|_, window| window.owner.strong_count() != 0);
++    }
++    pub fn slot(&mut self, space: u64, address: u64) -> Option<Arc<Slot>> {
++        let base = address & !(WINDOW as u64 - 1);
++        let offset = (address - base) as usize;
++        let entry = self
++            .windows
++            .entry((space, base))
++            .or_insert_with(|| PhysicalWindow {
++                owner: Weak::new(),
++                slots: (0..WINDOW / P).map(|_| Weak::new()).collect(),
++            });
++        let owner = match entry
++            .owner
++            .upgrade()
++            .filter(|_| entry.slots[offset / P].strong_count() == 0)
++        {
++            Some(owner) => owner,
++            None => {
++                let owner = Arc::new(host::Mapping::new()?);
++                entry.owner = Arc::downgrade(&owner);
++                entry.slots.fill_with(Weak::new);
++                owner
++            }
++        };
++        let slot = Arc::new(Slot { owner, offset });
++        entry.slots[offset / P] = Arc::downgrade(&slot);
++        Some(slot)
++    }
++}
++
++/// Only mapping/checkpoint code mutates this object. A View retains its whole
++/// Snapshot, so published windows are immutable until every worker is joined.
++pub(crate) struct Frozen {
++    windows: BTreeMap<u64, Arc<Window>>,
++    granule: usize,
++    key: u64,
++}
++impl Default for Frozen {
++    fn default() -> Self {
++        Self {
++            windows: BTreeMap::new(),
++            granule: host::page_size().unwrap_or(0),
++            key: NEXT_SPACE.fetch_add(1, Ordering::Relaxed),
++        }
++    }
++}
++pub(crate) struct Operand<'a> {
++    pub(crate) frame: usize,
++    target: *mut u8,
++    _owner: PhantomData<&'a Frozen>,
++}
++impl Operand<'_> {
++    /// Caller holds the exact worker byte-region guard, or an immutable frame.
++    pub(crate) unsafe fn read<const N: usize>(&self) -> Option<[u8; N]> {
++        let mut bytes = [0; N];
++        // SAFETY: Frozen validated the complete hardware-page-contained target;
++        // the caller excludes overlapping writers for this operation.
++        if unsafe { access::access::<N>(false, self.target, bytes.as_mut_ptr()) } {
++            Some(bytes)
++        } else {
++            None
++        }
++    }
++    /// Caller holds the frame's write-region guard through dirty publication.
++    pub(crate) unsafe fn write<const N: usize>(&self, mut bytes: [u8; N]) -> bool {
++        // SAFETY: same target lifetime/bounds as read and an exclusive guard.
++        unsafe { access::access::<N>(true, self.target, bytes.as_mut_ptr()) }
++    }
++}
++impl Frozen {
++    pub fn granule(&self) -> usize {
++        self.granule
++    }
++    pub fn invalidate_hints(&mut self) {
++        self.key = NEXT_SPACE.fetch_add(1, Ordering::Relaxed);
++    }
++    #[inline]
++    pub fn hint(&self, cache: &Cache) -> DirectHint {
++        cache.hint(self.key)
++    }
++    /// Entries contain root slab IDs, which survive incremental frame swaps.
++    /// A partial/mixed/IO-backed group passes None and becomes inaccessible.
++    pub fn update(
++        &mut self,
++        address: u64,
++        permissions: Option<Permissions>,
++        physical: &[(&Arc<host::Mapping>, usize, usize)],
++    ) {
++        if self.granule == 0 {
++            return;
++        }
++        let base = address & !(WINDOW as u64 - 1);
++        let offset = (address - base) as usize;
++        let mut state = 0;
++        if let Some(permissions) = permissions {
++            if physical.len() == self.granule / P && (permissions.read || !permissions.write) {
++                let (owner, at, _) = physical[0];
++                if at.is_multiple_of(self.granule)
++                    && physical
++                        .iter()
++                        .enumerate()
++                        .all(|(index, (next, offset, _))| {
++                            Arc::ptr_eq(owner, next) && *offset == at + index * P
++                        })
++                {
++                    if !self.windows.contains_key(&base) {
++                        let Some(window) = Window::new(base, self.granule) else {
++                            return;
++                        };
++                        self.windows.insert(base, Arc::new(window));
++                    }
++                    let window = &self.windows[&base];
++                    if window.mapping.alias(offset, owner, at, self.granule) {
++                        for (index, (_, _, root)) in physical.iter().enumerate() {
++                            window.frames[offset / P + index].store(*root, Ordering::Relaxed);
++                        }
++                        state = ELIGIBLE
++                            | if permissions.read { READ } else { 0 }
++                            | if permissions.write && !permissions.execute {
++                                WRITE
++                            } else {
++                                0
++                            }
++                            | if permissions.execute { CODE } else { 0 };
++                    }
++                }
++            }
++        }
++        if let Some(window) = self.windows.get(&base) {
++            window.protect_run(offset / self.granule, offset / self.granule + 1, state);
++        }
++    }
++    #[cold]
++    #[inline(never)]
++    fn reached_slow(&self, cache: &Cache, base: u64) -> Option<NonNull<Window>> {
++        let window = self.windows.get(&base)?;
++        let pointer = NonNull::from(window.as_ref());
++        cache.insert(base, pointer);
++        Some(pointer)
++    }
++    #[inline(always)]
++    pub fn operand_hint<'a>(
++        &'a self,
++        cache: &Cache,
++        address: u64,
++        len: usize,
++        write: bool,
++        hint: &mut DirectHint,
++    ) -> Option<Operand<'a>> {
++        if !matches!(len, 1 | 2 | 4 | 8 | 16) || len > P - (address as usize & (P - 1)) {
++            return None;
++        }
++        let (window, bias) = if let Some(reached) = hint.reached(self.key, address) {
++            reached
++        } else {
++            let base = address & !(WINDOW as u64 - 1);
++            let pointer = if let Some(pointer) = cache.get(base) {
++                pointer
++            } else {
++                self.reached_slow(cache, base)?
++            };
++            *hint = cache.hint(self.key);
++            // SAFETY: the cache is owned by this snapshot's View and only
++            // contains immutable pinned windows retained by that snapshot.
++            let window = unsafe { pointer.as_ref() };
++            (window, hint.bias)
++        };
++        let offset = (address - window.base) as usize;
++        let state = window.flags[offset / window.granule].load(Ordering::Relaxed);
++        if state & ELIGIBLE == 0 || (write && state & CODE != 0) {
++            return None;
++        }
++        Some(Operand {
++            frame: window.frames[offset / P].load(Ordering::Relaxed),
++            target: bias.wrapping_add(address as usize) as *mut u8,
++            _owner: PhantomData,
++        })
++    }
++}
+diff --git a/crates/trames-memory/src/native_access.rs b/crates/trames-memory/src/native_access.rs
+index c69a07c..ad429de 100644
+--- a/crates/trames-memory/src/native_access.rs
++++ b/crates/trames-memory/src/native_access.rs
+@@ -298,11 +298,11 @@ impl Memory {
+             if !b.shared && !b.private_copy {
+                 let mut bytes = [0; PAGE_SIZE as usize];
+                 b.object.read(0, &mut bytes)?;
+-                page.bytes = Rc::new(bytes);
++                page.bytes = Rc::new(PageBytes::new(bytes));
+                 b.private_copy = true;
+             }
+         }
+-        self.mark_native_write(frame);
++        self.mark_native_write(frame, address & !(PAGE_SIZE - 1));
+         let page = self.frames[frame].as_mut().expect("checked page");
+         if page.backing.as_ref().is_some_and(|b| b.shared) {
+             let mut operation = Some(operation);
+@@ -331,7 +331,8 @@ impl Memory {
+         ))
+     }
+ 
+-    fn mark_native_write(&mut self, frame: usize) {
++    fn mark_native_write(&mut self, frame: usize, base: u64) {
++        self.prepare_mmu_write(base, PAGE_SIZE as usize);
+         self.note_parallel_write(frame);
+         self.revision = self.revision.wrapping_add(1);
+         if self.frames[frame]
+@@ -457,7 +458,7 @@ impl Memory {
+                 .frame(dst & !(PAGE_SIZE - 1))
+                 .expect("checked destination");
+             let sf = self.frame(src & !(PAGE_SIZE - 1)).expect("checked source");
+-            self.mark_native_write(df);
++            self.mark_native_write(df, dst & !(PAGE_SIZE - 1));
+             let di = (dst % PAGE_SIZE) as usize;
+             let si = (src % PAGE_SIZE) as usize;
+             if df == sf {
+diff --git a/crates/trames-memory/src/parallel.rs b/crates/trames-memory/src/parallel.rs
+index 2a2ae6e..065f337 100644
+--- a/crates/trames-memory/src/parallel.rs
++++ b/crates/trames-memory/src/parallel.rs
+@@ -2,6 +2,7 @@
+ //! CPU/native views between quiescent kernel checkpoints. Scoped page guards
+ //! stay on workers; Rc backings, mappings and persistence stay coordinated.
+ //! Mutable byte cells have an audited region-guard Sync boundary in page.rs.
++mod hardware;
+ mod native;
+ mod page;
+ mod snapshot;
+@@ -10,6 +11,7 @@ use std::sync::{Arc, Weak};
+ 
+ #[derive(Default)]
+ pub struct Registry {
++    mmu: mmu::Pool,
+     shared: BTreeMap<(u64, u64), Weak<ConcurrentPage>>,
+     code_epoch: Arc<AtomicU64>,
+     pub metrics: Metrics,
+@@ -28,7 +30,7 @@ pub struct Metrics {
+ }
+ struct ConcurrentPage {
+     identity: u64,
+-    constant: Option<Arc<[u8; PAGE_SIZE as usize]>>,
++    constant: Option<Arc<PageBytes>>,
+     bytes: Option<page::MutablePage>,
+     dirty: AtomicU64,
+     version: AtomicU64,
+@@ -36,11 +38,35 @@ struct ConcurrentPage {
+     code_epoch: Arc<AtomicU64>,
+ }
+ impl ConcurrentPage {
+-    fn new(bytes: [u8; PAGE_SIZE as usize], constant: bool, code_epoch: Arc<AtomicU64>) -> Self {
++    fn new(
++        bytes: [u8; PAGE_SIZE as usize],
++        constant: bool,
++        code_epoch: Arc<AtomicU64>,
++        slot: Option<Arc<mmu::Slot>>,
++    ) -> Self {
++        let immutable = if constant {
++            Some(Arc::new(if let Some(slot) = &slot {
++                slot.initialize(&bytes);
++                PageBytes::from_slot(slot.clone())
++            } else {
++                PageBytes::new(bytes)
++            }))
++        } else {
++            None
++        };
++        let mutable = if constant {
++            None
++        } else {
++            Some(if let Some(slot) = slot {
++                page::MutablePage::new_mapped(bytes, slot)
++            } else {
++                page::MutablePage::new(bytes)
++            })
++        };
+         Self {
+             identity: new_backing_identity(),
+-            constant: constant.then(|| Arc::new(bytes)),
+-            bytes: (!constant).then(|| page::MutablePage::new(bytes)),
++            constant: immutable,
++            bytes: mutable,
+             dirty: AtomicU64::new(0),
+             version: AtomicU64::new(0),
+             executable: std::sync::atomic::AtomicBool::new(false),
+@@ -101,6 +127,7 @@ struct Frame {
+     bytes: Arc<ConcurrentPage>,
+ }
+ fn prepare_frame(
++    space: u64,
+     page: &Page,
+     base: u64,
+     root_frame: usize,
+@@ -141,6 +168,7 @@ fn prepare_frame(
+                     data,
+                     false,
+                     registry.code_epoch.clone(),
++                    None,
+                 ));
+                 registry.shared.insert(key, Arc::downgrade(&bytes));
+                 bytes
+@@ -153,6 +181,11 @@ fn prepare_frame(
+                 data,
+                 !page.permissions.write,
+                 registry.code_epoch.clone(),
++                if page.backing.is_none() {
++                    registry.mmu.slot(space, base)
++                } else {
++                    None
++                },
+             ))
+         }
+     };
+@@ -180,6 +213,7 @@ fn prepare_frame(
+ }
+ 
+ struct Snapshot {
++    mmu: mmu::Frozen,
+     has_aliases: bool,
+     dynamic_code: bool,
+     dynamic_code_pages: usize,
+@@ -207,6 +241,7 @@ pub(super) struct SnapshotCache {
+ pub struct View {
+     snapshot: Arc<Snapshot>,
+     translations: [Cell<Translation>; TRANSLATION_SLOTS],
++    mmu_cache: mmu::Cache,
+ }
+ /// Clone a worker-local view over the same frozen address space, with its own
+ /// translation cells. This is a shared-VM view, not a process fork.
+@@ -219,6 +254,7 @@ impl View {
+     fn new(snapshot: Arc<Snapshot>) -> Self {
+         Self {
+             snapshot,
++            mmu_cache: mmu::Cache::default(),
+             translations: std::array::from_fn(|_| Cell::new(Translation::EMPTY)),
+         }
+     }
+@@ -409,10 +445,24 @@ impl CpuMemory for View {
+     }
+     #[inline]
+     fn read_array<const N: usize>(&self, address: u64) -> Result<[u8; N], MemoryError> {
++        if let Some(bytes) = self.mmu_read::<N>(address) {
++            return Ok(bytes);
++        }
+         let mut bytes = [0; N];
+         self.read(address, &mut bytes)?;
+         Ok(bytes)
+     }
++    #[inline]
++    fn write_array<const N: usize>(
++        &mut self,
++        address: u64,
++        bytes: [u8; N],
++    ) -> Result<(), MemoryError> {
++        if self.mmu_write(address, bytes) {
++            return Ok(());
++        }
++        self.write(address, &bytes)
++    }
+     fn write(&mut self, address: u64, input: &[u8]) -> Result<(), MemoryError> {
+         let mut address = address & 0x00ffffffffffffff;
+         if input.is_empty() {
+@@ -478,6 +528,37 @@ impl CpuMemory for View {
+             frame.bytes.version.load(Ordering::Acquire),
+         ))
+     }
++    #[inline]
++    fn direct_hint(&self) -> DirectHint {
++        self.snapshot.mmu.hint(&self.mmu_cache)
++    }
++    #[inline(always)]
++    fn read_array_hint<const N: usize>(
++        &self,
++        address: u64,
++        hint: &mut DirectHint,
++    ) -> Result<[u8; N], MemoryError> {
++        if let Some(bytes) = self.mmu_read_hint(address, hint) {
++            return Ok(bytes);
++        }
++        let result = self.read_array(address);
++        *hint = self.direct_hint();
++        result
++    }
++    #[inline(always)]
++    fn write_array_hint<const N: usize>(
++        &mut self,
++        address: u64,
++        bytes: [u8; N],
++        hint: &mut DirectHint,
++    ) -> Result<(), MemoryError> {
++        if self.mmu_write_hint(address, bytes, hint) {
++            return Ok(());
++        }
++        let result = self.write_array(address, bytes);
++        *hint = self.direct_hint();
++        result
++    }
+     fn atomic_update<T>(
+         &mut self,
+         address: u64,
+@@ -670,6 +751,7 @@ impl Memory {
+             return None;
+         }
+         registry.shared.retain(|_, page| page.strong_count() != 0);
++        registry.mmu.prune();
+         registry.metrics.full_rebuilds += 1;
+         registry.metrics.full_rebuild_pages += self.pages.len() as u64;
+         if let Some(cache) = &self.parallel_cache {
+@@ -690,7 +772,7 @@ impl Memory {
+             let previous = old
+                 .as_ref()
+                 .and_then(|c| c.snapshot.pages.get(&base).map(|&i| &c.snapshot.frames[i]));
+-            let frame = prepare_frame(page, base, root_frame, previous, registry)?;
++            let frame = prepare_frame(self.identity, page, base, root_frame, previous, registry)?;
+             let count = identities.entry(frame.bytes.identity).or_insert(0usize);
+             alias_count += usize::from(*count == 1);
+             *count += 1;
+@@ -701,7 +783,8 @@ impl Memory {
+             positions[root_frame] = Some(frames.len());
+             frames.push(frame);
+         }
+-        let snapshot = Arc::new(Snapshot {
++        let mut snapshot = Snapshot {
++            mmu: mmu::Frozen::default(),
+             has_aliases: alias_count != 0,
+             dynamic_code: frames
+                 .iter()
+@@ -740,7 +823,9 @@ impl Memory {
+             frames,
+             reservations: self.reservations.clone(),
+             code_epoch: registry.code_epoch.clone(),
+-        });
++        };
++        snapshot.refresh_mmu_all();
++        let snapshot = Arc::new(snapshot);
+         self.parallel_cache = Some(SnapshotCache {
+             snapshot: snapshot.clone(),
+             source_revision: self.revision,
+diff --git a/crates/trames-memory/src/parallel/hardware.rs b/crates/trames-memory/src/parallel/hardware.rs
+new file mode 100644
+index 0000000..7775587
+--- /dev/null
++++ b/crates/trames-memory/src/parallel/hardware.rs
+@@ -0,0 +1,121 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++//! Hardware aliases retain the same region, atomic and dirty-byte protocol.
++use super::*;
++
++impl Snapshot {
++    pub(super) fn refresh_mmu_all(&mut self) {
++        let addresses: Vec<_> = self.pages.keys().copied().collect();
++        self.refresh_mmu(&addresses);
++    }
++    pub(super) fn refresh_mmu(&mut self, changed: &[u64]) {
++        self.mmu.invalidate_hints();
++        let granule = self.mmu.granule();
++        if granule == 0 {
++            return;
++        }
++        let groups: BTreeSet<_> = changed
++            .iter()
++            .map(|&address| address & !(granule as u64 - 1))
++            .collect();
++        for base in groups {
++            let mut permissions = None;
++            let mut physical = Vec::new();
++            for at in (base..base + granule as u64).step_by(PAGE_SIZE as usize) {
++                let Some(&position) = self.pages.get(&at) else {
++                    break;
++                };
++                let frame = &self.frames[position];
++                if self.backed_pages.contains(&at)
++                    || frame.error.is_some()
++                    || permissions.is_some_and(|p| p != frame.permissions)
++                {
++                    break;
++                }
++                let storage = if let Some(bytes) = &frame.bytes.constant {
++                    bytes.physical()
++                } else {
++                    frame
++                        .bytes
++                        .bytes
++                        .as_ref()
++                        .and_then(page::MutablePage::physical)
++                };
++                let Some((mapping, offset)) = storage else {
++                    break;
++                };
++                permissions = Some(frame.permissions);
++                physical.push((mapping, offset, frame.root_frame));
++            }
++            self.mmu.update(base, permissions, &physical);
++        }
++    }
++}
++impl View {
++    #[inline]
++    pub(crate) fn mmu_read<const N: usize>(&self, address: u64) -> Option<[u8; N]> {
++        self.mmu_read_hint(address, &mut self.snapshot.mmu.hint(&self.mmu_cache))
++    }
++    #[inline(always)]
++    pub(super) fn mmu_read_hint<const N: usize>(
++        &self,
++        address: u64,
++        hint: &mut DirectHint,
++    ) -> Option<[u8; N]> {
++        let address = address & 0x00ffffffffffffff;
++        let operand = self
++            .snapshot
++            .mmu
++            .operand_hint(&self.mmu_cache, address, N, false, hint)?;
++        let position = self.snapshot.positions[operand.frame]?;
++        let frame = &self.snapshot.frames[position];
++        let _guard = frame
++            .bytes
++            .bytes
++            .as_ref()
++            .map(|bytes| bytes.lock(address as usize & 4095, N));
++        // SAFETY: mutable frames retain the exact region guard; constant frames
++        // cannot be mutated through any published view. CPU permissions are
++        // enforced by the hardware alias, not a second software permission test.
++        unsafe { operand.read() }
++    }
++    #[inline]
++    pub(super) fn mmu_write<const N: usize>(&self, address: u64, bytes: [u8; N]) -> bool {
++        self.mmu_write_hint(address, bytes, &mut self.snapshot.mmu.hint(&self.mmu_cache))
++    }
++    #[inline(always)]
++    pub(super) fn mmu_write_hint<const N: usize>(
++        &self,
++        address: u64,
++        bytes: [u8; N],
++        hint: &mut DirectHint,
++    ) -> bool {
++        let address = address & 0x00ffffffffffffff;
++        let Some(operand) = self
++            .snapshot
++            .mmu
++            .operand_hint(&self.mmu_cache, address, N, true, hint)
++        else {
++            return false;
++        };
++        let Some(position) = self.snapshot.positions[operand.frame] else {
++            return false;
++        };
++        let frame = &self.snapshot.frames[position];
++        let offset = address as usize & 4095;
++        // A read-only constant frame must fault without constructing a writable
++        // Rust reference. The fixed store instruction supplies that proof.
++        let Some(storage) = &frame.bytes.bytes else {
++            // SAFETY: a constant mapping has no hardware write permission.
++            debug_assert!(!unsafe { operand.write(bytes) });
++            return false;
++        };
++        let mut guard = storage.lock(offset, N);
++        // SAFETY: the same guarded physical bytes back the hardware alias.
++        if unsafe { operand.write(bytes) } {
++            self.changed(frame, &mut guard, offset, N);
++            true
++        } else {
++            false
++        }
++    }
++}
+diff --git a/crates/trames-memory/src/parallel/native.rs b/crates/trames-memory/src/parallel/native.rs
+index 75c4d41..912f90c 100644
+--- a/crates/trames-memory/src/parallel/native.rs
++++ b/crates/trames-memory/src/parallel/native.rs
+@@ -85,6 +85,11 @@ impl NativeMemory for View {
+         &self,
+         address: u64,
+     ) -> Result<[u8; N], NativeAccessError> {
++        // Hardware views contain only ordinary anonymous pages, which cannot
++        // require native live-backing admission.
++        if let Some(bytes) = self.mmu_read::<N>(address) {
++            return Ok(bytes);
++        }
+         let mut bytes = [0; N];
+         self.native_read(address, &mut bytes)?;
+         Ok(bytes)
+diff --git a/crates/trames-memory/src/parallel/page.rs b/crates/trames-memory/src/parallel/page.rs
+index f363ff6..df5bb46 100644
+--- a/crates/trames-memory/src/parallel/page.rs
++++ b/crates/trames-memory/src/parallel/page.rs
+@@ -11,8 +11,20 @@ const PAGE: usize = PAGE_SIZE as usize;
+ 
+ /// Byte cells are never exposed without a matching, live range guard. The Box
+ /// stays at one allocation for the lifetime of every guard and borrowed slice.
++enum Bytes {
++    Heap(Box<[UnsafeCell<u8>; PAGE]>),
++    Mapped(std::sync::Arc<crate::mmu::Slot>),
++}
++impl Bytes {
++    fn as_ptr(&self) -> *const UnsafeCell<u8> {
++        match self {
++            Self::Heap(bytes) => bytes.as_ptr(),
++            Self::Mapped(slot) => slot.pointer().cast(),
++        }
++    }
++}
+ pub(super) struct MutablePage {
+-    bytes: Box<[UnsafeCell<u8>; PAGE]>,
++    bytes: Bytes,
+     held: AtomicU64,
+     reservations: [UnsafeCell<[u64; 4]>; PAGE / REGION],
+     reservation_overrides: [UnsafeCell<u8>; PAGE / REGION],
+@@ -38,8 +50,11 @@ fn mask(offset: usize, len: usize) -> u64 {
+ 
+ impl MutablePage {
+     pub fn new(bytes: [u8; PAGE]) -> Self {
++        Self::with_storage(Bytes::Heap(Box::new(bytes.map(UnsafeCell::new))))
++    }
++    fn with_storage(bytes: Bytes) -> Self {
+         Self {
+-            bytes: Box::new(bytes.map(UnsafeCell::new)),
++            bytes,
+             held: AtomicU64::new(0),
+             reservations: std::array::from_fn(|_| UnsafeCell::new([0; 4])),
+             reservation_overrides: std::array::from_fn(|_| UnsafeCell::new(0)),
+@@ -47,6 +62,16 @@ impl MutablePage {
+             reservation_written: AtomicU64::new(0),
+         }
+     }
++    pub(super) fn new_mapped(bytes: [u8; PAGE], slot: std::sync::Arc<crate::mmu::Slot>) -> Self {
++        slot.initialize(&bytes);
++        Self::with_storage(Bytes::Mapped(slot))
++    }
++    pub(super) fn physical(&self) -> Option<(&std::sync::Arc<crate::mmu::host::Mapping>, usize)> {
++        match &self.bytes {
++            Bytes::Mapped(slot) => Some((&slot.owner, slot.offset)),
++            _ => None,
++        }
++    }
+     pub fn lock(&self, offset: usize, len: usize) -> Guard<'_> {
+         self.lock_mask(mask(offset, len))
+     }
+diff --git a/crates/trames-memory/src/parallel/snapshot.rs b/crates/trames-memory/src/parallel/snapshot.rs
+index 003bc4a..fdc6819 100644
+--- a/crates/trames-memory/src/parallel/snapshot.rs
++++ b/crates/trames-memory/src/parallel/snapshot.rs
+@@ -89,6 +89,7 @@ impl Memory {
+             .iter()
+             .filter_map(|&base| snapshot.remove_frame(base).map(|frame| (base, frame)))
+             .collect();
++        let mmu_changed: Vec<_> = changed.iter().copied().collect();
+         for base in changed {
+             let Some(&root_frame) = self.pages.get(&base) else {
+                 continue;
+@@ -103,9 +104,17 @@ impl Memory {
+                 // conservative serial behavior for custom backings.
+                 return None;
+             }
+-            let frame = prepare_frame(page, base, root_frame, previous.get(&base), registry)?;
++            let frame = prepare_frame(
++                self.identity,
++                page,
++                base,
++                root_frame,
++                previous.get(&base),
++                registry,
++            )?;
+             snapshot.insert_frame(frame, page.backing.is_some());
+         }
++        snapshot.refresh_mmu(&mmu_changed);
+         snapshot.has_aliases = snapshot.alias_count != 0;
+         snapshot.dynamic_code = snapshot.dynamic_code_pages != 0;
+         snapshot.identity = self.identity;

@@ -43,17 +43,25 @@ not erase guest permissions, file errors, code invalidation, LL/SC reservations,
 region guards or atomic/fence ordering. Pure native helpers reuse these same
 translations; no algorithm lock or global serialization is added.
 
-## Can the hardware MMU remove software permissions?
+## Hardware MMU integration
+
+[Dedicated hardware-protected mappings](hardware-mmu.md) now implement this
+path for ordinary RAM, including shared native/CPU physical storage, a single-level
+direct-mapped window cache and bounded fault recovery. Mixed iOS subpages and
+special backings retain the software TLB. The constraints below explain those
+boundaries; this is still ordinary userspace mmap/mprotect, without privileged
+guest page tables or a JIT.
+
+### Design constraints
 
 The host MMU already translates the host allocations containing guest bytes.
-To make it additionally enforce guest permissions, the runtime would need
+To make it additionally enforce guest permissions, the runtime needs
 **dedicated host mappings**, set their protections with mmap/mprotect equivalents,
-and translate expected host protection faults back to guest exceptions. The
-current Rc heap pages and worker byte allocations cannot simply be mprotected:
+and translate expected host protection faults back to guest exceptions. Ordinary
+heap pages and worker byte allocations cannot simply be mprotected:
 a host page may contain other allocations and unrelated runtime state.
 
-This can be useful for a future direct mapping arena, but it is not a drop-in
-replacement for the current lookup:
+Dedicated mappings are therefore a separate storage path, with these boundaries:
 
 | Constraint | Consequence |
 | --- | --- |
@@ -64,19 +72,11 @@ replacement for the current lookup:
 | Executable guest writes, dirty commit and exclusive reservations | These metadata effects remain even when hardware validates access. Write-protecting and trapping only the first dirty write is a different storage design and requires workload measurement. |
 | Fault recovery inside Rust, native helpers and multiple workers | A process-wide signal handler must distinguish known guest accesses from real host bugs. Longjmp across Rust frames/guards cannot be used as a general shortcut. Recovery would need bounded audited assembly access sites and platform-specific signal/exception context handling, with exact guest PC and partial-effect rules. |
 
-Hardware protection for a bounded direct arena is worth a separate prototype,
-with anonymous pages first, measured iPad page size/address reservation, isolated
-fault recovery, and COW/alias tests before replacing the storage backend. It does
-not require JIT, but ordinary iOS userspace cannot install a guest page table or
-change privileged MMU registers. Host mprotect must be assessed as a memory
-backend optimization, rather than assuming one unchecked guest-address load is
-already safe or equivalent.
-
-For the current architecture, the compact permission TLB removes repeated checks
-without rebuilding backing storage or fault delivery. Next candidates include
-measuring TLB collision rates before adding associativity, fixed-width byte
-transport/codegen, and scoped resident-page access that does not retain stale
-pointers across COW or callbacks. Each should be compared against this same
-nightly tail-call baseline, not mixed with a compiler upgrade.
+The hardware path represents sparse windows instead of reserving the complete
+48-bit guest VA range. Compatible host-page groups use native guarded operands;
+failed admission retains this compact TLB. Neither translation mechanism removes
+COW, EOF, code epochs, reservation metadata or the existing concurrency protocol.
+See [hardware mapping validation](../validation/hardware-mmu.md) for code generation,
+measurements and remaining device checks.
 
 [Measurements and regression validation](../validation/tail-tlb.md).

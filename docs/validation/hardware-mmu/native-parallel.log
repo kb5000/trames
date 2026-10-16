@@ -1,0 +1,7 @@
+PASS native pthread cpus=1 enabled=False shared_stack=False memory=True: all 19 entries, FP/errno, parsing and nested callbacks; worker_calls=0 native_overlap=0
+PASS native pthread cpus=4 enabled=False shared_stack=False memory=True: all 19 entries, FP/errno, parsing and nested callbacks; worker_calls=0 native_overlap=0
+PASS native pthread cpus=1 enabled=True shared_stack=False memory=True: all 19 entries, FP/errno, parsing and nested callbacks; worker_calls=0 native_overlap=0
+PASS native pthread cpus=2 enabled=True shared_stack=False memory=True: all 19 entries, FP/errno, parsing and nested callbacks; worker_calls=9930 native_overlap=2
+PASS native pthread cpus=4 enabled=True shared_stack=False memory=True: all 19 entries, FP/errno, parsing and nested callbacks; worker_calls=9726 native_overlap=4
+PASS native pthread cpus=4 enabled=True shared_stack=True memory=True: all 19 entries, FP/errno, parsing and nested callbacks; worker_calls=7707 native_overlap=3
+PASS native pthread cpus=4 enabled=True shared_stack=False memory=False: all 19 entries, FP/errno, parsing and nested callbacks; worker_calls=10366 native_overlap=4

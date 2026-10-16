@@ -24,7 +24,7 @@ main 新增[通用解释执行优化](docs/validation/execution-efficiency.md)�
 
 继续加入[选择性惰性标志与短路径](docs/validation/lazy-flags.md)：延迟计算算术 C/V，保留 N/Z 的直接读取，解释循环携带局部标志状态，并在解码时简化不更新标志的立即数加减。覆盖条件分支、带进位运算、局部标志修改和信号上下文恢复；设备端 Swift 构建也改为 Release。运行时仍不使用 JIT。
 
-[调度与边界检查实验](docs/validation/dispatch-experiments.md)进一步比较固定代码页、unchecked 寄存器索引、状态驻留、紧凑记录，以及真正的 nightly Rust 显式尾调用。按项目决策，完整 `tailhot` 实现现已成为唯一默认解释器，工具链固定为 `nightly-2026-10-16`；没有恢复多后端或引入 JIT。随后加入[权限软 TLB 与 MMU 研究](docs/architecture/soft-tlb.md)，将地址与权限校验合为缓存标签比较，保留文件、COW 和多核语义。
+[调度与边界检查实验](docs/validation/dispatch-experiments.md)进一步比较固定代码页、unchecked 寄存器索引、状态驻留、紧凑记录，以及真正的 nightly Rust 显式尾调用。按项目决策，完整 `tailhot` 实现现已成为唯一默认解释器，工具链固定为 `nightly-2026-10-16`；没有恢复多后端或引入 JIT。随后加入[权限软 TLB 与 MMU 研究](docs/architecture/soft-tlb.md)，将地址与权限校验合为缓存标签比较，保留文件、COW 和多核语义。 现在已接入[硬件保护的 RAM 映射](docs/architecture/hardware-mmu.md)与单级直接映射窗口缓存；混合权限页和特殊文件映射继续使用软件路径。
 
 最新 [0.16.0/build 17](docs/validation/release-0.16.md) 已发布：**[下载 unsigned IPA](https://github.com/kb5000/trames/releases/download/v0.16.0/Trames-0.16.0-build17-unsigned.ipa)**。合并 guest 内容器、默认宿主直连网络和无 JIT 解释器优化；同一源码的 Linux CI 和 Apple 14 项模拟器验收通过。Sideloadly 覆盖安装可保留数据；磁盘 v3 会升级到旧版无法读取的 v4，安装前先导出重要文件。
 
