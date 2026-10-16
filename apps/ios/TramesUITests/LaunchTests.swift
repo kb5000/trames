@@ -3,6 +3,17 @@ import XCTest
 import UIKit
 final class LaunchTests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
+    func testNativeCoreMarkCanBeOpenedWithoutStartingATimedRun() {
+        let app = XCUIApplication(); app.launch()
+        XCTAssertTrue(app.buttons["新建或管理会话"].waitForExistence(timeout: 20))
+        app.buttons["新建或管理会话"].tap()
+        app.buttons["原生 CoreMark"].tap()
+        XCTAssertTrue(app.buttons["native-coremark-run"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.staticTexts["native-coremark-status"].label, "尚未运行")
+        XCTAssertTrue(app.buttons["native-coremark-run"].isEnabled)
+        app.buttons["完成"].tap()
+        XCTAssertTrue(app.buttons["新建或管理会话"].isHittable)
+    }
     func testNativeSwapchainPresentsWhileWindowMovesResizesAndHides() {
         let app = XCUIApplication(); app.launchArguments = ["--vulkan-display-acceptance"]; app.launch()
         let canvas = app.otherElements["vulkan-display-canvas"].firstMatch

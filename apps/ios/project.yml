@@ -12,8 +12,8 @@ settings:
     LIBRARY_SEARCH_PATHS: ['$(inherited)', '$(SRCROOT)/../../target/ios-link/$(TRAMES_RUST_TARGET)']
     'TRAMES_RUST_TARGET[sdk=iphoneos*]': aarch64-apple-ios
     'TRAMES_RUST_TARGET[sdk=iphonesimulator*]': aarch64-apple-ios-sim
-    MARKETING_VERSION: '0.16.0'
-    CURRENT_PROJECT_VERSION: '17'
+    MARKETING_VERSION: '0.17.0'
+    CURRENT_PROJECT_VERSION: '18'
     INFOPLIST_KEY_CFBundleShortVersionString: '$(MARKETING_VERSION)'
     INFOPLIST_KEY_CFBundleVersion: '$(CURRENT_PROJECT_VERSION)'
     INFOPLIST_KEY_CFBundleDisplayName: Trames
@@ -23,6 +23,8 @@ settings:
     INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
     CODE_SIGN_STYLE: Automatic
 packages:
+  NativeCoreMark:
+    path: NativeCoreMark
   TramesKit:
     path: TramesKit
   SwiftTerm:
@@ -42,6 +44,7 @@ targets:
         type: folder
         buildPhase: resources
     dependencies:
+      - package: NativeCoreMark
       - package: TramesKit
       - package: SwiftTerm
       # A Rust staticlib bundles MoltenVK's objects, but its system link flags

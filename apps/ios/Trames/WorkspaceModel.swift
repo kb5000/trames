@@ -8,6 +8,8 @@ final class WorkspaceModel: ObservableObject {
     @Published var challenge: HostKeyChallenge?
     @Published var error: String?
     @Published var resetting = false
+    private var benchmarkRunning = false
+    private var appActive = true
     private(set) var environment: EnvironmentStore?
     private(set) var knownHosts: KnownHosts?
     private(set) var directories: ScopedDirectories?
@@ -28,6 +30,7 @@ final class WorkspaceModel: ObservableObject {
         if let local { selected = local.id; return }
         guard let environment else { return }
         let session = TerminalSession(title: "Alpine")
+        session.pause(benchmarkRunning || !appActive)
         session.bridge.directories = directories
         sessions.append(session); selected = session.id
         session.startLocal(environment, useVolumeBudget: UserDefaults.standard.bool(forKey: "useVolumeBudget"))
@@ -58,12 +61,20 @@ final class WorkspaceModel: ObservableObject {
         catch { self.error = error.localizedDescription }
     }
     func background() {
+        appActive = false
         for session in sessions {
             session.pause(true)
             if session.ssh != nil { session.close() }
         }
     }
-    func foreground() { for session in sessions { session.pause(false) } }
+    func foreground() {
+        appActive = true
+        for session in sessions { session.pause(benchmarkRunning && session.ssh == nil) }
+    }
+    func setBenchmarkRunning(_ running: Bool) {
+        benchmarkRunning = running
+        local?.pause(running || !appActive)
+    }
     func guestText(_ path: String) async throws -> String {
         guard let local = local?.local else { throw TramesError.message("请先启动本地 Alpine 环境") }
         let stage = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

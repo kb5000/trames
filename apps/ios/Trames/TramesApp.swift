@@ -22,6 +22,9 @@ struct WorkspaceView: View {
     @State private var filesSheet = false
     @State private var settingsSheet = false
     @State private var sessionActions = false
+    @State private var coreMarkSheet = false
+    @StateObject private var coreMark = NativeCoreMarkRunner()
+    @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         VStack(spacing: 0) {
             HStack {
@@ -51,6 +54,7 @@ struct WorkspaceView: View {
                         Button("显示窗口", systemImage: "rectangle.on.rectangle") { local.displayVisible = true }
                     }
                     Button("设置", systemImage: "gear") { settingsSheet = true }
+                    Button("原生 CoreMark", systemImage: "speedometer") { coreMarkSheet = true }
                 }
                 if let current = workspace.current { Button { workspace.close(current) } label: {
                     Label("关闭当前终端", systemImage: "xmark")
@@ -67,6 +71,10 @@ struct WorkspaceView: View {
         .sheet(isPresented: $sshSheet) { SSHConnectView(workspace: workspace) }
         .sheet(isPresented: $filesSheet) { if let session = workspace.current { TransferView(session: session) } }
         .sheet(isPresented: $settingsSheet) { SettingsView(workspace: workspace) }
+        .sheet(isPresented: $coreMarkSheet) { NativeCoreMarkView(runner: coreMark, workspace: workspace) }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active { coreMark.markInterrupted() }
+        }
         .overlay(alignment: .topLeading) {
             GeometryReader { proxy in
                 if let local = workspace.local {
