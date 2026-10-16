@@ -1,148 +1,134 @@
-# Native Wayland compositor (work in progress)
+# Native Wayland compositor
 
-The guest runs original ARM64 Linux libwayland clients. A host Rust event loop
-uses the original wayland-rs server/backend and upstream protocol definitions;
-it does not emulate a Linux display driver or run a nested guest compositor.
-Each xdg_toplevel is a native app window, with movement, minimization, close,
-and maximization into a workspace tab. Resizing sends configure/ack and requires
-new client buffer dimensions. It does not scale an unchanged fixed canvas.
+Original ARM64 Linux clients use their ordinary libwayland and connect to a host
+Rust compositor built from wayland-rs and upstream protocol definitions. There
+is no nested guest Weston compositor. Each xdg_toplevel becomes an independently
+managed iPad window: move, resize, minimize, close or maximize into a workspace
+tab. Resizing sends configure/ack and requires new client buffer dimensions;
+it does not retain and scale a fixed-resolution canvas.
 
-## Storage and lifetime
+The implementation is in `feature/native-wayland`, [PR #26](https://github.com/kb5000/trames/pull/26),
+tracked by [Issue #25](https://github.com/kb5000/trames/issues/25). It has not yet
+been released. See the [usage guide](../guides/wayland.md).
+
+## Shared storage and descriptors
 
 Managed guest memfds have a real anonymous host inode. The Unix stream bridge
-carries control messages and SCM_RIGHTS capabilities, not pixels or host paths.
-Virtual descriptor identity, credentials, EOF/seals, mmap dirty/COW hooks and
-existing guest memory synchronization are preserved. Mappings retain storage
-independently of open descriptors. Logical truncation zeros removed bytes but
-never physically removes pages while native readers or GPU work can retain them.
-Physical bytes remain charged against the instance's memfd budget until the
-last native mapping/frame lease is released.
+carries bounded control messages and SCM_RIGHTS capabilities, never pixels or
+host paths. Connection identity comes from the guest bridge. Virtual descriptor
+identity, credentials, logical EOF/seals, mmap dirty/COW hooks and existing guest
+memory synchronization are preserved. The shared physical-storage budget is
+128 MiB per instance.
 
-The Metal frontend imports page-aligned SHM bytes with bytesNoCopy and reads
-arbitrary row strides in its fragment shader. If the device refuses an import,
-a bounded copy is explicit and counted in the canvas accessibility statistics.
-Actual Apple simulator execution has validated SHM no-copy rendering and UIKit
-composition; this does not replace iPad device testing. A frame owns
-its buffer leases through command-buffer completion, including session teardown.
-A wl_buffer shared by several surfaces has one common usage lease; its release
-cannot race another surface's continued use.
+An export lease is registered before sending SCM_RIGHTS and survives until
+SharedFile import acknowledges the descriptor or its client disconnects. Closing
+the last guest descriptor while an FD is in transit therefore cannot lose its
+logical EOF, managed backing or budget. Cancelled transfers cannot consume the
+acknowledgement for a later export of the same inode. Backpressure is bounded
+independently of frame leases.
 
-Vulkan uses VK_KHR_wayland_surface and the original guest loader/libwayland.
-The ICD resolves libwayland through its own library handle, including clients
-that load it RTLD_LOCAL. The bridge authenticates the socket and resolves its
-connection-scoped wl_surface ID; guest pointers are never native capabilities.
+Mappings retain storage independently of descriptors. Logical shrinking zeros
+removed bytes without physically truncating pages still visible to native readers
+or GPU work. Physical storage remains charged until the final mapping/frame lease
+is released. A wl_buffer shared across surfaces has one common usage lease.
 
-Swapchains own a bounded pool of original native Vulkan optimal images. On Apple,
-VK_EXT_metal_objects exports their original MTLTextures, sampled directly by the
-Metal window compositor. A nonblocking producer fence gates publication. A frame
-lease spans producer completion, queued/current scenes and final Metal command
-completion; image reuse follows the final lease, including swapchain replacement
-and session teardown. FIFO presentation pauses while minimized/occluded. Pending
-frames are bounded per surface across pool replacement; image allocations share
-the existing GPU budget. The VM coordinator never waits for a native frame/fence.
-No normal pixel readback or GPU-to-CPU-to-GPU transport is used. Debug acceptance
-alone reads back the final host drawable to verify actual displayed pixels.
+The Metal frontend imports page-aligned SHM bytes with bytesNoCopy and handles
+arbitrary row strides in its fragment shader. A refused import uses an explicit,
+counted copy fallback. Frames retain their bytes through Metal command completion
+and remain valid across VM shutdown. Mode-zero fallocate reserves guest storage
+quota and grows files while preserving data and file position. KEEP_SIZE,
+hole-punching and physical host-block reservation are not implemented.
 
-The expanded selected graphics path includes sRGB textures, D16 depth attachments,
-depth compare/write, empty native pipeline caches, PREINITIALIZED images and
+## Vulkan presentation
+
+Standard VK_KHR_wayland_surface uses the original guest loader/libwayland. The
+ICD resolves libwayland through its own handle, including clients using RTLD_LOCAL.
+It authenticates the bridged connection and resolves its connection-local
+wl_surface ID; guest pointers never become host capabilities.
+
+Swapchains own bounded pools of original native Vulkan optimal images. On Apple,
+VK_EXT_metal_objects exports their MTLTextures for direct Metal sampling. Producer
+fences gate publication without blocking the VM coordinator. A frame lease spans
+producer completion, queued/current scenes and final Metal command completion.
+Image reuse follows the final lease, including swapchain replacement and session
+teardown. FIFO pauses while minimized/occluded. Pending frames are bounded across
+pool replacement; allocations share the existing 128 MiB GPU budget.
+
+Normal presentation performs no pixel readback or GPU-to-CPU-to-GPU transport.
+Only debug acceptance reads back the final host drawable for pixel verification.
+CPU mappings remain separate guest/native storage: native HOST_COHERENT types
+synchronize changed bytes at submit, successful fence status/wait and unmap,
+preserving independent CPU/GPU changes. Those shadow transfers are distinct from
+image presentation. See [Vulkan memory and lifetime](vulkan-compute.md#memory-and-lifetime)
+for the profile's boundaries and accounting.
+
+The graphics subset includes sRGB textures, D16 depth attachments, depth
+compare/write, empty native pipeline caches, PREINITIALIZED images and
 SIMULTANEOUS_USE command buffers with per-submission completion accounting.
-Native Wayland and legacy fixed-display WSI are currently separate instance
-routes; enabling both extension routes on one instance is explicitly rejected.
+Native Wayland and legacy fixed-display WSI remain separate instance routes;
+requesting both on one instance is rejected.
 
-## Input
+## Scene and input
 
-A host seat sends Linux evdev keycodes and surface-local pointer coordinates.
-The original xkeyboard-config US keymap is a protocol data artifact; native
-composition uses UIKit UITextInput and upstream text-input v1/v3 instead.
-The native document uses UTF-16 positions internally and converts to protocol
-UTF-8 byte offsets for preedit/commit/delete. Context IDs and epochs reject
-late IME edits after focus changes. Surrounding text and caret rectangles travel
-back from the client. Weston editor's text-input-v1 is included explicitly.
+Synchronized subsurfaces publish buffers/positions atomically with their parent.
+Input regions retain copy semantics. Buffer scale/transform, window-geometry
+origins and nonzero v4 attach offsets are preserved. Popup placement supports
+anchor/gravity and ordered flip/slide/resize constraints, explicit reposition
+tokens, authenticated implicit grabs and outside-click dismissal. Surface role
+identity survives role-object destruction.
 
-## Current validation and remaining work
+The native canvas includes popup extents beyond root geometry, clipped to the
+actual workspace before drawable allocation. Empty padding is transparent and
+does not intercept neighboring controls. Pointer/caret coordinates include that
+scene origin. Pointer grabs deliver release outside the originally pressed region;
+native focus loss clears held keys/buttons and stale text contexts.
 
-- Host shared-storage/mapping/accounting tests and VFS regressions pass locally.
-- An independent C client linked to original libwayland-client creates two xdg
-  windows, closes its buffer FDs/mappings immediately, changes actual buffer
-  resolution after configure, receives frames, and exits on native close.
-  Run `bash scripts/test-wayland.sh` with the original development tools installed.
-- Original Alpine-signed wayland-info and weston-simple-shm run in the guest;
-  simple-shm continuously redraws and exits on the native close event. Weston
-  editor completes native text-input-v1 preedit/Chinese/emoji commit roundtrips
-  after installing its original Weston PNG assets. Reproduce with the ignored
-  `trames-core/tests/wayland.rs` acceptance and a prepared signed-package store.
-- The same ARM64 client and original Alpine libwayland-client/libffi execute
-  through the Linux guest VFS bridge successfully.
-- Rust core/bridge/FFI compile for aarch64-apple-ios. Swift parser checks pass;
-  both simulator and device apps link successfully. Actual Apple simulator tests
-  pass original wayland-info, two-window resize, Weston SHM and Weston editor
-  Chinese/emoji composition through UIKit. Original vkcube exposed a missing
-  HOST_COHERENT mapping path; its Metal acceptance is being rerun after the fix.
-- Synchronized subsurfaces, input regions, buffer transforms, nonzero v4 attach
-  offsets, real window-geometry origins, and native IME serial/ready state are
-  implemented. Original Alpine vkcube 1.4.313 completes standard Wayland WSI
-  presentation and native configure-driven 320x240 swapchain recreation on Linux
-  lavapipe. This is protocol/resource validation, not Apple Metal validation.
-- Independent C acceptance also proves producer readiness, FIFO acknowledgement,
-  queue budget recovery and retained image lifetime across native-server teardown.
-- scripts/prepare-wayland-guest.py prepares original signed runtime packages, the
-  C ABI peer and original Weston PNG assets. Apple CI installs them with the
-  ordinary guest apk, then exercises two windows, Weston SHM/editor and vkcube
-  against actual CAMetalLayer drawables, including native UITextInput composition
-  and configure-driven image recreation. Pixel readback is debug-test-only.
-- Actual Apple UI test results are still being completed. This is not a completed release.
+A native seat sends Linux evdev keycodes. The original xkeyboard-config US keymap
+is protocol data; native composition uses UIKit UITextInput and text-input v1/v3.
+The local document uses UTF-16 and converts to protocol UTF-8 byte offsets for
+preedit, commit, deletion and cursor ranges. Context IDs/epochs reject late edits
+after focus changes. Surrounding text and caret rectangles return from the client.
+Weston editor uses v1; an independent original C client exercises v3.
 
-Upstream wayland-backend is retained under vendor/ with its MIT license and
-three documented Apple-platform cfg changes. See TRAMES-PATCHES.md there.
+v3 surrounding deletion excludes selected text; preedit/commit replaces the
+selection itself. UIKit avoids duplicate deletion and retains selection direction.
+v1 preserves explicit cursor-relative byte deletion. Marked-text backspace acts
+at the composition caret, including interior selections.
 
-Mode-zero fallocate now reserves guest storage quota and grows a file while
-preserving existing bytes and file position, so original libwayland/Weston SHM
-allocation works. KEEP_SIZE/hole-punching and physical host-block reservation
-are not claimed. The original Weston CSD PNG assets come from the `weston`
-package; `weston-clients` alone does not include them in Alpine v3.22.
+## Validation
 
-The Apple C acceptance peer builds original Wayland 1.23.1 client/scanner sources
-with a documented Darwin OS adapter: fcntl CLOEXEC, SO_NOSIGPIPE, getpeereid,
-original recvmsg CLOEXEC fallback, and omission of unused server epoll helpers.
-Protocol/queue/marshalling sources are unchanged; this test library is not
-linked into the app. Linux acceptance continues to use original distro binaries.
+- 182 affected shared/core/VFS/Vulkan/FFI/Wayland library tests and strict Clippy
+  pass on Linux.
+- Four independent original C acceptance groups cover two-window resize/close,
+  synchronized scenes/popups/input regions/grabs, v3 UTF-8/serial/surrounding state,
+  producer readiness/FIFO/budget and retained GPU-image lifetime.
+- Original Alpine-signed wayland-info, Weston SHM/editor and vkcube run through
+  the production session/transfer/frame ABI. vkcube recreates images at 320x240.
+  Retained SHM/GPU capabilities survive session shutdown and then release cleanly.
+- Compute (including coherent unmap/remap and persistent mappings without explicit
+  flush/invalidate), graphics and texture outputs match the independent native
+  Linux driver with one and four guest CPUs; graphics pixels match byte-for-byte.
+- Both Apple apps link. Actual Apple simulator execution passes original
+  wayland-info, two-window resize, no-copy SHM drawing and UIKit Chinese/emoji
+  composition. Original vkcube reaches actual Metal drawables, recreates its
+  swapchain at 320x240 and produces nonuniform displayed pixels. The coherent
+  no-flush/no-invalidate compute test also passes. Apple acceptance is 23 passed,
+  zero failed/skipped; see the [validation record](../validation/wayland-native.md).
+  This is simulator execution, not an iPad device test.
 
-An additional original C scene peer validates synchronized child buffer/position
-atomicity, destroyed-region copy semantics, CSD geometry offsets, input-region
-hit testing, pointer release outside the pressed surface, popup anchor/gravity,
-ordered flip/slide/resize placement, explicit reposition tokens and authenticated
-keyboard/pointer implicit grabs with outside-click dismissal. Surface role
-identity survives role-object destruction. The native canvas includes popup
-extents beyond parent geometry, clipped to the actual app workspace before GPU
-allocation, and translates pointer/caret coordinates with that scene origin.
-Automatic reactive popup relayout, custom cursor images, data-device clipboard
-and drag-and-drop, touch protocol and full Wayland conformance are not claimed.
+Reproduce independent native C acceptance with the original development tools:
 
-Current Linux regressions: 180 shared/core/VFS/Vulkan/FFI/Wayland library tests, four
-independent native C acceptance tests, and original graphics/texture guest pixel
-oracles for one and four CPUs pass. Ordinary guest apk resolves and verifies an
-offline original repository, rather than explicitly installing every alternative
-provider. Apple simulator SHM and IME acceptance pass. Original vkcube
-Metal presentation is the remaining acceptance gate.
+```sh
+bash scripts/test-wayland.sh
+```
 
-In-flight descriptor transfers have an explicit export lease, registered before
-sending SCM_RIGHTS. The receiving service retains it until SharedFile import
-acknowledges that FD, or until the client disconnects. The original logical EOF,
-managed backing and physical budget therefore survive the interval after the
-guest closes its last descriptor but before the server imports the FD. Transfer
-backpressure is bounded independently of frame leases; no extra pixel lock is
-introduced. Tests cover cancelled transfers followed by another export of the
-same inode and cancellation on native client disconnect.
+On Apple, that script builds original Wayland 1.23.1 client/scanner sources with
+a documented Darwin OS adapter: fcntl CLOEXEC, SO_NOSIGPIPE, getpeereid, original
+recvmsg CLOEXEC fallback and omission of unused server epoll helpers. Protocol,
+queue and marshalling sources stay unchanged; this test library is not linked
+into the app. Linux uses the original distro library.
 
-A headless production embedding test also drives original wayland-info, the C
-multiwindow peer, Weston SHM/editor and vkcube through the same session/transfer/
-frame API as UIKit. It retains SHM and GPU frames across VM shutdown, queries
-their capabilities afterwards, then releases them. Linux compute regression
-continues to match the independent driver, including mapped-memory transfers,
-semaphore reuse and asynchronous pipeline callers.
-
-To reproduce the signed offline store and production ABI acceptance on Linux
-(with the AArch64 C compiler, Wayland scanner and Vulkan host driver installed):
+To prepare signed offline inputs and exercise the production ABI on Linux:
 
 ```sh
 bash scripts/build-vulkan-fixtures.sh
@@ -151,15 +137,24 @@ cargo build -p trames-ffi --release --locked
 TRAMES_WAYLAND_STORE=/tmp/trames-wayland-test python3 tests/integration/wayland.py --prepare
 ```
 
-The target store must be absent for --prepare. Omit that flag to repeat the
-client/lifetime checks against the prepared store. This headless test does not
-claim to validate Apple drawable pixels or actual iPad keyboard interaction.
+The store must be absent for --prepare. Omit that flag to repeat client/lifetime
+checks against a prepared store. Ordinary guest apk resolves and verifies the
+original repository, choosing between alternative providers itself. Weston CSD
+PNG assets come from Alpine's `weston` package; `weston-clients` alone lacks them.
+The headless ABI test does not validate Apple pixels or system keyboard behavior.
+Apple CI uses these same original inputs against real CAMetalLayer drawables,
+UIKit input and native configure-driven image recreation.
 
-The native text context identifies text-input v1 versus v3. v3 surrounding
-removal excludes selected text; preedit/commit replaces that selection itself.
-UIKit therefore does not send a duplicate deletion for it. v1 retains explicit
-cursor-relative byte deletion. An independent original C v3 peer checks preedit
-UTF-8 offsets, the originating done serial and the client's surrounding-text
-acknowledgement. UIKit checks cover selection direction, replacement without
-double deletion and deleting at an interior composition caret. Popup canvas
-padding is transparent and empty gaps do not intercept neighboring controls.
+## Initial limits and upstream notices
+
+This is a selected protocol/graphics implementation, not full Wayland or Vulkan
+conformance. Output scale is initially one. Clipboard/data-device/DnD, custom
+cursor images, automatic reactive popup relayout, touch protocol and EGL/OpenGL
+bridging are not implemented. Device touch and actual system keyboard experience
+still require iPad use.
+
+wayland-backend is vendored under its original MIT license with three documented
+Apple cfg changes. See its TRAMES-PATCHES.md and the [dependency record](../security/dependencies.md#native-wayland-and-shared-descriptors).
+Original dependency, XML and keymap notices are bundled in the App. The offline
+Wayland repository/client fixtures serve DEBUG XCTest acceptance and are omitted
+from sideload IPA packaging; runtime clients are installed with ordinary apk.

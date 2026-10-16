@@ -1,6 +1,6 @@
 # Trames
 
-当前开发分支正在接入[宿主原生 Wayland](docs/architecture/wayland.md)：独立浮动窗口、真实分辨率调整、UIKit 输入法与标准 Vulkan Wayland WSI。原版 Weston 客户端、vkcube 及独立 C 协议/生命周期验收已在 Linux 通过；Apple Metal/UI 验收正在进行，尚未作为正式安装版本发布。[使用说明](docs/guides/wayland.md)，[PR #26](https://github.com/kb5000/trames/pull/26)。
+当前开发分支已接入[宿主原生 Wayland](docs/architecture/wayland.md)：独立浮动窗口、真实分辨率调整、UIKit 输入法与标准 Vulkan Wayland WSI。原版 Weston 客户端、vkcube、Metal 画面及输入验收已在 Apple 模拟器通过（23 项，零失败）；[验证记录](docs/validation/wayland-native.md)。尚未作为正式安装版本发布。[使用说明](docs/guides/wayland.md)，[PR #26](https://github.com/kb5000/trames/pull/26)。
 
 本轮开发：Linux 的总内存/单进程预算已可在 iPad 设置与 CLI 中配置，
 默认仍为 1 GiB / 512 MiB，按需分配。

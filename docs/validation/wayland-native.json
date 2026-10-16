@@ -1,0 +1,85 @@
+{
+  "date": "2026-10-16",
+  "implementation_commit": "713ffd93a15193397d0a85abf961bfc68c451326",
+  "local": {
+    "affected_library_tests_passed": 182,
+    "original_native_c_acceptance_groups_passed": 4,
+    "production_ffi_original_guest_clients": [
+      "wayland-info",
+      "two-window C peer",
+      "weston-simple-shm",
+      "weston-editor",
+      "vkcube --wsi wayland --c 30"
+    ],
+    "guest_vkcube_configure_extent": [
+      320,
+      240
+    ],
+    "frame_capabilities_retained_across_vm_shutdown": [
+      "SHM",
+      "native GPU image"
+    ],
+    "gpu_oracle_guest_cpus": [
+      1,
+      4
+    ],
+    "gpu_oracles": [
+      "compute",
+      "coherent unmap/remap and persistent mappings",
+      "graphics pixels",
+      "texture pixels"
+    ],
+    "coherent_independent_cpu_gpu_ranges_preserved": true,
+    "rust_clippy_warnings_denied": true,
+    "rust_ios_target_check": "passed; not an Apple runtime test",
+    "timezone_python_regression": "passed"
+  },
+  "apple": {
+    "workflow_run": 38963548724,
+    "workflow_url": "https://github.com/kb5000/trames/actions/runs/38963548724",
+    "job_id": 117185181275,
+    "actual_runtime_result": "passed",
+    "platform": "iOS Simulator",
+    "architecture": "arm64",
+    "device_name": "iPad Pro 11-inch (M4)",
+    "os_version": "18.5",
+    "tests_passed": 23,
+    "tests_failed": 0,
+    "tests_skipped": 0,
+    "app_unit_tests_passed": 19,
+    "ui_tests_passed": 4,
+    "simulator_app_link": "passed",
+    "device_app_link": "passed",
+    "original_client_metal_ime_acceptance_test": "LocalWaylandTests.testOriginalGuestClientsNativeIMEAndVkcubeReachMetalDrawables",
+    "coherent_compute_test": "LocalVulkanTests.testCoherentMappingsPreserveCpuWritesAndGpuResultsWithoutExplicitTransfers",
+    "shm_fallback_copied_bytes": 0,
+    "vkcube_recreated_extent": [
+      320,
+      240
+    ],
+    "final_drawable_distinct_rgb_colors_minimum": 65,
+    "original_guest_clients": [
+      "wayland-info",
+      "two-window C peer",
+      "weston-simple-shm",
+      "weston-editor",
+      "vkcube --wsi wayland --c 30"
+    ],
+    "ime_roundtrip": "UIKit preedit ni, committed 你好🙂, client surrounding-text acknowledgement",
+    "diagnostic_artifact_id": 12075551098,
+    "unit_stdout_sha256": "dbf24ca204d7563b19e107afc90f2ca49e06664f5182a9d68f15659a2e7e7752",
+    "ui_stdout_sha256": "68614c87fbf7b3e192a7c95d1a7a4941a45a559685cdfd5e523b042e1bbc62e3"
+  },
+  "limits": [
+    "Not full Wayland or Vulkan conformance",
+    "No clipboard/DnD or EGL/OpenGL bridge",
+    "Device touch and actual system keyboard experience require iPad use"
+  ],
+  "packaging_and_notice_commit": "814744fb3300bc9fe38697f69ee200c21f59a76d",
+  "source_note": "The native Rust/Swift/Metal and GPU acceptance sources tested at 713ffd93 are unchanged by 814744fb; the latter adds upstream notices and excludes DEBUG offline client inputs from IPA packaging.",
+  "packaging": {
+    "offline_wayland_inputs_omitted_from_sideload_ipa": true,
+    "native_icd_and_notices_retained": true,
+    "verification": "host packaging contract check; new cloud build runs separately"
+  }
+}
