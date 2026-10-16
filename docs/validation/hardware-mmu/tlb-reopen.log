@@ -1,0 +1,5 @@
+PASS cold embedding boot first: preserved user data and exact bundled ICD bytes
+PASS cold embedding boot second: preserved user data and exact bundled ICD bytes
+PASS cold embedding boot updated: preserved user data and exact bundled ICD bytes
+PASS cold embedding boot disabled: preserved user data and exact bundled ICD bytes
+PASS cold embedding boot enabled-again: preserved user data and exact bundled ICD bytes

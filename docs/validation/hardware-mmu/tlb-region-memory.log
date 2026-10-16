@@ -1,0 +1,3 @@
+PASS same-page independent CPU regions cpus=1: exact four-counter result
+PASS same-page independent CPU regions cpus=2: exact four-counter result
+PASS same-page independent CPU regions cpus=4: exact four-counter result

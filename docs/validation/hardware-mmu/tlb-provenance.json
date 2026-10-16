@@ -1,0 +1,105 @@
+{
+  "base_commit": "d516f84e07d8f41529c3ea357a4cc8f81c2a01b6",
+  "production_files_sha256": {
+    "crates/trames-cpu/src/cached.rs": "b1e13e69fc1a75731bfe05c460abac0215195df5ee9028c8f33f081258718022",
+    "crates/trames-cpu/src/load_store.rs": "097d94820bd9b5d5f7a02cc62be96db716246511707afeac4731e8359de19573",
+    "crates/trames-memory/src/backing.rs": "1d77947ac7e41ff830d93a6383f6465b1d76e6da56e823afc8112dae0c67b7fc",
+    "crates/trames-memory/src/cpu_memory.rs": "88f234cf75bff92e859e33b7e96000e19830ea27841e04ee210a431b82ea42e8",
+    "crates/trames-memory/src/lib.rs": "be034bb7a16f4b4bc24b13958cdb2150c3b9dc8ef47cb60dde1952c54d035190",
+    "crates/trames-memory/src/mmu/access.rs": "8aba33f3e3d31c758fe7442332f224c7d69fd775428b2a516b7a3cf32d32db1f",
+    "crates/trames-memory/src/mmu/cache.rs": "7b876abbedf2eb88f2a98b8212f97451af451f43e0897be96445717be725ddb6",
+    "crates/trames-memory/src/mmu/mod.rs": "eb5c2c35dece0d83d1ec2c2449a6f7557162e17f028d7056854229fbf1a3d599",
+    "crates/trames-memory/src/mmu/worker.rs": "874dff138a1d7d37a3d837847f3840279950c769b9c20ad0cb3b74420c0c823a",
+    "crates/trames-memory/src/parallel.rs": "27cc3815475d5fbbf36030aa09b360751343b10867c786b22fcfeed66a86b552",
+    "crates/trames-memory/src/parallel/hardware.rs": "86b59b7a9e9ddfbaef0411d819aa2875f92378b31c2e9ea7c8f4834e4cf8f84e"
+  },
+  "runner_sha256": "cc6b90a1fe05e8db96f6846b0c5a994da36cf807259ce4443ff2e071fa95742a",
+  "note": "Test-only native COW regression added; CPU/base hint API removed. TLB caches CPU page aliases and file-backed single-page writes skip impossible hardware promotion.",
+  "candidate_commit": "7c964341555653fb6e1b19caa551c37c859e0af5",
+  "baseline_commit": "538232a9243b605e11afae7fe8d87f23c4bf1116",
+  "ci": {
+    "apple": {
+      "run": 38934931830,
+      "memory_job": 117087925645,
+      "memory_result": "success",
+      "full_result": "in progress at report update"
+    },
+    "linux": {
+      "run": 38934931832,
+      "full_result": "in progress at report update"
+    }
+  },
+  "host_measurements": [
+    {
+      "workload": "coremark",
+      "median_seconds": {
+        "baseline": 27.233,
+        "candidate": 27.863
+      },
+      "speedup": 0.977389369414636
+    },
+    {
+      "workload": "cpu-memory",
+      "median_seconds": {
+        "baseline": 2.040803566,
+        "candidate": 1.7824811569999999
+      },
+      "speedup": 1.1449229395696778
+    },
+    {
+      "workload": "vim-default",
+      "median_seconds": {
+        "baseline": 2.014059760986129,
+        "candidate": 2.1973844110034406
+      },
+      "speedup": 0.9165714250545738
+    },
+    {
+      "workload": "python-imports",
+      "median_seconds": {
+        "baseline": 8.71740890701767,
+        "candidate": 9.107499053992797
+      },
+      "speedup": 0.9571682473242632
+    },
+    {
+      "workload": "gcc-build-run",
+      "median_seconds": {
+        "baseline": 2.840465443005087,
+        "candidate": 3.0112310300173704
+      },
+      "speedup": 0.9432904399197499
+    }
+  ],
+  "smp_measurements": [
+    {
+      "workload": "smp-work",
+      "median_seconds": {
+        "baseline": 2.585495228,
+        "candidate": 3.026354115
+      },
+      "speedup": 0.8543267343319472
+    }
+  ],
+  "full_workspace_cases": 376,
+  "artifacts_sha256": {
+    "tlb-ios.log": "1b9dadbb02194560006d76c4196be9e3d4006a8b2e26446d7c07064400363678",
+    "tlb-apple-memory.log": "e21d5369c7dd16880542c0e6643acc9a751021b2b385ba6627e6d79313aecea6",
+    "tlb-clippy.log": "21b5881e678e8cac3489e36a92944e5e6694f209e72ef84f6bcdeb568efc3b0e",
+    "tlb-workspace.log": "d1fd37d425080f44941916d8c7e0d949a0e63476e88f33d52eaf4b2037e521d6",
+    "tlb-host.json": "39af4899af46096cc6e8b1f6521298bfb02614c27bb3759f15b6715d886492a1",
+    "tlb-tsan.log": "6d761bc4cbaa0c7edc3f7b86376952f224f05ff082bc1914550465d96c3dd4ac",
+    "tlb-cpu-signals.log": "bfc68e532ddf3930f990d364e6c0ffcf2c9f7ba2b6eb86dfd5afe86a18802d0f",
+    "tlb-mmap.log": "453725a63be7753442ba43c54f3339c3669e83cea185e4c5e2886c4134abdc3b",
+    "tlb-reopen.log": "7ef99afe2593f29c644fec1338edda3c15dacfbf2c78c31142a35c67b4f56607",
+    "tlb-ffi-build.log": "324d7a37582d28e6ea267439ecad32457716f50114db082d5447e6d1def42041",
+    "tlb-region-memory.log": "0494bf2095ec4648b4c27b8807a105eae1694bee2f26cae63b25f2954b1c7461",
+    "tlb-arm.log": "59e93afdbc5014d473b6a5769475c813f6c0630ea96e7527b3e744ff81af49ee",
+    "tlb-smp.json": "9a6e6756ce2a52db4273b973f5a348b9a0ffd57f2d439805ef85222fbfe68928",
+    "tlb-memory.log": "b4afb604a9fc51c8b3c9455ff5f8049460ebfd04bd02135629fde791394ba827",
+    "tlb-memory-arm.log": "ade668cb584015e23478425018fa1f4f5f0cf75236e2b2054ea107e810a3b8e5",
+    "tlb-integer-blocks.log": "03db4e0048fa7befcef256239d9a3875a03f351ea5259f53b353bdffc473aef6",
+    "tlb-native-parallel.log": "3ade2e264ec633aee63fa9b021ac80595694a75f6e9bcee2cf11af5bb52c8f70"
+  },
+  "ffi_library_sha256": "eae454e440b05b9e64804007ef9822ac5e2b3e424a965cdbce16616a269bb52f"
+}

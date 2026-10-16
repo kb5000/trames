@@ -11,8 +11,9 @@ containing a virtual page and slab index. A hit avoided BTreeMap lookup but stil
 loaded the page's permission fields and checked them separately. The new entry
 now includes a protected CPU page address: **24 bytes**, or **6 KiB** per view. Its tag packs the
 virtual page, read/write/execute bits, a valid bit and a coordinator backing bit
-into otherwise unused low page-offset bits. One masked comparison proves both
-the page identity and requested access. Invalid entries grant no permissions,
+into otherwise unused low page-offset bits. On the software path one masked
+comparison proves both the page identity and requested access; eligible CPU alias
+hits match page identity and let hardware enforce read/write permission. Invalid entries grant no permissions,
 including for page zero or addresses above the 48-bit guest limit.
 
 For a single-page coordinator hit, a valid mapping also proves the address range;

@@ -1,0 +1,13 @@
+   Compiling trames-memory v0.16.0 (/tmp/trames-mmu-tlb/crates/trames-memory)
+   Compiling trames-native v0.16.0 (/tmp/trames-mmu-tlb/crates/trames-native)
+   Compiling trames-net v0.16.0 (/tmp/trames-mmu-tlb/crates/trames-net)
+   Compiling trames-compute v0.16.0 (/tmp/trames-mmu-tlb/crates/trames-compute)
+   Compiling trames-vulkan v0.16.0 (/tmp/trames-mmu-tlb/crates/trames-vulkan)
+   Compiling trames-cpu v0.16.0 (/tmp/trames-mmu-tlb/crates/trames-cpu)
+   Compiling trames-accel v0.16.0 (/tmp/trames-mmu-tlb/crates/trames-accel)
+   Compiling trames-bridge v0.16.0 (/tmp/trames-mmu-tlb/crates/trames-bridge)
+   Compiling trames-vfs v0.16.0 (/tmp/trames-mmu-tlb/crates/trames-vfs)
+   Compiling trames-elf v0.16.0 (/tmp/trames-mmu-tlb/crates/trames-elf)
+   Compiling trames-linux v0.16.0 (/tmp/trames-mmu-tlb/crates/trames-linux)
+   Compiling trames-core v0.16.0 (/tmp/trames-mmu-tlb/crates/trames-core)
+    Finished `release` profile [optimized] target(s) in 35.12s

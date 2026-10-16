@@ -1,0 +1,106 @@
+{
+  "production_source_commit": "97092c9b09e670b795b969ecae4574451790f859",
+  "test_and_integration_notes_commit": "d516f84e07d8f41529c3ea357a4cc8f81c2a01b6",
+  "compiler": "rustc 1.101.0-nightly (4ebd25825 2026-10-15)\nbinary: rustc\ncommit-hash: 4ebd258257737d5b7635c116fa7d281627a7e937\ncommit-date: 2026-10-15\nhost: x86_64-unknown-linux-gnu\nrelease: 1.101.0-nightly\nLLVM version: 23.1.4\n",
+  "production_files_sha256": {
+    "crates/trames-cpu/src/cached.rs": "482a6d4db370fe616e6fdaebeb2c82ec91c00ba605ca5258dfd6f29c1ef83a84",
+    "crates/trames-cpu/src/load_store.rs": "2bcb8af3c413a32d032dd75df8fa77dc46e63f613ae5b51ce7b0cd0e7e7d8880",
+    "crates/trames-distro/src/lib.rs": "1401f6ca82511f04129ef7598361be434e945ea02776094a8cd0110af26d4a47",
+    "crates/trames-distro/src/vulkan.rs": "644be78bfb312206cedca1a90506951c0f78fe54098c1016305b661add6b3a7b",
+    "crates/trames-ffi/src/session.rs": "582992c64b1068bfb2956332149dc29fcacdfa069a519872b9de52af0bcd62ce",
+    "crates/trames-memory/Cargo.toml": "e2b356e55881afcde4f7d70ec7aa155e9af2c6f7250b7d3aecaf14acf9621604",
+    "crates/trames-memory/src/backing.rs": "faccdee66a021572c8455f37139cd6c5fe48f88a64fe6d053534b900d691ae75",
+    "crates/trames-memory/src/cpu_memory.rs": "0fec0cab306ee0a1cfb9434160b7d11068169cf47cdf3c765ea0031500a8bcf8",
+    "crates/trames-memory/src/lib.rs": "89cebfde52222ddb1b5a2038cf80200693c9f7bbe5eb8127a4b10b62f01d9a8a",
+    "crates/trames-memory/src/mmu/access.rs": "4b954a346af70943f5453338afdb5354013b594d37b18522e6cf82e65a54c7f3",
+    "crates/trames-memory/src/mmu/cache.rs": "46285c627a0d83bdf685e4a7e7d4b756ace1a13234f464b3e8281851fa66bc46",
+    "crates/trames-memory/src/mmu/fault.rs": "4d49321e5f000280ea63100b4393882871f0cd4e65a7022d95174f413eab4f32",
+    "crates/trames-memory/src/mmu/host.rs": "fa4e3e95a8dcec88bf1b3fc0ab6ef6c5b83727dfe943f546e3b86e7dc87f3a4f",
+    "crates/trames-memory/src/mmu/mod.rs": "e588e3a3d05af497bef42417930da0b64bb0c22f5c1c8a475865c2c854deb1d9",
+    "crates/trames-memory/src/mmu/worker.rs": "98d80b162ab7054fb61ecdb5aa4ad86e2bda4f020f13ce5ebe2ad49e86f41e26",
+    "crates/trames-memory/src/native_access.rs": "2a92e49c4ecb7040aec9cb31c53e1392775941f4e33e5d32cd5fffb3222c74a8",
+    "crates/trames-memory/src/parallel.rs": "c6c695eaf40baaa01da820f88125398b06cf8dab68393ca3a2067a0c55172acf",
+    "crates/trames-memory/src/parallel/hardware.rs": "1af128d326f3d1f913a9cf6751fd3d67563437de2d4ce0d9f1035b907798f4db",
+    "crates/trames-memory/src/parallel/native.rs": "b476adc3b6d489a5bf54f1f45a05deb48b40aa753f6081bfce42e3c82a808cd0",
+    "crates/trames-memory/src/parallel/page.rs": "37cf5f1ca433309dc96715aa2b3bb1e20fd3bc67f3a38bc63b37afbde560e7f6",
+    "crates/trames-memory/src/parallel/snapshot.rs": "dc344a6bcf5033e4776bb643fca2aa465ed203c4dafd41f051ab0e8023185ecc"
+  },
+  "runner_sha256": {
+    "baseline": "eb04f1b529baf6543f61e512ac4ca64c6500816c54dae3e1c09eb8fc1b69e448",
+    "final": "84355df9e43405563e83565fe526760aa590338f880daf52271633c37a6f741e"
+  },
+  "assembly_udiv_count_before": 10,
+  "assembly_udiv_count_final": 0,
+  "initial_ci": {
+    "linux": {
+      "run": 38926291820,
+      "result": "failed TSan forwarded mask assertion"
+    },
+    "apple": {
+      "run": 38926291715,
+      "result": "failed unqueryable one-shot flag expectation"
+    }
+  },
+  "final_source_ci": {
+    "linux": {
+      "run": 38929761456,
+      "status": "running"
+    },
+    "apple": {
+      "run": 38929761386,
+      "status": "running",
+      "memory_abi": "passed 59 library and 4 translation tests"
+    }
+  },
+  "scope": "Shared x86_64 timings, identical guest inputs, three alternating pairs. Not physical ARM64/iPad performance; no universal improvement established.",
+  "final_comparison": [
+    {
+      "workload": "coremark",
+      "median_seconds": {
+        "baseline": 30.22,
+        "candidate": 27.987
+      },
+      "speedup": 1.0797870439847073
+    },
+    {
+      "workload": "cpu-memory",
+      "median_seconds": {
+        "baseline": 2.260227101,
+        "candidate": 2.085169259
+      },
+      "speedup": 1.083953780367908
+    },
+    {
+      "workload": "vim-default",
+      "median_seconds": {
+        "baseline": 2.981940028985264,
+        "candidate": 3.113679444009904
+      },
+      "speedup": 0.9576901163419117
+    },
+    {
+      "workload": "python-imports",
+      "median_seconds": {
+        "baseline": 10.909082500991644,
+        "candidate": 14.699820815003477
+      },
+      "speedup": 0.742123501931208
+    },
+    {
+      "workload": "gcc-build-run",
+      "median_seconds": {
+        "baseline": 3.045390557992505,
+        "candidate": 3.103128592018038
+      },
+      "speedup": 0.9813936057390439
+    },
+    {
+      "workload": "smp-work",
+      "median_seconds": {
+        "baseline": 2.320817359,
+        "candidate": 5.190787515
+      },
+      "speedup": 0.44710313267369406
+    }
+  ]
+}

@@ -6,19 +6,19 @@ operands and the same physical bytes as native functions. See the
 permission/fault rules, sparse addresses and preserved ARM concurrency semantics.
 One non-JIT interpreter remains.
 
-A per-view **16-entry, single-level direct-mapped window cache** avoids the sparse
-map on hits. Cached absence also avoids repeated map searches after fork or in
-unsupported windows. Creation invalidates the relevant absent entry. The existing
-256-entry software permission TLB serves special mappings and precise faults.
-Hardware admission failure goes directly to that fallback, without trying the
-same MMU operand twice.
+**Current implementation:** [CPU aliases in the 256-entry page TLB](mmu-page-tlb.md),
+source `7c96434`. That report contains current tests, code generation, all paired
+samples and the explicit absence of a demonstrated general application speedup.
+The extra resident-hint tail arguments described below are historical experiments,
+removed from production. This report retains every earlier comparison, including
+regressions, rather than replacing unfavorable results.
 
-## Validation and code generation
+## Resident-hint validation and code generation
 
 Local checks: **375 workspace tests**, strict workspace/all-target/all-feature
 Clippy, and **108 ARM64/QEMU CPU/memory tests** pass. Memory tests include actual
 host access faults for every operand width, simulated 16 KiB mixed-permission
-subpages, COW/remap/discard, cached collisions/absence and stale owner generations,
+subpages, COW/remap/discard, cached collisions/absence and stale owner generations in that earlier API,
 retained worker snapshots and native/CPU coherence. Isolated subprocesses check
 unrelated default host faults and previous handlers' queryable masks/NODEFER/one-shot rules.
 The default child explicitly restores SIG_DFL so a sanitizer's crash policy does
@@ -27,7 +27,7 @@ is unavailable. Signal forwarding now explicitly reconstructs the previous handl
 interrupted context, including when an interposed dispatcher supplies another
 mask. Default redelivery first unblocks its signal. The host memory suite passes
 these paths; the complete instrumented-standard-library TSan batch passes 88
-tests before the final default-redelivery adjustment. TSan does not instrument
+tests on production source 97092c9, including the final default-redelivery adjustment. TSan does not instrument
 raw asm bytes; its result checks the Rust-side region/ownership protocol, not
 every native memory instruction.
 
@@ -38,7 +38,7 @@ the first inline candidate; the refined fallback additionally passes the full
 workspace and ARM CPU/memory suite. Exact-commit CI covers the final source.
 
 The final iOS ARM64 Release core compiles to assembly on Linux, including its real
-worker interpreter instantiation. [Selected handlers](hardware-mmu/arm64-selected.s)
+worker interpreter instantiation. [Final selected handlers](hardware-mmu/arm64-final.s)
 show the hint owner/descriptor/base carried in the preserve-none tail ABI
 (x24/x25/x26 in this build). Ordinary ADD-immediate does not spill these values.
 The complex memory handler still spills/reloads them while decoding widths and
@@ -93,14 +93,55 @@ medians to claim an isolated refinement gain.
 
 Assembly inspection also identifies runtime division by the host-page granule.
 The final implementation stores its power-of-two shift at construction and uses
-shifts for hot group indexing. This change and signal-forwarding fixes are being
-validated; their performance is not inferred from the earlier binary's numbers.
+shifts for hot group indexing. The final assembly has zero UDIVs in the selected scalar handler, compared with
+ten before this change. This is code-generation evidence, not a cycle attribution.
 All earlier unfavorable measurements remain. Physical iPad MMU speed is unmeasured.
 
 Initial exact-source CI caught signal-composition issues: Linux/TSan deferred
 signal masks, and Darwin one-shot-handler default redelivery. These failures are
 recorded rather than claimed as passing pipelines. A new early native Apple
 memory-ABI job precedes the app build, while full Linux/Apple validation is rerun.
+
+## Resident-hint comparison after shift indexing
+
+The final resident-hint source is `97092c9`; 65a43ec/d516f84 change tests/docs only. Current page-TLB source 7c96434 is measured separately.
+[Provenance and source/binary hashes](hardware-mmu/provenance.json),
+[all final host samples](hardware-mmu/final-host.json) and
+[all final SMP samples](hardware-mmu/final-smp.json) retain this third and last
+resident-hint batch. The baseline/candidate store manifest hash matches both previous batches.
+The same three-pair method and fixed-work inputs apply. The later page-TLB architecture receives its own complete batch; none of these
+samples are removed or combined across batches.
+
+| Workload | Baseline median (s) | Final median (s) | Baseline/final |
+| --- | ---: | ---: | ---: |
+| coremark | 30.220 | 27.987 | 1.080× |
+| cpu-memory | 2.260 | 2.085 | 1.084× |
+| vim-default | 2.982 | 3.114 | 0.958× |
+| python-imports | 10.909 | 14.700 | 0.742× |
+| gcc-build-run | 3.045 | 3.103 | 0.981× |
+| smp-work | 2.321 | 5.191 | 0.447× |
+
+The hardware path and direct-mapped cache are implemented and correctness-tested;
+**general acceleration is not demonstrated by these development-host results**.
+CoreMark and the memory loop have modest median gains, while app/SMP observations
+include substantial regressions and variability. SMP candidate samples are
+5.191/5.951/2.509s against baseline 2.299/2.321/2.366s. Those slow samples also
+consume more child CPU time; snapshot setup remains a small part of elapsed time.
+Do not describe this as only startup/mapping overhead or discard the slow samples.
+
+The fixed-work SMP loop is mostly ALU/branch instructions. Extra live tail arguments,
+register pressure, code layout/prediction and host scheduling need profiling;
+these comparisons do not isolate their contributions. This led to the separately
+measured [page-TLB implementation](mmu-page-tlb.md), which removes resident hints.
+No benchmark-specific runtime branch or extra interpreter backend is added.
+
+Native [Apple ARM64 memory ABI tests](hardware-mmu/apple-memory-abi.log) pass all
+59 library + 4 translation cases on d516f84, including real 16KiB Mach remaps and
+fault recovery. The [d516f84 Apple pipeline](https://github.com/kb5000/trames/actions/runs/38929761386)
+passes all jobs, including native core suites, SDK builds and simulator acceptance.
+Its [Linux pipeline](https://github.com/kb5000/trames/actions/runs/38929761456)
+is still running later integration workloads at this update. Later page-TLB source
+has its own native Apple validation and CI links in the current report.
 
 ## Vulkan cold-start regression
 
@@ -130,6 +171,7 @@ but omits `ps_sigreset` / SA_RESETHAND. Automatic chaining cannot recover a flag
 that the query omits; this integration limit is explicit in the architecture.
 The final regression compares forwarding against an independent native
 query/restore and also runs the untouched native control. It does not claim
-preservation of an unobservable pre-existing Darwin flag. The earlier strict
-Linux-style expectation failed on Apple, and that failed comparison is retained
-in CI history. Linux retains the original queried one-shot behavior.
+preservation of an unobservable pre-existing Darwin flag. The untouched native control proves that the original reset flag works; the
+query/restore control proves the flag is lost at that API boundary. Earlier
+expectations that forwarding could preserve the unqueryable flag failed on Apple
+and are retained in CI history. Linux retains the original queried one-shot behavior.
