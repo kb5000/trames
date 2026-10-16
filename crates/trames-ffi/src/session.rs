@@ -170,7 +170,7 @@ impl Session {
             return Err("invalid session configuration".into());
         }
         WORKERS
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
+            .try_update(Ordering::AcqRel, Ordering::Acquire, |n| {
                 (n < 8).then_some(n + 1)
             })
             .map_err(|_| "session worker limit reached")?;
@@ -241,7 +241,7 @@ impl Session {
         }
         let token = self
             .next_transfer
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| n.checked_add(1))
+            .try_update(Ordering::AcqRel, Ordering::Acquire, |n| n.checked_add(1))
             .map_err(|_| "transfer tokens exhausted")?;
         transfers.insert(
             token,

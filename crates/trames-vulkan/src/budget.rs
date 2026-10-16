@@ -22,7 +22,7 @@ impl Default for Budget {
 impl Budget {
     pub(crate) fn compile(&self) -> Option<CompilePermit> {
         self.compiling
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| {
+            .try_update(Ordering::Relaxed, Ordering::Relaxed, |n| {
                 (n < 8).then_some(n + 1)
             })
             .ok()?;
@@ -30,7 +30,7 @@ impl Budget {
     }
     pub(crate) fn reserve(&self, size: u64) -> bool {
         self.used
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |used| {
+            .try_update(Ordering::Relaxed, Ordering::Relaxed, |used| {
                 used.checked_add(size).filter(|&n| n <= self.limit)
             })
             .is_ok()

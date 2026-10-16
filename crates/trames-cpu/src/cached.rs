@@ -12,6 +12,25 @@ const WAYS: usize = 2;
 const SETS: usize = SLOTS / WAYS;
 const PAGE_WORDS: usize = PAGE_SIZE as usize / 4;
 
+/// A decoded five-bit register field. Only `decode` constructs this type.
+#[derive(Clone, Copy, Debug)]
+struct Register(u8);
+impl Register {
+    const fn decode(word: u32) -> Self {
+        Self((word & 31) as u8)
+    }
+    #[inline(always)]
+    fn index(self) -> usize {
+        debug_assert!(self.0 < 32);
+        // SAFETY: the private constructor masks to five bits. Cached operands
+        // are never populated from guest data except through that constructor.
+        // This describes an already validated index; public Cpu register access
+        // and guest memory permissions retain their normal checks.
+        unsafe { std::hint::assert_unchecked(self.0 < 32) };
+        self.0 as usize
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 enum Addressing {
     Offset(u64),
@@ -91,7 +110,7 @@ enum Op {
     },
     Multiply {
         kind: u8,
-        ra: u8,
+        ra: Register,
         sub: bool,
     },
     ShiftVariable {
@@ -131,7 +150,7 @@ enum Op {
     Pair {
         offset: u64,
         size: u8,
-        second: u8,
+        second: Register,
         load: bool,
         vector: bool,
         signed: bool,
@@ -147,9 +166,9 @@ enum Op {
 #[derive(Clone, Copy, Debug)]
 struct Instruction {
     word: u32,
-    rd: u8,
-    rn: u8,
-    rm: u8,
+    rd: Register,
+    rn: Register,
+    rm: Register,
     wide: bool,
     op: Op,
 }
@@ -293,7 +312,11 @@ impl Instruction {
                 || (wide && matches!(kind, 1 | 5))
                 || (wide && !sub && ra == 31 && matches!(kind, 2 | 6))
             {
-                Op::Multiply { kind, ra, sub }
+                Op::Multiply {
+                    kind,
+                    ra: Register::decode(ra as u32),
+                    sub,
+                }
             } else {
                 Op::Fallback
             }
@@ -391,7 +414,7 @@ impl Instruction {
                 Op::Pair {
                     offset: sign_extend(((word >> 15) & 127) as u64, 7).wrapping_mul(size as u64),
                     size,
-                    second,
+                    second: Register::decode(second as u32),
                     load,
                     vector,
                     signed: opc == 1,
@@ -408,9 +431,9 @@ impl Instruction {
         };
         Self {
             word,
-            rd: (word & 31) as u8,
-            rn: ((word >> 5) & 31) as u8,
-            rm: ((word >> 16) & 31) as u8,
+            rd: Register::decode(word),
+            rn: Register::decode(word >> 5),
+            rm: Register::decode(word >> 16),
             wide,
             op,
         }
@@ -484,9 +507,9 @@ impl Default for Entry {
             generation: 0,
             instruction: Instruction {
                 word: 0,
-                rd: 0,
-                rn: 0,
-                rm: 0,
+                rd: Register::decode(0),
+                rn: Register::decode(0),
+                rm: Register::decode(0),
                 wide: false,
                 op: Op::Fallback,
             },
@@ -499,7 +522,37 @@ struct CodePage {
     identity: (u64, u64, u64),
     checked: (u64, u64, u64),
     generation: u64,
-    instructions: Box<[Entry]>,
+    instructions: Box<[Entry; PAGE_WORDS]>,
+}
+impl CodePage {
+    #[cold]
+    #[inline(never)]
+    fn decode_slot(
+        &mut self,
+        memory: &impl CpuMemory,
+        slot: usize,
+        pc: u64,
+        stats: &mut super::DecodeStats,
+    ) -> Result<(), trames_memory::MemoryError> {
+        // Decode only the reached PC: no speculative page reads,
+        // early faults, or decoding of never-executed page contents.
+        let word = memory.fetch_u32(pc)?;
+        let instruction = Instruction::decode(word);
+        self.instructions[slot].instruction = instruction;
+        self.instructions[slot].generation = self.generation;
+        stats.instructions += 1;
+        // Form pairs only from words that have actually executed.
+        // No lookahead fetch can move a fault before its reached PC.
+        if slot != 0 && self.instructions[slot - 1].generation == self.generation {
+            let previous = &mut self.instructions[slot - 1];
+            previous.instruction = previous.instruction.followed_by(instruction);
+        }
+        if slot + 1 < PAGE_WORDS && self.instructions[slot + 1].generation == self.generation {
+            let instruction = instruction.followed_by(self.instructions[slot + 1].instruction);
+            self.instructions[slot].instruction = instruction;
+        }
+        Ok(())
+    }
 }
 #[derive(Debug)]
 pub(super) struct Cache {
@@ -568,7 +621,7 @@ impl Cache {
                 page.generation = page.generation.wrapping_add(1);
                 if page.generation == 0 {
                     // Epoch wrap must never expose a stale or empty entry.
-                    for entry in &mut page.instructions {
+                    for entry in page.instructions.iter_mut() {
                         entry.generation = 0;
                     }
                     page.generation = 1;
@@ -579,7 +632,10 @@ impl Cache {
                     identity,
                     checked,
                     generation: 1,
-                    instructions: vec![Entry::default(); PAGE_WORDS].into_boxed_slice(),
+                    instructions: vec![Entry::default(); PAGE_WORDS]
+                        .into_boxed_slice()
+                        .try_into()
+                        .expect("fixed code page"),
                 }));
             }
         }
@@ -638,113 +694,47 @@ impl Cpu {
                     return self.slice_fault(CpuFault::Memory { pc: self.pc, error }, executed)
                 }
             };
-            while executed < budget && self.pc & !(PAGE_SIZE - 1) == page.base {
-                let pc = self.pc;
-                if pc & 3 != 0 {
-                    return self.slice_fault(
-                        CpuFault::Memory {
-                            pc,
-                            error: trames_memory::MemoryError::Alignment(pc),
-                        },
-                        executed,
-                    );
-                }
-                let slot = ((pc - page.base) / 4) as usize;
-                if page.instructions[slot].generation != page.generation {
-                    // Decode only the reached PC: no speculative page reads,
-                    // early faults, or decoding of never-executed page contents.
-                    let word = match memory.fetch_u32(pc) {
-                        Ok(word) => word,
-                        Err(error) => {
-                            return self.slice_fault(CpuFault::Memory { pc, error }, executed)
-                        }
-                    };
-                    let instruction = Instruction::decode(word);
-                    page.instructions[slot].instruction = instruction;
-                    page.instructions[slot].generation = page.generation;
-                    stats.instructions += 1;
-                    // Form pairs only from words that have actually executed.
-                    // No lookahead fetch can move a fault before its reached PC.
-                    if slot != 0 && page.instructions[slot - 1].generation == page.generation {
-                        let previous = &mut page.instructions[slot - 1];
-                        previous.instruction = previous.instruction.followed_by(instruction);
-                    }
-                    if slot + 1 < PAGE_WORDS
-                        && page.instructions[slot + 1].generation == page.generation
-                    {
-                        let instruction =
-                            instruction.followed_by(page.instructions[slot + 1].instruction);
-                        page.instructions[slot].instruction = instruction;
-                    }
-                }
-                // Read operands in the selected handler instead of copying every
-                // variant's payload before dispatch. Cache mutation above is
-                // complete; a code-writing instruction still exits on epoch change.
-                let instruction = &page.instructions[slot].instruction;
-                match self.execute_decoded(instruction, memory, budget - executed, flags) {
-                    Ok((Event::Continue, count)) => executed += count,
-                    Ok((Event::Yield, _)) => {
-                        return SliceOutcome::Yield {
-                            instructions: executed,
-                        }
-                    }
-                    Ok((Event::Syscall, _)) => {
-                        return SliceOutcome::Syscall {
-                            instructions: executed + 1,
-                        }
-                    }
-                    Ok((
-                        Event::NativeCall {
-                            pc,
-                            module,
-                            function,
-                        },
-                        _,
-                    )) => {
-                        return SliceOutcome::NativeCall {
-                            instructions: executed,
-                            pc,
-                            module,
-                            function,
-                        }
-                    }
-                    Err(error) => return self.slice_fault(error, executed),
-                }
-                // A successful self-modifying store must leave this borrowed
-                // code page before the next instruction is read from it.
-                if instruction.may_write_code() && memory.instruction_identity() != page.checked {
-                    break;
-                }
+            let mut state = TailState {
+                cpu: self,
+                memory,
+                flags,
+                page,
+                stats,
+                budget,
+            };
+            match tail_enter(&mut state, 0, executed) {
+                TailExit::Page(count) => executed = count,
+                TailExit::Stop(outcome) => return outcome,
             }
         }
         SliceOutcome::Yield {
             instructions: executed,
         }
     }
-    // One call site per CpuMemory specialization. Keep dispatch and execution
-    // in one loop even when small ALU helpers change LLVM's size heuristic;
-    // outlining this function would add an ABI call for every guest instruction.
+    // Inline each operation into its tail handler. TAG comes only from the
+    // exhaustive tail_next dispatcher, with no intervening cache mutation.
+    // The specialization removes the redundant second operation dispatch.
     #[inline(always)]
-    fn execute_decoded(
+    fn execute_decoded<M: CpuMemory, const TAG: usize>(
         &mut self,
         ins: &Instruction,
-        memory: &mut impl CpuMemory,
+        memory: &mut M,
         remaining: u64,
         flags: &mut ConditionFlags,
     ) -> Result<(Event, u64), CpuFault> {
         let pc = self.pc;
         let mut next = pc.wrapping_add(4);
         let mut count = 1;
-        let (rd, rn, rm) = (ins.rd as usize, ins.rn as usize, ins.rm as usize);
+        let (rd, rn, rm) = (ins.rd.index(), ins.rn.index(), ins.rm.index());
         let wide = ins.wide;
         let mask = width_mask(wide);
         match ins.op {
-            Op::Nop => {}
-            Op::Svc => {
+            Op::Nop if TAG == 0 => {}
+            Op::Svc if TAG == 1 => {
                 self.pc = next;
                 return Ok((Event::Syscall, 1));
             }
-            Op::Move { opc, shift, value } => {
+            Op::Move { opc, shift, value } if TAG == 2 => {
                 let value = match opc {
                     0 => !value,
                     2 => value,
@@ -752,7 +742,7 @@ impl Cpu {
                 };
                 self.put(rd, value, wide, false);
             }
-            Op::Address { immediate } => self.set_x(
+            Op::Address { immediate } if TAG == 3 => self.set_x(
                 rd,
                 if wide {
                     (pc & !4095).wrapping_add(immediate << 12)
@@ -760,10 +750,10 @@ impl Cpu {
                     pc.wrapping_add(immediate)
                 },
             ),
-            Op::AddImmediate { value } => {
+            Op::AddImmediate { value } if TAG == 4 => {
                 self.put(rd, self.reg(rn, true).wrapping_add(value), wide, true);
             }
-            Op::FlagsImmediate { sub, value } => {
+            Op::FlagsImmediate { sub, value } if TAG == 5 => {
                 let value = flags.calculate(self.reg(rn, true), value, sub, true, wide);
                 self.put(rd, value, wide, false);
             }
@@ -772,7 +762,7 @@ impl Cpu {
                 flags: set_flags,
                 kind,
                 amount,
-            } => {
+            } if TAG == 6 => {
                 let value = flags.calculate(
                     self.x(rn),
                     shifted(self.x(rm), kind as u32, amount as u32, wide),
@@ -790,7 +780,7 @@ impl Cpu {
                 immediate,
                 kind,
                 amount,
-            } => {
+            } if TAG == 7 => {
                 let left = self.reg(rn, immediate);
                 let right = if immediate {
                     value
@@ -813,11 +803,11 @@ impl Cpu {
                 invert,
                 kind,
                 amount,
-            } => {
+            } if TAG == 8 => {
                 let rhs = shifted(self.x(rm), kind as u32, amount as u32, wide);
                 self.decoded_logical(ins, if invert { !rhs } else { rhs }, opc, false, flags);
             }
-            Op::LogicalImmediate { opc, value } => {
+            Op::LogicalImmediate { opc, value } if TAG == 9 => {
                 self.decoded_logical(ins, value, opc, opc != 3, flags)
             }
             Op::Bitfield {
@@ -826,7 +816,7 @@ impl Cpu {
                 s,
                 wmask,
                 tmask,
-            } => {
+            } if TAG == 10 => {
                 let value = rotate(self.x(rn) & mask, r as u32, if wide { 64 } else { 32 });
                 let value = match opc {
                     0 => {
@@ -844,7 +834,7 @@ impl Cpu {
                 condition,
                 invert,
                 increment,
-            } => {
+            } if TAG == 11 => {
                 let value = if flags.condition(condition as u32) {
                     self.x(rn)
                 } else {
@@ -863,7 +853,7 @@ impl Cpu {
                 signed,
                 bits,
                 amount,
-            } => {
+            } if TAG == 12 => {
                 let rhs = self.x(rm) & ones(bits as u32);
                 let rhs = if signed {
                     sign_extend(rhs, bits as u32)
@@ -884,7 +874,7 @@ impl Cpu {
                 immediate,
                 sub,
                 nzcv,
-            } => {
+            } if TAG == 13 => {
                 if flags.condition(condition as u32) {
                     flags.calculate(
                         self.x(rn),
@@ -897,7 +887,7 @@ impl Cpu {
                     flags.set(nzcv as u32);
                 }
             }
-            Op::Multiply { kind, ra, sub } => {
+            Op::Multiply { kind, ra, sub } if TAG == 14 => {
                 let product = match kind {
                     0 => self.x(rn).wrapping_mul(self.x(rm)),
                     1 => (self.x(rn) as u32 as i32 as i64)
@@ -910,13 +900,13 @@ impl Cpu {
                 let value = if matches!(kind, 2 | 6) {
                     product
                 } else if sub {
-                    self.x(ra as usize).wrapping_sub(product)
+                    self.x(ra.index()).wrapping_sub(product)
                 } else {
-                    self.x(ra as usize).wrapping_add(product)
+                    self.x(ra.index()).wrapping_add(product)
                 };
                 self.put(rd, value, wide, false);
             }
-            Op::ShiftVariable { kind } => {
+            Op::ShiftVariable { kind } if TAG == 15 => {
                 let amount = (self.x(rm) & if wide { 63 } else { 31 }) as u32;
                 self.put(
                     rd,
@@ -925,7 +915,7 @@ impl Cpu {
                     false,
                 );
             }
-            Op::Divide { signed } => {
+            Op::Divide { signed } if TAG == 16 => {
                 let a = self.x(rn) & mask;
                 let b = self.x(rm) & mask;
                 let value = if b == 0 {
@@ -939,20 +929,20 @@ impl Cpu {
                 };
                 self.put(rd, value, wide, false);
             }
-            Op::Branch { offset, link } => {
+            Op::Branch { offset, link } if TAG == 17 => {
                 if link {
                     self.set_x(30, next);
                 }
                 next = pc.wrapping_add(offset);
             }
-            Op::RegisterBranch { link } => {
+            Op::RegisterBranch { link } if TAG == 18 => {
                 let target = self.x(rn);
                 if link {
                     self.set_x(30, next);
                 }
                 next = target;
             }
-            Op::CompareBranch { offset, nonzero } => {
+            Op::CompareBranch { offset, nonzero } if TAG == 19 => {
                 if (self.x(rd) & mask != 0) == nonzero {
                     next = pc.wrapping_add(offset);
                 }
@@ -961,12 +951,12 @@ impl Cpu {
                 offset,
                 bit,
                 nonzero,
-            } => {
+            } if TAG == 20 => {
                 if (self.x(rd) & (1 << bit) != 0) == nonzero {
                     next = pc.wrapping_add(offset);
                 }
             }
-            Op::ConditionalBranch { offset, condition } => {
+            Op::ConditionalBranch { offset, condition } if TAG == 21 => {
                 if flags.condition(condition as u32) {
                     next = pc.wrapping_add(offset);
                 }
@@ -976,7 +966,7 @@ impl Cpu {
                 size,
                 opc,
                 vector,
-            } => {
+            } if TAG == 22 => {
                 if !vector && size == 8 && opc == 2 {
                     self.pc = next;
                     return Ok((Event::Continue, 1));
@@ -1037,14 +1027,14 @@ impl Cpu {
                 signed,
                 writeback,
                 post,
-            } => {
+            } if TAG == 23 => {
                 let base = self.reg(rn, true);
                 let address = if post {
                     base
                 } else {
                     base.wrapping_add(offset)
                 };
-                let second = second as usize;
+                let second = second.index();
                 let fault = |error| CpuFault::Memory { pc, error };
                 if load {
                     let (first, other) = match size {
@@ -1125,7 +1115,7 @@ impl Cpu {
                     self.put(rn, base.wrapping_add(offset), true, true);
                 }
             }
-            Op::Memory { .. } => {
+            Op::Memory { .. } if TAG == 24 => {
                 if !self.execute_memory(ins.word, memory)? {
                     return Err(CpuFault::Instruction {
                         pc,
@@ -1133,12 +1123,15 @@ impl Cpu {
                     });
                 }
             }
-            Op::Fallback => {
+            Op::Fallback if TAG == 25 => {
                 self.condition_flags = *flags;
                 let result = self.execute_instruction(ins.word, memory);
                 *flags = self.condition_flags;
                 return result.map(|event| (event, 1));
             }
+            // SAFETY: tail_next selects this specialization from this exact
+            // entry's Op. No code-cache mutation occurs before executing it.
+            _ => unsafe { std::hint::unreachable_unchecked() },
         }
         self.pc = next;
         Ok((Event::Continue, count))
@@ -1152,7 +1145,7 @@ impl Cpu {
         sp: bool,
         flags: &mut ConditionFlags,
     ) {
-        let (rd, rn, wide) = (ins.rd as usize, ins.rn as usize, ins.wide);
+        let (rd, rn, wide) = (ins.rd.index(), ins.rn.index(), ins.wide);
         let value = match opc {
             0 | 3 => self.x(rn) & rhs,
             1 => self.x(rn) | rhs,
@@ -1166,6 +1159,153 @@ impl Cpu {
         }
         self.put(rd, value, wide, sp);
     }
+}
+
+struct TailState<'a, M: CpuMemory> {
+    cpu: &'a mut Cpu,
+    memory: &'a mut M,
+    flags: &'a mut ConditionFlags,
+    page: &'a mut CodePage,
+    stats: &'a mut super::DecodeStats,
+    budget: u64,
+}
+enum TailExit {
+    Page(u64),
+    Stop(SliceOutcome),
+}
+macro_rules! tail_next {
+    ($state:ident, $executed:ident) => {{
+        let pc = $state.cpu.pc;
+        if $executed >= $state.budget {
+            return TailExit::Stop(SliceOutcome::Yield {
+                instructions: $executed,
+            });
+        }
+        if pc & !(PAGE_SIZE - 1) != $state.page.base {
+            return TailExit::Page($executed);
+        }
+        if pc & 3 != 0 {
+            return TailExit::Stop($state.cpu.slice_fault(
+                CpuFault::Memory {
+                    pc,
+                    error: trames_memory::MemoryError::Alignment(pc),
+                },
+                $executed,
+            ));
+        }
+        let slot = (pc as usize & (PAGE_SIZE as usize - 1)) / 4;
+        if $state.page.instructions[slot].generation != $state.page.generation {
+            become tail_decode($state, slot, $executed);
+        }
+        match $state.page.instructions[slot].instruction.op {
+            Op::Nop => become tail_op::<M, 0>($state, slot, $executed),
+            Op::Svc => become tail_op::<M, 1>($state, slot, $executed),
+            Op::Move { .. } => become tail_op::<M, 2>($state, slot, $executed),
+            Op::Address { .. } => become tail_op::<M, 3>($state, slot, $executed),
+            Op::AddImmediate { .. } => become tail_op::<M, 4>($state, slot, $executed),
+            Op::FlagsImmediate { .. } => become tail_op::<M, 5>($state, slot, $executed),
+            Op::AddShift { .. } => become tail_op::<M, 6>($state, slot, $executed),
+            Op::FlagsBranch { .. } => become tail_op::<M, 7>($state, slot, $executed),
+            Op::LogicalShift { .. } => become tail_op::<M, 8>($state, slot, $executed),
+            Op::LogicalImmediate { .. } => become tail_op::<M, 9>($state, slot, $executed),
+            Op::Bitfield { .. } => become tail_op::<M, 10>($state, slot, $executed),
+            Op::Select { .. } => become tail_op::<M, 11>($state, slot, $executed),
+            Op::AddExtended { .. } => become tail_op::<M, 12>($state, slot, $executed),
+            Op::Compare { .. } => become tail_op::<M, 13>($state, slot, $executed),
+            Op::Multiply { .. } => become tail_op::<M, 14>($state, slot, $executed),
+            Op::ShiftVariable { .. } => become tail_op::<M, 15>($state, slot, $executed),
+            Op::Divide { .. } => become tail_op::<M, 16>($state, slot, $executed),
+            Op::Branch { .. } => become tail_op::<M, 17>($state, slot, $executed),
+            Op::RegisterBranch { .. } => become tail_op::<M, 18>($state, slot, $executed),
+            Op::CompareBranch { .. } => become tail_op::<M, 19>($state, slot, $executed),
+            Op::TestBranch { .. } => become tail_op::<M, 20>($state, slot, $executed),
+            Op::ConditionalBranch { .. } => become tail_op::<M, 21>($state, slot, $executed),
+            Op::MemoryImmediate { .. } => become tail_op::<M, 22>($state, slot, $executed),
+            Op::Pair { .. } => become tail_op::<M, 23>($state, slot, $executed),
+            Op::Memory { .. } => become tail_op::<M, 24>($state, slot, $executed),
+            Op::Fallback => become tail_op::<M, 25>($state, slot, $executed),
+        }
+    }};
+}
+#[cold]
+#[inline(never)]
+extern "rust-preserve-none" fn tail_decode<M: CpuMemory>(
+    state: &mut TailState<'_, M>,
+    slot: usize,
+    executed: u64,
+) -> TailExit {
+    let pc = state.cpu.pc;
+    if let Err(error) = state.page.decode_slot(state.memory, slot, pc, state.stats) {
+        return TailExit::Stop(
+            state
+                .cpu
+                .slice_fault(CpuFault::Memory { pc, error }, executed),
+        );
+    }
+    tail_next!(state, executed)
+}
+#[inline(never)]
+extern "rust-preserve-none" fn tail_enter<M: CpuMemory>(
+    state: &mut TailState<'_, M>,
+    _slot: usize,
+    executed: u64,
+) -> TailExit {
+    tail_next!(state, executed)
+}
+#[inline(never)]
+extern "rust-preserve-none" fn tail_op<M: CpuMemory, const TAG: usize>(
+    state: &mut TailState<'_, M>,
+    slot: usize,
+    executed: u64,
+) -> TailExit {
+    debug_assert!(slot < PAGE_WORDS && executed < state.budget);
+    // SAFETY: every entry is reached via tail_next, which checks the budget
+    // and derives the slot from the low twelve PC bits, divided by four.
+    unsafe { std::hint::assert_unchecked(slot < PAGE_WORDS && executed < state.budget) };
+    let instruction = &state.page.instructions[slot].instruction;
+    let count = match state.cpu.execute_decoded::<M, TAG>(
+        instruction,
+        state.memory,
+        state.budget - executed,
+        state.flags,
+    ) {
+        Ok((Event::Continue, count)) => count,
+        Ok((Event::Yield, _)) => {
+            return TailExit::Stop(SliceOutcome::Yield {
+                instructions: executed,
+            })
+        }
+        Ok((Event::Syscall, _)) => {
+            return TailExit::Stop(SliceOutcome::Syscall {
+                instructions: executed + 1,
+            })
+        }
+        Ok((
+            Event::NativeCall {
+                pc,
+                module,
+                function,
+            },
+            _,
+        )) => {
+            return TailExit::Stop(SliceOutcome::NativeCall {
+                instructions: executed,
+                pc,
+                module,
+                function,
+            })
+        }
+        Err(error) => return TailExit::Stop(state.cpu.slice_fault(error, executed)),
+    };
+    debug_assert!(count <= state.budget - executed);
+    let executed = executed.wrapping_add(count);
+    if matches!(TAG, 22..=25)
+        && instruction.may_write_code()
+        && state.memory.instruction_identity() != state.page.checked
+    {
+        return TailExit::Page(executed);
+    }
+    tail_next!(state, executed)
 }
 
 #[cfg(test)]

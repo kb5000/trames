@@ -45,9 +45,9 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.90.0
+          toolchain: nightly-2026-10-16
           targets: aarch64-apple-ios,aarch64-apple-ios-sim
       - uses: actions/download-artifact@v4
         with:

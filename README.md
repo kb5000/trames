@@ -16,7 +16,7 @@ main 新增[通用解释执行优化](docs/validation/execution-efficiency.md)�
 
 继续加入[选择性惰性标志与短路径](docs/validation/lazy-flags.md)：延迟计算算术 C/V，保留 N/Z 的直接读取，解释循环携带局部标志状态，并在解码时简化不更新标志的立即数加减。覆盖条件分支、带进位运算、局部标志修改和信号上下文恢复；设备端 Swift 构建也改为 Release。运行时仍不使用 JIT。
 
-[调度与边界检查实验](docs/validation/dispatch-experiments.md)进一步比较固定代码页、unchecked 寄存器索引、状态驻留、紧凑记录，以及真正的 nightly Rust 显式尾调用。完整尾调用原型、所有采样和未采用方案均可复现；本轮没有将出现退步的微调设为默认，也未增加生产后端或更换默认工具链。
+[调度与边界检查实验](docs/validation/dispatch-experiments.md)进一步比较固定代码页、unchecked 寄存器索引、状态驻留、紧凑记录，以及真正的 nightly Rust 显式尾调用。按项目决策，完整 `tailhot` 实现现已成为唯一默认解释器，工具链固定为 `nightly-2026-10-16`；没有恢复多后端或引入 JIT。随后加入[权限软 TLB 与 MMU 研究](docs/architecture/soft-tlb.md)，将地址与权限校验合为缓存标签比较，保留文件、COW 和多核语义。
 
 最新 [0.15.0/build 16](docs/validation/release-0.15.md) 已发布：[下载 unsigned IPA](https://github.com/kb5000/trames/releases/download/v0.15.0/Trames-0.15.0-build16-unsigned.ipa)，用 Sideloadly 覆盖安装可保留数据。本版合并 sudo／时区／匿名 ELF 修复及 Vulkan 原生计算、纹理与浮动显示窗口；同一源码的 Linux CI 与 Apple 14 项模拟器验收均通过。Vulkan 默认关闭，真机验收待实际使用。
 
@@ -30,7 +30,7 @@ main 进一步修复[匿名 ELF 与 fd 执行](docs/validation/fd-exec.md)：`/p
 
 0.15.0 已加入[实验性 Vulkan 计算、图形与显示桥](docs/architecture/vulkan-compute.md)：原版 Linux loader 通过标准 guest ICD 调用原生 Vulkan；iPad 静态链接原版 MoltenVK／Metal。新增标准 `VK_KHR_display` / `VK_KHR_swapchain`，程序可直接提交 GPU 图像到 App 内可拖动、缩放的显示窗口（固定 1024×768 画布）。新增[顶点／索引缓冲、纹理上传与采样、图形描述符和 push constants](docs/validation/vulkan-textures.md)，采用原生 Vulkan／Metal 执行。[离屏图形](docs/validation/vulkan-render.md)已有真实 Metal 像素验证；[持续显示与窗口验收](docs/validation/vulkan-display.md)与新增纹理用例已通过 Apple CI 的 14 项测试，含实际 GPU 像素、拖动缩放、隐藏恢复和运行中关闭。当前仍为选定接口子集，真机验收留待后续版本；[Issue #21](https://github.com/kb5000/trames/issues/21)。
 
-需要 Rust 1.90.0；交叉构建 BusyBox 和运行差分测试还需要 Python 3、GNU AArch64 GCC/Binutils、Make、curl、bzip2 和 QEMU user-mode。Debian/Ubuntu 可安装：
+需要 Rust nightly-2026-10-16；交叉构建 BusyBox 和运行差分测试还需要 Python 3、GNU AArch64 GCC/Binutils、Make、curl、bzip2 和 QEMU user-mode。Debian/Ubuntu 可安装：
 
 ```sh
 sudo apt-get install gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu qemu-user build-essential curl bzip2
@@ -161,7 +161,7 @@ cargo build --workspace --locked
 cargo test --workspace --locked
 bash scripts/build-qemu-oracle.sh
 export PATH="$PWD/target/qemu-oracle/bin:$PATH"
-rustup target add aarch64-unknown-linux-musl --toolchain 1.90.0
+rustup target add aarch64-unknown-linux-musl --toolchain nightly-2026-10-16
 CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-gnu-gcc \
   cargo build -p trames-cli --target aarch64-unknown-linux-musl --release --locked
 export TRAMES_RUNNER="$PWD/tests/differential/arm-runner.sh"
@@ -202,7 +202,7 @@ bash scripts/build-cpu-fixtures.sh
 python3 tests/integration/cpu-signals.py
 cargo build -p trames-cpu --example instruction_probe --release --locked
 python3 scripts/audit-instructions.py
-rustup target add aarch64-apple-ios --toolchain 1.90.0
+rustup target add aarch64-apple-ios --toolchain nightly-2026-10-16
 cargo check -p trames-core -p trames-distro --target aarch64-apple-ios --locked
 TRAMES_TEST_STORAGE=disk python3 tests/integration/m2.py
 TRAMES_TEST_STORAGE=disk python3 tests/integration/terminal.py

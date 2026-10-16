@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// Pinned in rust-toolchain.toml: compiler-enforced, bounded-stack dispatch.
+#![feature(explicit_tail_calls, rust_preserve_none_cc)]
+#![allow(incomplete_features)]
 //! AArch64 virtual CPU with a single bounded cached interpreter.
 use std::fmt;
 use trames_memory::{CpuMemory, MemoryError};

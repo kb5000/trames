@@ -1032,8 +1032,8 @@ impl Kernel {
                 allowed &= 1 << 17;
             }
             if matches!(p.state, State::Gpu { .. }) {
-                for sig in 1..=64 {
-                    if p.actions[sig].handler > 1 {
+                for (sig, action) in p.actions.iter().enumerate().skip(1) {
+                    if action.handler > 1 {
                         allowed &= !(1 << (sig - 1));
                     }
                 }

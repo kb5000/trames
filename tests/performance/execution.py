@@ -50,6 +50,8 @@ def main():
     parser.add_argument('--store', type=Path, required=True)
     parser.add_argument('--samples', type=int, default=3)
     parser.add_argument('--coremark-iterations', type=int, default=8000)
+    parser.add_argument('--smp-work-iterations', type=int, default=3000000,
+                        help='Fixed work per thread; increase for less noisy sustained SMP measurements')
     parser.add_argument('--cpu-memory-fixture', type=Path,
                         help='Optional longer build of cpu-memory.S; checksum and instruction count are still checked')
     parser.add_argument('--emulated-host', action='store_true')
@@ -57,6 +59,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     assert args.samples > 0 and args.coremark_iterations > 0
+    assert 0 < args.smp_work_iterations <= 2147483647
     binaries = {'baseline': args.baseline.resolve(), 'candidate': args.candidate.resolve()}
     libc = ROOT / 'target/musl-hybrid/libc.so'
     fixtures = {name: ROOT / 'tests/fixtures/bin' / name for name in ('cpu-memory', 'smp')}
@@ -65,7 +68,7 @@ def main():
     qemu = shutil.which(os.getenv('QEMU_AARCH64', 'qemu-aarch64'))
     expected_smp = None
     if 'smp-work' in args.workloads:
-        result = subprocess.run([qemu, '-cpu', 'max', str(fixtures['smp']), 'work', '4', '3000000'],
+        result = subprocess.run([qemu, '-cpu', 'max', str(fixtures['smp']), 'work', '4', str(args.smp_work_iterations)],
                                 capture_output=True, timeout=120, check=True)
         assert not result.stderr, result.stderr
         expected_smp = result.stdout
@@ -78,6 +81,7 @@ def main():
                   libc_sha256=digest(libc), store_manifest_sha256=digest(args.store / 'manifest'),
                   fixture_sha256={name: digest(path) for name, path in fixtures.items()},
                   coremark_iterations=args.coremark_iterations,
+                  smp_work_iterations=args.smp_work_iterations,
                   scope='Alternating baseline/candidate, identical guest programs and fresh cloned app stores; '
                         'warm caches on a shared host; affinity recorded, frequency not controlled. CoreMark default single-thread -O2. '
                         'Apps use the same complete hybrid musl, pure routing, allocator routing off. '
@@ -120,7 +124,7 @@ def main():
                         command += [str(fixtures[name])]
                         expected = b'cpu-memory-ok\n'
                     elif name == 'smp-work':
-                        command += [str(fixtures['smp']), 'work', '4', '3000000']
+                        command += [str(fixtures['smp']), 'work', '4', str(args.smp_work_iterations)]
                         expected = expected_smp
                     elif name == 'vim-default':
                         command += ['--pty', '--guest', '/usr/bin/vim', '/tmp/performance-empty.txt']

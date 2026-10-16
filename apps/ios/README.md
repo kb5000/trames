@@ -40,7 +40,7 @@ and provider operations are finite background work, not an iOS background daemon
 
 ## Build
 
-Use macOS 15, Xcode 16 or newer with the iOS SDK, Swift 6 and Rust 1.90.0:
+Use macOS 15, Xcode 16 or newer with the iOS SDK, Swift 6 and Rust nightly-2026-10-16:
 
     brew install xcodegen
     bash scripts/build-ios.sh simulator

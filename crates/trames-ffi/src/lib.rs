@@ -230,7 +230,7 @@ pub unsafe extern "C" fn trames_session_open(pointer: *const u8, length: u32) ->
             .lock()
             .map_err(|_| "handle registry unavailable")?;
         let handle = NEXT_HANDLE
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| n.checked_add(1))
+            .try_update(Ordering::AcqRel, Ordering::Acquire, |n| n.checked_add(1))
             .map_err(|_| "session handles exhausted")?;
         let session = Session::start(config)?;
         registry.insert(handle, session);

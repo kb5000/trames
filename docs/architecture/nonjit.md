@@ -2,8 +2,8 @@
 
 The runtime has one Rust interpreter with bounded, data-only lazily decoded
 AArch64 code pages. The single-step decoder is also exercised as a test oracle;
-there is no production backend selector. The optional C++ executor and the
-unsuccessful tail-dispatch experiment have been removed. No path allocates
+there is no production backend selector. The optional C++ executor has been removed. The single cached interpreter now
+uses compiler-enforced Rust tail calls on pinned nightly-2026-10-16. No path allocates
 executable memory, emits native code, or needs a JIT entitlement.
 
 Both the Linux guest ABI and the shipping iPad host are ARM64. The x86_64 code in
@@ -49,9 +49,9 @@ and scalar/vector loads and stores are decoded once. Immediates, scaled offsets,
 register roles and reserved-field validation are cached. Other instructions use
 the instruction semantics without copying CPU state or crossing an FFI boundary.
 Hot entries are borrowed rather than copied by value. The decoded executor is
-explicitly inlined at its single dispatch call site per memory specialization,
-so inlining small ALU helpers cannot make LLVM outline the entire executor and
-introduce an ABI call for every guest instruction. Register/width helpers use
+inlined into 26 operation-specialized tail handlers per memory specialization.
+`become` transitions use the preserve-none ABI, including cold decode misses, so
+ordinary ARM64 handlers need no entry register-save frame. Register/width helpers use
 inline hints; arithmetic and condition helpers expose constant modes to callers.
 FRINTTS and LRCPC2 remain supported; the single virtual CPU advertises the tested
 `frint` and `ilrcpc` features. The native compute helper is not an execution backend.
@@ -82,7 +82,7 @@ Deferred flags are owned architectural CPU state, with no guest memory reference
 or host condition-register lifetime assumptions. They survive a slice, syscall,
 CPU clone and worker migration. Public `flags()`/`nzcv()` reads return complete
 architectural values; callers replace them through `set_flags()`/`set_nzcv()`.
-The cached loop carries a separate local flag state, publishing it to `Cpu` on
+The cached slice carries a separate local flag state, publishing it to `Cpu` on
 every slice exit and before a reference fallback, then reading back fallback
 changes. Common handlers need not repeatedly expose it through the register file.
 ADC/SBC reads deferred carry before replacing any flags; RMIF, CFINV, SETF8/16
@@ -186,15 +186,10 @@ and validates Python and GCC results. Timing has no CI pass/fail threshold.
 
 [The dispatch experiments](../validation/dispatch-experiments.md) compare fixed
 code-page bounds, unchecked register indices, local state, compact records and
-full nightly tail dispatch on actual guest workloads. None of the small layout
-changes showed a sufficiently balanced benefit, so this round keeps the runtime
-unchanged. The complete tail-call prototype has measurable compute gains and is
-archived for target-device evaluation, without another production backend.
-
-For a physical iPad, Vim itself can record startup stages with
-`vim --startuptime /tmp/vim-startup.log`; after quitting, inspect that file.
-Host Linux throughput and simulator acceptance do not establish device speed.
-The present results are a measured optimization series, not a proof of the
-maximum possible non-JIT throughput. Further work should follow measured cache
-misses, dispatch/operand costs and workload-specific syscalls; superinstructions,
-additional static decoding and storage indexing remain possible.
+full nightly tail dispatch on actual guest workloads. The owner approved the
+complete `tailhot` variant as the default; rejected layout variants remain only
+archived patches. [The production design](tail-dispatch.md) describes its bounded
+stack and specialization invariants. [The permission TLB](soft-tlb.md) reduces
+operand checks without changing page storage or the concurrency model. Further
+work should measure dispatch, operand costs and workload-specific syscalls;
+superinstructions, additional static decoding and storage indexing remain possible.

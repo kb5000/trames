@@ -1,0 +1,82 @@
+# Permission-cached guest memory and the host MMU
+
+The default interpreter is the pinned nightly tail-call implementation. CPU and
+native accesses continue to share the same guest memory contract. This change
+optimizes translation and permission validation, not the allowed guest results.
+
+## Implemented software TLB
+
+Both coordinator Memory and worker View already had 256 direct-mapped entries
+containing a virtual page and slab index. A hit avoided BTreeMap lookup but still
+loaded the page's permission fields and checked them separately. The new entry
+remains **16 bytes**, and the full cache remains **4 KiB**. Its tag packs the
+virtual page, read/write/execute bits, a valid bit and a coordinator backing bit
+into otherwise unused low page-offset bits. One masked comparison proves both
+the page identity and requested access. Invalid entries grant no permissions,
+including for page zero or addresses above the 48-bit guest limit.
+
+For a single-page coordinator hit, a valid mapping also proves the address range;
+there is no repeated checked-add or address-limit branch. Misses take the checked
+cold path and preserve precise fault addresses. Permission failure is never
+cached as success. Worker hits also reuse the snapshot's already validated
+backing status. Cross-page accesses validate the complete range before effects.
+Top-byte data tags and untagged instruction fetch semantics are unchanged.
+
+The warmed slab index uses get_unchecked and unwrap_unchecked: only the private
+page table can fill an entry, all mapping/protection edits flush the cache before
+another access, and no callback occurs between translation and dereference.
+Debug assertions retain these invariants in checked builds. The coordinator is
+local and non-Send/non-Sync; workers use their own Cell cache over a fixed Arc
+snapshot. Mapping changes require joined workers and produce fresh empty views.
+
+No byte pointer or extra Rc is cached. Vec growth cannot invalidate an index;
+COW, discard and file-private copy may replace bytes without changing the frame.
+The ordinary Rc::make_mut, version, dirty publication and executable-write hooks
+remain active. File-backed coordinator pages still check live EOF on **every**
+access, including after a private COW copy. Backing methods retain their fallible
+transport. A worker's EOF/permission facts are immutable for its checkpoint;
+backing changes refresh the snapshot before workers resume. Native admission is
+still checked separately when it decides whether execution needs a checkpoint.
+
+The hot path removes redundant checks established by a cached mapping. It does
+not erase guest permissions, file errors, code invalidation, LL/SC reservations,
+region guards or atomic/fence ordering. Pure native helpers reuse these same
+translations; no algorithm lock or global serialization is added.
+
+## Can the hardware MMU remove software permissions?
+
+The host MMU already translates the host allocations containing guest bytes.
+To make it additionally enforce guest permissions, the runtime would need
+**dedicated host mappings**, set their protections with mmap/mprotect equivalents,
+and translate expected host protection faults back to guest exceptions. The
+current Rc heap pages and worker byte allocations cannot simply be mprotected:
+a host page may contain other allocations and unrelated runtime state.
+
+This can be useful for a future direct mapping arena, but it is not a drop-in
+replacement for the current lookup:
+
+| Constraint | Consequence |
+| --- | --- |
+| Guest pages are 4 KiB; iOS ARM64 host pages are normally 16 KiB | Four adjacent guest pages can have different permissions. One contiguous host protection cannot represent that. Runtime page-size detection and subpage software checks or separately padded host slots are needed. Separate slots can multiply physical/virtual memory costs. |
+| Sparse 48-bit guest addresses, high stacks and top-byte data tags | Guest addresses are not host pointers. A contiguous reserved arena needs a constrained guest window and host address-space availability, or an extra translation table. Permission hardware does not remove this address conversion by itself. |
+| Fork COW, shared-file aliases and remapping | Host mappings must represent guest alias identities and independent protections while preserving private copies and shared updates. Current heap ownership must be redesigned. |
+| File truncation/EOF and guest execution under an interpreter | Host page protection alone does not reproduce every backing error. Interpreted instruction bytes are host data reads, so host NX cannot distinguish guest execute permission from read permission. |
+| Executable guest writes, dirty commit and exclusive reservations | These metadata effects remain even when hardware validates access. Write-protecting and trapping only the first dirty write is a different storage design and requires workload measurement. |
+| Fault recovery inside Rust, native helpers and multiple workers | A process-wide signal handler must distinguish known guest accesses from real host bugs. Longjmp across Rust frames/guards cannot be used as a general shortcut. Recovery would need bounded audited assembly access sites and platform-specific signal/exception context handling, with exact guest PC and partial-effect rules. |
+
+Hardware protection for a bounded direct arena is worth a separate prototype,
+with anonymous pages first, measured iPad page size/address reservation, isolated
+fault recovery, and COW/alias tests before replacing the storage backend. It does
+not require JIT, but ordinary iOS userspace cannot install a guest page table or
+change privileged MMU registers. Host mprotect must be assessed as a memory
+backend optimization, rather than assuming one unchecked guest-address load is
+already safe or equivalent.
+
+For the current architecture, the compact permission TLB removes repeated checks
+without rebuilding backing storage or fault delivery. Next candidates include
+measuring TLB collision rates before adding associativity, fixed-width byte
+transport/codegen, and scoped resident-page access that does not retain stale
+pointers across COW or callbacks. Each should be compared against this same
+nightly tail-call baseline, not mixed with a compiler upgrade.
+
+[Measurements and regression validation](../validation/tail-tlb.md).

@@ -17,9 +17,9 @@ jobs:
       TRAMES_RUNNER: ${{ github.workspace }}/tests/differential/arm-runner.sh
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.90.0
+          toolchain: nightly-2026-10-16
           components: rustfmt, clippy, rust-src
           targets: aarch64-apple-ios,aarch64-unknown-linux-musl
       - name: Install independent AArch64 oracle and cross assembler
@@ -40,10 +40,9 @@ jobs:
       - run: cargo test --workspace --all-features --locked
       - name: Check region guard races with fully instrumented Rust standard library
         env:
-          RUSTC_BOOTSTRAP: 1
           RUSTFLAGS: -Zsanitizer=thread
           CARGO_TARGET_DIR: target/thread-sanitizer
-        run: cargo test -Zbuild-std -p trames-memory -p trames-accel --target x86_64-unknown-linux-gnu --locked --lib
+        run: cargo test -Zbuild-std -p trames-memory -p trames-accel --target x86_64-unknown-linux-gnu --locked --lib --tests
       - name: Check original-source native allocator C with address and undefined behavior sanitizers
         run: bash scripts/check-native-allocator.sh
       - name: Compile core and both network backends for iOS (no SDK link or device test)

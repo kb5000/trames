@@ -36,7 +36,7 @@ impl Control {
         }
         match self
             .remaining
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |left| {
+            .try_update(Ordering::Relaxed, Ordering::Relaxed, |left| {
                 (left != 0).then(|| left.saturating_sub(POLL_INSTRUCTIONS))
             }) {
             Ok(left) => Some(left.min(POLL_INSTRUCTIONS)),
