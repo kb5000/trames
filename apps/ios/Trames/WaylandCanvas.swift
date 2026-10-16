@@ -22,6 +22,7 @@ final class WaylandCanvas: WaylandInputView {
     private var displayLink: CADisplayLink?
     private var foregroundObserver: NSObjectProtocol?
     private var pressedButton: Int?
+    private var visibleRects: [CGRect] = []
     @MainActor private final class RefreshTarget: NSObject {
         weak var canvas: WaylandCanvas?
         init(_ canvas: WaylandCanvas) { self.canvas = canvas }
@@ -66,19 +67,26 @@ final class WaylandCanvas: WaylandInputView {
         metal.device = device; metal.pixelFormat = .bgra8Unorm
         metal.framebufferOnly = true; metal.maximumDrawableCount = 3
         metal.presentsWithTransaction = false
-        backgroundColor = .black; clipsToBounds = true
+        backgroundColor = .clear; isOpaque = false; metal.isOpaque = false; clipsToBounds = true
         isAccessibilityElement = true; accessibilityIdentifier = "wayland-canvas"
         addGestureRecognizer(UIHoverGestureRecognizer(target:self,action:#selector(hover(_:))))
         let scroll=UIPanGestureRecognizer(target:self,action:#selector(scroll(_:)))
         scroll.allowedTouchTypes=[NSNumber(value:UITouch.TouchType.indirectPointer.rawValue)]
         scroll.allowedScrollTypesMask = .all
-        scroll.cancelsTouchesInView=false; addGestureRecognizer(scroll)
+        scroll.cancelsTouchesInView=false; scroll.delaysTouchesEnded=false; addGestureRecognizer(scroll)
         foregroundObserver = NotificationCenter.default.addObserver(forName:UIApplication.didBecomeActiveNotification,object:nil,queue:.main) { [weak self] _ in
             MainActor.assumeIsolated { self?.lastRevision = nil }
         }
     }
     private func pointer(_ point:CGPoint) {
         sendInput?(["op":"pointer","window":windowID,"x":point.x+sceneOrigin.x,"y":point.y+sceneOrigin.y,"time":UInt32(truncatingIfNeeded:UInt64(ProcessInfo.processInfo.systemUptime*1000))])
+    }
+    override func point(inside point:CGPoint,with event:UIEvent?)->Bool {
+        guard super.point(inside:point,with:event) else { return false }
+        let location=CGPoint(x:point.x+sceneOrigin.x,y:point.y+sceneOrigin.y)
+        // An outlying popup extends the canvas bounds; empty space between
+        // surfaces must not intercept another native window's controls.
+        return visibleRects.isEmpty || visibleRects.contains { $0.contains(location) }
     }
     override func touchesBegan(_ touches:Set<UITouch>,with event:UIEvent?) {
         guard pressedButton == nil, let touch=touches.first else { return }
@@ -98,6 +106,9 @@ final class WaylandCanvas: WaylandInputView {
         } else { pointer(gesture.location(in:self)) }
     }
     @objc private func scroll(_ gesture:UIPanGestureRecognizer) {
+        // Scroll-wheel/trackpad scrolling has no pressed pointer touch. A
+        // primary-button drag already travels through touchesMoved/Ended.
+        guard gesture.numberOfTouches == 0 else { return }
         let delta=gesture.translation(in:self);gesture.setTranslation(.zero,in:self)
         pointer(gesture.location(in:self))
         sendInput?(["op":"scroll","horizontal":-delta.x,"vertical":-delta.y,"time":inputTime])
@@ -132,6 +143,11 @@ final class WaylandCanvas: WaylandInputView {
         do {
             guard let frame = try session?.waylandFrame(window: windowID) else { return }
             guard lastRevision != frame.info.revision else { return }
+            visibleRects=frame.images.map { image in
+                let scale=CGFloat(max(1,image.scale))
+                let size=image.transform & 1 == 0 ? CGSize(width:CGFloat(image.width)/scale,height:CGFloat(image.height)/scale) : CGSize(width:CGFloat(image.height)/scale,height:CGFloat(image.width)/scale)
+                return CGRect(origin:CGPoint(x:CGFloat(image.x),y:CGFloat(image.y)),size:size)
+            }
             var buffers: [(Source, ImageUniform)] = []
             for image in frame.images {
                 guard let pointer = UnsafeMutableRawPointer(bitPattern: UInt(image.address)) else { continue }

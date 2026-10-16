@@ -115,7 +115,7 @@ allocation, and translates pointer/caret coordinates with that scene origin.
 Automatic reactive popup relayout, custom cursor images, data-device clipboard
 and drag-and-drop, touch protocol and full Wayland conformance are not claimed.
 
-Current Linux regressions: 180 shared/core/VFS/Vulkan/FFI/Wayland library tests, three
+Current Linux regressions: 180 shared/core/VFS/Vulkan/FFI/Wayland library tests, four
 independent native C acceptance tests, and original graphics/texture guest pixel
 oracles for one and four CPUs pass. Ordinary guest apk resolves and verifies an
 offline original repository, rather than explicitly installing every alternative
@@ -151,3 +151,12 @@ TRAMES_WAYLAND_STORE=/tmp/trames-wayland-test python3 tests/integration/wayland.
 The target store must be absent for --prepare. Omit that flag to repeat the
 client/lifetime checks against the prepared store. This headless test does not
 claim to validate Apple drawable pixels or actual iPad keyboard interaction.
+
+The native text context identifies text-input v1 versus v3. v3 surrounding
+removal excludes selected text; preedit/commit replaces that selection itself.
+UIKit therefore does not send a duplicate deletion for it. v1 retains explicit
+cursor-relative byte deletion. An independent original C v3 peer checks preedit
+UTF-8 offsets, the originating done serial and the client's surrounding-text
+acknowledgement. UIKit checks cover selection direction, replacement without
+double deletion and deleting at an interior composition caret. Popup canvas
+padding is transparent and empty gaps do not intercept neighboring controls.

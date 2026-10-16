@@ -21,6 +21,9 @@ PY
 scanner=${TRAMES_WAYLAND_SCANNER:-wayland-scanner}
 "$scanner" client-header "$xml" "$output/generated/xdg-shell-client-protocol.h"
 "$scanner" private-code "$xml" "$output/generated/xdg-shell-protocol.c"
+text_xml="$(dirname "$(dirname "$(dirname "$xml")")")/unstable/text-input/text-input-unstable-v3.xml"
+"$scanner" client-header "$text_xml" "$output/generated/text-input-v3-client-protocol.h"
+"$scanner" private-code "$text_xml" "$output/generated/text-input-v3-protocol.c"
 # Optional flags allow an extracted original distro development package locally;
 # CI uses ordinary pkg-config for its installed upstream libwayland-client.
 read -r -a client_cflags <<< "${TRAMES_WAYLAND_CFLAGS:-$(pkg-config --cflags wayland-client)}"
@@ -31,4 +34,7 @@ read -r -a client_libs <<< "${TRAMES_WAYLAND_LIBS:-$(pkg-config --libs wayland-c
 "${CC:-cc}" -O2 -Wall -Wextra -Werror "${client_cflags[@]}" -I"$output/generated" \
     tests/fixtures/wayland-scene.c "$output/generated/xdg-shell-protocol.c" \
     "${client_libs[@]}" -o "$output/scene-native"
-TRAMES_WAYLAND_C_CLIENT="$output/client-native" TRAMES_WAYLAND_SCENE_CLIENT="$output/scene-native" cargo test -p trames-wayland --locked --test native_client -- --ignored --nocapture
+"${CC:-cc}" -O2 -Wall -Wextra -Werror "${client_cflags[@]}" -I"$output/generated" \
+    tests/fixtures/wayland-text-v3.c "$output/generated/xdg-shell-protocol.c" "$output/generated/text-input-v3-protocol.c" \
+    "${client_libs[@]}" -o "$output/text-v3-native"
+TRAMES_WAYLAND_C_CLIENT="$output/client-native" TRAMES_WAYLAND_SCENE_CLIENT="$output/scene-native" TRAMES_WAYLAND_TEXT_V3_CLIENT="$output/text-v3-native" cargo test -p trames-wayland --locked --test native_client -- --ignored --nocapture

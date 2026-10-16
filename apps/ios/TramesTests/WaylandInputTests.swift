@@ -5,8 +5,36 @@ import TramesKit
 
 final class WaylandInputTests: XCTestCase {
     @MainActor
+    func testV3SelectionIsReplacedWithoutDeletingItTwice() throws {
+        let object:[String:Any] = ["version":3,"id":7,"epoch":3,"surface":4,"window":4,"serial":8,
+            "text":"a🙂中","cursor":8,"anchor":1,"caret":[0,0,1,20],"hint":0,"purpose":0]
+        let context=try JSONDecoder().decode(LocalWaylandText.self,from:JSONSerialization.data(withJSONObject:object))
+        let view=WaylandInputView(frame:.zero)
+        var commands:[[String:Any]]=[];view.sendInput={commands.append($0)}
+        view.textContext=context;view.insertText("新")
+        XCTAssertEqual(commands.last?["delete_before"] as? Int,0)
+        XCTAssertEqual(commands.last?["delete_after"] as? Int,0)
+        XCTAssertEqual(commands.last?["commit"] as? String,"新")
+        var updated=object;updated["epoch"]=4
+        view.textContext=try JSONDecoder().decode(LocalWaylandText.self,from:JSONSerialization.data(withJSONObject:updated))
+        commands=[];view.setMarkedText("你",selectedRange:NSRange(location:1,length:0))
+        XCTAssertEqual(commands.count,1)
+        XCTAssertEqual(commands.last?["preedit"] as? String,"你")
+    }
+    @MainActor
+    func testMarkedBackspaceUsesCompositionCaret() throws {
+        let object:[String:Any] = ["version":1,"id":7,"epoch":3,"surface":4,"window":4,"serial":8,
+            "text":"","cursor":0,"anchor":0,"caret":[0,0,1,20],"hint":0,"purpose":0]
+        let view=WaylandInputView(frame:.zero)
+        var commands:[[String:Any]]=[];view.sendInput={commands.append($0)}
+        view.textContext=try JSONDecoder().decode(LocalWaylandText.self,from:JSONSerialization.data(withJSONObject:object))
+        view.setMarkedText("a🙂b",selectedRange:NSRange(location:3,length:0));view.deleteBackward()
+        XCTAssertEqual(commands.last?["preedit"] as? String,"ab")
+        XCTAssertEqual(commands.last?["cursor_begin"] as? Int,1)
+    }
+    @MainActor
     func testSelectionReplacementUsesActiveCursorInsteadOfSortedRangeStart() throws {
-        let object:[String:Any] = ["id":7,"epoch":3,"surface":4,"window":4,"serial":8,
+        let object:[String:Any] = ["version":1,"id":7,"epoch":3,"surface":4,"window":4,"serial":8,
             "text":"a🙂中","cursor":8,"anchor":1,"caret":[0,0,1,20],"hint":0,"purpose":0]
         let view=WaylandInputView(frame:.zero)
         var commands:[[String:Any]]=[];view.sendInput={commands.append($0)}
@@ -19,7 +47,7 @@ final class WaylandInputTests: XCTestCase {
     }
     @MainActor
     func testNativeCompositionAndUTF8OffsetsPreserveEmoji() throws {
-        let object:[String:Any] = ["id":7,"epoch":3,"surface":4,"window":4,"serial":8,
+        let object:[String:Any] = ["version":1,"id":7,"epoch":3,"surface":4,"window":4,"serial":8,
             "text":"a🙂中","cursor":5,"anchor":5,"caret":[30,40,1,20],"hint":0,"purpose":0]
         let context = try JSONDecoder().decode(LocalWaylandText.self,from:JSONSerialization.data(withJSONObject:object))
         let view=WaylandInputView(frame:CGRect(x:0,y:0,width:640,height:480))
@@ -42,7 +70,7 @@ final class WaylandInputTests: XCTestCase {
     }
     @MainActor
     func testEndingMarkedTextCommitsOnceAndFocusResetClearsIt() throws {
-        var object:[String:Any] = ["id":7,"epoch":3,"surface":4,"window":4,"serial":8,
+        var object:[String:Any] = ["version":1,"id":7,"epoch":3,"surface":4,"window":4,"serial":8,
             "text":"","cursor":0,"anchor":0,"caret":[0,0,1,20],"hint":0,"purpose":0]
         let view=WaylandInputView(frame:.zero)
         var commands:[[String:Any]]=[]

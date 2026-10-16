@@ -112,10 +112,14 @@ class WaylandInputView: UIView, UITextInput {
     }
     func deleteBackward() {
         if let marked {
-            if marked.length == 0 { return }
-            let end=String.Index(utf16Offset:NSMaxRange(marked),in:document)
-            let start=document.index(before:end)
-            let range=NSRange(start..<end,in:document)
+            guard selection.location>=marked.location, NSMaxRange(selection)<=NSMaxRange(marked) else { return }
+            let range:NSRange
+            if selection.length>0 { range=selection }
+            else {
+                if selection.location==marked.location { return }
+                let end=String.Index(utf16Offset:selection.location,in:document)
+                range=NSRange(document.index(before:end)..<end,in:document)
+            }
             update(range,with:"");self.marked=NSRange(location:marked.location,length:marked.length-range.length)
             sendPreedit();return
         }
@@ -133,14 +137,21 @@ class WaylandInputView: UIView, UITextInput {
         // Native replacement must overlap the current cursor/selection. Arbitrary
         // remote document edits are not expressible by text-input-v3.
         guard start<=cursor && end>=cursor else { return }
-        edit(["delete_before":cursor-start,"delete_after":end-cursor,"commit":text])
+        if textContext?.version == 3 && selection.length>0 {
+            let lower=byteOffset(selection.location,in:document),upper=byteOffset(NSMaxRange(selection),in:document)
+            guard start<=lower && end>=upper else { return }
+            // v3 deletes surrounding bytes excluding the selection; commit or
+            // preedit already replaces selected text. v1 uses cursor-relative
+            // byte ranges including selected text instead.
+            edit(["delete_before":lower-start,"delete_after":end-upper,"commit":text])
+        } else { edit(["delete_before":cursor-start,"delete_after":end-cursor,"commit":text]) }
         update(range,with:text);marked=nil
     }
     func setMarkedText(_ text:String?,selectedRange:NSRange) {
         guard textContext != nil else { return }
         let value=text ?? "";guard value.utf8.count<=4096 else { return }
         let range=marked ?? selection
-        if marked == nil && selection.length>0 {
+        if marked == nil && selection.length>0 && textContext?.version != 3 {
             let cursor=byteOffset(cursorOffset,in:document)
             let start=byteOffset(selection.location,in:document),end=byteOffset(NSMaxRange(selection),in:document)
             edit(["delete_before":cursor-start,"delete_after":end-cursor])
