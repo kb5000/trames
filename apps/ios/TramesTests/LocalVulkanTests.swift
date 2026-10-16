@@ -3,6 +3,17 @@ import XCTest
 @testable import Trames
 
 final class LocalVulkanTests: XCTestCase {
+    func testCoherentMappingsPreserveCpuWritesAndGpuResultsWithoutExplicitTransfers() async throws {
+        let text = try await LocalVulkanProbe.coherent()
+        let log = XCTAttachment(string: text)
+        log.name = "native-vulkan-coherent-log"; log.lifetime = .keepAlways; add(log)
+        XCTAssertTrue(text.contains("coherent unmap/remap preserves CPU writes: ok"), text)
+        XCTAssertTrue(text.contains("coherent persistent mappings without flush/invalidate preserve independent CPU input and GPU output ranges: ok"), text)
+        XCTAssertTrue(text.contains("compute round 3: 4096 uint32 values correct"), text)
+        XCTAssertTrue(text.contains("vulkan-compute-ok"), text)
+        XCTAssertTrue(text.contains("\r\nVULKAN_RESULT:0\r\n"), text)
+        XCTAssertFalse(text.contains("llvmpipe"), text)
+    }
     func testStandardDisplaySwapchainRecreationAndProducerRelease() async throws {
         let text = try await LocalVulkanProbe.present()
         let log = XCTAttachment(string: text)

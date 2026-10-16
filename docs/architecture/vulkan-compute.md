@@ -77,7 +77,8 @@ framebuffer, vertex/fragment graphics pipelines, dynamic viewport/scissor, draw,
 image layout barriers, buffer-to-image uploads and image-to-buffer copy. Queue queries retain native
 graphics/compute/transfer flags. Image format queries expose only this profile:
 one mip/layer/sample and dimensions up to 4096; allocation/session budgets still
-apply. Device memory remains explicit and noncoherent at the guest boundary.
+apply. Device memory uses explicit noncoherent transfers or coherent shadow
+mappings synchronized at the exposed host synchronization boundaries.
 
 Pipelines accept generated vertices or vertex/instance buffers (up to 16 bindings
 and attributes), triangle list/strip topology (including strip primitive restart), 16/32-bit index buffers and indexed
@@ -208,9 +209,21 @@ Bounds, mapping identity and noncoherent-atom alignment are checked. The guest
 mapping aligns `pData-offset` to the native `minMemoryMapAlignment`, including
 unaligned mapping offsets; the underlying anonymous mapping is retained
 separately for unmap/free. Partial flush/invalidate translates allocation offsets
-to mapping-relative guest addresses. HOST_COHERENT
-is cleared even when the host type has it: applications must follow the reported
-properties and explicitly flush/invalidate. Shared storage remains future work.
+to mapping-relative guest addresses.
+
+Native HOST_COHERENT types retain that property. Their guest shadow is initialized
+from native storage on map. A budget-charged baseline records synchronized bytes:
+queue submission and unmap upload only CPU changes, while successful fence
+status/wait (including queue/device idle) downloads GPU changes without replacing
+new CPU writes to other bytes. Explicit coherent flush/invalidate follows the
+same rules. This supports original clients that persistently map uniforms or
+unmap texture staging memory without a flush. It avoids whole-map upload/readback
+clobbering independent CPU inputs and GPU outputs; same-byte unsynchronized races
+remain application errors under Vulkan. The baseline shares the session GPU
+allocation budget and is released with the mapping. Direct CPU aliasing of native
+allocations and device/host polling outside these synchronization boundaries are
+not implemented. Image presentation still exports the original native texture
+without pixel readback; shadow mappings do not change that path.
 
 No guest borrow survives a submission or wait. GPU buffers live on the host.
 Fence polling is nonblocking; the guest wait wrapper uses monotonic deadlines

@@ -45,6 +45,12 @@ private final class WaylandPixelCapture {
 /// confined to this debug acceptance probe, never used for presentation.
 @MainActor
 enum LocalWaylandProbe {
+    private static func repositoryFiles(_ repository: URL) throws -> [URL] {
+        guard let entries = FileManager.default.enumerator(at: repository, includingPropertiesForKeys: [.isRegularFileKey]) else {
+            throw TramesError.message("Missing offline Wayland repository")
+        }
+        return try entries.compactMap { $0 as? URL }.filter { try $0.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile == true }
+    }
     static func run() async throws -> WaylandProbeResult {
         guard let resources=Bundle.main.resourceURL?.appendingPathComponent("GuestVulkan"),
               let icd=Bundle.main.url(forResource:"libtrames_vulkan_icd",withExtension:"so",subdirectory:"GuestVulkan") else { throw TramesError.message("Missing Wayland acceptance inputs") }
@@ -87,12 +93,9 @@ enum LocalWaylandProbe {
             try await Task.sleep(for:.milliseconds(10))
         }
         let repository=inputs.appendingPathComponent("repository",isDirectory:true)
-        guard let entries=FileManager.default.enumerator(at:repository,includingPropertiesForKeys:[.isRegularFileKey]) else { throw TramesError.message("Missing offline Wayland repository") }
-        for case let file as URL in entries {
-            if try file.resourceValues(forKeys:[.isRegularFileKey]).isRegularFile == true {
-                let relative=String(file.path.dropFirst(repository.path.count+1))
-                try session.transfer(guest:"/tmp/wayland-repo/"+relative,host:file,export:false)
-            }
+        for file in try repositoryFiles(repository) {
+            let relative=String(file.path.dropFirst(repository.path.count+1))
+            try session.transfer(guest:"/tmp/wayland-repo/"+relative,host:file,export:false)
         }
         for (guest,host) in [("wayland-client","wayland-client"),("weston-assets.apk","weston-assets.apk.input"),("wayland-assets.tar","assets.tar"),("wayland-repositories","repositories")] {
             try session.transfer(guest:"/tmp/"+guest,host:inputs.appendingPathComponent(host),export:false)
@@ -113,6 +116,15 @@ enum LocalWaylandProbe {
             let marker="\r\nWAYLAND_RESULT:\(stage):0\r\n"
             while !text.contains(marker) {
                 try receive()
+                if text.range(of:"\r\nWAYLAND_RESULT:\(stage):[1-9][0-9]*\r\n",options:.regularExpression) != nil {
+                    try send("dmesg; printf '\\nWAYLAND_KERNEL_LOG_END\\n'\n")
+                    let deadline=Date().addingTimeInterval(3)
+                    while !text.contains("\r\nWAYLAND_KERNEL_LOG_END\r\n") && Date()<deadline {
+                        try receive()
+                        try await Task.sleep(for:.milliseconds(10))
+                    }
+                    throw TramesError.message("Wayland \(stage) failed: \(text.suffix(16384))")
+                }
                 let status=try session.waylandStatus()
                 if let first=status.windows.first {
                     currentID=first.id; canvas.windowID=first.id

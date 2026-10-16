@@ -19,6 +19,8 @@ runner = os.getenv('TRAMES_RUNNER', str(ROOT / 'target/release/trames-run'))
 fixtures = ROOT / 'tests/fixtures/bin'
 reference = subprocess.run([str(fixtures / 'vulkan-compute-host'), str(fixtures / 'vulkan-compute.spv')], capture_output=True, timeout=60)
 assert reference.returncode == 0 and reference.stdout.endswith(b'vulkan-compute-ok\n'), reference
+coherent_reference = subprocess.run([str(fixtures / 'vulkan-compute-host'), str(fixtures / 'vulkan-compute.spv'), 'coherent'], capture_output=True, timeout=60)
+assert coherent_reference.returncode == 0 and b'coherent persistent mappings without flush/invalidate' in coherent_reference.stdout, coherent_reference
 print(reference.stderr.decode(), end='', flush=True)
 with tempfile.TemporaryDirectory(prefix='trames-vulkan-compute-') as directory:
     tmp = Path(directory)
@@ -55,6 +57,11 @@ with tempfile.TemporaryDirectory(prefix='trames-vulkan-compute-') as directory:
         print(f"{cpus}-CPU asynchronous native compile: peer retirement summed over call wait windows={metrics['gpu_peer_instructions']}; pending callers peak={metrics['gpu_peak_pending']}; direct GPU transfers {metrics['gpu_direct_bytes']} bytes with zero full-range staging",flush=True)
         print(f'{cpus}-CPU guest standard Vulkan: default and specialized compute, binary semaphore chains/reuse, batch boundaries, empty submissions and rejection rollback match native driver', flush=True)
         print(p.stderr.decode(), end='', flush=True)
+        coherent = subprocess.run([*base,
+            '--env', 'VK_DRIVER_FILES=/usr/share/vulkan/icd.d/trames.json',
+            '--guest', '/tmp/vulkan-compute', '/tmp/compute.spv', 'coherent'], capture_output=True, timeout=120)
+        assert coherent.returncode == 0 and coherent.stdout == coherent_reference.stdout, (coherent.stdout, coherent.stderr)
+        print(f'{cpus}-CPU coherent Vulkan: unmap/remap and persistent mappings without explicit flush/invalidate match native driver; disjoint CPU/GPU writes preserved', flush=True)
         disabled = subprocess.run([runner, '--storage', str(tmp / ('store-' + cpus)), '--cpus', cpus,
             '--max-instructions', '1000000000', '--env', 'VK_DRIVER_FILES=/usr/share/vulkan/icd.d/trames.json',
             '--guest', '/tmp/vulkan-compute', '/tmp/compute.spv', 'disabled'], capture_output=True, timeout=30)

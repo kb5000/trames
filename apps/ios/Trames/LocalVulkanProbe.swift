@@ -6,6 +6,7 @@ import UIKit
 @MainActor
 enum LocalVulkanProbe {
     static func run() async throws -> String { try await execute(render: false).text }
+    static func coherent() async throws -> String { try await execute(render: false, coherent: true).text }
     static func render() async throws -> VulkanRenderResult {
         let result = try await execute(render: true)
         guard let ppm = result.ppm, result.text.contains("vulkan-render-ok"), result.text.contains("\r\nVULKAN_RESULT:0\r\n") else {
@@ -60,7 +61,7 @@ enum LocalVulkanProbe {
         let data = Data(command.utf8)
         guard try session.send(data) == data.count else { throw TramesError.message("Vulkan acceptance input was incomplete") }
     }
-    private static func execute(render: Bool, texture: Bool = false, display: VulkanCanvas? = nil) async throws -> (text: String, ppm: Data?) {
+    private static func execute(render: Bool, texture: Bool = false, coherent: Bool = false, display: VulkanCanvas? = nil) async throws -> (text: String, ppm: Data?) {
         guard let resources=Bundle.main.resourceURL?.appendingPathComponent("GuestVulkan"),
               let icd=Bundle.main.url(forResource:"libtrames_vulkan_icd",withExtension:"so",subdirectory:"GuestVulkan") else {
             throw TramesError.message("Missing bundled Vulkan acceptance resources")
@@ -83,7 +84,7 @@ enum LocalVulkanProbe {
         }
         let program = display != nil ? "vulkan-present" : render ? (texture ? "vulkan-texture" : "vulkan-render") : "vulkan-compute"
         let graphics = texture ? "vulkan-texture" : "vulkan-render"
-        let arguments = display != nil ? "/tmp/vulkan-render.vert.spv /tmp/vulkan-render.frag.spv" : render ? "/tmp/\(graphics).vert.spv /tmp/\(graphics).frag.spv /tmp/render.ppm" : "/tmp/vulkan-compute.spv"
+        let arguments = display != nil ? "/tmp/vulkan-render.vert.spv /tmp/vulkan-render.frag.spv" : render ? "/tmp/\(graphics).vert.spv /tmp/\(graphics).frag.spv /tmp/render.ppm" : "/tmp/vulkan-compute.spv" + (coherent ? " coherent" : "")
         try prepare(session, inputs: inputs, program: program, arguments: arguments)
         while text.range(of:"\r\nVULKAN_RESULT:[0-9]+\r\n",options:.regularExpression)==nil {
             text+=String(decoding:try session.receive(),as:UTF8.self)

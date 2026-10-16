@@ -12,6 +12,7 @@ use std::{
 };
 use trames_memory::{Access, Memory, MemoryError};
 use vk::Handle;
+mod coherent;
 mod graphics;
 mod textures;
 mod wayland;
@@ -196,6 +197,7 @@ struct Mapping {
     guest: u64,
     offset: u64,
     size: u64,
+    coherent: Option<coherent::CoherentBytes>,
 }
 #[derive(Default)]
 struct SubmitBatch {
@@ -392,7 +394,7 @@ impl Backend {
         self.objects.remove(&id);
         Ok(())
     }
-    fn submit(&mut self, m: &Memory, op: u64, a: [u64; 16], dev: Arc<Device>) -> Result<()> {
+    fn submit(&mut self, m: &mut Memory, op: u64, a: [u64; 16], dev: Arc<Device>) -> Result<()> {
         if a[1] != self.queue_id {
             return invalid();
         }
@@ -484,6 +486,7 @@ impl Backend {
                     .signal_semaphores(&batch.signals)
             })
             .collect();
+        self.coherent_sync(m, true)?;
         unsafe { d.queue_submit(self.queue, &infos, vk::Fence::from_raw(fence.raw)) }?;
         for c in &commands {
             c.state.set(3);
@@ -904,11 +907,6 @@ impl Backend {
                 )?;
             }
             5 => {
-                let props = unsafe {
-                    instance
-                        .native
-                        .get_physical_device_memory_properties(self.physical)
-                };
                 let mut b = vec![
                     0u64;
                     std::mem::size_of::<vk::PhysicalDeviceMemoryProperties>()
@@ -928,14 +926,8 @@ impl Backend {
                         b.as_mut_ptr().cast(),
                     );
                 }
-                // Shadow mappings require explicit flush/invalidate. Never
-                // falsely advertise HOST_COHERENT while CPU/GPU storage differs.
-                for i in 0..props.memory_type_count as usize {
-                    let at = 4 + i * 8;
-                    let word = at / 8;
-                    let shift = (at % 8) * 8;
-                    b[word] &= !((vk::MemoryPropertyFlags::HOST_COHERENT.as_raw() as u64) << shift);
-                }
+                // Native coherent types are mirrored at queue submission and
+                // exposed host completion boundaries, with per-byte ownership.
                 write_words(
                     m,
                     a[1],
@@ -1183,7 +1175,15 @@ impl Backend {
                 self.objects[&id].state.set(a[2] as u8);
                 write(m, a[3], &id.to_le_bytes())?;
             }
-            15 => self.remove(a[1], Kind::Memory)?,
+            15 => {
+                if let Some(map) = self.mappings.remove(&a[1]) {
+                    unsafe {
+                        d.unmap_memory(vk::DeviceMemory::from_raw(map.memory.raw));
+                    }
+                    map.memory.mapped.set(0);
+                }
+                self.remove(a[1], Kind::Memory)?;
+            }
             16 => {
                 let b = self.object(a[1], Kind::Buffer)?;
                 let mem = self.object(a[2], Kind::Memory)?;
@@ -1229,6 +1229,36 @@ impl Backend {
                     )
                 }?;
                 mem.mapped.set(ptr as usize);
+                let initialized = (|| -> Result<Option<coherent::CoherentBytes>> {
+                    if mem.flags & vk::MemoryPropertyFlags::HOST_COHERENT.as_raw() == 0 {
+                        return Ok(None);
+                    }
+                    let mut baseline =
+                        coherent::CoherentBytes::new(len as usize, self.budget.clone())?;
+                    let mut t = unsafe {
+                        transfer_pages(
+                            m,
+                            a[4],
+                            (ptr as *mut u8).add(a[2] as usize),
+                            len as usize,
+                            false,
+                        )
+                    }?;
+                    t.download_bytes = len;
+                    self.record_transfer(t);
+                    baseline.initialize(m, a[4])?;
+                    Ok(Some(baseline))
+                })();
+                let coherent = match initialized {
+                    Ok(v) => v,
+                    Err(e) => {
+                        unsafe {
+                            d.unmap_memory(vk::DeviceMemory::from_raw(mem.raw));
+                        }
+                        mem.mapped.set(0);
+                        return Err(e);
+                    }
+                };
                 self.mappings.insert(
                     a[1],
                     Mapping {
@@ -1236,14 +1266,18 @@ impl Backend {
                         guest: a[4],
                         offset: a[2],
                         size: len,
+                        coherent,
                     },
                 );
             }
             18 => {
                 let map = self
                     .mappings
-                    .remove(&a[1])
+                    .get_mut(&a[1])
                     .ok_or(Failure::Vk(vk::Result::ERROR_UNKNOWN))?;
+                let t = coherent::synchronize(map, m, map.offset, map.size, true)?;
+                self.record_transfer(t);
+                let map = self.mappings.remove(&a[1]).unwrap();
                 unsafe {
                     d.unmap_memory(vk::DeviceMemory::from_raw(map.memory.raw));
                 }
@@ -1252,7 +1286,7 @@ impl Backend {
             19 | 20 => {
                 let map = self
                     .mappings
-                    .get(&a[1])
+                    .get_mut(&a[1])
                     .ok_or(Failure::Vk(vk::Result::ERROR_UNKNOWN))?;
                 let len = if a[3] == u64::MAX {
                     map.memory.size.saturating_sub(a[2])
@@ -1273,6 +1307,17 @@ impl Backend {
                         .is_none_or(|n| n > map.offset + map.size)
                 {
                     return invalid();
+                }
+                if map.coherent.is_some() {
+                    let t = coherent::synchronize(map, m, a[2], len, true)?;
+                    let down = if op == 20 {
+                        coherent::synchronize(map, m, a[2], len, false)?
+                    } else {
+                        TransferMetrics::default()
+                    };
+                    self.record_transfer(t);
+                    self.record_transfer(down);
+                    return Ok(());
                 }
                 let guest = map.guest + (a[2] - map.offset);
                 let ptr = (map.memory.mapped.get() as *mut u8).wrapping_add(a[2] as usize);
@@ -1789,6 +1834,7 @@ impl Backend {
                 if !Self::fence_ready(&f)? {
                     return Err(vk::Result::NOT_READY.into());
                 }
+                self.coherent_sync(m, false)?;
             }
             52 | 56 => self.submit(m, op, a, dev.clone())?,
             54 => {

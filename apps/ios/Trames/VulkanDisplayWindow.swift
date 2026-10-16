@@ -64,7 +64,7 @@ struct VulkanDisplayWindow: View {
     @State private var dragOrigin: CGPoint?
     @State private var resizeOrigin: CGSize?
     var body: some View {
-        if session.displayEnabled && session.displayHasFrames {
+        if session.displayEnabled {
         VStack(spacing: 0) {
             HStack {
                 Text("显示器 · 1024 × 768").font(.callout).lineLimit(1)
@@ -106,7 +106,10 @@ struct VulkanDisplayWindow: View {
             .background(.black).clipShape(RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.white.opacity(0.3)))
             .shadow(radius: 14).offset(x: geometry.origin.x, y: geometry.origin.y)
-            .opacity(session.displayVisible ? 1 : 0).allowsHitTesting(session.displayVisible)
+            // Keep the authorized Metal layer mounted before the first present;
+            // hiding unused legacy output must not gate drawable availability.
+            .opacity(session.displayVisible && session.displayHasFrames ? 1 : 0)
+            .allowsHitTesting(session.displayVisible && session.displayHasFrames)
             .onAppear { geometry.constrain(to: viewport) }
             .onChange(of: viewport) { _, value in geometry.constrain(to: value) }
         }

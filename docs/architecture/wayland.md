@@ -21,8 +21,8 @@ last native mapping/frame lease is released.
 The Metal frontend imports page-aligned SHM bytes with bytesNoCopy and reads
 arbitrary row strides in its fragment shader. If the device refuses an import,
 a bounded copy is explicit and counted in the canvas accessibility statistics.
-No-copy support and rendering still need actual Apple execution validation;
-compilation on the iOS Rust target alone is not that validation. A frame owns
+Actual Apple simulator execution has validated SHM no-copy rendering and UIKit
+composition; this does not replace iPad device testing. A frame owns
 its buffer leases through command-buffer completion, including session teardown.
 A wl_buffer shared by several surfaces has one common usage lease; its release
 cannot race another surface's continued use.
@@ -74,7 +74,10 @@ back from the client. Weston editor's text-input-v1 is included explicitly.
 - The same ARM64 client and original Alpine libwayland-client/libffi execute
   through the Linux guest VFS bridge successfully.
 - Rust core/bridge/FFI compile for aarch64-apple-ios. Swift parser checks pass;
-  the Apple simulator app now links successfully; actual Metal/IME runtime acceptance remains pending.
+  both simulator and device apps link successfully. Actual Apple simulator tests
+  pass original wayland-info, two-window resize, Weston SHM and Weston editor
+  Chinese/emoji composition through UIKit. Original vkcube exposed a missing
+  HOST_COHERENT mapping path; its Metal acceptance is being rerun after the fix.
 - Synchronized subsurfaces, input regions, buffer transforms, nonzero v4 attach
   offsets, real window-geometry origins, and native IME serial/ready state are
   implemented. Original Alpine vkcube 1.4.313 completes standard Wayland WSI
@@ -119,8 +122,8 @@ Current Linux regressions: 180 shared/core/VFS/Vulkan/FFI/Wayland library tests,
 independent native C acceptance tests, and original graphics/texture guest pixel
 oracles for one and four CPUs pass. Ordinary guest apk resolves and verifies an
 offline original repository, rather than explicitly installing every alternative
-provider. The Apple simulator app links successfully after the refresh-target
-actor isolation correction; actual Metal/IME acceptance remains required.
+provider. Apple simulator SHM and IME acceptance pass. Original vkcube
+Metal presentation is the remaining acceptance gate.
 
 In-flight descriptor transfers have an explicit export lease, registered before
 sending SCM_RIGHTS. The receiving service retains it until SharedFile import
