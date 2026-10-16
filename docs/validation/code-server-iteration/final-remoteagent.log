@@ -1,0 +1,83 @@
+2026-10-16 13:14:13.511 [info] 
+
+
+
+
+2026-10-16 13:14:13.514 [error] Error: Unable to retrieve mac address (unexpected format)
+    at WF (file:///opt/code-server/lib/vscode/out/server-main.js:83:33935)
+    at dK (file:///opt/code-server/lib/vscode/out/server-main.js:83:34259)
+    at async file:///opt/code-server/lib/vscode/out/server-main.js:83:34178
+    at async Promise.all (index 2)
+    at async Hq (file:///opt/code-server/lib/vscode/out/server-main.js:239:403)
+    at async Kq (file:///opt/code-server/lib/vscode/out/server-main.js:240:1455)
+2026-10-16 13:14:15.130 [info] StorageMainService: creating application shared storage
+2026-10-16 13:14:16.991 [info] [AgentHostChannel] Registered lazy IPC channel 'agentHostProxy' (upstream: /tmp/vscode-ipc-4b72c4cd-7068-4cb6-8cf0-3053108f35fc.sock)
+2026-10-16 13:14:18.482 [info] Extension host agent started.
+2026-10-16 13:14:19.441 [info] [shared storage] Creating shared storage database at '/root/.vscode-oss-shared/sharedStorage/state.vscdb' (wasCreated: false)
+2026-10-16 13:14:19.466 [info] [shared storage] Initializing fallback application storage (path: /root/code-data/User/globalStorage/state.vscdb)
+2026-10-16 13:14:21.118 [error] Unable to retrieve release information from known identifier paths.
+2026-10-16 13:14:23.062 [info] [shared storage] Fallback application storage initialized with 4 items
+2026-10-16 13:14:42.278 [debug] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+2026-10-16 13:14:45.206 [debug] ComputeTargetPlatform: alpine-arm64
+2026-10-16 13:14:46.711 [debug] No extensions are marked as removed.
+2026-10-16 13:16:04.366 [info] [127.0.0.1][0ed45f78][ManagementConnection] New connection established.
+2026-10-16 13:16:20.659 [debug] Using cached extensions scan result user file:///root/code-ext/extensions.json
+2026-10-16 13:16:21.035 [info] [127.0.0.1][81dd92fa][ExtensionHostConnection] New connection established.
+2026-10-16 13:16:21.113 [debug] ServerLifetime: consumer 'ExtensionHost:81dd92fa' active (total: 1)
+2026-10-16 13:16:21.241 [info] [127.0.0.1][81dd92fa][ExtensionHostConnection] Starting extension host process...
+2026-10-16 13:16:39.536 [debug] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+2026-10-16 13:16:52.126 [debug] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+2026-10-16 13:17:06.519 [error] ExtensionHostConnection#buildUserEnvironment resolving shell environment failed Unable to resolve your shell environment in a reasonable time. Please review your shell configuration and restart.
+2026-10-16 13:17:11.100 [info] [127.0.0.1][81dd92fa][ExtensionHostConnection] <30> Launched Extension Host Process.
+2026-10-16 13:19:40.049 [debug] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+2026-10-16 13:20:16.705 [error] ptyHost was unable to resolve shell environment Unable to resolve your shell environment in a reasonable time. Please review your shell configuration and restart.
+2026-10-16 13:20:37.018 [info] [127.0.0.1][81dd92fa][ExtensionHostConnection] <30> [reconnection-grace-time] Extension host: read VSCODE_RECONNECTION_GRACE_TIME=10800000ms (10800s)
+
+2026-10-16 13:21:38.418 [debug] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+2026-10-16 13:22:24.424 [debug] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+2026-10-16 13:23:47.382 [debug] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+2026-10-16 13:27:12.331 [info] [127.0.0.1][0ed45f78][ManagementConnection] The client has disconnected, will wait for reconnection 3h before disposing...
+2026-10-16 13:27:21.440 [info] [127.0.0.1][0ed45f78][ManagementConnection] Another client has connected, will shorten the wait for reconnection 5m before disposing...
+2026-10-16 13:27:21.557 [info] [127.0.0.1][2bc04b8f][ManagementConnection] New connection established.
+2026-10-16 13:27:33.427 [debug] Using cached extensions scan result user file:///root/code-ext/extensions.json
+2026-10-16 13:27:33.947 [info] [127.0.0.1][390e038c][ExtensionHostConnection] New connection established.
+2026-10-16 13:27:33.974 [debug] ServerLifetime: consumer 'ExtensionHost:390e038c' active (total: 2)
+2026-10-16 13:27:33.984 [info] [127.0.0.1][390e038c][ExtensionHostConnection] Starting extension host process...
+2026-10-16 13:27:44.356 [debug] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+2026-10-16 13:27:57.201 [debug] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+2026-10-16 13:28:11.178 [error] ExtensionHostConnection#buildUserEnvironment resolving shell environment failed Unable to resolve your shell environment in a reasonable time. Please review your shell configuration and restart.
+2026-10-16 13:28:19.250 [info] [127.0.0.1][390e038c][ExtensionHostConnection] <54> Launched Extension Host Process.
+2026-10-16 13:30:38.680 [debug] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+2026-10-16 13:31:30.465 [error] ptyHost was unable to resolve shell environment Unable to resolve your shell environment in a reasonable time. Please review your shell configuration and restart.
+2026-10-16 13:31:46.285 [info] [127.0.0.1][390e038c][ExtensionHostConnection] <54> [reconnection-grace-time] Extension host: read VSCODE_RECONNECTION_GRACE_TIME=10800000ms (10800s)
+
+2026-10-16 13:32:59.218 [error] [127.0.0.1][81dd92fa][ExtensionHostConnection] <30> Extension Host Process had an error
+2026-10-16 13:32:59.416 [error] Error: write EPIPE
+    at target._send (node:internal/child_process:900:20)
+    at SocketListSend._request (node:internal/socket_list:20:16)
+    at SocketListSend.getConnections (node:internal/socket_list:47:10)
+    at Server.getConnections (node:net:2416:22)
+    at /opt/code-server/out/node/routes/index.js:84:24
+    at new Promise (<anonymous>)
+    at /opt/code-server/out/node/routes/index.js:76:16
+    at Generator.next (<anonymous>)
+    at /opt/code-server/out/node/routes/index.js:41:71
+    at new Promise (<anonymous>)
+    at __awaiter (/opt/code-server/out/node/routes/index.js:37:12)
+    at Heart.isActive (/opt/code-server/out/node/routes/index.js:75:86)
+    at Heart.<anonymous> (/opt/code-server/out/node/heart.js:59:36)
+    at Generator.next (<anonymous>)
+    at /opt/code-server/out/node/heart.js:8:71
+    at new Promise (<anonymous>)
+    at __awaiter (/opt/code-server/out/node/heart.js:4:12)
+    at Timeout._onTimeout (/opt/code-server/out/node/heart.js:57:52)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+2026-10-16 13:33:00.311 [debug] ServerLifetime: consumer 'ExtensionHost:81dd92fa' inactive (total: 1)
+2026-10-16 13:33:01.617 [info] [127.0.0.1][81dd92fa][ExtensionHostConnection] <30> Extension Host Process exited with code: 0, signal: null.
+2026-10-16 13:33:01.910 [error] Error: Unexpected SIGPIPE
+    at process.<anonymous> (file:///opt/code-server/lib/vscode/out/server-main.js:240:1366)
+    at process.emit (node:events:521:24)
+2026-10-16 13:33:12.497 [debug] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+2026-10-16 13:34:32.122 [debug] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+2026-10-16 13:36:33.866 [debug] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions

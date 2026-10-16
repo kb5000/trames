@@ -71,6 +71,16 @@ def main():
                             f'http://198.18.0.1:{server.server_port}/main/aarch64/APKINDEX.tar.gz'])
             assert out.endswith(b'node compatibility: ok\n') and not err, (out, err)
             print(out.decode(), end='', flush=True)
+            watch_path = '/root/node-watch-' + tmp.name + '.cjs'
+            out, err = run(['--file', watch_path + '=' + str(ROOT / 'tests/fixtures/node-inotify.cjs'),
+                            '--guest', '/usr/bin/node', watch_path])
+            assert out == b'node-inotify-ok\n' and not err, (out, err)
+            print('Real Node.js fs.watch / libuv inode notifications: passed', flush=True)
+            handoff_path = '/root/node-handoff-' + tmp.name + '.cjs'
+            out, err = run(['--file', handoff_path + '=' + str(ROOT / 'tests/fixtures/node-socket-handoff.cjs'),
+                            '--guest', '/usr/bin/node', handoff_path])
+            assert out == b'node-socket-handoff-ok\n' and not err, (out, err)
+            print('Real Node.js fork IPC and accepted TCP socket handoff: passed', flush=True)
             out, err = run(['--guest', '/bin/sh', '-ec', 'npm --version'])
             assert out.startswith(b'11.') and not err, (out, err)
             run(['--guest', '/bin/sh', '-c', 'mkdir -p /root/node-offline/dep'])

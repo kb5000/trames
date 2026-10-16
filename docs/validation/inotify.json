@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-16",
+  "base_commit": "a39ffa6c6b6566bc6ac7f27c463bbe84dfcf2080",
+  "source_sha256": {
+    "crates/trames-vfs/src/inotify.rs": "baf2ab4b6eeaa53e8007e8c5183c97fea45cda8d7d35b4b900048cf65a7c5c1a",
+    "crates/trames-vfs/src/events.rs": "61ba2c7767f74b984efdbdd6037368cb172cfc4fd66210d89af41e10b1dac60c",
+    "crates/trames-vfs/src/lib.rs": "8bbfd0a4e9d658c3cdd483b69387ff61d9544a07a2a75b69647475610a2b92fe",
+    "crates/trames-linux/src/state.rs": "c1b743bcf5eaf1df38a6bbe32ad417d5fa2d403a0e5fea88506686afdfb6558a",
+    "crates/trames-core/src/process.rs": "43dade602479d5459feac863ab4782227302a00da771a4695a052b0556e6f758",
+    "tests/fixtures/inotify.c": "5d679fa3dbe752b87cb6056215b8f0bb4a740c80c780339090bb5fe3638a8101",
+    "tests/fixtures/node-inotify.cjs": "ef99e544d6710f49ed9a70cb6621e5e02230c8645fcc866511f8c78efecdec2d",
+    "tests/integration/inotify.py": "ce1cba3b069ddf3f37a537de7b308eccfcebb391a20526f3735d9bcb4ff1a29a",
+    "scripts/build-inotify-fixtures.sh": "9c1d931a8bc1bd3d60da82177a5933e8b84e5ab9c46d6addd40141c38b6f105a"
+  },
+  "checks": {
+    "linux_qemu_memory_disk": [
+      "PASS ['/workspace/trames/tests/fixtures/bin/inotify-host']",
+      "PASS ['qemu-aarch64', '-cpu', 'max']",
+      "PASS ['/workspace/trames/target/debug/trames-run', '--memory', '--exec-file']",
+      "PASS ['/workspace/trames/target/debug/trames-run', '--storage', '/tmp/trames-inotify-xch06zx1/store']"
+    ],
+    "workspace_tests_passed": 364,
+    "arm64_qemu_vfs_tests_passed": 110,
+    "real_signed_arm64_musl_node_24_18_1": "node-inotify-ok",
+    "strict_clippy": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.29s",
+    "ios_core_distro_ffi_check": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.45s",
+    "node_socket_handoff": "node-socket-handoff-ok"
+  },
+  "limits": "Selected guest VFS inode semantics; no IN_UNMOUNT, full pseudo/Bridge notifications, fanotify or per-UID sysctl quotas."
+}

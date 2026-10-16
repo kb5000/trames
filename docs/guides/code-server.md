@@ -1,8 +1,8 @@
 # code-server 开发验证
 
 这是实际 ARM64 Linux 后端的兼容性试跑，尚未作为 iPad 安装功能交付。
-HTTP 服务和编辑器欢迎页已启动；远端握手仍超时，文件监听、文件保存、
-集成终端和扩展须分别验收。
+HTTP 服务和编辑器欢迎页已启动；远端握手仍超时，文件保存、集成终端和扩展须分别验收；VFS inotify 和原版 Node
+`fs.watch` 已通过[独立验证](../validation/inotify.md)。
 请使用独立测试磁盘，暂勿把现有 Alpine 环境直接切换到另一发行分支。
 
 ## 已采用的输入
@@ -72,7 +72,33 @@ python3 tests/integration/code-server.py \
   --browser
 ```
 
-只在第一次导入时传 `--package`；后续省略。脚本默认四核、总预算
+Code 另有浏览器端 10 秒认证消息、30 秒重连、60 秒扩展就绪等待，以及
+两端 20 秒未确认消息/心跳超时，与父子进程握手独立。可在导入前执行校验字节补丁，保留上游签名校验
+和未配置时的原有默认行为：
+
+```sh
+python3 scripts/patch-code-server.py /path/to/prepared/code-server/package
+```
+
+脚本校验两端原始 SHA256 和唯一字节位置，全部预检后修改，支持幂等重跑；
+不提交 20 MiB 上游压缩 bundle。浏览器测试会通过 init script 把上述超时环境变量传入
+`globalThis.TRAMES_REMOTE_HANDSHAKE_TIMEOUT_MS`，范围仍为 10,000–600,000 ms。
+这是开发探测选项，不改变 guest 时钟，也没有省略身份认证。
+`TRAMES_CODE_SERVER_IDENTITY=1` 可让测试浏览器请求未经 HTTP 压缩的资源，
+用于区分静态资源压缩成本；它不是后端连接成功的证明。
+`--skip-version` 可复用已经核实过的版本；`--serve-only` 会持续运行后端，
+并在输出目录的 result.json 写入实际监听 URL，供独立浏览器探测连接。
+这两个选项用于调试时复用后端，不能当作版本或 UI 验收通过。
+
+只在第一次导入时传 `--package`；后续省略。npm 中的 `build/` 可能是正式
+JavaScript 发布目录，不能整体排除；导入脚本保留其中的运行时文件，仅过滤
+编译对象目录。漏掉 `socks/build` 等文件会导致 Agent Host 缺模块退出。
+
+`--lean-workbench` 可应用仓库里的开发测试设置：关闭 AI、后台扩展更新和
+shell integration，并向 User 和服务端 Machine 设置写入 120 秒 shell 环境解析
+配置。之前仅写 User 设置的试跑仍超时，Machine 配置尚需下一轮单独验收。
+不替换编辑器或终端。
+脚本默认四核、总预算
 3 GiB、单进程 1 GiB、项目 hybrid musl/pure 加速，启动实际 guest
 Node，探测 `/healthz`，可选运行宿主 Playwright 浏览器。浏览器需要
 单独安装 Playwright 和 Chromium。`--version-only` 仅测版本输出；
@@ -83,5 +109,8 @@ Node，探测 `/healthz`，可选运行宿主 Playwright 浏览器。浏览器�
 应并排显示两者。开发宿主上的浏览器测试不能代替 iPad/Safari 验收。
 
 `--browser` 的 DOM/WebSocket 观测与真正编辑、保存、重开文件、终端
-往返测试分开记录；连接尝试不能当作已连通。文件监听需要的 inotify
-仍是已知缺口。具体运行结果见开发验证记录。
+往返测试分开记录；连接尝试不能当作已连通。脚本实际执行打开、编辑、
+保存和重开文件，再向 xterm 发送创建 marker 文件的命令；服务退出后通过
+VFS export 校验磁盘内容，分别记录 editing_verified/terminal_verified。
+开发 fixture 使用 `--disable-workspace-trust`；正常使用不必关闭工作区信任。
+具体运行结果见开发验证记录。

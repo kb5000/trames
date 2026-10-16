@@ -1,0 +1,560 @@
+{
+  "websockets": [
+    {
+      "url": "ws://127.0.0.1:40699/stable-8b41915d25547e2edd553bab03ea4cbd621f98c5?reconnectionToken=0ed45f78-de97-44e7-9974-f4b63127b53b&reconnection=false&skipWebSocketFrames=false",
+      "sent": 111,
+      "received": 31,
+      "closed": false
+    },
+    {
+      "url": "ws://127.0.0.1:40699/stable-8b41915d25547e2edd553bab03ea4cbd621f98c5?reconnectionToken=81dd92fa-f1a9-45c3-87cd-a90141c5ec51&reconnection=false&skipWebSocketFrames=false",
+      "sent": 26,
+      "received": 15,
+      "closed": false
+    }
+  ],
+  "errors": [
+    "http://127.0.0.1:40699/stable-8b41915d25547e2edd553bab03ea4cbd621f98c5/static/node_modules/vsda/rust/web/vsda.js: net::ERR_ABORTED"
+  ],
+  "console": [
+    {
+      "type": "log",
+      "text": "%c INFO color: #33f Resolving connection token (127.0.0.1:40699)..."
+    },
+    {
+      "type": "log",
+      "text": "%c INFO color: #33f Resolved connection token (127.0.0.1:40699) after 10 ms"
+    },
+    {
+      "type": "log",
+      "text": "%c INFO color: #33f Creating a socket (renderer-Management-0ed45f78-de97-44e7-9974-f4b63127b53b)..."
+    },
+    {
+      "type": "log",
+      "text": "%c INFO color: #33f Creating a socket (renderer-Management-0ed45f78-de97-44e7-9974-f4b63127b53b) was successful after 659 ms."
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "type": "log",
+      "text": "%c INFO color: #33f [reconnection-grace-time] Client received grace time from server: 10800000ms (10800s)"
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Running builtin chat extension enablement migration"
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Disabling builtin chat extension as chat set up is not completed"
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 [DefaultAccount] Waiting for default account authentication provider to be available."
+    },
+    {
+      "type": "warning",
+      "text": "%c WARN color: #993 Creation of workbench contribution 'workbench.contrib.preferencesActions' took 22ms."
+    },
+    {
+      "type": "log",
+      "text": "%c INFO color: #33f [RemoteAgentHost] Reconciling: desired=[], current=[]"
+    },
+    {
+      "type": "log",
+      "text": "%c INFO color: #33f [AgentHost:remote] Initializing (remoteAuthority=127.0.0.1:40699)"
+    },
+    {
+      "type": "warning",
+      "text": "The web worker extension host is started in a same-origin iframe!"
+    },
+    {
+      "type": "log",
+      "text": "%c INFO color: #33f Updating additional builtin extensions cache"
+    },
+    {
+      "type": "log",
+      "text": "%c INFO color: #33f Creating a socket (renderer-ExtensionHost-81dd92fa-f1a9-45c3-87cd-a90141c5ec51)..."
+    },
+    {
+      "type": "log",
+      "text": "%c INFO color: #33f [AccountPolicyGate] apply: state=inactive, reason=undefined, isRestricted=false"
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 [McpGateway][ToolBroker] Initialized"
+    },
+    {
+      "type": "log",
+      "text": "%c INFO color: #33f [RemoteAgentHost] Reconciling: desired=[], current=[]"
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 [GitHubService] Reusable GitHub service initialized"
+    },
+    {
+      "type": "log",
+      "text": "%c INFO color: #33f Creating a socket (renderer-ExtensionHost-81dd92fa-f1a9-45c3-87cd-a90141c5ec51) was successful after 2572 ms."
+    },
+    {
+      "type": "log",
+      "text": "%c INFO color: #33f [Service Worker] registered"
+    },
+    {
+      "type": "error",
+      "text": "%c  ERR color: #f33 Error: Timed out waiting for authentication provider 'github' to register.\n    at bbt.tryActivateProvider (http://127.0.0.1:40699/stable-8b41915d25547e2edd553bab03ea4cbd621f98c5/static/out/vs/code/browser/workbench/workbench.js:851:73672)\n    at async bbt.getSessions (http://127.0.0.1:40699/stable-8b41915d25547e2edd553bab03ea4cbd621f98c5/static/out/vs/code/browser/workbench/workbench.js:851:69650)"
+    },
+    {
+      "type": "warning",
+      "text": "An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%c INFO color: #33f [AccountPolicyGate] apply: state=inactive, reason=undefined, isRestricted=false"
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "warning",
+      "text": "The customer named _initialize has been holding on to the lock for 30s. This might be a problem."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "warning",
+      "text": "The Web Worker Extension Host did not start in 60s, that might be a problem."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    },
+    {
+      "type": "log",
+      "text": "%cDEBUG background: #eee; color: #888 Comments: URIs of continue on comments to add to storage ."
+    }
+  ],
+  "requests": [
+    {
+      "url": "http://127.0.0.1:40699/?folder=/root/project",
+      "timing": {
+        "startTime": 1792156355714.108,
+        "domainLookupStart": 0.725,
+        "domainLookupEnd": 1.085,
+        "connectStart": 1.085,
+        "secureConnectionStart": -1,
+        "connectEnd": 1.497,
+        "requestStart": 1.745,
+        "responseStart": 127570.989,
+        "responseEnd": 127589.9
+      }
+    },
+    {
+      "url": "http://127.0.0.1:40699/stable-8b41915d25547e2edd553bab03ea4cbd621f98c5/static/out/nls.messages.js",
+      "timing": {
+        "startTime": 1792156483387.0627,
+        "domainLookupStart": 0.296,
+        "domainLookupEnd": 0.353,
+        "connectStart": 0.353,
+        "secureConnectionStart": -1,
+        "connectEnd": 2.516,
+        "requestStart": 2.58,
+        "responseStart": 2806.156,
+        "responseEnd": 40282.684
+      }
+    },
+    {
+      "url": "http://127.0.0.1:40699/stable-8b41915d25547e2edd553bab03ea4cbd621f98c5/static/out/vs/code/browser/workbench/workbench.css",
+      "timing": {
+        "startTime": 1792156483381.891,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 4.069,
+        "responseStart": 2643.984,
+        "responseEnd": 61065.457
+      }
+    },
+    {
+      "url": "http://127.0.0.1:40699/stable-8b41915d25547e2edd553bab03ea4cbd621f98c5/static/out/vs/code/browser/workbench/workbench.js",
+      "timing": {
+        "startTime": 1792156483389.078,
+        "domainLookupStart": 0.131,
+        "domainLookupEnd": 0.14,
+        "connectStart": 0.14,
+        "secureConnectionStart": -1,
+        "connectEnd": 0.551,
+        "requestStart": 0.679,
+        "responseStart": 2941.951,
+        "responseEnd": 76922.766
+      }
+    },
+    {
+      "url": "http://127.0.0.1:40699/stable-8b41915d25547e2edd553bab03ea4cbd621f98c5/static/node_modules/vsda/rust/web/vsda_bg.wasm",
+      "timing": {
+        "startTime": 1792156562772.1392,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 1.111,
+        "responseStart": 665.424,
+        "responseEnd": 669.905
+      }
+    },
+    {
+      "url": "http://127.0.0.1:40699/stable-8b41915d25547e2edd553bab03ea4cbd621f98c5/static/out/vs/workbench/services/keybinding/browser/keyboardLayouts/layout.contribution.linux.js",
+      "timing": {
+        "startTime": 1792156571908.518,
+        "domainLookupStart": 0.453,
+        "domainLookupEnd": 0.583,
+        "connectStart": 0.583,
+        "secureConnectionStart": -1,
+        "connectEnd": 1.078,
+        "requestStart": 1.193,
+        "responseStart": 266.593,
+        "responseEnd": 279.198
+      }
+    },
+    {
+      "url": "http://127.0.0.1:40699/stable-8b41915d25547e2edd553bab03ea4cbd621f98c5/static/out/media/letterpress-light.svg",
+      "timing": {
+        "startTime": 1792156572554.056,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.68,
+        "responseStart": 2339.446,
+        "responseEnd": 2951.123
+      }
+    },
+    {
+      "url": "blob:http://127.0.0.1:40699/f0471f8b-1403-4dcb-a9cc-8a9ff746597e",
+      "timing": {
+        "startTime": 1792156578585.9932,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 62.988,
+        "responseStart": 62.988,
+        "responseEnd": 62.988
+      }
+    },
+    {
+      "url": "http://127.0.0.1:40699/stable-8b41915d25547e2edd553bab03ea4cbd621f98c5/static/out/vs/workbench/services/extensions/worker/webWorkerExtensionHostIframe.html?&vscodeWebWorkerExtHostId=aac3d41a-f58a-45d9-8b3c-92bae7e6b4ee",
+      "timing": {
+        "startTime": 1792156573148.704,
+        "domainLookupStart": 0.126,
+        "domainLookupEnd": 0.224,
+        "connectStart": 0.224,
+        "secureConnectionStart": -1,
+        "connectEnd": 1.569,
+        "requestStart": 1.667,
+        "responseStart": 5366.469,
+        "responseEnd": 6162.234
+      }
+    },
+    {
+      "url": "http://127.0.0.1:40699/stable-8b41915d25547e2edd553bab03ea4cbd621f98c5/static/out/media/codicon.ttf",
+      "timing": {
+        "startTime": 1792156573537.621,
+        "domainLookupStart": 0.131,
+        "domainLookupEnd": 0.147,
+        "connectStart": 0.147,
+        "secureConnectionStart": -1,
+        "connectEnd": 0.559,
+        "requestStart": 0.623,
+        "responseStart": 6033.414,
+        "responseEnd": 6695.618
+      }
+    },
+    {
+      "url": "http://127.0.0.1:40699/stable-8b41915d25547e2edd553bab03ea4cbd621f98c5/static/out/vs/workbench/api/worker/extensionHostWorkerMain.js",
+      "timing": {
+        "startTime": 1792156578672.2798,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.327,
+        "responseStart": 1614.216,
+        "responseEnd": 193030.98
+      }
+    }
+  ],
+  "request_headers": {
+    "Accept-Encoding": "identity"
+  },
+  "http_status": 200,
+  "interaction_error": "Locator.wait_for: Timeout 300000ms exceeded.\nCall log:\n  - waiting for locator(\".quick-input-list .monaco-list-row\").filter(has_text=\"hello.txt\").first to be visible\n",
+  "title": "project - code-server",
+  "body": "Explorer\nproject\nOutline\nTimeline\nShow All Commands\nCtrl\n+\nShift\n+\nP\nGo to File\nCtrl\n+\nP\nOpen Settings\nCtrl\n+\n,\n 0 \n 0\n 0\nLayout: us\n0 Results",
+  "seconds": 551.0919888159842,
+  "workbench_shell": true,
+  "editing_verified": false,
+  "terminal_verified": false
+}

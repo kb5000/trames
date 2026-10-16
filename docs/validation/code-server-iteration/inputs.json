@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-16",
+  "code_server": "4.141.0",
+  "guest_node": "24.18.1-r0",
+  "cpus": 4,
+  "aggregate_memory_budget": "3GiB",
+  "process_memory_budget": "1GiB",
+  "patched_sources_sha256": {
+    "out/node/wrapper.js": "584989bad638e8c1eb51e29cd3cd574dc82529ba828b378f5dfd98ce806293b4",
+    "lib/vscode/out/server-main.js": "e19bec0276d9289a87fc4aba183917c540a3d2d826a5cda0e9a9ff4e6bab81bc",
+    "lib/vscode/out/vs/code/browser/workbench/workbench.js": "6be6588a8d1547530b193fb999b5d829659cb2d3fc92b47828ce722e4bb11ae0"
+  },
+  "runtime_sha256": "eb04f1b529baf6543f61e512ac4ca64c6500816c54dae3e1c09eb8fc1b69e448",
+  "upstream_npm_sha256": "6e5ec40643fc1849838eb7ddf960230fe9fb5de49c88e1618bcde5b175860d65",
+  "partial_trial": "inotify + auth timeout only, missing build/ JS and unchanged 20s transport deadlines; did not pass editing/terminal",
+  "partial_timing": "Concurrent checks and a secondary root GET; diagnostic observations, not a controlled benchmark",
+  "node_socket_handoff": {
+    "stdout": "node-socket-handoff-ok",
+    "fixture_sha256": "61482bae080b3ecb9370b393909eb90234272752e25788c742d896e10fbfb246",
+    "timeout_note": "Successful run used the stricter 120s guard; CI guard raised to 300s for slower unaccelerated runs."
+  }
+}

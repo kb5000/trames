@@ -2332,6 +2332,7 @@ impl Kernel {
         p.linux.vfs.set_lock_owner(p.tgid);
         p.linux.vfs.set_file_size_limit(p.file_size_limit.get().0);
         let proc_path = match number {
+            27 => Some((trames_vfs::AT_FDCWD, a[1])),
             43 | 45 | 221 => Some((trames_vfs::AT_FDCWD, a[0])),
             48 | 53 | 54 | 56 | 78 | 79 | 88 | 281 | 291 | 437 | 439 | 452 => {
                 Some((a[0] as i32, a[1]))

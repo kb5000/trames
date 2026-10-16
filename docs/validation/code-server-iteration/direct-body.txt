@@ -1,0 +1,29 @@
+project
+Explorer
+project
+Outline
+Timeline
+Show All Commands
+Ctrl
++
+Shift
++
+P
+Go to File
+Ctrl
++
+P
+Find in Files
+Ctrl
++
+Shift
++
+F
+Problems
+Output
+Terminal
+Ports
+ 0 
+ 0
+ 0
+Layout: us

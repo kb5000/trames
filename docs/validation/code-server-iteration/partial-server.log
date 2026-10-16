@@ -1,0 +1,115 @@
+[2026-10-16T12:50:03.766Z] debug parent:1 spawned child process 12
+[2026-10-16T12:50:55.055Z] debug child:12 initiating handshake
+[2026-10-16T12:50:55.573Z] debug parent:1 got message [38;2;140;140;140m{"message":{"type":"handshake"}}[0m
+[2026-10-16T12:50:55.842Z] debug child:12 got message [38;2;140;140;140m{"message":{"type":"handshake","args":{"bind-addr":"127.0.0.1:48819","auth":"none","password":"<redacted>","config":"/root/.config/code-server/config.yaml","user-data-dir":"/root/code-data","extensions-dir":"/root/code-ext","disable-telemetry":true,"disable-update-check":true,"disable-workspace-trust":true,"log":"debug","_":["/root/project"],"session-socket":"/root/code-data/code-server-ipc.sock","verbose":false,"host":"127.0.0.1","port":48819,"proxy-domain":[],"app-name":"code-server","usingEnvPassword":false,"usingEnvHashedPassword":false}}}[0m
+[2026-10-16T12:50:56.045Z] info  code-server 4.141.0 8b41915d25547e2edd553bab03ea4cbd621f98c5
+[2026-10-16T12:50:56.059Z] info  Using user-data-dir /root/code-data
+[2026-10-16T12:50:56.069Z] debug Using extensions-dir /root/code-ext
+[2026-10-16T12:50:59.235Z] info  Using config file /root/.config/code-server/config.yaml
+[2026-10-16T12:50:59.258Z] info  HTTP server listening on http://127.0.0.1:48819/
+[2026-10-16T12:50:59.279Z] info    - Authentication is disabled
+[2026-10-16T12:50:59.295Z] info    - Not serving HTTPS
+[2026-10-16T12:50:59.344Z] info  Session server listening on /root/code-data/code-server-ipc.sock
+[2026-10-16T12:51:06.883Z] debug heartbeat
+[12:52:17] 
+
+
+
+
+[12:52:25] Error: Unable to retrieve mac address (unexpected format)
+    at WF (file:///opt/code-server/lib/vscode/out/server-main.js:83:33935)
+    at dK (file:///opt/code-server/lib/vscode/out/server-main.js:83:34259)
+    at async file:///opt/code-server/lib/vscode/out/server-main.js:83:34178
+    at async Promise.all (index 2)
+    at async Hq (file:///opt/code-server/lib/vscode/out/server-main.js:239:403)
+    at async Kq (file:///opt/code-server/lib/vscode/out/server-main.js:240:1455)
+[2026-10-16T12:52:25.444Z] debug 1 active connection
+[2026-10-16T12:52:25.460Z] debug heartbeat
+[12:52:28] StorageMainService: creating application shared storage
+[reconnection-grace-time] No CLI argument provided, using default: 10800000ms (10800s)
+[12:52:29] [AgentHostChannel] Registered lazy IPC channel 'agentHostProxy' (upstream: /tmp/vscode-ipc-e971fbb1-f842-4540-b64e-d18d1e8a1228.sock)
+[12:52:30] Extension host agent started.
+[12:52:31] [shared storage] Creating shared storage database at '/root/.vscode-oss-shared/sharedStorage/state.vscdb' (wasCreated: false)
+[12:52:32] [shared storage] Initializing fallback application storage (path: /root/code-data/User/globalStorage/state.vscdb)
+[12:52:33] Unable to retrieve release information from known identifier paths.
+[12:52:34] [shared storage] Fallback application storage initialized with 4 items
+[12:52:49] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+[12:52:52] ComputeTargetPlatform: alpine-arm64
+[12:52:53] No extensions are marked as removed.
+[2026-10-16T12:53:44.422Z] debug 3 active connections
+[2026-10-16T12:53:44.450Z] debug heartbeat
+File not found: /opt/code-server/lib/vscode/node_modules/vsda/rust/web/vsda_bg.wasm
+File not found: /opt/code-server/lib/vscode/node_modules/vsda/rust/web/vsda.js
+[12:54:07] [127.0.0.1][67f89660][ManagementConnection] New connection established.
+[12:54:18] [AgentHostChannel] Renderer ctx=[object Object] requested connect to upstream
+[12:54:37] AgentHostStarter was unable to resolve shell environment Error: Unable to resolve your shell environment in a reasonable time. Please review your shell configuration and restart.
+    at Timeout.<anonymous> (file:///opt/code-server/lib/vscode/out/server-main.js:47:9812)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+[2026-10-16T12:54:55.636Z] debug 6 active connections
+[2026-10-16T12:54:55.676Z] debug heartbeat
+[2026-10-16T12:56:10.723Z] debug 5 active connections
+[2026-10-16T12:56:10.749Z] debug heartbeat
+[2026-10-16T12:56:33.270Z] debug redirecting from / to ./?folder=/root/project
+[12:56:53] [127.0.0.1][7f6fec4c][ExtensionHostConnection] New connection established.
+[12:56:53] ServerLifetime: consumer 'ExtensionHost:7f6fec4c' active (total: 1)
+[12:56:53] [127.0.0.1][7f6fec4c][ExtensionHostConnection] Starting extension host process...
+[12:56:53] ExtensionHostConnection#buildUserEnvironment resolving shell environment failed Error: Unable to resolve your shell environment in a reasonable time. Please review your shell configuration and restart.
+    at Timeout.<anonymous> (file:///opt/code-server/lib/vscode/out/server-main.js:47:9812)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+[12:56:56] [127.0.0.1][7f6fec4c][ExtensionHostConnection] <51> Launched Extension Host Process.
+[2026-10-16T12:57:17.901Z] debug 6 active connections
+[2026-10-16T12:57:17.935Z] debug heartbeat
+[12:57:38] [127.0.0.1][67f89660][ManagementConnection] The client has reconnected.
+[12:58:03] [127.0.0.1][7f6fec4c][ExtensionHostConnection] The client has reconnected.
+[12:58:08] [127.0.0.1][67f89660][ManagementConnection] The client has reconnected.
+[12:58:16] ptyHost was unable to resolve shell environment Error: Unable to resolve your shell environment in a reasonable time. Please review your shell configuration and restart.
+    at Timeout.<anonymous> (file:///opt/code-server/lib/vscode/out/server-main.js:47:9812)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+[12:58:16] ptyHost was unable to resolve shell environment Error: Unable to resolve your shell environment in a reasonable time. Please review your shell configuration and restart.
+    at Timeout.<anonymous> (file:///opt/code-server/lib/vscode/out/server-main.js:47:9812)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+[IPC Library: Agent Host] Uncaught Exception:  Error: Cannot find module '/opt/code-server/lib/vscode/node_modules/socks/build/index.js'. Please verify that the package.json has a valid "main" entry
+    at tryPackage (node:internal/modules/cjs/loader:553:19)
+    at Module._findPath (node:internal/modules/cjs/loader:821:18)
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1502:27)
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)
+    at Module._load (node:internal/modules/cjs/loader:1294:5)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.require (node:internal/modules/cjs/loader:1617:12)
+    at require (node:internal/modules/helpers:153:16)
+    at Object.<anonymous> (/opt/code-server/lib/vscode/node_modules/socks-proxy-agent/dist/index.js:30:17)
+    at Module._compile (node:internal/modules/cjs/loader:1871:14)
+    at Object..js (node:internal/modules/cjs/loader:2002:10)
+    at Module.load (node:internal/modules/cjs/loader:1594:32)
+    at Module._load (node:internal/modules/cjs/loader:1396:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.require (node:internal/modules/cjs/loader:1617:12)
+    at require (node:internal/modules/helpers:153:16)
+    at Object.<anonymous> (/opt/code-server/lib/vscode/node_modules/@vscode/proxy-agent/out/agent.js:22:29)
+    at Module._compile (node:internal/modules/cjs/loader:1871:14)
+    at Object..js (node:internal/modules/cjs/loader:2002:10)
+    at Module.load (node:internal/modules/cjs/loader:1594:32)
+    at Module._load (node:internal/modules/cjs/loader:1396:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.require (node:internal/modules/cjs/loader:1617:12)
+    at require (node:internal/modules/helpers:153:16)
+    at Object.<anonymous> (/opt/code-server/lib/vscode/node_modules/@vscode/proxy-agent/out/index.js:50:17)
+    at Module._compile (node:internal/modules/cjs/loader:1871:14)
+    at Object..js (node:internal/modules/cjs/loader:2002:10)
+    at Module.load (node:internal/modules/cjs/loader:1594:32)
+    at Module._load (node:internal/modules/cjs/loader:1396:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at loadCJSModuleWithModuleLoad (node:internal/modules/esm/translators:372:15)
+    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:244:9)
+    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+    at async node:internal/modules/esm/loader:643:26
+    at async file:///opt/code-server/lib/vscode/out/bootstrap-fork.js:30:1201
+[2026-10-16T12:58:24.512Z] debug Node failed to respond with connections; assuming zero
+[12:58:42] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+[2026-10-16T12:59:12.421Z] debug heartbeat

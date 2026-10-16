@@ -1,0 +1,23 @@
+{
+  "saved-file.txt": {
+    "exit": 0,
+    "stderr": "",
+    "contents": "hello Trames code-server\n"
+  },
+  "terminal-result.txt": {
+    "exit": 125,
+    "stderr": "trames-run: virtual filesystem errno 2\n"
+  },
+  "remoteagent.log": {
+    "exit": 0,
+    "stderr": ""
+  },
+  "editing_verified": false,
+  "terminal_verified": false,
+  "quick_open_timeout_ms": 300000,
+  "direct_open": "Ctrl+O did not show a remote file dialog; file contents not opened",
+  "terminal_textarea_timeout_ms": 180000,
+  "health_websocket_timeout_ms": 10000,
+  "shell_environment_timeout_still_observed": true,
+  "machine_settings_change": "added to helper after this trial; not yet verified"
+}

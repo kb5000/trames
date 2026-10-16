@@ -53,6 +53,9 @@ for source in ('crates/trames-core/src/process.rs', 'crates/trames-linux/src/sta
                 found.setdefault(number, f'{source}:{i + 1}')
 rows = list(csv.DictReader((OUT / 'compatibility-0.4-syscalls.csv').open()))
 notes = {
+    26: 'Guest inode notification instance, NONBLOCK/CLOEXEC, whole-record read, FIONREAD, dup/fork/exec lifetime, poll and level/edge/ONESHOT epoll; bounded/coalesced queue with overflow. No host file notifications.',
+    27: 'Inode watches, read/search permissions, ONLYDIR/DONT_FOLLOW/MASK_ADD/MASK_CREATE/ONESHOT/EXCL_UNLINK; VFS create/delete/rename cookies, access/modify/attributes/open/last-close. No automatic recursive watches, IN_UNMOUNT or host Bridge mutations; pathless metadata changes fan out to linked parent directories.',
+    28: 'Remove a live watch and queue IN_IGNORED, including shared descriptors; invalid descriptor/watch errors.',
     52: "FD mode changes include a shared anonymous-pipe inode, ownership/FOWNER/FSETID checks, fork/dup identity; existing pipe endpoint access is retained.",
     55: "FD ownership changes include shared anonymous-pipe inode metadata, CHOWN checks and -1 preservation. Anonymous pipe metadata is volatile and never checkpoints the disk store.",
     74: 'Guest signalfd4 mask/create/update, NONBLOCK/CLOEXEC, read/readv whole 128-byte records, short reads/EFAULT dequeue, dup/fork/exec, proc fdinfo and selected poll/pselect/epoll level/ONESHOT readiness. Private task and shared process pending queues, standard coalescing, bounded RT FIFO for implemented producers, sender PID/UID and child/timer metadata. No rt_sigqueueinfo/rt_tgsigqueueinfo or complete Linux cross-fork epoll wake-queue binding.',
@@ -197,7 +200,7 @@ metadata = {
         'crates/trames-vfs/src/mapped.rs', 'crates/trames-vfs/src/memfd.rs', 'crates/trames-vfs/src/executable.rs',
         'crates/trames-vfs/src/linux_namespace.rs', 'crates/trames-vfs/src/pid_namespace.rs', 'crates/trames-vfs/src/mounts.rs', 'crates/trames-net/src/direct_dns.rs',
         'crates/trames-net/src/interfaces.rs', 'crates/trames-net/src/native_icmp.rs',
-        'crates/trames-vfs/src/namespace.rs', 'crates/trames-vfs/src/credentials.rs')},
+        'crates/trames-vfs/src/namespace.rs', 'crates/trames-vfs/src/credentials.rs', 'crates/trames-vfs/src/inotify.rs', 'crates/trames-vfs/src/events.rs')},
 }
 (OUT / (args.prefix + '-syscalls.json')).write_text(json.dumps(metadata, indent=2) + '\n')
 print(json.dumps({key: value for key, value in metadata.items() if key != 'source_sha256'}))

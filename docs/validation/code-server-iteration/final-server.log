@@ -1,0 +1,149 @@
+[2026-10-16T13:11:13.480Z] debug parent:1 spawned child process 12
+[2026-10-16T13:12:15.976Z] debug child:12 initiating handshake
+[2026-10-16T13:12:17.671Z] debug parent:1 got message [38;2;140;140;140m{"message":{"type":"handshake"}}[0m
+[2026-10-16T13:12:18.289Z] debug child:12 got message [38;2;140;140;140m{"message":{"type":"handshake","args":{"bind-addr":"127.0.0.1:40699","auth":"none","password":"<redacted>","config":"/root/.config/code-server/config.yaml","user-data-dir":"/root/code-data","extensions-dir":"/root/code-ext","disable-telemetry":true,"disable-update-check":true,"disable-workspace-trust":true,"log":"debug","_":["/root/project"],"session-socket":"/root/code-data/code-server-ipc.sock","verbose":false,"host":"127.0.0.1","port":40699,"proxy-domain":[],"app-name":"code-server","usingEnvPassword":false,"usingEnvHashedPassword":false}}}[0m
+[2026-10-16T13:12:18.572Z] info  code-server 4.141.0 8b41915d25547e2edd553bab03ea4cbd621f98c5
+[2026-10-16T13:12:18.610Z] info  Using user-data-dir /root/code-data
+[2026-10-16T13:12:18.629Z] debug Using extensions-dir /root/code-ext
+[2026-10-16T13:12:22.955Z] info  Using config file /root/.config/code-server/config.yaml
+[2026-10-16T13:12:22.990Z] info  HTTP server listening on http://127.0.0.1:40699/
+[2026-10-16T13:12:23.003Z] info    - Authentication is disabled
+[2026-10-16T13:12:23.017Z] info    - Not serving HTTPS
+[2026-10-16T13:12:23.144Z] info  Session server listening on /root/code-data/code-server-ipc.sock
+[2026-10-16T13:12:35.900Z] debug heartbeat
+[13:14:00] 
+
+
+
+
+[13:14:10] Error: Unable to retrieve mac address (unexpected format)
+    at WF (file:///opt/code-server/lib/vscode/out/server-main.js:83:33935)
+    at dK (file:///opt/code-server/lib/vscode/out/server-main.js:83:34259)
+    at async file:///opt/code-server/lib/vscode/out/server-main.js:83:34178
+    at async Promise.all (index 2)
+    at async Hq (file:///opt/code-server/lib/vscode/out/server-main.js:239:403)
+    at async Kq (file:///opt/code-server/lib/vscode/out/server-main.js:240:1455)
+[2026-10-16T13:14:11.553Z] debug 1 active connection
+[2026-10-16T13:14:11.576Z] debug heartbeat
+[13:14:15] StorageMainService: creating application shared storage
+[reconnection-grace-time] No CLI argument provided, using default: 10800000ms (10800s)
+[13:14:16] [AgentHostChannel] Registered lazy IPC channel 'agentHostProxy' (upstream: /tmp/vscode-ipc-4b72c4cd-7068-4cb6-8cf0-3053108f35fc.sock)
+[13:14:18] Extension host agent started.
+[13:14:19] [shared storage] Creating shared storage database at '/root/.vscode-oss-shared/sharedStorage/state.vscdb' (wasCreated: false)
+[13:14:19] [shared storage] Initializing fallback application storage (path: /root/code-data/User/globalStorage/state.vscdb)
+[13:14:21] Unable to retrieve release information from known identifier paths.
+[13:14:23] [shared storage] Fallback application storage initialized with 4 items
+[13:14:42] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+[13:14:45] ComputeTargetPlatform: alpine-arm64
+[13:14:46] No extensions are marked as removed.
+[2026-10-16T13:15:16.712Z] debug 3 active connections
+[2026-10-16T13:15:16.733Z] debug heartbeat
+File not found: /opt/code-server/lib/vscode/node_modules/vsda/rust/web/vsda_bg.wasm
+File not found: /opt/code-server/lib/vscode/node_modules/vsda/rust/web/vsda.js
+[13:16:04] [127.0.0.1][0ed45f78][ManagementConnection] New connection established.
+[2026-10-16T13:16:17.906Z] debug 6 active connections
+[2026-10-16T13:16:17.920Z] debug heartbeat
+[13:16:20] Using cached extensions scan result user file:///root/code-ext/extensions.json
+[13:16:21] [127.0.0.1][81dd92fa][ExtensionHostConnection] New connection established.
+[13:16:21] ServerLifetime: consumer 'ExtensionHost:81dd92fa' active (total: 1)
+[13:16:21] [127.0.0.1][81dd92fa][ExtensionHostConnection] Starting extension host process...
+[13:16:39] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+[13:16:52] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+[13:17:06] ExtensionHostConnection#buildUserEnvironment resolving shell environment failed Error: Unable to resolve your shell environment in a reasonable time. Please review your shell configuration and restart.
+    at Timeout.<anonymous> (file:///opt/code-server/lib/vscode/out/server-main.js:47:9812)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+[13:17:11] [127.0.0.1][81dd92fa][ExtensionHostConnection] <30> Launched Extension Host Process.
+[2026-10-16T13:17:35.830Z] debug 3 active connections
+[2026-10-16T13:17:35.852Z] debug heartbeat
+[2026-10-16T13:18:41.843Z] debug 3 active connections
+[2026-10-16T13:18:41.886Z] debug heartbeat
+[13:19:40] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+[2026-10-16T13:19:44.087Z] debug 2 active connections
+[2026-10-16T13:19:44.110Z] debug heartbeat
+[13:20:16] ptyHost was unable to resolve shell environment Error: Unable to resolve your shell environment in a reasonable time. Please review your shell configuration and restart.
+    at Timeout.<anonymous> (file:///opt/code-server/lib/vscode/out/server-main.js:47:9812)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+[13:20:37] [127.0.0.1][81dd92fa][ExtensionHostConnection] <30> [reconnection-grace-time] Extension host: read VSCODE_RECONNECTION_GRACE_TIME=10800000ms (10800s)
+
+[2026-10-16T13:20:47.380Z] debug 2 active connections
+[2026-10-16T13:20:47.401Z] debug heartbeat
+[13:21:38] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+[2026-10-16T13:22:00.869Z] debug 1 active connection
+[2026-10-16T13:22:00.887Z] debug heartbeat
+[13:22:24] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+[2026-10-16T13:23:09.048Z] debug 0 active connections
+[13:23:47] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+[2026-10-16T13:25:22.331Z] debug heartbeat
+[2026-10-16T13:26:53.432Z] debug 3 active connections
+[2026-10-16T13:26:53.491Z] debug heartbeat
+[13:27:12] [127.0.0.1][0ed45f78][ManagementConnection] The client has disconnected, will wait for reconnection 3h before disposing...
+File not found: /opt/code-server/lib/vscode/node_modules/vsda/rust/web/vsda_bg.wasm
+File not found: /opt/code-server/lib/vscode/node_modules/vsda/rust/web/vsda.js
+[13:27:21] [127.0.0.1][0ed45f78][ManagementConnection] Another client has connected, will shorten the wait for reconnection 5m before disposing...
+[13:27:21] [127.0.0.1][2bc04b8f][ManagementConnection] New connection established.
+[13:27:33] Using cached extensions scan result user file:///root/code-ext/extensions.json
+[13:27:33] [127.0.0.1][390e038c][ExtensionHostConnection] New connection established.
+[13:27:33] ServerLifetime: consumer 'ExtensionHost:390e038c' active (total: 2)
+[13:27:33] [127.0.0.1][390e038c][ExtensionHostConnection] Starting extension host process...
+[13:27:44] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+[13:27:57] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+[2026-10-16T13:28:11.025Z] debug 3 active connections
+[2026-10-16T13:28:11.043Z] debug heartbeat
+[13:28:11] ExtensionHostConnection#buildUserEnvironment resolving shell environment failed Error: Unable to resolve your shell environment in a reasonable time. Please review your shell configuration and restart.
+    at Timeout.<anonymous> (file:///opt/code-server/lib/vscode/out/server-main.js:47:9812)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+[13:28:19] [127.0.0.1][390e038c][ExtensionHostConnection] <54> Launched Extension Host Process.
+[2026-10-16T13:29:24.998Z] debug 3 active connections
+[2026-10-16T13:29:25.017Z] debug heartbeat
+[2026-10-16T13:30:29.738Z] debug 3 active connections
+[2026-10-16T13:30:29.775Z] debug heartbeat
+[13:30:38] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+[13:31:30] ptyHost was unable to resolve shell environment Error: Unable to resolve your shell environment in a reasonable time. Please review your shell configuration and restart.
+    at Timeout.<anonymous> (file:///opt/code-server/lib/vscode/out/server-main.js:47:9812)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+[2026-10-16T13:31:32.614Z] debug 2 active connections
+[2026-10-16T13:31:32.639Z] debug heartbeat
+[13:31:46] [127.0.0.1][390e038c][ExtensionHostConnection] <54> [reconnection-grace-time] Extension host: read VSCODE_RECONNECTION_GRACE_TIME=10800000ms (10800s)
+
+[13:32:59] [127.0.0.1][81dd92fa][ExtensionHostConnection] <30> Extension Host Process had an error
+[13:32:59] Error: write EPIPE
+    at target._send (node:internal/child_process:900:20)
+    at SocketListSend._request (node:internal/socket_list:20:16)
+    at SocketListSend.getConnections (node:internal/socket_list:47:10)
+    at Server.getConnections (node:net:2416:22)
+    at /opt/code-server/out/node/routes/index.js:84:24
+    at new Promise (<anonymous>)
+    at /opt/code-server/out/node/routes/index.js:76:16
+    at Generator.next (<anonymous>)
+    at /opt/code-server/out/node/routes/index.js:41:71
+    at new Promise (<anonymous>)
+    at __awaiter (/opt/code-server/out/node/routes/index.js:37:12)
+    at Heart.isActive (/opt/code-server/out/node/routes/index.js:75:86)
+    at Heart.<anonymous> (/opt/code-server/out/node/heart.js:59:36)
+    at Generator.next (<anonymous>)
+    at /opt/code-server/out/node/heart.js:8:71
+    at new Promise (<anonymous>)
+    at __awaiter (/opt/code-server/out/node/heart.js:4:12)
+    at Timeout._onTimeout (/opt/code-server/out/node/heart.js:57:52)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7) {
+  errno: -32,
+  code: 'EPIPE',
+  syscall: 'write'
+}
+[13:33:00] ServerLifetime: consumer 'ExtensionHost:81dd92fa' inactive (total: 1)
+[2026-10-16T13:33:01.119Z] warn  Child closed before reply received
+[13:33:01] [127.0.0.1][81dd92fa][ExtensionHostConnection] <30> Extension Host Process exited with code: 0, signal: null.
+Error: Unexpected SIGPIPE
+    at process.<anonymous> (file:///opt/code-server/lib/vscode/out/server-main.js:259:9013)
+    at process.emit (node:events:521:24)
+[13:33:01] Error: Unexpected SIGPIPE
+    at process.<anonymous> (file:///opt/code-server/lib/vscode/out/server-main.js:240:1366)
+    at process.emit (node:events:521:24)
+[13:33:12] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+[13:34:32] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions
+[13:36:33] Using cached extensions scan result system file:///opt/code-server/lib/vscode/extensions

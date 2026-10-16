@@ -86,6 +86,10 @@ jobs:
         run: |
           bash scripts/build-runtime-compat-fixtures.sh
           python3 tests/integration/runtime-compat.py
+      - name: Compare inode notifications, epoll edges and fork with Linux
+        run: |
+          bash scripts/build-inotify-fixtures.sh
+          python3 tests/integration/inotify.py
       - run: bash scripts/build-mmap-fixtures.sh
       - run: python3 tests/integration/mmap.py
       - name: Validate configurable guest memory across threads, fork and exec

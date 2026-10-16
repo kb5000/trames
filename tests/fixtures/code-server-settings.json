@@ -1,0 +1,11 @@
+{
+  "chat.disableAIFeatures": true,
+  "workbench.startupEditor": "none",
+  "workbench.secondarySideBar.defaultVisibility": "hidden",
+  "application.shellEnvironmentResolutionTimeout": 120,
+  "extensions.autoCheckUpdates": false,
+  "extensions.autoUpdate": false,
+  "telemetry.telemetryLevel": "off",
+  "terminal.integrated.shellIntegration.enabled": false,
+  "terminal.integrated.gpuAcceleration": "off"
+}

@@ -4,8 +4,9 @@
 默认仍为 1 GiB / 512 MiB，按需分配。
 [内存配置说明](docs/guides/guest-memory.md)。并行内存视图改为增量维护，
 避免 Node 等程序频繁改变小段映射时反复重建整个页表；保留真正多核执行。
-[code-server 开发验证](docs/guides/code-server.md) 仍需分别验收完整编辑器、
-文件监听和终端，尚未作为 iPad 安装功能发布。
+[inotify 文件监听](docs/validation/inotify.md)已接入 VFS，并通过真实 Node
+`fs.watch` 验证。[code-server 开发验证](docs/guides/code-server.md)继续验收
+编辑和终端，尚未作为 iPad 安装功能发布。
 
 面向 iPadOS 的终端优先开发环境：原生 SSH，加上运行未修改 AArch64 Linux 用户态程序的兼容运行时。使用普通开发者签名，架构不依赖越狱、JIT 权限、私有 API 或硬件虚拟化。
 

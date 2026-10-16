@@ -17,6 +17,10 @@ ARM 独占/原子/acquire-release/屏障及共享 futex 键；内核和 NativeCa
 采用 ARM 允许结果的较强子集，不复现所有弱内存交错；普通读写之间仍允许竞争。
 这次扩大已有接口语义，系统调用入口数与指令审计样本数保持不变。
 
+本批新增 `inotify_init1/add_watch/rm_watch` 三个入口，支持实际文件事件与
+Node `fs.watch`，对应[验证记录](../validation/inotify.md)。下方的当前审计已更新；
+前述历史批次的“入口数保持不变”不包括这三个新接口。
+
 ## CPU：尚未实现与兼容替代
 
 范围是 AArch64 EL0 用户态。应用只保留一个 Rust 缓存解释器；计算优先使用
@@ -50,8 +54,8 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 ## Linux：尚无入口的系统调用
 
 固定参照仍为 Linux v6.12 原生 AArch64 的 318 个编号，不是最新版内核的全部接口。
-当前有 **190 个已实现子集、126 个未实现条目、2 个废弃条目**。
-本轮使用实际 ARM64 探测 ELF，在唯一缓存解释器上逐个调用全部 128 个未分派编号，
+当前有 **193 个已实现子集、123 个未实现条目、2 个废弃条目**。
+本轮使用实际 ARM64 探测 ELF，在唯一缓存解释器上逐个调用全部 125 个未分派编号，
 均返回 `-ENOSYS`（-38）。这验证的是无入口行为，不能代替已有入口的 ABI 完整性测试。
 
 完整的编号、名称、状态、当前源码位置和探测返回值见
@@ -59,12 +63,12 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 单后端、统计及源码指纹见 [审计 JSON](../validation/compatibility-current-syscalls.json)。
 可运行 `python3 scripts/audit-syscalls.py` 更新当前报告，历史报告不会被默认覆盖。
 
-以下按用途列出主要缺口；每行列举代表接口，完整 126 项以 CSV 中 `missing` 行为准。
+以下按用途列出主要缺口；每行列举代表接口，完整 123 项以 CSV 中 `missing` 行为准。
 
 | 用途 | 尚未实现的代表接口 |
 | --- | --- |
 | 文件数据与批量 I/O | splice/vmsplice/tee、fallocate、sync_file_range |
-| 文件通知和异步 I/O | inotify、fanotify、旧 AIO、io_uring |
+| 文件通知和异步 I/O | fanotify、旧 AIO、io_uring |
 | 内存 | memfd_secret、mlock/munlock 系列、userfaultfd、mseal、内存策略与 pkey 系列 |
 | 进程与调度 | clone3、pidfd 系列、实时调度、sched_rr_get_interval、sched_setattr/getattr、get/setpriority、getrusage、times、rseq |
 | 信号与同步 | rt_sigqueueinfo/rt_tgsigqueueinfo、get/set_robust_list、futex_waitv、独立 futex_wait/wake/requeue、restart_syscall |
@@ -72,7 +76,7 @@ CSSC、BF16、FHM/复数、SHA512/SHA3/SM3/SM4、MOPS、LOR 和选定 LSE128 操
 | 内核管理与隔离 | 新挂载 API、传播挂载/overlayfs、ptrace/seccomp、process_vm_readv/writev、perf、landlock、模块/重启/交换分区等 |
 
 2 个废弃条目是 `lookup_dcookie`（18）与 `nfsservctl`（42），同样返回 ENOSYS，
-不计入 126 个未实现条目。内核管理类接口需要结合用户态虚拟化目标选择范围，
+不计入 123 个未实现条目。内核管理类接口需要结合用户态虚拟化目标选择范围，
 不能把完整内核功能视为普通文件/进程接口的自然延伸。
 
 先前的 statx、preadv/pwritev、close_range 和 syslog 已扩展为本轮包含 23 个新入口的
@@ -108,6 +112,7 @@ Docker 批次新增 12 个 xattr 入口、具名 Unix socket、PDEATHSIG 和更�
 | rt_sigaction / 信号帧 | 备用信号栈、嵌套及 AUTODISARM 已实现；kill/tkill/tgkill 的实时排队已有；rt_sigqueueinfo/rt_tgsigqueueinfo、每 UID 的 RLIMIT_SIGPENDING、SVE/SME 信号上下文仍缺失；同步 CPU 故障恢复已有实现 |
 | socket / socketpair | Unix socketpair 已实现；SCM_RIGHTS 支持文件/pipe/PTY 等 FD，具名/抽象 stream/seqpacket 已有；Unix socket FD 的循环回收、具名 datagram 定址发送与 SCM_CREDENTIALS 仍缺 |
 | signalfd4 / epoll | 128 字节 read/readv、私有/共享队列、level-triggered 和 ONESHOT 已实现；PTY/嵌入终端、Unix socket、pipe/FIFO、eventfd、Netlink EPOLLET 已有；宿主 socket 和 timerfd/signalfd 的 EPOLLET、嵌套 epoll、EXCLUSIVE、跨 fork 继承 epoll 的 Linux 信号等待队列绑定仍缺，子进程应新建并注册 epoll |
+| inotify | 已支持真实 VFS inode 事件、rename cookie、完整记录读取、FIONREAD、dup/fork/关闭、队列合并/溢出和 epoll ET；IN_UNMOUNT、宿主 Bridge 变更通知、递归监听策略仍缺；无路径的 inode 元数据变更向已有父目录链接广播，见[验证记录](../validation/inotify.md) |
 | timerfd | 普通 realtime/monotonic/虚拟 boottime 定时器已有实现；alarm 时钟和 CANCEL_ON_SET 不支持 |
 | fcntl / futex | POSIX 记录锁已有实现；OFD 锁、完整 robust/shared futex 语义仍缺失 |
 | mknodat / mount / 虚拟设备 | 普通/FIFO/字符/块 inode 与设备号持久化已有；标准字符设备复用 guest 驱动，未注册设备打开 ENXIO；socket inode 由 bind 创建，socket mknod 仍缺；独立 devpts 已有；块驱动/文件系统和完整 Linux 驱动模型仍缺 |
