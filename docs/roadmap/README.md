@@ -24,7 +24,7 @@ after the [bulk native batch](../validation/bulk-native.md). Pure functions, par
 and callback steps continue on their owning CPU through checked resident page
 guards; kernel/live private backing effects still join. [Evidence and fixed-work
 measurements](../validation/parallel-nativecalls.md) accompany issue #16.
-The latest delivered device release is [0.14.0/build 15](../validation/release-0.14.md);
+The latest delivered device release is [0.16.0/build 17](../validation/release-0.16.md);
 historical release and benchmark records below retain their original scope.
 
 The current grouped release includes [host multicore execution](../architecture/multicore.md),

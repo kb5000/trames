@@ -1,0 +1,85 @@
+{
+  "source_commit": "24b9a945c115adea7e6940120d7cab33299dfa4f",
+  "version": "0.16.0",
+  "build": "17",
+  "ipa_sha256": "e8c62938ab8135cae6b0df0595cc928cf8bba50cb1500f52040c116fdc1b11e5",
+  "ipa_bytes": 13457636,
+  "bundle_id": "org.trames.Trames",
+  "minimum_os": "17.0",
+  "device_families": [
+    1,
+    2
+  ],
+  "device_architecture": "arm64",
+  "mach_o_platform": 2,
+  "all_packaged_files_match_device_build": 63,
+  "executable_permission_verified": true,
+  "zip_crc_and_sha256_sidecar_verified": true,
+  "libc_sha256": "885b308b75e36bb402b311fba1d3f1284e6dd8d3a0bfbf88686bff1b629f9b23",
+  "musl_native_functions": 19,
+  "source_inputs_verified": 19,
+  "license_notices_verified": true,
+  "vulkan_icd_sha256": "5c142549de6a9eeccb95b82f639172a805b77cce35bf8ea2d59db125a3fe21bb",
+  "vulkan_profile": 65542,
+  "vulkan_public_entrypoints": 108,
+  "moltenvk_version": "1.4.2",
+  "vulkan_default_enabled": false,
+  "vulkan_source_and_notices_verified": true,
+  "simulator_passed": 14,
+  "simulator_failed": 0,
+  "artifacts": {
+    "sideload": {
+      "id": 12039669016,
+      "name": "Trames-unsigned-sideload",
+      "digest": "sha256:447f624bbc7f170c9e42576f075b8d236711bebd28d39b8d0e98d0901e93f380",
+      "expires_at": "2026-10-30T10:20:24Z"
+    },
+    "build": {
+      "id": 12039753551,
+      "name": "unsigned-ipad-build-and-project",
+      "digest": "sha256:52214fe250e511f3782b7dd36becf5db09c8de370446d2b7417a6a801585e631",
+      "expires_at": "2026-10-23T10:20:27Z"
+    },
+    "musl": {
+      "id": 12038832954,
+      "name": "full-musl-library-and-source",
+      "digest": "sha256:9058cb6dfe54f2facccf7cb430871a393096c83688ace6603bec53a8ae846654",
+      "expires_at": "2026-10-30T10:07:37Z"
+    },
+    "vulkan": {
+      "id": 12039591344,
+      "name": "vulkan-compute-driver-and-native-source",
+      "digest": "sha256:cdb2991f9eba1cb5b2aca65df357b49aad00e6c1d2771e804afd568e4a3baf4f",
+      "expires_at": "2026-10-30T10:07:35Z"
+    }
+  },
+  "publisher_source_commit": "0b734f51fe2ed91d6ac037e2e3f295d4d3ac12b9",
+  "tag_commit": "0b734f51fe2ed91d6ac037e2e3f295d4d3ac12b9",
+  "application_identical_at_tag": true,
+  "publication_only_changed_paths": [
+    ".github/workflows/release-0.16.yml"
+  ],
+  "ci": {
+    "iPad frontend": {
+      "id": 38884960115,
+      "attempt": 1,
+      "url": "https://github.com/kb5000/trames/actions/runs/38884960115",
+      "head_sha": "24b9a945c115adea7e6940120d7cab33299dfa4f",
+      "conclusion": "success"
+    },
+    "Linux runtime": {
+      "id": 38884960056,
+      "attempt": 1,
+      "url": "https://github.com/kb5000/trames/actions/runs/38884960056",
+      "head_sha": "24b9a945c115adea7e6940120d7cab33299dfa4f",
+      "conclusion": "success"
+    }
+  },
+  "public_download_verification": {
+    "ipa_sha256": "e8c62938ab8135cae6b0df0595cc928cf8bba50cb1500f52040c116fdc1b11e5",
+    "ipa_bytes": 13457636,
+    "release_asset_digests_verified": 4,
+    "downloaded_assets": 4,
+    "bundle_version_and_libraries_checked": true
+  }
+}
