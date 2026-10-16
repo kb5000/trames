@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 .global _start
+.ifndef iterations
+.set iterations, 1000000
+.endif
 .text
 _start:
     adrp x1, buffer
     add x1, x1, :lo12:buffer
-    movz x2, #0x4240
-    movk x2, #0xf, lsl #16 // 1,000,000 iterations
+    movz x2, #(iterations & 0xffff)
+    movk x2, #((iterations >> 16) & 0xffff), lsl #16
 1:
     ldr x3, [x1]
     add x3, x3, #1
@@ -20,12 +23,12 @@ _start:
     strb w6, [x1, #16]
     subs x2, x2, #1
     b.ne 1b
-    movz x7, #0x4240
-    movk x7, #0xf, lsl #16
+    movz x7, #(iterations & 0xffff)
+    movk x7, #((iterations >> 16) & 0xffff), lsl #16
     cmp x3, x7
     b.ne fail
     ldrb w6, [x1, #16]
-    cmp w6, #64
+    cmp w6, #(iterations & 0xff)
     b.ne fail
     mov x0, #1
     adr x1, message

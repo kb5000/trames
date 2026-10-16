@@ -1,0 +1,242 @@
+--- a/crates/trames-cpu/src/cached.rs
++++ b/crates/trames-cpu/src/cached.rs
+@@ -11,6 +11,25 @@
+ const WAYS: usize = 2;
+ const SETS: usize = SLOTS / WAYS;
+ const PAGE_WORDS: usize = PAGE_SIZE as usize / 4;
++
++/// A decoded five-bit register field. Only `decode` constructs this type.
++#[derive(Clone, Copy, Debug)]
++struct Register(u8);
++impl Register {
++    const fn decode(word: u32) -> Self {
++        Self((word & 31) as u8)
++    }
++    #[inline(always)]
++    fn index(self) -> usize {
++        debug_assert!(self.0 < 32);
++        // SAFETY: the private constructor masks to five bits. Cached operands
++        // are never populated from guest data except through that constructor.
++        // This describes an already validated index; public Cpu register access
++        // and guest memory permissions retain their normal checks.
++        unsafe { std::hint::assert_unchecked(self.0 < 32) };
++        self.0 as usize
++    }
++}
+ 
+ #[derive(Clone, Copy, Debug)]
+ enum Addressing {
+@@ -91,7 +110,7 @@
+     },
+     Multiply {
+         kind: u8,
+-        ra: u8,
++        ra: Register,
+         sub: bool,
+     },
+     ShiftVariable {
+@@ -131,7 +150,7 @@
+     Pair {
+         offset: u64,
+         size: u8,
+-        second: u8,
++        second: Register,
+         load: bool,
+         vector: bool,
+         signed: bool,
+@@ -147,9 +166,9 @@
+ #[derive(Clone, Copy, Debug)]
+ struct Instruction {
+     word: u32,
+-    rd: u8,
+-    rn: u8,
+-    rm: u8,
++    rd: Register,
++    rn: Register,
++    rm: Register,
+     wide: bool,
+     op: Op,
+ }
+@@ -293,7 +312,11 @@
+                 || (wide && matches!(kind, 1 | 5))
+                 || (wide && !sub && ra == 31 && matches!(kind, 2 | 6))
+             {
+-                Op::Multiply { kind, ra, sub }
++                Op::Multiply {
++                    kind,
++                    ra: Register::decode(ra as u32),
++                    sub,
++                }
+             } else {
+                 Op::Fallback
+             }
+@@ -391,7 +414,7 @@
+                 Op::Pair {
+                     offset: sign_extend(((word >> 15) & 127) as u64, 7).wrapping_mul(size as u64),
+                     size,
+-                    second,
++                    second: Register::decode(second as u32),
+                     load,
+                     vector,
+                     signed: opc == 1,
+@@ -408,9 +431,9 @@
+         };
+         Self {
+             word,
+-            rd: (word & 31) as u8,
+-            rn: ((word >> 5) & 31) as u8,
+-            rm: ((word >> 16) & 31) as u8,
++            rd: Register::decode(word),
++            rn: Register::decode(word >> 5),
++            rm: Register::decode(word >> 16),
+             wide,
+             op,
+         }
+@@ -484,9 +507,9 @@
+             generation: 0,
+             instruction: Instruction {
+                 word: 0,
+-                rd: 0,
+-                rn: 0,
+-                rm: 0,
++                rd: Register::decode(0),
++                rn: Register::decode(0),
++                rm: Register::decode(0),
+                 wide: false,
+                 op: Op::Fallback,
+             },
+@@ -499,7 +522,37 @@
+     identity: (u64, u64, u64),
+     checked: (u64, u64, u64),
+     generation: u64,
+-    instructions: Box<[Entry]>,
++    instructions: Box<[Entry; PAGE_WORDS]>,
++}
++impl CodePage {
++    #[cold]
++    #[inline(never)]
++    fn decode_slot(
++        &mut self,
++        memory: &impl CpuMemory,
++        slot: usize,
++        pc: u64,
++        stats: &mut super::DecodeStats,
++    ) -> Result<(), trames_memory::MemoryError> {
++        // Decode only the reached PC: no speculative page reads,
++        // early faults, or decoding of never-executed page contents.
++        let word = memory.fetch_u32(pc)?;
++        let instruction = Instruction::decode(word);
++        self.instructions[slot].instruction = instruction;
++        self.instructions[slot].generation = self.generation;
++        stats.instructions += 1;
++        // Form pairs only from words that have actually executed.
++        // No lookahead fetch can move a fault before its reached PC.
++        if slot != 0 && self.instructions[slot - 1].generation == self.generation {
++            let previous = &mut self.instructions[slot - 1];
++            previous.instruction = previous.instruction.followed_by(instruction);
++        }
++        if slot + 1 < PAGE_WORDS && self.instructions[slot + 1].generation == self.generation {
++            let instruction = instruction.followed_by(self.instructions[slot + 1].instruction);
++            self.instructions[slot].instruction = instruction;
++        }
++        Ok(())
++    }
+ }
+ #[derive(Debug)]
+ pub(super) struct Cache {
+@@ -568,7 +621,7 @@
+                 page.generation = page.generation.wrapping_add(1);
+                 if page.generation == 0 {
+                     // Epoch wrap must never expose a stale or empty entry.
+-                    for entry in &mut page.instructions {
++                    for entry in page.instructions.iter_mut() {
+                         entry.generation = 0;
+                     }
+                     page.generation = 1;
+@@ -579,7 +632,10 @@
+                     identity,
+                     checked,
+                     generation: 1,
+-                    instructions: vec![Entry::default(); PAGE_WORDS].into_boxed_slice(),
++                    instructions: vec![Entry::default(); PAGE_WORDS]
++                        .into_boxed_slice()
++                        .try_into()
++                        .expect("fixed code page"),
+                 }));
+             }
+         }
+@@ -649,32 +705,10 @@
+                         executed,
+                     );
+                 }
+-                let slot = ((pc - page.base) / 4) as usize;
++                let slot = (pc as usize & (PAGE_SIZE as usize - 1)) / 4;
+                 if page.instructions[slot].generation != page.generation {
+-                    // Decode only the reached PC: no speculative page reads,
+-                    // early faults, or decoding of never-executed page contents.
+-                    let word = match memory.fetch_u32(pc) {
+-                        Ok(word) => word,
+-                        Err(error) => {
+-                            return self.slice_fault(CpuFault::Memory { pc, error }, executed)
+-                        }
+-                    };
+-                    let instruction = Instruction::decode(word);
+-                    page.instructions[slot].instruction = instruction;
+-                    page.instructions[slot].generation = page.generation;
+-                    stats.instructions += 1;
+-                    // Form pairs only from words that have actually executed.
+-                    // No lookahead fetch can move a fault before its reached PC.
+-                    if slot != 0 && page.instructions[slot - 1].generation == page.generation {
+-                        let previous = &mut page.instructions[slot - 1];
+-                        previous.instruction = previous.instruction.followed_by(instruction);
+-                    }
+-                    if slot + 1 < PAGE_WORDS
+-                        && page.instructions[slot + 1].generation == page.generation
+-                    {
+-                        let instruction =
+-                            instruction.followed_by(page.instructions[slot + 1].instruction);
+-                        page.instructions[slot].instruction = instruction;
++                    if let Err(error) = page.decode_slot(memory, slot, pc, stats) {
++                        return self.slice_fault(CpuFault::Memory { pc, error }, executed);
+                     }
+                 }
+                 // Read operands in the selected handler instead of copying every
+@@ -735,7 +769,7 @@
+         let pc = self.pc;
+         let mut next = pc.wrapping_add(4);
+         let mut count = 1;
+-        let (rd, rn, rm) = (ins.rd as usize, ins.rn as usize, ins.rm as usize);
++        let (rd, rn, rm) = (ins.rd.index(), ins.rn.index(), ins.rm.index());
+         let wide = ins.wide;
+         let mask = width_mask(wide);
+         match ins.op {
+@@ -910,9 +944,9 @@
+                 let value = if matches!(kind, 2 | 6) {
+                     product
+                 } else if sub {
+-                    self.x(ra as usize).wrapping_sub(product)
++                    self.x(ra.index()).wrapping_sub(product)
+                 } else {
+-                    self.x(ra as usize).wrapping_add(product)
++                    self.x(ra.index()).wrapping_add(product)
+                 };
+                 self.put(rd, value, wide, false);
+             }
+@@ -1044,7 +1078,7 @@
+                 } else {
+                     base.wrapping_add(offset)
+                 };
+-                let second = second as usize;
++                let second = second.index();
+                 let fault = |error| CpuFault::Memory { pc, error };
+                 if load {
+                     let (first, other) = match size {
+@@ -1152,7 +1186,7 @@
+         sp: bool,
+         flags: &mut ConditionFlags,
+     ) {
+-        let (rd, rn, wide) = (ins.rd as usize, ins.rn as usize, ins.wide);
++        let (rd, rn, wide) = (ins.rd.index(), ins.rn.index(), ins.wide);
+         let value = match opc {
+             0 | 3 => self.x(rn) & rhs,
+             1 => self.x(rn) | rhs,

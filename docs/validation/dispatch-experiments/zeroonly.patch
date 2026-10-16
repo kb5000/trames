@@ -1,0 +1,25 @@
+--- a/crates/trames-cpu/src/lib.rs
++++ b/crates/trames-cpu/src/lib.rs
+@@ -65,7 +65,7 @@
+ pub struct Cpu {
+     native_calls: bool,
+     vulkan_calls: bool,
+-    registers: [u64; 31],
++    registers: [u64; 32],
+     pub sp: u64,
+     pub pc: u64,
+     condition_flags: flags::ConditionFlags,
+@@ -200,11 +200,8 @@
+     /// Register 31 denotes ZR here; SP is selected explicitly by instruction semantics.
+     #[inline]
+     pub fn x(&self, index: usize) -> u64 {
+-        if index == 31 {
+-            0
+-        } else {
+-            self.registers[index]
+-        }
++        // Slot 31 is initialized to zero and never written by set_x.
++        self.registers[index]
+     }
+     #[inline]
+     pub fn set_x(&mut self, index: usize, value: u64) {

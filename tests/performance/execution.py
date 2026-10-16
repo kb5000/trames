@@ -50,6 +50,8 @@ def main():
     parser.add_argument('--store', type=Path, required=True)
     parser.add_argument('--samples', type=int, default=3)
     parser.add_argument('--coremark-iterations', type=int, default=8000)
+    parser.add_argument('--cpu-memory-fixture', type=Path,
+                        help='Optional longer build of cpu-memory.S; checksum and instruction count are still checked')
     parser.add_argument('--emulated-host', action='store_true')
     parser.add_argument('--workloads', nargs='+', choices=WORKLOADS, default=WORKLOADS)
     parser.add_argument('--output', type=Path, required=True)
@@ -58,6 +60,8 @@ def main():
     binaries = {'baseline': args.baseline.resolve(), 'candidate': args.candidate.resolve()}
     libc = ROOT / 'target/musl-hybrid/libc.so'
     fixtures = {name: ROOT / 'tests/fixtures/bin' / name for name in ('cpu-memory', 'smp')}
+    if args.cpu_memory_fixture:
+        fixtures['cpu-memory'] = args.cpu_memory_fixture.resolve()
     qemu = shutil.which(os.getenv('QEMU_AARCH64', 'qemu-aarch64'))
     expected_smp = None
     if 'smp-work' in args.workloads:
@@ -68,13 +72,14 @@ def main():
     report = dict(baseline_commit=args.baseline_commit,
                   host=platform.platform(), host_arch=platform.machine(),
                   cpu_quota=Path('/sys/fs/cgroup/cpu.max').read_text().strip(),
-                  cpu_affinity=len(os.sched_getaffinity(0)), emulated_host=args.emulated_host,
+                  cpu_affinity=len(os.sched_getaffinity(0)),
+                  cpu_affinity_ids=sorted(os.sched_getaffinity(0)), emulated_host=args.emulated_host,
                   runner_sha256={name: digest(path) for name, path in binaries.items()},
                   libc_sha256=digest(libc), store_manifest_sha256=digest(args.store / 'manifest'),
                   fixture_sha256={name: digest(path) for name, path in fixtures.items()},
                   coremark_iterations=args.coremark_iterations,
                   scope='Alternating baseline/candidate, identical guest programs and fresh cloned app stores; '
-                        'warm caches on a shared host, no affinity/frequency control. CoreMark default single-thread -O2. '
+                        'warm caches on a shared host; affinity recorded, frequency not controlled. CoreMark default single-thread -O2. '
                         'Apps use the same complete hybrid musl, pure routing, allocator routing off. '
                         'CoreMark and static CPU/SMP fixtures use their original libc. '
                         'QEMU host timings, when selected, test ARM64 code generation, not device speed.',

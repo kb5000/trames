@@ -184,6 +184,13 @@ It alternates the preserved baseline binary and current interpreter order,
 restores a fresh copy before every run, retains Vim's defaults/plugins/history,
 and validates Python and GCC results. Timing has no CI pass/fail threshold.
 
+[The dispatch experiments](../validation/dispatch-experiments.md) compare fixed
+code-page bounds, unchecked register indices, local state, compact records and
+full nightly tail dispatch on actual guest workloads. None of the small layout
+changes showed a sufficiently balanced benefit, so this round keeps the runtime
+unchanged. The complete tail-call prototype has measurable compute gains and is
+archived for target-device evaluation, without another production backend.
+
 For a physical iPad, Vim itself can record startup stages with
 `vim --startuptime /tmp/vim-startup.log`; after quitting, inspect that file.
 Host Linux throughput and simulator acceptance do not establish device speed.
