@@ -33,13 +33,26 @@ final class WorkspaceTabsTests: XCTestCase {
         state.detach(id,at:CGPoint(x:100,y:120))
         XCTAssertEqual(state.floating,[id]);XCTAssertEqual(state.frames[id]?.origin,CGPoint(x:100,y:120))
     }
-    func testMinimizeRestorePreservesDockedOrFloatingPlacement() {
+    func testMinimizedFloatingWindowReturnsToInactiveTopTab() {
         let a=WorkspaceItemID.terminal(UUID()),b=WorkspaceItemID.terminal(UUID())
         var state=WorkspaceTabs();state.insert(a,as:.tabbed);state.insert(b,as:.floating)
-        state.minimize(a);state.minimize(b);XCTAssertNil(state.selected)
-        state.restore(a);state.restore(b)
-        XCTAssertEqual(state.tabs,[a]);XCTAssertEqual(state.floating,[b]);XCTAssertEqual(state.focused,b)
-        XCTAssertTrue(state.minimized.isEmpty)
+        state.minimize(b)
+        XCTAssertEqual(state.tabs,[a,b]);XCTAssertTrue(state.floating.isEmpty)
+        XCTAssertEqual(state.minimized,[b]);XCTAssertEqual(state.selected,a);XCTAssertEqual(state.focused,a)
+        state.restore(b)
+        XCTAssertEqual(state.tabs,[a,b]);XCTAssertEqual(state.selected,b);XCTAssertEqual(state.focused,b)
+        XCTAssertTrue(state.floating.isEmpty);XCTAssertTrue(state.minimized.isEmpty)
+    }
+    func testAllMinimizedTabsStayDiscoverableWithoutSelectingHiddenContent() {
+        let a=WorkspaceItemID.terminal(UUID()),b=WorkspaceItemID.terminal(UUID())
+        var state=WorkspaceTabs();state.insert(a,as:.tabbed);state.insert(b,as:.minimized)
+        state.minimize(a)
+        XCTAssertNil(state.selected);XCTAssertNil(state.focused)
+        XCTAssertEqual(Set(state.tabs),Set([a,b]))
+        state.select(b);XCTAssertEqual(state.selected,b);XCTAssertEqual(state.focused,b)
+        state.close(b);XCTAssertNil(state.selected);XCTAssertNil(state.focused)
+        XCTAssertEqual(state.tabs,[a])
+        state.restore(a);XCTAssertEqual(state.selected,a)
     }
     func testClosingGraphicsDoesNotCloseOwningTerminalOrOtherSessions() {
         let owner=UUID(),a=WorkspaceItemID.terminal(owner),b=WorkspaceItemID.wayland(owner,1),c=WorkspaceItemID.terminal(UUID())

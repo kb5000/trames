@@ -6,6 +6,16 @@ final class WorkspaceModel: ObservableObject {
     @Published var sessions: [TerminalSession] = []
     @Published private(set) var layout = WorkspaceTabs()
     private var observedModes: [WorkspaceItemID:String] = [:]
+    private var pendingModes: [WorkspaceItemID:String] = [:]
+    /// Stable identity/order across tab, floating and background placement.
+    var items: [WorkspaceItemID] {
+        sessions.flatMap { session in
+            [.terminal(session.id)] + session.waylandWindows.map { .wayland(session.id,$0.id) }
+        }.filter { layout.placement($0) != nil }
+    }
+    func isVisible(_ id: WorkspaceItemID) -> Bool {
+        layout.placement(id) == .floating || layout.selected == id
+    }
     @Published var challenge: HostKeyChallenge?
     @Published var error: String?
     @Published var resetting = false
@@ -68,7 +78,10 @@ final class WorkspaceModel: ObservableObject {
         else if layout.placement(id) == .tabbed { select(id) }
         else { focus(id) }
     }
-    func select(_ id: WorkspaceItemID) { change { $0.select(id) } }
+    func select(_ id: WorkspaceItemID) {
+        if layout.placement(id) == .minimized { restore(id) }
+        else { change { $0.select(id) } }
+    }
     func dock(_ id: WorkspaceItemID, before target: WorkspaceItemID? = nil) {
         change { $0.dock(id,before:target) }; nativeMode(id,"maximized")
     }
@@ -86,17 +99,26 @@ final class WorkspaceModel: ObservableObject {
         else if case .wayland(_,let window)=id { session(for:id)?.waylandCommand(["op":"close","window":window]) }
     }
     private func nativeMode(_ id: WorkspaceItemID, _ mode: String) {
-        if case .wayland(_,let window)=id { session(for:id)?.waylandMode(window,mode) }
+        if case .wayland(_,let window)=id {
+            pendingModes[id]=mode
+            session(for:id)?.waylandMode(window,mode)
+        }
     }
     private func synchronize(_ session: TerminalSession, windows: [LocalWaylandWindow]) {
         let live=Set(windows.map { WorkspaceItemID.wayland(session.id,$0.id) })
         change { next in
             for id in Array(observedModes.keys) where id.session == session.id && !live.contains(id) {
-                next.close(id); observedModes.removeValue(forKey:id)
+                next.close(id); observedModes.removeValue(forKey:id); pendingModes.removeValue(forKey:id)
             }
             for window in windows {
                 let id=WorkspaceItemID.wayland(session.id,window.id)
                 let oldMode=observedModes.updateValue(window.mode,forKey:id)
+                // Ignore snapshots queued before a host placement request.
+                // A matching acknowledgement must not select/focus it again.
+                if let pending=pendingModes[id] {
+                    if pending == window.mode { pendingModes.removeValue(forKey:id) }
+                    continue
+                }
                 let placement:WorkspaceTabs.Placement = window.mode == "maximized" ? .tabbed : window.mode == "minimized" ? .minimized : .floating
                 if next.placement(id) == nil { next.insert(id,as:placement) }
                 else if oldMode != window.mode && next.placement(id) != placement {
@@ -139,6 +161,7 @@ final class WorkspaceModel: ObservableObject {
         session.close(); sessions.removeAll { $0.id == session.id }
         change { $0.closeSession(session.id) }
         observedModes = observedModes.filter { $0.key.session != session.id }
+        pendingModes = pendingModes.filter { $0.key.session != session.id }
     }
     func trust() {
         guard let challenge, let knownHosts else { return }

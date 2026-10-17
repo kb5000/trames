@@ -15,6 +15,9 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     @Published var waylandWindows: [LocalWaylandWindow] = []
     @Published var waylandText: LocalWaylandText?
     private var waylandRevision: UInt64?
+    #if DEBUG
+    var onWaylandCommand: (([String:Any]) -> Void)?
+    #endif
     var local: LocalSession?
     let bridge = BridgeController()
     var ssh: SSHSession?
@@ -72,11 +75,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
                 let count = try local.send(pendingInput)
                 pendingInput.removeFirst(count)
             }
-            let wayland = try local.waylandStatus()
-            if wayland.revision != waylandRevision {
-                waylandRevision = wayland.revision; waylandWindows = wayland.windows; waylandText = wayland.text
-                onWaylandChanged?(wayland.windows)
-            }
+            applyWaylandStatus(try local.waylandStatus())
             let status = try local.status()
             if status != capacity { capacity = status }
             if status.phase != lastPhase {
@@ -87,7 +86,20 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
             }
         } catch { fail(error); timer?.invalidate() }
     }
+    func applyWaylandStatus(_ status: LocalWaylandStatus) {
+        guard status.revision != waylandRevision else { return }
+        waylandRevision=status.revision
+        if waylandWindows.count != status.windows.count
+            || !zip(waylandWindows,status.windows).allSatisfy({ pair in pair.0.hasSameLayout(as:pair.1) }) {
+            waylandWindows=status.windows
+            onWaylandChanged?(status.windows)
+        }
+        if waylandText != status.text { waylandText=status.text }
+    }
     func waylandCommand(_ command: [String:Any]) {
+        #if DEBUG
+        onWaylandCommand?(command)
+        #endif
         do { try local?.waylandCommand(command) } catch { fail(error) }
     }
     func waylandMode(_ window: UInt64, _ mode: String) {

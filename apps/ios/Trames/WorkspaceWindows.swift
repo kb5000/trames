@@ -17,19 +17,17 @@ struct WorkspaceTabLabel: View {
 struct WorkspaceContent: View {
     @ObservedObject var workspace: WorkspaceModel
     let item: WorkspaceItemID
-    let origin: CGPoint
-    let viewport: CGSize
     var body: some View {
         if let session=workspace.session(for:item) {
             if case .terminal = item {
                 SessionView(workspace:workspace,session:session)
-            } else if let window=workspace.window(for:item) {
-                WaylandContent(workspace:workspace,session:session,window:window,contentOrigin:origin,viewport:viewport)
+            } else if case .wayland(_,let window)=item {
+                WaylandContent(workspace:workspace,session:session,windowID:window,visible:workspace.isVisible(item))
             }
         }
     }
 }
-struct WorkspaceFloatingWindow: View {
+struct WorkspaceWindow: View {
     @ObservedObject var workspace: WorkspaceModel
     let item: WorkspaceItemID
     let viewport: CGSize
@@ -38,8 +36,11 @@ struct WorkspaceFloatingWindow: View {
     @State private var dragOrigin: CGPoint?
     @State private var resizeOrigin: CGSize?
     @State private var docking=false
+    private var floating: Bool { workspace.layout.placement(item) == .floating }
+    private var visible: Bool { workspace.isVisible(item) }
     var body: some View {
         VStack(spacing:0) {
+            if floating {
             HStack(spacing:12) {
                 if let session=workspace.session(for:item) {
                     WorkspaceTabLabel(session:session,item:item).lineLimit(1)
@@ -47,7 +48,8 @@ struct WorkspaceFloatingWindow: View {
                         .accessibilityIdentifier("window-title-\(item.token)")
                 }
                 Spacer()
-                Button { workspace.minimize(item) } label: { Image(systemName:"minus") }.accessibilityLabel("最小化")
+                Button { workspace.minimize(item) } label: { Image(systemName:"minus") }.accessibilityLabel("最小化到标签栏")
+                    .accessibilityIdentifier("minimize-\(item.token)")
                 Button { workspace.dock(item) } label: { Image(systemName:"arrow.up.left.and.arrow.down.right") }.accessibilityLabel("停靠为标签页")
                     .accessibilityIdentifier("dock-\(item.token)")
                 Button { workspace.closeItem(item) } label: { Image(systemName:"xmark") }.accessibilityLabel("关闭窗口")
@@ -66,11 +68,13 @@ struct WorkspaceFloatingWindow: View {
                     if headerFrame.contains(value.location) { workspace.dock(item) }
                     docking=false
                 })
-                // Client-side shadows/popups can extend above the content
-                // origin. Host title controls keep drawing and hit-test priority.
+                // Native controls are outside the clipped client viewport.
                 .zIndex(2)
-            WorkspaceContent(workspace:workspace,item:item,origin:CGPoint(x:geometry.origin.x,y:geometry.origin.y+40),viewport:viewport)
+            }
+            WorkspaceContent(workspace:workspace,item:item)
                 .frame(maxWidth:.infinity,maxHeight:.infinity)
+                .clipped()
+            if floating {
             HStack {
                 Spacer()
                 Image(systemName:"arrow.down.right.and.arrow.up.left").frame(width:44,height:28).contentShape(Rectangle())
@@ -81,12 +85,20 @@ struct WorkspaceFloatingWindow: View {
                         geometry.constrain(to:viewport)
                     }.onEnded { _ in resizeOrigin=nil;workspace.saveFrame(item,geometry) })
             }.background(Color(white:0.12))
-        }.frame(width:geometry.size.width,height:geometry.size.height)
-            .background(Color.black.clipShape(RoundedRectangle(cornerRadius:10)))
-            .overlay(RoundedRectangle(cornerRadius:10).stroke(workspace.layout.focused == item ? Color.mint : Color.white.opacity(0.3)))
-            .shadow(radius:12).offset(x:geometry.origin.x,y:geometry.origin.y)
+            }
+        }.frame(width:floating ? geometry.size.width : viewport.width,
+                height:floating ? geometry.size.height : viewport.height)
+            .background(Color.black)
+            .clipShape(RoundedRectangle(cornerRadius:floating ? 10 : 0))
+            .overlay(RoundedRectangle(cornerRadius:floating ? 10 : 0).stroke(floating ? (workspace.layout.focused == item ? Color.mint : Color.white.opacity(0.3)) : .clear))
+            .shadow(radius:floating ? 12 : 0)
+            .offset(x:floating ? geometry.origin.x : 0,y:floating ? geometry.origin.y : 0)
+            .opacity(visible ? 1 : 0).allowsHitTesting(visible).accessibilityHidden(!visible)
             .onAppear { geometry=workspace.layout.frames[item] ?? DisplayWindowGeometry();geometry.constrain(to:viewport) }
             .onChange(of:viewport) { _,_ in geometry.constrain(to:viewport) }
+            .onChange(of:workspace.layout.frames[item]) { _,value in
+                if let value, value != geometry { geometry=value;geometry.constrain(to:viewport) }
+            }
             // Container identifiers propagate to descendants in SwiftUI and
             // replace title/button identifiers. Identify concrete controls only.
     }

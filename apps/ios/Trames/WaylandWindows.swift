@@ -6,7 +6,7 @@ struct WaylandCanvasPane: UIViewRepresentable {
     @ObservedObject var workspace: WorkspaceModel
     @ObservedObject var session: TerminalSession
     let window: LocalWaylandWindow
-    let sceneOrigin: CGPoint
+    let visible: Bool
     private var item: WorkspaceItemID { .wayland(session.id,window.id) }
     func makeUIView(context: Context) -> UIView {
         do {
@@ -19,46 +19,51 @@ struct WaylandCanvasPane: UIViewRepresentable {
     }
     func updateUIView(_ view: UIView, context: Context) {
         guard let canvas=view as? WaylandCanvas else { return }
-        canvas.sceneOrigin=sceneOrigin;canvas.session=session.local;canvas.windowID=window.id
+        canvas.sceneOrigin = .zero;canvas.session=session.local;canvas.windowID=window.id
+        canvas.presentationEnabled=visible
         canvas.sendInput={ [weak session] in session?.waylandCommand($0) }
-        // Pointer/button events choose the actual child/popup surface. Sending
-        // root focus here would dismiss the popup being clicked.
+        // Pointer/button events choose the actual child/popup surface.
         let id=item
         canvas.onFocus={ [weak workspace] in workspace?.focus(id,protocolFocus:false) }
         canvas.textContext=session.waylandText?.window == window.id ? session.waylandText : nil
-        canvas.setKeyboardFocus(workspace.layout.focused == item)
+        canvas.setKeyboardFocus(visible && workspace.layout.focused == item)
     }
 }
-/// Logical resolution follows the actual content area, with no internal title
-/// bar in a docked tab. Popup scene origins stay in surface coordinates.
+private struct WaylandResizeRequest: Hashable {
+    let width: Int
+    let height: Int
+    let mode: String
+    let visible: Bool
+    init(size: CGSize, mode: String, visible: Bool) {
+        width=max(1,min(4096,Int(size.width)))
+        height=max(1,min(4096,Int(size.height)))
+        self.mode=mode;self.visible=visible
+    }
+}
+/// The host content rectangle owns the logical viewport. Old client buffers
+/// never enlarge it while a configure/ack/commit round trip is outstanding.
 struct WaylandContent: View {
     @ObservedObject var workspace: WorkspaceModel
     @ObservedObject var session: TerminalSession
-    let window: LocalWaylandWindow
-    let contentOrigin: CGPoint
-    let viewport: CGSize
-    @State private var resizeTask: Task<Void,Never>?
+    let windowID: UInt64
+    let visible: Bool
     var body: some View {
+        if let window=session.waylandWindows.first(where:{ $0.id == windowID }) {
         GeometryReader { proxy in
-            let b=window.bounds
-            let scene=b.count == 4 ? CGRect(x:CGFloat(b[0]),y:CGFloat(b[1]),width:CGFloat(b[2]),height:CGFloat(b[3])) : CGRect(origin:.zero,size:proxy.size)
-            let visible=scene.intersection(CGRect(x:-contentOrigin.x,y:-contentOrigin.y,width:viewport.width,height:viewport.height))
-            if !visible.isNull && !visible.isEmpty {
-                WaylandCanvasPane(workspace:workspace,session:session,window:window,sceneOrigin:visible.origin)
-                    .frame(width:visible.width,height:visible.height).offset(x:visible.minX,y:visible.minY)
-            }
-            Color.clear.frame(width:0,height:0)
-                .onAppear { resize(proxy.size) }
-                .onChange(of:proxy.size) { _, value in resize(value) }
-        }.onDisappear { resizeTask?.cancel() }
-    }
-    private func resize(_ size: CGSize) {
-        resizeTask?.cancel()
-        let width=max(1,min(4096,Int(size.width))),height=max(1,min(4096,Int(size.height)))
-        guard window.width != width || window.height != height else { return }
-        resizeTask=Task { @MainActor in
-            do { try await Task.sleep(for:.milliseconds(80)) } catch { return }
-            session.waylandCommand(["op":"resize","window":window.id,"width":width,"height":height])
+            let request=WaylandResizeRequest(size:proxy.size,mode:window.mode,visible:visible)
+            WaylandCanvasPane(workspace:workspace,session:session,window:window,visible:visible)
+                .frame(width:proxy.size.width,height:proxy.size.height)
+                .clipped()
+                .task(id:request) {
+                    guard request.visible else { return }
+                    do { try await Task.sleep(for:.milliseconds(40)) } catch { return }
+                    guard !Task.isCancelled else { return }
+                    // Resend after a mode change even if the previous buffer
+                    // already has this size: mode configure can still be queued.
+                    session.waylandCommand(["op":"resize","window":window.id,
+                        "width":request.width,"height":request.height])
+                }
+        }.clipped()
         }
     }
 }

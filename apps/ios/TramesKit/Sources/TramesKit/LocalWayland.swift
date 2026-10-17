@@ -12,6 +12,13 @@ public struct LocalWaylandWindow: Decodable, Identifiable, Sendable, Equatable {
     public let revision: UInt64
     public let mode: String
     public let bounds: [Int32]
+    /// Pixel revisions are consumed directly by the display link, without
+    /// rebuilding the SwiftUI workspace on every rendered guest frame.
+    public func hasSameLayout(as other: Self) -> Bool {
+        id == other.id && connection == other.connection && title == other.title
+            && app_id == other.app_id && width == other.width && height == other.height
+            && mode == other.mode && bounds == other.bounds
+    }
 }
 public struct LocalWaylandText: Decodable, Sendable, Equatable {
     public let version: UInt32

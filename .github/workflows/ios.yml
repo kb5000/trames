@@ -17,6 +17,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - name: Parse Swift sources and validate workspace placement before app builds
+        run: |
+          swiftc -frontend -parse apps/ios/Trames/*.swift apps/ios/TramesTests/*.swift apps/ios/TramesUITests/*.swift
+          bash scripts/test-workspace-tabs.sh
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-10-16

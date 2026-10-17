@@ -33,14 +33,13 @@ struct WorkspaceTabs: Equatable {
     private(set) var tabs: [WorkspaceItemID] = []
     private(set) var floating: [WorkspaceItemID] = []
     private(set) var minimized: [WorkspaceItemID] = []
-    private var previous: [WorkspaceItemID: Placement] = [:]
     var frames: [WorkspaceItemID: DisplayWindowGeometry] = [:]
     private(set) var selected: WorkspaceItemID?
     private(set) var focused: WorkspaceItemID?
     func placement(_ id: WorkspaceItemID) -> Placement? {
+        if minimized.contains(id) { return .minimized }
         if tabs.contains(id) { return .tabbed }
         if floating.contains(id) { return .floating }
-        if minimized.contains(id) { return .minimized }
         return nil
     }
     mutating func insert(_ id: WorkspaceItemID, as placement: Placement) {
@@ -48,11 +47,12 @@ struct WorkspaceTabs: Equatable {
         switch placement {
         case .tabbed: tabs.append(id); select(id)
         case .floating: floating.append(id); focus(id)
-        case .minimized: minimized.append(id)
+        case .minimized: tabs.append(id); minimized.append(id)
         }
     }
     mutating func select(_ id: WorkspaceItemID) {
         guard tabs.contains(id) else { return }
+        minimized.removeAll { $0 == id }
         selected = id; focus(id)
     }
     mutating func focus(_ id: WorkspaceItemID) {
@@ -75,28 +75,32 @@ struct WorkspaceTabs: Equatable {
         if let origin { var frame = frames[id] ?? DisplayWindowGeometry(); frame.origin = origin; frames[id] = frame }
         focus(id)
     }
+    /// Minimization docks an inactive tab. The tab itself is always the restore
+    /// target, including windows minimized by an xdg_toplevel request.
     mutating func minimize(_ id: WorkspaceItemID) {
         guard let place = placement(id), place != .minimized else { return }
-        previous[id] = place
-        removePlacement(id); minimized.append(id)
-        if focused == id { focused = selected ?? floating.last }
+        let wasFocused = focused == id
+        removePlacement(id); tabs.append(id); minimized.append(id)
+        if wasFocused { focused = selected ?? floating.last }
     }
     mutating func restore(_ id: WorkspaceItemID) {
         guard minimized.contains(id) else { return }
-        let place = previous.removeValue(forKey: id) ?? .floating
-        if place == .tabbed { dock(id) } else { detach(id) }
+        select(id)
     }
     mutating func close(_ id: WorkspaceItemID) {
-        removePlacement(id); frames.removeValue(forKey: id); previous.removeValue(forKey: id)
+        removePlacement(id); frames.removeValue(forKey: id)
         if focused == id { focused = selected ?? floating.last }
     }
     mutating func closeSession(_ session: UUID) {
-        for id in tabs + floating + minimized where id.session == session { close(id) }
+        for id in tabs + floating where id.session == session { close(id) }
     }
     private mutating func removePlacement(_ id: WorkspaceItemID) {
         if let index = tabs.firstIndex(of: id) {
             tabs.remove(at: index)
-            if selected == id { selected = tabs.isEmpty ? nil : tabs[min(index, tabs.count - 1)] }
+            if selected == id {
+                let available = tabs.filter { !minimized.contains($0) }
+                selected = available.isEmpty ? nil : available[min(index, available.count - 1)]
+            }
         }
         floating.removeAll { $0 == id }; minimized.removeAll { $0 == id }
     }

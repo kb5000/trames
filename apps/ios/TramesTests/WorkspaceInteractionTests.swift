@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import XCTest
 import UIKit
+import SwiftUI
 import TramesKit
 @testable import Trames
 
@@ -52,5 +53,94 @@ final class WorkspaceInteractionTests: XCTestCase {
         session.onWaylandChanged?(try snapshot("floating"))
         session.onWaylandChanged?(try snapshot("maximized"))
         XCTAssertEqual(model.layout.tabs,[terminal,graphic]);XCTAssertEqual(model.layout.selected,terminal);XCTAssertEqual(model.layout.focused,terminal)
+    }
+    func testFrameRevisionsDoNotRebuildTheWorkspaceLayout() throws {
+        let session=TerminalSession(title:"Alpine",isLocal:true)
+        defer { session.terminal.updateUiClosed() }
+        var changes=0;session.onWaylandChanged={ _ in changes += 1 }
+        func status(_ revision: Int, width: Int = 400) throws -> LocalWaylandStatus {
+            try JSONDecoder().decode(LocalWaylandStatus.self,from:Data("""
+            {"revision":\(revision),"text":null,"windows":[{"id":7,"connection":1,"title":"cube","app_id":"cube","width":\(width),"height":300,"revision":\(revision),"mode":"floating","bounds":[0,0,\(width),300]}]}
+            """.utf8))
+        }
+        for revision in 1...100 { session.applyWaylandStatus(try status(revision)) }
+        XCTAssertEqual(changes,1)
+        session.applyWaylandStatus(try status(101,width:500))
+        XCTAssertEqual(changes,2);XCTAssertEqual(session.waylandWindows[0].width,500)
+    }
+    func testTerminalKeepsTheSameUIKitHostAcrossDockDetachAndBackgroundTabs() async throws {
+        let previous=UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).first { $0.isKeyWindow }
+        let window=UIWindow(windowScene:try XCTUnwrap(previous?.windowScene))
+        let model=WorkspaceModel(prepareEnvironment:false)
+        let session=TerminalSession(title:"Alpine",isLocal:true),other=TerminalSession(title:"SSH")
+        defer {
+            session.terminal.updateUiClosed();other.terminal.updateUiClosed()
+            window.isHidden=true;previous?.makeKeyAndVisible()
+        }
+        model.add(session);model.add(other)
+        let id=WorkspaceItemID.terminal(session.id)
+        model.select(id)
+        window.rootViewController=UIHostingController(rootView:WorkspaceView(workspace:model))
+        window.makeKeyAndVisible()
+        try await Task.sleep(for:.milliseconds(250))
+        let parent=try XCTUnwrap(session.terminal.superview)
+        for _ in 0..<5 {
+            model.detach(id);try await Task.sleep(for:.milliseconds(50))
+            XCTAssertTrue(session.terminal.superview === parent)
+            model.dock(id);try await Task.sleep(for:.milliseconds(50))
+            XCTAssertTrue(session.terminal.superview === parent)
+            model.select(.terminal(other.id));try await Task.sleep(for:.milliseconds(50))
+            XCTAssertTrue(session.terminal.superview === parent)
+            model.select(id)
+        }
+        session.terminal.feed(text:"terminal survived\r\n")
+        XCTAssertTrue(session.terminal.window === window)
+        XCTAssertGreaterThan(session.terminal.getTerminal().cols,1)
+        XCTAssertGreaterThan(session.terminal.getTerminal().rows,1)
+    }
+    func testCanvasFollowsHostContentAndFinalResizeRequest() async throws {
+        let previous=UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).first { $0.isKeyWindow }
+        let window=UIWindow(windowScene:try XCTUnwrap(previous?.windowScene))
+        let model=WorkspaceModel(prepareEnvironment:false),session=TerminalSession(title:"Alpine",isLocal:true)
+        defer { session.terminal.updateUiClosed();window.isHidden=true;previous?.makeKeyAndVisible() }
+        model.add(session)
+        let status=try JSONDecoder().decode(LocalWaylandStatus.self,from:Data("""
+        {"revision":1,"text":null,"windows":[{"id":7,"connection":1,"title":"cube","app_id":"cube","width":1024,"height":768,"revision":1,"mode":"floating","bounds":[-32,-32,1088,832]}]}
+        """.utf8))
+        session.applyWaylandStatus(status)
+        var sizes:[CGSize]=[]
+        session.onWaylandCommand={ command in
+            if command["op"] as? String == "resize",let w=command["width"] as? Int,let h=command["height"] as? Int {
+                sizes.append(CGSize(width:CGFloat(w),height:CGFloat(h)))
+            }
+        }
+        window.rootViewController=UIHostingController(rootView:WorkspaceView(workspace:model))
+        window.makeKeyAndVisible()
+        try await Task.sleep(for:.milliseconds(250))
+        func findCanvas(_ view:UIView)->WaylandCanvas? {
+            if let canvas=view as? WaylandCanvas { return canvas }
+            return view.subviews.lazy.compactMap { findCanvas($0) }.first
+        }
+        let canvas=try XCTUnwrap(findCanvas(try XCTUnwrap(window.rootViewController?.view)))
+        let id=WorkspaceItemID.wayland(session.id,7)
+        model.saveFrame(id,DisplayWindowGeometry(origin:CGPoint(x:20,y:20),size:CGSize(width:400,height:300)))
+        try await Task.sleep(for:.milliseconds(150))
+        XCTAssertEqual(canvas.bounds.width,400,accuracy:1)
+        XCTAssertEqual(canvas.bounds.height,232,accuracy:1)
+        XCTAssertEqual(sizes.last?.width,400);XCTAssertEqual(sizes.last?.height,232)
+        for width in [350,320,280] {
+            model.saveFrame(id,DisplayWindowGeometry(origin:CGPoint(x:20,y:20),size:CGSize(width:CGFloat(width),height:260)))
+            try await Task.sleep(for:.milliseconds(10))
+        }
+        try await Task.sleep(for:.milliseconds(150))
+        XCTAssertEqual(canvas.bounds.width,280,accuracy:1);XCTAssertEqual(sizes.last?.width,280)
+        XCTAssertEqual(canvas.bounds.height,192,accuracy:1);XCTAssertEqual(sizes.last?.height,192)
+        model.dock(id);try await Task.sleep(for:.milliseconds(150))
+        XCTAssertTrue(findCanvas(try XCTUnwrap(window.rootViewController?.view)) === canvas)
+        XCTAssertGreaterThan(canvas.bounds.width,400)
+        model.select(.terminal(session.id));try await Task.sleep(for:.milliseconds(50))
+        XCTAssertFalse(canvas.presentationEnabled)
+        model.select(id);try await Task.sleep(for:.milliseconds(50))
+        XCTAssertTrue(canvas.presentationEnabled)
     }
 }

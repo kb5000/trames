@@ -11,6 +11,7 @@ final class LocalWaylandTests: XCTestCase {
         let image=XCTAttachment(data:result.png,uniformTypeIdentifier:"public.png");image.name="original-vkcube-native-metal-wayland";image.lifetime = .keepAlways;add(image)
         for stage in ["info","windows","shm","editor","cube","vkmark"] { XCTAssertTrue(result.text.contains("\r\nWAYLAND_RESULT:\(stage):0\r\n"),result.text) }
         XCTAssertTrue(result.resized);XCTAssertTrue(result.textConfirmed)
+        XCTAssertGreaterThan(result.presented,0,"No actual Metal drawable presentation was observed")
         XCTAssertEqual(result.copiedBytes,0,"SHM import unexpectedly copied pixels")
         XCTAssertFalse(result.text.contains("llvmpipe"),result.text)
     }

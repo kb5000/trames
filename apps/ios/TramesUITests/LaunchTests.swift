@@ -27,6 +27,15 @@ final class LaunchTests: XCTestCase {
         alpine.tap();XCTAssertTrue(alpine.label.contains("Alpine"))
         graphic.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.5)).press(forDuration:0.15,thenDragTo:app.coordinate(withNormalizedOffset:CGVector(dx:0.55,dy:0.5)))
         XCTAssertTrue(title.waitForExistence(timeout:5),app.debugDescription)
+        element("minimize-wayland-").tap()
+        XCTAssertTrue(graphic.waitForExistence(timeout:5),app.debugDescription)
+        XCTAssertTrue(alpine.isHittable)
+        XCTAssertEqual(graphic.frame.midY,alpine.frame.midY,accuracy:5)
+        graphic.tap()
+        XCTAssertFalse(element("window-title-wayland-").exists)
+        XCTAssertFalse(element("minimize-wayland-").exists)
+        graphic.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.5)).press(forDuration:0.15,thenDragTo:app.coordinate(withNormalizedOffset:CGVector(dx:0.55,dy:0.5)))
+        XCTAssertTrue(title.waitForExistence(timeout:5))
         let dock=element("dock-wayland-");dock.tap();XCTAssertTrue(graphic.waitForExistence(timeout:5))
         alpine.tap();XCTAssertTrue(alpine.label.contains("Alpine"))
         alpine.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.5)).press(forDuration:0.15,thenDragTo:app.coordinate(withNormalizedOffset:CGVector(dx:0.3,dy:0.6)))
@@ -50,6 +59,17 @@ final class LaunchTests: XCTestCase {
         let app=launchApp()
         let ready=XCTNSPredicateExpectation(predicate:NSPredicate(format:"label == %@","Alpine · 本地"),object:app.staticTexts["session-state"])
         XCTAssertEqual(XCTWaiter.wait(for:[ready],timeout:120),.completed)
+        // Exercise the actual running VM/PTY, rather than only the no-VM
+        // workspace gesture fixture, then execute a command through that PTY.
+        let terminalTab=app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","tab-terminal-")).firstMatch
+        for _ in 0..<2 {
+            terminalTab.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.5)).press(forDuration:0.15,
+                thenDragTo:app.coordinate(withNormalizedOffset:CGVector(dx:0.3,dy:0.6)))
+            let dock=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","dock-terminal-")).firstMatch
+            XCTAssertTrue(dock.waitForExistence(timeout:5),app.debugDescription)
+            dock.tap()
+            XCTAssertTrue(terminalTab.waitForExistence(timeout:5))
+        }
         app.buttons["terminal-keyboard"].tap()
         app.typeText("trames bridge '{\"version\":1,\"id\":1,\"method\":\"device.info\",\"params\":{}}'\n")
         XCTAssertTrue(app.buttons["bridge-deny"].waitForExistence(timeout:20))

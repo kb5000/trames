@@ -48,7 +48,6 @@ struct WorkspaceView: View {
                                         .onEnded { value in finishTabDrag(item,at:value.location) })
                                     .contextMenu {
                                         Button("移到浮动窗口",systemImage:"rectangle.on.rectangle") { workspace.detach(item) }
-                                        Button("最小化",systemImage:"minus") { workspace.minimize(item) }
                                         Button("关闭",role:.destructive) { workspace.closeItem(item) }
                                     }
                             }
@@ -62,11 +61,6 @@ struct WorkspaceView: View {
                     Button("本地 Alpine", systemImage: "terminal") { workspace.openLocal() }
                     Button("SSH 连接", systemImage: "network") { sshSheet = true }
                     Button("Files / SFTP", systemImage: "folder") { filesSheet = true }
-                    ForEach(workspace.layout.minimized,id:\.self) { item in
-                        if let session=workspace.session(for:item) {
-                            Button { workspace.restore(item) } label: { WorkspaceTabLabel(session:session,item:item) }
-                        }
-                    }
                     Button("设置", systemImage: "gear") { settingsSheet = true }
                     Button("原生 CoreMark", systemImage: "speedometer") { coreMarkSheet = true }
                 }
@@ -76,15 +70,17 @@ struct WorkspaceView: View {
             }.padding(.horizontal,12).padding(.vertical,6).workspaceFrame("header")
             GeometryReader { proxy in
                 ZStack(alignment:.topLeading) {
-                    if let selected=workspace.layout.selected {
-                        WorkspaceContent(workspace:workspace,item:selected,origin:.zero,viewport:proxy.size).id(selected)
-                    } else {
-                        ContentUnavailableView("打开一个终端",systemImage:"terminal",description:Text("从右上角添加本地 Alpine 或 SSH 会话。"))
+                    if workspace.layout.selected == nil && workspace.layout.floating.isEmpty {
+                        ContentUnavailableView("打开一个终端",systemImage:"terminal",description:Text("从顶部标签栏恢复窗口，或添加本地 Alpine / SSH 会话。"))
                     }
-                    ForEach(workspace.layout.floating,id:\.self) { item in
-                        WorkspaceFloatingWindow(workspace:workspace,item:item,viewport:proxy.size,
+                    // A terminal/Metal view has exactly one SwiftUI host for its
+                    // entire lifetime. Docking changes geometry, never parents.
+                    ForEach(workspace.items,id:\.self) { item in
+                        WorkspaceWindow(workspace:workspace,item:item,viewport:proxy.size,
                             headerFrame:frames["header"] ?? .zero)
-                            .zIndex(Double((workspace.layout.floating.firstIndex(of:item) ?? 0)+1))
+                            .zIndex(workspace.layout.placement(item) == .floating
+                                ? Double((workspace.layout.floating.firstIndex(of:item) ?? 0)+2)
+                                : workspace.layout.selected == item ? 1 : 0)
                     }
                 }.frame(width:proxy.size.width,height:proxy.size.height,alignment:.topLeading)
             }.workspaceFrame("body")

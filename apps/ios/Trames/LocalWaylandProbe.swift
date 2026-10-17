@@ -7,6 +7,7 @@ import TramesKit
 struct WaylandProbeResult {
     let text: String
     let png: Data
+    let presented: UInt64
     let copiedBytes: UInt64
     let resized: Bool
     let textConfirmed: Bool
@@ -114,7 +115,7 @@ enum LocalWaylandProbe {
         var cubeResized=false, textConfirmed=false
         for (stage,program) in [("info","wayland-info"),("windows","/tmp/wayland-client 1 hold"),("shm","weston-simple-shm"),("editor","weston-editor"),("cube","vkcube --wsi wayland --c 30"),("vkmark","vkmark --winsys wayland --size 320x240 -b clear:duration=0.1 -b texture:anisotropy=16:duration=0.1 -b shading:shading=phong:duration=0.1")] {
             print("Wayland acceptance: starting \(stage) at \(Date().timeIntervalSince(began))s")
-            let start=Date(), baseline=canvas.rendered
+            let start=Date(), baseline=canvas.rendered, presentationBaseline=canvas.presented
             var focused=false, resized=false, closed=false
             var currentID:UInt64?
             var editorStep=0
@@ -179,10 +180,11 @@ enum LocalWaylandProbe {
                 if Date().timeIntervalSince(start)>180 { throw TramesError.message("Wayland \(stage) timed out (window=\(String(describing:currentID)), frames=\(canvas.rendered-baseline)): \(text.suffix(4096))") }
                 try await Task.sleep(for:.milliseconds(10))
             }
-            if stage == "vkmark" && (!text.contains("vkmark Score") || text.contains("Failed with exception") || canvas.rendered == baseline) {
+            if stage == "vkmark" && (!text.contains("vkmark Score") || text.contains("Failed with exception") || canvas.presented == presentationBaseline) {
                 throw TramesError.message("Original vkmark scene failed: \(text.suffix(16384))")
             }
-            print("Wayland acceptance: \(stage) passed; frames=\(canvas.rendered-baseline), IME=\(textConfirmed)")
+            print("Wayland acceptance: \(stage) passed; submitted=\(canvas.rendered-baseline), presented=\(canvas.presented-presentationBaseline), IME=\(textConfirmed)")
+            text += "\r\nWAYLAND_PRESENTATION:\(stage):submitted=\(canvas.rendered-baseline):presented=\(canvas.presented-presentationBaseline)\r\n"
             while !(try session.waylandStatus()).windows.isEmpty {
                 if Date().timeIntervalSince(start)>185 { throw TramesError.message("Wayland client resources were not reclaimed") }
                 try await Task.sleep(for:.milliseconds(10))
@@ -196,7 +198,7 @@ enum LocalWaylandProbe {
             for at in stride(from:0,to:p.count,by:4) { colors.insert(UInt32(p[at]) | UInt32(p[at+1])<<8 | UInt32(p[at+2])<<16) }
         }
         guard colors.count>64, cubeResized, textConfirmed else { throw TramesError.message("Wayland acceptance incomplete: colors=\(colors.count), resize=\(cubeResized), IME=\(textConfirmed)") }
-        return WaylandProbeResult(text:text,png:try capture.png(),copiedBytes:canvas.copiedBytes+second.copiedBytes,resized:cubeResized,textConfirmed:textConfirmed)
+        return WaylandProbeResult(text:text,png:try capture.png(),presented:canvas.presented,copiedBytes:canvas.copiedBytes+second.copiedBytes,resized:cubeResized,textConfirmed:textConfirmed)
     }
 }
 #endif

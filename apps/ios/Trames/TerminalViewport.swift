@@ -6,6 +6,7 @@ import SwiftTerm
 final class TerminalViewport: TerminalView {
     var onFocusRequested: (() -> Void)?
     private var wantsKeyboardFocus = false
+    private var changingFocus = false
     func setKeyboardFocus(_ value: Bool) {
         guard wantsKeyboardFocus != value else { return }
         wantsKeyboardFocus = value
@@ -13,12 +14,17 @@ final class TerminalViewport: TerminalView {
         else if !value && isFirstResponder { resignFirstResponder() }
     }
     override func becomeFirstResponder() -> Bool {
-        onFocusRequested?()
-        return super.becomeFirstResponder()
+        // UIKit can reenter while updating the keyboard during a resize.
+        guard !isFirstResponder, !changingFocus else { return isFirstResponder }
+        changingFocus = true
+        defer { changingFocus = false }
+        let became = super.becomeFirstResponder()
+        if became { onFocusRequested?() }
+        return became
     }
     override func didMoveToWindow() {
         super.didMoveToWindow()
-        if window != nil && wantsKeyboardFocus { _ = becomeFirstResponder() }
+        if window != nil && wantsKeyboardFocus && !isFirstResponder { _ = becomeFirstResponder() }
     }
 
     override init(frame: CGRect, font: UIFont?) {
