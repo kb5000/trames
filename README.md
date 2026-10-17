@@ -1,5 +1,7 @@
 # Trames
 
+[Trames 1.0.0（build 26）](https://github.com/kb5000/trames/releases/tag/v1.0.0) · [下载 unsigned IPA](https://github.com/kb5000/trames/releases/download/v1.0.0/Trames-1.0.0-build26-unsigned.ipa)。点击 **+ → 本地 Alpine 终端** 可创建多个独立终端，支持浮动、调整大小、最小化、停靠和关闭；共享同一 Linux 的文件、进程、网络及软件，工作目录、环境变量和终端尺寸独立。关闭首个终端或全部关闭后再打开，仍使用同一运行环境。包含此前 Wayland／Vulkan、GTK 剪贴板／输入、粘贴权限连贴、窗口／PTY 尺寸及 Files 修复。新增多终端生产回归与 iPad 模拟器验收通过，复用不受影响的成功检查。[发行和验证记录](docs/validation/release-1.0.md)。使用 Sideloadly 签名安装；[只读 rootfs File Provider](docs/guides/rootfs-files.md) 真机激活仍待正式 App Group 签名。
+
 0.17.0 加入[宿主原生 Wayland](docs/architecture/wayland.md)：终端与图形应用共用顶部标签栏，支持拖出浮窗、停靠、调整分辨率及 UIKit 输入法。旧“显示窗口”菜单与固定显示器界面已移除。原版 vkmark 的 13 种场景通过本地功能验收；窗口手势、原版 Weston、vkcube、vkmark 与 Metal 显示通过 **33 项 Apple 模拟器验收**，零失败或跳过。[验证记录](docs/validation/wayland-workspace-vkmark.md)、[使用说明](docs/guides/wayland.md)、[0.17.0/build 19 发行记录](docs/validation/release-0.17.md)，对应 [PR #26](https://github.com/kb5000/trames/pull/26)。
 
 本轮开发：Linux 的总内存/单进程预算已可在 iPad 设置与 CLI 中配置，
@@ -10,9 +12,9 @@
 `fs.watch` 验证。[code-server 开发验证](docs/guides/code-server.md)继续验收
 编辑和终端，尚未作为 iPad 安装功能发布。
 
-面向 iPadOS 的终端优先开发环境：原生 SSH，加上运行未修改 AArch64 Linux 用户态程序的兼容运行时。使用普通开发者签名，架构不依赖越狱、JIT 权限、私有 API 或硬件虚拟化。
+面向 iPadOS 的终端与 Wayland 窗口开发环境，运行未修改的 AArch64 Linux 用户态程序。使用普通开发者签名，架构不依赖越狱、JIT 权限、私有 API 或硬件虚拟化。
 
-**当前交付：M0–M5 软件实现；完整 iPad 真机验收待完成。** `trames-run` 执行实际静态／动态 AArch64 ELF，支持 32/64 位标量及选定 SIMD 浮点、虚拟进程、管道、信号和一个虚拟 PTY。交互式 BusyBox `ash` 已在内存和磁盘两种后端验证。Linux CLI 默认保存文件到磁盘，新存储目录的文件预算为 16 GiB。IPv4/IPv6 TCP/UDP、真实 musl DNS，以及具有独立 IP 和回环地址的用户态网络栈已验证；Alpine 3.22.6、动态 musl、经过证书和包签名验证的 HTTPS apk update/add，以及安装后 tree 执行已验证。iPad App、原生 SSH/SFTP、Files 授权和 Bridge 已实现并通过软件验证。
+**当前交付：iPad 本地 AArch64 Linux、多终端及原生 Wayland／Vulkan 窗口工作区；兼容性以已实现范围和验证记录为准，完整 iPad 真机矩阵仍待补齐。** `trames-run` 执行实际静态／动态 AArch64 ELF，支持 32/64 位标量及选定 SIMD 浮点、虚拟进程、管道、信号和一个虚拟 PTY。交互式 BusyBox `ash` 已在内存和磁盘两种后端验证。Linux CLI 默认保存文件到磁盘，新存储目录的文件预算为 16 GiB。IPv4/IPv6 TCP/UDP、真实 musl DNS，以及具有独立 IP 和回环地址的用户态网络栈已验证；Alpine 3.22.6、动态 musl、经过证书和包签名验证的 HTTPS apk update/add，以及安装后 tree 执行已验证。iPad App、Files 授权和 Bridge 已实现并通过软件验证；SSH/SFTP 保留为独立可选库，当前 App 专注本地 Linux。
 
 0.12.0/build 13 加入[宿主多核执行](docs/architecture/multicore.md)：`--cpus auto|1..32` 控制虚拟 CPU 数，默认自动选择。真实 musl pthread 和 Node.js Worker 可并行执行；ARM 原子、独占访问、acquire/release 和屏障已有同步实现。内核及 NativeCall 初期仍集中处理。[验证和跑分](docs/validation/multicore.md)记录了收益、单核开销和限制；[下载多核 IPA 与安装说明](docs/validation/release-0.12.md)。
 

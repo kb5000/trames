@@ -49,7 +49,9 @@ xcodebuild -quiet -project apps/ios/Trames.xcodeproj -scheme Trames -configurati
   CODE_SIGNING_ALLOWED=NO \
   TRAMES_RUST_LIB_DIR="$TRAMES_RUST_LIB_DIR" -skipPackagePluginValidation build
 
-app_binary="apps/ios/build/$platform/Build/Products/$configuration-$sdk/Trames.app/Trames"
+app_bundle="apps/ios/build/$platform/Build/Products/$configuration-$sdk/Trames.app"
+python3 scripts/finalize-ios-app.py "$app_bundle"
+app_binary="$app_bundle/Trames"
 if otool -L "$app_binary" | grep -F 'libtrames_ffi.dylib'; then
   echo 'The app must link the Rust static archive.' >&2
   exit 1

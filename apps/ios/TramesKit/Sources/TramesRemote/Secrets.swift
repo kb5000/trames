@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Foundation
+import TramesKit
 #if canImport(Security)
 import Security
 public enum Secrets {

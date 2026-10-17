@@ -46,7 +46,7 @@ number,name,status,dispatch_source,probe_return,notes,baseline_status
 44,fstatfs,implemented_subset,crates/trames-linux/src/state.rs:679,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 45,truncate,implemented_subset,crates/trames-linux/src/state.rs:690,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 46,ftruncate,implemented_subset,crates/trames-linux/src/state.rs:695,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
-47,fallocate,implemented_subset,crates/trames-linux/src/state.rs:699,,"Mode-zero fallocate reserves guest file quota and grows regular/memfd files while preserving bytes and file offset. Enforces writable descriptors, signed range validation, seals and storage limits; KEEP_SIZE, hole punching and physical host block reservation are unsupported.",missing
+47,fallocate,implemented_subset,crates/trames-linux/src/state.rs:699,,Mode-zero fallocate reserves quota and grows regular/memfd files; memfd KEEP_SIZE reserves ranges without changing EOF. Sparse ftruncate has a separate 2 GiB logical bound; only mapped/written/reserved shared ranges count against the 128 MiB working-set quota. Guest hole punching and host physical allocation guarantees remain unsupported. Verified by targeted VFS tests; the full syscall probe was not rerun.,missing
 48,faccessat,implemented_subset,crates/trames-linux/src/state.rs:988,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 49,chdir,implemented_subset,crates/trames-linux/src/state.rs:877,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 50,fchdir,implemented_subset,crates/trames-linux/src/state.rs:873,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
@@ -118,7 +118,7 @@ number,name,status,dispatch_source,probe_return,notes,baseline_status
 116,syslog,implemented_subset,crates/trames-linux/src/state.rs:593,,"Session-scoped bounded runtime log; privileged READ/READ_ALL/READ_CLEAR/CLEAR and buffer size queries, independent /dev/kmsg cursors. No host kernel log or console control.",missing
 117,ptrace,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 118,sched_setparam,implemented_subset,crates/trames-core/src/process.rs:1505,,"Virtual SCHED_OTHER parameter set; priority must be zero, target lifetime and owner permissions checked.",missing
-119,sched_setscheduler,implemented_subset,crates/trames-core/src/process.rs:1505,,SCHED_OTHER only; realtime and other scheduling policies explicitly unsupported.,missing
+119,sched_setscheduler,implemented_subset,crates/trames-core/src/process.rs,,SCHED_OTHER/BATCH/IDLE metadata; zero static priority; real-time policies remain unsupported. Host worker priorities are unchanged. Verified by targeted kernel unit tests; the full syscall probe was not rerun.,missing
 120,sched_getscheduler,implemented_subset,crates/trames-core/src/process.rs:1505,,Query current virtual SCHED_OTHER policy and validate target task.,missing
 121,sched_getparam,implemented_subset,crates/trames-core/src/process.rs:1505,,Return virtual sched_priority zero with output preflight.,missing
 122,sched_setaffinity,implemented_subset,crates/trames-core/src/process.rs:1505,,"Per-task virtual CPU affinity, intersected with 1..32 configured CPUs and enforced by dispatch; reject empty effective masks and check owner/target permissions.",missing
@@ -139,8 +139,8 @@ number,name,status,dispatch_source,probe_return,notes,baseline_status
 137,rt_sigtimedwait,implemented_subset,crates/trames-core/src/process.rs:1909,,"rt_sigtimedwait consumes private then shared queues with Linux signal priority, sender namespace translation and UID, timeout and interruption.",implemented_subset
 138,rt_sigqueueinfo,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 139,rt_sigreturn,implemented_subset,crates/trames-core/src/process.rs:2042,,Checked virtual signal frame; no alternate-stack implementation.,implemented_subset
-140,setpriority,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
-141,getpriority,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
+140,setpriority,implemented_subset,crates/trames-core/src/process_scheduling.rs,,"Virtual per-task nice, process/group/user selectors, clamped -20..19; ownership and SYS_NICE checks; RLIMIT_NICE raising not yet supported. Verified by targeted kernel unit tests; the full syscall probe was not rerun.",missing
+141,getpriority,implemented_subset,crates/trames-core/src/process_scheduling.rs,,Virtual process/group/user nice query; raw Linux return is 20 minus nice; namespace-visible targets only. Verified by targeted kernel unit tests; the full syscall probe was not rerun.,missing
 142,reboot,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 143,setregid,implemented_subset,crates/trames-linux/src/state.rs:1155,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
 144,setgid,implemented_subset,crates/trames-linux/src/state.rs:1151,,"Virtual userspace implementation; bounded runtime semantics, not full Linux conformance.",implemented_subset
@@ -235,7 +235,7 @@ number,name,status,dispatch_source,probe_return,notes,baseline_status
 233,madvise,implemented_subset,crates/trames-linux/src/state.rs:1297,,"Selected memory access/huge-page/dump hints and real private-page DONTNEED discard. No DONTFORK, FREE, REMOVE or paging model.",missing
 234,remap_file_pages,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 235,mbind,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
-236,get_mempolicy,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
+236,get_mempolicy,implemented_subset,crates/trames-core/src/process_scheduling.rs,,Single NUMA node 0; MPOL_DEFAULT and allowed-node/address queries with guest pointer validation; no non-default NUMA policy. Verified by targeted kernel unit tests; the full syscall probe was not rerun.,missing
 237,set_mempolicy,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 238,migrate_pages,missing,,-38,No dispatcher entry; returns ENOSYS.,missing
 239,move_pages,missing,,-38,No dispatcher entry; returns ENOSYS.,missing

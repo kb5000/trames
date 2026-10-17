@@ -1,14 +1,116 @@
 name: Linux runtime
 on:
   push:
+    branches: [main]
+    paths-ignore: ['apps/ios/**', 'docs/**', '.github/workflows/ios.yml', 'scripts/ios-ci-scope.py', '.github/workflows/linux.yml']
   pull_request:
+    paths-ignore: ['apps/ios/**', 'docs/**', '.github/workflows/ios.yml', 'scripts/ios-ci-scope.py', '.github/workflows/linux.yml']
 permissions:
   contents: read
+  actions: read
 defaults:
   run:
     shell: bash
 jobs:
+  scope:
+    runs-on: ubuntu-24.04
+    outputs:
+      frontend_only: ${{ steps.scope.outputs.frontend_only }}
+      targeted: ${{ steps.scope.outputs.targeted }}
+      skip_native: ${{ steps.scope.outputs.skip_linux_native }}
+      skip_modules: ${{ steps.scope.outputs.skip_linux_modules }}
+      native_scope: ${{ steps.scope.outputs.native_scope }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - id: scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TRAMES_FULL_CHECK: 'false'
+          TRAMES_VALIDATION_WORKFLOW: linux.yml
+          TRAMES_NEEDS_GUEST_ARTIFACTS: 'false'
+        run: python3 scripts/ios-ci-scope.py
+  targeted-runtime:
+    needs: scope
+    if: needs.scope.outputs.targeted == 'true' && needs.scope.outputs.skip_native != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+          components: rustfmt, clippy
+      - name: Check affected modules
+        if: needs.scope.outputs.skip_modules != 'true'
+        run: |
+          cargo fmt --all --check
+          if [[ '${{ needs.scope.outputs.native_scope }}' == wayland-input ]]; then
+            cargo clippy -p trames-wayland --all-targets --locked -- -D warnings
+            cargo test -p trames-wayland --lib nested_popup_unmap --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == wayland-clipboard ]]; then
+            cargo clippy -p trames-wayland --all-targets --locked -- -D warnings
+            cargo test -p trames-wayland --lib clipboard_permission --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == host-terminals ]]; then
+            cargo clippy -p trames-vfs -p trames-core -p trames-ffi --all-targets --locked -- -D warnings
+            cargo test -p trames-vfs -p trames-core -p trames-ffi --lib --locked
+          else
+            cargo clippy -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --all-targets --locked -- -D warnings
+            cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --lib --locked
+          fi
+      - name: Exercise original GTK3 and mousepad, including clipboard FD transfers
+        if: needs.scope.outputs.skip_modules != 'true' && needs.scope.outputs.native_scope != 'host-terminals'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --yes --no-install-recommends libgtk-3-0 mousepad fonts-dejavu-core
+          if [[ '${{ needs.scope.outputs.native_scope }}' == wayland-input ]]; then
+            cargo test -p trames-wayland --test gtk_client original_gtk_context_menu_copy_keeps_selection_and_keyboard_focus --locked -- --ignored --nocapture
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == wayland-clipboard ]]; then
+            cargo test -p trames-wayland --test gtk_client host_paste_permission_wait --locked -- --ignored --nocapture
+          else
+            cargo test -p trames-wayland --test gtk_client --locked -- --ignored --nocapture
+          fi
+      - name: Exercise original signed ARM64 foot over the guest Wayland ABI
+        if: needs.scope.outputs.native_scope != 'wayland-input' && needs.scope.outputs.native_scope != 'wayland-clipboard' && needs.scope.outputs.native_scope != 'host-terminals'
+        timeout-minutes: 10
+        env:
+          TRAMES_FOOT_STORE: ${{ github.workspace }}/target/foot-acceptance/store
+          TRAMES_FOOT_REPOSITORY: ${{ github.workspace }}/target/foot-acceptance/repository
+          TRAMES_FOOT_ROOTFS: ${{ github.workspace }}/target/foot-acceptance/rootfs.tar.gz
+          TRAMES_FFI_LIB: ${{ github.workspace }}/target/release/libtrames_ffi.so
+          TRAMES_FOOT_LOG: ${{ github.workspace }}/target/foot-acceptance/foot.log
+        run: |
+          python3 - <<'PY'
+          import importlib.util,pathlib,urllib.request
+          root=pathlib.Path('target/foot-acceptance');root.mkdir(parents=True,exist_ok=True)
+          spec=importlib.util.spec_from_file_location('m6','tests/integration/m6.py');m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+          m.CACHE=root/'download';m.CACHE.mkdir(exist_ok=True)
+          m.repository(root/'repository',tools=('foot','font-dejavu'))
+          urllib.request.urlretrieve('https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz',root/'rootfs.tar.gz')
+          PY
+          cargo build -p trames-ffi --release --locked
+          python3 tests/integration/foot-wayland.py --prepare
+      - name: Exercise multiple independent terminals in one original Alpine guest
+        if: needs.scope.outputs.native_scope == 'host-terminals'
+        env:
+          TRAMES_ALPINE_ARCHIVE: ${{ github.workspace }}/target/multi-terminal-rootfs.tar.gz
+        run: |
+          mkdir -p target
+          curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o "$TRAMES_ALPINE_ARCHIVE"
+          cargo build -p trames-ffi --release --locked
+          python3 tests/integration/multiple-terminals.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-arm64-foot-log
+          path: target/foot-acceptance/foot.log
+          if-no-files-found: ignore
+          retention-days: 7
   runtime:
+    needs: scope
+    if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:

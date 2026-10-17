@@ -12,19 +12,19 @@ settings:
     LIBRARY_SEARCH_PATHS: ['$(inherited)', '$(SRCROOT)/../../target/ios-link/$(TRAMES_RUST_TARGET)']
     'TRAMES_RUST_TARGET[sdk=iphoneos*]': aarch64-apple-ios
     'TRAMES_RUST_TARGET[sdk=iphonesimulator*]': aarch64-apple-ios-sim
-    MARKETING_VERSION: '0.17.0'
-    CURRENT_PROJECT_VERSION: '19'
+    MARKETING_VERSION: '1.0.0'
+    CURRENT_PROJECT_VERSION: '26'
+    TRAMES_APP_GROUP: group.org.trames.Trames
+    INFOPLIST_KEY_TramesAppGroup: '$(TRAMES_APP_GROUP)'
     INFOPLIST_KEY_CFBundleShortVersionString: '$(MARKETING_VERSION)'
     INFOPLIST_KEY_CFBundleVersion: '$(CURRENT_PROJECT_VERSION)'
     INFOPLIST_KEY_CFBundleDisplayName: Trames
     INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
-    INFOPLIST_KEY_NSLocalNetworkUsageDescription: Connect to SSH servers and development services on your local network.
+    INFOPLIST_KEY_NSLocalNetworkUsageDescription: Allow Linux applications to connect to services on your local network.
     INFOPLIST_KEY_UILaunchScreen_Generation: YES
     INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
     CODE_SIGN_STYLE: Automatic
 packages:
-  NativeCoreMark:
-    path: NativeCoreMark
   TramesKit:
     path: TramesKit
   SwiftTerm:
@@ -37,6 +37,7 @@ targets:
     sources:
       - path: Trames
         excludes: [GuestMusl, GuestVulkan]
+      - path: TramesFileSystem
       - path: Trames/GuestMusl
         type: folder
         buildPhase: resources
@@ -44,9 +45,11 @@ targets:
         type: folder
         buildPhase: resources
     dependencies:
-      - package: NativeCoreMark
       - package: TramesKit
       - package: SwiftTerm
+      - target: TramesFileProvider
+        embed: true
+      - sdk: FileProvider.framework
       # A Rust staticlib bundles MoltenVK's objects, but its system link flags
       # do not propagate to Xcode's final Swift executable link.
       - sdk: Metal.framework
@@ -60,16 +63,39 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: org.trames.Trames
+        CODE_SIGN_ENTITLEMENTS: Trames.entitlements
         ARCHS: arm64
         ONLY_ACTIVE_ARCH: YES
         LIBRARY_SEARCH_PATHS: ['$(inherited)', '$(SRCROOT)/../../target/ios-link/$(TRAMES_RUST_TARGET)']
         'TRAMES_RUST_TARGET[sdk=iphoneos*]': aarch64-apple-ios
         'TRAMES_RUST_TARGET[sdk=iphonesimulator*]': aarch64-apple-ios-sim
         OTHER_LDFLAGS: ['$(inherited)', '-ltrames_ffi', '-lresolv', '-lc++']
+  TramesFileProvider:
+    type: app-extension
+    platform: iOS
+    sources: [TramesFileProvider,TramesFileSystem]
+    dependencies:
+      - sdk: FileProvider.framework
+      - sdk: UniformTypeIdentifiers.framework
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: TramesFileProvider/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: org.trames.Trames.FileProvider
+        CODE_SIGN_ENTITLEMENTS: Trames.entitlements
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+        ARCHS: arm64
+        ONLY_ACTIVE_ARCH: YES
   TramesTests:
     type: bundle.unit-test
     platform: iOS
-    sources: [TramesTests]
+    sources:
+      - path: TramesTests
+        excludes: [Fixtures]
+      - path: TramesTests/Fixtures
+        type: folder
+        buildPhase: resources
     dependencies:
       - target: Trames
       - package: SwiftTerm

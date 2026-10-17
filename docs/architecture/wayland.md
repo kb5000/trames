@@ -19,7 +19,12 @@ carries bounded control messages and SCM_RIGHTS capabilities, never pixels or
 host paths. Connection identity comes from the guest bridge. Virtual descriptor
 identity, credentials, logical EOF/seals, mmap dirty/COW hooks and existing guest
 memory synchronization are preserved. The shared physical-storage budget is
-128 MiB per instance.
+128 MiB per instance for mapped, written or explicitly reserved shared ranges.
+Sparse memfd logical length is separately bounded at 2 GiB; ftruncate does not
+charge untouched holes. Logical shrink retains live mappings, zeroes removed
+bytes and uses host sparse-hole clearing where supported. Guest KEEP_SIZE
+allocation reserves ranges without growing EOF; guest hole punching remains
+unsupported, so original foot uses its existing non-scrolling-SHM fallback.
 
 An export lease is registered before sending SCM_RIGHTS and survives until
 SharedFile import acknowledges the descriptor or its client disconnects. Closing
@@ -78,8 +83,12 @@ requesting both on one instance is rejected.
 ## Workspace and focus
 
 Terminal and Wayland identities share one root tab/window model, independent of
-mutable application titles. Tabs can reorder or detach, floating title bars can
-dock into that same tab row, and minimization preserves the previous placement.
+mutable application titles. Tabs can reorder or detach; an explicit floating-window
+button docks into that same tab row. Dragging to the top does not maximize.
+Minimization preserves window identity and leaves an inactive tab for restoration.
+Client toplevel parent/min/max hints are exposed separately from popup scene parenting.
+Fixed-size transient dialogs use their committed client size plus the host header,
+and configure requests respect their limits.
 Geometry comes from the actual header/content frames. Resizing follows available
 client space. Guest mode acknowledgements do not steal terminal focus on every
 frame, and empty OSC titles fall back to the session's original title.
@@ -90,6 +99,72 @@ Wayland seat and reclaims UIKit first responder. Canvas/frame updates only chang
 first responder when the desired focus changes. v1 activation sends one balanced
 leave/enter across widget switches and ignores duplicate activation; epochs
 invalidate composition belonging to an old widget.
+
+The only terminal host stays mounted when all windows are minimized. Keyboard
+focus is resigned before publishing a hidden layout; queued UIKit focus requests
+are revision-checked and applied outside SwiftUI updates. Hidden terminals cannot
+become first responder, and ordinary redraws preserve manual keyboard dismissal.
+
+## Clipboard and GTK
+
+The 0.18.0/build 21 test app adds wl_data_device_manager v3, data sources and
+selection offers. Original GTK3 waits for this global, in addition to the
+compositor, before creating its default seat. Omitting it caused mousepad's
+GDK_IS_SEAT errors. Selection delivery follows the focused client and passes
+clipboard pipe FDs with SCM_RIGHTS. Coordinator-owned, nonblocking relays move
+bounded byte chunks between virtual guest pipes and native pipe descriptors;
+guest Rc/RefCell state never crosses onto native threads.
+
+Guest-to-guest offers retain the source's MIME types and use the normal source
+send/receive flow. The host provider supports UTF-8 text up to the existing
+16 KiB Bridge limit, with at most four off-thread transfers. It advertises text
+without reading UIPasteboard; actual reads occur only when a client requests
+the offered data. Pasteboard-change notifications and foreground entry replace
+old selections without inspecting their contents. New text writes and host
+clipboard changes invalidate older pending writes. Deadlines, session teardown
+and closed pipe readers terminate pending transfers.
+
+Clipboard Bridge calls execute automatically under the owner-selected policy.
+iPadOS owns read permission prompts; writes have no OS permission dialog. The
+global Native Bridge setting rejects new host requests when disabled. Other
+native capabilities retain their existing consent flow. UIKit copy/cut/paste/
+select-all actions send guest control keys so the original toolkit owns the
+selection and transfer. Image clipboard and drag-and-drop remain unsupported.
+Original host GTK3 and mousepad pass real seat/window tests and Unicode
+clipboard transfers. Build 24 additionally exercises the original GTK text
+context menu and signed ARM64 mousepad through the production guest FD and
+Bridge adapters: Ctrl+C, right-click Copy, then navigation and a Chinese text
+commit after the popup closes. GTK destroys its menu before sending selection;
+unmapping/destroying/dismissing a focused popup restores the nearest mapped
+parent so keyboard, text-input and data-device focus agree. A grabbed menu that
+has not attached a buffer, or has detached it before destruction, cannot take
+focus back from that parent. Keyboard-triggered
+menus also accept GTK's recent key-release grab serial, while retaining the
+client and popup-parent checks.
+
+On iPad, printable hardware keys keep using the native input method. Navigation,
+editing and function keys use guest key events even when UIKit represents them
+as printable private-use Unicode: moving only the local document mirror would
+leave its selection inconsistent with the guest cursor. ISO/keypad keycodes and
+shifted ASCII punctuation in the no-text-input fallback are mapped explicitly.
+Each physical raw key sends one down/up pair; UIKit duplicate downs are consumed
+because the Wayland client already implements repeat using `repeat_info`.
+
+Before handing a host text receive to the asynchronous clipboard provider, the
+compositor releases held keys, preserving Caps Lock, the selection offer, popup
+state and keyboard/text-input focus. An iPadOS paste-permission alert can take
+physical key-up delivery away from UIKit. Without this handoff GTK keeps
+repeating Ctrl+V while the provider waits, then applies all pending paste actions
+to the same cached text: one host read can produce dozens of insertions. An
+original GTK3 regression delays the provider for two seconds with no physical
+release, verifies one insertion and unchanged focus, then accepts a late release
+and a new intentional paste. Guest-to-guest FD transfers retain their existing
+path. See the [build 25 record](../validation/ipad-0.18-build25.json).
+
+The simulator exercises automatic guest clipboard requests against the real
+UIPasteboard; OS permission presentation and physical-keyboard behavior still
+need iPad acceptance. See the [build 24 record](../validation/ipad-0.18-build24.json)
+and the earlier [build 21 record](../validation/ipad-0.18-build21.json).
 
 ## Scene and input
 
@@ -178,7 +253,7 @@ UIKit input and native configure-driven image recreation.
 ## Initial limits and upstream notices
 
 This is a selected protocol/graphics implementation, not full Wayland or Vulkan
-conformance. Output scale is initially one. Clipboard/data-device/DnD, custom
+conformance. Output scale is initially one. Image clipboard, DnD, custom
 cursor images, automatic reactive popup relayout, touch protocol and EGL/OpenGL
 bridging are not implemented. Device touch and actual system keyboard experience
 still require iPad use.

@@ -14,6 +14,7 @@ impl State {
     pub(crate) fn dismiss_popups(&mut self) {
         let ids = std::mem::take(&mut self.seat.popups);
         for id in ids.into_iter().rev() {
+            self.surface_unmapped(id);
             if let Some(s) = self.surfaces.get_mut(&id) {
                 if let Some(p) = &s.popup {
                     p.popup_done();
@@ -36,7 +37,20 @@ impl State {
             states.extend_from_slice(&(xdg_toplevel::State::Maximized as u32).to_ne_bytes());
         }
         if let Some(top) = &s.top {
-            top.configure(s.requested_size.0 as i32, s.requested_size.1 as i32, states);
+            let clamp = |value: u32, min: u32, max: u32| {
+                if value == 0 {
+                    0
+                } else {
+                    value
+                        .max(min)
+                        .min(if max == 0 { 4096 } else { max.max(min) })
+                }
+            };
+            top.configure(
+                clamp(s.requested_size.0, s.min_size.0, s.max_size.0) as i32,
+                clamp(s.requested_size.1, s.min_size.1, s.max_size.1) as i32,
+                states,
+            );
         }
         if let Some(popup) = &s.popup {
             let (_, x, y) = s.parent.unwrap_or((0, 0, 0));
@@ -253,10 +267,26 @@ impl Dispatch<xdg_toplevel::XdgToplevel, SurfaceKey> for State {
                 configure = true;
             }
             xdg_toplevel::Request::SetMinimized => s.mode = WindowMode::Minimized,
-            xdg_toplevel::Request::SetParent { .. }
-            | xdg_toplevel::Request::SetMinSize { .. }
-            | xdg_toplevel::Request::SetMaxSize { .. }
-            | xdg_toplevel::Request::ShowWindowMenu { .. }
+            xdg_toplevel::Request::SetParent { parent } => {
+                s.top_parent = parent
+                    .and_then(|p| p.data::<SurfaceKey>().map(|p| p.0))
+                    .filter(|id| *id != key.0);
+            }
+            xdg_toplevel::Request::SetMinSize { width, height } => {
+                if width >= 0 && height >= 0 {
+                    s.min_size = (width as u32, height as u32);
+                } else if let Some(top) = &s.top {
+                    top.post_error(2u32, "negative minimum size");
+                }
+            }
+            xdg_toplevel::Request::SetMaxSize { width, height } => {
+                if width >= 0 && height >= 0 {
+                    s.max_size = (width as u32, height as u32);
+                } else if let Some(top) = &s.top {
+                    top.post_error(2u32, "negative maximum size");
+                }
+            }
+            xdg_toplevel::Request::ShowWindowMenu { .. }
             | xdg_toplevel::Request::Move { .. }
             | xdg_toplevel::Request::Resize { .. } => {}
             _ => {}
@@ -339,6 +369,7 @@ impl Dispatch<xdg_popup::XdgPopup, SurfaceKey> for State {
     ) {
         match request {
             xdg_popup::Request::Destroy => {
+                state.surface_unmapped(key.0);
                 if let Some(s) = state.surfaces.get_mut(&key.0) {
                     s.popup = None;
                     s.current = None;
@@ -352,13 +383,19 @@ impl Dispatch<xdg_popup::XdgPopup, SurfaceKey> for State {
                     .get(&key.0)
                     .and_then(|s| s.parent)
                     .map(|p| p.0);
-                let valid = state.seat.press_serial.is_some_and(|(issued, target)| {
-                    issued == serial && parent.is_some_and(|p| state.is_descendant(target, p))
-                }) && state
-                    .seat
-                    .popups
-                    .last()
-                    .is_none_or(|id| Some(*id) == parent)
+                // GTK keyboard menus can be opened from key release; pointer
+                // menus keep using the button-press implicit grab serial.
+                let valid = [state.seat.press_serial, state.seat.key_serial]
+                    .into_iter()
+                    .flatten()
+                    .any(|(issued, target)| {
+                        issued == serial && parent.is_some_and(|p| state.is_descendant(target, p))
+                    })
+                    && state
+                        .seat
+                        .popups
+                        .last()
+                        .is_none_or(|id| Some(*id) == parent)
                     && state
                         .surfaces
                         .get(&key.0)

@@ -5,20 +5,81 @@ import SwiftTerm
 /// Terminal columns fit the viewport; only scrollback needs a scrolling axis.
 final class TerminalViewport: TerminalView {
     var onFocusRequested: (() -> Void)?
+    var onGridLayout: ((Int,Int) -> Void)?
+    // Query the live model even if UIKit is applying an older SwiftUI snapshot.
+    var keyboardVisibility: (() -> Bool)?
+    private var requestedKeyboardFocus = false
     private var wantsKeyboardFocus = false
-    func setKeyboardFocus(_ value: Bool) {
-        guard wantsKeyboardFocus != value else { return }
-        wantsKeyboardFocus = value
-        if value && window != nil { _ = becomeFirstResponder() }
-        else if !value && isFirstResponder { resignFirstResponder() }
+    private var acceptsKeyboardFocus = true
+    private var focusRevision: UInt64 = 0
+    private var changingFocus = false
+    func setKeyboardFocus(_ value: Bool, visible: Bool = true, deferred: Bool = false) {
+        // Resigning can synchronously redraw the still-visible old layout.
+        // That stale request must not undo the transition already in progress.
+        guard !changingFocus else { return }
+        let wanted = value && visible
+        // A status redraw must not reopen a keyboard the user just dismissed.
+        // Hidden views still retry resignation if UIKit changed the responder.
+        guard requestedKeyboardFocus != wanted || acceptsKeyboardFocus != visible
+                || (!wanted && isFirstResponder) else { return }
+        requestedKeyboardFocus = wanted
+        acceptsKeyboardFocus = visible
+        wantsKeyboardFocus = wanted
+        focusRevision &+= 1
+        if deferred { scheduleKeyboardFocus() }
+        else { applyKeyboardFocus() }
     }
+    private func scheduleKeyboardFocus() {
+        let revision = focusRevision
+        // UIViewRepresentable updates must not synchronously start a keyboard
+        // transition: its safe-area resize can reenter the same SwiftUI update.
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.focusRevision == revision else { return }
+            self.applyKeyboardFocus()
+        }
+    }
+    private func applyKeyboardFocus() {
+        guard !changingFocus else { return }
+        if wantsKeyboardFocus && window != nil && !isFirstResponder { _ = becomeFirstResponder() }
+        else if !wantsKeyboardFocus && isFirstResponder { _ = resignFirstResponder() }
+    }
+    private var keyboardIsVisible: Bool { acceptsKeyboardFocus && (keyboardVisibility?() ?? true) }
+    override var canBecomeFirstResponder: Bool { keyboardIsVisible && super.canBecomeFirstResponder }
     override func becomeFirstResponder() -> Bool {
-        onFocusRequested?()
-        return super.becomeFirstResponder()
+        guard keyboardIsVisible else { return false }
+        // UIKit can reenter while updating the keyboard during a resize.
+        guard !isFirstResponder, !changingFocus else { return isFirstResponder }
+        wantsKeyboardFocus = true
+        changingFocus = true
+        defer { changingFocus = false }
+        let became = super.becomeFirstResponder()
+        if became { onFocusRequested?() }
+        return became
+    }
+    override func resignFirstResponder() -> Bool {
+        guard isFirstResponder, !changingFocus else { return !isFirstResponder }
+        // Invalidate any queued restoration. Keep the model's last request so
+        // an unchanged redraw preserves a keyboard dismissed by the user.
+        wantsKeyboardFocus = false
+        focusRevision &+= 1
+        changingFocus = true
+        defer { changingFocus = false }
+        return super.resignFirstResponder()
+    }
+    override func reloadInputViews() {
+        // SwiftTerm's alternate keyboard starts with UIScreen dimensions. In
+        // Stage Manager the keyboard belongs to this app window, not the screen.
+        if let keyboard=inputView,let window {
+            let size=CGSize(width:window.bounds.width,height:max(140,window.bounds.height/5))
+            if keyboard.frame.size != size { keyboard.frame.size=size }
+            keyboard.autoresizingMask = .flexibleWidth
+            keyboard.accessibilityIdentifier="terminal-extended-keyboard"
+        }
+        super.reloadInputViews()
     }
     override func didMoveToWindow() {
         super.didMoveToWindow()
-        if window != nil && wantsKeyboardFocus { _ = becomeFirstResponder() }
+        if window != nil { scheduleKeyboardFocus() }
     }
 
     override init(frame: CGRect, font: UIFont?) {
@@ -32,6 +93,9 @@ final class TerminalViewport: TerminalView {
     }
 
     private func configureScrolling() {
+        if UIDevice.current.userInterfaceIdiom == .pad,let accessory=inputAccessoryView as? TerminalAccessory {
+            inputAccessoryView=TerminalKeyboardAccessory(accessory:accessory,terminal:self)
+        }
         contentInsetAdjustmentBehavior = .never
         alwaysBounceHorizontal = false
         showsHorizontalScrollIndicator = false
@@ -68,6 +132,8 @@ final class TerminalViewport: TerminalView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        let terminal=getTerminal()
+        onGridLayout?(terminal.cols,terminal.rows)
         // A fractional resize can leave the column count unchanged. Keep the
         // scrolling width in sync even when SwiftTerm does not resize its grid.
         if contentSize.width != bounds.width {

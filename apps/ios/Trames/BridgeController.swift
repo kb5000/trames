@@ -16,6 +16,8 @@ final class BridgeController: ObservableObject {
         guard challenge == nil, running == nil, let request = try local.pollBridge() else { return }
         if UserDefaults.standard.object(forKey: "bridgeEnabled") as? Bool == false {
             try local.rejectBridge(request.ticket, error: BridgeFailure(code: "denied", message: "Native Bridge is disabled in settings"))
+        } else if ["clipboard.read","clipboard.write"].contains(request.request.method) {
+            executeHost(request,local:local)
         } else { challenge = request }
     }
     func deny() {
@@ -24,7 +26,11 @@ final class BridgeController: ObservableObject {
     }
     func allow() {
         guard let host = challenge, let local else { return }
-        challenge = nil; running = host.ticket
+        challenge = nil
+        executeHost(host,local:local)
+    }
+    private func executeHost(_ host:BridgeHostRequest,local:LocalSession) {
+        running = host.ticket
         task = Task {
             defer { running = nil; task = nil }
             do {

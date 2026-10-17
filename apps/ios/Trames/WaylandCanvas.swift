@@ -4,6 +4,39 @@ import Metal
 import QuartzCore
 import TramesKit
 
+/// Presentation and command failure can arrive on different Metal threads.
+/// Complete the native lease/queue permit exactly once, at actual scanout (or
+/// failed GPU completion), rather than treating GPU completion as presentation.
+private final class WaylandPresentation: @unchecked Sendable {
+    private let lock = NSLock()
+    private var frame: LocalWaylandFrame?
+    private var gpuFinished=false
+    private var cancelled=false
+    private let semaphore: DispatchSemaphore
+    init(frame: LocalWaylandFrame, semaphore: DispatchSemaphore) {
+        self.frame=frame;self.semaphore=semaphore
+    }
+    var isFinished: Bool {
+        lock.lock();defer { lock.unlock() };return frame == nil
+    }
+    func cancel() {
+        lock.lock();cancelled=true;let finished=gpuFinished;lock.unlock()
+        if finished { finish(presented:false) }
+    }
+    func gpuCompleted(success: Bool) {
+        lock.lock();gpuFinished=true;let discard=cancelled || !success;lock.unlock()
+        if discard { finish(presented:false) }
+    }
+    func finish(presented: Bool) {
+        lock.lock()
+        let retained=frame;frame=nil
+        lock.unlock()
+        guard let retained else { return }
+        retained.release(presented:presented);semaphore.signal()
+    }
+    deinit { finish(presented:false) }
+}
+
 @MainActor
 final class WaylandCanvas: WaylandInputView {
     override class var layerClass: AnyClass { CAMetalLayer.self }
@@ -12,14 +45,37 @@ final class WaylandCanvas: WaylandInputView {
     private let queue: MTLCommandQueue
     private let pipeline: MTLRenderPipelineState
     private let texturePipeline: MTLRenderPipelineState
-    private let inFlight = DispatchSemaphore(value: 3)
+    private let inFlight = DispatchSemaphore(value: 2)
     weak var session: LocalSession?
     var windowID: UInt64 = 0
+    var presentationEnabled = true {
+        didSet {
+            guard oldValue != presentationEnabled else { return }
+            displayLink?.isPaused = !presentationEnabled
+            if presentationEnabled { lastRevision=nil;lastPresentationTime=nil }
+            else { cancelPresentations() }
+        }
+    }
     var sceneOrigin: CGPoint = .zero { didSet { if oldValue != sceneOrigin { lastRevision=nil } } }
     var rendered: UInt64 = 0
     var copiedBytes: UInt64 = 0
+    private(set) var completed: UInt64 = 0
+    private(set) var presented: UInt64 = 0
+    var presentationFeedbackAvailable: Bool {
+        #if targetEnvironment(simulator)
+        false
+        #else
+        true
+        #endif
+    }
+    // Simulator SDK omits drawable presentation feedback. Keep its completion
+    // fallback explicit; this counter is progress, never a claim of scanout.
+    var frameProgress: UInt64 { presentationFeedbackAvailable ? presented : completed }
+    private(set) var maximumPresentationInterval: CFTimeInterval = 0
+    private var lastPresentationTime: CFTimeInterval?
     var lastRevision: UInt64?
     private var displayLink: CADisplayLink?
+    private var presentations: [WaylandPresentation] = []
     private var foregroundObserver: NSObjectProtocol?
     private var pressedButton: Int?
     private var visibleRects: [CGRect] = []
@@ -73,6 +129,7 @@ final class WaylandCanvas: WaylandInputView {
         super.init(frame: .zero)
         metal.device = device; metal.pixelFormat = .bgra8Unorm
         metal.framebufferOnly = true; metal.maximumDrawableCount = 3
+        metal.allowsNextDrawableTimeout = true
         metal.presentsWithTransaction = false
         backgroundColor = .clear; isOpaque = false; metal.isOpaque = false; clipsToBounds = true
         isAccessibilityElement = true; accessibilityIdentifier = "wayland-canvas"
@@ -82,7 +139,7 @@ final class WaylandCanvas: WaylandInputView {
         scroll.allowedScrollTypesMask = .all
         scroll.cancelsTouchesInView=false; scroll.delaysTouchesEnded=false; addGestureRecognizer(scroll)
         foregroundObserver = NotificationCenter.default.addObserver(forName:UIApplication.didBecomeActiveNotification,object:nil,queue:.main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.lastRevision = nil }
+            MainActor.assumeIsolated { self?.cancelPresentations();self?.lastRevision = nil }
         }
     }
     private func pointer(_ point:CGPoint) {
@@ -128,8 +185,12 @@ final class WaylandCanvas: WaylandInputView {
     override func didMoveToWindow() {
         super.didMoveToWindow()
         displayLink?.invalidate(); displayLink = nil
+        cancelPresentations()
         if window != nil {
             let link = CADisplayLink(target: RefreshTarget(self), selector: #selector(RefreshTarget.tick))
+            let maximum=Float(window?.screen.maximumFramesPerSecond ?? 60)
+            link.preferredFrameRateRange=CAFrameRateRange(minimum:min(30,maximum),maximum:maximum,preferred:maximum)
+            link.isPaused = !presentationEnabled
             link.add(to: .main, forMode: .common); displayLink = link
             lastRevision = nil
             if wantsKeyboardFocus { _ = becomeFirstResponder() }
@@ -138,12 +199,19 @@ final class WaylandCanvas: WaylandInputView {
     deinit { if let foregroundObserver { NotificationCenter.default.removeObserver(foregroundObserver) } }
     override func layoutSubviews() {
         super.layoutSubviews()
-        metal.contentsScale = window?.screen.scale ?? 2
-        metal.drawableSize = CGSize(width: max(1,bounds.width * metal.contentsScale), height: max(1,bounds.height * metal.contentsScale))
-        lastRevision = nil
+        let scale=window?.screen.scale ?? 2
+        let size=CGSize(width:max(1,bounds.width * scale),height:max(1,bounds.height * scale))
+        if metal.contentsScale != scale || metal.drawableSize != size {
+            metal.contentsScale=scale;metal.drawableSize=size;lastRevision=nil
+        }
+    }
+    private func cancelPresentations() {
+        presentations.forEach { $0.cancel() }
+        presentations.removeAll { $0.isFinished }
     }
     private func renderFrame() {
-        guard bounds.width > 0, bounds.height > 0, window != nil, !isHidden,
+        presentations.removeAll { $0.isFinished }
+        guard presentationEnabled, bounds.width > 0, bounds.height > 0, window != nil, !isHidden,
               UIApplication.shared.applicationState == .active,
               inFlight.wait(timeout: .now()) == .success else { return }
         var submitted = false
@@ -208,16 +276,59 @@ final class WaylandCanvas: WaylandInputView {
             #if DEBUG
             inspectFrame?(drawable.texture, command)
             #endif
-            command.present(drawable)
-            let semaphore = inFlight
-            command.addCompletedHandler { result in
-                // The driver retains MTLBuffers; frame owns their mmap bytes.
-                frame.release(presented: result.status == .completed)
-                semaphore.signal()
+            let presentation=WaylandPresentation(frame:frame,semaphore:inFlight)
+            presentations.append(presentation)
+            let submittedRevision=frame.info.revision
+            #if !targetEnvironment(simulator)
+            drawable.addPresentedHandler { [weak self] drawable in
+                let time=drawable.presentedTime
+                if time > 0 { presentation.finish(presented:true) }
+                else { presentation.cancel() }
+                Task { @MainActor in
+                    if time > 0 { self?.didPresent(at:time) }
+                    else { self?.retryUnpresented(submittedRevision) }
+                }
             }
+            #endif
+            command.addCompletedHandler { [weak self] result in
+                let success=result.status == .completed
+                presentation.gpuCompleted(success:success)
+                #if targetEnvironment(simulator)
+                // The simulator has no presented handler/presentedTime API.
+                // Advance the protocol at GPU completion without inventing an
+                // on-screen presentation count or timestamp.
+                presentation.finish(presented:success)
+                #endif
+                Task { @MainActor in
+                    if success { self?.didCompleteFrame() }
+                    else { self?.retryUnpresented(submittedRevision) }
+                }
+            }
+            command.present(drawable)
             command.commit(); submitted = true; lastRevision = frame.info.revision
             rendered += 1
-            accessibilityValue = "window=\(windowID) frames=\(rendered) copied=\(copiedBytes)"
+            updatePresentationStatus()
         } catch { onError?(error.localizedDescription) }
+    }
+    private func retryUnpresented(_ revision: UInt64) {
+        // Core Animation reports zero for skipped drawables. A dropped or
+        // failed frame cannot leave FIFO waiting on a revision we never retry.
+        if lastRevision == revision { lastRevision=nil }
+    }
+    private func didCompleteFrame() {
+        completed += 1
+        updatePresentationStatus()
+    }
+    private func didPresent(at time: CFTimeInterval) {
+        presented += 1
+        if let lastPresentationTime, time >= lastPresentationTime {
+            maximumPresentationInterval=max(maximumPresentationInterval,time-lastPresentationTime)
+        }
+        lastPresentationTime=time
+        updatePresentationStatus()
+    }
+    private func updatePresentationStatus() {
+        let display=presentationFeedbackAvailable ? String(presented) : "unavailable"
+        accessibilityValue="window=\(windowID) submitted=\(rendered) completed=\(completed) presented=\(display) maxIntervalMs=\(Int(maximumPresentationInterval*1000)) copied=\(copiedBytes)"
     }
 }

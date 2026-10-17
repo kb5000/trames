@@ -6,7 +6,7 @@ import FoundationNetworking
 #endif
 import TramesKit
 /// Simulator acceptance invokes the app's linked runtime, avoiding a second
-/// copy of TramesKit/SSH/crypto in the hosted test bundle.
+/// copy of TramesKit in the hosted test bundle.
 enum LocalNetworkProbe {
     static func run() async throws -> String {
         let (archive,response)=try await ConnectivityRetry.download(from:EnvironmentStore.archiveURL)

@@ -78,6 +78,8 @@ use signals::Pending;
 #[path = "process_pid.rs"]
 mod pid_namespace;
 use compat::AltStack;
+#[path = "process_scheduling.rs"]
+mod scheduling;
 #[derive(Clone, Copy, Default)]
 struct Action {
     handler: u64,
@@ -126,6 +128,8 @@ struct Process {
     cpu: Cpu,
     affinity: u64,
     last_cpu: usize,
+    nice: i32,
+    scheduler: u32,
     memory: Memory,
     linux: Linux,
     parent: u32,
@@ -168,6 +172,8 @@ impl Process {
             cpu: self.cpu.clone(),
             affinity: self.affinity,
             last_cpu: self.last_cpu,
+            nice: self.nice,
+            scheduler: self.scheduler,
             memory: self.memory.clone(),
             linux: self.linux.clone(),
             parent: 0,
@@ -534,6 +540,8 @@ impl Kernel {
             maps: maps.into_bytes(),
             affinity: p.affinity,
             processor: p.last_cpu as u32,
+            nice: p.nice,
+            scheduler: p.scheduler,
             user_ticks: (p.cpu_time.as_millis() / 10) as u64,
             start_ticks: (p
                 .started
@@ -1493,6 +1501,8 @@ impl Kernel {
         io: &mut impl GuestOutput,
     ) -> Result<Option<u64>, Errno> {
         match number {
+            140 | 141 => self.priority(pid, p, number, a),
+            236 => Self::mempolicy(p, a),
             90 | 91 => self.capcall(pid, p, number == 91, a).map(Some),
             93 | 94 => {
                 if number == 93 {
@@ -1533,15 +1543,22 @@ impl Kernel {
                     118 | 119 => {
                         let pointer = if number == 118 { a[1] } else { a[2] };
                         let priority = read_u32(&p.memory, pointer)? as i32;
-                        if number == 119 && a[1] as u32 != 0 {
-                            return Err(Errno(95));
+                        if number == 119 && !matches!(a[1] as u32, 0 | 3 | 5) {
+                            return Err(Errno(if matches!(a[1] as u32, 1 | 2) { 95 } else { 22 }));
                         }
                         if priority != 0 {
                             return Err(Errno(22));
                         }
-                        Ok(Some(0)) // Virtual CPUs currently run SCHED_OTHER only.
+                        if number == 119 {
+                            if target_id == pid {
+                                p.scheduler = a[1] as u32;
+                            } else {
+                                self.processes.get_mut(&target_id).unwrap().scheduler = a[1] as u32;
+                            }
+                        }
+                        Ok(Some(0)) // Policy is guest metadata; host workers retain their priorities.
                     }
-                    120 => Ok(Some(0)),
+                    120 => Ok(Some(target.scheduler as u64)),
                     121 => {
                         Linux::check(&p.memory, a[1], 4, Access::Write)?;
                         p.memory.write(a[1], &[0; 4]).map_err(|_| Errno(14))?;
@@ -2954,6 +2971,25 @@ impl Kernel {
             .unwrap_or_default();
         for pair in pairs {
             pair.flush_echo();
+            if pair.host_resize_pending.replace(false) {
+                pair.host_signals.set(pair.host_signals.get() | (1 << 27));
+            }
+            let signals = pair.host_signals.replace(0);
+            if signals != 0 {
+                let tty = pair.terminal.borrow();
+                for (&pid, process) in &mut self.processes {
+                    if tty.session != 0
+                        && process.session == tty.session
+                        && process.group == tty.foreground
+                    {
+                        for sig in 1..=64 {
+                            if signals & (1 << (sig - 1)) != 0 {
+                                Self::queue_one(pid, process, sig, 0);
+                            }
+                        }
+                    }
+                }
+            }
             if pair.master_alive.get() || pair.hangup_notified.replace(true) {
                 continue;
             }
@@ -3694,6 +3730,8 @@ pub(super) fn run(
         cpu: std::mem::take(&mut runtime.cpu),
         affinity: (1u64 << runtime.cpu_count.clamp(1, 32)) - 1,
         last_cpu: 0,
+        nice: 0,
+        scheduler: 0,
         memory: std::mem::take(&mut runtime.memory),
         linux: std::mem::replace(&mut runtime.linux, Linux::new(0)),
         parent: 0,
@@ -3858,6 +3896,8 @@ mod tests {
             cpu: Cpu::new(0x4000, 0x9000),
             affinity: 1,
             last_cpu: 0,
+            nice: 0,
+            scheduler: 0,
             memory,
             linux: Linux::new(0xa000),
             parent: 0,
@@ -3909,6 +3949,41 @@ mod tests {
         assert!(k.processes[&3].pending.contains_key(&2));
         assert!(!k.processes[&4].pending.contains_key(&2));
         assert!(!sender.pending.contains_key(&2));
+    }
+    #[test]
+    fn host_pty_keyboard_and_resize_signals_are_scoped_to_the_foreground_session() {
+        let mut k = kernel();
+        let mut root = process();
+        k.refresh_proc(1, &mut root);
+        let fd = root.linux.vfs.open_at(-100, b"/dev/ptmx", 2, 0).unwrap();
+        let pair = root.linux.vfs.pty(fd).unwrap().unwrap().pair.clone();
+        {
+            let mut tty = pair.terminal.borrow_mut();
+            tty.session = 9;
+            tty.foreground = 3;
+        }
+        pair.resize_from_host(40, 120);
+        pair.host_signals.set(1 << 1);
+        let mut foreground = process();
+        foreground.session = 9;
+        foreground.group = 3;
+        let mut other = foreground.fork();
+        other.session = 10;
+        let mut background = foreground.fork();
+        background.group = 4;
+        k.processes.insert(1, root);
+        k.processes.insert(3, foreground);
+        k.processes.insert(4, other);
+        k.processes.insert(5, background);
+        k.pump_guest_ptys();
+        assert!(k.processes[&3].pending.contains_key(&2));
+        assert!(k.processes[&3].pending.contains_key(&28));
+        for id in [1, 4, 5] {
+            assert!(!k.processes[&id].pending.contains_key(&2));
+            assert!(!k.processes[&id].pending.contains_key(&28));
+        }
+        assert_eq!(pair.host_signals.get(), 0);
+        assert!(!pair.host_resize_pending.get());
     }
     pub(super) fn kernel() -> Kernel {
         Kernel {

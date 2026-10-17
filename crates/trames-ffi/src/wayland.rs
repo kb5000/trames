@@ -26,6 +26,7 @@ fn controller(handle: u64) -> Result<Server, String> {
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "snake_case", deny_unknown_fields)]
 enum Command {
+    ClipboardChanged,
     Resize {
         window: u64,
         width: u32,
@@ -98,7 +99,7 @@ pub unsafe extern "C" fn trames_session_wayland_status(
                 .map_err(|_| "Wayland lock unavailable")?
                 .clone();
             let snapshot = server.map(|s| s.snapshot()).unwrap_or_default();
-            let windows:Vec<_>=snapshot.windows.iter().map(|w|serde_json::json!({"id":w.id,"connection":w.connection,"title":w.title,"app_id":w.app_id,"width":w.width,"height":w.height,"bounds":w.bounds(),"revision":w.revision,"mode":match w.mode{WindowMode::Floating=>"floating",WindowMode::Minimized=>"minimized",WindowMode::Maximized=>"maximized"}})).collect();
+            let windows:Vec<_>=snapshot.windows.iter().map(|w|serde_json::json!({"id":w.id,"connection":w.connection,"title":w.title,"app_id":w.app_id,"width":w.width,"height":w.height,"bounds":w.bounds(),"parent":w.parent,"min_size":[w.min_size.0,w.min_size.1],"max_size":[w.max_size.0,w.max_size.1],"revision":w.revision,"mode":match w.mode{WindowMode::Floating=>"floating",WindowMode::Minimized=>"minimized",WindowMode::Maximized=>"maximized"}})).collect();
             let bytes = serde_json::to_vec(
                 &serde_json::json!({"revision":snapshot.revision,"windows":windows,"text":snapshot.text.map(|t|serde_json::json!({"version":t.version,"id":t.id,"epoch":t.epoch,"surface":t.surface,"window":t.window,"serial":t.serial,"text":t.text,"cursor":t.cursor,"anchor":t.anchor,"caret":t.caret,"hint":t.hint,"purpose":t.purpose}))}),
             )
@@ -125,6 +126,7 @@ pub unsafe extern "C" fn trames_session_wayland_command(
                     .map_err(|e| e.to_string())?;
             let server = controller(handle)?;
             match command {
+                Command::ClipboardChanged => server.clipboard_changed(),
                 Command::Resize {
                     window,
                     width,

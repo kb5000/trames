@@ -1,0 +1,185 @@
+{
+  "version": "0.18.0",
+  "build": 23,
+  "status": "test IPA; owner iPad Stage Manager acceptance pending",
+  "source_commit": "08804c08f4da3dcf9385e5ae0c8e8d0d44a5e7f3",
+  "workflow_run": 39050660220,
+  "workflow_url": "https://github.com/kb5000/trames/actions/runs/39050660220",
+  "changes": [
+    "Restore the floating terminal status row to its original horizontal/vertical padding; remove build 22's internal 48-point footer reservation. Keep terminal grid/PTY reflow on docking.",
+    "Vend one UIInputView wrapper containing the original SwiftTerm row; reserve 48 trailing points for the system resize corner. Retain original key targets/layout and bridge sticky Ctrl through the public TerminalView modifier/reset notification API.",
+    "Use the full UIKit keyboard end rectangle, including the accessory, for one workspace inset. Disable separate SwiftUI keyboard avoidance so alternate-keyboard reloads cannot obscure the status row. Undocked keyboards do not shrink the whole workspace.",
+    "Size the alternate input view from the current app window instead of UIScreen bounds.",
+    "Add actual accessory-button expand/collapse checks and focused window/focus regressions only.",
+    "Keep saved user frames independent of temporary viewport constraints; constrain displayed copies only and retain the same Metal canvas across background/resume and frame revisions.",
+    "Position new windows relative to existing displayed, constrained origins while retaining their preferred saved frames.",
+    "Measure the actual system-app viewport at the scene root and host the terminal scroll view in a plain UIKit viewport; system window resizing relayouts the same terminal without requiring a model change or internal docking.",
+    "Send the current live grid on deferred size notifications so stale snapshots cannot overwrite a completed app-window resize. Verify actual Linux stty size after four native app-container size transitions.",
+    "Rebind final buttons after UIKit finishes assigning the original row bounds; handle real upstream button rebuilds without losing keyboard-toggle accessibility identity or sticky Ctrl forwarding."
+  ],
+  "selected_checks": [
+    "TramesUITests/LaunchTests/testExtendedKeyboardRoundTripKeepsStatusVisibleAndLeavesResizeCorner",
+    "TramesTests/TerminalViewportTests/testAccessoryControllerReservesSystemCornerAndPreservesCtrl"
+  ],
+  "native_reuse": {
+    "source_commit": "77455055bf902e6ea0193c36919c01daa672506d",
+    "apple_run": 39034108790,
+    "linux_run": 39034896571,
+    "reason": "Crates, native dependencies, toolchain and guest sources are unchanged; no repeated CPU, Linux, GTK, foot, network, container or Vulkan suites."
+  },
+  "reused_guest_run": 39015795319,
+  "file_provider": {
+    "status": "Owner confirmed formal App Group signing is needed; defer device activation/browsing tests until that signing is available.",
+    "code": "unchanged from build 22; no repeated provider validation this iteration"
+  },
+  "pending": [
+    "Owner iPad: actual system window resize corner and accessory button hit areas in Stage Manager.",
+    "Owner iPad: alternate keyboard expand/collapse restores CPU/disk/session status and terminal grid.",
+    "Owner iPad: Stage Manager system maximize/fullscreen and restore, with keyboard collapsed/expanded; software regression changes the native app-container size and checks real guest stty output, not the system window-management UI itself.",
+    "Owner iPad: real vkcube background/resume, position/size retention and physical GPU presentation. Simulator workspace lifecycle coverage does not replace this device check.",
+    "Formal-signing File Provider device activation remains deferred.",
+    "1.0.0 release after owner acceptance; no merge or formal release this iteration."
+  ],
+  "diagnosis": {
+    "window_geometry": "Both the saved workspace frames and the local SwiftUI state were destructively constrained by transient viewport changes. Keep preferred frames and constrain displayed copies; only user gestures save altered geometry. Rust pause and Metal foreground recovery do not explicitly delete top-level surfaces.",
+    "keyboard": "Accessory-controller variants passed standalone tests but left an empty row in the actual UIKit attachment path. The final version vends exactly one wrapper as inputAccessoryView and does not override inputAccessoryViewController. It retains original key behavior and bridges the upstream public Ctrl modifier/reset API explicitly. The plain wrapper renders correctly and leaves the measured trailing gap; UIKit then invokes the child bounds observer and rebuilds the buttons after the parent binding pass. Coalesced post-layout rebinding retains IDs and Ctrl targets on the actual displayed controls.",
+    "scope": "No GPU, guest, native library or File Provider implementation changes in this follow-up."
+  },
+  "reused_background_ui_check": {
+    "source_commit": "ea1d67868253bb02e313440057ec20b24695cbfc",
+    "run": 39047804647,
+    "job": 117439990138,
+    "test": "TramesUITests/LaunchTests/testGraphicWindowPositionSurvivesAppBackground",
+    "passed": 1,
+    "failed": 0,
+    "note": "Actual Home/background/activate twice. This individual test passed; the separate keyboard and transient-viewport tests failed and are selected for rerun. The overall job is not counted as successful."
+  },
+  "notes": [
+    "Only affected/failed frontend checks are rerun. Successful tests from previous jobs are listed individually and do not turn those failed overall jobs into passing jobs.",
+    "The viewport regression uses a keyboard-independent hosting surface to isolate explicit viewport transitions. Actual app background/activate is checked separately through XCTest Home/activate.",
+    "The final unsigned app is linked from the tested frontend sources; documentation and validation records are committed later with [skip ci].",
+    "Internal docking/grid is selected again only because the final system-window fix changes the terminal UIView host. Unchanged graphics placement and cascade checks remain reused."
+  ],
+  "reused_geometry_checks": {
+    "source_commit": "06992fc8330ec53c565014df6d8d5aa8f676e6bd",
+    "run": 39048579722,
+    "job": 117442261526,
+    "tests": [
+      "TramesTests/WorkspaceInteractionTests/testGraphicsPreferredFrameSurvivesBackgroundAndTransientViewportChanges",
+      "TramesTests/WorkspaceTabsTests/testNewWindowsCascadeAroundDisplayedPositionsWithoutOverwritingPreferredFrames"
+    ],
+    "passed": 2,
+    "failed": 0,
+    "note": "The successful native-layout steps are reused individually. The failed accessory UI critical test is not reused."
+  },
+  "reused_system_resize_checks": {
+    "source_commit": "fbf57a4beabb2f172f6a65921660581e9da5fe43",
+    "run": 39049701246,
+    "job": 117445633676,
+    "tests": [
+      "TramesTests/WorkspaceInteractionTests/testSystemAppWindowResizeUpdatesTerminalAndGuestPTY",
+      "TramesTests/WorkspaceInteractionTests/testDockingTerminalReflowsTheGrid"
+    ],
+    "passed": 2,
+    "failed": 0,
+    "system_resize_steps": 4,
+    "system_resize_sizes": [
+      [
+        360,
+        430
+      ],
+      [
+        750,
+        980
+      ],
+      [
+        500,
+        600
+      ],
+      [
+        750,
+        980
+      ]
+    ],
+    "guest": "Original offline Alpine, network disabled, real guest printf/stty size through the production FFI/PTY. Each output matches the actual terminal grid.",
+    "note": "The individually successful system-resize/docking tests are reused. Their sources and grid/PTY code are unchanged; only late keyboard-key rebinding is changed next. The old failed overall job is not counted as passing."
+  },
+  "tests": {
+    "keyboard_ui": {
+      "run": 39050660220,
+      "job": 117448416675,
+      "artifact_id": 12107537142,
+      "artifact_sha256": "ff260288bf2631e43f9f65800c2246e1d97a50409f48e1720c3b22c29bcc378c",
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "scenarios": "Three full original-accessory toggle expand/collapse cycles; status row visible/hittable and trailing gap measured each time."
+    },
+    "accessory_ctrl_rebuild": {
+      "run": 39050660220,
+      "job": 117448416675,
+      "artifact_id": 12107069094,
+      "artifact_sha256": "2493cdd9b560946c6a258336b53db820b5b0ba81bb57b379c574df27b0b70f9c",
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "scenarios": "Four widths, initial and real upstream bounds-triggered button rebuilds, sticky Ctrl delivery/reset."
+    },
+    "distinct_current_iteration_checks_passed": 7,
+    "checks_in_final_run": 2,
+    "individually_reused_checks_from_this_iteration": 5,
+    "failed": 0,
+    "skipped": 0
+  },
+  "workflow_conclusion": "success",
+  "artifact": {
+    "id": 12107662210,
+    "url": "https://github.com/kb5000/trames/actions/runs/39050660220/artifacts/12107662210",
+    "zip_sha256": "cad71296e2a2b27a4f62544fd5996a0fbf2316b513a71cadd4803362c514462e",
+    "filename": "Trames-0.18.0-build23-unsigned.ipa",
+    "version": "0.18.0",
+    "build": 23,
+    "bundle_id": "org.trames.Trames",
+    "platform": "iPhoneOS arm64",
+    "signed": false,
+    "bytes": 10573351,
+    "sha256": "882082822f5688dbce7598d3e4d04f1eb2c3b1d08d946ed6dd2b5c8b4208f3c9",
+    "file_provider_bundle_id": "org.trames.Trames.FileProvider",
+    "file_provider_group": "group.org.trames.Trames",
+    "file_provider_platform_verified": true,
+    "native_coremark_and_ssh_symbols_absent": true,
+    "debug_acceptance_fixtures_absent": true
+  },
+  "verification": [
+    "GitHub artifact ZIP SHA-256 and embedded IPA.sha256 agree with the downloaded bytes.",
+    "App and extension are unsigned ARM64 iPhoneOS 0.18.0 build 23 with matching App Group metadata.",
+    "Release executable excludes CoreMark/SSH integration and DEBUG workspace/keyboard fixture flags; packaged guest acceptance fixtures are absent.",
+    "Both actual final xcresult summaries report 1 passed, 0 failed, 0 skipped; final Apple workflow and device Release link/package succeeded."
+  ],
+  "frontend_source_sha256": {
+    "apps/ios/Trames/TerminalKeyboardAccessory.swift": "99e4ecb736b01c6c807505da3c8471594c768c1ff1f2661a239a64f256e5b6b7",
+    "apps/ios/Trames/TerminalSession.swift": "e940d2be12b9fd85665ee9535f68d6dd91220dc8794a515a3e1f49945a685acc",
+    "apps/ios/Trames/TerminalViewport.swift": "12fa36849cf45d97f052e4512b817682333cbc671e71e9f613bf4047ea73b212",
+    "apps/ios/Trames/TramesApp.swift": "5e64f3034483a853cfedeeb0302023ef1f9861030328b46576359874ad504f65",
+    "apps/ios/Trames/WorkspaceKeyboardContainer.swift": "956c4e896a3e139723b1144c357f4b0bd25aeffe743c8ed37b0b5cddbc64a4dc",
+    "apps/ios/Trames/WorkspaceModel.swift": "faeedaa15214a5543774b48815155b8fcb77af936543855dccfed3662f6abe24",
+    "apps/ios/Trames/WorkspaceTabs.swift": "1dc96d489bf1dc07241e3902b2fa2f16da232f76093f711439eeab3910bb2c4f",
+    "apps/ios/Trames/WorkspaceWindows.swift": "b6b003f25286b665ea42be8f1d1c534d7e528ddb5af4b50ac7179335788126c4",
+    "apps/ios/TramesTests/TerminalViewportTests.swift": "218bf113b4c700230b85aa77c3d1b73e0a7b9cadb5fc5bff714d74d369b9e5a9",
+    "apps/ios/TramesTests/WorkspaceInteractionTests.swift": "266975935e88c1f9fe4b8aa07fbed3076e8d0525400c1ee94162475904ccd4a1",
+    "apps/ios/TramesTests/WorkspaceTabsTests.swift": "5ff0e106f4e18a41300d391717e5365d9b70cd3ff56badc4d9dfe828861a5488",
+    "apps/ios/TramesUITests/LaunchTests.swift": "ac1932096c51cb7c382a82221d0b81809c9f9b2cf71501583395e3bdc00fe648",
+    "apps/ios/project.yml": "c01f905c9323a133ed3c97972df3c87d9a3b85812f7cf297e889161c2b498f3d"
+  },
+  "prior_minimize_checks": {
+    "run": 39046560912,
+    "job": 117436388619,
+    "tests": [
+      "TramesTests/WorkspaceInteractionTests/testOnlyTerminalCanMinimizeWithoutReactivatingItsHiddenKeyboard",
+      "TramesUITests/LaunchTests/testOnlyAlpineCanMinimizeRestoreAndUseTheInvisibleResizeCorner"
+    ],
+    "note": "These individually successful checks are evidence for their tested paths only. The separate keyboard tests failed, were fixed, and are selected for rerun; the old overall job is not counted as successful.",
+    "source_commit": "1e30e30812c5b2f3ac8fc30cdf262332db3a8392",
+    "counted_in_current_iteration_total": false
+  }
+}

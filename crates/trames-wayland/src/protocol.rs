@@ -20,6 +20,7 @@ impl State {
         handle.create_global::<Self, wl_output::WlOutput, _>(3, ());
         crate::shell::globals(handle);
         crate::input::globals(handle);
+        crate::selection::globals(handle);
         crate::text::globals(handle);
         crate::subsurface::globals(handle);
     }
@@ -52,6 +53,9 @@ impl State {
         self.apply_children(id);
     }
     pub(crate) fn apply_commit(&mut self, id: u64, pending: CachedCommit) {
+        if matches!(pending.buffer, Some(None)) {
+            self.surface_unmapped(id);
+        }
         let needs_configure = self
             .surfaces
             .get(&id)
@@ -105,7 +109,9 @@ impl State {
         if !pending.callbacks.is_empty() {
             s.callbacks.push_back((s.revision, pending.callbacks));
         }
-        if self.seat.popups.last() == Some(&id) {
+        if self.seat.popups.last() == Some(&id)
+            && self.surfaces.get(&id).is_some_and(|s| s.current.is_some())
+        {
             self.focus_surface(Some(id));
         }
     }
@@ -262,6 +268,7 @@ impl Dispatch<wl_surface::WlSurface, SurfaceKey> for State {
         _: &wl_surface::WlSurface,
         key: &SurfaceKey,
     ) {
+        state.surface_unmapped(key.0);
         if let Some(s) = state.surfaces.remove(&key.0) {
             if let Some((parent, ..)) = s.parent {
                 if let Some(p) = state.surfaces.get_mut(&parent) {

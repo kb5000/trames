@@ -1,0 +1,23 @@
+{
+  "base_sha": "aa4528166c8d0cdb04f3fe540730d9af63ed7f07",
+  "reuse_guest_run": 39015795319,
+  "native_reuse": {
+    "sha": "0bca0f90f8f22221c455aed789712bb4c13aad2a",
+    "apple_run": 39060385817,
+    "linux_run": 39061233876
+  },
+  "native_scope": "host-terminals",
+  "critical_test": "TramesTests/WorkspaceInteractionTests/testMultipleAlpineTerminalsShareGuestAndSurviveClosingFirstWindow",
+  "ui_targets": [],
+  "repackage": {
+    "sha": "aa4528166c8d0cdb04f3fe540730d9af63ed7f07",
+    "run": 39062598012
+  },
+  "changed_file_sha256": {
+    "README.md": "1c9488dc2377742f0f77cfaead26292819b92a681ee3a165ab65cbf8fa04ee4f",
+    "docs/validation/release-1.0.json": "69dad85d56c84f7cbd40ed5f2576e8e716b0f1c3002efb74c6cdf6d2052ee866",
+    "docs/validation/release-1.0.md": "87ae51031da3d13b152e481880d0145ca74e7084a3fd4efbc52f239fbc60ac24",
+    "scripts/publish-ios-release-1.0.py": "5e42bc101c453caa0484eadcfa842e70448dea73e1d25c0c96ef362e12646b08"
+  },
+  "reason": "1.0.0 build 26 has passed the actual iPad workspace/PT Y/Bridge acceptance and original Alpine multiple-terminal integration. This commit changes release records/README/publication verification only. Reuse all successful native/guest/simulator results and repackage the byte-identical tested device bundle on main; no recompilation or repeated tests. User explicitly authorized direct 1.0.0 publication after completion."
+}

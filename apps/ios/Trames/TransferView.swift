@@ -10,22 +10,26 @@ struct TransferView: View {
     @State private var selected: URL?
     @State private var chooser = false
     @State private var busy = false
+    @State private var replace = true
     @State private var message = ""
     @State private var exportFile: ExportFile?
     @State private var task: Task<Void,Never>?
     var body: some View {
         NavigationStack {
             Form {
-                Section(session.ssh == nil ? "本地 Linux 文件" : "远端 SFTP 文件") {
+                Section("本地 Linux 文件") {
+                    Text(UserDefaults.standard.bool(forKey:"rootfsFileProviderAvailable") ? "文件 App 中可浏览 Trames › Alpine 的 rootfs（只读）。" : "当前签名未提供文件共享容器，可继续使用这里的导入和导出。")
+                        .font(.caption).foregroundStyle(.secondary)
                     TextField("文件路径", text: $path).textInputAutocapitalization(.never).autocorrectionDisabled()
                     if let selected { Text(selected.lastPathComponent) }
                     Button("选择 Files 文件") { chooser = true }.disabled(busy)
-                    Button(session.ssh == nil ? "导入到 Linux" : "上传到远端") { transfer(upload: true) }.disabled(busy || selected == nil)
-                    Button(session.ssh == nil ? "导出到 Files" : "从远端下载到 Files") { transfer(upload: false) }.disabled(busy)
+                    Toggle("替换 Linux 中的同名文件",isOn:$replace).disabled(busy)
+                    Button("导入到 Linux") { transfer(upload: true) }.disabled(busy || selected == nil)
+                    Button("导出到 Files") { transfer(upload: false) }.disabled(busy)
                 }
-                Section { Text(message.isEmpty ? "传输使用文件副本；目标已存在时会报错。上传取消或失败时会尝试清理远端的部分文件。" : message).font(.caption) }
+                Section { Text(message.isEmpty ? "导入使用文件副本；开启替换后，同名文件在传输完整成功后替换，取消或失败时保留原文件。" : message).font(.caption) }
                 if busy { Button("取消传输", role: .destructive) { task?.cancel(); message = "取消中…" } }
-            }.navigationTitle(session.ssh == nil ? "Files" : "SFTP")
+            }.navigationTitle("Files")
                 .toolbar { Button("完成") { task?.cancel(); dismiss() } }
                 .fileImporter(isPresented: $chooser, allowedContentTypes: [.data, .item]) { result in
                     switch result {
@@ -51,9 +55,7 @@ struct TransferView: View {
                 if upload, let selected { try await ScopedFiles.stage(selected: selected, destination: stage) }
                 try Task.checkCancellation()
                 if let local = session.local {
-                    try await local.transferAsync(guest: path, host: stage, export: !upload)
-                } else if let ssh = session.ssh {
-                    try await ssh.transfer(remote: path, local: stage, upload: upload)
+                    try await local.transferAsync(guest: path, host: stage, export: !upload, replace:upload && replace)
                 } else { throw TramesError.message("会话已关闭") }
                 try Task.checkCancellation()
                 if upload { message = "传输完成" }

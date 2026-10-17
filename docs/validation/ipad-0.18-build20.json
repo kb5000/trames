@@ -1,0 +1,66 @@
+{
+  "version": "0.18.0",
+  "build": 20,
+  "status": "test IPA; await owner iPad acceptance before the 1.0.0 release",
+  "source_commit": "6a3ba0f230c43909918874016b152f664755d656",
+  "workflow_run": 39019541916,
+  "workflow_url": "https://github.com/kb5000/trames/actions/runs/39019541916",
+  "ipa": {
+    "artifact_id": 12096452494,
+    "url": "https://github.com/kb5000/trames/actions/runs/39019541916/artifacts/12096452494",
+    "sha256": "feeab1727fa7704f101a50c8f94de56af3beeb778f26371e2ba47b917d7641d9",
+    "bytes": 10335281,
+    "platform": "iPhoneOS arm64",
+    "signed": false
+  },
+  "tests": {
+    "gesture": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0
+    },
+    "affected_frontend": {
+      "passed": 22,
+      "failed": 0,
+      "skipped": 0
+    },
+    "total_passed": 23
+  },
+  "reused_validation": {
+    "source_commit": "534e223e284df48f207500e84ab4cd05dd3d3958",
+    "apple_run": 39015795319,
+    "linux_run": 39015795340,
+    "reason": "Rust and guest sources unchanged; guest artifacts downloaded from successful Apple run and checked by existing manifest hashes."
+  },
+  "artifact_digests": [
+    {
+      "id": 12096452494,
+      "name": "Trames-unsigned-sideload",
+      "sha256": "sha256:6964e25a5b810076591eeb0a0d96f6ed44f8858508ecf9f12f8e12727165616e"
+    },
+    {
+      "id": 12096332847,
+      "name": "ipad-smoke-diagnostics",
+      "sha256": "sha256:ada3c3bc0597da29c01fcea9fed5d9576bc5118bf6b93afcab7a04c7b4e9bb37"
+    },
+    {
+      "id": 12095693668,
+      "name": "workspace-gesture-diagnostics",
+      "sha256": "sha256:172e3b9e4d98e7cd6e7fb9fc7dbe284d33d77f31b0ad99d25d98a3c11bf775f5"
+    }
+  ],
+  "checks": {
+    "archive_sha256_verified": true,
+    "ipa_sha256_verified": true,
+    "bundle_version_verified": true,
+    "native_coremark_and_ssh_symbols_absent": true
+  },
+  "pending": [
+    "iPad window interactions and native keyboard accessory acceptance",
+    "iPad vkmark presentation smoothness",
+    "Intermittent disappearing status bar not reproduced; keep follow-up open"
+  ],
+  "notes": [
+    "This record and an optional remote-module test import do not change the built app. CI is intentionally skipped for this bookkeeping commit."
+  ]
+}

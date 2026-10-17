@@ -1,10 +1,12 @@
 name: iPad frontend
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: ipad-frontend-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
@@ -12,17 +14,49 @@ defaults:
   run:
     shell: bash
 jobs:
+  scope:
+    runs-on: ubuntu-24.04
+    outputs:
+      frontend_only: ${{ steps.scope.outputs.frontend_only }}
+      baseline_run: ${{ steps.scope.outputs.baseline_run }}
+      baseline_sha: ${{ steps.scope.outputs.baseline_sha }}
+      targeted: ${{ steps.scope.outputs.targeted }}
+      skip_native: ${{ steps.scope.outputs.skip_native }}
+      repackage_run: ${{ steps.scope.outputs.repackage_run }}
+      critical_test: ${{ steps.scope.outputs.critical_test }}
+      ui_targets: ${{ steps.scope.outputs.ui_targets }}
+      native_scope: ${{ steps.scope.outputs.native_scope }}
+      frontend_reused: ${{ steps.scope.outputs.frontend_reused }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - id: scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # A hash-bound plan can reuse the exact validated PR binaries after
+          # merge. Unmatched source changes still fall back to the full checks.
+          TRAMES_FULL_CHECK: 'false'
+        run: python3 scripts/ios-ci-scope.py
   memory-abi:
+    needs: scope
+    if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'
     runs-on: macos-15
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - name: Parse Swift sources before app builds
+        run: |
+          swiftc -frontend -parse apps/ios/Trames/*.swift apps/ios/TramesTests/*.swift apps/ios/TramesUITests/*.swift
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-10-16
       - name: Validate hardware mappings and signal recovery before app builds
         run: cargo test -p trames-memory --locked
   guest-musl:
+    needs: scope
+    if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -54,11 +88,18 @@ jobs:
           if-no-files-found: error
           retention-days: 14
   apple-build:
-    needs: [guest-musl, memory-abi]
+    needs: [scope, guest-musl, memory-abi]
+    if: ${{ !cancelled() && needs.scope.outputs.repackage_run == '' && needs.scope.result == 'success' && (needs.scope.outputs.frontend_only == 'true' || needs.scope.outputs.targeted == 'true' || (needs.guest-musl.result == 'success' && needs.memory-abi.result == 'success')) }}
     runs-on: macos-15
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+      - name: Parse frontend Swift sources
+        run: |
+          swiftc -frontend -parse apps/ios/Trames/*.swift apps/ios/TramesFileSystem/*.swift apps/ios/TramesFileProvider/*.swift apps/ios/TramesTests/*.swift apps/ios/TramesUITests/*.swift
+          xcrun --sdk iphonesimulator swiftc -typecheck -target arm64-apple-ios17.0-simulator \
+            -sdk "$(xcrun --sdk iphonesimulator --show-sdk-path)" -application-extension \
+            apps/ios/TramesFileSystem/*.swift apps/ios/TramesFileProvider/*.swift
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-10-16
@@ -66,27 +107,59 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: full-musl-library-and-source
+          run-id: ${{ needs.scope.outputs.baseline_run || github.run_id }}
+          github-token: ${{ github.token }}
           path: target/musl-hybrid
       - uses: actions/download-artifact@v4
         with:
           name: vulkan-compute-driver-and-native-source
+          run-id: ${{ needs.scope.outputs.baseline_run || github.run_id }}
+          github-token: ${{ github.token }}
           path: target/vulkan-guest
       - name: Build native Rust embedding library
+        if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'
         run: cargo build -p trames-ffi --release --locked
       - name: Test native SSH PTY and SFTP against OpenSSH
+        if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'
         env:
           TRAMES_RUST_LIB_DIR: ${{ github.workspace }}/target/release
         run: bash scripts/test-swift-ssh.sh
-      - name: Validate shared mapping and guest ABI core on native Apple ARM64
-        run: cargo test -p trames-shared -p trames-wayland -p trames-native -p trames-compute -p trames-cpu -p trames-accel -p trames-memory -p trames-vfs -p trames-core --locked
+      - name: Validate affected native modules or the complete Apple core
+        if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.skip_native != 'true'
+        run: |
+          if [[ '${{ needs.scope.outputs.native_scope }}' == wayland-input ]]; then
+            cargo test -p trames-wayland --lib nested_popup_unmap --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == wayland-clipboard ]]; then
+            cargo test -p trames-wayland --lib clipboard_permission --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == host-terminals ]]; then
+            cargo test -p trames-vfs -p trames-core -p trames-ffi --lib --locked
+          elif [[ '${{ needs.scope.outputs.targeted }}' == true ]]; then
+            cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --lib --locked
+          else
+            cargo test -p trames-shared -p trames-wayland -p trames-native -p trames-compute -p trames-cpu -p trames-accel -p trames-memory -p trames-vfs -p trames-core --locked
+          fi
       - name: Test original native Wayland clients and shared-FD lifetimes
+        if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'
         run: brew install pkg-config libffi expat && bash scripts/test-wayland.sh
       - name: Generate Xcode project
         run: brew install xcodegen
       - name: Link unsigned iPad simulator app
-        run: bash scripts/build-ios.sh simulator
+        if: needs.scope.outputs.frontend_reused != 'true'
+        run: |
+          bash scripts/build-ios.sh simulator
+          python3 - <<'PYCODE'
+          import pathlib,plistlib
+          root=pathlib.Path('apps/ios/build/simulator/Build/Products/Debug-iphonesimulator/Trames.app')
+          for extension in (root/'PlugIns').glob('*.appex'):
+              info=plistlib.loads((extension/'Info.plist').read_bytes())
+              assert info['NSExtension']['NSExtensionPointIdentifier']=='com.apple.fileprovider-nonui'
+              assert info['NSExtension']['NSExtensionFileProviderDocumentGroup']==info['TramesAppGroup']
+          PYCODE
       - name: Exercise peer tabs and floating window gestures first
-        timeout-minutes: 8
+        if: needs.scope.outputs.frontend_reused != 'true'
+        timeout-minutes: 12
+        env:
+          TRAMES_UI_CRITICAL: ${{ needs.scope.outputs.critical_test || 'TramesUITests/LaunchTests/testWorkspaceTabsDetachDockAndTerminalTitleRemainsVisible' }}
         run: |
           device_id=$(xcrun simctl list devices available --json | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for rows in devices.values() for d in rows if d["name"].startswith("iPad")))')
           python3 -c 'import subprocess,sys; subprocess.run(["xcrun","simctl","bootstatus",sys.argv[1],"-b"],check=True,timeout=180)' "$device_id"
@@ -94,11 +167,11 @@ jobs:
             -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath apps/ios/build/simulator \
             -parallel-testing-enabled NO -test-timeouts-enabled YES \
             -default-test-execution-time-allowance 180 -maximum-test-execution-time-allowance 180 \
-            -only-testing:TramesUITests/LaunchTests/testWorkspaceTabsDetachDockAndTerminalTitleRemainsVisible \
+            -only-testing:"$TRAMES_UI_CRITICAL" \
             CODE_SIGNING_ALLOWED=NO -skipPackagePluginValidation -resultBundlePath apps/ios/build/workspace-interaction.xcresult test \
             2>&1 | tee apps/ios/build/workspace-interaction.log
       - name: Publish workspace gesture result before the remaining tests
-        if: always()
+        if: ${{ always() && needs.scope.outputs.frontend_reused != 'true' }}
         run: |
           if [[ -d apps/ios/build/workspace-interaction.xcresult ]]; then
             xcrun xcresulttool get test-results summary --path apps/ios/build/workspace-interaction.xcresult \
@@ -106,7 +179,7 @@ jobs:
             cat apps/ios/build/workspace-interaction-summary.json
           fi
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ always() && needs.scope.outputs.frontend_reused != 'true' }}
         with:
           name: workspace-gesture-diagnostics
           path: |
@@ -114,29 +187,40 @@ jobs:
             apps/ios/build/workspace-interaction.log
             apps/ios/build/workspace-interaction.xcresult
           retention-days: 7
-      - name: Test viewport, native consent, real gateway DNS/HTTPS and lifecycle in iPad simulator
-        if: ${{ !cancelled() }}
+      - name: Test affected frontend paths or the full simulator suite
+        if: ${{ !cancelled() && needs.scope.outputs.ui_targets != '[]' }}
         timeout-minutes: 20
+        env:
+          TRAMES_UI_CRITICAL: ${{ needs.scope.outputs.critical_test || 'TramesUITests/LaunchTests/testWorkspaceTabsDetachDockAndTerminalTitleRemainsVisible' }}
+          TRAMES_UI_TARGETS: ${{ needs.scope.outputs.ui_targets }}
         run: |
           device_id=$(xcrun simctl list devices available --json | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for rows in devices.values() for d in rows if d["name"].startswith("iPad")))')
           python3 -c 'import subprocess,sys; subprocess.run(["xcrun","simctl","bootstatus",sys.argv[1],"-b"],check=True,timeout=180)' "$device_id"
+          test_flags=()
+          if [[ -n "$TRAMES_UI_TARGETS" ]]; then
+            while IFS= read -r target; do test_flags+=("-only-testing:$target"); done < <(python3 -c 'import json,os;print("\n".join(json.loads(os.environ["TRAMES_UI_TARGETS"])))')
+          elif [[ '${{ needs.scope.outputs.frontend_only }}' == true ]]; then
+            test_flags=(-only-testing:TramesTests/WorkspaceTabsTests -only-testing:TramesTests/WorkspaceInteractionTests
+              -only-testing:TramesTests/TerminalViewportTests -only-testing:TramesUITests/LaunchTests)
+          fi
           xcodebuild -project apps/ios/Trames.xcodeproj -scheme Trames -configuration Debug \
             -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath apps/ios/build/simulator \
             -parallel-testing-enabled NO -test-timeouts-enabled YES \
             -default-test-execution-time-allowance 900 -maximum-test-execution-time-allowance 900 \
-            -skip-testing:TramesUITests/LaunchTests/testWorkspaceTabsDetachDockAndTerminalTitleRemainsVisible \
+            "${test_flags[@]}" \
+            -skip-testing:"$TRAMES_UI_CRITICAL" \
             CODE_SIGNING_ALLOWED=NO -skipPackagePluginValidation -resultBundlePath apps/ios/build/ipad-smoke.xcresult test \
             2>&1 | tee apps/ios/build/ipad-smoke.log
       - name: Export simulator test summary
-        if: always()
+        if: ${{ always() && needs.scope.outputs.frontend_reused != 'true' }}
         run: |
           if [[ -d apps/ios/build/ipad-smoke.xcresult ]]; then
             xcrun xcresulttool get test-results summary --path apps/ios/build/ipad-smoke.xcresult \
               > apps/ios/build/ipad-smoke-summary.json
             cat apps/ios/build/ipad-smoke-summary.json
             python3 -c 'import json; s=json.load(open("apps/ios/build/ipad-smoke-summary.json")); assert s["failedTests"] == 0 and s["passedTests"] > 0, "The actual simulator test report did not pass"'
-            python3 -c 'import json; s=json.load(open("apps/ios/build/workspace-interaction-summary.json")); assert s["failedTests"] == 0 and s["passedTests"] == 1, "Workspace gestures must pass too"'
           fi
+          python3 -c 'import json; s=json.load(open("apps/ios/build/workspace-interaction-summary.json")); assert s["failedTests"] == 0 and s["passedTests"] == 1, "Workspace gestures must pass too"'
       - name: Link unsigned iPad device app
         run: bash scripts/build-ios.sh device
       - name: Package unsigned device IPA for sideload signing
@@ -145,14 +229,14 @@ jobs:
             apps/ios/build/device/Build/Products/Release-iphoneos/Trames.app \
             apps/ios/build/sideload/Trames-unsigned.ipa
       - name: Export simulator crash diagnostics
-        if: always()
+        if: ${{ always() && needs.scope.outputs.frontend_reused != 'true' }}
         run: |
           if [[ -d apps/ios/build/ipad-smoke.xcresult ]]; then
             xcrun xcresulttool export diagnostics --path apps/ios/build/ipad-smoke.xcresult \
               --output-path apps/ios/build/ipad-diagnostics
           fi
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ always() && needs.scope.outputs.frontend_reused != 'true' }}
         with:
           name: ipad-smoke-diagnostics
           path: |
@@ -181,3 +265,46 @@ jobs:
             apps/ios/build/*/Build/Products/Debug-*/*.app
             apps/ios/build/*/Build/Products/Release-*/*.app
           retention-days: 7
+  repackage:
+    needs: scope
+    if: needs.scope.outputs.repackage_run != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: unsigned-ipad-build-and-project
+          run-id: ${{ needs.scope.outputs.repackage_run }}
+          github-token: ${{ github.token }}
+          path: target/reused-ios
+      - name: Finalize shared-group metadata and package the existing device app
+        run: |
+          python3 - <<'PYCODE'
+          import hashlib,json,pathlib,plistlib,subprocess
+          bundles=list(pathlib.Path('target/reused-ios').glob('**/Release-iphoneos/Trames.app'))
+          assert len(bundles)==1, bundles
+          bundle=bundles[0];app=str(bundle)
+          # Actions ZIP transport does not retain executable permission bits.
+          for p in bundle.rglob('Info.plist'):
+              executable=plistlib.loads(p.read_bytes()).get('CFBundleExecutable','')
+              if executable and pathlib.Path(executable).name==executable:
+                  binary=p.parent/executable
+                  if binary.is_file():binary.chmod(0o755)
+          def hashes():
+              return {str(p.relative_to(bundle)):hashlib.sha256(p.read_bytes()).hexdigest() for p in bundle.rglob('*') if p.is_file() and p!=bundle/'Info.plist'}
+          before=hashes()
+          subprocess.run(['python3','scripts/finalize-ios-app.py',app],check=True)
+          assert hashes()==before, 'Compiled executables and guest inputs must remain byte-identical'
+          pathlib.Path('target/sideload').mkdir(parents=True,exist_ok=True)
+          pathlib.Path('target/sideload/build-reuse.json').write_text(json.dumps({'source_run':${{ needs.scope.outputs.repackage_run }},'unchanged_files_sha256':before},indent=2)+'\n')
+          subprocess.run(['python3','scripts/package-ios.py',app,'target/sideload/Trames-unsigned.ipa'],check=True)
+          PYCODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Trames-unsigned-sideload
+          path: |
+            target/sideload/Trames-unsigned.ipa*
+            target/sideload/build-reuse.json
+          if-no-files-found: error
+          retention-days: 14

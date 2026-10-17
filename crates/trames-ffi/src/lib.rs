@@ -2,7 +2,9 @@
 //! Version 3 embedding ABI. Retained v1 functions keep their signatures/semantics.
 //! All runtime/VFS objects stay on their owning worker. Only bounded byte copies
 //! require unsafe code; callers own and keep their C buffers valid for each call.
+mod clipboard;
 mod session;
+mod terminals;
 mod wayland;
 use session::{HostTimezone, Options, Session, TransferOptions, QUEUE_LIMIT};
 use std::{
@@ -253,6 +255,17 @@ pub unsafe extern "C" fn trames_session_open(pointer: *const u8, length: u32) ->
 /// See `bytes`. Returns accepted bytes; retry the remaining bytes on backpressure.
 #[no_mangle]
 pub unsafe extern "C" fn trames_session_input(handle: u64, pointer: *const u8, length: u32) -> i32 {
+    unsafe { trames_session_terminal_input(handle, 1, pointer, length) }
+}
+/// # Safety
+/// Same bounded input buffer contract as session_input.
+#[no_mangle]
+pub unsafe extern "C" fn trames_session_terminal_input(
+    handle: u64,
+    terminal: u64,
+    pointer: *const u8,
+    length: u32,
+) -> i32 {
     boundary(|| {
         let result = (|| {
             let data = unsafe { bytes(pointer, length) }?;
@@ -261,6 +274,13 @@ pub unsafe extern "C" fn trames_session_input(handle: u64, pointer: *const u8, l
                 .buffers
                 .lock()
                 .map_err(|_| "session lock unavailable")?;
+            let b = b
+                .terminals
+                .get_mut(&terminal)
+                .ok_or("invalid or closed terminal")?;
+            if matches!(b.phase, "exited" | "failed") {
+                return Err("terminal has exited");
+            }
             let count = data.len().min(QUEUE_LIMIT - b.input.len());
             b.input.extend(&data[..count]);
             Ok::<_, &str>(count as i32)
@@ -276,6 +296,17 @@ pub unsafe extern "C" fn trames_session_output(
     pointer: *mut u8,
     capacity: u32,
 ) -> i32 {
+    unsafe { trames_session_terminal_output(handle, 1, pointer, capacity) }
+}
+/// # Safety
+/// Same bounded output buffer contract as session_output.
+#[no_mangle]
+pub unsafe extern "C" fn trames_session_terminal_output(
+    handle: u64,
+    terminal: u64,
+    pointer: *mut u8,
+    capacity: u32,
+) -> i32 {
     boundary(|| {
         let result = (|| {
             let session = session(handle)?;
@@ -283,6 +314,10 @@ pub unsafe extern "C" fn trames_session_output(
                 .buffers
                 .lock()
                 .map_err(|_| "session lock unavailable")?;
+            let b = b
+                .terminals
+                .get_mut(&terminal)
+                .ok_or("invalid or closed terminal")?;
             let count = b.output.len().min(capacity as usize);
             let data: Vec<_> = b.output.iter().take(count).copied().collect();
             let count = unsafe { copy(pointer, capacity, &data) }?;
@@ -294,6 +329,15 @@ pub unsafe extern "C" fn trames_session_output(
 }
 #[no_mangle]
 pub extern "C" fn trames_session_resize(handle: u64, rows: u16, columns: u16) -> i32 {
+    trames_session_terminal_resize(handle, 1, rows, columns)
+}
+#[no_mangle]
+pub extern "C" fn trames_session_terminal_resize(
+    handle: u64,
+    terminal: u64,
+    rows: u16,
+    columns: u16,
+) -> i32 {
     boundary(|| {
         if rows == 0 || columns == 0 || rows > 4096 || columns > 4096 {
             return error("invalid terminal size");
@@ -301,6 +345,9 @@ pub extern "C" fn trames_session_resize(handle: u64, rows: u16, columns: u16) ->
         match session(handle) {
             Ok(s) => match s.buffers.lock() {
                 Ok(mut b) => {
+                    let Some(b) = b.terminals.get_mut(&terminal) else {
+                        return error("invalid or closed terminal");
+                    };
                     b.size = Some((rows, columns));
                     0
                 }
@@ -318,6 +365,92 @@ pub extern "C" fn trames_session_pause(handle: u64, paused: u32) -> i32 {
             0
         }
         Err(e) => error(e),
+    })
+}
+/// Allocate a terminal in a multiple_terminals session. Opening is asynchronous;
+/// status reports starting/running/exited/failed. IDs are never reused.
+#[no_mangle]
+pub extern "C" fn trames_session_terminal_open(handle: u64) -> u64 {
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let session = session(handle)?;
+        if !session.multiple_terminals {
+            return Err("multiple terminals are not enabled");
+        }
+        let mut b = session
+            .buffers
+            .lock()
+            .map_err(|_| "session lock unavailable")?;
+        if b.terminals.len() >= terminals::LIMIT {
+            return Err("terminal limit reached");
+        }
+        if !matches!(b.status.phase, "starting" | "running") {
+            return Err("session is not running");
+        }
+        let id = session.next_terminal.fetch_add(1, Ordering::Relaxed);
+        b.terminals.insert(id, terminals::Channel::default());
+        Ok(id)
+    }));
+    match result {
+        Ok(Ok(id)) => id,
+        Ok(Err(e)) => {
+            error(e);
+            0
+        }
+        Err(_) => {
+            error("terminal ABI panicked");
+            0
+        }
+    }
+}
+#[no_mangle]
+pub extern "C" fn trames_session_terminal_close(handle: u64, terminal: u64) -> i32 {
+    boundary(|| {
+        let result = (|| {
+            let session = session(handle)?;
+            if !session.multiple_terminals {
+                return Err("multiple terminals are not enabled");
+            }
+            session
+                .buffers
+                .lock()
+                .map_err(|_| "session lock unavailable")?
+                .terminals
+                .remove(&terminal)
+                .ok_or("invalid or closed terminal")?;
+            Ok::<_, &str>(0)
+        })();
+        result.unwrap_or_else(error)
+    })
+}
+/// # Safety
+/// Same bounded JSON output buffer contract as session_status.
+#[no_mangle]
+pub unsafe extern "C" fn trames_session_terminal_status(
+    handle: u64,
+    terminal: u64,
+    pointer: *mut u8,
+    capacity: u32,
+) -> i32 {
+    boundary(|| {
+        let result = (|| {
+            let session = session(handle).map_err(str::to_owned)?;
+            let b = session
+                .buffers
+                .lock()
+                .map_err(|_| "session lock unavailable")?;
+            let channel = b
+                .terminals
+                .get(&terminal)
+                .ok_or("invalid or closed terminal")?;
+            let phase = if session.multiple_terminals {
+                channel.phase
+            } else {
+                b.status.phase
+            };
+            let bytes=serde_json::to_vec(&serde_json::json!({"phase":phase,"error":channel.error,"exit_code":if session.multiple_terminals {None}else{b.status.exit_code}})).map_err(|e| e.to_string())?;
+            unsafe { copy(pointer, capacity, &bytes) }.map_err(str::to_owned)
+        })();
+        result.unwrap_or_else(error)
     })
 }
 #[no_mangle]

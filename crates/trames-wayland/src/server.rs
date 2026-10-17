@@ -40,6 +40,8 @@ enum Command {
     Text(TextEdit),
     Gpu(u64, Arc<dyn GpuImage>),
     Exports(u64, Vec<trames_shared::ExportLease>),
+    HostClipboard(Arc<dyn HostClipboard>),
+    ClipboardChanged,
     Stop,
 }
 struct Control {
@@ -128,6 +130,12 @@ impl Server {
         ))?;
         Ok((connection, guest))
     }
+    pub fn attach_clipboard(&self, host: Arc<dyn HostClipboard>) -> io::Result<()> {
+        self.0.send(Command::HostClipboard(host))
+    }
+    pub fn clipboard_changed(&self) -> io::Result<()> {
+        self.0.send(Command::ClipboardChanged)
+    }
     pub fn snapshot(&self) -> Snapshot {
         self.0
             .snapshot
@@ -191,6 +199,11 @@ fn run(
                 Command::Exports(connection, leases) => {
                     compositor.retain_exports(connection, leases)
                 }
+                Command::HostClipboard(host) => {
+                    compositor.state.selection.host = Some(host);
+                    compositor.state.selection_focus_changed();
+                }
+                Command::ClipboardChanged => compositor.state.host_clipboard_changed(),
                 Command::Stop => stopped = true,
             }
         }
@@ -200,7 +213,7 @@ fn run(
         if compositor.dispatch().is_err() {
             break;
         }
-        compositor.state.poll_gpu();
+        let waiting_for_gpu = compositor.state.poll_gpu();
         if compositor.state.revision != published {
             let surfaces = compositor
                 .state
@@ -245,8 +258,11 @@ fn run(
             },
         ];
         // SAFETY: two live native descriptors and a fixed initialized array.
-        // The timeout also retries outbound flush after peer backpressure.
-        let result = unsafe { libc::poll(fds.as_mut_ptr(), fds.len() as libc::nfds_t, 16) };
+        // A producer wakeup can precede fence completion. Sleeping a full 16ms
+        // then misses a display refresh even when rendering itself was fast.
+        // Keep the idle/backpressure timeout; only retry pending fences at 1ms.
+        let timeout = if waiting_for_gpu { 1 } else { 16 };
+        let result = unsafe { libc::poll(fds.as_mut_ptr(), fds.len() as libc::nfds_t, timeout) };
         if result < 0 && io::Error::last_os_error().kind() != io::ErrorKind::Interrupted {
             break;
         }

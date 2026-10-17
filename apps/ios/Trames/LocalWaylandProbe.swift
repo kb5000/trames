@@ -7,8 +7,12 @@ import TramesKit
 struct WaylandProbeResult {
     let text: String
     let png: Data
+    let presented: UInt64
+    let completed: UInt64
+    let presentationFeedbackAvailable: Bool
     let copiedBytes: UInt64
     let resized: Bool
+    let resumedPresentation: Bool
     let textConfirmed: Bool
 }
 @MainActor
@@ -111,10 +115,10 @@ enum LocalWaylandProbe {
             try await Task.sleep(for:.milliseconds(10))
         }
         print("Wayland acceptance: original apk setup passed at \(Date().timeIntervalSince(began))s")
-        var cubeResized=false, textConfirmed=false
+        var cubeResized=false, textConfirmed=false, resumedPresentation=false
         for (stage,program) in [("info","wayland-info"),("windows","/tmp/wayland-client 1 hold"),("shm","weston-simple-shm"),("editor","weston-editor"),("cube","vkcube --wsi wayland --c 30"),("vkmark","vkmark --winsys wayland --size 320x240 -b clear:duration=0.1 -b texture:anisotropy=16:duration=0.1 -b shading:shading=phong:duration=0.1")] {
             print("Wayland acceptance: starting \(stage) at \(Date().timeIntervalSince(began))s")
-            let start=Date(), baseline=canvas.rendered
+            let start=Date(), baseline=canvas.rendered, presentationBaseline=canvas.frameProgress, completionBaseline=canvas.completed, shownBaseline=canvas.presented
             var focused=false, resized=false, closed=false
             var currentID:UInt64?
             var editorStep=0
@@ -148,6 +152,14 @@ enum LocalWaylandProbe {
                     if (stage=="windows" || stage=="cube") && !resized && canvas.rendered>baseline {
                         try session.waylandCommand(["op":"resize","window":first.id,"width":320,"height":240]); resized=true
                     }
+                    if stage=="cube" && !resumedPresentation && canvas.frameProgress>=presentationBaseline+4 {
+                        // Hide with GPU/presentation work potentially outstanding.
+                        // A restored window must not inherit occupied UI permits.
+                        canvas.presentationEnabled=false;canvas.isHidden=true
+                        try await Task.sleep(for:.milliseconds(60))
+                        canvas.isHidden=false;canvas.presentationEnabled=true
+                        resumedPresentation=true
+                    }
                     let sizeOK=first.width==320 && first.height==240
                     if stage=="cube" { cubeResized = cubeResized || resized && sizeOK }
                     if stage=="editor", let context=status.text {
@@ -179,10 +191,13 @@ enum LocalWaylandProbe {
                 if Date().timeIntervalSince(start)>180 { throw TramesError.message("Wayland \(stage) timed out (window=\(String(describing:currentID)), frames=\(canvas.rendered-baseline)): \(text.suffix(4096))") }
                 try await Task.sleep(for:.milliseconds(10))
             }
-            if stage == "vkmark" && (!text.contains("vkmark Score") || text.contains("Failed with exception") || canvas.rendered == baseline) {
+            if stage == "vkmark" && (!text.contains("vkmark Score") || text.contains("Failed with exception") || canvas.frameProgress == presentationBaseline) {
                 throw TramesError.message("Original vkmark scene failed: \(text.suffix(16384))")
             }
-            print("Wayland acceptance: \(stage) passed; frames=\(canvas.rendered-baseline), IME=\(textConfirmed)")
+            let feedback=canvas.presentationFeedbackAvailable ? "device-presented" : "simulator-completed"
+            let metrics="submitted=\(canvas.rendered-baseline):completed=\(canvas.completed-completionBaseline):presented=\(canvas.presented-shownBaseline):feedback=\(feedback)"
+            print("Wayland acceptance: \(stage) passed; \(metrics), IME=\(textConfirmed)")
+            text += "\r\nWAYLAND_PRESENTATION:\(stage):\(metrics)\r\n"
             while !(try session.waylandStatus()).windows.isEmpty {
                 if Date().timeIntervalSince(start)>185 { throw TramesError.message("Wayland client resources were not reclaimed") }
                 try await Task.sleep(for:.milliseconds(10))
@@ -195,8 +210,8 @@ enum LocalWaylandProbe {
             let p=raw.bindMemory(to:UInt8.self)
             for at in stride(from:0,to:p.count,by:4) { colors.insert(UInt32(p[at]) | UInt32(p[at+1])<<8 | UInt32(p[at+2])<<16) }
         }
-        guard colors.count>64, cubeResized, textConfirmed else { throw TramesError.message("Wayland acceptance incomplete: colors=\(colors.count), resize=\(cubeResized), IME=\(textConfirmed)") }
-        return WaylandProbeResult(text:text,png:try capture.png(),copiedBytes:canvas.copiedBytes+second.copiedBytes,resized:cubeResized,textConfirmed:textConfirmed)
+        guard colors.count>64, cubeResized, textConfirmed, resumedPresentation else { throw TramesError.message("Wayland acceptance incomplete: colors=\(colors.count), resize=\(cubeResized), IME=\(textConfirmed)") }
+        return WaylandProbeResult(text:text,png:try capture.png(),presented:canvas.presented,completed:canvas.completed,presentationFeedbackAvailable:canvas.presentationFeedbackAvailable,copiedBytes:canvas.copiedBytes+second.copiedBytes,resized:cubeResized,resumedPresentation:resumedPresentation,textConfirmed:textConfirmed)
     }
 }
 #endif

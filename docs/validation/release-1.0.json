@@ -1,0 +1,200 @@
+{
+  "version": "1.0.0",
+  "build": 26,
+  "status": "verified",
+  "source_commit": "aa4528166c8d0cdb04f3fe540730d9af63ed7f07",
+  "apple_run": 39062598012,
+  "linux_run": 39061233876,
+  "reuse_guest_run": 39015795319,
+  "authorization": "Owner requested multiple local Alpine terminals and direct 1.0.0 release on completion.",
+  "feature": {
+    "guest_instances": 1,
+    "independent_ptys": true,
+    "independent_shells": true,
+    "shared": [
+      "filesystem",
+      "processes",
+      "network",
+      "memory budget",
+      "Wayland",
+      "Bridge"
+    ],
+    "private": [
+      "working directory",
+      "exported shell environment",
+      "stdin/stdout",
+      "terminal window size"
+    ],
+    "terminal_limit": 32,
+    "queue_bytes_per_direction_per_terminal": 65536,
+    "launcher": "Original BusyBox ash monitor mode, private init pipe, original setsid and interactive ash; no new guest binary",
+    "close": "Only the selected PTY hangs up. Environment owner is retained when its first terminal closes; reopening after closing all terminal views retains the guest."
+  },
+  "local_checks": {
+    "foreground_session_signal_unit": {
+      "passed": 1,
+      "failed": 0
+    },
+    "strict_affected_clippy": "passed",
+    "original_alpine_multiple_terminals": "passed locally and in final original Alpine production integration CI run 39061233876"
+  },
+  "reused_validation": [
+    "ipad-0.18-build23.json",
+    "ipad-0.18-build24.json",
+    "ipad-0.18-build25.json"
+  ],
+  "device_limits": [
+    "File Provider device activation/browsing awaits formal App Group signing, as already agreed.",
+    "Actual iPad multiple-window/physical-keyboard/permission-alert and GPU presentation remain user-device observations; simulator is not a physical-device claim."
+  ],
+  "source_sha256": {
+    "crates/trames-core/src/process.rs": "6d52d4aaa2bc2dd015faaad1e3267ff7349947a11c9f712ad5fc864f3c9c8b49",
+    "crates/trames-vfs/src/pty.rs": "18f0a442cf369fec200085a720101bae90fa89eb505711b2c8bc16ab3c667de7",
+    "crates/trames-ffi/src/terminals.rs": "0f5a79828a0ac084cd0fe3107b1bc96e4533023635a7a650029bad00c2fe0e12",
+    "crates/trames-ffi/src/lib.rs": "c66af1a56dcdf3285c16118b1f51b876c7ae5976e5e46eb07c6aa5ce305c69b7",
+    "crates/trames-ffi/src/session.rs": "367b74d36833d98ee2b60db0c88a7998fe89b4c0f84144e533a6945d6e9cb50c",
+    "apps/ios/Trames/WorkspaceModel.swift": "3c79d21c3718a50fc80e28ea84ab3d0e7d435474f5e0510cca19e9f7b20a330d",
+    "apps/ios/Trames/TerminalSession.swift": "4d286f1ade8a30a3c8f0eca73deacf9d58ebcf2fae9376d6738622cfe50523f8",
+    "apps/ios/Trames/EnvironmentStore.swift": "835f86017d500d7fedeb0e3b4dc0923a434977387afec62ae55f4b13f3ac9e56",
+    "apps/ios/Trames/TramesApp.swift": "71f546caf76ebb6d64b714641a3e16e949a1068c54b0ac7bf6c58b8331a3e9e1",
+    "apps/ios/TramesKit/Sources/TramesKit/LocalSession.swift": "8c3d3c70a5327c7d114a191faefa62ef7591bbbd1a52185e676cde4f673c6858",
+    "apps/ios/TramesTests/WorkspaceInteractionTests.swift": "473faf01effbe03c89ffd8595a804adffbd5504442dc8b8b5bfcaa2beca0bce0",
+    "apps/ios/project.yml": "044b2f12e22d06cebe63437f052003bcfebcb337bac93dd07812d0e17956f378",
+    "tests/integration/multiple-terminals.py": "7d2067e2beffc754339114d86f6354f0d02871826e2e4970078534692dec051f",
+    "Cargo.toml": "935d609762905ada3fe18a44beeb060504756724a44c7f23f57283f23073a263",
+    "Cargo.lock": "a759cd8327b553b803b7f1540fd87b7a55bf8d34cbab56aad04bc451e9400ef5",
+    "crates/trames-ffi/include/trames.h": "48e42896d3074be965c815ae6e0cce36de21c94fe085173b86cab53b6680f103",
+    "LICENSE": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+  },
+  "native_apple_run": 39060385817,
+  "native_linux_run": 39060385786,
+  "native_checks": {
+    "apple": {
+      "run": 39060385817,
+      "job": 117476990833,
+      "passed": 165,
+      "failed": 0,
+      "ignored": 1,
+      "step_conclusion": "success",
+      "job_conclusion": "failure (independent simulator cleanup/acceptance failed, retried separately)"
+    },
+    "linux": {
+      "run": 39060385786,
+      "job": 117476992939,
+      "passed": 166,
+      "failed": 0,
+      "ignored": 1,
+      "strict_clippy": "passed",
+      "step_conclusion": "success",
+      "job_conclusion": "failure (independent shell readiness test matched TTY echo, fixed and retried separately)"
+    },
+    "source_commit": "0bca0f90f8f22221c455aed789712bb4c13aad2a",
+    "reuse_reason": "All crates, Cargo inputs and application production sources remain identical; only validation/publication files changed."
+  },
+  "retry_reason": [
+    "Initial integration test matched a command echo before stty -echo completed; corrected to complete real output frames.",
+    "The simulator cleanup restored arbitrary old clipboard items and surfaced a missing InputMode_qwerty.plist; the retry clears the disposable clipboard, keeps the soft keyboard hidden for stable viewport measurement and logs acceptance stages.",
+    "The simulator passed 3 PTYs and actual workspace/stty sizes, then waited for a CRLF-framed echo marker despite disabled echo placing output beside the prompt. Markers now explicitly printf leading/trailing newlines; serialize errors before cleanup. Production sources remain unchanged."
+  ],
+  "linux_source_commit": "df98d94ce22406e5c9f6a71b55e9f16d7899842c",
+  "linux_source_reuse_run": 39062597898,
+  "integration_checks": {
+    "linux": {
+      "run": 39061233876,
+      "job": 117479481355,
+      "conclusion": "success",
+      "summary": "PASS: 3 independent PTYs, shared files/processes, private cwd/env, resize, Ctrl+C, output backpressure, close/exit/reopen and rapid pending cancellation",
+      "source_commit": "df98d94ce22406e5c9f6a71b55e9f16d7899842c",
+      "production_identical_to_source": true
+    },
+    "linux_reuse": {
+      "run": 39062597898,
+      "conclusion": "success",
+      "checks_reused_without_rerunning": true
+    }
+  },
+  "simulator_checks": {
+    "run": 39062598012,
+    "job": 117483504149,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "artifact_id": 12112480847,
+    "artifact_zip_sha256": "f99c2a9f8169ed665e67ede5ef1208105edd1cd5f8f231b7b4a1f9e5682bce34",
+    "test": "TramesTests/WorkspaceInteractionTests/testMultipleAlpineTerminalsShareGuestAndSurviveClosingFirstWindow",
+    "scenarios": [
+      "Three independent PTYs in the actual workspace, different native viewport/stty sizes",
+      "Shared filesystem and private shell cwd/environment",
+      "Detach, minimize, restore and dock a secondary terminal",
+      "Close the first terminal view; hidden owner continues actual native Bridge/UIPasteboard write from another shell",
+      "Shared background pause/resume",
+      "Close all terminal views and open another shell in the same live guest"
+    ],
+    "summary": {
+      "devicesAndConfigurations": [
+        {
+          "device": {
+            "architecture": "arm64",
+            "deviceId": "2EDB2671-090C-4988-822E-421879ECE84C",
+            "deviceName": "iPad Pro 11-inch (M4)",
+            "modelName": "iPad Pro 11-inch (M4)",
+            "osBuildNumber": "22F77",
+            "osVersion": "18.5",
+            "platform": "iOS Simulator"
+          },
+          "expectedFailures": 0,
+          "failedTests": 0,
+          "passedTests": 1,
+          "skippedTests": 0,
+          "testPlanConfiguration": {
+            "configurationId": "1",
+            "configurationName": "Test Scheme Action"
+          }
+        }
+      ],
+      "environmentDescription": "Trames · Built with macOS 15.7.9",
+      "expectedFailures": 0,
+      "failedTests": 0,
+      "finishTime": 1792265797.306,
+      "passedTests": 1,
+      "result": "Passed",
+      "skippedTests": 0,
+      "startTime": 1792265665.657,
+      "statistics": [],
+      "testFailures": [],
+      "title": "Test - Trames",
+      "topInsights": [],
+      "totalTestCount": 1
+    }
+  },
+  "apple_conclusion": "success",
+  "linux_conclusion": "success",
+  "artifact": {
+    "version": "1.0.0",
+    "build": 26,
+    "bundle_id": "org.trames.Trames",
+    "platform": "iPhoneOS arm64",
+    "signed": false,
+    "bytes": 10607498,
+    "sha256": "264df460a1b224a7e0570c43d1fa78de745b18ea7a6824c2aeed635e6cfda754",
+    "file_provider_bundle_id": "org.trames.Trames.FileProvider",
+    "file_provider_group": "group.org.trames.Trames",
+    "file_provider_platform_verified": true,
+    "native_coremark_and_ssh_symbols_absent": true,
+    "debug_wayland_fixtures_absent": true,
+    "guest_aarch64_and_manifests_verified": true,
+    "id": 12111869549,
+    "zip_sha256": "d70f01ef0084bd08daa5d05d91dc2105fb48af7d0422ad087995b2d8eb4c1d17",
+    "ci_url": "https://github.com/kb5000/trames/actions/runs/39062598012/artifacts/12111869549",
+    "release_url": "https://github.com/kb5000/trames/releases/tag/v1.0.0",
+    "release_ipa_url": "https://github.com/kb5000/trames/releases/download/v1.0.0/Trames-1.0.0-build26-unsigned.ipa"
+  },
+  "verification": [
+    "Downloaded Actions artifact ZIP digest matches the API digest; embedded IPA.sha256 matches the actual IPA.",
+    "Both main App and File Provider are unsigned ARM64 iPhoneOS 1.0.0 build 26; matching shared-group metadata, no native CoreMark/SSH product integration, DEBUG Wayland test directory excluded.",
+    "Bundled AArch64 ELF64 musl/Vulkan libraries match their manifests.",
+    "The final release publisher checks all packaged file bytes against the tested device build, original-source inputs/notices and paired source archives before publishing; application/guest/build source changes after acceptance are rejected.",
+    "Main merge uses only hash-bound validated source reuse and re-packages the exact tested device bundle, without another simulator/native test run or recompilation.",
+    "Real iPad observations and formally signed File Provider activation are distinguished from simulator/CI coverage."
+  ]
+}

@@ -10,10 +10,15 @@ actor EnvironmentStore {
         return url
     }
     let root: URL
+    let authorizationRoot: URL
     private var generation: UInt64 = 0
     private var resetting = false
     init() throws {
-        root = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true).appendingPathComponent("Trames", isDirectory: true)
+        let privateRoot = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true).appendingPathComponent("Trames", isDirectory: true)
+        authorizationRoot=privateRoot
+        try FileManager.default.createDirectory(at:privateRoot,withIntermediateDirectories:true)
+        root = try RootfsLocations.prepare(privateRoot:privateRoot,sharedRoot:RootfsLocations.sharedRoot)
+        UserDefaults.standard.set(root==RootfsLocations.sharedRoot,forKey:"rootfsFileProviderAvailable")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
     }
     func start(useVolumeBudget: Bool, vulkan: Bool = false, memoryBudgetMiB: Int = 1024, processMemoryBudgetMiB: Int = 512) async throws -> LocalSession {
@@ -44,7 +49,7 @@ actor EnvironmentStore {
         }
         let icd = vulkan ? Bundle.main.url(forResource: "libtrames_vulkan_icd", withExtension: "so", subdirectory: "GuestVulkan") : nil
         if vulkan, icd == nil { throw TramesError.message("Missing bundled Vulkan compute driver") }
-        return try LocalSession(store: active, rootfs: nil, total: UInt64(total), available: UInt64(available), useVolumeBudget: useVolumeBudget, muslLibc: musl, pureAccelerator: true, vulkanICD: icd, memoryBudgetMiB: memoryBudgetMiB, processMemoryBudgetMiB: processMemoryBudgetMiB)
+        return try LocalSession(store: active, rootfs: nil, total: UInt64(total), available: UInt64(available), useVolumeBudget: useVolumeBudget, muslLibc: musl, pureAccelerator: true, vulkanICD: icd, memoryBudgetMiB: memoryBudgetMiB, processMemoryBudgetMiB: processMemoryBudgetMiB, multipleTerminals: true)
     }
     func reset() async throws {
         guard !resetting else {throw TramesError.message("Linux 环境正在重置")}
@@ -52,5 +57,4 @@ actor EnvironmentStore {
         defer {resetting=false}
         try await LocalSession.reset(store:root.appendingPathComponent("environment",isDirectory:true))
     }
-    func knownHosts() throws -> KnownHosts { try KnownHosts(url: root.appendingPathComponent("known-hosts.json")) }
 }

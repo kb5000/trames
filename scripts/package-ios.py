@@ -47,6 +47,26 @@ def package(app: Path, output: Path) -> None:
         raise ValueError("Executable must target the iOS device platform")
     if not binary.stat().st_mode & stat.S_IXUSR:
         raise ValueError("App executable has lost its executable permission")
+    for extension in sorted((app / "PlugIns").glob("*.appex")):
+        with (extension / "Info.plist").open("rb") as source:
+            metadata = plistlib.load(source)
+        if not metadata.get("CFBundleIdentifier", "").startswith(info["CFBundleIdentifier"] + "."):
+            raise ValueError("Extension bundle identifier must belong to this app")
+        if any(metadata.get(key) != info[key] for key in ("CFBundleVersion", "CFBundleShortVersionString")):
+            raise ValueError("App and extension versions must match")
+        if metadata.get("CFBundleSupportedPlatforms") != ["iPhoneOS"]:
+            raise ValueError("Only an iPhoneOS device extension can be packaged")
+        provider = metadata.get("NSExtension", {})
+        if provider.get("NSExtensionPointIdentifier") != "com.apple.fileprovider-nonui" or not provider.get("NSExtensionPrincipalClass"):
+            raise ValueError("Missing File Provider extension metadata")
+        if not info.get("TramesAppGroup") or provider.get("NSExtensionFileProviderDocumentGroup") != info["TramesAppGroup"]:
+            raise ValueError("File Provider must use the app's configured shared group")
+        executable = metadata.get("CFBundleExecutable", "")
+        if not executable or Path(executable).name != executable:
+            raise ValueError("Invalid extension executable")
+        header = (extension / executable).read_bytes()[:32]
+        if len(header) != 32 or struct.unpack_from("<2I", header) != (0xFEEDFACF, 0x0100000C):
+            raise ValueError("Expected an arm64 extension executable")
     if output.suffix != ".ipa":
         raise ValueError("Output must use the .ipa extension")
     if output.resolve().is_relative_to(app.resolve()):
