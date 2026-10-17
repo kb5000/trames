@@ -86,6 +86,7 @@ final class WaylandInputTests: XCTestCase {
         let all=try XCTUnwrap(view.textRange(from:view.beginningOfDocument,to:view.endOfDocument))
         XCTAssertEqual(view.text(in:all),"other")
     }
+    @MainActor
     func testNativeClipboardActionsRouteToGuestControlKeys() {
         let view=WaylandInputView();var events:[[String:Any]]=[]
         view.sendInput={ events.append($0) }

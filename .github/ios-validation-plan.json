@@ -20,7 +20,7 @@
     "apps/ios/Trames/WaylandInputView.swift": "f94a7475a8cae8a5dde5ec0482ba6707a2503f9c926aec3426d6244384297d0b",
     "apps/ios/Trames/WorkspaceModel.swift": "53a37f104c70df34d911200ac96bf504c3870393c526a04b36e10ff6b44d32dc",
     "apps/ios/Trames/WorkspaceWindows.swift": "ca6aa8a67ecf2afd3a9de78937abf9cc178438f3ef4ad4fda99ad1b573c7da9a",
-    "apps/ios/TramesTests/WaylandInputTests.swift": "251a09378dfed1ad858b05b85b0d9a9b428ade60c0cd7ce3494c9574b01f7653",
+    "apps/ios/TramesTests/WaylandInputTests.swift": "2632694e2489504deddd8dc128c85b28c15c1aaae5d874d1ef856a877d53c284",
     "apps/ios/TramesTests/WorkspaceInteractionTests.swift": "e8fe3a21f8d28bba5c9820f0c0eb9986e84e8b9e407b435933d23351b27eaf3d",
     "apps/ios/TramesUITests/LaunchTests.swift": "2c00d7ce1363d21ab283e3fabbc1db52b757d9444058c8a5ffce800d7e6eb647",
     "apps/ios/project.yml": "8c78118b279f20cbe677898cfd8cb6ef1f9381846ef3ae9900ff247fd8f241b8",
