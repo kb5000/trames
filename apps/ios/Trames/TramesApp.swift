@@ -122,7 +122,7 @@ struct SessionView: View {
     @ObservedObject var session: TerminalSession
     var body: some View {
         VStack(spacing: 0) {
-            TerminalPane(session:session,focused:workspace.layout.focused == .terminal(session.id),visible:workspace.isVisible(.terminal(session.id)),onFocus:{ [weak workspace, weak session] in if let session { workspace?.focus(.terminal(session.id)) } })
+            TerminalPane(session:session,workspace:workspace,onFocus:{ [weak workspace, weak session] in if let session { workspace?.focus(.terminal(session.id)) } })
                 .frame(minHeight:0,maxHeight:.infinity).clipped()
             HStack {
                 Text(session.state).lineLimit(2).accessibilityIdentifier("session-state")

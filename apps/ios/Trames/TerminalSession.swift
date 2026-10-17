@@ -194,12 +194,14 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
 }
 struct TerminalPane: UIViewRepresentable {
     @ObservedObject var session: TerminalSession
-    let focused: Bool
-    let visible: Bool
+    let workspace: WorkspaceModel
     let onFocus: () -> Void
     func makeUIView(context: Context) -> TerminalViewport { session.terminal }
     func updateUIView(_ view: TerminalViewport, context: Context) {
         view.onFocusRequested = onFocus
-        view.setKeyboardFocus(focused,visible:visible,deferred:true)
+        let id=WorkspaceItemID.terminal(session.id)
+        // SwiftUI may deliver a snapshot queued before minimization. Read the
+        // live model rather than focus/visibility captured in that snapshot.
+        view.setKeyboardFocus(workspace.layout.focused == id,visible:workspace.isVisible(id),deferred:true)
     }
 }

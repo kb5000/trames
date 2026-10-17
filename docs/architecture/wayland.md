@@ -80,7 +80,7 @@ requesting both on one instance is rejected.
 Terminal and Wayland identities share one root tab/window model, independent of
 mutable application titles. Tabs can reorder or detach; an explicit floating-window
 button docks into that same tab row. Dragging to the top does not maximize.
-Minimization preserves the previous placement and leaves an inactive tab for restoration.
+Minimization preserves window identity and leaves an inactive tab for restoration.
 Geometry comes from the actual header/content frames. Resizing follows available
 client space. Guest mode acknowledgements do not steal terminal focus on every
 frame, and empty OSC titles fall back to the session's original title.

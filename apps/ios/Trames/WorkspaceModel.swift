@@ -48,6 +48,10 @@ final class WorkspaceModel: ObservableObject {
         return session(for:id)?.waylandWindows.first { $0.id == window }
     }
     func add(_ session: TerminalSession) {
+        session.terminal.keyboardVisibility = { [weak self, weak session] in
+            guard let self, let session else { return false }
+            return self.isVisible(.terminal(session.id))
+        }
         session.onWaylandChanged = { [weak self, weak session] windows in
             guard let self, let session else { return }; self.synchronize(session, windows:windows)
         }

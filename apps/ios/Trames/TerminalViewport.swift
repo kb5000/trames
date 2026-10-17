@@ -5,6 +5,8 @@ import SwiftTerm
 /// Terminal columns fit the viewport; only scrollback needs a scrolling axis.
 final class TerminalViewport: TerminalView {
     var onFocusRequested: (() -> Void)?
+    // Query the live model even if UIKit is applying an older SwiftUI snapshot.
+    var keyboardVisibility: (() -> Bool)?
     private var requestedKeyboardFocus = false
     private var wantsKeyboardFocus = false
     private var acceptsKeyboardFocus = true
@@ -40,9 +42,10 @@ final class TerminalViewport: TerminalView {
         if wantsKeyboardFocus && window != nil && !isFirstResponder { _ = becomeFirstResponder() }
         else if !wantsKeyboardFocus && isFirstResponder { _ = resignFirstResponder() }
     }
-    override var canBecomeFirstResponder: Bool { acceptsKeyboardFocus && super.canBecomeFirstResponder }
+    private var keyboardIsVisible: Bool { acceptsKeyboardFocus && (keyboardVisibility?() ?? true) }
+    override var canBecomeFirstResponder: Bool { keyboardIsVisible && super.canBecomeFirstResponder }
     override func becomeFirstResponder() -> Bool {
-        guard acceptsKeyboardFocus else { return false }
+        guard keyboardIsVisible else { return false }
         // UIKit can reenter while updating the keyboard during a resize.
         guard !isFirstResponder, !changingFocus else { return isFirstResponder }
         wantsKeyboardFocus = true
