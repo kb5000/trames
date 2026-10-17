@@ -133,6 +133,13 @@ final class WorkspaceInteractionTests: XCTestCase {
                 sizes.append(CGSize(width:CGFloat(w),height:CGFloat(h)))
             }
         }
+        func waitForResize(_ expected: CGSize) async throws {
+            let deadline=Date().addingTimeInterval(5)
+            while sizes.last != expected && Date() < deadline {
+                try await Task.sleep(for:.milliseconds(20))
+            }
+            XCTAssertEqual(sizes.last,expected,"The final configure must follow the host content rectangle")
+        }
         window.rootViewController=UIHostingController(rootView:WorkspaceView(workspace:model))
         window.makeKeyAndVisible()
         try await Task.sleep(for:.milliseconds(250))
@@ -143,7 +150,7 @@ final class WorkspaceInteractionTests: XCTestCase {
         let canvas=try XCTUnwrap(findCanvas(try XCTUnwrap(window.rootViewController?.view)))
         let id=WorkspaceItemID.wayland(session.id,7)
         model.saveFrame(id,DisplayWindowGeometry(origin:CGPoint(x:20,y:20),size:CGSize(width:400,height:300)))
-        try await Task.sleep(for:.milliseconds(150))
+        try await waitForResize(CGSize(width:400,height:232))
         XCTAssertEqual(canvas.bounds.width,400,accuracy:1)
         XCTAssertEqual(canvas.bounds.height,232,accuracy:1)
         XCTAssertEqual(sizes.last?.width,400);XCTAssertEqual(sizes.last?.height,232)
@@ -151,7 +158,7 @@ final class WorkspaceInteractionTests: XCTestCase {
             model.saveFrame(id,DisplayWindowGeometry(origin:CGPoint(x:20,y:20),size:CGSize(width:CGFloat(width),height:260)))
             try await Task.sleep(for:.milliseconds(10))
         }
-        try await Task.sleep(for:.milliseconds(150))
+        try await waitForResize(CGSize(width:280,height:192))
         XCTAssertEqual(canvas.bounds.width,280,accuracy:1);XCTAssertEqual(sizes.last?.width,280)
         XCTAssertEqual(canvas.bounds.height,192,accuracy:1);XCTAssertEqual(sizes.last?.height,192)
         model.dock(id);try await Task.sleep(for:.milliseconds(150))

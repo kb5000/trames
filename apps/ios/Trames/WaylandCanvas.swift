@@ -278,11 +278,15 @@ final class WaylandCanvas: WaylandInputView {
             #endif
             let presentation=WaylandPresentation(frame:frame,semaphore:inFlight)
             presentations.append(presentation)
+            let submittedRevision=frame.info.revision
             #if !targetEnvironment(simulator)
             drawable.addPresentedHandler { [weak self] drawable in
                 let time=drawable.presentedTime
                 presentation.finish(presented:time > 0)
-                if time > 0 { Task { @MainActor in self?.didPresent(at:time) } }
+                Task { @MainActor in
+                    if time > 0 { self?.didPresent(at:time) }
+                    else { self?.retryUnpresented(submittedRevision) }
+                }
             }
             #endif
             command.addCompletedHandler { [weak self] result in
@@ -294,13 +298,21 @@ final class WaylandCanvas: WaylandInputView {
                 // on-screen presentation count or timestamp.
                 presentation.finish(presented:success)
                 #endif
-                if success { Task { @MainActor in self?.didCompleteFrame() } }
+                Task { @MainActor in
+                    if success { self?.didCompleteFrame() }
+                    else { self?.retryUnpresented(submittedRevision) }
+                }
             }
             command.present(drawable)
             command.commit(); submitted = true; lastRevision = frame.info.revision
             rendered += 1
             updatePresentationStatus()
         } catch { onError?(error.localizedDescription) }
+    }
+    private func retryUnpresented(_ revision: UInt64) {
+        // Core Animation reports zero for skipped drawables. A dropped or
+        // failed frame cannot leave FIFO waiting on a revision we never retry.
+        if lastRevision == revision { lastRevision=nil }
     }
     private func didCompleteFrame() {
         completed += 1
