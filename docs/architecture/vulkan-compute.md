@@ -71,13 +71,16 @@ Timeline semaphore extensions remain unavailable.
 
 ## Graphics resources
 
-Core graphics now includes native 2D optimal-tiled RGBA8/BGRA8 UNORM images,
-binding/memory requirements, color image views, a single-color render pass and
-framebuffer, vertex/fragment graphics pipelines, dynamic viewport/scissor, draw,
-image layout barriers, buffer-to-image uploads and image-to-buffer copy. Queue queries retain native
+Core graphics includes native 2D optimal-tiled RGBA8/BGRA8 UNORM/sRGB images and
+D16/D32 depth images, binding/memory requirements, image views, single-color
+render passes with optional depth, framebuffer and vertex/fragment pipelines.
+Static or dynamic viewport/scissor, depth compare/write, native color/alpha
+blending, transfer color clears, draws, image layout barriers, buffer-to-image
+uploads and image-to-buffer copies are supported. Queue queries retain native
 graphics/compute/transfer flags. Image format queries expose only this profile:
 one mip/layer/sample and dimensions up to 4096; allocation/session budgets still
-apply. Device memory remains explicit and noncoherent at the guest boundary.
+apply. Device memory uses explicit noncoherent transfers or coherent shadow
+mappings synchronized at the exposed host synchronization boundaries.
 
 Pipelines accept generated vertices or vertex/instance buffers (up to 16 bindings
 and attributes), triangle list/strip topology (including strip primitive restart), 16/32-bit index buffers and indexed
@@ -105,12 +108,14 @@ RGBA8/BGRA8 textures support optimal 2D, one mip/layer/sample, explicit uploads,
 `SHADER_READ_ONLY_OPTIMAL`/GENERAL layouts, nearest/linear filtering, and normalized
 repeat/mirrored-repeat/clamp-to-edge/clamp-to-border sampling. Native format
 properties bound sampling/filter support. Buffer/image copies check offsets,
-padded row/image pitches, subresources and buffer/image extents. Anisotropy,
-comparison, unnormalized coordinates, immutable samplers, storage images, mipmap
-chains, depth/stencil, blending, multisampling and graphics specialization remain
-unavailable. Unsupported options fail explicitly.
+padded row/image pitches, subresources and buffer/image extents. Sampler
+anisotropy is queried from the host, must be enabled at device creation and
+uses the native sampler with the native maximum. Comparison, unnormalized
+coordinates, immutable samplers, storage images, mipmap chains, stencil,
+multisampling and graphics specialization remain unavailable. Unsupported options fail explicitly.
 
-Dynamic viewport/scissor must both be set; draw checks recording/render-pass/
+Pipelines copy static viewport/scissor and blend constants into owned compiler
+inputs. Each dynamic viewport/scissor must be set before drawing; draw checks recording/render-pass/
 pipeline compatibility. Buffer transfers remain outside render passes.
 Framebuffers/views/images retain their memory and render pass; recorded commands
 and in-flight snapshots retain the complete graph. Graphics compilation uses the
@@ -125,9 +130,11 @@ sheet has been removed from the product UI.
 
 ## Native display and swapchain
 
-With GPU enabled, each local session owns one 1024 × 768 virtual display, plane
-and mode (60 Hz nominal). The App creates/configures a `CAMetalLayer` on its main
-thread and passes it only through the native embedding capability. No guest
+The native embedding API retains a fixed-display WSI backend for regression
+testing. Normal App sessions no longer attach this display; graphical clients
+use [Wayland windows and workspace tabs](wayland.md). Tests explicitly attach one
+1024 × 768 virtual display, plane and mode (60 Hz nominal). The host configures
+a `CAMetalLayer` on its main thread and passes it through the native embedding capability. No guest
 pointer can select a host layer or Objective-C object. Objective-C retain leases
 keep the target alive through surface, swapchain, view, recorded-command and
 in-flight work lifetimes. Detach invalidates that target generation with
@@ -142,8 +149,9 @@ an original native `VK_EXT_metal_surface` on the trusted layer. Device
 `VK_KHR_swapchain` exposes BGRA8 UNORM/SRGB nonlinear, FIFO, exclusive sharing,
 one layer, identity transform, opaque alpha, color attachment and optional
 transfer-source usage; native capabilities bound the image count (at most four).
-Unsupported options fail explicitly. Without an attached display, no WSI
-extensions are advertised; the existing compute/offscreen path remains usable.
+Unsupported options fail explicitly. Without an attached display, the legacy
+display extension is unavailable. Wayland WSI and compute/offscreen rendering
+remain independently usable.
 
 Acquire uses a zero-timeout native call. The guest ICD implements finite/infinite
 waits by retrying with guest nanosleep, allowing peer guest threads and the
@@ -162,22 +170,21 @@ Failed output publication rolls back owned resources; ambiguous native present
 errors retire the affected chain. The display registry lock only protects target
 lookup/attach/detach, never an entire rendering call.
 
-The session menu's “显示窗口” reveals the floating display. Drag its title to
-move it or its bottom-right grip to resize it; the parent transform scales and
-letterboxes the fixed canvas. Metal layer bounds and drawable size remain
-1024 × 768, so window geometry changes do not invalidate guest swapchains.
-Hiding keeps the GPU target attached; closing the local session detaches it and
-cancels guest work. No CPU framebuffer device is added. This is one virtual
-display, not X11/Wayland integration, a desktop window manager or pointer input.
+The old “显示窗口” menu entry, fixed-resolution floating monitor and automatic
+display attachment have been removed. All App graphics use the unified Wayland
+window/tab workspace; resizing requests a new client buffer resolution. The
+fixed-display canvas and its probes now live only in the XCTest target.
 
 `vulkan-present.c` is an ordinary Vulkan acceptance fixture, not a special
 product rendering API. It exercises continuous native acquire/draw/present,
 semaphore reuse, swapchain recreation, retired acquire and producer release.
-Apple XCTest also moves/resizes/hides/reopens the live window and closes a guest
-that is still submitting. Current acceptance status is tracked in
+Apple XCTest retains the native fixed-display swapchain and producer-release
+regression. Workspace gestures and live Wayland presentation cover the App UI.
+The earlier monitor UI acceptance remains historical in
 [display verification](../validation/vulkan-display.md).
 
-Optional core features remain zero. Only the selected WSI extensions are advertised.
+Optional core features are limited to queried native sampler anisotropy.
+Only the selected WSI extensions are advertised.
 Unsupported entrypoints
 return NULL. Unsupported creation parameters return Vulkan failures. Recording
 functions have void signatures; invalid/unsupported recording parameters abort
@@ -208,9 +215,21 @@ Bounds, mapping identity and noncoherent-atom alignment are checked. The guest
 mapping aligns `pData-offset` to the native `minMemoryMapAlignment`, including
 unaligned mapping offsets; the underlying anonymous mapping is retained
 separately for unmap/free. Partial flush/invalidate translates allocation offsets
-to mapping-relative guest addresses. HOST_COHERENT
-is cleared even when the host type has it: applications must follow the reported
-properties and explicitly flush/invalidate. Shared storage remains future work.
+to mapping-relative guest addresses.
+
+Native HOST_COHERENT types retain that property. Their guest shadow is initialized
+from native storage on map. A budget-charged baseline records synchronized bytes:
+queue submission and unmap upload only CPU changes, while successful fence
+status/wait (including queue/device idle) downloads GPU changes without replacing
+new CPU writes to other bytes. Explicit coherent flush/invalidate follows the
+same rules. This supports original clients that persistently map uniforms or
+unmap texture staging memory without a flush. It avoids whole-map upload/readback
+clobbering independent CPU inputs and GPU outputs; same-byte unsynchronized races
+remain application errors under Vulkan. The baseline shares the session GPU
+allocation budget and is released with the mapping. Direct CPU aliasing of native
+allocations and device/host polling outside these synchronization boundaries are
+not implemented. Image presentation still exports the original native texture
+without pixel readback; shadow mappings do not change that path.
 
 No guest borrow survives a submission or wait. GPU buffers live on the host.
 Fence polling is nonblocking; the guest wait wrapper uses monotonic deadlines

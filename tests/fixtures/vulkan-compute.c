@@ -26,6 +26,7 @@ static void *compile_peer(void *unused) {
 }
 int main(int argc,char **argv) {
     assert(argc==2 || argc==3);
+    int coherent=argc==3 && !strcmp(argv[2],"coherent");
     int bridge_checks=argc==3 && !strcmp(argv[2],"bridge-check");
     FILE *file=fopen(argv[1],"rb");assert(file);assert(fseek(file,0,SEEK_END)==0);long size=ftell(file);assert(size>0 && size%4==0);rewind(file);uint32_t *code=malloc((size_t)size);assert(code && fread(code,1,(size_t)size,file)==(size_t)size);fclose(file);
     VkApplicationInfo app={.sType=VK_STRUCTURE_TYPE_APPLICATION_INFO,.pApplicationName="Trames compute lab",.apiVersion=VK_API_VERSION_1_0};
@@ -43,11 +44,13 @@ int main(int argc,char **argv) {
     VkDeviceCreateInfo di={.sType=VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,.queueCreateInfoCount=1,.pQueueCreateInfos=&qi};VkDevice device;OK(vkCreateDevice(physical,&di,NULL,&device));VkQueue queue;vkGetDeviceQueue(device,family,0,&queue);
     assert(vkGetDeviceProcAddr(device,"vkCmdDispatch"));assert(!vkGetDeviceProcAddr(device,"vkAbsolutelyNotARealFunction"));
     assert(!vkGetDeviceProcAddr(device,"vkCreateInstance"));
-    VkBufferCreateInfo bi={.sType=VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,.size=N*4,.usage=VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT};VkBuffer buffer;OK(vkCreateBuffer(device,&bi,NULL,&buffer));
-    VkMemoryRequirements req;vkGetBufferMemoryRequirements(device,buffer,&req);VkPhysicalDeviceMemoryProperties memprops;vkGetPhysicalDeviceMemoryProperties(physical,&memprops);uint32_t type=0;while(type<memprops.memoryTypeCount && (!(req.memoryTypeBits&(1u<<type)) || !(memprops.memoryTypes[type].propertyFlags&VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)))type++;assert(type<memprops.memoryTypeCount);
+    VkBufferCreateInfo bi={.sType=VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,.size=(N+(coherent?8:0))*4,.usage=VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT};VkBuffer buffer;OK(vkCreateBuffer(device,&bi,NULL,&buffer));
+    VkMemoryRequirements req;vkGetBufferMemoryRequirements(device,buffer,&req);VkPhysicalDeviceMemoryProperties memprops;vkGetPhysicalDeviceMemoryProperties(physical,&memprops);uint32_t type=0;while(type<memprops.memoryTypeCount && (!(req.memoryTypeBits&(1u<<type)) || (!(memprops.memoryTypes[type].propertyFlags&VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) || (coherent && !(memprops.memoryTypes[type].propertyFlags&VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)))))type++;assert(type<memprops.memoryTypeCount);
     VkMemoryAllocateInfo ai={.sType=VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,.allocationSize=req.size,.memoryTypeIndex=type};VkDeviceMemory memory;OK(vkAllocateMemory(device,&ai,NULL,&memory));OK(vkBindBufferMemory(device,buffer,memory,0));uint32_t *values;OK(vkMapMemory(device,memory,0,VK_WHOLE_SIZE,0,(void **)&values));
     for(uint32_t i=0;i<N;i++)values[i]=i;
-    VkMappedMemoryRange range={.sType=VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,.memory=memory,.size=VK_WHOLE_SIZE};OK(vkFlushMappedMemoryRanges(device,1,&range));
+    VkMappedMemoryRange range={.sType=VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,.memory=memory,.size=VK_WHOLE_SIZE};
+    if(coherent){vkUnmapMemory(device,memory);OK(vkMapMemory(device,memory,0,VK_WHOLE_SIZE,0,(void **)&values));for(uint32_t i=0;i<N;i++)assert(values[i]==i);puts("coherent unmap/remap preserves CPU writes: ok");}
+    else OK(vkFlushMappedMemoryRanges(device,1,&range));
     VkShaderModuleCreateInfo si={.sType=VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,.codeSize=(size_t)size,.pCode=code};VkShaderModule shader;OK(vkCreateShaderModule(device,&si,NULL,&shader));free(code);
     VkDescriptorSetLayoutBinding binding={.binding=0,.descriptorType=VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,.descriptorCount=1,.stageFlags=VK_SHADER_STAGE_COMPUTE_BIT};VkDescriptorSetLayoutCreateInfo li={.sType=VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,.bindingCount=1,.pBindings=&binding};VkDescriptorSetLayout descriptor_layout;OK(vkCreateDescriptorSetLayout(device,&li,NULL,&descriptor_layout));
     VkPushConstantRange push={.stageFlags=VK_SHADER_STAGE_COMPUTE_BIT,.size=4};VkPipelineLayoutCreateInfo pli={.sType=VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,.setLayoutCount=1,.pSetLayouts=&descriptor_layout,.pushConstantRangeCount=1,.pPushConstantRanges=&push};VkPipelineLayout layout;OK(vkCreatePipelineLayout(device,&pli,NULL,&layout));
@@ -76,9 +79,10 @@ int main(int argc,char **argv) {
     for(uint32_t round=0;round<3;round++) {
         if(round){OK(vkResetFences(device,1,&fence));OK(vkResetCommandBuffer(command,0));}
         VkCommandBufferBeginInfo begin={.sType=VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,.flags=VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT};OK(vkBeginCommandBuffer(command,&begin));vkCmdBindPipeline(command,VK_PIPELINE_BIND_POINT_COMPUTE,pipeline);vkCmdBindDescriptorSets(command,VK_PIPELINE_BIND_POINT_COMPUTE,layout,0,1,&set,0,NULL);uint32_t factor=3;vkCmdPushConstants(command,layout,VK_SHADER_STAGE_COMPUTE_BIT,0,4,&factor);vkCmdDispatch(command,N/64,1,1);
-        VkMemoryBarrier barrier={.sType=VK_STRUCTURE_TYPE_MEMORY_BARRIER,.srcAccessMask=VK_ACCESS_SHADER_WRITE_BIT,.dstAccessMask=VK_ACCESS_HOST_READ_BIT};vkCmdPipelineBarrier(command,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,VK_PIPELINE_STAGE_HOST_BIT,0,1,&barrier,0,NULL,0,NULL);OK(vkEndCommandBuffer(command));VkSubmitInfo submit={.sType=VK_STRUCTURE_TYPE_SUBMIT_INFO,.commandBufferCount=1,.pCommandBuffers=&command};OK(vkQueueSubmit(queue,1,&submit,fence));OK(vkWaitForFences(device,1,&fence,VK_TRUE,5000000000UL));OK(vkInvalidateMappedMemoryRanges(device,1,&range));
+        VkMemoryBarrier barrier={.sType=VK_STRUCTURE_TYPE_MEMORY_BARRIER,.srcAccessMask=VK_ACCESS_SHADER_WRITE_BIT,.dstAccessMask=VK_ACCESS_HOST_READ_BIT};vkCmdPipelineBarrier(command,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,VK_PIPELINE_STAGE_HOST_BIT,0,1,&barrier,0,NULL,0,NULL);OK(vkEndCommandBuffer(command));VkSubmitInfo submit={.sType=VK_STRUCTURE_TYPE_SUBMIT_INFO,.commandBufferCount=1,.pCommandBuffers=&command};OK(vkQueueSubmit(queue,1,&submit,fence));if(coherent)values[N]=0xdecafbadU+round;OK(vkWaitForFences(device,1,&fence,VK_TRUE,5000000000UL));if(coherent)assert(values[N]==0xdecafbadU+round);else OK(vkInvalidateMappedMemoryRanges(device,1,&range));
         for(uint32_t i=0;i<N;i++){uint32_t wanted=i;for(uint32_t j=0;j<=round;j++)wanted=wanted*3+7;assert(values[i]==wanted);}printf("compute round %u: %u uint32 values correct\n",round+1,N);
     }
+    if(coherent)puts("coherent persistent mappings without flush/invalidate preserve independent CPU input and GPU output ranges: ok");
     VkSemaphoreCreateInfo sci={.sType=VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};VkSemaphore semaphores[2];
     for(unsigned i=0;i<2;i++)OK(vkCreateSemaphore(device,&sci,NULL,&semaphores[i]));
     assert(vkGetDeviceProcAddr(device,"vkCreateSemaphore"));

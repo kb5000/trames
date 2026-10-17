@@ -3,23 +3,37 @@ use super::*;
 pub const MEMFD_BYTES: u64 = 128 * 1024 * 1024;
 impl Vfs {
     pub(super) fn memfd_available(&self) -> u64 {
-        let used: u64 = self
-            .fs
-            .borrow()
-            .inodes
-            .iter()
-            .filter_map(Weak::upgrade)
-            .map(|node| {
-                let n = node.borrow();
-                if n.seals.is_some() {
-                    if let Content::File(data) = &n.content {
-                        return data.len();
-                    }
-                }
-                0
-            })
-            .sum();
-        MEMFD_BYTES.saturating_sub(used)
+        self.fs.borrow().shared_budget.available() as u64
+    }
+    /// Mode-zero allocation reserves the virtual inode's storage quota and
+    /// extends logical EOF without changing existing bytes or the fd position.
+    /// Hole punching/KEEP_SIZE and host physical block reservation are separate.
+    pub fn allocate_fd(&mut self, fd: u32, mode: u64, offset: u64, length: u64) -> Result<()> {
+        if length == 0 || offset > i64::MAX as u64 || length > i64::MAX as u64 {
+            return Err(Errno(22));
+        }
+        let end = offset
+            .checked_add(length)
+            .filter(|n| *n <= i64::MAX as u64)
+            .ok_or(Errno(27))?;
+        let old = {
+            let o = self.descriptor(fd)?.open.borrow();
+            if o.flags & O_PATH != 0 || o.flags & 3 == 0 {
+                return Err(Errno(9));
+            }
+            if o.pipe.is_some() {
+                return Err(Errno(29));
+            }
+            let n = o.node.as_ref().ok_or(Errno(19))?.borrow();
+            let Content::File(data) = &n.content else {
+                return Err(Errno(19));
+            };
+            data.len()
+        };
+        if mode != 0 {
+            return Err(Errno(95));
+        }
+        self.truncate_fd(fd, old.max(end))
     }
     pub fn memfd_create(&mut self, name: &[u8], flags: u32) -> Result<u32> {
         if name.len() > 249 {
@@ -39,7 +53,10 @@ impl Vfs {
         let node = Rc::new(RefCell::new(Node {
             notifications: inotify::Marks::default(),
             device: 16,
-            content: Content::File(storage::FileData::Memory(Vec::new())),
+            content: Content::File(storage::FileData::Shared(
+                trames_shared::SharedFile::anonymous_in(fs.shared_budget.clone())
+                    .map_err(storage::host_errno)?,
+            )),
             mode: 0o100777,
             uid: self.credentials.fsuid,
             gid: self.credentials.fsgid,
@@ -81,6 +98,19 @@ impl Vfs {
         );
         Ok(fd)
     }
+    /// A managed shared inode capability for native protocol FD translation.
+    /// Guest descriptor numbers and guest-selected host paths never cross here.
+    pub fn shared_file(&self, fd: u32) -> Result<trames_shared::SharedFile> {
+        let open = self.descriptor(fd)?.open.borrow();
+        if open.flags & O_PATH != 0 || open.flags & 3 == 1 {
+            return Err(Errno(9));
+        }
+        let node = open.node.as_ref().ok_or(Errno(19))?.borrow();
+        let Content::File(data) = &node.content else {
+            return Err(Errno(19));
+        };
+        data.shared_file().ok_or(Errno(95))
+    }
     pub fn seals(&self, fd: u32, add: Option<u32>) -> Result<u32> {
         let o = self.descriptor(fd)?.open.borrow();
         let node = o.node.as_ref().ok_or(Errno(22))?;
@@ -103,5 +133,24 @@ impl Vfs {
         }
         n.seals = Some(current | add);
         Ok(0)
+    }
+}
+
+#[cfg(test)]
+mod allocation_tests {
+    use super::*;
+    #[test]
+    fn allocation_preserves_bytes_position_and_shared_quota() {
+        let mut v = Vfs::default();
+        let fd = v.memfd_create(b"buffer", 2).unwrap();
+        v.write(fd, b"existing").unwrap();
+        v.allocate_fd(fd, 0, 4096, 4096).unwrap();
+        assert_eq!(v.pread(fd, 8, 0).unwrap(), b"existing");
+        assert_eq!(v.seek(fd, 0, 1).unwrap(), 8);
+        assert_eq!(v.pread(fd, 4, 4096).unwrap(), [0; 4]);
+        assert_eq!(v.allocate_fd(fd, 0, 0, 0), Err(Errno(22)));
+        assert_eq!(v.allocate_fd(fd, 1, 0, 1), Err(Errno(95)));
+        assert_eq!(v.allocate_fd(fd, 0, 0, MEMFD_BYTES + 1), Err(Errno(28)));
+        assert_eq!(v.pread(fd, 8, 0).unwrap(), b"existing");
     }
 }

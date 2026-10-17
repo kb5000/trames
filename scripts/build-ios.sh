@@ -20,6 +20,7 @@ cp target/musl-hybrid/libc.so target/musl-hybrid/manifest.json target/musl-hybri
 mkdir -p apps/ios/Trames/GuestVulkan
 cp target/vulkan-guest/libtrames_vulkan_icd.so target/vulkan-guest/manifest.json target/vulkan-guest/GPL-3.0.txt apps/ios/Trames/GuestVulkan/
 cp -R target/vulkan-guest/acceptance apps/ios/Trames/GuestVulkan/
+cp -R target/vulkan-guest/wayland-acceptance apps/ios/Trames/GuestVulkan/
 if [[ -d target/vulkan-guest/Notices ]]; then cp -R target/vulkan-guest/Notices apps/ios/Trames/GuestVulkan/; fi
 python3 - <<'PYCODE'
 import hashlib,json,pathlib

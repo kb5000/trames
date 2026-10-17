@@ -200,7 +200,7 @@ impl Backend {
                     vk::SurfaceTransformFlagsKHR::IDENTITY.as_raw(),
                     vk::SurfaceTransformFlagsKHR::IDENTITY.as_raw(),
                     vk::CompositeAlphaFlagsKHR::OPAQUE.as_raw(),
-                    c.supported_usage_flags.as_raw() & 0x11,
+                    c.supported_usage_flags.as_raw() & 0x13,
                 ];
                 let values: Vec<u32> = values
                     .into_iter()
@@ -259,6 +259,11 @@ impl Backend {
         if !self.wsi.device_enabled {
             return Err(vk::Result::ERROR_EXTENSION_NOT_PRESENT.into());
         }
+        if op == 87 && self.wayland.surfaces.contains_key(&a[1])
+            || (88..=91).contains(&op) && self.wayland.has_chain(if op == 91 { a[2] } else { a[1] })
+        {
+            return self.wayland_device(m, op, a);
+        }
         let device = self.device(a[0])?;
         let loader = ash::khr::swapchain::Device::new(&device.instance.native, &device.native);
         match op {
@@ -279,9 +284,11 @@ impl Backend {
                     || a[4] != 0
                     || a[5] != surface.target.width as u64
                     || a[6] != surface.target.height as u64
-                    || a[7] & !0x11 != 0
+                    || a[7] & !0x13 != 0
                     || a[7] & 16 == 0
                     || a[7] & !(caps.supported_usage_flags.as_raw() as u64) != 0
+                    || a[9] != 0
+                    || a[11] > 1
                 {
                     return unsupported();
                 }
@@ -319,7 +326,7 @@ impl Backend {
                     .pre_transform(vk::SurfaceTransformFlagsKHR::IDENTITY)
                     .composite_alpha(vk::CompositeAlphaFlagsKHR::OPAQUE)
                     .present_mode(vk::PresentModeKHR::FIFO)
-                    .clipped(true)
+                    .clipped(a[11] != 0)
                     .old_swapchain(old);
                 let raw = match unsafe { loader.create_swapchain(&info, None) } {
                     Ok(x) => x,

@@ -5,6 +5,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: ipad-frontend-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 defaults:
   run:
     shell: bash
@@ -25,11 +28,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install AArch64 source toolchain
-        run: sudo apt-get update && sudo apt-get install --yes gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu libvulkan-dev glslang-tools
+        run: sudo apt-get update && sudo apt-get install --yes gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu libvulkan-dev glslang-tools libwayland-dev
       - run: bash scripts/build-musl-hybrid.sh > /tmp/musl-build.log 2>&1 || { tail -30 /tmp/musl-build.log; exit 1; }
       - name: Build standard guest Vulkan ICD and retain original native GPU sources
         run: |
           bash scripts/build-vulkan-fixtures.sh > /tmp/vulkan-build.log 2>&1 || { tail -30 /tmp/vulkan-build.log; exit 1; }
+          python3 scripts/prepare-wayland-guest.py
           python3 scripts/prepare-vulkan.py --apple
       - uses: actions/upload-artifact@v4
         with:
@@ -74,22 +78,53 @@ jobs:
           TRAMES_RUST_LIB_DIR: ${{ github.workspace }}/target/release
         run: bash scripts/test-swift-ssh.sh
       - name: Validate shared mapping and guest ABI core on native Apple ARM64
-        run: cargo test -p trames-native -p trames-compute -p trames-cpu -p trames-accel -p trames-memory -p trames-vfs -p trames-core --locked
+        run: cargo test -p trames-shared -p trames-wayland -p trames-native -p trames-compute -p trames-cpu -p trames-accel -p trames-memory -p trames-vfs -p trames-core --locked
+      - name: Test original native Wayland clients and shared-FD lifetimes
+        run: brew install pkg-config libffi expat && bash scripts/test-wayland.sh
       - name: Generate Xcode project
         run: brew install xcodegen
       - name: Link unsigned iPad simulator app
         run: bash scripts/build-ios.sh simulator
-      - name: Link unsigned iPad device app
-        run: bash scripts/build-ios.sh device
+      - name: Exercise peer tabs and floating window gestures first
+        timeout-minutes: 8
+        run: |
+          device_id=$(xcrun simctl list devices available --json | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for rows in devices.values() for d in rows if d["name"].startswith("iPad")))')
+          python3 -c 'import subprocess,sys; subprocess.run(["xcrun","simctl","bootstatus",sys.argv[1],"-b"],check=True,timeout=180)' "$device_id"
+          xcodebuild -project apps/ios/Trames.xcodeproj -scheme Trames -configuration Debug \
+            -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath apps/ios/build/simulator \
+            -parallel-testing-enabled NO -test-timeouts-enabled YES \
+            -default-test-execution-time-allowance 180 -maximum-test-execution-time-allowance 180 \
+            -only-testing:TramesUITests/LaunchTests/testWorkspaceTabsDetachDockAndTerminalTitleRemainsVisible \
+            CODE_SIGNING_ALLOWED=NO -skipPackagePluginValidation -resultBundlePath apps/ios/build/workspace-interaction.xcresult test \
+            2>&1 | tee apps/ios/build/workspace-interaction.log
+      - name: Publish workspace gesture result before the remaining tests
+        if: always()
+        run: |
+          if [[ -d apps/ios/build/workspace-interaction.xcresult ]]; then
+            xcrun xcresulttool get test-results summary --path apps/ios/build/workspace-interaction.xcresult \
+              > apps/ios/build/workspace-interaction-summary.json
+            cat apps/ios/build/workspace-interaction-summary.json
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: workspace-gesture-diagnostics
+          path: |
+            apps/ios/build/workspace-interaction-summary.json
+            apps/ios/build/workspace-interaction.log
+            apps/ios/build/workspace-interaction.xcresult
+          retention-days: 7
       - name: Test viewport, native consent, real gateway DNS/HTTPS and lifecycle in iPad simulator
+        if: ${{ !cancelled() }}
         timeout-minutes: 20
         run: |
           device_id=$(xcrun simctl list devices available --json | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for rows in devices.values() for d in rows if d["name"].startswith("iPad")))')
           python3 -c 'import subprocess,sys; subprocess.run(["xcrun","simctl","bootstatus",sys.argv[1],"-b"],check=True,timeout=180)' "$device_id"
-          xcodebuild -quiet -project apps/ios/Trames.xcodeproj -scheme Trames -configuration Debug \
+          xcodebuild -project apps/ios/Trames.xcodeproj -scheme Trames -configuration Debug \
             -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath apps/ios/build/simulator \
             -parallel-testing-enabled NO -test-timeouts-enabled YES \
             -default-test-execution-time-allowance 900 -maximum-test-execution-time-allowance 900 \
+            -skip-testing:TramesUITests/LaunchTests/testWorkspaceTabsDetachDockAndTerminalTitleRemainsVisible \
             CODE_SIGNING_ALLOWED=NO -skipPackagePluginValidation -resultBundlePath apps/ios/build/ipad-smoke.xcresult test \
             2>&1 | tee apps/ios/build/ipad-smoke.log
       - name: Export simulator test summary
@@ -100,7 +135,10 @@ jobs:
               > apps/ios/build/ipad-smoke-summary.json
             cat apps/ios/build/ipad-smoke-summary.json
             python3 -c 'import json; s=json.load(open("apps/ios/build/ipad-smoke-summary.json")); assert s["failedTests"] == 0 and s["passedTests"] > 0, "The actual simulator test report did not pass"'
+            python3 -c 'import json; s=json.load(open("apps/ios/build/workspace-interaction-summary.json")); assert s["failedTests"] == 0 and s["passedTests"] == 1, "Workspace gestures must pass too"'
           fi
+      - name: Link unsigned iPad device app
+        run: bash scripts/build-ios.sh device
       - name: Package unsigned device IPA for sideload signing
         run: |
           python3 scripts/package-ios.py \
@@ -120,6 +158,8 @@ jobs:
           path: |
             apps/ios/build/ipad-smoke-summary.json
             apps/ios/build/ipad-smoke.log
+            apps/ios/build/ipad-smoke.xcresult/Staging/**/StandardOutputAndStandardError*.txt
+            apps/ios/build/ipad-smoke.xcresult/Staging/**/Session-*.log
             apps/ios/build/ipad-diagnostics
           retention-days: 7
       - uses: actions/upload-artifact@v4

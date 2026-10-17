@@ -15,7 +15,7 @@ runner = os.getenv('TRAMES_RUNNER', str(ROOT / 'target/release/trames-run'))
 fixtures = ROOT / 'tests/fixtures/bin'
 artifacts = ROOT / 'target/vulkan-texture'
 artifacts.mkdir(exist_ok=True)
-for mode, extra in [('basic', []), ('base-offsets', ['base-offsets'])]:
+for mode, extra in [('basic', []), ('base-offsets', ['base-offsets']), ('anisotropy', ['anisotropy']), ('static-blend', ['static-blend'])]:
     reference = subprocess.run([str(fixtures / 'vulkan-texture-host'),
         str(fixtures / 'vulkan-texture.vert.spv'), str(fixtures / 'vulkan-texture.frag.spv'),
         str(artifacts / (mode + '-native.ppm')), *extra], capture_output=True, timeout=60)

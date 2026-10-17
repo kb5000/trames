@@ -165,3 +165,43 @@ Original fallback files are unchanged and MIT/Arm notices retained; two checked
 startup hooks and Trames wrappers are GPL-3.0-or-later. The full-library artifact
 contains the original archive, all adaptations/build files and notices. iPad
 bundles the Linux ELF as interpreted guest data. [Integration](../architecture/musl-hybrid.md).
+
+## Native Wayland and shared descriptors
+
+Cargo.lock pins the added dependency closure. The selected MIT terms are
+compatible with GPL-3.0-or-later; protocol XML and keyboard data retain their
+own original notices as well.
+
+| Crate | Version | Selected license |
+| --- | --- | --- |
+| wayland-server | 0.31.14 | MIT |
+| wayland-backend | 0.3.17 | MIT |
+| wayland-protocols | 0.32.13 | MIT |
+| wayland-scanner | 0.31.11 | MIT |
+| wayland-sys | 0.31.11 | MIT |
+| rustix | 1.1.5 | MIT |
+| errno | 0.3.14 | MIT |
+| linux-raw-sys | 0.12.1 | MIT |
+| downcast-rs | 1.2.1 | MIT |
+| smallvec | 1.16.3 | MIT |
+| quick-xml | 0.41.0 | MIT |
+| cc | 1.8.0 | MIT |
+| find-msvc-tools | 0.1.14 | MIT |
+| pkg-config | 0.3.34 | MIT |
+| shlex | 2.0.1 | MIT |
+
+The latter build tools and scanner/parser execute during compilation;
+linux-raw-sys is Linux-specific. wayland-backend is vendored with its original
+license and three documented Apple cfg adaptations. The shared socket adapter
+also credits the original backend. The core, xdg-shell and text-input v1/v3
+protocol copyrights and the original xkeyboard-config keymap notices accompany
+the generated code/data.
+
+The committed app resource
+`apps/ios/Trames/Notices/Wayland-native-dependencies-NOTICES.txt` includes these
+original notices. On a Linux development machine after Cargo has populated its
+locked packages, `python3 scripts/prepare-wayland-notices.py --check` verifies
+the bundle against original source bytes. Run without `--check` to regenerate.
+The script downloads nothing. Original signed Alpine clients remain guest
+distribution data with their package licenses; the test Darwin Wayland client
+library is not linked into the app.

@@ -30,17 +30,20 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDisplayPlaneSurfaceKHR(VkInstance i,const
     if(info->flags || (uint64_t)info->displayMode!=1 || info->planeIndex || info->planeStackIndex || info->transform!=VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR || info->alphaMode!=VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR || info->globalAlpha!=1.0f || !display_info(0,d) || info->imageExtent.width!=d[1] || info->imageExtent.height!=d[2])return VK_ERROR_FEATURE_NOT_PRESENT;
     return CALL(81,KEY(i),PTR(out));
 }
-VKAPI_ATTR void VKAPI_CALL vkDestroySurfaceKHR(VkInstance i,VkSurfaceKHR surface,const VkAllocationCallbacks *allocator) {if(surface)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(82,KEY(i),(uint64_t)surface));}
+VKAPI_ATTR void VKAPI_CALL vkDestroySurfaceKHR(VkInstance i,VkSurfaceKHR surface,const VkAllocationCallbacks *allocator) {if(surface){checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(82,KEY(i),(uint64_t)surface));wayland_forget_surface(surface);}}
 VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceSupportKHR(VkPhysicalDevice p,uint32_t family,VkSurfaceKHR surface,VkBool32 *out) {return CALL(83,KEY(p),(uint64_t)surface,family,PTR(out));}
 VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceCapabilitiesKHR(VkPhysicalDevice p,VkSurfaceKHR surface,VkSurfaceCapabilitiesKHR *out) {return CALL(84,KEY(p),(uint64_t)surface,PTR(out));}
 VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceFormatsKHR(VkPhysicalDevice p,VkSurfaceKHR surface,uint32_t *count,VkSurfaceFormatKHR *out) {return CALL(85,KEY(p),(uint64_t)surface,PTR(count),PTR(out));}
 VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfacePresentModesKHR(VkPhysicalDevice p,VkSurfaceKHR surface,uint32_t *count,VkPresentModeKHR *out) {return CALL(86,KEY(p),(uint64_t)surface,PTR(count),PTR(out));}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(VkDevice d,const VkSwapchainCreateInfoKHR *info,const VkAllocationCallbacks *allocator,VkSwapchainKHR *out) {
     CHECK(info,VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);ALLOCATOR(allocator);
-    if(info->flags || info->imageArrayLayers!=1 || info->imageSharingMode!=VK_SHARING_MODE_EXCLUSIVE || info->preTransform!=VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR || info->compositeAlpha!=VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR || info->presentMode!=VK_PRESENT_MODE_FIFO_KHR || !info->clipped)return VK_ERROR_FEATURE_NOT_PRESENT;
-    return CALL(87,KEY(d),(uint64_t)info->surface,info->minImageCount,info->imageFormat,info->imageColorSpace,info->imageExtent.width,info->imageExtent.height,info->imageUsage,(uint64_t)info->oldSwapchain,0,PTR(out));
+    // Original vkmark leaves transform/alpha at zero; this single-profile
+    // surface interprets those as its only supported identity/opaque choices.
+    if(info->flags || info->imageArrayLayers!=1 || info->imageSharingMode!=VK_SHARING_MODE_EXCLUSIVE || (info->preTransform && info->preTransform!=VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) || (info->compositeAlpha && info->compositeAlpha!=VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) || (info->presentMode!=VK_PRESENT_MODE_FIFO_KHR && info->presentMode!=VK_PRESENT_MODE_MAILBOX_KHR))return VK_ERROR_FEATURE_NOT_PRESENT;
+    VkResult r=CALL(87,KEY(d),(uint64_t)info->surface,info->minImageCount,info->imageFormat,info->imageColorSpace,info->imageExtent.width,info->imageExtent.height,info->imageUsage,(uint64_t)info->oldSwapchain,info->presentMode==VK_PRESENT_MODE_MAILBOX_KHR,PTR(out),info->clipped);
+    if(r==VK_SUCCESS && !wayland_register_chain(*out,info->surface)){CALL(88,KEY(d),(uint64_t)*out);return VK_ERROR_OUT_OF_HOST_MEMORY;}return r;
 }
-VKAPI_ATTR void VKAPI_CALL vkDestroySwapchainKHR(VkDevice d,VkSwapchainKHR chain,const VkAllocationCallbacks *allocator) {if(chain)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(88,KEY(d),(uint64_t)chain));}
+VKAPI_ATTR void VKAPI_CALL vkDestroySwapchainKHR(VkDevice d,VkSwapchainKHR chain,const VkAllocationCallbacks *allocator) {if(chain){checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(88,KEY(d),(uint64_t)chain));wayland_forget_chain(chain);}}
 VKAPI_ATTR VkResult VKAPI_CALL vkGetSwapchainImagesKHR(VkDevice d,VkSwapchainKHR chain,uint32_t *count,VkImage *out) {return CALL(89,KEY(d),(uint64_t)chain,PTR(count),PTR(out));}
 VKAPI_ATTR VkResult VKAPI_CALL vkAcquireNextImageKHR(VkDevice d,VkSwapchainKHR chain,uint64_t timeout,VkSemaphore semaphore,VkFence fence,uint32_t *out) {
     uint64_t began=now_ns();for(;;){VkResult r=CALL(90,KEY(d),(uint64_t)chain,(uint64_t)semaphore,(uint64_t)fence,PTR(out));if(r!=VK_NOT_READY && r!=VK_TIMEOUT)return r;
@@ -50,7 +53,11 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAcquireNextImageKHR(VkDevice d,VkSwapchainKHR c
 }
 VKAPI_ATTR VkResult VKAPI_CALL vkQueuePresentKHR(VkQueue q,const VkPresentInfoKHR *info) {
     CHECK(info,VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);if(info->swapchainCount!=1 || info->waitSemaphoreCount>64)return VK_ERROR_FEATURE_NOT_PRESENT;
-    VkResult r=CALL(91,DEVKEY(q),KEY(q),(uint64_t)info->pSwapchains[0],info->pImageIndices[0],PTR(info->pWaitSemaphores),info->waitSemaphoreCount);
+    VkResult r;
+    do {r=CALL(91,DEVKEY(q),KEY(q),(uint64_t)info->pSwapchains[0],info->pImageIndices[0],PTR(info->pWaitSemaphores),info->waitSemaphoreCount);
+        if(r==VK_NOT_READY){struct timespec pause={0,1000000};nanosleep(&pause,NULL);}
+    } while(r==VK_NOT_READY);
+    if(r==VK_SUCCESS || r==VK_SUBOPTIMAL_KHR)wayland_present(info->pSwapchains[0]);
     if(info->pResults)info->pResults[0]=r;return r;
 }
 #undef ONE

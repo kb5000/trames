@@ -65,6 +65,8 @@
     if(!strcmp(name,"vkQueueSubmit"))return (PFN_vkVoidFunction)vkQueueSubmit;
     if(!strcmp(name,"vkQueueWaitIdle"))return (PFN_vkVoidFunction)vkQueueWaitIdle;
     if(!strcmp(name,"vkDeviceWaitIdle"))return (PFN_vkVoidFunction)vkDeviceWaitIdle;
+    if(!strcmp(name,"vkCreatePipelineCache"))return (PFN_vkVoidFunction)vkCreatePipelineCache;
+    if(!strcmp(name,"vkDestroyPipelineCache"))return (PFN_vkVoidFunction)vkDestroyPipelineCache;
     if(!strcmp(name,"vkGetInstanceProcAddr"))return (PFN_vkVoidFunction)vkGetInstanceProcAddr;
     if(!strcmp(name,"vkGetDeviceProcAddr"))return (PFN_vkVoidFunction)vkGetDeviceProcAddr;
     if(!strcmp(name,"vkCreateImage"))return (PFN_vkVoidFunction)vkCreateImage;
@@ -90,6 +92,7 @@
     if(!strcmp(name,"vkCmdBindVertexBuffers"))return (PFN_vkVoidFunction)vkCmdBindVertexBuffers;
     if(!strcmp(name,"vkCmdBindIndexBuffer"))return (PFN_vkVoidFunction)vkCmdBindIndexBuffer;
     if(!strcmp(name,"vkCmdDrawIndexed"))return (PFN_vkVoidFunction)vkCmdDrawIndexed;
+    if(!strcmp(name,"vkCmdClearColorImage"))return (PFN_vkVoidFunction)vkCmdClearColorImage;
     if(!strcmp(name,"vkGetPhysicalDeviceDisplayPropertiesKHR"))return (PFN_vkVoidFunction)vkGetPhysicalDeviceDisplayPropertiesKHR;
     if(!strcmp(name,"vkGetPhysicalDeviceDisplayPlanePropertiesKHR"))return (PFN_vkVoidFunction)vkGetPhysicalDeviceDisplayPlanePropertiesKHR;
     if(!strcmp(name,"vkGetDisplayPlaneSupportedDisplaysKHR"))return (PFN_vkVoidFunction)vkGetDisplayPlaneSupportedDisplaysKHR;
@@ -107,3 +110,5 @@
     if(!strcmp(name,"vkGetSwapchainImagesKHR"))return (PFN_vkVoidFunction)vkGetSwapchainImagesKHR;
     if(!strcmp(name,"vkAcquireNextImageKHR"))return (PFN_vkVoidFunction)vkAcquireNextImageKHR;
     if(!strcmp(name,"vkQueuePresentKHR"))return (PFN_vkVoidFunction)vkQueuePresentKHR;
+    if(!strcmp(name,"vkCreateWaylandSurfaceKHR"))return (PFN_vkVoidFunction)vkCreateWaylandSurfaceKHR;
+    if(!strcmp(name,"vkGetPhysicalDeviceWaylandPresentationSupportKHR"))return (PFN_vkVoidFunction)vkGetPhysicalDeviceWaylandPresentationSupportKHR;

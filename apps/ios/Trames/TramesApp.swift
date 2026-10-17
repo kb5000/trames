@@ -25,24 +25,36 @@ struct WorkspaceView: View {
     @State private var coreMarkSheet = false
     @StateObject private var coreMark = NativeCoreMarkRunner()
     @Environment(\.scenePhase) private var scenePhase
+    @State private var frames: [String:CGRect] = [:]
+    @State private var draggedTab: WorkspaceItemID?
+    @State private var dragLocation = CGPoint.zero
     var body: some View {
         VStack(spacing: 0) {
             HStack {
                 Text("TRAMES").font(.system(.headline, design: .monospaced)).foregroundStyle(.mint)
-                if workspace.sessions.isEmpty {
-                    Spacer(minLength: 8)
-                } else {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack {
-                            ForEach(workspace.sessions) { session in
-                                Button { workspace.selected = session.id } label: {
-                                    Text(session.title).lineLimit(1).padding(8)
-                                        .background(workspace.selected == session.id ? Color.white.opacity(0.12) : .clear).clipShape(RoundedRectangle(cornerRadius: 6))
-                                }.contextMenu { Button("关闭终端", role: .destructive) { workspace.close(session) } }
+                ScrollView(.horizontal,showsIndicators:false) {
+                    HStack(spacing:4) {
+                        ForEach(workspace.layout.tabs,id:\.self) { item in
+                            if let session=workspace.session(for:item) {
+                                WorkspaceTabLabel(session:session,item:item).lineLimit(1).padding(8)
+                                    .background(workspace.layout.selected == item ? Color.white.opacity(0.12) : .clear)
+                                    .clipShape(RoundedRectangle(cornerRadius:6))
+                                    .contentShape(Rectangle()).accessibilityAddTraits(.isButton)
+                                    .accessibilityIdentifier("tab-\(item.token)")
+                                    .workspaceFrame(item.token)
+                                    .onTapGesture { workspace.select(item) }
+                                    .simultaneousGesture(DragGesture(minimumDistance:10,coordinateSpace:.named("workspace"))
+                                        .onChanged { value in draggedTab=item;dragLocation=value.location }
+                                        .onEnded { value in finishTabDrag(item,at:value.location) })
+                                    .contextMenu {
+                                        Button("移到浮动窗口",systemImage:"rectangle.on.rectangle") { workspace.detach(item) }
+                                        Button("最小化",systemImage:"minus") { workspace.minimize(item) }
+                                        Button("关闭",role:.destructive) { workspace.closeItem(item) }
+                                    }
                             }
                         }
                     }
-                }
+                }.workspaceFrame("tabs")
                 Button { sessionActions = true } label: {
                     Label("新建或管理会话", systemImage: "plus")
                         .labelStyle(.iconOnly).frame(minWidth: 44, minHeight: 44)
@@ -50,21 +62,39 @@ struct WorkspaceView: View {
                     Button("本地 Alpine", systemImage: "terminal") { workspace.openLocal() }
                     Button("SSH 连接", systemImage: "network") { sshSheet = true }
                     Button("Files / SFTP", systemImage: "folder") { filesSheet = true }
-                    if let local = workspace.local, local.displayEnabled {
-                        Button("显示窗口", systemImage: "rectangle.on.rectangle") { local.displayVisible = true }
+                    ForEach(workspace.layout.minimized,id:\.self) { item in
+                        if let session=workspace.session(for:item) {
+                            Button { workspace.restore(item) } label: { WorkspaceTabLabel(session:session,item:item) }
+                        }
                     }
                     Button("设置", systemImage: "gear") { settingsSheet = true }
                     Button("原生 CoreMark", systemImage: "speedometer") { coreMarkSheet = true }
                 }
-                if let current = workspace.current { Button { workspace.close(current) } label: {
-                    Label("关闭当前终端", systemImage: "xmark")
-                        .labelStyle(.iconOnly).frame(minWidth: 44, minHeight: 44)
+                if let selected=workspace.layout.selected { Button { workspace.closeItem(selected) } label: {
+                    Label("关闭当前终端",systemImage:"xmark").labelStyle(.iconOnly).frame(minWidth:44,minHeight:44)
                 } }
-            }.padding(.horizontal, 12).padding(.vertical, 6)
-            if let current = workspace.current {
-                SessionView(session: current).id(current.id)
-            } else {
-                ContentUnavailableView("打开一个终端", systemImage: "terminal", description: Text("从右上角添加本地 Alpine 或 SSH 会话。"))
+            }.padding(.horizontal,12).padding(.vertical,6).workspaceFrame("header")
+            GeometryReader { proxy in
+                ZStack(alignment:.topLeading) {
+                    if let selected=workspace.layout.selected {
+                        WorkspaceContent(workspace:workspace,item:selected,origin:.zero,viewport:proxy.size).id(selected)
+                    } else {
+                        ContentUnavailableView("打开一个终端",systemImage:"terminal",description:Text("从右上角添加本地 Alpine 或 SSH 会话。"))
+                    }
+                    ForEach(workspace.layout.floating,id:\.self) { item in
+                        WorkspaceFloatingWindow(workspace:workspace,item:item,viewport:proxy.size,
+                            headerFrame:frames["header"] ?? .zero)
+                            .zIndex(Double((workspace.layout.floating.firstIndex(of:item) ?? 0)+1))
+                    }
+                }.frame(width:proxy.size.width,height:proxy.size.height,alignment:.topLeading)
+            }.workspaceFrame("body")
+        }
+        .coordinateSpace(name:"workspace")
+        .onPreferenceChange(WorkspaceFramesKey.self) { frames=$0 }
+        .overlay(alignment:.topLeading) {
+            if let item=draggedTab,let session=workspace.session(for:item) {
+                WorkspaceTabLabel(session:session,item:item).padding(10).background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius:6)).offset(x:dragLocation.x-40,y:dragLocation.y-18).allowsHitTesting(false)
             }
         }
         .background(.black)
@@ -75,13 +105,6 @@ struct WorkspaceView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase != .active { coreMark.markInterrupted() }
         }
-        .overlay(alignment: .topLeading) {
-            GeometryReader { proxy in
-                if let local = workspace.local {
-                    VulkanDisplayWindow(session: local, viewport: proxy.size).id(local.id)
-                }
-            }
-        }
         .alert("验证 SSH 主机指纹", isPresented: Binding(get: { workspace.challenge != nil }, set: { if !$0 { workspace.challenge = nil } })) {
             Button("信任此密钥") { workspace.trust() }
             Button("取消", role: .cancel) { workspace.challenge = nil }
@@ -90,14 +113,28 @@ struct WorkspaceView: View {
             Button("好") { workspace.error = nil }
         } message: { Text(workspace.error ?? "") }
     }
+    private func finishTabDrag(_ item: WorkspaceItemID, at point: CGPoint) {
+        defer { draggedTab=nil }
+        let body=frames["body"] ?? .zero
+        if body.contains(point) {
+            workspace.detach(item,at:CGPoint(x:max(0,point.x-body.minX-60),y:max(0,point.y-body.minY-20)))
+        } else if (frames["header"] ?? .zero).contains(point) {
+            let target=workspace.layout.tabs.first { candidate in
+                candidate != item && (frames[candidate.token].map { point.x < $0.midX } ?? false)
+            }
+            workspace.dock(item,before:target)
+        }
+    }
+
 }
 struct SessionView: View {
+    @ObservedObject var workspace: WorkspaceModel
     @ObservedObject var session: TerminalSession
     @AppStorage("extraKeys") private var keys = "Esc,Tab,Ctrl-C,Ctrl-D,↑,↓,←,→"
     private let bytes: [String:[UInt8]] = ["Esc":[27], "Tab":[9], "Ctrl-C":[3], "Ctrl-D":[4], "↑":[27,91,65], "↓":[27,91,66], "←":[27,91,68], "→":[27,91,67]]
     var body: some View {
         VStack(spacing: 0) {
-            TerminalPane(session: session)
+            TerminalPane(session:session,focused:workspace.layout.focused == .terminal(session.id),onFocus:{ [weak workspace, weak session] in if let session { workspace?.focus(.terminal(session.id)) } })
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack {
                     ForEach(Array(keys.split(separator: ",").enumerated()), id: \.offset) { _, key in
@@ -105,7 +142,7 @@ struct SessionView: View {
                             .font(.system(.callout, design: .monospaced)).padding(.horizontal, 13).padding(.vertical, 8)
                             .background(Color.white.opacity(0.08)).clipShape(RoundedRectangle(cornerRadius: 5))
                     }
-                    Button { session.terminal.becomeFirstResponder() } label: { Image(systemName: "keyboard") }
+                    Button { workspace.focus(.terminal(session.id));session.terminal.becomeFirstResponder() } label: { Image(systemName: "keyboard") }
                         .accessibilityLabel("显示终端键盘").accessibilityIdentifier("terminal-keyboard")
                 }.padding(6)
             }
@@ -167,7 +204,7 @@ struct SettingsView: View {
                 Section("后台行为") { Text("进入后台后暂停本地 Linux 并断开 SSH；返回前台后继续本地会话。Files 采用独立副本导入和导出。").font(.caption) }
                 Section("GPU") {
                     Toggle("Vulkan 计算与图形（实验）", isOn: $vulkan)
-                    Text("下次打开本地终端生效。需在 Linux 安装 vulkan-loader；支持选定计算和离屏图形接口；Vulkan 程序可通过标准 display/swapchain 接口提交到 App 内的显示窗口；拖动和缩放窗口不改变画布分辨率。").font(.caption)
+                    Text("下次打开本地终端生效。需在 Linux 安装 vulkan-loader；支持选定计算、图形和 Wayland 接口。Wayland 应用各自显示为 App 内窗口，调整窗口大小会请求应用改变分辨率。窗口也可停靠到顶部标签栏。").font(.caption)
                 }
             }.navigationTitle("设置").toolbar { Button("完成") { dismiss() } }
                 .alert("重置 Linux 环境？",isPresented:$resetConfirmation) {

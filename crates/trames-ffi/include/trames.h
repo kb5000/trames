@@ -56,6 +56,19 @@ int32_t trames_session_bridge_reply(uint64_t handle, const uint8_t *json, uint32
 int32_t trames_session_bridge_active(uint64_t handle, uint64_t ticket);
 int32_t trames_session_close(uint64_t handle);
 int32_t trames_last_error(uint8_t *bytes, uint32_t capacity);
+/* Native Wayland UI. Frame handles retain bytes/textures until release after GPU completion. */
+typedef struct { uint32_t width, height, images, reserved; uint64_t revision; } TramesWaylandFrameInfo;
+typedef struct {
+    uint64_t kind, address, length, offset;
+    uint32_t width, height, stride, alpha;
+    int32_t x, y, scale; uint32_t transform;
+} TramesWaylandImageInfo;
+int32_t trames_session_wayland_status(uint64_t session, uint8_t *output, uint32_t capacity);
+int32_t trames_session_wayland_command(uint64_t session, const uint8_t *json, uint32_t length);
+uint64_t trames_session_wayland_frame_acquire(uint64_t session, uint64_t window);
+int32_t trames_wayland_frame_info(uint64_t frame, TramesWaylandFrameInfo *output);
+int32_t trames_wayland_frame_image(uint64_t frame, uint32_t index, TramesWaylandImageInfo *output);
+int32_t trames_wayland_frame_release(uint64_t frame, uint32_t presented, uint32_t milliseconds);
 #ifdef __cplusplus
 }
 #endif

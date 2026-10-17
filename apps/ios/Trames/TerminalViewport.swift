@@ -4,6 +4,23 @@ import SwiftTerm
 
 /// Terminal columns fit the viewport; only scrollback needs a scrolling axis.
 final class TerminalViewport: TerminalView {
+    var onFocusRequested: (() -> Void)?
+    private var wantsKeyboardFocus = false
+    func setKeyboardFocus(_ value: Bool) {
+        guard wantsKeyboardFocus != value else { return }
+        wantsKeyboardFocus = value
+        if value && window != nil { _ = becomeFirstResponder() }
+        else if !value && isFirstResponder { resignFirstResponder() }
+    }
+    override func becomeFirstResponder() -> Bool {
+        onFocusRequested?()
+        return super.becomeFirstResponder()
+    }
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window != nil && wantsKeyboardFocus { _ = becomeFirstResponder() }
+    }
+
     override init(frame: CGRect, font: UIFont?) {
         super.init(frame: frame, font: font)
         configureScrolling()

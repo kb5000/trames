@@ -1,5 +1,7 @@
 # Trames
 
+0.17.0 加入[宿主原生 Wayland](docs/architecture/wayland.md)：终端与图形应用共用顶部标签栏，支持拖出浮窗、停靠、调整分辨率及 UIKit 输入法。旧“显示窗口”菜单与固定显示器界面已移除。原版 vkmark 的 13 种场景通过本地功能验收；窗口手势、原版 Weston、vkcube、vkmark 与 Metal 显示通过 **33 项 Apple 模拟器验收**，零失败或跳过。[验证记录](docs/validation/wayland-workspace-vkmark.md)、[使用说明](docs/guides/wayland.md)、[0.17.0/build 19 发行记录](docs/validation/release-0.17.md)，对应 [PR #26](https://github.com/kb5000/trames/pull/26)。
+
 本轮开发：Linux 的总内存/单进程预算已可在 iPad 设置与 CLI 中配置，
 默认仍为 1 GiB / 512 MiB，按需分配。
 [内存配置说明](docs/guides/guest-memory.md)。并行内存视图改为增量维护，
@@ -26,7 +28,7 @@ main 新增[通用解释执行优化](docs/validation/execution-efficiency.md)�
 
 [调度与边界检查实验](docs/validation/dispatch-experiments.md)进一步比较固定代码页、unchecked 寄存器索引、状态驻留、紧凑记录，以及真正的 nightly Rust 显式尾调用。按项目决策，完整 `tailhot` 实现现已成为唯一默认解释器，工具链固定为 `nightly-2026-10-16`；没有恢复多后端或引入 JIT。随后加入[权限软 TLB 与 MMU 研究](docs/architecture/soft-tlb.md)，将地址与权限校验合为缓存标签比较，保留文件、COW 和多核语义。 现在已接入[硬件保护的 RAM 映射](docs/architecture/hardware-mmu.md)与单级直接映射窗口缓存；混合权限页和特殊文件映射继续使用软件路径。
 
-最新 [0.16.0/build 17](docs/validation/release-0.16.md) 已发布：**[下载 unsigned IPA](https://github.com/kb5000/trames/releases/download/v0.16.0/Trames-0.16.0-build17-unsigned.ipa)**。合并 guest 内容器、默认宿主直连网络和无 JIT 解释器优化；同一源码的 Linux CI 和 Apple 14 项模拟器验收通过。Sideloadly 覆盖安装可保留数据；磁盘 v3 会升级到旧版无法读取的 v4，安装前先导出重要文件。
+历史 [0.16.0/build 17](docs/validation/release-0.16.md) 已发布：**[下载 unsigned IPA](https://github.com/kb5000/trames/releases/download/v0.16.0/Trames-0.16.0-build17-unsigned.ipa)**。合并 guest 内容器、默认宿主直连网络和无 JIT 解释器优化；同一源码的 Linux CI 和 Apple 14 项模拟器验收通过。Sideloadly 覆盖安装可保留数据；磁盘 v3 会升级到旧版无法读取的 v4，安装前先导出重要文件。
 
 历史 [0.15.0/build 16](docs/validation/release-0.15.md) 已发布：[下载 unsigned IPA](https://github.com/kb5000/trames/releases/download/v0.15.0/Trames-0.15.0-build16-unsigned.ipa)，用 Sideloadly 覆盖安装可保留数据。本版合并 sudo／时区／匿名 ELF 修复及 Vulkan 原生计算、纹理与浮动显示窗口；同一源码的 Linux CI 与 Apple 14 项模拟器验收均通过。Vulkan 默认关闭，真机验收待实际使用。
 
@@ -38,7 +40,7 @@ main 进一步修复[匿名 ELF 与 fd 执行](docs/validation/fd-exec.md)：`/p
 
 ## 快速运行
 
-0.15.0 已加入[实验性 Vulkan 计算、图形与显示桥](docs/architecture/vulkan-compute.md)：原版 Linux loader 通过标准 guest ICD 调用原生 Vulkan；iPad 静态链接原版 MoltenVK／Metal。新增标准 `VK_KHR_display` / `VK_KHR_swapchain`，程序可直接提交 GPU 图像到 App 内可拖动、缩放的显示窗口（固定 1024×768 画布）。新增[顶点／索引缓冲、纹理上传与采样、图形描述符和 push constants](docs/validation/vulkan-textures.md)，采用原生 Vulkan／Metal 执行。[离屏图形](docs/validation/vulkan-render.md)已有真实 Metal 像素验证；[持续显示与窗口验收](docs/validation/vulkan-display.md)与新增纹理用例已通过 Apple CI 的 14 项测试，含实际 GPU 像素、拖动缩放、隐藏恢复和运行中关闭。当前仍为选定接口子集，真机验收留待后续版本；[Issue #21](https://github.com/kb5000/trames/issues/21)。
+历史 0.15.0 已加入[实验性 Vulkan 计算、图形与显示桥](docs/architecture/vulkan-compute.md)：原版 Linux loader 通过标准 guest ICD 调用原生 Vulkan；iPad 静态链接原版 MoltenVK／Metal。新增标准 `VK_KHR_display` / `VK_KHR_swapchain`，程序可直接提交 GPU 图像到 App 内可拖动、缩放的显示窗口（固定 1024×768 画布）。新增[顶点／索引缓冲、纹理上传与采样、图形描述符和 push constants](docs/validation/vulkan-textures.md)，采用原生 Vulkan／Metal 执行。[离屏图形](docs/validation/vulkan-render.md)已有真实 Metal 像素验证；[持续显示与窗口验收](docs/validation/vulkan-display.md)与新增纹理用例已通过 Apple CI 的 14 项测试，含实际 GPU 像素、拖动缩放、隐藏恢复和运行中关闭。当前仍为选定接口子集，真机验收留待后续版本；[Issue #21](https://github.com/kb5000/trames/issues/21)。
 
 需要 Rust nightly-2026-10-16；交叉构建 BusyBox 和运行差分测试还需要 Python 3、GNU AArch64 GCC/Binutils、Make、curl、bzip2 和 QEMU user-mode。Debian/Ubuntu 可安装：
 

@@ -6,12 +6,15 @@ import TramesKit
 final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalViewDelegate {
     let id = UUID()
     let terminal = TerminalViewport(frame: .zero, font: .monospacedSystemFont(ofSize: 14, weight: .regular))
+    let fallbackTitle: String
+    let isLocal: Bool
+    var onWaylandChanged: (([LocalWaylandWindow]) -> Void)?
     @Published var title: String
     @Published var state = "连接中…"
     @Published var capacity: LocalStatus?
-    lazy var displayCanvas = VulkanCanvas()
-    @Published var displayEnabled = false
-    @Published var displayVisible = true
+    @Published var waylandWindows: [LocalWaylandWindow] = []
+    @Published var waylandText: LocalWaylandText?
+    private var waylandRevision: UInt64?
     var local: LocalSession?
     let bridge = BridgeController()
     var ssh: SSHSession?
@@ -24,8 +27,10 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     private var closed = false
     private var paused = false
     private var timezoneObserver: NSObjectProtocol?
-    init(title: String) {
-        self.title = title; super.init()
+    init(title: String, isLocal: Bool = false) {
+        self.fallbackTitle = title.isEmpty ? "终端" : title
+        self.isLocal = isLocal
+        self.title = self.fallbackTitle; super.init()
         terminal.terminalDelegate = self
         terminal.backgroundColor = .black
         timezoneObserver = NotificationCenter.default.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: .main) { [weak self] _ in
@@ -42,16 +47,11 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         state="正在准备 Alpine…"
         task = Task { [weak self] in
             do {
-                let gpu = UserDefaults.standard.bool(forKey: "vulkanCompute") || ProcessInfo.processInfo.arguments.contains("--vulkan-display-acceptance")
+                let gpu = UserDefaults.standard.bool(forKey: "vulkanCompute")
                 let memory = UserDefaults.standard.object(forKey: "guestMemoryMiB") as? Int ?? 1024
                 let processMemory = UserDefaults.standard.object(forKey: "guestProcessMemoryMiB") as? Int ?? 512
                 let local = try await environment.start(useVolumeBudget: useVolumeBudget, vulkan: gpu, memoryBudgetMiB: memory, processMemoryBudgetMiB: min(processMemory, memory))
                 guard let self, !self.closed else { local.close(); return }
-                if gpu {
-                    try local.attachDisplay(layer: Unmanaged.passUnretained(self.displayCanvas.metal).toOpaque(), width: 1024, height: 768)
-                    self.displayCanvas.frameCount = { [weak local] in (try? local?.displayStatus().presented) ?? 0 }
-                    self.displayEnabled = true
-                }
                 self.local = local
                 bridge.attach(local)
                 try local.pause(paused)
@@ -59,11 +59,6 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
                 timer = Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) { [weak self] _ in
                     Task { @MainActor in self?.pollLocal() }
                 }
-                #if DEBUG
-                if ProcessInfo.processInfo.arguments.contains("--vulkan-display-acceptance") {
-                    try await LocalVulkanProbe.submitPresentation(to: local)
-                }
-                #endif
             } catch { self?.fail(error) }
         }
     }
@@ -77,6 +72,11 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
                 let count = try local.send(pendingInput)
                 pendingInput.removeFirst(count)
             }
+            let wayland = try local.waylandStatus()
+            if wayland.revision != waylandRevision {
+                waylandRevision = wayland.revision; waylandWindows = wayland.windows; waylandText = wayland.text
+                onWaylandChanged?(wayland.windows)
+            }
             let status = try local.status()
             if status != capacity { capacity = status }
             if status.phase != lastPhase {
@@ -86,6 +86,12 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
                 if status.phase == "exited" { state = "已退出 · \(status.exit_code ?? 0)"; timer?.invalidate() }
             }
         } catch { fail(error); timer?.invalidate() }
+    }
+    func waylandCommand(_ command: [String:Any]) {
+        do { try local?.waylandCommand(command) } catch { fail(error) }
+    }
+    func waylandMode(_ window: UInt64, _ mode: String) {
+        waylandCommand(["op":"mode","window":window,"mode":mode])
     }
     func startSSH(host: SSHHost, credential: SSHCredential, knownHosts: KnownHosts) {
         let connection = SSHSession(); ssh = connection
@@ -119,7 +125,9 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         }
     }
     func pause(_ paused: Bool) {
-        self.paused = paused; try? local?.pause(paused)
+        self.paused = paused
+        if paused { waylandCommand(["op":"focus","window":NSNull()]) }
+        try? local?.pause(paused)
         if !paused { synchronizeTimezone() }
     }
     private func synchronizeTimezone() {
@@ -137,7 +145,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         timezoneObserver = nil
         timer?.invalidate(); timer = nil; task?.cancel(); sender?.cancel()
         bridge.close()
-        local?.close(); local = nil
+        local?.close(); local = nil; waylandWindows = []; onWaylandChanged = nil
         if let ssh { Task { await ssh.close() } }; ssh = nil; pendingInput.removeAll()
         state = "已关闭"
     }
@@ -149,7 +157,10 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         try? local?.resize(columns: newCols, rows: newRows)
         if let ssh { Task { try? await ssh.resize(columns: newCols, rows: newRows) } }
     }
-    func setTerminalTitle(source: TerminalView, title: String) { self.title = String(title.prefix(80)) }
+    func setTerminalTitle(source: TerminalView, title: String) {
+        let value = String(title.prefix(80)).trimmingCharacters(in: .whitespacesAndNewlines)
+        self.title = value.isEmpty ? fallbackTitle : value
+    }
     func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {}
     func send(source: TerminalView, data: ArraySlice<UInt8>) { send(Data(data)) }
     func scrolled(source: TerminalView, position: Double) {}
@@ -163,6 +174,11 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
 }
 struct TerminalPane: UIViewRepresentable {
     @ObservedObject var session: TerminalSession
-    func makeUIView(context: Context) -> TerminalView { session.terminal }
-    func updateUIView(_ view: TerminalView, context: Context) {}
+    let focused: Bool
+    let onFocus: () -> Void
+    func makeUIView(context: Context) -> TerminalViewport { session.terminal }
+    func updateUIView(_ view: TerminalViewport, context: Context) {
+        view.onFocusRequested = onFocus
+        view.setKeyboardFocus(focused)
+    }
 }

@@ -2,9 +2,11 @@
 // Standard Linux ICD frontend. Only fixed-size, little-endian wire records
 // cross NativeCall; every returned function pointer is ordinary guest ELF code.
 #define _GNU_SOURCE
+#define VK_USE_PLATFORM_WAYLAND_KHR
 #include <vulkan/vulkan.h>
 #include <vulkan/vk_icd.h>
 #include <stdint.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -48,9 +50,17 @@ static Memory *memory(Dispatch *d,VkDeviceMemory key) {for (Memory *m=d->memorie
 
 static uint64_t now_ns(void);
 static int display_info(uint64_t key,uint64_t out[3]) { return CALL(key?80:79,key?key:PTR(out),key?PTR(out):0)==VK_SUCCESS && out[0]; }
+static int wayland_available(void) {uint64_t available=0;return CALL(109,PTR(&available))==VK_SUCCESS && available;}
 static VkResult display_extensions(const char *layer,uint32_t *count,VkExtensionProperties *out,int device) {
-    if(layer)return VK_ERROR_LAYER_NOT_PRESENT;uint64_t info[3]={0};uint32_t n=display_info(0,info)?(device?1:2):0;
-    const char *names[]={device?VK_KHR_SWAPCHAIN_EXTENSION_NAME:VK_KHR_SURFACE_EXTENSION_NAME,VK_KHR_DISPLAY_EXTENSION_NAME};
+    if(layer)return VK_ERROR_LAYER_NOT_PRESENT;
+    uint64_t info[3]={0};int fixed=display_info(0,info),wayland=wayland_available();
+    const char *names[3];uint32_t n=0;
+    if(device){if(fixed || wayland)names[n++]=VK_KHR_SWAPCHAIN_EXTENSION_NAME;}
+    else {
+        if(fixed || wayland)names[n++]=VK_KHR_SURFACE_EXTENSION_NAME;
+        if(fixed)names[n++]=VK_KHR_DISPLAY_EXTENSION_NAME;
+        if(wayland)names[n++]=VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME;
+    }
     if(!out){*count=n;return VK_SUCCESS;}uint32_t capacity=*count;*count=capacity<n?capacity:n;
     for(uint32_t i=0;i<*count;i++){memset(out+i,0,sizeof(*out));strcpy(out[i].extensionName,names[i]);out[i].specVersion=1;}
     return capacity<n?VK_INCOMPLETE:VK_SUCCESS;
@@ -59,9 +69,15 @@ static int extensions(uint32_t count,const char *const *names,int device) {
     unsigned bits=0;for(uint32_t i=0;i<count;i++){
         unsigned bit=0;if(!strcmp(names[i],device?VK_KHR_SWAPCHAIN_EXTENSION_NAME:VK_KHR_SURFACE_EXTENSION_NAME))bit=1;
         else if(!device && !strcmp(names[i],VK_KHR_DISPLAY_EXTENSION_NAME))bit=2;
+        else if(!device && !strcmp(names[i],VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME))bit=4;
         if(!bit || bits&bit)return -1;bits|=bit;
     }
-    return bits!=0;
+    if(device)return bits!=0;
+    // These selected native render routes have different final image layouts.
+    // A single instance uses one route; separate instances may use either.
+    if((bits&6)==6)return -1;
+    if(bits&4)return 2;if(bits&2)return 1;
+    return bits ? (wayland_available()?2:1) : 0;
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(const VkInstanceCreateInfo *info,const VkAllocationCallbacks *allocator,VkInstance *out) {
@@ -95,9 +111,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(VkPhysicalDevice p,const VkDeviceC
     int wsi=extensions(info->enabledExtensionCount,info->ppEnabledExtensionNames,1);if(info->flags || info->queueCreateInfoCount!=1 || wsi<0)return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkDeviceQueueCreateInfo *q=info->pQueueCreateInfos;CHECK(q,VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO);
     if(q->flags || q->queueCount!=1)return VK_ERROR_FEATURE_NOT_PRESENT;
-    if(info->pEnabledFeatures){const VkBool32 *v=(const VkBool32 *)info->pEnabledFeatures;for(size_t j=0;j<sizeof(VkPhysicalDeviceFeatures)/sizeof(VkBool32);j++)if(v[j])return VK_ERROR_FEATURE_NOT_PRESENT;}
+    if(info->pEnabledFeatures){const VkBool32 *v=(const VkBool32 *)info->pEnabledFeatures;for(size_t j=0;j<sizeof(VkPhysicalDeviceFeatures)/sizeof(VkBool32);j++)if(v[j] && j!=offsetof(VkPhysicalDeviceFeatures,samplerAnisotropy)/sizeof(VkBool32))return VK_ERROR_FEATURE_NOT_PRESENT;}
     Dispatch *d=dispatch(0,NULL);if(!d)return VK_ERROR_OUT_OF_HOST_MEMORY;d->device=d;d->family=q->queueFamilyIndex;
-    VkResult r=CALL(8,KEY(p),q->queueFamilyIndex,PTR(&d->key),wsi);if(r!=VK_SUCCESS){free_dispatch(d);return r;}
+    VkResult r=CALL(8,KEY(p),q->queueFamilyIndex,PTR(&d->key),wsi,info->pEnabledFeatures?info->pEnabledFeatures->samplerAnisotropy:0);if(r!=VK_SUCCESS){free_dispatch(d);return r;}
     r=CALL(57,d->key,PTR(&d->map_alignment));if(r!=VK_SUCCESS){checked(CALL(9,d->key));free_dispatch(d);return r;}*out=(VkDevice)d;return VK_SUCCESS;
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroyDevice(VkDevice device,const VkAllocationCallbacks *allocator) {
@@ -150,12 +166,12 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreatePipelineLayout(VkDevice d,const VkPipelin
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroyPipelineLayout(VkDevice d,VkPipelineLayout layout,const VkAllocationCallbacks *allocator) {if(layout)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(26,KEY(d),(uint64_t)layout));}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateComputePipelines(VkDevice d,VkPipelineCache cache,uint32_t count,const VkComputePipelineCreateInfo *info,const VkAllocationCallbacks *allocator,VkPipeline *out) {
-    ALLOCATOR(allocator);if(cache || count!=1)return VK_ERROR_FEATURE_NOT_PRESENT;CHECK(info,VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO);CHECK(&info->stage,VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
+    ALLOCATOR(allocator);if(count!=1)return VK_ERROR_FEATURE_NOT_PRESENT;CHECK(info,VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO);CHECK(&info->stage,VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
     if(info->flags || info->stage.flags || info->stage.stage!=VK_SHADER_STAGE_COMPUTE_BIT || info->basePipelineHandle)return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkSpecializationInfo *s=info->stage.pSpecializationInfo;uint64_t entries[192];
     if(s){if(s->mapEntryCount>64 || s->dataSize>65536 || (s->mapEntryCount && !s->pMapEntries) || (s->dataSize && !s->pData))return VK_ERROR_FEATURE_NOT_PRESENT;
         for(uint32_t i=0;i<s->mapEntryCount;i++){entries[i*3]=s->pMapEntries[i].constantID;entries[i*3+1]=s->pMapEntries[i].offset;entries[i*3+2]=s->pMapEntries[i].size;}}
-    return CALL(27,KEY(d),(uint64_t)info->layout,(uint64_t)info->stage.module,PTR(info->stage.pName),PTR(out),PTR(entries),s?s->mapEntryCount:0,s?PTR(s->pData):0,s?s->dataSize:0);
+    return CALL(27,KEY(d),(uint64_t)info->layout,(uint64_t)info->stage.module,PTR(info->stage.pName),PTR(out),PTR(entries),s?s->mapEntryCount:0,s?PTR(s->pData):0,s?s->dataSize:0,(uint64_t)cache);
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroyPipeline(VkDevice d,VkPipeline pipeline,const VkAllocationCallbacks *allocator) {if(pipeline)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(28,KEY(d),(uint64_t)pipeline));}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorPool(VkDevice d,const VkDescriptorPoolCreateInfo *info,const VkAllocationCallbacks *allocator,VkDescriptorPool *out) {
@@ -200,11 +216,11 @@ VKAPI_ATTR void VKAPI_CALL vkCmdBindPipeline(VkCommandBuffer c,VkPipelineBindPoi
 VKAPI_ATTR void VKAPI_CALL vkCmdBindDescriptorSets(VkCommandBuffer c,VkPipelineBindPoint point,VkPipelineLayout layout,uint32_t first,uint32_t count,const VkDescriptorSet *sets,uint32_t offsets,const uint32_t *offset) {(void)offset;if((point!=VK_PIPELINE_BIND_POINT_COMPUTE && point!=VK_PIPELINE_BIND_POINT_GRAPHICS) || offsets)checked(VK_ERROR_FEATURE_NOT_PRESENT);checked(CALL(42,DEVKEY(c),KEY(c),(uint64_t)layout,first,PTR(sets),count,point==VK_PIPELINE_BIND_POINT_GRAPHICS));}
 VKAPI_ATTR void VKAPI_CALL vkCmdDispatch(VkCommandBuffer c,uint32_t x,uint32_t y,uint32_t z) {checked(CALL(43,DEVKEY(c),KEY(c),x,y,z));}
 VKAPI_ATTR void VKAPI_CALL vkCmdPipelineBarrier(VkCommandBuffer c,VkPipelineStageFlags src,VkPipelineStageFlags dst,VkDependencyFlags flags,uint32_t count,const VkMemoryBarrier *barriers,uint32_t buffers,const VkBufferMemoryBarrier *buffer,uint32_t images,const VkImageMemoryBarrier *image) {
-    if(flags || images>64)checked(VK_ERROR_FEATURE_NOT_PRESENT);VkAccessFlags sa=0,da=0;uint64_t data[64][5];
-    for(uint32_t i=0;i<images;i++){const VkImageMemoryBarrier *b=&image[i];if(!VALID(b,VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER) || b->srcQueueFamilyIndex!=VK_QUEUE_FAMILY_IGNORED || b->dstQueueFamilyIndex!=VK_QUEUE_FAMILY_IGNORED || b->subresourceRange.aspectMask!=VK_IMAGE_ASPECT_COLOR_BIT || b->subresourceRange.baseMipLevel || b->subresourceRange.levelCount!=1 || b->subresourceRange.baseArrayLayer || b->subresourceRange.layerCount!=1)checked(VK_ERROR_FEATURE_NOT_PRESENT);data[i][0]=(uint64_t)b->image;data[i][1]=b->srcAccessMask;data[i][2]=b->dstAccessMask;data[i][3]=b->oldLayout;data[i][4]=b->newLayout;}
+    if(flags || images>64)checked(VK_ERROR_FEATURE_NOT_PRESENT);VkAccessFlags sa=0,da=0;uint64_t data[64][6];
+    for(uint32_t i=0;i<images;i++){const VkImageMemoryBarrier *b=&image[i];if(!VALID(b,VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER) || b->srcQueueFamilyIndex!=VK_QUEUE_FAMILY_IGNORED || b->dstQueueFamilyIndex!=VK_QUEUE_FAMILY_IGNORED || (b->subresourceRange.aspectMask!=VK_IMAGE_ASPECT_COLOR_BIT && b->subresourceRange.aspectMask!=VK_IMAGE_ASPECT_DEPTH_BIT) || b->subresourceRange.baseMipLevel || b->subresourceRange.levelCount!=1 || b->subresourceRange.baseArrayLayer || b->subresourceRange.layerCount!=1)checked(VK_ERROR_FEATURE_NOT_PRESENT);data[i][0]=(uint64_t)b->image;data[i][1]=b->srcAccessMask;data[i][2]=b->dstAccessMask;data[i][3]=b->oldLayout;data[i][4]=b->newLayout;data[i][5]=b->subresourceRange.aspectMask;}
     for(uint32_t i=0;i<count;i++){if(!VALID(&barriers[i],VK_STRUCTURE_TYPE_MEMORY_BARRIER))checked(VK_ERROR_FEATURE_NOT_PRESENT);sa|=barriers[i].srcAccessMask;da|=barriers[i].dstAccessMask;}
     for(uint32_t i=0;i<buffers;i++){if(!VALID(&buffer[i],VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER) || buffer[i].srcQueueFamilyIndex!=VK_QUEUE_FAMILY_IGNORED || buffer[i].dstQueueFamilyIndex!=VK_QUEUE_FAMILY_IGNORED)checked(VK_ERROR_FEATURE_NOT_PRESENT);sa|=buffer[i].srcAccessMask;da|=buffer[i].dstAccessMask;}
-    checked(CALL(44,DEVKEY(c),KEY(c),src,dst,sa,da,PTR(data),images));
+    checked(CALL(44,DEVKEY(c),KEY(c),src,dst,sa,da,PTR(data),images,6));
 }
 VKAPI_ATTR void VKAPI_CALL vkCmdCopyBuffer(VkCommandBuffer c,VkBuffer src,VkBuffer dst,uint32_t count,const VkBufferCopy *regions) {if(count>64)checked(VK_ERROR_FEATURE_NOT_PRESENT);uint64_t data[192];for(uint32_t i=0;i<count;i++){data[i*3]=regions[i].srcOffset;data[i*3+1]=regions[i].dstOffset;data[i*3+2]=regions[i].size;}checked(CALL(45,DEVKEY(c),KEY(c),(uint64_t)src,(uint64_t)dst,PTR(data),count));}
 VKAPI_ATTR void VKAPI_CALL vkCmdFillBuffer(VkCommandBuffer c,VkBuffer buffer,VkDeviceSize offset,VkDeviceSize size,uint32_t value) {checked(CALL(46,DEVKEY(c),KEY(c),(uint64_t)buffer,offset,size,value));}
@@ -239,7 +255,18 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(VkQueue queue,uint32_t count,const 
 VKAPI_ATTR VkResult VKAPI_CALL vkQueueWaitIdle(VkQueue q) {VkFence fence;VkFenceCreateInfo f={.sType=VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};VkDevice d=(VkDevice)DEVICE(q);VkResult r=vkCreateFence(d,&f,NULL,&fence);if(r!=VK_SUCCESS)return r;r=vkQueueSubmit(q,0,NULL,fence);if(r==VK_SUCCESS)r=vkWaitForFences(d,1,&fence,VK_TRUE,UINT64_MAX);vkDestroyFence(d,fence,NULL);return r;}
 VKAPI_ATTR VkResult VKAPI_CALL vkDeviceWaitIdle(VkDevice d) {VkQueue q;vkGetDeviceQueue(d,D(d)->family,0,&q);return vkQueueWaitIdle(q);}
 
+
+VKAPI_ATTR VkResult VKAPI_CALL vkCreatePipelineCache(VkDevice d,const VkPipelineCacheCreateInfo *info,const VkAllocationCallbacks *allocator,VkPipelineCache *out) {
+    CHECK(info,VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO);ALLOCATOR(allocator);
+    if(info->flags || info->initialDataSize)return VK_ERROR_FEATURE_NOT_PRESENT;
+    return CALL(112,KEY(d),PTR(out));
+}
+VKAPI_ATTR void VKAPI_CALL vkDestroyPipelineCache(VkDevice d,VkPipelineCache cache,const VkAllocationCallbacks *allocator) {
+    if(cache)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(113,KEY(d),(uint64_t)cache));
+}
+
 #include "graphics.inc"
+#include "wayland.inc"
 #include "wsi.inc"
 
 static PFN_vkVoidFunction find(const char *name) {

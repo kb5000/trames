@@ -34,7 +34,7 @@ final class NativeCoreMarkRunner: ObservableObject {
         let appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"
         let previousIdleTimer = UIApplication.shared.isIdleTimerDisabled
         UIApplication.shared.isIdleTimerDisabled = true
-        output = "Trames 原生 CoreMark（临时测试包）\n" +
+        output = "Trames 原生 CoreMark（宿主基线）\n" +
             "App：\(appVersion) build \(appBuild)\n" +
             "上游：eembc/coremark @ 1f483d5b8316753a742cbf5590caf5bd0a4e4777\n" +
             "开始：\(started.ISO8601Format())\n" +

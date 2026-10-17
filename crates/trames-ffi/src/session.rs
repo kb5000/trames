@@ -43,6 +43,8 @@ pub struct Options {
     pub native_allocator: bool,
     #[serde(default)]
     pub vulkan_accelerator: bool,
+    #[serde(default)]
+    pub wayland: bool,
     pub vulkan_icd: Option<PathBuf>,
     pub timezone: Option<HostTimezone>,
 }
@@ -125,6 +127,7 @@ pub struct Buffers {
 }
 pub struct Session {
     pub display: trames_core::VulkanDisplay,
+    pub wayland: Mutex<Option<trames_wayland::Server>>,
     pub bridge: trames_bridge::Broker,
     pub buffers: Mutex<Buffers>,
     pub cancelled: AtomicBool,
@@ -193,6 +196,7 @@ impl Session {
         let (commands, receiver) = mpsc::sync_channel(8);
         let session = Arc::new(Self {
             display: trames_core::VulkanDisplay::default(),
+            wayland: Mutex::new(None),
             bridge: trames_bridge::Broker::default(),
             buffers: Mutex::new(Buffers {
                 input: VecDeque::new(),
@@ -456,18 +460,32 @@ fn run(
         _ => return Err("invalid network mode".into()),
     })
     .map_err(|e| e.to_string())?;
+    let mut environment: Vec<String> = vec![
+        "HOME=/root".into(),
+        "USER=root".into(),
+        "LOGNAME=root".into(),
+        "PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin".into(),
+        "TERM=xterm-256color".into(),
+        "LANG=C.UTF-8".into(),
+    ];
+    if options.wayland {
+        let server = vfs
+            .enable_wayland(b"/run/user/0")
+            .map_err(|e| e.to_string())?;
+        *session
+            .wayland
+            .lock()
+            .map_err(|_| "Wayland lock unavailable")? = Some(server);
+        environment.extend([
+            "XDG_RUNTIME_DIR=/run/user/0".into(),
+            "WAYLAND_DISPLAY=wayland-0".into(),
+        ]);
+    }
     let bytes = vfs.executable(b"/bin/ash").map_err(|e| e.to_string())?;
     let mut runtime = Runtime::load_with_options(
         &bytes,
         &["/bin/ash".into(), "-i".into()],
-        &[
-            "HOME=/root".into(),
-            "USER=root".into(),
-            "LOGNAME=root".into(),
-            "PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin".into(),
-            "TERM=xterm-256color".into(),
-            "LANG=C.UTF-8".into(),
-        ],
+        &environment,
         vfs,
         trames_core::RuntimeOptions {
             memory_limits: guest_memory_limits,
