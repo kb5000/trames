@@ -234,6 +234,7 @@ class WaylandInputView: UIView, UITextInput {
         for char in text {
             if char == "\n" { sendKey(28);continue }
             if char == "\t" { sendKey(15);continue }
+            if let key=Self.shiftedASCII[String(char)] { sendKey(key,modifiers:1);continue }
             let lower=String(char).lowercased()
             if let key=Self.ascii[lower] { sendKey(key,modifiers:String(char) != lower ? 1 : 0) }
         }
@@ -243,14 +244,24 @@ class WaylandInputView: UIView, UITextInput {
         for (row,start) in [("1234567890",2),("qwertyuiop",16),("asdfghjkl",30),("zxcvbnm",44)] { for (i,c) in row.enumerated(){keys[String(c)]=start+i} }
         return keys
     }()
+    private static let shiftedASCII: [String:Int] = {
+        let shifted="!@#$%^&*()_+{}:\"~|<>?",base="1234567890-=[];'`\\,./"
+        return Dictionary(uniqueKeysWithValues:zip(shifted,base).compactMap { symbol,key in
+            ascii[String(key)].map { (String(symbol),$0) }
+        })
+    }()
     private func evdev(_ hid:Int)->Int? {
         if (4...29).contains(hid) {return Self.ascii[String(UnicodeScalar(hid-4+97)!)]}
         if (30...38).contains(hid) {return hid-28}
         switch hid {
         case 39:return 11;case 40:return 28;case 41:return 1;case 42:return 14;case 43:return 15;case 44:return 57
-        case 45:return 12;case 46:return 13;case 47:return 26;case 48:return 27;case 49:return 43;case 51:return 39;case 52:return 40;case 53:return 41;case 54:return 51;case 55:return 52;case 56:return 53;case 57:return 58
+        case 45:return 12;case 46:return 13;case 47:return 26;case 48:return 27;case 49,50:return 43;case 51:return 39;case 52:return 40;case 53:return 41;case 54:return 51;case 55:return 52;case 56:return 53;case 57:return 58
         case 58...67:return hid+1;case 68:return 87;case 69:return 88
+        case 70:return 99;case 71:return 70;case 72:return 119
         case 73:return 110;case 74:return 102;case 75:return 104;case 76:return 111;case 77:return 107;case 78:return 109;case 79:return 106;case 80:return 105;case 81:return 108;case 82:return 103
+        case 83:return 69;case 84:return 98;case 85:return 55;case 86:return 74;case 87:return 78;case 88:return 96
+        case 89...97:return [79,80,81,75,76,77,71,72,73][hid-89]
+        case 98:return 82;case 99:return 83;case 100:return 86;case 101:return 127;case 103:return 117
         case 224:return 29;case 225:return 42;case 226:return 56;case 227:return 125;case 228:return 97;case 229:return 54;case 230:return 100;case 231:return 126
         default:return nil
         }
@@ -258,22 +269,39 @@ class WaylandInputView: UIView, UITextInput {
     private func modifiers(_ flags:UIKeyModifierFlags)->Int {
         (flags.contains(.shift) ? 1 : 0) | (flags.contains(.control) ? 4 : 0) | (flags.contains(.alternate) ? 8 : 0) | (flags.contains(.command) ? 64 : 0) | (flags.contains(.alphaShift) ? 2 : 0)
     }
+    // UIKit represents arrows/function keys with printable private-use Unicode
+    // characters. They must reach GTK as keys; UITextInput's local navigation
+    // would move only our document mirror, leaving the guest cursor behind.
+    private func forwardsHardwareKey(_ hid:Int,characters:String,modifiers:UIKeyModifierFlags)->Bool {
+        let printable=(4...39).contains(hid) || (44...56).contains(hid)
+            || (84...87).contains(hid) || (89...100).contains(hid) || hid == 103
+        return !(textContext != nil && printable && !modifiers.contains(.control)
+            && !modifiers.contains(.command) && !characters.isEmpty
+            && characters.unicodeScalars.allSatisfy { !CharacterSet.controlCharacters.contains($0) })
+    }
+    @discardableResult
+    func hardwareKey(_ hid:Int,characters:String="",modifiers:UIKeyModifierFlags=[],pressed:Bool)->Bool {
+        guard let code=evdev(hid) else { return false }
+        if pressed {
+            guard forwardsHardwareKey(hid,characters:characters,modifiers:modifiers) else { return false }
+            forwardedKeys.insert(hid)
+        } else {
+            guard forwardedKeys.remove(hid) != nil else { return false }
+        }
+        sendInput?(["op":"key","key":code,"pressed":pressed,"modifiers":self.modifiers(modifiers),"time":time])
+        return true
+    }
     override func pressesBegan(_ presses:Set<UIPress>,with event:UIPressesEvent?) {
         var native=Set<UIPress>()
         for press in presses {
-            guard let key=press.key,let code=evdev(key.keyCode.rawValue) else { native.insert(press);continue }
-            let composed = textContext != nil && !key.modifierFlags.contains(.control) && !key.modifierFlags.contains(.command) && !key.characters.isEmpty && key.characters.unicodeScalars.allSatisfy { !CharacterSet.controlCharacters.contains($0) }
-            if composed {native.insert(press);continue}
-            forwardedKeys.insert(key.keyCode.rawValue)
-            sendInput?(["op":"key","key":code,"pressed":true,"modifiers":modifiers(key.modifierFlags),"time":time])
+            guard let key=press.key,hardwareKey(key.keyCode.rawValue,characters:key.characters,modifiers:key.modifierFlags,pressed:true) else { native.insert(press);continue }
         }
         if !native.isEmpty { super.pressesBegan(native,with:event) }
     }
     override func pressesEnded(_ presses:Set<UIPress>,with event:UIPressesEvent?) {
         var native=Set<UIPress>()
         for press in presses {
-            guard let key=press.key,forwardedKeys.remove(key.keyCode.rawValue) != nil,let code=evdev(key.keyCode.rawValue) else { native.insert(press);continue }
-            sendInput?(["op":"key","key":code,"pressed":false,"modifiers":modifiers(key.modifierFlags),"time":time])
+            guard let key=press.key,hardwareKey(key.keyCode.rawValue,modifiers:key.modifierFlags,pressed:false) else { native.insert(press);continue }
         }
         if !native.isEmpty { super.pressesEnded(native,with:event) }
     }

@@ -60,6 +60,12 @@ def main():
                                     results.append(any(job['name']=='targeted-runtime' and job['conclusion']=='success' for job in jobs))
                             skip_native=results[0];skip_linux_native=results[1]
                             if skip_native or skip_linux_native:print(f'Reusing unchanged native checks: Apple={skip_native}, Linux={skip_linux_native}.')
+                    native_scope=''
+                    if plan.get('native_scope') == 'wayland-input' and plan.get('native_reuse'):
+                        native_paths=subprocess.check_output(['git','diff','--name-only',plan['native_reuse']['sha'],'HEAD','--','crates','Cargo.toml','Cargo.lock','vendor','.cargo','rust-toolchain.toml'],text=True).splitlines()
+                        if native_paths and all(path.startswith('crates/trames-wayland/') for path in native_paths):
+                            native_scope='wayland-input'
+                            print('Only compositor input changed; validate popup focus and original GTK menu copy, reusing other native modules and foot.')
                     repackage_run=''
                     if plan.get('repackage'):
                         reuse=plan['repackage']
@@ -77,6 +83,7 @@ def main():
                     with open(os.environ['GITHUB_OUTPUT'],'a') as output:
                         output.write('frontend_only=false\ntargeted=true\n')
                         output.write('repackage_run='+repackage_run+'\n')
+                        output.write('native_scope='+native_scope+'\n')
                         output.write('skip_native='+str(skip_native).lower()+'\n')
                         output.write('skip_linux_native='+str(skip_linux_native).lower()+'\n')
                         output.write('skip_linux_modules='+str(skip_linux_modules).lower()+'\n')

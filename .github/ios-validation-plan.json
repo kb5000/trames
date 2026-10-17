@@ -1,18 +1,31 @@
 {
-  "base_sha": "fbf57a4beabb2f172f6a65921660581e9da5fe43",
+  "base_sha": "22a5d3aa0ffe4da1b204b0ff06160daa43303e56",
   "reuse_guest_run": 39015795319,
   "native_reuse": {
     "sha": "77455055bf902e6ea0193c36919c01daa672506d",
     "apple_run": 39034108790,
     "linux_run": 39034896571
   },
-  "critical_test": "TramesUITests/LaunchTests/testExtendedKeyboardRoundTripKeepsStatusVisibleAndLeavesResizeCorner",
+  "native_scope": "wayland-input",
+  "critical_test": "TramesTests/WaylandInputTests/testHardwareNavigationKeepsGuestCursorAndSubsequentCompositionTogether",
   "ui_targets": [
-    "TramesTests/TerminalViewportTests/testAccessoryControllerReservesSystemCornerAndPreservesCtrl"
+    "TramesTests/WaylandInputTests",
+    "TramesTests/ClipboardBridgeTests"
   ],
   "changed_file_sha256": {
-    "apps/ios/Trames/TerminalKeyboardAccessory.swift": "99e4ecb736b01c6c807505da3c8471594c768c1ff1f2661a239a64f256e5b6b7",
-    "apps/ios/TramesTests/TerminalViewportTests.swift": "218bf113b4c700230b85aa77c3d1b73e0a7b9cadb5fc5bff714d74d369b9e5a9"
+    ".github/workflows/ios.yml": "5e9f6820c4b36ecf218deae6227be557b0d0053dc27f754021ca6c6ae35ea4cc",
+    ".github/workflows/linux.yml": "aa0a83f1c19ce8cc59a1d6cfd520dd1e7274090464c5c8909f8bd10a0142de21",
+    "apps/ios/Trames/WaylandInputView.swift": "6fbaf90a5ff6bf5a00c2edb7dd3de0b40a3bae65263bfe35501104a16790ef20",
+    "apps/ios/TramesTests/ClipboardBridgeTests.swift": "73daaadebd516e2420eba338594cd6ac34a674b72c0bc31c5451c367076265b7",
+    "apps/ios/TramesTests/WaylandInputTests.swift": "32a722260ebf183f81e8ecd920b901019694b42a40fbc97c0b25c58485dec50a",
+    "apps/ios/project.yml": "5d454257b012e5335940373f9e4443c859f44d8ad18960bf1809fda7ae938042",
+    "crates/trames-wayland/src/input.rs": "d8362af1d786cf949b19700ccc3795544aa4814d2f20260614f6477b17f64564",
+    "crates/trames-wayland/src/protocol.rs": "4ed0049dfaee5a25f1c97d9de72ee0bcf42b40ec9dddfe7575fefe0244ff6deb",
+    "crates/trames-wayland/src/shell.rs": "2331e176dd398c57ab0b286625984b103f315aa2782f8c3ab1dddad1d21dc3ee",
+    "crates/trames-wayland/tests/gtk_client.rs": "d08fa1b770932eac4151d0186ce0290db75f03f81709991e86090dd737d80b33",
+    "scripts/ios-ci-scope.py": "de9abc58715a3e16a4e76acc075fd664d83b1327e899b3229713833fa3aeb7c9",
+    "tests/fixtures/gtk-editing.py": "509582ae50f8522858798c5af2d8368fca373c33f9141264ba201af31d244bed",
+    "tests/integration/mousepad-clipboard.py": "c0545c7295b30bf6120a6e05e7bf66d6ddf7518a10702169950aeb55422a8fa4"
   },
-  "reason": "Restore internal floating terminal spacing. Exercise the actual app-window keyboard accessory toggle and root keyboard-layout guide, window-size reflow and minimize/focus regressions only. Native/guest and File Provider code are unchanged; formal-key device acceptance is deferred as the owner confirmed."
+  "reason": "Fix original GTK/mousepad context-menu clipboard after popup unmap; accept GTK keyboard popup grabs on key release. Validate the affected compositor focus and GTK menu transfer only, reusing unchanged guest/memory/VFS/FFI/GPU/foot/window/keyboard-layout checks. Validate navigation/function/modifier/keypad/punctuation input and actual automatic guest Bridge-to-UIPasteboard text effects in the simulator. Build 24 remains a test IPA pending owner device acceptance."
 }

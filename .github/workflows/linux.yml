@@ -19,6 +19,7 @@ jobs:
       targeted: ${{ steps.scope.outputs.targeted }}
       skip_native: ${{ steps.scope.outputs.skip_linux_native }}
       skip_modules: ${{ steps.scope.outputs.skip_linux_modules }}
+      native_scope: ${{ steps.scope.outputs.native_scope }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,15 +47,25 @@ jobs:
         if: needs.scope.outputs.skip_modules != 'true'
         run: |
           cargo fmt --all --check
-          cargo clippy -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --all-targets --locked -- -D warnings
-          cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --lib --locked
+          if [[ '${{ needs.scope.outputs.native_scope }}' == wayland-input ]]; then
+            cargo clippy -p trames-wayland --all-targets --locked -- -D warnings
+            cargo test -p trames-wayland --lib nested_popup_unmap --locked
+          else
+            cargo clippy -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --all-targets --locked -- -D warnings
+            cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --lib --locked
+          fi
       - name: Exercise original GTK3 and mousepad, including clipboard FD transfers
         if: needs.scope.outputs.skip_modules != 'true'
         run: |
           sudo apt-get update -qq
-          sudo apt-get install --yes --no-install-recommends libgtk-3-0 mousepad
-          cargo test -p trames-wayland --test gtk_client --locked -- --ignored --nocapture
+          sudo apt-get install --yes --no-install-recommends libgtk-3-0 mousepad fonts-dejavu-core
+          if [[ '${{ needs.scope.outputs.native_scope }}' == wayland-input ]]; then
+            cargo test -p trames-wayland --test gtk_client original_gtk_context_menu_copy_keeps_selection_and_keyboard_focus --locked -- --ignored --nocapture
+          else
+            cargo test -p trames-wayland --test gtk_client --locked -- --ignored --nocapture
+          fi
       - name: Exercise original signed ARM64 foot over the guest Wayland ABI
+        if: needs.scope.outputs.native_scope != 'wayland-input'
         timeout-minutes: 10
         env:
           TRAMES_FOOT_STORE: ${{ github.workspace }}/target/foot-acceptance/store

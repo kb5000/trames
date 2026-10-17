@@ -13,7 +13,7 @@ settings:
     'TRAMES_RUST_TARGET[sdk=iphoneos*]': aarch64-apple-ios
     'TRAMES_RUST_TARGET[sdk=iphonesimulator*]': aarch64-apple-ios-sim
     MARKETING_VERSION: '0.18.0'
-    CURRENT_PROJECT_VERSION: '23'
+    CURRENT_PROJECT_VERSION: '24'
     TRAMES_APP_GROUP: group.org.trames.Trames
     INFOPLIST_KEY_TramesAppGroup: '$(TRAMES_APP_GROUP)'
     INFOPLIST_KEY_CFBundleShortVersionString: '$(MARKETING_VERSION)'

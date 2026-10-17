@@ -1,9 +1,73 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import XCTest
+import UIKit
 import TramesKit
 @testable import Trames
 
 final class WaylandInputTests: XCTestCase {
+    @MainActor
+    func testHardwareNavigationKeepsGuestCursorAndSubsequentCompositionTogether() throws {
+        var object:[String:Any] = ["version":3,"id":7,"epoch":3,"surface":4,"window":4,"serial":8,
+            "text":"ab","cursor":2,"anchor":2,"caret":[0,0,1,20],"hint":0,"purpose":0]
+        let view=WaylandInputView();var commands:[[String:Any]]=[]
+        view.sendInput={ commands.append($0) }
+        view.textContext=try JSONDecoder().decode(LocalWaylandText.self,from:JSONSerialization.data(withJSONObject:object))
+        // These are the actual UIKit private-use arrow strings, which are not
+        // members of CharacterSet.controlCharacters.
+        for (hid,string,evdev) in [(80,UIKeyCommand.inputLeftArrow,105),(79,UIKeyCommand.inputRightArrow,106),
+                                   (82,UIKeyCommand.inputUpArrow,103),(81,UIKeyCommand.inputDownArrow,108),
+                                   (74,"\u{F729}",102),(77,"\u{F72B}",107),(58,"\u{F704}",59)] {
+            commands=[]
+            XCTAssertTrue(view.hardwareKey(hid,characters:string,pressed:true))
+            XCTAssertTrue(view.hardwareKey(hid,pressed:false))
+            XCTAssertEqual(commands.compactMap{$0["key"] as? Int},[evdev,evdev])
+            XCTAssertEqual(commands.compactMap{$0["pressed"] as? Bool},[true,false])
+        }
+        let nonText:[(Int,Int)] = [(40,28),(41,1),(42,14),(43,15),(57,58),(73,110),(74,102),(75,104),(76,111),(77,107),(78,109)]
+            + Array(zip(58...67,59...68)) + [(68,87),(69,88),(70,99),(71,70),(72,119),(83,69),(88,96),(101,127)]
+            + [(224,29),(225,42),(226,56),(227,125),(228,97),(229,54),(230,100),(231,126)]
+        for (hid,evdev) in nonText {
+            commands=[]
+            XCTAssertTrue(view.hardwareKey(hid,characters:"\u{F700}",pressed:true))
+            XCTAssertTrue(view.hardwareKey(hid,pressed:false))
+            XCTAssertEqual(commands.compactMap{$0["key"] as? Int},[evdev,evdev],"HID \(hid)")
+        }
+        for (flags,mask) in [(UIKeyModifierFlags.shift,1),(.control,4),(.alternate,8),(.command,64),(.alphaShift,2),([.control,.shift],5)] {
+            commands=[]
+            XCTAssertTrue(view.hardwareKey(80,characters:UIKeyCommand.inputLeftArrow,modifiers:flags,pressed:true))
+            XCTAssertTrue(view.hardwareKey(80,pressed:false))
+            XCTAssertEqual(commands.compactMap{$0["modifiers"] as? Int},[mask,0])
+        }
+        XCTAssertFalse(view.hardwareKey(4,characters:"a",pressed:true),"Printable text belongs to the native input method")
+        XCTAssertTrue(view.hardwareKey(6,characters:"c",modifiers:.control,pressed:true))
+        XCTAssertTrue(view.hardwareKey(6,modifiers:.control,pressed:false))
+        // GTK reports its cursor after handling Left. Text must still insert
+        // without a mouse click or a new focus/epoch.
+        object["serial"]=9;object["cursor"]=1;object["anchor"]=1
+        view.textContext=try JSONDecoder().decode(LocalWaylandText.self,from:JSONSerialization.data(withJSONObject:object))
+        commands=[];view.insertText("你🙂")
+        XCTAssertEqual(commands.count,1);XCTAssertEqual(commands[0]["commit"] as? String,"你🙂")
+        XCTAssertEqual(commands[0]["serial"] as? UInt32,9)
+        let all=try XCTUnwrap(view.textRange(from:view.beginningOfDocument,to:view.endOfDocument))
+        XCTAssertEqual(view.text(in:all),"a你🙂b")
+    }
+    @MainActor
+    func testSoftKeyboardPunctuationAndRawKeypadUseStandardLinuxKeys() {
+        let view=WaylandInputView();var commands:[[String:Any]]=[]
+        view.sendInput={ commands.append($0) }
+        view.insertText("aA1!_+{}:\"~|<>?\t\n")
+        let downs=commands.filter{$0["pressed"] as? Bool == true}
+        XCTAssertEqual(downs.compactMap{$0["key"] as? Int},[30,30,2,2,12,13,26,27,39,40,41,43,51,52,53,15,28])
+        XCTAssertEqual(downs.compactMap{$0["modifiers"] as? Int},[0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0])
+        let raw:[(Int,Int)] = [(50,43),(84,98),(85,55),(86,74),(87,78),(88,96)]
+            + Array(zip(89...97,[79,80,81,75,76,77,71,72,73])) + [(98,82),(99,83),(100,86),(103,117)]
+        for (hid,evdev) in raw {
+            commands=[]
+            XCTAssertTrue(view.hardwareKey(hid,characters:"1",pressed:true))
+            XCTAssertTrue(view.hardwareKey(hid,pressed:false))
+            XCTAssertEqual(commands.compactMap{$0["key"] as? Int},[evdev,evdev])
+        }
+    }
     @MainActor
     func testV3SelectionIsReplacedWithoutDeletingItTwice() throws {
         let object:[String:Any] = ["version":3,"id":7,"epoch":3,"surface":4,"window":4,"serial":8,

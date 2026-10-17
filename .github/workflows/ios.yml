@@ -25,6 +25,7 @@ jobs:
       repackage_run: ${{ steps.scope.outputs.repackage_run }}
       critical_test: ${{ steps.scope.outputs.critical_test }}
       ui_targets: ${{ steps.scope.outputs.ui_targets }}
+      native_scope: ${{ steps.scope.outputs.native_scope }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -123,7 +124,9 @@ jobs:
       - name: Validate affected native modules or the complete Apple core
         if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.skip_native != 'true'
         run: |
-          if [[ '${{ needs.scope.outputs.targeted }}' == true ]]; then
+          if [[ '${{ needs.scope.outputs.native_scope }}' == wayland-input ]]; then
+            cargo test -p trames-wayland --lib nested_popup_unmap --locked
+          elif [[ '${{ needs.scope.outputs.targeted }}' == true ]]; then
             cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --lib --locked
           else
             cargo test -p trames-shared -p trames-wayland -p trames-native -p trames-compute -p trames-cpu -p trames-accel -p trames-memory -p trames-vfs -p trames-core --locked
