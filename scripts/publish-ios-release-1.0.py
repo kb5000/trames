@@ -115,6 +115,7 @@ def verify(archives, source, source_commit):
         meta=plistlib.loads(app.read(root+'Info.plist'))
         assert meta['CFBundleShortVersionString']=='1.0.0' and meta['CFBundleVersion']=='26'
         assert meta['CFBundleSupportedPlatforms']==['iPhoneOS']
+        assert (app.getinfo(root+meta['CFBundleExecutable']).external_attr >> 16) & stat.S_IXUSR
         image=app.read(root+meta['CFBundleExecutable']);magic,cpu,_,kind,count,size,_,_=struct.unpack_from('<8I',image)
         assert (magic,cpu,kind)==(0xfeedfacf,0x0100000c,2)
         offset=32;platforms=[]
@@ -193,6 +194,8 @@ def main():
     parser.add_argument('--repository',required=True)
     args=parser.parse_args()
     assert args.repository=='kb5000/trames'
+    if tomllib.loads(Path('Cargo.toml').read_text())['workspace']['package']['version'] != '1.0.0':
+        print('This publisher only handles 1.0.0; nothing to publish.');return
     manifest=Path('docs/validation/release-1.0.json')
     if not manifest.exists():
         print('No verified 1.0.0 publication manifest; nothing to publish.')
@@ -266,7 +269,7 @@ def main():
         report.update(tag_commit=tag_commit,publisher_source_commit=tag_commit,application_identical_at_tag=True,
                       publication_only_changed_paths=changed,artifacts=metadata,
                       ci={r['name']:{'id':r['id'],'url':r['html_url'],'head_sha':r['head_sha'],'conclusion':r['conclusion']} for r in (apple,linux)},
-                      reuse_guest_run=config['reuse_guest_run'],local_checks=config['local_checks'],
+                      reuse_guest_run=config['reuse_guest_run'],local_checks=config['local_checks'],native_checks=config['native_checks'],
                       native_linux_run=config['native_linux_run'],native_apple_run=config['native_apple_run'],validation_source_commit=config.get('linux_source_commit',source_commit),
                       source_archives_sha256={name:sha(archives[kind].read(name)) for kind,name in [('musl','musl-hybrid-1.2.5-source.tar.gz'),('vulkan','vulkan-native-upstream-source.tar.gz')]})
         ipa=directory/'Trames-1.0.0-build26-unsigned.ipa';ipa.write_bytes(data)
