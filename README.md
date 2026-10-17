@@ -1,6 +1,6 @@
 # Trames
 
-[0.18.0 build 22 测试 IPA](https://github.com/kb5000/trames/actions/runs/39037069302/artifacts/12102612294)：修复终端最大化后的行列数、窗口调整大小与键盘热区冲突，以及 GTK 弹窗尺寸；原版 ARM64 foot 已通过安装、提交帧和正常退出验收。新增[文件 App 只读浏览 rootfs](docs/guides/rootfs-files.md)（Trames → Alpine，需有效 App Group 签名），App 内 Files 导入可原子替换同名文件。[本轮验证记录](docs/validation/ipad-0.18-build22.json)。当前仍为测试包，iPad 验收后再准备 1.0.0。
+[0.18.0 build 23 测试 IPA](https://github.com/kb5000/trames/actions/runs/39050660220/artifacts/12107662210)：补齐系统 App 小窗／全屏变化时的终端与 PTY 尺寸刷新，保留后台／键盘切换前的浮窗位置，修复扩展键盘开关后状态行遮挡；键盘栏右侧预留系统窗口调整角落，内部浮窗恢复原间距。7 项本轮相关检查通过（2 项最终运行、5 项成功结果复用），四次原生容器尺寸切换的真实 Linux `stty size` 均匹配。[验证记录](docs/validation/ipad-0.18-build23.json)。原版 foot、GTK／剪贴板与[只读 rootfs Files 扩展](docs/guides/rootfs-files.md)继续保留；File Provider 真机验收待正式 App Group 签名。当前仅为测试包，iPad 验收后再准备 1.0.0。
 
 0.17.0 加入[宿主原生 Wayland](docs/architecture/wayland.md)：终端与图形应用共用顶部标签栏，支持拖出浮窗、停靠、调整分辨率及 UIKit 输入法。旧“显示窗口”菜单与固定显示器界面已移除。原版 vkmark 的 13 种场景通过本地功能验收；窗口手势、原版 Weston、vkcube、vkmark 与 Metal 显示通过 **33 项 Apple 模拟器验收**，零失败或跳过。[验证记录](docs/validation/wayland-workspace-vkmark.md)、[使用说明](docs/guides/wayland.md)、[0.17.0/build 19 发行记录](docs/validation/release-0.17.md)，对应 [PR #26](https://github.com/kb5000/trames/pull/26)。
 

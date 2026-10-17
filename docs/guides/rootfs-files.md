@@ -23,7 +23,8 @@ Files 的目录授权记录仍在主 App 私有目录中。
 File Provider 需要主 App 与扩展具有相同的有效 **App Group** 签名权限。
 `TRAMES_APP_GROUP` 是构建配置，默认 `group.org.trames.Trames`。安装工具必须为两者
 保留或正确映射相同的权限及扩展 Info.plist 中的 document group。普通未签名 IPA
-本身不授予该权限；Sideloadly 的免费签名是否能提供该权限须在实际安装后确认。
+本身不授予该权限。已确认这部分需要正式的 App Group 签名；当前免费签名
+环境暂不安排 File Provider 真机验收，待配置正式签名后再测试。
 不具备共享容器时，App 使用原有私有 store，Files 面板会说明当前不可用，已有
 Linux 数据和手动导入／导出继续保留。扩展编译／模拟器验证不替代这项真机签名验收。
 
