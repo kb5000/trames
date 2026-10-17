@@ -2,6 +2,7 @@
 import XCTest
 import UIKit
 import SwiftUI
+import Combine
 import TramesKit
 @testable import Trames
 
@@ -56,8 +57,9 @@ final class WorkspaceInteractionTests: XCTestCase {
     }
     func testFrameRevisionsDoNotRebuildTheWorkspaceLayout() throws {
         let session=TerminalSession(title:"Alpine",isLocal:true)
-        defer { session.terminal.updateUiClosed() }
-        var changes=0;session.onWaylandChanged={ _ in changes += 1 }
+        var changes=0
+        let observation=session.$waylandWindows.dropFirst().sink { _ in changes += 1 }
+        defer { observation.cancel();session.terminal.updateUiClosed() }
         func status(_ revision: Int, width: Int = 400) throws -> LocalWaylandStatus {
             try JSONDecoder().decode(LocalWaylandStatus.self,from:Data("""
             {"revision":\(revision),"text":null,"windows":[{"id":7,"connection":1,"title":"cube","app_id":"cube","width":\(width),"height":300,"revision":\(revision),"mode":"floating","bounds":[0,0,\(width),300]}]}
@@ -67,6 +69,23 @@ final class WorkspaceInteractionTests: XCTestCase {
         XCTAssertEqual(changes,1)
         session.applyWaylandStatus(try status(101,width:500))
         XCTAssertEqual(changes,2);XCTAssertEqual(session.waylandWindows[0].width,500)
+    }
+    func testSameLayoutModeAcknowledgementDoesNotMaskLaterGuestRequests() throws {
+        let model=WorkspaceModel(prepareEnvironment:false),session=TerminalSession(title:"Alpine",isLocal:true)
+        defer { session.terminal.updateUiClosed() };model.add(session)
+        func update(_ revision: Int, _ mode: String) throws {
+            let data=Data("""
+            {"revision":\(revision),"text":null,"windows":[{"id":7,"connection":1,"title":"cube","app_id":"cube","width":400,"height":300,"revision":\(revision),"mode":"\(mode)","bounds":[0,0,400,300]}]}
+            """.utf8)
+            session.applyWaylandStatus(try JSONDecoder().decode(LocalWaylandStatus.self,from:data))
+        }
+        try update(1,"maximized")
+        let id=WorkspaceItemID.wayland(session.id,7)
+        model.minimize(id);model.restore(id)
+        try update(2,"maximized")
+        try update(3,"floating")
+        XCTAssertEqual(model.layout.placement(id),.floating)
+        XCTAssertFalse(model.layout.tabs.contains(id))
     }
     func testTerminalKeepsTheSameUIKitHostAcrossDockDetachAndBackgroundTabs() async throws {
         let previous=UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).first { $0.isKeyWindow }

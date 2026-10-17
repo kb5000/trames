@@ -92,9 +92,12 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         if waylandWindows.count != status.windows.count
             || !zip(waylandWindows,status.windows).allSatisfy({ pair in pair.0.hasSameLayout(as:pair.1) }) {
             waylandWindows=status.windows
-            onWaylandChanged?(status.windows)
         }
         if waylandText != status.text { waylandText=status.text }
+        // Mode acknowledgements can have the same layout as the previous
+        // snapshot (e.g. minimize/restore between polls). Reconcile them without
+        // publishing pixel-only revisions to the view tree.
+        onWaylandChanged?(status.windows)
     }
     func waylandCommand(_ command: [String:Any]) {
         #if DEBUG
