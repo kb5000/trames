@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Core graphics frontend: single color attachment, vertex/index input, sampled textures, dynamic
-// viewport/scissor, no optional raster/depth/blend features. Wire op 58..76 and 92..97.
+// static/dynamic viewport/scissor, depth and native blend/sampler state.
+// Wire op 58..76, 92..97 and 114.
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateImage(VkDevice d,const VkImageCreateInfo *info,const VkAllocationCallbacks *allocator,VkImage *out) {
     CHECK(info,VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);ALLOCATOR(allocator);
     if(info->flags || info->imageType!=VK_IMAGE_TYPE_2D || info->extent.depth!=1 || info->mipLevels!=1 || info->arrayLayers!=1 || info->samples!=VK_SAMPLE_COUNT_1_BIT || info->tiling!=VK_IMAGE_TILING_OPTIMAL || info->sharingMode!=VK_SHARING_MODE_EXCLUSIVE || (info->initialLayout!=VK_IMAGE_LAYOUT_UNDEFINED && info->initialLayout!=VK_IMAGE_LAYOUT_PREINITIALIZED))return VK_ERROR_FEATURE_NOT_PRESENT;
@@ -49,14 +50,19 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateGraphicsPipelines(VkDevice d,VkPipelineCa
     const VkPipelineRasterizationStateCreateInfo *r=info->pRasterizationState;CHECK(r,VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);if(r->flags || r->depthClampEnable || r->rasterizerDiscardEnable || r->polygonMode!=VK_POLYGON_MODE_FILL || r->depthBiasEnable || r->lineWidth!=1.0f)return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkPipelineMultisampleStateCreateInfo *m=info->pMultisampleState;CHECK(m,VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);if(m->flags || m->rasterizationSamples!=VK_SAMPLE_COUNT_1_BIT || m->sampleShadingEnable || m->alphaToCoverageEnable || m->alphaToOneEnable || (m->pSampleMask && m->pSampleMask[0]!=UINT32_MAX))return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkPipelineDepthStencilStateCreateInfo *z=info->pDepthStencilState;if(z){CHECK(z,VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);if(z->flags || z->depthBoundsTestEnable || z->stencilTestEnable || z->depthCompareOp>VK_COMPARE_OP_ALWAYS)return VK_ERROR_FEATURE_NOT_PRESENT;}
-    const VkPipelineColorBlendStateCreateInfo *b=info->pColorBlendState;CHECK(b,VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);if(b->flags || b->logicOpEnable || b->attachmentCount!=1 || b->pAttachments[0].blendEnable)return VK_ERROR_FEATURE_NOT_PRESENT;
-    const VkPipelineDynamicStateCreateInfo *dynamic=info->pDynamicState;CHECK(dynamic,VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);if(dynamic->flags || dynamic->dynamicStateCount!=2)return VK_ERROR_FEATURE_NOT_PRESENT;
-    unsigned states=0;for(unsigned i=0;i<2;i++){if(dynamic->pDynamicStates[i]==VK_DYNAMIC_STATE_VIEWPORT)states|=1;else if(dynamic->pDynamicStates[i]==VK_DYNAMIC_STATE_SCISSOR)states|=2;}if(states!=3)return VK_ERROR_FEATURE_NOT_PRESENT;
+    const VkPipelineColorBlendStateCreateInfo *b=info->pColorBlendState;CHECK(b,VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);if(b->flags || b->logicOpEnable || b->attachmentCount!=1)return VK_ERROR_FEATURE_NOT_PRESENT;
+    const VkPipelineDynamicStateCreateInfo *dynamic=info->pDynamicState;unsigned states=0;
+    if(dynamic){CHECK(dynamic,VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);if(dynamic->flags || dynamic->dynamicStateCount>2)return VK_ERROR_FEATURE_NOT_PRESENT;for(unsigned i=0;i<dynamic->dynamicStateCount;i++){unsigned bit=dynamic->pDynamicStates[i]==VK_DYNAMIC_STATE_VIEWPORT?1:dynamic->pDynamicStates[i]==VK_DYNAMIC_STATE_SCISSOR?2:0;if(!bit || (states&bit))return VK_ERROR_FEATURE_NOT_PRESENT;states|=bit;}}
+    uint64_t config[22]={states};
+    if(!(states&1)){if(!p->pViewports)return VK_ERROR_FEATURE_NOT_PRESENT;uint32_t bits[6];memcpy(bits,p->pViewports,sizeof(bits));for(unsigned i=0;i<6;i++)config[1+i]=bits[i];}
+    if(!(states&2)){if(!p->pScissors)return VK_ERROR_FEATURE_NOT_PRESENT;config[7]=(uint64_t)(int64_t)p->pScissors[0].offset.x;config[8]=(uint64_t)(int64_t)p->pScissors[0].offset.y;config[9]=p->pScissors[0].extent.width;config[10]=p->pScissors[0].extent.height;}
+    const VkPipelineColorBlendAttachmentState *ba=b->pAttachments;config[11]=ba->blendEnable;config[12]=ba->srcColorBlendFactor;config[13]=ba->dstColorBlendFactor;config[14]=ba->colorBlendOp;config[15]=ba->srcAlphaBlendFactor;config[16]=ba->dstAlphaBlendFactor;config[17]=ba->alphaBlendOp;
+    uint32_t constants[4];memcpy(constants,b->blendConstants,sizeof(constants));for(unsigned i=0;i<4;i++)config[18+i]=constants[i];
     uint64_t state[5]={(uint64_t)info->renderPass,a->topology,r->cullMode,r->frontFace,b->pAttachments[0].colorWriteMask};
     uint64_t bindings[16][3],attributes[16][4];
     for(uint32_t i=0;i<v->vertexBindingDescriptionCount;i++){const VkVertexInputBindingDescription *x=&v->pVertexBindingDescriptions[i];bindings[i][0]=x->binding;bindings[i][1]=x->stride;bindings[i][2]=x->inputRate;}
     for(uint32_t i=0;i<v->vertexAttributeDescriptionCount;i++){const VkVertexInputAttributeDescription *x=&v->pVertexAttributeDescriptions[i];attributes[i][0]=x->location;attributes[i][1]=x->binding;attributes[i][2]=x->format;attributes[i][3]=x->offset;}
-    return CALL(70,KEY(d),(uint64_t)info->layout,(uint64_t)vertex->module,(uint64_t)fragment->module,PTR(vertex->pName),PTR(fragment->pName),PTR(state),PTR(out),PTR(bindings),v->vertexBindingDescriptionCount,PTR(attributes),v->vertexAttributeDescriptionCount,a->primitiveRestartEnable,(uint64_t)cache,z?((z->depthTestEnable?1UL:0)|(z->depthWriteEnable?2UL:0)|((uint64_t)z->depthCompareOp<<4)):0);
+    return CALL(70,KEY(d),(uint64_t)info->layout,(uint64_t)vertex->module,(uint64_t)fragment->module,PTR(vertex->pName),PTR(fragment->pName),PTR(state),PTR(out),PTR(bindings),v->vertexBindingDescriptionCount,PTR(attributes),v->vertexAttributeDescriptionCount,a->primitiveRestartEnable,(uint64_t)cache,z?((z->depthTestEnable?1UL:0)|(z->depthWriteEnable?2UL:0)|((uint64_t)z->depthCompareOp<<4)):0,PTR(config));
 }
 VKAPI_ATTR void VKAPI_CALL vkCmdBeginRenderPass(VkCommandBuffer c,const VkRenderPassBeginInfo *info,VkSubpassContents contents) {
     if(!VALID(info,VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO) || contents!=VK_SUBPASS_CONTENTS_INLINE || info->clearValueCount>2)checked(VK_ERROR_FEATURE_NOT_PRESENT);
@@ -86,3 +92,9 @@ VKAPI_ATTR void VKAPI_CALL vkCmdBindVertexBuffers(VkCommandBuffer c,uint32_t fir
 }
 VKAPI_ATTR void VKAPI_CALL vkCmdBindIndexBuffer(VkCommandBuffer c,VkBuffer buffer,VkDeviceSize offset,VkIndexType type) {checked(CALL(96,DEVKEY(c),KEY(c),(uint64_t)buffer,offset,type));}
 VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexed(VkCommandBuffer c,uint32_t indices,uint32_t instances,uint32_t firstIndex,int32_t vertexOffset,uint32_t firstInstance) {checked(CALL(97,DEVKEY(c),KEY(c),indices,instances,firstIndex,(uint64_t)(int64_t)vertexOffset,firstInstance));}
+
+VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(VkCommandBuffer c,VkImage image,VkImageLayout layout,const VkClearColorValue *color,uint32_t count,const VkImageSubresourceRange *ranges) {
+    if(!count || count>64 || !color || !ranges)checked(VK_ERROR_FEATURE_NOT_PRESENT);
+    uint64_t wire[64][5];for(uint32_t i=0;i<count;i++){const VkImageSubresourceRange *r=ranges+i;wire[i][0]=r->aspectMask;wire[i][1]=r->baseMipLevel;wire[i][2]=r->levelCount;wire[i][3]=r->baseArrayLayer;wire[i][4]=r->layerCount;}
+    checked(CALL(114,DEVKEY(c),KEY(c),(uint64_t)image,layout,PTR(color),PTR(wire),count));
+}

@@ -200,7 +200,7 @@ impl Backend {
                     vk::SurfaceTransformFlagsKHR::IDENTITY.as_raw(),
                     vk::SurfaceTransformFlagsKHR::IDENTITY.as_raw(),
                     vk::CompositeAlphaFlagsKHR::OPAQUE.as_raw(),
-                    c.supported_usage_flags.as_raw() & 0x11,
+                    c.supported_usage_flags.as_raw() & 0x13,
                 ];
                 let values: Vec<u32> = values
                     .into_iter()
@@ -284,7 +284,7 @@ impl Backend {
                     || a[4] != 0
                     || a[5] != surface.target.width as u64
                     || a[6] != surface.target.height as u64
-                    || a[7] & !0x11 != 0
+                    || a[7] & !0x13 != 0
                     || a[7] & 16 == 0
                     || a[7] & !(caps.supported_usage_flags.as_raw() as u64) != 0
                     || a[9] != 0

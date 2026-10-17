@@ -51,8 +51,10 @@ VK_EXT_metal_objects exports their MTLTextures for direct Metal sampling. Produc
 fences gate publication without blocking the VM coordinator. A frame lease spans
 producer completion, queued/current scenes and final Metal command completion.
 Image reuse follows the final lease, including swapchain replacement and session
-teardown. FIFO pauses while minimized/occluded. Pending frames are bounded across
-pool replacement; allocations share the existing 128 MiB GPU budget.
+teardown. FIFO waits for UI presentation; Mailbox replaces queued Mailbox frames
+and may publish a newer ready image before the previous frame is displayed.
+Cancellation releases only the queue lease, retaining producer and acquired UI
+leases until completion. Both modes are bounded across pool replacement; allocations share the existing 128 MiB GPU budget.
 
 Normal presentation performs no pixel readback or GPU-to-CPU-to-GPU transport.
 Only debug acceptance reads back the final host drawable for pixel verification.
@@ -62,11 +64,29 @@ preserving independent CPU/GPU changes. Those shadow transfers are distinct from
 image presentation. See [Vulkan memory and lifetime](vulkan-compute.md#memory-and-lifetime)
 for the profile's boundaries and accounting.
 
-The graphics subset includes sRGB textures, D16 depth attachments, depth
+The graphics subset includes sRGB textures, D16/D32 depth attachments, native sampler anisotropy
+(queried and enabled from the host feature/limit), transfer color clears, static/dynamic viewport and scissor, native color/alpha
+blending, depth
 compare/write, empty native pipeline caches, PREINITIALIZED images and
 SIMULTANEOUS_USE command buffers with per-submission completion accounting.
 Native Wayland and legacy fixed-display WSI remain separate instance routes;
 requesting both on one instance is rejected.
+
+## Workspace and focus
+
+Terminal and Wayland identities share one root tab/window model, independent of
+mutable application titles. Tabs can reorder or detach, floating title bars can
+dock into that same tab row, and minimization preserves the previous placement.
+Geometry comes from the actual header/content frames. Resizing follows available
+client space. Guest mode acknowledgements do not steal terminal focus on every
+frame, and empty OSC titles fall back to the session's original title.
+
+Selected background tab and keyboard focus are separate. Focusing a floating
+window does not remove the selected terminal; touching the terminal clears the
+Wayland seat and reclaims UIKit first responder. Canvas/frame updates only change
+first responder when the desired focus changes. v1 activation sends one balanced
+leave/enter across widget switches and ignores duplicate activation; epochs
+invalidate composition belonging to an old widget.
 
 ## Scene and input
 

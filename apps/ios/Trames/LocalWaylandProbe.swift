@@ -170,6 +170,9 @@ enum LocalWaylandProbe {
                 if Date().timeIntervalSince(start)>180 { throw TramesError.message("Wayland \(stage) timed out (window=\(String(describing:currentID)), frames=\(canvas.rendered-baseline)): \(text.suffix(4096))") }
                 try await Task.sleep(for:.milliseconds(10))
             }
+            if stage == "vkmark" && (!text.contains("vkmark Score") || text.contains("Failed with exception") || canvas.rendered == baseline) {
+                throw TramesError.message("Original vkmark scene failed: \(text.suffix(16384))")
+            }
             while !(try session.waylandStatus()).windows.isEmpty {
                 if Date().timeIntervalSince(start)>185 { throw TramesError.message("Wayland client resources were not reclaimed") }
                 try await Task.sleep(for:.milliseconds(10))

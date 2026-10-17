@@ -92,6 +92,7 @@
     if(!strcmp(name,"vkCmdBindVertexBuffers"))return (PFN_vkVoidFunction)vkCmdBindVertexBuffers;
     if(!strcmp(name,"vkCmdBindIndexBuffer"))return (PFN_vkVoidFunction)vkCmdBindIndexBuffer;
     if(!strcmp(name,"vkCmdDrawIndexed"))return (PFN_vkVoidFunction)vkCmdDrawIndexed;
+    if(!strcmp(name,"vkCmdClearColorImage"))return (PFN_vkVoidFunction)vkCmdClearColorImage;
     if(!strcmp(name,"vkGetPhysicalDeviceDisplayPropertiesKHR"))return (PFN_vkVoidFunction)vkGetPhysicalDeviceDisplayPropertiesKHR;
     if(!strcmp(name,"vkGetPhysicalDeviceDisplayPlanePropertiesKHR"))return (PFN_vkVoidFunction)vkGetPhysicalDeviceDisplayPlanePropertiesKHR;
     if(!strcmp(name,"vkGetDisplayPlaneSupportedDisplaysKHR"))return (PFN_vkVoidFunction)vkGetDisplayPlaneSupportedDisplaysKHR;

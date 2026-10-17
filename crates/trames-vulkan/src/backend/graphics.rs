@@ -251,6 +251,73 @@ impl Backend {
                 .get_physical_device_properties(self.physical)
         }
         .limits;
+        // Extended graphics state is copied before the asynchronous native
+        // compiler starts; no guest pointers enter that worker.
+        let mut config = vec![0; 22];
+        config[0] = 3; // Older ICDs supply dynamic viewport/scissor only.
+        if a[15] != 0 {
+            config = words64(m, a[15], 22)?;
+        }
+        if config[0] & !3 != 0
+            || config[11] > 1
+            || [12, 13, 15, 16].iter().any(|&i| config[i] > 14)
+            || config[14] > 4
+            || config[17] > 4
+        {
+            return unsupported();
+        }
+        let static_states = (!config[0] & 3) as u8;
+        let mut static_viewports = Vec::new();
+        let mut static_scissors = Vec::new();
+        if static_states & 1 != 0 {
+            let v: Vec<_> = config[1..7]
+                .iter()
+                .map(|&v| f32::from_bits(v as u32))
+                .collect();
+            if v.iter().any(|v| !v.is_finite())
+                || v[0] < 0.0
+                || v[1] < 0.0
+                || v[2] <= 0.0
+                || v[3] <= 0.0
+                || v[0] + v[2] > DIMENSION as f32
+                || v[1] + v[3] > DIMENSION as f32
+                || !(0.0..=1.0).contains(&v[4])
+                || !(0.0..=1.0).contains(&v[5])
+            {
+                return invalid();
+            }
+            static_viewports.push(vk::Viewport {
+                x: v[0],
+                y: v[1],
+                width: v[2],
+                height: v[3],
+                min_depth: v[4],
+                max_depth: v[5],
+            });
+        }
+        if static_states & 2 != 0 {
+            if config[9] == 0
+                || config[10] == 0
+                || config[7]
+                    .checked_add(config[9])
+                    .is_none_or(|n| n > DIMENSION as u64)
+                || config[8]
+                    .checked_add(config[10])
+                    .is_none_or(|n| n > DIMENSION as u64)
+            {
+                return invalid();
+            }
+            static_scissors.push(vk::Rect2D {
+                offset: vk::Offset2D {
+                    x: config[7] as i32,
+                    y: config[8] as i32,
+                },
+                extent: vk::Extent2D {
+                    width: config[9] as u32,
+                    height: config[10] as u32,
+                },
+            });
+        }
         let binding_wire = words64(m, a[8], bounded(a[9], 16)? * 3)?;
         let attribute_wire = words64(m, a[10], bounded(a[11], 16)? * 4)?;
         let mut bindings = Vec::new();
@@ -343,9 +410,15 @@ impl Backend {
             let assembly = vk::PipelineInputAssemblyStateCreateInfo::default()
                 .topology(vk::PrimitiveTopology::from_raw(state[1] as i32))
                 .primitive_restart_enable(restart);
-            let viewport = vk::PipelineViewportStateCreateInfo::default()
+            let mut viewport = vk::PipelineViewportStateCreateInfo::default()
                 .viewport_count(1)
                 .scissor_count(1);
+            if !static_viewports.is_empty() {
+                viewport = viewport.viewports(&static_viewports);
+            }
+            if !static_scissors.is_empty() {
+                viewport = viewport.scissors(&static_scissors);
+            }
             let raster = vk::PipelineRasterizationStateCreateInfo::default()
                 .polygon_mode(vk::PolygonMode::FILL)
                 .cull_mode(vk::CullModeFlags::from_raw(state[2] as u32))
@@ -358,9 +431,26 @@ impl Backend {
                 .depth_write_enable(depth_write)
                 .depth_compare_op(vk::CompareOp::from_raw(compare));
             let attachments = [vk::PipelineColorBlendAttachmentState::default()
+                .blend_enable(config[11] != 0)
+                .src_color_blend_factor(vk::BlendFactor::from_raw(config[12] as i32))
+                .dst_color_blend_factor(vk::BlendFactor::from_raw(config[13] as i32))
+                .color_blend_op(vk::BlendOp::from_raw(config[14] as i32))
+                .src_alpha_blend_factor(vk::BlendFactor::from_raw(config[15] as i32))
+                .dst_alpha_blend_factor(vk::BlendFactor::from_raw(config[16] as i32))
+                .alpha_blend_op(vk::BlendOp::from_raw(config[17] as i32))
                 .color_write_mask(vk::ColorComponentFlags::from_raw(state[4] as u32))];
-            let blend = vk::PipelineColorBlendStateCreateInfo::default().attachments(&attachments);
-            let dynamic_states = [vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR];
+            let blend = vk::PipelineColorBlendStateCreateInfo::default()
+                .attachments(&attachments)
+                .blend_constants(std::array::from_fn(|i| {
+                    f32::from_bits(config[18 + i] as u32)
+                }));
+            let mut dynamic_states = Vec::new();
+            if static_states & 1 == 0 {
+                dynamic_states.push(vk::DynamicState::VIEWPORT);
+            }
+            if static_states & 2 == 0 {
+                dynamic_states.push(vk::DynamicState::SCISSOR);
+            }
             let dynamic =
                 vk::PipelineDynamicStateCreateInfo::default().dynamic_states(&dynamic_states);
             let info = [vk::GraphicsPipelineCreateInfo::default()
@@ -405,6 +495,7 @@ impl Backend {
                 },
                 bind_point: vk::PipelineBindPoint::GRAPHICS,
                 vertex_inputs: inputs,
+                static_states,
                 output: a[7],
                 abandoned: false,
             },
@@ -702,13 +793,63 @@ impl Backend {
                 self.publish(m, a[5], id)?;
             }
             69 => self.remove(a[1], Kind::Framebuffer)?,
-            71..=76 | 94..=97 => {
+            71..=76 | 94..=97 | 114 => {
                 let c = self.object(a[1], Kind::CommandBuffer)?;
                 if c.state.get() != 1 {
                     return invalid();
                 }
                 let raw = vk::CommandBuffer::from_raw(c.raw);
                 match op {
+                    114 => {
+                        let image = self.object(a[2], Kind::Image)?;
+                        let shape = shape(&image)?;
+                        if c.recording.borrow().pass.is_some()
+                            || is_depth(shape.format)
+                            || image.flags & vk::ImageUsageFlags::TRANSFER_DST.as_raw() == 0
+                            || (image.deps.borrow().is_empty()
+                                && image.swapchain.borrow().is_none()
+                                && image.wayland_pool.borrow().is_none())
+                            || a[6] == 0
+                        {
+                            return invalid();
+                        }
+                        let native_layout = self.native_layout(a[3], false)?;
+                        if !matches!(
+                            native_layout,
+                            vk::ImageLayout::GENERAL | vk::ImageLayout::TRANSFER_DST_OPTIMAL
+                        ) {
+                            return invalid();
+                        }
+                        let color = m.read_array::<16>(a[4])?;
+                        let color = vk::ClearColorValue {
+                            uint32: std::array::from_fn(|i| {
+                                u32::from_le_bytes(color[i * 4..i * 4 + 4].try_into().unwrap())
+                            }),
+                        };
+                        let wire = words64(m, a[5], bounded(a[6], 64)? * 5)?;
+                        let mut ranges = Vec::new();
+                        for range in wire.chunks_exact(5) {
+                            if range[0] != 1
+                                || range[1] != 0
+                                || !matches!(range[2], 1 | 0xffff_ffff)
+                                || range[3] != 0
+                                || !matches!(range[4], 1 | 0xffff_ffff)
+                            {
+                                return invalid();
+                            }
+                            ranges.push(image_range(shape.format));
+                        }
+                        unsafe {
+                            d.cmd_clear_color_image(
+                                raw,
+                                vk::Image::from_raw(image.raw),
+                                native_layout,
+                                &color,
+                                &ranges,
+                            );
+                        }
+                        c.retain(image);
+                    }
                     71 => {
                         if c.recording.borrow().pass.is_some() {
                             return invalid();
@@ -794,8 +935,8 @@ impl Backend {
                             .as_ref()
                             .ok_or(Failure::Vk(vk::Result::ERROR_UNKNOWN))?;
                         if p.flags != vk::PipelineBindPoint::GRAPHICS.as_raw() as u32
-                            || !r.viewport
-                            || !r.scissor
+                            || (!r.viewport && p.static_states.get() & 1 == 0)
+                            || (!r.scissor && p.static_states.get() & 2 == 0)
                             || !Rc::ptr_eq(&p.deps.borrow()[1], pass)
                             || a[2..5].iter().any(|&x| x > u32::MAX as u64)
                             || (op == 73 && a[5] > u32::MAX as u64)

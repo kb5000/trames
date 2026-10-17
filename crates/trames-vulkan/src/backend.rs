@@ -111,6 +111,7 @@ struct Object {
     pass: Cell<Option<PassInfo>>,
     recording: RefCell<Recording>,
     vertex_inputs: RefCell<Vec<graphics::VertexBinding>>,
+    static_states: Cell<u8>,
     swapchain: RefCell<Option<Rc<wsi::Swapchain>>>,
     wayland_pool: RefCell<Option<Rc<wayland::Pool>>>,
     // Acquire backing is private per use. Original MoltenVK can re-signal an
@@ -238,6 +239,7 @@ struct Compile {
     dependencies: Vec<Rc<Object>>,
     bind_point: vk::PipelineBindPoint,
     vertex_inputs: Vec<graphics::VertexBinding>,
+    static_states: u8,
     output: u64,
     abandoned: bool,
 }
@@ -368,6 +370,7 @@ impl Backend {
             pass: Cell::new(None),
             recording: RefCell::new(Recording::default()),
             vertex_inputs: RefCell::new(Vec::new()),
+            static_states: Cell::new(0),
             swapchain: RefCell::new(None),
             wayland_pool: RefCell::new(None),
             acquisition: RefCell::new(None),
@@ -544,6 +547,7 @@ impl Backend {
             pass: Cell::new(None),
             recording: RefCell::new(Recording::default()),
             vertex_inputs: RefCell::new(Vec::new()),
+            static_states: Cell::new(0),
             swapchain: RefCell::new(None),
             wayland_pool: RefCell::new(None),
             acquisition: RefCell::new(None),
@@ -685,6 +689,7 @@ impl Backend {
                 },
                 bind_point: vk::PipelineBindPoint::COMPUTE,
                 vertex_inputs: Vec::new(),
+                static_states: 0,
                 output: a[4],
                 abandoned: false,
             },
@@ -740,6 +745,7 @@ impl Backend {
             c.bind_point.as_raw() as u32,
         );
         *self.objects[&id].vertex_inputs.borrow_mut() = c.vertex_inputs;
+        self.objects[&id].static_states.set(c.static_states);
         pipeline.raw = vk::Pipeline::null();
         if let Err(error) = m.write(c.output, &id.to_le_bytes()) {
             // A live backing provider can still fail after permission preflight.
@@ -1890,7 +1896,7 @@ impl Backend {
                     *c.recording.borrow_mut() = Recording::default();
                 }
             }
-            60..=76 | 94..=97 => self.graphics_call(m, op, a)?,
+            60..=76 | 94..=97 | 114 => self.graphics_call(m, op, a)?,
             92..=93 => self.sampler_call(m, op, a)?,
             87..=91 => self.wsi_device(m, op, a)?,
             _ => return unsupported(),

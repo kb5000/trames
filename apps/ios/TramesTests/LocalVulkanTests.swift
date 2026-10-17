@@ -62,6 +62,15 @@ final class LocalVulkanTests: XCTestCase {
         let attachment = XCTAttachment(data: image, uniformTypeIdentifier: "public.png")
         attachment.name = "native-metal-vulkan-texture"; attachment.lifetime = .keepAlways; add(attachment)
     }
+    func testNativeAnisotropyTransferClearAndStaticAlphaBlendPixels() async throws {
+        for (mode, marker) in [("anisotropy", "native anisotropic sampler and transfer color clear: correct"),
+                               ("static-blend", "static viewport/scissor and source-alpha blending: correct")] {
+            let result = try await LocalVulkanProbe.texture(mode: mode)
+            XCTAssertTrue(result.text.contains(marker), result.text)
+            XCTAssertFalse(result.text.contains("llvmpipe"), result.text)
+            let log = XCTAttachment(string: result.text); log.name = "native-vulkan-" + mode; log.lifetime = .keepAlways; add(log)
+        }
+    }
     func testIncompleteOrUnexpectedImageCannotBeDisplayed() {
         for ppm in [Data(), Data("P6\n256 192\n255\n".utf8), Data(repeating: 0, count: 256 * 192 * 3 + 15)] {
             XCTAssertThrowsError(try VulkanRenderResult(text: "", ppm: ppm))

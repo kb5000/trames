@@ -19,6 +19,11 @@ final class LaunchTests: XCTestCase {
         XCTAssertTrue(title.waitForExistence(timeout:5),app.debugDescription)
         let dock=element("dock-wayland-");dock.tap();XCTAssertTrue(graphic.waitForExistence(timeout:5))
         alpine.tap();XCTAssertTrue(alpine.label.contains("Alpine"))
+        alpine.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.5)).press(forDuration:0.15,thenDragTo:app.coordinate(withNormalizedOffset:CGVector(dx:0.3,dy:0.6)))
+        let terminalTitle=element("window-title-terminal-")
+        XCTAssertTrue(terminalTitle.waitForExistence(timeout:5),app.debugDescription)
+        element("dock-terminal-").tap();XCTAssertTrue(alpine.waitForExistence(timeout:5))
+        XCTAssertTrue(alpine.label.contains("Alpine"));XCTAssertEqual(graphic.frame.midY,alpine.frame.midY,accuracy:5)
     }
     func testNativeCoreMarkCanBeOpenedWithoutStartingATimedRun() {
         let app = XCUIApplication(); app.launch()

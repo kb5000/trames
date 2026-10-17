@@ -9,20 +9,25 @@
 `XDG_RUNTIME_DIR=/run/user/0` 和 `WAYLAND_DISPLAY=wayland-0`。
 
 ```sh
-apk add wayland-utils weston-clients weston font-dejavu breeze-cursors vulkan-loader vulkan-tools
+apk add wayland-utils weston-clients weston font-dejavu breeze-cursors vulkan-loader vulkan-tools vkmark
 wayland-info
 weston-simple-shm &
 weston-editor &
 vkcube --wsi wayland
+vkmark --winsys wayland
 ```
 
 `weston` 包在这里用于安装原版客户端装饰 PNG 素材；无需执行 `weston` 命令。
 首次安装会下载客户端的原始运行依赖。上述示例使用原版包，无需替换 libwayland
 或修改应用源码。Vulkan 使用标准 loader 与 App 自动安装的实验性 ICD。
 
-每个顶层窗口有独立标题栏，可拖动、调整大小、最小化、关闭或最大化为工作区标签。
-拖动右下角会发送新的尺寸请求，客户端确认后重新生成对应分辨率的图像。
-最小化窗口从顶部标签恢复；最大化标签与终端标签可切换，guest 资源持续保留。
+终端和图形应用共用顶部标签栏。浮动窗口标题栏的停靠按钮会把窗口放到与 Alpine
+平行的标签页；也可把标题栏拖入顶部。拖动标签到内容区可重新变成浮动窗口，
+在顶部左右拖动可调整顺序；终端标签同样支持这些操作。
+
+窗口可独立移动、调整大小、最小化或关闭。拖动右下角会发送新的尺寸请求，
+客户端确认后重新生成对应分辨率的图像。最小化项目从右上角“＋”菜单恢复。
+点击 Alpine 标签或终端内容即可把键盘焦点交还终端，图形窗口继续保留。
 触摸、指针和硬件键盘发送给聚焦表面；使用 text-input v1/v3 的应用可接收
 UIKit 原生输入法的预编辑和提交，Weston editor 是对应验收应用。
 

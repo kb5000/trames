@@ -69,7 +69,7 @@ try:
                 assert api.trames_wayland_frame_release(frame,1,int(time.monotonic()*1000)&0xffffffff)==0;frames+=1
         assert time.monotonic()-began<240,text[-12000:]
         time.sleep(.003)
-    assert frames>0 and 'vkmark Score' in text,text[-12000:]
+    assert frames>0 and 'vkmark Score' in text and 'Failed with exception' not in text and 'ErrorFeatureNotPresent' not in text,text[-12000:]
     print(text,flush=True);print('Original vkmark passed',len(scenes),'scene variants; native frame acquisitions:',frames,flush=True)
 finally:
     api.trames_session_close(session)

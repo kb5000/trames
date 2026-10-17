@@ -37,7 +37,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceFormatsKHR(VkPhysicalDe
 VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfacePresentModesKHR(VkPhysicalDevice p,VkSurfaceKHR surface,uint32_t *count,VkPresentModeKHR *out) {return CALL(86,KEY(p),(uint64_t)surface,PTR(count),PTR(out));}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(VkDevice d,const VkSwapchainCreateInfoKHR *info,const VkAllocationCallbacks *allocator,VkSwapchainKHR *out) {
     CHECK(info,VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);ALLOCATOR(allocator);
-    if(info->flags || info->imageArrayLayers!=1 || info->imageSharingMode!=VK_SHARING_MODE_EXCLUSIVE || info->preTransform!=VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR || info->compositeAlpha!=VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR || (info->presentMode!=VK_PRESENT_MODE_FIFO_KHR && info->presentMode!=VK_PRESENT_MODE_MAILBOX_KHR) || !info->clipped)return VK_ERROR_FEATURE_NOT_PRESENT;
+    if(info->flags || info->imageArrayLayers!=1 || info->imageSharingMode!=VK_SHARING_MODE_EXCLUSIVE || (info->preTransform && info->preTransform!=VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) || (info->compositeAlpha && info->compositeAlpha!=VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) || (info->presentMode!=VK_PRESENT_MODE_FIFO_KHR && info->presentMode!=VK_PRESENT_MODE_MAILBOX_KHR))return VK_ERROR_FEATURE_NOT_PRESENT;
     VkResult r=CALL(87,KEY(d),(uint64_t)info->surface,info->minImageCount,info->imageFormat,info->imageColorSpace,info->imageExtent.width,info->imageExtent.height,info->imageUsage,(uint64_t)info->oldSwapchain,info->presentMode==VK_PRESENT_MODE_MAILBOX_KHR,PTR(out));
     if(r==VK_SUCCESS && !wayland_register_chain(*out,info->surface)){CALL(88,KEY(d),(uint64_t)*out);return VK_ERROR_OUT_OF_HOST_MEMORY;}return r;
 }
