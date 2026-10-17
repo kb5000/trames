@@ -24,10 +24,11 @@ final class WorkspaceModel: ObservableObject {
     private(set) var directories: ScopedDirectories?
     init(prepareEnvironment: Bool = true) {
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("--workspace-ui-acceptance") {
+        if ProcessInfo.processInfo.arguments.contains("--workspace-ui-acceptance") || ProcessInfo.processInfo.arguments.contains("--keyboard-ui-acceptance") {
             let session=TerminalSession(title:"Alpine",isLocal:true)
             session.state="工作区交互验收";add(session)
             session.terminal.feed(text:"\u{1b}]0;\u{7}")
+            if ProcessInfo.processInfo.arguments.contains("--keyboard-ui-acceptance") { return }
             let data=Data("[{\"id\":7,\"connection\":1,\"title\":\"测试图形窗口\",\"app_id\":\"workspace-test\",\"width\":400,\"height\":280,\"revision\":1,\"mode\":\"floating\",\"bounds\":[-32,-32,464,344]}]".utf8)
             session.waylandWindows=(try? JSONDecoder().decode([LocalWaylandWindow].self,from:data)) ?? []
             session.onWaylandChanged?(session.waylandWindows)

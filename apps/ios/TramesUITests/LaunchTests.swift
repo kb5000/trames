@@ -63,6 +63,32 @@ final class LaunchTests: XCTestCase {
         XCTAssertEqual(close.frame.minX,alpine.frame.maxX,accuracy:2)
         XCTAssertEqual(close.frame.midY,alpine.frame.midY,accuracy:2)
     }
+    func testExtendedKeyboardRoundTripKeepsStatusVisibleAndLeavesResizeCorner() {
+        let app=launchApp(["--keyboard-ui-acceptance"])
+        let status=app.staticTexts["session-state"]
+        XCTAssertTrue(status.waitForExistence(timeout:20),app.debugDescription)
+        let viewport=app.descendants(matching:.any).matching(identifier:"terminal-viewport").firstMatch
+        viewport.tap()
+        func checkStatusAndCorner() {
+            let toggle=app.buttons["terminal-extended-keyboard-toggle"]
+            XCTAssertTrue(toggle.waitForExistence(timeout:5),app.debugDescription)
+            XCTAssertTrue(status.exists);XCTAssertTrue(status.isHittable)
+            XCTAssertGreaterThan(status.frame.height,0)
+            XCTAssertLessThanOrEqual(status.frame.maxY,toggle.frame.minY+2)
+            XCTAssertLessThanOrEqual(toggle.frame.maxX,app.frame.maxX-44)
+        }
+        checkStatusAndCorner()
+        for _ in 0..<3 {
+            app.buttons["terminal-extended-keyboard-toggle"].tap()
+            let panel=app.descendants(matching:.any).matching(identifier:"terminal-extended-keyboard").firstMatch
+            XCTAssertTrue(panel.waitForExistence(timeout:5),app.debugDescription)
+            checkStatusAndCorner()
+            app.buttons["terminal-extended-keyboard-toggle"].tap()
+            let gone=XCTNSPredicateExpectation(predicate:NSPredicate(format:"exists == false"),object:panel)
+            XCTAssertEqual(XCTWaiter.wait(for:[gone],timeout:5),.completed)
+            checkStatusAndCorner()
+        }
+    }
     func testOnlyAlpineCanMinimizeRestoreAndUseTheInvisibleResizeCorner() {
         let app=launchApp()
         func element(_ prefix:String)->XCUIElement {
@@ -83,7 +109,7 @@ final class LaunchTests: XCTestCase {
                 XCTAssertTrue(corner.waitForExistence(timeout:5))
                 XCTAssertFalse(app.images.matching(NSPredicate(format:"identifier BEGINSWITH %@","window-resize-")).firstMatch.exists)
                 let viewport=app.descendants(matching:.any).matching(identifier:"terminal-viewport").firstMatch
-                XCTAssertLessThanOrEqual(viewport.frame.maxY,corner.frame.minY+1,"Resize must stay below the terminal keyboard controls")
+                XCTAssertGreaterThan(viewport.frame.height,0)
                 let oldRight=corner.frame.maxX
                 let point=corner.coordinate(withNormalizedOffset:CGVector(dx:0.85,dy:0.85))
                 point.press(forDuration:0.15,thenDragTo:point.withOffset(CGVector(dx:-60,dy:-40)))

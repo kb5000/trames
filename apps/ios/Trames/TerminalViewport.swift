@@ -4,6 +4,7 @@ import SwiftTerm
 
 /// Terminal columns fit the viewport; only scrollback needs a scrolling axis.
 final class TerminalViewport: TerminalView {
+    private var keyboardAccessoryController:TerminalKeyboardAccessoryController?
     var onFocusRequested: (() -> Void)?
     var onGridLayout: ((Int,Int) -> Void)?
     // Query the live model even if UIKit is applying an older SwiftUI snapshot.
@@ -65,6 +66,24 @@ final class TerminalViewport: TerminalView {
         changingFocus = true
         defer { changingFocus = false }
         return super.resignFirstResponder()
+    }
+    override var inputAccessoryViewController:UIInputViewController? {
+        guard UIDevice.current.userInterfaceIdiom == .pad,let accessory=inputAccessoryView as? TerminalAccessory else { return super.inputAccessoryViewController }
+        if keyboardAccessoryController?.accessory !== accessory {
+            keyboardAccessoryController=TerminalKeyboardAccessoryController(accessory:accessory)
+        }
+        return keyboardAccessoryController
+    }
+    override func reloadInputViews() {
+        // SwiftTerm's alternate keyboard starts with UIScreen dimensions. In
+        // Stage Manager the keyboard belongs to this app window, not the screen.
+        if let keyboard=inputView,let window {
+            let size=CGSize(width:window.bounds.width,height:max(140,window.bounds.height/5))
+            if keyboard.frame.size != size { keyboard.frame.size=size }
+            keyboard.autoresizingMask = .flexibleWidth
+            keyboard.accessibilityIdentifier="terminal-extended-keyboard"
+        }
+        super.reloadInputViews()
     }
     override func didMoveToWindow() {
         super.didMoveToWindow()

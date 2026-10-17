@@ -7,7 +7,8 @@ struct TramesApp: App {
     @Environment(\.scenePhase) private var scenePhase
     var body: some Scene {
         WindowGroup {
-            WorkspaceView(workspace: workspace)
+            WorkspaceKeyboardContainer(workspace: workspace)
+                .ignoresSafeArea(.keyboard)
                 .preferredColorScheme(.dark)
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .background { workspace.background() }
@@ -136,10 +137,8 @@ struct SessionView: View {
                 if let capacity = session.capacity {
                     Text("\(ByteCountFormatter.string(fromByteCount: Int64(capacity.used_bytes), countStyle: .binary)) / \(ByteCountFormatter.string(fromByteCount: Int64(capacity.budget_bytes), countStyle: .binary))")
                 }
-            }.font(.caption).foregroundStyle(.secondary).padding(.leading,12)
-                .padding(.trailing,workspace.layout.placement(.terminal(session.id)) == .floating ? 52 : 12)
+            }.font(.caption).foregroundStyle(.secondary).padding(.horizontal,12)
                 .padding(.vertical,6).fixedSize(horizontal:false,vertical:true)
-                .frame(minHeight:workspace.layout.placement(.terminal(session.id)) == .floating ? 48 : 0)
                 .layoutPriority(1)
         }.background(BridgeConsentPresenter(controller: session.bridge))
     }

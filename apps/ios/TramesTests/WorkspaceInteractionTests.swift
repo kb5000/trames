@@ -153,7 +153,7 @@ final class WorkspaceInteractionTests: XCTestCase {
         try await Task.sleep(for:.milliseconds(50))
         XCTAssertFalse(session.terminal.isFirstResponder,"A view redraw must preserve manual keyboard dismissal")
     }
-    func testFloatingTerminalReservesResizeSpaceAndDockReflowsTheGrid() async throws {
+    func testDockingTerminalReflowsTheGrid() async throws {
         let previous=UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).first { $0.isKeyWindow }
         let window=UIWindow(windowScene:try XCTUnwrap(previous?.windowScene))
         let model=WorkspaceModel(prepareEnvironment:false),session=TerminalSession(title:"Alpine",isLocal:true)

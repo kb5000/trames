@@ -15,6 +15,24 @@ final class TerminalViewportTests: XCTestCase {
         return view
     }
 
+    func testAccessoryControllerReservesSystemCornerAndPreservesCtrl() throws {
+        let view=makeViewport();defer {view.updateUiClosed()}
+        let original=try XCTUnwrap(view.inputAccessoryView as? TerminalAccessory)
+        original.controlModifier=true
+        let controller=try XCTUnwrap(view.inputAccessoryViewController as? TerminalKeyboardAccessoryController)
+        controller.loadViewIfNeeded()
+        for width:CGFloat in [375,768,1024] {
+            controller.view.frame=CGRect(x:0,y:0,width:width,height:48)
+            controller.view.setNeedsLayout();controller.view.layoutIfNeeded()
+            XCTAssertTrue(view.inputAccessoryView === original)
+            XCTAssertTrue(original.controlModifier)
+            let toggle=try XCTUnwrap(original.subviews.first {$0.accessibilityIdentifier=="terminal-extended-keyboard-toggle"})
+            let frame=toggle.convert(toggle.bounds,to:controller.view)
+            XCTAssertLessThanOrEqual(frame.maxX,width-TerminalKeyboardAccessoryContainer.trailingClearance)
+            XCTAssertGreaterThan(frame.width,0)
+        }
+    }
+
     func testGestureAndProgrammaticOffsetsKeepTheLeftEdgeAndVerticalScroll() {
         let view = makeViewport()
         defer { view.updateUiClosed() }
