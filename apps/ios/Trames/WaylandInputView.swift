@@ -65,7 +65,10 @@ class WaylandInputView: UIView, UITextInput {
         }
         inputDelegate?.textDidChange(self); inputDelegate?.selectionDidChange(self)
         isSecureTextEntry = (context.hint & 0xc0) != 0 || context.purpose == 8
-        if changedFocus { reloadInputViews() }
+        // Background canvases mirror protocol state without reconfiguring the
+        // active terminal/other window's system keyboard. UIKit reads these
+        // traits normally when this view later becomes first responder.
+        if changedFocus && isFirstResponder { reloadInputViews() }
     }
     private func utf16Offset(_ bytes: UInt32,in text:String)->Int {
         let index=text.utf8.index(text.utf8.startIndex,offsetBy:min(Int(bytes),text.utf8.count))

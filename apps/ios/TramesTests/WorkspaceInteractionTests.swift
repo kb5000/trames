@@ -31,7 +31,13 @@ final class WorkspaceInteractionTests: XCTestCase {
         session.terminal.onFocusRequested={ model.focus(id) }
         session.terminal.setKeyboardFocus(true)
         XCTAssertTrue(session.terminal.isFirstResponder);XCTAssertEqual(model.layout.focused,id)
-        for _ in 0..<10 { canvas.setKeyboardFocus(false);canvas.textContext=nil }
+        for epoch in 1...10 {
+            canvas.setKeyboardFocus(false)
+            let context=Data("{\"id\":11,\"epoch\":\(epoch),\"version\":1,\"surface\":7,\"window\":7,\"serial\":2,\"text\":\"Numeric\",\"cursor\":7,\"anchor\":7,\"caret\":[0,0,1,20],\"hint\":0,\"purpose\":3}".utf8)
+            canvas.textContext=try JSONDecoder().decode(LocalWaylandText.self,from:context)
+            XCTAssertTrue(session.terminal.isFirstResponder)
+        }
+        canvas.textContext=nil
         XCTAssertTrue(session.terminal.isFirstResponder);XCTAssertFalse(canvas.isFirstResponder)
     }
     func testLateGuestModeAcknowledgementCannotReopenGraphicsOverSelectedTerminal() throws {
