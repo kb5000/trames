@@ -15,7 +15,7 @@ final class TerminalViewportTests: XCTestCase {
         return view
     }
 
-    func testAccessoryControllerReservesSystemCornerAndPreservesCtrl() throws {
+    func testAccessoryControllerReservesSystemCornerAndPreservesCtrl() async throws {
         let view=makeViewport();defer {view.updateUiClosed()}
         let wrapper=try XCTUnwrap(view.inputAccessoryView as? TerminalKeyboardAccessory)
         let original=wrapper.accessory
@@ -28,6 +28,16 @@ final class TerminalViewportTests: XCTestCase {
             XCTAssertGreaterThan(frame.width,0)
             let control=try XCTUnwrap(original.subviews.first {$0.accessibilityIdentifier=="terminal-control-modifier"} as? UIButton)
             control.sendActions(for:.touchDown)
+            XCTAssertTrue(original.controlModifier);XCTAssertTrue(view.controlModifier)
+            view.insertText("c")
+            XCTAssertFalse(original.controlModifier);XCTAssertFalse(view.controlModifier)
+            // UIKit assigns the child's bounds after its parent's layout;
+            // this invokes SwiftTerm's real key-rebuilding bounds observer.
+            original.bounds=CGRect(origin:original.bounds.origin,size:original.bounds.size)
+            try await Task.sleep(for:.milliseconds(20))
+            XCTAssertNotNil(original.subviews.first {$0.accessibilityIdentifier=="terminal-extended-keyboard-toggle"})
+            let rebuilt=try XCTUnwrap(original.subviews.first {$0.accessibilityIdentifier=="terminal-control-modifier"} as? UIButton)
+            rebuilt.sendActions(for:.touchDown)
             XCTAssertTrue(original.controlModifier);XCTAssertTrue(view.controlModifier)
             view.insertText("c")
             XCTAssertFalse(original.controlModifier);XCTAssertFalse(view.controlModifier)

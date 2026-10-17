@@ -9,6 +9,7 @@ final class TerminalKeyboardAccessory:UIInputView {
     private weak var terminal:TerminalView?
     private let rowHeight:CGFloat
     private var resetObserver:NSObjectProtocol?
+    private var bindingScheduled=false
     static let trailingClearance:CGFloat=48
     init(accessory:TerminalAccessory,terminal:TerminalView) {
         self.accessory=accessory;self.terminal=terminal
@@ -34,6 +35,21 @@ final class TerminalKeyboardAccessory:UIInputView {
             accessory.frame=rect;accessory.setupUI();accessory.controlModifier=control
         }
         accessory.layoutIfNeeded()
+        bindKeys()
+        // UIKit can assign the nested input view's bounds after this parent's
+        // layout. SwiftTerm recreates every key in that setter, so rebind the
+        // final buttons once the native layout pass has completed.
+        scheduleKeyBinding()
+    }
+    private func scheduleKeyBinding() {
+        guard !bindingScheduled else {return}
+        bindingScheduled=true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else {return}
+            self.bindingScheduled=false;self.bindKeys()
+        }
+    }
+    private func bindKeys() {
         for case let button as UIButton in accessory.subviews {
             let actions=button.actions(forTarget:accessory,forControlEvent:.touchDown) ?? []
             if actions.contains("toggleInputKeyboard:") {
@@ -55,6 +71,7 @@ final class TerminalKeyboardAccessory:UIInputView {
     }
     override func didMoveToWindow() {
         super.didMoveToWindow()
+        if window != nil {scheduleKeyBinding()}
         if window == nil {
             // Preserve upstream autorepeat cancellation when the wrapped row
             // leaves UIKit's keyboard hierarchy during dismissal or teardown.

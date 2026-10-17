@@ -1,5 +1,5 @@
 {
-  "base_sha": "06992fc8330ec53c565014df6d8d5aa8f676e6bd",
+  "base_sha": "fbf57a4beabb2f172f6a65921660581e9da5fe43",
   "reuse_guest_run": 39015795319,
   "native_reuse": {
     "sha": "77455055bf902e6ea0193c36919c01daa672506d",
@@ -8,18 +8,11 @@
   },
   "critical_test": "TramesUITests/LaunchTests/testExtendedKeyboardRoundTripKeepsStatusVisibleAndLeavesResizeCorner",
   "ui_targets": [
-    "TramesTests/TerminalViewportTests/testAccessoryControllerReservesSystemCornerAndPreservesCtrl",
-    "TramesTests/WorkspaceInteractionTests/testSystemAppWindowResizeUpdatesTerminalAndGuestPTY",
-    "TramesTests/WorkspaceInteractionTests/testDockingTerminalReflowsTheGrid"
+    "TramesTests/TerminalViewportTests/testAccessoryControllerReservesSystemCornerAndPreservesCtrl"
   ],
   "changed_file_sha256": {
-    "apps/ios/Trames/TerminalKeyboardAccessory.swift": "fa8fdf3be3d2c1134c36ce69f9cb15e493c2a305b0cd02b8351d8e68381b6922",
-    "apps/ios/Trames/TerminalSession.swift": "e940d2be12b9fd85665ee9535f68d6dd91220dc8794a515a3e1f49945a685acc",
-    "apps/ios/Trames/TerminalViewport.swift": "12fa36849cf45d97f052e4512b817682333cbc671e71e9f613bf4047ea73b212",
-    "apps/ios/Trames/TramesApp.swift": "5e64f3034483a853cfedeeb0302023ef1f9861030328b46576359874ad504f65",
-    "apps/ios/Trames/WorkspaceKeyboardContainer.swift": "956c4e896a3e139723b1144c357f4b0bd25aeffe743c8ed37b0b5cddbc64a4dc",
-    "apps/ios/TramesTests/TerminalViewportTests.swift": "fa916fa254c3082c24d41b5d62917d9007c9923c045e87ebabe6eb4771714285",
-    "apps/ios/TramesTests/WorkspaceInteractionTests.swift": "266975935e88c1f9fe4b8aa07fbed3076e8d0525400c1ee94162475904ccd4a1"
+    "apps/ios/Trames/TerminalKeyboardAccessory.swift": "99e4ecb736b01c6c807505da3c8471594c768c1ff1f2661a239a64f256e5b6b7",
+    "apps/ios/TramesTests/TerminalViewportTests.swift": "218bf113b4c700230b85aa77c3d1b73e0a7b9cadb5fc5bff714d74d369b9e5a9"
   },
   "reason": "Restore internal floating terminal spacing. Exercise the actual app-window keyboard accessory toggle and root keyboard-layout guide, window-size reflow and minimize/focus regressions only. Native/guest and File Provider code are unchanged; formal-key device acceptance is deferred as the owner confirmed."
 }
