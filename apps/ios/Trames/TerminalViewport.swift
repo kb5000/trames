@@ -5,16 +5,21 @@ import SwiftTerm
 /// Terminal columns fit the viewport; only scrollback needs a scrolling axis.
 final class TerminalViewport: TerminalView {
     var onFocusRequested: (() -> Void)?
+    private var requestedKeyboardFocus = false
     private var wantsKeyboardFocus = false
     private var acceptsKeyboardFocus = true
     private var focusRevision: UInt64 = 0
     private var changingFocus = false
     func setKeyboardFocus(_ value: Bool, visible: Bool = true, deferred: Bool = false) {
+        // Resigning can synchronously redraw the still-visible old layout.
+        // That stale request must not undo the transition already in progress.
+        guard !changingFocus else { return }
         let wanted = value && visible
         // A status redraw must not reopen a keyboard the user just dismissed.
         // Hidden views still retry resignation if UIKit changed the responder.
-        guard wantsKeyboardFocus != wanted || acceptsKeyboardFocus != visible
+        guard requestedKeyboardFocus != wanted || acceptsKeyboardFocus != visible
                 || (!wanted && isFirstResponder) else { return }
+        requestedKeyboardFocus = wanted
         acceptsKeyboardFocus = visible
         wantsKeyboardFocus = wanted
         focusRevision &+= 1
@@ -40,6 +45,7 @@ final class TerminalViewport: TerminalView {
         guard acceptsKeyboardFocus else { return false }
         // UIKit can reenter while updating the keyboard during a resize.
         guard !isFirstResponder, !changingFocus else { return isFirstResponder }
+        wantsKeyboardFocus = true
         changingFocus = true
         defer { changingFocus = false }
         let became = super.becomeFirstResponder()
@@ -48,6 +54,10 @@ final class TerminalViewport: TerminalView {
     }
     override func resignFirstResponder() -> Bool {
         guard isFirstResponder, !changingFocus else { return !isFirstResponder }
+        // Invalidate any queued restoration. Keep the model's last request so
+        // an unchanged redraw preserves a keyboard dismissed by the user.
+        wantsKeyboardFocus = false
+        focusRevision &+= 1
         changingFocus = true
         defer { changingFocus = false }
         return super.resignFirstResponder()

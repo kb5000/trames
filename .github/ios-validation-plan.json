@@ -5,9 +5,7 @@
   "ui_targets": [
     "TramesTests/WorkspaceInteractionTests/testOnlyTerminalCanMinimizeWithoutReactivatingItsHiddenKeyboard",
     "TramesTests/WorkspaceInteractionTests/testNativeTerminalFocusSurvivesRepeatedCanvasUpdates",
-    "TramesTests/WorkspaceInteractionTests/testTerminalKeepsTheSameUIKitHostAcrossDockDetachAndBackgroundTabs",
-    "TramesTests/WorkspaceInteractionTests/testCanvasFollowsHostContentAndFinalResizeRequest",
-    "TramesTests/WaylandInputTests/testNativeClipboardActionsRouteToGuestControlKeys"
+    "TramesTests/WorkspaceInteractionTests/testTerminalKeepsTheSameUIKitHostAcrossDockDetachAndBackgroundTabs"
   ],
   "changed_file_sha256": {
     ".github/workflows/ios.yml": "317c8d39d93822c6bd72f2a7be13e440786617df377e37b36455bf7cce5cb0b4",
@@ -15,7 +13,7 @@
     "Cargo.lock": "e67d1213de44718c2f4c8e2d9eae344b99131a1ea800db359b09c76657a2ec94",
     "apps/ios/Trames/BridgeController.swift": "35de5863de92e57ae2b2fed9fbee7b6171a00ec2f4984b3e9d1a7f87f5157a74",
     "apps/ios/Trames/TerminalSession.swift": "3f3d95488b1e2b0d294db7cd69ed4d0bc1e9470374dd0760ea7c6d6636edf951",
-    "apps/ios/Trames/TerminalViewport.swift": "0a005a2ca58a93c88734a84a38f2e32c2f2df656b08426af288f4d166eb8f5d3",
+    "apps/ios/Trames/TerminalViewport.swift": "d27d8d71726bcad2007c3d89e3b776547111e1eeb1c40cc214a09c56a9cd49f2",
     "apps/ios/Trames/TramesApp.swift": "be9f05e857d3942211d8e654560e8fe1bb4e6653b4653ec1c59c02490ba97c5e",
     "apps/ios/Trames/WaylandInputView.swift": "f94a7475a8cae8a5dde5ec0482ba6707a2503f9c926aec3426d6244384297d0b",
     "apps/ios/Trames/WorkspaceModel.swift": "53a37f104c70df34d911200ac96bf504c3870393c526a04b36e10ff6b44d32dc",
@@ -41,12 +39,16 @@
     "crates/trames-wayland/src/selection.rs": "2738d1113c72fcaac8b5138e9a58a86ad6cca21a2931f91a6ee709948103461a",
     "crates/trames-wayland/src/server.rs": "be378819937878d8f3d3cd7808561b8521d9a882862348693beb38ae683b4b40",
     "crates/trames-wayland/tests/gtk_client.rs": "4041ddd9264e2a9046dbca1265a2943708ec6eeb0602b1643ff34bc7daeccc9a",
+    "docs/architecture/accelerator.md": "dad1a7507caf4ac01055551a28832f5e76f7e53a0d95b8c983408818adf24b9e",
+    "docs/architecture/m5.md": "118c9fbe72717b1520e3619ba6bc369e5ac7117f1ca5fc06fddf604751ad8bd3",
+    "docs/architecture/wayland.md": "61eee523012bcac1e6074ad0245ab9d6854f3817da3ed45dd7a820f8138883cc",
+    "docs/guides/wayland.md": "3019df7fbe11f31c25da69ebee315a5f7cef8e50b178e13ef37e9341856e7688",
     "docs/validation/compatibility-current-syscalls.csv": "b5366b21fe6a9a62ef4e4246b989d91fd9804b1e29d788622f67e45a1309c1c8",
     "docs/validation/compatibility-current-syscalls.json": "29b091824822144c4bda25ea20682fce28f9056bd017c5a104d35499d6fe5198",
     "scripts/ios-ci-scope.py": "df409a8fc9195226636e356f4df2e6e2a718174d06b0f6e571f3c29968e40eba",
     "tests/fixtures/gtk-seat.py": "328f09a9c61bf13fc98d015f9fd8dc02c95aa35e496083c383e7b6636aff92b7"
   },
-  "reason": "Only changed scheduling/NUMA, native pipe, Wayland/GTK/clipboard and UIKit focus paths are validated; existing guest ELF inputs and CPU/network/docker coverage are reused.",
+  "reason": "Rerun the failed focus invariant and other focus-dependent checks after the UIKit reentrancy fix; reuse passed native/GTK, clipboard action and canvas-resize results from unchanged code.",
   "native_reuse": {
     "sha": "9fb645fd32a77b4020a43847e7db311517207f2f",
     "apple_run": 39023715512,
