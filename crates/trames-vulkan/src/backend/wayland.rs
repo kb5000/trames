@@ -457,6 +457,7 @@ impl Backend {
                     || a[7] & !0x13 != 0
                     || a[7] & 0x10 == 0
                     || a[9] > 1
+                    || a[11] > 1
                 {
                     return unsupported();
                 }

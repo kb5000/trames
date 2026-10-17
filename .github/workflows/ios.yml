@@ -5,6 +5,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: ipad-frontend-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 defaults:
   run:
     shell: bash

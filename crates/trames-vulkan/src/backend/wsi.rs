@@ -288,6 +288,7 @@ impl Backend {
                     || a[7] & 16 == 0
                     || a[7] & !(caps.supported_usage_flags.as_raw() as u64) != 0
                     || a[9] != 0
+                    || a[11] > 1
                 {
                     return unsupported();
                 }
@@ -325,7 +326,7 @@ impl Backend {
                     .pre_transform(vk::SurfaceTransformFlagsKHR::IDENTITY)
                     .composite_alpha(vk::CompositeAlphaFlagsKHR::OPAQUE)
                     .present_mode(vk::PresentModeKHR::FIFO)
-                    .clipped(true)
+                    .clipped(a[11] != 0)
                     .old_swapchain(old);
                 let raw = match unsafe { loader.create_swapchain(&info, None) } {
                     Ok(x) => x,

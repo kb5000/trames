@@ -71,10 +71,12 @@ Timeline semaphore extensions remain unavailable.
 
 ## Graphics resources
 
-Core graphics now includes native 2D optimal-tiled RGBA8/BGRA8 UNORM images,
-binding/memory requirements, color image views, a single-color render pass and
-framebuffer, vertex/fragment graphics pipelines, dynamic viewport/scissor, draw,
-image layout barriers, buffer-to-image uploads and image-to-buffer copy. Queue queries retain native
+Core graphics includes native 2D optimal-tiled RGBA8/BGRA8 UNORM/sRGB images and
+D16/D32 depth images, binding/memory requirements, image views, single-color
+render passes with optional depth, framebuffer and vertex/fragment pipelines.
+Static or dynamic viewport/scissor, depth compare/write, native color/alpha
+blending, transfer color clears, draws, image layout barriers, buffer-to-image
+uploads and image-to-buffer copies are supported. Queue queries retain native
 graphics/compute/transfer flags. Image format queries expose only this profile:
 one mip/layer/sample and dimensions up to 4096; allocation/session budgets still
 apply. Device memory uses explicit noncoherent transfers or coherent shadow
@@ -106,12 +108,14 @@ RGBA8/BGRA8 textures support optimal 2D, one mip/layer/sample, explicit uploads,
 `SHADER_READ_ONLY_OPTIMAL`/GENERAL layouts, nearest/linear filtering, and normalized
 repeat/mirrored-repeat/clamp-to-edge/clamp-to-border sampling. Native format
 properties bound sampling/filter support. Buffer/image copies check offsets,
-padded row/image pitches, subresources and buffer/image extents. Anisotropy,
-comparison, unnormalized coordinates, immutable samplers, storage images, mipmap
-chains, depth/stencil, blending, multisampling and graphics specialization remain
-unavailable. Unsupported options fail explicitly.
+padded row/image pitches, subresources and buffer/image extents. Sampler
+anisotropy is queried from the host, must be enabled at device creation and
+uses the native sampler with the native maximum. Comparison, unnormalized
+coordinates, immutable samplers, storage images, mipmap chains, stencil,
+multisampling and graphics specialization remain unavailable. Unsupported options fail explicitly.
 
-Dynamic viewport/scissor must both be set; draw checks recording/render-pass/
+Pipelines copy static viewport/scissor and blend constants into owned compiler
+inputs. Each dynamic viewport/scissor must be set before drawing; draw checks recording/render-pass/
 pipeline compatibility. Buffer transfers remain outside render passes.
 Framebuffers/views/images retain their memory and render pass; recorded commands
 and in-flight snapshots retain the complete graph. Graphics compilation uses the
