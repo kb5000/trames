@@ -6,6 +6,29 @@ import TramesKit
 
 final class WaylandInputTests: XCTestCase {
     @MainActor
+    func testHeldShortcutDoesNotSendDuplicateDownsAfterSystemPasteAlert() {
+        let view=WaylandInputView();var commands:[[String:Any]]=[]
+        view.sendInput={ commands.append($0) }
+        XCTAssertTrue(view.hardwareKey(25,characters:"v",modifiers:.control,pressed:true))
+        // UIKit may deliver repeated downs while the native permission modal
+        // owns the physical key-up. The compositor must receive one gesture.
+        for _ in 0..<50 {
+            XCTAssertTrue(view.hardwareKey(25,characters:"v",modifiers:.control,pressed:true))
+        }
+        XCTAssertEqual(commands.count,1)
+        XCTAssertTrue(view.hardwareKey(25,pressed:false))
+        XCTAssertEqual(commands.compactMap{$0["pressed"] as? Bool},[true,false])
+        // A later intentional paste and held navigation remain usable. Their
+        // normal repetition is implemented by the Wayland client, not UIKit.
+        for hid in [25,80] {
+            commands=[]
+            XCTAssertTrue(view.hardwareKey(hid,modifiers:.control,pressed:true))
+            XCTAssertTrue(view.hardwareKey(hid,modifiers:.control,pressed:true))
+            XCTAssertTrue(view.hardwareKey(hid,pressed:false))
+            XCTAssertEqual(commands.compactMap{$0["pressed"] as? Bool},[true,false])
+        }
+    }
+    @MainActor
     func testHardwareNavigationKeepsGuestCursorAndSubsequentCompositionTogether() throws {
         var object:[String:Any] = ["version":3,"id":7,"epoch":3,"surface":4,"window":4,"serial":8,
             "text":"ab","cursor":2,"anchor":2,"caret":[0,0,1,20],"hint":0,"purpose":0]

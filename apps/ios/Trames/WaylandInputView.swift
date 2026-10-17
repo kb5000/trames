@@ -284,7 +284,10 @@ class WaylandInputView: UIView, UITextInput {
         guard let code=evdev(hid) else { return false }
         if pressed {
             guard forwardsHardwareKey(hid,characters:characters,modifiers:modifiers) else { return false }
-            forwardedKeys.insert(hid)
+            // Wayland clients implement repeat using repeat_info. Sending a
+            // second down for the same physical press would trigger it twice,
+            // including when UIKit drains events after a system paste alert.
+            guard forwardedKeys.insert(hid).inserted else { return true }
         } else {
             guard forwardedKeys.remove(hid) != nil else { return false }
         }

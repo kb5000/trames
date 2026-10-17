@@ -127,6 +127,8 @@ jobs:
         run: |
           if [[ '${{ needs.scope.outputs.native_scope }}' == wayland-input ]]; then
             cargo test -p trames-wayland --lib nested_popup_unmap --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == wayland-clipboard ]]; then
+            cargo test -p trames-wayland --lib clipboard_permission --locked
           elif [[ '${{ needs.scope.outputs.targeted }}' == true ]]; then
             cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --lib --locked
           else

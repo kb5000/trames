@@ -1,23 +1,25 @@
 {
-  "base_sha": "f9c2f7bd48aa9309a9b918ba436a2a986ac58175",
+  "base_sha": "48b07c1d7e0cbe08de9b2b416bc8b500160084b8",
   "reuse_guest_run": 39015795319,
   "native_reuse": {
-    "sha": "f9c2f7bd48aa9309a9b918ba436a2a986ac58175",
-    "apple_run": 39054497343,
-    "linux_run": 39053617583
+    "sha": "48b07c1d7e0cbe08de9b2b416bc8b500160084b8",
+    "apple_run": 39055907059,
+    "linux_run": 39055907060
   },
-  "critical_test": "TramesTests/ClipboardBridgeTests/testGuestClipboardRequestsAutomaticallyReachTheSystemPasteboard",
+  "native_scope": "wayland-clipboard",
+  "critical_test": "TramesTests/WaylandInputTests/testHeldShortcutDoesNotSendDuplicateDownsAfterSystemPasteAlert",
   "ui_targets": [],
   "changed_file_sha256": {
-    ".github/workflows/ios.yml": "a47ef2bebb2ad496587d1ea1d4f0bb673333e2827f8b616900058de9c0b3f63f",
-    "crates/trames-wayland/src/input.rs": "9bea55f7f4dabc7017dc86e9736b7e346150d4c4e3dc912c0970df95b86fb3b0",
-    "crates/trames-wayland/src/protocol.rs": "77b2124eb9048dc4bc2270efd41078cb8e5bee01fcd25f9ff60bee032b77ff33",
-    "scripts/ios-ci-scope.py": "e15cb7d02e0315b08d8b54d67b923193eb8cd8f78653e81a7dcd3da1c63f2a4f"
+    ".github/workflows/ios.yml": "8f56a79f37393888a7e6c4d474e5eef950a38f2b9d6af81ab0e729170fcd26ee",
+    ".github/workflows/linux.yml": "b0487ca8cc275adf58db5b8ebd0289da75e3a5b665b686b0e1e2262dabc79d93",
+    "apps/ios/Trames/WaylandInputView.swift": "c4d7967788dbc6cec96367e416947513939a655a9a5b02643e5306e9ae995cc4",
+    "apps/ios/TramesTests/WaylandInputTests.swift": "6c2f7ba67884212210d4152a7785712f980eaacb9707c31ddea7b74ba44b4c2e",
+    "apps/ios/project.yml": "9605c4583f3dda79d532d4d1c16ecd354ea0d3276e683213e2e218476d568be8",
+    "crates/trames-wayland/src/input.rs": "a32b51409c85d7ab9d7c15bd9b4c3c8bf017981fafd05efc4c234bfb66e9fabb",
+    "crates/trames-wayland/src/selection.rs": "d7f6e2b960521c3e0f34e826200a9897bd86718e7a5398848f56db6a3fc3e289",
+    "crates/trames-wayland/tests/gtk_client.rs": "c9e7bd98384b220bc496f6e042e5f90f3b81d1bfe75eea95d37f4c6dacc0fd75",
+    "scripts/ios-ci-scope.py": "08801e080635a921df6d9201c25f9d8ad56cf157a86566e6c5f0423f0c184f51",
+    "tests/fixtures/gtk-paste.py": "a04408d29b0edbdbecd9bbdd594db31ee659cfe8d5318484b3e238f8adeb898b"
   },
-  "reason": "Extend the popup-unmap regression to a real active grab stack: a NULL buffer must retain the restored parent focus rather than refocusing an unmapped popup. Only compositor code changed; rerun the affected native popup and original GTK menu tests. Reuse all nine already successful unchanged input/system-pasteboard acceptance checks and build a fresh device IPA; do not rebuild or repeat simulator tests.",
-  "native_scope": "wayland-input",
-  "frontend_reuse": {
-    "sha": "f9c2f7bd48aa9309a9b918ba436a2a986ac58175",
-    "run": 39054497343
-  }
+  "reason": "Reproduce original GTK client-side Ctrl+V repeat during a delayed host paste permission response. Release held keys before the asynchronous host clipboard read without changing focus or the offer, and suppress duplicate UIKit downs. Run only the new clipboard key-state unit, delayed original GTK paste regression, affected compositor clippy, and the new UIKit held-shortcut test; reuse unchanged guest, popup, window and other acceptance results. Build a fresh 0.18.0 build 25 unsigned device IPA; keep PR/issue open for iPad testing."
 }

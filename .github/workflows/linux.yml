@@ -50,6 +50,9 @@ jobs:
           if [[ '${{ needs.scope.outputs.native_scope }}' == wayland-input ]]; then
             cargo clippy -p trames-wayland --all-targets --locked -- -D warnings
             cargo test -p trames-wayland --lib nested_popup_unmap --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == wayland-clipboard ]]; then
+            cargo clippy -p trames-wayland --all-targets --locked -- -D warnings
+            cargo test -p trames-wayland --lib clipboard_permission --locked
           else
             cargo clippy -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --all-targets --locked -- -D warnings
             cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --lib --locked
@@ -61,11 +64,13 @@ jobs:
           sudo apt-get install --yes --no-install-recommends libgtk-3-0 mousepad fonts-dejavu-core
           if [[ '${{ needs.scope.outputs.native_scope }}' == wayland-input ]]; then
             cargo test -p trames-wayland --test gtk_client original_gtk_context_menu_copy_keeps_selection_and_keyboard_focus --locked -- --ignored --nocapture
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == wayland-clipboard ]]; then
+            cargo test -p trames-wayland --test gtk_client host_paste_permission_wait --locked -- --ignored --nocapture
           else
             cargo test -p trames-wayland --test gtk_client --locked -- --ignored --nocapture
           fi
       - name: Exercise original signed ARM64 foot over the guest Wayland ABI
-        if: needs.scope.outputs.native_scope != 'wayland-input'
+        if: needs.scope.outputs.native_scope != 'wayland-input' && needs.scope.outputs.native_scope != 'wayland-clipboard'
         timeout-minutes: 10
         env:
           TRAMES_FOOT_STORE: ${{ github.workspace }}/target/foot-acceptance/store

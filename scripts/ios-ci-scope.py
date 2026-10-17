@@ -61,11 +61,11 @@ def main():
                             skip_native=results[0];skip_linux_native=results[1]
                             if skip_native or skip_linux_native:print(f'Reusing unchanged native checks: Apple={skip_native}, Linux={skip_linux_native}.')
                     native_scope=''
-                    if plan.get('native_scope') == 'wayland-input' and plan.get('native_reuse'):
+                    if plan.get('native_scope') in {'wayland-input','wayland-clipboard'} and plan.get('native_reuse'):
                         native_paths=subprocess.check_output(['git','diff','--name-only',plan['native_reuse']['sha'],'HEAD','--','crates','Cargo.toml','Cargo.lock','vendor','.cargo','rust-toolchain.toml'],text=True).splitlines()
                         if native_paths and all(path.startswith('crates/trames-wayland/') for path in native_paths):
-                            native_scope='wayland-input'
-                            print('Only compositor input changed; validate popup focus and original GTK menu copy, reusing other native modules and foot.')
+                            native_scope=plan['native_scope']
+                            print(f'Only compositor code changed; use {native_scope} checks, reusing unchanged native modules and foot.')
                     frontend_reused=False
                     if plan.get('frontend_reuse') and native_scope=='wayland-input':
                         reuse=plan['frontend_reuse']
