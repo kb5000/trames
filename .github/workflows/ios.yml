@@ -22,6 +22,7 @@ jobs:
       baseline_sha: ${{ steps.scope.outputs.baseline_sha }}
       targeted: ${{ steps.scope.outputs.targeted }}
       skip_native: ${{ steps.scope.outputs.skip_native }}
+      repackage_run: ${{ steps.scope.outputs.repackage_run }}
       critical_test: ${{ steps.scope.outputs.critical_test }}
       ui_targets: ${{ steps.scope.outputs.ui_targets }}
     steps:
@@ -84,7 +85,7 @@ jobs:
           retention-days: 14
   apple-build:
     needs: [scope, guest-musl, memory-abi]
-    if: ${{ !cancelled() && needs.scope.result == 'success' && (needs.scope.outputs.frontend_only == 'true' || needs.scope.outputs.targeted == 'true' || (needs.guest-musl.result == 'success' && needs.memory-abi.result == 'success')) }}
+    if: ${{ !cancelled() && needs.scope.outputs.repackage_run == '' && needs.scope.result == 'success' && (needs.scope.outputs.frontend_only == 'true' || needs.scope.outputs.targeted == 'true' || (needs.guest-musl.result == 'success' && needs.memory-abi.result == 'success')) }}
     runs-on: macos-15
     timeout-minutes: 40
     steps:
@@ -252,3 +253,46 @@ jobs:
             apps/ios/build/*/Build/Products/Debug-*/*.app
             apps/ios/build/*/Build/Products/Release-*/*.app
           retention-days: 7
+  repackage:
+    needs: scope
+    if: needs.scope.outputs.repackage_run != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: unsigned-ipad-build-and-project
+          run-id: ${{ needs.scope.outputs.repackage_run }}
+          github-token: ${{ github.token }}
+          path: target/reused-ios
+      - name: Finalize shared-group metadata and package the existing device app
+        run: |
+          python3 - <<'PYCODE'
+          import hashlib,json,pathlib,plistlib,subprocess
+          bundles=list(pathlib.Path('target/reused-ios').glob('**/Release-iphoneos/Trames.app'))
+          assert len(bundles)==1, bundles
+          bundle=bundles[0];app=str(bundle)
+          # Actions ZIP transport does not retain executable permission bits.
+          for p in bundle.rglob('Info.plist'):
+              executable=plistlib.loads(p.read_bytes()).get('CFBundleExecutable','')
+              if executable and pathlib.Path(executable).name==executable:
+                  binary=p.parent/executable
+                  if binary.is_file():binary.chmod(0o755)
+          def hashes():
+              return {str(p.relative_to(bundle)):hashlib.sha256(p.read_bytes()).hexdigest() for p in bundle.rglob('*') if p.is_file() and p!=bundle/'Info.plist'}
+          before=hashes()
+          subprocess.run(['python3','scripts/finalize-ios-app.py',app],check=True)
+          assert hashes()==before, 'Compiled executables and guest inputs must remain byte-identical'
+          pathlib.Path('target/sideload').mkdir(parents=True,exist_ok=True)
+          pathlib.Path('target/sideload/build-reuse.json').write_text(json.dumps({'source_run':${{ needs.scope.outputs.repackage_run }},'unchanged_files_sha256':before},indent=2)+'\n')
+          subprocess.run(['python3','scripts/package-ios.py',app,'target/sideload/Trames-unsigned.ipa'],check=True)
+          PYCODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Trames-unsigned-sideload
+          path: |
+            target/sideload/Trames-unsigned.ipa*
+            target/sideload/build-reuse.json
+          if-no-files-found: error
+          retention-days: 14

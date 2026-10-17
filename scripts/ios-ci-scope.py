@@ -60,9 +60,23 @@ def main():
                                     results.append(any(job['name']=='targeted-runtime' and job['conclusion']=='success' for job in jobs))
                             skip_native=results[0];skip_linux_native=results[1]
                             if skip_native or skip_linux_native:print(f'Reusing unchanged native checks: Apple={skip_native}, Linux={skip_linux_native}.')
+                    repackage_run=''
+                    if plan.get('repackage'):
+                        reuse=plan['repackage']
+                        paths=subprocess.check_output(['git','diff','--name-only',reuse['sha'],'HEAD'],text=True).splitlines()
+                        allowed={'.github/ios-validation-plan.json','.github/workflows/ios.yml','scripts/ios-ci-scope.py','scripts/build-ios.sh','scripts/finalize-ios-app.py'}
+                        if any(path not in allowed for path in paths):raise RuntimeError('Repackaging must preserve compiled app sources and build settings')
+                        with urllib.request.urlopen(urllib.request.Request(f"https://api.github.com/repos/{repo}/actions/runs/{reuse['run']}/jobs",headers=dict(request.headers)),timeout=30) as response:
+                            jobs=json.load(response)['jobs']
+                        completed={step['name'] for job in jobs if job['name']=='apple-build' for step in job['steps'] if step['conclusion']=='success'}
+                        required={'Parse frontend Swift sources','Link unsigned iPad simulator app','Exercise peer tabs and floating window gestures first','Export simulator test summary','Link unsigned iPad device app'}
+                        if not required<=completed:raise RuntimeError('Repackaging requires successful source checks, frontend summary and device compilation')
+                        repackage_run=str(reuse['run'])
+                        print(f'Repackaging validated unchanged device executables from run {repackage_run}; no recompilation or repeated tests.')
                     print('Applying the source-hash-bound targeted validation plan; unchanged guest inputs are reused.')
                     with open(os.environ['GITHUB_OUTPUT'],'a') as output:
                         output.write('frontend_only=false\ntargeted=true\n')
+                        output.write('repackage_run='+repackage_run+'\n')
                         output.write('skip_native='+str(skip_native).lower()+'\n')
                         output.write('skip_linux_native='+str(skip_linux_native).lower()+'\n')
                         output.write('skip_linux_modules='+str(skip_linux_modules).lower()+'\n')
