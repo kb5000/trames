@@ -1,21 +1,16 @@
 {
-  "base_sha": "0bca0f90f8f22221c455aed789712bb4c13aad2a",
+  "base_sha": "df98d94ce22406e5c9f6a71b55e9f16d7899842c",
   "reuse_guest_run": 39015795319,
   "native_reuse": {
     "sha": "0bca0f90f8f22221c455aed789712bb4c13aad2a",
     "apple_run": 39060385817,
-    "linux_run": 39060385786
+    "linux_run": 39061233876
   },
   "native_scope": "host-terminals",
   "critical_test": "TramesTests/WorkspaceInteractionTests/testMultipleAlpineTerminalsShareGuestAndSurviveClosingFirstWindow",
   "ui_targets": [],
   "changed_file_sha256": {
-    ".github/workflows/release-1.0.yml": "16f9f181f68596892362801def2209d68bb4a6425614a3a89c2519c1697d153d",
-    "apps/ios/TramesTests/WorkspaceInteractionTests.swift": "2337fee074451f31d235a2ab34d4a5f7f84d9b3f612de3eec2a6a9b5578e998f",
-    "apps/ios/TramesUITests/LaunchTests.swift": "a7254d12bcecf579f4783fe4f6334744f50a9be0c7bd13dbd3ca4432e5d179eb",
-    "scripts/ios-ci-scope.py": "81e8d9de4166578eaf95b7e24987bc37a8a8948ea6ecb5138b777f531e3c4d44",
-    "scripts/publish-ios-release-1.0.py": "eec748fb5d1b7249331cbf20b1db271596f5c8d0f4ca4695d03ee28a9be61b34",
-    "tests/integration/multiple-terminals.py": "7d2067e2beffc754339114d86f6354f0d02871826e2e4970078534692dec051f"
+    "apps/ios/TramesTests/WorkspaceInteractionTests.swift": "473faf01effbe03c89ffd8595a804adffbd5504442dc8b8b5bfcaa2beca0bce0"
   },
-  "reason": "Keep all application/native sources identical. Retry only failed validation: initial Alpine shell readiness must match complete real output rather than TTY echo. The simulator cleanup hit a missing system InputMode_qwerty.plist while restoring arbitrary pasteboard items; clear the disposable test clipboard, stabilize viewports without a software keyboard and log stages. Reuse successful Apple/Linux affected native module checks from the previous jobs even though their independent acceptance steps failed. Update menu test labels and add publication-only release verification; no release manifest/publishing before successful acceptance."
+  "reason": "The real simulator already passed three PTY startup and independent workspace/stty viewport checks. Give subsequent shell markers explicit leading newlines: with echo disabled, echo output shares the prompt line and cannot satisfy a CRLF-framed assertion. Preserve failure details before cleanup using a simple serializable NSError. Production code is unchanged; reuse all successful native checks and the now-successful complete Alpine multi-terminal acceptance, retry only the failed simulator acceptance and required app build."
 }

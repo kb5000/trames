@@ -30,7 +30,11 @@ final class WorkspaceInteractionTests: XCTestCase {
         func wait(_ condition:() throws -> Bool) async throws {
             let deadline=Date().addingTimeInterval(25)
             while try !condition() {
-                guard Date()<deadline else {throw TramesError.message("Multi-terminal wait timed out at \(stage): \(output); states=\(created.map(\.state))")}
+                guard Date()<deadline else {
+                    let detail="Multi-terminal wait timed out at \(stage): \(output); states=\(created.map(\.state))"
+                    print("MULTI FAILURE: \(detail)")
+                    throw NSError(domain:"TramesTerminalAcceptance",code:1,userInfo:[NSLocalizedDescriptionKey:detail])
+                }
                 try await Task.sleep(for:.milliseconds(20))
             }
         }
@@ -70,7 +74,7 @@ final class WorkspaceInteractionTests: XCTestCase {
         XCTAssertNotEqual(second.terminal.getTerminal().cols,third.terminal.getTerminal().cols)
         print("MULTI: independent workspace viewports and real stty sizes passed")
         stage="shared files and private cwd/env"
-        first.send(Data("cd /tmp; export PRIVATE=first; printf shared >/tmp/multi-shared; echo FIRST_READY\n".utf8))
+        first.send(Data("cd /tmp; export PRIVATE=first; printf shared >/tmp/multi-shared; printf '\\nFIRST_READY\\n'\n".utf8))
         try await wait {output[first.id,default:""].contains("\r\nFIRST_READY\r\n")}
         second.send(Data("printf '\\nSHARED:%s:%s:%s\\n' \"$(cat /tmp/multi-shared)\" \"${PRIVATE-unset}\" \"$(pwd)\"\n".utf8))
         try await wait {output[second.id,default:""].contains("\r\nSHARED:shared:unset:/root\r\n")}
@@ -84,11 +88,11 @@ final class WorkspaceInteractionTests: XCTestCase {
         // once; a secondary shell can copy to the actual iPad pasteboard.
         let json="{\"version\":1,\"id\":1,\"method\":\"clipboard.write\",\"params\":{\"text\":\"multiple terminals 中文\"}}"
         stage="Bridge after closing first view"
-        third.send(Data("exec 3<>/dev/trames-bridge; printf '%s\\n' '\(json)' >&3; IFS= read -r reply <&3; echo BRIDGE_FROM_THIRD; exec 3>&-\n".utf8))
+        third.send(Data("exec 3<>/dev/trames-bridge; printf '%s\\n' '\(json)' >&3; IFS= read -r reply <&3; printf '\\nBRIDGE_FROM_THIRD\\n'; exec 3>&-\n".utf8))
         try await wait {output[third.id,default:""].contains("\r\nBRIDGE_FROM_THIRD\r\n")}
         XCTAssertEqual(pasteboard.string,"multiple terminals 中文")
         stage="shared pause/resume"
-        model.background();third.send(Data("echo AFTER_SHARED_RESUME\n".utf8));model.foreground()
+        model.background();third.send(Data("printf '\\nAFTER_SHARED_RESUME\\n'\n".utf8));model.foreground()
         try await wait {output[third.id,default:""].contains("\r\nAFTER_SHARED_RESUME\r\n")}
         model.close(second);model.close(third)
         XCTAssertTrue(model.sessions.isEmpty)
