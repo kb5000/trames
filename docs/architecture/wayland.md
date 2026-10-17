@@ -147,6 +147,20 @@ editing and function keys use guest key events even when UIKit represents them
 as printable private-use Unicode: moving only the local document mirror would
 leave its selection inconsistent with the guest cursor. ISO/keypad keycodes and
 shifted ASCII punctuation in the no-text-input fallback are mapped explicitly.
+Each physical raw key sends one down/up pair; UIKit duplicate downs are consumed
+because the Wayland client already implements repeat using `repeat_info`.
+
+Before handing a host text receive to the asynchronous clipboard provider, the
+compositor releases held keys, preserving Caps Lock, the selection offer, popup
+state and keyboard/text-input focus. An iPadOS paste-permission alert can take
+physical key-up delivery away from UIKit. Without this handoff GTK keeps
+repeating Ctrl+V while the provider waits, then applies all pending paste actions
+to the same cached text: one host read can produce dozens of insertions. An
+original GTK3 regression delays the provider for two seconds with no physical
+release, verifies one insertion and unchanged focus, then accepts a late release
+and a new intentional paste. Guest-to-guest FD transfers retain their existing
+path. See the [build 25 record](../validation/ipad-0.18-build25.json).
+
 The simulator exercises automatic guest clipboard requests against the real
 UIPasteboard; OS permission presentation and physical-keyboard behavior still
 need iPad acceptance. See the [build 24 record](../validation/ipad-0.18-build24.json)

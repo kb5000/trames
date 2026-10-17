@@ -1,0 +1,182 @@
+{
+  "version": "0.18.0",
+  "build": 25,
+  "source_commit": "c44ce40bbb8d00c5eb2970691507bba2aaf8aa19",
+  "status": "Validated unsigned test IPA; owner iPadOS permission-alert acceptance pending; no merge or formal release",
+  "workflow_run": 39057562012,
+  "linux_run": 39057562014,
+  "diagnosis": "An OS paste permission dialog can take physical key-up away from UIKit. Original GTK continues its 25 Hz client-side Ctrl+V repeat while waiting for host text. The regression reproduced dozens of insertions from a single host read: GTK queues paste callbacks and later reuses the same cached reply. It is not duplicate pipe bytes or repeated native clipboard reads.",
+  "changes": [
+    "Cancel held Wayland keys before a focused client receives host clipboard text, before the asynchronous provider can present the iPadOS permission alert. Preserve Caps Lock, keyboard/text focus, popup state and the current offer.",
+    "Ignore duplicate UIKit downs for a still-held raw physical key. Wayland clients retain their existing normal repeat implementation. A late physical release and a fresh intentional paste continue to work."
+  ],
+  "local_checks": {
+    "original_gtk_delayed_host_paste": {
+      "passed": true,
+      "delay_seconds": 2,
+      "scenarios": [
+        "Lost physical Ctrl+V key-up while host permission is pending",
+        "One host read and exactly one insertion after 2.8 seconds",
+        "Text-input focus/epoch unchanged",
+        "Late key-up, fresh host offer, intentional second paste inserts exactly one more copy"
+      ]
+    },
+    "key_state_unit": {
+      "passed": 1,
+      "failed": 0,
+      "checks": [
+        "Release Ctrl and V",
+        "Preserve Caps Lock",
+        "Repeated cancellation sends no duplicate releases",
+        "Accept late release and subsequent new press"
+      ]
+    },
+    "strict_compositor_clippy": "passed",
+    "cargo_fmt": "passed",
+    "git_diff_check": "passed",
+    "arm64_mousepad": {
+      "passed": true,
+      "library": "release, exact production sources; temporary tracing removed before final pass",
+      "client": "Original signed Alpine v3.22 ARM64 mousepad 0.6.3-r1, GTK3 3.24.50-r0",
+      "network": "off",
+      "delay_seconds": 2,
+      "host_reads": 1,
+      "actual_saved_document": "ready: permission paste 中文 🧪",
+      "after_native_chinese_input": "ready: permission paste 中文 🧪新",
+      "scenarios": [
+        "Hold Ctrl+V without physical key-up while the production native Bridge reply waits 2 seconds",
+        "Save and export the actual document: one exact insertion, no repeated copies",
+        "Delayed key-up, unchanged input epoch, native Chinese text commit then save/export: exactly one appended 新"
+      ],
+      "oracle_note": "GTK does not necessarily republish text-input surrounding context after an async paste. The first probe falsely checked a stale mirror; final verification uses the actual Ctrl+S/exported document for both paste and subsequent input. This is not reported as an App paste failure.",
+      "probe_sha256": "83eee060ecc21a096336c49d00e500ca3aa3d899bd0f915ee40cef2f5a64bfe5",
+      "guest_log_sha256": "a6beeeba26aef89eb6aa28bfdc1d98e1d9989e19fea4c3c82ba3c9a35a884e31"
+    }
+  },
+  "source_sha256": {
+    "crates/trames-wayland/src/input.rs": "a32b51409c85d7ab9d7c15bd9b4c3c8bf017981fafd05efc4c234bfb66e9fabb",
+    "crates/trames-wayland/src/selection.rs": "d7f6e2b960521c3e0f34e826200a9897bd86718e7a5398848f56db6a3fc3e289",
+    "apps/ios/Trames/WaylandInputView.swift": "c4d7967788dbc6cec96367e416947513939a655a9a5b02643e5306e9ae995cc4",
+    "apps/ios/Trames/BridgeController.swift": "35de5863de92e57ae2b2fed9fbee7b6171a00ec2f4984b3e9d1a7f87f5157a74",
+    "crates/trames-ffi/src/clipboard.rs": "dd3f522606091b7aa71466fa5c27b6c929cfd86b1f3bb9a4eeb77cfe5074c844",
+    "crates/trames-wayland/tests/gtk_client.rs": "c9e7bd98384b220bc496f6e042e5f90f3b81d1bfe75eea95d37f4c6dacc0fd75",
+    "tests/fixtures/gtk-paste.py": "a04408d29b0edbdbecd9bbdd594db31ee659cfe8d5318484b3e238f8adeb898b",
+    "apps/ios/TramesTests/WaylandInputTests.swift": "6c2f7ba67884212210d4152a7785712f980eaacb9707c31ddea7b74ba44b4c2e"
+  },
+  "reuse": {
+    "record": "ipad-0.18-build24.json",
+    "guest_artifact_run": 39015795319,
+    "unchanged": [
+      "CPU/Linux/network/container implementations and tests",
+      "FFI native clipboard pipes, broker and UIKit clipboard provider",
+      "Popup-unmap and keyboard/text/data-device focus restoration",
+      "System window/PTY resizing, floating window placement, SwiftTerm accessory/status line",
+      "File Provider metadata and pending formal App Group signing"
+    ],
+    "note": "New held-key and clipboard-receive paths have focused checks. Prior successful checks are reused for unchanged behavior; no full suites or original foot rerun."
+  },
+  "pending": [
+    "Actual iPadOS cross-application paste permission alert: allow inserts once; deny inserts nothing; repeat/new paste and ordinary input still usable",
+    "Owner approval before merge and 1.0.0 formal release",
+    "File Provider device acceptance deferred until formal App Group signing"
+  ],
+  "tests": {
+    "apple_native": {
+      "run": 39057562012,
+      "job": 117468587081,
+      "test": "input::tests::clipboard_permission_cancels_held_keys_without_repeating_releases",
+      "passed": 1,
+      "failed": 0
+    },
+    "linux": {
+      "run": 39057562014,
+      "job": 117468592530,
+      "conclusion": "success",
+      "passed": 2,
+      "failed": 0,
+      "tests": [
+        "input::tests::clipboard_permission_cancels_held_keys_without_repeating_releases",
+        "host_paste_permission_wait_does_not_repeat_or_lose_focus"
+      ],
+      "strict_compositor_clippy": "passed"
+    },
+    "ipad_simulator": {
+      "run": 39057562012,
+      "job": 117468587081,
+      "test": "TramesTests/WaylandInputTests/testHeldShortcutDoesNotSendDuplicateDownsAfterSystemPasteAlert",
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "artifact_id": 12110038719,
+      "artifact_zip_sha256": "f6187d4e44ab82acd625bcbe26ff07e2e6477c9f599337752e0a7c2db70f3610",
+      "scenarios": [
+        "50 duplicate UIKit downs produce one guest down",
+        "A late physical release ends the gesture",
+        "A fresh deliberate Ctrl+V and raw navigation remain usable"
+      ],
+      "summary": {
+        "devicesAndConfigurations": [
+          {
+            "device": {
+              "architecture": "arm64",
+              "deviceId": "2EDB2671-090C-4988-822E-421879ECE84C",
+              "deviceName": "iPad Pro 11-inch (M4)",
+              "modelName": "iPad Pro 11-inch (M4)",
+              "osBuildNumber": "22F77",
+              "osVersion": "18.5",
+              "platform": "iOS Simulator"
+            },
+            "expectedFailures": 0,
+            "failedTests": 0,
+            "passedTests": 1,
+            "skippedTests": 0,
+            "testPlanConfiguration": {
+              "configurationId": "1",
+              "configurationName": "Test Scheme Action"
+            }
+          }
+        ],
+        "environmentDescription": "Trames · Built with macOS 15.7.9",
+        "expectedFailures": 0,
+        "failedTests": 0,
+        "finishTime": 1792261691.781,
+        "passedTests": 1,
+        "result": "Passed",
+        "skippedTests": 0,
+        "startTime": 1792261624.729,
+        "statistics": [],
+        "testFailures": [],
+        "title": "Test - Trames",
+        "topInsights": [],
+        "totalTestCount": 1
+      }
+    }
+  },
+  "workflow_conclusion": "success",
+  "artifact": {
+    "version": "0.18.0",
+    "build": 25,
+    "bundle_id": "org.trames.Trames",
+    "platform": "iPhoneOS arm64",
+    "signed": false,
+    "bytes": 10575924,
+    "sha256": "103048127916c56ce09e459b8cc066be717faf0624674820e9b3ea3f94db4402",
+    "file_provider_bundle_id": "org.trames.Trames.FileProvider",
+    "file_provider_group": "group.org.trames.Trames",
+    "file_provider_platform_verified": true,
+    "native_coremark_and_ssh_symbols_absent": true,
+    "debug_acceptance_fixtures_absent": true,
+    "guest_aarch64_and_manifests_verified": true,
+    "id": 12110561897,
+    "url": "https://github.com/kb5000/trames/actions/runs/39057562012/artifacts/12110561897",
+    "zip_sha256": "8aa44cbd5dbafc208e485015d725132c8d145cc23e212b1be8e553094af3cbbe"
+  },
+  "verification": [
+    "GitHub artifact ZIP digest and embedded IPA.sha256 match the downloaded IPA.",
+    "Main App and File Provider are unsigned ARM64 iPhoneOS 0.18.0 build 25, with matching App Group metadata.",
+    "Guest musl/Vulkan are AArch64 ELF64 and match their manifests.",
+    "No native CoreMark/SSH integration symbols, DEBUG fixture flags or packaged acceptance fixtures.",
+    "Apple/Linux affected checks and new UIKit test passed; final original ARM64 mousepad probe passed with a rebuilt production Release library. No temporary tracing remains in production sources.",
+    "The iPadOS system permission alert itself requires owner device testing; automated delay/lost-key-up tests exercise the failure mechanism, not a real OS permission decision."
+  ]
+}

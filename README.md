@@ -1,6 +1,6 @@
 # Trames
 
-[0.18.0 build 24 测试 IPA](https://github.com/kb5000/trames/actions/runs/39055907059/artifacts/12109179664)：修复 mousepad 右键菜单关闭后复制未同步 iPad 的焦点问题，以及方向键导致后续文字无法输入；补齐其他常用按键、ISO／小键盘及 Shift 标点。9 项 iPad 输入／系统剪贴板检查通过，原版 ARM64 mousepad 的 Ctrl+C、右键 Copy、导航后中文提交也通过生产 FFI 验证。包含此前系统 App 最大化／终端 PTY 尺寸、浮窗位置保留、扩展键盘／状态行修复，相关成功结果直接复用。[验证记录](docs/validation/ipad-0.18-build24.json)。原版 foot 与[只读 rootfs Files 扩展](docs/guides/rootfs-files.md)继续保留；File Provider 真机验收待正式 App Group 签名。当前仅为测试包，iPad 验收后再准备 1.0.0。
+[0.18.0 build 25 测试 IPA](https://github.com/kb5000/trames/actions/runs/39057562012/artifacts/12110561897)：修复 iPadOS 跨应用粘贴权限等待时 GTK 积累重复粘贴；宿主剪贴板读取前释放 held keys，保留窗口焦点与当前 offer，UIKit 忽略同一物理按键的重复 down。原版 GTK 延迟 2 秒／丢失 key-up、后续主动粘贴与新的 iPad 按键检查通过；原版 ARM64 mousepad 通过生产 Bridge 延迟回复和实际保存文档核对，粘贴后中文输入正常。包含此前右键 Copy、导航输入、系统窗口／PTY 尺寸、浮窗位置及键盘／状态行修复，复用无关成功检查。[验证记录](docs/validation/ipad-0.18-build25.json)。[只读 rootfs Files 扩展](docs/guides/rootfs-files.md)真机验收仍待正式 App Group 签名。当前仅为测试包，iPad 验收后再准备 1.0.0。
 
 0.17.0 加入[宿主原生 Wayland](docs/architecture/wayland.md)：终端与图形应用共用顶部标签栏，支持拖出浮窗、停靠、调整分辨率及 UIKit 输入法。旧“显示窗口”菜单与固定显示器界面已移除。原版 vkmark 的 13 种场景通过本地功能验收；窗口手势、原版 Weston、vkcube、vkmark 与 Metal 显示通过 **33 项 Apple 模拟器验收**，零失败或跳过。[验证记录](docs/validation/wayland-workspace-vkmark.md)、[使用说明](docs/guides/wayland.md)、[0.17.0/build 19 发行记录](docs/validation/release-0.17.md)，对应 [PR #26](https://github.com/kb5000/trames/pull/26)。
 
