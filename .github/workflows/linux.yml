@@ -18,6 +18,7 @@ jobs:
       frontend_only: ${{ steps.scope.outputs.frontend_only }}
       targeted: ${{ steps.scope.outputs.targeted }}
       skip_native: ${{ steps.scope.outputs.skip_linux_native }}
+      skip_modules: ${{ steps.scope.outputs.skip_linux_modules }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,11 +43,13 @@ jobs:
           toolchain: nightly-2026-10-16
           components: rustfmt, clippy
       - name: Check affected modules
+        if: needs.scope.outputs.skip_modules != 'true'
         run: |
           cargo fmt --all --check
           cargo clippy -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --all-targets --locked -- -D warnings
           cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --lib --locked
       - name: Exercise original GTK3 and mousepad, including clipboard FD transfers
+        if: needs.scope.outputs.skip_modules != 'true'
         run: |
           sudo apt-get update -qq
           sudo apt-get install --yes --no-install-recommends libgtk-3-0 mousepad
@@ -57,7 +60,7 @@ jobs:
           TRAMES_FOOT_STORE: ${{ github.workspace }}/target/foot-acceptance/store
           TRAMES_FOOT_REPOSITORY: ${{ github.workspace }}/target/foot-acceptance/repository
           TRAMES_FOOT_ROOTFS: ${{ github.workspace }}/target/foot-acceptance/rootfs.tar.gz
-          TRAMES_FFI_LIB: ${{ github.workspace }}/target/debug/libtrames_ffi.so
+          TRAMES_FFI_LIB: ${{ github.workspace }}/target/release/libtrames_ffi.so
           TRAMES_FOOT_LOG: ${{ github.workspace }}/target/foot-acceptance/foot.log
         run: |
           python3 - <<'PY'
@@ -68,7 +71,7 @@ jobs:
           m.repository(root/'repository',tools=('foot','font-dejavu'))
           urllib.request.urlretrieve('https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz',root/'rootfs.tar.gz')
           PY
-          cargo build -p trames-ffi --locked
+          cargo build -p trames-ffi --release --locked
           python3 tests/integration/foot-wayland.py --prepare
       - uses: actions/upload-artifact@v4
         if: always()

@@ -44,7 +44,7 @@ def main():
                 guest_paths=['guest','include','scripts/build-musl-hybrid.sh','scripts/build-vulkan-fixtures.sh','scripts/prepare-wayland-guest.py','scripts/prepare-vulkan.py',':(glob)tests/fixtures/*.c']
                 guest_unchanged=not subprocess.check_output(['git','diff','--name-only',validated['head_sha'],'HEAD','--',*guest_paths],text=True).strip()
                 if validated['conclusion']=='success' and guest_unchanged:
-                    skip_native=False;skip_linux_native=False
+                    skip_native=False;skip_linux_native=False;skip_linux_modules=False
                     if plan.get('native_reuse'):
                         reuse=plan['native_reuse'];same_native=not subprocess.check_output(['git','diff','--name-only',reuse['sha'],'HEAD','--','crates','Cargo.toml','Cargo.lock','vendor','.cargo','rust-toolchain.toml'],text=True).strip()
                         if same_native:
@@ -54,7 +54,10 @@ def main():
                                     jobs=json.load(response)['jobs']
                                 if name=='apple':
                                     results.append(any(step['name']=='Validate affected native modules or the complete Apple core' and step['conclusion']=='success' for job in jobs for step in job['steps']))
-                                else:results.append(any(job['name']=='targeted-runtime' and job['conclusion']=='success' for job in jobs))
+                                else:
+                                    completed={step['name'] for job in jobs if job['name']=='targeted-runtime' for step in job['steps'] if step['conclusion']=='success'}
+                                    skip_linux_modules={'Check affected modules','Exercise original GTK3 and mousepad, including clipboard FD transfers'}<=completed
+                                    results.append(any(job['name']=='targeted-runtime' and job['conclusion']=='success' for job in jobs))
                             skip_native=results[0];skip_linux_native=results[1]
                             if skip_native or skip_linux_native:print(f'Reusing unchanged native checks: Apple={skip_native}, Linux={skip_linux_native}.')
                     print('Applying the source-hash-bound targeted validation plan; unchanged guest inputs are reused.')
@@ -62,6 +65,7 @@ def main():
                         output.write('frontend_only=false\ntargeted=true\n')
                         output.write('skip_native='+str(skip_native).lower()+'\n')
                         output.write('skip_linux_native='+str(skip_linux_native).lower()+'\n')
+                        output.write('skip_linux_modules='+str(skip_linux_modules).lower()+'\n')
                         output.write(f'baseline_run={baseline}\n')
                         output.write('critical_test='+plan['critical_test']+'\n')
                         output.write('ui_targets='+json.dumps(plan['ui_targets'],separators=(',',':'))+'\n')

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-import argparse,ctypes as C,json,pathlib,time,os,sys
+import argparse,ctypes as C,json,pathlib,time,os,tempfile
 R=pathlib.Path(__file__).resolve().parents[2]
 parser=argparse.ArgumentParser(description='Original signed ARM64 foot over the production Wayland/session ABI')
 parser.add_argument('--prepare',action='store_true');args=parser.parse_args()
@@ -40,8 +40,8 @@ try:
    if p.is_file():payload('trames_session_transfer',dict(guest='/tmp/foot-repo/'+p.relative_to(repository).as_posix(),host=str(p),export=False))
   send("printf '/tmp/foot-repo/main\\n/tmp/foot-repo/community\\n' > /tmp/foot-repositories; apk --repositories-file /tmp/foot-repositories --no-progress add foot font-dejavu; printf '\\nFOOT_SETUP:%d\\n' $?\n")
   wait('\r\nFOOT_SETUP:0\r\n',300);print('Original signed ARM64 foot installed',flush=True)
- send("XDG_RUNTIME_DIR=/run/user/0 WAYLAND_DISPLAY=wayland-0 foot -e /bin/sh -c 'echo FOOT_READY; sleep 1'; printf '\\nFOOT_RESULT:%d\\n' $?\n")
- began=time.monotonic();frames=0
+ send("rm -f /tmp/.foot-acceptance-complete; XDG_RUNTIME_DIR=/run/user/0 WAYLAND_DISPLAY=wayland-0 foot -e /bin/sh -c 'echo FOOT_READY; while [ ! -e /tmp/.foot-acceptance-complete ]; do sleep 0.05; done'; printf '\\nFOOT_RESULT:%d\\n' $?\n")
+ began=time.monotonic();frames=0;acknowledged=False
  while '\r\nFOOT_RESULT:0\r\n' not in output:
   output+=read('trames_session_output').decode(errors='replace')
   scene=json.loads(read('trames_session_wayland_status'))
@@ -49,6 +49,13 @@ try:
    frame=a.trames_session_wayland_frame_acquire(h,w['id'])
    if frame:
     assert a.trames_wayland_frame_release(frame,1,int(time.monotonic()*1000)&0xffffffff)==0;frames+=1
+    if not acknowledged:
+     # End the child only after the compositor actually acquired a frame.
+     # A fixed sleep can expire during font setup on a busy CI host.
+     with tempfile.NamedTemporaryFile() as marker:
+      marker.write(b'1');marker.flush()
+      payload('trames_session_transfer',dict(guest='/tmp/.foot-acceptance-complete',host=marker.name,export=False))
+     acknowledged=True
   if 'FOOT_RESULT:' in output and any('\r\nFOOT_RESULT:'+str(n)+'\r\n' in output for n in [1,134,139]):raise AssertionError(output[-7000:])
   assert time.monotonic()-began<180,output[-7000:]
   time.sleep(.005)

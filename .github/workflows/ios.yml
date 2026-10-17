@@ -133,7 +133,16 @@ jobs:
       - name: Generate Xcode project
         run: brew install xcodegen
       - name: Link unsigned iPad simulator app
-        run: bash scripts/build-ios.sh simulator
+        run: |
+          bash scripts/build-ios.sh simulator
+          python3 - <<'PYCODE'
+          import pathlib,plistlib
+          root=pathlib.Path('apps/ios/build/simulator/Build/Products/Debug-iphonesimulator/Trames.app')
+          for extension in (root/'PlugIns').glob('*.appex'):
+              info=plistlib.loads((extension/'Info.plist').read_bytes())
+              assert info['NSExtension']['NSExtensionPointIdentifier']=='com.apple.fileprovider-nonui'
+              assert info['NSExtension']['NSExtensionFileProviderDocumentGroup']==info['TramesAppGroup']
+          PYCODE
       - name: Exercise peer tabs and floating window gestures first
         timeout-minutes: 8
         env:

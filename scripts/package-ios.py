@@ -56,6 +56,11 @@ def package(app: Path, output: Path) -> None:
             raise ValueError("App and extension versions must match")
         if metadata.get("CFBundleSupportedPlatforms") != ["iPhoneOS"]:
             raise ValueError("Only an iPhoneOS device extension can be packaged")
+        provider = metadata.get("NSExtension", {})
+        if provider.get("NSExtensionPointIdentifier") != "com.apple.fileprovider-nonui" or not provider.get("NSExtensionPrincipalClass"):
+            raise ValueError("Missing File Provider extension metadata")
+        if not info.get("TramesAppGroup") or provider.get("NSExtensionFileProviderDocumentGroup") != info["TramesAppGroup"]:
+            raise ValueError("File Provider must use the app's configured shared group")
         executable = metadata.get("CFBundleExecutable", "")
         if not executable or Path(executable).name != executable:
             raise ValueError("Invalid extension executable")

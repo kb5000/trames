@@ -11,8 +11,8 @@
     "TramesUITests/LaunchTests/testOnlyAlpineCanMinimizeRestoreAndUseTheInvisibleResizeCorner"
   ],
   "changed_file_sha256": {
-    ".github/workflows/ios.yml": "0e96542503fa30037846fb87702a615c914f5d6003c433c933eb0d383569cf13",
-    ".github/workflows/linux.yml": "6bcab688b25639cb70fab4cb8a4042d6b876ccb266e24834a272260018890c98",
+    ".github/workflows/ios.yml": "5bbe28d74e53d41c23ae2e9979ef38d4b9e061292f29f6e94e8ddb6904af9576",
+    ".github/workflows/linux.yml": "0416d54f92cfdc4aaa1453d974a450c4283a26457507df595c9d3b9557665e6e",
     "apps/ios/Trames.entitlements": "fee16729fe8dd0f346188500fa23ae096d53b729db313ad63d8c06a049613b4a",
     "apps/ios/Trames/EnvironmentStore.swift": "e37f8de53c6fcfa57d4e94d3bd4eb5c2f2ed2545ff99ca8dc5ee0c75f936a2bf",
     "apps/ios/Trames/FileProviderService.swift": "e9e433011067e55af7c1d90c82309ab9e6ff3e1638414c62622cc9bc2890e29a",
@@ -23,7 +23,7 @@
     "apps/ios/Trames/WorkspaceModel.swift": "1a58de577055a8db59278bf719694c4c1e43f77f0dc7c0807c4dc4bf164b47ca",
     "apps/ios/Trames/WorkspaceTabs.swift": "a5059c20e9f8a90900ecbf17d2b53ac4c2d1a89c0357f9aff9aaae7362cc1574",
     "apps/ios/Trames/WorkspaceWindows.swift": "5b9e44ba8425c10232bf8907ab96694c03a40bf230eac8540152a36341fc1f82",
-    "apps/ios/TramesFileProvider/Info.plist": "b3a84a950a44b1c0598d72e573978c7c1403997066e5542d56ac004bd3a26bf5",
+    "apps/ios/TramesFileProvider/Info.plist": "6ef3272b3729cfdb99240631eb968b87e292bd9ca4dc05f0a4338ccfb07e216e",
     "apps/ios/TramesFileProvider/RootfsFileProvider.swift": "353cf7c3bb3ce8ec11a3831d124eb2968b61a6bf7a443b929fa45c300be2225b",
     "apps/ios/TramesFileSystem/RootfsCatalog.swift": "85e76c6d4e9a2a103bb0f5649311fe7464ea4ec006fe0b66910b6eebf8ef4ec4",
     "apps/ios/TramesKit/Sources/TramesKit/LocalSession.swift": "87c91b9822f6a5be6044df4067d1975e82b77af1735639c559272290af6899a0",
@@ -32,7 +32,7 @@
     "apps/ios/TramesTests/RootfsSnapshotTests.swift": "ff3bf218f9c233b5e201c1e72ec246bb5a99d6ee1be8625728f0137600ccd1a5",
     "apps/ios/TramesTests/WorkspaceInteractionTests.swift": "7fdc7f032c6de638f21c915c4c33f57a42c1ce585be08928402fb0e73f60a964",
     "apps/ios/TramesUITests/LaunchTests.swift": "96500e303d63d1e8527fe3bdee05a0fcf8f3b23f8c75107b79ddc0e3d4e55d0c",
-    "apps/ios/project.yml": "89b1f7aba3c81a82aab06a09dc5e6e36e599e7f90d2e0209a41d7efa3426f38f",
+    "apps/ios/project.yml": "e5ccaf79dbe21751d7c4de1053fce8bdb08fb21a194ef9b0089d613d43a1743e",
     "crates/trames-ffi/src/session.rs": "c402848d1321d03b92ae5d7c7e710bacc6ef985d780e1da681ec11fe38370807",
     "crates/trames-ffi/src/wayland.rs": "8a66d15aad333152ae50c15364da368940ceb6f54268a19e7f25a10a7d7db058",
     "crates/trames-shared/src/lib.rs": "03822d499bb127f68540f110eedb8962756b6821033c35e858f2964659540fff",
@@ -47,10 +47,15 @@
     "docs/guides/rootfs-files.md": "9ee1b01d5f26908dc7af1b377a3202c2c5bc1fd484026bb6cc705a6e3fb821ad",
     "docs/validation/compatibility-current-syscalls.csv": "cd4235fdc0a835be89b5591973ae78cf8e3440232af4447e57c08c7345ff351a",
     "docs/validation/compatibility-current-syscalls.json": "22a708e63ba3b8e185c8332b7ad36e435fdcaba6270b2fce740526696185f44e",
-    "scripts/ios-ci-scope.py": "1b1831b270b102703e18c7cc053e8cfc4f0bed74d5dc8ec2631b2448b18ed9c9",
-    "scripts/package-ios.py": "7c7f1baad26b8e65230f14945577da105e4da91572b1a29fecd7ef68eed7975f",
+    "scripts/ios-ci-scope.py": "fec12eaffe86236737febffb39edb98628098b294e264e3bcdef6a072c7e2c8c",
+    "scripts/package-ios.py": "32c147e6e9e486307a0d67c5b5a9386117c53aec6fbb574ee229a97f9d1ee8a3",
     "tests/fixtures/gtk-seat.py": "8503ab064159f1576c01b6b384c4b361f84c307b1e02dacc437875c4f5790727",
-    "tests/integration/foot-wayland.py": "fab06b19c0a1b406deeb0342e1df3796b2a98824c18b48a699ef2a420de78a97"
+    "tests/integration/foot-wayland.py": "14923e118861a3ae19b6e6347e1c8c5401b138274b20f096bc6c2104f4d93b86"
   },
-  "reason": "Validate only changed SHM, VFS, Wayland, File Provider and workspace paths. Reuse unchanged guest C inputs; keep manual iPad/signing acceptance pending."
+  "reason": "Fix extension installation metadata and rerun the blocked Apple tests. Reuse successful native and GTK steps; rerun only original foot with a Release interpreter and frame-confirmed termination.",
+  "native_reuse": {
+    "sha": "77455055bf902e6ea0193c36919c01daa672506d",
+    "apple_run": 39034108790,
+    "linux_run": 39034108836
+  }
 }

@@ -74,13 +74,13 @@ targets:
     type: app-extension
     platform: iOS
     sources: [TramesFileProvider,TramesFileSystem]
-    info:
-      path: TramesFileProvider/Info.plist
     dependencies:
       - sdk: FileProvider.framework
       - sdk: UniformTypeIdentifiers.framework
     settings:
       base:
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: TramesFileProvider/Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: org.trames.Trames.FileProvider
         CODE_SIGN_ENTITLEMENTS: Trames.entitlements
         APPLICATION_EXTENSION_API_ONLY: YES
