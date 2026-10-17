@@ -1,0 +1,194 @@
+{
+  "version": "0.18.0",
+  "build": 24,
+  "source_commit": "43889808afcf6c2a74917d8d0abacf83fe18be83",
+  "status": "Validated unsigned test IPA; owner iPad acceptance pending; no merge or formal release",
+  "workflow_run": 39055907059,
+  "workflow_url": "https://github.com/kb5000/trames/actions/runs/39055907059",
+  "linux_run": 39055907060,
+  "changes": [
+    "Restore nearest mapped parent on popup destroy, null attachment or dismissal; synchronize keyboard/text-input/data-device focus and clear stale pointer/grab targets before processing GTK selection.",
+    "Accept recent keyboard release serial for original GTK Shift+F10 popup grabs, preserving client/parent/implicit-grab checks.",
+    "Send non-printable hardware keys to the guest even if UIKit uses private-use printable Unicode; keep the native text input method for actual printable keys.",
+    "Cover navigation, editing, F1-F12, modifier masks, ISO and keypad keycodes; translate shifted ASCII punctuation for clients without text-input.",
+    "Add a real guest Bridge/UIPasteboard read/write test and original GTK/ARM64 mousepad context-menu regressions.",
+    "Only a mapped grabbed popup can receive focus on commit. Keep parent focus after an active popup attaches NULL, and keep parent focus while a new menu is still awaiting its first buffer. Regression first failed with focus=None and now passes with the mapped parent."
+  ],
+  "diagnosis": {
+    "clipboard": "Original ARM64 mousepad unmaps/destroys its context-menu popup before sending wl_data_device.set_selection. The old compositor kept the focus pointing to that deleted surface, rejected the valid selection and never requested host clipboard.write. Ctrl+C from the mapped parent continued to work.",
+    "navigation": "UIKit arrow/function strings pass CharacterSet.controlCharacters filtering. The previous code handed them to local UITextInput navigation, so only the mirror selection moved. Subsequent replacement no longer overlapped the guest cursor and was discarded."
+  },
+  "local_checks": {
+    "arm64_mousepad": {
+      "script": "tests/integration/mousepad-clipboard.py",
+      "library": "release",
+      "client": "Original signed Alpine v3.22 ARM64 mousepad 0.6.3-r1, GTK3 3.24.50-r0; font-dejavu 2.37-r6",
+      "network": "off",
+      "passed": true,
+      "stages": [
+        "Ctrl+C exact UTF-8 text through production native Bridge",
+        "right-click Copy exact UTF-8 text after actual popup mapping and destruction",
+        "restored text-input focus, Left navigation and subsequent Chinese text commit"
+      ],
+      "summary": "Ctrl+C: exact UTF-8 host clipboard request\nright-click Copy: exact UTF-8 host clipboard request\nPASS: Ctrl+C, right-click Copy, restored focus and navigation followed by IME text\n",
+      "guest_log_sha256": "41e553d5d676d447dca4fbeb10462223d3bd320fdcc8df8021d0e1d2d1a04748",
+      "apk_sha256": {
+        "mousepad-0.6.3-r1.apk": "52f96bd1f6dce0bed65f08781c6b113968391fa0d84929c59d5415f0ceba648c",
+        "gtk+3.0-3.24.50-r0.apk": "7f4392900085d4893cc5a525f304f51c3c3fa0c90607e53a9315838cc31b255c",
+        "font-dejavu-2.37-r6.apk": "24b82f5811626adeef883b761ce567df0ad2b21359fee6c519296bb75f7cfe71"
+      },
+      "embedding_library_sha256": "e65fc8aa0c6f34ee185bc6250ecea483c64e80d13a84e47299ced9b7703b87d6"
+    },
+    "gtk_menu": {
+      "test": "original_gtk_context_menu_copy_keeps_selection_and_keyboard_focus",
+      "passed": true
+    },
+    "nested_popup": {
+      "test": "input::tests::nested_popup_unmap_restores_mapped_ancestors_without_stealing_other_focus",
+      "passed": true
+    },
+    "clippy": "cargo clippy -p trames-wayland --all-targets --locked -- -D warnings: passed"
+  },
+  "linux_ci": {
+    "run": 39055907060,
+    "job": 117463732840,
+    "conclusion": "success",
+    "tests_passed": 2,
+    "tests_failed": 0,
+    "notes": "Strict compositor clippy/formatting, enhanced grabbed-popup NULL-buffer parent focus and original GTK menu Copy tests passed. Full runtime and foot suites skipped."
+  },
+  "reuse": {
+    "guest_run": 39015795319,
+    "previous_ipa_record": "docs/validation/ipad-0.18-build23.json",
+    "frontend": "Reuse all seven successful window, actual keyboard accessory and real PTY resize checks; those implementations are unchanged.",
+    "other_native": "Only crates/trames-wayland changed. Reuse validated VFS/shared/FFI/CPU/memory/network/container/GPU/foot source baselines from build 23; compile affected native dependencies for the new app.",
+    "file_provider": "Unchanged; device activation/browsing deferred until formal App Group signing as the owner requested."
+  },
+  "pending": [
+    "Owner iPad acceptance: right-click copy into another iPad app, physical navigation and IME; Stage Manager corners/resize and vkcube background retention",
+    "Formal App Group File Provider device activation deferred",
+    "No merge or 1.0.0 Release until owner device acceptance"
+  ],
+  "production_fix_commit": "b45510516d16287fd74359c96fcfabbd5a216e83",
+  "reused_input_checks": {
+    "source_commit": "b45510516d16287fd74359c96fcfabbd5a216e83",
+    "run": 39053617459,
+    "job": 117457045803,
+    "passed": 8,
+    "failed": 0,
+    "critical_artifact_id": 12108816528,
+    "critical_artifact_sha256": "90d386246b55a2585cf6c3cded74a9aa7b10fcd51ac7a29645d98c9daf71e1ee",
+    "other_input_artifact_id": 12109211314,
+    "other_input_artifact_sha256": "702a64be3e0fde7ec70f2a3b7904ad0e60d06134837eda4f0049e364e71e6049",
+    "note": "The navigation critical test and all seven other WaylandInputTests passed individually. The unrelated new ClipboardBridgeTests failed only due to CRLF parsing in its own test; that test is fixed and selected alone next. The old overall job is not counted as successful.",
+    "tests": [
+      "TramesTests/WaylandInputTests/testHardwareNavigationKeepsGuestCursorAndSubsequentCompositionTogether",
+      "TramesTests/WaylandInputTests/testSoftKeyboardPunctuationAndRawKeypadUseStandardLinuxKeys",
+      "TramesTests/WaylandInputTests/testV3SelectionIsReplacedWithoutDeletingItTwice",
+      "TramesTests/WaylandInputTests/testMarkedBackspaceUsesCompositionCaret",
+      "TramesTests/WaylandInputTests/testSelectionReplacementUsesActiveCursorInsteadOfSortedRangeStart",
+      "TramesTests/WaylandInputTests/testNativeCompositionAndUTF8OffsetsPreserveEmoji",
+      "TramesTests/WaylandInputTests/testEndingMarkedTextCommitsOnceAndFocusResetClearsIt",
+      "TramesTests/WaylandInputTests/testNativeClipboardActionsRouteToGuestControlKeys"
+    ],
+    "old_overall_job_conclusion": "failure (separate clipboard acceptance test framing, selected for retry)"
+  },
+  "apple_native": {
+    "run": 39055907059,
+    "job": 117463727785,
+    "test": "input::tests::nested_popup_unmap_restores_mapped_ancestors_without_stealing_other_focus",
+    "passed": 1,
+    "failed": 0,
+    "note": "The enhanced test includes an active grabbed popup attaching NULL. Final native step passed; simulator acceptance is reused separately because frontend and clipboard implementation are unchanged."
+  },
+  "source_sha256": {
+    "apps/ios/Trames/WaylandInputView.swift": "6fbaf90a5ff6bf5a00c2edb7dd3de0b40a3bae65263bfe35501104a16790ef20",
+    "apps/ios/Trames/BridgeController.swift": "35de5863de92e57ae2b2fed9fbee7b6171a00ec2f4984b3e9d1a7f87f5157a74",
+    "apps/ios/Trames/TerminalKeyboardAccessory.swift": "99e4ecb736b01c6c807505da3c8471594c768c1ff1f2661a239a64f256e5b6b7",
+    "apps/ios/Trames/TerminalSession.swift": "e940d2be12b9fd85665ee9535f68d6dd91220dc8794a515a3e1f49945a685acc",
+    "apps/ios/Trames/TerminalViewport.swift": "12fa36849cf45d97f052e4512b817682333cbc671e71e9f613bf4047ea73b212",
+    "apps/ios/Trames/WorkspaceKeyboardContainer.swift": "956c4e896a3e139723b1144c357f4b0bd25aeffe743c8ed37b0b5cddbc64a4dc",
+    "apps/ios/Trames/WorkspaceWindows.swift": "b6b003f25286b665ea42be8f1d1c534d7e528ddb5af4b50ac7179335788126c4",
+    "apps/ios/Trames/WorkspaceTabs.swift": "1dc96d489bf1dc07241e3902b2fa2f16da232f76093f711439eeab3910bb2c4f",
+    "apps/ios/Trames/TramesApp.swift": "5e64f3034483a853cfedeeb0302023ef1f9861030328b46576359874ad504f65",
+    "crates/trames-wayland/src/input.rs": "9bea55f7f4dabc7017dc86e9736b7e346150d4c4e3dc912c0970df95b86fb3b0",
+    "crates/trames-wayland/src/protocol.rs": "77b2124eb9048dc4bc2270efd41078cb8e5bee01fcd25f9ff60bee032b77ff33",
+    "crates/trames-wayland/src/shell.rs": "2331e176dd398c57ab0b286625984b103f315aa2782f8c3ab1dddad1d21dc3ee",
+    "crates/trames-ffi/src/clipboard.rs": "dd3f522606091b7aa71466fa5c27b6c929cfd86b1f3bb9a4eeb77cfe5074c844",
+    "apps/ios/TramesTests/ClipboardBridgeTests.swift": "2b509caaeffb7a7174b6588cb45e3add384c1dafe0f55e621242b844d1c25fdb",
+    "apps/ios/TramesTests/WaylandInputTests.swift": "32a722260ebf183f81e8ecd920b901019694b42a40fbc97c0b25c58485dec50a",
+    "tests/integration/mousepad-clipboard.py": "c0545c7295b30bf6120a6e05e7bf66d6ddf7518a10702169950aeb55422a8fa4"
+  },
+  "tests": {
+    "clipboard_bridge": {
+      "run": 39054497343,
+      "job": 117459621118,
+      "test": "TramesTests/ClipboardBridgeTests/testGuestClipboardRequestsAutomaticallyReachTheSystemPasteboard",
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "scenarios": [
+        "Fresh actual original Alpine session; native Bridge handles clipboard.write automatically without challenge",
+        "UIPasteboard.general contains the exact Chinese/emoji text",
+        "guest clipboard.read returns the same text; preserve and restore simulator clipboard and Bridge setting"
+      ],
+      "artifact_id": 12109087136,
+      "artifact_sha256": "2f8a2a7df7a68cd9c2a8eb0b7939e8f568ed039b71d7938f723ccec0a409536a",
+      "reused": true
+    },
+    "distinct_input_clipboard_checks_passed": 9,
+    "reused_individually_passed_input_checks": 9,
+    "failed": 0,
+    "skipped": 0,
+    "simulator_checks_in_final_run": 0,
+    "final_native": {
+      "apple": {
+        "run": 39055907059,
+        "job": 117463727785,
+        "passed": 1,
+        "failed": 0
+      },
+      "linux": {
+        "run": 39055907060,
+        "job": 117463732840,
+        "passed": 2,
+        "failed": 0
+      },
+      "scope": "Enhanced grabbed-popup buffer-detach parent focus on Apple/Linux; original GTK Shift+F10 menu Copy/focus on Linux; strict compositor clippy."
+    }
+  },
+  "frontend_reuse": {
+    "source_commit": "f9c2f7bd48aa9309a9b918ba436a2a986ac58175",
+    "run": 39054497343,
+    "conclusion": "success",
+    "reason": "All apps/ios, FFI/Bridge/shared/VFS code, guest sources, public headers and build/package scripts are unchanged. The final change only affects compositor mapping/focus, which has updated native and original GTK coverage. No repeated simulator build/tests.",
+    "source_paths_unchanged_verified": true
+  },
+  "workflow_conclusion": "success",
+  "artifact": {
+    "id": 12109179664,
+    "url": "https://github.com/kb5000/trames/actions/runs/39055907059/artifacts/12109179664",
+    "zip_sha256": "99a3b928ad386be038fa51f6d84a2e41bacf77dc72ea8e211bc0e00751b9e72d",
+    "filename": "Trames-0.18.0-build24-unsigned.ipa",
+    "version": "0.18.0",
+    "build": 24,
+    "bundle_id": "org.trames.Trames",
+    "platform": "iPhoneOS arm64",
+    "signed": false,
+    "bytes": 10575823,
+    "sha256": "49cb1babdba8b29b4334bde7b185afba36d5cd87729f2bfe493879e7f8eda766",
+    "file_provider_bundle_id": "org.trames.Trames.FileProvider",
+    "file_provider_group": "group.org.trames.Trames",
+    "file_provider_platform_verified": true,
+    "native_coremark_and_ssh_symbols_absent": true,
+    "debug_acceptance_fixtures_absent": true,
+    "guest_aarch64_and_manifests_verified": true
+  },
+  "verification": [
+    "Downloaded GitHub artifact ZIP digest matches the API digest; embedded IPA.sha256 matches the actual IPA.",
+    "Main App and File Provider are unsigned ARM64 iPhoneOS 0.18.0 build 24; LC_BUILD_VERSION platform is iOS, no code signature remains, App Group metadata matches.",
+    "Bundled musl and Vulkan guest libraries are AArch64 ELF64 and match their package manifests.",
+    "Native CoreMark/SSH integration symbols, DEBUG fixture flags and packaged acceptance fixtures are absent.",
+    "Apple/Linux final native checks and device Release/package succeeded. All nine simulator input/clipboard successes are reused by exact unchanged frontend source verification; no repeated simulator build/tests in the final workflow."
+  ]
+}

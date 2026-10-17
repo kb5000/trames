@@ -1,6 +1,6 @@
 # Trames
 
-[0.18.0 build 23 测试 IPA](https://github.com/kb5000/trames/actions/runs/39050660220/artifacts/12107662210)：补齐系统 App 小窗／全屏变化时的终端与 PTY 尺寸刷新，保留后台／键盘切换前的浮窗位置，修复扩展键盘开关后状态行遮挡；键盘栏右侧预留系统窗口调整角落，内部浮窗恢复原间距。7 项本轮相关检查通过（2 项最终运行、5 项成功结果复用），四次原生容器尺寸切换的真实 Linux `stty size` 均匹配。[验证记录](docs/validation/ipad-0.18-build23.json)。原版 foot、GTK／剪贴板与[只读 rootfs Files 扩展](docs/guides/rootfs-files.md)继续保留；File Provider 真机验收待正式 App Group 签名。当前仅为测试包，iPad 验收后再准备 1.0.0。
+[0.18.0 build 24 测试 IPA](https://github.com/kb5000/trames/actions/runs/39055907059/artifacts/12109179664)：修复 mousepad 右键菜单关闭后复制未同步 iPad 的焦点问题，以及方向键导致后续文字无法输入；补齐其他常用按键、ISO／小键盘及 Shift 标点。9 项 iPad 输入／系统剪贴板检查通过，原版 ARM64 mousepad 的 Ctrl+C、右键 Copy、导航后中文提交也通过生产 FFI 验证。包含此前系统 App 最大化／终端 PTY 尺寸、浮窗位置保留、扩展键盘／状态行修复，相关成功结果直接复用。[验证记录](docs/validation/ipad-0.18-build24.json)。原版 foot 与[只读 rootfs Files 扩展](docs/guides/rootfs-files.md)继续保留；File Provider 真机验收待正式 App Group 签名。当前仅为测试包，iPad 验收后再准备 1.0.0。
 
 0.17.0 加入[宿主原生 Wayland](docs/architecture/wayland.md)：终端与图形应用共用顶部标签栏，支持拖出浮窗、停靠、调整分辨率及 UIKit 输入法。旧“显示窗口”菜单与固定显示器界面已移除。原版 vkmark 的 13 种场景通过本地功能验收；窗口手势、原版 Weston、vkcube、vkmark 与 Metal 显示通过 **33 项 Apple 模拟器验收**，零失败或跳过。[验证记录](docs/validation/wayland-workspace-vkmark.md)、[使用说明](docs/guides/wayland.md)、[0.17.0/build 19 发行记录](docs/validation/release-0.17.md)，对应 [PR #26](https://github.com/kb5000/trames/pull/26)。
 

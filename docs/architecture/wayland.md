@@ -131,8 +131,26 @@ native capabilities retain their existing consent flow. UIKit copy/cut/paste/
 select-all actions send guest control keys so the original toolkit owns the
 selection and transfer. Image clipboard and drag-and-drop remain unsupported.
 Original host GTK3 and mousepad pass real seat/window tests and Unicode
-clipboard transfers; actual iPad permission and application behavior still need
-device acceptance. See the [build 21 record](../validation/ipad-0.18-build21.json).
+clipboard transfers. Build 24 additionally exercises the original GTK text
+context menu and signed ARM64 mousepad through the production guest FD and
+Bridge adapters: Ctrl+C, right-click Copy, then navigation and a Chinese text
+commit after the popup closes. GTK destroys its menu before sending selection;
+unmapping/destroying/dismissing a focused popup restores the nearest mapped
+parent so keyboard, text-input and data-device focus agree. A grabbed menu that
+has not attached a buffer, or has detached it before destruction, cannot take
+focus back from that parent. Keyboard-triggered
+menus also accept GTK's recent key-release grab serial, while retaining the
+client and popup-parent checks.
+
+On iPad, printable hardware keys keep using the native input method. Navigation,
+editing and function keys use guest key events even when UIKit represents them
+as printable private-use Unicode: moving only the local document mirror would
+leave its selection inconsistent with the guest cursor. ISO/keypad keycodes and
+shifted ASCII punctuation in the no-text-input fallback are mapped explicitly.
+The simulator exercises automatic guest clipboard requests against the real
+UIPasteboard; OS permission presentation and physical-keyboard behavior still
+need iPad acceptance. See the [build 24 record](../validation/ipad-0.18-build24.json)
+and the earlier [build 21 record](../validation/ipad-0.18-build21.json).
 
 ## Scene and input
 
