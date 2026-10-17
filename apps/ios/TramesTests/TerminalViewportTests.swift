@@ -17,20 +17,20 @@ final class TerminalViewportTests: XCTestCase {
 
     func testAccessoryControllerReservesSystemCornerAndPreservesCtrl() throws {
         let view=makeViewport();defer {view.updateUiClosed()}
-        let original=try XCTUnwrap(view.inputAccessoryView as? TerminalAccessory)
-        original.controlModifier=true
-        let controller=try XCTUnwrap(view.inputAccessoryViewController as? TerminalKeyboardAccessoryController)
-        controller.loadViewIfNeeded()
-        for width:CGFloat in [375,768,1024] {
-            controller.view.frame=CGRect(x:0,y:0,width:width,height:48)
-            controller.view.setNeedsLayout();controller.view.layoutIfNeeded()
-            XCTAssertTrue(controller.view === original)
-            XCTAssertTrue(view.inputAccessoryView === original)
-            XCTAssertTrue(original.controlModifier)
+        let wrapper=try XCTUnwrap(view.inputAccessoryView as? TerminalKeyboardAccessory)
+        let original=wrapper.accessory
+        for width:CGFloat in [375,768,1024,768] {
+            wrapper.frame=CGRect(x:0,y:0,width:width,height:48)
+            wrapper.setNeedsLayout();wrapper.layoutIfNeeded()
             let toggle=try XCTUnwrap(original.subviews.first {$0.accessibilityIdentifier=="terminal-extended-keyboard-toggle"})
-            let frame=toggle.convert(toggle.bounds,to:controller.view)
-            XCTAssertLessThanOrEqual(frame.maxX,width-TerminalKeyboardAccessoryController.trailingClearance)
+            let frame=toggle.convert(toggle.bounds,to:wrapper)
+            XCTAssertLessThanOrEqual(frame.maxX,width-TerminalKeyboardAccessory.trailingClearance)
             XCTAssertGreaterThan(frame.width,0)
+            let control=try XCTUnwrap(original.subviews.first {$0.accessibilityIdentifier=="terminal-control-modifier"} as? UIButton)
+            control.sendActions(for:.touchDown)
+            XCTAssertTrue(original.controlModifier);XCTAssertTrue(view.controlModifier)
+            view.insertText("c")
+            XCTAssertFalse(original.controlModifier);XCTAssertFalse(view.controlModifier)
         }
     }
 

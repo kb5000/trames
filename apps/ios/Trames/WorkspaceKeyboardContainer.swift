@@ -9,6 +9,10 @@ struct WorkspaceKeyboardContainer:UIViewControllerRepresentable {
     let workspace:WorkspaceModel
     func makeUIViewController(context:Context)->WorkspaceKeyboardController { WorkspaceKeyboardController(workspace:workspace) }
     func updateUIViewController(_ controller:WorkspaceKeyboardController,context:Context) {}
+    func sizeThatFits(_ proposal:ProposedViewSize,uiViewController:WorkspaceKeyboardController,context:Context)->CGSize? {
+        guard let width=proposal.width,let height=proposal.height else {return nil}
+        return CGSize(width:max(0,width),height:max(0,height))
+    }
 }
 final class WorkspaceKeyboardController:UIViewController {
     private let content:UIHostingController<WorkspaceView>

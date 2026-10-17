@@ -179,7 +179,10 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         state = error.localizedDescription
     }
     func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) {
-        synchronizeTerminalSize(columns:newCols,rows:newRows)
+        // SwiftTerm also delivers deferred size notifications. A completed
+        // system-window resize must not be overwritten by an older snapshot.
+        let grid=source.getTerminal()
+        synchronizeTerminalSize(columns:grid.cols,rows:grid.rows)
     }
     private func synchronizeTerminalSize(columns:Int,rows:Int) {
         guard let local,columns>0,rows>0,terminalSize?.columns != columns || terminalSize?.rows != rows else {return}
@@ -205,16 +208,37 @@ struct TerminalPane: UIViewRepresentable {
     @ObservedObject var session: TerminalSession
     let workspace: WorkspaceModel
     let onFocus: () -> Void
-    func makeUIView(context: Context) -> TerminalViewport { session.terminal }
-    func sizeThatFits(_ proposal: ProposedViewSize, uiView: TerminalViewport, context: Context) -> CGSize? {
+    func makeUIView(context: Context) -> TerminalViewportHost { TerminalViewportHost(terminal:session.terminal) }
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: TerminalViewportHost, context: Context) -> CGSize? {
         guard let width=proposal.width,let height=proposal.height else { return nil }
         return CGSize(width:max(0,width),height:max(0,height))
     }
-    func updateUIView(_ view: TerminalViewport, context: Context) {
+    func updateUIView(_ host: TerminalViewportHost, context: Context) {
+        let view=host.terminal
         view.onFocusRequested = onFocus
         let id=WorkspaceItemID.terminal(session.id)
         // SwiftUI may deliver a snapshot queued before minimization. Read the
         // live model rather than focus/visibility captured in that snapshot.
         view.setKeyboardFocus(workspace.layout.focused == id,visible:workspace.isVisible(id),deferred:true)
+    }
+}
+/// A plain UIKit viewport tracks system-window geometry even when SwiftUI does
+/// not call updateUIView. Do not let the scroll view's content size become its
+/// layout proposal during Stage Manager/full-screen transitions.
+final class TerminalViewportHost:UIView {
+    let terminal:TerminalViewport
+    init(terminal:TerminalViewport) {
+        self.terminal=terminal
+        super.init(frame:.zero)
+        clipsToBounds=true
+        terminal.frame=bounds
+        terminal.autoresizingMask=[.flexibleWidth,.flexibleHeight]
+        addSubview(terminal)
+    }
+    required init?(coder:NSCoder) {fatalError("init(coder:) has not been implemented")}
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        if terminal.frame != bounds {terminal.frame=bounds;terminal.setNeedsLayout()}
+        terminal.layoutIfNeeded()
     }
 }

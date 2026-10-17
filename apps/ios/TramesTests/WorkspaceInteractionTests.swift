@@ -8,6 +8,56 @@ import TramesKit
 
 @MainActor
 final class WorkspaceInteractionTests: XCTestCase {
+    func testSystemAppWindowResizeUpdatesTerminalAndGuestPTY() async throws {
+        let previous=UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).first { $0.isKeyWindow }
+        let window=UIWindow(windowScene:try XCTUnwrap(previous?.windowScene)),parent=UIViewController()
+        let model=WorkspaceModel(prepareEnvironment:false),session=TerminalSession(title:"Alpine",isLocal:true)
+        let directory=FileManager.default.temporaryDirectory.appendingPathComponent("system-resize-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+        let archive=try XCTUnwrap(Bundle.main.resourceURL).appendingPathComponent("GuestVulkan/acceptance/alpine-minirootfs.tar.gz")
+        let native=try LocalSession(store:directory.appendingPathComponent("store"),rootfs:archive,total:1<<30,available:1<<30,network:"off")
+        session.local=native;model.add(session)
+        defer {
+            session.close();session.terminal.updateUiClosed();window.isHidden=true;previous?.makeKeyAndVisible()
+            try? FileManager.default.removeItem(at:directory)
+        }
+        let started=Date()
+        while try native.status().phase != "running" {
+            let status=try native.status()
+            if let error=status.error {throw TramesError.message(error)}
+            guard Date().timeIntervalSince(started)<30 else {throw TramesError.message("Resize test shell did not start")}
+            try await Task.sleep(for:.milliseconds(20))
+        }
+        let host=WorkspaceKeyboardController(workspace:model)
+        window.rootViewController=parent
+        parent.addChild(host);parent.view.addSubview(host.view);host.didMove(toParent:parent)
+        window.makeKeyAndVisible()
+        let terminal=session.terminal
+        var previousColumns:Int?
+        for (index,size) in [CGSize(width:360,height:430),CGSize(width:750,height:980),CGSize(width:500,height:600),CGSize(width:750,height:980)].enumerated() {
+            // Resize the native app-container view directly. No docking, model
+            // change or TerminalPane.updateUIView call drives this transition.
+            host.view.frame=CGRect(origin:.zero,size:size);host.view.setNeedsLayout();host.view.layoutIfNeeded()
+            let deadline=Date().addingTimeInterval(5)
+            while (abs(terminal.bounds.width-size.width)>1 || terminal.getTerminal().cols==previousColumns) && Date()<deadline {
+                try await Task.sleep(for:.milliseconds(20))
+            }
+            let columns=terminal.getTerminal().cols,rows=terminal.getTerminal().rows
+            XCTAssertEqual(terminal.bounds.width,size.width,accuracy:1)
+            XCTAssertNotEqual(columns,previousColumns);XCTAssertGreaterThan(rows,1)
+            XCTAssertLessThanOrEqual(terminal.getOptimalFrameSize().width,terminal.bounds.width)
+            let command=Data("printf '\\nSYS_GRID_\(index):'; stty size\n".utf8)
+            XCTAssertEqual(try native.send(command),command.count)
+            let expected="\r\nSYS_GRID_\(index):\(rows) \(columns)\r\n"
+            var output="";let received=Date().addingTimeInterval(10)
+            while !output.contains(expected) && Date()<received {
+                output+=String(decoding:try native.receive(),as:UTF8.self)
+                try await Task.sleep(for:.milliseconds(20))
+            }
+            XCTAssertTrue(output.contains(expected),"Guest PTY did not match the actual viewport: \(output)")
+            previousColumns=columns
+        }
+    }
     func testGraphicsPreferredFrameSurvivesBackgroundAndTransientViewportChanges() async throws {
         let previous=UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).first { $0.isKeyWindow }
         let window=UIWindow(windowScene:try XCTUnwrap(previous?.windowScene))

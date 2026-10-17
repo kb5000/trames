@@ -7,7 +7,10 @@ struct TramesApp: App {
     @Environment(\.scenePhase) private var scenePhase
     var body: some Scene {
         WindowGroup {
-            WorkspaceKeyboardContainer(workspace: workspace)
+            GeometryReader { proxy in
+                WorkspaceKeyboardContainer(workspace: workspace)
+                    .frame(width:proxy.size.width,height:proxy.size.height)
+            }
                 .ignoresSafeArea(.keyboard)
                 .preferredColorScheme(.dark)
                 .onChange(of: scenePhase) { _, phase in

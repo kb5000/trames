@@ -2,60 +2,63 @@
 import UIKit
 import SwiftTerm
 
-/// Present the original accessory as the controller's root, preserving the
-/// TerminalView cast used for Ctrl and all upstream targets/actions. Nesting a
-/// second UIInputView inside an accessory controller leaves an empty row when
-/// UIKit attaches the input views, even though standalone layout succeeds.
-final class TerminalKeyboardAccessoryController: UIInputViewController {
+/// Vend one accessory view to UIKit. The original upstream row owns its key
+/// layout/actions; the surrounding view reserves the system resize corner.
+final class TerminalKeyboardAccessory:UIInputView {
     let accessory:TerminalAccessory
+    private weak var terminal:TerminalView?
+    private let rowHeight:CGFloat
+    private var resetObserver:NSObjectProtocol?
     static let trailingClearance:CGFloat=48
-    private var naturalWidths:[ObjectIdentifier:CGFloat]=[:]
-    private var laidOutSize=CGSize.zero
-    init(accessory:TerminalAccessory) {
-        self.accessory=accessory
-        super.init(nibName:nil,bundle:nil)
-    }
-    required init?(coder:NSCoder) { fatalError("init(coder:) has not been implemented") }
-    override func loadView() {
-        inputView=accessory
-        accessory.accessibilityIdentifier="terminal-accessory"
-    }
-    override func viewWillLayoutSubviews() {
-        super.viewWillLayoutSubviews()
-        if laidOutSize != accessory.bounds.size || !accessory.subviews.contains(where:{$0 is UIButton}) {
-            let control=accessory.controlModifier
-            accessory.setupUI()
-            accessory.controlModifier=control
-            naturalWidths.removeAll()
-            laidOutSize=accessory.bounds.size
-        } else {
-            // The upstream layout uses each button's current width. Restore its
-            // natural width first so repeated layouts never shrink keys again.
-            for case let button as UIButton in accessory.subviews {
-                if let width=naturalWidths[ObjectIdentifier(button)] {button.frame.size.width=width}
-            }
+    init(accessory:TerminalAccessory,terminal:TerminalView) {
+        self.accessory=accessory;self.terminal=terminal
+        rowHeight=max(36,accessory.bounds.height)
+        super.init(frame:CGRect(x:0,y:0,width:accessory.bounds.width,height:rowHeight),inputViewStyle:.keyboard)
+        allowsSelfSizing=true;accessory.allowsSelfSizing=false
+        accessibilityIdentifier="terminal-accessory"
+        addSubview(accessory)
+        // SwiftTerm casts inputAccessoryView to TerminalAccessory. A wrapper
+        // instead bridges its original sticky Ctrl to the public modifier API.
+        resetObserver=NotificationCenter.default.addObserver(forName:.terminalViewControlModifierReset,object:terminal,queue:.main) { [weak self] _ in
+            MainActor.assumeIsolated {self?.accessory.controlModifier=false}
         }
-        accessory.layoutSubviews()
     }
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        let width=accessory.bounds.width
-        guard width>0 else {return}
-        let left=accessory.safeAreaInsets.left
-        let available=max(0,width-left-accessory.safeAreaInsets.right-Self.trailingClearance)
-        let scale=available/width
-        var natural:[ObjectIdentifier:CGFloat]=[:]
+    required init?(coder:NSCoder) {fatalError("init(coder:) has not been implemented")}
+    deinit {if let resetObserver {NotificationCenter.default.removeObserver(resetObserver)}}
+    override var intrinsicContentSize:CGSize {CGSize(width:UIView.noIntrinsicMetric,height:rowHeight)}
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let rect=CGRect(x:safeAreaInsets.left,y:0,width:max(0,bounds.width-safeAreaInsets.left-safeAreaInsets.right-Self.trailingClearance),height:rowHeight)
+        if accessory.frame != rect || !accessory.subviews.contains(where:{$0 is UIButton}) {
+            let control=accessory.controlModifier
+            accessory.frame=rect;accessory.setupUI();accessory.controlModifier=control
+        }
+        accessory.layoutIfNeeded()
         for case let button as UIButton in accessory.subviews {
-            var frame=button.frame
-            natural[ObjectIdentifier(button)]=frame.width
-            frame.origin.x=left+frame.origin.x*scale
-            frame.size.width *= scale
-            button.frame=frame
-            if button.actions(forTarget:accessory,forControlEvent:.touchDown)?.contains("toggleInputKeyboard:") == true {
+            let actions=button.actions(forTarget:accessory,forControlEvent:.touchDown) ?? []
+            if actions.contains("toggleInputKeyboard:") {
                 button.accessibilityIdentifier="terminal-extended-keyboard-toggle"
                 button.accessibilityLabel="扩展键盘"
             }
+            if actions.contains("ctrl:") {
+                // Upstream ctrl: only toggles controlModifier. Forward that
+                // same operation to the public fallback modifier as well.
+                button.removeTarget(accessory,action:NSSelectorFromString("ctrl:"),for:.touchDown)
+                button.addTarget(self,action:#selector(toggleControl),for:.touchDown)
+                button.accessibilityIdentifier="terminal-control-modifier"
+            }
         }
-        naturalWidths=natural
+    }
+    @objc private func toggleControl() {
+        accessory.controlModifier.toggle()
+        terminal?.controlModifier=accessory.controlModifier
+    }
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window == nil {
+            // Preserve upstream autorepeat cancellation when the wrapped row
+            // leaves UIKit's keyboard hierarchy during dismissal or teardown.
+            for case let button as UIButton in accessory.subviews {button.sendActions(for:.touchCancel)}
+        }
     }
 }
