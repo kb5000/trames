@@ -35,7 +35,9 @@ jobs:
       - id: scope
         env:
           GH_TOKEN: ${{ github.token }}
-          TRAMES_FULL_CHECK: ${{ github.event_name != 'pull_request' }}
+          # A hash-bound plan can reuse the exact validated PR binaries after
+          # merge. Unmatched source changes still fall back to the full checks.
+          TRAMES_FULL_CHECK: 'false'
         run: python3 scripts/ios-ci-scope.py
   memory-abi:
     needs: scope
@@ -129,6 +131,8 @@ jobs:
             cargo test -p trames-wayland --lib nested_popup_unmap --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == wayland-clipboard ]]; then
             cargo test -p trames-wayland --lib clipboard_permission --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == host-terminals ]]; then
+            cargo test -p trames-vfs -p trames-core -p trames-ffi --lib --locked
           elif [[ '${{ needs.scope.outputs.targeted }}' == true ]]; then
             cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --lib --locked
           else

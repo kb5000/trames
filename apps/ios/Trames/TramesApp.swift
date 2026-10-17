@@ -66,7 +66,7 @@ struct WorkspaceView: View {
                     Label("新建或管理会话", systemImage: "plus")
                         .labelStyle(.iconOnly).frame(minWidth: 44, minHeight: 44)
                 }.confirmationDialog("新建或管理会话", isPresented: $sessionActions, titleVisibility: .visible) {
-                    Button("本地 Alpine", systemImage: "terminal") { workspace.openLocal() }
+                    Button("本地 Alpine 终端", systemImage: "terminal") { workspace.openLocal() }
                     Button("Files", systemImage: "folder") { filesSheet = true }
                     Button("设置", systemImage: "gear") { settingsSheet = true }
                 }
@@ -101,6 +101,7 @@ struct WorkspaceView: View {
             }
         }
         .background(.black)
+        .background { if let owner=workspace.localOwner {BridgeConsentPresenter(controller:owner.bridge)} }
         .sheet(isPresented: $filesSheet) { if let session = workspace.current { TransferView(session: session) } }
         .sheet(isPresented: $settingsSheet) { SettingsView(workspace: workspace) }
         .alert("Trames", isPresented: Binding(get: { workspace.error != nil }, set: { if !$0 { workspace.error = nil } })) {
@@ -143,7 +144,7 @@ struct SessionView: View {
             }.font(.caption).foregroundStyle(.secondary).padding(.horizontal,12)
                 .padding(.vertical,6).fixedSize(horizontal:false,vertical:true)
                 .layoutPriority(1)
-        }.background(BridgeConsentPresenter(controller: session.bridge))
+        }
     }
 }
 struct SettingsView: View {

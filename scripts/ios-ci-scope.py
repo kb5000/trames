@@ -61,6 +61,12 @@ def main():
                             skip_native=results[0];skip_linux_native=results[1]
                             if skip_native or skip_linux_native:print(f'Reusing unchanged native checks: Apple={skip_native}, Linux={skip_linux_native}.')
                     native_scope=''
+                    if plan.get('native_scope') == 'host-terminals' and plan.get('native_reuse'):
+                        paths=subprocess.check_output(['git','diff','--name-only',plan['native_reuse']['sha'],'HEAD','--','crates','Cargo.toml','Cargo.lock','vendor','.cargo','rust-toolchain.toml'],text=True).splitlines()
+                        allowed={'Cargo.toml','Cargo.lock','crates/trames-core/src/process.rs','crates/trames-vfs/src/pty.rs','crates/trames-ffi/src/lib.rs','crates/trames-ffi/src/session.rs','crates/trames-ffi/src/terminals.rs','crates/trames-ffi/include/trames.h'}
+                        if paths and set(paths)<=allowed:
+                            native_scope='host-terminals'
+                            print('Validate host PTY lifecycle, coordinator signals and original Alpine multiple shells; reuse unrelated CPU, GTK, GPU and networking checks.')
                     if plan.get('native_scope') in {'wayland-input','wayland-clipboard'} and plan.get('native_reuse'):
                         native_paths=subprocess.check_output(['git','diff','--name-only',plan['native_reuse']['sha'],'HEAD','--','crates','Cargo.toml','Cargo.lock','vendor','.cargo','rust-toolchain.toml'],text=True).splitlines()
                         if native_paths and all(path.startswith('crates/trames-wayland/') for path in native_paths):
@@ -81,7 +87,7 @@ def main():
                     if plan.get('repackage'):
                         reuse=plan['repackage']
                         paths=subprocess.check_output(['git','diff','--name-only',reuse['sha'],'HEAD'],text=True).splitlines()
-                        allowed={'.github/ios-validation-plan.json','.github/workflows/ios.yml','scripts/ios-ci-scope.py','scripts/build-ios.sh','scripts/finalize-ios-app.py'}
+                        allowed={'.github/ios-validation-plan.json','.github/workflows/ios.yml','scripts/ios-ci-scope.py','scripts/build-ios.sh','scripts/finalize-ios-app.py','README.md','docs/validation/release-1.0.json','docs/validation/release-1.0.md'}
                         if any(path not in allowed for path in paths):raise RuntimeError('Repackaging must preserve compiled app sources and build settings')
                         with urllib.request.urlopen(urllib.request.Request(f"https://api.github.com/repos/{repo}/actions/runs/{reuse['run']}/jobs",headers=dict(request.headers)),timeout=30) as response:
                             jobs=json.load(response)['jobs']

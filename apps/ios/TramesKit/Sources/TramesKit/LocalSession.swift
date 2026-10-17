@@ -17,11 +17,16 @@ public struct LocalDisplayStatus: Decodable, Sendable {
     public let height: UInt32
     public let presented: UInt64
 }
+public struct LocalTerminalStatus: Decodable, Sendable {
+    public let phase: String
+    public let error: String?
+    public let exit_code: UInt8?
+}
 /// Methods are serialized by the frontend; the ABI itself is thread-safe.
 public final class LocalSession: @unchecked Sendable {
     private let lock = NSLock()
     private var handle: UInt64
-    public init(store: URL, rootfs: URL?, total: UInt64, available: UInt64, network: String = "full", useVolumeBudget: Bool = false, muslLibc: URL? = nil, pureAccelerator: Bool = false, vulkanICD: URL? = nil, memoryBudgetMiB: Int = 1024, processMemoryBudgetMiB: Int = 512) throws {
+    public init(store: URL, rootfs: URL?, total: UInt64, available: UInt64, network: String = "full", useVolumeBudget: Bool = false, muslLibc: URL? = nil, pureAccelerator: Bool = false, vulkanICD: URL? = nil, memoryBudgetMiB: Int = 1024, processMemoryBudgetMiB: Int = 512, multipleTerminals: Bool = false) throws {
         guard memoryBudgetMiB > 0, processMemoryBudgetMiB > 0,
               processMemoryBudgetMiB <= memoryBudgetMiB,
               memoryBudgetMiB <= (1 << 28) else { throw TramesError.message("Invalid guest memory budget") }
@@ -33,6 +38,7 @@ public final class LocalSession: @unchecked Sendable {
         options["process_memory_budget_bytes"] = UInt64(processMemoryBudgetMiB) << 20
         options["pure_accelerator"] = pureAccelerator
         options["wayland"] = true
+        options["multiple_terminals"] = multipleTerminals
         if let vulkanICD { options["vulkan_accelerator"] = true; options["vulkan_icd"] = vulkanICD.path }
         options["budget_bytes"] = useVolumeBudget ? total : UInt64(16) << 30
         options["timezone"] = try LocalTimezone().options
@@ -70,16 +76,16 @@ public final class LocalSession: @unchecked Sendable {
         lock.lock(); defer { lock.unlock() }
         guard handle != 0 else { throw TramesError.message("Local session closed") }; return handle
     }
-    public func send(_ data: Data) throws -> Int {
+    public func send(_ data: Data, terminal: UInt64 = 1) throws -> Int {
         guard data.count <= 65536 else { throw TramesError.message("Input chunk exceeds 64 KiB") }
         let h = try currentHandle()
-        let count = data.withUnsafeBytes { trames_session_input(h, $0.bindMemory(to: UInt8.self).baseAddress, UInt32($0.count)) }
+        let count = data.withUnsafeBytes { trames_session_terminal_input(h, terminal, $0.bindMemory(to: UInt8.self).baseAddress, UInt32($0.count)) }
         guard count >= 0 else { throw Self.lastError() }; return Int(count)
     }
-    public func receive() throws -> Data {
+    public func receive(terminal: UInt64 = 1) throws -> Data {
         let h = try currentHandle()
         var data = Data(count: 65536)
-        let count = data.withUnsafeMutableBytes { trames_session_output(h, $0.bindMemory(to: UInt8.self).baseAddress, UInt32($0.count)) }
+        let count = data.withUnsafeMutableBytes { trames_session_terminal_output(h, terminal, $0.bindMemory(to: UInt8.self).baseAddress, UInt32($0.count)) }
         guard count >= 0 else { throw Self.lastError() }; data.count = Int(count); return data
     }
     public func status() throws -> LocalStatus {
@@ -89,9 +95,23 @@ public final class LocalSession: @unchecked Sendable {
         guard count >= 0 else { throw Self.lastError() }; data.count = Int(count)
         return try JSONDecoder().decode(LocalStatus.self, from: data)
     }
-    public func resize(columns: Int, rows: Int) throws {
+    public func resize(columns: Int, rows: Int, terminal: UInt64 = 1) throws {
         guard (1...4096).contains(columns), (1...4096).contains(rows) else { return }
-        if trames_session_resize(try currentHandle(), UInt16(rows), UInt16(columns)) < 0 { throw Self.lastError() }
+        if trames_session_terminal_resize(try currentHandle(), terminal, UInt16(rows), UInt16(columns)) < 0 { throw Self.lastError() }
+    }
+    public func openTerminal() throws -> UInt64 {
+        let id=trames_session_terminal_open(try currentHandle())
+        guard id != 0 else { throw Self.lastError() }; return id
+    }
+    public func closeTerminal(_ terminal: UInt64) throws {
+        if trames_session_terminal_close(try currentHandle(), terminal) < 0 { throw Self.lastError() }
+    }
+    public func terminalStatus(_ terminal: UInt64) throws -> LocalTerminalStatus {
+        var data=Data(count:8192)
+        let handle=try currentHandle()
+        let count=data.withUnsafeMutableBytes { trames_session_terminal_status(handle, terminal, $0.bindMemory(to:UInt8.self).baseAddress, UInt32($0.count)) }
+        guard count >= 0 else {throw Self.lastError()};data.count=Int(count)
+        return try JSONDecoder().decode(LocalTerminalStatus.self,from:data)
     }
     public func pause(_ value: Bool) throws {
         if trames_session_pause(try currentHandle(), value ? 1 : 0) < 0 { throw Self.lastError() }

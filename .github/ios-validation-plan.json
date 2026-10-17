@@ -1,25 +1,36 @@
 {
-  "base_sha": "48b07c1d7e0cbe08de9b2b416bc8b500160084b8",
+  "base_sha": "156aaf4a951bd7dd96111550edc6d7efc931287d",
   "reuse_guest_run": 39015795319,
   "native_reuse": {
-    "sha": "48b07c1d7e0cbe08de9b2b416bc8b500160084b8",
-    "apple_run": 39055907059,
-    "linux_run": 39055907060
+    "sha": "156aaf4a951bd7dd96111550edc6d7efc931287d",
+    "apple_run": 39057562012,
+    "linux_run": 39057562014
   },
-  "native_scope": "wayland-clipboard",
-  "critical_test": "TramesTests/WaylandInputTests/testHeldShortcutDoesNotSendDuplicateDownsAfterSystemPasteAlert",
+  "native_scope": "host-terminals",
+  "critical_test": "TramesTests/WorkspaceInteractionTests/testMultipleAlpineTerminalsShareGuestAndSurviveClosingFirstWindow",
   "ui_targets": [],
   "changed_file_sha256": {
-    ".github/workflows/ios.yml": "8f56a79f37393888a7e6c4d474e5eef950a38f2b9d6af81ab0e729170fcd26ee",
-    ".github/workflows/linux.yml": "b0487ca8cc275adf58db5b8ebd0289da75e3a5b665b686b0e1e2262dabc79d93",
-    "apps/ios/Trames/WaylandInputView.swift": "c4d7967788dbc6cec96367e416947513939a655a9a5b02643e5306e9ae995cc4",
-    "apps/ios/TramesTests/WaylandInputTests.swift": "6c2f7ba67884212210d4152a7785712f980eaacb9707c31ddea7b74ba44b4c2e",
-    "apps/ios/project.yml": "9605c4583f3dda79d532d4d1c16ecd354ea0d3276e683213e2e218476d568be8",
-    "crates/trames-wayland/src/input.rs": "a32b51409c85d7ab9d7c15bd9b4c3c8bf017981fafd05efc4c234bfb66e9fabb",
-    "crates/trames-wayland/src/selection.rs": "d7f6e2b960521c3e0f34e826200a9897bd86718e7a5398848f56db6a3fc3e289",
-    "crates/trames-wayland/tests/gtk_client.rs": "c9e7bd98384b220bc496f6e042e5f90f3b81d1bfe75eea95d37f4c6dacc0fd75",
-    "scripts/ios-ci-scope.py": "08801e080635a921df6d9201c25f9d8ad56cf157a86566e6c5f0423f0c184f51",
-    "tests/fixtures/gtk-paste.py": "a04408d29b0edbdbecd9bbdd594db31ee659cfe8d5318484b3e238f8adeb898b"
+    ".github/workflows/ios.yml": "a3f78338ff9add3dcb8e082b9eb6037b7a12368e4c37a13bafa16ec564ea91e2",
+    ".github/workflows/linux.yml": "ede41a897e85474a5bd2d9460fca9fba810d87274101e09d2750b956783ffb48",
+    "Cargo.lock": "a759cd8327b553b803b7f1540fd87b7a55bf8d34cbab56aad04bc451e9400ef5",
+    "Cargo.toml": "935d609762905ada3fe18a44beeb060504756724a44c7f23f57283f23073a263",
+    "apps/ios/Trames/EnvironmentStore.swift": "835f86017d500d7fedeb0e3b4dc0923a434977387afec62ae55f4b13f3ac9e56",
+    "apps/ios/Trames/TerminalSession.swift": "4d286f1ade8a30a3c8f0eca73deacf9d58ebcf2fae9376d6738622cfe50523f8",
+    "apps/ios/Trames/TramesApp.swift": "71f546caf76ebb6d64b714641a3e16e949a1068c54b0ac7bf6c58b8331a3e9e1",
+    "apps/ios/Trames/WorkspaceModel.swift": "3c79d21c3718a50fc80e28ea84ab3d0e7d435474f5e0510cca19e9f7b20a330d",
+    "apps/ios/TramesKit/Sources/TramesKit/LocalSession.swift": "8c3d3c70a5327c7d114a191faefa62ef7591bbbd1a52185e676cde4f673c6858",
+    "apps/ios/TramesTests/WorkspaceInteractionTests.swift": "a5e941ff962552a4dd8603082ebd99b171199d946355751deeea52766cabd3cb",
+    "apps/ios/project.yml": "044b2f12e22d06cebe63437f052003bcfebcb337bac93dd07812d0e17956f378",
+    "crates/trames-core/src/process.rs": "6d52d4aaa2bc2dd015faaad1e3267ff7349947a11c9f712ad5fc864f3c9c8b49",
+    "crates/trames-ffi/include/trames.h": "48e42896d3074be965c815ae6e0cce36de21c94fe085173b86cab53b6680f103",
+    "crates/trames-ffi/src/lib.rs": "c66af1a56dcdf3285c16118b1f51b876c7ae5976e5e46eb07c6aa5ce305c69b7",
+    "crates/trames-ffi/src/session.rs": "367b74d36833d98ee2b60db0c88a7998fe89b4c0f84144e533a6945d6e9cb50c",
+    "crates/trames-ffi/src/terminals.rs": "0f5a79828a0ac084cd0fe3107b1bc96e4533023635a7a650029bad00c2fe0e12",
+    "crates/trames-vfs/src/pty.rs": "18f0a442cf369fec200085a720101bae90fa89eb505711b2c8bc16ab3c667de7",
+    "docs/architecture/multiple-terminals.md": "6fb834bbf6cfaaa6a4aac9dc23e4d13ea0ff8b6de54fd92b262d74f30f4eb8a6",
+    "docs/validation/release-1.0-notes.md": "9b187cf7e8c5bf6f845e6202e1609c4370fa3db35e272807897c85ef14da7f7c",
+    "scripts/ios-ci-scope.py": "b16e9e76335d708cccce6eeb7b88f8c0eb022fae54b34ab01d7bdb40421f6ba1",
+    "tests/integration/multiple-terminals.py": "c5f3ed666a641b8bb5ede583a41ecc65791a7af5db2ce1f1bce7fcd53b81f58a"
   },
-  "reason": "Reproduce original GTK client-side Ctrl+V repeat during a delayed host paste permission response. Release held keys before the asynchronous host clipboard read without changing focus or the offer, and suppress duplicate UIKit downs. Run only the new clipboard key-state unit, delayed original GTK paste regression, affected compositor clippy, and the new UIKit held-shortcut test; reuse unchanged guest, popup, window and other acceptance results. Build a fresh 0.18.0 build 25 unsigned device IPA; keep PR/issue open for iPad testing."
+  "reason": "Implement independent host PTYs and original BusyBox shells in one shared Linux instance. Validate affected VFS/core/FFI libraries and new signal scoping, original Alpine multiple-terminal production integration and the actual iPad workspace/Bridge/PTY test. Reuse unchanged CPU instruction, network, Vulkan, GTK, foot and guest C inputs; prepare 1.0.0 build 26 as explicitly requested. Source-hash-bound validation remains effective on main so a later merge can reuse exact already tested binaries."
 }

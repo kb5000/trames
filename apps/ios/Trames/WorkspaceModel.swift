@@ -4,15 +4,17 @@ import TramesKit
 @MainActor
 final class WorkspaceModel: ObservableObject {
     @Published var sessions: [TerminalSession] = []
+    @Published private(set) var localOwner: TerminalSession?
+    private var terminalSequence = 0
     @Published private(set) var layout = WorkspaceTabs()
     private var observedModes: [WorkspaceItemID:String] = [:]
     private var pendingModes: [WorkspaceItemID:String] = [:]
     private var dialogSizes: [WorkspaceItemID:CGSize] = [:]
     /// Stable identity/order across tab, floating and background placement.
     var items: [WorkspaceItemID] {
-        sessions.flatMap { session in
-            [.terminal(session.id)] + session.waylandWindows.map { .wayland(session.id,$0.id) }
-        }.filter { layout.placement($0) != nil }
+        let terminals=sessions.map { WorkspaceItemID.terminal($0.id) }
+        let graphics=environmentOwners.flatMap { session in session.waylandWindows.map { WorkspaceItemID.wayland(session.id,$0.id) } }
+        return (terminals+graphics).filter { layout.placement($0) != nil }
     }
     func isVisible(_ id: WorkspaceItemID) -> Bool {
         layout.placement(id) == .floating || layout.selected == id
@@ -43,13 +45,21 @@ final class WorkspaceModel: ObservableObject {
         } catch { self.error = error.localizedDescription }
     }
     var current: TerminalSession? { layout.selected.flatMap { session(for: $0) } ?? local }
-    var local: TerminalSession? { sessions.first { $0.isLocal } }
-    func session(for id: WorkspaceItemID) -> TerminalSession? { sessions.first { $0.id == id.session } }
+    var local: TerminalSession? { localOwner }
+    private var environmentOwners: [TerminalSession] {
+        var owners=sessions.filter { $0.environmentOwner == nil }
+        if let localOwner,!owners.contains(where:{$0.id == localOwner.id}) {owners.append(localOwner)}
+        return owners
+    }
+    func session(for id: WorkspaceItemID) -> TerminalSession? {
+        sessions.first { $0.id == id.session } ?? (localOwner?.id == id.session ? localOwner : nil)
+    }
     func window(for id: WorkspaceItemID) -> LocalWaylandWindow? {
         guard case .wayland(_, let window) = id else { return nil }
         return session(for:id)?.waylandWindows.first { $0.id == window }
     }
     func add(_ session: TerminalSession) {
+        if session.isLocal,session.environmentOwner == nil,localOwner == nil {localOwner=session;terminalSequence=max(1,terminalSequence)}
         session.terminal.keyboardVisibility = { [weak self, weak session] in
             guard let self, let session else { return false }
             return self.isVisible(.terminal(session.id))
@@ -72,7 +82,7 @@ final class WorkspaceModel: ObservableObject {
         }
         layout=next
         if old != next.focused {
-            for session in sessions where session.isLocal {
+            for session in environmentOwners where session.isLocal {
                 if let focused=next.focused, case .wayland(let owner, let window) = focused, owner == session.id {
                     if protocolFocus { session.waylandCommand(["op":"focus","window":window]) }
                 } else { session.waylandCommand(["op":"focus","window":NSNull()]) }
@@ -160,7 +170,14 @@ final class WorkspaceModel: ObservableObject {
     }
     func openLocal() {
         guard !resetting else { return }
-        if let local { activate(.terminal(local.id)); return }
+        if let owner=localOwner {
+            terminalSequence+=1
+            let session=TerminalSession(title:"Alpine \(terminalSequence)",isLocal:true)
+            session.attachTerminal(to:owner)
+            session.pause(!appActive)
+            add(session)
+            return
+        }
         guard let environment else { return }
         let session = TerminalSession(title: "Alpine", isLocal:true)
         session.pause(!appActive)
@@ -171,27 +188,29 @@ final class WorkspaceModel: ObservableObject {
     func resetLocal() {
         guard let environment, !resetting else {return}
         resetting=true
-        if let local {close(local)}
+        for session in sessions {session.close()}
+        localOwner?.close()
+        let ids=Set(sessions.map(\.id)+[localOwner?.id].compactMap{$0})
+        sessions=[];change { next in for id in ids {next.closeSession(id)} }
+        localOwner=nil;terminalSequence=0
+        observedModes=[:];pendingModes=[:];dialogSizes=[:]
         Task {
             do { try await environment.reset(); resetting=false; openLocal() }
             catch {resetting=false; self.error=error.localizedDescription}
         }
     }
     func close(_ session: TerminalSession) {
-        session.close(); sessions.removeAll { $0.id == session.id }
-        change { $0.closeSession(session.id) }
-        observedModes = observedModes.filter { $0.key.session != session.id }
-        pendingModes = pendingModes.filter { $0.key.session != session.id }
-        dialogSizes = dialogSizes.filter { $0.key.session != session.id }
+        session.closeTerminalWindow(); sessions.removeAll { $0.id == session.id }
+        change { $0.close(.terminal(session.id)) }
     }
     func background() {
         appActive = false
-        for session in sessions {
+        for session in environmentOwners {
             session.pause(true)
         }
     }
     func foreground() {
         appActive = true
-        for session in sessions { session.pause(false) }
+        for session in environmentOwners { session.pause(false) }
     }
 }

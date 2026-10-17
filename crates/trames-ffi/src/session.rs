@@ -2,7 +2,7 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::{BTreeMap, VecDeque},
+    collections::BTreeMap,
     fs::{self, File, OpenOptions},
     io::{self, Read, Write},
     path::PathBuf,
@@ -45,6 +45,8 @@ pub struct Options {
     pub vulkan_accelerator: bool,
     #[serde(default)]
     pub wayland: bool,
+    #[serde(default)]
+    pub multiple_terminals: bool,
     pub vulkan_icd: Option<PathBuf>,
     pub timezone: Option<HostTimezone>,
 }
@@ -120,9 +122,7 @@ pub struct Status {
     pub nodes_used: usize,
 }
 pub struct Buffers {
-    pub input: VecDeque<u8>,
-    pub output: VecDeque<u8>,
-    pub size: Option<(u16, u16)>,
+    pub(crate) terminals: BTreeMap<u64, crate::terminals::Channel>,
     pub status: Status,
 }
 pub struct Session {
@@ -132,6 +132,8 @@ pub struct Session {
     pub buffers: Mutex<Buffers>,
     pub cancelled: AtomicBool,
     pub paused: AtomicBool,
+    pub multiple_terminals: bool,
+    pub next_terminal: AtomicU64,
     commands: mpsc::SyncSender<Command>,
     transfers: Mutex<BTreeMap<u64, TransferTicket>>,
     next_transfer: AtomicU64,
@@ -201,9 +203,13 @@ impl Session {
             wayland: Mutex::new(None),
             bridge: trames_bridge::Broker::default(),
             buffers: Mutex::new(Buffers {
-                input: VecDeque::new(),
-                output: VecDeque::new(),
-                size: None,
+                terminals: BTreeMap::from([(
+                    1,
+                    crate::terminals::Channel {
+                        size: Some((options.rows, options.columns)),
+                        ..Default::default()
+                    },
+                )]),
                 status: Status {
                     phase: "starting",
                     error: None,
@@ -218,6 +224,8 @@ impl Session {
             }),
             cancelled: AtomicBool::new(false),
             paused: AtomicBool::new(false),
+            multiple_terminals: options.multiple_terminals,
+            next_terminal: AtomicU64::new(2),
             commands,
             transfers: Mutex::new(BTreeMap::new()),
             next_transfer: AtomicU64::new(1),
@@ -487,9 +495,18 @@ fn run(
         ]);
     }
     let bytes = vfs.executable(b"/bin/ash").map_err(|e| e.to_string())?;
+    let argv = if options.multiple_terminals {
+        vec![
+            "/bin/ash".into(),
+            "-c".into(),
+            crate::terminals::INIT.into(),
+        ]
+    } else {
+        vec!["/bin/ash".into(), "-i".into()]
+    };
     let mut runtime = Runtime::load_with_options(
         &bytes,
-        &["/bin/ash".into(), "-i".into()],
+        &argv,
         &environment,
         vfs,
         trames_core::RuntimeOptions {
@@ -511,6 +528,7 @@ fn run(
         session: session.clone(),
         commands,
         snapshot_at: Instant::now(),
+        terminals: None,
     };
     io.snapshot(&runtime.linux.vfs);
     session
@@ -532,6 +550,7 @@ struct Adapter {
     session: Arc<Session>,
     commands: mpsc::Receiver<Command>,
     snapshot_at: Instant,
+    terminals: Option<crate::terminals::NativeTerminals>,
 }
 impl Adapter {
     fn snapshot(&self, vfs: &Vfs) {
@@ -663,6 +682,21 @@ impl GuestOutput for Adapter {
         if self.session.cancelled.load(Ordering::Acquire) {
             return Ok(false);
         }
+        if self.session.multiple_terminals {
+            if self.terminals.is_none() {
+                self.terminals =
+                    Some(crate::terminals::NativeTerminals::new(vfs).map_err(io::Error::other)?);
+            }
+            let mut buffers = self
+                .session
+                .buffers
+                .lock()
+                .map_err(|_| io::Error::other("session lock failed"))?;
+            self.terminals
+                .as_mut()
+                .expect("initialized")
+                .pump(&mut buffers);
+        }
         if let Ok(command) = self.commands.try_recv() {
             let (result, response) = match command {
                 Command::Transfer(command) => (
@@ -696,6 +730,9 @@ impl GuestOutput for Adapter {
             .buffers
             .lock()
             .map_err(|_| io::Error::other("session lock failed"))?;
+        let Some(b) = b.terminals.get_mut(&1) else {
+            return Ok(bytes.len());
+        };
         let count = bytes.len().min(QUEUE_LIMIT - b.output.len());
         if count == 0 && !bytes.is_empty() {
             return Err(io::ErrorKind::WouldBlock.into());
@@ -704,11 +741,18 @@ impl GuestOutput for Adapter {
         Ok(count)
     }
     fn poll_stdin(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
+        if self.session.multiple_terminals {
+            return Err(io::ErrorKind::WouldBlock.into());
+        }
         let mut b = self
             .session
             .buffers
             .lock()
             .map_err(|_| io::Error::other("session lock failed"))?;
+        let b = b
+            .terminals
+            .get_mut(&1)
+            .ok_or_else(|| io::Error::other("primary terminal closed"))?;
         if b.input.is_empty() {
             return Err(io::ErrorKind::WouldBlock.into());
         }
@@ -719,19 +763,28 @@ impl GuestOutput for Adapter {
         Ok(count)
     }
     fn stdin_ready(&mut self) -> io::Result<bool> {
-        Ok(!self
+        if self.session.multiple_terminals {
+            return Ok(false);
+        }
+        Ok(self
             .session
             .buffers
             .lock()
             .map_err(|_| io::Error::other("session lock failed"))?
-            .input
-            .is_empty())
+            .terminals
+            .get(&1)
+            .is_some_and(|b| !b.input.is_empty()))
     }
     fn terminal_event(&mut self) -> Option<TerminalEvent> {
+        if self.session.multiple_terminals {
+            return None;
+        }
         self.session
             .buffers
             .lock()
             .ok()?
+            .terminals
+            .get_mut(&1)?
             .size
             .take()
             .map(|(rows, columns)| TerminalEvent::Resize { rows, columns })

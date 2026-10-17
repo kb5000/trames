@@ -34,6 +34,18 @@ int32_t trames_session_output(uint64_t handle, uint8_t *bytes, uint32_t capacity
 int32_t trames_session_status(uint64_t handle, uint8_t *json, uint32_t capacity);
 int32_t trames_session_resize(uint64_t handle, uint16_t rows, uint16_t columns);
 int32_t trames_session_pause(uint64_t handle, uint32_t paused);
+/* Opt-in {"multiple_terminals":true}: one Linux/init/VFS/network, independent
+ * guest PTYs/shells. Legacy input/output/resize address terminal 1. Closing a
+ * terminal sends its PTY hangup, never cancels the environment. At most 32 live
+ * terminals, 64 KiB input/output per terminal. Open is asynchronous, IDs never
+ * reused; status JSON has phase/error/exit_code (PTY exit code can be null).
+ * Closing before startup is allowed. Close session to stop the entire guest. */
+uint64_t trames_session_terminal_open(uint64_t session);
+int32_t trames_session_terminal_input(uint64_t session, uint64_t terminal, const uint8_t *bytes, uint32_t length);
+int32_t trames_session_terminal_output(uint64_t session, uint64_t terminal, uint8_t *bytes, uint32_t capacity);
+int32_t trames_session_terminal_resize(uint64_t session, uint64_t terminal, uint16_t rows, uint16_t columns);
+int32_t trames_session_terminal_status(uint64_t session, uint64_t terminal, uint8_t *json, uint32_t capacity);
+int32_t trames_session_terminal_close(uint64_t session, uint64_t terminal);
 /* Host-supplied original timezone rules: {"identifier":"Area/City","data":[TZif bytes]}.
  * Updates /etc/localtime, /etc/timezone and the named zoneinfo file. Does not
  * override guest TZ. Call after resuming; existing libc caches follow normal

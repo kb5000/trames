@@ -49,7 +49,7 @@ actor EnvironmentStore {
         }
         let icd = vulkan ? Bundle.main.url(forResource: "libtrames_vulkan_icd", withExtension: "so", subdirectory: "GuestVulkan") : nil
         if vulkan, icd == nil { throw TramesError.message("Missing bundled Vulkan compute driver") }
-        return try LocalSession(store: active, rootfs: nil, total: UInt64(total), available: UInt64(available), useVolumeBudget: useVolumeBudget, muslLibc: musl, pureAccelerator: true, vulkanICD: icd, memoryBudgetMiB: memoryBudgetMiB, processMemoryBudgetMiB: processMemoryBudgetMiB)
+        return try LocalSession(store: active, rootfs: nil, total: UInt64(total), available: UInt64(available), useVolumeBudget: useVolumeBudget, muslLibc: musl, pureAccelerator: true, vulkanICD: icd, memoryBudgetMiB: memoryBudgetMiB, processMemoryBudgetMiB: processMemoryBudgetMiB, multipleTerminals: true)
     }
     func reset() async throws {
         guard !resetting else {throw TramesError.message("Linux 环境正在重置")}

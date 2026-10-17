@@ -2971,6 +2971,25 @@ impl Kernel {
             .unwrap_or_default();
         for pair in pairs {
             pair.flush_echo();
+            if pair.host_resize_pending.replace(false) {
+                pair.host_signals.set(pair.host_signals.get() | (1 << 27));
+            }
+            let signals = pair.host_signals.replace(0);
+            if signals != 0 {
+                let tty = pair.terminal.borrow();
+                for (&pid, process) in &mut self.processes {
+                    if tty.session != 0
+                        && process.session == tty.session
+                        && process.group == tty.foreground
+                    {
+                        for sig in 1..=64 {
+                            if signals & (1 << (sig - 1)) != 0 {
+                                Self::queue_one(pid, process, sig, 0);
+                            }
+                        }
+                    }
+                }
+            }
             if pair.master_alive.get() || pair.hangup_notified.replace(true) {
                 continue;
             }
@@ -3930,6 +3949,41 @@ mod tests {
         assert!(k.processes[&3].pending.contains_key(&2));
         assert!(!k.processes[&4].pending.contains_key(&2));
         assert!(!sender.pending.contains_key(&2));
+    }
+    #[test]
+    fn host_pty_keyboard_and_resize_signals_are_scoped_to_the_foreground_session() {
+        let mut k = kernel();
+        let mut root = process();
+        k.refresh_proc(1, &mut root);
+        let fd = root.linux.vfs.open_at(-100, b"/dev/ptmx", 2, 0).unwrap();
+        let pair = root.linux.vfs.pty(fd).unwrap().unwrap().pair.clone();
+        {
+            let mut tty = pair.terminal.borrow_mut();
+            tty.session = 9;
+            tty.foreground = 3;
+        }
+        pair.resize_from_host(40, 120);
+        pair.host_signals.set(1 << 1);
+        let mut foreground = process();
+        foreground.session = 9;
+        foreground.group = 3;
+        let mut other = foreground.fork();
+        other.session = 10;
+        let mut background = foreground.fork();
+        background.group = 4;
+        k.processes.insert(1, root);
+        k.processes.insert(3, foreground);
+        k.processes.insert(4, other);
+        k.processes.insert(5, background);
+        k.pump_guest_ptys();
+        assert!(k.processes[&3].pending.contains_key(&2));
+        assert!(k.processes[&3].pending.contains_key(&28));
+        for id in [1, 4, 5] {
+            assert!(!k.processes[&id].pending.contains_key(&2));
+            assert!(!k.processes[&id].pending.contains_key(&28));
+        }
+        assert_eq!(pair.host_signals.get(), 0);
+        assert!(!pair.host_resize_pending.get());
     }
     pub(super) fn kernel() -> Kernel {
         Kernel {

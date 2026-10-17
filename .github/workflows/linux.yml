@@ -28,7 +28,7 @@ jobs:
       - id: scope
         env:
           GH_TOKEN: ${{ github.token }}
-          TRAMES_FULL_CHECK: ${{ github.event_name != 'pull_request' }}
+          TRAMES_FULL_CHECK: 'false'
           TRAMES_VALIDATION_WORKFLOW: linux.yml
           TRAMES_NEEDS_GUEST_ARTIFACTS: 'false'
         run: python3 scripts/ios-ci-scope.py
@@ -53,12 +53,15 @@ jobs:
           elif [[ '${{ needs.scope.outputs.native_scope }}' == wayland-clipboard ]]; then
             cargo clippy -p trames-wayland --all-targets --locked -- -D warnings
             cargo test -p trames-wayland --lib clipboard_permission --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == host-terminals ]]; then
+            cargo clippy -p trames-vfs -p trames-core -p trames-ffi --all-targets --locked -- -D warnings
+            cargo test -p trames-vfs -p trames-core -p trames-ffi --lib --locked
           else
             cargo clippy -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --all-targets --locked -- -D warnings
             cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --lib --locked
           fi
       - name: Exercise original GTK3 and mousepad, including clipboard FD transfers
-        if: needs.scope.outputs.skip_modules != 'true'
+        if: needs.scope.outputs.skip_modules != 'true' && needs.scope.outputs.native_scope != 'host-terminals'
         run: |
           sudo apt-get update -qq
           sudo apt-get install --yes --no-install-recommends libgtk-3-0 mousepad fonts-dejavu-core
@@ -70,7 +73,7 @@ jobs:
             cargo test -p trames-wayland --test gtk_client --locked -- --ignored --nocapture
           fi
       - name: Exercise original signed ARM64 foot over the guest Wayland ABI
-        if: needs.scope.outputs.native_scope != 'wayland-input' && needs.scope.outputs.native_scope != 'wayland-clipboard'
+        if: needs.scope.outputs.native_scope != 'wayland-input' && needs.scope.outputs.native_scope != 'wayland-clipboard' && needs.scope.outputs.native_scope != 'host-terminals'
         timeout-minutes: 10
         env:
           TRAMES_FOOT_STORE: ${{ github.workspace }}/target/foot-acceptance/store
@@ -89,6 +92,15 @@ jobs:
           PY
           cargo build -p trames-ffi --release --locked
           python3 tests/integration/foot-wayland.py --prepare
+      - name: Exercise multiple independent terminals in one original Alpine guest
+        if: needs.scope.outputs.native_scope == 'host-terminals'
+        env:
+          TRAMES_ALPINE_ARCHIVE: ${{ github.workspace }}/target/multi-terminal-rootfs.tar.gz
+        run: |
+          mkdir -p target
+          curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o "$TRAMES_ALPINE_ARCHIVE"
+          cargo build -p trames-ffi --release --locked
+          python3 tests/integration/multiple-terminals.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
