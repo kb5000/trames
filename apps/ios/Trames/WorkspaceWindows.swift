@@ -31,42 +31,38 @@ struct WorkspaceWindow: View {
     @ObservedObject var workspace: WorkspaceModel
     let item: WorkspaceItemID
     let viewport: CGSize
-    let headerFrame: CGRect
     @State private var geometry=DisplayWindowGeometry()
     @State private var dragOrigin: CGPoint?
     @State private var resizeOrigin: CGSize?
-    @State private var docking=false
     private var floating: Bool { workspace.layout.placement(item) == .floating }
     private var visible: Bool { workspace.isVisible(item) }
     var body: some View {
         VStack(spacing:0) {
             if floating {
-            HStack(spacing:12) {
+            HStack(spacing:0) {
                 if let session=workspace.session(for:item) {
                     WorkspaceTabLabel(session:session,item:item).lineLimit(1)
                         .accessibilityElement(children:.combine)
                         .accessibilityIdentifier("window-title-\(item.token)")
                 }
                 Spacer()
-                Button { workspace.minimize(item) } label: { Image(systemName:"minus") }.accessibilityLabel("最小化到标签栏")
+                windowButton("minus",label:"最小化到标签栏") { workspace.minimize(item) }
                     .accessibilityIdentifier("minimize-\(item.token)")
-                Button { workspace.dock(item) } label: { Image(systemName:"arrow.up.left.and.arrow.down.right") }.accessibilityLabel("停靠为标签页")
+                windowButton("arrow.up.left.and.arrow.down.right",label:"停靠为标签页") { workspace.dock(item) }
                     .accessibilityIdentifier("dock-\(item.token)")
-                Button { workspace.closeItem(item) } label: { Image(systemName:"xmark") }.accessibilityLabel("关闭窗口")
-            }.font(.callout).padding(.horizontal,12).frame(height:40)
-                .background(docking ? Color.mint.opacity(0.35) : Color(white:0.16))
+                windowButton("xmark",label:"关闭窗口") { workspace.closeItem(item) }
+                    .accessibilityIdentifier("close-window-\(item.token)")
+            }.font(.callout).padding(.leading,12).frame(height:44)
+                .background(Color(white:0.16))
                 .contentShape(Rectangle())
                 .onTapGesture { workspace.focus(item) }
                 .gesture(DragGesture(coordinateSpace:.named("workspace")).onChanged { value in
                     if dragOrigin == nil { dragOrigin=geometry.origin;workspace.focus(item) }
                     geometry.origin=CGPoint(x:dragOrigin!.x+value.translation.width,y:dragOrigin!.y+value.translation.height)
                     geometry.constrain(to:viewport)
-                    docking=headerFrame.contains(value.location)
-                }.onEnded { value in
+                }.onEnded { _ in
                     dragOrigin=nil
                     workspace.saveFrame(item,geometry)
-                    if headerFrame.contains(value.location) { workspace.dock(item) }
-                    docking=false
                 })
                 // Native controls are outside the clipped client viewport.
                 .zIndex(2)
@@ -74,20 +70,24 @@ struct WorkspaceWindow: View {
             WorkspaceContent(workspace:workspace,item:item)
                 .frame(maxWidth:.infinity,maxHeight:.infinity)
                 .clipped()
-            if floating {
-            HStack {
-                Spacer()
-                Image(systemName:"arrow.down.right.and.arrow.up.left").frame(width:44,height:28).contentShape(Rectangle())
+        }.frame(width:floating ? geometry.size.width : viewport.width,
+                height:floating ? geometry.size.height : viewport.height)
+            .overlay(alignment:.bottomTrailing) {
+                if floating {
+                Image(systemName:"arrow.down.right.and.arrow.up.left")
+                    .font(.system(size:12)).foregroundStyle(.white)
+                    .shadow(color:.black,radius:2)
+                    .frame(width:44,height:44,alignment:.bottomTrailing)
+                    .padding(.trailing,4).padding(.bottom,4).contentShape(Rectangle())
                     .accessibilityIdentifier("window-resize-\(item.token)")
+                    .accessibilityLabel("调整窗口大小")
                     .gesture(DragGesture(coordinateSpace:.named("workspace")).onChanged { value in
-                        if resizeOrigin == nil { resizeOrigin=geometry.size }
+                        if resizeOrigin == nil { resizeOrigin=geometry.size;workspace.focus(item) }
                         geometry.size=CGSize(width:resizeOrigin!.width+value.translation.width,height:resizeOrigin!.height+value.translation.height)
                         geometry.constrain(to:viewport)
                     }.onEnded { _ in resizeOrigin=nil;workspace.saveFrame(item,geometry) })
-            }.background(Color(white:0.12))
+                }
             }
-        }.frame(width:floating ? geometry.size.width : viewport.width,
-                height:floating ? geometry.size.height : viewport.height)
             .background(Color.black)
             .clipShape(RoundedRectangle(cornerRadius:floating ? 10 : 0))
             .overlay(RoundedRectangle(cornerRadius:floating ? 10 : 0).stroke(floating ? (workspace.layout.focused == item ? Color.mint : Color.white.opacity(0.3)) : .clear))
@@ -101,6 +101,11 @@ struct WorkspaceWindow: View {
             }
             // Container identifiers propagate to descendants in SwiftUI and
             // replace title/button identifiers. Identify concrete controls only.
+    }
+    private func windowButton(_ symbol:String,label:String,action:@escaping ()->Void) -> some View {
+        Button(action:action) {
+            Image(systemName:symbol).frame(width:44,height:44).contentShape(Rectangle())
+        }.buttonStyle(.plain).accessibilityLabel(label)
     }
 }
 struct WorkspaceFramesKey: PreferenceKey {

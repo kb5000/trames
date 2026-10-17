@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Foundation
+import TramesKit
 public struct SSHHost: Equatable, Sendable {
     public var alias: String
     public var hostname: String
@@ -79,8 +80,4 @@ public struct SSHConfig: Sendable {
         guard quote == nil && !escaped else { throw TramesError.message("Unterminated SSH config quote or escape") }
         if !token.isEmpty { tokens.append(token) }; return tokens
     }
-}
-public enum TramesError: Error, LocalizedError {
-    case message(String)
-    public var errorDescription: String? { switch self { case .message(let text): return text } }
 }

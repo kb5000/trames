@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import XCTest
-@testable import TramesKit
+@testable import TramesRemote
 private actor Capture {
     var text = ""
     func add(_ data: Data) { text += String(decoding: data, as: UTF8.self); if text.utf8.count > 65536 { text = String(text.suffix(32768)) } }

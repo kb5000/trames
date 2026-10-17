@@ -1,14 +1,36 @@
 name: Linux runtime
 on:
   push:
+    branches: [main]
+    paths-ignore: ['apps/ios/**', 'docs/**', '.github/workflows/ios.yml', 'scripts/ios-ci-scope.py', '.github/workflows/linux.yml']
   pull_request:
+    paths-ignore: ['apps/ios/**', 'docs/**', '.github/workflows/ios.yml', 'scripts/ios-ci-scope.py', '.github/workflows/linux.yml']
 permissions:
   contents: read
+  actions: read
 defaults:
   run:
     shell: bash
 jobs:
+  scope:
+    runs-on: ubuntu-24.04
+    outputs:
+      frontend_only: ${{ steps.scope.outputs.frontend_only }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - id: scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TRAMES_FULL_CHECK: ${{ github.event_name != 'pull_request' }}
+          TRAMES_VALIDATION_WORKFLOW: linux.yml
+          TRAMES_NEEDS_GUEST_ARTIFACTS: 'false'
+        run: python3 scripts/ios-ci-scope.py
   runtime:
+    needs: scope
+    if: needs.scope.outputs.frontend_only != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:

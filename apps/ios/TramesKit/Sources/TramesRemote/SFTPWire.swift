@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Foundation
+import TramesKit
 import NIO
 import NIOSSH
 /// SFTP v3 file-copy subset. Exactly one request is outstanding; all frames are

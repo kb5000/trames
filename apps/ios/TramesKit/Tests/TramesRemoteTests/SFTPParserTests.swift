@@ -3,7 +3,7 @@ import XCTest
 import NIO
 import NIOEmbedded
 import NIOSSH
-@testable import TramesKit
+@testable import TramesRemote
 final class SFTPParserTests: XCTestCase {
     func testFragmentedSFTPFrameAndHeader() async throws {
         let (stream,c) = AsyncThrowingStream<ByteBuffer,Error>.makeStream(bufferingPolicy: .bufferingOldest(4))

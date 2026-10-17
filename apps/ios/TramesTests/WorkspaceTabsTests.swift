@@ -60,6 +60,25 @@ final class WorkspaceTabsTests: XCTestCase {
         state.close(b);XCTAssertEqual(state.tabs,[a,c]);XCTAssertEqual(state.selected,c)
         state.closeSession(owner);XCTAssertEqual(state.tabs,[c]);XCTAssertEqual(state.focused,c)
     }
+    func testAutomaticFloatingWindowsCascadeWithinViewportAndKeepSavedFrames() throws {
+        var state=WorkspaceTabs();state.updateViewport(CGSize(width:820,height:620))
+        let owner=UUID()
+        var origins:[CGPoint]=[]
+        for number in 1...12 {
+            let id=WorkspaceItemID.wayland(owner,UInt64(number))
+            state.insert(id,as:.floating)
+            let frame=try XCTUnwrap(state.frames[id])
+            XCTAssertFalse(origins.contains(frame.origin))
+            XCTAssertGreaterThanOrEqual(frame.origin.x,0);XCTAssertGreaterThanOrEqual(frame.origin.y,0)
+            XCTAssertLessThanOrEqual(frame.origin.x+frame.size.width,820)
+            XCTAssertLessThanOrEqual(frame.origin.y+frame.size.height,620)
+            origins.append(frame.origin)
+        }
+        let id=WorkspaceItemID.wayland(owner,1),saved=state.frames[.wayland(owner,1)]
+        state.dock(id);state.detach(id)
+        XCTAssertEqual(state.frames[id],saved)
+        state.detach(id,at:CGPoint(x:10,y:20));XCTAssertEqual(state.frames[id]?.origin,CGPoint(x:10,y:20))
+    }
     func testForeignAndStaleItemsCannotBeActivated() {
         let id=WorkspaceItemID.terminal(UUID());var state=WorkspaceTabs()
         state.dock(id);state.detach(id);state.focus(id);state.select(id)

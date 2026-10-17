@@ -1,10 +1,12 @@
 name: iPad frontend
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: ipad-frontend-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
@@ -12,7 +14,25 @@ defaults:
   run:
     shell: bash
 jobs:
+  scope:
+    runs-on: ubuntu-24.04
+    outputs:
+      frontend_only: ${{ steps.scope.outputs.frontend_only }}
+      baseline_run: ${{ steps.scope.outputs.baseline_run }}
+      baseline_sha: ${{ steps.scope.outputs.baseline_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - id: scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TRAMES_FULL_CHECK: ${{ github.event_name != 'pull_request' }}
+        run: python3 scripts/ios-ci-scope.py
   memory-abi:
+    needs: scope
+    if: needs.scope.outputs.frontend_only != 'true'
     runs-on: macos-15
     timeout-minutes: 10
     steps:
@@ -26,6 +46,8 @@ jobs:
       - name: Validate hardware mappings and signal recovery before app builds
         run: cargo test -p trames-memory --locked
   guest-musl:
+    needs: scope
+    if: needs.scope.outputs.frontend_only != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -57,11 +79,14 @@ jobs:
           if-no-files-found: error
           retention-days: 14
   apple-build:
-    needs: [guest-musl, memory-abi]
+    needs: [scope, guest-musl, memory-abi]
+    if: ${{ !cancelled() && needs.scope.result == 'success' && (needs.scope.outputs.frontend_only == 'true' || (needs.guest-musl.result == 'success' && needs.memory-abi.result == 'success')) }}
     runs-on: macos-15
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+      - name: Parse frontend Swift sources
+        run: swiftc -frontend -parse apps/ios/Trames/*.swift apps/ios/TramesTests/*.swift apps/ios/TramesUITests/*.swift
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-10-16
@@ -69,20 +94,28 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: full-musl-library-and-source
+          run-id: ${{ needs.scope.outputs.baseline_run || github.run_id }}
+          github-token: ${{ github.token }}
           path: target/musl-hybrid
       - uses: actions/download-artifact@v4
         with:
           name: vulkan-compute-driver-and-native-source
+          run-id: ${{ needs.scope.outputs.baseline_run || github.run_id }}
+          github-token: ${{ github.token }}
           path: target/vulkan-guest
       - name: Build native Rust embedding library
+        if: needs.scope.outputs.frontend_only != 'true'
         run: cargo build -p trames-ffi --release --locked
       - name: Test native SSH PTY and SFTP against OpenSSH
+        if: needs.scope.outputs.frontend_only != 'true'
         env:
           TRAMES_RUST_LIB_DIR: ${{ github.workspace }}/target/release
         run: bash scripts/test-swift-ssh.sh
       - name: Validate shared mapping and guest ABI core on native Apple ARM64
+        if: needs.scope.outputs.frontend_only != 'true'
         run: cargo test -p trames-shared -p trames-wayland -p trames-native -p trames-compute -p trames-cpu -p trames-accel -p trames-memory -p trames-vfs -p trames-core --locked
       - name: Test original native Wayland clients and shared-FD lifetimes
+        if: needs.scope.outputs.frontend_only != 'true'
         run: brew install pkg-config libffi expat && bash scripts/test-wayland.sh
       - name: Generate Xcode project
         run: brew install xcodegen
@@ -117,16 +150,22 @@ jobs:
             apps/ios/build/workspace-interaction.log
             apps/ios/build/workspace-interaction.xcresult
           retention-days: 7
-      - name: Test viewport, native consent, real gateway DNS/HTTPS and lifecycle in iPad simulator
+      - name: Test affected frontend paths or the full simulator suite
         if: ${{ !cancelled() }}
         timeout-minutes: 20
         run: |
           device_id=$(xcrun simctl list devices available --json | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for rows in devices.values() for d in rows if d["name"].startswith("iPad")))')
           python3 -c 'import subprocess,sys; subprocess.run(["xcrun","simctl","bootstatus",sys.argv[1],"-b"],check=True,timeout=180)' "$device_id"
+          test_flags=()
+          if [[ '${{ needs.scope.outputs.frontend_only }}' == true ]]; then
+            test_flags=(-only-testing:TramesTests/WorkspaceTabsTests -only-testing:TramesTests/WorkspaceInteractionTests
+              -only-testing:TramesTests/TerminalViewportTests -only-testing:TramesUITests/LaunchTests)
+          fi
           xcodebuild -project apps/ios/Trames.xcodeproj -scheme Trames -configuration Debug \
             -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath apps/ios/build/simulator \
             -parallel-testing-enabled NO -test-timeouts-enabled YES \
             -default-test-execution-time-allowance 900 -maximum-test-execution-time-allowance 900 \
+            "${test_flags[@]}" \
             -skip-testing:TramesUITests/LaunchTests/testWorkspaceTabsDetachDockAndTerminalTitleRemainsVisible \
             CODE_SIGNING_ALLOWED=NO -skipPackagePluginValidation -resultBundlePath apps/ios/build/ipad-smoke.xcresult test \
             2>&1 | tee apps/ios/build/ipad-smoke.log

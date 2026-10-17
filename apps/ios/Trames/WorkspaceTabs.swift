@@ -34,6 +34,7 @@ struct WorkspaceTabs: Equatable {
     private(set) var floating: [WorkspaceItemID] = []
     private(set) var minimized: [WorkspaceItemID] = []
     var frames: [WorkspaceItemID: DisplayWindowGeometry] = [:]
+    private(set) var viewport = CGSize(width:1024,height:768)
     private(set) var selected: WorkspaceItemID?
     private(set) var focused: WorkspaceItemID?
     func placement(_ id: WorkspaceItemID) -> Placement? {
@@ -46,7 +47,7 @@ struct WorkspaceTabs: Equatable {
         guard self.placement(id) == nil else { return }
         switch placement {
         case .tabbed: tabs.append(id); select(id)
-        case .floating: floating.append(id); focus(id)
+        case .floating: positionNewWindow(id); floating.append(id); focus(id)
         case .minimized: tabs.append(id); minimized.append(id)
         }
     }
@@ -71,9 +72,39 @@ struct WorkspaceTabs: Equatable {
     }
     mutating func detach(_ id: WorkspaceItemID, at origin: CGPoint? = nil) {
         guard placement(id) != nil else { return }
+        if origin == nil { positionNewWindow(id) }
         removePlacement(id); floating.append(id)
         if let origin { var frame = frames[id] ?? DisplayWindowGeometry(); frame.origin = origin; frames[id] = frame }
         focus(id)
+    }
+    mutating func updateViewport(_ size: CGSize) {
+        guard size.width > 0, size.height > 0, size != viewport else { return }
+        viewport=size
+        for id in Array(frames.keys) { frames[id]?.constrain(to:size) }
+    }
+    /// Only automatic initial placement cascades. Explicit drag positions and
+    /// saved user geometry survive subsequent docking/restoration.
+    private mutating func positionNewWindow(_ id: WorkspaceItemID) {
+        guard frames[id] == nil else { return }
+        var frame=DisplayWindowGeometry();frame.constrain(to:viewport)
+        let occupied=floating.compactMap { frames[$0]?.origin }
+        let start=frame.origin
+        let maxX=max(0,viewport.width-frame.size.width), maxY=max(0,viewport.height-frame.size.height)
+        func isFree(_ origin:CGPoint) -> Bool {
+            !occupied.contains { abs($0.x-origin.x)<14 && abs($0.y-origin.y)<14 }
+        }
+        // Try a diagonal cascade first, then search the remaining visible grid.
+        for step in 0...occupied.count {
+            let candidate=CGPoint(x:min(maxX,start.x+CGFloat(step)*28),y:min(maxY,start.y+CGFloat(step)*28))
+            if isFree(candidate) { frame.origin=candidate;frames[id]=frame;return }
+        }
+        for y in stride(from:CGFloat(0),through:maxY,by:28) {
+            for x in stride(from:CGFloat(0),through:maxX,by:28) {
+                let candidate=CGPoint(x:x,y:y)
+                if isFree(candidate) { frame.origin=candidate;frames[id]=frame;return }
+            }
+        }
+        frames[id]=frame
     }
     /// Minimization docks an inactive tab. The tab itself is always the restore
     /// target, including windows minimized by an xdg_toplevel request.

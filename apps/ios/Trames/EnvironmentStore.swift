@@ -52,5 +52,4 @@ actor EnvironmentStore {
         defer {resetting=false}
         try await LocalSession.reset(store:root.appendingPathComponent("environment",isDirectory:true))
     }
-    func knownHosts() throws -> KnownHosts { try KnownHosts(url: root.appendingPathComponent("known-hosts.json")) }
 }

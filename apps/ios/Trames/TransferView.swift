@@ -16,16 +16,16 @@ struct TransferView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section(session.ssh == nil ? "本地 Linux 文件" : "远端 SFTP 文件") {
+                Section("本地 Linux 文件") {
                     TextField("文件路径", text: $path).textInputAutocapitalization(.never).autocorrectionDisabled()
                     if let selected { Text(selected.lastPathComponent) }
                     Button("选择 Files 文件") { chooser = true }.disabled(busy)
-                    Button(session.ssh == nil ? "导入到 Linux" : "上传到远端") { transfer(upload: true) }.disabled(busy || selected == nil)
-                    Button(session.ssh == nil ? "导出到 Files" : "从远端下载到 Files") { transfer(upload: false) }.disabled(busy)
+                    Button("导入到 Linux") { transfer(upload: true) }.disabled(busy || selected == nil)
+                    Button("导出到 Files") { transfer(upload: false) }.disabled(busy)
                 }
-                Section { Text(message.isEmpty ? "传输使用文件副本；目标已存在时会报错。上传取消或失败时会尝试清理远端的部分文件。" : message).font(.caption) }
+                Section { Text(message.isEmpty ? "传输使用文件副本；目标已存在时会报错。取消或失败时会清理临时文件。" : message).font(.caption) }
                 if busy { Button("取消传输", role: .destructive) { task?.cancel(); message = "取消中…" } }
-            }.navigationTitle(session.ssh == nil ? "Files" : "SFTP")
+            }.navigationTitle("Files")
                 .toolbar { Button("完成") { task?.cancel(); dismiss() } }
                 .fileImporter(isPresented: $chooser, allowedContentTypes: [.data, .item]) { result in
                     switch result {
@@ -52,8 +52,6 @@ struct TransferView: View {
                 try Task.checkCancellation()
                 if let local = session.local {
                     try await local.transferAsync(guest: path, host: stage, export: !upload)
-                } else if let ssh = session.ssh {
-                    try await ssh.transfer(remote: path, local: stage, upload: upload)
                 } else { throw TramesError.message("会话已关闭") }
                 try Task.checkCancellation()
                 if upload { message = "传输完成" }

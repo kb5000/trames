@@ -2,6 +2,7 @@
 import SwiftUI
 import SwiftTerm
 import TramesKit
+import Darwin
 @MainActor
 final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalViewDelegate {
     let id = UUID()
@@ -20,10 +21,9 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     #endif
     var local: LocalSession?
     let bridge = BridgeController()
-    var ssh: SSHSession?
-    var onChallenge: ((HostKeyChallenge) -> Void)?
+    @Published private(set) var cpuPercent: Int?
+    private var cpuSample: (wall:TimeInterval,cpu:TimeInterval)?
     private var task: Task<Void,Never>?
-    private var sender: Task<Void,Never>?
     private var pendingInput = Data()
     private var timer: Timer?
     private var lastPhase: String?
@@ -35,6 +35,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         self.isLocal = isLocal
         self.title = self.fallbackTitle; super.init()
         terminal.terminalDelegate = self
+        terminal.accessibilityIdentifier = "terminal-viewport"
         terminal.backgroundColor = .black
         timezoneObserver = NotificationCenter.default.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.synchronizeTimezone() }
@@ -76,6 +77,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
                 pendingInput.removeFirst(count)
             }
             applyWaylandStatus(try local.waylandStatus())
+            sampleCPU()
             let status = try local.status()
             if status != capacity { capacity = status }
             if status.phase != lastPhase {
@@ -85,6 +87,22 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
                 if status.phase == "exited" { state = "已退出 · \(status.exit_code ?? 0)"; timer?.invalidate() }
             }
         } catch { fail(error); timer?.invalidate() }
+    }
+    /// One host getrusage sample per second, piggybacked on the existing timer.
+    /// This includes the interpreter/native workers; 100% means one busy core.
+    private func sampleCPU() {
+        guard !paused else { return }
+        let wall=ProcessInfo.processInfo.systemUptime
+        if let previous=cpuSample,wall-previous.wall<1 { return }
+        var usage=rusage()
+        guard getrusage(RUSAGE_SELF,&usage) == 0 else { return }
+        let cpu=Double(usage.ru_utime.tv_sec+usage.ru_stime.tv_sec)
+            + Double(usage.ru_utime.tv_usec+usage.ru_stime.tv_usec)/1_000_000
+        if let previous=cpuSample,wall>previous.wall {
+            let percent=Int(max(0,(cpu-previous.cpu)/(wall-previous.wall)*100).rounded())
+            if cpuPercent != percent { cpuPercent=percent }
+        }
+        cpuSample=(wall,cpu)
     }
     func applyWaylandStatus(_ status: LocalWaylandStatus) {
         guard status.revision != waylandRevision else { return }
@@ -108,39 +126,15 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     func waylandMode(_ window: UInt64, _ mode: String) {
         waylandCommand(["op":"mode","window":window,"mode":mode])
     }
-    func startSSH(host: SSHHost, credential: SSHCredential, knownHosts: KnownHosts) {
-        let connection = SSHSession(); ssh = connection
-        task = Task { [weak self] in
-            do {
-                try await connection.run(host: host, credential: credential, knownHosts: knownHosts,
-                    onChallenge: { [weak self] challenge in Task { @MainActor in self?.onChallenge?(challenge) } },
-                    output: { [weak self] bytes in
-                        await MainActor.run {
-                            guard let self, !self.closed else { return }
-                            self.state = "SSH · \(host.hostname)"
-                            self.terminal.feed(byteArray: Array(bytes)[...])
-                        }
-                    })
-                self?.state = "SSH 已断开"
-            } catch { self?.fail(error) }
-        }
-    }
     func send(_ data: Data) {
         guard !closed, pendingInput.count + data.count <= 65536 else { state = "输入队列已满，请稍后重试"; return }
         pendingInput.append(data)
-        if let ssh, sender == nil {
-            sender = Task { [weak self] in
-                guard let self else { return }
-                defer { sender = nil }
-                while !pendingInput.isEmpty && !closed {
-                    let data = pendingInput; pendingInput.removeAll(keepingCapacity: true)
-                    do { try await ssh.send(data) } catch { fail(error); break }
-                }
-            }
-        }
+
     }
     func pause(_ paused: Bool) {
         self.paused = paused
+        cpuSample=nil
+        if paused { cpuPercent=nil }
         if paused { waylandCommand(["op":"focus","window":NSNull()]) }
         try? local?.pause(paused)
         if !paused { synchronizeTimezone() }
@@ -158,10 +152,10 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         guard !closed else { return }; closed = true
         if let timezoneObserver { NotificationCenter.default.removeObserver(timezoneObserver) }
         timezoneObserver = nil
-        timer?.invalidate(); timer = nil; task?.cancel(); sender?.cancel()
+        timer?.invalidate(); timer = nil; task?.cancel()
         bridge.close()
         local?.close(); local = nil; waylandWindows = []; onWaylandChanged = nil
-        if let ssh { Task { await ssh.close() } }; ssh = nil; pendingInput.removeAll()
+        pendingInput.removeAll()
         state = "已关闭"
     }
     func fail(_ error: Error) {
@@ -170,7 +164,6 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     }
     func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) {
         try? local?.resize(columns: newCols, rows: newRows)
-        if let ssh { Task { try? await ssh.resize(columns: newCols, rows: newRows) } }
     }
     func setTerminalTitle(source: TerminalView, title: String) {
         let value = String(title.prefix(80)).trimmingCharacters(in: .whitespacesAndNewlines)

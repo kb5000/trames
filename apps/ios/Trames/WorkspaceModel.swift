@@ -16,13 +16,10 @@ final class WorkspaceModel: ObservableObject {
     func isVisible(_ id: WorkspaceItemID) -> Bool {
         layout.placement(id) == .floating || layout.selected == id
     }
-    @Published var challenge: HostKeyChallenge?
     @Published var error: String?
     @Published var resetting = false
-    private var benchmarkRunning = false
     private var appActive = true
     private(set) var environment: EnvironmentStore?
-    private(set) var knownHosts: KnownHosts?
     private(set) var directories: ScopedDirectories?
     init(prepareEnvironment: Bool = true) {
         #if DEBUG
@@ -40,10 +37,7 @@ final class WorkspaceModel: ObservableObject {
         do {
             let environment = try EnvironmentStore(); self.environment = environment
             directories = try ScopedDirectories(file: environment.root.appendingPathComponent("folder-grants.json"))
-            Task {
-                do { knownHosts = try await environment.knownHosts(); openLocal() }
-                catch { self.error = error.localizedDescription }
-            }
+            openLocal()
         } catch { self.error = error.localizedDescription }
     }
     var current: TerminalSession? { layout.selected.flatMap { session(for: $0) } ?? local }
@@ -93,6 +87,7 @@ final class WorkspaceModel: ObservableObject {
         change { $0.restore(id) }
         nativeMode(id,layout.placement(id) == .tabbed ? "maximized" : "floating")
     }
+    func updateViewport(_ size:CGSize) { change { $0.updateViewport(size) } }
     func saveFrame(_ id: WorkspaceItemID, _ frame: DisplayWindowGeometry) { change { $0.frames[id]=frame } }
     func closeItem(_ id: WorkspaceItemID) {
         if case .terminal = id, let session=session(for:id) { close(session) }
@@ -136,7 +131,7 @@ final class WorkspaceModel: ObservableObject {
         if let local { activate(.terminal(local.id)); return }
         guard let environment else { return }
         let session = TerminalSession(title: "Alpine", isLocal:true)
-        session.pause(benchmarkRunning || !appActive)
+        session.pause(!appActive)
         session.bridge.directories = directories
         add(session)
         session.startLocal(environment, useVolumeBudget: UserDefaults.standard.bool(forKey: "useVolumeBudget"))
@@ -150,46 +145,20 @@ final class WorkspaceModel: ObservableObject {
             catch {resetting=false; self.error=error.localizedDescription}
         }
     }
-    func connect(host: SSHHost, credential: SSHCredential) {
-        guard sessions.count < 8, let knownHosts else { error = "最多同时打开 8 个终端"; return }
-        let session = TerminalSession(title: host.alias)
-        session.onChallenge = { [weak self] challenge in self?.challenge = challenge }
-        add(session)
-        session.startSSH(host: host, credential: credential, knownHosts: knownHosts)
-    }
     func close(_ session: TerminalSession) {
         session.close(); sessions.removeAll { $0.id == session.id }
         change { $0.closeSession(session.id) }
         observedModes = observedModes.filter { $0.key.session != session.id }
         pendingModes = pendingModes.filter { $0.key.session != session.id }
     }
-    func trust() {
-        guard let challenge, let knownHosts else { return }
-        do { try knownHosts.trust(challenge); self.challenge = nil }
-        catch { self.error = error.localizedDescription }
-    }
     func background() {
         appActive = false
         for session in sessions {
             session.pause(true)
-            if session.ssh != nil { session.close() }
         }
     }
     func foreground() {
         appActive = true
-        for session in sessions { session.pause(benchmarkRunning && session.ssh == nil) }
-    }
-    func setBenchmarkRunning(_ running: Bool) {
-        benchmarkRunning = running
-        local?.pause(running || !appActive)
-    }
-    func guestText(_ path: String) async throws -> String {
-        guard let local = local?.local else { throw TramesError.message("请先启动本地 Alpine 环境") }
-        let stage = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        defer { try? FileManager.default.removeItem(at: stage) }
-        try await local.transferAsync(guest: path, host: stage, export: true, maximumBytes: 65536)
-        let size = try stage.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? Int.max
-        guard size <= 65536 else { throw TramesError.message("SSH 配置或密钥超过 64 KiB") }
-        return try String(contentsOf: stage, encoding: .utf8)
+        for session in sessions { session.pause(false) }
     }
 }
