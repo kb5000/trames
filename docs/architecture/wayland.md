@@ -122,9 +122,11 @@ at the composition caret, including interior selections.
 - Four independent original C acceptance groups cover two-window resize/close,
   synchronized scenes/popups/input regions/grabs, v3 UTF-8/serial/surrounding state,
   producer readiness/FIFO/budget and retained GPU-image lifetime.
-- Original Alpine-signed wayland-info, Weston SHM/editor and vkcube run through
+- Original Alpine-signed wayland-info, Weston SHM/editor, vkcube and vkmark run through
   the production session/transfer/frame ABI. vkcube recreates images at 320x240.
   Retained SHM/GPU capabilities survive session shutdown and then release cleanly.
+  All 13 default vkmark scene variants pass in short functional runs; scene
+  exceptions are failures even when vkmark itself exits zero.
 - Compute (including coherent unmap/remap and persistent mappings without explicit
   flush/invalidate), graphics and texture outputs match the independent native
   Linux driver with one and four guest CPUs; graphics pixels match byte-for-byte.
@@ -155,6 +157,7 @@ bash scripts/build-vulkan-fixtures.sh
 python3 scripts/prepare-wayland-guest.py
 cargo build -p trames-ffi --release --locked
 TRAMES_WAYLAND_STORE=/tmp/trames-wayland-test python3 tests/integration/wayland.py --prepare
+TRAMES_WAYLAND_STORE=/tmp/trames-wayland-test python3 tests/integration/vkmark-wayland.py
 ```
 
 The store must be absent for --prepare. Omit that flag to repeat client/lifetime

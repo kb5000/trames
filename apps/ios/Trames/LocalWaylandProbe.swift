@@ -149,14 +149,17 @@ enum LocalWaylandProbe {
                         if editorStep == 0 {
                             editorFirst=context.id
                             canvas.setMarkedText("ni",selectedRange:NSRange(location:2,length:0));canvas.insertText("你好🙂");editorStep=1
+                        // Click blank space at the end of the next field: its
+                        // cursor stays put, so the next commit-state acknowledges
+                        // enter, rather than a cursor update queued before enter.
                         } else if editorStep == 1 && context.text.contains("你好🙂") {
-                            for command:[String:Any] in [["op":"pointer","window":first.id,"x":80,"y":Double(first.height)*0.75,"time":4],
+                            for command:[String:Any] in [["op":"pointer","window":first.id,"x":max(80,first.width-64),"y":Double(first.height)*0.75,"time":4],
                                 ["op":"button","button":0x110,"pressed":true,"time":5],["op":"button","button":0x110,"pressed":false,"time":6]] { try session.waylandCommand(command) }
                             editorStep=2
                         } else if editorStep == 2 && context.id != editorFirst {
                             canvas.insertText("第二框");editorStep=3
                         } else if editorStep == 3 && context.text.contains("第二框") {
-                            for command:[String:Any] in [["op":"pointer","window":first.id,"x":80,"y":80,"time":7],
+                            for command:[String:Any] in [["op":"pointer","window":first.id,"x":max(80,first.width-64),"y":80,"time":7],
                                 ["op":"button","button":0x110,"pressed":true,"time":8],["op":"button","button":0x110,"pressed":false,"time":9]] { try session.waylandCommand(command) }
                             editorStep=4
                         } else if editorStep == 4 && context.id == editorFirst && context.text.contains("你好🙂") {

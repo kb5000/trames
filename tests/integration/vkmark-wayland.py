@@ -41,7 +41,8 @@ try:
     while json.loads(read('trames_session_status',session))['phase']=='starting':
         assert time.monotonic()-start<60;time.sleep(.01)
     state=json.loads(read('trames_session_status',session));assert state['phase']=='running',state
-    repository=ROOT/'target/wayland/vkmark-repository'
+    repository=ROOT/'target/vulkan-guest/wayland-acceptance/repository'
+    assert any(repository.rglob('vkmark-*.apk')), 'Run scripts/prepare-wayland-guest.py first'
     guest='/tmp/vkmark-'+uuid.uuid4().hex
     for path in sorted(repository.rglob('*')):
         if path.is_file():payload('trames_session_transfer',session,dict(guest=guest+'/repo/'+path.relative_to(repository).as_posix(),host=str(path),export=False))

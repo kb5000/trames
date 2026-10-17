@@ -68,7 +68,7 @@ try:
     peer='/tmp/wayland-ffi-'+uuid.uuid4().hex
     payload('trames_session_transfer',session,{'guest':peer,'host':str(ROOT/'target/vulkan-guest/wayland-acceptance/wayland-client'),'export':False})
     for stage,program in [('info','wayland-info'),('windows',peer+' 1 hold'),('shm','weston-simple-shm'),('editor','weston-editor'),('cube','vkcube --wsi wayland --c 30')]:
-        before=time.monotonic();frames=0;focused=False;closed=False;resized=False;confirmed=False;edited=False;last={};held=False
+        before=time.monotonic();frames=0;focused=False;closed=False;resized=False;confirmed=False;edited=False;editor_step=0;first_context=None;last={};held=False
         send(f'chmod 755 {peer}; XDG_RUNTIME_DIR=/run/user/0 WAYLAND_DISPLAY=wayland-0 VK_DRIVER_FILES=/usr/share/vulkan/icd.d/trames.json {program}; printf "\\nWAYLAND_FFI:{stage}:%d\\n" $?\n')
         marker=f'\r\nWAYLAND_FFI:{stage}:0\r\n'
         while marker not in text:
@@ -97,11 +97,22 @@ try:
                     ready=stage=='windows' and confirmed and len(scene['windows'])==2 or stage=='shm' and frames>=4
                     if stage=='editor' and scene.get('text'):
                         context=scene['text']
-                        if not edited:
-                            values=dict(op='text',serial=context['serial'],context=context['id'],epoch=context['epoch'])
-                            command(dict(values,preedit='ni',cursor_begin=2,cursor_end=2))
-                            command(dict(values,preedit='',commit='你好🙂'));edited=True
-                        ready='你好🙂' in context['text']
+                        values=dict(op='text',serial=context['serial'],context=context['id'],epoch=context['epoch'])
+                        def click(y):
+                            command(dict(op='pointer',window=wid,x=window['width']-64,y=y,time=4))
+                            for pressed in [True,False]:command(dict(op='button',button=0x110,pressed=pressed,time=5))
+                        if editor_step==0:
+                            first_context=context['id'];command(dict(values,preedit='ni',cursor_begin=2,cursor_end=2))
+                            command(dict(values,preedit='',commit='你好🙂'));edited=True;editor_step=1
+                        elif editor_step==1 and '你好🙂' in context['text']:
+                            click(window['height']*.75);editor_step=2
+                        elif editor_step==2 and context['id']!=first_context:
+                            command(dict(values,commit='第二框'));editor_step=3
+                        elif editor_step==3 and '第二框' in context['text']:
+                            click(80);editor_step=4
+                        elif editor_step==4 and context['id']==first_context and '你好🙂' in context['text']:
+                            command(dict(values,commit='返回'));editor_step=5
+                        ready=editor_step==5 and '返回' in context['text']
                     if ready and not closed:command(dict(op='close',window=wid));closed=True
             assert time.monotonic()-before<90,(stage,text[-4096:],scene)
             time.sleep(.004)
