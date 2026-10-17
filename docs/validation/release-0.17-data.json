@@ -1,0 +1,112 @@
+{
+  "source_commit": "a3451367fdd9d2936ed0a8ee0ee8f4f9b331e8a3",
+  "version": "0.17.0",
+  "build": "19",
+  "ipa_sha256": "c2cbb3eed53209fc911148852afa642feebb2c43498fada6e90edf4f268fc3a2",
+  "ipa_bytes": 14164730,
+  "bundle_id": "org.trames.Trames",
+  "minimum_os": "17.0",
+  "device_families": [
+    1,
+    2
+  ],
+  "device_architecture": "arm64",
+  "mach_o_platform": 2,
+  "all_packaged_files_match_device_build": 66,
+  "executable_permission_verified": true,
+  "zip_crc_and_sha256_sidecar_verified": true,
+  "libc_sha256": "885b308b75e36bb402b311fba1d3f1284e6dd8d3a0bfbf88686bff1b629f9b23",
+  "musl_native_functions": 19,
+  "source_inputs_verified": 19,
+  "license_notices_verified": true,
+  "vulkan_icd_sha256": "8a5d5f7ba25cc83cdbb2e2a14e4677271b010b96879ae83473a4a9b9cfcb8c34",
+  "vulkan_profile": 65542,
+  "vulkan_public_entrypoints": 113,
+  "moltenvk_version": "1.4.2",
+  "vulkan_default_enabled": false,
+  "vulkan_source_and_notices_verified": true,
+  "wayland_notices_sha256": "0a618d583ae09c77243785307164618f1351bb8df363d32dd6c54c9c01556a2a",
+  "debug_wayland_files_excluded": 108,
+  "workspace_passed": 1,
+  "simulator_remaining_passed": 32,
+  "simulator_passed": 33,
+  "simulator_failed": 0,
+  "artifacts": {
+    "sideload": {
+      "id": 12089902003,
+      "name": "Trames-unsigned-sideload",
+      "digest": "sha256:213e2fc016c1a9e2324723756a5930ce53f05e605f35244f7cbdeb6425046ccf",
+      "expires_at": "2026-10-31T04:28:45Z"
+    },
+    "build": {
+      "id": 12089956819,
+      "name": "unsigned-ipad-build-and-project",
+      "digest": "sha256:e7666920395226e95ce0c0f01dda6e05260e891a2a929a7e14d7842621a46ab6",
+      "expires_at": "2026-10-24T04:28:47Z"
+    },
+    "musl": {
+      "id": 12089396319,
+      "name": "full-musl-library-and-source",
+      "digest": "sha256:4c7a51236505c1542b66212b8d56aea76169b9996765eca6fc945611d555dd14",
+      "expires_at": "2026-10-31T04:08:35Z"
+    },
+    "vulkan": {
+      "id": 12089451124,
+      "name": "vulkan-compute-driver-and-native-source",
+      "digest": "sha256:773928b90266fa783e25915cdb1b0bf1b9d608b8cb929cd7c2138f0b767d4cbe",
+      "expires_at": "2026-10-31T04:08:30Z"
+    },
+    "workspace": {
+      "id": 12089278395,
+      "name": "workspace-gesture-diagnostics",
+      "digest": "sha256:c8ee37296e5a35b84a60ac7c9e2c54aca4d5f575d0f58dbe972a3b044361cfae",
+      "expires_at": "2026-10-24T04:18:56Z"
+    }
+  },
+  "source_archives_sha256": {
+    "musl-hybrid-1.2.5-source.tar.gz": "17f12be2dea8e2ebb56909960fbbf5d6feb929ebd9023270c59062331876d5ad",
+    "vulkan-native-upstream-source.tar.gz": "c24836fcbb9c463f40f6e777f12d518fdaa49e2a8fd0cc255533bd5f630634d7"
+  },
+  "publisher_source_commit": "d6113f61d5c9f22fe014c414fd58e5cf2ea34f35",
+  "tag_commit": "d6113f61d5c9f22fe014c414fd58e5cf2ea34f35",
+  "application_identical_at_tag": true,
+  "publication_only_changed_paths": [
+    ".github/workflows/release-0.17.yml"
+  ],
+  "ci": {
+    "iPad frontend": {
+      "id": 39001346219,
+      "attempt": 1,
+      "url": "https://github.com/kb5000/trames/actions/runs/39001346219",
+      "head_sha": "a3451367fdd9d2936ed0a8ee0ee8f4f9b331e8a3",
+      "conclusion": "success"
+    },
+    "Linux runtime": {
+      "id": 39001346269,
+      "attempt": 1,
+      "url": "https://github.com/kb5000/trames/actions/runs/39001346269",
+      "head_sha": "a3451367fdd9d2936ed0a8ee0ee8f4f9b331e8a3",
+      "conclusion": "success"
+    }
+  },
+  "public_verification": {
+    "release_url": "https://github.com/kb5000/trames/releases/tag/v0.17.0",
+    "published_at": "2026-10-17T04:39:14Z",
+    "public_asset_sha256": {
+      "musl-hybrid-1.2.5-source.tar.gz": "17f12be2dea8e2ebb56909960fbbf5d6feb929ebd9023270c59062331876d5ad",
+      "Trames-0.17.0-build19-unsigned.ipa": "c2cbb3eed53209fc911148852afa642feebb2c43498fada6e90edf4f268fc3a2",
+      "Trames-0.17.0-build19-unsigned.ipa.sha256": "0a09c1e419148a8d9b38f592141b715349e5c4160c4f930ffc07c9d6691f48a5",
+      "Trames-0.17.0-simulator.json": "90f05cfc9edff8d5d0cb134457d8e23f0bef31b14633b30212ce7b2272a1bd30",
+      "Trames-0.17.0-verification.json": "671e074c259325ad549e4d14ff37dc9988ed67deec238f5244d562bf916531da",
+      "Trames-0.17.0-workspace.json": "b3b3b991a7b9aecbfc7dea52bfeb69792755719649998f79913778ee71974474",
+      "vulkan-native-upstream-source.tar.gz": "c24836fcbb9c463f40f6e777f12d518fdaa49e2a8fd0cc255533bd5f630634d7"
+    },
+    "public_asset_bytes": 30028434,
+    "public_ipa_sha256": "c2cbb3eed53209fc911148852afa642feebb2c43498fada6e90edf4f268fc3a2",
+    "public_ipa_bytes": 14164730,
+    "public_download_verified": true,
+    "source_pairing_verified": true,
+    "metadata_and_device_macho_verified": true,
+    "wayland_notices_and_debug_exclusion_verified": true
+  }
+}

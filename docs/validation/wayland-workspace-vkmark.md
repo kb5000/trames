@@ -52,3 +52,7 @@ The existing 2026-10-16 acceptance record remains historical. This update is not
 full Wayland/Vulkan conformance; physical iPad gestures and system candidate UI
 still require device use. Normal presentation has no pixel readback; test-only
 Metal capture and independent offscreen readback validate actual pixels.
+
+These changes are merged and shipped in [0.17.0/build 19](release-0.17.md).
+Its exact main application source, a3451367, independently passes the same 33
+Apple tests and the full Linux workflow; publication is pinned to that source.

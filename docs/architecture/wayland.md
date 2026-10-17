@@ -8,8 +8,8 @@ tab. Resizing sends configure/ack and requires new client buffer dimensions;
 it does not retain and scale a fixed-resolution canvas.
 
 The implementation is tracked by [PR #26](https://github.com/kb5000/trames/pull/26)
-and [Issue #25](https://github.com/kb5000/trames/issues/25). Its first release family
-is 0.17.0; publication and artifact verification are tracked in the
+and [Issue #25](https://github.com/kb5000/trames/issues/25). It is released in
+0.17.0; publication and artifact verification are tracked in the
 [release record](../validation/release-0.17.md). See the [usage guide](../guides/wayland.md).
 
 ## Shared storage and descriptors
