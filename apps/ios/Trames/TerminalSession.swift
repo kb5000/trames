@@ -12,10 +12,6 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     @Published var title: String
     @Published var state = "连接中…"
     @Published var capacity: LocalStatus?
-    lazy var displayCanvas = VulkanCanvas()
-    @Published var displayEnabled = false
-    @Published var displayHasFrames = false
-    @Published var displayVisible = true
     @Published var waylandWindows: [LocalWaylandWindow] = []
     @Published var waylandText: LocalWaylandText?
     private var waylandRevision: UInt64?
@@ -51,16 +47,11 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         state="正在准备 Alpine…"
         task = Task { [weak self] in
             do {
-                let gpu = UserDefaults.standard.bool(forKey: "vulkanCompute") || ProcessInfo.processInfo.arguments.contains("--vulkan-display-acceptance")
+                let gpu = UserDefaults.standard.bool(forKey: "vulkanCompute")
                 let memory = UserDefaults.standard.object(forKey: "guestMemoryMiB") as? Int ?? 1024
                 let processMemory = UserDefaults.standard.object(forKey: "guestProcessMemoryMiB") as? Int ?? 512
                 let local = try await environment.start(useVolumeBudget: useVolumeBudget, vulkan: gpu, memoryBudgetMiB: memory, processMemoryBudgetMiB: min(processMemory, memory))
                 guard let self, !self.closed else { local.close(); return }
-                if gpu {
-                    try local.attachDisplay(layer: Unmanaged.passUnretained(self.displayCanvas.metal).toOpaque(), width: 1024, height: 768)
-                    self.displayCanvas.frameCount = { [weak local] in (try? local?.displayStatus().presented) ?? 0 }
-                    self.displayEnabled = true
-                }
                 self.local = local
                 bridge.attach(local)
                 try local.pause(paused)
@@ -68,11 +59,6 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
                 timer = Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) { [weak self] _ in
                     Task { @MainActor in self?.pollLocal() }
                 }
-                #if DEBUG
-                if ProcessInfo.processInfo.arguments.contains("--vulkan-display-acceptance") {
-                    try await LocalVulkanProbe.submitPresentation(to: local)
-                }
-                #endif
             } catch { self?.fail(error) }
         }
     }
@@ -80,9 +66,6 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         guard let local, !closed else { return }
         do {
             let output = try local.receive()
-            if displayEnabled && !displayHasFrames {
-                displayHasFrames = try local.displayStatus().presented > 0
-            }
             try bridge.poll()
             if !output.isEmpty { terminal.feed(byteArray: Array(output)[...]) }
             if !pendingInput.isEmpty {

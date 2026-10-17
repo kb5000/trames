@@ -130,9 +130,11 @@ sheet has been removed from the product UI.
 
 ## Native display and swapchain
 
-With GPU enabled, each local session owns one 1024 × 768 virtual display, plane
-and mode (60 Hz nominal). The App creates/configures a `CAMetalLayer` on its main
-thread and passes it only through the native embedding capability. No guest
+The native embedding API retains a fixed-display WSI backend for regression
+testing. Normal App sessions no longer attach this display; graphical clients
+use [Wayland windows and workspace tabs](wayland.md). Tests explicitly attach one
+1024 × 768 virtual display, plane and mode (60 Hz nominal). The host configures
+a `CAMetalLayer` on its main thread and passes it through the native embedding capability. No guest
 pointer can select a host layer or Objective-C object. Objective-C retain leases
 keep the target alive through surface, swapchain, view, recorded-command and
 in-flight work lifetimes. Detach invalidates that target generation with
@@ -147,8 +149,9 @@ an original native `VK_EXT_metal_surface` on the trusted layer. Device
 `VK_KHR_swapchain` exposes BGRA8 UNORM/SRGB nonlinear, FIFO, exclusive sharing,
 one layer, identity transform, opaque alpha, color attachment and optional
 transfer-source usage; native capabilities bound the image count (at most four).
-Unsupported options fail explicitly. Without an attached display, no WSI
-extensions are advertised; the existing compute/offscreen path remains usable.
+Unsupported options fail explicitly. Without an attached display, the legacy
+display extension is unavailable. Wayland WSI and compute/offscreen rendering
+remain independently usable.
 
 Acquire uses a zero-timeout native call. The guest ICD implements finite/infinite
 waits by retrying with guest nanosleep, allowing peer guest threads and the
@@ -167,22 +170,21 @@ Failed output publication rolls back owned resources; ambiguous native present
 errors retire the affected chain. The display registry lock only protects target
 lookup/attach/detach, never an entire rendering call.
 
-The session menu's “显示窗口” reveals the floating display. Drag its title to
-move it or its bottom-right grip to resize it; the parent transform scales and
-letterboxes the fixed canvas. Metal layer bounds and drawable size remain
-1024 × 768, so window geometry changes do not invalidate guest swapchains.
-Hiding keeps the GPU target attached; closing the local session detaches it and
-cancels guest work. No CPU framebuffer device is added. This is one virtual
-display, not X11/Wayland integration, a desktop window manager or pointer input.
+The old “显示窗口” menu entry, fixed-resolution floating monitor and automatic
+display attachment have been removed. All App graphics use the unified Wayland
+window/tab workspace; resizing requests a new client buffer resolution. The
+fixed-display canvas and its probes now live only in the XCTest target.
 
 `vulkan-present.c` is an ordinary Vulkan acceptance fixture, not a special
 product rendering API. It exercises continuous native acquire/draw/present,
 semaphore reuse, swapchain recreation, retired acquire and producer release.
-Apple XCTest also moves/resizes/hides/reopens the live window and closes a guest
-that is still submitting. Current acceptance status is tracked in
+Apple XCTest retains the native fixed-display swapchain and producer-release
+regression. Workspace gestures and live Wayland presentation cover the App UI.
+The earlier monitor UI acceptance remains historical in
 [display verification](../validation/vulkan-display.md).
 
-Optional core features remain zero. Only the selected WSI extensions are advertised.
+Optional core features are limited to queried native sampler anisotropy.
+Only the selected WSI extensions are advertised.
 Unsupported entrypoints
 return NULL. Unsupported creation parameters return Vulkan failures. Recording
 functions have void signatures; invalid/unsupported recording parameters abort

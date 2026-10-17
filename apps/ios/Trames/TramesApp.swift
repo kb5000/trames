@@ -62,9 +62,6 @@ struct WorkspaceView: View {
                     Button("本地 Alpine", systemImage: "terminal") { workspace.openLocal() }
                     Button("SSH 连接", systemImage: "network") { sshSheet = true }
                     Button("Files / SFTP", systemImage: "folder") { filesSheet = true }
-                    if let local = workspace.local, local.displayEnabled {
-                        Button("显示窗口", systemImage: "rectangle.on.rectangle") { local.displayVisible = true }
-                    }
                     ForEach(workspace.layout.minimized,id:\.self) { item in
                         if let session=workspace.session(for:item) {
                             Button { workspace.restore(item) } label: { WorkspaceTabLabel(session:session,item:item) }
@@ -84,7 +81,6 @@ struct WorkspaceView: View {
                     } else {
                         ContentUnavailableView("打开一个终端",systemImage:"terminal",description:Text("从右上角添加本地 Alpine 或 SSH 会话。"))
                     }
-                    if let local=workspace.local { VulkanDisplayWindow(session:local,viewport:proxy.size).id(local.id) }
                     ForEach(workspace.layout.floating,id:\.self) { item in
                         WorkspaceFloatingWindow(workspace:workspace,item:item,viewport:proxy.size,
                             headerFrame:frames["header"] ?? .zero)
@@ -208,7 +204,7 @@ struct SettingsView: View {
                 Section("后台行为") { Text("进入后台后暂停本地 Linux 并断开 SSH；返回前台后继续本地会话。Files 采用独立副本导入和导出。").font(.caption) }
                 Section("GPU") {
                     Toggle("Vulkan 计算与图形（实验）", isOn: $vulkan)
-                    Text("下次打开本地终端生效。需在 Linux 安装 vulkan-loader；支持选定计算、图形和 Wayland 接口。Wayland 应用各自显示为 App 内窗口，调整窗口大小会请求应用改变分辨率；也保留固定分辨率的 Vulkan 显示设备。").font(.caption)
+                    Text("下次打开本地终端生效。需在 Linux 安装 vulkan-loader；支持选定计算、图形和 Wayland 接口。Wayland 应用各自显示为 App 内窗口，调整窗口大小会请求应用改变分辨率。窗口也可停靠到顶部标签栏。").font(.caption)
                 }
             }.navigationTitle("设置").toolbar { Button("完成") { dismiss() } }
                 .alert("重置 Linux 环境？",isPresented:$resetConfirmation) {

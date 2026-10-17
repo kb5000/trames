@@ -2,6 +2,7 @@
 import Foundation
 import TramesKit
 import UIKit
+@testable import Trames
 
 @MainActor
 enum LocalVulkanProbe {
@@ -35,20 +36,6 @@ enum LocalVulkanProbe {
         defer { window.isHidden = true; previous?.makeKeyAndVisible() }
         return try await execute(render: false, display: canvas).text
     }
-    // Test-only fixture launch. Production programs use the ordinary terminal.
-    #if DEBUG
-    static func submitPresentation(to session: LocalSession) async throws {
-        guard let inputs = Bundle.main.resourceURL?.appendingPathComponent("GuestVulkan/acceptance") else {
-            throw TramesError.message("Missing presentation fixture")
-        }
-        let began = Date()
-        while try session.status().phase == "starting" {
-            if Date().timeIntervalSince(began) > 60 { throw TramesError.message("Display session did not start") }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        try prepare(session, inputs: inputs, program: "vulkan-present", arguments: "/tmp/vulkan-render.vert.spv /tmp/vulkan-render.frag.spv continuous")
-    }
-    #endif
     private static func prepare(_ session: LocalSession, inputs: URL, program: String, arguments: String) throws {
         let packages = try FileManager.default.contentsOfDirectory(at: inputs, includingPropertiesForKeys: nil).filter { $0.pathExtension == "apk" }.sorted { $0.lastPathComponent < $1.lastPathComponent }
         guard !packages.isEmpty else { throw TramesError.message("Missing signed Vulkan loader packages") }
