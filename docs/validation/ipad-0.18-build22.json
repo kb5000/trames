@@ -1,0 +1,166 @@
+{
+  "version": "0.18.0",
+  "build": 22,
+  "status": "test IPA; await owner iPad acceptance before the 1.0.0 release",
+  "source_commit": "303aeb1656a5f433e3fc2984f6181a1bf2075c29",
+  "workflow_run": 39037069302,
+  "workflow_url": "https://github.com/kb5000/trames/actions/runs/39037069302",
+  "changes": [
+    "Reserve the terminal status area for the invisible window resize corner; give SwiftTerm an explicit viewport and propagate changed rows/columns to the PTY.",
+    "Separate sparse memfd logical length (up to 2 GiB) from the 128 MiB retained working-set budget; support KEEP_SIZE reservation.",
+    "Use xdg_toplevel parent and min/max size hints to fit transient dialogs and keep fixed-size dialogs fixed.",
+    "Add a read-only File Provider with a Trames/Alpine hierarchy, multi-root catalog, production manifest parser and chunked regular-file export.",
+    "Migrate an existing private environment only before VM startup; preserve private storage when no shared App Group is available or migration fails.",
+    "Stage complete Linux imports then atomically replace same-name regular files when the user enables replacement."
+  ],
+  "reused_guest_inputs": {
+    "source_commit": "534e223e284df48f207500e84ab4cd05dd3d3958",
+    "apple_run": 39015795319,
+    "reason": "Guest C/build inputs are unchanged; reuse original artifacts and verify their manifests."
+  },
+  "pending": [
+    "Owner iPad: terminal grid after docking/maximization and resize/keyboard hit areas.",
+    "Owner iPad: mousepad Save dialog size, foot startup and clipboard permission behavior.",
+    "File Provider requires valid matching App Group signing for app and extension; free-account Sideloadly availability is not verified.",
+    "Owner iPad: actual Files location/browsing/preview/export and repeated Linux import.",
+    "Prior issue 27 device acceptance remains open; no merge or 1.0.0 release."
+  ],
+  "limitations": [
+    "File Provider is read-only; symlinks and special devices are metadata only; runtime /proc and /sys data are not exported.",
+    "Guest FALLOC_FL_PUNCH_HOLE remains unsupported; original foot uses its supported fallback, so its warning may remain.",
+    "Sparse logical growth is free but mapped/written/explicitly reserved pages still consume the existing shared working-set budget.",
+    "File Provider compiler and simulator checks do not validate personal-team signing or physical-device extension activation."
+  ],
+  "native_validation": {
+    "source_commit": "77455055bf902e6ea0193c36919c01daa672506d",
+    "apple": {
+      "run": 39034108790,
+      "job": 117400399449,
+      "step": "Validate affected native modules or the complete Apple core",
+      "step_conclusion": "success",
+      "passed": 125,
+      "failed": 0,
+      "ignored": 1,
+      "note": "Only this successful native step is reused. The first extension install failed because its generated plist omitted NSExtension; configuration was fixed and blocked frontend checks rerun."
+    },
+    "linux": {
+      "run": 39034108836,
+      "job": 117400396451,
+      "lib_tests_passed": 126,
+      "failed": 0,
+      "ignored": 1,
+      "gtk_tests_passed": 1,
+      "note": "Reuse successful Check affected modules (including clippy) and original GTK3/mousepad steps only. The later foot prepare step hit its Debug font-cache timeout; it is rerun in Release."
+    },
+    "packages": [
+      "trames-shared",
+      "trames-wayland",
+      "trames-vfs",
+      "trames-ffi"
+    ]
+  },
+  "foot_validation": {
+    "source_commit": "aad698d9d0621d5d94935123fe9ae87e9d06ce13",
+    "run": 39034896571,
+    "job": 117402651035,
+    "package": "original signed Alpine aarch64 foot 1.22.3-r0",
+    "font_package": "font-dejavu 2.37-r6",
+    "mode": "Release interpreter, production FFI/Wayland, no host graphics library mocking",
+    "child_completion": "Only after a real committed frame is acquired and released; natural child exit yields foot exit code 0.",
+    "conclusion": "success",
+    "frames_acquired": 14,
+    "exit_code": 0,
+    "artifact_id": 12101329667,
+    "artifact_sha256": "6ec62e1942d04cd75669b3279b36a942a2186e3e22d738781d82a326e2582506",
+    "artifact_url": "https://github.com/kb5000/trames/actions/runs/39034896571/artifacts/12101329667"
+  },
+  "reused_frontend_checks": {
+    "source_commit": "aad698d9d0621d5d94935123fe9ae87e9d06ce13",
+    "workflow_run": 39034896559,
+    "job": 117402670021,
+    "step": "Test affected frontend paths or the full simulator suite",
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0,
+    "artifact_id": 12102092686,
+    "artifact_sha256": "3295397736bd88dc66520888d5a66a1a6dece01dceb13a391991a7772ff3c3e6",
+    "tests": [
+      "TramesTests/RootfsSnapshotTests/testCatalogSupportsMultipleRootsAndRejectsEscapingStores",
+      "TramesTests/RootfsSnapshotTests/testEnablingSharedStoragePreservesExistingRootfsAndNoGroupUsesPrivateStore",
+      "TramesTests/WorkspaceInteractionTests/testFloatingTerminalReservesResizeSpaceAndDockReflowsTheGrid",
+      "TramesTests/WorkspaceInteractionTests/testOnlyTerminalCanMinimizeWithoutReactivatingItsHiddenKeyboard",
+      "TramesTests/WorkspaceInteractionTests/testTransientDialogFrameFitsClientAndSurvivesViewportChange",
+      "TramesUITests/LaunchTests/testOnlyAlpineCanMinimizeRestoreAndUseTheInvisibleResizeCorner"
+    ],
+    "reason": "Production app code is unchanged by the final correction to the snapshot fixture expectation. Reuse these individually successful checks, not the failed critical test or the failed overall run."
+  },
+  "notes": [
+    "The first generated extension plist lost NSExtension; the build now uses the explicit plist and checks its metadata before tests and packaging.",
+    "The production snapshot fixture also contains the automatically created /dev directory. Its missing test expectation was corrected; this failed check alone is rerun.",
+    "The first original-foot prepare hit a Debug interpreter timeout in font-cache triggers. Its Release rerun passed; successful native and GTK steps were not repeated.",
+    "The package finalizer runs after normal simulator/device linking too, avoiding reliance on unsupported arbitrary generated INFOPLIST_KEY settings. Repackaging checks bound source hashes and successful build/test steps before downloading original compiled products.",
+    "Documentation, validation record and restoration of the build-ios.sh executable mode are committed afterward with [skip ci]; no extra app build is triggered."
+  ],
+  "tests": {
+    "critical_snapshot_test": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "artifact_id": 12102301310,
+      "artifact_sha256": "5d621e445a37c67d09c7b26f287e877032512a77eea9b2fd8ee2c8b017008521",
+      "run": 39036043036,
+      "job": 117405926153
+    },
+    "reused_successful_frontend_checks": 6,
+    "distinct_frontend_checks_passed": 7
+  },
+  "executable_source_commit": "89051454cb6b69ffcf9e41c7d3732ab9997c7351",
+  "workflow_conclusion": "success",
+  "apple_compile_and_test": {
+    "run": 39036043036,
+    "job": 117405926153,
+    "simulator_build": "success",
+    "critical_snapshot_test": "success",
+    "frontend_summary": "success",
+    "device_release_build": "success",
+    "note": "The final packaging step alone rejected missing main-app generated group metadata. Device executables are reused without recompilation; the explicit post-build finalizer copies the expanded extension group into the unsigned main Info.plist."
+  },
+  "ipa": {
+    "version": "0.18.0",
+    "build": 22,
+    "bundle_id": "org.trames.Trames",
+    "platform": "iPhoneOS arm64",
+    "signed": false,
+    "bytes": 10564633,
+    "sha256": "2cd9cd4c2794759299d72fd587f171bd8e99750027eae0f850e8fdcde4a9e8be",
+    "file_provider_bundle_id": "org.trames.Trames.FileProvider",
+    "file_provider_group": "group.org.trames.Trames",
+    "file_provider_platform_verified": true,
+    "native_coremark_and_ssh_symbols_absent": true,
+    "debug_acceptance_fixtures_absent": true,
+    "artifact_id": 12102612294,
+    "url": "https://github.com/kb5000/trames/actions/runs/39037069302/artifacts/12102612294"
+  },
+  "packaging": {
+    "run": 39037069302,
+    "job": 117408974542,
+    "conclusion": "success",
+    "compiled_app_source_run": 39036043036,
+    "compiled_app_artifact": 12102044423,
+    "compiled_app_archive_sha256": "c966879121387e335d01363bd15c71592f07809b0fced2c06eb244024ef2204a",
+    "artifact_archive_sha256": "abc09cba370effa2bf5eecc7bc0413565133544f4b05fb3e9d90aea8e7bd34fd",
+    "unchanged_payload_files_verified": 163,
+    "note": "Main Info.plist group metadata only. The Actions ZIP loses executable modes; packaging restores bundle executable mode bits, while verifying every executable and guest payload is byte-identical."
+  },
+  "checks": {
+    "artifact_archive_sha256_verified": true,
+    "ipa_sha256_verified": true,
+    "reused_payload_sha256_verified": true,
+    "main_and_provider_versions_verified": true,
+    "main_and_provider_ios_arm64_verified": true,
+    "file_provider_metadata_and_group_verified": true,
+    "both_bundles_unsigned": true,
+    "native_coremark_and_ssh_symbols_absent": true,
+    "debug_acceptance_fixtures_absent": true
+  }
+}
