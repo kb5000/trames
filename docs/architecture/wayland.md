@@ -7,9 +7,10 @@ managed iPad window: move, resize, minimize, close or maximize into a workspace
 tab. Resizing sends configure/ack and requires new client buffer dimensions;
 it does not retain and scale a fixed-resolution canvas.
 
-The implementation is in `feature/native-wayland`, [PR #26](https://github.com/kb5000/trames/pull/26),
-tracked by [Issue #25](https://github.com/kb5000/trames/issues/25). It has not yet
-been released. See the [usage guide](../guides/wayland.md).
+The implementation is tracked by [PR #26](https://github.com/kb5000/trames/pull/26)
+and [Issue #25](https://github.com/kb5000/trames/issues/25). Its first release family
+is 0.17.0; publication and artifact verification are tracked in the
+[release record](../validation/release-0.17.md). See the [usage guide](../guides/wayland.md).
 
 ## Shared storage and descriptors
 
@@ -69,7 +70,9 @@ The graphics subset includes sRGB textures, D16/D32 depth attachments, native sa
 blending, depth
 compare/write, empty native pipeline caches, PREINITIALIZED images and
 SIMULTANEOUS_USE command buffers with per-submission completion accounting.
-Native Wayland and legacy fixed-display WSI remain separate instance routes;
+The App no longer mounts the legacy fixed-display monitor. The native embedding
+API retains it only for regression tests. Native Wayland and legacy fixed-display
+WSI remain separate instance routes;
 requesting both on one instance is rejected.
 
 ## Workspace and focus
@@ -117,11 +120,12 @@ at the composition caret, including interior selections.
 
 ## Validation
 
-- 182 affected shared/core/VFS/Vulkan/FFI/Wayland library tests and strict Clippy
-  pass on Linux.
-- Four independent original C acceptance groups cover two-window resize/close,
+- 138 affected shared/VFS/Vulkan/FFI/Wayland library tests, six portable workspace
+  tests, the Rust iOS target check and strict Clippy pass on Linux.
+- Five independent original C acceptance groups cover two-window resize/close,
   synchronized scenes/popups/input regions/grabs, v3 UTF-8/serial/surrounding state,
-  producer readiness/FIFO/budget and retained GPU-image lifetime.
+  exclusive v1 widget activation, producer readiness/FIFO/Mailbox/budget and
+  retained GPU-image lifetime.
 - Original Alpine-signed wayland-info, Weston SHM/editor, vkcube and vkmark run through
   the production session/transfer/frame ABI. vkcube recreates images at 320x240.
   Retained SHM/GPU capabilities survive session shutdown and then release cleanly.
@@ -131,12 +135,15 @@ at the composition caret, including interior selections.
   flush/invalidate), graphics and texture outputs match the independent native
   Linux driver with one and four guest CPUs; graphics pixels match byte-for-byte.
 - Both Apple apps link. Actual Apple simulator execution passes original
-  wayland-info, two-window resize, no-copy SHM drawing and UIKit Chinese/emoji
-  composition. Original vkcube reaches actual Metal drawables, recreates its
-  swapchain at 320x240 and produces nonuniform displayed pixels. The coherent
-  no-flush/no-invalidate compute test also passes. Apple acceptance is 23 passed,
-  zero failed/skipped; see the [validation record](../validation/wayland-native.md).
-  This is simulator execution, not an iPad device test.
+  wayland-info, two-window resize, no-copy SHM drawing and Weston widget A/B/A
+  Chinese/emoji composition. vkcube reaches Metal drawables at a recreated
+  320x240 extent; original vkmark runs clear, anisotropic texture and Phong scenes.
+  Anisotropy/transfer-clear and static alpha-blend pixel tests pass on the native
+  GPU. Workspace gestures and repeated UIKit terminal focus are exercised.
+  Current acceptance is 33 passed, zero failed/skipped; see the
+  [workspace/vkmark record](../validation/wayland-workspace-vkmark.md). This is
+  simulator execution, not a physical iPad test. The earlier 23-test record
+  remains historical in [initial acceptance](../validation/wayland-native.md).
 
 Reproduce independent native C acceptance with the original development tools:
 

@@ -1,0 +1,87 @@
+{
+  "date": "2026-10-17",
+  "implementation_commit": "fc4ff5237cc1ff3a1ba5c79c1b46dbe580f3cdd3",
+  "local": {
+    "affected_library_tests_passed": 138,
+    "original_native_c_acceptance_groups_passed": 5,
+    "portable_workspace_model_tests_passed": 6,
+    "native_pixel_oracle_guest_cpus": [
+      1,
+      4
+    ],
+    "native_pixel_oracle_modes": [
+      "basic",
+      "base-offsets",
+      "anisotropy + transfer clear",
+      "static viewport/scissor + source-alpha blending"
+    ],
+    "vkmark_package": "Alpine v3.22 vkmark 2025.01-r0; original signed APK",
+    "vkmark_scene_variants_passed": 13,
+    "vkmark_extent": [
+      320,
+      240
+    ],
+    "vkmark_duration_seconds_per_scene": 0.05,
+    "performance_measurement": false,
+    "weston_ime_roundtrip": [
+      "Entry你好🙂",
+      "Numeric第二框",
+      "Entry你好🙂返回"
+    ],
+    "retained_frame_lifetimes": [
+      "SHM",
+      "native GPU"
+    ],
+    "clippy_warnings_denied": true,
+    "rust_ios_target_check": "passed",
+    "upstream_notice_check": "passed",
+    "vkmark_apk_sha256": "75505c577506f5c7b199ac80026c8f3f2edbf753bf12e06e0a095f3d43f5d0a7",
+    "native_core_commit": "a71e7c571830b77e966137d0ce207052e1faec0c"
+  },
+  "apple": {
+    "status": "passed",
+    "workflow_run": 38999206546,
+    "workflow_url": "https://github.com/kb5000/trames/actions/runs/38999206546",
+    "physical_ipad_test": false,
+    "workspace_gesture_result": "passed",
+    "workspace_gesture_artifact_id": 12088647998,
+    "workspace_gesture_tests_passed": 1,
+    "actual_runtime_result": "passed",
+    "job_id": 117298921765,
+    "simulator_passed_total": 33,
+    "simulator_failed": 0,
+    "simulator_skipped": 0,
+    "app_tests_passed": 29,
+    "ui_tests_passed": 4,
+    "remaining_tests_passed": 32,
+    "remaining_artifact_id": 12088689195,
+    "simulator_app_link": "passed",
+    "device_release_app_link": "passed",
+    "device_name": "iPad Pro 11-inch (M4)",
+    "os_version": "18.5",
+    "architecture": "arm64",
+    "wayland_client_stages_passed": [
+      "info",
+      "windows",
+      "shm",
+      "editor",
+      "cube",
+      "vkmark"
+    ],
+    "wayland_setup_seconds": 188.678,
+    "wayland_all_stages_seconds": 203.28
+  },
+  "logs_sha256": {
+    "vulkan_and_wayland_libraries": "d59def6ba9cf10f52b5443743a063d80061c5a1ea0c599fc3918ada9218ea727",
+    "native_wayland_c_clients": "1d5a8cc5a652cd224ad445ddc22f28c53d51e13bb420c8486323ed706696246a",
+    "workspace_model": "d2dcc57d3d4835821ffee2e33610886f0dfc943defbfb872f10f680aeb3b42b3",
+    "native_gpu_pixel_oracles": "7ebe11970ffbca7502f2d3ace8dd3653cba144cc98e1d829c692a9061fc7d64c",
+    "original_wayland_ffi": "806bb0600a69a06567cf771c151970675fca2983f59298ff9b53f64a2399e31a",
+    "original_vkmark_ffi": "9ded2a418574924438df67a187b1ec1b2586dba04207310a19f440f990c3eacd",
+    "apple_remaining_summary": "a4d54fc263c95ecadc9a5f192020fbd413b7efd9c25e973bfa8a9243fdf70347",
+    "apple_gesture_summary": "424bf4b64491a2795d62843c55cb96de834de1f8c7175ef4a634fa3d45bc02ef",
+    "apple_remaining_stdout": "55af2e447335725b28acf6539dcf4d5e2d6523b5c927ef221c894e41cdd431c5",
+    "apple_gesture_stdout": "3e92e5a421e199427587a19831869d8c65dbb9a6e9956af6fb6f37bcc33b5f58"
+  },
+  "legacy_monitor_ui": "removed; native WSI probes retained only in XCTest target"
+}

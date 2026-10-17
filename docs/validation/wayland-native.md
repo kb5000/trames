@@ -49,3 +49,6 @@ published release. Clipboard/DnD, custom cursor images, reactive popup relayout
 and EGL/OpenGL bridging remain outside the initial profile. Real iPad touch,
 window gestures and system keyboard/candidate behavior still need device use;
 programmatic UIKit composition in a simulator does not establish that experience.
+
+The subsequent unified workspace, v1 widget-focus and vkmark changes are tracked
+separately in [the 2026-10-17 follow-up](wayland-workspace-vkmark.md).
