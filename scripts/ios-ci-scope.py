@@ -56,7 +56,7 @@ def main():
                                     results.append(any(step['name']=='Validate affected native modules or the complete Apple core' and step['conclusion']=='success' for job in jobs for step in job['steps']))
                                 else:
                                     completed={step['name'] for job in jobs if job['name']=='targeted-runtime' for step in job['steps'] if step['conclusion']=='success'}
-                                    skip_linux_modules={'Check affected modules','Exercise original GTK3 and mousepad, including clipboard FD transfers'}<=completed
+                                    skip_linux_modules='Check affected modules' in completed and (plan.get('native_scope')=='host-terminals' or 'Exercise original GTK3 and mousepad, including clipboard FD transfers' in completed)
                                     results.append(any(job['name']=='targeted-runtime' and job['conclusion']=='success' for job in jobs))
                             skip_native=results[0];skip_linux_native=results[1]
                             if skip_native or skip_linux_native:print(f'Reusing unchanged native checks: Apple={skip_native}, Linux={skip_linux_native}.')
@@ -64,7 +64,7 @@ def main():
                     if plan.get('native_scope') == 'host-terminals' and plan.get('native_reuse'):
                         paths=subprocess.check_output(['git','diff','--name-only',plan['native_reuse']['sha'],'HEAD','--','crates','Cargo.toml','Cargo.lock','vendor','.cargo','rust-toolchain.toml'],text=True).splitlines()
                         allowed={'Cargo.toml','Cargo.lock','crates/trames-core/src/process.rs','crates/trames-vfs/src/pty.rs','crates/trames-ffi/src/lib.rs','crates/trames-ffi/src/session.rs','crates/trames-ffi/src/terminals.rs','crates/trames-ffi/include/trames.h'}
-                        if paths and set(paths)<=allowed:
+                        if set(paths)<=allowed:
                             native_scope='host-terminals'
                             print('Validate host PTY lifecycle, coordinator signals and original Alpine multiple shells; reuse unrelated CPU, GTK, GPU and networking checks.')
                     if plan.get('native_scope') in {'wayland-input','wayland-clipboard'} and plan.get('native_reuse'):
@@ -87,7 +87,7 @@ def main():
                     if plan.get('repackage'):
                         reuse=plan['repackage']
                         paths=subprocess.check_output(['git','diff','--name-only',reuse['sha'],'HEAD'],text=True).splitlines()
-                        allowed={'.github/ios-validation-plan.json','.github/workflows/ios.yml','scripts/ios-ci-scope.py','scripts/build-ios.sh','scripts/finalize-ios-app.py','README.md','docs/validation/release-1.0.json','docs/validation/release-1.0.md'}
+                        allowed={'.github/ios-validation-plan.json','.github/workflows/ios.yml','scripts/ios-ci-scope.py','scripts/build-ios.sh','scripts/finalize-ios-app.py','README.md','docs/validation/release-1.0.json','docs/validation/release-1.0.md','scripts/publish-ios-release-1.0.py','.github/workflows/release-1.0.yml','tests/integration/multiple-terminals.py','apps/ios/TramesUITests/LaunchTests.swift','apps/ios/TramesTests/WorkspaceInteractionTests.swift'}
                         if any(path not in allowed for path in paths):raise RuntimeError('Repackaging must preserve compiled app sources and build settings')
                         with urllib.request.urlopen(urllib.request.Request(f"https://api.github.com/repos/{repo}/actions/runs/{reuse['run']}/jobs",headers=dict(request.headers)),timeout=30) as response:
                             jobs=json.load(response)['jobs']

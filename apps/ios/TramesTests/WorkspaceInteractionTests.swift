@@ -18,31 +18,39 @@ final class WorkspaceInteractionTests: XCTestCase {
         let native=try LocalSession(store:directory.appendingPathComponent("store"),rootfs:archive,total:1<<30,available:1<<30,network:"off",multipleTerminals:true)
         var created:[TerminalSession]=[first],output:[UUID:String]=[:]
         let defaults=UserDefaults.standard,oldBridge=defaults.object(forKey:"bridgeEnabled")
-        let pasteboard=UIPasteboard.general,oldItems=pasteboard.items
+        let pasteboard=UIPasteboard.general
         defaults.set(true,forKey:"bridgeEnabled")
         defer {
             for session in created {session.close();session.terminal.updateUiClosed()}
-            native.close();window.isHidden=true;previous?.makeKeyAndVisible();pasteboard.items=oldItems
+            native.close();window.isHidden=true;previous?.makeKeyAndVisible();pasteboard.items=[]
             if let oldBridge {defaults.set(oldBridge,forKey:"bridgeEnabled")} else {defaults.removeObject(forKey:"bridgeEnabled")}
             try? FileManager.default.removeItem(at:directory)
         }
+        var stage="start three PTYs"
         func wait(_ condition:() throws -> Bool) async throws {
             let deadline=Date().addingTimeInterval(25)
             while try !condition() {
-                guard Date()<deadline else {throw TramesError.message("Multi-terminal wait timed out: \(output)")}
+                guard Date()<deadline else {throw TramesError.message("Multi-terminal wait timed out at \(stage): \(output); states=\(created.map(\.state))")}
                 try await Task.sleep(for:.milliseconds(20))
             }
         }
         first.local=native;first.bridge.attach(native);model.add(first);first.startPolling()
         model.openLocal();model.openLocal();created=model.sessions
         XCTAssertEqual(created.count,3)
-        for session in created {session.onTerminalOutput={ output[session.id,default:""]+=String(decoding:$0,as:UTF8.self) }}
+        for session in created {
+            session.onTerminalOutput={ output[session.id,default:""]+=String(decoding:$0,as:UTF8.self) }
+            // This check exercises workspace/PTY routing. The soft keyboard
+            // and native composition already have separate acceptance; keeping
+            // it hidden also keeps the three viewport measurements stable.
+            session.terminal.keyboardVisibility={false}
+        }
         try await wait { try created.allSatisfy { session in
             guard let id=session.terminalID else {return false}
             return try native.terminalStatus(id).phase == "running"
         } }
         XCTAssertEqual(Set(created.compactMap(\.terminalID)).count,3)
         XCTAssertTrue(created.allSatisfy{$0.local === native})
+        print("MULTI: three independent PTYs are running")
         let second=created[1],third=created[2]
         let host=UIHostingController(rootView:WorkspaceView(workspace:model))
         window.rootViewController=host;window.makeKeyAndVisible()
@@ -52,6 +60,7 @@ final class WorkspaceInteractionTests: XCTestCase {
         model.saveFrame(.terminal(third.id),DisplayWindowGeometry(origin:CGPoint(x:440,y:100),size:CGSize(width:490,height:360)))
         try await Task.sleep(for:.milliseconds(300))
         for session in created {
+            stage="viewport \(session.title)"
             let terminal=session.terminal.getTerminal()
             let marker="GRID_\(session.id.uuidString.prefix(6)):"
             session.send(Data("stty -echo; printf '\\n\(marker)'; stty size\n".utf8))
@@ -59,6 +68,8 @@ final class WorkspaceInteractionTests: XCTestCase {
             try await wait {output[session.id,default:""].contains(expected)}
         }
         XCTAssertNotEqual(second.terminal.getTerminal().cols,third.terminal.getTerminal().cols)
+        print("MULTI: independent workspace viewports and real stty sizes passed")
+        stage="shared files and private cwd/env"
         first.send(Data("cd /tmp; export PRIVATE=first; printf shared >/tmp/multi-shared; echo FIRST_READY\n".utf8))
         try await wait {output[first.id,default:""].contains("\r\nFIRST_READY\r\n")}
         second.send(Data("printf '\\nSHARED:%s:%s:%s\\n' \"$(cat /tmp/multi-shared)\" \"${PRIVATE-unset}\" \"$(pwd)\"\n".utf8))
@@ -67,23 +78,29 @@ final class WorkspaceInteractionTests: XCTestCase {
         model.minimize(.terminal(second.id));model.restore(.terminal(second.id));model.dock(.terminal(second.id))
         XCTAssertEqual(model.layout.placement(.terminal(second.id)),.tabbed)
         model.close(first)
+        print("MULTI: shared files, private cwd/env and docking passed; first view closed")
         XCTAssertTrue(model.localOwner === first);XCTAssertFalse(model.sessions.contains{$0 === first})
         // The invisible environment owner must still poll the Bridge exactly
         // once; a secondary shell can copy to the actual iPad pasteboard.
         let json="{\"version\":1,\"id\":1,\"method\":\"clipboard.write\",\"params\":{\"text\":\"multiple terminals 中文\"}}"
+        stage="Bridge after closing first view"
         third.send(Data("exec 3<>/dev/trames-bridge; printf '%s\\n' '\(json)' >&3; IFS= read -r reply <&3; echo BRIDGE_FROM_THIRD; exec 3>&-\n".utf8))
         try await wait {output[third.id,default:""].contains("\r\nBRIDGE_FROM_THIRD\r\n")}
         XCTAssertEqual(pasteboard.string,"multiple terminals 中文")
+        stage="shared pause/resume"
         model.background();third.send(Data("echo AFTER_SHARED_RESUME\n".utf8));model.foreground()
         try await wait {output[third.id,default:""].contains("\r\nAFTER_SHARED_RESUME\r\n")}
         model.close(second);model.close(third)
         XCTAssertTrue(model.sessions.isEmpty)
         model.openLocal();let reopened=try XCTUnwrap(model.sessions.first);created.append(reopened)
+        reopened.terminal.keyboardVisibility={false}
+        stage="reopen after closing all views"
         reopened.onTerminalOutput={output[reopened.id,default:""]+=String(decoding:$0,as:UTF8.self)}
         try await wait {reopened.terminalID != nil}
         reopened.send(Data("stty -echo; printf '\\nREOPENED:'; cat /tmp/multi-shared; printf '\\n'\n".utf8))
         try await wait {output[reopened.id,default:""].contains("\r\nREOPENED:shared\r\n")}
         XCTAssertTrue(reopened.local === native)
+        print("MULTI: Bridge, pause/resume and reopen after closing all views passed")
     }
     func testSystemAppWindowResizeUpdatesTerminalAndGuestPTY() async throws {
         let previous=UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).first { $0.isKeyWindow }

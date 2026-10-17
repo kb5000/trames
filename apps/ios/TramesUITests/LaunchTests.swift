@@ -150,7 +150,7 @@ final class LaunchTests: XCTestCase {
         let app=launchApp(["--workspace-ui-acceptance"])
         XCTAssertTrue(app.buttons["新建或管理会话"].waitForExistence(timeout:20))
         app.buttons["新建或管理会话"].tap()
-        XCTAssertTrue(app.buttons["本地 Alpine"].waitForExistence(timeout:5))
+        XCTAssertTrue(app.buttons["本地 Alpine 终端"].waitForExistence(timeout:5))
         XCTAssertTrue(app.buttons["Files"].exists);XCTAssertTrue(app.buttons["设置"].exists)
         XCTAssertFalse(app.buttons["原生 CoreMark"].exists)
         XCTAssertFalse(app.buttons["SSH 连接"].exists);XCTAssertFalse(app.buttons["Files / SFTP"].exists)
@@ -200,7 +200,7 @@ final class LaunchTests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [exited], timeout: 30), .completed)
         app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","close-tab-terminal-")).firstMatch.tap()
         app.buttons["新建或管理会话"].tap()
-        app.buttons["本地 Alpine"].tap()
+        app.buttons["本地 Alpine 终端"].tap()
         let reopened = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", "Alpine · 本地"), object: app.staticTexts["session-state"])
         XCTAssertEqual(XCTWaiter.wait(for: [reopened], timeout: 30), .completed)
         XCUIDevice.shared.orientation = .portrait

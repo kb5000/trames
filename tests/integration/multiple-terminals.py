@@ -51,7 +51,8 @@ with tempfile.TemporaryDirectory(prefix='trames-terminals-') as d:
         terminals=[1,api.trames_session_terminal_open(handle),api.trames_session_terminal_open(handle)]
         assert terminals==[1,2,3],terminals
         wait(lambda: all(status(t)['phase']=='running' for t in terminals))
-        for t in terminals:run(t,"stty -echo; printf '\\nREADY_%s\\n' $$",'READY_')
+        # Match an actual complete output frame, never the command's TTY echo.
+        for t in terminals:run(t,f"stty -echo; printf '\\nREADY_{t}\\n'",f'\r\nREADY_{t}\r\n')
         run(1,"cd /tmp; export PRIVATE_VAR=one; printf shared-content >/tmp/shared; echo ONE_READY",'ONE_READY')
         run(2,"printf '\\nTWO:%s:%s:%s\\n' \"$(pwd)\" \"${PRIVATE_VAR-unset}\" \"$(cat /tmp/shared)\"",'TWO:/root:unset:shared-content')
         paths=[]
