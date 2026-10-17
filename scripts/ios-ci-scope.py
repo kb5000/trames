@@ -66,6 +66,17 @@ def main():
                         if native_paths and all(path.startswith('crates/trames-wayland/') for path in native_paths):
                             native_scope='wayland-input'
                             print('Only compositor input changed; validate popup focus and original GTK menu copy, reusing other native modules and foot.')
+                    frontend_reused=False
+                    if plan.get('frontend_reuse') and native_scope=='wayland-input':
+                        reuse=plan['frontend_reuse']
+                        app_paths=['apps/ios','include','guest','scripts/build-ios.sh','scripts/package-ios.py','scripts/finalize-ios-app.py','scripts/prepare-vulkan.py','scripts/prepare-wayland-guest.py']
+                        same_frontend=not subprocess.check_output(['git','diff','--name-only',reuse['sha'],'HEAD','--',*app_paths],text=True).strip()
+                        if same_frontend:
+                            with urllib.request.urlopen(urllib.request.Request(f"https://api.github.com/repos/{repo}/actions/runs/{reuse['run']}/jobs",headers=dict(request.headers)),timeout=30) as response:
+                                jobs=json.load(response)['jobs']
+                            required={'Parse frontend Swift sources','Link unsigned iPad simulator app','Exercise peer tabs and floating window gestures first','Export simulator test summary','Link unsigned iPad device app','Package unsigned device IPA for sideload signing'}
+                            frontend_reused=any(job['name']=='apple-build' and job['conclusion']=='success' and required<={step['name'] for step in job['steps'] if step['conclusion']=='success'} for job in jobs)
+                            if frontend_reused:print(f"Reusing unchanged frontend/clipboard acceptance from {reuse['run']}; rebuild the device app with the newly tested compositor only.")
                     repackage_run=''
                     if plan.get('repackage'):
                         reuse=plan['repackage']
@@ -84,6 +95,7 @@ def main():
                         output.write('frontend_only=false\ntargeted=true\n')
                         output.write('repackage_run='+repackage_run+'\n')
                         output.write('native_scope='+native_scope+'\n')
+                        output.write('frontend_reused='+str(frontend_reused).lower()+'\n')
                         output.write('skip_native='+str(skip_native).lower()+'\n')
                         output.write('skip_linux_native='+str(skip_linux_native).lower()+'\n')
                         output.write('skip_linux_modules='+str(skip_linux_modules).lower()+'\n')

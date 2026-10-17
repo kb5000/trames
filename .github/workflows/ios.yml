@@ -26,6 +26,7 @@ jobs:
       critical_test: ${{ steps.scope.outputs.critical_test }}
       ui_targets: ${{ steps.scope.outputs.ui_targets }}
       native_scope: ${{ steps.scope.outputs.native_scope }}
+      frontend_reused: ${{ steps.scope.outputs.frontend_reused }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -137,6 +138,7 @@ jobs:
       - name: Generate Xcode project
         run: brew install xcodegen
       - name: Link unsigned iPad simulator app
+        if: needs.scope.outputs.frontend_reused != 'true'
         run: |
           bash scripts/build-ios.sh simulator
           python3 - <<'PYCODE'
@@ -148,6 +150,7 @@ jobs:
               assert info['NSExtension']['NSExtensionFileProviderDocumentGroup']==info['TramesAppGroup']
           PYCODE
       - name: Exercise peer tabs and floating window gestures first
+        if: needs.scope.outputs.frontend_reused != 'true'
         timeout-minutes: 12
         env:
           TRAMES_UI_CRITICAL: ${{ needs.scope.outputs.critical_test || 'TramesUITests/LaunchTests/testWorkspaceTabsDetachDockAndTerminalTitleRemainsVisible' }}
@@ -162,7 +165,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO -skipPackagePluginValidation -resultBundlePath apps/ios/build/workspace-interaction.xcresult test \
             2>&1 | tee apps/ios/build/workspace-interaction.log
       - name: Publish workspace gesture result before the remaining tests
-        if: always()
+        if: ${{ always() && needs.scope.outputs.frontend_reused != 'true' }}
         run: |
           if [[ -d apps/ios/build/workspace-interaction.xcresult ]]; then
             xcrun xcresulttool get test-results summary --path apps/ios/build/workspace-interaction.xcresult \
@@ -170,7 +173,7 @@ jobs:
             cat apps/ios/build/workspace-interaction-summary.json
           fi
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ always() && needs.scope.outputs.frontend_reused != 'true' }}
         with:
           name: workspace-gesture-diagnostics
           path: |
@@ -203,7 +206,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO -skipPackagePluginValidation -resultBundlePath apps/ios/build/ipad-smoke.xcresult test \
             2>&1 | tee apps/ios/build/ipad-smoke.log
       - name: Export simulator test summary
-        if: always()
+        if: ${{ always() && needs.scope.outputs.frontend_reused != 'true' }}
         run: |
           if [[ -d apps/ios/build/ipad-smoke.xcresult ]]; then
             xcrun xcresulttool get test-results summary --path apps/ios/build/ipad-smoke.xcresult \
@@ -220,14 +223,14 @@ jobs:
             apps/ios/build/device/Build/Products/Release-iphoneos/Trames.app \
             apps/ios/build/sideload/Trames-unsigned.ipa
       - name: Export simulator crash diagnostics
-        if: always()
+        if: ${{ always() && needs.scope.outputs.frontend_reused != 'true' }}
         run: |
           if [[ -d apps/ios/build/ipad-smoke.xcresult ]]; then
             xcrun xcresulttool export diagnostics --path apps/ios/build/ipad-smoke.xcresult \
               --output-path apps/ios/build/ipad-diagnostics
           fi
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ always() && needs.scope.outputs.frontend_reused != 'true' }}
         with:
           name: ipad-smoke-diagnostics
           path: |

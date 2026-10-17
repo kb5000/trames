@@ -1,15 +1,23 @@
 {
-  "base_sha": "b45510516d16287fd74359c96fcfabbd5a216e83",
+  "base_sha": "f9c2f7bd48aa9309a9b918ba436a2a986ac58175",
   "reuse_guest_run": 39015795319,
   "native_reuse": {
-    "sha": "b45510516d16287fd74359c96fcfabbd5a216e83",
-    "apple_run": 39053617459,
+    "sha": "f9c2f7bd48aa9309a9b918ba436a2a986ac58175",
+    "apple_run": 39054497343,
     "linux_run": 39053617583
   },
   "critical_test": "TramesTests/ClipboardBridgeTests/testGuestClipboardRequestsAutomaticallyReachTheSystemPasteboard",
   "ui_targets": [],
   "changed_file_sha256": {
-    "apps/ios/TramesTests/ClipboardBridgeTests.swift": "2b509caaeffb7a7174b6588cb45e3add384c1dafe0f55e621242b844d1c25fdb"
+    ".github/workflows/ios.yml": "a47ef2bebb2ad496587d1ea1d4f0bb673333e2827f8b616900058de9c0b3f63f",
+    "crates/trames-wayland/src/input.rs": "9bea55f7f4dabc7017dc86e9736b7e346150d4c4e3dc912c0970df95b86fb3b0",
+    "crates/trames-wayland/src/protocol.rs": "77b2124eb9048dc4bc2270efd41078cb8e5bee01fcd25f9ff60bee032b77ff33",
+    "scripts/ios-ci-scope.py": "e15cb7d02e0315b08d8b54d67b923193eb8cd8f78653e81a7dcd3da1c63f2a4f"
   },
-  "reason": "Only correct the new clipboard acceptance test CRLF framing: Swift Character treats CRLF as a single grapheme, so parse complete lines before JSON. All eight WaylandInput checks passed in run 39053617459, and original GTK/nested-popup tests passed on Apple/Linux. Production code is unchanged; rerun only the previously failing guest Bridge/UIPasteboard test and build the test IPA."
+  "reason": "Extend the popup-unmap regression to a real active grab stack: a NULL buffer must retain the restored parent focus rather than refocusing an unmapped popup. Only compositor code changed; rerun the affected native popup and original GTK menu tests. Reuse all nine already successful unchanged input/system-pasteboard acceptance checks and build a fresh device IPA; do not rebuild or repeat simulator tests.",
+  "native_scope": "wayland-input",
+  "frontend_reuse": {
+    "sha": "f9c2f7bd48aa9309a9b918ba436a2a986ac58175",
+    "run": 39054497343
+  }
 }
