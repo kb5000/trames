@@ -282,7 +282,8 @@ final class WaylandCanvas: WaylandInputView {
             #if !targetEnvironment(simulator)
             drawable.addPresentedHandler { [weak self] drawable in
                 let time=drawable.presentedTime
-                presentation.finish(presented:time > 0)
+                if time > 0 { presentation.finish(presented:true) }
+                else { presentation.cancel() }
                 Task { @MainActor in
                     if time > 0 { self?.didPresent(at:time) }
                     else { self?.retryUnpresented(submittedRevision) }
