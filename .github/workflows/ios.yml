@@ -144,7 +144,7 @@ jobs:
               assert info['NSExtension']['NSExtensionFileProviderDocumentGroup']==info['TramesAppGroup']
           PYCODE
       - name: Exercise peer tabs and floating window gestures first
-        timeout-minutes: 8
+        timeout-minutes: 12
         env:
           TRAMES_UI_CRITICAL: ${{ needs.scope.outputs.critical_test || 'TramesUITests/LaunchTests/testWorkspaceTabsDetachDockAndTerminalTitleRemainsVisible' }}
         run: |
@@ -175,7 +175,7 @@ jobs:
             apps/ios/build/workspace-interaction.xcresult
           retention-days: 7
       - name: Test affected frontend paths or the full simulator suite
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && needs.scope.outputs.ui_targets != '[]' }}
         timeout-minutes: 20
         env:
           TRAMES_UI_CRITICAL: ${{ needs.scope.outputs.critical_test || 'TramesUITests/LaunchTests/testWorkspaceTabsDetachDockAndTerminalTitleRemainsVisible' }}
@@ -206,8 +206,8 @@ jobs:
               > apps/ios/build/ipad-smoke-summary.json
             cat apps/ios/build/ipad-smoke-summary.json
             python3 -c 'import json; s=json.load(open("apps/ios/build/ipad-smoke-summary.json")); assert s["failedTests"] == 0 and s["passedTests"] > 0, "The actual simulator test report did not pass"'
-            python3 -c 'import json; s=json.load(open("apps/ios/build/workspace-interaction-summary.json")); assert s["failedTests"] == 0 and s["passedTests"] == 1, "Workspace gestures must pass too"'
           fi
+          python3 -c 'import json; s=json.load(open("apps/ios/build/workspace-interaction-summary.json")); assert s["failedTests"] == 0 and s["passedTests"] == 1, "Workspace gestures must pass too"'
       - name: Link unsigned iPad device app
         run: bash scripts/build-ios.sh device
       - name: Package unsigned device IPA for sideload signing

@@ -2,16 +2,9 @@
   "base_sha": "769737e4d36eee64fa6dc70ffb9a5c01484f8ff3",
   "reuse_guest_run": 39015795319,
   "critical_test": "TramesTests/RootfsSnapshotTests/testProductionManifestReadOnlyBrowsingAndExportPreserveHardlinks",
-  "ui_targets": [
-    "TramesTests/RootfsSnapshotTests/testCatalogSupportsMultipleRootsAndRejectsEscapingStores",
-    "TramesTests/RootfsSnapshotTests/testEnablingSharedStoragePreservesExistingRootfsAndNoGroupUsesPrivateStore",
-    "TramesTests/WorkspaceInteractionTests/testFloatingTerminalReservesResizeSpaceAndDockReflowsTheGrid",
-    "TramesTests/WorkspaceInteractionTests/testTransientDialogFrameFitsClientAndSurvivesViewportChange",
-    "TramesTests/WorkspaceInteractionTests/testOnlyTerminalCanMinimizeWithoutReactivatingItsHiddenKeyboard",
-    "TramesUITests/LaunchTests/testOnlyAlpineCanMinimizeRestoreAndUseTheInvisibleResizeCorner"
-  ],
+  "ui_targets": [],
   "changed_file_sha256": {
-    ".github/workflows/ios.yml": "5bbe28d74e53d41c23ae2e9979ef38d4b9e061292f29f6e94e8ddb6904af9576",
+    ".github/workflows/ios.yml": "62f6f782da650d34af81b71a685cf28dc1808ad7f3d274980f2930af970f1da5",
     ".github/workflows/linux.yml": "0416d54f92cfdc4aaa1453d974a450c4283a26457507df595c9d3b9557665e6e",
     "apps/ios/Trames.entitlements": "fee16729fe8dd0f346188500fa23ae096d53b729db313ad63d8c06a049613b4a",
     "apps/ios/Trames/EnvironmentStore.swift": "e37f8de53c6fcfa57d4e94d3bd4eb5c2f2ed2545ff99ca8dc5ee0c75f936a2bf",
@@ -29,7 +22,7 @@
     "apps/ios/TramesKit/Sources/TramesKit/LocalSession.swift": "87c91b9822f6a5be6044df4067d1975e82b77af1735639c559272290af6899a0",
     "apps/ios/TramesKit/Sources/TramesKit/LocalWayland.swift": "556f0258249c65834195f14d0f147dd1c283479c5973a27f0e306464bdb3607e",
     "apps/ios/TramesTests/Fixtures/rootfs-manifest.hex": "729fe6ea1ab3e1a64dd81e98b32079f1d82263abac8756c24adf44528fb32636",
-    "apps/ios/TramesTests/RootfsSnapshotTests.swift": "ff3bf218f9c233b5e201c1e72ec246bb5a99d6ee1be8625728f0137600ccd1a5",
+    "apps/ios/TramesTests/RootfsSnapshotTests.swift": "ea699ed69635cc8bf2ef52207b9b67ec048f40b027756d177c4163eea355d44f",
     "apps/ios/TramesTests/WorkspaceInteractionTests.swift": "7fdc7f032c6de638f21c915c4c33f57a42c1ce585be08928402fb0e73f60a964",
     "apps/ios/TramesUITests/LaunchTests.swift": "96500e303d63d1e8527fe3bdee05a0fcf8f3b23f8c75107b79ddc0e3d4e55d0c",
     "apps/ios/project.yml": "e5ccaf79dbe21751d7c4de1053fce8bdb08fb21a194ef9b0089d613d43a1743e",
@@ -52,10 +45,10 @@
     "tests/fixtures/gtk-seat.py": "8503ab064159f1576c01b6b384c4b361f84c307b1e02dacc437875c4f5790727",
     "tests/integration/foot-wayland.py": "14923e118861a3ae19b6e6347e1c8c5401b138274b20f096bc6c2104f4d93b86"
   },
-  "reason": "Fix extension installation metadata and rerun the blocked Apple tests. Reuse successful native and GTK steps; rerun only original foot with a Release interpreter and frame-confirmed termination.",
+  "reason": "Rerun only the production-manifest test after correcting its missing /dev expectation; reuse the six other frontend checks from run 39034896559, successful native/GTK steps, and successful Release foot acceptance.",
   "native_reuse": {
     "sha": "77455055bf902e6ea0193c36919c01daa672506d",
     "apple_run": 39034108790,
-    "linux_run": 39034108836
+    "linux_run": 39034896571
   }
 }

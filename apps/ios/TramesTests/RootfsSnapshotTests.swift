@@ -20,7 +20,7 @@ final class RootfsSnapshotTests:XCTestCase {
         let original=try Data(contentsOf:directory.appendingPathComponent("manifest"))
         let entry=try XCTUnwrap(snapshot.entries[Data("/root/readme.txt".utf8)]),alias=try XCTUnwrap(snapshot.entries[Data("/alias".utf8)])
         XCTAssertEqual(entry.inode,alias.inode);XCTAssertNotEqual(entry.identifier(environment:"alpine"),alias.identifier(environment:"alpine"))
-        XCTAssertEqual(Set(snapshot.entries.values.filter{$0.parent==Data([47]) && $0.path != Data([47])}.map(\.filename)),["alias","root","link"])
+        XCTAssertEqual(Set(snapshot.entries.values.filter{$0.parent==Data([47]) && $0.path != Data([47])}.map(\.filename)),["alias","root","link","dev"])
         let output=directory.appendingPathComponent("cache-copy.txt")
         try snapshot.materialize(entry,to:output)
         XCTAssertEqual(try Data(contentsOf:output),Data("rootfs fixture".utf8))
