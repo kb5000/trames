@@ -118,7 +118,7 @@ enum LocalWaylandProbe {
         var cubeResized=false, textConfirmed=false, resumedPresentation=false
         for (stage,program) in [("info","wayland-info"),("windows","/tmp/wayland-client 1 hold"),("shm","weston-simple-shm"),("editor","weston-editor"),("cube","vkcube --wsi wayland --c 30"),("vkmark","vkmark --winsys wayland --size 320x240 -b clear:duration=0.1 -b texture:anisotropy=16:duration=0.1 -b shading:shading=phong:duration=0.1")] {
             print("Wayland acceptance: starting \(stage) at \(Date().timeIntervalSince(began))s")
-            let start=Date(), baseline=canvas.rendered, presentationBaseline=canvas.frameProgress
+            let start=Date(), baseline=canvas.rendered, presentationBaseline=canvas.frameProgress, completionBaseline=canvas.completed, shownBaseline=canvas.presented
             var focused=false, resized=false, closed=false
             var currentID:UInt64?
             var editorStep=0
@@ -194,8 +194,10 @@ enum LocalWaylandProbe {
             if stage == "vkmark" && (!text.contains("vkmark Score") || text.contains("Failed with exception") || canvas.frameProgress == presentationBaseline) {
                 throw TramesError.message("Original vkmark scene failed: \(text.suffix(16384))")
             }
-            print("Wayland acceptance: \(stage) passed; submitted=\(canvas.rendered-baseline), progress=\(canvas.frameProgress-presentationBaseline), IME=\(textConfirmed)")
-            text += "\r\nWAYLAND_PRESENTATION:\(stage):submitted=\(canvas.rendered-baseline):presented=\(canvas.presented-presentationBaseline)\r\n"
+            let feedback=canvas.presentationFeedbackAvailable ? "device-presented" : "simulator-completed"
+            let metrics="submitted=\(canvas.rendered-baseline):completed=\(canvas.completed-completionBaseline):presented=\(canvas.presented-shownBaseline):feedback=\(feedback)"
+            print("Wayland acceptance: \(stage) passed; \(metrics), IME=\(textConfirmed)")
+            text += "\r\nWAYLAND_PRESENTATION:\(stage):\(metrics)\r\n"
             while !(try session.waylandStatus()).windows.isEmpty {
                 if Date().timeIntervalSince(start)>185 { throw TramesError.message("Wayland client resources were not reclaimed") }
                 try await Task.sleep(for:.milliseconds(10))
