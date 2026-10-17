@@ -53,7 +53,8 @@ final class LaunchTests: XCTestCase {
         XCTAssertEqual(app.staticTexts["native-coremark-status"].label, "尚未运行")
         XCTAssertTrue(app.buttons["native-coremark-run"].isEnabled)
         app.buttons["完成"].tap()
-        XCTAssertTrue(app.buttons["新建或管理会话"].isHittable)
+        let restored=XCTNSPredicateExpectation(predicate:NSPredicate(format:"hittable == true"),object:app.buttons["新建或管理会话"])
+        XCTAssertEqual(XCTWaiter.wait(for:[restored],timeout:10),.completed,app.debugDescription)
     }
     func testGuestNativeRequestRequiresVisibleConsent() {
         let app=launchApp()
