@@ -10,18 +10,18 @@
     "TramesTests/WaylandInputTests/testNativeClipboardActionsRouteToGuestControlKeys"
   ],
   "changed_file_sha256": {
-    ".github/workflows/ios.yml": "84edc95edf10b0ef530782f59d47254caf876eb05386d045ee97c45fd9afb126",
-    ".github/workflows/linux.yml": "d6f7a9802a87405c9a87a2b36e9b11f1aeca23cb0fdbfb1bbe869aca010e14a8",
+    ".github/workflows/ios.yml": "317c8d39d93822c6bd72f2a7be13e440786617df377e37b36455bf7cce5cb0b4",
+    ".github/workflows/linux.yml": "c21c767456b85bb64b4fa3c4be6df40395064a83d5d158e0110ef960752ff581",
     "Cargo.lock": "e67d1213de44718c2f4c8e2d9eae344b99131a1ea800db359b09c76657a2ec94",
     "apps/ios/Trames/BridgeController.swift": "35de5863de92e57ae2b2fed9fbee7b6171a00ec2f4984b3e9d1a7f87f5157a74",
     "apps/ios/Trames/TerminalSession.swift": "3f3d95488b1e2b0d294db7cd69ed4d0bc1e9470374dd0760ea7c6d6636edf951",
-    "apps/ios/Trames/TerminalViewport.swift": "97802d866c691643e170c14ddd985115211d3836559befc74c2c738302b03177",
+    "apps/ios/Trames/TerminalViewport.swift": "0a005a2ca58a93c88734a84a38f2e32c2f2df656b08426af288f4d166eb8f5d3",
     "apps/ios/Trames/TramesApp.swift": "be9f05e857d3942211d8e654560e8fe1bb4e6653b4653ec1c59c02490ba97c5e",
     "apps/ios/Trames/WaylandInputView.swift": "f94a7475a8cae8a5dde5ec0482ba6707a2503f9c926aec3426d6244384297d0b",
     "apps/ios/Trames/WorkspaceModel.swift": "53a37f104c70df34d911200ac96bf504c3870393c526a04b36e10ff6b44d32dc",
     "apps/ios/Trames/WorkspaceWindows.swift": "ca6aa8a67ecf2afd3a9de78937abf9cc178438f3ef4ad4fda99ad1b573c7da9a",
     "apps/ios/TramesTests/WaylandInputTests.swift": "251a09378dfed1ad858b05b85b0d9a9b428ade60c0cd7ce3494c9574b01f7653",
-    "apps/ios/TramesTests/WorkspaceInteractionTests.swift": "c9a0b41751074eeb1001b11a2b7dcb718d26c7d05fece34ed552a5117c542ec1",
+    "apps/ios/TramesTests/WorkspaceInteractionTests.swift": "e8fe3a21f8d28bba5c9820f0c0eb9986e84e8b9e407b435933d23351b27eaf3d",
     "apps/ios/TramesUITests/LaunchTests.swift": "2c00d7ce1363d21ab283e3fabbc1db52b757d9444058c8a5ffce800d7e6eb647",
     "apps/ios/project.yml": "8c78118b279f20cbe677898cfd8cb6ef1f9381846ef3ae9900ff247fd8f241b8",
     "crates/trames-core/src/process.rs": "aba6d57e909736ec95bf1a125d0209c4300c48060c9c01ecfdef2d8787b2e794",
@@ -43,8 +43,13 @@
     "crates/trames-wayland/tests/gtk_client.rs": "4041ddd9264e2a9046dbca1265a2943708ec6eeb0602b1643ff34bc7daeccc9a",
     "docs/validation/compatibility-current-syscalls.csv": "b5366b21fe6a9a62ef4e4246b989d91fd9804b1e29d788622f67e45a1309c1c8",
     "docs/validation/compatibility-current-syscalls.json": "29b091824822144c4bda25ea20682fce28f9056bd017c5a104d35499d6fe5198",
-    "scripts/ios-ci-scope.py": "9c4e9fb784f340f9f76008c4e27123f0d18fc638b73ced6adc425b81fb097229",
+    "scripts/ios-ci-scope.py": "df409a8fc9195226636e356f4df2e6e2a718174d06b0f6e571f3c29968e40eba",
     "tests/fixtures/gtk-seat.py": "328f09a9c61bf13fc98d015f9fd8dc02c95aa35e496083c383e7b6636aff92b7"
   },
-  "reason": "Only changed scheduling/NUMA, native pipe, Wayland/GTK/clipboard and UIKit focus paths are validated; existing guest ELF inputs and CPU/network/docker coverage are reused."
+  "reason": "Only changed scheduling/NUMA, native pipe, Wayland/GTK/clipboard and UIKit focus paths are validated; existing guest ELF inputs and CPU/network/docker coverage are reused.",
+  "native_reuse": {
+    "sha": "9fb645fd32a77b4020a43847e7db311517207f2f",
+    "apple_run": 39023715512,
+    "linux_run": 39023715509
+  }
 }

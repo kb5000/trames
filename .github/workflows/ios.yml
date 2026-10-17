@@ -21,6 +21,7 @@ jobs:
       baseline_run: ${{ steps.scope.outputs.baseline_run }}
       baseline_sha: ${{ steps.scope.outputs.baseline_sha }}
       targeted: ${{ steps.scope.outputs.targeted }}
+      skip_native: ${{ steps.scope.outputs.skip_native }}
       critical_test: ${{ steps.scope.outputs.critical_test }}
       ui_targets: ${{ steps.scope.outputs.ui_targets }}
     steps:
@@ -115,7 +116,7 @@ jobs:
           TRAMES_RUST_LIB_DIR: ${{ github.workspace }}/target/release
         run: bash scripts/test-swift-ssh.sh
       - name: Validate affected native modules or the complete Apple core
-        if: needs.scope.outputs.frontend_only != 'true'
+        if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.skip_native != 'true'
         run: |
           if [[ '${{ needs.scope.outputs.targeted }}' == true ]]; then
             cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-core -p trames-ffi --lib --locked

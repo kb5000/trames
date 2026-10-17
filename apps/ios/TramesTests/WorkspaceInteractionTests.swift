@@ -148,6 +148,10 @@ final class WorkspaceInteractionTests: XCTestCase {
             try await settle { session.terminal.isFirstResponder }
             XCTAssertEqual(model.layout.selected,id);XCTAssertTrue(session.terminal.superview === parent)
         }
+        session.terminal.resignFirstResponder()
+        session.terminal.setKeyboardFocus(true,deferred:true)
+        try await Task.sleep(for:.milliseconds(50))
+        XCTAssertFalse(session.terminal.isFirstResponder,"A view redraw must preserve manual keyboard dismissal")
     }
     func testCanvasFollowsHostContentAndFinalResizeRequest() async throws {
         let previous=UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).first { $0.isKeyWindow }

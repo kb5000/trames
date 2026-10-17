@@ -10,8 +10,13 @@ final class TerminalViewport: TerminalView {
     private var focusRevision: UInt64 = 0
     private var changingFocus = false
     func setKeyboardFocus(_ value: Bool, visible: Bool = true, deferred: Bool = false) {
+        let wanted = value && visible
+        // A status redraw must not reopen a keyboard the user just dismissed.
+        // Hidden views still retry resignation if UIKit changed the responder.
+        guard wantsKeyboardFocus != wanted || acceptsKeyboardFocus != visible
+                || (!wanted && isFirstResponder) else { return }
         acceptsKeyboardFocus = visible
-        wantsKeyboardFocus = value && visible
+        wantsKeyboardFocus = wanted
         focusRevision &+= 1
         if deferred { scheduleKeyboardFocus() }
         else { applyKeyboardFocus() }

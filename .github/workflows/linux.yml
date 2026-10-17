@@ -17,6 +17,7 @@ jobs:
     outputs:
       frontend_only: ${{ steps.scope.outputs.frontend_only }}
       targeted: ${{ steps.scope.outputs.targeted }}
+      skip_native: ${{ steps.scope.outputs.skip_native }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,7 +32,7 @@ jobs:
         run: python3 scripts/ios-ci-scope.py
   targeted-runtime:
     needs: scope
-    if: needs.scope.outputs.targeted == 'true'
+    if: needs.scope.outputs.targeted == 'true' && needs.scope.outputs.skip_native != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
