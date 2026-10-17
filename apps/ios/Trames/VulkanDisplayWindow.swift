@@ -47,16 +47,6 @@ struct VulkanCanvasPane: UIViewRepresentable {
     func makeUIView(context: Context) -> VulkanCanvas { canvas }
     func updateUIView(_ view: VulkanCanvas, context: Context) { view.setNeedsLayout() }
 }
-struct DisplayWindowGeometry {
-    var origin = CGPoint(x: 32, y: 90)
-    var size = CGSize(width: 600, height: 490)
-    mutating func constrain(to viewport: CGSize) {
-        size.width = min(max(240, size.width), max(1, viewport.width))
-        size.height = min(max(200, size.height), max(1, viewport.height))
-        origin.x = min(max(0, origin.x), max(0, viewport.width - size.width))
-        origin.y = min(max(0, origin.y), max(0, viewport.height - size.height))
-    }
-}
 struct VulkanDisplayWindow: View {
     @ObservedObject var session: TerminalSession
     let viewport: CGSize

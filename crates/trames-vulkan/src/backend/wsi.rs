@@ -287,6 +287,7 @@ impl Backend {
                     || a[7] & !0x11 != 0
                     || a[7] & 16 == 0
                     || a[7] & !(caps.supported_usage_flags.as_raw() as u64) != 0
+                    || a[9] != 0
                 {
                     return unsupported();
                 }

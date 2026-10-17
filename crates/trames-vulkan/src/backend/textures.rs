@@ -30,7 +30,19 @@ impl Backend {
         {
             return unsupported();
         }
+        let anisotropy = f32::from_bits(a[11] as u32);
+        if a[10] > 1
+            || a[10] != 0
+                && (!device.anisotropy
+                    || !anisotropy.is_finite()
+                    || anisotropy < 1.0
+                    || anisotropy > limits.max_sampler_anisotropy)
+        {
+            return unsupported();
+        }
         let info = vk::SamplerCreateInfo::default()
+            .anisotropy_enable(a[10] != 0)
+            .max_anisotropy(if a[10] != 0 { anisotropy } else { 1.0 })
             .mag_filter(vk::Filter::from_raw(a[1] as i32))
             .min_filter(vk::Filter::from_raw(a[2] as i32))
             .mipmap_mode(vk::SamplerMipmapMode::from_raw(a[3] as i32))

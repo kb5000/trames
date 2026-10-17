@@ -25,7 +25,7 @@ output.mkdir(parents=True, exist_ok=True)
 with tempfile.TemporaryDirectory(prefix='wayland-acceptance-') as temporary:
     tmp = Path(temporary)
     runtime = tmp / 'runtime'
-    m6.repository(runtime, ('wayland-utils', 'weston-clients', 'vulkan-tools', 'vulkan-loader', 'font-dejavu', 'breeze-cursors'))
+    m6.repository(runtime, ('wayland-utils', 'weston-clients', 'vulkan-tools', 'vulkan-loader', 'vkmark', 'font-dejavu', 'breeze-cursors'))
     sdk = tmp / 'sdk'
     sdk.mkdir()
     development = tmp / 'development'

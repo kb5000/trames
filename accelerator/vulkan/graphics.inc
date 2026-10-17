@@ -12,7 +12,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkBindImageMemory(VkDevice d,VkImage image,VkDevi
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateImageView(VkDevice d,const VkImageViewCreateInfo *info,const VkAllocationCallbacks *allocator,VkImageView *out) {
     CHECK(info,VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);ALLOCATOR(allocator);
     const VkImageSubresourceRange *r=&info->subresourceRange;
-    if(info->flags || info->viewType!=VK_IMAGE_VIEW_TYPE_2D || info->components.r || info->components.g || info->components.b || info->components.a || r->aspectMask!=(info->format==VK_FORMAT_D16_UNORM?VK_IMAGE_ASPECT_DEPTH_BIT:VK_IMAGE_ASPECT_COLOR_BIT) || r->baseMipLevel || r->levelCount!=1 || r->baseArrayLayer || r->layerCount!=1)return VK_ERROR_FEATURE_NOT_PRESENT;
+    if(info->flags || info->viewType!=VK_IMAGE_VIEW_TYPE_2D || info->components.r || info->components.g || info->components.b || info->components.a || r->aspectMask!=((info->format==VK_FORMAT_D16_UNORM||info->format==VK_FORMAT_D32_SFLOAT)?VK_IMAGE_ASPECT_DEPTH_BIT:VK_IMAGE_ASPECT_COLOR_BIT) || r->baseMipLevel || r->levelCount!=1 || r->baseArrayLayer || r->layerCount!=1)return VK_ERROR_FEATURE_NOT_PRESENT;
     return CALL(64,KEY(d),(uint64_t)info->image,info->format,PTR(out));
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroyImageView(VkDevice d,VkImageView view,const VkAllocationCallbacks *allocator) {if(view)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(65,KEY(d),(uint64_t)view));}
@@ -24,7 +24,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateRenderPass(VkDevice d,const VkRenderPassC
     uint64_t depth[5];
     if(info->attachmentCount==2){
         const VkAttachmentDescription *z=a+1;
-        if(!s->pDepthStencilAttachment || s->pDepthStencilAttachment->attachment!=1 || s->pDepthStencilAttachment->layout!=VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || z->flags || z->format!=VK_FORMAT_D16_UNORM || z->samples!=VK_SAMPLE_COUNT_1_BIT)return VK_ERROR_FEATURE_NOT_PRESENT;
+        if(!s->pDepthStencilAttachment || s->pDepthStencilAttachment->attachment!=1 || s->pDepthStencilAttachment->layout!=VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || z->flags || (z->format!=VK_FORMAT_D16_UNORM && z->format!=VK_FORMAT_D32_SFLOAT) || z->samples!=VK_SAMPLE_COUNT_1_BIT)return VK_ERROR_FEATURE_NOT_PRESENT;
         depth[0]=z->format;depth[1]=z->loadOp;depth[2]=z->storeOp;depth[3]=z->initialLayout;depth[4]=z->finalLayout;
     } else if(s->pDepthStencilAttachment && s->pDepthStencilAttachment->attachment!=VK_ATTACHMENT_UNUSED)return VK_ERROR_FEATURE_NOT_PRESENT;
     uint64_t dependencies[8][7];for(uint32_t i=0;i<info->dependencyCount;i++){const VkSubpassDependency *x=&info->pDependencies[i];dependencies[i][0]=x->srcSubpass;dependencies[i][1]=x->dstSubpass;dependencies[i][2]=x->srcStageMask;dependencies[i][3]=x->dstStageMask;dependencies[i][4]=x->srcAccessMask;dependencies[i][5]=x->dstAccessMask;dependencies[i][6]=x->dependencyFlags;}
@@ -76,9 +76,9 @@ VKAPI_ATTR void VKAPI_CALL vkCmdCopyImageToBuffer(VkCommandBuffer c,VkImage imag
 VKAPI_ATTR void VKAPI_CALL vkCmdCopyBufferToImage(VkCommandBuffer c,VkBuffer buffer,VkImage image,VkImageLayout layout,uint32_t count,const VkBufferImageCopy *regions) {buffer_image_copy(c,image,layout,buffer,count,regions,94);}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateSampler(VkDevice d,const VkSamplerCreateInfo *info,const VkAllocationCallbacks *allocator,VkSampler *out) {
     CHECK(info,VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);ALLOCATOR(allocator);
-    if(info->flags || info->anisotropyEnable || info->compareEnable || info->unnormalizedCoordinates)return VK_ERROR_FEATURE_NOT_PRESENT;
-    float lod[3]={info->mipLodBias,info->minLod,info->maxLod};
-    return CALL(92,KEY(d),info->magFilter,info->minFilter,info->mipmapMode,info->addressModeU,info->addressModeV,info->addressModeW,info->borderColor,PTR(lod),PTR(out));
+    if(info->flags || info->compareEnable || info->unnormalizedCoordinates)return VK_ERROR_FEATURE_NOT_PRESENT;
+    float lod[3]={info->mipLodBias,info->minLod,info->maxLod};uint32_t anisotropy;memcpy(&anisotropy,&info->maxAnisotropy,4);
+    return CALL(92,KEY(d),info->magFilter,info->minFilter,info->mipmapMode,info->addressModeU,info->addressModeV,info->addressModeW,info->borderColor,PTR(lod),PTR(out),info->anisotropyEnable,anisotropy);
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroySampler(VkDevice d,VkSampler sampler,const VkAllocationCallbacks *allocator) {if(sampler)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(93,KEY(d),(uint64_t)sampler));}
 VKAPI_ATTR void VKAPI_CALL vkCmdBindVertexBuffers(VkCommandBuffer c,uint32_t first,uint32_t count,const VkBuffer *buffers,const VkDeviceSize *offsets) {

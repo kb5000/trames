@@ -100,17 +100,19 @@ enum LocalWaylandProbe {
         for (guest,host) in [("wayland-client","wayland-client"),("weston-assets.apk","weston-assets.apk.input"),("wayland-assets.tar","assets.tar"),("wayland-repositories","repositories")] {
             try session.transfer(guest:"/tmp/"+guest,host:inputs.appendingPathComponent(host),export:false)
         }
-        try send("apk --repositories-file /tmp/wayland-repositories --no-progress add wayland-utils weston-clients vulkan-tools vulkan-loader font-dejavu breeze-cursors && apk verify /tmp/weston-assets.apk && tar -xf /tmp/wayland-assets.tar -C / && chmod 755 /tmp/wayland-client; printf '\\nWAYLAND_SETUP:%d\\n' $?\n")
+        try send("apk --repositories-file /tmp/wayland-repositories --no-progress add wayland-utils weston-clients vulkan-tools vulkan-loader vkmark font-dejavu breeze-cursors && apk verify /tmp/weston-assets.apk && tar -xf /tmp/wayland-assets.tar -C / && chmod 755 /tmp/wayland-client; printf '\\nWAYLAND_SETUP:%d\\n' $?\n")
         while !text.contains("\r\nWAYLAND_SETUP:0\r\n") {
             try receive()
             if text.range(of:"\r\nWAYLAND_SETUP:[1-9][0-9]*\r\n",options:.regularExpression) != nil || Date().timeIntervalSince(began)>300 { throw TramesError.message("Wayland package setup failed: \(text.suffix(4096))") }
             try await Task.sleep(for:.milliseconds(10))
         }
         var cubeResized=false, textConfirmed=false
-        for (stage,program) in [("info","wayland-info"),("windows","/tmp/wayland-client 1 hold"),("shm","weston-simple-shm"),("editor","weston-editor"),("cube","vkcube --wsi wayland --c 30")] {
+        for (stage,program) in [("info","wayland-info"),("windows","/tmp/wayland-client 1 hold"),("shm","weston-simple-shm"),("editor","weston-editor"),("cube","vkcube --wsi wayland --c 30"),("vkmark","vkmark --winsys wayland --size 320x240 -b clear:duration=0.1 -b texture:anisotropy=16:duration=0.1 -b shading:shading=phong:duration=0.1")] {
             let start=Date(), baseline=canvas.rendered
-            var focused=false, resized=false, edited=false, closed=false
+            var focused=false, resized=false, closed=false
             var currentID:UInt64?
+            var editorStep=0
+            var editorFirst:UInt64?
             canvas.windowID=0; second.windowID=0; canvas.lastRevision=nil; second.lastRevision=nil
             try send("XDG_RUNTIME_DIR=/run/user/0 WAYLAND_DISPLAY=wayland-0 VK_DRIVER_FILES=/usr/share/vulkan/icd.d/trames.json \(program); printf '\\nWAYLAND_RESULT:\(stage):%d\\n' $?\n")
             let marker="\r\nWAYLAND_RESULT:\(stage):0\r\n"
@@ -143,10 +145,23 @@ enum LocalWaylandProbe {
                     let sizeOK=first.width==320 && first.height==240
                     if stage=="cube" { cubeResized = cubeResized || resized && sizeOK }
                     if stage=="editor", let context=status.text {
-                        if !edited {
-                            canvas.textContext=context
-                            canvas.setMarkedText("ni",selectedRange:NSRange(location:2,length:0)); canvas.insertText("你好🙂"); edited=true
-                        } else if context.text.contains("你好🙂") { textConfirmed=true }
+                        canvas.textContext=context
+                        if editorStep == 0 {
+                            editorFirst=context.id
+                            canvas.setMarkedText("ni",selectedRange:NSRange(location:2,length:0));canvas.insertText("你好🙂");editorStep=1
+                        } else if editorStep == 1 && context.text.contains("你好🙂") {
+                            for command:[String:Any] in [["op":"pointer","window":first.id,"x":80,"y":Double(first.height)*0.75,"time":4],
+                                ["op":"button","button":0x110,"pressed":true,"time":5],["op":"button","button":0x110,"pressed":false,"time":6]] { try session.waylandCommand(command) }
+                            editorStep=2
+                        } else if editorStep == 2 && context.id != editorFirst {
+                            canvas.insertText("第二框");editorStep=3
+                        } else if editorStep == 3 && context.text.contains("第二框") {
+                            for command:[String:Any] in [["op":"pointer","window":first.id,"x":80,"y":80,"time":7],
+                                ["op":"button","button":0x110,"pressed":true,"time":8],["op":"button","button":0x110,"pressed":false,"time":9]] { try session.waylandCommand(command) }
+                            editorStep=4
+                        } else if editorStep == 4 && context.id == editorFirst && context.text.contains("你好🙂") {
+                            canvas.insertText("返回");editorStep=5
+                        } else if editorStep == 5 && context.text.contains("返回") { textConfirmed=true }
                     }
                     let complete = stage=="windows" && resized && sizeOK && status.windows.count==2 && canvas.rendered>=baseline+2
                         || stage=="shm" && canvas.rendered>=baseline+4 || stage=="editor" && textConfirmed

@@ -6,6 +6,9 @@ import TramesKit
 final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalViewDelegate {
     let id = UUID()
     let terminal = TerminalViewport(frame: .zero, font: .monospacedSystemFont(ofSize: 14, weight: .regular))
+    let fallbackTitle: String
+    let isLocal: Bool
+    var onWaylandChanged: (([LocalWaylandWindow]) -> Void)?
     @Published var title: String
     @Published var state = "连接中…"
     @Published var capacity: LocalStatus?
@@ -15,9 +18,6 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     @Published var displayVisible = true
     @Published var waylandWindows: [LocalWaylandWindow] = []
     @Published var waylandText: LocalWaylandText?
-    @Published var waylandSelected: UInt64?
-    @Published var waylandFocus: UInt64?
-    var waylandGeometry: [UInt64:DisplayWindowGeometry] = [:]
     private var waylandRevision: UInt64?
     var local: LocalSession?
     let bridge = BridgeController()
@@ -31,8 +31,10 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     private var closed = false
     private var paused = false
     private var timezoneObserver: NSObjectProtocol?
-    init(title: String) {
-        self.title = title; super.init()
+    init(title: String, isLocal: Bool = false) {
+        self.fallbackTitle = title.isEmpty ? "终端" : title
+        self.isLocal = isLocal
+        self.title = self.fallbackTitle; super.init()
         terminal.terminalDelegate = self
         terminal.backgroundColor = .black
         timezoneObserver = NotificationCenter.default.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: .main) { [weak self] _ in
@@ -89,10 +91,8 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
             }
             let wayland = try local.waylandStatus()
             if wayland.revision != waylandRevision {
-                let newMaximized = wayland.windows.first { w in w.mode == "maximized" && !waylandWindows.contains(where: { $0.id == w.id && $0.mode == "maximized" }) }
                 waylandRevision = wayland.revision; waylandWindows = wayland.windows; waylandText = wayland.text
-                if let selected = waylandSelected, !wayland.windows.contains(where: { $0.id == selected && $0.mode == "maximized" }) { waylandSelected = nil }
-                if let window = newMaximized { waylandSelected = window.id }
+                onWaylandChanged?(wayland.windows)
             }
             let status = try local.status()
             if status != capacity { capacity = status }
@@ -109,8 +109,6 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     }
     func waylandMode(_ window: UInt64, _ mode: String) {
         waylandCommand(["op":"mode","window":window,"mode":mode])
-        if mode == "maximized" { waylandSelected = window }
-        else if waylandSelected == window { waylandSelected = nil }
     }
     func startSSH(host: SSHHost, credential: SSHCredential, knownHosts: KnownHosts) {
         let connection = SSHSession(); ssh = connection
@@ -164,7 +162,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         timezoneObserver = nil
         timer?.invalidate(); timer = nil; task?.cancel(); sender?.cancel()
         bridge.close()
-        local?.close(); local = nil; waylandWindows = []; waylandSelected = nil
+        local?.close(); local = nil; waylandWindows = []; onWaylandChanged = nil
         if let ssh { Task { await ssh.close() } }; ssh = nil; pendingInput.removeAll()
         state = "已关闭"
     }
@@ -176,7 +174,10 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         try? local?.resize(columns: newCols, rows: newRows)
         if let ssh { Task { try? await ssh.resize(columns: newCols, rows: newRows) } }
     }
-    func setTerminalTitle(source: TerminalView, title: String) { self.title = String(title.prefix(80)) }
+    func setTerminalTitle(source: TerminalView, title: String) {
+        let value = String(title.prefix(80)).trimmingCharacters(in: .whitespacesAndNewlines)
+        self.title = value.isEmpty ? fallbackTitle : value
+    }
     func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {}
     func send(source: TerminalView, data: ArraySlice<UInt8>) { send(Data(data)) }
     func scrolled(source: TerminalView, position: Double) {}
@@ -190,6 +191,11 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
 }
 struct TerminalPane: UIViewRepresentable {
     @ObservedObject var session: TerminalSession
-    func makeUIView(context: Context) -> TerminalView { session.terminal }
-    func updateUIView(_ view: TerminalView, context: Context) {}
+    let focused: Bool
+    let onFocus: () -> Void
+    func makeUIView(context: Context) -> TerminalViewport { session.terminal }
+    func updateUIView(_ view: TerminalViewport, context: Context) {
+        view.onFocusRequested = onFocus
+        view.setKeyboardFocus(focused)
+    }
 }

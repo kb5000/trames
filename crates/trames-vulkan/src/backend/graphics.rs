@@ -51,6 +51,7 @@ fn format(raw: u64) -> Result<vk::Format> {
         44 => Ok(vk::Format::B8G8R8A8_UNORM),
         50 => Ok(vk::Format::B8G8R8A8_SRGB),
         124 => Ok(vk::Format::D16_UNORM),
+        126 => Ok(vk::Format::D32_SFLOAT),
         _ => Err(vk::Result::ERROR_FORMAT_NOT_SUPPORTED.into()),
     }
 }
@@ -80,18 +81,20 @@ fn layout(raw: u64, initial: bool) -> Result<vk::ImageLayout> {
         _ => unsupported(),
     }
 }
+fn is_depth(format: vk::Format) -> bool {
+    matches!(format, vk::Format::D16_UNORM | vk::Format::D32_SFLOAT)
+}
 fn image_range(format: vk::Format) -> vk::ImageSubresourceRange {
     let mut range = color_range();
-    if format == vk::Format::D16_UNORM {
+    if is_depth(format) {
         range.aspect_mask = vk::ImageAspectFlags::DEPTH;
     }
     range
 }
 fn format_usage(format: vk::Format, raw: u64) -> Result<vk::ImageUsageFlags> {
     let flags = usage(raw)?;
-    if format == vk::Format::D16_UNORM && flags.contains(vk::ImageUsageFlags::COLOR_ATTACHMENT)
-        || format != vk::Format::D16_UNORM
-            && flags.contains(vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT)
+    if is_depth(format) && flags.contains(vk::ImageUsageFlags::COLOR_ATTACHMENT)
+        || !is_depth(format) && flags.contains(vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT)
     {
         return Err(vk::Result::ERROR_FORMAT_NOT_SUPPORTED.into());
     }
@@ -578,7 +581,7 @@ impl Backend {
                 let colors = [vk::AttachmentReference::default()
                     .attachment(0)
                     .layout(vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL)];
-                if f == vk::Format::D16_UNORM {
+                if is_depth(f) {
                     return unsupported();
                 }
                 let mut depth = None;
@@ -592,7 +595,7 @@ impl Backend {
                 if a[9] != 0 {
                     let x = words64(m, a[9], 5)?;
                     let df = format(x[0])?;
-                    if df != vk::Format::D16_UNORM || x[1] > 2 || x[2] > 1 {
+                    if !is_depth(df) || x[1] > 2 || x[2] > 1 {
                         return unsupported();
                     }
                     attachments.push(
@@ -1057,7 +1060,7 @@ impl Backend {
     }
 }
 fn checked_copy(x: &[u64], image: ImageShape, buffer_size: u64) -> Result<()> {
-    if image.format == vk::Format::D16_UNORM {
+    if is_depth(image.format) {
         return unsupported();
     }
     if x[3] != 1
@@ -1134,7 +1137,11 @@ mod tests {
     fn image_profile_reports_only_supported_formats_usages_and_layouts() {
         assert!(format(37).is_ok());
         assert!(format(44).is_ok());
-        assert!(format(126).is_err());
+        assert_eq!(format(126).unwrap(), vk::Format::D32_SFLOAT);
+        assert!(is_depth(vk::Format::D32_SFLOAT));
+        assert!(is_depth(vk::Format::D16_UNORM));
+        assert!(!is_depth(vk::Format::R8G8B8A8_UNORM));
+        assert!(format(127).is_err());
         assert!(usage(vk::ImageUsageFlags::COLOR_ATTACHMENT.as_raw() as u64).is_ok());
         assert!(usage(vk::ImageUsageFlags::SAMPLED.as_raw() as u64).is_ok());
         assert!(usage(0).is_err());

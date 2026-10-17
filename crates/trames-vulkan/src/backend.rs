@@ -55,6 +55,7 @@ impl Drop for Instance {
     }
 }
 struct Device {
+    anisotropy: bool,
     native: ash::Device,
     instance: Arc<Instance>,
     atom: u64,
@@ -976,8 +977,11 @@ impl Backend {
                 )?;
             }
             7 => {
-                let zero = vec![0; std::mem::size_of::<vk::PhysicalDeviceFeatures>()];
-                write(m, a[1], &zero)?;
+                let native = unsafe { instance.native.get_physical_device_features(self.physical) };
+                let mut features = vec![0; std::mem::size_of::<vk::PhysicalDeviceFeatures>()];
+                let at = std::mem::offset_of!(vk::PhysicalDeviceFeatures, sampler_anisotropy);
+                features[at..at + 4].copy_from_slice(&native.sampler_anisotropy.to_le_bytes());
+                write(m, a[1], &features)?;
             }
             8 => {
                 output(m, a[2], 8)?;
@@ -1020,9 +1024,16 @@ impl Backend {
                     if !ext.iter().any(|e|unsafe {std::ffi::CStr::from_ptr(e.extension_name.as_ptr())}==ash::ext::metal_objects::NAME){return unsupported();}
                     names.push(ash::ext::metal_objects::NAME.as_ptr());
                 }
+                let native_features =
+                    unsafe { instance.native.get_physical_device_features(self.physical) };
+                if a[4] > 1 || a[4] != 0 && native_features.sampler_anisotropy == 0 {
+                    return unsupported();
+                }
+                let features = vk::PhysicalDeviceFeatures::default().sampler_anisotropy(a[4] != 0);
                 self.wsi.device_enabled = a[3] != 0;
                 let info = vk::DeviceCreateInfo::default()
                     .queue_create_infos(&queue)
+                    .enabled_features(&features)
                     .enabled_extension_names(&names);
                 let native = unsafe { instance.native.create_device(self.physical, &info, None) }?;
                 self.queue = unsafe { native.get_device_queue(a[1] as u32, 0) };
@@ -1034,6 +1045,7 @@ impl Backend {
                 }
                 .limits;
                 self.device = Some(Arc::new(Device {
+                    anisotropy: a[4] != 0,
                     native,
                     instance,
                     atom: limits.non_coherent_atom_size,

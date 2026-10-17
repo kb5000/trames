@@ -76,6 +76,7 @@ impl Drop for Completion {
 struct Frame {
     image: Arc<NativeImage>,
     completion: Arc<Completion>,
+    mailbox: bool,
     _permit: trames_wayland::GpuPermit,
 }
 impl Drop for Frame {
@@ -97,6 +98,9 @@ unsafe impl GpuImage for Frame {
         self.completion
             .ready()
             .map_err(|e| io::Error::other(format!("native GPU presentation: {e:?}")))
+    }
+    fn mailbox(&self) -> bool {
+        self.mailbox
     }
 }
 struct Pending {
@@ -133,6 +137,7 @@ struct Chain {
     images: Vec<u64>,
     acquired: Vec<bool>,
     retired: bool,
+    mailbox: bool,
 }
 impl Wayland {
     pub(super) fn has_chain(&self, id: u64) -> bool {
@@ -270,25 +275,34 @@ impl Backend {
                 )
             }
             85 | 86 => {
-                let values = if op == 85 { vec![44u32, 0] } else { vec![2u32] };
-                let capacity = read32(m, a[2])?;
+                let values = if op == 85 {
+                    vec![44u32, 0]
+                } else {
+                    vec![2u32, 1]
+                };
+                let total = if op == 85 { 1 } else { 2 };
+                let capacity = read32(m, a[2])? as usize;
+                let count = if a[3] == 0 {
+                    total
+                } else {
+                    total.min(capacity)
+                };
                 output(m, a[2], 4)?;
                 if a[3] != 0 && capacity != 0 {
+                    let words = count * if op == 85 { 2 } else { 1 };
                     write(
                         m,
                         a[3],
                         &values
-                            .into_iter()
+                            .iter()
+                            .take(words)
+                            .copied()
                             .flat_map(u32::to_le_bytes)
                             .collect::<Vec<_>>(),
                     )?;
                 }
-                write(
-                    m,
-                    a[2],
-                    &u32::from(a[3] == 0 || capacity != 0).to_le_bytes(),
-                )?;
-                if a[3] != 0 && capacity == 0 {
+                write(m, a[2], &(count as u32).to_le_bytes())?;
+                if a[3] != 0 && capacity < total {
                     return Err(vk::Result::INCOMPLETE.into());
                 }
                 Ok(())
@@ -442,6 +456,7 @@ impl Backend {
                     || a[6] > 4096
                     || a[7] & !0x11 != 0
                     || a[7] & 0x10 == 0
+                    || a[9] > 1
                 {
                     return unsupported();
                 }
@@ -517,6 +532,7 @@ impl Backend {
                         images: ids,
                         acquired: vec![false; a[2] as usize],
                         retired: false,
+                        mailbox: a[9] == 1,
                     },
                 );
                 if let Err(e) = write(m, a[10], &owner.to_le_bytes()) {
@@ -687,6 +703,7 @@ impl Backend {
                 let frame = Arc::new(Frame {
                     image,
                     completion,
+                    mailbox: chain.mailbox,
                     _permit: permit,
                 });
                 // This extra producer lease prevents cancellation/disconnect from releasing

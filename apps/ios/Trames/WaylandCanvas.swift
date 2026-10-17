@@ -28,6 +28,13 @@ final class WaylandCanvas: WaylandInputView {
         init(_ canvas: WaylandCanvas) { self.canvas = canvas }
         @objc func tick() { canvas?.renderFrame() }
     }
+    private var wantsKeyboardFocus = false
+    func setKeyboardFocus(_ value: Bool) {
+        guard wantsKeyboardFocus != value else { return }
+        wantsKeyboardFocus = value
+        if value && window != nil { _ = becomeFirstResponder() }
+        else if !value && isFirstResponder { resignFirstResponder() }
+    }
     var revision: UInt64 = 0
     var onError: ((String) -> Void)?
     #if DEBUG
@@ -125,6 +132,7 @@ final class WaylandCanvas: WaylandInputView {
             let link = CADisplayLink(target: RefreshTarget(self), selector: #selector(RefreshTarget.tick))
             link.add(to: .main, forMode: .common); displayLink = link
             lastRevision = nil
+            if wantsKeyboardFocus { _ = becomeFirstResponder() }
         }
     }
     deinit { if let foregroundObserver { NotificationCenter.default.removeObserver(foregroundObserver) } }

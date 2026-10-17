@@ -3,6 +3,23 @@ import XCTest
 import UIKit
 final class LaunchTests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
+    func testWorkspaceTabsDetachDockAndTerminalTitleRemainsVisible() {
+        let app=XCUIApplication();app.launchArguments=["--workspace-ui-acceptance"];app.launch()
+        func element(_ prefix:String)->XCUIElement {
+            app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@",prefix)).firstMatch
+        }
+        let alpine=element("tab-terminal-"),title=element("window-title-wayland-")
+        XCTAssertTrue(alpine.waitForExistence(timeout:20));XCTAssertTrue(title.waitForExistence(timeout:10))
+        title.coordinate(withNormalizedOffset:CGVector(dx:0.25,dy:0.5)).press(forDuration:0.15,thenDragTo:alpine.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.5)))
+        let graphic=element("tab-wayland-")
+        XCTAssertTrue(graphic.waitForExistence(timeout:5),app.debugDescription)
+        XCTAssertEqual(graphic.frame.midY,alpine.frame.midY,accuracy:5)
+        alpine.tap();XCTAssertTrue(alpine.label.contains("Alpine"))
+        graphic.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.5)).press(forDuration:0.15,thenDragTo:app.coordinate(withNormalizedOffset:CGVector(dx:0.55,dy:0.5)))
+        XCTAssertTrue(title.waitForExistence(timeout:5),app.debugDescription)
+        let dock=element("dock-wayland-");dock.tap();XCTAssertTrue(graphic.waitForExistence(timeout:5))
+        alpine.tap();XCTAssertTrue(alpine.label.contains("Alpine"))
+    }
     func testNativeCoreMarkCanBeOpenedWithoutStartingATimedRun() {
         let app = XCUIApplication(); app.launch()
         XCTAssertTrue(app.buttons["新建或管理会话"].waitForExistence(timeout: 20))
