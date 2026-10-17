@@ -10,9 +10,22 @@ import TramesKit
 private final class WaylandPresentation: @unchecked Sendable {
     private let lock = NSLock()
     private var frame: LocalWaylandFrame?
+    private var gpuFinished=false
+    private var cancelled=false
     private let semaphore: DispatchSemaphore
     init(frame: LocalWaylandFrame, semaphore: DispatchSemaphore) {
         self.frame=frame;self.semaphore=semaphore
+    }
+    var isFinished: Bool {
+        lock.lock();defer { lock.unlock() };return frame == nil
+    }
+    func cancel() {
+        lock.lock();cancelled=true;let finished=gpuFinished;lock.unlock()
+        if finished { finish(presented:false) }
+    }
+    func gpuCompleted(success: Bool) {
+        lock.lock();gpuFinished=true;let discard=cancelled || !success;lock.unlock()
+        if discard { finish(presented:false) }
     }
     func finish(presented: Bool) {
         lock.lock()
@@ -40,16 +53,29 @@ final class WaylandCanvas: WaylandInputView {
             guard oldValue != presentationEnabled else { return }
             displayLink?.isPaused = !presentationEnabled
             if presentationEnabled { lastRevision=nil;lastPresentationTime=nil }
+            else { cancelPresentations() }
         }
     }
     var sceneOrigin: CGPoint = .zero { didSet { if oldValue != sceneOrigin { lastRevision=nil } } }
     var rendered: UInt64 = 0
     var copiedBytes: UInt64 = 0
+    private(set) var completed: UInt64 = 0
     private(set) var presented: UInt64 = 0
+    var presentationFeedbackAvailable: Bool {
+        #if targetEnvironment(simulator)
+        false
+        #else
+        true
+        #endif
+    }
+    // Simulator SDK omits drawable presentation feedback. Keep its completion
+    // fallback explicit; this counter is progress, never a claim of scanout.
+    var frameProgress: UInt64 { presentationFeedbackAvailable ? presented : completed }
     private(set) var maximumPresentationInterval: CFTimeInterval = 0
     private var lastPresentationTime: CFTimeInterval?
     var lastRevision: UInt64?
     private var displayLink: CADisplayLink?
+    private var presentations: [WaylandPresentation] = []
     private var foregroundObserver: NSObjectProtocol?
     private var pressedButton: Int?
     private var visibleRects: [CGRect] = []
@@ -113,7 +139,7 @@ final class WaylandCanvas: WaylandInputView {
         scroll.allowedScrollTypesMask = .all
         scroll.cancelsTouchesInView=false; scroll.delaysTouchesEnded=false; addGestureRecognizer(scroll)
         foregroundObserver = NotificationCenter.default.addObserver(forName:UIApplication.didBecomeActiveNotification,object:nil,queue:.main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.lastRevision = nil }
+            MainActor.assumeIsolated { self?.cancelPresentations();self?.lastRevision = nil }
         }
     }
     private func pointer(_ point:CGPoint) {
@@ -159,6 +185,7 @@ final class WaylandCanvas: WaylandInputView {
     override func didMoveToWindow() {
         super.didMoveToWindow()
         displayLink?.invalidate(); displayLink = nil
+        cancelPresentations()
         if window != nil {
             let link = CADisplayLink(target: RefreshTarget(self), selector: #selector(RefreshTarget.tick))
             let maximum=Float(window?.screen.maximumFramesPerSecond ?? 60)
@@ -178,7 +205,12 @@ final class WaylandCanvas: WaylandInputView {
             metal.contentsScale=scale;metal.drawableSize=size;lastRevision=nil
         }
     }
+    private func cancelPresentations() {
+        presentations.forEach { $0.cancel() }
+        presentations.removeAll { $0.isFinished }
+    }
     private func renderFrame() {
+        presentations.removeAll { $0.isFinished }
         guard presentationEnabled, bounds.width > 0, bounds.height > 0, window != nil, !isHidden,
               UIApplication.shared.applicationState == .active,
               inFlight.wait(timeout: .now()) == .success else { return }
@@ -245,19 +277,34 @@ final class WaylandCanvas: WaylandInputView {
             inspectFrame?(drawable.texture, command)
             #endif
             let presentation=WaylandPresentation(frame:frame,semaphore:inFlight)
+            presentations.append(presentation)
+            #if !targetEnvironment(simulator)
             drawable.addPresentedHandler { [weak self] drawable in
                 let time=drawable.presentedTime
                 presentation.finish(presented:time > 0)
                 if time > 0 { Task { @MainActor in self?.didPresent(at:time) } }
             }
-            command.addCompletedHandler { result in
-                if result.status != .completed { presentation.finish(presented:false) }
+            #endif
+            command.addCompletedHandler { [weak self] result in
+                let success=result.status == .completed
+                presentation.gpuCompleted(success:success)
+                #if targetEnvironment(simulator)
+                // The simulator has no presented handler/presentedTime API.
+                // Advance the protocol at GPU completion without inventing an
+                // on-screen presentation count or timestamp.
+                presentation.finish(presented:success)
+                #endif
+                if success { Task { @MainActor in self?.didCompleteFrame() } }
             }
             command.present(drawable)
             command.commit(); submitted = true; lastRevision = frame.info.revision
             rendered += 1
             updatePresentationStatus()
         } catch { onError?(error.localizedDescription) }
+    }
+    private func didCompleteFrame() {
+        completed += 1
+        updatePresentationStatus()
     }
     private func didPresent(at time: CFTimeInterval) {
         presented += 1
@@ -268,6 +315,7 @@ final class WaylandCanvas: WaylandInputView {
         updatePresentationStatus()
     }
     private func updatePresentationStatus() {
-        accessibilityValue="window=\(windowID) submitted=\(rendered) presented=\(presented) maxIntervalMs=\(Int(maximumPresentationInterval*1000)) copied=\(copiedBytes)"
+        let display=presentationFeedbackAvailable ? String(presented) : "unavailable"
+        accessibilityValue="window=\(windowID) submitted=\(rendered) completed=\(completed) presented=\(display) maxIntervalMs=\(Int(maximumPresentationInterval*1000)) copied=\(copiedBytes)"
     }
 }

@@ -25,7 +25,12 @@
   FIFO 呈现确认时保留事件驱动的等待，不把后台合成器变成忙轮询。
 - GPU command 完成与屏幕呈现分开：通过 drawable presented handler
   才发送 Wayland presented/frame callback，失败命令单独回收。
-  最多保留两个呈现中的 UI 帧，继续保留原有 SHM bytesNoCopy 与
+  最多保留两个呈现中的 UI 帧；隐藏、离开 UIWindow 或从后台恢复时，
+  未显示帧在 GPU 读操作完成后回收，不保留永远等待的呈现许可。
+  模拟器 SDK 没有 drawable presented handler/presentedTime，协议通过
+  GPU 完成回调推进；completed 与 presented 单独计数，后者在模拟器为
+  unavailable，不能据此声称真实显示或延迟验证。
+  继续保留原有 SHM bytesNoCopy 与
   MoltenVK Metal texture 导入，不引入生产路径像素回读。
 
 ## 验证
@@ -41,10 +46,11 @@
 6. 在真实运行 Alpine 的 PTY 上重复终端浮动/最大化，再执行 bridge
    命令验证 App 与 guest 继续响应。
 7. 原始 Wayland 客户端、Weston 输入、vkcube 与 vkmark 实际 Metal
-   drawable 呈现；现有 GPU producer readiness/FIFO/Mailbox 生命周期测试。
+   drawable 像素与 GPU 完成，包括 vkcube 运行期间隐藏/恢复再完成其余帧；
+   现有 GPU producer readiness/FIFO/Mailbox 生命周期测试。
 
-画布 accessibilityValue 区分 submitted 与 presented，并记录观测到的
+画布 accessibilityValue 区分 submitted、completed 与 presented，并记录真机观测到的
 最大显示间隔 maxIntervalMs；原始客户端验收日志逐场景保存提交数和
-实际呈现数。静止、遮挡、后台和场景切换也可能增加最大间隔，因此它
+完成数及呈现反馈来源。静止、遮挡、后台和场景切换也可能增加最大间隔，因此它
 不是独立的动画卡顿判定。模拟器不用于宣称 iPad 60/120Hz 稳定帧率，
 最终流畅度仍需真机复测。
