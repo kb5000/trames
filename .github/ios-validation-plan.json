@@ -1,5 +1,5 @@
 {
-  "base_sha": "1e30e30812c5b2f3ac8fc30cdf262332db3a8392",
+  "base_sha": "ea1d67868253bb02e313440057ec20b24695cbfc",
   "reuse_guest_run": 39015795319,
   "native_reuse": {
     "sha": "77455055bf902e6ea0193c36919c01daa672506d",
@@ -10,15 +10,14 @@
   "ui_targets": [
     "TramesTests/TerminalViewportTests/testAccessoryControllerReservesSystemCornerAndPreservesCtrl",
     "TramesTests/WorkspaceInteractionTests/testGraphicsPreferredFrameSurvivesBackgroundAndTransientViewportChanges",
-    "TramesUITests/LaunchTests/testGraphicWindowPositionSurvivesAppBackground"
+    "TramesTests/WorkspaceTabsTests/testNewWindowsCascadeAroundDisplayedPositionsWithoutOverwritingPreferredFrames"
   ],
   "changed_file_sha256": {
-    "apps/ios/Trames/TerminalKeyboardAccessory.swift": "7a7845e774f44bc6ce226b376c0469a9cfc5e76c84e0c8557ffe317d709fc675",
-    "apps/ios/Trames/WorkspaceKeyboardContainer.swift": "d7a7bce9ff18c80325f564fad3f687e2c78b4f1e41122c2360c741feea09de24",
-    "apps/ios/Trames/WorkspaceTabs.swift": "c6facc3f842e1912ab043567385834d304c9bda972dd49440cb3d47b9655d840",
-    "apps/ios/Trames/WorkspaceWindows.swift": "b6b003f25286b665ea42be8f1d1c534d7e528ddb5af4b50ac7179335788126c4",
-    "apps/ios/TramesTests/WorkspaceInteractionTests.swift": "9661fea3153c94108bb6586f62bcab97a21490151d08995907545eb3b5ce2add",
-    "apps/ios/TramesUITests/LaunchTests.swift": "ac1932096c51cb7c382a82221d0b81809c9f9b2cf71501583395e3bdc00fe648"
+    "apps/ios/Trames/TerminalKeyboardAccessory.swift": "98b954be2640e979f5a055f66781e3993e803ffc7fd176b4a59ebcca01f4c3ac",
+    "apps/ios/Trames/WorkspaceTabs.swift": "1dc96d489bf1dc07241e3902b2fa2f16da232f76093f711439eeab3910bb2c4f",
+    "apps/ios/TramesTests/TerminalViewportTests.swift": "15f5ba496591da806c2986283b757f564345b05af172e59e28d22fc881cda18c",
+    "apps/ios/TramesTests/WorkspaceInteractionTests.swift": "d6d7553f64d2661433977ba84e4a024e598eca29e4f2cd79eb27211e751d6b4e",
+    "apps/ios/TramesTests/WorkspaceTabsTests.swift": "5ff0e106f4e18a41300d391717e5365d9b70cd3ff56badc4d9dfe828861a5488"
   },
   "reason": "Restore internal floating terminal spacing. Exercise the actual app-window keyboard accessory toggle and root keyboard-layout guide, window-size reflow and minimize/focus regressions only. Native/guest and File Provider code are unchanged; formal-key device acceptance is deferred as the owner confirmed."
 }

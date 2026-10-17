@@ -2,52 +2,60 @@
 import UIKit
 import SwiftTerm
 
-/// UIKit hosts the original SwiftTerm accessory through this controller. Keep
-/// TerminalView.inputAccessoryView unchanged: SwiftTerm reads Ctrl state there.
+/// Present the original accessory as the controller's root, preserving the
+/// TerminalView cast used for Ctrl and all upstream targets/actions. Nesting a
+/// second UIInputView inside an accessory controller leaves an empty row when
+/// UIKit attaches the input views, even though standalone layout succeeds.
 final class TerminalKeyboardAccessoryController: UIInputViewController {
-    let accessory: TerminalAccessory
-    init(accessory: TerminalAccessory) {
+    let accessory:TerminalAccessory
+    static let trailingClearance:CGFloat=48
+    private var naturalWidths:[ObjectIdentifier:CGFloat]=[:]
+    private var laidOutSize=CGSize.zero
+    init(accessory:TerminalAccessory) {
         self.accessory=accessory
         super.init(nibName:nil,bundle:nil)
     }
     required init?(coder:NSCoder) { fatalError("init(coder:) has not been implemented") }
-    override func loadView() { inputView=TerminalKeyboardAccessoryContainer(accessory:accessory) }
-}
-final class TerminalKeyboardAccessoryContainer: UIInputView {
-    let accessory: TerminalAccessory
-    private let rowHeight:CGFloat
-    /// Leave the Stage Manager/system window resize corner free of controls.
-    static let trailingClearance:CGFloat=48
-    init(accessory:TerminalAccessory) {
-        self.accessory=accessory
-        rowHeight=max(36,accessory.bounds.height)
-        super.init(frame:CGRect(x:0,y:0,width:accessory.bounds.width,height:rowHeight),inputViewStyle:.keyboard)
-        allowsSelfSizing=true
-        accessory.allowsSelfSizing=false
-        addSubview(accessory)
+    override func loadView() {
+        inputView=accessory
+        accessory.accessibilityIdentifier="terminal-accessory"
     }
-    required init?(coder:NSCoder) { fatalError("init(coder:) has not been implemented") }
-    override var intrinsicContentSize:CGSize { CGSize(width:UIView.noIntrinsicMetric,height:rowHeight) }
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        let rect=CGRect(x:safeAreaInsets.left,y:0,
-            width:max(0,bounds.width-safeAreaInsets.left-safeAreaInsets.right-Self.trailingClearance),height:rowHeight)
-        if accessory.frame != rect || !accessory.subviews.contains(where: { $0 is UIButton }) {
-            accessory.frame=rect
-            // A frame change inside a host view does not invoke SwiftTerm's
-            // Swift bounds observer. Build its original buttons explicitly.
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        if laidOutSize != accessory.bounds.size || !accessory.subviews.contains(where:{$0 is UIButton}) {
             let control=accessory.controlModifier
             accessory.setupUI()
             accessory.controlModifier=control
+            naturalWidths.removeAll()
+            laidOutSize=accessory.bounds.size
+        } else {
+            // The upstream layout uses each button's current width. Restore its
+            // natural width first so repeated layouts never shrink keys again.
+            for case let button as UIButton in accessory.subviews {
+                if let width=naturalWidths[ObjectIdentifier(button)] {button.frame.size.width=width}
+            }
         }
-        accessory.layoutIfNeeded()
-        // SwiftTerm rebuilds its controls after width changes. Give the actual
-        // toggle a stable public accessibility identity after each layout.
+        accessory.layoutSubviews()
+    }
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        let width=accessory.bounds.width
+        guard width>0 else {return}
+        let left=accessory.safeAreaInsets.left
+        let available=max(0,width-left-accessory.safeAreaInsets.right-Self.trailingClearance)
+        let scale=available/width
+        var natural:[ObjectIdentifier:CGFloat]=[:]
         for case let button as UIButton in accessory.subviews {
+            var frame=button.frame
+            natural[ObjectIdentifier(button)]=frame.width
+            frame.origin.x=left+frame.origin.x*scale
+            frame.size.width *= scale
+            button.frame=frame
             if button.actions(forTarget:accessory,forControlEvent:.touchDown)?.contains("toggleInputKeyboard:") == true {
                 button.accessibilityIdentifier="terminal-extended-keyboard-toggle"
                 button.accessibilityLabel="扩展键盘"
             }
         }
+        naturalWidths=natural
     }
 }

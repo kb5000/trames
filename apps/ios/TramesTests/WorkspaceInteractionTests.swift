@@ -25,6 +25,7 @@ final class WorkspaceInteractionTests: XCTestCase {
         model.saveFrame(id,saved)
         let original=CGSize(width:1024,height:768)
         let host=UIHostingController(rootView:WorkspaceWindow(workspace:model,item:id,viewport:original))
+        host.safeAreaRegions = .container
         window.rootViewController=host;window.makeKeyAndVisible()
         func canvas(_ view:UIView)->WaylandCanvas? {
             if let view=view as? WaylandCanvas {return view}

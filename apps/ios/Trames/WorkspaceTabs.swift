@@ -88,7 +88,11 @@ struct WorkspaceTabs: Equatable {
     private mutating func positionNewWindow(_ id: WorkspaceItemID) {
         guard frames[id] == nil else { return }
         var frame=DisplayWindowGeometry();frame.constrain(to:viewport)
-        let occupied=floating.compactMap { frames[$0]?.origin }
+        let occupied=floating.compactMap { id -> CGPoint? in
+            guard var shown=frames[id] else {return nil}
+            shown.constrain(to:viewport,minimum:CGSize(width:1,height:1))
+            return shown.origin
+        }
         let start=frame.origin
         let maxX=max(0,viewport.width-frame.size.width), maxY=max(0,viewport.height-frame.size.height)
         func isFree(_ origin:CGPoint) -> Bool {

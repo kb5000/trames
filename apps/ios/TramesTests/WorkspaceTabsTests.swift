@@ -84,4 +84,18 @@ final class WorkspaceTabsTests: XCTestCase {
         state.dock(id);state.detach(id);state.focus(id);state.select(id)
         XCTAssertTrue(state.tabs.isEmpty);XCTAssertTrue(state.floating.isEmpty);XCTAssertNil(state.focused)
     }
+    func testNewWindowsCascadeAroundDisplayedPositionsWithoutOverwritingPreferredFrames() throws {
+        let owner=UUID(),first=WorkspaceItemID.wayland(UUID(),1),second=WorkspaceItemID.wayland(owner,2)
+        var state=WorkspaceTabs();state.insert(first,as:.floating)
+        let saved=DisplayWindowGeometry(origin:CGPoint(x:500,y:400),size:CGSize(width:600,height:490))
+        state.frames[first]=saved
+        // The default new-window origin is (32, 90). Put the existing window
+        // there through viewport clipping, while retaining its preferred frame.
+        state.updateViewport(CGSize(width:632,height:580))
+        var shown=saved;shown.constrain(to:state.viewport)
+        XCTAssertEqual(shown.origin,CGPoint(x:32,y:90))
+        state.insert(second,as:.floating)
+        XCTAssertNotEqual(state.frames[second]?.origin,shown.origin)
+        XCTAssertEqual(state.frames[first],saved)
+    }
 }
