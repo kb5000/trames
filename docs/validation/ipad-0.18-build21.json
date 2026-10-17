@@ -1,0 +1,130 @@
+{
+  "version": "0.18.0",
+  "build": 21,
+  "status": "test IPA; await owner iPad acceptance before the 1.0.0 release",
+  "source_commit": "2e92956e347cb06f347e16bdac384ef73f40c600",
+  "workflow_run": 39026158871,
+  "workflow_url": "https://github.com/kb5000/trames/actions/runs/39026158871",
+  "changes": [
+    "Keep the only terminal UIKit host stable while minimizing; resign focus before publishing the hidden layout and defer focus requests outside SwiftUI updates.",
+    "Preserve manual keyboard dismissal across ordinary redraws.",
+    "Sample host process CPU on the existing timer every two seconds; leave the 48-point corner resize hit area invisible.",
+    "Expose wl_data_device_manager v3, data sources and selection offers so original GTK3 creates its default seat.",
+    "Carry clipboard pipe FDs across guest/native SCM_RIGHTS with bounded, coordinator-owned nonblocking relays.",
+    "Read and write the iPad text clipboard automatically through the existing bridge; read permission remains controlled by iPadOS, with no additional app consent sheet.",
+    "Implement virtual scheduling/nice metadata and single-node get_mempolicy subsets used by imv."
+  ],
+  "native_validation": {
+    "source_commit": "9fb645fd32a77b4020a43847e7db311517207f2f",
+    "apple": {
+      "run": 39023715512,
+      "job": 117370478525,
+      "step": "Validate affected native modules or the complete Apple core",
+      "step_conclusion": "success",
+      "passed": 169,
+      "failed": 0,
+      "note": "The later UI/build portion was superseded and cancelled; reuse only this completed native step."
+    },
+    "linux": {
+      "run": 39023715509,
+      "job": 117370471801,
+      "conclusion": "success",
+      "lib_tests_passed": 170,
+      "gtk_integration_tests_passed": 1,
+      "failed": 0
+    },
+    "packages": [
+      "trames-shared",
+      "trames-wayland",
+      "trames-vfs",
+      "trames-core",
+      "trames-ffi"
+    ],
+    "gtk": "Original host GTK3 and mousepad, real seat/keyboard/pointer, SHM window and bidirectional Unicode text clipboard; no mocked GTK or seat.",
+    "reuse_reason": "Native sources, Cargo manifests/lock, vendored sources and toolchain match the validated commit. CI verifies the diff and completed steps before reusing results."
+  },
+  "reused_guest_inputs": {
+    "source_commit": "534e223e284df48f207500e84ab4cd05dd3d3958",
+    "apple_run": 39015795319,
+    "linux_run": 39015795340,
+    "reason": "Guest sources and build inputs are unchanged; the successful baseline artifacts are downloaded and checked against their manifests."
+  },
+  "limitations": [
+    "Clipboard is UTF-8 text only, up to the existing 16 KiB bridge limit; no image clipboard or drag-and-drop.",
+    "The global Native Bridge setting disables new host clipboard requests as well as other bridge methods. Other native capabilities retain their existing consent flow.",
+    "Scheduling policy and nice values are guest metadata; host worker scheduling is unchanged. Real-time policies and RLIMIT_NICE privilege raising remain unsupported.",
+    "get_mempolicy models node 0 and MPOL_DEFAULT; no non-default NUMA allocation policy.",
+    "Compatibility CSV/JSON were updated for the targeted syscall work; the full syscall probe and unrelated CPU/network/container suites were not rerun."
+  ],
+  "pending": [
+    "Owner iPad reproduction: sole Alpine float/minimize/restore, manual keyboard dismissal, hidden resize corner and two-second CPU refresh.",
+    "Owner iPad mousepad/imv startup, copy/paste in both directions and the actual iPadOS paste permission prompt.",
+    "Owner iPad vkmark display smoothness; simulator GPU completion is not physical presentation acceptance.",
+    "Intermittent disappearing status bar remains unconfirmed and tracked in issue 27."
+  ],
+  "reused_frontend_checks": {
+    "source_commit": "fda111c8ff69daf3c85130676899d45c36284468",
+    "workflow_run": 39024361587,
+    "job": 117372703224,
+    "tests": [
+      "TramesTests/WaylandInputTests/testNativeClipboardActionsRouteToGuestControlKeys",
+      "TramesTests/WorkspaceInteractionTests/testCanvasFollowsHostContentAndFinalResizeRequest"
+    ],
+    "passed": 2,
+    "failed": 0,
+    "reason": "Both individual checks passed. The follow-up changes terminal focus reentrancy, not clipboard key translation or canvas resize/configure logic; the failed focus invariant and other focus-dependent checks are rerun."
+  },
+  "notes": [
+    "The real Alpine UI flow passed before a stronger single-terminal focus invariant exposed stale SwiftUI visibility snapshots. The final fix queries the live workspace both when applying the UIView update and when UIKit asks whether a terminal may become first responder. It also ignores reentrant transition requests, preserves manual keyboard dismissal and invalidates queued restoration on resign. The failed invariant runs first, followed by focus-dependent tests.",
+    "Validation records are committed with [skip ci] after the built app is verified; no extra build is triggered for bookkeeping."
+  ],
+  "workflow_conclusion": "success",
+  "ipa": {
+    "sha256": "eede9e9759862cef9108c9cb251b64f4de0557aefc397b476a48870c3859cb7e",
+    "bytes": 10382995,
+    "platform": "iPhoneOS arm64",
+    "signed": false,
+    "bundle_id": "org.trames.Trames",
+    "artifact_id": 12098952421,
+    "url": "https://github.com/kb5000/trames/actions/runs/39026158871/artifacts/12098952421"
+  },
+  "tests": {
+    "critical_hidden_terminal_focus": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0
+    },
+    "affected_focus_and_real_alpine": {
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0
+    },
+    "passed_this_run": 4,
+    "reused_unchanged_frontend_checks": 2,
+    "distinct_frontend_checks_passed": 6
+  },
+  "artifact_digests": [
+    {
+      "id": 12098952421,
+      "name": "Trames-unsigned-sideload",
+      "sha256": "sha256:eb9dc88d77829702825340ab906eb26eb72b590270849d71f7b6596e2f8ff324"
+    },
+    {
+      "id": 12098897682,
+      "name": "ipad-smoke-diagnostics",
+      "sha256": "sha256:b75981ac0ddab88f7f10d2c51f7aff0a2a81141564d8b2a052a07b56d930bcd9"
+    },
+    {
+      "id": 12098488661,
+      "name": "workspace-gesture-diagnostics",
+      "sha256": "sha256:c8ee4952003f8aa9b7447fef0587cbaaab2266b4bd037cb0ef0bf9a6432c705d"
+    }
+  ],
+  "checks": {
+    "archive_sha256_verified": true,
+    "ipa_sha256_verified": true,
+    "bundle_version_verified": true,
+    "native_coremark_and_ssh_symbols_absent": true,
+    "debug_acceptance_fixtures_absent": true
+  }
+}
