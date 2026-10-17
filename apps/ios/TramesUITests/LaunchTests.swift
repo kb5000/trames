@@ -89,6 +89,23 @@ final class LaunchTests: XCTestCase {
             checkStatusAndCorner()
         }
     }
+    func testGraphicWindowPositionSurvivesAppBackground() {
+        let app=launchApp(["--workspace-ui-acceptance"])
+        let title=app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","window-title-wayland-")).firstMatch
+        XCTAssertTrue(title.waitForExistence(timeout:20),app.debugDescription)
+        let point=title.coordinate(withNormalizedOffset:CGVector(dx:0.2,dy:0.5))
+        point.press(forDuration:0.15,thenDragTo:point.withOffset(CGVector(dx:110,dy:110)))
+        let saved=title.frame
+        for _ in 0..<2 {
+            XCUIDevice.shared.press(.home)
+            XCTAssertTrue(app.wait(for:.runningBackground,timeout:10))
+            app.activate()
+            XCTAssertTrue(title.waitForExistence(timeout:10),app.debugDescription)
+            XCTAssertEqual(title.frame.minX,saved.minX,accuracy:2)
+            XCTAssertEqual(title.frame.minY,saved.minY,accuracy:2)
+            XCTAssertEqual(title.frame.width,saved.width,accuracy:2)
+        }
+    }
     func testOnlyAlpineCanMinimizeRestoreAndUseTheInvisibleResizeCorner() {
         let app=launchApp()
         func element(_ prefix:String)->XCUIElement {

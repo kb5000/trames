@@ -37,6 +37,9 @@ struct WorkspaceWindow: View {
     private var floating: Bool { workspace.layout.placement(item) == .floating }
     private var visible: Bool { workspace.isVisible(item) }
     private var minimum: CGSize { workspace.window(for:item)?.parent == nil ? CGSize(width:240,height:200) : CGSize(width:120,height:88) }
+    private var displayedGeometry: DisplayWindowGeometry {
+        var value=geometry;value.constrain(to:viewport,minimum:minimum);return value
+    }
     private var resizable: Bool {
         guard let window=workspace.window(for:item),let min=window.min_size,let max=window.max_size else { return true }
         return min.count != 2 || max.count != 2 || max[0]==0 || max[1]==0 || min != max
@@ -62,7 +65,7 @@ struct WorkspaceWindow: View {
                 .contentShape(Rectangle())
                 .onTapGesture { workspace.focus(item) }
                 .gesture(DragGesture(coordinateSpace:.named("workspace")).onChanged { value in
-                    if dragOrigin == nil { dragOrigin=geometry.origin;workspace.focus(item) }
+                    if dragOrigin == nil { geometry=displayedGeometry;dragOrigin=geometry.origin;workspace.focus(item) }
                     geometry.origin=CGPoint(x:dragOrigin!.x+value.translation.width,y:dragOrigin!.y+value.translation.height)
                     geometry.constrain(to:viewport,minimum:minimum)
                 }.onEnded { _ in
@@ -75,8 +78,8 @@ struct WorkspaceWindow: View {
             WorkspaceContent(workspace:workspace,item:item)
                 .frame(maxWidth:.infinity,maxHeight:.infinity)
                 .clipped()
-        }.frame(width:floating ? geometry.size.width : viewport.width,
-                height:floating ? geometry.size.height : viewport.height)
+        }.frame(width:floating ? displayedGeometry.size.width : viewport.width,
+                height:floating ? displayedGeometry.size.height : viewport.height)
             .overlay(alignment:.bottomTrailing) {
                 if floating && resizable {
                 Color.clear.frame(width:48,height:48).contentShape(Rectangle())
@@ -84,7 +87,7 @@ struct WorkspaceWindow: View {
                     .accessibilityIdentifier("window-resize-\(item.token)")
                     .accessibilityLabel("调整窗口大小")
                     .gesture(DragGesture(coordinateSpace:.named("workspace")).onChanged { value in
-                        if resizeOrigin == nil { resizeOrigin=geometry.size;workspace.focus(item) }
+                        if resizeOrigin == nil { geometry=displayedGeometry;resizeOrigin=geometry.size;workspace.focus(item) }
                         geometry.size=CGSize(width:resizeOrigin!.width+value.translation.width,height:resizeOrigin!.height+value.translation.height)
                         geometry.constrain(to:viewport,minimum:minimum)
                     }.onEnded { _ in resizeOrigin=nil;workspace.saveFrame(item,geometry) })
@@ -94,12 +97,11 @@ struct WorkspaceWindow: View {
             .clipShape(RoundedRectangle(cornerRadius:floating ? 10 : 0))
             .overlay(RoundedRectangle(cornerRadius:floating ? 10 : 0).stroke(floating ? (workspace.layout.focused == item ? Color.mint : Color.white.opacity(0.3)) : .clear))
             .shadow(radius:floating ? 12 : 0)
-            .offset(x:floating ? geometry.origin.x : 0,y:floating ? geometry.origin.y : 0)
+            .offset(x:floating ? displayedGeometry.origin.x : 0,y:floating ? displayedGeometry.origin.y : 0)
             .opacity(visible ? 1 : 0).allowsHitTesting(visible).accessibilityHidden(!visible)
-            .onAppear { geometry=workspace.layout.frames[item] ?? DisplayWindowGeometry();geometry.constrain(to:viewport,minimum:minimum) }
-            .onChange(of:viewport) { _,_ in geometry.constrain(to:viewport,minimum:minimum) }
+            .onAppear { geometry=workspace.layout.frames[item] ?? DisplayWindowGeometry() }
             .onChange(of:workspace.layout.frames[item]) { _,value in
-                if let value, value != geometry { geometry=value;geometry.constrain(to:viewport,minimum:minimum) }
+                if let value, value != geometry { geometry=value }
             }
             // Container identifiers propagate to descendants in SwiftUI and
             // replace title/button identifiers. Identify concrete controls only.

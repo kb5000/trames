@@ -1,5 +1,5 @@
 {
-  "base_sha": "e064da13da0e1d148fe39dca68fd90966a8e43eb",
+  "base_sha": "1e30e30812c5b2f3ac8fc30cdf262332db3a8392",
   "reuse_guest_run": 39015795319,
   "native_reuse": {
     "sha": "77455055bf902e6ea0193c36919c01daa672506d",
@@ -9,20 +9,16 @@
   "critical_test": "TramesUITests/LaunchTests/testExtendedKeyboardRoundTripKeepsStatusVisibleAndLeavesResizeCorner",
   "ui_targets": [
     "TramesTests/TerminalViewportTests/testAccessoryControllerReservesSystemCornerAndPreservesCtrl",
-    "TramesTests/WorkspaceInteractionTests/testDockingTerminalReflowsTheGrid",
-    "TramesTests/WorkspaceInteractionTests/testOnlyTerminalCanMinimizeWithoutReactivatingItsHiddenKeyboard",
-    "TramesUITests/LaunchTests/testOnlyAlpineCanMinimizeRestoreAndUseTheInvisibleResizeCorner"
+    "TramesTests/WorkspaceInteractionTests/testGraphicsPreferredFrameSurvivesBackgroundAndTransientViewportChanges",
+    "TramesUITests/LaunchTests/testGraphicWindowPositionSurvivesAppBackground"
   ],
   "changed_file_sha256": {
-    "apps/ios/Trames/TerminalKeyboardAccessory.swift": "59205b945f2bcf73319af01011b595c63896094ea7d868b9ab26c92b881d5be0",
-    "apps/ios/Trames/TerminalViewport.swift": "e434f499ab438a529df97cb96c98972f8f314562c22996f3f7f5a0af7f3dd532",
-    "apps/ios/Trames/TramesApp.swift": "23ca21b329d185f70d17c2cec526a1336fea638dccc430ea86bc729baa9ef902",
-    "apps/ios/Trames/WorkspaceKeyboardContainer.swift": "b4d04fd83f9b186852a2924826bbf5bb90e7e7c8d579b45050d50670205bbddc",
-    "apps/ios/Trames/WorkspaceModel.swift": "faeedaa15214a5543774b48815155b8fcb77af936543855dccfed3662f6abe24",
-    "apps/ios/TramesTests/TerminalViewportTests.swift": "3935c96423323dcc806767b953aadfb32ad08830808a081205de597bb472a0cb",
-    "apps/ios/TramesTests/WorkspaceInteractionTests.swift": "20608ae6008a2f9f0b9b5ea26f8c8061eac0ee91404c45bf2b1bf95f3bcd782d",
-    "apps/ios/TramesUITests/LaunchTests.swift": "774040e455b364a8a73195c2863f87f292fda64a20dce7dd149e3c0ae61f3c8f",
-    "apps/ios/project.yml": "c01f905c9323a133ed3c97972df3c87d9a3b85812f7cf297e889161c2b498f3d"
+    "apps/ios/Trames/TerminalKeyboardAccessory.swift": "7a7845e774f44bc6ce226b376c0469a9cfc5e76c84e0c8557ffe317d709fc675",
+    "apps/ios/Trames/WorkspaceKeyboardContainer.swift": "d7a7bce9ff18c80325f564fad3f687e2c78b4f1e41122c2360c741feea09de24",
+    "apps/ios/Trames/WorkspaceTabs.swift": "c6facc3f842e1912ab043567385834d304c9bda972dd49440cb3d47b9655d840",
+    "apps/ios/Trames/WorkspaceWindows.swift": "b6b003f25286b665ea42be8f1d1c534d7e528ddb5af4b50ac7179335788126c4",
+    "apps/ios/TramesTests/WorkspaceInteractionTests.swift": "9661fea3153c94108bb6586f62bcab97a21490151d08995907545eb3b5ce2add",
+    "apps/ios/TramesUITests/LaunchTests.swift": "ac1932096c51cb7c382a82221d0b81809c9f9b2cf71501583395e3bdc00fe648"
   },
   "reason": "Restore internal floating terminal spacing. Exercise the actual app-window keyboard accessory toggle and root keyboard-layout guide, window-size reflow and minimize/focus regressions only. Native/guest and File Provider code are unchanged; formal-key device acceptance is deferred as the owner confirmed."
 }

@@ -8,6 +8,49 @@ import TramesKit
 
 @MainActor
 final class WorkspaceInteractionTests: XCTestCase {
+    func testGraphicsPreferredFrameSurvivesBackgroundAndTransientViewportChanges() async throws {
+        let previous=UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).first { $0.isKeyWindow }
+        let window=UIWindow(windowScene:try XCTUnwrap(previous?.windowScene))
+        let model=WorkspaceModel(prepareEnvironment:false),session=TerminalSession(title:"Alpine",isLocal:true)
+        defer {session.terminal.updateUiClosed();window.isHidden=true;previous?.makeKeyAndVisible()}
+        model.add(session)
+        func status(_ revision:Int) throws -> LocalWaylandStatus {
+            try JSONDecoder().decode(LocalWaylandStatus.self,from:Data("""
+            {"revision":\(revision),"text":null,"windows":[{"id":7,"connection":1,"title":"vkcube","app_id":"vkcube","width":430,"height":296,"revision":\(revision),"mode":"floating","bounds":[0,0,430,296]}]}
+            """.utf8))
+        }
+        session.applyWaylandStatus(try status(1))
+        let id=WorkspaceItemID.wayland(session.id,7)
+        let saved=DisplayWindowGeometry(origin:CGPoint(x:310,y:280),size:CGSize(width:430,height:340))
+        model.saveFrame(id,saved)
+        let original=CGSize(width:1024,height:768)
+        let host=UIHostingController(rootView:WorkspaceWindow(workspace:model,item:id,viewport:original))
+        window.rootViewController=host;window.makeKeyAndVisible()
+        func canvas(_ view:UIView)->WaylandCanvas? {
+            if let view=view as? WaylandCanvas {return view}
+            return view.subviews.lazy.compactMap {canvas($0)}.first
+        }
+        try await Task.sleep(for:.milliseconds(100))
+        let view=try XCTUnwrap(canvas(host.view)),before=view.convert(view.bounds,to:host.view)
+        for revision in 2...4 {
+            model.background()
+            for size in [CGSize(width:250,height:190),CGSize(width:600,height:350)] {
+                model.updateViewport(size)
+                host.rootView=WorkspaceWindow(workspace:model,item:id,viewport:size)
+                try await Task.sleep(for:.milliseconds(50))
+                XCTAssertEqual(model.layout.frames[id],saved)
+            }
+            session.applyWaylandStatus(try status(revision))
+            model.foreground();model.updateViewport(original)
+            host.rootView=WorkspaceWindow(workspace:model,item:id,viewport:original)
+            try await Task.sleep(for:.milliseconds(100))
+            XCTAssertTrue(canvas(host.view) === view)
+            let after=view.convert(view.bounds,to:host.view)
+            XCTAssertEqual(after.minX,before.minX,accuracy:1);XCTAssertEqual(after.minY,before.minY,accuracy:1)
+            XCTAssertEqual(after.width,before.width,accuracy:1);XCTAssertEqual(after.height,before.height,accuracy:1)
+            XCTAssertEqual(model.layout.frames[id],saved)
+        }
+    }
     func testEmptyOscTitleFallsBackWithoutChangingLocalIdentity() {
         let local=TerminalSession(title:"Alpine",isLocal:true),ssh=TerminalSession(title:"my-server")
         defer { local.terminal.updateUiClosed();ssh.terminal.updateUiClosed() }

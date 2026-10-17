@@ -80,7 +80,8 @@ struct WorkspaceTabs: Equatable {
     mutating func updateViewport(_ size: CGSize) {
         guard size.width > 0, size.height > 0, size != viewport else { return }
         viewport=size
-        for id in Array(frames.keys) { frames[id]?.constrain(to:size,minimum:CGSize(width:1,height:1)) }
+        // Saved frames describe the user's placement. Keyboard/background
+        // transitions only constrain their displayed copy, never this record.
     }
     /// Only automatic initial placement cascades. Explicit drag positions and
     /// saved user geometry survive subsequent docking/restoration.

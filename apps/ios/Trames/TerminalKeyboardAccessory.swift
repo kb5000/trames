@@ -11,7 +11,7 @@ final class TerminalKeyboardAccessoryController: UIInputViewController {
         super.init(nibName:nil,bundle:nil)
     }
     required init?(coder:NSCoder) { fatalError("init(coder:) has not been implemented") }
-    override func loadView() { view=TerminalKeyboardAccessoryContainer(accessory:accessory) }
+    override func loadView() { inputView=TerminalKeyboardAccessoryContainer(accessory:accessory) }
 }
 final class TerminalKeyboardAccessoryContainer: UIInputView {
     let accessory: TerminalAccessory
@@ -32,7 +32,14 @@ final class TerminalKeyboardAccessoryContainer: UIInputView {
         super.layoutSubviews()
         let rect=CGRect(x:safeAreaInsets.left,y:0,
             width:max(0,bounds.width-safeAreaInsets.left-safeAreaInsets.right-Self.trailingClearance),height:rowHeight)
-        if accessory.frame != rect { accessory.frame=rect }
+        if accessory.frame != rect || !accessory.subviews.contains(where: { $0 is UIButton }) {
+            accessory.frame=rect
+            // A frame change inside a host view does not invoke SwiftTerm's
+            // Swift bounds observer. Build its original buttons explicitly.
+            let control=accessory.controlModifier
+            accessory.setupUI()
+            accessory.controlModifier=control
+        }
         accessory.layoutIfNeeded()
         // SwiftTerm rebuilds its controls after width changes. Give the actual
         // toggle a stable public accessibility identity after each layout.
