@@ -3,8 +3,17 @@ import XCTest
 import UIKit
 final class LaunchTests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
+    // SwiftTerm's indefinite cursor animation makes XCTest wait 60 seconds
+    // per action. Use the existing DEBUG steady-cursor mode for every launch;
+    // window gestures and UIKit animations remain enabled.
+    private func launchApp(_ arguments: [String] = []) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-acceptance"] + arguments
+        app.launch()
+        return app
+    }
     func testWorkspaceTabsDetachDockAndTerminalTitleRemainsVisible() {
-        let app=XCUIApplication();app.launchArguments=["--workspace-ui-acceptance"];app.launch()
+        let app=launchApp(["--workspace-ui-acceptance"])
         func element(_ prefix:String)->XCUIElement {
             app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@",prefix)).firstMatch
         }
@@ -26,7 +35,7 @@ final class LaunchTests: XCTestCase {
         XCTAssertTrue(alpine.label.contains("Alpine"));XCTAssertEqual(graphic.frame.midY,alpine.frame.midY,accuracy:5)
     }
     func testNativeCoreMarkCanBeOpenedWithoutStartingATimedRun() {
-        let app = XCUIApplication(); app.launch()
+        let app=launchApp()
         XCTAssertTrue(app.buttons["新建或管理会话"].waitForExistence(timeout: 20))
         app.buttons["新建或管理会话"].tap()
         app.buttons["原生 CoreMark"].tap()
@@ -37,7 +46,7 @@ final class LaunchTests: XCTestCase {
         XCTAssertTrue(app.buttons["新建或管理会话"].isHittable)
     }
     func testNativeSwapchainPresentsWhileWindowMovesResizesAndHides() {
-        let app = XCUIApplication(); app.launchArguments = ["--vulkan-display-acceptance"]; app.launch()
+        let app=launchApp(["--vulkan-display-acceptance"])
         let canvas = app.otherElements["vulkan-display-canvas"].firstMatch
         XCTAssertTrue(canvas.waitForExistence(timeout: 120), app.debugDescription)
         let active = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value MATCHES %@", "1024x768 frames=[1-9][0-9]+"), object: canvas)
@@ -90,7 +99,7 @@ final class LaunchTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["打开一个终端"].waitForExistence(timeout: 20))
     }
     func testGuestNativeRequestRequiresVisibleConsent() {
-        let app=XCUIApplication(); app.launchArguments=["--ui-acceptance"]; app.launch()
+        let app=launchApp()
         let ready=XCTNSPredicateExpectation(predicate:NSPredicate(format:"label == %@","Alpine · 本地"),object:app.staticTexts["session-state"])
         XCTAssertEqual(XCTWaiter.wait(for:[ready],timeout:120),.completed)
         app.buttons["terminal-keyboard"].tap()
@@ -107,8 +116,7 @@ final class LaunchTests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for:[accepted],timeout:10),.completed)
     }
     func testLaunchAlpineRotateExitAndReopenPersistentStore() {
-        let app = XCUIApplication()
-        app.launch()
+        let app=launchApp()
         XCTAssertTrue(app.staticTexts["TRAMES"].waitForExistence(timeout: 20))
         let state = app.staticTexts["session-state"]
         let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", "Alpine · 本地"), object: state)

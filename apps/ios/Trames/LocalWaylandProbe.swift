@@ -88,26 +88,32 @@ enum LocalWaylandProbe {
             guard try session.send(data)==data.count else { throw TramesError.message("Wayland acceptance input queue full") }
         }
         let began=Date()
+        print("Wayland acceptance: preparing original signed clients")
         while try session.status().phase == "starting" {
             if Date().timeIntervalSince(began)>60 { throw TramesError.message("Wayland session did not start") }
             try await Task.sleep(for:.milliseconds(10))
         }
         let repository=inputs.appendingPathComponent("repository",isDirectory:true)
-        for file in try repositoryFiles(repository) {
+        let files=try repositoryFiles(repository)
+        for (index,file) in files.enumerated() {
             let relative=String(file.path.dropFirst(repository.path.count+1))
             try session.transfer(guest:"/tmp/wayland-repo/"+relative,host:file,export:false)
+            if index.isMultiple(of:16) { print("Wayland acceptance: imported \(index+1)/\(files.count) files at \(Date().timeIntervalSince(began))s") }
         }
         for (guest,host) in [("wayland-client","wayland-client"),("weston-assets.apk","weston-assets.apk.input"),("wayland-assets.tar","assets.tar"),("wayland-repositories","repositories")] {
             try session.transfer(guest:"/tmp/"+guest,host:inputs.appendingPathComponent(host),export:false)
         }
+        print("Wayland acceptance: original apk installation begins at \(Date().timeIntervalSince(began))s")
         try send("apk --repositories-file /tmp/wayland-repositories --no-progress add wayland-utils weston-clients vulkan-tools vulkan-loader vkmark font-dejavu breeze-cursors && apk verify /tmp/weston-assets.apk && tar -xf /tmp/wayland-assets.tar -C / && chmod 755 /tmp/wayland-client; printf '\\nWAYLAND_SETUP:%d\\n' $?\n")
         while !text.contains("\r\nWAYLAND_SETUP:0\r\n") {
             try receive()
             if text.range(of:"\r\nWAYLAND_SETUP:[1-9][0-9]*\r\n",options:.regularExpression) != nil || Date().timeIntervalSince(began)>300 { throw TramesError.message("Wayland package setup failed: \(text.suffix(4096))") }
             try await Task.sleep(for:.milliseconds(10))
         }
+        print("Wayland acceptance: original apk setup passed at \(Date().timeIntervalSince(began))s")
         var cubeResized=false, textConfirmed=false
         for (stage,program) in [("info","wayland-info"),("windows","/tmp/wayland-client 1 hold"),("shm","weston-simple-shm"),("editor","weston-editor"),("cube","vkcube --wsi wayland --c 30"),("vkmark","vkmark --winsys wayland --size 320x240 -b clear:duration=0.1 -b texture:anisotropy=16:duration=0.1 -b shading:shading=phong:duration=0.1")] {
+            print("Wayland acceptance: starting \(stage) at \(Date().timeIntervalSince(began))s")
             let start=Date(), baseline=canvas.rendered
             var focused=false, resized=false, closed=false
             var currentID:UInt64?
@@ -176,6 +182,7 @@ enum LocalWaylandProbe {
             if stage == "vkmark" && (!text.contains("vkmark Score") || text.contains("Failed with exception") || canvas.rendered == baseline) {
                 throw TramesError.message("Original vkmark scene failed: \(text.suffix(16384))")
             }
+            print("Wayland acceptance: \(stage) passed; frames=\(canvas.rendered-baseline), IME=\(textConfirmed)")
             while !(try session.waylandStatus()).windows.isEmpty {
                 if Date().timeIntervalSince(start)>185 { throw TramesError.message("Wayland client resources were not reclaimed") }
                 try await Task.sleep(for:.milliseconds(10))

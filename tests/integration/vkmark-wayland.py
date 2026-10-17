@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Original signed vkmark scenes through production Wayland/Vulkan FFI (not a speed benchmark)."""
 import ctypes as C
-import json,os,sys,time,uuid
+import json,os,sys,time,uuid,tempfile
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 store=Path(os.environ.get('TRAMES_WAYLAND_STORE',str(ROOT/'target/wayland/store'))).resolve()
@@ -46,8 +46,9 @@ try:
     guest='/tmp/vkmark-'+uuid.uuid4().hex
     for path in sorted(repository.rglob('*')):
         if path.is_file():payload('trames_session_transfer',session,dict(guest=guest+'/repo/'+path.relative_to(repository).as_posix(),host=str(path),export=False))
-    config=repository.parent/'vkmark-repositories';config.write_text(guest+'/repo/main\n'+guest+'/repo/community\n')
-    payload('trames_session_transfer',session,dict(guest=guest+'/repositories',host=str(config),export=False))
+    with tempfile.NamedTemporaryFile(mode='w',suffix='.repositories') as config:
+        config.write(guest+'/repo/main\n'+guest+'/repo/community\n');config.flush()
+        payload('trames_session_transfer',session,dict(guest=guest+'/repositories',host=config.name,export=False))
     send("apk --repositories-file "+guest+"/repositories --no-progress add vkmark; printf '\\nVKMARK_SETUP:%d\\n' $?\n")
     while '\r\nVKMARK_SETUP:0\r\n' not in text:
         text+=read('trames_session_output',session).decode(errors='replace')
