@@ -5,6 +5,7 @@ import SwiftTerm
 /// Terminal columns fit the viewport; only scrollback needs a scrolling axis.
 final class TerminalViewport: TerminalView {
     var onFocusRequested: (() -> Void)?
+    var onGridLayout: ((Int,Int) -> Void)?
     // Query the live model even if UIKit is applying an older SwiftUI snapshot.
     var keyboardVisibility: (() -> Bool)?
     private var requestedKeyboardFocus = false
@@ -117,6 +118,8 @@ final class TerminalViewport: TerminalView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        let terminal=getTerminal()
+        onGridLayout?(terminal.cols,terminal.rows)
         // A fractional resize can leave the column count unchanged. Keep the
         // scrolling width in sync even when SwiftTerm does not resize its grid.
         if contentSize.width != bounds.width {

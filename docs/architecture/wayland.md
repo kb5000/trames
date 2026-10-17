@@ -19,7 +19,12 @@ carries bounded control messages and SCM_RIGHTS capabilities, never pixels or
 host paths. Connection identity comes from the guest bridge. Virtual descriptor
 identity, credentials, logical EOF/seals, mmap dirty/COW hooks and existing guest
 memory synchronization are preserved. The shared physical-storage budget is
-128 MiB per instance.
+128 MiB per instance for mapped, written or explicitly reserved shared ranges.
+Sparse memfd logical length is separately bounded at 2 GiB; ftruncate does not
+charge untouched holes. Logical shrink retains live mappings, zeroes removed
+bytes and uses host sparse-hole clearing where supported. Guest KEEP_SIZE
+allocation reserves ranges without growing EOF; guest hole punching remains
+unsupported, so original foot uses its existing non-scrolling-SHM fallback.
 
 An export lease is registered before sending SCM_RIGHTS and survives until
 SharedFile import acknowledges the descriptor or its client disconnects. Closing
@@ -81,6 +86,9 @@ Terminal and Wayland identities share one root tab/window model, independent of
 mutable application titles. Tabs can reorder or detach; an explicit floating-window
 button docks into that same tab row. Dragging to the top does not maximize.
 Minimization preserves window identity and leaves an inactive tab for restoration.
+Client toplevel parent/min/max hints are exposed separately from popup scene parenting.
+Fixed-size transient dialogs use their committed client size plus the host header,
+and configure requests respect their limits.
 Geometry comes from the actual header/content frames. Resizing follows available
 client space. Guest mode acknowledgements do not steal terminal focus on every
 frame, and empty OSC titles fall back to the session's original title.

@@ -153,6 +153,46 @@ final class WorkspaceInteractionTests: XCTestCase {
         try await Task.sleep(for:.milliseconds(50))
         XCTAssertFalse(session.terminal.isFirstResponder,"A view redraw must preserve manual keyboard dismissal")
     }
+    func testFloatingTerminalReservesResizeSpaceAndDockReflowsTheGrid() async throws {
+        let previous=UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).first { $0.isKeyWindow }
+        let window=UIWindow(windowScene:try XCTUnwrap(previous?.windowScene))
+        let model=WorkspaceModel(prepareEnvironment:false),session=TerminalSession(title:"Alpine",isLocal:true)
+        defer {session.terminal.updateUiClosed();window.isHidden=true;previous?.makeKeyAndVisible()}
+        model.add(session);let id=WorkspaceItemID.terminal(session.id)
+        window.rootViewController=UIHostingController(rootView:WorkspaceView(workspace:model));window.makeKeyAndVisible()
+        try await Task.sleep(for:.milliseconds(200))
+        let originalColumns=session.terminal.getTerminal().cols
+        model.detach(id)
+        model.saveFrame(id,DisplayWindowGeometry(origin:CGPoint(x:10,y:10),size:CGSize(width:320,height:300)))
+        try await Task.sleep(for:.milliseconds(150))
+        let floatingColumns=session.terminal.getTerminal().cols
+        let floatingFrame=session.terminal.convert(session.terminal.bounds,to:window)
+        XCTAssertLessThan(floatingColumns,originalColumns)
+        var grids:[(Int,Int)]=[]
+        session.terminal.onGridLayout={grids.append(($0,$1))}
+        model.dock(id)
+        let deadline=Date().addingTimeInterval(5)
+        while (session.terminal.getTerminal().cols<=floatingColumns || grids.isEmpty) && Date()<deadline {try await Task.sleep(for:.milliseconds(20))}
+        XCTAssertGreaterThan(session.terminal.getTerminal().cols,floatingColumns)
+        XCTAssertGreaterThan(session.terminal.bounds.width,floatingFrame.width)
+        XCTAssertEqual(grids.last?.0,session.terminal.getTerminal().cols)
+        XCTAssertEqual(grids.last?.1,session.terminal.getTerminal().rows)
+        XCTAssertLessThanOrEqual(session.terminal.getOptimalFrameSize().width,session.terminal.bounds.width)
+    }
+    func testTransientDialogFrameFitsClientAndSurvivesViewportChange() throws {
+        let model=WorkspaceModel(prepareEnvironment:false),session=TerminalSession(title:"Alpine",isLocal:true)
+        defer {session.terminal.updateUiClosed()};model.add(session)
+        let data=Data("""
+        [{"id":7,"connection":1,"title":"editor","app_id":"editor","width":800,"height":600,"revision":1,"mode":"floating","bounds":[0,0,800,600]},
+         {"id":8,"connection":1,"title":"Save changes?","app_id":"editor","width":360,"height":160,"revision":1,"mode":"floating","bounds":[0,0,360,160],"parent":7,"min_size":[360,160],"max_size":[360,160]}]
+        """.utf8)
+        let windows=try JSONDecoder().decode([LocalWaylandWindow].self,from:data)
+        session.waylandWindows=windows;session.onWaylandChanged?(windows)
+        let id=WorkspaceItemID.wayland(session.id,8)
+        XCTAssertEqual(model.layout.frames[id]?.size,CGSize(width:360,height:204))
+        model.updateViewport(CGSize(width:700,height:600))
+        XCTAssertEqual(model.layout.frames[id]?.size,CGSize(width:360,height:204))
+    }
     func testCanvasFollowsHostContentAndFinalResizeRequest() async throws {
         let previous=UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).first { $0.isKeyWindow }
         let window=UIWindow(windowScene:try XCTUnwrap(previous?.windowScene))

@@ -31,11 +31,13 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     private var paused = false
     private var timezoneObserver: NSObjectProtocol?
     private var clipboardObserver: NSObjectProtocol?
+    private var terminalSize:(columns:Int,rows:Int)?
     init(title: String, isLocal: Bool = false) {
         self.fallbackTitle = title.isEmpty ? "终端" : title
         self.isLocal = isLocal
         self.title = self.fallbackTitle; super.init()
         terminal.terminalDelegate = self
+        terminal.onGridLayout = { [weak self] columns,rows in self?.synchronizeTerminalSize(columns:columns,rows:rows) }
         terminal.accessibilityIdentifier = "terminal-viewport"
         terminal.backgroundColor = .black
         timezoneObserver = NotificationCenter.default.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: .main) { [weak self] _ in
@@ -63,7 +65,8 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
                 self.local = local
                 bridge.attach(local)
                 try local.pause(paused)
-                try local.resize(columns: max(1,terminal.getTerminal().cols), rows: max(1,terminal.getTerminal().rows))
+                terminalSize=nil
+                synchronizeTerminalSize(columns:max(1,terminal.getTerminal().cols),rows:max(1,terminal.getTerminal().rows))
                 timer = Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) { [weak self] _ in
                     Task { @MainActor in self?.pollLocal() }
                 }
@@ -82,6 +85,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
             }
             applyWaylandStatus(try local.waylandStatus())
             sampleCPU()
+            FileProviderService.poll()
             let status = try local.status()
             if status != capacity { capacity = status }
             if status.phase != lastPhase {
@@ -175,7 +179,12 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         state = error.localizedDescription
     }
     func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) {
-        try? local?.resize(columns: newCols, rows: newRows)
+        synchronizeTerminalSize(columns:newCols,rows:newRows)
+    }
+    private func synchronizeTerminalSize(columns:Int,rows:Int) {
+        guard let local,columns>0,rows>0,terminalSize?.columns != columns || terminalSize?.rows != rows else {return}
+        do { try local.resize(columns:columns,rows:rows);terminalSize=(columns,rows) }
+        catch { fail(error) }
     }
     func setTerminalTitle(source: TerminalView, title: String) {
         let value = String(title.prefix(80)).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -197,6 +206,10 @@ struct TerminalPane: UIViewRepresentable {
     let workspace: WorkspaceModel
     let onFocus: () -> Void
     func makeUIView(context: Context) -> TerminalViewport { session.terminal }
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: TerminalViewport, context: Context) -> CGSize? {
+        guard let width=proposal.width,let height=proposal.height else { return nil }
+        return CGSize(width:max(0,width),height:max(0,height))
+    }
     func updateUIView(_ view: TerminalViewport, context: Context) {
         view.onFocusRequested = onFocus
         let id=WorkspaceItemID.terminal(session.id)

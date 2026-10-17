@@ -33,11 +33,11 @@
     "crates/trames-net/src/lib.rs": "2752a98b7f544429b9b6f4fd4cd3e0c35d39a7df5578ef90f783340df328002d",
     "crates/trames-vfs/src/locks.rs": "bfd76ae2d7a69185cfaa863e5de60732e6ed1f0bf954746a2a06f72aca812d9b",
     "crates/trames-vfs/src/lib.rs": "9b5026e8a3fb60fe706c8622517764e7ae6ecef137ed5840ec2dea7a0daac572",
-    "crates/trames-vfs/src/pseudo.rs": "bc69add8161ca83b7729146a4b6a8d5a415b9299bd42a0685e97a3d8d8a6d91b",
+    "crates/trames-vfs/src/pseudo.rs": "766a5af604d8db16f75742b22c4ca892cb3d3f847aebb2ef364f14494a4ad3cf",
     "crates/trames-vfs/src/oom.rs": "1349853b8b727dc7b3368c085b7281123477b5a3a4643152be6954015cd42cad",
     "crates/trames-vfs/src/credentials.rs": "d0641d4797167f610f3cb2d2d12a89f7a16cd1c05e2df30fe8556c10fec1ff9b",
     "crates/trames-vfs/src/namespace.rs": "1fe1cfc270b15a9b6bc9f6016534c859c9d1dfca14fd89e21a09182293510bd0",
-    "crates/trames-vfs/src/storage.rs": "2ecd5352dd9a91f6bd04f0b7718c7beaf2d1d3f23f423517ad89480d58c59020",
+    "crates/trames-vfs/src/storage.rs": "6a7c63b7d5bd9696e31d7242f3566d62a25f2e0ce22a172bfc4e3b4abc176b28",
     "crates/trames-vfs/src/kernel_log.rs": "0390b640adb90efb53adfc784c50b2d8891c04e3019e44c1b3a6b0052763b5bf",
     "crates/trames-vfs/src/syscall_names.rs": "3fa0cb4f8a3cc71f32f37dcfff68b70fb1da60ec36b9a005024559a3bcb363bc",
     "crates/trames-memory/src/lib.rs": "be034bb7a16f4b4bc24b13958cdb2150c3b9dc8ef47cb60dde1952c54d035190",
@@ -50,7 +50,7 @@
     "crates/trames-net/src/native.rs": "bd729ecbc9ae46f46c9453caa631618b8b889e9a7d65090839def9a63c1fed10",
     "crates/trames-net/src/virtualnet/sockets.rs": "2576e1c5578729db8c0608f5cd0fd7f5fe0f5370432b9f9b6cd37abcdf36351a",
     "crates/trames-vfs/src/mapped.rs": "4ee64b5dadb4c3be394d5f0c070b3e2cd125d0006ff105b0def2d5889e909a5c",
-    "crates/trames-vfs/src/memfd.rs": "181e3f45c1bee13aa7800d46cfc0a907300ef1c05020bceb0b91f3261ec12e6d",
+    "crates/trames-vfs/src/memfd.rs": "edd3daa46f94b8362e501edaf50377c149e1a883ff89ac088b10b360712b2957",
     "crates/trames-vfs/src/executable.rs": "2a907395047467f660d4413f8ba9da91c5c6ac997963afc7b3f9a9484126f3c2",
     "crates/trames-vfs/src/linux_namespace.rs": "3c46eed93a79b64c90f1521cd9c809fe16187aa0ec541f0fd5438bbd19295078",
     "crates/trames-vfs/src/pid_namespace.rs": "78161d9b5fdb05eb006230e3ac1ae0236b9adedfcda4556c210a07c3a57b28f9",
@@ -59,15 +59,17 @@
     "crates/trames-net/src/interfaces.rs": "5844f093d45db4df27dc639cbf5167b7c980cb9521f0f792bf99bde9d1b7b3ae",
     "crates/trames-net/src/native_icmp.rs": "ab56d7bf3e6785b03c8d438c4aa11e6f3dae0a7c4259c9c912a3aafeb559388e",
     "crates/trames-vfs/src/inotify.rs": "baf2ab4b6eeaa53e8007e8c5183c97fea45cda8d7d35b4b900048cf65a7c5c1a",
-    "crates/trames-core/src/process_scheduling.rs": "4c8ea69952ba925fca7fcb9535b83941c49157b8f9d69986f2a4fdec5f4de777"
+    "crates/trames-core/src/process_scheduling.rs": "4c8ea69952ba925fca7fcb9535b83941c49157b8f9d69986f2a4fdec5f4de777",
+    "crates/trames-shared/src/lib.rs": "03822d499bb127f68540f110eedb8962756b6821033c35e858f2964659540fff"
   },
   "targeted_update": {
     "syscalls": [
+      47,
       119,
       140,
       141,
       236
     ],
-    "validation": "process::scheduling unit tests; full syscall probe results remain the prior baseline"
+    "validation": "Targeted VFS/Wayland/native tests; sparse memfd growth and KEEP_SIZE allocation added. Full syscall probes retain the prior baseline."
   }
 }

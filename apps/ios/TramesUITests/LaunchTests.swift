@@ -82,6 +82,8 @@ final class LaunchTests: XCTestCase {
                 let corner=element("window-resize-terminal-")
                 XCTAssertTrue(corner.waitForExistence(timeout:5))
                 XCTAssertFalse(app.images.matching(NSPredicate(format:"identifier BEGINSWITH %@","window-resize-")).firstMatch.exists)
+                let viewport=app.descendants(matching:.any).matching(identifier:"terminal-viewport").firstMatch
+                XCTAssertLessThanOrEqual(viewport.frame.maxY,corner.frame.minY+1,"Resize must stay below the terminal keyboard controls")
                 let oldRight=corner.frame.maxX
                 let point=corner.coordinate(withNormalizedOffset:CGVector(dx:0.85,dy:0.85))
                 point.press(forDuration:0.15,thenDragTo:point.withOffset(CGVector(dx:-60,dy:-40)))

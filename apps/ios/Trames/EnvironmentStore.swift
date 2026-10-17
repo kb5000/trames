@@ -10,10 +10,15 @@ actor EnvironmentStore {
         return url
     }
     let root: URL
+    let authorizationRoot: URL
     private var generation: UInt64 = 0
     private var resetting = false
     init() throws {
-        root = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true).appendingPathComponent("Trames", isDirectory: true)
+        let privateRoot = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true).appendingPathComponent("Trames", isDirectory: true)
+        authorizationRoot=privateRoot
+        try FileManager.default.createDirectory(at:privateRoot,withIntermediateDirectories:true)
+        root = try RootfsLocations.prepare(privateRoot:privateRoot,sharedRoot:RootfsLocations.sharedRoot)
+        UserDefaults.standard.set(root==RootfsLocations.sharedRoot,forKey:"rootfsFileProviderAvailable")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
     }
     func start(useVolumeBudget: Bool, vulkan: Bool = false, memoryBudgetMiB: Int = 1024, processMemoryBudgetMiB: Int = 512) async throws -> LocalSession {

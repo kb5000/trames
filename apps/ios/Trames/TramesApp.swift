@@ -122,8 +122,10 @@ struct SessionView: View {
     @ObservedObject var session: TerminalSession
     var body: some View {
         VStack(spacing: 0) {
-            TerminalPane(session:session,workspace:workspace,onFocus:{ [weak workspace, weak session] in if let session { workspace?.focus(.terminal(session.id)) } })
-                .frame(minHeight:0,maxHeight:.infinity).clipped()
+            GeometryReader { proxy in
+                TerminalPane(session:session,workspace:workspace,onFocus:{ [weak workspace, weak session] in if let session { workspace?.focus(.terminal(session.id)) } })
+                    .frame(width:proxy.size.width,height:proxy.size.height)
+            }.frame(minHeight:0,maxHeight:.infinity).clipped()
             HStack {
                 Text(session.state).lineLimit(2).accessibilityIdentifier("session-state")
                 Spacer()
@@ -134,8 +136,11 @@ struct SessionView: View {
                 if let capacity = session.capacity {
                     Text("\(ByteCountFormatter.string(fromByteCount: Int64(capacity.used_bytes), countStyle: .binary)) / \(ByteCountFormatter.string(fromByteCount: Int64(capacity.budget_bytes), countStyle: .binary))")
                 }
-            }.font(.caption).foregroundStyle(.secondary).padding(.horizontal, 12).padding(.vertical, 6)
-                .fixedSize(horizontal:false,vertical:true).layoutPriority(1)
+            }.font(.caption).foregroundStyle(.secondary).padding(.leading,12)
+                .padding(.trailing,workspace.layout.placement(.terminal(session.id)) == .floating ? 52 : 12)
+                .padding(.vertical,6).fixedSize(horizontal:false,vertical:true)
+                .frame(minHeight:workspace.layout.placement(.terminal(session.id)) == .floating ? 48 : 0)
+                .layoutPriority(1)
         }.background(BridgeConsentPresenter(controller: session.bridge))
     }
 }

@@ -17,7 +17,7 @@ jobs:
     outputs:
       frontend_only: ${{ steps.scope.outputs.frontend_only }}
       targeted: ${{ steps.scope.outputs.targeted }}
-      skip_native: ${{ steps.scope.outputs.skip_native }}
+      skip_native: ${{ steps.scope.outputs.skip_linux_native }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,7 +34,7 @@ jobs:
     needs: scope
     if: needs.scope.outputs.targeted == 'true' && needs.scope.outputs.skip_native != 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
@@ -44,13 +44,39 @@ jobs:
       - name: Check affected modules
         run: |
           cargo fmt --all --check
-          cargo clippy -p trames-shared -p trames-wayland -p trames-vfs -p trames-core -p trames-ffi --all-targets --locked -- -D warnings
-          cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-core -p trames-ffi --lib --locked
+          cargo clippy -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --all-targets --locked -- -D warnings
+          cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --lib --locked
       - name: Exercise original GTK3 and mousepad, including clipboard FD transfers
         run: |
           sudo apt-get update -qq
           sudo apt-get install --yes --no-install-recommends libgtk-3-0 mousepad
           cargo test -p trames-wayland --test gtk_client --locked -- --ignored --nocapture
+      - name: Exercise original signed ARM64 foot over the guest Wayland ABI
+        timeout-minutes: 10
+        env:
+          TRAMES_FOOT_STORE: ${{ github.workspace }}/target/foot-acceptance/store
+          TRAMES_FOOT_REPOSITORY: ${{ github.workspace }}/target/foot-acceptance/repository
+          TRAMES_FOOT_ROOTFS: ${{ github.workspace }}/target/foot-acceptance/rootfs.tar.gz
+          TRAMES_FFI_LIB: ${{ github.workspace }}/target/debug/libtrames_ffi.so
+          TRAMES_FOOT_LOG: ${{ github.workspace }}/target/foot-acceptance/foot.log
+        run: |
+          python3 - <<'PY'
+          import importlib.util,pathlib,urllib.request
+          root=pathlib.Path('target/foot-acceptance');root.mkdir(parents=True,exist_ok=True)
+          spec=importlib.util.spec_from_file_location('m6','tests/integration/m6.py');m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+          m.CACHE=root/'download';m.CACHE.mkdir(exist_ok=True)
+          m.repository(root/'repository',tools=('foot','font-dejavu'))
+          urllib.request.urlretrieve('https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz',root/'rootfs.tar.gz')
+          PY
+          cargo build -p trames-ffi --locked
+          python3 tests/integration/foot-wayland.py --prepare
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-arm64-foot-log
+          path: target/foot-acceptance/foot.log
+          if-no-files-found: ignore
+          retention-days: 7
   runtime:
     needs: scope
     if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'

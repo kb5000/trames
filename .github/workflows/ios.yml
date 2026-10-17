@@ -90,7 +90,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Parse frontend Swift sources
-        run: swiftc -frontend -parse apps/ios/Trames/*.swift apps/ios/TramesTests/*.swift apps/ios/TramesUITests/*.swift
+        run: |
+          swiftc -frontend -parse apps/ios/Trames/*.swift apps/ios/TramesFileSystem/*.swift apps/ios/TramesFileProvider/*.swift apps/ios/TramesTests/*.swift apps/ios/TramesUITests/*.swift
+          xcrun --sdk iphonesimulator swiftc -typecheck -target arm64-apple-ios17.0-simulator \
+            -sdk "$(xcrun --sdk iphonesimulator --show-sdk-path)" -application-extension \
+            apps/ios/TramesFileSystem/*.swift apps/ios/TramesFileProvider/*.swift
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-10-16
@@ -119,7 +123,7 @@ jobs:
         if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.skip_native != 'true'
         run: |
           if [[ '${{ needs.scope.outputs.targeted }}' == true ]]; then
-            cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-core -p trames-ffi --lib --locked
+            cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --lib --locked
           else
             cargo test -p trames-shared -p trames-wayland -p trames-native -p trames-compute -p trames-cpu -p trames-accel -p trames-memory -p trames-vfs -p trames-core --locked
           fi

@@ -7,6 +7,7 @@ final class WorkspaceModel: ObservableObject {
     @Published private(set) var layout = WorkspaceTabs()
     private var observedModes: [WorkspaceItemID:String] = [:]
     private var pendingModes: [WorkspaceItemID:String] = [:]
+    private var dialogSizes: [WorkspaceItemID:CGSize] = [:]
     /// Stable identity/order across tab, floating and background placement.
     var items: [WorkspaceItemID] {
         sessions.flatMap { session in
@@ -36,7 +37,7 @@ final class WorkspaceModel: ObservableObject {
         guard prepareEnvironment else { return }
         do {
             let environment = try EnvironmentStore(); self.environment = environment
-            directories = try ScopedDirectories(file: environment.root.appendingPathComponent("folder-grants.json"))
+            directories = try ScopedDirectories(file: environment.authorizationRoot.appendingPathComponent("folder-grants.json"))
             openLocal()
         } catch { self.error = error.localizedDescription }
     }
@@ -115,6 +116,7 @@ final class WorkspaceModel: ObservableObject {
         change { next in
             for id in Array(observedModes.keys) where id.session == session.id && !live.contains(id) {
                 next.close(id); observedModes.removeValue(forKey:id); pendingModes.removeValue(forKey:id)
+                dialogSizes.removeValue(forKey:id)
             }
             for window in windows {
                 let id=WorkspaceItemID.wayland(session.id,window.id)
@@ -132,6 +134,24 @@ final class WorkspaceModel: ObservableObject {
                     case .tabbed: next.dock(id)
                     case .floating: next.detach(id)
                     case .minimized: next.minimize(id)
+                    }
+                }
+                if window.parent != nil && next.placement(id) == .floating {
+                    let size=CGSize(width:CGFloat(window.width),height:CGFloat(window.height))
+                    if dialogSizes[id] != size {
+                        let initial=dialogSizes[id] == nil
+                        dialogSizes[id]=size
+                        var frame=next.frames[id] ?? DisplayWindowGeometry()
+                        frame.size=CGSize(width:size.width,height:size.height+44)
+                        if initial {
+                            let parent=WorkspaceItemID.wayland(session.id,window.parent!)
+                            let parentFrame=next.placement(parent) == .floating ? next.frames[parent] : nil
+                            let origin=parentFrame?.origin ?? .zero
+                            let parentSize=parentFrame?.size ?? next.viewport
+                            frame.origin=CGPoint(x:origin.x+(parentSize.width-frame.size.width)/2,y:origin.y+(parentSize.height-frame.size.height)/2)
+                        }
+                        frame.constrain(to:next.viewport,minimum:CGSize(width:120,height:88))
+                        next.frames[id]=frame
                     }
                 }
             }
@@ -161,6 +181,7 @@ final class WorkspaceModel: ObservableObject {
         change { $0.closeSession(session.id) }
         observedModes = observedModes.filter { $0.key.session != session.id }
         pendingModes = pendingModes.filter { $0.key.session != session.id }
+        dialogSizes = dialogSizes.filter { $0.key.session != session.id }
     }
     func background() {
         appActive = false

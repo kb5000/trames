@@ -13,7 +13,9 @@ settings:
     'TRAMES_RUST_TARGET[sdk=iphoneos*]': aarch64-apple-ios
     'TRAMES_RUST_TARGET[sdk=iphonesimulator*]': aarch64-apple-ios-sim
     MARKETING_VERSION: '0.18.0'
-    CURRENT_PROJECT_VERSION: '21'
+    CURRENT_PROJECT_VERSION: '22'
+    TRAMES_APP_GROUP: group.org.trames.Trames
+    INFOPLIST_KEY_TramesAppGroup: '$(TRAMES_APP_GROUP)'
     INFOPLIST_KEY_CFBundleShortVersionString: '$(MARKETING_VERSION)'
     INFOPLIST_KEY_CFBundleVersion: '$(CURRENT_PROJECT_VERSION)'
     INFOPLIST_KEY_CFBundleDisplayName: Trames
@@ -35,6 +37,7 @@ targets:
     sources:
       - path: Trames
         excludes: [GuestMusl, GuestVulkan]
+      - path: TramesFileSystem
       - path: Trames/GuestMusl
         type: folder
         buildPhase: resources
@@ -44,6 +47,9 @@ targets:
     dependencies:
       - package: TramesKit
       - package: SwiftTerm
+      - target: TramesFileProvider
+        embed: true
+      - sdk: FileProvider.framework
       # A Rust staticlib bundles MoltenVK's objects, but its system link flags
       # do not propagate to Xcode's final Swift executable link.
       - sdk: Metal.framework
@@ -57,16 +63,39 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: org.trames.Trames
+        CODE_SIGN_ENTITLEMENTS: Trames.entitlements
         ARCHS: arm64
         ONLY_ACTIVE_ARCH: YES
         LIBRARY_SEARCH_PATHS: ['$(inherited)', '$(SRCROOT)/../../target/ios-link/$(TRAMES_RUST_TARGET)']
         'TRAMES_RUST_TARGET[sdk=iphoneos*]': aarch64-apple-ios
         'TRAMES_RUST_TARGET[sdk=iphonesimulator*]': aarch64-apple-ios-sim
         OTHER_LDFLAGS: ['$(inherited)', '-ltrames_ffi', '-lresolv', '-lc++']
+  TramesFileProvider:
+    type: app-extension
+    platform: iOS
+    sources: [TramesFileProvider,TramesFileSystem]
+    info:
+      path: TramesFileProvider/Info.plist
+    dependencies:
+      - sdk: FileProvider.framework
+      - sdk: UniformTypeIdentifiers.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.trames.Trames.FileProvider
+        CODE_SIGN_ENTITLEMENTS: Trames.entitlements
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+        ARCHS: arm64
+        ONLY_ACTIVE_ARCH: YES
   TramesTests:
     type: bundle.unit-test
     platform: iOS
-    sources: [TramesTests]
+    sources:
+      - path: TramesTests
+        excludes: [Fixtures]
+      - path: TramesTests/Fixtures
+        type: folder
+        buildPhase: resources
     dependencies:
       - target: Trames
       - package: SwiftTerm

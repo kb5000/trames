@@ -145,6 +145,8 @@ pub struct TransferOptions {
     #[serde(default)]
     pub token: u64,
     pub maximum_bytes: Option<u64>,
+    #[serde(default)]
+    pub replace: bool,
 }
 struct Transfer {
     options: TransferOptions,
@@ -592,16 +594,17 @@ impl Adapter {
             {
                 return Err("source is not a regular file or exceeds transfer size limit".into());
             }
-            vfs.import_reader(
-                o.guest.as_bytes(),
-                &mut CancelReader {
-                    file,
-                    session: &self.session.cancelled,
-                    cancelled,
-                    remaining: o.maximum_bytes.unwrap_or(u64::MAX),
-                },
-                false,
-            )
+            let mut reader = CancelReader {
+                file,
+                session: &self.session.cancelled,
+                cancelled,
+                remaining: o.maximum_bytes.unwrap_or(u64::MAX),
+            };
+            (if o.replace {
+                vfs.import_reader_replace(o.guest.as_bytes(), &mut reader)
+            } else {
+                vfs.import_reader(o.guest.as_bytes(), &mut reader, false)
+            })
             .map(|_| ())
             .map_err(|e| e.to_string())
         }

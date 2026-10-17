@@ -18,9 +18,9 @@ enum WorkspaceItemID: Hashable {
 struct DisplayWindowGeometry: Equatable {
     var origin = CGPoint(x: 32, y: 90)
     var size = CGSize(width: 600, height: 490)
-    mutating func constrain(to viewport: CGSize) {
-        size.width = min(max(240, size.width), max(1, viewport.width))
-        size.height = min(max(200, size.height), max(1, viewport.height))
+    mutating func constrain(to viewport: CGSize, minimum: CGSize = CGSize(width:240,height:200)) {
+        size.width = min(max(minimum.width, size.width), max(1, viewport.width))
+        size.height = min(max(minimum.height, size.height), max(1, viewport.height))
         origin.x = min(max(0, origin.x), max(0, viewport.width - size.width))
         origin.y = min(max(0, origin.y), max(0, viewport.height - size.height))
     }
@@ -80,7 +80,7 @@ struct WorkspaceTabs: Equatable {
     mutating func updateViewport(_ size: CGSize) {
         guard size.width > 0, size.height > 0, size != viewport else { return }
         viewport=size
-        for id in Array(frames.keys) { frames[id]?.constrain(to:size) }
+        for id in Array(frames.keys) { frames[id]?.constrain(to:size,minimum:CGSize(width:1,height:1)) }
     }
     /// Only automatic initial placement cascades. Explicit drag positions and
     /// saved user geometry survive subsequent docking/restoration.

@@ -130,14 +130,14 @@ public final class LocalSession: @unchecked Sendable {
         let result = data.withUnsafeBytes { trames_session_transfer(h, $0.bindMemory(to: UInt8.self).baseAddress, UInt32($0.count)) }
         if result < 0 { throw Self.lastError() }
     }
-    public func transferAsync(guest: String, host: URL, export: Bool, maximumBytes: UInt64? = nil, authorization: RevocableAccess? = nil) async throws {
+    public func transferAsync(guest: String, host: URL, export: Bool, maximumBytes: UInt64? = nil, authorization: RevocableAccess? = nil, replace: Bool = false) async throws {
         guard guest.utf8.count <= 4096, host.path.utf8.count <= 4096 else { throw TramesError.message("Transfer path exceeds 4 KiB") }
         let h = try currentHandle()
         let token = trames_session_transfer_begin(h)
         guard token != 0 else { throw Self.lastError() }
         let registration = authorization?.register { _ = trames_session_transfer_cancel(h, token) }
         defer { if let registration { authorization?.unregister(registration) } }
-        var options: [String:Any] = ["guest":guest, "host":host.path, "export":export, "token":token]
+        var options: [String:Any] = ["guest":guest, "host":host.path, "export":export, "token":token, "replace":replace]
         if let maximumBytes { options["maximum_bytes"] = maximumBytes }
         let data = try JSONSerialization.data(withJSONObject: options)
         try await withTaskCancellationHandler(operation: {
