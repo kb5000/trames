@@ -35,14 +35,17 @@ final class ClipboardBridgeTests:XCTestCase {
             XCTAssertEqual(try native.send(command),command.count)
             let deadline=Date().addingTimeInterval(10);var output=""
             let marker="\r\nCLIP_REPLY_\(index):"
-            while !output.contains(marker) && Date()<deadline {
+            while Date()<deadline {
                 try controller.poll()
                 XCTAssertNil(controller.challenge,"Clipboard requests must not open an extra App confirmation")
                 output+=String(decoding:try native.receive(),as:UTF8.self)
+                if let range=output.range(of:marker),output[range.upperBound...].contains("\r\n") { break }
                 try await Task.sleep(for:.milliseconds(20))
             }
             let range=try XCTUnwrap(output.range(of:marker),output)
-            let line=String(output[range.upperBound...].prefix(while:{$0 != "\r" && $0 != "\n"}))
+            // Swift treats CRLF as one Character. Split on newline scalars so
+            // the following shell prompt cannot become part of the JSON frame.
+            let line=String(output[range.upperBound...]).components(separatedBy:.newlines)[0]
             let reply=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(line.utf8)) as? [String:Any])
             XCTAssertNil(reply["error"],line)
             XCTAssertEqual(pasteboard.string,expected)
