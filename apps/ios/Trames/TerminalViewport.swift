@@ -6,14 +6,33 @@ import SwiftTerm
 final class TerminalViewport: TerminalView {
     var onFocusRequested: (() -> Void)?
     private var wantsKeyboardFocus = false
+    private var acceptsKeyboardFocus = true
+    private var focusRevision: UInt64 = 0
     private var changingFocus = false
-    func setKeyboardFocus(_ value: Bool) {
-        guard wantsKeyboardFocus != value else { return }
-        wantsKeyboardFocus = value
-        if value && window != nil { _ = becomeFirstResponder() }
-        else if !value && isFirstResponder { resignFirstResponder() }
+    func setKeyboardFocus(_ value: Bool, visible: Bool = true, deferred: Bool = false) {
+        acceptsKeyboardFocus = visible
+        wantsKeyboardFocus = value && visible
+        focusRevision &+= 1
+        if deferred { scheduleKeyboardFocus() }
+        else { applyKeyboardFocus() }
     }
+    private func scheduleKeyboardFocus() {
+        let revision = focusRevision
+        // UIViewRepresentable updates must not synchronously start a keyboard
+        // transition: its safe-area resize can reenter the same SwiftUI update.
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.focusRevision == revision else { return }
+            self.applyKeyboardFocus()
+        }
+    }
+    private func applyKeyboardFocus() {
+        guard !changingFocus else { return }
+        if wantsKeyboardFocus && window != nil && !isFirstResponder { _ = becomeFirstResponder() }
+        else if !wantsKeyboardFocus && isFirstResponder { _ = resignFirstResponder() }
+    }
+    override var canBecomeFirstResponder: Bool { acceptsKeyboardFocus && super.canBecomeFirstResponder }
     override func becomeFirstResponder() -> Bool {
+        guard acceptsKeyboardFocus else { return false }
         // UIKit can reenter while updating the keyboard during a resize.
         guard !isFirstResponder, !changingFocus else { return isFirstResponder }
         changingFocus = true
@@ -22,9 +41,15 @@ final class TerminalViewport: TerminalView {
         if became { onFocusRequested?() }
         return became
     }
+    override func resignFirstResponder() -> Bool {
+        guard isFirstResponder, !changingFocus else { return !isFirstResponder }
+        changingFocus = true
+        defer { changingFocus = false }
+        return super.resignFirstResponder()
+    }
     override func didMoveToWindow() {
         super.didMoveToWindow()
-        if window != nil && wantsKeyboardFocus && !isFirstResponder { _ = becomeFirstResponder() }
+        if window != nil { scheduleKeyboardFocus() }
     }
 
     override init(frame: CGRect, font: UIFont?) {

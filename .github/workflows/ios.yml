@@ -20,6 +20,9 @@ jobs:
       frontend_only: ${{ steps.scope.outputs.frontend_only }}
       baseline_run: ${{ steps.scope.outputs.baseline_run }}
       baseline_sha: ${{ steps.scope.outputs.baseline_sha }}
+      targeted: ${{ steps.scope.outputs.targeted }}
+      critical_test: ${{ steps.scope.outputs.critical_test }}
+      ui_targets: ${{ steps.scope.outputs.ui_targets }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,7 +35,7 @@ jobs:
         run: python3 scripts/ios-ci-scope.py
   memory-abi:
     needs: scope
-    if: needs.scope.outputs.frontend_only != 'true'
+    if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'
     runs-on: macos-15
     timeout-minutes: 10
     steps:
@@ -47,7 +50,7 @@ jobs:
         run: cargo test -p trames-memory --locked
   guest-musl:
     needs: scope
-    if: needs.scope.outputs.frontend_only != 'true'
+    if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -80,7 +83,7 @@ jobs:
           retention-days: 14
   apple-build:
     needs: [scope, guest-musl, memory-abi]
-    if: ${{ !cancelled() && needs.scope.result == 'success' && (needs.scope.outputs.frontend_only == 'true' || (needs.guest-musl.result == 'success' && needs.memory-abi.result == 'success')) }}
+    if: ${{ !cancelled() && needs.scope.result == 'success' && (needs.scope.outputs.frontend_only == 'true' || needs.scope.outputs.targeted == 'true' || (needs.guest-musl.result == 'success' && needs.memory-abi.result == 'success')) }}
     runs-on: macos-15
     timeout-minutes: 40
     steps:
@@ -104,18 +107,23 @@ jobs:
           github-token: ${{ github.token }}
           path: target/vulkan-guest
       - name: Build native Rust embedding library
-        if: needs.scope.outputs.frontend_only != 'true'
+        if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'
         run: cargo build -p trames-ffi --release --locked
       - name: Test native SSH PTY and SFTP against OpenSSH
-        if: needs.scope.outputs.frontend_only != 'true'
+        if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'
         env:
           TRAMES_RUST_LIB_DIR: ${{ github.workspace }}/target/release
         run: bash scripts/test-swift-ssh.sh
-      - name: Validate shared mapping and guest ABI core on native Apple ARM64
+      - name: Validate affected native modules or the complete Apple core
         if: needs.scope.outputs.frontend_only != 'true'
-        run: cargo test -p trames-shared -p trames-wayland -p trames-native -p trames-compute -p trames-cpu -p trames-accel -p trames-memory -p trames-vfs -p trames-core --locked
+        run: |
+          if [[ '${{ needs.scope.outputs.targeted }}' == true ]]; then
+            cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-core -p trames-ffi --lib --locked
+          else
+            cargo test -p trames-shared -p trames-wayland -p trames-native -p trames-compute -p trames-cpu -p trames-accel -p trames-memory -p trames-vfs -p trames-core --locked
+          fi
       - name: Test original native Wayland clients and shared-FD lifetimes
-        if: needs.scope.outputs.frontend_only != 'true'
+        if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'
         run: brew install pkg-config libffi expat && bash scripts/test-wayland.sh
       - name: Generate Xcode project
         run: brew install xcodegen
@@ -123,6 +131,8 @@ jobs:
         run: bash scripts/build-ios.sh simulator
       - name: Exercise peer tabs and floating window gestures first
         timeout-minutes: 8
+        env:
+          TRAMES_UI_CRITICAL: ${{ needs.scope.outputs.critical_test || 'TramesUITests/LaunchTests/testWorkspaceTabsDetachDockAndTerminalTitleRemainsVisible' }}
         run: |
           device_id=$(xcrun simctl list devices available --json | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for rows in devices.values() for d in rows if d["name"].startswith("iPad")))')
           python3 -c 'import subprocess,sys; subprocess.run(["xcrun","simctl","bootstatus",sys.argv[1],"-b"],check=True,timeout=180)' "$device_id"
@@ -130,7 +140,7 @@ jobs:
             -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath apps/ios/build/simulator \
             -parallel-testing-enabled NO -test-timeouts-enabled YES \
             -default-test-execution-time-allowance 180 -maximum-test-execution-time-allowance 180 \
-            -only-testing:TramesUITests/LaunchTests/testWorkspaceTabsDetachDockAndTerminalTitleRemainsVisible \
+            -only-testing:"$TRAMES_UI_CRITICAL" \
             CODE_SIGNING_ALLOWED=NO -skipPackagePluginValidation -resultBundlePath apps/ios/build/workspace-interaction.xcresult test \
             2>&1 | tee apps/ios/build/workspace-interaction.log
       - name: Publish workspace gesture result before the remaining tests
@@ -153,11 +163,16 @@ jobs:
       - name: Test affected frontend paths or the full simulator suite
         if: ${{ !cancelled() }}
         timeout-minutes: 20
+        env:
+          TRAMES_UI_CRITICAL: ${{ needs.scope.outputs.critical_test || 'TramesUITests/LaunchTests/testWorkspaceTabsDetachDockAndTerminalTitleRemainsVisible' }}
+          TRAMES_UI_TARGETS: ${{ needs.scope.outputs.ui_targets }}
         run: |
           device_id=$(xcrun simctl list devices available --json | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for rows in devices.values() for d in rows if d["name"].startswith("iPad")))')
           python3 -c 'import subprocess,sys; subprocess.run(["xcrun","simctl","bootstatus",sys.argv[1],"-b"],check=True,timeout=180)' "$device_id"
           test_flags=()
-          if [[ '${{ needs.scope.outputs.frontend_only }}' == true ]]; then
+          if [[ -n "$TRAMES_UI_TARGETS" ]]; then
+            while IFS= read -r target; do test_flags+=("-only-testing:$target"); done < <(python3 -c 'import json,os;print("\n".join(json.loads(os.environ["TRAMES_UI_TARGETS"])))')
+          elif [[ '${{ needs.scope.outputs.frontend_only }}' == true ]]; then
             test_flags=(-only-testing:TramesTests/WorkspaceTabsTests -only-testing:TramesTests/WorkspaceInteractionTests
               -only-testing:TramesTests/TerminalViewportTests -only-testing:TramesUITests/LaunchTests)
           fi
@@ -166,7 +181,7 @@ jobs:
             -parallel-testing-enabled NO -test-timeouts-enabled YES \
             -default-test-execution-time-allowance 900 -maximum-test-execution-time-allowance 900 \
             "${test_flags[@]}" \
-            -skip-testing:TramesUITests/LaunchTests/testWorkspaceTabsDetachDockAndTerminalTitleRemainsVisible \
+            -skip-testing:"$TRAMES_UI_CRITICAL" \
             CODE_SIGNING_ALLOWED=NO -skipPackagePluginValidation -resultBundlePath apps/ios/build/ipad-smoke.xcresult test \
             2>&1 | tee apps/ios/build/ipad-smoke.log
       - name: Export simulator test summary

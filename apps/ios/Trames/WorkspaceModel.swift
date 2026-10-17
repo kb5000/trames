@@ -57,7 +57,14 @@ final class WorkspaceModel: ObservableObject {
     private func change(protocolFocus: Bool = true, _ update: (inout WorkspaceTabs) -> Void) {
         var next=layout; update(&next)
         guard next != layout else { return }
-        let old=layout.focused; layout=next
+        let old=layout.focused
+        if old != next.focused, let old, case .terminal = old, let session=session(for:old) {
+            // Resign while the old host is still visible, before publishing the
+            // empty/minimized layout and changing keyboard safe-area geometry.
+            let visible=next.placement(old) == .floating || next.selected == old
+            session.terminal.setKeyboardFocus(false,visible:visible)
+        }
+        layout=next
         if old != next.focused {
             for session in sessions where session.isLocal {
                 if let focused=next.focused, case .wayland(let owner, let window) = focused, owner == session.id {

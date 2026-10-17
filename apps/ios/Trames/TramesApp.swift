@@ -70,9 +70,6 @@ struct WorkspaceView: View {
             }.padding(.horizontal,12).padding(.vertical,6).workspaceFrame("header")
             GeometryReader { proxy in
                 ZStack(alignment:.topLeading) {
-                    if workspace.layout.selected == nil && workspace.layout.floating.isEmpty {
-                        ContentUnavailableView("打开一个终端",systemImage:"terminal",description:Text("从顶部标签栏恢复窗口，或打开本地 Alpine。"))
-                    }
                     // A terminal/Metal view has exactly one SwiftUI host for its
                     // entire lifetime. Docking changes geometry, never parents.
                     ForEach(workspace.items,id:\.self) { item in
@@ -82,6 +79,11 @@ struct WorkspaceView: View {
                                 : workspace.layout.selected == item ? 1 : 0)
                     }
                 }.frame(width:proxy.size.width,height:proxy.size.height,alignment:.topLeading)
+                .overlay {
+                    if workspace.layout.selected == nil && workspace.layout.floating.isEmpty {
+                        ContentUnavailableView("打开一个终端",systemImage:"terminal",description:Text("从顶部标签栏恢复窗口，或打开本地 Alpine。"))
+                    }
+                }
             .onAppear { workspace.updateViewport(proxy.size) }
             .onChange(of:proxy.size) { _,size in workspace.updateViewport(size) }
             }.workspaceFrame("body")
@@ -120,7 +122,7 @@ struct SessionView: View {
     @ObservedObject var session: TerminalSession
     var body: some View {
         VStack(spacing: 0) {
-            TerminalPane(session:session,focused:workspace.layout.focused == .terminal(session.id),onFocus:{ [weak workspace, weak session] in if let session { workspace?.focus(.terminal(session.id)) } })
+            TerminalPane(session:session,focused:workspace.layout.focused == .terminal(session.id),visible:workspace.isVisible(.terminal(session.id)),onFocus:{ [weak workspace, weak session] in if let session { workspace?.focus(.terminal(session.id)) } })
                 .frame(minHeight:0,maxHeight:.infinity).clipped()
             HStack {
                 Text(session.state).lineLimit(2).accessibilityIdentifier("session-state")
@@ -175,7 +177,7 @@ struct SettingsView: View {
                 }
                 Section("Linux 与 iPad") {
                     Toggle("允许 Linux 发起原生访问请求", isOn: $bridge)
-                    Text("剪贴板、打开链接、设备信息及 Files 复制均需逐次允许。关闭后新请求会被拒绝。").font(.caption)
+                    Text("文本剪贴板自动与 iPad 互通，读取由 iPadOS 请求权限。其他原生请求仍需逐次允许；关闭后所有新请求都会被拒绝。").font(.caption)
                     if let directories = workspace.directories {
                         NavigationLink("Files 目录授权") { FolderGrantsView(store: directories) }
                     }

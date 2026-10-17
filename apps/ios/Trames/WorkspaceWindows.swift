@@ -74,11 +74,8 @@ struct WorkspaceWindow: View {
                 height:floating ? geometry.size.height : viewport.height)
             .overlay(alignment:.bottomTrailing) {
                 if floating {
-                Image(systemName:"arrow.down.right.and.arrow.up.left")
-                    .font(.system(size:12)).foregroundStyle(.white)
-                    .shadow(color:.black,radius:2)
-                    .frame(width:44,height:44,alignment:.bottomTrailing)
-                    .padding(.trailing,4).padding(.bottom,4).contentShape(Rectangle())
+                Color.clear.frame(width:48,height:48).contentShape(Rectangle())
+                    .accessibilityElement(children:.ignore)
                     .accessibilityIdentifier("window-resize-\(item.token)")
                     .accessibilityLabel("调整窗口大小")
                     .gesture(DragGesture(coordinateSpace:.named("workspace")).onChanged { value in

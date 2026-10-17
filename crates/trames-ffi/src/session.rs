@@ -472,6 +472,9 @@ fn run(
         let server = vfs
             .enable_wayland(b"/run/user/0")
             .map_err(|e| e.to_string())?;
+        server
+            .attach_clipboard(Arc::new(crate::clipboard::Clipboard::new(&session)))
+            .map_err(|e| e.to_string())?;
         *session
             .wayland
             .lock()

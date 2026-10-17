@@ -220,6 +220,16 @@ class WaylandInputView: UIView, UITextInput {
         sendInput?(["op":"key","key":key,"pressed":true,"modifiers":modifiers,"time":time])
         sendInput?(["op":"key","key":key,"pressed":false,"modifiers":0,"time":time])
     }
+    // Route UIKit editing actions through the guest toolkit so the standard
+    // Wayland data-device offer owns clipboard transfer and iPadOS permission.
+    override func copy(_ sender:Any?) { sendKey(46,modifiers:4) }
+    override func cut(_ sender:Any?) { sendKey(45,modifiers:4) }
+    override func paste(_ sender:Any?) { sendKey(47,modifiers:4) }
+    override func selectAll(_ sender:Any?) { sendKey(30,modifiers:4) }
+    override func canPerformAction(_ action:Selector,withSender sender:Any?) -> Bool {
+        if [#selector(copy(_:)),#selector(cut(_:)),#selector(paste(_:)),#selector(selectAll(_:))].contains(action) { return isFirstResponder }
+        return super.canPerformAction(action,withSender:sender)
+    }
     private func fallbackText(_ text:String) {
         for char in text {
             if char == "\n" { sendKey(28);continue }

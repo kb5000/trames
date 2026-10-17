@@ -30,6 +30,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     private var closed = false
     private var paused = false
     private var timezoneObserver: NSObjectProtocol?
+    private var clipboardObserver: NSObjectProtocol?
     init(title: String, isLocal: Bool = false) {
         self.fallbackTitle = title.isEmpty ? "终端" : title
         self.isLocal = isLocal
@@ -39,6 +40,9 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         terminal.backgroundColor = .black
         timezoneObserver = NotificationCenter.default.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.synchronizeTimezone() }
+        }
+        clipboardObserver=NotificationCenter.default.addObserver(forName:UIPasteboard.changedNotification,object:nil,queue:.main) { [weak self] _ in
+            Task { @MainActor in self?.synchronizeClipboard() }
         }
         terminal.getTerminal().changeScrollback(1000)
         #if DEBUG
@@ -88,12 +92,12 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
             }
         } catch { fail(error); timer?.invalidate() }
     }
-    /// One host getrusage sample per second, piggybacked on the existing timer.
+    /// One host getrusage sample every two seconds, on the existing timer.
     /// This includes the interpreter/native workers; 100% means one busy core.
     private func sampleCPU() {
         guard !paused else { return }
         let wall=ProcessInfo.processInfo.systemUptime
-        if let previous=cpuSample,wall-previous.wall<1 { return }
+        if let previous=cpuSample,wall-previous.wall<2 { return }
         var usage=rusage()
         guard getrusage(RUSAGE_SELF,&usage) == 0 else { return }
         let cpu=Double(usage.ru_utime.tv_sec+usage.ru_stime.tv_sec)
@@ -137,7 +141,13 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         if paused { cpuPercent=nil }
         if paused { waylandCommand(["op":"focus","window":NSNull()]) }
         try? local?.pause(paused)
-        if !paused { synchronizeTimezone() }
+        if !paused { synchronizeTimezone();synchronizeClipboard() }
+    }
+    private func synchronizeClipboard() {
+        guard !paused,local != nil,UserDefaults.standard.object(forKey:"bridgeEnabled") as? Bool != false else { return }
+        // change notifications carry no clipboard text; actual reads happen
+        // only when a Wayland client requests the text offer.
+        try? local?.waylandCommand(["op":"clipboard_changed"])
     }
     private func synchronizeTimezone() {
         if !paused, let local {
@@ -152,6 +162,8 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         guard !closed else { return }; closed = true
         if let timezoneObserver { NotificationCenter.default.removeObserver(timezoneObserver) }
         timezoneObserver = nil
+        if let clipboardObserver { NotificationCenter.default.removeObserver(clipboardObserver) }
+        clipboardObserver=nil
         timer?.invalidate(); timer = nil; task?.cancel()
         bridge.close()
         local?.close(); local = nil; waylandWindows = []; onWaylandChanged = nil
@@ -183,10 +195,11 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
 struct TerminalPane: UIViewRepresentable {
     @ObservedObject var session: TerminalSession
     let focused: Bool
+    let visible: Bool
     let onFocus: () -> Void
     func makeUIView(context: Context) -> TerminalViewport { session.terminal }
     func updateUIView(_ view: TerminalViewport, context: Context) {
         view.onFocusRequested = onFocus
-        view.setKeyboardFocus(focused)
+        view.setKeyboardFocus(focused,visible:visible,deferred:true)
     }
 }

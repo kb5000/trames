@@ -117,6 +117,38 @@ final class WorkspaceInteractionTests: XCTestCase {
         XCTAssertGreaterThan(session.terminal.getTerminal().cols,1)
         XCTAssertGreaterThan(session.terminal.getTerminal().rows,1)
     }
+    func testOnlyTerminalCanMinimizeWithoutReactivatingItsHiddenKeyboard() async throws {
+        let previous=UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).first { $0.isKeyWindow }
+        let window=UIWindow(windowScene:try XCTUnwrap(previous?.windowScene))
+        let model=WorkspaceModel(prepareEnvironment:false),session=TerminalSession(title:"Alpine",isLocal:true)
+        defer { session.terminal.updateUiClosed();window.isHidden=true;previous?.makeKeyAndVisible() }
+        model.add(session)
+        let id=WorkspaceItemID.terminal(session.id)
+        window.rootViewController=UIHostingController(rootView:WorkspaceView(workspace:model));window.makeKeyAndVisible()
+        func settle(_ condition:()->Bool) async throws {
+            let deadline=Date().addingTimeInterval(5)
+            while !condition() && Date()<deadline { try await Task.sleep(for:.milliseconds(20)) }
+            XCTAssertTrue(condition())
+        }
+        try await settle { session.terminal.isFirstResponder }
+        let parent=try XCTUnwrap(session.terminal.superview)
+        for _ in 0..<3 {
+            model.detach(id)
+            try await settle { model.layout.placement(id) == .floating && session.terminal.isFirstResponder }
+            // Model a late queued keyboard request from the pre-minimize layout.
+            session.terminal.setKeyboardFocus(true,deferred:true)
+            model.minimize(id)
+            try await settle { !session.terminal.isFirstResponder }
+            XCTAssertNil(model.layout.selected);XCTAssertNil(model.layout.focused)
+            XCTAssertEqual(model.layout.tabs,[id]);XCTAssertEqual(model.layout.placement(id),.minimized)
+            XCTAssertTrue(session.terminal.superview === parent)
+            XCTAssertFalse(session.terminal.canBecomeFirstResponder)
+            XCTAssertFalse(session.terminal.becomeFirstResponder())
+            model.select(id)
+            try await settle { session.terminal.isFirstResponder }
+            XCTAssertEqual(model.layout.selected,id);XCTAssertTrue(session.terminal.superview === parent)
+        }
+    }
     func testCanvasFollowsHostContentAndFinalResizeRequest() async throws {
         let previous=UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).first { $0.isKeyWindow }
         let window=UIWindow(windowScene:try XCTUnwrap(previous?.windowScene))

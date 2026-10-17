@@ -63,6 +63,44 @@ final class LaunchTests: XCTestCase {
         XCTAssertEqual(close.frame.minX,alpine.frame.maxX,accuracy:2)
         XCTAssertEqual(close.frame.midY,alpine.frame.midY,accuracy:2)
     }
+    func testOnlyAlpineCanMinimizeRestoreAndUseTheInvisibleResizeCorner() {
+        let app=launchApp()
+        func element(_ prefix:String)->XCUIElement {
+            app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@",prefix)).firstMatch
+        }
+        let state=app.staticTexts["session-state"]
+        let ready=XCTNSPredicateExpectation(predicate:NSPredicate(format:"label == %@","Alpine · 本地"),object:state)
+        XCTAssertEqual(XCTWaiter.wait(for:[ready],timeout:120),.completed)
+        XCTAssertTrue(app.staticTexts["cpu-usage"].waitForExistence(timeout:6))
+        for iteration in 0..<3 {
+            let tab=element("tab-terminal-")
+            tab.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.5)).press(forDuration:0.15,
+                thenDragTo:app.coordinate(withNormalizedOffset:CGVector(dx:0.3,dy:0.6)))
+            let title=element("window-title-terminal-")
+            XCTAssertTrue(title.waitForExistence(timeout:5),app.debugDescription)
+            if iteration==0 {
+                let corner=element("window-resize-terminal-")
+                XCTAssertTrue(corner.waitForExistence(timeout:5))
+                XCTAssertFalse(app.images.matching(NSPredicate(format:"identifier BEGINSWITH %@","window-resize-")).firstMatch.exists)
+                let oldRight=corner.frame.maxX
+                let point=corner.coordinate(withNormalizedOffset:CGVector(dx:0.85,dy:0.85))
+                point.press(forDuration:0.15,thenDragTo:point.withOffset(CGVector(dx:-60,dy:-40)))
+                XCTAssertLessThan(corner.frame.maxX,oldRight-30)
+            }
+            element("minimize-terminal-").tap()
+            XCTAssertTrue(tab.waitForExistence(timeout:5),app.debugDescription)
+            let hidden=XCTNSPredicateExpectation(predicate:NSPredicate(format:"exists == false"),object:title)
+            XCTAssertEqual(XCTWaiter.wait(for:[hidden],timeout:5),.completed)
+            app.buttons["新建或管理会话"].tap();app.buttons["设置"].tap()
+            XCTAssertTrue(app.buttons["完成"].waitForExistence(timeout:5));app.buttons["完成"].tap()
+            tab.tap()
+            XCTAssertTrue(state.waitForExistence(timeout:5),app.debugDescription)
+        }
+        app.descendants(matching:.any).matching(identifier:"terminal-viewport").firstMatch.tap()
+        app.typeText("exit\n")
+        let exited=XCTNSPredicateExpectation(predicate:NSPredicate(format:"label BEGINSWITH %@","已退出"),object:state)
+        XCTAssertEqual(XCTWaiter.wait(for:[exited],timeout:30),.completed)
+    }
     func testSessionMenuContainsOnlyProductFeatures() {
         let app=launchApp(["--workspace-ui-acceptance"])
         XCTAssertTrue(app.buttons["新建或管理会话"].waitForExistence(timeout:20))

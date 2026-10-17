@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       frontend_only: ${{ steps.scope.outputs.frontend_only }}
+      targeted: ${{ steps.scope.outputs.targeted }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,9 +29,30 @@ jobs:
           TRAMES_VALIDATION_WORKFLOW: linux.yml
           TRAMES_NEEDS_GUEST_ARTIFACTS: 'false'
         run: python3 scripts/ios-ci-scope.py
+  targeted-runtime:
+    needs: scope
+    if: needs.scope.outputs.targeted == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+          components: rustfmt, clippy
+      - name: Check affected modules
+        run: |
+          cargo fmt --all --check
+          cargo clippy -p trames-shared -p trames-wayland -p trames-vfs -p trames-core -p trames-ffi --all-targets --locked -- -D warnings
+          cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-core -p trames-ffi --lib --locked
+      - name: Exercise original GTK3 and mousepad, including clipboard FD transfers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --yes --no-install-recommends libgtk-3-0 mousepad
+          cargo test -p trames-wayland --test gtk_client --locked -- --ignored --nocapture
   runtime:
     needs: scope
-    if: needs.scope.outputs.frontend_only != 'true'
+    if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:

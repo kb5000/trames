@@ -86,4 +86,12 @@ final class WaylandInputTests: XCTestCase {
         let all=try XCTUnwrap(view.textRange(from:view.beginningOfDocument,to:view.endOfDocument))
         XCTAssertEqual(view.text(in:all),"other")
     }
+    func testNativeClipboardActionsRouteToGuestControlKeys() {
+        let view=WaylandInputView();var events:[[String:Any]]=[]
+        view.sendInput={ events.append($0) }
+        view.copy(nil);view.cut(nil);view.paste(nil);view.selectAll(nil)
+        XCTAssertEqual(events.compactMap {$0["key"] as? Int},[46,46,45,45,47,47,30,30])
+        XCTAssertEqual(events.compactMap {$0["modifiers"] as? Int},[4,0,4,0,4,0,4,0])
+    }
+
 }

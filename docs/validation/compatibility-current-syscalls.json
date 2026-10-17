@@ -2,8 +2,8 @@
   "scope": "Linux v6.12 native AArch64 numbered entries; entry presence is not full ABI conformance",
   "entries": 318,
   "statuses": {
-    "missing": 122,
-    "implemented_subset": 194,
+    "missing": 119,
+    "implemented_subset": 197,
     "obsolete_stub": 2
   },
   "undispatched_probes_per_backend": 124,
@@ -12,7 +12,7 @@
   ],
   "unhandled_return": -38,
   "source_sha256": {
-    "crates/trames-core/src/process.rs": "4bfe6dfc8ca62aa9c3fe935116dda524ac0a7c31ead74cf93481e4328717633d",
+    "crates/trames-core/src/process.rs": "aba6d57e909736ec95bf1a125d0209c4300c48060c9c01ecfdef2d8787b2e794",
     "crates/trames-core/src/process_caps.rs": "4a1bcf7e4568f0c892302fc3b9026d6ba94e079adad35d1b51873b249ab6c31f",
     "crates/trames-vfs/src/capabilities.rs": "ee0332c9a2a0ec9a8d9a3261039c02f7eb206db1b8f0f02ac15fe6ac826e67c9",
     "crates/trames-vfs/src/cgroup.rs": "4968430253610c9bcb121d6e09b90788224276198c8f366cfd284fa47e0f1616",
@@ -58,6 +58,16 @@
     "crates/trames-net/src/direct_dns.rs": "0cd8f75e0bf0e1b9032c848074b43a0fa775a01229cddf7ba2380e9cb83b3944",
     "crates/trames-net/src/interfaces.rs": "5844f093d45db4df27dc639cbf5167b7c980cb9521f0f792bf99bde9d1b7b3ae",
     "crates/trames-net/src/native_icmp.rs": "ab56d7bf3e6785b03c8d438c4aa11e6f3dae0a7c4259c9c912a3aafeb559388e",
-    "crates/trames-vfs/src/inotify.rs": "baf2ab4b6eeaa53e8007e8c5183c97fea45cda8d7d35b4b900048cf65a7c5c1a"
+    "crates/trames-vfs/src/inotify.rs": "baf2ab4b6eeaa53e8007e8c5183c97fea45cda8d7d35b4b900048cf65a7c5c1a",
+    "crates/trames-core/src/process_scheduling.rs": "4c8ea69952ba925fca7fcb9535b83941c49157b8f9d69986f2a4fdec5f4de777"
+  },
+  "targeted_update": {
+    "syscalls": [
+      119,
+      140,
+      141,
+      236
+    ],
+    "validation": "process::scheduling unit tests; full syscall probe results remain the prior baseline"
   }
 }
