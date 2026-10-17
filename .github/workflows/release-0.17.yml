@@ -1,0 +1,44 @@
+name: Publish iPad 0.17 release
+on:
+  push:
+    branches: [main]
+    paths: ['scripts/publish-ios-release-0.17.py', '.github/workflows/release-0.17.yml']
+  workflow_run:
+    workflows: [iPad frontend]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      apple_run:
+        description: Successful iPad frontend run to publish
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: trames-ipad-release-0.17
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 110
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify both workflows and publish the requested version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APPLE_RUN: ${{ github.event.workflow_run.id || inputs.apple_run || '39001346219' }}
+        run: >-
+          python3 scripts/publish-ios-release-0.17.py --repository "$GITHUB_REPOSITORY"
+          --apple-run "$APPLE_RUN" --allow-version 0.17.0
+          --allow-source a3451367fdd9d2936ed0a8ee0ee8f4f9b331e8a3
