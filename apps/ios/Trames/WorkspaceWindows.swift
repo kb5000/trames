@@ -62,6 +62,9 @@ struct WorkspaceFloatingWindow: View {
                     if headerFrame.contains(value.location) { workspace.dock(item) }
                     docking=false
                 })
+                // Client-side shadows/popups can extend above the content
+                // origin. Host title controls keep drawing and hit-test priority.
+                .zIndex(2)
             WorkspaceContent(workspace:workspace,item:item,origin:CGPoint(x:geometry.origin.x,y:geometry.origin.y+40),viewport:viewport)
                 .frame(maxWidth:.infinity,maxHeight:.infinity)
             HStack {
