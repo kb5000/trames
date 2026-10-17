@@ -85,8 +85,6 @@ jobs:
         run: brew install xcodegen
       - name: Link unsigned iPad simulator app
         run: bash scripts/build-ios.sh simulator
-      - name: Link unsigned iPad device app
-        run: bash scripts/build-ios.sh device
       - name: Exercise peer tabs and floating window gestures first
         timeout-minutes: 8
         run: |
@@ -117,6 +115,7 @@ jobs:
             apps/ios/build/workspace-interaction.xcresult
           retention-days: 7
       - name: Test viewport, native consent, real gateway DNS/HTTPS and lifecycle in iPad simulator
+        if: ${{ !cancelled() }}
         timeout-minutes: 20
         run: |
           device_id=$(xcrun simctl list devices available --json | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for rows in devices.values() for d in rows if d["name"].startswith("iPad")))')
@@ -138,6 +137,8 @@ jobs:
             python3 -c 'import json; s=json.load(open("apps/ios/build/ipad-smoke-summary.json")); assert s["failedTests"] == 0 and s["passedTests"] > 0, "The actual simulator test report did not pass"'
             python3 -c 'import json; s=json.load(open("apps/ios/build/workspace-interaction-summary.json")); assert s["failedTests"] == 0 and s["passedTests"] == 1, "Workspace gestures must pass too"'
           fi
+      - name: Link unsigned iPad device app
+        run: bash scripts/build-ios.sh device
       - name: Package unsigned device IPA for sideload signing
         run: |
           python3 scripts/package-ios.py \

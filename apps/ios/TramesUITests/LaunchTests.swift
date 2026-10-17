@@ -18,7 +18,8 @@ final class LaunchTests: XCTestCase {
             app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@",prefix)).firstMatch
         }
         let alpine=element("tab-terminal-"),title=element("window-title-wayland-")
-        XCTAssertTrue(alpine.waitForExistence(timeout:20));XCTAssertTrue(title.waitForExistence(timeout:10))
+        XCTAssertTrue(alpine.waitForExistence(timeout:20),app.debugDescription)
+        XCTAssertTrue(title.waitForExistence(timeout:10),app.debugDescription)
         title.coordinate(withNormalizedOffset:CGVector(dx:0.25,dy:0.5)).press(forDuration:0.15,thenDragTo:alpine.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.5)))
         let graphic=element("tab-wayland-")
         XCTAssertTrue(graphic.waitForExistence(timeout:5),app.debugDescription)

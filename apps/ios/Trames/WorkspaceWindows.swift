@@ -41,7 +41,11 @@ struct WorkspaceFloatingWindow: View {
     var body: some View {
         VStack(spacing:0) {
             HStack(spacing:12) {
-                if let session=workspace.session(for:item) { WorkspaceTabLabel(session:session,item:item).lineLimit(1) }
+                if let session=workspace.session(for:item) {
+                    WorkspaceTabLabel(session:session,item:item).lineLimit(1)
+                        .accessibilityElement(children:.combine)
+                        .accessibilityIdentifier("window-title-\(item.token)")
+                }
                 Spacer()
                 Button { workspace.minimize(item) } label: { Image(systemName:"minus") }.accessibilityLabel("最小化")
                 Button { workspace.dock(item) } label: { Image(systemName:"arrow.up.left.and.arrow.down.right") }.accessibilityLabel("停靠为标签页")
@@ -49,7 +53,7 @@ struct WorkspaceFloatingWindow: View {
                 Button { workspace.closeItem(item) } label: { Image(systemName:"xmark") }.accessibilityLabel("关闭窗口")
             }.font(.callout).padding(.horizontal,12).frame(height:40)
                 .background(docking ? Color.mint.opacity(0.35) : Color(white:0.16))
-                .contentShape(Rectangle()).accessibilityIdentifier("window-title-\(item.token)")
+                .contentShape(Rectangle())
                 .onTapGesture { workspace.focus(item) }
                 .gesture(DragGesture(coordinateSpace:.named("workspace")).onChanged { value in
                     if dragOrigin == nil { dragOrigin=geometry.origin;workspace.focus(item) }
@@ -83,7 +87,8 @@ struct WorkspaceFloatingWindow: View {
             .shadow(radius:12).offset(x:geometry.origin.x,y:geometry.origin.y)
             .onAppear { geometry=workspace.layout.frames[item] ?? DisplayWindowGeometry();geometry.constrain(to:viewport) }
             .onChange(of:viewport) { _,_ in geometry.constrain(to:viewport) }
-            .accessibilityIdentifier("floating-\(item.token)")
+            // Container identifiers propagate to descendants in SwiftUI and
+            // replace title/button identifiers. Identify concrete controls only.
     }
 }
 struct WorkspaceFramesKey: PreferenceKey {
