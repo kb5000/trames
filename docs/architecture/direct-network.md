@@ -32,8 +32,10 @@ flowchart LR
 快照最多缓存一秒；不复制宿主 MAC、接口索引或修改宿主接口。`lo` 对应宿主回环。
 读接口的 ioctl/netlink/proc 使用这一视图，默认路由展示为交由宿主处理，不伪造
 10.0.0.1 下一跳。MTU 仍是逻辑值，链路计数来自 guest 实际 socket 数据传输，
-不是完整宿主线速包统计。1.0.0 后开发分支已支持只有私有 lo 的独立 netns；
-可配置接口/veth/bridge、完整路由表、多网卡与 IPv6 scope 仍待实现。
+不是完整宿主线速包统计。1.0.0 后开发分支已支持只有私有 lo 的独立 netns，
+以及可配置 veth/bridge、IPv4/IPv6 地址、直连/静态路由的内部 IP 数据路径。
+根 guest 到容器地址、外部转发/NAT、完整路由表和 IPv6 scope 仍待实现，
+见[网络验收边界](../validation/container-network.md)。
 容器后续网络路线见[设计](container-network-design.md)，根 guest 直连路径保留。
 
 ## 系统 DNS

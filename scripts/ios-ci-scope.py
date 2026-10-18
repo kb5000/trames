@@ -27,6 +27,14 @@ def container_isolation_path(path):
     }
 
 
+def container_network_path(path):
+    return path.startswith(('crates/trames-net/','crates/trames-vfs/','crates/trames-linux/','docs/')) or path in {
+        '.github/workflows/ios.yml','.github/workflows/linux.yml','scripts/ios-ci-scope.py',
+        'scripts/build-container-network-fixture.sh','tests/fixtures/container-network.c',
+        'tests/integration/container-network.py',
+    }
+
+
 def isolation_retry_source_unchanged(sha):
     delta=subprocess.check_output(['git','diff','--name-only',sha,'HEAD'],text=True).splitlines()
     allowed={'.github/ios-validation-plan.json','.github/workflows/ios.yml',
@@ -72,6 +80,12 @@ def main():
             changed=set(subprocess.check_output(['git','diff','--name-only',base,'HEAD'],text=True).splitlines())- {str(plan_path)}
             hashes=plan['changed_file_sha256']
             if changed==set(hashes) and all(Path(path).exists() and hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest for path,digest in hashes.items()):
+                if plan.get('native_scope') == 'container-network' and changed and all(container_network_path(p) for p in changed):
+                    print('Container network: Net/VFS/Linux, existing virtual network, actual guest networking, Docker isolation and ARM64 iOS FFI only. Reuse unchanged Core/seccomp/CPU/UI/GPU/guest libraries; no IPA.')
+                    with open(os.environ['GITHUB_OUTPUT'],'a') as output:
+                        output.write('frontend_only=false\ntargeted=true\nnative_scope=container-network\n')
+                        output.write('skip_native=false\nskip_linux_native=false\nskip_linux_modules=false\n')
+                    return
                 if plan.get('native_scope') == 'container-isolation' and changed and all(container_isolation_path(p) for p in changed):
                     # All affected kernel/network crates and the CPU hint are
                     # checked, followed by real guest ABI and original Docker.

@@ -1,0 +1,80 @@
+{
+  "status": "local_passed_ci_pending",
+  "base_sha": "c2b0cda93ed6dc874bd3b3f0feced26d14ee461c",
+  "source_commit": null,
+  "guest_network": {
+    "checks": [
+      {
+        "cpus": 1,
+        "fixture": "container-network",
+        "exit_code": 0,
+        "stdout": "container network: veth/bridge, namespace FDs, live TCP/UDP, sysfs/proc and cross-bridge isolation: ok\n"
+      },
+      {
+        "cpus": 1,
+        "fixture": "network-namespaces",
+        "exit_code": 0,
+        "stdout": "network namespaces: private TCP/UDP/Unix, old FDs, pathname reachability, lo, sysctls and setns: ok\n"
+      },
+      {
+        "cpus": 4,
+        "fixture": "container-network",
+        "exit_code": 0,
+        "stdout": "container network: veth/bridge, namespace FDs, live TCP/UDP, sysfs/proc and cross-bridge isolation: ok\n"
+      },
+      {
+        "cpus": 4,
+        "fixture": "network-namespaces",
+        "exit_code": 0,
+        "stdout": "network namespaces: private TCP/UDP/Unix, old FDs, pathname reachability, lo, sysctls and setns: ok\n"
+      }
+    ],
+    "source_sha256": "c4f117a20fc20cc4f00b861fc33d75ce7f3ace18b55b001c5cc1c772055a210b",
+    "fixture_sha256": {
+      "container-network": "e007678648411abb910d28d74d817bdb6f47f57b187eaa44f8dcdb6e37127f5c",
+      "network-namespaces": "db829cdfc6c8afcdc1d79f20753c87767f52845c0a7f4feaae621c94f394203c"
+    },
+    "scope": "Namespace-owned configurable veth/bridge, direct/static routes and real internal IP data. External forwarding, nftables/NAT, host-to-container paths and full Docker bridge are not accepted by this fixture."
+  },
+  "local": {
+    "net_library": 16,
+    "vfs_library_passed": 120,
+    "vfs_library_ignored": 1,
+    "linux_library": 21,
+    "virtual_network": 11,
+    "strict_clippy": [
+      "trames-net",
+      "trames-vfs",
+      "trames-linux"
+    ],
+    "fmt": true,
+    "native_network_permission_retry": "Only failed native-socket cases rerun with supported runtime network permission; passed cases reused."
+  },
+  "docker": "Original strict isolated 1-CPU run in progress; daemon bridge=none, iptables=false, container network=none. No full Docker bridge claim.",
+  "ci": {},
+  "production_sha256": {
+    "crates/trames-linux/src/network.rs": "3a5dd143316e79a4e21cf2ef8d7fccc950cf3d8f15430020fd9641e731bf8bf1",
+    "crates/trames-net/Cargo.toml": "b6176f634fe2a2b9a45bb6efc225705129df6441d1a2b5afd346da5886016da1",
+    "crates/trames-net/src/lib.rs": "05077b0520e0b79e26d5a3f16c330c3821240d73159c40e136f20dde741f2dd3",
+    "crates/trames-net/src/netdev.rs": "d2f304c5d3577ad0d8c8c59c0cac8fa8b703cc530e3bceed6b523e4a3f53c289",
+    "crates/trames-net/src/netlink.rs": "0a5132bf697e3a1d663edaeb765fef23301d3db28803812d75c8b1bfe47652b3",
+    "crates/trames-net/src/rtnetlink.rs": "06bac7fe649fa3ba6c5ee75e53812298bc10754b8ff2ba89c491954c5b5dba31",
+    "crates/trames-net/src/virtualnet/mod.rs": "5d85df98fb8fdc147cddeeb37cf474a51b1ea18fa8d9a32af738087a49f72c3d",
+    "crates/trames-net/src/virtualnet/sockets.rs": "7aeadf179f9bcd7f5bc9099a8a220cc5e166255b606a17e8a872d1a02356e526",
+    "crates/trames-vfs/src/lib.rs": "cea8b7c4103b79110616645cb4992101de919f52994de24e5b840d78ff06fe06",
+    "crates/trames-vfs/src/network.rs": "be710b7ac72c27bcd7fd0b5d504dbd11104950ac562bf10e27ddbd14143f9683",
+    "crates/trames-vfs/src/pseudo.rs": "777745d96d1dc36a6b38d4aaa82fd43a639e644d2df7b28bd96a01dbe861706c"
+  },
+  "not_implemented": [
+    "root-to-container data path",
+    "bridge local IP services",
+    "L3 forwarding",
+    "external DNS/HTTP from containers",
+    "NETLINK_NETFILTER/nftables",
+    "NAT/port publishing",
+    "raw Ethernet/AF_PACKET",
+    "multicast/VLAN/STP",
+    "variable MTU",
+    "link-local IPv6 scopes"
+  ]
+}

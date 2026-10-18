@@ -6,6 +6,8 @@ IPC/cgroup/seccomp 配置。[隔离验证](../validation/container-isolation.md)
 [完整网络路线](../architecture/container-network-design.md)列出边界。
 已发布的 1.0.0 IPA 不包含这批开发改动；bridge/NAT 尚未完成，下方的原有
 daemon 配置仍禁用 bridge/iptables，不能直接删除这些限制配置来启用完整网络。
+内部 veth/bridge 和静态路由已有独立 guest 验收，但宿主/外部转发、nftables/NAT
+和 Docker 默认 bridge 尚未完成，见[本批范围](../validation/container-network.md)。
 
 当前开发版可通过原版 Alpine Docker → containerd → crun 执行 Alpine 容器：
 镜像导入、create/start、PID 1 payload、退出码、docker logs 与清理均纳入验收。

@@ -19,21 +19,27 @@ sysctl、netlink 地址与抽象 Unix 地址属于该 namespace；文件路径 U
 seccomp=unconfined 或共享 IPC/cgroup namespace 来通过这一项验收。
 完整范围与限制见[验证记录](../validation/container-isolation.md)。
 
+## 已接通的内部数据路径
+
+开发分支已接通 namespace 拓扑、成对 veth、bridge master、跨 netns FD 移动、
+IPv4/IPv6 地址和直连/无网关静态路由。独立协议栈由同一有界 fabric 调度，
+实际投递沿 up 的 veth 和 bridge 成员关系查找，断开成员或删除地址就停止可达。
+TCP/UDP 使用已有 smoltcp IP 层，不引入新的 CPU 锁，也不将所有 netns 全连接。
+1/4 vCPU 的真实 guest 数据验收见[网络验证](../validation/container-network.md)。
+
+这是内部 IP 单播适配；AF_PACKET/以太网帧、ARP、VLAN/STP/multicast、可变 MTU
+和 IPv6 scope 尚未开放，相关不支持的设置明确拒绝。新 netns 仍只有 down lo，
+必须配置接口。接口/地址/路由及事件队列有上限，根 eth0 继续只读。
+
 ## 下一阶段的数据路径
 
-1. 每个 netns 保存真实的接口、地址、路由和 namespace 引用；rtnetlink 的
-   create/delete/move/rename/up/down 先验证，再原子更新这些对象。veth 两端、
-   bridge master、netns FD 与销毁后的清理必须保持同一身份。
-2. 容器端使用可配置 CIDR 的现有软件协议栈；veth/bridge 决定实际可达性，
-   独立 lo、相同端口及不同 bridge 的隔离不能被一个全连接 fabric 代替。
-   不复用旧 API 的固定 10.0.0.X 地址作为 Docker 容器地址。
-3. 根 guest 的普通 socket 继续直连宿主；访问容器地址或 Docker 发布端口时，
+1. 根 guest 的普通 socket 继续直连宿主；访问容器地址或 Docker 发布端口时，
    根据实际路由和 NAT 进入容器数据路径。root 没有额外的 10.0.0.1 网关。
    外部监听仍受宿主 BSD socket、iPad 本地网络许可与 App 生命周期约束。
-4. 补 NETLINK_NETFILTER/nftables 的规则对象、事务、匹配、计数和连接状态，
+2. 补 NETLINK_NETFILTER/nftables 的规则对象、事务、匹配、计数和连接状态，
    让原版 iptables-nft 的 Docker bridge/NAT 规则真正作用于转发流量。
    不支持的表达式必须拒绝；不能只返回成功 ACK 或以禁用过滤来声称隔离完成。
-5. 原版 Docker 的 userland proxy/NAT、嵌入式 DNS、TCP/UDP 端口发布和删除
+3. 原版 Docker 的 userland proxy/NAT、嵌入式 DNS、TCP/UDP 端口发布和删除
    清理一起验收，随后验收 pull、volume、exec、build/BuildKit 和 Compose。
 
 控制元数据继续由现有内核协调线程管理。普通 CPU 指令、guest memory 和 musl

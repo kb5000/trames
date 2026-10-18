@@ -189,8 +189,10 @@ IPC、cgroup namespace，并通过 FD、task/TID 路径、nsfs bind mount 与 se
 真实引用；不改变宿主 namespace。隔离与默认 seccomp 验收见[记录](../validation/container-isolation.md)。
 UTS/PID 句柄也可 bind；mount namespace 句柄的挂载循环回收尚缺，明确拒绝。
 新 network namespace 只有独立的 lo；NETLINK_ROUTE/ioctl 可查询并改变它的 up/down，
-并检查 CAP_NET_ADMIN。根直连接口只接受原有的幂等 lo up。veth/bridge、地址、
-路由与 MTU 配置仍待实现；[后续路线](container-network-design.md)包含实际过滤/NAT。
+并检查 CAP_NET_ADMIN。根直连接口只接受原有的幂等 lo up。开发分支已增加
+veth/bridge、namespace FD 移动、IPv4/IPv6 地址和直连/静态路由的内部 IP 数据路径；
+MTU 暂固定 1500，外部转发/过滤/NAT 仍待接通，见[数据路径](container-network-design.md)
+和[1/4 vCPU 验证](../validation/container-network.md)。
 private mount 请求 MS_SLAVE/REC 时继续保持 private（没有 shared master）；
 这不代表已实现跨 namespace 挂载传播。
 
