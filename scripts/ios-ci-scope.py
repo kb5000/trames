@@ -198,6 +198,28 @@ def device_build_outputs(plan, repo, headers):
     def unchanged(sha, paths):
         return not subprocess.check_output(['git', 'diff', '--name-only', sha, 'HEAD', '--', *paths], text=True).strip()
 
+    metadata = reuse.get('metadata_repackage')
+    if metadata:
+        delta = subprocess.check_output(['git', 'diff', '--name-only', metadata['sha'], 'HEAD'], text=True).splitlines()
+        allowed = {'.github/ios-validation-plan.json', '.github/workflows/ios.yml',
+                   'scripts/ios-ci-scope.py', 'apps/ios/project.yml'}
+        if any(p not in allowed and not p.startswith('docs/') for p in delta):
+            raise RuntimeError('Metadata repackaging must preserve all compiled sources')
+        project = 'apps/ios/project.yml'
+        previous = subprocess.check_output(['git', 'show', metadata['sha'] + ':' + project], text=True)
+        strip_build = lambda text: '\n'.join(line for line in text.splitlines() if not line.strip().startswith('CURRENT_PROJECT_VERSION:'))
+        if strip_build(previous) != strip_build(Path(project).read_text()):
+            raise RuntimeError('Metadata repackaging may only change the build number')
+        completed = verified_run(metadata, 'ios.yml', 'apple-build')
+        if not {'Validate affected native modules or the complete Apple core',
+                'Link unsigned iPad device app', 'Package unsigned device IPA for sideload signing'} <= completed:
+            raise RuntimeError('Missing passed current runtime checks and device compilation')
+        print('Repackage successful identical device executables; correct only bundle build numbers, no repeated checks.')
+        return {'frontend_only': 'false', 'targeted': 'true', 'native_scope': 'device-metadata',
+                'repackage_run': str(metadata['run']), 'skip_native': 'true',
+                'skip_linux_native': 'true', 'skip_linux_modules': 'true', 'frontend_reused': 'true',
+                'ui_targets': '[]', 'baseline_run': str(reuse['guest']['run'])}
+
     runtime_paths = ['crates', 'Cargo.toml', 'Cargo.lock', 'vendor', '.cargo', 'rust-toolchain.toml']
     memory_va = reuse.get('memory_va')
     startup_mounts = reuse.get('startup_mounts')

@@ -424,7 +424,7 @@ jobs:
       - name: Finalize shared-group metadata and package the existing device app
         run: |
           python3 - <<'PYCODE'
-          import hashlib,json,pathlib,plistlib,subprocess
+          import hashlib,json,pathlib,plistlib,re,subprocess
           bundles=list(pathlib.Path('target/reused-ios').glob('**/Release-iphoneos/Trames.app'))
           assert len(bundles)==1, bundles
           bundle=bundles[0];app=str(bundle)
@@ -435,8 +435,13 @@ jobs:
                   binary=p.parent/executable
                   if binary.is_file():binary.chmod(0o755)
           def hashes():
-              return {str(p.relative_to(bundle)):hashlib.sha256(p.read_bytes()).hexdigest() for p in bundle.rglob('*') if p.is_file() and p!=bundle/'Info.plist'}
+              return {str(p.relative_to(bundle)):hashlib.sha256(p.read_bytes()).hexdigest() for p in bundle.rglob('*') if p.is_file() and p.name!='Info.plist'}
           before=hashes()
+          if '${{ needs.scope.outputs.native_scope }}' == 'device-metadata':
+              build=re.search(r"CURRENT_PROJECT_VERSION: ['\"]?(\d+)",pathlib.Path('apps/ios/project.yml').read_text()).group(1)
+              for p in [bundle/'Info.plist', *bundle.glob('PlugIns/*.appex/Info.plist')]:
+                  info=plistlib.loads(p.read_bytes()); info['CFBundleVersion']=build
+                  p.write_bytes(plistlib.dumps(info,fmt=plistlib.FMT_BINARY))
           subprocess.run(['python3','scripts/finalize-ios-app.py',app],check=True)
           assert hashes()==before, 'Compiled executables and guest inputs must remain byte-identical'
           pathlib.Path('target/sideload').mkdir(parents=True,exist_ok=True)

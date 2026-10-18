@@ -1,6 +1,6 @@
 {
-  "base_sha": "e6d54bf92be8f4cf32d637edd2b9d1f662ee1bdc",
-  "native_scope": "devpts",
+  "base_sha": "c9292cccbe923206026e86a0d76327f41d31544f",
+  "native_scope": "device-metadata",
   "device_build": {
     "frontend": {
       "sha": "aa4528166c8d0cdb04f3fe540730d9af63ed7f07",
@@ -10,26 +10,15 @@
       "sha": "534e223e284df48f207500e84ab4cd05dd3d3958",
       "run": 39015795319
     },
-    "devpts": {
-      "sha": "7700195e4da14b8bf05b3b1644779b3c47ce16cc",
-      "apple": 39135889869,
-      "patch_sha256": "70c4407c4e63af3e93fa7bc9b351591a8725db443d5075464361a8cf3c8c0c87",
-      "linux_delta_record": "docs/validation/devpts-inode.md"
+    "metadata_repackage": {
+      "sha": "c9292cccbe923206026e86a0d76327f41d31544f",
+      "run": 39142856325
     }
   },
   "changed_file_sha256": {
-    ".github/workflows/ios.yml": "29da368657490f21273bc08ad1cc5de9e736dbfb1100ce359a0f5f40e228490b",
-    "crates/trames-vfs/src/pseudo.rs": "e52544321cc53b6f622b61924ea7914d956d3ccacca2802796ab83d81b9a2ea1",
-    "crates/trames-vfs/src/pty.rs": "61233fd12e4d1b314de15c261ac4740ca54332596ef30f31bdcd5437a39c9d5a",
-    "docs/validation/devpts-inode.md": "126db38216aeb255d700dae867c04f3e30de2411ca50fca8f91cfc707c911545",
-    "docs/validation/devpts-inode/clippy.log": "2a448a532e1c5889a6404ec62708b06ab3f976c1ad7dd4b5c7da7dec71da1e8d",
-    "docs/validation/devpts-inode/docker-results.json": "794d837fab9fbf4a5ca1cb708a15787cd54b2868336db51e82315c9174d44290",
-    "docs/validation/devpts-inode/docker-runtime.log": "17168e2653e7615451b01dfba754a8169bacae57c0da04661f5249fbdc4f39c6",
-    "docs/validation/devpts-inode/linux-reference.log": "ce8f279e4f017b785ccaef2f36f490978348cacf5ff0f29057962e1a348407a6",
-    "docs/validation/devpts-inode/proc-tests.log": "fa6f49b13769388c2019c1403ce34df029ade498c20c89f348fac84e6c0ea1e7",
-    "docs/validation/devpts-inode/tests.log": "edf3c370a328c147e50295ef5098b1cfb35a5bf88dd8699300adc0abfadfa17f",
-    "scripts/ios-ci-scope.py": "872ddf9a949c7bb7e6df9f593e6a87f84a368ca9e391b55512c119ec2af7cd89",
-    "tests/integration/docker-tty.py": "e741777e30f41c6034e38ac6d302daa3db8c8218f3cf8f348028ed02e3e901e2"
+    ".github/workflows/ios.yml": "89ee89104553134440ab1fb0342f44db2aa09d8203a332fdb89ef5927c42a174",
+    "apps/ios/project.yml": "16dcfa71458e5d623e77858f00649c08a93c7f284501b281456846429ec81e93",
+    "scripts/ios-ci-scope.py": "20d0a065610b753f8659a44d800d5b57ff74a4d70acf6831ad941a7428e06dc9"
   },
-  "reason": "Linux devpts inode and proc PTY reopen fix: native Linux reference, 4 PTY plus 11 proc tests (one overlaps), strict VFS Clippy and original Docker run -it --rm input/output/exit/cleanup passed. Rebuild build31 with affected Apple tests; reuse unchanged acceptance."
+  "reason": "Correct build number from30 to31 using successful current device app; identical compiled executables, only main/extension CFBundleVersion metadata updated. No repeated passed tests or compilation."
 }
