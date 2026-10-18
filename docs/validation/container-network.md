@@ -39,6 +39,11 @@
   检查以及 guest/Docker 4 vCPU 检查通过。基线源码 `01a87156c44cb10b5c2c2993186ce4274f058ed6`；
   同目录 `container-network.json` 保存最终结果和输入 hash。
 
+最终生产源码：`df4a18a1fd15ceec30bfa0d38a42342072ca8f66`。
+[Linux 补充检查](https://github.com/kb5000/trames/actions/runs/39092229490) 与
+[Apple/iOS FFI 补充检查](https://github.com/kb5000/trames/actions/runs/39092229631) 均通过。
+最后的记录提交只更新本文、JSON 和 scope hash，不重复触发 CI。
+
 补充生命周期回归先复现“只有旧 netlink FD 时 IP 栈提前释放、ping EAGAIN”，
 随后通过 namespace 强持有 stack 修复。最后引用释放先结束协议栈再删除拓扑，
 不存在身份/协议栈所有权环。6 项 routing case、既有 teardown case 和
@@ -62,6 +67,8 @@ guest 网络/旧 netns 1/4 vCPU 已再次通过；CI 仅补这一精确增量和
   STP、multicast 或链路本地 IPv6 scope。MTU 当前固定 1500，其他设置明确拒绝。
 - 根逻辑 eth0 继续只读，普通 root socket 直连宿主。旧显式 Fabric API 保留
   已验证行为，不能用于绕过新拓扑隔离。暂无物理 iPad 网络或性能提升结论。
+- 根接口目前取初始化地址快照；宿主地址变化刷新、peer carrier 变化及自动路由
+  通知的完整性仍需补齐。当前验收覆盖固定配置的内部 IP 通路。
 
 ## 重现
 

@@ -1,7 +1,7 @@
 {
-  "status": "baseline_linux_apple_passed_lifetime_followup_pending",
+  "status": "verified",
   "base_sha": "c2b0cda93ed6dc874bd3b3f0feced26d14ee461c",
-  "source_commit": null,
+  "source_commit": "df4a18a1fd15ceec30bfa0d38a42342072ca8f66",
   "guest_network": {
     "checks": [
       {
@@ -97,7 +97,12 @@
       "run": 39091722010,
       "job": 117569736542,
       "conclusion": "success",
-      "original_docker_cpus": 4
+      "original_docker_cpus": 4,
+      "artifact": {
+        "id": 12122588127,
+        "bytes": 13997,
+        "sha256": "b7050f7a85f2b21d15141cbbc77e2cb1ba5fc03c9047d5018f1ac04f72fa6a50"
+      }
     },
     "apple": {
       "run": 39091721951,
@@ -129,7 +134,9 @@
     "raw Ethernet/AF_PACKET",
     "multicast/VLAN/STP",
     "variable MTU",
-    "link-local IPv6 scopes"
+    "link-local IPv6 scopes",
+    "host address snapshot refresh",
+    "complete peer-carrier and automatic-route notifications"
   ],
   "baseline_source": "01a87156c44cb10b5c2c2993186ce4274f058ed6",
   "lifetime_followup": {
@@ -137,6 +144,26 @@
     "production_diff_sha256": "b72cac90931a82d6d21a4432b241ba8fe265206bc035b378f20e6a625f2cbc2c",
     "local_routing_cases": 6,
     "local_virtual_teardown": true,
-    "local_guest_network_1_4_cpu": true
-  }
+    "local_guest_network_1_4_cpu": true,
+    "ci": {
+      "linux": {
+        "run": 39092229490,
+        "job": 117571244429,
+        "conclusion": "success",
+        "scope": "strict Net clippy; six routing cases; existing virtual namespace teardown; real guest network and old namespace 1/4 vCPU; no Docker rerun",
+        "artifact": {
+          "id": 12122508713,
+          "bytes": 1779,
+          "sha256": "01fc10a9ff088e4a835cbf75029c33b919a5aadb757ebec7e519bfe0ec849345"
+        }
+      },
+      "apple": {
+        "run": 39092229631,
+        "job": 117571236086,
+        "conclusion": "success",
+        "scope": "six routing cases; virtual teardown; aarch64-apple-ios trames-ffi check; unchanged libraries reused"
+      }
+    }
+  },
+  "reuse": "Baseline source 01a871 passed affected Linux/Apple libraries, virtual network and original Docker 4 vCPU, plus local fresh-store Docker 1 vCPU. Exact OnceCell stack pin/lifetime delta b72cac... is verified separately on df4a18 with affected routing/teardown, guest network 1/4 vCPU and iOS FFI. No Core/CPU/UI/GPU/guest-library source changed."
 }
