@@ -199,12 +199,39 @@ def device_build_outputs(plan, repo, headers):
         return not subprocess.check_output(['git', 'diff', '--name-only', sha, 'HEAD', '--', *paths], text=True).strip()
 
     runtime_paths = ['crates', 'Cargo.toml', 'Cargo.lock', 'vendor', '.cargo', 'rust-toolchain.toml']
-    for key, workflow, job in [('linux', 'linux.yml', 'targeted-runtime'),
-                               ('apple', 'ios.yml', 'container-storage-apple')]:
-        record = reuse[key]
-        if not unchanged(record['sha'], runtime_paths):
-            raise RuntimeError('Device-only build requires unchanged validated runtime sources')
-        verified_run(record, workflow, job)
+    costs = reuse.get('runtime_costs')
+    if costs:
+        # These exact MMU/proc changes already passed the recorded Linux tests.
+        # Run their Apple counterparts below; reuse only the unchanged modules.
+        changed_runtime = set(subprocess.check_output(
+            ['git', 'diff', '--name-only', costs['sha'], 'HEAD', '--', *runtime_paths], text=True).splitlines())
+        expected = {'crates/trames-memory/src/mmu/mod.rs',
+                    'crates/trames-memory/src/mmu/tests.rs', 'crates/trames-core/src/process.rs'}
+        patch = subprocess.check_output(['git', 'diff', '--binary', costs['sha'], 'HEAD', '--', *runtime_paths])
+        if changed_runtime != expected or hashlib.sha256(patch).hexdigest() != costs['patch_sha256']:
+            raise RuntimeError('Performance IPA requires the exact Linux-validated MMU/proc patch')
+        # The prior combined Linux workflow timed out after its module step;
+        # require that step, without claiming the unfinished workflow passed.
+        for key, workflow, name in [('linux', 'linux.yml', 'targeted-runtime'),
+                                    ('apple', 'ios.yml', 'docker-default-apple')]:
+            run_id = costs[key]
+            run = get(f'actions/runs/{run_id}')
+            if (run['head_sha'] != costs['sha'] or run['path'] != '.github/workflows/' + workflow
+                    or run['head_repository']['full_name'] != repo):
+                raise RuntimeError('Performance baseline evidence/source mismatch')
+            job = next(j for j in get(f'actions/runs/{run_id}/jobs')['jobs'] if j['name'] == name)
+            if key == 'apple' and job['conclusion'] != 'success':
+                raise RuntimeError('Missing successful Apple baseline checks')
+            if key == 'linux' and not any(s['name'] == 'Check affected modules' and s['conclusion'] == 'success'
+                                         for s in job['steps']):
+                raise RuntimeError('Missing successful Linux baseline module checks')
+    else:
+        for key, workflow, job in [('linux', 'linux.yml', 'targeted-runtime'),
+                                   ('apple', 'ios.yml', 'container-storage-apple')]:
+            record = reuse[key]
+            if not unchanged(record['sha'], runtime_paths):
+                raise RuntimeError('Device-only build requires unchanged validated runtime sources')
+            verified_run(record, workflow, job)
 
     frontend = reuse['frontend']
     frontend_paths = ['apps/ios', 'include', 'scripts/build-ios.sh', 'scripts/package-ios.py',
@@ -238,10 +265,12 @@ def device_build_outputs(plan, repo, headers):
     names = {artifact['name'] for artifact in artifacts if not artifact['expired']}
     if not {'full-musl-library-and-source', 'vulkan-compute-driver-and-native-source'} <= names:
         raise RuntimeError('Validated guest artifacts expired or missing')
-    print('Device IPA: rebuild current ARM64 release runtime/app; reuse source-identical native, frontend and guest acceptance.')
+    print('Device IPA: rebuild current ARM64 release runtime/app; reuse source-identical frontend and guest acceptance.')
+    if costs:
+        print('Exact Linux-validated MMU/proc delta: run Apple memory + proc-map regressions; unchanged native modules reuse baseline results. No unrelated CPU/UI/GPU/Docker reruns.')
     print(json.dumps(reuse, sort_keys=True))
-    return {'frontend_only': 'false', 'targeted': 'true', 'native_scope': 'device-build',
-            'skip_native': 'true', 'skip_linux_native': 'true', 'skip_linux_modules': 'true',
+    return {'frontend_only': 'false', 'targeted': 'true', 'native_scope': 'runtime-costs' if costs else 'device-build',
+            'skip_native': 'false' if costs else 'true', 'skip_linux_native': 'true', 'skip_linux_modules': 'true',
             'frontend_reused': 'true', 'ui_targets': '[]', 'baseline_run': str(guest['run'])}
 
 

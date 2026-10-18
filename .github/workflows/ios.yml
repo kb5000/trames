@@ -253,6 +253,9 @@ jobs:
             cargo test -p trames-wayland --lib clipboard_permission --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == host-terminals ]]; then
             cargo test -p trames-vfs -p trames-core -p trames-ffi --lib --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == runtime-costs ]]; then
+            cargo test -p trames-memory --locked
+            cargo test -p trames-core --lib proc_map --locked
           elif [[ '${{ needs.scope.outputs.targeted }}' == true ]]; then
             cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --lib --locked
           else
