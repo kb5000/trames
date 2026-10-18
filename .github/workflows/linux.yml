@@ -41,6 +41,24 @@ jobs:
           TRAMES_VALIDATION_WORKFLOW: linux.yml
           TRAMES_NEEDS_GUEST_ARTIFACTS: 'false'
         run: python3 scripts/ios-ci-scope.py
+  release-core:
+    needs: scope
+    if: needs.scope.outputs.native_scope == 'release-core'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+          components: rustfmt, clippy
+          targets: aarch64-apple-ios
+      - name: Check release workspace formatting, lints and all Rust tests
+        run: |
+          cargo fmt --all --check
+          cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+          cargo test --workspace --all-features --locked
+          cargo check -p trames-core -p trames-distro -p trames-ffi --target aarch64-apple-ios --locked
   docker-default-lifecycle:
     needs: scope
     if: needs.scope.outputs.native_scope == 'docker-default-lifecycle'
@@ -79,7 +97,7 @@ jobs:
           retention-days: 14
   targeted-runtime:
     needs: scope
-    if: needs.scope.outputs.targeted == 'true' && needs.scope.outputs.skip_native != 'true'
+    if: needs.scope.outputs.targeted == 'true' && needs.scope.outputs.skip_native != 'true' && needs.scope.outputs.native_scope != 'release-core'
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:

@@ -1,7 +1,13 @@
 {
-  "base_sha": "c9292cccbe923206026e86a0d76327f41d31544f",
-  "native_scope": "device-metadata",
+  "base_sha": "400d495ac2e6750727bf78c61a0f4501d7e16460",
+  "native_scope": "release-core",
   "device_build": {
+    "release_core": {
+      "sha": "c9292cccbe923206026e86a0d76327f41d31544f",
+      "apple": 39142856325,
+      "patch_sha256": "9a289a07227c09d04dfbd3883d24b155c40fff94fedcb819d7a385c1970e9cbf",
+      "linux_delta_record": "docs/validation/release-1.1-notes.md"
+    },
     "frontend": {
       "sha": "aa4528166c8d0cdb04f3fe540730d9af63ed7f07",
       "run": 39062598012
@@ -9,20 +15,19 @@
     "guest": {
       "sha": "534e223e284df48f207500e84ab4cd05dd3d3958",
       "run": 39015795319
-    },
-    "metadata_repackage": {
-      "sha": "c9292cccbe923206026e86a0d76327f41d31544f",
-      "run": 39142856325
     }
   },
+  "reason": "Authorized formal 1.1.0 release: consolidated Linux formatting/strict clippy/all Rust workspace tests/iOS cross-check, Apple all Rust workspace tests and current 1.1.0 ARM64 Release device compile. Only package versions changed; reuse unchanged source-verified frontend/guest acceptance and original Docker/MMU/CPU/network/GPU integration evidence.",
   "changed_file_sha256": {
-    ".github/workflows/ios.yml": "89ee89104553134440ab1fb0342f44db2aa09d8203a332fdb89ef5927c42a174",
-    "apps/ios/project.yml": "16dcfa71458e5d623e77858f00649c08a93c7f284501b281456846429ec81e93",
-    "docs/validation/devpts-inode.md": "d0d30c96c79b289a9e9d64790abda7af3cc6d0bd6d999e92a3f69828495e440b",
-    "docs/validation/devpts-inode/apple-summary.log": "64daa499c16311d25616a31c90332feba1444b05eb93c065df524844a730d5ee",
-    "docs/validation/ipad-1.0-build31.json": "3544ba7f236d29eece2631a0025248f548d1f985462a3a04912c938d372d93ce",
-    "docs/validation/ipad-1.0-build31.md": "c1f845825e227593d7548ea13fce7eb6ac90222a3b9932d804a9f16f4e646f53",
-    "scripts/ios-ci-scope.py": "20d0a065610b753f8659a44d800d5b57ff74a4d70acf6831ad941a7428e06dc9"
-  },
-  "reason": "Record verified build31 interactive Docker fix, Apple checks and final metadata-only package [skip ci]; no runtime change, merge or repeated suites."
+    ".github/workflows/ios.yml": "25a3e959e178e89c5feda8d25be98d3a79c16e6feb167754bd50386938967426",
+    ".github/workflows/linux.yml": "4741e48239ffbab04a46b494d12177e589738976653506d22b303571c6d406af",
+    ".github/workflows/release-1.1.yml": "9f1e9728c72c6aeb50824de7ad3fd753a400dfa1d98f566a66dc10b3b5f89280",
+    "Cargo.lock": "bd797eddded7c5cdef47cf6ef4866160e3da83c925860c05dc71a8a7adf2b480",
+    "Cargo.toml": "e0573f48adacf055c5eb49c49914fed5081a85b03c2ef79d81b2bee0e1faeff9",
+    "README.md": "d1417e0109456b676770f45e3c9f1450a8d9e82e4bbcda201a6955ac48159113",
+    "apps/ios/project.yml": "4d34f1953cc4654a83eca5ded3bdfe3da4f446251dda99bb446cc9ec00042c3f",
+    "docs/validation/release-1.1-notes.md": "c718efe622cdf6c4fec38a82fd0ef45358b4973ead8cdf6fee7df215028b0f74",
+    "scripts/ios-ci-scope.py": "543263f376fcd5d1a0d577de46e7a3aa7dd12c9d185075064d4832a3bca12734",
+    "scripts/publish-ios-release-1.1.py": "197bb14a581ac8ebe68bb6071753d88eb0f44645c1f85a308649e28711e613c6"
+  }
 }
