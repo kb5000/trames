@@ -46,8 +46,8 @@ int main(void) {
     command("ip6tables -N TRAMES; ip6tables -A TRAMES -s fd11::/64 -p udp --dport 19001 -j DROP; ip6tables -A FORWARD -j TRAMES");
     enter(a);send4(s4,r4,"10.12.0.2",19001,1);send6(s6,r6,"fd12::2",19001,1);send4(s4,other,"10.12.0.2",19002,0);
     enter(router);command("iptables -S; iptables -v -n -L TRAMES; ip6tables -v -n -L TRAMES; test $(iptables -v -n -L TRAMES | awk '$3==\"DROP\"{print $1}') = 1; test $(ip6tables -v -n -L TRAMES | awk '$3==\"DROP\"{print $1}') = 1");
-    // Unsupported ct/NAT cannot leave a partially-installed rule behind.
-    assert(tool("iptables -A TRAMES -m conntrack --ctstate ESTABLISHED -j ACCEPT")!=0);
+    // An unsupported conntrack expiry matcher cannot leave a partial rule.
+    assert(tool("iptables -A TRAMES -m conntrack --ctexpire 1:2 -j ACCEPT")!=0);
     enter(a);send4(s4,r4,"10.12.0.2",19001,1);
     enter(router);command("iptables -I TRAMES 1 -p udp --dport 19001 -j ACCEPT; iptables -C TRAMES -p udp --dport 19001 -j ACCEPT");
     enter(a);send4(s4,r4,"10.12.0.2",19001,0);
@@ -57,7 +57,7 @@ int main(void) {
     // Namespace B does not inherit the router's rules. Its INPUT policy really drops.
     enter(b);command("iptables -P INPUT DROP");enter(a);send4(s4,r4,"10.12.0.2",19001,1);
     enter(b);command("iptables -P INPUT ACCEPT");enter(a);send4(s4,r4,"10.12.0.2",19001,0);
-    enter(native);assert(tool("iptables -t nat -A POSTROUTING -j MASQUERADE")!=0);
+    enter(native);command("iptables -t nat -A POSTROUTING -j MASQUERADE; iptables -t nat -D POSTROUTING -j MASQUERADE");
     int handles[]={native,router,a,b,nl,f4,f6,s4,s6,r4,r6,other};for(unsigned i=0;i<sizeof(handles)/sizeof(handles[0]);i++)close(handles[i]);
     puts("nftables: original iptables-nft/ip6tables, IPv4/IPv6 DROP/ACCEPT, counters, rule lifecycle and namespace policy: ok");return 0;
 }

@@ -3,7 +3,7 @@
 """Original signed iptables-nft controls enforce real guest packet filtering.
 
 No host firewall commands/daemon, rootless substitutions or modified guest tools.
-Reuses unchanged Docker bridge acceptance; NAT/conntrack deliberately not accepted.
+Filter lifecycle regression only; full conntrack/NAT/default Docker have separate tests.
 """
 import argparse
 import hashlib
@@ -23,7 +23,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 RUNNER = os.getenv('TRAMES_RUNNER', str(ROOT / 'target/release/trames-run'))
 FIXTURE = ROOT / 'tests/fixtures/bin/nftables'
 marker = b'nftables: original iptables-nft/ip6tables, IPv4/IPv6 DROP/ACCEPT, counters, rule lifecycle and namespace policy: ok\n'
-results = {'scope': 'Namespace-local bounded nftables filter only: original signed iptables-nft/ip6tables rule creation/list/check/insert/replace/delete/flush/policy, routed IPv4/IPv6 port/source/interface filtering, packet counters, namespace INPUT policy, rejected unsupported conntrack/NAT. No default Docker firewall/NAT/external-network acceptance.',
+results = {'scope': 'Namespace-local bounded nftables filter only: original signed iptables-nft/ip6tables rule creation/list/check/insert/replace/delete/flush/policy, routed IPv4/IPv6 port/source/interface filtering, packet counters, namespace INPUT policy, rejected unsupported conntrack expiry match. NAT/conntrack/default Docker behavior is tested separately.',
            'inputs_sha256': {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in
                              (FIXTURE, ROOT / 'tests/fixtures/nftables.c', ROOT / 'tests/fixtures/container-network.c')},
            'checks': []}

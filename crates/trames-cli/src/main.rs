@@ -440,10 +440,10 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
         }
         vfs.configure_virtual_network(&fabric, id, network)?;
     } else {
-        if !host_mappings.is_empty() {
-            return Err("--host-map requires --virtual-network".into());
-        }
         vfs.configure_network(network)?;
+        for (virtual_ip, host_ip) in host_mappings {
+            vfs.map_network_host_ip(virtual_ip, host_ip)?;
+        }
     }
     if let Some(archive) = rootfs {
         trames_distro::install_alpine(&mut File::open(archive)?, &mut vfs)?;

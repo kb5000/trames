@@ -34,6 +34,12 @@ def container_network_path(path):
         'tests/integration/container-network.py','tests/integration/docker.py',
         'scripts/build-docker-network-fixture.sh','tests/fixtures/docker-network-control.c',
         'scripts/build-nftables-fixture.sh','tests/fixtures/nftables.c','tests/integration/nftables.py',
+        '.cargo/config.toml','crates/trames-core/src/process.rs',
+        'crates/trames-cli/src/main.rs','crates/trames-ffi/src/session.rs',
+        'examples/docker/daemon.json','scripts/build-netfilter-nat-fixture.sh',
+        'tests/fixtures/netfilter-nat.c','tests/fixtures/docker-network-probe.c',
+        'tests/integration/netfilter-nat.py','tests/integration/docker-network.py',
+        'tests/integration/docker-network.sh',
     }
 
 
@@ -97,7 +103,7 @@ def main():
             hashes=plan['changed_file_sha256']
             if changed==set(hashes) and all(Path(path).exists() and hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest for path,digest in hashes.items()):
                 if plan.get('native_scope') == 'container-network' and changed and all(container_network_path(p) for p in changed):
-                    print('Container network: Net/VFS/Linux, existing virtual network, actual guest networking, Docker isolation and ARM64 iOS FFI only. Reuse unchanged Core/seccomp/CPU/UI/GPU/guest libraries; no IPA.')
+                    print('Container network: source-bounded Net/VFS/Linux and affected kernel adapters, actual guest networking/Docker and ARM64 iOS FFI only. Reuse unchanged CPU/UI/GPU/guest libraries; no IPA.')
                     retry=False
                     reuse=plan.get('network_lifetime_reuse')
                     if reuse and network_lifetime_source_unchanged(reuse['sha']):
@@ -113,7 +119,10 @@ def main():
                         output.write('skip_native=false\nskip_linux_native=false\nskip_linux_modules=false\n')
                         output.write('network_retry='+str(retry).lower()+'\n')
                         output.write('nftables='+str(plan.get('nftables_stage') is True).lower()+'\n')
+                        output.write('docker_network='+str(plan.get('docker_network_stage') is True).lower()+'\n')
                         output.write('docker_bridge='+str(plan.get('docker_bridge_stage') is True).lower()+'\n')
+                    if plan.get('docker_network_stage') is True:
+                        print('Docker full network stage: Net/virtual, VFS network/events, Linux network/splice, Core splice scheduler compile, FFI managed DNS, CLI; signed iptables/NAT 1/4 CPU and original default Docker network/DNS/TCP/UDP/isolation at 4 CPU; Apple counterparts and iOS FFI. Reuse unchanged CPU/UI/GPU/guest libraries; no IPA.')
                     if plan.get('nftables_stage') is True:
                         print('nftables stage: affected Net libraries/virtual sockets, forwarding/TTL 1/4 CPU, original signed iptables-nft data filtering 1/4 CPU, iOS FFI. Reuse unchanged VFS/Linux/Core/Docker daemon/CPU/UI/GPU and guest libraries.')
                     if plan.get('docker_bridge_stage') is True:

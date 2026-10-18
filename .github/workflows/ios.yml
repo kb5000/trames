@@ -52,7 +52,16 @@ jobs:
           targets: aarch64-apple-ios
       - name: Validate affected Apple network modules and iOS FFI
         run: |
-          if [[ '${{ needs.scope.outputs.nftables }}' == true ]]; then
+          if [[ '${{ needs.scope.outputs.docker_network }}' == true ]]; then
+            cargo test -p trames-net --locked
+            cargo test -p trames-vfs --lib network --locked
+            cargo test -p trames-vfs --lib events --locked
+            cargo test -p trames-linux --lib network --locked
+            cargo test -p trames-linux --lib file_calls --locked
+            cargo test -p trames-ffi --lib managed_dns --locked
+            cargo test -p trames-core --lib splice --locked
+            cargo check -p trames-core --locked
+          elif [[ '${{ needs.scope.outputs.nftables }}' == true ]]; then
             cargo test -p trames-net --lib --locked
           elif [[ '${{ needs.scope.outputs.docker_bridge }}' == true ]]; then
             cargo test -p trames-net --lib --locked
@@ -80,6 +89,7 @@ jobs:
       network_retry: ${{ steps.scope.outputs.network_retry }}
       docker_bridge: ${{ steps.scope.outputs.docker_bridge }}
       nftables: ${{ steps.scope.outputs.nftables }}
+      docker_network: ${{ steps.scope.outputs.docker_network }}
       frontend_reused: ${{ steps.scope.outputs.frontend_reused }}
     steps:
       - uses: actions/checkout@v4

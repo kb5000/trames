@@ -2359,6 +2359,7 @@ impl Kernel {
                     }
                 }
                 let per_call_nonblock = match number {
+                    76 => a[5] & 2 != 0 || p.linux.vfs.flags(a[2] as u32)? & O_NONBLOCK != 0,
                     206 | 207 => a[3] & 0x40 != 0,
                     211 | 212 => a[2] & 0x40 != 0,
                     _ => false,
@@ -2369,7 +2370,7 @@ impl Kernel {
                 if ((raw == error(Errno(11))
                     && matches!(
                         number,
-                        63 | 64 | 65 | 66 | 71 | 202 | 203 | 242 | 206 | 207 | 211 | 212
+                        63 | 64 | 65 | 66 | 71 | 76 | 202 | 203 | 242 | 206 | 207 | 211 | 212
                     )
                     && !per_call_nonblock)
                     || (raw == error(Errno(115)) && number == 203)
@@ -2476,7 +2477,7 @@ impl Kernel {
             }
         };
         let signal_pipe = match number {
-            64 | 66 | 71 => true,
+            64 | 66 | 71 | 76 => true,
             206 => a[3] & 0x4000 == 0,
             211 => a[2] & 0x4000 == 0,
             _ => false,
@@ -3646,6 +3647,7 @@ impl Kernel {
                         || matches!(p.state, State::Blocked(number, a)
                         if matches!(number, 63 | 64 | 65 | 66 | 202 | 203 | 242 | 206 | 207 | 211 | 212)
                         && p.linux.vfs.fd_kind(a[0] as u32).ok() == Some(FdKind::Socket))
+                        || matches!(p.state,State::Blocked(76,a)if [a[0],a[2]].iter().any(|fd|p.linux.vfs.fd_kind(*fd as u32).ok()==Some(FdKind::Socket)))
                         || (matches!(p.state, State::Blocked(22 | 72 | 73 | 441, _))
                             && p.linux.vfs.live_sockets() != 0)
                         || p.linux.vfs.has_bridge_descriptors()
@@ -3710,6 +3712,10 @@ impl Kernel {
                     if p.linux.vfs.fd_kind(a[0] as u32).ok() == Some(FdKind::Stdin) {
                         timeout = timeout.min(Duration::from_millis(1));
                     }
+                }
+                76 => {
+                    add(a[0] as u32, 1);
+                    add(a[2] as u32, 4);
                 }
                 64 | 66 | 203 | 206 | 211 => add(a[0] as u32, 4),
                 73 => {
@@ -4338,6 +4344,28 @@ mod tests {
         }
     }
 
+    #[test]
+    fn splice_blocks_on_backpressure_and_respects_output_nonblocking() {
+        let mut k = kernel();
+        let mut p = process();
+        let mut io = trames_linux::CapturedOutput::default();
+        let [r, w] = p.linux.vfs.pipe(0).unwrap();
+        let [r2, w2] = p.linux.vfs.pipe(0).unwrap();
+        p.linux.vfs.write(w, b"abc").unwrap();
+        while p.linux.vfs.write(w2, &[0; 4096]).is_ok() {}
+        let a = [r as u64, 0, w2 as u64, 0, 3, 0];
+        k.call(1, &mut p, 76, a, &mut io);
+        assert!(matches!(p.state, State::Blocked(76, _)));
+        p.linux.vfs.set_status_flags(w2, 1 | O_NONBLOCK).unwrap();
+        k.call(1, &mut p, 76, a, &mut io);
+        assert!(matches!(p.state, State::Ready));
+        assert_eq!(p.cpu.x(0), error(Errno(11)));
+        p.linux.vfs.read(r2, 3).unwrap();
+        k.call(1, &mut p, 76, a, &mut io);
+        assert!(matches!(p.state, State::Ready));
+        assert_eq!(p.cpu.x(0), 3);
+        assert_eq!(p.linux.vfs.read(r, 3), Err(Errno(11)));
+    }
     #[test]
     fn close_range_unshare_detaches_only_callers_shared_table() {
         let mut k = kernel();

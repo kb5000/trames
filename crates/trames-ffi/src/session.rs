@@ -361,6 +361,50 @@ impl Session {
         }
     }
 }
+fn prepare_guest_defaults(vfs: &mut Vfs, network: &str) -> Result<(), String> {
+    let resolver = if network == "loopback" {
+        b"nameserver 127.0.0.53\n".as_slice()
+    } else {
+        b"nameserver 169.254.0.53\n".as_slice()
+    };
+    for (path, bytes) in [
+        (b"/root/.trames".as_slice(), b"Trames\n".as_slice()),
+        (b"/etc/resolv.conf".as_slice(), resolver),
+    ] {
+        let old_managed_dns = path == b"/etc/resolv.conf"
+            && vfs
+                .open_at(trames_vfs::AT_FDCWD, path, 0, 0)
+                .is_ok_and(|fd| {
+                    let data = vfs.read(fd, 256).unwrap_or_default();
+                    let _ = vfs.close(fd);
+                    data != bytes
+                        && matches!(
+                            data.as_slice(),
+                            b"nameserver 10.0.0.1\nnameserver fd00::1\n"
+                                | b"nameserver 10.0.0.1\n"
+                                | b"nameserver 127.0.0.53\n"
+                                | b"nameserver 169.254.0.53\n"
+                        )
+                });
+        if old_managed_dns {
+            let fd = vfs
+                .open_at(trames_vfs::AT_FDCWD, path, 1, 0)
+                .map_err(|e| e.to_string())?;
+            let result = vfs.write(fd, bytes).and_then(|written| {
+                if written != bytes.len() {
+                    return Err(trames_vfs::Errno(5));
+                }
+                vfs.truncate_fd(fd, bytes.len() as u64)
+            });
+            let close = vfs.close(fd);
+            result.and(close).map_err(|e| e.to_string())?;
+        } else if vfs.stat_at(trames_vfs::AT_FDCWD, path).is_err() {
+            vfs.import_file(path, bytes.to_vec())
+                .map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
 fn run(
     options: Options,
     session: Arc<Session>,
@@ -413,41 +457,7 @@ fn run(
         trames_distro::install_musl(&mut File::open(libc).map_err(|e| e.to_string())?, &mut vfs)
             .map_err(|e| e.to_string())?;
     }
-    for (path, bytes) in [
-        (b"/root/.trames".as_slice(), b"Trames\n".as_slice()),
-        (
-            b"/etc/resolv.conf".as_slice(),
-            b"nameserver 127.0.0.53\n".as_slice(),
-        ),
-    ] {
-        let old_managed_dns = path == b"/etc/resolv.conf"
-            && vfs
-                .open_at(trames_vfs::AT_FDCWD, path, 0, 0)
-                .is_ok_and(|fd| {
-                    let data = vfs.read(fd, 256).unwrap_or_default();
-                    let _ = vfs.close(fd);
-                    matches!(
-                        data.as_slice(),
-                        b"nameserver 10.0.0.1\nnameserver fd00::1\n" | b"nameserver 10.0.0.1\n"
-                    )
-                });
-        if old_managed_dns {
-            let fd = vfs
-                .open_at(trames_vfs::AT_FDCWD, path, 1, 0)
-                .map_err(|e| e.to_string())?;
-            let result = vfs.write(fd, bytes).and_then(|written| {
-                if written != bytes.len() {
-                    return Err(trames_vfs::Errno(5));
-                }
-                vfs.truncate_fd(fd, bytes.len() as u64)
-            });
-            let close = vfs.close(fd);
-            result.and(close).map_err(|e| e.to_string())?;
-        } else if vfs.stat_at(trames_vfs::AT_FDCWD, path).is_err() {
-            vfs.import_file(path, bytes.to_vec())
-                .map_err(|e| e.to_string())?;
-        }
-    }
+    prepare_guest_defaults(&mut vfs, &options.network)?;
     vfs.chdir(b"/root").map_err(|e| e.to_string())?;
     if options.vulkan_accelerator {
         if let Some(path) = &options.vulkan_icd {
@@ -794,6 +804,37 @@ impl GuestOutput for Adapter {
 #[cfg(test)]
 mod memory_tests {
     use super::*;
+    #[test]
+    fn managed_dns_is_routable_for_containers_and_preserves_custom_configs() {
+        let mut vfs = Vfs::default();
+        for dir in [b"/etc".as_slice(), b"/root".as_slice()] {
+            if vfs.stat_at(trames_vfs::AT_FDCWD, dir).is_err() {
+                vfs.mkdir_at(trames_vfs::AT_FDCWD, dir, 0o755).unwrap();
+            }
+        }
+        let read = |vfs: &mut Vfs| {
+            let fd = vfs
+                .open_at(trames_vfs::AT_FDCWD, b"/etc/resolv.conf", 0, 0)
+                .unwrap();
+            let bytes = vfs.read(fd, 1024).unwrap();
+            vfs.close(fd).unwrap();
+            bytes
+        };
+        prepare_guest_defaults(&mut vfs, "full").unwrap();
+        assert_eq!(read(&mut vfs), b"nameserver 169.254.0.53\n");
+        prepare_guest_defaults(&mut vfs, "loopback").unwrap();
+        assert_eq!(read(&mut vfs), b"nameserver 127.0.0.53\n");
+        prepare_guest_defaults(&mut vfs, "full").unwrap();
+        assert_eq!(read(&mut vfs), b"nameserver 169.254.0.53\n");
+        let fd = vfs
+            .open_at(trames_vfs::AT_FDCWD, b"/etc/resolv.conf", 1 | 0x200, 0)
+            .unwrap();
+        vfs.write(fd, b"nameserver 1.1.1.1\n# user override\n")
+            .unwrap();
+        vfs.close(fd).unwrap();
+        prepare_guest_defaults(&mut vfs, "full").unwrap();
+        assert_eq!(read(&mut vfs), b"nameserver 1.1.1.1\n# user override\n");
+    }
     #[test]
     fn optional_json_budgets_preserve_defaults_and_validate_before_start() {
         let base = serde_json::json!({"store":"/tmp/trames-memory-options", "volume_total": 1 << 30, "volume_available": 1 << 30});

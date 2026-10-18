@@ -1,9 +1,9 @@
-# Guest nf_tables 第一阶段
+# Guest nf_tables 与连接跟踪
 
 `NETLINK_NETFILTER=12` 与 route netlink 共用有界传输；端口占用按
 (namespace, protocol, port) 区分。FD 保留创建时的 namespace，组播订阅暂不
 开放。所有请求需要 guest CAP_NET_ADMIN，不调用宿主 iptables/nft 或修改
-宿主网络。普通原生 socket 的快路径不进入此过滤器。
+宿主网络。没有活动规则时，普通原生 socket 保留快路径；活动规则通过 native I/O 策略检查。
 
 ## 控制面
 
@@ -12,7 +12,7 @@
 空 set dump 返回空，因为当前没有可创建的 set；NEWSET 和单项查询分别
 拒绝／返回不存在。原版 libnftnl 删除对象时回送的已知描述属性按 Linux
 删除语义处理，不将其误认为新的规则。tcp/udp/icmp/icmp6 revision-0 探测
-仅允许可转成下述表达式的匹配；opaque xt match/target 仍拒绝。
+允许已实现的匹配；另支持 addrtype/conntrack 与 SNAT/DNAT/MASQUERADE/CT zone 的原版 xt wire。未知 revision/flags/扩展仍拒绝。
 
 单个 datagram 的 batch begin/end 包围一个事务：复制 namespace 的规则集、
 校验所有请求和跳转关系、检查完整回复容量，最后发布。失败只返回错误 ACK，
@@ -42,18 +42,17 @@ base chain 的 ACCEPT 不能绕过稍后的 DROP。拓扑、up、路由和逐族
 仍决定可达性，过滤不会创建连接或启用宿主出口。没有 active hook 时跳过规则
 求值和接口名分配；CPU／musl 不新增锁。
 
-根 guest 的 native BSD socket 不经过 smoltcp，因此根只允许 FORWARD base
-chain，其余 hooks 返回 EOPNOTSUPP。旧的显式 `--virtual-network` 网关模式
-也拒绝安装 base chain；其动态子 netns 可独立配置。不能通过成功安装一个
-根 INPUT／OUTPUT 链来假装已过滤 native I/O。
+根 native INPUT/OUTPUT、同桥 IP 过滤、分片重组、conntrack/NAT 和原版
+Docker 默认 firewall 已接入。ct state/status/mark/zone/tuple、fib addrtype、
+标准优先级的 nat/masq 和已实现的 xt 兼容表达式在真实路径求值；NAT 不能安装
+进 filter 链，zone 只能在 conntrack 前设置。GET/dump/DELETE 使用实际连接。
+相关数据路径、native socket 边界和明确限制见 [Docker 网络运行时](docker-network-runtime.md)。
+旧显式 `--virtual-network` 网关模式仍拒绝 base chain，动态子 netns 可独立配置。
 
-当前没有 conntrack／RELATED／ESTABLISHED／NAT／masquerade／reject 回复，
-也没有 br_netfilter 的同桥 IP 过滤、family bridge/netdev 或以太网规则。
-本阶段以内部 routed 单播为验收范围；访问本机非 loopback 接口地址时，
-local-route 的输入／输出设备视图仍需完善。过滤作用于 fabric 的 IP 包；
-尚未在 hooks 前统一重组分片，基于 L4 的规则
-不能承诺 Linux defrag 的全部语义。IPv6 扩展头读取有界，无法解析的 transport
-匹配不成立；这些限制都不是完整 Docker 默认 bridge 的验收。
+sets、flowtable、family bridge/netdev、以太网规则、REJECT 回复、conntrack expiry
+match 和未实现的 xt 扩展仍拒绝。IPv6 扩展头与所有内核 defrag/conntrack 细节
+不作完整 Linux 等价承诺。dump 将多个对齐消息合并到有界 datagram，避免将
+消息数量误当成队列项数量。
 
 ## 依据与后续
 
@@ -63,7 +62,6 @@ ABI 对齐 Linux `include/uapi/linux/netfilter/nf_tables.h`、`nfnetlink.h`、
 的 batch、chain use 和原版工具 wire 请求；未替换 guest 工具。项目继续使用
 GPL-3.0-or-later。本阶段不引入新的第三方实现。
 
-下一步补连接跟踪和 NAT，并将 root native I/O、外部转发、发布端口接入相同
-策略模型，再开放 Docker 默认防火墙配置。原版 Docker 内部 bridge／HTTP 的
-[已有证据](../validation/docker-bridge-internal.md) 保持原验收范围；本阶段
-[独立过滤验收](../validation/nftables.md) 不将它扩称完整 Docker 网络。
+第一阶段 [过滤验收](../validation/nftables.md) 保留其原有范围；后续
+默认 firewall、DNS、端口发布和隔离的结果单独记录在
+[Docker 网络验证](../validation/docker-network.md)。

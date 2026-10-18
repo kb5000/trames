@@ -76,10 +76,9 @@ bridge `brif`／`brport/state` 由实际成员关系、up 和 carrier 派生。T
 IPv6 socket 默认按 Linux 双栈行为工作，显式 V6ONLY=1 仍有效；ICMP 保持单协议。
 `tx_queue_len` 是 netdev 元数据，不预分配相应内存，也不声称已实现 qdisc/tc。
 
-原版 Docker 在明确禁用 iptables/NAT 的开发配置下已能创建 docker0、veth、
-容器 netns、eth0 地址和网关并运行容器，通信证据见
-[内部 bridge 验证](../validation/docker-bridge-internal.md)。该配置没有
-Docker 的防火墙或跨网络过滤，不能当作完整默认 bridge。
-上一阶段的 `Failed to initialize nft: Protocol not supported` 已由真实 nftables
-控制面取代；当前 conntrack／NAT 表达式、根 INPUT／OUTPUT 及同桥过滤仍未
-完成，明确返回 EOPNOTSUPP，默认 Docker firewall/NAT 仍不能开放。[跟踪 Issue #29](https://github.com/kb5000/trames/issues/29)。
+早期关闭 iptables/NAT 的 [内部 bridge 验证](../validation/docker-bridge-internal.md)
+保留为历史证据。后续接通 conntrack/NAT、native I/O 过滤、同桥 br_netfilter、
+原版 docker-proxy 与 Docker 内置 DNS，默认 bridge 可按原版规则转发。
+实现与平台边界见 [网络运行时](docker-network-runtime.md)，功能结果与输入指纹见
+[网络验证](../validation/docker-network.md)。其他 Docker 工作流继续由
+[Issue #29](https://github.com/kb5000/trames/issues/29) 跟踪。
