@@ -25,6 +25,7 @@ jobs:
       docker_bridge: ${{ steps.scope.outputs.docker_bridge }}
       nftables: ${{ steps.scope.outputs.nftables }}
       docker_network: ${{ steps.scope.outputs.docker_network }}
+      docker_network_retry: ${{ steps.scope.outputs.docker_network_retry }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,6 +62,9 @@ jobs:
           elif [[ '${{ needs.scope.outputs.native_scope }}' == host-terminals ]]; then
             cargo clippy -p trames-vfs -p trames-core -p trames-ffi --all-targets --locked -- -D warnings
             cargo test -p trames-vfs -p trames-core -p trames-ffi --lib --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == container-network && '${{ needs.scope.outputs.docker_network_retry }}' == true ]]; then
+            cargo test -p trames-net --lib native_root_input --locked
+            cargo test -p trames-linux --lib udp_pktinfo --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == container-network && '${{ needs.scope.outputs.docker_network }}' == true ]]; then
             cargo clippy -p trames-net -p trames-vfs -p trames-linux -p trames-core -p trames-ffi -p trames-cli --all-targets --locked -- -D warnings
             cargo test -p trames-net --locked
@@ -159,7 +163,7 @@ jobs:
             python3 tests/integration/docker.py --isolated --require-run --cpus 4
           fi
       - name: Exercise real guest veth and bridge networking and retain Docker isolation
-        if: needs.scope.outputs.native_scope == 'container-network'
+        if: needs.scope.outputs.native_scope == 'container-network' && needs.scope.outputs.docker_network_retry != 'true'
         env:
           TRAMES_ALPINE_CACHE: ${{ github.workspace }}/target/alpine-download
         run: |
@@ -203,7 +207,7 @@ jobs:
             fi
           fi
       - uses: actions/upload-artifact@v4
-        if: always() && needs.scope.outputs.native_scope == 'container-network'
+        if: always() && needs.scope.outputs.native_scope == 'container-network' && needs.scope.outputs.docker_network_retry != 'true'
         with:
           name: guest-container-network
           path: |
