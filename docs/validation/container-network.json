@@ -1,5 +1,5 @@
 {
-  "status": "local_passed_ci_pending",
+  "status": "baseline_linux_apple_passed_lifetime_followup_pending",
   "base_sha": "c2b0cda93ed6dc874bd3b3f0feced26d14ee461c",
   "source_commit": null,
   "guest_network": {
@@ -50,14 +50,68 @@
     "fmt": true,
     "native_network_permission_retry": "Only failed native-socket cases rerun with supported runtime network permission; passed cases reused."
   },
-  "docker": "Original strict isolated 1-CPU run in progress; daemon bridge=none, iptables=false, container network=none. No full Docker bridge claim.",
-  "ci": {},
+  "docker": {
+    "profile": "private-net-ipc-cgroup-default-seccomp",
+    "checks": [
+      {
+        "cpus": 1,
+        "exit_code": 0,
+        "checks": {
+          "DAEMON": true,
+          "IMAGE": true,
+          "CREATE": true,
+          "RUN": true,
+          "CLEANUP": true
+        },
+        "start_exit": 7
+      }
+    ],
+    "packages_sha256": {
+      "containerd-2.1.5-r2.apk": "963e1c79c6439e23afbb085428d6466fa684921bacfc4f39dc0e667b044b7669",
+      "crun-1.23.1-r0.apk": "64c9b516fc7f8cdde7b666db5832fa93952c71545832292fcd9845401ca7bcca",
+      "docker-cli-28.3.3-r5.apk": "8895ae93210cdf47018720928fd703d30f43f62ec452b6a30391d5a6b18a6ae2",
+      "docker-engine-28.3.3-r5.apk": "ea07b9c3e707fa12920e1501d14bf702ee19af56f21634356af4311a02384aad",
+      "runc-1.3.4-r1.apk": "4a6a59757e4559796492417e7cd10c8719b4dd00684e7ce7ea6197d18f1db52a",
+      "tini-static-0.19.0-r3.apk": "b16167b87355ea675d0bbba2dc2ad6bf537edd97e73c4a1a2ed720f23e85c877",
+      "busybox-1.37.0-r20.apk": "9d25af67564c92a4a4c603462efdbcd23019e90b8785f1ebcad640cbb1551c93",
+      "busybox-binsh-1.37.0-r20.apk": "9180dcee3f67ea806fe45361cffab94f8ce7e417d5f373bb0d989e88eb609903",
+      "ca-certificates-20260909-r0.apk": "b281f0245c7998f8d72541e301b259e370eae9491b66881a27380e544cba432b",
+      "iptables-1.8.11-r1.apk": "0a10fe634e3525082a1219487cd044d987ac4a55ed5aa551bf758e81223e1cfb",
+      "libcap2-2.78-r0.apk": "de209aee8b76946849bff6bd97151c6af20889be5a96a2e28f9899255e252e3f",
+      "libcrypto3-3.5.9-r0.apk": "ede2ef7eca3b65a42e902aaf7890f9c5647dca0c55123a817179ad9f3bc6ef24",
+      "libmnl-1.0.5-r2.apk": "213a7e87553bed3d9159b2e74d2627885c259883e61714b357949ca806eb1f8d",
+      "libncursesw-6.5_p20250503-r0.apk": "419b375e8a4345e7172b1f0f3a3c57db61374f5408cdb875d9e860bd4c243aca",
+      "libnftnl-1.2.9-r0.apk": "6912a5d56b31d3365b8dd0d6339bd70a2bfc9e25dab0c387f77174113c43e664",
+      "libseccomp-2.6.1-r0.apk": "ee817c130535b72e5b0a63b211f9d2fbbaa493a319f78e9da5e30359991e5180",
+      "libssl3-3.5.9-r0.apk": "338c9f6154582b4b76455a59f95538bcea8df039c5c72916dd2d8d0d844c9583",
+      "libxtables-1.8.11-r1.apk": "e84f0d6b69d4318f297056d00ccbe433e6c7d163fe6767405e373248c42e3e88",
+      "musl-1.2.5-r12.apk": "ac281d1e7f9e9c447c51e309317b975f48be6edaf3ab91ae73b959cf86703782",
+      "ncurses-terminfo-base-6.5_p20250503-r0.apk": "3d37403e0b5ab9eb0c1ce269444e4a385faec9fe6af452c1c6956806b13d2bd6",
+      "yajl-2.1.0-r9.apk": "34a2fb7671a29f19166d051318c866e60f4687184fe73939b6b08325d11b68a8"
+    },
+    "rootfs_sha256": "821565fa8f3953eefd12497b166b4b50add2f7c57fb312e75862f5867e06fefe",
+    "scope": "Original Docker network=none with independent net/IPC/cgroup namespace identities, rebased cgroup mount/proc, applied network sysctls and enforced default seccomp/device filter. Bridge/NAT remain separate acceptance."
+  },
+  "ci": {
+    "linux": {
+      "run": 39091722010,
+      "job": 117569736542,
+      "conclusion": "success",
+      "original_docker_cpus": 4
+    },
+    "apple": {
+      "run": 39091721951,
+      "job": 117569726657,
+      "conclusion": "success",
+      "scope": "Net/VFS/Linux libraries and aarch64-apple-ios trames-ffi check; no App link or IPA"
+    }
+  },
   "production_sha256": {
     "crates/trames-linux/src/network.rs": "3a5dd143316e79a4e21cf2ef8d7fccc950cf3d8f15430020fd9641e731bf8bf1",
     "crates/trames-net/Cargo.toml": "b6176f634fe2a2b9a45bb6efc225705129df6441d1a2b5afd346da5886016da1",
-    "crates/trames-net/src/lib.rs": "05077b0520e0b79e26d5a3f16c330c3821240d73159c40e136f20dde741f2dd3",
+    "crates/trames-net/src/lib.rs": "a45e131a819275610f0490d6ec38bc54da6aaec3bbea5f991f924ef184448c2a",
     "crates/trames-net/src/netdev.rs": "d2f304c5d3577ad0d8c8c59c0cac8fa8b703cc530e3bceed6b523e4a3f53c289",
-    "crates/trames-net/src/netlink.rs": "0a5132bf697e3a1d663edaeb765fef23301d3db28803812d75c8b1bfe47652b3",
+    "crates/trames-net/src/netlink.rs": "b9d3fa519d4d71c37ca521995ef878ec317ab1a6a4ca63be021e9faf6f533ef6",
     "crates/trames-net/src/rtnetlink.rs": "06bac7fe649fa3ba6c5ee75e53812298bc10754b8ff2ba89c491954c5b5dba31",
     "crates/trames-net/src/virtualnet/mod.rs": "5d85df98fb8fdc147cddeeb37cf474a51b1ea18fa8d9a32af738087a49f72c3d",
     "crates/trames-net/src/virtualnet/sockets.rs": "7aeadf179f9bcd7f5bc9099a8a220cc5e166255b606a17e8a872d1a02356e526",
@@ -76,5 +130,13 @@
     "multicast/VLAN/STP",
     "variable MTU",
     "link-local IPv6 scopes"
-  ]
+  ],
+  "baseline_source": "01a87156c44cb10b5c2c2993186ce4274f058ed6",
+  "lifetime_followup": {
+    "scope": "Only strong OnceCell stack ownership and teardown order in netlink namespace; regression first reproduced ping EAGAIN with only an old netlink FD, then passed. Exact production diff hash guards CI reuse.",
+    "production_diff_sha256": "b72cac90931a82d6d21a4432b241ba8fe265206bc035b378f20e6a625f2cbc2c",
+    "local_routing_cases": 6,
+    "local_virtual_teardown": true,
+    "local_guest_network_1_4_cpu": true
+  }
 }

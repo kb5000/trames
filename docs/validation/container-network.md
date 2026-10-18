@@ -31,8 +31,19 @@
   peer namespace FD、配置 IP、先监听后配置、TCP/UDP 数据、跨桥隔离、移出桥
   后断路/重接后恢复、旧 netlink FD 与当前调用者 namespace 不同、proc/sysfs/ioctl。
 - 既有 `network-namespaces.c` 在新共享 fabric 下的 1/4 vCPU 验收通过。
-- 原版签名 Docker 的 `--network none` 默认安全配置与 Apple/iOS 定向检查，
-  最终结果及源码标识写入同目录 `container-network.json`。
+- 原版签名 Docker 的 `--network none` 默认安全配置在新磁盘 1 vCPU 下通过：
+  daemon/image/create/start/logs/cleanup、退出码 7 和各项隔离断言全部检查。
+- [Apple 定向 CI](https://github.com/kb5000/trames/actions/runs/39091721951) 通过：
+  Net/VFS/Linux library，以及 `aarch64-apple-ios` 的 trames-ffi check；没有链接 App 或 IPA。
+- [Linux 定向 CI](https://github.com/kb5000/trames/actions/runs/39091722010) 的 library/virtual
+  检查以及 guest/Docker 4 vCPU 检查通过。基线源码 `01a87156c44cb10b5c2c2993186ce4274f058ed6`；
+  同目录 `container-network.json` 保存最终结果和输入 hash。
+
+补充生命周期回归先复现“只有旧 netlink FD 时 IP 栈提前释放、ping EAGAIN”，
+随后通过 namespace 强持有 stack 修复。最后引用释放先结束协议栈再删除拓扑，
+不存在身份/协议栈所有权环。6 项 routing case、既有 teardown case 和
+guest 网络/旧 netns 1/4 vCPU 已再次通过；CI 仅补这一精确增量和 iOS FFI，
+复用通过的基线 Docker/其他 library/virtual 检查，不重复无关验收。
 
 首次本地 native socket 检查被执行沙箱的网络权限拒绝；使用环境支持的网络权限
 重跑失败项目后通过，已通过项目复用。旧 root-ifindex 测试将不存在的接口错误从

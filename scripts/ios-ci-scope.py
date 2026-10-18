@@ -35,6 +35,20 @@ def container_network_path(path):
     }
 
 
+def network_lifetime_source_unchanged(sha):
+    delta=subprocess.check_output(['git','diff','--name-only',sha,'HEAD'],text=True).splitlines()
+    allowed={'.github/ios-validation-plan.json','.github/workflows/ios.yml',
+             '.github/workflows/linux.yml','scripts/ios-ci-scope.py',
+             'crates/trames-net/src/lib.rs','crates/trames-net/src/netlink.rs',
+             'crates/trames-net/src/routing_tests.rs'}
+    if any(not p.startswith('docs/') and p not in allowed for p in delta):return False
+    # Exact OnceCell ownership pin + teardown guard, without protocol changes.
+    # Any further production change falls back to all affected network checks.
+    patch=subprocess.check_output(['git','diff','--binary',sha,'HEAD','--',
+        'crates/trames-net/src/lib.rs','crates/trames-net/src/netlink.rs'])
+    return hashlib.sha256(patch).hexdigest()=='b72cac90931a82d6d21a4432b241ba8fe265206bc035b378f20e6a625f2cbc2c'
+
+
 def isolation_retry_source_unchanged(sha):
     delta=subprocess.check_output(['git','diff','--name-only',sha,'HEAD'],text=True).splitlines()
     allowed={'.github/ios-validation-plan.json','.github/workflows/ios.yml',
@@ -82,9 +96,20 @@ def main():
             if changed==set(hashes) and all(Path(path).exists() and hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest for path,digest in hashes.items()):
                 if plan.get('native_scope') == 'container-network' and changed and all(container_network_path(p) for p in changed):
                     print('Container network: Net/VFS/Linux, existing virtual network, actual guest networking, Docker isolation and ARM64 iOS FFI only. Reuse unchanged Core/seccomp/CPU/UI/GPU/guest libraries; no IPA.')
+                    retry=False
+                    reuse=plan.get('network_lifetime_reuse')
+                    if reuse and network_lifetime_source_unchanged(reuse['sha']):
+                        passed=[]
+                        for workflow_name,run_id in [('linux.yml',reuse['linux_run']),('ios.yml',reuse['apple_run'])]:
+                            with urllib.request.urlopen(urllib.request.Request(f'https://api.github.com/repos/{repo}/actions/runs/{run_id}',headers=dict(request.headers)),timeout=30) as response:
+                                previous=json.load(response)
+                            passed.append(previous['conclusion']=='success' and previous['head_sha']==reuse['sha'] and previous['path']=='.github/workflows/'+workflow_name and previous['head_repository']['full_name']==repo)
+                        retry=all(passed)
+                    if retry:print('Reuse successful Linux/Apple libraries, virtual network and original Docker checks; only exact stack-lifetime delta, affected guest networking and iOS FFI run.')
                     with open(os.environ['GITHUB_OUTPUT'],'a') as output:
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=container-network\n')
                         output.write('skip_native=false\nskip_linux_native=false\nskip_linux_modules=false\n')
+                        output.write('network_retry='+str(retry).lower()+'\n')
                     return
                 if plan.get('native_scope') == 'container-isolation' and changed and all(container_isolation_path(p) for p in changed):
                     # All affected kernel/network crates and the CPU hint are
