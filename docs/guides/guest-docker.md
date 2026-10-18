@@ -26,7 +26,7 @@ userland proxy。`GOMAXPROCS` 由 Go 和 guest 的 CPU 视图自行决定。
 
 测试环境为 Alpine 3.22.6 aarch64、Docker 28.3.3-r5、containerd 2.1.5-r2、
 runc 1.3.4-r1。启动较慢时查看 `/tmp/dockerd.log`，不要重复启动多个 daemon。
-当前 iPad build 27 仍是前一批 crun 代码；默认 runc 所需的兼容修正属于之后的源码。
+iPad build29已包含默认runc及宿主MMU资源修复；build30起还自动准备启动tmpfs。
 
 如果此前复制过本项目旧配置，移除其中 `containerd`、`default-runtime: crun`
 与 crun runtime 注册项，或在备份自己的设置后改为默认空配置 `{}`。不要覆盖
@@ -35,13 +35,16 @@ runc 1.3.4-r1。启动较慢时查看 `/tmp/dockerd.log`，不要重复启动多
 [containerd.toml](../../examples/docker/containerd.toml) 是可选的独立 daemon 示例，
 Docker 管理模式无需安装它。
 
-在不运行 init 的最小 shell 环境中，先准备常规的启动挂载；它们不是 Docker
-专用配置。`/run` 和 `/dev/shm` 已挂载为 tmpfs 时跳过对应命令：
+iPad build30起在Wayland、终端和服务启动前自动挂载 `/run`（0755）和
+`/dev/shm`（1777，64MiB按需额度），直接运行dockerd即可。多个本地终端共享
+这些挂载，冷启动得到新的临时内容。
+
+独立CLI或其他未运行init的最小shell环境仍需手动准备；已挂载时跳过：
 
 ```sh
 mkdir -p /run /dev/shm
-mount -t tmpfs -o mode=755 tmpfs /run
-mount -t tmpfs -o size=64m,mode=1777 tmpfs /dev/shm
+mountpoint -q /run || mount -t tmpfs -o mode=755 tmpfs /run
+mountpoint -q /dev/shm || mount -t tmpfs -o size=64m,mode=1777 tmpfs /dev/shm
 ```
 
 这些挂载应在启动 dockerd 前完成；不要在已有活跃服务的 `/run` 上重复挂载。

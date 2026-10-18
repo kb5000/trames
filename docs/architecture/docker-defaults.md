@@ -21,7 +21,9 @@ containerd 配置保留上游行为。插件能够加载不等于完整 Kubernet
 NRI 在该配置下可以加载。
 
 最小 rootfs 中的 `/run`、`/dev/shm` tmpfs 是常规启动挂载，不属于 Docker 的
-配置文件。若运行 init，由 init 完成；手动挂载必须在启动服务前进行。
+配置文件。iPad build30起由本地会话启动层在Wayland/终端/服务之前完成，
+重复准备保留原挂载和活跃socket，冷启动重新建立临时内容。独立CLI若运行init
+则由init完成，否则手动挂载必须在启动服务前进行。
 guest 总资源上限仍然有效。移除 nofile 参数不等于取消 FD 上限。
 
 ## runc 所需的 procfs 语义

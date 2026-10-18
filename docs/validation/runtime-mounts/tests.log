@@ -1,0 +1,10 @@
+   Compiling trames-ffi v1.0.0 (/workspace/trames/crates/trames-ffi)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.92s
+     Running unittests src/lib.rs (target/debug/build/trames-ffi/545975820d7a8b4a/out/trames_ffi-545975820d7a8b4a)
+
+running 2 tests
+test session::memory_tests::runtime_tmpfs_is_fresh_after_cold_disk_reopen ... ok
+test session::memory_tests::runtime_tmpfs_precedes_wayland_and_repeated_preparation_preserves_live_files ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.02s
+

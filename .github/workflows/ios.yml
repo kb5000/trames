@@ -256,6 +256,8 @@ jobs:
           elif [[ '${{ needs.scope.outputs.native_scope }}' == runtime-costs ]]; then
             cargo test -p trames-memory --locked
             cargo test -p trames-core --lib proc_map --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == startup-mounts ]]; then
+            cargo test -p trames-ffi --lib runtime_tmpfs --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == memory-va ]]; then
             uname -m
             sysctl hw.pagesize
