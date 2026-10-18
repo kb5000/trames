@@ -169,7 +169,7 @@ C++ 后端只直接执行选定整数/分支块；其余指令回到 Rust。
 | `getrlimit/setrlimit/prlimit64` | 查询固定 runtime 限额 | 改变实际未强制执行的限额会拒绝；不支持完整动态限额调整或任意目标进程 |
 | `prctl` | `PR_SET_NAME/PR_GET_NAME` | PDEATHSIG、dumpable、no_new_privs、seccomp、tagged address 等其他操作缺失 |
 | `socket` | IPv4/IPv6 TCP/UDP，虚拟 ICMP，查询用 NETLINK_ROUTE | AF_UNIX/AF_PACKET 等缺失；netlink 只支持选定查询，无路由修改/多播订阅；外部非 echo raw ICMP 不支持 |
-| `setsockopt/getsockopt` | 选定 SOL_SOCKET/TCP/IPv6/ICMP 选项 | `SO_RCVTIMEO/SO_SNDTIMEO` 明确拒绝；linger、许多 keepalive 调参、multicast、其他选项未实现；native/virtual 后端支持集合不完全相同 |
+| `setsockopt/getsockopt` | 选定 SOL_SOCKET/TCP/IPv6/ICMP 选项 | TCP/UDP/netlink 的 `SO_RCVTIMEO/SO_SNDTIMEO` 已有调度器超时；Unix socket 超时尚缺；linger、许多 keepalive 调参、multicast、其他选项未实现；native/virtual 后端支持集合不完全相同 |
 | `sendmsg/recvmsg` | iovec、地址、基本 flags、选定 ICMP hop ancillary | 通用发送 ancillary 拒绝；没有 FD/credentials 传递和完整控制消息集合 |
 | stat/proc/sys/dev | 虚拟文件与进程、网络和内置挂载视图 | statx 缺失；没有完整 Linux 设备/文件系统/可写 sysctl 集合，内容和容量描述 runtime，不是 host Linux |
 

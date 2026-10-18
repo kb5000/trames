@@ -126,7 +126,7 @@ DNS 由真实 musl 读取 guest 的 `/etc/resolv.conf`；可用 `--file /etc/res
 
 ## Guest 内容器（开发中）
 
-原版 Alpine `crun` 已可在 guest 内运行配置范围内的 rootful 容器：独立 PID/mount/UTS、tmpfs 和 devpts、前台终端、cgroupfs、pause/resume/kill、pids 进程数限制，以及多个 Alpine rootfs 并行运行；1/4 CPU 自动验收通过。网络共享当前 guest 的直连网络。使用方法见[容器入门](docs/guides/guest-containers.md)，接口和限制见[架构说明](docs/architecture/guest-containers.md)。[原版 Docker](docs/guides/guest-docker.md)已通过原版 containerd/crun 执行 Alpine 容器 payload，并保留默认设备过滤；新增 proc OOM 属性、匿名 pipe 权限与 cgroup device BPF。开发分支 `feat/guest-docker-workflows` 进一步补齐 IPC/net namespace、默认 Docker bridge/NAT/DNS/端口发布和 [overlayfs/overlay2 写时复制存储](docs/architecture/overlayfs.md)，已发布的 1.0.0 IPA 不包含这些改动。user namespace、完整 CPU/memory/io 配额、rootless 和完整 Docker/Podman 工作流仍待扩展。
+原版 Alpine `crun` 已可在 guest 内运行配置范围内的 rootful 容器：独立 PID/mount/UTS、tmpfs 和 devpts、前台终端、cgroupfs、pause/resume/kill、pids 进程数限制，以及多个 Alpine rootfs 并行运行；1/4 CPU 自动验收通过。网络共享当前 guest 的直连网络。使用方法见[容器入门](docs/guides/guest-containers.md)，接口和限制见[架构说明](docs/architecture/guest-containers.md)。[原版 Docker](docs/guides/guest-docker.md)在开发分支采用默认 runc、dockerd 自动管理的 containerd 和 overlay2；不要求 crun、专用配置、GOMAXPROCS 或 nofile 参数。标准运行时的 procfs、socket timeout 和安全 reopen 语义见[默认启动路径](docs/architecture/docker-defaults.md)。开发分支 `feat/guest-docker-workflows` 进一步补齐 IPC/net namespace、默认 Docker bridge/NAT/DNS/端口发布和 [overlayfs/overlay2 写时复制存储](docs/architecture/overlayfs.md)，正式 1.0.0 build 26 不包含容器新改动，build 27 测试 IPA 包含上一轮网络/overlay2；本轮默认 runc 修正尚未重新打包。user namespace、完整 CPU/memory/io 配额、rootless 和完整 Docker/Podman 工作流仍待扩展。
 
 ## Linux 兼容性更新（0.2.0）
 

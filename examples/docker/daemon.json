@@ -1,16 +1,1 @@
-{
-  "containerd": "/run/containerd/containerd.sock",
-  "storage-driver": "overlay2",
-  "iptables": true,
-  "ip6tables": true,
-  "bridge": "docker0",
-  "ip-forward": true,
-  "ip-masq": true,
-  "runtimes": {
-    "crun": {
-      "path": "/usr/bin/crun"
-    }
-  },
-  "default-runtime": "crun",
-  "userland-proxy": true
-}
+{}

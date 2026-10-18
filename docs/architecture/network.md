@@ -3,6 +3,8 @@
 Historical M3 design. Current defaults and DNS/interface/ICMP changes are in
 [Direct native networking](direct-network.md). The selected Unix IPC, epoll and
 other later ABI additions are recorded in the current compatibility inventory.
+Current TCP/UDP/netlink socket timeout semantics are documented in
+[Docker defaults](docker-defaults.md); the M3 option table below is historical.
 
 This stage implements real native IPv4/IPv6 TCP and UDP for interpreted AArch64
 Linux programs. Dynamic musl/Alpine and authenticated HTTPS/apk are now validated

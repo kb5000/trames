@@ -1,3 +1,4 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
+# Optional standalone containerd example. Docker starts its own managed
+# containerd; no copy to /etc/containerd/config.toml is needed for that path.
 version = 3
-disabled_plugins = ["io.containerd.cri.v1.images", "io.containerd.cri.v1.runtime", "io.containerd.nri.v1.nri"]

@@ -463,7 +463,10 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
             &mut if virtual_network.is_some() {
                 &b"nameserver 10.0.0.1\n"[..]
             } else {
-                &b"nameserver 127.0.0.53\n"[..]
+                // Match iPad sessions: Docker filters loopback nameservers
+                // from container resolv.conf. The managed resolver is reachable
+                // from each guest network namespace, without a daemon override.
+                &b"nameserver 169.254.0.53\n"[..]
             },
             false,
         )?;

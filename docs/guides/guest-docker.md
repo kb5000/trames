@@ -1,6 +1,6 @@
 # 在 guest 内运行 Docker 容器
 
-`feat/guest-docker-workflows` 接通原版 dockerd → containerd → crun、默认
+`feat/guest-docker-workflows` 接通原版 dockerd → containerd → runc、默认
 IPC/cgroup/net namespace、seccomp/device 过滤和 bridge 网络。已发布的
 **正式 1.0.0 build 26 IPA 不包含本批改动**；[1.0.0 build 27 测试 IPA](../validation/ipad-1.0-build27.md) 已包含网络和 overlay2。这不是宿主 Docker socket 接入。
 
@@ -11,42 +11,46 @@ IPC/cgroup/net namespace、seccomp/device 过滤和 bridge 网络。已发布的
 
 ## 安装与启动
 
-在 guest 中安装签名原版包：
+当前开发分支使用 **Docker 默认的 runc + 自动管理 containerd**。安装原版签名包后直接启动：
 
 ```sh
-apk add docker-engine docker-cli containerd crun
+apk add docker-engine docker-cli
+dockerd >/tmp/dockerd.log 2>&1 &
 ```
 
-测试版本为 Alpine 3.22.6 aarch64、Docker 28.3.3-r5、containerd 2.1.5-r2、
-crun 1.23.1-r0。把 [daemon.json](../../examples/docker/daemon.json) 与
-[containerd.toml](../../examples/docker/containerd.toml) 分别放入
-`/etc/docker/daemon.json`、`/etc/containerd/config.toml`。采用 overlay2 写时复制存储和
-正常的 iptables/ip6tables/docker0/ip-forward/ip-masq，保留默认
-**userland-proxy=true**。不要使用旧阶段关闭 firewall/NAT 的开发配置。
+`docker-engine` 会安装所需的 containerd/runc；不需要额外安装 crun、先启动
+containerd、复制专用 daemon.json/containerd.toml，或设置 `GOMAXPROCS=1`。
+默认探测选中 overlay2，并保留默认 bridge、iptables/ip6tables、转发/NAT 和
+userland proxy。`GOMAXPROCS` 由 Go 和 guest 的 CPU 视图自行决定。
+等日志出现 `API listen on /var/run/docker.sock` 后使用 Docker CLI。
 
-新 guest 会话需 `/run` 和 `/dev/shm` tmpfs；若初始化系统已挂载则不重复挂载。
-`/run` 的 PID/socket 文件不能当作跨 guest 内核会话的活进程恢复。
+测试环境为 Alpine 3.22.6 aarch64、Docker 28.3.3-r5、containerd 2.1.5-r2、
+runc 1.3.4-r1。启动较慢时查看 `/tmp/dockerd.log`，不要重复启动多个 daemon。
+当前 iPad build 27 仍是前一批 crun 代码；默认 runc 所需的兼容修正属于之后的源码。
+
+如果此前复制过本项目旧配置，移除其中 `containerd`、`default-runtime: crun`
+与 crun runtime 注册项，或在备份自己的设置后改为默认空配置 `{}`。不要覆盖
+其他有意设置的选项。此前手动启动的 containerd 也不再需要。
+[daemon.json](../../examples/docker/daemon.json) 现在仅示意空的默认配置；
+[containerd.toml](../../examples/docker/containerd.toml) 是可选的独立 daemon 示例，
+Docker 管理模式无需安装它。
+
+在不运行 init 的最小 shell 环境中，先准备常规的启动挂载；它们不是 Docker
+专用配置。`/run` 和 `/dev/shm` 已挂载为 tmpfs 时跳过对应命令：
 
 ```sh
 mkdir -p /run /dev/shm
 mount -t tmpfs -o mode=755 tmpfs /run
-mount -t tmpfs -o size=16m,mode=1777 tmpfs /dev/shm
-export GOMAXPROCS=1
-containerd --config /etc/containerd/config.toml >/tmp/containerd.log 2>&1 &
+mount -t tmpfs -o size=64m,mode=1777 tmpfs /dev/shm
 ```
 
-等 `containerd successfully booted` 后启动：
+这些挂载应在启动 dockerd 前完成；不要在已有活跃服务的 `/run` 上重复挂载。
+`/run` 的 PID/socket 文件不能作为跨 guest 内核会话的活进程恢复。
 
-```sh
-dockerd --config-file /etc/docker/daemon.json >/tmp/dockerd.log 2>&1 &
-```
-
-等 `API listen on /var/run/docker.sock` 后使用 CLI。先单独启动 containerd，
-避免 dockerd 内置启动期限；解释执行下冷启动仍慢。`GOMAXPROCS=1` 是验收
-设置，不改变 Trames vCPU 数。overlay2 共享只读镜像层，首次修改文件才复制到上层。
-旧的 `vfs` 数据不自动迁移；切换驱动后需重新导入或拉取镜像，旧驱动的数据不会自动删除。
+overlay2 共享只读镜像层，首次修改文件才复制到上层。旧的 `vfs` 数据不自动
+迁移；切换驱动后需重新导入或拉取镜像，旧驱动的数据不会自动删除。
 [overlay 设计与边界](../architecture/overlayfs.md)及[存储验收](../validation/overlayfs.md)
-单独记录；此前完整网络验收使用 vfs，不重复作为 overlay2 的存储证据。
+保持各自范围；此前完整网络验收使用 vfs，不能替代 overlay2 的存储证据。
 
 托管 resolver 为 `169.254.0.53`，由宿主系统 DNS 提供解析；它不是网关。
 用户自定义 resolv.conf 保留。自定义 Docker 网络内的 `127.0.0.11` 由原版
@@ -58,10 +62,10 @@ Docker resolver 提供容器名称/alias 与外部 DNS。使用 full 网络模�
 
 ```sh
 docker import /tmp/alpine-rootfs.tar trames-alpine:probe
-docker run --rm --ulimit nofile=256:256 trames-alpine:probe \
+docker run --rm trames-alpine:probe \
   /bin/sh -ec 'ip a; ip route; nslookup dl-cdn.alpinelinux.org'
 docker network create appnet
-docker run --ulimit nofile=256:256 --network appnet --name app \
+docker run --network appnet --name app \
   -p 8080:8080 trames-alpine:probe /path/to/server
 ```
 
@@ -70,15 +74,18 @@ docker run --ulimit nofile=256:256 --network appnet --name app \
 已发布端口；仍受 iPadOS 网络权限和应用前后台限制。`--network none`、
 `--internal` 可限制外网，不能通过 unshare 绕过宿主网络模式。
 
-`--ulimit nofile=256:256` 对应当前 guest FD 上限。namespace/seccomp/device
+不要求额外传入 `--ulimit nofile=256:256`；实际资源上限仍由 guest 内核提供。namespace/seccomp/device
 是已实现的隔离范围；并不包含所有 SysV/POSIX IPC、user/rootless、完整 cgroup
-CPU/memory/io controller。Registry pull、volume、exec/交互终端、
+CPU/memory/io controller。Registry pull、完整 volume/交互终端、
 build/BuildKit、Compose 工作流仍单独跟进。AF_PACKET/ARP、STP/qdisc/tc、
 所有 netfilter 扩展及 `--userland-proxy=false` 的宿主入口尚未覆盖。
 
 ## 验证
 
+默认配置工作流的状态与边界见[默认运行时验证](../validation/docker-defaults.md)。
+
 ```sh
+python3 tests/integration/docker-default.py
 python3 tests/integration/docker-overlay.py
 bash scripts/build-nftables-fixture.sh
 bash scripts/build-netfilter-nat-fixture.sh

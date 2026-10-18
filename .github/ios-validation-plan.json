@@ -1,29 +1,29 @@
 {
-  "base_sha": "657960d69f6ca88ce5a641ef66e6b1ebbefce5dd",
-  "device_build": {
-    "linux": {
-      "sha": "31abd3538994e501cb249601c2adcca2b8bc608a",
-      "run": 39107028366
-    },
-    "apple": {
-      "sha": "31abd3538994e501cb249601c2adcca2b8bc608a",
-      "run": 39107028392
-    },
-    "frontend": {
-      "sha": "aa4528166c8d0cdb04f3fe540730d9af63ed7f07",
-      "run": 39062598012
-    },
-    "guest": {
-      "sha": "534e223e284df48f207500e84ab4cd05dd3d3958",
-      "run": 39015795319
-    }
-  },
+  "base_sha": "9bd40304b405b066b0b9ebb45d763acfdc6d73d1",
+  "native_scope": "docker-default",
   "changed_file_sha256": {
-    "apps/ios/project.yml": "ffdba9e38411f47cb8db830595c4e0cd8c2d4f37db6a6464ba185e093c6929e3",
-    "docs/guides/guest-docker.md": "73917badb6178d66d697930d4784fcdfcaaa8a392a4516c71f796ef8d342d039",
-    "docs/validation/ipad-1.0-build27.json": "c11d8e124c8380c2bdfca65a6ca3c0db23ea6ccd350a73f175545090ee90ac65",
-    "docs/validation/ipad-1.0-build27.md": "efdf7a9611db5f7fda65f2ec4a3a8fbbb06387720918c7cdd8164ad7eb1012b8",
-    "scripts/ios-ci-scope.py": "13e67c66568511ba72358bea6e3eb19a155253cb1a14c4ec469ba181d62fb334"
+    ".github/workflows/ios.yml": "3eea53896aa54c37903435fe1e3eb731ac620b82ff9678edf199ccf3d9ae90f7",
+    ".github/workflows/linux.yml": "7f66b8304ecfddee3555be8df9dfdc7364d55f1fb40638d16bb5b799ec2d0650",
+    "README.md": "195de3eca317b7341d42cdb84b7a949192394d2601253705a36dde4af8dc4610",
+    "crates/trames-cli/src/main.rs": "bdcfde45b90ae68282dfea06377ef5ab04c0ec27ae3cf7b1a2000f47578635b4",
+    "crates/trames-core/src/process.rs": "251107c6cca8d45943af4775d85f7051d83a005df098be3e4ceecaa03dccc91e",
+    "crates/trames-linux/src/network.rs": "72e38995bc02147980f15a532243528cf4e8f1999506ad77e1c5fac15dab04c8",
+    "crates/trames-net/src/lib.rs": "31a500790bb1eb7f44b1a44844a60ed88cfa533ac178fd49561cf4620640df9c",
+    "crates/trames-vfs/src/lib.rs": "9b6c4fd26c87b574f36bb17f54f3c2458b3dec28918b79c580b7ef7bd4555d16",
+    "crates/trames-vfs/src/pseudo.rs": "fc7e75fee061d20ca0d0e754d3f2e56729fd64f35bfa58c60cd5bd8bf0f3f1c4",
+    "docs/architecture/direct-network.md": "f22502d318be7a5011af2f5641a81ce5b5db4c4e55abb37c7a4e250d9e6e7d1f",
+    "docs/architecture/docker-defaults.md": "4a62b30cd46fa003b42eb101c4829e1a53f7e2186d64110be8e9dd9c66e9d338",
+    "docs/architecture/network.md": "6f79a352e3e6852b9806be860657a61fc40e85ef690c45b287301eb5d5f6fdbd",
+    "docs/guides/guest-docker.md": "ab1a46bbf84b415a67e68cf9bd09231417bccdf005bf6e29eeb0289263e14485",
+    "docs/roadmap/compatibility-gaps.md": "23f1116860dadc6cbbc6953549183ffe4c2abdc29ac221a76ffe422a7021ff0d",
+    "docs/validation/docker-defaults.md": "94a4369832b9e60e63ef26aa17364ce28c813c38e96f0b69c0fd53257ed44616",
+    "examples/docker/containerd.toml": "8b6d4f5c93c6a4af37e30b0e47e47a02f5d9b550935987c7340ca37cc6d6b3fb",
+    "examples/docker/daemon.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "scripts/build-socket-timeouts-fixture.sh": "d6b81b4b578389706e18d53d94f720cf39d0745cf60fd6eb56241579e105713b",
+    "scripts/ios-ci-scope.py": "b2bd4346fd361a767ac36e35b88531ab5f74863d5daaa02a2e0277ce767597c5",
+    "tests/fixtures/socket-timeouts.c": "fc25489a9dd5c33e511518db3b38ef5a11df8bbef9e37fee2ec288b59c883a53",
+    "tests/integration/docker-default.py": "cb191e230c695fb33e5a6bc27346634bf841838b104dcebebdada9976f878009",
+    "tests/integration/docker-default.sh": "4da695fbcd627ff57611912e43b84104421cc44e5a988df80d274258f8cfa598"
   },
-  "reason": "Owner-requested test IPA1.0.0(27) built and inspected successfully in39109373627. Current runtime rebuilt; source-identical Linux/Apple/UI/guest results reused. Final records only [skip ci]; no merge or formal release."
+  "reason": "Owner-requested default Docker stack: managed containerd and runc, no special runtime/plugin/Go/nofile config. Validate affected procfs/socket timeout/seccomp/scheduler modules, original signed default Docker workflow and Apple/iOS FFI. CPU/UI/GPU/guest assets unchanged; no IPA or merge."
 }

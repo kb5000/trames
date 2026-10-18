@@ -14,6 +14,25 @@ defaults:
   run:
     shell: bash
 jobs:
+  docker-default-apple:
+    needs: scope
+    if: needs.scope.outputs.native_scope == 'docker-default'
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+          targets: aarch64-apple-ios
+      - name: Validate proc identity, socket timeouts, scheduler deadlines and iOS FFI
+        run: |
+          cargo test -p trames-net --locked
+          cargo test -p trames-vfs --lib --locked
+          cargo test -p trames-linux --lib network --locked
+          cargo test -p trames-core --lib socket_timeout --locked
+          cargo test -p trames-core --lib seccomp --locked
+          cargo check -p trames-ffi --target aarch64-apple-ios --locked
   container-storage-apple:
     needs: scope
     if: needs.scope.outputs.native_scope == 'container-storage' && needs.scope.outputs.skip_native != 'true'
@@ -183,7 +202,7 @@ jobs:
           retention-days: 14
   apple-build:
     needs: [scope, guest-musl, memory-abi]
-    if: ${{ !cancelled() && needs.scope.outputs.native_scope != 'container-isolation' && needs.scope.outputs.native_scope != 'container-network' && needs.scope.outputs.native_scope != 'container-storage' && needs.scope.outputs.repackage_run == '' && needs.scope.result == 'success' && (needs.scope.outputs.frontend_only == 'true' || needs.scope.outputs.targeted == 'true' || (needs.guest-musl.result == 'success' && needs.memory-abi.result == 'success')) }}
+    if: ${{ !cancelled() && needs.scope.outputs.native_scope != 'docker-default' && needs.scope.outputs.native_scope != 'container-isolation' && needs.scope.outputs.native_scope != 'container-network' && needs.scope.outputs.native_scope != 'container-storage' && needs.scope.outputs.repackage_run == '' && needs.scope.result == 'success' && (needs.scope.outputs.frontend_only == 'true' || needs.scope.outputs.targeted == 'true' || (needs.guest-musl.result == 'success' && needs.memory-abi.result == 'success')) }}
     runs-on: macos-15
     timeout-minutes: 40
     steps:

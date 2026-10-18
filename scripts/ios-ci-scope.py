@@ -196,6 +196,22 @@ def main():
             changed=set(subprocess.check_output(['git','diff','--name-only',base,'HEAD'],text=True).splitlines())- {str(plan_path)}
             hashes=plan['changed_file_sha256']
             if changed==set(hashes) and all(Path(path).exists() and hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest for path,digest in hashes.items()):
+                if plan.get('native_scope') == 'docker-default':
+                    allowed = {'crates/trames-vfs/src/lib.rs', 'crates/trames-vfs/src/pseudo.rs',
+                               'crates/trames-net/src/lib.rs', 'crates/trames-linux/src/network.rs',
+                               'crates/trames-core/src/process.rs', 'tests/fixtures/socket-timeouts.c',
+                               'crates/trames-cli/src/main.rs',
+                               'scripts/build-socket-timeouts-fixture.sh',
+                               'tests/integration/docker-default.py', 'tests/integration/docker-default.sh',
+                               'examples/docker/daemon.json', 'examples/docker/containerd.toml',
+                               '.github/workflows/ios.yml', '.github/workflows/linux.yml',
+                               'scripts/ios-ci-scope.py', 'README.md'}
+                    if not all(p.startswith('docs/') or p in allowed for p in changed):
+                        raise RuntimeError('Docker defaults plan contains unrelated source changes')
+                    print('Original Docker defaults: affected VFS/proc metadata, socket timeouts and scheduler deadlines, original managed containerd/runc workflow, Apple counterparts and iOS FFI; reuse unchanged CPU/UI/GPU and unrelated network acceptance. No IPA.')
+                    with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+                        output.write('frontend_only=false\ntargeted=true\nnative_scope=docker-default\n')
+                    return
                 if plan.get('device_build'):
                     outputs = device_build_outputs(plan, repo, dict(request.headers))
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:

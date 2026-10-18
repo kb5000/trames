@@ -10,7 +10,7 @@ flowchart LR
     L --> S[宿主非阻塞 socket]
     S --> N[宿主系统网络]
     B[浏览器 / LAN 客户端] --> S
-    L --> D[仅 127.0.0.53:53 的 DNS 适配器]
+    L --> D[169.254.0.53:53 的 DNS 适配器]
     D --> R[宿主系统 resolver]
 ```
 
@@ -43,11 +43,11 @@ IPv6 转发受各自 netns sysctl 控制，默认关闭；它不开放容器到�
 
 ## 系统 DNS
 
-默认 `/etc/resolv.conf` 为 `nameserver 127.0.0.53`。它仅在 Trames 的 socket
+当前 CLI 与 iPad 默认 `/etc/resolv.conf` 为 `nameserver 169.254.0.53`。Docker 会过滤容器配置中的 loopback nameserver，使用此地址无需专用 Docker DNS 配置。它仅在 Trames 的 socket
 层识别此地址的 53 端口，没有在宿主抢占 DNS 端口，也不是默认 IP 网关。
 普通 UDP/TCP 流量和用户指定的其他 DNS 地址仍直接进入宿主 socket。
 iPad 启动时替换完全匹配旧内置网关配置的 resolver 文件；自定义内容保持不变。
-CLI 在文件缺失时创建默认配置，已有 store 的 resolver 由用户选择是否更换。
+CLI 在文件缺失时创建默认配置，已有 store 的 resolver 由用户选择是否更换。旧的 `127.0.0.53` 适配仍可用于根网络。
 
 复用已有系统 resolver worker，支持 A/AAAA、UDP 和带长度前缀的 TCP 查询、
 响应 transaction ID/源地址、UDP 截断及 TCP 半关闭。真实 musl 仍负责名称解析
