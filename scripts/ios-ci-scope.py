@@ -102,6 +102,78 @@ def isolation_retry_source_unchanged(sha):
     return core.count(guard)==1 and core.replace(guard,'')==old('crates/trames-core/src/process_seccomp.rs')
 
 
+def device_build_outputs(plan, repo, headers):
+    """Rebuild the device runtime, reusing only source-identical acceptance."""
+    reuse = plan['device_build']
+
+    def get(path):
+        request = urllib.request.Request(f'https://api.github.com/repos/{repo}/{path}', headers=headers)
+        with urllib.request.urlopen(request, timeout=30) as response:
+            return json.load(response)
+
+    def verified_run(record, workflow, job_name):
+        run_id = record['run']
+        run = get(f'actions/runs/{run_id}')
+        if (run['conclusion'] != 'success' or run['head_sha'] != record['sha']
+                or run['path'] != '.github/workflows/' + workflow
+                or run['head_repository']['full_name'] != repo):
+            raise RuntimeError(f'Device build requires successful same-repository evidence: {run_id}')
+        jobs = get(f'actions/runs/{run_id}/jobs')['jobs']
+        job = next((j for j in jobs if j['name'] == job_name and j['conclusion'] == 'success'), None)
+        if job is None:
+            raise RuntimeError(f'Missing successful {job_name} in {run_id}')
+        return {step['name'] for step in job.get('steps', []) if step['conclusion'] == 'success'}
+
+    def unchanged(sha, paths):
+        return not subprocess.check_output(['git', 'diff', '--name-only', sha, 'HEAD', '--', *paths], text=True).strip()
+
+    runtime_paths = ['crates', 'Cargo.toml', 'Cargo.lock', 'vendor', '.cargo', 'rust-toolchain.toml']
+    for key, workflow, job in [('linux', 'linux.yml', 'targeted-runtime'),
+                               ('apple', 'ios.yml', 'container-storage-apple')]:
+        record = reuse[key]
+        if not unchanged(record['sha'], runtime_paths):
+            raise RuntimeError('Device-only build requires unchanged validated runtime sources')
+        verified_run(record, workflow, job)
+
+    frontend = reuse['frontend']
+    frontend_paths = ['apps/ios', 'include', 'scripts/build-ios.sh', 'scripts/package-ios.py',
+                      'scripts/finalize-ios-app.py', 'scripts/prepare-vulkan.py',
+                      ':(exclude)apps/ios/project.yml']
+    if not unchanged(frontend['sha'], frontend_paths):
+        raise RuntimeError('Device-only build requires unchanged frontend sources')
+    project = 'apps/ios/project.yml'
+    previous = subprocess.check_output(['git', 'show', frontend['sha'] + ':' + project], text=True)
+    # A build-number bump does not invalidate simulator interaction acceptance.
+    strip_build = lambda text: '\n'.join(line for line in text.splitlines() if not line.strip().startswith('CURRENT_PROJECT_VERSION:'))
+    if strip_build(previous) != strip_build(Path(project).read_text()):
+        raise RuntimeError('Only the build number may change in the validated Xcode project')
+    completed = verified_run(frontend, 'ios.yml', 'apple-build')
+    if not {'Link unsigned iPad simulator app', 'Exercise peer tabs and floating window gestures first',
+            'Export simulator test summary', 'Link unsigned iPad device app'} <= completed:
+        raise RuntimeError('Missing previous simulator/frontend acceptance')
+
+    guest = reuse['guest']
+    guest_paths = ['guest', 'include', 'accelerator', 'LICENSE', 'crates/trames-native/upstream',
+                   'scripts/build-musl-hybrid.sh', 'scripts/prepare-musl-hybrid.py',
+                   'scripts/build-vulkan-guest.sh', 'scripts/build-vulkan-fixtures.sh',
+                   'scripts/prepare-vulkan.py', 'scripts/vulkan-upstream.json',
+                   'scripts/prepare-wayland-guest.py', 'scripts/build-busybox.sh',
+                   'scripts/prepare-alpine.sh', 'tests/integration/m6.py',
+                   ':(glob)tests/fixtures/vulkan-*', ':(glob)tests/fixtures/wayland-*']
+    if not unchanged(guest['sha'], guest_paths):
+        raise RuntimeError('Guest artifact build inputs changed')
+    verified_run(guest, 'ios.yml', 'guest-musl')
+    artifacts = get(f"actions/runs/{guest['run']}/artifacts?per_page=100")['artifacts']
+    names = {artifact['name'] for artifact in artifacts if not artifact['expired']}
+    if not {'full-musl-library-and-source', 'vulkan-compute-driver-and-native-source'} <= names:
+        raise RuntimeError('Validated guest artifacts expired or missing')
+    print('Device IPA: rebuild current ARM64 release runtime/app; reuse source-identical native, frontend and guest acceptance.')
+    print(json.dumps(reuse, sort_keys=True))
+    return {'frontend_only': 'false', 'targeted': 'true', 'native_scope': 'device-build',
+            'skip_native': 'true', 'skip_linux_native': 'true', 'skip_linux_modules': 'true',
+            'frontend_reused': 'true', 'ui_targets': '[]', 'baseline_run': str(guest['run'])}
+
+
 def main():
     if os.environ.get("TRAMES_FULL_CHECK") == "true":
         with open(os.environ["GITHUB_OUTPUT"], "a") as output:
@@ -124,6 +196,12 @@ def main():
             changed=set(subprocess.check_output(['git','diff','--name-only',base,'HEAD'],text=True).splitlines())- {str(plan_path)}
             hashes=plan['changed_file_sha256']
             if changed==set(hashes) and all(Path(path).exists() and hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest for path,digest in hashes.items()):
+                if plan.get('device_build'):
+                    outputs = device_build_outputs(plan, repo, dict(request.headers))
+                    with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+                        for key, value in outputs.items():
+                            output.write(f'{key}={value}\n')
+                    return
                 if plan.get('native_scope') == 'container-storage' and changed and all(container_storage_path(p) for p in changed):
                     print('Guest overlay storage: affected VFS and Linux file ABI, original Docker overlay2, Apple VFS and iOS FFI. Reuse unchanged CPU/UI/GPU/network and guest libraries; no IPA.')
                     skip_apple = skip_linux = skip_modules = proc_only = False

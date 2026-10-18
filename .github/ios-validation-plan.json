@@ -1,21 +1,26 @@
 {
-  "base_sha": "8f5872a156f05c3fd21eb307d354184ea4aa3fcd",
-  "native_scope": "container-storage",
-  "storage_validation_reuse": {
-    "sha": "8f5872a156f05c3fd21eb307d354184ea4aa3fcd",
-    "linux_run": 39106082142,
-    "apple_run": 39106082144,
-    "proc_reopen_patch_sha256": "56de73f95e80aa4874824ae0ce598b5376027b4344ec6867f121e801a43e6512"
+  "base_sha": "657960d69f6ca88ce5a641ef66e6b1ebbefce5dd",
+  "device_build": {
+    "linux": {
+      "sha": "31abd3538994e501cb249601c2adcca2b8bc608a",
+      "run": 39107028366
+    },
+    "apple": {
+      "sha": "31abd3538994e501cb249601c2adcca2b8bc608a",
+      "run": 39107028392
+    },
+    "frontend": {
+      "sha": "aa4528166c8d0cdb04f3fe540730d9af63ed7f07",
+      "run": 39062598012
+    },
+    "guest": {
+      "sha": "534e223e284df48f207500e84ab4cd05dd3d3958",
+      "run": 39015795319
+    }
   },
   "changed_file_sha256": {
-    ".github/workflows/ios.yml": "8fdac8bea1c42d0d7e46f874d363d6ecfbe69496bb55ecee307313a9c947f62f",
-    ".github/workflows/linux.yml": "1285e211e0c231a95175f2c7a9b204cb817c507af9ec82c1dc7577a8bf81feb7",
-    "crates/trames-vfs/src/overlay.rs": "28f7998e1fded9188b11cac44393119b2abaaedd1d0183e3c1fb30ec86907a39",
-    "crates/trames-vfs/src/pseudo.rs": "2c15ac7bbfa26875aefaa880a9ea4633a0ce9b9e7ec8f9ab7d5825fe111d70d3",
-    "docs/architecture/overlayfs.md": "537c1e9b4363cfdf04d2b78c7a24aee877df3368d9a2e766062aba8cc4b6defe",
-    "docs/validation/overlayfs.json": "ad72830aacba8a078b86172170152293bf07494ce503ba82c5af5a7684b29146",
-    "docs/validation/overlayfs.md": "a7d22da72ac17e1fed09d9317bb0ea8af29309e103764c6c7483b59f94a06fcd",
-    "scripts/ios-ci-scope.py": "1d5ec85401038c9df0ec193cac465bebac1ab04796f309795b18ce0e4ddab444"
+    "apps/ios/project.yml": "ffdba9e38411f47cb8db830595c4e0cd8c2d4f37db6a6464ba185e093c6929e3",
+    "scripts/ios-ci-scope.py": "13e67c66568511ba72358bea6e3eb19a155253cb1a14c4ec469ba181d62fb334"
   },
-  "reason": "Full overlay/Docker passed on8f5872a; exact proc fix31abd35 passed Linux/Apple15 cases and iOS FFI. Final records only, [skip ci]. Runtime/fixtures unchanged from31abd35. Reuse verified tests, no unrelated repeats or IPA."
+  "reason": "Owner requested a test IPA. Build1.0.0(27) recompiles current runtime including Docker networking/overlay2; source-identical Linux/Apple/runtime, frontend interaction and guest library results are reused. No release, merge or repeated full suites."
 }
