@@ -1,11 +1,11 @@
-   Compiling trames-vfs v1.0.0 (/workspace/trames/crates/trames-vfs)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.18s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
      Running unittests src/lib.rs (target/debug/build/trames-vfs/0d8296f6ed3d14ee/out/trames_vfs-0d8296f6ed3d14ee)
 
-running 3 tests
+running 4 tests
 test pty::tests::bind_clone_and_detached_master_retain_their_devpts_instance ... ok
-test pty::tests::devpts_linux_inode_identity_survives_bind_and_path_handles ... ok
 test pty::tests::independent_devpts_reuses_local_numbers_but_not_terminal_identity ... ok
+test pty::tests::devpts_linux_inode_identity_survives_bind_and_path_handles ... ok
+test pty::tests::devpts_proc_path_reopen_allocates_a_fresh_master_and_opens_slave ... ok
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 145 filtered out; finished in 0.00s
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 145 filtered out; finished in 0.00s
 

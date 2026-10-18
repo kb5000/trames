@@ -13,19 +13,23 @@
     "devpts": {
       "sha": "7700195e4da14b8bf05b3b1644779b3c47ce16cc",
       "apple": 39135889869,
-      "patch_sha256": "657c3c3352c9936fcd5669604f6e00f6b6181dd5d95c0bb4e3175ea8ab68c962",
+      "patch_sha256": "70c4407c4e63af3e93fa7bc9b351591a8725db443d5075464361a8cf3c8c0c87",
       "linux_delta_record": "docs/validation/devpts-inode.md"
     }
   },
   "changed_file_sha256": {
-    ".github/workflows/ios.yml": "b87a4a6827110afc0cc8eff87b630b9a972961c1496965cce8349ef93ca264d5",
-    "crates/trames-vfs/src/pty.rs": "ebc0faf47b8635932398d2295155326581553b43c056bebe18e3eaeb1d729e3c",
-    "docs/validation/devpts-inode.md": "6668434d04ab92580c5fc233d79135c2fec60beb1340d6a4f9a0902dbae49279",
-    "docs/validation/devpts-inode/clippy.log": "f3302243031973ee7c689e5ae522cd6615e16fbda7a4bbddb0bcd2b7f584aa33",
-    "docs/validation/devpts-inode/linux-reference.log": "6e174dd8f1756ae124b7e2dd54f1e15bbae154e5265130c2ccd49d48ee367531",
-    "docs/validation/devpts-inode/tests.log": "da133f17a7224aa86d209ea841306990484da4f2506694c665b2527faee2f67c",
-    "scripts/ios-ci-scope.py": "96d410fc90ad186fd8a33bcb5bf855b96f9dd0343821eb267488de39e7248754",
+    ".github/workflows/ios.yml": "29da368657490f21273bc08ad1cc5de9e736dbfb1100ce359a0f5f40e228490b",
+    "crates/trames-vfs/src/pseudo.rs": "e52544321cc53b6f622b61924ea7914d956d3ccacca2802796ab83d81b9a2ea1",
+    "crates/trames-vfs/src/pty.rs": "61233fd12e4d1b314de15c261ac4740ca54332596ef30f31bdcd5437a39c9d5a",
+    "docs/validation/devpts-inode.md": "126db38216aeb255d700dae867c04f3e30de2411ca50fca8f91cfc707c911545",
+    "docs/validation/devpts-inode/clippy.log": "2a448a532e1c5889a6404ec62708b06ab3f976c1ad7dd4b5c7da7dec71da1e8d",
+    "docs/validation/devpts-inode/docker-results.json": "794d837fab9fbf4a5ca1cb708a15787cd54b2868336db51e82315c9174d44290",
+    "docs/validation/devpts-inode/docker-runtime.log": "7ea14398fad077ea09d44de5761689d40861703609e7c8ba3edd0de9c08f4462",
+    "docs/validation/devpts-inode/linux-reference.log": "ce8f279e4f017b785ccaef2f36f490978348cacf5ff0f29057962e1a348407a6",
+    "docs/validation/devpts-inode/proc-tests.log": "fa6f49b13769388c2019c1403ce34df029ade498c20c89f348fac84e6c0ea1e7",
+    "docs/validation/devpts-inode/tests.log": "edf3c370a328c147e50295ef5098b1cfb35a5bf88dd8699300adc0abfadfa17f",
+    "scripts/ios-ci-scope.py": "872ddf9a949c7bb7e6df9f593e6a87f84a368ca9e391b55512c119ec2af7cd89",
     "tests/integration/docker-tty.py": "e741777e30f41c6034e38ac6d302daa3db8c8218f3cf8f348028ed02e3e901e2"
   },
-  "reason": "Exact devpts Linux inode identity fix: local native Linux reference, 3 PTY tests and strict VFS clippy passed; original Docker -it regression in progress. Rebuild build31 with only Apple PTY tests; reuse all unchanged acceptance."
+  "reason": "Linux devpts inode and proc PTY reopen fix: native Linux reference, 4 PTY plus 11 proc tests (one overlaps), strict VFS Clippy and original Docker run -it --rm input/output/exit/cleanup passed. Rebuild build31 with affected Apple tests; reuse unchanged acceptance."
 }

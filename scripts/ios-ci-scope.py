@@ -217,7 +217,7 @@ def device_build_outputs(plan, repo, headers):
         if startup_mounts:
             expected = {'crates/trames-ffi/src/session.rs'}
         if devpts:
-            expected = {'crates/trames-vfs/src/pty.rs'}
+            expected = {'crates/trames-vfs/src/pty.rs', 'crates/trames-vfs/src/pseudo.rs'}
         patch = subprocess.check_output(['git', 'diff', '--binary', costs['sha'], 'HEAD', '--', *runtime_paths])
         if changed_runtime != expected or hashlib.sha256(patch).hexdigest() != costs['patch_sha256']:
             raise RuntimeError('Device IPA requires the exact Linux-validated runtime patch')

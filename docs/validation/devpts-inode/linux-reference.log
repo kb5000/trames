@@ -1,1 +1,2 @@
 Native Linux devpts: root=1 ptmx=2 slave=index+3; all assertions passed
+Native Linux O_PATH ptmx -> proc fd reopen allocates independent PTY masters: passed

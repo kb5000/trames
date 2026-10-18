@@ -1,0 +1,15 @@
+{
+  "runner_sha256": "02c2cc7a3e792a7131d6a2d0261f66c8546ce8a9113c327318d95f3e69471260",
+  "store_manifest_sha256": "5c5612b3d70825159d39b87887bbf82b091dfd69dcf0a82c7d02119c1c304ca4",
+  "image": "default-probe",
+  "cpus": 4,
+  "exit_code": 0,
+  "seconds": 111.671,
+  "input_sent": true,
+  "checks": {
+    "DAEMON": true,
+    "ROUNDTRIP": true,
+    "STDERR": true,
+    "CLEANUP": true
+  }
+}
