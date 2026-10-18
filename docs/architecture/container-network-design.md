@@ -52,8 +52,9 @@ L3 转发，逐跳递减 TTL/hop limit 并更新 IPv4 校验和；关闭后跨�
    不把容器包隐式送入宿主网络。容器访问根 bridge/gateway 地址已有支持，
    访问根原生 eth0/lo 地址服务尚未接通。外部监听仍受宿主 BSD socket、
    iPad 本地网络许可与 App 生命周期约束。
-2. 补 NETLINK_NETFILTER/nftables 的规则对象、事务、匹配、计数和连接状态，
-   让原版 iptables-nft 的 Docker bridge/NAT 规则真正作用于转发流量。
+2. 已接入 NETLINK_NETFILTER/nftables 的有界事务、filter 规则和真实内部过滤，
+   范围见 [nftables 设计](nftables.md)。继续补连接状态、原生 socket hooks、
+   sets/扩展和 NAT，让原版 iptables-nft 的完整 Docker 规则真正作用于转发流量。
    不支持的表达式必须拒绝；不能只返回成功 ACK 或以禁用过滤来声称隔离完成。
 3. 原版 Docker 的 userland proxy/NAT、嵌入式 DNS、TCP/UDP 端口发布和删除
    清理一起验收，随后验收 pull、volume、exec、build/BuildKit 和 Compose。
@@ -79,5 +80,6 @@ IPv6 socket 默认按 Linux 双栈行为工作，显式 V6ONLY=1 仍有效；ICM
 容器 netns、eth0 地址和网关并运行容器，通信证据见
 [内部 bridge 验证](../validation/docker-bridge-internal.md)。该配置没有
 Docker 的防火墙或跨网络过滤，不能当作完整默认 bridge。
-默认启用 iptables 的实测阻塞仍是 `iptables --wait -t nat -N DOCKER` 返回
-`Failed to initialize nft: Protocol not supported`。[跟踪 Issue #29](https://github.com/kb5000/trames/issues/29)。
+上一阶段的 `Failed to initialize nft: Protocol not supported` 已由真实 nftables
+控制面取代；当前 conntrack／NAT 表达式、根 INPUT／OUTPUT 及同桥过滤仍未
+完成，明确返回 EOPNOTSUPP，默认 Docker firewall/NAT 仍不能开放。[跟踪 Issue #29](https://github.com/kb5000/trames/issues/29)。

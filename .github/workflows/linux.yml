@@ -23,6 +23,7 @@ jobs:
       isolation_retry: ${{ steps.scope.outputs.isolation_retry }}
       network_retry: ${{ steps.scope.outputs.network_retry }}
       docker_bridge: ${{ steps.scope.outputs.docker_bridge }}
+      nftables: ${{ steps.scope.outputs.nftables }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -59,6 +60,10 @@ jobs:
           elif [[ '${{ needs.scope.outputs.native_scope }}' == host-terminals ]]; then
             cargo clippy -p trames-vfs -p trames-core -p trames-ffi --all-targets --locked -- -D warnings
             cargo test -p trames-vfs -p trames-core -p trames-ffi --lib --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == container-network && '${{ needs.scope.outputs.nftables }}' == true ]]; then
+            cargo clippy -p trames-net --all-targets --locked -- -D warnings
+            cargo test -p trames-net --lib --locked
+            cargo test -p trames-net --test virtual --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == container-network && '${{ needs.scope.outputs.docker_bridge }}' == true ]]; then
             cargo clippy -p trames-net -p trames-vfs --all-targets --locked -- -D warnings
             cargo test -p trames-net --lib --locked
@@ -150,18 +155,26 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install --yes --no-install-recommends gcc-aarch64-linux-gnu libc6-dev-arm64-cross
-          if [[ '${{ needs.scope.outputs.docker_bridge }}' == true ]]; then
+          if [[ '${{ needs.scope.outputs.nftables }}' == true ]]; then
+            bash scripts/build-nftables-fixture.sh
+            bash scripts/build-container-network-fixture.sh
+          elif [[ '${{ needs.scope.outputs.docker_bridge }}' == true ]]; then
             bash scripts/build-docker-network-fixture.sh
           else
             bash scripts/build-container-network-fixture.sh
           fi
           cargo build -p trames-cli --release --locked
-          if [[ '${{ needs.scope.outputs.docker_bridge }}' == true ]]; then
+          if [[ '${{ needs.scope.outputs.nftables }}' == true ]]; then
+            python3 tests/integration/container-network.py --forwarding-only
+            mkdir -p "$TRAMES_ALPINE_CACHE"
+            curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o "$TRAMES_ALPINE_CACHE/alpine-minirootfs-3.22.6-aarch64.tar.gz"
+            python3 tests/integration/nftables.py
+          elif [[ '${{ needs.scope.outputs.docker_bridge }}' == true ]]; then
             python3 tests/integration/container-network.py --docker-control-only
           else
             python3 tests/integration/container-network.py
           fi
-          if [[ '${{ needs.scope.outputs.network_retry }}' != true ]]; then
+          if [[ '${{ needs.scope.outputs.network_retry }}' != true && '${{ needs.scope.outputs.nftables }}' != true ]]; then
             mkdir -p "$TRAMES_ALPINE_CACHE"
             curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o "$TRAMES_ALPINE_CACHE/alpine-minirootfs-3.22.6-aarch64.tar.gz"
             if [[ '${{ needs.scope.outputs.docker_bridge }}' == true ]]; then
@@ -179,6 +192,8 @@ jobs:
             target/docker-lifecycle/
             target/docker-network-control/
             target/docker-bridge-lifecycle/
+            target/nftables/
+            target/container-forwarding/
           if-no-files-found: warn
           retention-days: 14
       - uses: actions/upload-artifact@v4

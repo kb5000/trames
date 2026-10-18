@@ -117,3 +117,22 @@ python3 tests/integration/docker.py --internal-bridge --cpus 1
 
 此测试用新磁盘和原版签名包，检查默认隔离、容器 ping bridge 网关、根 guest
 读取容器内 BusyBox nc 提供的 HTTP、退出码与清理；不验收防火墙或 NAT。
+
+## 开发分支的 nftables 过滤
+
+已接入 `NETLINK_NETFILTER` 的有界规则子集，原版 `iptables-nft`／`ip6tables`
+可以在独立 guest 网络命名空间配置 filter 链，并实际丢弃匹配的内部 IP 包。
+这一步没有接通 Docker 完整防火墙：NAT／conntrack／sets／xt 扩展以及根 guest
+的原生 socket INPUT／OUTPUT 仍明确拒绝，以上 daemon 配置仍需保留。
+
+单独验证这次改变：
+
+```sh
+bash scripts/build-nftables-fixture.sh
+python3 tests/integration/nftables.py
+```
+
+测试只操作 guest 防火墙，用新磁盘和 Alpine 签名原版工具验证 1/4 CPU 的
+IPv4／IPv6 过滤、规则生命周期、计数器和 namespace 策略。范围与限制见
+[nftables 设计](../architecture/nftables.md)，不需要重跑已通过的 Docker 镜像
+导入或其他未变功能。

@@ -11,13 +11,15 @@ import subprocess
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--cpus',choices=('1','4','both'),default='both')
 parser.add_argument('--docker-control-only',action='store_true',help='Only the new Go/BusyBox control ABI; reuse unchanged data-path coverage')
+parser.add_argument('--forwarding-only',action='store_true',help='Only affected L3 forwarding, TTL and root/native paths')
 args=parser.parse_args()
+if args.forwarding_only and args.docker_control_only: parser.error('choose one targeted fixture')
 root=Path(__file__).resolve().parents[2]
-out=root/('target/docker-network-control' if args.docker_control_only else 'target/container-network');out.mkdir(parents=True,exist_ok=True)
+out=root/('target/docker-network-control' if args.docker_control_only else ('target/container-forwarding' if args.forwarding_only else 'target/container-network'));out.mkdir(parents=True,exist_ok=True)
 runner=os.environ.get('TRAMES_RUNNER',str(root/'target/release/trames-run'))
 expected=b'container network: veth/bridge, namespace FDs, live TCP/UDP, sysfs/proc and cross-bridge isolation: ok\n'
 checks=[]
-fixtures=('docker-network-control',) if args.docker_control_only else ('container-forwarding','container-network','network-namespaces')
+fixtures=('container-forwarding',) if args.forwarding_only else ('docker-network-control',) if args.docker_control_only else ('container-forwarding','container-network','network-namespaces')
 for cpus in (('1','4') if args.cpus=='both' else (args.cpus,)):
     for fixture in fixtures:
         binary=root/'tests/fixtures/bin'/fixture

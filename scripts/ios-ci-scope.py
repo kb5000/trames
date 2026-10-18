@@ -33,6 +33,7 @@ def container_network_path(path):
         'scripts/build-container-network-fixture.sh','tests/fixtures/container-network.c','tests/fixtures/container-forwarding.c',
         'tests/integration/container-network.py','tests/integration/docker.py',
         'scripts/build-docker-network-fixture.sh','tests/fixtures/docker-network-control.c',
+        'scripts/build-nftables-fixture.sh','tests/fixtures/nftables.c','tests/integration/nftables.py',
     }
 
 
@@ -111,7 +112,10 @@ def main():
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=container-network\n')
                         output.write('skip_native=false\nskip_linux_native=false\nskip_linux_modules=false\n')
                         output.write('network_retry='+str(retry).lower()+'\n')
+                        output.write('nftables='+str(plan.get('nftables_stage') is True).lower()+'\n')
                         output.write('docker_bridge='+str(plan.get('docker_bridge_stage') is True).lower()+'\n')
+                    if plan.get('nftables_stage') is True:
+                        print('nftables stage: affected Net libraries/virtual sockets, forwarding/TTL 1/4 CPU, original signed iptables-nft data filtering 1/4 CPU, iOS FFI. Reuse unchanged VFS/Linux/Core/Docker daemon/CPU/UI/GPU and guest libraries.')
                     if plan.get('docker_bridge_stage') is True:
                         print('Docker bridge stage: Net and VFS network checks, new Go/BusyBox control fixture 1/4 CPU, original Docker internal bridge/HTTP at 4 CPU, iOS FFI. Reuse unchanged Linux/Core/CPU/UI/GPU and previous forwarding/none-profile acceptance.')
                     return
