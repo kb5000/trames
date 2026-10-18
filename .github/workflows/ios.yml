@@ -26,12 +26,18 @@ jobs:
           toolchain: nightly-2026-10-16
           targets: aarch64-apple-ios
       - name: Validate proc identity, socket timeouts, scheduler deadlines and iOS FFI
+        if: needs.scope.outputs.docker_default_remount != 'true'
         run: |
           cargo test -p trames-net --locked
           cargo test -p trames-vfs --lib --locked
           cargo test -p trames-linux --lib network --locked
           cargo test -p trames-core --lib socket_timeout --locked
           cargo test -p trames-core --lib seccomp --locked
+          cargo check -p trames-ffi --target aarch64-apple-ios --locked
+      - name: Validate bind remount regressions and iOS FFI
+        if: needs.scope.outputs.docker_default_remount == 'true'
+        run: |
+          cargo test -p trames-vfs --lib mounts:: --locked
           cargo check -p trames-ffi --target aarch64-apple-ios --locked
   container-storage-apple:
     needs: scope
@@ -139,6 +145,7 @@ jobs:
       docker_network: ${{ steps.scope.outputs.docker_network }}
       docker_network_retry: ${{ steps.scope.outputs.docker_network_retry }}
       docker_network_virtual_retry: ${{ steps.scope.outputs.docker_network_virtual_retry }}
+      docker_default_remount: ${{ steps.scope.outputs.docker_default_remount }}
       frontend_reused: ${{ steps.scope.outputs.frontend_reused }}
     steps:
       - uses: actions/checkout@v4

@@ -33,6 +33,9 @@ guest 总资源上限仍然有效。移除 nofile 参数不等于取消 FD 上�
   proc inode；实际写入仍执行权限和挂载只读检查。
 - `/proc/PID/setgroups` 与 task 别名报告初始 user namespace 的 `allow` 策略。
   当前尚不提供 user namespace 或可写的 setgroups 策略。
+- bind remount 接受 runc 传入的 MS_REC；与 Linux `path_mount()` 一致，
+  MS_REMOUNT|MS_BIND 只修改当前挂载，源挂载和子挂载各自保留属性。
+  这不等同于 mount_setattr 的递归属性修改。
 
 ## seccomp
 

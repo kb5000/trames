@@ -1,29 +1,19 @@
 {
-  "base_sha": "9bd40304b405b066b0b9ebb45d763acfdc6d73d1",
+  "base_sha": "a7306222ef841dc28760c7ba0578f0f1ff29d9c1",
   "native_scope": "docker-default",
-  "changed_file_sha256": {
-    ".github/workflows/ios.yml": "3eea53896aa54c37903435fe1e3eb731ac620b82ff9678edf199ccf3d9ae90f7",
-    ".github/workflows/linux.yml": "7f66b8304ecfddee3555be8df9dfdc7364d55f1fb40638d16bb5b799ec2d0650",
-    "README.md": "195de3eca317b7341d42cdb84b7a949192394d2601253705a36dde4af8dc4610",
-    "crates/trames-cli/src/main.rs": "bdcfde45b90ae68282dfea06377ef5ab04c0ec27ae3cf7b1a2000f47578635b4",
-    "crates/trames-core/src/process.rs": "251107c6cca8d45943af4775d85f7051d83a005df098be3e4ceecaa03dccc91e",
-    "crates/trames-linux/src/network.rs": "72e38995bc02147980f15a532243528cf4e8f1999506ad77e1c5fac15dab04c8",
-    "crates/trames-net/src/lib.rs": "31a500790bb1eb7f44b1a44844a60ed88cfa533ac178fd49561cf4620640df9c",
-    "crates/trames-vfs/src/lib.rs": "9b6c4fd26c87b574f36bb17f54f3c2458b3dec28918b79c580b7ef7bd4555d16",
-    "crates/trames-vfs/src/pseudo.rs": "fc7e75fee061d20ca0d0e754d3f2e56729fd64f35bfa58c60cd5bd8bf0f3f1c4",
-    "docs/architecture/direct-network.md": "f22502d318be7a5011af2f5641a81ce5b5db4c4e55abb37c7a4e250d9e6e7d1f",
-    "docs/architecture/docker-defaults.md": "4a62b30cd46fa003b42eb101c4829e1a53f7e2186d64110be8e9dd9c66e9d338",
-    "docs/architecture/network.md": "6f79a352e3e6852b9806be860657a61fc40e85ef690c45b287301eb5d5f6fdbd",
-    "docs/guides/guest-docker.md": "ab1a46bbf84b415a67e68cf9bd09231417bccdf005bf6e29eeb0289263e14485",
-    "docs/roadmap/compatibility-gaps.md": "23f1116860dadc6cbbc6953549183ffe4c2abdc29ac221a76ffe422a7021ff0d",
-    "docs/validation/docker-defaults.md": "94a4369832b9e60e63ef26aa17364ce28c813c38e96f0b69c0fd53257ed44616",
-    "examples/docker/containerd.toml": "8b6d4f5c93c6a4af37e30b0e47e47a02f5d9b550935987c7340ca37cc6d6b3fb",
-    "examples/docker/daemon.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
-    "scripts/build-socket-timeouts-fixture.sh": "d6b81b4b578389706e18d53d94f720cf39d0745cf60fd6eb56241579e105713b",
-    "scripts/ios-ci-scope.py": "b2bd4346fd361a767ac36e35b88531ab5f74863d5daaa02a2e0277ce767597c5",
-    "tests/fixtures/socket-timeouts.c": "fc25489a9dd5c33e511518db3b38ef5a11df8bbef9e37fee2ec288b59c883a53",
-    "tests/integration/docker-default.py": "cb191e230c695fb33e5a6bc27346634bf841838b104dcebebdada9976f878009",
-    "tests/integration/docker-default.sh": "4da695fbcd627ff57611912e43b84104421cc44e5a988df80d274258f8cfa598"
+  "docker_default_reuse": {
+    "sha": "a7306222ef841dc28760c7ba0578f0f1ff29d9c1",
+    "linux": 39114128259,
+    "apple": 39114128260
   },
-  "reason": "Owner-requested default Docker stack: managed containerd and runc, no special runtime/plugin/Go/nofile config. Validate affected procfs/socket timeout/seccomp/scheduler modules, original signed default Docker workflow and Apple/iOS FFI. CPU/UI/GPU/guest assets unchanged; no IPA or merge."
+  "changed_file_sha256": {
+    ".github/workflows/ios.yml": "9520df13f1da6423b096be112a9763350a6c2275a6c1c19ac49628c8f96bae97",
+    ".github/workflows/linux.yml": "f7e73a61fcc4a5040fe3182718aff8abc3f106999828be826c43cf33b6c8f485",
+    "crates/trames-vfs/src/mounts.rs": "1ce820afebd04d9bddd4bbef9341def2c80561b3e87e54bb422062c42db6b91b",
+    "docs/architecture/docker-defaults.md": "d59625115080c4fda0bba2ae25a3f94eedaca13661efe593431eb45532a82f01",
+    "docs/validation/docker-defaults.md": "9e6c755584206cf410f606af5e462771acbe47a6b41c49d07f04879977004e8a",
+    "scripts/ios-ci-scope.py": "5e462b4ff6f9e102fcf1a292ff33ab57a7cd5b840021d750ddb2af903ec16823",
+    "tests/integration/docker-default.py": "325133bf983e65a5f3e8257a8f87190001f812120746f295b54ef47a092e163e"
+  },
+  "reason": "Exact bind-remount MS_REC compatibility fix. Reuse successful unchanged net/Linux/core/C ABI and Apple checks from source a7306222. Rerun mount regressions and iOS FFI; finish original default Docker workflow. Stream fixture progress and allow sufficient interpreted runc execution time; no IPA/merge."
 }

@@ -20,8 +20,17 @@ runc 1.3.4-r1。默认启动 dockerd，自行管理 containerd，使用 runc/ove
 - 独立 seccomp C 夹具：宿主 Linux、guest 1/4 CPU 均验证 prctl 安装、拒绝
   指定 syscall、fork 后继承。过滤器真正执行。
 
-默认 Docker 完整工作流和 Apple/iOS 检查仍在进行；不得据此把 daemon 成功启动
-视为容器生命周期已经通过。待完成后记录对应 CI、原始日志和结果指纹。
+源码 a7306222 的 [Apple/iOS](https://github.com/kb5000/trames/actions/runs/39114128260)
+针对性检查已通过。Linux 同批模块检查和 C ABI 对照通过；默认配置的本地
+容器运行、PID1/eth0/cgroup、退出和清理通过（4 CPU，475.630 秒）。
+
+首次完整 CI 在 runc 只读 bind mount 重设标志时失败：MS_REC 与 bind remount
+组合被误拒绝。已按 [Linux v6.12 path_mount](https://github.com/torvalds/linux/blob/v6.12/fs/namespace.c)
+修正；14 项挂载回归和 clippy 本地通过，包含源/子挂载属性不变的检查。
+首轮 artifact #12131568019（14000 bytes）核验 SHA256
+`36ae367b6945f4dd988312d1db03eaab829da13b8036194f64ca3061b2800d60`。
+后续只重跑挂载回归、iOS FFI 和未完成的默认 Docker 工作流；未变的模块和
+C ABI 对照按精确源码补丁 hash 与 CI 结果复用。完整工作流仍待通过。
 
 ## 工作流覆盖与边界
 

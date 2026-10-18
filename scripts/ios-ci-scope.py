@@ -102,6 +102,44 @@ def isolation_retry_source_unchanged(sha):
     return core.count(guard)==1 and core.replace(guard,'')==old('crates/trames-core/src/process_seccomp.rs')
 
 
+
+def docker_defaults_remount_retry(plan, repo, headers):
+    """Reuse passed modules only for the exact bind-remount compatibility fix."""
+    reuse = plan.get('docker_default_reuse')
+    if not reuse:
+        return False
+    source = reuse['sha']
+    patch = subprocess.check_output(['git', 'diff', '--binary', source, 'HEAD', '--', 'crates'])
+    if hashlib.sha256(patch).hexdigest() != '6b6511c47bb4b2657fe8ab9b54ce366e8379048280a843277f976db7c6869016':
+        raise RuntimeError('Docker retry requires the exact validated bind-remount patch')
+    if subprocess.check_output(['git', 'diff', '--name-only', source, 'HEAD', '--',
+                                'tests/fixtures/socket-timeouts.c',
+                                'scripts/build-socket-timeouts-fixture.sh']).strip():
+        raise RuntimeError('Cannot reuse changed socket/seccomp C ABI fixtures')
+
+    def get(path):
+        request = urllib.request.Request(f'https://api.github.com/repos/{repo}/{path}', headers=headers)
+        with urllib.request.urlopen(request, timeout=30) as response:
+            return json.load(response)
+
+    for key, workflow, job_name in [('linux', 'linux.yml', 'targeted-runtime'),
+                                     ('apple', 'ios.yml', 'docker-default-apple')]:
+        run_id = reuse[key]
+        run = get(f'actions/runs/{run_id}')
+        if (run['head_sha'] != source or run['path'] != '.github/workflows/' + workflow
+                or run['head_repository']['full_name'] != repo):
+            raise RuntimeError('Docker retry evidence does not match its source/workflow')
+        job = next(j for j in get(f'actions/runs/{run_id}/jobs')['jobs'] if j['name'] == job_name)
+        if key == 'apple':
+            if job['conclusion'] != 'success':
+                raise RuntimeError('Missing successful Apple defaults checks')
+        elif not any(s['name'] == 'Check affected modules' and s['conclusion'] == 'success'
+                     for s in job['steps']):
+            raise RuntimeError('Missing successful Linux defaults module checks')
+    print('Reuse passed unchanged net/Linux/core/socket ABI and Apple results; rerun mount regressions, iOS FFI and the unfinished default Docker workflow.')
+    return True
+
+
 def device_build_outputs(plan, repo, headers):
     """Rebuild the device runtime, reusing only source-identical acceptance."""
     reuse = plan['device_build']
@@ -198,6 +236,7 @@ def main():
             if changed==set(hashes) and all(Path(path).exists() and hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest for path,digest in hashes.items()):
                 if plan.get('native_scope') == 'docker-default':
                     allowed = {'crates/trames-vfs/src/lib.rs', 'crates/trames-vfs/src/pseudo.rs',
+                               'crates/trames-vfs/src/mounts.rs',
                                'crates/trames-net/src/lib.rs', 'crates/trames-linux/src/network.rs',
                                'crates/trames-core/src/process.rs', 'tests/fixtures/socket-timeouts.c',
                                'crates/trames-cli/src/main.rs',
@@ -209,8 +248,11 @@ def main():
                     if not all(p.startswith('docs/') or p in allowed for p in changed):
                         raise RuntimeError('Docker defaults plan contains unrelated source changes')
                     print('Original Docker defaults: affected VFS/proc metadata, socket timeouts and scheduler deadlines, original managed containerd/runc workflow, Apple counterparts and iOS FFI; reuse unchanged CPU/UI/GPU and unrelated network acceptance. No IPA.')
+                    remount_retry = docker_defaults_remount_retry(plan, repo, dict(request.headers))
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=docker-default\n')
+                        if remount_retry:
+                            output.write('docker_default_remount=true\n')
                     return
                 if plan.get('device_build'):
                     outputs = device_build_outputs(plan, repo, dict(request.headers))

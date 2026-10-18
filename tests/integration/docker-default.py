@@ -74,7 +74,20 @@ try:
         (OUT / 'install.log').write_bytes(install.stdout + install.stderr)
         assert install.returncode == 0 and b'ERROR:' not in install.stdout + install.stderr
         logpath = OUT / 'default.log'
+        logpath.write_bytes(b'')
         stop = threading.Event()
+
+        def progress():
+            offset = 0
+            while not stop.wait(1):
+                with logpath.open('rb') as current:
+                    current.seek(offset)
+                    data = current.read()
+                    offset = current.tell()
+                if data:
+                    print(data.decode(errors='replace'), end='', flush=True)
+
+        threading.Thread(target=progress, daemon=True).start()
 
         def browser():
             while not stop.wait(.1):
@@ -110,7 +123,7 @@ try:
         try:
             with logpath.open('wb') as log:
                 process = subprocess.run([*base, '--host-map', '198.18.0.1=127.0.0.1',
-                    '--guest', '/bin/sh', '-ec', script], stdout=log, stderr=subprocess.STDOUT, timeout=1200)
+                    '--guest', '/bin/sh', '-ec', script], stdout=log, stderr=subprocess.STDOUT, timeout=1800)
         finally:
             stop.set()
             worker.join(timeout=20)

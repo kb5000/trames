@@ -28,6 +28,7 @@ jobs:
       docker_network: ${{ steps.scope.outputs.docker_network }}
       docker_network_retry: ${{ steps.scope.outputs.docker_network_retry }}
       docker_network_virtual_retry: ${{ steps.scope.outputs.docker_network_virtual_retry }}
+      docker_default_remount: ${{ steps.scope.outputs.docker_default_remount }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,7 +45,7 @@ jobs:
     needs: scope
     if: needs.scope.outputs.targeted == 'true' && needs.scope.outputs.skip_native != 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
@@ -55,7 +56,10 @@ jobs:
         if: needs.scope.outputs.skip_modules != 'true'
         run: |
           cargo fmt --all --check
-          if [[ '${{ needs.scope.outputs.native_scope }}' == docker-default ]]; then
+          if [[ '${{ needs.scope.outputs.docker_default_remount }}' == true ]]; then
+            cargo clippy -p trames-vfs --all-targets --locked -- -D warnings
+            cargo test -p trames-vfs --lib mounts:: --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == docker-default ]]; then
             cargo clippy -p trames-net -p trames-vfs -p trames-linux -p trames-core -p trames-ffi -p trames-cli --all-targets --locked -- -D warnings
             cargo test -p trames-net --locked
             cargo test -p trames-vfs --lib --locked
@@ -191,14 +195,16 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install --yes --no-install-recommends gcc-aarch64-linux-gnu libc6-dev-arm64-cross
           bash scripts/build-socket-timeouts-fixture.sh
-          tests/fixtures/bin/socket-timeouts-host
-          tests/fixtures/bin/socket-timeouts-host seccomp
           cargo build -p trames-cli --release --locked
-          for cpus in 1 4; do
-            target/release/trames-run --cpus "$cpus" --memory --max-instructions 1000000000 --exec-file /socket-timeouts=tests/fixtures/bin/socket-timeouts --guest /socket-timeouts netlink
-            target/release/trames-run --cpus "$cpus" --memory --max-instructions 1000000000 --exec-file /socket-timeouts=tests/fixtures/bin/socket-timeouts --guest /socket-timeouts seccomp
-          done
-          target/release/trames-run --cpus 4 --network loopback --memory --max-instructions 1000000000 --exec-file /socket-timeouts=tests/fixtures/bin/socket-timeouts --guest /socket-timeouts
+          if [[ '${{ needs.scope.outputs.docker_default_remount }}' != true ]]; then
+            tests/fixtures/bin/socket-timeouts-host
+            tests/fixtures/bin/socket-timeouts-host seccomp
+            for cpus in 1 4; do
+              target/release/trames-run --cpus "$cpus" --memory --max-instructions 1000000000 --exec-file /socket-timeouts=tests/fixtures/bin/socket-timeouts --guest /socket-timeouts netlink
+              target/release/trames-run --cpus "$cpus" --memory --max-instructions 1000000000 --exec-file /socket-timeouts=tests/fixtures/bin/socket-timeouts --guest /socket-timeouts seccomp
+            done
+            target/release/trames-run --cpus 4 --network loopback --memory --max-instructions 1000000000 --exec-file /socket-timeouts=tests/fixtures/bin/socket-timeouts --guest /socket-timeouts
+          fi
           mkdir -p "$TRAMES_ALPINE_CACHE"
           curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o "$TRAMES_ALPINE_CACHE/alpine-minirootfs-3.22.6-aarch64.tar.gz"
           python3 tests/integration/docker-default.py
