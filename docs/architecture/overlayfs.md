@@ -23,8 +23,8 @@ names cannot collide. Visible hard-link aliases within a view share copy-up.
 Untouched siblings remain references to lower files.
 
 Read descriptions and file mappings opened before copy-up retain the actual
-lower data inode. New descriptions use upper data. Dup/fork and proc-FD readonly
-reopens retain the chosen data reference; writable proc reopens copy up. Shared
+lower data inode. New descriptions use upper data. Dup/fork retain the chosen data reference. A new proc-FD open selects the
+current layer, just like reopening the overlay path; writable proc opens copy up. Shared
 writable mappings use the copied upper object and existing mapped-page writeback.
 Open-unlinked upper files keep their object and budget charge until last close.
 Mount namespaces and bind mounts share the overlay superblock, without adding
@@ -45,7 +45,9 @@ in a lower layer are consumed by merging rather than copied into ordinary
 copy-up metadata. Trusted overlay attribute writes require guest CAP_SYS_ADMIN;
 unprivileged attribute listings hide trusted names. Existing v4 manifests encode
 the two trusted names with the same bounded attribute table; no new format or
-historical migration is introduced. The iOS read-only provider already skips
+historical migration is introduced. Older VFS builds accepting only `user.*`
+can reject these stores; downgrading an active Docker store is not supported.
+The iOS read-only provider already skips
 bounded attribute payloads independent of their namespace.
 
 An overlay namespace checkpoint stages the upper dentries, whiteouts, attributes,

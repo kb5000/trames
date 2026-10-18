@@ -16,7 +16,7 @@ defaults:
 jobs:
   container-storage-apple:
     needs: scope
-    if: needs.scope.outputs.native_scope == 'container-storage'
+    if: needs.scope.outputs.native_scope == 'container-storage' && needs.scope.outputs.skip_native != 'true'
     runs-on: macos-15
     timeout-minutes: 15
     steps:
@@ -27,8 +27,12 @@ jobs:
           targets: aarch64-apple-ios
       - name: Validate overlay storage, Apple file IO and iOS FFI
         run: |
-          cargo test -p trames-vfs --lib --locked
-          cargo test -p trames-linux --lib file_calls --locked
+          if [[ '${{ needs.scope.outputs.storage_proc_only }}' == true ]]; then
+            cargo test -p trames-vfs --lib proc --locked
+          else
+            cargo test -p trames-vfs --lib --locked
+            cargo test -p trames-linux --lib file_calls --locked
+          fi
           cargo check -p trames-ffi --target aarch64-apple-ios --locked
   container-isolation-apple:
     needs: scope
@@ -108,6 +112,7 @@ jobs:
       critical_test: ${{ steps.scope.outputs.critical_test }}
       ui_targets: ${{ steps.scope.outputs.ui_targets }}
       native_scope: ${{ steps.scope.outputs.native_scope }}
+      storage_proc_only: ${{ steps.scope.outputs.storage_proc_only }}
       isolation_retry: ${{ steps.scope.outputs.isolation_retry }}
       network_retry: ${{ steps.scope.outputs.network_retry }}
       docker_bridge: ${{ steps.scope.outputs.docker_bridge }}

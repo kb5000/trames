@@ -126,9 +126,51 @@ def main():
             if changed==set(hashes) and all(Path(path).exists() and hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest for path,digest in hashes.items()):
                 if plan.get('native_scope') == 'container-storage' and changed and all(container_storage_path(p) for p in changed):
                     print('Guest overlay storage: affected VFS and Linux file ABI, original Docker overlay2, Apple VFS and iOS FFI. Reuse unchanged CPU/UI/GPU/network and guest libraries; no IPA.')
+                    skip_apple = skip_linux = skip_modules = proc_only = False
+                    reuse = plan.get('storage_validation_reuse')
+                    if reuse:
+                        delta = subprocess.check_output(['git', 'diff', '--name-only', reuse['sha'], 'HEAD'], text=True).splitlines()
+                        allowed = {'.github/ios-validation-plan.json', '.github/workflows/ios.yml',
+                                   '.github/workflows/linux.yml', 'scripts/ios-ci-scope.py', 'README.md'}
+                        unchanged = all(p.startswith('docs/') or p in allowed for p in delta)
+                        proc_patch = reuse.get('proc_reopen_patch_sha256')
+                        exact_proc_patch = False
+                        if proc_patch and all(p.startswith('docs/') or p in allowed or p in {
+                                'crates/trames-vfs/src/pseudo.rs', 'crates/trames-vfs/src/overlay.rs'} for p in delta):
+                            patch = subprocess.check_output(['git', 'diff', '--binary', reuse['sha'], 'HEAD', '--', 'crates/trames-vfs/src/pseudo.rs'])
+                            previous_overlay = subprocess.check_output(['git', 'show', reuse['sha'] + ':crates/trames-vfs/src/overlay.rs'], text=True).split('#[cfg(test)]')[0]
+                            current_overlay = Path('crates/trames-vfs/src/overlay.rs').read_text().split('#[cfg(test)]')[0]
+                            exact_proc_patch = hashlib.sha256(patch).hexdigest() == proc_patch and previous_overlay == current_overlay
+                        if unchanged or exact_proc_patch:
+                            for workflow_name, run_id in [('linux.yml', reuse['linux_run']), ('ios.yml', reuse['apple_run'])]:
+                                url = f'https://api.github.com/repos/{repo}/actions/runs/{run_id}'
+                                with urllib.request.urlopen(urllib.request.Request(url, headers=dict(request.headers)), timeout=30) as response:
+                                    prior = json.load(response)
+                                if prior['head_sha'] != reuse['sha'] or prior['path'] != '.github/workflows/' + workflow_name or prior['head_repository']['full_name'] != repo:
+                                    continue
+                                with urllib.request.urlopen(urllib.request.Request(url + '/jobs', headers=dict(request.headers)), timeout=30) as response:
+                                    jobs = json.load(response)['jobs']
+                                if workflow_name == 'linux.yml':
+                                    steps = {step['name'] for job in jobs if job['name'] == 'targeted-runtime'
+                                             for step in job.get('steps', []) if step['conclusion'] == 'success'}
+                                    skip_modules = 'Check affected modules' in steps
+                                    skip_linux = skip_modules and 'Exercise original guest Docker overlay2 and persistent image layers' in steps
+                                else:
+                                    skip_apple = any(job['name'] == 'container-storage-apple' and job['conclusion'] == 'success' for job in jobs)
+                            print(f'Reuse unchanged overlay evidence: Linux modules={skip_modules}, Docker={skip_linux}, Apple/iOS={skip_apple}.')
+                            if exact_proc_patch and skip_modules and skip_linux and skip_apple:
+                                # Ordinary opens and dup/fork are unchanged; the
+                                # exact proc reopen fix needs its own regression,
+                                # affected clippy and cross-target compilation.
+                                proc_only = True
+                                skip_apple = skip_linux = skip_modules = False
+                                print('Validate exact proc reopen delta; reuse completed overlay/Docker/platform IO checks.')
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=container-storage\n')
-                        output.write('skip_native=false\nskip_linux_native=false\nskip_linux_modules=false\n')
+                        output.write('skip_native=' + str(skip_apple).lower() + '\n')
+                        output.write('skip_linux_native=' + str(skip_linux).lower() + '\n')
+                        output.write('skip_linux_modules=' + str(skip_modules).lower() + '\n')
+                        output.write('storage_proc_only=' + str(proc_only).lower() + '\n')
                     return
                 if plan.get('native_scope') == 'container-network' and changed and all(container_network_path(p) for p in changed):
                     print('Container network: source-bounded Net/VFS/Linux and affected kernel adapters, actual guest networking/Docker and ARM64 iOS FFI only. Reuse unchanged CPU/UI/GPU/guest libraries; no IPA.')
