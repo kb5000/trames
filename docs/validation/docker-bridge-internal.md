@@ -35,7 +35,12 @@ rename／队列、BusyBox dump、订阅、RouteGet 与 bridge sysfs 状态；旧
 上完成 bridge 创建、veth/netns/eth0/IP/网关、容器启动、退出码 7、日志与清理。
 新增的新磁盘测试进一步检查默认私有 net/IPC/cgroup、seccomp mode 2、容器
 ping 网关、根 guest 获取容器 BusyBox nc 的 HTTP，新磁盘 1 vCPU 已全部通过。
-Linux／Apple CI 待源码提交后完成，
+生产源码 `27f2931be47abc13e5d66558358a356e2e4a9c6b` 的
+[Linux](https://github.com/kb5000/trames/actions/runs/39096972765)／
+[Apple](https://github.com/kb5000/trames/actions/runs/39096972663) CI 均成功：Apple 通过 Net 29、VFS network 5 和 ARM64 iOS FFI；Linux 通过
+严格 clippy/fmt、Net 29、VFS network 5、virtual 11、新控制 ABI 1/4 vCPU，
+以及新磁盘原版 Docker internal-bridge 4 vCPU 的网关 ICMP、真实 HTTP 与
+完整生命周期。最后记录提交只更新文档／hash，不重复触发构建或测试。
 最终源码和输入指纹见[机器记录](docker-bridge-internal.json)。
 
 ```sh
