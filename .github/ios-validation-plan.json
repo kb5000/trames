@@ -1,13 +1,7 @@
 {
-  "base_sha": "ca5ee98607cb981d3ebdacbfec5d65117f5daa5c",
-  "native_scope": "startup-mounts",
+  "base_sha": "e6d54bf92be8f4cf32d637edd2b9d1f662ee1bdc",
+  "native_scope": "devpts",
   "device_build": {
-    "startup_mounts": {
-      "sha": "1a3bcb6a60bd46af11bbdc49113fb34e178d031a",
-      "apple": 39134234642,
-      "patch_sha256": "7bf2b038ce82f0f8aed5d8c0e81f68ec43c88c405ddc0a55dc59a263a2808538",
-      "linux_delta_record": "docs/validation/runtime-mounts.md"
-    },
     "frontend": {
       "sha": "aa4528166c8d0cdb04f3fe540730d9af63ed7f07",
       "run": 39062598012
@@ -15,20 +9,23 @@
     "guest": {
       "sha": "534e223e284df48f207500e84ab4cd05dd3d3958",
       "run": 39015795319
+    },
+    "devpts": {
+      "sha": "7700195e4da14b8bf05b3b1644779b3c47ce16cc",
+      "apple": 39135889869,
+      "patch_sha256": "657c3c3352c9936fcd5669604f6e00f6b6181dd5d95c0bb4e3175ea8ab68c962",
+      "linux_delta_record": "docs/validation/devpts-inode.md"
     }
   },
   "changed_file_sha256": {
-    ".github/workflows/ios.yml": "bc57cab3b68349f22e94697db05470e44faa0600c02077e3ae8ee6dec056ba6a",
-    "apps/ios/project.yml": "baffe3b46a552668af667a31b163b13b6c350aa4a240db2eb20f09adbfb7d0ed",
-    "crates/trames-ffi/src/session.rs": "b37c7cfffcae22c9eb5a4b96e81cae0bc174b50abccf5164dbee72e19149120d",
-    "docs/architecture/docker-defaults.md": "2caaf6eeab7a7a8363421849ebfe3a6977c1be4ff9a1646b31c3886cc18c53bb",
-    "docs/guides/guest-docker.md": "4d8b08ef645110fe610f37c9e29c6e8637fd64d20a006b6b0e0411e4f7ab4350",
-    "docs/validation/ipad-1.0-build30.json": "b37204243ef591707f4437af012fd01616e9cda5d36cb88181b97068c963591e",
-    "docs/validation/ipad-1.0-build30.md": "85a48e64f44bf7016728eadefdcaf27aa9b4292ae755d89831b97a59d960d250",
-    "docs/validation/runtime-mounts.md": "f34b2e19e28f2e42f70e6a8bccd34cc7338e472d684a1d01514c55e500040548",
-    "docs/validation/runtime-mounts/clippy.log": "a386aab4ddb65e67f4bf10c6f08f041d0b9f43914bb86a4be9d81f1fc71d76b7",
-    "docs/validation/runtime-mounts/tests.log": "0d3ee9c0d53a3b1836dba80818b1b9f3b85f18c244541899fde45f33610cb19e",
-    "scripts/ios-ci-scope.py": "84c560fcfbda163f736c1755180c0e136289df5bb09aa74e3233c535b09a89c5"
+    ".github/workflows/ios.yml": "b87a4a6827110afc0cc8eff87b630b9a972961c1496965cce8349ef93ca264d5",
+    "crates/trames-vfs/src/pty.rs": "ebc0faf47b8635932398d2295155326581553b43c056bebe18e3eaeb1d729e3c",
+    "docs/validation/devpts-inode.md": "6668434d04ab92580c5fc233d79135c2fec60beb1340d6a4f9a0902dbae49279",
+    "docs/validation/devpts-inode/clippy.log": "f3302243031973ee7c689e5ae522cd6615e16fbda7a4bbddb0bcd2b7f584aa33",
+    "docs/validation/devpts-inode/linux-reference.log": "6e174dd8f1756ae124b7e2dd54f1e15bbae154e5265130c2ccd49d48ee367531",
+    "docs/validation/devpts-inode/tests.log": "da133f17a7224aa86d209ea841306990484da4f2506694c665b2527faee2f67c",
+    "scripts/ios-ci-scope.py": "96d410fc90ad186fd8a33bcb5bf855b96f9dd0343821eb267488de39e7248754",
+    "tests/integration/docker-tty.py": "e741777e30f41c6034e38ac6d302daa3db8c8218f3cf8f348028ed02e3e901e2"
   },
-  "reason": "Record passed build30 Linux/Apple FFI startup checks, current ARM64 Release IPA and downloaded package inspection. Same runtime/frontend/guest as7700195; [skip ci], no repeated passed suites, merge or formal release."
+  "reason": "Exact devpts Linux inode identity fix: local native Linux reference, 3 PTY tests and strict VFS clippy passed; original Docker -it regression in progress. Rebuild build31 with only Apple PTY tests; reuse all unchanged acceptance."
 }
