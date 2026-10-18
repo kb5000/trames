@@ -1,5 +1,5 @@
 {
-  "status": "local_pass_apple_followup_pending",
+  "status": "verified",
   "base": "02bbd14871f2ec8d0c4ee824d1a2e67ad2ad2b5c",
   "initial_source": "2c3309cbed2f8acb6abe0b59bdbad657698c3e02",
   "linux_run": 39088637865,
@@ -107,5 +107,24 @@
     "crates/trames-vfs/src/network.rs": "de5c8b04c8d99603ee077f8e7beb089c2ab421517d521811f5c66d769d7ebc7b",
     "crates/trames-vfs/src/pseudo.rs": "cc23e7562a9c9f754e84842629da3efc7a8db1e5bd099b46d45eb42fb4c6a05b",
     "crates/trames-vfs/src/pty.rs": "f1011d04750d310a5d816dc191274982d76b52005e031a44d13c613ed3d421f5"
-  }
+  },
+  "source_commit": "4598cecb71da994f81c85eaa0f260b963085e093",
+  "linux_followup_run": 39089214927,
+  "apple_followup_run": 39089214879,
+  "ci_conclusions": {
+    "linux_initial": "success",
+    "apple_initial": "failure (one old closed-port fixture)",
+    "linux_followup": "success",
+    "apple_followup": "success"
+  },
+  "apple_remaining_checks": "Net/VFS libraries, corrected Linux socket test, new seccomp cases, CHKFEAT and ARM64 iOS FFI check passed",
+  "linux_docker_4": {
+    "run": 39088637865,
+    "job": 117560434036,
+    "passed": true,
+    "profile": "private-net-ipc-cgroup-default-seccomp",
+    "artifact_id": 12121892438,
+    "artifact_zip_sha256": "2a3c484169e3f99a1c03907f0cda4e864ecb7d302d946507ecce4093b9dc163b"
+  },
+  "validation_reuse": "Initial successful checks retained. Followup production diff is exactly forced SIGSYS in the TRAP arm; Linux socket production prefix unchanged. No second Docker/network/UI/GPU run and no IPA."
 }

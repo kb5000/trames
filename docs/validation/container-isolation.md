@@ -80,3 +80,11 @@ socket 时等待连接拒绝，Darwin 未在期限内返回。这是旧测试的
 网络和文件数据路径未变；CI 只在源码仍为这个确切 TRAP 修正时复用旧通过项。
 验收脚本曾保留 host 参数，已加入显式参数替换及反向断言；对应失败已重试，
 不作为隔离通过。详见[机器可读记录](container-isolation.json)。
+
+后续[Linux CI](https://github.com/kb5000/trames/actions/runs/39089214927)与
+[Apple CI](https://github.com/kb5000/trames/actions/runs/39089214879)均已通过。
+前者仅检查修改的 seccomp/测试项并运行新增 1/4 vCPU 原生对照；后者补齐
+Net/VFS、修正后的 Darwin socket fixture、seccomp、CHKFEAT 与 ARM64 iOS FFI
+检查。原版 Docker/网络和先前成功的 library/UI/GPU 项未重跑；未打包新 IPA。
+生产源码提交为 `4598cecb71da994f81c85eaa0f260b963085e093`，此后的记录变更
+不改变运行时、测试或构建输入。PR #30 保持 draft，完整 bridge/NAT 继续由 #29 跟踪。
