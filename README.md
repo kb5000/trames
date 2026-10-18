@@ -112,7 +112,7 @@ python3 tests/integration/m3.py
 
 网络支持实际 IPv4/IPv6 TCP 和 UDP。宿主 socket 始终非阻塞，guest 阻塞调用挂起当前虚拟进程；fork/dup 共享连接，最后一个持有者关闭后释放。每会话最多 64 个 socket，单次复制最多 1 MiB，UDP 数据报保持完整或显式报告截断。
 
-CLI 与 iPad LocalSession 默认 `--network full` 原生直连：普通 TCP/UDP 不经过 10.0.0.1 网关，允许宿主 loopback 和 LAN 监听；绑定 `0.0.0.0:PORT` 的 guest 服务可通过宿主地址访问。默认 DNS 是仅处理名称解析的 `127.0.0.53`，接入宿主系统 resolver。`off`、`loopback`、`outbound` 可显式收紧权限；所有模式受宿主 OS、网络授权与 App 生命周期约束。端口空间与宿主共享，并不是独占网卡或完整 Linux 网络 namespace。详见[原生直连设计](docs/architecture/direct-network.md)；iPad Safari/LAN 与后台行为仍需真机验收。
+CLI 与 iPad LocalSession 默认 `--network full` 原生直连：普通 TCP/UDP 不经过 10.0.0.1 网关，允许宿主 loopback 和 LAN 监听；绑定 `0.0.0.0:PORT` 的 guest 服务可通过宿主地址访问。默认 DNS 是仅处理名称解析的 `169.254.0.53`，接入宿主系统 resolver；该地址也可供容器使用。`off`、`loopback`、`outbound` 可显式收紧权限；所有模式受宿主 OS、网络授权与 App 生命周期约束。端口空间与宿主共享，并不是独占网卡或完整 Linux 网络 namespace。详见[原生直连设计](docs/architecture/direct-network.md)；iPad Safari/LAN 与后台行为仍需真机验收。
 
 使用 `--virtual-network 2` 可进入独立 IP 网络：环境 2 的地址为 `10.0.0.2`／`fd00::2`，网关与 DNS 为 `10.0.0.1`／`fd00::1`，`127.0.0.1`／`::1` 只指向该环境。不同环境拥有独立端口空间，可监听私有 80／53 端口。库的共享 `Fabric` API 可同时连接多个环境；CLI 每次创建一个环境。TCP／UDP 经 smoltcp 数据包栈处理，外网流量再由网关桥接原生 socket，TLS 始终由 guest 库处理。无需 TUN／VPN 权限。虚拟模式在缺少 `/etc/resolv.conf` 时写入虚拟 DNS，保留已有配置。
 
@@ -126,7 +126,7 @@ DNS 由真实 musl 读取 guest 的 `/etc/resolv.conf`；可用 `--file /etc/res
 
 ## Guest 内容器（开发中）
 
-原版 Alpine `crun` 已可在 guest 内运行配置范围内的 rootful 容器：独立 PID/mount/UTS、tmpfs 和 devpts、前台终端、cgroupfs、pause/resume/kill、pids 进程数限制，以及多个 Alpine rootfs 并行运行；1/4 CPU 自动验收通过。网络共享当前 guest 的直连网络。使用方法见[容器入门](docs/guides/guest-containers.md)，接口和限制见[架构说明](docs/architecture/guest-containers.md)。[原版 Docker](docs/guides/guest-docker.md)在开发分支采用默认 runc、dockerd 自动管理的 containerd 和 overlay2；不要求 crun、专用配置、GOMAXPROCS 或 nofile 参数。标准运行时的 procfs、socket timeout 和安全 reopen 语义见[默认启动路径](docs/architecture/docker-defaults.md)。开发分支 `feat/guest-docker-workflows` 进一步补齐 IPC/net namespace、默认 Docker bridge/NAT/DNS/端口发布和 [overlayfs/overlay2 写时复制存储](docs/architecture/overlayfs.md)，正式 1.0.0 build 26 不包含容器新改动，build 27 测试 IPA 包含上一轮网络/overlay2；本轮默认 runc 修正尚未重新打包。user namespace、完整 CPU/memory/io 配额、rootless 和完整 Docker/Podman 工作流仍待扩展。
+原版 Alpine `crun` 已可在 guest 内运行配置范围内的 rootful 容器：独立 PID/mount/UTS、tmpfs 和 devpts、前台终端、cgroupfs、pause/resume/kill、pids 进程数限制，以及多个 Alpine rootfs 并行运行；1/4 CPU 自动验收通过。网络共享当前 guest 的直连网络。使用方法见[容器入门](docs/guides/guest-containers.md)，接口和限制见[架构说明](docs/architecture/guest-containers.md)。[原版 Docker](docs/guides/guest-docker.md)在开发分支采用默认 runc、dockerd 自动管理的 containerd 和 overlay2；不要求 crun、专用配置、GOMAXPROCS 或 nofile 参数。标准运行时的 procfs、socket timeout 和安全 reopen 语义见[默认启动路径](docs/architecture/docker-defaults.md)，默认 exec/停止/持久化/重启已通过[独立生命周期验证](docs/validation/docker-defaults.md)。开发分支 `feat/guest-docker-workflows` 进一步补齐 IPC/net namespace、默认 Docker bridge/NAT/DNS/端口发布和 [overlayfs/overlay2 写时复制存储](docs/architecture/overlayfs.md)，正式 1.0.0 build 26 不包含容器新改动，build 27 测试 IPA 包含上一轮网络/overlay2；本轮默认 runc 修正尚未重新打包。user namespace、完整 CPU/memory/io 配额、rootless 和完整 Docker/Podman 工作流仍待扩展。
 
 ## Linux 兼容性更新（0.2.0）
 

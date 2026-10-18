@@ -268,7 +268,7 @@ def main():
             hashes=plan['changed_file_sha256']
             if changed==set(hashes) and all(Path(path).exists() and hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest for path,digest in hashes.items()):
                 if plan.get('native_scope') == 'docker-default-lifecycle':
-                    allowed = {'.github/workflows/linux.yml', '.github/workflows/ios.yml',
+                    allowed = {'.github/workflows/linux.yml', '.github/workflows/ios.yml', 'README.md',
                                'scripts/ios-ci-scope.py', 'tests/integration/docker-default.py',
                                'tests/integration/docker-default-lifecycle.py',
                                'tests/integration/docker-default-lifecycle.sh'}

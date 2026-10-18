@@ -9,13 +9,15 @@
   "changed_file_sha256": {
     ".github/workflows/ios.yml": "85364d83a9e6406b6b9519fb44b543bc16f5505ef688edbe6a34acb18715ba4c",
     ".github/workflows/linux.yml": "02a6da24c3760d6e299fd91756b7b9588be97ca36717c87f3e43bc3fa025bf74",
-    "docs/architecture/docker-defaults.md": "0854885a0c32fbb15c422c61b8cf366a8cd4c0e3a4a9608d1029cff9d4fe2e8e",
+    "README.md": "8a5dafc781e5612ade207ade3f43afa1e4dcef1e400ca2bcbac34d1e4db83c0a",
+    "docs/architecture/docker-defaults.md": "035354c2c15af61d272b810667bae94a9a8c1f5335f653be759cea934c28b21b",
     "docs/guides/guest-docker.md": "070ea9e2e89c7e87c003cd01ec1af22b19ef66d6d23d8f58f37b8b47c25fc88d",
-    "docs/validation/docker-defaults.md": "bcaabbdb4e0f3b0b31e2b24a19641e8036d5dbd03eca4f57f5b0900bd7cfc211",
-    "scripts/ios-ci-scope.py": "9b3adc4b2aa7e9c02ec7693143afd9215ae046fa7f764cdcb8282c34eb6c31c9",
+    "docs/validation/docker-defaults.json": "055567c97347e18055c6ffa7b165d55d3ddf363871f0f05040a9b3a33744cb33",
+    "docs/validation/docker-defaults.md": "214807f6d6af4a50c68a2b622cff0ce0184b1ac925b8ebeebfb1e1916aaf17c4",
+    "scripts/ios-ci-scope.py": "a0d93f1d9591ef4ecbbe79aa7d37a29e26c9d644f01a7d16d8a9170d5aa7c571",
     "tests/integration/docker-default-lifecycle.py": "f80fd1440c825693ede6cd40cefd20f0e8664aab244f7da831b4d0eee0bf80d8",
     "tests/integration/docker-default-lifecycle.sh": "232384d9e34edb634eda16bb92e550da2b11783ae30d0636e450e17fa08cb1bc",
     "tests/integration/docker-default.py": "55020cbdd57db040a1763ae397f453e17f5cefcb84aa27f488fdafecdc4ffde2"
   },
-  "reason": "Runtime/config/C ABI unchanged. Combined default bind/device/DNS/egress checks completed, then 30-minute total timeout during exec. Finish exec and storage/restart in independent parallel guests; reuse all passed module/Apple checks and prior network component evidence. No IPA or merge."
+  "reason": "Default Docker runtime/config unchanged from505e1c4. Final original exec/storage lifecycle jobs39118090096 passed and both artifact hashes verified; Apple/module/C ABI evidence reused by exact source binding. Record results and truthful combined-timeout/host-TCP/iPad boundaries, correct resolver documentation; [skip ci], no repeated tests, IPA, merge or release."
 }

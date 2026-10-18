@@ -4,14 +4,15 @@
 runc 1.3.4-r1。默认启动 dockerd，自行管理 containerd，使用 runc/overlay2；
 不安装 crun，不传 GOMAXPROCS、nofile、runtime、storage、安全或网络覆盖配置。
 
-实现见 [默认启动设计](../architecture/docker-defaults.md)，复现入口为
+实现见 [默认启动设计](../architecture/docker-defaults.md)，生命周期复现入口为
+`tests/integration/docker-default-lifecycle.py exec|storage`，额外组合链路为
 `tests/integration/docker-default.py`。正常启动所需的 /run、/dev/shm tmpfs
 在服务启动前挂载。宿主仅提供受控 HTTP peer 和端口客户端，不调用宿主 Docker。
 
 ## 已完成的局部验证
 
 - Linux net 40 个单元和 11 个虚拟网络测试通过。
-- VFS 143 个通过、1 个忽略；新增 setgroups 初始 user namespace 策略测试另通过。
+- 首轮 Linux VFS 144 个通过、1 个忽略；Apple 为 143 个通过、1 个忽略。
 - Linux socket ABI 3 项、调度器 timeout 1 项、seccomp 4 项通过。
 - 受影响模块 strict clippy、格式和脚本语法检查通过。
 - 独立 C 夹具：宿主 Linux UDP 对照、guest 1/4 CPU netlink 和 4 CPU UDP；
@@ -42,13 +43,29 @@ PID/cgroup、169.254.0.53 DNS 和受控 HTTP 出站。artifact #12132698705
 后续将 exec 与存储/重启拆为两个独立 guest，并行验收未完成部分，避免每次
 组合验收都重复等待 bind/端口链路。新入口为
 `tests/integration/docker-default-lifecycle.py exec|storage`；运行时源码仍为
-505e1c4，模块/C ABI/Apple 检查均复用。两个生命周期结果仍待通过。
+505e1c4，模块/C ABI/Apple 检查均复用。
+
+存储生命周期已通过 [Linux 独立验收](https://github.com/kb5000/trames/actions/runs/39118090096)
+的 job #117647914965：默认 runc/overlay2、容器停止、upper 文件持久化、未改动
+BusyBox 不复制到 upper、daemon 重启恢复、容器/镜像清理。4 guest CPU、
+1172.181 秒。artifact #12134115545（7773 bytes）SHA256 核验为
+`f402037288869a44fcf0d142170b481643527bbe0b1db0651739697849021164`。
+exec 独立验收也已通过同一 run 的 job #117647914939：原版 `docker exec` 执行、
+结果读取、文件和 proc inode 检查、容器正常退出和清理。4 guest CPU、1854.747 秒。
+artifact #12133901582（8100 bytes）SHA256 核验为
+`080edfe15a24a476bf32da1fc98e6939b711eec727508c5be1609f770453a790`。
+两条验收的 runner、shell、rootfs 和签名包输入 hash 一致。原始指纹见
+[JSON 记录](docker-defaults.json)。运行时源码为 505e1c4，测试拆分源码为 56a8a3a。
+
+此处为 Linux x86_64 CI 主机解释执行 ARM64 原版包；时长不是 iPad 实测。
+runc 容器创建仍较慢，后续需要单独采样定位；本次没有用 Go/nofile 参数规避。
 
 ## 工作流覆盖与边界
 
-验收包含默认 daemon/containerd/runc、overlay2、seccomp 状态、设备策略实际拒绝、
-PID/cgroup 视图、容器 DNS/受控 HTTP 出站、独立宿主 TCP 访问已发布端口、
-docker exec、upper 文件持久化/未变文件不复制、daemon 重启和清理。
+本批确认默认 daemon/containerd/runc、overlay2、seccomp 状态、设备策略实际拒绝、
+PID/cgroup 视图、容器 DNS/受控 HTTP 出站、docker exec、upper 文件持久化/
+未变文件不复制、daemon 重启和清理。组合链路中的独立宿主 TCP 回调没有保存
+完成结果；本轮不将它记为通过，历史宿主端口访问证据保持原有范围。
 
 历史完整双栈/UDP/bridge/firewall 网络和 overlay commit/diff 结果保持原有范围，
 本次不重复未改动的全部工作流。不将插件加载解释成完整 CRI/Kubernetes/NRI 验收。

@@ -71,6 +71,8 @@ CLI 新建 resolver 配置与 iPad 一致，使用 `169.254.0.53`；该地址可
 网络访问，避免 Docker 过滤 loopback nameserver 后改用外部公共 DNS。
 已有用户 resolver 不覆盖。
 
-验收入口为 `tests/integration/docker-default.py`，只使用原版签名包和正常的
-Docker CLI。socket timeout C ABI 夹具提供宿主 Linux UDP 对照和 guest
+独立生命周期验收入口为 `tests/integration/docker-default-lifecycle.py exec|storage`，
+额外组合 bind/端口链路为 `tests/integration/docker-default.py`，使用原版签名包和正常的
+Docker CLI；具体通过范围见[验证记录](../validation/docker-defaults.md)。
+socket timeout C ABI 夹具提供宿主 Linux UDP 对照和 guest
 1/4 CPU netlink/UDP、信号、错误优先级与 FD 共享验证。
