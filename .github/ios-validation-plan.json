@@ -16,7 +16,9 @@
     ".github/workflows/ios.yml": "73439feb9d7a67bd943061021aa19ad578ae6ed7f6e78d04e60b8dca65fb5155",
     ".github/workflows/linux.yml": "851458dee469794327122059c219d478f52ea21a8a312fc27aeae4ca9cda0573",
     "crates/trames-net/tests/virtual.rs": "6c98b0a2905a6ed83d7becc910484b6e941d261312d407396c2454c2a5bcb1da",
+    "docs/validation/docker-network.json": "9b58861d68b0bae049021b3ee94b0810796ff3e1bdd3dd8e7b84a374cd7f1475",
+    "docs/validation/docker-network.md": "7fa0d2f02da40424ed0bf3de9d17353f3928bc7ba602f4e49ed3ffcf03f78ff8",
     "scripts/ios-ci-scope.py": "8851f941831a6e7905792f9d831d72900d950321513a3110dd42472e02db9b3e"
   },
-  "reason": "Only host test buffer/CI changed. Set Darwin UDP echo peer send buffer to64KiB for unchanged60KB payload, matching production adapter. Runtime bytes unchanged. Reuse full Linux/Docker and both native UDP fixtures, Apple Net40 and virtual10. Retry only large gateway datagram on Linux/Apple and unrun Apple VFS/Linux/Core/FFI/iOS; no repeated successful acceptance."
+  "reason": "Only host test buffer/CI changed. Set Darwin UDP echo peer send buffer to64KiB for unchanged60KB payload, matching production adapter. Runtime bytes unchanged. Reuse full Linux/Docker and both native UDP fixtures, Apple Net40 and virtual10. Retry only large gateway datagram on Linux/Apple and unrun Apple VFS/Linux/Core/FFI/iOS; no repeated successful acceptance. Final records include verified CI artifact/provenance; documentation-only commit skips CI."
 }
