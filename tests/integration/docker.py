@@ -20,7 +20,11 @@ import m6
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--require-run', action='store_true')
 parser.add_argument('--privileged', action='store_true', help='Explicit guest privileged profile with allow-all device policy')
+parser.add_argument('--isolated', action='store_true', help='Private network=none, IPC and cgroup namespaces, default Docker seccomp/device profile')
+parser.add_argument('--cpus', choices=('1','4','both'), default='both', help='Only run the requested CPU configuration')
 args = parser.parse_args()
+if args.isolated and args.privileged:
+    parser.error('--isolated verifies the ordinary default security profile; omit --privileged')
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT/'target/docker-lifecycle'
 OUT.mkdir(parents=True, exist_ok=True)
@@ -89,8 +93,30 @@ docker image rm trames-alpine:probe
 echo DOCKER_CLEANUP_PASS
 '''
 script = script.replace('@PROFILE@', '--privileged' if args.privileged else '')
+if args.isolated:
+    for old, new in [('--network host', '--network none'), ('--ipc host', ''),
+                     ('--cgroupns host', ''), ('--security-opt seccomp=unconfined', '')]:
+        assert script.count(old)==1, ('profile marker missing or duplicated',old)
+        script=script.replace(old,new)
+    assert '--network none' in script and not any(flag in script for flag in
+        ('--network host','--ipc host','--cgroupns host','seccomp=unconfined','--privileged'))
+    script=script.replace('docker create ','''root_net=$(readlink /proc/self/ns/net)
+root_ipc=$(readlink /proc/self/ns/ipc)
+root_cgroup=$(readlink /proc/self/ns/cgroup)
+docker create --env ROOT_NET="$root_net" --env ROOT_IPC="$root_ipc" --env ROOT_CGROUP="$root_cgroup" ''',1)
+    script=script.replace('test "$$" = 1; id; hostname;', '''test "$$" = 1;
+  test "$(readlink /proc/self/ns/net)" != "$ROOT_NET";
+  test "$(readlink /proc/self/ns/ipc)" != "$ROOT_IPC";
+  test "$(readlink /proc/self/ns/cgroup)" != "$ROOT_CGROUP";
+  test "$(cat /proc/self/cgroup)" = "0::/";
+  grep -Eq "^Seccomp:[[:space:]]+2$" /proc/self/status;
+  test "$(cat /proc/sys/net/ipv4/ip_unprivileged_port_start)" = 0;
+  if ip link show eth0 2>/dev/null; then exit 91; fi;
+  id; hostname;''')
 results = {'profile': 'guest-privileged' if args.privileged else 'default-device-filter', 'gomaxprocs': 1, 'scope': 'Unmodified signed guest Docker/containerd/crun; mandatory daemon, vfs image import, create/inspect/remove. Container start is a separately recorded diagnostic until explicitly required.',
            'script': script, 'checks': []}
+if args.isolated:
+    results.update(profile='private-net-ipc-cgroup-default-seccomp',scope='Original Docker network=none with independent net/IPC/cgroup namespace identities, rebased cgroup mount/proc, applied network sysctls and enforced default seccomp/device filter. Bridge/NAT remain separate acceptance.')
 with tempfile.TemporaryDirectory(prefix='trames-docker-') as directory:
     tmp = Path(directory)
     m6.repository(tmp/'repository', ('docker-engine', 'docker-cli', 'crun', 'libssl3'))
@@ -102,7 +128,7 @@ with tempfile.TemporaryDirectory(prefix='trames-docker-') as directory:
     results['rootfs_sha256'] = hashlib.sha256(rootfs.read_bytes()).hexdigest()
     with gzip.open(rootfs, 'rb') as src, (tmp/'alpine.tar').open('wb') as dest:
         shutil.copyfileobj(src, dest)
-    for cpus in ('1', '4'):
+    for cpus in (('1','4') if args.cpus=='both' else (args.cpus,)):
         base = [RUNNER, '--storage', str(tmp/('store-'+cpus)), '--network', 'full', '--cpus', cpus,
                 '--env', 'GOMAXPROCS=1', '--max-instructions', '20000000000']
         imported = [arg for p in packages for arg in ('--file', '/tmp/'+p.name+'='+str(p))]

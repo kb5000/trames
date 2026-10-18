@@ -199,6 +199,7 @@ mod tests {
     fn disabled_authentication_and_ordering_hints_preserve_values() {
         for ins in [
             0xdac10020, 0xdac10420, 0xdac11020, 0xdac11420, 0xd50320df, 0xd50322df, 0xd503245f,
+            0xd503251f,
         ] {
             let (mut c, mut m) = setup(ins);
             for i in 0..31 {

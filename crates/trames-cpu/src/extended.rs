@@ -470,6 +470,7 @@ impl Cpu {
                     | 0xd503245f
                     | 0xd503249f
                     | 0xd50324df
+                    | 0xd503251f // CHKFEAT: GCS disabled, HINT preserves X16.
                     | 0xd503233f
                     | 0xd503237f
                     | 0xd50323bf

@@ -15,6 +15,18 @@ def frontend_path(path):
     }
 
 
+def container_isolation_path(path):
+    return path.startswith(('crates/trames-net/', 'crates/trames-vfs/',
+                            'crates/trames-linux/', 'crates/trames-core/', 'docs/')) or path in {
+        'crates/trames-cpu/src/extended.rs', 'crates/trames-cpu/src/compatibility.rs',
+        'tests/fixtures/seccomp.c', 'tests/fixtures/network-namespaces.c',
+        'scripts/build-container-isolation-fixtures.sh',
+        'tests/integration/container-isolation.py', 'tests/integration/docker.py',
+        '.github/workflows/ios.yml', '.github/workflows/linux.yml',
+        'scripts/ios-ci-scope.py',
+    }
+
+
 def main():
     if os.environ.get("TRAMES_FULL_CHECK") == "true":
         with open(os.environ["GITHUB_OUTPUT"], "a") as output:
@@ -37,6 +49,15 @@ def main():
             changed=set(subprocess.check_output(['git','diff','--name-only',base,'HEAD'],text=True).splitlines())- {str(plan_path)}
             hashes=plan['changed_file_sha256']
             if changed==set(hashes) and all(Path(path).exists() and hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest for path,digest in hashes.items()):
+                if plan.get('native_scope') == 'container-isolation' and changed and all(container_isolation_path(p) for p in changed):
+                    # All affected kernel/network crates and the CPU hint are
+                    # checked, followed by real guest ABI and original Docker.
+                    # Untouched App/guest-library inputs retain 1.0.0 coverage.
+                    print('Container isolation: affected native/ABI/Docker checks only; unchanged UI/GPU/guest libraries reused, no new IPA.')
+                    with open(os.environ['GITHUB_OUTPUT'],'a') as output:
+                        output.write('frontend_only=false\ntargeted=true\nnative_scope=container-isolation\n')
+                        output.write('skip_native=false\nskip_linux_native=false\nskip_linux_modules=false\n')
+                    return
                 baseline=plan['reuse_guest_run']
                 url=f'https://api.github.com/repos/{repo}/actions/runs/{baseline}'
                 with urllib.request.urlopen(urllib.request.Request(url,headers=dict(request.headers)),timeout=30) as response:

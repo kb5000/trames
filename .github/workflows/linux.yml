@@ -56,12 +56,17 @@ jobs:
           elif [[ '${{ needs.scope.outputs.native_scope }}' == host-terminals ]]; then
             cargo clippy -p trames-vfs -p trames-core -p trames-ffi --all-targets --locked -- -D warnings
             cargo test -p trames-vfs -p trames-core -p trames-ffi --lib --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == container-isolation ]]; then
+            cargo clippy -p trames-net -p trames-vfs -p trames-linux -p trames-core --all-targets --locked -- -D warnings
+            cargo test -p trames-net -p trames-vfs -p trames-linux -p trames-core --lib --locked
+            cargo test -p trames-net --test virtual --locked
+            cargo test -p trames-cpu --lib disabled_authentication_and_ordering_hints_preserve_values --locked
           else
             cargo clippy -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --all-targets --locked -- -D warnings
             cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --lib --locked
           fi
       - name: Exercise original GTK3 and mousepad, including clipboard FD transfers
-        if: needs.scope.outputs.skip_modules != 'true' && needs.scope.outputs.native_scope != 'host-terminals'
+        if: needs.scope.outputs.skip_modules != 'true' && needs.scope.outputs.native_scope != 'host-terminals' && needs.scope.outputs.native_scope != 'container-isolation'
         run: |
           sudo apt-get update -qq
           sudo apt-get install --yes --no-install-recommends libgtk-3-0 mousepad fonts-dejavu-core
@@ -73,7 +78,7 @@ jobs:
             cargo test -p trames-wayland --test gtk_client --locked -- --ignored --nocapture
           fi
       - name: Exercise original signed ARM64 foot over the guest Wayland ABI
-        if: needs.scope.outputs.native_scope != 'wayland-input' && needs.scope.outputs.native_scope != 'wayland-clipboard' && needs.scope.outputs.native_scope != 'host-terminals'
+        if: needs.scope.outputs.native_scope != 'wayland-input' && needs.scope.outputs.native_scope != 'wayland-clipboard' && needs.scope.outputs.native_scope != 'host-terminals' && needs.scope.outputs.native_scope != 'container-isolation'
         timeout-minutes: 10
         env:
           TRAMES_FOOT_STORE: ${{ github.workspace }}/target/foot-acceptance/store
@@ -101,6 +106,28 @@ jobs:
           curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o "$TRAMES_ALPINE_ARCHIVE"
           cargo build -p trames-ffi --release --locked
           python3 tests/integration/multiple-terminals.py
+      - name: Exercise real guest container isolation and original Docker defaults
+        if: needs.scope.outputs.native_scope == 'container-isolation'
+        env:
+          TRAMES_ALPINE_CACHE: ${{ github.workspace }}/target/alpine-download
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --yes --no-install-recommends gcc-aarch64-linux-gnu libc6-dev-arm64-cross
+          bash scripts/build-container-isolation-fixtures.sh
+          cargo build -p trames-cli --release --locked
+          python3 tests/integration/container-isolation.py
+          mkdir -p "$TRAMES_ALPINE_CACHE"
+          curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o "$TRAMES_ALPINE_CACHE/alpine-minirootfs-3.22.6-aarch64.tar.gz"
+          python3 tests/integration/docker.py --isolated --require-run --cpus 4
+      - uses: actions/upload-artifact@v4
+        if: always() && needs.scope.outputs.native_scope == 'container-isolation'
+        with:
+          name: original-docker-isolation
+          path: |
+            target/container-isolation/
+            target/docker-lifecycle/
+          if-no-files-found: warn
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -1,5 +1,12 @@
 # 在 guest 内运行 Docker 容器
 
+1.0.0 后的开发分支已加入独立 network/IPC/cgroup namespace 与经典 BPF seccomp，
+可测试 `docker create --network none --ulimit nofile=256:256 ...`，保留默认
+IPC/cgroup/seccomp 配置。[隔离验证](../validation/container-isolation.md)和
+[完整网络路线](../architecture/container-network-design.md)列出边界。
+已发布的 1.0.0 IPA 不包含这批开发改动；bridge/NAT 尚未完成，下方的原有
+daemon 配置仍禁用 bridge/iptables，不能直接删除这些限制配置来启用完整网络。
+
 当前开发版可通过原版 Alpine Docker → containerd → crun 执行 Alpine 容器：
 镜像导入、create/start、PID 1 payload、退出码、docker logs 与清理均纳入验收。
 使用 vfs、共享 guest 网络/IPC/cgroup namespace、关闭 seccomp 的选定配置，

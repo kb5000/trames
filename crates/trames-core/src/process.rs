@@ -80,6 +80,8 @@ mod pid_namespace;
 use compat::AltStack;
 #[path = "process_scheduling.rs"]
 mod scheduling;
+#[path = "process_seccomp.rs"]
+mod seccomp;
 #[derive(Clone, Copy, Default)]
 struct Action {
     handler: u64,
@@ -162,6 +164,7 @@ struct Process {
     membarrier_registered: Rc<Cell<bool>>,
     file_size_limit: Rc<Cell<(u64, u64)>>,
     oom: Rc<trames_vfs::OomTask>,
+    seccomp: seccomp::Seccomp,
 }
 impl Process {
     fn frozen(&self, pid: u32) -> bool {
@@ -206,6 +209,7 @@ impl Process {
             membarrier_registered: Rc::new(Cell::new(self.membarrier_registered.get())),
             file_size_limit: Rc::new(Cell::new(self.file_size_limit.get())),
             oom: Rc::new(self.oom.fork()),
+            seccomp: self.seccomp.clone(),
         }
     }
 }
@@ -527,6 +531,8 @@ impl Kernel {
             command: p.linux.command_name.clone(),
             cgroup: p.linux.vfs.cgroup_path(pid),
             nondumpable: p.linux.vfs.dumpable() != 1,
+            seccomp: p.seccomp.mode(),
+            seccomp_filters: p.seccomp.count(),
             arguments,
             environment: p.linux.environment.clone(),
             executable: p.linux.executable_file.as_ref().map_or_else(
@@ -1214,7 +1220,7 @@ impl Kernel {
         p.cpu.set_x(2, sp + 128);
         p.cpu.set_x(
             30,
-            if action.restorer == 0 {
+            if action.flags & 0x04000000 == 0 {
                 0x7fff_ffd0_0000
             } else {
                 action.restorer
@@ -1501,6 +1507,11 @@ impl Kernel {
         io: &mut impl GuestOutput,
     ) -> Result<Option<u64>, Errno> {
         match number {
+            277 => self.seccomp(p, a).map(Some),
+            167 if a[0] == 21 => Ok(Some(p.seccomp.mode() as u64)),
+            167 if a[0] == 22 => self
+                .seccomp(p, [a[1], 0, if a[1] == 1 { 0 } else { a[2] }, 0, 0, 0])
+                .map(Some),
             140 | 141 => self.priority(pid, p, number, a),
             236 => Self::mempolicy(p, a),
             90 | 91 => self.capcall(pid, p, number == 91, a).map(Some),
@@ -1634,6 +1645,9 @@ impl Kernel {
                 const ALLOWED: u64 = trames_vfs::CLONE_NEWUTS
                     | trames_vfs::CLONE_NEWNS
                     | trames_vfs::CLONE_NEWPID
+                    | trames_vfs::CLONE_NEWNET
+                    | trames_vfs::CLONE_NEWIPC
+                    | trames_vfs::CLONE_NEWCGROUP
                     | 0x200
                     | 0x400;
                 if a[0] & !ALLOWED != 0 {
@@ -1657,6 +1671,15 @@ impl Kernel {
                 }
                 if a[0] & trames_vfs::CLONE_NEWNS != 0 {
                     view.unshare_mounts()?;
+                }
+                if a[0] & trames_vfs::CLONE_NEWNET != 0 {
+                    view.unshare_net()?;
+                }
+                if a[0] & trames_vfs::CLONE_NEWIPC != 0 {
+                    view.unshare_ipc()?;
+                }
+                if a[0] & trames_vfs::CLONE_NEWCGROUP != 0 {
+                    view.unshare_cgroup()?;
                 }
                 p.linux.vfs = view;
                 if a[0] & (0x200 | trames_vfs::CLONE_NEWNS) != 0 {
@@ -1725,7 +1748,10 @@ impl Kernel {
                     | 0x1000000
                     | trames_vfs::CLONE_NEWUTS
                     | trames_vfs::CLONE_NEWNS
-                    | trames_vfs::CLONE_NEWPID;
+                    | trames_vfs::CLONE_NEWPID
+                    | trames_vfs::CLONE_NEWNET
+                    | trames_vfs::CLONE_NEWIPC
+                    | trames_vfs::CLONE_NEWCGROUP;
                 let threaded = a[0] & 0x10000 != 0;
                 let shared_vm = a[0] & 0x100 != 0;
                 if a[0] & !ALLOWED != 0
@@ -1735,6 +1761,7 @@ impl Kernel {
                             != p.linux.vfs.pid_children_namespace().id())
                     || (a[0] & 0x8000 != 0 && p.linux.vfs.visible_pid(p.tgid) == 1)
                     || (a[0] & trames_vfs::CLONE_NEWNS != 0 && a[0] & 0x200 != 0)
+                    || (a[0] & trames_vfs::CLONE_NEWIPC != 0 && a[0] & 0x40000 != 0)
                     || (!threaded && a[0] & 255 != 17)
                     || (threaded && (a[0] & 0x900 != 0x900 || a[0] & 255 != 0))
                     || (a[0] & 0x800 != 0 && !shared_vm)
@@ -1782,6 +1809,15 @@ impl Kernel {
                 }
                 if a[0] & trames_vfs::CLONE_NEWNS != 0 {
                     child.linux.vfs.unshare_mounts()?;
+                }
+                if a[0] & trames_vfs::CLONE_NEWNET != 0 {
+                    child.linux.vfs.unshare_net()?;
+                }
+                if a[0] & trames_vfs::CLONE_NEWIPC != 0 {
+                    child.linux.vfs.unshare_ipc()?;
+                }
+                if a[0] & trames_vfs::CLONE_NEWCGROUP != 0 {
+                    child.linux.vfs.unshare_cgroup()?;
                 }
                 child.linux.vfs.activate_child_pid(id)?;
                 let parent_tid = p.linux.vfs.visible_pid(id);
@@ -2359,6 +2395,9 @@ impl Kernel {
     ) {
         let began = self.profile_syscalls.then(Instant::now);
         self.syscalls += 1;
+        if !matches!(p.state, State::Blocked(..)) && self.filter_syscall(pid, p, number, a) {
+            return;
+        }
         p.linux.vfs.set_process_context(pid);
         p.linux.vfs.set_lock_owner(p.tgid);
         p.linux.vfs.set_file_size_limit(p.file_size_limit.get().0);
@@ -3764,6 +3803,7 @@ pub(super) fn run(
         membarrier_registered: Rc::new(Cell::new(false)),
         file_size_limit: Rc::new(Cell::new((u64::MAX, u64::MAX))),
         oom: Rc::new(trames_vfs::OomTask::default()),
+        seccomp: seccomp::Seccomp::default(),
     };
     let count = runtime.cpu_count.clamp(1, 32);
     let mut kernel = Kernel {
@@ -3930,6 +3970,7 @@ mod tests {
             membarrier_registered: Rc::new(Cell::new(false)),
             file_size_limit: Rc::new(Cell::new((u64::MAX, u64::MAX))),
             oom: Rc::new(trames_vfs::OomTask::default()),
+            seccomp: seccomp::Seccomp::default(),
         }
     }
     #[test]
