@@ -39,8 +39,15 @@
 net/IPC/cgroup、seccomp mode 2、退出码 7、logs、删除及清理。
 daemon 仍禁用 bridge/iptables，容器为 network=none；该项不验证 NAT。
 
-Linux 与 Apple/iOS FFI 对应 CI 待本批源码提交后完成；完整输入指纹、
-本地结果和后续 CI 链接写入[机器记录](container-forwarding.json)。
+生产源码为 `b98c891930aa2a6547b8694bf033bc92a091dd78`。
+[Apple/iOS FFI](https://github.com/kb5000/trames/actions/runs/39094617889)
+已通过 Net 24、Linux 21、VFS 120（1 ignored）和 ARM64 iOS FFI 编译检查。
+[Linux](https://github.com/kb5000/trames/actions/runs/39094617887)
+通过严格 clippy/fmt、Net 24、Linux 21、VFS 121（1 ignored）、virtual 11，
+三个真实 ARM64 网络程序各 1/4 vCPU，以及新磁盘上原版 Docker 严格隔离
+4 vCPU 的完整生命周期。完整输入指纹、本地结果和 CI 证据写入
+[机器记录](container-forwarding.json)。最后提交只更新记录，不改变生产源码
+或重复触发 CI。
 
 ```sh
 bash scripts/build-container-network-fixture.sh
@@ -67,3 +74,13 @@ time-exceeded/unreachable。peer carrier/自动路由通知、root 双路径持�
 
 跟踪 [Issue #29](https://github.com/kb5000/trames/issues/29)，草稿
 [PR #30](https://github.com/kb5000/trames/pull/30)。
+
+## 下一阶段诊断
+
+使用已有开发测试磁盘，保持原版 dockerd，仅关闭 iptables 并打开 docker0
+作 daemon 启动诊断（不是网络验收），目前仍报 `Failed to create bridge
+docker0 via netlink: operation not supported`。对照 Moby v28.3.3 与其
+vendored Go netlink，零值 LinkAttrs 会发送 `IFLA_TXQLEN=0`，当前解析器
+会拒绝此属性。最小 ARM64 guest 请求已复现：同一 bridge 请求加上该属性
+返回 errno 95，去掉后成功。下一批应先核对队列及其后的实际 bridge 设置，再接通
+netfilter/NAT。默认开启 iptables 的路线仍受 nft 初始化未实现阻塞。
