@@ -1,0 +1,82 @@
+{
+  "version": "1.0.0",
+  "build": 30,
+  "source_commit": "7700195e4da14b8bf05b3b1644779b3c47ce16cc",
+  "runtime_source_commit": "7700195e4da14b8bf05b3b1644779b3c47ce16cc",
+  "status": "verified-package",
+  "apple_run": 39135889869,
+  "linux_scope_run": 39135889864,
+  "purpose": "Owner-requested runtime tmpfs initialization hotfix; unsigned Sideloadly IPA, no formal release or merge.",
+  "features": [
+    "Automatically mount /run tmpfs0755 and /dev/shm tmpfs1777 size64MiB before Wayland/terminal/services",
+    "Idempotent initialization preserves live sockets/files; local terminals share mounts; cold reopen starts fresh",
+    "Retains build29 MMU VA and route-endian fixes"
+  ],
+  "validation_reuse": {
+    "startup_mounts": {
+      "sha": "1a3bcb6a60bd46af11bbdc49113fb34e178d031a",
+      "apple": 39134234642,
+      "patch_sha256": "7bf2b038ce82f0f8aed5d8c0e81f68ec43c88c405ddc0a55dc59a263a2808538",
+      "linux_delta_record": "docs/validation/runtime-mounts.md"
+    },
+    "frontend": {
+      "sha": "aa4528166c8d0cdb04f3fe540730d9af63ed7f07",
+      "run": 39062598012
+    },
+    "guest": {
+      "sha": "534e223e284df48f207500e84ab4cd05dd3d3958",
+      "run": 39015795319
+    }
+  },
+  "device_execution_tested": false,
+  "unrelated_test_suites_rerun": false,
+  "scope": "Two affected Linux/Apple FFI startup tests plus strict Linux FFI clippy and current optimized ARM64 device app build. Source-identical Docker/MMU/route/CPU/UI/GPU and guest artifacts reused.",
+  "source_closure": {
+    "repository": "https://github.com/kb5000/trames/tree/7700195e4da14b8bf05b3b1644779b3c47ce16cc",
+    "guest_source_run": 39015795319,
+    "guest_musl_source_artifact": 12095225586,
+    "guest_vulkan_native_source_artifact": 12095066135
+  },
+  "inspection": {
+    "version": "1.0.0",
+    "build": 30,
+    "bundle_id": "org.trames.Trames",
+    "platform": "iPhoneOS arm64",
+    "signed": false,
+    "bytes": 10961095,
+    "sha256": "2930fa31f0daaef89e46ab6ce40e6dc653de90a9330a13df94b64aa52e9a71fc",
+    "source_commit": "7700195e4da14b8bf05b3b1644779b3c47ce16cc",
+    "runtime_source_commit": "7700195e4da14b8bf05b3b1644779b3c47ce16cc",
+    "apple_run": 39135889869,
+    "main_binary_sha256": "63a63642c64bdec01f6717e7b3f6a92a31eb740e171a3f9f9186920ed83cada8",
+    "file_provider_binary_sha256": "d9b54880744c3dd9d44ff0985dcb455d6cde8b39d6a8afda461e9af5fdb47baa",
+    "file_provider_group": "group.org.trames.Trames",
+    "guest_library_sha256": {
+      "GuestMusl": "885b308b75e36bb402b311fba1d3f1284e6dd8d3a0bfbf88686bff1b629f9b23",
+      "GuestVulkan": "02b28eae49783dd1f8fdcbe7341f9cb0325d1b2593f713726e571a7704774c26"
+    },
+    "debug_wayland_fixtures_absent": true,
+    "native_coremark_absent": true,
+    "current_device_execution_tested": false
+  },
+  "artifact": {
+    "id": 12139164057,
+    "name": "Trames-unsigned-sideload",
+    "bytes": 10887217,
+    "zip_sha256": "36d8ecfbccd1171552d460a436c74bbf95432ba2d382a9a264c1337e4226229c",
+    "url": "https://github.com/kb5000/trames/actions/runs/39135889869/artifacts/12139164057",
+    "expires_at": "2026-11-01T14:30:43Z"
+  },
+  "results": {
+    "linux_targeted_tests": 2,
+    "linux_ffi_clippy": "passed",
+    "apple_targeted_tests": 2,
+    "apple_build": "success",
+    "linux_scope": "success; passed local delta and unchanged source checks reused",
+    "current_device_release": "passed; freshly compiled aarch64-apple-ios FFI release [optimized] and Xcode Release app",
+    "downloaded_zip_and_ipa_crc_sha256": "passed",
+    "app_extension_iphoneos_arm64_versions_group": "passed",
+    "guest_elf_manifest_and_previous_hashes": "passed",
+    "unchanged_acceptance_reused": "build29 MMU/route/Docker, frontend UI/GPU/guest sources"
+  }
+}

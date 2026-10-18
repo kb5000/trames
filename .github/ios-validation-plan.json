@@ -23,10 +23,12 @@
     "crates/trames-ffi/src/session.rs": "b37c7cfffcae22c9eb5a4b96e81cae0bc174b50abccf5164dbee72e19149120d",
     "docs/architecture/docker-defaults.md": "2caaf6eeab7a7a8363421849ebfe3a6977c1be4ff9a1646b31c3886cc18c53bb",
     "docs/guides/guest-docker.md": "4d8b08ef645110fe610f37c9e29c6e8637fd64d20a006b6b0e0411e4f7ab4350",
-    "docs/validation/runtime-mounts.md": "52a9b17f0d4ad40f9a83a39480ad58a9e87d95cb7be8fecdd23a98c7583cd28f",
+    "docs/validation/ipad-1.0-build30.json": "b37204243ef591707f4437af012fd01616e9cda5d36cb88181b97068c963591e",
+    "docs/validation/ipad-1.0-build30.md": "85a48e64f44bf7016728eadefdcaf27aa9b4292ae755d89831b97a59d960d250",
+    "docs/validation/runtime-mounts.md": "f34b2e19e28f2e42f70e6a8bccd34cc7338e472d684a1d01514c55e500040548",
     "docs/validation/runtime-mounts/clippy.log": "a386aab4ddb65e67f4bf10c6f08f041d0b9f43914bb86a4be9d81f1fc71d76b7",
     "docs/validation/runtime-mounts/tests.log": "0d3ee9c0d53a3b1836dba80818b1b9f3b85f18c244541899fde45f33610cb19e",
     "scripts/ios-ci-scope.py": "84c560fcfbda163f736c1755180c0e136289df5bb09aa74e3233c535b09a89c5"
   },
-  "reason": "Owner-requested build30: initialize run/shm tmpfs before Wayland and terminal/services. Linux runtime-mount idempotency/order/quota/cold-reopen tests and FFI clippy passed. Run only affected Apple FFI startup tests and fresh device release build; reuse source-identical Docker/MMU/route/CPU/UI/GPU and guest evidence."
+  "reason": "Record passed build30 Linux/Apple FFI startup checks, current ARM64 Release IPA and downloaded package inspection. Same runtime/frontend/guest as7700195; [skip ci], no repeated passed suites, merge or formal release."
 }

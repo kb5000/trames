@@ -11,5 +11,7 @@ Docker及未变CPU/UI/GPU/guest产物继续保留各自通过证据，不重复�
 
 两个Linux定向回归和FFI严格Clippy通过：检查tmpfs magic、目录权限、64MiB额度
 和空闲块；Wayland建立后重复调用不叠加挂载或遮住socket；保留活文件/共享终端
-namespace；磁盘冷重开没有上一会话的临时文件。Apple同项检查和build30实际
-ARM64 iOS Release IPA构建随后执行。[本地日志](runtime-mounts/tests.log)。
+namespace；磁盘冷重开没有上一会话的临时文件。[Apple同两项检查及build30实际
+ARM64 iOS Release IPA构建](https://github.com/kb5000/trames/actions/runs/39135889869)已通过。[本地日志](runtime-mounts/tests.log)。
+
+[build30安装包和SHA256](ipad-1.0-build30.md)已下载核验，实际iPad安装后可直接启动dockerd。
