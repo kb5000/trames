@@ -1,0 +1,44 @@
+{
+  "version": "1.1.0",
+  "build": 32,
+  "status": "verified",
+  "source_commit": "d1d0185073230919496567223520594f1f83df7d",
+  "apple_run": 39147131590,
+  "linux_run": 39147626609,
+  "linux_source_commit": "42a6864698e23e6833ab17ca5415541f5fc4462a",
+  "linux_workspace_run": 39147131597,
+  "linux_workspace_job": 117733188032,
+  "linux_workspace_passed": 477,
+  "apple_workspace_passed": 478,
+  "guest_run": 39015795319,
+  "ipa_sha256": "e6c4c5da9aee9f10fcc65dfb173b9593a2cf3858ad1447b66e71ce091acc3f94",
+  "inspection": {
+    "version": "1.1.0",
+    "build": 32,
+    "bundle_id": "org.trames.Trames",
+    "platform": "iPhoneOS arm64",
+    "signed": false,
+    "bytes": 10962236,
+    "sha256": "e6c4c5da9aee9f10fcc65dfb173b9593a2cf3858ad1447b66e71ce091acc3f94",
+    "source_commit": "d1d0185073230919496567223520594f1f83df7d",
+    "runtime_source_commit": "d1d0185073230919496567223520594f1f83df7d",
+    "apple_run": 39147131590,
+    "main_binary_sha256": "541c966b911ff8c4f3c8f7763308ad6ad99f639959a5a8564cf73c8e2fe622e5",
+    "file_provider_binary_sha256": "d9b54880744c3dd9d44ff0985dcb455d6cde8b39d6a8afda461e9af5fdb47baa",
+    "file_provider_group": "group.org.trames.Trames",
+    "guest_library_sha256": {
+      "GuestMusl": "885b308b75e36bb402b311fba1d3f1284e6dd8d3a0bfbf88686bff1b629f9b23",
+      "GuestVulkan": "02b28eae49783dd1f8fdcbe7341f9cb0325d1b2593f713726e571a7704774c26"
+    },
+    "debug_wayland_fixtures_absent": true,
+    "native_coremark_absent": true,
+    "current_device_execution_tested": false
+  },
+  "device_execution_tested": false,
+  "validation": "Linux fmt/strict workspace clippy/477 Rust tests passed; initial bundled step failed only on missing llvm-ar during iOS cross check. Source-identical focused cross-check after installing LLVM passed; successful results not rerun. Apple478 Rust tests plus current optimized ARM64 Release compile passed. Unchanged UI/CPU differential/network/GPU/Docker integration and guest acceptance reused by source hash.",
+  "scope": "Rootful guest Docker subset, default runc/overlay2 and tested interactive TTY; not full OCI/rootless/CRI/BuildKit/Compose. Docker API --rm passes; retained shim/runc cleanup warnings. Physical device matrix and formal-key FileProvider activation remain separate.",
+  "guest_source_artifacts": [
+    12095225586,
+    12095066135
+  ]
+}

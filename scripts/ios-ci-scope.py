@@ -203,7 +203,7 @@ def device_build_outputs(plan, repo, headers):
         delta = subprocess.check_output(['git', 'diff', '--name-only', metadata['sha'], 'HEAD'], text=True).splitlines()
         allowed = {'.github/ios-validation-plan.json', '.github/workflows/ios.yml',
                    'scripts/ios-ci-scope.py', 'apps/ios/project.yml', '.github/workflows/linux.yml',
-                   'scripts/publish-ios-release-1.1.py'}
+                   'scripts/publish-ios-release-1.1.py', 'README.md'}
         if any(p not in allowed and not p.startswith('docs/') for p in delta):
             raise RuntimeError('Metadata repackaging must preserve all compiled sources')
         project = 'apps/ios/project.yml'

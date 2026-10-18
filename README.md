@@ -1,8 +1,8 @@
 # Trames
 
-正在准备 **1.1.0 / build 32**：默认 runc/overlay2 的 guest Docker、网络隔离、自动运行目录挂载、MMU 地址空间与交互式终端修复。[发行说明](docs/validation/release-1.1-notes.md)。正式下载将在合并与检查完成后提供。
+[Trames 1.1.0（build 32）](https://github.com/kb5000/trames/releases/tag/v1.1.0) · [下载 unsigned IPA](https://github.com/kb5000/trames/releases/download/v1.1.0/Trames-1.1.0-build32-unsigned.ipa)。默认 runc/overlay2 的 guest Docker、网络隔离、自动运行目录挂载、MMU 地址空间与交互式终端修复。[发行说明](docs/validation/release-1.1-notes.md) · [验证和源码](docs/validation/release-1.1.md)。后续兼容性继续由 #29 跟踪。
 
-[Trames 1.0.0（build 26）](https://github.com/kb5000/trames/releases/tag/v1.0.0) · [下载 unsigned IPA](https://github.com/kb5000/trames/releases/download/v1.0.0/Trames-1.0.0-build26-unsigned.ipa)。点击 **+ → 本地 Alpine 终端** 可创建多个独立终端，支持浮动、调整大小、最小化、停靠和关闭；共享同一 Linux 的文件、进程、网络及软件，工作目录、环境变量和终端尺寸独立。关闭首个终端或全部关闭后再打开，仍使用同一运行环境。包含此前 Wayland／Vulkan、GTK 剪贴板／输入、粘贴权限连贴、窗口／PTY 尺寸及 Files 修复。新增多终端生产回归与 iPad 模拟器验收通过，复用不受影响的成功检查。[发行和验证记录](docs/validation/release-1.0.md)。使用 Sideloadly 签名安装；[只读 rootfs File Provider](docs/guides/rootfs-files.md) 真机激活仍待正式 App Group 签名。
+[此前 Trames 1.0.0（build 26）](https://github.com/kb5000/trames/releases/tag/v1.0.0) · [下载 unsigned IPA](https://github.com/kb5000/trames/releases/download/v1.0.0/Trames-1.0.0-build26-unsigned.ipa)。点击 **+ → 本地 Alpine 终端** 可创建多个独立终端，支持浮动、调整大小、最小化、停靠和关闭；共享同一 Linux 的文件、进程、网络及软件，工作目录、环境变量和终端尺寸独立。关闭首个终端或全部关闭后再打开，仍使用同一运行环境。包含此前 Wayland／Vulkan、GTK 剪贴板／输入、粘贴权限连贴、窗口／PTY 尺寸及 Files 修复。新增多终端生产回归与 iPad 模拟器验收通过，复用不受影响的成功检查。[发行和验证记录](docs/validation/release-1.0.md)。使用 Sideloadly 签名安装；[只读 rootfs File Provider](docs/guides/rootfs-files.md) 真机激活仍待正式 App Group 签名。
 
 0.17.0 加入[宿主原生 Wayland](docs/architecture/wayland.md)：终端与图形应用共用顶部标签栏，支持拖出浮窗、停靠、调整分辨率及 UIKit 输入法。旧“显示窗口”菜单与固定显示器界面已移除。原版 vkmark 的 13 种场景通过本地功能验收；窗口手势、原版 Weston、vkcube、vkmark 与 Metal 显示通过 **33 项 Apple 模拟器验收**，零失败或跳过。[验证记录](docs/validation/wayland-workspace-vkmark.md)、[使用说明](docs/guides/wayland.md)、[0.17.0/build 19 发行记录](docs/validation/release-0.17.md)，对应 [PR #26](https://github.com/kb5000/trames/pull/26)。
 

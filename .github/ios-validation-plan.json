@@ -1,6 +1,6 @@
 {
-  "base_sha": "d1d0185073230919496567223520594f1f83df7d",
-  "native_scope": "release-cross",
+  "base_sha": "42a6864698e23e6833ab17ca5415541f5fc4462a",
+  "native_scope": "device-metadata",
   "device_build": {
     "frontend": {
       "sha": "aa4528166c8d0cdb04f3fe540730d9af63ed7f07",
@@ -12,14 +12,14 @@
     },
     "metadata_repackage": {
       "sha": "d1d0185073230919496567223520594f1f83df7d",
-      "run": 39147131590,
-      "cross_only": true
+      "run": 39147131590
     }
   },
-  "reason": "Preserve successful Linux fmt/strict clippy/477 Rust tests and successful Apple workspace/current Release app fromd1d0185. Install missing LLVM tool and retry only Linux iOS cross-check; repackage identical IPA, no repeated native/UI/GPU/CPU tests.",
+  "reason": "Verified release record [skip ci]. Retain Apple478 and Linux477 + successful focused cross-check; after merge only reuse/package exact current app, no repeated passed suites.",
   "changed_file_sha256": {
-    ".github/workflows/linux.yml": "dcc11f35bcdc4dc0f81bf3382dcab095fd6479180a8a50f5af200b87385eec9c",
-    "scripts/ios-ci-scope.py": "787802796779063afc54fe7cb2a68042dcc0ce04a2d9a1966e1d1d670d7a563c",
-    "scripts/publish-ios-release-1.1.py": "6997bf5713764dc6bb0c54b7a5d80d9849d6c41ac624e9d888498bdf8b47cc5c"
+    "README.md": "9ffa094c800c5fffe4babee045bdf8f8a695b81d1f6cf2e8ae17616bf571f9a7",
+    "docs/validation/release-1.1.json": "fa7b85cfa8378c30e954a3c013c2417ed31a1a9ea725b3fdf24fd490e4ff5577",
+    "docs/validation/release-1.1.md": "a3f3a92f755a346618e47365e4b7d21b7c77848d7adab979c9aa0673cd529f2c",
+    "scripts/ios-ci-scope.py": "875e9036a40b8ebb3974a97f274a138668bebcdd27a4c052ef1b170de00205fc"
   }
 }
