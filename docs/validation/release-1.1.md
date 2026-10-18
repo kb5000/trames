@@ -24,3 +24,12 @@ IPA SHA256：`e6c4c5da9aee9f10fcc65dfb173b9593a2cf3858ad1447b66e71ce091acc3f94`�
 
 后续范围由#29（Docker）、#24（code-server）、#23（解释器性能）、#18（实验native allocator）
 与#8（设备/FileProvider）继续跟踪。关闭旧功能或重复Issue不代表未实现功能已经完成。
+
+发布已完成：v1.1.0固定在b25feb43，公开发行工作流39147982945成功，6项资产上传并
+逐个回读核验。另行从公开Release URL下载IPA，SHA256与已检查Actions IPA一致。
+项目/库对应源码、checksum与verification JSON均已公开；未替换任何旧tag/资产。
+本文件后续记录提交只更新文档，不移动正式tag。
+
+Issue整理：#19/#21的初始功能交付完成；#22的后续事项转入#29后关闭；#9因原生
+SSH/SFTP退出当前App集成范围按not_planned关闭，不宣称NIOSSH崩溃已修复。
+#8/#18/#23/#24/#29保留，分别跟踪真机/FileProvider、实验allocator、性能、code-server和Docker剩余项。

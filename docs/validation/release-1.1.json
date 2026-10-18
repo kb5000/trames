@@ -40,5 +40,69 @@
   "guest_source_artifacts": [
     12095225586,
     12095066135
-  ]
+  ],
+  "publication": {
+    "tag": "v1.1.0",
+    "tag_commit": "b25feb43ba019850511b440af34e9595f1b2e97c",
+    "url": "https://github.com/kb5000/trames/releases/tag/v1.1.0",
+    "published_at": "2026-10-18T17:06:06Z",
+    "workflow_run": 39147982945,
+    "workflow_job": 117735626715,
+    "public_ipa_download_sha256_verified": true,
+    "closed_issues": {
+      "completed": [
+        19,
+        21,
+        22
+      ],
+      "not_planned": [
+        9
+      ]
+    },
+    "retained_issues": [
+      8,
+      18,
+      23,
+      24,
+      29
+    ],
+    "assets": [
+      {
+        "name": "musl-hybrid-1.2.5-source.tar.gz",
+        "size": 1600750,
+        "digest": "sha256:16be4a115dd55670eb78f3e9aaf17c2046b1fb5baca454824c3f7d10d8d357fa",
+        "url": "https://github.com/kb5000/trames/releases/download/v1.1.0/musl-hybrid-1.2.5-source.tar.gz"
+      },
+      {
+        "name": "Trames-1.1.0-build32-unsigned.ipa",
+        "size": 10962236,
+        "digest": "sha256:e6c4c5da9aee9f10fcc65dfb173b9593a2cf3858ad1447b66e71ce091acc3f94",
+        "url": "https://github.com/kb5000/trames/releases/download/v1.1.0/Trames-1.1.0-build32-unsigned.ipa"
+      },
+      {
+        "name": "Trames-1.1.0-build32-unsigned.ipa.sha256",
+        "size": 100,
+        "digest": "sha256:9bbc0cc9fb7184631ab9ba350f63dd5d7e7bfe81e69fd8eff73a11f2325904e1",
+        "url": "https://github.com/kb5000/trames/releases/download/v1.1.0/Trames-1.1.0-build32-unsigned.ipa.sha256"
+      },
+      {
+        "name": "Trames-1.1.0-source.tar.gz",
+        "size": 3619572,
+        "digest": "sha256:451deac7dc32787ffc061591c857e24a9d9533f52655ec07810cb8c2423f5571",
+        "url": "https://github.com/kb5000/trames/releases/download/v1.1.0/Trames-1.1.0-source.tar.gz"
+      },
+      {
+        "name": "Trames-1.1.0-verification.json",
+        "size": 3792,
+        "digest": "sha256:a0c4efa9aa11944b06c1258660a9989489b1fcf3a9eaefb4f1620e551e31f331",
+        "url": "https://github.com/kb5000/trames/releases/download/v1.1.0/Trames-1.1.0-verification.json"
+      },
+      {
+        "name": "vulkan-native-upstream-source.tar.gz",
+        "size": 14257361,
+        "digest": "sha256:84ee0d1b3eba9debaa2cc44e5ee81cc66c72e0d07e45b5a52ab7fb67b75bf401",
+        "url": "https://github.com/kb5000/trames/releases/download/v1.1.0/vulkan-native-upstream-source.tar.gz"
+      }
+    ]
+  }
 }

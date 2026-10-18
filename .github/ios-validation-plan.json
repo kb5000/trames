@@ -15,11 +15,11 @@
       "run": 39147131590
     }
   },
-  "reason": "Publication-only gh ANSI log transport fix; reuse all passed source-identical release checks and app.",
+  "reason": "Published v1.1.0/tag and six public assets verified; four issue closures recorded [skip ci]. Documentation only, no repeated checks or tag movement.",
   "changed_file_sha256": {
     "README.md": "9ffa094c800c5fffe4babee045bdf8f8a695b81d1f6cf2e8ae17616bf571f9a7",
-    "docs/validation/release-1.1.json": "fa7b85cfa8378c30e954a3c013c2417ed31a1a9ea725b3fdf24fd490e4ff5577",
-    "docs/validation/release-1.1.md": "a3f3a92f755a346618e47365e4b7d21b7c77848d7adab979c9aa0673cd529f2c",
+    "docs/validation/release-1.1.json": "b4ef79ea8f44d1f33b0eb067a5caaaba0290c9d91ad0d9079ba8e4c808ee659a",
+    "docs/validation/release-1.1.md": "23249f21860a5cd8999ae8ca596d36d45f560b232fbd7e8dcbd4ac9923a76932",
     "scripts/ios-ci-scope.py": "875e9036a40b8ebb3974a97f274a138668bebcdd27a4c052ef1b170de00205fc",
     "scripts/publish-ios-release-1.1.py": "2dc38fe91458f6c356e1045472ecec773dabed1c740ce424719387ef512185ca"
   }
