@@ -47,7 +47,8 @@ def network_test_retry_source_unchanged(sha):
     delta=subprocess.check_output(['git','diff','--name-only',sha,'HEAD'],text=True).splitlines()
     allowed={'.github/ios-validation-plan.json','.github/workflows/ios.yml',
              '.github/workflows/linux.yml','scripts/ios-ci-scope.py',
-             'crates/trames-net/src/nftables_tests.rs','crates/trames-linux/src/network.rs'}
+             'crates/trames-net/src/nftables_tests.rs','crates/trames-linux/src/network.rs',
+             'crates/trames-net/tests/virtual.rs'}
     if any(not p.startswith('docs/') and p not in allowed for p in delta):return False
     # nftables_tests is included only under cfg(test). Socket production code,
     # including ancillary parsing, must be byte-identical to the verified run.
@@ -135,6 +136,16 @@ def main():
                                 prior=json.load(response)
                             verified.append(prior['conclusion']==conclusion and prior['head_sha']==fixture_reuse['sha'] and prior['path']=='.github/workflows/'+workflow_name and prior['head_repository']['full_name']==repo)
                         fixture_retry=all(verified)
+                    virtual_retry=False
+                    virtual_reuse=plan.get('network_virtual_reuse')
+                    if fixture_retry and virtual_reuse:
+                        verified=[]
+                        for workflow_name,run_id,conclusion in [('linux.yml',virtual_reuse['linux_run'],'success'),('ios.yml',virtual_reuse['apple_run'],'failure')]:
+                            with urllib.request.urlopen(urllib.request.Request(f'https://api.github.com/repos/{repo}/actions/runs/{run_id}',headers=dict(request.headers)),timeout=30)as response:
+                                prior=json.load(response)
+                            verified.append(prior['conclusion']==conclusion and prior['head_sha']==virtual_reuse['sha'] and prior['path']=='.github/workflows/'+workflow_name and prior['head_repository']['full_name']==repo)
+                        virtual_retry=all(verified)
+                    if virtual_retry:print('Darwin host UDP echo fixture now uses an explicit 64KiB send buffer: reuse all40 Apple Net tests, 10 virtual tests and Linux changed-fixture results. Retry the single large-datagram test and remaining Apple checks.')
                     if fixture_retry:print('Only bounded native UDP test delivery waits changed: reuse successful Linux runtime/default Docker network and 39 Apple Net tests; retry changed fixtures and remaining Apple checks. All production bytes are unchanged.')
                     if retry:print('Reuse successful Linux/Apple libraries, virtual network and original Docker checks; only exact stack-lifetime delta, affected guest networking and iOS FFI run.')
                     with open(os.environ['GITHUB_OUTPUT'],'a') as output:
@@ -144,6 +155,7 @@ def main():
                         output.write('nftables='+str(plan.get('nftables_stage') is True).lower()+'\n')
                         output.write('docker_network='+str(plan.get('docker_network_stage') is True).lower()+'\n')
                         output.write('docker_network_retry='+str(fixture_retry).lower()+'\n')
+                        output.write('docker_network_virtual_retry='+str(virtual_retry).lower()+'\n')
                         output.write('docker_bridge='+str(plan.get('docker_bridge_stage') is True).lower()+'\n')
                     if plan.get('docker_network_stage') is True:
                         print('Docker full network stage: Net/virtual, VFS network/events, Linux network/splice, Core splice scheduler compile, FFI managed DNS, CLI; signed iptables/NAT 1/4 CPU and original default Docker network/DNS/TCP/UDP/isolation at 4 CPU; Apple counterparts and iOS FFI. Reuse unchanged CPU/UI/GPU/guest libraries; no IPA.')

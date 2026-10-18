@@ -1,5 +1,5 @@
 {
-  "base_sha": "69fc75b30851916a9ee45e95fb5a6a8d6239060f",
+  "base_sha": "62e14732adb2014fe1d5ecc2001c367c6ed2642a",
   "native_scope": "container-network",
   "docker_network_stage": true,
   "network_validation_reuse": {
@@ -7,12 +7,16 @@
     "linux_run": 39103300381,
     "apple_run": 39103300557
   },
-  "changed_file_sha256": {
-    ".github/workflows/ios.yml": "2d1252796ab624f041eff2c133534abf1f890a62b46a30cf0db0e6c1bd39882a",
-    ".github/workflows/linux.yml": "496e082aad00f75e52caa3084d34e35e2bf7206eb6314989d23b8a7c2c90faf5",
-    "crates/trames-linux/src/network.rs": "5e1ce9382edbad60f302f6df099710b14c85ca5489ce8b11f336be627d4cd8f0",
-    "crates/trames-net/src/nftables_tests.rs": "31b9d477e57e26cadd2e3c16b88f9687d0a8d5912e48fa7c7f885edf8e9c1961",
-    "scripts/ios-ci-scope.py": "ee390a8f3ae1b2c22f9429daebe5b0b19d1b4c568cba7b6e034f14fbbf34e07e"
+  "network_virtual_reuse": {
+    "sha": "62e14732adb2014fe1d5ecc2001c367c6ed2642a",
+    "linux_run": 39103832582,
+    "apple_run": 39103832584
   },
-  "reason": "Only test/CI changes: Darwin UDP delivery is asynchronous, so native filter and pktinfo fixtures wait for actual readiness. All production sources are unchanged. Verify prior Linux runtime/default Docker/restart success and reuse; retry changed fixtures only on Linux, failed native filter plus unrun virtual/VFS/Linux/FFI/Core splice/iOS checks on Apple. Do not rerun passed Net39, Docker, CPU/UI/GPU or guest libraries."
+  "changed_file_sha256": {
+    ".github/workflows/ios.yml": "73439feb9d7a67bd943061021aa19ad578ae6ed7f6e78d04e60b8dca65fb5155",
+    ".github/workflows/linux.yml": "851458dee469794327122059c219d478f52ea21a8a312fc27aeae4ca9cda0573",
+    "crates/trames-net/tests/virtual.rs": "6c98b0a2905a6ed83d7becc910484b6e941d261312d407396c2454c2a5bcb1da",
+    "scripts/ios-ci-scope.py": "8851f941831a6e7905792f9d831d72900d950321513a3110dd42472e02db9b3e"
+  },
+  "reason": "Only host test buffer/CI changed. Set Darwin UDP echo peer send buffer to64KiB for unchanged60KB payload, matching production adapter. Runtime bytes unchanged. Reuse full Linux/Docker and both native UDP fixtures, Apple Net40 and virtual10. Retry only large gateway datagram on Linux/Apple and unrun Apple VFS/Linux/Core/FFI/iOS; no repeated successful acceptance."
 }

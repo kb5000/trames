@@ -53,7 +53,9 @@ jobs:
       - name: Validate affected Apple network modules and iOS FFI
         run: |
           if [[ '${{ needs.scope.outputs.docker_network }}' == true ]]; then
-            if [[ '${{ needs.scope.outputs.docker_network_retry }}' == true ]]; then
+            if [[ '${{ needs.scope.outputs.docker_network_virtual_retry }}' == true ]]; then
+              cargo test -p trames-net --test virtual native_gateway_tcp_and_udp_both_families --locked
+            elif [[ '${{ needs.scope.outputs.docker_network_retry }}' == true ]]; then
               cargo test -p trames-net --lib native_root_input --locked
               cargo test -p trames-net --test virtual --locked
             else
@@ -96,6 +98,7 @@ jobs:
       nftables: ${{ steps.scope.outputs.nftables }}
       docker_network: ${{ steps.scope.outputs.docker_network }}
       docker_network_retry: ${{ steps.scope.outputs.docker_network_retry }}
+      docker_network_virtual_retry: ${{ steps.scope.outputs.docker_network_virtual_retry }}
       frontend_reused: ${{ steps.scope.outputs.frontend_reused }}
     steps:
       - uses: actions/checkout@v4
