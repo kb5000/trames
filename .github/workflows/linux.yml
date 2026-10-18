@@ -43,7 +43,7 @@ jobs:
         run: python3 scripts/ios-ci-scope.py
   release-core:
     needs: scope
-    if: needs.scope.outputs.native_scope == 'release-core'
+    if: needs.scope.outputs.native_scope == 'release-core' || needs.scope.outputs.native_scope == 'release-cross'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -53,11 +53,16 @@ jobs:
           toolchain: nightly-2026-10-16
           components: rustfmt, clippy
           targets: aarch64-apple-ios
+      - name: Install LLVM archiver for the iOS cross target
+        run: sudo apt-get update && sudo apt-get install --yes clang llvm
       - name: Check release workspace formatting, lints and all Rust tests
+        if: needs.scope.outputs.native_scope != 'release-cross'
         run: |
           cargo fmt --all --check
           cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
           cargo test --workspace --all-features --locked
+      - name: Complete release iOS cross compile
+        run: |
           cargo check -p trames-core -p trames-distro -p trames-ffi --target aarch64-apple-ios --locked
   docker-default-lifecycle:
     needs: scope

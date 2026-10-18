@@ -87,14 +87,27 @@ def main():
     head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
     subprocess.run(['git', 'merge-base', '--is-ancestor', source, head], check=True)
     changed = subprocess.check_output(['git', 'diff', '--name-only', source, head], text=True).splitlines()
-    allowed = {'.github/ios-validation-plan.json', 'scripts/ios-ci-scope.py', '.github/workflows/ios.yml', '.github/workflows/linux.yml'}
+    allowed = {'.github/ios-validation-plan.json', 'scripts/ios-ci-scope.py', '.github/workflows/ios.yml', '.github/workflows/linux.yml', 'scripts/publish-ios-release-1.1.py'}
     assert all(p.startswith('docs/') or p in allowed or p == 'README.md' for p in changed), 'Tag must retain the tested application/build/publisher sources'
     pr = api(f'repos/{REPO}/pulls/30')
     assert pr['merged'] and pr['base']['ref'] == 'main' and pr['head']['repo']['full_name'] == REPO
     apple, steps = checked_run(config['apple_run'], source, 'ios.yml', 'apple-build')
     assert {'Validate affected native modules or the complete Apple core', 'Link unsigned iPad device app', 'Package unsigned device IPA for sideload signing'} <= steps
-    linux, steps = checked_run(config['linux_run'], source, 'linux.yml', 'release-core')
-    assert 'Check release workspace formatting, lints and all Rust tests' in steps
+    linux, steps = checked_run(config['linux_run'], config['linux_source_commit'], 'linux.yml', 'release-core')
+    assert 'Complete release iOS cross compile' in steps
+    assert not subprocess.check_output(['git', 'diff', '--name-only', source, config['linux_source_commit'], '--', 'crates', 'Cargo.toml', 'Cargo.lock', 'vendor', '.cargo', 'rust-toolchain.toml']).strip()
+    workspace = api(f"repos/{REPO}/actions/runs/{config['linux_workspace_run']}")
+    assert workspace['head_sha'] == source and workspace['path'] == '.github/workflows/linux.yml'
+    assert workspace['head_repository']['full_name'] == REPO
+    workspace_job = next(j for j in api(f"repos/{REPO}/actions/runs/{workspace['id']}/jobs")['jobs'] if j['name'] == 'release-core')
+    log = gh('api', f"repos/{REPO}/actions/jobs/{workspace_job['id']}/logs").decode(errors='replace')
+    passed = sum(int(n) for n in re.findall(r'test result: ok\. (\d+) passed;', log))
+    assert passed == config['linux_workspace_passed'] >= 477
+    assert not re.search(r'test result: FAILED', log)
+    assert 'native parser archiver: Os { code: 2' in log
+    # The original -e shell reached the iOS cross check only after fmt, strict
+    # clippy and the full workspace tests passed. Retry only that missing tool.
+
     tag = 'v' + VERSION
     present = subprocess.run(['gh', 'release', 'view', tag, '--repo', REPO, '--json', 'url,isDraft,targetCommitish,assets'], capture_output=True)
     release = json.loads(present.stdout) if present.returncode == 0 else None
@@ -158,7 +171,7 @@ def main():
         ipa = directory / f'Trames-{VERSION}-build{BUILD}-unsigned.ipa'; ipa.write_bytes(data)
         checksum = ipa.with_suffix('.ipa.sha256'); checksum.write_text(f'{sha(data)}  {ipa.name}\n')
         proof = directory / f'Trames-{VERSION}-verification.json'
-        report = {**config, 'tag_commit': head, 'all_packaged_files_match_device_build': len(files), 'main_binary_sha256': executable_sha, 'file_provider_binary_sha256': provider_sha, 'licenses_and_paired_sources_verified': True, 'artifacts': [outer_meta, built_meta, musl_meta, vulkan_meta], 'ci': [apple['html_url'], linux['html_url']]}
+        report = {**config, 'tag_commit': head, 'all_packaged_files_match_device_build': len(files), 'main_binary_sha256': executable_sha, 'file_provider_binary_sha256': provider_sha, 'licenses_and_paired_sources_verified': True, 'artifacts': [outer_meta, built_meta, musl_meta, vulkan_meta], 'ci': [apple['html_url'], workspace['html_url'], linux['html_url']]}
         proof.write_text(json.dumps(report, indent=2) + '\n')
         assets = [ipa, checksum, proof]
         for archive, name in [(musl, 'musl-hybrid-1.2.5-source.tar.gz'), (vulkan, 'vulkan-native-upstream-source.tar.gz')]:

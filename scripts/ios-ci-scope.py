@@ -202,7 +202,8 @@ def device_build_outputs(plan, repo, headers):
     if metadata:
         delta = subprocess.check_output(['git', 'diff', '--name-only', metadata['sha'], 'HEAD'], text=True).splitlines()
         allowed = {'.github/ios-validation-plan.json', '.github/workflows/ios.yml',
-                   'scripts/ios-ci-scope.py', 'apps/ios/project.yml'}
+                   'scripts/ios-ci-scope.py', 'apps/ios/project.yml', '.github/workflows/linux.yml',
+                   'scripts/publish-ios-release-1.1.py'}
         if any(p not in allowed and not p.startswith('docs/') for p in delta):
             raise RuntimeError('Metadata repackaging must preserve all compiled sources')
         project = 'apps/ios/project.yml'
@@ -215,7 +216,7 @@ def device_build_outputs(plan, repo, headers):
                 'Link unsigned iPad device app', 'Package unsigned device IPA for sideload signing'} <= completed:
             raise RuntimeError('Missing passed current runtime checks and device compilation')
         print('Repackage successful identical device executables; correct only bundle build numbers, no repeated checks.')
-        return {'frontend_only': 'false', 'targeted': 'true', 'native_scope': 'device-metadata',
+        return {'frontend_only': 'false', 'targeted': 'true', 'native_scope': 'release-cross' if metadata.get('cross_only') else 'device-metadata',
                 'repackage_run': str(metadata['run']), 'skip_native': 'true',
                 'skip_linux_native': 'true', 'skip_linux_modules': 'true', 'frontend_reused': 'true',
                 'ui_targets': '[]', 'baseline_run': str(reuse['guest']['run'])}
