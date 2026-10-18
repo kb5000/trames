@@ -1,0 +1,408 @@
+{
+  "scope": "Original dockerd startup with 4GiB guest budgets, 8 CPUs and host VA sampling.\n\nOnly startup/info/shutdown is exercised, not the already validated container\nlifecycle/network/storage suites. An optional prepared store is copied privately.\nLinux additionally constrains host VA to 2560MiB; Darwin records native RSS/VA.\n",
+  "host": "Darwin",
+  "arch": "arm64",
+  "host_page_bytes": 16384,
+  "cpus": 8,
+  "memory_budget_bytes": 4294967296,
+  "process_budget_bytes": 4294967296,
+  "runner_sha256": "9b940c2da6f6efe6f6b3baa848925aaadae055cc3051092ab217d058c8199ed0",
+  "test_sha256": "8745f7700ec754d6d1a31eefbccb0fc4fdd47a4121079b372625c76a1bcad086",
+  "samples": [
+    {
+      "seconds": 0.513,
+      "rss_kib": 231616,
+      "virtual_kib": 411297296
+    },
+    {
+      "seconds": 1.075,
+      "rss_kib": 460944,
+      "virtual_kib": 411543248
+    },
+    {
+      "seconds": 1.602,
+      "rss_kib": 482720,
+      "virtual_kib": 411625360
+    },
+    {
+      "seconds": 2.172,
+      "rss_kib": 522160,
+      "virtual_kib": 411670160
+    },
+    {
+      "seconds": 2.691,
+      "rss_kib": 537728,
+      "virtual_kib": 411682448
+    },
+    {
+      "seconds": 3.219,
+      "rss_kib": 548384,
+      "virtual_kib": 411681424
+    },
+    {
+      "seconds": 3.744,
+      "rss_kib": 556624,
+      "virtual_kib": 411697808
+    },
+    {
+      "seconds": 4.326,
+      "rss_kib": 581296,
+      "virtual_kib": 411713168
+    },
+    {
+      "seconds": 4.863,
+      "rss_kib": 579456,
+      "virtual_kib": 411688592
+    },
+    {
+      "seconds": 5.412,
+      "rss_kib": 687360,
+      "virtual_kib": 411899536
+    },
+    {
+      "seconds": 5.97,
+      "rss_kib": 801216,
+      "virtual_kib": 412101264
+    },
+    {
+      "seconds": 6.562,
+      "rss_kib": 837040,
+      "virtual_kib": 412070544
+    },
+    {
+      "seconds": 7.093,
+      "rss_kib": 845712,
+      "virtual_kib": 412083856
+    },
+    {
+      "seconds": 7.681,
+      "rss_kib": 866368,
+      "virtual_kib": 412112528
+    },
+    {
+      "seconds": 8.202,
+      "rss_kib": 871088,
+      "virtual_kib": 412115600
+    },
+    {
+      "seconds": 8.774,
+      "rss_kib": 892528,
+      "virtual_kib": 412142224
+    },
+    {
+      "seconds": 9.318,
+      "rss_kib": 902128,
+      "virtual_kib": 412137104
+    },
+    {
+      "seconds": 9.832,
+      "rss_kib": 917824,
+      "virtual_kib": 412156560
+    },
+    {
+      "seconds": 10.388,
+      "rss_kib": 915696,
+      "virtual_kib": 412156560
+    },
+    {
+      "seconds": 10.912,
+      "rss_kib": 919504,
+      "virtual_kib": 412155536
+    },
+    {
+      "seconds": 11.463,
+      "rss_kib": 917536,
+      "virtual_kib": 412156560
+    },
+    {
+      "seconds": 12.012,
+      "rss_kib": 932880,
+      "virtual_kib": 412177040
+    },
+    {
+      "seconds": 12.593,
+      "rss_kib": 939088,
+      "virtual_kib": 412174992
+    },
+    {
+      "seconds": 13.173,
+      "rss_kib": 945392,
+      "virtual_kib": 412173968
+    },
+    {
+      "seconds": 13.701,
+      "rss_kib": 945824,
+      "virtual_kib": 412173968
+    },
+    {
+      "seconds": 14.268,
+      "rss_kib": 994640,
+      "virtual_kib": 412332560
+    },
+    {
+      "seconds": 14.807,
+      "rss_kib": 949792,
+      "virtual_kib": 412250640
+    },
+    {
+      "seconds": 15.393,
+      "rss_kib": 973232,
+      "virtual_kib": 412300832
+    },
+    {
+      "seconds": 15.935,
+      "rss_kib": 956368,
+      "virtual_kib": 412277280
+    },
+    {
+      "seconds": 16.447,
+      "rss_kib": 953728,
+      "virtual_kib": 412294688
+    },
+    {
+      "seconds": 17.024,
+      "rss_kib": 957936,
+      "virtual_kib": 412345888
+    },
+    {
+      "seconds": 17.537,
+      "rss_kib": 952800,
+      "virtual_kib": 412313120
+    },
+    {
+      "seconds": 18.094,
+      "rss_kib": 951392,
+      "virtual_kib": 412322336
+    },
+    {
+      "seconds": 18.662,
+      "rss_kib": 954160,
+      "virtual_kib": 412320288
+    },
+    {
+      "seconds": 19.208,
+      "rss_kib": 958800,
+      "virtual_kib": 412348960
+    },
+    {
+      "seconds": 19.787,
+      "rss_kib": 958432,
+      "virtual_kib": 412348960
+    },
+    {
+      "seconds": 20.347,
+      "rss_kib": 956304,
+      "virtual_kib": 412347936
+    },
+    {
+      "seconds": 21.163,
+      "rss_kib": 910656,
+      "virtual_kib": 412347936
+    },
+    {
+      "seconds": 21.837,
+      "rss_kib": 897456,
+      "virtual_kib": 412347936
+    },
+    {
+      "seconds": 22.485,
+      "rss_kib": 896112,
+      "virtual_kib": 412339744
+    },
+    {
+      "seconds": 23.031,
+      "rss_kib": 897280,
+      "virtual_kib": 412348960
+    },
+    {
+      "seconds": 23.698,
+      "rss_kib": 887280,
+      "virtual_kib": 412348960
+    },
+    {
+      "seconds": 24.276,
+      "rss_kib": 871008,
+      "virtual_kib": 412348960
+    },
+    {
+      "seconds": 24.942,
+      "rss_kib": 860992,
+      "virtual_kib": 412347936
+    },
+    {
+      "seconds": 25.464,
+      "rss_kib": 843840,
+      "virtual_kib": 412348960
+    },
+    {
+      "seconds": 26.039,
+      "rss_kib": 840400,
+      "virtual_kib": 412348960
+    },
+    {
+      "seconds": 26.707,
+      "rss_kib": 839760,
+      "virtual_kib": 412348960
+    },
+    {
+      "seconds": 27.307,
+      "rss_kib": 836464,
+      "virtual_kib": 412348960
+    },
+    {
+      "seconds": 27.867,
+      "rss_kib": 835104,
+      "virtual_kib": 412348960
+    },
+    {
+      "seconds": 28.44,
+      "rss_kib": 835280,
+      "virtual_kib": 412348960
+    },
+    {
+      "seconds": 29.095,
+      "rss_kib": 834256,
+      "virtual_kib": 412347936
+    },
+    {
+      "seconds": 29.622,
+      "rss_kib": 837072,
+      "virtual_kib": 412352416
+    },
+    {
+      "seconds": 30.216,
+      "rss_kib": 841552,
+      "virtual_kib": 412353440
+    },
+    {
+      "seconds": 30.798,
+      "rss_kib": 841616,
+      "virtual_kib": 412353440
+    },
+    {
+      "seconds": 31.448,
+      "rss_kib": 841936,
+      "virtual_kib": 412353440
+    },
+    {
+      "seconds": 32.084,
+      "rss_kib": 842384,
+      "virtual_kib": 412353440
+    },
+    {
+      "seconds": 32.633,
+      "rss_kib": 842608,
+      "virtual_kib": 412353440
+    },
+    {
+      "seconds": 33.214,
+      "rss_kib": 842896,
+      "virtual_kib": 412353440
+    },
+    {
+      "seconds": 33.788,
+      "rss_kib": 891904,
+      "virtual_kib": 412394400
+    },
+    {
+      "seconds": 34.459,
+      "rss_kib": 892576,
+      "virtual_kib": 412394400
+    },
+    {
+      "seconds": 35.062,
+      "rss_kib": 894192,
+      "virtual_kib": 412394400
+    },
+    {
+      "seconds": 35.67,
+      "rss_kib": 895632,
+      "virtual_kib": 412394400
+    },
+    {
+      "seconds": 36.245,
+      "rss_kib": 901808,
+      "virtual_kib": 412394400
+    },
+    {
+      "seconds": 36.751,
+      "rss_kib": 902352,
+      "virtual_kib": 412394400
+    },
+    {
+      "seconds": 37.421,
+      "rss_kib": 934896,
+      "virtual_kib": 412424560
+    },
+    {
+      "seconds": 37.974,
+      "rss_kib": 1033280,
+      "virtual_kib": 412522864
+    },
+    {
+      "seconds": 38.607,
+      "rss_kib": 1034608,
+      "virtual_kib": 412522864
+    },
+    {
+      "seconds": 39.166,
+      "rss_kib": 1059440,
+      "virtual_kib": 412531056
+    },
+    {
+      "seconds": 39.7,
+      "rss_kib": 1085392,
+      "virtual_kib": 412547440
+    },
+    {
+      "seconds": 40.286,
+      "rss_kib": 1172176,
+      "virtual_kib": 412621184
+    },
+    {
+      "seconds": 40.901,
+      "rss_kib": 1218544,
+      "virtual_kib": 412653952
+    },
+    {
+      "seconds": 41.609,
+      "rss_kib": 1072496,
+      "virtual_kib": 412506496
+    },
+    {
+      "seconds": 42.163,
+      "rss_kib": 928000,
+      "virtual_kib": 412089728
+    },
+    {
+      "seconds": 42.801,
+      "rss_kib": 729584,
+      "virtual_kib": 411487616
+    }
+  ],
+  "packages_sha256": {
+    "containerd-2.1.5-r2.apk": "963e1c79c6439e23afbb085428d6466fa684921bacfc4f39dc0e667b044b7669",
+    "docker-cli-28.3.3-r5.apk": "8895ae93210cdf47018720928fd703d30f43f62ec452b6a30391d5a6b18a6ae2",
+    "docker-engine-28.3.3-r5.apk": "ea07b9c3e707fa12920e1501d14bf702ee19af56f21634356af4311a02384aad",
+    "runc-1.3.4-r1.apk": "4a6a59757e4559796492417e7cd10c8719b4dd00684e7ce7ea6197d18f1db52a",
+    "tini-static-0.19.0-r3.apk": "b16167b87355ea675d0bbba2dc2ad6bf537edd97e73c4a1a2ed720f23e85c877",
+    "busybox-1.37.0-r20.apk": "9d25af67564c92a4a4c603462efdbcd23019e90b8785f1ebcad640cbb1551c93",
+    "busybox-binsh-1.37.0-r20.apk": "9180dcee3f67ea806fe45361cffab94f8ce7e417d5f373bb0d989e88eb609903",
+    "ca-certificates-20260909-r0.apk": "b281f0245c7998f8d72541e301b259e370eae9491b66881a27380e544cba432b",
+    "iptables-1.8.11-r1.apk": "0a10fe634e3525082a1219487cd044d987ac4a55ed5aa551bf758e81223e1cfb",
+    "libcrypto3-3.5.9-r0.apk": "ede2ef7eca3b65a42e902aaf7890f9c5647dca0c55123a817179ad9f3bc6ef24",
+    "libmnl-1.0.5-r2.apk": "213a7e87553bed3d9159b2e74d2627885c259883e61714b357949ca806eb1f8d",
+    "libncursesw-6.5_p20250503-r0.apk": "419b375e8a4345e7172b1f0f3a3c57db61374f5408cdb875d9e860bd4c243aca",
+    "libnftnl-1.2.9-r0.apk": "6912a5d56b31d3365b8dd0d6339bd70a2bfc9e25dab0c387f77174113c43e664",
+    "libseccomp-2.6.1-r0.apk": "ee817c130535b72e5b0a63b211f9d2fbbaa493a319f78e9da5e30359991e5180",
+    "libssl3-3.5.9-r0.apk": "338c9f6154582b4b76455a59f95538bcea8df039c5c72916dd2d8d0d844c9583",
+    "libxtables-1.8.11-r1.apk": "e84f0d6b69d4318f297056d00ccbe433e6c7d163fe6767405e373248c42e3e88",
+    "musl-1.2.5-r12.apk": "ac281d1e7f9e9c447c51e309317b975f48be6edaf3ab91ae73b959cf86703782",
+    "ncurses-terminfo-base-6.5_p20250503-r0.apk": "3d37403e0b5ab9eb0c1ce269444e4a385faec9fe6af452c1c6956806b13d2bd6"
+  },
+  "exit_code": 0,
+  "seconds": 42.942878958999984,
+  "ready": true,
+  "completed": true,
+  "host_va_limit_mib": null
+}

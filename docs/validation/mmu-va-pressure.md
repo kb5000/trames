@@ -56,3 +56,15 @@ Linux统计仅累加命名RAM memfd视图，包含别名；未别名的PROT_NONE
 原始采样和日志在[数据目录](mmu-va-pressure/)，[机器可读摘要](mmu-va-pressure.json)
 绑定运行时代码patch与输入指纹。修复前后各一次启动，只用于确认资源放大/边界，
 不据此宣称通用性能加速比。
+
+## Apple ARM64 验证
+
+[build29 CI](https://github.com/kb5000/trames/actions/runs/39134234642)的定向检查通过。
+实际Darwin ARM64、16KiB宿主页，从新的Alpine store安装18个原版签名包；
+8guest CPU、4GiB总预算/单进程预算，默认dockerd→managed containerd/runc、
+overlay2正常启动，`docker info`与正常退出通过。启动/info/关闭42.943秒，
+RSS采样峰值1,218,544KiB；不是iPad用时，也未在Darwin施加Linux的RLIMIT_AS。
+[证据artifact](https://github.com/kb5000/trames/actions/runs/39134234642/artifacts/12139322416)
+已下载核验ZIP digest和CRC；包、runner和脚本指纹见原始Apple记录。
+
+当前iOS Release [build29安装包](ipad-1.0-build29.md)已构建、下载检查通过；真机复测待用户进行。

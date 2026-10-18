@@ -26,8 +26,13 @@
     "crates/trames-memory/src/mmu/worker.rs": "1baeb41d97f573085206f64d7d9db71a1e815226816e096a38ffd44c14b04e3a",
     "crates/trames-vfs/src/pseudo.rs": "edc13227dfcd0b8047f20ad62499c787165bc018231a7a158c67882e0919be67",
     "docs/architecture/hardware-mmu.md": "4508f944423ea67baf49092fdf628e579b4ba544f6eaf26586e6d81dcabaaccd",
-    "docs/validation/mmu-va-pressure.json": "8ce6bf23bf88fc40e7aa27a611107bbbadf818d0dfb17e3eed0016f2d00f9263",
-    "docs/validation/mmu-va-pressure.md": "8f7f1068e3a0cc7e4e89d092d528b11d921649f649c740316ad7732059692b03",
+    "docs/validation/ipad-1.0-build29.json": "4868c5f8c5d9f2b575c0c7eec36b0da97d0f33b8282d87e11df80003933f808e",
+    "docs/validation/ipad-1.0-build29.md": "2cb90e75932c6e33edfbae8cab37fa41f6f75d80a3dbe080ca586d9610f65530",
+    "docs/validation/mmu-va-pressure.json": "85711a1368f5f377cf96975e60b8b36da68a1bba374e4565f5198f3596ba4043",
+    "docs/validation/mmu-va-pressure.md": "06a2b442cd16001ab35ab6d4ee910a42bd704d2b1d87aa1dded2420345b45e1d",
+    "docs/validation/mmu-va-pressure/apple-boot.log": "42d387ffe8ee52028d4e5cc389879b27832c4b9c3c83c1e9b4a48e4ffa9048cc",
+    "docs/validation/mmu-va-pressure/apple-install.log": "da9f4c540f2d99228b0ac25eb79d7f695091a9db04ff5ba6db64488ed536dfd7",
+    "docs/validation/mmu-va-pressure/apple-results.json": "543a629a1805996787343c1111d37618014d75a34a5685c45ecd859ad901fd08",
     "docs/validation/mmu-va-pressure/clippy-final.log": "1d3430ea3bd25c0c9cdb66dafc16c58581316dd83ef4c4a3a029f66959cbb805",
     "docs/validation/mmu-va-pressure/clippy.log": "436a9723fbdc0fdca02407012968e8bd0590c1656555406879cb3e48d26c01e6",
     "docs/validation/mmu-va-pressure/empty-window-final.log": "5c1fc61061212a535dda151a7e9445cfb4160ce3308317ced6ccbc16e6cd86cc",
@@ -39,9 +44,9 @@
     "docs/validation/mmu-va-pressure/route-clippy.log": "f5a8d60f004e0687fd2f96f846bc7b0e1e99c0b935c991d9c5ef8ce8c20e6a11",
     "docs/validation/mmu-va-pressure/route-test.log": "06872ce51970a7d30f4961f08b1ce616b0de167b419a2cceea047502f49b046c",
     "docs/validation/mmu-va-pressure/translation-tests.log": "9e5632d130a8f9588f4f9985ae80c0923182029d46b3f9ce1d90c0799b248e0c",
-    "docs/validation/proc-route-endian.md": "789c43f2a6c68c0b474f9853667a9ff44afa35ad655c455431ca14e93821a415",
+    "docs/validation/proc-route-endian.md": "5f669789f63495333221198cb7c8d558b53608167289e33432285216967bf135",
     "scripts/ios-ci-scope.py": "fd350cd3c52bfdce2a84c2f09c81c2231312d7567d818aae30e71cf5b057a742",
     "tests/integration/docker-startup-memory.py": "8745f7700ec754d6d1a31eefbccb0fc4fdd47a4121079b372625c76a1bcad086"
   },
-  "reason": "Fix reported build28 Rust allocation abort: remove unused/retired MMU aliases, 1MiB windows, bound optional physical+CPU VA to1GiB with checked fallback. Local MMU/translation/clippy and 4GiB Docker startup under2.5GiB host VA passed. Verify final Apple memory and fresh Docker startup; rebuild 1.0.0(29), reusing unchanged frontend/guest/unrelated modules. Includes owner-reported proc/net/route byte-order fix, with targeted Linux/Apple proc-route reader validation."
+  "reason": "Record passed final Apple ARM64/16KiB memory65/translation4/route1 and fresh4GiB Docker startup, verified build29 ARM64 Release IPA. Same runtime/frontend/guest as1a3bcb6; [skip ci], no repeated passed suites, main merge or formal release."
 }

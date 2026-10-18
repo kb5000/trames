@@ -9,8 +9,8 @@ in_addr十六进制字，BusyBox route按该ABI解释，因此地址/掩码反�
 统一直接网络和bridge/veth行的格式化：IP/网关按octets转little-endian数值，
 前缀产生的网络掩码也按相同ABI序列化。回归按BusyBox读取方式解析输出，
 检查192.168.2.0/24、默认网关、172.17.0.0/16以及/32主机路由，验证地址、
-掩码、网关、flags和metric；Linux该项和VFS严格Clippy通过。Apple在build29
-定向检查同一项，未重跑未变网络栈全套验收。
+掩码、网关、flags和metric；Linux该项和VFS严格Clippy通过。Apple在[build29 CI](https://github.com/kb5000/trames/actions/runs/39134234642)
+定向检查同一项通过，未重跑未变网络栈全套验收。
 
 修复示例：
 
