@@ -199,7 +199,8 @@ def device_build_outputs(plan, repo, headers):
         return not subprocess.check_output(['git', 'diff', '--name-only', sha, 'HEAD', '--', *paths], text=True).strip()
 
     runtime_paths = ['crates', 'Cargo.toml', 'Cargo.lock', 'vendor', '.cargo', 'rust-toolchain.toml']
-    costs = reuse.get('runtime_costs')
+    memory_va = reuse.get('memory_va')
+    costs = reuse.get('runtime_costs') or memory_va
     if costs:
         # These exact MMU/proc changes already passed the recorded Linux tests.
         # Run their Apple counterparts below; reuse only the unchanged modules.
@@ -207,13 +208,22 @@ def device_build_outputs(plan, repo, headers):
             ['git', 'diff', '--name-only', costs['sha'], 'HEAD', '--', *runtime_paths], text=True).splitlines())
         expected = {'crates/trames-memory/src/mmu/mod.rs',
                     'crates/trames-memory/src/mmu/tests.rs', 'crates/trames-core/src/process.rs'}
+        if memory_va:
+            expected = {'crates/trames-memory/src/mmu/host.rs', 'crates/trames-memory/src/mmu/mod.rs',
+                        'crates/trames-memory/src/mmu/tests.rs', 'crates/trames-memory/src/mmu/worker.rs',
+                        'crates/trames-vfs/src/pseudo.rs'}
         patch = subprocess.check_output(['git', 'diff', '--binary', costs['sha'], 'HEAD', '--', *runtime_paths])
         if changed_runtime != expected or hashlib.sha256(patch).hexdigest() != costs['patch_sha256']:
             raise RuntimeError('Performance IPA requires the exact Linux-validated MMU/proc patch')
         # The prior combined Linux workflow timed out after its module step;
         # require that step, without claiming the unfinished workflow passed.
-        for key, workflow, name in [('linux', 'linux.yml', 'targeted-runtime'),
-                                    ('apple', 'ios.yml', 'docker-default-apple')]:
+        if memory_va:
+            completed = verified_run({'sha': costs['sha'], 'run': costs['apple']}, 'ios.yml', 'apple-build')
+            if not {'Validate affected native modules or the complete Apple core',
+                    'Link unsigned iPad device app', 'Package unsigned device IPA for sideload signing'} <= completed:
+                raise RuntimeError('Missing successful baseline memory/proc/device verification')
+        for key, workflow, name in ([] if memory_va else [('linux', 'linux.yml', 'targeted-runtime'),
+                                    ('apple', 'ios.yml', 'docker-default-apple')]):
             run_id = costs[key]
             run = get(f'actions/runs/{run_id}')
             if (run['head_sha'] != costs['sha'] or run['path'] != '.github/workflows/' + workflow
@@ -267,9 +277,10 @@ def device_build_outputs(plan, repo, headers):
         raise RuntimeError('Validated guest artifacts expired or missing')
     print('Device IPA: rebuild current ARM64 release runtime/app; reuse source-identical frontend and guest acceptance.')
     if costs:
-        print('Exact Linux-validated MMU/proc delta: run Apple memory + proc-map regressions; unchanged native modules reuse baseline results. No unrelated CPU/UI/GPU/Docker reruns.')
+        print('Exact Linux-validated delta: run Apple memory, proc-route and Docker startup/VA checks.' if memory_va else
+              'Exact Linux-validated MMU/proc delta: run Apple memory + proc-map regressions; unchanged native modules reuse baseline results. No unrelated CPU/UI/GPU/Docker reruns.')
     print(json.dumps(reuse, sort_keys=True))
-    return {'frontend_only': 'false', 'targeted': 'true', 'native_scope': 'runtime-costs' if costs else 'device-build',
+    return {'frontend_only': 'false', 'targeted': 'true', 'native_scope': 'memory-va' if memory_va else 'runtime-costs' if costs else 'device-build',
             'skip_native': 'false' if costs else 'true', 'skip_linux_native': 'true', 'skip_linux_modules': 'true',
             'frontend_reused': 'true', 'ui_targets': '[]', 'baseline_run': str(guest['run'])}
 

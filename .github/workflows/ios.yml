@@ -256,11 +256,26 @@ jobs:
           elif [[ '${{ needs.scope.outputs.native_scope }}' == runtime-costs ]]; then
             cargo test -p trames-memory --locked
             cargo test -p trames-core --lib proc_map --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == memory-va ]]; then
+            uname -m
+            sysctl hw.pagesize
+            cargo test -p trames-memory --locked
+            cargo test -p trames-vfs --lib proc_route --locked
+            cargo build -p trames-cli --release --locked
+            python3 tests/integration/docker-startup-memory.py
           elif [[ '${{ needs.scope.outputs.targeted }}' == true ]]; then
             cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --lib --locked
           else
             cargo test -p trames-shared -p trames-wayland -p trames-native -p trames-compute -p trames-cpu -p trames-accel -p trames-memory -p trames-vfs -p trames-core --locked
           fi
+      - name: Preserve Docker startup memory evidence
+        if: ${{ always() && needs.scope.outputs.native_scope == 'memory-va' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: apple-docker-startup-memory
+          path: target/docker-startup-memory
+          if-no-files-found: error
+          retention-days: 14
       - name: Test original native Wayland clients and shared-FD lifetimes
         if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'
         run: brew install pkg-config libffi expat && bash scripts/test-wayland.sh

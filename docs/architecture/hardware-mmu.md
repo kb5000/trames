@@ -10,7 +10,7 @@ executable, and no code is generated at runtime.
 
 Guest pointers remain 48-bit addresses with the established top-byte handling.
 A single contiguous reservation of that whole address space is impractical on
-an iPad. Instead, each touched 16 MiB guest window gets a separate host mapping.
+an iPad. Instead, each touched 1 MiB guest window gets a separate host mapping.
 Low heap and high stack addresses do not require allocating their intervening VA.
 Linux uses a RAM-backed memfd and closes its descriptor after mapping both aliases.
 Darwin uses anonymous memory and same-task `mach_vm_remap(copy=false)`; it requires
@@ -109,7 +109,14 @@ function's original thread-safety contract, and adds no algorithm/global lock.
 Backed mappings retain live EOF, alias, writeback and checkpoint behavior.
 
 The registry caps live CPU aliases at 2,048 windows; exhaustion falls back to
-software. Each alias reserves 16 MiB of VA, not 16 MiB of physical RAM. OS page
+software. Each alias reserves 1 MiB of VA, not 1 MiB of physical RAM. Physical RW mappings
+and protected CPU views have separate lifetimes; worker physical pools reserve no
+unused CPU view, and frozen CPU views allocate no unused RAM object. Fork retains
+bytes without retaining retired CPU reservations; empty windows are released.
+All live physical/CPU reservations together have a 1 GiB VA budget. Exhaustion
+uses the checked software transport; ordinary stores do not repeatedly retry a
+failed window. No guest quota or permission changes. See the
+[Docker startup pressure report](../validation/mmu-va-pressure.md). OS page
 tables, descriptor arrays, setup syscalls and COW group copies still cost memory
 and time. Different 4 KiB slots within a 16 KiB host group may become physically
 fragmented after replacement; these groups safely fall back rather than widening
