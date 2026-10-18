@@ -2,7 +2,7 @@
 
 `feat/guest-docker-workflows` 接通原版 dockerd → containerd → crun、默认
 IPC/cgroup/net namespace、seccomp/device 过滤和 bridge 网络。已发布的
-**1.0.0 IPA 不包含本批改动**。这不是宿主 Docker socket 接入。
+**正式 1.0.0 build 26 IPA 不包含本批改动**；[1.0.0 build 27 测试 IPA](../validation/ipad-1.0-build27.md) 已包含网络和 overlay2。这不是宿主 Docker socket 接入。
 
 网络支持默认 firewall/NAT、容器 DNS/TCP/UDP 出站、原版 Docker 内置 DNS、
 自定义 bridge、同桥通信/跨桥隔离、DOCKER-USER、internal 网络和默认 TCP/UDP

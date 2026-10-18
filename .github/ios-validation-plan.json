@@ -20,7 +20,10 @@
   },
   "changed_file_sha256": {
     "apps/ios/project.yml": "ffdba9e38411f47cb8db830595c4e0cd8c2d4f37db6a6464ba185e093c6929e3",
+    "docs/guides/guest-docker.md": "73917badb6178d66d697930d4784fcdfcaaa8a392a4516c71f796ef8d342d039",
+    "docs/validation/ipad-1.0-build27.json": "c11d8e124c8380c2bdfca65a6ca3c0db23ea6ccd350a73f175545090ee90ac65",
+    "docs/validation/ipad-1.0-build27.md": "efdf7a9611db5f7fda65f2ec4a3a8fbbb06387720918c7cdd8164ad7eb1012b8",
     "scripts/ios-ci-scope.py": "13e67c66568511ba72358bea6e3eb19a155253cb1a14c4ec469ba181d62fb334"
   },
-  "reason": "Owner requested a test IPA. Build1.0.0(27) recompiles current runtime including Docker networking/overlay2; source-identical Linux/Apple/runtime, frontend interaction and guest library results are reused. No release, merge or repeated full suites."
+  "reason": "Owner-requested test IPA1.0.0(27) built and inspected successfully in39109373627. Current runtime rebuilt; source-identical Linux/Apple/UI/guest results reused. Final records only [skip ci]; no merge or formal release."
 }
