@@ -1,0 +1,159 @@
+{
+  "baseline_source": "d492bb98d5f050fc5f7a7ae1ea062d63690c6399",
+  "candidate": "baseline + software-only MMU group cache + process-maps generation cache",
+  "cpus": 4,
+  "sampler": "Linux ITIMER_PROF, requested 1ms; observed about250Hz, saved PCs of this runner only; optimized release/debuginfo, all threads, whole guest session",
+  "scope": "One sequential before/after pair, identical script and copies of one prepared original Docker/image disk; shared Linux x86_64 host. Not fresh-store full acceptance or physical iPad timing. No overlapping own builds or other tests.",
+  "stage_clock": "guest date +%s (host-backed real time); seconds rounded to whole seconds. New reusable harness captures host monotonic markers instead.",
+  "input_sha256": {
+    "store_manifest": "5c5612b3d70825159d39b87887bbf82b091dfd69dcf0a82c7d02119c1c304ca4",
+    "shell": "c082e667171952aa882a4a7d81bd1aad748923447ecbf97d8d417b692934cf6c",
+    "sampler": "f478023f00770c38ecf369f4bbf2f9c20998047d4a242e5093ba39086f899d68"
+  },
+  "runs": {
+    "before": {
+      "scope": "Original default Docker/runc, persistent imported image, shared x86_64 host; profile includes daemon startup/create/exec/stop. No iPad claim.",
+      "exit_code": 0,
+      "wall_seconds": 664.0475780210036,
+      "runner_sha256": "b12862f3a8119fa51d7e8064a7dcf85127def3748df9183a4b9f9a45ca8ad074",
+      "markers": [
+        "PROFILE_DAEMON_BEGIN 1792327499",
+        "PROFILE_DAEMON_READY 1792327515",
+        "PROFILE_CREATE_BEGIN 1792327516",
+        "PROFILE_CREATE_END 1792327951",
+        "PROFILE_EXEC_BEGIN 1792327951",
+        "PROFILE_EXEC_END 1792328156",
+        "PROFILE_CLEANUP_END 1792328162"
+      ],
+      "metrics": {
+        "backend": "cached",
+        "context_switches": 503695,
+        "cpu_count": 4,
+        "cpu_seconds": 20.398671392,
+        "decode_lookups": 38538177,
+        "decode_misses": 374461,
+        "dispatch_seconds": 4.181315832,
+        "gpu_buffered_bytes": 0,
+        "gpu_compiles": 0,
+        "gpu_direct_bytes": 0,
+        "gpu_download_bytes": 0,
+        "gpu_peak_pending": 0,
+        "gpu_peer_instructions": 0,
+        "gpu_upload_bytes": 0,
+        "gpu_wait_seconds": 0.0,
+        "idle_seconds": 1.024725518,
+        "instructions": 1160931661,
+        "instructions_decoded": 32922073,
+        "instructions_per_second": 1748379.2610853026,
+        "memory_seconds": 8.044259212,
+        "parallel_rounds": 123124,
+        "parallel_snapshots": {
+          "backing_invalidations": 128,
+          "cache_hits": 302619,
+          "code_invalidations": 4974,
+          "dirty_refreshes": 97275,
+          "full_rebuild_pages": 424247,
+          "full_rebuilds": 500,
+          "incremental_pages": 321828,
+          "incremental_updates": 5101,
+          "source_page_reads": 951755
+        },
+        "peak_parallel_cpus": 4,
+        "peak_parallel_native_calls": 0,
+        "proc_refreshes": 101621,
+        "runtime_error": null,
+        "seconds": 664.004479371,
+        "stop_seconds": 10.329854391,
+        "syscall_seconds": 613.71693521,
+        "syscalls": 1408149,
+        "worker_chunks": 258757,
+        "worker_slices": 405495
+      },
+      "stages_seconds": {
+        "daemon": 16,
+        "create": 435,
+        "exec": 205,
+        "cleanup": 6
+      },
+      "log_sha256": "8b7535c657911fa3bd25f8a4f3bdc8ec6405ed7f16aa2f2aefdf7c9858ebaf57",
+      "pc_samples_sha256": "2f44d89a45a57addfbf2ae26fb84a89b2bed83a37f03ee9cea8cf8d86b26e85a"
+    },
+    "after": {
+      "scope": "Original default Docker/runc, persistent imported image, shared x86_64 host; profile includes daemon startup/create/exec/stop. No iPad claim.",
+      "exit_code": 0,
+      "wall_seconds": 140.81437935999566,
+      "runner_sha256": "48a74240c27dd35d779d8865c622b79ec7745e9adeb1b1e4f44b2f1ae3742216",
+      "markers": [
+        "PROFILE_DAEMON_BEGIN 1792328517",
+        "PROFILE_DAEMON_READY 1792328532",
+        "PROFILE_CREATE_BEGIN 1792328533",
+        "PROFILE_CREATE_END 1792328613",
+        "PROFILE_EXEC_BEGIN 1792328613",
+        "PROFILE_EXEC_END 1792328652",
+        "PROFILE_CLEANUP_END 1792328656"
+      ],
+      "metrics": {
+        "backend": "cached",
+        "context_switches": 421263,
+        "cpu_count": 4,
+        "cpu_seconds": 14.205296496,
+        "decode_lookups": 32504228,
+        "decode_misses": 354783,
+        "dispatch_seconds": 2.8289590220000003,
+        "gpu_buffered_bytes": 0,
+        "gpu_compiles": 0,
+        "gpu_direct_bytes": 0,
+        "gpu_download_bytes": 0,
+        "gpu_peak_pending": 0,
+        "gpu_peer_instructions": 0,
+        "gpu_upload_bytes": 0,
+        "gpu_wait_seconds": 0.0,
+        "idle_seconds": 1.743489402,
+        "instructions": 953385050,
+        "instructions_decoded": 30830430,
+        "instructions_per_second": 6773718.354593704,
+        "memory_seconds": 4.136483042,
+        "parallel_rounds": 104521,
+        "parallel_snapshots": {
+          "backing_invalidations": 149,
+          "cache_hits": 235841,
+          "code_invalidations": 4473,
+          "dirty_refreshes": 75704,
+          "full_rebuild_pages": 331254,
+          "full_rebuilds": 370,
+          "incremental_pages": 329191,
+          "incremental_updates": 4620,
+          "source_page_reads": 856627
+        },
+        "peak_parallel_cpus": 4,
+        "peak_parallel_native_calls": 0,
+        "proc_refreshes": 86533,
+        "runtime_error": null,
+        "seconds": 140.747666214,
+        "stop_seconds": 7.089480136,
+        "syscall_seconds": 102.536406916,
+        "syscalls": 1286748,
+        "worker_chunks": 195693,
+        "worker_slices": 316535
+      },
+      "stages_seconds": {
+        "daemon": 15,
+        "create": 80,
+        "exec": 39,
+        "cleanup": 4
+      },
+      "log_sha256": "be8e1fbaaf94dd53cba4c63bde526ad6b814a0bd6965a34e345d1ead7a0615ec",
+      "pc_samples_sha256": "348c0f77d4672e0d9c3bc3ce8768eabcaa8da2b8a785c0a51b13be945a2aa469"
+    }
+  },
+  "source_files_sha256": {
+    "crates/trames-core/src/process.rs": "ee3f5a7b6a9093545624f5507a99398ed118f0c5f281e5837b3d43d1b71dac07",
+    "crates/trames-memory/src/mmu/mod.rs": "d1c60edb100924454fec9aaae1f763d84259c9f08c1f4cb2be0ea7f5ccd02a13",
+    "crates/trames-memory/src/mmu/tests.rs": "84bcfc54074542a10a73577f0a0fe4e81cd9afa80467dfe5025c3e00682f23ee"
+  },
+  "speedup": {
+    "create": 5.4375,
+    "exec": 5.256410256410256,
+    "whole": 4.71576540008992
+  }
+}

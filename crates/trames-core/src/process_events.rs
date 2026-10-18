@@ -19,6 +19,11 @@ pub(super) fn write_siginfo(out: &mut [u8], sig: u32, info: Info) {
     out[8..12].copy_from_slice(&info.code.to_le_bytes());
     if let Some(address) = info.fault {
         out[16..24].copy_from_slice(&address.to_le_bytes());
+        if sig == 31 && info.code == 1 {
+            out[4..8].copy_from_slice(&info.sender.to_le_bytes());
+            out[24..28].copy_from_slice(&info.status.to_le_bytes());
+            out[28..32].copy_from_slice(&info.uid.to_le_bytes());
+        }
     } else if let Some((id, overrun, value)) = info.timer {
         out[16..20].copy_from_slice(&id.to_le_bytes());
         out[20..24].copy_from_slice(&overrun.to_le_bytes());

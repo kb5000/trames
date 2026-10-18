@@ -11,11 +11,11 @@ Docker/Podman 兼容仍待扩展。
 
 | 接口 | 当前范围 |
 | --- | --- |
-| `unshare` | `CLONE_NEWUTS`、`CLONE_NEWNS`、`CLONE_NEWPID`、`CLONE_FS`、`CLONE_FILES`；未知组合与额度失败不改变调用者状态；NEWNS 隐含独立 fs context |
-| `clone` | UTS/mount/PID namespace；NEWNS 与 CLONE_FS、NEWPID 与 THREAD/PARENT 冲突返回 EINVAL；PID 1 不接受 CLONE_PARENT |
+| `unshare` | `CLONE_NEWUTS`、`CLONE_NEWNS`、`CLONE_NEWPID`、`CLONE_NEWNET`、`CLONE_NEWIPC`、`CLONE_NEWCGROUP`、`CLONE_FS`、`CLONE_FILES`；未知组合与额度失败不改变调用者状态；NEWNS 隐含独立 fs context |
+| `clone` | UTS/mount/PID/network/IPC/cgroup namespace；NEWNS 与 CLONE_FS、NEWPID 与 THREAD/PARENT 冲突返回 EINVAL；PID 1 不接受 CLONE_PARENT |
 | `setns` | UTS/mount/PID namespace FD，类型 0 或对应 CLONE 标志；mount 拒绝共享 fs context；PID 仅接受当前或后代 namespace，影响后续子进程 |
 | `uname`、`sethostname`、`setdomainname` | 调用者 UTS，名称最长 64 字节；按 guest CAP_SYS_ADMIN 授权 |
-| namespace FD | `/proc/PID/ns/{uts,mnt,pid,pid_for_children,net}`、task/TID 形式、dup、O_PATH、stat、nsfs statfs、`NS_GET_NSTYPE`；FD 保持 namespace 存活 |
+| namespace FD | `/proc/PID/ns/{uts,mnt,pid,pid_for_children,net,ipc,cgroup}`、task/TID 形式、dup、O_PATH、stat、nsfs statfs、`NS_GET_NSTYPE`；FD 保持 namespace 存活 |
 | `chroot` | 独立 `(mount,inode)` fs.root，绝对路径/绝对符号链接从新根解析，根内 `..` 不能向上；保留 cwd/dirfd |
 | `mount` | tmpfs、proc、sysfs、独立 devpts、bind/rbind、选定 remount；所有挂载初始为 private，支持 make-private/recursive-private |
 | `umount2` | 普通卸载检查子挂载和 FD/cwd/root/exec/mmap 引用；MNT_DETACH 断开整个子树，已有能力仍能访问；UMOUNT_NOFOLLOW |
@@ -78,7 +78,7 @@ KILL、SYS_NICE、SYS_RESOURCE、SYSLOG 和 NET_RAW。既有 proc 敏感路径�
 
 当前只有初始 guest user namespace；位掩码可表达某项能力不代表该项 Linux
 设施已实现。文件 security.capability xattr、UID/GID 映射、user namespace
-权限层级、完整 ptrace、seccomp 仍缺。不冒充宿主 Linux 权限，也不更改 iPad 凭据。
+权限层级、完整 ptrace 仍缺；seccomp 已有下述经典 BPF 子集。不冒充宿主 Linux 权限，也不更改 iPad 凭据。
 
 原版签名 Alpine capsh 2.78 已可查询/丢弃/保留能力并测试 ambient/NNP 跨 exec。
 crun 1.23.1 现在通过单核/四核下的选定生命周期验收：实际 shell 输出和退出码 7、
@@ -184,11 +184,18 @@ PR_SET/GET_PDEATHSIG 记录实际创建线程，在线程退出时投递进程�
 默认每地址空间 512 MiB / 全会话 1 GiB，现在可通过运行时、CLI 和
 [iPad 设置](../guides/guest-memory.md)调整。
 
-每个 guest 当前根网络具有唯一的 `ns/net` 对象。FD、task/TID 路径、nsfs bind
-mount 和同一网络的 setns 保持真实引用；不会创建新网络或改变宿主 namespace。
+每个 guest 根网络具有唯一的 `ns/net` 对象。1.0.0 后开发分支可创建独立 network、
+IPC、cgroup namespace，并通过 FD、task/TID 路径、nsfs bind mount 与 setns 保持
+真实引用；不改变宿主 namespace。隔离与默认 seccomp 验收见[记录](../validation/container-isolation.md)。
+内部 veth/bridge、根 guest 与容器的 TCP/UDP，以及按 netns 控制的 IPv4/IPv6
+L3 转发已有真实 guest 1/4 vCPU 验收；外部转发、netfilter/NAT 和 Docker
+默认 bridge 仍待实现，见[当前网络范围](../validation/container-forwarding.md)。
 UTS/PID 句柄也可 bind；mount namespace 句柄的挂载循环回收尚缺，明确拒绝。
-CLONE_NEWNET 仍不支持。NETLINK_ROUTE 支持按接口名查询及对已经 UP 的 lo 的
-精确幂等 LinkSetUp；后者检查 CAP_NET_ADMIN。关接口、改地址、路由与 MTU 仍失败。
+新 network namespace 只有独立的 lo；NETLINK_ROUTE/ioctl 可查询并改变它的 up/down，
+并检查 CAP_NET_ADMIN。根直连接口只接受原有的幂等 lo up。开发分支已增加
+veth/bridge、namespace FD 移动、IPv4/IPv6 地址和直连/静态路由的内部 IP 数据路径；
+MTU 暂固定 1500，外部转发/过滤/NAT 仍待接通，见[数据路径](container-network-design.md)
+和[1/4 vCPU 验证](../validation/container-network.md)。
 private mount 请求 MS_SLAVE/REC 时继续保持 private（没有 shared master）；
 这不代表已实现跨 namespace 挂载传播。
 
@@ -292,7 +299,7 @@ magic 被兼容。不支持的挂载行为明确返回错误。
   按需分配，`nr_inodes` 可降低节点上限，`mode` 设置根目录权限。
   卸载/会话结束后内容不持久化。这里的内存上限
   与根磁盘默认 16 GiB 预算无关；尚未接入统一的 tmpfs/guest RAM 回收机制。
-- 所有挂载均为 private；shared/slave/unbindable 传播、MS_MOVE、overlayfs、块设备
+- 所有挂载均为 private；shared/slave/unbindable 传播、MS_MOVE、块设备
   文件系统及 open_tree/move_mount/fsopen 等新挂载 API 尚缺。
 - procfs 支持有权限检查的 `oom_score_adj` 读写；其余 proc 控制端点与 sysfs 保持只读。独立 devpts 支持初始挂载选项，重挂载修改
   uid/gid/mode/max 尚未实现，明确返回 EOPNOTSUPP。
@@ -317,7 +324,7 @@ namespace 归属，setns 只影响后续创建。私有 loopback、端口空间�
 ## 后续顺序
 
 1. 按真实工具缺口扩展 user/IPC/net namespace、具名 AF_UNIX 和更广的 epoll 事件源。
-2. 再扩展完整容器引擎、overlayfs、CPU/memory/io 控制器和安全接口。
+2. 再扩展完整容器引擎、CPU/memory/io 控制器和安全接口。基础 overlayfs/overlay2 已在后续批次接入，见 [设计](overlayfs.md)。
 
 ## 验证
 

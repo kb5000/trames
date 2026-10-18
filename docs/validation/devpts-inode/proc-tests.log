@@ -1,0 +1,18 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
+     Running unittests src/lib.rs (target/debug/build/trames-vfs/0d8296f6ed3d14ee/out/trames_vfs-0d8296f6ed3d14ee)
+
+running 11 tests
+test executable::tests::symlink_to_proc_magic_link_uses_the_deleted_inode_and_preserves_permissions ... ok
+test overlay::tests::proc_reopens_select_current_layer_but_dup_keeps_original_data ... ok
+test linux_namespace::tests::private_cgroup_namespace_rebases_proc_and_new_mount_without_moving_tasks ... ok
+test oom::tests::proc_control_checks_dac_mount_and_retains_only_weak_task_identity ... ok
+test pseudo::proc_probe_tests::proc_probe_follows_aliases_cwd_and_dirfd_even_for_missing_processes ... ok
+test pseudo::tests::proc_readlink_empty_path_retains_symlink_inode_and_refreshes_fd_target ... ok
+test pseudo::tests::proc_root_inode_matches_linux_across_paths_fds_and_bind_mounts ... ok
+test pseudo::tests::proc_route_uses_guest_little_endian_addresses_for_native_and_bridge_rows ... ok
+test pseudo::tests::proc_setgroups_reports_initial_user_namespace_policy ... ok
+test pty::tests::devpts_proc_path_reopen_allocates_a_fresh_master_and_opens_slave ... ok
+test pseudo::tests::proc_sysctl_path_fd_reopens_with_truncation_and_keeps_network_namespace ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 138 filtered out; finished in 0.00s
+

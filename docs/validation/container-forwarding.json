@@ -1,0 +1,295 @@
+{
+  "date": "2026-10-18",
+  "base_source": "0de557ee6b679d2da862e4635fee55fbc9752e6f",
+  "runtime_source": "b98c891930aa2a6547b8694bf033bc92a091dd78",
+  "production_sha256": {
+    "crates/trames-net/src/hybrid.rs": "01d616bb3780bf05eae6d2791ed486207784955940144680d7d6428e71836e77",
+    "crates/trames-net/src/lib.rs": "25a2f1be96074bb8792b0bc5e186d2f7329d474b1d357a2694b93e3509c6ea86",
+    "crates/trames-net/src/netdev.rs": "796248b579251509ebdd10a39be2cdc65f2a6107c7566702270e32bedba074a3",
+    "crates/trames-net/src/netlink.rs": "292e54c434ef4fd2fe0541da0352ab0ba623b0f5e6cc38d748b9b34b19aa74ac",
+    "crates/trames-net/src/root_routing_tests.rs": "6192b93cc567a698db5239ba77a2ac789830c8486e0429f20cf90ac7797412b7",
+    "crates/trames-net/src/routing_tests.rs": "8ecc7b5b79a373885fa0cbf6e2899a32d816d253a8b1c87a48ef770d0e08f44c",
+    "crates/trames-net/src/rtnetlink.rs": "be4745831c249fd8d06c3cfef5d8c4ab3a3ec06d09f4d0bb80977d63759426b5",
+    "crates/trames-net/src/virtualnet/mod.rs": "5a451532cdf726f5f8aebee38ea81eaad7fb5376319ba627a7df6f23e3066728",
+    "crates/trames-net/src/virtualnet/sockets.rs": "7b9a0d6f47c560414299d7c12f587f5413b63732a961327cbd0865f1d741a79d",
+    "crates/trames-vfs/src/network.rs": "06f1a3144827bbf7cf0dd0647c54bb298fcaa9b45d1a4b29c22373dcc7d31e4d",
+    "crates/trames-vfs/src/pseudo.rs": "b2d67b1d79e1c5bc863cd5e01e5a420b7c67f1e30dd19317fc39d41adae19191"
+  },
+  "local": {
+    "net_unit_tests": {
+      "passed": 24,
+      "method": "Existing library pass plus incremental UDP switch, SETLINK and missing-native protocol/low-port checks; no repeated full suite."
+    },
+    "vfs_unit_tests": {
+      "passed": 121,
+      "ignored": 1,
+      "method": "Existing library pass plus new forwarding-control check."
+    },
+    "linux_network_tests": 2,
+    "legacy_virtual_network_tests": 11,
+    "strict_clippy": true,
+    "fmt": true,
+    "guest_network": {
+      "checks": [
+        {
+          "cpus": 1,
+          "fixture": "container-forwarding",
+          "exit_code": 0,
+          "stdout": "container forwarding: root native/bridge TCP/UDP, IPv4/IPv6 L3 policy, pinned sysctls and TTL: ok\n"
+        },
+        {
+          "cpus": 1,
+          "fixture": "container-network",
+          "exit_code": 0,
+          "stdout": "container network: veth/bridge, namespace FDs, live TCP/UDP, sysfs/proc and cross-bridge isolation: ok\n"
+        },
+        {
+          "cpus": 1,
+          "fixture": "network-namespaces",
+          "exit_code": 0,
+          "stdout": "network namespaces: private TCP/UDP/Unix, old FDs, pathname reachability, lo, sysctls and setns: ok\n"
+        },
+        {
+          "cpus": 4,
+          "fixture": "container-forwarding",
+          "exit_code": 0,
+          "stdout": "container forwarding: root native/bridge TCP/UDP, IPv4/IPv6 L3 policy, pinned sysctls and TTL: ok\n"
+        },
+        {
+          "cpus": 4,
+          "fixture": "container-network",
+          "exit_code": 0,
+          "stdout": "container network: veth/bridge, namespace FDs, live TCP/UDP, sysfs/proc and cross-bridge isolation: ok\n"
+        },
+        {
+          "cpus": 4,
+          "fixture": "network-namespaces",
+          "exit_code": 0,
+          "stdout": "network namespaces: private TCP/UDP/Unix, old FDs, pathname reachability, lo, sysctls and setns: ok\n"
+        }
+      ],
+      "source_sha256": {
+        "container-forwarding": "7c5cb9657d41412424c748194905f5584413def9694c8ca0778ef8d86999b56f",
+        "container-network": "c4f117a20fc20cc4f00b861fc33d75ce7f3ace18b55b001c5cc1c772055a210b",
+        "network-namespaces": "6b7d8b49143787261a72dd04a847ec7e7f335670e5c0818081c5350b3ec49487"
+      },
+      "fixture_sha256": {
+        "container-forwarding": "9e9da17056157bc36be789f938f47ae43bfa79a4f9b9a99b8efbbd8a8cc189cb",
+        "container-network": "e007678648411abb910d28d74d817bdb6f47f57b187eaa44f8dcdb6e37127f5c",
+        "network-namespaces": "db829cdfc6c8afcdc1d79f20753c87767f52845c0a7f4feaae621c94f394203c"
+      },
+      "scope": "Namespace-owned configurable veth/bridge, direct/static routes and real internal IP data. Root bridge/native socket paths and per-family L3 forwarding are tested; external forwarding, nftables/NAT and full Docker bridge are not accepted by this fixture."
+    },
+    "docker": {
+      "profile": "private-net-ipc-cgroup-default-seccomp",
+      "gomaxprocs": 1,
+      "scope": "Original Docker network=none with independent net/IPC/cgroup namespace identities, rebased cgroup mount/proc, applied network sysctls and enforced default seccomp/device filter. Bridge/NAT remain separate acceptance.",
+      "packages_sha256": {
+        "containerd-2.1.5-r2.apk": "963e1c79c6439e23afbb085428d6466fa684921bacfc4f39dc0e667b044b7669",
+        "crun-1.23.1-r0.apk": "64c9b516fc7f8cdde7b666db5832fa93952c71545832292fcd9845401ca7bcca",
+        "docker-cli-28.3.3-r5.apk": "8895ae93210cdf47018720928fd703d30f43f62ec452b6a30391d5a6b18a6ae2",
+        "docker-engine-28.3.3-r5.apk": "ea07b9c3e707fa12920e1501d14bf702ee19af56f21634356af4311a02384aad",
+        "runc-1.3.4-r1.apk": "4a6a59757e4559796492417e7cd10c8719b4dd00684e7ce7ea6197d18f1db52a",
+        "tini-static-0.19.0-r3.apk": "b16167b87355ea675d0bbba2dc2ad6bf537edd97e73c4a1a2ed720f23e85c877",
+        "busybox-1.37.0-r20.apk": "9d25af67564c92a4a4c603462efdbcd23019e90b8785f1ebcad640cbb1551c93",
+        "busybox-binsh-1.37.0-r20.apk": "9180dcee3f67ea806fe45361cffab94f8ce7e417d5f373bb0d989e88eb609903",
+        "ca-certificates-20260909-r0.apk": "b281f0245c7998f8d72541e301b259e370eae9491b66881a27380e544cba432b",
+        "iptables-1.8.11-r1.apk": "0a10fe634e3525082a1219487cd044d987ac4a55ed5aa551bf758e81223e1cfb",
+        "libcap2-2.78-r0.apk": "de209aee8b76946849bff6bd97151c6af20889be5a96a2e28f9899255e252e3f",
+        "libcrypto3-3.5.9-r0.apk": "ede2ef7eca3b65a42e902aaf7890f9c5647dca0c55123a817179ad9f3bc6ef24",
+        "libmnl-1.0.5-r2.apk": "213a7e87553bed3d9159b2e74d2627885c259883e61714b357949ca806eb1f8d",
+        "libncursesw-6.5_p20250503-r0.apk": "419b375e8a4345e7172b1f0f3a3c57db61374f5408cdb875d9e860bd4c243aca",
+        "libnftnl-1.2.9-r0.apk": "6912a5d56b31d3365b8dd0d6339bd70a2bfc9e25dab0c387f77174113c43e664",
+        "libseccomp-2.6.1-r0.apk": "ee817c130535b72e5b0a63b211f9d2fbbaa493a319f78e9da5e30359991e5180",
+        "libssl3-3.5.9-r0.apk": "338c9f6154582b4b76455a59f95538bcea8df039c5c72916dd2d8d0d844c9583",
+        "libxtables-1.8.11-r1.apk": "e84f0d6b69d4318f297056d00ccbe433e6c7d163fe6767405e373248c42e3e88",
+        "musl-1.2.5-r12.apk": "ac281d1e7f9e9c447c51e309317b975f48be6edaf3ab91ae73b959cf86703782",
+        "ncurses-terminfo-base-6.5_p20250503-r0.apk": "3d37403e0b5ab9eb0c1ce269444e4a385faec9fe6af452c1c6956806b13d2bd6",
+        "yajl-2.1.0-r9.apk": "34a2fb7671a29f19166d051318c866e60f4687184fe73939b6b08325d11b68a8"
+      },
+      "rootfs_sha256": "821565fa8f3953eefd12497b166b4b50add2f7c57fb312e75862f5867e06fefe",
+      "checks": [
+        {
+          "cpus": 1,
+          "exit_code": 0,
+          "checks": {
+            "DAEMON": true,
+            "IMAGE": true,
+            "CREATE": true,
+            "RUN": true,
+            "CLEANUP": true
+          },
+          "start_exit": 7
+        }
+      ],
+      "log_sha256": "a44509a398e9bb8e382879915304bd799530fdca7eff81eb66b929db669f1979"
+    }
+  },
+  "ci": {
+    "linux": {
+      "run": 39094617887,
+      "job": 117578378745,
+      "conclusion": "success",
+      "strict_clippy": true,
+      "fmt": true,
+      "net_tests": 24,
+      "linux_tests": 21,
+      "vfs_tests": {
+        "passed": 121,
+        "ignored": 1
+      },
+      "virtual_network_tests": 11,
+      "real_guest_fixtures_1_4_cpu": true,
+      "original_docker_strict_isolation_4_cpu": true,
+      "artifact": {
+        "id": 12124008460,
+        "bytes": 14762,
+        "sha256": "5806db162c64a72148a857d0976fc3389935f0f216660ac33a8b1c6d1094a614"
+      },
+      "guest_network": {
+        "checks": [
+          {
+            "cpus": 1,
+            "fixture": "container-forwarding",
+            "exit_code": 0,
+            "stdout": "container forwarding: root native/bridge TCP/UDP, IPv4/IPv6 L3 policy, pinned sysctls and TTL: ok\n"
+          },
+          {
+            "cpus": 1,
+            "fixture": "container-network",
+            "exit_code": 0,
+            "stdout": "container network: veth/bridge, namespace FDs, live TCP/UDP, sysfs/proc and cross-bridge isolation: ok\n"
+          },
+          {
+            "cpus": 1,
+            "fixture": "network-namespaces",
+            "exit_code": 0,
+            "stdout": "network namespaces: private TCP/UDP/Unix, old FDs, pathname reachability, lo, sysctls and setns: ok\n"
+          },
+          {
+            "cpus": 4,
+            "fixture": "container-forwarding",
+            "exit_code": 0,
+            "stdout": "container forwarding: root native/bridge TCP/UDP, IPv4/IPv6 L3 policy, pinned sysctls and TTL: ok\n"
+          },
+          {
+            "cpus": 4,
+            "fixture": "container-network",
+            "exit_code": 0,
+            "stdout": "container network: veth/bridge, namespace FDs, live TCP/UDP, sysfs/proc and cross-bridge isolation: ok\n"
+          },
+          {
+            "cpus": 4,
+            "fixture": "network-namespaces",
+            "exit_code": 0,
+            "stdout": "network namespaces: private TCP/UDP/Unix, old FDs, pathname reachability, lo, sysctls and setns: ok\n"
+          }
+        ],
+        "source_sha256": {
+          "container-forwarding": "7c5cb9657d41412424c748194905f5584413def9694c8ca0778ef8d86999b56f",
+          "container-network": "c4f117a20fc20cc4f00b861fc33d75ce7f3ace18b55b001c5cc1c772055a210b",
+          "network-namespaces": "6b7d8b49143787261a72dd04a847ec7e7f335670e5c0818081c5350b3ec49487"
+        },
+        "fixture_sha256": {
+          "container-forwarding": "b5bb86d0f333fd44e4fcd25125e983be4b817c119dd6abd71f3b076f6be66210",
+          "container-network": "52c0e2dd31991c47834e7bba21b619bae454409af70a7b11229390690c401dcb",
+          "network-namespaces": "a291b5ecf52dc1b3abe65eba833670d470141a5858fe7a54987953d4440b7e5c"
+        },
+        "scope": "Namespace-owned configurable veth/bridge, direct/static routes and real internal IP data. Root bridge/native socket paths and per-family L3 forwarding are tested; external forwarding, nftables/NAT and full Docker bridge are not accepted by this fixture."
+      },
+      "docker": {
+        "profile": "private-net-ipc-cgroup-default-seccomp",
+        "gomaxprocs": 1,
+        "scope": "Original Docker network=none with independent net/IPC/cgroup namespace identities, rebased cgroup mount/proc, applied network sysctls and enforced default seccomp/device filter. Bridge/NAT remain separate acceptance.",
+        "packages_sha256": {
+          "containerd-2.1.5-r2.apk": "963e1c79c6439e23afbb085428d6466fa684921bacfc4f39dc0e667b044b7669",
+          "crun-1.23.1-r0.apk": "64c9b516fc7f8cdde7b666db5832fa93952c71545832292fcd9845401ca7bcca",
+          "docker-cli-28.3.3-r5.apk": "8895ae93210cdf47018720928fd703d30f43f62ec452b6a30391d5a6b18a6ae2",
+          "docker-engine-28.3.3-r5.apk": "ea07b9c3e707fa12920e1501d14bf702ee19af56f21634356af4311a02384aad",
+          "runc-1.3.4-r1.apk": "4a6a59757e4559796492417e7cd10c8719b4dd00684e7ce7ea6197d18f1db52a",
+          "tini-static-0.19.0-r3.apk": "b16167b87355ea675d0bbba2dc2ad6bf537edd97e73c4a1a2ed720f23e85c877",
+          "busybox-1.37.0-r20.apk": "9d25af67564c92a4a4c603462efdbcd23019e90b8785f1ebcad640cbb1551c93",
+          "busybox-binsh-1.37.0-r20.apk": "9180dcee3f67ea806fe45361cffab94f8ce7e417d5f373bb0d989e88eb609903",
+          "ca-certificates-20260909-r0.apk": "b281f0245c7998f8d72541e301b259e370eae9491b66881a27380e544cba432b",
+          "iptables-1.8.11-r1.apk": "0a10fe634e3525082a1219487cd044d987ac4a55ed5aa551bf758e81223e1cfb",
+          "libcap2-2.78-r0.apk": "de209aee8b76946849bff6bd97151c6af20889be5a96a2e28f9899255e252e3f",
+          "libcrypto3-3.5.9-r0.apk": "ede2ef7eca3b65a42e902aaf7890f9c5647dca0c55123a817179ad9f3bc6ef24",
+          "libmnl-1.0.5-r2.apk": "213a7e87553bed3d9159b2e74d2627885c259883e61714b357949ca806eb1f8d",
+          "libncursesw-6.5_p20250503-r0.apk": "419b375e8a4345e7172b1f0f3a3c57db61374f5408cdb875d9e860bd4c243aca",
+          "libnftnl-1.2.9-r0.apk": "6912a5d56b31d3365b8dd0d6339bd70a2bfc9e25dab0c387f77174113c43e664",
+          "libseccomp-2.6.1-r0.apk": "ee817c130535b72e5b0a63b211f9d2fbbaa493a319f78e9da5e30359991e5180",
+          "libssl3-3.5.9-r0.apk": "338c9f6154582b4b76455a59f95538bcea8df039c5c72916dd2d8d0d844c9583",
+          "libxtables-1.8.11-r1.apk": "e84f0d6b69d4318f297056d00ccbe433e6c7d163fe6767405e373248c42e3e88",
+          "musl-1.2.5-r12.apk": "ac281d1e7f9e9c447c51e309317b975f48be6edaf3ab91ae73b959cf86703782",
+          "ncurses-terminfo-base-6.5_p20250503-r0.apk": "3d37403e0b5ab9eb0c1ce269444e4a385faec9fe6af452c1c6956806b13d2bd6",
+          "yajl-2.1.0-r9.apk": "34a2fb7671a29f19166d051318c866e60f4687184fe73939b6b08325d11b68a8"
+        },
+        "rootfs_sha256": "821565fa8f3953eefd12497b166b4b50add2f7c57fb312e75862f5867e06fefe",
+        "checks": [
+          {
+            "cpus": 4,
+            "exit_code": 0,
+            "checks": {
+              "DAEMON": true,
+              "IMAGE": true,
+              "CREATE": true,
+              "RUN": true,
+              "CLEANUP": true
+            },
+            "start_exit": 7
+          }
+        ]
+      }
+    },
+    "apple": {
+      "run": 39094617889,
+      "job": 117578384252,
+      "conclusion": "success",
+      "net_tests": 24,
+      "linux_tests": 21,
+      "vfs_tests": {
+        "passed": 120,
+        "ignored": 1
+      },
+      "aarch64_apple_ios_ffi_check": true
+    }
+  },
+  "scope": "Root native/guest TCP/UDP; actual internal IPv4/IPv6 L3 forwarding with namespace-owned default-off sysctls. No external forwarding/NAT or full Docker bridge acceptance. No IPA.",
+  "not_implemented": [
+    "NETLINK_NETFILTER/nftables",
+    "conntrack/NAT",
+    "Docker default bridge",
+    "external container DNS/HTTP",
+    "published ports",
+    "root native eth0/lo services through guest fabric",
+    "ICMP forwarding errors",
+    "raw Ethernet/AF_PACKET",
+    "multicast/VLAN/STP",
+    "variable MTU",
+    "link-local IPv6 scopes",
+    "complete peer-carrier and automatic-route notifications",
+    "hybrid saturated-load fairness and complex connected UDP rebinding"
+  ],
+  "bridge_diagnostic": {
+    "profile": "Existing developer store, original dockerd, vfs, iptables=false/ip6tables=false, bridge=docker0, ip-forward=true, ip-masq=false. Daemon-only diagnostic, no container/security bypass.",
+    "exit_code": 1,
+    "error": "Failed to create bridge docker0 via netlink: operation not supported",
+    "script_sha256": "cebf0334735c2f6718a6325dd2038d15ec6a6c846b4ce637d311f455fd72d29f",
+    "log_sha256": "0f6b3c0e616d08f1a750d5c5661b15ae9fd1f955e40fb001299e4531d63801fc",
+    "runner_sha256": "fee659d64ab7124131ea7515b32f1ed09659d5d278ae14eb8abd877e1c925b2e",
+    "source_note": "Local release runner from this iteration before the protocol-info fallback guard; diagnostic is not full bridge/NAT acceptance.",
+    "next_investigation": "Moby v28.3.3 setupDevice passes a zero-valued LinkAttrs.TxQLen; its vendor LinkAdd emits IFLA_TXQLEN=0, currently rejected by rtnetlink. Check this and all following Docker bridge settings against actual behavior.",
+    "upstream": [
+      "https://github.com/moby/moby/blob/v28.3.3/libnetwork/drivers/bridge/setup_device_linux.go",
+      "https://github.com/moby/moby/blob/v28.3.3/vendor/github.com/vishvananda/netlink/link_linux.go"
+    ],
+    "minimal_attribute_reproduction": {
+      "cpu": 1,
+      "request": "RTM_NEWLINK CREATE|EXCL, IFLA_IFNAME, unicast IFLA_ADDRESS, bridge LINKINFO with empty INFO_DATA; compare with/without IFLA_TXQLEN=0",
+      "with_txqlen_errno": 95,
+      "without_txqlen_errno": 0,
+      "stdout": "bridge attribute diagnostic: IFLA_TXQLEN=0 -> -95; otherwise identical bridge -> 0\n",
+      "source_sha256": "b3e74718bf21af240d9d87724890fafcae38295b039ebd3f2c2fdc7a7d3ca1d6"
+    }
+  }
+}

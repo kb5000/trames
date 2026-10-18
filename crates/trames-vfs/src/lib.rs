@@ -24,9 +24,12 @@ mod pid_namespace;
 pub use pid_namespace::{PidNamespace, CLONE_NEWPID};
 mod namespace;
 mod xattr;
-pub use linux_namespace::{NamespaceSnapshot, UtsNamespace, CLONE_NEWUTS};
+pub use linux_namespace::{
+    NamespaceSnapshot, UtsNamespace, CLONE_NEWCGROUP, CLONE_NEWIPC, CLONE_NEWNET, CLONE_NEWUTS,
+};
 mod network;
 mod oom;
+mod overlay;
 mod pseudo;
 pub use oom::OomTask;
 mod pty;
@@ -184,6 +187,8 @@ struct OpenDescription {
     flags: u32,
     position: u64,
     node: Option<Rc<RefCell<Node>>>,
+    // Overlay read descriptions retain the real lower file selected at open.
+    read_node: Option<Rc<RefCell<Node>>>,
     pipe: Option<Rc<PipeEnd>>,
     socket: Option<Rc<NetSocket>>,
     bridge: Option<std::sync::Arc<trames_bridge::Connection>>,
@@ -194,6 +199,7 @@ struct OpenDescription {
     pty: Option<Rc<PtyEnd>>,
     namespace: Option<linux_namespace::NamespaceHandle>,
     oom: Option<Weak<OomTask>>,
+    network_control: Option<network::Control>,
     mount: Option<Rc<Mount>>,
 }
 impl Drop for OpenDescription {
@@ -202,6 +208,9 @@ impl Drop for OpenDescription {
     }
 }
 impl OpenDescription {
+    fn data_node(&self) -> Option<Rc<RefCell<Node>>> {
+        self.read_node.clone().or_else(|| self.node.clone())
+    }
     fn metadata_node(&self) -> Option<Rc<RefCell<Node>>> {
         self.node
             .clone()
@@ -241,6 +250,7 @@ type ResolvedInode = (Rc<RefCell<Node>>, Vec<u8>, Option<Rc<Mount>>);
 type ResolvedEntry = (ResolvedPath, Option<ResolvedInode>);
 type FlockOwners = Vec<(Weak<RefCell<OpenDescription>>, u32)>;
 struct Filesystem {
+    overlay: Option<Rc<overlay::Overlay>>,
     shared_budget: trames_shared::SharedBudget,
     paths: BTreeMap<Vec<u8>, Rc<RefCell<Node>>>,
     inodes: Vec<Weak<RefCell<Node>>>,
@@ -254,7 +264,6 @@ struct Filesystem {
 #[derive(Clone)]
 pub struct Vfs {
     network: trames_net::Network,
-    local_namespace: Rc<RefCell<ipc::LocalNamespace>>,
     native_services: Rc<RefCell<Option<Rc<RefCell<ipc::NativeServices>>>>>,
     fs: Rc<RefCell<Filesystem>>,
     fds: BTreeMap<u32, Descriptor>,
@@ -262,6 +271,8 @@ pub struct Vfs {
     root_node: Option<Rc<RefCell<Node>>>,
     uts: UtsNamespace,
     root_network: Rc<linux_namespace::RootNetwork>,
+    ipc_namespace: Rc<linux_namespace::IpcNamespace>,
+    cgroup_namespace: Rc<linux_namespace::CgroupNamespace>,
     pid_ns: PidNamespace,
     pid_children: PidNamespace,
     mounts: Option<MountNamespace>,
@@ -290,11 +301,13 @@ pub struct Vfs {
 impl Default for Vfs {
     fn default() -> Self {
         let pid_ns = PidNamespace::default();
+        let root_network = Rc::new(linux_namespace::RootNetwork::default());
+        let network = root_network.network.borrow().clone();
         let mut v = Self {
-            network: trames_net::Network::default(),
-            local_namespace: Rc::default(),
+            network,
             native_services: Rc::default(),
             fs: Rc::new(RefCell::new(Filesystem {
+                overlay: None,
                 shared_budget: trames_shared::SharedBudget::new(memfd::MEMFD_BYTES as usize),
                 paths: BTreeMap::new(),
                 inodes: Vec::new(),
@@ -309,7 +322,9 @@ impl Default for Vfs {
             cwd_node: None,
             root_node: None,
             uts: UtsNamespace::default(),
-            root_network: Rc::default(),
+            root_network,
+            ipc_namespace: Rc::default(),
+            cgroup_namespace: Rc::default(),
             pid_ns: pid_ns.clone(),
             pid_children: pid_ns,
             mounts: None,
@@ -351,6 +366,7 @@ impl Default for Vfs {
                 fd,
                 Descriptor {
                     open: Rc::new(RefCell::new(OpenDescription {
+                        read_node: None,
                         id: v.open_id(),
                         owner: (v.credentials.fsuid, v.credentials.fsgid),
                         kind,
@@ -366,6 +382,7 @@ impl Default for Vfs {
                         local: None,
                         pty: None,
                         namespace: None,
+                        network_control: None,
                         oom: None,
                         mount: None,
                     })),
@@ -490,6 +507,7 @@ impl Vfs {
                 fd,
                 Descriptor {
                     open: Rc::new(RefCell::new(OpenDescription {
+                        read_node: None,
                         id: self.open_id(),
                         owner: (self.credentials.fsuid, self.credentials.fsgid),
                         kind: FdKind::Terminal,
@@ -505,6 +523,7 @@ impl Vfs {
                         local: None,
                         pty: None,
                         namespace: None,
+                        network_control: None,
                         oom: None,
                         mount: None,
                     })),
@@ -547,7 +566,15 @@ impl Vfs {
         }
         let old_next = fs.next_inode;
         let inode = if let Content::File(data) = &content {
-            data.inode().unwrap_or(fs.next_inode)
+            match data.inode() {
+                Some(inode) => inode,
+                None => match &fs.overlay {
+                    Some(overlay) => overlay.allocate_inode()?,
+                    None => fs.next_inode,
+                },
+            }
+        } else if let Some(overlay) = &fs.overlay {
+            overlay.allocate_inode()?
         } else {
             fs.next_inode
         };
@@ -926,6 +953,31 @@ impl Vfs {
         self.insert(dest, Content::Symlink(target.to_vec()), 0o120777)
     }
     pub fn readlink_at(&self, dirfd: i32, path: &[u8]) -> Result<Vec<u8>> {
+        // readlinkat has implicit AT_EMPTY_PATH support for an O_PATH handle
+        // opened with O_NOFOLLOW. Keep the inode alive even after unlink, and
+        // refresh dynamic proc magic links before reading their current target.
+        if path.is_empty() {
+            if dirfd == AT_FDCWD {
+                return Err(Errno(2));
+            }
+            let description = self.descriptor(dirfd as u32)?.open.clone();
+            if let FdKind::Node(path) = &description.borrow().kind {
+                self.check_proc_inspection(
+                    &ResolvedPath {
+                        key: path.clone(),
+                        mount: description.borrow().mount.clone(),
+                    },
+                    true,
+                )?;
+            }
+            self.refresh_pseudo_fd(dirfd as u32)?;
+            let open = description.borrow();
+            let node = open.node.as_ref().ok_or(Errno(2))?.borrow();
+            return match &node.content {
+                Content::Symlink(target) => Ok(target.clone()),
+                _ => Err(Errno(2)),
+            };
+        }
         let dest = self.resolve_final(dirfd, path, false)?;
         self.check_proc_inspection(&dest, true)?;
         let node = self.node(&dest)?;
@@ -1262,7 +1314,9 @@ impl Vfs {
             p.writable()?;
         }
         let oom = self.oom_for_path(&p);
+        let network_control = self.network_control(&p);
         if oom.is_none()
+            && network_control.is_none()
             && self.uses_pseudo(&p)
             && self.pseudo_readonly(&p)
             && (flags & 3 != 0 || flags & 0x240 != 0)
@@ -1290,7 +1344,7 @@ impl Vfs {
         }
         let node = self.node(&p)?;
         {
-            let mut n = node.borrow_mut();
+            let n = node.borrow();
             self.check_device_open(&n, flags)?;
             if matches!(n.content, Content::Socket(_)) && flags & O_PATH == 0 {
                 return Err(Errno(6));
@@ -1306,6 +1360,9 @@ impl Vfs {
             }
             if existed
                 && flags & O_PATH == 0
+                && !(network_control.is_some()
+                    && (self.credentials.euid == 0
+                        || self.credentials.has_cap(capabilities::NET_ADMIN)))
                 && ((flags & 3 != 1 && !self.allowed(&n, 4))
                     || (flags & 3 != 0 && !self.allowed(&n, 2)))
             {
@@ -1322,7 +1379,17 @@ impl Vfs {
             {
                 return Err(Errno(13));
             }
-            if flags & 0x200 != 0 && !Self::cgroup_mount(&p) && oom.is_none() {
+        }
+        if flags & O_PATH == 0 && flags & 3 != 0 {
+            self.overlay_prepare(&p, &node, flags & 0x200 != 0)?;
+        }
+        {
+            let mut n = node.borrow_mut();
+            if flags & 0x200 != 0
+                && !Self::cgroup_mount(&p)
+                && oom.is_none()
+                && network_control.is_none()
+            {
                 if let Content::File(b) = &mut n.content {
                     b.truncate(0)?;
                     n.times[1] = storage::Timestamp::now();
@@ -1395,10 +1462,19 @@ impl Vfs {
             None
         };
         let notification = self.notification_open(&p, &node, flags);
+        let read_node = if flags & O_PATH == 0 && flags & 3 == 0 {
+            match &node.borrow().content {
+                Content::File(storage::FileData::Lower(source)) => Some(source.clone()),
+                _ => None,
+            }
+        } else {
+            None
+        };
         self.fds.insert(
             fd,
             Descriptor {
                 open: Rc::new(RefCell::new(OpenDescription {
+                    read_node,
                     id: self.open_id(),
                     owner: (self.credentials.fsuid, self.credentials.fsgid),
                     kind: if flags & O_PATH == 0
@@ -1425,6 +1501,7 @@ impl Vfs {
                     local: None,
                     pty,
                     namespace: None,
+                    network_control,
                     oom,
                 })),
                 cloexec: flags & O_CLOEXEC != 0,
@@ -1578,6 +1655,7 @@ impl Vfs {
                 fd,
                 Descriptor {
                     open: Rc::new(RefCell::new(OpenDescription {
+                        read_node: None,
                         id: self.open_id(),
                         owner: (self.credentials.fsuid, self.credentials.fsgid),
                         kind,
@@ -1593,6 +1671,7 @@ impl Vfs {
                         local: None,
                         pty: None,
                         namespace: None,
+                        network_control: None,
                         oom: None,
                         mount: None,
                     })),
@@ -1602,11 +1681,139 @@ impl Vfs {
         }
         Ok([free[0], free[1]])
     }
+    /// Bounded splice through a pipe. Commit pipe consumption only after the
+    /// destination accepts bytes; EAGAIN must never lose buffered stream data.
+    pub fn splice(
+        &mut self,
+        input: u32,
+        output: u32,
+        count: usize,
+        from: Option<u64>,
+        to: Option<u64>,
+    ) -> Result<usize> {
+        let source = self.descriptor(input)?.open.clone();
+        let dest = self.descriptor(output)?.open.clone();
+        if Rc::ptr_eq(&source, &dest) {
+            return Err(Errno(22));
+        }
+        let source_pipe = {
+            let o = source.borrow();
+            if o.flags & O_PATH != 0 || o.flags & 3 == 1 {
+                return Err(Errno(9));
+            }
+            o.pipe.as_ref().map(|p| (p.pipe.clone(), p.read))
+        };
+        let dest_pipe = {
+            let o = dest.borrow();
+            if o.flags & O_PATH != 0 || o.flags & 3 == 0 {
+                return Err(Errno(9));
+            }
+            if o.flags & 0x400 != 0 {
+                return Err(Errno(22));
+            }
+            o.pipe.as_ref().map(|p| (p.pipe.clone(), p.write))
+        };
+        for open in [&source, &dest] {
+            let o = open.borrow();
+            if o.socket
+                .as_ref()
+                .is_some_and(|s| s.info().is_some_and(|i| i.kind != 1))
+                || o.local.as_ref().is_some_and(|s| s.kind() != 1)
+            {
+                return Err(Errno(22));
+            }
+        }
+        if source_pipe.is_none() && dest_pipe.is_none() {
+            return Err(Errno(22));
+        }
+        if source_pipe.is_some() && from.is_some() || dest_pipe.is_some() && to.is_some() {
+            return Err(Errno(29));
+        }
+        if let (Some((a, _)), Some((b, _))) = (&source_pipe, &dest_pipe) {
+            if Rc::ptr_eq(a, b) {
+                return Err(Errno(22));
+            }
+        }
+        if source_pipe.as_ref().is_some_and(|(_, read)| !*read)
+            || dest_pipe.as_ref().is_some_and(|(_, write)| !*write)
+        {
+            return Err(Errno(9));
+        }
+        if count == 0 {
+            return Ok(0);
+        }
+        if let Some((pipe, _)) = source_pipe {
+            let bytes = {
+                let p = pipe.borrow();
+                if p.bytes.is_empty() && p.writers != 0 {
+                    return Err(Errno(11));
+                }
+                p.bytes
+                    .iter()
+                    .take(count.min(PIPE_CAPACITY))
+                    .copied()
+                    .collect::<Vec<_>>()
+            };
+            if bytes.is_empty() {
+                return Ok(0);
+            }
+            let n = if let Some((target, _)) = &dest_pipe {
+                let mut p = target.borrow_mut();
+                if p.readers == 0 {
+                    return Err(Errno(32));
+                }
+                let n = bytes.len().min(PIPE_CAPACITY - p.bytes.len());
+                if n == 0 {
+                    return Err(Errno(11));
+                }
+                p.bytes.extend(&bytes[..n]);
+                p.io_epoch[0] = p.io_epoch[0].wrapping_add(1);
+                n
+            } else if let Some(offset) = to {
+                self.pwrite(output, &bytes, offset)?
+            } else {
+                self.write(output, &bytes)?
+            };
+            let mut p = pipe.borrow_mut();
+            p.bytes.drain(..n);
+            if n != 0 {
+                p.io_epoch[1] = p.io_epoch[1].wrapping_add(1);
+            }
+            return Ok(n);
+        }
+        let (pipe, _) = dest_pipe.unwrap();
+        let room = {
+            let p = pipe.borrow();
+            if p.readers == 0 {
+                return Err(Errno(32));
+            }
+            PIPE_CAPACITY - p.bytes.len()
+        };
+        if room == 0 {
+            return Err(Errno(11));
+        }
+        let bytes = if let Some(offset) = from {
+            self.pread(input, count.min(room), offset)?
+        } else {
+            self.read(input, count.min(room))?
+        };
+        let mut p = pipe.borrow_mut();
+        p.bytes.extend(&bytes);
+        if !bytes.is_empty() {
+            p.io_epoch[0] = p.io_epoch[0].wrapping_add(1);
+        }
+        Ok(bytes.len())
+    }
     pub fn read(&mut self, fd: u32, count: usize) -> Result<Vec<u8>> {
         self.refresh_pseudo_fd(fd)?;
         let mut o = self.descriptor(fd)?.open.borrow_mut();
         if o.flags & O_PATH != 0 || o.flags & 3 == 1 {
             return Err(Errno(9));
+        }
+        if let Some(control) = &o.network_control {
+            let data = control.read(o.position, count);
+            o.position += data.len() as u64;
+            return Ok(data);
         }
         if let Some(data) = Self::oom_read(&o, o.position, count)? {
             o.position += data.len() as u64;
@@ -1654,7 +1861,7 @@ impl Vfs {
             }
             return Ok(p.bytes.drain(..n).collect());
         }
-        let node = o.node.clone().ok_or(Errno(9))?;
+        let node = o.data_node().ok_or(Errno(9))?;
         let mut n = node.borrow_mut();
         let result = match &n.content {
             Content::File(b) => {
@@ -1674,11 +1881,15 @@ impl Vfs {
             mounts::accessed(&mut n, o.mount.as_ref());
         }
         drop(n);
+        let notification_node = o.node.as_ref().unwrap_or(&node);
+        if !Rc::ptr_eq(notification_node, &node) && result.is_ok() {
+            mounts::accessed(&mut notification_node.borrow_mut(), o.mount.as_ref());
+        }
         if result.as_ref().is_ok_and(|b| !b.is_empty())
             && !(node.borrow().seals.is_some() && o.notification.is_none())
         {
             inotify::notify(
-                &node,
+                notification_node,
                 inotify::ACCESS,
                 o.notification.as_ref().and_then(|c| c.link.as_ref()),
             );
@@ -1712,14 +1923,9 @@ impl Vfs {
             return bridge.write(bytes).map_err(Errno);
         }
         if let Some(socket) = &o.socket {
-            return socket
-                .send_bytes_authorized(
-                    bytes,
-                    0,
-                    None,
-                    self.credentials.has_cap(capabilities::NET_ADMIN),
-                )
-                .map_err(|e| Errno(e.0));
+            let socket = socket.clone();
+            drop(o);
+            return self.socket_send_bytes(&socket, bytes, 0, None);
         }
         if let Some(end) = &o.pipe {
             if !end.write {
@@ -1759,6 +1965,17 @@ impl Vfs {
         let mut o = self.descriptor(fd)?.open.borrow_mut();
         if o.flags & 3 == 0 {
             return Err(Errno(9));
+        }
+        if let Some(control) = &o.network_control {
+            let count = control.write(
+                bytes,
+                offset.unwrap_or(o.position),
+                self.credentials.euid == 0 || self.credentials.has_cap(capabilities::NET_ADMIN),
+            )?;
+            if offset.is_none() {
+                o.position += count as u64;
+            }
+            return Ok(count);
         }
         if let Some(count) = self.oom_write(&o, bytes)? {
             // proc oom_score_adj_write ignores and does not advance f_pos.
@@ -1863,13 +2080,16 @@ impl Vfs {
         if o.flags & O_PATH != 0 || o.flags & 3 == 1 {
             return Err(Errno(9));
         }
+        if let Some(control) = &o.network_control {
+            return Ok(control.read(offset, count));
+        }
         if let Some(data) = Self::oom_read(&o, offset, count)? {
             return Ok(data);
         }
         if let Some(data) = self.cgroup_read(&o, offset, count)? {
             return Ok(data);
         }
-        let node = o.node.as_ref().ok_or(Errno(29))?;
+        let node = o.data_node().ok_or(Errno(29))?;
         let mut n = node.borrow_mut();
         let result = match &n.content {
             Content::File(b) => b.read_at(offset, count),
@@ -1884,11 +2104,15 @@ impl Vfs {
             mounts::accessed(&mut n, o.mount.as_ref());
         }
         drop(n);
+        let notification_node = o.node.as_ref().unwrap_or(&node);
+        if !Rc::ptr_eq(notification_node, &node) && result.is_ok() {
+            mounts::accessed(&mut notification_node.borrow_mut(), o.mount.as_ref());
+        }
         if result.as_ref().is_ok_and(|b| !b.is_empty())
             && !(node.borrow().seals.is_some() && o.notification.is_none())
         {
             inotify::notify(
-                node,
+                notification_node,
                 inotify::ACCESS,
                 o.notification.as_ref().and_then(|c| c.link.as_ref()),
             );
@@ -1978,7 +2202,7 @@ impl Vfs {
         if o.bridge.is_some() {
             return Err(Errno(29));
         }
-        let node = o.node.clone().ok_or(Errno(29))?;
+        let node = o.data_node().ok_or(Errno(29))?;
         let n = node.borrow();
         if let Some(log) = &o.kernel_log {
             let position = log.borrow().seek(offset, whence)?;
@@ -2013,7 +2237,10 @@ impl Vfs {
     }
     fn stat_node(&self, node: &Node, mount: Option<&Rc<Mount>>) -> Result<[u8; 128]> {
         let mut out = [0; 128];
-        out[..8].copy_from_slice(&node.device.to_le_bytes());
+        let device = mount
+            .filter(|m| m.kind == mounts::Kind::Overlay)
+            .map_or(node.device, |m| m.device());
+        out[..8].copy_from_slice(&device.to_le_bytes());
         out[8..16].copy_from_slice(&node.inode.to_le_bytes());
         out[16..20].copy_from_slice(&node.mode.to_le_bytes());
         let mut links = node.links;
@@ -2023,14 +2250,20 @@ impl Vfs {
             let path = fs
                 .paths
                 .iter()
-                .find(|(_, n)| n.borrow().inode == node.inode)
+                .find(|(_, n)| {
+                    let n = n.borrow();
+                    n.device == node.device && n.inode == node.inode
+                })
                 .map(|(p, _)| p.clone())
                 .or_else(|| {
                     self.pseudo
                         .borrow()
                         .nodes
                         .iter()
-                        .find(|(_, n)| n.borrow().inode == node.inode)
+                        .find(|(_, n)| {
+                            let n = n.borrow();
+                            n.device == node.device && n.inode == node.inode
+                        })
                         .map(|((_, p), _)| p.clone())
                 });
             if let Some(path) = path {
@@ -2125,7 +2358,14 @@ impl Vfs {
     }
     fn stat_open(&self, o: &OpenDescription) -> Result<[u8; 128]> {
         if let Some(n) = o.metadata_node() {
-            return self.stat_node(&n.borrow(), o.mount.as_ref());
+            let mut stat = self.stat_node(&n.borrow(), o.mount.as_ref())?;
+            if let Some(source) = &o.read_node {
+                if let Content::File(data) = &source.borrow().content {
+                    stat[48..56].copy_from_slice(&data.len().to_le_bytes());
+                    stat[64..72].copy_from_slice(&data.blocks()?.to_le_bytes());
+                }
+            }
+            return Ok(stat);
         }
         if matches!(o.kind, FdKind::Terminal) {
             if let Ok(n) = self.node(b"/dev/pts/0") {

@@ -1,0 +1,88 @@
+{
+  "version": "1.0.0",
+  "build": 27,
+  "status": "verified-package",
+  "source_commit": "33541e7cdb9105bfeb85b53fca57a20a8970efe6",
+  "runtime_source_commit": "31abd3538994e501cb249601c2adcca2b8bc608a",
+  "apple_run": 39109373627,
+  "linux_scope_run": 39109373618,
+  "purpose": "Owner-requested unsigned Sideloadly test IPA; no formal release or merge.",
+  "features": [
+    "Guest Docker default network and DNS/TCP/UDP/bridge/NAT/port proxy",
+    "Guest namespace/seccomp/device isolation",
+    "Overlayfs/overlay2 shared lower layers, copy-up, whiteouts, persistent upper/work"
+  ],
+  "validation_reuse": {
+    "linux": {
+      "sha": "31abd3538994e501cb249601c2adcca2b8bc608a",
+      "run": 39107028366
+    },
+    "apple": {
+      "sha": "31abd3538994e501cb249601c2adcca2b8bc608a",
+      "run": 39107028392
+    },
+    "frontend": {
+      "sha": "aa4528166c8d0cdb04f3fe540730d9af63ed7f07",
+      "run": 39062598012
+    },
+    "guest": {
+      "sha": "534e223e284df48f207500e84ab4cd05dd3d3958",
+      "run": 39015795319
+    }
+  },
+  "previous_feature_records": [
+    "overlayfs.json",
+    "docker-network.json"
+  ],
+  "native_source_delta_from_validated_runtime": [],
+  "device_execution_tested": false,
+  "scope": "Compile and inspect the actual ARM64 device app; reuse successful unchanged Linux/Apple/runtime, simulator UI and guest library results. Physical-device Docker execution is not claimed.",
+  "unrelated_test_suites_rerun": false,
+  "release_profile": "optimized; current ARM64 device FFI statically linked",
+  "inspection": {
+    "version": "1.0.0",
+    "build": 27,
+    "bundle_id": "org.trames.Trames",
+    "platform": "iPhoneOS arm64",
+    "signed": false,
+    "bytes": 10947245,
+    "sha256": "247789aa752d63fab0f4e6399a55b587aeecb3a299098aa56fa4087d524d9666",
+    "source_commit": "33541e7cdb9105bfeb85b53fca57a20a8970efe6",
+    "runtime_source_commit": "31abd3538994e501cb249601c2adcca2b8bc608a",
+    "apple_run": 39109373627,
+    "main_binary_sha256": "b6f06936c307309e47fd3e1f1fae4673028216405902da408804fa40ddb75583",
+    "file_provider_binary_sha256": "d9b54880744c3dd9d44ff0985dcb455d6cde8b39d6a8afda461e9af5fdb47baa",
+    "file_provider_group": "group.org.trames.Trames",
+    "guest_library_sha256": {
+      "GuestMusl": "885b308b75e36bb402b311fba1d3f1284e6dd8d3a0bfbf88686bff1b629f9b23",
+      "GuestVulkan": "02b28eae49783dd1f8fdcbe7341f9cb0325d1b2593f713726e571a7704774c26"
+    },
+    "debug_wayland_fixtures_absent": true,
+    "native_coremark_absent": true,
+    "current_device_execution_tested": false
+  },
+  "artifact": {
+    "id": 12129517629,
+    "name": "Trames-unsigned-sideload",
+    "bytes": 10872570,
+    "zip_sha256": "b0a9c4fab525f3ca24540c614711abeb1aef5e5294d6357ba62d2eeb3cc0c446",
+    "url": "https://github.com/kb5000/trames/actions/runs/39109373627/artifacts/12129517629",
+    "expires_at": "2026-11-01T07:57:36Z"
+  },
+  "results": {
+    "linux_scope": "success; prior source-identical native checks reused",
+    "apple_build": "success",
+    "artifact_zip_digest": "passed",
+    "ipa_sha256_and_crc": "passed",
+    "app_and_extension_arm64_iphoneos": "passed",
+    "bundle_versions_and_shared_group": "passed",
+    "guest_elf_architecture_and_manifest_hashes": "passed",
+    "debug_wayland_fixtures_excluded": "passed"
+  },
+  "source_closure": {
+    "repository": "https://github.com/kb5000/trames/tree/33541e7cdb9105bfeb85b53fca57a20a8970efe6",
+    "guest_musl_source_artifact": 12095225586,
+    "guest_vulkan_native_source_artifact": 12095066135,
+    "guest_source_run": 39015795319
+  }
+}

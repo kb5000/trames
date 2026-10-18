@@ -3,6 +3,27 @@
 use super::*;
 use std::time::Duration;
 
+// /proc/net/route exposes the guest's little-endian in_addr words, even though
+// Rust's u32::from(Ipv4Addr) is a network-order numeric value. to_le() alone is
+// therefore wrong on a little-endian host. Netlink keeps its separate wire ABI.
+fn proc_ipv4_route_row(
+    name: &[u8],
+    ip: std::net::Ipv4Addr,
+    prefix: u8,
+    gateway: Option<std::net::Ipv4Addr>,
+    metric: u32,
+) -> String {
+    let mask = u32::MAX.checked_shl(32 - u32::from(prefix)).unwrap_or(0);
+    let destination = u32::from_le_bytes((u32::from(ip) & mask).to_be_bytes());
+    let mask = u32::from_le_bytes(mask.to_be_bytes());
+    let gw = gateway.map_or(0, |ip| u32::from_le_bytes(ip.octets()));
+    format!(
+        "{}\t{destination:08X}\t{gw:08X}\t{:04X}\t0\t0\t{metric}\t{mask:08X}\t0\t0\t0\n",
+        String::from_utf8_lossy(name),
+        if gateway.is_some() { 3 } else { 1 }
+    )
+}
+
 #[derive(Clone)]
 pub struct FdInfo {
     pub fd: u32,
@@ -46,6 +67,151 @@ mod tests {
         let out = v.read(fd, 65536).unwrap();
         v.close(fd).unwrap();
         out
+    }
+    #[test]
+    fn proc_route_uses_guest_little_endian_addresses_for_native_and_bridge_rows() {
+        use std::net::Ipv4Addr;
+        // Decode the text exactly as little-endian route/BusyBox consumers do.
+        let decode =
+            |field: &str| Ipv4Addr::from(u32::from_str_radix(field, 16).unwrap().to_le_bytes());
+        for (name, ip, prefix, gateway, destination, mask) in [
+            (
+                b"eth0".as_slice(),
+                [192, 168, 2, 99],
+                24,
+                None,
+                [192, 168, 2, 0],
+                [255, 255, 255, 0],
+            ),
+            (
+                b"eth0",
+                [0, 0, 0, 0],
+                0,
+                Some([192, 168, 2, 1]),
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ),
+            (
+                b"docker0",
+                [172, 17, 0, 1],
+                16,
+                None,
+                [172, 17, 0, 0],
+                [255, 255, 0, 0],
+            ),
+            (
+                b"veth0",
+                [10, 23, 8, 7],
+                32,
+                Some([10, 23, 8, 1]),
+                [10, 23, 8, 7],
+                [255, 255, 255, 255],
+            ),
+        ] {
+            let row = proc_ipv4_route_row(name, ip.into(), prefix, gateway.map(Ipv4Addr::from), 7);
+            let fields: Vec<_> = row.split_whitespace().collect();
+            assert_eq!(decode(fields[1]), Ipv4Addr::from(destination));
+            assert_eq!(decode(fields[2]), Ipv4Addr::from(gateway.unwrap_or([0; 4])));
+            assert_eq!(decode(fields[7]), Ipv4Addr::from(mask));
+            assert_eq!(fields[6], "7");
+            assert_eq!(fields[3], if gateway.is_some() { "0003" } else { "0001" });
+        }
+    }
+    #[test]
+    fn proc_setgroups_reports_initial_user_namespace_policy() {
+        let mut v = Vfs::default();
+        snapshot(&mut v);
+        assert_eq!(read(&mut v, b"/proc/self/setgroups"), b"allow\n");
+        assert_eq!(read(&mut v, b"/proc/1/task/1/setgroups"), b"allow\n");
+        // User namespaces and changing their setgroups policy are unsupported.
+        assert!(v.open_at(AT_FDCWD, b"/proc/self/setgroups", 1, 0).is_err());
+    }
+    #[test]
+    fn proc_root_inode_matches_linux_across_paths_fds_and_bind_mounts() {
+        let mut v = Vfs::default();
+        snapshot(&mut v);
+        let fd = v
+            .open_at(AT_FDCWD, b"/proc", O_PATH | O_DIRECTORY, 0)
+            .unwrap();
+        let root = v.stat_at(AT_FDCWD, b"/proc").unwrap();
+        assert_eq!(&root[8..16], &1u64.to_le_bytes());
+        assert_eq!(v.stat_fd(fd).unwrap(), root);
+        assert_eq!(v.stat_at(fd as i32, b".").unwrap(), root);
+        assert_eq!(&v.statfs_fd(fd).unwrap()[..8], &0x9fa0u64.to_le_bytes());
+        v.mkdir_at(AT_FDCWD, b"/proc-alias", 0o755).unwrap();
+        v.mount(Some(b"/proc"), b"/proc-alias", None, 4096, None)
+            .unwrap();
+        assert_eq!(v.stat_at(AT_FDCWD, b"/proc-alias").unwrap(), root);
+        // Ordinary synthesized entries retain their separate inode range.
+        assert_ne!(
+            &v.stat_at(AT_FDCWD, b"/proc/stat").unwrap()[8..16],
+            &root[8..16]
+        );
+    }
+    #[test]
+    fn proc_readlink_empty_path_retains_symlink_inode_and_refreshes_fd_target() {
+        let mut v = Vfs::default();
+        v.symlink_at(b"missing", AT_FDCWD, b"/link").unwrap();
+        let link = v
+            .open_at(AT_FDCWD, b"/link", O_PATH | O_NOFOLLOW, 0)
+            .unwrap();
+        v.unlink_at(AT_FDCWD, b"/link", false).unwrap();
+        assert_eq!(v.readlink_at(link as i32, b"").unwrap(), b"missing");
+        v.import_file(b"/target", b"data".to_vec()).unwrap();
+        let target = v.open_at(AT_FDCWD, b"/target", 0, 0).unwrap();
+        snapshot(&mut v);
+        let proc_link = v
+            .open_at(
+                AT_FDCWD,
+                format!("/proc/self/fd/{target}").as_bytes(),
+                O_PATH | O_NOFOLLOW,
+                0,
+            )
+            .unwrap();
+        snapshot(&mut v);
+        assert_eq!(v.readlink_at(proc_link as i32, b"").unwrap(), b"/target");
+        v.rename_at(AT_FDCWD, b"/target", AT_FDCWD, b"/renamed", 0)
+            .unwrap();
+        snapshot(&mut v);
+        assert_eq!(v.readlink_at(proc_link as i32, b"").unwrap(), b"/renamed");
+        assert_eq!(v.readlink_at(target as i32, b""), Err(Errno(2)));
+        assert_eq!(v.readlink_at(AT_FDCWD, b""), Err(Errno(2)));
+        let credentials = v.credentials.clone();
+        v.credentials = Credentials::user(1000, 1000);
+        // A fork can retain this link FD, but changing its credentials does
+        // not grant inspection of the original process's descriptor table.
+        v.set_process_context(2);
+        assert_eq!(v.readlink_at(proc_link as i32, b""), Err(Errno(13)));
+        v.set_process_context(1);
+        v.credentials = credentials;
+        v.close(target).unwrap();
+        snapshot(&mut v);
+        assert_eq!(v.readlink_at(proc_link as i32, b""), Err(Errno(2)));
+        assert_eq!(v.readlink_at(250, b""), Err(Errno(9)));
+    }
+    #[test]
+    fn proc_sysctl_path_fd_reopens_with_truncation_and_keeps_network_namespace() {
+        let mut v = Vfs::default();
+        v.configure_network(NetworkMode::Loopback).unwrap();
+        snapshot(&mut v);
+        let path = b"/proc/sys/net/ipv4/ip_unprivileged_port_start";
+        let original = v.open_at(AT_FDCWD, path, O_PATH, 0).unwrap();
+        v.unshare_net().unwrap();
+        snapshot(&mut v);
+        let fd = v
+            .open_at(
+                AT_FDCWD,
+                format!("/proc/self/fd/{original}").as_bytes(),
+                2 | 0x200,
+                0,
+            )
+            .unwrap();
+        assert_eq!(v.write(fd, b"0\n").unwrap(), 2);
+        v.seek(fd, 0, 0).unwrap();
+        assert_eq!(v.read(fd, 100).unwrap(), b"0\n");
+        assert_eq!(read(&mut v, path), b"1024\n");
+        v.credentials = Credentials::user(1000, 1000);
+        assert_eq!(v.write(fd, b"1\n"), Err(Errno(13)));
     }
     #[test]
     fn device_directory_enumerates_only_available_embedding_devices() {
@@ -263,6 +429,8 @@ pub struct ProcessInfo {
     pub command: Vec<u8>,
     pub cgroup: Vec<u8>,
     pub nondumpable: bool,
+    pub seccomp: u32,
+    pub seccomp_filters: usize,
     pub arguments: Vec<Vec<u8>>,
     pub environment: Vec<Vec<u8>>,
     pub executable: Vec<u8>,
@@ -303,9 +471,6 @@ pub struct RuntimeInfo {
 }
 #[derive(Default)]
 pub(super) struct PseudoFs {
-    // One empty POSIX queue filesystem for the current guest IPC scope.
-    // mq_* calls remain unsupported; ordinary VFS operations cannot invent queues.
-    pub(super) mqueue: Option<Rc<RefCell<Filesystem>>>,
     pub(super) enabled: bool,
     pub(super) runtime: RuntimeInfo,
     pub(super) nodes: BTreeMap<(u64, Vec<u8>), Rc<RefCell<Node>>>,
@@ -349,7 +514,13 @@ impl PseudoFs {
             } else {
                 0xfd01
             },
-            inode: (1u64 << 63) + self.next_inode,
+            // Linux PROC_ROOT_INO is 1. Original runc/pathrs validates this
+            // along with procfs's superblock type before trusting proc paths.
+            inode: if path == b"/proc" {
+                1
+            } else {
+                (1u64 << 63) + self.next_inode
+            },
             links: 1,
             times: [storage::Timestamp::default(); 3],
             xattrs: BTreeMap::new(),
@@ -667,6 +838,7 @@ impl Vfs {
         };
         let owner = (node.borrow().uid, node.borrow().gid);
         Ok(Some(Rc::new(RefCell::new(OpenDescription {
+            read_node: None,
             id: self.open_id(),
             owner,
             kind: FdKind::Node(label),
@@ -682,6 +854,7 @@ impl Vfs {
             local: None,
             pty: None,
             namespace: None,
+            network_control: None,
             oom: None,
             mount,
         }))))
@@ -835,6 +1008,16 @@ impl Vfs {
             if let Some(m) = &original.mount {
                 m.writable()?;
             }
+            if let Some(node) = &original.node {
+                self.overlay_prepare(
+                    &ResolvedPath {
+                        key: Vec::new(),
+                        mount: original.mount.clone(),
+                    },
+                    node,
+                    flags & 0x200 != 0,
+                )?;
+            }
         }
         let fd = self.available(0)?;
         let pipe = if let Some(node) = &original.node {
@@ -850,10 +1033,56 @@ impl Vfs {
             .node
             .as_ref()
             .and_then(|node| inotify::Close::reopen(node, flags, original.notification.as_ref()));
+        // Reopening a proc magic link is a fresh device open, not dup(). In
+        // particular, runc reopens an O_PATH ptmx handle to allocate a new PTY.
+        let pty = if flags & O_PATH != 0 {
+            None
+        } else if let Some(node) = &original.node {
+            match node.borrow().content {
+                Content::Device(Device::Ptmx) => {
+                    let key = match &original.kind {
+                        FdKind::Node(path) => path.clone(),
+                        _ if original.mount.as_ref().is_some_and(|m| m.devpts.is_some()) => {
+                            b"/ptmx".to_vec()
+                        }
+                        _ => b"/dev/ptmx".to_vec(),
+                    };
+                    Some(self.allocate_pty(&ResolvedPath {
+                        key,
+                        mount: original.mount.clone(),
+                    })?)
+                }
+                Content::Device(Device::Pts(id, _)) if id != 0 => {
+                    let pair = self.pty_by_id(id).ok_or(Errno(5))?;
+                    if pair.locked.get() || !pair.master_alive.get() {
+                        return Err(Errno(5));
+                    }
+                    Some(pty::PtyEnd::new(pair, false))
+                }
+                _ => original.pty.clone(),
+            }
+        } else {
+            original.pty.clone()
+        };
         let descriptor = OpenDescription {
+            read_node: if flags & O_PATH == 0 && flags & 3 == 0 {
+                original
+                    .node
+                    .as_ref()
+                    .and_then(|node| match &node.borrow().content {
+                        Content::File(storage::FileData::Lower(source)) => Some(source.clone()),
+                        _ => None,
+                    })
+            } else {
+                None
+            },
             id: self.open_id(),
             owner: original.owner,
-            kind: original.kind.clone(),
+            kind: if pty.is_some() {
+                FdKind::Terminal
+            } else {
+                original.kind.clone()
+            },
             flags: flags & !O_CLOEXEC,
             position: 0,
             node: original.node.clone(),
@@ -864,8 +1093,9 @@ impl Vfs {
             anonymous: None,
             notification,
             local: None,
-            pty: original.pty.clone(),
+            pty,
             namespace: original.namespace.clone(),
+            network_control: original.network_control.clone(),
             oom: original.oom.clone(),
             mount: original.mount.clone(),
         };
@@ -879,6 +1109,7 @@ impl Vfs {
         );
         if flags & 0x200 != 0
             && self.descriptor(fd)?.open.borrow().oom.is_none()
+            && self.descriptor(fd)?.open.borrow().network_control.is_none()
             && self
                 .descriptor(fd)?
                 .open
@@ -925,7 +1156,7 @@ impl Vfs {
     }
     pub(super) fn refresh_pseudo_fd(&self, fd: u32) -> Result<()> {
         let o = self.descriptor(fd)?.open.borrow();
-        if o.oom.is_some() {
+        if o.oom.is_some() || o.network_control.is_some() {
             return Ok(());
         }
         if let FdKind::Node(key) = &o.kind {
@@ -1011,7 +1242,6 @@ impl Vfs {
         let directory = || Some((Content::Directory, 0o40555));
         let regular = |value: Vec<u8>| Some((file(value), 0o100444));
         let link = |value: Vec<u8>| Some((Content::Symlink(value), 0o120777));
-        let info = self.network_info();
         if let Some(tail) = path.strip_prefix(b"/dev/pts/") {
             if let Some(id) = std::str::from_utf8(tail)
                 .ok()
@@ -1100,7 +1330,7 @@ impl Vfs {
             b"/proc/diskstats" => return Ok(regular(b"253 0 vda 0 0 0 0 0 0 0 0 0 0 0\n253 1 vda1 0 0 0 0 0 0 0 0 0 0 0\n".to_vec())),
             b"/proc/version" => return Ok(regular(b"Linux version 6.0.0-trames (Trames userspace compatibility runtime)\n".to_vec())),
             b"/proc/cgroups" => return Ok(regular(self.cgroup_subsystems())),
-            b"/proc/filesystems" => return Ok(regular(b"nodev\tproc\nnodev\tsysfs\nnodev\tdevpts\nnodev\trootfs\nnodev\ttmpfs\nnodev\tcgroup2\nnodev\tmqueue\n".to_vec())),
+            b"/proc/filesystems" => return Ok(regular(b"nodev\tproc\nnodev\tsysfs\nnodev\tdevpts\nnodev\trootfs\nnodev\ttmpfs\nnodev\tcgroup2\nnodev\tmqueue\nnodev\toverlay\n".to_vec())),
             b"/proc/stat" => {
                 let user = r.cpu_user_ticks;
                 let idle = r.idle.as_millis() / 10;
@@ -1125,10 +1355,11 @@ impl Vfs {
             b"/proc/sys/fs/file-max" => return Ok(regular(format!("{}\n", MAX_TASKS * MAX_FDS as usize).into_bytes())),
             b"/proc/sys/fs/file-nr" => return Ok(regular(format!("{}\t0\t{}\n", r.processes.iter().map(|p| p.fds.len()).sum::<usize>(), MAX_TASKS * MAX_FDS as usize).into_bytes())),
             b"/proc/sys/vm/overcommit_memory" => return Ok(regular(b"2\n".to_vec())),
-            b"/proc/sys/net/ipv4/ip_forward" => return Ok(regular(b"0\n".to_vec())),
+            b"/proc/sys/net/bridge/bridge-nf-call-iptables"|b"/proc/sys/net/bridge/bridge-nf-call-ip6tables"|b"/proc/sys/net/ipv4/ip_forward"|b"/proc/sys/net/ipv4/conf/all/forwarding"|b"/proc/sys/net/ipv6/conf/all/forwarding"=>return Ok(Some((file(Vec::new()),0o100644))),
+            b"/proc/sys/net/bridge"|b"/proc/sys/net/ipv4/conf"|b"/proc/sys/net/ipv4/conf/all"|b"/proc/sys/net/ipv6"|b"/proc/sys/net/ipv6/conf"|b"/proc/sys/net/ipv6/conf/all"=>return Ok(directory()),
             b"/proc/sys/net/ipv4/ip_local_port_range" => return Ok(regular(b"49152\t65535\n".to_vec())),
             b"/proc/sys/net/ipv4/ip_default_ttl" => return Ok(regular(b"64\n".to_vec())),
-            b"/proc/sys/net/ipv4/ping_group_range" => return Ok(regular(b"0\t2147483647\n".to_vec())),
+            b"/proc/sys/net/ipv4/ping_group_range" | b"/proc/sys/net/ipv4/ip_unprivileged_port_start" => return Ok(Some((file(Vec::new()),0o100644))),
             _ => {},
         }
         if let Some(rest) = path.strip_prefix(b"/proc/") {
@@ -1166,7 +1397,13 @@ impl Vfs {
                     && key == b"ns"
                     && matches!(
                         parts[i + 1],
-                        b"uts" | b"mnt" | b"pid" | b"pid_for_children" | b"net"
+                        b"uts"
+                            | b"mnt"
+                            | b"pid"
+                            | b"pid_for_children"
+                            | b"net"
+                            | b"ipc"
+                            | b"cgroup"
                     )
                 {
                     return Ok(
@@ -1181,13 +1418,13 @@ impl Vfs {
                         b"exe" if p.state != 'Z' => return Ok(link(p.executable.clone())),
                         b"exe" => return Ok(None),
                         b"oom_score_adj" => return Ok(Some((file(Vec::new()), 0o100644))),
+                        // All tasks currently belong to the initial user
+                        // namespace; supplementary groups are not disabled.
+                        b"setgroups" => b"allow\n".to_vec(),
                         b"comm" => comm(p),
-                        b"cgroup" => [
-                            b"0::".as_slice(),
-                            if p.cgroup.is_empty() { b"/" } else { &p.cgroup },
-                            b"\n",
-                        ]
-                        .concat(),
+                        b"cgroup" => {
+                            [b"0::".as_slice(), &self.cgroup_view_path(&p.cgroup), b"\n"].concat()
+                        }
                         b"cmdline" => nul_list(&p.arguments),
                         b"environ" => nul_list(&p.environment),
                         b"auxv" => p.auxiliary.clone(),
@@ -1261,6 +1498,10 @@ impl Vfs {
                                 "\nNoNewPrivs:\t{}",
                                 u32::from(c.caps.no_new_privs)
                             ));
+                            name.push_str(&format!(
+                                "\nSeccomp:\t{}\nSeccomp_filters:\t{}",
+                                p.seccomp, p.seccomp_filters
+                            ));
                             for (key, ids) in ["NStgid", "NSpid", "NSpgid", "NSsid"]
                                 .iter()
                                 .zip(&p.namespace_ids)
@@ -1318,6 +1559,12 @@ impl Vfs {
                     ));
                 }
                 if parts.len() == i + 2 && key == b"net" {
+                    let network = p
+                        .namespaces
+                        .net
+                        .upgrade()
+                        .map(|ns| ns.network.borrow().clone());
+                    let info = network.as_ref().and_then(|n| n.info());
                     return Ok(match parts[i + 1] {
                         b"tcp" | b"tcp6" | b"udp" | b"udp6" | b"raw" | b"raw6" | b"icmp"
                         | b"icmp6" => {
@@ -1362,7 +1609,10 @@ impl Vfs {
                             for process in &r.processes {
                                 for fd in &process.fds {
                                     if let Some(s) = fd.socket.as_ref().filter(|s| {
-                                        s.family == family
+                                        network
+                                            .as_ref()
+                                            .is_some_and(|n| n.namespace_id() == s.namespace_id)
+                                            && s.family == family
                                             && s.kind == kind
                                             && s.protocol == protocol
                                     }) {
@@ -1380,8 +1630,18 @@ impl Vfs {
                         ),
                         b"dev" => {
                             let mut data=String::from("Inter-|   Receive                                                |  Transmit\n face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed\n");
-                            if let Some(links) = self.network_links() {
-                                for (name, s) in ["lo", "eth0"].into_iter().zip(links) {
+                            if let Some(network) = &network {
+                                let links = network.links();
+                                for mut d in network.devices() {
+                                    if let Some(links) = links {
+                                        if d.kind == trames_net::DeviceKind::Loopback {
+                                            d.stats = links[0];
+                                        } else if d.kind == trames_net::DeviceKind::Direct {
+                                            d.stats = links[1];
+                                        }
+                                    }
+                                    let name = String::from_utf8_lossy(&d.name);
+                                    let s = d.stats;
                                     data.push_str(&format!(
                                         "{name:>6}: {} {} 0 {} 0 0 0 0 {} {} 0 {} 0 0 0 0\n",
                                         s.rx_bytes,
@@ -1395,30 +1655,84 @@ impl Vfs {
                             }
                             regular(data.into_bytes())
                         }
+                        b"route"
+                            if network.as_ref().is_some_and(|n| {
+                                n.devices().iter().any(|d| {
+                                    matches!(
+                                        d.kind,
+                                        trames_net::DeviceKind::Veth { .. }
+                                            | trames_net::DeviceKind::Bridge
+                                    )
+                                })
+                            }) =>
+                        {
+                            let n = network.as_ref().unwrap();
+                            let devices = n.devices();
+                            let mut data=String::from("Iface\tDestination\tGateway\tFlags\tRefCnt\tUse\tMetric\tMask\tMTU\tWindow\tIRTT\n");
+                            for route in n.routes() {
+                                if let std::net::IpAddr::V4(ip) = route.destination.ip {
+                                    let Some(d) = devices.iter().find(|d| d.index == route.device)
+                                    else {
+                                        continue;
+                                    };
+                                    let gateway = match route.gateway {
+                                        Some(std::net::IpAddr::V4(gateway)) => Some(gateway),
+                                        _ => None,
+                                    };
+                                    data.push_str(&proc_ipv4_route_row(
+                                        &d.name,
+                                        ip,
+                                        route.destination.prefix,
+                                        gateway,
+                                        route.metric,
+                                    ));
+                                }
+                            }
+                            regular(data.into_bytes())
+                        }
                         b"route" => regular(if let Some(n) = info {
                             if n.id == 0 {
-                                let mask = u32::MAX.checked_shl(32 - n.prefix4 as u32).unwrap_or(0);
-                                format!("Iface\tDestination\tGateway\tFlags\tRefCnt\tUse\tMetric\tMask\tMTU\tWindow\tIRTT\neth0\t00000000\t00000000\t0001\t0\t0\t0\t00000000\t0\t0\t0\neth0\t{:08X}\t00000000\t0001\t0\t0\t0\t{:08X}\t0\t0\t0\n", (u32::from(n.ipv4) & mask).to_le(), mask.to_le()).into_bytes()
+                                let mut data = String::from("Iface\tDestination\tGateway\tFlags\tRefCnt\tUse\tMetric\tMask\tMTU\tWindow\tIRTT\n");
+                                data.push_str(&proc_ipv4_route_row(
+                                    b"eth0",
+                                    std::net::Ipv4Addr::UNSPECIFIED,
+                                    0,
+                                    None,
+                                    0,
+                                ));
+                                data.push_str(&proc_ipv4_route_row(
+                                    b"eth0", n.ipv4, n.prefix4, None, 0,
+                                ));
+                                data.into_bytes()
                             } else {
                                 format!("Iface\tDestination\tGateway\tFlags\tRefCnt\tUse\tMetric\tMask\t\tMTU\tWindow\tIRTT\neth0\t00000000\t{:08X}\t0003\t0\t0\t0\t00000000\t0\t0\t0\neth0\t0000000A\t00000000\t0001\t0\t0\t0\t00FFFFFF\t0\t0\t0\n", u32::from_le_bytes(n.gateway4.octets())).into_bytes()
                             }
                         } else {
                             b"Iface\tDestination\tGateway\tFlags\tRefCnt\tUse\tMetric\tMask\tMTU\tWindow\tIRTT\n".to_vec()
                         }),
-                        b"if_inet6" => regular(
-                            format!(
-                                "00000000000000000000000000000001 01 80 10 80 lo\n{}",
-                                info.filter(|n| !n.ipv6.is_unspecified()).map_or(
-                                    String::new(),
-                                    |n| format!(
-                                        "{:032x} 02 {:02x} 00 80 eth0\n",
-                                        u128::from_be_bytes(n.ipv6.octets()),
-                                        n.prefix6
-                                    )
-                                )
-                            )
-                            .into_bytes(),
-                        ),
+                        b"if_inet6" => {
+                            let mut data = String::new();
+                            if let Some(n) = &network {
+                                for d in n.devices() {
+                                    if d.kind == trames_net::DeviceKind::Loopback && !d.up {
+                                        continue;
+                                    }
+                                    for a in d.addresses {
+                                        if let std::net::IpAddr::V6(ip) = a.ip {
+                                            data.push_str(&format!(
+                                                "{:032x} {:02x} {:02x} {:02x} 80 {}\n",
+                                                u128::from(ip),
+                                                d.index,
+                                                a.prefix,
+                                                if ip.is_loopback() { 16 } else { 0 },
+                                                String::from_utf8_lossy(&d.name)
+                                            ));
+                                        }
+                                    }
+                                }
+                            }
+                            regular(data.into_bytes())
+                        }
                         _ => None,
                     });
                 }
@@ -1449,7 +1763,7 @@ impl Vfs {
             return Ok(regular(value.into_bytes()));
         }
         if let Some(name) = path.strip_prefix(b"/sys/class/net/") {
-            if matches!(name, b"lo" | b"eth0") && (name == b"lo" || info.is_some()) {
+            if self.network_devices().iter().any(|d| d.name == name) {
                 let mut target = b"../../devices/virtual/net/".to_vec();
                 target.extend_from_slice(name);
                 return Ok(link(target));
@@ -1457,44 +1771,141 @@ impl Vfs {
         }
         if let Some(rest) = path.strip_prefix(b"/sys/devices/virtual/net/") {
             let parts: Vec<_> = rest.split(|b| *b == b'/').collect();
-            if !matches!(parts[0], b"lo" | b"eth0") || (parts[0] == b"eth0" && info.is_none()) {
+            let Some(d) = self
+                .network_devices()
+                .into_iter()
+                .find(|d| d.name == parts[0])
+            else {
                 return Ok(None);
-            }
+            };
             if parts.len() == 1 {
                 return Ok(directory());
+            }
+            if parts.get(1) == Some(&b"bridge".as_slice())
+                && d.kind == trames_net::DeviceKind::Bridge
+            {
+                if parts.len() == 2 {
+                    return Ok(directory());
+                }
+                // This IP fabric has no STP engine; report its actual disabled
+                // state read-only rather than fabricate configurable STP.
+                if parts.len() == 3 && parts[2] == b"stp_state" {
+                    return Ok(regular(b"0\n".to_vec()));
+                }
+                return Ok(None);
+            }
+            if parts.get(1) == Some(&b"brif".as_slice()) && d.kind == trames_net::DeviceKind::Bridge
+            {
+                if parts.len() == 2 {
+                    return Ok(directory());
+                }
+                if parts.len() == 3
+                    && self
+                        .network_devices()
+                        .iter()
+                        .any(|p| p.master == Some(d.index) && p.name == parts[2])
+                {
+                    let mut target = b"../../".to_vec();
+                    target.extend_from_slice(parts[2]);
+                    target.extend_from_slice(b"/brport");
+                    return Ok(link(target));
+                }
+                return Ok(None);
+            }
+            if parts.get(1) == Some(&b"brport".as_slice()) {
+                let Some(master) = d.master else {
+                    return Ok(None);
+                };
+                if parts.len() == 2 {
+                    return Ok(directory());
+                }
+                if parts.len() == 3 && parts[2] == b"state" {
+                    // No STP/qdisc layer: an up, connected port forwards;
+                    // detached/down links never claim a forwarding state.
+                    let forwarding = self.network_carrier(&d)
+                        && self
+                            .network_devices()
+                            .iter()
+                            .any(|p| p.index == master && p.up);
+                    return Ok(regular(if forwarding { b"3\n" } else { b"0\n" }.to_vec()));
+                }
+                return Ok(None);
             }
             if parts.get(1) == Some(&b"statistics".as_slice()) {
                 if parts.len() == 2 {
                     return Ok(directory());
                 }
                 if parts.len() == 3 {
-                    let Some(links) = self.network_links() else {
-                        return Ok(None);
-                    };
-                    let s = links[usize::from(parts[0] != b"lo")];
-                    let count = match parts[2] {
-                        b"rx_bytes" => s.rx_bytes,
-                        b"rx_packets" => s.rx_packets,
-                        b"rx_dropped" => s.rx_dropped,
-                        b"tx_bytes" => s.tx_bytes,
-                        b"tx_packets" => s.tx_packets,
-                        b"tx_dropped" => s.tx_dropped,
+                    let v = match parts[2] {
+                        b"rx_bytes" => d.stats.rx_bytes,
+                        b"rx_packets" => d.stats.rx_packets,
+                        b"rx_dropped" => d.stats.rx_dropped,
+                        b"tx_bytes" => d.stats.tx_bytes,
+                        b"tx_packets" => d.stats.tx_packets,
+                        b"tx_dropped" => d.stats.tx_dropped,
                         _ => return Ok(None),
                     };
-                    return Ok(regular(format!("{count}\n").into_bytes()));
+                    return Ok(regular(format!("{v}\n").into_bytes()));
                 }
             }
             if parts.len() == 2 {
-                let lo = parts[0] == b"lo";
+                let lo = d.kind == trames_net::DeviceKind::Loopback;
+                let carrier = self.network_carrier(&d);
                 let value = match parts[1] {
-                    b"ifindex" | b"iflink" => if lo { "1\n" } else { "2\n" }.to_string(),
-                    b"type" => if lo { "772\n" } else { "65534\n" }.to_string(),
-                    b"mtu" => format!("{}\n", info.map_or(65536, |n| n.mtu)),
-                    b"address" | b"broadcast" => "00:00:00:00:00:00\n".to_string(),
-                    b"flags" => if lo { "0x9\n" } else { "0x11\n" }.to_string(),
-                    b"operstate" => if lo { "unknown\n" } else { "up\n" }.to_string(),
-                    b"carrier" => "1\n".to_string(),
-                    b"tx_queue_len" => "0\n".to_string(),
+                    b"ifindex" => format!("{}\n", d.index),
+                    b"iflink" => format!(
+                        "{}\n",
+                        if let trames_net::DeviceKind::Veth { peer } = d.kind {
+                            peer
+                        } else {
+                            d.index
+                        }
+                    ),
+                    b"type" => format!(
+                        "{}\n",
+                        if lo {
+                            772
+                        } else if d.kind == trames_net::DeviceKind::Direct {
+                            65534
+                        } else {
+                            1
+                        }
+                    ),
+                    b"mtu" => format!("{}\n", d.mtu),
+                    b"address" | b"broadcast" => {
+                        let mac = if parts[1] == b"broadcast"
+                            && !lo
+                            && d.kind != trames_net::DeviceKind::Direct
+                        {
+                            [255; 6]
+                        } else {
+                            d.mac
+                        };
+                        format!(
+                            "{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}\n",
+                            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]
+                        )
+                    }
+                    b"flags" => format!(
+                        "0x{:x}\n",
+                        if lo {
+                            8 | u32::from(d.up)
+                        } else if d.kind == trames_net::DeviceKind::Direct {
+                            0x11
+                        } else {
+                            0x1002 | u32::from(d.up)
+                        }
+                    ),
+                    b"operstate" => if !d.up || !carrier {
+                        "down\n"
+                    } else if lo {
+                        "unknown\n"
+                    } else {
+                        "up\n"
+                    }
+                    .into(),
+                    b"carrier" => format!("{}\n", u8::from(carrier)),
+                    b"tx_queue_len" => format!("{}\n", d.tx_queue_len),
                     _ => return Ok(None),
                 };
                 return Ok(regular(value.into_bytes()));
@@ -1629,11 +2040,7 @@ impl Vfs {
             .map(|s| s.as_bytes().to_vec())
             .collect(),
             b"/sys/class/net" | b"/sys/devices/virtual/net" => {
-                let mut n = vec![b"lo".to_vec()];
-                if self.network_info().is_some() {
-                    n.push(b"eth0".to_vec());
-                }
-                n
+                self.network_devices().into_iter().map(|d| d.name).collect()
             }
             b"/proc/sys" => ["kernel", "fs", "vm", "net"]
                 .iter()
@@ -1654,9 +2061,20 @@ impl Vfs {
             .collect(),
             b"/proc/sys/fs" => vec![b"file-max".to_vec(), b"file-nr".to_vec()],
             b"/proc/sys/vm" => vec![b"overcommit_memory".to_vec()],
-            b"/proc/sys/net" => vec![b"ipv4".to_vec()],
+            b"/proc/sys/net" => vec![b"ipv4".to_vec(), b"ipv6".to_vec(), b"bridge".to_vec()],
+            b"/proc/sys/net/bridge" => vec![
+                b"bridge-nf-call-iptables".to_vec(),
+                b"bridge-nf-call-ip6tables".to_vec(),
+            ],
+            b"/proc/sys/net/ipv4/conf" | b"/proc/sys/net/ipv6/conf" => vec![b"all".to_vec()],
+            b"/proc/sys/net/ipv4/conf/all" | b"/proc/sys/net/ipv6/conf/all" => {
+                vec![b"forwarding".to_vec()]
+            }
+            b"/proc/sys/net/ipv6" => vec![b"conf".to_vec()],
             b"/proc/sys/net/ipv4" => [
+                "conf",
                 "ip_forward",
+                "ip_unprivileged_port_start",
                 "ip_local_port_range",
                 "ip_default_ttl",
                 "ping_group_range",
@@ -1727,6 +2145,7 @@ impl Vfs {
                             "status",
                             "statm",
                             "oom_score_adj",
+                            "setgroups",
                             "cgroup",
                             "cmdline",
                             "environ",
@@ -1759,6 +2178,8 @@ impl Vfs {
                         names.push(b"pid".to_vec());
                         names.push(b"pid_for_children".to_vec());
                         names.push(b"net".to_vec());
+                        names.push(b"ipc".to_vec());
+                        names.push(b"cgroup".to_vec());
                         if p.namespaces.mount.strong_count() != 0 {
                             names.push(b"mnt".to_vec());
                         }
@@ -1780,42 +2201,72 @@ impl Vfs {
             }
         }
         if let Some(rest) = path.strip_prefix(b"/sys/devices/virtual/net/") {
-            if matches!(rest, b"lo" | b"eth0") {
-                names.extend(
-                    [
-                        "ifindex",
-                        "iflink",
-                        "type",
-                        "mtu",
-                        "address",
-                        "broadcast",
-                        "flags",
-                        "operstate",
-                        "carrier",
-                        "tx_queue_len",
-                    ]
-                    .iter()
-                    .map(|s| s.as_bytes().to_vec()),
-                );
-            }
-            if matches!(rest, b"lo" | b"eth0") && self.network_links().is_some() {
-                names.push(b"statistics".to_vec());
-            }
-            if matches!(rest, b"lo/statistics" | b"eth0/statistics")
-                && self.network_links().is_some()
+            let parts: Vec<_> = rest.split(|b| *b == b'/').collect();
+            if let Some(d) = self
+                .network_devices()
+                .into_iter()
+                .find(|d| d.name == parts[0])
             {
-                names.extend(
-                    [
-                        "rx_bytes",
-                        "rx_packets",
-                        "rx_dropped",
-                        "tx_bytes",
-                        "tx_packets",
-                        "tx_dropped",
-                    ]
-                    .iter()
-                    .map(|s| s.as_bytes().to_vec()),
-                );
+                if parts.len() == 1 {
+                    names.extend(
+                        [
+                            "ifindex",
+                            "iflink",
+                            "type",
+                            "mtu",
+                            "address",
+                            "broadcast",
+                            "flags",
+                            "operstate",
+                            "carrier",
+                            "tx_queue_len",
+                            "statistics",
+                        ]
+                        .iter()
+                        .map(|s| s.as_bytes().to_vec()),
+                    );
+                    if d.kind == trames_net::DeviceKind::Bridge {
+                        names.push(b"brif".to_vec());
+                        names.push(b"bridge".to_vec());
+                    }
+                    if d.master.is_some() {
+                        names.push(b"brport".to_vec());
+                    }
+                }
+                if parts.len() == 2
+                    && parts[1] == b"brif"
+                    && d.kind == trames_net::DeviceKind::Bridge
+                {
+                    names.extend(
+                        self.network_devices()
+                            .into_iter()
+                            .filter(|p| p.master == Some(d.index))
+                            .map(|p| p.name),
+                    );
+                }
+                if parts.len() == 2
+                    && parts[1] == b"bridge"
+                    && d.kind == trames_net::DeviceKind::Bridge
+                {
+                    return Ok(vec![b"stp_state".to_vec()]);
+                }
+                if parts.len() == 2 && parts[1] == b"brport" && d.master.is_some() {
+                    names.push(b"state".to_vec());
+                }
+                if parts.len() == 2 && parts[1] == b"statistics" {
+                    names.extend(
+                        [
+                            "rx_bytes",
+                            "rx_packets",
+                            "rx_dropped",
+                            "tx_bytes",
+                            "tx_packets",
+                            "tx_dropped",
+                        ]
+                        .iter()
+                        .map(|s| s.as_bytes().to_vec()),
+                    );
+                }
             }
         }
         names.sort();

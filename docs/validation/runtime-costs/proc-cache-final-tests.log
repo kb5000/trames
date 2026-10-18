@@ -1,0 +1,10 @@
+   Compiling trames-core v1.0.0 (/workspace/trames/crates/trames-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.30s
+     Running unittests src/lib.rs (target/debug/build/trames-core/c0a8d7cc270486d2/out/trames_core-c0a8d7cc270486d2)
+
+running 2 tests
+test process::tests::proc_mapping_cache_never_freezes_argv_fds_or_credentials_and_retires_dead_vms ... ok
+test process::tests::proc_maps_refresh_after_shared_protect_reserve_unmap_and_fork ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 53 filtered out; finished in 0.00s
+

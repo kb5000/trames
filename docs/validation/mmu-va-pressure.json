@@ -1,0 +1,134 @@
+{
+  "baseline_runtime": "cff014809fa77a38fc25fa0c7e6f250afcf1a19d",
+  "baseline_apple_source": "0c43e34243c15a391f822ebc410b82039132156f",
+  "patch_sha256": "ac0d58d8554d0389d67d793e026bc5cc11aa67692f0dddc22b928e8677710dc0",
+  "reported_failure": {
+    "app_version": "1.0.0",
+    "build": 28,
+    "guest_total_bytes": 4294967296,
+    "guest_process_bytes": 4294967296,
+    "exception": "EXC_CRASH / SIGABRT",
+    "thread": "trames-cpu-1",
+    "stack": [
+      "Cache::page",
+      "handle_alloc_error",
+      "rust_oom",
+      "abort"
+    ],
+    "scope": "Allocation failure confirmed; last allocation site is not proof of a decoded-cache leak. Raw device identifiers and original crash report are not included."
+  },
+  "host": "shared x86_64 Linux, actual host pages 4096 bytes",
+  "control": {
+    "cpus": 8,
+    "same_prepared_store": true,
+    "before_after_guest_total_bytes": 1073741824,
+    "before_after_guest_process_bytes": 536870912,
+    "baseline_scope": "Startup until API listener; host deliberately terminates each private copy after readiness. These are not normal-exit lifecycle tests or performance benchmarks."
+  },
+  "before": {
+    "mmu_peak_bytes": 14092861440,
+    "rss_peak_kib": 1185652,
+    "ready": true
+  },
+  "after": {
+    "mmu_peak_bytes": 1060024320,
+    "rss_peak_kib": 1011852,
+    "ready": true
+  },
+  "four_gib_guest": {
+    "guest_total_bytes": 4294967296,
+    "guest_process_bytes": 4294967296,
+    "host_va_limit_bytes": 2684354560,
+    "ready": true,
+    "info": "overlay2 8 4294967296",
+    "normal_exit": true,
+    "mmu_peak_bytes": 1057726464,
+    "rss_peak_kib": 1284156,
+    "test_prepared_path_unchanged": true,
+    "test_source_note": "After this local run, fresh-store preparation added the same dash/yash provider filter as docker-default.py; prepared-store path unchanged. Fresh-store path is exercised by Apple CI."
+  },
+  "implementation": {
+    "window_bytes": 1048576,
+    "total_optional_mmu_va_limit_bytes": 1073741824,
+    "counted": "Physical RW windows and CPU reservations, including retained owners; not the guest committed-RAM limit",
+    "unneeded_worker_physical_mappings": false,
+    "unneeded_pool_cpu_mappings": false,
+    "retired_cpu_aliases_retained_by_physical_owners": false,
+    "over_budget": "checked software transport; no guest quota reduction or artificial guest error"
+  },
+  "local_checks": {
+    "initial_memory_lib": 62,
+    "initial_translation": 4,
+    "final_mmu": 17,
+    "final_translation": 4,
+    "strict_clippy": "memory/core/CLI all-targets passed",
+    "final_empty_window_case": 1,
+    "final_delta_note": "After startup probes, added reclaim of failed-window metadata on empty unmap; affected case and strict clippy passed. Apple startup will exercise the final source."
+  },
+  "apple_status": "passed ARM64/16KiB memory65+translation4+proc-route1, fresh original Docker startup/info/graceful shutdown, current device release IPA build29 and downloaded package inspection",
+  "device_execution_tested": false,
+  "files_sha256": {
+    "apple-boot.log": "42d387ffe8ee52028d4e5cc389879b27832c4b9c3c83c1e9b4a48e4ffa9048cc",
+    "apple-install.log": "da9f4c540f2d99228b0ac25eb79d7f695091a9db04ff5ba6db64488ed536dfd7",
+    "apple-results.json": "543a629a1805996787343c1111d37618014d75a34a5685c45ecd859ad901fd08",
+    "clippy-final.log": "1d3430ea3bd25c0c9cdb66dafc16c58581316dd83ef4c4a3a029f66959cbb805",
+    "clippy.log": "436a9723fbdc0fdca02407012968e8bd0590c1656555406879cb3e48d26c01e6",
+    "empty-window-final.log": "5c1fc61061212a535dda151a7e9445cfb4160ce3308317ced6ccbc16e6cd86cc",
+    "linux-4g-boot.log": "7c7edd6e9b9c8ee433f43b46b51e392b001be5cf13ac23fd058cb4cfa14532cc",
+    "linux-4g-limited.json": "4f08995e63882a651c385a68264943cf54b5b7efd3bc17f3403f24ffd326d57a",
+    "linux-after.json": "50e4327795e5cf55120c0089453620c4bef7b128dabb0a03f49327b9d2f6718b",
+    "linux-before.json": "9de47512577742cfec4f8da4d93c62ab9c14c2a245a663317883246c38f16a31",
+    "mmu-tests.log": "2c818471d8394978eddb72a0dd095f90cb1a71f54e9e3c488c05d86f1c0f7efd",
+    "route-clippy.log": "f5a8d60f004e0687fd2f96f846bc7b0e1e99c0b935c991d9c5ef8ce8c20e6a11",
+    "route-test.log": "06872ce51970a7d30f4961f08b1ce616b0de167b419a2cceea047502f49b046c",
+    "translation-tests.log": "9e5632d130a8f9588f4f9985ae80c0923182029d46b3f9ce1d90c0799b248e0c"
+  },
+  "linux_startup_patch_sha256": "b7f70dee70eee2157540cd19c0ef95b03dbc895929e96fb218571fc93ce8f7dc",
+  "mmu_patch_sha256": "ac0d58d8554d0389d67d793e026bc5cc11aa67692f0dddc22b928e8677710dc0",
+  "runtime_patch_sha256": "79cd385c67cc71ec6b5b0a057cbff68583424cb8b3309a4b0546b56123c58193",
+  "route_fix": "Same build also corrects proc/net/route destination/mask endian serialization; targeted native/bridge/default/host-route reader and VFS clippy passed.",
+  "source_commit": "1a3bcb6a60bd46af11bbdc49113fb34e178d031a",
+  "apple": {
+    "scope": "Original dockerd startup with 4GiB guest budgets, 8 CPUs and host VA sampling.\n\nOnly startup/info/shutdown is exercised, not the already validated container\nlifecycle/network/storage suites. An optional prepared store is copied privately.\nLinux additionally constrains host VA to 2560MiB; Darwin records native RSS/VA.\n",
+    "host": "Darwin",
+    "arch": "arm64",
+    "host_page_bytes": 16384,
+    "cpus": 8,
+    "memory_budget_bytes": 4294967296,
+    "process_budget_bytes": 4294967296,
+    "runner_sha256": "9b940c2da6f6efe6f6b3baa848925aaadae055cc3051092ab217d058c8199ed0",
+    "test_sha256": "8745f7700ec754d6d1a31eefbccb0fc4fdd47a4121079b372625c76a1bcad086",
+    "packages_sha256": {
+      "containerd-2.1.5-r2.apk": "963e1c79c6439e23afbb085428d6466fa684921bacfc4f39dc0e667b044b7669",
+      "docker-cli-28.3.3-r5.apk": "8895ae93210cdf47018720928fd703d30f43f62ec452b6a30391d5a6b18a6ae2",
+      "docker-engine-28.3.3-r5.apk": "ea07b9c3e707fa12920e1501d14bf702ee19af56f21634356af4311a02384aad",
+      "runc-1.3.4-r1.apk": "4a6a59757e4559796492417e7cd10c8719b4dd00684e7ce7ea6197d18f1db52a",
+      "tini-static-0.19.0-r3.apk": "b16167b87355ea675d0bbba2dc2ad6bf537edd97e73c4a1a2ed720f23e85c877",
+      "busybox-1.37.0-r20.apk": "9d25af67564c92a4a4c603462efdbcd23019e90b8785f1ebcad640cbb1551c93",
+      "busybox-binsh-1.37.0-r20.apk": "9180dcee3f67ea806fe45361cffab94f8ce7e417d5f373bb0d989e88eb609903",
+      "ca-certificates-20260909-r0.apk": "b281f0245c7998f8d72541e301b259e370eae9491b66881a27380e544cba432b",
+      "iptables-1.8.11-r1.apk": "0a10fe634e3525082a1219487cd044d987ac4a55ed5aa551bf758e81223e1cfb",
+      "libcrypto3-3.5.9-r0.apk": "ede2ef7eca3b65a42e902aaf7890f9c5647dca0c55123a817179ad9f3bc6ef24",
+      "libmnl-1.0.5-r2.apk": "213a7e87553bed3d9159b2e74d2627885c259883e61714b357949ca806eb1f8d",
+      "libncursesw-6.5_p20250503-r0.apk": "419b375e8a4345e7172b1f0f3a3c57db61374f5408cdb875d9e860bd4c243aca",
+      "libnftnl-1.2.9-r0.apk": "6912a5d56b31d3365b8dd0d6339bd70a2bfc9e25dab0c387f77174113c43e664",
+      "libseccomp-2.6.1-r0.apk": "ee817c130535b72e5b0a63b211f9d2fbbaa493a319f78e9da5e30359991e5180",
+      "libssl3-3.5.9-r0.apk": "338c9f6154582b4b76455a59f95538bcea8df039c5c72916dd2d8d0d844c9583",
+      "libxtables-1.8.11-r1.apk": "e84f0d6b69d4318f297056d00ccbe433e6c7d163fe6767405e373248c42e3e88",
+      "musl-1.2.5-r12.apk": "ac281d1e7f9e9c447c51e309317b975f48be6edaf3ab91ae73b959cf86703782",
+      "ncurses-terminfo-base-6.5_p20250503-r0.apk": "3d37403e0b5ab9eb0c1ce269444e4a385faec9fe6af452c1c6956806b13d2bd6"
+    },
+    "exit_code": 0,
+    "seconds": 42.942878958999984,
+    "ready": true,
+    "completed": true,
+    "host_va_limit_mib": null,
+    "artifact": {
+      "id": 12139322416,
+      "sha256": "9da3c72055350176934708c833c64ab07e107918f86f265012c713af2ec45714",
+      "url": "https://github.com/kb5000/trames/actions/runs/39134234642/artifacts/12139322416"
+    },
+    "rss_peak_kib": 1218544
+  },
+  "ipa_record": "ipad-1.0-build29.json"
+}

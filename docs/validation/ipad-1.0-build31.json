@@ -1,0 +1,70 @@
+{
+  "version": "1.0.0",
+  "build": 31,
+  "source_commit": "0d13d8be7a1bba716b7a8ce9c3c551f41c549308",
+  "runtime_source_commit": "c9292cccbe923206026e86a0d76327f41d31544f",
+  "apple_compile_and_tests_run": 39142856325,
+  "metadata_only_package_run": 39143544853,
+  "linux_scope_run": 39142856279,
+  "inspection": {
+    "version": "1.0.0",
+    "build": 31,
+    "bundle_id": "org.trames.Trames",
+    "platform": "iPhoneOS arm64",
+    "signed": false,
+    "bytes": 10961563,
+    "sha256": "15b1ddd7a92806170f78ba57c2e7e889b87cfc1214500f07bd2c20134ad49673",
+    "source_commit": "0d13d8be7a1bba716b7a8ce9c3c551f41c549308",
+    "runtime_source_commit": "c9292cccbe923206026e86a0d76327f41d31544f",
+    "apple_run": 39142856325,
+    "main_binary_sha256": "93ff442bf14edd09a0ada27269f7482fbfbf52d44471f668d71e45517d490d6b",
+    "file_provider_binary_sha256": "d9b54880744c3dd9d44ff0985dcb455d6cde8b39d6a8afda461e9af5fdb47baa",
+    "file_provider_group": "group.org.trames.Trames",
+    "guest_library_sha256": {
+      "GuestMusl": "885b308b75e36bb402b311fba1d3f1284e6dd8d3a0bfbf88686bff1b629f9b23",
+      "GuestVulkan": "02b28eae49783dd1f8fdcbe7341f9cb0325d1b2593f713726e571a7704774c26"
+    },
+    "debug_wayland_fixtures_absent": true,
+    "native_coremark_absent": true,
+    "current_device_execution_tested": false,
+    "package_run": 39143544853,
+    "non_plist_bundle_files_byte_identical": true
+  },
+  "artifact": {
+    "id": 12142766562,
+    "name": "Trames-unsigned-sideload",
+    "size_in_bytes": 10896165,
+    "url": "https://github.com/kb5000/trames/actions/runs/39143544853/artifacts/12142766562",
+    "archive_download_url": "https://api.github.com/repos/kb5000/trames/actions/artifacts/12142766562/zip",
+    "expired": false,
+    "created_at": "2026-10-18T16:07:24Z",
+    "expires_at": "2026-11-01T16:07:22Z",
+    "updated_at": "2026-10-18T16:07:24Z",
+    "digest": "sha256:b806f7c4db929fa23a3d41effdfd8b545c19e620354aa903dfffb7fd4295874b",
+    "workflow_run": {
+      "id": 39143544853,
+      "repository_id": 1413044949,
+      "head_repository_id": 1413044949,
+      "head_branch": "feat/guest-docker-workflows",
+      "head_sha": "0d13d8be7a1bba716b7a8ce9c3c551f41c549308"
+    }
+  },
+  "linux_original_docker_tty": {
+    "runner_sha256": "02c2cc7a3e792a7131d6a2d0261f66c8546ce8a9113c327318d95f3e69471260",
+    "store_manifest_sha256": "5c5612b3d70825159d39b87887bbf82b091dfd69dcf0a82c7d02119c1c304ca4",
+    "image": "default-probe",
+    "cpus": 4,
+    "exit_code": 0,
+    "seconds": 111.671,
+    "input_sent": true,
+    "checks": {
+      "DAEMON": true,
+      "ROUNDTRIP": true,
+      "STDERR": true,
+      "CLEANUP": true
+    }
+  },
+  "device_execution_tested": false,
+  "validation_reuse": "Build30 startup mounts and previous MMU/route/CPU/UI/GPU; unchanged guest source artifacts from39015795319. Final packaging only changes main/extension CFBundleVersion; all other bundle files SHA256-identical to tested optimized device app. No repeated passed suites.",
+  "known_limitations": "Docker API --rm confirmed; shim cleanup warns about runc exit255, not a claim of complete underlying runtime-state cleanup. Other unsupported optional syscalls remain; no fresh registry pull or iPad run in this check."
+}

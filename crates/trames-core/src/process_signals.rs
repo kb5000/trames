@@ -95,7 +95,9 @@ impl Process {
             self.pending.remove(&sig)
         }
         .expect("selected pending signal");
-        info.sender = self.linux.vfs.visible_pid(info.sender);
+        if info.fault.is_none() {
+            info.sender = self.linux.vfs.visible_pid(info.sender);
+        }
         info
     }
     pub(super) fn signal_senders(&self) -> Vec<u32> {
@@ -118,6 +120,12 @@ fn write_signalfd(sig: u32, info: Info) -> [u8; 128] {
         out[48..56].copy_from_slice(&value.to_le_bytes());
     } else if let Some(address) = info.fault {
         out[72..80].copy_from_slice(&address.to_le_bytes());
+        if sig == 31 && info.code == 1 {
+            out[4..8].copy_from_slice(&info.sender.to_le_bytes());
+            out[84..88].copy_from_slice(&info.status.to_le_bytes());
+            out[88..96].copy_from_slice(&address.to_le_bytes());
+            out[96..100].copy_from_slice(&info.uid.to_le_bytes());
+        }
     } else {
         out[12..16].copy_from_slice(&info.sender.to_le_bytes());
         out[16..20].copy_from_slice(&info.uid.to_le_bytes());

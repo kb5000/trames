@@ -11,6 +11,65 @@ fn net(error: NetError) -> Errno {
     Errno(error.0)
 }
 
+fn packet_control(
+    memory: &Memory,
+    address: u64,
+    size: u64,
+) -> Result<Option<trames_net::PacketInfo>> {
+    let mut offset = 0;
+    let mut info = None;
+    while size - offset >= 16 {
+        let length = u64_at(memory, address + offset)?;
+        if length < 16 || length > size - offset {
+            return Err(Errno(22));
+        }
+        if info.is_some() {
+            return Err(Errno(22));
+        }
+        let level = u32_at(memory, address + offset + 8)?;
+        let kind = u32_at(memory, address + offset + 12)?;
+        let data = address + offset + 16;
+        info = Some(match (level, kind, length) {
+            (0, 8, 28) => {
+                let mut ip = [0; 4];
+                memory.read(data + 4, &mut ip).map_err(|_| Errno(14))?;
+                trames_net::PacketInfo {
+                    address: std::net::Ipv4Addr::from(ip).into(),
+                    interface: u32_at(memory, data)?,
+                }
+            }
+            (41, 50, 36) => {
+                let mut ip = [0; 16];
+                memory.read(data, &mut ip).map_err(|_| Errno(14))?;
+                trames_net::PacketInfo {
+                    address: std::net::Ipv6Addr::from(ip).into(),
+                    interface: u32_at(memory, data + 16)?,
+                }
+            }
+            (0, 8, _) | (41, 50, _) => return Err(Errno(22)),
+            _ => return Err(Errno(95)),
+        });
+        let padded = (length + 7) & !7;
+        if padded > size - offset {
+            offset = size;
+        } else {
+            offset += padded;
+        }
+    }
+    if size != 0 && info.is_none() {
+        return Err(Errno(22));
+    }
+    Ok(info)
+}
+fn push_control(out: &mut Vec<u8>, level: u32, kind: u32, payload: &[u8]) {
+    let size = 16 + payload.len();
+    let at = out.len();
+    out.resize(at + ((size + 7) & !7), 0);
+    out[at..at + 8].copy_from_slice(&(size as u64).to_le_bytes());
+    out[at + 8..at + 12].copy_from_slice(&level.to_le_bytes());
+    out[at + 12..at + 16].copy_from_slice(&kind.to_le_bytes());
+    out[at + 16..at + size].copy_from_slice(payload);
+}
 fn u32_at(memory: &Memory, address: u64) -> Result<u32> {
     let mut bytes = [0; 4];
     memory.read(address, &mut bytes).map_err(|_| Errno(14))?;
@@ -132,7 +191,7 @@ impl Linux {
         }
         let request = a[1] as u32;
         if request != 0x5421 {
-            let info = self.vfs.network_info().ok_or(Errno(25))?;
+            let devices = self.vfs.network_devices();
             if request == 0x8912 {
                 // SIOCGIFCONF: AArch64 ifconf and two IPv4 ifreq entries.
                 let capacity = u32_at(memory, a[2])?;
@@ -141,22 +200,28 @@ impl Linux {
                 }
                 let pointer = u64_at(memory, a[2] + 8)?;
                 Self::check(memory, a[2], 16, Access::Write)?;
+                let interfaces: Vec<_> = devices
+                    .iter()
+                    .flat_map(|d| {
+                        d.addresses.iter().filter_map(move |a| {
+                            if let std::net::IpAddr::V4(ip) = a.ip {
+                                (d.kind != trames_net::DeviceKind::Loopback || d.up)
+                                    .then_some((d.name.as_slice(), ip))
+                            } else {
+                                None
+                            }
+                        })
+                    })
+                    .collect();
                 let size = if pointer == 0 {
-                    80
+                    interfaces.len() * 40
                 } else {
-                    (capacity as usize / 40).min(2) * 40
+                    (capacity as usize / 40).min(interfaces.len()) * 40
                 };
                 if pointer != 0 {
                     Self::check(memory, pointer, size, Access::Write)?;
                     let mut entries = vec![0; size];
-                    for (i, (name, ip)) in [
-                        (b"lo".as_slice(), std::net::Ipv4Addr::LOCALHOST),
-                        (b"eth0".as_slice(), info.ipv4),
-                    ]
-                    .into_iter()
-                    .take(size / 40)
-                    .enumerate()
-                    {
+                    for (i, (name, ip)) in interfaces.into_iter().take(size / 40).enumerate() {
                         let e = &mut entries[i * 40..(i + 1) * 40];
                         e[..name.len()].copy_from_slice(name);
                         e[16..32].copy_from_slice(&encode_address(SocketAddr::new(ip.into(), 0)));
@@ -170,62 +235,87 @@ impl Linux {
             }
             if !matches!(
                 request,
-                0x8910 | 0x8913 | 0x8915 | 0x891b | 0x8921 | 0x8933 | 0x8942 | 0x8927
+                0x8910 | 0x8913 | 0x8914 | 0x8915 | 0x891b | 0x8921 | 0x8933 | 0x8942 | 0x8927
             ) {
                 return Err(Errno(25));
             }
             Self::check(memory, a[2], 40, Access::Write)?;
             let mut entry = [0; 40];
             memory.read(a[2], &mut entry).map_err(|_| Errno(14))?;
-            let loopback = if request == 0x8910 {
-                match u32::from_le_bytes(entry[16..20].try_into().unwrap()) {
-                    1 => true,
-                    2 => false,
-                    _ => return Err(Errno(19)),
-                }
+            let device = if request == 0x8910 {
+                let index = u32::from_le_bytes(entry[16..20].try_into().unwrap());
+                devices.iter().find(|d| d.index == index)
             } else {
                 let end = entry[..16].iter().position(|b| *b == 0).unwrap_or(16);
-                match &entry[..end] {
-                    b"lo" => true,
-                    b"eth0" => false,
-                    _ => return Err(Errno(19)),
-                }
-            };
+                devices.iter().find(|d| d.name == entry[..end])
+            }
+            .ok_or(Errno(19))?;
+            let loopback = device.kind == trames_net::DeviceKind::Loopback;
             match request {
-                0x8942 => entry[16..20].copy_from_slice(&0u32.to_le_bytes()),
+                0x8914 => {
+                    let flags = u16::from_le_bytes(entry[16..18].try_into().unwrap());
+                    if flags & !(1 | 2 | 8 | 0x40 | 0x1000) != 0 {
+                        return Err(Errno(95));
+                    }
+                    self.vfs
+                        .set_network_device_up(device.index, flags & 1 != 0)?;
+                    return Ok(0);
+                }
+                0x8942 => entry[16..20].copy_from_slice(&device.master.unwrap_or(0).to_le_bytes()),
                 0x8927 => {
                     entry[16..32].fill(0);
-                    entry[16..18]
-                        .copy_from_slice(&(if loopback { 772u16 } else { 65534 }).to_le_bytes());
+                    entry[16..18].copy_from_slice(
+                        &(if loopback {
+                            772u16
+                        } else if device.kind == trames_net::DeviceKind::Direct {
+                            65534
+                        } else {
+                            1
+                        })
+                        .to_le_bytes(),
+                    );
+                    entry[18..24].copy_from_slice(&device.mac);
                 }
                 0x8910 => {
                     entry[..16].fill(0);
-                    let name = if loopback {
-                        b"lo".as_slice()
-                    } else {
-                        b"eth0".as_slice()
-                    };
-                    entry[..name.len()].copy_from_slice(name);
+                    entry[..device.name.len()].copy_from_slice(&device.name);
                 }
-                0x8913 => entry[16..18]
-                    .copy_from_slice(&(if loopback { 0x49u16 } else { 0xc1u16 }).to_le_bytes()),
+                0x8913 => {
+                    let flags: u16 = if loopback {
+                        8 | if device.up { 0x41 } else { 0 }
+                    } else if device.kind == trames_net::DeviceKind::Direct {
+                        0xc1
+                    } else {
+                        0x1002
+                            | u16::from(device.up)
+                            | if self.vfs.network_carrier(device) {
+                                0x40
+                            } else {
+                                0
+                            }
+                    };
+                    entry[16..18].copy_from_slice(&flags.to_le_bytes());
+                }
                 0x8915 | 0x891b => {
+                    let address = device
+                        .addresses
+                        .iter()
+                        .find(|a| a.ip.is_ipv4())
+                        .filter(|_| !loopback || device.up)
+                        .ok_or(Errno(99))?;
                     let ip = if request == 0x891b {
-                        std::net::Ipv4Addr::from(
+                        std::net::IpAddr::V4(std::net::Ipv4Addr::from(
                             u32::MAX
-                                .checked_shl(32 - if loopback { 8 } else { info.prefix4 as u32 })
+                                .checked_shl(32 - u32::from(address.prefix))
                                 .unwrap_or(0),
-                        )
-                    } else if loopback {
-                        std::net::Ipv4Addr::LOCALHOST
+                        ))
                     } else {
-                        info.ipv4
+                        address.ip
                     };
-                    entry[16..32].copy_from_slice(&encode_address(SocketAddr::new(ip.into(), 0)));
+                    entry[16..32].copy_from_slice(&encode_address(SocketAddr::new(ip, 0)));
                 }
-                0x8921 => entry[16..20].copy_from_slice(&info.mtu.to_le_bytes()),
-                0x8933 => entry[16..20]
-                    .copy_from_slice(&(if loopback { 1u32 } else { 2u32 }).to_le_bytes()),
+                0x8921 => entry[16..20].copy_from_slice(&device.mtu.to_le_bytes()),
+                0x8933 => entry[16..20].copy_from_slice(&device.index.to_le_bytes()),
                 _ => unreachable!(),
             }
             memory.write(a[2], &entry).map_err(|_| Errno(14))?;
@@ -268,7 +358,14 @@ impl Linux {
             200 | 203 => {
                 let peer = address(memory, a[1], a[2])?;
                 if number == 200 {
-                    socket.bind_bytes(&peer).map_err(net)?;
+                    socket
+                        .bind_authorized(
+                            &peer,
+                            self.vfs
+                                .credentials
+                                .has_cap(trames_vfs::capabilities::NET_BIND_SERVICE),
+                        )
+                        .map_err(net)?;
                 } else {
                     socket.connect_bytes(&peer).map_err(net)?;
                 }
@@ -312,16 +409,10 @@ impl Linux {
                 };
                 let mut bytes = vec![0; a[2] as usize];
                 memory.read(a[1], &mut bytes).map_err(|_| Errno(14))?;
-                Ok(socket
-                    .send_bytes_authorized(
-                        &bytes,
-                        a[3] as u32,
-                        peer.as_deref(),
-                        self.vfs
-                            .credentials
-                            .has_cap(trames_vfs::capabilities::NET_ADMIN),
-                    )
-                    .map_err(net)? as u64)
+                Ok(self
+                    .vfs
+                    .socket_send_bytes(&socket, &bytes, a[3] as u32, peer.as_deref())?
+                    as u64)
             }
             207 => {
                 let count = a[2].min(trames_net::MAX_TRANSFER as u64) as usize;
@@ -342,10 +433,28 @@ impl Linux {
                 if (a[4] as u32) < 4 || (a[4] as u32) > i32::MAX as u32 {
                     return Err(Errno(22));
                 }
-                // SOL_SOCKET receive/send timeouts require a timespec ABI and
-                // scheduler deadlines; never pretend a timeout was installed.
-                if a[1] == 1 && matches!(a[2], 20 | 21) {
-                    return Err(Errno(95));
+                if a[1] == 1 && matches!(a[2], 20 | 21 | 66 | 67) {
+                    if a[4] < 16 {
+                        return Err(Errno(22));
+                    }
+                    Self::check(memory, a[3], 16, Access::Read)?;
+                    let seconds = u64_at(memory, a[3])? as i64;
+                    let micros = u64_at(memory, a[3] + 8)? as i64;
+                    if !(0..1_000_000).contains(&micros) {
+                        return Err(Errno(33));
+                    }
+                    let timeout = if seconds < 0 {
+                        Some(std::time::Duration::ZERO)
+                    } else if seconds == 0 && micros == 0 {
+                        None
+                    } else {
+                        Some(std::time::Duration::new(
+                            seconds as u64,
+                            micros as u32 * 1000,
+                        ))
+                    };
+                    socket.set_io_timeout(matches!(a[2], 20 | 66), timeout);
+                    return Ok(0);
                 }
                 if a[4] > 65536 {
                     return Err(Errno(22));
@@ -363,6 +472,21 @@ impl Linux {
                 let capacity = u32_at(memory, a[4])?;
                 if capacity > i32::MAX as u32 {
                     return Err(Errno(22));
+                }
+                if a[1] == 1 && matches!(a[2], 20 | 21 | 66 | 67) {
+                    let count = capacity.min(16) as usize;
+                    Self::check(memory, a[3], count, Access::Write)?;
+                    let timeout = socket
+                        .io_timeout(matches!(a[2], 20 | 66))
+                        .unwrap_or_default();
+                    let mut value = [0; 16];
+                    value[..8].copy_from_slice(&timeout.as_secs().to_le_bytes());
+                    value[8..].copy_from_slice(&(timeout.subsec_micros() as u64).to_le_bytes());
+                    memory.write(a[3], &value[..count]).map_err(|_| Errno(14))?;
+                    memory
+                        .write(a[4], &(count as u32).to_le_bytes())
+                        .map_err(|_| Errno(14))?;
+                    return Ok(0);
                 }
                 let count = capacity.min(4) as usize;
                 Linux::check(memory, a[3], count, Access::Write)?;
@@ -395,14 +519,21 @@ impl Linux {
                 let control = u64_at(memory, a[1] + 32)?;
                 let control_size = u64_at(memory, a[1] + 40)?;
                 if control_size != 0 {
-                    if !receive {
-                        return Err(Errno(95));
-                    }
                     if control_size > trames_net::MAX_TRANSFER as u64 {
                         return Err(Errno(22));
                     }
-                    Linux::check(memory, control, control_size as usize, Access::Write)?;
+                    Linux::check(
+                        memory,
+                        control,
+                        control_size as usize,
+                        if receive { Access::Write } else { Access::Read },
+                    )?;
                 }
+                let packet_info = if receive {
+                    None
+                } else {
+                    packet_control(memory, control, control_size)?
+                };
                 let vectors = Vectors::prepare(
                     memory,
                     u64_at(memory, a[1] + 16)?,
@@ -423,11 +554,23 @@ impl Linux {
                     }
                     let mut ancillary = Vec::new();
                     if let Some((level, kind, hop)) = socket.ancillary_hop() {
-                        ancillary.resize(24, 0);
-                        ancillary[..8].copy_from_slice(&20u64.to_le_bytes());
-                        ancillary[8..12].copy_from_slice(&level.to_le_bytes());
-                        ancillary[12..16].copy_from_slice(&kind.to_le_bytes());
-                        ancillary[16..20].copy_from_slice(&(hop as u32).to_le_bytes());
+                        push_control(&mut ancillary, level, kind, &(hop as u32).to_le_bytes());
+                    }
+                    if let Some(info) = received.packet_info {
+                        let mut payload = vec![];
+                        match info.address {
+                            std::net::IpAddr::V4(ip) => {
+                                payload.extend_from_slice(&info.interface.to_le_bytes());
+                                payload.extend_from_slice(&ip.octets());
+                                payload.extend_from_slice(&ip.octets());
+                                push_control(&mut ancillary, 0, 8, &payload);
+                            }
+                            std::net::IpAddr::V6(ip) => {
+                                payload.extend_from_slice(&ip.octets());
+                                payload.extend_from_slice(&info.interface.to_le_bytes());
+                                push_control(&mut ancillary, 41, 50, &payload);
+                            }
+                        }
                     }
                     let control_count = ancillary.len().min(control_size as usize);
                     if control_count != 0 {
@@ -461,16 +604,24 @@ impl Linux {
                     } else {
                         Some(address(memory, name, name_size as u64)?)
                     };
-                    Ok(socket
-                        .send_bytes_authorized(
-                            &vectors.read(memory)?,
+                    let bytes = vectors.read(memory)?;
+                    if let Some(info) = packet_info {
+                        let peer = peer
+                            .as_deref()
+                            .map(trames_net::decode_address)
+                            .transpose()
+                            .map_err(net)?;
+                        Ok(socket
+                            .send_packet(&bytes, a[2] as u32, peer, info)
+                            .map_err(net)? as u64)
+                    } else {
+                        Ok(self.vfs.socket_send_bytes(
+                            &socket,
+                            &bytes,
                             a[2] as u32,
                             peer.as_deref(),
-                            self.vfs
-                                .credentials
-                                .has_cap(trames_vfs::capabilities::NET_ADMIN),
-                        )
-                        .map_err(net)? as u64)
+                        )? as u64)
+                    }
                 }
             }
             _ => Err(Errno(38)),
@@ -728,6 +879,77 @@ mod tests {
     use trames_memory::{Permissions, PAGE_SIZE};
     use trames_vfs::NetworkMode;
     #[test]
+    fn udp_pktinfo_cmsg_roundtrip_and_invalid_receive_are_transactional() {
+        let mut linux = Linux::new(0x10000);
+        linux.vfs.configure_network(NetworkMode::Full).unwrap();
+        let fd = linux.vfs.socket(2, 2 | trames_vfs::O_NONBLOCK, 0).unwrap();
+        let socket = linux.vfs.socket_fd(fd).unwrap();
+        socket.bind("0.0.0.0:0".parse().unwrap()).unwrap();
+        socket.set_option(0, 8, 1).unwrap();
+        let peer = std::net::UdpSocket::bind("127.0.0.1:0").unwrap();
+        peer.set_nonblocking(true).unwrap();
+        peer.send_to(b"abc", ("127.0.0.1", socket.local_addr().unwrap().port()))
+            .unwrap();
+        let mut memory = Memory::default();
+        memory.map(0x1000, PAGE_SIZE, Permissions::RW).unwrap();
+        memory.write(0x1000, &[0; 56]).unwrap();
+        memory.write(0x1000, &0x1700u64.to_le_bytes()).unwrap();
+        memory.write(0x1008, &16u32.to_le_bytes()).unwrap();
+        for (offset, value) in [(16, 0x1200u64), (24, 1), (32, 0x9000), (40, 32)] {
+            memory.write(0x1000 + offset, &value.to_le_bytes()).unwrap();
+        }
+        memory.write(0x1200, &0x1300u64.to_le_bytes()).unwrap();
+        memory.write(0x1208, &10u64.to_le_bytes()).unwrap();
+        assert_eq!(
+            linux.network_syscall(212, [fd as u64, 0x1000, 0, 0, 0, 0], &mut memory),
+            Err(Errno(14))
+        );
+        memory.write(0x1020, &0x1400u64.to_le_bytes()).unwrap();
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+        while socket.poll(1).unwrap() & 1 == 0 {
+            assert!(std::time::Instant::now() < deadline);
+            std::thread::yield_now();
+        }
+        assert_eq!(
+            linux.network_syscall(212, [fd as u64, 0x1000, 0, 0, 0, 0], &mut memory),
+            Ok(3)
+        );
+        assert_eq!(memory.read_u64(0x1400).unwrap(), 28);
+        assert_eq!(u32_at(&memory, 0x140c), Ok(8));
+        assert_eq!(u32_at(&memory, 0x1410), Ok(1));
+        assert_eq!(
+            u32_at(&memory, 0x1414),
+            Ok(u32::from_le_bytes([127, 0, 0, 1]))
+        );
+        memory.write(0x1208, &3u64.to_le_bytes()).unwrap();
+        assert_eq!(
+            linux.network_syscall(211, [fd as u64, 0x1000, 0, 0, 0, 0], &mut memory),
+            Ok(3)
+        );
+        let mut bytes = [0; 10];
+        let n = loop {
+            match peer.recv(&mut bytes) {
+                Ok(n) => break n,
+                Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                    assert!(std::time::Instant::now() < deadline);
+                    std::thread::yield_now();
+                }
+                Err(e) => panic!("{e}"),
+            }
+        };
+        assert_eq!(n, 3);
+        assert_eq!(&bytes[..3], b"abc");
+        memory.write(0x1400, &15u64.to_le_bytes()).unwrap();
+        assert_eq!(
+            linux.network_syscall(211, [fd as u64, 0x1000, 0, 0, 0, 0], &mut memory),
+            Err(Errno(22))
+        );
+        assert_eq!(
+            peer.recv(&mut bytes).unwrap_err().kind(),
+            std::io::ErrorKind::WouldBlock
+        );
+    }
+    #[test]
     fn invalid_accept_destination_does_not_drop_queued_connection() {
         let mut linux = Linux::new(0x10000);
         linux.vfs.configure_network(NetworkMode::Loopback).unwrap();
@@ -767,14 +989,16 @@ mod tests {
             Ok(0)
         );
         assert_eq!(u32_at(&memory, 0x1100), Ok(1));
-        let reserved = linux.vfs.socket(2, 1, 0).unwrap();
-        let reserved = linux.vfs.socket_fd(reserved).unwrap();
+        let reserved_fd = linux.vfs.socket(2, 1, 0).unwrap();
+        let reserved = linux.vfs.socket_fd(reserved_fd).unwrap();
         reserved.bind("127.0.0.1:0".parse().unwrap()).unwrap();
+        let address = reserved.local_addr().unwrap();
+        // Test a closed port. Darwin may silently retain SYNs for a bound,
+        // non-listening socket, which is not a portable refusal fixture.
+        linux.vfs.close(reserved_fd).unwrap();
+        drop(reserved);
         let socket = linux.vfs.socket_fd(fd).unwrap();
-        let error = socket
-            .connect(reserved.local_addr().unwrap())
-            .unwrap_err()
-            .0;
+        let error = socket.connect(address).unwrap_err().0;
         assert!(matches!(error, 115 | 111));
         if error == 115 {
             let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);

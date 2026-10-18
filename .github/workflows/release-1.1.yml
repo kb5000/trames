@@ -1,0 +1,27 @@
+name: Publish Trames 1.1.0
+on:
+  push:
+    branches: [main]
+    paths: ['docs/validation/release-1.1.json', 'scripts/publish-ios-release-1.1.py', '.github/workflows/release-1.1.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: trames-ipad-release-1.1
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify merged tested sources, IPA and corresponding GPL sources; publish immutable 1.1.0
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/publish-ios-release-1.1.py

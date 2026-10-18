@@ -14,6 +14,117 @@ defaults:
   run:
     shell: bash
 jobs:
+  docker-default-apple:
+    needs: scope
+    if: needs.scope.outputs.native_scope == 'docker-default'
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+          targets: aarch64-apple-ios
+      - name: Validate proc identity, socket timeouts, scheduler deadlines and iOS FFI
+        if: needs.scope.outputs.docker_default_remount != 'true'
+        run: |
+          cargo test -p trames-net --locked
+          cargo test -p trames-vfs --lib --locked
+          cargo test -p trames-linux --lib network --locked
+          cargo test -p trames-core --lib socket_timeout --locked
+          cargo test -p trames-core --lib seccomp --locked
+          cargo check -p trames-ffi --target aarch64-apple-ios --locked
+      - name: Validate bind remount regressions and iOS FFI
+        if: needs.scope.outputs.docker_default_remount == 'true'
+        run: |
+          cargo test -p trames-vfs --lib mounts:: --locked
+          cargo check -p trames-ffi --target aarch64-apple-ios --locked
+  container-storage-apple:
+    needs: scope
+    if: needs.scope.outputs.native_scope == 'container-storage' && needs.scope.outputs.skip_native != 'true'
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+          targets: aarch64-apple-ios
+      - name: Validate overlay storage, Apple file IO and iOS FFI
+        run: |
+          if [[ '${{ needs.scope.outputs.storage_proc_only }}' == true ]]; then
+            cargo test -p trames-vfs --lib proc --locked
+          else
+            cargo test -p trames-vfs --lib --locked
+            cargo test -p trames-linux --lib file_calls --locked
+          fi
+          cargo check -p trames-ffi --target aarch64-apple-ios --locked
+  container-isolation-apple:
+    needs: scope
+    if: needs.scope.outputs.native_scope == 'container-isolation'
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+          targets: aarch64-apple-ios
+      - name: Validate affected Apple kernel and network modules
+        if: needs.scope.outputs.isolation_retry != 'true'
+        run: |
+          cargo test -p trames-net -p trames-vfs -p trames-linux -p trames-core --lib --locked
+          cargo test -p trames-cpu --lib disabled_authentication_and_ordering_hints_preserve_values --locked
+          cargo check -p trames-ffi --target aarch64-apple-ios --locked
+      - name: Retry failed Darwin fixture, new seccomp case and remaining Apple checks
+        if: needs.scope.outputs.isolation_retry == 'true'
+        run: |
+          cargo test -p trames-net -p trames-vfs --lib --locked
+          cargo test -p trames-linux --lib socket_output_preflight_and_descriptor_type_errors --locked
+          cargo test -p trames-core --lib seccomp --locked
+          cargo test -p trames-cpu --lib disabled_authentication_and_ordering_hints_preserve_values --locked
+          cargo check -p trames-ffi --target aarch64-apple-ios --locked
+  container-network-apple:
+    needs: scope
+    if: needs.scope.outputs.native_scope == 'container-network'
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+          targets: aarch64-apple-ios
+      - name: Validate affected Apple network modules and iOS FFI
+        run: |
+          if [[ '${{ needs.scope.outputs.docker_network }}' == true ]]; then
+            if [[ '${{ needs.scope.outputs.docker_network_virtual_retry }}' == true ]]; then
+              cargo test -p trames-net --test virtual native_gateway_tcp_and_udp_both_families --locked
+            elif [[ '${{ needs.scope.outputs.docker_network_retry }}' == true ]]; then
+              cargo test -p trames-net --lib native_root_input --locked
+              cargo test -p trames-net --test virtual --locked
+            else
+              cargo test -p trames-net --locked
+            fi
+            cargo test -p trames-vfs --lib network --locked
+            cargo test -p trames-vfs --lib events --locked
+            cargo test -p trames-linux --lib network --locked
+            cargo test -p trames-linux --lib file_calls --locked
+            cargo test -p trames-ffi --lib managed_dns --locked
+            cargo test -p trames-core --lib splice --locked
+            cargo check -p trames-core --locked
+          elif [[ '${{ needs.scope.outputs.nftables }}' == true ]]; then
+            cargo test -p trames-net --lib --locked
+          elif [[ '${{ needs.scope.outputs.docker_bridge }}' == true ]]; then
+            cargo test -p trames-net --lib --locked
+            cargo test -p trames-vfs --lib network --locked
+          elif [[ '${{ needs.scope.outputs.network_retry }}' == true ]]; then
+            cargo test -p trames-net --lib routing_tests --locked
+            cargo test -p trames-net --test virtual namespace_finish_resets_peer_and_preserves_other_namespace --locked
+          else
+            cargo test -p trames-net -p trames-vfs -p trames-linux --lib --locked
+          fi
+          cargo check -p trames-ffi --target aarch64-apple-ios --locked
   scope:
     runs-on: ubuntu-24.04
     outputs:
@@ -26,6 +137,15 @@ jobs:
       critical_test: ${{ steps.scope.outputs.critical_test }}
       ui_targets: ${{ steps.scope.outputs.ui_targets }}
       native_scope: ${{ steps.scope.outputs.native_scope }}
+      storage_proc_only: ${{ steps.scope.outputs.storage_proc_only }}
+      isolation_retry: ${{ steps.scope.outputs.isolation_retry }}
+      network_retry: ${{ steps.scope.outputs.network_retry }}
+      docker_bridge: ${{ steps.scope.outputs.docker_bridge }}
+      nftables: ${{ steps.scope.outputs.nftables }}
+      docker_network: ${{ steps.scope.outputs.docker_network }}
+      docker_network_retry: ${{ steps.scope.outputs.docker_network_retry }}
+      docker_network_virtual_retry: ${{ steps.scope.outputs.docker_network_virtual_retry }}
+      docker_default_remount: ${{ steps.scope.outputs.docker_default_remount }}
       frontend_reused: ${{ steps.scope.outputs.frontend_reused }}
     steps:
       - uses: actions/checkout@v4
@@ -89,7 +209,7 @@ jobs:
           retention-days: 14
   apple-build:
     needs: [scope, guest-musl, memory-abi]
-    if: ${{ !cancelled() && needs.scope.outputs.repackage_run == '' && needs.scope.result == 'success' && (needs.scope.outputs.frontend_only == 'true' || needs.scope.outputs.targeted == 'true' || (needs.guest-musl.result == 'success' && needs.memory-abi.result == 'success')) }}
+    if: ${{ !cancelled() && needs.scope.outputs.native_scope != 'docker-default' && needs.scope.outputs.native_scope != 'docker-default-lifecycle' && needs.scope.outputs.native_scope != 'container-isolation' && needs.scope.outputs.native_scope != 'container-network' && needs.scope.outputs.native_scope != 'container-storage' && needs.scope.outputs.repackage_run == '' && needs.scope.result == 'success' && (needs.scope.outputs.frontend_only == 'true' || needs.scope.outputs.targeted == 'true' || (needs.guest-musl.result == 'success' && needs.memory-abi.result == 'success')) }}
     runs-on: macos-15
     timeout-minutes: 40
     steps:
@@ -133,11 +253,36 @@ jobs:
             cargo test -p trames-wayland --lib clipboard_permission --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == host-terminals ]]; then
             cargo test -p trames-vfs -p trames-core -p trames-ffi --lib --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == runtime-costs ]]; then
+            cargo test -p trames-memory --locked
+            cargo test -p trames-core --lib proc_map --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == release-core ]]; then
+            cargo test --workspace --all-features --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == devpts ]]; then
+            cargo test -p trames-vfs --lib pty::tests --locked
+            cargo test -p trames-vfs --lib proc_ --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == startup-mounts ]]; then
+            cargo test -p trames-ffi --lib runtime_tmpfs --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == memory-va ]]; then
+            uname -m
+            sysctl hw.pagesize
+            cargo test -p trames-memory --locked
+            cargo test -p trames-vfs --lib proc_route --locked
+            cargo build -p trames-cli --release --locked
+            python3 tests/integration/docker-startup-memory.py
           elif [[ '${{ needs.scope.outputs.targeted }}' == true ]]; then
             cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --lib --locked
           else
             cargo test -p trames-shared -p trames-wayland -p trames-native -p trames-compute -p trames-cpu -p trames-accel -p trames-memory -p trames-vfs -p trames-core --locked
           fi
+      - name: Preserve Docker startup memory evidence
+        if: ${{ always() && needs.scope.outputs.native_scope == 'memory-va' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: apple-docker-startup-memory
+          path: target/docker-startup-memory
+          if-no-files-found: error
+          retention-days: 14
       - name: Test original native Wayland clients and shared-FD lifetimes
         if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'
         run: brew install pkg-config libffi expat && bash scripts/test-wayland.sh
@@ -281,7 +426,7 @@ jobs:
       - name: Finalize shared-group metadata and package the existing device app
         run: |
           python3 - <<'PYCODE'
-          import hashlib,json,pathlib,plistlib,subprocess
+          import hashlib,json,pathlib,plistlib,re,subprocess
           bundles=list(pathlib.Path('target/reused-ios').glob('**/Release-iphoneos/Trames.app'))
           assert len(bundles)==1, bundles
           bundle=bundles[0];app=str(bundle)
@@ -292,8 +437,13 @@ jobs:
                   binary=p.parent/executable
                   if binary.is_file():binary.chmod(0o755)
           def hashes():
-              return {str(p.relative_to(bundle)):hashlib.sha256(p.read_bytes()).hexdigest() for p in bundle.rglob('*') if p.is_file() and p!=bundle/'Info.plist'}
+              return {str(p.relative_to(bundle)):hashlib.sha256(p.read_bytes()).hexdigest() for p in bundle.rglob('*') if p.is_file() and p.name!='Info.plist'}
           before=hashes()
+          if '${{ needs.scope.outputs.native_scope }}' == 'device-metadata':
+              build=re.search(r"CURRENT_PROJECT_VERSION: ['\"]?(\d+)",pathlib.Path('apps/ios/project.yml').read_text()).group(1)
+              for p in [bundle/'Info.plist', *bundle.glob('PlugIns/*.appex/Info.plist')]:
+                  info=plistlib.loads(p.read_bytes()); info['CFBundleVersion']=build
+                  p.write_bytes(plistlib.dumps(info,fmt=plistlib.FMT_BINARY))
           subprocess.run(['python3','scripts/finalize-ios-app.py',app],check=True)
           assert hashes()==before, 'Compiled executables and guest inputs must remain byte-identical'
           pathlib.Path('target/sideload').mkdir(parents=True,exist_ok=True)

@@ -80,6 +80,8 @@ mod pid_namespace;
 use compat::AltStack;
 #[path = "process_scheduling.rs"]
 mod scheduling;
+#[path = "process_seccomp.rs"]
+mod seccomp;
 #[derive(Clone, Copy, Default)]
 struct Action {
     handler: u64,
@@ -145,6 +147,7 @@ struct Process {
     frames: u32,
     wait_event: Option<i32>,
     poll_deadline: Option<Instant>,
+    socket_deadline: Option<Instant>,
     poll_mask: Option<u64>,
     pending_open: Option<u32>,
     stopped_state: Option<Box<State>>,
@@ -162,6 +165,7 @@ struct Process {
     membarrier_registered: Rc<Cell<bool>>,
     file_size_limit: Rc<Cell<(u64, u64)>>,
     oom: Rc<trames_vfs::OomTask>,
+    seccomp: seccomp::Seccomp,
 }
 impl Process {
     fn frozen(&self, pid: u32) -> bool {
@@ -189,6 +193,7 @@ impl Process {
             frames: self.frames,
             wait_event: None,
             poll_deadline: None,
+            socket_deadline: None,
             poll_mask: None,
             pending_open: None,
             stopped_state: None,
@@ -206,8 +211,13 @@ impl Process {
             membarrier_registered: Rc::new(Cell::new(self.membarrier_registered.get())),
             file_size_limit: Rc::new(Cell::new(self.file_size_limit.get())),
             oom: Rc::new(self.oom.fork()),
+            seccomp: self.seccomp.clone(),
         }
     }
+}
+struct ProcMaps {
+    identity: (u64, u64),
+    bytes: Vec<u8>,
 }
 struct Kernel {
     memory_limits: super::MemoryLimits,
@@ -236,6 +246,7 @@ struct Kernel {
     syscall_total: Duration,
     syscalls: u64,
     proc_refreshes: u64,
+    proc_maps: RefCell<BTreeMap<u64, ProcMaps>>,
     profile_syscalls: bool,
     idle: Duration,
     load: [f64; 3],
@@ -479,7 +490,17 @@ impl Kernel {
             }
         }
     }
-    fn process_info(&self, pid: u32, p: &Process) -> trames_vfs::ProcessInfo {
+    fn process_maps(&self, p: &Process) -> Vec<u8> {
+        // Mapping edits (including PROT_NONE reservations) advance the code
+        // generation. Ordinary data stores do not. Fork/exec have a new space
+        // identity; shared VM wrappers report their underlying owner's key.
+        // Backing byte/EOF epochs do not change the displayed mapping ranges.
+        let (space, generation, _) = p.memory.instruction_identity();
+        let identity = (space, generation);
+        let mut cache = self.proc_maps.borrow_mut();
+        if let Some(maps) = cache.get(&space).filter(|maps| maps.identity == identity) {
+            return maps.bytes.clone();
+        }
         let mut maps = String::new();
         for (start, end, access) in p.memory.regions() {
             use std::fmt::Write;
@@ -494,6 +515,18 @@ impl Kernel {
                 break;
             }
         }
+        let maps = maps.into_bytes();
+        cache.insert(
+            space,
+            ProcMaps {
+                identity,
+                bytes: maps.clone(),
+            },
+        );
+        maps
+    }
+    fn process_info(&self, pid: u32, p: &Process) -> trames_vfs::ProcessInfo {
+        let maps = self.process_maps(p);
         let arguments = p
             .linux
             .argument_pointers
@@ -527,6 +560,8 @@ impl Kernel {
             command: p.linux.command_name.clone(),
             cgroup: p.linux.vfs.cgroup_path(pid),
             nondumpable: p.linux.vfs.dumpable() != 1,
+            seccomp: p.seccomp.mode(),
+            seccomp_filters: p.seccomp.count(),
             arguments,
             environment: p.linux.environment.clone(),
             executable: p.linux.executable_file.as_ref().map_or_else(
@@ -537,7 +572,7 @@ impl Kernel {
             cwd: p.linux.vfs.cwd().unwrap_or_else(|_| b"/".to_vec()),
             mapped_bytes: p.memory.mapped_bytes(),
             virtual_bytes: p.memory.virtual_bytes(),
-            maps: maps.into_bytes(),
+            maps,
             affinity: p.affinity,
             processor: p.last_cpu as u32,
             nice: p.nice,
@@ -566,6 +601,18 @@ impl Kernel {
         }
     }
     fn refresh_proc(&self, pid: u32, p: &mut Process) {
+        // Bound cached bytes by the current memory-owner set, even after repeated
+        // fork/exec. Never cache fd paths, credentials, names, argv bytes or
+        // other mutable process metadata under a mapping-generation key.
+        let live: std::collections::BTreeSet<_> = self
+            .processes
+            .values()
+            .map(|p| p.memory.instruction_identity().0)
+            .chain(std::iter::once(p.memory.instruction_identity().0))
+            .collect();
+        self.proc_maps
+            .borrow_mut()
+            .retain(|vm, _| live.contains(vm));
         let mut processes: Vec<_> = self
             .processes
             .iter()
@@ -1118,7 +1165,9 @@ impl Kernel {
                     p.mask = mask;
                 }
                 p.poll_deadline = None;
-                if action.flags & 0x10000000 != 0
+                let timed_socket = p.socket_deadline.take().is_some();
+                if !timed_socket
+                    && action.flags & 0x10000000 != 0
                     && matches!(
                         number,
                         25 | 32
@@ -1214,7 +1263,7 @@ impl Kernel {
         p.cpu.set_x(2, sp + 128);
         p.cpu.set_x(
             30,
-            if action.restorer == 0 {
+            if action.flags & 0x04000000 == 0 {
                 0x7fff_ffd0_0000
             } else {
                 action.restorer
@@ -1501,6 +1550,15 @@ impl Kernel {
         io: &mut impl GuestOutput,
     ) -> Result<Option<u64>, Errno> {
         match number {
+            277 => self.seccomp(p, a).map(Some),
+            167 if a[0] == 21 => Ok(Some(p.seccomp.mode() as u64)),
+            167 if a[0] == 22 => match a[1] {
+                // PR_SET_SECCOMP uses mode 1/2, while seccomp(2) uses
+                // operation 0/1. Keep validation and actual filters shared.
+                1 => self.seccomp(p, [0, 0, 0, 0, 0, 0]).map(Some),
+                2 => self.seccomp(p, [1, 0, a[2], 0, 0, 0]).map(Some),
+                _ => Err(Errno(22)),
+            },
             140 | 141 => self.priority(pid, p, number, a),
             236 => Self::mempolicy(p, a),
             90 | 91 => self.capcall(pid, p, number == 91, a).map(Some),
@@ -1634,6 +1692,9 @@ impl Kernel {
                 const ALLOWED: u64 = trames_vfs::CLONE_NEWUTS
                     | trames_vfs::CLONE_NEWNS
                     | trames_vfs::CLONE_NEWPID
+                    | trames_vfs::CLONE_NEWNET
+                    | trames_vfs::CLONE_NEWIPC
+                    | trames_vfs::CLONE_NEWCGROUP
                     | 0x200
                     | 0x400;
                 if a[0] & !ALLOWED != 0 {
@@ -1657,6 +1718,15 @@ impl Kernel {
                 }
                 if a[0] & trames_vfs::CLONE_NEWNS != 0 {
                     view.unshare_mounts()?;
+                }
+                if a[0] & trames_vfs::CLONE_NEWNET != 0 {
+                    view.unshare_net()?;
+                }
+                if a[0] & trames_vfs::CLONE_NEWIPC != 0 {
+                    view.unshare_ipc()?;
+                }
+                if a[0] & trames_vfs::CLONE_NEWCGROUP != 0 {
+                    view.unshare_cgroup()?;
                 }
                 p.linux.vfs = view;
                 if a[0] & (0x200 | trames_vfs::CLONE_NEWNS) != 0 {
@@ -1725,7 +1795,10 @@ impl Kernel {
                     | 0x1000000
                     | trames_vfs::CLONE_NEWUTS
                     | trames_vfs::CLONE_NEWNS
-                    | trames_vfs::CLONE_NEWPID;
+                    | trames_vfs::CLONE_NEWPID
+                    | trames_vfs::CLONE_NEWNET
+                    | trames_vfs::CLONE_NEWIPC
+                    | trames_vfs::CLONE_NEWCGROUP;
                 let threaded = a[0] & 0x10000 != 0;
                 let shared_vm = a[0] & 0x100 != 0;
                 if a[0] & !ALLOWED != 0
@@ -1735,6 +1808,7 @@ impl Kernel {
                             != p.linux.vfs.pid_children_namespace().id())
                     || (a[0] & 0x8000 != 0 && p.linux.vfs.visible_pid(p.tgid) == 1)
                     || (a[0] & trames_vfs::CLONE_NEWNS != 0 && a[0] & 0x200 != 0)
+                    || (a[0] & trames_vfs::CLONE_NEWIPC != 0 && a[0] & 0x40000 != 0)
                     || (!threaded && a[0] & 255 != 17)
                     || (threaded && (a[0] & 0x900 != 0x900 || a[0] & 255 != 0))
                     || (a[0] & 0x800 != 0 && !shared_vm)
@@ -1782,6 +1856,15 @@ impl Kernel {
                 }
                 if a[0] & trames_vfs::CLONE_NEWNS != 0 {
                     child.linux.vfs.unshare_mounts()?;
+                }
+                if a[0] & trames_vfs::CLONE_NEWNET != 0 {
+                    child.linux.vfs.unshare_net()?;
+                }
+                if a[0] & trames_vfs::CLONE_NEWIPC != 0 {
+                    child.linux.vfs.unshare_ipc()?;
+                }
+                if a[0] & trames_vfs::CLONE_NEWCGROUP != 0 {
+                    child.linux.vfs.unshare_cgroup()?;
                 }
                 child.linux.vfs.activate_child_pid(id)?;
                 let parent_tid = p.linux.vfs.visible_pid(id);
@@ -2240,7 +2323,16 @@ impl Kernel {
             203 if matches!(p.state, State::Blocked(203, _))
                 && p.linux.vfs.local_socket(a[0] as u32)?.is_none() =>
             {
-                Ok(p.linux.resume_connect(a[0] as u32)?.then_some(0))
+                if p.linux.resume_connect(a[0] as u32)? {
+                    Ok(Some(0))
+                } else if p
+                    .socket_deadline
+                    .is_some_and(|deadline| Instant::now() >= deadline)
+                {
+                    Err(Errno(115))
+                } else {
+                    Ok(None)
+                }
             }
             63 | 65 if p.linux.vfs.signalfd_mask(a[0] as u32)?.is_some() => {
                 self.read_signalfd(p, number, a)
@@ -2323,6 +2415,7 @@ impl Kernel {
                     }
                 }
                 let per_call_nonblock = match number {
+                    76 => a[5] & 2 != 0 || p.linux.vfs.flags(a[2] as u32)? & O_NONBLOCK != 0,
                     206 | 207 => a[3] & 0x40 != 0,
                     211 | 212 => a[2] & 0x40 != 0,
                     _ => false,
@@ -2333,7 +2426,7 @@ impl Kernel {
                 if ((raw == error(Errno(11))
                     && matches!(
                         number,
-                        63 | 64 | 65 | 66 | 71 | 202 | 203 | 242 | 206 | 207 | 211 | 212
+                        63 | 64 | 65 | 66 | 71 | 76 | 202 | 203 | 242 | 206 | 207 | 211 | 212
                     )
                     && !per_call_nonblock)
                     || (raw == error(Errno(115)) && number == 203)
@@ -2342,6 +2435,26 @@ impl Kernel {
                     && (matches!(number, 25 | 32)
                         || p.linux.vfs.flags(a[0] as u32)? & O_NONBLOCK == 0)
                 {
+                    if !matches!(p.state, State::Blocked(..)) {
+                        p.socket_deadline = match number {
+                            63 | 65 | 202 | 242 | 207 | 212 => Some(true),
+                            64 | 66 | 203 | 206 | 211 => Some(false),
+                            _ => None,
+                        }
+                        .and_then(|receive| {
+                            p.linux
+                                .vfs
+                                .socket_fd(a[0] as u32)
+                                .ok()
+                                .and_then(|socket| socket.io_timeout(receive))
+                        })
+                        .and_then(|duration| Instant::now().checked_add(duration));
+                    }
+                    if p.socket_deadline
+                        .is_some_and(|deadline| Instant::now() >= deadline)
+                    {
+                        return Ok(Some(raw));
+                    }
                     Ok(None)
                 } else {
                     Ok(Some(raw))
@@ -2359,6 +2472,9 @@ impl Kernel {
     ) {
         let began = self.profile_syscalls.then(Instant::now);
         self.syscalls += 1;
+        if !matches!(p.state, State::Blocked(..)) && self.filter_syscall(pid, p, number, a) {
+            return;
+        }
         p.linux.vfs.set_process_context(pid);
         p.linux.vfs.set_lock_owner(p.tgid);
         p.linux.vfs.set_file_size_limit(p.file_size_limit.get().0);
@@ -2374,7 +2490,7 @@ impl Kernel {
             p.memory.read_c_string(address, 4096).is_ok_and(|path| {
                 p.linux.vfs.accesses_proc(dirfd, &path)
             })
-        }) || (matches!(number, 44 | 61 | 63 | 65 | 67 | 69 | 80)
+        }) || (matches!(number, 44 | 61 | 63 | 65 | 67 | 69 | 78 | 80)
             && p.linux.vfs.fd_kind(a[0] as u32).is_ok_and(|kind| {
                 matches!(kind, FdKind::Node(path) if path == b"/proc" || path.starts_with(b"/proc/"))
             }));
@@ -2402,6 +2518,7 @@ impl Kernel {
             Ok(Some(raw)) => {
                 p.cpu.set_x(0, raw);
                 p.state = State::Ready;
+                p.socket_deadline = None;
                 Some(raw)
             }
             Ok(None) => {
@@ -2412,6 +2529,7 @@ impl Kernel {
                 None
             }
             Err(e) => {
+                p.socket_deadline = None;
                 if matches!(number, 22 | 72 | 73 | 441) {
                     // A failed poll ends its wait just as a successful return
                     // does. Do not leak its deadline or temporary signal mask
@@ -2437,7 +2555,7 @@ impl Kernel {
             }
         };
         let signal_pipe = match number {
-            64 | 66 | 71 => true,
+            64 | 66 | 71 | 76 => true,
             206 => a[3] & 0x4000 == 0,
             211 => a[2] & 0x4000 == 0,
             _ => false,
@@ -3420,7 +3538,10 @@ impl Kernel {
             let poll = matches!(p.state, State::Blocked(22 | 72 | 73 | 441, _))
                 .then_some(p.poll_deadline)
                 .flatten();
-            for deadline in [poll, timerfd].into_iter().flatten() {
+            let socket = matches!(p.state, State::Blocked(..))
+                .then_some(p.socket_deadline)
+                .flatten();
+            for deadline in [poll, timerfd, socket].into_iter().flatten() {
                 timeout = timeout.min(deadline.saturating_duration_since(now));
             }
             if let State::Futex {
@@ -3607,6 +3728,7 @@ impl Kernel {
                         || matches!(p.state, State::Blocked(number, a)
                         if matches!(number, 63 | 64 | 65 | 66 | 202 | 203 | 242 | 206 | 207 | 211 | 212)
                         && p.linux.vfs.fd_kind(a[0] as u32).ok() == Some(FdKind::Socket))
+                        || matches!(p.state,State::Blocked(76,a)if [a[0],a[2]].iter().any(|fd|p.linux.vfs.fd_kind(*fd as u32).ok()==Some(FdKind::Socket)))
                         || (matches!(p.state, State::Blocked(22 | 72 | 73 | 441, _))
                             && p.linux.vfs.live_sockets() != 0)
                         || p.linux.vfs.has_bridge_descriptors()
@@ -3654,6 +3776,11 @@ impl Kernel {
             if let Some(deadline) = p.poll_deadline {
                 timeout = timeout.min(deadline.saturating_duration_since(now));
             }
+            if matches!(p.state, State::Blocked(..)) {
+                if let Some(deadline) = p.socket_deadline {
+                    timeout = timeout.min(deadline.saturating_duration_since(now));
+                }
+            }
             if let State::Sleep(deadline, _) = p.state {
                 timeout = timeout.min(deadline.saturating_duration_since(now));
             }
@@ -3671,6 +3798,10 @@ impl Kernel {
                     if p.linux.vfs.fd_kind(a[0] as u32).ok() == Some(FdKind::Stdin) {
                         timeout = timeout.min(Duration::from_millis(1));
                     }
+                }
+                76 => {
+                    add(a[0] as u32, 1);
+                    add(a[2] as u32, 4);
                 }
                 64 | 66 | 203 | 206 | 211 => add(a[0] as u32, 4),
                 73 => {
@@ -3747,6 +3878,7 @@ pub(super) fn run(
         frames: 0,
         wait_event: None,
         poll_deadline: None,
+        socket_deadline: None,
         poll_mask: None,
         pending_open: None,
         stopped_state: None,
@@ -3764,6 +3896,7 @@ pub(super) fn run(
         membarrier_registered: Rc::new(Cell::new(false)),
         file_size_limit: Rc::new(Cell::new((u64::MAX, u64::MAX))),
         oom: Rc::new(trames_vfs::OomTask::default()),
+        seccomp: seccomp::Seccomp::default(),
     };
     let count = runtime.cpu_count.clamp(1, 32);
     let mut kernel = Kernel {
@@ -3796,6 +3929,7 @@ pub(super) fn run(
         syscall_total: Duration::ZERO,
         syscalls: 0,
         proc_refreshes: 0,
+        proc_maps: RefCell::new(BTreeMap::new()),
         profile_syscalls: runtime.profile_syscalls,
         idle: Duration::ZERO,
         load: [0.0; 3],
@@ -3913,6 +4047,7 @@ mod tests {
             frames: 0,
             wait_event: None,
             poll_deadline: None,
+            socket_deadline: None,
             poll_mask: None,
             pending_open: None,
             stopped_state: None,
@@ -3930,6 +4065,7 @@ mod tests {
             membarrier_registered: Rc::new(Cell::new(false)),
             file_size_limit: Rc::new(Cell::new((u64::MAX, u64::MAX))),
             oom: Rc::new(trames_vfs::OomTask::default()),
+            seccomp: seccomp::Seccomp::default(),
         }
     }
     #[test]
@@ -4016,6 +4152,7 @@ mod tests {
             syscall_total: Duration::ZERO,
             syscalls: 0,
             proc_refreshes: 0,
+            proc_maps: RefCell::new(BTreeMap::new()),
             profile_syscalls: false,
             idle: Duration::ZERO,
             load: [0.0; 3],
@@ -4034,6 +4171,82 @@ mod tests {
             gpu_transfers: trames_vulkan::TransferMetrics::default(),
         }
     }
+    #[test]
+    fn proc_maps_refresh_after_shared_protect_reserve_unmap_and_fork() {
+        let k = kernel();
+        let mut p = process();
+        assert_eq!(
+            k.process_maps(&p),
+            b"000000001000-000000009000 rw-p 00000000 00:00 0\n"
+        );
+        let mut peer = p.fork();
+        peer.memory = p.memory.share();
+        peer.memory
+            .protect(0x2000, PAGE_SIZE, Permissions::R)
+            .unwrap();
+        let maps = k.process_maps(&p);
+        assert!(String::from_utf8_lossy(&maps).contains("000000002000-000000003000 r--p"));
+        assert_eq!(k.process_maps(&peer), maps);
+        p.memory.reserve(0x100000, 2 * PAGE_SIZE, false).unwrap();
+        let maps = String::from_utf8(k.process_maps(&p)).unwrap();
+        assert!(maps.contains("000000100000-000000102000 ---p"));
+        p.memory
+            .protect(0x100000, PAGE_SIZE, Permissions::RW)
+            .unwrap();
+        let maps = String::from_utf8(k.process_maps(&peer)).unwrap();
+        assert!(maps.contains("000000100000-000000101000 rw-p"));
+        p.memory.unmap(0x100000, 2 * PAGE_SIZE).unwrap();
+        assert!(!String::from_utf8(k.process_maps(&p))
+            .unwrap()
+            .contains("000000100000-"));
+        let mut child = p.fork();
+        child.vm_id = 2;
+        child
+            .memory
+            .protect(0x2000, PAGE_SIZE, Permissions::RW)
+            .unwrap();
+        assert_eq!(
+            k.process_maps(&child),
+            b"000000001000-000000009000 rw-p 00000000 00:00 0\n"
+        );
+        assert_eq!(k.process_maps(&p), k.process_maps(&peer));
+        assert_ne!(k.process_maps(&p), k.process_maps(&child));
+        // An exited group leader has released its Memory while surviving
+        // threads still share the old vm_id. It must not evict their maps.
+        let mut leader = process();
+        leader.vm_id = p.vm_id;
+        leader.memory = Memory::default();
+        assert!(k.process_maps(&leader).is_empty());
+        assert_eq!(k.process_maps(&p), k.process_maps(&peer));
+        assert_eq!(k.proc_maps.borrow().len(), 3);
+    }
+
+    #[test]
+    fn proc_mapping_cache_never_freezes_argv_fds_or_credentials_and_retires_dead_vms() {
+        let k = kernel();
+        let mut p = process();
+        p.linux.arguments = vec![b"first".to_vec()];
+        p.linux.argument_pointers = vec![0x1000];
+        p.memory.write(0x1000, b"first\0").unwrap();
+        let before = k.process_info(1, &p);
+        p.memory.write(0x1000, b"other\0").unwrap();
+        let pipe = p.linux.vfs.pipe(0).unwrap();
+        p.linux.vfs.credentials = trames_vfs::Credentials::user(1000, 1000);
+        let after = k.process_info(1, &p);
+        assert_eq!(before.maps, after.maps);
+        assert_eq!(before.arguments, [b"first".to_vec()]);
+        assert_eq!(after.arguments, [b"other".to_vec()]);
+        assert_eq!(after.credentials.euid, 1000);
+        assert_eq!(after.fds.len(), before.fds.len() + 2);
+        assert!(after.fds.iter().any(|fd| fd.fd == pipe[0]));
+        let mut old = p.fork();
+        old.vm_id = 2;
+        k.process_maps(&old);
+        assert_eq!(k.proc_maps.borrow().len(), 2);
+        k.refresh_proc(1, &mut p);
+        assert_eq!(k.proc_maps.borrow().len(), 1);
+    }
+
     #[test]
     fn native_workers_execute_shared_atomic_guest_loops_and_account_the_budget() {
         let mut p = process();
@@ -4179,6 +4392,43 @@ mod tests {
         assert!(k.parallel_timeout() <= Duration::from_millis(1));
     }
     #[test]
+    fn socket_timeout_wakes_continuous_peers_but_not_stopped_or_runnable_tasks() {
+        let mut k = spinning_peers();
+        k.processes.get_mut(&1).unwrap().socket_deadline = Some(Instant::now());
+        assert_eq!(k.parallel_timeout(), Duration::from_millis(10));
+        k.processes.get_mut(&1).unwrap().state = State::Blocked(212, [0; 6]);
+        assert_eq!(k.parallel_timeout(), Duration::ZERO);
+        k.processes.get_mut(&1).unwrap().state = State::Stopped;
+        assert_eq!(k.parallel_timeout(), Duration::from_millis(10));
+    }
+    #[test]
+    fn prctl_seccomp_modes_translate_to_syscall_operations() {
+        let mut k = kernel();
+        let mut p = process();
+        let mut io = trames_linux::CapturedOutput::default();
+        assert_eq!(
+            k.syscall(1, &mut p, 167, [22, 0, 0, 0, 0, 0], &mut io),
+            Err(Errno(22))
+        );
+        assert_eq!(
+            k.syscall(1, &mut p, 167, [22, 1, 0xffff, 0, 0, 0], &mut io),
+            Ok(Some(0))
+        );
+        assert_eq!(p.seccomp.mode(), 1);
+        let mut p = process();
+        p.memory.write(0x1000, &[1, 0, 0, 0, 0, 0, 0, 0]).unwrap();
+        write_u64(&mut p.memory, 0x1008, 0x1100).unwrap();
+        p.memory
+            .write(0x1100, &[6, 0, 0, 0, 0, 0, 0xff, 0x7f])
+            .unwrap();
+        assert_eq!(
+            k.syscall(1, &mut p, 167, [22, 2, 0x1000, 0, 0, 0], &mut io),
+            Ok(Some(0))
+        );
+        assert_eq!(p.seccomp.mode(), 2);
+        assert_eq!(p.seccomp.count(), 1);
+    }
+    #[test]
     fn gpu_wait_defers_caught_handlers_but_preserves_stop_continue() {
         let mut p = process();
         let mut k = kernel();
@@ -4297,6 +4547,28 @@ mod tests {
         }
     }
 
+    #[test]
+    fn splice_blocks_on_backpressure_and_respects_output_nonblocking() {
+        let mut k = kernel();
+        let mut p = process();
+        let mut io = trames_linux::CapturedOutput::default();
+        let [r, w] = p.linux.vfs.pipe(0).unwrap();
+        let [r2, w2] = p.linux.vfs.pipe(0).unwrap();
+        p.linux.vfs.write(w, b"abc").unwrap();
+        while p.linux.vfs.write(w2, &[0; 4096]).is_ok() {}
+        let a = [r as u64, 0, w2 as u64, 0, 3, 0];
+        k.call(1, &mut p, 76, a, &mut io);
+        assert!(matches!(p.state, State::Blocked(76, _)));
+        p.linux.vfs.set_status_flags(w2, 1 | O_NONBLOCK).unwrap();
+        k.call(1, &mut p, 76, a, &mut io);
+        assert!(matches!(p.state, State::Ready));
+        assert_eq!(p.cpu.x(0), error(Errno(11)));
+        p.linux.vfs.read(r2, 3).unwrap();
+        k.call(1, &mut p, 76, a, &mut io);
+        assert!(matches!(p.state, State::Ready));
+        assert_eq!(p.cpu.x(0), 3);
+        assert_eq!(p.linux.vfs.read(r, 3), Err(Errno(11)));
+    }
     #[test]
     fn close_range_unshare_detaches_only_callers_shared_table() {
         let mut k = kernel();

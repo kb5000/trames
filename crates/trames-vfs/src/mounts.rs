@@ -25,6 +25,7 @@ pub(super) enum Kind {
     Cgroup,
     Nsfs,
     Mqueue,
+    Overlay,
 }
 #[derive(Clone)]
 pub(super) struct Attachment {
@@ -64,6 +65,13 @@ pub(super) struct Mount {
     pub parent: RefCell<Option<Attachment>>,
 }
 impl Mount {
+    pub(super) fn device(&self) -> u64 {
+        self.fs
+            .borrow()
+            .overlay
+            .as_ref()
+            .map_or_else(|| self.root.borrow().device, |o| o.device)
+    }
     pub fn readonly(&self) -> bool {
         self.flags.get() & MS_RDONLY != 0
     }
@@ -477,7 +485,7 @@ impl Vfs {
             return false;
         }
         match path.mount().map(|m| m.kind) {
-            Some(Kind::Tmpfs | Kind::Cgroup | Kind::Nsfs | Kind::Mqueue) => false,
+            Some(Kind::Tmpfs | Kind::Cgroup | Kind::Nsfs | Kind::Mqueue | Kind::Overlay) => false,
             Some(Kind::Root) => {
                 let p = path.key();
                 !p.starts_with(b"/proc/")
@@ -524,7 +532,7 @@ impl Vfs {
 impl Vfs {
     // A proc FD magic link is a retained mount/inode capability. Its display
     // label may have been renamed or replaced and must not select the target.
-    fn mount_location(&self, path: &[u8], follow: bool) -> Result<ResolvedPath> {
+    pub(super) fn mount_location(&self, path: &[u8], follow: bool) -> Result<ResolvedPath> {
         let (path, magic) = self.resolve_entry(AT_FDCWD, path, follow, true)?;
         match magic {
             Some((node, _, mount)) => self.location(&node, &mount),
@@ -591,13 +599,26 @@ impl Vfs {
             if parent.devpts.is_some() && data.is_some_and(|d| !d.is_empty()) {
                 return Err(Errno(95));
             }
-            if flags & !(REMOUNT | BIND | ATTRS) != 0 {
+            // Linux accepts MS_REC here but MS_REMOUNT|MS_BIND updates only
+            // this mount. Recursive attribute changes require mount_setattr.
+            let ignored = if flags & BIND != 0 { REC } else { 0 };
+            if flags & !(REMOUNT | BIND | ATTRS | ignored) != 0 {
                 return Err(Errno(95));
             }
             if !self.is_mount_root(&target) {
                 return Err(Errno(22));
             }
             if parent.kind == Kind::Sysfs && flags & MS_RDONLY == 0 {
+                return Err(Errno(30));
+            }
+            if flags & MS_RDONLY == 0
+                && parent
+                    .fs
+                    .borrow()
+                    .overlay
+                    .as_ref()
+                    .is_some_and(|o| !o.has_upper())
+            {
                 return Err(Errno(30));
             }
             if flags & MS_RDONLY != 0 && parent.writers.get() != 0 {
@@ -612,7 +633,7 @@ impl Vfs {
         if flags & REC != 0 && flags & BIND == 0 {
             return Err(Errno(22));
         }
-        let ns = self.mounts.as_ref().ok_or(Errno(22))?;
+        let ns = self.mounts.as_ref().ok_or(Errno(22))?.clone();
         let mut additions = Vec::new();
         let mut devpts = None;
         let mut namespace = None;
@@ -645,6 +666,7 @@ impl Vfs {
                 seals: None,
             }));
             let fs = Rc::new(RefCell::new(Filesystem {
+                overlay: None,
                 shared_budget: trames_shared::SharedBudget::new(memfd::MEMFD_BYTES as usize),
                 paths: BTreeMap::from([(b"/".to_vec(), root.clone())]),
                 inodes: vec![Rc::downgrade(&root)],
@@ -699,11 +721,23 @@ impl Vfs {
                 return Err(Errno(20));
             }
             match kind.ok_or(Errno(22))? {
-                b"mqueue" if self.pseudo.borrow().mqueue.is_some() => {
+                b"overlay" => {
+                    let (fs, readonly) =
+                        self.overlay_mount(data.ok_or(Errno(22))?, flags & MS_RDONLY != 0)?;
+                    let root = fs.borrow().paths[b"/".as_slice()].clone();
+                    (
+                        fs,
+                        root,
+                        b"/".to_vec(),
+                        Kind::Overlay,
+                        (flags & ATTRS) | if readonly { MS_RDONLY } else { 0 },
+                    )
+                }
+                b"mqueue" if self.ipc_namespace.mqueue.borrow().is_some() => {
                     if data.is_some_and(|d| !d.is_empty()) {
                         return Err(Errno(95));
                     }
-                    let fs = self.pseudo.borrow().mqueue.as_ref().unwrap().clone();
+                    let fs = self.ipc_namespace.mqueue.borrow().as_ref().unwrap().clone();
                     let root = fs.borrow().paths[b"/".as_slice()].clone();
                     (fs, root, b"/".to_vec(), Kind::Mqueue, flags & ATTRS)
                 }
@@ -734,6 +768,7 @@ impl Vfs {
                         seals: None,
                     }));
                     let fs = Rc::new(RefCell::new(Filesystem {
+                        overlay: None,
                         shared_budget: trames_shared::SharedBudget::new(
                             memfd::MEMFD_BYTES as usize,
                         ),
@@ -750,7 +785,7 @@ impl Vfs {
                         volume: None,
                     }));
                     if mqueue {
-                        self.pseudo.borrow_mut().mqueue = Some(fs.clone());
+                        *self.ipc_namespace.mqueue.borrow_mut() = Some(fs.clone());
                     }
                     (
                         fs,
@@ -765,8 +800,19 @@ impl Vfs {
                         return Err(Errno(95));
                     }
                     let fs = self.cgroups.borrow().fs.clone();
-                    let root = fs.borrow().paths[b"/".as_slice()].clone();
-                    (fs, root, b"/".to_vec(), Kind::Cgroup, flags & ATTRS)
+                    let (root, key) = if let Some(root) = &self.cgroup_namespace.root {
+                        let key = fs
+                            .borrow()
+                            .paths
+                            .iter()
+                            .find(|(_, n)| Rc::ptr_eq(n, root))
+                            .map(|(p, _)| p.clone())
+                            .ok_or(Errno(2))?;
+                        (root.clone(), key)
+                    } else {
+                        (fs.borrow().paths[b"/".as_slice()].clone(), b"/".to_vec())
+                    };
+                    (fs, root, key, Kind::Cgroup, flags & ATTRS)
                 }
                 b"devpts" => {
                     let pts = pty::Devpts::new(new_mount_id()?, data.unwrap_or_default())?;
@@ -1112,6 +1158,7 @@ impl Mount {
             Kind::Cgroup => "cgroup2",
             Kind::Nsfs => "nsfs",
             Kind::Mqueue => "mqueue",
+            Kind::Overlay => "overlay",
         }
     }
     fn options(&self) -> String {
@@ -1174,6 +1221,12 @@ pub(super) fn table_text(snapshot: &NamespaceSnapshot, info: bool) -> Vec<u8> {
             m.fs_name()
         };
         let flags = m.options();
+        let super_options =
+            m.fs.borrow()
+                .overlay
+                .as_ref()
+                .map(|o| format!(",{}", escape_mount_field(o.options())))
+                .unwrap_or_default();
         if info {
             let root = match m.kind {
                 Kind::Proc | Kind::Sysfs | Kind::Devpts => m
@@ -1184,10 +1237,10 @@ pub(super) fn table_text(snapshot: &NamespaceSnapshot, info: bool) -> Vec<u8> {
                 _ => filesystem_root,
             };
             let root = if root.is_empty() { b"/".to_vec() } else { root };
-            let dev = m.root.borrow().device;
+            let dev = m.device();
             let parent = m.parent.borrow().as_ref().map_or(m.id, |a| a.parent.id);
             text.push_str(&format!(
-                "{} {} {}:{} {} {} {} - {} {} {}\n",
+                "{} {} {}:{} {} {} {} - {} {} {}{}\n",
                 m.id,
                 parent,
                 (dev >> 8) & 0xfff,
@@ -1197,15 +1250,17 @@ pub(super) fn table_text(snapshot: &NamespaceSnapshot, info: bool) -> Vec<u8> {
                 flags,
                 m.fs_name(),
                 source,
-                if m.readonly() { "ro" } else { "rw" }
+                if m.readonly() { "ro" } else { "rw" },
+                super_options,
             ));
         } else {
             text.push_str(&format!(
-                "{} {} {} {} 0 0\n",
+                "{} {} {} {}{} 0 0\n",
                 source,
                 escape_mount_field(&target),
                 m.fs_name(),
-                flags
+                flags,
+                super_options,
             ));
         }
     }
@@ -1226,9 +1281,10 @@ impl Vfs {
             Kind::Cgroup => 0x63677270,
             Kind::Nsfs => 0x6e736673,
             Kind::Mqueue => 0x19800202,
+            Kind::Overlay => 0x794c7630,
         };
         let capacity = Self::filesystem_capacity(&m.fs.borrow());
-        if matches!(m.kind, Kind::Root | Kind::Tmpfs) {
+        if matches!(m.kind, Kind::Root | Kind::Tmpfs | Kind::Overlay) {
             for (offset, value) in [
                 (16, capacity.budget_bytes / 4096),
                 (24, capacity.available_bytes / 4096),
@@ -1245,7 +1301,7 @@ impl Vfs {
         for (offset, value) in [
             (0, magic),
             (8, 4096),
-            (56, m.root.borrow().device),
+            (56, m.device()),
             (64, 255),
             (72, 4096),
             (
@@ -1392,6 +1448,33 @@ mod tests {
         assert_eq!(read(&mut v, b"/file"), b"shared");
     }
     #[test]
+    fn bind_remount_accepts_rec_without_changing_nested_or_source_mounts() {
+        let mut v = setup();
+        v.mkdir_at(AT_FDCWD, b"/src/sub", 0o755).unwrap();
+        v.mount(None, b"/src/sub", Some(b"tmpfs"), 0, None).unwrap();
+        v.mount(Some(b"/src"), b"/dst", None, 4096 | 16384, None)
+            .unwrap();
+        v.mount(
+            None,
+            b"/dst",
+            None,
+            32 | 4096 | 16384 | 1 | MS_RELATIME,
+            None,
+        )
+        .unwrap();
+        assert_eq!(v.open_at(AT_FDCWD, b"/dst/file", 1, 0), Err(Errno(30)));
+        // MS_REC does not make the nested tmpfs read-only on a bind remount.
+        let child = v.open_at(AT_FDCWD, b"/dst/sub/new", 0x41, 0o600).unwrap();
+        v.close(child).unwrap();
+        let source = v.open_at(AT_FDCWD, b"/src/file", 1, 0).unwrap();
+        v.close(source).unwrap();
+        // Clearing read-only is likewise confined to this mount.
+        v.mount(None, b"/dst", None, 32 | 4096 | 16384 | MS_RELATIME, None)
+            .unwrap();
+        let reopened = v.open_at(AT_FDCWD, b"/dst/file", 1, 0).unwrap();
+        v.close(reopened).unwrap();
+    }
+    #[test]
     fn shared_mapping_pins_mount_and_blocks_readonly_remount() {
         let mut v = setup();
         bind(&mut v, b"/src", b"/dst");
@@ -1419,7 +1502,7 @@ impl Vfs {
         registry.extend(mounts.iter().map(Rc::downgrade));
         Ok(())
     }
-    fn reap_detached_mounts(&self) {
+    pub(super) fn reap_detached_mounts(&self) {
         // The retained tree owns one reference per mount. Attachment edges
         // own their parents; anything else is an fd/cwd/root/exec/mapping pin.
         self.detached_mounts.borrow_mut().retain(|tree| {

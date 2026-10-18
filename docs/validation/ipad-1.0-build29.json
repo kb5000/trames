@@ -1,0 +1,90 @@
+{
+  "version": "1.0.0",
+  "build": 29,
+  "status": "verified-package",
+  "source_commit": "1a3bcb6a60bd46af11bbdc49113fb34e178d031a",
+  "runtime_source_commit": "1a3bcb6a60bd46af11bbdc49113fb34e178d031a",
+  "apple_run": 39134234642,
+  "linux_scope_run": 39134234663,
+  "purpose": "Owner-requested hotfix test IPA for build28 host allocation abort and route endian; no formal release or merge.",
+  "features": [
+    "Separate physical/CPU MMU ownership, reclaim retired/empty CPU views",
+    "1MiB sparse windows, total optional MMU VA bounded to1GiB with checked fallback",
+    "Correct proc/net/route native/bridge address and mask endian"
+  ],
+  "validation_reuse": {
+    "memory_va": {
+      "sha": "0c43e34243c15a391f822ebc410b82039132156f",
+      "apple": 39130864515,
+      "patch_sha256": "79cd385c67cc71ec6b5b0a057cbff68583424cb8b3309a4b0546b56123c58193",
+      "linux_delta_record": "docs/validation/mmu-va-pressure.json"
+    },
+    "frontend": {
+      "sha": "aa4528166c8d0cdb04f3fe540730d9af63ed7f07",
+      "run": 39062598012
+    },
+    "guest": {
+      "sha": "534e223e284df48f207500e84ab4cd05dd3d3958",
+      "run": 39015795319
+    }
+  },
+  "device_execution_tested": false,
+  "unrelated_test_suites_rerun": false,
+  "scope": "Affected Apple ARM64/16KiB memory and proc-route tests; fresh signed Docker startup/info/shutdown at4GiB total/per-process and8CPU; rebuild current optimized ARM64 device FFI/app. Reuse unchanged frontend/guest/unrelated modules. Physical iPad retest remains pending.",
+  "inspection": {
+    "version": "1.0.0",
+    "build": 29,
+    "bundle_id": "org.trames.Trames",
+    "platform": "iPhoneOS arm64",
+    "signed": false,
+    "bytes": 10961206,
+    "sha256": "738ab119058294936a1f8f5c7a4eb6ad87badbb9221a391df2496dc794c3819b",
+    "source_commit": "1a3bcb6a60bd46af11bbdc49113fb34e178d031a",
+    "runtime_source_commit": "1a3bcb6a60bd46af11bbdc49113fb34e178d031a",
+    "apple_run": 39134234642,
+    "main_binary_sha256": "6e494e8b40422c34f31d9f55fd0b947565aeca0c7d78504828fd579aaa281e71",
+    "file_provider_binary_sha256": "d9b54880744c3dd9d44ff0985dcb455d6cde8b39d6a8afda461e9af5fdb47baa",
+    "file_provider_group": "group.org.trames.Trames",
+    "guest_library_sha256": {
+      "GuestMusl": "885b308b75e36bb402b311fba1d3f1284e6dd8d3a0bfbf88686bff1b629f9b23",
+      "GuestVulkan": "02b28eae49783dd1f8fdcbe7341f9cb0325d1b2593f713726e571a7704774c26"
+    },
+    "debug_wayland_fixtures_absent": true,
+    "native_coremark_absent": true,
+    "current_device_execution_tested": false
+  },
+  "artifact": {
+    "id": 12138583880,
+    "name": "Trames-unsigned-sideload",
+    "bytes": 10886676,
+    "zip_sha256": "3f647824de306cd8530e8cb5c0f6f10fe7ab9bc0128a5cf717aba0225b4c23aa",
+    "url": "https://github.com/kb5000/trames/actions/runs/39134234642/artifacts/12138583880",
+    "expires_at": "2026-11-01T14:10:53Z"
+  },
+  "results": {
+    "apple_build": "success",
+    "linux_scope": "success; prior local delta and unchanged module results reused",
+    "apple_memory_lib": 65,
+    "apple_memory_integration": 4,
+    "apple_proc_route": 1,
+    "apple_original_docker_startup": "passed; ARM64 Darwin16384-byte pages,4GiB/4GiB,8CPU, fresh18 signed APKs, Docker info overlay2/8/4294967296 and normal exit",
+    "device_release_build": "fresh aarch64-apple-ios optimized FFI and Xcode Release app passed",
+    "artifact_and_ipa_crc_sha256": "passed",
+    "both_executables_iphoneos_arm64": "passed",
+    "bundle_versions_and_app_group": "passed",
+    "reused_guest_elf_and_manifest_hashes": "passed; exact build28 guest hashes",
+    "debug_samples_absent": "passed"
+  },
+  "source_closure": {
+    "repository": "https://github.com/kb5000/trames/tree/1a3bcb6a60bd46af11bbdc49113fb34e178d031a",
+    "ci_checkout": "Synthetic merge of1a3bcb6 into unchanged ancestor main02bbd148; same source tree",
+    "guest_musl_source_artifact": 12095225586,
+    "guest_vulkan_native_source_artifact": 12095066135,
+    "guest_source_run": 39015795319
+  },
+  "related_records": [
+    "mmu-va-pressure.json",
+    "proc-route-endian.md",
+    "ipad-1.0-build28.json"
+  ]
+}

@@ -1,23 +1,25 @@
 {
-  "base_sha": "aa4528166c8d0cdb04f3fe540730d9af63ed7f07",
-  "reuse_guest_run": 39015795319,
-  "native_reuse": {
-    "sha": "0bca0f90f8f22221c455aed789712bb4c13aad2a",
-    "apple_run": 39060385817,
-    "linux_run": 39061233876
+  "base_sha": "42a6864698e23e6833ab17ca5415541f5fc4462a",
+  "native_scope": "device-metadata",
+  "device_build": {
+    "frontend": {
+      "sha": "aa4528166c8d0cdb04f3fe540730d9af63ed7f07",
+      "run": 39062598012
+    },
+    "guest": {
+      "sha": "534e223e284df48f207500e84ab4cd05dd3d3958",
+      "run": 39015795319
+    },
+    "metadata_repackage": {
+      "sha": "d1d0185073230919496567223520594f1f83df7d",
+      "run": 39147131590
+    }
   },
-  "native_scope": "host-terminals",
-  "critical_test": "TramesTests/WorkspaceInteractionTests/testMultipleAlpineTerminalsShareGuestAndSurviveClosingFirstWindow",
-  "ui_targets": [],
-  "repackage": {
-    "sha": "aa4528166c8d0cdb04f3fe540730d9af63ed7f07",
-    "run": 39062598012
-  },
+  "reason": "Verified release record [skip ci]. Retain Apple478 and Linux477 + successful focused cross-check; after merge only reuse/package exact current app, no repeated passed suites.",
   "changed_file_sha256": {
-    "README.md": "1c9488dc2377742f0f77cfaead26292819b92a681ee3a165ab65cbf8fa04ee4f",
-    "docs/validation/release-1.0.json": "69dad85d56c84f7cbd40ed5f2576e8e716b0f1c3002efb74c6cdf6d2052ee866",
-    "docs/validation/release-1.0.md": "87ae51031da3d13b152e481880d0145ca74e7084a3fd4efbc52f239fbc60ac24",
-    "scripts/publish-ios-release-1.0.py": "5e42bc101c453caa0484eadcfa842e70448dea73e1d25c0c96ef362e12646b08"
-  },
-  "reason": "1.0.0 build 26 has passed the actual iPad workspace/PT Y/Bridge acceptance and original Alpine multiple-terminal integration. This commit changes release records/README/publication verification only. Reuse all successful native/guest/simulator results and repackage the byte-identical tested device bundle on main; no recompilation or repeated tests. User explicitly authorized direct 1.0.0 publication after completion."
+    "README.md": "9ffa094c800c5fffe4babee045bdf8f8a695b81d1f6cf2e8ae17616bf571f9a7",
+    "docs/validation/release-1.1.json": "fa7b85cfa8378c30e954a3c013c2417ed31a1a9ea725b3fdf24fd490e4ff5577",
+    "docs/validation/release-1.1.md": "a3f3a92f755a346618e47365e4b7d21b7c77848d7adab979c9aa0673cd529f2c",
+    "scripts/ios-ci-scope.py": "875e9036a40b8ebb3974a97f274a138668bebcdd27a4c052ef1b170de00205fc"
+  }
 }

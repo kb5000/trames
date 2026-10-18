@@ -145,3 +145,14 @@ open-unlinked files retain the private object and store lock until their final
 reference closes. The number of closed stored files does not consume host FDs.
 Explicit native reset checks the lock before deleting an environment; it is not
 a guest syscall or an automatic response to unsupported metadata.
+
+
+## Guest overlay layers
+
+The Docker storage batch adds [guest overlayfs](overlayfs.md). Merged views share
+lower file data; writable opens and metadata modifications copy up into the
+existing private upper store. Whiteouts and opaque-directory attributes survive
+reopening the same store. The two supported `trusted.overlay.*` attributes extend
+the existing bounded v4 attribute namespace without changing the manifest layout.
+No host overlay mount is used. Layer contents and upper objects use existing
+capacity accounting, inode lifetimes, fsync and manifest commits.

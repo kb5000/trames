@@ -2,7 +2,7 @@
 //! A bounded IP fabric. Only the trusted gateway opens native sockets.
 use crate::dns;
 mod gateway;
-mod packet;
+pub(crate) mod packet;
 mod sockets;
 use super::native::{
     self, NetError, NetworkMode, Received, MAX_BUFFER, MAX_SOCKETS, MAX_TRANSFER, MSG_DONTWAIT,
@@ -71,10 +71,14 @@ struct Node {
     iface: Interface,
     sockets: SocketSet<'static>,
     port: Port,
+    filter_rx: Port,
     registry: Vec<Weak<Socket>>,
     detached: Vec<(SocketHandle, Instant)>,
     resets: Vec<(Weak<Socket>, Connection)>,
     links: [LinkStats; 2],
+    configuration_pending: bool,
+    configuration_revision: u64,
+    configuration_lo: bool,
 }
 struct Namespace {
     fabric: Fabric,
@@ -83,6 +87,9 @@ struct Namespace {
     mode: NetworkMode,
     live: Cell<usize>,
     finished: Cell<bool>,
+    isolated: Cell<bool>,
+    loopback_up: Rc<Cell<bool>>,
+    routing: Option<crate::netdev::View>,
 }
 #[derive(Clone)]
 pub(super) struct Network(Rc<Namespace>);
@@ -114,6 +121,7 @@ struct State {
     icmp_pending: Option<(Vec<u8>, IpAddr)>,
     hop_limit: u8,
     receive_hops: bool,
+    receive_packet_info: bool,
     last_hop: Option<u8>,
     broadcast: bool,
     icmp6_filter: [u8; 32],
@@ -194,10 +202,14 @@ fn make_node(id: u8, now: smoltcp::time::Instant) -> Result<Node> {
         iface,
         sockets: SocketSet::new(Vec::new()),
         port,
+        filter_rx: Port::default(),
         registry: Vec::new(),
         detached: Vec::new(),
         resets: Vec::new(),
         links: [LinkStats::default(); 2],
+        configuration_pending: false,
+        configuration_revision: u64::MAX,
+        configuration_lo: false,
     })
 }
 impl Fabric {
@@ -276,8 +288,50 @@ impl Fabric {
             mode,
             live: Cell::new(0),
             finished: Cell::new(false),
+            isolated: Cell::new(false),
+            loopback_up: Rc::new(Cell::new(true)),
+            routing: None,
         });
         node.owner = Rc::downgrade(&ns);
+        i.nodes.insert(key, node);
+        Ok(Network(ns))
+    }
+    pub(super) fn dynamic_environment(
+        &self,
+        mode: NetworkMode,
+        routing: crate::netdev::View,
+        loopback_up: Rc<Cell<bool>>,
+    ) -> Result<Network> {
+        let mut i = self.0.borrow_mut();
+        if i.nodes.len() >= 128 {
+            return Err(NetError(28));
+        }
+        let key = i.next_node;
+        i.next_node = i.next_node.checked_add(1).ok_or(NetError(28))?;
+        let mut node = make_node(2, i.now())?;
+        let ns = Rc::new(Namespace {
+            fabric: self.clone(),
+            key,
+            info: NetworkInfo {
+                id: 2,
+                ipv4: Ipv4Addr::UNSPECIFIED,
+                ipv6: Ipv6Addr::UNSPECIFIED,
+                gateway4: Ipv4Addr::UNSPECIFIED,
+                gateway6: Ipv6Addr::UNSPECIFIED,
+                mtu: 1500,
+                prefix4: 0,
+                prefix6: 0,
+            },
+            mode,
+            live: Cell::new(0),
+            finished: Cell::new(false),
+            isolated: Cell::new(true),
+            loopback_up,
+            routing: Some(routing),
+        });
+        node.owner = Rc::downgrade(&ns);
+        node.iface.set_any_ip(true);
+        node.configure_dynamic(&mut 0);
         i.nodes.insert(key, node);
         Ok(Network(ns))
     }
@@ -331,7 +385,9 @@ impl Inner {
     fn tick(&mut self) {
         let now = self.now();
         let time = Instant::now();
+        let mut spare = MAX_HANDLES.saturating_sub(self.handles());
         for node in self.nodes.values_mut() {
+            node.configure_dynamic(&mut spare);
             node.registry.retain(|s| s.strong_count() != 0);
             for (_, socket) in node.sockets.iter_mut() {
                 if let smoltcp::socket::Socket::Tcp(t) = socket {
@@ -399,26 +455,132 @@ impl Inner {
                     }
                     self.stats.corrupted += 1;
                 }
-                let Some(h) = packet::header(&p) else {
+                let Some(_h) = packet::header(&p) else {
                     self.stats.dropped += 1;
                     if let Some(n) = self.nodes.get_mut(&source) {
                         n.links[usize::from(!lo)].tx_dropped += 1;
                     }
                     continue;
                 };
-                let dst = h.tuple.destination.ip();
-                let target = if dst.is_loopback() {
-                    if source == 0 {
-                        None
-                    } else {
-                        Some(source)
+                if source == 0 {
+                    let rx = &mut self.gateway.node.filter_rx;
+                    if !rx.receive_packet(p) {
+                        self.stats.dropped += 1;
+                        continue;
                     }
-                } else {
-                    self.nodes
-                        .iter()
-                        .find(|(_, n)| dst == IpAddr::V4(v4(n.id)) || dst == IpAddr::V6(v6(n.id)))
-                        .map(|(&key, _)| key)
+                    let Some(complete) = rx.rx.pop_front() else {
+                        continue;
+                    };
+                    p = complete;
+                }
+                let Some(h) = packet::header(&p) else {
+                    continue;
                 };
+                let routed_reply = if source == 0 {
+                    self.gateway.reply_route(&p)
+                } else {
+                    None
+                };
+                let dynamic = routed_reply.as_ref().map(|r| r.0.clone()).or_else(|| {
+                    self.nodes
+                        .get(&source)
+                        .and_then(|n| n.owner.upgrade())
+                        .and_then(|ns| ns.routing.clone())
+                });
+                let mut delivery = None;
+                let target = if let Some(view) = &dynamic {
+                    // Reassemble before L4 matching/NAT. A bounded IP queue is
+                    // also used for unfragmented packets without copying them.
+                    if source != 0 {
+                        let rx = &mut self.nodes.get_mut(&source).unwrap().filter_rx;
+                        if !rx.receive_packet(p) {
+                            self.stats.dropped += 1;
+                            continue;
+                        }
+                        let Some(complete) = rx.rx.pop_front() else {
+                            continue;
+                        };
+                        p = complete;
+                    }
+                    if !packet::valid_transport(&p) {
+                        self.stats.dropped += 1;
+                        continue;
+                    }
+                    let original = crate::conntrack::key(&p);
+                    let incoming = routed_reply.as_ref().map(|r| r.1);
+                    delivery = view
+                        .graph
+                        .borrow()
+                        .route_packet(view.namespace, incoming, &mut p);
+                    let Some(route) = delivery else {
+                        self.stats.dropped += 1;
+                        continue;
+                    };
+                    if route.external {
+                        let Some(wire) = crate::conntrack::key(&p) else {
+                            self.stats.dropped += 1;
+                            continue;
+                        };
+                        let mut gateway_view = view.clone();
+                        gateway_view.namespace = route.namespace;
+                        let allowed = self
+                            .nodes
+                            .get(&source)
+                            .and_then(|n| n.owner.upgrade())
+                            .is_some_and(|ns| {
+                                matches!(ns.mode, NetworkMode::Full | NetworkMode::Outbound)
+                            });
+                        let ok = allowed
+                            && self.gateway.route_flow(
+                                wire,
+                                original.unwrap(),
+                                source,
+                                gateway_view,
+                                route.input,
+                            );
+                        let h = packet::header(&p).unwrap();
+                        if !ok
+                            || !self.gateway.ingress(
+                                source,
+                                p,
+                                &h,
+                                &self.nodes,
+                                now,
+                                self.handles() < MAX_HANDLES,
+                            )
+                        {
+                            self.stats.dropped += 1;
+                        }
+                        continue;
+                    }
+                    self.nodes.iter().find_map(|(&key, n)| {
+                        n.owner.upgrade().and_then(|ns| {
+                            ns.routing.as_ref().and_then(|r| {
+                                (r.namespace == route.namespace
+                                    && Rc::ptr_eq(&r.graph, &view.graph))
+                                .then_some(key)
+                            })
+                        })
+                    })
+                } else {
+                    let dst = h.tuple.destination.ip();
+                    if dst.is_loopback() {
+                        (source != 0).then_some(source)
+                    } else {
+                        self.nodes
+                            .iter()
+                            .find(|(_, n)| {
+                                n.owner.upgrade().is_some_and(|ns| ns.routing.is_none())
+                                    && (dst == IpAddr::V4(v4(n.id)) || dst == IpAddr::V6(v6(n.id)))
+                            })
+                            .map(|(&key, _)| key)
+                    }
+                };
+                let Some(h) = packet::header(&p) else {
+                    self.stats.dropped += 1;
+                    continue;
+                };
+                let dst = h.tuple.destination.ip();
                 if let Some(key) = target {
                     let permitted = source == key
                         || source == 0
@@ -462,11 +624,18 @@ impl Inner {
 
                     let enabled = node.owner.upgrade().is_some_and(|ns| {
                         ns.mode != NetworkMode::Off
+                            && (!lo || ns.loopback_up.get())
                             && (source == key
                                 || matches!(ns.mode, NetworkMode::Outbound | NetworkMode::Full))
                     });
                     let size = p.len() as u64;
-                    if !permitted || !enabled || !node.port.receive_packet(p) {
+                    let dropped = !permitted || !enabled || !node.port.receive_packet(p);
+                    if let (Some(view), Some(path)) = (&dynamic, delivery) {
+                        let mut graph = view.graph.borrow_mut();
+                        graph.account(view.namespace, path.output, size as usize, true, dropped);
+                        graph.account(path.namespace, path.input, size as usize, false, dropped);
+                    }
+                    if dropped {
                         node.links[usize::from(!lo)].rx_dropped += 1;
                         self.stats.dropped += 1;
                     } else {
@@ -475,6 +644,7 @@ impl Inner {
                         s.rx_bytes += size;
                     }
                 } else if source != 0
+                    && dynamic.is_none()
                     && (!private_ip(dst) || dst == IpAddr::V4(v4(1)) || dst == IpAddr::V6(v6(1)))
                 {
                     if !self.gateway.ingress(
@@ -531,6 +701,151 @@ impl Inner {
         }
     }
 }
+impl Node {
+    fn configure_dynamic(&mut self, spare: &mut usize) {
+        let Some(owner) = self.owner.upgrade() else {
+            return;
+        };
+        let Some(view) = &owner.routing else { return };
+        let revision = view.graph.borrow().revision();
+        if !self.configuration_pending
+            && self.configuration_revision == revision
+            && self.configuration_lo == owner.loopback_up.get()
+        {
+            return;
+        }
+        self.configuration_revision = revision;
+        self.configuration_lo = owner.loopback_up.get();
+        let addresses = view.addresses(true);
+        let old = self.iface.ip_addrs();
+        if !self.configuration_pending
+            && old.len() == addresses.len()
+            && old
+                .iter()
+                .zip(&addresses)
+                .all(|(old, new)| old.address() == ip(new.ip) && old.prefix_len() == new.prefix)
+        {
+            return;
+        }
+        self.configuration_pending = false;
+        self.iface.update_ip_addrs(|out| {
+            out.clear();
+            for a in &addresses {
+                out.push(IpCidr::new(ip(a.ip), a.prefix))
+                    .expect("topology address budget");
+            }
+        });
+        self.iface.routes_mut().remove_default_ipv4_route();
+        self.iface.routes_mut().remove_default_ipv6_route();
+        // Actual egress selection is performed by the topology. Give smoltcp
+        // an on-link next hop for off-link datagrams; this never grants access
+        // through an absent guest route or between disconnected bridges.
+        if let Some(a) = addresses.iter().find_map(|a| {
+            if let IpAddr::V4(a) = a.ip {
+                Some(a)
+            } else {
+                None
+            }
+        }) {
+            self.iface.routes_mut().add_default_ipv4_route(a).unwrap();
+        }
+        if let Some(a) = addresses.iter().find_map(|a| {
+            if let IpAddr::V6(a) = a.ip {
+                Some(a)
+            } else {
+                None
+            }
+        }) {
+            self.iface.routes_mut().add_default_ipv6_route(a).unwrap();
+        }
+        // Wildcard listeners/bindings must acquire addresses configured after
+        // bind(). Keep established TCP handles intact during address changes.
+        let all = view.addresses(false);
+        let expected: Vec<_> = all.iter().map(|a| a.ip).collect();
+        for weak in &self.registry {
+            let Some(socket) = weak.upgrade() else {
+                continue;
+            };
+            let mut state = socket.state.borrow_mut();
+            let Some(bound) = state.bound.filter(|a| a.ip().is_unspecified()) else {
+                continue;
+            };
+            if socket.kind != 2 && !(socket.kind == 1 && state.connection == Connection::Listening)
+            {
+                continue;
+            }
+            let ipv4 = socket.family == 2;
+            let dual = socket.family == 10 && !state.v6_only;
+            let desired: Vec<_> = expected
+                .iter()
+                .copied()
+                .filter(|a| a.is_ipv4() == ipv4 || dual)
+                .collect();
+            state.handles.retain(|&h| {
+                let endpoint = if socket.kind == 2 {
+                    self.sockets.get::<udp::Socket>(h).endpoint().addr
+                } else {
+                    self.sockets
+                        .get::<tcp::Socket>(h)
+                        .local_endpoint()
+                        .map(|e| e.addr)
+                };
+                if endpoint.is_some_and(|a| !desired.contains(&addr(a))) {
+                    if socket.kind == 1 && self.sockets.get::<tcp::Socket>(h).is_active() {
+                        true
+                    } else {
+                        self.sockets.remove(h);
+                        *spare += 1;
+                        false
+                    }
+                } else {
+                    true
+                }
+            });
+            for a in &desired {
+                let count = state
+                    .handles
+                    .iter()
+                    .filter(|&&h| {
+                        if socket.kind == 2 {
+                            self.sockets.get::<udp::Socket>(h).endpoint().addr == Some(ip(*a))
+                        } else {
+                            self.sockets
+                                .get::<tcp::Socket>(h)
+                                .local_endpoint()
+                                .is_some_and(|e| e.addr == ip(*a))
+                        }
+                    })
+                    .count();
+                let needed = if socket.kind == 2 { 1 } else { state.backlog };
+                for _ in count..needed {
+                    if *spare == 0 {
+                        self.configuration_pending = true;
+                        break;
+                    }
+                    let ep = SocketAddr::new(*a, bound.port());
+                    let handle = if socket.kind == 2 {
+                        let mut u = udp_socket();
+                        u.set_hop_limit(Some(state.hop_limit));
+                        if u.bind(endpoint(ep)).is_err() {
+                            break;
+                        }
+                        self.sockets.add(u)
+                    } else {
+                        let mut t = tcp_socket();
+                        t.set_hop_limit(Some(state.hop_limit));
+                        if t.listen(endpoint(ep)).is_err() {
+                            break;
+                        }
+                        self.sockets.add(t)
+                    };
+                    *spare -= 1;
+                    state.handles.push(handle);
+                }
+            }
+        }
+    }
+}
 impl Namespace {
     fn finish(&self) {
         if self.finished.replace(true) {
@@ -557,6 +872,12 @@ impl Drop for Namespace {
     }
 }
 impl Network {
+    pub(super) fn mode(&self) -> NetworkMode {
+        self.0.mode
+    }
+    pub(super) fn is_isolated(&self) -> bool {
+        self.0.isolated.get()
+    }
     pub fn links(&self) -> [LinkStats; 2] {
         self.0
             .fabric
@@ -619,7 +940,7 @@ impl Network {
                 blocking_failed: false,
                 read_closed: false,
                 write_closed: false,
-                v6_only: family == 10,
+                v6_only: family == 10 && matches!(kind, 3 | 4),
                 reuse: false,
                 nodelay: false,
                 keepalive: false,
@@ -630,6 +951,7 @@ impl Network {
                 icmp_pending: None,
                 hop_limit: 64,
                 receive_hops: false,
+                receive_packet_info: false,
                 last_hop: None,
                 broadcast: false,
                 icmp6_filter: [0; 32],

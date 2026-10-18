@@ -1,0 +1,130 @@
+{
+  "status": "verified",
+  "base": "02bbd14871f2ec8d0c4ee824d1a2e67ad2ad2b5c",
+  "initial_source": "2c3309cbed2f8acb6abe0b59bdbad657698c3e02",
+  "linux_run": 39088637865,
+  "apple_initial_run": 39088637745,
+  "scope": "Guest Docker isolation foundation; no bridge/NAT/full-Docker or physical iPad claim",
+  "docker_local_1": {
+    "cpus": 1,
+    "exit_code": 0,
+    "checks": {
+      "DAEMON": true,
+      "IMAGE": true,
+      "CREATE": true,
+      "RUN": true,
+      "CLEANUP": true
+    },
+    "start_exit": 7
+  },
+  "packages_sha256": {
+    "containerd-2.1.5-r2.apk": "963e1c79c6439e23afbb085428d6466fa684921bacfc4f39dc0e667b044b7669",
+    "crun-1.23.1-r0.apk": "64c9b516fc7f8cdde7b666db5832fa93952c71545832292fcd9845401ca7bcca",
+    "docker-cli-28.3.3-r5.apk": "8895ae93210cdf47018720928fd703d30f43f62ec452b6a30391d5a6b18a6ae2",
+    "docker-engine-28.3.3-r5.apk": "ea07b9c3e707fa12920e1501d14bf702ee19af56f21634356af4311a02384aad",
+    "runc-1.3.4-r1.apk": "4a6a59757e4559796492417e7cd10c8719b4dd00684e7ce7ea6197d18f1db52a",
+    "tini-static-0.19.0-r3.apk": "b16167b87355ea675d0bbba2dc2ad6bf537edd97e73c4a1a2ed720f23e85c877",
+    "busybox-1.37.0-r20.apk": "9d25af67564c92a4a4c603462efdbcd23019e90b8785f1ebcad640cbb1551c93",
+    "busybox-binsh-1.37.0-r20.apk": "9180dcee3f67ea806fe45361cffab94f8ce7e417d5f373bb0d989e88eb609903",
+    "ca-certificates-20260909-r0.apk": "b281f0245c7998f8d72541e301b259e370eae9491b66881a27380e544cba432b",
+    "iptables-1.8.11-r1.apk": "0a10fe634e3525082a1219487cd044d987ac4a55ed5aa551bf758e81223e1cfb",
+    "libcap2-2.78-r0.apk": "de209aee8b76946849bff6bd97151c6af20889be5a96a2e28f9899255e252e3f",
+    "libcrypto3-3.5.9-r0.apk": "ede2ef7eca3b65a42e902aaf7890f9c5647dca0c55123a817179ad9f3bc6ef24",
+    "libmnl-1.0.5-r2.apk": "213a7e87553bed3d9159b2e74d2627885c259883e61714b357949ca806eb1f8d",
+    "libncursesw-6.5_p20250503-r0.apk": "419b375e8a4345e7172b1f0f3a3c57db61374f5408cdb875d9e860bd4c243aca",
+    "libnftnl-1.2.9-r0.apk": "6912a5d56b31d3365b8dd0d6339bd70a2bfc9e25dab0c387f77174113c43e664",
+    "libseccomp-2.6.1-r0.apk": "ee817c130535b72e5b0a63b211f9d2fbbaa493a319f78e9da5e30359991e5180",
+    "libssl3-3.5.9-r0.apk": "338c9f6154582b4b76455a59f95538bcea8df039c5c72916dd2d8d0d844c9583",
+    "libxtables-1.8.11-r1.apk": "e84f0d6b69d4318f297056d00ccbe433e6c7d163fe6767405e373248c42e3e88",
+    "musl-1.2.5-r12.apk": "ac281d1e7f9e9c447c51e309317b975f48be6edaf3ab91ae73b959cf86703782",
+    "ncurses-terminfo-base-6.5_p20250503-r0.apk": "3d37403e0b5ab9eb0c1ce269444e4a385faec9fe6af452c1c6956806b13d2bd6",
+    "yajl-2.1.0-r9.apk": "34a2fb7671a29f19166d051318c866e60f4687184fe73939b6b08325d11b68a8"
+  },
+  "rootfs_sha256": "821565fa8f3953eefd12497b166b4b50add2f7c57fb312e75862f5867e06fefe",
+  "seccomp_local": {
+    "checks": [
+      {
+        "cpus": 1,
+        "fixture": "seccomp",
+        "exit_code": 0,
+        "stdout": "seccomp: errno, stacking, fork/exec, TRAP siginfo/context/masks, TSYNC and KILL_PROCESS: ok\n"
+      },
+      {
+        "cpus": 4,
+        "fixture": "seccomp",
+        "exit_code": 0,
+        "stdout": "seccomp: errno, stacking, fork/exec, TRAP siginfo/context/masks, TSYNC and KILL_PROCESS: ok\n"
+      }
+    ],
+    "native_seccomp": "seccomp: errno, stacking, fork/exec, TRAP siginfo/context/masks, TSYNC and KILL_PROCESS: ok\n",
+    "network_acceptance_reused": true,
+    "source_sha256": {
+      "tests/fixtures/seccomp.c": "b2cfe3f12b52525bbcf1818b912020367dc2e39436e2eb0583f240b084daff27",
+      "tests/fixtures/network-namespaces.c": "6b7d8b49143787261a72dd04a847ec7e7f335670e5c0818081c5350b3ec49487"
+    },
+    "fixture_sha256": {
+      "seccomp": "a58840d55d0a01dd5079d91bc411dfdc48b12bfd798107d5c57c39d7d1d88a0a",
+      "network-namespaces": "db829cdfc6c8afcdc1d79f20753c87767f52845c0a7f4feaae621c94f394203c",
+      "seccomp-native": "aaef1ad385f92cfc7ad32e8f844fcaee2582538af0529b023490bec81ac58ba1"
+    },
+    "scope": "Guest net/IPC/cgroup namespaces and enforced classic-BPF seccomp. Namespace tests do not claim a privileged host netns oracle, bridge/NAT or a physical iPad."
+  },
+  "apple_initial": {
+    "whole_job": "failure",
+    "core": {
+      "passed": 49,
+      "failed": 0
+    },
+    "linux_library": {
+      "passed": 20,
+      "failed": 1
+    },
+    "failure": "Closed-port oracle had retained a bound non-listening TCP socket; Darwin did not promptly refuse it. Test now closes all reservation references first. Net/VFS, CPU hint and iOS FFI checks remain pending."
+  },
+  "followup": "Native Linux oracle confirms blocked/ignored SIGSYS must make a seccomp TRAP fatal. Added exact TRAP guard plus native/guest cases; normal Docker/network/data paths unchanged. Existing successful library/network/Docker checks will be reused; only affected seccomp, failed Darwin fixture and missing Apple checks run.",
+  "production_sha256": {
+    "crates/trames-core/src/process.rs": "160e0e13b8de4f8b5570288fab47870756c569df9817906b2f11eed17ddb0319",
+    "crates/trames-core/src/process_events.rs": "bf1c2f8b486a0af6afefe6c80e0c284b7e8dbe16485865700a741de50626eb91",
+    "crates/trames-core/src/process_seccomp.rs": "dc7cc34d6daa5e9c663fdf4d5b8d736e0c9981d21003dcfb3db880a39533dbd8",
+    "crates/trames-core/src/process_signals.rs": "ead095a0e7520e801d4d1329563b06755e0dda0a3a39be5acc0f0d0683f83a86",
+    "crates/trames-cpu/src/compatibility.rs": "6a2f865d30b900ec772da5d35224072950d61f7feb4df24af96082741c62ec2f",
+    "crates/trames-cpu/src/extended.rs": "0ec4f221dfdbed6e566ab50c30c5572d1ac6f10233acc2e2e0a4f4ed127c68ba",
+    "crates/trames-linux/src/network.rs": "7e511be7e70b72c789b84fd5165223dc69cb1204679e733fe5af4178a276e725",
+    "crates/trames-linux/src/state.rs": "ebcc37aa1da3e6f0f085e9bed4186f062e446f0fcc851f99622bd9d1e32c4f0d",
+    "crates/trames-net/src/lib.rs": "6c129fd615e4fa928a20049b9a9376520d288d876babf74994aceddbceae43e0",
+    "crates/trames-net/src/native.rs": "b7a97fda06efbbfa96b310b6320802a560290ae7ce93ee46e2b3ca28e5fef471",
+    "crates/trames-net/src/netlink.rs": "7dab4642332ce4fad69a2a468fc3a953dc5a032e3ec145c064f5954de0dea3e6",
+    "crates/trames-net/src/virtualnet/mod.rs": "814ec72434ec62589ccad451a1aa52c70ff9058f1393844bf80c632e9aa63b4a",
+    "crates/trames-net/src/virtualnet/sockets.rs": "8028ba5e0f849e986373aec066d4786cba32c0605daa4d1b53ceb91e597c59ef",
+    "crates/trames-vfs/src/capabilities.rs": "0b64896036a377d4c7f849421555735bf660c8741378fd8e25644e5a3c2aea8f",
+    "crates/trames-vfs/src/events.rs": "0014200962764a9f4735790dc9f845edfc8de1f2e895eb5c526cde31f8b243ce",
+    "crates/trames-vfs/src/ipc.rs": "5198f39a815dbfd82a49ae24c3a6e5fffe17e7160ad4a3dee3bc8ce219b77cfa",
+    "crates/trames-vfs/src/ipc/native.rs": "b8da81760b953c9b5022f50436134ce7ce62db4fd1dfdc3589370b93169f4ecd",
+    "crates/trames-vfs/src/lib.rs": "42c21fbb5775c125d0eed2ca496c7f182a89dc1bd758ddd628e6e1b7e2a8847b",
+    "crates/trames-vfs/src/linux_namespace.rs": "902f3291d36dfdff45104b650293af54f5f8e116bdaefcd26a8c9cacc4fe9924",
+    "crates/trames-vfs/src/memfd.rs": "d58ea552800a79f90ec8e72a833784239a5a9b52e196bfffce335a4ac137ba5c",
+    "crates/trames-vfs/src/mounts.rs": "1c11a251a9f1f20a48fccaeafd836860c65515d642f87f80095851a5b3c435f8",
+    "crates/trames-vfs/src/network.rs": "de5c8b04c8d99603ee077f8e7beb089c2ab421517d521811f5c66d769d7ebc7b",
+    "crates/trames-vfs/src/pseudo.rs": "cc23e7562a9c9f754e84842629da3efc7a8db1e5bd099b46d45eb42fb4c6a05b",
+    "crates/trames-vfs/src/pty.rs": "f1011d04750d310a5d816dc191274982d76b52005e031a44d13c613ed3d421f5"
+  },
+  "source_commit": "4598cecb71da994f81c85eaa0f260b963085e093",
+  "linux_followup_run": 39089214927,
+  "apple_followup_run": 39089214879,
+  "ci_conclusions": {
+    "linux_initial": "success",
+    "apple_initial": "failure (one old closed-port fixture)",
+    "linux_followup": "success",
+    "apple_followup": "success"
+  },
+  "apple_remaining_checks": "Net/VFS libraries, corrected Linux socket test, new seccomp cases, CHKFEAT and ARM64 iOS FFI check passed",
+  "linux_docker_4": {
+    "run": 39088637865,
+    "job": 117560434036,
+    "passed": true,
+    "profile": "private-net-ipc-cgroup-default-seccomp",
+    "artifact_id": 12121892438,
+    "artifact_zip_sha256": "2a3c484169e3f99a1c03907f0cda4e864ecb7d302d946507ecce4093b9dc163b"
+  },
+  "validation_reuse": "Initial successful checks retained. Followup production diff is exactly forced SIGSYS in the TRAP arm; Linux socket production prefix unchanged. No second Docker/network/UI/GPU run and no IPA."
+}

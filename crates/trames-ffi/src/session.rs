@@ -361,6 +361,84 @@ impl Session {
         }
     }
 }
+fn prepare_runtime_mounts(vfs: &mut Vfs) -> Result<(), String> {
+    let prepare = |vfs: &mut Vfs| -> Result<(), trames_vfs::Errno> {
+        match vfs.mkdir_at(trames_vfs::AT_FDCWD, b"/dev", 0o755) {
+            Ok(()) | Err(trames_vfs::Errno(17)) => {}
+            Err(error) => return Err(error),
+        }
+        for (path, parent, mode, options) in [
+            (
+                b"/run".as_slice(),
+                b"/".as_slice(),
+                0o755,
+                b"mode=755".as_slice(),
+            ),
+            (
+                b"/dev/shm".as_slice(),
+                b"/dev".as_slice(),
+                0o1777,
+                b"size=64m,mode=1777".as_slice(),
+            ),
+        ] {
+            match vfs.mkdir_at(trames_vfs::AT_FDCWD, path, mode) {
+                Ok(()) | Err(trames_vfs::Errno(17)) => {}
+                Err(error) => return Err(error),
+            }
+            if vfs.mount_id_at(trames_vfs::AT_FDCWD, path, false)?
+                == vfs.mount_id_at(trames_vfs::AT_FDCWD, parent, false)?
+            {
+                vfs.mount(Some(b"tmpfs"), path, Some(b"tmpfs"), 0, Some(options))?;
+            }
+        }
+        Ok(())
+    };
+    prepare(vfs).map_err(|error| format!("prepare runtime tmpfs: {error}"))
+}
+fn prepare_guest_defaults(vfs: &mut Vfs, network: &str) -> Result<(), String> {
+    let resolver = if network == "loopback" {
+        b"nameserver 127.0.0.53\n".as_slice()
+    } else {
+        b"nameserver 169.254.0.53\n".as_slice()
+    };
+    for (path, bytes) in [
+        (b"/root/.trames".as_slice(), b"Trames\n".as_slice()),
+        (b"/etc/resolv.conf".as_slice(), resolver),
+    ] {
+        let old_managed_dns = path == b"/etc/resolv.conf"
+            && vfs
+                .open_at(trames_vfs::AT_FDCWD, path, 0, 0)
+                .is_ok_and(|fd| {
+                    let data = vfs.read(fd, 256).unwrap_or_default();
+                    let _ = vfs.close(fd);
+                    data != bytes
+                        && matches!(
+                            data.as_slice(),
+                            b"nameserver 10.0.0.1\nnameserver fd00::1\n"
+                                | b"nameserver 10.0.0.1\n"
+                                | b"nameserver 127.0.0.53\n"
+                                | b"nameserver 169.254.0.53\n"
+                        )
+                });
+        if old_managed_dns {
+            let fd = vfs
+                .open_at(trames_vfs::AT_FDCWD, path, 1, 0)
+                .map_err(|e| e.to_string())?;
+            let result = vfs.write(fd, bytes).and_then(|written| {
+                if written != bytes.len() {
+                    return Err(trames_vfs::Errno(5));
+                }
+                vfs.truncate_fd(fd, bytes.len() as u64)
+            });
+            let close = vfs.close(fd);
+            result.and(close).map_err(|e| e.to_string())?;
+        } else if vfs.stat_at(trames_vfs::AT_FDCWD, path).is_err() {
+            vfs.import_file(path, bytes.to_vec())
+                .map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
 fn run(
     options: Options,
     session: Arc<Session>,
@@ -413,41 +491,10 @@ fn run(
         trames_distro::install_musl(&mut File::open(libc).map_err(|e| e.to_string())?, &mut vfs)
             .map_err(|e| e.to_string())?;
     }
-    for (path, bytes) in [
-        (b"/root/.trames".as_slice(), b"Trames\n".as_slice()),
-        (
-            b"/etc/resolv.conf".as_slice(),
-            b"nameserver 127.0.0.53\n".as_slice(),
-        ),
-    ] {
-        let old_managed_dns = path == b"/etc/resolv.conf"
-            && vfs
-                .open_at(trames_vfs::AT_FDCWD, path, 0, 0)
-                .is_ok_and(|fd| {
-                    let data = vfs.read(fd, 256).unwrap_or_default();
-                    let _ = vfs.close(fd);
-                    matches!(
-                        data.as_slice(),
-                        b"nameserver 10.0.0.1\nnameserver fd00::1\n" | b"nameserver 10.0.0.1\n"
-                    )
-                });
-        if old_managed_dns {
-            let fd = vfs
-                .open_at(trames_vfs::AT_FDCWD, path, 1, 0)
-                .map_err(|e| e.to_string())?;
-            let result = vfs.write(fd, bytes).and_then(|written| {
-                if written != bytes.len() {
-                    return Err(trames_vfs::Errno(5));
-                }
-                vfs.truncate_fd(fd, bytes.len() as u64)
-            });
-            let close = vfs.close(fd);
-            result.and(close).map_err(|e| e.to_string())?;
-        } else if vfs.stat_at(trames_vfs::AT_FDCWD, path).is_err() {
-            vfs.import_file(path, bytes.to_vec())
-                .map_err(|e| e.to_string())?;
-        }
-    }
+    // Before Wayland publishes its socket or any terminal/service can run.
+    // Mounts belong to this kernel session, shared by all its local terminals.
+    prepare_runtime_mounts(&mut vfs)?;
+    prepare_guest_defaults(&mut vfs, &options.network)?;
     vfs.chdir(b"/root").map_err(|e| e.to_string())?;
     if options.vulkan_accelerator {
         if let Some(path) = &options.vulkan_icd {
@@ -794,6 +841,151 @@ impl GuestOutput for Adapter {
 #[cfg(test)]
 mod memory_tests {
     use super::*;
+    #[test]
+    fn runtime_tmpfs_is_fresh_after_cold_disk_reopen() {
+        let path = std::env::temp_dir().join(format!(
+            "trames-runtime-mounts-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        {
+            let mut vfs = Vfs::open_disk(&path, DiskOptions::default()).unwrap();
+            prepare_runtime_mounts(&mut vfs).unwrap();
+            for file in [b"/run/stale.pid".as_slice(), b"/dev/shm/stale".as_slice()] {
+                let fd = vfs
+                    .open_at(trames_vfs::AT_FDCWD, file, 0x41, 0o600)
+                    .unwrap();
+                vfs.write(fd, b"old session").unwrap();
+                vfs.close(fd).unwrap();
+            }
+            vfs.sync().unwrap();
+        }
+        {
+            let mut vfs = Vfs::open_disk(&path, DiskOptions::default()).unwrap();
+            prepare_runtime_mounts(&mut vfs).unwrap();
+            assert!(vfs
+                .stat_at(trames_vfs::AT_FDCWD, b"/run/stale.pid")
+                .is_err());
+            assert!(vfs
+                .stat_at(trames_vfs::AT_FDCWD, b"/dev/shm/stale")
+                .is_err());
+            assert_eq!(
+                &vfs.statfs_at(b"/dev/shm").unwrap()[..8],
+                &0x01021994u64.to_le_bytes()
+            );
+        }
+        std::fs::remove_dir_all(path).unwrap();
+    }
+    #[test]
+    fn runtime_tmpfs_precedes_wayland_and_repeated_preparation_preserves_live_files() {
+        let mut vfs = Vfs::default();
+        prepare_runtime_mounts(&mut vfs).unwrap();
+        for (path, mode) in [
+            (b"/run".as_slice(), 0o755),
+            (b"/dev/shm".as_slice(), 0o1777),
+        ] {
+            assert_eq!(
+                &vfs.statfs_at(path).unwrap()[..8],
+                &0x01021994u64.to_le_bytes()
+            );
+            assert_eq!(
+                u32::from_le_bytes(
+                    vfs.stat_at(trames_vfs::AT_FDCWD, path).unwrap()[16..20]
+                        .try_into()
+                        .unwrap()
+                ) & 0o7777,
+                mode
+            );
+        }
+        let shm = vfs.statfs_at(b"/dev/shm").unwrap();
+        let block = u64::from_le_bytes(shm[8..16].try_into().unwrap());
+        let blocks = u64::from_le_bytes(shm[16..24].try_into().unwrap());
+        assert_eq!(block * blocks, 64 << 20);
+        assert_eq!(
+            &shm[16..24],
+            &shm[24..32],
+            "empty shm is lazy, not preallocated"
+        );
+        let run = vfs
+            .mount_id_at(trames_vfs::AT_FDCWD, b"/run", false)
+            .unwrap();
+        let shm = vfs
+            .mount_id_at(trames_vfs::AT_FDCWD, b"/dev/shm", false)
+            .unwrap();
+        let _wayland = vfs.enable_wayland(b"/run/user/0").unwrap();
+        let socket = vfs
+            .stat_at(trames_vfs::AT_FDCWD, b"/run/user/0/wayland-0")
+            .unwrap();
+        let fd = vfs
+            .open_at(trames_vfs::AT_FDCWD, b"/run/live.pid", 0x41, 0o600)
+            .unwrap();
+        vfs.write(fd, b"123\n").unwrap();
+        vfs.close(fd).unwrap();
+        prepare_runtime_mounts(&mut vfs).unwrap();
+        assert_eq!(
+            vfs.mount_id_at(trames_vfs::AT_FDCWD, b"/run", false)
+                .unwrap(),
+            run
+        );
+        assert_eq!(
+            vfs.mount_id_at(trames_vfs::AT_FDCWD, b"/dev/shm", false)
+                .unwrap(),
+            shm
+        );
+        assert_eq!(
+            vfs.stat_at(trames_vfs::AT_FDCWD, b"/run/user/0/wayland-0")
+                .unwrap()[8..16],
+            socket[8..16]
+        );
+        assert_eq!(
+            u64::from_le_bytes(
+                vfs.stat_at(trames_vfs::AT_FDCWD, b"/run/live.pid").unwrap()[48..56]
+                    .try_into()
+                    .unwrap()
+            ),
+            4
+        );
+        let peer = vfs.clone();
+        assert_eq!(
+            peer.mount_id_at(trames_vfs::AT_FDCWD, b"/run", false)
+                .unwrap(),
+            run
+        );
+    }
+    #[test]
+    fn managed_dns_is_routable_for_containers_and_preserves_custom_configs() {
+        let mut vfs = Vfs::default();
+        for dir in [b"/etc".as_slice(), b"/root".as_slice()] {
+            if vfs.stat_at(trames_vfs::AT_FDCWD, dir).is_err() {
+                vfs.mkdir_at(trames_vfs::AT_FDCWD, dir, 0o755).unwrap();
+            }
+        }
+        let read = |vfs: &mut Vfs| {
+            let fd = vfs
+                .open_at(trames_vfs::AT_FDCWD, b"/etc/resolv.conf", 0, 0)
+                .unwrap();
+            let bytes = vfs.read(fd, 1024).unwrap();
+            vfs.close(fd).unwrap();
+            bytes
+        };
+        prepare_guest_defaults(&mut vfs, "full").unwrap();
+        assert_eq!(read(&mut vfs), b"nameserver 169.254.0.53\n");
+        prepare_guest_defaults(&mut vfs, "loopback").unwrap();
+        assert_eq!(read(&mut vfs), b"nameserver 127.0.0.53\n");
+        prepare_guest_defaults(&mut vfs, "full").unwrap();
+        assert_eq!(read(&mut vfs), b"nameserver 169.254.0.53\n");
+        let fd = vfs
+            .open_at(trames_vfs::AT_FDCWD, b"/etc/resolv.conf", 1 | 0x200, 0)
+            .unwrap();
+        vfs.write(fd, b"nameserver 1.1.1.1\n# user override\n")
+            .unwrap();
+        vfs.close(fd).unwrap();
+        prepare_guest_defaults(&mut vfs, "full").unwrap();
+        assert_eq!(read(&mut vfs), b"nameserver 1.1.1.1\n# user override\n");
+    }
     #[test]
     fn optional_json_budgets_preserve_defaults_and_validate_before_start() {
         let base = serde_json::json!({"store":"/tmp/trames-memory-options", "volume_total": 1 << 30, "volume_available": 1 << 30});

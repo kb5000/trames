@@ -1,0 +1,5 @@
+    Checking trames-linux v1.0.0 (/workspace/trames/crates/trames-linux)
+    Checking trames-distro v1.0.0 (/workspace/trames/crates/trames-distro)
+    Checking trames-core v1.0.0 (/workspace/trames/crates/trames-core)
+    Checking trames-ffi v1.0.0 (/workspace/trames/crates/trames-ffi)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.52s

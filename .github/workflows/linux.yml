@@ -20,6 +20,15 @@ jobs:
       skip_native: ${{ steps.scope.outputs.skip_linux_native }}
       skip_modules: ${{ steps.scope.outputs.skip_linux_modules }}
       native_scope: ${{ steps.scope.outputs.native_scope }}
+      storage_proc_only: ${{ steps.scope.outputs.storage_proc_only }}
+      isolation_retry: ${{ steps.scope.outputs.isolation_retry }}
+      network_retry: ${{ steps.scope.outputs.network_retry }}
+      docker_bridge: ${{ steps.scope.outputs.docker_bridge }}
+      nftables: ${{ steps.scope.outputs.nftables }}
+      docker_network: ${{ steps.scope.outputs.docker_network }}
+      docker_network_retry: ${{ steps.scope.outputs.docker_network_retry }}
+      docker_network_virtual_retry: ${{ steps.scope.outputs.docker_network_virtual_retry }}
+      docker_default_remount: ${{ steps.scope.outputs.docker_default_remount }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,11 +41,70 @@ jobs:
           TRAMES_VALIDATION_WORKFLOW: linux.yml
           TRAMES_NEEDS_GUEST_ARTIFACTS: 'false'
         run: python3 scripts/ios-ci-scope.py
+  release-core:
+    needs: scope
+    if: needs.scope.outputs.native_scope == 'release-core' || needs.scope.outputs.native_scope == 'release-cross'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+          components: rustfmt, clippy
+          targets: aarch64-apple-ios
+      - name: Install LLVM archiver for the iOS cross target
+        run: sudo apt-get update && sudo apt-get install --yes clang llvm
+      - name: Check release workspace formatting, lints and all Rust tests
+        if: needs.scope.outputs.native_scope != 'release-cross'
+        run: |
+          cargo fmt --all --check
+          cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+          cargo test --workspace --all-features --locked
+      - name: Complete release iOS cross compile
+        run: |
+          cargo check -p trames-core -p trames-distro -p trames-ffi --target aarch64-apple-ios --locked
+  docker-default-lifecycle:
+    needs: scope
+    if: needs.scope.outputs.native_scope == 'docker-default-lifecycle'
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [exec, storage]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+      - name: Validate focused harness syntax and build unchanged release runtime
+        run: |
+          python3 - <<'PY'
+          import ast,pathlib
+          ast.parse(pathlib.Path('tests/integration/docker-default-lifecycle.py').read_text())
+          PY
+          bash -n tests/integration/docker-default-lifecycle.sh
+          cargo build -p trames-cli --release --locked
+      - name: Exercise original default Docker lifecycle
+        env:
+          TRAMES_ALPINE_CACHE: ${{ github.workspace }}/target/alpine-download
+        run: |
+          mkdir -p "$TRAMES_ALPINE_CACHE"
+          curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o "$TRAMES_ALPINE_CACHE/alpine-minirootfs-3.22.6-aarch64.tar.gz"
+          python3 tests/integration/docker-default-lifecycle.py '${{ matrix.part }}'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: guest-docker-default-${{ matrix.part }}
+          path: target/docker-default-${{ matrix.part }}/
+          if-no-files-found: error
+          retention-days: 14
   targeted-runtime:
     needs: scope
-    if: needs.scope.outputs.targeted == 'true' && needs.scope.outputs.skip_native != 'true'
+    if: needs.scope.outputs.targeted == 'true' && needs.scope.outputs.skip_native != 'true' && needs.scope.outputs.native_scope != 'release-core'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
@@ -47,7 +115,17 @@ jobs:
         if: needs.scope.outputs.skip_modules != 'true'
         run: |
           cargo fmt --all --check
-          if [[ '${{ needs.scope.outputs.native_scope }}' == wayland-input ]]; then
+          if [[ '${{ needs.scope.outputs.docker_default_remount }}' == true ]]; then
+            cargo clippy -p trames-vfs --all-targets --locked -- -D warnings
+            cargo test -p trames-vfs --lib mounts:: --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == docker-default ]]; then
+            cargo clippy -p trames-net -p trames-vfs -p trames-linux -p trames-core -p trames-ffi -p trames-cli --all-targets --locked -- -D warnings
+            cargo test -p trames-net --locked
+            cargo test -p trames-vfs --lib --locked
+            cargo test -p trames-linux --lib network --locked
+            cargo test -p trames-core --lib socket_timeout --locked
+            cargo test -p trames-core --lib seccomp --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == wayland-input ]]; then
             cargo clippy -p trames-wayland --all-targets --locked -- -D warnings
             cargo test -p trames-wayland --lib nested_popup_unmap --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == wayland-clipboard ]]; then
@@ -56,12 +134,63 @@ jobs:
           elif [[ '${{ needs.scope.outputs.native_scope }}' == host-terminals ]]; then
             cargo clippy -p trames-vfs -p trames-core -p trames-ffi --all-targets --locked -- -D warnings
             cargo test -p trames-vfs -p trames-core -p trames-ffi --lib --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == container-storage ]]; then
+            if [[ '${{ needs.scope.outputs.storage_proc_only }}' == true ]]; then
+              cargo clippy -p trames-vfs --all-targets --locked -- -D warnings
+              cargo test -p trames-vfs --lib proc --locked
+            else
+              cargo clippy -p trames-vfs -p trames-linux -p trames-core -p trames-ffi -p trames-cli --all-targets --locked -- -D warnings
+              cargo test -p trames-vfs --lib --locked
+              cargo test -p trames-linux --lib file_calls --locked
+            fi
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == container-network && '${{ needs.scope.outputs.docker_network_retry }}' == true ]]; then
+            if [[ '${{ needs.scope.outputs.docker_network_virtual_retry }}' == true ]]; then
+              cargo test -p trames-net --test virtual native_gateway_tcp_and_udp_both_families --locked
+            else
+              cargo test -p trames-net --lib native_root_input --locked
+              cargo test -p trames-linux --lib udp_pktinfo --locked
+            fi
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == container-network && '${{ needs.scope.outputs.docker_network }}' == true ]]; then
+            cargo clippy -p trames-net -p trames-vfs -p trames-linux -p trames-core -p trames-ffi -p trames-cli --all-targets --locked -- -D warnings
+            cargo test -p trames-net --locked
+            cargo test -p trames-vfs --lib network --locked
+            cargo test -p trames-vfs --lib events --locked
+            cargo test -p trames-linux --lib network --locked
+            cargo test -p trames-linux --lib file_calls --locked
+            cargo test -p trames-ffi --lib managed_dns --locked
+            cargo test -p trames-core --lib splice --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == container-network && '${{ needs.scope.outputs.nftables }}' == true ]]; then
+            cargo clippy -p trames-net --all-targets --locked -- -D warnings
+            cargo test -p trames-net --lib --locked
+            cargo test -p trames-net --test virtual --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == container-network && '${{ needs.scope.outputs.docker_bridge }}' == true ]]; then
+            cargo clippy -p trames-net -p trames-vfs --all-targets --locked -- -D warnings
+            cargo test -p trames-net --lib --locked
+            cargo test -p trames-vfs --lib network --locked
+            cargo test -p trames-net --test virtual --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == container-network && '${{ needs.scope.outputs.network_retry }}' == true ]]; then
+            cargo clippy -p trames-net --all-targets --locked -- -D warnings
+            cargo test -p trames-net --lib routing_tests --locked
+            cargo test -p trames-net --test virtual namespace_finish_resets_peer_and_preserves_other_namespace --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == container-network ]]; then
+            cargo clippy -p trames-net -p trames-vfs -p trames-linux --all-targets --locked -- -D warnings
+            cargo test -p trames-net -p trames-vfs -p trames-linux --lib --locked
+            cargo test -p trames-net --test virtual --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == container-isolation && '${{ needs.scope.outputs.isolation_retry }}' == true ]]; then
+            cargo clippy -p trames-linux -p trames-core --all-targets --locked -- -D warnings
+            cargo test -p trames-linux --lib socket_output_preflight_and_descriptor_type_errors --locked
+            cargo test -p trames-core --lib seccomp --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == container-isolation ]]; then
+            cargo clippy -p trames-net -p trames-vfs -p trames-linux -p trames-core --all-targets --locked -- -D warnings
+            cargo test -p trames-net -p trames-vfs -p trames-linux -p trames-core --lib --locked
+            cargo test -p trames-net --test virtual --locked
+            cargo test -p trames-cpu --lib disabled_authentication_and_ordering_hints_preserve_values --locked
           else
             cargo clippy -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --all-targets --locked -- -D warnings
             cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --lib --locked
           fi
       - name: Exercise original GTK3 and mousepad, including clipboard FD transfers
-        if: needs.scope.outputs.skip_modules != 'true' && needs.scope.outputs.native_scope != 'host-terminals'
+        if: needs.scope.outputs.skip_modules != 'true' && needs.scope.outputs.native_scope != 'host-terminals' && needs.scope.outputs.native_scope != 'container-isolation' && needs.scope.outputs.native_scope != 'container-network' && needs.scope.outputs.native_scope != 'container-storage' && needs.scope.outputs.native_scope != 'docker-default'
         run: |
           sudo apt-get update -qq
           sudo apt-get install --yes --no-install-recommends libgtk-3-0 mousepad fonts-dejavu-core
@@ -73,7 +202,7 @@ jobs:
             cargo test -p trames-wayland --test gtk_client --locked -- --ignored --nocapture
           fi
       - name: Exercise original signed ARM64 foot over the guest Wayland ABI
-        if: needs.scope.outputs.native_scope != 'wayland-input' && needs.scope.outputs.native_scope != 'wayland-clipboard' && needs.scope.outputs.native_scope != 'host-terminals'
+        if: needs.scope.outputs.native_scope != 'wayland-input' && needs.scope.outputs.native_scope != 'wayland-clipboard' && needs.scope.outputs.native_scope != 'host-terminals' && needs.scope.outputs.native_scope != 'container-isolation' && needs.scope.outputs.native_scope != 'container-network' && needs.scope.outputs.native_scope != 'container-storage' && needs.scope.outputs.native_scope != 'docker-default'
         timeout-minutes: 10
         env:
           TRAMES_FOOT_STORE: ${{ github.workspace }}/target/foot-acceptance/store
@@ -101,6 +230,135 @@ jobs:
           curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o "$TRAMES_ALPINE_ARCHIVE"
           cargo build -p trames-ffi --release --locked
           python3 tests/integration/multiple-terminals.py
+      - name: Exercise original guest Docker overlay2 and persistent image layers
+        if: needs.scope.outputs.native_scope == 'container-storage' && needs.scope.outputs.storage_proc_only != 'true'
+        env:
+          TRAMES_ALPINE_CACHE: ${{ github.workspace }}/target/alpine-download
+        run: |
+          cargo build -p trames-cli --release --locked
+          mkdir -p "$TRAMES_ALPINE_CACHE"
+          curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o "$TRAMES_ALPINE_CACHE/alpine-minirootfs-3.22.6-aarch64.tar.gz"
+          python3 tests/integration/docker-overlay.py
+      - uses: actions/upload-artifact@v4
+        if: always() && needs.scope.outputs.native_scope == 'container-storage' && needs.scope.outputs.storage_proc_only != 'true'
+        with:
+          name: guest-docker-overlay
+          path: target/docker-overlay/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Exercise original Docker defaults, managed containerd and runc
+        if: needs.scope.outputs.native_scope == 'docker-default'
+        env:
+          TRAMES_ALPINE_CACHE: ${{ github.workspace }}/target/alpine-download
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --yes --no-install-recommends gcc-aarch64-linux-gnu libc6-dev-arm64-cross
+          bash scripts/build-socket-timeouts-fixture.sh
+          cargo build -p trames-cli --release --locked
+          if [[ '${{ needs.scope.outputs.docker_default_remount }}' != true ]]; then
+            tests/fixtures/bin/socket-timeouts-host
+            tests/fixtures/bin/socket-timeouts-host seccomp
+            for cpus in 1 4; do
+              target/release/trames-run --cpus "$cpus" --memory --max-instructions 1000000000 --exec-file /socket-timeouts=tests/fixtures/bin/socket-timeouts --guest /socket-timeouts netlink
+              target/release/trames-run --cpus "$cpus" --memory --max-instructions 1000000000 --exec-file /socket-timeouts=tests/fixtures/bin/socket-timeouts --guest /socket-timeouts seccomp
+            done
+            target/release/trames-run --cpus 4 --network loopback --memory --max-instructions 1000000000 --exec-file /socket-timeouts=tests/fixtures/bin/socket-timeouts --guest /socket-timeouts
+          fi
+          mkdir -p "$TRAMES_ALPINE_CACHE"
+          curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o "$TRAMES_ALPINE_CACHE/alpine-minirootfs-3.22.6-aarch64.tar.gz"
+          python3 tests/integration/docker-default.py
+      - uses: actions/upload-artifact@v4
+        if: always() && needs.scope.outputs.native_scope == 'docker-default'
+        with:
+          name: guest-docker-defaults
+          path: target/docker-default-acceptance/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Exercise real guest container isolation and original Docker defaults
+        if: needs.scope.outputs.native_scope == 'container-isolation'
+        env:
+          TRAMES_ALPINE_CACHE: ${{ github.workspace }}/target/alpine-download
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --yes --no-install-recommends gcc-aarch64-linux-gnu libc6-dev-arm64-cross
+          bash scripts/build-container-isolation-fixtures.sh
+          cargo build -p trames-cli --release --locked
+          if [[ '${{ needs.scope.outputs.isolation_retry }}' == true ]]; then
+            python3 tests/integration/container-isolation.py --seccomp-only
+          else
+            python3 tests/integration/container-isolation.py
+            mkdir -p "$TRAMES_ALPINE_CACHE"
+            curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o "$TRAMES_ALPINE_CACHE/alpine-minirootfs-3.22.6-aarch64.tar.gz"
+            python3 tests/integration/docker.py --isolated --require-run --cpus 4
+          fi
+      - name: Exercise real guest veth and bridge networking and retain Docker isolation
+        if: needs.scope.outputs.native_scope == 'container-network' && needs.scope.outputs.docker_network_retry != 'true'
+        env:
+          TRAMES_ALPINE_CACHE: ${{ github.workspace }}/target/alpine-download
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --yes --no-install-recommends gcc-aarch64-linux-gnu libc6-dev-arm64-cross
+          if [[ '${{ needs.scope.outputs.docker_network }}' == true ]]; then
+            bash scripts/build-netfilter-nat-fixture.sh
+            bash scripts/build-nftables-fixture.sh
+          elif [[ '${{ needs.scope.outputs.nftables }}' == true ]]; then
+            bash scripts/build-nftables-fixture.sh
+            bash scripts/build-container-network-fixture.sh
+          elif [[ '${{ needs.scope.outputs.docker_bridge }}' == true ]]; then
+            bash scripts/build-docker-network-fixture.sh
+          else
+            bash scripts/build-container-network-fixture.sh
+          fi
+          cargo build -p trames-cli --release --locked
+          if [[ '${{ needs.scope.outputs.docker_network }}' == true ]]; then
+            mkdir -p "$TRAMES_ALPINE_CACHE"
+            curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o "$TRAMES_ALPINE_CACHE/alpine-minirootfs-3.22.6-aarch64.tar.gz"
+            python3 tests/integration/nftables.py
+            python3 tests/integration/netfilter-nat.py
+            python3 tests/integration/docker-network.py --cpus 4
+          elif [[ '${{ needs.scope.outputs.nftables }}' == true ]]; then
+            python3 tests/integration/container-network.py --forwarding-only
+            mkdir -p "$TRAMES_ALPINE_CACHE"
+            curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o "$TRAMES_ALPINE_CACHE/alpine-minirootfs-3.22.6-aarch64.tar.gz"
+            python3 tests/integration/nftables.py
+          elif [[ '${{ needs.scope.outputs.docker_bridge }}' == true ]]; then
+            python3 tests/integration/container-network.py --docker-control-only
+          else
+            python3 tests/integration/container-network.py
+          fi
+          if [[ '${{ needs.scope.outputs.network_retry }}' != true && '${{ needs.scope.outputs.nftables }}' != true && '${{ needs.scope.outputs.docker_network }}' != true ]]; then
+            mkdir -p "$TRAMES_ALPINE_CACHE"
+            curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o "$TRAMES_ALPINE_CACHE/alpine-minirootfs-3.22.6-aarch64.tar.gz"
+            if [[ '${{ needs.scope.outputs.docker_bridge }}' == true ]]; then
+              python3 tests/integration/docker.py --internal-bridge --require-run --cpus 4
+            else
+              python3 tests/integration/docker.py --isolated --require-run --cpus 4
+            fi
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always() && needs.scope.outputs.native_scope == 'container-network' && needs.scope.outputs.docker_network_retry != 'true'
+        with:
+          name: guest-container-network
+          path: |
+            target/container-network/
+            target/docker-lifecycle/
+            target/docker-network-control/
+            target/docker-bridge-lifecycle/
+            target/nftables/
+            target/container-forwarding/
+            target/netfilter-nat/
+            target/docker-full-network/
+          if-no-files-found: warn
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always() && needs.scope.outputs.native_scope == 'container-isolation'
+        with:
+          name: original-docker-isolation
+          path: |
+            target/container-isolation/
+            target/docker-lifecycle/
+          if-no-files-found: warn
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         if: always()
         with:

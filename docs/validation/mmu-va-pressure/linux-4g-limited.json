@@ -1,0 +1,324 @@
+{
+  "scope": "Original dockerd startup with 4GiB guest budgets, 8 CPUs and host VA sampling.\n\nOnly startup/info/shutdown is exercised, not the already validated container\nlifecycle/network/storage suites. An optional prepared store is copied privately.\nLinux additionally constrains host VA to 2560MiB; Darwin records native RSS/VA.\n",
+  "host": "Linux",
+  "arch": "x86_64",
+  "host_page_bytes": 4096,
+  "cpus": 8,
+  "memory_budget_bytes": 4294967296,
+  "process_budget_bytes": 4294967296,
+  "runner_sha256": "2f007e5ba3efac58a7454fd9bd3d482b460624be8e958a7872934d19552aad79",
+  "test_sha256": "31348831568d5dc1b49711cca2dca7614f5b14e744433aa2b2d98b228cdf33f9",
+  "samples": [
+    {
+      "seconds": 0.503,
+      "VmPeak": "871964 kB",
+      "VmSize": "832576 kB",
+      "VmRSS": "374364 kB",
+      "mmu_mapped_bytes": 448811008
+    },
+    {
+      "seconds": 1.004,
+      "VmPeak": "1205212 kB",
+      "VmSize": "1182548 kB",
+      "VmRSS": "435116 kB",
+      "mmu_mapped_bytes": 527474688
+    },
+    {
+      "seconds": 1.506,
+      "VmPeak": "1213600 kB",
+      "VmSize": "1213600 kB",
+      "VmRSS": "464144 kB",
+      "mmu_mapped_bytes": 556969984
+    },
+    {
+      "seconds": 2.008,
+      "VmPeak": "1550880 kB",
+      "VmSize": "1550876 kB",
+      "VmRSS": "674704 kB",
+      "mmu_mapped_bytes": 857436160
+    },
+    {
+      "seconds": 2.51,
+      "VmPeak": "1636716 kB",
+      "VmSize": "1636716 kB",
+      "VmRSS": "749604 kB",
+      "mmu_mapped_bytes": 926109696
+    },
+    {
+      "seconds": 3.011,
+      "VmPeak": "1666368 kB",
+      "VmSize": "1665344 kB",
+      "VmRSS": "782704 kB",
+      "mmu_mapped_bytes": 952807424
+    },
+    {
+      "seconds": 3.514,
+      "VmPeak": "1674168 kB",
+      "VmSize": "1667000 kB",
+      "VmRSS": "787716 kB",
+      "mmu_mapped_bytes": 953856000
+    },
+    {
+      "seconds": 4.016,
+      "VmPeak": "1685908 kB",
+      "VmSize": "1683860 kB",
+      "VmRSS": "800012 kB",
+      "mmu_mapped_bytes": 970633216
+    },
+    {
+      "seconds": 4.518,
+      "VmPeak": "1695120 kB",
+      "VmSize": "1683856 kB",
+      "VmRSS": "813124 kB",
+      "mmu_mapped_bytes": 967491584
+    },
+    {
+      "seconds": 5.021,
+      "VmPeak": "1703312 kB",
+      "VmSize": "1702288 kB",
+      "VmRSS": "819392 kB",
+      "mmu_mapped_bytes": 985976832
+    },
+    {
+      "seconds": 5.525,
+      "VmPeak": "1784160 kB",
+      "VmSize": "1769596 kB",
+      "VmRSS": "872640 kB",
+      "mmu_mapped_bytes": 1038352384
+    },
+    {
+      "seconds": 6.027,
+      "VmPeak": "1882096 kB",
+      "VmSize": "1831920 kB",
+      "VmRSS": "955952 kB",
+      "mmu_mapped_bytes": 1004064768
+    },
+    {
+      "seconds": 6.529,
+      "VmPeak": "1882096 kB",
+      "VmSize": "1866736 kB",
+      "VmRSS": "962548 kB",
+      "mmu_mapped_bytes": 1037500416
+    },
+    {
+      "seconds": 7.031,
+      "VmPeak": "1882096 kB",
+      "VmSize": "1882096 kB",
+      "VmRSS": "970092 kB",
+      "mmu_mapped_bytes": 1055850496
+    },
+    {
+      "seconds": 7.534,
+      "VmPeak": "1882096 kB",
+      "VmSize": "1882096 kB",
+      "VmRSS": "972252 kB",
+      "mmu_mapped_bytes": 1055850496
+    },
+    {
+      "seconds": 8.036,
+      "VmPeak": "1882096 kB",
+      "VmSize": "1882096 kB",
+      "VmRSS": "972436 kB",
+      "mmu_mapped_bytes": 1055850496
+    },
+    {
+      "seconds": 8.538,
+      "VmPeak": "1882096 kB",
+      "VmSize": "1882096 kB",
+      "VmRSS": "972592 kB",
+      "mmu_mapped_bytes": 1055850496
+    },
+    {
+      "seconds": 9.04,
+      "VmPeak": "1882096 kB",
+      "VmSize": "1882096 kB",
+      "VmRSS": "973908 kB",
+      "mmu_mapped_bytes": 1056112640
+    },
+    {
+      "seconds": 9.542,
+      "VmPeak": "1882096 kB",
+      "VmSize": "1882096 kB",
+      "VmRSS": "973960 kB",
+      "mmu_mapped_bytes": 1056112640
+    },
+    {
+      "seconds": 10.044,
+      "VmPeak": "1882096 kB",
+      "VmSize": "1882096 kB",
+      "VmRSS": "972160 kB",
+      "mmu_mapped_bytes": 1057685504
+    },
+    {
+      "seconds": 10.546,
+      "VmPeak": "1882096 kB",
+      "VmSize": "1881072 kB",
+      "VmRSS": "972212 kB",
+      "mmu_mapped_bytes": 1056636928
+    },
+    {
+      "seconds": 11.048,
+      "VmPeak": "1882096 kB",
+      "VmSize": "1881072 kB",
+      "VmRSS": "972212 kB",
+      "mmu_mapped_bytes": 1056636928
+    },
+    {
+      "seconds": 11.551,
+      "VmPeak": "1882096 kB",
+      "VmSize": "1882096 kB",
+      "VmRSS": "972280 kB",
+      "mmu_mapped_bytes": 1057685504
+    },
+    {
+      "seconds": 12.053,
+      "VmPeak": "2148700 kB",
+      "VmSize": "2017652 kB",
+      "VmRSS": "973660 kB",
+      "mmu_mapped_bytes": 1057685504
+    },
+    {
+      "seconds": 12.555,
+      "VmPeak": "2148700 kB",
+      "VmSize": "2017652 kB",
+      "VmRSS": "973752 kB",
+      "mmu_mapped_bytes": 1057685504
+    },
+    {
+      "seconds": 13.057,
+      "VmPeak": "2148700 kB",
+      "VmSize": "2016628 kB",
+      "VmRSS": "973960 kB",
+      "mmu_mapped_bytes": 1056636928
+    },
+    {
+      "seconds": 13.559,
+      "VmPeak": "2148700 kB",
+      "VmSize": "2017652 kB",
+      "VmRSS": "973976 kB",
+      "mmu_mapped_bytes": 1057685504
+    },
+    {
+      "seconds": 14.061,
+      "VmPeak": "2148700 kB",
+      "VmSize": "2017652 kB",
+      "VmRSS": "975228 kB",
+      "mmu_mapped_bytes": 1057726464
+    },
+    {
+      "seconds": 14.564,
+      "VmPeak": "2148700 kB",
+      "VmSize": "2017652 kB",
+      "VmRSS": "975208 kB",
+      "mmu_mapped_bytes": 1057726464
+    },
+    {
+      "seconds": 15.066,
+      "VmPeak": "2148700 kB",
+      "VmSize": "2017652 kB",
+      "VmRSS": "974628 kB",
+      "mmu_mapped_bytes": 1057726464
+    },
+    {
+      "seconds": 15.568,
+      "VmPeak": "2148700 kB",
+      "VmSize": "2019700 kB",
+      "VmRSS": "975564 kB",
+      "mmu_mapped_bytes": 1057726464
+    },
+    {
+      "seconds": 16.073,
+      "VmPeak": "2148700 kB",
+      "VmSize": "2019700 kB",
+      "VmRSS": "977132 kB",
+      "mmu_mapped_bytes": 1057726464
+    },
+    {
+      "seconds": 16.576,
+      "VmPeak": "2148700 kB",
+      "VmSize": "2018676 kB",
+      "VmRSS": "976572 kB",
+      "mmu_mapped_bytes": 1056677888
+    },
+    {
+      "seconds": 17.078,
+      "VmPeak": "2148700 kB",
+      "VmSize": "2068548 kB",
+      "VmRSS": "1030856 kB",
+      "mmu_mapped_bytes": 1057726464
+    },
+    {
+      "seconds": 17.58,
+      "VmPeak": "2148700 kB",
+      "VmSize": "2068548 kB",
+      "VmRSS": "1031892 kB",
+      "mmu_mapped_bytes": 1057726464
+    },
+    {
+      "seconds": 18.083,
+      "VmPeak": "2148700 kB",
+      "VmSize": "2068548 kB",
+      "VmRSS": "1032880 kB",
+      "mmu_mapped_bytes": 1057726464
+    },
+    {
+      "seconds": 18.585,
+      "VmPeak": "2148700 kB",
+      "VmSize": "2068548 kB",
+      "VmRSS": "1033224 kB",
+      "mmu_mapped_bytes": 1057726464
+    },
+    {
+      "seconds": 19.087,
+      "VmPeak": "2148700 kB",
+      "VmSize": "2068548 kB",
+      "VmRSS": "1031976 kB",
+      "mmu_mapped_bytes": 1057726464
+    },
+    {
+      "seconds": 19.589,
+      "VmPeak": "2148700 kB",
+      "VmSize": "2131940 kB",
+      "VmRSS": "1095820 kB",
+      "mmu_mapped_bytes": 1057726464
+    },
+    {
+      "seconds": 20.092,
+      "VmPeak": "2148700 kB",
+      "VmSize": "2136484 kB",
+      "VmRSS": "1124604 kB",
+      "mmu_mapped_bytes": 1057726464
+    },
+    {
+      "seconds": 20.594,
+      "VmPeak": "2285520 kB",
+      "VmSize": "2285520 kB",
+      "VmRSS": "1284156 kB",
+      "mmu_mapped_bytes": 1057726464
+    },
+    {
+      "seconds": 21.096,
+      "VmPeak": "2285520 kB",
+      "VmSize": "1817372 kB",
+      "VmRSS": "993696 kB",
+      "mmu_mapped_bytes": 634748928
+    },
+    {
+      "seconds": 21.597,
+      "VmPeak": "2285520 kB",
+      "VmSize": "1817372 kB",
+      "VmRSS": "993696 kB",
+      "mmu_mapped_bytes": 634748928
+    },
+    {
+      "seconds": 22.098,
+      "mmu_mapped_bytes": 0
+    }
+  ],
+  "store_manifest_sha256": "7e78f5530a599735453d715572931692c50c85c28b69015e375ba8f92c90b751",
+  "exit_code": 0,
+  "seconds": 22.119977896996716,
+  "ready": true,
+  "completed": true,
+  "host_va_limit_mib": 2560
+}

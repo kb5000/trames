@@ -1,0 +1,93 @@
+{
+  "version": "1.0.0",
+  "build": 28,
+  "status": "verified-package",
+  "source_commit": "0c43e34243c15a391f822ebc410b82039132156f",
+  "runtime_source_commit": "cff014809fa77a38fc25fa0c7e6f250afcf1a19d",
+  "apple_run": 39130864515,
+  "linux_scope_run": 39130864477,
+  "purpose": "Owner-requested unsigned Sideloadly test IPA; no formal release or merge.",
+  "features": [
+    "Original Docker default managed containerd/runc compatibility",
+    "MMU software-group negative cache avoids repeated write preparation on 16KiB hosts",
+    "Generation-bound proc maps cache avoids repeated mapped-page scans"
+  ],
+  "validation_reuse": {
+    "runtime_costs": {
+      "sha": "505e1c4bf38face2220a8fe3d0e6d1c2fe415998",
+      "patch_sha256": "716af6aa438180067cbdfbf680f05167b58673a10b6a720a0f0a00a55c4d75f2",
+      "linux": 39115510073,
+      "apple": 39115510112,
+      "linux_delta_record": "docs/validation/runtime-costs.md",
+      "linux_delta_source": "cff014809fa77a38fc25fa0c7e6f250afcf1a19d"
+    },
+    "frontend": {
+      "sha": "aa4528166c8d0cdb04f3fe540730d9af63ed7f07",
+      "run": 39062598012
+    },
+    "guest": {
+      "sha": "534e223e284df48f207500e84ab4cd05dd3d3958",
+      "run": 39015795319
+    }
+  },
+  "previous_feature_records": [
+    "docker-defaults.json",
+    "overlayfs.json",
+    "docker-network.json"
+  ],
+  "device_execution_tested": false,
+  "scope": "Run affected Apple memory and proc-map regression tests, compile current release ARM64 FFI/app; reuse recorded Linux delta results, unchanged frontend/guest libraries and unrelated modules. Physical-device performance is not claimed.",
+  "unrelated_test_suites_rerun": false,
+  "release_profile": "optimized; current ARM64 device FFI statically linked",
+  "source_closure": {
+    "repository": "https://github.com/kb5000/trames/tree/0c43e34243c15a391f822ebc410b82039132156f",
+    "guest_musl_source_artifact": 12095225586,
+    "guest_vulkan_native_source_artifact": 12095066135,
+    "guest_source_run": 39015795319
+  },
+  "inspection": {
+    "version": "1.0.0",
+    "build": 28,
+    "bundle_id": "org.trames.Trames",
+    "platform": "iPhoneOS arm64",
+    "signed": false,
+    "bytes": 10958365,
+    "sha256": "b11f0ca21e8aff085723a7ad860e0ffd66949c7a33590de29df06891c6d510ff",
+    "source_commit": "0c43e34243c15a391f822ebc410b82039132156f",
+    "runtime_source_commit": "cff014809fa77a38fc25fa0c7e6f250afcf1a19d",
+    "apple_run": 39130864515,
+    "main_binary_sha256": "8472fe3b2dfd8ccdcb22a3520c1b63ac62704c574574bd4f35bc802858a8458e",
+    "file_provider_binary_sha256": "d9b54880744c3dd9d44ff0985dcb455d6cde8b39d6a8afda461e9af5fdb47baa",
+    "file_provider_group": "group.org.trames.Trames",
+    "guest_library_sha256": {
+      "GuestMusl": "885b308b75e36bb402b311fba1d3f1284e6dd8d3a0bfbf88686bff1b629f9b23",
+      "GuestVulkan": "02b28eae49783dd1f8fdcbe7341f9cb0325d1b2593f713726e571a7704774c26"
+    },
+    "debug_wayland_fixtures_absent": true,
+    "native_coremark_absent": true,
+    "current_device_execution_tested": false
+  },
+  "artifact": {
+    "id": 12137858269,
+    "name": "Trames-unsigned-sideload",
+    "bytes": 10884339,
+    "zip_sha256": "16c39b80d518a9945290b077cd3d231c3a45164e778f4d34a02bf03afac05d08",
+    "url": "https://github.com/kb5000/trames/actions/runs/39130864515/artifacts/12137858269",
+    "expires_at": "2026-11-01T13:21:03Z"
+  },
+  "results": {
+    "linux_scope": "success; recorded Linux delta and unchanged module results reused",
+    "apple_build": "success",
+    "apple_job": 117685593922,
+    "apple_memory_lib": 61,
+    "apple_memory_integration": 4,
+    "apple_proc_map": 2,
+    "device_release_build": "passed; fresh aarch64-apple-ios trames-ffi release [optimized] and Xcode Release app",
+    "artifact_zip_digest": "passed",
+    "ipa_sha256_and_crc": "passed",
+    "app_and_extension_arm64_iphoneos": "passed",
+    "bundle_versions_and_shared_group": "passed",
+    "guest_elf_architecture_and_manifest_hashes": "passed; unchanged guest library SHA256 matches build27",
+    "debug_wayland_fixtures_excluded": "passed"
+  }
+}

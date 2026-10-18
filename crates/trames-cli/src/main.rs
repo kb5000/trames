@@ -440,10 +440,10 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
         }
         vfs.configure_virtual_network(&fabric, id, network)?;
     } else {
-        if !host_mappings.is_empty() {
-            return Err("--host-map requires --virtual-network".into());
-        }
         vfs.configure_network(network)?;
+        for (virtual_ip, host_ip) in host_mappings {
+            vfs.map_network_host_ip(virtual_ip, host_ip)?;
+        }
     }
     if let Some(archive) = rootfs {
         trames_distro::install_alpine(&mut File::open(archive)?, &mut vfs)?;
@@ -463,7 +463,10 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
             &mut if virtual_network.is_some() {
                 &b"nameserver 10.0.0.1\n"[..]
             } else {
-                &b"nameserver 127.0.0.53\n"[..]
+                // Match iPad sessions: Docker filters loopback nameservers
+                // from container resolv.conf. The managed resolver is reachable
+                // from each guest network namespace, without a daemon override.
+                &b"nameserver 169.254.0.53\n"[..]
             },
             false,
         )?;

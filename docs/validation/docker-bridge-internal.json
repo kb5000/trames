@@ -1,0 +1,207 @@
+{
+  "date": "2026-10-18",
+  "base_source": "0a2326f497864f5a23c57cad770c3af07aa39d18",
+  "runtime_source": "27f2931be47abc13e5d66558358a356e2e4a9c6b",
+  "production_sha256": {
+    "crates/trames-net/src/direct_dns.rs": "6b59aae8cdf225ae1ab3c2edc1eb6b06387b1eeb200cb8311fac7ff8ef4a0e31",
+    "crates/trames-net/src/lib.rs": "6a8c9eb05b918d855d87542d23ad528fb433288b32f846e4b95378ebb9402374",
+    "crates/trames-net/src/native.rs": "c16212d275d6f23deb028d52b0d44482849590f29493cde4465514bd2dae5ec0",
+    "crates/trames-net/src/native_icmp.rs": "d056f97703ab9d554c3337782b3cb83aba68356f17562eb986a6b118e4dd16e7",
+    "crates/trames-net/src/netdev.rs": "5c6cbc2a32d7c070ef72b3a1730dbb7283b8028780d5ce0d5383c8610fa9c09c",
+    "crates/trames-net/src/netlink.rs": "cd5c59d61cf3174d09e39c41036b0b588ad810f454ede5b0174f5900018687b1",
+    "crates/trames-net/src/root_routing_tests.rs": "7ef2b0139d0d2589e9ce611a83c0fcfad67c0e15f96fefae2e761346534bc471",
+    "crates/trames-net/src/routing_tests.rs": "9dccf05d8b1e1e2669d8368b2eaf559844be6b1af2520da8de694f8b611d6cf9",
+    "crates/trames-net/src/rtnetlink.rs": "79bebc519fdc7e068b8c9725c034cb175113c0938d5919adbd3c6c2a62f621a2",
+    "crates/trames-net/src/virtualnet/mod.rs": "9a11f186dba577f1a95cf9d61e2f5cb6305b7cef938c680ff8139a6c5b35486b",
+    "crates/trames-net/src/virtualnet/sockets.rs": "a5586b5049930eae29111ee7c549c223e05d6b2b34eec3ce2044ac393cefbc72",
+    "crates/trames-vfs/src/pseudo.rs": "3a72f95b093e3ed42b9bed7c9d1007a3c6e33bc5f956ef6a4b71a403bf27583b"
+  },
+  "local": {
+    "net_tests": 29,
+    "vfs_network_tests": 5,
+    "virtual_tests": 11,
+    "strict_clippy": true,
+    "fmt": true,
+    "control_abi": {
+      "checks": [
+        {
+          "cpus": 1,
+          "fixture": "docker-network-control",
+          "exit_code": 0,
+          "stdout": "docker network control: Go link/queue, BusyBox dumps, subscriptions and RouteGet: ok\n"
+        },
+        {
+          "cpus": 4,
+          "fixture": "docker-network-control",
+          "exit_code": 0,
+          "stdout": "docker network control: Go link/queue, BusyBox dumps, subscriptions and RouteGet: ok\n"
+        }
+      ],
+      "source_sha256": {
+        "container-network": "c4f117a20fc20cc4f00b861fc33d75ce7f3ace18b55b001c5cc1c772055a210b",
+        "docker-network-control": "4c22432a2cab3ffec5237f88d8ab3083ea8817c23bfdd61fd491d3cf5676fcb1"
+      },
+      "fixture_sha256": {
+        "docker-network-control": "6b26d6f7ccdb0f7b997f59236c212304ead28d181f0eab1e939f982a3c62ffda"
+      },
+      "scope": "Go link string/queue metadata, non-NUL rename, BusyBox compact dumps, real subscribed netlink dump and gateway RouteGet ABI. Does not accept external forwarding, nftables/NAT or full Docker bridge."
+    },
+    "docker": {
+      "profile": "internal-bridge-default-seccomp",
+      "gomaxprocs": 1,
+      "scope": "Original Docker creates docker0, veth pair, netns, eth0/IP/gateway; container reaches bridge gateway and root guest fetches actual HTTP from the container. Default IPC/cgroup/seccomp/device isolation retained. Explicit iptables=false/ip6tables=false/ip-masq=false: no firewall/NAT/external DNS/port-publishing acceptance.",
+      "packages_sha256": {
+        "containerd-2.1.5-r2.apk": "963e1c79c6439e23afbb085428d6466fa684921bacfc4f39dc0e667b044b7669",
+        "crun-1.23.1-r0.apk": "64c9b516fc7f8cdde7b666db5832fa93952c71545832292fcd9845401ca7bcca",
+        "docker-cli-28.3.3-r5.apk": "8895ae93210cdf47018720928fd703d30f43f62ec452b6a30391d5a6b18a6ae2",
+        "docker-engine-28.3.3-r5.apk": "ea07b9c3e707fa12920e1501d14bf702ee19af56f21634356af4311a02384aad",
+        "runc-1.3.4-r1.apk": "4a6a59757e4559796492417e7cd10c8719b4dd00684e7ce7ea6197d18f1db52a",
+        "tini-static-0.19.0-r3.apk": "b16167b87355ea675d0bbba2dc2ad6bf537edd97e73c4a1a2ed720f23e85c877",
+        "busybox-1.37.0-r20.apk": "9d25af67564c92a4a4c603462efdbcd23019e90b8785f1ebcad640cbb1551c93",
+        "busybox-binsh-1.37.0-r20.apk": "9180dcee3f67ea806fe45361cffab94f8ce7e417d5f373bb0d989e88eb609903",
+        "ca-certificates-20260909-r0.apk": "b281f0245c7998f8d72541e301b259e370eae9491b66881a27380e544cba432b",
+        "iptables-1.8.11-r1.apk": "0a10fe634e3525082a1219487cd044d987ac4a55ed5aa551bf758e81223e1cfb",
+        "libcap2-2.78-r0.apk": "de209aee8b76946849bff6bd97151c6af20889be5a96a2e28f9899255e252e3f",
+        "libcrypto3-3.5.9-r0.apk": "ede2ef7eca3b65a42e902aaf7890f9c5647dca0c55123a817179ad9f3bc6ef24",
+        "libmnl-1.0.5-r2.apk": "213a7e87553bed3d9159b2e74d2627885c259883e61714b357949ca806eb1f8d",
+        "libncursesw-6.5_p20250503-r0.apk": "419b375e8a4345e7172b1f0f3a3c57db61374f5408cdb875d9e860bd4c243aca",
+        "libnftnl-1.2.9-r0.apk": "6912a5d56b31d3365b8dd0d6339bd70a2bfc9e25dab0c387f77174113c43e664",
+        "libseccomp-2.6.1-r0.apk": "ee817c130535b72e5b0a63b211f9d2fbbaa493a319f78e9da5e30359991e5180",
+        "libssl3-3.5.9-r0.apk": "338c9f6154582b4b76455a59f95538bcea8df039c5c72916dd2d8d0d844c9583",
+        "libxtables-1.8.11-r1.apk": "e84f0d6b69d4318f297056d00ccbe433e6c7d163fe6767405e373248c42e3e88",
+        "musl-1.2.5-r12.apk": "ac281d1e7f9e9c447c51e309317b975f48be6edaf3ab91ae73b959cf86703782",
+        "ncurses-terminfo-base-6.5_p20250503-r0.apk": "3d37403e0b5ab9eb0c1ce269444e4a385faec9fe6af452c1c6956806b13d2bd6",
+        "yajl-2.1.0-r9.apk": "34a2fb7671a29f19166d051318c866e60f4687184fe73939b6b08325d11b68a8"
+      },
+      "rootfs_sha256": "821565fa8f3953eefd12497b166b4b50add2f7c57fb312e75862f5867e06fefe",
+      "checks": [
+        {
+          "cpus": 1,
+          "exit_code": 0,
+          "checks": {
+            "DAEMON": true,
+            "IMAGE": true,
+            "CREATE": true,
+            "RUN": true,
+            "CLEANUP": true,
+            "BRIDGE_HTTP": true
+          },
+          "start_exit": 7
+        }
+      ],
+      "log_sha256": "a7681251d25168ab4a57f6f60b77f466653a97dcde674cf565b09fa8eaab0644"
+    },
+    "busybox_nc_regression": {
+      "before": "Default V6ONLY=1, listener [::]:18080, IPv4 root connect refused",
+      "after": "Default TCP/UDP V6ONLY=0, same original BusyBox sh/nc serves an IPv4 root HTTP request",
+      "explicit_v6only_preserved": true
+    }
+  },
+  "ci": {
+    "linux": {
+      "run": 39096972765,
+      "job": 117585362338,
+      "conclusion": "success",
+      "strict_clippy": true,
+      "fmt": true,
+      "net_tests": 29,
+      "vfs_network_tests": 5,
+      "virtual_tests": 11,
+      "artifact": {
+        "id": 12124728845,
+        "bytes": 15217,
+        "sha256": "980819f1991c855b26f43dcb577e3b1018b080030df742370e742c8c0b083793"
+      },
+      "control_abi": {
+        "checks": [
+          {
+            "cpus": 1,
+            "fixture": "docker-network-control",
+            "exit_code": 0,
+            "stdout": "docker network control: Go link/queue, BusyBox dumps, subscriptions and RouteGet: ok\n"
+          },
+          {
+            "cpus": 4,
+            "fixture": "docker-network-control",
+            "exit_code": 0,
+            "stdout": "docker network control: Go link/queue, BusyBox dumps, subscriptions and RouteGet: ok\n"
+          }
+        ],
+        "source_sha256": {
+          "container-network": "c4f117a20fc20cc4f00b861fc33d75ce7f3ace18b55b001c5cc1c772055a210b",
+          "docker-network-control": "4c22432a2cab3ffec5237f88d8ab3083ea8817c23bfdd61fd491d3cf5676fcb1"
+        },
+        "fixture_sha256": {
+          "docker-network-control": "7eaa26e3172d9b5c1094105ee73d964d520437c68a5d2bb01b62c40e14665413"
+        },
+        "scope": "Go link string/queue metadata, non-NUL rename, BusyBox compact dumps, real subscribed netlink dump and gateway RouteGet ABI. Does not accept external forwarding, nftables/NAT or full Docker bridge."
+      },
+      "docker": {
+        "profile": "internal-bridge-default-seccomp",
+        "gomaxprocs": 1,
+        "scope": "Original Docker creates docker0, veth pair, netns, eth0/IP/gateway; container reaches bridge gateway and root guest fetches actual HTTP from the container. Default IPC/cgroup/seccomp/device isolation retained. Explicit iptables=false/ip6tables=false/ip-masq=false: no firewall/NAT/external DNS/port-publishing acceptance.",
+        "packages_sha256": {
+          "containerd-2.1.5-r2.apk": "963e1c79c6439e23afbb085428d6466fa684921bacfc4f39dc0e667b044b7669",
+          "crun-1.23.1-r0.apk": "64c9b516fc7f8cdde7b666db5832fa93952c71545832292fcd9845401ca7bcca",
+          "docker-cli-28.3.3-r5.apk": "8895ae93210cdf47018720928fd703d30f43f62ec452b6a30391d5a6b18a6ae2",
+          "docker-engine-28.3.3-r5.apk": "ea07b9c3e707fa12920e1501d14bf702ee19af56f21634356af4311a02384aad",
+          "runc-1.3.4-r1.apk": "4a6a59757e4559796492417e7cd10c8719b4dd00684e7ce7ea6197d18f1db52a",
+          "tini-static-0.19.0-r3.apk": "b16167b87355ea675d0bbba2dc2ad6bf537edd97e73c4a1a2ed720f23e85c877",
+          "busybox-1.37.0-r20.apk": "9d25af67564c92a4a4c603462efdbcd23019e90b8785f1ebcad640cbb1551c93",
+          "busybox-binsh-1.37.0-r20.apk": "9180dcee3f67ea806fe45361cffab94f8ce7e417d5f373bb0d989e88eb609903",
+          "ca-certificates-20260909-r0.apk": "b281f0245c7998f8d72541e301b259e370eae9491b66881a27380e544cba432b",
+          "iptables-1.8.11-r1.apk": "0a10fe634e3525082a1219487cd044d987ac4a55ed5aa551bf758e81223e1cfb",
+          "libcap2-2.78-r0.apk": "de209aee8b76946849bff6bd97151c6af20889be5a96a2e28f9899255e252e3f",
+          "libcrypto3-3.5.9-r0.apk": "ede2ef7eca3b65a42e902aaf7890f9c5647dca0c55123a817179ad9f3bc6ef24",
+          "libmnl-1.0.5-r2.apk": "213a7e87553bed3d9159b2e74d2627885c259883e61714b357949ca806eb1f8d",
+          "libncursesw-6.5_p20250503-r0.apk": "419b375e8a4345e7172b1f0f3a3c57db61374f5408cdb875d9e860bd4c243aca",
+          "libnftnl-1.2.9-r0.apk": "6912a5d56b31d3365b8dd0d6339bd70a2bfc9e25dab0c387f77174113c43e664",
+          "libseccomp-2.6.1-r0.apk": "ee817c130535b72e5b0a63b211f9d2fbbaa493a319f78e9da5e30359991e5180",
+          "libssl3-3.5.9-r0.apk": "338c9f6154582b4b76455a59f95538bcea8df039c5c72916dd2d8d0d844c9583",
+          "libxtables-1.8.11-r1.apk": "e84f0d6b69d4318f297056d00ccbe433e6c7d163fe6767405e373248c42e3e88",
+          "musl-1.2.5-r12.apk": "ac281d1e7f9e9c447c51e309317b975f48be6edaf3ab91ae73b959cf86703782",
+          "ncurses-terminfo-base-6.5_p20250503-r0.apk": "3d37403e0b5ab9eb0c1ce269444e4a385faec9fe6af452c1c6956806b13d2bd6",
+          "yajl-2.1.0-r9.apk": "34a2fb7671a29f19166d051318c866e60f4687184fe73939b6b08325d11b68a8"
+        },
+        "rootfs_sha256": "821565fa8f3953eefd12497b166b4b50add2f7c57fb312e75862f5867e06fefe",
+        "checks": [
+          {
+            "cpus": 4,
+            "exit_code": 0,
+            "checks": {
+              "DAEMON": true,
+              "IMAGE": true,
+              "CREATE": true,
+              "RUN": true,
+              "CLEANUP": true,
+              "BRIDGE_HTTP": true
+            },
+            "start_exit": 7
+          }
+        ]
+      }
+    },
+    "apple": {
+      "run": 39096972663,
+      "job": 117585357919,
+      "conclusion": "success",
+      "net_tests": 29,
+      "vfs_network_tests": 5,
+      "aarch64_apple_ios_ffi_check": true
+    }
+  },
+  "scope": "Original signed Docker IPv4 internal bridge/veth/netns, default IPC/cgroup/seccomp/device plus gateway ICMP and root-to-container BusyBox HTTP. iptables/ip6tables/ip-masq explicitly disabled; no full Docker firewall/NAT/external network acceptance. No IPA.",
+  "not_implemented": [
+    "NETLINK_NETFILTER/iptables-nft",
+    "conntrack/filter/NAT",
+    "external container DNS/HTTP",
+    "embedded Docker DNS",
+    "published ports",
+    "full Docker IPv6 networks",
+    "AF_PACKET/raw Ethernet/unsolicited ARP",
+    "STP/VLAN/multicast",
+    "qdisc/tc",
+    "arbitrary netlink peer unicast",
+    "complete route/carrier notifications"
+  ]
+}

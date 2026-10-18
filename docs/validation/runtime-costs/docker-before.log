@@ -1,0 +1,161 @@
+PROFILE_DAEMON_BEGIN 1792327499
+PROFILE_DAEMON_READY 1792327515
+PROFILE_CREATE_BEGIN 1792327516
+5764099178cf0c520062f6bb6ec53e1e04d8199de112565e3a034351e3354d3d
+PROFILE_CREATE_END 1792327951
+PROFILE_EXEC_BEGIN 1792327951
+profile-exec-ok
+PROFILE_EXEC_END 1792328156
+0
+profile-app
+PROFILE_CLEANUP_END 1792328162
+time="2026-10-18T12:45:00.748453206Z" level=info msg="Starting up"
+time="2026-10-18T12:45:00.762647029Z" level=warning msg="Error while setting daemon root propagation, this is not generally critical but may cause some functionality to not work or fallback to less desirable behavior" dir=/var/lib/docker error="could not setup daemon root propagation to shared: remount /var/lib/docker, flags: 0x100000: operation not supported"
+time="2026-10-18T12:45:00.773887295Z" level=info msg="containerd not running, starting managed containerd"
+time="2026-10-18T12:45:00.901082425Z" level=info msg="started new containerd process" address=/var/run/docker/containerd/containerd.sock module=libcontainerd pid=18
+time="2026-10-18T12:45:01.755743458Z" level=info msg="starting containerd" revision=fcd43222d6b07379a4be9786bda52438f0dd16a1 version=v2.1.5
+time="2026-10-18T12:45:02.718165964Z" level=warning msg="Configuration migrated from version 2, use `containerd config migrate` to avoid migration" t="760.65µs"
+time="2026-10-18T12:45:02.720206251Z" level=info msg="loading plugin" id=io.containerd.content.v1.content type=io.containerd.content.v1
+time="2026-10-18T12:45:02.724134449Z" level=info msg="loading plugin" id=io.containerd.image-verifier.v1.bindir type=io.containerd.image-verifier.v1
+time="2026-10-18T12:45:02.730588682Z" level=info msg="loading plugin" id=io.containerd.internal.v1.opt type=io.containerd.internal.v1
+time="2026-10-18T12:45:02.733778463Z" level=info msg="loading plugin" id=io.containerd.warning.v1.deprecations type=io.containerd.warning.v1
+time="2026-10-18T12:45:02.735100544Z" level=info msg="loading plugin" id=io.containerd.snapshotter.v1.blockfile type=io.containerd.snapshotter.v1
+time="2026-10-18T12:45:02.736844087Z" level=info msg="skip loading plugin" error="no scratch file generator: skip plugin" id=io.containerd.snapshotter.v1.blockfile type=io.containerd.snapshotter.v1
+time="2026-10-18T12:45:02.738416985Z" level=info msg="loading plugin" id=io.containerd.snapshotter.v1.btrfs type=io.containerd.snapshotter.v1
+time="2026-10-18T12:45:02.755315391Z" level=info msg="skip loading plugin" error="path /var/lib/docker/containerd/daemon/io.containerd.snapshotter.v1.btrfs (rootfs) must be a btrfs filesystem to be used with the btrfs snapshotter: skip plugin" id=io.containerd.snapshotter.v1.btrfs type=io.containerd.snapshotter.v1
+time="2026-10-18T12:45:02.758258923Z" level=info msg="loading plugin" id=io.containerd.snapshotter.v1.devmapper type=io.containerd.snapshotter.v1
+time="2026-10-18T12:45:02.763360399Z" level=info msg="skip loading plugin" error="devmapper not configured: skip plugin" id=io.containerd.snapshotter.v1.devmapper type=io.containerd.snapshotter.v1
+time="2026-10-18T12:45:02.766300415Z" level=info msg="loading plugin" id=io.containerd.snapshotter.v1.erofs type=io.containerd.snapshotter.v1
+time="2026-10-18T12:45:02.796994378Z" level=info msg="skip loading plugin" error="EROFS unsupported, please `modprobe erofs`: skip plugin" id=io.containerd.snapshotter.v1.erofs type=io.containerd.snapshotter.v1
+time="2026-10-18T12:45:02.804059747Z" level=info msg="loading plugin" id=io.containerd.snapshotter.v1.native type=io.containerd.snapshotter.v1
+time="2026-10-18T12:45:02.806031863Z" level=info msg="loading plugin" id=io.containerd.snapshotter.v1.overlayfs type=io.containerd.snapshotter.v1
+time="2026-10-18T12:45:02.837340908Z" level=info msg="loading plugin" id=io.containerd.snapshotter.v1.zfs type=io.containerd.snapshotter.v1
+time="2026-10-18T12:45:02.848436417Z" level=info msg="skip loading plugin" error="lstat /var/lib/docker/containerd/daemon/io.containerd.snapshotter.v1.zfs: no such file or directory: skip plugin" id=io.containerd.snapshotter.v1.zfs type=io.containerd.snapshotter.v1
+time="2026-10-18T12:45:02.854496810Z" level=info msg="loading plugin" id=io.containerd.event.v1.exchange type=io.containerd.event.v1
+time="2026-10-18T12:45:02.865025064Z" level=info msg="loading plugin" id=io.containerd.monitor.task.v1.cgroups type=io.containerd.monitor.task.v1
+time="2026-10-18T12:45:02.929599435Z" level=info msg="loading plugin" id=io.containerd.metadata.v1.bolt type=io.containerd.metadata.v1
+time="2026-10-18T12:45:02.936884854Z" level=info msg="metadata content store policy set" policy=shared
+time="2026-10-18T12:45:02.953199542Z" level=info msg="loading plugin" id=io.containerd.gc.v1.scheduler type=io.containerd.gc.v1
+time="2026-10-18T12:45:02.961549957Z" level=info msg="loading plugin" id=io.containerd.differ.v1.erofs type=io.containerd.differ.v1
+time="2026-10-18T12:45:02.966655098Z" level=info msg="skip loading plugin" error="could not find mkfs.erofs: exec: \"mkfs.erofs\": executable file not found in $PATH: skip plugin" id=io.containerd.differ.v1.erofs type=io.containerd.differ.v1
+time="2026-10-18T12:45:02.968707544Z" level=info msg="loading plugin" id=io.containerd.differ.v1.walking type=io.containerd.differ.v1
+time="2026-10-18T12:45:02.971554201Z" level=info msg="loading plugin" id=io.containerd.lease.v1.manager type=io.containerd.lease.v1
+time="2026-10-18T12:45:02.974564863Z" level=info msg="loading plugin" id=io.containerd.service.v1.containers-service type=io.containerd.service.v1
+time="2026-10-18T12:45:02.977936066Z" level=info msg="loading plugin" id=io.containerd.service.v1.content-service type=io.containerd.service.v1
+time="2026-10-18T12:45:02.980205858Z" level=info msg="loading plugin" id=io.containerd.service.v1.diff-service type=io.containerd.service.v1
+time="2026-10-18T12:45:02.985922986Z" level=info msg="loading plugin" id=io.containerd.service.v1.images-service type=io.containerd.service.v1
+time="2026-10-18T12:45:02.988311125Z" level=info msg="loading plugin" id=io.containerd.service.v1.introspection-service type=io.containerd.service.v1
+time="2026-10-18T12:45:02.990477597Z" level=info msg="loading plugin" id=io.containerd.service.v1.namespaces-service type=io.containerd.service.v1
+time="2026-10-18T12:45:02.992692967Z" level=info msg="loading plugin" id=io.containerd.service.v1.snapshots-service type=io.containerd.service.v1
+time="2026-10-18T12:45:02.995858231Z" level=info msg="loading plugin" id=io.containerd.shim.v1.manager type=io.containerd.shim.v1
+time="2026-10-18T12:45:02.999199809Z" level=info msg="loading plugin" id=io.containerd.runtime.v2.task type=io.containerd.runtime.v2
+time="2026-10-18T12:45:03.007523875Z" level=info msg="loading plugin" id=io.containerd.service.v1.tasks-service type=io.containerd.service.v1
+time="2026-10-18T12:45:03.017751353Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.containers type=io.containerd.grpc.v1
+time="2026-10-18T12:45:03.022428113Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.content type=io.containerd.grpc.v1
+time="2026-10-18T12:45:03.027543309Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.diff type=io.containerd.grpc.v1
+time="2026-10-18T12:45:03.034372955Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.events type=io.containerd.grpc.v1
+time="2026-10-18T12:45:03.036672642Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.images type=io.containerd.grpc.v1
+time="2026-10-18T12:45:03.041706857Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.introspection type=io.containerd.grpc.v1
+time="2026-10-18T12:45:03.045653392Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.leases type=io.containerd.grpc.v1
+time="2026-10-18T12:45:03.052278761Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.namespaces type=io.containerd.grpc.v1
+time="2026-10-18T12:45:03.057617633Z" level=info msg="loading plugin" id=io.containerd.sandbox.store.v1.local type=io.containerd.sandbox.store.v1
+time="2026-10-18T12:45:03.061966311Z" level=info msg="loading plugin" id=io.containerd.transfer.v1.local type=io.containerd.transfer.v1
+time="2026-10-18T12:45:03.070035655Z" level=info msg="loading plugin" id=io.containerd.cri.v1.images type=io.containerd.cri.v1
+time="2026-10-18T12:45:03.080890714Z" level=info msg="Get image filesystem path \"/var/lib/docker/containerd/daemon/io.containerd.snapshotter.v1.overlayfs\" for snapshotter \"overlayfs\""
+time="2026-10-18T12:45:03.084983709Z" level=info msg="Start snapshots syncer"
+time="2026-10-18T12:45:03.086803907Z" level=info msg="loading plugin" id=io.containerd.cri.v1.runtime type=io.containerd.cri.v1
+time="2026-10-18T12:45:03.109639161Z" level=info msg="starting cri plugin" config="{\"containerd\":{\"defaultRuntimeName\":\"runc\",\"runtimes\":{\"runc\":{\"runtimeType\":\"io.containerd.runc.v2\",\"runtimePath\":\"\",\"PodAnnotations\":null,\"ContainerAnnotations\":null,\"options\":{\"BinaryName\":\"\",\"CriuImagePath\":\"\",\"CriuWorkPath\":\"\",\"IoGid\":0,\"IoUid\":0,\"NoNewKeyring\":false,\"Root\":\"\",\"ShimCgroup\":\"\",\"SystemdCgroup\":false},\"privileged_without_host_devices\":false,\"privileged_without_host_devices_all_devices_allowed\":false,\"cgroupWritable\":false,\"baseRuntimeSpec\":\"\",\"cniConfDir\":\"\",\"cniMaxConfNum\":0,\"snapshotter\":\"\",\"sandboxer\":\"podsandbox\",\"io_type\":\"\"}},\"ignoreBlockIONotEnabledErrors\":false,\"ignoreRdtNotEnabledErrors\":false},\"cni\":{\"binDir\":\"\",\"binDirs\":[\"/opt/cni/bin\"],\"confDir\":\"/etc/cni/net.d\",\"maxConfNum\":1,\"setupSerially\":false,\"confTemplate\":\"\",\"ipPref\":\"\",\"useInternalLoopback\":false},\"enableSelinux\":false,\"selinuxCategoryRange\":1024,\"maxContainerLogLineSize\":16384,\"disableApparmor\":false,\"restrictOOMScoreAdj\":false,\"disableProcMount\":false,\"unsetSeccompProfile\":\"\",\"tolerateMissingHugetlbController\":true,\"disableHugetlbController\":true,\"device_ownership_from_security_context\":false,\"ignoreImageDefinedVolumes\":false,\"netnsMountsUnderStateDir\":false,\"enableUnprivilegedPorts\":true,\"enableUnprivilegedICMP\":true,\"enableCDI\":true,\"cdiSpecDirs\":[\"/etc/cdi\",\"/var/run/cdi\"],\"drainExecSyncIOTimeout\":\"0s\",\"ignoreDeprecationWarnings\":null,\"containerdRootDir\":\"/var/lib/docker/containerd/daemon\",\"containerdEndpoint\":\"/var/run/docker/containerd/containerd.sock\",\"rootDir\":\"/var/lib/docker/containerd/daemon/io.containerd.grpc.v1.cri\",\"stateDir\":\"/var/run/docker/containerd/daemon/io.containerd.grpc.v1.cri\"}"
+time="2026-10-18T12:45:03.113276172Z" level=info msg="loading plugin" id=io.containerd.podsandbox.controller.v1.podsandbox type=io.containerd.podsandbox.controller.v1
+time="2026-10-18T12:45:03.116407625Z" level=info msg="loading plugin" id=io.containerd.sandbox.controller.v1.shim type=io.containerd.sandbox.controller.v1
+time="2026-10-18T12:45:03.126098580Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.sandbox-controllers type=io.containerd.grpc.v1
+time="2026-10-18T12:45:03.131792463Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.sandboxes type=io.containerd.grpc.v1
+time="2026-10-18T12:45:03.134719370Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.snapshots type=io.containerd.grpc.v1
+time="2026-10-18T12:45:03.137881179Z" level=info msg="loading plugin" id=io.containerd.streaming.v1.manager type=io.containerd.streaming.v1
+time="2026-10-18T12:45:03.146155590Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.streaming type=io.containerd.grpc.v1
+time="2026-10-18T12:45:03.148180695Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.tasks type=io.containerd.grpc.v1
+time="2026-10-18T12:45:03.149568956Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.transfer type=io.containerd.grpc.v1
+time="2026-10-18T12:45:03.150950526Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.version type=io.containerd.grpc.v1
+time="2026-10-18T12:45:03.152381912Z" level=info msg="loading plugin" id=io.containerd.monitor.container.v1.restart type=io.containerd.monitor.container.v1
+time="2026-10-18T12:45:03.155902088Z" level=info msg="loading plugin" id=io.containerd.tracing.processor.v1.otlp type=io.containerd.tracing.processor.v1
+time="2026-10-18T12:45:03.159162164Z" level=info msg="skip loading plugin" error="skip plugin: tracing endpoint not configured" id=io.containerd.tracing.processor.v1.otlp type=io.containerd.tracing.processor.v1
+time="2026-10-18T12:45:03.162907267Z" level=info msg="loading plugin" id=io.containerd.internal.v1.tracing type=io.containerd.internal.v1
+time="2026-10-18T12:45:03.169425155Z" level=info msg="skip loading plugin" error="skip plugin: tracing endpoint not configured" id=io.containerd.internal.v1.tracing type=io.containerd.internal.v1
+time="2026-10-18T12:45:03.170712465Z" level=info msg="loading plugin" id=io.containerd.ttrpc.v1.otelttrpc type=io.containerd.ttrpc.v1
+time="2026-10-18T12:45:03.172074025Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.healthcheck type=io.containerd.grpc.v1
+time="2026-10-18T12:45:03.173311550Z" level=info msg="loading plugin" id=io.containerd.nri.v1.nri type=io.containerd.nri.v1
+time="2026-10-18T12:45:03.174342415Z" level=info msg="runtime interface created"
+time="2026-10-18T12:45:03.174966330Z" level=info msg="created NRI interface"
+time="2026-10-18T12:45:03.194168309Z" level=info msg=serving... address=/var/run/docker/containerd/containerd-debug.sock
+time="2026-10-18T12:45:03.204399984Z" level=info msg=serving... address=/var/run/docker/containerd/containerd.sock.ttrpc
+time="2026-10-18T12:45:03.213703959Z" level=info msg=serving... address=/var/run/docker/containerd/containerd.sock
+time="2026-10-18T12:45:03.216318112Z" level=info msg="containerd successfully booted in 1.506919s"
+time="2026-10-18T12:45:03.759644019Z" level=info msg="OTEL tracing is not configured, using no-op tracer provider"
+time="2026-10-18T12:45:03.774323761Z" level=info msg="CDI directory does not exist, skipping: failed to monitor for changes: no such file or directory" dir=/var/run/cdi
+time="2026-10-18T12:45:03.775819583Z" level=info msg="CDI directory does not exist, skipping: failed to monitor for changes: no such file or directory" dir=/etc/cdi
+time="2026-10-18T12:45:03.780978044Z" level=warning msg="unable to modify root key limit, number of containers could be limited by this quota: open /proc/sys/kernel/keys/root_maxkeys: no such file or directory"
+time="2026-10-18T12:45:03.785555564Z" level=info msg="detected 127.0.0.53 nameserver, assuming systemd-resolved, so using resolv.conf: /run/systemd/resolve/resolv.conf"
+time="2026-10-18T12:45:04.692861582Z" level=info msg="Creating a containerd client" address=/var/run/docker/containerd/containerd.sock timeout=1m0s
+time="2026-10-18T12:45:05.004802989Z" level=info msg="[graphdriver] using prior storage driver: overlay2"
+time="2026-10-18T12:45:05.056171906Z" level=info msg="Loading containers: start."
+time="2026-10-18T12:45:05.076696716Z" level=warning msg="Could not load necessary modules for IPSEC rules: protocol not supported"
+time="2026-10-18T12:45:09.261407944Z" level=info msg="failed to read ipv6 net.ipv6.conf.<bridge>.accept_ra" bridge=docker0 syspath=/proc/sys/net/ipv6/conf/docker0/accept_ra
+time="2026-10-18T12:45:09.265438585Z" level=info msg="failed to read ipv6 net.ipv6.conf.<bridge>.accept_ra" bridge=docker0 syspath=/proc/sys/net/ipv6/conf/docker0/accept_ra
+time="2026-10-18T12:45:11.937888020Z" level=warning msg="Error (Unable to complete atomic operation, key modified) deleting object [endpoint_count db74764766dd9cfa14940bedeba25cf7d158586046574354ab49db3220b1b01f], retrying...."
+time="2026-10-18T12:45:11.982529274Z" level=info msg="failed to read ipv6 net.ipv6.conf.<bridge>.accept_ra" bridge=docker0 syspath=/proc/sys/net/ipv6/conf/docker0/accept_ra
+time="2026-10-18T12:45:13.084525344Z" level=info msg="Loading containers: done."
+time="2026-10-18T12:45:13.721943933Z" level=warning msg="WARNING: No memory limit support"
+time="2026-10-18T12:45:13.723757654Z" level=warning msg="WARNING: No swap limit support"
+time="2026-10-18T12:45:13.725601621Z" level=warning msg="WARNING: No cpu cfs quota support"
+time="2026-10-18T12:45:13.727354261Z" level=warning msg="WARNING: No cpu cfs period support"
+time="2026-10-18T12:45:13.729057327Z" level=warning msg="WARNING: No cpu shares support"
+time="2026-10-18T12:45:13.734247666Z" level=warning msg="WARNING: No cpuset support"
+time="2026-10-18T12:45:13.735740157Z" level=warning msg="WARNING: No io.weight support"
+time="2026-10-18T12:45:13.736713843Z" level=warning msg="WARNING: No io.weight (per device) support"
+time="2026-10-18T12:45:13.737603462Z" level=warning msg="WARNING: No io.max (rbps) support"
+time="2026-10-18T12:45:13.738198041Z" level=warning msg="WARNING: No io.max (wbps) support"
+time="2026-10-18T12:45:13.739005869Z" level=warning msg="WARNING: No io.max (riops) support"
+time="2026-10-18T12:45:13.739632917Z" level=warning msg="WARNING: No io.max (wiops) support"
+time="2026-10-18T12:45:13.740874102Z" level=info msg="Docker daemon" commit=bea959c7b793b32a893820b97c4eadc7c87fabb0 containerd-snapshotter=false storage-driver=overlay2 version=28.3.3
+time="2026-10-18T12:45:13.742576948Z" level=info msg="Initializing buildkit"
+time="2026-10-18T12:45:14.121896907Z" level=info msg="Completed buildkit initialization"
+time="2026-10-18T12:45:14.835107608Z" level=info msg="Daemon has completed initialization"
+time="2026-10-18T12:45:14.837122721Z" level=info msg="API listen on /var/run/docker.sock"
+time="2026-10-18T12:45:51.452787618Z" level=info msg="connecting to shim 5764099178cf0c520062f6bb6ec53e1e04d8199de112565e3a034351e3354d3d" address="unix:///run/containerd/s/8460095b2e79a8e2b4a86d00ee04f7cae10eca17c43dc0e57518920b1e46851e" namespace=moby protocol=ttrpc version=3
+time="2026-10-18T12:51:53.773130423Z" level=warning msg="xtables contention detected while running [--wait -t raw -A PREROUTING -d 172.17.0.2 ! -i docker0 -j DROP]: Waited for 2.91 seconds and received \"\""
+time="2026-10-18T12:51:58.019047408Z" level=info msg="No non-localhost DNS nameservers are left in resolv.conf. Using default external servers"
+time="2026-10-18T12:52:03.426962406Z" level=warning msg="Failed to prepare unsolicited ARP" eid=68aed8046dbf708f96e34ffaf91dccb3eb58efdf0aaa193c1b9d62ff43869a1a ep=profile-app error="create socket: address family not supported by protocol" iface=eth0 ifi=5 ip4=172.17.0.2/16 ip6="<nil>" mac="4a:50:e8:33:85:e1" mcastRouteOk=true net=bridge nid=33365c704fa10fc233ebe0f7c3d8b6ecd934e35a26e9e40c68ba04510ebd0218
+time="2026-10-18T12:52:30.617411201Z" level=warning msg="error from *cgroupsv2.Manager.EventChan" error="failed to add inotify watch for \"/sys/fs/cgroup/docker/5764099178cf0c520062f6bb6ec53e1e04d8199de112565e3a034351e3354d3d/memory.events\": no such file or directory"
+time="2026-10-18T12:55:58.886397001Z" level=info msg="shim disconnected" id=5764099178cf0c520062f6bb6ec53e1e04d8199de112565e3a034351e3354d3d namespace=moby
+time="2026-10-18T12:55:58.925906307Z" level=info msg="cleaning up after shim disconnected" id=5764099178cf0c520062f6bb6ec53e1e04d8199de112565e3a034351e3354d3d namespace=moby
+time="2026-10-18T12:55:58.928001441Z" level=info msg="ignoring event" container=5764099178cf0c520062f6bb6ec53e1e04d8199de112565e3a034351e3354d3d module=libcontainerd namespace=moby topic=/tasks/delete type="*events.TaskDelete"
+time="2026-10-18T12:55:58.938369926Z" level=info msg="cleaning up dead shim" id=5764099178cf0c520062f6bb6ec53e1e04d8199de112565e3a034351e3354d3d namespace=moby
+time="2026-10-18T12:56:02.181549652Z" level=info msg="Processing signal 'terminated'"
+time="2026-10-18T12:56:02.288990221Z" level=info msg="stopping event stream following graceful shutdown" error="<nil>" module=libcontainerd namespace=moby
+time="2026-10-18T12:56:02.327939322Z" level=info msg="stopping healthcheck following graceful shutdown" module=libcontainerd
+time="2026-10-18T12:56:02.332290749Z" level=info msg="Daemon shutdown complete"
+time="2026-10-18T12:56:02.339525602Z" level=info msg="stopping event stream following graceful shutdown" error="context canceled" module=libcontainerd namespace=plugins.moby
+[1.281792] pid=6 syscall=40(mount) pc=0x407bc59c args=[4000499815, 4000499820, 4000499816, 100000, 0, 0] unsupported errno=95 comm="dockerd"
+[1.306394] pid=10 syscall=434(pidfd_open) pc=0x407bc59c args=[6, 0, 0, 0, 0, 0] unsupported errno=38 comm="dockerd"
+[5.395162] pid=6 syscall=60(quotactl) pc=0x407bc59c args=[580502, 44611580, 0, 4000660590, 0, 0] unsupported errno=38 comm="dockerd"
+[27.771823] pid=21 syscall=434(pidfd_open) pc=0x404194fc args=[12, 0, 0, 0, 0, 0] unsupported errno=38 comm="containerd"
+[48.450901] pid=300 syscall=434(pidfd_open) pc=0x40019b2c args=[124, 0, 0, 0, 0, 0] unsupported errno=38 comm="containerd-shim"
+[81.156602] pid=311 syscall=434(pidfd_open) pc=0x40019b2c args=[12d, 0, 0, 0, 0, 0] unsupported errno=38 comm="containerd-shim"
+[105.647025] pid=312 syscall=428(open_tree) pc=0x4012b9ac args=[fffffffffffffff7, 4000011aca, 80000, 0, 0, 0] unsupported errno=38 comm="runc"
+[109.450543] pid=312 syscall=430(fsopen) pc=0x4012b9ac args=[40002178d0, 1, 0, 0, 0, 0] unsupported errno=38 comm="runc"
+[111.244543] pid=312 syscall=434(pidfd_open) pc=0x4012b9ac args=[138, 0, 0, 0, 0, 0] unsupported errno=38 comm="runc"
+[185.565031] pid=325 syscall=219(keyctl) pc=0x4012b9ac args=[1, 400007c190, 0, 0, 0, 0] unsupported errno=38 comm="runc:[2:INIT]"
+[188.175818] pid=325 syscall=428(open_tree) pc=0x4012b9ac args=[fffffffffffffff7, 40001012ea, 80000, 0, 0, 0] unsupported errno=38 comm="runc:[2:INIT]"
+[282.876747] pid=312 syscall=280(bpf) pc=0x4012b9ac args=[0, 40001b5d18, 50, 0, 0, 0] unsupported errno=95 comm="runc"
+[284.108849] pid=312 syscall=280(bpf) pc=0x4012b9ac args=[0, 40001b5a98, 50, 0, 0, 0] unsupported errno=95 comm="runc"
+[284.174110] pid=312 syscall=280(bpf) pc=0x4012b9ac args=[5, 40001b5f88, 98, 0, 0, 0] unsupported errno=95 comm="runc"
+[285.985090] pid=312 syscall=280(bpf) pc=0x4012b9ac args=[5, 40001b5f88, 98, 0, 0, 0] unsupported errno=95 comm="runc"
+[286.503635] pid=312 syscall=280(bpf) pc=0x4012b9ac args=[0, 40001b5f78, 50, 0, 0, 0] unsupported errno=95 comm="runc"
+[448.873703] pid=339 syscall=428(open_tree) pc=0x4012b9ac args=[fffffffffffffff7, 4000105f32, 80000, 0, 0, 0] unsupported errno=38 comm="runc"
+[493.091747] pid=369 syscall=428(open_tree) pc=0x4012b9ac args=[fffffffffffffff7, 4000011e00, 80000, 0, 0, 0] unsupported errno=38 comm="runc"
+[502.573013] pid=371 syscall=430(fsopen) pc=0x4012b9ac args=[40000a5e48, 1, 0, 0, 0, 0] unsupported errno=38 comm="runc"
+[506.069606] pid=371 syscall=434(pidfd_open) pc=0x4012b9ac args=[16a, 0, 0, 0, 0, 0] unsupported errno=38 comm="runc"
+[555.241236] pid=400 syscall=219(keyctl) pc=0x4012b9ac args=[1, 4000190190, 0, 0, 0, 0] unsupported errno=38 comm="runc:[2:INIT]"
+[658.948183] pid=480 syscall=428(open_tree) pc=0x4012b9ac args=[fffffffffffffff7, 4000011adc, 80000, 0, 0, 0] unsupported errno=38 comm="runc"
+[660.367068] pid=491 syscall=434(pidfd_open) pc=0x40019b2c args=[1e6, 0, 0, 0, 0, 0] unsupported errno=38 comm="containerd-shim"
+trames native metrics: {"calls":0,"worker_calls":0,"checkpoint_retries":0,"function_calls":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"function_fallbacks":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"integer_calls":0,"integer_conversions":0,"allocator_calls":0,"allocator_load_callbacks":0,"allocator_page_callbacks":0,"allocator_direct_loads":0,"allocator_journal_writes":0,"allocator_allocations":0,"allocator_slot_reservations":0,"allocator_frees":0,"allocator_free_resumes":0,"callback_calls":0,"callback_requests":0,"callback_yields":0,"callback_sorts":0,"callback_searches":0,"callback_state_bytes":0,"numeric_calls":0,"numeric_conversions":0,"numeric_replays":0,"numeric_input_bytes":0,"numeric_result_bytes":0,"fallbacks":0,"rejected":0,"validation_hits":0,"validation_misses":0,"faults":0,"bytes_read":0,"bytes_written":0,"direct_bytes_read":0,"direct_bytes_written":0,"buffered_bytes_read":0,"buffered_bytes_written":0,"nanoseconds":0}
+trames metrics: {"backend":"cached","context_switches":503695,"cpu_count":4,"cpu_seconds":20.398671392,"decode_lookups":38538177,"decode_misses":374461,"dispatch_seconds":4.181315832,"gpu_buffered_bytes":0,"gpu_compiles":0,"gpu_direct_bytes":0,"gpu_download_bytes":0,"gpu_peak_pending":0,"gpu_peer_instructions":0,"gpu_upload_bytes":0,"gpu_wait_seconds":0.0,"idle_seconds":1.024725518,"instructions":1160931661,"instructions_decoded":32922073,"instructions_per_second":1748379.2610853026,"memory_seconds":8.044259212,"parallel_rounds":123124,"parallel_snapshots":{"backing_invalidations":128,"cache_hits":302619,"code_invalidations":4974,"dirty_refreshes":97275,"full_rebuild_pages":424247,"full_rebuilds":500,"incremental_pages":321828,"incremental_updates":5101,"source_page_reads":951755},"peak_parallel_cpus":4,"peak_parallel_native_calls":0,"proc_refreshes":101621,"runtime_error":null,"seconds":664.004479371,"stop_seconds":10.329854391,"syscall_seconds":613.71693521,"syscalls":1408149,"worker_chunks":258757,"worker_slices":405495}

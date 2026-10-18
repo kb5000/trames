@@ -1,0 +1,24 @@
+   Compiling trames-memory v1.0.0 (/workspace/trames/crates/trames-memory)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.33s
+     Running unittests src/lib.rs (target/debug/build/trames-memory/b684aa926f13bfe0/out/trames_memory-b684aa926f13bfe0)
+
+running 1 test
+test mmu::tests::software_only_host_groups_do_not_rebuild_on_each_store ... FAILED
+
+failures:
+
+---- mmu::tests::software_only_host_groups_do_not_rebuild_on_each_store stdout ----
+
+thread 'mmu::tests::software_only_host_groups_do_not_rebuild_on_each_store' (66495) panicked at crates/trames-memory/src/mmu/tests.rs:101:5:
+assertion `left == right` failed
+  left: 1001
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    mmu::tests::software_only_host_groups_do_not_rebuild_on_each_store
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 60 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p trames-memory --lib`

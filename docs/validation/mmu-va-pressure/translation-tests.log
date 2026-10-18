@@ -1,0 +1,12 @@
+   Compiling trames-memory v1.0.0 (/workspace/trames/crates/trames-memory)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.99s
+     Running tests/translation.rs (target/debug/build/trames-memory/0c3e0be197cd815a/out/translation-0c3e0be197cd815a)
+
+running 4 tests
+test warmed_backing_and_private_copy_still_fault_after_truncation ... ok
+test tags_empty_entries_address_limit_and_cross_page_faults_preserve_effects ... ok
+test resident_cow_discard_remap_and_frame_growth_revoke_old_translations ... ok
+test warming_one_access_does_not_grant_another_and_protect_revokes_permissions ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
