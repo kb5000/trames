@@ -24,6 +24,13 @@ offset; hardware checks its read/write permission. Eligibility and sparse-window
 lookup happen at fill time, rather than once per memory instruction. Special
 mappings retain the same packed permission tag and checked transport.
 
+Host groups also remember a software-only preparation result. A plain store
+cannot fill holes or change adjacent page permissions, so it does not rebuild
+that group on every write. Mapping/protection/discard/remap boundaries recompute
+eligibility, and fork retires all results before sharing pages. This matters for
+small heaps and mixed 4KiB permissions on 16KiB hosts; see the
+[regression and controlled diagnostic](../validation/runtime-costs.md).
+
 A separate 16-entry direct-mapped descriptor cache assists cold window lookup
 and mapping/COW preparation; it is not another page-translation level. Descriptor
 collisions and cached absence only change fill work. The interpreter has its

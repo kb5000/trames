@@ -58,7 +58,10 @@ artifact #12133901582（8100 bytes）SHA256 核验为
 [JSON 记录](docker-defaults.json)。运行时源码为 505e1c4，测试拆分源码为 56a8a3a。
 
 此处为 Linux x86_64 CI 主机解释执行 ARM64 原版包；时长不是 iPad 实测。
-runc 容器创建仍较慢，后续需要单独采样定位；本次没有用 Go/nofile 参数规避。
+本次没有用 Go/nofile 参数规避。后续[独立采样和优化](runtime-costs.md)发现
+proc maps 重建热点；本地同盘/同脚本对照 create 435→80 秒、exec 205→39 秒。
+它与这里的 fresh-store CI 是不同机器/工作流，不直接比较两份绝对时间；
+新的性能修复尚未进行 iPad 实测。
 
 ## 工作流覆盖与边界
 

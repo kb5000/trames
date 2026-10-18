@@ -1,0 +1,91 @@
+{
+  "samples": 166497,
+  "categories": {
+    "other_memory_or_merged_generic": 57706,
+    "outside_executable": 24822,
+    "other": 26868,
+    "regions_including_inline_frames": 57101
+  },
+  "application_frames": [
+    [
+      "outside_or_unattributed",
+      93633
+    ],
+    [
+      "<trames_memory::Memory>::regions",
+      53459
+    ],
+    [
+      "trames_vfs::mounts::below",
+      3923
+    ],
+    [
+      "<trames_memory::Permissions as core::cmp::PartialEq>::eq",
+      3226
+    ],
+    [
+      "<trames_vfs::mounts::Mount>::key_of",
+      1866
+    ],
+    [
+      "<trames_vfs::mounts::Mount>::root_path",
+      860
+    ],
+    [
+      "<trames_vfs::mounts::Mount>::key_of::{closure#0}",
+      717
+    ],
+    [
+      "<trames_core::process::Kernel>::process_info",
+      425
+    ],
+    [
+      "<trames_vfs::Vfs>::descriptor",
+      283
+    ],
+    [
+      "<trames_memory::parallel::page::MutablePage>::lock_mask",
+      259
+    ],
+    [
+      "trames_memory::mmu::access::access::<8>",
+      253
+    ],
+    [
+      "<trames_vfs::Vfs>::fd_snapshot::{closure#1}",
+      252
+    ],
+    [
+      "<trames_memory::parallel::View>::frame_slow",
+      248
+    ],
+    [
+      "<trames_vfs::Vfs>::path_of",
+      241
+    ],
+    [
+      "<trames_vfs::mounts::Mount>::root_path::{closure#1}",
+      200
+    ],
+    [
+      "trames_cpu::cached::tail_enter::<trames_memory::parallel::View>",
+      187
+    ],
+    [
+      "<trames_core::process::Kernel>::sync_resources",
+      186
+    ],
+    [
+      "<trames_memory::parallel::ConcurrentPage>::changed",
+      176
+    ],
+    [
+      "<trames_vfs::Vfs>::path_visible",
+      170
+    ],
+    [
+      "<trames_cpu::cached::Cache>::page::<trames_memory::parallel::View>",
+      157
+    ]
+  ]
+}

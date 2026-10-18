@@ -215,6 +215,10 @@ impl Process {
         }
     }
 }
+struct ProcMaps {
+    identity: (u64, u64),
+    bytes: Vec<u8>,
+}
 struct Kernel {
     memory_limits: super::MemoryLimits,
     cpu_count: usize,
@@ -242,6 +246,7 @@ struct Kernel {
     syscall_total: Duration,
     syscalls: u64,
     proc_refreshes: u64,
+    proc_maps: RefCell<BTreeMap<u64, ProcMaps>>,
     profile_syscalls: bool,
     idle: Duration,
     load: [f64; 3],
@@ -485,7 +490,17 @@ impl Kernel {
             }
         }
     }
-    fn process_info(&self, pid: u32, p: &Process) -> trames_vfs::ProcessInfo {
+    fn process_maps(&self, p: &Process) -> Vec<u8> {
+        // Mapping edits (including PROT_NONE reservations) advance the code
+        // generation. Ordinary data stores do not. Fork/exec have a new space
+        // identity; shared VM wrappers report their underlying owner's key.
+        // Backing byte/EOF epochs do not change the displayed mapping ranges.
+        let (space, generation, _) = p.memory.instruction_identity();
+        let identity = (space, generation);
+        let mut cache = self.proc_maps.borrow_mut();
+        if let Some(maps) = cache.get(&space).filter(|maps| maps.identity == identity) {
+            return maps.bytes.clone();
+        }
         let mut maps = String::new();
         for (start, end, access) in p.memory.regions() {
             use std::fmt::Write;
@@ -500,6 +515,18 @@ impl Kernel {
                 break;
             }
         }
+        let maps = maps.into_bytes();
+        cache.insert(
+            space,
+            ProcMaps {
+                identity,
+                bytes: maps.clone(),
+            },
+        );
+        maps
+    }
+    fn process_info(&self, pid: u32, p: &Process) -> trames_vfs::ProcessInfo {
+        let maps = self.process_maps(p);
         let arguments = p
             .linux
             .argument_pointers
@@ -545,7 +572,7 @@ impl Kernel {
             cwd: p.linux.vfs.cwd().unwrap_or_else(|_| b"/".to_vec()),
             mapped_bytes: p.memory.mapped_bytes(),
             virtual_bytes: p.memory.virtual_bytes(),
-            maps: maps.into_bytes(),
+            maps,
             affinity: p.affinity,
             processor: p.last_cpu as u32,
             nice: p.nice,
@@ -574,6 +601,18 @@ impl Kernel {
         }
     }
     fn refresh_proc(&self, pid: u32, p: &mut Process) {
+        // Bound cached bytes by the current memory-owner set, even after repeated
+        // fork/exec. Never cache fd paths, credentials, names, argv bytes or
+        // other mutable process metadata under a mapping-generation key.
+        let live: std::collections::BTreeSet<_> = self
+            .processes
+            .values()
+            .map(|p| p.memory.instruction_identity().0)
+            .chain(std::iter::once(p.memory.instruction_identity().0))
+            .collect();
+        self.proc_maps
+            .borrow_mut()
+            .retain(|vm, _| live.contains(vm));
         let mut processes: Vec<_> = self
             .processes
             .iter()
@@ -3890,6 +3929,7 @@ pub(super) fn run(
         syscall_total: Duration::ZERO,
         syscalls: 0,
         proc_refreshes: 0,
+        proc_maps: RefCell::new(BTreeMap::new()),
         profile_syscalls: runtime.profile_syscalls,
         idle: Duration::ZERO,
         load: [0.0; 3],
@@ -4112,6 +4152,7 @@ mod tests {
             syscall_total: Duration::ZERO,
             syscalls: 0,
             proc_refreshes: 0,
+            proc_maps: RefCell::new(BTreeMap::new()),
             profile_syscalls: false,
             idle: Duration::ZERO,
             load: [0.0; 3],
@@ -4130,6 +4171,82 @@ mod tests {
             gpu_transfers: trames_vulkan::TransferMetrics::default(),
         }
     }
+    #[test]
+    fn proc_maps_refresh_after_shared_protect_reserve_unmap_and_fork() {
+        let k = kernel();
+        let mut p = process();
+        assert_eq!(
+            k.process_maps(&p),
+            b"000000001000-000000009000 rw-p 00000000 00:00 0\n"
+        );
+        let mut peer = p.fork();
+        peer.memory = p.memory.share();
+        peer.memory
+            .protect(0x2000, PAGE_SIZE, Permissions::R)
+            .unwrap();
+        let maps = k.process_maps(&p);
+        assert!(String::from_utf8_lossy(&maps).contains("000000002000-000000003000 r--p"));
+        assert_eq!(k.process_maps(&peer), maps);
+        p.memory.reserve(0x100000, 2 * PAGE_SIZE, false).unwrap();
+        let maps = String::from_utf8(k.process_maps(&p)).unwrap();
+        assert!(maps.contains("000000100000-000000102000 ---p"));
+        p.memory
+            .protect(0x100000, PAGE_SIZE, Permissions::RW)
+            .unwrap();
+        let maps = String::from_utf8(k.process_maps(&peer)).unwrap();
+        assert!(maps.contains("000000100000-000000101000 rw-p"));
+        p.memory.unmap(0x100000, 2 * PAGE_SIZE).unwrap();
+        assert!(!String::from_utf8(k.process_maps(&p))
+            .unwrap()
+            .contains("000000100000-"));
+        let mut child = p.fork();
+        child.vm_id = 2;
+        child
+            .memory
+            .protect(0x2000, PAGE_SIZE, Permissions::RW)
+            .unwrap();
+        assert_eq!(
+            k.process_maps(&child),
+            b"000000001000-000000009000 rw-p 00000000 00:00 0\n"
+        );
+        assert_eq!(k.process_maps(&p), k.process_maps(&peer));
+        assert_ne!(k.process_maps(&p), k.process_maps(&child));
+        // An exited group leader has released its Memory while surviving
+        // threads still share the old vm_id. It must not evict their maps.
+        let mut leader = process();
+        leader.vm_id = p.vm_id;
+        leader.memory = Memory::default();
+        assert!(k.process_maps(&leader).is_empty());
+        assert_eq!(k.process_maps(&p), k.process_maps(&peer));
+        assert_eq!(k.proc_maps.borrow().len(), 3);
+    }
+
+    #[test]
+    fn proc_mapping_cache_never_freezes_argv_fds_or_credentials_and_retires_dead_vms() {
+        let k = kernel();
+        let mut p = process();
+        p.linux.arguments = vec![b"first".to_vec()];
+        p.linux.argument_pointers = vec![0x1000];
+        p.memory.write(0x1000, b"first\0").unwrap();
+        let before = k.process_info(1, &p);
+        p.memory.write(0x1000, b"other\0").unwrap();
+        let pipe = p.linux.vfs.pipe(0).unwrap();
+        p.linux.vfs.credentials = trames_vfs::Credentials::user(1000, 1000);
+        let after = k.process_info(1, &p);
+        assert_eq!(before.maps, after.maps);
+        assert_eq!(before.arguments, [b"first".to_vec()]);
+        assert_eq!(after.arguments, [b"other".to_vec()]);
+        assert_eq!(after.credentials.euid, 1000);
+        assert_eq!(after.fds.len(), before.fds.len() + 2);
+        assert!(after.fds.iter().any(|fd| fd.fd == pipe[0]));
+        let mut old = p.fork();
+        old.vm_id = 2;
+        k.process_maps(&old);
+        assert_eq!(k.proc_maps.borrow().len(), 2);
+        k.refresh_proc(1, &mut p);
+        assert_eq!(k.proc_maps.borrow().len(), 1);
+    }
+
     #[test]
     fn native_workers_execute_shared_atomic_guest_loops_and_account_the_budget() {
         let mut p = process();

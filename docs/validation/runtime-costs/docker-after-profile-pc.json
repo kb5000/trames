@@ -1,0 +1,367 @@
+{
+  "method": "Linux ITIMER_PROF saved user PC, requested 1 ms; actual tick resolution applies. Exclusive samples classified using inline source frames; whole process including startup/calibration. Not hardware cycle counters or iPad measurements.",
+  "samples": 35261,
+  "unique_pcs": 3203,
+  "header": [
+    "TRAMES-PC-SAMPLES-v1",
+    "requested_interval_us 1000",
+    "samples 35261",
+    "dropped 0"
+  ],
+  "categories": [
+    {
+      "name": "other",
+      "samples": 15800,
+      "percent": 44.80871217492414
+    },
+    {
+      "name": "outside_executable",
+      "samples": 14859,
+      "percent": 42.14004140551884
+    },
+    {
+      "name": "guest_memory",
+      "samples": 3613,
+      "percent": 10.246447916962083
+    },
+    {
+      "name": "scheduler_and_kernel",
+      "samples": 847,
+      "percent": 2.402087291908908
+    },
+    {
+      "name": "instruction_execution",
+      "samples": 142,
+      "percent": 0.40271121068602705
+    }
+  ],
+  "functions": [
+    {
+      "name": "outside_executable",
+      "samples": 14859,
+      "percent": 42.14004140551884
+    },
+    {
+      "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::perform_next_unchecked::<<alloc::collections::btree::navigate::LeafRange<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>>>::next_checked::{closure#0}, (&alloc::vec::Vec<u8>, &alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>)>",
+      "samples": 2170,
+      "percent": 6.154107937948441
+    },
+    {
+      "name": "<u8 as core::slice::cmp::SlicePartialEq<u8>>::equal_same_length",
+      "samples": 1700,
+      "percent": 4.821190550466521
+    },
+    {
+      "name": "<usize as core::slice::index::SliceIndex<[core::mem::maybe_uninit::MaybeUninit<alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>>]>>::get_unchecked",
+      "samples": 848,
+      "percent": 2.4049232863503587
+    },
+    {
+      "name": "<alloc::collections::btree::navigate::LazyLeafRange<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>>>::init_front",
+      "samples": 749,
+      "percent": 2.12415983664672
+    },
+    {
+      "name": "<core::option::Option<core::ptr::non_null::NonNull<alloc::collections::btree::node::InternalNode<alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>>>>>::as_ref",
+      "samples": 737,
+      "percent": 2.0901279033493094
+    },
+    {
+      "name": "<[u8] as core::cmp::PartialEq>::eq",
+      "samples": 609,
+      "percent": 1.727120614843595
+    },
+    {
+      "name": "<usize as core::slice::index::SliceIndex<[core::mem::maybe_uninit::MaybeUninit<alloc::vec::Vec<u8>>]>>::get_unchecked",
+      "samples": 564,
+      "percent": 1.5995008649783047
+    },
+    {
+      "name": "<alloc::collections::btree::map::Iter<alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>> as core::iter::traits::iterator::Iterator>::next",
+      "samples": 547,
+      "percent": 1.5512889594736394
+    },
+    {
+      "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::Internal>, alloc::collections::btree::node::marker::Edge>>::descend",
+      "samples": 534,
+      "percent": 1.5144210317347777
+    },
+    {
+      "name": "<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::Leaf>>::len",
+      "samples": 470,
+      "percent": 1.3329173874819205
+    },
+    {
+      "name": "<alloc::vec::Vec<u8>>::as_slice",
+      "samples": 396,
+      "percent": 1.1230537988145544
+    },
+    {
+      "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::LeafOrInternal>, alloc::collections::btree::node::marker::Edge>>::right_kv",
+      "samples": 374,
+      "percent": 1.0606619211026347
+    },
+    {
+      "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::next_unchecked",
+      "samples": 330,
+      "percent": 0.9358781656787952
+    },
+    {
+      "name": "<alloc::collections::btree::map::Iter<alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>> as core::iter::traits::iterator::Iterator>::try_fold::<(), core::iter::traits::iterator::Iterator::find::check<(&alloc::vec::Vec<u8>, &alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>), <trames_vfs::mounts::Mount>::key_of::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<(&alloc::vec::Vec<u8>, &alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>)>>",
+      "samples": 330,
+      "percent": 0.9358781656787952
+    },
+    {
+      "name": "<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::LeafOrInternal>>::force",
+      "samples": 330,
+      "percent": 0.9358781656787952
+    },
+    {
+      "name": "trames_vfs::mounts::below",
+      "samples": 275,
+      "percent": 0.779898471398996
+    },
+    {
+      "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::idx",
+      "samples": 271,
+      "percent": 0.7685544936331925
+    },
+    {
+      "name": "core::ptr::addr_eq::<alloc::rcs::rc::RcInner<core::cell::RefCell<trames_vfs::Node>>, alloc::rcs::rc::RcInner<core::cell::RefCell<trames_vfs::Node>>>",
+      "samples": 235,
+      "percent": 0.6664586937409602
+    },
+    {
+      "name": "<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::LeafOrInternal>>::first_leaf_edge",
+      "samples": 222,
+      "percent": 0.6295907660020986
+    },
+    {
+      "name": "<core::sync::atomic::Atomic<u64>>::try_update::<<trames_memory::parallel::page::MutablePage>::lock_mask::{closure#0}>",
+      "samples": 199,
+      "percent": 0.5643628938487281
+    },
+    {
+      "name": "trames_memory::mmu::access::access::<8>",
+      "samples": 193,
+      "percent": 0.5473469272000226
+    },
+    {
+      "name": "<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::Leaf>>::reborrow",
+      "samples": 173,
+      "percent": 0.4906270383710048
+    },
+    {
+      "name": "<u64>::wrapping_add",
+      "samples": 172,
+      "percent": 0.4877910439295539
+    },
+    {
+      "name": "core::intrinsics::unlikely",
+      "samples": 171,
+      "percent": 0.48495504948810303
+    }
+  ],
+  "source_lines": [
+    {
+      "name": "outside_executable",
+      "samples": 14859,
+      "percent": 42.14004140551884
+    },
+    {
+      "name": "<u8 as core::slice::cmp::SlicePartialEq<u8>>::equal_same_length /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/core/src/slice/cmp.rs:154",
+      "samples": 1700,
+      "percent": 4.821190550466521
+    },
+    {
+      "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::perform_next_unchecked::<<alloc::collections::btree::navigate::LeafRange<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>>>::next_checked::{closure#0}, (&alloc::vec::Vec<u8>, &alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>)> /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/alloc/src/collections/btree/navigate.rs:600",
+      "samples": 1271,
+      "percent": 3.6045489350840874
+    },
+    {
+      "name": "<usize as core::slice::index::SliceIndex<[core::mem::maybe_uninit::MaybeUninit<alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>>]>>::get_unchecked /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/core/src/slice/index.rs:219",
+      "samples": 848,
+      "percent": 2.4049232863503587
+    },
+    {
+      "name": "<alloc::collections::btree::navigate::LazyLeafRange<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>>>::init_front /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/alloc/src/collections/btree/navigate.rs:226",
+      "samples": 748,
+      "percent": 2.1213238422052694
+    },
+    {
+      "name": "<core::option::Option<core::ptr::non_null::NonNull<alloc::collections::btree::node::InternalNode<alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>>>>>::as_ref /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/core/src/option.rs:744",
+      "samples": 737,
+      "percent": 2.0901279033493094
+    },
+    {
+      "name": "<[u8] as core::cmp::PartialEq>::eq /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/core/src/slice/cmp.rs:21",
+      "samples": 609,
+      "percent": 1.727120614843595
+    },
+    {
+      "name": "<usize as core::slice::index::SliceIndex<[core::mem::maybe_uninit::MaybeUninit<alloc::vec::Vec<u8>>]>>::get_unchecked /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/core/src/slice/index.rs:219",
+      "samples": 564,
+      "percent": 1.5995008649783047
+    },
+    {
+      "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::Internal>, alloc::collections::btree::node::marker::Edge>>::descend /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/alloc/src/collections/btree/node.rs:1190",
+      "samples": 534,
+      "percent": 1.5144210317347777
+    },
+    {
+      "name": "<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::Leaf>>::len /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/alloc/src/collections/btree/node.rs:291",
+      "samples": 470,
+      "percent": 1.3329173874819205
+    },
+    {
+      "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::perform_next_unchecked::<<alloc::collections::btree::navigate::LeafRange<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>>>::next_checked::{closure#0}, (&alloc::vec::Vec<u8>, &alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>)> /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/alloc/src/collections/btree/navigate.rs:616",
+      "samples": 449,
+      "percent": 1.2733615042114517
+    },
+    {
+      "name": "<alloc::vec::Vec<u8>>::as_slice /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/alloc/src/vec/mod.rs:1782",
+      "samples": 395,
+      "percent": 1.1202178043731035
+    },
+    {
+      "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::LeafOrInternal>, alloc::collections::btree::node::marker::Edge>>::right_kv /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/alloc/src/collections/btree/node.rs:960",
+      "samples": 374,
+      "percent": 1.0606619211026347
+    },
+    {
+      "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::next_unchecked /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/alloc/src/collections/btree/navigate.rs:546",
+      "samples": 330,
+      "percent": 0.9358781656787952
+    },
+    {
+      "name": "<alloc::collections::btree::map::Iter<alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>> as core::iter::traits::iterator::Iterator>::try_fold::<(), core::iter::traits::iterator::Iterator::find::check<(&alloc::vec::Vec<u8>, &alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>), <trames_vfs::mounts::Mount>::key_of::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<(&alloc::vec::Vec<u8>, &alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>)>> /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/core/src/iter/traits/iterator.rs:2503",
+      "samples": 330,
+      "percent": 0.9358781656787952
+    },
+    {
+      "name": "<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::LeafOrInternal>>::force /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/alloc/src/collections/btree/node.rs:790",
+      "samples": 330,
+      "percent": 0.9358781656787952
+    },
+    {
+      "name": "<alloc::collections::btree::map::Iter<alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>> as core::iter::traits::iterator::Iterator>::next /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/alloc/src/collections/btree/map.rs:1743",
+      "samples": 315,
+      "percent": 0.8933382490570319
+    },
+    {
+      "name": "trames_vfs::mounts::below /workspace/trames/crates/trames-vfs/src/mounts.rs:1091",
+      "samples": 275,
+      "percent": 0.779898471398996
+    },
+    {
+      "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::idx /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/alloc/src/collections/btree/node.rs:853",
+      "samples": 271,
+      "percent": 0.7685544936331925
+    },
+    {
+      "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::perform_next_unchecked::<<alloc::collections::btree::navigate::LeafRange<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>>>::next_checked::{closure#0}, (&alloc::vec::Vec<u8>, &alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>)> /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/alloc/src/collections/btree/navigate.rs:605",
+      "samples": 260,
+      "percent": 0.7373585547772327
+    },
+    {
+      "name": "core::ptr::addr_eq::<alloc::rcs::rc::RcInner<core::cell::RefCell<trames_vfs::Node>>, alloc::rcs::rc::RcInner<core::cell::RefCell<trames_vfs::Node>>> /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/core/src/ptr/mod.rs:2531",
+      "samples": 235,
+      "percent": 0.6664586937409602
+    },
+    {
+      "name": "<alloc::collections::btree::map::Iter<alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>> as core::iter::traits::iterator::Iterator>::next /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/alloc/src/collections/btree/map.rs:1746",
+      "samples": 232,
+      "percent": 0.6579507104166076
+    },
+    {
+      "name": "<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::LeafOrInternal>>::first_leaf_edge /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/alloc/src/collections/btree/navigate.rs:701",
+      "samples": 221,
+      "percent": 0.6267547715606477
+    },
+    {
+      "name": "<core::sync::atomic::Atomic<u64>>::try_update::<<trames_memory::parallel::page::MutablePage>::lock_mask::{closure#0}> /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/core/src/sync/atomic.rs:3805",
+      "samples": 199,
+      "percent": 0.5643628938487281
+    },
+    {
+      "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::perform_next_unchecked::<<alloc::collections::btree::navigate::LeafRange<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>>>::next_checked::{closure#0}, (&alloc::vec::Vec<u8>, &alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>)> /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/alloc/src/collections/btree/navigate.rs:593",
+      "samples": 190,
+      "percent": 0.53883894387567
+    },
+    {
+      "name": "<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::Leaf>>::reborrow /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/alloc/src/collections/btree/node.rs:305",
+      "samples": 173,
+      "percent": 0.4906270383710048
+    },
+    {
+      "name": "<u64>::wrapping_add /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/core/src/num/uint_macros.rs:2676",
+      "samples": 172,
+      "percent": 0.4877910439295539
+    },
+    {
+      "name": "core::intrinsics::unlikely /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/core/src/intrinsics/mod.rs:691",
+      "samples": 171,
+      "percent": 0.48495504948810303
+    },
+    {
+      "name": "<[u8]>::starts_with /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/core/src/slice/mod.rs:2637",
+      "samples": 170,
+      "percent": 0.4821190550466521
+    },
+    {
+      "name": "<usize as core::slice::index::SliceIndex<[core::mem::maybe_uninit::MaybeUninit<trames_vfs::Descriptor>]>>::get_unchecked_mut /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/core/src/slice/index.rs:232",
+      "samples": 155,
+      "percent": 0.43957913842488866
+    },
+    {
+      "name": "<alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::OpenDescription>> as core::ops::drop::Drop>::drop /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/alloc/src/rcs/rc.rs:2652",
+      "samples": 123,
+      "percent": 0.34882731629846003
+    },
+    {
+      "name": "trames_memory::mmu::access::access::<8> /workspace/trames/crates/trames-memory/src/mmu/access.rs:65",
+      "samples": 117,
+      "percent": 0.33181134964975467
+    },
+    {
+      "name": "<core::option::Option<trames_memory::parallel::page::MutablePage>>::as_ref /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/core/src/option.rs:744",
+      "samples": 103,
+      "percent": 0.2921074274694422
+    },
+    {
+      "name": "<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Dying, u32, trames_vfs::Descriptor, alloc::collections::btree::node::marker::LeafOrInternal>>::len /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/alloc/src/collections/btree/node.rs:291",
+      "samples": 100,
+      "percent": 0.2835994441450895
+    },
+    {
+      "name": "<alloc::raw_vec::RawVecInner>::non_null::<u8> /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/alloc/src/raw_vec/mod.rs:635",
+      "samples": 83,
+      "percent": 0.23538753864042428
+    },
+    {
+      "name": "core::cell::is_reading /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/core/src/cell.rs:958",
+      "samples": 82,
+      "percent": 0.23255154419897336
+    },
+    {
+      "name": "<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::LeafOrInternal>>::ascend::{closure#0} /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/alloc/src/collections/btree/node.rs:345",
+      "samples": 79,
+      "percent": 0.22404356087462068
+    },
+    {
+      "name": "core::ptr::write::<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>> /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/core/src/ptr/mod.rs:1962",
+      "samples": 77,
+      "percent": 0.2183715719917189
+    },
+    {
+      "name": "<alloc::collections::btree::map::Iter<alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>> as core::iter::traits::iterator::Iterator>::try_fold::<(), core::iter::traits::iterator::Iterator::find::check<(&alloc::vec::Vec<u8>, &alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>), <trames_vfs::mounts::Mount>::root_path::{closure#1}>::{closure#0}, core::ops::control_flow::ControlFlow<(&alloc::vec::Vec<u8>, &alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>)>> /rustc/4ebd258257737d5b7635c116fa7d281627a7e937/library/core/src/iter/traits/iterator.rs:2503",
+      "samples": 75,
+      "percent": 0.21269958310881712
+    },
+    {
+      "name": "trames_cpu::cached::tail_enter::<trames_memory::parallel::View> /workspace/trames/crates/trames-cpu/src/cached.rs:1197",
+      "samples": 71,
+      "percent": 0.20135560534301353
+    }
+  ]
+}
