@@ -100,7 +100,7 @@ def main():
     assert workspace['head_sha'] == source and workspace['path'] == '.github/workflows/linux.yml'
     assert workspace['head_repository']['full_name'] == REPO
     workspace_job = next(j for j in api(f"repos/{REPO}/actions/runs/{workspace['id']}/jobs")['jobs'] if j['name'] == 'release-core')
-    log = gh('api', f"repos/{REPO}/actions/jobs/{workspace_job['id']}/logs").decode(errors='replace')
+    log = gh('api', '--allow-escape-sequences', f"repos/{REPO}/actions/jobs/{workspace_job['id']}/logs").decode(errors='replace')
     passed = sum(int(n) for n in re.findall(r'test result: ok\. (\d+) passed;', log))
     assert passed == config['linux_workspace_passed'] >= 477
     assert not re.search(r'test result: FAILED', log)
