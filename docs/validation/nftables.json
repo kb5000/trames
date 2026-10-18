@@ -1,5 +1,5 @@
 {
-  "runtime_commit": null,
+  "runtime_commit": "56b272e7846468fd25d35cc9f91b0a48d2ad2d57",
   "date": "2026-10-18",
   "scope": "Namespace-local bounded nftables filter only: original signed iptables-nft/ip6tables rule creation/list/check/insert/replace/delete/flush/policy, routed IPv4/IPv6 port/source/interface filtering, packet counters, namespace INPUT policy, rejected unsupported conntrack/NAT. No default Docker firewall/NAT/external-network acceptance.",
   "local": {
@@ -67,7 +67,82 @@
     }
   },
   "ci": {
-    "status": "pending publication"
+    "status": "success",
+    "linux_run": 39098659865,
+    "linux_job": 117590246768,
+    "apple_run": 39098659882,
+    "apple_job": 117590245419,
+    "apple_result": "success",
+    "linux_result": "success",
+    "net_lib": 34,
+    "virtual_tests": 11,
+    "strict_clippy": true,
+    "fmt": true,
+    "ios_ffi": "aarch64-apple-ios check passed",
+    "nftables": {
+      "scope": "Namespace-local bounded nftables filter only: original signed iptables-nft/ip6tables rule creation/list/check/insert/replace/delete/flush/policy, routed IPv4/IPv6 port/source/interface filtering, packet counters, namespace INPUT policy, rejected unsupported conntrack/NAT. No default Docker firewall/NAT/external-network acceptance.",
+      "inputs_sha256": {
+        "tests/fixtures/bin/nftables": "7814cb6b55610647cef9f42fc472063ce6f4b797763691b666b0750b02042757",
+        "tests/fixtures/nftables.c": "660c8ad7d2cc95b94e7626f49b6d33f249c205542458cc29f89711d71ef275f1",
+        "tests/fixtures/container-network.c": "c4f117a20fc20cc4f00b861fc33d75ce7f3ace18b55b001c5cc1c772055a210b"
+      },
+      "checks": [
+        {
+          "cpus": 1,
+          "exit_code": 0,
+          "passed": true,
+          "output": "iptables v1.8.11 (nf_tables)\n-P INPUT ACCEPT\n-P FORWARD ACCEPT\n-P OUTPUT ACCEPT\n-N TRAMES\n-A FORWARD -j TRAMES\n-A TRAMES -s 10.11.0.0/24 -o nft-b -p udp -m udp --dport 19001 -j DROP\nChain TRAMES (1 references)\n pkts bytes target     prot opt in     out     source               destination         \n    1    34 DROP       udp  --  *      nft-b   10.11.0.0/24         0.0.0.0/0            udp dpt:19001\nChain TRAMES (1 references)\n pkts bytes target     prot opt in     out     source               destination         \n    1    55 DROP       udp  --  *      *       fd11::/64            ::/0                 udp dpt:19001\nnftables: original iptables-nft/ip6tables, IPv4/IPv6 DROP/ACCEPT, counters, rule lifecycle and namespace policy: ok\nWarning: Extension conntrack revision 0 not supported, missing kernel module?\niptables v1.8.11 (nf_tables):  RULE_APPEND failed (Not supported): rule in chain TRAMES\nWarning: Extension MASQUERADE revision 0 not supported, missing kernel module?\niptables v1.8.11 (nf_tables):  CHAIN_ADD failed (Not supported): chain POSTROUTING\n"
+        },
+        {
+          "cpus": 4,
+          "exit_code": 0,
+          "passed": true,
+          "output": "iptables v1.8.11 (nf_tables)\n-P INPUT ACCEPT\n-P FORWARD ACCEPT\n-P OUTPUT ACCEPT\n-N TRAMES\n-A FORWARD -j TRAMES\n-A TRAMES -s 10.11.0.0/24 -o nft-b -p udp -m udp --dport 19001 -j DROP\nChain TRAMES (1 references)\n pkts bytes target     prot opt in     out     source               destination         \n    1    34 DROP       udp  --  *      nft-b   10.11.0.0/24         0.0.0.0/0            udp dpt:19001\nChain TRAMES (1 references)\n pkts bytes target     prot opt in     out     source               destination         \n    1    55 DROP       udp  --  *      *       fd11::/64            ::/0                 udp dpt:19001\nnftables: original iptables-nft/ip6tables, IPv4/IPv6 DROP/ACCEPT, counters, rule lifecycle and namespace policy: ok\nWarning: Extension conntrack revision 0 not supported, missing kernel module?\niptables v1.8.11 (nf_tables):  RULE_APPEND failed (Not supported): rule in chain TRAMES\nWarning: Extension MASQUERADE revision 0 not supported, missing kernel module?\niptables v1.8.11 (nf_tables):  CHAIN_ADD failed (Not supported): chain POSTROUTING\n"
+        }
+      ],
+      "packages_sha256": {
+        "busybox-1.37.0-r20.apk": "9d25af67564c92a4a4c603462efdbcd23019e90b8785f1ebcad640cbb1551c93",
+        "busybox-binsh-1.37.0-r20.apk": "9180dcee3f67ea806fe45361cffab94f8ce7e417d5f373bb0d989e88eb609903",
+        "iptables-1.8.11-r1.apk": "0a10fe634e3525082a1219487cd044d987ac4a55ed5aa551bf758e81223e1cfb",
+        "libmnl-1.0.5-r2.apk": "213a7e87553bed3d9159b2e74d2627885c259883e61714b357949ca806eb1f8d",
+        "libncursesw-6.5_p20250503-r0.apk": "419b375e8a4345e7172b1f0f3a3c57db61374f5408cdb875d9e860bd4c243aca",
+        "libnftnl-1.2.9-r0.apk": "6912a5d56b31d3365b8dd0d6339bd70a2bfc9e25dab0c387f77174113c43e664",
+        "libxtables-1.8.11-r1.apk": "e84f0d6b69d4318f297056d00ccbe433e6c7d163fe6767405e373248c42e3e88",
+        "musl-1.2.5-r12.apk": "ac281d1e7f9e9c447c51e309317b975f48be6edaf3ab91ae73b959cf86703782",
+        "ncurses-terminfo-base-6.5_p20250503-r0.apk": "3d37403e0b5ab9eb0c1ce269444e4a385faec9fe6af452c1c6956806b13d2bd6"
+      },
+      "rootfs_sha256": "821565fa8f3953eefd12497b166b4b50add2f7c57fb312e75862f5867e06fefe"
+    },
+    "forwarding": {
+      "checks": [
+        {
+          "cpus": 1,
+          "fixture": "container-forwarding",
+          "exit_code": 0,
+          "stdout": "container forwarding: root native/bridge TCP/UDP, IPv4/IPv6 L3 policy, pinned sysctls and TTL: ok\n"
+        },
+        {
+          "cpus": 4,
+          "fixture": "container-forwarding",
+          "exit_code": 0,
+          "stdout": "container forwarding: root native/bridge TCP/UDP, IPv4/IPv6 L3 policy, pinned sysctls and TTL: ok\n"
+        }
+      ],
+      "source_sha256": {
+        "container-forwarding": "7c5cb9657d41412424c748194905f5584413def9694c8ca0778ef8d86999b56f",
+        "container-network": "c4f117a20fc20cc4f00b861fc33d75ce7f3ace18b55b001c5cc1c772055a210b"
+      },
+      "fixture_sha256": {
+        "container-forwarding": "b5bb86d0f333fd44e4fcd25125e983be4b817c119dd6abd71f3b076f6be66210"
+      },
+      "scope": "Namespace-owned configurable veth/bridge, direct/static routes and real internal IP data. Root bridge/native socket paths and per-family L3 forwarding are tested; external forwarding, nftables/NAT and full Docker bridge are not accepted by this fixture."
+    },
+    "artifact": {
+      "id": 12125681495,
+      "name": "guest-container-network",
+      "bytes": 4314,
+      "sha256": "2b2ad03ecc3e2e7fd74bbb08e56fa3b8efff3336023de49460d7a711422b9fae"
+    }
   },
   "reused": {
     "docker_internal_bridge": {
@@ -82,6 +157,7 @@
     "native root INPUT/OUTPUT",
     "same-bridge br_netfilter",
     "Docker default firewall/external networking/published ports",
-    "full Linux defragmentation at hooks"
+    "full Linux defragmentation at hooks",
+    "complete local-route interface identity for non-loopback own IP"
   ]
 }

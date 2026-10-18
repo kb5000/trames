@@ -49,7 +49,9 @@ chain，其余 hooks 返回 EOPNOTSUPP。旧的显式 `--virtual-network` 网关
 
 当前没有 conntrack／RELATED／ESTABLISHED／NAT／masquerade／reject 回复，
 也没有 br_netfilter 的同桥 IP 过滤、family bridge/netdev 或以太网规则。
-过滤作用于 fabric 的 IP 包；尚未在 hooks 前统一重组分片，基于 L4 的规则
+本阶段以内部 routed 单播为验收范围；访问本机非 loopback 接口地址时，
+local-route 的输入／输出设备视图仍需完善。过滤作用于 fabric 的 IP 包；
+尚未在 hooks 前统一重组分片，基于 L4 的规则
 不能承诺 Linux defrag 的全部语义。IPv6 扩展头读取有界，无法解析的 transport
 匹配不成立；这些限制都不是完整 Docker 默认 bridge 的验收。
 

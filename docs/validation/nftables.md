@@ -15,7 +15,17 @@ policy，实际计数器与独立 namespace INPUT。另验证已建立 TCP 被 F
 CPU／图形／VFS／Linux/Core 以及原版 Docker daemon/镜像/内部 bridge HTTP 的
 未变流程直接复用 [上一阶段记录](docker-bridge-internal.md)，没有重跑全套。
 
-Linux／Apple CI 待本次源码提交后记录；当前不声称已完成远端验证。
+生产源码：`56b272e7846468fd25d35cc9f91b0a48d2ad2d57`。
+[Linux CI](https://github.com/kb5000/trames/actions/runs/39098659865) 与
+[Apple CI](https://github.com/kb5000/trames/actions/runs/39098659882) 均通过：
+Linux strict clippy/fmt、Net 34、virtual 11、forwarding 1／4 vCPU 和原版
+iptables-nft 新磁盘 1／4 vCPU；Apple Net 34 及 aarch64-apple-ios FFI check。
+本地与 CI 的 APK／rootfs 和 C 源码指纹一致，编译器不同的 C binary 指纹分别保存。
+
+已下载并核验 CI artifact `guest-container-network` #12125681495，4314 bytes，
+SHA256 `2b2ad03ecc3e2e7fd74bbb08e56fa3b8efff3336023de49460d7a711422b9fae`。
+ZIP 内含两组 1／4 vCPU 实测日志和输入／结果 JSON；完整指纹与结果保存在
+本文件旁的 JSON。后续仅文档／记录更新不重跑上述检查。
 
 测试中 conntrack 和 NAT 的 EOPNOTSUPP 是预期的拒绝，退出码来自 C fixture
 逐项核验后的 0，不把拒绝当作功能实现。没有 default Docker firewall、
