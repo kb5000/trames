@@ -27,6 +27,14 @@ def container_isolation_path(path):
     }
 
 
+def container_storage_path(path):
+    return path.startswith(('crates/trames-vfs/', 'docs/')) or path in {
+        '.github/workflows/ios.yml', '.github/workflows/linux.yml',
+        'scripts/ios-ci-scope.py', 'examples/docker/daemon.json', 'README.md',
+        'tests/integration/docker-overlay.py', 'tests/integration/docker-overlay.sh',
+    }
+
+
 def container_network_path(path):
     return path.startswith(('crates/trames-net/','crates/trames-vfs/','crates/trames-linux/','docs/')) or path in {
         '.github/workflows/ios.yml','.github/workflows/linux.yml','scripts/ios-ci-scope.py',
@@ -116,6 +124,12 @@ def main():
             changed=set(subprocess.check_output(['git','diff','--name-only',base,'HEAD'],text=True).splitlines())- {str(plan_path)}
             hashes=plan['changed_file_sha256']
             if changed==set(hashes) and all(Path(path).exists() and hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest for path,digest in hashes.items()):
+                if plan.get('native_scope') == 'container-storage' and changed and all(container_storage_path(p) for p in changed):
+                    print('Guest overlay storage: affected VFS and Linux file ABI, original Docker overlay2, Apple VFS and iOS FFI. Reuse unchanged CPU/UI/GPU/network and guest libraries; no IPA.')
+                    with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+                        output.write('frontend_only=false\ntargeted=true\nnative_scope=container-storage\n')
+                        output.write('skip_native=false\nskip_linux_native=false\nskip_linux_modules=false\n')
+                    return
                 if plan.get('native_scope') == 'container-network' and changed and all(container_network_path(p) for p in changed):
                     print('Container network: source-bounded Net/VFS/Linux and affected kernel adapters, actual guest networking/Docker and ARM64 iOS FFI only. Reuse unchanged CPU/UI/GPU/guest libraries; no IPA.')
                     retry=False

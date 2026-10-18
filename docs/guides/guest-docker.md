@@ -20,7 +20,7 @@ apk add docker-engine docker-cli containerd crun
 测试版本为 Alpine 3.22.6 aarch64、Docker 28.3.3-r5、containerd 2.1.5-r2、
 crun 1.23.1-r0。把 [daemon.json](../../examples/docker/daemon.json) 与
 [containerd.toml](../../examples/docker/containerd.toml) 分别放入
-`/etc/docker/daemon.json`、`/etc/containerd/config.toml`。采用 vfs 存储和
+`/etc/docker/daemon.json`、`/etc/containerd/config.toml`。采用 overlay2 写时复制存储和
 正常的 iptables/ip6tables/docker0/ip-forward/ip-masq，保留默认
 **userland-proxy=true**。不要使用旧阶段关闭 firewall/NAT 的开发配置。
 
@@ -43,7 +43,10 @@ dockerd --config-file /etc/docker/daemon.json >/tmp/dockerd.log 2>&1 &
 
 等 `API listen on /var/run/docker.sock` 后使用 CLI。先单独启动 containerd，
 避免 dockerd 内置启动期限；解释执行下冷启动仍慢。`GOMAXPROCS=1` 是验收
-设置，不改变 Trames vCPU 数。vfs 复制镜像层，尚未作 Docker 性能优化。
+设置，不改变 Trames vCPU 数。overlay2 共享只读镜像层，首次修改文件才复制到上层。
+旧的 `vfs` 数据不自动迁移；切换驱动后需重新导入或拉取镜像，旧驱动的数据不会自动删除。
+[overlay 设计与边界](../architecture/overlayfs.md)及[存储验收](../validation/overlayfs.md)
+单独记录；此前完整网络验收使用 vfs，不重复作为 overlay2 的存储证据。
 
 托管 resolver 为 `169.254.0.53`，由宿主系统 DNS 提供解析；它不是网关。
 用户自定义 resolv.conf 保留。自定义 Docker 网络内的 `127.0.0.11` 由原版
@@ -69,13 +72,14 @@ docker run --ulimit nofile=256:256 --network appnet --name app \
 
 `--ulimit nofile=256:256` 对应当前 guest FD 上限。namespace/seccomp/device
 是已实现的隔离范围；并不包含所有 SysV/POSIX IPC、user/rootless、完整 cgroup
-CPU/memory/io controller。overlayfs、Registry pull、volume、exec/交互终端、
+CPU/memory/io controller。Registry pull、volume、exec/交互终端、
 build/BuildKit、Compose 工作流仍单独跟进。AF_PACKET/ARP、STP/qdisc/tc、
 所有 netfilter 扩展及 `--userland-proxy=false` 的宿主入口尚未覆盖。
 
 ## 验证
 
 ```sh
+python3 tests/integration/docker-overlay.py
 bash scripts/build-nftables-fixture.sh
 bash scripts/build-netfilter-nat-fixture.sh
 python3 tests/integration/nftables.py

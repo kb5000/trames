@@ -1,6 +1,6 @@
 {
   "containerd": "/run/containerd/containerd.sock",
-  "storage-driver": "vfs",
+  "storage-driver": "overlay2",
   "iptables": true,
   "ip6tables": true,
   "bridge": "docker0",

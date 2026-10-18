@@ -55,7 +55,7 @@ PID 1 遵循 Linux 的信号处理规则：没有 TERM handler 的程序可能�
 
 - 网络共享当前 guest 的直连网络和端口空间；没有给容器建立虚构的独立 IP。
 - 尚未提供 user/IPC/net namespace、rootless、seccomp、CPU/memory/io 配额、
-  overlayfs、共享挂载传播或完整 Docker/Podman 支持。
+  共享挂载传播或完整 Docker/Podman 支持。后续开发分支已补齐基础 [overlayfs/overlay2](../architecture/overlayfs.md)。
 - 原版 `crun spec` 的默认配置包含更多设施，当前应从上面的已验收配置开始。
 - 这不是运行不可信程序的完整安全隔离边界。
 

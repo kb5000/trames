@@ -299,7 +299,7 @@ magic 被兼容。不支持的挂载行为明确返回错误。
   按需分配，`nr_inodes` 可降低节点上限，`mode` 设置根目录权限。
   卸载/会话结束后内容不持久化。这里的内存上限
   与根磁盘默认 16 GiB 预算无关；尚未接入统一的 tmpfs/guest RAM 回收机制。
-- 所有挂载均为 private；shared/slave/unbindable 传播、MS_MOVE、overlayfs、块设备
+- 所有挂载均为 private；shared/slave/unbindable 传播、MS_MOVE、块设备
   文件系统及 open_tree/move_mount/fsopen 等新挂载 API 尚缺。
 - procfs 支持有权限检查的 `oom_score_adj` 读写；其余 proc 控制端点与 sysfs 保持只读。独立 devpts 支持初始挂载选项，重挂载修改
   uid/gid/mode/max 尚未实现，明确返回 EOPNOTSUPP。
@@ -324,7 +324,7 @@ namespace 归属，setns 只影响后续创建。私有 loopback、端口空间�
 ## 后续顺序
 
 1. 按真实工具缺口扩展 user/IPC/net namespace、具名 AF_UNIX 和更广的 epoll 事件源。
-2. 再扩展完整容器引擎、overlayfs、CPU/memory/io 控制器和安全接口。
+2. 再扩展完整容器引擎、CPU/memory/io 控制器和安全接口。基础 overlayfs/overlay2 已在后续批次接入，见 [设计](overlayfs.md)。
 
 ## 验证
 

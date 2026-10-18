@@ -63,6 +63,10 @@ jobs:
           elif [[ '${{ needs.scope.outputs.native_scope }}' == host-terminals ]]; then
             cargo clippy -p trames-vfs -p trames-core -p trames-ffi --all-targets --locked -- -D warnings
             cargo test -p trames-vfs -p trames-core -p trames-ffi --lib --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == container-storage ]]; then
+            cargo clippy -p trames-vfs -p trames-linux -p trames-core -p trames-ffi -p trames-cli --all-targets --locked -- -D warnings
+            cargo test -p trames-vfs --lib --locked
+            cargo test -p trames-linux --lib file_calls --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == container-network && '${{ needs.scope.outputs.docker_network_retry }}' == true ]]; then
             if [[ '${{ needs.scope.outputs.docker_network_virtual_retry }}' == true ]]; then
               cargo test -p trames-net --test virtual native_gateway_tcp_and_udp_both_families --locked
@@ -150,6 +154,22 @@ jobs:
           curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o "$TRAMES_ALPINE_ARCHIVE"
           cargo build -p trames-ffi --release --locked
           python3 tests/integration/multiple-terminals.py
+      - name: Exercise original guest Docker overlay2 and persistent image layers
+        if: needs.scope.outputs.native_scope == 'container-storage'
+        env:
+          TRAMES_ALPINE_CACHE: ${{ github.workspace }}/target/alpine-download
+        run: |
+          cargo build -p trames-cli --release --locked
+          mkdir -p "$TRAMES_ALPINE_CACHE"
+          curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o "$TRAMES_ALPINE_CACHE/alpine-minirootfs-3.22.6-aarch64.tar.gz"
+          python3 tests/integration/docker-overlay.py
+      - uses: actions/upload-artifact@v4
+        if: always() && needs.scope.outputs.native_scope == 'container-storage'
+        with:
+          name: guest-docker-overlay
+          path: target/docker-overlay/
+          if-no-files-found: error
+          retention-days: 14
       - name: Exercise real guest container isolation and original Docker defaults
         if: needs.scope.outputs.native_scope == 'container-isolation'
         env:

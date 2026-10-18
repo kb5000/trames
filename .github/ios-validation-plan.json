@@ -1,24 +1,38 @@
 {
-  "base_sha": "62e14732adb2014fe1d5ecc2001c367c6ed2642a",
-  "native_scope": "container-network",
-  "docker_network_stage": true,
-  "network_validation_reuse": {
-    "sha": "69fc75b30851916a9ee45e95fb5a6a8d6239060f",
-    "linux_run": 39103300381,
-    "apple_run": 39103300557
-  },
-  "network_virtual_reuse": {
-    "sha": "62e14732adb2014fe1d5ecc2001c367c6ed2642a",
-    "linux_run": 39103832582,
-    "apple_run": 39103832584
-  },
+  "base_sha": "646205bcdf6c4ebc6e70d1ef017a4381b3bea654",
+  "native_scope": "container-storage",
   "changed_file_sha256": {
-    ".github/workflows/ios.yml": "73439feb9d7a67bd943061021aa19ad578ae6ed7f6e78d04e60b8dca65fb5155",
-    ".github/workflows/linux.yml": "851458dee469794327122059c219d478f52ea21a8a312fc27aeae4ca9cda0573",
-    "crates/trames-net/tests/virtual.rs": "6c98b0a2905a6ed83d7becc910484b6e941d261312d407396c2454c2a5bcb1da",
-    "docs/validation/docker-network.json": "9b58861d68b0bae049021b3ee94b0810796ff3e1bdd3dd8e7b84a374cd7f1475",
-    "docs/validation/docker-network.md": "7fa0d2f02da40424ed0bf3de9d17353f3928bc7ba602f4e49ed3ffcf03f78ff8",
-    "scripts/ios-ci-scope.py": "8851f941831a6e7905792f9d831d72900d950321513a3110dd42472e02db9b3e"
+    ".github/workflows/ios.yml": "a57f4f7762650380319302ed409b32521388cf871430cbe182e3781ae161254e",
+    ".github/workflows/linux.yml": "c87204103635a81ef59be94a5c8d22676a79b9ef657a1142b34453711fac3aaa",
+    "README.md": "b0f54ef24d0ef11f63bbab1809b61c6d5ea89858bc790b71bf3c6c260352678c",
+    "crates/trames-vfs/src/cgroup.rs": "d38334c44ddd38b6eaf92d98b67d69269aebfdefec2eda5df8100ef5deb61778",
+    "crates/trames-vfs/src/events.rs": "13a0a3758c1a15ec8554268da1721f1b1a17de4a0f563f18ce26bc1f42a398e2",
+    "crates/trames-vfs/src/inotify.rs": "a501e2773da0b229995a3fb64952b5d168f6ef6b61c551fd1553bd5735e79a27",
+    "crates/trames-vfs/src/ipc.rs": "c3654fcc29318db2246b6500c56004f7a1053dbf19127e07b4515b791223b1e3",
+    "crates/trames-vfs/src/ipc/native.rs": "8c461ab25f49998dabb00f1235408d7b394eca39a6026a6eb2e4df15900c2ff3",
+    "crates/trames-vfs/src/lib.rs": "280ab936f6ca7533c506514be6125238dc43eb75cc088f771810657a9f233c7b",
+    "crates/trames-vfs/src/linux_namespace.rs": "eb482182827ad523125c02397617f5273f687243625d8bf419976eb8b1426762",
+    "crates/trames-vfs/src/mapped.rs": "118bfc0ae3f6e82c29bf5b41fc8b49b248320b69f31b6b5fdcdd407d4f4be40e",
+    "crates/trames-vfs/src/memfd.rs": "91d371d927fc7e2c066388d9f1ee76a8298f531431a18c73933f9f72193cfe47",
+    "crates/trames-vfs/src/mounts.rs": "ddcc7929191483c4323ede70d10701db324b6e19cf207b793d52d655f645dfe5",
+    "crates/trames-vfs/src/namespace.rs": "9a6a6ca3c14b17c1726864c3398ed7d3e091abcbebb071329fe39fe2bfdcfbbf",
+    "crates/trames-vfs/src/network.rs": "9708e529779ff779a54c96793f30c69245030285f5d882306ec13a000e825130",
+    "crates/trames-vfs/src/overlay.rs": "17cecbb2749bee8b93f762c8e1b9788ee410f40c6dc845e12c583f04c9ae163c",
+    "crates/trames-vfs/src/pseudo.rs": "5e88df2c9e0698c797c4ced0c31f43f9c0f1a1aa5709b75503061cb8e43e35b7",
+    "crates/trames-vfs/src/pty.rs": "131e0fb88ebb35591444389de5d653f6fc2083948bf7095c32eec1da1179096c",
+    "crates/trames-vfs/src/storage.rs": "c5ad40a27855c474f084bc897306fd35bd7f79d48c6967f55da5cb6ca78b2105",
+    "crates/trames-vfs/src/xattr.rs": "d18aba359f972fc6e5c9f3e3a68a3aefbc4ee8588aa3d54169bcb850477af060",
+    "docs/architecture/guest-containers.md": "19f566c914da8043d67eb4cf6e86324e408dacf1c9b8a21f6434654ab30b2c28",
+    "docs/architecture/overlayfs.md": "835c6e96a7870fcb0da9d59f8207eafedb9d267f8803ff41d643415a7becd7b0",
+    "docs/architecture/storage.md": "1c273fab6cff8a6ae691d90fffd292703b80554a904ce102a47b879639313abf",
+    "docs/guides/guest-containers.md": "7be74c2bafca74664e8212c04f6ae8b2698385bfe267b0b3a114e7d823ec6af7",
+    "docs/guides/guest-docker.md": "08686d57c5ade4895dcbbce15659b94525f7b3fe6554c4f1c5a27d76ef8f351b",
+    "docs/validation/overlayfs.json": "a5f343e9b5ba46535920edf264ad304c4f5716abb34064550d72f93500bce80f",
+    "docs/validation/overlayfs.md": "f68e249c0b31a1fbfb10e1a8b6bb5087a446037f58ff2d5288f434aec6032a19",
+    "examples/docker/daemon.json": "7c8ebe99bcd317ed949123b5492ac95819490ed678eb8f8b6227237aec53a136",
+    "scripts/ios-ci-scope.py": "95b2800ddad425c74a2fcb40cbb3f8bb0663eda43c75cb25b3b387e93c66274b",
+    "tests/integration/docker-overlay.py": "e05ea0d63a5b752fb834350aa0b9d8be00364be02450616d9507b8b76bc6404d",
+    "tests/integration/docker-overlay.sh": "2d18582afb539bf4a5ba6eb5a9dac7fc1db31ba2ea19c8dd35bb6231d0352291"
   },
-  "reason": "Only host test buffer/CI changed. Set Darwin UDP echo peer send buffer to64KiB for unchanged60KB payload, matching production adapter. Runtime bytes unchanged. Reuse full Linux/Docker and both native UDP fixtures, Apple Net40 and virtual10. Retry only large gateway datagram on Linux/Apple and unrun Apple VFS/Linux/Core/FFI/iOS; no repeated successful acceptance. Final records include verified CI artifact/provenance; documentation-only commit skips CI."
+  "reason": "Guest overlayfs/overlay2 only. Check affected VFS, Linux file ABI, original signed Docker overlay2 at4CPU, Apple VFS and iOS FFI. Reuse unchanged default network acceptance39103300381/39104031102 and CPU/UI/GPU/guest libraries. No merge, tag or IPA."
 }
