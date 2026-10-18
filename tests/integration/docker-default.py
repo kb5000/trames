@@ -109,6 +109,7 @@ try:
                                     raise ConnectionError('Published listener not ready')
                                 data += chunk
                         result['host_browser'].append({'tcp': True})
+                        print('HOST_DEFAULT_PUBLISHED_TCP_PASS', flush=True)
                         break
                     except (OSError, ConnectionError):
                         if time.monotonic() >= deadline:
@@ -124,6 +125,9 @@ try:
             with logpath.open('wb') as log:
                 process = subprocess.run([*base, '--host-map', '198.18.0.1=127.0.0.1',
                     '--guest', '/bin/sh', '-ec', script], stdout=log, stderr=subprocess.STDOUT, timeout=1800)
+        except subprocess.TimeoutExpired:
+            result['timed_out'] = True
+            process = subprocess.CompletedProcess([], 124)
         finally:
             stop.set()
             worker.join(timeout=20)

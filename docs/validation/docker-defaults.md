@@ -30,7 +30,19 @@ runc 1.3.4-r1。默认启动 dockerd，自行管理 containerd，使用 runc/ove
 首轮 artifact #12131568019（14000 bytes）核验 SHA256
 `36ae367b6945f4dd988312d1db03eaab829da13b8036194f64ca3061b2800d60`。
 后续只重跑挂载回归、iOS FFI 和未完成的默认 Docker 工作流；未变的模块和
-C ABI 对照按精确源码补丁 hash 与 CI 结果复用。完整工作流仍待通过。
+C ABI 对照按精确源码补丁 hash 与 CI 结果复用。
+
+修正后组合验收在 `docker exec` 阶段触发 1800 秒总超时。此前已通过默认
+daemon/containerd/runc、只读 bind mount、实际设备策略拒绝、Seccomp=2、
+PID/cgroup、169.254.0.53 DNS 和受控 HTTP 出站。artifact #12132698705
+（1793 bytes）的 SHA256 为
+`ed9b4bfd1c53005b84b832a39707207e7ba1bf538ceeaa2d066b51623813cfa2`。
+未保存 host browser 的完成结果，不能据此宣称该轮宿主 TCP 访问或 exec 成功。
+
+后续将 exec 与存储/重启拆为两个独立 guest，并行验收未完成部分，避免每次
+组合验收都重复等待 bind/端口链路。新入口为
+`tests/integration/docker-default-lifecycle.py exec|storage`；运行时源码仍为
+505e1c4，模块/C ABI/Apple 检查均复用。两个生命周期结果仍待通过。
 
 ## 工作流覆盖与边界
 

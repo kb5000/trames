@@ -14,6 +14,12 @@
 containerd 配置保留上游行为。插件能够加载不等于完整 Kubernetes CRI、NRI
 资源管理、containerd snapshotter 或资源控制器已经验收。
 
+所测 Docker 28.3.3 仍会自行生成
+`disabled_plugins = ["io.containerd.grpc.v1.cri"]`，这是上游配置，保留原样。
+删除的是本项目额外手写的 CRI images/runtime 和 NRI 禁用项；不修改
+`/run/docker/containerd/containerd.toml`。containerd 2.1 的 images/runtime、
+NRI 在该配置下可以加载。
+
 最小 rootfs 中的 `/run`、`/dev/shm` tmpfs 是常规启动挂载，不属于 Docker 的
 配置文件。若运行 init，由 init 完成；手动挂载必须在启动服务前进行。
 guest 总资源上限仍然有效。移除 nofile 参数不等于取消 FD 上限。

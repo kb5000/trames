@@ -85,6 +85,9 @@ build/BuildKit、Compose 工作流仍单独跟进。AF_PACKET/ARP、STP/qdisc/tc
 默认配置工作流的状态与边界见[默认运行时验证](../validation/docker-defaults.md)。
 
 ```sh
+python3 tests/integration/docker-default-lifecycle.py exec
+python3 tests/integration/docker-default-lifecycle.py storage
+# 额外组合 bind/端口链路，解释执行较慢；状态以验证文档为准。
 python3 tests/integration/docker-default.py
 python3 tests/integration/docker-overlay.py
 bash scripts/build-nftables-fixture.sh

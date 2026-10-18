@@ -1,19 +1,21 @@
 {
-  "base_sha": "a7306222ef841dc28760c7ba0578f0f1ff29d9c1",
-  "native_scope": "docker-default",
-  "docker_default_reuse": {
-    "sha": "a7306222ef841dc28760c7ba0578f0f1ff29d9c1",
-    "linux": 39114128259,
-    "apple": 39114128260
+  "base_sha": "505e1c4bf38face2220a8fe3d0e6d1c2fe415998",
+  "native_scope": "docker-default-lifecycle",
+  "docker_default_lifecycle": {
+    "sha": "505e1c4bf38face2220a8fe3d0e6d1c2fe415998",
+    "linux": 39115510073,
+    "apple": 39115510112
   },
   "changed_file_sha256": {
-    ".github/workflows/ios.yml": "9520df13f1da6423b096be112a9763350a6c2275a6c1c19ac49628c8f96bae97",
-    ".github/workflows/linux.yml": "f7e73a61fcc4a5040fe3182718aff8abc3f106999828be826c43cf33b6c8f485",
-    "crates/trames-vfs/src/mounts.rs": "1ce820afebd04d9bddd4bbef9341def2c80561b3e87e54bb422062c42db6b91b",
-    "docs/architecture/docker-defaults.md": "d59625115080c4fda0bba2ae25a3f94eedaca13661efe593431eb45532a82f01",
-    "docs/validation/docker-defaults.md": "9e6c755584206cf410f606af5e462771acbe47a6b41c49d07f04879977004e8a",
-    "scripts/ios-ci-scope.py": "5e462b4ff6f9e102fcf1a292ff33ab57a7cd5b840021d750ddb2af903ec16823",
-    "tests/integration/docker-default.py": "325133bf983e65a5f3e8257a8f87190001f812120746f295b54ef47a092e163e"
+    ".github/workflows/ios.yml": "85364d83a9e6406b6b9519fb44b543bc16f5505ef688edbe6a34acb18715ba4c",
+    ".github/workflows/linux.yml": "02a6da24c3760d6e299fd91756b7b9588be97ca36717c87f3e43bc3fa025bf74",
+    "docs/architecture/docker-defaults.md": "0854885a0c32fbb15c422c61b8cf366a8cd4c0e3a4a9608d1029cff9d4fe2e8e",
+    "docs/guides/guest-docker.md": "070ea9e2e89c7e87c003cd01ec1af22b19ef66d6d23d8f58f37b8b47c25fc88d",
+    "docs/validation/docker-defaults.md": "bcaabbdb4e0f3b0b31e2b24a19641e8036d5dbd03eca4f57f5b0900bd7cfc211",
+    "scripts/ios-ci-scope.py": "9b3adc4b2aa7e9c02ec7693143afd9215ae046fa7f764cdcb8282c34eb6c31c9",
+    "tests/integration/docker-default-lifecycle.py": "f80fd1440c825693ede6cd40cefd20f0e8664aab244f7da831b4d0eee0bf80d8",
+    "tests/integration/docker-default-lifecycle.sh": "232384d9e34edb634eda16bb92e550da2b11783ae30d0636e450e17fa08cb1bc",
+    "tests/integration/docker-default.py": "55020cbdd57db040a1763ae397f453e17f5cefcb84aa27f488fdafecdc4ffde2"
   },
-  "reason": "Exact bind-remount MS_REC compatibility fix. Reuse successful unchanged net/Linux/core/C ABI and Apple checks from source a7306222. Rerun mount regressions and iOS FFI; finish original default Docker workflow. Stream fixture progress and allow sufficient interpreted runc execution time; no IPA/merge."
+  "reason": "Runtime/config/C ABI unchanged. Combined default bind/device/DNS/egress checks completed, then 30-minute total timeout during exec. Finish exec and storage/restart in independent parallel guests; reuse all passed module/Apple checks and prior network component evidence. No IPA or merge."
 }

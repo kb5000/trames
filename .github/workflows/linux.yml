@@ -41,6 +41,42 @@ jobs:
           TRAMES_VALIDATION_WORKFLOW: linux.yml
           TRAMES_NEEDS_GUEST_ARTIFACTS: 'false'
         run: python3 scripts/ios-ci-scope.py
+  docker-default-lifecycle:
+    needs: scope
+    if: needs.scope.outputs.native_scope == 'docker-default-lifecycle'
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [exec, storage]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+      - name: Validate focused harness syntax and build unchanged release runtime
+        run: |
+          python3 - <<'PY'
+          import ast,pathlib
+          ast.parse(pathlib.Path('tests/integration/docker-default-lifecycle.py').read_text())
+          PY
+          bash -n tests/integration/docker-default-lifecycle.sh
+          cargo build -p trames-cli --release --locked
+      - name: Exercise original default Docker lifecycle
+        env:
+          TRAMES_ALPINE_CACHE: ${{ github.workspace }}/target/alpine-download
+        run: |
+          mkdir -p "$TRAMES_ALPINE_CACHE"
+          curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o "$TRAMES_ALPINE_CACHE/alpine-minirootfs-3.22.6-aarch64.tar.gz"
+          python3 tests/integration/docker-default-lifecycle.py '${{ matrix.part }}'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: guest-docker-default-${{ matrix.part }}
+          path: target/docker-default-${{ matrix.part }}/
+          if-no-files-found: error
+          retention-days: 14
   targeted-runtime:
     needs: scope
     if: needs.scope.outputs.targeted == 'true' && needs.scope.outputs.skip_native != 'true'

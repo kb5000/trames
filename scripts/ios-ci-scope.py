@@ -103,6 +103,39 @@ def isolation_retry_source_unchanged(sha):
 
 
 
+
+def docker_default_lifecycle_outputs(plan, repo, headers):
+    reuse = plan['docker_default_lifecycle']
+    source = reuse['sha']
+    paths = ['crates', 'Cargo.toml', 'Cargo.lock', 'vendor', '.cargo',
+             'rust-toolchain.toml', 'guest', 'examples/docker',
+             'tests/fixtures/socket-timeouts.c', 'scripts/build-socket-timeouts-fixture.sh']
+    if subprocess.check_output(['git', 'diff', '--name-only', source, 'HEAD', '--', *paths]).strip():
+        raise RuntimeError('Lifecycle-only acceptance requires unchanged validated runtime/config/C ABI')
+
+    def get(path):
+        request = urllib.request.Request(f'https://api.github.com/repos/{repo}/{path}', headers=headers)
+        with urllib.request.urlopen(request, timeout=30) as response:
+            return json.load(response)
+
+    for key, workflow, name in [('linux', 'linux.yml', 'targeted-runtime'),
+                                ('apple', 'ios.yml', 'docker-default-apple')]:
+        run_id = reuse[key]
+        run = get(f'actions/runs/{run_id}')
+        if (run['head_sha'] != source or run['path'] != '.github/workflows/' + workflow
+                or run['head_repository']['full_name'] != repo):
+            raise RuntimeError('Lifecycle evidence must match the unchanged source/workflow')
+        job = next(j for j in get(f'actions/runs/{run_id}/jobs')['jobs'] if j['name'] == name)
+        if key == 'apple' and job['conclusion'] != 'success':
+            raise RuntimeError('Missing successful Apple/iOS runtime acceptance')
+        if key == 'linux' and not any(s['name'] == 'Check affected modules' and s['conclusion'] == 'success'
+                                     for s in job['steps']):
+            raise RuntimeError('Missing successful Linux module acceptance')
+    print('Runtime unchanged: reuse passed module/C ABI/Apple checks; execute independent default Docker exec and storage lifecycle guests. Combined bind/device/DNS/egress coverage retained with its timeout boundary.')
+    return {'frontend_only': 'false', 'targeted': 'true', 'native_scope': 'docker-default-lifecycle',
+            'skip_native': 'true', 'skip_linux_native': 'true', 'skip_linux_modules': 'true'}
+
+
 def docker_defaults_remount_retry(plan, repo, headers):
     """Reuse passed modules only for the exact bind-remount compatibility fix."""
     reuse = plan.get('docker_default_reuse')
@@ -234,6 +267,18 @@ def main():
             changed=set(subprocess.check_output(['git','diff','--name-only',base,'HEAD'],text=True).splitlines())- {str(plan_path)}
             hashes=plan['changed_file_sha256']
             if changed==set(hashes) and all(Path(path).exists() and hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest for path,digest in hashes.items()):
+                if plan.get('native_scope') == 'docker-default-lifecycle':
+                    allowed = {'.github/workflows/linux.yml', '.github/workflows/ios.yml',
+                               'scripts/ios-ci-scope.py', 'tests/integration/docker-default.py',
+                               'tests/integration/docker-default-lifecycle.py',
+                               'tests/integration/docker-default-lifecycle.sh'}
+                    if not all(p.startswith('docs/') or p in allowed for p in changed):
+                        raise RuntimeError('Lifecycle-only plan includes unrelated files')
+                    outputs = docker_default_lifecycle_outputs(plan, repo, dict(request.headers))
+                    with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+                        for key, value in outputs.items():
+                            output.write(f'{key}={value}\n')
+                    return
                 if plan.get('native_scope') == 'docker-default':
                     allowed = {'crates/trames-vfs/src/lib.rs', 'crates/trames-vfs/src/pseudo.rs',
                                'crates/trames-vfs/src/mounts.rs',
