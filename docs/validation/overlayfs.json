@@ -110,7 +110,8 @@
           "yajl-2.1.0-r9.apk": "34a2fb7671a29f19166d051318c866e60f4687184fe73939b6b08325d11b68a8"
         },
         "rootfs_sha256": "821565fa8f3953eefd12497b166b4b50add2f7c57fb312e75862f5867e06fefe"
-      }
+      },
+      "source_commit": "8f5872a156f05c3fd21eb307d354184ea4aa3fcd"
     },
     "apple_ios": {
       "status": "passed",
@@ -121,13 +122,24 @@
       "overlay_tests_passed": 15,
       "linux_file_abi_passed": 3,
       "ffi_target": "aarch64-apple-ios",
-      "ffi_check": "passed"
+      "ffi_check": "passed",
+      "source_commit": "8f5872a156f05c3fd21eb307d354184ea4aa3fcd"
     },
     "proc_reopen_fix": {
-      "status": "pending",
+      "status": "passed",
       "base_source": "8f5872a156f05c3fd21eb307d354184ea4aa3fcd",
       "production_patch_sha256": "56de73f95e80aa4874824ae0ce598b5376027b4344ec6867f121e801a43e6512",
-      "scope": "Only a new proc FD open selects the current overlay layer; dup/fork keep the original OFD/lower. Ordinary opens and overlay production code unchanged. Local proc tests15 and clippy pass; Linux/Apple affected regressions and iOS FFI follow. Reuse full Docker/storage proof."
+      "scope": "Exact proc reopen fix. Ordinary open and dup/fork unchanged; full overlay/Docker/platform evidence reused after source delta and run checks. Only affected regressions and iOS FFI reran.",
+      "source_commit": "31abd3538994e501cb249601c2adcca2b8bc608a",
+      "linux_run": 39107028366,
+      "linux_job": 117615040762,
+      "linux_proc_tests": 15,
+      "linux_clippy": "passed",
+      "apple_run": 39107028392,
+      "apple_job": 117615046100,
+      "apple_proc_tests": 15,
+      "ffi_target": "aarch64-apple-ios",
+      "ffi_check": "passed"
     }
   },
   "limits": [
@@ -137,7 +149,8 @@
     "Storage acceptance uses --network none; unchanged full default network evidence remains in docker-network.json",
     "No IPA or merge; original containerd overlayfs snapshotter discovery is not end-to-end snapshotter acceptance"
   ],
-  "source_commit": "8f5872a156f05c3fd21eb307d354184ea4aa3fcd",
-  "source_tree": "b81187e9807cb4f32ff1e4b5c949f63b99cd0adb",
-  "ci_scope_correction": "The initial Linux workflow also ran unchanged GTK/foot checks due to missing exclusion of container-storage. They passed. Subsequent workflow records exclude them and reuse verified unchanged source; no runtime/guest source changes."
+  "source_commit": "31abd3538994e501cb249601c2adcca2b8bc608a",
+  "source_tree": "74372046028a91443f1eed73796dd5f27a796e24",
+  "ci_scope_correction": "Initial Linux workflow also ran unchanged GTK/foot checks due to missing container-storage exclusion. Both passed. Conditions corrected in the proc fix commit; the original full storage/Docker/Apple evidence was reused, with only affected proc checks and iOS FFI rerun. Final records commit uses [skip ci].",
+  "base_overlay_source": "8f5872a156f05c3fd21eb307d354184ea4aa3fcd"
 }

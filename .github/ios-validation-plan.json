@@ -13,9 +13,9 @@
     "crates/trames-vfs/src/overlay.rs": "28f7998e1fded9188b11cac44393119b2abaaedd1d0183e3c1fb30ec86907a39",
     "crates/trames-vfs/src/pseudo.rs": "2c15ac7bbfa26875aefaa880a9ea4633a0ce9b9e7ec8f9ab7d5825fe111d70d3",
     "docs/architecture/overlayfs.md": "537c1e9b4363cfdf04d2b78c7a24aee877df3368d9a2e766062aba8cc4b6defe",
-    "docs/validation/overlayfs.json": "e66f9f5fcf4679295dc6672240ade7bfd0ed6455559cd450d6fc6105f00583cf",
-    "docs/validation/overlayfs.md": "8aee6db23d067b5c520d887d0940e52c14dd5e96536f177695a96badede5a013",
+    "docs/validation/overlayfs.json": "ad72830aacba8a078b86172170152293bf07494ce503ba82c5af5a7684b29146",
+    "docs/validation/overlayfs.md": "a7d22da72ac17e1fed09d9317bb0ea8af29309e103764c6c7483b59f94a06fcd",
     "scripts/ios-ci-scope.py": "1d5ec85401038c9df0ec193cac465bebac1ab04796f309795b18ce0e4ddab444"
   },
-  "reason": "Exact proc FD reopen fix verified against Linux path/open semantics. Ordinary opens, dup/fork and overlay production code unchanged. Reuse passed Linux/Apple VFS/file ABI/full original Docker overlay2 artifact. Run only affected proc regressions, VFS clippy and iOS FFI. Correct accidental GTK/foot CI exclusion; no unrelated repeats or IPA."
+  "reason": "Full overlay/Docker passed on8f5872a; exact proc fix31abd35 passed Linux/Apple15 cases and iOS FFI. Final records only, [skip ci]. Runtime/fixtures unchanged from31abd35. Reuse verified tests, no unrelated repeats or IPA."
 }
