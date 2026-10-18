@@ -24,9 +24,12 @@ runc/overlay2的 `docker run -it --rm`，终端stdin/stdout/stderr、输入往�
 输入往返、stderr、正常退出及--rm清理全部成功，退出码0，用时111.671秒。
 这是共享x86_64开发机解释ARM64的链路验收用时，不是iPad性能对照。
 输入磁盘清单及runner哈希、原始日志见同名目录。镜像来自已有签名Alpine测试盘，
-不是一次重新拉取Registry验收。Apple定向验证与build31 IPA随后记录。
+不是一次重新拉取Registry验收。Apple相同4+11项检查通过；[最终build31 IPA和指纹](ipad-1.0-build31.md)已核验。
 不重跑未变CPU/MMU/网络/UI/GPU和guest库完整验收。
 
 日志中的pidfd_open/open_tree/fsopen/keyctl以及bpf拒绝也出现在此前已成功的默认
 非TTY链路中；本次直接错误是ptmx inode，不把所有ENOSYS同时认定为启动阻塞，
 也不把这些能力记为已实现。
+
+边界：本轮--rm断言确认Docker API列表无该容器；日志仍有shim清理时runc exit255警告，
+不宣称所有底层runtime状态清理完整。没有在iPad复测或重新验收Registry拉取。

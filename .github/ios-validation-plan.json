@@ -18,7 +18,11 @@
   "changed_file_sha256": {
     ".github/workflows/ios.yml": "89ee89104553134440ab1fb0342f44db2aa09d8203a332fdb89ef5927c42a174",
     "apps/ios/project.yml": "16dcfa71458e5d623e77858f00649c08a93c7f284501b281456846429ec81e93",
+    "docs/validation/devpts-inode.md": "d0d30c96c79b289a9e9d64790abda7af3cc6d0bd6d999e92a3f69828495e440b",
+    "docs/validation/devpts-inode/apple-summary.log": "64daa499c16311d25616a31c90332feba1444b05eb93c065df524844a730d5ee",
+    "docs/validation/ipad-1.0-build31.json": "3544ba7f236d29eece2631a0025248f548d1f985462a3a04912c938d372d93ce",
+    "docs/validation/ipad-1.0-build31.md": "c1f845825e227593d7548ea13fce7eb6ac90222a3b9932d804a9f16f4e646f53",
     "scripts/ios-ci-scope.py": "20d0a065610b753f8659a44d800d5b57ff74a4d70acf6831ad941a7428e06dc9"
   },
-  "reason": "Correct build number from30 to31 using successful current device app; identical compiled executables, only main/extension CFBundleVersion metadata updated. No repeated passed tests or compilation."
+  "reason": "Record verified build31 interactive Docker fix, Apple checks and final metadata-only package [skip ci]; no runtime change, merge or repeated suites."
 }
