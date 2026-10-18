@@ -63,7 +63,30 @@ static void wait_ok(pid_t pid) {
     if (!WIFEXITED(status) || WEXITSTATUS(status)) fprintf(stderr,"seccomp %s: child status %#x\n",stage,status);
     assert(WIFEXITED(status) && WEXITSTATUS(status) == 0);
 }
+static void ignored_or_blocked_trap(void) {
+    for(int blocked=0;blocked<2;++blocked) {
+        pid_t child=fork(); assert(child>=0);
+        if(!child) {
+            assert(prctl(PR_SET_NO_NEW_PRIVS,1,0,0,0)==0);
+            struct sigaction sa={.sa_sigaction=trap_handler,.sa_flags=SA_SIGINFO};
+            sigemptyset(&sa.sa_mask);
+            if(!blocked) sa.sa_handler=SIG_IGN;
+            assert(sigaction(SIGSYS,&sa,NULL)==0);
+            if(blocked) {
+                sigset_t set; sigemptyset(&set); sigaddset(&set,SIGSYS);
+                assert(sigprocmask(SIG_BLOCK,&set,NULL)==0);
+            }
+            install(SECCOMP_RET_TRAP|0x55,0);
+            syscall(SYS_getppid); _exit(99);
+        }
+        int status; assert(waitpid(child,&status,0)==child);
+        assert(WIFSIGNALED(status) && WTERMSIG(status)==SIGSYS);
+    }
+}
 int main(int argc, char **argv) {
+    if(argc==2 && !strcmp(argv[1],"trap-mask")) {
+        ignored_or_blocked_trap(); puts("seccomp ignored/blocked TRAP: ok"); return 0;
+    }
     if (argc == 2 && !strcmp(argv[1], "exec-child")) {
         errno = 0;
         assert(syscall(SYS_getppid) == -1 && errno == 123);
@@ -110,6 +133,7 @@ int main(int argc, char **argv) {
     }
     int status; assert(waitpid(child, &status, 0) == child);
     assert(WIFSIGNALED(status) && WTERMSIG(status) == SIGSYS);
-    puts("seccomp: errno, stacking, fork/exec, TRAP siginfo/context, TSYNC and KILL_PROCESS: ok");
+    ignored_or_blocked_trap();
+    puts("seccomp: errno, stacking, fork/exec, TRAP siginfo/context/masks, TSYNC and KILL_PROCESS: ok");
     return 0;
 }

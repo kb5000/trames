@@ -27,6 +27,29 @@ def container_isolation_path(path):
     }
 
 
+def isolation_retry_source_unchanged(sha):
+    delta=subprocess.check_output(['git','diff','--name-only',sha,'HEAD'],text=True).splitlines()
+    allowed={'.github/ios-validation-plan.json','.github/workflows/ios.yml',
+             '.github/workflows/linux.yml','scripts/ios-ci-scope.py',
+             'crates/trames-core/src/process_seccomp.rs','crates/trames-linux/src/network.rs',
+             'tests/fixtures/seccomp.c','tests/integration/container-isolation.py'}
+    if any(not p.startswith('docs/') and p not in allowed for p in delta):return False
+    old=lambda p:subprocess.check_output(['git','show',sha+':'+p],text=True).split('#[cfg(test)]')[0]
+    current=lambda p:Path(p).read_text().split('#[cfg(test)]')[0]
+    if old('crates/trames-linux/src/network.rs') != current('crates/trames-linux/src/network.rs'):return False
+    # Reuse Docker/ordinary syscall results only for this exact TRAP-only fix.
+    # Any broader production change falls back to the complete affected checks.
+    guard='''                // force_sig_seccomp cannot be suppressed by ignoring or
+                // blocking SIGSYS; Linux forces its fatal default action.
+                if p.mask & (1u64 << 30) != 0 || p.actions[31].handler == 1 {
+                    self.exit(pid, p, 31);
+                    return true;
+                }
+'''
+    core=current('crates/trames-core/src/process_seccomp.rs')
+    return core.count(guard)==1 and core.replace(guard,'')==old('crates/trames-core/src/process_seccomp.rs')
+
+
 def main():
     if os.environ.get("TRAMES_FULL_CHECK") == "true":
         with open(os.environ["GITHUB_OUTPUT"], "a") as output:
@@ -54,9 +77,18 @@ def main():
                     # checked, followed by real guest ABI and original Docker.
                     # Untouched App/guest-library inputs retain 1.0.0 coverage.
                     print('Container isolation: affected native/ABI/Docker checks only; unchanged UI/GPU/guest libraries reused, no new IPA.')
+                    retry=False
+                    if plan.get('isolation_retry'):
+                        reuse=plan['isolation_retry']
+                        if isolation_retry_source_unchanged(reuse['sha']):
+                            with urllib.request.urlopen(urllib.request.Request(f'https://api.github.com/repos/{repo}/actions/runs/{reuse["linux_run"]}',headers=dict(request.headers)),timeout=30) as response:
+                                previous=json.load(response)
+                            retry=previous['conclusion']=='success' and previous['head_sha']==reuse['sha'] and previous['path']=='.github/workflows/linux.yml' and previous['head_repository']['full_name']==repo
+                        if retry: print('Reusing passed Docker/network/library checks; only the new seccomp TRAP case, failed Darwin test and remaining Apple checks run.')
                     with open(os.environ['GITHUB_OUTPUT'],'a') as output:
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=container-isolation\n')
                         output.write('skip_native=false\nskip_linux_native=false\nskip_linux_modules=false\n')
+                        output.write('isolation_retry='+str(retry).lower()+'\n')
                     return
                 baseline=plan['reuse_guest_run']
                 url=f'https://api.github.com/repos/{repo}/actions/runs/{baseline}'

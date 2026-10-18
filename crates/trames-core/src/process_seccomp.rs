@@ -303,6 +303,12 @@ impl Kernel {
                 p.state = State::Ready;
             }
             0x0003_0000 => {
+                // force_sig_seccomp cannot be suppressed by ignoring or
+                // blocking SIGSYS; Linux forces its fatal default action.
+                if p.mask & (1u64 << 30) != 0 || p.actions[31].handler == 1 {
+                    self.exit(pid, p, 31);
+                    return true;
+                }
                 p.cpu.set_x(0, number as u64);
                 p.state = State::Ready;
                 p.pending.discard(31);
@@ -331,6 +337,20 @@ impl Kernel {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn ignored_or_blocked_sigsys_cannot_suppress_a_forced_seccomp_trap() {
+        for (handler, mask) in [(1, 0), (0x5000, 1u64 << 30)] {
+            let mut p = super::super::tests::process();
+            let mut kernel = super::super::tests::kernel();
+            p.seccomp.filters.push(Rc::new(
+                Filter::validate(vec![i(6, 0, 0, 0x30055)]).unwrap(),
+            ));
+            p.actions[31].handler = handler;
+            p.mask = mask;
+            assert!(kernel.filter_syscall(1, &mut p, 173, [0; 6]));
+            assert!(matches!(p.state, State::Zombie(31)));
+        }
+    }
     fn i(code: u16, yes: u8, no: u8, value: u32) -> Instruction {
         Instruction {
             code,

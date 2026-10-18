@@ -2,10 +2,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Real guest namespace/FD/network policy and seccomp vs independent native Linux."""
 import hashlib
+import argparse
 import json
 import os
 from pathlib import Path
 import subprocess
+
+parser=argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--seccomp-only',action='store_true',help='Reuse unchanged network acceptance; run the new seccomp case only')
+args=parser.parse_args()
 
 ROOT=Path(__file__).resolve().parents[2]
 BIN=ROOT/'tests/fixtures/bin'
@@ -17,7 +22,7 @@ assert oracle.returncode==0 and not oracle.stderr,(oracle.returncode,oracle.stdo
 (OUT/'seccomp-native.log').write_bytes(oracle.stdout)
 checks=[]
 for cpus in ('1','4'):
-    for name in ('seccomp','network-namespaces'):
+    for name in (('seccomp',) if args.seccomp_only else ('seccomp','network-namespaces')):
         p=subprocess.run([runner,'--memory','--network','full','--cpus',cpus,
             '--max-instructions','300000000','--exec-file',f'/{name}={BIN/name}',
             '--guest','/'+name],capture_output=True,timeout=60)
@@ -27,7 +32,7 @@ for cpus in ('1','4'):
         else: assert p.stdout==b'network namespaces: private TCP/UDP/Unix, old FDs, pathname reachability, lo, sysctls and setns: ok\n',p.stdout
         checks.append(dict(cpus=int(cpus),fixture=name,exit_code=p.returncode,stdout=p.stdout.decode()))
         print(f'{cpus}-CPU {name}: passed'+(' (matches native Linux)' if name=='seccomp' else ''),flush=True)
-report=dict(checks=checks,native_seccomp=oracle.stdout.decode(),
+report=dict(checks=checks,native_seccomp=oracle.stdout.decode(),network_acceptance_reused=args.seccomp_only,
     source_sha256={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT/'tests/fixtures/seccomp.c',ROOT/'tests/fixtures/network-namespaces.c']},
     fixture_sha256={name:hashlib.sha256((BIN/name).read_bytes()).hexdigest() for name in ('seccomp','network-namespaces','seccomp-native')},
     scope='Guest net/IPC/cgroup namespaces and enforced classic-BPF seccomp. Namespace tests do not claim a privileged host netns oracle, bridge/NAT or a physical iPad.')

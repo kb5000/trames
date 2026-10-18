@@ -26,8 +26,17 @@ jobs:
           toolchain: nightly-2026-10-16
           targets: aarch64-apple-ios
       - name: Validate affected Apple kernel and network modules
+        if: needs.scope.outputs.isolation_retry != 'true'
         run: |
           cargo test -p trames-net -p trames-vfs -p trames-linux -p trames-core --lib --locked
+          cargo test -p trames-cpu --lib disabled_authentication_and_ordering_hints_preserve_values --locked
+          cargo check -p trames-ffi --target aarch64-apple-ios --locked
+      - name: Retry failed Darwin fixture, new seccomp case and remaining Apple checks
+        if: needs.scope.outputs.isolation_retry == 'true'
+        run: |
+          cargo test -p trames-net -p trames-vfs --lib --locked
+          cargo test -p trames-linux --lib socket_output_preflight_and_descriptor_type_errors --locked
+          cargo test -p trames-core --lib seccomp --locked
           cargo test -p trames-cpu --lib disabled_authentication_and_ordering_hints_preserve_values --locked
           cargo check -p trames-ffi --target aarch64-apple-ios --locked
   scope:
@@ -42,6 +51,7 @@ jobs:
       critical_test: ${{ steps.scope.outputs.critical_test }}
       ui_targets: ${{ steps.scope.outputs.ui_targets }}
       native_scope: ${{ steps.scope.outputs.native_scope }}
+      isolation_retry: ${{ steps.scope.outputs.isolation_retry }}
       frontend_reused: ${{ steps.scope.outputs.frontend_reused }}
     steps:
       - uses: actions/checkout@v4

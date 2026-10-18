@@ -20,6 +20,7 @@ jobs:
       skip_native: ${{ steps.scope.outputs.skip_linux_native }}
       skip_modules: ${{ steps.scope.outputs.skip_linux_modules }}
       native_scope: ${{ steps.scope.outputs.native_scope }}
+      isolation_retry: ${{ steps.scope.outputs.isolation_retry }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -56,6 +57,10 @@ jobs:
           elif [[ '${{ needs.scope.outputs.native_scope }}' == host-terminals ]]; then
             cargo clippy -p trames-vfs -p trames-core -p trames-ffi --all-targets --locked -- -D warnings
             cargo test -p trames-vfs -p trames-core -p trames-ffi --lib --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == container-isolation && '${{ needs.scope.outputs.isolation_retry }}' == true ]]; then
+            cargo clippy -p trames-linux -p trames-core --all-targets --locked -- -D warnings
+            cargo test -p trames-linux --lib socket_output_preflight_and_descriptor_type_errors --locked
+            cargo test -p trames-core --lib seccomp --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == container-isolation ]]; then
             cargo clippy -p trames-net -p trames-vfs -p trames-linux -p trames-core --all-targets --locked -- -D warnings
             cargo test -p trames-net -p trames-vfs -p trames-linux -p trames-core --lib --locked
@@ -115,10 +120,14 @@ jobs:
           sudo apt-get install --yes --no-install-recommends gcc-aarch64-linux-gnu libc6-dev-arm64-cross
           bash scripts/build-container-isolation-fixtures.sh
           cargo build -p trames-cli --release --locked
-          python3 tests/integration/container-isolation.py
-          mkdir -p "$TRAMES_ALPINE_CACHE"
-          curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o "$TRAMES_ALPINE_CACHE/alpine-minirootfs-3.22.6-aarch64.tar.gz"
-          python3 tests/integration/docker.py --isolated --require-run --cpus 4
+          if [[ '${{ needs.scope.outputs.isolation_retry }}' == true ]]; then
+            python3 tests/integration/container-isolation.py --seccomp-only
+          else
+            python3 tests/integration/container-isolation.py
+            mkdir -p "$TRAMES_ALPINE_CACHE"
+            curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o "$TRAMES_ALPINE_CACHE/alpine-minirootfs-3.22.6-aarch64.tar.gz"
+            python3 tests/integration/docker.py --isolated --require-run --cpus 4
+          fi
       - uses: actions/upload-artifact@v4
         if: always() && needs.scope.outputs.native_scope == 'container-isolation'
         with:

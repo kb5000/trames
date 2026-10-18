@@ -61,3 +61,22 @@ python3 tests/integration/docker.py --isolated --require-run --cpus 1
 3.22.6 rootfs 下载缓存，APK 仍由 guest apk 验签。CI 仅检查本轮受影响模块，
 并编译 ARM64 iOS FFI；不重复 1.0.0 的 UIKit/GPU/GTK/foot/多终端验收，不生成
 新 IPA。CLI 阶段的宿主网络结果不是 iPad 真机网络/后台运行证明。
+
+## CI 与后续定向修正
+
+[Linux CI](https://github.com/kb5000/trames/actions/runs/39088637865) 已通过：
+201 项受影响 library（1 项原有 ignored）、11 项 virtual 网络、1 项 CPU hint、
+1/4 vCPU 静态 C 夹具，以及原版 Docker 4 vCPU 的严格隔离 profile。
+本地新磁盘/签名包的规范 1 vCPU Docker profile 同样通过所有强制断言。
+
+[首次 Apple CI](https://github.com/kb5000/trames/actions/runs/39088637745) 的 Core
+49 项与 Linux library 20 项通过；另一项测试在仍持有“绑定但未 listen”的 TCP
+socket 时等待连接拒绝，Darwin 未在期限内返回。这是旧测试的跨平台假设，
+现先释放保留端口的全部 FD/引用，再测试关闭端口。整个旧 Apple job 为失败，
+不将其写成通过；剩余模块与 ARM64 iOS FFI 尚待后续 CI。
+
+审核还添加了 SIGSYS 被忽略/屏蔽时 TRAP 必须终止的独立原生 Linux 对照，
+确认并修复这一边界；新增 1/4 vCPU guest 用例通过。普通 Docker ERRNO/ALLOW、
+网络和文件数据路径未变；CI 只在源码仍为这个确切 TRAP 修正时复用旧通过项。
+验收脚本曾保留 host 参数，已加入显式参数替换及反向断言；对应失败已重试，
+不作为隔离通过。详见[机器可读记录](container-isolation.json)。
