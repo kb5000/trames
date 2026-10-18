@@ -22,7 +22,10 @@
   "changed_file_sha256": {
     ".github/workflows/ios.yml": "7d1537698d43816ca5a189e4c0ceba6bd658e57826d15ec32abdb3150feaa956",
     "apps/ios/project.yml": "cceb6daf3d46d2a119998738731b4d7f2f5eabd010d66da4cb291cbba4ee207f",
+    "docs/validation/ipad-1.0-build28.json": "2ab249ecd6fa5b383b136ed9acb320854b58d13277ecba9e46b370fc5749bf81",
+    "docs/validation/ipad-1.0-build28.md": "f1dff716315dd84c012a4b2c202f714de1adcb5ba0a07fdc665e08ed700808b5",
+    "docs/validation/runtime-costs.md": "4d9abd58f96882a1e2e2623b22fdf0a341999bc715823044c16a08a14c038cb8",
     "scripts/ios-ci-scope.py": "94646072813025adab0792f3290a5d39c0ff7ebaa4cee4b8c3521bf35b4ab1d0"
   },
-  "reason": "Owner-requested 1.0.0 build28 IPA with default runc compatibility and Linux-validated MMU/proc performance fixes. Run affected Apple memory/proc regressions and rebuild current release ARM64 iOS FFI/app. Reuse unchanged frontend, guest bundles and unrelated modules; no full-suite rerun, merge or formal release."
+  "reason": "Record successful build28 Apple memory/proc checks, current ARM64 release IPA and downloaded package inspection. Same runtime/frontend/guest source as 0c43e34; [skip ci] prevents repeated passed checks. No main merge or formal release."
 }

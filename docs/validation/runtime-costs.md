@@ -119,7 +119,10 @@ PROT_NONE 保留/提交/unmap、fork 独立权限、退出 leader、实时 argv/
 缓存清退；受影响模块[严格 Clippy](runtime-costs/clippy-final.log)通过。
 内存 61 项结果复用；将新增测试适配 64KiB 主机后仅重跑
 [该项回归](runtime-costs/mmu-final-case.log)，没有再重跑全部通过项。
-这批改动没有新的 Apple/iOS CI 或实机结果，旧 Apple 结果只保留原源码范围。
+随后按所有者要求构建 [1.0.0 build28](ipad-1.0-build28.md)：
+[Apple CI](https://github.com/kb5000/trames/actions/runs/39130864515)通过内存库61项、
+内存集成4项与proc-map缓存2项，重新编译当前ARM64 iOS release应用；未变
+模块、UI与guest产物复用。没有新增实机性能结果。
 
 修复后仍有 86533 次 proc 刷新，syscall 协调线程时间为 102.536 秒。
 [35261 个后续 PC 样本](runtime-costs/docker-after-profile-pc.json)中内存相关分类
