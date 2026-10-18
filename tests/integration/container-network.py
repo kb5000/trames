@@ -10,16 +10,19 @@ import subprocess
 
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--cpus',choices=('1','4','both'),default='both')
+parser.add_argument('--docker-control-only',action='store_true',help='Only the new Go/BusyBox control ABI; reuse unchanged data-path coverage')
 args=parser.parse_args()
 root=Path(__file__).resolve().parents[2]
-out=root/'target/container-network';out.mkdir(parents=True,exist_ok=True)
+out=root/('target/docker-network-control' if args.docker_control_only else 'target/container-network');out.mkdir(parents=True,exist_ok=True)
 runner=os.environ.get('TRAMES_RUNNER',str(root/'target/release/trames-run'))
 expected=b'container network: veth/bridge, namespace FDs, live TCP/UDP, sysfs/proc and cross-bridge isolation: ok\n'
 checks=[]
+fixtures=('docker-network-control',) if args.docker_control_only else ('container-forwarding','container-network','network-namespaces')
 for cpus in (('1','4') if args.cpus=='both' else (args.cpus,)):
-    for fixture in ('container-forwarding','container-network','network-namespaces'):
+    for fixture in fixtures:
         binary=root/'tests/fixtures/bin'/fixture
         wanted=(b'container forwarding: root native/bridge TCP/UDP, IPv4/IPv6 L3 policy, pinned sysctls and TTL: ok\n' if fixture=='container-forwarding' else expected) if fixture!='network-namespaces' else b'network namespaces: private TCP/UDP/Unix, old FDs, pathname reachability, lo, sysctls and setns: ok\n'
+        if fixture=='docker-network-control':wanted=b'docker network control: Go link/queue, BusyBox dumps, subscriptions and RouteGet: ok\n'
         result=subprocess.run([runner,'--memory','--network','full','--cpus',cpus,
             '--max-instructions','300000000','--exec-file',f'/{fixture}={binary}',
             '--guest','/'+fixture],capture_output=True,timeout=60)
@@ -27,7 +30,9 @@ for cpus in (('1','4') if args.cpus=='both' else (args.cpus,)):
         assert result.returncode==0 and result.stdout==wanted and not result.stderr,(cpus,fixture,result.returncode,result.stdout,result.stderr)
         checks.append(dict(cpus=int(cpus),fixture=fixture,exit_code=result.returncode,stdout=result.stdout.decode()))
         print(f'{cpus}-CPU {fixture}: passed',flush=True)
-report=dict(checks=checks,source_sha256={name:hashlib.sha256((root/'tests/fixtures'/f'{name}.c').read_bytes()).hexdigest() for name in ('container-forwarding','container-network','network-namespaces')},
-    fixture_sha256={name:hashlib.sha256((root/'tests/fixtures/bin'/name).read_bytes()).hexdigest() for name in ('container-forwarding','container-network','network-namespaces')},
+sources=set(fixtures)|{'container-network'}
+report=dict(checks=checks,source_sha256={name:hashlib.sha256((root/'tests/fixtures'/f'{name}.c').read_bytes()).hexdigest() for name in sorted(sources)},
+    fixture_sha256={name:hashlib.sha256((root/'tests/fixtures/bin'/name).read_bytes()).hexdigest() for name in fixtures},
     scope='Namespace-owned configurable veth/bridge, direct/static routes and real internal IP data. Root bridge/native socket paths and per-family L3 forwarding are tested; external forwarding, nftables/NAT and full Docker bridge are not accepted by this fixture.')
+if args.docker_control_only:report['scope']='Go link string/queue metadata, non-NUL rename, BusyBox compact dumps, real subscribed netlink dump and gateway RouteGet ABI. Does not accept external forwarding, nftables/NAT or full Docker bridge.'
 (out/'results.json').write_text(json.dumps(report,indent=2)+'\n')

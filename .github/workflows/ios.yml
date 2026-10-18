@@ -52,7 +52,10 @@ jobs:
           targets: aarch64-apple-ios
       - name: Validate affected Apple network modules and iOS FFI
         run: |
-          if [[ '${{ needs.scope.outputs.network_retry }}' == true ]]; then
+          if [[ '${{ needs.scope.outputs.docker_bridge }}' == true ]]; then
+            cargo test -p trames-net --lib --locked
+            cargo test -p trames-vfs --lib network --locked
+          elif [[ '${{ needs.scope.outputs.network_retry }}' == true ]]; then
             cargo test -p trames-net --lib routing_tests --locked
             cargo test -p trames-net --test virtual namespace_finish_resets_peer_and_preserves_other_namespace --locked
           else
@@ -73,6 +76,7 @@ jobs:
       native_scope: ${{ steps.scope.outputs.native_scope }}
       isolation_retry: ${{ steps.scope.outputs.isolation_retry }}
       network_retry: ${{ steps.scope.outputs.network_retry }}
+      docker_bridge: ${{ steps.scope.outputs.docker_bridge }}
       frontend_reused: ${{ steps.scope.outputs.frontend_reused }}
     steps:
       - uses: actions/checkout@v4

@@ -7,8 +7,9 @@ IPC/cgroup/seccomp 配置。[隔离验证](../validation/container-isolation.md)
 已发布的 1.0.0 IPA 不包含这批开发改动；bridge/NAT 尚未完成，下方的原有
 daemon 配置仍禁用 bridge/iptables，不能直接删除这些限制配置来启用完整网络。
 内部 veth/bridge、根 guest 与容器的 TCP/UDP 和 IPv4/IPv6 L3 转发已有独立
-guest 验收；外部转发、nftables/NAT 和 Docker 默认 bridge 尚未完成，
-见[当前范围](../validation/container-forwarding.md)。
+guest 验收。后续已接通原版 Docker 的内部 bridge 创建／容器运行路径，
+但外部转发、nftables/NAT 和含防火墙的完整默认 bridge 尚未完成，
+见[内部 bridge 范围](../validation/docker-bridge-internal.md)。
 
 当前开发版可通过原版 Alpine Docker → containerd → crun 执行 Alpine 容器：
 镜像导入、create/start、PID 1 payload、退出码、docker logs 与清理均纳入验收。
@@ -90,3 +91,29 @@ PID 1 payload、退出码 7、日志、remove。CI 使用 `--require-run`，启�
 通过检查；省略该参数只用于单独记录阻塞的诊断。测试配置未使用 GODEBUG 改写
 Go 抢占行为。完整日志、输入指纹和限制见[启动验证记录](../validation/guest-docker-start.md)；
 之前的 OOM 阻塞保留在[历史基础验收](../validation/guest-docker.md)。
+
+## 开发分支的内部 bridge
+
+1.0.0 后开发分支可用原版 Docker 自动配置内部 IPv4 bridge。停止已有
+dockerd 后，以下参数替代上面的 daemon 配置；containerd 保持同一配置：
+
+```sh
+dockerd --containerd=/run/containerd/containerd.sock --storage-driver=vfs \
+  --iptables=false --ip6tables=false --bridge=docker0 --ip-forward=true --ip-masq=false \
+  --add-runtime crun=/usr/bin/crun --default-runtime=crun >/tmp/dockerd.log 2>&1 &
+```
+
+创建容器时使用 `--network bridge`，保留默认 IPC/cgroup/seccomp/device。
+根 guest 可以按实际容器地址访问其监听端口；不提供 SNAT、外部 DNS/HTTP
+或发布端口。上述配置关闭了 Docker 防火墙与跨网络过滤，路由可达的 bridge
+之间可转发，不能作为完整 Docker 网络隔离配置。
+AF_PACKET／原始 ARP 尚缺，原版运行时的 unsolicited ARP 提示仍可能出现。
+
+单独验收该路径，无需重跑原有 network=none 或全部图形／CPU 测试：
+
+```sh
+python3 tests/integration/docker.py --internal-bridge --cpus 1
+```
+
+此测试用新磁盘和原版签名包，检查默认隔离、容器 ping bridge 网关、根 guest
+读取容器内 BusyBox nc 提供的 HTTP、退出码与清理；不验收防火墙或 NAT。

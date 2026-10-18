@@ -21,12 +21,16 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--require-run', action='store_true')
 parser.add_argument('--privileged', action='store_true', help='Explicit guest privileged profile with allow-all device policy')
 parser.add_argument('--isolated', action='store_true', help='Private network=none, IPC and cgroup namespaces, default Docker seccomp/device profile')
+parser.add_argument('--internal-bridge', action='store_true', help='Original Docker bridge/veth/IP and root-to-container HTTP, with iptables/NAT explicitly disabled; keeps default IPC/cgroup/seccomp/device isolation')
 parser.add_argument('--cpus', choices=('1','4','both'), default='both', help='Only run the requested CPU configuration')
 args = parser.parse_args()
-if args.isolated and args.privileged:
+if (args.isolated or args.internal_bridge) and args.privileged:
     parser.error('--isolated verifies the ordinary default security profile; omit --privileged')
+if args.internal_bridge:
+    args.isolated = True
+    args.require_run = True
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT/'target/docker-lifecycle'
+OUT = ROOT/('target/docker-bridge-lifecycle' if args.internal_bridge else 'target/docker-lifecycle')
 OUT.mkdir(parents=True, exist_ok=True)
 RUNNER = os.getenv('TRAMES_RUNNER', str(ROOT/'target/release/trames-run'))
 script = r'''
@@ -113,10 +117,37 @@ docker create --env ROOT_NET="$root_net" --env ROOT_IPC="$root_ipc" --env ROOT_C
   test "$(cat /proc/sys/net/ipv4/ip_unprivileged_port_start)" = 0;
   if ip link show eth0 2>/dev/null; then exit 91; fi;
   id; hostname;''')
+if args.internal_bridge:
+    script=script.replace('--bridge=none --ip-forward=false','--bridge=docker0 --ip-forward=true')
+    script=script.replace('--network none','--network bridge')
+    script=script.replace('if ip link show eth0 2>/dev/null; then exit 91; fi;', '''test -e /sys/class/net/eth0;
+  ip -4 addr show dev eth0; ip route;
+  ping -c 1 -W 2 172.17.0.1;''')
+    script=script.replace('echo DOCKER_GUEST_PAYLOAD; exit 7',r'''echo DOCKER_GUEST_PAYLOAD;
+  echo DOCKER_HTTP_READY;
+  printf "HTTP/1.1 200 OK\r\nContent-Length: 21\r\nConnection: close\r\n\r\nTRAMES_DOCKER_BRIDGE\n" | nc -l -p 18080 -w 90;
+  exit 7''')
+    script=script.replace('docker start -a smoke >/tmp/start.log 2>&1 || status=$?', '''docker start -a smoke >/tmp/start.log 2>&1 &
+start_pid=$!
+ready /tmp/start.log '^DOCKER_HTTP_READY$' "$start_pid"
+ip=$(docker inspect smoke --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')
+test -n "$ip"
+for i in $(seq 1 10); do
+  if wget -T 2 -qO /tmp/bridge-http "http://$ip:18080/"; then break; fi
+  sleep 1
+done
+cat /tmp/bridge-http
+grep -qx TRAMES_DOCKER_BRIDGE /tmp/bridge-http
+echo DOCKER_BRIDGE_HTTP_PASS
+wait "$start_pid" || status=$?''')
+    script=script.replace('cat /tmp/containerd.log /tmp/dockerd.log', 'cat /tmp/start.log /tmp/container.log /tmp/containerd.log /tmp/dockerd.log')
+    assert '--network bridge' in script and '--iptables=false' in script
 results = {'profile': 'guest-privileged' if args.privileged else 'default-device-filter', 'gomaxprocs': 1, 'scope': 'Unmodified signed guest Docker/containerd/crun; mandatory daemon, vfs image import, create/inspect/remove. Container start is a separately recorded diagnostic until explicitly required.',
            'script': script, 'checks': []}
 if args.isolated:
     results.update(profile='private-net-ipc-cgroup-default-seccomp',scope='Original Docker network=none with independent net/IPC/cgroup namespace identities, rebased cgroup mount/proc, applied network sysctls and enforced default seccomp/device filter. Bridge/NAT remain separate acceptance.')
+if args.internal_bridge:
+    results.update(profile='internal-bridge-default-seccomp',scope='Original Docker creates docker0, veth pair, netns, eth0/IP/gateway; container reaches bridge gateway and root guest fetches actual HTTP from the container. Default IPC/cgroup/seccomp/device isolation retained. Explicit iptables=false/ip6tables=false/ip-masq=false: no firewall/NAT/external DNS/port-publishing acceptance.')
 with tempfile.TemporaryDirectory(prefix='trames-docker-') as directory:
     tmp = Path(directory)
     m6.repository(tmp/'repository', ('docker-engine', 'docker-cli', 'crun', 'libssl3'))
@@ -143,12 +174,14 @@ with tempfile.TemporaryDirectory(prefix='trames-docker-') as directory:
                                stdout=log, stderr=subprocess.STDOUT, timeout=900)
         output = (OUT/f'lifecycle-{cpus}.log').read_text()
         checks = {name: 'DOCKER_'+name+'_PASS\n' in output
-                  for name in ('DAEMON', 'IMAGE', 'CREATE', 'RUN', 'CLEANUP')}
+                  for name in (('DAEMON', 'IMAGE', 'CREATE', 'RUN', 'CLEANUP', 'BRIDGE_HTTP') if args.internal_bridge else ('DAEMON', 'IMAGE', 'CREATE', 'RUN', 'CLEANUP'))}
         status = re.search(r'DOCKER_START_STATUS=(\d+)', output)
         results['checks'].append({'cpus': int(cpus), 'exit_code': p.returncode,
             'checks': checks, 'start_exit': int(status[1]) if status else None, 'output': output})
         (OUT/'results.json').write_text(json.dumps(results, indent=2)+'\n')
         assert p.returncode == 0 and all(checks[n] for n in ('DAEMON','IMAGE','CREATE','CLEANUP')), output[-12000:]
+        if args.internal_bridge:
+            assert checks['BRIDGE_HTTP'], output[-12000:]
         print(f'{cpus}-CPU original Docker: daemon/image/create/cleanup passed; container run: '+
               ('PASSED' if checks['RUN'] else 'BLOCKED (see recorded diagnostic)'), flush=True)
         if args.require_run:

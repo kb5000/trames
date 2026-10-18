@@ -69,6 +69,15 @@ L3 转发，逐跳递减 TTL/hop limit 并更新 IPv4 校验和；关闭后跨�
 再验证重启/删除/端口重用及权限失败的原子性。网络必须遵守 full/outbound/
 loopback/off 的宿主策略，容器不能借 unshare 获得更大外部权限。
 
-当前默认 bridge 的实测阻塞是 `iptables --wait -t nat -N DOCKER` 返回
-`Failed to initialize nft: Protocol not supported`。`--network none` 的通过只
-验证隔离基础，不代表 bridge/NAT 已完成。[跟踪 Issue #29](https://github.com/kb5000/trames/issues/29)。
+当前开发分支已补原版 Go netlink 所需的带／不带 NUL 字符串、队列长度元数据、
+BusyBox 紧凑 dump、带组地址的订阅 dump、真实来源身份和 gateway RouteGet。
+bridge `brif`／`brport/state` 由实际成员关系、up 和 carrier 派生。TCP/UDP
+IPv6 socket 默认按 Linux 双栈行为工作，显式 V6ONLY=1 仍有效；ICMP 保持单协议。
+`tx_queue_len` 是 netdev 元数据，不预分配相应内存，也不声称已实现 qdisc/tc。
+
+原版 Docker 在明确禁用 iptables/NAT 的开发配置下已能创建 docker0、veth、
+容器 netns、eth0 地址和网关并运行容器，通信证据见
+[内部 bridge 验证](../validation/docker-bridge-internal.md)。该配置没有
+Docker 的防火墙或跨网络过滤，不能当作完整默认 bridge。
+默认启用 iptables 的实测阻塞仍是 `iptables --wait -t nat -N DOCKER` 返回
+`Failed to initialize nft: Protocol not supported`。[跟踪 Issue #29](https://github.com/kb5000/trames/issues/29)。

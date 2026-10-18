@@ -31,7 +31,8 @@ def container_network_path(path):
     return path.startswith(('crates/trames-net/','crates/trames-vfs/','crates/trames-linux/','docs/')) or path in {
         '.github/workflows/ios.yml','.github/workflows/linux.yml','scripts/ios-ci-scope.py',
         'scripts/build-container-network-fixture.sh','tests/fixtures/container-network.c','tests/fixtures/container-forwarding.c',
-        'tests/integration/container-network.py',
+        'tests/integration/container-network.py','tests/integration/docker.py',
+        'scripts/build-docker-network-fixture.sh','tests/fixtures/docker-network-control.c',
     }
 
 
@@ -110,6 +111,9 @@ def main():
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=container-network\n')
                         output.write('skip_native=false\nskip_linux_native=false\nskip_linux_modules=false\n')
                         output.write('network_retry='+str(retry).lower()+'\n')
+                        output.write('docker_bridge='+str(plan.get('docker_bridge_stage') is True).lower()+'\n')
+                    if plan.get('docker_bridge_stage') is True:
+                        print('Docker bridge stage: Net and VFS network checks, new Go/BusyBox control fixture 1/4 CPU, original Docker internal bridge/HTTP at 4 CPU, iOS FFI. Reuse unchanged Linux/Core/CPU/UI/GPU and previous forwarding/none-profile acceptance.')
                     return
                 if plan.get('native_scope') == 'container-isolation' and changed and all(container_isolation_path(p) for p in changed):
                     # All affected kernel/network crates and the CPU hint are

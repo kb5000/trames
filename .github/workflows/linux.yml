@@ -22,6 +22,7 @@ jobs:
       native_scope: ${{ steps.scope.outputs.native_scope }}
       isolation_retry: ${{ steps.scope.outputs.isolation_retry }}
       network_retry: ${{ steps.scope.outputs.network_retry }}
+      docker_bridge: ${{ steps.scope.outputs.docker_bridge }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -58,6 +59,11 @@ jobs:
           elif [[ '${{ needs.scope.outputs.native_scope }}' == host-terminals ]]; then
             cargo clippy -p trames-vfs -p trames-core -p trames-ffi --all-targets --locked -- -D warnings
             cargo test -p trames-vfs -p trames-core -p trames-ffi --lib --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == container-network && '${{ needs.scope.outputs.docker_bridge }}' == true ]]; then
+            cargo clippy -p trames-net -p trames-vfs --all-targets --locked -- -D warnings
+            cargo test -p trames-net --lib --locked
+            cargo test -p trames-vfs --lib network --locked
+            cargo test -p trames-net --test virtual --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == container-network && '${{ needs.scope.outputs.network_retry }}' == true ]]; then
             cargo clippy -p trames-net --all-targets --locked -- -D warnings
             cargo test -p trames-net --lib routing_tests --locked
@@ -144,13 +150,25 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install --yes --no-install-recommends gcc-aarch64-linux-gnu libc6-dev-arm64-cross
-          bash scripts/build-container-network-fixture.sh
+          if [[ '${{ needs.scope.outputs.docker_bridge }}' == true ]]; then
+            bash scripts/build-docker-network-fixture.sh
+          else
+            bash scripts/build-container-network-fixture.sh
+          fi
           cargo build -p trames-cli --release --locked
-          python3 tests/integration/container-network.py
+          if [[ '${{ needs.scope.outputs.docker_bridge }}' == true ]]; then
+            python3 tests/integration/container-network.py --docker-control-only
+          else
+            python3 tests/integration/container-network.py
+          fi
           if [[ '${{ needs.scope.outputs.network_retry }}' != true ]]; then
             mkdir -p "$TRAMES_ALPINE_CACHE"
             curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o "$TRAMES_ALPINE_CACHE/alpine-minirootfs-3.22.6-aarch64.tar.gz"
-            python3 tests/integration/docker.py --isolated --require-run --cpus 4
+            if [[ '${{ needs.scope.outputs.docker_bridge }}' == true ]]; then
+              python3 tests/integration/docker.py --internal-bridge --require-run --cpus 4
+            else
+              python3 tests/integration/docker.py --isolated --require-run --cpus 4
+            fi
           fi
       - uses: actions/upload-artifact@v4
         if: always() && needs.scope.outputs.native_scope == 'container-network'
@@ -159,6 +177,8 @@ jobs:
           path: |
             target/container-network/
             target/docker-lifecycle/
+            target/docker-network-control/
+            target/docker-bridge-lifecycle/
           if-no-files-found: warn
           retention-days: 14
       - uses: actions/upload-artifact@v4
