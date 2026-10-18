@@ -30,7 +30,7 @@ def container_isolation_path(path):
 def container_network_path(path):
     return path.startswith(('crates/trames-net/','crates/trames-vfs/','crates/trames-linux/','docs/')) or path in {
         '.github/workflows/ios.yml','.github/workflows/linux.yml','scripts/ios-ci-scope.py',
-        'scripts/build-container-network-fixture.sh','tests/fixtures/container-network.c',
+        'scripts/build-container-network-fixture.sh','tests/fixtures/container-network.c','tests/fixtures/container-forwarding.c',
         'tests/integration/container-network.py',
     }
 

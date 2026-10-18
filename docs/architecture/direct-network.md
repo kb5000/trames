@@ -34,8 +34,11 @@ flowchart LR
 10.0.0.1 下一跳。MTU 仍是逻辑值，链路计数来自 guest 实际 socket 数据传输，
 不是完整宿主线速包统计。1.0.0 后开发分支已支持只有私有 lo 的独立 netns，
 以及可配置 veth/bridge、IPv4/IPv6 地址、直连/静态路由的内部 IP 数据路径。
-根 guest 到容器地址、外部转发/NAT、完整路由表和 IPv6 scope 仍待实现，
-见[网络验收边界](../validation/container-network.md)。
+根 guest 到容器／bridge 地址的 TCP/UDP 已通过双路径 socket 接通，通配监听
+同时接收原生与 guest 流量，普通原生客户端仍不进入 fabric。内部跨桥 IPv4/
+IPv6 转发受各自 netns sysctl 控制，默认关闭；它不开放容器到宿主外网的转发。
+完整动态路由通知、外部转发/NAT 和 IPv6 scope 仍待扩展，
+见[根网络／转发验收](../validation/container-forwarding.md)。
 容器后续网络路线见[设计](container-network-design.md)，根 guest 直连路径保留。
 
 ## 系统 DNS

@@ -187,6 +187,9 @@ PR_SET/GET_PDEATHSIG 记录实际创建线程，在线程退出时投递进程�
 每个 guest 根网络具有唯一的 `ns/net` 对象。1.0.0 后开发分支可创建独立 network、
 IPC、cgroup namespace，并通过 FD、task/TID 路径、nsfs bind mount 与 setns 保持
 真实引用；不改变宿主 namespace。隔离与默认 seccomp 验收见[记录](../validation/container-isolation.md)。
+内部 veth/bridge、根 guest 与容器的 TCP/UDP，以及按 netns 控制的 IPv4/IPv6
+L3 转发已有真实 guest 1/4 vCPU 验收；外部转发、netfilter/NAT 和 Docker
+默认 bridge 仍待实现，见[当前网络范围](../validation/container-forwarding.md)。
 UTS/PID 句柄也可 bind；mount namespace 句柄的挂载循环回收尚缺，明确拒绝。
 新 network namespace 只有独立的 lo；NETLINK_ROUTE/ioctl 可查询并改变它的 up/down，
 并检查 CAP_NET_ADMIN。根直连接口只接受原有的幂等 lo up。开发分支已增加

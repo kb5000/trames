@@ -3,6 +3,9 @@
 本批在 1.0.0 后的 `feat/guest-docker-workflows` 开发分支中，延续
 [隔离基础验收](container-isolation.md)。它未合入 main、未生成新 IPA。
 
+后续根 guest 双路径与内部 L3 已另行实现，见[转发验证](container-forwarding.md)。
+以下证据和限制固定于本次内部网络历史源码。
+
 ## 已实现
 
 - 同一 guest 的 netns 共用有界拓扑和现有 smoltcp IP 协议栈；每个 netns
