@@ -15,7 +15,7 @@
     "docs/guides/wayland.md": "88e5a3e3d81e1ee8148ead90525224181273786f1b23b4fc30db87f9dd74df66",
     "docs/validation/zink-wayland.md": "6a227ef5eaa6a0498c2b0e8febbb3161fbf683d4dd05e636066f56fccf464400",
     "docs/validation/zink-wayland/clippy.log": "01306378568e8fe963e4d7e02feedc2cad134a3de7535aaa35364f78a2dc0a8a",
-    "docs/validation/zink-wayland/local-guest.log": "b507e8dc1cc31ed8a976e54a90f19769eff9ae51e12b9ecacf0bbb037aad74c6",
+    "docs/validation/zink-wayland/local-guest.log": "759cd287860a2331e2a4ea556fdef436e2134c7598673a1207c11eb84699f5b4",
     "docs/validation/zink-wayland/local-results.json": "1884903d60af3ac1f21982c1071c3d4f491ebdf5ddc34ea0c9ec4c110e3adc99",
     "docs/validation/zink-wayland/unit.log": "40e5f31ffe2a527f2c56299b3c6efff7b9b929a98272faa4268db189b7fa3486",
     "scripts/build-vulkan-guest.sh": "12633cc5007c2ad8154d762d510b35a62cb25de04d37be59431db07802896631",
