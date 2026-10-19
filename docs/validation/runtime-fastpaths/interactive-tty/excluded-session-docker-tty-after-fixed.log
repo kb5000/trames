@@ -1,0 +1,3 @@
+~ # [6n; printf '\nTRAMES_TTY_HOST_READY\n'
+/bin/ash: syntax error: unexpected ";"
+~ # [6n

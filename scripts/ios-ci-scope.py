@@ -382,7 +382,8 @@ def main():
                                'crates/trames-vfs/src/memfd.rs', 'crates/trames-vfs/src/cgroup.rs',
                                'crates/trames-vfs/src/ipc/native.rs', 'scripts/ios-ci-scope.py',
                                '.github/workflows/ios.yml', '.github/workflows/linux.yml',
-                               'tests/performance/session-coremark.py', 'tests/performance/prepare-coremark.py'}
+                               'tests/performance/session-coremark.py', 'tests/performance/prepare-coremark.py',
+                               'tests/performance/session-docker-tty.py'}
                     if any(p not in allowed and not p.startswith('docs/') for p in changed):
                         raise RuntimeError('Runtime fastpath plan includes unrelated source changes')
                     print('VFS path lookup and solo scheduling: affected Core/VFS tests, production multi-terminal ABI, paired original CoreMark on Apple host. Reuse unchanged CPU/MMU/network/GPU/UI acceptance; no IPA.')

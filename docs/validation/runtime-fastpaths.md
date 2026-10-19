@@ -91,3 +91,60 @@ python3 tests/performance/prepare-coremark.py --runner target/baseline/release/t
 python3 tests/performance/session-coremark.py --library target/release/libtrames_ffi.dylib \
   --store target/coremark-inputs/store --output target/session-profile-new
 ```
+
+## 已缓存镜像的交互式启动补测（2026-10-19）
+
+用户补充准确命令为`docker run --rm -it alpine:latest sh`，已经预拉取镜像，
+之前启动可能需十几分钟，尚未重复对比首次/后续启动。因此排除下载；前述`run -d`与`exec`配对不能当作
+交互式启动的测量。追加同一生产多终端FFI入口、相同缓存镜像/磁盘副本的一次配对，
+无新runtime改动或IPA，既有相关Linux/Apple检查直接复用。
+
+| 阶段 | 1.1.0基线 | 候选42628d2 |
+| --- | ---: | ---: |
+| daemon到API就绪 | 15.932s | 12.545s |
+| `run --rm -it … sh`到容器提示符 | 88.826s | 43.868s |
+| 输入往返、exit到命令返回/自动删除等待完成 | 4.029s | 2.767s |
+
+输入往返确认stdin/stdout/stderr均为TTY，并打印`tty`设备再退出。
+启动比2.025×，顺序新→旧，每版本只运行一次，不能据此承诺iPad加速比。
+两边均启用`dockerd --debug`用于保留阶段日志，未替换runtime或添加安全/资源参数。
+默认自动CPU数在这台机器为4；4GiB总/单进程预算、Wayland和多终端均启用。
+
+这是x86 Linux上实际4KiB页、诊断协调器16KiB分组的测量；没有冒充Apple硬件页。
+镜像使用同一`default-probe`导入Alpine测试镜像，ID及store/library摘要留存，
+并非用户`alpine:latest`对应的确切Docker Hub digest，也不是其完整rootfs。
+
+保留日志的事件间隔（墙钟，异步通知/调度也包含在内，不是互斥CPU时间）：
+
+| 区间 | 基线 | 候选 |
+| --- | ---: | ---: |
+| API create到start请求 | 0.467s | 0.482s |
+| start请求到shim连接 | 9.472s | 2.709s |
+| shim连接到tasks/create通知 | 64.839s | 32.148s |
+| tasks/create到tasks/start通知 | 13.209s | 7.876s |
+
+最长段仍是shim/runc创建任务阶段，包含原版runtime初始化、namespace/挂载/FD设置等，
+不能仅凭一段日志归为某一个syscall。没有在此开发机证明TTY attach存在十几分钟固定超时；
+设备的十几分钟启动与具体runc子阶段仍待真机日志验证，#29继续保留。
+
+入口`tests/performance/session-docker-tty.py`等待真实内层提示符，模拟终端回应BusyBox的
+光标查询，并把回应和首次命令分开100ms；提示符后的100ms只进入退出/清理计时。
+初版探针未识别带查询的提示符，以及两次preflight输入合并失败，均已留存并排除，
+不将自动化等待算作产品启动慢或成功结果。
+[完整数据、范围与排除记录](runtime-fastpaths/interactive-tty/results.json)及两版完整日志位于同目录。
+
+```sh
+python3 tests/performance/session-docker-tty.py --library target/release/libtrames_ffi.dylib \
+  --store target/docker-default/store --image default-probe \
+  --output target/docker-tty-session-new --debug-daemon
+```
+
+现有iPad版本也可先手动分开启动与退出时间，无需新IPA或重启daemon。
+下面诊断载荷比原命令多打印一次设备时间，再`exec sh`，不是原样计时或已完成的真机验收：
+
+```sh
+docker image inspect alpine:latest --format 'IMAGE={{.Id}}'
+date '+RUN_BEGIN %s %T'
+docker run --rm -it alpine:latest sh -c 'date "+CONTAINER_READY %s %T"; exec sh'
+date '+RUN_RETURNED %s %T'
+```

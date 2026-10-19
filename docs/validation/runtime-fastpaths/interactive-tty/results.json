@@ -1,0 +1,86 @@
+{
+  "user_report": {
+    "command": "docker run --rm -it alpine:latest sh",
+    "image_already_pulled": true,
+    "reported_wait": "ten or more minutes until startup",
+    "repeatability": "Owner has not repeated the comparison yet; not established whether cold-only or every run."
+  },
+  "runtime_source": "42628d2365e5f60936b08e0df679684a93c64f68",
+  "baseline_release": "b25feb43ba019850511b440af34e9595f1b2e97c",
+  "host_scope": "Shared x86_64 Linux, real 4 KiB host pages, diagnostic coordinator grouping16KiB; real App multiple-terminal FFI, Wayland on, 4 GiB memory budgets, automatic guest CPU count=4. This is not an Apple or physical iPad Docker timing.",
+  "image_scope": "Same cached default-probe imported Alpine test image, not a reproduction of the user-specific Docker Hub alpine:latest digest or full user rootfs.",
+  "run_order": [
+    "after",
+    "before"
+  ],
+  "samples_each": 1,
+  "run_to_prompt_speedup": 2.024846480296571,
+  "before": {
+    "daemon": 15.931991344999915,
+    "run_to_prompt": 88.82585491999998,
+    "roundtrip_exit_rm": 4.028888357999676
+  },
+  "after": {
+    "daemon": 12.5445940110003,
+    "run_to_prompt": 43.86794543899941,
+    "roundtrip_exit_rm": 2.767483591999735
+  },
+  "excluded_probe_attempts": [
+    {
+      "scope": "Time cached-image Docker -it through the App's production terminal session.\n\nCopies an installed Docker store; never invokes host Docker or pulls an image.\nThe guest command is docker run --rm -it IMAGE sh. Host waits for the real inner\nshell prompt before sending a tty/stdio roundtrip and exit. Optional daemon debug\nlogging retains API/containerd timestamps; no runtime/security/CPU overrides.\n",
+      "host": "x86_64",
+      "library_sha256": "8a82c89aeb298a53c8680673fb23d589f5b78a1e24f0934ba2b73930b73688ac",
+      "input_store_manifest_sha256": "5c5612b3d70825159d39b87887bbf82b091dfd69dcf0a82c7d02119c1c304ca4",
+      "image": "default-probe",
+      "command": "docker run --rm -it default-probe sh",
+      "debug_daemon": true,
+      "markers": {
+        "DAEMON_BEGIN": 0.1937045800004853,
+        "DAEMON_READY": 14.581390698999712,
+        "RUN_BEGIN": 15.349004104999949
+      },
+      "completed": false,
+      "seconds": 99.46915402000013,
+      "stages": {
+        "daemon": 14.387686118999227
+      },
+      "exclusion": "Initial probe did not recognize the inner BusyBox prompt followed by ESC[6n and did not answer its cursor-position query. Interrupted probe; no startup timing or product failure is inferred. Prompt was already present.",
+      "excluded_because": "Initial driver did not recognize the prompt followed by ESC[6n. Container prompt was already present; interrupted; no startup timing inferred."
+    },
+    {
+      "scope": "Time cached-image Docker -it through the App's production terminal session.\n\nCopies an installed Docker store; never invokes host Docker or pulls an image.\nThe guest command is docker run --rm -it IMAGE sh. Host waits for the real inner\nshell prompt before sending a tty/stdio roundtrip and exit. Optional daemon debug\nlogging retains API/containerd timestamps; no runtime/security/CPU overrides.\n",
+      "host": "x86_64",
+      "library_sha256": "8a82c89aeb298a53c8680673fb23d589f5b78a1e24f0934ba2b73930b73688ac",
+      "input_store_manifest_sha256": "5c5612b3d70825159d39b87887bbf82b091dfd69dcf0a82c7d02119c1c304ca4",
+      "image": "default-probe",
+      "command": "docker run --rm -it default-probe sh",
+      "debug_daemon": true,
+      "markers": {},
+      "completed": false,
+      "seconds": 83.35962819799988,
+      "stages": {},
+      "excluded_because": "Preflight cursor reply and keyboard command coalesced; initial shell command was consumed, no Docker run began. Interrupted."
+    },
+    {
+      "scope": "Time cached-image Docker -it through the App's production terminal session.\n\nCopies an installed Docker store; never invokes host Docker or pulls an image.\nThe guest command is docker run --rm -it IMAGE sh. Host waits for the real inner\nshell prompt before sending a tty/stdio roundtrip and exit. Optional daemon debug\nlogging retains API/containerd timestamps; no runtime/security/CPU overrides.\n",
+      "host": "x86_64",
+      "library_sha256": "8a82c89aeb298a53c8680673fb23d589f5b78a1e24f0934ba2b73930b73688ac",
+      "input_store_manifest_sha256": "5c5612b3d70825159d39b87887bbf82b091dfd69dcf0a82c7d02119c1c304ca4",
+      "image": "default-probe",
+      "command": "docker run --rm -it default-probe sh",
+      "debug_daemon": true,
+      "markers": {},
+      "completed": false,
+      "error": "TimeoutError(b'~ # \\x1b[6n; printf \\'\\\\nTRAMES_TTY_HOST_READY\\\\n\\'\\r\\n/bin/ash: syntax error: unexpected \";\"\\r\\n~ # \\x1b[6n')",
+      "seconds": 20.12673444400025,
+      "stages": {},
+      "excluded_because": "Same preflight input coalescing; failed at 20-second preflight deadline, no Docker run began."
+    }
+  ],
+  "limitations": [
+    "Debug daemon logging enabled in both runs; log events are asynchronous delivery/observation timestamps, not exclusive CPU attribution.",
+    "Cursor response and first command separated by100ms; delay after container prompt is counted in exit/cleanup, not run-to-prompt.",
+    "No long fixed attach timeout is demonstrated on this host. iPad ten-minute startup is still unconfirmed and unresolved.",
+    "No runtime production changes or new IPA; previous focused runtime/Apple acceptance reused."
+  ]
+}

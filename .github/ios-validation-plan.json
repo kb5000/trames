@@ -1,7 +1,7 @@
 {
   "base_sha": "975027eb65643ecfb5ae1d75b07a2e1be1d29c84",
   "native_scope": "runtime-fastpaths",
-  "reason": "Validated VFS reverse-path and directory subtree fast paths plus bounded solo scheduling. Exact source 42628d2 passed focused Linux and native Apple Core/VFS + production multi-terminal checks; native ARM64/16KiB ABBA original guest CoreMark complete. This follow-up only retains measurements/logs and updates their hashes; no source or verification change, no repeated suites or IPA.",
+  "reason": "Exact runtime42628d2 remains unchanged and retains successful focused Linux/Apple acceptance. This follow-up adds a manual production-session cached-image Docker -it probe and its completed before/after results with failed preflight attempts retained; extends only its CI scope allowlist. Syntax/JSON/scope hashes checked, no repeated acceptance suites, IPA or release.",
   "changed_file_sha256": {
     ".github/workflows/ios.yml": "71198bb2b07a9500795ccfd7983d4529d04a06e65c54cf4d5078ffdbc939df40",
     ".github/workflows/linux.yml": "b15d65c75a3b669d6e55d47b9426dab474367436f910b17fa8889b473b6547f8",
@@ -16,7 +16,7 @@
     "crates/trames-vfs/src/pseudo.rs": "be66418f82a2f3d2ca47696b99157cebc434a1dbdfd7e6186dfae7650a8cea3c",
     "crates/trames-vfs/src/pty.rs": "b948b4be30242062ff3ec557484c8cb6e8557b0363237e40950b98c97efc62ae",
     "crates/trames-vfs/src/storage.rs": "712d66b811a20433c2fb0f7cc49387c124f1b83e078dd4e73d3ca54fbe20f9c5",
-    "docs/validation/runtime-fastpaths.md": "71f6504e4891445239c71a0ba9a25d0029d6427743a86a6160b3ba142028b548",
+    "docs/validation/runtime-fastpaths.md": "f35afd13497fadc6d2dd8d3e21df48b58bcd68eeb21f5baab2cf7b0663a9e13a",
     "docs/validation/runtime-fastpaths/apple-after-1-results.json": "4303d7d9b7a5f760c438fe22b9c1b562899c2fd1c5f5dac73e08defbf2e1103e",
     "docs/validation/runtime-fastpaths/apple-after-1-stdout.log": "8920d097b575d839ed256daa16fee418025f407ad3bec64e240c2ec27a8fd2f2",
     "docs/validation/runtime-fastpaths/apple-after-2-results.json": "f8bc61c126581b3e2526853dc94f128109c0bf224c8a065bd7fe79e636ad2367",
@@ -37,6 +37,15 @@
     "docs/validation/runtime-fastpaths/docker-before-runtime.log": "6a37844eb8f40c5e0a81418da89ea6c0450ad8624f3ec26f12d4b8ff528d1f88",
     "docs/validation/runtime-fastpaths/docker-before.json": "0e273619a481a8a559c3f33b71a90fefad4ecb6cd1b2c130179bae1e5efa2348",
     "docs/validation/runtime-fastpaths/docker-path-cache.json": "db7eb8a61e7416818d9fc2850074f5da609f1157a3b92573f12e4de2b5b3e8a2",
+    "docs/validation/runtime-fastpaths/interactive-tty/after.json": "19a0ca6a4e5aa2a96c253ce1d29410ee80bf9ea6b066a232ac6845e587926a09",
+    "docs/validation/runtime-fastpaths/interactive-tty/after.log": "d0654d202da8b0d4723848ca95beb6e17115bd97d38387d69cab6a0e249c3b61",
+    "docs/validation/runtime-fastpaths/interactive-tty/before.json": "331cd5fa37531b2b609c7d9dcedbcbc912cf52f6b357c272403153e838cff5fe",
+    "docs/validation/runtime-fastpaths/interactive-tty/before.log": "80ad054b5664da6791e0ff389d2cd182da132b78aa9bf41edafbcebd56ef3aa7",
+    "docs/validation/runtime-fastpaths/interactive-tty/excluded-session-docker-tty-after-fixed.log": "98874487ca559f0b30c4a6ef2b3e3ba37c25746d9cfc5e8c5209e684d1b7912e",
+    "docs/validation/runtime-fastpaths/interactive-tty/excluded-session-docker-tty-after-measured.log": "98874487ca559f0b30c4a6ef2b3e3ba37c25746d9cfc5e8c5209e684d1b7912e",
+    "docs/validation/runtime-fastpaths/interactive-tty/excluded-session-docker-tty-after.log": "290d10feec7e5f2a41ac9056eab099818ad6fa6d0bc37ab3471958dd576c03ce",
+    "docs/validation/runtime-fastpaths/interactive-tty/guest.sh": "b499e4954080c292d886c765b6a0bede5840fe4f84ce224276e396c079cc1451",
+    "docs/validation/runtime-fastpaths/interactive-tty/results.json": "d187a72534977ee382e779b6225b2e4e3938a729a85c3fb94253c470315f5f96",
     "docs/validation/runtime-fastpaths/linux-ci.log": "579da255d70b9ab8267f2e2afbe9d352dfed56221ce85e83e755cf1e5aab9460",
     "docs/validation/runtime-fastpaths/results.json": "f6ca2870c85709395f2b2b037885f311137716de28b3f42a565bfdd7c48cb95e",
     "docs/validation/runtime-fastpaths/session-host16-diagnostic-after.json": "aaa3b11a9982b94397cd4a9d0163f976752be50697b2c41b141386f40d28d339",
@@ -44,8 +53,9 @@
     "docs/validation/runtime-fastpaths/session-host16-diagnostic-before.json": "cf9c1b10a8f30f16f7e20f8aba572cbd904c964e321b9af39fc96f06af5052d8",
     "docs/validation/runtime-fastpaths/session-host16-diagnostic-before.log": "9ed888118300b7d1ccc78c70bed95e026f88248924aaa7e75640668725d46ab3",
     "docs/validation/runtime-fastpaths/tests-linux.log": "f86de1a45699b4564ce0f1bbf2d6066f5554c790c1f76cf5ce0157144b69604c",
-    "scripts/ios-ci-scope.py": "e759e49ca897e971114c908525a74c89b327b880255e53e568206c1d64bb05eb",
+    "scripts/ios-ci-scope.py": "ffbd3567ec173e25f67c41e3c27f87653cec78eedf13626782f05ba912380d2d",
     "tests/performance/prepare-coremark.py": "b76650b7e0cbc1e25d726b0ace2b37d521a4e8783fa96583732f9fb9e27bc9ed",
-    "tests/performance/session-coremark.py": "ea2a0a65cc09dee9a6f6d4154d831f14c28e120c958ce33b59b15598b70213d1"
+    "tests/performance/session-coremark.py": "ea2a0a65cc09dee9a6f6d4154d831f14c28e120c958ce33b59b15598b70213d1",
+    "tests/performance/session-docker-tty.py": "15eac50a0d1ce7b7e4317f62948e7be3708da0e9729a933bf4b548dc2cc7253f"
   }
 }
