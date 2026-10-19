@@ -40,7 +40,11 @@ Apple/iOS metadata CI在a231f47已通过（run39202469057），只做两项manif
 iOS FFI编译，不是Metal GPU验收。Linux run39202468982在干净SDK链接阶段发现
 准备脚本只收集`.so.*`而遗漏裸soname的`libgallium-25.1.9.so`及非标准名字的SONAME链接；已修复并以最小
 sysroot验证链接。没有runtime改动，Apple源码/命令与已通过结果精确核对后复用，
-只重跑未完成的Linux检查。当前未打IPA或发布。
+只重跑未完成的Linux检查。第二次干净CI run39203103689暴露LLVM子目录库链接
+扁平化后指向自身；准备脚本跳过同名别名，并在写入真实库前移除旧链接。
+全新目录重新收集381个共享库文件，199个别名均可解析；只使用该目录及最小musl
+CRT/libc sysroot成功链接EGL客户端，避免本地完整SDK掩盖依赖缺失。
+当前未打IPA或发布。
 
 复现入口：
 

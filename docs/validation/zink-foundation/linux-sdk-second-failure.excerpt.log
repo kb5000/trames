@@ -1,0 +1,16 @@
+2026-10-19T05:11:28.3037600Z tests/fixtures/vulkan-texture.vert
+2026-10-19T05:11:28.3888580Z tests/fixtures/vulkan-texture.frag
+2026-10-19T05:11:30.5597120Z Signed repository inputs: mesa-dri-gallium=25.1.9-r0, mesa-egl=25.1.9-r0, mesa-gles=25.1.9-r0, mesa-dev=25.1.9-r0, vulkan-loader=1.4.313.0-r0
+2026-10-19T05:11:31.0063749Z Traceback (most recent call last):
+2026-10-19T05:11:31.0067126Z   File "/home/runner/work/trames/trames/scripts/prepare-zink-guest.py", line 48, in <module>
+2026-10-19T05:11:31.0068152Z     target.write_bytes(archive.extractfile(entry).read())
+2026-10-19T05:11:31.0068887Z   File "/usr/lib/python3.12/pathlib.py", line 1038, in write_bytes
+2026-10-19T05:11:31.0069533Z     with self.open(mode='wb') as f:
+2026-10-19T05:11:31.0069989Z          ^^^^^^^^^^^^^^^^^^^^
+2026-10-19T05:11:31.0070514Z   File "/usr/lib/python3.12/pathlib.py", line 1015, in open
+2026-10-19T05:11:31.0071275Z     return io.open(self, mode, buffering, encoding, errors, newline)
+2026-10-19T05:11:31.0071954Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-19T05:11:31.0072714Z OSError: [Errno 40] Too many levels of symbolic links: '/home/runner/work/trames/trames/target/zink-inputs/sdk/libclang-cpp.so.20.1'
+2026-10-19T05:11:31.0289647Z ##[error]Process completed with exit code 1.
+2026-10-19T05:11:31.0377082Z ##[group]Run actions/upload-artifact@v4
+2026-10-19T05:11:31.0377384Z with:

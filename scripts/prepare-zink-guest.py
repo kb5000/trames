@@ -22,7 +22,7 @@ if not repo.exists():
     m6.repository(repo, ('mesa-dri-gallium', 'mesa-egl', 'mesa-gles', 'mesa-dev', 'vulkan-loader'))
 packages = sorted(repo.rglob('*.apk'))
 assert any(p.name == 'mesa-dri-gallium-25.1.9-r0.apk' for p in packages), 'Review requirements before changing Mesa version'
-sdk = out / 'sdk'
+sdk = Path(os.environ.get('TRAMES_ZINK_SDK', out / 'sdk'))
 sdk.mkdir(exist_ok=True)
 for package in packages:
     with tarfile.open(package, ignore_zeros=True) as archive:
@@ -32,9 +32,15 @@ for package in packages:
             if shared and (entry.issym() or entry.islnk()):
                 # ELF sonames do not always match the real file's basename:
                 # libelf.so.1 -> libelf-0.193.so, for example.
+                target_name = Path(entry.linkname).name
+                # ../llvm20/lib/libclang-cpp.so.20.1 flattens to the same
+                # basename. Its real file will populate this slot; a link here
+                # would point to itself in a clean SDK.
+                if target_name == name.name:
+                    continue
                 link = sdk / name.name
                 if not link.exists() and not link.is_symlink():
-                    link.symlink_to(Path(entry.linkname).name)
+                    link.symlink_to(target_name)
                 continue
             if not entry.isfile():
                 continue
@@ -45,6 +51,8 @@ for package in packages:
             else:
                 continue
             target.parent.mkdir(parents=True, exist_ok=True)
+            if target.is_symlink():
+                target.unlink()
             target.write_bytes(archive.extractfile(entry).read())
             if '.so.' in name.name:
                 base, version = name.name.split('.so.', 1)
