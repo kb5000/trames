@@ -1,0 +1,19 @@
+{
+  "runtime_source": "native Vulkan and guest ICD maintenance1/timeline/renderpass2/imageless;  CPU/MMU/UI unchanged",
+  "runner_sha256": "190dab3eafe4264029bfd5293ffcaaa6a21d7ac247e9be8c02a21d60c8ca829c",
+  "icd_sha256": "c3e7d1db7ef97faef140c7a78bef6abc0f9fc3f088ee4cc48e937793cb4acc26",
+  "native_driver_scope": "configured host Vulkan driver, local reference may be software",
+  "rendering_attempted": true,
+  "rendering_passed": true,
+  "cases": {
+    "mesa-egl-probe-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "mesa-egl-probe": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    }
+  },
+  "input_store_manifest_sha256": "7f634d5a3fcd8b7800a88da654edcb666b69efec71d7f116b33af09af8779c31"
+}

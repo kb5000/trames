@@ -12,6 +12,9 @@
     "network",
     "iOS UI"
   ],
-  "apple_metal": "pending",
-  "ipa": "not built"
+  "apple_metal": "passed: Apple Paravirtual device; native timeline/renderpass/resources and original Mesa EGL clear/uniform GLSL/three texture rounds; iOS FFI check",
+  "ipa": "not built",
+  "linux_ci": "53 cases exit0; 20 native/guest images equal; original Mesa require-render passed",
+  "source_sha": "c15d6a586f12995b8d9b5e491938d67ab6980f07",
+  "ci_run_id": 39240757068
 }

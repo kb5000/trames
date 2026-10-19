@@ -1,0 +1,4 @@
+render round 1: barycentric colors, alpha, background and scissor correct
+render round 2: barycentric colors, alpha, background and scissor correct
+render round 3: barycentric colors, alpha, background and scissor correct
+vulkan-render-ok

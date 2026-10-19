@@ -1,0 +1,1 @@
+vulkan-resources-ok: dynamic UBO, texel read/write, scalar vec3 at offset4, storage image, cache roundtrip and 128 GPU outputs correct

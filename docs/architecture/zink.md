@@ -7,8 +7,9 @@
 loader→Trames guest ICD→现有原生Vulkan/MoltenVK→Metal。保留上游算法，不另写一套
 OpenGL实现。后续窗口继续使用现有Wayland合成器和App浮窗/标签页。
 
-当前已在Linux原生Vulkan参考上跑通原版Mesa25.1.9的EGL1.5、GLES2 context、GPU清屏、
-GLSL着色器绘制和重复纹理采样。**这是基础离屏GL链路，不是完整OpenGL或Vulkan一致性声明。**
+当前已在Linux原生Vulkan参考和Apple原版MoltenVK/Metal上跑通原版Mesa25.1.9的EGL1.5、
+GLES2 context、GPU清屏、GLSL着色器绘制和重复纹理采样。
+**这是基础离屏GL链路，不是完整OpenGL或Vulkan一致性声明。**
 本批Apple/MoltenVK实测结果见[验证记录](../validation/zink-gles.md)；物理iPad和Wayland EGL窗口仍待验收。
 
 ## 已实现
@@ -25,7 +26,8 @@ GLSL着色器绘制和重复纹理采样。**这是基础离屏GL链路，不是
   当前image creation没有sparse，合法图像的sparse要求数量为零。
 - `VK_KHR_descriptor_update_template`：guest模板复制布局与offset/stride，在guest
   ICD展开为原有native descriptor写入；支持现有uniform/storage buffer、sampler、
-  sampled image、combined image sampler及数组。未知descriptor/push-template失败。
+  sampled image、combined image sampler及数组；本批新增texel、storage-image和dynamic
+  buffer descriptors。未知descriptor/push-template失败。
   资源由原有descriptor/in-flight依赖图保留；不新增整次调用的宿主锁。
 - `VK_KHR_maintenance1`：仅在原生driver支持时枚举，逻辑device显式启用；静态与
   动态负/零高度viewport，以及原生TrimCommandPool。Trim保留已录制命令。
@@ -82,7 +84,8 @@ Alpine签名Mesa25.1.9-r0和loader保持原样；五项硬扩展已满足。离�
 64个uniform GLSL像素及三轮共192个纹理采样像素校验，并正确销毁context/资源。
 后续继续扩展格式/图像维度/mipmap、渲染状态和真实可用features，打通Wayland EGL窗口及生命周期。
 当前仍有custom-border-color、line-rasterization和depth-clip-enable相关上游警告；基础样例通过
-不代表所有应用/裁剪/线段状态已可用。未通过的能力不会仅靠枚举名称来启用。
+不代表所有应用/裁剪/线段状态已可用。Apple driver的logicOp不可用，另有禁用primitive
+restart的Metal警告；索引/拓扑边界需要单独验证。未通过的能力不会仅靠枚举名称来启用。
 DRI/dmabuf、external-memory FD还需要guest FD与Metal资源身份/生命周期设计；
 不把宿主FD或指针直接当guest handle。
 
@@ -99,4 +102,9 @@ DRI/dmabuf、external-memory FD还需要guest FD与Metal资源身份/生命周�
 Zink选中这个CPU physical device；它不替换OpenGL实现。iPad GPU验收不使用此变量。
 此前同步/renderpass批次的MoltenVK/Metal timeline、imageless附件重绑定、可选深度、GPU读回与清理，
 已在CI的Apple Paravirtual device通过。
-本批原版GL在Metal上的结果待回填；Wayland EGL呈现与物理iPad仍待验收；本批没有构建新的Zink IPA或release。
+本批同一提交的guest ICD、原版Mesa store、客户端和shader共448个文件经逐文件SHA-256
+匹配后在Apple Paravirtual device运行；原版Mesa报告
+`zink Vulkan 1.0(Apple Paravirtual device (MOLTENVK))`，清屏、uniform GLSL、
+三轮纹理采样和销毁均通过。原生resources两轮256个GPU结果、cache/pool复用也通过。
+详见[本批验证](../validation/zink-gles.md)。Wayland EGL呈现与物理iPad仍待验收；
+本批没有构建新的Zink IPA或release。

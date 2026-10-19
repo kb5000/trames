@@ -1,0 +1,224 @@
+{
+  "runtime_source": "native Vulkan and guest ICD maintenance1/timeline/renderpass2/imageless;  CPU/MMU/UI unchanged",
+  "runner_sha256": "ceb3b8ab04426130f427d659be2511f0b21f147e0fa002980cba05124df83a8c",
+  "icd_sha256": "c3e7d1db7ef97faef140c7a78bef6abc0f9fc3f088ee4cc48e937793cb4acc26",
+  "native_driver_scope": "configured host Vulkan driver, local reference may be software",
+  "rendering_attempted": true,
+  "rendering_passed": true,
+  "cases": {
+    "install": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "queries-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "queries-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "queries": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "timeline-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "timeline-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "timeline": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "timeline-single-cpu-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "timeline-single-cpu": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-legacy-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "render-legacy-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-legacy": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-negative-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "render-negative-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-negative": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-negative-static-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "render-negative-static-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-negative-static": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-renderpass2-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "render-renderpass2-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-renderpass2": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-imageless-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "render-imageless-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-imageless": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-imageless-legacy-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "render-imageless-legacy-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-imageless-legacy": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-imageless-depth-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "render-imageless-depth-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-imageless-depth": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-compatible-dynamic-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "render-compatible-dynamic-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-compatible-dynamic": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "compute-legacy-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "compute-legacy-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "compute-legacy": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "texture-legacy-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "texture-legacy-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "texture-legacy": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "compute-template-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "compute-template-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "compute-template": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "texture-template-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "texture-template-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "texture-template": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "resources-legacy-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "resources-legacy-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "resources-legacy": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "resources-template-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "resources-template-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "resources-template": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "mesa-egl-probe-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "mesa-egl-probe": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    }
+  },
+  "input_store_manifest_sha256": "7f634d5a3fcd8b7800a88da654edcb666b69efec71d7f116b33af09af8779c31",
+  "missing_zink_hard_requirements": []
+}

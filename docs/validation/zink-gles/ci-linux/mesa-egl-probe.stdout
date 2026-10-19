@@ -1,0 +1,6 @@
+EGL initialized 1.5
+EGL 1.5; GL renderer: zink Vulkan 1.0(llvmpipe (LLVM 20.1.2, 256 bits) (MESA_LLVMPIPE))
+zink-egl-clear-ok: 64 GPU clear/readback pixels correct
+zink-egl-shader-ok: 64 uniform GLSL pixels correct
+zink-egl-texture-ok: 3 rounds / 192 sampled GLSL pixels correct
+zink-egl-ok: clear, uniform shader, repeated texture sampling and teardown correct

@@ -1,0 +1,35 @@
+{
+  "source_sha": "c15d6a586f12995b8d9b5e491938d67ab6980f07",
+  "run_id": 39240757068,
+  "run_url": "https://github.com/kb5000/trames/actions/runs/39240757068",
+  "jobs": {
+    "linux": 118020764405,
+    "apple_metal": 118022912956
+  },
+  "artifacts": [
+    {
+      "id": 12182020754,
+      "name": "zink-native-bundle",
+      "size_in_bytes": 282598776,
+      "digest": "sha256:0ef173ba91859c6d57a2243972ad3c58cfcc2e4cbb4008f36bb131b11bbe6995",
+      "downloaded_and_sha256_zip_crc_verified": false,
+      "verification": "Apple job verified source SHA and SHA-256 of all 448 files after download; bundle archive not downloaded again locally"
+    },
+    {
+      "id": 12181283384,
+      "name": "zink-foundation-evidence",
+      "size_in_bytes": 765292,
+      "digest": "sha256:5ce1fd5c8f38416c232c2399c76405af5c400b17c6b9360b564ba58a8579df8c",
+      "downloaded_and_sha256_zip_crc_verified": true
+    },
+    {
+      "id": 12180954404,
+      "name": "zink-metal-evidence",
+      "size_in_bytes": 32588,
+      "digest": "sha256:321f39d2bc1934daf348fa3455a9c966c26ea83b7706484b337cc081b3798089",
+      "downloaded_and_sha256_zip_crc_verified": true
+    }
+  ],
+  "physical_ipad": "not tested",
+  "ipa": "not built"
+}

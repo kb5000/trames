@@ -1,0 +1,379 @@
+2026-10-19T10:56:05.9510450Z ##[group]Run cargo fmt --all --check
+2026-10-19T10:56:05.9510811Z [36;1mcargo fmt --all --check[0m
+2026-10-19T10:56:05.9511207Z [36;1mcargo clippy -p trames-vulkan --all-targets --locked -- -D warnings[0m
+2026-10-19T10:56:05.9511667Z [36;1mcargo test -p trames-vulkan --lib --locked[0m
+2026-10-19T10:56:05.9512038Z [36;1mcargo build -p trames-cli --release --locked[0m
+2026-10-19T10:56:05.9512654Z [36;1mexport VK_DRIVER_FILES="$(python3 -c 'from pathlib import Path; print(next(Path("/usr/share/vulkan/icd.d").glob("*lvp*")))')"[0m
+2026-10-19T10:56:05.9513321Z [36;1mcargo run -p trames-vulkan --example timeline --release --locked[0m
+2026-10-19T10:56:05.9513805Z [36;1mcargo run -p trames-vulkan --example renderpass --release --locked[0m
+2026-10-19T10:56:05.9514438Z [36;1mcargo run -p trames-vulkan --example resources --release --locked -- tests/fixtures/bin/vulkan-resources.spv[0m
+2026-10-19T10:56:05.9515896Z [36;1mcargo run -p trames-vulkan --example lifecycle --release --locked -- tests/fixtures/bin/vulkan-compute.spv tests/fixtures/bin/vulkan-render.vert.spv tests/fixtures/bin/vulkan-render.frag.spv[0m
+2026-10-19T10:56:05.9579751Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-19T10:56:05.9580103Z env:
+2026-10-19T10:56:05.9580308Z   CARGO_HOME: /home/runner/.cargo
+2026-10-19T10:56:05.9580572Z   CARGO_INCREMENTAL: 0
+2026-10-19T10:56:05.9580792Z   CARGO_TERM_COLOR: always
+2026-10-19T10:56:05.9581029Z ##[endgroup]
+2026-10-19T10:56:07.2479916Z [1m[92m    Updating[0m crates.io index
+2026-10-19T10:56:07.5091366Z [1m[92m Downloading[0m crates ...
+2026-10-19T10:56:07.5437926Z [1m[92m  Downloaded[0m downcast-rs v1.2.1
+2026-10-19T10:56:07.5495725Z [1m[92m  Downloaded[0m cfg-if v1.0.5
+2026-10-19T10:56:07.5574253Z [1m[92m  Downloaded[0m errno v0.3.14
+2026-10-19T10:56:07.5599778Z [1m[92m  Downloaded[0m wayland-sys v0.31.11
+2026-10-19T10:56:07.5662944Z [1m[92m  Downloaded[0m shlex v2.0.1
+2026-10-19T10:56:07.5678607Z [1m[92m  Downloaded[0m libloading v0.8.9
+2026-10-19T10:56:07.5706687Z [1m[92m  Downloaded[0m quote v1.0.47
+2026-10-19T10:56:07.5738767Z [1m[92m  Downloaded[0m pkg-config v0.3.34
+2026-10-19T10:56:07.5755428Z [1m[92m  Downloaded[0m find-msvc-tools v0.1.14
+2026-10-19T10:56:07.5773925Z [1m[92m  Downloaded[0m smallvec v1.16.3
+2026-10-19T10:56:07.5789527Z [1m[92m  Downloaded[0m wayland-scanner v0.31.11
+2026-10-19T10:56:07.5814516Z [1m[92m  Downloaded[0m unicode-ident v1.0.26
+2026-10-19T10:56:07.5847955Z [1m[92m  Downloaded[0m proc-macro2 v1.0.107
+2026-10-19T10:56:07.5884738Z [1m[92m  Downloaded[0m bitflags v2.13.2
+2026-10-19T10:56:07.5944609Z [1m[92m  Downloaded[0m wayland-server v0.31.14
+2026-10-19T10:56:07.5966012Z [1m[92m  Downloaded[0m memchr v2.8.3
+2026-10-19T10:56:07.6043449Z [1m[92m  Downloaded[0m cc v1.8.0
+2026-10-19T10:56:07.6081655Z [1m[92m  Downloaded[0m wayland-protocols v0.32.13
+2026-10-19T10:56:07.6166999Z [1m[92m  Downloaded[0m quick-xml v0.41.0
+2026-10-19T10:56:07.6225082Z [1m[92m  Downloaded[0m ash v0.38.0+1.3.281
+2026-10-19T10:56:07.6380333Z [1m[92m  Downloaded[0m rustix v1.1.5
+2026-10-19T10:56:07.6655520Z [1m[92m  Downloaded[0m libc v0.2.190
+2026-10-19T10:56:07.7140781Z [1m[92m  Downloaded[0m linux-raw-sys v0.12.1
+2026-10-19T10:56:07.8002714Z [1m[92m   Compiling[0m find-msvc-tools v0.1.14
+2026-10-19T10:56:07.8003443Z [1m[92m   Compiling[0m shlex v2.0.1
+2026-10-19T10:56:07.8003990Z [1m[92m   Compiling[0m rustix v1.1.5
+2026-10-19T10:56:07.8004406Z [1m[92m   Compiling[0m pkg-config v0.3.34
+2026-10-19T10:56:07.9058837Z [1m[92m   Compiling[0m proc-macro2 v1.0.107
+2026-10-19T10:56:07.9566305Z [1m[92m   Compiling[0m cc v1.8.0
+2026-10-19T10:56:08.1027205Z [1m[92m   Compiling[0m quote v1.0.47
+2026-10-19T10:56:08.1086407Z [1m[92m    Checking[0m bitflags v2.13.2
+2026-10-19T10:56:08.2042199Z [1m[92m   Compiling[0m wayland-sys v0.31.11
+2026-10-19T10:56:08.2115251Z [1m[92m    Checking[0m linux-raw-sys v0.12.1
+2026-10-19T10:56:08.2358689Z [1m[92m   Compiling[0m unicode-ident v1.0.26
+2026-10-19T10:56:08.3246712Z [1m[92m   Compiling[0m memchr v2.8.3
+2026-10-19T10:56:08.8746805Z [1m[92m   Compiling[0m libc v0.2.190
+2026-10-19T10:56:08.8947324Z [1m[92m   Compiling[0m quick-xml v0.41.0
+2026-10-19T10:56:09.4337751Z [1m[92m    Checking[0m downcast-rs v1.2.1
+2026-10-19T10:56:09.4907040Z [1m[92m    Checking[0m smallvec v1.16.3
+2026-10-19T10:56:09.7097341Z [1m[92m   Compiling[0m wayland-backend v0.3.17 (/home/runner/work/trames/trames/vendor/wayland-backend)
+2026-10-19T10:56:09.8127703Z [1m[92m   Compiling[0m ash v0.38.0+1.3.281
+2026-10-19T10:56:09.8308012Z [1m[92m   Compiling[0m wayland-scanner v0.31.11
+2026-10-19T10:56:09.8921775Z [1m[92m    Checking[0m cfg-if v1.0.5
+2026-10-19T10:56:09.9159433Z [1m[92m    Checking[0m libloading v0.8.9
+2026-10-19T10:56:09.9927290Z [1m[92m   Compiling[0m trames-vulkan v1.1.0 (/home/runner/work/trames/trames/crates/trames-vulkan)
+2026-10-19T10:56:10.5777404Z [1m[92m    Checking[0m trames-memory v1.1.0 (/home/runner/work/trames/trames/crates/trames-memory)
+2026-10-19T10:56:12.0464261Z [1m[92m    Checking[0m trames-shared v1.1.0 (/home/runner/work/trames/trames/crates/trames-shared)
+2026-10-19T10:56:12.4230678Z [1m[92m    Checking[0m wayland-server v0.31.14
+2026-10-19T10:56:13.0043457Z [1m[92m    Checking[0m wayland-protocols v0.32.13
+2026-10-19T10:56:15.4744797Z [1m[92m    Checking[0m trames-wayland v1.1.0 (/home/runner/work/trames/trames/crates/trames-wayland)
+2026-10-19T10:56:17.1961465Z [1m[92m    Finished[0m `dev` profile [unoptimized + debuginfo] target(s) in 9.97s
+2026-10-19T10:56:17.3042127Z [1m[92m   Compiling[0m bitflags v2.13.2
+2026-10-19T10:56:17.3042750Z [1m[92m   Compiling[0m linux-raw-sys v0.12.1
+2026-10-19T10:56:17.3044894Z [1m[92m   Compiling[0m wayland-sys v0.31.11
+2026-10-19T10:56:17.3066907Z [1m[92m   Compiling[0m downcast-rs v1.2.1
+2026-10-19T10:56:17.3426879Z [1m[92m   Compiling[0m smallvec v1.16.3
+2026-10-19T10:56:17.3546773Z [1m[92m   Compiling[0m libc v0.2.190
+2026-10-19T10:56:17.4572920Z [1m[92m   Compiling[0m cfg-if v1.0.5
+2026-10-19T10:56:17.4856964Z [1m[92m   Compiling[0m libloading v0.8.9
+2026-10-19T10:56:17.5029103Z [1m[92m   Compiling[0m trames-vulkan v1.1.0 (/home/runner/work/trames/trames/crates/trames-vulkan)
+2026-10-19T10:56:17.6117178Z [1m[92m   Compiling[0m ash v0.38.0+1.3.281
+2026-10-19T10:56:18.4057643Z [1m[92m   Compiling[0m trames-memory v1.1.0 (/home/runner/work/trames/trames/crates/trames-memory)
+2026-10-19T10:56:18.5727272Z [1m[92m   Compiling[0m rustix v1.1.5
+2026-10-19T10:56:20.9427763Z [1m[92m   Compiling[0m wayland-backend v0.3.17 (/home/runner/work/trames/trames/vendor/wayland-backend)
+2026-10-19T10:56:20.9430231Z [1m[92m   Compiling[0m trames-shared v1.1.0 (/home/runner/work/trames/trames/crates/trames-shared)
+2026-10-19T10:56:21.6776784Z [1m[92m   Compiling[0m wayland-server v0.31.14
+2026-10-19T10:56:22.4748916Z [1m[92m   Compiling[0m wayland-protocols v0.32.13
+2026-10-19T10:56:25.5728593Z [1m[92m   Compiling[0m trames-wayland v1.1.0 (/home/runner/work/trames/trames/crates/trames-wayland)
+2026-10-19T10:56:29.0489167Z [1m[92m    Finished[0m `test` profile [unoptimized + debuginfo] target(s) in 11.80s
+2026-10-19T10:56:29.0512170Z [1m[92m     Running[0m unittests src/lib.rs (target/debug/build/trames-vulkan/1ba81da1315f6af6/out/trames_vulkan-1ba81da1315f6af6)
+2026-10-19T10:56:29.0524442Z 
+2026-10-19T10:56:29.0524672Z running 17 tests
+2026-10-19T10:56:29.0536885Z test backend::coherent::tests::coherent_tracking_is_charged_and_released_with_the_mapping ... ok
+2026-10-19T10:56:29.0538747Z test backend::coherent::tests::independent_cpu_inputs_and_gpu_outputs_do_not_overwrite_each_other ... ok
+2026-10-19T10:56:29.0540064Z test backend::graphics::tests::copy_checks_padded_rows_offsets_overflow_and_color_subresources ... ok
+2026-10-19T10:56:29.0541422Z test backend::graphics::tests::image_profile_reports_only_supported_formats_usages_and_layouts ... ok
+2026-10-19T10:56:29.0542944Z test backend::graphics::tests::maintenance1_negative_viewports_use_native_bounds ... ok
+2026-10-19T10:56:29.0544159Z test backend::tests::malformed_transport_cannot_read_guest_memory_or_create_driver_objects ... ok
+2026-10-19T10:56:29.0545334Z test backend::tests::native_transfers_cross_pages_keep_cow_and_preflight_permissions ... ok
+2026-10-19T10:56:29.0546788Z test backend::tests::specialization_records_keep_offsets_and_reject_overflow_or_duplicate_ids ... ok
+2026-10-19T10:56:29.0547885Z test backend::tests::spirv_debug_names_do_not_change_entrypoints_or_specialization_decorations ... ok
+2026-10-19T10:56:29.0548826Z test budget::tests::compiler_capacity_is_shared_and_released_without_a_global_work_lock ... ok
+2026-10-19T10:56:29.0549505Z test budget::tests::independent_contexts_share_budget_without_overcommit_or_lifetime_leak ... ok
+2026-10-19T10:56:29.0550194Z test backend::tests::unknown_object_domains_and_uninitialized_driver_never_become_host_handles ... ok
+2026-10-19T10:56:29.0550851Z test display::tests::detach_invalidates_generation_but_preserves_in_flight_lease ... ok
+2026-10-19T10:56:29.0551421Z test display::tests::invalid_native_targets_fail_before_objc_access ... ok
+2026-10-19T10:56:29.0551941Z test task::tests::slow_tasks_do_not_block_the_caller_or_an_unrelated_task ... ok
+2026-10-19T10:56:29.0554371Z test backend::tests::wait_stages_support_selected_graphics_but_reject_unknown_extension_bits ... ok
+2026-10-19T10:56:29.0555849Z test task::tests::teardown_joins_before_owned_dependency_destruction ... ok
+2026-10-19T10:56:29.0556400Z 
+2026-10-19T10:56:29.0556875Z test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-10-19T10:56:29.0557496Z 
+2026-10-19T10:56:29.1071926Z [1m[92m Downloading[0m crates ...
+2026-10-19T10:56:29.1366272Z [1m[92m  Downloaded[0m adler2 v2.0.1
+2026-10-19T10:56:29.1400005Z [1m[92m  Downloaded[0m cfg_aliases v0.2.2
+2026-10-19T10:56:29.1423042Z [1m[92m  Downloaded[0m block-buffer v0.10.4
+2026-10-19T10:56:29.1435638Z [1m[92m  Downloaded[0m bitflags v1.3.2
+2026-10-19T10:56:29.1469196Z [1m[92m  Downloaded[0m byteorder v1.5.0
+2026-10-19T10:56:29.1485055Z [1m[92m  Downloaded[0m crc32fast v1.5.2
+2026-10-19T10:56:29.1505379Z [1m[92m  Downloaded[0m filetime v0.2.29
+2026-10-19T10:56:29.1524997Z [1m[92m  Downloaded[0m simd-adler32 v0.3.10
+2026-10-19T10:56:29.1546220Z [1m[92m  Downloaded[0m defmt v1.1.1
+2026-10-19T10:56:29.1595985Z [1m[92m  Downloaded[0m flate2 v1.1.10
+2026-10-19T10:56:29.1646066Z [1m[92m  Downloaded[0m crypto-common v0.1.7
+2026-10-19T10:56:29.1655933Z [1m[92m  Downloaded[0m generic-array v0.14.7
+2026-10-19T10:56:29.1673555Z [1m[92m  Downloaded[0m stable_deref_trait v1.2.1
+2026-10-19T10:56:29.1683027Z [1m[92m  Downloaded[0m defmt v0.3.100
+2026-10-19T10:56:29.1691081Z [1m[92m  Downloaded[0m version_check v0.9.5
+2026-10-19T10:56:29.1705246Z [1m[92m  Downloaded[0m hash32 v0.3.1
+2026-10-19T10:56:29.1724987Z [1m[92m  Downloaded[0m cpufeatures v0.2.17
+2026-10-19T10:56:29.1739043Z [1m[92m  Downloaded[0m defmt-parser v1.0.0
+2026-10-19T10:56:29.1748827Z [1m[92m  Downloaded[0m digest v0.10.7
+2026-10-19T10:56:29.1771659Z [1m[92m  Downloaded[0m itoa v1.0.18
+2026-10-19T10:56:29.1786994Z [1m[92m  Downloaded[0m thiserror v2.0.21
+2026-10-19T10:56:29.1863439Z [1m[92m  Downloaded[0m thiserror-impl v2.0.21
+2026-10-19T10:56:29.1878408Z [1m[92m  Downloaded[0m defmt-macros v1.1.1
+2026-10-19T10:56:29.1915318Z [1m[92m  Downloaded[0m managed v0.8.0
+2026-10-19T10:56:29.1927261Z [1m[92m  Downloaded[0m zmij v1.0.23
+2026-10-19T10:56:29.1944403Z [1m[92m  Downloaded[0m sha2 v0.10.9
+2026-10-19T10:56:29.1970592Z [1m[92m  Downloaded[0m serde_core v1.0.229
+2026-10-19T10:56:29.1998562Z [1m[92m  Downloaded[0m getrandom v0.3.4
+2026-10-19T10:56:29.2033967Z [1m[92m  Downloaded[0m serde_derive v1.0.229
+2026-10-19T10:56:29.2064980Z [1m[92m  Downloaded[0m socket2 v0.6.1
+2026-10-19T10:56:29.2083286Z [1m[92m  Downloaded[0m miniz_oxide v0.9.1
+2026-10-19T10:56:29.2108918Z [1m[92m  Downloaded[0m heapless v0.8.0
+2026-10-19T10:56:29.2147017Z [1m[92m  Downloaded[0m serde v1.0.229
+2026-10-19T10:56:29.2181843Z [1m[92m  Downloaded[0m tar v0.4.46
+2026-10-19T10:56:29.2210618Z [1m[92m  Downloaded[0m typenum v1.20.1
+2026-10-19T10:56:29.2246927Z [1m[92m  Downloaded[0m serde_json v1.0.151
+2026-10-19T10:56:29.2320626Z [1m[92m  Downloaded[0m smoltcp v0.12.0
+2026-10-19T10:56:29.2448804Z [1m[92m  Downloaded[0m syn v3.0.7
+2026-10-19T10:56:29.2557643Z [1m[92m  Downloaded[0m syn v2.0.119
+2026-10-19T10:56:29.2666926Z [1m[92m  Downloaded[0m nix v0.31.3
+2026-10-19T10:56:29.3084016Z [1m[92m   Compiling[0m libc v0.2.190
+2026-10-19T10:56:29.3084789Z [1m[92m   Compiling[0m cfg-if v1.0.5
+2026-10-19T10:56:29.3086226Z [1m[92m   Compiling[0m proc-macro2 v1.0.107
+2026-10-19T10:56:29.3087343Z [1m[92m   Compiling[0m unicode-ident v1.0.26
+2026-10-19T10:56:29.3414648Z [1m[92m   Compiling[0m quote v1.0.47
+2026-10-19T10:56:29.3580403Z [1m[92m   Compiling[0m bitflags v2.13.2
+2026-10-19T10:56:29.4670404Z [1m[92m   Compiling[0m version_check v0.9.5
+2026-10-19T10:56:29.5987896Z [1m[92m   Compiling[0m rustix v1.1.5
+2026-10-19T10:56:29.6736823Z [1m[92m   Compiling[0m generic-array v0.14.7
+2026-10-19T10:56:29.7447536Z [1m[92m   Compiling[0m find-msvc-tools v0.1.14
+2026-10-19T10:56:29.7867828Z [1m[92m   Compiling[0m pkg-config v0.3.34
+2026-10-19T10:56:30.0510933Z [1m[92m   Compiling[0m shlex v2.0.1
+2026-10-19T10:56:30.1302275Z [1m[92m   Compiling[0m typenum v1.20.1
+2026-10-19T10:56:30.1687144Z [1m[92m   Compiling[0m cc v1.8.0
+2026-10-19T10:56:30.2156795Z [1m[92m   Compiling[0m wayland-sys v0.31.11
+2026-10-19T10:56:30.2906861Z [1m[92m   Compiling[0m linux-raw-sys v0.12.1
+2026-10-19T10:56:31.2960903Z [1m[92m   Compiling[0m memchr v2.8.3
+2026-10-19T10:56:31.8417089Z [1m[92m   Compiling[0m serde_core v1.0.229
+2026-10-19T10:56:31.8717495Z [1m[92m   Compiling[0m wayland-backend v0.3.17 (/home/runner/work/trames/trames/vendor/wayland-backend)
+2026-10-19T10:56:31.9026770Z [1m[92m   Compiling[0m quick-xml v0.41.0
+2026-10-19T10:56:31.9777285Z [1m[92m   Compiling[0m trames-memory v1.1.0 (/home/runner/work/trames/trames/crates/trames-memory)
+2026-10-19T10:56:32.0146992Z [1m[92m   Compiling[0m downcast-rs v1.2.1
+2026-10-19T10:56:32.0536980Z [1m[92m   Compiling[0m smallvec v1.16.3
+2026-10-19T10:56:32.8068063Z [1m[92m   Compiling[0m wayland-scanner v0.31.11
+2026-10-19T10:56:34.3277222Z [1m[92m   Compiling[0m block-buffer v0.10.4
+2026-10-19T10:56:34.4027111Z [1m[92m   Compiling[0m crypto-common v0.1.7
+2026-10-19T10:56:34.4547021Z [1m[92m   Compiling[0m syn v3.0.7
+2026-10-19T10:56:34.8356903Z [1m[92m   Compiling[0m getrandom v0.3.4
+2026-10-19T10:56:34.9806875Z [1m[92m   Compiling[0m serde v1.0.229
+2026-10-19T10:56:35.0747692Z [1m[92m   Compiling[0m trames-native v1.1.0 (/home/runner/work/trames/trames/crates/trames-native)
+2026-10-19T10:56:35.1197136Z [1m[92m   Compiling[0m heapless v0.8.0
+2026-10-19T10:56:35.2346927Z [1m[92m   Compiling[0m cfg_aliases v0.2.2
+2026-10-19T10:56:35.2652028Z [1m[92m   Compiling[0m zmij v1.0.23
+2026-10-19T10:56:35.3317192Z [1m[92m   Compiling[0m byteorder v1.5.0
+2026-10-19T10:56:35.4646421Z [1m[92m   Compiling[0m hash32 v0.3.1
+2026-10-19T10:56:35.5246990Z [1m[92m   Compiling[0m nix v0.31.3
+2026-10-19T10:56:36.5728185Z [1m[92m   Compiling[0m wayland-server v0.31.14
+2026-10-19T10:56:36.8036686Z [1m[92m   Compiling[0m serde_derive v1.0.229
+2026-10-19T10:56:37.1407380Z [1m[92m   Compiling[0m digest v0.10.7
+2026-10-19T10:56:37.2876976Z [1m[92m   Compiling[0m stable_deref_trait v1.2.1
+2026-10-19T10:56:37.3167535Z [1m[92m   Compiling[0m cpufeatures v0.2.17
+2026-10-19T10:56:37.3206330Z [1m[92m   Compiling[0m smoltcp v0.12.0
+2026-10-19T10:56:37.3437433Z [1m[92m   Compiling[0m serde_json v1.0.151
+2026-10-19T10:56:37.4287039Z [1m[92m   Compiling[0m sha2 v0.10.9
+2026-10-19T10:56:38.1387163Z [1m[92m   Compiling[0m wayland-protocols v0.32.13
+2026-10-19T10:56:38.2528464Z [1m[92m   Compiling[0m trames-shared v1.1.0 (/home/runner/work/trames/trames/crates/trames-shared)
+2026-10-19T10:56:39.0036764Z [1m[92m   Compiling[0m managed v0.8.0
+2026-10-19T10:56:39.2626986Z [1m[92m   Compiling[0m bitflags v1.3.2
+2026-10-19T10:56:39.2917916Z [1m[92m   Compiling[0m itoa v1.0.18
+2026-10-19T10:56:40.4257852Z [1m[92m   Compiling[0m trames-accel v1.1.0 (/home/runner/work/trames/trames/crates/trames-accel)
+2026-10-19T10:56:41.2727309Z [1m[92m   Compiling[0m socket2 v0.6.1
+2026-10-19T10:56:41.8187861Z [1m[92m   Compiling[0m trames-net v1.1.0 (/home/runner/work/trames/trames/crates/trames-net)
+2026-10-19T10:56:41.8817193Z [1m[92m   Compiling[0m trames-bridge v1.1.0 (/home/runner/work/trames/trames/crates/trames-bridge)
+2026-10-19T10:56:42.2067979Z [1m[92m   Compiling[0m crc32fast v1.5.2
+2026-10-19T10:56:42.3196690Z [1m[92m   Compiling[0m ash v0.38.0+1.3.281
+2026-10-19T10:56:42.4036777Z [1m[92m   Compiling[0m libloading v0.8.9
+2026-10-19T10:56:42.5307939Z [1m[92m   Compiling[0m simd-adler32 v0.3.10
+2026-10-19T10:56:43.0013207Z [1m[92m   Compiling[0m adler2 v2.0.1
+2026-10-19T10:56:43.0777758Z [1m[92m   Compiling[0m trames-compute v1.1.0 (/home/runner/work/trames/trames/crates/trames-compute)
+2026-10-19T10:56:43.1392177Z [1m[92m   Compiling[0m trames-vulkan v1.1.0 (/home/runner/work/trames/trames/crates/trames-vulkan)
+2026-10-19T10:56:43.1955162Z [1m[92m   Compiling[0m trames-wayland v1.1.0 (/home/runner/work/trames/trames/crates/trames-wayland)
+2026-10-19T10:56:43.3087288Z [1m[92m   Compiling[0m trames-cpu v1.1.0 (/home/runner/work/trames/trames/crates/trames-cpu)
+2026-10-19T10:56:44.7997148Z [1m[92m   Compiling[0m trames-vfs v1.1.0 (/home/runner/work/trames/trames/crates/trames-vfs)
+2026-10-19T10:56:47.0823029Z [1m[92m   Compiling[0m miniz_oxide v0.9.1
+2026-10-19T10:56:48.2507175Z [1m[92m   Compiling[0m trames-elf v1.1.0 (/home/runner/work/trames/trames/crates/trames-elf)
+2026-10-19T10:56:48.5006950Z [1m[92m   Compiling[0m filetime v0.2.29
+2026-10-19T10:56:48.6076492Z [1m[92m   Compiling[0m tar v0.4.46
+2026-10-19T10:56:50.1067122Z [1m[92m   Compiling[0m trames-linux v1.1.0 (/home/runner/work/trames/trames/crates/trames-linux)
+2026-10-19T10:56:51.1676858Z [1m[92m   Compiling[0m flate2 v1.1.10
+2026-10-19T10:56:51.6237705Z [1m[92m   Compiling[0m trames-distro v1.1.0 (/home/runner/work/trames/trames/crates/trames-distro)
+2026-10-19T10:56:58.0923190Z [1m[92m   Compiling[0m trames-core v1.1.0 (/home/runner/work/trames/trames/crates/trames-core)
+2026-10-19T10:57:00.7501787Z [1m[92m   Compiling[0m trames-cli v1.1.0 (/home/runner/work/trames/trames/crates/trames-cli)
+2026-10-19T10:57:25.4881834Z [1m[92m    Finished[0m `release` profile [optimized] target(s) in 56.40s
+2026-10-19T10:57:25.5779624Z [1m[92m   Compiling[0m libc v0.2.190
+2026-10-19T10:57:26.2981934Z [1m[92m   Compiling[0m trames-shared v1.1.0 (/home/runner/work/trames/trames/crates/trames-shared)
+2026-10-19T10:57:26.2983776Z [1m[92m   Compiling[0m trames-memory v1.1.0 (/home/runner/work/trames/trames/crates/trames-memory)
+2026-10-19T10:57:26.4514403Z [1m[92m   Compiling[0m trames-wayland v1.1.0 (/home/runner/work/trames/trames/crates/trames-wayland)
+2026-10-19T10:57:27.0917036Z [1m[92m   Compiling[0m trames-vulkan v1.1.0 (/home/runner/work/trames/trames/crates/trames-vulkan)
+2026-10-19T10:57:34.4221207Z [1m[92m    Finished[0m `release` profile [optimized] target(s) in 8.87s
+2026-10-19T10:57:34.4239079Z [1m[92m     Running[0m `target/release/examples/timeline`
+2026-10-19T10:57:36.8043663Z native driver properties: llvmpipe
+2026-10-19T10:57:37.7318672Z native-timeline-ok: 64-bit driver counters, nonblocking future wait, real GPU coherent output, reset/trim and retained submission lifetimes
+2026-10-19T10:57:37.8582116Z [1m[92m   Compiling[0m trames-vulkan v1.1.0 (/home/runner/work/trames/trames/crates/trames-vulkan)
+2026-10-19T10:57:42.3266279Z [1m[92m    Finished[0m `release` profile [optimized] target(s) in 4.49s
+2026-10-19T10:57:42.3282238Z [1m[92m     Running[0m `target/release/examples/renderpass`
+2026-10-19T10:57:42.3680380Z native-renderpass-ok: legacy/renderpass2, imageless rebinding, color/depth, feature/geometry guards, GPU readback and deferred attachment cleanup
+2026-10-19T10:57:42.4293674Z [1m[92m   Compiling[0m trames-vulkan v1.1.0 (/home/runner/work/trames/trames/crates/trames-vulkan)
+2026-10-19T10:57:46.9056630Z [1m[92m    Finished[0m `release` profile [optimized] target(s) in 4.50s
+2026-10-19T10:57:46.9078329Z [1m[92m     Running[0m `target/release/examples/resources tests/fixtures/bin/vulkan-resources.spv`
+2026-10-19T10:57:46.9248383Z resource driver: llvmpipe (LLVM 20.1.2, 256 bits)
+2026-10-19T10:57:47.2131107Z native-resources-ok: dynamic offsets, texel read/write, scalar vec3 at offset4, storage image, pipeline cache roundtrip, descriptor pool reset/reuse and 256 GPU results correct; budget released
+2026-10-19T10:57:47.2758073Z [1m[92m   Compiling[0m trames-vulkan v1.1.0 (/home/runner/work/trames/trames/crates/trames-vulkan)
+2026-10-19T10:57:51.8161532Z [1m[92m    Finished[0m `release` profile [optimized] target(s) in 4.57s
+2026-10-19T10:57:51.8179449Z [1m[92m     Running[0m `target/release/examples/lifecycle tests/fixtures/bin/vulkan-compute.spv tests/fixtures/bin/vulkan-render.vert.spv tests/fixtures/bin/vulkan-render.frag.spv`
+2026-10-19T10:57:51.8963031Z 260 live-output unmaps: faults, no ID publication/table exhaustion
+2026-10-19T10:57:51.9454214Z 260 post-preflight backing I/O failures: native outputs rolled back
+2026-10-19T10:57:52.0280784Z 260 graphics output unmaps: no pipeline publication/table exhaustion
+2026-10-19T10:57:52.1032185Z 260 graphics pipeline, 260 image and 260 sampler backing failures: unpublished native outputs rolled back
+2026-10-19T10:57:52.1035920Z in-flight graphics pass/shader removal: dependencies retained until completion
+2026-10-19T10:57:52.1039204Z in-flight shader removal: retained native dependency completes
+2026-10-19T10:57:52.1055844Z abandoned compiler/device teardown: no result publication
+2026-10-19T10:57:52.1141838Z ##[group]Run export VK_DRIVER_FILES="$(python3 -c 'from pathlib import Path; print(next(Path("/usr/share/vulkan/icd.d").glob("*lvp*")))')"
+2026-10-19T10:57:52.1142974Z [36;1mexport VK_DRIVER_FILES="$(python3 -c 'from pathlib import Path; print(next(Path("/usr/share/vulkan/icd.d").glob("*lvp*")))')"[0m
+2026-10-19T10:57:52.1143562Z [36;1mexport TRAMES_ZINK_CPU_REFERENCE=1[0m
+2026-10-19T10:57:52.1143872Z [36;1mif [[ 'zink-gles' == zink-gles ]]; then[0m
+2026-10-19T10:57:52.1144452Z [36;1m  python3 tests/integration/zink-foundation.py --require-render --snapshot-store target/zink-native-bundle/store[0m
+2026-10-19T10:57:52.1145065Z [36;1m  python3 scripts/prepare-zink-native-bundle.py[0m
+2026-10-19T10:57:52.1145692Z [36;1melse[0m
+2026-10-19T10:57:52.1146130Z [36;1m  python3 tests/integration/zink-foundation.py[0m
+2026-10-19T10:57:52.1146645Z [36;1mfi[0m
+2026-10-19T10:57:52.1209620Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-19T10:57:52.1209988Z env:
+2026-10-19T10:57:52.1210187Z   CARGO_HOME: /home/runner/.cargo
+2026-10-19T10:57:52.1210451Z   CARGO_INCREMENTAL: 0
+2026-10-19T10:57:52.1210667Z   CARGO_TERM_COLOR: always
+2026-10-19T10:57:52.1210884Z ##[endgroup]
+2026-10-19T10:59:35.8908975Z Vulkan query/template foundation passed; original Mesa Zink rendering: True
+2026-10-19T10:59:36.4004203Z Prepared source-bound native GPU bundle: 448 files
+2026-10-19T10:59:36.4133054Z ##[group]Run actions/upload-artifact@v4
+2026-10-19T10:59:36.4133368Z with:
+2026-10-19T10:59:36.4133584Z   name: zink-foundation-evidence
+2026-10-19T10:59:36.4134054Z   path: target/zink-foundation/
+target/zink-inputs/inputs.json
+target/vulkan-guest/manifest.json
+
+2026-10-19T10:59:36.4134529Z   retention-days: 14
+2026-10-19T10:59:36.4134748Z   if-no-files-found: warn
+2026-10-19T10:59:36.4134980Z   compression-level: 6
+2026-10-19T10:59:36.4135193Z   overwrite: false
+2026-10-19T10:59:36.4135637Z   include-hidden-files: false
+2026-10-19T10:59:36.4135883Z env:
+2026-10-19T10:59:36.4136076Z   CARGO_HOME: /home/runner/.cargo
+2026-10-19T10:59:36.4136338Z   CARGO_INCREMENTAL: 0
+2026-10-19T10:59:36.4136552Z   CARGO_TERM_COLOR: always
+2026-10-19T10:59:36.4136770Z ##[endgroup]
+2026-10-19T10:59:36.5795108Z (node:17123) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-19T10:59:36.5796747Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-19T10:59:36.6103367Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2026-10-19T10:59:36.6105245Z The least common ancestor is /home/runner/work/trames/trames/target. This will be the root directory of the artifact
+2026-10-19T10:59:36.6106449Z With the provided path, there will be 129 files uploaded
+2026-10-19T10:59:36.6111364Z Artifact name is valid!
+2026-10-19T10:59:36.6112437Z Root directory input is valid!
+2026-10-19T10:59:36.8229296Z Beginning upload of artifact content to blob storage
+2026-10-19T10:59:36.9917484Z (node:17123) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-10-19T10:59:37.0803789Z Uploaded bytes 765292
+2026-10-19T10:59:37.1018665Z Finished uploading artifact content to blob storage!
+2026-10-19T10:59:37.1020009Z SHA256 digest of uploaded artifact zip is 5ce1fd5c8f38416c232c2399c76405af5c400b17c6b9360b564ba58a8579df8c
+2026-10-19T10:59:37.1021229Z Finalizing artifact upload
+2026-10-19T10:59:37.3107206Z Artifact zink-foundation-evidence.zip successfully finalized. Artifact ID 12181283384
+2026-10-19T10:59:37.3108730Z Artifact zink-foundation-evidence has been successfully uploaded! Final size is 765292 bytes. Artifact ID is 12181283384
+2026-10-19T10:59:37.3114705Z Artifact download URL: https://github.com/kb5000/trames/actions/runs/39240757068/artifacts/12181283384
+2026-10-19T10:59:37.3267517Z ##[group]Run actions/upload-artifact@v4
+2026-10-19T10:59:37.3267819Z with:
+2026-10-19T10:59:37.3268024Z   name: zink-native-bundle
+2026-10-19T10:59:37.3268458Z   path: target/zink-native-bundle/
+2026-10-19T10:59:37.3268745Z   include-hidden-files: true
+2026-10-19T10:59:37.3268987Z   retention-days: 3
+2026-10-19T10:59:37.3269198Z   if-no-files-found: warn
+2026-10-19T10:59:37.3269431Z   compression-level: 6
+2026-10-19T10:59:37.3269660Z   overwrite: false
+2026-10-19T10:59:37.3269857Z env:
+2026-10-19T10:59:37.3270050Z   CARGO_HOME: /home/runner/.cargo
+2026-10-19T10:59:37.3270300Z   CARGO_INCREMENTAL: 0
+2026-10-19T10:59:37.3270520Z   CARGO_TERM_COLOR: always
+2026-10-19T10:59:37.3270741Z ##[endgroup]
+2026-10-19T10:59:37.4923198Z (node:17136) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-19T10:59:37.4924185Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-19T10:59:37.5795972Z With the provided path, there will be 449 files uploaded
+2026-10-19T10:59:37.5801709Z Artifact name is valid!
+2026-10-19T10:59:37.5802158Z Root directory input is valid!
+2026-10-19T10:59:37.7928653Z Beginning upload of artifact content to blob storage
+2026-10-19T10:59:38.2858128Z (node:17136) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-10-19T10:59:38.5822587Z Uploaded bytes 8388608
+2026-10-19T10:59:38.7691681Z Uploaded bytes 16777216
+2026-10-19T10:59:38.9519181Z Uploaded bytes 25165824
+2026-10-19T10:59:39.2747813Z Uploaded bytes 33554432
+2026-10-19T10:59:39.4673154Z Uploaded bytes 41943040
+2026-10-19T10:59:39.7284066Z Uploaded bytes 50331648
+2026-10-19T10:59:39.9939581Z Uploaded bytes 58720256
+2026-10-19T10:59:40.3525367Z Uploaded bytes 67108864
+2026-10-19T10:59:40.6238727Z Uploaded bytes 75497472
+2026-10-19T10:59:40.9161661Z Uploaded bytes 83886080
+2026-10-19T10:59:41.1833958Z Uploaded bytes 92274688
+2026-10-19T10:59:41.4455278Z Uploaded bytes 100663296
+2026-10-19T10:59:41.7194724Z Uploaded bytes 109051904
+2026-10-19T10:59:42.0205331Z Uploaded bytes 117440512
+2026-10-19T10:59:42.2937406Z Uploaded bytes 125829120
+2026-10-19T10:59:42.5833450Z Uploaded bytes 134217728
+2026-10-19T10:59:42.8589316Z Uploaded bytes 142606336
+2026-10-19T10:59:43.1181878Z Uploaded bytes 150994944
+2026-10-19T10:59:43.4247911Z Uploaded bytes 159383552
+2026-10-19T10:59:43.8230396Z Uploaded bytes 167772160
+2026-10-19T10:59:44.0994899Z Uploaded bytes 176160768
+2026-10-19T10:59:44.2814472Z Uploaded bytes 184549376
+2026-10-19T10:59:44.7400344Z Uploaded bytes 192937984
+2026-10-19T10:59:45.2939356Z Uploaded bytes 201326592
+2026-10-19T10:59:45.6978838Z Uploaded bytes 209715200
+2026-10-19T10:59:46.1774918Z Uploaded bytes 218103808
+2026-10-19T10:59:46.6362666Z Uploaded bytes 226492416
+2026-10-19T10:59:47.2833669Z Uploaded bytes 234881024
+2026-10-19T10:59:47.9246426Z Uploaded bytes 243269632
+2026-10-19T10:59:48.6974901Z Uploaded bytes 251658240
+2026-10-19T10:59:49.4390107Z Uploaded bytes 260046848
+2026-10-19T10:59:50.0798899Z Uploaded bytes 268435456
+2026-10-19T10:59:50.6297904Z Uploaded bytes 276824064
+2026-10-19T10:59:51.0506950Z Uploaded bytes 282598776
+2026-10-19T10:59:51.0728726Z Finished uploading artifact content to blob storage!
+2026-10-19T10:59:51.0732275Z SHA256 digest of uploaded artifact zip is 0ef173ba91859c6d57a2243972ad3c58cfcc2e4cbb4008f36bb131b11bbe6995
+2026-10-19T10:59:51.0734188Z Finalizing artifact upload
+2026-10-19T10:59:51.3164524Z Artifact zink-native-bundle.zip successfully finalized. Artifact ID 12182020754
+2026-10-19T10:59:51.3165573Z Artifact zink-native-bundle has been successfully uploaded! Final size is 282598776 bytes. Artifact ID is 12182020754
+2026-10-19T10:59:51.3173405Z Artifact download URL: https://github.com/kb5000/trames/actions/runs/39240757068/artifacts/12182020754
+2026-10-19T10:59:51.3413215Z Post job cleanup.
+2026-10-19T10:59:51.4281485Z [command]/usr/bin/git version
+2026-10-19T10:59:51.4323376Z git version 2.55.0
+2026-10-19T10:59:51.4369101Z Temporarily overriding HOME='/home/runner/work/_temp/d9444b3b-94d4-43e0-95c7-c865305c8491' before making global git config changes
+2026-10-19T10:59:51.4370794Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-19T10:59:51.4375259Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/trames/trames
+2026-10-19T10:59:51.4414032Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-19T10:59:51.4449280Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-19T10:59:51.4711930Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-19T10:59:51.4740512Z http.https://github.com/.extraheader
+2026-10-19T10:59:51.4752196Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-19T10:59:51.4788126Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-19T10:59:51.5050768Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-19T10:59:51.5091326Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-19T10:59:51.5530749Z Cleaning up orphan processes
+2026-10-19T10:59:51.5928918Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
