@@ -1,0 +1,245 @@
+   Compiling trames-core v1.1.0 (/workspace/trames/crates/trames-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.40s
+     Running unittests src/lib.rs (target/debug/build/trames-core/e0217532727e4e8e/out/trames_core-e0217532727e4e8e)
+
+running 56 tests
+test accelerator_tests::budget_checkpoint_fallback_and_fault_do_not_fake_retirement ... ok
+test accelerator_tests::committed_call_retires_once_and_preserves_guest_context ... ok
+test process::boundary_tests::failed_exec_preserves_image_and_cloexec_descriptor ... ok
+test process::boundary_tests::kill_is_delivered_even_with_an_older_pending_signal_while_stopped ... ok
+test process::boundary_tests::terminal_resize_event_is_scoped_to_the_foreground_group ... ok
+test process::compat::tests::compatibility_state_and_fault_preflight ... ok
+test process::compat::tests::file_size_limit_changes_are_atomic_and_hard_limit_is_privileged ... ok
+test process::cpu_fault_tests::data_top_byte_tags_work_across_pages_and_fork_copy_on_write ... ok
+test process::cpu_fault_tests::masked_or_ignored_synchronous_faults_terminate_instead_of_looping ... ok
+test process::cpu_fault_tests::synchronous_signal_contains_fault_address_and_resumes_from_edited_context ... ok
+test process::scheduling::tests::desktop_priorities_and_batch_idle_policy_roundtrip_and_inherit ... ok
+test process::scheduling::tests::numa_default_allowed_mask_and_address_queries_are_consistent ... ok
+test process::seccomp::tests::filter_loads_arch_arguments_and_verifies_all_paths ... ok
+test process::seccomp::tests::ignored_or_blocked_sigsys_cannot_suppress_a_forced_seccomp_trap ... ok
+test process::seccomp::tests::stacked_filters_keep_restrictions_and_newest_equal_action_data ... ok
+test process::signals::tests::realtime_budget_preserves_fifo_and_cannot_drop_sigkill ... ok
+test process::tests::close_range_unshare_detaches_only_callers_shared_table ... ok
+test process::tests::continuous_deadlines_include_sleep_and_do_not_spin_on_unread_expired_timerfd ... ok
+test process::tests::affinity_assignment_keeps_flexible_tasks_fair_and_relocates_for_pinned_peers ... ok
+test process::tests::failed_blocked_epoll_clears_deadline_and_restores_its_temporary_signal_mask ... ok
+test process::tests::gpu_wait_defers_caught_handlers_but_preserves_stop_continue ... ok
+test process::tests::a_removed_gpu_context_completes_once_without_reexecuting_the_stub ... ok
+test process::tests::host_pty_keyboard_and_resize_signals_are_scoped_to_the_foreground_session ... ok
+test process::tests::malformed_signal_frame_fails_without_partial_register_restoration ... ok
+test process::tests::prctl_seccomp_modes_translate_to_syscall_operations ... ok
+test process::tests::proc_mapping_cache_never_freezes_argv_fds_or_credentials_and_retires_dead_vms ... ok
+test process::tests::proc_maps_refresh_after_shared_protect_reserve_unmap_and_fork ... ok
+test process::tests::process_signals_are_single_delivery_and_thread_signals_check_identity_and_permissions ... ok
+test process::tests::restart_rewinds_the_syscall_and_eintr_does_not ... ok
+test process::tests::session_leader_fifo_open_waits_before_terminal_inspection_and_is_interruptible ... ok
+test process::tests::signal_frame_restores_integer_vector_fp_state_and_accepts_guest_context_edits ... ok
+test process::tests::continuous_peers_cancel_at_control_checkpoints_and_commit_the_exact_budget ... ok
+test process::tests::solo_quantum_does_not_delay_a_runnable_peer ... ok
+test process::tests::splice_blocks_on_backpressure_and_respects_output_nonblocking ... ok
+test process::tests::stdio_eagain_blocks_only_without_nonblocking_flag ... ok
+test process::tests::stop_continue_preserves_a_blocked_timer ... ok
+test process::tests::socket_timeout_wakes_continuous_peers_but_not_stopped_or_runnable_tasks ... ok
+test process::boundary_tests::process_limit_rejects_fork_without_changing_parent_memory ... ok
+test process::tests::thread_directed_stop_and_continue_change_the_entire_group ... ok
+test process::tests::terminal_control_signals_use_kernel_authority_and_the_foreground_session ... ok
+test tests::argument_limits_and_nuls_fail ... ok
+test tests::endless_guest_is_bounded ... ok
+test tests::memory_budget_validation_accepts_large_limits_without_preallocation ... ok
+test tests::stack_layout_contains_argv_envp_auxv_and_aligned_sp ... ok
+test tests::virtual_devices_work_without_any_proc_access_or_snapshot_refresh ... ok
+test process::tests::unsupported_instruction_log_survives_child_exit ... ok
+test process::tests::native_workers_execute_shared_atomic_guest_loops_and_account_the_budget ... ok
+test workers::tests::fault_reports_retirement_from_all_preceding_polls ... ok
+test workers::tests::a_peer_completes_native_work_while_another_native_body_is_blocked_on_its_page ... ok
+test workers::tests::native_fallback_retires_once_but_fault_refunds_its_credit ... ok
+test workers::tests::deferred_native_reserves_hlt_before_effects_and_unstable_code_never_enters_body ... ok
+test workers::tests::native_returns_continue_locally_with_exact_retirement_and_guest_state ... ok
+test workers::tests::retains_cpu_through_many_polls_without_a_peer_or_coordinator_message ... ok
+test workers::tests::rejected_native_does_not_retire_and_stops_queued_peers ... ok
+test workers::tests::concurrent_workers_share_an_exact_non_divisible_budget ... ok
+test workers::tests::request_and_pool_teardown_stop_endless_guest_workers ... ok
+
+test result: ok. 56 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+     Running tests/wayland.rs (target/debug/build/trames-core/c1b872697d69095b/out/wayland-c1b872697d69095b)
+
+running 4 tests
+test original_vkcube_wayland_inside_guest ... ignored, prepare original signed Vulkan tools/loader and current guest ICD; set TRAMES_WAYLAND_STORE
+test original_wayland_info_inside_guest ... ignored, prepare signed wayland-utils and weston-clients; set TRAMES_WAYLAND_STORE
+test original_weston_editor_native_ime_inside_guest ... ignored, prepare signed wayland-utils and weston-clients; set TRAMES_WAYLAND_STORE
+test original_weston_simple_shm_inside_guest ... ignored, prepare signed wayland-utils and weston-clients; set TRAMES_WAYLAND_STORE
+
+test result: ok. 0 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/build/trames-vfs/e30ff28a766f6258/out/trames_vfs-e30ff28a766f6258)
+
+running 153 tests
+test bpf::tests::attachments_survive_close_replace_atomically_and_follow_membership ... ok
+test bpf::tests::crun_style_context_mask_and_branches_enforce_device_access ... ok
+test bpf::tests::registry_quota_reclaims_dead_programs ... ok
+test bpf::tests::typed_forward_verifier_rejects_unsafe_and_uninitialized_programs ... ok
+test cgroup::tests::depth_limit_is_transactional_and_storage_budget_is_separate ... ok
+test directory::tests::immediate_children_preserve_byte_order_and_prefix_siblings ... ok
+test events::tests::anonymous_and_socket_owners_survive_identity_changes ... ok
+test cgroup::tests::quotas_count_live_deleted_objects_and_release_them ... ok
+test directory::tests::root_enumeration_skips_a_large_nested_tree ... ok
+test executable::tests::symlink_to_proc_magic_link_uses_the_deleted_inode_and_preserves_permissions ... ok
+test inotify::tests::denied_operations_do_not_emit_events_and_path_watch_lifetime ... ok
+test events::tests::unsupported_epoll_modes_leave_registrations_unchanged ... ok
+test executable::tests::anonymous_exec_reference_survives_last_fd_close_and_retains_ram_accounting ... ok
+test inotify::tests::unlinked_open_description_and_excl_unlink ... ok
+test ipc::named_tests::socket_lookup_follows_inode_links_and_permission_checks ... ok
+test ipc::native::tests::clipboard_pipe_relays_preserve_bytes_backpressure_and_eof ... ok
+test ipc::named_tests::accept_fd_exhaustion_retains_pending_connection ... ok
+test ipc::waitall_tests::fragmented_waitall_preserves_prefix_and_nonblocking_and_eof_return_short_reads ... ok
+test events::tests::timer_expirations_accumulate_and_disarm_clears_pending ... ok
+test kernel_log::tests::independent_readers_dup_clear_and_user_permissions ... ok
+test linux_namespace::tests::chroot_clamps_dotdot_and_absolute_links_but_preserves_open_dirfds ... ok
+test linux_namespace::tests::clone_shares_names_until_unshare_and_checks_privilege ... ok
+test linux_namespace::tests::ipc_namespace_mqueue_identity_and_pinned_mounts_are_independent ... ok
+test inotify::tests::overflow_coalescing_and_new_edges_after_drain ... ok
+test ipc::native::tests::guest_unix_stream_reaches_the_native_wayland_server_with_standard_wire_messages ... ok
+test linux_namespace::tests::isolated_network_has_private_ports_abstract_names_and_retains_old_fds ... ok
+test linux_namespace::tests::namespace_quota_is_released_with_last_object_reference ... ok
+test linux_namespace::tests::namespace_fd_pins_identity_across_unshare_and_setns ... ok
+test linux_namespace::tests::root_network_handle_binds_pins_and_reenters_without_creating_isolation ... ok
+test linux_namespace::tests::private_cgroup_namespace_rebases_proc_and_new_mount_without_moving_tasks ... ok
+test linux_namespace::tests::network_sysctls_pin_their_namespace_and_change_actual_ping_policy ... ok
+test locks::tests::backward_ranges_readers_and_overflow_are_checked ... ok
+test mapped::tests::mapped_code_aliases_and_fd_writes_change_decoder_tokens ... ok
+test mapped::tests::alias_fd_io_cow_truncate_permissions_and_unlinked_lifetime ... ok
+test mapped::tests::memfd_native_views_share_guest_pages_and_keep_physical_budget_until_last_lease ... ok
+test mapped::tests::direct_file_borrows_dirty_writeback_alias_tokens_and_live_eof ... ok
+test mapped::tests::read_only_shared_mapping_cannot_gain_write_access ... ok
+test mapped::tests::parallel_readonly_alias_dirty_fragments_private_refresh_and_live_eof ... ok
+test memfd::allocation_tests::allocation_preserves_bytes_position_and_shared_quota ... ok
+test mounts::boundary_tests::docker_tmpfs_size_is_lazy_and_strictatime_overrides_relatime ... ok
+test mounts::boundary_tests::detached_subtree_remains_traversable_and_releases_its_quota ... ok
+test mounts::boundary_tests::empty_mqueue_mounts_share_identity_without_creatable_regular_files ... ok
+test mounts::boundary_tests::mountinfo_is_relative_to_chroot_and_escapes_field_bytes ... ok
+test memfd::allocation_tests::foot_sparse_pool_probe_falls_back_without_charging_512_mib ... ok
+test mounts::boundary_tests::namespace_limit_failure_is_atomic_and_recoverable ... ok
+test kernel_log::tests::bounded_log_overrun_stream_progress_and_rate_limit ... ok
+test mounts::boundary_tests::noexec_mapping_rejects_later_mprotect_without_changing_other_pages ... ok
+test mounts::boundary_tests::retained_directory_exec_is_valid_outside_the_new_root ... ok
+test mounts::boundary_tests::tmpfs_directory_links_and_hardlink_outside_bind_do_not_confuse_paths ... ok
+test mounts::tests::bind_remount_accepts_rec_without_changing_nested_or_source_mounts ... ok
+test mounts::tests::bind_identity_readonly_and_inode_updates ... ok
+test mounts::tests::shared_mapping_pins_mount_and_blocks_readonly_remount ... ok
+test mounts::tests::recursive_bind_preserves_nested_tmpfs_and_pivot_root ... ok
+test mounts::tests::tmpfs_quota_hardlinks_rename_and_lazy_unmount_keep_fd ... ok
+test mounts::tests::unshare_mount_table_and_namespace_fd_lifetime ... ok
+test network::tests::bridge_sysctls_are_namespace_pinned_and_authorized ... ok
+test network::tests::native_and_virtual_epollet_wake_after_drain_and_new_arrival ... ok
+test network::tests::splice_preserves_bytes_under_backpressure_and_stream_half_close ... ok
+test oom::tests::privilege_floor_fork_sharing_and_invalid_writes_are_atomic ... ok
+test oom::tests::proc_control_checks_dac_mount_and_retains_only_weak_task_identity ... ok
+test network::tests::forwarding_controls_pin_namespace_recheck_authority_and_validate_values ... ok
+test oom::tests::task_paths_use_thread_credentials_and_thread_lifetime ... ok
+test overlay::tests::committed_lower_whiteouts_and_hardlinks_survive_another_upper ... ok
+test overlay::tests::copy_up_quota_failure_and_readonly_permissions_do_not_change_lower ... ok
+test network::tests::fork_dup_cloexec_and_quota_follow_socket_lifetime ... ok
+test overlay::tests::failed_manifest_commit_rolls_back_whiteout_and_visible_namespace ... ok
+test overlay::tests::lazy_detach_releases_upper_lease_after_last_file_reference ... ok
+test overlay::tests::disk_reopen_persists_copy_up_whiteout_metadata_and_opaque ... ok
+test overlay::tests::merged_layers_copy_up_and_old_descriptions_keep_lower ... ok
+test overlay::tests::metadata_hardlinks_rename_and_open_unlink ... ok
+test overlay::tests::read_and_copy_up_notify_the_merged_inode_and_parent ... ok
+test overlay::tests::proc_reopens_select_current_layer_but_dup_keeps_original_data ... ok
+test overlay::tests::readonly_leases_options_and_layer_type_conflicts ... ok
+test overlay::tests::truncating_lower_file_needs_no_space_for_discarded_data ... ok
+test overlay::tests::whiteouts_opaque_recreation_symlinks_and_remount ... ok
+test network::tests::packet_info_is_per_datagram_and_source_selection_is_real ... ok
+test overlay::tests::userxattr_whiteouts_and_opaque_are_selected_by_mount_option ... ok
+test overlay::tests::upper_directory_rename_namespace_copy_and_readonly_remount ... ok
+test overlay::tests::writable_mapping_changes_only_upper_and_read_mapping_retains_lower ... ok
+test pid_namespace::tests::dead_namespace_allocation_does_not_consume_ancestor_ids ... ok
+test pid_namespace::tests::ancestor_ids_survive_group_leaders_but_siblings_are_invisible ... ok
+test permission_tests::directory_mutations_require_parent_write_and_import_uses_canonical_path ... ok
+test pid_namespace::tests::depth_and_live_namespace_quotas_release_without_unbounded_registry_growth ... ok
+test process_tests::dup_and_fork_share_status_flags_but_cloexec_is_per_descriptor ... ok
+test process_tests::failed_dup3_does_not_close_the_target ... ok
+test process_tests::fork_shares_storage_and_open_position_but_not_descriptor_table ... ok
+test process_tests::pipe_eof_waits_for_last_shared_writer_and_broken_pipe_for_last_reader ... ok
+test process_tests::pipe_small_writes_are_atomic_under_backpressure ... ok
+test process_tests::unlink_keeps_open_file_and_quota_until_last_close ... ok
+test pseudo::proc_probe_tests::proc_probe_follows_aliases_cwd_and_dirfd_even_for_missing_processes ... ok
+test pseudo::tests::common_devices_and_cross_process_privacy_have_real_behavior ... ok
+test pseudo::tests::fd_magic_links_keep_deleted_inodes_and_pipe_identity ... ok
+test pseudo::tests::directory_links_and_mount_identity_match_live_namespace ... ok
+test pseudo::tests::device_directory_enumerates_only_available_embedding_devices ... ok
+test pseudo::tests::logical_block_identity_agrees_across_mounts_stat_and_sysfs ... ok
+test pseudo::tests::proc_readlink_empty_path_retains_symlink_inode_and_refreshes_fd_target ... ok
+test pseudo::tests::proc_root_inode_matches_linux_across_paths_fds_and_bind_mounts ... ok
+test pseudo::tests::proc_route_uses_guest_little_endian_addresses_for_native_and_bridge_rows ... ok
+test pseudo::tests::proc_setgroups_reports_initial_user_namespace_policy ... ok
+test pty::tests::devpts_linux_inode_identity_survives_bind_and_path_handles ... ok
+test pty::tests::bind_clone_and_detached_master_retain_their_devpts_instance ... ok
+test pseudo::tests::process_views_are_live_readonly_and_outside_storage_quota ... ok
+test pseudo::tests::proc_sysctl_path_fd_reopens_with_truncation_and_keeps_network_namespace ... ok
+test pty::tests::independent_devpts_reuses_local_numbers_but_not_terminal_identity ... ok
+test pty::tests::devpts_proc_path_reopen_allocates_a_fresh_master_and_opens_slave ... ok
+test storage_tests::bridge_device_is_volatile_nonseekable_and_shared_by_dup ... ok
+test storage_tests::device_creation_failure_rolls_back_and_unprivileged_cannot_create ... ok
+test storage_tests::corrupt_manifest_is_rejected_without_deleting_objects ... ok
+test storage_tests::corrupt_device_payloads_are_rejected_before_storage_recovery ... ok
+test storage_tests::direct_native_mapped_writes_survive_disk_sync_unmap_and_reopen ... ok
+test storage_tests::device_nodes_persist_numbers_links_and_driver_behavior ... ok
+test storage_tests::disk_store_lock_lasts_until_the_last_process_clone_is_dropped ... ok
+test storage_tests::disk_fork_and_unlink_keep_shared_offsets_and_account_open_files ... ok
+test storage_tests::emit_file_provider_manifest_fixture ... ignored, emits the independent iOS File Provider manifest fixture
+test storage_tests::explicit_reset_refuses_live_stores_and_clears_unsupported_metadata ... ok
+test storage_tests::fifo_inode_persists_but_live_channel_does_not ... ok
+test storage_tests::failed_namespace_commit_rolls_back_create_alias_rename_chmod_and_unlink ... ok
+test storage_tests::flock_is_shared_by_dup_fork_and_released_by_last_close ... ok
+test storage_tests::inode_attributes_bound_metadata_and_reject_unimplemented_security_policy ... ok
+test storage_tests::inode_attributes_persist_share_hardlinks_and_rollback_failed_commits ... ok
+test storage_tests::named_socket_inodes_reopen_as_stale_endpoints ... ok
+test storage_tests::ownership_sticky_modes_and_symlink_ownership_survive_reopening ... ok
+test storage_tests::pseudo_views_do_not_enter_the_manifest_or_consume_disk_quota ... ok
+test storage_tests::recorded_limits_and_writable_usr_survive_reopen ... ok
+test storage_tests::recover_removes_only_validated_orphan_objects_and_abandoned_manifest ... ok
+test storage_tests::reopen_restores_byte_paths_hard_links_modes_times_and_bytes ... ok
+test storage_tests::reopened_inode_watches_keep_parent_identity_and_failed_transactions_are_silent ... ok
+test storage_tests::repeated_host_import_is_atomic_preserves_open_inode_and_survives_cancel ... ok
+test storage_tests::replacing_executable_updates_aliases_but_open_descriptions_keep_old_data ... ok
+test storage_tests::setgid_inheritance_and_setid_bits_follow_guest_ownership ... ok
+test storage_tests::sparse_16_gib_file_exhausts_logical_quota_without_a_large_buffer ... ok
+test storage_tests::symlinked_private_objects_and_dangling_lock_are_rejected ... ok
+test storage_tests::subtree_rename_updates_other_process_cwd_and_open_dirfd ... ok
+test storage_tests::symlinks_persist_resolve_relative_and_do_not_follow_on_unlink ... ok
+test storage_tests::version_three_manifest_reopens_without_attributes_and_upgrades_on_write ... ok
+test storage_tests::unsupported_manifest_versions_are_rejected_without_deleting_data ... ok
+test storage_tests::volume_snapshots_bound_growth_and_refresh_independently_of_budget ... ok
+test terminal::boundary_tests::raw_minimum_and_software_flow_control ... ok
+test terminal::echo_tests::repeated_erases_cannot_grow_echo_past_the_budget ... ok
+test terminal::tests::canonical_lines_erase_eof_and_control_signals ... ok
+test terminal::boundary_tests::empty_eof_records_consume_capacity_and_read_frees_it ... ok
+test terminal::tests::output_backpressure_preserves_a_complete_translated_character ... ok
+test terminal::tests::raw_input_and_output_translation ... ok
+test tests::append_null_and_storage_limit ... ok
+test tests::directory_entries_are_aligned_and_continue_after_small_buffers ... ok
+test tests::directory_search_permissions_and_zero_length_writes ... ok
+test tests::open_read_seek_write_and_fd_reuse ... ok
+test tests::paths_cannot_escape_root_or_traverse_regular_files ... ok
+test tests::reverse_path_hint_cannot_escape_a_bind_root_through_a_hardlink ... ok
+test tests::reverse_path_hint_validates_rename_unlink_and_replacement_inode ... ok
+test storage_tests::stream_import_export_uses_bounded_chunks_and_rejects_over_budget ... ok
+test tests::imports_do_not_leave_partial_directories_at_the_node_limit ... ok
+test storage_tests::closed_inodes_do_not_retain_native_file_descriptors ... ok
+
+test result: ok. 152 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.46s
+
+   Doc-tests trames_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests trames_vfs
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

@@ -14,6 +14,54 @@ defaults:
   run:
     shell: bash
 jobs:
+  runtime-fastpaths-apple:
+    needs: scope
+    if: needs.scope.outputs.native_scope == 'runtime-fastpaths'
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      CARGO_PROFILE_RELEASE_DEBUG: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+      - name: Validate affected Apple VFS and scheduler modules
+        run: |
+          uname -m
+          sysctl hw.pagesize
+          cargo test -p trames-vfs -p trames-core --locked
+      - name: Build original release baseline and candidate session libraries
+        run: |
+          git worktree add --detach target/fastpaths-baseline-source b25feb43ba019850511b440af34e9595f1b2e97c
+          cargo build -p trames-cli -p trames-ffi --release --locked --manifest-path target/fastpaths-baseline-source/Cargo.toml --target-dir target/fastpaths-baseline
+          cargo build -p trames-cli -p trames-ffi --release --locked --target-dir target/fastpaths-candidate
+      - name: Prepare one identical original guest CoreMark input
+        run: python3 tests/performance/prepare-coremark.py --runner target/fastpaths-baseline/release/trames-run --output target/fastpaths-coremark-inputs
+      - name: Measure paired production session throughput with native host page granularity
+        run: |
+          python3 tests/performance/session-coremark.py --library target/fastpaths-baseline/release/libtrames_ffi.dylib --store target/fastpaths-coremark-inputs/store --output target/fastpaths-results/before-1
+          python3 tests/performance/session-coremark.py --library target/fastpaths-candidate/release/libtrames_ffi.dylib --store target/fastpaths-coremark-inputs/store --output target/fastpaths-results/after-1
+          python3 tests/performance/session-coremark.py --library target/fastpaths-candidate/release/libtrames_ffi.dylib --store target/fastpaths-coremark-inputs/store --output target/fastpaths-results/after-2
+          python3 tests/performance/session-coremark.py --library target/fastpaths-baseline/release/libtrames_ffi.dylib --store target/fastpaths-coremark-inputs/store --output target/fastpaths-results/before-2
+      - name: Validate production multiple-terminal control after timing
+        env:
+          TRAMES_FFI_LIB: ${{ github.workspace }}/target/fastpaths-candidate/release/libtrames_ffi.dylib
+        run: python3 tests/integration/multiple-terminals.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: runtime-fastpaths-apple-evidence
+          path: |
+            target/fastpaths-results/
+            target/fastpaths-coremark-inputs/inputs.json
+            target/fastpaths-coremark-inputs/install.log
+            target/fastpaths-coremark-inputs/compile.log
+            target/fastpaths-coremark-inputs/coremark-alpine
+          if-no-files-found: warn
+          retention-days: 14
   docker-default-apple:
     needs: scope
     if: needs.scope.outputs.native_scope == 'docker-default'
@@ -209,7 +257,7 @@ jobs:
           retention-days: 14
   apple-build:
     needs: [scope, guest-musl, memory-abi]
-    if: ${{ !cancelled() && needs.scope.outputs.native_scope != 'docker-default' && needs.scope.outputs.native_scope != 'docker-default-lifecycle' && needs.scope.outputs.native_scope != 'container-isolation' && needs.scope.outputs.native_scope != 'container-network' && needs.scope.outputs.native_scope != 'container-storage' && needs.scope.outputs.repackage_run == '' && needs.scope.result == 'success' && (needs.scope.outputs.frontend_only == 'true' || needs.scope.outputs.targeted == 'true' || (needs.guest-musl.result == 'success' && needs.memory-abi.result == 'success')) }}
+    if: ${{ !cancelled() && needs.scope.outputs.native_scope != 'runtime-fastpaths' && needs.scope.outputs.native_scope != 'docker-default' && needs.scope.outputs.native_scope != 'docker-default-lifecycle' && needs.scope.outputs.native_scope != 'container-isolation' && needs.scope.outputs.native_scope != 'container-network' && needs.scope.outputs.native_scope != 'container-storage' && needs.scope.outputs.repackage_run == '' && needs.scope.result == 'success' && (needs.scope.outputs.frontend_only == 'true' || needs.scope.outputs.targeted == 'true' || (needs.guest-musl.result == 'success' && needs.memory-abi.result == 'success')) }}
     runs-on: macos-15
     timeout-minutes: 40
     steps:

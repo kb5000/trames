@@ -374,6 +374,22 @@ def main():
                         if remount_retry:
                             output.write('docker_default_remount=true\n')
                     return
+                if plan.get('native_scope') == 'runtime-fastpaths':
+                    allowed = {'crates/trames-core/src/process.rs', 'crates/trames-vfs/src/lib.rs',
+                               'crates/trames-vfs/src/mounts.rs', 'crates/trames-vfs/src/directory.rs',
+                               'crates/trames-vfs/src/storage.rs', 'crates/trames-vfs/src/pseudo.rs',
+                               'crates/trames-vfs/src/overlay.rs', 'crates/trames-vfs/src/pty.rs',
+                               'crates/trames-vfs/src/memfd.rs', 'crates/trames-vfs/src/cgroup.rs',
+                               'crates/trames-vfs/src/ipc/native.rs', 'scripts/ios-ci-scope.py',
+                               '.github/workflows/ios.yml', '.github/workflows/linux.yml',
+                               'tests/performance/session-coremark.py', 'tests/performance/prepare-coremark.py'}
+                    if any(p not in allowed and not p.startswith('docs/') for p in changed):
+                        raise RuntimeError('Runtime fastpath plan includes unrelated source changes')
+                    print('VFS path lookup and solo scheduling: affected Core/VFS tests, production multi-terminal ABI, paired original CoreMark on Apple host. Reuse unchanged CPU/MMU/network/GPU/UI acceptance; no IPA.')
+                    with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+                        output.write('frontend_only=false\ntargeted=true\nnative_scope=runtime-fastpaths\n')
+                        output.write('skip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
+                    return
                 if plan.get('device_build'):
                     outputs = device_build_outputs(plan, repo, dict(request.headers))
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:

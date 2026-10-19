@@ -1,26 +1,29 @@
 {
-  "base_sha": "42a6864698e23e6833ab17ca5415541f5fc4462a",
-  "native_scope": "device-metadata",
-  "device_build": {
-    "frontend": {
-      "sha": "aa4528166c8d0cdb04f3fe540730d9af63ed7f07",
-      "run": 39062598012
-    },
-    "guest": {
-      "sha": "534e223e284df48f207500e84ab4cd05dd3d3958",
-      "run": 39015795319
-    },
-    "metadata_repackage": {
-      "sha": "d1d0185073230919496567223520594f1f83df7d",
-      "run": 39147131590
-    }
-  },
-  "reason": "Published v1.1.0/tag and six public assets verified; four issue closures recorded [skip ci]. Documentation only, no repeated checks or tag movement.",
+  "base_sha": "975027eb65643ecfb5ae1d75b07a2e1be1d29c84",
+  "native_scope": "runtime-fastpaths",
+  "reason": "Measured VFS reverse-path scan and directory subtree skip plus bounded solo scheduling. Run affected Linux/Apple Core+VFS, production session lifecycle and paired ARM64-host CoreMark; reuse unchanged ISA/memory/network/GPU/UI acceptance, no IPA.",
   "changed_file_sha256": {
-    "README.md": "9ffa094c800c5fffe4babee045bdf8f8a695b81d1f6cf2e8ae17616bf571f9a7",
-    "docs/validation/release-1.1.json": "b4ef79ea8f44d1f33b0eb067a5caaaba0290c9d91ad0d9079ba8e4c808ee659a",
-    "docs/validation/release-1.1.md": "23249f21860a5cd8999ae8ca596d36d45f560b232fbd7e8dcbd4ac9923a76932",
-    "scripts/ios-ci-scope.py": "875e9036a40b8ebb3974a97f274a138668bebcdd27a4c052ef1b170de00205fc",
-    "scripts/publish-ios-release-1.1.py": "2dc38fe91458f6c356e1045472ecec773dabed1c740ce424719387ef512185ca"
+    ".github/workflows/ios.yml": "71198bb2b07a9500795ccfd7983d4529d04a06e65c54cf4d5078ffdbc939df40",
+    ".github/workflows/linux.yml": "b15d65c75a3b669d6e55d47b9426dab474367436f910b17fa8889b473b6547f8",
+    "crates/trames-core/src/process.rs": "fe38d6d9a875676ad0369a2607be704287b5f5bc6f5b8120c9ce43100e49593e",
+    "crates/trames-vfs/src/cgroup.rs": "467ea8b54f7a01e4d7e89d08b1fcf8a125683e2631c1e45e1699ad089bd7c093",
+    "crates/trames-vfs/src/directory.rs": "faa2e018d3a0e2be9c9ccabd281e64234836e4e65206d31d663fb98e123a7b99",
+    "crates/trames-vfs/src/ipc/native.rs": "b8f77e2df92a60bf0a31374306387a85b4de980ba03dced7baef120b4478ce8d",
+    "crates/trames-vfs/src/lib.rs": "320794fb3ebf9ddea9971f1c341925dbe1c2b1d9690b2824d67ab466fa6733d5",
+    "crates/trames-vfs/src/memfd.rs": "3265719efbd4a480d7583868350aa9b59b0b4e7affa3ac87d62eb6b70ec24a4d",
+    "crates/trames-vfs/src/mounts.rs": "155de29427eaadf2f062ed09ebaff5b491b3597ce69dd7e6a167d4f1b4c63c0f",
+    "crates/trames-vfs/src/overlay.rs": "ef29a29222cbc2d35040ebaef2e57399be5ed151aa55d7613057e9d0cda6723e",
+    "crates/trames-vfs/src/pseudo.rs": "be66418f82a2f3d2ca47696b99157cebc434a1dbdfd7e6186dfae7650a8cea3c",
+    "crates/trames-vfs/src/pty.rs": "b948b4be30242062ff3ec557484c8cb6e8557b0363237e40950b98c97efc62ae",
+    "crates/trames-vfs/src/storage.rs": "712d66b811a20433c2fb0f7cc49387c124f1b83e078dd4e73d3ca54fbe20f9c5",
+    "docs/validation/runtime-fastpaths.md": "8b80e0cb05c7f984084eb789a65623cc0fd73bc310a912e95d28ae7f4439de51",
+    "docs/validation/runtime-fastpaths/clippy-linux.log": "d414d093cec7dda712b745513f1bd042fb64bab1839b3b917af94f94cc30474c",
+    "docs/validation/runtime-fastpaths/docker-before-profile.json": "2621451ff150dbe6e3c5e1d1b332befb300d104adb5ab2bf8203c555745b0186",
+    "docs/validation/runtime-fastpaths/docker-before.json": "0e273619a481a8a559c3f33b71a90fefad4ecb6cd1b2c130179bae1e5efa2348",
+    "docs/validation/runtime-fastpaths/docker-path-cache.json": "db7eb8a61e7416818d9fc2850074f5da609f1157a3b92573f12e4de2b5b3e8a2",
+    "docs/validation/runtime-fastpaths/tests-linux.log": "f86de1a45699b4564ce0f1bbf2d6066f5554c790c1f76cf5ce0157144b69604c",
+    "scripts/ios-ci-scope.py": "e759e49ca897e971114c908525a74c89b327b880255e53e568206c1d64bb05eb",
+    "tests/performance/prepare-coremark.py": "b76650b7e0cbc1e25d726b0ace2b37d521a4e8783fa96583732f9fb9e27bc9ed",
+    "tests/performance/session-coremark.py": "ea2a0a65cc09dee9a6f6d4154d831f14c28e120c958ce33b59b15598b70213d1"
   }
 }
