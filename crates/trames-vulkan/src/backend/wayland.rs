@@ -359,10 +359,16 @@ impl NativeImage {
         let index = (0..types.memory_type_count)
             .filter(|i| requirements.memory_type_bits & (1 << i) != 0)
             .max_by_key(|&i| {
-                u8::from(
-                    types.memory_types[i as usize]
-                        .property_flags
-                        .contains(vk::MemoryPropertyFlags::DEVICE_LOCAL),
+                let flags = types.memory_types[i as usize].property_flags;
+                // Producer, compositor and retained frame leases all use this
+                // image on the GPU. Prefer private device memory over equally
+                // local host-visible memory: the latter makes MoltenVK upload
+                // undefined initial bytes during bind and crashes Paravirtual
+                // Metal's replaceRegion path. UMA drivers may report every
+                // memory type as DEVICE_LOCAL, so that flag alone is insufficient.
+                (
+                    flags.contains(vk::MemoryPropertyFlags::DEVICE_LOCAL),
+                    !flags.contains(vk::MemoryPropertyFlags::HOST_VISIBLE),
                 )
             });
         let Some(index) = index else {

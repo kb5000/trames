@@ -75,7 +75,7 @@ jobs:
             cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
             cargo test -p trames-vulkan --lib --locked
           fi
-          cargo clippy -p trames-distro -p trames-ffi --all-targets --locked -- -D warnings
+          cargo clippy -p trames-distro -p trames-ffi --all-targets --no-deps --locked -- -D warnings
           cargo test -p trames-distro vulkan --locked
           cargo build -p trames-cli -p trames-ffi --release --locked
           python3 -m py_compile scripts/prepare-zink-guest.py scripts/prepare-zink-native-bundle.py tests/integration/zink-wayland.py
