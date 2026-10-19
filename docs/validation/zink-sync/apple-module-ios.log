@@ -1,0 +1,220 @@
+2026-10-19T08:19:13.8081080Z ##[group]Run cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
+2026-10-19T08:19:13.8081600Z [36;1mcargo clippy -p trames-vulkan --all-targets --locked -- -D warnings[0m
+2026-10-19T08:19:13.8081990Z [36;1mcargo test -p trames-vulkan --lib --locked[0m
+2026-10-19T08:19:13.8082420Z [36;1mcargo check -p trames-ffi --target aarch64-apple-ios --locked[0m
+2026-10-19T08:19:13.8120770Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-19T08:19:13.8121140Z env:
+2026-10-19T08:19:13.8121330Z   CARGO_HOME: /Users/runner/.cargo
+2026-10-19T08:19:13.8121550Z   CARGO_INCREMENTAL: 0
+2026-10-19T08:19:13.8121750Z   CARGO_TERM_COLOR: always
+2026-10-19T08:19:13.8122240Z ##[endgroup]
+2026-10-19T08:19:13.9169980Z info: syncing channel updates for nightly-2026-10-16-aarch64-apple-darwin
+2026-10-19T08:19:14.0883640Z info: latest update on 2026-10-16 for version 1.101.0-nightly (4ebd25825 2026-10-15)
+2026-10-19T08:19:14.1013400Z info: downloading component clippy
+2026-10-19T08:19:15.0753070Z [1m[92m    Updating[0m crates.io index
+2026-10-19T08:19:15.3939640Z [1m[92m Downloading[0m crates ...
+2026-10-19T08:19:15.4592080Z [1m[92m  Downloaded[0m shlex v2.0.1
+2026-10-19T08:19:15.4652580Z [1m[92m  Downloaded[0m errno v0.3.14
+2026-10-19T08:19:15.4771210Z [1m[92m  Downloaded[0m cfg-if v1.0.5
+2026-10-19T08:19:15.4840960Z [1m[92m  Downloaded[0m downcast-rs v1.2.1
+2026-10-19T08:19:15.4874330Z [1m[92m  Downloaded[0m pkg-config v0.3.34
+2026-10-19T08:19:15.4908290Z [1m[92m  Downloaded[0m wayland-sys v0.31.11
+2026-10-19T08:19:15.4959930Z [1m[92m  Downloaded[0m libloading v0.8.9
+2026-10-19T08:19:15.5084260Z [1m[92m  Downloaded[0m find-msvc-tools v0.1.14
+2026-10-19T08:19:15.5125990Z [1m[92m  Downloaded[0m wayland-scanner v0.31.11
+2026-10-19T08:19:15.5174680Z [1m[92m  Downloaded[0m quote v1.0.47
+2026-10-19T08:19:15.5224090Z [1m[92m  Downloaded[0m smallvec v1.16.3
+2026-10-19T08:19:15.5252730Z [1m[92m  Downloaded[0m unicode-ident v1.0.26
+2026-10-19T08:19:15.5303120Z [1m[92m  Downloaded[0m bitflags v2.13.2
+2026-10-19T08:19:15.5391930Z [1m[92m  Downloaded[0m wayland-protocols v0.32.13
+2026-10-19T08:19:15.5577320Z [1m[92m  Downloaded[0m wayland-server v0.31.14
+2026-10-19T08:19:15.5608060Z [1m[92m  Downloaded[0m memchr v2.8.3
+2026-10-19T08:19:15.5724230Z [1m[92m  Downloaded[0m proc-macro2 v1.0.107
+2026-10-19T08:19:15.5780280Z [1m[92m  Downloaded[0m cc v1.8.0
+2026-10-19T08:19:15.5867170Z [1m[92m  Downloaded[0m quick-xml v0.41.0
+2026-10-19T08:19:15.5980600Z [1m[92m  Downloaded[0m rustix v1.1.5
+2026-10-19T08:19:15.6554880Z [1m[92m  Downloaded[0m ash v0.38.0+1.3.281
+2026-10-19T08:19:15.6812830Z [1m[92m  Downloaded[0m libc v0.2.190
+2026-10-19T08:19:15.8186780Z [1m[92m   Compiling[0m libc v0.2.190
+2026-10-19T08:19:15.8188110Z [1m[92m   Compiling[0m find-msvc-tools v0.1.14
+2026-10-19T08:19:15.8189000Z [1m[92m   Compiling[0m proc-macro2 v1.0.107
+2026-10-19T08:19:16.3173460Z [1m[92m   Compiling[0m pkg-config v0.3.34
+2026-10-19T08:19:16.7828650Z [1m[92m   Compiling[0m rustix v1.1.5
+2026-10-19T08:19:19.6267590Z [1m[92m   Compiling[0m shlex v2.0.1
+2026-10-19T08:19:19.7300320Z [1m[92m   Compiling[0m cc v1.8.0
+2026-10-19T08:19:19.7587760Z [1m[92m   Compiling[0m wayland-sys v0.31.11
+2026-10-19T08:19:19.9086760Z [1m[92m    Checking[0m bitflags v2.13.2
+2026-10-19T08:19:20.0002120Z [1m[92m   Compiling[0m unicode-ident v1.0.26
+2026-10-19T08:19:20.0511390Z [1m[92m   Compiling[0m quote v1.0.47
+2026-10-19T08:19:20.1993870Z [1m[92m    Checking[0m errno v0.3.14
+2026-10-19T08:19:20.6170330Z [1m[92m   Compiling[0m memchr v2.8.3
+2026-10-19T08:19:20.9542970Z [1m[92m   Compiling[0m wayland-backend v0.3.17 (/Users/runner/work/trames/trames/vendor/wayland-backend)
+2026-10-19T08:19:20.9659040Z [1m[92m   Compiling[0m quick-xml v0.41.0
+2026-10-19T08:19:21.3055480Z [1m[92m    Checking[0m downcast-rs v1.2.1
+2026-10-19T08:19:21.3514730Z [1m[92m    Checking[0m smallvec v1.16.3
+2026-10-19T08:19:21.4673960Z [1m[92m   Compiling[0m ash v0.38.0+1.3.281
+2026-10-19T08:19:21.5852720Z [1m[92m    Checking[0m cfg-if v1.0.5
+2026-10-19T08:19:21.6120990Z [1m[92m    Checking[0m libloading v0.8.9
+2026-10-19T08:19:21.6961980Z [1m[92m    Checking[0m trames-shared v1.1.0 (/Users/runner/work/trames/trames/crates/trames-shared)
+2026-10-19T08:19:21.7114950Z [1m[92m   Compiling[0m wayland-scanner v0.31.11
+2026-10-19T08:19:21.9136330Z [1m[92m   Compiling[0m trames-vulkan v1.1.0 (/Users/runner/work/trames/trames/crates/trames-vulkan)
+2026-10-19T08:19:22.1213320Z [1m[92m    Checking[0m trames-memory v1.1.0 (/Users/runner/work/trames/trames/crates/trames-memory)
+2026-10-19T08:19:22.7475880Z [1m[92m    Checking[0m wayland-server v0.31.14
+2026-10-19T08:19:23.5385030Z [1m[92m    Checking[0m wayland-protocols v0.32.13
+2026-10-19T08:19:26.5274940Z [1m[92m    Checking[0m trames-wayland v1.1.0 (/Users/runner/work/trames/trames/crates/trames-wayland)
+2026-10-19T08:19:30.3242630Z [1m[92m    Finished[0m `dev` profile [unoptimized + debuginfo] target(s) in 15.37s
+2026-10-19T08:19:30.5484600Z [1m[92m   Compiling[0m libc v0.2.190
+2026-10-19T08:19:30.5506290Z [1m[92m   Compiling[0m bitflags v2.13.2
+2026-10-19T08:19:30.5528680Z [1m[92m   Compiling[0m wayland-sys v0.31.11
+2026-10-19T08:19:30.6165600Z [1m[92m   Compiling[0m downcast-rs v1.2.1
+2026-10-19T08:19:30.6606570Z [1m[92m   Compiling[0m smallvec v1.16.3
+2026-10-19T08:19:30.7229090Z [1m[92m   Compiling[0m cfg-if v1.0.5
+2026-10-19T08:19:30.7535510Z [1m[92m   Compiling[0m libloading v0.8.9
+2026-10-19T08:19:30.8065900Z [1m[92m   Compiling[0m trames-vulkan v1.1.0 (/Users/runner/work/trames/trames/crates/trames-vulkan)
+2026-10-19T08:19:30.8759970Z [1m[92m   Compiling[0m ash v0.38.0+1.3.281
+2026-10-19T08:19:31.1767990Z [1m[92m   Compiling[0m errno v0.3.14
+2026-10-19T08:19:31.2971700Z [1m[92m   Compiling[0m rustix v1.1.5
+2026-10-19T08:19:31.2980630Z [1m[92m   Compiling[0m trames-memory v1.1.0 (/Users/runner/work/trames/trames/crates/trames-memory)
+2026-10-19T08:19:33.4068690Z [1m[92m   Compiling[0m wayland-backend v0.3.17 (/Users/runner/work/trames/trames/vendor/wayland-backend)
+2026-10-19T08:19:33.4371620Z [1m[92m   Compiling[0m trames-shared v1.1.0 (/Users/runner/work/trames/trames/crates/trames-shared)
+2026-10-19T08:19:33.9416170Z [1m[92m   Compiling[0m wayland-server v0.31.14
+2026-10-19T08:19:34.6143580Z [1m[92m   Compiling[0m wayland-protocols v0.32.13
+2026-10-19T08:19:37.5968630Z [1m[92m   Compiling[0m trames-wayland v1.1.0 (/Users/runner/work/trames/trames/crates/trames-wayland)
+2026-10-19T08:19:43.0384850Z [1m[92m    Finished[0m `test` profile [unoptimized + debuginfo] target(s) in 12.62s
+2026-10-19T08:19:43.0428970Z [1m[92m     Running[0m unittests src/lib.rs (target/debug/build/trames-vulkan/9422eb90ce9029f5/out/trames_vulkan-9422eb90ce9029f5)
+2026-10-19T08:19:43.0478110Z 
+2026-10-19T08:19:43.0478360Z running 17 tests
+2026-10-19T08:19:43.0496590Z test backend::coherent::tests::independent_cpu_inputs_and_gpu_outputs_do_not_overwrite_each_other ... ok
+2026-10-19T08:19:43.0497540Z test backend::graphics::tests::copy_checks_padded_rows_offsets_overflow_and_color_subresources ... ok
+2026-10-19T08:19:43.0498330Z test backend::coherent::tests::coherent_tracking_is_charged_and_released_with_the_mapping ... ok
+2026-10-19T08:19:43.0499050Z test backend::graphics::tests::image_profile_reports_only_supported_formats_usages_and_layouts ... ok
+2026-10-19T08:19:43.0499760Z test backend::graphics::tests::maintenance1_negative_viewports_use_native_bounds ... ok
+2026-10-19T08:19:43.0500420Z test backend::tests::specialization_records_keep_offsets_and_reject_overflow_or_duplicate_ids ... ok
+2026-10-19T08:19:43.0501160Z test backend::tests::malformed_transport_cannot_read_guest_memory_or_create_driver_objects ... ok
+2026-10-19T08:19:43.0501820Z test backend::tests::native_transfers_cross_pages_keep_cow_and_preflight_permissions ... ok
+2026-10-19T08:19:43.0511140Z test backend::tests::spirv_debug_names_do_not_change_entrypoints_or_specialization_decorations ... ok
+2026-10-19T08:19:43.0511920Z test backend::tests::unknown_object_domains_and_uninitialized_driver_never_become_host_handles ... ok
+2026-10-19T08:19:43.0513050Z test backend::tests::wait_stages_support_selected_graphics_but_reject_unknown_extension_bits ... ok
+2026-10-19T08:19:43.0513780Z test budget::tests::compiler_capacity_is_shared_and_released_without_a_global_work_lock ... ok
+2026-10-19T08:19:43.0514370Z test budget::tests::independent_contexts_share_budget_without_overcommit_or_lifetime_leak ... ok
+2026-10-19T08:19:43.0515770Z test display::tests::detach_invalidates_generation_but_preserves_in_flight_lease ... ok
+2026-10-19T08:19:43.0516550Z test display::tests::invalid_native_targets_fail_before_objc_access ... ok
+2026-10-19T08:19:43.0526510Z test task::tests::teardown_joins_before_owned_dependency_destruction ... ok
+2026-10-19T08:19:43.0527860Z test task::tests::slow_tasks_do_not_block_the_caller_or_an_unrelated_task ... ok
+2026-10-19T08:19:43.0528790Z 
+2026-10-19T08:19:43.0529430Z test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-10-19T08:19:43.0530380Z 
+2026-10-19T08:19:43.2084730Z [1m[92m Downloading[0m crates ...
+2026-10-19T08:19:43.2630490Z [1m[92m  Downloaded[0m adler2 v2.0.1
+2026-10-19T08:19:43.2690940Z [1m[92m  Downloaded[0m bitflags v1.3.2
+2026-10-19T08:19:43.2813230Z [1m[92m  Downloaded[0m defmt-macros v1.1.1
+2026-10-19T08:19:43.2942290Z [1m[92m  Downloaded[0m digest v0.10.7
+2026-10-19T08:19:43.2996490Z [1m[92m  Downloaded[0m managed v0.8.0
+2026-10-19T08:19:43.3024270Z [1m[92m  Downloaded[0m defmt-parser v1.0.0
+2026-10-19T08:19:43.3047580Z [1m[92m  Downloaded[0m crypto-common v0.1.7
+2026-10-19T08:19:43.3074580Z [1m[92m  Downloaded[0m hash32 v0.3.1
+2026-10-19T08:19:43.3122650Z [1m[92m  Downloaded[0m block-buffer v0.10.4
+2026-10-19T08:19:43.3292090Z [1m[92m  Downloaded[0m cfg_aliases v0.2.2
+2026-10-19T08:19:43.3333880Z [1m[92m  Downloaded[0m defmt v0.3.100
+2026-10-19T08:19:43.3344030Z [1m[92m  Downloaded[0m itoa v1.0.18
+2026-10-19T08:19:43.3386000Z [1m[92m  Downloaded[0m cpufeatures v0.2.17
+2026-10-19T08:19:43.3443540Z [1m[92m  Downloaded[0m version_check v0.9.5
+2026-10-19T08:19:43.3479110Z [1m[92m  Downloaded[0m stable_deref_trait v1.2.1
+2026-10-19T08:19:43.3510170Z [1m[92m  Downloaded[0m generic-array v0.14.7
+2026-10-19T08:19:43.3548760Z [1m[92m  Downloaded[0m sha2 v0.10.9
+2026-10-19T08:19:43.3608620Z [1m[92m  Downloaded[0m thiserror-impl v2.0.21
+2026-10-19T08:19:43.3644830Z [1m[92m  Downloaded[0m simd-adler32 v0.3.10
+2026-10-19T08:19:43.3678590Z [1m[92m  Downloaded[0m thiserror v2.0.21
+2026-10-19T08:19:43.3851230Z [1m[92m  Downloaded[0m zmij v1.0.23
+2026-10-19T08:19:43.3885910Z [1m[92m  Downloaded[0m byteorder v1.5.0
+2026-10-19T08:19:43.3914240Z [1m[92m  Downloaded[0m filetime v0.2.29
+2026-10-19T08:19:43.3949910Z [1m[92m  Downloaded[0m crc32fast v1.5.2
+2026-10-19T08:19:43.3988250Z [1m[92m  Downloaded[0m socket2 v0.6.1
+2026-10-19T08:19:43.4029670Z [1m[92m  Downloaded[0m defmt v1.1.1
+2026-10-19T08:19:43.4173050Z [1m[92m  Downloaded[0m getrandom v0.3.4
+2026-10-19T08:19:43.4232560Z [1m[92m  Downloaded[0m heapless v0.8.0
+2026-10-19T08:19:43.4302750Z [1m[92m  Downloaded[0m serde_derive v1.0.229
+2026-10-19T08:19:43.4367890Z [1m[92m  Downloaded[0m flate2 v1.1.10
+2026-10-19T08:19:43.4494490Z [1m[92m  Downloaded[0m miniz_oxide v0.9.1
+2026-10-19T08:19:43.4535780Z [1m[92m  Downloaded[0m serde v1.0.229
+2026-10-19T08:19:43.4598460Z [1m[92m  Downloaded[0m serde_core v1.0.229
+2026-10-19T08:19:43.4647220Z [1m[92m  Downloaded[0m tar v0.4.46
+2026-10-19T08:19:43.4707660Z [1m[92m  Downloaded[0m typenum v1.20.1
+2026-10-19T08:19:43.4853500Z [1m[92m  Downloaded[0m serde_json v1.0.151
+2026-10-19T08:19:43.5028810Z [1m[92m  Downloaded[0m syn v3.0.7
+2026-10-19T08:19:43.5325680Z [1m[92m  Downloaded[0m syn v2.0.119
+2026-10-19T08:19:43.5526300Z [1m[92m  Downloaded[0m smoltcp v0.12.0
+2026-10-19T08:19:43.5784170Z [1m[92m  Downloaded[0m nix v0.31.3
+2026-10-19T08:19:43.6502060Z [1m[92m   Compiling[0m libc v0.2.190
+2026-10-19T08:19:43.6504560Z [1m[92m    Checking[0m cfg-if v1.0.5
+2026-10-19T08:19:43.6506020Z [1m[92m   Compiling[0m proc-macro2 v1.0.107
+2026-10-19T08:19:43.7443530Z [1m[92m   Compiling[0m quote v1.0.47
+2026-10-19T08:19:44.0756220Z [1m[92m   Compiling[0m unicode-ident v1.0.26
+2026-10-19T08:19:44.1568610Z [1m[92m   Compiling[0m version_check v0.9.5
+2026-10-19T08:19:44.6063390Z [1m[92m    Checking[0m bitflags v2.13.2
+2026-10-19T08:19:45.1084880Z [1m[92m   Compiling[0m generic-array v0.14.7
+2026-10-19T08:19:45.2168230Z [1m[92m   Compiling[0m find-msvc-tools v0.1.14
+2026-10-19T08:19:45.2767010Z [1m[92m   Compiling[0m shlex v2.0.1
+2026-10-19T08:19:45.3572910Z [1m[92m   Compiling[0m pkg-config v0.3.34
+2026-10-19T08:19:45.4428840Z [1m[92m   Compiling[0m rustix v1.1.5
+2026-10-19T08:19:45.4967650Z [1m[92m   Compiling[0m cc v1.8.0
+2026-10-19T08:19:45.8761650Z [1m[92m    Checking[0m errno v0.3.14
+2026-10-19T08:19:45.9453460Z [1m[92m   Compiling[0m wayland-sys v0.31.11
+2026-10-19T08:19:45.9820070Z [1m[92m    Checking[0m typenum v1.20.1
+2026-10-19T08:19:47.4013630Z [1m[92m   Compiling[0m serde_core v1.0.229
+2026-10-19T08:19:47.7034290Z [1m[92m   Compiling[0m memchr v2.8.3
+2026-10-19T08:19:47.7449090Z [1m[92m   Compiling[0m wayland-backend v0.3.17 (/Users/runner/work/trames/trames/vendor/wayland-backend)
+2026-10-19T08:19:47.8200810Z [1m[92m    Checking[0m trames-memory v1.1.0 (/Users/runner/work/trames/trames/crates/trames-memory)
+2026-10-19T08:19:47.9586870Z [1m[92m    Checking[0m downcast-rs v1.2.1
+2026-10-19T08:19:48.0078930Z [1m[92m    Checking[0m smallvec v1.16.3
+2026-10-19T08:19:48.1411940Z [1m[92m   Compiling[0m quick-xml v0.41.0
+2026-10-19T08:19:48.6640330Z [1m[92m    Checking[0m block-buffer v0.10.4
+2026-10-19T08:19:48.7290840Z [1m[92m    Checking[0m crypto-common v0.1.7
+2026-10-19T08:19:48.7855300Z [1m[92m   Compiling[0m syn v3.0.7
+2026-10-19T08:19:49.1453570Z [1m[92m   Compiling[0m wayland-scanner v0.31.11
+2026-10-19T08:19:50.2499540Z [1m[92m   Compiling[0m serde v1.0.229
+2026-10-19T08:19:50.4936260Z [1m[92m   Compiling[0m heapless v0.8.0
+2026-10-19T08:19:50.5997210Z [1m[92m    Checking[0m byteorder v1.5.0
+2026-10-19T08:19:50.7089810Z [1m[92m   Compiling[0m cfg_aliases v0.2.2
+2026-10-19T08:19:50.7239850Z [1m[92m   Compiling[0m zmij v1.0.23
+2026-10-19T08:19:50.7465970Z [1m[92m   Compiling[0m getrandom v0.3.4
+2026-10-19T08:19:50.9149820Z [1m[92m   Compiling[0m trames-native v1.1.0 (/Users/runner/work/trames/trames/crates/trames-native)
+2026-10-19T08:19:51.0605640Z [1m[92m   Compiling[0m nix v0.31.3
+2026-10-19T08:19:51.3377560Z [1m[92m    Checking[0m hash32 v0.3.1
+2026-10-19T08:19:51.4415050Z [1m[92m    Checking[0m wayland-server v0.31.14
+2026-10-19T08:19:51.4462460Z [1m[92m   Compiling[0m serde_derive v1.0.229
+2026-10-19T08:19:52.7010870Z [1m[92m    Checking[0m digest v0.10.7
+2026-10-19T08:19:52.8249430Z [1m[92m    Checking[0m cpufeatures v0.2.17
+2026-10-19T08:19:52.8868880Z [1m[92m    Checking[0m stable_deref_trait v1.2.1
+2026-10-19T08:19:52.9340550Z [1m[92m   Compiling[0m serde_json v1.0.151
+2026-10-19T08:19:53.1268420Z [1m[92m   Compiling[0m smoltcp v0.12.0
+2026-10-19T08:19:53.7712330Z [1m[92m    Checking[0m sha2 v0.10.9
+2026-10-19T08:19:53.8881810Z [1m[92m    Checking[0m wayland-protocols v0.32.13
+2026-10-19T08:19:55.1175430Z [1m[92m    Checking[0m trames-shared v1.1.0 (/Users/runner/work/trames/trames/crates/trames-shared)
+2026-10-19T08:19:55.2334630Z [1m[92m    Checking[0m bitflags v1.3.2
+2026-10-19T08:19:55.3641120Z [1m[92m    Checking[0m managed v0.8.0
+2026-10-19T08:19:55.4848000Z [1m[92m    Checking[0m itoa v1.0.18
+2026-10-19T08:19:56.1580610Z [1m[92m    Checking[0m trames-accel v1.1.0 (/Users/runner/work/trames/trames/crates/trames-accel)
+2026-10-19T08:19:56.6236770Z [1m[92m    Checking[0m socket2 v0.6.1
+2026-10-19T08:19:56.7371300Z [1m[92m    Checking[0m trames-bridge v1.1.0 (/Users/runner/work/trames/trames/crates/trames-bridge)
+2026-10-19T08:19:56.7782180Z [1m[92m    Checking[0m trames-net v1.1.0 (/Users/runner/work/trames/trames/crates/trames-net)
+2026-10-19T08:19:56.8611560Z [1m[92m   Compiling[0m crc32fast v1.5.2
+2026-10-19T08:19:57.1134470Z [1m[92m   Compiling[0m ash v0.38.0+1.3.281
+2026-10-19T08:19:57.2882510Z [1m[92m    Checking[0m libloading v0.8.9
+2026-10-19T08:19:57.3589580Z [1m[92m    Checking[0m adler2 v2.0.1
+2026-10-19T08:19:57.4006030Z [1m[92m    Checking[0m trames-wayland v1.1.0 (/Users/runner/work/trames/trames/crates/trames-wayland)
+2026-10-19T08:19:57.4196130Z [1m[92m   Compiling[0m trames-vulkan v1.1.0 (/Users/runner/work/trames/trames/crates/trames-vulkan)
+2026-10-19T08:19:57.6827530Z [1m[92m    Checking[0m simd-adler32 v0.3.10
+2026-10-19T08:19:57.6981850Z [1m[92m    Checking[0m trames-compute v1.1.0 (/Users/runner/work/trames/trames/crates/trames-compute)
+2026-10-19T08:19:57.7596750Z [1m[92m    Checking[0m miniz_oxide v0.9.1
+2026-10-19T08:19:57.7870740Z [1m[92m    Checking[0m trames-cpu v1.1.0 (/Users/runner/work/trames/trames/crates/trames-cpu)
+2026-10-19T08:19:57.9319860Z [1m[92m    Checking[0m trames-vfs v1.1.0 (/Users/runner/work/trames/trames/crates/trames-vfs)
+2026-10-19T08:19:58.5144480Z [1m[92m    Checking[0m trames-elf v1.1.0 (/Users/runner/work/trames/trames/crates/trames-elf)
+2026-10-19T08:19:58.5719170Z [1m[92m    Checking[0m filetime v0.2.29
+2026-10-19T08:19:58.6220980Z [1m[92m    Checking[0m tar v0.4.46
+2026-10-19T08:19:58.9416930Z [1m[92m    Checking[0m flate2 v1.1.10
+2026-10-19T08:19:59.7787500Z [1m[92m    Checking[0m trames-linux v1.1.0 (/Users/runner/work/trames/trames/crates/trames-linux)
+2026-10-19T08:19:59.7789750Z [1m[92m    Checking[0m trames-distro v1.1.0 (/Users/runner/work/trames/trames/crates/trames-distro)
+2026-10-19T08:20:06.1646740Z [1m[92m    Checking[0m trames-core v1.1.0 (/Users/runner/work/trames/trames/crates/trames-core)
+2026-10-19T08:20:06.6964880Z [1m[92m    Checking[0m trames-ffi v1.1.0 (/Users/runner/work/trames/trames/crates/trames-ffi)
+2026-10-19T08:20:07.0787120Z [1m[92m    Finished[0m `dev` profile [unoptimized + debuginfo] target(s) in 23.94s

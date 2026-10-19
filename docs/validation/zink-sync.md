@@ -36,7 +36,7 @@ guest只收标量和数组。bridge的conformanceVersion置零。
 
 CI只验证受影响的Vulkan backend/ICD和iOS embedding；CPU/MMU、网络、UI与bundle
 安装源码未变，复用已有验收。Apple CI新增原版MoltenVK的native timeline例程，检查
-真实GPU填充/读回及同步；结果待本轮运行完成后记录，不把编译通过当作GPU通过。
+真实GPU填充/读回及同步；该检查已通过，运行范围见下方精确CI记录。
 
 本地结果、stdout/stderr和图像摘要见同目录`zink-sync/`；原版输入仍沿用
 `zink-foundation/inputs.json`。新增wire revision5保持旧8/54/56操作兼容，扩展
@@ -61,3 +61,11 @@ macOS版本对齐原始MoltenVK archive的12.0，不修改iPad链接或生产run
 VUID-VkSemaphoreSignalInfo-value-03259要求host signal值小于所有pending signal值；
 合法应用不能用host signal越过尚未完成的GPU signal。观察到最终GPU timeline值因此
 可确认此前命令完成，私有fence继续单独保活。仍由应用遵循Vulkan原本的同步责任。
+
+[Apple CI39222826919](https://github.com/kb5000/trames/actions/runs/39222826919)在CI-only
+提交daabd76通过。生产runtime与3e6c014逐字节相同，模块/iOS及Linux成功结果按源码、
+命令与GitHub成功步骤复用，没有重跑。原版MoltenVK1.4.2识别Apple Paravirtual device，
+Metal Shading Language3.2，semaphores使用MTLEvent；native timeline例程完成真实GPU
+填充/读回、2^40计数器、非阻塞未来等待、wait后reset/trim与资源清理。
+macOS GPU通过不等同物理iPad或新增GL/Wayland窗口验收；负viewport的像素对照仍是
+Linux/Lavapipe记录。Apple原始模块/iOS与GPU输出见`zink-sync/apple-*.log`。

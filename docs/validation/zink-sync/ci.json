@@ -17,7 +17,24 @@
     "job": 117958870508,
     "module_checks": "success",
     "ios_ffi_check": "success",
-    "native_gpu": "not executed: macOS linker missing IOKit/availability runtime",
-    "retry": "pending; only CI link configuration changed"
+    "retry": "success; exact prior Apple module/iOS and Linux checks reused",
+    "first_native_gpu_attempt": "not executed: macOS linker missing IOKit/availability runtime",
+    "native_gpu": {
+      "source": "daabd7633e6c3e5800af913b606dbdfc098ddcd3",
+      "run": 39222826919,
+      "job": 117961997898,
+      "conclusion": "success",
+      "runtime_source_unchanged": "3e6c014edec6698d4fbb81339104937433e571af",
+      "driver": "original MoltenVK1.4.2, Metal3.2, MTLEvent",
+      "device": "Apple Paravirtual device",
+      "checks": [
+        "real GPU fill/readback via coherent mappings",
+        "64-bit initial/counter/signal/wait",
+        "future wait returns without blocking host worker",
+        "timeline completion permits reset/trim",
+        "native fence/resource lifetime cleanup"
+      ],
+      "physical_ipad_test": false
+    }
   }
 }

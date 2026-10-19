@@ -1,0 +1,261 @@
+2026-10-19T08:27:28.2387600Z ##[group]Run python3 scripts/prepare-vulkan.py --apple
+2026-10-19T08:27:28.2387990Z [36;1mpython3 scripts/prepare-vulkan.py --apple[0m
+2026-10-19T08:27:28.2389220Z [36;1mexport TRAMES_MOLTENVK_STATIC_DIR="$PWD/target/vulkan-upstream/moltenvk-all/MoltenVK/MoltenVK/static/MoltenVK.xcframework/macos-arm64_x86_64"[0m
+2026-10-19T08:27:28.2389950Z [36;1mexport MACOSX_DEPLOYMENT_TARGET=12.0[0m
+2026-10-19T08:27:28.2390470Z [36;1mexport RUSTFLAGS="-C link-arg=-framework -C link-arg=IOKit -C link-arg=$(xcrun clang --print-runtime-dir)/libclang_rt.osx.a"[0m
+2026-10-19T08:27:28.2391050Z [36;1mcargo run -p trames-vulkan --example timeline --release --locked[0m
+2026-10-19T08:27:28.2443380Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-19T08:27:28.2443660Z env:
+2026-10-19T08:27:28.2443850Z   CARGO_HOME: /Users/runner/.cargo
+2026-10-19T08:27:28.2444100Z   CARGO_INCREMENTAL: 0
+2026-10-19T08:27:28.2444320Z   CARGO_TERM_COLOR: always
+2026-10-19T08:27:28.2444620Z ##[endgroup]
+2026-10-19T08:27:29.8739570Z Verified headers.tar.gz 1a8fef6a5718e84b67530f736c9e5bb5c6fa51be5d7c0e2a2349cc5d31156ea1
+2026-10-19T08:27:32.8948050Z Verified moltenvk-all.tar 562a15a29bc358446a56a4091c5f7e08f604184187c1d34f712148b61ef17276
+2026-10-19T08:27:33.2528520Z Verified moltenvk-source.tar.gz c6ced1eb31827be7f10e2d8d77087486c75e595ab068e665a712d73b99a8ff06
+2026-10-19T08:27:35.8694680Z Verified moltenvk-dependency-SPIRV-Cross.tar.gz b81b9956289950570953738e666a031ca32ff64e4fc925eba89f227c42109518
+2026-10-19T08:27:36.1401140Z Verified moltenvk-dependency-SPIRV-Headers.tar.gz 232899f1ad4104fb5bc377b94596c7621575eee62ad9a9e8f929b63a7dd8a7ad
+2026-10-19T08:27:37.3941030Z Verified moltenvk-dependency-SPIRV-Tools.tar.gz 20219c0962dffb0d7644bb3116a5923cfcf0526a569baa0b2a17343dd2fa6e5d
+2026-10-19T08:27:37.5934940Z Verified moltenvk-dependency-Volk.tar.gz ff5b63e1b7104b34955eb4a993b94882a55f8561e971b92119069e496e3496b5
+2026-10-19T08:27:38.4278460Z Verified moltenvk-dependency-Vulkan-Headers.tar.gz f492279345cbc10708b64fcd432b3ff6c8246a5837c4db2b649abba00cf82208
+2026-10-19T08:27:38.7813850Z Verified moltenvk-dependency-Vulkan-Tools.tar.gz 170eaa9086812c0a8d5275e0fa320b96af4a00fa4e84eee0437650bdd54ed2a8
+2026-10-19T08:27:39.0990450Z Verified moltenvk-dependency-cereal.tar.gz 12e10fb541270632f6683286ce8c7e8c321fe4addb53fa91ed498b95c1758f93
+2026-10-19T08:27:41.2202640Z info: syncing channel updates for nightly-2026-10-16-aarch64-apple-darwin
+2026-10-19T08:27:41.3315580Z info: latest update on 2026-10-16 for version 1.101.0-nightly (4ebd25825 2026-10-15)
+2026-10-19T08:27:41.3530630Z info: downloading component clippy
+2026-10-19T08:27:42.3747350Z [1m[92m    Updating[0m crates.io index
+2026-10-19T08:27:42.5646680Z [1m[92m Downloading[0m crates ...
+2026-10-19T08:27:42.5984990Z [1m[92m  Downloaded[0m errno v0.3.14
+2026-10-19T08:27:42.6028100Z [1m[92m  Downloaded[0m proc-macro2 v1.0.107
+2026-10-19T08:27:42.6145580Z [1m[92m  Downloaded[0m wayland-server v0.31.14
+2026-10-19T08:27:42.6172380Z [1m[92m  Downloaded[0m ash v0.38.0+1.3.281
+2026-10-19T08:27:42.6414250Z [1m[92m  Downloaded[0m unicode-ident v1.0.26
+2026-10-19T08:27:42.6464970Z [1m[92m  Downloaded[0m wayland-sys v0.31.11
+2026-10-19T08:27:42.6505620Z [1m[92m  Downloaded[0m cfg-if v1.0.5
+2026-10-19T08:27:42.6521950Z [1m[92m  Downloaded[0m downcast-rs v1.2.1
+2026-10-19T08:27:42.6545180Z [1m[92m  Downloaded[0m pkg-config v0.3.34
+2026-10-19T08:27:42.6574250Z [1m[92m  Downloaded[0m quote v1.0.47
+2026-10-19T08:27:42.6617790Z [1m[92m  Downloaded[0m shlex v2.0.1
+2026-10-19T08:27:42.6635850Z [1m[92m  Downloaded[0m find-msvc-tools v0.1.14
+2026-10-19T08:27:42.6664330Z [1m[92m  Downloaded[0m libloading v0.8.9
+2026-10-19T08:27:42.6699150Z [1m[92m  Downloaded[0m smallvec v1.16.3
+2026-10-19T08:27:42.6717790Z [1m[92m  Downloaded[0m wayland-scanner v0.31.11
+2026-10-19T08:27:42.6763680Z [1m[92m  Downloaded[0m bitflags v2.13.2
+2026-10-19T08:27:42.6847790Z [1m[92m  Downloaded[0m memchr v2.8.3
+2026-10-19T08:27:42.6966030Z [1m[92m  Downloaded[0m cc v1.8.0
+2026-10-19T08:27:42.7079850Z [1m[92m  Downloaded[0m wayland-protocols v0.32.13
+2026-10-19T08:27:42.7347840Z [1m[92m  Downloaded[0m quick-xml v0.41.0
+2026-10-19T08:27:42.7504350Z [1m[92m  Downloaded[0m rustix v1.1.5
+2026-10-19T08:27:42.8283470Z [1m[92m  Downloaded[0m libc v0.2.190
+2026-10-19T08:27:43.0157470Z [1m[92m   Compiling[0m libc v0.2.190
+2026-10-19T08:27:43.0160190Z [1m[92m   Compiling[0m pkg-config v0.3.34
+2026-10-19T08:27:43.0161730Z [1m[92m   Compiling[0m shlex v2.0.1
+2026-10-19T08:27:43.8813890Z [1m[92m   Compiling[0m rustix v1.1.5
+2026-10-19T08:27:44.1522940Z [1m[92m   Compiling[0m proc-macro2 v1.0.107
+2026-10-19T08:27:46.4869890Z [1m[92m   Compiling[0m find-msvc-tools v0.1.14
+2026-10-19T08:27:46.6637050Z [1m[92m   Compiling[0m cc v1.8.0
+2026-10-19T08:27:46.6857520Z [1m[92m   Compiling[0m wayland-sys v0.31.11
+2026-10-19T08:27:46.8387470Z [1m[92m   Compiling[0m quote v1.0.47
+2026-10-19T08:27:47.0197060Z [1m[92m   Compiling[0m bitflags v2.13.2
+2026-10-19T08:27:47.2677370Z [1m[92m   Compiling[0m errno v0.3.14
+2026-10-19T08:27:47.3343310Z [1m[92m   Compiling[0m unicode-ident v1.0.26
+2026-10-19T08:27:47.9726510Z [1m[92m   Compiling[0m memchr v2.8.3
+2026-10-19T08:27:48.1808500Z [1m[92m   Compiling[0m wayland-backend v0.3.17 (/Users/runner/work/trames/trames/vendor/wayland-backend)
+2026-10-19T08:27:48.4082050Z [1m[92m   Compiling[0m quick-xml v0.41.0
+2026-10-19T08:27:48.6418490Z [1m[92m   Compiling[0m downcast-rs v1.2.1
+2026-10-19T08:27:48.6784910Z [1m[92m   Compiling[0m smallvec v1.16.3
+2026-10-19T08:27:48.8740210Z [1m[92m   Compiling[0m ash v0.38.0+1.3.281
+2026-10-19T08:27:49.0047890Z [1m[92m   Compiling[0m cfg-if v1.0.5
+2026-10-19T08:27:49.0492860Z [1m[92m   Compiling[0m libloading v0.8.9
+2026-10-19T08:27:49.2333150Z [1m[92m   Compiling[0m trames-vulkan v1.1.0 (/Users/runner/work/trames/trames/crates/trames-vulkan)
+2026-10-19T08:27:49.3099870Z [1m[92m   Compiling[0m wayland-scanner v0.31.11
+2026-10-19T08:27:50.0584650Z [1m[92m   Compiling[0m trames-shared v1.1.0 (/Users/runner/work/trames/trames/crates/trames-shared)
+2026-10-19T08:27:50.5921470Z [1m[92m   Compiling[0m wayland-server v0.31.14
+2026-10-19T08:27:51.5603610Z [1m[92m   Compiling[0m trames-memory v1.1.0 (/Users/runner/work/trames/trames/crates/trames-memory)
+2026-10-19T08:27:53.0208710Z [1m[92m   Compiling[0m wayland-protocols v0.32.13
+2026-10-19T08:27:57.9520650Z [1m[92m   Compiling[0m trames-wayland v1.1.0 (/Users/runner/work/trames/trames/crates/trames-wayland)
+2026-10-19T08:28:11.3548560Z [1m[92m    Finished[0m `release` profile [optimized] target(s) in 29.23s
+2026-10-19T08:28:11.4142520Z [1m[92m     Running[0m `target/release/examples/timeline`
+2026-10-19T08:28:11.5239320Z [mvk-info] MoltenVK version 1.4.2, supporting Vulkan version 1.4.357.
+2026-10-19T08:28:11.5240370Z 	The following 153 Vulkan extensions are supported:
+2026-10-19T08:28:11.5240750Z 	VK_KHR_16bit_storage v1
+2026-10-19T08:28:11.5241140Z 	VK_KHR_8bit_storage v1
+2026-10-19T08:28:11.5241940Z 	VK_KHR_bind_memory2 v1
+2026-10-19T08:28:11.5242240Z 	VK_KHR_buffer_device_address v1
+2026-10-19T08:28:11.5242610Z 	VK_KHR_calibrated_timestamps v1
+2026-10-19T08:28:11.5243060Z 	VK_KHR_copy_commands2 v1
+2026-10-19T08:28:11.5243720Z 	VK_KHR_create_renderpass2 v1
+2026-10-19T08:28:11.5244810Z 	VK_KHR_dedicated_allocation v3
+2026-10-19T08:28:11.5245560Z 	VK_KHR_deferred_host_operations v4
+2026-10-19T08:28:11.5246900Z 	VK_KHR_depth_stencil_resolve v1
+2026-10-19T08:28:11.5247260Z 	VK_KHR_descriptor_update_template v1
+2026-10-19T08:28:11.5247670Z 	VK_KHR_device_group v4
+2026-10-19T08:28:11.5247960Z 	VK_KHR_device_group_creation v1
+2026-10-19T08:28:11.5248350Z 	VK_KHR_driver_properties v1
+2026-10-19T08:28:11.5248740Z 	VK_KHR_dynamic_rendering v1
+2026-10-19T08:28:11.5249060Z 	VK_KHR_dynamic_rendering_local_read v1
+2026-10-19T08:28:11.5249460Z 	VK_KHR_external_fence v1
+2026-10-19T08:28:11.5249700Z 	VK_KHR_external_fence_capabilities v1
+2026-10-19T08:28:11.5250070Z 	VK_KHR_external_memory v1
+2026-10-19T08:28:11.5257610Z 	VK_KHR_external_memory_capabilities v1
+2026-10-19T08:28:11.5258020Z 	VK_KHR_external_semaphore v1
+2026-10-19T08:28:11.5258310Z 	VK_KHR_external_semaphore_capabilities v1
+2026-10-19T08:28:11.5258690Z 	VK_KHR_format_feature_flags2 v2
+2026-10-19T08:28:11.5259020Z 	VK_KHR_fragment_shader_barycentric v1
+2026-10-19T08:28:11.5259360Z 	VK_KHR_get_memory_requirements2 v1
+2026-10-19T08:28:11.5259710Z 	VK_KHR_get_physical_device_properties2 v2
+2026-10-19T08:28:11.5260140Z 	VK_KHR_get_surface_capabilities2 v1
+2026-10-19T08:28:11.5260430Z 	VK_KHR_global_priority v1
+2026-10-19T08:28:11.5260750Z 	VK_KHR_image_format_list v1
+2026-10-19T08:28:11.5261000Z 	VK_KHR_imageless_framebuffer v1
+2026-10-19T08:28:11.5269210Z 	VK_KHR_incremental_present v2
+2026-10-19T08:28:11.5269460Z 	VK_KHR_index_type_uint8 v1
+2026-10-19T08:28:11.5269780Z 	VK_KHR_line_rasterization v1
+2026-10-19T08:28:11.5270070Z 	VK_KHR_load_store_op_none v1
+2026-10-19T08:28:11.5270370Z 	VK_KHR_maintenance1 v2
+2026-10-19T08:28:11.5270670Z 	VK_KHR_maintenance2 v1
+2026-10-19T08:28:11.5270920Z 	VK_KHR_maintenance3 v1
+2026-10-19T08:28:11.5271300Z 	VK_KHR_maintenance4 v2
+2026-10-19T08:28:11.5271530Z 	VK_KHR_maintenance5 v1
+2026-10-19T08:28:11.5271860Z 	VK_KHR_maintenance6 v1
+2026-10-19T08:28:11.5272080Z 	VK_KHR_maintenance7 v1
+2026-10-19T08:28:11.5272350Z 	VK_KHR_maintenance8 v1
+2026-10-19T08:28:11.5272550Z 	VK_KHR_maintenance9 v1
+2026-10-19T08:28:11.5272830Z 	VK_KHR_map_memory2 v1
+2026-10-19T08:28:11.5273070Z 	VK_KHR_multiview v1
+2026-10-19T08:28:11.5273360Z 	VK_KHR_portability_subset v1
+2026-10-19T08:28:11.5273670Z 	VK_KHR_present_id v1
+2026-10-19T08:28:11.5273930Z 	VK_KHR_present_id2 v1
+2026-10-19T08:28:11.5274210Z 	VK_KHR_present_wait v1
+2026-10-19T08:28:11.5274470Z 	VK_KHR_present_wait2 v1
+2026-10-19T08:28:11.5274760Z 	VK_KHR_push_descriptor v2
+2026-10-19T08:28:11.5275060Z 	VK_KHR_relaxed_block_layout v1
+2026-10-19T08:28:11.5275470Z 	VK_KHR_robustness2 v1
+2026-10-19T08:28:11.5275700Z 	VK_KHR_sampler_mirror_clamp_to_edge v3
+2026-10-19T08:28:11.5276060Z 	VK_KHR_sampler_ycbcr_conversion v14
+2026-10-19T08:28:11.5276380Z 	VK_KHR_separate_depth_stencil_layouts v1
+2026-10-19T08:28:11.5276760Z 	VK_KHR_shader_draw_parameters v1
+2026-10-19T08:28:11.5277090Z 	VK_KHR_shader_expect_assume v1
+2026-10-19T08:28:11.5277340Z 	VK_KHR_shader_float_controls v4
+2026-10-19T08:28:11.5277660Z 	VK_KHR_shader_float_controls2 v1
+2026-10-19T08:28:11.5277920Z 	VK_KHR_shader_float16_int8 v1
+2026-10-19T08:28:11.5278260Z 	VK_KHR_shader_fma v1
+2026-10-19T08:28:11.5278550Z 	VK_KHR_shader_integer_dot_product v1
+2026-10-19T08:28:11.5279250Z 	VK_KHR_shader_maximal_reconvergence v1
+2026-10-19T08:28:11.5280150Z 	VK_KHR_shader_non_semantic_info v1
+2026-10-19T08:28:11.5280830Z 	VK_KHR_shader_quad_control v1
+2026-10-19T08:28:11.5281270Z 	VK_KHR_shader_relaxed_extended_instruction v1
+2026-10-19T08:28:11.5281630Z 	VK_KHR_shader_subgroup_extended_types v1
+2026-10-19T08:28:11.5282010Z 	VK_KHR_shader_subgroup_rotate v2
+2026-10-19T08:28:11.5282290Z 	VK_KHR_shader_subgroup_uniform_control_flow v1
+2026-10-19T08:28:11.5282660Z 	VK_KHR_shader_terminate_invocation v1
+2026-10-19T08:28:11.5282930Z 	VK_KHR_spirv_1_4 v1
+2026-10-19T08:28:11.5283200Z 	VK_KHR_storage_buffer_storage_class v1
+2026-10-19T08:28:11.5283450Z 	VK_KHR_surface v25
+2026-10-19T08:28:11.5283800Z 	VK_KHR_surface_maintenance1 v1
+2026-10-19T08:28:11.5284100Z 	VK_KHR_surface_protected_capabilities v1
+2026-10-19T08:28:11.5284350Z 	VK_KHR_swapchain v70
+2026-10-19T08:28:11.5284640Z 	VK_KHR_swapchain_maintenance1 v1
+2026-10-19T08:28:11.5285120Z 	VK_KHR_swapchain_mutable_format v1
+2026-10-19T08:28:11.5285480Z 	VK_KHR_synchronization2 v1
+2026-10-19T08:28:11.5285730Z 	VK_KHR_timeline_semaphore v2
+2026-10-19T08:28:11.5286080Z 	VK_KHR_uniform_buffer_standard_layout v1
+2026-10-19T08:28:11.5286430Z 	VK_KHR_variable_pointers v1
+2026-10-19T08:28:11.5286750Z 	VK_KHR_vertex_attribute_divisor v1
+2026-10-19T08:28:11.5287010Z 	VK_KHR_vulkan_memory_model v3
+2026-10-19T08:28:11.5287330Z 	VK_KHR_zero_initialize_workgroup_memory v1
+2026-10-19T08:28:11.5288100Z 	VK_EXT_4444_formats v1
+2026-10-19T08:28:11.5288360Z 	VK_EXT_buffer_device_address v2
+2026-10-19T08:28:11.5288680Z 	VK_EXT_calibrated_timestamps v2
+2026-10-19T08:28:11.5288900Z 	VK_EXT_debug_marker v4
+2026-10-19T08:28:11.5289200Z 	VK_EXT_debug_report v10
+2026-10-19T08:28:11.5289430Z 	VK_EXT_debug_utils v2
+2026-10-19T08:28:11.5289720Z 	VK_EXT_depth_clip_control v1
+2026-10-19T08:28:11.5289960Z 	VK_EXT_descriptor_indexing v2
+2026-10-19T08:28:11.5290280Z 	VK_EXT_extended_dynamic_state v1
+2026-10-19T08:28:11.5290540Z 	VK_EXT_extended_dynamic_state2 v1
+2026-10-19T08:28:11.5290870Z 	VK_EXT_extended_dynamic_state3 v2
+2026-10-19T08:28:11.5291270Z 	VK_EXT_external_memory_host v1
+2026-10-19T08:28:11.5291770Z 	VK_EXT_external_memory_metal v1
+2026-10-19T08:28:11.5292060Z 	VK_EXT_fragment_shader_interlock v1
+2026-10-19T08:28:11.5292310Z 	VK_EXT_global_priority v2
+2026-10-19T08:28:11.5292650Z 	VK_EXT_global_priority_query v1
+2026-10-19T08:28:11.5292910Z 	VK_EXT_hdr_metadata v3
+2026-10-19T08:28:11.5293230Z 	VK_EXT_headless_surface v1
+2026-10-19T08:28:11.5293510Z 	VK_EXT_host_image_copy v1
+2026-10-19T08:28:11.5293870Z 	VK_EXT_host_query_reset v1
+2026-10-19T08:28:11.5294100Z 	VK_EXT_image_2d_view_of_3d v1
+2026-10-19T08:28:11.5294420Z 	VK_EXT_image_robustness v1
+2026-10-19T08:28:11.5294780Z 	VK_EXT_index_type_uint8 v1
+2026-10-19T08:28:11.5295110Z 	VK_EXT_inline_uniform_block v1
+2026-10-19T08:28:11.5295350Z 	VK_EXT_layer_settings v2
+2026-10-19T08:28:11.5295660Z 	VK_EXT_legacy_dithering v2
+2026-10-19T08:28:11.5295890Z 	VK_EXT_line_rasterization v1
+2026-10-19T08:28:11.5296220Z 	VK_EXT_load_store_op_none v1
+2026-10-19T08:28:11.5296530Z 	VK_EXT_memory_budget v1
+2026-10-19T08:28:11.5296810Z 	VK_EXT_metal_objects v2
+2026-10-19T08:28:11.5297140Z 	VK_EXT_metal_surface v1
+2026-10-19T08:28:11.5297450Z 	VK_EXT_non_seamless_cube_map v1
+2026-10-19T08:28:11.5297730Z 	VK_EXT_pipeline_creation_cache_control v3
+2026-10-19T08:28:11.5323070Z 	VK_EXT_pipeline_creation_feedback v1
+2026-10-19T08:28:11.5323500Z 	VK_EXT_pipeline_robustness v1
+2026-10-19T08:28:11.5323800Z 	VK_EXT_post_depth_coverage v1
+2026-10-19T08:28:11.5324080Z 	VK_EXT_primitive_topology_list_restart v1
+2026-10-19T08:28:11.5324360Z 	VK_EXT_private_data v1
+2026-10-19T08:28:11.5324590Z 	VK_EXT_provoking_vertex v1
+2026-10-19T08:28:11.5324780Z 	VK_EXT_robustness2 v1
+2026-10-19T08:28:11.5325360Z 	VK_EXT_sample_locations v1
+2026-10-19T08:28:11.5325560Z 	VK_EXT_scalar_block_layout v1
+2026-10-19T08:28:11.5325870Z 	VK_EXT_separate_stencil_usage v1
+2026-10-19T08:28:11.5326160Z 	VK_EXT_shader_atomic_float v1
+2026-10-19T08:28:11.5326460Z 	VK_EXT_shader_demote_to_helper_invocation v1
+2026-10-19T08:28:11.5326720Z 	VK_EXT_shader_stencil_export v1
+2026-10-19T08:28:11.5326910Z 	VK_EXT_shader_subgroup_ballot v1
+2026-10-19T08:28:11.5327150Z 	VK_EXT_shader_subgroup_vote v1
+2026-10-19T08:28:11.5327420Z 	VK_EXT_shader_viewport_index_layer v1
+2026-10-19T08:28:11.5327670Z 	VK_EXT_subgroup_size_control v2
+2026-10-19T08:28:11.5327880Z 	VK_EXT_surface_maintenance1 v1
+2026-10-19T08:28:11.5328200Z 	VK_EXT_swapchain_colorspace v5
+2026-10-19T08:28:11.5328400Z 	VK_EXT_swapchain_maintenance1 v1
+2026-10-19T08:28:11.5328590Z 	VK_EXT_texel_buffer_alignment v1
+2026-10-19T08:28:11.5328900Z 	VK_EXT_texture_compression_astc_hdr v1
+2026-10-19T08:28:11.5329200Z 	VK_EXT_tooling_info v1
+2026-10-19T08:28:11.5329500Z 	VK_EXT_vertex_attribute_divisor v3
+2026-10-19T08:28:11.5329750Z 	VK_AMD_gpu_shader_half_float v2
+2026-10-19T08:28:11.5330110Z 	VK_AMD_negative_viewport_height v1
+2026-10-19T08:28:11.5330410Z 	VK_AMD_shader_image_load_store_lod v1
+2026-10-19T08:28:11.5330720Z 	VK_AMD_shader_trinary_minmax v1
+2026-10-19T08:28:11.5330920Z 	VK_GOOGLE_display_timing v1
+2026-10-19T08:28:11.5331250Z 	VK_IMG_format_pvrtc v1
+2026-10-19T08:28:11.5331580Z 	VK_INTEL_shader_integer_functions2 v1
+2026-10-19T08:28:11.5331850Z 	VK_MVK_macos_surface v3
+2026-10-19T08:28:11.5332120Z 	VK_MVK_moltenvk v37
+2026-10-19T08:28:11.5332380Z 	VK_NV_fragment_shader_barycentric v1
+2026-10-19T08:28:11.5586110Z [mvk-info] GPU device:
+2026-10-19T08:28:11.5587070Z 	model: Apple Paravirtual device
+2026-10-19T08:28:11.5587470Z 	type: Integrated
+2026-10-19T08:28:11.5587720Z 	vendorID: 0x106b
+2026-10-19T08:28:11.5587990Z 	deviceID: 0xf070205
+2026-10-19T08:28:11.5588480Z 	pipelineCacheUUID: DB660224-0F07-0205-0000-000100000000
+2026-10-19T08:28:11.5588870Z 	GPU memory available: 4778 MB
+2026-10-19T08:28:11.5589240Z 	GPU memory used: 0 MB
+2026-10-19T08:28:11.5589510Z 	Metal Shading Language 3.2
+2026-10-19T08:28:11.5589820Z 	supports the following GPU Features:
+2026-10-19T08:28:11.5590160Z 		GPU Family Apple 5
+2026-10-19T08:28:11.5590410Z 		GPU Family Mac 1
+2026-10-19T08:28:11.5590670Z 		GPU Family Mac 2
+2026-10-19T08:28:11.5590900Z 		Read-Write Texture Tier 2
+2026-10-19T08:28:11.5591730Z [mvk-info] Created VkInstance for Vulkan version 1.0.357, as requested by app, with the following 1 Vulkan extensions enabled:
+2026-10-19T08:28:11.5592270Z 	VK_KHR_get_physical_device_properties2 v2
+2026-10-19T08:28:11.5650250Z [mvk-info] Vulkan semaphores using MTLEvent.
+2026-10-19T08:28:11.5650660Z native driver properties: MoltenVK
+2026-10-19T08:28:11.5661500Z [mvk-info] Descriptor sets binding resources using Metal argument buffers.
+2026-10-19T08:28:12.7395950Z [mvk-info] Created VkDevice to run on GPU Apple Paravirtual device with the following 4 Vulkan extensions enabled:
+2026-10-19T08:28:12.7398390Z 	VK_KHR_driver_properties v1
+2026-10-19T08:28:12.7399340Z 	VK_KHR_maintenance1 v2
+2026-10-19T08:28:12.7400660Z 	VK_KHR_portability_subset v1
+2026-10-19T08:28:12.7402790Z 	VK_KHR_timeline_semaphore v2
+2026-10-19T08:28:12.8264950Z [mvk-info] Destroyed VkDevice on GPU Apple Paravirtual device with 4 Vulkan extensions enabled.
+2026-10-19T08:28:12.8265770Z native-timeline-ok: 64-bit driver counters, nonblocking future wait, real GPU coherent output, reset/trim and retained submission lifetimes
+2026-10-19T08:28:12.8277300Z [mvk-info] Destroyed VkPhysicalDevice for GPU Apple Paravirtual device with 1 MB of GPU memory still allocated.
+2026-10-19T08:28:12.8283420Z [mvk-info] Destroying VkInstance for Vulkan version 1.0.357 with 1 Vulkan extensions enabled.
