@@ -3,9 +3,9 @@
   "native_scope": "runtime-fastpaths",
   "syscall_parallel": true,
   "epoch_services": true,
-  "reason": "In-epoch FD/pipe service without stopping peer CPU/native workers; owned view roundtrip, shutdown/no-replay tests, version-cached FD admission and diagnostic-only global peak counters. Validate affected Core/Linux/VFS, production terminals, one original static-musl fixture on Apple ARM64 native pages. Reuse unchanged CPU interpreter/MMU/GPU/UI acceptance; no CoreMark rerun or IPA.",
+  "reason": "Apple host oracle portability only: Darwin lacks pthread_barrier; provide a host-only mutex/cond shim. Runtime, guest musl ELF, tests and benchmark inputs unchanged. Verify exact passed Linux/Apple modules and prior fixture artifact; complete only Apple mixed-service and terminal checks.",
   "changed_file_sha256": {
-    ".github/workflows/ios.yml": "6c3550557557cbe1431882fe4167199723b635f1a8496a79389fcefdaa7e2942",
+    ".github/workflows/ios.yml": "86e13ce64b6336e9d71ea20465ec8f0ff92bc6da82d8f87cafcd6bf75fdbc2cb",
     ".github/workflows/linux.yml": "1d3e9ea52fb3ed6f1ebf88dcb3087b498822dd295ee8bdf6617a68ff2b3cfaba",
     "crates/trames-cli/src/main.rs": "1fafa24c8a308dfe2f5387fc16d9ff57baeff482e5f513ae44964dcd2b36fb90",
     "crates/trames-core/src/lib.rs": "5821192fba6c66794890585402995feeb3d4beedab82e5a242faa85a05ae6f8f",
@@ -57,10 +57,15 @@
     "docs/validation/epoch-services/semantic.json": "5db8976965e1efeb19f514329a01a7dc82ce75e62e8b60ab142da2825cf290f2",
     "docs/validation/epoch-services/smp.json": "23c1870085269ea89571a369a540044ab804fb12b596a844b22a923b6d243008",
     "scripts/build-epoch-services-fixture.sh": "56204a64558282bdbacb0f20be8b212d3308fb2966ffa658b03ece5ac0d7106c",
-    "scripts/ios-ci-scope.py": "2caadb61ba8f7f231b305f8147372dc35fd9c1cbbe366489667a39dd3e2473b4",
+    "scripts/ios-ci-scope.py": "4fbd5fafcbab6073ddc112c0012c2acdf902d144958f718fb398fec1eb3a5f0b",
     "tests/fixtures/epoch-services-native.S": "f0e393022ae06d80c042885a4d8f7db7ff589ed3a0d8a1bc27b6201f990f0e4d",
     "tests/fixtures/epoch-services.c": "c753ea84dadd14f396aa4fc92092b21660de323ce4e9a6a55e051337a93562a0",
     "tests/integration/epoch-services.py": "a0ab0c1fd571b64ef2169d5c6da96fecc00f79ed3442d638feb0aa0044e8e2ce",
     "tests/performance/epoch-services.py": "b109be46d6d6b4cd78cee07e11a08c4cb9dffb13cd07529a52d42f6d159a2e13"
+  },
+  "runtime_reuse": {
+    "sha": "2676e17c932efdcf564a94105b90b789e3c295a1",
+    "linux": 39305679202,
+    "apple": 39305679109
   }
 }

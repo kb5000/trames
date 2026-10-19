@@ -46,6 +46,15 @@ def runtime_fastpaths_reuse(plan, repo, headers):
                 raise RuntimeError('Missing successful Apple module checks')
         elif job['conclusion'] != 'success':
             raise RuntimeError('Missing successful Linux acceptance')
+    if plan.get('epoch_services'):
+        jobs = get(f"actions/runs/{reuse['apple']}/jobs")['jobs']
+        if not any(j['name'] == 'epoch-service-fixture' and j['conclusion'] == 'success' for j in jobs):
+            raise RuntimeError('Missing successful unchanged musl fixture build')
+        artifacts = get(f"actions/runs/{reuse['apple']}/artifacts?per_page=100")['artifacts']
+        if not any(a['name'] == 'epoch-service-fixture' and not a['expired'] for a in artifacts):
+            raise RuntimeError('Validated epoch fixture artifact missing or expired')
+        with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+            output.write(f"epoch_fixture_run={reuse['apple']}\n")
     print('Reuse exact passed Linux and Apple modules; complete only the unfinished Apple terminal check.')
     return True
 

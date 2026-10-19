@@ -47,7 +47,7 @@ jobs:
           cargo run -p trames-vulkan --example renderpass --release --locked
   epoch-service-fixture:
     needs: scope
-    if: needs.scope.outputs.epoch_services == 'true'
+    if: needs.scope.outputs.epoch_services == 'true' && needs.scope.outputs.epoch_fixture_run == ''
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -100,11 +100,51 @@ jobs:
         with:
           name: epoch-service-fixture
           path: target/epoch-service-fixture
+          run-id: ${{ needs.scope.outputs.epoch_fixture_run || github.run_id }}
+          github-token: ${{ github.token }}
       - name: Validate native calls overlapping FD and pipe services on Apple
         if: needs.scope.outputs.epoch_services == 'true'
         run: |
           chmod +x target/epoch-service-fixture/epoch-services
-          cc -O2 -Wall -Wextra -Werror -DTRAMES_HOST_ORACLE tests/fixtures/epoch-services.c -pthread -o target/epoch-service-fixture/host-oracle
+          # Darwin has no pthread_barrier. Only the host output oracle uses this
+          # shim; the validated original musl guest ELF is reused unchanged.
+          cat > target/epoch-service-fixture/host-barrier.h <<'C'
+          #include <stddef.h>
+          #include <pthread.h>
+          #ifndef PTHREAD_BARRIER_SERIAL_THREAD
+          #define PTHREAD_BARRIER_SERIAL_THREAD 1
+          #endif
+          typedef struct { pthread_mutex_t mutex; pthread_cond_t cond; unsigned count, arrived, generation; } trames_barrier;
+          static int trames_barrier_init(trames_barrier *b, const void *attr, unsigned count) {
+              (void)attr; b->count = count; b->arrived = b->generation = 0;
+              int rc = pthread_mutex_init(&b->mutex, NULL); if (rc) return rc;
+              rc = pthread_cond_init(&b->cond, NULL); if (rc) pthread_mutex_destroy(&b->mutex);
+              return rc;
+          }
+          static int trames_barrier_wait(trames_barrier *b) {
+              int rc = pthread_mutex_lock(&b->mutex); if (rc) return rc;
+              unsigned generation = b->generation;
+              if (++b->arrived == b->count) {
+                  b->arrived = 0; b->generation++;
+                  pthread_cond_broadcast(&b->cond); pthread_mutex_unlock(&b->mutex);
+                  return PTHREAD_BARRIER_SERIAL_THREAD;
+              }
+              while (generation == b->generation) {
+                  rc = pthread_cond_wait(&b->cond, &b->mutex);
+                  if (rc) { pthread_mutex_unlock(&b->mutex); return rc; }
+              }
+              return pthread_mutex_unlock(&b->mutex);
+          }
+          static int trames_barrier_destroy(trames_barrier *b) {
+              int rc = pthread_cond_destroy(&b->cond); if (rc) return rc;
+              return pthread_mutex_destroy(&b->mutex);
+          }
+          #define pthread_barrier_t trames_barrier
+          #define pthread_barrier_init trames_barrier_init
+          #define pthread_barrier_wait trames_barrier_wait
+          #define pthread_barrier_destroy trames_barrier_destroy
+          C
+          cc -O2 -Wall -Wextra -Werror -DTRAMES_HOST_ORACLE -include target/epoch-service-fixture/host-barrier.h tests/fixtures/epoch-services.c -pthread -o target/epoch-service-fixture/host-oracle
           python3 tests/integration/epoch-services.py --runner target/fastpaths-candidate/release/trames-run --fixture target/epoch-service-fixture/epoch-services --oracle target/epoch-service-fixture/host-oracle --output target/epoch-service-results
       - name: Prepare one identical original guest CoreMark input
         if: needs.scope.outputs.syscall_parallel != 'true'
@@ -262,6 +302,7 @@ jobs:
       native_scope: ${{ steps.scope.outputs.native_scope }}
       syscall_parallel: ${{ steps.scope.outputs.syscall_parallel }}
       epoch_services: ${{ steps.scope.outputs.epoch_services }}
+      epoch_fixture_run: ${{ steps.scope.outputs.epoch_fixture_run }}
       runtime_apple_modules_reused: ${{ steps.scope.outputs.runtime_apple_modules_reused }}
       zink_skip_apple: ${{ steps.scope.outputs.zink_skip_apple }}
       zink_sync_skip_apple_checks: ${{ steps.scope.outputs.zink_sync_skip_apple_checks }}
