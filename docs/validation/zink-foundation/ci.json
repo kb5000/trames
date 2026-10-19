@@ -14,11 +14,27 @@
     "conclusion": "failure",
     "stage": "SDK preparation: omitted bare .so library and soname aliases; runtime foundation never executed"
   },
-  "linux_retry": "pending; fresh isolated flat SDK link now passes; runtime source unchanged",
+  "linux_retry": "pending; corrected native query oracle, strict guest query rerun passes; reuse exact passed Apple and Linux bundle/reopen checks",
   "second_linux": {
     "run": 39203103689,
     "job": 117900111850,
     "conclusion": "failure",
     "stage": "SDK extraction: flattened LLVM alias pointed to itself; runtime foundation never executed"
+  },
+  "linux_checks": {
+    "source": "e55d3d17ba04efb694c53ad0c51794725f5b4a2f",
+    "run": 39203619165,
+    "job": 117901657483,
+    "conclusion": "success (named bundle metadata/build/reopen step)",
+    "manifest_tests": 2,
+    "cold_embedding_modes": 5,
+    "distro_clippy": true,
+    "release_cli_ffi_build": true
+  },
+  "third_linux": {
+    "run": 39203619165,
+    "job": 117901657483,
+    "foundation_conclusion": "failure",
+    "stage": "Native reference query asserted unknown group pNext preservation; original Mesa device_select layer overwrites pNext. Production guest ICD unchanged."
   }
 }

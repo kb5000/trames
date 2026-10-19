@@ -1,0 +1,13 @@
+2026-10-19T05:20:51.8793189Z Traceback (most recent call last):
+2026-10-19T05:20:51.8794310Z   File "/home/runner/work/trames/trames/tests/integration/zink-foundation.py", line 84, in <module>
+2026-10-19T05:20:51.8795606Z     native = execute('queries-native', [str(inputs / 'vulkan-queries-host')], native=True)
+2026-10-19T05:20:51.8796455Z              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-19T05:20:51.8797338Z   File "/home/runner/work/trames/trames/tests/integration/zink-foundation.py", line 43, in execute
+2026-10-19T05:20:51.8798285Z     assert r.returncode == 0, (label, r.stdout[-2000:], r.stderr[-4000:])
+2026-10-19T05:20:51.8798929Z            ^^^^^^^^^^^^^^^^^
+2026-10-19T05:20:51.8800616Z AssertionError: ('queries-native', b'', b"vulkan-queries-host: /home/runner/work/trames/trames/tests/fixtures/vulkan-queries.c:60: main: Assertion `group.physicalDeviceCount==1 && group.physicalDevices[0]==p && !group.subsetAllocation && group.pNext==&unknown' failed.\n")
+2026-10-19T05:20:51.8956778Z ##[error]Process completed with exit code 1.
+2026-10-19T05:20:51.9048251Z ##[group]Run actions/upload-artifact@v4
+2026-10-19T05:20:51.9048544Z with:
+2026-10-19T05:20:51.9048746Z   name: zink-foundation-evidence
+2026-10-19T05:20:51.9049203Z   path: target/zink-foundation/

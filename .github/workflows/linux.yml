@@ -29,6 +29,7 @@ jobs:
       docker_network_retry: ${{ steps.scope.outputs.docker_network_retry }}
       docker_network_virtual_retry: ${{ steps.scope.outputs.docker_network_virtual_retry }}
       docker_default_remount: ${{ steps.scope.outputs.docker_default_remount }}
+      zink_skip_linux_checks: ${{ steps.scope.outputs.zink_skip_linux_checks }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,6 +62,7 @@ jobs:
           bash scripts/build-vulkan-fixtures.sh
           python3 scripts/prepare-zink-guest.py
       - name: Check bundle metadata and build unchanged native backend
+        if: needs.scope.outputs.zink_skip_linux_checks != 'true'
         run: |
           cargo fmt --all --check
           cargo clippy -p trames-distro --all-targets --locked -- -D warnings
@@ -68,6 +70,9 @@ jobs:
           cargo build -p trames-cli -p trames-ffi --release --locked
           python3 -m py_compile scripts/prepare-zink-guest.py tests/integration/zink-foundation.py
           python3 tests/integration/embedding-reopen.py
+      - name: Build unchanged runner for remaining graphics checks
+        if: needs.scope.outputs.zink_skip_linux_checks == 'true'
+        run: cargo build -p trames-cli --release --locked
       - name: Validate query and template foundation and retain actual Mesa outcome
         run: |
           export VK_DRIVER_FILES="$(python3 -c 'from pathlib import Path; print(next(Path("/usr/share/vulkan/icd.d").glob("*lvp*")))')"

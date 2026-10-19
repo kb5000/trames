@@ -1,0 +1,26 @@
+system-1.4.309 before exit=-6
+group: count=1 device_match=1 subset=0 pNext_preserved=0
+queries-before: /workspace/trames/target/zink-old-loader/queries-before.c:61: main: Assertion `group.physicalDeviceCount==1 && group.physicalDevices[0]==p && !group.subsetAllocation && group.pNext==&unknown' failed.
+
+system-1.4.309 after exit=0
+zink-required VK_KHR_maintenance1 available
+zink-required VK_KHR_create_renderpass2 available
+zink-required VK_KHR_imageless_framebuffer available
+zink-required VK_KHR_timeline_semaphore available
+zink-required VK_KHR_descriptor_update_template available
+instance queries: legacy equivalence, aliases, groups, unknown pNext and capacity guards: ok
+vulkan-queries-ok: extension-only device, memory requirements and unavailable external handles
+
+ubuntu-1.3.275 before exit=-6
+group: count=1 device_match=1 subset=0 pNext_preserved=0
+queries-before: /workspace/trames/target/zink-old-loader/queries-before.c:61: main: Assertion `group.physicalDeviceCount==1 && group.physicalDevices[0]==p && !group.subsetAllocation && group.pNext==&unknown' failed.
+
+ubuntu-1.3.275 after exit=0
+zink-required VK_KHR_maintenance1 available
+zink-required VK_KHR_create_renderpass2 available
+zink-required VK_KHR_imageless_framebuffer available
+zink-required VK_KHR_timeline_semaphore available
+zink-required VK_KHR_descriptor_update_template available
+instance queries: legacy equivalence, aliases, groups, unknown pNext and capacity guards: ok
+vulkan-queries-ok: extension-only device, memory requirements and unavailable external handles
+

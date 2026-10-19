@@ -57,7 +57,13 @@ int main(int argc,char **argv) {
     capacity=0;queues.out[0].queueFamilyProperties.queueCount=0xdead;vkGetPhysicalDeviceQueueFamilyProperties2(p,&capacity,queues.out);assert(!capacity && queues.out[0].queueFamilyProperties.queueCount==0xdead);
     uint32_t group_count=0;OK(vkEnumeratePhysicalDeviceGroups(instance,&group_count,NULL));assert(group_count>0);
     VkPhysicalDeviceGroupProperties group={.sType=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GROUP_PROPERTIES,.pNext=&unknown};group_count=1;OK(vkEnumeratePhysicalDeviceGroups(instance,&group_count,&group));
-    assert(group.physicalDeviceCount==1 && group.physicalDevices[0]==p && !group.subsetAllocation && group.pNext==&unknown);
+    assert(group.physicalDeviceCount==1 && group.physicalDevices[0]==p);
+    // Native device-selection layers may copy group structs and overwrite
+    // pNext; subsetAllocation is a driver capability, not a group-size rule.
+    // Keep the exact guest ABI/canary contract strict without requiring native
+    // loaders to implement Trames's profile or preserve an unknown group chain.
+    assert(group.subsetAllocation==VK_FALSE || group.subsetAllocation==VK_TRUE);
+    if(bridge)assert(!group.subsetAllocation && group.pNext==&unknown);
     group_count=0;assert(vkEnumeratePhysicalDeviceGroups(instance,&group_count,&group)==VK_INCOMPLETE);
     if(bridge){
         VkPhysicalDeviceExternalBufferInfo eb={.sType=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO,.usage=VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,.handleType=VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT};

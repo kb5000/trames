@@ -378,6 +378,31 @@ def main():
                         job = next(j for j in evidence(f'actions/runs/{run_id}/jobs')['jobs'] if j['name'] == 'zink-foundation-apple')
                         if run['head_sha'] != source or job['conclusion'] != 'success':
                             raise RuntimeError('Missing exact-source successful Apple Zink metadata job')
+                    linux_reuse = plan.get('zink_reuse_linux_checks')
+                    if linux_reuse:
+                        source = linux_reuse['sha']
+                        paths = ['crates', 'Cargo.toml', 'Cargo.lock', '.cargo', 'vendor', 'rust-toolchain.toml',
+                                 'accelerator', 'scripts/build-vulkan-guest.sh', 'tests/integration/embedding-reopen.py']
+                        if subprocess.check_output(['git', 'diff', '--name-only', source, 'HEAD', '--', *paths]).strip():
+                            raise RuntimeError('Linux metadata/reopen reuse requires unchanged runtime, guest ICD and build inputs')
+                        def linux_checks(text):
+                            block = text.split('      - name: Check bundle metadata and build unchanged native backend\n', 1)[1].split('      - name:', 1)[0]
+                            return '\n'.join(l for l in block.splitlines() if not l.strip().startswith('if:'))
+                        previous = subprocess.check_output(['git', 'show', source + ':.github/workflows/linux.yml'], text=True)
+                        if linux_checks(previous) != linux_checks(Path('.github/workflows/linux.yml').read_text()):
+                            raise RuntimeError('Linux metadata/reopen job commands changed; cannot reuse')
+                        run_id = linux_reuse['run']
+                        def linux_evidence(path):
+                            req = urllib.request.Request(f'https://api.github.com/repos/{repo}/' + path, headers=dict(request.headers))
+                            with urllib.request.urlopen(req, timeout=30) as response:
+                                return json.load(response)
+                        run = linux_evidence(f'actions/runs/{run_id}')
+                        job = next(j for j in linux_evidence(f'actions/runs/{run_id}/jobs')['jobs'] if j['name'] == 'zink-foundation')
+                        if (run['head_sha'] != source or run['path'] != '.github/workflows/linux.yml'
+                                or run['head_repository']['full_name'] != repo or not any(
+                                    s['name'] == 'Check bundle metadata and build unchanged native backend' and s['conclusion'] == 'success'
+                                    for s in job['steps'])):
+                            raise RuntimeError('Missing successful exact-source Linux bundle/build/reopen checks')
                     print('Guest ICD query/template foundation: original loader/Mesa probe, native GPU compute/texture oracles, bundle upgrade/reopen and Apple/iOS metadata checks. CPU/MMU/native GPU backend/UI unchanged; no IPA or repeated unrelated acceptance.')
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=zink-foundation\n')
@@ -385,6 +410,9 @@ def main():
                         if reuse:
                             output.write('zink_skip_apple=true\n')
                             print('Reuse exact unchanged Apple manifest/iOS checks; retry unfinished Linux preparation and foundation checks only.')
+                        if linux_reuse:
+                            output.write('zink_skip_linux_checks=true\n')
+                            print('Reuse exact unchanged passed Linux bundle/reopen/module checks; build the runner and retry the changed native query oracle and unfinished graphics checks.')
                     return
                 if plan.get('native_scope') == 'docker-default-lifecycle':
                     allowed = {'.github/workflows/linux.yml', '.github/workflows/ios.yml', 'README.md',

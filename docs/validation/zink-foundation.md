@@ -44,7 +44,14 @@ sysroot验证链接。没有runtime改动，Apple源码/命令与已通过结果
 扁平化后指向自身；准备脚本跳过同名别名，并在写入真实库前移除旧链接。
 全新目录重新收集381个共享库文件，199个别名均可解析；只使用该目录及最小musl
 CRT/libc sysroot成功链接EGL客户端，避免本地完整SDK掩盖依赖缺失。
-当前未打IPA或发布。
+第三次CI run39203619165的SDK、Rust检查、两项manifest测试、release构建与
+五种冷进程启动检查通过。native查询测试把unknown group pNext保留也施加给宿主，
+但CI默认Mesa `device_select`隐式层会覆盖它；这是参考测试的环境假设。
+用原版Ubuntu Mesa25.2.8及原版loader1.3.275/本地1.4.309加相同层独立复现：
+旧断言均abort，新测试均通过。native只要求合法设备成员和能力，guest继续严格检查
+pNext/canary、零外部handle与受限profile；单独重跑修改的guest查询通过。
+生产Rust/ICD与a231f47保持相同，只重试未完成图形检查；本次已通过的Linux
+bundle/reopen检查按源码和命令核对后复用。当前未打IPA或发布。
 
 复现入口：
 
