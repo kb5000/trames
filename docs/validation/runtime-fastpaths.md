@@ -76,7 +76,8 @@ Linux受影响Core56、VFS152项通过（另保留既有4+1项ignore），严格
 这是云端Mac的吞吐，不能用绝对分数对比iPad或Linux，更不是硬件周期。
 Apple Core56、VFS151（Linux多一项平台专用测试）通过，既有4+1项ignore保留，
 生产多终端交互/取消也通过；无新IPA或发布。CI artifact ZIP的SHA-256与各项CRC验证
-通过，原始结果、编译输入哈希、全部四条stdout与CI日志保留在同目录。
+通过，原始结果、编译输入哈希、全部四条stdout与CI日志保留在同目录；
+仓库中的stdout文本统一为LF换行，artifact ZIP摘要仍指向原始上传字节。
 尚未在用户iPad复现400分或确认恢复历史600分；未把此项性能回退Issue关闭。
 [原始日志与哈希](runtime-fastpaths/results.json)保留单次测量、宿主架构与诊断范围。
 
