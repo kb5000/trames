@@ -7,6 +7,18 @@
 loader→Trames guest ICD→现有原生Vulkan/MoltenVK→Metal。保留上游算法，不另写一套
 OpenGL实现。后续窗口继续使用现有Wayland合成器和App浮窗/标签页。
 
+窗口链路的EGL平台适配与原版核心分开：原版Mesa25.1.9的硬件Wayland初始化要求DRM，
+Metal没有DRM设备；原版EGL在Apple实测会退到SHM，因此未通过GPU-only验收。
+[最小EGL补丁](../../patches/mesa/0001-wayland-kopper-native-wsi.patch)仅增加显式DRM-less
+Kopper初始化和一个无DRM/软件扩展的真实native EGLDevice。没有伪造CPU设备或绕过
+Zink/Vulkan能力检查。原版签名Gallium/Zink/NIR/GLSL/SPIR-V/GLES2与Vulkan loader保持不变；
+[构建脚本](../../scripts/build-zink-egl.py)只重编译EGL平台组件，链接原版Gallium。
+
+组件随guest Vulkan资源可选携带。生产FFI在Vulkan开关开启且组件存在时，原子安装标准
+SONAME `/usr/local/lib/libEGL.so.1`，利用musl原有路径优先级，不改apk拥有的`/usr/lib`
+文件。自动设置Zink/native-WSI及当前ES2的GL-thread配置；包安装/升级不会覆盖组件。
+源码、补丁、原版Gallium及产物SHA-256记录在`egl-manifest.json`，对应许可随构建保留。
+
 当前已在Linux原生Vulkan参考和Apple原版MoltenVK/Metal上跑通原版Mesa25.1.9的EGL1.5、
 GLES2 context、GPU清屏、GLSL着色器绘制和重复纹理采样。
 **这是基础离屏GL链路，不是完整OpenGL或Vulkan一致性声明。**

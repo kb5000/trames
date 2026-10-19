@@ -31,6 +31,7 @@ jobs:
       docker_default_remount: ${{ steps.scope.outputs.docker_default_remount }}
       zink_skip_linux_checks: ${{ steps.scope.outputs.zink_skip_linux_checks }}
       zink_sync_skip_linux: ${{ steps.scope.outputs.zink_sync_skip_linux }}
+      zink_egl_only: ${{ steps.scope.outputs.zink_egl_only }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -57,14 +58,22 @@ jobs:
       - name: Prepare original signed Mesa and Wayland EGL clients
         run: |
           sudo apt-get update
-          sudo apt-get install --yes gcc-aarch64-linux-gnu libvulkan-dev mesa-vulkan-drivers libwayland-bin
+          sudo apt-get install --yes gcc-aarch64-linux-gnu g++-aarch64-linux-gnu gcc-14-aarch64-linux-gnu g++-14-aarch64-linux-gnu libvulkan-dev mesa-vulkan-drivers libwayland-bin pkg-config bison flex ninja-build python3-venv patch
           bash scripts/build-vulkan-guest.sh
           python3 scripts/prepare-zink-guest.py --wayland
+          python3 -m venv target/mesa-tools
+          target/mesa-tools/bin/pip install meson==1.12.1 mako==1.4.3
+          export PATH="$PWD/target/mesa-tools/bin:$PATH"
+          python3 scripts/build-zink-egl.py
       - name: Check affected Vulkan module and build production embedding
         run: |
           cargo fmt --all --check
-          cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
-          cargo test -p trames-vulkan --lib --locked
+          if [[ '${{ needs.scope.outputs.zink_egl_only }}' != true ]]; then
+            cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
+            cargo test -p trames-vulkan --lib --locked
+          fi
+          cargo clippy -p trames-distro -p trames-ffi --all-targets --locked -- -D warnings
+          cargo test -p trames-distro vulkan --locked
           cargo build -p trames-cli -p trames-ffi --release --locked
           python3 -m py_compile scripts/prepare-zink-guest.py scripts/prepare-zink-native-bundle.py tests/integration/zink-wayland.py
       - name: Verify GPU image copies and original Mesa window lifecycle
@@ -114,8 +123,12 @@ jobs:
       - name: Verify exact guest inputs and Apple embedding
         run: |
           python3 scripts/prepare-zink-native-bundle.py --verify
-          cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
-          cargo test -p trames-vulkan --lib --locked
+          if [[ '${{ needs.scope.outputs.zink_egl_only }}' != true ]]; then
+            cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
+            cargo test -p trames-vulkan --lib --locked
+          fi
+          cargo clippy -p trames-distro -p trames-ffi --all-targets --locked -- -D warnings
+          cargo test -p trames-distro vulkan --locked
           cargo check -p trames-ffi --target aarch64-apple-ios --locked
       - name: Verify original Mesa Wayland EGL on exported Metal textures
         run: |

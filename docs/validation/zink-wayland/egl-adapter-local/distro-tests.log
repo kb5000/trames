@@ -1,0 +1,55 @@
+   Compiling libc v0.2.190
+   Compiling version_check v0.9.5
+   Compiling typenum v1.20.1
+   Compiling serde_core v1.0.229
+   Compiling generic-array v0.14.7
+   Compiling syn v3.0.7
+   Compiling block-buffer v0.10.4
+   Compiling crypto-common v0.1.7
+   Compiling zmij v1.0.23
+   Compiling cfg_aliases v0.2.2
+   Compiling heapless v0.8.0
+   Compiling serde v1.0.229
+   Compiling trames-native v1.1.0 (/workspace/trames/crates/trames-native)
+   Compiling byteorder v1.5.0
+   Compiling hash32 v0.3.1
+   Compiling trames-memory v1.1.0 (/workspace/trames/crates/trames-memory)
+   Compiling nix v0.31.3
+   Compiling digest v0.10.7
+   Compiling stable_deref_trait v1.2.1
+   Compiling serde_derive v1.0.229
+   Compiling getrandom v0.3.4
+   Compiling smoltcp v0.12.0
+   Compiling cpufeatures v0.2.17
+   Compiling serde_json v1.0.151
+   Compiling sha2 v0.10.9
+   Compiling crc32fast v1.5.2
+   Compiling managed v0.8.0
+   Compiling memchr v2.8.3
+   Compiling bitflags v1.3.2
+   Compiling itoa v1.0.18
+   Compiling trames-accel v1.1.0 (/workspace/trames/crates/trames-accel)
+   Compiling trames-shared v1.1.0 (/workspace/trames/crates/trames-shared)
+   Compiling socket2 v0.6.1
+   Compiling simd-adler32 v0.3.10
+   Compiling adler2 v2.0.1
+   Compiling miniz_oxide v0.9.1
+   Compiling trames-net v1.1.0 (/workspace/trames/crates/trames-net)
+   Compiling trames-wayland v1.1.0 (/workspace/trames/crates/trames-wayland)
+   Compiling trames-bridge v1.1.0 (/workspace/trames/crates/trames-bridge)
+   Compiling filetime v0.2.29
+   Compiling tar v0.4.46
+   Compiling flate2 v1.1.10
+   Compiling trames-elf v1.1.0 (/workspace/trames/crates/trames-elf)
+   Compiling trames-vfs v1.1.0 (/workspace/trames/crates/trames-vfs)
+   Compiling trames-distro v1.1.0 (/workspace/trames/crates/trames-distro)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 10.88s
+     Running unittests src/lib.rs (target/perf-runtime/debug/build/trames-distro/aecdb1f2ed0e53bb/out/trames_distro-aecdb1f2ed0e53bb)
+
+running 3 tests
+test vulkan::tests::refreshes_old_instance_manifest_without_replacing_identical_library ... ok
+test vulkan::tests::egl_adapter_install_is_atomic_and_keeps_apk_owned_mesa ... ok
+test vulkan::tests::repeated_install_keeps_inodes_updates_bundles_and_preserves_user_files ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.00s
+

@@ -1,0 +1,80 @@
+{
+  "source": "original signed Mesa25.1.9 EGL/GLES2 and libwayland; production FFI and native Vulkan WSI",
+  "icd_sha256": "4050de835ff5497716da03e316972d11c18370f30bf6914d132926a672fc9d5e",
+  "input_store_manifest_sha256": "20ea3ac7bd96bdc79a914a9fd6fdfa381d1a1c1eda17f76c3f0c10ccfa237257",
+  "rounds": [
+    {
+      "frame_acquisitions": 148,
+      "unique_scene_revisions": 6,
+      "sizes": [
+        [
+          1,
+          96,
+          64
+        ],
+        [
+          1,
+          160,
+          96
+        ],
+        [
+          2,
+          80,
+          48
+        ],
+        [
+          2,
+          128,
+          72
+        ],
+        [
+          2,
+          144,
+          80
+        ]
+      ],
+      "metal_texture_sizes_verified": [],
+      "resize": true,
+      "close": true,
+      "retained_old_frame": true
+    },
+    {
+      "frame_acquisitions": 136,
+      "unique_scene_revisions": 6,
+      "sizes": [
+        [
+          3,
+          96,
+          64
+        ],
+        [
+          3,
+          160,
+          96
+        ],
+        [
+          4,
+          80,
+          48
+        ],
+        [
+          4,
+          128,
+          72
+        ],
+        [
+          4,
+          144,
+          80
+        ]
+      ],
+      "metal_texture_sizes_verified": [],
+      "resize": true,
+      "close": true,
+      "retained_old_frame": true
+    }
+  ],
+  "passed": true,
+  "physical_ipad": false,
+  "native_image_copy_gpu_pixels": 64
+}

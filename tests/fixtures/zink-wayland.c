@@ -2,6 +2,7 @@
 // Original libwayland/EGL/GLES2 client. No Mesa or Vulkan WSI replacement.
 #define _GNU_SOURCE
 #include <EGL/egl.h>
+#include <EGL/eglext.h>
 #include <GLES2/gl2.h>
 #include <errno.h>
 #include <wayland-client.h>
@@ -96,6 +97,18 @@ int main(int argc,char **argv) {
     struct wl_registry *registry=wl_display_get_registry(display);wl_registry_add_listener(registry,&registry_listener,NULL);
     check(wl_display_roundtrip(display)>=0 && compositor && shell,"Wayland globals");
     egl=eglGetDisplay((EGLNativeDisplayType)display);EGLint major,minor;check(eglInitialize(egl,&major,&minor),"Wayland eglInitialize");
+    PFNEGLQUERYDISPLAYATTRIBEXTPROC query_display=(PFNEGLQUERYDISPLAYATTRIBEXTPROC)eglGetProcAddress("eglQueryDisplayAttribEXT");
+    PFNEGLQUERYDEVICESTRINGEXTPROC query_device=(PFNEGLQUERYDEVICESTRINGEXTPROC)eglGetProcAddress("eglQueryDeviceStringEXT");
+    PFNEGLQUERYDEVICESEXTPROC query_devices=(PFNEGLQUERYDEVICESEXTPROC)eglGetProcAddress("eglQueryDevicesEXT");
+    EGLAttrib device;EGLDeviceEXT devices[16];EGLint device_count;int found=0;
+    check(query_display && query_device && query_devices,"EGL device query entrypoints");
+    check(query_display(egl,EGL_DEVICE_EXT,&device) && device!=(EGLAttrib)EGL_NO_DEVICE_EXT,"display device identity");
+    const char *extensions=query_device((EGLDeviceEXT)device,EGL_EXTENSIONS);check(extensions!=NULL,"device extensions");
+    if(!getenv("LIBGL_ALWAYS_SOFTWARE"))check(!strstr(extensions,"EGL_MESA_device_software") && !strstr(extensions,"EGL_EXT_device_drm"),"native GPU must not claim software or DRM identity");
+    check(query_devices(16,devices,&device_count) && device_count>0 && device_count<=16,"enumerate devices");
+    for(int i=0;i<device_count;i++)if(devices[i]==(EGLDeviceEXT)device)found=1;
+    check(found,"display device is enumerated");
+    printf("zink-wayland-device extensions=[%s] identity=correct\n",extensions);fflush(stdout);
     printf("zink-wayland-EGL %d.%d\n",major,minor);fflush(stdout);check(eglBindAPI(EGL_OPENGL_ES_API),"bind GLES2");
     const EGLint attrs[]={EGL_SURFACE_TYPE,EGL_WINDOW_BIT,EGL_RENDERABLE_TYPE,EGL_OPENGL_ES2_BIT,EGL_RED_SIZE,8,EGL_GREEN_SIZE,8,EGL_BLUE_SIZE,8,EGL_ALPHA_SIZE,8,EGL_NONE};EGLint count;
     check(eglChooseConfig(egl,attrs,&config,1,&count) && count==1,"Wayland config");

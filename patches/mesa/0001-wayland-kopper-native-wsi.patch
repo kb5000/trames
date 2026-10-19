@@ -1,0 +1,116 @@
+# SPDX-License-Identifier: MIT
+Subject: EGL Wayland: opt in to native Vulkan WSI without a DRM fd
+
+--- a/src/egl/drivers/dri2/platform_wayland.c
++++ b/src/egl/drivers/dri2/platform_wayland.c
+@@ -3045,7 +3045,13 @@
+                           dri2_dpy->formats.num_formats))
+       goto cleanup;
+ 
+-   if (disp->Options.Zink) {
++   /* Native Vulkan WSI owns presentation images; no DRM FD or DMA-BUF
++    * transport is involved. Zink still validates the real Vulkan features.
++    * Leave the ordinary Wayland DRM initialization unchanged by default.
++    */
++   const bool native_wsi = disp->Options.Zink &&
++      debug_get_bool_option("LIBGL_KOPPER_WAYLAND_NO_DRM", false);
++   if (disp->Options.Zink && !native_wsi) {
+       if (!dri2_initialize_wayland_drm_extensions(dri2_dpy) && !disp->Options.ForceSoftware)
+          goto cleanup;
+ 
+@@ -3082,7 +3088,12 @@
+    if (!dri2_create_screen(disp))
+       goto cleanup;
+ 
+-   if (!dri2_setup_device(disp, disp->Options.ForceSoftware)) {
++   if (native_wsi && !disp->Options.ForceSoftware) {
++      /* A real Vulkan GPU without a DRM identity is neither a DRM nor a
++       * software EGLDevice. Publish an extension-free native device handle.
++       */
++      disp->Device = _eglFindNativeDevice();
++   } else if (!dri2_setup_device(disp, disp->Options.ForceSoftware)) {
+       _eglError(EGL_NOT_INITIALIZED, "DRI2: failed to setup EGLDevice");
+       goto cleanup;
+    }
+--- a/src/egl/main/egldevice.c
++++ b/src/egl/main/egldevice.c
+@@ -51,6 +51,8 @@
+ #endif
+ };
+ 
++static _EGLDevice native_device = { .extensions = "" };
++
+ void
+ _eglFiniDevice(void)
+ {
+@@ -70,6 +72,10 @@
+       dev = dev_list;
+       dev_list = dev_list->Next;
+ 
++      if (dev == &native_device) {
++         native_device.Next = NULL;
++         continue;
++      }
+ #ifdef HAVE_LIBDRM
+       assert(_eglDeviceSupports(dev, _EGL_DEVICE_DRM));
+       drmFreeDevice(&dev->device);
+@@ -132,8 +138,9 @@
+    while (dev->Next) {
+       dev = dev->Next;
+ 
+-      assert(_eglDeviceSupports(dev, _EGL_DEVICE_DRM));
+-      if (drmDevicesEqual(device, dev->device) != 0)
++      assert(dev == &native_device || _eglDeviceSupports(dev, _EGL_DEVICE_DRM));
++      if (_eglDeviceSupports(dev, _EGL_DEVICE_DRM) &&
++          drmDevicesEqual(device, dev->device) != 0)
+          return 1;
+    }
+ 
+@@ -150,6 +157,25 @@
+    return 0;
+ }
+ #endif
++
++/* The current Trames profile selects one native Vulkan GPU per process.
++ * Register identity only after its original Zink screen initializes. No DRM
++ * or software extensions are claimed for this device; ordinary device handle
++ * validation, enumeration and display queries use the existing global lock.
++ */
++_EGLDevice *
++_eglFindNativeDevice(void)
++{
++   simple_mtx_lock(_eglGlobal.Mutex);
++   _EGLDevice *tail = _eglGlobal.DeviceList;
++   assert(tail);
++   while (tail->Next && tail != &native_device)
++      tail = tail->Next;
++   if (tail != &native_device)
++      tail->Next = &native_device;
++   simple_mtx_unlock(_eglGlobal.Mutex);
++   return &native_device;
++}
+ 
+ /* Finds a device in DeviceList, for the given fd.
+  *
+@@ -310,6 +336,9 @@
+    assert(dev);
+    assert(_eglDeviceSupports(dev, _EGL_DEVICE_SOFTWARE));
+    count++;
++   for (_EGLDevice *native = dev->Next; native; native = native->Next)
++      if (native == &native_device)
++         count++;
+ 
+ #ifdef HAVE_LIBDRM
+    drmDevicePtr devices[64];
+--- a/src/egl/main/egldevice.h
++++ b/src/egl/main/egldevice.h
+@@ -60,6 +60,9 @@
+ _EGLDevice *
+ _eglFindDevice(int fd, bool software);
+ 
++_EGLDevice *
++_eglFindNativeDevice(void);
++
+ enum _egl_device_extension {
+    _EGL_DEVICE_SOFTWARE,
+    _EGL_DEVICE_DRM,

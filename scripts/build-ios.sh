@@ -19,12 +19,17 @@ cp target/musl-hybrid/libc.so target/musl-hybrid/manifest.json target/musl-hybri
 [[ -f target/vulkan-guest/libtrames_vulkan_icd.so && -f target/vulkan-guest/manifest.json ]]
 mkdir -p apps/ios/Trames/GuestVulkan
 cp target/vulkan-guest/libtrames_vulkan_icd.so target/vulkan-guest/manifest.json target/vulkan-guest/GPL-3.0.txt apps/ios/Trames/GuestVulkan/
+if [[ -f target/vulkan-guest/libEGL.so.1 ]]; then
+  cp target/vulkan-guest/libEGL.so.1 target/vulkan-guest/egl-manifest.json apps/ios/Trames/GuestVulkan/
+fi
 cp -R target/vulkan-guest/acceptance apps/ios/Trames/GuestVulkan/
 cp -R target/vulkan-guest/wayland-acceptance apps/ios/Trames/GuestVulkan/
 if [[ -d target/vulkan-guest/Notices ]]; then cp -R target/vulkan-guest/Notices apps/ios/Trames/GuestVulkan/; fi
 python3 - <<'PYCODE'
 import hashlib,json,pathlib
 p=pathlib.Path('apps/ios/Trames/GuestVulkan');m=json.loads((p/'manifest.json').read_text());assert hashlib.sha256((p/'libtrames_vulkan_icd.so').read_bytes()).hexdigest()==m['icd_sha256']
+if (p/'libEGL.so.1').exists():
+    e=json.loads((p/'egl-manifest.json').read_text());assert hashlib.sha256((p/'libEGL.so.1').read_bytes()).hexdigest()==e['egl_sha256']
 PYCODE
 python3 scripts/prepare-vulkan.py --apple
 mvk="$PWD/target/vulkan-upstream/moltenvk-all/MoltenVK/MoltenVK/static/MoltenVK.xcframework"

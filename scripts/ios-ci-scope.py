@@ -357,14 +357,37 @@ def main():
                                         'scripts/build-vulkan-fixtures.sh', 'scripts/prepare-zink-native-bundle.py'})
                     if plan.get('native_scope') == 'zink-wayland':
                         allowed.update({'tests/fixtures/zink-wayland.c', 'tests/fixtures/vulkan-copy.c',
-                                        'tests/fixtures/zink-metal-pixels.m', 'tests/integration/zink-wayland.py'})
+                                        'tests/fixtures/zink-metal-pixels.m', 'tests/integration/zink-wayland.py',
+                                        'scripts/build-zink-egl.py', 'patches/mesa/0001-wayland-kopper-native-wsi.patch',
+                                        'crates/trames-distro/src/lib.rs', 'crates/trames-ffi/src/session.rs', 'scripts/build-ios.sh'})
                     if any(p not in allowed and not p.startswith('docs/') and not (sync and p.startswith('crates/trames-vulkan/')) for p in changed):
                         raise RuntimeError('Zink foundation plan includes unrelated source changes')
                     path = 'crates/trames-distro/src/vulkan.rs'
                     old = subprocess.check_output(['git', 'show', base + ':' + path], text=True).split('#[cfg(test)]')[0]
                     new = Path(path).read_text().split('#[cfg(test)]')[0]
-                    if old.replace('"api_version":"1.0.0"', '"api_version":"1.1.0"') != new:
+                    if plan.get('native_scope') != 'zink-wayland' and old.replace('"api_version":"1.0.0"', '"api_version":"1.1.0"') != new:
                         raise RuntimeError('Only bundled instance-version metadata may change in native Rust')
+                    gpu_reuse = plan.get('zink_vulkan_validation_reuse')
+                    if gpu_reuse:
+                        source = gpu_reuse['sha']
+                        if plan.get('native_scope') != 'zink-wayland' or subprocess.check_output([
+                                'git', 'diff', '--name-only', source, 'HEAD', '--',
+                                'crates/trames-vulkan', 'accelerator/vulkan', 'Cargo.lock', 'rust-toolchain.toml']).strip():
+                            raise RuntimeError('Vulkan validation reuse requires exact unchanged Vulkan source/toolchain')
+                        def gpu_evidence(path):
+                            req = urllib.request.Request(f'https://api.github.com/repos/{repo}/' + path, headers=dict(request.headers))
+                            with urllib.request.urlopen(req, timeout=30) as response:
+                                return json.load(response)
+                        run = gpu_evidence(f"actions/runs/{gpu_reuse['run']}")
+                        if run['head_sha'] != source or run['head_repository']['full_name'] != repo:
+                            raise RuntimeError('Vulkan validation source/repository mismatch')
+                        jobs = gpu_evidence(f"actions/runs/{gpu_reuse['run']}/jobs")['jobs']
+                        for name, step in [
+                                ('zink-wayland-linux', 'Check affected Vulkan module and build production embedding'),
+                                ('zink-wayland-apple', 'Verify exact guest inputs and Apple embedding')]:
+                            job = next(j for j in jobs if j['name'] == name)
+                            if not any(s['name'] == step and s['conclusion'] == 'success' for s in job['steps']):
+                                raise RuntimeError('Missing passed exact-source Vulkan module checks: ' + name)
                     reuse = plan.get('zink_reuse_apple')
                     if reuse:
                         source = reuse['sha']
@@ -447,6 +470,9 @@ def main():
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=' + plan['native_scope'] + '\n')
                         output.write('skip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
+                        if gpu_reuse:
+                            output.write('zink_egl_only=true\n')
+                            print('Reuse exact unchanged Linux/Apple Vulkan module checks; validate changed EGL component, distro install and embedding.')
                         if sync_reuse:
                             output.write('zink_sync_skip_linux=true\nzink_sync_skip_apple_checks=true\n')
                             print('Reuse exact-source passed Linux GPU and Apple module/iOS checks; retry only macOS MoltenVK native-example linking/runtime.')

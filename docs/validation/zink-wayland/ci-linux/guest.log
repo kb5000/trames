@@ -1,0 +1,52 @@
+chmod +x /tmp/zink-wayland /tmp/vulkan-copy; VK_DRIVER_FILES=/usr/share/vulkan/icd.d/trames.json /tmp/vulkan-copy; printf "\nZINK_COPY_RESULT:%d\n" $?
+~ # chmod +x /tmp/zink-wayland /tmp/vulkan-copy; VK_DRIVER_FILES=/usr/share/vulk
+
+an/icd.d/trames.json /tmp/vulkan-copy; printf "\nZINK_COPY_RESULT:%d\n" $?
+vulkan-copy-ok: 64 GPU pixels; offset multi-region copies, same-image disjoint copy and teardown
+
+ZINK_COPY_RESULT:0
+~ # [6nchmod +x /tmp/zink-wayland; GALLIUM_DRIVER=zink MESA_LOADER_DRIVER_OVERRIDE=
+
+zink EGL_PLATFORM=wayland mesa_glthread=false VK_DRIVER_FILES=/usr/share/vulkan/
+
+icd.d/trames.json LIBGL_ALWAYS_SOFTWARE=true /tmp/zink-wayland; printf "\nZINK_W
+
+INDOW_RESULT:%d\n" $?
+WARNING: Some incorrect rendering might occur because the selected Vulkan device (llvmpipe (LLVM 20.1.2, 256 bits)) doesn't support base Zink requirements: have_EXT_custom_border_color have_EXT_line_rasterization 
+zink-wayland-EGL 1.5
+ATTENTION: default value of option mesa_glthread overridden by environment.
+zink-wayland-renderer zink Vulkan 1.0(llvmpipe (LLVM 20.1.2, 256 bits) (MESA_LLVMPIPE))
+MESA: warning: WARNING: Incorrect rendering will happen because the Vulkan device doesn't support the 'VK_EXT_depth_clip_enable' feature
+zink-wayland-frame id=0 size=96x64 pixels=correct
+zink-wayland-frame id=1 size=80x48 pixels=correct
+zink-wayland-frame id=0 size=160x96 pixels=correct
+zink-wayland-frame id=1 size=128x72 pixels=correct
+zink-wayland-closed id=0 frames=2
+zink-wayland-frame id=1 size=144x80 pixels=correct
+zink-wayland-closed id=1 frames=4
+zink-wayland-ok: two original Mesa EGL windows, GLSL pixels, swaps and teardown
+
+ZINK_WINDOW_RESULT:0
+~ # [6nchmod +x /tmp/zink-wayland; GALLIUM_DRIVER=zink MESA_LOADER_DRIVER_OVERRIDE=
+
+zink EGL_PLATFORM=wayland mesa_glthread=false VK_DRIVER_FILES=/usr/share/vulkan/
+
+icd.d/trames.json LIBGL_ALWAYS_SOFTWARE=true /tmp/zink-wayland; printf "\nZINK_W
+
+INDOW_RESULT:%d\n" $?
+WARNING: Some incorrect rendering might occur because the selected Vulkan device (llvmpipe (LLVM 20.1.2, 256 bits)) doesn't support base Zink requirements: have_EXT_custom_border_color have_EXT_line_rasterization 
+zink-wayland-EGL 1.5
+ATTENTION: default value of option mesa_glthread overridden by environment.
+zink-wayland-renderer zink Vulkan 1.0(llvmpipe (LLVM 20.1.2, 256 bits) (MESA_LLVMPIPE))
+MESA: warning: WARNING: Incorrect rendering will happen because the Vulkan device doesn't support the 'VK_EXT_depth_clip_enable' feature
+zink-wayland-frame id=0 size=96x64 pixels=correct
+zink-wayland-frame id=1 size=80x48 pixels=correct
+zink-wayland-frame id=0 size=160x96 pixels=correct
+zink-wayland-frame id=1 size=128x72 pixels=correct
+zink-wayland-closed id=0 frames=2
+zink-wayland-frame id=1 size=144x80 pixels=correct
+zink-wayland-closed id=1 frames=4
+zink-wayland-ok: two original Mesa EGL windows, GLSL pixels, swaps and teardown
+
+ZINK_WINDOW_RESULT:0
+~ # [6n

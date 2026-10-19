@@ -17,6 +17,7 @@ p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('--store', type=Path, help='installed signed Mesa plus wayland-libs-egl store; copied; otherwise install original APKs')
 p.add_argument('--snapshot-store', type=Path, help='save original installed inputs before session mutations')
 p.add_argument('--metal-validator', type=Path, help='native test-only exported-MTLTexture pixel oracle')
+p.add_argument('--egl-library', type=Path, help='Mesa EGL platform adapter; Gallium/Zink and loader remain original')
 p.add_argument('--output', type=Path, required=True)
 p.add_argument('--ffi', type=Path, default=ROOT / 'target/release' / ('libtrames_ffi.dylib' if sys.platform == 'darwin' else 'libtrames_ffi.so'))
 a = p.parse_args()
@@ -77,6 +78,11 @@ report = dict(source='original signed Mesa25.1.9 EGL/GLES2 and libwayland; produ
               icd_sha256=hashlib.sha256((ROOT / 'target/vulkan-guest/libtrames_vulkan_icd.so').read_bytes()).hexdigest(),
               input_store_manifest_sha256=input_manifest,
               rounds=[], passed=False, physical_ipad=False)
+bundled_egl = ROOT / 'target/vulkan-guest/libEGL.so.1'
+if bundled_egl.is_file():
+    report['source'] = 'Mesa25.1.9 EGL native-WSI platform adapter; original signed Gallium/Zink/GLES2, libwayland and Vulkan loader; production FFI'
+    report['egl_adapter_sha256'] = hashlib.sha256(bundled_egl.read_bytes()).hexdigest()
+    report['automatic_session_egl_setup'] = True
 
 def payload(method, value):
     data = json.dumps(value).encode()
@@ -111,6 +117,9 @@ try:
     assert state['phase'] == 'running', state
     for name in ('zink-wayland', 'vulkan-copy'):
         payload('transfer', dict(guest='/tmp/' + name, host=str(ROOT / 'target/zink-inputs' / name), export=False, replace=True))
+    if a.egl_library:
+        payload('transfer', dict(guest='/usr/local/lib/libEGL.so.1', host=str(a.egl_library.resolve()), export=False, replace=True))
+        report['egl_adapter_sha256'] = hashlib.sha256(a.egl_library.read_bytes()).hexdigest()
     send('chmod +x /tmp/zink-wayland /tmp/vulkan-copy; VK_DRIVER_FILES=/usr/share/vulkan/icd.d/trames.json /tmp/vulkan-copy; printf "\\nZINK_COPY_RESULT:%d\\n" $?\n')
     start = time.monotonic()
     while '\r\nZINK_COPY_RESULT:0\r\n' not in text:
@@ -126,7 +135,11 @@ try:
         # ES3 in upstream gl_API.xml. Its ES2-only context reports INVALID_OPERATION
         # after SwapBuffers. This upstream option uses direct GL dispatch; Zink
         # and Vulkan/Metal rendering, threads and presentation remain original.
-        environment = 'GALLIUM_DRIVER=zink MESA_LOADER_DRIVER_OVERRIDE=zink EGL_PLATFORM=wayland mesa_glthread=false VK_DRIVER_FILES=/usr/share/vulkan/icd.d/trames.json'
+        environment = 'EGL_PLATFORM=wayland'
+        if not bundled_egl.is_file():
+            environment += ' GALLIUM_DRIVER=zink MESA_LOADER_DRIVER_OVERRIDE=zink mesa_glthread=false VK_DRIVER_FILES=/usr/share/vulkan/icd.d/trames.json'
+        if a.egl_library:
+            environment += ' LIBGL_KOPPER_WAYLAND_NO_DRM=true'
         if os.environ.get('TRAMES_ZINK_CPU_REFERENCE') == '1':
             environment += ' LIBGL_ALWAYS_SOFTWARE=true'
         if os.environ.get('TRAMES_VULKAN_TRACE'):
@@ -212,5 +225,5 @@ finally:
     for frame, _, _, _ in held:
         release(frame, False)
     api.trames_session_close(session)
-    (a.output / 'guest.log').write_text(text)
+    (a.output / 'guest.log').write_text(text.replace('\r\n', '\n').replace('\r', '\n'))
     (a.output / 'results.json').write_text(json.dumps(report, indent=2) + '\n')

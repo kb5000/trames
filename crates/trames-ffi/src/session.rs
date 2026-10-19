@@ -496,6 +496,7 @@ fn run(
     prepare_runtime_mounts(&mut vfs)?;
     prepare_guest_defaults(&mut vfs, &options.network)?;
     vfs.chdir(b"/root").map_err(|e| e.to_string())?;
+    let mut zink_egl = false;
     if options.vulkan_accelerator {
         if let Some(path) = &options.vulkan_icd {
             trames_distro::install_vulkan_icd(
@@ -503,6 +504,15 @@ fn run(
                 &mut vfs,
             )
             .map_err(|e| format!("install Vulkan ICD: {e}"))?;
+            match File::open(path.with_file_name("libEGL.so.1")) {
+                Ok(mut reader) => {
+                    trames_distro::install_zink_egl(&mut reader, &mut vfs)
+                        .map_err(|e| format!("install Mesa EGL: {e}"))?;
+                    zink_egl = true;
+                }
+                Err(e) if e.kind() == io::ErrorKind::NotFound => {}
+                Err(e) => return Err(format!("read bundled Mesa EGL: {e}")),
+            }
         }
     }
     if let Some(timezone) = options.timezone {
@@ -525,6 +535,15 @@ fn run(
         "TERM=xterm-256color".into(),
         "LANG=C.UTF-8".into(),
     ];
+    if zink_egl {
+        environment.extend([
+            "GALLIUM_DRIVER=zink".into(),
+            "MESA_LOADER_DRIVER_OVERRIDE=zink".into(),
+            "LIBGL_KOPPER_WAYLAND_NO_DRM=true".into(),
+            "mesa_glthread=false".into(),
+            "VK_DRIVER_FILES=/usr/share/vulkan/icd.d/trames.json".into(),
+        ]);
+    }
     if options.wayland {
         let server = vfs
             .enable_wayland(b"/run/user/0")
