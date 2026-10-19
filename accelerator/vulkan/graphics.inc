@@ -2,23 +2,50 @@
 // Core graphics frontend: single color attachment, vertex/index input, sampled textures, dynamic
 // static/dynamic viewport/scissor, depth and native blend/sampler state.
 // Wire op 58..76, 92..97 and 114.
+// Decode selected pNext records locally. Only their copied bodies enter wire calls.
+static int image_formats(const void *chain,const VkImageFormatListCreateInfo **list) {
+    const VkBaseInStructure *next=chain;*list=NULL;unsigned n=0;
+    while(next && n++<16){
+        if(next->sType!=VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO || *list)return 0;
+        *list=(const void *)next;
+        if((*list)->viewFormatCount>16)return 0;
+        next=next->pNext;
+    }
+    return !next;
+}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateImage(VkDevice d,const VkImageCreateInfo *info,const VkAllocationCallbacks *allocator,VkImage *out) {
-    CHECK(info,VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);ALLOCATOR(allocator);
+    if(!info || info->sType!=VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;ALLOCATOR(allocator);
+    const VkImageFormatListCreateInfo *list;if(!image_formats(info->pNext,&list))return VK_ERROR_FEATURE_NOT_PRESENT;
     if(info->flags || info->imageType!=VK_IMAGE_TYPE_2D || info->extent.depth!=1 || info->mipLevels!=1 || info->arrayLayers!=1 || info->samples!=VK_SAMPLE_COUNT_1_BIT || info->tiling!=VK_IMAGE_TILING_OPTIMAL || info->sharingMode!=VK_SHARING_MODE_EXCLUSIVE || (info->initialLayout!=VK_IMAGE_LAYOUT_UNDEFINED && info->initialLayout!=VK_IMAGE_LAYOUT_PREINITIALIZED))return VK_ERROR_FEATURE_NOT_PRESENT;
-    return CALL(60,KEY(d),info->format,info->extent.width,info->extent.height,info->usage,PTR(out),info->initialLayout);
+    return CALL(60,KEY(d),info->format,info->extent.width,info->extent.height,info->usage,PTR(out),info->initialLayout,list?PTR(list->pViewFormats):0,list?list->viewFormatCount:0);
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroyImage(VkDevice d,VkImage image,const VkAllocationCallbacks *allocator) {if(image)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(61,KEY(d),(uint64_t)image));}
 VKAPI_ATTR void VKAPI_CALL vkGetImageMemoryRequirements(VkDevice d,VkImage image,VkMemoryRequirements *out) {checked(CALL(62,KEY(d),(uint64_t)image,PTR(out)));}
 VKAPI_ATTR VkResult VKAPI_CALL vkBindImageMemory(VkDevice d,VkImage image,VkDeviceMemory memory,VkDeviceSize offset) {return CALL(63,KEY(d),(uint64_t)image,(uint64_t)memory,offset);}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateImageView(VkDevice d,const VkImageViewCreateInfo *info,const VkAllocationCallbacks *allocator,VkImageView *out) {
-    CHECK(info,VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);ALLOCATOR(allocator);
+    if(!info || info->sType!=VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;ALLOCATOR(allocator);
+    const VkImageViewUsageCreateInfo *usage=info->pNext;
+    if(usage && !VALID(usage,VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO))return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkImageSubresourceRange *r=&info->subresourceRange;
     if(info->flags || info->viewType!=VK_IMAGE_VIEW_TYPE_2D || info->components.r || info->components.g || info->components.b || info->components.a || r->aspectMask!=((info->format==VK_FORMAT_D16_UNORM||info->format==VK_FORMAT_D32_SFLOAT)?VK_IMAGE_ASPECT_DEPTH_BIT:VK_IMAGE_ASPECT_COLOR_BIT) || r->baseMipLevel || r->levelCount!=1 || r->baseArrayLayer || r->layerCount!=1)return VK_ERROR_FEATURE_NOT_PRESENT;
-    return CALL(64,KEY(d),(uint64_t)info->image,info->format,PTR(out));
+    return CALL(64,KEY(d),(uint64_t)info->image,info->format,PTR(out),usage?usage->usage:0);
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroyImageView(VkDevice d,VkImageView view,const VkAllocationCallbacks *allocator) {if(view)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(65,KEY(d),(uint64_t)view));}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateRenderPass(VkDevice d,const VkRenderPassCreateInfo *info,const VkAllocationCallbacks *allocator,VkRenderPass *out) {
-    CHECK(info,VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);ALLOCATOR(allocator);
+    if(!info || info->sType!=VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;ALLOCATOR(allocator);
+    const VkBaseInStructure *next=info->pNext;unsigned n=0,seen=0;
+    while(next && n++<16){
+        if(next->sType==VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO){
+            const VkRenderPassMultiviewCreateInfo *v=(const void *)next;
+            if(seen&1 || v->correlationMaskCount || (v->subpassCount && v->subpassCount!=info->subpassCount) || (v->dependencyCount && v->dependencyCount!=info->dependencyCount))return VK_ERROR_FEATURE_NOT_PRESENT;seen|=1;
+            for(uint32_t i=0;i<v->subpassCount;i++)if(v->pViewMasks[i])return VK_ERROR_FEATURE_NOT_PRESENT;
+            for(uint32_t i=0;i<v->dependencyCount;i++)if(v->pViewOffsets[i])return VK_ERROR_FEATURE_NOT_PRESENT;
+        }else if(next->sType==VK_STRUCTURE_TYPE_RENDER_PASS_INPUT_ATTACHMENT_ASPECT_CREATE_INFO){
+            if(seen&2 || ((const VkRenderPassInputAttachmentAspectCreateInfo *)next)->aspectReferenceCount)return VK_ERROR_FEATURE_NOT_PRESENT;seen|=2;
+        }else return VK_ERROR_FEATURE_NOT_PRESENT;
+        next=next->pNext;
+    }
+    if(next)return VK_ERROR_FEATURE_NOT_PRESENT;
     if(info->flags || (info->attachmentCount!=1 && info->attachmentCount!=2) || info->subpassCount!=1 || info->dependencyCount>8)return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkAttachmentDescription *a=info->pAttachments;const VkSubpassDescription *s=info->pSubpasses;
     if(a->flags || a->samples!=VK_SAMPLE_COUNT_1_BIT || s->flags || s->pipelineBindPoint!=VK_PIPELINE_BIND_POINT_GRAPHICS || s->inputAttachmentCount || s->colorAttachmentCount!=1 || s->pColorAttachments[0].attachment!=0 || s->pColorAttachments[0].layout!=VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL || s->pResolveAttachments || s->preserveAttachmentCount)return VK_ERROR_FEATURE_NOT_PRESENT;
@@ -33,7 +60,19 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateRenderPass(VkDevice d,const VkRenderPassC
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroyRenderPass(VkDevice d,VkRenderPass pass,const VkAllocationCallbacks *allocator) {if(pass)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(67,KEY(d),(uint64_t)pass));}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateFramebuffer(VkDevice d,const VkFramebufferCreateInfo *info,const VkAllocationCallbacks *allocator,VkFramebuffer *out) {
-    CHECK(info,VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);ALLOCATOR(allocator);
+    if(!info || info->sType!=VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;ALLOCATOR(allocator);
+    if(info->flags==VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT){
+        const VkFramebufferAttachmentsCreateInfo *a=info->pNext;
+        if(!VALID(a,VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO) || a->attachmentImageInfoCount!=info->attachmentCount || info->layers!=1 || info->attachmentCount>2)return VK_ERROR_FEATURE_NOT_PRESENT;
+        uint64_t wire[2][7];
+        for(uint32_t i=0;i<info->attachmentCount;i++){
+            const VkFramebufferAttachmentImageInfo *v=a->pAttachmentImageInfos+i;
+            if(!VALID(v,VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO) || v->viewFormatCount>16)return VK_ERROR_FEATURE_NOT_PRESENT;
+            wire[i][0]=v->flags;wire[i][1]=v->usage;wire[i][2]=v->width;wire[i][3]=v->height;wire[i][4]=v->layerCount;wire[i][5]=PTR(v->pViewFormats);wire[i][6]=v->viewFormatCount;
+        }
+        return CALL(125,KEY(d),(uint64_t)info->renderPass,info->width,info->height,info->attachmentCount,PTR(wire),PTR(out));
+    }
+    if(!supported_next(info->pNext))return VK_ERROR_FEATURE_NOT_PRESENT;
     if(info->flags || (info->attachmentCount!=1 && info->attachmentCount!=2) || info->layers!=1)return VK_ERROR_FEATURE_NOT_PRESENT;
     return CALL(68,KEY(d),(uint64_t)info->renderPass,(uint64_t)info->pAttachments[0],info->width,info->height,PTR(out),info->attachmentCount==2?(uint64_t)info->pAttachments[1]:0);
 }
@@ -64,10 +103,13 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateGraphicsPipelines(VkDevice d,VkPipelineCa
     for(uint32_t i=0;i<v->vertexAttributeDescriptionCount;i++){const VkVertexInputAttributeDescription *x=&v->pVertexAttributeDescriptions[i];attributes[i][0]=x->location;attributes[i][1]=x->binding;attributes[i][2]=x->format;attributes[i][3]=x->offset;}
     return CALL(70,KEY(d),(uint64_t)info->layout,(uint64_t)vertex->module,(uint64_t)fragment->module,PTR(vertex->pName),PTR(fragment->pName),PTR(state),PTR(out),PTR(bindings),v->vertexBindingDescriptionCount,PTR(attributes),v->vertexAttributeDescriptionCount,a->primitiveRestartEnable,(uint64_t)cache,z?((z->depthTestEnable?1UL:0)|(z->depthWriteEnable?2UL:0)|((uint64_t)z->depthCompareOp<<4)):0,PTR(config));
 }
-VKAPI_ATTR void VKAPI_CALL vkCmdBeginRenderPass(VkCommandBuffer c,const VkRenderPassBeginInfo *info,VkSubpassContents contents) {
-    if(!VALID(info,VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO) || contents!=VK_SUBPASS_CONTENTS_INLINE || info->clearValueCount>2)checked(VK_ERROR_FEATURE_NOT_PRESENT);
-    checked(CALL(71,DEVKEY(c),KEY(c),(uint64_t)info->renderPass,(uint64_t)info->framebuffer,info->renderArea.offset.x,info->renderArea.offset.y,info->renderArea.extent.width,info->renderArea.extent.height,PTR(info->pClearValues),info->clearValueCount));
+static VkResult begin_pass(VkCommandBuffer c,const VkRenderPassBeginInfo *info,VkSubpassContents contents,unsigned op) {
+    if(!info || info->sType!=VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO || contents!=VK_SUBPASS_CONTENTS_INLINE || info->clearValueCount>2)return VK_ERROR_FEATURE_NOT_PRESENT;
+    const VkRenderPassAttachmentBeginInfo *a=info->pNext;
+    if(a && (!VALID(a,VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO) || a->attachmentCount>2))return VK_ERROR_FEATURE_NOT_PRESENT;
+    return CALL(op,DEVKEY(c),KEY(c),(uint64_t)info->renderPass,(uint64_t)info->framebuffer,(uint64_t)(int64_t)info->renderArea.offset.x,(uint64_t)(int64_t)info->renderArea.offset.y,info->renderArea.extent.width,info->renderArea.extent.height,PTR(info->pClearValues),info->clearValueCount,a?PTR(a->pAttachments):0,a?a->attachmentCount:0);
 }
+VKAPI_ATTR void VKAPI_CALL vkCmdBeginRenderPass(VkCommandBuffer c,const VkRenderPassBeginInfo *info,VkSubpassContents contents) {checked(begin_pass(c,info,contents,71));}
 VKAPI_ATTR void VKAPI_CALL vkCmdEndRenderPass(VkCommandBuffer c) {checked(CALL(72,DEVKEY(c),KEY(c)));}
 VKAPI_ATTR void VKAPI_CALL vkCmdDraw(VkCommandBuffer c,uint32_t vertices,uint32_t instances,uint32_t firstVertex,uint32_t firstInstance) {checked(CALL(73,DEVKEY(c),KEY(c),vertices,instances,firstVertex,firstInstance));}
 static void buffer_image_copy(VkCommandBuffer c,VkImage image,VkImageLayout layout,VkBuffer buffer,uint32_t count,const VkBufferImageCopy *regions,unsigned op) {

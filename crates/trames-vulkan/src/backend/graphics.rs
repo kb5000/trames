@@ -16,10 +16,17 @@ pub(super) struct PassInfo {
     depth: Option<vk::Format>,
     depth_clear: bool,
 }
+pub(super) struct AttachmentSpec {
+    usage: vk::ImageUsageFlags,
+    width: u32,
+    height: u32,
+    formats: Vec<vk::Format>,
+}
 #[derive(Default)]
 pub(super) struct Recording {
     pub pass: Option<Rc<Object>>,
     pub pipeline: Option<Rc<Object>>,
+    pass2: bool,
     pub compute_pipeline: Option<Rc<Object>>,
     vertices: BTreeMap<u32, (Rc<Object>, u64)>,
     index: Option<(Rc<Object>, u64, u32)>,
@@ -77,6 +84,7 @@ fn layout(raw: u64, initial: bool) -> Result<vk::ImageLayout> {
         5 => Ok(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL),
         6 => Ok(vk::ImageLayout::TRANSFER_SRC_OPTIMAL),
         7 => Ok(vk::ImageLayout::TRANSFER_DST_OPTIMAL),
+        1000117000 | 1000117001 => Ok(vk::ImageLayout::from_raw(raw as i32)),
         1000001002 => Ok(vk::ImageLayout::PRESENT_SRC_KHR),
         _ => unsupported(),
     }
@@ -169,16 +177,45 @@ impl Backend {
         {
             return Err(vk::Result::ERROR_FORMAT_NOT_SUPPORTED.into());
         }
-        let p = unsafe {
-            instance.get_physical_device_image_format_properties(
-                self.physical,
-                format(a[1])?,
-                vk::ImageType::TYPE_2D,
-                vk::ImageTiling::OPTIMAL,
-                format_usage(format(a[1])?, a[4])?,
-                vk::ImageCreateFlags::empty(),
-            )
-        }?;
+        let formats: Vec<_> = words32(m, a[7], bounded(a[8], 16)?)?
+            .into_iter()
+            .map(|f| format(f as u64))
+            .collect::<Result<_>>()?;
+        let p = if formats.is_empty() {
+            unsafe {
+                instance.get_physical_device_image_format_properties(
+                    self.physical,
+                    format(a[1])?,
+                    vk::ImageType::TYPE_2D,
+                    vk::ImageTiling::OPTIMAL,
+                    format_usage(format(a[1])?, a[4])?,
+                    vk::ImageCreateFlags::empty(),
+                )
+            }?
+        } else {
+            if self.capabilities.bits & zink::FORMAT_LIST == 0 {
+                return unsupported();
+            }
+            let mut list = vk::ImageFormatListCreateInfo::default().view_formats(&formats);
+            let info = vk::PhysicalDeviceImageFormatInfo2::default()
+                .format(format(a[1])?)
+                .ty(vk::ImageType::TYPE_2D)
+                .tiling(vk::ImageTiling::OPTIMAL)
+                .usage(format_usage(format(a[1])?, a[4])?)
+                .push_next(&mut list);
+            let mut properties = vk::ImageFormatProperties2::default();
+            let owner = self.instance.as_ref().unwrap();
+            let api =
+                ash::khr::get_physical_device_properties2::Instance::new(&owner._entry, instance);
+            unsafe {
+                api.get_physical_device_image_format_properties2(
+                    self.physical,
+                    &info,
+                    &mut properties,
+                )
+            }?;
+            properties.image_format_properties
+        };
         let mut bytes = Vec::new();
         for n in [
             p.max_extent.width.min(DIMENSION),
@@ -554,7 +591,15 @@ impl Backend {
                 if a[2] == 0 || a[3] == 0 || a[2] > DIMENSION as u64 || a[3] > DIMENSION as u64 {
                     return invalid();
                 }
-                let info = vk::ImageCreateInfo::default()
+                let formats: Vec<_> = words32(m, a[7], bounded(a[8], 16)?)?
+                    .into_iter()
+                    .map(|f| format(f as u64))
+                    .collect::<Result<_>>()?;
+                if !formats.is_empty() && !device.format_list {
+                    return unsupported();
+                }
+                let mut list = vk::ImageFormatListCreateInfo::default().view_formats(&formats);
+                let mut info = vk::ImageCreateInfo::default()
                     .image_type(vk::ImageType::TYPE_2D)
                     .format(f)
                     .extent(vk::Extent3D {
@@ -573,6 +618,9 @@ impl Backend {
                         8 => vk::ImageLayout::PREINITIALIZED,
                         _ => return invalid(),
                     });
+                if !formats.is_empty() {
+                    info = info.push_next(&mut list);
+                }
                 let raw = unsafe { d.create_image(&info, None) }?;
                 let id = self.put(Kind::Image, raw.as_raw(), vec![], 0, u.as_raw());
                 self.objects[&id].image.set(Some(ImageShape {
@@ -633,18 +681,37 @@ impl Backend {
                 {
                     return invalid();
                 }
-                let info = vk::ImageViewCreateInfo::default()
+                let view_usage = if a[4] == 0 {
+                    vk::ImageUsageFlags::empty()
+                } else {
+                    if !device.maintenance2 {
+                        return unsupported();
+                    }
+                    let usage = usage(a[4])?;
+                    if usage.as_raw() & !image.flags != 0 {
+                        return invalid();
+                    }
+                    usage
+                };
+                let mut view_usage_info = vk::ImageViewUsageCreateInfo::default().usage(view_usage);
+                let mut info = vk::ImageViewCreateInfo::default()
                     .image(vk::Image::from_raw(image.raw))
                     .view_type(vk::ImageViewType::TYPE_2D)
                     .format(shape.format)
                     .subresource_range(image_range(shape.format));
+                if a[4] != 0 {
+                    info = info.push_next(&mut view_usage_info);
+                }
                 let raw = unsafe { d.create_image_view(&info, None) }?;
                 let id = self.put(Kind::ImageView, raw.as_raw(), vec![image], 0, 0);
                 self.objects[&id].image.set(Some(shape));
                 self.publish(m, a[3], id)?;
             }
             65 => self.remove(a[1], Kind::ImageView)?,
-            66 => {
+            66 | 122 => {
+                if op == 122 && !device.renderpass2 {
+                    return unsupported();
+                }
                 self.room(1)?;
                 output(m, a[8], 8)?;
                 let f = format(a[1])?;
@@ -720,7 +787,58 @@ impl Backend {
                     .attachments(&attachments)
                     .subpasses(&subpasses)
                     .dependencies(&dependencies);
-                let raw = unsafe { d.create_render_pass(&info, None) }?;
+                let raw = if op == 122 {
+                    let attachments: Vec<_> = attachments
+                        .iter()
+                        .map(|x| {
+                            vk::AttachmentDescription2::default()
+                                .format(x.format)
+                                .samples(x.samples)
+                                .load_op(x.load_op)
+                                .store_op(x.store_op)
+                                .stencil_load_op(x.stencil_load_op)
+                                .stencil_store_op(x.stencil_store_op)
+                                .initial_layout(x.initial_layout)
+                                .final_layout(x.final_layout)
+                        })
+                        .collect();
+                    let colors = [vk::AttachmentReference2::default()
+                        .attachment(0)
+                        .layout(vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL)
+                        .aspect_mask(vk::ImageAspectFlags::COLOR)];
+                    let reference = vk::AttachmentReference2::default()
+                        .attachment(1)
+                        .layout(vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+                        .aspect_mask(vk::ImageAspectFlags::DEPTH);
+                    let mut subpass = vk::SubpassDescription2::default()
+                        .pipeline_bind_point(vk::PipelineBindPoint::GRAPHICS)
+                        .color_attachments(&colors);
+                    if depth.is_some() {
+                        subpass = subpass.depth_stencil_attachment(&reference);
+                    }
+                    let subpasses = [subpass];
+                    let dependencies: Vec<_> = dependencies
+                        .iter()
+                        .map(|x| {
+                            vk::SubpassDependency2::default()
+                                .src_subpass(x.src_subpass)
+                                .dst_subpass(x.dst_subpass)
+                                .src_stage_mask(x.src_stage_mask)
+                                .dst_stage_mask(x.dst_stage_mask)
+                                .src_access_mask(x.src_access_mask)
+                                .dst_access_mask(x.dst_access_mask)
+                                .dependency_flags(x.dependency_flags)
+                        })
+                        .collect();
+                    let info2 = vk::RenderPassCreateInfo2::default()
+                        .attachments(&attachments)
+                        .subpasses(&subpasses)
+                        .dependencies(&dependencies);
+                    let api = ash::khr::create_renderpass2::Device::new(&device.instance.native, d);
+                    unsafe { api.create_render_pass2(&info2, None) }?
+                } else {
+                    unsafe { d.create_render_pass(&info, None) }?
+                };
                 let id = self.put(Kind::RenderPass, raw.as_raw(), vec![], 0, 0);
                 self.objects[&id].pass.set(Some(PassInfo {
                     format: f,
@@ -783,8 +901,88 @@ impl Backend {
                 }));
                 self.publish(m, a[5], id)?;
             }
+            125 => {
+                if !device.imageless {
+                    return unsupported();
+                }
+                self.room(1)?;
+                output(m, a[6], 8)?;
+                let pass = self.object(a[1], Kind::RenderPass)?;
+                let p = pass.pass.get().unwrap();
+                let count = 1 + usize::from(p.depth.is_some());
+                if a[4] != count as u64
+                    || a[2] == 0
+                    || a[3] == 0
+                    || a[2] > DIMENSION as u64
+                    || a[3] > DIMENSION as u64
+                {
+                    return invalid();
+                }
+                let wire = words64(m, a[5], count * 7)?;
+                let mut specs = Vec::new();
+                for (i, x) in wire.chunks_exact(7).enumerate() {
+                    let u = usage(x[1])?;
+                    let wanted = if i == 0 { p.format } else { p.depth.unwrap() };
+                    let required = if i == 0 {
+                        vk::ImageUsageFlags::COLOR_ATTACHMENT
+                    } else {
+                        vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT
+                    };
+                    let formats: Vec<_> = words32(m, x[5], bounded(x[6], 16)?)?
+                        .into_iter()
+                        .map(|f| format(f as u64))
+                        .collect::<Result<_>>()?;
+                    if x[0] != 0
+                        || !u.contains(required)
+                        || x[2] < a[2]
+                        || x[3] < a[3]
+                        || x[2] > DIMENSION as u64
+                        || x[3] > DIMENSION as u64
+                        || x[4] != 1
+                        || !formats.contains(&wanted)
+                    {
+                        return invalid();
+                    }
+                    specs.push(AttachmentSpec {
+                        usage: u,
+                        width: x[2] as u32,
+                        height: x[3] as u32,
+                        formats,
+                    });
+                }
+                let images: Vec<_> = specs
+                    .iter()
+                    .map(|s| {
+                        vk::FramebufferAttachmentImageInfo::default()
+                            .usage(s.usage)
+                            .width(s.width)
+                            .height(s.height)
+                            .layer_count(1)
+                            .view_formats(&s.formats)
+                    })
+                    .collect();
+                let mut attachment_info =
+                    vk::FramebufferAttachmentsCreateInfo::default().attachment_image_infos(&images);
+                let mut info = vk::FramebufferCreateInfo::default()
+                    .flags(vk::FramebufferCreateFlags::IMAGELESS)
+                    .render_pass(vk::RenderPass::from_raw(pass.raw))
+                    .width(a[2] as u32)
+                    .height(a[3] as u32)
+                    .layers(1)
+                    .push_next(&mut attachment_info);
+                info.attachment_count = count as u32;
+                let raw = unsafe { d.create_framebuffer(&info, None) }?;
+                let id = self.put(Kind::Framebuffer, raw.as_raw(), vec![pass], 0, 1);
+                self.objects[&id].image.set(Some(ImageShape {
+                    width: a[2] as u32,
+                    height: a[3] as u32,
+                    format: p.format,
+                }));
+                *self.objects[&id].attachment_specs.borrow_mut() = specs;
+                self.publish(m, a[6], id)?;
+            }
             69 => self.remove(a[1], Kind::Framebuffer)?,
-            71..=76 | 94..=97 | 114 => {
+            71..=76 | 94..=97 | 114 | 123..=124 => {
                 let c = self.object(a[1], Kind::CommandBuffer)?;
                 if c.state.get() != 1 {
                     return invalid();
@@ -841,7 +1039,10 @@ impl Backend {
                         }
                         c.retain(image);
                     }
-                    71 => {
+                    71 | 123 => {
+                        if op == 123 && !device.renderpass2 {
+                            return unsupported();
+                        }
                         if c.recording.borrow().pass.is_some() {
                             return invalid();
                         }
@@ -886,7 +1087,40 @@ impl Backend {
                                 });
                             }
                         }
-                        let info = vk::RenderPassBeginInfo::default()
+                        let views: Vec<_> = words64(m, a[10], bounded(a[11], 2)?)?
+                            .into_iter()
+                            .map(|id| self.object(id, Kind::ImageView))
+                            .collect::<Result<_>>()?;
+                        let specs = fb.attachment_specs.borrow();
+                        if fb.flags == 1 {
+                            if views.len() != specs.len() {
+                                return invalid();
+                            }
+                            let p = pass.pass.get().unwrap();
+                            for (i, (v, spec)) in views.iter().zip(specs.iter()).enumerate() {
+                                let shape = shape(v)?;
+                                let image = &v.deps.borrow()[0];
+                                let wanted = if i == 0 { p.format } else { p.depth.unwrap() };
+                                if shape.format != wanted
+                                    || !spec.formats.contains(&shape.format)
+                                    || image.flags != spec.usage.as_raw()
+                                    || shape.width < spec.width
+                                    || shape.height < spec.height
+                                {
+                                    return invalid();
+                                }
+                            }
+                        } else if !views.is_empty() {
+                            return invalid();
+                        }
+                        drop(specs);
+                        let attachments: Vec<_> = views
+                            .iter()
+                            .map(|v| vk::ImageView::from_raw(v.raw))
+                            .collect();
+                        let mut attachment_info =
+                            vk::RenderPassAttachmentBeginInfo::default().attachments(&attachments);
+                        let mut info = vk::RenderPassBeginInfo::default()
                             .render_pass(vk::RenderPass::from_raw(pass.raw))
                             .framebuffer(vk::Framebuffer::from_raw(fb.raw))
                             .render_area(vk::Rect2D {
@@ -900,18 +1134,51 @@ impl Backend {
                                 },
                             })
                             .clear_values(&clears);
-                        unsafe {
-                            d.cmd_begin_render_pass(raw, &info, vk::SubpassContents::INLINE);
+                        if fb.flags == 1 {
+                            info = info.push_next(&mut attachment_info);
                         }
+                        unsafe {
+                            if op == 123 {
+                                let api = ash::khr::create_renderpass2::Device::new(
+                                    &device.instance.native,
+                                    d,
+                                );
+                                api.cmd_begin_render_pass2(
+                                    raw,
+                                    &info,
+                                    &vk::SubpassBeginInfo::default()
+                                        .contents(vk::SubpassContents::INLINE),
+                                );
+                            } else {
+                                d.cmd_begin_render_pass(raw, &info, vk::SubpassContents::INLINE);
+                            }
+                        }
+                        for view in views {
+                            c.retain(view);
+                        }
+                        c.recording.borrow_mut().pass2 = op == 123;
                         c.recording.borrow_mut().pass = Some(pass);
                         c.retain(fb);
                     }
-                    72 => {
-                        if c.recording.borrow().pass.is_none() {
+                    72 | 124 => {
+                        if op == 124 && !device.renderpass2 {
+                            return unsupported();
+                        }
+                        if c.recording.borrow().pass.is_none()
+                            || c.recording.borrow().pass2 != (op == 124)
+                        {
                             return invalid();
                         }
                         unsafe {
-                            d.cmd_end_render_pass(raw);
+                            if op == 124 {
+                                let api = ash::khr::create_renderpass2::Device::new(
+                                    &device.instance.native,
+                                    d,
+                                );
+                                api.cmd_end_render_pass2(raw, &vk::SubpassEndInfo::default());
+                            } else {
+                                d.cmd_end_render_pass(raw);
+                            }
                         }
                         c.recording.borrow_mut().pass = None;
                     }

@@ -125,6 +125,14 @@
     if(!strcmp(name,"vkSignalSemaphoreKHR"))return (PFN_vkVoidFunction)vkSignalSemaphoreKHR;
     if(!strcmp(name,"vkWaitSemaphores"))return (PFN_vkVoidFunction)vkWaitSemaphores;
     if(!strcmp(name,"vkWaitSemaphoresKHR"))return (PFN_vkVoidFunction)vkWaitSemaphoresKHR;
+    if(!strcmp(name,"vkCreateRenderPass2"))return (PFN_vkVoidFunction)vkCreateRenderPass2;
+    if(!strcmp(name,"vkCreateRenderPass2KHR"))return (PFN_vkVoidFunction)vkCreateRenderPass2KHR;
+    if(!strcmp(name,"vkCmdBeginRenderPass2"))return (PFN_vkVoidFunction)vkCmdBeginRenderPass2;
+    if(!strcmp(name,"vkCmdBeginRenderPass2KHR"))return (PFN_vkVoidFunction)vkCmdBeginRenderPass2KHR;
+    if(!strcmp(name,"vkCmdEndRenderPass2"))return (PFN_vkVoidFunction)vkCmdEndRenderPass2;
+    if(!strcmp(name,"vkCmdEndRenderPass2KHR"))return (PFN_vkVoidFunction)vkCmdEndRenderPass2KHR;
+    if(!strcmp(name,"vkCmdNextSubpass2"))return (PFN_vkVoidFunction)vkCmdNextSubpass2;
+    if(!strcmp(name,"vkCmdNextSubpass2KHR"))return (PFN_vkVoidFunction)vkCmdNextSubpass2KHR;
     if(!strcmp(name,"vkCreateDescriptorUpdateTemplate"))return (PFN_vkVoidFunction)vkCreateDescriptorUpdateTemplate;
     if(!strcmp(name,"vkCreateDescriptorUpdateTemplateKHR"))return (PFN_vkVoidFunction)vkCreateDescriptorUpdateTemplateKHR;
     if(!strcmp(name,"vkDestroyDescriptorUpdateTemplate"))return (PFN_vkVoidFunction)vkDestroyDescriptorUpdateTemplate;

@@ -6,11 +6,17 @@ use super::*;
 pub(super) const MAINTENANCE1: u64 = 1;
 pub(super) const TIMELINE: u64 = 2;
 pub(super) const DRIVER_PROPERTIES: u64 = 4;
+pub(super) const MAINTENANCE2: u64 = 8;
+pub(super) const MULTIVIEW: u64 = 16;
+pub(super) const FORMAT_LIST: u64 = 32;
+pub(super) const RENDERPASS2: u64 = 64;
+pub(super) const IMAGELESS: u64 = 128;
 
 #[derive(Default)]
 pub(super) struct Capabilities {
     pub bits: u64,
     pub max_timeline_difference: u64,
+    point_clipping: u32,
     driver: Option<vk::PhysicalDeviceDriverProperties<'static>>,
 }
 impl Capabilities {
@@ -28,6 +34,21 @@ impl Capabilities {
         if has(ash::khr::maintenance1::NAME) {
             result.bits |= MAINTENANCE1;
         }
+        if instance.queries2 && has(ash::khr::maintenance2::NAME) {
+            result.bits |= MAINTENANCE2;
+        }
+        // Multiview remains disabled in the selected single-layer profile.
+        if has(ash::khr::multiview::NAME) {
+            result.bits |= MULTIVIEW;
+        }
+        if has(ash::khr::image_format_list::NAME) {
+            result.bits |= FORMAT_LIST;
+        }
+        if result.bits & (MAINTENANCE2 | MULTIVIEW) == MAINTENANCE2 | MULTIVIEW
+            && has(ash::khr::create_renderpass2::NAME)
+        {
+            result.bits |= RENDERPASS2;
+        }
         if !instance.queries2 {
             return Ok(result);
         }
@@ -35,6 +56,26 @@ impl Capabilities {
             &instance._entry,
             &instance.native,
         );
+        if result.bits & MAINTENANCE2 != 0 {
+            let mut clipping = vk::PhysicalDevicePointClippingProperties::default();
+            let mut properties = vk::PhysicalDeviceProperties2::default().push_next(&mut clipping);
+            unsafe {
+                queries.get_physical_device_properties2(physical, &mut properties);
+            }
+            result.point_clipping = clipping.point_clipping_behavior.as_raw() as u32;
+        }
+        if result.bits & (MAINTENANCE2 | FORMAT_LIST) == MAINTENANCE2 | FORMAT_LIST
+            && has(ash::khr::imageless_framebuffer::NAME)
+        {
+            let mut imageless = vk::PhysicalDeviceImagelessFramebufferFeatures::default();
+            let mut features = vk::PhysicalDeviceFeatures2::default().push_next(&mut imageless);
+            unsafe {
+                queries.get_physical_device_features2(physical, &mut features);
+            }
+            if imageless.imageless_framebuffer != 0 {
+                result.bits |= IMAGELESS;
+            }
+        }
         if has(ash::khr::timeline_semaphore::NAME) {
             let mut timeline = vk::PhysicalDeviceTimelineSemaphoreFeatures::default();
             let mut features = vk::PhysicalDeviceFeatures2::default().push_next(&mut timeline);
@@ -65,6 +106,12 @@ impl Capabilities {
         }
         Ok(result)
     }
+    pub fn write_clipping(&self, m: &mut Memory, at: u64) -> Result<()> {
+        if self.bits & MAINTENANCE2 == 0 {
+            return unsupported();
+        }
+        write(m, at, &self.point_clipping.to_le_bytes())
+    }
     pub fn write_driver(&self, m: &mut Memory, at: u64) -> Result<()> {
         let Some(driver) = &self.driver else {
             return unsupported();
@@ -84,12 +131,39 @@ pub(super) fn device_extensions(
     caps: &Capabilities,
     names: &mut Vec<*const std::ffi::c_char>,
 ) -> Result<()> {
+    // Native dependencies can be promoted by a client's API version. Resolve
+    // them on the host rather than requiring duplicated guest extension names;
+    // no multiview feature is enabled or exposed by this single-layer profile.
+    let mut flags = flags;
+    if flags & 128 != 0 {
+        flags |= 16 | 32;
+    }
+    if flags & 256 != 0 {
+        flags |= 16 | 64;
+    }
     // bit8 enables the timeline extension, bit2 separately enables its feature.
-    if flags & !15 != 0
+    if flags & !1023 != 0
         || flags & 7 & !caps.bits != 0
         || flags & 2 != 0 && flags & 8 == 0
         || flags & 8 != 0 && caps.bits & TIMELINE == 0
     {
+        return unsupported();
+    }
+    for (flag, cap, name) in [
+        (16, MAINTENANCE2, ash::khr::maintenance2::NAME),
+        (32, MULTIVIEW, ash::khr::multiview::NAME),
+        (64, FORMAT_LIST, ash::khr::image_format_list::NAME),
+        (128, RENDERPASS2, ash::khr::create_renderpass2::NAME),
+        (256, IMAGELESS, ash::khr::imageless_framebuffer::NAME),
+    ] {
+        if flags & flag != 0 {
+            if caps.bits & cap == 0 {
+                return unsupported();
+            }
+            names.push(name.as_ptr());
+        }
+    }
+    if flags & 512 != 0 && flags & 256 == 0 {
         return unsupported();
     }
     if flags & MAINTENANCE1 != 0 {

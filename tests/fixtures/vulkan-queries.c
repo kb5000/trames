@@ -79,6 +79,20 @@ int main(int argc,char **argv) {
         printf("zink-required %s %s\n",zink_extensions[i],available?"available":"missing");
     }
     free(extensions);
+    VkPhysicalDeviceMultiviewFeatures multiview={.sType=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES,.pNext=&unknown,.multiview=VK_TRUE,.multiviewGeometryShader=VK_TRUE,.multiviewTessellationShader=VK_TRUE};
+    VkPhysicalDeviceImagelessFramebufferFeatures imageless={.sType=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES,.pNext=&multiview};
+    features.pNext=&imageless;features_khr(p,&features);assert(imageless.imagelessFramebuffer);
+    assert(features.pNext==&imageless && imageless.pNext==&multiview && multiview.pNext==&unknown);
+    if(bridge)assert(!multiview.multiview && !multiview.multiviewGeometryShader && !multiview.multiviewTessellationShader);
+    VkPhysicalDeviceMultiviewProperties mp={.sType=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES,.pNext=&unknown};
+    VkPhysicalDevicePointClippingProperties clipping={.sType=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES,.pNext=&mp};
+    properties2.pNext=&clipping;vkGetPhysicalDeviceProperties2(p,&properties2);
+    assert(clipping.pointClippingBehavior==VK_POINT_CLIPPING_BEHAVIOR_ALL_CLIP_PLANES || clipping.pointClippingBehavior==VK_POINT_CLIPPING_BEHAVIOR_USER_CLIP_PLANES_ONLY);
+    if(bridge)assert(!mp.maxMultiviewViewCount && !mp.maxMultiviewInstanceIndex);
+    assert(properties2.pNext==&clipping && clipping.pNext==&mp && mp.pNext==&unknown);
+    VkFormat one_format=image_info.format;VkImageFormatListCreateInfo list={.sType=VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO,.viewFormatCount=1,.pViewFormats=&one_format};
+    image_info.pNext=&list;OK(vkGetPhysicalDeviceImageFormatProperties2(p,&image_info,&image_format));assert(image_format.pNext==&unknown);
+
     puts("instance queries: legacy equivalence, aliases, groups, unknown pNext and capacity guards: ok");
     const char *device_extensions[]={VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,VK_KHR_DESCRIPTOR_UPDATE_TEMPLATE_EXTENSION_NAME};
     float priority=1;VkDeviceQueueCreateInfo queue={.sType=VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,.queueFamilyIndex=0,.queueCount=1,.pQueuePriorities=&priority};

@@ -1,0 +1,10 @@
+   Compiling trames-vulkan v1.1.0 (/workspace/trames/crates/trames-vulkan)
+    Finished `release` profile [optimized] target(s) in 5.33s
+     Running `target/perf-runtime/release/examples/lifecycle tests/fixtures/bin/vulkan-compute.spv tests/fixtures/bin/vulkan-render.vert.spv tests/fixtures/bin/vulkan-render.frag.spv`
+260 live-output unmaps: faults, no ID publication/table exhaustion
+260 post-preflight backing I/O failures: native outputs rolled back
+260 graphics output unmaps: no pipeline publication/table exhaustion
+260 graphics pipeline, 260 image and 260 sampler backing failures: unpublished native outputs rolled back
+in-flight graphics pass/shader removal: dependencies retained until completion
+in-flight shader removal: retained native dependency completes
+abandoned compiler/device teardown: no result publication

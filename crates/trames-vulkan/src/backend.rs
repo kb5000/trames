@@ -60,6 +60,10 @@ struct Device {
     anisotropy: bool,
     maintenance1: bool,
     timeline: bool,
+    renderpass2: bool,
+    imageless: bool,
+    format_list: bool,
+    maintenance2: bool,
     native: ash::Device,
     instance: Arc<Instance>,
     atom: u64,
@@ -113,6 +117,7 @@ struct Object {
     mapped: Cell<usize>,
     image: Cell<Option<ImageShape>>,
     pass: Cell<Option<PassInfo>>,
+    attachment_specs: RefCell<Vec<graphics::AttachmentSpec>>,
     recording: RefCell<Recording>,
     vertex_inputs: RefCell<Vec<graphics::VertexBinding>>,
     static_states: Cell<u8>,
@@ -379,6 +384,7 @@ impl Backend {
             mapped: Cell::new(0),
             image: Cell::new(None),
             pass: Cell::new(None),
+            attachment_specs: RefCell::new(Vec::new()),
             recording: RefCell::new(Recording::default()),
             vertex_inputs: RefCell::new(Vec::new()),
             static_states: Cell::new(0),
@@ -634,6 +640,7 @@ impl Backend {
             mapped: Cell::new(0),
             image: Cell::new(None),
             pass: Cell::new(None),
+            attachment_specs: RefCell::new(Vec::new()),
             recording: RefCell::new(Recording::default()),
             vertex_inputs: RefCell::new(Vec::new()),
             static_states: Cell::new(0),
@@ -989,7 +996,7 @@ impl Backend {
             .instance
             .clone()
             .ok_or(Failure::Vk(vk::Result::ERROR_INITIALIZATION_FAILED))?;
-        if ((3..=8).contains(&op) || (58..=59).contains(&op) || op == 115 || op == 121)
+        if ((3..=8).contains(&op) || (58..=59).contains(&op) || op == 115 || op == 121 || op == 126)
             && a[0]
                 != if op == 3 {
                     self.instance_id
@@ -1010,6 +1017,9 @@ impl Backend {
                     ],
                     16,
                 )?;
+            }
+            126 => {
+                self.capabilities.write_clipping(m, a[1])?;
             }
             121 => {
                 self.capabilities.write_driver(m, a[1])?;
@@ -1169,12 +1179,17 @@ impl Backend {
                 zink::device_extensions(a[5], &self.capabilities, &mut names)?;
                 let mut timeline = vk::PhysicalDeviceTimelineSemaphoreFeatures::default()
                     .timeline_semaphore(a[5] & 2 != 0);
+                let mut imageless = vk::PhysicalDeviceImagelessFramebufferFeatures::default()
+                    .imageless_framebuffer(a[5] & 512 != 0);
                 let mut info = vk::DeviceCreateInfo::default()
                     .queue_create_infos(&queue)
                     .enabled_features(&features)
                     .enabled_extension_names(&names);
                 if a[5] & 2 != 0 {
                     info = info.push_next(&mut timeline);
+                }
+                if a[5] & 512 != 0 {
+                    info = info.push_next(&mut imageless);
                 }
                 let native = unsafe { instance.native.create_device(self.physical, &info, None) }?;
                 self.queue = unsafe { native.get_device_queue(a[1] as u32, 0) };
@@ -1189,6 +1204,10 @@ impl Backend {
                     anisotropy: a[4] != 0,
                     maintenance1: a[5] & 1 != 0,
                     timeline: a[5] & 2 != 0,
+                    renderpass2: a[5] & 128 != 0,
+                    imageless: a[5] & 512 != 0,
+                    format_list: a[5] & 64 != 0,
+                    maintenance2: a[5] & 16 != 0,
                     native,
                     instance,
                     atom: limits.non_coherent_atom_size,
@@ -2043,7 +2062,7 @@ impl Backend {
                     *c.recording.borrow_mut() = Recording::default();
                 }
             }
-            60..=76 | 94..=97 | 114 => self.graphics_call(m, op, a)?,
+            60..=76 | 94..=97 | 114 | 122..=125 => self.graphics_call(m, op, a)?,
             92..=93 => self.sampler_call(m, op, a)?,
             87..=91 => self.wsi_device(m, op, a)?,
             116..=119 => self.zink_device(m, op, a, &dev)?,

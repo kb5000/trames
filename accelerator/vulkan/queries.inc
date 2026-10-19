@@ -12,6 +12,11 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFeatures2(VkPhysicalDevice p,VkPhy
     vkGetPhysicalDeviceFeatures(p,&out->features);
     VkBaseOutStructure *next=out->pNext;
     for(unsigned i=0;next && i<64;i++,next=next->pNext){
+        if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES)
+            ((VkPhysicalDeviceImagelessFramebufferFeatures *)next)->imagelessFramebuffer=(D(p)->capabilities[0]&128)!=0;
+        if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES){
+            VkPhysicalDeviceMultiviewFeatures *v=(void *)next;v->multiview=VK_FALSE;v->multiviewGeometryShader=VK_FALSE;v->multiviewTessellationShader=VK_FALSE;
+        }
         if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES)
             ((VkPhysicalDeviceTimelineSemaphoreFeatures *)next)->timelineSemaphore=(D(p)->capabilities[0]&2)!=0;
     }
@@ -22,6 +27,11 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceProperties2(VkPhysicalDevice p,VkP
     vkGetPhysicalDeviceProperties(p,&out->properties);
     VkBaseOutStructure *next=out->pNext;
     for(unsigned i=0;next && i<64;i++,next=next->pNext){
+        if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES){
+            VkPhysicalDeviceMultiviewProperties *v=(void *)next;v->maxMultiviewViewCount=0;v->maxMultiviewInstanceIndex=0;
+        }
+        if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES && (D(p)->capabilities[0]&8))
+            checked(CALL(126,KEY(p),PTR(&((VkPhysicalDevicePointClippingProperties *)next)->pointClippingBehavior)));
         if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES && (D(p)->capabilities[0]&2))
             ((VkPhysicalDeviceTimelineSemaphoreProperties *)next)->maxTimelineSemaphoreValueDifference=D(p)->capabilities[1];
         if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES && (D(p)->capabilities[0]&4)){
@@ -46,9 +56,10 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties2(VkPhysicalDevice
 }
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties2KHR(VkPhysicalDevice p,VkFormat format,VkFormatProperties2 *out) {vkGetPhysicalDeviceFormatProperties2(p,format,out);}
 VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties2(VkPhysicalDevice p,const VkPhysicalDeviceImageFormatInfo2 *info,VkImageFormatProperties2 *out) {
-    if(!VALID(info,VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2))return VK_ERROR_FORMAT_NOT_SUPPORTED;
+    if(!info || info->sType!=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2)return VK_ERROR_FORMAT_NOT_SUPPORTED;
+    const VkImageFormatListCreateInfo *list;if(!image_formats(info->pNext,&list))return VK_ERROR_FORMAT_NOT_SUPPORTED;
     query_output(out,VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2);
-    return vkGetPhysicalDeviceImageFormatProperties(p,info->format,info->type,info->tiling,info->usage,info->flags,&out->imageFormatProperties);
+    return CALL(59,KEY(p),info->format,info->type,info->tiling,info->usage,info->flags,PTR(&out->imageFormatProperties),list?PTR(list->pViewFormats):0,list?list->viewFormatCount:0);
 }
 VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties2KHR(VkPhysicalDevice p,const VkPhysicalDeviceImageFormatInfo2 *info,VkImageFormatProperties2 *out) {return vkGetPhysicalDeviceImageFormatProperties2(p,info,out);}
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceQueueFamilyProperties2(VkPhysicalDevice p,uint32_t *count,VkQueueFamilyProperties2 *out) {

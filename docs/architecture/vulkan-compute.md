@@ -48,7 +48,7 @@ Install the ordinary `vulkan-loader` package with apk.
 
 ## Supported compute operations
 
-The [catalog](../../accelerator/vulkan/entrypoints.inc) contains 151 public
+The [catalog](../../accelerator/vulkan/entrypoints.inc) contains 159 public
 functions plus ICD negotiation exports. The profile supports one instance,
 compute-capable physical device, logical device and queue per address space;
 property queries; buffers and memory; SPIR-V modules; storage/uniform buffer
@@ -71,13 +71,17 @@ signals asynchronously. With the single-queue profile, a binary wait consumes a
 previously queued signal. Validation changes temporary state only; a rejected
 batch does not consume signals, mark commands pending or submit earlier records.
 Semaphore-only submissions and reuse after a consumed signal are supported.
-Timeline semaphore extensions remain unavailable.
+Driver-backed timeline counters and host/GPU waits/signals are covered by the
+[Zink synchronization layer](zink.md), including polling rather than blocking a guest worker.
 
 ## Graphics resources
 
 Core graphics includes native 2D optimal-tiled RGBA8/BGRA8 UNORM/sRGB images and
 D16/D32 depth images, binding/memory requirements, image views, single-color
 render passes with optional depth, framebuffer and vertex/fragment pipelines.
+Driver-backed renderpass2 and imageless framebuffer attachment binding are also
+available in this single-subpass profile; recorded commands retain late-bound
+views/images until native submissions complete. See [Zink coverage](zink.md).
 Static or dynamic viewport/scissor, depth compare/write, native color/alpha
 blending, transfer color clears, draws, image layout barriers, buffer-to-image
 uploads and image-to-buffer copies are supported. Queue queries retain native

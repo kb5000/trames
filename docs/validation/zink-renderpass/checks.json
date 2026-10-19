@@ -1,0 +1,16 @@
+{
+  "base_sha": "b1494b3e32a6703081e555b3cddee6df4dc6d2b2",
+  "vulkan_clippy": "passed --all-targets -D warnings",
+  "vulkan_unit_tests": "17 passed",
+  "guest_icd": "cross-built -Wall -Wextra -Werror",
+  "native_renderpass": "passed, including 260+260 output backing failures",
+  "native_reference": "Mesa 25.0.7 Lavapipe / LLVM 19 software Vulkan",
+  "unchanged_reused": [
+    "CPU",
+    "MMU",
+    "Linux",
+    "network",
+    "iOS UI"
+  ],
+  "ci": "pending"
+}

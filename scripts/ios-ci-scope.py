@@ -352,7 +352,7 @@ def main():
                                'scripts/ios-ci-scope.py', '.github/workflows/ios.yml', '.github/workflows/linux.yml'}
                     sync = plan.get('native_scope') == 'zink-sync'
                     if sync:
-                        allowed.update({'accelerator/vulkan/zink.inc', 'tests/fixtures/vulkan-timeline.c',
+                        allowed.update({'accelerator/vulkan/zink.inc', 'accelerator/vulkan/graphics.inc', 'tests/fixtures/vulkan-timeline.c',
                                         'tests/fixtures/vulkan-render.c'})
                     if any(p not in allowed and not p.startswith('docs/') and not (sync and p.startswith('crates/trames-vulkan/')) for p in changed):
                         raise RuntimeError('Zink foundation plan includes unrelated source changes')

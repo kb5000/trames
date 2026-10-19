@@ -1,0 +1,4 @@
+   Compiling trames-vulkan v1.1.0 (/workspace/trames/crates/trames-vulkan)
+    Finished `release` profile [optimized] target(s) in 6.90s
+     Running `target/perf-runtime/release/examples/renderpass`
+native-renderpass-ok: legacy/renderpass2, imageless rebinding, color/depth, feature/geometry guards, GPU readback and deferred attachment cleanup

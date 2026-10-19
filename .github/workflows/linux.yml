@@ -74,7 +74,7 @@ jobs:
       - name: Build unchanged runner for remaining graphics checks
         if: needs.scope.outputs.native_scope == 'zink-foundation' && needs.scope.outputs.zink_skip_linux_checks == 'true'
         run: cargo build -p trames-cli --release --locked
-      - name: Check changed Vulkan backend and native synchronization
+      - name: Check changed Vulkan backend and native graphics and synchronization
         if: needs.scope.outputs.native_scope == 'zink-sync'
         run: |
           cargo fmt --all --check
@@ -83,6 +83,7 @@ jobs:
           cargo build -p trames-cli --release --locked
           export VK_DRIVER_FILES="$(python3 -c 'from pathlib import Path; print(next(Path("/usr/share/vulkan/icd.d").glob("*lvp*")))')"
           cargo run -p trames-vulkan --example timeline --release --locked
+          cargo run -p trames-vulkan --example renderpass --release --locked
           cargo run -p trames-vulkan --example lifecycle --release --locked -- tests/fixtures/bin/vulkan-compute.spv tests/fixtures/bin/vulkan-render.vert.spv tests/fixtures/bin/vulkan-render.frag.spv
       - name: Validate query and template foundation and retain actual Mesa outcome
         run: |

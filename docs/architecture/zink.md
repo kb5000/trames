@@ -7,7 +7,7 @@
 loader→Trames guest ICD→现有原生Vulkan/MoltenVK→Metal。保留上游算法，不另写一套
 OpenGL实现。后续窗口继续使用现有Wayland合成器和App浮窗/标签页。
 
-当前完成的是Vulkan查询/descriptor template、maintenance1与timeline基础，**原版Mesa25.1.9仍不能初始化
+当前完成了Vulkan查询/descriptor template、maintenance1/timeline，以及renderpass2/imageless framebuffer基础，**原版Mesa25.1.9仍不能初始化
 EGL context，尚未产生OpenGL画面**。这不是完整Vulkan或OpenGL一致性声明。
 
 ## 已实现
@@ -38,20 +38,30 @@ EGL context，尚未产生OpenGL画面**。这不是完整Vulkan或OpenGL一致�
 - `VK_KHR_driver_properties`：真实driver ID/name/info用于Zink的MoltenVK工作路径，
   timeline properties返回真实最大值差。guest pNext不跨宿主边界。bridge未通过Vulkan
   conformance，因此返回的conformanceVersion为零，不继承宿主证书。
+- `VK_KHR_create_renderpass2`：原生KHR创建/开始/结束命令及core/KHR别名，当前仍是
+  单subpass、一个颜色附件、可选D16/D32深度，单层/单sample。没有可用的next-subpass
+  转换；非零viewMask、多个subpass、input/resolve attachments尚未支持。
+- `VK_KHR_imageless_framebuffer`：原生feature查询/显式启用、附件格式/usage/尺寸约束，
+  framebuffer创建时不绑定图片；legacy或renderpass2 begin时绑定实际view。每次recording
+  独立保留这些view及image/memory，提交快照沿用原依赖图，reset后不会提前释放在途资源。
+- 依赖扩展`maintenance2`、`multiview`、`image_format_list`按原生能力枚举。multiview三个
+  feature均为false；只接受零viewMask。支持point-clipping原生属性、image-view usage、
+  两种maintenance2 depth/stencil layout及image-format-list创建/查询链。其余图像限制沿用原profile。
+  宿主为renderpass2/imageless启用相应原生依赖，不要求客户端重复列出已提升的依赖名称。
+- 原版loader在1.0应用路径可能重复追加properties2扩展；相同扩展名称按一次启用处理。
 - App自带ICD JSON为实例1.1；旧JSON原子刷新，保持未变库inode与用户数据。
 
-## 原版Mesa硬依赖与下一批
+## 原版Mesa进度与下一批
 
-选定版本为Alpine签名Mesa25.1.9-r0，依据相同版本上游`zink_device_info.py`与
-`zink_screen.c`，当前缺少的硬依赖是：
+选定版本为Alpine签名Mesa25.1.9-r0。相同版本上游列出的maintenance1、renderpass2、
+imageless framebuffer、timeline、descriptor template五项硬扩展现在均通过查询，原版Mesa
+已创建Vulkan device。本地Lavapipe参考停在`vkCreatePipelineLayout`的
+`VK_ERROR_FEATURE_NOT_PRESENT`，仍未创建EGL context或产生OpenGL画面。
 
-1. `VK_KHR_create_renderpass2`。
-2. `VK_KHR_imageless_framebuffer`。
-
-下一批一起处理以上两项的attachment、recording和in-flight依赖，不能只接受创建flags。
-随后补其他真实设备features、图像/格式/视图/mipmap、渲染状态与scalar-block-layout等
-基础要求。MoltenVK driver-properties查询已可用；上游workaround的完整执行仍要等EGL
-创建成功后验证。扩展按原生能力和已实现路径枚举。
+原版Mesa同时报告缺少`logicOp`、`fillModeNonSolid`、`shaderClipDistance`、
+`scalarBlockLayout`、custom border color和line rasterization。下一批先处理pipeline/
+descriptor布局与这些真实features，再扩展图像/格式/视图/mipmap及渲染状态；不能只抹掉
+错误或跳过上游要求。MoltenVK工作路径仍需实际EGL创建后验证。
 DRI/dmabuf、external-memory FD还需要guest FD与Metal资源身份/生命周期设计；
 不把宿主FD或指针直接当guest handle。
 
@@ -60,7 +70,7 @@ DRI/dmabuf、external-memory FD还需要guest FD与Metal资源身份/生命周�
 
 ## 验证
 
-见[查询/模板基础验证](../validation/zink-foundation.md)与[同步/viewport验证](../validation/zink-sync.md)。测试使用原版Mesa与loader，
+见[查询/模板基础验证](../validation/zink-foundation.md)、[同步/viewport验证](../validation/zink-sync.md)与[renderpass/imageless验证](../validation/zink-renderpass.md)。测试使用原版Mesa与loader，
 不修改Mesa使其跳过硬要求。`zink-foundation.py`明确分开基础检查和`rendering_passed`；
 `--require-render`在EGL仍不可用时必须失败。
 

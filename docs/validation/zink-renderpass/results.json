@@ -1,0 +1,66 @@
+{
+  "runtime_source": "native Vulkan and guest ICD maintenance1/timeline/renderpass2/imageless;  CPU/MMU/UI unchanged",
+  "runner_sha256": "69e3d248e9db3d9df63c8d57b9e04e16e5370779a14a76b819ab07e6a6bf9402",
+  "icd_sha256": "17a352aadb374cd08ac0b4ab4aabf6e696a3cfdc2ea31f57ba876062a7fb9c18",
+  "native_driver_scope": "configured host Vulkan driver, local reference may be software",
+  "rendering_passed": false,
+  "cases": {
+    "render-renderpass2-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "render-renderpass2-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-renderpass2": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-imageless-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "render-imageless-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-imageless": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-imageless-legacy-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "render-imageless-legacy-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-imageless-legacy": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-imageless-depth-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "render-imageless-depth-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "render-imageless-depth": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "mesa-egl-probe-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "mesa-egl-probe": {
+      "exit_code": 1,
+      "scope": "original guest client"
+    }
+  },
+  "input_store_manifest_sha256": "647137469fb3daea693f768570b551a6e566017eb4a72e86990b30f16a82f2f9"
+}

@@ -36,7 +36,7 @@ jobs:
           cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
           cargo test -p trames-vulkan --lib --locked
           cargo check -p trames-ffi --target aarch64-apple-ios --locked
-      - name: Validate original MoltenVK timeline GPU path
+      - name: Validate original MoltenVK synchronization and imageless GPU paths
         if: needs.scope.outputs.native_scope == 'zink-sync'
         run: |
           python3 scripts/prepare-vulkan.py --apple
@@ -44,6 +44,7 @@ jobs:
           export MACOSX_DEPLOYMENT_TARGET=12.0
           export RUSTFLAGS="-C link-arg=-framework -C link-arg=IOKit -C link-arg=$(xcrun clang --print-runtime-dir)/libclang_rt.osx.a"
           cargo run -p trames-vulkan --example timeline --release --locked
+          cargo run -p trames-vulkan --example renderpass --release --locked
   runtime-fastpaths-apple:
     needs: scope
     if: needs.scope.outputs.native_scope == 'runtime-fastpaths'

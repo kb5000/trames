@@ -56,7 +56,7 @@ static int wayland_available(void) {uint64_t available=0;return CALL(109,PTR(&av
 static VkResult display_extensions(const char *layer,uint32_t *count,VkExtensionProperties *out,int device,uint64_t caps) {
     if(layer)return VK_ERROR_LAYER_NOT_PRESENT;
     uint64_t info[3]={0};int fixed=display_info(0,info),wayland=wayland_available();
-    const char *names[8];uint32_t n=0;
+    const char *names[16];uint32_t n=0;
     if(device){
         if(fixed || wayland)names[n++]=VK_KHR_SWAPCHAIN_EXTENSION_NAME;
         names[n++]=VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME;
@@ -64,6 +64,11 @@ static VkResult display_extensions(const char *layer,uint32_t *count,VkExtension
         if(caps&1)names[n++]=VK_KHR_MAINTENANCE_1_EXTENSION_NAME;
         if(caps&2)names[n++]=VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME;
         if(caps&4)names[n++]=VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME;
+        if(caps&8)names[n++]=VK_KHR_MAINTENANCE_2_EXTENSION_NAME;
+        if(caps&16)names[n++]=VK_KHR_MULTIVIEW_EXTENSION_NAME;
+        if(caps&32)names[n++]=VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME;
+        if(caps&64)names[n++]=VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME;
+        if(caps&128)names[n++]=VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME;
     }
     else {
         if(fixed || wayland)names[n++]=VK_KHR_SURFACE_EXTENSION_NAME;
@@ -86,7 +91,13 @@ static int extensions(uint32_t count,const char *const *names,int device) {
         if(device && !strcmp(names[i],VK_KHR_MAINTENANCE_1_EXTENSION_NAME))bit=32;
         else if(device && !strcmp(names[i],VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME))bit=64;
         else if(device && !strcmp(names[i],VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME))bit=128;
-        if(!bit || bits&bit)return -1;bits|=bit;
+        else if(device && !strcmp(names[i],VK_KHR_MAINTENANCE_2_EXTENSION_NAME))bit=256;
+        else if(device && !strcmp(names[i],VK_KHR_MULTIVIEW_EXTENSION_NAME))bit=512;
+        else if(device && !strcmp(names[i],VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME))bit=1024;
+        else if(device && !strcmp(names[i],VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME))bit=2048;
+        else if(device && !strcmp(names[i],VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME))bit=4096;
+        // Original loaders may append an already enabled promoted extension.
+        if(!bit)return -1;bits|=bit;
     }
     if(device)return (bits&1)!=0;
     // These selected native render routes have different final image layouts.
@@ -137,7 +148,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceSparseImageFormatProperties(VkPhys
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(VkPhysicalDevice p,const VkDeviceCreateInfo *info,const VkAllocationCallbacks *allocator,VkDevice *out) {
     if(!info || info->sType!=VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;ALLOCATOR(allocator);
     const VkPhysicalDeviceFeatures *features=info->pEnabledFeatures;
-    const VkBaseInStructure *next=info->pNext;unsigned chain=0;int timeline=0,seen_timeline=0;
+    const VkBaseInStructure *next=info->pNext;unsigned chain=0;int timeline=0,seen_timeline=0,imageless=0,seen_imageless=0,seen_multiview=0;
     while(next && chain++<16){
         if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2){
             if(features)return VK_ERROR_FEATURE_NOT_PRESENT;
@@ -146,6 +157,13 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(VkPhysicalDevice p,const VkDeviceC
             if(seen_timeline++)return VK_ERROR_FEATURE_NOT_PRESENT;
             timeline=((const VkPhysicalDeviceTimelineSemaphoreFeatures *)next)->timelineSemaphore;
             if(timeline!=VK_FALSE && timeline!=VK_TRUE)return VK_ERROR_FEATURE_NOT_PRESENT;
+        }else if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES){
+            if(seen_imageless++)return VK_ERROR_FEATURE_NOT_PRESENT;
+            imageless=((const VkPhysicalDeviceImagelessFramebufferFeatures *)next)->imagelessFramebuffer;
+            if(imageless!=VK_FALSE && imageless!=VK_TRUE)return VK_ERROR_FEATURE_NOT_PRESENT;
+        }else if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES){
+            const VkPhysicalDeviceMultiviewFeatures *v=(const void *)next;
+            if(seen_multiview++ || v->multiview || v->multiviewGeometryShader || v->multiviewTessellationShader)return VK_ERROR_FEATURE_NOT_PRESENT;
         }else if(next->sType!=VK_STRUCTURE_TYPE_LOADER_DEVICE_CREATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;
         next=next->pNext;
     }
@@ -158,6 +176,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(VkPhysicalDevice p,const VkDeviceC
     uint64_t enabled=(has_extension(info->enabledExtensionCount,info->ppEnabledExtensionNames,VK_KHR_MAINTENANCE_1_EXTENSION_NAME)?1UL:0)
         |(has_extension(info->enabledExtensionCount,info->ppEnabledExtensionNames,VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME)?8UL:0)
         |(has_extension(info->enabledExtensionCount,info->ppEnabledExtensionNames,VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME)?4UL:0)|(timeline?2UL:0);
+    const char *extra[]={VK_KHR_MAINTENANCE_2_EXTENSION_NAME,VK_KHR_MULTIVIEW_EXTENSION_NAME,VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME,VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME,VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME};
+    for(unsigned i=0;i<5;i++)if(has_extension(info->enabledExtensionCount,info->ppEnabledExtensionNames,extra[i]))enabled|=16UL<<i;
+    if(imageless)enabled|=512;
     if(timeline && !(enabled&8)){free_dispatch(d);return VK_ERROR_FEATURE_NOT_PRESENT;}
     d->enabled=enabled;
     VkResult r=CALL(8,KEY(p),q->queueFamilyIndex,PTR(&d->key),wsi,features?features->samplerAnisotropy:0,enabled);if(r!=VK_SUCCESS){free_dispatch(d);return r;}
