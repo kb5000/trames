@@ -14,7 +14,6 @@
     "conclusion": "failure",
     "stage": "SDK preparation: omitted bare .so library and soname aliases; runtime foundation never executed"
   },
-  "linux_retry": "pending; corrected native query oracle, strict guest query rerun passes; reuse exact passed Apple and Linux bundle/reopen checks",
   "second_linux": {
     "run": 39203103689,
     "job": 117900111850,
@@ -36,5 +35,16 @@
     "job": 117901657483,
     "foundation_conclusion": "failure",
     "stage": "Native reference query asserted unknown group pNext preservation; original Mesa device_select layer overwrites pNext. Production guest ICD unchanged."
+  },
+  "linux_foundation": {
+    "source": "1e0aac5a7f8296d29fc6436d3b5a72cd0bbd6130",
+    "run": 39204706189,
+    "job": 117904948337,
+    "artifact": 12164804745,
+    "artifact_sha256": "f67d30fd5845ef4544223a6be4b1805514cb0aa714c18182eca650f53da99053",
+    "conclusion": "success",
+    "checks_reused_from": 39203619165,
+    "apple_checks_reused_from": 39202469057,
+    "rendering_passed": false
   }
 }

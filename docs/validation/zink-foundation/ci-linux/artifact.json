@@ -1,0 +1,18 @@
+{
+  "source": "1e0aac5a7f8296d29fc6436d3b5a72cd0bbd6130",
+  "run": 39204706189,
+  "job": 117904948337,
+  "artifact": 12164804745,
+  "artifact_sha256": "f67d30fd5845ef4544223a6be4b1805514cb0aa714c18182eca650f53da99053",
+  "sha256_verified": true,
+  "zip_crc_verified": true,
+  "archive_file_count": 43,
+  "reference": "Ubuntu Mesa25.2.8 Lavapipe software Vulkan; native device_select layer enabled by package installation",
+  "image_sha256": {
+    "texture-legacy-guest.ppm": "19904e521a2a082b0bf57aa1ddb7f6813b737b294554745dead359cf104dba8f",
+    "texture-legacy-native.ppm": "19904e521a2a082b0bf57aa1ddb7f6813b737b294554745dead359cf104dba8f",
+    "texture-template-native.ppm": "19904e521a2a082b0bf57aa1ddb7f6813b737b294554745dead359cf104dba8f",
+    "texture-template-guest.ppm": "19904e521a2a082b0bf57aa1ddb7f6813b737b294554745dead359cf104dba8f"
+  },
+  "original_mesa_rendering_passed": false
+}

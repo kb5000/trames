@@ -1,0 +1,88 @@
+{
+  "runtime_source": "unchanged native backend; ICD/frontend and bundled manifest updated",
+  "runner_sha256": "97946deeebcc2b413bb5f399cdbff8a54d667dd8af243c71b9496ade470f35a8",
+  "icd_sha256": "3398d5771d659cb2ff07fe16aa616aa798406ae2424d9adda55c73122466d11d",
+  "native_driver_scope": "configured host Vulkan driver, local reference may be software",
+  "rendering_passed": false,
+  "cases": {
+    "install": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "queries-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "queries-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "queries": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "compute-legacy-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "compute-legacy-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "compute-legacy": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "texture-legacy-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "texture-legacy-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "texture-legacy": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "compute-template-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "compute-template-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "compute-template": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "texture-template-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "texture-template-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "texture-template": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "mesa-egl-probe-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "mesa-egl-probe": {
+      "exit_code": 1,
+      "scope": "original guest client"
+    }
+  },
+  "input_store_manifest_sha256": "b4af66e7ad9780b4d3f005a9737418602f5380151c9c591bbb87eccdee2629a6",
+  "missing_zink_hard_requirements": [
+    "VK_KHR_maintenance1",
+    "VK_KHR_create_renderpass2",
+    "VK_KHR_imageless_framebuffer",
+    "VK_KHR_timeline_semaphore"
+  ]
+}

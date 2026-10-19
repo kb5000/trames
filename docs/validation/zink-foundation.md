@@ -34,7 +34,7 @@ AArch64，经同一解释器/NativeCall路径执行。此结果不是Apple GPU�
 只有guest ICD、bundle manifest常量和相关测试/构建文件改变，CPU/MMU/native GPU
 backend/UI无改动，复用此前已通过验收；不重跑CoreMark、Docker或全套CPU/网络测试。
 
-精确源码Linux CI会重建原版guest ICD、执行新基础检查与原版Mesa probe。
+精确源码Linux CI重建原版guest ICD、执行新基础检查与原版Mesa probe。
 Apple CI只检查manifest更新和iOS embedding编译，**不等同新增Metal GPU/GL测试**。
 Apple/iOS metadata CI在a231f47已通过（run39202469057），只做两项manifest测试与
 iOS FFI编译，不是Metal GPU验收。Linux run39202468982在干净SDK链接阶段发现
@@ -50,8 +50,15 @@ CRT/libc sysroot成功链接EGL客户端，避免本地完整SDK掩盖依赖缺�
 用原版Ubuntu Mesa25.2.8及原版loader1.3.275/本地1.4.309加相同层独立复现：
 旧断言均abort，新测试均通过。native只要求合法设备成员和能力，guest继续严格检查
 pNext/canary、零外部handle与受限profile；单独重跑修改的guest查询通过。
-生产Rust/ICD与a231f47保持相同，只重试未完成图形检查；本次已通过的Linux
-bundle/reopen检查按源码和命令核对后复用。当前未打IPA或发布。
+生产Rust/ICD与a231f47保持相同，本次已通过的Linux bundle/reopen检查和
+Apple metadata检查均按源码、命令与成功步骤核对后复用。
+
+最终精确源码1e0aac5的[Linux run39204706189](https://github.com/kb5000/trames/actions/runs/39204706189)
+通过，含原版签名包安装、native/guest查询、legacy/template GPU计算、纹理方程和
+四张导出图逐字节对照。CI参考为Ubuntu Mesa25.2.8 Lavapipe软件Vulkan。
+artifact12164804745的SHA-256与ZIP CRC已校验；结果、原始stdout/stderr、输入摘要和
+图像摘要持久保留在`zink-foundation/ci-linux/`。原版Mesa EGL probe仍exit1，
+`rendering_passed:false`，缺少的四个硬依赖与本地一致；未打IPA或发布。
 
 复现入口：
 
