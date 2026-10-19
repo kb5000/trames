@@ -148,7 +148,7 @@ jobs:
           cargo build -p trames-ffi --release --locked
           xcrun clang -O2 -Wall -Wextra -Werror -fobjc-arc -dynamiclib tests/fixtures/zink-metal-pixels.m -framework Metal -framework Foundation -o target/zink-metal-pixels.dylib
           export TRAMES_VULKAN_TRACE=1
-          lldb --batch -o run -k 'thread backtrace all' -- "$(command -v python3)" tests/integration/zink-wayland.py --store target/zink-native-bundle/store --output target/zink-wayland-metal --metal-validator target/zink-metal-pixels.dylib 2>&1 | tee target/zink-metal-debug.log
+          lldb --batch -o 'settings set target.process.stop-on-exec false' -o run -k 'thread backtrace all' -- "$(command -v python3)" tests/integration/zink-wayland.py --store target/zink-native-bundle/store --output target/zink-wayland-metal --metal-validator target/zink-metal-pixels.dylib 2>&1 | tee target/zink-metal-debug.log
           python3 -c 'import json; assert json.load(open("target/zink-wayland-metal/results.json"))["passed"]'
       - uses: actions/upload-artifact@v4
         if: always()

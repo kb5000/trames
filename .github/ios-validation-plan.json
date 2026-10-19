@@ -4,7 +4,7 @@
   "reason": "Native Vulkan source unchanged from b23e75a module checks. Build a minimal Mesa25.1.9 EGL DRM-less Kopper platform/device adapter, retain original signed Gallium/Zink/loader, install standard libEGL.so.1 automatically and verify actual exported Metal texture pixels. No CPU/Linux/network/UI test reruns or IPA.",
   "changed_file_sha256": {
     ".github/workflows/ios.yml": "4f6c8234f8414bc24216b63955bf9cf267cb107372434f6cc1eee6b87eaf0e38",
-    ".github/workflows/linux.yml": "cc789951c3a2546b6372436c17ab28f1f125ce518439e49abd802bb710157d1e",
+    ".github/workflows/linux.yml": "38bdd5b6d7e90cb067edc5dff91567aa33206a7158158ea5b0eb5034487e3853",
     "accelerator/vulkan/entrypoints.inc": "67b672180bd9cb8c9bdfc6316a1deaa9bab86c807e3f30566e6295251caf838d",
     "accelerator/vulkan/graphics.inc": "c52ca87a202b41934e1593efd25cbc0451e960c6f6de4c78883e8c99c9148d32",
     "crates/trames-distro/src/lib.rs": "c2f25c30e35fd91ffd2924d6c06a999fbcf062fab65e7dd22006ed4d61f550e1",
