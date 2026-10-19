@@ -358,7 +358,7 @@ def main():
                     if plan.get('native_scope') == 'zink-wayland':
                         allowed.update({'tests/fixtures/zink-wayland.c', 'tests/fixtures/vulkan-copy.c',
                                         'tests/fixtures/zink-metal-pixels.m', 'tests/integration/zink-wayland.py',
-                                        'scripts/build-zink-egl.py', 'patches/mesa/0001-wayland-kopper-native-wsi.patch',
+                                        'scripts/build-zink-egl.py', 'scripts/zink-egl-requirements.txt', 'patches/mesa/0001-wayland-kopper-native-wsi.patch',
                                         'crates/trames-distro/src/lib.rs', 'crates/trames-ffi/src/session.rs', 'scripts/build-ios.sh'})
                     if any(p not in allowed and not p.startswith('docs/') and not (sync and p.startswith('crates/trames-vulkan/')) for p in changed):
                         raise RuntimeError('Zink foundation plan includes unrelated source changes')

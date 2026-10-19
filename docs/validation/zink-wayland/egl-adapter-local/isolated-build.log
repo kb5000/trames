@@ -1,0 +1,18 @@
+[126/142] Compiling C object src/egl/libEGL.so.1.0.0.p/main_eglconfig.c.o
+[127/142] Compiling C object src/egl/libEGL.so.1.0.0.p/main_eglcurrent.c.o
+[128/142] Compiling C object src/egl/libEGL.so.1.0.0.p/main_egldevice.c.o
+[129/142] Compiling C object src/egl/libEGL.so.1.0.0.p/main_eglglobals.c.o
+[130/142] Compiling C object src/egl/libEGL.so.1.0.0.p/main_egldisplay.c.o
+[131/142] Compiling C object src/egl/libEGL.so.1.0.0.p/main_eglimage.c.o
+[132/142] Compiling C object src/egl/libEGL.so.1.0.0.p/main_egllog.c.o
+[133/142] Compiling C object src/egl/libEGL.so.1.0.0.p/main_eglsync.c.o
+[134/142] Compiling C object src/egl/libEGL.so.1.0.0.p/main_eglsurface.c.o
+[135/142] Compiling C object src/egl/libEGL.so.1.0.0.p/drivers_dri2_platform_device.c.o
+[136/142] Compiling C object src/egl/libEGL.so.1.0.0.p/main_eglapi.c.o
+[137/142] Compiling C object src/egl/libEGL.so.1.0.0.p/drivers_dri2_platform_surfaceless.c.o
+[138/142] Compiling C object src/egl/libEGL.so.1.0.0.p/drivers_dri2_egl_dri2.c.o
+[139/142] Compiling C object src/egl/libEGL.so.1.0.0.p/drivers_dri2_platform_wayland.c.o
+[140/142] Compiling C object src/util/libmesa_util.a.p/meson-generated_.._format_u_format_table.c.o
+[141/142] Linking static target src/util/libmesa_util.a
+[142/142] Linking target src/egl/libEGL.so.1.0.0
+Built Mesa EGL native WSI adapter: 237693f0f5b801eff7ff4db6f74dc136241d7b591f1962c87e32ac4a3449e100

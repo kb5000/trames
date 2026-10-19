@@ -1,0 +1,11 @@
+{
+  "isolated_python_dependencies": {
+    "meson": "1.12.1",
+    "mako": "1.4.3",
+    "packaging": "25.0",
+    "PyYAML": "6.0.3"
+  },
+  "build": "142 native cross-build steps completed in isolated Python venv; no target execution",
+  "egl_sha256": "237693f0f5b801eff7ff4db6f74dc136241d7b591f1962c87e32ac4a3449e100",
+  "matches_previously_tested_component": true
+}

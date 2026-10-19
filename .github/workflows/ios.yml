@@ -271,7 +271,7 @@ jobs:
           python3 scripts/prepare-wayland-guest.py
           python3 scripts/prepare-zink-guest.py --wayland
           python3 -m venv target/mesa-tools
-          target/mesa-tools/bin/pip install meson==1.12.1 mako==1.4.3 packaging==25.0
+          target/mesa-tools/bin/pip install -r scripts/zink-egl-requirements.txt
           export PATH="$PWD/target/mesa-tools/bin:$PATH"
           python3 scripts/build-zink-egl.py
           python3 scripts/prepare-vulkan.py --apple
