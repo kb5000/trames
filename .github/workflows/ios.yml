@@ -209,6 +209,7 @@ jobs:
     outputs:
       frontend_only: ${{ steps.scope.outputs.frontend_only }}
       baseline_run: ${{ steps.scope.outputs.baseline_run }}
+      zink_graphics_run: ${{ steps.scope.outputs.zink_graphics_run }}
       baseline_sha: ${{ steps.scope.outputs.baseline_sha }}
       targeted: ${{ steps.scope.outputs.targeted }}
       skip_native: ${{ steps.scope.outputs.skip_native }}
@@ -322,6 +323,24 @@ jobs:
           run-id: ${{ needs.scope.outputs.baseline_run || github.run_id }}
           github-token: ${{ github.token }}
           path: target/vulkan-guest
+      - uses: actions/download-artifact@v4
+        if: needs.scope.outputs.zink_graphics_run != ''
+        with:
+          name: zink-native-bundle
+          run-id: ${{ needs.scope.outputs.zink_graphics_run }}
+          github-token: ${{ github.token }}
+          path: target/zink-native-bundle
+      - name: Install exact Metal-validated EGL and ICD with paired sources
+        if: needs.scope.outputs.zink_graphics_run != ''
+        run: python3 scripts/prepare-zink-ipa.py
+      - uses: actions/upload-artifact@v4
+        if: needs.scope.outputs.zink_graphics_run != ''
+        with:
+          name: vulkan-compute-driver-and-native-source
+          path: |
+            target/vulkan-guest/
+            !target/vulkan-guest/wayland-acceptance/**
+          retention-days: 14
       - name: Build native Rust embedding library
         if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'
         run: cargo build -p trames-ffi --release --locked

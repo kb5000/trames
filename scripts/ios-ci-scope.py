@@ -198,6 +198,51 @@ def device_build_outputs(plan, repo, headers):
     def unchanged(sha, paths):
         return not subprocess.check_output(['git', 'diff', '--name-only', sha, 'HEAD', '--', *paths], text=True).strip()
 
+    zink = reuse.get('zink')
+    if zink:
+        import tomllib
+        paths = ['crates', 'vendor', '.cargo', 'rust-toolchain.toml', 'accelerator', 'include', 'patches/mesa',
+                 'scripts/build-zink-egl.py', 'scripts/zink-egl-requirements.txt']
+        if not unchanged(zink['sha'], paths):
+            raise RuntimeError('Zink IPA requires unchanged Metal-validated runtime and guest sources')
+        old = tomllib.loads(subprocess.check_output(['git', 'show', zink['sha'] + ':Cargo.toml'], text=True))
+        new = tomllib.loads(Path('Cargo.toml').read_text())
+        old['workspace']['package']['version'] = new['workspace']['package']['version']
+        if old != new:
+            raise RuntimeError('Only workspace version metadata may change')
+        old = tomllib.loads(subprocess.check_output(['git', 'show', zink['sha'] + ':Cargo.lock'], text=True))
+        new = tomllib.loads(Path('Cargo.lock').read_text())
+        for package in old['package']:
+            if package['name'].startswith('trames-'):
+                package['version'] = tomllib.loads(Path('Cargo.toml').read_text())['workspace']['package']['version']
+        if old != new:
+            raise RuntimeError('Dependency versions or lockfile inputs changed')
+        for name in ['zink-wayland-linux', 'zink-wayland-apple']:
+            verified_run(zink, 'linux.yml', name)
+        frontend = reuse['frontend']
+        if not unchanged(frontend['sha'], ['apps/ios', 'include', 'scripts/package-ios.py', 'scripts/finalize-ios-app.py', ':(exclude)apps/ios/project.yml']):
+            raise RuntimeError('Frontend acceptance source changed')
+        strip = lambda text: '\n'.join(l for l in text.splitlines() if not l.strip().startswith(('MARKETING_VERSION:', 'CURRENT_PROJECT_VERSION:')))
+        previous = subprocess.check_output(['git', 'show', frontend['sha'] + ':apps/ios/project.yml'], text=True)
+        if strip(previous) != strip(Path('apps/ios/project.yml').read_text()):
+            raise RuntimeError('Only app version/build metadata may change')
+        completed = verified_run(frontend, 'ios.yml', 'apple-build')
+        if not {'Link unsigned iPad simulator app', 'Exercise peer tabs and floating window gestures first', 'Export simulator test summary', 'Link unsigned iPad device app'} <= completed:
+            raise RuntimeError('Missing passed frontend interactions')
+        guest = reuse['guest']
+        if not unchanged(guest['sha'], ['accelerator/musl', 'accelerator/guest', 'crates/trames-native/upstream',
+                                       'scripts/build-musl-hybrid.sh', 'scripts/prepare-musl-hybrid.py',
+                                       'scripts/prepare-vulkan.py', 'scripts/vulkan-upstream.json', 'LICENSE']):
+            raise RuntimeError('Original musl/MoltenVK build inputs changed')
+        verified_run(guest, 'ios.yml', 'guest-musl')
+        names = {a['name'] for a in get(f"actions/runs/{guest['run']}/artifacts")['artifacts'] if not a['expired']}
+        if not {'full-musl-library-and-source', 'vulkan-compute-driver-and-native-source'} <= names:
+            raise RuntimeError('Paired original source artifacts missing')
+        print('Compile current iPad Release app; reuse exact validated graphics bundle, paired musl/native sources and unchanged frontend acceptance. No repeated passed suites.')
+        return dict(frontend_only='false', targeted='true', native_scope='device-build', skip_native='true',
+                    skip_linux_native='true', skip_linux_modules='true', frontend_reused='true', ui_targets='[]',
+                    baseline_run=str(guest['run']), zink_graphics_run=str(zink['run']))
+
     metadata = reuse.get('metadata_repackage')
     if metadata:
         delta = subprocess.check_output(['git', 'diff', '--name-only', metadata['sha'], 'HEAD'], text=True).splitlines()
