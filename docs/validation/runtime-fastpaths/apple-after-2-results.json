@@ -1,0 +1,12 @@
+{
+  "mode": "workspace",
+  "host": "arm64",
+  "seconds": 38.551,
+  "score": 389.094965,
+  "wall_seconds": 38.561115332999975,
+  "iterations": 15000,
+  "crc_passed": true,
+  "library_sha256": "6306198cfbdac95401748b464f43e92aa4ea45a78190384821e89e05f3df386a",
+  "input_store_manifest_sha256": "3881412cf105c7944c5274b15ca90e2d311412a292daaf63cd3c858abbdacaae",
+  "scope": "Measure original guest CoreMark through the production terminal session ABI.\n\nCopies an installed Alpine/CoreMark store. Workspace mode includes the real init\nshell, host PTY adapter, blocked shell and shared-state polling used by the App.\nNo guest algorithm, compiler flags or clock is changed. Timing is not a CI gate.\n"
+}

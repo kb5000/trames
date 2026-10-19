@@ -1,0 +1,858 @@
+﻿2026-10-19T01:52:06.5687263Z Current runner version: '2.337.0'
+2026-10-19T01:52:06.5706510Z ##[group]Runner Image Provisioner
+2026-10-19T01:52:06.5707190Z Hosted Compute Agent
+2026-10-19T01:52:06.5707743Z Version: 20261012.601
+2026-10-19T01:52:06.5708406Z Commit: f3dc54e1fb89da6852db922499a0233137369e1d
+2026-10-19T01:52:06.5709005Z Build Date: 2026-10-12T17:48:21Z
+2026-10-19T01:52:06.5709413Z Worker ID: {da51185e-8d4d-48be-b579-05e35a4221f1}
+2026-10-19T01:52:06.5709899Z Region: southcentralus
+2026-10-19T01:52:06.5710256Z Cloud: Azure
+2026-10-19T01:52:06.5710644Z ##[endgroup]
+2026-10-19T01:52:06.5711489Z ##[group]Operating System
+2026-10-19T01:52:06.5711863Z Ubuntu
+2026-10-19T01:52:06.5712232Z 24.04.5
+2026-10-19T01:52:06.5712552Z LTS
+2026-10-19T01:52:06.5712891Z ##[endgroup]
+2026-10-19T01:52:06.5713274Z ##[group]Runner Image
+2026-10-19T01:52:06.5713692Z Image: ubuntu-24.04
+2026-10-19T01:52:06.5714072Z Version: 20261012.334.1
+2026-10-19T01:52:06.5714918Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261012.334/images/ubuntu/Ubuntu2404-Readme.md
+2026-10-19T01:52:06.5715858Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261012.334
+2026-10-19T01:52:06.5716472Z ##[endgroup]
+2026-10-19T01:52:06.5717209Z ##[group]GITHUB_TOKEN Permissions
+2026-10-19T01:52:06.5718613Z Actions: read
+2026-10-19T01:52:06.5719028Z Contents: read
+2026-10-19T01:52:06.5719373Z Metadata: read
+2026-10-19T01:52:06.5719702Z ##[endgroup]
+2026-10-19T01:52:06.5721146Z Secret source: Actions
+2026-10-19T01:52:06.5721725Z Cache mode: write
+2026-10-19T01:52:06.5722237Z Prepare workflow directory
+2026-10-19T01:52:06.6006883Z Prepare all required actions
+2026-10-19T01:52:06.6050939Z Getting action download info
+2026-10-19T01:52:06.8288471Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-10-19T01:52:07.0053146Z Download action repository 'dtolnay/rust-toolchain@master' (SHA:683b588c487a69d01f6c6ddf40f036ff682cc2c8)
+2026-10-19T01:52:07.3187332Z Complete job name: runtime-fastpaths
+2026-10-19T01:52:07.3730875Z ##[group]Run actions/checkout@v4
+2026-10-19T01:52:07.3731315Z with:
+2026-10-19T01:52:07.3731564Z   repository: kb5000/trames
+2026-10-19T01:52:07.3733806Z   token: ***
+2026-10-19T01:52:07.3734046Z   ssh-strict: true
+2026-10-19T01:52:07.3734300Z   ssh-user: git
+2026-10-19T01:52:07.3734554Z   persist-credentials: true
+2026-10-19T01:52:07.3734828Z   clean: true
+2026-10-19T01:52:07.3735084Z   sparse-checkout-cone-mode: true
+2026-10-19T01:52:07.3735378Z   fetch-depth: 1
+2026-10-19T01:52:07.3735627Z   fetch-tags: false
+2026-10-19T01:52:07.3735878Z   show-progress: true
+2026-10-19T01:52:07.3736126Z   lfs: false
+2026-10-19T01:52:07.3736360Z   submodules: false
+2026-10-19T01:52:07.3736613Z   set-safe-directory: true
+2026-10-19T01:52:07.3736901Z   allow-unsafe-pr-checkout: false
+2026-10-19T01:52:07.3737258Z ##[endgroup]
+2026-10-19T01:52:07.4431981Z Syncing repository: kb5000/trames
+2026-10-19T01:52:07.4433560Z ##[group]Getting Git version info
+2026-10-19T01:52:07.4434262Z Working directory is '/home/runner/work/trames/trames'
+2026-10-19T01:52:07.4435191Z [command]/usr/bin/git version
+2026-10-19T01:52:07.4481995Z git version 2.55.0
+2026-10-19T01:52:07.4519379Z ##[endgroup]
+2026-10-19T01:52:07.4526186Z Temporarily overriding HOME='/home/runner/work/_temp/ca405c9b-f29a-4dde-9e5f-da959e6bafdd' before making global git config changes
+2026-10-19T01:52:07.4527912Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-19T01:52:07.4529136Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/trames/trames
+2026-10-19T01:52:07.4616343Z Deleting the contents of '/home/runner/work/trames/trames'
+2026-10-19T01:52:07.4620232Z ##[group]Initializing the repository
+2026-10-19T01:52:07.4624155Z [command]/usr/bin/git init /home/runner/work/trames/trames
+2026-10-19T01:52:07.4889420Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-19T01:52:07.4890199Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-19T01:52:07.4891034Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-19T01:52:07.4891984Z hint: call:
+2026-10-19T01:52:07.4892390Z hint:
+2026-10-19T01:52:07.4892895Z hint: 	git config --global init.defaultBranch <name>
+2026-10-19T01:52:07.4893401Z hint:
+2026-10-19T01:52:07.4893753Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-19T01:52:07.4894321Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-19T01:52:07.4894758Z hint:
+2026-10-19T01:52:07.4895012Z hint: 	git branch -m <name>
+2026-10-19T01:52:07.4895289Z hint:
+2026-10-19T01:52:07.4895640Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-19T01:52:07.4896173Z Initialized empty Git repository in /home/runner/work/trames/trames/.git/
+2026-10-19T01:52:07.4897245Z [command]/usr/bin/git remote add origin https://github.com/kb5000/trames
+2026-10-19T01:52:07.5071920Z ##[endgroup]
+2026-10-19T01:52:07.5072516Z ##[group]Disabling automatic garbage collection
+2026-10-19T01:52:07.5075056Z [command]/usr/bin/git config --local gc.auto 0
+2026-10-19T01:52:07.5168282Z ##[endgroup]
+2026-10-19T01:52:07.5168757Z ##[group]Setting up auth
+2026-10-19T01:52:07.5173878Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-19T01:52:07.5207869Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-19T01:52:07.5510405Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-19T01:52:07.5542471Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-19T01:52:07.5732737Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-19T01:52:07.5763042Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-19T01:52:07.5954261Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-19T01:52:07.6201762Z ##[endgroup]
+2026-10-19T01:52:07.6202294Z ##[group]Fetching the repository
+2026-10-19T01:52:07.6212252Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +52b445e2497c9206bcb856d20b0728524ad1de48:refs/remotes/pull/31/merge
+2026-10-19T01:52:08.5565531Z From https://github.com/kb5000/trames
+2026-10-19T01:52:08.5566750Z  * [new ref]         52b445e2497c9206bcb856d20b0728524ad1de48 -> pull/31/merge
+2026-10-19T01:52:08.5569587Z ##[endgroup]
+2026-10-19T01:52:08.5570471Z ##[group]Determining the checkout info
+2026-10-19T01:52:08.5571406Z ##[endgroup]
+2026-10-19T01:52:08.5575658Z [command]/usr/bin/git sparse-checkout disable
+2026-10-19T01:52:08.5622315Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-19T01:52:08.5660407Z ##[group]Checking out the ref
+2026-10-19T01:52:08.5661473Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/31/merge
+2026-10-19T01:52:08.6496563Z Note: switching to 'refs/remotes/pull/31/merge'.
+2026-10-19T01:52:08.6497341Z 
+2026-10-19T01:52:08.6497964Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-10-19T01:52:08.6498990Z changes and commit them, and you can discard any commits you make in this
+2026-10-19T01:52:08.6500029Z state without impacting any branches by switching back to a branch.
+2026-10-19T01:52:08.6500648Z 
+2026-10-19T01:52:08.6501107Z If you want to create a new branch to retain commits you create, you may
+2026-10-19T01:52:08.6502044Z do so (now or later) by using -c with the switch command. Example:
+2026-10-19T01:52:08.6502606Z 
+2026-10-19T01:52:08.6502817Z   git switch -c <new-branch-name>
+2026-10-19T01:52:08.6503522Z 
+2026-10-19T01:52:08.6503732Z Or undo this operation with:
+2026-10-19T01:52:08.6504063Z 
+2026-10-19T01:52:08.6504233Z   git switch -
+2026-10-19T01:52:08.6504493Z 
+2026-10-19T01:52:08.6504956Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-10-19T01:52:08.6505637Z 
+2026-10-19T01:52:08.6506373Z HEAD is now at 52b445e Merge 42628d2365e5f60936b08e0df679684a93c64f68 into 975027eb65643ecfb5ae1d75b07a2e1be1d29c84
+2026-10-19T01:52:08.6509728Z ##[endgroup]
+2026-10-19T01:52:08.6549242Z [command]/usr/bin/git log -1 --format=%H
+2026-10-19T01:52:08.6570776Z 52b445e2497c9206bcb856d20b0728524ad1de48
+2026-10-19T01:52:08.7002788Z ##[group]Run dtolnay/rust-toolchain@master
+2026-10-19T01:52:08.7003254Z with:
+2026-10-19T01:52:08.7003560Z   toolchain: nightly-2026-10-16
+2026-10-19T01:52:08.7003963Z   components: rustfmt, clippy
+2026-10-19T01:52:08.7004338Z ##[endgroup]
+2026-10-19T01:52:08.7055235Z ##[start-action display=Parse toolchain version;id=__dtolnay_rust-toolchain.parse]
+2026-10-19T01:52:08.7104266Z ##[group]Run if [[ -z $toolchain ]]; then
+2026-10-19T01:52:08.7104809Z [36;1mif [[ -z $toolchain ]]; then[0m
+2026-10-19T01:52:08.7105590Z [36;1m  # GitHub does not enforce `required: true` inputs itself. https://github.com/actions/runner/issues/1070[0m
+2026-10-19T01:52:08.7106420Z [36;1m  echo "'toolchain' is a required input" >&2[0m
+2026-10-19T01:52:08.7106857Z [36;1m  exit 1[0m
+2026-10-19T01:52:08.7107341Z [36;1melif [[ $toolchain =~ ^stable' '[0-9]+' '(year|month|week|day)s?' 'ago$ ]]; then[0m
+2026-10-19T01:52:08.7108084Z [36;1m  if [[ Linux == macOS ]]; then[0m
+2026-10-19T01:52:08.7108907Z [36;1m    echo "toolchain=1.$((($(date -v-$(sed 's/stable \([0-9]*\) \(.\).*/\1\2/' <<< $toolchain) +%s)/60/60/24-16569)/7/6))" >> $GITHUB_OUTPUT[0m
+2026-10-19T01:52:08.7109676Z [36;1m  else[0m
+2026-10-19T01:52:08.7110265Z [36;1m    echo "toolchain=1.$((($(date --date "${toolchain#stable }" +%s)/60/60/24-16569)/7/6))" >> $GITHUB_OUTPUT[0m
+2026-10-19T01:52:08.7110947Z [36;1m  fi[0m
+2026-10-19T01:52:08.7111379Z [36;1melif [[ $toolchain =~ ^stable' 'minus' '[0-9]+' 'releases?$ ]]; then[0m
+2026-10-19T01:52:08.7112160Z [36;1m  echo "toolchain=1.$((($(date +%s)/60/60/24-16569)/7/6-${toolchain//[^0-9]/}))" >> $GITHUB_OUTPUT[0m
+2026-10-19T01:52:08.7112846Z [36;1melif [[ $toolchain =~ ^1\.[0-9]+$ ]]; then[0m
+2026-10-19T01:52:08.7113621Z [36;1m  echo "toolchain=1.$((i=${toolchain#1.}, c=($(date +%s)/60/60/24-16569)/7/6, i+9*i*(10*i<=c)+90*i*(100*i<=c)))" >> $GITHUB_OUTPUT[0m
+2026-10-19T01:52:08.7114357Z [36;1melse[0m
+2026-10-19T01:52:08.7114638Z [36;1m  delimiter=EOF[0m
+2026-10-19T01:52:08.7115082Z [36;1m  while [[ $toolchain == *$delimiter* ]]; do delimiter+=_; done[0m
+2026-10-19T01:52:08.7115832Z [36;1m  printf 'toolchain<<%s\n%s\n%s\n' "$delimiter" "$toolchain" "$delimiter" >> $GITHUB_OUTPUT[0m
+2026-10-19T01:52:08.7116457Z [36;1mfi[0m
+2026-10-19T01:52:08.7331198Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-19T01:52:08.7331709Z env:
+2026-10-19T01:52:08.7332009Z   toolchain: nightly-2026-10-16
+2026-10-19T01:52:08.7332363Z ##[endgroup]
+2026-10-19T01:52:08.7454970Z ##[end-action id=__dtolnay_rust-toolchain.parse;outcome=success;conclusion=success;duration_ms=39]
+2026-10-19T01:52:08.7460588Z ##[start-action display=Set $CARGO_HOME;id=__dtolnay_rust-toolchain.__run]
+2026-10-19T01:52:08.7495581Z ##[group]Run echo CARGO_HOME=${CARGO_HOME:-"$HOME/.cargo"} >> $GITHUB_ENV
+2026-10-19T01:52:08.7496329Z [36;1mecho CARGO_HOME=${CARGO_HOME:-"$HOME/.cargo"} >> $GITHUB_ENV[0m
+2026-10-19T01:52:08.7551648Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-19T01:52:08.7552193Z ##[endgroup]
+2026-10-19T01:52:08.7631735Z ##[end-action id=__dtolnay_rust-toolchain.__run;outcome=success;conclusion=success;duration_ms=16]
+2026-10-19T01:52:08.7634617Z ##[start-action display=Install rustup if needed;id=__dtolnay_rust-toolchain.__run_2]
+2026-10-19T01:52:08.7664390Z ##[group]Run if ! command -v rustup &>/dev/null; then
+2026-10-19T01:52:08.7664928Z [36;1mif ! command -v rustup &>/dev/null; then[0m
+2026-10-19T01:52:08.7666252Z [36;1m  curl --proto '=https' --tlsv1.2 --retry 10 --retry-connrefused --location --silent --show-error --fail https://sh.rustup.rs | sh -s -- --default-toolchain none -y[0m
+2026-10-19T01:52:08.7667396Z [36;1m  echo "$CARGO_HOME/bin" >> $GITHUB_PATH[0m
+2026-10-19T01:52:08.7668086Z [36;1mfi[0m
+2026-10-19T01:52:08.7717373Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-19T01:52:08.7718101Z env:
+2026-10-19T01:52:08.7718399Z   CARGO_HOME: /home/runner/.cargo
+2026-10-19T01:52:08.7718838Z ##[endgroup]
+2026-10-19T01:52:08.7793873Z ##[end-action id=__dtolnay_rust-toolchain.__run_2;outcome=success;conclusion=success;duration_ms=15]
+2026-10-19T01:52:08.7796639Z ##[start-action display=Install rustup if needed on windows;id=__dtolnay_rust-toolchain.__run_3]
+2026-10-19T01:52:08.7803543Z ##[end-action id=__dtolnay_rust-toolchain.__run_3;outcome=skipped;conclusion=skipped;duration_ms=0]
+2026-10-19T01:52:08.7814726Z ##[start-action display=rustup toolchain install nightly-2026-10-16;id=__dtolnay_rust-toolchain.__run_4]
+2026-10-19T01:52:08.7837788Z ##[group]Run set -f  # split targets and components on commas and whitespace, without glob expansion
+2026-10-19T01:52:08.7838776Z [36;1mset -f  # split targets and components on commas and whitespace, without glob expansion[0m
+2026-10-19T01:52:08.7839440Z [36;1mflags=()[0m
+2026-10-19T01:52:08.7839835Z [36;1mfor t in ${targets//,/ }; do flags+=(--target "$t"); done[0m
+2026-10-19T01:52:08.7840444Z [36;1mfor c in ${components//,/ }; do flags+=(--component "$c"); done[0m
+2026-10-19T01:52:08.7841190Z [36;1mif [[ $toolchain == nightly && -n $components ]]; then flags+=(--allow-downgrade); fi[0m
+2026-10-19T01:52:08.7841818Z [36;1mlog=$(mktemp)[0m
+2026-10-19T01:52:08.7842154Z [36;1mtrap 'rm -f "$log"' EXIT[0m
+2026-10-19T01:52:08.7842528Z [36;1mfor attempt in 1 2 3 4 5; do[0m
+2026-10-19T01:52:08.7843370Z [36;1m  if rustup toolchain install "$toolchain" "${flags[@]}" --profile minimal --no-self-update --force-non-host 2>&1 | tee "$log"; then[0m
+2026-10-19T01:52:08.7844233Z [36;1m    break[0m
+2026-10-19T01:52:08.7844524Z [36;1m  else[0m
+2026-10-19T01:52:08.7844814Z [36;1m    status=$?[0m
+2026-10-19T01:52:08.7845122Z [36;1m  fi[0m
+2026-10-19T01:52:08.7845532Z [36;1m  if [[ $attempt == 5 ]] || ! grep -Fq 'checksum failed for ' "$log" \[0m
+2026-10-19T01:52:08.7846339Z [36;1m      || ! grep -Fq 'this is likely due to an ongoing update of the official release server' "$log"; then[0m
+2026-10-19T01:52:08.7847028Z [36;1m    exit "$status"[0m
+2026-10-19T01:52:08.7847353Z [36;1m  fi[0m
+2026-10-19T01:52:08.7848001Z [36;1m  echo "Retrying rustup toolchain install in 30 seconds (retry $attempt of 4)" >&2[0m
+2026-10-19T01:52:08.7848622Z [36;1m  sleep 30[0m
+2026-10-19T01:52:08.7848908Z [36;1mdone[0m
+2026-10-19T01:52:08.7895564Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-19T01:52:08.7896021Z env:
+2026-10-19T01:52:08.7896289Z   CARGO_HOME: /home/runner/.cargo
+2026-10-19T01:52:08.7896664Z   toolchain: nightly-2026-10-16
+2026-10-19T01:52:08.7897003Z   targets: 
+2026-10-19T01:52:08.7897280Z   components: rustfmt, clippy
+2026-10-19T01:52:08.7897711Z   RUSTUP_PERMIT_COPY_RENAME: 1
+2026-10-19T01:52:08.7898045Z ##[endgroup]
+2026-10-19T01:52:08.8306859Z info: syncing channel updates for nightly-2026-10-16-x86_64-unknown-linux-gnu
+2026-10-19T01:52:09.0573875Z info: latest update on 2026-10-16 for version 1.101.0-nightly (4ebd25825 2026-10-15)
+2026-10-19T01:52:09.0574923Z info: downloading 5 components
+2026-10-19T01:52:16.0145910Z 
+2026-10-19T01:52:16.0210558Z   nightly-2026-10-16-x86_64-unknown-linux-gnu installed - rustc 1.101.0-nightly (4ebd25825 2026-10-15)
+2026-10-19T01:52:16.0211049Z 
+2026-10-19T01:52:16.0286229Z ##[end-action id=__dtolnay_rust-toolchain.__run_4;outcome=success;conclusion=success;duration_ms=7247]
+2026-10-19T01:52:16.0296370Z ##[start-action display=rustup default nightly-2026-10-16;id=__dtolnay_rust-toolchain.__run_5]
+2026-10-19T01:52:16.0322705Z ##[group]Run rustup default "$toolchain" --force-non-host
+2026-10-19T01:52:16.0323224Z [36;1mrustup default "$toolchain" --force-non-host[0m
+2026-10-19T01:52:16.0380201Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-19T01:52:16.0380428Z env:
+2026-10-19T01:52:16.0380582Z   CARGO_HOME: /home/runner/.cargo
+2026-10-19T01:52:16.0380765Z   toolchain: nightly-2026-10-16
+2026-10-19T01:52:16.0380934Z ##[endgroup]
+2026-10-19T01:52:16.0495426Z info: using existing install for nightly-2026-10-16-x86_64-unknown-linux-gnu
+2026-10-19T01:52:16.0502468Z info: default toolchain set to nightly-2026-10-16-x86_64-unknown-linux-gnu
+2026-10-19T01:52:16.0502965Z 
+2026-10-19T01:52:16.0562076Z   nightly-2026-10-16-x86_64-unknown-linux-gnu unchanged - rustc 1.101.0-nightly (4ebd25825 2026-10-15)
+2026-10-19T01:52:16.0562537Z 
+2026-10-19T01:52:16.0563131Z info: note that the toolchain 'nightly-2026-10-16-x86_64-unknown-linux-gnu' is currently in use (overridden by '/home/runner/work/trames/trames/rust-toolchain.toml')
+2026-10-19T01:52:16.0579620Z ##[end-action id=__dtolnay_rust-toolchain.__run_5;outcome=success;conclusion=success;duration_ms=28]
+2026-10-19T01:52:16.0583476Z ##[start-action display=Create cachekey;id=__dtolnay_rust-toolchain.rustc-version]
+2026-10-19T01:52:16.0605034Z ##[group]Run DATE=$(rustc +"$toolchain" --version --verbose | sed -ne 's/^commit-date: \(20[0-9][0-9]\)-\([01][0-9]\)-\([0-3][0-9]\)$/\1\2\3/p')
+2026-10-19T01:52:16.0605587Z [36;1mDATE=$(rustc +"$toolchain" --version --verbose | sed -ne 's/^commit-date: \(20[0-9][0-9]\)-\([01][0-9]\)-\([0-3][0-9]\)$/\1\2\3/p')[0m
+2026-10-19T01:52:16.0606002Z [36;1mHASH=$(rustc +"$toolchain" --version --verbose | sed -ne 's/^commit-hash: //p')[0m
+2026-10-19T01:52:16.0606317Z [36;1mecho "cachekey=$(echo $DATE$HASH | head -c12)" >> $GITHUB_OUTPUT[0m
+2026-10-19T01:52:16.0666196Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-19T01:52:16.0666430Z env:
+2026-10-19T01:52:16.0666596Z   CARGO_HOME: /home/runner/.cargo
+2026-10-19T01:52:16.0666817Z   toolchain: nightly-2026-10-16
+2026-10-19T01:52:16.0666989Z ##[endgroup]
+2026-10-19T01:52:16.0971420Z ##[end-action id=__dtolnay_rust-toolchain.rustc-version;outcome=success;conclusion=success;duration_ms=38]
+2026-10-19T01:52:16.0973834Z ##[start-action display=Disable incremental compilation;id=__dtolnay_rust-toolchain.__run_6]
+2026-10-19T01:52:16.0996646Z ##[group]Run if [ -z "${CARGO_INCREMENTAL+set}" ]; then
+2026-10-19T01:52:16.0996930Z [36;1mif [ -z "${CARGO_INCREMENTAL+set}" ]; then[0m
+2026-10-19T01:52:16.0997164Z [36;1m  echo CARGO_INCREMENTAL=0 >> $GITHUB_ENV[0m
+2026-10-19T01:52:16.0997429Z [36;1mfi[0m
+2026-10-19T01:52:16.1056700Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-19T01:52:16.1056943Z env:
+2026-10-19T01:52:16.1057112Z   CARGO_HOME: /home/runner/.cargo
+2026-10-19T01:52:16.1057295Z ##[endgroup]
+2026-10-19T01:52:16.1162852Z ##[end-action id=__dtolnay_rust-toolchain.__run_6;outcome=success;conclusion=success;duration_ms=18]
+2026-10-19T01:52:16.1165049Z ##[start-action display=Enable colors in Cargo output;id=__dtolnay_rust-toolchain.__run_7]
+2026-10-19T01:52:16.1186600Z ##[group]Run if [ -z "${CARGO_TERM_COLOR+set}" ]; then
+2026-10-19T01:52:16.1186868Z [36;1mif [ -z "${CARGO_TERM_COLOR+set}" ]; then[0m
+2026-10-19T01:52:16.1187093Z [36;1m  echo CARGO_TERM_COLOR=always >> $GITHUB_ENV[0m
+2026-10-19T01:52:16.1187290Z [36;1mfi[0m
+2026-10-19T01:52:16.1246056Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-19T01:52:16.1246286Z env:
+2026-10-19T01:52:16.1246451Z   CARGO_HOME: /home/runner/.cargo
+2026-10-19T01:52:16.1246629Z   CARGO_INCREMENTAL: 0
+2026-10-19T01:52:16.1246804Z ##[endgroup]
+2026-10-19T01:52:16.1331864Z ##[end-action id=__dtolnay_rust-toolchain.__run_7;outcome=success;conclusion=success;duration_ms=16]
+2026-10-19T01:52:16.1336461Z ##[start-action display=Enable Cargo sparse registry;id=__dtolnay_rust-toolchain.__run_8]
+2026-10-19T01:52:16.1359438Z ##[group]Run # implemented in 1.66, stabilized in 1.68, made default in 1.70
+2026-10-19T01:52:16.1359954Z [36;1m# implemented in 1.66, stabilized in 1.68, made default in 1.70[0m
+2026-10-19T01:52:16.1360372Z [36;1mif [ -z "${CARGO_REGISTRIES_CRATES_IO_PROTOCOL+set}" -o -f "/home/runner/work/_temp"/.implicit_cargo_registries_crates_io_protocol ]; then[0m
+2026-10-19T01:52:16.1360809Z [36;1m  if rustc +"$toolchain" --version --verbose | grep -q '^release: 1\.6[89]\.'; then[0m
+2026-10-19T01:52:16.1361162Z [36;1m    touch "/home/runner/work/_temp"/.implicit_cargo_registries_crates_io_protocol || true[0m
+2026-10-19T01:52:16.1361490Z [36;1m    echo CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse >> $GITHUB_ENV[0m
+2026-10-19T01:52:16.1361928Z [36;1m  elif rustc +"$toolchain" --version --verbose | grep -q '^release: 1\.6[67]\.'; then[0m
+2026-10-19T01:52:16.1362272Z [36;1m    touch "/home/runner/work/_temp"/.implicit_cargo_registries_crates_io_protocol || true[0m
+2026-10-19T01:52:16.1362579Z [36;1m    echo CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git >> $GITHUB_ENV[0m
+2026-10-19T01:52:16.1362798Z [36;1m  fi[0m
+2026-10-19T01:52:16.1362946Z [36;1mfi[0m
+2026-10-19T01:52:16.1422075Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-19T01:52:16.1422325Z env:
+2026-10-19T01:52:16.1422477Z   CARGO_HOME: /home/runner/.cargo
+2026-10-19T01:52:16.1422657Z   CARGO_INCREMENTAL: 0
+2026-10-19T01:52:16.1422819Z   CARGO_TERM_COLOR: always
+2026-10-19T01:52:16.1422987Z   toolchain: nightly-2026-10-16
+2026-10-19T01:52:16.1423157Z ##[endgroup]
+2026-10-19T01:52:16.1703782Z ##[end-action id=__dtolnay_rust-toolchain.__run_8;outcome=success;conclusion=success;duration_ms=36]
+2026-10-19T01:52:16.1708070Z ##[start-action display=Work around spurious network errors in curl 8.0;id=__dtolnay_rust-toolchain.__run_9]
+2026-10-19T01:52:16.1730097Z ##[group]Run # https://rust-lang.zulipchat.com/#narrow/stream/246057-t-cargo/topic/timeout.20investigation
+2026-10-19T01:52:16.1730619Z [36;1m# https://rust-lang.zulipchat.com/#narrow/stream/246057-t-cargo/topic/timeout.20investigation[0m
+2026-10-19T01:52:16.1731027Z [36;1mif rustc +"$toolchain" --version --verbose | grep -q '^release: 1\.7[01]\.'; then[0m
+2026-10-19T01:52:16.1731342Z [36;1m  echo CARGO_HTTP_MULTIPLEXING=false >> $GITHUB_ENV[0m
+2026-10-19T01:52:16.1731550Z [36;1mfi[0m
+2026-10-19T01:52:16.1791692Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-19T01:52:16.1791953Z env:
+2026-10-19T01:52:16.1792130Z   CARGO_HOME: /home/runner/.cargo
+2026-10-19T01:52:16.1792334Z   CARGO_INCREMENTAL: 0
+2026-10-19T01:52:16.1792510Z   CARGO_TERM_COLOR: always
+2026-10-19T01:52:16.1792697Z   toolchain: nightly-2026-10-16
+2026-10-19T01:52:16.1792893Z ##[endgroup]
+2026-10-19T01:52:16.1975784Z ##[end-action id=__dtolnay_rust-toolchain.__run_9;outcome=success;conclusion=success;duration_ms=26]
+2026-10-19T01:52:16.1981381Z ##[start-action display=rustc +nightly-2026-10-16 --version --verbose;id=__dtolnay_rust-toolchain.__run_10]
+2026-10-19T01:52:16.2004782Z ##[group]Run rustc +"$toolchain" --version --verbose
+2026-10-19T01:52:16.2005089Z [36;1mrustc +"$toolchain" --version --verbose[0m
+2026-10-19T01:52:16.2064642Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-19T01:52:16.2064878Z env:
+2026-10-19T01:52:16.2065041Z   CARGO_HOME: /home/runner/.cargo
+2026-10-19T01:52:16.2065222Z   CARGO_INCREMENTAL: 0
+2026-10-19T01:52:16.2065385Z   CARGO_TERM_COLOR: always
+2026-10-19T01:52:16.2065570Z   toolchain: nightly-2026-10-16
+2026-10-19T01:52:16.2065742Z ##[endgroup]
+2026-10-19T01:52:16.2232110Z rustc 1.101.0-nightly (4ebd25825 2026-10-15)
+2026-10-19T01:52:16.2232556Z binary: rustc
+2026-10-19T01:52:16.2232830Z commit-hash: 4ebd258257737d5b7635c116fa7d281627a7e937
+2026-10-19T01:52:16.2233244Z commit-date: 2026-10-15
+2026-10-19T01:52:16.2233421Z host: x86_64-unknown-linux-gnu
+2026-10-19T01:52:16.2233593Z release: 1.101.0-nightly
+2026-10-19T01:52:16.2234065Z LLVM version: 23.1.4
+2026-10-19T01:52:16.2247218Z ##[end-action id=__dtolnay_rust-toolchain.__run_10;outcome=success;conclusion=success;duration_ms=26]
+2026-10-19T01:52:16.2299425Z ##[group]Run cargo fmt --all --check
+2026-10-19T01:52:16.2299823Z [36;1mcargo fmt --all --check[0m
+2026-10-19T01:52:16.2300152Z [36;1mcargo clippy -p trames-vfs -p trames-core -p trames-ffi --all-targets --all-features --locked -- -D warnings[0m
+2026-10-19T01:52:16.2300514Z [36;1mcargo test -p trames-vfs -p trames-core --locked[0m
+2026-10-19T01:52:16.2300866Z [36;1mpython3 -m py_compile tests/performance/prepare-coremark.py tests/performance/session-coremark.py[0m
+2026-10-19T01:52:16.2360912Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-19T01:52:16.2361137Z env:
+2026-10-19T01:52:16.2361301Z   CARGO_HOME: /home/runner/.cargo
+2026-10-19T01:52:16.2361482Z   CARGO_INCREMENTAL: 0
+2026-10-19T01:52:16.2361649Z   CARGO_TERM_COLOR: always
+2026-10-19T01:52:16.2361811Z ##[endgroup]
+2026-10-19T01:52:17.0272706Z [1m[92m    Updating[0m crates.io index
+2026-10-19T01:52:21.2956277Z [1m[92m Downloading[0m crates ...
+2026-10-19T01:52:21.3842823Z [1m[92m  Downloaded[0m adler2 v2.0.1
+2026-10-19T01:52:21.3976739Z [1m[92m  Downloaded[0m block-buffer v0.10.4
+2026-10-19T01:52:21.4048352Z [1m[92m  Downloaded[0m bitflags v1.3.2
+2026-10-19T01:52:21.4114202Z [1m[92m  Downloaded[0m bitflags v2.13.2
+2026-10-19T01:52:21.4347991Z [1m[92m  Downloaded[0m filetime v0.2.29
+2026-10-19T01:52:21.4366195Z [1m[92m  Downloaded[0m libloading v0.8.9
+2026-10-19T01:52:21.4389330Z [1m[92m  Downloaded[0m socket2 v0.6.1
+2026-10-19T01:52:21.4405832Z [1m[92m  Downloaded[0m generic-array v0.14.7
+2026-10-19T01:52:21.4418739Z [1m[92m  Downloaded[0m memchr v2.8.3
+2026-10-19T01:52:21.4474076Z [1m[92m  Downloaded[0m wayland-server v0.31.14
+2026-10-19T01:52:21.4487177Z [1m[92m  Downloaded[0m serde v1.0.229
+2026-10-19T01:52:21.4513682Z [1m[92m  Downloaded[0m proc-macro2 v1.0.107
+2026-10-19T01:52:21.4535582Z [1m[92m  Downloaded[0m pkg-config v0.3.34
+2026-10-19T01:52:21.4547025Z [1m[92m  Downloaded[0m serde_json v1.0.151
+2026-10-19T01:52:21.4604126Z [1m[92m  Downloaded[0m sha2 v0.10.9
+2026-10-19T01:52:21.4623295Z [1m[92m  Downloaded[0m defmt v1.1.1
+2026-10-19T01:52:21.4662367Z [1m[92m  Downloaded[0m errno v0.3.14
+2026-10-19T01:52:21.4674439Z [1m[92m  Downloaded[0m cfg-if v1.0.5
+2026-10-19T01:52:21.4684548Z [1m[92m  Downloaded[0m hash32 v0.3.1
+2026-10-19T01:52:21.4694920Z [1m[92m  Downloaded[0m wayland-sys v0.31.11
+2026-10-19T01:52:21.4703564Z [1m[92m  Downloaded[0m quote v1.0.47
+2026-10-19T01:52:21.4723774Z [1m[92m  Downloaded[0m thiserror v2.0.21
+2026-10-19T01:52:21.4775086Z [1m[92m  Downloaded[0m defmt-parser v1.0.0
+2026-10-19T01:52:21.4781948Z [1m[92m  Downloaded[0m defmt v0.3.100
+2026-10-19T01:52:21.4788515Z [1m[92m  Downloaded[0m simd-adler32 v0.3.10
+2026-10-19T01:52:21.4802458Z [1m[92m  Downloaded[0m defmt-macros v1.1.1
+2026-10-19T01:52:21.4829776Z [1m[92m  Downloaded[0m shlex v2.0.1
+2026-10-19T01:52:21.4839226Z [1m[92m  Downloaded[0m stable_deref_trait v1.2.1
+2026-10-19T01:52:21.4845137Z [1m[92m  Downloaded[0m cpufeatures v0.2.17
+2026-10-19T01:52:21.4855509Z [1m[92m  Downloaded[0m find-msvc-tools v0.1.14
+2026-10-19T01:52:21.4868729Z [1m[92m  Downloaded[0m crypto-common v0.1.7
+2026-10-19T01:52:21.4875000Z [1m[92m  Downloaded[0m cfg_aliases v0.2.2
+2026-10-19T01:52:21.4881816Z [1m[92m  Downloaded[0m crc32fast v1.5.2
+2026-10-19T01:52:21.4896889Z [1m[92m  Downloaded[0m digest v0.10.7
+2026-10-19T01:52:21.4910534Z [1m[92m  Downloaded[0m flate2 v1.1.10
+2026-10-19T01:52:21.4951008Z [1m[92m  Downloaded[0m miniz_oxide v0.9.1
+2026-10-19T01:52:21.4974391Z [1m[92m  Downloaded[0m wayland-scanner v0.31.11
+2026-10-19T01:52:21.4990135Z [1m[92m  Downloaded[0m unicode-ident v1.0.26
+2026-10-19T01:52:21.5015538Z [1m[92m  Downloaded[0m getrandom v0.3.4
+2026-10-19T01:52:21.5042029Z [1m[92m  Downloaded[0m downcast-rs v1.2.1
+2026-10-19T01:52:21.5052356Z [1m[92m  Downloaded[0m managed v0.8.0
+2026-10-19T01:52:21.5061129Z [1m[92m  Downloaded[0m typenum v1.20.1
+2026-10-19T01:52:21.5087814Z [1m[92m  Downloaded[0m itoa v1.0.18
+2026-10-19T01:52:21.5097996Z [1m[92m  Downloaded[0m version_check v0.9.5
+2026-10-19T01:52:21.5107315Z [1m[92m  Downloaded[0m byteorder v1.5.0
+2026-10-19T01:52:21.5119119Z [1m[92m  Downloaded[0m heapless v0.8.0
+2026-10-19T01:52:21.5147989Z [1m[92m  Downloaded[0m cc v1.8.0
+2026-10-19T01:52:21.5179978Z [1m[92m  Downloaded[0m smallvec v1.16.3
+2026-10-19T01:52:21.5190133Z [1m[92m  Downloaded[0m zmij v1.0.23
+2026-10-19T01:52:21.5203280Z [1m[92m  Downloaded[0m thiserror-impl v2.0.21
+2026-10-19T01:52:21.5214250Z [1m[92m  Downloaded[0m quick-xml v0.41.0
+2026-10-19T01:52:21.5258591Z [1m[92m  Downloaded[0m serde_core v1.0.229
+2026-10-19T01:52:21.5279237Z [1m[92m  Downloaded[0m serde_derive v1.0.229
+2026-10-19T01:52:21.5302212Z [1m[92m  Downloaded[0m tar v0.4.46
+2026-10-19T01:52:21.5324818Z [1m[92m  Downloaded[0m wayland-protocols v0.32.13
+2026-10-19T01:52:21.5391122Z [1m[92m  Downloaded[0m ash v0.38.0+1.3.281
+2026-10-19T01:52:21.5515168Z [1m[92m  Downloaded[0m nix v0.31.3
+2026-10-19T01:52:21.5606270Z [1m[92m  Downloaded[0m smoltcp v0.12.0
+2026-10-19T01:52:21.5706057Z [1m[92m  Downloaded[0m syn v2.0.119
+2026-10-19T01:52:21.5795946Z [1m[92m  Downloaded[0m syn v3.0.7
+2026-10-19T01:52:21.5877780Z [1m[92m  Downloaded[0m rustix v1.1.5
+2026-10-19T01:52:21.6091903Z [1m[92m  Downloaded[0m libc v0.2.190
+2026-10-19T01:52:21.6477192Z [1m[92m  Downloaded[0m linux-raw-sys v0.12.1
+2026-10-19T01:52:22.0958917Z [1m[92m   Compiling[0m libc v0.2.190
+2026-10-19T01:52:22.0959401Z [1m[92m    Checking[0m cfg-if v1.0.5
+2026-10-19T01:52:22.0959706Z [1m[92m   Compiling[0m proc-macro2 v1.0.107
+2026-10-19T01:52:22.0960338Z [1m[92m   Compiling[0m unicode-ident v1.0.26
+2026-10-19T01:52:22.1153723Z [1m[92m   Compiling[0m quote v1.0.47
+2026-10-19T01:52:22.1430848Z [1m[92m    Checking[0m bitflags v2.13.2
+2026-10-19T01:52:22.2243076Z [1m[92m   Compiling[0m version_check v0.9.5
+2026-10-19T01:52:22.2386463Z [1m[92m   Compiling[0m shlex v2.0.1
+2026-10-19T01:52:22.3133650Z [1m[92m   Compiling[0m pkg-config v0.3.34
+2026-10-19T01:52:22.3909348Z [1m[92m   Compiling[0m generic-array v0.14.7
+2026-10-19T01:52:22.4711904Z [1m[92m   Compiling[0m rustix v1.1.5
+2026-10-19T01:52:22.6209147Z [1m[92m   Compiling[0m find-msvc-tools v0.1.14
+2026-10-19T01:52:22.6809369Z [1m[92m   Compiling[0m wayland-sys v0.31.11
+2026-10-19T01:52:22.7177104Z [1m[92m   Compiling[0m cc v1.8.0
+2026-10-19T01:52:22.7729062Z [1m[92m    Checking[0m typenum v1.20.1
+2026-10-19T01:52:22.7780378Z [1m[92m    Checking[0m linux-raw-sys v0.12.1
+2026-10-19T01:52:23.3869053Z [1m[92m   Compiling[0m serde_core v1.0.229
+2026-10-19T01:52:23.5019182Z [1m[92m   Compiling[0m memchr v2.8.3
+2026-10-19T01:52:23.8219175Z [1m[92m   Compiling[0m quick-xml v0.41.0
+2026-10-19T01:52:23.9410698Z [1m[92m    Checking[0m trames-memory v1.1.0 (/home/runner/work/trames/trames/crates/trames-memory)
+2026-10-19T01:52:23.9500380Z [1m[92m   Compiling[0m wayland-backend v0.3.17 (/home/runner/work/trames/trames/vendor/wayland-backend)
+2026-10-19T01:52:24.0455544Z [1m[92m    Checking[0m downcast-rs v1.2.1
+2026-10-19T01:52:24.0729242Z [1m[92m    Checking[0m smallvec v1.16.3
+2026-10-19T01:52:24.4289164Z [1m[92m    Checking[0m block-buffer v0.10.4
+2026-10-19T01:52:24.4689416Z [1m[92m    Checking[0m crypto-common v0.1.7
+2026-10-19T01:52:24.4889260Z [1m[92m   Compiling[0m syn v3.0.7
+2026-10-19T01:52:24.5506304Z [1m[92m   Compiling[0m wayland-scanner v0.31.11
+2026-10-19T01:52:25.5048914Z [1m[92m    Checking[0m byteorder v1.5.0
+2026-10-19T01:52:25.5424613Z [1m[92m   Compiling[0m zmij v1.0.23
+2026-10-19T01:52:25.5699110Z [1m[92m   Compiling[0m serde v1.0.229
+2026-10-19T01:52:25.6377149Z [1m[92m   Compiling[0m cfg_aliases v0.2.2
+2026-10-19T01:52:25.6639192Z [1m[92m   Compiling[0m getrandom v0.3.4
+2026-10-19T01:52:25.6789320Z [1m[92m   Compiling[0m trames-native v1.1.0 (/home/runner/work/trames/trames/crates/trames-native)
+2026-10-19T01:52:25.7868979Z [1m[92m   Compiling[0m heapless v0.8.0
+2026-10-19T01:52:25.9395007Z [1m[92m   Compiling[0m nix v0.31.3
+2026-10-19T01:52:26.0970356Z [1m[92m   Compiling[0m serde_derive v1.0.229
+2026-10-19T01:52:26.1132025Z [1m[92m    Checking[0m hash32 v0.3.1
+2026-10-19T01:52:26.1295493Z [1m[92m    Checking[0m wayland-server v0.31.14
+2026-10-19T01:52:26.1459122Z [1m[92m    Checking[0m digest v0.10.7
+2026-10-19T01:52:26.2259228Z [1m[92m   Compiling[0m smoltcp v0.12.0
+2026-10-19T01:52:26.3479308Z [1m[92m    Checking[0m stable_deref_trait v1.2.1
+2026-10-19T01:52:26.3668857Z [1m[92m   Compiling[0m serde_json v1.0.151
+2026-10-19T01:52:26.4415161Z [1m[92m    Checking[0m cpufeatures v0.2.17
+2026-10-19T01:52:26.4609111Z [1m[92m    Checking[0m sha2 v0.10.9
+2026-10-19T01:52:26.7959286Z [1m[92m    Checking[0m wayland-protocols v0.32.13
+2026-10-19T01:52:27.0799115Z [1m[92m    Checking[0m trames-shared v1.1.0 (/home/runner/work/trames/trames/crates/trames-shared)
+2026-10-19T01:52:27.1664945Z [1m[92m    Checking[0m itoa v1.0.18
+2026-10-19T01:52:27.4380674Z [1m[92m    Checking[0m managed v0.8.0
+2026-10-19T01:52:27.5437057Z [1m[92m    Checking[0m bitflags v1.3.2
+2026-10-19T01:52:28.4523221Z [1m[92m    Checking[0m socket2 v0.6.1
+2026-10-19T01:52:28.4579951Z [1m[92m   Compiling[0m ash v0.38.0+1.3.281
+2026-10-19T01:52:28.5399176Z [1m[92m    Checking[0m trames-accel v1.1.0 (/home/runner/work/trames/trames/crates/trames-accel)
+2026-10-19T01:52:28.5408544Z [1m[92m    Checking[0m libloading v0.8.9
+2026-10-19T01:52:28.5959513Z [1m[92m   Compiling[0m trames-vulkan v1.1.0 (/home/runner/work/trames/trames/crates/trames-vulkan)
+2026-10-19T01:52:28.6305008Z [1m[92m    Checking[0m trames-net v1.1.0 (/home/runner/work/trames/trames/crates/trames-net)
+2026-10-19T01:52:28.7169132Z [1m[92m    Checking[0m trames-bridge v1.1.0 (/home/runner/work/trames/trames/crates/trames-bridge)
+2026-10-19T01:52:28.7366743Z [1m[92m    Checking[0m trames-compute v1.1.0 (/home/runner/work/trames/trames/crates/trames-compute)
+2026-10-19T01:52:28.7929317Z [1m[92m    Checking[0m trames-cpu v1.1.0 (/home/runner/work/trames/trames/crates/trames-cpu)
+2026-10-19T01:52:29.3869333Z [1m[92m    Checking[0m trames-elf v1.1.0 (/home/runner/work/trames/trames/crates/trames-elf)
+2026-10-19T01:52:29.4431656Z [1m[92m   Compiling[0m crc32fast v1.5.2
+2026-10-19T01:52:29.5559026Z [1m[92m    Checking[0m simd-adler32 v0.3.10
+2026-10-19T01:52:29.6249475Z [1m[92m    Checking[0m adler2 v2.0.1
+2026-10-19T01:52:29.6549211Z [1m[92m    Checking[0m miniz_oxide v0.9.1
+2026-10-19T01:52:29.7305942Z [1m[92m    Checking[0m trames-wayland v1.1.0 (/home/runner/work/trames/trames/crates/trames-wayland)
+2026-10-19T01:52:29.7853833Z [1m[92m    Checking[0m filetime v0.2.29
+2026-10-19T01:52:29.8410075Z [1m[92m    Checking[0m tar v0.4.46
+2026-10-19T01:52:29.9009568Z [1m[92m    Checking[0m flate2 v1.1.10
+2026-10-19T01:52:30.0320198Z [1m[92m    Checking[0m trames-vfs v1.1.0 (/home/runner/work/trames/trames/crates/trames-vfs)
+2026-10-19T01:52:31.1849902Z [1m[92m    Checking[0m trames-linux v1.1.0 (/home/runner/work/trames/trames/crates/trames-linux)
+2026-10-19T01:52:31.1879193Z [1m[92m    Checking[0m trames-distro v1.1.0 (/home/runner/work/trames/trames/crates/trames-distro)
+2026-10-19T01:52:34.7659303Z [1m[92m    Checking[0m trames-core v1.1.0 (/home/runner/work/trames/trames/crates/trames-core)
+2026-10-19T01:52:35.1952783Z [1m[92m    Checking[0m trames-ffi v1.1.0 (/home/runner/work/trames/trames/crates/trames-ffi)
+2026-10-19T01:52:35.5697425Z [1m[92m    Finished[0m `dev` profile [unoptimized + debuginfo] target(s) in 18.56s
+2026-10-19T01:52:35.6658886Z [1m[92m   Compiling[0m libc v0.2.190
+2026-10-19T01:52:35.6659252Z [1m[92m   Compiling[0m cfg-if v1.0.5
+2026-10-19T01:52:35.6659676Z [1m[92m   Compiling[0m bitflags v2.13.2
+2026-10-19T01:52:35.6688667Z [1m[92m   Compiling[0m linux-raw-sys v0.12.1
+2026-10-19T01:52:35.6876561Z [1m[92m   Compiling[0m typenum v1.20.1
+2026-10-19T01:52:35.7915972Z [1m[92m   Compiling[0m wayland-sys v0.31.11
+2026-10-19T01:52:35.8349677Z [1m[92m   Compiling[0m downcast-rs v1.2.1
+2026-10-19T01:52:35.8652334Z [1m[92m   Compiling[0m smallvec v1.16.3
+2026-10-19T01:52:35.9809411Z [1m[92m   Compiling[0m serde_core v1.0.229
+2026-10-19T01:52:36.5556554Z [1m[92m   Compiling[0m generic-array v0.14.7
+2026-10-19T01:52:36.6499571Z [1m[92m   Compiling[0m rustix v1.1.5
+2026-10-19T01:52:36.8552906Z [1m[92m   Compiling[0m crypto-common v0.1.7
+2026-10-19T01:52:36.8936680Z [1m[92m   Compiling[0m trames-memory v1.1.0 (/home/runner/work/trames/trames/crates/trames-memory)
+2026-10-19T01:52:36.9229048Z [1m[92m   Compiling[0m block-buffer v0.10.4
+2026-10-19T01:52:36.9729377Z [1m[92m   Compiling[0m trames-native v1.1.0 (/home/runner/work/trames/trames/crates/trames-native)
+2026-10-19T01:52:37.1719324Z [1m[92m   Compiling[0m byteorder v1.5.0
+2026-10-19T01:52:37.2609280Z [1m[92m   Compiling[0m hash32 v0.3.1
+2026-10-19T01:52:37.7338890Z [1m[92m   Compiling[0m digest v0.10.7
+2026-10-19T01:52:37.8389152Z [1m[92m   Compiling[0m stable_deref_trait v1.2.1
+2026-10-19T01:52:37.8599347Z [1m[92m   Compiling[0m cpufeatures v0.2.17
+2026-10-19T01:52:37.8809620Z [1m[92m   Compiling[0m sha2 v0.10.9
+2026-10-19T01:52:38.1129444Z [1m[92m   Compiling[0m heapless v0.8.0
+2026-10-19T01:52:38.4499799Z [1m[92m   Compiling[0m serde v1.0.229
+2026-10-19T01:52:38.6009138Z [1m[92m   Compiling[0m getrandom v0.3.4
+2026-10-19T01:52:38.6909318Z [1m[92m   Compiling[0m zmij v1.0.23
+2026-10-19T01:52:38.7499138Z [1m[92m   Compiling[0m itoa v1.0.18
+2026-10-19T01:52:38.8295624Z [1m[92m   Compiling[0m managed v0.8.0
+2026-10-19T01:52:38.8632174Z [1m[92m   Compiling[0m bitflags v1.3.2
+2026-10-19T01:52:38.8789858Z [1m[92m   Compiling[0m memchr v2.8.3
+2026-10-19T01:52:38.8848986Z [1m[92m   Compiling[0m trames-accel v1.1.0 (/home/runner/work/trames/trames/crates/trames-accel)
+2026-10-19T01:52:38.9583332Z [1m[92m   Compiling[0m smoltcp v0.12.0
+2026-10-19T01:52:39.1479427Z [1m[92m   Compiling[0m wayland-backend v0.3.17 (/home/runner/work/trames/trames/vendor/wayland-backend)
+2026-10-19T01:52:39.3789995Z [1m[92m   Compiling[0m trames-shared v1.1.0 (/home/runner/work/trames/trames/crates/trames-shared)
+2026-10-19T01:52:39.7196180Z [1m[92m   Compiling[0m wayland-server v0.31.14
+2026-10-19T01:52:39.8940118Z [1m[92m   Compiling[0m serde_json v1.0.151
+2026-10-19T01:52:39.9869154Z [1m[92m   Compiling[0m nix v0.31.3
+2026-10-19T01:52:40.3026718Z [1m[92m   Compiling[0m socket2 v0.6.1
+2026-10-19T01:52:40.6819658Z [1m[92m   Compiling[0m wayland-protocols v0.32.13
+2026-10-19T01:52:40.6969557Z [1m[92m   Compiling[0m trames-net v1.1.0 (/home/runner/work/trames/trames/crates/trames-net)
+2026-10-19T01:52:40.8339596Z [1m[92m   Compiling[0m trames-bridge v1.1.0 (/home/runner/work/trames/trames/crates/trames-bridge)
+2026-10-19T01:52:41.0449135Z [1m[92m   Compiling[0m libloading v0.8.9
+2026-10-19T01:52:41.1309321Z [1m[92m   Compiling[0m trames-compute v1.1.0 (/home/runner/work/trames/trames/crates/trames-compute)
+2026-10-19T01:52:41.2079441Z [1m[92m   Compiling[0m trames-vulkan v1.1.0 (/home/runner/work/trames/trames/crates/trames-vulkan)
+2026-10-19T01:52:41.3469324Z [1m[92m   Compiling[0m trames-cpu v1.1.0 (/home/runner/work/trames/trames/crates/trames-cpu)
+2026-10-19T01:52:41.4223670Z [1m[92m   Compiling[0m ash v0.38.0+1.3.281
+2026-10-19T01:52:42.1666142Z [1m[92m   Compiling[0m trames-elf v1.1.0 (/home/runner/work/trames/trames/crates/trames-elf)
+2026-10-19T01:52:43.9892146Z [1m[92m   Compiling[0m trames-wayland v1.1.0 (/home/runner/work/trames/trames/crates/trames-wayland)
+2026-10-19T01:52:44.7863674Z [1m[92m   Compiling[0m trames-vfs v1.1.0 (/home/runner/work/trames/trames/crates/trames-vfs)
+2026-10-19T01:52:47.0507306Z [1m[92m   Compiling[0m trames-linux v1.1.0 (/home/runner/work/trames/trames/crates/trames-linux)
+2026-10-19T01:52:50.9498884Z [1m[92m   Compiling[0m trames-core v1.1.0 (/home/runner/work/trames/trames/crates/trames-core)
+2026-10-19T01:52:55.0116594Z [1m[92m    Finished[0m `test` profile [unoptimized + debuginfo] target(s) in 19.40s
+2026-10-19T01:52:55.0160467Z [1m[92m     Running[0m unittests src/lib.rs (target/debug/build/trames-core/b70430197d69bb3b/out/trames_core-b70430197d69bb3b)
+2026-10-19T01:52:55.0175912Z 
+2026-10-19T01:52:55.0176137Z running 56 tests
+2026-10-19T01:52:55.0203624Z test process::boundary_tests::kill_is_delivered_even_with_an_older_pending_signal_while_stopped ... ok
+2026-10-19T01:52:55.0204515Z test process::boundary_tests::failed_exec_preserves_image_and_cloexec_descriptor ... ok
+2026-10-19T01:52:55.0205823Z test accelerator_tests::committed_call_retires_once_and_preserves_guest_context ... ok
+2026-10-19T01:52:55.0206352Z test accelerator_tests::budget_checkpoint_fallback_and_fault_do_not_fake_retirement ... ok
+2026-10-19T01:52:55.0206889Z test process::boundary_tests::terminal_resize_event_is_scoped_to_the_foreground_group ... ok
+2026-10-19T01:52:55.0207791Z test process::cpu_fault_tests::data_top_byte_tags_work_across_pages_and_fork_copy_on_write ... ok
+2026-10-19T01:52:55.0220129Z test process::compat::tests::compatibility_state_and_fault_preflight ... ok
+2026-10-19T01:52:55.0220942Z test process::cpu_fault_tests::masked_or_ignored_synchronous_faults_terminate_instead_of_looping ... ok
+2026-10-19T01:52:55.0224691Z test process::compat::tests::file_size_limit_changes_are_atomic_and_hard_limit_is_privileged ... ok
+2026-10-19T01:52:55.0225444Z test process::cpu_fault_tests::synchronous_signal_contains_fault_address_and_resumes_from_edited_context ... ok
+2026-10-19T01:52:55.0233151Z test process::seccomp::tests::filter_loads_arch_arguments_and_verifies_all_paths ... ok
+2026-10-19T01:52:55.0233717Z test process::scheduling::tests::desktop_priorities_and_batch_idle_policy_roundtrip_and_inherit ... ok
+2026-10-19T01:52:55.0234313Z test process::seccomp::tests::stacked_filters_keep_restrictions_and_newest_equal_action_data ... ok
+2026-10-19T01:52:55.0234946Z test process::scheduling::tests::numa_default_allowed_mask_and_address_queries_are_consistent ... ok
+2026-10-19T01:52:55.0238663Z test process::seccomp::tests::ignored_or_blocked_sigsys_cannot_suppress_a_forced_seccomp_trap ... ok
+2026-10-19T01:52:55.0239292Z test process::tests::a_removed_gpu_context_completes_once_without_reexecuting_the_stub ... ok
+2026-10-19T01:52:55.0247846Z test process::signals::tests::realtime_budget_preserves_fifo_and_cannot_drop_sigkill ... ok
+2026-10-19T01:52:55.0288484Z test process::tests::affinity_assignment_keeps_flexible_tasks_fair_and_relocates_for_pinned_peers ... ok
+2026-10-19T01:52:55.0307979Z test process::tests::close_range_unshare_detaches_only_callers_shared_table ... ok
+2026-10-19T01:52:55.0340702Z test process::tests::continuous_deadlines_include_sleep_and_do_not_spin_on_unread_expired_timerfd ... ok
+2026-10-19T01:52:55.0350636Z test process::tests::failed_blocked_epoll_clears_deadline_and_restores_its_temporary_signal_mask ... ok
+2026-10-19T01:52:55.0378455Z test process::tests::gpu_wait_defers_caught_handlers_but_preserves_stop_continue ... ok
+2026-10-19T01:52:55.0408326Z test process::tests::malformed_signal_frame_fails_without_partial_register_restoration ... ok
+2026-10-19T01:52:55.0428190Z test process::tests::host_pty_keyboard_and_resize_signals_are_scoped_to_the_foreground_session ... ok
+2026-10-19T01:52:55.0457855Z test process::tests::prctl_seccomp_modes_translate_to_syscall_operations ... ok
+2026-10-19T01:52:55.0468766Z test process::tests::proc_mapping_cache_never_freezes_argv_fds_or_credentials_and_retires_dead_vms ... ok
+2026-10-19T01:52:55.0469476Z test process::tests::proc_maps_refresh_after_shared_protect_reserve_unmap_and_fork ... ok
+2026-10-19T01:52:55.0470201Z test process::tests::process_signals_are_single_delivery_and_thread_signals_check_identity_and_permissions ... ok
+2026-10-19T01:52:55.0470971Z test process::tests::restart_rewinds_the_syscall_and_eintr_does_not ... ok
+2026-10-19T01:52:55.0471462Z test process::tests::session_leader_fifo_open_waits_before_terminal_inspection_and_is_interruptible ... ok
+2026-10-19T01:52:55.0472359Z test process::tests::signal_frame_restores_integer_vector_fp_state_and_accepts_guest_context_edits ... ok
+2026-10-19T01:52:55.0472944Z test process::tests::socket_timeout_wakes_continuous_peers_but_not_stopped_or_runnable_tasks ... ok
+2026-10-19T01:52:55.0473414Z test process::tests::solo_quantum_does_not_delay_a_runnable_peer ... ok
+2026-10-19T01:52:55.0495887Z test process::tests::splice_blocks_on_backpressure_and_respects_output_nonblocking ... ok
+2026-10-19T01:52:55.0496700Z test process::tests::stdio_eagain_blocks_only_without_nonblocking_flag ... ok
+2026-10-19T01:52:55.0512178Z test process::tests::stop_continue_preserves_a_blocked_timer ... ok
+2026-10-19T01:52:55.0538246Z test process::tests::terminal_control_signals_use_kernel_authority_and_the_foreground_session ... ok
+2026-10-19T01:52:55.0558452Z test process::tests::thread_directed_stop_and_continue_change_the_entire_group ... ok
+2026-10-19T01:52:55.0559306Z test process::tests::unsupported_instruction_log_survives_child_exit ... ok
+2026-10-19T01:52:55.0573123Z test process::tests::continuous_peers_cancel_at_control_checkpoints_and_commit_the_exact_budget ... ok
+2026-10-19T01:52:55.0574983Z test tests::endless_guest_is_bounded ... ok
+2026-10-19T01:52:55.0575532Z test tests::memory_budget_validation_accepts_large_limits_without_preallocation ... ok
+2026-10-19T01:52:55.0594047Z test tests::stack_layout_contains_argv_envp_auxv_and_aligned_sp ... ok
+2026-10-19T01:52:55.0599321Z test tests::argument_limits_and_nuls_fail ... ok
+2026-10-19T01:52:55.0600069Z test tests::virtual_devices_work_without_any_proc_access_or_snapshot_refresh ... ok
+2026-10-19T01:52:55.0648525Z test workers::tests::concurrent_workers_share_an_exact_non_divisible_budget ... ok
+2026-10-19T01:52:55.0653145Z test workers::tests::deferred_native_reserves_hlt_before_effects_and_unstable_code_never_enters_body ... ok
+2026-10-19T01:52:55.0654288Z test workers::tests::a_peer_completes_native_work_while_another_native_body_is_blocked_on_its_page ... ok
+2026-10-19T01:52:55.0669999Z test workers::tests::native_fallback_retires_once_but_fault_refunds_its_credit ... ok
+2026-10-19T01:52:55.0694370Z test workers::tests::native_returns_continue_locally_with_exact_retirement_and_guest_state ... ok
+2026-10-19T01:52:55.0718067Z test workers::tests::rejected_native_does_not_retire_and_stops_queued_peers ... ok
+2026-10-19T01:52:55.0780059Z test workers::tests::fault_reports_retirement_from_all_preceding_polls ... ok
+2026-10-19T01:52:55.0848324Z test process::boundary_tests::process_limit_rejects_fork_without_changing_parent_memory ... ok
+2026-10-19T01:52:55.0849086Z test workers::tests::request_and_pool_teardown_stop_endless_guest_workers ... ok
+2026-10-19T01:52:55.0857498Z test workers::tests::retains_cpu_through_many_polls_without_a_peer_or_coordinator_message ... ok
+2026-10-19T01:52:55.0932719Z test process::tests::native_workers_execute_shared_atomic_guest_loops_and_account_the_budget ... ok
+2026-10-19T01:52:55.0933043Z 
+2026-10-19T01:52:55.0933296Z test result: ok. 56 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+2026-10-19T01:52:55.0933581Z 
+2026-10-19T01:52:55.0941109Z [1m[92m     Running[0m tests/wayland.rs (target/debug/build/trames-core/3e1bb24ca4fb8a97/out/wayland-3e1bb24ca4fb8a97)
+2026-10-19T01:52:55.0956551Z 
+2026-10-19T01:52:55.0956630Z running 4 tests
+2026-10-19T01:52:55.0957320Z test original_vkcube_wayland_inside_guest ... ignored, prepare original signed Vulkan tools/loader and current guest ICD; set TRAMES_WAYLAND_STORE
+2026-10-19T01:52:55.0958108Z test original_wayland_info_inside_guest ... ignored, prepare signed wayland-utils and weston-clients; set TRAMES_WAYLAND_STORE
+2026-10-19T01:52:55.0958565Z test original_weston_editor_native_ime_inside_guest ... ignored, prepare signed wayland-utils and weston-clients; set TRAMES_WAYLAND_STORE
+2026-10-19T01:52:55.0959037Z test original_weston_simple_shm_inside_guest ... ignored, prepare signed wayland-utils and weston-clients; set TRAMES_WAYLAND_STORE
+2026-10-19T01:52:55.0959283Z 
+2026-10-19T01:52:55.0959776Z test result: ok. 0 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-10-19T01:52:55.0960208Z 
+2026-10-19T01:52:55.0960655Z [1m[92m     Running[0m unittests src/lib.rs (target/debug/build/trames-vfs/fc1e01257ef4dc0b/out/trames_vfs-fc1e01257ef4dc0b)
+2026-10-19T01:52:55.0972511Z 
+2026-10-19T01:52:55.0972618Z running 153 tests
+2026-10-19T01:52:55.0983858Z test bpf::tests::typed_forward_verifier_rejects_unsafe_and_uninitialized_programs ... ok
+2026-10-19T01:52:55.0984519Z test bpf::tests::crun_style_context_mask_and_branches_enforce_device_access ... ok
+2026-10-19T01:52:55.0984995Z test bpf::tests::registry_quota_reclaims_dead_programs ... ok
+2026-10-19T01:52:55.0985486Z test bpf::tests::attachments_survive_close_replace_atomically_and_follow_membership ... ok
+2026-10-19T01:52:55.0988522Z test directory::tests::immediate_children_preserve_byte_order_and_prefix_siblings ... ok
+2026-10-19T01:52:55.0988994Z test events::tests::anonymous_and_socket_owners_survive_identity_changes ... ok
+2026-10-19T01:52:55.0991586Z test events::tests::timer_expirations_accumulate_and_disarm_clears_pending ... ok
+2026-10-19T01:52:55.0993891Z test events::tests::unsupported_epoll_modes_leave_registrations_unchanged ... ok
+2026-10-19T01:52:55.0998870Z test executable::tests::anonymous_exec_reference_survives_last_fd_close_and_retains_ram_accounting ... ok
+2026-10-19T01:52:55.1028108Z test executable::tests::symlink_to_proc_magic_link_uses_the_deleted_inode_and_preserves_permissions ... ok
+2026-10-19T01:52:55.1058179Z test inotify::tests::denied_operations_do_not_emit_events_and_path_watch_lifetime ... ok
+2026-10-19T01:52:55.1068208Z test cgroup::tests::depth_limit_is_transactional_and_storage_budget_is_separate ... ok
+2026-10-19T01:52:55.1080233Z test inotify::tests::unlinked_open_description_and_excl_unlink ... ok
+2026-10-19T01:52:55.1080824Z test cgroup::tests::quotas_count_live_deleted_objects_and_release_them ... ok
+2026-10-19T01:52:55.1082802Z test ipc::named_tests::socket_lookup_follows_inode_links_and_permission_checks ... ok
+2026-10-19T01:52:55.1083468Z test ipc::native::tests::clipboard_pipe_relays_preserve_bytes_backpressure_and_eof ... ok
+2026-10-19T01:52:55.1084140Z test directory::tests::root_enumeration_skips_a_large_nested_tree ... ok
+2026-10-19T01:52:55.1084795Z test ipc::waitall_tests::fragmented_waitall_preserves_prefix_and_nonblocking_and_eof_return_short_reads ... ok
+2026-10-19T01:52:55.1085598Z test ipc::native::tests::guest_unix_stream_reaches_the_native_wayland_server_with_standard_wire_messages ... ok
+2026-10-19T01:52:55.1086335Z test kernel_log::tests::independent_readers_dup_clear_and_user_permissions ... ok
+2026-10-19T01:52:55.1086876Z test ipc::named_tests::accept_fd_exhaustion_retains_pending_connection ... ok
+2026-10-19T01:52:55.1109767Z test linux_namespace::tests::clone_shares_names_until_unshare_and_checks_privilege ... ok
+2026-10-19T01:52:55.1111222Z test linux_namespace::tests::chroot_clamps_dotdot_and_absolute_links_but_preserves_open_dirfds ... ok
+2026-10-19T01:52:55.1114500Z test linux_namespace::tests::ipc_namespace_mqueue_identity_and_pinned_mounts_are_independent ... ok
+2026-10-19T01:52:55.1141654Z test linux_namespace::tests::namespace_fd_pins_identity_across_unshare_and_setns ... ok
+2026-10-19T01:52:55.1148047Z test linux_namespace::tests::namespace_quota_is_released_with_last_object_reference ... ok
+2026-10-19T01:52:55.1158677Z test linux_namespace::tests::network_sysctls_pin_their_namespace_and_change_actual_ping_policy ... ok
+2026-10-19T01:52:55.1172657Z test linux_namespace::tests::isolated_network_has_private_ports_abstract_names_and_retains_old_fds ... ok
+2026-10-19T01:52:55.1173772Z test linux_namespace::tests::root_network_handle_binds_pins_and_reenters_without_creating_isolation ... ok
+2026-10-19T01:52:55.1174568Z test linux_namespace::tests::private_cgroup_namespace_rebases_proc_and_new_mount_without_moving_tasks ... ok
+2026-10-19T01:52:55.1175205Z test locks::tests::backward_ranges_readers_and_overflow_are_checked ... ok
+2026-10-19T01:52:55.1176165Z test mapped::tests::direct_file_borrows_dirty_writeback_alias_tokens_and_live_eof ... ok
+2026-10-19T01:52:55.1176963Z test mapped::tests::alias_fd_io_cow_truncate_permissions_and_unlinked_lifetime ... ok
+2026-10-19T01:52:55.1177531Z test inotify::tests::overflow_coalescing_and_new_edges_after_drain ... ok
+2026-10-19T01:52:55.1191145Z test mapped::tests::mapped_code_aliases_and_fd_writes_change_decoder_tokens ... ok
+2026-10-19T01:52:55.1198411Z test mapped::tests::memfd_native_views_share_guest_pages_and_keep_physical_budget_until_last_lease ... ok
+2026-10-19T01:52:55.1198997Z test mapped::tests::parallel_readonly_alias_dirty_fragments_private_refresh_and_live_eof ... ok
+2026-10-19T01:52:55.1199495Z test mapped::tests::read_only_shared_mapping_cannot_gain_write_access ... ok
+2026-10-19T01:52:55.1199959Z test mounts::boundary_tests::detached_subtree_remains_traversable_and_releases_its_quota ... ok
+2026-10-19T01:52:55.1200476Z test memfd::allocation_tests::foot_sparse_pool_probe_falls_back_without_charging_512_mib ... ok
+2026-10-19T01:52:55.1201032Z test mounts::boundary_tests::docker_tmpfs_size_is_lazy_and_strictatime_overrides_relatime ... ok
+2026-10-19T01:52:55.1201584Z test mounts::boundary_tests::empty_mqueue_mounts_share_identity_without_creatable_regular_files ... ok
+2026-10-19T01:52:55.1202154Z test mounts::boundary_tests::mountinfo_is_relative_to_chroot_and_escapes_field_bytes ... ok
+2026-10-19T01:52:55.1202650Z test mounts::boundary_tests::namespace_limit_failure_is_atomic_and_recoverable ... ok
+2026-10-19T01:52:55.1203123Z test mounts::boundary_tests::retained_directory_exec_is_valid_outside_the_new_root ... ok
+2026-10-19T01:52:55.1211809Z test mounts::boundary_tests::tmpfs_directory_links_and_hardlink_outside_bind_do_not_confuse_paths ... ok
+2026-10-19T01:52:55.1218660Z test mounts::tests::bind_identity_readonly_and_inode_updates ... ok
+2026-10-19T01:52:55.1219392Z test memfd::allocation_tests::allocation_preserves_bytes_position_and_shared_quota ... ok
+2026-10-19T01:52:55.1220183Z test mounts::boundary_tests::noexec_mapping_rejects_later_mprotect_without_changing_other_pages ... ok
+2026-10-19T01:52:55.1223598Z test mounts::tests::bind_remount_accepts_rec_without_changing_nested_or_source_mounts ... ok
+2026-10-19T01:52:55.1232641Z test mounts::tests::tmpfs_quota_hardlinks_rename_and_lazy_unmount_keep_fd ... ok
+2026-10-19T01:52:55.1233739Z test mounts::tests::recursive_bind_preserves_nested_tmpfs_and_pivot_root ... ok
+2026-10-19T01:52:55.1236737Z test mounts::tests::shared_mapping_pins_mount_and_blocks_readonly_remount ... ok
+2026-10-19T01:52:55.1238551Z test mounts::tests::unshare_mount_table_and_namespace_fd_lifetime ... ok
+2026-10-19T01:52:55.1268868Z test network::tests::fork_dup_cloexec_and_quota_follow_socket_lifetime ... ok
+2026-10-19T01:52:55.1278134Z test network::tests::bridge_sysctls_are_namespace_pinned_and_authorized ... ok
+2026-10-19T01:52:55.1299719Z test network::tests::forwarding_controls_pin_namespace_recheck_authority_and_validate_values ... ok
+2026-10-19T01:52:55.1300833Z test network::tests::splice_preserves_bytes_under_backpressure_and_stream_half_close ... ok
+2026-10-19T01:52:55.1301598Z test network::tests::native_and_virtual_epollet_wake_after_drain_and_new_arrival ... ok
+2026-10-19T01:52:55.1302235Z test oom::tests::privilege_floor_fork_sharing_and_invalid_writes_are_atomic ... ok
+2026-10-19T01:52:55.1302891Z test oom::tests::task_paths_use_thread_credentials_and_thread_lifetime ... ok
+2026-10-19T01:52:55.1303614Z test overlay::tests::committed_lower_whiteouts_and_hardlinks_survive_another_upper ... ok
+2026-10-19T01:52:55.1304280Z test network::tests::packet_info_is_per_datagram_and_source_selection_is_real ... ok
+2026-10-19T01:52:55.1319115Z test oom::tests::proc_control_checks_dac_mount_and_retains_only_weak_task_identity ... ok
+2026-10-19T01:52:55.1319991Z test overlay::tests::copy_up_quota_failure_and_readonly_permissions_do_not_change_lower ... ok
+2026-10-19T01:52:55.1326085Z test overlay::tests::lazy_detach_releases_upper_lease_after_last_file_reference ... ok
+2026-10-19T01:52:55.1334417Z test overlay::tests::merged_layers_copy_up_and_old_descriptions_keep_lower ... ok
+2026-10-19T01:52:55.1345398Z test overlay::tests::metadata_hardlinks_rename_and_open_unlink ... ok
+2026-10-19T01:52:55.1352104Z test overlay::tests::proc_reopens_select_current_layer_but_dup_keeps_original_data ... ok
+2026-10-19T01:52:55.1360961Z test overlay::tests::read_and_copy_up_notify_the_merged_inode_and_parent ... ok
+2026-10-19T01:52:55.1366319Z test overlay::tests::readonly_leases_options_and_layer_type_conflicts ... ok
+2026-10-19T01:52:55.1372171Z test overlay::tests::truncating_lower_file_needs_no_space_for_discarded_data ... ok
+2026-10-19T01:52:55.1380745Z test overlay::tests::upper_directory_rename_namespace_copy_and_readonly_remount ... ok
+2026-10-19T01:52:55.1385148Z test overlay::tests::userxattr_whiteouts_and_opaque_are_selected_by_mount_option ... ok
+2026-10-19T01:52:55.1392860Z test overlay::tests::whiteouts_opaque_recreation_symlinks_and_remount ... ok
+2026-10-19T01:52:55.1402155Z test overlay::tests::writable_mapping_changes_only_upper_and_read_mapping_retains_lower ... ok
+2026-10-19T01:52:55.1402561Z test permission_tests::directory_mutations_require_parent_write_and_import_uses_canonical_path ... ok
+2026-10-19T01:52:55.1404725Z test pid_namespace::tests::ancestor_ids_survive_group_leaders_but_siblings_are_invisible ... ok
+2026-10-19T01:52:55.1405190Z test pid_namespace::tests::dead_namespace_allocation_does_not_consume_ancestor_ids ... ok
+2026-10-19T01:52:55.1409873Z test pid_namespace::tests::depth_and_live_namespace_quotas_release_without_unbounded_registry_growth ... ok
+2026-10-19T01:52:55.1410738Z test process_tests::dup_and_fork_share_status_flags_but_cloexec_is_per_descriptor ... ok
+2026-10-19T01:52:55.1411521Z test process_tests::failed_dup3_does_not_close_the_target ... ok
+2026-10-19T01:52:55.1414554Z test process_tests::fork_shares_storage_and_open_position_but_not_descriptor_table ... ok
+2026-10-19T01:52:55.1417220Z test process_tests::pipe_eof_waits_for_last_shared_writer_and_broken_pipe_for_last_reader ... ok
+2026-10-19T01:52:55.1423974Z test process_tests::pipe_small_writes_are_atomic_under_backpressure ... ok
+2026-10-19T01:52:55.1426744Z test process_tests::unlink_keeps_open_file_and_quota_until_last_close ... ok
+2026-10-19T01:52:55.1430840Z test pseudo::proc_probe_tests::proc_probe_follows_aliases_cwd_and_dirfd_even_for_missing_processes ... ok
+2026-10-19T01:52:55.1434045Z test pseudo::tests::common_devices_and_cross_process_privacy_have_real_behavior ... ok
+2026-10-19T01:52:55.1439730Z test pseudo::tests::device_directory_enumerates_only_available_embedding_devices ... ok
+2026-10-19T01:52:55.1444794Z test pseudo::tests::directory_links_and_mount_identity_match_live_namespace ... ok
+2026-10-19T01:52:55.1449607Z test pseudo::tests::fd_magic_links_keep_deleted_inodes_and_pipe_identity ... ok
+2026-10-19T01:52:55.1456864Z test pseudo::tests::logical_block_identity_agrees_across_mounts_stat_and_sysfs ... ok
+2026-10-19T01:52:55.1460316Z test pseudo::tests::proc_readlink_empty_path_retains_symlink_inode_and_refreshes_fd_target ... ok
+2026-10-19T01:52:55.1464424Z test pseudo::tests::proc_root_inode_matches_linux_across_paths_fds_and_bind_mounts ... ok
+2026-10-19T01:52:55.1468551Z test pseudo::tests::proc_route_uses_guest_little_endian_addresses_for_native_and_bridge_rows ... ok
+2026-10-19T01:52:55.1469085Z test pseudo::tests::proc_setgroups_reports_initial_user_namespace_policy ... ok
+2026-10-19T01:52:55.1479591Z test pseudo::tests::proc_sysctl_path_fd_reopens_with_truncation_and_keeps_network_namespace ... ok
+2026-10-19T01:52:55.1483411Z test pseudo::tests::process_views_are_live_readonly_and_outside_storage_quota ... ok
+2026-10-19T01:52:55.1486483Z test pty::tests::bind_clone_and_detached_master_retain_their_devpts_instance ... ok
+2026-10-19T01:52:55.1489470Z test pty::tests::devpts_linux_inode_identity_survives_bind_and_path_handles ... ok
+2026-10-19T01:52:55.1493576Z test pty::tests::devpts_proc_path_reopen_allocates_a_fresh_master_and_opens_slave ... ok
+2026-10-19T01:52:55.1568962Z test pty::tests::independent_devpts_reuses_local_numbers_but_not_terminal_identity ... ok
+2026-10-19T01:52:55.1619822Z test kernel_log::tests::bounded_log_overrun_stream_progress_and_rate_limit ... ok
+2026-10-19T01:52:55.1645722Z test storage_tests::bridge_device_is_volatile_nonseekable_and_shared_by_dup ... ok
+2026-10-19T01:52:55.1729688Z test overlay::tests::failed_manifest_commit_rolls_back_whiteout_and_visible_namespace ... ok
+2026-10-19T01:52:55.1735441Z test storage_tests::corrupt_device_payloads_are_rejected_before_storage_recovery ... ok
+2026-10-19T01:52:55.1808723Z test storage_tests::corrupt_manifest_is_rejected_without_deleting_objects ... ok
+2026-10-19T01:52:55.1814230Z test storage_tests::device_creation_failure_rolls_back_and_unprivileged_cannot_create ... ok
+2026-10-19T01:52:55.1903857Z test storage_tests::direct_native_mapped_writes_survive_disk_sync_unmap_and_reopen ... ok
+2026-10-19T01:52:55.2009876Z test overlay::tests::disk_reopen_persists_copy_up_whiteout_metadata_and_opaque ... ok
+2026-10-19T01:52:55.2012044Z test storage_tests::disk_fork_and_unlink_keep_shared_offsets_and_account_open_files ... ok
+2026-10-19T01:52:55.2012650Z test storage_tests::emit_file_provider_manifest_fixture ... ignored, emits the independent iOS File Provider manifest fixture
+2026-10-19T01:52:55.2041549Z test storage_tests::device_nodes_persist_numbers_links_and_driver_behavior ... ok
+2026-10-19T01:52:55.2046741Z test storage_tests::disk_store_lock_lasts_until_the_last_process_clone_is_dropped ... ok
+2026-10-19T01:52:55.2071991Z test storage_tests::explicit_reset_refuses_live_stores_and_clears_unsupported_metadata ... ok
+2026-10-19T01:52:55.2075882Z test storage_tests::flock_is_shared_by_dup_fork_and_released_by_last_close ... ok
+2026-10-19T01:52:55.2082106Z test storage_tests::inode_attributes_bound_metadata_and_reject_unimplemented_security_policy ... ok
+2026-10-19T01:52:55.2102345Z test storage_tests::failed_namespace_commit_rolls_back_create_alias_rename_chmod_and_unlink ... ok
+2026-10-19T01:52:55.2110660Z test storage_tests::fifo_inode_persists_but_live_channel_does_not ... ok
+2026-10-19T01:52:55.2176629Z test storage_tests::named_socket_inodes_reopen_as_stale_endpoints ... ok
+2026-10-19T01:52:55.2199640Z test storage_tests::inode_attributes_persist_share_hardlinks_and_rollback_failed_commits ... ok
+2026-10-19T01:52:55.2229380Z test storage_tests::pseudo_views_do_not_enter_the_manifest_or_consume_disk_quota ... ok
+2026-10-19T01:52:55.2247186Z test storage_tests::ownership_sticky_modes_and_symlink_ownership_survive_reopening ... ok
+2026-10-19T01:52:55.2293605Z test storage_tests::recover_removes_only_validated_orphan_objects_and_abandoned_manifest ... ok
+2026-10-19T01:52:55.2317209Z test storage_tests::recorded_limits_and_writable_usr_survive_reopen ... ok
+2026-10-19T01:52:55.2355078Z test storage_tests::reopen_restores_byte_paths_hard_links_modes_times_and_bytes ... ok
+2026-10-19T01:52:55.2360600Z test storage_tests::reopened_inode_watches_keep_parent_identity_and_failed_transactions_are_silent ... ok
+2026-10-19T01:52:55.2363324Z test storage_tests::setgid_inheritance_and_setid_bits_follow_guest_ownership ... ok
+2026-10-19T01:52:55.2402391Z test storage_tests::repeated_host_import_is_atomic_preserves_open_inode_and_survives_cancel ... ok
+2026-10-19T01:52:55.2450805Z test storage_tests::sparse_16_gib_file_exhausts_logical_quota_without_a_large_buffer ... ok
+2026-10-19T01:52:55.2463157Z test storage_tests::replacing_executable_updates_aliases_but_open_descriptions_keep_old_data ... ok
+2026-10-19T01:52:55.2504656Z test storage_tests::symlinked_private_objects_and_dangling_lock_are_rejected ... ok
+2026-10-19T01:52:55.2647254Z test storage_tests::subtree_rename_updates_other_process_cwd_and_open_dirfd ... ok
+2026-10-19T01:52:55.3816538Z test storage_tests::symlinks_persist_resolve_relative_and_do_not_follow_on_unlink ... ok
+2026-10-19T01:52:55.3855219Z test storage_tests::unsupported_manifest_versions_are_rejected_without_deleting_data ... ok
+2026-10-19T01:52:55.3890494Z test storage_tests::version_three_manifest_reopens_without_attributes_and_upgrades_on_write ... ok
+2026-10-19T01:52:55.3907321Z test storage_tests::volume_snapshots_bound_growth_and_refresh_independently_of_budget ... ok
+2026-10-19T01:52:55.3908631Z test terminal::boundary_tests::raw_minimum_and_software_flow_control ... ok
+2026-10-19T01:52:55.3958657Z test terminal::boundary_tests::empty_eof_records_consume_capacity_and_read_frees_it ... ok
+2026-10-19T01:52:55.3959424Z test terminal::tests::canonical_lines_erase_eof_and_control_signals ... ok
+2026-10-19T01:52:55.3968387Z test terminal::echo_tests::repeated_erases_cannot_grow_echo_past_the_budget ... ok
+2026-10-19T01:52:55.3969764Z test terminal::tests::raw_input_and_output_translation ... ok
+2026-10-19T01:52:55.3973858Z test tests::append_null_and_storage_limit ... ok
+2026-10-19T01:52:55.3980403Z test tests::directory_entries_are_aligned_and_continue_after_small_buffers ... ok
+2026-10-19T01:52:55.3981925Z test tests::directory_search_permissions_and_zero_length_writes ... ok
+2026-10-19T01:52:55.4058319Z test terminal::tests::output_backpressure_preserves_a_complete_translated_character ... ok
+2026-10-19T01:52:55.4062719Z test tests::open_read_seek_write_and_fd_reuse ... ok
+2026-10-19T01:52:55.4071795Z test tests::paths_cannot_escape_root_or_traverse_regular_files ... ok
+2026-10-19T01:52:55.4075729Z test tests::reverse_path_hint_cannot_escape_a_bind_root_through_a_hardlink ... ok
+2026-10-19T01:52:55.4079756Z test tests::reverse_path_hint_validates_rename_unlink_and_replacement_inode ... ok
+2026-10-19T01:52:55.4255147Z test storage_tests::stream_import_export_uses_bounded_chunks_and_rejects_over_budget ... ok
+2026-10-19T01:52:55.4398815Z test tests::imports_do_not_leave_partial_directories_at_the_node_limit ... ok
+2026-10-19T01:52:56.5788558Z test storage_tests::closed_inodes_do_not_retain_native_file_descriptors ... ok
+2026-10-19T01:52:56.5788788Z 
+2026-10-19T01:52:56.5788935Z test result: ok. 152 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 1.48s
+2026-10-19T01:52:56.5789125Z 
+2026-10-19T01:52:56.5799262Z [1m[92m   Doc-tests[0m trames_core
+2026-10-19T01:52:56.6261461Z 
+2026-10-19T01:52:56.6261978Z running 0 tests
+2026-10-19T01:52:56.6262183Z 
+2026-10-19T01:52:56.6262461Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-10-19T01:52:56.6262757Z 
+2026-10-19T01:52:56.6276475Z [1m[92m   Doc-tests[0m trames_vfs
+2026-10-19T01:52:56.7150856Z 
+2026-10-19T01:52:56.7151190Z running 0 tests
+2026-10-19T01:52:56.7151313Z 
+2026-10-19T01:52:56.7151497Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-10-19T01:52:56.7151726Z 
+2026-10-19T01:52:56.7481650Z ##[group]Run cargo build -p trames-ffi --release --locked
+2026-10-19T01:52:56.7481924Z [36;1mcargo build -p trames-ffi --release --locked[0m
+2026-10-19T01:52:56.7482110Z [36;1mmkdir -p target/alpine-download[0m
+2026-10-19T01:52:56.7482622Z [36;1mcurl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o target/alpine-download/alpine-minirootfs-3.22.6-aarch64.tar.gz[0m
+2026-10-19T01:52:56.7483154Z [36;1mpython3 tests/integration/multiple-terminals.py[0m
+2026-10-19T01:52:56.7535542Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-19T01:52:56.7535732Z env:
+2026-10-19T01:52:56.7535853Z   CARGO_HOME: /home/runner/.cargo
+2026-10-19T01:52:56.7535994Z   CARGO_INCREMENTAL: 0
+2026-10-19T01:52:56.7536124Z   CARGO_TERM_COLOR: always
+2026-10-19T01:52:56.7536251Z ##[endgroup]
+2026-10-19T01:52:56.8193238Z [1m[92m   Compiling[0m libc v0.2.190
+2026-10-19T01:52:56.8193778Z [1m[92m   Compiling[0m cfg-if v1.0.5
+2026-10-19T01:52:56.8194084Z [1m[92m   Compiling[0m proc-macro2 v1.0.107
+2026-10-19T01:52:56.8194576Z [1m[92m   Compiling[0m unicode-ident v1.0.26
+2026-10-19T01:52:56.8433366Z [1m[92m   Compiling[0m quote v1.0.47
+2026-10-19T01:52:56.8541601Z [1m[92m   Compiling[0m version_check v0.9.5
+2026-10-19T01:52:56.9451499Z [1m[92m   Compiling[0m bitflags v2.13.2
+2026-10-19T01:52:56.9909432Z [1m[92m   Compiling[0m generic-array v0.14.7
+2026-10-19T01:52:57.0550091Z [1m[92m   Compiling[0m pkg-config v0.3.34
+2026-10-19T01:52:57.1920661Z [1m[92m   Compiling[0m shlex v2.0.1
+2026-10-19T01:52:57.3499507Z [1m[92m   Compiling[0m rustix v1.1.5
+2026-10-19T01:52:57.3838985Z [1m[92m   Compiling[0m find-msvc-tools v0.1.14
+2026-10-19T01:52:57.4207925Z [1m[92m   Compiling[0m wayland-sys v0.31.11
+2026-10-19T01:52:57.4844261Z [1m[92m   Compiling[0m cc v1.8.0
+2026-10-19T01:52:57.4969531Z [1m[92m   Compiling[0m typenum v1.20.1
+2026-10-19T01:52:57.5152455Z [1m[92m   Compiling[0m linux-raw-sys v0.12.1
+2026-10-19T01:52:58.2999184Z [1m[92m   Compiling[0m memchr v2.8.3
+2026-10-19T01:52:58.6829461Z [1m[92m   Compiling[0m serde_core v1.0.229
+2026-10-19T01:52:58.7219117Z [1m[92m   Compiling[0m quick-xml v0.41.0
+2026-10-19T01:52:58.7351123Z [1m[92m   Compiling[0m wayland-backend v0.3.17 (/home/runner/work/trames/trames/vendor/wayland-backend)
+2026-10-19T01:52:58.8249495Z [1m[92m   Compiling[0m trames-memory v1.1.0 (/home/runner/work/trames/trames/crates/trames-memory)
+2026-10-19T01:52:58.8519345Z [1m[92m   Compiling[0m smallvec v1.16.3
+2026-10-19T01:52:58.9979164Z [1m[92m   Compiling[0m downcast-rs v1.2.1
+2026-10-19T01:52:59.3979132Z [1m[92m   Compiling[0m wayland-scanner v0.31.11
+2026-10-19T01:53:00.4240396Z [1m[92m   Compiling[0m block-buffer v0.10.4
+2026-10-19T01:53:00.4884302Z [1m[92m   Compiling[0m crypto-common v0.1.7
+2026-10-19T01:53:00.5359048Z [1m[92m   Compiling[0m syn v3.0.7
+2026-10-19T01:53:00.8149348Z [1m[92m   Compiling[0m serde v1.0.229
+2026-10-19T01:53:00.9199204Z [1m[92m   Compiling[0m heapless v0.8.0
+2026-10-19T01:53:01.0279710Z [1m[92m   Compiling[0m byteorder v1.5.0
+2026-10-19T01:53:01.1359173Z [1m[92m   Compiling[0m trames-native v1.1.0 (/home/runner/work/trames/trames/crates/trames-native)
+2026-10-19T01:53:02.2621220Z [1m[92m   Compiling[0m getrandom v0.3.4
+2026-10-19T01:53:02.3789115Z [1m[92m   Compiling[0m zmij v1.0.23
+2026-10-19T01:53:02.4700462Z [1m[92m   Compiling[0m cfg_aliases v0.2.2
+2026-10-19T01:53:02.4896315Z [1m[92m   Compiling[0m nix v0.31.3
+2026-10-19T01:53:02.6719381Z [1m[92m   Compiling[0m serde_derive v1.0.229
+2026-10-19T01:53:03.0260513Z [1m[92m   Compiling[0m wayland-server v0.31.14
+2026-10-19T01:53:03.8409115Z [1m[92m   Compiling[0m hash32 v0.3.1
+2026-10-19T01:53:03.9309065Z [1m[92m   Compiling[0m digest v0.10.7
+2026-10-19T01:53:04.0509696Z [1m[92m   Compiling[0m stable_deref_trait v1.2.1
+2026-10-19T01:53:04.0769122Z [1m[92m   Compiling[0m cpufeatures v0.2.17
+2026-10-19T01:53:04.1030348Z [1m[92m   Compiling[0m serde_json v1.0.151
+2026-10-19T01:53:04.1780205Z [1m[92m   Compiling[0m smoltcp v0.12.0
+2026-10-19T01:53:04.3019305Z [1m[92m   Compiling[0m sha2 v0.10.9
+2026-10-19T01:53:04.9181207Z [1m[92m   Compiling[0m wayland-protocols v0.32.13
+2026-10-19T01:53:05.4519163Z [1m[92m   Compiling[0m trames-shared v1.1.0 (/home/runner/work/trames/trames/crates/trames-shared)
+2026-10-19T01:53:06.1680140Z [1m[92m   Compiling[0m managed v0.8.0
+2026-10-19T01:53:06.3350038Z [1m[92m   Compiling[0m itoa v1.0.18
+2026-10-19T01:53:06.5170400Z [1m[92m   Compiling[0m bitflags v1.3.2
+2026-10-19T01:53:07.0489410Z [1m[92m   Compiling[0m trames-accel v1.1.0 (/home/runner/work/trames/trames/crates/trames-accel)
+2026-10-19T01:53:07.3768903Z [1m[92m   Compiling[0m socket2 v0.6.1
+2026-10-19T01:53:08.0509280Z [1m[92m   Compiling[0m trames-net v1.1.0 (/home/runner/work/trames/trames/crates/trames-net)
+2026-10-19T01:53:08.6119532Z [1m[92m   Compiling[0m trames-bridge v1.1.0 (/home/runner/work/trames/trames/crates/trames-bridge)
+2026-10-19T01:53:09.4529515Z [1m[92m   Compiling[0m trames-wayland v1.1.0 (/home/runner/work/trames/trames/crates/trames-wayland)
+2026-10-19T01:53:10.7239059Z [1m[92m   Compiling[0m crc32fast v1.5.2
+2026-10-19T01:53:10.8080800Z [1m[92m   Compiling[0m ash v0.38.0+1.3.281
+2026-10-19T01:53:10.8789699Z [1m[92m   Compiling[0m trames-vfs v1.1.0 (/home/runner/work/trames/trames/crates/trames-vfs)
+2026-10-19T01:53:16.5289267Z [1m[92m   Compiling[0m libloading v0.8.9
+2026-10-19T01:53:16.6325027Z [1m[92m   Compiling[0m adler2 v2.0.1
+2026-10-19T01:53:16.7069441Z [1m[92m   Compiling[0m trames-vulkan v1.1.0 (/home/runner/work/trames/trames/crates/trames-vulkan)
+2026-10-19T01:53:16.8260332Z [1m[92m   Compiling[0m trames-compute v1.1.0 (/home/runner/work/trames/trames/crates/trames-compute)
+2026-10-19T01:53:16.9409116Z [1m[92m   Compiling[0m simd-adler32 v0.3.10
+2026-10-19T01:53:17.5738517Z [1m[92m   Compiling[0m miniz_oxide v0.9.1
+2026-10-19T01:53:17.6259279Z [1m[92m   Compiling[0m trames-cpu v1.1.0 (/home/runner/work/trames/trames/crates/trames-cpu)
+2026-10-19T01:53:19.3820001Z [1m[92m   Compiling[0m trames-elf v1.1.0 (/home/runner/work/trames/trames/crates/trames-elf)
+2026-10-19T01:53:19.6639856Z [1m[92m   Compiling[0m filetime v0.2.29
+2026-10-19T01:53:19.7819196Z [1m[92m   Compiling[0m tar v0.4.46
+2026-10-19T01:53:21.9849120Z [1m[92m   Compiling[0m flate2 v1.1.10
+2026-10-19T01:53:22.3839379Z [1m[92m   Compiling[0m trames-linux v1.1.0 (/home/runner/work/trames/trames/crates/trames-linux)
+2026-10-19T01:53:23.5720971Z [1m[92m   Compiling[0m trames-distro v1.1.0 (/home/runner/work/trames/trames/crates/trames-distro)
+2026-10-19T01:53:29.1504019Z [1m[92m   Compiling[0m trames-core v1.1.0 (/home/runner/work/trames/trames/crates/trames-core)
+2026-10-19T01:53:33.3277424Z [1m[92m   Compiling[0m trames-ffi v1.1.0 (/home/runner/work/trames/trames/crates/trames-ffi)
+2026-10-19T01:53:38.6652249Z [1m[92m    Finished[0m `release` profile [optimized] target(s) in 41.88s
+2026-10-19T01:53:38.6805022Z   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+2026-10-19T01:53:38.6805435Z                                  Dload  Upload   Total   Spent    Left  Speed
+2026-10-19T01:53:38.6805628Z 
+2026-10-19T01:53:38.8844451Z   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+2026-10-19T01:53:38.8844833Z 100 3876k  100 3876k    0     0  18.5M      0 --:--:-- --:--:-- --:--:-- 18.6M
+2026-10-19T01:53:40.7530562Z PASS: 3 independent PTYs, shared files/processes, private cwd/env, resize, Ctrl+C, output backpressure, close/exit/reopen and rapid pending cancellation
+2026-10-19T01:53:40.7829366Z Post job cleanup.
+2026-10-19T01:53:40.8470233Z [command]/usr/bin/git version
+2026-10-19T01:53:40.8507745Z git version 2.55.0
+2026-10-19T01:53:40.8538665Z Temporarily overriding HOME='/home/runner/work/_temp/b5d13b7e-4b0d-4fe3-b831-13e4876a0d20' before making global git config changes
+2026-10-19T01:53:40.8539432Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-19T01:53:40.8543328Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/trames/trames
+2026-10-19T01:53:40.8585218Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-19T01:53:40.8621154Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-19T01:53:40.8843278Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-19T01:53:40.8876154Z http.https://github.com/.extraheader
+2026-10-19T01:53:40.8886008Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-19T01:53:40.8944387Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-19T01:53:40.9174654Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-19T01:53:40.9210714Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-19T01:53:40.9563814Z Cleaning up orphan processes
+2026-10-19T01:53:40.9774569Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
