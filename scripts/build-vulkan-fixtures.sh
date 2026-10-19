@@ -52,3 +52,5 @@ cp tests/fixtures/bin/vulkan-texture tests/fixtures/bin/vulkan-texture.*.spv tar
   -I "$headers" -L "$PWD/target/vulkan-loader-sdk" -L "$PWD/target/alpine-build/lib" \
   tests/fixtures/vulkan-present.c -lvulkan -o tests/fixtures/bin/vulkan-present
 cp tests/fixtures/bin/vulkan-present target/vulkan-guest/acceptance/
+
+"${GLSLANG_VALIDATOR:-glslangValidator}" -V --target-env vulkan1.0 tests/fixtures/vulkan-resources.comp -o tests/fixtures/bin/vulkan-resources.spv

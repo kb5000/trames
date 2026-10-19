@@ -58,12 +58,14 @@ impl Drop for Instance {
 }
 struct Device {
     anisotropy: bool,
+    features: vk::PhysicalDeviceFeatures,
     maintenance1: bool,
     timeline: bool,
     renderpass2: bool,
     imageless: bool,
     format_list: bool,
     maintenance2: bool,
+    portability: Option<vk::PhysicalDevicePortabilitySubsetFeaturesKHR<'static>>,
     native: ash::Device,
     instance: Arc<Instance>,
     atom: u64,
@@ -81,6 +83,7 @@ impl Drop for Device {
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Kind {
     Buffer,
+    BufferView,
     Image,
     SwapchainImage,
     ImageView,
@@ -108,6 +111,8 @@ struct Object {
     deps: RefCell<Vec<Rc<Object>>>,
     bindings: RefCell<BTreeMap<u32, (u32, u32, u32)>>,
     bound_resources: RefCell<DescriptorResources>,
+    dynamic_ranges: RefCell<BTreeMap<(u32, u32), (u64, u64)>>,
+    descriptor_epoch: Cell<u64>,
     push_ranges: RefCell<Vec<(u32, u32, u32)>>,
     size: u64,
     flags: u32,
@@ -116,6 +121,7 @@ struct Object {
     pending_submissions: Cell<u32>,
     mapped: Cell<usize>,
     image: Cell<Option<ImageShape>>,
+    image_flags: Cell<u32>,
     pass: Cell<Option<PassInfo>>,
     attachment_specs: RefCell<Vec<graphics::AttachmentSpec>>,
     recording: RefCell<Recording>,
@@ -144,6 +150,7 @@ impl Drop for Object {
         // keep every dependency alive until the native driver has finished.
         unsafe {
             match self.kind {
+                Kind::BufferView => d.destroy_buffer_view(vk::BufferView::from_raw(self.raw), None),
                 Kind::Buffer => d.destroy_buffer(vk::Buffer::from_raw(self.raw), None),
                 Kind::SwapchainImage => {}
                 Kind::Image => d.destroy_image(vk::Image::from_raw(self.raw), None),
@@ -176,9 +183,13 @@ impl Drop for Object {
                     d.destroy_descriptor_pool(vk::DescriptorPool::from_raw(self.raw), None)
                 }
                 Kind::DescriptorSet => {
-                    let pool = self.deps.borrow()[0].raw;
+                    let dependencies = self.deps.borrow();
+                    let pool = &dependencies[0];
+                    if self.descriptor_epoch.get() != pool.descriptor_epoch.get() {
+                        return;
+                    }
                     let _ = d.free_descriptor_sets(
-                        vk::DescriptorPool::from_raw(pool),
+                        vk::DescriptorPool::from_raw(pool.raw),
                         &[vk::DescriptorSet::from_raw(self.raw)],
                     );
                 }
@@ -364,6 +375,10 @@ impl Backend {
         self.objects
             .get(&id)
             .filter(|x| x.kind == kind || kind == Kind::Image && x.kind == Kind::SwapchainImage)
+            .filter(|x| {
+                x.kind != Kind::DescriptorSet
+                    || x.descriptor_epoch.get() == x.deps.borrow()[0].descriptor_epoch.get()
+            })
             .cloned()
             .ok_or(Failure::Vk(vk::Result::ERROR_UNKNOWN))
     }
@@ -375,6 +390,8 @@ impl Backend {
             deps: RefCell::new(deps),
             bindings: RefCell::new(BTreeMap::new()),
             bound_resources: RefCell::new(BTreeMap::new()),
+            dynamic_ranges: RefCell::new(BTreeMap::new()),
+            descriptor_epoch: Cell::new(0),
             push_ranges: RefCell::new(Vec::new()),
             size,
             flags,
@@ -383,6 +400,7 @@ impl Backend {
             pending_submissions: Cell::new(0),
             mapped: Cell::new(0),
             image: Cell::new(None),
+            image_flags: Cell::new(0),
             pass: Cell::new(None),
             attachment_specs: RefCell::new(Vec::new()),
             recording: RefCell::new(Recording::default()),
@@ -631,6 +649,8 @@ impl Backend {
             deps: RefCell::new(Vec::new()),
             bindings: RefCell::new(BTreeMap::new()),
             bound_resources: RefCell::new(BTreeMap::new()),
+            dynamic_ranges: RefCell::new(BTreeMap::new()),
+            descriptor_epoch: Cell::new(0),
             push_ranges: RefCell::new(Vec::new()),
             size: 0,
             flags: 0,
@@ -639,6 +659,7 @@ impl Backend {
             pending_submissions: Cell::new(0),
             mapped: Cell::new(0),
             image: Cell::new(None),
+            image_flags: Cell::new(0),
             pass: Cell::new(None),
             attachment_specs: RefCell::new(Vec::new()),
             recording: RefCell::new(Recording::default()),
@@ -996,7 +1017,12 @@ impl Backend {
             .instance
             .clone()
             .ok_or(Failure::Vk(vk::Result::ERROR_INITIALIZATION_FAILED))?;
-        if ((3..=8).contains(&op) || (58..=59).contains(&op) || op == 115 || op == 121 || op == 126)
+        if ((3..=8).contains(&op)
+            || (58..=59).contains(&op)
+            || op == 115
+            || op == 121
+            || op == 126
+            || op == 133)
             && a[0]
                 != if op == 3 {
                     self.instance_id
@@ -1018,6 +1044,7 @@ impl Backend {
                     16,
                 )?;
             }
+            133 => self.capabilities.write_portability(m, a[1])?,
             126 => {
                 self.capabilities.write_clipping(m, a[1])?;
             }
@@ -1045,6 +1072,12 @@ impl Backend {
                 // This is an experimental 1.0 compute profile, not a complete
                 // Vulkan conformance claim or the host driver's extension set.
                 b[0] = (b[0] & 0xffffffff00000000) | vk::API_VERSION_1_0 as u64;
+                // The selected renderpass profile has one color attachment and
+                // one viewport. Do not let Mesa infer unsupported MRT/viewport counts.
+                let properties =
+                    unsafe { &mut *b.as_mut_ptr().cast::<vk::PhysicalDeviceProperties>() };
+                properties.limits.max_color_attachments = 1;
+                properties.limits.max_viewports = 1;
                 write_words(
                     m,
                     a[1],
@@ -1124,8 +1157,30 @@ impl Backend {
             7 => {
                 let native = unsafe { instance.native.get_physical_device_features(self.physical) };
                 let mut features = vec![0; std::mem::size_of::<vk::PhysicalDeviceFeatures>()];
-                let at = std::mem::offset_of!(vk::PhysicalDeviceFeatures, sampler_anisotropy);
-                features[at..at + 4].copy_from_slice(&native.sampler_anisotropy.to_le_bytes());
+                for (at, value) in [
+                    (
+                        std::mem::offset_of!(vk::PhysicalDeviceFeatures, sampler_anisotropy),
+                        native.sampler_anisotropy,
+                    ),
+                    (
+                        std::mem::offset_of!(vk::PhysicalDeviceFeatures, logic_op),
+                        native.logic_op,
+                    ),
+                    (
+                        std::mem::offset_of!(vk::PhysicalDeviceFeatures, fill_mode_non_solid),
+                        native.fill_mode_non_solid,
+                    ),
+                    (
+                        std::mem::offset_of!(vk::PhysicalDeviceFeatures, shader_clip_distance),
+                        native.shader_clip_distance,
+                    ),
+                    (
+                        std::mem::offset_of!(vk::PhysicalDeviceFeatures, independent_blend),
+                        native.independent_blend,
+                    ),
+                ] {
+                    features[at..at + 4].copy_from_slice(&value.to_le_bytes());
+                }
                 write(m, a[1], &features)?;
             }
             8 => {
@@ -1171,16 +1226,35 @@ impl Backend {
                 }
                 let native_features =
                     unsafe { instance.native.get_physical_device_features(self.physical) };
-                if a[4] > 1 || a[4] != 0 && native_features.sampler_anisotropy == 0 {
+                if a[4] & !31 != 0
+                    || [
+                        native_features.sampler_anisotropy,
+                        native_features.logic_op,
+                        native_features.fill_mode_non_solid,
+                        native_features.shader_clip_distance,
+                        native_features.independent_blend,
+                    ]
+                    .iter()
+                    .enumerate()
+                    .any(|(i, &v)| a[4] & (1 << i) != 0 && v == 0)
+                {
                     return unsupported();
                 }
-                let features = vk::PhysicalDeviceFeatures::default().sampler_anisotropy(a[4] != 0);
+                let features = vk::PhysicalDeviceFeatures::default()
+                    .sampler_anisotropy(a[4] & 1 != 0)
+                    .logic_op(a[4] & 2 != 0)
+                    .fill_mode_non_solid(a[4] & 4 != 0)
+                    .shader_clip_distance(a[4] & 8 != 0)
+                    .independent_blend(a[4] & 16 != 0);
                 self.wsi.device_enabled = a[3] != 0;
                 zink::device_extensions(a[5], &self.capabilities, &mut names)?;
                 let mut timeline = vk::PhysicalDeviceTimelineSemaphoreFeatures::default()
                     .timeline_semaphore(a[5] & 2 != 0);
                 let mut imageless = vk::PhysicalDeviceImagelessFramebufferFeatures::default()
                     .imageless_framebuffer(a[5] & 512 != 0);
+                let mut portability = self.capabilities.portability;
+                let mut scalar = vk::PhysicalDeviceScalarBlockLayoutFeatures::default()
+                    .scalar_block_layout(a[5] & 2048 != 0);
                 let mut info = vk::DeviceCreateInfo::default()
                     .queue_create_infos(&queue)
                     .enabled_features(&features)
@@ -1190,6 +1264,12 @@ impl Backend {
                 }
                 if a[5] & 512 != 0 {
                     info = info.push_next(&mut imageless);
+                }
+                if a[5] & 2048 != 0 {
+                    info = info.push_next(&mut scalar);
+                }
+                if let Some(ref mut subset) = portability {
+                    info = info.push_next(subset);
                 }
                 let native = unsafe { instance.native.create_device(self.physical, &info, None) }?;
                 self.queue = unsafe { native.get_device_queue(a[1] as u32, 0) };
@@ -1201,13 +1281,15 @@ impl Backend {
                 }
                 .limits;
                 self.device = Some(Arc::new(Device {
-                    anisotropy: a[4] != 0,
+                    anisotropy: a[4] & 1 != 0,
+                    features,
                     maintenance1: a[5] & 1 != 0,
                     timeline: a[5] & 2 != 0,
                     renderpass2: a[5] & 128 != 0,
                     imageless: a[5] & 512 != 0,
                     format_list: a[5] & 64 != 0,
                     maintenance2: a[5] & 16 != 0,
+                    portability: self.capabilities.portability,
                     native,
                     instance,
                     atom: limits.non_coherent_atom_size,
@@ -1259,20 +1341,83 @@ impl Backend {
             112 => {
                 self.room(1)?;
                 output(m, a[1], 8)?;
-                let raw = unsafe {
-                    d.create_pipeline_cache(&vk::PipelineCacheCreateInfo::default(), None)
-                }?;
+                let size = bounded(a[3], MAX_ALLOCATION as usize)?;
+                let mut data = vec![0; size];
+                if size != 0 {
+                    m.read(a[2], &mut data)?;
+                }
+                let info = vk::PipelineCacheCreateInfo::default().initial_data(&data);
+                let raw = unsafe { d.create_pipeline_cache(&info, None) }?;
                 let id = self.put(Kind::PipelineCache, raw.as_raw(), vec![], 0, 0);
                 self.publish(m, a[1], id)?;
             }
             113 => self.remove(a[1], Kind::PipelineCache)?,
+            130 => {
+                output(m, a[2], 8)?;
+                let cache = self.object(a[1], Kind::PipelineCache)?;
+                let native = vk::PipelineCache::from_raw(cache.raw);
+                if a[3] == 0 {
+                    let mut size = 0usize;
+                    unsafe {
+                        (d.fp_v1_0().get_pipeline_cache_data)(
+                            d.handle(),
+                            native,
+                            &mut size,
+                            std::ptr::null_mut(),
+                        )
+                    }
+                    .result()?;
+                    write(m, a[2], &(size as u64).to_le_bytes())?;
+                } else {
+                    let capacity = bounded(
+                        u64::from_le_bytes(m.read_array::<8>(a[2])?),
+                        MAX_ALLOCATION as usize,
+                    )?;
+                    let mut size = capacity;
+                    let mut data = vec![0; capacity];
+                    let result = unsafe {
+                        (d.fp_v1_0().get_pipeline_cache_data)(
+                            d.handle(),
+                            native,
+                            &mut size,
+                            data.as_mut_ptr().cast(),
+                        )
+                    };
+                    if !matches!(result, vk::Result::SUCCESS | vk::Result::INCOMPLETE) {
+                        return Err(result.into());
+                    }
+                    if size > capacity {
+                        return invalid();
+                    }
+                    write(m, a[3], &data[..size])?;
+                    write(m, a[2], &(size as u64).to_le_bytes())?;
+                    result.result()?;
+                }
+            }
+            131 => {
+                let dest = self.object(a[1], Kind::PipelineCache)?;
+                let source = words64(m, a[3], bounded(a[2], 64)?)?;
+                let mut native = Vec::new();
+                for id in source {
+                    if id == a[1] {
+                        return invalid();
+                    }
+                    native.push(vk::PipelineCache::from_raw(
+                        self.object(id, Kind::PipelineCache)?.raw,
+                    ));
+                }
+                unsafe { d.merge_pipeline_caches(vk::PipelineCache::from_raw(dest.raw), &native) }?;
+            }
             11 => {
                 self.room(1)?;
                 output(m, a[3], 8)?;
                 if a[1] == 0 || a[1] > MAX_ALLOCATION {
                     return Err(vk::Result::ERROR_OUT_OF_DEVICE_MEMORY.into());
                 }
-                let allowed = vk::BufferUsageFlags::STORAGE_BUFFER
+                let allowed = vk::BufferUsageFlags::UNIFORM_TEXEL_BUFFER
+                    | vk::BufferUsageFlags::STORAGE_TEXEL_BUFFER
+                    | vk::BufferUsageFlags::INDIRECT_BUFFER
+                    | vk::BufferUsageFlags::STORAGE_BUFFER
                     | vk::BufferUsageFlags::UNIFORM_BUFFER
                     | vk::BufferUsageFlags::VERTEX_BUFFER
                     | vk::BufferUsageFlags::INDEX_BUFFER
@@ -1545,11 +1690,7 @@ impl Backend {
                 let mut bindings = Vec::new();
                 let mut metadata = BTreeMap::new();
                 for b in wire.chunks_exact(4) {
-                    if !matches!(b[1], 0..=2 | 6 | 7)
-                        || b[2] == 0
-                        || b[2] > 64
-                        || shader_stages(b[3]).is_err()
-                    {
+                    if b[1] > 9 || b[2] == 0 || b[2] > 64 || visibility_stages(b[3]).is_err() {
                         return unsupported();
                     }
                     if b[0] > u32::MAX as u64
@@ -1564,7 +1705,7 @@ impl Backend {
                             .binding(b[0] as u32)
                             .descriptor_type(vk::DescriptorType::from_raw(b[1] as i32))
                             .descriptor_count(b[2] as u32)
-                            .stage_flags(shader_stages(b[3])?),
+                            .stage_flags(visibility_stages(b[3])?),
                     );
                 }
                 let info = vk::DescriptorSetLayoutCreateInfo::default().bindings(&bindings);
@@ -1588,7 +1729,7 @@ impl Backend {
                 let wire = words64(m, a[3], bounded(a[4], 8)? * 3)?;
                 let mut ranges = Vec::new();
                 for r in wire.chunks_exact(3) {
-                    if shader_stages(r[0]).is_err()
+                    if visibility_stages(r[0]).is_err()
                         || r[1] % 4 != 0
                         || r[2] == 0
                         || r[2] % 4 != 0
@@ -1601,7 +1742,7 @@ impl Backend {
                     }
                     ranges.push(
                         vk::PushConstantRange::default()
-                            .stage_flags(shader_stages(r[0])?)
+                            .stage_flags(visibility_stages(r[0])?)
                             .offset(r[1] as u32)
                             .size(r[2] as u32),
                     );
@@ -1625,7 +1766,7 @@ impl Backend {
                 let wire = words64(m, a[1], bounded(a[2], 64)? * 2)?;
                 let mut sizes = Vec::new();
                 for x in wire.chunks_exact(2) {
-                    if !matches!(x[0], 0..=2 | 6 | 7) || x[1] == 0 || x[1] > 256 {
+                    if x[0] > 9 || x[1] == 0 || x[1] > 65536 {
                         return unsupported();
                     }
                     sizes.push(
@@ -1634,7 +1775,7 @@ impl Backend {
                             .descriptor_count(x[1] as u32),
                     );
                 }
-                if a[3] == 0 || a[3] > 64 || a[4] & !1 != 0 {
+                if a[3] == 0 || a[3] > 4096 || a[4] & !1 != 0 {
                     return unsupported();
                 }
                 let info = vk::DescriptorPoolCreateInfo::default()
@@ -1644,6 +1785,47 @@ impl Backend {
                 let raw = unsafe { d.create_descriptor_pool(&info, None) }?;
                 let id = self.put(Kind::DescriptorPool, raw.as_raw(), vec![], 0, a[4] as u32);
                 write(m, a[5], &id.to_le_bytes())?;
+            }
+            129 => {
+                let pool = self.object(a[1], Kind::DescriptorPool)?;
+                if a[2] != 0 {
+                    return unsupported();
+                }
+                let next = pool
+                    .descriptor_epoch
+                    .get()
+                    .checked_add(1)
+                    .ok_or(Failure::Vk(vk::Result::ERROR_TOO_MANY_OBJECTS))?;
+                let commands: Vec<_> = self
+                    .objects
+                    .values()
+                    .filter(|c| {
+                        c.kind == Kind::CommandBuffer
+                            && c.deps.borrow().iter().any(|s| {
+                                s.kind == Kind::DescriptorSet
+                                    && Rc::ptr_eq(&s.deps.borrow()[0], &pool)
+                            })
+                    })
+                    .cloned()
+                    .collect();
+                if commands.iter().any(|c| c.state.get() == 3) {
+                    return invalid();
+                }
+                unsafe {
+                    d.reset_descriptor_pool(
+                        vk::DescriptorPool::from_raw(pool.raw),
+                        vk::DescriptorPoolResetFlags::empty(),
+                    )
+                }?;
+                pool.descriptor_epoch.set(next);
+                for c in commands {
+                    c.state.set(4);
+                    c.deps.borrow_mut().truncate(1);
+                    *c.recording.borrow_mut() = Recording::default();
+                }
+                self.objects.retain(|_, s| {
+                    s.kind != Kind::DescriptorSet || !Rc::ptr_eq(&s.deps.borrow()[0], &pool)
+                });
             }
             30 => self.remove(a[1], Kind::DescriptorPool)?,
             31 => {
@@ -1671,6 +1853,9 @@ impl Backend {
                         0,
                         0,
                     );
+                    self.objects[&id]
+                        .descriptor_epoch
+                        .set(pool.descriptor_epoch.get());
                     write(m, a[4] + i as u64 * 8, &id.to_le_bytes())?;
                 }
             }
@@ -1801,7 +1986,10 @@ impl Backend {
                             return invalid();
                         }
                         let ids = words64(m, a[4], bounded(a[5], 8)?)?;
+                        let offsets = words32(m, a[7], bounded(a[8], 64)?)?;
+                        let mut used_offsets = 0;
                         let mut sets = Vec::new();
+                        let mut retained = Vec::new();
                         for (i, id) in ids.into_iter().enumerate() {
                             let s = self.object(id, Kind::DescriptorSet)?;
                             let expected = layout.deps.borrow()[a[3] as usize + i].clone();
@@ -1809,8 +1997,50 @@ impl Backend {
                             if *expected.bindings.borrow() != *actual.bindings.borrow() {
                                 return invalid();
                             }
+                            let limits = unsafe {
+                                dev.instance
+                                    .native
+                                    .get_physical_device_properties(self.physical)
+                            }
+                            .limits;
+                            for (&binding, &(ty, count, _)) in actual.bindings.borrow().iter() {
+                                if !matches!(ty, 8 | 9) {
+                                    continue;
+                                }
+                                let alignment = if ty == 8 {
+                                    limits.min_uniform_buffer_offset_alignment
+                                } else {
+                                    limits.min_storage_buffer_offset_alignment
+                                };
+                                for index in 0..count {
+                                    let dynamic = *offsets
+                                        .get(used_offsets)
+                                        .ok_or(Failure::Vk(vk::Result::ERROR_UNKNOWN))?
+                                        as u64;
+                                    used_offsets += 1;
+                                    let ranges = s.dynamic_ranges.borrow();
+                                    let &(base, range) = ranges
+                                        .get(&(binding, index))
+                                        .ok_or(Failure::Vk(vk::Result::ERROR_UNKNOWN))?;
+                                    let resources = s.bound_resources.borrow();
+                                    let buffer = &resources
+                                        .get(&(binding, index))
+                                        .ok_or(Failure::Vk(vk::Result::ERROR_UNKNOWN))?[0];
+                                    if !dynamic.is_multiple_of(alignment.max(1))
+                                        || base
+                                            .checked_add(dynamic)
+                                            .and_then(|n| n.checked_add(range))
+                                            .is_none_or(|end| end > buffer.size)
+                                    {
+                                        return invalid();
+                                    }
+                                }
+                            }
                             sets.push(vk::DescriptorSet::from_raw(s.raw));
-                            c.retain(s);
+                            retained.push(s);
+                        }
+                        if used_offsets != offsets.len() {
+                            return invalid();
                         }
                         unsafe {
                             d.cmd_bind_descriptor_sets(
@@ -1823,8 +2053,11 @@ impl Backend {
                                 vk::PipelineLayout::from_raw(layout.raw),
                                 a[3] as u32,
                                 &sets,
-                                &[],
+                                &offsets,
                             );
+                        }
+                        for set in retained {
+                            c.retain(set);
                         }
                         c.retain(layout);
                     }
@@ -1852,6 +2085,9 @@ impl Backend {
                         if c.recording.borrow().pass.is_some() {
                             return invalid();
                         }
+                        if a[9] & !1 != 0 {
+                            return unsupported();
+                        }
                         let images = self.image_barriers(m, &c, a[6], a[7], a[8])?;
                         let barriers = [vk::MemoryBarrier::default()
                             .src_access_mask(vk::AccessFlags::from_raw(a[4] as u32))
@@ -1861,7 +2097,7 @@ impl Backend {
                                 raw,
                                 compute_stage(a[2] as u32)?,
                                 compute_stage(a[3] as u32)?,
-                                vk::DependencyFlags::empty(),
+                                vk::DependencyFlags::from_raw(a[9] as u32),
                                 &barriers,
                                 &[],
                                 &images,
@@ -1942,7 +2178,7 @@ impl Backend {
                     }
                     47 => {
                         let layout = self.object(a[2], Kind::PipelineLayout)?;
-                        let stages = shader_stages(if a[6] == 0 { 32 } else { a[6] })?;
+                        let stages = visibility_stages(if a[6] == 0 { 32 } else { a[6] })?;
                         let mut covered = 0;
                         for &(offset, size, flags) in layout.push_ranges.borrow().iter() {
                             if a[3] >= offset as u64
@@ -2063,6 +2299,8 @@ impl Backend {
                 }
             }
             60..=76 | 94..=97 | 114 | 122..=125 => self.graphics_call(m, op, a)?,
+            132 => self.dynamic_call(m, a)?,
+            127..=128 => self.texel_view_call(m, op, a)?,
             92..=93 => self.sampler_call(m, op, a)?,
             87..=91 => self.wsi_device(m, op, a)?,
             116..=119 => self.zink_device(m, op, a, &dev)?,
@@ -2145,8 +2383,10 @@ unsafe fn transfer_pages(
     }
     Ok(transferred)
 }
-fn shader_stages(raw: u64) -> Result<vk::ShaderStageFlags> {
-    if raw == 0 || raw & !0x31 != 0 {
+fn visibility_stages(raw: u64) -> Result<vk::ShaderStageFlags> {
+    // Visibility may name disabled stages (ALL_GRAPHICS/ALL); it does not
+    // enable tessellation/geometry execution or any new pipeline feature.
+    if raw != vk::ShaderStageFlags::ALL.as_raw() as u64 && (raw == 0 || raw & !0x3f != 0) {
         return unsupported();
     }
     Ok(vk::ShaderStageFlags::from_raw(raw as u32))

@@ -17,9 +17,12 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 p = argparse.ArgumentParser(description=__doc__)
+p.add_argument('--snapshot-store', type=Path, help='copy installed original Mesa store for native GPU CI on another host')
 p.add_argument('--store', type=Path, help='copy an already installed original Mesa store')
 p.add_argument('--output', type=Path, default=ROOT / 'target/zink-foundation')
 p.add_argument('--require-render', action='store_true')
+p.add_argument('--resources-only', action='store_true', help='only new dynamic/scalar/texel/storage/cache GPU cases')
+p.add_argument('--probe-only', action='store_true', help='only original Mesa EGL probe during capability iteration')
 p.add_argument('--renderpass-only', action='store_true', help='only changed renderpass/imageless clients and original Mesa probe')
 a = p.parse_args()
 a.output.mkdir(parents=True, exist_ok=False)
@@ -32,7 +35,7 @@ report = dict(runtime_source='native Vulkan and guest ICD maintenance1/timeline/
               runner_sha256=hashlib.sha256(runner.read_bytes()).hexdigest(),
               icd_sha256=hashlib.sha256(icd.read_bytes()).hexdigest(),
               native_driver_scope='configured host Vulkan driver, local reference may be software',
-              rendering_passed=False, cases={})
+              rendering_attempted=False, rendering_passed=False, cases={})
 
 
 def execute(label, command, success=True, native=False):
@@ -60,6 +63,8 @@ try:
             execute('install', [*base, '--rootfs', str(rootfs), *imports, '--guest', '/bin/sh', '-ec',
                 'printf "/tmp/zink-repo/main\\n/tmp/zink-repo/community\\n" >/tmp/zink.repositories; '
                 'apk --repositories-file /tmp/zink.repositories --no-progress add mesa-dri-gallium mesa-egl mesa-gles vulkan-loader'])
+        if a.snapshot_store:
+            shutil.copytree(store,a.snapshot_store)
         report['input_store_manifest_sha256'] = hashlib.sha256((store / 'manifest').read_bytes()).hexdigest()
 
         def guest(label, program, source, arguments=(), files=(), exports=(), egl=False):
@@ -72,6 +77,8 @@ try:
                        '--exec-file', program + '=' + str(source)]
             for g, f in exports:
                 command += ['--export', g + '=' + str(f)]
+            if os.environ.get('TRAMES_VULKAN_TRACE'):
+                command += ['--env', 'TRAMES_VULKAN_TRACE=1']
             if egl:
                 for value in ('GALLIUM_DRIVER=zink', 'MESA_LOADER_DRIVER_OVERRIDE=zink', 'EGL_PLATFORM=surfaceless'):
                     command += ['--env', value]
@@ -82,7 +89,7 @@ try:
                     command += ['--env', 'LIBGL_ALWAYS_SOFTWARE=true']
             return execute(label, [*command, '--guest', program, *arguments], success=not egl)
 
-        if not a.renderpass_only:
+        if not a.renderpass_only and not a.probe_only and not a.resources_only:
             native = execute('queries-native', [str(inputs / 'vulkan-queries-host')], native=True)
             queries = guest('queries', '/tmp/queries', inputs / 'vulkan-queries', ('bridge',))
             assert b'vulkan-queries-ok' in queries.stdout and b'vulkan-queries-ok' in native.stdout
@@ -95,8 +102,8 @@ try:
             single = guest('timeline-single-cpu', '/tmp/timeline-single', inputs / 'vulkan-timeline', ('bridge',))
             assert native.stdout == single.stdout
             base[base.index('--cpus') + 1] = '4'
-        modes = ('renderpass2', 'imageless', 'imageless-legacy', 'imageless-depth') if a.renderpass_only else ('legacy', 'negative', 'negative-static', 'renderpass2', 'imageless', 'imageless-legacy', 'imageless-depth')
-        for mode in modes:
+        modes = ('renderpass2', 'imageless', 'imageless-legacy', 'imageless-depth', 'compatible-dynamic') if a.renderpass_only else ('legacy', 'negative', 'negative-static', 'renderpass2', 'imageless', 'imageless-legacy', 'imageless-depth', 'compatible-dynamic')
+        for mode in (() if a.probe_only or a.resources_only else modes):
             args = [] if mode == 'legacy' else [mode]
             host_image = a.output / ('render-' + mode + '-native.ppm')
             native = execute('render-' + mode + '-native', [str(fixtures / 'vulkan-render-host'), str(fixtures / 'vulkan-render.vert.spv'), str(fixtures / 'vulkan-render.frag.spv'), str(host_image), *args], native=True)
@@ -105,7 +112,7 @@ try:
                              tuple(('/tmp/render.' + stage + '.spv', fixtures / ('vulkan-render.' + stage + '.spv')) for stage in ('vert', 'frag')),
                              (('/tmp/render.ppm', guest_image),))
             assert native.stdout == rendered.stdout and host_image.read_bytes() == guest_image.read_bytes()
-        if not a.renderpass_only:
+        if not a.renderpass_only and not a.probe_only and not a.resources_only:
             for mode in ('legacy', 'template'):
                 args = ['template'] if mode == 'template' else []
                 native = execute('compute-' + mode + '-native', [str(fixtures / 'vulkan-compute-host'), str(fixtures / 'vulkan-compute.spv'), *args], native=True)
@@ -118,10 +125,18 @@ try:
                                 tuple(('/tmp/texture.' + s + '.spv', fixtures / ('vulkan-texture.' + s + '.spv')) for s in ('vert', 'frag')),
                                 (('/tmp/texture.ppm', guest_image),))
                 assert native.stdout == texture.stdout and host_image.read_bytes() == guest_image.read_bytes()
-        egl = guest('mesa-egl-probe', '/tmp/zink-egl', inputs / 'zink-egl', egl=True)
-        report['rendering_passed'] = egl.returncode == 0 and b'zink-egl-ok:' in egl.stdout
-        if a.require_render:
-            assert report['rendering_passed'], 'Original Mesa Zink still lacks required Vulkan capabilities; see retained probe and requirement list'
+        if not a.probe_only and not a.renderpass_only:
+            for mode in ('legacy', 'template'):
+                args = ['template'] if mode == 'template' else []
+                native = execute('resources-' + mode + '-native', [str(inputs / 'vulkan-resources-host'), str(fixtures / 'vulkan-resources.spv'), *args], native=True)
+                result = guest('resources-' + mode, '/tmp/resources', inputs / 'vulkan-resources', ('/tmp/resources.spv', *args), (('/tmp/resources.spv', fixtures / 'vulkan-resources.spv'),))
+                assert native.stdout == result.stdout
+        if not a.resources_only:
+            report['rendering_attempted'] = True
+            egl = guest('mesa-egl-probe', '/tmp/zink-egl', inputs / 'zink-egl', egl=True)
+            report['rendering_passed'] = egl.returncode == 0 and b'zink-egl-ok:' in egl.stdout
+            if a.require_render:
+                assert report['rendering_passed'], 'Original Mesa Zink still lacks required Vulkan capabilities; see retained probe and requirement list'
         print('Vulkan query/template foundation passed; original Mesa Zink rendering:', report['rendering_passed'], flush=True)
 finally:
     (a.output / 'results.json').write_text(json.dumps(report, indent=2) + '\n')

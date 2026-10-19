@@ -1,0 +1,2 @@
+WARNING: Some incorrect rendering might occur because the selected Vulkan device (llvmpipe (LLVM 19.1.7, 256 bits)) doesn't support base Zink requirements: have_EXT_custom_border_color have_EXT_line_rasterization 
+MESA: warning: WARNING: Incorrect rendering will happen because the Vulkan device doesn't support the 'VK_EXT_depth_clip_enable' feature

@@ -342,7 +342,7 @@ def main():
             changed=set(subprocess.check_output(['git','diff','--name-only',base,'HEAD'],text=True).splitlines())- {str(plan_path)}
             hashes=plan['changed_file_sha256']
             if changed==set(hashes) and all(Path(path).exists() and hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest for path,digest in hashes.items()):
-                if plan.get('native_scope') in {'zink-foundation', 'zink-sync'}:
+                if plan.get('native_scope') in {'zink-foundation', 'zink-sync', 'zink-gles'}:
                     allowed = {'accelerator/vulkan/icd.c', 'accelerator/vulkan/queries.inc',
                                'accelerator/vulkan/templates.inc', 'accelerator/vulkan/entrypoints.inc',
                                'crates/trames-distro/src/vulkan.rs', 'tests/fixtures/vulkan-queries.c',
@@ -350,10 +350,11 @@ def main():
                                'tests/fixtures/vulkan-texture.c', 'tests/integration/zink-foundation.py',
                                'scripts/prepare-zink-guest.py', 'scripts/build-vulkan-guest.sh',
                                'scripts/ios-ci-scope.py', '.github/workflows/ios.yml', '.github/workflows/linux.yml'}
-                    sync = plan.get('native_scope') == 'zink-sync'
+                    sync = plan.get('native_scope') in {'zink-sync','zink-gles'}
                     if sync:
                         allowed.update({'accelerator/vulkan/zink.inc', 'accelerator/vulkan/graphics.inc', 'tests/fixtures/vulkan-timeline.c',
-                                        'tests/fixtures/vulkan-render.c'})
+                                        'tests/fixtures/vulkan-render.c', 'tests/fixtures/vulkan-resources.c', 'tests/fixtures/vulkan-resources.comp',
+                                        'scripts/build-vulkan-fixtures.sh', 'scripts/prepare-zink-native-bundle.py'})
                     if any(p not in allowed and not p.startswith('docs/') and not (sync and p.startswith('crates/trames-vulkan/')) for p in changed):
                         raise RuntimeError('Zink foundation plan includes unrelated source changes')
                     path = 'crates/trames-distro/src/vulkan.rs'

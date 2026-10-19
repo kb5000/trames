@@ -4,6 +4,63 @@
 use super::*;
 
 impl Backend {
+    pub(super) fn texel_view_call(&mut self, m: &mut Memory, op: u64, a: [u64; 16]) -> Result<()> {
+        if op == 128 {
+            return self.remove(a[1], Kind::BufferView);
+        }
+        self.room(1)?;
+        output(m, a[5], 8)?;
+        let buffer = self.object(a[1], Kind::Buffer)?;
+        let dev = &buffer.device;
+        let size = graphics::vertex_size(a[2])
+            .ok_or(Failure::Vk(vk::Result::ERROR_FORMAT_NOT_SUPPORTED))? as u64;
+        let f = vk::Format::from_raw(a[2] as i32);
+        let props = unsafe {
+            dev.instance
+                .native
+                .get_physical_device_properties(self.physical)
+        };
+        let format = unsafe {
+            dev.instance
+                .native
+                .get_physical_device_format_properties(self.physical, f)
+        };
+        let usage = vk::BufferUsageFlags::from_raw(buffer.flags);
+        let texel =
+            vk::BufferUsageFlags::UNIFORM_TEXEL_BUFFER | vk::BufferUsageFlags::STORAGE_TEXEL_BUFFER;
+        let range = if a[4] == vk::WHOLE_SIZE {
+            buffer.size.saturating_sub(a[3])
+        } else {
+            a[4]
+        };
+        if buffer.deps.borrow().is_empty()
+            || !usage.intersects(texel)
+            || !a[3].is_multiple_of(props.limits.min_texel_buffer_offset_alignment.max(1))
+            || range == 0
+            || !range.is_multiple_of(size)
+            || range / size > props.limits.max_texel_buffer_elements as u64
+            || a[3].checked_add(range).is_none_or(|n| n > buffer.size)
+            || usage.contains(vk::BufferUsageFlags::UNIFORM_TEXEL_BUFFER)
+                && !format
+                    .buffer_features
+                    .contains(vk::FormatFeatureFlags::UNIFORM_TEXEL_BUFFER)
+            || usage.contains(vk::BufferUsageFlags::STORAGE_TEXEL_BUFFER)
+                && !format
+                    .buffer_features
+                    .contains(vk::FormatFeatureFlags::STORAGE_TEXEL_BUFFER)
+        {
+            return invalid();
+        }
+        let info = vk::BufferViewCreateInfo::default()
+            .buffer(vk::Buffer::from_raw(buffer.raw))
+            .format(f)
+            .offset(a[3])
+            .range(a[4]);
+        let raw = unsafe { dev.native.create_buffer_view(&info, None) }?;
+        let flags = buffer.flags;
+        let id = self.put(Kind::BufferView, raw.as_raw(), vec![buffer], range, flags);
+        self.publish(m, a[5], id)
+    }
     pub(super) fn sampler_call(&mut self, m: &mut Memory, op: u64, a: [u64; 16]) -> Result<()> {
         if op == 93 {
             return self.remove(a[1], Kind::Sampler);
@@ -27,6 +84,13 @@ impl Backend {
             || lod[0].abs() > limits.max_sampler_lod_bias
             || lod[1] < 0.0
             || lod[2] < lod[1]
+        {
+            return unsupported();
+        }
+        if lod[0] != 0.0
+            && device
+                .portability
+                .is_some_and(|p| p.sampler_mip_lod_bias == 0)
         {
             return unsupported();
         }
@@ -60,7 +124,7 @@ impl Backend {
 
     pub(super) fn write_descriptors(&self, m: &Memory, a: [u64; 16]) -> Result<()> {
         let set = self.object(a[1], Kind::DescriptorSet)?;
-        if !matches!(a[5], 0..=2 | 6 | 7) {
+        if a[5] > 9 {
             return unsupported();
         }
         let layout = set.deps.borrow()[1].clone();
@@ -86,12 +150,14 @@ impl Backend {
         .limits;
         let mut buffers = Vec::new();
         let mut images = Vec::new();
+        let mut texels = Vec::new();
+        let mut dynamic_ranges = Vec::new();
         let mut dependencies = Vec::new();
         for x in wire.chunks_exact(3) {
             let mut deps = Vec::new();
             if a[5] >= 6 {
                 let buffer = self.object(x[0], Kind::Buffer)?;
-                let (usage, alignment, max_range) = if a[5] == 6 {
+                let (usage, alignment, max_range) = if matches!(a[5], 6 | 8) {
                     (
                         vk::BufferUsageFlags::UNIFORM_BUFFER,
                         limits.min_uniform_buffer_offset_alignment,
@@ -124,10 +190,25 @@ impl Backend {
                         .offset(x[1])
                         .range(x[2]),
                 );
+                if a[5] >= 8 {
+                    dynamic_ranges.push((x[1], range));
+                }
                 deps.push(buffer);
+            } else if matches!(a[5], 4 | 5) {
+                let view = self.object(x[0], Kind::BufferView)?;
+                let wanted = if a[5] == 4 {
+                    vk::BufferUsageFlags::UNIFORM_TEXEL_BUFFER
+                } else {
+                    vk::BufferUsageFlags::STORAGE_TEXEL_BUFFER
+                };
+                if view.flags & wanted.as_raw() == 0 {
+                    return invalid();
+                }
+                texels.push(vk::BufferView::from_raw(view.raw));
+                deps.push(view);
             } else {
                 let mut info = vk::DescriptorImageInfo::default();
-                if a[5] != 2 {
+                if a[5] <= 1 {
                     let sampler = self.object(x[0], Kind::Sampler)?;
                     info.sampler = vk::Sampler::from_raw(sampler.raw);
                     deps.push(sampler);
@@ -135,8 +216,17 @@ impl Backend {
                 if a[5] != 0 {
                     let view = self.object(x[1], Kind::ImageView)?;
                     let image = view.deps.borrow()[0].clone();
-                    if image.flags & vk::ImageUsageFlags::SAMPLED.as_raw() == 0
-                        || !matches!(x[2], 1 | 5)
+                    let wanted = if a[5] == 3 {
+                        vk::ImageUsageFlags::STORAGE
+                    } else {
+                        vk::ImageUsageFlags::SAMPLED
+                    };
+                    if image.flags & wanted.as_raw() == 0
+                        || (if a[5] == 3 {
+                            x[2] != 1
+                        } else {
+                            !matches!(x[2], 1 | 5)
+                        })
                     {
                         return invalid();
                     }
@@ -155,11 +245,18 @@ impl Backend {
             .descriptor_type(vk::DescriptorType::from_raw(a[5] as i32));
         let write = if a[5] >= 6 {
             write.buffer_info(&buffers)
+        } else if matches!(a[5], 4 | 5) {
+            write.texel_buffer_view(&texels)
         } else {
             write.image_info(&images)
         };
         unsafe {
             d.update_descriptor_sets(&[write], &[]);
+        }
+        for (i, range) in dynamic_ranges.into_iter().enumerate() {
+            set.dynamic_ranges
+                .borrow_mut()
+                .insert((a[2] as u32, a[3] as u32 + i as u32), range);
         }
         let mut slots = set.bound_resources.borrow_mut();
         for (i, deps) in dependencies.into_iter().enumerate() {

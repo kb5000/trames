@@ -67,6 +67,9 @@
     if(!strcmp(name,"vkDeviceWaitIdle"))return (PFN_vkVoidFunction)vkDeviceWaitIdle;
     if(!strcmp(name,"vkCreatePipelineCache"))return (PFN_vkVoidFunction)vkCreatePipelineCache;
     if(!strcmp(name,"vkDestroyPipelineCache"))return (PFN_vkVoidFunction)vkDestroyPipelineCache;
+    if(!strcmp(name,"vkResetDescriptorPool"))return (PFN_vkVoidFunction)vkResetDescriptorPool;
+    if(!strcmp(name,"vkGetPipelineCacheData"))return (PFN_vkVoidFunction)vkGetPipelineCacheData;
+    if(!strcmp(name,"vkMergePipelineCaches"))return (PFN_vkVoidFunction)vkMergePipelineCaches;
     if(!strcmp(name,"vkGetInstanceProcAddr"))return (PFN_vkVoidFunction)vkGetInstanceProcAddr;
     if(!strcmp(name,"vkGetDeviceProcAddr"))return (PFN_vkVoidFunction)vkGetDeviceProcAddr;
     if(!strcmp(name,"vkCreateImage"))return (PFN_vkVoidFunction)vkCreateImage;
@@ -93,6 +96,15 @@
     if(!strcmp(name,"vkCmdBindIndexBuffer"))return (PFN_vkVoidFunction)vkCmdBindIndexBuffer;
     if(!strcmp(name,"vkCmdDrawIndexed"))return (PFN_vkVoidFunction)vkCmdDrawIndexed;
     if(!strcmp(name,"vkCmdClearColorImage"))return (PFN_vkVoidFunction)vkCmdClearColorImage;
+    if(!strcmp(name,"vkCreateBufferView"))return (PFN_vkVoidFunction)vkCreateBufferView;
+    if(!strcmp(name,"vkDestroyBufferView"))return (PFN_vkVoidFunction)vkDestroyBufferView;
+    if(!strcmp(name,"vkCmdSetLineWidth"))return (PFN_vkVoidFunction)vkCmdSetLineWidth;
+    if(!strcmp(name,"vkCmdSetDepthBias"))return (PFN_vkVoidFunction)vkCmdSetDepthBias;
+    if(!strcmp(name,"vkCmdSetBlendConstants"))return (PFN_vkVoidFunction)vkCmdSetBlendConstants;
+    if(!strcmp(name,"vkCmdSetDepthBounds"))return (PFN_vkVoidFunction)vkCmdSetDepthBounds;
+    if(!strcmp(name,"vkCmdSetStencilCompareMask"))return (PFN_vkVoidFunction)vkCmdSetStencilCompareMask;
+    if(!strcmp(name,"vkCmdSetStencilWriteMask"))return (PFN_vkVoidFunction)vkCmdSetStencilWriteMask;
+    if(!strcmp(name,"vkCmdSetStencilReference"))return (PFN_vkVoidFunction)vkCmdSetStencilReference;
     if(!strcmp(name,"vkGetPhysicalDeviceFeatures2"))return (PFN_vkVoidFunction)vkGetPhysicalDeviceFeatures2;
     if(!strcmp(name,"vkGetPhysicalDeviceFeatures2KHR"))return (PFN_vkVoidFunction)vkGetPhysicalDeviceFeatures2KHR;
     if(!strcmp(name,"vkGetPhysicalDeviceProperties2"))return (PFN_vkVoidFunction)vkGetPhysicalDeviceProperties2;

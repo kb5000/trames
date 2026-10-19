@@ -45,7 +45,7 @@ jobs:
         run: python3 scripts/ios-ci-scope.py
   zink-foundation:
     needs: scope
-    if: (needs.scope.outputs.native_scope == 'zink-foundation' || needs.scope.outputs.native_scope == 'zink-sync') && needs.scope.outputs.zink_sync_skip_linux != 'true'
+    if: (needs.scope.outputs.native_scope == 'zink-foundation' || needs.scope.outputs.native_scope == 'zink-sync' || needs.scope.outputs.native_scope == 'zink-gles') && needs.scope.outputs.zink_sync_skip_linux != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -75,7 +75,7 @@ jobs:
         if: needs.scope.outputs.native_scope == 'zink-foundation' && needs.scope.outputs.zink_skip_linux_checks == 'true'
         run: cargo build -p trames-cli --release --locked
       - name: Check changed Vulkan backend and native graphics and synchronization
-        if: needs.scope.outputs.native_scope == 'zink-sync'
+        if: needs.scope.outputs.native_scope == 'zink-sync' || needs.scope.outputs.native_scope == 'zink-gles'
         run: |
           cargo fmt --all --check
           cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
@@ -84,12 +84,18 @@ jobs:
           export VK_DRIVER_FILES="$(python3 -c 'from pathlib import Path; print(next(Path("/usr/share/vulkan/icd.d").glob("*lvp*")))')"
           cargo run -p trames-vulkan --example timeline --release --locked
           cargo run -p trames-vulkan --example renderpass --release --locked
+          cargo run -p trames-vulkan --example resources --release --locked -- tests/fixtures/bin/vulkan-resources.spv
           cargo run -p trames-vulkan --example lifecycle --release --locked -- tests/fixtures/bin/vulkan-compute.spv tests/fixtures/bin/vulkan-render.vert.spv tests/fixtures/bin/vulkan-render.frag.spv
       - name: Validate query and template foundation and retain actual Mesa outcome
         run: |
           export VK_DRIVER_FILES="$(python3 -c 'from pathlib import Path; print(next(Path("/usr/share/vulkan/icd.d").glob("*lvp*")))')"
           export TRAMES_ZINK_CPU_REFERENCE=1
-          python3 tests/integration/zink-foundation.py
+          if [[ '${{ needs.scope.outputs.native_scope }}' == zink-gles ]]; then
+            python3 tests/integration/zink-foundation.py --require-render --snapshot-store target/zink-native-bundle/store
+            python3 scripts/prepare-zink-native-bundle.py
+          else
+            python3 tests/integration/zink-foundation.py
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -98,6 +104,58 @@ jobs:
             target/zink-foundation/
             target/zink-inputs/inputs.json
             target/vulkan-guest/manifest.json
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: success() && needs.scope.outputs.native_scope == 'zink-gles'
+        with:
+          name: zink-native-bundle
+          path: target/zink-native-bundle/
+          include-hidden-files: true
+          retention-days: 3
+  zink-gles-apple:
+    needs: [scope, zink-foundation]
+    if: needs.scope.outputs.native_scope == 'zink-gles'
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+          targets: aarch64-apple-ios
+          components: clippy
+      - uses: actions/download-artifact@v4
+        with:
+          name: zink-native-bundle
+          path: target/zink-native-bundle
+      - name: Verify exact guest inputs, Apple modules and iOS embedding
+        run: |
+          python3 scripts/prepare-zink-native-bundle.py --verify
+          cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
+          cargo test -p trames-vulkan --lib --locked
+          cargo check -p trames-ffi --target aarch64-apple-ios --locked
+      - name: Run original MoltenVK Metal resource and Mesa GLSL paths
+        run: |
+          mkdir -p target/zink-metal-native
+          python3 scripts/prepare-vulkan.py --apple
+          export TRAMES_MOLTENVK_STATIC_DIR="$PWD/target/vulkan-upstream/moltenvk-all/MoltenVK/MoltenVK/static/MoltenVK.xcframework/macos-arm64_x86_64"
+          export MACOSX_DEPLOYMENT_TARGET=12.0
+          export RUSTFLAGS="-C link-arg=-framework -C link-arg=IOKit -C link-arg=$(xcrun clang --print-runtime-dir)/libclang_rt.osx.a"
+          cargo build -p trames-cli --release --locked
+          cargo run -p trames-vulkan --example timeline --release --locked 2>&1 | tee target/zink-metal-native/timeline.log
+          cargo run -p trames-vulkan --example renderpass --release --locked 2>&1 | tee target/zink-metal-native/renderpass.log
+          cargo run -p trames-vulkan --example resources --release --locked -- target/zink-native-bundle/shaders/vulkan-resources.spv 2>&1 | tee target/zink-metal-native/resources.log
+          export TRAMES_RUNNER="$PWD/target/release/trames-run"
+          export TRAMES_VULKAN_TRACE=1
+          python3 tests/integration/zink-foundation.py --store target/zink-native-bundle/store --probe-only --require-render --output target/zink-metal
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zink-metal-evidence
+          path: |
+            target/zink-metal/
+            target/zink-metal-native/
+            target/zink-native-bundle/checksums.json
           retention-days: 14
   runtime-fastpaths:
     needs: scope

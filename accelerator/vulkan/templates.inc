@@ -12,8 +12,9 @@ static void free_templates(DescriptorTemplate *head) {
 }
 static size_t descriptor_record_size(VkDescriptorType type) {
     switch(type){
-    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:return sizeof(VkDescriptorBufferInfo);
-    case VK_DESCRIPTOR_TYPE_SAMPLER:case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:return sizeof(VkDescriptorImageInfo);
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:return sizeof(VkDescriptorBufferInfo);
+    case VK_DESCRIPTOR_TYPE_SAMPLER:case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:return sizeof(VkDescriptorImageInfo);
+    case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:return sizeof(VkBufferView);
     default:return 0;
     }
 }
@@ -49,15 +50,16 @@ VKAPI_ATTR void VKAPI_CALL vkUpdateDescriptorSetWithTemplate(VkDevice device,VkD
     // requires external synchronization in Vulkan; no new algorithm lock.
     for(uint32_t i=0;i<t->count;i++){
         const VkDescriptorUpdateTemplateEntry *e=t->entries+i;
-        VkDescriptorBufferInfo buffers[64];VkDescriptorImageInfo images[64];
+        VkDescriptorBufferInfo buffers[64];VkDescriptorImageInfo images[64];VkBufferView views[64];
         const unsigned char *source=(const unsigned char *)data+e->offset;
         for(uint32_t j=0;j<e->descriptorCount;j++){
             const void *record=source+j*e->stride;
-            if(e->descriptorType==VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || e->descriptorType==VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)memcpy(buffers+j,record,sizeof(*buffers));
+            if(e->descriptorType>=VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER && e->descriptorType<=VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)memcpy(buffers+j,record,sizeof(*buffers));
+            else if(e->descriptorType==VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER || e->descriptorType==VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER)memcpy(views+j,record,sizeof(*views));
             else memcpy(images+j,record,sizeof(*images));
         }
         VkWriteDescriptorSet write={.sType=VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,.dstSet=set,.dstBinding=e->dstBinding,.dstArrayElement=e->dstArrayElement,
-            .descriptorCount=e->descriptorCount,.descriptorType=e->descriptorType,.pBufferInfo=buffers,.pImageInfo=images};
+            .descriptorCount=e->descriptorCount,.descriptorType=e->descriptorType,.pBufferInfo=buffers,.pImageInfo=images,.pTexelBufferView=views};
         vkUpdateDescriptorSets(device,1,&write,0,NULL);
     }
 }

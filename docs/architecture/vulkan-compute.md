@@ -13,8 +13,10 @@ This selected subset is not complete Vulkan 1.0 conformance. Loader/ICD version
 negotiation describes the base ABI; it does not advertise the host's entire API.
 The instance query layer now supports1.1 while physical devices retain the selected
 1.0 profile. KHR properties2/memory-requirements2 and descriptor update templates
-are covered by the [Zink foundation](zink.md); original Mesa GL rendering remains
-unavailable until its remaining Vulkan requirements are implemented.
+are covered by the [Zink implementation](zink.md). Original Mesa now passes
+basic offscreen EGL/GLES2 clear, GLSL draw and repeated texture readback on the
+Linux reference; see the [GL/resource validation](../validation/zink-gles.md) for
+Apple/Metal results and remaining coverage.
 
 ```mermaid
 flowchart LR
@@ -48,7 +50,7 @@ Install the ordinary `vulkan-loader` package with apk.
 
 ## Supported compute operations
 
-The [catalog](../../accelerator/vulkan/entrypoints.inc) contains 159 public
+The [catalog](../../accelerator/vulkan/entrypoints.inc) contains 171 public
 functions plus ICD negotiation exports. The profile supports one instance,
 compute-capable physical device, logical device and queue per address space;
 property queries; buffers and memory; SPIR-V modules; storage/uniform buffer
@@ -104,8 +106,12 @@ the command buffer. Base-zero indexed/instanced drawing is tested there; the
 nonzero positive/negative cases are independently verified on Linux. Physical
 iPad support remains to be tested.
 
-Graphics and compute descriptor layouts accept uniform/storage buffers, samplers,
-sampled images and combined image samplers, including descriptor arrays. Vertex,
+Graphics and compute descriptor layouts accept uniform/storage buffers, their
+dynamic variants, texel buffer views, storage images, samplers, sampled images and
+combined image samplers, including arrays and update templates. Native dynamic
+offsets preserve binding/array order and alignment/range constraints. Descriptor
+pool reset invalidates old sets and recorded commands without double-freeing
+native sets. Pipeline caches support original driver bytes and merge. Vertex,
 fragment and compute visibility is preserved. Graphics descriptor binding and up
 to 128 bytes of stage-aware push constants use the original native commands.
 Each descriptor slot retains all its resources, including both view and sampler;

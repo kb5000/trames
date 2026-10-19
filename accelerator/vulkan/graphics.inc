@@ -16,8 +16,8 @@ static int image_formats(const void *chain,const VkImageFormatListCreateInfo **l
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateImage(VkDevice d,const VkImageCreateInfo *info,const VkAllocationCallbacks *allocator,VkImage *out) {
     if(!info || info->sType!=VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;ALLOCATOR(allocator);
     const VkImageFormatListCreateInfo *list;if(!image_formats(info->pNext,&list))return VK_ERROR_FEATURE_NOT_PRESENT;
-    if(info->flags || info->imageType!=VK_IMAGE_TYPE_2D || info->extent.depth!=1 || info->mipLevels!=1 || info->arrayLayers!=1 || info->samples!=VK_SAMPLE_COUNT_1_BIT || info->tiling!=VK_IMAGE_TILING_OPTIMAL || info->sharingMode!=VK_SHARING_MODE_EXCLUSIVE || (info->initialLayout!=VK_IMAGE_LAYOUT_UNDEFINED && info->initialLayout!=VK_IMAGE_LAYOUT_PREINITIALIZED))return VK_ERROR_FEATURE_NOT_PRESENT;
-    return CALL(60,KEY(d),info->format,info->extent.width,info->extent.height,info->usage,PTR(out),info->initialLayout,list?PTR(list->pViewFormats):0,list?list->viewFormatCount:0);
+    if((info->flags&~(VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT|VK_IMAGE_CREATE_EXTENDED_USAGE_BIT)) || info->imageType!=VK_IMAGE_TYPE_2D || info->extent.depth!=1 || info->mipLevels!=1 || info->arrayLayers!=1 || info->samples!=VK_SAMPLE_COUNT_1_BIT || info->tiling!=VK_IMAGE_TILING_OPTIMAL || info->sharingMode!=VK_SHARING_MODE_EXCLUSIVE || (info->initialLayout!=VK_IMAGE_LAYOUT_UNDEFINED && info->initialLayout!=VK_IMAGE_LAYOUT_PREINITIALIZED))return VK_ERROR_FEATURE_NOT_PRESENT;
+    return CALL(60,KEY(d),info->format,info->extent.width,info->extent.height,info->usage,PTR(out),info->initialLayout,list?PTR(list->pViewFormats):0,list?list->viewFormatCount:0,info->flags);
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroyImage(VkDevice d,VkImage image,const VkAllocationCallbacks *allocator) {if(image)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(61,KEY(d),(uint64_t)image));}
 VKAPI_ATTR void VKAPI_CALL vkGetImageMemoryRequirements(VkDevice d,VkImage image,VkMemoryRequirements *out) {checked(CALL(62,KEY(d),(uint64_t)image,PTR(out)));}
@@ -27,8 +27,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateImageView(VkDevice d,const VkImageViewCre
     const VkImageViewUsageCreateInfo *usage=info->pNext;
     if(usage && !VALID(usage,VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO))return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkImageSubresourceRange *r=&info->subresourceRange;
-    if(info->flags || info->viewType!=VK_IMAGE_VIEW_TYPE_2D || info->components.r || info->components.g || info->components.b || info->components.a || r->aspectMask!=((info->format==VK_FORMAT_D16_UNORM||info->format==VK_FORMAT_D32_SFLOAT)?VK_IMAGE_ASPECT_DEPTH_BIT:VK_IMAGE_ASPECT_COLOR_BIT) || r->baseMipLevel || r->levelCount!=1 || r->baseArrayLayer || r->layerCount!=1)return VK_ERROR_FEATURE_NOT_PRESENT;
-    return CALL(64,KEY(d),(uint64_t)info->image,info->format,PTR(out),usage?usage->usage:0);
+    if(info->flags || (info->viewType!=VK_IMAGE_VIEW_TYPE_2D && info->viewType!=VK_IMAGE_VIEW_TYPE_2D_ARRAY) || info->components.r>VK_COMPONENT_SWIZZLE_A || info->components.g>VK_COMPONENT_SWIZZLE_A || info->components.b>VK_COMPONENT_SWIZZLE_A || info->components.a>VK_COMPONENT_SWIZZLE_A || r->aspectMask!=((info->format==VK_FORMAT_D16_UNORM||info->format==VK_FORMAT_D32_SFLOAT)?VK_IMAGE_ASPECT_DEPTH_BIT:VK_IMAGE_ASPECT_COLOR_BIT) || r->baseMipLevel || r->levelCount!=1 || r->baseArrayLayer || r->layerCount!=1)return VK_ERROR_FEATURE_NOT_PRESENT;
+    return CALL(64,KEY(d),(uint64_t)info->image,info->format,PTR(out),usage?usage->usage:0,info->viewType,(uint64_t)info->components.r|((uint64_t)info->components.g<<4)|((uint64_t)info->components.b<<8)|((uint64_t)info->components.a<<12));
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroyImageView(VkDevice d,VkImageView view,const VkAllocationCallbacks *allocator) {if(view)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(65,KEY(d),(uint64_t)view));}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateRenderPass(VkDevice d,const VkRenderPassCreateInfo *info,const VkAllocationCallbacks *allocator,VkRenderPass *out) {
@@ -86,12 +86,13 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateGraphicsPipelines(VkDevice d,VkPipelineCa
     const VkPipelineVertexInputStateCreateInfo *v=info->pVertexInputState;CHECK(v,VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);if(v->flags || v->vertexBindingDescriptionCount>16 || v->vertexAttributeDescriptionCount>16)return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkPipelineInputAssemblyStateCreateInfo *a=info->pInputAssemblyState;CHECK(a,VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);if(a->flags || (a->primitiveRestartEnable && a->topology!=VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP))return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkPipelineViewportStateCreateInfo *p=info->pViewportState;CHECK(p,VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO);if(p->flags || p->viewportCount!=1 || p->scissorCount!=1)return VK_ERROR_FEATURE_NOT_PRESENT;
-    const VkPipelineRasterizationStateCreateInfo *r=info->pRasterizationState;CHECK(r,VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);if(r->flags || r->depthClampEnable || r->rasterizerDiscardEnable || r->polygonMode!=VK_POLYGON_MODE_FILL || r->depthBiasEnable || r->lineWidth!=1.0f)return VK_ERROR_FEATURE_NOT_PRESENT;
+    const VkPipelineRasterizationStateCreateInfo *r=info->pRasterizationState;CHECK(r,VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);if(r->flags || r->depthClampEnable || r->polygonMode>VK_POLYGON_MODE_POINT || r->lineWidth!=1.0f)return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkPipelineMultisampleStateCreateInfo *m=info->pMultisampleState;CHECK(m,VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);if(m->flags || m->rasterizationSamples!=VK_SAMPLE_COUNT_1_BIT || m->sampleShadingEnable || m->alphaToCoverageEnable || m->alphaToOneEnable || (m->pSampleMask && m->pSampleMask[0]!=UINT32_MAX))return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkPipelineDepthStencilStateCreateInfo *z=info->pDepthStencilState;if(z){CHECK(z,VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);if(z->flags || z->depthBoundsTestEnable || z->stencilTestEnable || z->depthCompareOp>VK_COMPARE_OP_ALWAYS)return VK_ERROR_FEATURE_NOT_PRESENT;}
-    const VkPipelineColorBlendStateCreateInfo *b=info->pColorBlendState;CHECK(b,VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);if(b->flags || b->logicOpEnable || b->attachmentCount!=1)return VK_ERROR_FEATURE_NOT_PRESENT;
+    const VkPipelineColorBlendStateCreateInfo *b=info->pColorBlendState;CHECK(b,VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);if(b->flags || b->logicOp>VK_LOGIC_OP_SET || b->attachmentCount!=1)return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkPipelineDynamicStateCreateInfo *dynamic=info->pDynamicState;unsigned states=0;
-    if(dynamic){CHECK(dynamic,VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);if(dynamic->flags || dynamic->dynamicStateCount>2)return VK_ERROR_FEATURE_NOT_PRESENT;for(unsigned i=0;i<dynamic->dynamicStateCount;i++){unsigned bit=dynamic->pDynamicStates[i]==VK_DYNAMIC_STATE_VIEWPORT?1:dynamic->pDynamicStates[i]==VK_DYNAMIC_STATE_SCISSOR?2:0;if(!bit || (states&bit))return VK_ERROR_FEATURE_NOT_PRESENT;states|=bit;}}
+    if(dynamic){CHECK(dynamic,VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);if(dynamic->flags || dynamic->dynamicStateCount>9)return VK_ERROR_FEATURE_NOT_PRESENT;for(unsigned i=0;i<dynamic->dynamicStateCount;i++){unsigned bit=dynamic->pDynamicStates[i]<=VK_DYNAMIC_STATE_STENCIL_REFERENCE?1u<<dynamic->pDynamicStates[i]:0;if(!bit || (states&bit))return VK_ERROR_FEATURE_NOT_PRESENT;states|=bit;}}
+    if(r->depthBiasEnable && !(states&(1u<<VK_DYNAMIC_STATE_DEPTH_BIAS)) && (r->depthBiasConstantFactor!=0 || r->depthBiasClamp!=0 || r->depthBiasSlopeFactor!=0))return VK_ERROR_FEATURE_NOT_PRESENT;
     uint64_t config[22]={states};
     if(!(states&1)){if(!p->pViewports)return VK_ERROR_FEATURE_NOT_PRESENT;uint32_t bits[6];memcpy(bits,p->pViewports,sizeof(bits));for(unsigned i=0;i<6;i++)config[1+i]=bits[i];}
     if(!(states&2)){if(!p->pScissors)return VK_ERROR_FEATURE_NOT_PRESENT;config[7]=(uint64_t)(int64_t)p->pScissors[0].offset.x;config[8]=(uint64_t)(int64_t)p->pScissors[0].offset.y;config[9]=p->pScissors[0].extent.width;config[10]=p->pScissors[0].extent.height;}
@@ -101,7 +102,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateGraphicsPipelines(VkDevice d,VkPipelineCa
     uint64_t bindings[16][3],attributes[16][4];
     for(uint32_t i=0;i<v->vertexBindingDescriptionCount;i++){const VkVertexInputBindingDescription *x=&v->pVertexBindingDescriptions[i];bindings[i][0]=x->binding;bindings[i][1]=x->stride;bindings[i][2]=x->inputRate;}
     for(uint32_t i=0;i<v->vertexAttributeDescriptionCount;i++){const VkVertexInputAttributeDescription *x=&v->pVertexAttributeDescriptions[i];attributes[i][0]=x->location;attributes[i][1]=x->binding;attributes[i][2]=x->format;attributes[i][3]=x->offset;}
-    return CALL(70,KEY(d),(uint64_t)info->layout,(uint64_t)vertex->module,(uint64_t)fragment->module,PTR(vertex->pName),PTR(fragment->pName),PTR(state),PTR(out),PTR(bindings),v->vertexBindingDescriptionCount,PTR(attributes),v->vertexAttributeDescriptionCount,a->primitiveRestartEnable,(uint64_t)cache,z?((z->depthTestEnable?1UL:0)|(z->depthWriteEnable?2UL:0)|((uint64_t)z->depthCompareOp<<4)):0,PTR(config));
+    return CALL(70,KEY(d),(uint64_t)info->layout,(uint64_t)vertex->module,(uint64_t)fragment->module,PTR(vertex->pName),PTR(fragment->pName),PTR(state),PTR(out),PTR(bindings),v->vertexBindingDescriptionCount,PTR(attributes),v->vertexAttributeDescriptionCount,a->primitiveRestartEnable,(uint64_t)cache,((z?((z->depthTestEnable?1UL:0)|(z->depthWriteEnable?2UL:0)|((uint64_t)z->depthCompareOp<<4)):0)|((uint64_t)r->polygonMode<<8)|(b->logicOpEnable?1024UL:0)|((uint64_t)b->logicOp<<12)|(r->rasterizerDiscardEnable?65536UL:0)|(r->depthBiasEnable?131072UL:0)),PTR(config));
 }
 static VkResult begin_pass(VkCommandBuffer c,const VkRenderPassBeginInfo *info,VkSubpassContents contents,unsigned op) {
     if(!info || info->sType!=VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO || contents!=VK_SUBPASS_CONTENTS_INLINE || info->clearValueCount>2)return VK_ERROR_FEATURE_NOT_PRESENT;
@@ -140,3 +141,17 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(VkCommandBuffer c,VkImage image,
     uint64_t wire[64][5];for(uint32_t i=0;i<count;i++){const VkImageSubresourceRange *r=ranges+i;wire[i][0]=r->aspectMask;wire[i][1]=r->baseMipLevel;wire[i][2]=r->levelCount;wire[i][3]=r->baseArrayLayer;wire[i][4]=r->layerCount;}
     checked(CALL(114,DEVKEY(c),KEY(c),(uint64_t)image,layout,PTR(color),PTR(wire),count));
 }
+
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateBufferView(VkDevice d,const VkBufferViewCreateInfo *info,const VkAllocationCallbacks *allocator,VkBufferView *out) {
+    CHECK(info,VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO);ALLOCATOR(allocator);if(info->flags)return VK_ERROR_FEATURE_NOT_PRESENT;
+    return CALL(127,KEY(d),(uint64_t)info->buffer,info->format,info->offset,info->range,PTR(out));
+}
+VKAPI_ATTR void VKAPI_CALL vkDestroyBufferView(VkDevice d,VkBufferView view,const VkAllocationCallbacks *allocator) {if(view)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(128,KEY(d),(uint64_t)view));}
+
+VKAPI_ATTR void VKAPI_CALL vkCmdSetLineWidth(VkCommandBuffer c,float value) {uint32_t bits;memcpy(&bits,&value,4);checked(CALL(132,DEVKEY(c),KEY(c),VK_DYNAMIC_STATE_LINE_WIDTH,PTR(&bits),1));}
+VKAPI_ATTR void VKAPI_CALL vkCmdSetDepthBias(VkCommandBuffer c,float constant,float clamp,float slope) {float values[3]={constant,clamp,slope};checked(CALL(132,DEVKEY(c),KEY(c),VK_DYNAMIC_STATE_DEPTH_BIAS,PTR(values),3));}
+VKAPI_ATTR void VKAPI_CALL vkCmdSetBlendConstants(VkCommandBuffer c,const float values[4]) {checked(CALL(132,DEVKEY(c),KEY(c),VK_DYNAMIC_STATE_BLEND_CONSTANTS,PTR(values),4));}
+VKAPI_ATTR void VKAPI_CALL vkCmdSetDepthBounds(VkCommandBuffer c,float min,float max) {float values[2]={min,max};checked(CALL(132,DEVKEY(c),KEY(c),VK_DYNAMIC_STATE_DEPTH_BOUNDS,PTR(values),2));}
+VKAPI_ATTR void VKAPI_CALL vkCmdSetStencilCompareMask(VkCommandBuffer c,VkStencilFaceFlags face,uint32_t mask) {uint32_t values[2]={face,mask};checked(CALL(132,DEVKEY(c),KEY(c),VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK,PTR(values),2));}
+VKAPI_ATTR void VKAPI_CALL vkCmdSetStencilWriteMask(VkCommandBuffer c,VkStencilFaceFlags face,uint32_t mask) {uint32_t values[2]={face,mask};checked(CALL(132,DEVKEY(c),KEY(c),VK_DYNAMIC_STATE_STENCIL_WRITE_MASK,PTR(values),2));}
+VKAPI_ATTR void VKAPI_CALL vkCmdSetStencilReference(VkCommandBuffer c,VkStencilFaceFlags face,uint32_t reference) {uint32_t values[2]={face,reference};checked(CALL(132,DEVKEY(c),KEY(c),VK_DYNAMIC_STATE_STENCIL_REFERENCE,PTR(values),2));}

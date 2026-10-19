@@ -1,0 +1,11 @@
+pipeline compile with active peer: ok
+parallel pipeline callers preserve default/specialized outputs: ok
+compute round 1: 4096 uint32 values correct
+compute round 2: 4096 uint32 values correct
+compute round 3: 4096 uint32 values correct
+compute semaphore chain 1: 4096 specialized uint32 values correct
+compute semaphore chain 2: 4096 specialized uint32 values correct
+binary semaphore reuse and empty submissions: ok
+partial mapping, offset flush/invalidate and remap persistence: ok
+unaligned map offset preserves Vulkan pointer alignment: ok
+vulkan-compute-ok

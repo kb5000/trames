@@ -1,0 +1,17 @@
+{
+  "base_sha": "3450c2f0e9bb073195bd159594481d3208bde2d0",
+  "vulkan_unit_tests": "17 passed",
+  "vulkan_clippy": "passed --all-targets -D warnings",
+  "native_resources": "passed: two rounds, 256 GPU results, dynamic-offset negative, descriptor epoch reuse, cache roundtrip and budget released",
+  "local_integration": "52 cases exit0; require-render passed; 20 native/guest PPM files equal",
+  "native_reference": "Mesa 25.0.7 Lavapipe / LLVM19 software Vulkan",
+  "unchanged_reused": [
+    "CPU",
+    "MMU",
+    "Linux",
+    "network",
+    "iOS UI"
+  ],
+  "apple_metal": "pending",
+  "ipa": "not built"
+}

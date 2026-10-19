@@ -12,6 +12,12 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFeatures2(VkPhysicalDevice p,VkPhy
     vkGetPhysicalDeviceFeatures(p,&out->features);
     VkBaseOutStructure *next=out->pNext;
     for(unsigned i=0;next && i<64;i++,next=next->pNext){
+        if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR && (D(p)->capabilities[0]&512)){
+            uint32_t values[16];checked(CALL(133,KEY(p),PTR(values)));
+            memcpy(&((VkPhysicalDevicePortabilitySubsetFeaturesKHR *)next)->constantAlphaColorBlendFactors,values,60);
+        }
+        if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES)
+            ((VkPhysicalDeviceScalarBlockLayoutFeatures *)next)->scalarBlockLayout=(D(p)->capabilities[0]&256)!=0;
         if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES)
             ((VkPhysicalDeviceImagelessFramebufferFeatures *)next)->imagelessFramebuffer=(D(p)->capabilities[0]&128)!=0;
         if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES){
@@ -27,6 +33,10 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceProperties2(VkPhysicalDevice p,VkP
     vkGetPhysicalDeviceProperties(p,&out->properties);
     VkBaseOutStructure *next=out->pNext;
     for(unsigned i=0;next && i<64;i++,next=next->pNext){
+        if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_PROPERTIES_KHR && (D(p)->capabilities[0]&512)){
+            uint32_t values[16];checked(CALL(133,KEY(p),PTR(values)));
+            ((VkPhysicalDevicePortabilitySubsetPropertiesKHR *)next)->minVertexInputBindingStrideAlignment=values[15];
+        }
         if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES){
             VkPhysicalDeviceMultiviewProperties *v=(void *)next;v->maxMultiviewViewCount=0;v->maxMultiviewInstanceIndex=0;
         }

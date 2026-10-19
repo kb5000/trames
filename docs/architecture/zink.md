@@ -7,8 +7,9 @@
 loader→Trames guest ICD→现有原生Vulkan/MoltenVK→Metal。保留上游算法，不另写一套
 OpenGL实现。后续窗口继续使用现有Wayland合成器和App浮窗/标签页。
 
-当前完成了Vulkan查询/descriptor template、maintenance1/timeline，以及renderpass2/imageless framebuffer基础，**原版Mesa25.1.9仍不能初始化
-EGL context，尚未产生OpenGL画面**。这不是完整Vulkan或OpenGL一致性声明。
+当前已在Linux原生Vulkan参考上跑通原版Mesa25.1.9的EGL1.5、GLES2 context、GPU清屏、
+GLSL着色器绘制和重复纹理采样。**这是基础离屏GL链路，不是完整OpenGL或Vulkan一致性声明。**
+本批Apple/MoltenVK实测结果见[验证记录](../validation/zink-gles.md)；物理iPad和Wayland EGL窗口仍待验收。
 
 ## 已实现
 
@@ -51,17 +52,37 @@ EGL context，尚未产生OpenGL画面**。这不是完整Vulkan或OpenGL一致�
 - 原版loader在1.0应用路径可能重复追加properties2扩展；相同扩展名称按一次启用处理。
 - App自带ICD JSON为实例1.1；旧JSON原子刷新，保持未变库inode与用户数据。
 
+## 本批GL/资源扩展
+
+- 布局可见性支持`ALL_GRAPHICS`/`ALL`，不因此启用geometry/tessellation执行。
+  单颜色附件/单viewport的实际限制如实报告，兼容render pass按格式/深度匹配，
+  允许不同load/store/layout的兼容对象共用framebuffer/pipeline。
+- 基础features按driver查询并显式启用：anisotropy、logicOp、fillModeNonSolid、
+  shaderClipDistance、independentBlend。`EXT_scalar_block_layout`同样按真实driver能力查询/启用。
+  polygon/logic state交给原生pipeline，未知feature继续失败。
+- 原生texel buffer view、uniform/storage texel descriptors、storage-image descriptors，
+  dynamic uniform/storage buffer descriptors及其template展开。动态偏移按binding/array顺序处理，
+  验证对齐和有效范围；不增加算法锁。绑定与提交快照保留view/buffer/image/memory。
+- 原生descriptor pool reset用generation区分旧set，拒绝重置仍在途的set，失效旧命令和句柄；
+  不对原生reset已释放的set再次free。重置后可重新分配/录制/执行。
+- 原生pipeline cache初始数据、size/data/INCOMPLETE语义与merge；缓存字节复制到guest，
+  不把guest指针或driver对象直接传入宿主。与原API相同，外部同步仍由调用方负责。
+- 可变格式/extended-usage 2D图片、显式分量swizzle、单层array view；image-format-list
+  仅为兼容性元数据，列出一个格式不表示已支持创建该格式。实际image/view仍经profile过滤。
+  新增RGBA8 SNORM/UINT/SINT图片，native blend/storage/texel格式能力按已实现路径过滤。
+- 九种核心dynamic graphics states及原生命令、discard/depth-bias和point/line/triangle拓扑。
+  当前line width为1、depth-bias clamp为0，未实现的静态bias参数会明确失败。
+- 真实`KHR_portability_subset`查询（仅宿主有该扩展时）让原版Mesa选择MoltenVK上游路径；
+  只返回本桥实际支持且原生支持的子集。triangleFans、stride、swizzle、sampler bias等
+  受真实限制约束，不让不支持的图形状态进入driver。
+
 ## 原版Mesa进度与下一批
 
-选定版本为Alpine签名Mesa25.1.9-r0。相同版本上游列出的maintenance1、renderpass2、
-imageless framebuffer、timeline、descriptor template五项硬扩展现在均通过查询，原版Mesa
-已创建Vulkan device。本地Lavapipe参考停在`vkCreatePipelineLayout`的
-`VK_ERROR_FEATURE_NOT_PRESENT`，仍未创建EGL context或产生OpenGL画面。
-
-原版Mesa同时报告缺少`logicOp`、`fillModeNonSolid`、`shaderClipDistance`、
-`scalarBlockLayout`、custom border color和line rasterization。下一批先处理pipeline/
-descriptor布局与这些真实features，再扩展图像/格式/视图/mipmap及渲染状态；不能只抹掉
-错误或跳过上游要求。MoltenVK工作路径仍需实际EGL创建后验证。
+Alpine签名Mesa25.1.9-r0和loader保持原样；五项硬扩展已满足。离屏客户端完成64个清屏像素、
+64个uniform GLSL像素及三轮共192个纹理采样像素校验，并正确销毁context/资源。
+后续继续扩展格式/图像维度/mipmap、渲染状态和真实可用features，打通Wayland EGL窗口及生命周期。
+当前仍有custom-border-color、line-rasterization和depth-clip-enable相关上游警告；基础样例通过
+不代表所有应用/裁剪/线段状态已可用。未通过的能力不会仅靠枚举名称来启用。
 DRI/dmabuf、external-memory FD还需要guest FD与Metal资源身份/生命周期设计；
 不把宿主FD或指针直接当guest handle。
 
@@ -76,6 +97,6 @@ DRI/dmabuf、external-memory FD还需要guest FD与Metal资源身份/生命周�
 
 本地native参考是Mesa25 Lavapipe软件Vulkan。`LIBGL_ALWAYS_SOFTWARE`仅用于让原版
 Zink选中这个CPU physical device；它不替换OpenGL实现。iPad GPU验收不使用此变量。
-本轮MoltenVK/Metal timeline及imageless附件重绑定、可选深度、GPU读回与清理，
+此前同步/renderpass批次的MoltenVK/Metal timeline、imageless附件重绑定、可选深度、GPU读回与清理，
 已在CI的Apple Paravirtual device通过。
-原版GL/Wayland呈现与物理iPad仍待验收；当前没有新的Zink IPA或release。
+本批原版GL在Metal上的结果待回填；Wayland EGL呈现与物理iPad仍待验收；本批没有构建新的Zink IPA或release。

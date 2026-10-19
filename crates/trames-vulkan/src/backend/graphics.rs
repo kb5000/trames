@@ -17,6 +17,7 @@ pub(super) struct PassInfo {
     depth_clear: bool,
 }
 pub(super) struct AttachmentSpec {
+    flags: vk::ImageCreateFlags,
     usage: vk::ImageUsageFlags,
     width: u32,
     height: u32,
@@ -41,7 +42,7 @@ pub(super) struct VertexBinding {
     extent: u32,
 }
 // A selected set of common native vertex formats. Image formats remain RGBA8/BGRA8.
-fn vertex_size(raw: u64) -> Option<u32> {
+pub(super) fn vertex_size(raw: u64) -> Option<u32> {
     match raw {
         37 | 38 | 41 | 42 | 98..=100 => Some(4),
         101..=103 => Some(8),
@@ -53,7 +54,7 @@ fn vertex_size(raw: u64) -> Option<u32> {
 const DIMENSION: u32 = 4096;
 fn format(raw: u64) -> Result<vk::Format> {
     match raw {
-        37 => Ok(vk::Format::R8G8B8A8_UNORM),
+        37 | 38 | 41 | 42 => Ok(vk::Format::from_raw(raw as i32)),
         43 => Ok(vk::Format::R8G8B8A8_SRGB),
         44 => Ok(vk::Format::B8G8R8A8_UNORM),
         50 => Ok(vk::Format::B8G8R8A8_SRGB),
@@ -62,11 +63,22 @@ fn format(raw: u64) -> Result<vk::Format> {
         _ => Err(vk::Result::ERROR_FORMAT_NOT_SUPPORTED.into()),
     }
 }
+// Format-list entries are metadata, not a claim that every listed format is
+// creatable in this profile. Retain valid core enum entries for native image
+// compatibility checks; actual images/views still pass the selected filter.
+fn view_format(raw: u32) -> Result<vk::Format> {
+    if !(1..=184).contains(&raw) {
+        return Err(vk::Result::ERROR_FORMAT_NOT_SUPPORTED.into());
+    }
+    Ok(vk::Format::from_raw(raw as i32))
+}
 fn usage(raw: u64) -> Result<vk::ImageUsageFlags> {
     let allowed = vk::ImageUsageFlags::COLOR_ATTACHMENT
         | vk::ImageUsageFlags::TRANSFER_SRC
         | vk::ImageUsageFlags::TRANSFER_DST
         | vk::ImageUsageFlags::SAMPLED
+        | vk::ImageUsageFlags::STORAGE
+        | vk::ImageUsageFlags::INPUT_ATTACHMENT
         | vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT;
     if raw == 0 || raw & !(allowed.as_raw() as u64) != 0 {
         return unsupported();
@@ -114,6 +126,12 @@ fn color_range() -> vk::ImageSubresourceRange {
         .level_count(1)
         .layer_count(1)
 }
+fn compatible_pass(a: &Object, b: &Object) -> bool {
+    a.pass
+        .get()
+        .zip(b.pass.get())
+        .is_some_and(|(a, b)| a.format == b.format && a.depth == b.depth)
+}
 fn shape(object: &Object) -> Result<ImageShape> {
     object
         .image
@@ -148,10 +166,12 @@ impl Backend {
                 let p = unsafe { instance.get_physical_device_format_properties(self.physical, f) };
                 let flags = p.optimal_tiling_features
                     & (vk::FormatFeatureFlags::COLOR_ATTACHMENT
+                        | vk::FormatFeatureFlags::COLOR_ATTACHMENT_BLEND
                         | vk::FormatFeatureFlags::DEPTH_STENCIL_ATTACHMENT
                         | vk::FormatFeatureFlags::TRANSFER_SRC
                         | vk::FormatFeatureFlags::TRANSFER_DST
                         | vk::FormatFeatureFlags::SAMPLED_IMAGE
+                        | vk::FormatFeatureFlags::STORAGE_IMAGE
                         | vk::FormatFeatureFlags::SAMPLED_IMAGE_FILTER_LINEAR);
                 bytes[4..8].copy_from_slice(&flags.as_raw().to_le_bytes());
             }
@@ -163,7 +183,10 @@ impl Backend {
                     )
                 };
                 bytes[8..12].copy_from_slice(
-                    &(p.buffer_features & vk::FormatFeatureFlags::VERTEX_BUFFER)
+                    &(p.buffer_features
+                        & (vk::FormatFeatureFlags::VERTEX_BUFFER
+                            | vk::FormatFeatureFlags::UNIFORM_TEXEL_BUFFER
+                            | vk::FormatFeatureFlags::STORAGE_TEXEL_BUFFER))
                         .as_raw()
                         .to_le_bytes(),
                 );
@@ -173,13 +196,13 @@ impl Backend {
         output(m, a[6], 32)?;
         if a[2] != vk::ImageType::TYPE_2D.as_raw() as u64
             || a[3] != vk::ImageTiling::OPTIMAL.as_raw() as u64
-            || a[5] != 0
+            || a[5] & !0x108 != 0
         {
             return Err(vk::Result::ERROR_FORMAT_NOT_SUPPORTED.into());
         }
         let formats: Vec<_> = words32(m, a[7], bounded(a[8], 16)?)?
             .into_iter()
-            .map(|f| format(f as u64))
+            .map(view_format)
             .collect::<Result<_>>()?;
         let p = if formats.is_empty() {
             unsafe {
@@ -189,7 +212,7 @@ impl Backend {
                     vk::ImageType::TYPE_2D,
                     vk::ImageTiling::OPTIMAL,
                     format_usage(format(a[1])?, a[4])?,
-                    vk::ImageCreateFlags::empty(),
+                    vk::ImageCreateFlags::from_raw(a[5] as u32),
                 )
             }?
         } else {
@@ -202,6 +225,7 @@ impl Backend {
                 .ty(vk::ImageType::TYPE_2D)
                 .tiling(vk::ImageTiling::OPTIMAL)
                 .usage(format_usage(format(a[1])?, a[4])?)
+                .flags(vk::ImageCreateFlags::from_raw(a[5] as u32))
                 .push_next(&mut list);
             let mut properties = vk::ImageFormatProperties2::default();
             let owner = self.instance.as_ref().unwrap();
@@ -256,17 +280,35 @@ impl Backend {
         let vertex_name = name(a[4])?;
         let fragment_name = name(a[5])?;
         let state = words64(m, a[6], 5)?;
+        if std::env::var_os("TRAMES_VULKAN_TRACE").is_some() {
+            eprintln!("trames-vulkan graphics-state={state:x?}");
+        }
         let pass = self.object(state[0], Kind::RenderPass)?;
-        if !matches!(state[1], 3 | 4) || state[2] & !3 != 0 || state[3] > 1 || state[4] & !15 != 0 {
+        if !matches!(state[1], 0..=5) || state[2] & !3 != 0 || state[3] > 1 || state[4] & !15 != 0 {
+            return unsupported();
+        }
+        if state[1] == 5 && device.portability.is_some_and(|p| p.triangle_fans == 0) {
             return unsupported();
         }
         if a[12] > 1 || a[12] != 0 && state[1] != 4 {
             return unsupported();
         }
         let restart = a[12] != 0;
-        if a[14] & !0x73 != 0 {
+        if a[14] & !0x3f773 != 0 {
             return unsupported();
         }
+        let polygon = ((a[14] >> 8) & 3) as i32;
+        let logic = a[14] & 1024 != 0;
+        if polygon > 2
+            || polygon != 0 && device.features.fill_mode_non_solid == 0
+            || logic && device.features.logic_op == 0
+        {
+            return unsupported();
+        }
+        if polygon == 2 && device.portability.is_some_and(|p| p.point_polygons == 0) {
+            return unsupported();
+        }
+        let logic_op = ((a[14] >> 12) & 15) as i32;
         let depth_test = a[14] & 1 != 0;
         let depth_write = a[14] & 2 != 0;
         let compare = ((a[14] >> 4) & 7) as i32;
@@ -295,11 +337,22 @@ impl Backend {
         if a[15] != 0 {
             config = words64(m, a[15], 22)?;
         }
-        if config[0] & !3 != 0
+        if std::env::var_os("TRAMES_VULKAN_TRACE").is_some() {
+            eprintln!("trames-vulkan graphics-config={config:x?}");
+        }
+        if config[0] & !511 != 0
             || config[11] > 1
             || [12, 13, 15, 16].iter().any(|&i| config[i] > 14)
             || config[14] > 4
             || config[17] > 4
+        {
+            return unsupported();
+        }
+        if config[11] != 0
+            && device
+                .portability
+                .is_some_and(|p| p.constant_alpha_color_blend_factors == 0)
+            && config[12..14].iter().any(|f| matches!(f, 12 | 13))
         {
             return unsupported();
         }
@@ -401,6 +454,13 @@ impl Backend {
             {
                 return Err(vk::Result::ERROR_FORMAT_NOT_SUPPORTED.into());
             }
+            if device
+                .portability
+                .is_some_and(|p| p.vertex_attribute_access_beyond_stride == 0)
+                && x[3] + size as u64 > input.stride as u64
+            {
+                return unsupported();
+            }
             input.extent = input.extent.max(x[3] as u32 + size);
             attributes.push(vk::VertexInputAttributeDescription {
                 location: x[0] as u32,
@@ -448,7 +508,9 @@ impl Backend {
                 viewport = viewport.scissors(&static_scissors);
             }
             let raster = vk::PipelineRasterizationStateCreateInfo::default()
-                .polygon_mode(vk::PolygonMode::FILL)
+                .rasterizer_discard_enable(a[14] & 65536 != 0)
+                .depth_bias_enable(a[14] & 131072 != 0)
+                .polygon_mode(vk::PolygonMode::from_raw(polygon))
                 .cull_mode(vk::CullModeFlags::from_raw(state[2] as u32))
                 .front_face(vk::FrontFace::from_raw(state[3] as i32))
                 .line_width(1.0);
@@ -468,6 +530,8 @@ impl Backend {
                 .alpha_blend_op(vk::BlendOp::from_raw(config[17] as i32))
                 .color_write_mask(vk::ColorComponentFlags::from_raw(state[4] as u32))];
             let blend = vk::PipelineColorBlendStateCreateInfo::default()
+                .logic_op_enable(logic)
+                .logic_op(vk::LogicOp::from_raw(logic_op))
                 .attachments(&attachments)
                 .blend_constants(std::array::from_fn(|i| {
                     f32::from_bits(config[18 + i] as u32)
@@ -478,6 +542,11 @@ impl Backend {
             }
             if static_states & 2 == 0 {
                 dynamic_states.push(vk::DynamicState::SCISSOR);
+            }
+            for state in 2..=8 {
+                if config[0] & (1 << state) != 0 {
+                    dynamic_states.push(vk::DynamicState::from_raw(state));
+                }
             }
             let dynamic =
                 vk::PipelineDynamicStateCreateInfo::default().dynamic_states(&dynamic_states);
@@ -593,13 +662,17 @@ impl Backend {
                 }
                 let formats: Vec<_> = words32(m, a[7], bounded(a[8], 16)?)?
                     .into_iter()
-                    .map(|f| format(f as u64))
+                    .map(view_format)
                     .collect::<Result<_>>()?;
                 if !formats.is_empty() && !device.format_list {
                     return unsupported();
                 }
                 let mut list = vk::ImageFormatListCreateInfo::default().view_formats(&formats);
+                if a[9] & !0x108 != 0 || a[9] & 256 != 0 && !device.maintenance2 {
+                    return unsupported();
+                }
                 let mut info = vk::ImageCreateInfo::default()
+                    .flags(vk::ImageCreateFlags::from_raw(a[9] as u32))
                     .image_type(vk::ImageType::TYPE_2D)
                     .format(f)
                     .extent(vk::Extent3D {
@@ -623,6 +696,7 @@ impl Backend {
                 }
                 let raw = unsafe { d.create_image(&info, None) }?;
                 let id = self.put(Kind::Image, raw.as_raw(), vec![], 0, u.as_raw());
+                self.objects[&id].image_flags.set(a[9] as u32);
                 self.objects[&id].image.set(Some(ImageShape {
                     width: a[2] as u32,
                     height: a[3] as u32,
@@ -673,14 +747,19 @@ impl Backend {
                 self.room(1)?;
                 output(m, a[3], 8)?;
                 let image = self.object(a[1], Kind::Image)?;
-                let shape = shape(&image)?;
-                if format(a[2])? != shape.format
+                let mut shape = shape(&image)?;
+                let view_format = format(a[2])?;
+                if view_format != shape.format
+                    && (image.image_flags.get() & 8 == 0
+                        || is_depth(view_format)
+                        || is_depth(shape.format))
                     || image.deps.borrow().is_empty()
                         && image.swapchain.borrow().is_none()
                         && image.wayland_pool.borrow().is_none()
                 {
                     return invalid();
                 }
+                shape.format = view_format;
                 let view_usage = if a[4] == 0 {
                     vk::ImageUsageFlags::empty()
                 } else {
@@ -694,9 +773,39 @@ impl Backend {
                     usage
                 };
                 let mut view_usage_info = vk::ImageViewUsageCreateInfo::default().usage(view_usage);
+                // Wire type zero is the legacy 2D default; new callers can
+                // request a one-layer array view and ordinary native swizzles.
+                if !matches!(a[5], 0 | 1 | 5)
+                    || a[6] > 0xffff
+                    || (0..4).any(|i| (a[6] >> (i * 4)) & 15 > 6)
+                {
+                    return unsupported();
+                }
+                if device
+                    .portability
+                    .is_some_and(|p| p.image_view_format_swizzle == 0)
+                    && (0..4).any(|i| {
+                        let v = (a[6] >> (i * 4)) & 15;
+                        v != 0 && v != i + 3
+                    })
+                {
+                    return unsupported();
+                }
+                let component =
+                    |i: u32| vk::ComponentSwizzle::from_raw(((a[6] >> (i * 4)) & 15u64) as i32);
                 let mut info = vk::ImageViewCreateInfo::default()
+                    .components(vk::ComponentMapping {
+                        r: component(0),
+                        g: component(1),
+                        b: component(2),
+                        a: component(3),
+                    })
                     .image(vk::Image::from_raw(image.raw))
-                    .view_type(vk::ImageViewType::TYPE_2D)
+                    .view_type(if a[5] == 5 {
+                        vk::ImageViewType::TYPE_2D_ARRAY
+                    } else {
+                        vk::ImageViewType::TYPE_2D
+                    })
                     .format(shape.format)
                     .subresource_range(image_range(shape.format));
                 if a[4] != 0 {
@@ -930,9 +1039,9 @@ impl Backend {
                     };
                     let formats: Vec<_> = words32(m, x[5], bounded(x[6], 16)?)?
                         .into_iter()
-                        .map(|f| format(f as u64))
+                        .map(view_format)
                         .collect::<Result<_>>()?;
-                    if x[0] != 0
+                    if x[0] & !0x108 != 0
                         || !u.contains(required)
                         || x[2] < a[2]
                         || x[3] < a[3]
@@ -944,6 +1053,7 @@ impl Backend {
                         return invalid();
                     }
                     specs.push(AttachmentSpec {
+                        flags: vk::ImageCreateFlags::from_raw(x[0] as u32),
                         usage: u,
                         width: x[2] as u32,
                         height: x[3] as u32,
@@ -954,6 +1064,7 @@ impl Backend {
                     .iter()
                     .map(|s| {
                         vk::FramebufferAttachmentImageInfo::default()
+                            .flags(s.flags)
                             .usage(s.usage)
                             .width(s.width)
                             .height(s.height)
@@ -1049,7 +1160,7 @@ impl Backend {
                         let pass = self.object(a[2], Kind::RenderPass)?;
                         let fb = self.object(a[3], Kind::Framebuffer)?;
                         let s = shape(&fb)?;
-                        if !Rc::ptr_eq(&fb.deps.borrow()[0], &pass)
+                        if !compatible_pass(&fb.deps.borrow()[0], &pass)
                             || a[6] == 0
                             || a[7] == 0
                             || a[4].checked_add(a[6]).is_none_or(|x| x > s.width as u64)
@@ -1103,6 +1214,7 @@ impl Backend {
                                 let wanted = if i == 0 { p.format } else { p.depth.unwrap() };
                                 if shape.format != wanted
                                     || !spec.formats.contains(&shape.format)
+                                    || image.image_flags.get() != spec.flags.as_raw()
                                     || image.flags != spec.usage.as_raw()
                                     || shape.width < spec.width
                                     || shape.height < spec.height
@@ -1195,7 +1307,7 @@ impl Backend {
                         if p.flags != vk::PipelineBindPoint::GRAPHICS.as_raw() as u32
                             || (!r.viewport && p.static_states.get() & 1 == 0)
                             || (!r.scissor && p.static_states.get() & 2 == 0)
-                            || !Rc::ptr_eq(&p.deps.borrow()[1], pass)
+                            || !compatible_pass(&p.deps.borrow()[1], pass)
                             || a[2..5].iter().any(|&x| x > u32::MAX as u64)
                             || (op == 73 && a[5] > u32::MAX as u64)
                             || (op == 97
