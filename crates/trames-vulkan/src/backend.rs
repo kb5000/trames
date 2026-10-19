@@ -17,6 +17,7 @@ mod graphics;
 mod textures;
 mod wayland;
 mod wsi;
+mod zink;
 use graphics::{ImageShape, PassInfo, Recording};
 
 const LIMIT: usize = 256;
@@ -48,6 +49,7 @@ fn unsupported<T>() -> Result<T> {
 struct Instance {
     native: ash::Instance,
     _entry: Entry,
+    queries2: bool,
 }
 impl Drop for Instance {
     fn drop(&mut self) {
@@ -56,6 +58,8 @@ impl Drop for Instance {
 }
 struct Device {
     anisotropy: bool,
+    maintenance1: bool,
+    timeline: bool,
     native: ash::Device,
     instance: Arc<Instance>,
     atom: u64,
@@ -193,6 +197,9 @@ struct Submission {
     fence: Rc<Object>,
     commands: Vec<Rc<Object>>,
     _resources: Vec<Rc<Object>>,
+    timeline_completion: Vec<(Rc<Object>, u64)>,
+    timeline_signals: Vec<(Rc<Object>, u64)>,
+    commands_complete: bool,
 }
 struct Mapping {
     memory: Rc<Object>,
@@ -207,6 +214,8 @@ struct SubmitBatch {
     stages: Vec<vk::PipelineStageFlags>,
     commands: Vec<vk::CommandBuffer>,
     signals: Vec<vk::Semaphore>,
+    wait_values: Vec<u64>,
+    signal_values: Vec<u64>,
 }
 #[derive(Debug, PartialEq, Eq)]
 pub enum Invocation {
@@ -268,6 +277,7 @@ pub struct Backend {
     wsi_enabled: bool,
     wayland: wayland::Wayland,
     virtual_wsi: bool,
+    capabilities: zink::Capabilities,
 }
 impl Default for Backend {
     fn default() -> Self {
@@ -303,6 +313,7 @@ impl Backend {
             wsi_enabled: false,
             wayland: Default::default(),
             virtual_wsi: false,
+            capabilities: Default::default(),
         }
     }
     pub fn with_display(mut self, display: crate::Display) -> Self {
@@ -407,17 +418,22 @@ impl Backend {
         }
         // Keep operation 52 readable for the initial ICD. Operation 56 retains
         // each VkSubmitInfo boundary instead of merging semaphore dependencies.
+        let stride = if op == 120 { 9 } else { 7 };
         let wire = if op == 52 {
             vec![0, 0, 0, a[2], a[3], 0, 0]
         } else {
-            words64(m, a[2], bounded(a[3], 64)? * 7)?
+            words64(m, a[2], bounded(a[3], 64)? * stride)?
         };
         let mut batches = Vec::new();
         let mut commands = Vec::new();
         let mut semaphores = Vec::new();
         let mut semaphore_states = BTreeMap::new();
+        let mut timeline_completion = Vec::new();
+        let mut timeline_signals = Vec::new();
+        let mut timeline_ready = BTreeMap::<u64, u64>::new();
         let (mut total_waits, mut total_commands, mut total_signals) = (0, 0, 0);
-        for record in wire.chunks_exact(7) {
+        for record in wire.chunks_exact(stride) {
+            timeline_completion.clear();
             let waits = bounded(record[1], 64)?;
             let count = bounded(record[4], 64)?;
             let signals = bounded(record[6], 64)?;
@@ -427,17 +443,62 @@ impl Backend {
             if total_waits > 64 || total_commands > 64 || total_signals > 64 {
                 return unsupported();
             }
-            let mut batch = SubmitBatch::default();
+            let mut batch = SubmitBatch {
+                wait_values: if op == 120 {
+                    words64(m, record[7], waits)?
+                } else {
+                    vec![0; waits]
+                },
+                signal_values: if op == 120 {
+                    words64(m, record[8], signals)?
+                } else {
+                    vec![0; signals]
+                },
+                ..Default::default()
+            };
             let stages = words32(m, record[2], waits)?;
-            for (id, stage) in words64(m, record[0], waits)?.into_iter().zip(stages) {
+            for (i, (id, stage)) in words64(m, record[0], waits)?
+                .into_iter()
+                .zip(stages)
+                .enumerate()
+            {
                 let semaphore = self.object(id, Kind::Semaphore)?;
                 let state = semaphore_states.entry(id).or_insert(semaphore.state.get());
                 // There is one queue. A wait consumes an earlier signal, even
                 // if the driver has not completed it yet. Commit only on success.
-                if *state != 1 {
+                if semaphore.flags == 0 && *state != 1 {
                     return invalid();
                 }
-                *state = 0;
+                if semaphore.flags == 0 {
+                    *state = 0;
+                } else if op != 120 || !dev.timeline {
+                    return unsupported();
+                }
+                if semaphore.flags != 0 {
+                    let api = ash::khr::timeline_semaphore::Device::new(
+                        &dev.instance.native,
+                        &dev.native,
+                    );
+                    let native = unsafe {
+                        api.get_semaphore_counter_value(vk::Semaphore::from_raw(semaphore.raw))
+                    }?;
+                    let ready = timeline_ready.entry(id).or_insert(native);
+                    *ready = (*ready).max(native);
+                    let queued = self.submissions.iter().any(|submission| {
+                        submission.timeline_signals.iter().any(|(s, value)| {
+                            Rc::ptr_eq(s, &semaphore) && *value >= batch.wait_values[i]
+                        })
+                    });
+                    if *ready < batch.wait_values[i] && !queued {
+                        // Drivers may block vkQueueSubmit on future host signals.
+                        // Poll before submitting so peer guest threads can signal
+                        // even with one worker. No queue/ledger changes yet.
+                        return Err(vk::Result::NOT_READY.into());
+                    }
+                }
+                if semaphore.flags == 0 {
+                    batch.wait_values[i] = 0;
+                }
                 batch.stages.push(compute_stage(stage)?);
                 batch.waits.push(vk::Semaphore::from_raw(semaphore.raw));
                 semaphores.push((id, semaphore));
@@ -455,13 +516,25 @@ impl Backend {
                     .push(vk::CommandBuffer::from_raw(command.raw));
                 commands.push(command);
             }
-            for id in words64(m, record[5], signals)? {
+            for (i, id) in words64(m, record[5], signals)?.into_iter().enumerate() {
                 let semaphore = self.object(id, Kind::Semaphore)?;
                 let state = semaphore_states.entry(id).or_insert(semaphore.state.get());
-                if *state != 0 {
+                if semaphore.flags == 0 && *state != 0 {
                     return invalid();
                 }
-                *state = 1;
+                if semaphore.flags == 0 {
+                    *state = 1;
+                } else if op != 120 || !dev.timeline {
+                    return unsupported();
+                }
+                if semaphore.flags == 0 {
+                    batch.signal_values[i] = 0;
+                } else {
+                    timeline_completion.push((semaphore.clone(), batch.signal_values[i]));
+                    timeline_signals.push((semaphore.clone(), batch.signal_values[i]));
+                    let ready = timeline_ready.entry(id).or_insert(0);
+                    *ready = (*ready).max(batch.signal_values[i]);
+                }
                 batch.signals.push(vk::Semaphore::from_raw(semaphore.raw));
                 semaphores.push((id, semaphore));
             }
@@ -480,14 +553,27 @@ impl Backend {
         } else {
             self.private_fence(dev.clone())?
         };
-        let infos: Vec<_> = batches
+        let mut timelines: Vec<_> = batches
             .iter()
             .map(|batch| {
-                vk::SubmitInfo::default()
+                vk::TimelineSemaphoreSubmitInfo::default()
+                    .wait_semaphore_values(&batch.wait_values)
+                    .signal_semaphore_values(&batch.signal_values)
+            })
+            .collect();
+        let infos: Vec<_> = batches
+            .iter()
+            .zip(&mut timelines)
+            .map(|(batch, timeline)| {
+                let mut info = vk::SubmitInfo::default()
                     .wait_semaphores(&batch.waits)
                     .wait_dst_stage_mask(&batch.stages)
                     .command_buffers(&batch.commands)
-                    .signal_semaphores(&batch.signals)
+                    .signal_semaphores(&batch.signals);
+                if op == 120 {
+                    info = info.push_next(timeline);
+                }
+                info
             })
             .collect();
         self.coherent_sync(m, true)?;
@@ -513,6 +599,9 @@ impl Backend {
             fence,
             commands,
             _resources: resources,
+            timeline_completion,
+            timeline_signals,
+            commands_complete: false,
         });
         Ok(())
     }
@@ -558,14 +647,32 @@ impl Backend {
         self.reap_abandoned();
         self.wayland.collect();
         self.retained.retain(|x| x.strong_count() != 0);
-        self.submissions.retain(|s| {
+        self.submissions.retain_mut(|s| {
             let done = unsafe {
                 s.fence
                     .device
                     .native
                     .get_fence_status(vk::Fence::from_raw(s.fence.raw))
             } == Ok(true);
-            if done {
+            // A final-batch timeline signal proves commands have completed,
+            // even if the private bookkeeping fence is signaled slightly later.
+            // Allow reset/re-record immediately; keep the native fence and the
+            // captured resource graph alive until its own completion. Never
+            // decrement again or overwrite newly recorded command state later.
+            let logical = done
+                || !s.commands_complete
+                    && s.timeline_completion.iter().any(|(semaphore, value)| {
+                        let dev = &semaphore.device;
+                        let api = ash::khr::timeline_semaphore::Device::new(
+                            &dev.instance.native,
+                            &dev.native,
+                        );
+                        unsafe {
+                            api.get_semaphore_counter_value(vk::Semaphore::from_raw(semaphore.raw))
+                        }
+                        .is_ok_and(|counter| counter >= *value)
+                    });
+            if logical && !s.commands_complete {
                 for command in &s.commands {
                     let remaining = command.pending_submissions.get() - 1;
                     command.pending_submissions.set(remaining);
@@ -573,6 +680,7 @@ impl Backend {
                         command.state.set(2);
                     }
                 }
+                s.commands_complete = true;
             }
             !done
         });
@@ -784,6 +892,10 @@ impl Backend {
             } else {
                 Vec::new()
             };
+            let queries2 = extensions.iter().any(|e| unsafe { std::ffi::CStr::from_ptr(e.extension_name.as_ptr()) } == ash::khr::get_physical_device_properties2::NAME);
+            if queries2 {
+                names.push(ash::khr::get_physical_device_properties2::NAME.as_ptr());
+            }
             if a[1] > 2 {
                 return unsupported();
             }
@@ -836,6 +948,7 @@ impl Backend {
             let instance = Arc::new(Instance {
                 native,
                 _entry: entry,
+                queries2,
             });
             let devices = unsafe { instance.native.enumerate_physical_devices() }?;
             self.physical = devices
@@ -850,6 +963,7 @@ impl Backend {
                     .any(|q| q.queue_flags.contains(vk::QueueFlags::COMPUTE))
                 })
                 .ok_or(Failure::Vk(vk::Result::ERROR_INITIALIZATION_FAILED))?;
+            self.capabilities = zink::Capabilities::query(&instance, self.physical)?;
             self.wsi_enabled = a[1] != 0;
             self.instance = Some(instance);
             self.instance_id = self.id();
@@ -868,13 +982,14 @@ impl Backend {
             self.wsi_enabled = false;
             self.instance_id = 0;
             self.physical_id = 0;
+            self.capabilities = Default::default();
             return Ok(());
         }
         let instance = self
             .instance
             .clone()
             .ok_or(Failure::Vk(vk::Result::ERROR_INITIALIZATION_FAILED))?;
-        if ((3..=8).contains(&op) || (58..=59).contains(&op))
+        if ((3..=8).contains(&op) || (58..=59).contains(&op) || op == 115 || op == 121)
             && a[0]
                 != if op == 3 {
                     self.instance_id
@@ -885,6 +1000,20 @@ impl Backend {
             return invalid();
         }
         match op {
+            115 => {
+                write_words(
+                    m,
+                    a[1],
+                    &[
+                        self.capabilities.bits,
+                        self.capabilities.max_timeline_difference,
+                    ],
+                    16,
+                )?;
+            }
+            121 => {
+                self.capabilities.write_driver(m, a[1])?;
+            }
             3 => {
                 output(m, a[1], 4)?;
                 if a[2] != 0 {
@@ -1037,10 +1166,16 @@ impl Backend {
                 }
                 let features = vk::PhysicalDeviceFeatures::default().sampler_anisotropy(a[4] != 0);
                 self.wsi.device_enabled = a[3] != 0;
-                let info = vk::DeviceCreateInfo::default()
+                zink::device_extensions(a[5], &self.capabilities, &mut names)?;
+                let mut timeline = vk::PhysicalDeviceTimelineSemaphoreFeatures::default()
+                    .timeline_semaphore(a[5] & 2 != 0);
+                let mut info = vk::DeviceCreateInfo::default()
                     .queue_create_infos(&queue)
                     .enabled_features(&features)
                     .enabled_extension_names(&names);
+                if a[5] & 2 != 0 {
+                    info = info.push_next(&mut timeline);
+                }
                 let native = unsafe { instance.native.create_device(self.physical, &info, None) }?;
                 self.queue = unsafe { native.get_device_queue(a[1] as u32, 0) };
                 self.family = a[1] as u32;
@@ -1052,6 +1187,8 @@ impl Backend {
                 .limits;
                 self.device = Some(Arc::new(Device {
                     anisotropy: a[4] != 0,
+                    maintenance1: a[5] & 1 != 0,
+                    timeline: a[5] & 2 != 0,
                     native,
                     instance,
                     atom: limits.non_coherent_atom_size,
@@ -1854,12 +1991,22 @@ impl Backend {
                 }
                 self.coherent_sync(m, false)?;
             }
-            52 | 56 => self.submit(m, op, a, dev.clone())?,
+            52 | 56 | 120 => self.submit(m, op, a, dev.clone())?,
             54 => {
                 self.room(1)?;
                 output(m, a[1], 8)?;
-                let raw = unsafe { d.create_semaphore(&vk::SemaphoreCreateInfo::default(), None) }?;
-                let id = self.put(Kind::Semaphore, raw.as_raw(), vec![], 0, 0);
+                if a[2] > 1 || a[2] == 1 && !dev.timeline || a[2] == 0 && a[3] != 0 {
+                    return unsupported();
+                }
+                let mut ty = vk::SemaphoreTypeCreateInfo::default()
+                    .semaphore_type(vk::SemaphoreType::TIMELINE)
+                    .initial_value(a[3]);
+                let mut info = vk::SemaphoreCreateInfo::default();
+                if a[2] != 0 {
+                    info = info.push_next(&mut ty);
+                }
+                let raw = unsafe { d.create_semaphore(&info, None) }?;
+                let id = self.put(Kind::Semaphore, raw.as_raw(), vec![], 0, a[2] as u32);
                 write(m, a[1], &id.to_le_bytes())?;
             }
             55 => self.remove(a[1], Kind::Semaphore)?,
@@ -1899,6 +2046,7 @@ impl Backend {
             60..=76 | 94..=97 | 114 => self.graphics_call(m, op, a)?,
             92..=93 => self.sampler_call(m, op, a)?,
             87..=91 => self.wsi_device(m, op, a)?,
+            116..=119 => self.zink_device(m, op, a, &dev)?,
             _ => return unsupported(),
         }
         Ok(())

@@ -27,7 +27,7 @@ fixtures = ROOT / 'tests/fixtures/bin'
 runner = Path(os.environ.get('TRAMES_RUNNER', ROOT / 'target/release/trames-run')).resolve()
 icd = ROOT / 'target/vulkan-guest/libtrames_vulkan_icd.so'
 rootfs = Path(os.environ.get('TRAMES_ALPINE_CACHE', ROOT / 'target/alpine-download')) / 'alpine-minirootfs-3.22.6-aarch64.tar.gz'
-report = dict(runtime_source='unchanged native backend; ICD/frontend and bundled manifest updated',
+report = dict(runtime_source='native Vulkan and guest ICD maintenance1/timeline/driver-properties; CPU/MMU/UI unchanged',
               runner_sha256=hashlib.sha256(runner.read_bytes()).hexdigest(),
               icd_sha256=hashlib.sha256(icd.read_bytes()).hexdigest(),
               native_driver_scope='configured host Vulkan driver, local reference may be software',
@@ -86,6 +86,22 @@ try:
         assert b'vulkan-queries-ok' in queries.stdout and b'vulkan-queries-ok' in native.stdout
         report['missing_zink_hard_requirements'] = [line.split()[1] for line in queries.stdout.decode().splitlines()
                                                      if line.startswith('zink-required ') and line.endswith(' missing')]
+        native = execute('timeline-native', [str(inputs / 'vulkan-timeline-host')], native=True)
+        timeline = guest('timeline', '/tmp/timeline', inputs / 'vulkan-timeline', ('bridge',))
+        assert native.stdout == timeline.stdout
+        base[base.index('--cpus') + 1] = '1'
+        single = guest('timeline-single-cpu', '/tmp/timeline-single', inputs / 'vulkan-timeline', ('bridge',))
+        assert native.stdout == single.stdout
+        base[base.index('--cpus') + 1] = '4'
+        for mode in ('legacy', 'negative', 'negative-static'):
+            args = [] if mode == 'legacy' else [mode]
+            host_image = a.output / ('render-' + mode + '-native.ppm')
+            native = execute('render-' + mode + '-native', [str(fixtures / 'vulkan-render-host'), str(fixtures / 'vulkan-render.vert.spv'), str(fixtures / 'vulkan-render.frag.spv'), str(host_image), *args], native=True)
+            guest_image = a.output / ('render-' + mode + '-guest.ppm')
+            rendered = guest('render-' + mode, '/tmp/render', fixtures / 'vulkan-render', ('/tmp/render.vert.spv', '/tmp/render.frag.spv', '/tmp/render.ppm', *args),
+                             tuple(('/tmp/render.' + stage + '.spv', fixtures / ('vulkan-render.' + stage + '.spv')) for stage in ('vert', 'frag')),
+                             (('/tmp/render.ppm', guest_image),))
+            assert native.stdout == rendered.stdout and host_image.read_bytes() == guest_image.read_bytes()
         for mode in ('legacy', 'template'):
             args = ['template'] if mode == 'template' else []
             native = execute('compute-' + mode + '-native', [str(fixtures / 'vulkan-compute-host'), str(fixtures / 'vulkan-compute.spv'), *args], native=True)

@@ -10,11 +10,29 @@ static void query_output(const void *p,VkStructureType type) {
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFeatures2(VkPhysicalDevice p,VkPhysicalDeviceFeatures2 *out) {
     query_output(out,VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2);
     vkGetPhysicalDeviceFeatures(p,&out->features);
+    VkBaseOutStructure *next=out->pNext;
+    for(unsigned i=0;next && i<64;i++,next=next->pNext){
+        if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES)
+            ((VkPhysicalDeviceTimelineSemaphoreFeatures *)next)->timelineSemaphore=(D(p)->capabilities[0]&2)!=0;
+    }
 }
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFeatures2KHR(VkPhysicalDevice p,VkPhysicalDeviceFeatures2 *out) {vkGetPhysicalDeviceFeatures2(p,out);}
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceProperties2(VkPhysicalDevice p,VkPhysicalDeviceProperties2 *out) {
     query_output(out,VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2);
     vkGetPhysicalDeviceProperties(p,&out->properties);
+    VkBaseOutStructure *next=out->pNext;
+    for(unsigned i=0;next && i<64;i++,next=next->pNext){
+        if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES && (D(p)->capabilities[0]&2))
+            ((VkPhysicalDeviceTimelineSemaphoreProperties *)next)->maxTimelineSemaphoreValueDifference=D(p)->capabilities[1];
+        if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES && (D(p)->capabilities[0]&4)){
+            VkPhysicalDeviceDriverProperties *driver=(VkPhysicalDeviceDriverProperties *)next;
+            unsigned char bytes[520];checked(CALL(121,KEY(p),PTR(bytes)));
+            memcpy(&driver->driverID,bytes,520);
+            // Identity/workarounds come from the native driver; the bridge has
+            // not passed Vulkan conformance and cannot inherit its certificate.
+            driver->conformanceVersion=(VkConformanceVersion){0};
+        }
+    }
 }
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice p,VkPhysicalDeviceProperties2 *out) {vkGetPhysicalDeviceProperties2(p,out);}
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceMemoryProperties2(VkPhysicalDevice p,VkPhysicalDeviceMemoryProperties2 *out) {

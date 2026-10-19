@@ -274,16 +274,7 @@ impl Backend {
                 .iter()
                 .map(|&v| f32::from_bits(v as u32))
                 .collect();
-            if v.iter().any(|v| !v.is_finite())
-                || v[0] < 0.0
-                || v[1] < 0.0
-                || v[2] <= 0.0
-                || v[3] <= 0.0
-                || v[0] + v[2] > DIMENSION as f32
-                || v[1] + v[3] > DIMENSION as f32
-                || !(0.0..=1.0).contains(&v[4])
-                || !(0.0..=1.0).contains(&v[5])
-            {
+            if !valid_viewport(&v, device.maintenance1) {
                 return invalid();
             }
             static_viewports.push(vk::Viewport {
@@ -1142,18 +1133,7 @@ impl Backend {
                     75 => {
                         let v = words32(m, a[2], 6)?;
                         let v: Vec<_> = v.into_iter().map(f32::from_bits).collect();
-                        if v.iter().any(|x| !x.is_finite())
-                            || v[0] < 0.0
-                            || v[1] < 0.0
-                            || v[2] <= 0.0
-                            || v[3] <= 0.0
-                            || v[0] + v[2] > DIMENSION as f32
-                            || v[1] + v[3] > DIMENSION as f32
-                            || v[4] < 0.0
-                            || v[4] > 1.0
-                            || v[5] < 0.0
-                            || v[5] > 1.0
-                        {
+                        if !valid_viewport(&v, device.maintenance1) {
                             return invalid();
                         }
                         let viewport = [vk::Viewport {
@@ -1200,6 +1180,19 @@ impl Backend {
         Ok(())
     }
 }
+fn valid_viewport(v: &[f32], maintenance1: bool) -> bool {
+    v.iter().all(|v| v.is_finite())
+        && v[0] >= 0.0
+        && v[1] >= 0.0
+        && v[2] > 0.0
+        && (v[3] > 0.0 || maintenance1)
+        && v[0] + v[2] <= DIMENSION as f32
+        && v[1] <= DIMENSION as f32
+        && (0.0..=DIMENSION as f32).contains(&(v[1] + v[3]))
+        && (0.0..=1.0).contains(&v[4])
+        && (0.0..=1.0).contains(&v[5])
+}
+
 fn checked_copy(x: &[u64], image: ImageShape, buffer_size: u64) -> Result<()> {
     if is_depth(image.format) {
         return unsupported();
@@ -1241,6 +1234,26 @@ fn checked_copy(x: &[u64], image: ImageShape, buffer_size: u64) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn maintenance1_negative_viewports_use_native_bounds() {
+        let flipped = [0.0, 192.0, 256.0, -192.0, 0.0, 1.0];
+        assert!(valid_viewport(&flipped, true));
+        assert!(valid_viewport(&[0.0, 0.0, 256.0, 0.0, 0.0, 1.0], true));
+        assert!(!valid_viewport(&flipped, false));
+        assert!(valid_viewport(&[0.0, 0.0, 256.0, 192.0, 0.0, 1.0], false));
+        for (field, value) in [
+            (0, f32::NAN),
+            (1, 0.0),
+            (2, 0.0),
+            (3, -193.0),
+            (4, -0.1),
+            (5, 1.1),
+        ] {
+            let mut invalid = flipped;
+            invalid[field] = value;
+            assert!(!valid_viewport(&invalid, true));
+        }
+    }
     #[test]
     fn copy_checks_padded_rows_offsets_overflow_and_color_subresources() {
         let s = ImageShape {

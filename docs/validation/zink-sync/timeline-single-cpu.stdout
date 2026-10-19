@@ -1,0 +1,5 @@
+native-driver-id=13 name=llvmpipe info=Mesa 25.0.7-2+deb13u1 (LLVM 19.1.7) max-timeline-difference=18446744073709551615
+timeline host: 64-bit initial/counter, wait-any/all, timeout and cross-thread wakeup: ok
+timeline GPU: future host signal, mixed binary waits, 64-bit submit values, coherent output and pool reset after wait: ok
+timeline GPU: inter-batch and previously queued signal/wait dependencies: ok
+vulkan-timeline-ok

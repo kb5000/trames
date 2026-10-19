@@ -23,7 +23,7 @@ static void free_templates(DescriptorTemplate *head);
 typedef struct dispatch {
     uintptr_t magic; uint64_t key;
     struct dispatch *device, *physical, *queue, *commands, *next;
-    uint64_t parent,map_alignment; uint32_t family;
+    uint64_t parent,map_alignment,capabilities[2],enabled; uint32_t family;
     pthread_mutex_t lock; Memory *memories; DescriptorTemplate *templates;
 } Dispatch;
 #define D(h) ((Dispatch *)(h))
@@ -53,14 +53,17 @@ static Memory *memory(Dispatch *d,VkDeviceMemory key) {for (Memory *m=d->memorie
 static uint64_t now_ns(void);
 static int display_info(uint64_t key,uint64_t out[3]) { return CALL(key?80:79,key?key:PTR(out),key?PTR(out):0)==VK_SUCCESS && out[0]; }
 static int wayland_available(void) {uint64_t available=0;return CALL(109,PTR(&available))==VK_SUCCESS && available;}
-static VkResult display_extensions(const char *layer,uint32_t *count,VkExtensionProperties *out,int device) {
+static VkResult display_extensions(const char *layer,uint32_t *count,VkExtensionProperties *out,int device,uint64_t caps) {
     if(layer)return VK_ERROR_LAYER_NOT_PRESENT;
     uint64_t info[3]={0};int fixed=display_info(0,info),wayland=wayland_available();
-    const char *names[4];uint32_t n=0;
+    const char *names[8];uint32_t n=0;
     if(device){
         if(fixed || wayland)names[n++]=VK_KHR_SWAPCHAIN_EXTENSION_NAME;
         names[n++]=VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME;
         names[n++]=VK_KHR_DESCRIPTOR_UPDATE_TEMPLATE_EXTENSION_NAME;
+        if(caps&1)names[n++]=VK_KHR_MAINTENANCE_1_EXTENSION_NAME;
+        if(caps&2)names[n++]=VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME;
+        if(caps&4)names[n++]=VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME;
     }
     else {
         if(fixed || wayland)names[n++]=VK_KHR_SURFACE_EXTENSION_NAME;
@@ -69,7 +72,7 @@ static VkResult display_extensions(const char *layer,uint32_t *count,VkExtension
         names[n++]=VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME;
     }
     if(!out){*count=n;return VK_SUCCESS;}uint32_t capacity=*count;*count=capacity<n?capacity:n;
-    for(uint32_t i=0;i<*count;i++){memset(out+i,0,sizeof(*out));strcpy(out[i].extensionName,names[i]);out[i].specVersion=!strcmp(names[i],VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME)?2:1;}
+    for(uint32_t i=0;i<*count;i++){memset(out+i,0,sizeof(*out));strcpy(out[i].extensionName,names[i]);out[i].specVersion=(!strcmp(names[i],VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME) || !strcmp(names[i],VK_KHR_MAINTENANCE_1_EXTENSION_NAME) || !strcmp(names[i],VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME))?2:1;}
     return capacity<n?VK_INCOMPLETE:VK_SUCCESS;
 }
 static int extensions(uint32_t count,const char *const *names,int device) {
@@ -80,6 +83,9 @@ static int extensions(uint32_t count,const char *const *names,int device) {
         else if(!device && !strcmp(names[i],VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))bit=8;
         else if(device && !strcmp(names[i],VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME))bit=8;
         else if(device && !strcmp(names[i],VK_KHR_DESCRIPTOR_UPDATE_TEMPLATE_EXTENSION_NAME))bit=16;
+        if(device && !strcmp(names[i],VK_KHR_MAINTENANCE_1_EXTENSION_NAME))bit=32;
+        else if(device && !strcmp(names[i],VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME))bit=64;
+        else if(device && !strcmp(names[i],VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME))bit=128;
         if(!bit || bits&bit)return -1;bits|=bit;
     }
     if(device)return (bits&1)!=0;
@@ -88,6 +94,10 @@ static int extensions(uint32_t count,const char *const *names,int device) {
     if((bits&6)==6)return -1;
     if(bits&4)return 2;if(bits&2)return 1;
     return bits&1 ? (wayland_available()?2:1) : 0;
+}
+
+static int has_extension(uint32_t count,const char *const *names,const char *name) {
+    for(uint32_t i=0;i<count;i++)if(!strcmp(names[i],name))return 1;return 0;
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(const VkInstanceCreateInfo *info,const VkAllocationCallbacks *allocator,VkInstance *out) {
@@ -106,14 +116,15 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(const VkInstanceCreateInfo *info
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroyInstance(VkInstance instance,const VkAllocationCallbacks *allocator) { if (!instance)return;checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(2,KEY(instance)));if(D(instance)->physical)free_dispatch(D(instance)->physical);free_dispatch(D(instance)); }
 VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceVersion(uint32_t *out) {*out=VK_API_VERSION_1_1;return VK_SUCCESS;}
-VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceExtensionProperties(const char *layer,uint32_t *count,VkExtensionProperties *out) {return display_extensions(layer,count,out,0);}
+VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceExtensionProperties(const char *layer,uint32_t *count,VkExtensionProperties *out) {return display_extensions(layer,count,out,0,0);}
 VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceLayerProperties(uint32_t *count,VkLayerProperties *out) {(void)out;*count=0;return VK_SUCCESS;}
-VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateDeviceExtensionProperties(VkPhysicalDevice physical,const char *layer,uint32_t *count,VkExtensionProperties *out) {(void)physical;return display_extensions(layer,count,out,1);}
+VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateDeviceExtensionProperties(VkPhysicalDevice physical,const char *layer,uint32_t *count,VkExtensionProperties *out) {return display_extensions(layer,count,out,1,D(physical)->capabilities[0]);}
 VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateDeviceLayerProperties(VkPhysicalDevice physical,uint32_t *count,VkLayerProperties *out) {(void)physical;(void)out;*count=0;return VK_SUCCESS;}
 VKAPI_ATTR VkResult VKAPI_CALL vkEnumeratePhysicalDevices(VkInstance instance,uint32_t *count,VkPhysicalDevice *out) {
     uint32_t n=1;uint64_t key=0;VkResult r=CALL(3,KEY(instance),PTR(&n),PTR(&key));if(r!=VK_SUCCESS)return r;
     if (!out){*count=1;return VK_SUCCESS;}if (!*count)return VK_INCOMPLETE;
     Dispatch *i=D(instance);if(!i->physical)i->physical=dispatch(key,NULL);if(!i->physical)return VK_ERROR_OUT_OF_HOST_MEMORY;
+    checked(CALL(115,key,PTR(i->physical->capabilities)));
     *count=1;out[0]=(VkPhysicalDevice)i->physical;return VK_SUCCESS;
 }
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceProperties(VkPhysicalDevice p,VkPhysicalDeviceProperties *out) {checked(CALL(4,KEY(p),PTR(out)));}
@@ -126,11 +137,15 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceSparseImageFormatProperties(VkPhys
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(VkPhysicalDevice p,const VkDeviceCreateInfo *info,const VkAllocationCallbacks *allocator,VkDevice *out) {
     if(!info || info->sType!=VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;ALLOCATOR(allocator);
     const VkPhysicalDeviceFeatures *features=info->pEnabledFeatures;
-    const VkBaseInStructure *next=info->pNext;unsigned chain=0;
+    const VkBaseInStructure *next=info->pNext;unsigned chain=0;int timeline=0,seen_timeline=0;
     while(next && chain++<16){
         if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2){
             if(features)return VK_ERROR_FEATURE_NOT_PRESENT;
             features=&((const VkPhysicalDeviceFeatures2 *)next)->features;
+        }else if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES){
+            if(seen_timeline++)return VK_ERROR_FEATURE_NOT_PRESENT;
+            timeline=((const VkPhysicalDeviceTimelineSemaphoreFeatures *)next)->timelineSemaphore;
+            if(timeline!=VK_FALSE && timeline!=VK_TRUE)return VK_ERROR_FEATURE_NOT_PRESENT;
         }else if(next->sType!=VK_STRUCTURE_TYPE_LOADER_DEVICE_CREATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;
         next=next->pNext;
     }
@@ -140,7 +155,12 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(VkPhysicalDevice p,const VkDeviceC
     if(q->flags || q->queueCount!=1)return VK_ERROR_FEATURE_NOT_PRESENT;
     if(features){const VkBool32 *v=(const VkBool32 *)features;for(size_t j=0;j<sizeof(VkPhysicalDeviceFeatures)/sizeof(VkBool32);j++)if(v[j] && j!=offsetof(VkPhysicalDeviceFeatures,samplerAnisotropy)/sizeof(VkBool32))return VK_ERROR_FEATURE_NOT_PRESENT;}
     Dispatch *d=dispatch(0,NULL);if(!d)return VK_ERROR_OUT_OF_HOST_MEMORY;d->device=d;d->family=q->queueFamilyIndex;
-    VkResult r=CALL(8,KEY(p),q->queueFamilyIndex,PTR(&d->key),wsi,features?features->samplerAnisotropy:0);if(r!=VK_SUCCESS){free_dispatch(d);return r;}
+    uint64_t enabled=(has_extension(info->enabledExtensionCount,info->ppEnabledExtensionNames,VK_KHR_MAINTENANCE_1_EXTENSION_NAME)?1UL:0)
+        |(has_extension(info->enabledExtensionCount,info->ppEnabledExtensionNames,VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME)?8UL:0)
+        |(has_extension(info->enabledExtensionCount,info->ppEnabledExtensionNames,VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME)?4UL:0)|(timeline?2UL:0);
+    if(timeline && !(enabled&8)){free_dispatch(d);return VK_ERROR_FEATURE_NOT_PRESENT;}
+    d->enabled=enabled;
+    VkResult r=CALL(8,KEY(p),q->queueFamilyIndex,PTR(&d->key),wsi,features?features->samplerAnisotropy:0,enabled);if(r!=VK_SUCCESS){free_dispatch(d);return r;}
     r=CALL(57,d->key,PTR(&d->map_alignment));if(r!=VK_SUCCESS){checked(CALL(9,d->key));free_dispatch(d);return r;}*out=(VkDevice)d;return VK_SUCCESS;
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroyDevice(VkDevice device,const VkAllocationCallbacks *allocator) {
@@ -255,7 +275,13 @@ VKAPI_ATTR void VKAPI_CALL vkCmdFillBuffer(VkCommandBuffer c,VkBuffer buffer,VkD
 VKAPI_ATTR void VKAPI_CALL vkCmdPushConstants(VkCommandBuffer c,VkPipelineLayout layout,VkShaderStageFlags stages,uint32_t offset,uint32_t size,const void *values) {if(!stages || (stages & ~(VK_SHADER_STAGE_COMPUTE_BIT|VK_SHADER_STAGE_VERTEX_BIT|VK_SHADER_STAGE_FRAGMENT_BIT)))checked(VK_ERROR_FEATURE_NOT_PRESENT);checked(CALL(47,DEVKEY(c),KEY(c),(uint64_t)layout,offset,size,PTR(values),stages));}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateFence(VkDevice d,const VkFenceCreateInfo *info,const VkAllocationCallbacks *allocator,VkFence *out) {CHECK(info,VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);ALLOCATOR(allocator);return CALL(48,KEY(d),info->flags,PTR(out));}
 VKAPI_ATTR void VKAPI_CALL vkDestroyFence(VkDevice d,VkFence f,const VkAllocationCallbacks *allocator) {if(f)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(49,KEY(d),(uint64_t)f));}
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateSemaphore(VkDevice d,const VkSemaphoreCreateInfo *info,const VkAllocationCallbacks *allocator,VkSemaphore *out) {CHECK(info,VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);ALLOCATOR(allocator);if(info->flags)return VK_ERROR_FEATURE_NOT_PRESENT;return CALL(54,KEY(d),PTR(out));}
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateSemaphore(VkDevice d,const VkSemaphoreCreateInfo *info,const VkAllocationCallbacks *allocator,VkSemaphore *out) {
+    if(!info || info->sType!=VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO || info->flags)return VK_ERROR_FEATURE_NOT_PRESENT;ALLOCATOR(allocator);
+    const VkSemaphoreTypeCreateInfo *type=info->pNext;
+    if(type && (!VALID(type,VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO) || type->semaphoreType>VK_SEMAPHORE_TYPE_TIMELINE ||
+       (type->semaphoreType==VK_SEMAPHORE_TYPE_TIMELINE && !(D(d)->enabled&2)) || (type->semaphoreType==VK_SEMAPHORE_TYPE_BINARY && type->initialValue)))return VK_ERROR_FEATURE_NOT_PRESENT;
+    return CALL(54,KEY(d),PTR(out),type?type->semaphoreType:0,type?type->initialValue:0);
+}
 VKAPI_ATTR void VKAPI_CALL vkDestroySemaphore(VkDevice d,VkSemaphore s,const VkAllocationCallbacks *allocator) {if(s)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(55,KEY(d),(uint64_t)s));}
 VKAPI_ATTR VkResult VKAPI_CALL vkResetFences(VkDevice d,uint32_t count,const VkFence *fences) {for(uint32_t i=0;i<count;i++){VkResult r=CALL(50,KEY(d),(uint64_t)fences[i]);if(r!=VK_SUCCESS)return r;}return VK_SUCCESS;}
 VKAPI_ATTR VkResult VKAPI_CALL vkGetFenceStatus(VkDevice d,VkFence f) {return CALL(51,KEY(d),(uint64_t)f);}
@@ -270,15 +296,29 @@ VKAPI_ATTR VkResult VKAPI_CALL vkWaitForFences(VkDevice d,uint32_t count,const V
 }
 VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(VkQueue queue,uint32_t count,const VkSubmitInfo *submits,VkFence fence) {
     if(count>64)return VK_ERROR_FEATURE_NOT_PRESENT;
-    uint64_t records[64][7],commands[64],waits[64],signals[64];uint32_t stages[64],nc=0,nw=0,ns=0;
-    for(uint32_t i=0;i<count;i++){const VkSubmitInfo *s=&submits[i];CHECK(s,VK_STRUCTURE_TYPE_SUBMIT_INFO);
+    uint64_t records[64][9],legacy[64][7],commands[64],waits[64],signals[64],wait_values[64]={0},signal_values[64]={0};uint32_t stages[64],nc=0,nw=0,ns=0;int timeline=0;
+    for(uint32_t i=0;i<count;i++){const VkSubmitInfo *s=&submits[i];if(s->sType!=VK_STRUCTURE_TYPE_SUBMIT_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;
+        const VkTimelineSemaphoreSubmitInfo *t=s->pNext;
+        if(t){
+            if(!VALID(t,VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO) || !(DEVICE(queue)->enabled&2) ||
+               (t->waitSemaphoreValueCount && t->waitSemaphoreValueCount!=s->waitSemaphoreCount) ||
+               (t->signalSemaphoreValueCount && t->signalSemaphoreValueCount!=s->signalSemaphoreCount))return VK_ERROR_FEATURE_NOT_PRESENT;
+            timeline=1;
+        }
         if(s->waitSemaphoreCount>64-nw || s->signalSemaphoreCount>64-ns || s->commandBufferCount>64-nc)return VK_ERROR_FEATURE_NOT_PRESENT;
         records[i][0]=PTR(waits+nw);records[i][1]=s->waitSemaphoreCount;records[i][2]=PTR(stages+nw);records[i][3]=PTR(commands+nc);records[i][4]=s->commandBufferCount;records[i][5]=PTR(signals+ns);records[i][6]=s->signalSemaphoreCount;
-        for(uint32_t j=0;j<s->waitSemaphoreCount;j++){waits[nw]=(uint64_t)s->pWaitSemaphores[j];stages[nw++]=s->pWaitDstStageMask[j];}
+        records[i][7]=PTR(wait_values+nw);records[i][8]=PTR(signal_values+ns);
+        for(uint32_t j=0;j<s->waitSemaphoreCount;j++){waits[nw]=(uint64_t)s->pWaitSemaphores[j];if(t && t->waitSemaphoreValueCount)wait_values[nw]=t->pWaitSemaphoreValues[j];stages[nw++]=s->pWaitDstStageMask[j];}
         for(uint32_t j=0;j<s->commandBufferCount;j++)commands[nc++]=KEY(s->pCommandBuffers[j]);
-        for(uint32_t j=0;j<s->signalSemaphoreCount;j++)signals[ns++]=(uint64_t)s->pSignalSemaphores[j];
+        for(uint32_t j=0;j<s->signalSemaphoreCount;j++){if(t && t->signalSemaphoreValueCount)signal_values[ns]=t->pSignalSemaphoreValues[j];signals[ns++]=(uint64_t)s->pSignalSemaphores[j];}
+        memcpy(legacy[i],records[i],sizeof(legacy[i]));
     }
-    return CALL(56,DEVKEY(queue),KEY(queue),PTR(records),count,(uint64_t)fence);
+    if(!timeline)return CALL(56,DEVKEY(queue),KEY(queue),PTR(legacy),count,(uint64_t)fence);
+    for(;;){
+        VkResult r=CALL(120,DEVKEY(queue),KEY(queue),PTR(records),count,(uint64_t)fence);
+        if(r!=VK_NOT_READY)return r;
+        struct timespec sleep={0,1000000};nanosleep(&sleep,NULL);
+    }
 }
 VKAPI_ATTR VkResult VKAPI_CALL vkQueueWaitIdle(VkQueue q) {VkFence fence;VkFenceCreateInfo f={.sType=VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};VkDevice d=(VkDevice)DEVICE(q);VkResult r=vkCreateFence(d,&f,NULL,&fence);if(r!=VK_SUCCESS)return r;r=vkQueueSubmit(q,0,NULL,fence);if(r==VK_SUCCESS)r=vkWaitForFences(d,1,&fence,VK_TRUE,UINT64_MAX);vkDestroyFence(d,fence,NULL);return r;}
 VKAPI_ATTR VkResult VKAPI_CALL vkDeviceWaitIdle(VkDevice d) {VkQueue q;vkGetDeviceQueue(d,D(d)->family,0,&q);return vkQueueWaitIdle(q);}
@@ -295,6 +335,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyPipelineCache(VkDevice d,VkPipelineCache cac
 
 #include "graphics.inc"
 #include "queries.inc"
+#include "zink.inc"
 #include "templates.inc"
 #include "wayland.inc"
 #include "wsi.inc"

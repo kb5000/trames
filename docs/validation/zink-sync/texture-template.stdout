@@ -1,0 +1,4 @@
+texture round 1: uint16 indexed nearest, vertex/instance input, uniforms and push constants correct
+texture round 2: uint32 indexed linear, vertex/instance input, uniforms and push constants correct
+texture round 3: non-indexed nearest, vertex/instance input, uniforms and push constants correct
+vulkan-texture-ok

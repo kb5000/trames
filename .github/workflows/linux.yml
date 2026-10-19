@@ -44,7 +44,7 @@ jobs:
         run: python3 scripts/ios-ci-scope.py
   zink-foundation:
     needs: scope
-    if: needs.scope.outputs.native_scope == 'zink-foundation'
+    if: needs.scope.outputs.native_scope == 'zink-foundation' || needs.scope.outputs.native_scope == 'zink-sync'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -62,7 +62,7 @@ jobs:
           bash scripts/build-vulkan-fixtures.sh
           python3 scripts/prepare-zink-guest.py
       - name: Check bundle metadata and build unchanged native backend
-        if: needs.scope.outputs.zink_skip_linux_checks != 'true'
+        if: needs.scope.outputs.native_scope == 'zink-foundation' && needs.scope.outputs.zink_skip_linux_checks != 'true'
         run: |
           cargo fmt --all --check
           cargo clippy -p trames-distro --all-targets --locked -- -D warnings
@@ -71,8 +71,18 @@ jobs:
           python3 -m py_compile scripts/prepare-zink-guest.py tests/integration/zink-foundation.py
           python3 tests/integration/embedding-reopen.py
       - name: Build unchanged runner for remaining graphics checks
-        if: needs.scope.outputs.zink_skip_linux_checks == 'true'
+        if: needs.scope.outputs.native_scope == 'zink-foundation' && needs.scope.outputs.zink_skip_linux_checks == 'true'
         run: cargo build -p trames-cli --release --locked
+      - name: Check changed Vulkan backend and native synchronization
+        if: needs.scope.outputs.native_scope == 'zink-sync'
+        run: |
+          cargo fmt --all --check
+          cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
+          cargo test -p trames-vulkan --lib --locked
+          cargo build -p trames-cli --release --locked
+          export VK_DRIVER_FILES="$(python3 -c 'from pathlib import Path; print(next(Path("/usr/share/vulkan/icd.d").glob("*lvp*")))')"
+          cargo run -p trames-vulkan --example timeline --release --locked
+          cargo run -p trames-vulkan --example lifecycle --release --locked -- tests/fixtures/bin/vulkan-compute.spv tests/fixtures/bin/vulkan-render.vert.spv tests/fixtures/bin/vulkan-render.frag.spv
       - name: Validate query and template foundation and retain actual Mesa outcome
         run: |
           export VK_DRIVER_FILES="$(python3 -c 'from pathlib import Path; print(next(Path("/usr/share/vulkan/icd.d").glob("*lvp*")))')"

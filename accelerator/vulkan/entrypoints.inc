@@ -117,6 +117,14 @@
     if(!strcmp(name,"vkGetPhysicalDeviceExternalBufferProperties"))return (PFN_vkVoidFunction)vkGetPhysicalDeviceExternalBufferProperties;
     if(!strcmp(name,"vkGetPhysicalDeviceExternalFenceProperties"))return (PFN_vkVoidFunction)vkGetPhysicalDeviceExternalFenceProperties;
     if(!strcmp(name,"vkGetPhysicalDeviceExternalSemaphoreProperties"))return (PFN_vkVoidFunction)vkGetPhysicalDeviceExternalSemaphoreProperties;
+    if(!strcmp(name,"vkTrimCommandPool"))return (PFN_vkVoidFunction)vkTrimCommandPool;
+    if(!strcmp(name,"vkTrimCommandPoolKHR"))return (PFN_vkVoidFunction)vkTrimCommandPoolKHR;
+    if(!strcmp(name,"vkGetSemaphoreCounterValue"))return (PFN_vkVoidFunction)vkGetSemaphoreCounterValue;
+    if(!strcmp(name,"vkGetSemaphoreCounterValueKHR"))return (PFN_vkVoidFunction)vkGetSemaphoreCounterValueKHR;
+    if(!strcmp(name,"vkSignalSemaphore"))return (PFN_vkVoidFunction)vkSignalSemaphore;
+    if(!strcmp(name,"vkSignalSemaphoreKHR"))return (PFN_vkVoidFunction)vkSignalSemaphoreKHR;
+    if(!strcmp(name,"vkWaitSemaphores"))return (PFN_vkVoidFunction)vkWaitSemaphores;
+    if(!strcmp(name,"vkWaitSemaphoresKHR"))return (PFN_vkVoidFunction)vkWaitSemaphoresKHR;
     if(!strcmp(name,"vkCreateDescriptorUpdateTemplate"))return (PFN_vkVoidFunction)vkCreateDescriptorUpdateTemplate;
     if(!strcmp(name,"vkCreateDescriptorUpdateTemplateKHR"))return (PFN_vkVoidFunction)vkCreateDescriptorUpdateTemplateKHR;
     if(!strcmp(name,"vkDestroyDescriptorUpdateTemplate"))return (PFN_vkVoidFunction)vkDestroyDescriptorUpdateTemplate;

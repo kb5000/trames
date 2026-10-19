@@ -1,0 +1,16 @@
+{
+  "vulkan_unit_tests": 17,
+  "strict_clippy": "passed",
+  "native_timeline_wire_example": "passed",
+  "native_lifecycle": "passed: unpublished output/fault/abandoned compile/in-flight resource regressions",
+  "guest_cpus": [
+    1,
+    4
+  ],
+  "native_reference": "Mesa25.0.7 Lavapipe LLVM19",
+  "public_exports": 151,
+  "new_public_exports": 8,
+  "rendering_passed": false,
+  "linux_ci": "pending",
+  "apple_ci": "pending"
+}

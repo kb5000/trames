@@ -75,6 +75,8 @@ subprocess.run([*common, str(ROOT / 'tests/fixtures/vulkan-queries.c'), '-l:libv
 subprocess.run([os.getenv('HOST_CC', 'cc'), '-O2', '-Wall', '-Wextra', '-Werror',
                 '-I' + str(headers), str(ROOT / 'tests/fixtures/vulkan-queries.c'),
                 os.getenv('VULKAN_HOST_LINK', '-lvulkan'), '-o', str(out / 'vulkan-queries-host')], check=True)
+subprocess.run([*common, str(ROOT / 'tests/fixtures/vulkan-timeline.c'), '-l:libvulkan.so.1', '-pthread', '-o', str(out / 'vulkan-timeline')], check=True)
+subprocess.run([os.getenv('HOST_CC', 'cc'), '-O2', '-Wall', '-Wextra', '-Werror', '-I' + str(headers), str(ROOT / 'tests/fixtures/vulkan-timeline.c'), os.getenv('VULKAN_HOST_LINK', '-lvulkan'), '-pthread', '-o', str(out / 'vulkan-timeline-host')], check=True)
 report = dict(mesa='25.1.9-r0', packages_sha256={str(p.relative_to(repo)): hashlib.sha256(p.read_bytes()).hexdigest() for p in packages},
               upstream_source='https://archive.mesa3d.org/mesa-25.1.9.tar.xz',
               upstream_source_sha256='412df33a1bb3c785ed698555a3972118a37c458e7accf6ae53f4bb87b3db454a',

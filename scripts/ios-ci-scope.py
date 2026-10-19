@@ -342,7 +342,7 @@ def main():
             changed=set(subprocess.check_output(['git','diff','--name-only',base,'HEAD'],text=True).splitlines())- {str(plan_path)}
             hashes=plan['changed_file_sha256']
             if changed==set(hashes) and all(Path(path).exists() and hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest for path,digest in hashes.items()):
-                if plan.get('native_scope') == 'zink-foundation':
+                if plan.get('native_scope') in {'zink-foundation', 'zink-sync'}:
                     allowed = {'accelerator/vulkan/icd.c', 'accelerator/vulkan/queries.inc',
                                'accelerator/vulkan/templates.inc', 'accelerator/vulkan/entrypoints.inc',
                                'crates/trames-distro/src/vulkan.rs', 'tests/fixtures/vulkan-queries.c',
@@ -350,7 +350,11 @@ def main():
                                'tests/fixtures/vulkan-texture.c', 'tests/integration/zink-foundation.py',
                                'scripts/prepare-zink-guest.py', 'scripts/build-vulkan-guest.sh',
                                'scripts/ios-ci-scope.py', '.github/workflows/ios.yml', '.github/workflows/linux.yml'}
-                    if any(p not in allowed and not p.startswith('docs/') for p in changed):
+                    sync = plan.get('native_scope') == 'zink-sync'
+                    if sync:
+                        allowed.update({'accelerator/vulkan/zink.inc', 'tests/fixtures/vulkan-timeline.c',
+                                        'tests/fixtures/vulkan-render.c'})
+                    if any(p not in allowed and not p.startswith('docs/') and not (sync and p.startswith('crates/trames-vulkan/')) for p in changed):
                         raise RuntimeError('Zink foundation plan includes unrelated source changes')
                     path = 'crates/trames-distro/src/vulkan.rs'
                     old = subprocess.check_output(['git', 'show', base + ':' + path], text=True).split('#[cfg(test)]')[0]
@@ -403,9 +407,9 @@ def main():
                                     s['name'] == 'Check bundle metadata and build unchanged native backend' and s['conclusion'] == 'success'
                                     for s in job['steps'])):
                             raise RuntimeError('Missing successful exact-source Linux bundle/build/reopen checks')
-                    print('Guest ICD query/template foundation: original loader/Mesa probe, native GPU compute/texture oracles, bundle upgrade/reopen and Apple/iOS metadata checks. CPU/MMU/native GPU backend/UI unchanged; no IPA or repeated unrelated acceptance.')
+                    print('Zink synchronization: changed guest ICD and native Vulkan backend, original driver timeline/viewport GPU checks and iOS embedding; CPU/MMU/UI/network unchanged, no IPA.' if sync else 'Guest ICD query/template foundation: original loader/Mesa probe, native GPU compute/texture oracles, bundle upgrade/reopen and Apple/iOS metadata checks. CPU/MMU/native GPU backend/UI unchanged; no IPA or repeated unrelated acceptance.')
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-                        output.write('frontend_only=false\ntargeted=true\nnative_scope=zink-foundation\n')
+                        output.write('frontend_only=false\ntargeted=true\nnative_scope=' + plan['native_scope'] + '\n')
                         output.write('skip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
                         if reuse:
                             output.write('zink_skip_apple=true\n')

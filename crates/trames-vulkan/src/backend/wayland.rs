@@ -571,7 +571,13 @@ impl Backend {
                 let semaphore = if a[2] == 0 {
                     None
                 } else {
-                    Some(self.object(a[2], Kind::Semaphore)?)
+                    Some({
+                        let semaphore = self.object(a[2], Kind::Semaphore)?;
+                        if semaphore.flags != 0 {
+                            return invalid();
+                        }
+                        semaphore
+                    })
                 };
                 let fence = if a[3] == 0 {
                     None
@@ -637,6 +643,9 @@ impl Backend {
                     fence,
                     commands: vec![],
                     _resources: resources,
+                    timeline_completion: Vec::new(),
+                    timeline_signals: Vec::new(),
+                    commands_complete: false,
                 });
                 self.wayland.chains.get_mut(&a[1]).unwrap().acquired[index] = true;
                 if let Err(e) = write(m, a[4], &(index as u32).to_le_bytes()) {
@@ -663,6 +672,9 @@ impl Backend {
                 let mut waits = Vec::new();
                 for id in words64(m, a[4], bounded(a[5], 64)?)? {
                     let s = self.object(id, Kind::Semaphore)?;
+                    if s.flags != 0 {
+                        return invalid();
+                    }
                     if s.state.get() != 1 || dependencies.iter().any(|x| Rc::ptr_eq(x, &s)) {
                         return invalid();
                     }

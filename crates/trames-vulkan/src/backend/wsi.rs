@@ -425,7 +425,13 @@ impl Backend {
                 let semaphore = if a[2] == 0 {
                     None
                 } else {
-                    Some(self.object(a[2], Kind::Semaphore)?)
+                    Some({
+                        let semaphore = self.object(a[2], Kind::Semaphore)?;
+                        if semaphore.flags != 0 {
+                            return invalid();
+                        }
+                        semaphore
+                    })
                 };
                 let fence = if a[3] == 0 {
                     None
@@ -491,6 +497,9 @@ impl Backend {
                     fence: completion,
                     commands: Vec::new(),
                     _resources: resources,
+                    timeline_completion: Vec::new(),
+                    timeline_signals: Vec::new(),
+                    commands_complete: false,
                 });
                 if let Err(error) = write(m, a[4], &index.to_le_bytes()) {
                     // Native acquisition happened: do not reuse an unpublished index.
@@ -524,6 +533,9 @@ impl Backend {
                 let mut semaphores = Vec::new();
                 for id in ids {
                     let s = self.object(id, Kind::Semaphore)?;
+                    if s.flags != 0 {
+                        return invalid();
+                    }
                     if s.state.get() != 1 || dependencies.iter().any(|x| Rc::ptr_eq(x, &s)) {
                         return invalid();
                     }
