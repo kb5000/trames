@@ -1,0 +1,41 @@
+{
+  "version": "1.2.0",
+  "build": 33,
+  "status": "verified",
+  "source_commit": "dbd0f88facef90330b6ec2022b5b71ab486fc69b",
+  "apple_run": 39269763734,
+  "linux_scope_run": 39269763952,
+  "graphics_source_commit": "18162c9c53ba1d8334b227087cbfd1474633bb2e",
+  "graphics_run": 39264897300,
+  "frontend_reuse": {
+    "sha": "aa4528166c8d0cdb04f3fe540730d9af63ed7f07",
+    "run": 39062598012
+  },
+  "guest_run": 39015795319,
+  "ipa_sha256": "c46f6a49f7ee66f8b6397b2b2530edff4062ad71b2f9dde183dd0c9013f47bb1",
+  "inspection": {
+    "version": "1.2.0",
+    "build": 33,
+    "bundle_id": "org.trames.Trames",
+    "platform": "iPhoneOS arm64",
+    "signed": false,
+    "minimum_os": "17.0",
+    "bytes": 11159672,
+    "sha256": "c46f6a49f7ee66f8b6397b2b2530edff4062ad71b2f9dde183dd0c9013f47bb1",
+    "main_binary_sha256": "54152e2b5f474844e4931b7fb2f7bfbf0e0bde05576ee2698518dc96c4dcb419",
+    "file_provider_binary_sha256": "d9b54880744c3dd9d44ff0985dcb455d6cde8b39d6a8afda461e9af5fdb47baa",
+    "shared_group": "group.org.trames.Trames",
+    "guest_library_sha256": {
+      "libtrames_vulkan_icd.so": "6c737c307cc3c3bf07d257b1cb758a92a3de8cad8bf008039caf9f9a8b233e9d",
+      "libEGL.so.1": "4ae608c00641d154e68cb6dfb1bf890613ebb22ec6edf1b5e8b2c02fe6b179b8",
+      "libc.so": "885b308b75e36bb402b311fba1d3f1284e6dd8d3a0bfbf88686bff1b629f9b23"
+    },
+    "debug_wayland_fixtures_absent": true,
+    "native_coremark_absent": true,
+    "exact_metal_validated_egl_and_icd": true,
+    "physical_ipad_execution_tested": false
+  },
+  "device_execution_tested": false,
+  "validation": "Current optimized ARM64 iOS Release app compiled and packaged; actual IPA main/extension versions, Mach-O platform/unsigned status, App Group, ELF architecture, exact Metal-validated ICD/EGL hashes and licenses inspected. Reused source-identical frontend, musl and native acceptance; workspace versions changed only, dependency graph unchanged. No repeated passed CPU/Linux/network/UI/GPU suites.",
+  "known_limits": "Basic GLES2 and constrained Vulkan profile; not conformance/full OpenGL. Physical iPad testing and formal-key File Provider activation remain separate."
+}

@@ -1,6 +1,6 @@
 # Trames
 
-[Trames 1.1.0（build 32）](https://github.com/kb5000/trames/releases/tag/v1.1.0) · [下载 unsigned IPA](https://github.com/kb5000/trames/releases/download/v1.1.0/Trames-1.1.0-build32-unsigned.ipa)。默认 runc/overlay2 的 guest Docker、网络隔离、自动运行目录挂载、MMU 地址空间与交互式终端修复。[发行说明](docs/validation/release-1.1-notes.md) · [验证和源码](docs/validation/release-1.1.md)。后续兼容性继续由 #29 跟踪。
+[Trames 1.2.0（build 33）](https://github.com/kb5000/trames/releases/tag/v1.2.0) · [下载 unsigned IPA](https://github.com/kb5000/trames/releases/download/v1.2.0/Trames-1.2.0-build33-unsigned.ipa)。基础 Wayland EGL/GLES2 的 Zink→Metal GPU 窗口、Vulkan 扩展和运行路径优化。[发行说明](docs/validation/release-1.2-notes.md) · [验证和源码](docs/validation/release-1.2.md)。图形兼容性由 #32 跟踪，Docker 兼容性继续由 #29 跟踪。
 
 [此前 Trames 1.0.0（build 26）](https://github.com/kb5000/trames/releases/tag/v1.0.0) · [下载 unsigned IPA](https://github.com/kb5000/trames/releases/download/v1.0.0/Trames-1.0.0-build26-unsigned.ipa)。点击 **+ → 本地 Alpine 终端** 可创建多个独立终端，支持浮动、调整大小、最小化、停靠和关闭；共享同一 Linux 的文件、进程、网络及软件，工作目录、环境变量和终端尺寸独立。关闭首个终端或全部关闭后再打开，仍使用同一运行环境。包含此前 Wayland／Vulkan、GTK 剪贴板／输入、粘贴权限连贴、窗口／PTY 尺寸及 Files 修复。新增多终端生产回归与 iPad 模拟器验收通过，复用不受影响的成功检查。[发行和验证记录](docs/validation/release-1.0.md)。使用 Sideloadly 签名安装；[只读 rootfs File Provider](docs/guides/rootfs-files.md) 真机激活仍待正式 App Group 签名。
 
