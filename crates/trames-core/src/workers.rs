@@ -68,15 +68,46 @@ pub(super) struct Done {
     pub instructions: u64,
     pub chunks: u64,
     pub syscalls: u64,
+    pub serviced_syscalls: u64,
+    pub service_wait: Duration,
     pub syscall_time: Duration,
     pub native: trames_accel::native::Metrics,
     pub rejected_native: Option<(u64, u64, u64)>,
 }
+pub(super) enum Event {
+    Done(Box<Done>),
+    Service(Box<Request>),
+}
+/// Ownership of the stopped caller's parallel view travels with the request.
+/// No coordinator Memory/Rc or page guard crosses this boundary.
+pub(super) struct Request {
+    pub pid: u32,
+    pub number: u32,
+    pub args: [u64; 6],
+    pub memory: View,
+    reply: mpsc::Sender<Reply>,
+}
+struct Reply {
+    memory: View,
+    value: Option<u64>,
+}
+impl Request {
+    /// None checkpoints before effects. A completed operation must always
+    /// return its result, including when a concurrent stop has been requested.
+    pub fn respond(self, value: Option<u64>) {
+        let _ = self.reply.send(Reply {
+            memory: self.memory,
+            value,
+        });
+    }
+}
 /// Native scopes begin after stub validation; even unwinding releases the count.
-struct NativeScope<'a>(&'a AtomicUsize);
+struct NativeScope<'a>(Option<&'a AtomicUsize>);
 impl Drop for NativeScope<'_> {
     fn drop(&mut self) {
-        self.0.fetch_sub(1, Ordering::Relaxed);
+        if let Some(active) = self.0 {
+            active.fetch_sub(1, Ordering::Relaxed);
+        }
     }
 }
 struct Worker {
@@ -86,15 +117,20 @@ struct Worker {
 }
 pub(super) struct Pool {
     workers: Vec<Option<Worker>>,
-    send: mpsc::Sender<Done>,
-    receive: mpsc::Receiver<Done>,
+    send: mpsc::Sender<Event>,
+    receive: mpsc::Receiver<Event>,
     active: Arc<AtomicUsize>,
     pub peak: Arc<AtomicUsize>,
     pub peak_native: Arc<AtomicUsize>,
     active_native: Arc<AtomicUsize>,
+    profile_native_overlap: bool,
 }
 impl Pool {
+    #[cfg(test)]
     pub fn new(count: usize) -> Self {
+        Self::with_profiling(count, true)
+    }
+    pub fn with_profiling(count: usize, profile_native_overlap: bool) -> Self {
         let (send, receive) = mpsc::channel();
         Self {
             workers: (0..count).map(|_| None).collect(),
@@ -104,6 +140,7 @@ impl Pool {
             peak: Arc::new(AtomicUsize::new(0)),
             peak_native: Arc::new(AtomicUsize::new(0)),
             active_native: Arc::new(AtomicUsize::new(0)),
+            profile_native_overlap,
         }
     }
     pub fn ensure(&mut self, index: usize) -> std::io::Result<()> {
@@ -116,11 +153,13 @@ impl Pool {
         let peak = self.peak.clone();
         let active_native = self.active_native.clone();
         let peak_native = self.peak_native.clone();
+        let profile_native_overlap = self.profile_native_overlap;
         let join = thread::Builder::new()
             .name(format!("trames-cpu-{index}"))
             .spawn(move || {
                 let mut registry = trames_accel::native::Registry::default();
                 while let Ok(mut work) = receive.recv() {
+                    let mut memory = Some(work.memory);
                     let before = work.cpu.decode_stats();
                     let began = Instant::now();
                     let mut instructions = 0;
@@ -130,6 +169,8 @@ impl Pool {
                     let mut credit = 0;
                     let mut syscalls = 0;
                     let mut syscall_time = Duration::ZERO;
+                    let mut serviced_syscalls = 0;
+                    let mut service_wait = Duration::ZERO;
                     let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                         loop {
                             if work.control.stop.load(Ordering::Acquire) {
@@ -143,11 +184,15 @@ impl Pool {
                             }
                             let budget = credit;
                             if !running {
-                                let n = active.fetch_add(1, Ordering::Relaxed) + 1;
-                                peak.fetch_max(n, Ordering::Relaxed);
+                                if profile_native_overlap {
+                                    let n = active.fetch_add(1, Ordering::Relaxed) + 1;
+                                    peak.fetch_max(n, Ordering::Relaxed);
+                                }
                                 running = true;
                             }
-                            let result = work.cpu.run_slice(&mut work.memory, budget);
+                            let result = work
+                                .cpu
+                                .run_slice(memory.as_mut().expect("worker view"), budget);
                             chunks += 1;
                             let retired = match &result {
                                 SliceOutcome::Fault(_) => work.cpu.fault_retired(),
@@ -161,8 +206,8 @@ impl Pool {
                                 work.cpu.clear_exclusive();
                                 if let Some(snapshot) = &work.syscalls {
                                     let began = snapshot.profile.then(Instant::now);
-                                    if let Some(value) =
-                                        snapshot.invoke(&work.cpu, &mut work.memory)
+                                    if let Some(value) = snapshot
+                                        .invoke(&work.cpu, memory.as_mut().expect("worker view"))
                                     {
                                         if let Some(began) = began {
                                             syscall_time += began.elapsed();
@@ -170,6 +215,38 @@ impl Pool {
                                         work.cpu.set_x(0, value);
                                         syscalls += 1;
                                         continue;
+                                    }
+                                    if crate::worker_syscalls::service_candidate(
+                                        &work.cpu, snapshot,
+                                    ) {
+                                        let began = Instant::now();
+                                        if profile_native_overlap {
+                                            active.fetch_sub(1, Ordering::Relaxed);
+                                        }
+                                        running = false;
+                                        let (reply, response) = mpsc::channel();
+                                        let request = Request {
+                                            pid: work.pid,
+                                            number: work.cpu.x(8) as u32,
+                                            args: std::array::from_fn(|i| work.cpu.x(i)),
+                                            memory: memory.take().expect("worker view"),
+                                            reply,
+                                        };
+                                        assert!(
+                                            done.send(Event::Service(Box::new(request))).is_ok(),
+                                            "coordinator receiver"
+                                        );
+                                        // Never abandon an in-flight request on stop: it
+                                        // may already have consumed input or written bytes.
+                                        let reply = response.recv().expect("coordinator response");
+                                        memory = Some(reply.memory);
+                                        service_wait += began.elapsed();
+                                        if let Some(value) = reply.value {
+                                            work.cpu.set_x(0, value);
+                                            serviced_syscalls += 1;
+                                            continue;
+                                        }
+                                        break result;
                                     }
                                 }
                             }
@@ -183,15 +260,20 @@ impl Pool {
                                 work.cpu.clear_exclusive();
                                 let args = [work.cpu.x(0), work.cpu.x(1), work.cpu.x(2)];
                                 let native = registry.invoke_scoped(
-                                    &mut work.memory,
+                                    memory.as_mut().expect("worker view"),
                                     *pc,
                                     *module,
                                     *function,
                                     args,
                                     || {
-                                        let n = active_native.fetch_add(1, Ordering::Relaxed) + 1;
-                                        peak_native.fetch_max(n, Ordering::Relaxed);
-                                        NativeScope(&active_native)
+                                        if profile_native_overlap {
+                                            let n =
+                                                active_native.fetch_add(1, Ordering::Relaxed) + 1;
+                                            peak_native.fetch_max(n, Ordering::Relaxed);
+                                            NativeScope(Some(&active_native))
+                                        } else {
+                                            NativeScope(None)
+                                        }
                                     },
                                 );
                                 match native {
@@ -245,18 +327,18 @@ impl Pool {
                     // Syscall, deferred native, fault and yield request a checkpoint
                     // immediately, before the coordinator receives this message.
                     work.control.stop();
-                    let elapsed = began.elapsed();
+                    let elapsed = began.elapsed().saturating_sub(service_wait);
                     let after = work.cpu.decode_stats();
-                    if running {
+                    if running && profile_native_overlap {
                         active.fetch_sub(1, Ordering::Relaxed);
                     }
                     // Completion publishes that this worker has released its
                     // immutable mapping view as well as stopped executing it.
                     // The joined coordinator can then update a uniquely owned
                     // snapshot without racing the message recipient.
-                    drop(work.memory);
+                    drop(memory);
                     if done
-                        .send(Done {
+                        .send(Event::Done(Box::new(Done {
                             pid: work.pid,
                             cpu: work.cpu,
                             outcome,
@@ -267,13 +349,15 @@ impl Pool {
                             instructions,
                             chunks,
                             syscalls,
+                            serviced_syscalls,
+                            service_wait,
                             syscall_time,
                             native: {
                                 registry.metrics.worker_calls = registry.metrics.calls;
                                 std::mem::take(&mut registry.metrics)
                             },
                             rejected_native,
-                        })
+                        })))
                         .is_err()
                     {
                         break;
@@ -289,17 +373,46 @@ impl Pool {
     }
     pub fn dispatch(&mut self, index: usize, work: Work) -> Result<(), ()> {
         let worker = self.workers[index].as_mut().ok_or(())?;
+        if worker.control.is_some() {
+            return Err(());
+        }
         worker.control = Some(work.control.clone());
         worker.send.send(work).map_err(|_| ())
     }
-    pub fn complete(&self) -> Result<Done, ()> {
-        self.receive.recv().map_err(|_| ())
+    fn received(&mut self, event: Event) -> Event {
+        if let Event::Done(done) = &event {
+            self.workers[done.worker]
+                .as_mut()
+                .expect("completed worker")
+                .control = None;
+        }
+        event
     }
-    pub fn complete_timeout(&self, timeout: Duration) -> Result<Option<Done>, ()> {
+    pub fn event_timeout(&mut self, timeout: Duration) -> Result<Option<Event>, ()> {
         match self.receive.recv_timeout(timeout) {
-            Ok(done) => Ok(Some(done)),
+            Ok(event) => Ok(Some(self.received(event))),
             Err(mpsc::RecvTimeoutError::Timeout) => Ok(None),
             Err(mpsc::RecvTimeoutError::Disconnected) => Err(()),
+        }
+    }
+    pub fn complete(&mut self) -> Result<Done, ()> {
+        loop {
+            let event = self.receive.recv().map_err(|_| ())?;
+            match self.received(event) {
+                Event::Done(done) => return Ok(*done),
+                Event::Service(request) => request.respond(None),
+            }
+        }
+    }
+    #[cfg(test)]
+    pub fn complete_timeout(&mut self, timeout: Duration) -> Result<Option<Done>, ()> {
+        let deadline = Instant::now() + timeout;
+        loop {
+            match self.event_timeout(deadline.saturating_duration_since(Instant::now()))? {
+                Some(Event::Done(done)) => return Ok(Some(*done)),
+                Some(Event::Service(request)) => request.respond(None),
+                None => return Ok(None),
+            }
         }
     }
 }
@@ -309,6 +422,22 @@ impl Drop for Pool {
         for worker in self.workers.iter().flatten() {
             if let Some(control) = &worker.control {
                 control.stop();
+            }
+        }
+        // A stopped worker may be parked waiting for a queued service request.
+        // Return its view before joining; no request is abandoned or replayed.
+        while self.workers.iter().flatten().any(|w| w.control.is_some()) {
+            match self.event_timeout(Duration::from_millis(10)) {
+                Ok(Some(Event::Service(request))) => request.respond(None),
+                Ok(Some(Event::Done(_))) => {}
+                Ok(None) => {
+                    for worker in self.workers.iter_mut().flatten() {
+                        if worker.join.is_finished() {
+                            worker.control = None;
+                        }
+                    }
+                }
+                Err(()) => break,
             }
         }
         for worker in self.workers.iter_mut().filter_map(Option::take) {
@@ -395,7 +524,92 @@ mod tests {
             started: Instant::now(),
             processor: 1,
             profile: true,
+            streams: [0; (trames_vfs::MAX_FDS as usize).div_ceil(64)],
         }
+    }
+
+    fn query_work(control: Arc<Control>) -> Work {
+        let mut job = work(1, &[0xd4000001, 0x14000000], 0, control);
+        job.cpu.set_x(8, 25);
+        job.cpu.set_x(1, 3);
+        job.syscalls = Some(syscall_snapshot());
+        job
+    }
+
+    #[test]
+    fn native_peer_finishes_while_a_syscall_caller_is_parked_without_a_global_stop() {
+        let mut pool = Pool::new(2);
+        pool.ensure(0).unwrap();
+        pool.ensure(1).unwrap();
+        let control = Arc::new(Control::new(100_000));
+        pool.dispatch(0, query_work(control.clone())).unwrap();
+        let Some(Event::Service(request)) = pool.event_timeout(Duration::from_secs(5)).unwrap()
+        else {
+            panic!("missing query request");
+        };
+        assert!(!control.stop.load(Ordering::Acquire));
+        let (mut peer, mut bytes) =
+            native_work(3, [0x2000, 0x72, 128], Permissions::RW, control.clone());
+        peer.pid = 2;
+        pool.dispatch(1, peer).unwrap();
+        let Some(Event::Done(peer)) = pool.event_timeout(Duration::from_secs(5)).unwrap() else {
+            panic!("native peer could not progress while caller waited");
+        };
+        assert_eq!(peer.pid, 2);
+        assert_eq!(peer.native.worker_calls, 1);
+        assert!(matches!(peer.outcome, Some(SliceOutcome::Syscall { .. })));
+        // Peer checkpoint arrived while this request was in flight. A completed
+        // result must still be committed, never replayed on the coordinator.
+        request.respond(Some(0x55));
+        let caller = pool.complete().unwrap();
+        assert_eq!(caller.cpu.x(0), 0x55);
+        assert_eq!(caller.instructions, 1);
+        assert_eq!(caller.serviced_syscalls, 1);
+        assert!(matches!(caller.outcome, Some(SliceOutcome::Yield { .. })));
+        bytes.commit_parallel().unwrap();
+        assert_eq!(bytes.read_array::<128>(0x2000).unwrap(), [0x72; 128]);
+        assert_eq!(control.remaining.load(Ordering::Relaxed), 100_000 - 7);
+    }
+    #[test]
+    fn production_native_calls_do_not_update_global_overlap_instrumentation() {
+        let mut pool = Pool::with_profiling(1, false);
+        pool.ensure(0).unwrap();
+        let (job, mut bytes) = native_work(
+            3,
+            [0x2000, 0x72, 128],
+            Permissions::RW,
+            Arc::new(Control::new(100)),
+        );
+        pool.dispatch(0, job).unwrap();
+        let done = pool.complete().unwrap();
+        assert_eq!(done.native.worker_calls, 1);
+        assert_eq!(pool.peak_native.load(Ordering::Relaxed), 0);
+        assert_eq!(pool.active_native.load(Ordering::Relaxed), 0);
+        bytes.commit_parallel().unwrap();
+        assert_eq!(bytes.read_array::<128>(0x2000).unwrap(), [0x72; 128]);
+    }
+
+    #[test]
+    fn pool_drop_drains_a_queued_request_and_returns_its_view_before_join() {
+        let (finished, completion) = mpsc::channel();
+        thread::spawn(move || {
+            let mut pool = Pool::new(1);
+            pool.ensure(0).unwrap();
+            let active = pool.active.clone();
+            pool.dispatch(0, query_work(Arc::new(Control::new(100))))
+                .unwrap();
+            let Some(Event::Service(request)) = pool.event_timeout(Duration::from_secs(5)).unwrap()
+            else {
+                panic!("missing query request");
+            };
+            assert!(pool.send.send(Event::Service(request)).is_ok());
+            drop(pool);
+            assert_eq!(active.load(Ordering::Relaxed), 0);
+            finished.send(()).unwrap();
+        });
+        completion
+            .recv_timeout(Duration::from_secs(5))
+            .expect("pool shutdown must drain requests");
     }
 
     #[test]

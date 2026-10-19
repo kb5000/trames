@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Syscalls whose authority is immutable during one parallel CPU epoch.
-//! No VFS/Process Rc crosses the boundary. Mutations and filtered calls still
-//! checkpoint; the coordinator cannot change identities/mappings before join.
+//! No VFS/Process Rc crosses the boundary. Mapping/process changes and filtered
+//! calls still checkpoint; identities/mappings cannot change before join.
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use trames_cpu::Cpu;
 use trames_memory::{Access, CpuMemory};
@@ -13,6 +13,21 @@ pub(super) struct Snapshot {
     pub started: Instant,
     pub processor: u32,
     pub profile: bool,
+    pub streams: trames_vfs::FdMask,
+}
+
+/// These calls can request the coordinator without stopping peer CPUs. The
+/// service still admits the actual descriptor kind before doing any effects.
+pub(super) fn service_candidate(cpu: &Cpu, snapshot: &Snapshot) -> bool {
+    match cpu.x(8) as u32 {
+        25 => matches!(cpu.x(1), 1 | 3),
+        62 | 80 => true,
+        63 | 64 => {
+            let fd = cpu.x(0) as u32;
+            fd < trames_vfs::MAX_FDS && snapshot.streams[fd as usize / 64] & (1 << (fd % 64)) != 0
+        }
+        _ => false,
+    }
 }
 
 pub(super) fn clock(
@@ -101,6 +116,7 @@ mod tests {
             started: Instant::now(),
             processor: 3,
             profile: false,
+            streams: [0; (trames_vfs::MAX_FDS as usize).div_ceil(64)],
         };
         let mut view = memory.parallel_view(&mut Default::default()).unwrap();
         let mut cpu = Cpu::new(0, 0);

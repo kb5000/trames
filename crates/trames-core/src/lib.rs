@@ -131,7 +131,17 @@ pub struct RuntimeMetrics {
     pub worker_chunks: u64,
     /// Completed on CPU workers without a coordinator checkpoint; included in syscalls.
     pub worker_syscalls: u64,
+    /// FD services requested while peer workers retain their running views.
+    pub service_requests: u64,
+    /// Completed in-epoch services; also included in total syscalls.
+    pub serviced_syscalls: u64,
+    /// Summed parked caller time, excluded from worker CPU elapsed accounting.
+    pub service_wait_time: std::time::Duration,
+    /// Peak tracking is collected with profile_syscalls; parked RPC callers
+    /// are excluded. Production avoids its shared counter updates.
     pub peak_parallel_cpus: usize,
+    /// Global native-overlap instrumentation, collected with profile_syscalls.
+    /// Production calls otherwise avoid its cross-worker atomic RMW operations.
     pub peak_parallel_native_calls: usize,
     pub parallel_memory_time: std::time::Duration,
     pub parallel_dispatch_time: std::time::Duration,

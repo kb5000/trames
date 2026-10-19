@@ -82,6 +82,8 @@ use compat::AltStack;
 mod scheduling;
 #[path = "process_seccomp.rs"]
 mod seccomp;
+#[path = "process_service.rs"]
+mod service;
 #[derive(Clone, Copy, Default)]
 struct Action {
     handler: u64,
@@ -228,6 +230,9 @@ struct Kernel {
     worker_slices: u64,
     worker_chunks: u64,
     worker_syscalls: u64,
+    service_requests: u64,
+    serviced_syscalls: u64,
+    service_wait: Duration,
     parallel_memory_time: Duration,
     parallel_dispatch_time: Duration,
     parallel_stop_time: Duration,
@@ -3403,6 +3408,7 @@ impl Kernel {
                                 started: self.started,
                                 processor: slot as u32,
                                 profile: self.profile_syscalls,
+                                streams: p.linux.vfs.stream_descriptors(),
                             }
                         }),
                     },
@@ -3411,12 +3417,31 @@ impl Kernel {
         }
         self.parallel_dispatch_time += began.elapsed();
         let mut completed = Vec::new();
-        if let Some(done) = self
-            .workers
-            .complete_timeout(timeout)
-            .map_err(|_| RuntimeError::Arguments("CPU worker failed"))?
-        {
-            completed.push(done);
+        let deadline = Instant::now() + timeout;
+        loop {
+            let left = deadline.saturating_duration_since(Instant::now());
+            if left.is_zero() {
+                break;
+            }
+            match self
+                .workers
+                .event_timeout(left)
+                .map_err(|_| RuntimeError::Arguments("CPU worker failed"))?
+            {
+                Some(crate::workers::Event::Done(done)) => {
+                    completed.push(*done);
+                    break;
+                }
+                Some(crate::workers::Event::Service(mut request)) => {
+                    self.service_requests += 1;
+                    let value = self.service_request(&mut request, io);
+                    request.respond(value);
+                    if value.is_none() {
+                        break;
+                    }
+                }
+                None => break,
+            }
         }
         control.stop();
         let began = Instant::now();
@@ -3478,7 +3503,9 @@ impl Kernel {
             self.instructions += done.instructions;
             self.worker_chunks += done.chunks;
             self.worker_syscalls += done.syscalls;
-            self.syscalls += done.syscalls;
+            self.serviced_syscalls += done.serviced_syscalls;
+            self.service_wait += done.service_wait;
+            self.syscalls += done.syscalls + done.serviced_syscalls;
             self.syscall_total += done.syscall_time;
             outcomes.push((done.pid, outcome));
         }
@@ -3918,12 +3945,15 @@ pub(super) fn run(
     let mut kernel = Kernel {
         memory_limits: runtime.memory_limits,
         cpu_count: count,
-        workers: crate::workers::Pool::new(count),
+        workers: crate::workers::Pool::with_profiling(count, runtime.profile_syscalls),
         parallel_memory: trames_memory::parallel::Registry::default(),
         parallel_rounds: 0,
         worker_slices: 0,
         worker_chunks: 0,
         worker_syscalls: 0,
+        service_requests: 0,
+        serviced_syscalls: 0,
+        service_wait: Duration::ZERO,
         parallel_memory_time: Duration::ZERO,
         parallel_dispatch_time: Duration::ZERO,
         parallel_stop_time: Duration::ZERO,
@@ -3978,6 +4008,9 @@ pub(super) fn run(
         worker_slices: kernel.worker_slices,
         worker_chunks: kernel.worker_chunks,
         worker_syscalls: kernel.worker_syscalls,
+        service_requests: kernel.service_requests,
+        serviced_syscalls: kernel.serviced_syscalls,
+        service_wait_time: kernel.service_wait,
         peak_parallel_native_calls: kernel
             .workers
             .peak_native
@@ -4160,6 +4193,9 @@ mod tests {
             worker_slices: 0,
             worker_chunks: 0,
             worker_syscalls: 0,
+            service_requests: 0,
+            serviced_syscalls: 0,
+            service_wait: Duration::ZERO,
             parallel_memory_time: Duration::ZERO,
             parallel_dispatch_time: Duration::ZERO,
             parallel_stop_time: Duration::ZERO,

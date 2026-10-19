@@ -634,6 +634,10 @@ def main():
                     allowed = {'crates/trames-core/src/process.rs', 'crates/trames-vfs/src/lib.rs',
                                'crates/trames-core/src/workers.rs', 'crates/trames-core/src/worker_syscalls.rs',
                                'crates/trames-core/src/lib.rs', 'crates/trames-core/src/process_seccomp.rs',
+                               'crates/trames-core/src/process_service.rs', 'crates/trames-linux/src/state.rs',
+                               'tests/fixtures/epoch-services.c', 'tests/fixtures/epoch-services-native.S',
+                               'scripts/build-epoch-services-fixture.sh', 'tests/performance/epoch-services.py',
+                               'tests/integration/epoch-services.py',
                                'crates/trames-cli/src/main.rs', 'tests/performance/session-sampler.c',
                                'crates/trames-vfs/src/mounts.rs', 'crates/trames-vfs/src/directory.rs',
                                'crates/trames-vfs/src/storage.rs', 'crates/trames-vfs/src/pseudo.rs',
@@ -654,6 +658,8 @@ def main():
                         if plan.get('syscall_parallel'):
                             print('Worker-local unfiltered syscalls and VFS synchronization: check Core/VFS/CLI, real terminal control and Apple memory granularity. Reuse unchanged CPU interpreter/CoreMark acceptance; Docker timings retained separately. No IPA.')
                             output.write('syscall_parallel=true\n')
+                        if plan.get('epoch_services'):
+                            output.write('epoch_services=true\n')
                         if reused:
                             output.write('runtime_linux_reused=true\nruntime_apple_modules_reused=true\n')
                     return

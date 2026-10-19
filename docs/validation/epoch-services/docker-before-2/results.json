@@ -1,0 +1,1074 @@
+{
+  "scope": "Time cached-image Docker -it through the App's production terminal session.\n\nCopies an installed Docker store; never invokes host Docker or pulls an image.\nThe guest command is docker run --rm -it IMAGE sh. Host waits for the real inner\nshell prompt before sending a tty/stdio roundtrip and exit. Optional daemon debug\nlogging retains API/containerd timestamps; no runtime/security/CPU overrides.\n",
+  "host": "x86_64",
+  "library_sha256": "411c83b115a706fdb68912531ed52695f95f36c4940bf14225414e2237bcd224",
+  "input_store_manifest_sha256": "5c5612b3d70825159d39b87887bbf82b091dfd69dcf0a82c7d02119c1c304ca4",
+  "image": "default-probe",
+  "command": "docker run --rm -it default-probe sh",
+  "debug_daemon": true,
+  "peer_probe": true,
+  "sampled": false,
+  "markers": {
+    "DAEMON_BEGIN": 0.41582565200224053,
+    "DAEMON_READY": 10.626532577000035,
+    "RUN_BEGIN": 11.205789571002242,
+    "CONTAINER_PROMPT": 32.64249168200331,
+    "RUN_END": 34.53664867900079,
+    "COMPLETE": 34.53667618000327,
+    "LOG_END": 35.68288257899985
+  },
+  "completed": true,
+  "peer_latencies": [
+    {
+      "sequence": 1,
+      "seconds": 0.40539324400015175,
+      "latency": 0.01008688099682331,
+      "stage": "other"
+    },
+    {
+      "sequence": 2,
+      "seconds": 0.6384142550014076,
+      "latency": 0.04038188599952264,
+      "stage": "other"
+    },
+    {
+      "sequence": 3,
+      "seconds": 0.8104153349995613,
+      "latency": 0.01008829299826175,
+      "stage": "other"
+    },
+    {
+      "sequence": 4,
+      "seconds": 1.0141475900018122,
+      "latency": 0.010090516996569932,
+      "stage": "other"
+    },
+    {
+      "sequence": 5,
+      "seconds": 1.2169649030038272,
+      "latency": 0.010101703002874274,
+      "stage": "other"
+    },
+    {
+      "sequence": 6,
+      "seconds": 1.422111361003772,
+      "latency": 0.01009538400103338,
+      "stage": "other"
+    },
+    {
+      "sequence": 7,
+      "seconds": 1.6244979900002363,
+      "latency": 0.010076045000459999,
+      "stage": "other"
+    },
+    {
+      "sequence": 8,
+      "seconds": 1.8271177070055273,
+      "latency": 0.010081322005135007,
+      "stage": "other"
+    },
+    {
+      "sequence": 9,
+      "seconds": 2.0298802980032633,
+      "latency": 0.010086916998261586,
+      "stage": "other"
+    },
+    {
+      "sequence": 10,
+      "seconds": 2.232317248999607,
+      "latency": 0.010083693996421061,
+      "stage": "other"
+    },
+    {
+      "sequence": 11,
+      "seconds": 2.4345105750035145,
+      "latency": 0.01010666799993487,
+      "stage": "other"
+    },
+    {
+      "sequence": 12,
+      "seconds": 2.637364708003588,
+      "latency": 0.010085055000672583,
+      "stage": "other"
+    },
+    {
+      "sequence": 13,
+      "seconds": 2.8399030940054217,
+      "latency": 0.010090693001984619,
+      "stage": "other"
+    },
+    {
+      "sequence": 14,
+      "seconds": 3.0436216200032504,
+      "latency": 0.010130823000508826,
+      "stage": "other"
+    },
+    {
+      "sequence": 15,
+      "seconds": 3.2467204360000324,
+      "latency": 0.010085866997542325,
+      "stage": "other"
+    },
+    {
+      "sequence": 16,
+      "seconds": 3.449316655001894,
+      "latency": 0.010113358002854511,
+      "stage": "other"
+    },
+    {
+      "sequence": 17,
+      "seconds": 3.654589053003292,
+      "latency": 0.010150832997169346,
+      "stage": "other"
+    },
+    {
+      "sequence": 18,
+      "seconds": 3.857480613005464,
+      "latency": 0.010087188005854841,
+      "stage": "other"
+    },
+    {
+      "sequence": 19,
+      "seconds": 4.06003700200381,
+      "latency": 0.010102881999046076,
+      "stage": "other"
+    },
+    {
+      "sequence": 20,
+      "seconds": 4.263033969000389,
+      "latency": 0.010086826994665898,
+      "stage": "other"
+    },
+    {
+      "sequence": 21,
+      "seconds": 4.466439061005076,
+      "latency": 0.010104544002388138,
+      "stage": "other"
+    },
+    {
+      "sequence": 22,
+      "seconds": 4.669894023005327,
+      "latency": 0.010139577003428712,
+      "stage": "other"
+    },
+    {
+      "sequence": 23,
+      "seconds": 4.873697977003758,
+      "latency": 0.010124273998371791,
+      "stage": "other"
+    },
+    {
+      "sequence": 24,
+      "seconds": 5.07619855300436,
+      "latency": 0.010091875003126916,
+      "stage": "other"
+    },
+    {
+      "sequence": 25,
+      "seconds": 5.280286582004919,
+      "latency": 0.010165256004256662,
+      "stage": "other"
+    },
+    {
+      "sequence": 26,
+      "seconds": 5.48422662899975,
+      "latency": 0.010086998998303898,
+      "stage": "other"
+    },
+    {
+      "sequence": 27,
+      "seconds": 5.687113936000969,
+      "latency": 0.010131593997357413,
+      "stage": "other"
+    },
+    {
+      "sequence": 28,
+      "seconds": 5.889745312000741,
+      "latency": 0.010079144994961098,
+      "stage": "other"
+    },
+    {
+      "sequence": 29,
+      "seconds": 6.092191196003114,
+      "latency": 0.010083642999234144,
+      "stage": "other"
+    },
+    {
+      "sequence": 30,
+      "seconds": 6.294645914000284,
+      "latency": 0.010099437000462785,
+      "stage": "other"
+    },
+    {
+      "sequence": 31,
+      "seconds": 6.497421150001173,
+      "latency": 0.01009551199967973,
+      "stage": "other"
+    },
+    {
+      "sequence": 32,
+      "seconds": 6.69982385700132,
+      "latency": 0.010187414001848083,
+      "stage": "other"
+    },
+    {
+      "sequence": 33,
+      "seconds": 6.902247081001406,
+      "latency": 0.010100433995830826,
+      "stage": "other"
+    },
+    {
+      "sequence": 34,
+      "seconds": 7.104865918001451,
+      "latency": 0.010078911996970419,
+      "stage": "other"
+    },
+    {
+      "sequence": 35,
+      "seconds": 7.307483051001327,
+      "latency": 0.010094475001096725,
+      "stage": "other"
+    },
+    {
+      "sequence": 36,
+      "seconds": 7.509981287003029,
+      "latency": 0.010083840003062505,
+      "stage": "other"
+    },
+    {
+      "sequence": 37,
+      "seconds": 7.712571200005186,
+      "latency": 0.010109027003636584,
+      "stage": "other"
+    },
+    {
+      "sequence": 38,
+      "seconds": 7.916036270005861,
+      "latency": 0.010119953003595583,
+      "stage": "other"
+    },
+    {
+      "sequence": 39,
+      "seconds": 8.11965689399949,
+      "latency": 0.010262445997796021,
+      "stage": "other"
+    },
+    {
+      "sequence": 40,
+      "seconds": 8.322979501004738,
+      "latency": 0.01007934300287161,
+      "stage": "other"
+    },
+    {
+      "sequence": 41,
+      "seconds": 8.527966756999376,
+      "latency": 0.010083518995088525,
+      "stage": "other"
+    },
+    {
+      "sequence": 42,
+      "seconds": 8.730751281000266,
+      "latency": 0.01013940299890237,
+      "stage": "other"
+    },
+    {
+      "sequence": 43,
+      "seconds": 8.933285841005272,
+      "latency": 0.010084389999974519,
+      "stage": "other"
+    },
+    {
+      "sequence": 44,
+      "seconds": 9.13597889200173,
+      "latency": 0.010096988997247536,
+      "stage": "other"
+    },
+    {
+      "sequence": 45,
+      "seconds": 9.338068807999662,
+      "latency": 0.010081535998324398,
+      "stage": "other"
+    },
+    {
+      "sequence": 46,
+      "seconds": 9.542693767005403,
+      "latency": 0.010091140000440646,
+      "stage": "other"
+    },
+    {
+      "sequence": 47,
+      "seconds": 9.74593750200438,
+      "latency": 0.01008096500299871,
+      "stage": "other"
+    },
+    {
+      "sequence": 48,
+      "seconds": 9.948405638999247,
+      "latency": 0.01008621299843071,
+      "stage": "other"
+    },
+    {
+      "sequence": 49,
+      "seconds": 10.150500841999019,
+      "latency": 0.010085020992846694,
+      "stage": "other"
+    },
+    {
+      "sequence": 50,
+      "seconds": 10.352751073005493,
+      "latency": 0.010113106000062544,
+      "stage": "other"
+    },
+    {
+      "sequence": 51,
+      "seconds": 10.555187855999975,
+      "latency": 0.010115839999343734,
+      "stage": "other"
+    },
+    {
+      "sequence": 52,
+      "seconds": 10.758390109003813,
+      "latency": 0.010376620004535653,
+      "stage": "other"
+    },
+    {
+      "sequence": 53,
+      "seconds": 10.961050452002382,
+      "latency": 0.01012063799862517,
+      "stage": "other"
+    },
+    {
+      "sequence": 54,
+      "seconds": 11.164788515001419,
+      "latency": 0.01024504399538273,
+      "stage": "other"
+    },
+    {
+      "sequence": 55,
+      "seconds": 11.368074953003088,
+      "latency": 0.010085064001032151,
+      "stage": "run"
+    },
+    {
+      "sequence": 56,
+      "seconds": 11.571674194005027,
+      "latency": 0.010091374002513476,
+      "stage": "run"
+    },
+    {
+      "sequence": 57,
+      "seconds": 11.774099735004711,
+      "latency": 0.010108784001204185,
+      "stage": "run"
+    },
+    {
+      "sequence": 58,
+      "seconds": 11.98154329800309,
+      "latency": 0.010097748003317975,
+      "stage": "run"
+    },
+    {
+      "sequence": 59,
+      "seconds": 12.184645756999089,
+      "latency": 0.010094358993228525,
+      "stage": "run"
+    },
+    {
+      "sequence": 60,
+      "seconds": 12.38735465100035,
+      "latency": 0.010080727995955385,
+      "stage": "run"
+    },
+    {
+      "sequence": 61,
+      "seconds": 12.59027811800479,
+      "latency": 0.010083633002068382,
+      "stage": "run"
+    },
+    {
+      "sequence": 62,
+      "seconds": 12.823119633001625,
+      "latency": 0.040614828998513985,
+      "stage": "run"
+    },
+    {
+      "sequence": 63,
+      "seconds": 12.995195399002114,
+      "latency": 0.010084873996675014,
+      "stage": "run"
+    },
+    {
+      "sequence": 64,
+      "seconds": 13.20758152900089,
+      "latency": 0.02020761399762705,
+      "stage": "run"
+    },
+    {
+      "sequence": 65,
+      "seconds": 13.399856078001903,
+      "latency": 0.010092274998896755,
+      "stage": "run"
+    },
+    {
+      "sequence": 66,
+      "seconds": 13.602604563006025,
+      "latency": 0.010091054005897604,
+      "stage": "run"
+    },
+    {
+      "sequence": 67,
+      "seconds": 13.80641734800156,
+      "latency": 0.01008553499559639,
+      "stage": "run"
+    },
+    {
+      "sequence": 68,
+      "seconds": 14.009996824002883,
+      "latency": 0.01019824299874017,
+      "stage": "run"
+    },
+    {
+      "sequence": 69,
+      "seconds": 14.267128646002675,
+      "latency": 0.06078746000275714,
+      "stage": "run"
+    },
+    {
+      "sequence": 70,
+      "seconds": 14.419136307005829,
+      "latency": 0.010086998001497705,
+      "stage": "run"
+    },
+    {
+      "sequence": 71,
+      "seconds": 14.651823387001059,
+      "latency": 0.040390438996837474,
+      "stage": "run"
+    },
+    {
+      "sequence": 72,
+      "seconds": 14.844471421005437,
+      "latency": 0.030462225004157517,
+      "stage": "run"
+    },
+    {
+      "sequence": 73,
+      "seconds": 15.02728754599957,
+      "latency": 0.010091920994454995,
+      "stage": "run"
+    },
+    {
+      "sequence": 74,
+      "seconds": 15.229582838001079,
+      "latency": 0.01008521099720383,
+      "stage": "run"
+    },
+    {
+      "sequence": 75,
+      "seconds": 15.432573660000344,
+      "latency": 0.010095777994138189,
+      "stage": "run"
+    },
+    {
+      "sequence": 76,
+      "seconds": 15.635069526004372,
+      "latency": 0.010097851001773961,
+      "stage": "run"
+    },
+    {
+      "sequence": 77,
+      "seconds": 15.838367721000395,
+      "latency": 0.01009705400065286,
+      "stage": "run"
+    },
+    {
+      "sequence": 78,
+      "seconds": 16.04085459899943,
+      "latency": 0.01009569799498422,
+      "stage": "run"
+    },
+    {
+      "sequence": 79,
+      "seconds": 16.25362863999908,
+      "latency": 0.02020114899642067,
+      "stage": "run"
+    },
+    {
+      "sequence": 80,
+      "seconds": 16.44594624599995,
+      "latency": 0.010087766000651754,
+      "stage": "run"
+    },
+    {
+      "sequence": 81,
+      "seconds": 16.658541000004334,
+      "latency": 0.02019408900378039,
+      "stage": "run"
+    },
+    {
+      "sequence": 82,
+      "seconds": 16.85075680800219,
+      "latency": 0.010084219997224864,
+      "stage": "run"
+    },
+    {
+      "sequence": 83,
+      "seconds": 17.052867544000037,
+      "latency": 0.0100782209992758,
+      "stage": "run"
+    },
+    {
+      "sequence": 84,
+      "seconds": 17.254999030999898,
+      "latency": 0.01007131199730793,
+      "stage": "run"
+    },
+    {
+      "sequence": 85,
+      "seconds": 17.45723686600104,
+      "latency": 0.010082717999466695,
+      "stage": "run"
+    },
+    {
+      "sequence": 86,
+      "seconds": 17.669386184999894,
+      "latency": 0.020174720993964,
+      "stage": "run"
+    },
+    {
+      "sequence": 87,
+      "seconds": 17.87152407100075,
+      "latency": 0.020179817998723593,
+      "stage": "run"
+    },
+    {
+      "sequence": 88,
+      "seconds": 18.06371472200408,
+      "latency": 0.01009057000192115,
+      "stage": "run"
+    },
+    {
+      "sequence": 89,
+      "seconds": 18.266090548000648,
+      "latency": 0.01008083499618806,
+      "stage": "run"
+    },
+    {
+      "sequence": 90,
+      "seconds": 18.478257983006188,
+      "latency": 0.020157985003606882,
+      "stage": "run"
+    },
+    {
+      "sequence": 91,
+      "seconds": 18.670275941003638,
+      "latency": 0.010078582003188785,
+      "stage": "run"
+    },
+    {
+      "sequence": 92,
+      "seconds": 18.8725043930026,
+      "latency": 0.010039934997621458,
+      "stage": "run"
+    },
+    {
+      "sequence": 93,
+      "seconds": 19.084859066999343,
+      "latency": 0.020181048996164463,
+      "stage": "run"
+    },
+    {
+      "sequence": 94,
+      "seconds": 19.28715943499992,
+      "latency": 0.0201772539949161,
+      "stage": "run"
+    },
+    {
+      "sequence": 95,
+      "seconds": 19.489534029002243,
+      "latency": 0.020175309997284785,
+      "stage": "run"
+    },
+    {
+      "sequence": 96,
+      "seconds": 19.691878608005936,
+      "latency": 0.020186687004752457,
+      "stage": "run"
+    },
+    {
+      "sequence": 97,
+      "seconds": 19.90430468699924,
+      "latency": 0.03029810599400662,
+      "stage": "run"
+    },
+    {
+      "sequence": 98,
+      "seconds": 20.08638690999942,
+      "latency": 0.010078503997647204,
+      "stage": "run"
+    },
+    {
+      "sequence": 99,
+      "seconds": 20.28874579100375,
+      "latency": 0.010090080999361817,
+      "stage": "run"
+    },
+    {
+      "sequence": 100,
+      "seconds": 20.50111259100231,
+      "latency": 0.020173994002107065,
+      "stage": "run"
+    },
+    {
+      "sequence": 101,
+      "seconds": 20.69323837700358,
+      "latency": 0.010078803999931552,
+      "stage": "run"
+    },
+    {
+      "sequence": 102,
+      "seconds": 20.905656251001346,
+      "latency": 0.020180052000796422,
+      "stage": "run"
+    },
+    {
+      "sequence": 103,
+      "seconds": 21.09795423500327,
+      "latency": 0.010113837000972126,
+      "stage": "run"
+    },
+    {
+      "sequence": 104,
+      "seconds": 21.310370958999556,
+      "latency": 0.020176947997242678,
+      "stage": "run"
+    },
+    {
+      "sequence": 105,
+      "seconds": 21.512655168000492,
+      "latency": 0.020178109996777494,
+      "stage": "run"
+    },
+    {
+      "sequence": 106,
+      "seconds": 21.70483385400439,
+      "latency": 0.010083462002512533,
+      "stage": "run"
+    },
+    {
+      "sequence": 107,
+      "seconds": 21.907168187004572,
+      "latency": 0.01008923900371883,
+      "stage": "run"
+    },
+    {
+      "sequence": 108,
+      "seconds": 22.109351115002937,
+      "latency": 0.010081589003675617,
+      "stage": "run"
+    },
+    {
+      "sequence": 109,
+      "seconds": 22.311528905003797,
+      "latency": 0.010078462997626048,
+      "stage": "run"
+    },
+    {
+      "sequence": 110,
+      "seconds": 22.513737432003836,
+      "latency": 0.01008028700016439,
+      "stage": "run"
+    },
+    {
+      "sequence": 111,
+      "seconds": 22.715905861005012,
+      "latency": 0.010080379004648421,
+      "stage": "run"
+    },
+    {
+      "sequence": 112,
+      "seconds": 22.918228922004346,
+      "latency": 0.01010027000302216,
+      "stage": "run"
+    },
+    {
+      "sequence": 113,
+      "seconds": 23.13056562300335,
+      "latency": 0.02017795600113459,
+      "stage": "run"
+    },
+    {
+      "sequence": 114,
+      "seconds": 23.322661664999032,
+      "latency": 0.010077715996885672,
+      "stage": "run"
+    },
+    {
+      "sequence": 115,
+      "seconds": 23.524888929001463,
+      "latency": 0.010087280999869108,
+      "stage": "run"
+    },
+    {
+      "sequence": 116,
+      "seconds": 23.727255769001204,
+      "latency": 0.01008024899783777,
+      "stage": "run"
+    },
+    {
+      "sequence": 117,
+      "seconds": 23.92940172100498,
+      "latency": 0.010075112004415132,
+      "stage": "run"
+    },
+    {
+      "sequence": 118,
+      "seconds": 24.131462280005508,
+      "latency": 0.01007870800094679,
+      "stage": "run"
+    },
+    {
+      "sequence": 119,
+      "seconds": 24.343879125000967,
+      "latency": 0.020479300001170486,
+      "stage": "run"
+    },
+    {
+      "sequence": 120,
+      "seconds": 24.53584234900336,
+      "latency": 0.010073088997160085,
+      "stage": "run"
+    },
+    {
+      "sequence": 121,
+      "seconds": 24.737884080001095,
+      "latency": 0.010076974998810329,
+      "stage": "run"
+    },
+    {
+      "sequence": 122,
+      "seconds": 24.939975895002135,
+      "latency": 0.01007872699847212,
+      "stage": "run"
+    },
+    {
+      "sequence": 123,
+      "seconds": 25.142362071004754,
+      "latency": 0.010105296998517588,
+      "stage": "run"
+    },
+    {
+      "sequence": 124,
+      "seconds": 25.34467802099971,
+      "latency": 0.010079142994072754,
+      "stage": "run"
+    },
+    {
+      "sequence": 125,
+      "seconds": 25.547005022999656,
+      "latency": 0.010086327994940802,
+      "stage": "run"
+    },
+    {
+      "sequence": 126,
+      "seconds": 25.749264830003085,
+      "latency": 0.010077035003632773,
+      "stage": "run"
+    },
+    {
+      "sequence": 127,
+      "seconds": 25.962542517001566,
+      "latency": 0.020918672998959664,
+      "stage": "run"
+    },
+    {
+      "sequence": 128,
+      "seconds": 26.165668576002645,
+      "latency": 0.020214062999002635,
+      "stage": "run"
+    },
+    {
+      "sequence": 129,
+      "seconds": 26.35797084600199,
+      "latency": 0.010084392997669056,
+      "stage": "run"
+    },
+    {
+      "sequence": 130,
+      "seconds": 26.56022624400066,
+      "latency": 0.010086825001053512,
+      "stage": "run"
+    },
+    {
+      "sequence": 131,
+      "seconds": 26.762731738002913,
+      "latency": 0.010088969997013919,
+      "stage": "run"
+    },
+    {
+      "sequence": 132,
+      "seconds": 26.975378209004703,
+      "latency": 0.020177427999442443,
+      "stage": "run"
+    },
+    {
+      "sequence": 133,
+      "seconds": 27.167623497000022,
+      "latency": 0.010088548995554447,
+      "stage": "run"
+    },
+    {
+      "sequence": 134,
+      "seconds": 27.38027604600211,
+      "latency": 0.02019103900238406,
+      "stage": "run"
+    },
+    {
+      "sequence": 135,
+      "seconds": 27.57283228400047,
+      "latency": 0.010092694996274076,
+      "stage": "run"
+    },
+    {
+      "sequence": 136,
+      "seconds": 27.78639104800095,
+      "latency": 0.020267572996090166,
+      "stage": "run"
+    },
+    {
+      "sequence": 137,
+      "seconds": 27.979384654005116,
+      "latency": 0.01012513300520368,
+      "stage": "run"
+    },
+    {
+      "sequence": 138,
+      "seconds": 28.182283025002107,
+      "latency": 0.010102540996740572,
+      "stage": "run"
+    },
+    {
+      "sequence": 139,
+      "seconds": 28.38540859400382,
+      "latency": 0.01010551299987128,
+      "stage": "run"
+    },
+    {
+      "sequence": 140,
+      "seconds": 28.59833842300577,
+      "latency": 0.02021067800524179,
+      "stage": "run"
+    },
+    {
+      "sequence": 141,
+      "seconds": 28.80068764900352,
+      "latency": 0.020175074998405762,
+      "stage": "run"
+    },
+    {
+      "sequence": 142,
+      "seconds": 28.99295005300519,
+      "latency": 0.0101178129989421,
+      "stage": "run"
+    },
+    {
+      "sequence": 143,
+      "seconds": 29.19568839400017,
+      "latency": 0.010110270995937753,
+      "stage": "run"
+    },
+    {
+      "sequence": 144,
+      "seconds": 29.399114753003232,
+      "latency": 0.010103720996994525,
+      "stage": "run"
+    },
+    {
+      "sequence": 145,
+      "seconds": 29.602676626003813,
+      "latency": 0.010254156004521064,
+      "stage": "run"
+    },
+    {
+      "sequence": 146,
+      "seconds": 29.805810238001868,
+      "latency": 0.010126244997081812,
+      "stage": "run"
+    },
+    {
+      "sequence": 147,
+      "seconds": 30.008820309005387,
+      "latency": 0.010092134005390108,
+      "stage": "run"
+    },
+    {
+      "sequence": 148,
+      "seconds": 30.211542075005127,
+      "latency": 0.010119995000422932,
+      "stage": "run"
+    },
+    {
+      "sequence": 149,
+      "seconds": 30.414728777002892,
+      "latency": 0.010119635000592098,
+      "stage": "run"
+    },
+    {
+      "sequence": 150,
+      "seconds": 30.61783252400346,
+      "latency": 0.010109389004355762,
+      "stage": "run"
+    },
+    {
+      "sequence": 151,
+      "seconds": 30.82099161800579,
+      "latency": 0.01011433100211434,
+      "stage": "run"
+    },
+    {
+      "sequence": 152,
+      "seconds": 31.02395149700169,
+      "latency": 0.010089062998304144,
+      "stage": "run"
+    },
+    {
+      "sequence": 153,
+      "seconds": 31.247530961001758,
+      "latency": 0.03050815899769077,
+      "stage": "run"
+    },
+    {
+      "sequence": 154,
+      "seconds": 31.46276690000377,
+      "latency": 0.04068532300152583,
+      "stage": "run"
+    },
+    {
+      "sequence": 155,
+      "seconds": 31.63511201700021,
+      "latency": 0.01008386499597691,
+      "stage": "run"
+    },
+    {
+      "sequence": 156,
+      "seconds": 31.837752399005694,
+      "latency": 0.010079349005536642,
+      "stage": "run"
+    },
+    {
+      "sequence": 157,
+      "seconds": 32.04450535900105,
+      "latency": 0.010078161001729313,
+      "stage": "run"
+    },
+    {
+      "sequence": 158,
+      "seconds": 32.24684021400026,
+      "latency": 0.010085456997330766,
+      "stage": "run"
+    },
+    {
+      "sequence": 159,
+      "seconds": 32.44958100600343,
+      "latency": 0.010142803999769967,
+      "stage": "run"
+    },
+    {
+      "sequence": 160,
+      "seconds": 32.74262771299982,
+      "latency": 0.10053587799484376,
+      "stage": "other"
+    },
+    {
+      "sequence": 161,
+      "seconds": 32.85509041000478,
+      "latency": 0.01020709900330985,
+      "stage": "other"
+    },
+    {
+      "sequence": 162,
+      "seconds": 33.05834320700524,
+      "latency": 0.01008996400196338,
+      "stage": "other"
+    },
+    {
+      "sequence": 163,
+      "seconds": 33.26060769700416,
+      "latency": 0.010085507004987448,
+      "stage": "other"
+    },
+    {
+      "sequence": 164,
+      "seconds": 33.46288285800256,
+      "latency": 0.010083364002639428,
+      "stage": "other"
+    },
+    {
+      "sequence": 165,
+      "seconds": 33.66529715700017,
+      "latency": 0.010077434999402612,
+      "stage": "other"
+    },
+    {
+      "sequence": 166,
+      "seconds": 33.86757753100392,
+      "latency": 0.010084125002322253,
+      "stage": "other"
+    },
+    {
+      "sequence": 167,
+      "seconds": 34.069934875005856,
+      "latency": 0.010096613004861865,
+      "stage": "other"
+    },
+    {
+      "sequence": 168,
+      "seconds": 34.27303126500192,
+      "latency": 0.010100565996253863,
+      "stage": "other"
+    },
+    {
+      "sequence": 169,
+      "seconds": 34.475792666002235,
+      "latency": 0.010108367998327594,
+      "stage": "other"
+    },
+    {
+      "sequence": 170,
+      "seconds": 34.67882785400434,
+      "latency": 0.010089729003084358,
+      "stage": "other"
+    },
+    {
+      "sequence": 171,
+      "seconds": 34.88130780200299,
+      "latency": 0.010093304001202341,
+      "stage": "other"
+    },
+    {
+      "sequence": 172,
+      "seconds": 35.0838252570029,
+      "latency": 0.010089709001476876,
+      "stage": "other"
+    },
+    {
+      "sequence": 173,
+      "seconds": 35.28687706400524,
+      "latency": 0.010106528003234416,
+      "stage": "other"
+    },
+    {
+      "sequence": 174,
+      "seconds": 35.48936592600512,
+      "latency": 0.010104070999659598,
+      "stage": "other"
+    }
+  ],
+  "host_clock_ticks": 100,
+  "seconds": 35.69818438800576,
+  "stages": {
+    "daemon": 10.210706924997794,
+    "run_to_prompt": 21.43670211100107,
+    "roundtrip_exit_rm": 1.8941569969974807
+  }
+}

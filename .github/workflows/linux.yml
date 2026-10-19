@@ -289,10 +289,13 @@ jobs:
       - name: Check affected VFS and scheduling paths
         run: |
           cargo fmt --all --check
-          cargo clippy -p trames-vfs -p trames-core -p trames-ffi -p trames-cli --all-targets --all-features --locked -- -D warnings
-          cargo test -p trames-vfs -p trames-core --locked
+          cargo clippy -p trames-vfs -p trames-core -p trames-linux -p trames-ffi -p trames-cli --all-targets --all-features --locked -- -D warnings
+          cargo test -p trames-vfs -p trames-core -p trames-linux --locked
           python3 -m py_compile tests/performance/prepare-coremark.py tests/performance/session-coremark.py tests/performance/session-docker-tty.py
           cc -O2 -shared -fPIC -Wall -Wextra -Werror tests/performance/session-sampler.c -ldl -o /tmp/trames-session-sampler.so
+          python3 -m py_compile tests/performance/epoch-services.py tests/integration/epoch-services.py
+          bash -n scripts/build-epoch-services-fixture.sh
+          cc -O2 -Wall -Wextra -Werror -DTRAMES_HOST_ORACLE tests/fixtures/epoch-services.c -pthread -o /tmp/trames-epoch-oracle
       - name: Validate production multiple-terminal control and cancellation
         run: |
           cargo build -p trames-ffi --release --locked
