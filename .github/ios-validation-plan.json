@@ -4,7 +4,7 @@
   "reason": "Native Vulkan source unchanged from b23e75a module checks. Build a minimal Mesa25.1.9 EGL DRM-less Kopper platform/device adapter, retain original signed Gallium/Zink/loader, install standard libEGL.so.1 automatically and verify actual exported Metal texture pixels. No CPU/Linux/network/UI test reruns or IPA.",
   "changed_file_sha256": {
     ".github/workflows/ios.yml": "4f6c8234f8414bc24216b63955bf9cf267cb107372434f6cc1eee6b87eaf0e38",
-    ".github/workflows/linux.yml": "5308764bdfecda5110eaf112552dc8d7aaf3c353bced3784b4c312efd34a3b5a",
+    ".github/workflows/linux.yml": "cc789951c3a2546b6372436c17ab28f1f125ce518439e49abd802bb710157d1e",
     "accelerator/vulkan/entrypoints.inc": "67b672180bd9cb8c9bdfc6316a1deaa9bab86c807e3f30566e6295251caf838d",
     "accelerator/vulkan/graphics.inc": "c52ca87a202b41934e1593efd25cbc0451e960c6f6de4c78883e8c99c9148d32",
     "crates/trames-distro/src/lib.rs": "c2f25c30e35fd91ffd2924d6c06a999fbcf062fab65e7dd22006ed4d61f550e1",
@@ -14,9 +14,13 @@
     "crates/trames-vulkan/src/backend/graphics.rs": "ae2a78b5139c6d46f6436c222e38269732e9f5dbba10cb45ce55717b1af9ee58",
     "crates/trames-vulkan/src/backend/wayland.rs": "0c9f53e4485451aed9e96f4fd6f5b8f0bc14306d93cd8b234f14bd02eae30dc3",
     "docs/architecture/vulkan-compute.md": "fa8f2c91a0d27b59ba829da7af683018722443f94dc87cb17cb8b581af161d72",
-    "docs/architecture/zink.md": "e89c861501c400ef1ee7da08ad2ed8ab7ea3df3be45efaadf53fef64782f2e1c",
+    "docs/architecture/zink.md": "74ca8aa7fd59d9ed7cc15507fa97f6bad491ceff67ae54d545480e31414fa853",
     "docs/guides/wayland.md": "b8c7aa2b3156dc26b5fbe7268948404f08682d811f4bfaec0dd4a1ba7dc194eb",
-    "docs/validation/zink-wayland.md": "92f78b1632235240a83d4f57f1beb9f57e582496126c2baabd23f0321320fa45",
+    "docs/validation/zink-wayland.md": "bc8c63841ae0d9b6da18d1ef615572f12496840e245891295fbd278176b558bf",
+    "docs/validation/zink-wayland/ci-linux-adapter/artifact-verification.json": "d38a331a31b02d964e2ccbe8c1d1aa00a0cc59da322a95ebc915af7a056b802b",
+    "docs/validation/zink-wayland/ci-linux-adapter/bundle-checksums.json": "5c782ca624c6a5e62fa000de4871bc28898b88a576690f16f3cb43f2ae3e1e47",
+    "docs/validation/zink-wayland/ci-linux-adapter/bundle-verification.json": "e692bd12efab09c2e8a5956812645cfa68581aea6b2cca703d71f41918509a17",
+    "docs/validation/zink-wayland/ci-linux-adapter/egl-manifest.json": "6cd9886989cd96fe989fd8777fa497a182ad85b2f94768bd96b6631e5929b2b2",
     "docs/validation/zink-wayland/ci-linux-adapter/guest.log": "e82a49366137e957ef51d360bf0a9c3ee88cb43cc5a075bccffbfa093197b6f1",
     "docs/validation/zink-wayland/ci-linux-adapter/icd-manifest.json": "fbd75e2c860e81956a96f0754590b5aae835a7f4a4791175ee1cbda8ef39ae5c",
     "docs/validation/zink-wayland/ci-linux-adapter/install.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -51,7 +55,7 @@
     "scripts/build-ios.sh": "81e33f5a261d492728278d75a6689f674faaa1e6631f7e89e83f6e222372b7c8",
     "scripts/build-vulkan-guest.sh": "12633cc5007c2ad8154d762d510b35a62cb25de04d37be59431db07802896631",
     "scripts/build-zink-egl.py": "80b56602f519c4f2286fbd58f0dcd23abe54e4029577a977c41b0d1b588474dc",
-    "scripts/ios-ci-scope.py": "723a9f45d8c8c5a96bffeeee07f507807a4127bc430d19c4ba1a58dc841295a6",
+    "scripts/ios-ci-scope.py": "b5f36631756ab5853173b2c02c9ce3e10a8d3f60b94dc50101054edcac26a45b",
     "scripts/prepare-zink-guest.py": "4cbbff53d96740c3252dfcd997b875d1e32f2a7ac972ea51758d63d014d9a0a8",
     "scripts/prepare-zink-native-bundle.py": "79b14366e71d3c3eb76926d817abea997d0ac4f3aa3c7c366713dab2f26b0142",
     "scripts/zink-egl-requirements.txt": "30eab30c9af3fdb75b35b19150d8f2357c772074e0c60b7459fbc672f2fed9d6",
@@ -67,5 +71,9 @@
   "zink_wayland_linux_reuse": {
     "sha": "86f84a7f79e8bf414b68662e4b16d6112f0f5566",
     "run": 39260974313
+  },
+  "zink_egl_apple_validation_reuse": {
+    "sha": "8aa5487d09a9b46d9f3036da01792ef4bdaa46d8",
+    "run": 39262670141
   }
 }

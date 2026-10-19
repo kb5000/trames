@@ -1,0 +1,9 @@
+{
+  "kind": "linux-adapter",
+  "artifact_id": 12190831689,
+  "digest": "sha256:1bcc2ca8d5ed37cbeda15d914ef0937efe9741bb8826ca1d9769d3a95c4ce06c",
+  "run_id": 39260974313,
+  "source_sha": "86f84a7f79e8bf414b68662e4b16d6112f0f5566",
+  "sha256": "1bcc2ca8d5ed37cbeda15d914ef0937efe9741bb8826ca1d9769d3a95c4ce06c",
+  "zip_crc": "passed"
+}

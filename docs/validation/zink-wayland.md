@@ -42,6 +42,16 @@ Mesa25.1.9的ES2 GL-thread内部ancillary invalidate入口标为ES3，交换缓�
 两轮窗口/resize/close与GPU-only场景也通过，见[组件本地记录](zink-wayland/egl-adapter-local/)。
 固定原始源码摘要、补丁与原版Gallium摘要、交叉编译参数、组件摘要及许可随产物保留。
 
-更新后的Apple Metal纹理CI待回填；复用源码完全未改的Vulkan模块通过记录，仅验证EGL组件、
-安装与embedding变化。Apple继续验证实际导出MTLTexture全部像素、双窗口/resize/close/重启
-及旧帧内容。物理iPad未验收，未构建IPA或发布release。
+[EGL适配后Linux CI39260974313](https://github.com/kb5000/trames/actions/runs/39260974313)
+的干净环境构建、签名APK安装、生产自动安装、设备身份/枚举、两轮窗口流程均通过。
+[归档](zink-wayland/ci-linux-adapter/)包含全部输出、EGL组件manifest、459文件bundle的
+逐文件SHA-256与ZIP验证。组件仅446KiB，原版Gallium仍来自签名APK；隔离Python环境的
+固定构建依赖见requirements，原始源码与上游算法不变。原Vulkan模块源码完全未变，
+直接复用b23e75a的Linux/Apple严格Clippy及18项测试。
+
+Apple使用相同459文件bundle；只允许CI/文档变更时复用Linux通过记录，验证器仍检查原始
+source SHA、当前commit及每一个文件摘要，不把旧bundle标成新源码。
+[Apple重试39262670141](https://github.com/kb5000/trames/actions/runs/39262670141)
+的本轮distro/FFI严格Clippy、安装模块3项及iOS编译通过。未改动依赖的AArch64专用lint不在
+本轮范围，使用Clippy的--no-deps；没有关闭本轮代码的警告检查。Metal窗口结果待回填。
+物理iPad未验收，未构建IPA或发布release。

@@ -405,6 +405,18 @@ def main():
                         artifacts = gpu_evidence(f'actions/runs/{run_id}/artifacts')['artifacts']
                         if not any(a['name'] == 'zink-native-bundle' and not a['expired'] for a in artifacts):
                             raise RuntimeError('Passed Linux guest bundle expired or missing')
+                    egl_apple_reuse = plan.get('zink_egl_apple_validation_reuse')
+                    if egl_apple_reuse:
+                        source = egl_apple_reuse['sha']
+                        delta = subprocess.check_output(['git', 'diff', '--name-only', source, 'HEAD'], text=True).splitlines()
+                        if not wayland_reuse or any(p not in ci_only and not p.startswith('docs/') for p in delta):
+                            raise RuntimeError('Apple EGL module reuse requires unchanged runtime and tests')
+                        run_id = egl_apple_reuse['run']
+                        run = gpu_evidence(f'actions/runs/{run_id}')
+                        job = next(j for j in gpu_evidence(f'actions/runs/{run_id}/jobs')['jobs'] if j['name'] == 'zink-wayland-apple')
+                        if (run['head_sha'] != source or run['head_repository']['full_name'] != repo
+                                or not any(s['name'] == 'Verify exact guest inputs and Apple embedding' and s['conclusion'] == 'success' for s in job['steps'])):
+                            raise RuntimeError('Missing passed exact-source Apple EGL module checks')
                     reuse = plan.get('zink_reuse_apple')
                     if reuse:
                         source = reuse['sha']
@@ -493,6 +505,9 @@ def main():
                         if wayland_reuse:
                             output.write(f"zink_wayland_linux_run={wayland_reuse['run']}\nzink_wayland_linux_sha={wayland_reuse['sha']}\n")
                             print('Reuse passed unchanged Linux Wayland build and exact guest bundle; retry only Apple acceptance.')
+                        if egl_apple_reuse:
+                            output.write('zink_egl_skip_apple_checks=true\n')
+                            print('Reuse unchanged passed Apple distro/FFI Clippy, three installation tests and iOS compilation.')
                         if sync_reuse:
                             output.write('zink_sync_skip_linux=true\nzink_sync_skip_apple_checks=true\n')
                             print('Reuse exact-source passed Linux GPU and Apple module/iOS checks; retry only macOS MoltenVK native-example linking/runtime.')

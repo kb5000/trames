@@ -105,7 +105,7 @@ Mesa25.1.9的ES2 context启用GL-thread时，SwapBuffers调用的内部
 `InternalInvalidateFramebufferAncillaryMESA`在上游`gl_API.xml`仅标为ES3，从而产生
 `GL_INVALID_OPERATION(invalid call)`。当前窗口验证使用上游`mesa_glthread=false`配置。
 这只关闭Mesa的GL调用封送队列；Zink/Vulkan/Metal、原生GPU和普通guest线程仍保持原路径。
-未修改Mesa或伪造ES3能力；这个限制应保留到实现足够真实的更高GL profile并重新验证。
+未修改GL-thread或伪造ES3能力；这个限制应保留到实现足够真实的更高GL profile并重新验证。
 当前仍有custom-border-color、line-rasterization和depth-clip-enable相关上游警告；基础样例通过
 不代表所有应用/裁剪/线段状态已可用。Apple driver的logicOp不可用，另有禁用primitive
 restart的Metal警告；索引/拓扑边界需要单独验证。未通过的能力不会仅靠枚举名称来启用。
@@ -118,7 +118,7 @@ DRI/dmabuf、external-memory FD还需要guest FD与Metal资源身份/生命周�
 ## 验证
 
 见[查询/模板基础验证](../validation/zink-foundation.md)、[同步/viewport验证](../validation/zink-sync.md)与[renderpass/imageless验证](../validation/zink-renderpass.md)。测试使用原版Mesa与loader，
-不修改Mesa使其跳过硬要求。`zink-foundation.py`明确分开基础检查和`rendering_passed`；
+不修改Zink使其跳过Vulkan硬要求。`zink-foundation.py`明确分开基础检查和`rendering_passed`；
 `--require-render`在EGL仍不可用时必须失败。
 
 本地native参考是Mesa25 Lavapipe软件Vulkan。`LIBGL_ALWAYS_SOFTWARE`仅用于让原版
