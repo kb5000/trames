@@ -41,6 +41,29 @@ jobs:
           TRAMES_VALIDATION_WORKFLOW: linux.yml
           TRAMES_NEEDS_GUEST_ARTIFACTS: 'false'
         run: python3 scripts/ios-ci-scope.py
+  runtime-fastpaths:
+    needs: scope
+    if: needs.scope.outputs.native_scope == 'runtime-fastpaths'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+          components: rustfmt, clippy
+      - name: Check affected VFS and scheduling paths
+        run: |
+          cargo fmt --all --check
+          cargo clippy -p trames-vfs -p trames-core -p trames-ffi --all-targets --all-features --locked -- -D warnings
+          cargo test -p trames-vfs -p trames-core --locked
+          python3 -m py_compile tests/performance/prepare-coremark.py tests/performance/session-coremark.py
+      - name: Validate production multiple-terminal control and cancellation
+        run: |
+          cargo build -p trames-ffi --release --locked
+          mkdir -p target/alpine-download
+          curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o target/alpine-download/alpine-minirootfs-3.22.6-aarch64.tar.gz
+          python3 tests/integration/multiple-terminals.py
   release-core:
     needs: scope
     if: needs.scope.outputs.native_scope == 'release-core' || needs.scope.outputs.native_scope == 'release-cross'

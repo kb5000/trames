@@ -3560,6 +3560,20 @@ impl Kernel {
         }
         timeout
     }
+    fn serial_quantum(&self) -> u64 {
+        // No runnable peer needs a turn. Keep a bounded CPU slice while
+        // amortizing control/PTY/timer and blocked-task checks. A syscall or
+        // native callback outcome still returns through finish_slice normally.
+        if self
+            .processes
+            .iter()
+            .any(|(&id, p)| matches!(p.state, State::Ready) && !p.frozen(id))
+        {
+            4096
+        } else {
+            65536
+        }
+    }
     fn drive(&mut self, io: &mut impl GuestOutput, limit: u64) -> Result<Exit, RuntimeError> {
         loop {
             self.pump_guest_ptys();
@@ -3626,7 +3640,11 @@ impl Kernel {
                     // No native borrow survives; blocking syscalls/faults still
                     // return to the scheduler. Bound work/time between control,
                     // signal and timer polls independently of guest retirement.
-                    let mut quantum = 4096u64;
+                    let mut quantum = if matches!(p.state, State::Ready) {
+                        self.serial_quantum()
+                    } else {
+                        4096
+                    };
                     let quantum_started = Instant::now();
                     let mut native_returns = 0;
                     while matches!(p.state, State::Ready) && quantum != 0 {
@@ -4007,6 +4025,17 @@ pub(super) fn run(
 mod tests {
     use super::*;
     use trames_memory::{Permissions, PAGE_SIZE};
+    #[test]
+    fn solo_quantum_does_not_delay_a_runnable_peer() {
+        let mut k = kernel();
+        assert_eq!(k.serial_quantum(), 65536);
+        let mut blocked = process();
+        blocked.state = State::Blocked(260, [0; 6]);
+        k.processes.insert(2, blocked);
+        assert_eq!(k.serial_quantum(), 65536);
+        k.processes.get_mut(&2).unwrap().state = State::Ready;
+        assert_eq!(k.serial_quantum(), 4096);
+    }
     #[test]
     fn affinity_assignment_keeps_flexible_tasks_fair_and_relocates_for_pinned_peers() {
         assert_eq!(

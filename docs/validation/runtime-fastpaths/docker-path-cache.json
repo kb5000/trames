@@ -1,0 +1,92 @@
+{
+  "scope": "Profile default guest Docker create/exec once, without repeating acceptance.\n\nInput store must contain original dockerd/containerd/runc and an imported Alpine\nimage. A private store copy is used. This never invokes host Docker. Optional\nPC sampling uses pc-sampler.c and an optimized release runner with debug symbols.\n",
+  "runner_sha256": "26bbc0fdf2aaf1c5188ab1d32ddd3a87612ebb914c0ea52b8e2b5f411655aaa7",
+  "store_manifest_sha256": "5c5612b3d70825159d39b87887bbf82b091dfd69dcf0a82c7d02119c1c304ca4",
+  "shell_sha256": "7ef5d9b475733e8c8e65fef4dcbc4020ac8d1a4b48a5486d2ff7270dff79b816",
+  "cpus": 4,
+  "image": "default-probe",
+  "pc_sampling": true,
+  "markers": [
+    {
+      "name": "DAEMON_BEGIN",
+      "seconds": 0.02708457099993211
+    },
+    {
+      "name": "DAEMON_END",
+      "seconds": 15.302560377999953
+    },
+    {
+      "name": "CREATE_BEGIN",
+      "seconds": 16.31515036299993
+    },
+    {
+      "name": "CREATE_END",
+      "seconds": 68.71226834599997
+    },
+    {
+      "name": "EXEC_BEGIN",
+      "seconds": 68.71302895499991
+    },
+    {
+      "name": "EXEC_END",
+      "seconds": 94.13114648199996
+    },
+    {
+      "name": "CLEANUP_END",
+      "seconds": 98.30103767999992
+    }
+  ],
+  "exit_code": 0,
+  "timed_out": false,
+  "seconds": 99.53688755999997,
+  "metrics": {
+    "backend": "cached",
+    "context_switches": 403423,
+    "cpu_count": 4,
+    "cpu_seconds": 14.437446298,
+    "decode_lookups": 32275140,
+    "decode_misses": 355794,
+    "dispatch_seconds": 2.492544418,
+    "gpu_buffered_bytes": 0,
+    "gpu_compiles": 0,
+    "gpu_direct_bytes": 0,
+    "gpu_download_bytes": 0,
+    "gpu_peak_pending": 0,
+    "gpu_peer_instructions": 0,
+    "gpu_upload_bytes": 0,
+    "gpu_wait_seconds": 0.0,
+    "idle_seconds": 0.949656169,
+    "instructions": 945928540,
+    "instructions_decoded": 30815740,
+    "instructions_per_second": 9505958.248403016,
+    "memory_seconds": 2.257156968,
+    "parallel_rounds": 99975,
+    "parallel_snapshots": {
+      "backing_invalidations": 144,
+      "cache_hits": 221154,
+      "code_invalidations": 4296,
+      "dirty_refreshes": 72692,
+      "full_rebuild_pages": 318429,
+      "full_rebuilds": 335,
+      "incremental_pages": 321409,
+      "incremental_updates": 4440,
+      "source_page_reads": 829927
+    },
+    "peak_parallel_cpus": 4,
+    "peak_parallel_native_calls": 0,
+    "proc_refreshes": 79605,
+    "runtime_error": null,
+    "seconds": 99.509014797,
+    "stop_seconds": 6.982680301,
+    "syscall_seconds": 63.41159592,
+    "syscalls": 1247141,
+    "worker_chunks": 187238,
+    "worker_slices": 298621
+  },
+  "stages": {
+    "DAEMON": 15.27547580700002,
+    "CREATE": 52.397117983000044,
+    "EXEC": 25.41811752700005
+  },
+  "completed": true
+}

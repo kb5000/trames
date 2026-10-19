@@ -1,0 +1,59 @@
+{
+  "scope": "Time cached-image Docker -it through the App's production terminal session.\n\nCopies an installed Docker store; never invokes host Docker or pulls an image.\nThe guest command is docker run --rm -it IMAGE sh. Host waits for the real inner\nshell prompt before sending a tty/stdio roundtrip and exit. Optional daemon debug\nlogging retains API/containerd timestamps; no runtime/security/CPU overrides.\n",
+  "host": "x86_64",
+  "library_sha256": "4a9b3f0b3e5b320b53835e3ee5b6da2a03995705d7408ef63f9f971b1e5b8991",
+  "input_store_manifest_sha256": "5c5612b3d70825159d39b87887bbf82b091dfd69dcf0a82c7d02119c1c304ca4",
+  "image": "default-probe",
+  "command": "docker run --rm -it default-probe sh",
+  "debug_daemon": true,
+  "markers": {
+    "DAEMON_BEGIN": 0.30633902000045055,
+    "DAEMON_READY": 16.238330365000365,
+    "RUN_BEGIN": 17.329405954000322,
+    "CONTAINER_PROMPT": 106.1552608740003,
+    "RUN_END": 110.18414923199998,
+    "COMPLETE": 110.18424813000001,
+    "LOG_END": 111.4204941070002
+  },
+  "completed": true,
+  "seconds": 111.43525140800011,
+  "stages": {
+    "daemon": 15.931991344999915,
+    "run_to_prompt": 88.82585491999998,
+    "roundtrip_exit_rm": 4.028888357999676
+  },
+  "image_id": "sha256:4a82f16bd90a1627d1f6319eaca9d525080e214534f11896222d69b9254c65c1",
+  "guest_cpus": 4,
+  "log_events": {
+    "api_create": {
+      "utc": "2026-10-19T03:22:22.689052592Z",
+      "epoch": 1792380142.689052
+    },
+    "api_attach": {
+      "utc": "2026-10-19T03:22:23.074631900Z",
+      "epoch": 1792380143.074631
+    },
+    "api_start": {
+      "utc": "2026-10-19T03:22:23.156416418Z",
+      "epoch": 1792380143.156416
+    },
+    "shim_connect": {
+      "utc": "2026-10-19T03:22:32.628293583Z",
+      "epoch": 1792380152.628293
+    },
+    "task_create": {
+      "utc": "2026-10-19T03:23:37.467629554Z",
+      "epoch": 1792380217.467629
+    },
+    "task_start": {
+      "utc": "2026-10-19T03:23:50.676890463Z",
+      "epoch": 1792380230.67689
+    }
+  },
+  "log_intervals_seconds": {
+    "api_create_to_start": 0.4673638343811035,
+    "start_to_shim_connect": 9.471877098083496,
+    "shim_connect_to_task_create": 64.83933591842651,
+    "task_create_to_task_start": 13.209260940551758
+  }
+}

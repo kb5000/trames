@@ -1,0 +1,9 @@
+> > > > > > > > > > > > > > > > > > > > > > > > > > ~ # 
+TRAMES_TTY_DAEMON_BEGIN
+
+TRAMES_TTY_DAEMON_READY
+IMAGE=sha256:4a82f16bd90a1627d1f6319eaca9d525080e214534f11896222d69b9254c65c1
+GUEST_CPUS=4
+
+TRAMES_TTY_RUN_BEGIN
+/ # [6n

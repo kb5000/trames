@@ -1,0 +1,92 @@
+{
+  "scope": "Profile default guest Docker create/exec once, without repeating acceptance.\n\nInput store must contain original dockerd/containerd/runc and an imported Alpine\nimage. A private store copy is used. This never invokes host Docker. Optional\nPC sampling uses pc-sampler.c and an optimized release runner with debug symbols.\n",
+  "runner_sha256": "e252af9ba2392488f6c454c9a49c9d58685b8e901861d8e2da0e9f36446523ed",
+  "store_manifest_sha256": "5c5612b3d70825159d39b87887bbf82b091dfd69dcf0a82c7d02119c1c304ca4",
+  "shell_sha256": "7ef5d9b475733e8c8e65fef4dcbc4020ac8d1a4b48a5486d2ff7270dff79b816",
+  "cpus": 4,
+  "image": "default-probe",
+  "pc_sampling": true,
+  "markers": [
+    {
+      "name": "DAEMON_BEGIN",
+      "seconds": 0.027475858000002518
+    },
+    {
+      "name": "DAEMON_END",
+      "seconds": 12.97979699900003
+    },
+    {
+      "name": "CREATE_BEGIN",
+      "seconds": 13.929313712999999
+    },
+    {
+      "name": "CREATE_END",
+      "seconds": 88.08056446500001
+    },
+    {
+      "name": "EXEC_BEGIN",
+      "seconds": 88.081185672
+    },
+    {
+      "name": "EXEC_END",
+      "seconds": 120.85644873400003
+    },
+    {
+      "name": "CLEANUP_END",
+      "seconds": 124.755928085
+    }
+  ],
+  "exit_code": 0,
+  "timed_out": false,
+  "seconds": 126.02307444599995,
+  "metrics": {
+    "backend": "cached",
+    "context_switches": 401427,
+    "cpu_count": 4,
+    "cpu_seconds": 13.622805408,
+    "decode_lookups": 32414278,
+    "decode_misses": 362933,
+    "dispatch_seconds": 2.384303051,
+    "gpu_buffered_bytes": 0,
+    "gpu_compiles": 0,
+    "gpu_direct_bytes": 0,
+    "gpu_download_bytes": 0,
+    "gpu_peak_pending": 0,
+    "gpu_peer_instructions": 0,
+    "gpu_upload_bytes": 0,
+    "gpu_wait_seconds": 0.0,
+    "idle_seconds": 1.228749165,
+    "instructions": 953175574,
+    "instructions_decoded": 31345168,
+    "instructions_per_second": 7565245.713001349,
+    "memory_seconds": 2.101930154,
+    "parallel_rounds": 98249,
+    "parallel_snapshots": {
+      "backing_invalidations": 149,
+      "cache_hits": 216281,
+      "code_invalidations": 4216,
+      "dirty_refreshes": 73830,
+      "full_rebuild_pages": 310694,
+      "full_rebuilds": 338,
+      "incremental_pages": 332240,
+      "incremental_updates": 4362,
+      "source_page_reads": 837269
+    },
+    "peak_parallel_cpus": 4,
+    "peak_parallel_native_calls": 0,
+    "proc_refreshes": 80435,
+    "runtime_error": null,
+    "seconds": 125.994000745,
+    "stop_seconds": 6.482089051,
+    "syscall_seconds": 91.891056465,
+    "syscalls": 1240128,
+    "worker_chunks": 189032,
+    "worker_slices": 294811
+  },
+  "stages": {
+    "DAEMON": 12.952321141000027,
+    "CREATE": 74.15125075200001,
+    "EXEC": 32.77526306200002
+  },
+  "completed": true
+}

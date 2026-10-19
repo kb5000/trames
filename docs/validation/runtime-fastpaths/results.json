@@ -1,0 +1,187 @@
+{
+  "source": "42628d2365e5f60936b08e0df679684a93c64f68",
+  "baseline": "b25feb43ba019850511b440af34e9595f1b2e97c",
+  "scope": "Single paired Docker observation on shared x86_64 Linux with real 4 KiB pages; original guest Docker/default runtime. Session diagnostic groups pages at 16 KiB on the same 4 KiB Linux host. No physical iPad measurements.",
+  "docker": {
+    "DAEMON": {
+      "before_seconds": 12.952321141000027,
+      "after_seconds": 13.237336724999977,
+      "speedup": 0.9784688121242945
+    },
+    "CREATE": {
+      "before_seconds": 74.15125075200001,
+      "after_seconds": 38.21649201900004,
+      "speedup": 1.9402945386806913
+    },
+    "EXEC": {
+      "before_seconds": 32.77526306200002,
+      "after_seconds": 16.683301795000034,
+      "speedup": 1.9645549463010212
+    }
+  },
+  "docker_total": {
+    "before_seconds": 126.02307444599995,
+    "after_seconds": 73.633605386,
+    "speedup": 1.711488576246747
+  },
+  "session_host16_diagnostic": {
+    "before_score": 598.444045,
+    "after_score": 707.714084,
+    "speedup": 1.1825902353159852,
+    "before_seconds": 25.065,
+    "after_seconds": 21.195,
+    "manifest_sha256": "408a8b970346fcb50bf3951a3e4769bed11f2243b52d77b95853adc23b3c7aa3"
+  },
+  "validation": {
+    "linux": {
+      "run": 39187274654,
+      "job": 117852262025,
+      "conclusion": "success",
+      "core_passed": 56,
+      "vfs_passed": 152,
+      "existing_core_ignored": 4,
+      "existing_vfs_ignored": 1,
+      "strict_relevant_clippy": true,
+      "multiple_terminals": true
+    },
+    "apple": {
+      "run": 39187274741,
+      "job": 117852262089,
+      "conclusion": "success",
+      "host": "arm64",
+      "page_size": 16384,
+      "core_passed": 56,
+      "vfs_passed": 151,
+      "existing_core_ignored": 4,
+      "existing_vfs_ignored": 1,
+      "multiple_terminals": true,
+      "artifact_id": 12158489716,
+      "artifact_sha256": "cbf569479b6b0d7ac4f1f4859887d5f80fe33b3e66bb1f62b734b3607cbffafb",
+      "artifact_crc_verified": true
+    }
+  },
+  "docker_profile": {
+    "before": {
+      "samples": 31756,
+      "groups": {
+        "outside executable": {
+          "samples": 12989,
+          "percent": 40.902506612923546
+        },
+        "guest memory": {
+          "samples": 3224,
+          "percent": 10.152412142587227
+        },
+        "scheduler/kernel": {
+          "samples": 879,
+          "percent": 2.7679808540118405
+        },
+        "VFS": {
+          "samples": 14067,
+          "percent": 44.297140697820886
+        },
+        "CPU interpreter": {
+          "samples": 150,
+          "percent": 0.47235168157198637
+        },
+        "other": {
+          "samples": 447,
+          "percent": 1.4076080110845195
+        }
+      },
+      "inclusive_known": {
+        "cgroup_frozen": 67,
+        "key_of": 4347,
+        "fd_snapshot": 375,
+        "translated": 11,
+        "prepare_mmu_write": 12,
+        "path_visible": 121,
+        "refresh_proc": 11,
+        "follow_mounts": 12,
+        "path_of": 222
+      }
+    },
+    "after": {
+      "samples": 18661,
+      "groups": {
+        "guest memory": {
+          "samples": 3235,
+          "percent": 17.335619741707305
+        },
+        "outside executable": {
+          "samples": 9905,
+          "percent": 53.078613150420665
+        },
+        "CPU interpreter": {
+          "samples": 122,
+          "percent": 0.6537698944322383
+        },
+        "other": {
+          "samples": 349,
+          "percent": 1.8702105996463212
+        },
+        "VFS": {
+          "samples": 4439,
+          "percent": 23.787578372005786
+        },
+        "scheduler/kernel": {
+          "samples": 611,
+          "percent": 3.2742082417876857
+        }
+      },
+      "inclusive_known": {
+        "cgroup_frozen": 35,
+        "translated": 3,
+        "prepare_mmu_write": 24,
+        "path_visible": 104,
+        "path_in": 1351,
+        "fd_snapshot": 236,
+        "follow_mounts": 11,
+        "refresh_proc": 9,
+        "key_of": 15,
+        "path_of": 32
+      }
+    },
+    "method": "Same exclusive saved-PC classifier on both binaries; exact baseline category totals reverified. Includes daemon, create/start, exec and cleanup. Shared generic frames and host libraries cannot be fully attributed without unwinding."
+  },
+  "limitations": [
+    "Docker is one paired shared-host observation, images cached; no registry pull or physical iPad timings.",
+    "Session diagnostic only groups software coordinator pages at 16 KiB; real local hardware pages remain 4 KiB.",
+    "No repeat-sample confidence interval or hardware cycle counters.",
+    "Do not treat overlapping cumulative syscall/worker/stop timers as exclusive percentages."
+  ],
+  "session_apple": {
+    "order": [
+      "before-1",
+      "after-1",
+      "after-2",
+      "before-2"
+    ],
+    "before_scores": [
+      312.891114,
+      294.059988
+    ],
+    "after_scores": [
+      379.852617,
+      389.094965
+    ],
+    "before_median": 303.475551,
+    "after_median": 384.473791,
+    "score_median_speedup": 1.2669020279660024,
+    "before_seconds": [
+      47.94,
+      51.01
+    ],
+    "after_seconds": [
+      39.489,
+      38.551
+    ],
+    "input_manifest_sha256": "3881412cf105c7944c5274b15ca90e2d311412a292daaf63cd3c858abbdacaae",
+    "library_sha256": {
+      "before": "81281446223449f52f15c262de3e48bd2ad2610f9bb97a0e3016c9832f897949",
+      "after": "6306198cfbdac95401748b464f43e92aa4ea45a78190384821e89e05f3df386a"
+    },
+    "guest_elf_sha256": "7db7b54a9b5de71d6e9ce1fbe8c71d3dc957187358c2f5b328a7a10cdfd4e378",
+    "scope": "macOS 15 ARM64 host with real 16 KiB pages, release App production FFI/multiple-terminal path, no overlapping builds/tests during timing; original signed Alpine guest GCC 14.2 -O2, pinned unmodified guest CoreMark. This is not physical iPad timing and does not reproduce the specific 400-score device regression."
+  }
+}
