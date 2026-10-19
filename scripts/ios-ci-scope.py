@@ -388,6 +388,23 @@ def main():
                             job = next(j for j in jobs if j['name'] == name)
                             if not any(s['name'] == step and s['conclusion'] == 'success' for s in job['steps']):
                                 raise RuntimeError('Missing passed exact-source Vulkan module checks: ' + name)
+                    wayland_reuse = plan.get('zink_wayland_linux_reuse')
+                    if wayland_reuse:
+                        source = wayland_reuse['sha']
+                        delta = subprocess.check_output(['git', 'diff', '--name-only', source, 'HEAD'], text=True).splitlines()
+                        ci_only = {'.github/ios-validation-plan.json', '.github/workflows/linux.yml',
+                                   'scripts/ios-ci-scope.py', 'scripts/prepare-zink-native-bundle.py'}
+                        if plan.get('native_scope') != 'zink-wayland' or any(p not in ci_only and not p.startswith('docs/') for p in delta):
+                            raise RuntimeError('Wayland Linux reuse requires unchanged runtime, EGL, fixtures and build inputs')
+                        run_id = wayland_reuse['run']
+                        run = gpu_evidence(f'actions/runs/{run_id}')
+                        job = next(j for j in gpu_evidence(f'actions/runs/{run_id}/jobs')['jobs'] if j['name'] == 'zink-wayland-linux')
+                        if (run['head_sha'] != source or run['path'] != '.github/workflows/linux.yml'
+                                or run['head_repository']['full_name'] != repo or job['conclusion'] != 'success'):
+                            raise RuntimeError('Missing passed exact-source Linux Wayland job')
+                        artifacts = gpu_evidence(f'actions/runs/{run_id}/artifacts')['artifacts']
+                        if not any(a['name'] == 'zink-native-bundle' and not a['expired'] for a in artifacts):
+                            raise RuntimeError('Passed Linux guest bundle expired or missing')
                     reuse = plan.get('zink_reuse_apple')
                     if reuse:
                         source = reuse['sha']
@@ -473,6 +490,9 @@ def main():
                         if gpu_reuse:
                             output.write('zink_egl_only=true\n')
                             print('Reuse exact unchanged Linux/Apple Vulkan module checks; validate changed EGL component, distro install and embedding.')
+                        if wayland_reuse:
+                            output.write(f"zink_wayland_linux_run={wayland_reuse['run']}\nzink_wayland_linux_sha={wayland_reuse['sha']}\n")
+                            print('Reuse passed unchanged Linux Wayland build and exact guest bundle; retry only Apple acceptance.')
                         if sync_reuse:
                             output.write('zink_sync_skip_linux=true\nzink_sync_skip_apple_checks=true\n')
                             print('Reuse exact-source passed Linux GPU and Apple module/iOS checks; retry only macOS MoltenVK native-example linking/runtime.')

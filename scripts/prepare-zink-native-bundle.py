@@ -12,6 +12,7 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('--verify', action='store_true')
+p.add_argument('--source-sha', help='reuse a passed bundle after CI/documentation-only changes')
 p.add_argument('--wayland', action='store_true', help='include exact Wayland EGL and image-copy clients')
 a = p.parse_args()
 out = ROOT / 'target/zink-native-bundle'
@@ -19,8 +20,15 @@ manifest = out / 'checksums.json'
 sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
 if a.verify:
     data = json.loads(manifest.read_text())
-    assert data['source_sha'] == sha, 'Guest bundle/source mismatch'
-    assert data['source_sha'] == os.environ.get('GITHUB_SHA', sha)
+    source = a.source_sha or sha
+    assert sha == os.environ.get('GITHUB_SHA', sha)
+    assert data['source_sha'] == source, 'Guest bundle/source mismatch'
+    if source != sha:
+        subprocess.run(['git', 'merge-base', '--is-ancestor', source, sha], cwd=ROOT, check=True)
+        delta = subprocess.check_output(['git', 'diff', '--name-only', source, sha], cwd=ROOT, text=True).splitlines()
+        ci_only = {'.github/ios-validation-plan.json', '.github/workflows/linux.yml',
+                   'scripts/ios-ci-scope.py', 'scripts/prepare-zink-native-bundle.py'}
+        assert all(f in ci_only or f.startswith('docs/') for f in delta), 'Guest/runtime inputs changed'
     actual = {str(f.relative_to(out)) for f in out.rglob('*') if f.is_file() and f != manifest}
     assert actual == set(data['sha256'])
     for name, expected in data['sha256'].items():
@@ -37,7 +45,7 @@ if a.verify:
             shutil.copyfile(out / 'bin' / name, ROOT / 'target/zink-inputs' / name)
     # Guest ELF execute bits do not need to survive an artifact ZIP roundtrip:
     # trames-run imports --exec-file and sets the guest executable metadata.
-    print('Verified exact guest ICD, original Mesa store, clients and shaders:', sha)
+    print('Verified exact guest ICD, original Mesa store, clients and shaders:', source, 'checkout:', sha)
 else:
     assert (out / 'store/manifest').is_file(), 'Run integration with --snapshot-store first'
     for folder in ('guest', 'bin', 'shaders'):

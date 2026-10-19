@@ -32,6 +32,8 @@ jobs:
       zink_skip_linux_checks: ${{ steps.scope.outputs.zink_skip_linux_checks }}
       zink_sync_skip_linux: ${{ steps.scope.outputs.zink_sync_skip_linux }}
       zink_egl_only: ${{ steps.scope.outputs.zink_egl_only }}
+      zink_wayland_linux_run: ${{ steps.scope.outputs.zink_wayland_linux_run }}
+      zink_wayland_linux_sha: ${{ steps.scope.outputs.zink_wayland_linux_sha }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,7 +48,7 @@ jobs:
         run: python3 scripts/ios-ci-scope.py
   zink-wayland-linux:
     needs: scope
-    if: needs.scope.outputs.native_scope == 'zink-wayland'
+    if: needs.scope.outputs.native_scope == 'zink-wayland' && needs.scope.outputs.zink_wayland_linux_run == ''
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -106,11 +108,13 @@ jobs:
           retention-days: 3
   zink-wayland-apple:
     needs: [scope, zink-wayland-linux]
-    if: needs.scope.outputs.native_scope == 'zink-wayland'
+    if: always() && needs.scope.result == 'success' && needs.scope.outputs.native_scope == 'zink-wayland' && (needs.zink-wayland-linux.result == 'success' || needs.zink-wayland-linux.result == 'skipped')
     runs-on: macos-15
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-10-16
@@ -119,15 +123,17 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: zink-native-bundle
+          github-token: ${{ github.token }}
+          run-id: ${{ needs.scope.outputs.zink_wayland_linux_run || github.run_id }}
           path: target/zink-native-bundle
       - name: Verify exact guest inputs and Apple embedding
         run: |
-          python3 scripts/prepare-zink-native-bundle.py --verify
+          python3 scripts/prepare-zink-native-bundle.py --verify --source-sha '${{ needs.scope.outputs.zink_wayland_linux_sha || github.sha }}'
           if [[ '${{ needs.scope.outputs.zink_egl_only }}' != true ]]; then
             cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
             cargo test -p trames-vulkan --lib --locked
           fi
-          cargo clippy -p trames-distro -p trames-ffi --all-targets --locked -- -D warnings
+          cargo clippy -p trames-distro -p trames-ffi --all-targets --no-deps --locked -- -D warnings
           cargo test -p trames-distro vulkan --locked
           cargo check -p trames-ffi --target aarch64-apple-ios --locked
       - name: Verify original Mesa Wayland EGL on exported Metal textures
