@@ -134,8 +134,19 @@
     "vfs": "155 passed (149 original batch + 6 failed-only retry after sandbox network access/test expectation correction), 1 pre-existing ignore",
     "strict_clippy": "VFS/Core/FFI/CLI all-targets/all-features passed",
     "production_terminals": "PASS: 3 independent PTYs, shared files/processes, private cwd/env, resize, Ctrl+C, output backpressure, close/exit/reopen and rapid pending cancellation",
-    "apple": "pending CI; no iPad run or new IPA",
-    "smp": "Original static musl pthread/topology/getcpu/atomics/futex/fork/exec fixture matches validated baseline one CPU on candidate one/two/four CPUs. QEMU unavailable; existing unchanged oracle coverage reused. Fixture itself did not guarantee local query syscalls while parallel, so no worker query count claim."
+    "apple": {
+      "run": 39298809201,
+      "sha": "6285e706dd1173d04ad1c3ab4d005fd6449f62ce",
+      "modules": "passed",
+      "session_library": "built successfully",
+      "terminal_control": "not executed: Alpine archive missing before guest startup; fix CI preparation and retry only unfinished check"
+    },
+    "smp": "Original static musl pthread/topology/getcpu/atomics/futex/fork/exec fixture matches validated baseline one CPU on candidate one/two/four CPUs. QEMU unavailable; existing unchanged oracle coverage reused. Fixture itself did not guarantee local query syscalls while parallel, so no worker query count claim.",
+    "linux_ci": {
+      "run": 39298809174,
+      "sha": "6285e706dd1173d04ad1c3ab4d005fd6449f62ce",
+      "result": "success"
+    }
   },
   "checksums": {
     "after-full.log": "bfb6b1abdb48dbfc2b80b298a82f7215b8a483ed3c659e7137a80e061308349a",

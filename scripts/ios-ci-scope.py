@@ -15,6 +15,41 @@ def frontend_path(path):
     }
 
 
+def runtime_fastpaths_reuse(plan, repo, headers):
+    reuse = plan.get('runtime_reuse')
+    if not reuse:
+        return False
+    source = reuse['sha']
+    changed = subprocess.check_output(['git', 'diff', '--name-only', source, 'HEAD'], text=True).splitlines()
+    allowed = {'.github/ios-validation-plan.json', '.github/workflows/ios.yml',
+               '.github/workflows/linux.yml', 'scripts/ios-ci-scope.py'}
+    if any(p not in allowed and not p.startswith('docs/') for p in changed):
+        raise RuntimeError('Runtime check reuse requires unchanged runtime, tests and build inputs')
+
+    def get(path):
+        request = urllib.request.Request(f'https://api.github.com/repos/{repo}/{path}', headers=headers)
+        with urllib.request.urlopen(request, timeout=30) as response:
+            return json.load(response)
+
+    for platform, workflow, name, required in [
+        ('linux', 'linux.yml', 'runtime-fastpaths', None),
+        ('apple', 'ios.yml', 'runtime-fastpaths-apple', 'Validate affected Apple VFS and scheduler modules'),
+    ]:
+        run_id = reuse[platform]
+        run = get(f'actions/runs/{run_id}')
+        if (run['head_sha'] != source or run['path'] != '.github/workflows/' + workflow
+                or run['head_repository']['full_name'] != repo):
+            raise RuntimeError('Runtime reuse evidence must match the exact repository/source/workflow')
+        job = next(j for j in get(f'actions/runs/{run_id}/jobs')['jobs'] if j['name'] == name)
+        if required:
+            if not any(s['name'] == required and s['conclusion'] == 'success' for s in job['steps']):
+                raise RuntimeError('Missing successful Apple module checks')
+        elif job['conclusion'] != 'success':
+            raise RuntimeError('Missing successful Linux acceptance')
+    print('Reuse exact passed Linux and Apple modules; complete only the unfinished Apple terminal check.')
+    return True
+
+
 def container_isolation_path(path):
     return path.startswith(('crates/trames-net/', 'crates/trames-vfs/',
                             'crates/trames-linux/', 'crates/trames-core/', 'docs/')) or path in {
@@ -612,12 +647,15 @@ def main():
                         raise RuntimeError('Runtime fastpath plan includes unrelated source changes')
                     if not plan.get('syscall_parallel'):
                         print('VFS path lookup and solo scheduling: affected Core/VFS tests, production multi-terminal ABI, paired original CoreMark on Apple host. Reuse unchanged CPU/MMU/network/GPU/UI acceptance; no IPA.')
+                    reused = runtime_fastpaths_reuse(plan, repo, dict(request.headers))
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=runtime-fastpaths\n')
                         output.write('skip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
                         if plan.get('syscall_parallel'):
                             print('Worker-local unfiltered syscalls and VFS synchronization: check Core/VFS/CLI, real terminal control and Apple memory granularity. Reuse unchanged CPU interpreter/CoreMark acceptance; Docker timings retained separately. No IPA.')
                             output.write('syscall_parallel=true\n')
+                        if reused:
+                            output.write('runtime_linux_reused=true\nruntime_apple_modules_reused=true\n')
                     return
                 if plan.get('device_build'):
                     outputs = device_build_outputs(plan, repo, dict(request.headers))

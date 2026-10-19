@@ -20,6 +20,7 @@ jobs:
       skip_native: ${{ steps.scope.outputs.skip_linux_native }}
       skip_modules: ${{ steps.scope.outputs.skip_linux_modules }}
       native_scope: ${{ steps.scope.outputs.native_scope }}
+      runtime_linux_reused: ${{ steps.scope.outputs.runtime_linux_reused }}
       storage_proc_only: ${{ steps.scope.outputs.storage_proc_only }}
       isolation_retry: ${{ steps.scope.outputs.isolation_retry }}
       network_retry: ${{ steps.scope.outputs.network_retry }}
@@ -276,7 +277,7 @@ jobs:
           retention-days: 14
   runtime-fastpaths:
     needs: scope
-    if: needs.scope.outputs.native_scope == 'runtime-fastpaths'
+    if: needs.scope.outputs.native_scope == 'runtime-fastpaths' && needs.scope.outputs.runtime_linux_reused != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:

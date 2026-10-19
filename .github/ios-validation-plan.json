@@ -1,34 +1,17 @@
 {
-  "base_sha": "d1d250d1cf34707f356c3b71ecfbdcd1c6046d02",
+  "base_sha": "6285e706dd1173d04ad1c3ab4d005fd6449f62ce",
   "native_scope": "runtime-fastpaths",
   "syscall_parallel": true,
-  "reason": "Worker-local unfiltered identity/clock/getcpu syscalls plus VFS pseudo lookup/FD version synchronization; check affected Core/VFS/CLI and real multi-terminal control on Linux/Apple. Reuse unchanged interpreter/MMU/GPU/UI and prior CoreMark evidence; retain new cached-image Docker timing locally. No IPA.",
+  "reason": "CI fixture preparation only: fetch Alpine rootfs for Apple terminal check after skipping unrelated CoreMark setup. Reuse exact passed Linux acceptance and Apple VFS/Core modules; rebuild same FFI solely to complete unfinished Apple terminal control. Runtime/test/build-input sources unchanged. No IPA.",
   "changed_file_sha256": {
-    ".github/workflows/ios.yml": "4778ca3ac7ab8378637b8dbeb6a200083fc5730070ce14a88149737f410b0cdc",
-    ".github/workflows/linux.yml": "6f9604b007e7ea434bd350a4ff6b7976ce65edc1ab46ef092a384a3147dcc7cf",
-    "crates/trames-cli/src/main.rs": "63cc1f5b05e013aefe66fa9b171441f00b3f57d71c89afd1e5c07a1635e6fdaf",
-    "crates/trames-core/src/lib.rs": "1eb55c7fb105dd9857fc8eb460e18b4bf07cf814d41bec02fc8fa11b5e0f9e2e",
-    "crates/trames-core/src/process.rs": "4165aad55cc4a011969369c6dd39cbabe7581fdf0479aacf52dd0b070343d0ea",
-    "crates/trames-core/src/process_seccomp.rs": "77e8b15f712b1860f8a9d4454f3212597e27a396082fc2d3c1390f5c915427fb",
-    "crates/trames-core/src/worker_syscalls.rs": "e50abc62572735bf0d6fe3ead79032d6458ca0226ee8edd0ea7c476896c7bb2c",
-    "crates/trames-core/src/workers.rs": "7fc0664848a3916849da3b1d80c5b265efbd1309b1564d516c2edb32b8a6e007",
-    "crates/trames-vfs/src/lib.rs": "1901ab962702ea07d2306a0132e9af4b0b768355fcebb932d3f9fe81a63b862b",
-    "crates/trames-vfs/src/mounts.rs": "59e7cc5dbc91bb42e506789e62dab4892433159808427689b86c6f068ed87688",
-    "docs/validation/docker-worker-syscalls.md": "875e12c446cdf8790db996b23dd8ced467c665de5462a7a048b3687a51c21c81",
-    "docs/validation/docker-worker-syscalls/after-full-threads.json": "8e056f1a25d30f570b2b9eb98ccca939abf5cd1650db3e23cdf80c35db705048",
-    "docs/validation/docker-worker-syscalls/after-full.json": "bce9b9d1effcd4bf038278ef3fe5ec50035590100794e93b1a7a2b74c29926a6",
-    "docs/validation/docker-worker-syscalls/after-full.log": "bfb6b1abdb48dbfc2b80b298a82f7215b8a483ed3c659e7137a80e061308349a",
-    "docs/validation/docker-worker-syscalls/after-vfs-threads.json": "6d3eeeb90893598cc7d2248b47f8f123a268f5a40e7dc508561e22354be1cc60",
-    "docs/validation/docker-worker-syscalls/after-vfs.json": "d114bb05b33783bda7ba52775a2312e2ff2b88adc9bc735c11fb1f4a40625a4e",
-    "docs/validation/docker-worker-syscalls/after-vfs.log": "a0ab7f3252981d91f027832378547c9c477de54c4bbbe38990a0673f1c8d476f",
-    "docs/validation/docker-worker-syscalls/before-full-threads.json": "64b235db56f2c8c8f7b17143c576f600f88e70275ed4c1ee7f280e9782fa281b",
-    "docs/validation/docker-worker-syscalls/before-full.json": "0204dcaf714939d106d8614d4aada603140ef38793dc15731ddddcab69d826bd",
-    "docs/validation/docker-worker-syscalls/before-full.log": "c732378e929cd903a498cf1a655f55efd876e4b2bb873e1145da96819b372267",
-    "docs/validation/docker-worker-syscalls/profiles.json": "ca49b7b9c01b5fb5be44f3d168b98f8497abde5486dd16cd1a8799057d265e0a",
-    "docs/validation/docker-worker-syscalls/results.json": "144ac70713b208cf43656a5f68bc79bf9ce81cb88a3d75e263ec6a84b5d22981",
-    "docs/validation/docker-worker-syscalls/smp.json": "d4c6b6ce81b599f8b3eafd24e141a214c7df789a782163ccfb9f95e54059afc9",
-    "scripts/ios-ci-scope.py": "3ad693d9a5e25aa1dc13e642b56ceed84bf6246235569196ba03a3d1d7792792",
-    "tests/performance/session-docker-tty.py": "e5c9f7a55e9d3176846ff076e09dbce8506589cd3c075d012f75d5a43be5e39e",
-    "tests/performance/session-sampler.c": "5953f28ece419d1bc51af74fefa5b7a7fd71ddf571279dce6557e6ad1dc6a7cf"
+    ".github/workflows/ios.yml": "563a6c8846d6ec1c22c45b9f56413387d7fe3c1c36cbcb65bb67b95ea80a48ac",
+    ".github/workflows/linux.yml": "20810192316297ea60147e11c62c4e7733012d6fb2f180e89f352ee08434ba65",
+    "docs/validation/docker-worker-syscalls/results.json": "8a1e9e742a50daa05cee8eb0ebdfdeb5c8dd713607042bf0d008455620b62527",
+    "scripts/ios-ci-scope.py": "c2f61511daa1e58d7bba00f8dc22ad724de673734ae7b7935a9f5e8423145b2c"
+  },
+  "runtime_reuse": {
+    "sha": "6285e706dd1173d04ad1c3ab4d005fd6449f62ce",
+    "linux": 39298809174,
+    "apple": 39298809201
   }
 }
