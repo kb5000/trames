@@ -597,6 +597,9 @@ def main():
                     return
                 if plan.get('native_scope') == 'runtime-fastpaths':
                     allowed = {'crates/trames-core/src/process.rs', 'crates/trames-vfs/src/lib.rs',
+                               'crates/trames-core/src/workers.rs', 'crates/trames-core/src/worker_syscalls.rs',
+                               'crates/trames-core/src/lib.rs', 'crates/trames-core/src/process_seccomp.rs',
+                               'crates/trames-cli/src/main.rs', 'tests/performance/session-sampler.c',
                                'crates/trames-vfs/src/mounts.rs', 'crates/trames-vfs/src/directory.rs',
                                'crates/trames-vfs/src/storage.rs', 'crates/trames-vfs/src/pseudo.rs',
                                'crates/trames-vfs/src/overlay.rs', 'crates/trames-vfs/src/pty.rs',
@@ -607,10 +610,14 @@ def main():
                                'tests/performance/session-docker-tty.py'}
                     if any(p not in allowed and not p.startswith('docs/') for p in changed):
                         raise RuntimeError('Runtime fastpath plan includes unrelated source changes')
-                    print('VFS path lookup and solo scheduling: affected Core/VFS tests, production multi-terminal ABI, paired original CoreMark on Apple host. Reuse unchanged CPU/MMU/network/GPU/UI acceptance; no IPA.')
+                    if not plan.get('syscall_parallel'):
+                        print('VFS path lookup and solo scheduling: affected Core/VFS tests, production multi-terminal ABI, paired original CoreMark on Apple host. Reuse unchanged CPU/MMU/network/GPU/UI acceptance; no IPA.')
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=runtime-fastpaths\n')
                         output.write('skip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
+                        if plan.get('syscall_parallel'):
+                            print('Worker-local unfiltered syscalls and VFS synchronization: check Core/VFS/CLI, real terminal control and Apple memory granularity. Reuse unchanged CPU interpreter/CoreMark acceptance; Docker timings retained separately. No IPA.')
+                            output.write('syscall_parallel=true\n')
                     return
                 if plan.get('device_build'):
                     outputs = device_build_outputs(plan, repo, dict(request.headers))

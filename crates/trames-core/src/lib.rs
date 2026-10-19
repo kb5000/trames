@@ -6,6 +6,7 @@ use trames_elf::{ElfError, LoadedElf};
 use trames_linux::{GuestOutput, Linux};
 mod process;
 mod terminal;
+mod worker_syscalls;
 mod workers;
 use trames_memory::{Memory, MemoryError, Permissions, DEFAULT_MEMORY_LIMIT, PAGE_SIZE};
 
@@ -128,6 +129,8 @@ pub struct RuntimeMetrics {
     /// Worker-local CPU slices, including polls and native returns; no messages
     /// or barriers are required between these slices.
     pub worker_chunks: u64,
+    /// Completed on CPU workers without a coordinator checkpoint; included in syscalls.
+    pub worker_syscalls: u64,
     pub peak_parallel_cpus: usize,
     pub peak_parallel_native_calls: usize,
     pub parallel_memory_time: std::time::Duration,

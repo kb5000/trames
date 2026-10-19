@@ -601,7 +601,7 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
                 "idle_seconds":profile.idle_time.as_secs_f64(),"syscalls":profile.syscalls,
                 "proc_refreshes":profile.proc_refreshes,"context_switches":profile.context_switches,
                 "decode_lookups":profile.decode_lookups,"decode_misses":profile.decode_misses,"instructions_decoded":profile.instructions_decoded,
-                "cpu_count":profile.cpu_count,"parallel_rounds":profile.parallel_rounds,"worker_slices":profile.worker_slices,"worker_chunks":profile.worker_chunks,
+                "cpu_count":profile.cpu_count,"parallel_rounds":profile.parallel_rounds,"worker_slices":profile.worker_slices,"worker_chunks":profile.worker_chunks,"worker_syscalls":profile.worker_syscalls,
                 "dispatch_seconds":profile.parallel_dispatch_time.as_secs_f64(),"stop_seconds":profile.parallel_stop_time.as_secs_f64(),
                 "peak_parallel_cpus":profile.peak_parallel_cpus,"peak_parallel_native_calls":profile.peak_parallel_native_calls,"memory_seconds":profile.parallel_memory_time.as_secs_f64(),
                 "parallel_snapshots":snapshots

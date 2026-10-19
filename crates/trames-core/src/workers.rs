@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! CPU workers retain state and run until an event or a requested checkpoint.
-//! Checked pure NativeCall runs on workers; Linux/VFS stay on the coordinator.
+//! Pure NativeCall and unfiltered snapshot/clock syscalls run on workers.
+//! Mutable Linux/VFS state stays on the coordinator.
 use std::{
     sync::{
         atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
@@ -53,6 +54,7 @@ pub(super) struct Work {
     pub cpu: Cpu,
     pub memory: View,
     pub control: Arc<Control>,
+    pub syscalls: Option<crate::worker_syscalls::Snapshot>,
 }
 pub(super) struct Done {
     pub pid: u32,
@@ -65,6 +67,8 @@ pub(super) struct Done {
     /// All retired instructions, including earlier uninterrupted local polls.
     pub instructions: u64,
     pub chunks: u64,
+    pub syscalls: u64,
+    pub syscall_time: Duration,
     pub native: trames_accel::native::Metrics,
     pub rejected_native: Option<(u64, u64, u64)>,
 }
@@ -124,6 +128,8 @@ impl Pool {
                     let mut running = false;
                     let mut rejected_native = None;
                     let mut credit = 0;
+                    let mut syscalls = 0;
+                    let mut syscall_time = Duration::ZERO;
                     let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                         loop {
                             if work.control.stop.load(Ordering::Acquire) {
@@ -151,6 +157,22 @@ impl Pool {
                             };
                             instructions += retired;
                             credit -= retired;
+                            if matches!(result, SliceOutcome::Syscall { .. }) {
+                                work.cpu.clear_exclusive();
+                                if let Some(snapshot) = &work.syscalls {
+                                    let began = snapshot.profile.then(Instant::now);
+                                    if let Some(value) =
+                                        snapshot.invoke(&work.cpu, &mut work.memory)
+                                    {
+                                        if let Some(began) = began {
+                                            syscall_time += began.elapsed();
+                                        }
+                                        work.cpu.set_x(0, value);
+                                        syscalls += 1;
+                                        continue;
+                                    }
+                                }
+                            }
                             if let SliceOutcome::NativeCall {
                                 pc,
                                 module,
@@ -244,6 +266,8 @@ impl Pool {
                             worker: index,
                             instructions,
                             chunks,
+                            syscalls,
+                            syscall_time,
                             native: {
                                 registry.metrics.worker_calls = registry.metrics.calls;
                                 std::mem::take(&mut registry.metrics)
@@ -361,7 +385,93 @@ mod tests {
             cpu,
             memory: memory.parallel_view(&mut Default::default()).unwrap(),
             control,
+            syscalls: None,
         }
+    }
+
+    fn syscall_snapshot() -> crate::worker_syscalls::Snapshot {
+        crate::worker_syscalls::Snapshot {
+            identities: [21, 12, 1000, 1001, 2000, 2001, 22],
+            started: Instant::now(),
+            processor: 1,
+            profile: true,
+        }
+    }
+
+    #[test]
+    fn local_syscalls_continue_with_exact_budget_and_fall_back_before_mutations() {
+        let mut pool = Pool::new(1);
+        pool.ensure(0).unwrap();
+        for budget in 1..=5 {
+            let control = Arc::new(Control::new(budget));
+            // mov x8,#178; svc #0; mov x1,x0; mov x8,#64; svc #0.
+            let mut work = work(
+                22,
+                &[0xd2801648, 0xd4000001, 0xaa0003e1, 0xd2800808, 0xd4000001],
+                0,
+                control.clone(),
+            );
+            work.syscalls = Some(syscall_snapshot());
+            work.cpu.set_x(19, 0x1234);
+            work.cpu.tpidr_el0 = 0x5678;
+            pool.dispatch(0, work).unwrap();
+            let done = pool
+                .complete_timeout(Duration::from_secs(5))
+                .unwrap()
+                .unwrap();
+            assert_eq!(done.instructions, budget);
+            assert_eq!(control.remaining.load(Ordering::Relaxed), 0);
+            assert_eq!(done.syscalls, u64::from(budget >= 2));
+            assert_eq!(done.cpu.x(19), 0x1234);
+            assert_eq!(done.cpu.tpidr_el0, 0x5678);
+            if budget >= 2 {
+                assert_eq!(done.cpu.x(0), 22);
+            }
+            if budget >= 3 {
+                assert_eq!(done.cpu.x(1), 22);
+            }
+            if budget == 5 {
+                assert!(matches!(done.outcome, Some(SliceOutcome::Syscall { .. })));
+                assert_eq!(done.cpu.x(8), 64);
+                assert_eq!(done.cpu.pc, 0x1014);
+            }
+        }
+        // Filtered/trace assignments receive no snapshot and must checkpoint at
+        // the original SVC, before the query returns or any following stores.
+        let work = work(
+            22,
+            &[0xd2801648, 0xd4000001, 0xaa0003e1],
+            0,
+            Arc::new(Control::new(10)),
+        );
+        pool.dispatch(0, work).unwrap();
+        let done = pool.complete().unwrap();
+        assert_eq!(
+            (done.instructions, done.syscalls, done.cpu.pc),
+            (2, 0, 0x1008)
+        );
+        assert!(matches!(done.outcome, Some(SliceOutcome::Syscall { .. })));
+    }
+
+    #[test]
+    fn repeated_queries_run_without_a_coordinator_rendezvous() {
+        let mut pool = Pool::new(1);
+        pool.ensure(0).unwrap();
+        let budget = 65_539;
+        let control = Arc::new(Control::new(budget));
+        let mut work = work(22, &[0xd4000001, 0x17ffffff], 0, control.clone());
+        work.cpu.set_x(8, 172);
+        work.syscalls = Some(syscall_snapshot());
+        pool.dispatch(0, work).unwrap();
+        let done = pool
+            .complete_timeout(Duration::from_secs(5))
+            .unwrap()
+            .unwrap();
+        assert_eq!(done.instructions, budget);
+        assert_eq!(done.syscalls, budget.div_ceil(2));
+        assert_eq!(done.cpu.x(0), 21);
+        assert_eq!(control.remaining.load(Ordering::Relaxed), 0);
+        assert!(matches!(done.outcome, Some(SliceOutcome::Yield { .. })));
     }
 
     fn native_work(
@@ -404,6 +514,7 @@ mod tests {
                 cpu,
                 memory: memory_view,
                 control,
+                syscalls: None,
             },
             memory,
         )
@@ -434,6 +545,7 @@ mod tests {
             cpu,
             memory: memory.parallel_view(&mut Default::default()).unwrap(),
             control: control.clone(),
+            syscalls: None,
         };
         pool.dispatch(0, work).unwrap();
         let done = pool.complete().unwrap();
@@ -522,6 +634,7 @@ mod tests {
                 cpu: peer_cpu,
                 memory: first.memory.clone(),
                 control: control.clone(),
+                syscalls: None,
             };
             let (held_tx, held_rx) = mpsc::channel();
             let (release_tx, release_rx) = mpsc::channel();

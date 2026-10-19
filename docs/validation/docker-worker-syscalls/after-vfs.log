@@ -1,0 +1,571 @@
+> > > > > > > > > > > > > > > > > > > > > > > > > > ~ # 
+TRAMES_TTY_DAEMON_BEGIN
+
+TRAMES_TTY_DAEMON_READY
+IMAGE=sha256:4a82f16bd90a1627d1f6319eaca9d525080e214534f11896222d69b9254c65c1
+GUEST_CPUS=4
+
+TRAMES_TTY_RUN_BEGIN
+/ # [6ntest -t 0 && test -t 1 && test -t 2 && printf '\nTRAMES_TTY_ROUNDTRIP:%s\n' 
+
+"$(tty)"; exit
+
+TRAMES_TTY_ROUNDTRIP:/dev/pts/0
+
+TRAMES_TTY_RUN_END
+
+TRAMES_TTY_COMPLETE
+
+TRAMES_TTY_LOG_BEGIN
+time="2026-10-19T17:48:15.711548734Z" level=info msg="Starting up"
+time="2026-10-19T17:48:15.722279896Z" level=warning msg="Error while setting daemon root propagation, this is not generally critical but may cause some functionality to not work or fallback to less desirable behavior" dir=/var/lib/docker error="could not setup daemon root propagation to shared: remount /var/lib/docker, flags: 0x100000: operation not supported"
+time="2026-10-19T17:48:15.735025431Z" level=debug msg="Listener created for HTTP on unix (/var/run/docker.sock)"
+time="2026-10-19T17:48:15.736129929Z" level=info msg="containerd not running, starting managed containerd"
+time="2026-10-19T17:48:15.748764300Z" level=debug msg="starting containerd binary" binary=containerd module=libcontainerd
+time="2026-10-19T17:48:15.843130231Z" level=info msg="started new containerd process" address=/var/run/docker/containerd/containerd.sock module=libcontainerd pid=20
+time="2026-10-19T17:48:15.867431073Z" level=debug msg="created containerd monitoring client" address=/var/run/docker/containerd/containerd.sock module=libcontainerd
+time="2026-10-19T17:48:16.477282574Z" level=info msg="starting containerd" revision=fcd43222d6b07379a4be9786bda52438f0dd16a1 version=v2.1.5
+time="2026-10-19T17:48:17.033276624Z" level=warning msg="Configuration migrated from version 2, use `containerd config migrate` to avoid migration" t="704.776µs"
+time="2026-10-19T17:48:17.034197727Z" level=info msg="loading plugin" id=io.containerd.content.v1.content type=io.containerd.content.v1
+time="2026-10-19T17:48:17.035272616Z" level=info msg="loading plugin" id=io.containerd.image-verifier.v1.bindir type=io.containerd.image-verifier.v1
+time="2026-10-19T17:48:17.036454451Z" level=info msg="loading plugin" id=io.containerd.internal.v1.opt type=io.containerd.internal.v1
+time="2026-10-19T17:48:17.037708846Z" level=info msg="loading plugin" id=io.containerd.warning.v1.deprecations type=io.containerd.warning.v1
+time="2026-10-19T17:48:17.039795909Z" level=info msg="loading plugin" id=io.containerd.snapshotter.v1.blockfile type=io.containerd.snapshotter.v1
+time="2026-10-19T17:48:17.041905348Z" level=info msg="skip loading plugin" error="no scratch file generator: skip plugin" id=io.containerd.snapshotter.v1.blockfile type=io.containerd.snapshotter.v1
+time="2026-10-19T17:48:17.043020904Z" level=info msg="loading plugin" id=io.containerd.snapshotter.v1.btrfs type=io.containerd.snapshotter.v1
+time="2026-10-19T17:48:17.049016032Z" level=info msg="skip loading plugin" error="path /var/lib/docker/containerd/daemon/io.containerd.snapshotter.v1.btrfs (rootfs) must be a btrfs filesystem to be used with the btrfs snapshotter: skip plugin" id=io.containerd.snapshotter.v1.btrfs type=io.containerd.snapshotter.v1
+time="2026-10-19T17:48:17.050039525Z" level=info msg="loading plugin" id=io.containerd.snapshotter.v1.devmapper type=io.containerd.snapshotter.v1
+time="2026-10-19T17:48:17.051021279Z" level=info msg="skip loading plugin" error="devmapper not configured: skip plugin" id=io.containerd.snapshotter.v1.devmapper type=io.containerd.snapshotter.v1
+time="2026-10-19T17:48:17.051696416Z" level=info msg="loading plugin" id=io.containerd.snapshotter.v1.erofs type=io.containerd.snapshotter.v1
+time="2026-10-19T17:48:17.058435144Z" level=info msg="skip loading plugin" error="EROFS unsupported, please `modprobe erofs`: skip plugin" id=io.containerd.snapshotter.v1.erofs type=io.containerd.snapshotter.v1
+time="2026-10-19T17:48:17.059085019Z" level=info msg="loading plugin" id=io.containerd.snapshotter.v1.native type=io.containerd.snapshotter.v1
+time="2026-10-19T17:48:17.060159797Z" level=info msg="loading plugin" id=io.containerd.snapshotter.v1.overlayfs type=io.containerd.snapshotter.v1
+time="2026-10-19T17:48:17.062257798Z" level=info msg="loading plugin" id=io.containerd.snapshotter.v1.zfs type=io.containerd.snapshotter.v1
+time="2026-10-19T17:48:17.063451072Z" level=info msg="skip loading plugin" error="lstat /var/lib/docker/containerd/daemon/io.containerd.snapshotter.v1.zfs: no such file or directory: skip plugin" id=io.containerd.snapshotter.v1.zfs type=io.containerd.snapshotter.v1
+time="2026-10-19T17:48:17.064079061Z" level=info msg="loading plugin" id=io.containerd.event.v1.exchange type=io.containerd.event.v1
+time="2026-10-19T17:48:17.065913395Z" level=info msg="loading plugin" id=io.containerd.monitor.task.v1.cgroups type=io.containerd.monitor.task.v1
+time="2026-10-19T17:48:17.119193748Z" level=info msg="loading plugin" id=io.containerd.metadata.v1.bolt type=io.containerd.metadata.v1
+time="2026-10-19T17:48:17.123512743Z" level=info msg="metadata content store policy set" policy=shared
+time="2026-10-19T17:48:17.137530502Z" level=info msg="loading plugin" id=io.containerd.gc.v1.scheduler type=io.containerd.gc.v1
+time="2026-10-19T17:48:17.142514207Z" level=info msg="loading plugin" id=io.containerd.differ.v1.erofs type=io.containerd.differ.v1
+time="2026-10-19T17:48:17.154253197Z" level=info msg="skip loading plugin" error="could not find mkfs.erofs: exec: \"mkfs.erofs\": executable file not found in $PATH: skip plugin" id=io.containerd.differ.v1.erofs type=io.containerd.differ.v1
+time="2026-10-19T17:48:17.162916679Z" level=info msg="loading plugin" id=io.containerd.differ.v1.walking type=io.containerd.differ.v1
+time="2026-10-19T17:48:17.164992153Z" level=info msg="loading plugin" id=io.containerd.lease.v1.manager type=io.containerd.lease.v1
+time="2026-10-19T17:48:17.166536352Z" level=info msg="loading plugin" id=io.containerd.service.v1.containers-service type=io.containerd.service.v1
+time="2026-10-19T17:48:17.170414728Z" level=info msg="loading plugin" id=io.containerd.service.v1.content-service type=io.containerd.service.v1
+time="2026-10-19T17:48:17.174884993Z" level=info msg="loading plugin" id=io.containerd.service.v1.diff-service type=io.containerd.service.v1
+time="2026-10-19T17:48:17.176965305Z" level=info msg="loading plugin" id=io.containerd.service.v1.images-service type=io.containerd.service.v1
+time="2026-10-19T17:48:17.179537921Z" level=info msg="loading plugin" id=io.containerd.service.v1.introspection-service type=io.containerd.service.v1
+time="2026-10-19T17:48:17.181944281Z" level=info msg="loading plugin" id=io.containerd.service.v1.namespaces-service type=io.containerd.service.v1
+time="2026-10-19T17:48:17.183405689Z" level=info msg="loading plugin" id=io.containerd.service.v1.snapshots-service type=io.containerd.service.v1
+time="2026-10-19T17:48:17.185701232Z" level=info msg="loading plugin" id=io.containerd.shim.v1.manager type=io.containerd.shim.v1
+time="2026-10-19T17:48:17.187929338Z" level=info msg="loading plugin" id=io.containerd.runtime.v2.task type=io.containerd.runtime.v2
+time="2026-10-19T17:48:17.192145523Z" level=info msg="loading plugin" id=io.containerd.service.v1.tasks-service type=io.containerd.service.v1
+time="2026-10-19T17:48:17.193396062Z" level=debug msg="No blockio config file specified, blockio not configured"
+time="2026-10-19T17:48:17.194608317Z" level=debug msg="No RDT config file specified, RDT not configured"
+time="2026-10-19T17:48:17.197428252Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.containers type=io.containerd.grpc.v1
+time="2026-10-19T17:48:17.199079844Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.content type=io.containerd.grpc.v1
+time="2026-10-19T17:48:17.200649191Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.diff type=io.containerd.grpc.v1
+time="2026-10-19T17:48:17.202229535Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.events type=io.containerd.grpc.v1
+time="2026-10-19T17:48:17.204233741Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.images type=io.containerd.grpc.v1
+time="2026-10-19T17:48:17.206000533Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.introspection type=io.containerd.grpc.v1
+time="2026-10-19T17:48:17.208716066Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.leases type=io.containerd.grpc.v1
+time="2026-10-19T17:48:17.210002264Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.namespaces type=io.containerd.grpc.v1
+time="2026-10-19T17:48:17.211086698Z" level=info msg="loading plugin" id=io.containerd.sandbox.store.v1.local type=io.containerd.sandbox.store.v1
+time="2026-10-19T17:48:17.212326579Z" level=info msg="loading plugin" id=io.containerd.transfer.v1.local type=io.containerd.transfer.v1
+time="2026-10-19T17:48:17.213601307Z" level=info msg="loading plugin" id=io.containerd.cri.v1.images type=io.containerd.cri.v1
+time="2026-10-19T17:48:17.215509695Z" level=info msg="Get image filesystem path \"/var/lib/docker/containerd/daemon/io.containerd.snapshotter.v1.overlayfs\" for snapshotter \"overlayfs\""
+time="2026-10-19T17:48:17.216164348Z" level=info msg="Start snapshots syncer"
+time="2026-10-19T17:48:17.217352433Z" level=info msg="loading plugin" id=io.containerd.cri.v1.runtime type=io.containerd.cri.v1
+time="2026-10-19T17:48:17.234758548Z" level=info msg="starting cri plugin" config="{\"containerd\":{\"defaultRuntimeName\":\"runc\",\"runtimes\":{\"runc\":{\"runtimeType\":\"io.containerd.runc.v2\",\"runtimePath\":\"\",\"PodAnnotations\":null,\"ContainerAnnotations\":null,\"options\":{\"BinaryName\":\"\",\"CriuImagePath\":\"\",\"CriuWorkPath\":\"\",\"IoGid\":0,\"IoUid\":0,\"NoNewKeyring\":false,\"Root\":\"\",\"ShimCgroup\":\"\",\"SystemdCgroup\":false},\"privileged_without_host_devices\":false,\"privileged_without_host_devices_all_devices_allowed\":false,\"cgroupWritable\":false,\"baseRuntimeSpec\":\"\",\"cniConfDir\":\"\",\"cniMaxConfNum\":0,\"snapshotter\":\"\",\"sandboxer\":\"podsandbox\",\"io_type\":\"\"}},\"ignoreBlockIONotEnabledErrors\":false,\"ignoreRdtNotEnabledErrors\":false},\"cni\":{\"binDir\":\"\",\"binDirs\":[\"/opt/cni/bin\"],\"confDir\":\"/etc/cni/net.d\",\"maxConfNum\":1,\"setupSerially\":false,\"confTemplate\":\"\",\"ipPref\":\"\",\"useInternalLoopback\":false},\"enableSelinux\":false,\"selinuxCategoryRange\":1024,\"maxContainerLogLineSize\":16384,\"disableApparmor\":false,\"restrictOOMScoreAdj\":false,\"disableProcMount\":false,\"unsetSeccompProfile\":\"\",\"tolerateMissingHugetlbController\":true,\"disableHugetlbController\":true,\"device_ownership_from_security_context\":false,\"ignoreImageDefinedVolumes\":false,\"netnsMountsUnderStateDir\":false,\"enableUnprivilegedPorts\":true,\"enableUnprivilegedICMP\":true,\"enableCDI\":true,\"cdiSpecDirs\":[\"/etc/cdi\",\"/var/run/cdi\"],\"drainExecSyncIOTimeout\":\"0s\",\"ignoreDeprecationWarnings\":null,\"containerdRootDir\":\"/var/lib/docker/containerd/daemon\",\"containerdEndpoint\":\"/var/run/docker/containerd/containerd.sock\",\"rootDir\":\"/var/lib/docker/containerd/daemon/io.containerd.grpc.v1.cri\",\"stateDir\":\"/var/run/docker/containerd/daemon/io.containerd.grpc.v1.cri\"}"
+time="2026-10-19T17:48:17.236813728Z" level=info msg="loading plugin" id=io.containerd.podsandbox.controller.v1.podsandbox type=io.containerd.podsandbox.controller.v1
+time="2026-10-19T17:48:17.241773874Z" level=info msg="loading plugin" id=io.containerd.sandbox.controller.v1.shim type=io.containerd.sandbox.controller.v1
+time="2026-10-19T17:48:17.247768551Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.sandbox-controllers type=io.containerd.grpc.v1
+time="2026-10-19T17:48:17.251917705Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.sandboxes type=io.containerd.grpc.v1
+time="2026-10-19T17:48:17.253349524Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.snapshots type=io.containerd.grpc.v1
+time="2026-10-19T17:48:17.255693541Z" level=info msg="loading plugin" id=io.containerd.streaming.v1.manager type=io.containerd.streaming.v1
+time="2026-10-19T17:48:17.258939942Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.streaming type=io.containerd.grpc.v1
+time="2026-10-19T17:48:17.261127881Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.tasks type=io.containerd.grpc.v1
+time="2026-10-19T17:48:17.262803393Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.transfer type=io.containerd.grpc.v1
+time="2026-10-19T17:48:17.264030333Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.version type=io.containerd.grpc.v1
+time="2026-10-19T17:48:17.265254839Z" level=info msg="loading plugin" id=io.containerd.monitor.container.v1.restart type=io.containerd.monitor.container.v1
+time="2026-10-19T17:48:17.266910808Z" level=info msg="loading plugin" id=io.containerd.tracing.processor.v1.otlp type=io.containerd.tracing.processor.v1
+time="2026-10-19T17:48:17.269828104Z" level=info msg="skip loading plugin" error="skip plugin: tracing endpoint not configured" id=io.containerd.tracing.processor.v1.otlp type=io.containerd.tracing.processor.v1
+time="2026-10-19T17:48:17.271662229Z" level=info msg="loading plugin" id=io.containerd.internal.v1.tracing type=io.containerd.internal.v1
+time="2026-10-19T17:48:17.276428574Z" level=info msg="skip loading plugin" error="skip plugin: tracing endpoint not configured" id=io.containerd.internal.v1.tracing type=io.containerd.internal.v1
+time="2026-10-19T17:48:17.277741906Z" level=info msg="loading plugin" id=io.containerd.ttrpc.v1.otelttrpc type=io.containerd.ttrpc.v1
+time="2026-10-19T17:48:17.279225030Z" level=info msg="loading plugin" id=io.containerd.grpc.v1.healthcheck type=io.containerd.grpc.v1
+time="2026-10-19T17:48:17.280573120Z" level=info msg="loading plugin" id=io.containerd.nri.v1.nri type=io.containerd.nri.v1
+time="2026-10-19T17:48:17.281651083Z" level=info msg="runtime interface created"
+time="2026-10-19T17:48:17.282308781Z" level=info msg="created NRI interface"
+time="2026-10-19T17:48:17.288754485Z" level=info msg=serving... address=/var/run/docker/containerd/containerd-debug.sock
+time="2026-10-19T17:48:17.296144360Z" level=info msg=serving... address=/var/run/docker/containerd/containerd.sock.ttrpc
+time="2026-10-19T17:48:17.301205182Z" level=info msg=serving... address=/var/run/docker/containerd/containerd.sock
+time="2026-10-19T17:48:17.304955837Z" level=debug msg="sd notification" notified=false state="READY=1"
+time="2026-10-19T17:48:17.307469285Z" level=info msg="containerd successfully booted in 0.848105s"
+time="2026-10-19T17:48:17.774053893Z" level=info msg="OTEL tracing is not configured, using no-op tracer provider"
+time="2026-10-19T17:48:17.790764277Z" level=info msg="CDI directory does not exist, skipping: failed to monitor for changes: no such file or directory" dir=/var/run/cdi
+time="2026-10-19T17:48:17.792561701Z" level=info msg="CDI directory does not exist, skipping: failed to monitor for changes: no such file or directory" dir=/etc/cdi
+time="2026-10-19T17:48:17.795191311Z" level=warning msg="unable to modify root key limit, number of containers could be limited by this quota: open /proc/sys/kernel/keys/root_maxkeys: no such file or directory"
+time="2026-10-19T17:48:18.221713854Z" level=debug msg="Golang's threads limit set to 180"
+time="2026-10-19T17:48:18.234837755Z" level=info msg="Creating a containerd client" address=/var/run/docker/containerd/containerd.sock timeout=1m0s
+time="2026-10-19T17:48:18.237281518Z" level=debug msg="metrics API listening on /var/run/docker/metrics.sock"
+time="2026-10-19T17:48:18.420313038Z" level=debug msg="Using default logging driver json-file"
+time="2026-10-19T17:48:18.427922086Z" level=debug msg="processing event stream" module=libcontainerd namespace=plugins.moby
+time="2026-10-19T17:48:18.431755086Z" level=debug msg="No quota support for local volumes in /var/lib/docker/volumes: Filesystem does not support, or has not enabled quotas"
+time="2026-10-19T17:48:18.473759130Z" level=debug msg="[graphdriver] priority list: [overlay2 fuse-overlayfs btrfs zfs vfs]"
+time="2026-10-19T17:48:18.499112591Z" level=debug msg="successfully detected metacopy status" storage-driver=overlay2 usingMetacopy=false
+time="2026-10-19T17:48:18.515076008Z" level=debug msg="backingFs=<unknown>, projectQuotaSupported=false, usingMetacopy=false, indexOff=\"\", userxattr=\"\"" storage-driver=overlay2
+time="2026-10-19T17:48:18.516143995Z" level=info msg="[graphdriver] using prior storage driver: overlay2"
+time="2026-10-19T17:48:18.516866530Z" level=debug msg="Initialized graph driver overlay2"
+time="2026-10-19T17:48:18.549542904Z" level=debug msg="Max Concurrent Downloads: 3"
+time="2026-10-19T17:48:18.550094507Z" level=debug msg="Max Concurrent Uploads: 5"
+time="2026-10-19T17:48:18.550497263Z" level=debug msg="Max Download Attempts: 5"
+time="2026-10-19T17:48:18.551728049Z" level=info msg="Loading containers: start."
+time="2026-10-19T17:48:18.557259589Z" level=debug msg="processing event stream" module=libcontainerd namespace=moby
+time="2026-10-19T17:48:18.555777247Z" level=debug msg="Option DefaultDriver: bridge"
+time="2026-10-19T17:48:18.562449395Z" level=debug msg="Option DefaultNetwork: bridge"
+time="2026-10-19T17:48:18.567987066Z" level=debug msg="Network Control Plane MTU: 1500"
+time="2026-10-19T17:48:18.588706039Z" level=warning msg="Could not load necessary modules for IPSEC rules: protocol not supported"
+time="2026-10-19T17:48:18.589935092Z" level=debug msg="Modules already loaded" modules="[nf_conntrack nf_conntrack_netlink]"
+time="2026-10-19T17:48:18.597174428Z" level=debug msg="unable to initialize firewalld; using raw iptables instead" error="Failed to connect to D-Bus system bus: dial unix /var/run/dbus/system_bus_socket: connect: no such file or directory"
+time="2026-10-19T17:48:18.603745518Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C FORWARD -j DOCKER-ISOLATION]"
+time="2026-10-19T17:48:18.632515700Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -D PREROUTING -m addrtype --dst-type LOCAL -j DOCKER]"
+time="2026-10-19T17:48:18.660132655Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -D OUTPUT -m addrtype --dst-type LOCAL ! --dst 127.0.0.0/8 -j DOCKER]"
+time="2026-10-19T17:48:18.698029275Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -D OUTPUT -m addrtype --dst-type LOCAL -j DOCKER]"
+time="2026-10-19T17:48:18.724641223Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -D PREROUTING]"
+time="2026-10-19T17:48:18.755630916Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -D OUTPUT]"
+time="2026-10-19T17:48:18.778790929Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -F DOCKER]"
+time="2026-10-19T17:48:18.809844278Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -X DOCKER]"
+time="2026-10-19T17:48:18.849313590Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -F DOCKER]"
+time="2026-10-19T17:48:18.873925423Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -X DOCKER]"
+time="2026-10-19T17:48:18.897814651Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -F DOCKER-FORWARD]"
+time="2026-10-19T17:48:18.927689241Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -X DOCKER-FORWARD]"
+time="2026-10-19T17:48:18.949579773Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -F DOCKER-BRIDGE]"
+time="2026-10-19T17:48:18.981169359Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -X DOCKER-BRIDGE]"
+time="2026-10-19T17:48:19.045696873Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -F DOCKER-CT]"
+time="2026-10-19T17:48:19.095799344Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -X DOCKER-CT]"
+time="2026-10-19T17:48:19.114918641Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -F DOCKER-ISOLATION-STAGE-1]"
+time="2026-10-19T17:48:19.135741067Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -X DOCKER-ISOLATION-STAGE-1]"
+time="2026-10-19T17:48:19.157080908Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -F DOCKER-ISOLATION-STAGE-2]"
+time="2026-10-19T17:48:19.187105655Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -X DOCKER-ISOLATION-STAGE-2]"
+time="2026-10-19T17:48:19.219891922Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -F DOCKER-ISOLATION]"
+time="2026-10-19T17:48:19.282429934Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -X DOCKER-ISOLATION]"
+time="2026-10-19T17:48:19.346982208Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -n -L DOCKER]"
+time="2026-10-19T17:48:19.405075022Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -N DOCKER]"
+time="2026-10-19T17:48:19.445006403Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -n -L DOCKER]"
+time="2026-10-19T17:48:19.471257158Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -N DOCKER]"
+time="2026-10-19T17:48:19.513112722Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -n -L DOCKER-FORWARD]"
+time="2026-10-19T17:48:19.543845752Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -N DOCKER-FORWARD]"
+time="2026-10-19T17:48:19.582336524Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -n -L DOCKER-BRIDGE]"
+time="2026-10-19T17:48:19.616154337Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -N DOCKER-BRIDGE]"
+time="2026-10-19T17:48:19.641893415Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -n -L DOCKER-CT]"
+time="2026-10-19T17:48:19.673837608Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -N DOCKER-CT]"
+time="2026-10-19T17:48:19.697588457Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -n -L DOCKER-ISOLATION-STAGE-1]"
+time="2026-10-19T17:48:19.740163076Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -N DOCKER-ISOLATION-STAGE-1]"
+time="2026-10-19T17:48:19.776162247Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -n -L DOCKER-ISOLATION-STAGE-2]"
+time="2026-10-19T17:48:19.816702549Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -N DOCKER-ISOLATION-STAGE-2]"
+time="2026-10-19T17:48:19.873947295Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -C PREROUTING -m addrtype --dst-type LOCAL -j DOCKER]"
+time="2026-10-19T17:48:19.897511356Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -A PREROUTING -m addrtype --dst-type LOCAL -j DOCKER]"
+time="2026-10-19T17:48:19.937870499Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -C OUTPUT -m addrtype --dst-type LOCAL -j DOCKER ! --dst 127.0.0.0/8]"
+time="2026-10-19T17:48:19.981288409Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -A OUTPUT -m addrtype --dst-type LOCAL -j DOCKER ! --dst 127.0.0.0/8]"
+time="2026-10-19T17:48:20.010489484Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C FORWARD -j DOCKER-FORWARD]"
+time="2026-10-19T17:48:20.043740719Z" level=debug msg="/usr/sbin/iptables, [--wait -I FORWARD -j DOCKER-FORWARD]"
+time="2026-10-19T17:48:20.096830352Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-FORWARD -j DOCKER-BRIDGE]"
+time="2026-10-19T17:48:20.195259058Z" level=debug msg="/usr/sbin/iptables, [--wait -I DOCKER-FORWARD -j DOCKER-BRIDGE]"
+time="2026-10-19T17:48:20.246326743Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-FORWARD -j DOCKER-ISOLATION-STAGE-1]"
+time="2026-10-19T17:48:20.290719458Z" level=debug msg="/usr/sbin/iptables, [--wait -I DOCKER-FORWARD -j DOCKER-ISOLATION-STAGE-1]"
+time="2026-10-19T17:48:20.310749677Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-FORWARD -j DOCKER-CT]"
+time="2026-10-19T17:48:20.332506165Z" level=debug msg="/usr/sbin/iptables, [--wait -I DOCKER-FORWARD -j DOCKER-CT]"
+time="2026-10-19T17:48:20.366304071Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -C DOCKER -i loopback0 -d 127.0.0.0/8 -j RETURN]"
+time="2026-10-19T17:48:20.393635008Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C FORWARD -m set --match-set docker-ext-bridges-v4 dst -j DOCKER]"
+time="2026-10-19T17:48:20.447956353Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C FORWARD -j DOCKER-ISOLATION-STAGE-1]"
+time="2026-10-19T17:48:20.485453751Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C FORWARD -m set --match-set docker-ext-bridges-v4 dst -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT]"
+time="2026-10-19T17:48:20.511814493Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -n -L FORWARD]"
+time="2026-10-19T17:48:20.550384806Z" level=debug msg="Modules already loaded" modules="[ip6_tables]"
+time="2026-10-19T17:48:20.552894931Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -C FORWARD -j DOCKER-ISOLATION]"
+time="2026-10-19T17:48:20.586229241Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t nat -D PREROUTING -m addrtype --dst-type LOCAL -j DOCKER]"
+time="2026-10-19T17:48:20.622273942Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t nat -D OUTPUT -m addrtype --dst-type LOCAL ! --dst ::1/128 -j DOCKER]"
+time="2026-10-19T17:48:20.652287577Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t nat -D OUTPUT -m addrtype --dst-type LOCAL -j DOCKER]"
+time="2026-10-19T17:48:20.686951872Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t nat -D PREROUTING]"
+time="2026-10-19T17:48:20.726112381Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t nat -D OUTPUT]"
+time="2026-10-19T17:48:20.752571861Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t nat -F DOCKER]"
+time="2026-10-19T17:48:20.780217561Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t nat -X DOCKER]"
+time="2026-10-19T17:48:20.821720592Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -F DOCKER]"
+time="2026-10-19T17:48:20.839912974Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -X DOCKER]"
+time="2026-10-19T17:48:20.870787421Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -F DOCKER-FORWARD]"
+time="2026-10-19T17:48:20.893342519Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -X DOCKER-FORWARD]"
+time="2026-10-19T17:48:20.914942179Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -F DOCKER-BRIDGE]"
+time="2026-10-19T17:48:20.964670188Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -X DOCKER-BRIDGE]"
+time="2026-10-19T17:48:20.986083794Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -F DOCKER-CT]"
+time="2026-10-19T17:48:21.006771774Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -X DOCKER-CT]"
+time="2026-10-19T17:48:21.030455804Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -F DOCKER-ISOLATION-STAGE-1]"
+time="2026-10-19T17:48:21.063618968Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -X DOCKER-ISOLATION-STAGE-1]"
+time="2026-10-19T17:48:21.088703820Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -F DOCKER-ISOLATION-STAGE-2]"
+time="2026-10-19T17:48:21.132330036Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -X DOCKER-ISOLATION-STAGE-2]"
+time="2026-10-19T17:48:21.155034973Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -F DOCKER-ISOLATION]"
+time="2026-10-19T17:48:21.178995213Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -X DOCKER-ISOLATION]"
+time="2026-10-19T17:48:21.217212349Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t nat -n -L DOCKER]"
+time="2026-10-19T17:48:21.275399304Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t nat -N DOCKER]"
+time="2026-10-19T17:48:21.318212450Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -n -L DOCKER]"
+time="2026-10-19T17:48:21.367598970Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -N DOCKER]"
+time="2026-10-19T17:48:21.401955454Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -n -L DOCKER-FORWARD]"
+time="2026-10-19T17:48:21.425928322Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -N DOCKER-FORWARD]"
+time="2026-10-19T17:48:21.453393208Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -n -L DOCKER-BRIDGE]"
+time="2026-10-19T17:48:21.483746500Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -N DOCKER-BRIDGE]"
+time="2026-10-19T17:48:21.505288189Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -n -L DOCKER-CT]"
+time="2026-10-19T17:48:21.531197289Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -N DOCKER-CT]"
+time="2026-10-19T17:48:21.554581870Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -n -L DOCKER-ISOLATION-STAGE-1]"
+time="2026-10-19T17:48:21.586312959Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -N DOCKER-ISOLATION-STAGE-1]"
+time="2026-10-19T17:48:21.608930373Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -n -L DOCKER-ISOLATION-STAGE-2]"
+time="2026-10-19T17:48:21.630624925Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -N DOCKER-ISOLATION-STAGE-2]"
+time="2026-10-19T17:48:21.658529199Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t nat -C PREROUTING -m addrtype --dst-type LOCAL -j DOCKER]"
+time="2026-10-19T17:48:21.684951525Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t nat -A PREROUTING -m addrtype --dst-type LOCAL -j DOCKER]"
+time="2026-10-19T17:48:21.709338113Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t nat -C OUTPUT -m addrtype --dst-type LOCAL -j DOCKER ! --dst ::1/128]"
+time="2026-10-19T17:48:21.752375707Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t nat -A OUTPUT -m addrtype --dst-type LOCAL -j DOCKER ! --dst ::1/128]"
+time="2026-10-19T17:48:21.778102392Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -C FORWARD -j DOCKER-FORWARD]"
+time="2026-10-19T17:48:21.798944566Z" level=debug msg="/usr/sbin/ip6tables, [--wait -I FORWARD -j DOCKER-FORWARD]"
+time="2026-10-19T17:48:21.828125896Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -C DOCKER-FORWARD -j DOCKER-BRIDGE]"
+time="2026-10-19T17:48:21.857476204Z" level=debug msg="/usr/sbin/ip6tables, [--wait -I DOCKER-FORWARD -j DOCKER-BRIDGE]"
+time="2026-10-19T17:48:21.882070393Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -C DOCKER-FORWARD -j DOCKER-ISOLATION-STAGE-1]"
+time="2026-10-19T17:48:21.918753225Z" level=debug msg="/usr/sbin/ip6tables, [--wait -I DOCKER-FORWARD -j DOCKER-ISOLATION-STAGE-1]"
+time="2026-10-19T17:48:21.943023790Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -C DOCKER-FORWARD -j DOCKER-CT]"
+time="2026-10-19T17:48:21.984358596Z" level=debug msg="/usr/sbin/ip6tables, [--wait -I DOCKER-FORWARD -j DOCKER-CT]"
+time="2026-10-19T17:48:22.010413591Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -C FORWARD -m set --match-set docker-ext-bridges-v6 dst -j DOCKER]"
+time="2026-10-19T17:48:22.043574402Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -C FORWARD -j DOCKER-ISOLATION-STAGE-1]"
+time="2026-10-19T17:48:22.069163881Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -C FORWARD -m set --match-set docker-ext-bridges-v6 dst -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT]"
+time="2026-10-19T17:48:22.138928080Z" level=debug msg="Did not find any interface with name docker0: Link not found"
+time="2026-10-19T17:48:22.141681542Z" level=debug msg="Setting bridge mac address to ee:a1:2b:f9:c3:1f"
+time="2026-10-19T17:48:22.162411217Z" level=info msg="failed to read ipv6 net.ipv6.conf.<bridge>.accept_ra" bridge=docker0 syspath=/proc/sys/net/ipv6/conf/docker0/accept_ra
+time="2026-10-19T17:48:22.165122734Z" level=info msg="failed to read ipv6 net.ipv6.conf.<bridge>.accept_ra" bridge=docker0 syspath=/proc/sys/net/ipv6/conf/docker0/accept_ra
+time="2026-10-19T17:48:22.189395001Z" level=debug msg="Assigning address to bridge interface docker0: 172.17.0.1/16"
+time="2026-10-19T17:48:22.206641726Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -P FORWARD DROP]"
+time="2026-10-19T17:48:22.280227684Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -C POSTROUTING -s 172.17.0.0/16 ! -o docker0 -j MASQUERADE]"
+time="2026-10-19T17:48:22.330508056Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -I POSTROUTING -s 172.17.0.0/16 ! -o docker0 -j MASQUERADE]"
+time="2026-10-19T17:48:22.420718748Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -C DOCKER -i docker0 -j RETURN]"
+time="2026-10-19T17:48:22.492556515Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -I DOCKER -i docker0 -j RETURN]"
+time="2026-10-19T17:48:22.522641120Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -C POSTROUTING -m addrtype --src-type LOCAL -o docker0 -j MASQUERADE]"
+time="2026-10-19T17:48:22.548630025Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-FORWARD -i docker0 -o docker0 -j ACCEPT]"
+time="2026-10-19T17:48:22.607469030Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-FORWARD -i docker0 -o docker0 -j DROP]"
+time="2026-10-19T17:48:22.633322300Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C FORWARD -i docker0 -o docker0 -j ACCEPT]"
+time="2026-10-19T17:48:22.665743754Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C FORWARD -i docker0 -o docker0 -j DROP]"
+time="2026-10-19T17:48:22.696879840Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C FORWARD -i docker0 ! -o docker0 -j ACCEPT]"
+time="2026-10-19T17:48:22.726913481Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-FORWARD -i docker0 -j ACCEPT]"
+time="2026-10-19T17:48:22.750767503Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -A DOCKER-FORWARD -i docker0 -j ACCEPT]"
+time="2026-10-19T17:48:22.782950447Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C FORWARD -i docker0 -j ACCEPT]"
+time="2026-10-19T17:48:22.812869671Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C FORWARD -o docker0 -j DOCKER]"
+time="2026-10-19T17:48:22.834164092Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C FORWARD -o docker0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT]"
+time="2026-10-19T17:48:22.871476722Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER ! -i docker0 -o docker0 -j DROP]"
+time="2026-10-19T17:48:22.896837075Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -A DOCKER ! -i docker0 -o docker0 -j DROP]"
+time="2026-10-19T17:48:22.949257958Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-CT -o docker0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT]"
+time="2026-10-19T17:48:22.973762066Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -A DOCKER-CT -o docker0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT]"
+time="2026-10-19T17:48:23.001463263Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-BRIDGE -o docker0 -j DOCKER]"
+time="2026-10-19T17:48:23.024596624Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -A DOCKER-BRIDGE -o docker0 -j DOCKER]"
+time="2026-10-19T17:48:23.057144059Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-ISOLATION-STAGE-1 -i docker0 ! -o docker0 -j DOCKER-ISOLATION-STAGE-2]"
+time="2026-10-19T17:48:23.079230256Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -A DOCKER-ISOLATION-STAGE-1 -i docker0 ! -o docker0 -j DOCKER-ISOLATION-STAGE-2]"
+time="2026-10-19T17:48:23.138177977Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-ISOLATION-STAGE-2 -o docker0 -j DROP]"
+time="2026-10-19T17:48:23.160467604Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -I DOCKER-ISOLATION-STAGE-2 -o docker0 -j DROP]"
+time="2026-10-19T17:48:23.181956802Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -C DOCKER-ISOLATION-STAGE-1 -i docker0 ! -o docker0 -j DOCKER-ISOLATION-STAGE-2]"
+time="2026-10-19T17:48:23.215431989Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -C DOCKER-ISOLATION-STAGE-2 -o docker0 -j DROP]"
+time="2026-10-19T17:48:23.245788428Z" level=debug msg="Network (db74764) restored"
+time="2026-10-19T17:48:23.269618771Z" level=debug msg="Allocating IPv4 pools for network bridge (db74764766dd9cfa14940bedeba25cf7d158586046574354ab49db3220b1b01f)"
+time="2026-10-19T17:48:23.289366888Z" level=debug msg="RequestPool: {AddressSpace:LocalDefault Pool:172.17.0.0/16 SubPool: Options:map[] Exclude:[127.0.0.0/8 169.254.0.53/32 172.17.0.0/16 172.26.88.0/22] V6:false}"
+time="2026-10-19T17:48:23.293065420Z" level=debug msg="RequestAddress(LocalDefault/172.17.0.0/16, 172.17.0.1, map[RequestAddressType:com.docker.network.gateway])"
+time="2026-10-19T17:48:23.294614388Z" level=debug msg="Request address PoolID:172.17.0.0/16 Bits: 65536, Unselected: 65534, Sequence: (0x80000000, 1)->(0x0, 2046)->(0x1, 1)->end Curr:0 Serial:false PrefAddress:172.17.0.1 "
+time="2026-10-19T17:48:23.299523472Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -n -L DOCKER-USER]"
+time="2026-10-19T17:48:23.322382997Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -N DOCKER-USER]"
+time="2026-10-19T17:48:23.349134237Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C FORWARD -j DOCKER-USER]"
+time="2026-10-19T17:48:23.378093679Z" level=debug msg="/usr/sbin/iptables, [--wait -I FORWARD -j DOCKER-USER]"
+time="2026-10-19T17:48:23.400264435Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -n -L DOCKER-USER]"
+time="2026-10-19T17:48:23.431649089Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -N DOCKER-USER]"
+time="2026-10-19T17:48:23.455506073Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -C FORWARD -j DOCKER-USER]"
+time="2026-10-19T17:48:23.481834489Z" level=debug msg="/usr/sbin/ip6tables, [--wait -I FORWARD -j DOCKER-USER]"
+time="2026-10-19T17:48:23.582709455Z" level=debug msg="releasing IPv4 pools from network bridge (db74764766dd9cfa14940bedeba25cf7d158586046574354ab49db3220b1b01f)"
+time="2026-10-19T17:48:23.584142237Z" level=debug msg="ReleaseAddress(LocalDefault/172.17.0.0/16, 172.17.0.1)"
+time="2026-10-19T17:48:23.586070723Z" level=debug msg="Released address Address:172.17.0.1 Sequence:Bits: 65536, Unselected: 65534, Sequence: (0x80000000, 1)->(0x0, 2046)->(0x1, 1)->end Curr:0"
+time="2026-10-19T17:48:23.587004274Z" level=debug msg="ReleasePool(LocalDefault/172.17.0.0/16)"
+time="2026-10-19T17:48:23.591822661Z" level=debug msg="cleanupServiceDiscovery for network:db74764766dd9cfa14940bedeba25cf7d158586046574354ab49db3220b1b01f"
+time="2026-10-19T17:48:23.593918211Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -C POSTROUTING -s 172.17.0.0/16 ! -o docker0 -j MASQUERADE]"
+time="2026-10-19T17:48:23.648895086Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -D POSTROUTING -s 172.17.0.0/16 ! -o docker0 -j MASQUERADE]"
+time="2026-10-19T17:48:23.712354005Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -C DOCKER -i docker0 -j RETURN]"
+time="2026-10-19T17:48:23.760406898Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -D DOCKER -i docker0 -j RETURN]"
+time="2026-10-19T17:48:23.796361671Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -C POSTROUTING -m addrtype --src-type LOCAL -o docker0 -j MASQUERADE]"
+time="2026-10-19T17:48:23.824983838Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-FORWARD -i docker0 -o docker0 -j ACCEPT]"
+time="2026-10-19T17:48:23.863272365Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-FORWARD -i docker0 -o docker0 -j DROP]"
+time="2026-10-19T17:48:23.890323422Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-FORWARD -i docker0 -j ACCEPT]"
+time="2026-10-19T17:48:23.923735373Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -D DOCKER-FORWARD -i docker0 -j ACCEPT]"
+time="2026-10-19T17:48:23.961099601Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER ! -i docker0 -o docker0 -j DROP]"
+time="2026-10-19T17:48:23.997355753Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -D DOCKER ! -i docker0 -o docker0 -j DROP]"
+time="2026-10-19T17:48:24.038968320Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-CT -o docker0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT]"
+time="2026-10-19T17:48:24.074113570Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -D DOCKER-CT -o docker0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT]"
+time="2026-10-19T17:48:24.100581949Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-BRIDGE -o docker0 -j DOCKER]"
+time="2026-10-19T17:48:24.129180242Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -D DOCKER-BRIDGE -o docker0 -j DOCKER]"
+time="2026-10-19T17:48:24.162527424Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-ISOLATION-STAGE-1 -i docker0 ! -o docker0 -j DOCKER-ISOLATION-STAGE-2]"
+time="2026-10-19T17:48:24.187951724Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -D DOCKER-ISOLATION-STAGE-1 -i docker0 ! -o docker0 -j DOCKER-ISOLATION-STAGE-2]"
+time="2026-10-19T17:48:24.226102520Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-ISOLATION-STAGE-2 -o docker0 -j DROP]"
+time="2026-10-19T17:48:24.264173915Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -D DOCKER-ISOLATION-STAGE-2 -o docker0 -j DROP]"
+time="2026-10-19T17:48:24.297407465Z" level=warning msg="Error (Unable to complete atomic operation, key modified) deleting object [endpoint_count db74764766dd9cfa14940bedeba25cf7d158586046574354ab49db3220b1b01f], retrying...."
+time="2026-10-19T17:48:24.326633483Z" level=debug msg="Allocating IPv4 pools for network bridge (0e8b0a0b1d0fe208e6350f43fddb8b4f3884a049e3d84ddbdcb05166f9237e55)"
+time="2026-10-19T17:48:24.333172218Z" level=debug msg="RequestPool: {AddressSpace:LocalDefault Pool:172.17.0.0/16 SubPool: Options:map[] Exclude:[127.0.0.0/8 169.254.0.53/32 172.17.0.0/16 172.26.88.0/22] V6:false}"
+time="2026-10-19T17:48:24.334081513Z" level=debug msg="RequestAddress(LocalDefault/172.17.0.0/16, 172.17.0.1, map[RequestAddressType:com.docker.network.gateway])"
+time="2026-10-19T17:48:24.334861881Z" level=debug msg="Request address PoolID:172.17.0.0/16 Bits: 65536, Unselected: 65534, Sequence: (0x80000000, 1)->(0x0, 2046)->(0x1, 1)->end Curr:0 Serial:false PrefAddress:172.17.0.1 "
+time="2026-10-19T17:48:24.340500055Z" level=info msg="failed to read ipv6 net.ipv6.conf.<bridge>.accept_ra" bridge=docker0 syspath=/proc/sys/net/ipv6/conf/docker0/accept_ra
+time="2026-10-19T17:48:24.350664411Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -C POSTROUTING -s 172.17.0.0/16 ! -o docker0 -j MASQUERADE]"
+time="2026-10-19T17:48:24.376998235Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -I POSTROUTING -s 172.17.0.0/16 ! -o docker0 -j MASQUERADE]"
+time="2026-10-19T17:48:24.438946810Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -C DOCKER -i docker0 -j RETURN]"
+time="2026-10-19T17:48:24.474782541Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -I DOCKER -i docker0 -j RETURN]"
+time="2026-10-19T17:48:24.498535026Z" level=debug msg="/usr/sbin/iptables, [--wait -t nat -C POSTROUTING -m addrtype --src-type LOCAL -o docker0 -j MASQUERADE]"
+time="2026-10-19T17:48:24.535221472Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-FORWARD -i docker0 -o docker0 -j ACCEPT]"
+time="2026-10-19T17:48:24.579011064Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-FORWARD -i docker0 -o docker0 -j DROP]"
+time="2026-10-19T17:48:24.621509700Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C FORWARD -i docker0 -o docker0 -j ACCEPT]"
+time="2026-10-19T17:48:24.648566976Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C FORWARD -i docker0 -o docker0 -j DROP]"
+time="2026-10-19T17:48:24.681841538Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C FORWARD -i docker0 ! -o docker0 -j ACCEPT]"
+time="2026-10-19T17:48:24.752197938Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-FORWARD -i docker0 -j ACCEPT]"
+time="2026-10-19T17:48:24.850612649Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -A DOCKER-FORWARD -i docker0 -j ACCEPT]"
+time="2026-10-19T17:48:24.872206116Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C FORWARD -i docker0 -j ACCEPT]"
+time="2026-10-19T17:48:24.896922598Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C FORWARD -o docker0 -j DOCKER]"
+time="2026-10-19T17:48:24.927705170Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C FORWARD -o docker0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT]"
+time="2026-10-19T17:48:24.957632005Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER ! -i docker0 -o docker0 -j DROP]"
+time="2026-10-19T17:48:24.981947897Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -A DOCKER ! -i docker0 -o docker0 -j DROP]"
+time="2026-10-19T17:48:25.020721027Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-CT -o docker0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT]"
+time="2026-10-19T17:48:25.108432311Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -A DOCKER-CT -o docker0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT]"
+time="2026-10-19T17:48:25.155577441Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-BRIDGE -o docker0 -j DOCKER]"
+time="2026-10-19T17:48:25.191646913Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -A DOCKER-BRIDGE -o docker0 -j DOCKER]"
+time="2026-10-19T17:48:25.236555008Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-ISOLATION-STAGE-1 -i docker0 ! -o docker0 -j DOCKER-ISOLATION-STAGE-2]"
+time="2026-10-19T17:48:25.268750477Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -A DOCKER-ISOLATION-STAGE-1 -i docker0 ! -o docker0 -j DOCKER-ISOLATION-STAGE-2]"
+time="2026-10-19T17:48:25.301268337Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -C DOCKER-ISOLATION-STAGE-2 -o docker0 -j DROP]"
+time="2026-10-19T17:48:25.346768643Z" level=debug msg="/usr/sbin/iptables, [--wait -t filter -I DOCKER-ISOLATION-STAGE-2 -o docker0 -j DROP]"
+time="2026-10-19T17:48:25.382290051Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -C DOCKER-ISOLATION-STAGE-1 -i docker0 ! -o docker0 -j DOCKER-ISOLATION-STAGE-2]"
+time="2026-10-19T17:48:25.419266139Z" level=debug msg="/usr/sbin/ip6tables, [--wait -t filter -C DOCKER-ISOLATION-STAGE-2 -o docker0 -j DROP]"
+time="2026-10-19T17:48:25.492330533Z" level=info msg="Loading containers: done."
+time="2026-10-19T17:48:25.723947760Z" level=warning msg="WARNING: No memory limit support"
+time="2026-10-19T17:48:25.724620525Z" level=warning msg="WARNING: No swap limit support"
+time="2026-10-19T17:48:25.725175690Z" level=warning msg="WARNING: No cpu cfs quota support"
+time="2026-10-19T17:48:25.726994800Z" level=warning msg="WARNING: No cpu cfs period support"
+time="2026-10-19T17:48:25.727695586Z" level=warning msg="WARNING: No cpu shares support"
+time="2026-10-19T17:48:25.728195498Z" level=warning msg="WARNING: No cpuset support"
+time="2026-10-19T17:48:25.728771064Z" level=warning msg="WARNING: No io.weight support"
+time="2026-10-19T17:48:25.729403637Z" level=warning msg="WARNING: No io.weight (per device) support"
+time="2026-10-19T17:48:25.729922517Z" level=warning msg="WARNING: No io.max (rbps) support"
+time="2026-10-19T17:48:25.730424722Z" level=warning msg="WARNING: No io.max (wbps) support"
+time="2026-10-19T17:48:25.731096485Z" level=warning msg="WARNING: No io.max (riops) support"
+time="2026-10-19T17:48:25.731698681Z" level=warning msg="WARNING: No io.max (wiops) support"
+time="2026-10-19T17:48:25.732736992Z" level=info msg="Docker daemon" commit=bea959c7b793b32a893820b97c4eadc7c87fabb0 containerd-snapshotter=false storage-driver=overlay2 version=28.3.3
+time="2026-10-19T17:48:25.734412684Z" level=info msg="Initializing buildkit"
+time="2026-10-19T17:48:26.192454542Z" level=info msg="Completed buildkit initialization"
+time="2026-10-19T17:48:26.206019496Z" level=debug msg="Registering routers"
+time="2026-10-19T17:48:26.206954249Z" level=debug msg="Registering route" method=GET path="/containers/{name:.*}/checkpoints"
+time="2026-10-19T17:48:26.210930593Z" level=debug msg="Registering route" method=POST path="/containers/{name:.*}/checkpoints"
+time="2026-10-19T17:48:26.214134471Z" level=debug msg="Registering route" method=DELETE path="/containers/{name}/checkpoints/{checkpoint}"
+time="2026-10-19T17:48:26.218224669Z" level=debug msg="Registering route" method=HEAD path="/containers/{name:.*}/archive"
+time="2026-10-19T17:48:26.222652400Z" level=debug msg="Registering route" method=GET path=/containers/json
+time="2026-10-19T17:48:26.224904339Z" level=debug msg="Registering route" method=GET path="/containers/{name:.*}/export"
+time="2026-10-19T17:48:26.228033984Z" level=debug msg="Registering route" method=GET path="/containers/{name:.*}/changes"
+time="2026-10-19T17:48:26.233263977Z" level=debug msg="Registering route" method=GET path="/containers/{name:.*}/json"
+time="2026-10-19T17:48:26.237320473Z" level=debug msg="Registering route" method=GET path="/containers/{name:.*}/top"
+time="2026-10-19T17:48:26.240464380Z" level=debug msg="Registering route" method=GET path="/containers/{name:.*}/logs"
+time="2026-10-19T17:48:26.250453088Z" level=debug msg="Registering route" method=GET path="/containers/{name:.*}/stats"
+time="2026-10-19T17:48:26.254813897Z" level=debug msg="Registering route" method=GET path="/containers/{name:.*}/attach/ws"
+time="2026-10-19T17:48:26.260990612Z" level=debug msg="Registering route" method=GET path="/exec/{id:.*}/json"
+time="2026-10-19T17:48:26.264810878Z" level=debug msg="Registering route" method=GET path="/containers/{name:.*}/archive"
+time="2026-10-19T17:48:26.268868156Z" level=debug msg="Registering route" method=POST path=/containers/create
+time="2026-10-19T17:48:26.272016970Z" level=debug msg="Registering route" method=POST path="/containers/{name:.*}/kill"
+time="2026-10-19T17:48:26.277463873Z" level=debug msg="Registering route" method=POST path="/containers/{name:.*}/pause"
+time="2026-10-19T17:48:26.281080750Z" level=debug msg="Registering route" method=POST path="/containers/{name:.*}/unpause"
+time="2026-10-19T17:48:26.284852192Z" level=debug msg="Registering route" method=POST path="/containers/{name:.*}/restart"
+time="2026-10-19T17:48:26.290590308Z" level=debug msg="Registering route" method=POST path="/containers/{name:.*}/start"
+time="2026-10-19T17:48:26.294644251Z" level=debug msg="Registering route" method=POST path="/containers/{name:.*}/stop"
+time="2026-10-19T17:48:26.298345496Z" level=debug msg="Registering route" method=POST path="/containers/{name:.*}/wait"
+time="2026-10-19T17:48:26.303859031Z" level=debug msg="Registering route" method=POST path="/containers/{name:.*}/resize"
+time="2026-10-19T17:48:26.307405821Z" level=debug msg="Registering route" method=POST path="/containers/{name:.*}/attach"
+time="2026-10-19T17:48:26.311006363Z" level=debug msg="Registering route" method=POST path="/containers/{name:.*}/exec"
+time="2026-10-19T17:48:26.317343967Z" level=debug msg="Registering route" method=POST path="/exec/{name:.*}/start"
+time="2026-10-19T17:48:26.320232104Z" level=debug msg="Registering route" method=POST path="/exec/{name:.*}/resize"
+time="2026-10-19T17:48:26.323511397Z" level=debug msg="Registering route" method=POST path="/containers/{name:.*}/rename"
+time="2026-10-19T17:48:26.326432134Z" level=debug msg="Registering route" method=POST path="/containers/{name:.*}/update"
+time="2026-10-19T17:48:26.329333802Z" level=debug msg="Registering route" method=POST path=/containers/prune
+time="2026-10-19T17:48:26.331594354Z" level=debug msg="Registering route" method=POST path=/commit
+time="2026-10-19T17:48:26.333492624Z" level=debug msg="Registering route" method=PUT path="/containers/{name:.*}/archive"
+time="2026-10-19T17:48:26.338371863Z" level=debug msg="Registering route" method=DELETE path="/containers/{name:.*}"
+time="2026-10-19T17:48:26.341325690Z" level=debug msg="Registering route" method=GET path=/images/json
+time="2026-10-19T17:48:26.343409032Z" level=debug msg="Registering route" method=GET path=/images/search
+time="2026-10-19T17:48:26.345470471Z" level=debug msg="Registering route" method=GET path=/images/get
+time="2026-10-19T17:48:26.347679844Z" level=debug msg="Registering route" method=GET path="/images/{name:.*}/get"
+time="2026-10-19T17:48:26.350446807Z" level=debug msg="Registering route" method=GET path="/images/{name:.*}/history"
+time="2026-10-19T17:48:26.353322756Z" level=debug msg="Registering route" method=GET path="/images/{name:.*}/json"
+time="2026-10-19T17:48:26.356059383Z" level=debug msg="Registering route" method=POST path=/images/load
+time="2026-10-19T17:48:26.360406982Z" level=debug msg="Registering route" method=POST path=/images/create
+time="2026-10-19T17:48:26.363443686Z" level=debug msg="Registering route" method=POST path="/images/{name:.*}/push"
+time="2026-10-19T17:48:26.367101625Z" level=debug msg="Registering route" method=POST path="/images/{name:.*}/tag"
+time="2026-10-19T17:48:26.370744481Z" level=debug msg="Registering route" method=POST path=/images/prune
+time="2026-10-19T17:48:26.374120511Z" level=debug msg="Registering route" method=DELETE path="/images/{name:.*}"
+time="2026-10-19T17:48:26.377537905Z" level=debug msg="Registering route" method=OPTIONS path="/{anyroute:.*}"
+time="2026-10-19T17:48:26.382556872Z" level=debug msg="Registering route" method=GET path=/_ping
+time="2026-10-19T17:48:26.384949394Z" level=debug msg="Registering route" method=HEAD path=/_ping
+time="2026-10-19T17:48:26.387054389Z" level=debug msg="Registering route" method=GET path=/events
+time="2026-10-19T17:48:26.389107545Z" level=debug msg="Registering route" method=GET path=/info
+time="2026-10-19T17:48:26.391738481Z" level=debug msg="Registering route" method=GET path=/version
+time="2026-10-19T17:48:26.393843115Z" level=debug msg="Registering route" method=GET path=/system/df
+time="2026-10-19T17:48:26.395923613Z" level=debug msg="Registering route" method=POST path=/auth
+time="2026-10-19T17:48:26.398035368Z" level=debug msg="Registering route" method=GET path=/volumes
+time="2026-10-19T17:48:26.400062114Z" level=debug msg="Registering route" method=GET path="/volumes/{name:.*}"
+time="2026-10-19T17:48:26.405467925Z" level=debug msg="Registering route" method=POST path=/volumes/create
+time="2026-10-19T17:48:26.407759754Z" level=debug msg="Registering route" method=POST path=/volumes/prune
+time="2026-10-19T17:48:26.410151956Z" level=debug msg="Registering route" method=PUT path="/volumes/{name:.*}"
+time="2026-10-19T17:48:26.413060505Z" level=debug msg="Registering route" method=DELETE path="/volumes/{name:.*}"
+time="2026-10-19T17:48:26.416655679Z" level=debug msg="Registering route" method=POST path=/build
+time="2026-10-19T17:48:26.418550814Z" level=debug msg="Registering route" method=POST path=/build/prune
+time="2026-10-19T17:48:26.420694318Z" level=debug msg="Registering route" method=POST path=/build/cancel
+time="2026-10-19T17:48:26.422874056Z" level=debug msg="Registering route" method=POST path=/session
+time="2026-10-19T17:48:26.424799949Z" level=debug msg="Registering route" method=POST path=/swarm/init
+time="2026-10-19T17:48:26.428709471Z" level=debug msg="Registering route" method=POST path=/swarm/join
+time="2026-10-19T17:48:26.430858773Z" level=debug msg="Registering route" method=POST path=/swarm/leave
+time="2026-10-19T17:48:26.433027205Z" level=debug msg="Registering route" method=GET path=/swarm
+time="2026-10-19T17:48:26.438970484Z" level=debug msg="Registering route" method=GET path=/swarm/unlockkey
+time="2026-10-19T17:48:26.443525469Z" level=debug msg="Registering route" method=POST path=/swarm/update
+time="2026-10-19T17:48:26.446821898Z" level=debug msg="Registering route" method=POST path=/swarm/unlock
+time="2026-10-19T17:48:26.451172231Z" level=debug msg="Registering route" method=GET path=/services
+time="2026-10-19T17:48:26.453284107Z" level=debug msg="Registering route" method=GET path="/services/{id}"
+time="2026-10-19T17:48:26.456115578Z" level=debug msg="Registering route" method=POST path=/services/create
+time="2026-10-19T17:48:26.458556004Z" level=debug msg="Registering route" method=POST path="/services/{id}/update"
+time="2026-10-19T17:48:26.462299774Z" level=debug msg="Registering route" method=DELETE path="/services/{id}"
+time="2026-10-19T17:48:26.465127569Z" level=debug msg="Registering route" method=GET path="/services/{id}/logs"
+time="2026-10-19T17:48:26.468107416Z" level=debug msg="Registering route" method=GET path=/nodes
+time="2026-10-19T17:48:26.470030354Z" level=debug msg="Registering route" method=GET path="/nodes/{id}"
+time="2026-10-19T17:48:26.474341658Z" level=debug msg="Registering route" method=DELETE path="/nodes/{id}"
+time="2026-10-19T17:48:26.477152938Z" level=debug msg="Registering route" method=POST path="/nodes/{id}/update"
+time="2026-10-19T17:48:26.480222892Z" level=debug msg="Registering route" method=GET path=/tasks
+time="2026-10-19T17:48:26.482288327Z" level=debug msg="Registering route" method=GET path="/tasks/{id}"
+time="2026-10-19T17:48:26.485660051Z" level=debug msg="Registering route" method=GET path="/tasks/{id}/logs"
+time="2026-10-19T17:48:26.488653919Z" level=debug msg="Registering route" method=GET path=/secrets
+time="2026-10-19T17:48:26.490606272Z" level=debug msg="Registering route" method=POST path=/secrets/create
+time="2026-10-19T17:48:26.492732559Z" level=debug msg="Registering route" method=DELETE path="/secrets/{id}"
+time="2026-10-19T17:48:26.497169925Z" level=debug msg="Registering route" method=GET path="/secrets/{id}"
+time="2026-10-19T17:48:26.500035087Z" level=debug msg="Registering route" method=POST path="/secrets/{id}/update"
+time="2026-10-19T17:48:26.503114566Z" level=debug msg="Registering route" method=GET path=/configs
+time="2026-10-19T17:48:26.505071105Z" level=debug msg="Registering route" method=POST path=/configs/create
+time="2026-10-19T17:48:26.507740429Z" level=debug msg="Registering route" method=DELETE path="/configs/{id}"
+time="2026-10-19T17:48:26.510458728Z" level=debug msg="Registering route" method=GET path="/configs/{id}"
+time="2026-10-19T17:48:26.513444604Z" level=debug msg="Registering route" method=POST path="/configs/{id}/update"
+time="2026-10-19T17:48:26.517150416Z" level=debug msg="Registering route" method=GET path=/plugins
+time="2026-10-19T17:48:26.520366873Z" level=debug msg="Registering route" method=GET path="/plugins/{name:.*}/json"
+time="2026-10-19T17:48:26.523221269Z" level=debug msg="Registering route" method=GET path=/plugins/privileges
+time="2026-10-19T17:48:26.525472377Z" level=debug msg="Registering route" method=DELETE path="/plugins/{name:.*}"
+time="2026-10-19T17:48:26.528235143Z" level=debug msg="Registering route" method=POST path="/plugins/{name:.*}/enable"
+time="2026-10-19T17:48:26.531355554Z" level=debug msg="Registering route" method=POST path="/plugins/{name:.*}/disable"
+time="2026-10-19T17:48:26.534231393Z" level=debug msg="Registering route" method=POST path=/plugins/pull
+time="2026-10-19T17:48:26.536420406Z" level=debug msg="Registering route" method=POST path="/plugins/{name:.*}/push"
+time="2026-10-19T17:48:26.541581373Z" level=debug msg="Registering route" method=POST path="/plugins/{name:.*}/upgrade"
+time="2026-10-19T17:48:26.544519096Z" level=debug msg="Registering route" method=POST path="/plugins/{name:.*}/set"
+time="2026-10-19T17:48:26.547420384Z" level=debug msg="Registering route" method=POST path=/plugins/create
+time="2026-10-19T17:48:26.549836652Z" level=debug msg="Registering route" method=GET path="/distribution/{name:.*}/json"
+time="2026-10-19T17:48:26.554535907Z" level=debug msg="Registering route" method=GET path=/networks
+time="2026-10-19T17:48:26.556547230Z" level=debug msg="Registering route" method=GET path=/networks/
+time="2026-10-19T17:48:26.558481324Z" level=debug msg="Registering route" method=GET path="/networks/{id:.+}"
+time="2026-10-19T17:48:26.561136667Z" level=debug msg="Registering route" method=POST path=/networks/create
+time="2026-10-19T17:48:26.565678452Z" level=debug msg="Registering route" method=POST path="/networks/{id:.*}/connect"
+time="2026-10-19T17:48:26.568512958Z" level=debug msg="Registering route" method=POST path="/networks/{id:.*}/disconnect"
+time="2026-10-19T17:48:26.571642242Z" level=debug msg="Registering route" method=POST path=/networks/prune
+time="2026-10-19T17:48:26.574202180Z" level=debug msg="Registering route" method=DELETE path="/networks/{id:.*}"
+time="2026-10-19T17:48:26.577223820Z" level=debug msg="Registering route" method=GET path=/debug/vars
+time="2026-10-19T17:48:26.579250376Z" level=debug msg="Registering route" method=GET path=/debug/pprof/
+time="2026-10-19T17:48:26.581827009Z" level=debug msg="Registering route" method=GET path=/debug/pprof/cmdline
+time="2026-10-19T17:48:26.584456312Z" level=debug msg="Registering route" method=GET path=/debug/pprof/profile
+time="2026-10-19T17:48:26.587995981Z" level=debug msg="Registering route" method=GET path=/debug/pprof/symbol
+time="2026-10-19T17:48:26.590376556Z" level=debug msg="Registering route" method=GET path=/debug/pprof/trace
+time="2026-10-19T17:48:26.592638630Z" level=debug msg="Registering route" method=GET path="/debug/pprof/{name}"
+time="2026-10-19T17:48:26.595434957Z" level=debug msg="Registering route" method=POST path=/grpc
+time="2026-10-19T17:48:26.600650879Z" level=info msg="Daemon has completed initialization"
+time="2026-10-19T17:48:26.602271106Z" level=info msg="API listen on /var/run/docker.sock"
+time="2026-10-19T17:48:27.623055705Z" level=debug msg="handling HEAD request" method=HEAD module=api request-url=/_ping vars="map[]"
+time="2026-10-19T17:48:27.655106044Z" level=debug msg="handling GET request" method=GET module=api request-url=/v1.51/images/default-probe/json vars="map[name:default-probe version:1.51]"
+time="2026-10-19T17:48:28.262766088Z" level=debug msg="handling HEAD request" method=HEAD module=api request-url=/_ping vars="map[]"
+time="2026-10-19T17:48:28.334162842Z" level=debug msg="handling POST request" form-data="{\"AttachStderr\":true,\"AttachStdin\":true,\"AttachStdout\":true,\"Cmd\":[\"sh\"],\"Domainname\":\"\",\"Entrypoint\":null,\"Env\":null,\"HostConfig\":{\"AutoRemove\":true,\"Binds\":null,\"BlkioDeviceReadBps\":[],\"BlkioDeviceReadIOps\":[],\"BlkioDeviceWriteBps\":[],\"BlkioDeviceWriteIOps\":[],\"BlkioWeight\":0,\"BlkioWeightDevice\":[],\"CapAdd\":null,\"CapDrop\":null,\"Cgroup\":\"\",\"CgroupParent\":\"\",\"CgroupnsMode\":\"\",\"ConsoleSize\":[24,80],\"ContainerIDFile\":\"\",\"CpuCount\":0,\"CpuPercent\":0,\"CpuPeriod\":0,\"CpuQuota\":0,\"CpuRealtimePeriod\":0,\"CpuRealtimeRuntime\":0,\"CpuShares\":0,\"CpusetCpus\":\"\",\"CpusetMems\":\"\",\"DeviceCgroupRules\":null,\"DeviceRequests\":null,\"Devices\":[],\"Dns\":[],\"DnsOptions\":[],\"DnsSearch\":[],\"ExtraHosts\":null,\"GroupAdd\":null,\"IOMaximumBandwidth\":0,\"IOMaximumIOps\":0,\"IpcMode\":\"\",\"Isolation\":\"\",\"Links\":null,\"LogConfig\":{\"Config\":{},\"Type\":\"\"},\"MaskedPaths\":null,\"Memory\":0,\"MemoryReservation\":0,\"MemorySwap\":0,\"MemorySwappiness\":-1,\"NanoCpus\":0,\"NetworkMode\":\"default\",\"OomKillDisable\":false,\"OomScoreAdj\":0,\"PidMode\":\"\",\"PidsLimit\":0,\"PortBindings\":{},\"Privileged\":false,\"PublishAllPorts\":false,\"ReadonlyPaths\":null,\"ReadonlyRootfs\":false,\"RestartPolicy\":{\"MaximumRetryCount\":0,\"Name\":\"no\"},\"SecurityOpt\":null,\"ShmSize\":0,\"UTSMode\":\"\",\"Ulimits\":[],\"UsernsMode\":\"\",\"VolumeDriver\":\"\",\"VolumesFrom\":null},\"Hostname\":\"\",\"Image\":\"default-probe\",\"Labels\":{},\"NetworkingConfig\":{\"EndpointsConfig\":{\"default\":{\"Aliases\":null,\"DNSNames\":null,\"DriverOpts\":null,\"EndpointID\":\"\",\"Gateway\":\"\",\"GlobalIPv6Address\":\"\",\"GlobalIPv6PrefixLen\":0,\"GwPriority\":0,\"IPAMConfig\":null,\"IPAddress\":\"\",\"IPPrefixLen\":0,\"IPv6Gateway\":\"\",\"Links\":null,\"MacAddress\":\"\",\"NetworkID\":\"\"}}},\"OnBuild\":null,\"OpenStdin\":true,\"StdinOnce\":true,\"Tty\":true,\"User\":\"\",\"Volumes\":{},\"WorkingDir\":\"\"}" method=POST module=api request-url=/v1.51/containers/create vars="map[version:1.51]"
+time="2026-10-19T17:48:28.522816706Z" level=debug msg="container mounted via layerStore" container=f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3 root=/var/lib/docker/overlay2/63972b9eb571521b67db6e655acfa2d3938646189d1de872b195fc9b241e70d8/merged storage-driver=overlay2
+time="2026-10-19T17:48:28.785222315Z" level=debug msg="handling POST request" method=POST module=api request-url="/v1.51/containers/f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3/attach?stderr=1&stdin=1&stdout=1&stream=1" vars="map[name:f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3 version:1.51]"
+time="2026-10-19T17:48:28.794035554Z" level=debug msg="attach: stdin: begin"
+time="2026-10-19T17:48:28.797712953Z" level=debug msg="attach: stderr: begin"
+time="2026-10-19T17:48:28.795685847Z" level=debug msg="attach: stdout: begin"
+time="2026-10-19T17:48:28.833654829Z" level=debug msg="handling POST request" method=POST module=api request-url="/v1.51/containers/f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3/wait?condition=removed" vars="map[name:f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3 version:1.51]"
+time="2026-10-19T17:48:28.870098314Z" level=debug msg="handling POST request" method=POST module=api request-url=/v1.51/containers/f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3/start vars="map[name:f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3 version:1.51]"
+time="2026-10-19T17:48:28.880170694Z" level=debug msg="container mounted via layerStore" container=f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3 root=/var/lib/docker/overlay2/63972b9eb571521b67db6e655acfa2d3938646189d1de872b195fc9b241e70d8/merged storage-driver=overlay2
+time="2026-10-19T17:48:28.929895088Z" level=debug msg="bundle dir created" bundle=/var/run/docker/containerd/f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3 module=libcontainerd namespace=moby root=/var/lib/docker/overlay2/63972b9eb571521b67db6e655acfa2d3938646189d1de872b195fc9b241e70d8/merged
+time="2026-10-19T17:48:31.135220750Z" level=info msg="connecting to shim f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3" address="unix:///run/containerd/s/e22c432254c09d75bb000acff829e920b1c5d124d06f20e94aba9d4a2d235f86" namespace=moby protocol=ttrpc version=3
+time="2026-10-19T17:48:32.038789048Z" level=debug msg="loading plugin" id=io.containerd.event.v1.publisher runtime=io.containerd.runc.v2 type=io.containerd.event.v1
+time="2026-10-19T17:48:32.143124351Z" level=debug msg="loading plugin" id=io.containerd.internal.v1.shutdown runtime=io.containerd.runc.v2 type=io.containerd.internal.v1
+time="2026-10-19T17:48:32.150897310Z" level=debug msg="loading plugin" id=io.containerd.ttrpc.v1.task runtime=io.containerd.runc.v2 type=io.containerd.ttrpc.v1
+time="2026-10-19T17:48:32.197487302Z" level=debug msg="registering ttrpc service" id=io.containerd.ttrpc.v1.task runtime=io.containerd.runc.v2
+time="2026-10-19T17:48:32.244360781Z" level=debug msg="serving api on socket" socket="[inherited from parent]"
+time="2026-10-19T17:48:32.281843007Z" level=debug msg="starting signal loop" namespace=moby path=/run/docker/containerd/daemon/io.containerd.runtime.v2.task/moby/f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3 pid=301 runtime=io.containerd.runc.v2
+time="2026-10-19T17:48:50.772001575Z" level=debug msg=event module=libcontainerd namespace=moby topic=/tasks/create
+time="2026-10-19T17:48:51.008060005Z" level=debug msg="sandbox set key processing took 580.149973ms for container f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3"
+time="2026-10-19T17:48:51.099574803Z" level=debug msg="Assigning addresses for endpoint boring_sammet's interface on network bridge"
+time="2026-10-19T17:48:51.106049271Z" level=debug msg="RequestAddress(LocalDefault/172.17.0.0/16, <nil>, map[])"
+time="2026-10-19T17:48:51.118800913Z" level=debug msg="Request address PoolID:172.17.0.0/16 Bits: 65536, Unselected: 65533, Sequence: (0xc0000000, 1)->(0x0, 2046)->(0x1, 1)->end Curr:0 Serial:false PrefAddress:invalid IP "
+time="2026-10-19T17:48:51.519765792Z" level=debug msg="/usr/sbin/iptables, [--wait -t raw -C PREROUTING -d 172.17.0.2 ! -i docker0 -j DROP]"
+time="2026-10-19T17:48:51.978317231Z" level=debug msg="/usr/sbin/iptables, [--wait -t raw -A PREROUTING -d 172.17.0.2 ! -i docker0 -j DROP]"
+time="2026-10-19T17:48:52.372281934Z" level=debug msg="bridge endpoint host link is up" hostifname=veth3cad7c0 ifi=4
+time="2026-10-19T17:48:53.072067997Z" level=debug msg="Not disabling IPv6 on container interface. Has IPv6 been disabled in this node's kernel?" error="open /proc/sys/net/ipv6/conf/eth0/disable_ipv6: no such file or directory"
+time="2026-10-19T17:48:53.142285595Z" level=debug msg="link has been set to up" eid=5977ef03b29fa6b229b0e682c1915cd57da679032d96dfcb9638ff6018e5b2b6 ep=boring_sammet net=bridge nid=0e8b0a0b1d0fe208e6350f43fddb8b4f3884a049e3d84ddbdcb05166f9237e55
+time="2026-10-19T17:48:53.455639376Z" level=debug msg="link update" eid=5977ef03b29fa6b229b0e682c1915cd57da679032d96dfcb9638ff6018e5b2b6 ep=boring_sammet flags="deviceFlags(IFF_UP | IFF_BROADCAST | IFF_RUNNING | IFF_MULTICAST | IFF_LOWER_UP)" iface=eth0 ifi=5 net=bridge nid=0e8b0a0b1d0fe208e6350f43fddb8b4f3884a049e3d84ddbdcb05166f9237e55
+time="2026-10-19T17:48:53.739814397Z" level=debug msg="Bridge port is forwarding" eid=5977ef03b29fa6b229b0e682c1915cd57da679032d96dfcb9638ff6018e5b2b6 ep=boring_sammet net=bridge nid=0e8b0a0b1d0fe208e6350f43fddb8b4f3884a049e3d84ddbdcb05166f9237e55 veth=vethc02e9e6
+time="2026-10-19T17:48:53.782092628Z" level=warning msg="Failed to prepare unsolicited ARP" eid=5977ef03b29fa6b229b0e682c1915cd57da679032d96dfcb9638ff6018e5b2b6 ep=boring_sammet error="create socket: address family not supported by protocol" iface=eth0 ifi=5 ip4=172.17.0.2/16 ip6="<nil>" mac="f6:be:6c:94:34:89" mcastRouteOk=true net=bridge nid=0e8b0a0b1d0fe208e6350f43fddb8b4f3884a049e3d84ddbdcb05166f9237e55
+time="2026-10-19T17:48:54.072474420Z" level=debug msg="Programming external connectivity on endpoint" eid=5977ef03b29fa6b229b0e682c1915cd57da679032d96dfcb9638ff6018e5b2b6 ep=boring_sammet net=bridge nid=0e8b0a0b1d0fe208e6350f43fddb8b4f3884a049e3d84ddbdcb05166f9237e55
+time="2026-10-19T17:48:54.209170389Z" level=debug msg="EnableService f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3 START"
+time="2026-10-19T17:48:54.223063199Z" level=debug msg="EnableService f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3 DONE"
+time="2026-10-19T17:48:58.612043434Z" level=warning msg="error from *cgroupsv2.Manager.EventChan" error="failed to add inotify watch for \"/sys/fs/cgroup/docker/f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3/memory.events\": no such file or directory"
+time="2026-10-19T17:48:58.697323188Z" level=debug msg=event module=libcontainerd namespace=moby topic=/tasks/start
+time="2026-10-19T17:48:59.013550492Z" level=debug msg="handling POST request" method=POST module=api request-url="/v1.51/containers/f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3/resize?h=24&w=80" vars="map[name:f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3 version:1.51]"
+time="2026-10-19T17:48:59.353576250Z" level=debug msg=event module=libcontainerd namespace=moby topic=/tasks/exit
+time="2026-10-19T17:48:59.866802787Z" level=debug msg=event module=libcontainerd namespace=moby topic=/tasks/delete
+time="2026-10-19T17:48:59.878640243Z" level=info msg="ignoring event" container=f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3 module=libcontainerd namespace=moby topic=/tasks/delete type="*events.TaskDelete"
+time="2026-10-19T17:48:59.955416346Z" level=info msg="shim disconnected" id=f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3 namespace=moby
+time="2026-10-19T17:48:59.966960182Z" level=info msg="cleaning up after shim disconnected" id=f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3 namespace=moby
+time="2026-10-19T17:48:59.971266802Z" level=info msg="cleaning up dead shim" id=f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3 namespace=moby
+time="2026-10-19T17:49:00.398045682Z" level=warning msg="warnings while cleaning up dead shim" id=f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3 namespace=moby warnings="time=\"2026-10-19T17:49:00Z\" level=debug msg=\"starting signal loop\" namespace=moby pid=348 runtime=io.containerd.runc.v2\n"
+time="2026-10-19T17:49:00.446227443Z" level=debug msg="attach: stdout: end"
+time="2026-10-19T17:49:00.447159023Z" level=debug msg="attach: stderr: end"
+time="2026-10-19T17:49:00.448595367Z" level=debug msg="attach: stdin: end"
+time="2026-10-19T17:49:00.460405652Z" level=debug msg="attach done"
+time="2026-10-19T17:49:00.573366361Z" level=debug msg="Revoking external connectivity on endpoint" eid=5977ef03b29fa6b229b0e682c1915cd57da679032d96dfcb9638ff6018e5b2b6 ep=boring_sammet net=bridge nid=0e8b0a0b1d0fe208e6350f43fddb8b4f3884a049e3d84ddbdcb05166f9237e55
+time="2026-10-19T17:49:00.634278539Z" level=debug msg="/usr/sbin/iptables, [--wait -t raw -C PREROUTING -d 172.17.0.2 ! -i docker0 -j DROP]"
+time="2026-10-19T17:49:00.667039625Z" level=debug msg="/usr/sbin/iptables, [--wait -t raw -D PREROUTING -d 172.17.0.2 ! -i docker0 -j DROP]"
+time="2026-10-19T17:49:00.714993217Z" level=debug msg="Releasing addresses for endpoint boring_sammet's interface on network bridge"
+time="2026-10-19T17:49:00.716893333Z" level=debug msg="ReleaseAddress(LocalDefault/172.17.0.0/16, 172.17.0.2)"
+time="2026-10-19T17:49:00.718461244Z" level=debug msg="Released address Address:172.17.0.2 Sequence:Bits: 65536, Unselected: 65533, Sequence: (0xc0000000, 1)->(0x0, 2046)->(0x1, 1)->end Curr:3"
+time="2026-10-19T17:49:00.858916628Z" level=debug msg="Closing buffered stdin pipe" container=f216b1a4f2e0f6baad0b9de2a833c37530cc2f387888ce0a38e2a5aa96ddfee3
+time="2026-10-19T17:49:00.945807049Z" level=info msg="Processing signal 'terminated'"
+time="2026-10-19T17:49:00.954368639Z" level=debug msg="daemon configured with a 15 seconds minimum shutdown timeout"
+time="2026-10-19T17:49:00.956278390Z" level=debug msg="start clean shutdown of all containers with a 15 seconds timeout..."
+time="2026-10-19T17:49:00.968791713Z" level=debug msg="Unix socket /var/run/docker/libnetwork/97b4fa3c09c9.sock was closed. The external key listener will stop."
+time="2026-10-19T17:49:00.994230468Z" level=info msg="stopping event stream following graceful shutdown" error="<nil>" module=libcontainerd namespace=moby
+time="2026-10-19T17:49:00.995975057Z" level=debug msg="Cleaning up old mountid : start."
+time="2026-10-19T17:49:01.002032550Z" level=debug msg="Cleaning up old mountid : done."
+time="2026-10-19T17:49:01.005310286Z" level=debug msg="Clean shutdown succeeded"
+time="2026-10-19T17:49:01.008944656Z" level=info msg="Daemon shutdown complete"
+time="2026-10-19T17:49:01.010823510Z" level=info msg="stopping healthcheck following graceful shutdown" module=libcontainerd
+time="2026-10-19T17:49:01.012082289Z" level=info msg="stopping event stream following graceful shutdown" error="context canceled" module=libcontainerd namespace=plugins.moby
+time="2026-10-19T17:49:01.040706619Z" level=debug msg="received signal" signal=terminated
+time="2026-10-19T17:49:01.042475856Z" level=debug msg="sd notification" notified=false state="STOPPING=1"
+[1.373317] pid=10 syscall=40(mount) pc=0x407bc59c args=[40004259d5, 40004259e0, 40004259d6, 100000, 0, 0] unsupported errno=95 comm="dockerd"
+[1.406414] pid=18 syscall=434(pidfd_open) pc=0x407bc59c args=[a, 0, 0, 0, 0, 0] unsupported errno=38 comm="dockerd"
+[4.083129] pid=10 syscall=60(quotactl) pc=0x407bc59c args=[580502, 44611580, 0, 400057c590, 0, 0] unsupported errno=38 comm="dockerd"
+[15.566751] pid=29 syscall=434(pidfd_open) pc=0x404194fc args=[14, 0, 0, 0, 0, 0] unsupported errno=38 comm="containerd"
+[16.534636] pid=295 syscall=434(pidfd_open) pc=0x40019b2c args=[125, 0, 0, 0, 0, 0] unsupported errno=38 comm="containerd-shim"
+[18.274639] pid=306 syscall=434(pidfd_open) pc=0x40019b2c args=[12d, 0, 0, 0, 0, 0] unsupported errno=38 comm="containerd-shim"
+[19.286720] pid=313 syscall=428(open_tree) pc=0x4012b9ac args=[fffffffffffffff7, 4000011898, 80000, 0, 0, 0] unsupported errno=38 comm="runc"
+[19.501843] pid=315 syscall=430(fsopen) pc=0x4012b9ac args=[400011b3c0, 1, 0, 0, 0, 0] unsupported errno=38 comm="runc"
+[19.718389] pid=315 syscall=434(pidfd_open) pc=0x4012b9ac args=[139, 0, 0, 0, 0, 0] unsupported errno=38 comm="runc"
+[23.447313] pid=325 syscall=219(keyctl) pc=0x4012b9ac args=[1, 4000114190, 0, 0, 0, 0] unsupported errno=38 comm="runc:[2:INIT]"
+[23.626201] pid=325 syscall=428(open_tree) pc=0x4012b9ac args=[fffffffffffffff7, 400018f2f6, 80000, 0, 0, 0] unsupported errno=38 comm="runc:[2:INIT]"
+[29.867436] pid=315 syscall=280(bpf) pc=0x4012b9ac args=[0, 40001b7d18, 50, 0, 0, 0] unsupported errno=95 comm="runc"
+[29.936560] pid=315 syscall=280(bpf) pc=0x4012b9ac args=[0, 40001b7a98, 50, 0, 0, 0] unsupported errno=95 comm="runc"
+[29.939525] pid=315 syscall=280(bpf) pc=0x4012b9ac args=[5, 40001b7f88, 98, 0, 0, 0] unsupported errno=95 comm="runc"
+[29.983803] pid=315 syscall=280(bpf) pc=0x4012b9ac args=[5, 40001b7f88, 98, 0, 0, 0] unsupported errno=95 comm="runc"
+[29.992639] pid=315 syscall=280(bpf) pc=0x4012b9ac args=[0, 40001b7f78, 50, 0, 0, 0] unsupported errno=95 comm="runc"
+[43.856482] pid=338 syscall=428(open_tree) pc=0x4012b9ac args=[fffffffffffffff7, 40001ef0b2, 80000, 0, 0, 0] unsupported errno=38 comm="runc"
+[45.422644] pid=346 syscall=428(open_tree) pc=0x4012b9ac args=[fffffffffffffff7, 40002126ec, 80000, 0, 0, 0] unsupported errno=38 comm="runc"
+[45.838878] pid=353 syscall=434(pidfd_open) pc=0x40019b2c args=[15c, 0, 0, 0, 0, 0] unsupported errno=38 comm="containerd-shim"
+
+TRAMES_TTY_LOG_END
+~ # 

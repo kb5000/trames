@@ -227,6 +227,7 @@ struct Kernel {
     parallel_rounds: u64,
     worker_slices: u64,
     worker_chunks: u64,
+    worker_syscalls: u64,
     parallel_memory_time: Duration,
     parallel_dispatch_time: Duration,
     parallel_stop_time: Duration,
@@ -2268,32 +2269,9 @@ impl Kernel {
                 );
                 Ok(None)
             }
-            113 => {
-                if !matches!(a[0], 0 | 1 | 4 | 6 | 7) {
-                    return Err(Errno(22));
-                }
-                Linux::check(&p.memory, a[1], 16, Access::Write)?;
-                let elapsed = if matches!(a[0], 0 | 6) {
-                    std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .map_err(|_| Errno(5))?
-                } else {
-                    self.started.elapsed()
-                };
-                write_u64(&mut p.memory, a[1], elapsed.as_secs())?;
-                write_u64(&mut p.memory, a[1] + 8, elapsed.subsec_nanos() as u64)?;
-                Ok(Some(0))
-            }
-            114 => {
-                if !matches!(a[0], 0 | 1 | 4 | 6 | 7) {
-                    return Err(Errno(22));
-                }
-                if a[1] != 0 {
-                    Linux::check(&p.memory, a[1], 16, Access::Write)?;
-                    write_u64(&mut p.memory, a[1], 0)?;
-                    write_u64(&mut p.memory, a[1] + 8, 1)?;
-                }
-                Ok(Some(0))
+            113 | 114 => {
+                crate::worker_syscalls::clock(&mut p.memory, number, a[0], a[1], self.started)
+                    .map(Some)
             }
             179 => {
                 Linux::check(&p.memory, a[0], 112, Access::Write)?;
@@ -3410,6 +3388,23 @@ impl Kernel {
                         cpu,
                         memory: view,
                         control: control.clone(),
+                        syscalls: (p.seccomp.mode() == 0 && !p.linux.trace).then(|| {
+                            let c = &p.linux.vfs.credentials;
+                            crate::worker_syscalls::Snapshot {
+                                identities: [
+                                    p.linux.vfs.visible_pid(p.tgid) as u64,
+                                    p.linux.vfs.visible_pid(p.parent) as u64,
+                                    c.uid as u64,
+                                    c.euid as u64,
+                                    c.gid as u64,
+                                    c.egid as u64,
+                                    p.linux.vfs.visible_pid(id) as u64,
+                                ],
+                                started: self.started,
+                                processor: slot as u32,
+                                profile: self.profile_syscalls,
+                            }
+                        }),
                     },
                 )
                 .map_err(|_| RuntimeError::Arguments("CPU worker disconnected"))?;
@@ -3482,6 +3477,9 @@ impl Kernel {
             let outcome = done.outcome.expect("checked worker completion");
             self.instructions += done.instructions;
             self.worker_chunks += done.chunks;
+            self.worker_syscalls += done.syscalls;
+            self.syscalls += done.syscalls;
+            self.syscall_total += done.syscall_time;
             outcomes.push((done.pid, outcome));
         }
         self.parallel_rounds += 1;
@@ -3925,6 +3923,7 @@ pub(super) fn run(
         parallel_rounds: 0,
         worker_slices: 0,
         worker_chunks: 0,
+        worker_syscalls: 0,
         parallel_memory_time: Duration::ZERO,
         parallel_dispatch_time: Duration::ZERO,
         parallel_stop_time: Duration::ZERO,
@@ -3978,6 +3977,7 @@ pub(super) fn run(
         parallel_rounds: kernel.parallel_rounds,
         worker_slices: kernel.worker_slices,
         worker_chunks: kernel.worker_chunks,
+        worker_syscalls: kernel.worker_syscalls,
         peak_parallel_native_calls: kernel
             .workers
             .peak_native
@@ -4159,6 +4159,7 @@ mod tests {
             parallel_rounds: 0,
             worker_slices: 0,
             worker_chunks: 0,
+            worker_syscalls: 0,
             parallel_memory_time: Duration::ZERO,
             parallel_dispatch_time: Duration::ZERO,
             parallel_stop_time: Duration::ZERO,

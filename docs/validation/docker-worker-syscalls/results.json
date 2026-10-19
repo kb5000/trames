@@ -1,0 +1,153 @@
+{
+  "scope": "Cached original Docker/runc/overlay2 through production multi-terminal FFI; Linux x86_64 actual 4KiB pages, default 4 guest CPUs; no GPU accelerator or image download; each phase variant measured once, diagnostic baselines retained separately.",
+  "base_source": "d1d250d1cf34707f356c3b71ecfbdcd1c6046d02",
+  "baseline_library_scope": "Existing optimized production FFI with Core/CPU/Memory/Linux/VFS/Net sources identical to d1d250d; unrelated native GPU backend predates the 1.2 release private-image fix and is disabled in this test.",
+  "rootfs_manifest_sha256": "5c5612b3d70825159d39b87887bbf82b091dfd69dcf0a82c7d02119c1c304ca4",
+  "rootfs_inodes_and_paths": 1741,
+  "cpu_quota": "400000 100000",
+  "runs": {
+    "before-full": {
+      "stages": {
+        "daemon": 13.887004102005449,
+        "run_to_prompt": 44.29413486800331,
+        "roundtrip_exit_rm": 2.6009009939953103
+      },
+      "library_sha256": "2fa73382b37b79b9fd71b6c38b91b279ebbfc4a12af9ffa3d3c4a94237492649",
+      "peer": {
+        "run": {
+          "count": 219,
+          "p50_seconds": 0.020176762001938187,
+          "p95_seconds": 0.05044194400397828,
+          "max_seconds": 0.17205340399959823,
+          "poll_resolution_seconds": 0.01
+        },
+        "other": {
+          "count": 91,
+          "p50_seconds": 0.010097985003085341,
+          "p95_seconds": 0.02019881300657289,
+          "max_seconds": 0.12168496099911863,
+          "poll_resolution_seconds": 0.01
+        }
+      },
+      "run_host_cpu_seconds": {
+        "python3": 0.25,
+        "trames-local": 41.71,
+        "trames-wayland": 0.04,
+        "trames-cpu-0": 1.77,
+        "trames-cpu-1": 1.29,
+        "trames-cpu-2": 0.69,
+        "trames-cpu-3": 0.37,
+        "trames-dns": 0.0
+      },
+      "host_cpu_sampling_boundary_seconds": [
+        15.081134038999153,
+        59.23289242399915
+      ]
+    },
+    "after-vfs": {
+      "stages": {
+        "daemon": 12.454461271998298,
+        "run_to_prompt": 30.854495815998234,
+        "roundtrip_exit_rm": 2.3097749310036306
+      },
+      "library_sha256": "582e3c5830e71540dbf80bc391434a028636c1b90ece2602538e674e33582cd6",
+      "peer": {
+        "run": {
+          "count": 152,
+          "p50_seconds": 0.010105080000357702,
+          "p95_seconds": 0.08084684999630554,
+          "max_seconds": 0.23308735900354804,
+          "poll_resolution_seconds": 0.01
+        },
+        "other": {
+          "count": 82,
+          "p50_seconds": 0.010097824000695255,
+          "p95_seconds": 0.010166838997974992,
+          "max_seconds": 0.030287764995591715,
+          "poll_resolution_seconds": 0.01
+        }
+      },
+      "run_host_cpu_seconds": {
+        "python3": 0.2,
+        "trames-local": 28.15,
+        "trames-wayland": 0.02,
+        "trames-cpu-0": 1.69,
+        "trames-cpu-1": 1.18,
+        "trames-cpu-2": 0.71,
+        "trames-cpu-3": 0.4,
+        "trames-dns": 0.0
+      },
+      "host_cpu_sampling_boundary_seconds": [
+        13.552760797996598,
+        44.16320635000011
+      ]
+    },
+    "after-full": {
+      "stages": {
+        "daemon": 10.156617713000742,
+        "run_to_prompt": 21.70205369500036,
+        "roundtrip_exit_rm": 1.7839223920018412
+      },
+      "library_sha256": "411c83b115a706fdb68912531ed52695f95f36c4940bf14225414e2237bcd224",
+      "peer": {
+        "run": {
+          "count": 107,
+          "p50_seconds": 0.010106526999152265,
+          "p95_seconds": 0.020397034000779968,
+          "max_seconds": 0.07068736500514206,
+          "poll_resolution_seconds": 0.01
+        },
+        "other": {
+          "count": 67,
+          "p50_seconds": 0.010100594998220913,
+          "p95_seconds": 0.010221797005215194,
+          "max_seconds": 0.020329935003246646,
+          "poll_resolution_seconds": 0.01
+        }
+      },
+      "run_host_cpu_seconds": {
+        "python3": 0.16,
+        "trames-local": 19.58,
+        "trames-wayland": 0.02,
+        "trames-cpu-0": 1.2,
+        "trames-cpu-1": 0.93,
+        "trames-cpu-2": 0.49,
+        "trames-cpu-3": 0.26,
+        "trames-dns": 0.0
+      },
+      "host_cpu_sampling_boundary_seconds": [
+        11.362294318998465,
+        32.67896587299765
+      ]
+    }
+  },
+  "excluded": [
+    "before: default sandbox rejected session startup EPERM before Docker; no timing",
+    "before-network: valid unsampled timing (run 43.129s), initial sampler output path lifetime bug lost PC file",
+    "before-sampled: valid FFI PC samples (run 41.569s), host external addresses not retained; superseded by before-full for full attribution",
+    "smp.py local initial attempt: QEMU not on PATH, no oracle or guest test completed; not counted as passing",
+    "First SMP differential driver incorrectly required worker query count > 0 in unchanged generic fixture; all executed baseline1/candidate1/2 semantics passed; only missing candidate4 run added, no unchanged variants repeated."
+  ],
+  "run_speedup": 2.041011209838064,
+  "validation": {
+    "core": "60 passed, 4 pre-existing Wayland fixture ignores",
+    "vfs": "155 passed (149 original batch + 6 failed-only retry after sandbox network access/test expectation correction), 1 pre-existing ignore",
+    "strict_clippy": "VFS/Core/FFI/CLI all-targets/all-features passed",
+    "production_terminals": "PASS: 3 independent PTYs, shared files/processes, private cwd/env, resize, Ctrl+C, output backpressure, close/exit/reopen and rapid pending cancellation",
+    "apple": "pending CI; no iPad run or new IPA",
+    "smp": "Original static musl pthread/topology/getcpu/atomics/futex/fork/exec fixture matches validated baseline one CPU on candidate one/two/four CPUs. QEMU unavailable; existing unchanged oracle coverage reused. Fixture itself did not guarantee local query syscalls while parallel, so no worker query count claim."
+  },
+  "checksums": {
+    "after-full.log": "bfb6b1abdb48dbfc2b80b298a82f7215b8a483ed3c659e7137a80e061308349a",
+    "after-vfs.json": "d114bb05b33783bda7ba52775a2312e2ff2b88adc9bc735c11fb1f4a40625a4e",
+    "before-full.log": "c732378e929cd903a498cf1a655f55efd876e4b2bb873e1145da96819b372267",
+    "after-full-threads.json": "8e056f1a25d30f570b2b9eb98ccca939abf5cd1650db3e23cdf80c35db705048",
+    "before-full-threads.json": "64b235db56f2c8c8f7b17143c576f600f88e70275ed4c1ee7f280e9782fa281b",
+    "after-full.json": "bce9b9d1effcd4bf038278ef3fe5ec50035590100794e93b1a7a2b74c29926a6",
+    "before-full.json": "0204dcaf714939d106d8614d4aada603140ef38793dc15731ddddcab69d826bd",
+    "after-vfs-threads.json": "6d3eeeb90893598cc7d2248b47f8f123a268f5a40e7dc508561e22354be1cc60",
+    "after-vfs.log": "a0ab7f3252981d91f027832378547c9c477de54c4bbbe38990a0673f1c8d476f",
+    "smp.json": "d4c6b6ce81b599f8b3eafd24e141a214c7df789a782163ccfb9f95e54059afc9",
+    "profiles.json": "ca49b7b9c01b5fb5be44f3d168b98f8497abde5486dd16cd1a8799057d265e0a"
+  }
+}

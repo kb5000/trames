@@ -65,13 +65,19 @@ jobs:
           sysctl hw.pagesize
           cargo test -p trames-vfs -p trames-core --locked
       - name: Build original release baseline and candidate session libraries
+        if: needs.scope.outputs.syscall_parallel != 'true'
         run: |
           git worktree add --detach target/fastpaths-baseline-source b25feb43ba019850511b440af34e9595f1b2e97c
           cargo build -p trames-cli -p trames-ffi --release --locked --manifest-path target/fastpaths-baseline-source/Cargo.toml --target-dir target/fastpaths-baseline
           cargo build -p trames-cli -p trames-ffi --release --locked --target-dir target/fastpaths-candidate
+      - name: Build changed syscall worker session library
+        if: needs.scope.outputs.syscall_parallel == 'true'
+        run: cargo build -p trames-ffi --release --locked --target-dir target/fastpaths-candidate
       - name: Prepare one identical original guest CoreMark input
+        if: needs.scope.outputs.syscall_parallel != 'true'
         run: python3 tests/performance/prepare-coremark.py --runner target/fastpaths-baseline/release/trames-run --output target/fastpaths-coremark-inputs
       - name: Measure paired production session throughput with native host page granularity
+        if: needs.scope.outputs.syscall_parallel != 'true'
         run: |
           python3 tests/performance/session-coremark.py --library target/fastpaths-baseline/release/libtrames_ffi.dylib --store target/fastpaths-coremark-inputs/store --output target/fastpaths-results/before-1
           python3 tests/performance/session-coremark.py --library target/fastpaths-candidate/release/libtrames_ffi.dylib --store target/fastpaths-coremark-inputs/store --output target/fastpaths-results/after-1
@@ -217,6 +223,7 @@ jobs:
       critical_test: ${{ steps.scope.outputs.critical_test }}
       ui_targets: ${{ steps.scope.outputs.ui_targets }}
       native_scope: ${{ steps.scope.outputs.native_scope }}
+      syscall_parallel: ${{ steps.scope.outputs.syscall_parallel }}
       zink_skip_apple: ${{ steps.scope.outputs.zink_skip_apple }}
       zink_sync_skip_apple_checks: ${{ steps.scope.outputs.zink_sync_skip_apple_checks }}
       storage_proc_only: ${{ steps.scope.outputs.storage_proc_only }}

@@ -338,6 +338,46 @@ impl Kernel {
 mod tests {
     use super::*;
     #[test]
+    fn filtered_identity_syscalls_still_checkpoint_and_apply_errno_in_parallel() {
+        let mut p = super::super::tests::process();
+        for (index, word) in [0xd2801588u32, 0xd4000001, 0x17ffffff]
+            .into_iter()
+            .enumerate()
+        {
+            p.memory
+                .write_array(0x4000 + index as u64 * 4, word.to_le_bytes())
+                .unwrap();
+        }
+        p.memory
+            .protect(
+                0x4000,
+                trames_memory::PAGE_SIZE,
+                trames_memory::Permissions::RX,
+            )
+            .unwrap();
+        p.cpu = Cpu::new(0x4000, 0);
+        p.affinity = 3;
+        p.seccomp.filters.push(Rc::new(
+            Filter::validate(vec![i(6, 0, 0, 0x5007b)]).unwrap(),
+        ));
+        let mut peer = p.fork();
+        peer.parent = 1;
+        let mut kernel = super::super::tests::kernel();
+        kernel.cpu_count = 2;
+        kernel.workers = crate::workers::Pool::new(2);
+        kernel.per_cpu = vec![Duration::ZERO; 2];
+        kernel.processes.insert(1, p);
+        kernel.processes.insert(2, peer);
+        assert!(kernel
+            .parallel_round(&mut trames_linux::CapturedOutput::default(), 100_000)
+            .unwrap());
+        assert_eq!(kernel.worker_syscalls, 0);
+        assert!(kernel.syscalls > 0);
+        for p in kernel.processes.values().filter(|p| p.cpu.pc == 0x4008) {
+            assert_eq!(p.cpu.x(0), error(Errno(123)));
+        }
+    }
+    #[test]
     fn ignored_or_blocked_sigsys_cannot_suppress_a_forced_seccomp_trap() {
         for (handler, mask) in [(1, 0), (0x5000, 1u64 << 30)] {
             let mut p = super::super::tests::process();

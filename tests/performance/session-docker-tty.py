@@ -13,6 +13,7 @@ import hashlib
 import json
 from pathlib import Path
 import platform
+import os
 import re
 import shlex
 import shutil
@@ -26,6 +27,8 @@ p.add_argument('--image', default='default-probe')
 p.add_argument('--output', type=Path, required=True)
 p.add_argument('--timeout', type=float, default=1200)
 p.add_argument('--debug-daemon', action='store_true')
+p.add_argument('--peer-probe', action='store_true', help='measure another real terminal during startup')
+p.add_argument('--sampler', type=Path, help='optional Linux per-thread loaded-FFI PC sampler')
 a = p.parse_args()
 a.output.mkdir(parents=True, exist_ok=False)
 assert a.timeout > 0
@@ -33,6 +36,8 @@ api = C.CDLL(str(a.library.resolve()))
 api.trames_session_open.argtypes = [C.c_char_p, C.c_uint32]
 api.trames_session_open.restype = C.c_uint64
 api.trames_session_close.argtypes = [C.c_uint64]
+api.trames_session_terminal_open.argtypes = [C.c_uint64]
+api.trames_session_terminal_open.restype = C.c_uint64
 api.trames_last_error.argtypes = [C.c_void_p, C.c_uint32]
 api.trames_session_terminal_input.argtypes = [C.c_uint64, C.c_uint64, C.c_char_p, C.c_uint32]
 api.trames_session_terminal_output.argtypes = [C.c_uint64, C.c_uint64, C.c_void_p, C.c_uint32]
@@ -79,11 +84,27 @@ mark COMPLETE
 report = dict(scope=__doc__, host=platform.machine(), library_sha256=sha(a.library),
               input_store_manifest_sha256=sha(a.store / 'manifest'), image=a.image,
               command='docker run --rm -it ' + shlex.quote(a.image) + ' sh',
-              debug_daemon=a.debug_daemon, markers={}, completed=False)
+              debug_daemon=a.debug_daemon, peer_probe=a.peer_probe, sampled=bool(a.sampler),
+              markers={}, completed=False)
 output = bytearray()
 answered_cursor_queries = 0
 began = time.monotonic()
 handle = None
+peer = None
+peer_output = bytearray()
+peer_queries = 0
+peer_ready = False
+peer_pending = None
+peer_sequence = 0
+peer_last = 0
+peer_sent = None
+peer_latencies = []
+thread_samples = []
+thread_last = 0
+sampler = None
+if a.sampler:
+    sampler = C.CDLL(str(a.sampler.resolve()))
+    sampler.trames_sample_start.argtypes = [C.c_char_p, C.c_char_p]
 try:
     with tempfile.TemporaryDirectory(prefix='trames-session-docker-tty-') as tmp:
         store = Path(tmp) / 'store'
@@ -100,7 +121,38 @@ try:
             assert api.trames_session_terminal_input(handle, 1, b, len(b)) == len(b), error()
 
         def pump():
-            global answered_cursor_queries
+            global answered_cursor_queries, peer_queries, peer_pending, peer_last, peer_sequence, peer_sent, thread_last
+            now = time.monotonic()
+            if a.peer_probe and now - thread_last >= .2:
+                rows = {}
+                for task in Path('/proc/self/task').iterdir():
+                    try:
+                        fields = (task / 'stat').read_text().rsplit(')', 1)[1].split()
+                        rows[task.name] = dict(name=(task / 'comm').read_text().strip(), ticks=int(fields[11]) + int(fields[12]))
+                    except (FileNotFoundError, ProcessLookupError):
+                        pass
+                thread_samples.append(dict(seconds=now-began, threads=rows))
+                thread_last = now
+            if peer:
+                b = C.create_string_buffer(65536)
+                n = api.trames_session_terminal_output(handle, peer, b, len(b)); assert n >= 0, error()
+                peer_output.extend(b.raw[:n])
+                queries = peer_output.count(b'\x1b[6n')
+                while peer_queries < queries:
+                    raw = b'\x1b[1;5R'; assert api.trames_session_terminal_input(handle, peer, raw, len(raw)) == len(raw)
+                    peer_queries += 1
+                if peer_ready:
+                    if peer_pending is not None and ('\r\nTRAMES_PEER_%d\r\n' % peer_pending).encode() in peer_output:
+                        peer_latencies.append(dict(sequence=peer_pending, seconds=now-began, latency=now-peer_sent,
+                            stage='run' if 'RUN_BEGIN' in report['markers'] and 'CONTAINER_PROMPT' not in report['markers'] else 'other'))
+                        peer_pending = None
+                    if peer_pending is None and now-peer_last >= .2:
+                        peer_sequence += 1; peer_pending = peer_sequence
+                        raw = ("printf '\\nTRAMES_PEER_%d\\n'\n" % peer_sequence).encode()
+                        peer_sent = time.monotonic()
+                        assert api.trames_session_terminal_input(handle, peer, raw, len(raw)) == len(raw), error()
+                        peer_last = now
+
             b = C.create_string_buffer(65536)
             n = api.trames_session_terminal_output(handle, 1, b, len(b))
             assert n >= 0, error()
@@ -142,6 +194,18 @@ try:
         time.sleep(.1)
         send("stty -echo; printf '\\nTRAMES_TTY_HOST_READY\\n'\n")
         wait_for(lambda: b'\r\nTRAMES_TTY_HOST_READY\r\n' in output, 20)
+        if a.peer_probe:
+            peer = api.trames_session_terminal_open(handle); assert peer, error()
+            wait_for(lambda: b'# ' in peer_output and peer_queries > 0, 20)
+            time.sleep(.1)
+            raw = b"stty -echo; printf '\\nTRAMES_PEER_READY\\n'\n"
+            assert api.trames_session_terminal_input(handle, peer, raw, len(raw)) == len(raw)
+            wait_for(lambda: b'\r\nTRAMES_PEER_READY\r\n' in peer_output, 20)
+            peer_ready = True
+        if sampler:
+            (a.output / 'host.maps').write_text(Path('/proc/self/maps').read_text())
+            report['sampler_begin'] = time.monotonic() - began
+            assert sampler.trames_sample_start(str(a.library.resolve()).encode(), str((a.output / 'host.pcs').resolve()).encode()) == 0
         output.clear()
         answered_cursor_queries = 0
         send("cat >/tmp/tty-profile.sh <<'TRAMES_TTY_SCRIPT_END'\n" + script +
@@ -161,6 +225,13 @@ except Exception as exc:
     report['error'] = repr(exc)
     raise
 finally:
+    if sampler:
+        sampler.trames_sample_stop()
+    if a.peer_probe:
+        report['peer_latencies'] = peer_latencies
+        report['host_clock_ticks'] = os.sysconf('SC_CLK_TCK')
+        (a.output / 'threads.json').write_text(json.dumps(thread_samples) + '\n')
+        (a.output / 'peer.log').write_bytes(peer_output)
     if handle:
         api.trames_session_close(handle)
     report['seconds'] = time.monotonic() - began

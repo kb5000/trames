@@ -1,0 +1,169 @@
+{
+  "before-full": {
+    "actual_samples": 11292,
+    "thread_samples": {
+      "57632": 10438,
+      "57636": 126,
+      "57634": 363,
+      "57635": 256,
+      "57643": 64,
+      "57631": 44,
+      "57633": 1
+    },
+    "symbol_category": {
+      "outside FFI": 6454,
+      "trames_memory": 995,
+      "trames_core": 328,
+      "trames_vfs": 3113,
+      "other/stdlib": 369,
+      "trames_cpu": 31,
+      "trames_net": 2
+    },
+    "top_symbols": [
+      [
+        "outside FFI",
+        6454
+      ],
+      [
+        "<trames_vfs::Node>::path_in",
+        1082
+      ],
+      [
+        "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::perform_next_unchecked::<<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::next_unchecked::{closure#0}, (&alloc::vec::Vec<u8>, &alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>)>",
+        986
+      ],
+      [
+        "<core::iter::adapters::map::Map<core::iter::adapters::filter::Filter<alloc::collections::btree::map::Iter<u32, trames_vfs::Descriptor>, <trames_vfs::Vfs>::fd_snapshot::{closure#0}>, <trames_vfs::Vfs>::fd_snapshot::{closure#1}> as core::iter::traits::iterator::Iterator>::next",
+        188
+      ],
+      [
+        "<alloc::collections::btree::map::BTreeMap<_, _, _> as core::clone::Clone>::clone::clone_subtree::<u32, trames_vfs::Descriptor, alloc::alloc::Global>",
+        158
+      ],
+      [
+        "<trames_vfs::mounts::Mount>::root_path",
+        98
+      ],
+      [
+        "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 22>",
+        97
+      ],
+      [
+        "<trames_vfs::Vfs>::path_visible",
+        83
+      ],
+      [
+        "<alloc::vec::Vec<trames_vfs::pseudo::ProcessInfo> as core::clone::Clone>::clone",
+        78
+      ],
+      [
+        "<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Dying, u32, trames_vfs::Descriptor, alloc::collections::btree::node::marker::LeafOrInternal>>::drop_tree::<alloc::alloc::Global>",
+        75
+      ],
+      [
+        "<trames_memory::parallel::page::MutablePage>::lock",
+        73
+      ],
+      [
+        "<trames_core::process::Kernel>::process_info",
+        62
+      ],
+      [
+        "<trames_core::process::Kernel>::sync_resources",
+        52
+      ],
+      [
+        "trames_cpu::cached::tail_op::<trames_memory::Memory, 22>",
+        51
+      ],
+      [
+        "<alloc::vec::Vec<&[u8]> as alloc::vec::spec_from_iter_nested::SpecFromIterNested<&[u8], core::slice::iter::Split<u8, <trames_vfs::Vfs>::set_runtime_info::{closure#1}::{closure#1}>>>::from_iter",
+        46
+      ]
+    ],
+    "limits": "Excludes outside-FFI stack attribution; no inlined call chains or cycles. ITIMER_PROF distribution not an exact CPU-time breakdown."
+  },
+  "after-full": {
+    "actual_samples": 5573,
+    "thread_samples": {
+      "65416": 4930,
+      "65419": 210,
+      "65415": 32,
+      "65418": 281,
+      "65427": 48,
+      "65420": 70,
+      "65417": 2
+    },
+    "symbol_category": {
+      "outside FFI": 3306,
+      "trames_memory": 853,
+      "trames_core": 210,
+      "trames_cpu": 35,
+      "other/stdlib": 241,
+      "trames_vfs": 928
+    },
+    "top_symbols": [
+      [
+        "outside FFI",
+        3306
+      ],
+      [
+        "<trames_vfs::Node>::path_in",
+        193
+      ],
+      [
+        "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::perform_next_unchecked::<<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, alloc::vec::Vec<u8>, alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::next_unchecked::{closure#0}, (&alloc::vec::Vec<u8>, &alloc::rcs::rc::Rc<core::cell::RefCell<trames_vfs::Node>>)>",
+        137
+      ],
+      [
+        "<core::iter::adapters::map::Map<core::iter::adapters::filter::Filter<alloc::collections::btree::map::Iter<u32, trames_vfs::Descriptor>, <trames_vfs::Vfs>::fd_snapshot::{closure#0}>, <trames_vfs::Vfs>::fd_snapshot::{closure#1}> as core::iter::traits::iterator::Iterator>::next",
+        112
+      ],
+      [
+        "<alloc::vec::Vec<trames_vfs::pseudo::ProcessInfo> as core::clone::Clone>::clone",
+        75
+      ],
+      [
+        "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 22>",
+        70
+      ],
+      [
+        "<trames_vfs::mounts::Mount>::root_path",
+        61
+      ],
+      [
+        "trames_cpu::cached::tail_op::<trames_memory::Memory, 22>",
+        52
+      ],
+      [
+        "<trames_vfs::Vfs>::path_visible",
+        41
+      ],
+      [
+        "<trames_vfs::mounts::Attachment>::key",
+        39
+      ],
+      [
+        "<trames_memory::Memory>::with_read_chunk::<bool, <trames_memory::Memory>::read_c_string::{closure#0}>",
+        36
+      ],
+      [
+        "<trames_memory::parallel::View>::read_checked::<trames_memory::MemoryError, <trames_memory::parallel::View as trames_memory::cpu_memory::CpuMemory>::read::{closure#0}>",
+        31
+      ],
+      [
+        "<alloc::vec::Vec<alloc::vec::Vec<u8>> as core::clone::Clone>::clone",
+        31
+      ],
+      [
+        "<trames_vfs::pseudo::PseudoFs>::path_of",
+        31
+      ],
+      [
+        "<trames_memory::parallel::page::MutablePage>::lock",
+        30
+      ]
+    ],
+    "limits": "Excludes outside-FFI stack attribution; no inlined call chains or cycles. ITIMER_PROF distribution not an exact CPU-time breakdown."
+  }
+}
