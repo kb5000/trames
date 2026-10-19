@@ -1,0 +1,10 @@
+   Compiling trames-distro v1.1.0 (/workspace/trames/crates/trames-distro)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.80s
+     Running unittests src/lib.rs (target/debug/build/trames-distro/aecdb1f2ed0e53bb/out/trames_distro-aecdb1f2ed0e53bb)
+
+running 2 tests
+test vulkan::tests::refreshes_old_instance_manifest_without_replacing_identical_library ... ok
+test vulkan::tests::repeated_install_keeps_inodes_updates_bundles_and_preserves_user_files ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.00s
+

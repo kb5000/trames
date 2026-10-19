@@ -11,6 +11,10 @@ window's `CAMetalLayer`. Host port forwarding remains deferred. Tracker:
 
 This selected subset is not complete Vulkan 1.0 conformance. Loader/ICD version
 negotiation describes the base ABI; it does not advertise the host's entire API.
+The instance query layer now supports1.1 while physical devices retain the selected
+1.0 profile. KHR properties2/memory-requirements2 and descriptor update templates
+are covered by the [Zink foundation](zink.md); original Mesa GL rendering remains
+unavailable until its remaining Vulkan requirements are implemented.
 
 ```mermaid
 flowchart LR
@@ -44,7 +48,7 @@ Install the ordinary `vulkan-loader` package with apk.
 
 ## Supported compute operations
 
-The [catalog](../../accelerator/vulkan/entrypoints.inc) contains 108 public
+The [catalog](../../accelerator/vulkan/entrypoints.inc) contains 143 public
 functions plus ICD negotiation exports. The profile supports one instance,
 compute-capable physical device, logical device and queue per address space;
 property queries; buffers and memory; SPIR-V modules; storage/uniform buffer

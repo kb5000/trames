@@ -1,0 +1,84 @@
+{
+  "runtime_source": "unchanged native backend; ICD/frontend and bundled manifest updated",
+  "runner_sha256": "5d49a8aee3443ae0ca4b050106b6f69653e6b20081d347b0f527c4be436f2c83",
+  "icd_sha256": "300ee95ec6bf5fbfc3a86fca600428ad9f4f0c8b643f116d2f4cfa7454d938a9",
+  "native_driver_scope": "configured host Vulkan driver, local reference may be software",
+  "rendering_passed": false,
+  "cases": {
+    "queries-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "queries-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "queries": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "compute-legacy-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "compute-legacy-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "compute-legacy": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "texture-legacy-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "texture-legacy-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "texture-legacy": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "compute-template-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "compute-template-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "compute-template": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "texture-template-native": {
+      "exit_code": 0,
+      "scope": "native oracle"
+    },
+    "texture-template-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "texture-template": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "mesa-egl-probe-cleanup": {
+      "exit_code": 0,
+      "scope": "original guest client"
+    },
+    "mesa-egl-probe": {
+      "exit_code": 1,
+      "scope": "original guest client"
+    }
+  },
+  "input_store_manifest_sha256": "647137469fb3daea693f768570b551a6e566017eb4a72e86990b30f16a82f2f9",
+  "missing_zink_hard_requirements": [
+    "VK_KHR_maintenance1",
+    "VK_KHR_create_renderpass2",
+    "VK_KHR_imageless_framebuffer",
+    "VK_KHR_timeline_semaphore"
+  ]
+}

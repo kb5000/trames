@@ -41,6 +41,47 @@ jobs:
           TRAMES_VALIDATION_WORKFLOW: linux.yml
           TRAMES_NEEDS_GUEST_ARTIFACTS: 'false'
         run: python3 scripts/ios-ci-scope.py
+  zink-foundation:
+    needs: scope
+    if: needs.scope.outputs.native_scope == 'zink-foundation'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+          components: rustfmt, clippy
+      - name: Prepare original guest ICD and signed Mesa clients
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes gcc-aarch64-linux-gnu libvulkan-dev mesa-vulkan-drivers glslang-tools
+          mkdir -p target/alpine-download
+          curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o target/alpine-download/alpine-minirootfs-3.22.6-aarch64.tar.gz
+          bash scripts/build-vulkan-fixtures.sh
+          python3 scripts/prepare-zink-guest.py
+      - name: Check bundle metadata and build unchanged native backend
+        run: |
+          cargo fmt --all --check
+          cargo clippy -p trames-distro --all-targets --locked -- -D warnings
+          cargo test -p trames-distro vulkan --locked
+          cargo build -p trames-cli -p trames-ffi --release --locked
+          python3 -m py_compile scripts/prepare-zink-guest.py tests/integration/zink-foundation.py
+          python3 tests/integration/embedding-reopen.py
+      - name: Validate query and template foundation and retain actual Mesa outcome
+        run: |
+          export VK_DRIVER_FILES="$(python3 -c 'from pathlib import Path; print(next(Path("/usr/share/vulkan/icd.d").glob("*lvp*")))')"
+          export TRAMES_ZINK_CPU_REFERENCE=1
+          python3 tests/integration/zink-foundation.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zink-foundation-evidence
+          path: |
+            target/zink-foundation/
+            target/zink-inputs/inputs.json
+            target/vulkan-guest/manifest.json
+          retention-days: 14
   runtime-fastpaths:
     needs: scope
     if: needs.scope.outputs.native_scope == 'runtime-fastpaths'

@@ -4,6 +4,7 @@
 #include <vulkan/vulkan.h>
 #include <assert.h>
 #include <stdint.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,15 +58,16 @@ static VkBuffer host_buffer(VkPhysicalDevice physical,VkDevice d,VkDeviceSize si
     VkMappedMemoryRange range={.sType=VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,.memory=*memory,.size=VK_WHOLE_SIZE};OK(vkFlushMappedMemoryRanges(d,1,&range));vkUnmapMemory(d,*memory);return buffer;
 }
 int main(int argc,char **argv) {
-    assert(argc>=4 && argc<=8);int bridge=0,shifted=0,anisotropy=0;
-    for(int i=4;i<argc;i++){if(!strcmp(argv[i],"bridge-check"))bridge=1;else if(!strcmp(argv[i],"base-offsets"))shifted=1;else if(!strcmp(argv[i],"anisotropy"))anisotropy=1;else if(!strcmp(argv[i],"static-blend"))static_blend=1;else abort();}
+    assert(argc>=4 && argc<=9);int bridge=0,shifted=0,anisotropy=0,templates=0;
+    for(int i=4;i<argc;i++){if(!strcmp(argv[i],"bridge-check"))bridge=1;else if(!strcmp(argv[i],"base-offsets"))shifted=1;else if(!strcmp(argv[i],"anisotropy"))anisotropy=1;else if(!strcmp(argv[i],"static-blend"))static_blend=1;else if(!strcmp(argv[i],"template"))templates=1;else abort();}
     VkInstanceCreateInfo ici={.sType=VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};VkInstance instance;OK(vkCreateInstance(&ici,NULL,&instance));
     uint32_t n=1;VkPhysicalDevice physical;OK(vkEnumeratePhysicalDevices(instance,&n,&physical));assert(n==1);
     VkPhysicalDeviceProperties properties;vkGetPhysicalDeviceProperties(physical,&properties);fprintf(stderr,"Vulkan texture driver: %s\n",properties.deviceName);
     VkFormatProperties fp;vkGetPhysicalDeviceFormatProperties(physical,VK_FORMAT_R8G8B8A8_UNORM,&fp);assert(fp.optimalTilingFeatures&VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT);
     VkImageFormatProperties imageProperties;OK(vkGetPhysicalDeviceImageFormatProperties(physical,VK_FORMAT_R8G8B8A8_UNORM,VK_IMAGE_TYPE_2D,VK_IMAGE_TILING_OPTIMAL,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_TRANSFER_SRC_BIT,0,&imageProperties));assert(imageProperties.maxExtent.width>=W && imageProperties.maxExtent.height>=H);
     vkGetPhysicalDeviceQueueFamilyProperties(physical,&n,NULL);VkQueueFamilyProperties *families=calloc(n,sizeof(*families));assert(families);vkGetPhysicalDeviceQueueFamilyProperties(physical,&n,families);uint32_t family=0;while(family<n && !(families[family].queueFlags&VK_QUEUE_GRAPHICS_BIT))family++;assert(family<n);free(families);
-    float priority=1;VkDeviceQueueCreateInfo qi={.sType=VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,.queueFamilyIndex=family,.queueCount=1,.pQueuePriorities=&priority};VkDeviceCreateInfo di={.sType=VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,.queueCreateInfoCount=1,.pQueueCreateInfos=&qi};VkPhysicalDeviceFeatures features={0};if(anisotropy){vkGetPhysicalDeviceFeatures(physical,&features);assert(features.samplerAnisotropy);memset(&features,0,sizeof(features));features.samplerAnisotropy=VK_TRUE;di.pEnabledFeatures=&features;}VkDevice device;OK(vkCreateDevice(physical,&di,NULL,&device));VkQueue queue;vkGetDeviceQueue(device,family,0,&queue);
+    const char *template_extension=VK_KHR_DESCRIPTOR_UPDATE_TEMPLATE_EXTENSION_NAME;
+    float priority=1;VkDeviceQueueCreateInfo qi={.sType=VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,.queueFamilyIndex=family,.queueCount=1,.pQueuePriorities=&priority};VkDeviceCreateInfo di={.sType=VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,.queueCreateInfoCount=1,.pQueueCreateInfos=&qi,.enabledExtensionCount=templates?1:0,.ppEnabledExtensionNames=templates?&template_extension:NULL};VkPhysicalDeviceFeatures features={0};if(anisotropy){vkGetPhysicalDeviceFeatures(physical,&features);assert(features.samplerAnisotropy);memset(&features,0,sizeof(features));features.samplerAnisotropy=VK_TRUE;di.pEnabledFeatures=&features;}VkDevice device;OK(vkCreateDevice(physical,&di,NULL,&device));VkQueue queue;vkGetDeviceQueue(device,family,0,&queue);
     VkImageCreateInfo imageInfo={.sType=VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,.imageType=VK_IMAGE_TYPE_2D,.format=VK_FORMAT_R8G8B8A8_UNORM,.extent={W,H,1},.mipLevels=1,.arrayLayers=1,.samples=VK_SAMPLE_COUNT_1_BIT,.tiling=VK_IMAGE_TILING_OPTIMAL,.usage=VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT,.initialLayout=VK_IMAGE_LAYOUT_UNDEFINED};VkImage image;
     if(bridge){VkImageCreateInfo bad=imageInfo;bad.extent.width=0;assert(vkCreateImage(device,&bad,NULL,&image)!=VK_SUCCESS);bad=imageInfo;bad.format=VK_FORMAT_D32_SFLOAT_S8_UINT;assert(vkCreateImage(device,&bad,NULL,&image)==VK_ERROR_FORMAT_NOT_SUPPORTED);}
     OK(vkCreateImage(device,&imageInfo,NULL,&image));VkMemoryRequirements imageReq;vkGetImageMemoryRequirements(device,image,&imageReq);
@@ -115,7 +117,17 @@ int main(int argc,char **argv) {
         VkDescriptorImageInfo combined[2]={{samplers[round==1],textureView,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL},{samplers[round==1],textureView,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}};
         VkDescriptorBufferInfo uniform={extra[5],0,16};VkWriteDescriptorSet writes[5];memset(writes,0,sizeof(writes));
         for(unsigned i=0;i<5;i++){writes[i].sType=VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;writes[i].dstSet=set;writes[i].dstBinding=i;writes[i].descriptorType=descBindings[i].descriptorType;writes[i].descriptorCount=descBindings[i].descriptorCount;}
-        writes[0].pImageInfo=combined;writes[1].pImageInfo=&sampled;writes[2].pImageInfo=&samplerOnly;writes[3].pBufferInfo=&uniform;writes[4].pBufferInfo=&uniform;vkUpdateDescriptorSets(device,5,writes,0,NULL);
+        writes[0].pImageInfo=combined;writes[1].pImageInfo=&sampled;writes[2].pImageInfo=&samplerOnly;writes[3].pBufferInfo=&uniform;writes[4].pBufferInfo=&uniform;
+        if(templates){
+            struct payload {uint64_t prefix;struct padded {VkDescriptorImageInfo info;uint64_t padding;} combined[2];VkDescriptorImageInfo sampled,sampler;VkDescriptorBufferInfo uniform;} data={.combined={{combined[0],0},{combined[1],0}},.sampled=sampled,.sampler=samplerOnly,.uniform=uniform};
+            size_t offsets[]={offsetof(struct payload,combined),offsetof(struct payload,sampled),offsetof(struct payload,sampler),offsetof(struct payload,uniform),offsetof(struct payload,uniform)};
+            VkDescriptorUpdateTemplateEntry entries[5];for(unsigned i=0;i<5;i++)entries[i]=(VkDescriptorUpdateTemplateEntry){.dstBinding=i,.descriptorCount=writes[i].descriptorCount,.descriptorType=writes[i].descriptorType,.offset=offsets[i],.stride=i?0:sizeof(data.combined[0])};
+            PFN_vkCreateDescriptorUpdateTemplateKHR create=(PFN_vkCreateDescriptorUpdateTemplateKHR)vkGetDeviceProcAddr(device,"vkCreateDescriptorUpdateTemplateKHR");
+            PFN_vkUpdateDescriptorSetWithTemplateKHR update=(PFN_vkUpdateDescriptorSetWithTemplateKHR)vkGetDeviceProcAddr(device,"vkUpdateDescriptorSetWithTemplateKHR");
+            PFN_vkDestroyDescriptorUpdateTemplateKHR destroy=(PFN_vkDestroyDescriptorUpdateTemplateKHR)vkGetDeviceProcAddr(device,"vkDestroyDescriptorUpdateTemplateKHR");assert(create && update && destroy);
+            VkDescriptorUpdateTemplateCreateInfo info={.sType=VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO,.descriptorUpdateEntryCount=5,.pDescriptorUpdateEntries=entries,.templateType=VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,.descriptorSetLayout=setLayout};VkDescriptorUpdateTemplate t;
+            OK(create(device,&info,NULL,&t));update(device,set,t,&data);destroy(device,t,NULL);memset(&data,0,sizeof(data));
+        }else vkUpdateDescriptorSets(device,5,writes,0,NULL);
         VkCommandBufferBeginInfo begin={.sType=VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};OK(vkBeginCommandBuffer(command,&begin));
         if(!round){
             VkImageMemoryBarrier toUpload={.sType=VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,.dstAccessMask=VK_ACCESS_TRANSFER_WRITE_BIT,.oldLayout=VK_IMAGE_LAYOUT_UNDEFINED,.newLayout=VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,.srcQueueFamilyIndex=VK_QUEUE_FAMILY_IGNORED,.dstQueueFamilyIndex=VK_QUEUE_FAMILY_IGNORED,.image=texture,.subresourceRange={VK_IMAGE_ASPECT_COLOR_BIT,0,1,0,1}};

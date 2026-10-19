@@ -342,6 +342,26 @@ def main():
             changed=set(subprocess.check_output(['git','diff','--name-only',base,'HEAD'],text=True).splitlines())- {str(plan_path)}
             hashes=plan['changed_file_sha256']
             if changed==set(hashes) and all(Path(path).exists() and hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest for path,digest in hashes.items()):
+                if plan.get('native_scope') == 'zink-foundation':
+                    allowed = {'accelerator/vulkan/icd.c', 'accelerator/vulkan/queries.inc',
+                               'accelerator/vulkan/templates.inc', 'accelerator/vulkan/entrypoints.inc',
+                               'crates/trames-distro/src/vulkan.rs', 'tests/fixtures/vulkan-queries.c',
+                               'tests/fixtures/zink-egl.c', 'tests/fixtures/vulkan-compute.c',
+                               'tests/fixtures/vulkan-texture.c', 'tests/integration/zink-foundation.py',
+                               'scripts/prepare-zink-guest.py', 'scripts/build-vulkan-guest.sh',
+                               'scripts/ios-ci-scope.py', '.github/workflows/ios.yml', '.github/workflows/linux.yml'}
+                    if any(p not in allowed and not p.startswith('docs/') for p in changed):
+                        raise RuntimeError('Zink foundation plan includes unrelated source changes')
+                    path = 'crates/trames-distro/src/vulkan.rs'
+                    old = subprocess.check_output(['git', 'show', base + ':' + path], text=True).split('#[cfg(test)]')[0]
+                    new = Path(path).read_text().split('#[cfg(test)]')[0]
+                    if old.replace('"api_version":"1.0.0"', '"api_version":"1.1.0"') != new:
+                        raise RuntimeError('Only bundled instance-version metadata may change in native Rust')
+                    print('Guest ICD query/template foundation: original loader/Mesa probe, native GPU compute/texture oracles, bundle upgrade/reopen and Apple/iOS metadata checks. CPU/MMU/native GPU backend/UI unchanged; no IPA or repeated unrelated acceptance.')
+                    with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+                        output.write('frontend_only=false\ntargeted=true\nnative_scope=zink-foundation\n')
+                        output.write('skip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
+                    return
                 if plan.get('native_scope') == 'docker-default-lifecycle':
                     allowed = {'.github/workflows/linux.yml', '.github/workflows/ios.yml', 'README.md',
                                'scripts/ios-ci-scope.py', 'tests/integration/docker-default.py',

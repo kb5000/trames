@@ -18,11 +18,13 @@
 struct result { uint64_t value, fallback; };
 extern struct result trames_vulkan_call(uint64_t, const uint64_t *, size_t);
 typedef struct memory_record { uint64_t key,size; void *base,*mapped; size_t length; struct memory_record *next; } Memory;
+typedef struct descriptor_template DescriptorTemplate;
+static void free_templates(DescriptorTemplate *head);
 typedef struct dispatch {
     uintptr_t magic; uint64_t key;
     struct dispatch *device, *physical, *queue, *commands, *next;
     uint64_t parent,map_alignment; uint32_t family;
-    pthread_mutex_t lock; Memory *memories;
+    pthread_mutex_t lock; Memory *memories; DescriptorTemplate *templates;
 } Dispatch;
 #define D(h) ((Dispatch *)(h))
 #define KEY(h) (D(h)->key)
@@ -54,15 +56,20 @@ static int wayland_available(void) {uint64_t available=0;return CALL(109,PTR(&av
 static VkResult display_extensions(const char *layer,uint32_t *count,VkExtensionProperties *out,int device) {
     if(layer)return VK_ERROR_LAYER_NOT_PRESENT;
     uint64_t info[3]={0};int fixed=display_info(0,info),wayland=wayland_available();
-    const char *names[3];uint32_t n=0;
-    if(device){if(fixed || wayland)names[n++]=VK_KHR_SWAPCHAIN_EXTENSION_NAME;}
+    const char *names[4];uint32_t n=0;
+    if(device){
+        if(fixed || wayland)names[n++]=VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+        names[n++]=VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME;
+        names[n++]=VK_KHR_DESCRIPTOR_UPDATE_TEMPLATE_EXTENSION_NAME;
+    }
     else {
         if(fixed || wayland)names[n++]=VK_KHR_SURFACE_EXTENSION_NAME;
         if(fixed)names[n++]=VK_KHR_DISPLAY_EXTENSION_NAME;
         if(wayland)names[n++]=VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME;
+        names[n++]=VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME;
     }
     if(!out){*count=n;return VK_SUCCESS;}uint32_t capacity=*count;*count=capacity<n?capacity:n;
-    for(uint32_t i=0;i<*count;i++){memset(out+i,0,sizeof(*out));strcpy(out[i].extensionName,names[i]);out[i].specVersion=1;}
+    for(uint32_t i=0;i<*count;i++){memset(out+i,0,sizeof(*out));strcpy(out[i].extensionName,names[i]);out[i].specVersion=!strcmp(names[i],VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME)?2:1;}
     return capacity<n?VK_INCOMPLETE:VK_SUCCESS;
 }
 static int extensions(uint32_t count,const char *const *names,int device) {
@@ -70,25 +77,35 @@ static int extensions(uint32_t count,const char *const *names,int device) {
         unsigned bit=0;if(!strcmp(names[i],device?VK_KHR_SWAPCHAIN_EXTENSION_NAME:VK_KHR_SURFACE_EXTENSION_NAME))bit=1;
         else if(!device && !strcmp(names[i],VK_KHR_DISPLAY_EXTENSION_NAME))bit=2;
         else if(!device && !strcmp(names[i],VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME))bit=4;
+        else if(!device && !strcmp(names[i],VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))bit=8;
+        else if(device && !strcmp(names[i],VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME))bit=8;
+        else if(device && !strcmp(names[i],VK_KHR_DESCRIPTOR_UPDATE_TEMPLATE_EXTENSION_NAME))bit=16;
         if(!bit || bits&bit)return -1;bits|=bit;
     }
-    if(device)return bits!=0;
+    if(device)return (bits&1)!=0;
     // These selected native render routes have different final image layouts.
     // A single instance uses one route; separate instances may use either.
     if((bits&6)==6)return -1;
     if(bits&4)return 2;if(bits&2)return 1;
-    return bits ? (wayland_available()?2:1) : 0;
+    return bits&1 ? (wayland_available()?2:1) : 0;
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(const VkInstanceCreateInfo *info,const VkAllocationCallbacks *allocator,VkInstance *out) {
     CHECK(info,VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO);ALLOCATOR(allocator);
     int wsi=extensions(info->enabledExtensionCount,info->ppEnabledExtensionNames,0);if(wsi<0 || info->enabledLayerCount)return VK_ERROR_EXTENSION_NOT_PRESENT;
-    if (info->flags || (info->pApplicationInfo && (!VALID(info->pApplicationInfo,VK_STRUCTURE_TYPE_APPLICATION_INFO) || info->pApplicationInfo->apiVersion>VK_API_VERSION_1_0))) return VK_ERROR_INCOMPATIBLE_DRIVER;
+    // Instance 1.1 implementations must accept applications targeting newer
+    // versions. Physical-device queries still report the selected 1.0 profile.
+    if(info->flags)return VK_ERROR_INCOMPATIBLE_DRIVER;
+    if(info->pApplicationInfo){
+        const VkApplicationInfo *app=info->pApplicationInfo;
+        if(!VALID(app,VK_STRUCTURE_TYPE_APPLICATION_INFO) || (app->apiVersion &&
+           (VK_API_VERSION_VARIANT(app->apiVersion) || VK_API_VERSION_MAJOR(app->apiVersion)!=1)))return VK_ERROR_INCOMPATIBLE_DRIVER;
+    }
     Dispatch *d=dispatch(0,NULL);if(!d)return VK_ERROR_OUT_OF_HOST_MEMORY;
     VkResult r=CALL(1,PTR(&d->key),wsi);if(r!=VK_SUCCESS){free_dispatch(d);return r;}*out=(VkInstance)d;return VK_SUCCESS;
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroyInstance(VkInstance instance,const VkAllocationCallbacks *allocator) { if (!instance)return;checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(2,KEY(instance)));if(D(instance)->physical)free_dispatch(D(instance)->physical);free_dispatch(D(instance)); }
-VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceVersion(uint32_t *out) {*out=VK_API_VERSION_1_0;return VK_SUCCESS;}
+VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceVersion(uint32_t *out) {*out=VK_API_VERSION_1_1;return VK_SUCCESS;}
 VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceExtensionProperties(const char *layer,uint32_t *count,VkExtensionProperties *out) {return display_extensions(layer,count,out,0);}
 VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceLayerProperties(uint32_t *count,VkLayerProperties *out) {(void)out;*count=0;return VK_SUCCESS;}
 VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateDeviceExtensionProperties(VkPhysicalDevice physical,const char *layer,uint32_t *count,VkExtensionProperties *out) {(void)physical;return display_extensions(layer,count,out,1);}
@@ -107,17 +124,28 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties(VkPhysicalDevice 
 VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties(VkPhysicalDevice p,VkFormat format,VkImageType type,VkImageTiling tiling,VkImageUsageFlags usage,VkImageCreateFlags flags,VkImageFormatProperties *out) {return CALL(59,KEY(p),format,type,tiling,usage,flags,PTR(out));}
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceSparseImageFormatProperties(VkPhysicalDevice p,VkFormat format,VkImageType type,VkSampleCountFlagBits samples,VkImageUsageFlags usage,VkImageTiling tiling,uint32_t *count,VkSparseImageFormatProperties *out) {(void)p;(void)format;(void)type;(void)samples;(void)usage;(void)tiling;(void)out;*count=0;}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(VkPhysicalDevice p,const VkDeviceCreateInfo *info,const VkAllocationCallbacks *allocator,VkDevice *out) {
-    CHECK(info,VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);ALLOCATOR(allocator);
+    if(!info || info->sType!=VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;ALLOCATOR(allocator);
+    const VkPhysicalDeviceFeatures *features=info->pEnabledFeatures;
+    const VkBaseInStructure *next=info->pNext;unsigned chain=0;
+    while(next && chain++<16){
+        if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2){
+            if(features)return VK_ERROR_FEATURE_NOT_PRESENT;
+            features=&((const VkPhysicalDeviceFeatures2 *)next)->features;
+        }else if(next->sType!=VK_STRUCTURE_TYPE_LOADER_DEVICE_CREATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;
+        next=next->pNext;
+    }
+    if(next)return VK_ERROR_FEATURE_NOT_PRESENT;
     int wsi=extensions(info->enabledExtensionCount,info->ppEnabledExtensionNames,1);if(info->flags || info->queueCreateInfoCount!=1 || wsi<0)return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkDeviceQueueCreateInfo *q=info->pQueueCreateInfos;CHECK(q,VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO);
     if(q->flags || q->queueCount!=1)return VK_ERROR_FEATURE_NOT_PRESENT;
-    if(info->pEnabledFeatures){const VkBool32 *v=(const VkBool32 *)info->pEnabledFeatures;for(size_t j=0;j<sizeof(VkPhysicalDeviceFeatures)/sizeof(VkBool32);j++)if(v[j] && j!=offsetof(VkPhysicalDeviceFeatures,samplerAnisotropy)/sizeof(VkBool32))return VK_ERROR_FEATURE_NOT_PRESENT;}
+    if(features){const VkBool32 *v=(const VkBool32 *)features;for(size_t j=0;j<sizeof(VkPhysicalDeviceFeatures)/sizeof(VkBool32);j++)if(v[j] && j!=offsetof(VkPhysicalDeviceFeatures,samplerAnisotropy)/sizeof(VkBool32))return VK_ERROR_FEATURE_NOT_PRESENT;}
     Dispatch *d=dispatch(0,NULL);if(!d)return VK_ERROR_OUT_OF_HOST_MEMORY;d->device=d;d->family=q->queueFamilyIndex;
-    VkResult r=CALL(8,KEY(p),q->queueFamilyIndex,PTR(&d->key),wsi,info->pEnabledFeatures?info->pEnabledFeatures->samplerAnisotropy:0);if(r!=VK_SUCCESS){free_dispatch(d);return r;}
+    VkResult r=CALL(8,KEY(p),q->queueFamilyIndex,PTR(&d->key),wsi,features?features->samplerAnisotropy:0);if(r!=VK_SUCCESS){free_dispatch(d);return r;}
     r=CALL(57,d->key,PTR(&d->map_alignment));if(r!=VK_SUCCESS){checked(CALL(9,d->key));free_dispatch(d);return r;}*out=(VkDevice)d;return VK_SUCCESS;
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroyDevice(VkDevice device,const VkAllocationCallbacks *allocator) {
     if(!device)return;Dispatch *d=D(device);checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(9,d->key));
+    free_templates(d->templates);
     while(d->memories){Memory *m=d->memories;d->memories=m->next;if(m->mapped)munmap(m->base,m->length);free(m);}
     while(d->commands){Dispatch *c=d->commands;d->commands=c->next;free_dispatch(c);}if(d->queue)free_dispatch(d->queue);free_dispatch(d);
 }
@@ -266,6 +294,8 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyPipelineCache(VkDevice d,VkPipelineCache cac
 }
 
 #include "graphics.inc"
+#include "queries.inc"
+#include "templates.inc"
 #include "wayland.inc"
 #include "wsi.inc"
 
@@ -276,7 +306,7 @@ static PFN_vkVoidFunction find(const char *name) {
 }
 static int global_name(const char *name) {return name && (!strcmp(name,"vkCreateInstance") || !strcmp(name,"vkGetInstanceProcAddr") || !strcmp(name,"vkEnumerateInstanceVersion") || !strcmp(name,"vkEnumerateInstanceExtensionProperties") || !strcmp(name,"vkEnumerateInstanceLayerProperties"));}
 VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(VkInstance instance,const char *name) {if(!instance && !global_name(name))return NULL;return find(name);}
-VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetDeviceProcAddr(VkDevice device,const char *name) {if(!device || !name || global_name(name) || !strcmp(name,"vkDestroyInstance") || !strcmp(name,"vkCreateDevice") || !strcmp(name,"vkEnumeratePhysicalDevices") || !strncmp(name,"vkGetPhysicalDevice",19) || !strcmp(name,"vkEnumerateDeviceExtensionProperties") || !strcmp(name,"vkEnumerateDeviceLayerProperties"))return NULL;return find(name);}
+VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetDeviceProcAddr(VkDevice device,const char *name) {if(!device || !name || global_name(name) || !strcmp(name,"vkDestroyInstance") || !strcmp(name,"vkCreateDevice") || !strncmp(name,"vkEnumeratePhysicalDevice",25) || !strncmp(name,"vkGetPhysicalDevice",19) || !strcmp(name,"vkEnumerateDeviceExtensionProperties") || !strcmp(name,"vkEnumerateDeviceLayerProperties"))return NULL;return find(name);}
 __attribute__((visibility("default"))) VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vk_icdGetInstanceProcAddr(VkInstance instance,const char *name) {(void)instance;return find(name);}
 __attribute__((visibility("default"))) VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vk_icdGetPhysicalDeviceProcAddr(VkInstance instance,const char *name) {(void)instance;return find(name);}
 __attribute__((visibility("default"))) VKAPI_ATTR VkResult VKAPI_CALL vk_icdNegotiateLoaderICDInterfaceVersion(uint32_t *version) {if(*version>5)*version=5;return VK_SUCCESS;}

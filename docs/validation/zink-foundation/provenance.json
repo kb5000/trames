@@ -1,0 +1,15 @@
+{
+  "artifact_icd_sha256": "300ee95ec6bf5fbfc3a86fca600428ad9f4f0c8b643f116d2f4cfa7454d938a9",
+  "gpu_image_sha256": {
+    "texture-legacy-guest.ppm": "19904e521a2a082b0bf57aa1ddb7f6813b737b294554745dead359cf104dba8f",
+    "texture-legacy-native.ppm": "19904e521a2a082b0bf57aa1ddb7f6813b737b294554745dead359cf104dba8f",
+    "texture-template-native.ppm": "19904e521a2a082b0bf57aa1ddb7f6813b737b294554745dead359cf104dba8f",
+    "texture-template-guest.ppm": "19904e521a2a082b0bf57aa1ddb7f6813b737b294554745dead359cf104dba8f"
+  },
+  "new_public_exports": 30,
+  "public_exports": 143,
+  "native_driver": "Mesa25.0.7 Lavapipe LLVM19 software Vulkan",
+  "local_foundation_passed": true,
+  "original_mesa_rendering_passed": false,
+  "apple_metal_gpu_validation": "pending, not run in metadata-only Apple job"
+}
