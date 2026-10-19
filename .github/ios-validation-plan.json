@@ -24,8 +24,8 @@
     "README.md": "95ce3f03c86aee941dbe752289b91664bc0585d30565ed5ad3c266ae06cb5d1c",
     "apps/ios/project.yml": "8603211d6fcdee5afbca4a7e0392353ec2aa449b74b0a5382e696ad82f00e386",
     "docs/validation/release-1.2-notes.md": "ab88c2e90c06e05316cec92917af732ac615ecf15165c8660b7d1b71e6ce1225",
-    "docs/validation/release-1.2.json": "9d763c8a9597bcc0ac26ffe674f264eb4b7402e83d7c5b5724fc59ae7184da31",
-    "docs/validation/release-1.2.md": "5229b2878d2857417611a080ca46b8f21e100ff0e91c9e011f1be91dbe6f4b91",
+    "docs/validation/release-1.2.json": "321f3a4884f6806d1e6b3d11250227b6d418513bd63ecdab616133cdbb723fa1",
+    "docs/validation/release-1.2.md": "31cf4f3c0c52238338f3ca7c2b95f4927773550e1c28c253532159c82145fba8",
     "scripts/ios-ci-scope.py": "9ed96ca60d41adc2ee9411ede27bebcd97c804bb9d38a7e80a5e059159b0cd14",
     "scripts/prepare-zink-ipa.py": "ea728665c2d88180fe99e83553e3625a7b264d6867a3cfcb8d2352c5ffcfdd73",
     "scripts/publish-ios-release-1.2.py": "8368f4cd07e40924a457cf85677a74ea3f917e288ca035e77d84edd06b6472c0"

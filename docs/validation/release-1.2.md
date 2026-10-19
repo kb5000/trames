@@ -28,3 +28,8 @@ IPA中的ICD和EGL逐字节摘要等于Metal验收版本：
 
 这次没有运行物理iPad；CI的Paravirtual Metal结果不作为iPad性能或全部GL一致性认证。
 更多GL版本/格式/渲染状态与既有Docker、File Provider限制见[发行说明](release-1.2-notes.md)。
+
+[正式Release](https://github.com/kb5000/trames/releases/tag/v1.2.0)已发布，tag固定在`dffaa65`。
+[发布CI39271059818](https://github.com/kb5000/trames/actions/runs/39271059818)逐项验证IPA与
+设备编译产物一致、对应源码和上游摘要，并将全部发布附件回下载校验。公开IPA另在开发
+环境下载复核SHA-256一致；公开verification.json也按GitHub资产摘要复核。共60个包内文件与device app一致。

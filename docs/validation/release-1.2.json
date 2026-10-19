@@ -37,5 +37,60 @@
   },
   "device_execution_tested": false,
   "validation": "Current optimized ARM64 iOS Release app compiled and packaged; actual IPA main/extension versions, Mach-O platform/unsigned status, App Group, ELF architecture, exact Metal-validated ICD/EGL hashes and licenses inspected. Reused source-identical frontend, musl and native acceptance; workspace versions changed only, dependency graph unchanged. No repeated passed CPU/Linux/network/UI/GPU suites.",
-  "known_limits": "Basic GLES2 and constrained Vulkan profile; not conformance/full OpenGL. Physical iPad testing and formal-key File Provider activation remain separate."
+  "known_limits": "Basic GLES2 and constrained Vulkan profile; not conformance/full OpenGL. Physical iPad testing and formal-key File Provider activation remain separate.",
+  "publication": {
+    "tag": "v1.2.0",
+    "tag_commit": "dffaa65cc76b6019d45b7cd55441683b6973f2a0",
+    "url": "https://github.com/kb5000/trames/releases/tag/v1.2.0",
+    "published_at": "2026-10-19T14:40:41Z",
+    "workflow_run": 39271059818,
+    "workflow_job": 118123157460,
+    "public_ipa_download_sha256_verified": true,
+    "all_public_assets_download_verified_by_ci": true,
+    "assets": [
+      {
+        "name": "mesa-egl-25.1.9-source.tar.gz",
+        "size": 47259997,
+        "digest": "sha256:99b9a12777fa541fde0b3745dfa174fb05cdf9d398862d13581c84c1a197ad84",
+        "url": "https://github.com/kb5000/trames/releases/download/v1.2.0/mesa-egl-25.1.9-source.tar.gz"
+      },
+      {
+        "name": "musl-hybrid-1.2.5-source.tar.gz",
+        "size": 1600750,
+        "digest": "sha256:16be4a115dd55670eb78f3e9aaf17c2046b1fb5baca454824c3f7d10d8d357fa",
+        "url": "https://github.com/kb5000/trames/releases/download/v1.2.0/musl-hybrid-1.2.5-source.tar.gz"
+      },
+      {
+        "name": "Trames-1.2.0-build33-unsigned.ipa",
+        "size": 11159672,
+        "digest": "sha256:c46f6a49f7ee66f8b6397b2b2530edff4062ad71b2f9dde183dd0c9013f47bb1",
+        "url": "https://github.com/kb5000/trames/releases/download/v1.2.0/Trames-1.2.0-build33-unsigned.ipa"
+      },
+      {
+        "name": "Trames-1.2.0-build33-unsigned.ipa.sha256",
+        "size": 100,
+        "digest": "sha256:871ed581fb5d951cc8a0bc33f9372faa33faeb6bce1a10b7c0e49b1eb03fa994",
+        "url": "https://github.com/kb5000/trames/releases/download/v1.2.0/Trames-1.2.0-build33-unsigned.ipa.sha256"
+      },
+      {
+        "name": "Trames-1.2.0-source.tar.gz",
+        "size": 4068338,
+        "digest": "sha256:0b1e562dc38305ee3d78133cec32c157e85f8d5e9fc827fc918c019d458a0a26",
+        "url": "https://github.com/kb5000/trames/releases/download/v1.2.0/Trames-1.2.0-source.tar.gz"
+      },
+      {
+        "name": "Trames-1.2.0-verification.json",
+        "size": 4172,
+        "digest": "sha256:8186fdbc01bc4ee5d9c1e632d5275ec9d44ccd0d2a885771998293a566471284",
+        "url": "https://github.com/kb5000/trames/releases/download/v1.2.0/Trames-1.2.0-verification.json"
+      },
+      {
+        "name": "vulkan-native-upstream-source.tar.gz",
+        "size": 14257361,
+        "digest": "sha256:84ee0d1b3eba9debaa2cc44e5ee81cc66c72e0d07e45b5a52ab7fb67b75bf401",
+        "url": "https://github.com/kb5000/trames/releases/download/v1.2.0/vulkan-native-upstream-source.tar.gz"
+      }
+    ],
+    "all_packaged_files_match_device_build": 60
+  }
 }
