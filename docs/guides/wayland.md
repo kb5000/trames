@@ -45,7 +45,13 @@ UIKit 原生输入法的预编辑和提交，Weston editor 是对应验收应用
 Vulkan 图像直接交给原生 Metal 合成，没有常规的像素读回与重新上传。
 缩放、生命周期、资源上限和当前协议子集见[架构说明](../architecture/wayland.md)。
 完整 Wayland/Vulkan 一致性、拖放、自定义鼠标图像、自动响应式弹窗布局
-以及 OpenGL/EGL 桥接不在首版范围。Apple 模拟器已通过 33 项验收，包含窗口
+以及 OpenGL/EGL 桥接不在首版范围。后续main开发版已增加原版Mesa/Zink的基础
+EGL/GLES2窗口，需包含该批ICD；原版包为`mesa-dri-gallium mesa-egl mesa-gles wayland-libs-egl`。
+选择Zink的环境为`GALLIUM_DRIVER=zink MESA_LOADER_DRIVER_OVERRIDE=zink`；
+当前Mesa25.1.9的ES2窗口还需`mesa_glthread=false`，原因和验收边界见
+[窗口验证](../validation/zink-wayland.md)。不能据此推定任意OpenGL应用已兼容。
+
+Apple 模拟器已通过 33 项验收，包含窗口
 拖出／停靠、Weston 输入、原版 vkcube 与 vkmark 的 Metal 画面，详见
 [验证记录](../validation/wayland-workspace-vkmark.md)；
 iPad 真机上的输入法与触控体验仍需实际使用验证。

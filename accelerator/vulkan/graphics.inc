@@ -123,6 +123,18 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetScissor(VkCommandBuffer c,uint32_t first,uint
 
 VKAPI_ATTR void VKAPI_CALL vkCmdCopyImageToBuffer(VkCommandBuffer c,VkImage image,VkImageLayout layout,VkBuffer buffer,uint32_t count,const VkBufferImageCopy *regions) {buffer_image_copy(c,image,layout,buffer,count,regions,74);}
 VKAPI_ATTR void VKAPI_CALL vkCmdCopyBufferToImage(VkCommandBuffer c,VkBuffer buffer,VkImage image,VkImageLayout layout,uint32_t count,const VkBufferImageCopy *regions) {buffer_image_copy(c,image,layout,buffer,count,regions,94);}
+VKAPI_ATTR void VKAPI_CALL vkCmdCopyImage(VkCommandBuffer c,VkImage src,VkImageLayout src_layout,VkImage dst,VkImageLayout dst_layout,uint32_t count,const VkImageCopy *regions) {
+    if(!count || count>64 || !regions)checked(VK_ERROR_FEATURE_NOT_PRESENT);uint64_t data[64][17];
+    for(uint32_t i=0;i<count;i++){
+        const VkImageCopy *r=&regions[i];uint64_t *v=data[i];
+        v[0]=r->srcSubresource.aspectMask;v[1]=r->srcSubresource.mipLevel;v[2]=r->srcSubresource.baseArrayLayer;v[3]=r->srcSubresource.layerCount;
+        v[4]=(int64_t)r->srcOffset.x;v[5]=(int64_t)r->srcOffset.y;v[6]=(int64_t)r->srcOffset.z;
+        v[7]=r->dstSubresource.aspectMask;v[8]=r->dstSubresource.mipLevel;v[9]=r->dstSubresource.baseArrayLayer;v[10]=r->dstSubresource.layerCount;
+        v[11]=(int64_t)r->dstOffset.x;v[12]=(int64_t)r->dstOffset.y;v[13]=(int64_t)r->dstOffset.z;
+        v[14]=r->extent.width;v[15]=r->extent.height;v[16]=r->extent.depth;
+    }
+    checked(CALL(134,DEVKEY(c),KEY(c),(uint64_t)src,src_layout,(uint64_t)dst,dst_layout,PTR(data),count));
+}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateSampler(VkDevice d,const VkSamplerCreateInfo *info,const VkAllocationCallbacks *allocator,VkSampler *out) {
     CHECK(info,VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);ALLOCATOR(allocator);
     if(info->flags || info->compareEnable || info->unnormalizedCoordinates)return VK_ERROR_FEATURE_NOT_PRESENT;

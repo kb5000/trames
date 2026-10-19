@@ -1093,13 +1093,77 @@ impl Backend {
                 self.publish(m, a[6], id)?;
             }
             69 => self.remove(a[1], Kind::Framebuffer)?,
-            71..=76 | 94..=97 | 114 | 123..=124 => {
+            71..=76 | 94..=97 | 114 | 123..=124 | 134 => {
                 let c = self.object(a[1], Kind::CommandBuffer)?;
                 if c.state.get() != 1 {
                     return invalid();
                 }
                 let raw = vk::CommandBuffer::from_raw(c.raw);
                 match op {
+                    134 => {
+                        let src = self.object(a[2], Kind::Image)?;
+                        let dst = self.object(a[4], Kind::Image)?;
+                        let src_shape = shape(&src)?;
+                        let dst_shape = shape(&dst)?;
+                        let src_layout = self.native_layout(a[3], false)?;
+                        let dst_layout = self.native_layout(a[5], false)?;
+                        if c.recording.borrow().pass.is_some()
+                            || a[7] == 0
+                            || src.flags & vk::ImageUsageFlags::TRANSFER_SRC.as_raw() == 0
+                            || dst.flags & vk::ImageUsageFlags::TRANSFER_DST.as_raw() == 0
+                            || [&src, &dst].iter().any(|i| {
+                                i.deps.borrow().is_empty()
+                                    && i.swapchain.borrow().is_none()
+                                    && i.wayland_pool.borrow().is_none()
+                            })
+                            || !matches!(
+                                src_layout,
+                                vk::ImageLayout::GENERAL | vk::ImageLayout::TRANSFER_SRC_OPTIMAL
+                            )
+                            || !matches!(
+                                dst_layout,
+                                vk::ImageLayout::GENERAL | vk::ImageLayout::TRANSFER_DST_OPTIMAL
+                            )
+                        {
+                            return invalid();
+                        }
+                        let wire = words64(m, a[6], bounded(a[7], 64)? * 17)?;
+                        let regions = wire
+                            .chunks_exact(17)
+                            .map(|r| checked_image_copy(r, src_shape, dst_shape))
+                            .collect::<Result<Vec<_>>>()?;
+                        if src.raw == dst.raw
+                            && (src_layout != dst_layout
+                                || regions.iter().any(|a| {
+                                    regions.iter().any(|b| {
+                                        let ax = a.src_offset.x as u32;
+                                        let ay = a.src_offset.y as u32;
+                                        let bx = b.dst_offset.x as u32;
+                                        let by = b.dst_offset.y as u32;
+                                        ax < bx + b.extent.width
+                                            && bx < ax + a.extent.width
+                                            && ay < by + b.extent.height
+                                            && by < ay + a.extent.height
+                                    })
+                                }))
+                        {
+                            return invalid();
+                        }
+                        unsafe {
+                            d.cmd_copy_image(
+                                raw,
+                                vk::Image::from_raw(src.raw),
+                                src_layout,
+                                vk::Image::from_raw(dst.raw),
+                                dst_layout,
+                                &regions,
+                            );
+                        }
+                        // Old swapchain pools and regular image memory survive replacement,
+                        // command-buffer reset and guest handle destruction until submission completion.
+                        c.retain(src);
+                        c.retain(dst);
+                    }
                     114 => {
                         let image = self.object(a[2], Kind::Image)?;
                         let shape = shape(&image)?;
@@ -1610,9 +1674,96 @@ fn checked_copy(x: &[u64], image: ImageShape, buffer_size: u64) -> Result<()> {
     }
     Ok(())
 }
+fn checked_image_copy(x: &[u64], src: ImageShape, dst: ImageShape) -> Result<vk::ImageCopy> {
+    let depth = is_depth(src.format);
+    if depth != is_depth(dst.format) || depth && src.format != dst.format {
+        return unsupported();
+    }
+    let aspect = if depth { 2 } else { 1 };
+    for (at, image) in [(0, src), (7, dst)] {
+        if x[at] != aspect
+            || x[at + 1] != 0
+            || x[at + 2] != 0
+            || x[at + 3] != 1
+            || x[at + 6] != 0
+            || x[14] == 0
+            || x[15] == 0
+            || x[16] != 1
+            || x[at + 4]
+                .checked_add(x[14])
+                .is_none_or(|n| n > image.width as u64)
+            || x[at + 5]
+                .checked_add(x[15])
+                .is_none_or(|n| n > image.height as u64)
+        {
+            return invalid();
+        }
+    }
+    let subresource = vk::ImageSubresourceLayers::default()
+        .aspect_mask(vk::ImageAspectFlags::from_raw(aspect as u32))
+        .layer_count(1);
+    Ok(vk::ImageCopy::default()
+        .src_subresource(subresource)
+        .dst_subresource(subresource)
+        .src_offset(vk::Offset3D {
+            x: x[4] as i32,
+            y: x[5] as i32,
+            z: 0,
+        })
+        .dst_offset(vk::Offset3D {
+            x: x[11] as i32,
+            y: x[12] as i32,
+            z: 0,
+        })
+        .extent(vk::Extent3D {
+            width: x[14] as u32,
+            height: x[15] as u32,
+            depth: 1,
+        }))
+}
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn image_copy_bounds_and_depth_compatibility() {
+        let image = ImageShape {
+            width: 8,
+            height: 8,
+            format: vk::Format::R8G8B8A8_UNORM,
+        };
+        let valid = [1, 0, 0, 1, 1, 2, 0, 1, 0, 0, 1, 3, 4, 0, 4, 4, 1];
+        assert!(checked_image_copy(&valid, image, image).is_ok());
+        for (field, value) in [
+            (0, 2),
+            (1, 1),
+            (3, 2),
+            (4, u64::MAX),
+            (6, 1),
+            (7, 2),
+            (11, 5),
+            (12, 5),
+            (14, 0),
+            (16, 2),
+        ] {
+            let mut bad = valid;
+            bad[field] = value;
+            assert!(checked_image_copy(&bad, image, image).is_err());
+        }
+        let depth = ImageShape {
+            format: vk::Format::D16_UNORM,
+            ..image
+        };
+        assert!(checked_image_copy(&valid, image, depth).is_err());
+        let mut copy = valid;
+        copy[0] = 2;
+        copy[7] = 2;
+        assert!(checked_image_copy(&copy, depth, depth).is_ok());
+        let other = ImageShape {
+            format: vk::Format::D32_SFLOAT,
+            ..depth
+        };
+        assert!(checked_image_copy(&copy, depth, other).is_err());
+    }
     #[test]
     fn maintenance1_negative_viewports_use_native_bounds() {
         let flipped = [0.0, 192.0, 256.0, -192.0, 0.0, 1.0];

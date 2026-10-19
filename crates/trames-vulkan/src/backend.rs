@@ -2298,7 +2298,7 @@ impl Backend {
                     *c.recording.borrow_mut() = Recording::default();
                 }
             }
-            60..=76 | 94..=97 | 114 | 122..=125 => self.graphics_call(m, op, a)?,
+            60..=76 | 94..=97 | 114 | 122..=125 | 134 => self.graphics_call(m, op, a)?,
             132 => self.dynamic_call(m, a)?,
             127..=128 => self.texel_view_call(m, op, a)?,
             92..=93 => self.sampler_call(m, op, a)?,

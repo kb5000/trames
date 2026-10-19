@@ -10,7 +10,9 @@ OpenGL实现。后续窗口继续使用现有Wayland合成器和App浮窗/标签
 当前已在Linux原生Vulkan参考和Apple原版MoltenVK/Metal上跑通原版Mesa25.1.9的EGL1.5、
 GLES2 context、GPU清屏、GLSL着色器绘制和重复纹理采样。
 **这是基础离屏GL链路，不是完整OpenGL或Vulkan一致性声明。**
-本批Apple/MoltenVK实测结果见[验证记录](../validation/zink-gles.md)；物理iPad和Wayland EGL窗口仍待验收。
+离屏Apple/MoltenVK实测见[验证记录](../validation/zink-gles.md)。新一批Wayland EGL双窗口、
+resize、close、重启和旧帧保活已在Linux参考通过；Metal窗口结果见[窗口验证](../validation/zink-wayland.md)，
+物理iPad仍待验收。
 
 ## 已实现
 
@@ -82,7 +84,16 @@ GLES2 context、GPU清屏、GLSL着色器绘制和重复纹理采样。
 
 Alpine签名Mesa25.1.9-r0和loader保持原样；五项硬扩展已满足。离屏客户端完成64个清屏像素、
 64个uniform GLSL像素及三轮共192个纹理采样像素校验，并正确销毁context/资源。
-后续继续扩展格式/图像维度/mipmap、渲染状态和真实可用features，打通Wayland EGL窗口及生命周期。
+Wayland EGL复用现有native swapchain/Metal texture路径，新增可采样swapchain usage和原生
+`vkCmdCopyImage`，使原版Kopper可在resize时复制旧图片。命令依赖图保留源/目标图像与旧pool，
+直到提交完成及最后UI帧释放。没有像素读回/SHM回退用于正常呈现；测试oracle的读回独立计入验证范围。
+后续继续扩展格式/图像维度/mipmap、渲染状态和真实可用features。
+
+Mesa25.1.9的ES2 context启用GL-thread时，SwapBuffers调用的内部
+`InternalInvalidateFramebufferAncillaryMESA`在上游`gl_API.xml`仅标为ES3，从而产生
+`GL_INVALID_OPERATION(invalid call)`。当前窗口验证使用上游`mesa_glthread=false`配置。
+这只关闭Mesa的GL调用封送队列；Zink/Vulkan/Metal、原生GPU和普通guest线程仍保持原路径。
+未修改Mesa或伪造ES3能力；这个限制应保留到实现足够真实的更高GL profile并重新验证。
 当前仍有custom-border-color、line-rasterization和depth-clip-enable相关上游警告；基础样例通过
 不代表所有应用/裁剪/线段状态已可用。Apple driver的logicOp不可用，另有禁用primitive
 restart的Metal警告；索引/拓扑边界需要单独验证。未通过的能力不会仅靠枚举名称来启用。
@@ -106,5 +117,5 @@ Zink选中这个CPU physical device；它不替换OpenGL实现。iPad GPU验收�
 匹配后在Apple Paravirtual device运行；原版Mesa报告
 `zink Vulkan 1.0(Apple Paravirtual device (MOLTENVK))`，清屏、uniform GLSL、
 三轮纹理采样和销毁均通过。原生resources两轮256个GPU结果、cache/pool复用也通过。
-详见[本批验证](../validation/zink-gles.md)。Wayland EGL呈现与物理iPad仍待验收；
+详见[离屏验证](../validation/zink-gles.md)和[窗口验证](../validation/zink-wayland.md)。物理iPad仍待验收；
 本批没有构建新的Zink IPA或release。

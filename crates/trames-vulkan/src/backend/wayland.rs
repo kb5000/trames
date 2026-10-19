@@ -263,7 +263,9 @@ impl Backend {
                     1,
                     1,
                     1,
-                    0x13,
+                    // The same native images are sampled directly by Metal.
+                    // Mesa Kopper also samples its swapchain resources.
+                    0x17,
                 ];
                 write(
                     m,
@@ -454,7 +456,7 @@ impl Backend {
                     || a[6] == 0
                     || a[5] > 4096
                     || a[6] > 4096
-                    || a[7] & !0x13 != 0
+                    || a[7] & !0x17 != 0
                     || a[7] & 0x10 == 0
                     || a[9] > 1
                     || a[11] > 1

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Prepare original Alpine-signed Mesa/Zink and ordinary EGL/Vulkan clients."""
+import argparse
 import hashlib
 import importlib.util
 import json
@@ -8,9 +9,14 @@ import os
 from pathlib import Path
 import subprocess
 import tarfile
+import tempfile
 import urllib.request
+import shutil
 
 ROOT = Path(__file__).resolve().parents[1]
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--wayland', action='store_true', help='also prepare original Wayland EGL window clients')
+args = parser.parse_args()
 spec = importlib.util.spec_from_file_location('m6', ROOT / 'tests/integration/m6.py')
 m6 = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(m6)
@@ -20,6 +26,11 @@ m6.CACHE.mkdir(parents=True, exist_ok=True)
 repo = out / 'repository'
 if not repo.exists():
     m6.repository(repo, ('mesa-dri-gallium', 'mesa-egl', 'mesa-gles', 'mesa-dev', 'vulkan-loader'))
+if args.wayland and not any(repo.rglob('wayland-protocols-*.apk')):
+    with tempfile.TemporaryDirectory(prefix='zink-wayland-repo-') as temporary:
+        extra = Path(temporary) / 'repository'
+        m6.repository(extra, ('wayland-dev', 'wayland-protocols', 'wayland-libs-egl'))
+        shutil.copytree(extra, repo, dirs_exist_ok=True)
 packages = sorted(repo.rglob('*.apk'))
 assert any(p.name == 'mesa-dri-gallium-25.1.9-r0.apk' for p in packages), 'Review requirements before changing Mesa version'
 sdk = Path(os.environ.get('TRAMES_ZINK_SDK', out / 'sdk'))
@@ -44,7 +55,11 @@ for package in packages:
                 continue
             if not entry.isfile():
                 continue
-            if name.as_posix().startswith(('usr/include/EGL/', 'usr/include/GLES2/', 'usr/include/KHR/')):
+            if args.wayland and name.as_posix().endswith('/stable/xdg-shell/xdg-shell.xml'):
+                (sdk / 'xdg-shell.xml').write_bytes(archive.extractfile(entry).read())
+                continue
+            if name.as_posix().startswith(('usr/include/EGL/', 'usr/include/GLES2/', 'usr/include/KHR/')) or (
+                    args.wayland and name.parent.as_posix() == 'usr/include' and name.name.startswith('wayland-')):
                 target = sdk / name
             elif shared:
                 target = sdk / name.name
@@ -70,6 +85,17 @@ common = [compiler, '-O2', '-mno-outline-atomics', '-Wall', '-Wextra', '-Werror'
           '-L' + str(ROOT / 'target/alpine-build/lib'), '-Wl,-rpath-link,' + str(sdk)]
 subprocess.run([*common, str(ROOT / 'tests/fixtures/zink-egl.c'), '-l:libEGL.so.1',
                 '-l:libGLESv2.so.2', '-o', str(out / 'zink-egl')], check=True)
+if args.wayland:
+    scanner = os.getenv('TRAMES_WAYLAND_SCANNER', 'wayland-scanner')
+    subprocess.run([scanner, 'client-header', str(sdk / 'xdg-shell.xml'), str(sdk / 'xdg-shell-client-protocol.h')], check=True)
+    subprocess.run([scanner, 'private-code', str(sdk / 'xdg-shell.xml'), str(sdk / 'xdg-shell-protocol.c')], check=True)
+    subprocess.run([*common, '-I' + str(sdk), str(ROOT / 'tests/fixtures/zink-wayland.c'),
+                    str(sdk / 'xdg-shell-protocol.c'), '-l:libEGL.so.1', '-l:libGLESv2.so.2',
+                    '-l:libwayland-client.so.0', '-l:libwayland-egl.so.1', '-o', str(out / 'zink-wayland')], check=True)
+    subprocess.run([*common, str(ROOT / 'tests/fixtures/vulkan-copy.c'), '-l:libvulkan.so.1', '-o', str(out / 'vulkan-copy')], check=True)
+    subprocess.run([os.getenv('HOST_CC', 'cc'), '-O2', '-Wall', '-Wextra', '-Werror', '-I' + str(headers),
+                    str(ROOT / 'tests/fixtures/vulkan-copy.c'), os.getenv('VULKAN_HOST_LINK', '-lvulkan'),
+                    '-o', str(out / 'vulkan-copy-host')], check=True)
 subprocess.run([*common, str(ROOT / 'tests/fixtures/vulkan-queries.c'), '-l:libvulkan.so.1',
                 '-o', str(out / 'vulkan-queries')], check=True)
 subprocess.run([os.getenv('HOST_CC', 'cc'), '-O2', '-Wall', '-Wextra', '-Werror',

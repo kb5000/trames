@@ -342,7 +342,7 @@ def main():
             changed=set(subprocess.check_output(['git','diff','--name-only',base,'HEAD'],text=True).splitlines())- {str(plan_path)}
             hashes=plan['changed_file_sha256']
             if changed==set(hashes) and all(Path(path).exists() and hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest for path,digest in hashes.items()):
-                if plan.get('native_scope') in {'zink-foundation', 'zink-sync', 'zink-gles'}:
+                if plan.get('native_scope') in {'zink-foundation', 'zink-sync', 'zink-gles', 'zink-wayland'}:
                     allowed = {'accelerator/vulkan/icd.c', 'accelerator/vulkan/queries.inc',
                                'accelerator/vulkan/templates.inc', 'accelerator/vulkan/entrypoints.inc',
                                'crates/trames-distro/src/vulkan.rs', 'tests/fixtures/vulkan-queries.c',
@@ -350,11 +350,14 @@ def main():
                                'tests/fixtures/vulkan-texture.c', 'tests/integration/zink-foundation.py',
                                'scripts/prepare-zink-guest.py', 'scripts/build-vulkan-guest.sh',
                                'scripts/ios-ci-scope.py', '.github/workflows/ios.yml', '.github/workflows/linux.yml'}
-                    sync = plan.get('native_scope') in {'zink-sync','zink-gles'}
+                    sync = plan.get('native_scope') in {'zink-sync','zink-gles','zink-wayland'}
                     if sync:
                         allowed.update({'accelerator/vulkan/zink.inc', 'accelerator/vulkan/graphics.inc', 'tests/fixtures/vulkan-timeline.c',
                                         'tests/fixtures/vulkan-render.c', 'tests/fixtures/vulkan-resources.c', 'tests/fixtures/vulkan-resources.comp',
                                         'scripts/build-vulkan-fixtures.sh', 'scripts/prepare-zink-native-bundle.py'})
+                    if plan.get('native_scope') == 'zink-wayland':
+                        allowed.update({'tests/fixtures/zink-wayland.c', 'tests/fixtures/vulkan-copy.c',
+                                        'tests/fixtures/zink-metal-pixels.m', 'tests/integration/zink-wayland.py'})
                     if any(p not in allowed and not p.startswith('docs/') and not (sync and p.startswith('crates/trames-vulkan/')) for p in changed):
                         raise RuntimeError('Zink foundation plan includes unrelated source changes')
                     path = 'crates/trames-distro/src/vulkan.rs'
@@ -440,7 +443,7 @@ def main():
                                 raise RuntimeError('Missing passed exact-source Linux GPU foundation')
                             if key == 'apple' and not any(step['name'] == 'Check changed Apple Vulkan backend and iOS embedding' and step['conclusion'] == 'success' for step in job['steps']):
                                 raise RuntimeError('Missing passed exact-source Apple Vulkan/iOS checks')
-                    print('Zink synchronization: changed guest ICD and native Vulkan backend, original driver timeline/viewport GPU checks and iOS embedding; CPU/MMU/UI/network unchanged, no IPA.' if sync else 'Guest ICD query/template foundation: original loader/Mesa probe, native GPU compute/texture oracles, bundle upgrade/reopen and Apple/iOS metadata checks. CPU/MMU/native GPU backend/UI unchanged; no IPA or repeated unrelated acceptance.')
+                    print('Original Mesa Wayland EGL: native WSI/image copies, two-window resize/close and retained Metal texture pixels; reuse unchanged offscreen/CPU/MMU/UI/network checks; no IPA.' if plan.get('native_scope') == 'zink-wayland' else 'Zink synchronization: changed guest ICD and native Vulkan backend, original driver timeline/viewport GPU checks and iOS embedding; CPU/MMU/UI/network unchanged, no IPA.' if sync else 'Guest ICD query/template foundation: original loader/Mesa probe, native GPU compute/texture oracles, bundle upgrade/reopen and Apple/iOS metadata checks. CPU/MMU/native GPU backend/UI unchanged; no IPA or repeated unrelated acceptance.')
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=' + plan['native_scope'] + '\n')
                         output.write('skip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')

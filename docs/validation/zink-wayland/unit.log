@@ -1,0 +1,26 @@
+   Compiling trames-vulkan v1.1.0 (/workspace/trames/crates/trames-vulkan)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.45s
+     Running unittests src/lib.rs (target/perf-runtime/debug/build/trames-vulkan/5d0a547338f800e2/out/trames_vulkan-5d0a547338f800e2)
+
+running 18 tests
+test backend::coherent::tests::coherent_tracking_is_charged_and_released_with_the_mapping ... ok
+test backend::graphics::tests::copy_checks_padded_rows_offsets_overflow_and_color_subresources ... ok
+test backend::coherent::tests::independent_cpu_inputs_and_gpu_outputs_do_not_overwrite_each_other ... ok
+test backend::graphics::tests::image_copy_bounds_and_depth_compatibility ... ok
+test backend::graphics::tests::image_profile_reports_only_supported_formats_usages_and_layouts ... ok
+test backend::graphics::tests::maintenance1_negative_viewports_use_native_bounds ... ok
+test backend::tests::specialization_records_keep_offsets_and_reject_overflow_or_duplicate_ids ... ok
+test backend::tests::malformed_transport_cannot_read_guest_memory_or_create_driver_objects ... ok
+test backend::tests::spirv_debug_names_do_not_change_entrypoints_or_specialization_decorations ... ok
+test backend::tests::wait_stages_support_selected_graphics_but_reject_unknown_extension_bits ... ok
+test backend::tests::unknown_object_domains_and_uninitialized_driver_never_become_host_handles ... ok
+test backend::tests::native_transfers_cross_pages_keep_cow_and_preflight_permissions ... ok
+test budget::tests::compiler_capacity_is_shared_and_released_without_a_global_work_lock ... ok
+test budget::tests::independent_contexts_share_budget_without_overcommit_or_lifetime_leak ... ok
+test display::tests::detach_invalidates_generation_but_preserves_in_flight_lease ... ok
+test display::tests::invalid_native_targets_fail_before_objc_access ... ok
+test task::tests::slow_tasks_do_not_block_the_caller_or_an_unrelated_task ... ok
+test task::tests::teardown_joins_before_owned_dependency_destruction ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

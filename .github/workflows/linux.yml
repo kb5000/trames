@@ -43,6 +43,99 @@ jobs:
           TRAMES_VALIDATION_WORKFLOW: linux.yml
           TRAMES_NEEDS_GUEST_ARTIFACTS: 'false'
         run: python3 scripts/ios-ci-scope.py
+  zink-wayland-linux:
+    needs: scope
+    if: needs.scope.outputs.native_scope == 'zink-wayland'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+          components: rustfmt, clippy
+      - name: Prepare original signed Mesa and Wayland EGL clients
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes gcc-aarch64-linux-gnu libvulkan-dev mesa-vulkan-drivers libwayland-bin
+          bash scripts/build-vulkan-guest.sh
+          python3 scripts/prepare-zink-guest.py --wayland
+      - name: Check affected Vulkan module and build production embedding
+        run: |
+          cargo fmt --all --check
+          cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
+          cargo test -p trames-vulkan --lib --locked
+          cargo build -p trames-cli -p trames-ffi --release --locked
+          python3 -m py_compile scripts/prepare-zink-guest.py scripts/prepare-zink-native-bundle.py tests/integration/zink-wayland.py
+      - name: Verify GPU image copies and original Mesa window lifecycle
+        run: |
+          export VK_DRIVER_FILES="$(python3 -c 'from pathlib import Path; print(next(Path("/usr/share/vulkan/icd.d").glob("*lvp*")))')"
+          export TRAMES_ZINK_CPU_REFERENCE=1
+          mkdir -p target/zink-wayland-native
+          target/zink-inputs/vulkan-copy-host | tee target/zink-wayland-native/image-copy.log
+          python3 tests/integration/zink-wayland.py --output target/zink-wayland --snapshot-store target/zink-native-bundle/store
+          python3 scripts/prepare-zink-native-bundle.py --wayland
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zink-wayland-evidence
+          path: |
+            target/zink-wayland/*.json
+            target/zink-wayland/*.log
+            target/zink-wayland/*.stdout
+            target/zink-wayland/*.stderr
+            target/zink-wayland-native/
+            target/zink-inputs/inputs.json
+            target/vulkan-guest/manifest.json
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: zink-native-bundle
+          path: target/zink-native-bundle/
+          include-hidden-files: true
+          retention-days: 3
+  zink-wayland-apple:
+    needs: [scope, zink-wayland-linux]
+    if: needs.scope.outputs.native_scope == 'zink-wayland'
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+          targets: aarch64-apple-ios
+          components: clippy
+      - uses: actions/download-artifact@v4
+        with:
+          name: zink-native-bundle
+          path: target/zink-native-bundle
+      - name: Verify exact guest inputs and Apple embedding
+        run: |
+          python3 scripts/prepare-zink-native-bundle.py --verify
+          cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
+          cargo test -p trames-vulkan --lib --locked
+          cargo check -p trames-ffi --target aarch64-apple-ios --locked
+      - name: Verify original Mesa Wayland EGL on exported Metal textures
+        run: |
+          python3 scripts/prepare-vulkan.py --apple
+          export TRAMES_MOLTENVK_STATIC_DIR="$PWD/target/vulkan-upstream/moltenvk-all/MoltenVK/MoltenVK/static/MoltenVK.xcframework/macos-arm64_x86_64"
+          export MACOSX_DEPLOYMENT_TARGET=12.0
+          export RUSTFLAGS="-C link-arg=-framework -C link-arg=IOKit -C link-arg=$(xcrun clang --print-runtime-dir)/libclang_rt.osx.a"
+          cargo build -p trames-ffi --release --locked
+          xcrun clang -O2 -Wall -Wextra -Werror -fobjc-arc -dynamiclib tests/fixtures/zink-metal-pixels.m -framework Metal -framework Foundation -o target/zink-metal-pixels.dylib
+          export TRAMES_VULKAN_TRACE=1
+          python3 tests/integration/zink-wayland.py --store target/zink-native-bundle/store --output target/zink-wayland-metal --metal-validator target/zink-metal-pixels.dylib
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zink-wayland-metal-evidence
+          path: |
+            target/zink-wayland-metal/*.json
+            target/zink-wayland-metal/*.log
+            target/zink-native-bundle/checksums.json
+          retention-days: 14
   zink-foundation:
     needs: scope
     if: (needs.scope.outputs.native_scope == 'zink-foundation' || needs.scope.outputs.native_scope == 'zink-sync' || needs.scope.outputs.native_scope == 'zink-gles') && needs.scope.outputs.zink_sync_skip_linux != 'true'
