@@ -1,0 +1,5 @@
+{
+  "exit_code": 0,
+  "method": "Minimal musl CRT/libc sysroot plus only flattened signed APK libraries; no full SDK library fallback",
+  "elf_sha256": "1d63fe082552d3a51e4d05a6425feeba7c1f9bd41d7d2f6db059ad286c9e7e64"
+}

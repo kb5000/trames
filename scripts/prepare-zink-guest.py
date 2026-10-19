@@ -27,12 +27,20 @@ sdk.mkdir(exist_ok=True)
 for package in packages:
     with tarfile.open(package, ignore_zeros=True) as archive:
         for entry in archive:
+            name = Path(entry.name)
+            shared = '.so.' in name.name or name.name.endswith('.so')
+            if shared and (entry.issym() or entry.islnk()):
+                # ELF sonames do not always match the real file's basename:
+                # libelf.so.1 -> libelf-0.193.so, for example.
+                link = sdk / name.name
+                if not link.exists() and not link.is_symlink():
+                    link.symlink_to(Path(entry.linkname).name)
+                continue
             if not entry.isfile():
                 continue
-            name = Path(entry.name)
             if name.as_posix().startswith(('usr/include/EGL/', 'usr/include/GLES2/', 'usr/include/KHR/')):
                 target = sdk / name
-            elif '.so.' in name.name:
+            elif shared:
                 target = sdk / name.name
             else:
                 continue
@@ -41,7 +49,7 @@ for package in packages:
             if '.so.' in name.name:
                 base, version = name.name.split('.so.', 1)
                 link = sdk / (base + '.so.' + version.split('.')[0])
-                if not link.exists():
+                if not link.exists() and not link.is_symlink():
                     link.symlink_to(target.name)
 rootfs = m6.CACHE / 'alpine-minirootfs-3.22.6-aarch64.tar.gz'
 if not rootfs.exists():

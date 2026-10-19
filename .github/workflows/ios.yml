@@ -16,7 +16,7 @@ defaults:
 jobs:
   zink-foundation-apple:
     needs: scope
-    if: needs.scope.outputs.native_scope == 'zink-foundation'
+    if: needs.scope.outputs.native_scope == 'zink-foundation' && needs.scope.outputs.zink_skip_apple != 'true'
     runs-on: macos-15
     timeout-minutes: 15
     steps:
@@ -200,6 +200,7 @@ jobs:
       critical_test: ${{ steps.scope.outputs.critical_test }}
       ui_targets: ${{ steps.scope.outputs.ui_targets }}
       native_scope: ${{ steps.scope.outputs.native_scope }}
+      zink_skip_apple: ${{ steps.scope.outputs.zink_skip_apple }}
       storage_proc_only: ${{ steps.scope.outputs.storage_proc_only }}
       isolation_retry: ${{ steps.scope.outputs.isolation_retry }}
       network_retry: ${{ steps.scope.outputs.network_retry }}

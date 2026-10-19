@@ -357,10 +357,34 @@ def main():
                     new = Path(path).read_text().split('#[cfg(test)]')[0]
                     if old.replace('"api_version":"1.0.0"', '"api_version":"1.1.0"') != new:
                         raise RuntimeError('Only bundled instance-version metadata may change in native Rust')
+                    reuse = plan.get('zink_reuse_apple')
+                    if reuse:
+                        source = reuse['sha']
+                        paths = ['crates', 'Cargo.toml', 'Cargo.lock', '.cargo', 'vendor', 'rust-toolchain.toml']
+                        if subprocess.check_output(['git', 'diff', '--name-only', source, 'HEAD', '--', *paths]).strip():
+                            raise RuntimeError('Apple Zink metadata acceptance requires unchanged Rust/build inputs')
+                        def apple_job(text):
+                            block = text.split('  zink-foundation-apple:\n', 1)[1].split('  runtime-fastpaths-apple:\n', 1)[0]
+                            return '\n'.join(l for l in block.splitlines() if not l.strip().startswith('if:'))
+                        previous = subprocess.check_output(['git', 'show', source + ':.github/workflows/ios.yml'], text=True)
+                        if apple_job(previous) != apple_job(Path('.github/workflows/ios.yml').read_text()):
+                            raise RuntimeError('Apple metadata job commands changed; cannot reuse')
+                        def evidence(path):
+                            req = urllib.request.Request(f'https://api.github.com/repos/{repo}/' + path, headers=dict(request.headers))
+                            with urllib.request.urlopen(req, timeout=30) as response:
+                                return json.load(response)
+                        run_id = reuse['run']
+                        run = evidence(f'actions/runs/{run_id}')
+                        job = next(j for j in evidence(f'actions/runs/{run_id}/jobs')['jobs'] if j['name'] == 'zink-foundation-apple')
+                        if run['head_sha'] != source or job['conclusion'] != 'success':
+                            raise RuntimeError('Missing exact-source successful Apple Zink metadata job')
                     print('Guest ICD query/template foundation: original loader/Mesa probe, native GPU compute/texture oracles, bundle upgrade/reopen and Apple/iOS metadata checks. CPU/MMU/native GPU backend/UI unchanged; no IPA or repeated unrelated acceptance.')
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=zink-foundation\n')
                         output.write('skip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
+                        if reuse:
+                            output.write('zink_skip_apple=true\n')
+                            print('Reuse exact unchanged Apple manifest/iOS checks; retry unfinished Linux preparation and foundation checks only.')
                     return
                 if plan.get('native_scope') == 'docker-default-lifecycle':
                     allowed = {'.github/workflows/linux.yml', '.github/workflows/ios.yml', 'README.md',

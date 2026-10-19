@@ -36,7 +36,11 @@ backend/UI无改动，复用此前已通过验收；不重跑CoreMark、Docker�
 
 精确源码Linux CI会重建原版guest ICD、执行新基础检查与原版Mesa probe。
 Apple CI只检查manifest更新和iOS embedding编译，**不等同新增Metal GPU/GL测试**。
-CI完成状态另记，未完成不记为通过。当前未打IPA或发布。
+Apple/iOS metadata CI在a231f47已通过（run39202469057），只做两项manifest测试与
+iOS FFI编译，不是Metal GPU验收。Linux run39202468982在干净SDK链接阶段发现
+准备脚本只收集`.so.*`而遗漏裸soname的`libgallium-25.1.9.so`及非标准名字的SONAME链接；已修复并以最小
+sysroot验证链接。没有runtime改动，Apple源码/命令与已通过结果精确核对后复用，
+只重跑未完成的Linux检查。当前未打IPA或发布。
 
 复现入口：
 

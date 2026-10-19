@@ -1,0 +1,18 @@
+{
+  "runtime_source": "a231f478caa2f1f21f13708b0f064f9e394484cc",
+  "apple": {
+    "run": 39202469057,
+    "job": 117898204471,
+    "conclusion": "success",
+    "manifest_tests": 2,
+    "ios_ffi_check": true,
+    "new_metal_gpu_test": false
+  },
+  "first_linux": {
+    "run": 39202468982,
+    "job": 117898198203,
+    "conclusion": "failure",
+    "stage": "SDK preparation: omitted bare .so library and soname aliases; runtime foundation never executed"
+  },
+  "linux_retry": "pending; guest/native runtime source unchanged"
+}

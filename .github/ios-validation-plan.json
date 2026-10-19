@@ -1,9 +1,9 @@
 {
   "base_sha": "121cdc769147afd2fd29775311f59696ec5372fd",
   "native_scope": "zink-foundation",
-  "reason": "Single-main development after merged PR31. Guest ICD adds real instance1.1/device1.0 query separation, memory requirements2 and descriptor templates; native Rust changes only bundled manifest version. Validate original signed Mesa probe, native/guest GPU query/compute/texture oracles, bundle upgrade/reopen and Apple/iOS metadata; reuse unchanged CPU/MMU/native GPU backend/network/UI acceptance. GL rendering remains unavailable, no IPA.",
+  "reason": "Fix only clean SDK extraction of bare .so sonames; native and guest runtime source unchanged from a231f47. Reuse exact successful Apple manifest/iOS compile evidence with verified identical Rust/build inputs and job commands. Retry unfinished Linux SDK/foundation checks only; keep Mesa GL initialization explicitly gated.",
   "changed_file_sha256": {
-    ".github/workflows/ios.yml": "db0c62848c5cf7fb1788a90e61aade7b6b1a79cc98070a4ace6ba2b8603cdb59",
+    ".github/workflows/ios.yml": "d4799fb505ebfa84a8ecdcb717cfaab568eede0fe0fc32e5686c89625d4e9ee7",
     ".github/workflows/linux.yml": "d6e77a68cb395fa7b172232104360ab7e40caad74777ee3e79ce7cea3f9011c1",
     "accelerator/vulkan/entrypoints.inc": "145d6a63b65ff506d80470d61c477989d29ef71838bd0975f274c5499dc68625",
     "accelerator/vulkan/icd.c": "cc1c45c636f286fedbbfe1bc45ad1368fc1a157a61893784c8026c4d7d560dd1",
@@ -12,8 +12,11 @@
     "crates/trames-distro/src/vulkan.rs": "edf1e5daf30d15077d41af758c88fe4ece1c3222f3f650ec997e2454e60f0d35",
     "docs/architecture/vulkan-compute.md": "92c9a6d02f80cbb11f899114692785c592e53039376864cdc77236d702d74ff4",
     "docs/architecture/zink.md": "4ccc016f4a959360d4d7df676419382f269ceae4f758150142fb63c48ed2a245",
-    "docs/validation/zink-foundation.md": "aef15c7d9607bab6b1cb96c6e92049aaac6d6ddc69ff6e1f7f3ddca16468747c",
+    "docs/validation/zink-foundation.md": "3e6b64c2cd75e704ece348d756fd916f11b793670b6172f36c900eb6d73d08ec",
+    "docs/validation/zink-foundation/apple-metadata.log": "5378b758dc9496606b567017ec73ef05a080807634a6f66fb9b0e894ee2ec05f",
     "docs/validation/zink-foundation/baseline-native-cpu.stderr": "a3b2c05cf5f7ce44dec8520edf4a3d178772ece2c8304f530cf8b512927daa3d",
+    "docs/validation/zink-foundation/ci.json": "9539888d64c36935133d3c6f324be814bf7f86d8374443ad98f1dc5e33525e72",
+    "docs/validation/zink-foundation/clean-sdk-link.json": "cd7e6d9d0a400ba0cd54ded94763649c875c3844e2626c96d638b7ef9b82518d",
     "docs/validation/zink-foundation/compute-legacy-native.stderr": "7cc175b484b8bbe823ce3a7f76995878a9ab0e44a65913d221b8fb062282f24c",
     "docs/validation/zink-foundation/compute-legacy-native.stdout": "f2db8e932750e273e1ccce90d610d50bbb138a1856dac4994394d0cb5d4ac048",
     "docs/validation/zink-foundation/compute-legacy.stderr": "7cc175b484b8bbe823ce3a7f76995878a9ab0e44a65913d221b8fb062282f24c",
@@ -25,6 +28,7 @@
     "docs/validation/zink-foundation/distro-clippy.log": "0bd16a45e887988bdc468e3d27f78b56a064fa8abff03f09b8edf78e9798322c",
     "docs/validation/zink-foundation/distro-tests.log": "5cfd5ff67167614dec4ccef1efb6cb6e23bdef8375da4b52c28554ea0a6dc671",
     "docs/validation/zink-foundation/inputs.json": "edcc60b5452771643bcea7b147e9c5f1a44b21f29d1aa09f2be71a4942019e20",
+    "docs/validation/zink-foundation/linux-sdk-first-failure.excerpt.log": "e19df08b31dccbbe8f9084d7062bd6236996b1c894c74cdb9186cadd0ac9a430",
     "docs/validation/zink-foundation/mesa-egl-probe.stderr": "621d7d9a42e9f20f3f3dc0047a2023d35b24bdc1ec46d3e29ddfbc1e1a851dea",
     "docs/validation/zink-foundation/mesa-egl-probe.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "docs/validation/zink-foundation/provenance.json": "70106742538358c30418415622907676f2a93fa5454b7e3c0d2560e3d6b4cbc5",
@@ -44,12 +48,16 @@
     "docs/validation/zink-foundation/texture-template.stderr": "c633ebfd1f5ea81e02db35cf1ccfbca38e6637a69b04b9976a6e578ade59a010",
     "docs/validation/zink-foundation/texture-template.stdout": "7975162acf4c57ef64c0f1295b725775cc4ad45f78403a975c0d1fb6c486d0bf",
     "scripts/build-vulkan-guest.sh": "99e52ba998fed6dd7d846fb6b6b5b758289230b0499d925ebb543a73dacbc311",
-    "scripts/ios-ci-scope.py": "12f10f7b0490bd7d3219701c9463817024ac76e6f6d224945a660edafed1a9d0",
-    "scripts/prepare-zink-guest.py": "fe40ec079d3738dd7252d15690f3df1642e274411e8de0f673602058b12bd5c0",
+    "scripts/ios-ci-scope.py": "9069a6542ab85741365b10e822aa50b6ee28489b1b93de8ea0fc10fa3f21f027",
+    "scripts/prepare-zink-guest.py": "2de70e71d54cc801cda49707795374902c0cbfe2ee17914dbb081ae1a74c1d53",
     "tests/fixtures/vulkan-compute.c": "f8ec56da3d5fc24b2f3eaf1cb2c6901e92e269111377fe74e8d15ca39bb06acd",
     "tests/fixtures/vulkan-queries.c": "a74db221fbae750a3e431b91b88cddd2b9d926733159825d0ebf5d442a47cc7c",
     "tests/fixtures/vulkan-texture.c": "6cf1c11bf6b6d4a58e3ad175dec23d4feb0c5ecf83dbabc13521c2a4702e4a15",
     "tests/fixtures/zink-egl.c": "8fd40dfeeeb42e373678e5a231fb7c4a28f9faa18b392571e22cf065977ff1e5",
     "tests/integration/zink-foundation.py": "d70aeed3d8ca0f5356a14f029e068f316dd96c7261876fb3191b7bee2af4a83b"
+  },
+  "zink_reuse_apple": {
+    "sha": "a231f478caa2f1f21f13708b0f064f9e394484cc",
+    "run": 39202469057
   }
 }
