@@ -1,0 +1,9 @@
+{
+  "kind": "original-metal-failure",
+  "artifact_id": 12187716996,
+  "digest": "sha256:12bd28d9c258409f6a9f36fe943e929e1621a57c0ac45efb1aceb0f1678e983e",
+  "run_id": 39254466978,
+  "source_sha": "b23e75af862f319d86b84269ae8498e615719d5c",
+  "sha256": "12bd28d9c258409f6a9f36fe943e929e1621a57c0ac45efb1aceb0f1678e983e",
+  "zip_crc": "passed"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "original signed Mesa25.1.9 EGL/GLES2 and libwayland; production FFI and native Vulkan WSI",
+  "icd_sha256": "4050de835ff5497716da03e316972d11c18370f30bf6914d132926a672fc9d5e",
+  "input_store_manifest_sha256": "20ea3ac7bd96bdc79a914a9fd6fdfa381d1a1c1eda17f76c3f0c10ccfa237257",
+  "rounds": [],
+  "passed": false,
+  "physical_ipad": false,
+  "native_image_copy_gpu_pixels": 64
+}

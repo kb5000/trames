@@ -4,7 +4,7 @@
 
 Only the explicit DRM-less Kopper platform option changes runtime source. Mesa's
 Zink/NIR/GLSL/SPIR-V/GLES2, libwayland and Vulkan loader remain original APKs.
-Requires host meson/ninja/mako/pkg-config/bison/flex/wayland-scanner and AArch64
+Requires host meson/ninja/mako/packaging/pkg-config/bison/flex/wayland-scanner and AArch64
 GCC/G++; no ARM executable is run by this build.
 """
 import hashlib

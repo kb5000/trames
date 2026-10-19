@@ -62,7 +62,7 @@ jobs:
           bash scripts/build-vulkan-guest.sh
           python3 scripts/prepare-zink-guest.py --wayland
           python3 -m venv target/mesa-tools
-          target/mesa-tools/bin/pip install meson==1.12.1 mako==1.4.3
+          target/mesa-tools/bin/pip install meson==1.12.1 mako==1.4.3 packaging==25.0
           export PATH="$PWD/target/mesa-tools/bin:$PATH"
           python3 scripts/build-zink-egl.py
       - name: Check affected Vulkan module and build production embedding
