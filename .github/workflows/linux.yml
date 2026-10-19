@@ -30,6 +30,7 @@ jobs:
       docker_network_virtual_retry: ${{ steps.scope.outputs.docker_network_virtual_retry }}
       docker_default_remount: ${{ steps.scope.outputs.docker_default_remount }}
       zink_skip_linux_checks: ${{ steps.scope.outputs.zink_skip_linux_checks }}
+      zink_sync_skip_linux: ${{ steps.scope.outputs.zink_sync_skip_linux }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,7 +45,7 @@ jobs:
         run: python3 scripts/ios-ci-scope.py
   zink-foundation:
     needs: scope
-    if: needs.scope.outputs.native_scope == 'zink-foundation' || needs.scope.outputs.native_scope == 'zink-sync'
+    if: (needs.scope.outputs.native_scope == 'zink-foundation' || needs.scope.outputs.native_scope == 'zink-sync') && needs.scope.outputs.zink_sync_skip_linux != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:

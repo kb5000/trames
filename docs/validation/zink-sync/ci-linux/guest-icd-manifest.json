@@ -1,0 +1,14 @@
+{
+  "profile": 65542,
+  "auxv_key": "0x54520008",
+  "wire_revision": 5,
+  "experimental": true,
+  "instance_api": "1.1.0",
+  "device_api": "1.0.0",
+  "scope": "selected compute, graphics, queries, descriptor templates, Wayland and fixed-display WSI API; not Vulkan conformance or complete Zink",
+  "icd_sha256": "748eb22952eb606756d61e2f0323fd664a4465f25b802b9ac6f517066ae39abe",
+  "loader": "unmodified distro libvulkan.so.1",
+  "headers": "1.3.281",
+  "native_moltenvk": "1.4.2",
+  "default_enabled": false
+}

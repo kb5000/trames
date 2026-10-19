@@ -1,0 +1,7 @@
+zink-required VK_KHR_maintenance1 available
+zink-required VK_KHR_create_renderpass2 available
+zink-required VK_KHR_imageless_framebuffer available
+zink-required VK_KHR_timeline_semaphore available
+zink-required VK_KHR_descriptor_update_template available
+instance queries: legacy equivalence, aliases, groups, unknown pNext and capacity guards: ok
+vulkan-queries-ok: extension-only device, memory requirements and unavailable external handles

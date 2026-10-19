@@ -31,7 +31,7 @@ jobs:
           cargo test -p trames-distro vulkan --locked
           cargo check -p trames-ffi --target aarch64-apple-ios --locked
       - name: Check changed Apple Vulkan backend and iOS embedding
-        if: needs.scope.outputs.native_scope == 'zink-sync'
+        if: needs.scope.outputs.native_scope == 'zink-sync' && needs.scope.outputs.zink_sync_skip_apple_checks != 'true'
         run: |
           cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
           cargo test -p trames-vulkan --lib --locked
@@ -41,6 +41,8 @@ jobs:
         run: |
           python3 scripts/prepare-vulkan.py --apple
           export TRAMES_MOLTENVK_STATIC_DIR="$PWD/target/vulkan-upstream/moltenvk-all/MoltenVK/MoltenVK/static/MoltenVK.xcframework/macos-arm64_x86_64"
+          export MACOSX_DEPLOYMENT_TARGET=12.0
+          export RUSTFLAGS="-C link-arg=-framework -C link-arg=IOKit -C link-arg=$(xcrun clang --print-runtime-dir)/libclang_rt.osx.a"
           cargo run -p trames-vulkan --example timeline --release --locked
   runtime-fastpaths-apple:
     needs: scope
@@ -214,6 +216,7 @@ jobs:
       ui_targets: ${{ steps.scope.outputs.ui_targets }}
       native_scope: ${{ steps.scope.outputs.native_scope }}
       zink_skip_apple: ${{ steps.scope.outputs.zink_skip_apple }}
+      zink_sync_skip_apple_checks: ${{ steps.scope.outputs.zink_sync_skip_apple_checks }}
       storage_proc_only: ${{ steps.scope.outputs.storage_proc_only }}
       isolation_retry: ${{ steps.scope.outputs.isolation_retry }}
       network_retry: ${{ steps.scope.outputs.network_retry }}

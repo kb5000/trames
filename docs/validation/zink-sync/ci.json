@@ -1,0 +1,23 @@
+{
+  "runtime_source": "3e6c014edec6698d4fbb81339104937433e571af",
+  "linux": {
+    "run": 39221867948,
+    "job": 117958852264,
+    "conclusion": "success",
+    "native_timeline": true,
+    "native_lifecycle": true,
+    "guest_cpus": [
+      1,
+      4
+    ],
+    "unit_tests": 17
+  },
+  "apple": {
+    "run": 39221868006,
+    "job": 117958870508,
+    "module_checks": "success",
+    "ios_ffi_check": "success",
+    "native_gpu": "not executed: macOS linker missing IOKit/availability runtime",
+    "retry": "pending; only CI link configuration changed"
+  }
+}

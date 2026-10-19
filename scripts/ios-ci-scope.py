@@ -407,10 +407,45 @@ def main():
                                     s['name'] == 'Check bundle metadata and build unchanged native backend' and s['conclusion'] == 'success'
                                     for s in job['steps'])):
                             raise RuntimeError('Missing successful exact-source Linux bundle/build/reopen checks')
+                    sync_reuse = plan.get('zink_sync_reuse_checks')
+                    if sync_reuse:
+                        source = sync_reuse['sha']
+                        delta = subprocess.check_output(['git', 'diff', '--name-only', source, 'HEAD'], text=True).splitlines()
+                        ci_only = {'.github/ios-validation-plan.json', '.github/workflows/ios.yml', '.github/workflows/linux.yml', 'scripts/ios-ci-scope.py'}
+                        if not sync or any(p not in ci_only and not p.startswith('docs/') for p in delta):
+                            raise RuntimeError('Zink sync reuse requires exact unchanged runtime, guest ICD, fixtures and build scripts')
+                        def no_conditions(block):
+                            return '\n'.join(l for l in block.splitlines() if not l.strip().startswith('if:'))
+                        for filename, start, end in [
+                            ('linux.yml', '  zink-foundation:\n', '  runtime-fastpaths:\n'),
+                            ('ios.yml', '      - name: Check changed Apple Vulkan backend and iOS embedding\n', '      - name: Validate original MoltenVK timeline GPU path\n')]:
+                            path = '.github/workflows/' + filename
+                            previous = subprocess.check_output(['git', 'show', source + ':' + path], text=True)
+                            old = previous.split(start, 1)[1].split(end, 1)[0]
+                            new = Path(path).read_text().split(start, 1)[1].split(end, 1)[0]
+                            if no_conditions(old) != no_conditions(new):
+                                raise RuntimeError('Reused Zink validation commands changed')
+                        def sync_evidence(path):
+                            req = urllib.request.Request(f'https://api.github.com/repos/{repo}/' + path, headers=dict(request.headers))
+                            with urllib.request.urlopen(req, timeout=30) as response:
+                                return json.load(response)
+                        for filename, key, name in [('linux.yml','linux','zink-foundation'), ('ios.yml','apple','zink-foundation-apple')]:
+                            run_id = sync_reuse[key]
+                            run = sync_evidence(f'actions/runs/{run_id}')
+                            job = next(j for j in sync_evidence(f'actions/runs/{run_id}/jobs')['jobs'] if j['name'] == name)
+                            if run['head_sha'] != source or run['path'] != '.github/workflows/' + filename or run['head_repository']['full_name'] != repo:
+                                raise RuntimeError('Zink sync acceptance does not match exact source/workflow')
+                            if key == 'linux' and job['conclusion'] != 'success':
+                                raise RuntimeError('Missing passed exact-source Linux GPU foundation')
+                            if key == 'apple' and not any(step['name'] == 'Check changed Apple Vulkan backend and iOS embedding' and step['conclusion'] == 'success' for step in job['steps']):
+                                raise RuntimeError('Missing passed exact-source Apple Vulkan/iOS checks')
                     print('Zink synchronization: changed guest ICD and native Vulkan backend, original driver timeline/viewport GPU checks and iOS embedding; CPU/MMU/UI/network unchanged, no IPA.' if sync else 'Guest ICD query/template foundation: original loader/Mesa probe, native GPU compute/texture oracles, bundle upgrade/reopen and Apple/iOS metadata checks. CPU/MMU/native GPU backend/UI unchanged; no IPA or repeated unrelated acceptance.')
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=' + plan['native_scope'] + '\n')
                         output.write('skip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
+                        if sync_reuse:
+                            output.write('zink_sync_skip_linux=true\nzink_sync_skip_apple_checks=true\n')
+                            print('Reuse exact-source passed Linux GPU and Apple module/iOS checks; retry only macOS MoltenVK native-example linking/runtime.')
                         if reuse:
                             output.write('zink_skip_apple=true\n')
                             print('Reuse exact unchanged Apple manifest/iOS checks; retry unfinished Linux preparation and foundation checks only.')

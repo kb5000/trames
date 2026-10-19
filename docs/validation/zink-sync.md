@@ -48,3 +48,16 @@ python3 scripts/prepare-zink-guest.py
 cargo run -p trames-vulkan --example timeline --release --locked
 python3 tests/integration/zink-foundation.py
 ```
+
+精确源码3e6c014的[Linux CI39221867948](https://github.com/kb5000/trames/actions/runs/39221867948)
+通过，包含native timeline/lifecycle、17项单元测试、严格Clippy，以及上述1/4核和像素
+对照。artifact12172386325的SHA-256及ZIP CRC已核对，原始输出与摘要见`zink-sync/ci-linux/`。
+Apple run39221868006的模块检查和iOS FFI编译通过；macOS原生例程在链接阶段缺少IOKit与
+Clang availability runtime，尚未执行GPU。本次只给CI native harness补这两个依赖，最低
+macOS版本对齐原始MoltenVK archive的12.0，不修改iPad链接或生产runtime。
+重试前逐文件、命令及GitHub成功步骤核对，复用Linux整体验证与Apple模块/iOS检查。
+
+生命周期依据：[Vulkan1.3.281同步规范](https://github.com/KhronosGroup/Vulkan-Docs/blob/v1.3.281/chapters/synchronization.adoc)
+VUID-VkSemaphoreSignalInfo-value-03259要求host signal值小于所有pending signal值；
+合法应用不能用host signal越过尚未完成的GPU signal。观察到最终GPU timeline值因此
+可确认此前命令完成，私有fence继续单独保活。仍由应用遵循Vulkan原本的同步责任。

@@ -1,0 +1,49 @@
+2026-10-19T08:20:36.4226940Z           Undefined symbols for architecture arm64:
+2026-10-19T08:20:36.4227310Z             "_IOIteratorNext", referenced from:
+2026-10-19T08:20:36.4228470Z                 MVKPhysicalDevice::initGPUInfoProperties() in libtrames_vulkan-02c6e6eb4f591e18.rlib[2](libMoltenVK.a-arm64-prelink.o)
+2026-10-19T08:20:36.4229340Z                 MVKPhysicalDevice::initGPUInfoProperties() in libtrames_vulkan-02c6e6eb4f591e18.rlib[2](libMoltenVK.a-arm64-prelink.o)
+2026-10-19T08:20:36.4229910Z             "_IOObjectRelease", referenced from:
+2026-10-19T08:20:36.4230430Z                 MVKPhysicalDevice::initGPUInfoProperties() in libtrames_vulkan-02c6e6eb4f591e18.rlib[2](libMoltenVK.a-arm64-prelink.o)
+2026-10-19T08:20:36.4231230Z                 MVKPhysicalDevice::initGPUInfoProperties() in libtrames_vulkan-02c6e6eb4f591e18.rlib[2](libMoltenVK.a-arm64-prelink.o)
+2026-10-19T08:20:36.4236910Z                 MVKPhysicalDevice::initGPUInfoProperties() in libtrames_vulkan-02c6e6eb4f591e18.rlib[2](libMoltenVK.a-arm64-prelink.o)
+2026-10-19T08:20:36.4237610Z             "_IORegistryEntryGetParentEntry", referenced from:
+2026-10-19T08:20:36.4238370Z                 MVKPhysicalDevice::initGPUInfoProperties() in libtrames_vulkan-02c6e6eb4f591e18.rlib[2](libMoltenVK.a-arm64-prelink.o)
+2026-10-19T08:20:36.4239050Z             "_IORegistryEntryIDMatching", referenced from:
+2026-10-19T08:20:36.4239790Z                 MVKPhysicalDevice::initGPUInfoProperties() in libtrames_vulkan-02c6e6eb4f591e18.rlib[2](libMoltenVK.a-arm64-prelink.o)
+2026-10-19T08:20:36.4240460Z             "_IORegistryEntrySearchCFProperty", referenced from:
+2026-10-19T08:20:36.4241230Z                 MVKPhysicalDevice::initGPUInfoProperties() in libtrames_vulkan-02c6e6eb4f591e18.rlib[2](libMoltenVK.a-arm64-prelink.o)
+2026-10-19T08:20:36.4242230Z                 MVKPhysicalDevice::initGPUInfoProperties() in libtrames_vulkan-02c6e6eb4f591e18.rlib[2](libMoltenVK.a-arm64-prelink.o)
+2026-10-19T08:20:36.4243120Z                 MVKPhysicalDevice::initGPUInfoProperties() in libtrames_vulkan-02c6e6eb4f591e18.rlib[2](libMoltenVK.a-arm64-prelink.o)
+2026-10-19T08:20:36.4248610Z                 MVKPhysicalDevice::initGPUInfoProperties() in libtrames_vulkan-02c6e6eb4f591e18.rlib[2](libMoltenVK.a-arm64-prelink.o)
+2026-10-19T08:20:36.4249560Z                 MVKPhysicalDevice::initGPUInfoProperties() in libtrames_vulkan-02c6e6eb4f591e18.rlib[2](libMoltenVK.a-arm64-prelink.o)
+2026-10-19T08:20:36.4250210Z             "_IOServiceGetMatchingService", referenced from:
+2026-10-19T08:20:36.4250870Z                 MVKPhysicalDevice::initGPUInfoProperties() in libtrames_vulkan-02c6e6eb4f591e18.rlib[2](libMoltenVK.a-arm64-prelink.o)
+2026-10-19T08:20:36.4251510Z             "_IOServiceGetMatchingServices", referenced from:
+2026-10-19T08:20:36.4252360Z                 MVKPhysicalDevice::initGPUInfoProperties() in libtrames_vulkan-02c6e6eb4f591e18.rlib[2](libMoltenVK.a-arm64-prelink.o)
+2026-10-19T08:20:36.4253140Z             "_IOServiceMatching", referenced from:
+2026-10-19T08:20:36.4253670Z                 MVKPhysicalDevice::initGPUInfoProperties() in libtrames_vulkan-02c6e6eb4f591e18.rlib[2](libMoltenVK.a-arm64-prelink.o)
+2026-10-19T08:20:36.4254280Z             "___isPlatformVersionAtLeast", referenced from:
+2026-10-19T08:20:36.4254930Z                 MVKSampler::newMTLSamplerDescriptor(VkSamplerCreateInfo const*) in libtrames_vulkan-02c6e6eb4f591e18.rlib[2](libMoltenVK.a-arm64-prelink.o)
+2026-10-19T08:20:36.4255620Z           ld: symbol(s) not found for architecture arm64
+2026-10-19T08:20:36.4256160Z           clang: error: linker command failed with exit code 1 (use -v to see invocation)
+2026-10-19T08:20:36.4256680Z           
+2026-10-19T08:20:36.4256830Z 
+2026-10-19T08:20:36.4346380Z [1m[91merror[0m: could not compile `trames-vulkan` (example "timeline") due to 1 previous error
+2026-10-19T08:20:36.4454530Z ##[error]Process completed with exit code 101.
+2026-10-19T08:20:36.4700880Z Post job cleanup.
+2026-10-19T08:20:36.7892610Z [command]/opt/homebrew/bin/git version
+2026-10-19T08:20:36.8171210Z git version 2.55.0
+2026-10-19T08:20:36.8214810Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/8a37b184-685a-4171-ac93-f49fd4e9a21e/.gitconfig'
+2026-10-19T08:20:36.8227860Z Temporarily overriding HOME='/Users/runner/work/_temp/8a37b184-685a-4171-ac93-f49fd4e9a21e' before making global git config changes
+2026-10-19T08:20:36.8230000Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-19T08:20:36.8230680Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/trames/trames
+2026-10-19T08:20:36.8385620Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-19T08:20:36.8481480Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-19T08:20:36.9349130Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-19T08:20:36.9395440Z http.https://github.com/.extraheader
+2026-10-19T08:20:36.9401960Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-19T08:20:36.9464770Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-19T08:20:37.0304460Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-19T08:20:37.0370290Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-19T08:20:37.1332120Z Cleaning up orphan processes
+2026-10-19T08:20:37.5230120Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

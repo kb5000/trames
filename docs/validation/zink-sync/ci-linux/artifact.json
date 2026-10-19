@@ -1,0 +1,23 @@
+{
+  "source": "3e6c014edec6698d4fbb81339104937433e571af",
+  "run": 39221867948,
+  "job": 117958852264,
+  "artifact": 12172386325,
+  "artifact_sha256": "6d43788bfb24c5f23814c0842163068ba40a3f6339749165f94ca0af054bfd5d",
+  "sha256_verified": true,
+  "zip_crc_verified": true,
+  "conclusion": "success",
+  "rendering_passed": false,
+  "image_sha256": {
+    "render-negative-static-native.ppm": "99f1864cdd55c3ff3b7a554e56bd4a9c3d73b1325d25ad265b0965789a9312d4",
+    "texture-legacy-guest.ppm": "19904e521a2a082b0bf57aa1ddb7f6813b737b294554745dead359cf104dba8f",
+    "texture-legacy-native.ppm": "19904e521a2a082b0bf57aa1ddb7f6813b737b294554745dead359cf104dba8f",
+    "render-negative-guest.ppm": "99f1864cdd55c3ff3b7a554e56bd4a9c3d73b1325d25ad265b0965789a9312d4",
+    "render-negative-static-guest.ppm": "99f1864cdd55c3ff3b7a554e56bd4a9c3d73b1325d25ad265b0965789a9312d4",
+    "render-legacy-native.ppm": "0539c7ad78eb06fa9b5998a6555931a1529aba93036deb9918cbc1faf94adcf7",
+    "texture-template-native.ppm": "19904e521a2a082b0bf57aa1ddb7f6813b737b294554745dead359cf104dba8f",
+    "render-negative-native.ppm": "99f1864cdd55c3ff3b7a554e56bd4a9c3d73b1325d25ad265b0965789a9312d4",
+    "texture-template-guest.ppm": "19904e521a2a082b0bf57aa1ddb7f6813b737b294554745dead359cf104dba8f",
+    "render-legacy-guest.ppm": "0539c7ad78eb06fa9b5998a6555931a1529aba93036deb9918cbc1faf94adcf7"
+  }
+}
