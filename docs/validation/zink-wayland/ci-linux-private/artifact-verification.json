@@ -1,0 +1,9 @@
+{
+  "kind": "linux-private",
+  "artifact_id": 12193411481,
+  "digest": "sha256:b564f0b5329e5cabdf72af11cbc200421f6dcd190fd12875b93965cae3f84365",
+  "run_id": 39264897300,
+  "source_sha": "18162c9c53ba1d8334b227087cbfd1474633bb2e",
+  "sha256": "b564f0b5329e5cabdf72af11cbc200421f6dcd190fd12875b93965cae3f84365",
+  "zip_crc": "passed"
+}

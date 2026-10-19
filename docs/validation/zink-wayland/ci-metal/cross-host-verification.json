@@ -1,0 +1,16 @@
+{
+  "run_id": 39264897300,
+  "source_sha": "18162c9c53ba1d8334b227087cbfd1474633bb2e",
+  "files": 459,
+  "matching": [
+    "guest ICD",
+    "Mesa EGL component",
+    "original Mesa input store"
+  ],
+  "metal_texture_unique_sizes": [
+    5,
+    5
+  ],
+  "retained_old_frame_pixels": "checked after window/process teardown in both rounds",
+  "physical_ipad": false
+}

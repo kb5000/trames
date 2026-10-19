@@ -1,0 +1,329 @@
+2026-10-19T14:01:57.7821017Z ##[group]Run cargo fmt --all --check
+2026-10-19T14:01:57.7821303Z cargo fmt --all --check
+2026-10-19T14:01:57.7821509Z if [[ '' != true ]]; then
+2026-10-19T14:01:57.7821801Z   cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
+2026-10-19T14:01:57.7822146Z   cargo test -p trames-vulkan --lib --locked
+2026-10-19T14:01:57.7822375Z fi
+2026-10-19T14:01:57.7822686Z cargo clippy -p trames-distro -p trames-ffi --all-targets --no-deps --locked -- -D warnings
+2026-10-19T14:01:57.7823075Z cargo test -p trames-distro vulkan --locked
+2026-10-19T14:01:57.7823391Z cargo build -p trames-cli -p trames-ffi --release --locked
+2026-10-19T14:01:57.7823914Z python3 -m py_compile scripts/prepare-zink-guest.py scripts/prepare-zink-native-bundle.py tests/integration/zink-wayland.py
+2026-10-19T14:01:57.7881438Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-19T14:01:57.7881763Z env:
+2026-10-19T14:01:57.7881940Z   CARGO_HOME: /home/runner/.cargo
+2026-10-19T14:01:57.7882155Z   CARGO_INCREMENTAL: 0
+2026-10-19T14:01:57.7882336Z   CARGO_TERM_COLOR: always
+2026-10-19T14:01:57.7882522Z ##[endgroup]
+2026-10-19T14:01:58.7706511Z     Updating crates.io index
+2026-10-19T14:01:59.1599613Z  Downloading crates ...
+2026-10-19T14:01:59.1871784Z   Downloaded cfg-if v1.0.5
+2026-10-19T14:01:59.1886840Z   Downloaded errno v0.3.14
+2026-10-19T14:01:59.1901753Z   Downloaded bitflags v2.13.2
+2026-10-19T14:01:59.1947430Z   Downloaded downcast-rs v1.2.1
+2026-10-19T14:01:59.1961293Z   Downloaded smallvec v1.16.3
+2026-10-19T14:01:59.1976645Z   Downloaded ash v0.38.0+1.3.281
+2026-10-19T14:01:59.2163450Z   Downloaded cc v1.8.0
+2026-10-19T14:01:59.2199507Z   Downloaded unicode-ident v1.0.26
+2026-10-19T14:01:59.2230485Z   Downloaded find-msvc-tools v0.1.14
+2026-10-19T14:01:59.2244447Z   Downloaded shlex v2.0.1
+2026-10-19T14:01:59.2254449Z   Downloaded pkg-config v0.3.34
+2026-10-19T14:01:59.2265870Z   Downloaded libloading v0.8.9
+2026-10-19T14:01:59.2283862Z   Downloaded wayland-sys v0.31.11
+2026-10-19T14:01:59.2293404Z   Downloaded wayland-server v0.31.14
+2026-10-19T14:01:59.2307508Z   Downloaded proc-macro2 v1.0.107
+2026-10-19T14:01:59.2330925Z   Downloaded quote v1.0.47
+2026-10-19T14:01:59.2352667Z   Downloaded wayland-scanner v0.31.11
+2026-10-19T14:01:59.2369167Z   Downloaded memchr v2.8.3
+2026-10-19T14:01:59.2413888Z   Downloaded wayland-protocols v0.32.13
+2026-10-19T14:01:59.2482835Z   Downloaded quick-xml v0.41.0
+2026-10-19T14:01:59.2531070Z   Downloaded rustix v1.1.5
+2026-10-19T14:01:59.2754181Z   Downloaded libc v0.2.190
+2026-10-19T14:01:59.3152556Z   Downloaded linux-raw-sys v0.12.1
+2026-10-19T14:01:59.4292886Z    Compiling proc-macro2 v1.0.107
+2026-10-19T14:01:59.4293384Z    Compiling rustix v1.1.5
+2026-10-19T14:01:59.4293769Z    Compiling pkg-config v0.3.34
+2026-10-19T14:01:59.4294308Z    Compiling find-msvc-tools v0.1.14
+2026-10-19T14:01:59.5453049Z    Compiling shlex v2.0.1
+2026-10-19T14:01:59.5937099Z     Checking bitflags v2.13.2
+2026-10-19T14:01:59.6047927Z    Compiling cc v1.8.0
+2026-10-19T14:01:59.6216876Z     Checking linux-raw-sys v0.12.1
+2026-10-19T14:01:59.6676850Z    Compiling quote v1.0.47
+2026-10-19T14:01:59.7767241Z    Compiling unicode-ident v1.0.26
+2026-10-19T14:01:59.7776779Z    Compiling wayland-sys v0.31.11
+2026-10-19T14:01:59.8747242Z    Compiling libc v0.2.190
+2026-10-19T14:02:00.0830867Z    Compiling memchr v2.8.3
+2026-10-19T14:02:00.4166805Z    Compiling quick-xml v0.41.0
+2026-10-19T14:02:00.5037219Z     Checking smallvec v1.16.3
+2026-10-19T14:02:00.5936675Z     Checking downcast-rs v1.2.1
+2026-10-19T14:02:00.9166986Z    Compiling wayland-backend v0.3.17 (/home/runner/work/trames/trames/vendor/wayland-backend)
+2026-10-19T14:02:01.0056701Z     Checking cfg-if v1.0.5
+2026-10-19T14:02:01.0176832Z    Compiling ash v0.38.0+1.3.281
+2026-10-19T14:02:01.0881224Z     Checking libloading v0.8.9
+2026-10-19T14:02:01.1117091Z    Compiling wayland-scanner v0.31.11
+2026-10-19T14:02:01.1457108Z    Compiling trames-vulkan v1.1.0 (/home/runner/work/trames/trames/crates/trames-vulkan)
+2026-10-19T14:02:01.3797804Z     Checking trames-memory v1.1.0 (/home/runner/work/trames/trames/crates/trames-memory)
+2026-10-19T14:02:02.7290932Z     Checking trames-shared v1.1.0 (/home/runner/work/trames/trames/crates/trames-shared)
+2026-10-19T14:02:03.0265965Z     Checking wayland-server v0.31.14
+2026-10-19T14:02:03.5053704Z     Checking wayland-protocols v0.32.13
+2026-10-19T14:02:05.5536570Z     Checking trames-wayland v1.1.0 (/home/runner/work/trames/trames/crates/trames-wayland)
+2026-10-19T14:02:07.2438587Z     Finished `dev` profile [unoptimized + debuginfo] target(s) in 8.49s
+2026-10-19T14:02:07.3365165Z    Compiling bitflags v2.13.2
+2026-10-19T14:02:07.3365824Z    Compiling linux-raw-sys v0.12.1
+2026-10-19T14:02:07.3373894Z    Compiling wayland-sys v0.31.11
+2026-10-19T14:02:07.3379065Z    Compiling downcast-rs v1.2.1
+2026-10-19T14:02:07.3657085Z    Compiling smallvec v1.16.3
+2026-10-19T14:02:07.3732209Z    Compiling libc v0.2.190
+2026-10-19T14:02:07.4636780Z    Compiling cfg-if v1.0.5
+2026-10-19T14:02:07.4826827Z    Compiling libloading v0.8.9
+2026-10-19T14:02:07.4945889Z    Compiling trames-vulkan v1.1.0 (/home/runner/work/trames/trames/crates/trames-vulkan)
+2026-10-19T14:02:07.5761225Z    Compiling ash v0.38.0+1.3.281
+2026-10-19T14:02:07.9519337Z    Compiling trames-memory v1.1.0 (/home/runner/work/trames/trames/crates/trames-memory)
+2026-10-19T14:02:08.3407060Z    Compiling rustix v1.1.5
+2026-10-19T14:02:10.3426582Z    Compiling wayland-backend v0.3.17 (/home/runner/work/trames/trames/vendor/wayland-backend)
+2026-10-19T14:02:10.3466451Z    Compiling trames-shared v1.1.0 (/home/runner/work/trames/trames/crates/trames-shared)
+2026-10-19T14:02:10.8691958Z    Compiling wayland-server v0.31.14
+2026-10-19T14:02:11.4862484Z    Compiling wayland-protocols v0.32.13
+2026-10-19T14:02:14.0323570Z    Compiling trames-wayland v1.1.0 (/home/runner/work/trames/trames/crates/trames-wayland)
+2026-10-19T14:02:16.7574767Z     Finished `test` profile [unoptimized + debuginfo] target(s) in 9.46s
+2026-10-19T14:02:16.7591672Z      Running unittests src/lib.rs (target/debug/build/trames-vulkan/1ba81da1315f6af6/out/trames_vulkan-1ba81da1315f6af6)
+2026-10-19T14:02:16.7601787Z 
+2026-10-19T14:02:16.7601908Z running 18 tests
+2026-10-19T14:02:16.7610599Z test backend::coherent::tests::independent_cpu_inputs_and_gpu_outputs_do_not_overwrite_each_other ... ok
+2026-10-19T14:02:16.7611789Z test backend::coherent::tests::coherent_tracking_is_charged_and_released_with_the_mapping ... ok
+2026-10-19T14:02:16.7613006Z test backend::graphics::tests::copy_checks_padded_rows_offsets_overflow_and_color_subresources ... ok
+2026-10-19T14:02:16.7613699Z test backend::graphics::tests::image_copy_bounds_and_depth_compatibility ... ok
+2026-10-19T14:02:16.7614132Z test backend::graphics::tests::maintenance1_negative_viewports_use_native_bounds ... ok
+2026-10-19T14:02:16.7614591Z test backend::tests::malformed_transport_cannot_read_guest_memory_or_create_driver_objects ... ok
+2026-10-19T14:02:16.7615328Z test backend::graphics::tests::image_profile_reports_only_supported_formats_usages_and_layouts ... ok
+2026-10-19T14:02:16.7616906Z test backend::tests::spirv_debug_names_do_not_change_entrypoints_or_specialization_decorations ... ok
+2026-10-19T14:02:16.7617772Z test backend::tests::specialization_records_keep_offsets_and_reject_overflow_or_duplicate_ids ... ok
+2026-10-19T14:02:16.7618405Z test backend::tests::unknown_object_domains_and_uninitialized_driver_never_become_host_handles ... ok
+2026-10-19T14:02:16.7618919Z test backend::tests::wait_stages_support_selected_graphics_but_reject_unknown_extension_bits ... ok
+2026-10-19T14:02:16.7619394Z test display::tests::detach_invalidates_generation_but_preserves_in_flight_lease ... ok
+2026-10-19T14:02:16.7619863Z test budget::tests::compiler_capacity_is_shared_and_released_without_a_global_work_lock ... ok
+2026-10-19T14:02:16.7620344Z test budget::tests::independent_contexts_share_budget_without_overcommit_or_lifetime_leak ... ok
+2026-10-19T14:02:16.7620805Z test backend::tests::native_transfers_cross_pages_keep_cow_and_preflight_permissions ... ok
+2026-10-19T14:02:16.7621210Z test display::tests::invalid_native_targets_fail_before_objc_access ... ok
+2026-10-19T14:02:16.7621576Z test task::tests::teardown_joins_before_owned_dependency_destruction ... ok
+2026-10-19T14:02:16.7621947Z test task::tests::slow_tasks_do_not_block_the_caller_or_an_unrelated_task ... ok
+2026-10-19T14:02:16.7622168Z 
+2026-10-19T14:02:16.7622358Z test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-10-19T14:02:16.7622612Z 
+2026-10-19T14:02:16.8316161Z  Downloading crates ...
+2026-10-19T14:02:16.8818396Z   Downloaded crypto-common v0.1.7
+2026-10-19T14:02:16.8833304Z   Downloaded block-buffer v0.10.4
+2026-10-19T14:02:16.8851764Z   Downloaded adler2 v2.0.1
+2026-10-19T14:02:16.8938028Z   Downloaded bitflags v1.3.2
+2026-10-19T14:02:16.8969197Z   Downloaded defmt v0.3.100
+2026-10-19T14:02:16.8972235Z   Downloaded defmt-macros v1.1.1
+2026-10-19T14:02:16.9003541Z   Downloaded cfg_aliases v0.2.2
+2026-10-19T14:02:16.9011881Z   Downloaded byteorder v1.5.0
+2026-10-19T14:02:16.9024393Z   Downloaded cpufeatures v0.2.17
+2026-10-19T14:02:16.9036376Z   Downloaded defmt-parser v1.0.0
+2026-10-19T14:02:16.9043921Z   Downloaded digest v0.10.7
+2026-10-19T14:02:16.9058363Z   Downloaded version_check v0.9.5
+2026-10-19T14:02:16.9075221Z   Downloaded defmt v1.1.1
+2026-10-19T14:02:16.9118710Z   Downloaded crc32fast v1.5.2
+2026-10-19T14:02:16.9135803Z   Downloaded itoa v1.0.18
+2026-10-19T14:02:16.9148056Z   Downloaded stable_deref_trait v1.2.1
+2026-10-19T14:02:16.9155538Z   Downloaded generic-array v0.14.7
+2026-10-19T14:02:16.9177565Z   Downloaded hash32 v0.3.1
+2026-10-19T14:02:16.9241639Z   Downloaded managed v0.8.0
+2026-10-19T14:02:16.9251940Z   Downloaded sha2 v0.10.9
+2026-10-19T14:02:16.9273041Z   Downloaded thiserror v2.0.21
+2026-10-19T14:02:16.9328980Z   Downloaded thiserror-impl v2.0.21
+2026-10-19T14:02:16.9341843Z   Downloaded simd-adler32 v0.3.10
+2026-10-19T14:02:16.9357626Z   Downloaded filetime v0.2.29
+2026-10-19T14:02:16.9372426Z   Downloaded zmij v1.0.23
+2026-10-19T14:02:16.9386762Z   Downloaded serde_core v1.0.229
+2026-10-19T14:02:16.9412654Z   Downloaded socket2 v0.6.1
+2026-10-19T14:02:16.9428889Z   Downloaded getrandom v0.3.4
+2026-10-19T14:02:16.9460311Z   Downloaded serde_derive v1.0.229
+2026-10-19T14:02:16.9486988Z   Downloaded miniz_oxide v0.9.1
+2026-10-19T14:02:16.9510800Z   Downloaded tar v0.4.46
+2026-10-19T14:02:16.9535106Z   Downloaded flate2 v1.1.10
+2026-10-19T14:02:16.9576585Z   Downloaded serde v1.0.229
+2026-10-19T14:02:16.9605057Z   Downloaded heapless v0.8.0
+2026-10-19T14:02:16.9636803Z   Downloaded typenum v1.20.1
+2026-10-19T14:02:16.9665459Z   Downloaded serde_json v1.0.151
+2026-10-19T14:02:16.9726272Z   Downloaded syn v2.0.119
+2026-10-19T14:02:16.9813526Z   Downloaded syn v3.0.7
+2026-10-19T14:02:16.9901743Z   Downloaded smoltcp v0.12.0
+2026-10-19T14:02:17.0004969Z   Downloaded nix v0.31.3
+2026-10-19T14:02:17.0512675Z    Compiling libc v0.2.190
+2026-10-19T14:02:17.0513305Z    Compiling version_check v0.9.5
+2026-10-19T14:02:17.0546624Z     Checking typenum v1.20.1
+2026-10-19T14:02:17.0547365Z    Compiling serde_core v1.0.229
+2026-10-19T14:02:17.1975165Z    Compiling generic-array v0.14.7
+2026-10-19T14:02:17.2797346Z    Compiling syn v3.0.7
+2026-10-19T14:02:18.2506944Z     Checking crypto-common v0.1.7
+2026-10-19T14:02:18.2801066Z     Checking block-buffer v0.10.4
+2026-10-19T14:02:18.3256676Z    Compiling serde v1.0.229
+2026-10-19T14:02:18.4435977Z     Checking byteorder v1.5.0
+2026-10-19T14:02:18.4637091Z     Checking trames-memory v1.1.0 (/home/runner/work/trames/trames/crates/trames-memory)
+2026-10-19T14:02:18.5256766Z    Compiling getrandom v0.3.4
+2026-10-19T14:02:18.6576986Z    Compiling zmij v1.0.23
+2026-10-19T14:02:18.7558852Z    Compiling heapless v0.8.0
+2026-10-19T14:02:18.7603343Z    Compiling cfg_aliases v0.2.2
+2026-10-19T14:02:18.7797007Z    Compiling trames-native v1.1.0 (/home/runner/work/trames/trames/crates/trames-native)
+2026-10-19T14:02:18.8593865Z    Compiling nix v0.31.3
+2026-10-19T14:02:18.8944126Z     Checking hash32 v0.3.1
+2026-10-19T14:02:18.9364341Z     Checking digest v0.10.7
+2026-10-19T14:02:19.0310492Z     Checking stable_deref_trait v1.2.1
+2026-10-19T14:02:19.0398413Z    Compiling serde_derive v1.0.229
+2026-10-19T14:02:19.0437386Z     Checking cpufeatures v0.2.17
+2026-10-19T14:02:19.0525647Z    Compiling smoltcp v0.12.0
+2026-10-19T14:02:19.0561860Z    Compiling serde_json v1.0.151
+2026-10-19T14:02:19.1314494Z     Checking sha2 v0.10.9
+2026-10-19T14:02:19.4382188Z     Checking trames-shared v1.1.0 (/home/runner/work/trames/trames/crates/trames-shared)
+2026-10-19T14:02:19.4937089Z     Checking memchr v2.8.3
+2026-10-19T14:02:19.5058765Z     Checking bitflags v1.3.2
+2026-10-19T14:02:19.5216727Z     Checking managed v0.8.0
+2026-10-19T14:02:19.6289777Z     Checking itoa v1.0.18
+2026-10-19T14:02:20.2757141Z     Checking trames-wayland v1.1.0 (/home/runner/work/trames/trames/crates/trames-wayland)
+2026-10-19T14:02:20.5497463Z     Checking socket2 v0.6.1
+2026-10-19T14:02:20.7111018Z    Compiling crc32fast v1.5.2
+2026-10-19T14:02:20.7134876Z     Checking adler2 v2.0.1
+2026-10-19T14:02:20.7174329Z     Checking trames-net v1.1.0 (/home/runner/work/trames/trames/crates/trames-net)
+2026-10-19T14:02:20.7421800Z     Checking simd-adler32 v0.3.10
+2026-10-19T14:02:20.8127939Z     Checking miniz_oxide v0.9.1
+2026-10-19T14:02:20.8787064Z     Checking trames-elf v1.1.0 (/home/runner/work/trames/trames/crates/trames-elf)
+2026-10-19T14:02:20.9251627Z     Checking filetime v0.2.29
+2026-10-19T14:02:20.9777490Z    Compiling trames-vulkan v1.1.0 (/home/runner/work/trames/trames/crates/trames-vulkan)
+2026-10-19T14:02:21.0577154Z     Checking trames-compute v1.1.0 (/home/runner/work/trames/trames/crates/trames-compute)
+2026-10-19T14:02:21.1183365Z     Checking trames-cpu v1.1.0 (/home/runner/work/trames/trames/crates/trames-cpu)
+2026-10-19T14:02:21.1276746Z     Checking flate2 v1.1.10
+2026-10-19T14:02:21.3216716Z     Checking tar v0.4.46
+2026-10-19T14:02:21.6187408Z     Checking trames-accel v1.1.0 (/home/runner/work/trames/trames/crates/trames-accel)
+2026-10-19T14:02:21.7799073Z     Checking trames-bridge v1.1.0 (/home/runner/work/trames/trames/crates/trames-bridge)
+2026-10-19T14:02:21.8614179Z     Checking trames-vfs v1.1.0 (/home/runner/work/trames/trames/crates/trames-vfs)
+2026-10-19T14:02:22.8254972Z     Checking trames-linux v1.1.0 (/home/runner/work/trames/trames/crates/trames-linux)
+2026-10-19T14:02:22.8255766Z     Checking trames-distro v1.1.0 (/home/runner/work/trames/trames/crates/trames-distro)
+2026-10-19T14:02:23.0374529Z     Checking trames-core v1.1.0 (/home/runner/work/trames/trames/crates/trames-core)
+2026-10-19T14:02:23.4125682Z     Checking trames-ffi v1.1.0 (/home/runner/work/trames/trames/crates/trames-ffi)
+2026-10-19T14:02:23.7174110Z     Finished `dev` profile [unoptimized + debuginfo] target(s) in 6.91s
+2026-10-19T14:02:23.8031082Z    Compiling libc v0.2.190
+2026-10-19T14:02:23.8031817Z    Compiling typenum v1.20.1
+2026-10-19T14:02:23.8056173Z    Compiling serde_core v1.0.229
+2026-10-19T14:02:23.8057913Z    Compiling trames-native v1.1.0 (/home/runner/work/trames/trames/crates/trames-native)
+2026-10-19T14:02:24.0222795Z    Compiling byteorder v1.5.0
+2026-10-19T14:02:24.1199645Z    Compiling hash32 v0.3.1
+2026-10-19T14:02:24.7622731Z    Compiling generic-array v0.14.7
+2026-10-19T14:02:25.0537133Z    Compiling trames-memory v1.1.0 (/home/runner/work/trames/trames/crates/trames-memory)
+2026-10-19T14:02:25.0966834Z    Compiling crypto-common v0.1.7
+2026-10-19T14:02:25.1326257Z    Compiling block-buffer v0.10.4
+2026-10-19T14:02:25.1959104Z    Compiling digest v0.10.7
+2026-10-19T14:02:25.2989260Z    Compiling stable_deref_trait v1.2.1
+2026-10-19T14:02:25.3196637Z    Compiling cpufeatures v0.2.17
+2026-10-19T14:02:25.3400695Z    Compiling sha2 v0.10.9
+2026-10-19T14:02:25.5577276Z    Compiling heapless v0.8.0
+2026-10-19T14:02:25.6228848Z    Compiling serde v1.0.229
+2026-10-19T14:02:25.6477179Z    Compiling zmij v1.0.23
+2026-10-19T14:02:25.8826861Z    Compiling memchr v2.8.3
+2026-10-19T14:02:25.8984614Z    Compiling managed v0.8.0
+2026-10-19T14:02:26.0287355Z    Compiling itoa v1.0.18
+2026-10-19T14:02:26.0486878Z    Compiling bitflags v1.3.2
+2026-10-19T14:02:26.0706894Z    Compiling smoltcp v0.12.0
+2026-10-19T14:02:26.1127014Z    Compiling trames-accel v1.1.0 (/home/runner/work/trames/trames/crates/trames-accel)
+2026-10-19T14:02:26.3686813Z    Compiling serde_json v1.0.151
+2026-10-19T14:02:26.3927827Z    Compiling nix v0.31.3
+2026-10-19T14:02:26.6933088Z    Compiling getrandom v0.3.4
+2026-10-19T14:02:26.7757182Z    Compiling trames-shared v1.1.0 (/home/runner/work/trames/trames/crates/trames-shared)
+2026-10-19T14:02:26.9626803Z    Compiling socket2 v0.6.1
+2026-10-19T14:02:27.2946834Z    Compiling simd-adler32 v0.3.10
+2026-10-19T14:02:27.3156845Z    Compiling adler2 v2.0.1
+2026-10-19T14:02:27.3457028Z    Compiling trames-net v1.1.0 (/home/runner/work/trames/trames/crates/trames-net)
+2026-10-19T14:02:27.3556774Z    Compiling trames-bridge v1.1.0 (/home/runner/work/trames/trames/crates/trames-bridge)
+2026-10-19T14:02:27.3967258Z    Compiling miniz_oxide v0.9.1
+2026-10-19T14:02:27.7997294Z    Compiling trames-wayland v1.1.0 (/home/runner/work/trames/trames/crates/trames-wayland)
+2026-10-19T14:02:27.9332609Z    Compiling crc32fast v1.5.2
+2026-10-19T14:02:27.9759695Z    Compiling filetime v0.2.29
+2026-10-19T14:02:28.0416805Z    Compiling tar v0.4.46
+2026-10-19T14:02:28.0597449Z    Compiling flate2 v1.1.10
+2026-10-19T14:02:28.3565174Z    Compiling trames-elf v1.1.0 (/home/runner/work/trames/trames/crates/trames-elf)
+2026-10-19T14:02:28.9147027Z    Compiling trames-vfs v1.1.0 (/home/runner/work/trames/trames/crates/trames-vfs)
+2026-10-19T14:02:32.5844387Z    Compiling trames-distro v1.1.0 (/home/runner/work/trames/trames/crates/trames-distro)
+2026-10-19T14:02:32.9939077Z     Finished `test` profile [unoptimized + debuginfo] target(s) in 9.24s
+2026-10-19T14:02:32.9973420Z      Running unittests src/lib.rs (target/debug/build/trames-distro/e0b59496e50e2d8d/out/trames_distro-e0b59496e50e2d8d)
+2026-10-19T14:02:32.9986082Z 
+2026-10-19T14:02:32.9986365Z running 3 tests
+2026-10-19T14:02:32.9994882Z test vulkan::tests::egl_adapter_install_is_atomic_and_keeps_apk_owned_mesa ... ok
+2026-10-19T14:02:32.9995957Z test vulkan::tests::refreshes_old_instance_manifest_without_replacing_identical_library ... ok
+2026-10-19T14:02:32.9999647Z test vulkan::tests::repeated_install_keeps_inodes_updates_bundles_and_preserves_user_files ... ok
+2026-10-19T14:02:33.0001482Z 
+2026-10-19T14:02:33.0001795Z test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.00s
+2026-10-19T14:02:33.0002190Z 
+2026-10-19T14:02:33.0678840Z    Compiling libc v0.2.190
+2026-10-19T14:02:33.0679359Z    Compiling cfg-if v1.0.5
+2026-10-19T14:02:33.0679849Z    Compiling proc-macro2 v1.0.107
+2026-10-19T14:02:33.0690418Z    Compiling unicode-ident v1.0.26
+2026-10-19T14:02:33.0981187Z    Compiling quote v1.0.47
+2026-10-19T14:02:33.1146822Z    Compiling bitflags v2.13.2
+2026-10-19T14:02:33.1927034Z    Compiling version_check v0.9.5
+2026-10-19T14:02:33.3486644Z    Compiling generic-array v0.14.7
+2026-10-19T14:02:33.3669118Z    Compiling rustix v1.1.5
+2026-10-19T14:02:33.4004675Z    Compiling find-msvc-tools v0.1.14
+2026-10-19T14:02:33.5067014Z    Compiling pkg-config v0.3.34
+2026-10-19T14:02:33.6279467Z    Compiling shlex v2.0.1
+2026-10-19T14:02:33.6736762Z    Compiling typenum v1.20.1
+2026-10-19T14:02:33.7096924Z    Compiling cc v1.8.0
+2026-10-19T14:02:33.8206753Z    Compiling wayland-sys v0.31.11
+2026-10-19T14:02:33.8856760Z    Compiling linux-raw-sys v0.12.1
+2026-10-19T14:02:34.6097536Z    Compiling memchr v2.8.3
+2026-10-19T14:02:34.9469891Z    Compiling wayland-backend v0.3.17 (/home/runner/work/trames/trames/vendor/wayland-backend)
+2026-10-19T14:02:34.9925733Z    Compiling serde_core v1.0.229
+2026-10-19T14:02:35.0266481Z    Compiling quick-xml v0.41.0
+2026-10-19T14:02:35.0658916Z    Compiling trames-memory v1.1.0 (/home/runner/work/trames/trames/crates/trames-memory)
+2026-10-19T14:02:35.1068231Z    Compiling downcast-rs v1.2.1
+2026-10-19T14:02:35.1368877Z    Compiling smallvec v1.16.3
+2026-10-19T14:02:35.6986876Z    Compiling wayland-scanner v0.31.11
+2026-10-19T14:02:36.7977863Z    Compiling block-buffer v0.10.4
+2026-10-19T14:02:36.8607974Z    Compiling crypto-common v0.1.7
+2026-10-19T14:02:36.9011318Z    Compiling syn v3.0.7
+2026-10-19T14:02:37.2817743Z    Compiling zmij v1.0.23
+2026-10-19T14:02:37.3656907Z    Compiling byteorder v1.5.0
+2026-10-19T14:02:37.4836788Z    Compiling getrandom v0.3.4
+2026-10-19T14:02:37.5856671Z    Compiling trames-native v1.1.0 (/home/runner/work/trames/trames/crates/trames-native)
+2026-10-19T14:02:37.7722072Z    Compiling heapless v0.8.0
+2026-10-19T14:02:38.6676964Z    Compiling cfg_aliases v0.2.2
+2026-10-19T14:02:38.6879901Z    Compiling serde v1.0.229
+2026-10-19T14:02:38.8046771Z    Compiling nix v0.31.3
+2026-10-19T14:02:38.9797036Z    Compiling serde_derive v1.0.229
+2026-10-19T14:02:39.5766400Z    Compiling wayland-server v0.31.14
+2026-10-19T14:02:40.1426660Z    Compiling hash32 v0.3.1
+2026-10-19T14:02:40.2038740Z    Compiling digest v0.10.7
+2026-10-19T14:02:40.3214657Z    Compiling stable_deref_trait v1.2.1
+2026-10-19T14:02:40.3464394Z    Compiling cpufeatures v0.2.17
+2026-10-19T14:02:40.3736737Z    Compiling smoltcp v0.12.0
+2026-10-19T14:02:40.4896812Z    Compiling serde_json v1.0.151
+2026-10-19T14:02:40.5544168Z    Compiling wayland-protocols v0.32.13
+2026-10-19T14:02:41.6432533Z    Compiling sha2 v0.10.9
+2026-10-19T14:02:42.4727396Z    Compiling trames-shared v1.1.0 (/home/runner/work/trames/trames/crates/trames-shared)
+2026-10-19T14:02:42.8537408Z    Compiling managed v0.8.0
+2026-10-19T14:02:43.0176747Z    Compiling itoa v1.0.18
+2026-10-19T14:02:43.0636769Z    Compiling bitflags v1.3.2
+2026-10-19T14:02:44.4523550Z    Compiling trames-wayland v1.1.0 (/home/runner/work/trames/trames/crates/trames-wayland)
+2026-10-19T14:02:45.7768162Z    Compiling trames-accel v1.1.0 (/home/runner/work/trames/trames/crates/trames-accel)
+2026-10-19T14:02:46.1046802Z    Compiling socket2 v0.6.1
+2026-10-19T14:02:46.1237021Z    Compiling trames-bridge v1.1.0 (/home/runner/work/trames/trames/crates/trames-bridge)
+2026-10-19T14:02:46.8047281Z    Compiling trames-net v1.1.0 (/home/runner/work/trames/trames/crates/trames-net)
+2026-10-19T14:02:48.3806745Z    Compiling ash v0.38.0+1.3.281
+2026-10-19T14:02:48.4427453Z    Compiling crc32fast v1.5.2
+2026-10-19T14:02:48.5479331Z    Compiling libloading v0.8.9
+2026-10-19T14:02:48.6647930Z    Compiling simd-adler32 v0.3.10
+2026-10-19T14:02:49.4806959Z    Compiling trames-vfs v1.1.0 (/home/runner/work/trames/trames/crates/trames-vfs)
+2026-10-19T14:02:51.8492348Z    Compiling trames-compute v1.1.0 (/home/runner/work/trames/trames/crates/trames-compute)
+2026-10-19T14:02:51.9676860Z    Compiling adler2 v2.0.1
+2026-10-19T14:02:52.0387055Z    Compiling trames-vulkan v1.1.0 (/home/runner/work/trames/trames/crates/trames-vulkan)
+2026-10-19T14:02:52.1526790Z    Compiling miniz_oxide v0.9.1
+2026-10-19T14:02:53.4567071Z    Compiling trames-cpu v1.1.0 (/home/runner/work/trames/trames/crates/trames-cpu)
+2026-10-19T14:02:55.4718342Z    Compiling trames-elf v1.1.0 (/home/runner/work/trames/trames/crates/trames-elf)
+2026-10-19T14:02:55.7446951Z    Compiling filetime v0.2.29
+2026-10-19T14:02:55.8547029Z    Compiling tar v0.4.46
+2026-10-19T14:02:58.0684064Z    Compiling flate2 v1.1.10
+2026-10-19T14:02:58.4579358Z    Compiling trames-linux v1.1.0 (/home/runner/work/trames/trames/crates/trames-linux)
+2026-10-19T14:02:59.6503821Z    Compiling trames-distro v1.1.0 (/home/runner/work/trames/trames/crates/trames-distro)
+2026-10-19T14:03:06.4056989Z    Compiling trames-core v1.1.0 (/home/runner/work/trames/trames/crates/trames-core)
+2026-10-19T14:03:10.9291254Z    Compiling trames-ffi v1.1.0 (/home/runner/work/trames/trames/crates/trames-ffi)
+2026-10-19T14:03:10.9292249Z    Compiling trames-cli v1.1.0 (/home/runner/work/trames/trames/crates/trames-cli)
+2026-10-19T14:03:33.7082549Z     Finished `release` profile [optimized] target(s) in 1m 00s

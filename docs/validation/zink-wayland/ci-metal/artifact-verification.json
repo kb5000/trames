@@ -1,0 +1,9 @@
+{
+  "kind": "metal",
+  "artifact_id": 12193327484,
+  "digest": "sha256:73c1fa991a4e2904dc8b101110aa76082b31b215ad6978d9db51c9e208bf8bc4",
+  "run_id": 39264897300,
+  "source_sha": "18162c9c53ba1d8334b227087cbfd1474633bb2e",
+  "sha256": "73c1fa991a4e2904dc8b101110aa76082b31b215ad6978d9db51c9e208bf8bc4",
+  "zip_crc": "passed"
+}

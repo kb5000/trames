@@ -53,5 +53,27 @@ Apple使用相同459文件bundle；只允许CI/文档变更时复用Linux通过�
 source SHA、当前commit及每一个文件摘要，不把旧bundle标成新源码。
 [Apple重试39262670141](https://github.com/kb5000/trames/actions/runs/39262670141)
 的本轮distro/FFI严格Clippy、安装模块3项及iOS编译通过。未改动依赖的AArch64专用lint不在
-本轮范围，使用Clippy的--no-deps；没有关闭本轮代码的警告检查。Metal窗口结果待回填。
+本轮范围，使用Clippy的--no-deps；没有关闭本轮代码的警告检查。随后原生窗口测试在首个swapchain创建时崩溃；[LLDB证据](zink-wayland/native-memory-metal-failure/)
+定位到vkBindImageMemory→MoltenVK初始host上传→Paravirtual Metal replaceRegion。
+旧策略只按DEVICE_LOCAL排序，在统一内存GPU上会选到同样local的host-visible类型。
+窗口图片仅供GPU使用，现优先private device memory，无此类型时保留原有合法fallback。
+[修复18162c9](https://github.com/kb5000/trames/commit/18162c9c53ba1d8334b227087cbfd1474633bb2e)
+的18项测试/严格Clippy在本地通过；因原生分配路径改变，本轮重验Linux/Apple图形，
+其余CPU/MMU/Linux系统调用/网络/UI检查继续复用。
+
+[最终CI39264897300](https://github.com/kb5000/trames/actions/runs/39264897300)全部通过，
+运行源码为18162c9。Linux与Apple严格Clippy/18项Vulkan测试、安装模块3项和iOS FFI编译通过。
+Linux窗口结果见[ci-linux-private](zink-wayland/ci-linux-private/)，
+Apple真实MoltenVK/Paravirtual Metal结果见[ci-metal](zink-wayland/ci-metal/)。
+Apple逐一校验同一提交的459文件及其SHA-256；两边的ICD、EGL组件和输入store摘要一致。
+两份结果ZIP的SHA-256和全部CRC均已验证。EGL组件manifest与新bundle中的对应文件摘要
+完全相同，避免将本地不同编译器的组件误记成CI产物。
+
+Apple两轮各验证96×64、80×48、160×96、128×72、144×80的全部导出MTLTexture像素，
+颜色、alpha、原点方向均正确；同一旧帧跨swapchain替换、窗口及guest进程销毁后再次全像素
+校验通过。所有scene均为GPU kind2，正常呈现不回退SHM/CPU像素上传。
+测试oracle单独用Metal blit读回共享buffer验证，生产呈现仍直接采样持有的GPU texture。
+逐窗口最小化/还原/关闭、剩余窗口继续resize、第二轮重启及最终清理均通过。
+采集次数不当作渲染帧数，唯一scene revision另列；没有宣称帧率或物理iPad性能。
+
 物理iPad未验收，未构建IPA或发布release。

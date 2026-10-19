@@ -21,9 +21,10 @@ SONAME `/usr/local/lib/libEGL.so.1`，利用musl原有路径优先级，不改ap
 
 当前已在Linux原生Vulkan参考和Apple原版MoltenVK/Metal上跑通原版Mesa25.1.9的EGL1.5、
 GLES2 context、GPU清屏、GLSL着色器绘制和重复纹理采样。
-**这是基础离屏GL链路，不是完整OpenGL或Vulkan一致性声明。**
+**这是基础GLES2离屏与Wayland窗口链路，不是完整OpenGL或Vulkan一致性声明。**
 离屏Apple/MoltenVK实测见[验证记录](../validation/zink-gles.md)。新一批Wayland EGL双窗口、
-resize、close、重启和旧帧保活已在Linux参考通过；Metal窗口结果见[窗口验证](../validation/zink-wayland.md)，
+resize、close、重启和旧帧保活已在Linux参考及Apple Metal通过；Apple还校验导出MTLTexture
+全部像素与销毁后的旧帧内容，见[窗口验证](../validation/zink-wayland.md)。
 物理iPad仍待验收。
 
 ## 已实现
@@ -99,6 +100,9 @@ Alpine签名Mesa25.1.9-r0和loader保持原样；五项硬扩展已满足。离�
 Wayland EGL复用现有native swapchain/Metal texture路径，新增可采样swapchain usage和原生
 `vkCmdCopyImage`，使原版Kopper可在resize时复制旧图片。命令依赖图保留源/目标图像与旧pool，
 直到提交完成及最后UI帧释放。没有像素读回/SHM回退用于正常呈现；测试oracle的读回独立计入验证范围。
+这些图片仅供GPU使用，内存选择优先DEVICE_LOCAL且非HOST_VISIBLE。统一内存GPU可能将
+多种类型同时标为local；避免无意义的初始CPU上传，也避开Paravirtual Metal在绑定图片时
+的replaceRegion崩溃。没有私有类型时仍保留符合memoryTypeBits的fallback。
 后续继续扩展格式/图像维度/mipmap、渲染状态和真实可用features。
 
 Mesa25.1.9的ES2 context启用GL-thread时，SwapBuffers调用的内部

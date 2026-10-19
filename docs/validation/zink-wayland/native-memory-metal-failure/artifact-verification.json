@@ -1,0 +1,12 @@
+{
+  "artifact_id": 12191079693,
+  "run_id": 39264148537,
+  "source_sha": "4818d0661920ea1470ee00f7ed73af6e38e82314",
+  "guest_source_sha": "86f84a7f79e8bf414b68662e4b16d6112f0f5566",
+  "sha256": "0d8fc5d3fdbe1d77537c3c1da236b06bdea6ace64905abf0b1bc3ee6eacbfff9",
+  "zip_crc": "passed",
+  "archive_files": [
+    "zink-metal-debug.log",
+    "zink-native-bundle/checksums.json"
+  ]
+}

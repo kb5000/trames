@@ -1,0 +1,45 @@
+* thread #3, name = 'trames-local', stop reason = EXC_BAD_ACCESS (code=1, address=0xc)
+    frame #0: 0x0000000103e26c7c AppleParavirtGPUMetalIOGPUFamily`___lldb_unnamed_symbol367 + 76
+AppleParavirtGPUMetalIOGPUFamily`___lldb_unnamed_symbol367:
+->  0x103e26c7c <+76>: ldur   x22, [x8, #0xc]
+    0x103e26c80 <+80>: bl     0x103e463c0
+    0x103e26c84 <+84>: add    x8, x0, x27
+    0x103e26c88 <+88>: mul    x26, x8, x22
+Target 0: (Python) stopped.
+(lldb) thread backtrace all
+  thread #2, queue = 'com.apple.main-thread'
+    frame #0: 0x000000018def11c8 libsystem_kernel.dylib`__semwait_signal + 8
+    frame #1: 0x000000018ddcd6f4 libsystem_c.dylib`nanosleep + 220
+    frame #2: 0x000000010092c8e0 Python`time_sleep + 224
+    frame #3: 0x000000010081cd68 Python`_PyEval_EvalFrameDefault + 23924
+    frame #4: 0x0000000100816aa0 Python`PyEval_EvalCode + 248
+    frame #5: 0x00000001008901c8 Python`run_mod + 172
+    frame #6: 0x000000010088ebe4 Python`_PyRun_File + 176
+    frame #7: 0x000000010088e0f0 Python`_PyRun_SimpleFile + 260
+    frame #8: 0x000000010088dd5c Python`_PyRun_AnyFile + 80
+    frame #9: 0x00000001008bced4 Python`pymain_run_file_obj + 164
+    frame #10: 0x00000001008bcc94 Python`pymain_run_file + 76
+    frame #11: 0x00000001008bc3a0 Python`Py_RunMain + 888
+    frame #12: 0x00000001008bc7f0 Python`pymain_main + 232
+    frame #13: 0x00000001008bc88c Python`Py_BytesMain + 40
+    frame #14: 0x000000018db8eb98 dyld`start + 6076
+* thread #3, name = 'trames-local', stop reason = EXC_BAD_ACCESS (code=1, address=0xc)
+  * frame #0: 0x0000000103e26c7c AppleParavirtGPUMetalIOGPUFamily`___lldb_unnamed_symbol367 + 76
+    frame #1: 0x00000001022fd03c libtrames_ffi.dylib`MVKImagePlane::updateMTLTextureContent(MVKImageSubresource&, unsigned long long, unsigned long long) + 396
+    frame #2: 0x00000001022fd910 libtrames_ffi.dylib`MVKImageMemoryBinding::flushToDevice(unsigned long long, unsigned long long) + 268
+    frame #3: 0x00000001022fd7d8 libtrames_ffi.dylib`MVKImageMemoryBinding::bindDeviceMemory(MVKDeviceMemory*, unsigned long long) + 628
+    frame #4: 0x00000001022d1e74 libtrames_ffi.dylib`vkBindImageMemory + 84
+    frame #5: 0x00000001022bc1b4 libtrames_ffi.dylib`<trames_vulkan::backend::wayland::NativeImage>::allocate + 1332
+    frame #6: 0x0000000102294104 libtrames_ffi.dylib`<trames_vulkan::backend::Backend>::wsi_device + 7140
+    frame #7: 0x000000010229c5d0 libtrames_ffi.dylib`<trames_vulkan::backend::Backend>::device_call + 25000
+    frame #8: 0x00000001022a1770 libtrames_ffi.dylib`<trames_vulkan::backend::Backend>::call + 3952
+    frame #9: 0x00000001022a4a4c libtrames_ffi.dylib`<trames_vulkan::backend::Backend>::invoke + 844
+    frame #10: 0x000000010222e398 libtrames_ffi.dylib`<trames_core::process::Kernel>::native_call + 972
+    frame #11: 0x00000001021969e4 libtrames_ffi.dylib`<trames_core::process::Kernel>::finish_slice::<trames_ffi::session::Adapter> + 288
+    frame #12: 0x000000010219afcc libtrames_ffi.dylib`<trames_core::process::Kernel>::drive::<trames_ffi::session::Adapter> + 7436
+    frame #13: 0x00000001021a4678 libtrames_ffi.dylib`trames_core::process::run::<trames_ffi::session::Adapter> + 2420
+    frame #14: 0x00000001021e05e8 libtrames_ffi.dylib`trames_ffi::session::run + 6004
+    frame #15: 0x00000001021eac5c libtrames_ffi.dylib`std::sys::backtrace::__rust_begin_short_backtrace::<<trames_ffi::session::Session>::start::{closure#4}, ()> + 204
+    frame #16: 0x00000001021ed404 libtrames_ffi.dylib`<std::thread::lifecycle::spawn_unchecked<<trames_ffi::session::Session>::start::{closure#4}, ()>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0} + 224
+    frame #17: 0x00000001027fdec4 libtrames_ffi.dylib`<std::sys::thread::unix::Thread>::new::thread_start + 452
+    frame #18: 0x000000018df2fbc8 libsystem_pthread.dylib`_pthread_start + 136

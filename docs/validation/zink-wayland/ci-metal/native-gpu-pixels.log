@@ -1,0 +1,14 @@
+2026-10-19T14:09:20.5806720Z zink-metal-texture-ok: 96x64 blue=0 all exported GPU pixels correct
+2026-10-19T14:09:20.6563890Z zink-metal-texture-ok: 80x48 blue=1 all exported GPU pixels correct
+2026-10-19T14:09:20.8174740Z zink-metal-texture-ok: 160x96 blue=0 all exported GPU pixels correct
+2026-10-19T14:09:20.8729690Z zink-metal-texture-ok: 128x72 blue=1 all exported GPU pixels correct
+2026-10-19T14:09:21.0574960Z zink-metal-texture-ok: 144x80 blue=1 all exported GPU pixels correct
+2026-10-19T14:09:21.5912270Z zink-metal-texture-ok: 96x64 blue=0 all exported GPU pixels correct
+2026-10-19T14:09:24.6049320Z zink-metal-texture-ok: 96x64 blue=0 all exported GPU pixels correct
+2026-10-19T14:09:24.6596850Z zink-metal-texture-ok: 80x48 blue=1 all exported GPU pixels correct
+2026-10-19T14:09:24.8945480Z zink-metal-texture-ok: 160x96 blue=0 all exported GPU pixels correct
+2026-10-19T14:09:24.8982100Z zink-metal-texture-ok: 128x72 blue=1 all exported GPU pixels correct
+2026-10-19T14:09:25.2870980Z zink-metal-texture-ok: 144x80 blue=1 all exported GPU pixels correct
+2026-10-19T14:09:25.5820090Z zink-metal-texture-ok: 96x64 blue=0 all exported GPU pixels correct
+2026-10-19T14:09:25.6236100Z zink-wayland-integration-ok: two windows, two launches, native GPU frames, resize, close and retained old frame
+2026-10-19T14:09:25.6437560Z Process 6421 exited with status = 0 (0x00000000)
