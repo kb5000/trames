@@ -76,5 +76,6 @@ DRI/dmabuf、external-memory FD还需要guest FD与Metal资源身份/生命周�
 
 本地native参考是Mesa25 Lavapipe软件Vulkan。`LIBGL_ALWAYS_SOFTWARE`仅用于让原版
 Zink选中这个CPU physical device；它不替换OpenGL实现。iPad GPU验收不使用此变量。
-本轮MoltenVK/Metal timeline、GPU填充/读回已在CI的Apple Paravirtual device通过。
+本轮MoltenVK/Metal timeline及imageless附件重绑定、可选深度、GPU读回与清理，
+已在CI的Apple Paravirtual device通过。
 原版GL/Wayland呈现与物理iPad仍待验收；当前没有新的Zink IPA或release。

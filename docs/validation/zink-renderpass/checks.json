@@ -12,5 +12,17 @@
     "network",
     "iOS UI"
   ],
-  "ci": "pending"
+  "ci": {
+    "source_sha": "59dccdb96072eeca2dfca1b0afb388a0d242a4fa",
+    "linux_run": 39227761983,
+    "linux_job": 117978187187,
+    "apple_run": 39227762013,
+    "apple_job": 117978218836,
+    "status": "passed",
+    "linux_vulkan_unit_tests": 17,
+    "apple_vulkan_unit_tests": 17,
+    "ios_ffi": "aarch64-apple-ios check passed",
+    "apple_gpu": "original MoltenVK1.4.2 / Apple Paravirtual device / real Metal clear/readback",
+    "rendering_passed": false
+  }
 }

@@ -1,0 +1,6 @@
+WARNING: Some incorrect rendering might occur because the selected Vulkan device (llvmpipe (LLVM 20.1.2, 256 bits)) doesn't support base Zink requirements: feats.features.logicOp feats.features.fillModeNonSolid feats.features.shaderClipDistance scalarBlockLayout OR EXT_scalar_block_layout have_EXT_custom_border_color have_EXT_line_rasterization 
+MESA: error: vkCreatePipelineLayout failed (VK_ERROR_FEATURE_NOT_PRESENT)
+MESA: error: ZINK: failed to initialize layouts
+libEGL warning: egl: failed to create dri2 screen
+libEGL warning: DRI2: failed to create screen
+zink-egl: eglInitialize failed, EGL error=0x3001
