@@ -1,7 +1,8 @@
 # Xwayland: original guest server, native window management
 
-The first X11 milestone runs the original Alpine ARM64 Xwayland in rootless
-software mode. A native Rust XWM uses the pure-Rust x11rb client. Each mapped X11
+The initial X11 milestone runs the original Alpine ARM64 Xwayland in rootless
+SHM mode. The optional native-WSI transport now adds original glamor/Zink GPU
+rendering without a DRM device. A native Rust XWM uses the pure-Rust x11rb client. Each mapped X11
 toplevel joins the existing Wayland window snapshots, frames and workspace UI;
 there is no nested desktop canvas or guest compositor/window manager.
 
@@ -40,7 +41,69 @@ SHM pixmaps use the same managed FD, scene lease and Metal presentation route
 as native Wayland applications. No new CPU pixel-copy bridge is introduced.
 This does not establish Apple bytesNoCopy success for Xwayland; the first gate
 uses Linux retained SHM frames. Native Wayland Vulkan remains independent.
-GLX, DRI3/glamor and X11 Vulkan WSI have **not** passed an acceleration gate.
+The optional GPU transport below has passed a Linux Vulkan-reference gate.
+GLX, DRI3 direct rendering and X11 Vulkan WSI have **not** passed an acceleration gate.
+
+## Original glamor/Zink with native Wayland WSI
+
+`accelerator/xwayland/native-wsi.c` and the small upstream patch add an explicit
+`TRAMES_XWAYLAND_NATIVE_WSI=1` route. Xwayland 24.1.9's X11 server, glamor drawing
+and shaders remain upstream. Mesa 25.1.9's original signed Gallium/Zink, GLSL/NIR
+and SPIR-V compilers remain unchanged. The already existing EGL Kopper adapter
+connects their rendering to Trames Vulkan, MoltenVK/Metal and native Wayland
+frames. This route requires no emulated DRM render node, GBM buffer or DMA-BUF.
+
+Original glamor renders ordinary 24/32-bit X11 pixmaps into textures. A separate
+shared ES2 context draws one textured quad into each window's EGL swapchain.
+It flips glamor's top-row-at-v=0 texture coordinates for Wayland's displayed
+top-left origin and forces opaque alpha for depth 24. Shared texture parameters
+are restored, and EGL GPU fence/wait pairs order both contexts. There is no
+production pixel readback, CPU staging pixmap or glFinish. Presentation includes
+one GPU draw/copy; it is not direct scanout of the original glamor texture.
+Original glamor still uses its own software fallbacks for unsupported drawing
+operations and depths. Those do not switch ordinary window presentation to SHM.
+
+EGL surfaces track actual X11 buffer dimensions and are destroyed before their
+Wayland surfaces. Existing Vulkan/Wayland frame leases retain old native images
+over resize, window destruction and session shutdown. Native mode requires an
+actual Zink renderer plus real fence/wait extensions. Initialization/presentation
+failure is reported; it does not silently select SHM. The launcher keeps the
+original `-shm` route when native mode is not requested.
+
+The Vulkan context now permits 16,384 retained objects, rather than the initial
+256-object smoke-test limit. Original glamor's descriptors and pixmap/shader
+caches exceed 256 even with xterm/xclock. Allocation bytes still use the existing
+GPU budget, and other bounds remain. Sampler descriptor updates preserve known
+native attachment/transfer layout enums used by Zink for unaccessed slots;
+they do not require shader-read layout before actual use. Native object identity,
+usage checks, dependencies and in-flight retention remain intact.
+
+Build with `python3 scripts/build-xwayland-native.py` after preparing the normal
+Mesa EGL prerequisites. It needs AArch64 GCC/binutils, native Meson/Ninja,
+pkg-config, bison/flex and wayland-scanner. The pinned original Xwayland archive
+is SHA-256 verified. Output includes a binary/hash manifest, original notices,
+GPLv3 terms, and `target/xwayland-native/xwayland-native-source.tar.gz` with the
+original source archive, patch, adapter and build inputs. The iOS prerequisite
+job carries the source bundle alongside the guest artifacts. The test-only
+pixel interposer stays outside `GuestVulkan` and the App.
+
+With Vulkan enabled and the bundled EGL adapter present, the session validates
+and atomically installs the sibling bundled server at
+`/usr/libexec/trames/Xwayland-native`. It preserves the apk-owned Xwayland.
+Native mode remains explicit pending Apple hardware acceptance:
+
+```sh
+apk add xwayland xkeyboard-config xterm xclock font-dejavu \
+    mesa-dri-gallium mesa-egl mesa-gles vulkan-loader wayland-libs-egl
+TRAMES_XWAYLAND_NATIVE_WSI=1 trames-xwayland :0 >/tmp/xwayland.log 2>&1 &
+export DISPLAY=:0
+xterm &
+xclock &
+```
+
+This enables accelerated X11 server drawing/presentation. The bundled server
+is built with GLX disabled; accelerated OpenGL clients via GLX/DRI3, X11 Vulkan
+WSI, clipboard and IME/XIM require separate implementation and acceptance.
 
 ## Session startup
 

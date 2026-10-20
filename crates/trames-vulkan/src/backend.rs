@@ -20,7 +20,10 @@ mod wsi;
 mod zink;
 use graphics::{ImageShape, PassInfo, Recording};
 
-const LIMIT: usize = 256;
+// Mesa/glamor caches descriptors, shaders and pixmaps across X11 windows. The
+// old smoke-test ceiling of 256 exhausted even xterm + xclock. This bounds
+// object metadata; native allocations still charge the separate GPU budget.
+const LIMIT: usize = 16_384;
 const MAX_ALLOCATION: u64 = 64 << 20;
 static DOMAIN: AtomicU64 = AtomicU64::new(1);
 type Result<T> = std::result::Result<T, Failure>;

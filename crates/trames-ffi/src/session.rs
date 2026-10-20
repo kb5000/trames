@@ -546,12 +546,24 @@ fn run(
         ]);
     }
     if options.wayland {
-        if let Some(path) = options.xwayland_launcher {
+        if let Some(ref path) = options.xwayland_launcher {
             trames_distro::install_xwayland_launcher(
                 &mut File::open(path).map_err(|e| e.to_string())?,
                 &mut vfs,
             )
             .map_err(|e| e.to_string())?;
+            // Only expose the native transport with this session's authorized
+            // Vulkan + matching EGL adapter. No dependence on user apk paths.
+            if zink_egl {
+                match File::open(path.with_file_name("Xwayland-native")) {
+                    Ok(mut reader) => {
+                        trames_distro::install_xwayland_native(&mut reader, &mut vfs)
+                            .map_err(|e| format!("install native Xwayland: {e}"))?;
+                    }
+                    Err(e) if e.kind() == io::ErrorKind::NotFound => {}
+                    Err(e) => return Err(format!("read bundled Xwayland: {e}")),
+                }
+            }
         }
         let server = vfs
             .enable_wayland(b"/run/user/0")

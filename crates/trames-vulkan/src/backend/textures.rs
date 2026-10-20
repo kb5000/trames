@@ -225,7 +225,12 @@ impl Backend {
                         || (if a[5] == 3 {
                             x[2] != 1
                         } else {
-                            !matches!(x[2], 1 | 5)
+                            // Original Zink also updates unaccessed sampler
+                            // slots with an image's current attachment/transfer
+                            // layout. Do not require shader-read layout before
+                            // the descriptor is used. Preserve the native enum;
+                            // object identity, usage and retention stay checked.
+                            !(1..=7).contains(&x[2])
                         })
                     {
                         return invalid();

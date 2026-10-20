@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Establish the private XWM capability, then exec the unmodified Xwayland.
+// Establish the private XWM capability, then exec the selected Xwayland.
 // PID and credentials remain identical on the XWM and Wayland connections.
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -18,14 +18,16 @@ int main(int argc, char **argv) {
     int fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd < 0 || connect(fd, (void *)&addr, sizeof addr) < 0) { perror("Connect Trames XWM"); return 1; }
     char number[24]; snprintf(number, sizeof number, "%d", fd);
-    // Explicit software path for the initial X11 milestone. The normal guest
-    // Vulkan/Wayland path is independent; GLX/DRI3 is not advertised as validated.
+    const char *native = getenv("TRAMES_XWAYLAND_NATIVE_WSI");
+    int gpu = native && !strcmp(native, "1");
     char **args = calloc((size_t)argc + 12, sizeof *args);
     if (!args) { perror("calloc"); return 1; }
     int i = 0;
-    args[i++] = "Xwayland";
+    args[i++] = gpu ? "/usr/libexec/trames/Xwayland-native" : "Xwayland";
     args[i++] = argc > 1 ? argv[1] : ":0";
-    args[i++] = "-rootless"; args[i++] = "-shm";
+    args[i++] = "-rootless";
+    if (gpu) { args[i++] = "-glamor"; args[i++] = "es"; }
+    else args[i++] = "-shm";
     args[i++] = "-nolisten"; args[i++] = "tcp";
     args[i++] = "-wm"; args[i++] = number;
     for (int j=2; j<argc; ++j) args[i++] = argv[j];

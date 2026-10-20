@@ -204,7 +204,7 @@ return NULL. Unsupported creation parameters return Vulkan failures. Recording
 functions have void signatures; invalid/unsupported recording parameters abort
 the experimental guest ICD with a diagnostic rather than fake success.
 
-Limits include 256 retained native objects per context, 64 in-flight submissions,
+Limits include 16,384 retained native objects per context, 64 in-flight submissions,
 64 MiB per native memory allocation and 128 MiB shared across the session's
 contexts. Native driver/pipeline bookkeeping is additional memory; these logical
 budgets do not establish an exact RSS or physical GPU capacity.

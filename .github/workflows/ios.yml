@@ -365,12 +365,14 @@ jobs:
           target/mesa-tools/bin/pip install -r scripts/zink-egl-requirements.txt
           export PATH="$PWD/target/mesa-tools/bin:$PATH"
           python3 scripts/build-zink-egl.py
+          python3 scripts/build-xwayland-native.py
           python3 scripts/prepare-vulkan.py --apple
       - uses: actions/upload-artifact@v4
         with:
           name: vulkan-compute-driver-and-native-source
           path: |
             target/vulkan-guest
+            target/xwayland-native/xwayland-native-source.tar.gz
           if-no-files-found: error
           retention-days: 14
       - uses: actions/upload-artifact@v4

@@ -1,0 +1,186 @@
+# SPDX-License-Identifier: MIT
+Subject: Xwayland: opt-in DRM-less EGL/Wayland transport for original glamor
+
+--- a/hw/xwayland/meson.build
++++ b/hw/xwayland/meson.build
+@@ -111,6 +111,7 @@
+ if build_xwayland_glamor
+     srcs += [
+               'xwayland-glamor.c',
++              'native-wsi.c',
+               'xwayland-dmabuf.h',
+               'xwayland-dmabuf.c',
+               'xwayland-glamor-gbm.c',
+@@ -124,6 +125,7 @@
+     srcs += client_header.process('drm.xml')
+     srcs += code.process('drm.xml')
+     xwayland_dep += gbm_dep
++    xwayland_dep += dependency('wayland-egl')
+     xwayland_glamor += glamor
+ endif
+ 
+--- a/hw/xwayland/xwayland-screen.h
++++ b/hw/xwayland/xwayland-screen.h
+@@ -136,6 +136,7 @@
+     uint32_t num_formats;
+     struct xwl_format *formats;
+     void *egl_display, *egl_context;
++    struct xwl_native *native_glamor;
+ 
+     struct glamor_context *glamor_ctx;
+ 
+--- a/hw/xwayland/xwayland-window.h
++++ b/hw/xwayland/xwayland-window.h
+@@ -55,6 +55,7 @@
+ };
+ 
+ struct xwl_window {
++    struct xwl_native_window *native_glamor;
+     struct xwl_screen *xwl_screen;
+     struct wl_surface *surface;
+     struct wp_viewport *viewport;
+--- a/hw/xwayland/xwayland-glamor.c
++++ b/hw/xwayland/xwayland-glamor.c
+@@ -45,6 +45,7 @@
+ #include "xwayland-glamor-gbm.h"
+ #include "xwayland-present.h"
+ #include "xwayland-screen.h"
++#include "native-wsi.h"
+ #include "xwayland-window.h"
+ #include "xwayland-window-buffers.h"
+ 
+@@ -79,7 +80,8 @@
+     struct xwl_screen *xwl_screen = xwl_screen_get(screen);
+ 
+     glamor_set_glvnd_vendor(screen, xwl_screen->glvnd_vendor);
+-    glamor_enable_dri3(screen);
++    if (!xwl_native_requested())
++        glamor_enable_dri3(screen);
+     glamor_ctx->ctx = xwl_screen->egl_context;
+     glamor_ctx->display = xwl_screen->egl_display;
+ 
+@@ -93,6 +95,9 @@
+ {
+     ScreenPtr screen = pixmap->drawable.pScreen;
+     PixmapPtr backing_pixmap = screen->GetWindowPixmap(present_window);
++
++    if (xwl_screen_get(screen)->native_glamor)
++        return FALSE;
+ 
+     if (pixmap->drawable.depth != backing_pixmap->drawable.depth) {
+         if (pixmap->drawable.depth == 32)
+@@ -227,6 +232,18 @@
+         return FALSE;
+     }
+ 
++    if (xwl_native_requested()) {
++        if (!xwl_native_init(xwl_screen))
++            return FALSE;
++        if (!glamor_init(screen, GLAMOR_USE_EGL_SCREEN | GLAMOR_NO_DRI3)) {
++            xwl_native_fini(xwl_screen);
++            return FALSE;
++        }
++        xwl_screen->CreateScreenResources = screen->CreateScreenResources;
++        screen->CreateScreenResources = xwl_glamor_create_screen_resources;
++        return TRUE;
++    }
++
+     if (!xwl_glamor_has_wl_interfaces(xwl_screen)) {
+         ErrorF("Xwayland glamor: GBM Wayland interfaces not available\n");
+         return FALSE;
+--- a/hw/xwayland/xwayland-glamor-gbm.c
++++ b/hw/xwayland/xwayland-glamor-gbm.c
+@@ -59,6 +59,7 @@
+ #include "xwayland-glamor-gbm.h"
+ #include "xwayland-pixmap.h"
+ #include "xwayland-screen.h"
++#include "native-wsi.h"
+ #include "xwayland-window-buffers.h"
+ 
+ #include "linux-dmabuf-unstable-v1-client-protocol.h"
+@@ -1861,7 +1862,7 @@
+ {
+     struct xwl_gbm_private *xwl_gbm;
+ 
+-    if (!xwl_glamor_gbm_has_egl_extension())
++    if (!xwl_native_requested() && !xwl_glamor_gbm_has_egl_extension())
+         return FALSE;
+ 
+     if (!dixRegisterPrivateKey(&xwl_gbm_private_key, PRIVATE_SCREEN, 0))
+--- a/hw/xwayland/xwayland-window.c
++++ b/hw/xwayland/xwayland-window.c
+@@ -44,6 +44,7 @@
+ #include "xwayland-pixmap.h"
+ #include "xwayland-present.h"
+ #include "xwayland-screen.h"
++#include "native-wsi.h"
+ #include "xwayland-window.h"
+ #include "xwayland-window-buffers.h"
+ #include "xwayland-shm.h"
+@@ -1721,6 +1722,8 @@
+     if (xwl_window->surface_sync)
+         wp_linux_drm_syncobj_surface_v1_destroy(xwl_window->surface_sync);
+ 
++    if (xwl_screen->native_glamor)
++        xwl_native_window_destroy(xwl_window);
+     release_wl_surface_for_window(xwl_window);
+     xorg_list_del(&xwl_window->link_damage);
+     xorg_list_del(&xwl_window->link_window);
+@@ -2023,6 +2026,9 @@
+     struct wl_buffer *buffer;
+     PixmapPtr pixmap;
+     int i;
++
++    if (xwl_screen->native_glamor)
++        return xwl_native_present(xwl_window);
+ 
+     pixmap = xwl_window_swap_pixmap(xwl_window, TRUE);
+     buffer = xwl_pixmap_get_wl_buffer(pixmap);
+--- a/hw/xwayland/xwayland-screen.c
++++ b/hw/xwayland/xwayland-screen.c
+@@ -47,6 +47,7 @@
+ 
+ #include "xwayland-cursor.h"
+ #include "xwayland-screen.h"
++#include "native-wsi.h"
+ #include "xwayland-window.h"
+ #include "xwayland-input.h"
+ #include "xwayland-output.h"
+@@ -264,6 +265,15 @@
+ 
+     RemoveNotifyFd(xwl_screen->wayland_fd);
+ 
++    if (xwl_screen->native_glamor) {
++        Bool result;
++        screen->CloseScreen = xwl_screen->CloseScreen;
++        result = screen->CloseScreen(screen);
++        xwl_native_fini(xwl_screen);
++        wl_display_disconnect(xwl_screen->display);
++        free(xwl_screen);
++        return result;
++    }
+     wl_display_disconnect(xwl_screen->display);
+ 
+     screen->CloseScreen = xwl_screen->CloseScreen;
+@@ -985,7 +995,12 @@
+     }
+ 
+ #ifdef XWL_HAS_GLAMOR
++    if (xwl_native_requested() && !xwl_screen->glamor)
++        FatalError("Native WSI requires glamor (remove -shm)\n");
++
+     if (xwl_screen->glamor && !xwl_glamor_init_gbm(xwl_screen)) {
++        if (xwl_native_requested())
++            FatalError("Native WSI private initialization failed\n");
+         ErrorF("xwayland glamor: failed to setup GBM backend, falling back to sw accel\n");
+         xwl_screen->glamor = 0;
+     }
+@@ -1107,6 +1122,8 @@
+ 
+ #ifdef XWL_HAS_GLAMOR
+     if (xwl_screen->glamor && !xwl_glamor_init(xwl_screen)) {
++       if (xwl_native_requested())
++           FatalError("Requested native Zink/glamor initialization failed\n");
+        ErrorF("Failed to initialize glamor, falling back to sw\n");
+        xwl_screen->glamor = XWL_GLAMOR_NONE;
+     }

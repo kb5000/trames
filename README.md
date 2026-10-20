@@ -16,7 +16,7 @@
 
 面向 iPadOS 的终端与 Wayland 窗口开发环境，运行未修改的 AArch64 Linux 用户态程序。使用普通开发者签名，架构不依赖越狱、JIT 权限、私有 API 或硬件虚拟化。
 
-主分支新增 [Xwayland 初始适配](docs/architecture/xwayland.md)：原版 guest Xwayland 配合宿主原生窗口管理，xterm/xclock 的独立窗口、调整大小、键盘输入与关闭已通过 Linux FFI 验证。[验证范围](docs/validation/xwayland.md)；尚未制作包含该功能的 IPA，X11 GPU 加速与剪贴板／输入法桥接后续继续。
+主分支新增 [Xwayland 适配](docs/architecture/xwayland.md)：宿主原生窗口管理，并增加复用原版 glamor／Zink 的 GPU 呈现通路。xterm/xclock 的独立窗口、调整大小、键盘输入与关闭，以及 X11 和最终呈现缓冲区的像素检查已通过 Linux FFI 验证。[验证范围](docs/validation/xwayland.md)；尚未制作包含该功能的 IPA，iPad Metal 验收、GLX／DRI3 与剪贴板／输入法桥接仍待完成。
 
 **当前交付：iPad 本地 AArch64 Linux、多终端及原生 Wayland／Vulkan 窗口工作区；兼容性以已实现范围和验证记录为准，完整 iPad 真机矩阵仍待补齐。** `trames-run` 执行实际静态／动态 AArch64 ELF，支持 32/64 位标量及选定 SIMD 浮点、虚拟进程、管道、信号和一个虚拟 PTY。交互式 BusyBox `ash` 已在内存和磁盘两种后端验证。Linux CLI 默认保存文件到磁盘，新存储目录的文件预算为 16 GiB。IPv4/IPv6 TCP/UDP、真实 musl DNS，以及具有独立 IP 和回环地址的用户态网络栈已验证；Alpine 3.22.6、动态 musl、经过证书和包签名验证的 HTTPS apk update/add，以及安装后 tree 执行已验证。iPad App、Files 授权和 Bridge 已实现并通过软件验证；SSH/SFTP 保留为独立可选库，当前 App 专注本地 Linux。
 

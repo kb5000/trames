@@ -23,6 +23,9 @@ cp target/vulkan-guest/trames-xwayland target/vulkan-guest/launcher-manifest.jso
 if [[ -f target/vulkan-guest/libEGL.so.1 ]]; then
   cp target/vulkan-guest/libEGL.so.1 target/vulkan-guest/egl-manifest.json apps/ios/Trames/GuestVulkan/
 fi
+if [[ -f target/vulkan-guest/Xwayland-native ]]; then
+  cp target/vulkan-guest/Xwayland-native target/vulkan-guest/xwayland-native-manifest.json apps/ios/Trames/GuestVulkan/
+fi
 cp -R target/vulkan-guest/acceptance apps/ios/Trames/GuestVulkan/
 cp -R target/vulkan-guest/wayland-acceptance apps/ios/Trames/GuestVulkan/
 if [[ -d target/vulkan-guest/Notices ]]; then cp -R target/vulkan-guest/Notices apps/ios/Trames/GuestVulkan/; fi
@@ -31,6 +34,8 @@ import hashlib,json,pathlib
 p=pathlib.Path('apps/ios/Trames/GuestVulkan');m=json.loads((p/'manifest.json').read_text());assert hashlib.sha256((p/'libtrames_vulkan_icd.so').read_bytes()).hexdigest()==m['icd_sha256']
 if (p/'libEGL.so.1').exists():
     e=json.loads((p/'egl-manifest.json').read_text());assert hashlib.sha256((p/'libEGL.so.1').read_bytes()).hexdigest()==e['egl_sha256']
+if (p/'Xwayland-native').exists():
+    x=json.loads((p/'xwayland-native-manifest.json').read_text());assert hashlib.sha256((p/'Xwayland-native').read_bytes()).hexdigest()==x['executable_sha256']
 PYCODE
 python3 scripts/prepare-vulkan.py --apple
 mvk="$PWD/target/vulkan-upstream/moltenvk-all/MoltenVK/MoltenVK/static/MoltenVK.xcframework"

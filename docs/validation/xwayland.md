@@ -40,6 +40,61 @@ X11↔Wayland/iPad clipboard, GLX/DRI3/glamor, X11 Vulkan WSI, complete ICCCM/EW
 or all legacy application menus. Those remain follow-up acceptance. No IPA was
 built or released for this milestone. Raw diagnostics stay outside the commit.
 
+## DRM-less glamor/Zink transport
+
+2026-10-21, same Linux host/ARM64 guest, four workers, 4 GiB aggregate and
+per-process commitment limits. The production FFI installs the bundled original
+Xwayland 24.1.9 plus GPLv3 transport, alongside original Alpine Mesa 25.1.9,
+libwayland, xterm and xclock. The native Vulkan reference is Lavapipe on a CPU;
+this establishes protocol/rendering correctness, not iPad GPU performance.
+
+The native-mode gate checks:
+
+- Actual Zink renderer, EGL fence/wait support and GPU frame type 2 throughout;
+  no SHM presentation fallback.
+- Independent xterm and xclock windows, 480×320 terminal resize, focus plus
+  immediate `a`/Return, exact ordinary child-shell output, and independent close.
+- An ordinary Xlib client fills a pixmap, copies it into its window and uses
+  XGetImage to check all 12,288 pixels at 128×96 and 16,000 at 160×100.
+- A **test-only** EGL dispatch interposer checks the same pixels and orientation
+  in the final presentation framebuffer, then forwards to original Mesa's swap.
+  The exact production Xwayland ELF is used; the oracle is not App code.
+- Old GPU frame metadata remains valid across resize/close and session shutdown.
+  Apple mode additionally requires the exported Metal texture pixel oracle,
+  including the retained old texture. This Apple gate has not run here.
+
+The initial object bound rejected normal descriptor allocations; increasing it
+to 16,384 resolved that limit. Further checks found and fixed the vertical
+texture-coordinate conversion and premature rejection of Zink's unaccessed
+sampler-slot attachment layouts. Unsupported 8/15/16/30-bit glamor formats can
+still report original per-format software fallbacks; ordinary depth-24/32
+presentation stays on the GPU transport. This does not establish full GLX or
+arbitrary application's OpenGL support.
+
+Scoped checks also pass: 18 Vulkan unit tests, release Clippy for Vulkan/distro/
+FFI, Rust formatting, Python parsing and shell syntax. The changed launcher and
+installer also pass the original SHM gate on reopened storage. Unchanged CPU,
+Linux, networking and other graphical suites are reused.
+
+The original-source transport ELF SHA-256 is
+`d26827c2a162d8859cfa6467d6ad1eb979754efbf205f1f9afd9275e0d859288`;
+the production Linux FFI SHA-256 is
+`5689bdfba88055801ba391be91b26e8943e9c50431a480a3d857c3afaf5e8f3c`.
+
+Reproduce after building the native transport and installing original signed
+Xwayland/Mesa packages into an isolated store:
+
+```sh
+# CPU reference only. For Apple, select the native Metal backend instead.
+TRAMES_ZINK_CPU_REFERENCE=1 python3 tests/integration/xwayland.py \
+    --store STORE --output NEW_DIRECTORY --native-wsi
+```
+
+Select the host reference ICD with `VK_DRIVER_FILES` and, where necessary,
+`TRAMES_VULKAN_LIBRARY`. On Apple, provide `--metal-validator` built from
+`tests/fixtures/zink-metal-pixels.m`. Raw guest/host logs stay local. No new IPA
+or hardware GPU acceptance is implied by this source milestone.
+
 Reproduction inputs: `scripts/prepare-xwayland-guest.py` downloads original
 signed APKs and builds the launcher/signal fixture. Import its repository into a
 fresh isolated store using `trames-run --file`, then install with ordinary guest
