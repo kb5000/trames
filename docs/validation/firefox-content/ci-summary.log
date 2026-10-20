@@ -1,0 +1,10 @@
+firefox-clock	Check changed Core paths and clock ABI	2026-10-20T11:22:31.9296927Z test result: ok. 87 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.12s
+firefox-clock	Check changed Core paths and clock ABI	2026-10-20T11:23:13.2969866Z clock ABI: two threads, realtime/coarse and monotonic/coarse epochs PASS
+firefox-clock	Check changed Core paths and clock ABI	2026-10-20T11:23:13.3001813Z clock ABI: two threads, realtime/coarse and monotonic/coarse epochs PASS
+firefox-clock	Check changed Core paths and clock ABI	2026-10-20T11:23:13.3045411Z clock ABI: two threads, realtime/coarse and monotonic/coarse epochs PASS
+firefox-clock-apple	Set up job	2026-10-20T11:23:22.5152470Z Image: macos-15-arm64
+firefox-clock-apple	Verify Apple ARM64 coordinator and original musl clocks	2026-10-20T11:23:34.6026390Z arm64
+firefox-clock-apple	Verify Apple ARM64 coordinator and original musl clocks	2026-10-20T11:23:34.6081520Z hw.pagesize: 16384
+firefox-clock-apple	Verify Apple ARM64 coordinator and original musl clocks	2026-10-20T11:24:05.0509580Z test result: ok. 87 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.16s
+firefox-clock-apple	Verify Apple ARM64 coordinator and original musl clocks	2026-10-20T11:24:53.5838640Z clock ABI: two threads, realtime/coarse and monotonic/coarse epochs PASS
+firefox-clock-apple	Verify Apple ARM64 coordinator and original musl clocks	2026-10-20T11:24:53.5887910Z clock ABI: two threads, realtime/coarse and monotonic/coarse epochs PASS

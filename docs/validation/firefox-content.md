@@ -2,7 +2,7 @@
 
 2026-10-20，沿用原版 Alpine ARM64 Firefox 142.0-r0、Release FFI、4 CPU、
 总/单进程均 4 GiB、默认沙箱配置与 Wayland proxy。GPU 与网络关闭，目标仍是
-本地 HTML 的 JS 标题及绿色 canvas。当前继续验收页面；不能把工具栏算作网页通过。
+本地 HTML 的 JS 标题及绿色 canvas。修复后 600s 仍未通过页面；不能把工具栏算作网页通过。
 
 本轮确认并修复两个独立问题：
 
@@ -35,10 +35,29 @@ SIGPROF 叶 PC 采样中，300–600 秒约 73.23% 的样本在协调线程，�
 按值存放 0.205899s，Box 指针 0.003475s。只测表搬移，不测 guest 指令或端到端应用，
 不据此宣称 Firefox/CoreMark/Docker 有相同比例的提速。
 
+手动复现元数据基准：
+`cargo test -p trames-core --release process_table_churn_profile -- --ignored --nocapture`。
+
 在额外模块日志/线程状态诊断中，Firefox 与 WebExtensions 多次停在 musl
 `clock_gettime` 返回位置、GLib 调用点，促成了时钟编号检查。该诊断在 241.05s
 经宿主 SIGINT 主动停止，以测试已确认的修复；不是 Firefox 崩溃或默认验收通过。
 时钟缺陷的 ABI 语义已经确定，仍需区分它与剩余页面问题的因果关系。
+
+合并修复后的默认配置组在 92.12s 出现窗口及首个 SHM 图像，600s 共收到 702 个
+含图像的不同 revision，仍停在 New Tab/工具栏：JS=false、绿色像素=0，Firefox
+没有退出。额外 30s 最终诊断只收到了部分 ps 输出，`diagnostics_complete=false`，
+不能把未收完的日志当成“没有其他错误”。保留了已有的内容进程信息。
+
+该组没有 SIGPROF/MOZ_LOG，和旧 900s 采样组的时长、插桩、缓存/调度进度不同；
+不据此计算整体启动加速比。另一次 10s 宿主观察里协调线程仍用了约 9.35 CPU 秒，
+工作线程合计约 0.77 秒，说明协调瓶颈仍在；本次元数据微基准的改善没有完成
+整个协调架构的优化。宿主 RSS 约 1.87GiB，未采 PSS，不能据此推导 iPad 物理 RAM 要求。
+
+随后使用相同生产 FFI，开启 Process/nsDocShell/DocumentChannel 模块日志及每 15 秒
+宿主导出，观察 180s。内容进程 116 已构造目标 file URI 的 DocumentChannelChild，
+而完整浏览器日志里未见该 URI 对应的父侧 OpenDocument；网页仍未通过。
+下一步查子侧 AsyncOpen 到父侧处理这段。构造函数日志不能证明 IPC 已发送，
+更不能据此认定消息丢失；本轮不以此猜测修改 socket/内存语义。
 
 上游解释也核对过：
 
@@ -57,7 +76,9 @@ SIGPROF 叶 PC 采样中，300–600 秒约 73.23% 的样本在协调线程，�
 其中 1600 个系统调用在 worker 内完成。相同 C 程序在宿主 Linux 通过。
 手工表搬移基准默认忽略，不加入每次 CI 跑分。
 
-Apple ARM64/16KiB 的定向 CI 只重查 Core 和新 clock ABI；复用源码未变的
+[Linux 与 Apple ARM64/16KiB 定向 CI](https://github.com/kb5000/trames/actions/runs/39414333180)
+在 `95830f6` 上通过：每平台 Core 87 项（手工基准 1 项忽略），原版 musl 双线程
+clock ABI 的 1/4 CPU 组也通过。只重查 Core 和新 ABI；复用源码未变的
 Memory/VFS/Linux/opcode/GPU/UI 验证。没有构建 IPA。
 
 测试探针新增默认关闭的 `--moz-log` 和 `--browser-log-interval`，后者通过宿主

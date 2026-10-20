@@ -1,0 +1,647 @@
+~ # [6nmkdir -p /root/firefox-probe-clock-content-log; ( MOZ_ENABLE_WAYLAND=1 GDK_B
+ACKEND=wayland XDG_RUNTIME_DIR=/run/user/0 WAYLAND_DISPLAY=wayland-0 MOZ_LOG=tim
+estamp,Process:5,nsDocShell:5,DocumentChannel:5 firefox --no-remote --profile /r
+oot/firefox-probe-clock-content-log file:///tmp/trames-firefox-122359337893845.h
+tml >/tmp/firefox-probe.log 2>&1; r=$?; printf "\nFIREFOX_PROBE_EXIT:%d\n" "$r";
+ ) </dev/null &
+~ # [6nprintf "\nFIREFOX_LOG_BEGIN\n"; cat /tmp/firefox-probe.log; printf "\nFIREFO
+X_DMESG_BEGIN\n"; dmesg; printf "\nFIREFOX_MEMORY_BEGIN\n"; cat /proc/meminfo; g
+rep -E 'Name:|Pid:|PPid:|VmRSS:|VmSize:|Threads:' /proc/[0-9]*/status; printf "\
+nFIREFOX_PROCESSES_BEGIN\n"; ps -T -o pid,ppid,stat,time,comm; printf "\nFIREFOX
+_DIAGNOSTICS_DONE\n"
+
+FIREFOX_LOG_BEGIN
+2026-10-20 11:25:36.389194 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=4b38f190, uri=chrome://browser/content/browser.xhtml]
+2026-10-20 11:25:36.389662 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel ctor [this=4b38f190]
+2026-10-20 11:25:36.390119 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel AsyncOpen [this=4b38f190]
+2026-10-20 11:25:36.390435 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=3c857610]
+2026-10-20 11:25:36.390660 UTC - [Parent 4: Main Thread]: V/DocumentChannel Created PPDocumentChannel with listener=3c857610
+2026-10-20 11:25:36.391027 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [3c857610] OpenDocument [uri=chrome://browser/content/browser.xhtml]
+2026-10-20 11:25:36.393231 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=489cc050]
+[Parent 4, Main Thread] WARNING: Failed to create DBus proxy for org.a11y.Bus: Cannot spawn a message bus without a machine-id: Unable to load /usr/var/lib/dbus/machine-id or /etc/machine-id: Failed to open file “/usr/var/lib/dbus/machine-id”: No such file or directory
+: 'glib warning', file /home/buildozer/aports/community/firefox/src/firefox-142.0/toolkit/xre/nsSigHandlers.cpp:201
+
+** (firefox:4): WARNING **: 11:25:37.275: Failed to create DBus proxy for org.a11y.Bus: Cannot spawn a message bus without a machine-id: Unable to load /usr/var/lib/dbus/machine-id or /etc/machine-id: Failed to open file “/usr/var/lib/dbus/machine-id”: No such file or directory
+
+2026-10-20 11:25:37.505615 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=489cc050]
+2026-10-20 11:25:37.506177 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=489cc050]
+2026-10-20 11:25:37.506833 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=3c857610]
+2026-10-20 11:25:37.507394 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener::TriggerRedirectToRealChannel [this=3c857610] aDestinationBrowsingContext=1 aDestinationProcess=-1
+2026-10-20 11:25:37.507729 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannel [this=3c857610] aRedirectFlags=4, aLoadFlags=3d0004
+2026-10-20 11:25:37.508528 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel RedirectToRealChannel [this=4b38f190]
+2026-10-20 11:25:39.751804 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel OnRedirectVerifyCallback [this=4b38f190 aResult=0]
+2026-10-20 11:25:39.753220 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel dtor [this=4b38f190]
+2026-10-20 11:25:41.598869 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannelFinished [this=3c857610, aRv=0 ]
+2026-10-20 11:25:41.599396 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener FinishReplacementChannelSetup [this=3c857610, aResult=0]
+2026-10-20 11:25:41.599801 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ResumeSuspendedChannel [this=3c857610]
+2026-10-20 11:25:41.803574 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=4b3a22f0, uri=chrome://extensions/content/dummy.xhtml]
+2026-10-20 11:25:41.804125 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel ctor [this=4b3a22f0]
+2026-10-20 11:25:41.804613 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel AsyncOpen [this=4b3a22f0]
+2026-10-20 11:25:41.804913 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=3c85d790]
+2026-10-20 11:25:41.805209 UTC - [Parent 4: Main Thread]: V/DocumentChannel Created PPDocumentChannel with listener=3c85d790
+2026-10-20 11:25:41.805612 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [3c85d790] OpenDocument [uri=chrome://extensions/content/dummy.xhtml]
+2026-10-20 11:25:41.809013 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=489d19b0]
+2026-10-20 11:25:45.501919 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=489cc050]
+2026-10-20 11:25:45.502624 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=3c857610]
+2026-10-20 11:25:46.333517 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=489d19b0]
+2026-10-20 11:25:46.333961 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=489d19b0]
+2026-10-20 11:25:46.334527 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=3c85d790]
+2026-10-20 11:25:46.334964 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener::TriggerRedirectToRealChannel [this=3c85d790] aDestinationBrowsingContext=2 aDestinationProcess=-1
+2026-10-20 11:25:46.335290 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannel [this=3c85d790] aRedirectFlags=4, aLoadFlags=3d0004
+2026-10-20 11:25:46.335933 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel RedirectToRealChannel [this=4b3a22f0]
+2026-10-20 11:25:48.668025 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel OnRedirectVerifyCallback [this=4b3a22f0 aResult=0]
+2026-10-20 11:25:48.669492 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel dtor [this=4b3a22f0]
+2026-10-20 11:25:52.078221 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannelFinished [this=3c85d790, aRv=0 ]
+2026-10-20 11:25:52.078749 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener FinishReplacementChannelSetup [this=3c85d790, aResult=0]
+2026-10-20 11:25:52.079016 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ResumeSuspendedChannel [this=3c85d790]
+2026-10-20 11:25:52.510872 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=489d19b0]
+2026-10-20 11:25:52.511700 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=3c85d790]
+2026-10-20 11:25:53.401385 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess for type extension
+2026-10-20 11:25:53.401971 UTC - [Parent 4: Main Thread]: D/Process Launching new process immediately for type extension
+2026-10-20 11:25:53.402501 UTC - [Parent 4: Main Thread]: V/Process CreateSubprocess: ContentParent id=470353710 mSubprocess id=87761c090 childID=3
+2026-10-20 11:25:53.441084 UTC - [Parent 4: Main Thread]: D/Process AddBlocker: extension 470353710 (sNumBlockers=0)
+2026-10-20 11:25:53.441933 UTC - [Parent 4: Main Thread]: D/Process Enabling preallocation: 3
+2026-10-20 11:25:53.442241 UTC - [Parent 4: Main Thread]: D/Process Starting delayed process start, delay=1000
+2026-10-20 11:25:53.443499 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess: new immediate process id=470353710 childID=3
+2026-10-20 11:25:54.021203 UTC - [Parent 4: Main Thread]: D/Process ContentParent::InitInternal: id=470353710, childID=3
+2026-10-20 11:25:54.079244 UTC - [Child 81: Main Thread]: D/Process Changed name of process 81 to Web Content
+2026-10-20 11:25:55.222715 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess for type extension
+2026-10-20 11:25:55.223407 UTC - [Parent 4: Main Thread]: D/Process GetUsedProcess: Reused process id=470353710 childID=3 for extension
+2026-10-20 11:25:55.270515 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess for type extension
+2026-10-20 11:25:55.271575 UTC - [Parent 4: Main Thread]: D/Process GetUsedProcess: Reused process id=470353710 childID=3 for extension
+2026-10-20 11:25:55.315298 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess for type extension
+2026-10-20 11:25:55.316040 UTC - [Parent 4: Main Thread]: D/Process GetUsedProcess: Reused process id=470353710 childID=3 for extension
+2026-10-20 11:25:55.355588 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess for type extension
+2026-10-20 11:25:55.356261 UTC - [Parent 4: Main Thread]: D/Process GetUsedProcess: Reused process id=470353710 childID=3 for extension
+2026-10-20 11:25:55.795077 UTC - [Parent 4: Main Thread]: D/Process Starting process allocate on idle
+2026-10-20 11:25:57.258808 UTC - [Child 81: Main Thread]: D/Process Setting remoteType of process 81 to extension
+2026-10-20 11:25:57.259798 UTC - [Child 81: Main Thread]: D/Process Changed name of process 81 to WebExtensions
+2026-10-20 11:25:57.929854 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040bf50, uri=about:blank]
+2026-10-20 11:25:57.938790 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040bf50, uri=about:blank]
+2026-10-20 11:25:58.139507 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040d210, uri=about:blank]
+2026-10-20 11:25:58.140778 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040d210, uri=about:blank]
+2026-10-20 11:25:58.351047 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040fc90, uri=about:blank]
+2026-10-20 11:25:58.353191 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040fc90, uri=about:blank]
+2026-10-20 11:25:58.524346 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=30410f50, uri=about:blank]
+2026-10-20 11:25:58.525692 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=30410f50, uri=about:blank]
+2026-10-20 11:25:58.673979 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=30412e90, uri=about:blank]
+2026-10-20 11:25:58.676285 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=30412e90, uri=about:blank]
+2026-10-20 11:25:58.743835 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ShutdownListeners [this=3040bf50, status=804b0002]
+2026-10-20 11:25:58.884851 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=30409890, uri=moz-extension://6c7d9719-4803-49b9-bf30-082dc29e17c8/_generated_background_page.html]
+2026-10-20 11:25:58.888563 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=30409890, uri=moz-extension://6c7d9719-4803-49b9-bf30-082dc29e17c8/_generated_background_page.html]
+2026-10-20 11:25:58.911578 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ShutdownListeners [this=3040d210, status=804b0002]
+2026-10-20 11:25:58.933899 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040bcd0, uri=moz-extension://ecc2f83b-83ca-46f2-8f33-ce2db648c4e3/_generated_background_page.html]
+2026-10-20 11:25:58.936564 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040bcd0, uri=moz-extension://ecc2f83b-83ca-46f2-8f33-ce2db648c4e3/_generated_background_page.html]
+2026-10-20 11:25:58.955990 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ShutdownListeners [this=3040fc90, status=804b0002]
+2026-10-20 11:25:58.968648 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040dad0, uri=moz-extension://a22bf963-79a5-48dc-9432-2a80c49a5b41/_generated_background_page.html]
+2026-10-20 11:25:58.970478 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040dad0, uri=moz-extension://a22bf963-79a5-48dc-9432-2a80c49a5b41/_generated_background_page.html]
+2026-10-20 11:25:58.988591 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ShutdownListeners [this=30410f50, status=804b0002]
+2026-10-20 11:25:59.002254 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040f790, uri=moz-extension://bf6742c7-efa0-4787-946d-8c096f0a925d/_generated_background_page.html]
+2026-10-20 11:25:59.005081 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040f790, uri=moz-extension://bf6742c7-efa0-4787-946d-8c096f0a925d/_generated_background_page.html]
+2026-10-20 11:25:59.026183 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ShutdownListeners [this=30412e90, status=804b0002]
+2026-10-20 11:25:59.039324 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=30411a90, uri=moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/_generated_background_page.html]
+2026-10-20 11:25:59.041542 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=30411a90, uri=moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/_generated_background_page.html]
+2026-10-20 11:25:59.140179 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=3040bf50]
+2026-10-20 11:25:59.153648 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=3040d210]
+2026-10-20 11:25:59.163282 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=3040fc90]
+2026-10-20 11:25:59.174153 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=30410f50]
+2026-10-20 11:25:59.189235 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=30412e90]
+2026-10-20 11:26:02.252640 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=87e907190]
+2026-10-20 11:26:02.253226 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=87e907190, uri=about:blank]
+2026-10-20 11:26:02.253509 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=877620590]
+2026-10-20 11:26:02.253782 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [877620590] OpenDocument [uri=about:blank]
+2026-10-20 11:26:02.271385 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=87586b590]
+2026-10-20 11:26:02.345849 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=8746cf890]
+2026-10-20 11:26:02.346304 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=8746cf890, uri=about:blank]
+2026-10-20 11:26:02.346551 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=877623a10]
+2026-10-20 11:26:02.347074 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [877623a10] OpenDocument [uri=about:blank]
+2026-10-20 11:26:02.352275 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=87c5e1d10]
+2026-10-20 11:26:02.385557 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=485c5490]
+2026-10-20 11:26:02.385961 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=485c5490, uri=about:blank]
+2026-10-20 11:26:02.386242 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=3c85c110]
+2026-10-20 11:26:02.386501 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [3c85c110] OpenDocument [uri=about:blank]
+2026-10-20 11:26:02.391748 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=48985790]
+2026-10-20 11:26:02.433787 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=8746d1990]
+2026-10-20 11:26:02.434409 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=8746d1990, uri=about:blank]
+2026-10-20 11:26:02.434700 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=877622990]
+2026-10-20 11:26:02.434985 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [877622990] OpenDocument [uri=about:blank]
+2026-10-20 11:26:02.440625 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=489c65b0]
+2026-10-20 11:26:02.589679 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=8746d1010]
+2026-10-20 11:26:02.590307 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=8746d1010, uri=about:blank]
+2026-10-20 11:26:02.590636 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=877622810]
+2026-10-20 11:26:02.590939 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [877622810] OpenDocument [uri=about:blank]
+2026-10-20 11:26:02.596825 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=875872bb0]
+2026-10-20 11:26:02.617822 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener Cancel [this=877620590, aStatusCode=804b0002 ]
+2026-10-20 11:26:02.618455 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener DisconnectListener [this=877620590, aStatus=804b0002, aLoadGroupStatus=804b0002, aContinueNavigating=0]
+2026-10-20 11:26:02.618863 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener Disconnect [this=877620590, aContinueNavigating=0]
+2026-10-20 11:26:02.630504 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent dtor [this=87e907190]
+2026-10-20 11:26:02.682650 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=8746d3e90]
+2026-10-20 11:26:02.683249 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=8746d3e90, uri=moz-extension://6c7d9719-4803-49b9-bf30-082dc29e17c8/_generated_background_page.html]
+2026-10-20 11:26:02.683549 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=87761fc90]
+2026-10-20 11:26:02.683845 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [87761fc90] OpenDocument [uri=moz-extension://6c7d9719-4803-49b9-bf30-082dc29e17c8/_generated_background_page.html]
+2026-10-20 11:26:02.689798 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=8758777f0]
+2026-10-20 11:26:02.715546 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener Cancel [this=877623a10, aStatusCode=804b0002 ]
+2026-10-20 11:26:02.715954 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener DisconnectListener [this=877623a10, aStatus=804b0002, aLoadGroupStatus=804b0002, aContinueNavigating=0]
+2026-10-20 11:26:02.716266 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener Disconnect [this=877623a10, aContinueNavigating=0]
+2026-10-20 11:26:02.718610 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent dtor [this=8746cf890]
+2026-10-20 11:26:02.771400 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=8746d2d10]
+2026-10-20 11:26:02.771925 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=8746d2d10, uri=moz-extension://ecc2f83b-83ca-46f2-8f33-ce2db648c4e3/_generated_background_page.html]
+2026-10-20 11:26:02.772224 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=877624010]
+2026-10-20 11:26:02.772587 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [877624010] OpenDocument [uri=moz-extension://ecc2f83b-83ca-46f2-8f33-ce2db648c4e3/_generated_background_page.html]
+2026-10-20 11:26:02.777550 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=307d8210]
+2026-10-20 11:26:02.818837 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener Cancel [this=3c85c110, aStatusCode=804b0002 ]
+2026-10-20 11:26:02.819266 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener DisconnectListener [this=3c85c110, aStatus=804b0002, aLoadGroupStatus=804b0002, aContinueNavigating=0]
+2026-10-20 11:26:02.819572 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener Disconnect [this=3c85c110, aContinueNavigating=0]
+2026-10-20 11:26:02.831724 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent dtor [this=485c5490]
+2026-10-20 11:26:02.882737 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=8746d3890]
+2026-10-20 11:26:02.883135 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=8746d3890, uri=moz-extension://a22bf963-79a5-48dc-9432-2a80c49a5b41/_generated_background_page.html]
+2026-10-20 11:26:02.883380 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=877624a90]
+2026-10-20 11:26:02.883623 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [877624a90] OpenDocument [uri=moz-extension://a22bf963-79a5-48dc-9432-2a80c49a5b41/_generated_background_page.html]
+2026-10-20 11:26:02.888549 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=307cccd0]
+2026-10-20 11:26:02.914977 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener Cancel [this=877622990, aStatusCode=804b0002 ]
+2026-10-20 11:26:02.915354 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener DisconnectListener [this=877622990, aStatus=804b0002, aLoadGroupStatus=804b0002, aContinueNavigating=0]
+2026-10-20 11:26:02.915630 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener Disconnect [this=877622990, aContinueNavigating=0]
+2026-10-20 11:26:02.918311 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent dtor [this=8746d1990]
+2026-10-20 11:26:02.956355 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=8746d4390]
+2026-10-20 11:26:02.956729 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=8746d4390, uri=moz-extension://bf6742c7-efa0-4787-946d-8c096f0a925d/_generated_background_page.html]
+2026-10-20 11:26:02.956965 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=877624c10]
+2026-10-20 11:26:02.957225 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [877624c10] OpenDocument [uri=moz-extension://bf6742c7-efa0-4787-946d-8c096f0a925d/_generated_background_page.html]
+2026-10-20 11:26:02.962632 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=875879b90]
+2026-10-20 11:26:02.997695 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener Cancel [this=877622810, aStatusCode=804b0002 ]
+2026-10-20 11:26:02.998157 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener DisconnectListener [this=877622810, aStatus=804b0002, aLoadGroupStatus=804b0002, aContinueNavigating=0]
+2026-10-20 11:26:02.998471 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener Disconnect [this=877622810, aContinueNavigating=0]
+2026-10-20 11:26:03.001075 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent dtor [this=8746d1010]
+2026-10-20 11:26:03.049427 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=8746d4190]
+2026-10-20 11:26:03.049963 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=8746d4190, uri=moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/_generated_background_page.html]
+2026-10-20 11:26:03.050278 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=877625390]
+2026-10-20 11:26:03.050572 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [877625390] OpenDocument [uri=moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/_generated_background_page.html]
+2026-10-20 11:26:03.059475 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=48981c30]
+2026-10-20 11:26:03.099795 UTC - [Parent 4: Main Thread]: V/Process RecvFirstIdle id=470353710 childID=3: Removing Blocker for extension
+2026-10-20 11:26:03.100124 UTC - [Parent 4: Main Thread]: D/Process RemoveBlocker: extension 470353710 (sNumBlockers=1)
+2026-10-20 11:26:03.100375 UTC - [Parent 4: Main Thread]: D/Process Blocked preallocation for 9656.945685ms
+2026-10-20 11:26:03.100566 UTC - [Parent 4: Main Thread]: D/Process Starting delayed process start, delay=1000
+2026-10-20 11:26:03.587363 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=87586b590]
+2026-10-20 11:26:03.587750 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=87586b590]
+2026-10-20 11:26:03.588104 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=877620590]
+2026-10-20 11:26:03.588601 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStopRequest [this=877620590]
+2026-10-20 11:26:03.588875 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=877620590]
+2026-10-20 11:26:03.589252 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=87586b590]
+2026-10-20 11:26:03.686223 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=87c5e1d10]
+2026-10-20 11:26:03.686661 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=87c5e1d10]
+2026-10-20 11:26:03.686997 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=877623a10]
+2026-10-20 11:26:03.687445 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStopRequest [this=877623a10]
+2026-10-20 11:26:03.687772 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=877623a10]
+2026-10-20 11:26:03.688502 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=87c5e1d10]
+2026-10-20 11:26:03.694528 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=48985790]
+2026-10-20 11:26:03.694886 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=48985790]
+2026-10-20 11:26:03.695303 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=3c85c110]
+2026-10-20 11:26:03.695769 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStopRequest [this=3c85c110]
+2026-10-20 11:26:03.696100 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=3c85c110]
+2026-10-20 11:26:03.696575 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=48985790]
+2026-10-20 11:26:03.699047 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=489c65b0]
+2026-10-20 11:26:03.699302 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=489c65b0]
+2026-10-20 11:26:03.699530 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=877622990]
+2026-10-20 11:26:03.699895 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStopRequest [this=877622990]
+2026-10-20 11:26:03.700147 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=877622990]
+2026-10-20 11:26:03.700566 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=489c65b0]
+2026-10-20 11:26:03.766078 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=875872bb0]
+2026-10-20 11:26:03.766549 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=875872bb0]
+2026-10-20 11:26:03.766874 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=877622810]
+2026-10-20 11:26:03.767329 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStopRequest [this=877622810]
+2026-10-20 11:26:03.767605 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=877622810]
+2026-10-20 11:26:03.768071 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=875872bb0]
+2026-10-20 11:26:03.797558 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=8758777f0]
+2026-10-20 11:26:03.797880 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=8758777f0]
+2026-10-20 11:26:03.798380 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=87761fc90]
+2026-10-20 11:26:03.799072 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener::TriggerRedirectToRealChannel [this=87761fc90] aDestinationBrowsingContext=3 aDestinationProcess=-1
+2026-10-20 11:26:03.799527 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannel [this=87761fc90] aRedirectFlags=4, aLoadFlags=3d0004
+2026-10-20 11:26:03.808189 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=307d8210]
+2026-10-20 11:26:03.808434 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=307d8210]
+2026-10-20 11:26:03.808884 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=877624010]
+2026-10-20 11:26:03.808944 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild RecvRedirectToRealChannel [this=30409890, uri=moz-extension://6c7d9719-4803-49b9-bf30-082dc29e17c8/_generated_background_page.html]
+2026-10-20 11:26:03.809590 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener::TriggerRedirectToRealChannel [this=877624010] aDestinationBrowsingContext=4 aDestinationProcess=-1
+2026-10-20 11:26:03.809925 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannel [this=877624010] aRedirectFlags=4, aLoadFlags=3d0004
+2026-10-20 11:26:03.819317 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=307cccd0]
+2026-10-20 11:26:03.820399 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=307cccd0]
+2026-10-20 11:26:03.820729 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=877624a90]
+2026-10-20 11:26:03.821227 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener::TriggerRedirectToRealChannel [this=877624a90] aDestinationBrowsingContext=5 aDestinationProcess=-1
+2026-10-20 11:26:03.821705 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannel [this=877624a90] aRedirectFlags=4, aLoadFlags=3d0004
+2026-10-20 11:26:03.823854 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild RecvRedirectToRealChannel [this=3040bcd0, uri=moz-extension://ecc2f83b-83ca-46f2-8f33-ce2db648c4e3/_generated_background_page.html]
+2026-10-20 11:26:03.831688 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=875879b90]
+2026-10-20 11:26:03.832176 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=875879b90]
+2026-10-20 11:26:03.832100 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild OnRedirectVerifyCallback [this=30409890, aRv=0x00000000 ]
+2026-10-20 11:26:03.832596 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=877624c10]
+2026-10-20 11:26:03.833182 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener::TriggerRedirectToRealChannel [this=877624c10] aDestinationBrowsingContext=6 aDestinationProcess=-1
+2026-10-20 11:26:03.833506 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannel [this=877624c10] aRedirectFlags=4, aLoadFlags=3d0004
+2026-10-20 11:26:03.837272 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=30409890]
+2026-10-20 11:26:03.843361 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild RecvRedirectToRealChannel [this=3040dad0, uri=moz-extension://a22bf963-79a5-48dc-9432-2a80c49a5b41/_generated_background_page.html]
+2026-10-20 11:26:03.846370 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=48981c30]
+2026-10-20 11:26:03.846572 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=48981c30]
+2026-10-20 11:26:03.846882 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=877625390]
+2026-10-20 11:26:03.847756 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener::TriggerRedirectToRealChannel [this=877625390] aDestinationBrowsingContext=7 aDestinationProcess=-1
+2026-10-20 11:26:03.848659 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannel [this=877625390] aRedirectFlags=4, aLoadFlags=3d0004
+2026-10-20 11:26:04.116219 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild RecvRedirectToRealChannel [this=3040f790, uri=moz-extension://bf6742c7-efa0-4787-946d-8c096f0a925d/_generated_background_page.html]
+2026-10-20 11:26:04.151667 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild OnRedirectVerifyCallback [this=3040bcd0, aRv=0x00000000 ]
+2026-10-20 11:26:04.157560 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=3040bcd0]
+2026-10-20 11:26:04.167577 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild RecvRedirectToRealChannel [this=30411a90, uri=moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/_generated_background_page.html]
+2026-10-20 11:26:05.901311 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannelFinished [this=87761fc90, aRv=0 ]
+2026-10-20 11:26:05.901851 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener FinishReplacementChannelSetup [this=87761fc90, aResult=0]
+2026-10-20 11:26:05.902185 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ResumeSuspendedChannel [this=87761fc90]
+2026-10-20 11:26:05.904246 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=87761fc90]
+2026-10-20 11:26:05.905997 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent dtor [this=8746d3e90]
+2026-10-20 11:26:06.342494 UTC - [Parent 4: Main Thread]: D/Process Starting process allocate on idle
+2026-10-20 11:26:06.345673 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannelFinished [this=877624010, aRv=0 ]
+2026-10-20 11:26:06.346013 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener FinishReplacementChannelSetup [this=877624010, aResult=0]
+2026-10-20 11:26:06.346297 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ResumeSuspendedChannel [this=877624010]
+2026-10-20 11:26:06.347300 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=877624010]
+2026-10-20 11:26:06.348910 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent dtor [this=8746d2d10]
+2026-10-20 11:26:07.686797 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=8758777f0]
+2026-10-20 11:26:07.983831 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=307d8210]
+2026-10-20 11:26:08.089496 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild OnRedirectVerifyCallback [this=3040dad0, aRv=0x00000000 ]
+2026-10-20 11:26:08.095163 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=3040dad0]
+2026-10-20 11:26:08.234282 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild OnRedirectVerifyCallback [this=3040f790, aRv=0x00000000 ]
+2026-10-20 11:26:08.239568 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=3040f790]
+2026-10-20 11:26:09.576739 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannelFinished [this=877624a90, aRv=0 ]
+2026-10-20 11:26:09.577329 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener FinishReplacementChannelSetup [this=877624a90, aResult=0]
+2026-10-20 11:26:09.577634 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ResumeSuspendedChannel [this=877624a90]
+2026-10-20 11:26:09.578521 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=877624a90]
+2026-10-20 11:26:09.580808 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent dtor [this=8746d3890]
+2026-10-20 11:26:09.609070 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannelFinished [this=877624c10, aRv=0 ]
+2026-10-20 11:26:09.609382 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener FinishReplacementChannelSetup [this=877624c10, aResult=0]
+2026-10-20 11:26:09.609629 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ResumeSuspendedChannel [this=877624c10]
+2026-10-20 11:26:09.610553 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=877624c10]
+2026-10-20 11:26:09.690882 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent dtor [this=8746d4390]
+2026-10-20 11:26:09.891988 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=307cccd0]
+2026-10-20 11:26:09.894236 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=875879b90]
+2026-10-20 11:26:10.422564 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild OnRedirectVerifyCallback [this=30411a90, aRv=0x00000000 ]
+2026-10-20 11:26:10.428131 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=30411a90]
+2026-10-20 11:26:10.801447 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannelFinished [this=877625390, aRv=0 ]
+2026-10-20 11:26:10.802000 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener FinishReplacementChannelSetup [this=877625390, aResult=0]
+2026-10-20 11:26:10.802328 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ResumeSuspendedChannel [this=877625390]
+2026-10-20 11:26:10.803398 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=877625390]
+2026-10-20 11:26:10.805017 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent dtor [this=8746d4190]
+2026-10-20 11:26:11.709966 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=48981c30]
+2026-10-20 11:26:16.645762 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess for type file
+2026-10-20 11:26:16.646438 UTC - [Parent 4: Main Thread]: D/Process Launching new process immediately for type file
+2026-10-20 11:26:16.646971 UTC - [Parent 4: Main Thread]: V/Process CreateSubprocess: ContentParent id=c87e0e110 mSubprocess id=c8738ee90 childID=5
+2026-10-20 11:26:16.684647 UTC - [Parent 4: Main Thread]: D/Process AddBlocker: file c87e0e110 (sNumBlockers=0)
+2026-10-20 11:26:16.685303 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess: new immediate process id=c87e0e110 childID=5
+2026-10-20 11:26:17.140386 UTC - [Parent 4: Main Thread]: D/Process ContentParent::InitInternal: id=c87e0e110, childID=5
+2026-10-20 11:26:17.526097 UTC - [Child 116: Main Thread]: D/Process Changed name of process 116 to Web Content
+2026-10-20 11:26:19.152030 UTC - [Child 116: Main Thread]: D/Process Setting remoteType of process 116 to file
+2026-10-20 11:26:19.153045 UTC - [Child 116: Main Thread]: D/Process Changed name of process 116 to file:// Content
+2026-10-20 11:26:27.749410 UTC - [Parent 4: Main Thread]: V/Process RecvFirstIdle id=c87e0e110 childID=5: Removing Blocker for file
+2026-10-20 11:26:27.750077 UTC - [Parent 4: Main Thread]: D/Process RemoveBlocker: file c87e0e110 (sNumBlockers=1)
+2026-10-20 11:26:27.750544 UTC - [Parent 4: Main Thread]: D/Process Blocked preallocation for 11065.189301ms
+2026-10-20 11:26:27.750931 UTC - [Parent 4: Main Thread]: D/Process Starting delayed process start, delay=1000
+2026-10-20 11:26:33.963215 UTC - [Parent 4: Main Thread]: D/Process Starting process allocate on idle
+Crash Annotation GraphicsCriticalError: |[0][GFX1-]: Calling WaitFlushedEvent::Run: is delayed: 4150 (t=99.617) [GFX1-]: Calling WaitFlushedEvent::Run: is delayed: 4150
+2026-10-20 11:26:46.808961 UTC - [Child 116: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040eb10, uri=file:///tmp/trames-firefox-122359337893845.html]
+2026-10-20 11:26:46.813404 UTC - [Child 116: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040eb10, uri=file:///tmp/trames-firefox-122359337893845.html]
+2026-10-20 11:26:52.827294 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess for type webIsolated=https://mozilla.org
+2026-10-20 11:26:52.827921 UTC - [Parent 4: Main Thread]: D/Process Launching new process immediately for type webIsolated=https://mozilla.org
+2026-10-20 11:26:52.829012 UTC - [Parent 4: Main Thread]: V/Process CreateSubprocess: ContentParent id=ca36a8510 mSubprocess id=ca3890b10 childID=6
+2026-10-20 11:26:52.873858 UTC - [Parent 4: Main Thread]: D/Process AddBlocker: webIsolated=https://mozilla.org ca36a8510 (sNumBlockers=0)
+2026-10-20 11:26:52.874255 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess: new immediate process id=ca36a8510 childID=6
+2026-10-20 11:26:53.309817 UTC - [Parent 4: Main Thread]: D/Process ContentParent::InitInternal: id=ca36a8510, childID=6
+2026-10-20 11:26:54.324390 UTC - [Child 140: Main Thread]: D/Process Changed name of process 140 to Web Content
+2026-10-20 11:26:54.585242 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener::OpenFromParent
+2026-10-20 11:26:54.586267 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=ca3893690]
+2026-10-20 11:26:54.596252 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=c8be07a90]
+2026-10-20 11:26:56.842874 UTC - [Child 140: Main Thread]: D/Process Setting remoteType of process 140 to webIsolated=https://mozilla.org
+2026-10-20 11:26:56.843907 UTC - [Child 140: Main Thread]: D/Process Changed name of process 140 to Isolated Web Content
+2026-10-20 11:26:57.733613 UTC - [Child 140: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040af10, uri=https://www.mozilla.org/privacy/firefox/]
+2026-10-20 11:26:57.743819 UTC - [Child 140: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040af10, uri=https://www.mozilla.org/privacy/firefox/]
+
+FIREFOX_DMESG_BEGIN
+[2.888523] pid=15 syscall=200(bind) pc=0x700414fc args=[1d, 455ac678, c, 0, 0, 0] unsupported errno=95 comm="Netlink Monitor"
+[41.189554] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 4725888c8, 0, 472588a90, 2e, 0] unsupported errno=38 comm="DOM Worker"
+[41.219754] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 472588660, 0, 47e950c8, 47e95008, 47e950c8] unsupported errno=38 comm="DOM Worker"
+[47.651946] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 4725888c8, ffffffffffff4760, 47258a0b8, 47258cc90, 0] unsupported errno=38 comm="DOM Worker"
+[47.786358] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 472588660, 0, 47e950c8, 47e95008, 47e950c8] unsupported errno=38 comm="DOM Worker"
+[53.737491] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 472588f18, fffffffffffdce60, 47258a0b0, 47258cc90, 0] unsupported errno=38 comm="DOM Worker"
+[54.946155] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 472588cb0, 0, 47e950c8, 47e95008, 47e950c8] unsupported errno=38 comm="DOM Worker"
+[54.963638] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 472588f18, 6640, 47258a120, 47258cc90, 0] unsupported errno=38 comm="DOM Worker"
+[55.060621] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 472588cb0, 0, 47e950c8, 47e95008, 47e950c8] unsupported errno=38 comm="DOM Worker"
+[60.177481] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdd48, 0, 7fffffefdf10, 28, 0] unsupported errno=38 comm="firefox"
+[60.184061] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdae0, 0, 10, 3b743264, 0] unsupported errno=38 comm="firefox"
+[60.188687] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 472588f18, f4a0, 47258a108, 47258cc90, 0] unsupported errno=38 comm="DOM Worker"
+[60.257159] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 472588cb0, 0, 47e950c8, 47e95008, 47e950c8] unsupported errno=38 comm="DOM Worker"
+[61.205787] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefc268, 7fffffefbdc0, 878704ac0, 200, 2d40] unsupported errno=38 comm="firefox"
+[61.206422] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefc000, 0, 10, 100, 2d40] unsupported errno=38 comm="firefox"
+[62.501660] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdd48, 7fffffefd8a0, 87ea135c0, 200, 2d40] unsupported errno=38 comm="firefox"
+[63.614527] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdae0, 0, 1, 365f104c, 1] unsupported errno=38 comm="firefox"
+[64.843678] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdd48, 7fffffefd8a0, 87ea13e40, 200, 2d40] unsupported errno=38 comm="firefox"
+[64.944881] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdae0, 0, 351c3490, 100, 2d40] unsupported errno=38 comm="firefox"
+[65.880723] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdd48, 7fffffefd8a0, 87ea13e80, 200, 2d40] unsupported errno=38 comm="firefox"
+[65.981853] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdae0, 0, 351ebe44, 277a5d3132e0, 0] unsupported errno=38 comm="firefox"
+[66.509746] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdd48, 7fffffefd8a0, 45d00680, 200, 2d40] unsupported errno=38 comm="firefox"
+[66.601527] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdae0, 0, 351ebe44, 100, 2d40] unsupported errno=38 comm="firefox"
+[67.667098] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdd48, 7fffffefd8a0, 45d03a00, 200, 2d40] unsupported errno=38 comm="firefox"
+[67.776678] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdae0, 0, 10, 30310e90, 0] unsupported errno=38 comm="firefox"
+[76.468119] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffef8f58, 7fffffef8ab0, c8b58f200, 200, 2d40] unsupported errno=38 comm="firefox"
+[76.609106] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffef8cf0, 0, 10, 30310e90, 0] unsupported errno=38 comm="firefox"
+[83.892036] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdd48, 7fffffefd8a0, 87ea68900, 200, 2d40] unsupported errno=38 comm="firefox"
+[84.067018] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdae0, 0, 10, 30310e90, 0] unsupported errno=38 comm="firefox"
+[90.230325] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdd48, 7fffffefd8a0, 87ea4c780, 200, 2d40] unsupported errno=38 comm="firefox"
+[90.397675] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdae0, 0, 10, 30310e90, 0] unsupported errno=38 comm="firefox"
+[90.497317] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 4725893c8, 11020, 47258a138, 47258cc90, 0] unsupported errno=38 comm="DOM Worker"
+[91.591768] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 472589160, 0, 47e950c8, 47e95008, 47e950c8] unsupported errno=38 comm="DOM Worker"
+[91.688552] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 4725893c8, 1b700, 47258a0f8, 47258cc90, 0] unsupported errno=38 comm="DOM Worker"
+[91.926300] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 472589160, 0, 47e950c8, 47e95008, 47e950c8] unsupported errno=38 comm="DOM Worker"
+[91.928622] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 4725890a8, 3fc20, 47258a120, 47258cc90, 0] unsupported errno=38 comm="DOM Worker"
+[91.947251] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 472588e40, 0, 47e950c8, 47e95008, 47e950c8] unsupported errno=38 comm="DOM Worker"
+[91.949430] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 472589288, 3fdc0, 47258a120, 47258cc90, 0] unsupported errno=38 comm="DOM Worker"
+[91.961433] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 472589020, 0, 47e950c8, 47e95008, 47e950c8] unsupported errno=38 comm="DOM Worker"
+[92.001621] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdd48, 7fffffefd8a0, 87ea6e5c0, 200, 2d40] unsupported errno=38 comm="firefox"
+[92.112973] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdae0, 0, 30310188, 30310e90, 0] unsupported errno=38 comm="firefox"
+[114.280972] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdd48, 7fffffefd8a0, 87ea70880, 200, 2d40] unsupported errno=38 comm="firefox"
+[114.313898] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdae0, 0, 3d4a90c8, 3d4a9008, 3d4a90c8] unsupported errno=38 comm="firefox"
+[114.388813] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb78, 0, 7fffffefdd40, 28, 0] unsupported errno=38 comm="file:// Content"
+[114.429618] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd910, 0, 1, 359e4074, 1] unsupported errno=38 comm="file:// Content"
+[114.475641] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb78, 7fffffefd9b0, 3091d020, 100, 2d40] unsupported errno=38 comm="file:// Content"
+[114.480181] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd910, 0, 350b4ad4, 65, 0] unsupported errno=38 comm="file:// Content"
+[114.638497] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb78, 31ece0, 303be2e8, 3077ee50, 303c0e90] unsupported errno=38 comm="file:// Content"
+[114.645274] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd910, 0, 350347f4, 65, 0] unsupported errno=38 comm="file:// Content"
+[114.902508] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 0, 7fffffefdcd0, 2f, 0] unsupported errno=38 comm="file:// Content"
+[114.906617] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 1, 65, 0] unsupported errno=38 comm="file:// Content"
+[115.165758] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 0, 7fffffefdcd0, 2f, 0] unsupported errno=38 comm="file:// Content"
+[115.181261] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 10, 44f95290, 303c0e90] unsupported errno=38 comm="file:// Content"
+[115.443888] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 323bc0, 303be410, 32de2530, 303c0e90] unsupported errno=38 comm="file:// Content"
+[115.456664] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 10, 359e4074, 0] unsupported errno=38 comm="file:// Content"
+[115.476800] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb78, 0, 7fffffefdd40, 2f, 0] unsupported errno=38 comm="file:// Content"
+[115.478241] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd910, 0, 1, 65, 0] unsupported errno=38 comm="file:// Content"
+[115.486739] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb78, 0, 7fffffefdd40, 2f, 0] unsupported errno=38 comm="file:// Content"
+[115.488654] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd910, 0, 1, 65, 0] unsupported errno=38 comm="file:// Content"
+[115.575112] pid=139 syscall=165(getrusage) pc=0x7003d98c args=[0, ca64a58c8, 0, ca64a5a90, 2e, 0] unsupported errno=38 comm="DOM Worker"
+[115.695599] pid=139 syscall=165(getrusage) pc=0x7003d98c args=[0, ca64a5660, 0, ca3def0c8, ca3def008, ca3def0c8] unsupported errno=38 comm="DOM Worker"
+[115.761136] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 0, 7fffffefdcd0, 2f, 0] unsupported errno=38 comm="file:// Content"
+[115.775790] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 10, 65, 0] unsupported errno=38 comm="file:// Content"
+[118.241441] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 3259c0, 303be4b8, 32e92710, 303c0e90] unsupported errno=38 comm="file:// Content"
+[118.593346] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 1, 30920314, 30920294] unsupported errno=38 comm="file:// Content"
+[121.255094] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 0, 7fffffefdcd0, 2f, 1] unsupported errno=38 comm="file:// Content"
+[121.683699] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 1, 65, 0] unsupported errno=38 comm="file:// Content"
+[124.095370] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 0, 7fffffefdcd0, 2f, 1] unsupported errno=38 comm="file:// Content"
+[124.606496] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 1, 65, 0] unsupported errno=38 comm="file:// Content"
+[126.596685] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 0, 7fffffefdcd0, 2f, 1] unsupported errno=38 comm="file:// Content"
+[127.069529] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 1, 65, 0] unsupported errno=38 comm="file:// Content"
+[129.062631] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 0, 7fffffefdcd0, 2f, 1] unsupported errno=38 comm="file:// Content"
+[129.473655] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 1, 65, 0] unsupported errno=38 comm="file:// Content"
+[131.694442] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 0, 7fffffefdcd0, 2f, 1] unsupported errno=38 comm="file:// Content"
+[132.017633] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 1, 65, 0] unsupported errno=38 comm="file:// Content"
+[132.503400] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 0, 7fffffefdcd0, 2f, 1] unsupported errno=38 comm="file:// Content"
+[132.659672] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 303bf688, 303c0e90, 0] unsupported errno=38 comm="file:// Content"
+[132.728939] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb78, 0, 7fffffefdd40, 2f, 1] unsupported errno=38 comm="file:// Content"
+[133.264796] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd910, 0, 0, 0, 0] unsupported errno=38 comm="file:// Content"
+[134.024295] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 39ff80, 303be6a0, 3040eed0, 303c0e90] unsupported errno=38 comm="file:// Content"
+[134.322212] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 1, 65, 0] unsupported errno=38 comm="file:// Content"
+[135.450161] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 0, 7fffffefdcd0, 2f, 1] unsupported errno=38 comm="file:// Content"
+[135.747897] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 1, 65, 0] unsupported errno=38 comm="file:// Content"
+[137.084959] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 0, 7fffffefdcd0, 2f, 1] unsupported errno=38 comm="file:// Content"
+[137.484747] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 1, 65, 0] unsupported errno=38 comm="file:// Content"
+[139.226573] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 0, 7fffffefdcd0, 2f, 1] unsupported errno=38 comm="file:// Content"
+[139.745810] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 1, 65, 0] unsupported errno=38 comm="file:// Content"
+[141.734465] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 0, 7fffffefdcd0, 2f, 1] unsupported errno=38 comm="file:// Content"
+[142.262219] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 1, 65, 0] unsupported errno=38 comm="file:// Content"
+[144.751974] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 0, 7fffffefdcd0, 2f, 1] unsupported errno=38 comm="file:// Content"
+[145.130043] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 1, 65, 0] unsupported errno=38 comm="file:// Content"
+[147.239490] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 0, 7fffffefdcd0, 2f, 1] unsupported errno=38 comm="file:// Content"
+[147.681177] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 1, 65, 0] unsupported errno=38 comm="file:// Content"
+[149.376362] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 0, 7fffffefdcd0, 2f, 1] unsupported errno=38 comm="file:// Content"
+[149.741731] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 1, 65, 0] unsupported errno=38 comm="file:// Content"
+[151.376363] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 0, 7fffffefdcd0, 2f, 1] unsupported errno=38 comm="file:// Content"
+[151.851054] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 1, 65, 0] unsupported errno=38 comm="file:// Content"
+[152.651128] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 0, 7fffffefdcd0, 2f, 1] unsupported errno=38 comm="file:// Content"
+[152.782806] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 10, 32df5e78, 0] unsupported errno=38 comm="file:// Content"
+[153.711577] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 0, 7fffffefdcd0, 2f, 1] unsupported errno=38 comm="file:// Content"
+[155.405377] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 10, 1, 0] unsupported errno=38 comm="file:// Content"
+[157.456186] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 0, 7fffffefdcd0, 2f, 1] unsupported errno=38 comm="file:// Content"
+[157.663591] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 42d330c8, 42d33008, 42d330c8] unsupported errno=38 comm="file:// Content"
+[161.384796] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdd98, 7fffffefdc38, 303be6b0, 303c0e90, 0] unsupported errno=38 comm="WebExtensions"
+[163.633894] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdd98, 7fffffefdc38, 30920c40, 100, 2d40] unsupported errno=38 comm="file:// Content"
+[164.302257] pid=167 syscall=165(getrusage) pc=0x7003d98c args=[0, 46e89558, 46e893f8, 3092c340, 100, 2d40] unsupported errno=38 comm="StreamTrans #2"
+[166.415208] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 0, 7fffffefdcd0, 26, 0] unsupported errno=38 comm="WebExtensions"
+[167.212557] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8a0, 0, 10, 3b61b264, 0] unsupported errno=38 comm="WebExtensions"
+[167.752767] pid=168 syscall=165(getrusage) pc=0x7003d98c args=[0, 45bf2558, 45bf23f8, 45bf3480, 45bf5c90, 0] unsupported errno=38 comm="StreamTrans #1"
+[171.373886] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefca58, 7fffffefc890, 309275a0, 100, 2d40] unsupported errno=38 comm="WebExtensions"
+[171.500878] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefc7f0, 0, 10, 3092c0b4, 3092d2f4] unsupported errno=38 comm="WebExtensions"
+[185.034121] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb08, 904060, 303be320, 44ff48d0, 303c0e90] unsupported errno=38 comm="WebExtensions"
+
+FIREFOX_MEMORY_BEGIN
+MemTotal:  4194304 kB
+MemFree:  2168504 kB
+MemAvailable:  2168504 kB
+Buffers: 0 kB
+Cached: 0 kB
+SwapTotal: 0 kB
+SwapFree: 0 kB
+/proc/1/status:Name:	ash
+/proc/1/status:Pid:	1
+/proc/1/status:PPid:	0
+/proc/1/status:TracerPid:	0
+/proc/1/status:VmSize:	2744 kB
+/proc/1/status:VmRSS:	1784 kB
+/proc/1/status:Threads:	1
+/proc/116/status:Name:	file:// Content
+/proc/116/status:Pid:	116
+/proc/116/status:PPid:	73
+/proc/116/status:TracerPid:	0
+/proc/116/status:VmSize:	2932240 kB
+/proc/116/status:VmRSS:	276900 kB
+/proc/116/status:Threads:	21
+/proc/140/status:Name:	Isolated Web Co
+/proc/140/status:Pid:	140
+/proc/140/status:PPid:	73
+/proc/140/status:TracerPid:	0
+/proc/140/status:VmSize:	2920840 kB
+/proc/140/status:VmRSS:	276612 kB
+/proc/140/status:Threads:	16
+/proc/3/status:Name:	ash
+/proc/3/status:Pid:	3
+/proc/3/status:PPid:	1
+/proc/3/status:TracerPid:	0
+/proc/3/status:VmSize:	2744 kB
+/proc/3/status:VmRSS:	1780 kB
+/proc/3/status:Threads:	1
+/proc/4/status:Name:	firefox
+/proc/4/status:Pid:	4
+/proc/4/status:PPid:	3
+/proc/4/status:TracerPid:	0
+/proc/4/status:VmSize:	11573084 kB
+/proc/4/status:VmRSS:	407388 kB
+/proc/4/status:Threads:	69
+/proc/64/status:Name:	Socket Process
+/proc/64/status:Pid:	64
+/proc/64/status:PPid:	4
+/proc/64/status:TracerPid:	0
+/proc/64/status:VmSize:	733032 kB
+/proc/64/status:VmRSS:	188136 kB
+/proc/64/status:Threads:	7
+/proc/73/status:Name:	forkserver
+/proc/73/status:Pid:	73
+/proc/73/status:PPid:	4
+/proc/73/status:TracerPid:	0
+/proc/73/status:VmSize:	799464 kB
+/proc/73/status:VmRSS:	264440 kB
+/proc/73/status:Threads:	1
+/proc/81/status:Name:	WebExtensions
+/proc/81/status:Pid:	81
+/proc/81/status:PPid:	73
+/proc/81/status:TracerPid:	0
+/proc/81/status:VmSize:	2955184 kB
+/proc/81/status:VmRSS:	291488 kB
+/proc/81/status:Threads:	21
+/proc/86/status:Name:	RDD Process
+/proc/86/status:Pid:	86
+/proc/86/status:PPid:	73
+/proc/86/status:TracerPid:	0
+/proc/86/status:VmSize:	902560 kB
+/proc/86/status:VmRSS:	315776 kB
+/proc/86/status:Threads:	4
+
+FIREFOX_PROCESSES_BEGIN
+PID   PPID  STAT TIME  COMMAND
+    1     0 S     0:00 ash
+  116    73 S     0:02 file:// Content
+  118    73 S     0:00 AsyncSi~lThread
+  119    73 S     0:00 IPC I/O Child
+  125    73 S     0:00 Socket Thread
+  126    73 S     0:00 HTML5 Parser
+  127    73 S     0:00 StyleThread#1
+  128    73 S     0:00 StyleThread#2
+  129    73 S     0:00 JS Watchdog
+  130    73 S     0:00 Backgro~Pool #1
+  131    73 S     0:00 RemVidChild
+  132    73 S     0:00 ImageIO
+  133    73 S     0:00 Worker Launcher
+  134    73 S     0:00 Timer
+  135    73 S     0:00 ImageBridgeChld
+  136    73 S     0:00 ProcessHangMon
+  137    73 S     0:00 ProfilerChild
+  163    73 S     0:00 TaskCon~ller #0
+  164    73 S     0:00 TaskCon~ller #1
+  165    73 S     0:00 TaskCon~ller #2
+  166    73 S     0:00 TaskCon~ller #3
+  168    73 S     0:00 StreamTrans #1
+  140    73 S     0:01 Isolated Web Co
+  142    73 S     0:00 AsyncSi~lThread
+  143    73 S     0:00 IPC I/O Child
+  147    73 S     0:00 Socket Thread
+  148    73 S     0:00 HTML5 Parser
+  149    73 S     0:00 StyleThread#1
+  150    73 S     0:00 StyleThread#2
+  151    73 S     0:00 JS Watchdog
+  152    73 S     0:00 Backgro~Pool #1
+  153    73 S     0:00 RemVidChild
+  157    73 S     0:00 ImageIO
+  158    73 S     0:00 Worker Launcher
+  159    73 S     0:00 Timer
+  160    73 S     0:00 ImageBridgeChld
+  161    73 S     0:00 ProcessHangMon
+  162    73 S     0:00 ProfilerChild
+  173     1 R     0:00 ps
+    3     1 S     0:00 ash
+   10     3 S     0:00 WaylandProxy
+  100     3 S     0:00 AudioIP~allback
+  101     3 S     0:00 AudioIP~ion RPC
+   11     3 S     0:00 glean.dispatche
+  120     3 S     0:00 FSBroker116
+  121     3 S<    0:00 SwComposite
+  122     3 S<    0:00 WRScene~ilder#1
+  123     3 S<    0:00 WRScene~derLP#1
+  124     3 S<    0:00 WRRende~ckend#1
+   13     3 S     0:00 IPC I/O Parent
+  138     3 S     0:00 IndexedDB IO #3
+  139     3 S     0:00 DOM Worker
+   14     3 S     0:00 Timer
+  144     3 S     0:00 FSBroker140
+  145     3 S     0:00 DNS Resolver #2
+  146     3 S     0:00 URL Classifier
+   15     3 S     0:00 Netlink Monitor
+  154     3 S     0:00 StreamTrans #3
+  155     3 S     0:00 StreamTrans #4
+  156     3 S     0:00 StreamTrans #5
+   16     3 S     0:00 Socket Thread
+   17     3 S     0:00 IPDL Background
+   18     3 S     0:00 Backgro~Pool #1
+   29     3 S     0:00 HTML5 Parser
+   30     3 S     0:02 StyleThread#1
+   31     3 S     0:00 StyleThread#2
+   34     3 S     0:00 JS Watchdog
+   36     3 S     0:00 Cache2 I/O
+   37     3 S     0:00 Cookie
+   38     3 S     0:00 StreamTrans #1
+   39     3 S     0:03 TaskCon~ller #0
+    4     3 R     1:18 firefox
+   40     3 S     0:00 TaskCon~ller #1
+   41     3 S     0:00 TaskCon~ller #2
+   42     3 S     0:00 TaskCon~ller #3
+   43     3 S     0:00 BgIOThr~Pool #1
+   45     3 S     0:00 Worker Launcher
+   46     3 S     0:00 QuotaManager IO
+   47     3 S     0:00 IndexedDB IO #1
+   48     3 R     0:01 Softwar~cThread
+   49     3 S<    0:02 Renderer
+   50     3 S     0:00 WRWorker#0
+   51     3 S     0:00 WRWorker#1
+   52     3 S     0:00 WRWorker#2
+   53     3 S     0:00 WRWorker#3
+   54     3 S     0:00 WRWorkerLP#0
+   55     3 S     0:00 WRWorkerLP#1
+   56     3 S     0:00 WRWorkerLP#2
+   57     3 S     0:00 WRWorkerLP#3
+   58     3 S     0:00 WrGlyph~terizer
+   59     3 S     0:00 Compositor
+    6     3 S     0:00 AsyncSi~lThread
+   60     3 S<    0:00 CanvasRenderer
+   61     3 S     0:00 ImageIO
+   62     3 S     0:00 SandboxReporter
+   63     3 S     0:00 IPC Launch
+   67     3 S     0:00 Permission
+    7     3 S     0:00 pool-spawner
+   74     3 S     0:00 TRR Background
+   75     3 S     0:00 DNS Resolver #1
+   76     3 S     0:00 FSBroker64
+   77     3 S     0:00 GMPThread
+    8     3 S     0:00 gmain
+   85     3 S     0:00 ImageBridgeChld
+   88     3 S     0:00 FSBroker81
+    9     3 S     0:00 [pango] fontcon
+   91     3 S     0:00 ProcessHangMon
+   98     3 S     0:00 FSBroker86
+   99     3 S     0:00 AudioIP~ver RPC
+   64     4 S     0:00 Socket Process
+   68     4 S     0:00 AsyncSi~lThread
+   69     4 S     0:00 IPC I/O Child
+   70     4 S     0:00 Backgro~Pool #1
+   71     4 S     0:00 Socket Thread
+   72     4 S     0:00 Timer
+   78     4 S     0:00 ProfilerChild
+   73     4 S     0:00 forkserver
+  102    73 S     0:00 RemVidChild
+  105    73 S     0:00 ImageIO
+  106    73 S     0:00 Worker Launcher
+  107    73 S     0:00 Timer
+  108    73 S     0:00 ImageBridgeChld
+  109    73 S     0:00 ProcessHangMon
+  110    73 S     0:00 ProfilerChild
+  112    73 S     0:00 TaskCon~ller #0
+  113    73 S     0:00 TaskCon~ller #1
+  114    73 S     0:00 TaskCon~ller #2
+  115    73 S     0:00 TaskCon~ller #3
+  167    73 S     0:00 StreamTrans #2
+   81    73 R     0:07 WebExtensions
+   83    73 S     0:00 AsyncSi~lThread
+   84    73 S     0:01 IPC I/O Child
+   92    73 S     0:00 Socket Thread
+   93    73 S     0:00 HTML5 Parser
+   94    73 S     0:00 StyleThread#1
+   95    73 S     0:00 StyleThread#2
+   96    73 S     0:00 JS Watchdog
+   97    73 S     0:00 Backgro~Pool #1
+  103    73 S     0:00 ProfilerChild
+   86    73 S     0:00 RDD Process
+   89    73 S     0:00 AsyncSi~lThread
+   90    73 S     0:00 IPC I/O Child
+
+FIREFOX_DIAGNOSTICS_DONE

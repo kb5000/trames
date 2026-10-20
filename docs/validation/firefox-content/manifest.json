@@ -42,5 +42,45 @@
     "pointer_seconds": 0.003475,
     "whole_app_speed_ratio": null
   },
-  "candidate_page_gate": "running; pending result"
+  "candidate_page_gate": {
+    "launch_seconds": 600.0003349390026,
+    "first_window_seconds": 92.12411404200247,
+    "first_image_seconds": 92.12420241499785,
+    "frames": 702,
+    "canvas_green_pixels": 0,
+    "canvas_green_seen": false,
+    "js_title_seen": false,
+    "firefox_exit": null,
+    "diagnostics_complete": false,
+    "passed": false,
+    "ffi_sha256": "9b9965a6361abff1382d655253fe150576bc36c717564bca24f8f1d860faaada",
+    "probe_sha256": "ee05c7efadf862b46b8c32744bd4e30789eba061a93c84659db43d04209172a5"
+  },
+  "candidate_ffi_source_note": "FFI was built before later cfg(test)-only benchmark/test portability/format additions; production logic is unchanged.",
+  "ci": {
+    "source_sha": "95830f6aeff866f91b2db2aac22293c070ba3f2f",
+    "run": 39414333180,
+    "linux_job": 118599598780,
+    "apple_job": 118600360152,
+    "conclusion": "success",
+    "core_tests_per_platform": 87,
+    "ignored_manual_benchmarks": 1,
+    "apple_arch": "arm64",
+    "apple_host_page_bytes": 16384,
+    "guest_clock_cpus": [
+      1,
+      4
+    ]
+  },
+  "candidate_log_diagnostic": {
+    "launch_seconds": 180.00440135400277,
+    "diagnostics_complete": true,
+    "passed": false,
+    "first_window_seconds": 94.25468245400407,
+    "frames": 477,
+    "firefox_exit": null,
+    "ffi_sha256": "9b9965a6361abff1382d655253fe150576bc36c717564bca24f8f1d860faaada",
+    "probe_sha256": "ee05c7efadf862b46b8c32744bd4e30789eba061a93c84659db43d04209172a5",
+    "browser_log_complete": true
+  }
 }

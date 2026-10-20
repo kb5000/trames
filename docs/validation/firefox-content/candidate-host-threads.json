@@ -1,0 +1,59 @@
+{
+  "interval_seconds": 10.000811603007605,
+  "threads": [
+    {
+      "tid": "178818",
+      "name": "python3",
+      "ticks": 176,
+      "delta_ticks": 7
+    },
+    {
+      "tid": "178819",
+      "name": "trames-local",
+      "ticks": 20725,
+      "delta_ticks": 935
+    },
+    {
+      "tid": "178820",
+      "name": "trames-wayland",
+      "ticks": 20,
+      "delta_ticks": 0
+    },
+    {
+      "tid": "178821",
+      "name": "trames-cpu-0",
+      "ticks": 2575,
+      "delta_ticks": 25
+    },
+    {
+      "tid": "178822",
+      "name": "trames-cpu-1",
+      "ticks": 2563,
+      "delta_ticks": 20
+    },
+    {
+      "tid": "178823",
+      "name": "trames-cpu-2",
+      "ticks": 888,
+      "delta_ticks": 19
+    },
+    {
+      "tid": "178825",
+      "name": "trames-cpu-3",
+      "ticks": 420,
+      "delta_ticks": 13
+    },
+    {
+      "tid": "178882",
+      "name": "trames-disk",
+      "ticks": 0,
+      "delta_ticks": 0
+    },
+    {
+      "tid": "178883",
+      "name": "trames-disk",
+      "ticks": 0,
+      "delta_ticks": 0
+    }
+  ]
+}
