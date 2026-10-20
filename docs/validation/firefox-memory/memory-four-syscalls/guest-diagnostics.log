@@ -1,0 +1,81 @@
+
+FIREFOX_LOG_BEGIN
+*** You are running in headless mode.
+Scudo ERROR: internal map failure (error desc=Out of memory)
+Redirecting call to abort() to mozalloc_abort
+
+[Parent 4, IPC I/O Parent] WARNING: process 88 exited on signal 11: file /home/buildozer/aports/community/firefox/src/firefox-142.0/ipc/chromium/src/chrome/common/process_watcher_posix_sigchld.cc:134
+out of memory: 0x0000000000000000 bytes requested
+[Parent 4, IPC I/O Parent] WARNING: process 116 exited on signal 11: file /home/buildozer/aports/community/firefox/src/firefox-142.0/ipc/chromium/src/chrome/common/process_watcher_posix_sigchld.cc:134
+[Parent 4, IPC I/O Parent] WARNING: process 132 exited on signal 11: file /home/buildozer/aports/community/firefox/src/firefox-142.0/ipc/chromium/src/chrome/common/process_watcher_posix_sigchld.cc:134
+Segmentation fault
+
+FIREFOX_DMESG_BEGIN
+[3.017177] pid=14 syscall=200(bind) pc=0x700414fc args=[19, 43781678, c, 0, 0, 0] unsupported errno=95 comm="Netlink Monitor"
+[38.168100] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 4723d38c8, 0, 4723d3a90, 2e, 0] unsupported errno=38 comm="DOM Worker"
+[38.426117] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 4723d3660, 0, 45d9f0c8, 45d9f008, 45d9f0c8] unsupported errno=38 comm="DOM Worker"
+[43.082430] pid=88 tgid=88 CPU fault at PC 0x40042138: guest memory: Unmapped(0) comm="Web Content"
+[43.089049] pid=88 tgid=88 CPU fault at PC 0x40042138: guest memory: Unmapped(0) comm="Web Content"
+[46.256344] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 4723d3f18, fffffffffffd9d00, 4723d5100, 4723d7c90, 0] unsupported errno=38 comm="DOM Worker"
+[46.267906] pid=116 tgid=116 CPU fault at PC 0x40042138: guest memory: Unmapped(0) comm="Web Content"
+[46.270051] pid=116 tgid=116 CPU fault at PC 0x40042138: guest memory: Unmapped(0) comm="Web Content"
+[46.575044] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 4723d3cb0, 0, 45d9f0c8, 45d9f008, 45d9f0c8] unsupported errno=38 comm="DOM Worker"
+[46.755115] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 4723d3f18, fce0, 4723d50f8, 4723d7c90, 0] unsupported errno=38 comm="DOM Worker"
+[46.788563] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 4723d3cb0, 0, 45d9f0c8, 45d9f008, 45d9f0c8] unsupported errno=38 comm="DOM Worker"
+[51.718151] pid=132 tgid=132 CPU fault at PC 0x36803948: guest memory: Unmapped(0) comm="Web Content"
+[51.980344] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 4723d3f18, ffffffffffffd980, 4723d5098, 4723d7c90, 0] unsupported errno=38 comm="DOM Worker"
+[52.197891] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 4723d3cb0, 0, 45d9f0c8, 45d9f008, 45d9f0c8] unsupported errno=38 comm="DOM Worker"
+[52.204570] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 4723d3f18, 6920, 4723d5108, 4723d7c90, 0] unsupported errno=38 comm="DOM Worker"
+[52.256822] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 4723d3cb0, 0, 45d9f0c8, 45d9f008, 45d9f0c8] unsupported errno=38 comm="DOM Worker"
+[54.657564] pid=4 tgid=4 CPU fault at PC 0x36bf3fbc: guest memory: Unmapped(0) comm="firefox"
+
+FIREFOX_MEMORY_BEGIN
+MemTotal:  4194304 kB
+MemFree:  2665256 kB
+MemAvailable:  2665256 kB
+Buffers: 0 kB
+Cached: 0 kB
+SwapTotal: 0 kB
+SwapFree: 0 kB
+/proc/1/status:Name:	ash
+/proc/1/status:Pid:	1
+/proc/1/status:PPid:	0
+/proc/1/status:TracerPid:	0
+/proc/1/status:VmSize:	2724 kB
+/proc/1/status:VmRSS:	2720 kB
+/proc/1/status:Threads:	1
+/proc/142/status:Name:	MainThread
+/proc/142/status:Pid:	142
+/proc/142/status:PPid:	76
+/proc/142/status:TracerPid:	0
+/proc/142/status:VmSize:	804512 kB
+/proc/142/status:VmRSS:	804492 kB
+/proc/142/status:Threads:	3
+/proc/76/status:Name:	forkserver
+/proc/76/status:Pid:	76
+/proc/76/status:PPid:	1
+/proc/76/status:TracerPid:	0
+/proc/76/status:VmSize:	719160 kB
+/proc/76/status:VmRSS:	719156 kB
+/proc/76/status:Threads:	1
+/proc/93/status:Name:	RDD Process
+/proc/93/status:Pid:	93
+/proc/93/status:PPid:	76
+/proc/93/status:TracerPid:	0
+/proc/93/status:VmSize:	0 kB
+/proc/93/status:VmRSS:	0 kB
+/proc/93/status:Threads:	1
+
+FIREFOX_PROCESSES_BEGIN
+PID   PPID  STAT TIME  COMMAND
+    1     0 S     0:00 ash
+  142    76 R     0:00 MainThread
+  144    76 S     0:00 AsyncSi~lThread
+  145    76 S     0:00 IPC I/O Child
+  151     1 R     0:00 ps
+   76     1 R     0:00 forkserver
+   93    76 Z     0:00 RDD Process
+
+FIREFOX_DIAGNOSTICS_DONE
+[1]+  Done                       (firefox --no-remote --profile /root/firefox-probe-memory-four-syscalls --headless --window-size 640,480 --screenshot /tmp/trames-firefox-101962991025210.html.png file:///tmp/trames-firefox-101962991025210.html 1>/tmp/firefox-probe.log 2>&1; ; printf "\nFIREFOX_PROBE_EXIT:%d\n" "${r}")
+~ # [6n

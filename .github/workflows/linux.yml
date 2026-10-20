@@ -48,6 +48,58 @@ jobs:
           TRAMES_VALIDATION_WORKFLOW: linux.yml
           TRAMES_NEEDS_GUEST_ARTIFACTS: 'false'
         run: python3 scripts/ios-ci-scope.py
+  firefox-memory:
+    needs: scope
+    if: needs.scope.outputs.native_scope == 'firefox-memory'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+          components: rustfmt, clippy
+      - name: Prepare original musl sparse BSS fixture
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes gcc-aarch64-linux-gnu
+          bash scripts/build-firefox-fixture.sh
+      - name: Check affected memory paths and original ARM64 ABI
+        run: |
+          cargo fmt --all --check
+          cargo clippy -p trames-memory -p trames-core -p trames-vfs --all-targets --no-deps --locked -- -D warnings
+          cargo test -p trames-memory -p trames-core -p trames-linux --lib --locked
+          cargo test -p trames-vfs mapped --lib --locked
+          cargo build -p trames-cli --release --locked
+          python3 -m py_compile tests/integration/firefox.py scripts/ios-ci-scope.py
+          cc -O2 -Wall -Wextra -Werror tests/fixtures/firefox-memory-probe.c -o /tmp/memory-probe
+          /tmp/memory-probe
+          target/release/trames-run --memory --memory-budget 4GiB --process-memory-budget 4GiB --cpus 4 target/firefox-fixture/memory-probe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firefox-memory-fixture
+          path: target/firefox-fixture/
+          retention-days: 7
+  firefox-memory-apple:
+    needs: [scope, firefox-memory]
+    if: needs.scope.outputs.native_scope == 'firefox-memory'
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+      - uses: actions/download-artifact@v4
+        with:
+          name: firefox-memory-fixture
+          path: target/firefox-fixture/
+      - name: Verify demand-zero paths on Apple ARM64 with 16KiB pages
+        run: |
+          uname -m
+          sysctl hw.pagesize
+          cargo test -p trames-memory -p trames-core -p trames-linux --lib --locked
+          cargo test -p trames-vfs mapped --lib --locked
+          cargo build -p trames-cli --release --locked
+          target/release/trames-run --memory --memory-budget 4GiB --process-memory-budget 4GiB --cpus 4 target/firefox-fixture/memory-probe
   firefox-runtime:
     needs: scope
     if: needs.scope.outputs.native_scope == 'firefox-runtime'

@@ -1,0 +1,210 @@
+
+FIREFOX_LOG_BEGIN
+*** You are running in headless mode.
+[Parent 4, IPC I/O Parent] WARNING: Failed to launch rdd subprocess @FSC::SFNS::Recv (Error:0): file /home/buildozer/aports/community/firefox/src/firefox-142.0/ipc/glue/GeckoChildProcessHost.cpp:804
+[Parent 4, IPC I/O Parent] WARNING: Failed to launch tab subprocess @FSC::SFNS::Failed (Error:0): file /home/buildozer/aports/community/firefox/src/firefox-142.0/ipc/glue/GeckoChildProcessHost.cpp:804
+
+FIREFOX_DMESG_BEGIN
+[7.531679] pid=14 syscall=200(bind) pc=0x700414fc args=[19, 43781678, c, 0, 0, 0] unsupported errno=95 comm="Netlink Monitor"
+[44.796237] pid=86 syscall=165(getrusage) pc=0x7003d98c args=[0, 4723898c8, 0, 472389a90, 2e, 0] unsupported errno=38 comm="DOM Worker"
+[45.065298] pid=86 syscall=165(getrusage) pc=0x7003d98c args=[0, 472389660, 0, 45db30c8, 45db3008, 45db30c8] unsupported errno=38 comm="DOM Worker"
+[53.661408] pid=76 tgid=76 CPU fault at PC 0x36b4a938: guest memory: Unmapped(0) comm="forkserver"
+[55.824822] pid=86 syscall=165(getrusage) pc=0x7003d98c args=[0, 472389f18, fffffffffffd5c80, 47238b0f8, 47238dc90, 0] unsupported errno=38 comm="DOM Worker"
+[56.510564] pid=86 syscall=165(getrusage) pc=0x7003d98c args=[0, 472389cb0, 0, 45db30c8, 45db3008, 45db30c8] unsupported errno=38 comm="DOM Worker"
+[56.540925] pid=86 syscall=165(getrusage) pc=0x7003d98c args=[0, 472389f18, ad60, 47238b140, 47238dc90, 0] unsupported errno=38 comm="DOM Worker"
+[56.634140] pid=86 syscall=165(getrusage) pc=0x7003d98c args=[0, 472389cb0, 0, 45db30c8, 45db3008, 45db30c8] unsupported errno=38 comm="DOM Worker"
+[62.295677] pid=86 syscall=165(getrusage) pc=0x7003d98c args=[0, 472389f18, ffffffffffffd7a0, 47238b098, 47238dc90, 0] unsupported errno=38 comm="DOM Worker"
+[65.783768] pid=86 syscall=165(getrusage) pc=0x7003d98c args=[0, 472389cb0, 0, 45db30c8, 45db3008, 45db30c8] unsupported errno=38 comm="DOM Worker"
+[65.989840] pid=86 syscall=165(getrusage) pc=0x7003d98c args=[0, 472389f18, 8460, 47238b110, 47238dc90, 0] unsupported errno=38 comm="DOM Worker"
+[66.045190] pid=86 syscall=165(getrusage) pc=0x7003d98c args=[0, 472389cb0, 0, 45db30c8, 45db3008, 45db30c8] unsupported errno=38 comm="DOM Worker"
+[66.926976] pid=88 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdba8, 0, 7fffffefdd70, 26, 0] unsupported errno=38 comm="Web Content"
+[67.238484] pid=88 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd940, 0, 1, 359e4074, 1] unsupported errno=38 comm="Web Content"
+[67.290426] pid=88 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdba8, 7fffffefd9e0, 3091fb60, 100, 2d40] unsupported errno=38 comm="Web Content"
+[67.317426] pid=88 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd940, 0, 350347f4, 65, 0] unsupported errno=38 comm="Web Content"
+[67.345998] pid=88 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdba8, 3022e0, 303be2b0, 44f838d0, 303c0e90] unsupported errno=38 comm="Web Content"
+[67.435124] pid=88 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd940, 0, 10, 303c0e90, 0] unsupported errno=38 comm="Web Content"
+[67.451512] pid=88 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdba8, 0, 7fffffefdd70, 2f, 0] unsupported errno=38 comm="Web Content"
+[67.573727] pid=88 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd940, 0, 303bf680, 303c0e90, 0] unsupported errno=38 comm="Web Content"
+[67.590903] pid=88 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdba8, 0, 7fffffefdd70, 2f, 0] unsupported errno=38 comm="Web Content"
+[67.673622] pid=88 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd940, 0, 10, 44f84b30, 2d40] unsupported errno=38 comm="Web Content"
+[67.697899] pid=88 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdba8, 304160, 303be430, 32df7bf0, 303c0e90] unsupported errno=38 comm="Web Content"
+[67.724381] pid=88 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd940, 0, 10, 3b61b264, 0] unsupported errno=38 comm="Web Content"
+[67.741396] pid=88 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdba8, 0, 7fffffefdd70, 2f, 0] unsupported errno=38 comm="Web Content"
+[67.743453] pid=88 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd940, 0, 42d330c8, 42d33008, 42d330c8] unsupported errno=38 comm="Web Content"
+[71.457654] pid=86 syscall=165(getrusage) pc=0x7003d98c args=[0, 472389f18, b6c0, 47238b128, 47238dc90, 0] unsupported errno=38 comm="DOM Worker"
+[73.055637] pid=86 syscall=165(getrusage) pc=0x7003d98c args=[0, 472389cb0, 0, 45db30c8, 45db3008, 45db30c8] unsupported errno=38 comm="DOM Worker"
+
+FIREFOX_MEMORY_BEGIN
+MemTotal:  4194304 kB
+MemFree:   843060 kB
+MemAvailable:   843060 kB
+Buffers: 0 kB
+Cached: 0 kB
+SwapTotal: 0 kB
+SwapFree: 0 kB
+/proc/1/status:Name:	ash
+/proc/1/status:Pid:	1
+/proc/1/status:PPid:	0
+/proc/1/status:TracerPid:	0
+/proc/1/status:VmSize:	2724 kB
+/proc/1/status:VmRSS:	2720 kB
+/proc/1/status:Threads:	1
+/proc/118/status:Name:	WebExtensions
+/proc/118/status:Pid:	118
+/proc/118/status:PPid:	1
+/proc/118/status:TracerPid:	0
+/proc/118/status:VmSize:	2926508 kB
+/proc/118/status:VmRSS:	833448 kB
+/proc/118/status:Threads:	16
+/proc/3/status:Name:	ash
+/proc/3/status:Pid:	3
+/proc/3/status:PPid:	1
+/proc/3/status:TracerPid:	0
+/proc/3/status:VmSize:	2724 kB
+/proc/3/status:VmRSS:	2720 kB
+/proc/3/status:Threads:	1
+/proc/4/status:Name:	firefox
+/proc/4/status:Pid:	4
+/proc/4/status:PPid:	3
+/proc/4/status:TracerPid:	0
+/proc/4/status:VmSize:	3033296 kB
+/proc/4/status:VmRSS:	940220 kB
+/proc/4/status:Threads:	65
+/proc/67/status:Name:	Socket Process
+/proc/67/status:Pid:	67
+/proc/67/status:PPid:	4
+/proc/67/status:TracerPid:	0
+/proc/67/status:VmSize:	733032 kB
+/proc/67/status:VmRSS:	732980 kB
+/proc/67/status:Threads:	7
+/proc/76/status:Name:	forkserver
+/proc/76/status:Pid:	76
+/proc/76/status:PPid:	4
+/proc/76/status:TracerPid:	0
+/proc/76/status:VmSize:	0 kB
+/proc/76/status:VmRSS:	0 kB
+/proc/76/status:Threads:	1
+/proc/88/status:Name:	Web Content
+/proc/88/status:Pid:	88
+/proc/88/status:PPid:	1
+/proc/88/status:TracerPid:	0
+/proc/88/status:VmSize:	2929544 kB
+/proc/88/status:VmRSS:	836476 kB
+/proc/88/status:Threads:	20
+
+FIREFOX_PROCESSES_BEGIN
+PID   PPID  STAT TIME  COMMAND
+    1     0 S     0:00 ash
+  118     1 R     0:02 WebExtensions
+  120     1 S     0:00 AsyncSi~lThread
+  121     1 S     0:00 IPC I/O Child
+  130     1 S     0:00 Socket Thread
+  131     1 S     0:00 HTML5 Parser
+  132     1 S     0:00 StyleThread#1
+  133     1 S     0:00 StyleThread#2
+  134     1 S     0:00 JS Watchdog
+  136     1 S     0:00 Backgro~Pool #1
+  137     1 S     0:00 RemVidChild
+  140     1 S     0:00 ImageIO
+  141     1 S     0:00 Worker Launcher
+  142     1 S     0:00 Timer
+  143     1 S     0:00 ImageBridgeChld
+  144     1 S     0:00 ProcessHangMon
+  145     1 S     0:00 ProfilerChild
+  166     1 R     0:00 ps
+    3     1 S     0:00 ash
+   10     3 S     0:00 glean.dispatche
+  102     3 S<    0:00 SwComposite
+  103     3 S<    0:00 WRScene~ilder#1
+  104     3 S<    0:00 WRScene~derLP#1
+  105     3 S<    0:00 WRRende~ckend#1
+  114     3 S     0:00 AudioIP~ver RPC
+  115     3 S     0:00 AudioIP~allback
+  116     3 S     0:00 AudioIP~ion RPC
+  117     3 S     0:00 StreamTrans #3
+   12     3 S     0:00 IPC I/O Parent
+  122     3 S     0:00 FSBroker118
+  123     3 S<    0:00 SwComposite
+  124     3 S<    0:00 WRScene~ilder#2
+  125     3 S<    0:00 WRScene~derLP#2
+  126     3 S<    0:00 WRRende~ckend#2
+   13     3 S     0:00 Timer
+   14     3 S     0:00 Netlink Monitor
+   15     3 S     0:00 Socket Thread
+   16     3 S     0:00 IPDL Background
+   17     3 S     0:00 Backgro~Pool #1
+   18     3 S     0:00 HTML5 Parser
+   19     3 S     0:00 StyleThread#1
+   20     3 S     0:00 StyleThread#2
+   24     3 S     0:00 JS Watchdog
+   35     3 S     0:00 Cache2 I/O
+   36     3 S     0:00 Cookie
+   38     3 S     0:01 TaskCon~ller #0
+   39     3 S     0:00 TaskCon~ller #1
+    4     3 R     0:23 firefox
+   40     3 S     0:00 TaskCon~ller #2
+   41     3 S     0:00 TaskCon~ller #3
+   42     3 S     0:00 BgIOThr~Pool #1
+   47     3 S     0:00 StreamTrans #2
+   48     3 S     0:00 Worker Launcher
+   49     3 S     0:00 QuotaManager IO
+   51     3 R     0:00 Softwar~cThread
+   52     3 S<    0:00 Renderer
+   53     3 S     0:00 WRWorker#0
+   54     3 S     0:00 WRWorker#1
+   55     3 S     0:00 WRWorker#2
+   56     3 S     0:00 WRWorker#3
+   57     3 S     0:00 WRWorkerLP#0
+   58     3 S     0:00 WRWorkerLP#1
+   59     3 S     0:00 WRWorkerLP#2
+    6     3 S     0:00 AsyncSi~lThread
+   60     3 S     0:00 WRWorkerLP#3
+   61     3 S     0:00 WrGlyph~terizer
+   62     3 S     0:00 Compositor
+   63     3 S<    0:00 CanvasRenderer
+   64     3 S     0:00 ImageIO
+   65     3 S     0:00 SandboxReporter
+   66     3 S     0:00 IPC Launch
+    7     3 S     0:00 pool-spawner
+   70     3 S     0:00 Permission
+    8     3 S     0:00 gmain
+   81     3 S     0:00 GMPThread
+   82     3 S     0:00 TRR Background
+   83     3 S     0:00 DNS Resolver #1
+   84     3 S     0:00 FSBroker67
+   86     3 S     0:00 DOM Worker
+   87     3 S     0:00 IndexedDB IO #2
+    9     3 S     0:00 [pango] fontcon
+   92     3 S     0:00 ImageBridgeChld
+   95     3 S     0:00 FSBroker88
+   99     3 S     0:00 ProcessHangMon
+   67     4 S     0:00 Socket Process
+   71     4 S     0:00 AsyncSi~lThread
+   72     4 S     0:00 IPC I/O Child
+   73     4 S     0:00 Backgro~Pool #1
+   74     4 S     0:00 Socket Thread
+   75     4 S     0:00 Timer
+   85     4 S     0:00 ProfilerChild
+   76     4 Z     0:00 forkserver
+  107     1 S     0:00 Socket Thread
+  108     1 S     0:00 HTML5 Parser
+  109     1 S     0:00 StyleThread#1
+  110     1 S     0:00 StyleThread#2
+  111     1 S     0:00 JS Watchdog
+  112     1 S     0:00 Backgro~Pool #1
+  113     1 S     0:00 RemVidChild
+  127     1 S     0:00 ImageIO
+  128     1 S     0:00 Worker Launcher
+  129     1 R     0:00 Timer
+  135     1 S     0:00 ImageBridgeChld
+  138     1 S     0:00 ProcessHangMon
+  139     1 S     0:00 ProfilerChild
+  150     1 S     0:00 TaskCon~ller #0
+  151     1 S     0:00 TaskCon~ller #1
+  152     1 S     0:00 TaskCon~ller #2
+  153     1 S     0:00 TaskCon~ller #3
+   88     1 R     0:02 Web Content
+   90     1 S     0:00 AsyncSi~lThread
+   91     1 S     0:00 IPC I/O Child
+
+FIREFOX_DIAGNOSTICS_DONE

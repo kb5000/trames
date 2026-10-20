@@ -1,0 +1,300 @@
+
+FIREFOX_LOG_BEGIN
+[2257257.938] {Default Queue}  -> wl_display#1.get_registry(new id wl_registry#2)
+[2257258.328] {Default Queue}  -> wl_display#1.sync(new id wl_callback#3)
+[2257261.653] {Display Queue} wl_display#1.delete_id(3)
+[2257262.078] {Default Queue} wl_registry#2.global(1, "wl_compositor", 4)
+[2257262.316] {Default Queue}  -> wl_registry#2.bind(1, "wl_compositor", 3, new id [unknown]#4)
+[2257262.554] {Default Queue} wl_registry#2.global(2, "wl_shm", 1)
+[2257263.007] {Default Queue}  -> wl_registry#2.bind(2, "wl_shm", 1, new id [unknown]#5)
+[2257263.332] {Default Queue} wl_registry#2.global(3, "wl_output", 3)
+[2257263.756] {Default Queue}  -> wl_registry#2.bind(3, "wl_output", 2, new id [unknown]#6)
+[2257266.892] {Default Queue}  -> wl_display#1.sync(new id wl_callback#7)
+[2257267.165] {Default Queue} wl_registry#2.global(4, "xdg_wm_base", 3)
+[2257267.377] {Default Queue} wl_registry#2.global(5, "wl_seat", 7)
+[2257267.592] {Default Queue} wl_registry#2.global(6, "wl_data_device_manager", 3)
+[2257267.855] {Default Queue}  -> wl_registry#2.bind(6, "wl_data_device_manager", 3, new id [unknown]#8)
+[2257268.245] {Default Queue} wl_registry#2.global(7, "zwp_text_input_manager_v1", 1)
+[2257268.543] {Default Queue} wl_registry#2.global(8, "zwp_text_input_manager_v3", 1)
+[2257269.108] {Default Queue} wl_registry#2.global(9, "wl_subcompositor", 1)
+[2257269.304] {Default Queue}  -> wl_registry#2.bind(9, "wl_subcompositor", 1, new id [unknown]#9)
+[2257269.550] {Default Queue} wl_callback#3.done(0)
+[2257273.608] {Default Queue}  -> wl_shm#5.create_pool(new id wl_shm_pool#3, fd 16, 2304)
+[2257434.704] {Default Queue}  -> wl_shm_pool#3.resize(5568)
+[2257577.442] {Default Queue}  -> wl_shm_pool#3.resize(12096)
+[2257920.547] {Default Queue}  -> wl_shm_pool#3.resize(25216)
+[2258229.795] {Default Queue}  -> wl_registry#2.bind(5, "wl_seat", 5, new id [unknown]#10)
+[2258573.062] {Default Queue}  -> wl_compositor#4.create_surface(new id wl_surface#11)
+[2258573.785] {Default Queue}  -> wl_data_device_manager#8.get_data_device(new id wl_data_device#12, wl_seat#10)
+[2258580.075] {Default Queue}  -> wl_compositor#4.create_surface(new id wl_surface#13)
+[2258580.528] {Default Queue}  -> wl_display#1.sync(new id wl_callback#14)
+[2258584.665] {Display Queue} wl_display#1.delete_id(7)
+[2258584.912] {Display Queue} wl_display#1.delete_id(14)
+[2258585.085] {Default Queue} wl_shm#5.format(0)
+[2258585.257] {Default Queue} wl_shm#5.format(1)
+[2258585.670] {Default Queue} wl_output#6.geometry(0, 0, 260, 195, 0, "Trames", "Wayland output", 0)
+[2258586.502] {Default Queue} wl_output#6.mode(3, 1024, 768, 60000)
+[2258586.994] {Default Queue} wl_output#6.scale(1)
+[2258587.179] {Default Queue} wl_output#6.done()
+[2258587.502] {Default Queue} wl_callback#7.done(0)
+[2258587.953] {Default Queue} wl_seat#10.capabilities(3)
+[2258588.138] {Default Queue}  -> wl_seat#10.get_pointer(new id wl_pointer#7)
+[2258588.806] {Default Queue}  -> wl_seat#10.get_keyboard(new id wl_keyboard#15)
+[2258589.374] {Default Queue} wl_seat#10.name("seat0")
+[2258589.558] {Default Queue} wl_data_device#12.selection(nil)
+[2258589.748] {Default Queue} wl_callback#14.done(0)
+[2258590.166] {Default Queue}  -> wl_registry#2.bind(4, "xdg_wm_base", 3, new id [unknown]#14)
+[2258723.330] {Default Queue}  -> wl_display#1.get_registry(new id wl_registry#16)
+[2258724.633] {Default Queue}  -> wl_display#1.sync(new id wl_callback#17)
+[2258735.258] {Display Queue} wl_display#1.delete_id(17)
+[2258735.708] {Default Queue} wl_keyboard#15.keymap(1, fd 19, 64754)
+[2259226.851] {Default Queue} wl_keyboard#15.repeat_info(25, 600)
+[2259227.260] {Default Queue} wl_registry#16.global(1, "wl_compositor", 4)
+[2259227.506] {Default Queue}  -> wl_registry#16.bind(1, "wl_compositor", 4, new id [unknown]#18)
+[2259227.762] {Default Queue} wl_registry#16.global(2, "wl_shm", 1)
+[2259227.956] {Default Queue}  -> wl_registry#16.bind(2, "wl_shm", 1, new id [unknown]#19)
+[2259228.162] {Default Queue} wl_registry#16.global(3, "wl_output", 3)
+[2259228.400] {Default Queue} wl_registry#16.global(4, "xdg_wm_base", 3)
+[2259228.603] {Default Queue}  -> wl_registry#16.bind(4, "xdg_wm_base", 3, new id [unknown]#20)
+[2259228.817] {Default Queue} wl_registry#16.global(5, "wl_seat", 7)
+[2259229.194] {Default Queue}  -> wl_registry#16.bind(5, "wl_seat", 7, new id [unknown]#21)
+[2259229.412] {Default Queue} wl_registry#16.global(6, "wl_data_device_manager", 3)
+[2259229.591] {Default Queue} wl_registry#16.global(7, "zwp_text_input_manager_v1", 1)
+[2259229.771] {Default Queue} wl_registry#16.global(8, "zwp_text_input_manager_v3", 1)
+[2259229.949] {Default Queue} wl_registry#16.global(9, "wl_subcompositor", 1)
+[2259230.130] {Default Queue}  -> wl_registry#16.bind(9, "wl_subcompositor", 1, new id [unknown]#22)
+[2259230.331] {Default Queue} wl_callback#17.done(0)
+[2259230.515] {Default Queue}  -> wl_display#1.sync(new id wl_callback#17)
+[2259232.661] {Display Queue} wl_display#1.delete_id(17)
+[2259232.905] {Default Queue} discarded wl_shm#19.format(0)
+[2259233.070] {Default Queue} discarded wl_shm#19.format(1)
+[2259233.230] {Default Queue} wl_seat#21.capabilities(3)
+[2259233.433] {Default Queue}  -> wl_seat#21.get_pointer(new id wl_pointer#23)
+[2259233.633] {Default Queue}  -> wl_seat#21.get_keyboard(new id wl_keyboard#24)
+[2259233.809] {Default Queue} wl_seat#21.name("seat0")
+[2259233.963] {Default Queue} wl_callback#17.done(0)
+[2263035.940] {Default Queue}  -> wl_display#1.get_registry(new id wl_registry#17)
+[2271224.095] {Default Queue} wl_keyboard#24.keymap(1, fd 33, 64754)
+[2271741.508] {Default Queue} wl_keyboard#24.repeat_info(25, 600)
+[2271742.078] {Default Queue} wl_registry#17.global(1, "wl_compositor", 4)
+[2271742.440] {Default Queue} wl_registry#17.global(2, "wl_shm", 1)
+[2271742.762] {Default Queue} wl_registry#17.global(3, "wl_output", 3)
+[2271743.055] {Default Queue} wl_registry#17.global(4, "xdg_wm_base", 3)
+[2271743.366] {Default Queue} wl_registry#17.global(5, "wl_seat", 7)
+[2271743.674] {Default Queue} wl_registry#17.global(6, "wl_data_device_manager", 3)
+[2271743.967] {Default Queue} wl_registry#17.global(7, "zwp_text_input_manager_v1", 1)
+[2271744.249] {Default Queue} wl_registry#17.global(8, "zwp_text_input_manager_v3", 1)
+[2271744.582] {Default Queue}  -> wl_registry#17.bind(8, "zwp_text_input_manager_v3", 1, new id [unknown]#25)
+[2271744.961] {Default Queue}  -> zwp_text_input_manager_v3#25.get_text_input(new id zwp_text_input_v3#26, wl_seat#10)
+[2271745.263] {Default Queue} wl_registry#17.global(9, "wl_subcompositor", 1)
+[2289590.986] {Default Queue}  -> wl_compositor#4.create_surface(new id wl_surface#27)
+[Parent 4, Main Thread] WARNING: Failed to create DBus proxy for org.a11y.Bus: Cannot spawn a message bus without a machine-id: Unable to load /usr/var/lib/dbus/machine-id or /etc/machine-id: Failed to open file “/usr/var/lib/dbus/machine-id”: No such file or directory
+: 'glib warning', file /home/buildozer/aports/community/firefox/src/firefox-142.0/toolkit/xre/nsSigHandlers.cpp:201
+
+** (firefox:4): WARNING **: 06:13:47.961: Failed to create DBus proxy for org.a11y.Bus: Cannot spawn a message bus without a machine-id: Unable to load /usr/var/lib/dbus/machine-id or /etc/machine-id: Failed to open file “/usr/var/lib/dbus/machine-id”: No such file or directory
+
+
+FIREFOX_DMESG_BEGIN
+[3.856492] pid=15 syscall=200(bind) pc=0x700414fc args=[1d, 455ac678, c, 0, 0, 0] unsupported errno=95 comm="Netlink Monitor"
+[43.370611] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 470eb18c8, 0, 470eb1a90, 2e, 0] unsupported errno=38 comm="DOM Worker"
+[43.412737] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 470eb1660, 0, 47c8b0c8, 47c8b008, 47c8b0c8] unsupported errno=38 comm="DOM Worker"
+[50.010691] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 470eb18c8, ffffffffffff1ba0, 470eb30b8, 470eb5c90, 0] unsupported errno=38 comm="DOM Worker"
+[50.069727] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 470eb1660, 0, 47c8b0c8, 47c8b008, 47c8b0c8] unsupported errno=38 comm="DOM Worker"
+[58.530439] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 470eb1f18, ffffffffffff0800, 470eb30a8, 470eb5c90, 0] unsupported errno=38 comm="DOM Worker"
+[58.962645] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 470eb1cb0, 0, 47c8b0c8, 47c8b008, 47c8b0c8] unsupported errno=38 comm="DOM Worker"
+[58.972108] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 470eb1f18, 28280, 470eb3140, 470eb5c90, 0] unsupported errno=38 comm="DOM Worker"
+[59.079076] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 470eb1cb0, 0, 47c8b0c8, 47c8b008, 47c8b0c8] unsupported errno=38 comm="DOM Worker"
+[64.124174] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 470eb1f18, 7f00, 470eb30d8, 470eb5c90, 0] unsupported errno=38 comm="DOM Worker"
+[65.699127] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 470eb1cb0, 0, 47c8b0c8, 47c8b008, 47c8b0c8] unsupported errno=38 comm="DOM Worker"
+[65.707844] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 470eb1f18, 17100, 470eb3108, 470eb5c90, 0] unsupported errno=38 comm="DOM Worker"
+[65.785871] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 470eb1cb0, 0, 47c8b0c8, 47c8b008, 47c8b0c8] unsupported errno=38 comm="DOM Worker"
+[70.805028] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 470eb1f18, 1fa00, 470eb30f8, 470eb5c90, 0] unsupported errno=38 comm="DOM Worker"
+[70.855482] pid=87 syscall=165(getrusage) pc=0x7003d98c args=[0, 470eb1cb0, 0, 47c8b0c8, 47c8b008, 47c8b0c8] unsupported errno=38 comm="DOM Worker"
+[80.330147] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdba8, 0, 7fffffefdd70, 26, 0] unsupported errno=38 comm="WebExtensions"
+[80.511457] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd940, 0, 1, 359e4074, 1] unsupported errno=38 comm="WebExtensions"
+[80.828464] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb38, 7fffffefd970, 303bea88, 303c0e90, 0] unsupported errno=38 comm="WebExtensions"
+[80.839573] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8d0, 0, 350b4ad4, 65, 0] unsupported errno=38 comm="WebExtensions"
+[81.043802] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdba8, 388200, 303be2b0, 44f80590, 303c0e90] unsupported errno=38 comm="WebExtensions"
+[81.051225] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd940, 0, 350347f4, 65, 0] unsupported errno=38 comm="WebExtensions"
+[81.192268] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdba8, 0, 7fffffefdd70, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[81.196883] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd940, 0, 350b4ad4, 65, 0] unsupported errno=38 comm="WebExtensions"
+[81.294469] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdba8, 0, 7fffffefdd70, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[81.297605] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd940, 0, 1, 65, 0] unsupported errno=38 comm="WebExtensions"
+[81.569730] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb38, 3b5680, 303be450, 32de0d90, 303c0e90] unsupported errno=38 comm="WebExtensions"
+[81.580309] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8d0, 0, 350b4ad4, 65, 0] unsupported errno=38 comm="WebExtensions"
+[81.839291] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb38, 0, 7fffffefdd00, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[81.850282] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8d0, 0, 350347f4, 65, 0] unsupported errno=38 comm="WebExtensions"
+[82.117593] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb38, 0, 7fffffefdd00, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[82.129575] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8d0, 0, 350347f4, 309201f4, 30920034] unsupported errno=38 comm="WebExtensions"
+[82.376838] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdba8, 0, 7fffffefdd70, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[82.458133] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd940, 0, 10, 303c0e90, 0] unsupported errno=38 comm="WebExtensions"
+[83.104642] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb38, 3e3c60, 303be4e8, 32e99290, 303c0e90] unsupported errno=38 comm="WebExtensions"
+[83.256308] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8d0, 0, 303bf680, 303c0e90, 0] unsupported errno=38 comm="WebExtensions"
+[86.349640] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb38, 0, 7fffffefdd00, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[86.479591] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8d0, 0, 10, 32df46b0, 303c0e90] unsupported errno=38 comm="WebExtensions"
+[86.852209] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb38, 0, 7fffffefdd00, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[86.953368] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8d0, 0, 10, 32df90d0, 2d40] unsupported errno=38 comm="WebExtensions"
+[87.292977] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb38, 0, 7fffffefdd00, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[87.302919] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8d0, 0, 10, 303c0e90, 0] unsupported errno=38 comm="WebExtensions"
+[87.580450] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb38, 0, 7fffffefdd00, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[87.585068] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8d0, 0, 0, 0, 0] unsupported errno=38 comm="WebExtensions"
+[88.063410] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb38, 0, 7fffffefdd00, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[88.065761] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8d0, 0, 42d150c8, 42d15008, 42d150c8] unsupported errno=38 comm="WebExtensions"
+[132.551992] pid=93 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefddc8, 7fffffefdc68, 30921680, 100, 2d40] unsupported errno=38 comm="WebExtensions"
+[132.621523] pid=147 syscall=165(getrusage) pc=0x7003d98c args=[0, 45df5558, 45df53f8, 45df6480, 45df8c90, 0] unsupported errno=38 comm="StreamTrans #1"
+
+FIREFOX_MEMORY_BEGIN
+MemTotal:  4194304 kB
+MemFree:  2790544 kB
+MemAvailable:  2790544 kB
+Buffers: 0 kB
+Cached: 0 kB
+SwapTotal: 0 kB
+SwapFree: 0 kB
+/proc/1/status:Name:	ash
+/proc/1/status:Pid:	1
+/proc/1/status:PPid:	0
+/proc/1/status:TracerPid:	0
+/proc/1/status:VmSize:	2728 kB
+/proc/1/status:VmRSS:	1768 kB
+/proc/1/status:Threads:	1
+/proc/3/status:Name:	ash
+/proc/3/status:Pid:	3
+/proc/3/status:PPid:	1
+/proc/3/status:TracerPid:	0
+/proc/3/status:VmSize:	2728 kB
+/proc/3/status:VmRSS:	1764 kB
+/proc/3/status:Threads:	1
+/proc/4/status:Name:	firefox
+/proc/4/status:Pid:	4
+/proc/4/status:PPid:	3
+/proc/4/status:TracerPid:	0
+/proc/4/status:VmSize:	11434072 kB
+/proc/4/status:VmRSS:	352480 kB
+/proc/4/status:Threads:	58
+/proc/68/status:Name:	Socket Process
+/proc/68/status:Pid:	68
+/proc/68/status:PPid:	4
+/proc/68/status:TracerPid:	0
+/proc/68/status:VmSize:	733032 kB
+/proc/68/status:VmRSS:	188144 kB
+/proc/68/status:Threads:	7
+/proc/77/status:Name:	forkserver
+/proc/77/status:Pid:	77
+/proc/77/status:PPid:	4
+/proc/77/status:TracerPid:	0
+/proc/77/status:VmSize:	799464 kB
+/proc/77/status:VmRSS:	264440 kB
+/proc/77/status:Threads:	1
+/proc/93/status:Name:	WebExtensions
+/proc/93/status:Pid:	93
+/proc/93/status:PPid:	77
+/proc/93/status:TracerPid:	0
+/proc/93/status:VmSize:	2936472 kB
+/proc/93/status:VmRSS:	277828 kB
+/proc/93/status:Threads:	20
+/proc/99/status:Name:	RDD Process
+/proc/99/status:Pid:	99
+/proc/99/status:PPid:	77
+/proc/99/status:TracerPid:	0
+/proc/99/status:VmSize:	902560 kB
+/proc/99/status:VmRSS:	315752 kB
+/proc/99/status:Threads:	4
+
+FIREFOX_PROCESSES_BEGIN
+PID   PPID  STAT TIME  COMMAND
+    1     0 S     0:00 ash
+  164     1 R     0:00 ps
+    3     1 S     0:00 ash
+   10     3 S     0:00 WaylandProxy
+  101     3 S     0:00 ProcessHangMon
+   11     3 S     0:00 glean.dispatche
+  111     3 S     0:00 FSBroker99
+  112     3 S     0:00 AudioIP~ver RPC
+  113     3 S     0:00 AudioIP~allback
+  114     3 S     0:00 AudioIP~ion RPC
+   13     3 S     0:00 IPC I/O Parent
+   14     3 S     0:00 Timer
+   15     3 S     0:00 Netlink Monitor
+   16     3 S     0:00 Socket Thread
+   17     3 S     0:00 IPDL Background
+   18     3 S     0:00 Backgro~Pool #1
+   29     3 S     0:00 HTML5 Parser
+   30     3 S     0:01 StyleThread#1
+   31     3 S     0:00 StyleThread#2
+   34     3 S     0:00 JS Watchdog
+   36     3 S     0:00 Cache2 I/O
+   37     3 S     0:00 Cookie
+   38     3 S     0:00 StreamTrans #1
+   39     3 S     0:00 TaskCon~ller #0
+    4     3 R     0:46 firefox
+   40     3 S     0:00 TaskCon~ller #1
+   41     3 S     0:00 TaskCon~ller #2
+   42     3 S     0:00 TaskCon~ller #3
+   43     3 S     0:00 BgIOThr~Pool #1
+   48     3 S     0:00 StreamTrans #2
+   49     3 S     0:00 Worker Launcher
+   50     3 S     0:00 QuotaManager IO
+   51     3 S     0:01 IndexedDB IO #1
+   52     3 R     0:02 Softwar~cThread
+   53     3 S<    0:00 Renderer
+   54     3 S     0:00 WRWorker#0
+   55     3 S     0:00 WRWorker#1
+   56     3 S     0:00 WRWorker#2
+   57     3 S     0:00 WRWorker#3
+   58     3 S     0:00 WRWorkerLP#0
+   59     3 S     0:00 WRWorkerLP#1
+    6     3 S     0:00 AsyncSi~lThread
+   60     3 S     0:00 WRWorkerLP#2
+   61     3 S     0:00 WRWorkerLP#3
+   62     3 S     0:00 WrGlyph~terizer
+   63     3 S     0:00 Compositor
+   64     3 S<    0:00 CanvasRenderer
+   65     3 S     0:00 ImageIO
+   66     3 S     0:00 SandboxReporter
+   67     3 S     0:00 IPC Launch
+    7     3 S     0:00 pool-spawner
+   71     3 S     0:00 Permission
+    8     3 S     0:00 gmain
+   82     3 S     0:00 TRR Background
+   83     3 S     0:00 DNS Resolver #1
+   84     3 S     0:00 FSBroker68
+   85     3 S     0:00 GMPThread
+   87     3 S     0:01 DOM Worker
+    9     3 S     0:00 [pango] fontcon
+   97     3 S     0:00 ImageBridgeChld
+   98     3 S     0:00 FSBroker93
+   68     4 S     0:00 Socket Process
+   72     4 S     0:00 AsyncSi~lThread
+   73     4 S     0:00 IPC I/O Child
+   74     4 S     0:00 Backgro~Pool #1
+   75     4 S     0:00 Socket Thread
+   76     4 S     0:00 Timer
+   86     4 S     0:00 ProfilerChild
+   77     4 S     0:00 forkserver
+  104    77 S     0:00 Socket Thread
+  105    77 S     0:00 HTML5 Parser
+  106    77 S     0:00 StyleThread#1
+  107    77 S     0:00 StyleThread#2
+  108    77 S     0:00 JS Watchdog
+  109    77 S     0:00 Backgro~Pool #1
+  110    77 S     0:00 RemVidChild
+  121    77 S     0:00 ImageIO
+  122    77 S     0:00 Worker Launcher
+  123    77 S     0:00 Timer
+  124    77 S     0:00 ImageBridgeChld
+  125    77 S     0:00 ProcessHangMon
+  126    77 S     0:00 ProfilerChild
+  131    77 S     0:00 TaskCon~ller #0
+  132    77 S     0:00 TaskCon~ller #1
+  133    77 S     0:00 TaskCon~ller #2
+  134    77 S     0:00 TaskCon~ller #3
+   93    77 R     0:06 WebExtensions
+   95    77 S     0:00 AsyncSi~lThread
+   96    77 R     0:03 IPC I/O Child
+  102    77 S     0:00 AsyncSi~lThread
+  103    77 S     0:00 IPC I/O Child
+  115    77 S     0:00 ProfilerChild
+   99    77 S     0:00 RDD Process
+
+FIREFOX_DIAGNOSTICS_DONE

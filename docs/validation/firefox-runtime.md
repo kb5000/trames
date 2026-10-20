@@ -2,6 +2,7 @@
 
 2026-10-20，在 [初次评估](firefox.md) 后继续测试原版 Alpine ARM64 Firefox 142.0。
 本轮修复系统接口和地址分配行为，没有修改浏览器、Scudo 算法或默认沙箱配置。
+后续已继续做 [4GiB 内存修复](firefox-memory.md)。本文保留首轮的历史结果；
 仍未把页面首帧/截图计为通过；后续跟踪在 [Issue #33](https://github.com/kb5000/trames/issues/33)。
 
 ## 已修复

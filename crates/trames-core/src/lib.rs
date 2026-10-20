@@ -10,8 +10,9 @@ mod worker_syscalls;
 mod workers;
 use trames_memory::{Memory, MemoryError, Permissions, DEFAULT_MEMORY_LIMIT, PAGE_SIZE};
 
-/// Guest committed-page budgets. Reservations do not preallocate host memory;
-/// fork charges each distinct address space conservatively, CLONE_VM only once.
+/// Guest resident-page budgets. Untouched anonymous zeros/reservations have no
+/// resident charge. File mappings and fork COW remain conservative; CLONE_VM
+/// shares one accounting domain. Per-process mapped-page caps also bound metadata.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MemoryLimits {
     pub per_process: usize,

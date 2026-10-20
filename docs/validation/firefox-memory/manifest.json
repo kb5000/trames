@@ -1,0 +1,87 @@
+{
+  "baseline": "4cde4ce92ed0d7942dbc5de34a55c1a7eed258a5",
+  "budgets": {
+    "total": 4294967296,
+    "per_process": 4294967296
+  },
+  "production_source_sha256": {
+    "crates/trames-core/src/lib.rs": "f3ea1d436956fc41b3387b927db41220d4163d323c8a4cd45f5adafd978b3174",
+    "crates/trames-core/src/process.rs": "f828d36da9fd0e12f866dc329dd2135d8c825a39c3f3ec4987cb84e0f330eef7",
+    "crates/trames-linux/src/state.rs": "c87f5038a60c9b6a65f638ac8ac7a77c7a396c7a9575b508de4946ba0562cb56",
+    "crates/trames-memory/src/backing.rs": "6433a3b30f333ae0ad7afb70774237078bba0516090cc23d7c1c0da1cdf7c9f9",
+    "crates/trames-memory/src/lib.rs": "5c1516dd173797de8bdc53d61162d14123299dd784a7e74ad661e4820f0953a3",
+    "crates/trames-memory/src/mmu/mod.rs": "248a7882ef3c72cd715d2814411aaa27cf46886fc13f93601b6239dbed55fe9b",
+    "crates/trames-memory/src/mmu/tests.rs": "e7cd6b057a0605653e35286c12ccf9505d64961b7e4962bc30b085de711b3973",
+    "crates/trames-memory/src/mmu/worker.rs": "481cdedc852bd5630b7b9c05fc9a94ec82dfa0d8256a7df8f71552d1cd05e43d",
+    "crates/trames-memory/src/native_access.rs": "b38beafda05428fe55fe49eefa8ee75d99460f181e39a4043867e6fb647c86be",
+    "crates/trames-memory/src/parallel.rs": "0c1d8151ebd8a8de7f4d292269a18afbc177bc87fbe56a814aa5cb189720f38c",
+    "crates/trames-memory/src/parallel/hardware.rs": "d3dffe376be8d31f06a6bb2a07e4d5b88d300f304459768c2aa30ed25bd003b2",
+    "crates/trames-memory/src/parallel/native.rs": "81b37c41692c808b3d1eba279f8ad69c22e5c107235144c5a333186c04807016",
+    "crates/trames-memory/src/parallel/page.rs": "4e16596c50def9262adb0dd62f94c93f0c6b82882cc238ed0b3c866f993448cb",
+    "crates/trames-memory/src/residency.rs": "1df060f1a6acbd4b01ead6b05f4c78b4566025d749670e02ee974ffd4267ca92",
+    "crates/trames-vfs/src/mapped.rs": "f16ea94c4d57762fc76a758b9fda3b15914aafb9736a3ca8b2765a44262a45e8"
+  },
+  "current_ffi_sha256": "f0c76d94a913acc737860eaf1fa1edb7425e35a0f84b7f20cdaa2c74030e006a",
+  "current_cli_sha256": "bcc6a44d51958f8b808c0711092ad93d1b62c8b02cb51c3a4d0511dcaf97f2ab",
+  "original_musl_fixture_sha256": "a4b2a0564f0cbb954a0198fcb21ed3508b9068d442b82036d7608d76c44d547b",
+  "runs": [
+    {
+      "run": "memory-four-baseline",
+      "diagnostics_complete": true,
+      "host_hwm_bytes": 9430044672,
+      "firefox_exit": null,
+      "passed": false
+    },
+    {
+      "run": "memory-four-syscalls",
+      "diagnostics_complete": true,
+      "host_hwm_bytes": 9660448768,
+      "firefox_exit": 139,
+      "passed": false
+    },
+    {
+      "run": "memory-final-headless",
+      "diagnostics_complete": false,
+      "host_hwm_bytes": 7503347712,
+      "firefox_exit": null,
+      "passed": false
+    },
+    {
+      "run": "memory-final-wayland",
+      "diagnostics_complete": true,
+      "host_hwm_bytes": 5489639424,
+      "firefox_exit": null,
+      "passed": false
+    },
+    {
+      "run": "memory-candidate-headless",
+      "diagnostics_complete": false,
+      "host_hwm_bytes": 7526547456,
+      "firefox_exit": null,
+      "passed": false
+    },
+    {
+      "run": "memory-quiet-headless",
+      "diagnostics_complete": true,
+      "host_hwm_bytes": 7550824448,
+      "firefox_exit": null,
+      "passed": false,
+      "guest_progress_diagnostic": false
+    },
+    {
+      "run": "memory-verified-wayland",
+      "diagnostics_complete": true,
+      "host_hwm_bytes": 5487419392,
+      "firefox_exit": null,
+      "passed": false,
+      "guest_progress_diagnostic": false
+    }
+  ],
+  "notes": [
+    "Default Firefox sandbox configuration retained; enforcement is not fully validated.",
+    "Final headless log collection did not finish in the extra 15s. Its partial tails cannot establish absence of every error.",
+    "Wayland sampling used the paired ELF recorded in host-profile.json, before the final one-page coordinator TLB optimization.",
+    "Host RSS includes runtime/shadow pages and allocator retention; it is not the guest 4GiB accounting budget.",
+    "Final kernel/native output preflight reserves first-touch quota before consuming input. The quiet-headless record predates only this final preflight guard; verified-wayland uses the current FFI."
+  ]
+}

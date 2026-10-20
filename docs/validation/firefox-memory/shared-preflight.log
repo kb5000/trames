@@ -1,0 +1,10 @@
+   Compiling trames-memory v1.2.0 (/workspace/trames/crates/trames-memory)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.91s
+     Running unittests src/lib.rs (target/perf-runtime/debug/build/trames-memory/adc3530834655997/out/trames_memory-adc3530834655997)
+
+running 2 tests
+test backing::tests::failed_remap_is_atomic_and_success_preserves_bytes_and_zero_grows ... ok
+test backing::tests::fork_shares_anonymous_bytes_but_not_protections_or_mapping_table ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 69 filtered out; finished in 0.00s
+

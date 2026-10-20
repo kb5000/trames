@@ -175,13 +175,16 @@ impl Process {
         self.linux.vfs.cgroup_frozen(pid) && self.pending_bits() & (1 << 8) == 0
     }
     fn fork(&self) -> Self {
+        self.fork_with_memory(self.memory.clone())
+    }
+    fn fork_with_memory(&self, memory: Memory) -> Self {
         Self {
             cpu: self.cpu.clone(),
             affinity: self.affinity,
             last_cpu: self.last_cpu,
             nice: self.nice,
             scheduler: self.scheduler,
-            memory: self.memory.clone(),
+            memory,
             linux: self.linux.clone(),
             parent: 0,
             parent_thread: 0,
@@ -473,7 +476,7 @@ impl Kernel {
             .values()
             .filter(|p| p.vm_id != vm_id && !matches!(p.state, State::Zombie(_)))
         {
-            spaces.entry(p.vm_id).or_insert(p.memory.mapped_bytes());
+            spaces.entry(p.vm_id).or_insert(p.memory.resident_bytes());
         }
         spaces.values().sum()
     }
@@ -580,7 +583,7 @@ impl Kernel {
             ),
             executable_file: p.linux.executable_file.as_ref().map(Rc::downgrade),
             cwd: p.linux.vfs.cwd().unwrap_or_else(|_| b"/".to_vec()),
-            mapped_bytes: p.memory.mapped_bytes(),
+            mapped_bytes: p.memory.resident_bytes(),
             virtual_bytes: p.memory.virtual_bytes(),
             maps,
             affinity: p.affinity,
@@ -648,7 +651,7 @@ impl Kernel {
                 memory_limit: self.memory_limits.total,
                 load: self.load,
                 processes_created: self.next_pid - 1,
-                used_memory: self.other_memory(p.vm_id) + p.memory.mapped_bytes(),
+                used_memory: self.other_memory(p.vm_id) + p.memory.resident_bytes(),
             },
         );
     }
@@ -1053,6 +1056,12 @@ impl Kernel {
                 pc, signal, code, ..
             } => (*signal, *code, *pc),
             F::Instruction { pc, .. } => (4, 1, *pc),
+            // An overcommitted anonymous page can exhaust the guest quota on
+            // first store. Kill this guest thread group, not a catchable SEGV.
+            F::Memory {
+                error: M::Limit,
+                pc,
+            } => (9, 0, *pc),
             F::Memory {
                 error: M::Bus(address),
                 ..
@@ -1447,9 +1456,13 @@ impl Kernel {
                 RuntimeError::Elf(trames_elf::ElfError::Interpreter(n)) => Errno(n),
                 _ => Errno(8),
             })?;
-            if runtime.memory.mapped_bytes() > budget {
+            if runtime.memory.resident_bytes() > budget {
                 return Err(Errno(12));
             }
+            runtime
+                .memory
+                .inherit_total_limit(&p.memory)
+                .map_err(|_| Errno(12))?;
             runtime.linux.executable_path = p.linux.vfs.executable_display(&file);
             runtime.linux.executable_file = Some(file);
             runtime.linux.command_name = filename
@@ -1825,10 +1838,7 @@ impl Kernel {
                 {
                     return Err(Errno(22));
                 }
-                if self.processes.len() + 1 >= MAX_PROCESSES
-                    || self.other_memory(p.vm_id)
-                        + p.memory.mapped_bytes() * if shared_vm { 1 } else { 2 }
-                        > self.memory_limits.total
+                if self.processes.len() + 1 >= MAX_PROCESSES || (!shared_vm && !p.memory.can_fork())
                 {
                     return Err(Errno(11));
                 }
@@ -1857,7 +1867,12 @@ impl Kernel {
                     .chain(p.signal_senders())
                     .collect();
                 p.linux.vfs.pid_namespace().retain_ids(&live);
-                let mut child = p.fork();
+                let mut child = if shared_vm {
+                    let memory = p.memory.share();
+                    p.fork_with_memory(memory)
+                } else {
+                    p.fork()
+                };
                 if a[0] & trames_vfs::CLONE_NEWPID != 0 {
                     child.linux.vfs.unshare_pid()?;
                 }
@@ -1884,7 +1899,6 @@ impl Kernel {
                 // inside the new namespace; init can then establish setsid().
                 let resource = self.resource_id();
                 if shared_vm {
-                    child.memory = p.memory.share();
                     child.membarrier_registered = p.membarrier_registered.clone();
                     if a[0] & 0x4000 == 0 {
                         child.alt_stack = AltStack::default();
@@ -1951,24 +1965,15 @@ impl Kernel {
             }
             221 | 281 => {
                 let old_vm = p.vm_id;
-                let others = self.other_memory(p.vm_id);
                 if number == 221 {
-                    Self::exec(
-                        p,
-                        a,
-                        self.memory_limits
-                            .per_process
-                            .min(self.memory_limits.total.saturating_sub(others)),
-                    )?;
+                    Self::exec(p, a, self.memory_limits.per_process)?;
                 } else {
                     Self::exec_at(
                         p,
                         a[0] as i32,
                         [a[1], a[2], a[3], 0, 0, 0],
                         a[4] as u32,
-                        self.memory_limits
-                            .per_process
-                            .min(self.memory_limits.total.saturating_sub(others)),
+                        self.memory_limits.per_process,
                     )?;
                 }
                 let ids: Vec<_> = self
@@ -2284,7 +2289,7 @@ impl Kernel {
             }
             179 => {
                 Linux::check(&p.memory, a[0], 112, Access::Write)?;
-                let used = self.other_memory(p.vm_id) + p.memory.mapped_bytes();
+                let used = self.other_memory(p.vm_id) + p.memory.resident_bytes();
                 let mut out = [0; 112];
                 for (offset, value) in [
                     (0, self.started.elapsed().as_secs()),
@@ -2485,12 +2490,6 @@ impl Kernel {
             self.proc_refreshes += 1;
             self.refresh_proc(pid, p);
         }
-        let other_bytes = self.other_memory(p.vm_id);
-        let _ = p.memory.set_limit(
-            self.memory_limits
-                .per_process
-                .min(self.memory_limits.total.saturating_sub(other_bytes)),
-        );
         let was_blocked = matches!(p.state, State::Blocked(..));
         p.cpu.set_x(8, number as u64);
         put_args(&mut p.cpu, a);
@@ -3924,6 +3923,9 @@ pub(super) fn run(
     runtime
         .memory
         .set_limit(runtime.memory_limits.per_process)?;
+    runtime
+        .memory
+        .set_total_limit(runtime.memory_limits.total)?;
     let mut root = Process {
         cpu: std::mem::take(&mut runtime.cpu),
         affinity: (1u64 << runtime.cpu_count.clamp(1, 32)) - 1,
@@ -4853,7 +4855,58 @@ mod tests {
 mod boundary_tests {
     use super::tests::{kernel, process};
     use super::*;
+    use crate::PAGE_SIZE;
     use trames_linux::CapturedOutput;
+    #[test]
+    fn first_touch_quota_failure_kills_the_guest_group_instead_of_segv() {
+        let mut p = process();
+        let mut k = kernel();
+        p.memory.set_total_limit(PAGE_SIZE as usize).unwrap();
+        p.memory.write_array(0x1000, [17u8]).unwrap();
+        let error = p.memory.write_array(0x2000, [42u8]).unwrap_err();
+        assert_eq!(error, trames_memory::MemoryError::Limit);
+        p.actions[11].handler = 0x4000;
+        k.synchronous_fault(
+            1,
+            &mut p,
+            &trames_cpu::CpuFault::Memory { pc: 0x4000, error },
+        );
+        assert!(matches!(p.state, State::Zombie(9)));
+    }
+    #[test]
+    fn clone_vm_shares_the_full_budget_without_a_temporary_fork_or_mmu_retirement() {
+        let mut p = process();
+        let mut k = kernel();
+        p.memory.write_array(0x1000, [17u8]).unwrap();
+        p.memory.set_total_limit(PAGE_SIZE as usize).unwrap();
+        assert!(!p.memory.can_fork());
+        let before = p.memory.instruction_identity();
+        assert_eq!(
+            k.syscall(
+                1,
+                &mut p,
+                220,
+                [17, 0, 0, 0, 0, 0],
+                &mut CapturedOutput::default()
+            ),
+            Err(Errno(11))
+        );
+        let result = k
+            .syscall(
+                1,
+                &mut p,
+                220,
+                [0x10900, 0x8000, 0, 0, 0, 0],
+                &mut CapturedOutput::default(),
+            )
+            .unwrap();
+        let id = result.unwrap() as u32;
+        let child = k.processes.get_mut(&id).unwrap();
+        child.memory.write_array(0x1000, [42u8]).unwrap();
+        assert_eq!(p.memory.read_array::<1>(0x1000), Ok([42]));
+        assert_eq!(p.memory.resident_bytes(), PAGE_SIZE as usize);
+        assert_eq!(p.memory.instruction_identity(), before);
+    }
     #[test]
     fn kill_is_delivered_even_with_an_older_pending_signal_while_stopped() {
         let mut p = process();

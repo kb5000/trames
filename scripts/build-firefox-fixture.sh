@@ -11,6 +11,8 @@ out="$PWD/target/firefox-fixture"
 mkdir -p "$out"
 "$compiler" -static -O2 -Wall -Wextra -Werror tests/fixtures/firefox-socket-probe.c -o "$out/socket-probe"
 cp tests/fixtures/firefox-socket-probe.c "$out/"
+"$compiler" -static -O2 -Wall -Wextra -Werror tests/fixtures/firefox-memory-probe.c -o "$out/memory-probe"
+cp tests/fixtures/firefox-memory-probe.c "$out/"
 cp LICENSE "$out/"
 if [[ -z "${MUSL_CC:-}" ]]; then
   tar -xOf target/busybox-build/downloads/musl-1.2.5.tar.gz musl-1.2.5/COPYRIGHT >"$out/musl-COPYRIGHT"

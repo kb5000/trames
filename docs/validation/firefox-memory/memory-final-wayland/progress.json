@@ -1,0 +1,24 @@
+{
+  "seconds": 165.0122657840111,
+  "status": {
+    "phase": "running",
+    "error": null,
+    "exit_code": null,
+    "budget_bytes": 17179869184,
+    "used_bytes": 692730234,
+    "available_bytes": 16487138950,
+    "volume_total_bytes": 17179869184,
+    "node_limit": 131072,
+    "nodes_used": 4428
+  },
+  "scene": {
+    "revision": 3,
+    "text": null,
+    "windows": []
+  },
+  "host_memory": {
+    "VmSize": 6920736768,
+    "VmHWM": 5489135616,
+    "VmRSS": 5489135616
+  }
+}

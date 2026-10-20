@@ -1,0 +1,38 @@
+{
+  "stage": "headless",
+  "sandbox": "default",
+  "wayland_proxy": "default",
+  "avoid_opengl_diagnostic": false,
+  "physical_ipad": false,
+  "options": {
+    "store": "/workspace/trames/target/firefox/store",
+    "volume_total": 17179869184,
+    "volume_available": 17179869184,
+    "network": "off",
+    "wayland": true,
+    "pure_accelerator": true,
+    "musl_libc": "/workspace/trames/target/musl-hybrid/libc.so",
+    "memory_budget_bytes": 4294967296,
+    "process_memory_budget_bytes": 4294967296,
+    "vulkan_accelerator": false
+  },
+  "frames": 0,
+  "windows": [],
+  "js_title_seen": false,
+  "probe_sha256": "c03e23a133447b0f6a3c292fb66ebfcfe84abbc5fce286408e3a1734d6563a60",
+  "ffi_sha256": "83ca390665304c12a2c9895595bc3b369c985d6f5d9939fc7a3088d392d16bd9",
+  "musl_sha256": "0350f31621b7abb66764e951318db85ba6606fb6be688be651d779465afff6e6",
+  "input_manifest_sha256": "81caa834813efd29df7d7515d9537999621da8e1bd2ef7f2feb2fb63bb637028",
+  "guest_page": "/tmp/trames-firefox-104555966084502.html",
+  "command": "mkdir -p /root/firefox-probe-memory-candidate-headless; ( MOZ_ENABLE_WAYLAND=1 GDK_BACKEND=wayland XDG_RUNTIME_DIR=/run/user/0 WAYLAND_DISPLAY=wayland-0 firefox --no-remote --profile /root/firefox-probe-memory-candidate-headless --headless --window-size 640,480 --screenshot /tmp/trames-firefox-104555966084502.html.png file:///tmp/trames-firefox-104555966084502.html >/tmp/firefox-probe.log 2>&1; r=$?; printf \"\\nFIREFOX_PROBE_EXIT:%d\\n\" \"$r\"; ) </dev/null &\n",
+  "launch_seconds": 100.00734615699912,
+  "firefox_exit": null,
+  "host_memory": {
+    "VmSize": 9006911488,
+    "VmHWM": 7526547456,
+    "VmRSS": 7526547456
+  },
+  "diagnostics_complete": false,
+  "passed": false,
+  "seconds": 145.28745628899196
+}

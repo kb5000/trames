@@ -25,6 +25,8 @@ p.add_argument('--stage', choices=['headless', 'wayland'], required=True)
 p.add_argument('--ffi', type=Path, default=ROOT/'target/perf-runtime/release/libtrames_ffi.so')
 p.add_argument('--musl', type=Path, default=ROOT/'target/musl-hybrid/libc.so')
 p.add_argument('--timeout', type=float, default=180)
+p.add_argument('--diagnostic-timeout', type=float, default=15)
+p.add_argument('--guest-progress', action='store_true', help='intrusive diagnosis: periodic guest ps/proc commands; disabled for startup gates')
 p.add_argument('--memory-gib', type=int, default=4, help='aggregate guest memory budget; overrides are diagnostic')
 p.add_argument('--process-memory-gib', type=int, default=4)
 p.add_argument('--gpu', action='store_true')
@@ -64,6 +66,8 @@ report = dict(stage=a.stage, sandbox='content-disabled-diagnostic' if a.disable_
     wayland_proxy='disabled-diagnostic' if a.disable_wayland_proxy else 'default',
     avoid_opengl_diagnostic=a.avoid_opengl,
     physical_ipad=False, options=options, frames=0, windows=[], js_title_seen=False,
+    guest_progress_diagnostic=a.guest_progress,
+    probe_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
     ffi_sha256=hashlib.sha256(a.ffi.read_bytes()).hexdigest(),
     musl_sha256=hashlib.sha256(a.musl.read_bytes()).hexdigest(),
     input_manifest_sha256=hashlib.sha256((a.store/'manifest').read_bytes()).hexdigest())
@@ -84,6 +88,14 @@ def send(value):
 def payload(name, value):
     b = json.dumps(value).encode()
     assert getattr(api, 'trames_session_'+name)(h, b, len(b)) >= 0
+def host_memory():
+    """Linux probe RSS includes guest storage and runtime bookkeeping."""
+    status = Path('/proc/self/status')
+    if not status.exists(): return {}
+    return {key: int(value.split()[0])*1024 for key, value in
+        (line.split(':',1) for line in status.read_text().splitlines() if ':' in line)
+        if key in ('VmRSS','VmHWM','VmSize')}
+memory_command = "cat /proc/meminfo; grep -E 'Name:|Pid:|PPid:|VmRSS:|VmSize:|Threads:' /proc/[0-9]*/status"
 def pump():
     global queries
     chunk = read('output')
@@ -113,6 +125,8 @@ try:
         sampler.trames_sample_start.argtypes = [C.c_char_p, C.c_char_p]
         assert sampler.trames_sample_start(str(a.ffi.resolve()).encode(), str((a.output/'samples.txt').resolve()).encode()) == 0
         report['host_pc_sampling'] = True
+        maps = Path('/proc/self/maps')
+        if maps.exists(): (a.output/'host-maps.txt').write_text(maps.read_text())
     while json.loads(read('status'))['phase'] == 'starting':
         assert time.monotonic()-began < 90
         time.sleep(.01)
@@ -148,9 +162,11 @@ document.title='TRAMES_FIREFOX_JS_OK';document.body.dataset.test='javascript-and
             report['status'] = status; break
         scene = json.loads(read('wayland_status'))
         if time.monotonic()-start >= progress:
-            (a.output/'progress.json').write_text(json.dumps(dict(seconds=time.monotonic()-start,status=status,scene=scene),indent=2)+'\n')
-            if progress:
-                send('printf "\\nFIREFOX_PROGRESS\\n"; tail -n 12 /tmp/firefox-probe.log; ps -T -o pid,ppid,stat,time,comm\n')
+            sample = dict(seconds=time.monotonic()-start,status=status,scene=scene,host_memory=host_memory())
+            (a.output/'progress.json').write_text(json.dumps(sample,indent=2)+'\n')
+            with (a.output/'progress.jsonl').open('a') as log: log.write(json.dumps(sample)+'\n')
+            if progress and a.guest_progress:
+                send('printf "\\nFIREFOX_PROGRESS\\n"; tail -n 12 /tmp/firefox-probe.log; '+memory_command+'; ps -T -o pid,ppid,stat,time,comm\n')
             progress += 15
         report['windows'] = scene.get('windows', [])
         for w in report['windows']:
@@ -170,8 +186,9 @@ document.title='TRAMES_FIREFOX_JS_OK';document.body.dataset.test='javascript-and
     report['launch_seconds'] = time.monotonic()-start
     match = re.search(rb'\r?\nFIREFOX_PROBE_EXIT:(\d+)\r?\n',output)
     report['firefox_exit'] = int(match[1]) if match else None
-    send('printf "\\nFIREFOX_LOG_BEGIN\\n"; cat /tmp/firefox-probe.log; printf "\\nFIREFOX_DMESG_BEGIN\\n"; dmesg; printf "\\nFIREFOX_PROCESSES_BEGIN\\n"; ps -T -o pid,ppid,stat,time,comm; printf "\\nFIREFOX_DIAGNOSTICS_DONE\\n"\n')
-    wait(b'\r\nFIREFOX_DIAGNOSTICS_DONE\r\n',15)
+    report['host_memory'] = host_memory()
+    send('printf "\\nFIREFOX_LOG_BEGIN\\n"; cat /tmp/firefox-probe.log; printf "\\nFIREFOX_DMESG_BEGIN\\n"; dmesg; printf "\\nFIREFOX_MEMORY_BEGIN\\n"; '+memory_command+'; printf "\\nFIREFOX_PROCESSES_BEGIN\\n"; ps -T -o pid,ppid,stat,time,comm; printf "\\nFIREFOX_DIAGNOSTICS_DONE\\n"\n')
+    report['diagnostics_complete'] = wait(b'\r\nFIREFOX_DIAGNOSTICS_DONE\r\n',a.diagnostic_timeout)
     if a.stage == 'headless' and report['firefox_exit'] == 0:
         screenshot = a.output/'headless.png'
         payload('transfer', dict(guest=guest_screenshot, host=str(screenshot.resolve()), export=True))
