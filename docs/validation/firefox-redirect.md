@@ -1,5 +1,9 @@
 # Firefox：单核离线页面已通过，默认多核仍待排查
 
+后续：[文件变更域优化](firefox-backing-domains.md)减少无关文件页的快照扫描，
+四核低刷新率诊断组也已通过离线 HTML / JS / canvas；默认刷新率仍待解决。
+以下保留优化前的调查记录。
+
 2026-10-20，继续[文件通道调查](firefox-open-document.md)。原版 Alpine ARM64
 Firefox 142 首次完成离线页面验收：目标 HTML 加载、JavaScript 修改标题，并通过
 Wayland SHM 画出完整的绿色 canvas。文件打开、通道重定向、子侧解析和页面脚本
