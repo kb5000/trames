@@ -1,0 +1,324 @@
+{
+  "kind": "SIGPROF leaf PCs, symbol ranges, no call stacks; not wall-time shares",
+  "ffi_sha256": "157c0fc6d4f7a0f9e2fc42d66552ae2814428d7a9b95988c3677236a7c58584c",
+  "sample_sha256": "ba0948854fa5b7254cfa10fabf062ce9e5471af6b35cdb8c64b0060dc4be1479",
+  "symbol_table_sha256": "d09011507892f2a16c18dcb8861efcab2ca63e70153e21c3c20e4ab757cc6607",
+  "end": "Host diagnostic interrupted with SIGINT at 346.56s after stable black SHM frame; not a Firefox exit or default startup gate",
+  "stages": {
+    "0-70s": {
+      "samples": 19289,
+      "top": [
+        {
+          "function": "outside FFI",
+          "samples": 3538,
+          "percent": 18.342
+        },
+        {
+          "function": "<trames_memory::parallel::page::MutablePage>::lock",
+          "samples": 1695,
+          "percent": 8.787
+        },
+        {
+          "function": "trames_cpu::cached::tail_op::<trames_memory::Memory, 22>",
+          "samples": 679,
+          "percent": 3.52
+        },
+        {
+          "function": "<trames_memory::Memory>::read_array::<8>",
+          "samples": 605,
+          "percent": 3.137
+        },
+        {
+          "function": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 22>",
+          "samples": 563,
+          "percent": 2.919
+        },
+        {
+          "function": "trames_memory::parallel::page::mask",
+          "samples": 444,
+          "percent": 2.302
+        },
+        {
+          "function": "<trames_memory::parallel::View>::read_checked::<trames_memory::MemoryError, <trames_memory::parallel::View as trames_memory::cpu_memory::CpuMemory>::read::{closure#0}>",
+          "samples": 432,
+          "percent": 2.24
+        },
+        {
+          "function": "<trames_memory::mmu::PageBytes>::with_read::<(), <trames_memory::Page>::read_bytes::{closure#0}>",
+          "samples": 317,
+          "percent": 1.643
+        },
+        {
+          "function": "trames_cpu::cached::tail_op::<trames_memory::Memory, 7>",
+          "samples": 309,
+          "percent": 1.602
+        },
+        {
+          "function": "<trames_memory::parallel::page::MutablePage>::changed",
+          "samples": 255,
+          "percent": 1.322
+        },
+        {
+          "function": "<trames_memory::parallel::page::Guard>::read",
+          "samples": 250,
+          "percent": 1.296
+        },
+        {
+          "function": "<trames_memory::Memory>::write_array::<16>",
+          "samples": 239,
+          "percent": 1.239
+        },
+        {
+          "function": "<trames_memory::parallel::View>::write_fragment",
+          "samples": 238,
+          "percent": 1.234
+        },
+        {
+          "function": "trames_cpu::cached::tail_op::<trames_memory::Memory, 8>",
+          "samples": 227,
+          "percent": 1.177
+        },
+        {
+          "function": "trames_cpu::cached::tail_enter::<trames_memory::Memory>",
+          "samples": 215,
+          "percent": 1.115
+        },
+        {
+          "function": "<trames_memory::Memory>::read_array::<1>",
+          "samples": 212,
+          "percent": 1.099
+        },
+        {
+          "function": "<trames_memory::Memory>::write_array::<8>",
+          "samples": 199,
+          "percent": 1.032
+        },
+        {
+          "function": "<trames_memory::Memory>::read_array::<4>",
+          "samples": 198,
+          "percent": 1.026
+        },
+        {
+          "function": "<trames_memory::Memory>::read_array::<16>",
+          "samples": 197,
+          "percent": 1.021
+        },
+        {
+          "function": "<trames_memory::parallel::View>::frame_slow",
+          "samples": 190,
+          "percent": 0.985
+        }
+      ]
+    },
+    "70-270s": {
+      "samples": 55350,
+      "top": [
+        {
+          "function": "outside FFI",
+          "samples": 26422,
+          "percent": 47.736
+        },
+        {
+          "function": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 22>",
+          "samples": 1577,
+          "percent": 2.849
+        },
+        {
+          "function": "<trames_memory::parallel::View>::frame_slow",
+          "samples": 1467,
+          "percent": 2.65
+        },
+        {
+          "function": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::ValMut, u32, (u32, u64), alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::perform_next_unchecked::<<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::ValMut, u32, (u32, u64), alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::next_unchecked::{closure#0}, (&u32, &mut (u32, u64))>",
+          "samples": 1395,
+          "percent": 2.52
+        },
+        {
+          "function": "<trames_memory::parallel::page::MutablePage>::lock",
+          "samples": 1242,
+          "percent": 2.244
+        },
+        {
+          "function": "<trames_memory::parallel::View>::read_checked::<trames_memory::MemoryError, <trames_memory::parallel::View as trames_memory::cpu_memory::CpuMemory>::read::{closure#0}>",
+          "samples": 1241,
+          "percent": 2.242
+        },
+        {
+          "function": "<trames_memory::Memory>::commit_parallel",
+          "samples": 972,
+          "percent": 1.756
+        },
+        {
+          "function": "<trames_core::process::Kernel>::drive::<trames_ffi::session::Adapter>",
+          "samples": 906,
+          "percent": 1.637
+        },
+        {
+          "function": "<trames_memory::parallel::View>::write_fragment",
+          "samples": 880,
+          "percent": 1.59
+        },
+        {
+          "function": "<trames_memory::parallel::View as trames_memory::cpu_memory::CpuMemory>::fetch_u32",
+          "samples": 721,
+          "percent": 1.303
+        },
+        {
+          "function": "<trames_vfs::Vfs>::next_timerfd_deadline",
+          "samples": 700,
+          "percent": 1.265
+        },
+        {
+          "function": "<trames_vfs::Vfs>::cgroup_frozen",
+          "samples": 688,
+          "percent": 1.243
+        },
+        {
+          "function": "<trames_memory::parallel::page::Guard>::read",
+          "samples": 660,
+          "percent": 1.192
+        },
+        {
+          "function": "trames_memory::parallel::page::mask",
+          "samples": 637,
+          "percent": 1.151
+        },
+        {
+          "function": "trames_cpu::cached::tail_enter::<trames_memory::parallel::View>",
+          "samples": 606,
+          "percent": 1.095
+        },
+        {
+          "function": "<trames_memory::parallel::ConcurrentPage>::changed",
+          "samples": 559,
+          "percent": 1.01
+        },
+        {
+          "function": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 23>",
+          "samples": 511,
+          "percent": 0.923
+        },
+        {
+          "function": "<trames_cpu::Cpu>::execute_extended::<trames_memory::parallel::View>",
+          "samples": 493,
+          "percent": 0.891
+        },
+        {
+          "function": "<trames_cpu::cached::Cache>::page::<trames_memory::parallel::View>",
+          "samples": 478,
+          "percent": 0.864
+        },
+        {
+          "function": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 7>",
+          "samples": 421,
+          "percent": 0.761
+        }
+      ]
+    },
+    "280-350s": {
+      "samples": 17023,
+      "top": [
+        {
+          "function": "outside FFI",
+          "samples": 2601,
+          "percent": 15.279
+        },
+        {
+          "function": "<trames_vfs::mapped::FileMapping as trames_memory::backing::PageBacking>::parallel_key",
+          "samples": 1941,
+          "percent": 11.402
+        },
+        {
+          "function": "<trames_memory::parallel::Snapshot>::remove_frame",
+          "samples": 1597,
+          "percent": 9.381
+        },
+        {
+          "function": "trames_memory::parallel::prepare_frame",
+          "samples": 1322,
+          "percent": 7.766
+        },
+        {
+          "function": "<trames_memory::parallel::page::MutablePage>::revision",
+          "samples": 1292,
+          "percent": 7.59
+        },
+        {
+          "function": "<trames_memory::parallel::Snapshot>::refresh_mmu",
+          "samples": 1224,
+          "percent": 7.19
+        },
+        {
+          "function": "<trames_memory::Memory>::update_parallel_snapshot",
+          "samples": 994,
+          "percent": 5.839
+        },
+        {
+          "function": "<trames_memory::parallel::Snapshot>::insert_frame",
+          "samples": 978,
+          "percent": 5.745
+        },
+        {
+          "function": "<alloc::collections::btree::map::BTreeMap<u64, alloc::collections::btree::set_val::SetValZST>>::insert",
+          "samples": 828,
+          "percent": 4.864
+        },
+        {
+          "function": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, u64, alloc::collections::btree::set_val::SetValZST, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::perform_next_unchecked::<<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Immut, u64, alloc::collections::btree::set_val::SetValZST, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::next_unchecked::{closure#0}, (&u64, &alloc::collections::btree::set_val::SetValZST)>",
+          "samples": 311,
+          "percent": 1.827
+        },
+        {
+          "function": "<trames_vfs::mapped::FileMapping as trames_memory::backing::PageBacking>::version",
+          "samples": 278,
+          "percent": 1.633
+        },
+        {
+          "function": "<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Dying, u64, trames_memory::parallel::Frame, alloc::collections::btree::node::marker::LeafOrInternal>>::drop_kvs",
+          "samples": 272,
+          "percent": 1.598
+        },
+        {
+          "function": "<trames_vfs::mapped::FileMapping as trames_memory::backing::PageBacking>::shared_page",
+          "samples": 235,
+          "percent": 1.38
+        },
+        {
+          "function": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, usize, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::insert_recursing::<alloc::alloc::Global, <alloc::collections::btree::map::entry::VacantEntry<u64, usize>>::insert_entry::{closure#0}>",
+          "samples": 224,
+          "percent": 1.316
+        },
+        {
+          "function": "<alloc::collections::btree::dedup_sorted_iter::DedupSortedIter<u64, trames_memory::parallel::Frame, alloc::vec::into_iter::IntoIter<(u64, trames_memory::parallel::Frame)>> as core::iter::traits::iterator::Iterator>::next",
+          "samples": 213,
+          "percent": 1.251
+        },
+        {
+          "function": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, usize, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::KV>>::remove_leaf_kv::<<alloc::collections::btree::map::entry::OccupiedEntry<u64, usize>>::remove_kv::{closure#0}, alloc::alloc::Global>",
+          "samples": 193,
+          "percent": 1.134
+        },
+        {
+          "function": "<alloc::collections::btree::map::IntoIter<u64, alloc::collections::btree::set_val::SetValZST>>::dying_next",
+          "samples": 172,
+          "percent": 1.01
+        },
+        {
+          "function": "<alloc::collections::btree::map::entry::VacantEntry<u64, usize>>::insert_entry",
+          "samples": 140,
+          "percent": 0.822
+        },
+        {
+          "function": "<trames_vfs::mapped::FileMapping as trames_memory::backing::PageBacking>::check",
+          "samples": 140,
+          "percent": 0.822
+        },
+        {
+          "function": "<alloc::vec::Vec<(u64, trames_memory::parallel::Frame)> as alloc::vec::spec_from_iter::SpecFromIter<(u64, trames_memory::parallel::Frame), core::iter::adapters::filter_map::FilterMap<alloc::collections::btree::set::Iter<u64>, <trames_memory::Memory>::update_parallel_snapshot::{closure#1}>>>::from_iter",
+          "samples": 137,
+          "percent": 0.805
+        }
+      ]
+    }
+  }
+}

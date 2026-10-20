@@ -1,0 +1,6 @@
+~ # [6nmkdir -p /root/firefox-probe-resource-sync-canvas-sampled; ( MOZ_ENABLE_WAYL
+AND=1 GDK_BACKEND=wayland XDG_RUNTIME_DIR=/run/user/0 WAYLAND_DISPLAY=wayland-0 
+firefox --no-remote --profile /root/firefox-probe-resource-sync-canvas-sampled f
+ile:///tmp/trames-firefox-118244825868076.html >/tmp/firefox-probe.log 2>&1; r=$
+?; printf "\nFIREFOX_PROBE_EXIT:%d\n" "$r"; ) </dev/null &
+~ # [6n

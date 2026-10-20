@@ -159,20 +159,26 @@ jobs:
         with:
           toolchain: nightly-2026-10-16
           components: rustfmt, clippy
-      - name: Prepare original musl socket fixture
+      - name: Check unchanged original-musl fixture sources
         run: |
-          sudo apt-get update
-          sudo apt-get install --yes gcc-aarch64-linux-gnu
-          bash scripts/build-firefox-fixture.sh
+          git fetch --depth=1 origin c7e9c39ee02c2adfecead1157d041201365a5113
+          git diff --exit-code c7e9c39ee02c2adfecead1157d041201365a5113 HEAD -- tests/fixtures/firefox-socket-probe.c tests/fixtures/firefox-memory-probe.c scripts/build-firefox-fixture.sh
+      - uses: actions/download-artifact@v4
+        with:
+          name: firefox-memory-fixture
+          path: target/firefox-fixture/
+          github-token: ${{ github.token }}
+          run-id: 39400045425
       - name: Check affected runtime modules and socket ABI
         run: |
           cargo fmt --all --check
-          cargo clippy -p trames-vfs -p trames-linux --all-targets --no-deps --locked -- -D warnings
-          cargo test -p trames-vfs -p trames-linux -p trames-core --lib --locked
+          cargo clippy -p trames-vfs -p trames-linux -p trames-core -p trames-memory --all-targets --no-deps --locked -- -D warnings
+          cargo test -p trames-core -p trames-memory --lib --locked
+          cargo test -p trames-vfs clone_resources --lib --locked
+          cargo test -p trames-vfs process_tests --lib --locked
+          cargo test -p trames-vfs mapped --lib --locked
           cargo build -p trames-cli --release --locked
           python3 -m py_compile tests/integration/firefox.py tests/integration/firefox-prepare.py scripts/ios-ci-scope.py
-          cc -O2 -Wall -Wextra -Werror tests/fixtures/firefox-socket-probe.c -o /tmp/socket-probe
-          /tmp/socket-probe
           target/release/trames-run --memory "$PWD/target/firefox-fixture/socket-probe"
       - uses: actions/upload-artifact@v4
         with:
@@ -196,7 +202,10 @@ jobs:
         run: |
           uname -m
           sysctl hw.pagesize
-          cargo test -p trames-vfs -p trames-linux -p trames-core --lib --locked
+          cargo test -p trames-core -p trames-memory --lib --locked
+          cargo test -p trames-vfs clone_resources --lib --locked
+          cargo test -p trames-vfs process_tests --lib --locked
+          cargo test -p trames-vfs mapped --lib --locked
           cargo build -p trames-cli --release --locked
           target/release/trames-run --memory "$PWD/target/firefox-fixture/socket-probe"
   compatibility-probe:

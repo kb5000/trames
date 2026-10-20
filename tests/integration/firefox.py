@@ -34,8 +34,11 @@ p.add_argument('--disable-content-sandbox', action='store_true')
 p.add_argument('--disable-wayland-proxy', action='store_true', help='diagnosis only: bypass the known FIONREAD blocker')
 p.add_argument('--avoid-opengl', action='store_true', help='diagnosis only: skip Firefox graphics probing')
 p.add_argument('--wayland-debug', action='store_true')
+p.add_argument('--capture-shm', action='store_true', help='save software-composited PNG and require the offline canvas green rectangle; requires Pillow')
 p.add_argument('--sampler', type=Path, help='optional Linux host PC sampling; not an uninstrumented timing run')
 a = p.parse_args()
+if a.capture_shm:
+    from PIL import Image as PillowImage, ImageChops
 a.output.mkdir(parents=True, exist_ok=False)
 if hasattr(os, 'sched_setaffinity'):
     os.sched_setaffinity(0, sorted(os.sched_getaffinity(0))[:4])
@@ -55,6 +58,37 @@ class Info(C.Structure):
     _fields_ = [('width', C.c_uint32), ('height', C.c_uint32), ('images', C.c_uint32),
                ('reserved', C.c_uint32), ('revision', C.c_uint64)]
 api.trames_wayland_frame_info.argtypes = [C.c_uint64, C.POINTER(Info)]
+class Image(C.Structure):
+    _fields_ = [(n, C.c_uint64) for n in ('kind','address','length','offset')] + [
+        (n, C.c_uint32) for n in ('width','height','stride','alpha')] + [
+        (n, C.c_int32) for n in ('x','y','scale')] + [('transform', C.c_uint32)]
+api.trames_wayland_frame_image.argtypes = [C.c_uint64, C.c_uint32, C.POINTER(Image)]
+
+def capture(frame, info):
+    """Read only retained SHM capabilities; native Metal handles are opaque."""
+    if not (0 < info.width <= 4096 and 0 < info.height <= 4096): return None
+    canvas = PillowImage.new('RGBA', (info.width, info.height), (0,0,0,255))
+    for i in range(info.images):
+        image = Image()
+        assert api.trames_wayland_frame_image(frame, i, C.byref(image)) == 0
+        size = image.stride * image.height
+        if (image.kind != 1 or not image.address or image.transform or image.scale < 1
+            or not 0 < image.width <= 4096 or not 0 < image.height <= 4096
+            or image.stride < image.width*4 or size > 64<<20
+            or image.offset + size > image.length): return None
+        pixels = C.string_at(image.address + image.offset, size)
+        layer = PillowImage.frombytes('RGBA', (image.width,image.height), pixels,
+                                     'raw', 'BGRA', image.stride, 1)
+        if not image.alpha: layer.putalpha(255)
+        if image.scale != 1:
+            layer = layer.resize((max(1,image.width//image.scale), max(1,image.height//image.scale)))
+        canvas.alpha_composite(layer, (image.x,image.y))
+    canvas.save(a.output/'wayland.png')
+    channels = canvas.convert('RGB').split()
+    matches = [channel.point([255 if i == expected else 0 for i in range(256)])
+               for channel, expected in zip(channels, (22,163,74))]
+    green = ImageChops.multiply(ImageChops.multiply(matches[0],matches[1]),matches[2])
+    return green.histogram()[255]
 
 options = dict(store=str(a.store.resolve()), volume_total=16<<30, volume_available=16<<30,
     network='off', wayland=True, pure_accelerator=True, musl_libc=str(a.musl.resolve()),
@@ -67,6 +101,7 @@ report = dict(stage=a.stage, sandbox='content-disabled-diagnostic' if a.disable_
     avoid_opengl_diagnostic=a.avoid_opengl,
     physical_ipad=False, options=options, frames=0, windows=[], js_title_seen=False,
     guest_progress_diagnostic=a.guest_progress,
+    capture_shm=a.capture_shm,
     probe_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
     ffi_sha256=hashlib.sha256(a.ffi.read_bytes()).hexdigest(),
     musl_sha256=hashlib.sha256(a.musl.read_bytes()).hexdigest(),
@@ -155,6 +190,8 @@ document.title='TRAMES_FIREFOX_JS_OK';document.body.dataset.test='javascript-and
     send(script)
     start = time.monotonic()
     focused = set()
+    revisions = set()
+    captured_at = -15.0
     progress = 0.0
     while time.monotonic()-start < a.timeout:
         status = pump()
@@ -162,25 +199,44 @@ document.title='TRAMES_FIREFOX_JS_OK';document.body.dataset.test='javascript-and
             report['status'] = status; break
         scene = json.loads(read('wayland_status'))
         if time.monotonic()-start >= progress:
-            sample = dict(seconds=time.monotonic()-start,status=status,scene=scene,host_memory=host_memory())
+            sample = dict(seconds=time.monotonic()-start,status=status,scene=scene,host_memory=host_memory(),
+                          frames=report['frames'],js_title_seen=report['js_title_seen'])
             (a.output/'progress.json').write_text(json.dumps(sample,indent=2)+'\n')
             with (a.output/'progress.jsonl').open('a') as log: log.write(json.dumps(sample)+'\n')
             if progress and a.guest_progress:
                 send('printf "\\nFIREFOX_PROGRESS\\n"; tail -n 12 /tmp/firefox-probe.log; '+memory_command+'; ps -T -o pid,ppid,stat,time,comm\n')
             progress += 15
         report['windows'] = scene.get('windows', [])
+        if report['windows']: report.setdefault('first_window_seconds',time.monotonic()-start)
         for w in report['windows']:
             if w['id'] not in focused:
                 payload('wayland_command', dict(op='focus', window=w['id'])); focused.add(w['id'])
             frame = api.trames_session_wayland_frame_acquire(h, w['id'])
             if frame:
-                info = Info()
-                assert api.trames_wayland_frame_info(frame, C.byref(info)) == 0
-                report['frames'] += 1
-                report['last_frame'] = dict(width=info.width, height=info.height, images=info.images, revision=info.revision)
-                assert api.trames_wayland_frame_release(frame, 1, int(time.monotonic()*1000)&0xffffffff) == 0
-            if 'TRAMES_FIREFOX_JS_OK' in w.get('title',''): report['js_title_seen'] = True
-        if a.stage == 'wayland' and report['js_title_seen'] and report['frames']: break
+                presented = False
+                try:
+                    info = Info()
+                    assert api.trames_wayland_frame_info(frame, C.byref(info)) == 0
+                    presented = info.images > 0
+                    identity = (w['id'],info.revision)
+                    if presented and identity not in revisions:
+                        revisions.add(identity)
+                        report['frames'] += 1
+                        report.setdefault('first_image_seconds',time.monotonic()-start)
+                        report['last_frame'] = dict(width=info.width, height=info.height, images=info.images, revision=info.revision)
+                        if a.capture_shm and (time.monotonic()-start-captured_at >= 15
+                                             or 'TRAMES_FIREFOX_JS_OK' in w.get('title','')):
+                            green = capture(frame,info)
+                            captured_at = time.monotonic()-start
+                            report['canvas_green_pixels'] = green
+                            report['canvas_green_seen'] = green is not None and green >= 45000
+                finally:
+                    assert api.trames_wayland_frame_release(frame, int(presented), int(time.monotonic()*1000)&0xffffffff) == 0
+            if 'TRAMES_FIREFOX_JS_OK' in w.get('title',''):
+                report['js_title_seen'] = True
+                report.setdefault('js_title_seconds',time.monotonic()-start)
+        if (a.stage == 'wayland' and report['js_title_seen'] and report['frames']
+            and (not a.capture_shm or report.get('canvas_green_seen'))): break
         if re.search(rb'\r?\nFIREFOX_PROBE_EXIT:\d+\r?\n',output): break
         time.sleep(.01)
     report['launch_seconds'] = time.monotonic()-start
@@ -195,7 +251,7 @@ document.title='TRAMES_FIREFOX_JS_OK';document.body.dataset.test='javascript-and
         deadline = time.monotonic()+10
         while not screenshot.exists() and time.monotonic()<deadline: pump(); time.sleep(.01)
         report['screenshot_exported'] = screenshot.exists()
-    report['passed'] = (report['firefox_exit'] == 0 and report.get('screenshot_exported',False)) if a.stage=='headless' else bool(report['frames'] and report['js_title_seen'])
+    report['passed'] = (report['firefox_exit'] == 0 and report.get('screenshot_exported',False)) if a.stage=='headless' else bool(report['frames'] and report['js_title_seen'] and (not a.capture_shm or report.get('canvas_green_seen')))
 finally:
     report['seconds'] = time.monotonic()-began
     (a.output/'guest.log').write_bytes(output)

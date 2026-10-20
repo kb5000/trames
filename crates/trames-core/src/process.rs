@@ -225,6 +225,18 @@ struct ProcMaps {
     identity: (u64, u64),
     bytes: Vec<u8>,
 }
+#[derive(Default)]
+struct ResourceChanges {
+    heap: bool,
+    files: bool,
+    fs: bool,
+    actions: bool,
+}
+impl ResourceChanges {
+    fn any(&self) -> bool {
+        self.heap || self.files || self.fs || self.actions
+    }
+}
 struct Kernel {
     memory_limits: super::MemoryLimits,
     cpu_count: usize,
@@ -480,8 +492,8 @@ impl Kernel {
         }
         spaces.values().sum()
     }
-    fn sync_resources(&mut self, p: &Process) {
-        if matches!(p.state, State::Zombie(_)) {
+    fn sync_resources(&mut self, p: &Process, changed: ResourceChanges) {
+        if !changed.any() || matches!(p.state, State::Zombie(_)) {
             return;
         }
         for other in self
@@ -489,18 +501,41 @@ impl Kernel {
             .values_mut()
             .filter(|o| !matches!(o.state, State::Zombie(_)))
         {
-            if other.vm_id == p.vm_id {
+            if changed.heap && other.vm_id == p.vm_id {
                 other.linux.share_heap_from(&p.linux);
             }
-            if other.files_id == p.files_id {
+            if changed.files && other.files_id == p.files_id {
                 other.linux.vfs.share_descriptors_from(&p.linux.vfs);
             }
-            if other.fs_id == p.fs_id {
+            if changed.fs && other.fs_id == p.fs_id {
                 other.linux.vfs.share_context_from(&p.linux.vfs);
             }
-            if other.actions_id == p.actions_id {
+            if changed.actions && other.actions_id == p.actions_id {
                 other.actions = p.actions;
             }
+        }
+    }
+    fn control(&mut self, io: &mut impl GuestOutput) -> Result<(), RuntimeError> {
+        let Some(root) = self.processes.get_mut(&1) else {
+            return Ok(());
+        };
+        let before = root.linux.vfs.clone_resources();
+        let result = io.control(&mut root.linux.vfs);
+        let (files, fs) = root.linux.vfs.changed_clone_resources(&before);
+        let changed = ResourceChanges {
+            files,
+            fs,
+            ..Default::default()
+        };
+        if changed.any() {
+            let root = self.processes.remove(&1).expect("root process");
+            self.sync_resources(&root, changed);
+            self.processes.insert(1, root);
+        }
+        match result {
+            Ok(true) => Ok(()),
+            Ok(false) => Err(RuntimeError::Cancelled),
+            Err(_) => Err(RuntimeError::Arguments("host session control failed")),
         }
     }
     fn process_maps(&self, p: &Process) -> Vec<u8> {
@@ -1276,6 +1311,15 @@ impl Kernel {
         p.mask &= !UNBLOCKABLE;
         if action.flags & 0x80000000 != 0 {
             p.actions[sig as usize] = Action::default();
+            // SA_RESETHAND changes shared dispositions outside rt_sigaction.
+            // Publish immediately, including faults delivered outside drive.
+            self.sync_resources(
+                p,
+                ResourceChanges {
+                    actions: true,
+                    ..Default::default()
+                },
+            );
         }
         p.cpu.set_x(0, sig as u64);
         p.cpu.set_x(1, sp);
@@ -2495,11 +2539,22 @@ impl Kernel {
         put_args(&mut p.cpu, a);
         let ids = |c: &trames_vfs::Credentials| [c.euid, c.egid, c.fsuid, c.fsgid];
         let before_ids = ids(&p.linux.vfs.credentials);
+        let heap = p.linux.heap_context();
+        let resources = p.linux.vfs.clone_resources();
         let result = self.syscall(pid, p, number, a, io);
         if ids(&p.linux.vfs.credentials) != before_ids {
             p.pdeath_signal = 0;
         }
-        self.sync_resources(p);
+        let (files, fs) = p.linux.vfs.changed_clone_resources(&resources);
+        self.sync_resources(
+            p,
+            ResourceChanges {
+                heap: p.linux.heap_context() != heap,
+                files,
+                fs,
+                actions: number == 134 && a[1] != 0,
+            },
+        );
         let raw = match result {
             Ok(Some(raw)) => {
                 p.cpu.set_x(0, raw);
@@ -3389,7 +3444,7 @@ impl Kernel {
                 if self.deliver(id, &mut p).is_err() {
                     self.exit(id, &mut p, 11);
                 }
-                self.sync_resources(&p);
+                // call/control/deliver publish resource changes immediately.
                 match p.state.clone() {
                     State::Blocked(number, a) => self.call(id, &mut p, number, a, io),
                     State::Sleep(deadline, _) if Instant::now() >= deadline => {
@@ -3697,13 +3752,7 @@ impl Kernel {
                 }
                 self.load_sample = Instant::now();
             }
-            if let Some(root) = self.processes.get_mut(&1) {
-                match io.control(&mut root.linux.vfs) {
-                    Ok(true) => {}
-                    Ok(false) => return Err(RuntimeError::Cancelled),
-                    Err(_) => return Err(RuntimeError::Arguments("host session control failed")),
-                }
-            }
+            self.control(io)?;
             for backend in self.gpu.borrow_mut().values_mut() {
                 backend.reap_abandoned();
             }
@@ -3729,7 +3778,7 @@ impl Kernel {
                             progress = true;
                         }
                     }
-                    self.sync_resources(&p);
+                    // call/control/deliver publish resource changes immediately.
                     match p.state.clone() {
                         State::Blocked(number, a) => {
                             self.call(id, &mut p, number, a, io);
@@ -3815,13 +3864,7 @@ impl Kernel {
                             .as_ref()
                             .is_some_and(|t| !t.output_queue.is_empty())
                         {
-                            if let Some(root) = self.processes.get_mut(&1) {
-                                if !io.control(&mut root.linux.vfs).map_err(|_| {
-                                    RuntimeError::Arguments("host session control failed")
-                                })? {
-                                    return Err(RuntimeError::Cancelled);
-                                }
-                            }
+                            self.control(io)?;
                             if !self.pump_terminal(io)? {
                                 // A native renderer can legitimately be full.
                                 // Preserve final output until it drains or the
@@ -4147,6 +4190,105 @@ pub(super) fn run(
 mod tests {
     use super::*;
     use trames_memory::{Permissions, PAGE_SIZE};
+    #[test]
+    fn syscall_resource_changes_reach_shared_peers_without_crossing_unshared_groups() {
+        let mut k = kernel();
+        let mut p = process();
+        p.linux.vfs.mkdir_at(AT_FDCWD, b"/dir", 0o700).unwrap();
+        let fd = p
+            .linux
+            .vfs
+            .open_at(AT_FDCWD, b"/file", 0x42, 0o600)
+            .unwrap();
+        let memory = p.memory.share();
+        k.processes.insert(2, p.fork_with_memory(memory));
+        let mut independent = p.fork();
+        independent.vm_id = 9;
+        independent.files_id = 9;
+        independent.fs_id = 9;
+        k.processes.insert(3, independent);
+        let mut io = trames_linux::CapturedOutput::default();
+
+        k.call(1, &mut p, 25, [fd as u64, 2, 1, 0, 0, 0], &mut io);
+        assert_eq!(
+            k.processes[&2]
+                .linux
+                .vfs
+                .fd_flags_snapshot()
+                .get(fd)
+                .unwrap()
+                & 0x80000,
+            0x80000
+        );
+        assert_eq!(
+            k.processes[&3]
+                .linux
+                .vfs
+                .fd_flags_snapshot()
+                .get(fd)
+                .unwrap()
+                & 0x80000,
+            0
+        );
+        p.memory.write(0x1000, b"/dir\0").unwrap();
+        k.call(1, &mut p, 49, [0x1000, 0, 0, 0, 0, 0], &mut io);
+        assert_eq!(k.processes[&2].linux.vfs.cwd().unwrap(), b"/dir");
+        assert_eq!(k.processes[&3].linux.vfs.cwd().unwrap(), b"/");
+        k.call(1, &mut p, 166, [0o077, 0, 0, 0, 0, 0], &mut io);
+        assert_eq!(k.processes[&2].linux.vfs.umask, 0o077);
+        assert_eq!(k.processes[&3].linux.vfs.umask, 0o022);
+        k.call(1, &mut p, 214, [0xb000, 0, 0, 0, 0, 0], &mut io);
+        assert_eq!(k.processes[&2].linux.heap_context(), p.linux.heap_context());
+        assert_ne!(k.processes[&3].linux.heap_context(), p.linux.heap_context());
+        k.call(1, &mut p, 57, [fd as u64, 0, 0, 0, 0, 0], &mut io);
+        assert_eq!(k.processes[&2].linux.vfs.fd_kind(fd), Err(Errno(9)));
+        assert!(k.processes[&3].linux.vfs.fd_kind(fd).is_ok());
+    }
+
+    #[test]
+    fn reset_hand_is_published_before_another_shared_thread_can_deliver_it() {
+        let mut k = kernel();
+        let mut p = process();
+        k.processes.insert(2, p.fork());
+        let mut io = trames_linux::CapturedOutput::default();
+        for (offset, value) in [(0, 0x4000u64), (8, 0x80000000), (16, 0), (24, 0)] {
+            write_u64(&mut p.memory, 0x2000 + offset, value).unwrap();
+        }
+        k.call(1, &mut p, 134, [10, 0x2000, 0, 8, 0, 0], &mut io);
+        assert_eq!(k.processes[&2].actions[10].handler, 0x4000);
+        Kernel::queue_one(1, &mut p, 10, 0);
+        assert_eq!(k.deliver(1, &mut p), Ok(true));
+        assert_eq!(p.cpu.pc, 0x4000);
+        assert_eq!(k.processes[&2].actions[10].handler, 0);
+    }
+
+    #[test]
+    fn host_control_publishes_partial_context_and_fd_changes_before_error() {
+        struct Control(u32);
+        impl GuestOutput for Control {
+            fn control(&mut self, vfs: &mut trames_vfs::Vfs) -> std::io::Result<bool> {
+                vfs.close(self.0).unwrap();
+                vfs.umask = 0o077;
+                Err(std::io::Error::other("after authorized mutation"))
+            }
+            fn write(&mut self, _: OutputFd, bytes: &[u8]) -> std::io::Result<usize> {
+                Ok(bytes.len())
+            }
+        }
+        let mut k = kernel();
+        let mut p = process();
+        let fd = p
+            .linux
+            .vfs
+            .open_at(AT_FDCWD, b"/file", 0x42, 0o600)
+            .unwrap();
+        k.processes.insert(2, p.fork());
+        k.processes.insert(1, p);
+        assert!(k.control(&mut Control(fd)).is_err());
+        assert_eq!(k.processes[&2].linux.vfs.fd_kind(fd), Err(Errno(9)));
+        assert_eq!(k.processes[&2].linux.vfs.umask, 0o077);
+    }
+
     #[test]
     fn solo_quantum_does_not_delay_a_runnable_peer() {
         let mut k = kernel();
@@ -4855,7 +4997,15 @@ mod tests {
             ),
             Ok(Some(0))
         );
-        k.sync_resources(&p);
+        k.sync_resources(
+            &p,
+            ResourceChanges {
+                heap: true,
+                files: true,
+                fs: true,
+                actions: true,
+            },
+        );
         assert_ne!(p.files_id, k.processes[&2].files_id);
         assert_eq!(p.linux.vfs.fd_kind(fd), Err(Errno(9)));
         assert!(k.processes[&2].linux.vfs.fd_kind(fd).is_ok());

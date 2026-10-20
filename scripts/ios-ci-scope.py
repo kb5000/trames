@@ -563,13 +563,16 @@ def main():
                     return
                 if plan.get('native_scope') == 'firefox-runtime':
                     allowed = {'crates/trames-vfs/src/lib.rs', 'crates/trames-vfs/src/ipc.rs',
+                               'crates/trames-vfs/src/clone_resources.rs', 'crates/trames-core/src/process.rs',
+                               'crates/trames-vfs/src/mapped.rs', 'crates/trames-memory/src/backing.rs',
+                               'crates/trames-memory/src/parallel/snapshot.rs',
                                'crates/trames-vfs/src/ipc/native.rs', 'crates/trames-linux/src/state.rs',
                                'tests/fixtures/firefox-socket-probe.c', 'tests/integration/firefox.py',
                                'scripts/build-firefox-fixture.sh', 'scripts/ios-ci-scope.py',
                                '.github/workflows/linux.yml', '.github/workflows/ios.yml'}
                     if any(p not in allowed and not p.startswith('docs/') for p in changed):
                         raise RuntimeError('Firefox runtime plan includes unrelated changes')
-                    print('Check changed VFS/Linux modules and original musl socket ABI on Linux/Apple ARM64; reuse unchanged CPU/MMU/GPU/UI/guest artifacts. No IPA.')
+                    print('Check changed coordinator/clone-resource paths and original musl socket ABI on Linux/Apple ARM64; reuse unchanged CPU/MMU/GPU/UI/guest artifacts. No IPA.')
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=firefox-runtime\nskip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
                     return

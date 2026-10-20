@@ -1,0 +1,24 @@
+{
+  "base": "c7e9c39ee02c2adfecead1157d041201365a5113",
+  "physical_ipad": false,
+  "production_source_sha256": {
+    "crates/trames-core/src/process.rs": "b3d2a9af8821757db4deb01ce89918907e9bfb16bfcc08f12fda72c582493465",
+    "crates/trames-linux/src/state.rs": "91032f98c58104f2f936e1e91b091ad262ba76432bbdb49d6f03348f9199af6c",
+    "crates/trames-memory/src/backing.rs": "35dc40da66e5a99c01877967d1d67b4c627bb08b8dc1934176b40cf7abf7bd2b",
+    "crates/trames-memory/src/parallel/snapshot.rs": "b35ebb4a3c7cdf5b098ca134321b454f797aabcab4fd8c744c2047bd3f40fe21",
+    "crates/trames-vfs/src/lib.rs": "e6be18b5d6084f511038ceac3501256936bea8b04e0cb0ef948b049d75e18247",
+    "crates/trames-vfs/src/clone_resources.rs": "b02a380abfad71e3d3c49605eb813ab32cd5f6a506176db14963e76f91f1f5e1",
+    "crates/trames-vfs/src/mapped.rs": "a19b8177c3b65d5ab4717a1663e8b4ba032e7b802e86e5dec10efb04e5294eca"
+  },
+  "limits": [
+    "Original signed Alpine ARM64 Firefox 142.0-r0; default sandbox configuration not independently validated",
+    "4 CPU and 4 GiB aggregate/per-process; offline local JS/canvas page",
+    "Black SHM frame is not page/render success; final versioned group ended without window at 240 seconds",
+    "Old resources-only probe counted repeated snapshot acquisitions, not real presentation frames",
+    "resources-sampled was interrupted via host SIGINT at 346.56s; not a Firefox exit",
+    "Intermediate Firefox ELF hashes are in the per-run JSON; final source also includes formatting/test-only additions; final clean candidate is checked separately",
+    "No byte guards/atomics/fences changed; no new TSan result; no IPA",
+    "Versioned Wayland and headless probes precede the final data-only decode-identity split; the final combined candidate is tracked in Issue #33. No whole-app speed ratio established."
+  ],
+  "final_ffi_sha256": "1aac998c73f22d935a0a72f0bd2a007605109a01f88bf9096826fdd38d7be852"
+}
