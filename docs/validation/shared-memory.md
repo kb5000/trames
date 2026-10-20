@@ -69,7 +69,11 @@ physical storage. PSS attributes their share once.
 
 Writable private file pages that have not detached, and legacy custom backings
 without the resident-storage API, retain their conservative shadow transport.
-File persistence and mapping mutation still need coordinated checkpoints. Those
+Warm software/native stores now reuse the paid TLB bit; initialized reads no
+longer load the quota state, and quota membership uses relaxed loads rather than
+another byte-publication acquire. These changes do not change guest fences or
+the CPU/native region-borrow protocol. File persistence and mapping mutation
+still need coordinated checkpoints. Those
 boundaries do not serialize whole native functions or allocate one RAM copy per
 core. No claim of complete weak ARM outcomes or lock-free byte transport is made;
 see [region-memory.md](../architecture/region-memory.md) for the guard/unsafe proof.

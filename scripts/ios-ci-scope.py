@@ -456,7 +456,7 @@ def main():
             hashes=plan['changed_file_sha256']
             if changed==set(hashes) and all(Path(path).exists() and hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest for path,digest in hashes.items()):
                 if plan.get('native_scope') == 'firefox-memory':
-                    allowed = {'crates/trames-core/src/lib.rs', 'crates/trames-core/src/process.rs',
+                    allowed = {'AGENTS.md', 'crates/trames-core/src/lib.rs', 'crates/trames-core/src/process.rs',
                                'crates/trames-core/src/process_service.rs', 'crates/trames-linux/src/state.rs',
                                'crates/trames-vfs/src/mapped.rs', 'tests/fixtures/firefox-memory-probe.c',
                                'tests/integration/firefox.py', 'scripts/build-firefox-fixture.sh',

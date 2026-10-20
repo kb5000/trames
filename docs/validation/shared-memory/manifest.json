@@ -9,13 +9,14 @@
     "crates/trames-memory/src/lib.rs": "98caeeb71d745bfe55b26b83de1aaa6973a90c0d810b0b842af555f426c8f912",
     "crates/trames-memory/src/mmu/mod.rs": "a2b179f819c3274e84138ce487dca0a6357866b709709b34a452139e0a76a099",
     "crates/trames-memory/src/native_access.rs": "5b17ec39dd4b5acfa1b563bbfb2ba87f8fd53607978f51e96f3eb1e9e48fa604",
-    "crates/trames-memory/src/parallel.rs": "dd7095ff280febaf4cc79ec1776a123a395abfb34b62d29dae4f75d768ab9020",
+    "crates/trames-memory/src/parallel.rs": "afc62cb983cb3316de61e332917207c0f2404a1e40f2483f4752bfffcbdd7dda",
     "crates/trames-memory/src/parallel/hardware.rs": "821c9e02403e33569a19a947bcffd0bbeb52e3a73ad6aa8f793131058ce7891e",
     "crates/trames-memory/src/parallel/native.rs": "2fa4eced48a066e0683a5a1918e9b4a1629ccc02809f1fd72d61c5929c5ebd28",
     "crates/trames-memory/src/parallel/page.rs": "5f54fbf35cb8888fc5fdb30c286da6a67df5257497366e9f8bb044a9a7ee25d7",
     "crates/trames-memory/src/parallel/sharing.rs": "75edb4c91c6fa1e9b6c583fd7327449e3897b01c87e483764ea05336bfd17a36",
     "crates/trames-memory/src/parallel/snapshot.rs": "94da0ca70509a53da00c7d0d2a4878980683b7b3e4db4e953a15838a62c9ce7e",
-    "crates/trames-vfs/src/mapped.rs": "dbebe7d35833de864879d5586c11339456a84ff8790845328ba9c2735b1e97d0"
+    "crates/trames-vfs/src/mapped.rs": "dbebe7d35833de864879d5586c11339456a84ff8790845328ba9c2735b1e97d0",
+    "crates/trames-memory/src/residency.rs": "d8e312736f455ab7e061718f66e2f66ed49bbcdf55995348872992494afe7063"
   },
   "runs": "comparison.json",
   "budgets": {

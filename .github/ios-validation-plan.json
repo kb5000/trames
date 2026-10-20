@@ -1,15 +1,14 @@
 {
-  "base_sha": "be259742b0b9281f19619cd905a2248c1aa711f4",
+  "base_sha": "43b0328e9207d496cdcd584e5fc4352c37933e89",
   "native_scope": "firefox-memory",
-  "reason": "Preserve retained physical slots across all snapshot generations; validate affected memory/runtime paths and Apple 16KiB groups, reuse unchanged original-musl fixture, no IPA.",
+  "reason": "Remove redundant quota acquires from initialized reads and warm CPU/native stores; preserve shared storage, ARM ordering and borrow boundaries. Affected memory/runtime verification only, no IPA.",
   "changed_file_sha256": {
-    "crates/trames-memory/src/backing.rs": "a4a77f0c19db569d86429d1e17d00c876f9e60bff2159f1bc318f47b84e94d94",
-    "crates/trames-memory/src/lib.rs": "98caeeb71d745bfe55b26b83de1aaa6973a90c0d810b0b842af555f426c8f912",
-    "crates/trames-memory/src/mmu/mod.rs": "a2b179f819c3274e84138ce487dca0a6357866b709709b34a452139e0a76a099",
-    "crates/trames-memory/src/parallel.rs": "dd7095ff280febaf4cc79ec1776a123a395abfb34b62d29dae4f75d768ab9020",
-    "crates/trames-memory/src/parallel/sharing.rs": "75edb4c91c6fa1e9b6c583fd7327449e3897b01c87e483764ea05336bfd17a36",
-    "docs/architecture/region-memory.md": "97b08c4e5bc5dec9e7fe4448ff7579530657c2e51735a40e1de8f652c5fa3c85",
-    "docs/validation/shared-memory.md": "c83cc2108a96a7c58d426a0d0d385c7dd224634d5405570d4ce56724d9c6336b",
-    "docs/validation/shared-memory/manifest.json": "fe9c3559c1b1c905fdee8609b27d83e6175912220c6d1802a277f0c42209f12f"
+    "AGENTS.md": "967a90ac3c9b898cf72ea65203aabf1dc17113c87a59d55f2a6a2895cbd5c61c",
+    "crates/trames-memory/src/parallel.rs": "afc62cb983cb3316de61e332917207c0f2404a1e40f2483f4752bfffcbdd7dda",
+    "crates/trames-memory/src/residency.rs": "d8e312736f455ab7e061718f66e2f66ed49bbcdf55995348872992494afe7063",
+    "docs/architecture/region-memory.md": "2f67e96c02f8ffd442ed3cddae5c815b62d7df82e46d6cc9f733f26383aa2659",
+    "docs/validation/shared-memory.md": "5a573ed8aa247f0ef9aa7a9c7164d39d6ec781ecaeca5f7efcb9696ef66d4530",
+    "docs/validation/shared-memory/manifest.json": "86e5602068bbe0ae11888649f9664aadf9751186db971848a2a140d1ce761f74",
+    "scripts/ios-ci-scope.py": "55fa57f7583f2a203eb117a0bc7f51a383a2314d29ad58cde5cba0874ef5177f"
   }
 }
