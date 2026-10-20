@@ -208,6 +208,65 @@ jobs:
           cargo test -p trames-vfs mapped --lib --locked
           cargo build -p trames-cli --release --locked
           target/release/trames-run --memory "$PWD/target/firefox-fixture/socket-probe"
+  firefox-clock:
+    needs: scope
+    if: needs.scope.outputs.native_scope == 'firefox-clock'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+          components: rustfmt, clippy
+      - uses: actions/download-artifact@v4
+        with:
+          name: firefox-memory-fixture
+          path: target/firefox-fixture/
+          github-token: ${{ github.token }}
+          run-id: 39400045425
+      - name: Build only the new original-musl clock fixture
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes gcc-aarch64-linux-gnu
+          bash scripts/build-firefox-clock-fixture.sh
+          cp target/firefox-fixture/musl-COPYRIGHT target/firefox-fixture/musl-1.2.5.tar.gz target/firefox-clock-fixture/
+      - name: Check changed Core paths and clock ABI
+        run: |
+          cargo fmt --all --check
+          cargo clippy -p trames-core --all-targets --no-deps --locked -- -D warnings
+          cargo test -p trames-core --lib --locked
+          cargo build -p trames-cli --release --locked
+          python3 -m py_compile tests/integration/firefox.py scripts/ios-ci-scope.py
+          cc -O2 -Wall -Wextra -Werror -pthread tests/fixtures/firefox-clock-probe.c -o /tmp/clock-probe
+          /tmp/clock-probe
+          target/release/trames-run --memory --cpus 1 target/firefox-clock-fixture/clock-probe
+          target/release/trames-run --memory --cpus 4 target/firefox-clock-fixture/clock-probe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firefox-clock-fixture
+          path: target/firefox-clock-fixture/
+          retention-days: 7
+  firefox-clock-apple:
+    needs: [scope, firefox-clock]
+    if: needs.scope.outputs.native_scope == 'firefox-clock'
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+      - uses: actions/download-artifact@v4
+        with:
+          name: firefox-clock-fixture
+          path: target/firefox-clock-fixture/
+      - name: Verify Apple ARM64 coordinator and original musl clocks
+        run: |
+          uname -m
+          sysctl hw.pagesize
+          cargo test -p trames-core --lib --locked
+          cargo build -p trames-cli --release --locked
+          target/release/trames-run --memory --cpus 1 target/firefox-clock-fixture/clock-probe
+          target/release/trames-run --memory --cpus 4 target/firefox-clock-fixture/clock-probe
   compatibility-probe:
     needs: scope
     if: needs.scope.outputs.native_scope == 'compatibility-probe'

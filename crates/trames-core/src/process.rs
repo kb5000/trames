@@ -174,11 +174,11 @@ impl Process {
     fn frozen(&self, pid: u32) -> bool {
         self.linux.vfs.cgroup_frozen(pid) && self.pending_bits() & (1 << 8) == 0
     }
-    fn fork(&self) -> Self {
+    fn fork(&self) -> Box<Self> {
         self.fork_with_memory(self.memory.clone())
     }
-    fn fork_with_memory(&self, memory: Memory) -> Self {
-        Self {
+    fn fork_with_memory(&self, memory: Memory) -> Box<Self> {
+        Box::new(Self {
             cpu: self.cpu.clone(),
             affinity: self.affinity,
             last_cpu: self.last_cpu,
@@ -218,7 +218,7 @@ impl Process {
             file_size_limit: Rc::new(Cell::new(self.file_size_limit.get())),
             oom: Rc::new(self.oom.fork()),
             seccomp: self.seccomp.clone(),
-        }
+        })
     }
 }
 struct ProcMaps {
@@ -257,7 +257,10 @@ struct Kernel {
     parallel_stop_time: Duration,
     next_parallel_pid: u32,
     per_cpu: Vec<Duration>,
-    processes: BTreeMap<u32, Process>,
+    // Scheduler passes remove/reinsert tasks while invoking Kernel methods.
+    // Keep the large CPU/Linux/VFS state stationary: B-tree node compaction
+    // must move only pointers, including when most guest threads are asleep.
+    processes: BTreeMap<u32, Box<Process>>,
     next_pid: u32,
     terminal: Option<Terminal>,
     started: Instant,
@@ -723,6 +726,7 @@ impl Kernel {
         if !self
             .processes
             .values()
+            .map(Box::as_ref)
             .filter(live)
             .any(|t| t.tgid == p.tgid)
         {
@@ -731,6 +735,7 @@ impl Kernel {
         if self
             .processes
             .values()
+            .map(Box::as_ref)
             .filter(live)
             .any(|t| t.files_id == p.files_id)
         {
@@ -4128,7 +4133,7 @@ pub(super) fn run(
     // that never touch /proc. Subsequent full snapshots are demand-driven.
     kernel.refresh_proc(1, &mut root);
     kernel.proc_refreshes += 1;
-    kernel.processes.insert(1, root);
+    kernel.processes.insert(1, Box::new(root));
     let result = kernel.drive(io, limit);
     runtime.metrics = super::RuntimeMetrics {
         instructions: kernel.instructions,
@@ -4316,10 +4321,10 @@ mod tests {
         );
         assert_eq!(assign_cpus([(1, 3), (2, 3)], 2), vec![(1, 0), (2, 1)]);
     }
-    pub(super) fn process() -> Process {
+    pub(super) fn process() -> Box<Process> {
         let mut memory = Memory::default();
         memory.map(0x1000, 8 * PAGE_SIZE, Permissions::RW).unwrap();
-        Process {
+        Box::new(Process {
             cpu: Cpu::new(0x4000, 0x9000),
             affinity: 1,
             last_cpu: 0,
@@ -4359,7 +4364,40 @@ mod tests {
             file_size_limit: Rc::new(Cell::new((u64::MAX, u64::MAX))),
             oom: Rc::new(trames_vfs::OomTask::default()),
             seccomp: seccomp::Seccomp::default(),
+        })
+    }
+    #[test]
+    #[ignore = "manual scheduler metadata benchmark; not an end-to-end speed ratio"]
+    fn process_table_churn_profile() {
+        const TASKS: u32 = 128;
+        const ROUNDS: u32 = 1024;
+        // Reproduce the old value layout only here, with identical real task
+        // state. No guest instructions, memory bytes, or syscall work is timed.
+        let mut values: BTreeMap<_, _> = (1..=TASKS).map(|id| (id, *process())).collect();
+        let began = Instant::now();
+        for _ in 0..ROUNDS {
+            for id in 1..=TASKS {
+                let p = std::hint::black_box(values.remove(&id).unwrap());
+                values.insert(id, p);
+            }
         }
+        let value_seconds = began.elapsed().as_secs_f64();
+        assert_eq!(std::hint::black_box(&values).len(), TASKS as usize);
+        drop(values);
+        let mut pointers: BTreeMap<_, _> = (1..=TASKS).map(|id| (id, process())).collect();
+        let began = Instant::now();
+        for _ in 0..ROUNDS {
+            for id in 1..=TASKS {
+                let p = std::hint::black_box(pointers.remove(&id).unwrap());
+                pointers.insert(id, p);
+            }
+        }
+        let pointer_seconds = began.elapsed().as_secs_f64();
+        assert_eq!(std::hint::black_box(&pointers).len(), TASKS as usize);
+        println!(
+            "process_table tasks={TASKS} rounds={ROUNDS} state_bytes={} value_seconds={value_seconds:.6} pointer_seconds={pointer_seconds:.6}",
+            std::mem::size_of::<Process>()
+        );
     }
     #[test]
     fn terminal_control_signals_use_kernel_authority_and_the_foreground_session() {

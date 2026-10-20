@@ -267,7 +267,11 @@ mod tests {
     use std::sync::Arc;
     use trames_memory::{CpuMemory, Permissions, PAGE_SIZE};
 
-    fn pending(mut p: Process, number: u32, a: [u64; 6]) -> (Kernel, Box<Request>, Arc<Control>) {
+    fn pending(
+        mut p: Box<Process>,
+        number: u32,
+        a: [u64; 6],
+    ) -> (Kernel, Box<Request>, Arc<Control>) {
         p.memory
             .write_array(0x4000, 0xd4000001u32.to_le_bytes())
             .unwrap();
@@ -329,7 +333,7 @@ mod tests {
             .unwrap();
         done
     }
-    fn disk_process() -> (std::path::PathBuf, Process, u32) {
+    fn disk_process() -> (std::path::PathBuf, Box<Process>, u32) {
         let path = std::env::temp_dir().join(format!(
             "trames-epoch-{}-{}",
             std::process::id(),

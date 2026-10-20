@@ -1,0 +1,68 @@
+{
+  "interval_seconds": 10,
+  "threads": [
+    {
+      "tid": "176031",
+      "name": "python3",
+      "ticks": 407,
+      "wchan": "0",
+      "delta_ticks": 8
+    },
+    {
+      "tid": "176032",
+      "name": "trames-local",
+      "ticks": 40489,
+      "wchan": "0",
+      "delta_ticks": 808
+    },
+    {
+      "tid": "176033",
+      "name": "trames-wayland",
+      "ticks": 70,
+      "wchan": "0",
+      "delta_ticks": 1
+    },
+    {
+      "tid": "176034",
+      "name": "trames-cpu-0",
+      "ticks": 7174,
+      "wchan": "0",
+      "delta_ticks": 131
+    },
+    {
+      "tid": "176035",
+      "name": "trames-cpu-1",
+      "ticks": 7021,
+      "wchan": "0",
+      "delta_ticks": 110
+    },
+    {
+      "tid": "176036",
+      "name": "trames-cpu-2",
+      "ticks": 3496,
+      "wchan": "0",
+      "delta_ticks": 84
+    },
+    {
+      "tid": "176048",
+      "name": "trames-cpu-3",
+      "ticks": 1759,
+      "wchan": "0",
+      "delta_ticks": 53
+    },
+    {
+      "tid": "176088",
+      "name": "trames-disk",
+      "ticks": 0,
+      "wchan": "0",
+      "delta_ticks": 0
+    },
+    {
+      "tid": "176089",
+      "name": "trames-disk",
+      "ticks": 0,
+      "wchan": "0",
+      "delta_ticks": 0
+    }
+  ]
+}

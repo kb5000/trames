@@ -1,0 +1,18 @@
+{
+  "runtime_commit": "ef4f68cf32de37fe19c3144639f9a9ce0c4ad66e",
+  "profile": "fresh",
+  "host_clock_ticks_per_second": 100,
+  "host_cpu_quota": "400000 100000",
+  "host_pc_sampling": true,
+  "background_work": [
+    {
+      "approximate_seconds": 580,
+      "kind": "one Release diagnostic FFI build, 8.17 seconds; current run retained its original ELF inode"
+    }
+  ],
+  "limitations": [
+    "Diagnostic timing, not a cross-run speed comparison",
+    "No guest ps/proc queries during the launch window; final queries occur after it",
+    "Only first 200000 SIGPROF records retained; dropped count is recorded when sampling stops"
+  ]
+}

@@ -561,6 +561,17 @@ def main():
                         output.write('firefox_memory_retry_run=' + str(plan['memory_apple_retry']['run'] if apple_retry else '') + '\n')
                         output.write('firefox_memory_readonly_followup=' + str(readonly_followup).lower() + '\n')
                     return
+                if plan.get('native_scope') == 'firefox-clock':
+                    allowed = {'crates/trames-core/src/process.rs', 'crates/trames-core/src/process_service.rs',
+                               'crates/trames-core/src/worker_syscalls.rs', 'tests/integration/firefox.py',
+                               'tests/fixtures/firefox-clock-probe.c', 'scripts/build-firefox-clock-fixture.sh',
+                               'scripts/ios-ci-scope.py', '.github/workflows/linux.yml', '.github/workflows/ios.yml'}
+                    if any(p not in allowed and not p.startswith('docs/') for p in changed):
+                        raise RuntimeError('Firefox clock plan includes unrelated changes')
+                    print('Check coordinator storage and coarse-clock epochs: Core tests and original musl clock ABI on Linux/Apple ARM64. Reuse unchanged Memory/VFS/Linux/CPU/GPU/UI checks. No IPA.')
+                    with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+                        output.write('frontend_only=false\ntargeted=true\nnative_scope=firefox-clock\nskip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
+                    return
                 if plan.get('native_scope') == 'firefox-runtime':
                     allowed = {'crates/trames-vfs/src/lib.rs', 'crates/trames-vfs/src/ipc.rs',
                                'crates/trames-vfs/src/clone_resources.rs', 'crates/trames-core/src/process.rs',

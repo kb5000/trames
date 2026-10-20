@@ -1,0 +1,46 @@
+{
+  "unchanged_base": "edfd117bac2211a147b6e3e378c350f4d80b5e82",
+  "new_ffi_sha256": "9b9965a6361abff1382d655253fe150576bc36c717564bca24f8f1d860faaada",
+  "production_source_sha256": {
+    "crates/trames-core/src/process.rs": "4e40f44fbff75ce2b397fb26910773cec97977f8d78362c871d608104bbc3ef5",
+    "crates/trames-core/src/process_service.rs": "bf608162519aeeb25b1d6b0ba93c782d9d5671ca631e9f782b76a9e126ae50ad",
+    "crates/trames-core/src/worker_syscalls.rs": "f49e83d73d06c8202fd03dd017dda82ad50a94b60a2cada86d859bf63db7a03b"
+  },
+  "baseline": {
+    "ffi_sha256": "1aac998c73f22d935a0a72f0bd2a007605109a01f88bf9096826fdd38d7be852",
+    "sample_header": [
+      "TRAMES-SESSION-PC-v2",
+      "samples 200000 dropped 48446"
+    ],
+    "last_retained_sample_seconds": 731.471890337
+  },
+  "trace": {
+    "host_interrupted": true,
+    "seconds": 241.05140146899794,
+    "instrumentation": {
+      "ffi_sha256": "cd69bc1119664c628c34644e9ab79eef960b5a564c18cccaa04c34c0087a5c73",
+      "production_source_sha256": "b3d2a9af8821757db4deb01ce89918907e9bfb16bfcc08f12fda72c582493465",
+      "diagnostic_source_sha256": "5970ec874fe526a95e284afa689d6818a998490783b087027fddccc7ebf1ecb3",
+      "only_difference": "Optional FFDIAG counters and task states at existing five-second load-sample boundaries. Not a production candidate."
+    }
+  },
+  "clock_abi": {
+    "host_linux": "passed",
+    "original_musl_arm64_serial": "passed",
+    "original_musl_arm64_four_cpus": "passed",
+    "parallel_metrics": {
+      "peak_parallel_cpus": 2,
+      "worker_syscalls": 1600,
+      "parallel_rounds": 4
+    }
+  },
+  "manual_metadata_benchmark": {
+    "tasks": 128,
+    "rounds": 1024,
+    "process_state_bytes": 10768,
+    "value_seconds": 0.205899,
+    "pointer_seconds": 0.003475,
+    "whole_app_speed_ratio": null
+  },
+  "candidate_page_gate": "running; pending result"
+}

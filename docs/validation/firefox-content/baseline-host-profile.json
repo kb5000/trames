@@ -1,0 +1,1029 @@
+{
+  "ffi_sha256": "1aac998c73f22d935a0a72f0bd2a007605109a01f88bf9096826fdd38d7be852",
+  "samples_sha256": "0b991b189638e1359b75fda738fda442f2d678877aca2e622ccc95f6f80e3583",
+  "symbols_sha256": "a851157e34671afa0d44d7da5b3d09fb10bd51aa457a3e6b2c63c44e01d9674d",
+  "header": [
+    "TRAMES-SESSION-PC-v2",
+    "samples 200000 dropped 48446"
+  ],
+  "note": "SIGPROF leaf PC samples; not wall time or call stacks. Outside-module symbols are not inferred from nearest libc symbol. Capacity loss is reported in the header.",
+  "groups": {
+    "0-150": {
+      "samples": 41933,
+      "functions": [
+        {
+          "name": "outside FFI: libc.so.6",
+          "samples": 12930,
+          "percent": 30.835
+        },
+        {
+          "name": "<trames_memory::parallel::page::MutablePage>::lock",
+          "samples": 2436,
+          "percent": 5.809
+        },
+        {
+          "name": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 22>",
+          "samples": 1379,
+          "percent": 3.289
+        },
+        {
+          "name": "trames_cpu::cached::tail_op::<trames_memory::Memory, 22>",
+          "samples": 851,
+          "percent": 2.029
+        },
+        {
+          "name": "trames_memory::parallel::page::mask",
+          "samples": 803,
+          "percent": 1.915
+        },
+        {
+          "name": "<trames_memory::parallel::View>::frame_slow",
+          "samples": 782,
+          "percent": 1.865
+        },
+        {
+          "name": "<trames_memory::parallel::View>::read_checked::<trames_memory::MemoryError, <trames_memory::parallel::View as trames_memory::cpu_memory::CpuMemory>::read::{closure#0}>",
+          "samples": 765,
+          "percent": 1.824
+        },
+        {
+          "name": "<trames_memory::Memory>::read_array::<8>",
+          "samples": 762,
+          "percent": 1.817
+        },
+        {
+          "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::ValMut, u32, (u32, u64), alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::perform_next_unchecked::<<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::ValMut, u32, (u32, u64), alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::next_unchecked::{closure#0}, (&u32, &mut (u32, u64))>",
+          "samples": 555,
+          "percent": 1.324
+        },
+        {
+          "name": "<trames_memory::parallel::View as trames_memory::cpu_memory::CpuMemory>::fetch_u32",
+          "samples": 522,
+          "percent": 1.245
+        },
+        {
+          "name": "<trames_memory::parallel::ConcurrentPage>::changed",
+          "samples": 473,
+          "percent": 1.128
+        },
+        {
+          "name": "trames_cpu::cached::tail_enter::<trames_memory::parallel::View>",
+          "samples": 424,
+          "percent": 1.011
+        },
+        {
+          "name": "<trames_memory::parallel::page::Guard>::read",
+          "samples": 409,
+          "percent": 0.975
+        },
+        {
+          "name": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 7>",
+          "samples": 404,
+          "percent": 0.963
+        },
+        {
+          "name": "<trames_core::process::Kernel>::drive::<trames_ffi::session::Adapter>",
+          "samples": 404,
+          "percent": 0.963
+        },
+        {
+          "name": "<trames_memory::mmu::PageBytes>::with_read::<(), <trames_memory::Page>::read_bytes::{closure#0}>",
+          "samples": 384,
+          "percent": 0.916
+        },
+        {
+          "name": "<trames_memory::parallel::View>::write_fragment",
+          "samples": 376,
+          "percent": 0.897
+        },
+        {
+          "name": "trames_cpu::cached::tail_op::<trames_memory::Memory, 7>",
+          "samples": 369,
+          "percent": 0.88
+        },
+        {
+          "name": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 23>",
+          "samples": 369,
+          "percent": 0.88
+        },
+        {
+          "name": "<trames_memory::Memory>::commit_parallel",
+          "samples": 346,
+          "percent": 0.825
+        },
+        {
+          "name": "<trames_memory::parallel::page::MutablePage>::changed",
+          "samples": 337,
+          "percent": 0.804
+        },
+        {
+          "name": "<trames_memory::parallel::page::Guard>::invalidate",
+          "samples": 337,
+          "percent": 0.804
+        },
+        {
+          "name": "<trames_cpu::cached::Cache>::page::<trames_memory::parallel::View>",
+          "samples": 336,
+          "percent": 0.801
+        },
+        {
+          "name": "<trames_vfs::Vfs>::next_timerfd_deadline",
+          "samples": 328,
+          "percent": 0.782
+        },
+        {
+          "name": "<trames_cpu::Cpu>::execute_extended::<trames_memory::parallel::View>",
+          "samples": 326,
+          "percent": 0.777
+        },
+        {
+          "name": "<trames_memory::parallel::View as trames_memory::cpu_memory::CpuMemory>::exclusive_read",
+          "samples": 313,
+          "percent": 0.746
+        },
+        {
+          "name": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 8>",
+          "samples": 311,
+          "percent": 0.742
+        },
+        {
+          "name": "<trames_vfs::Vfs>::cgroup_frozen",
+          "samples": 304,
+          "percent": 0.725
+        },
+        {
+          "name": "trames_cpu::cached::tail_enter::<trames_memory::Memory>",
+          "samples": 298,
+          "percent": 0.711
+        },
+        {
+          "name": "<trames_memory::Memory>::write_array::<16>",
+          "samples": 296,
+          "percent": 0.706
+        },
+        {
+          "name": "<trames_cpu::cached::Instruction>::decode",
+          "samples": 293,
+          "percent": 0.699
+        },
+        {
+          "name": "<trames_memory::Memory>::read_array::<1>",
+          "samples": 285,
+          "percent": 0.68
+        },
+        {
+          "name": "<trames_memory::Memory>::fill_translation",
+          "samples": 272,
+          "percent": 0.649
+        },
+        {
+          "name": "<trames_cpu::cached::CodePage>::decode_slot::<trames_memory::parallel::View>",
+          "samples": 269,
+          "percent": 0.641
+        },
+        {
+          "name": "<trames_memory::Memory>::write_array::<8>",
+          "samples": 259,
+          "percent": 0.618
+        }
+      ],
+      "modules": [
+        {
+          "name": "libtrames_ffi.so",
+          "samples": 28814,
+          "percent": 68.714
+        },
+        {
+          "name": "libc.so.6",
+          "samples": 12930,
+          "percent": 30.835
+        },
+        {
+          "name": "[vdso]",
+          "samples": 101,
+          "percent": 0.241
+        },
+        {
+          "name": "python3.12",
+          "samples": 86,
+          "percent": 0.205
+        },
+        {
+          "name": "libm.so.6",
+          "samples": 1,
+          "percent": 0.002
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "samples": 1,
+          "percent": 0.002
+        }
+      ],
+      "threads": [
+        {
+          "name": "176032",
+          "samples": 28130,
+          "percent": 67.083
+        },
+        {
+          "name": "176035",
+          "samples": 5912,
+          "percent": 14.099
+        },
+        {
+          "name": "176034",
+          "samples": 5866,
+          "percent": 13.989
+        },
+        {
+          "name": "176036",
+          "samples": 1506,
+          "percent": 3.591
+        },
+        {
+          "name": "176048",
+          "samples": 376,
+          "percent": 0.897
+        },
+        {
+          "name": "176031",
+          "samples": 130,
+          "percent": 0.31
+        },
+        {
+          "name": "176033",
+          "samples": 13,
+          "percent": 0.031
+        }
+      ]
+    },
+    "150-300": {
+      "samples": 40737,
+      "functions": [
+        {
+          "name": "outside FFI: libc.so.6",
+          "samples": 18728,
+          "percent": 45.973
+        },
+        {
+          "name": "<trames_vfs::mapped::FileMapping as trames_memory::backing::PageBacking>::version",
+          "samples": 1710,
+          "percent": 4.198
+        },
+        {
+          "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::ValMut, u32, (u32, u64), alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::perform_next_unchecked::<<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::ValMut, u32, (u32, u64), alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::next_unchecked::{closure#0}, (&u32, &mut (u32, u64))>",
+          "samples": 1277,
+          "percent": 3.135
+        },
+        {
+          "name": "<trames_memory::parallel::page::MutablePage>::revision",
+          "samples": 1156,
+          "percent": 2.838
+        },
+        {
+          "name": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 22>",
+          "samples": 1107,
+          "percent": 2.717
+        },
+        {
+          "name": "<trames_memory::parallel::View>::frame_slow",
+          "samples": 1097,
+          "percent": 2.693
+        },
+        {
+          "name": "<trames_memory::Memory>::update_parallel_snapshot",
+          "samples": 946,
+          "percent": 2.322
+        },
+        {
+          "name": "<trames_core::process::Kernel>::drive::<trames_ffi::session::Adapter>",
+          "samples": 801,
+          "percent": 1.966
+        },
+        {
+          "name": "<trames_vfs::Vfs>::next_timerfd_deadline",
+          "samples": 689,
+          "percent": 1.691
+        },
+        {
+          "name": "<trames_vfs::Vfs>::cgroup_frozen",
+          "samples": 539,
+          "percent": 1.323
+        },
+        {
+          "name": "<trames_memory::Memory>::commit_parallel",
+          "samples": 517,
+          "percent": 1.269
+        },
+        {
+          "name": "<trames_memory::parallel::View as trames_memory::cpu_memory::CpuMemory>::fetch_u32",
+          "samples": 515,
+          "percent": 1.264
+        },
+        {
+          "name": "<trames_memory::parallel::View>::read_checked::<trames_memory::MemoryError, <trames_memory::parallel::View as trames_memory::cpu_memory::CpuMemory>::read::{closure#0}>",
+          "samples": 488,
+          "percent": 1.198
+        },
+        {
+          "name": "<trames_memory::parallel::page::MutablePage>::lock",
+          "samples": 484,
+          "percent": 1.188
+        },
+        {
+          "name": "trames_cpu::cached::tail_enter::<trames_memory::parallel::View>",
+          "samples": 399,
+          "percent": 0.979
+        },
+        {
+          "name": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 23>",
+          "samples": 342,
+          "percent": 0.84
+        },
+        {
+          "name": "<trames_cpu::Cpu>::execute_extended::<trames_memory::parallel::View>",
+          "samples": 310,
+          "percent": 0.761
+        },
+        {
+          "name": "<trames_cpu::cached::Cache>::page::<trames_memory::parallel::View>",
+          "samples": 308,
+          "percent": 0.756
+        },
+        {
+          "name": "<trames_cpu::cached::CodePage>::decode_slot::<trames_memory::parallel::View>",
+          "samples": 295,
+          "percent": 0.724
+        },
+        {
+          "name": "trames_memory::parallel::page::mask",
+          "samples": 285,
+          "percent": 0.7
+        },
+        {
+          "name": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 7>",
+          "samples": 274,
+          "percent": 0.673
+        },
+        {
+          "name": "<trames_memory::parallel::ConcurrentPage>::changed",
+          "samples": 269,
+          "percent": 0.66
+        },
+        {
+          "name": "<trames_memory::parallel::View>::write_fragment",
+          "samples": 267,
+          "percent": 0.655
+        },
+        {
+          "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u32, trames_core::process::Process, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::KV>>::remove_leaf_kv::<<alloc::collections::btree::map::entry::OccupiedEntry<u32, trames_core::process::Process>>::remove_kv::{closure#0}, alloc::alloc::Global>",
+          "samples": 256,
+          "percent": 0.628
+        },
+        {
+          "name": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 8>",
+          "samples": 247,
+          "percent": 0.606
+        },
+        {
+          "name": "<trames_memory::parallel::page::Guard>::invalidate",
+          "samples": 220,
+          "percent": 0.54
+        },
+        {
+          "name": "<trames_memory::parallel::page::Guard>::read",
+          "samples": 210,
+          "percent": 0.516
+        },
+        {
+          "name": "<trames_cpu::cached::Instruction>::decode",
+          "samples": 200,
+          "percent": 0.491
+        },
+        {
+          "name": "<trames_memory::Memory>::check",
+          "samples": 194,
+          "percent": 0.476
+        },
+        {
+          "name": "<trames_memory::parallel::View as trames_memory::cpu_memory::CpuMemory>::read_array::<8>",
+          "samples": 194,
+          "percent": 0.476
+        },
+        {
+          "name": "<alloc::collections::btree::map::entry::OccupiedEntry<u32, trames_core::process::Process>>::remove_kv",
+          "samples": 188,
+          "percent": 0.461
+        },
+        {
+          "name": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 4>",
+          "samples": 167,
+          "percent": 0.41
+        },
+        {
+          "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u32, trames_core::process::Process, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::insert_recursing::<alloc::alloc::Global, <alloc::collections::btree::map::entry::VacantEntry<u32, trames_core::process::Process>>::insert_entry::{closure#0}>",
+          "samples": 163,
+          "percent": 0.4
+        },
+        {
+          "name": "trames_cpu::cached::tail_decode::<trames_memory::parallel::View>",
+          "samples": 158,
+          "percent": 0.388
+        },
+        {
+          "name": "<trames_cpu::Cpu>::run_slice::<trames_memory::parallel::View>",
+          "samples": 154,
+          "percent": 0.378
+        }
+      ],
+      "modules": [
+        {
+          "name": "libtrames_ffi.so",
+          "samples": 21782,
+          "percent": 53.47
+        },
+        {
+          "name": "libc.so.6",
+          "samples": 18728,
+          "percent": 45.973
+        },
+        {
+          "name": "python3.12",
+          "samples": 125,
+          "percent": 0.307
+        },
+        {
+          "name": "[vdso]",
+          "samples": 68,
+          "percent": 0.167
+        },
+        {
+          "name": "_imaging.cpython-312-x86_64-linux-gnu.so",
+          "samples": 17,
+          "percent": 0.042
+        },
+        {
+          "name": "libz.so.1.3.1",
+          "samples": 14,
+          "percent": 0.034
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "samples": 3,
+          "percent": 0.007
+        }
+      ],
+      "threads": [
+        {
+          "name": "176032",
+          "samples": 28536,
+          "percent": 70.049
+        },
+        {
+          "name": "176035",
+          "samples": 4358,
+          "percent": 10.698
+        },
+        {
+          "name": "176034",
+          "samples": 4005,
+          "percent": 9.831
+        },
+        {
+          "name": "176036",
+          "samples": 2359,
+          "percent": 5.791
+        },
+        {
+          "name": "176048",
+          "samples": 1203,
+          "percent": 2.953
+        },
+        {
+          "name": "176031",
+          "samples": 233,
+          "percent": 0.572
+        },
+        {
+          "name": "176033",
+          "samples": 43,
+          "percent": 0.106
+        }
+      ]
+    },
+    "300-600": {
+      "samples": 81434,
+      "functions": [
+        {
+          "name": "outside FFI: libc.so.6",
+          "samples": 45668,
+          "percent": 56.08
+        },
+        {
+          "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::ValMut, u32, (u32, u64), alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::perform_next_unchecked::<<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::ValMut, u32, (u32, u64), alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::next_unchecked::{closure#0}, (&u32, &mut (u32, u64))>",
+          "samples": 3337,
+          "percent": 4.098
+        },
+        {
+          "name": "<trames_memory::parallel::View>::frame_slow",
+          "samples": 2640,
+          "percent": 3.242
+        },
+        {
+          "name": "<trames_core::process::Kernel>::drive::<trames_ffi::session::Adapter>",
+          "samples": 2023,
+          "percent": 2.484
+        },
+        {
+          "name": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 22>",
+          "samples": 1792,
+          "percent": 2.201
+        },
+        {
+          "name": "<trames_vfs::Vfs>::next_timerfd_deadline",
+          "samples": 1755,
+          "percent": 2.155
+        },
+        {
+          "name": "<trames_vfs::Vfs>::cgroup_frozen",
+          "samples": 1369,
+          "percent": 1.681
+        },
+        {
+          "name": "<trames_memory::Memory>::commit_parallel",
+          "samples": 1341,
+          "percent": 1.647
+        },
+        {
+          "name": "<trames_memory::parallel::View as trames_memory::cpu_memory::CpuMemory>::fetch_u32",
+          "samples": 973,
+          "percent": 1.195
+        },
+        {
+          "name": "<trames_memory::parallel::View>::read_checked::<trames_memory::MemoryError, <trames_memory::parallel::View as trames_memory::cpu_memory::CpuMemory>::read::{closure#0}>",
+          "samples": 784,
+          "percent": 0.963
+        },
+        {
+          "name": "trames_cpu::cached::tail_enter::<trames_memory::parallel::View>",
+          "samples": 760,
+          "percent": 0.933
+        },
+        {
+          "name": "<trames_memory::parallel::page::MutablePage>::lock",
+          "samples": 685,
+          "percent": 0.841
+        },
+        {
+          "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u32, trames_core::process::Process, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::KV>>::remove_leaf_kv::<<alloc::collections::btree::map::entry::OccupiedEntry<u32, trames_core::process::Process>>::remove_kv::{closure#0}, alloc::alloc::Global>",
+          "samples": 646,
+          "percent": 0.793
+        },
+        {
+          "name": "<trames_cpu::cached::Cache>::page::<trames_memory::parallel::View>",
+          "samples": 546,
+          "percent": 0.67
+        },
+        {
+          "name": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 23>",
+          "samples": 536,
+          "percent": 0.658
+        },
+        {
+          "name": "<trames_cpu::cached::CodePage>::decode_slot::<trames_memory::parallel::View>",
+          "samples": 519,
+          "percent": 0.637
+        },
+        {
+          "name": "<trames_memory::Memory>::check",
+          "samples": 470,
+          "percent": 0.577
+        },
+        {
+          "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u32, trames_core::process::Process, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::insert_recursing::<alloc::alloc::Global, <alloc::collections::btree::map::entry::VacantEntry<u32, trames_core::process::Process>>::insert_entry::{closure#0}>",
+          "samples": 462,
+          "percent": 0.567
+        },
+        {
+          "name": "<trames_memory::parallel::ConcurrentPage>::changed",
+          "samples": 433,
+          "percent": 0.532
+        },
+        {
+          "name": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 8>",
+          "samples": 432,
+          "percent": 0.53
+        },
+        {
+          "name": "<trames_memory::parallel::page::Guard>::invalidate",
+          "samples": 428,
+          "percent": 0.526
+        },
+        {
+          "name": "<trames_cpu::Cpu>::execute_extended::<trames_memory::parallel::View>",
+          "samples": 415,
+          "percent": 0.51
+        },
+        {
+          "name": "<alloc::collections::btree::map::entry::OccupiedEntry<u32, trames_core::process::Process>>::remove_kv",
+          "samples": 403,
+          "percent": 0.495
+        },
+        {
+          "name": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 7>",
+          "samples": 391,
+          "percent": 0.48
+        },
+        {
+          "name": "<trames_memory::parallel::View>::write_fragment",
+          "samples": 385,
+          "percent": 0.473
+        },
+        {
+          "name": "trames_memory::parallel::page::mask",
+          "samples": 369,
+          "percent": 0.453
+        },
+        {
+          "name": "<trames_memory::parallel::page::Guard>::read",
+          "samples": 368,
+          "percent": 0.452
+        },
+        {
+          "name": "<trames_cpu::cached::Instruction>::decode",
+          "samples": 345,
+          "percent": 0.424
+        },
+        {
+          "name": "outside FFI: python3.12",
+          "samples": 321,
+          "percent": 0.394
+        },
+        {
+          "name": "<trames_memory::parallel::View as trames_memory::cpu_memory::CpuMemory>::read_array::<8>",
+          "samples": 315,
+          "percent": 0.387
+        },
+        {
+          "name": "<alloc::collections::btree::map::entry::VacantEntry<u32, trames_core::process::Process>>::insert_entry",
+          "samples": 300,
+          "percent": 0.368
+        },
+        {
+          "name": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 4>",
+          "samples": 299,
+          "percent": 0.367
+        },
+        {
+          "name": "trames_cpu::cached::tail_decode::<trames_memory::parallel::View>",
+          "samples": 285,
+          "percent": 0.35
+        },
+        {
+          "name": "<std::sys::sync::mutex::futex::Mutex>::lock_contended",
+          "samples": 273,
+          "percent": 0.335
+        },
+        {
+          "name": "<trames_memory::Memory>::read_array::<8>",
+          "samples": 267,
+          "percent": 0.328
+        }
+      ],
+      "modules": [
+        {
+          "name": "libc.so.6",
+          "samples": 45668,
+          "percent": 56.08
+        },
+        {
+          "name": "libtrames_ffi.so",
+          "samples": 35165,
+          "percent": 43.182
+        },
+        {
+          "name": "python3.12",
+          "samples": 321,
+          "percent": 0.394
+        },
+        {
+          "name": "[vdso]",
+          "samples": 177,
+          "percent": 0.217
+        },
+        {
+          "name": "_imaging.cpython-312-x86_64-linux-gnu.so",
+          "samples": 58,
+          "percent": 0.071
+        },
+        {
+          "name": "libz.so.1.3.1",
+          "samples": 39,
+          "percent": 0.048
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "samples": 6,
+          "percent": 0.007
+        }
+      ],
+      "threads": [
+        {
+          "name": "176032",
+          "samples": 59637,
+          "percent": 73.234
+        },
+        {
+          "name": "176034",
+          "samples": 7610,
+          "percent": 9.345
+        },
+        {
+          "name": "176035",
+          "samples": 6444,
+          "percent": 7.913
+        },
+        {
+          "name": "176036",
+          "samples": 4438,
+          "percent": 5.45
+        },
+        {
+          "name": "176048",
+          "samples": 2627,
+          "percent": 3.226
+        },
+        {
+          "name": "176031",
+          "samples": 585,
+          "percent": 0.718
+        },
+        {
+          "name": "176033",
+          "samples": 93,
+          "percent": 0.114
+        }
+      ]
+    },
+    "600-900": {
+      "samples": 35896,
+      "functions": [
+        {
+          "name": "outside FFI: libc.so.6",
+          "samples": 20057,
+          "percent": 55.875
+        },
+        {
+          "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::ValMut, u32, (u32, u64), alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::perform_next_unchecked::<<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::ValMut, u32, (u32, u64), alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::next_unchecked::{closure#0}, (&u32, &mut (u32, u64))>",
+          "samples": 1465,
+          "percent": 4.081
+        },
+        {
+          "name": "<trames_memory::parallel::View>::frame_slow",
+          "samples": 1104,
+          "percent": 3.076
+        },
+        {
+          "name": "<trames_core::process::Kernel>::drive::<trames_ffi::session::Adapter>",
+          "samples": 859,
+          "percent": 2.393
+        },
+        {
+          "name": "<trames_vfs::Vfs>::next_timerfd_deadline",
+          "samples": 827,
+          "percent": 2.304
+        },
+        {
+          "name": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 22>",
+          "samples": 821,
+          "percent": 2.287
+        },
+        {
+          "name": "<trames_vfs::Vfs>::cgroup_frozen",
+          "samples": 599,
+          "percent": 1.669
+        },
+        {
+          "name": "<trames_memory::Memory>::commit_parallel",
+          "samples": 568,
+          "percent": 1.582
+        },
+        {
+          "name": "<trames_memory::parallel::View as trames_memory::cpu_memory::CpuMemory>::fetch_u32",
+          "samples": 413,
+          "percent": 1.151
+        },
+        {
+          "name": "trames_cpu::cached::tail_enter::<trames_memory::parallel::View>",
+          "samples": 343,
+          "percent": 0.956
+        },
+        {
+          "name": "<trames_memory::parallel::View>::read_checked::<trames_memory::MemoryError, <trames_memory::parallel::View as trames_memory::cpu_memory::CpuMemory>::read::{closure#0}>",
+          "samples": 337,
+          "percent": 0.939
+        },
+        {
+          "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u32, trames_core::process::Process, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::KV>>::remove_leaf_kv::<<alloc::collections::btree::map::entry::OccupiedEntry<u32, trames_core::process::Process>>::remove_kv::{closure#0}, alloc::alloc::Global>",
+          "samples": 282,
+          "percent": 0.786
+        },
+        {
+          "name": "<trames_memory::parallel::page::MutablePage>::lock",
+          "samples": 262,
+          "percent": 0.73
+        },
+        {
+          "name": "<trames_memory::Memory>::check",
+          "samples": 246,
+          "percent": 0.685
+        },
+        {
+          "name": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 23>",
+          "samples": 241,
+          "percent": 0.671
+        },
+        {
+          "name": "<trames_cpu::cached::Cache>::page::<trames_memory::parallel::View>",
+          "samples": 235,
+          "percent": 0.655
+        },
+        {
+          "name": "<alloc::collections::btree::map::entry::OccupiedEntry<u32, trames_core::process::Process>>::remove_kv",
+          "samples": 231,
+          "percent": 0.644
+        },
+        {
+          "name": "<trames_cpu::cached::CodePage>::decode_slot::<trames_memory::parallel::View>",
+          "samples": 224,
+          "percent": 0.624
+        },
+        {
+          "name": "<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u32, trames_core::process::Process, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::insert_recursing::<alloc::alloc::Global, <alloc::collections::btree::map::entry::VacantEntry<u32, trames_core::process::Process>>::insert_entry::{closure#0}>",
+          "samples": 215,
+          "percent": 0.599
+        },
+        {
+          "name": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 8>",
+          "samples": 198,
+          "percent": 0.552
+        },
+        {
+          "name": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 7>",
+          "samples": 194,
+          "percent": 0.54
+        },
+        {
+          "name": "<trames_memory::parallel::page::Guard>::read",
+          "samples": 186,
+          "percent": 0.518
+        },
+        {
+          "name": "<trames_cpu::Cpu>::execute_extended::<trames_memory::parallel::View>",
+          "samples": 181,
+          "percent": 0.504
+        },
+        {
+          "name": "<trames_memory::parallel::page::Guard>::invalidate",
+          "samples": 179,
+          "percent": 0.499
+        },
+        {
+          "name": "<trames_memory::parallel::View>::write_fragment",
+          "samples": 176,
+          "percent": 0.49
+        },
+        {
+          "name": "<trames_memory::parallel::ConcurrentPage>::changed",
+          "samples": 172,
+          "percent": 0.479
+        },
+        {
+          "name": "<trames_cpu::cached::Instruction>::decode",
+          "samples": 170,
+          "percent": 0.474
+        },
+        {
+          "name": "trames_cpu::cached::tail_decode::<trames_memory::parallel::View>",
+          "samples": 155,
+          "percent": 0.432
+        },
+        {
+          "name": "<trames_memory::parallel::View as trames_memory::cpu_memory::CpuMemory>::read_array::<8>",
+          "samples": 153,
+          "percent": 0.426
+        },
+        {
+          "name": "trames_memory::parallel::page::mask",
+          "samples": 149,
+          "percent": 0.415
+        },
+        {
+          "name": "outside FFI: python3.12",
+          "samples": 145,
+          "percent": 0.404
+        },
+        {
+          "name": "<std::sys::sync::mutex::futex::Mutex>::lock_contended",
+          "samples": 133,
+          "percent": 0.371
+        },
+        {
+          "name": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 4>",
+          "samples": 121,
+          "percent": 0.337
+        },
+        {
+          "name": "<alloc::collections::btree::map::entry::VacantEntry<u32, trames_core::process::Process>>::insert_entry",
+          "samples": 119,
+          "percent": 0.332
+        },
+        {
+          "name": "trames_cpu::cached::tail_op::<trames_memory::parallel::View, 19>",
+          "samples": 119,
+          "percent": 0.332
+        }
+      ],
+      "modules": [
+        {
+          "name": "libc.so.6",
+          "samples": 20057,
+          "percent": 55.875
+        },
+        {
+          "name": "libtrames_ffi.so",
+          "samples": 15582,
+          "percent": 43.409
+        },
+        {
+          "name": "python3.12",
+          "samples": 145,
+          "percent": 0.404
+        },
+        {
+          "name": "[vdso]",
+          "samples": 72,
+          "percent": 0.201
+        },
+        {
+          "name": "_imaging.cpython-312-x86_64-linux-gnu.so",
+          "samples": 22,
+          "percent": 0.061
+        },
+        {
+          "name": "libz.so.1.3.1",
+          "samples": 14,
+          "percent": 0.039
+        },
+        {
+          "name": "ld-linux-x86-64.so.2",
+          "samples": 4,
+          "percent": 0.011
+        }
+      ],
+      "threads": [
+        {
+          "name": "176032",
+          "samples": 26189,
+          "percent": 72.958
+        },
+        {
+          "name": "176034",
+          "samples": 3386,
+          "percent": 9.433
+        },
+        {
+          "name": "176035",
+          "samples": 2979,
+          "percent": 8.299
+        },
+        {
+          "name": "176036",
+          "samples": 1955,
+          "percent": 5.446
+        },
+        {
+          "name": "176048",
+          "samples": 1079,
+          "percent": 3.006
+        },
+        {
+          "name": "176031",
+          "samples": 265,
+          "percent": 0.738
+        },
+        {
+          "name": "176033",
+          "samples": 43,
+          "percent": 0.12
+        }
+      ]
+    },
+    "900+": {
+      "samples": 0,
+      "functions": [],
+      "modules": [],
+      "threads": []
+    }
+  }
+}

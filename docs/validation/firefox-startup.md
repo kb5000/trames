@@ -1,5 +1,7 @@
 # Firefox：减少休眠线程广播与文件映射重建
 
+后续已继续定位并修复 [coarse 时钟与调度器大对象搬移](firefox-content.md)；本文保留本轮历史结果。
+
 2026-10-20，继续原版签名 Alpine ARM64 Firefox 142.0-r0、Release FFI、完整
 hybrid musl、4 CPU、总/单进程均 4 GiB。没有改浏览器或关闭其默认内容沙箱配置。
 最终版本已经绘制出浏览器标签栏、地址栏、按钮与文字，收到多个软件渲染帧。

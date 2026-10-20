@@ -1,0 +1,124 @@
+2026-10-20 11:09:26.709951 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=4b30e470, uri=chrome://browser/content/browser.xhtml]
+2026-10-20 11:09:26.710826 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel ctor [this=4b30e470]
+2026-10-20 11:09:26.711640 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel AsyncOpen [this=4b30e470]
+2026-10-20 11:09:26.712235 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=3c859e90]
+2026-10-20 11:09:26.712690 UTC - [Parent 4: Main Thread]: V/DocumentChannel Created PPDocumentChannel with listener=3c859e90
+2026-10-20 11:09:26.713457 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [3c859e90] OpenDocument [uri=chrome://browser/content/browser.xhtml]
+2026-10-20 11:09:26.715969 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=488cbd30]
+[Parent 4, Main Thread] WARNING: Failed to create DBus proxy for org.a11y.Bus: Cannot spawn a message bus without a machine-id: Unable to load /usr/var/lib/dbus/machine-id or /etc/machine-id: Failed to open file “/usr/var/lib/dbus/machine-id”: No such file or directory
+: 'glib warning', file /home/buildozer/aports/community/firefox/src/firefox-142.0/toolkit/xre/nsSigHandlers.cpp:201
+
+** (firefox:4): WARNING **: 11:09:27.646: Failed to create DBus proxy for org.a11y.Bus: Cannot spawn a message bus without a machine-id: Unable to load /usr/var/lib/dbus/machine-id or /etc/machine-id: Failed to open file “/usr/var/lib/dbus/machine-id”: No such file or directory
+
+2026-10-20 11:09:27.887460 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=488cbd30]
+2026-10-20 11:09:27.888308 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=488cbd30]
+2026-10-20 11:09:27.889432 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=3c859e90]
+2026-10-20 11:09:27.890095 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener::TriggerRedirectToRealChannel [this=3c859e90] aDestinationBrowsingContext=1 aDestinationProcess=-1
+2026-10-20 11:09:27.890709 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannel [this=3c859e90] aRedirectFlags=4, aLoadFlags=3d0004
+2026-10-20 11:09:27.891864 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel RedirectToRealChannel [this=4b30e470]
+2026-10-20 11:09:30.452174 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel OnRedirectVerifyCallback [this=4b30e470 aResult=0]
+2026-10-20 11:09:30.453501 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel dtor [this=4b30e470]
+2026-10-20 11:09:32.472174 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannelFinished [this=3c859e90, aRv=0 ]
+2026-10-20 11:09:32.473116 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener FinishReplacementChannelSetup [this=3c859e90, aResult=0]
+2026-10-20 11:09:32.473858 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ResumeSuspendedChannel [this=3c859e90]
+2026-10-20 11:09:32.719666 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=4b322210, uri=chrome://extensions/content/dummy.xhtml]
+2026-10-20 11:09:32.720450 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel ctor [this=4b322210]
+2026-10-20 11:09:32.721236 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel AsyncOpen [this=4b322210]
+2026-10-20 11:09:32.721797 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=3c85e210]
+2026-10-20 11:09:32.722311 UTC - [Parent 4: Main Thread]: V/DocumentChannel Created PPDocumentChannel with listener=3c85e210
+2026-10-20 11:09:32.723095 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [3c85e210] OpenDocument [uri=chrome://extensions/content/dummy.xhtml]
+2026-10-20 11:09:32.727302 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=488d1910]
+2026-10-20 11:09:36.642766 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=488cbd30]
+2026-10-20 11:09:36.643956 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=3c859e90]
+2026-10-20 11:09:37.770576 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=488d1910]
+2026-10-20 11:09:37.771332 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=488d1910]
+2026-10-20 11:09:37.772124 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=3c85e210]
+2026-10-20 11:09:37.772807 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener::TriggerRedirectToRealChannel [this=3c85e210] aDestinationBrowsingContext=2 aDestinationProcess=-1
+2026-10-20 11:09:37.773360 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannel [this=3c85e210] aRedirectFlags=4, aLoadFlags=3d0004
+2026-10-20 11:09:37.774405 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel RedirectToRealChannel [this=4b322210]
+2026-10-20 11:09:40.381987 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel OnRedirectVerifyCallback [this=4b322210 aResult=0]
+2026-10-20 11:09:40.384132 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel dtor [this=4b322210]
+2026-10-20 11:09:44.043246 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannelFinished [this=3c85e210, aRv=0 ]
+2026-10-20 11:09:44.043703 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener FinishReplacementChannelSetup [this=3c85e210, aResult=0]
+2026-10-20 11:09:44.043926 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ResumeSuspendedChannel [this=3c85e210]
+2026-10-20 11:09:44.537917 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=488d1910]
+2026-10-20 11:09:44.539011 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=3c85e210]
+2026-10-20 11:09:45.670688 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess for type extension
+2026-10-20 11:09:45.671573 UTC - [Parent 4: Main Thread]: D/Process Launching new process immediately for type extension
+2026-10-20 11:09:45.672421 UTC - [Parent 4: Main Thread]: V/Process CreateSubprocess: ContentParent id=470354610 mSubprocess id=87771c090 childID=3
+2026-10-20 11:09:45.715087 UTC - [Parent 4: Main Thread]: D/Process AddBlocker: extension 470354610 (sNumBlockers=0)
+2026-10-20 11:09:45.716895 UTC - [Parent 4: Main Thread]: D/Process Enabling preallocation: 3
+2026-10-20 11:09:45.717524 UTC - [Parent 4: Main Thread]: D/Process Starting delayed process start, delay=1000
+2026-10-20 11:09:46.091777 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess: new immediate process id=470354610 childID=3
+2026-10-20 11:09:46.290595 UTC - [Parent 4: Main Thread]: D/Process ContentParent::InitInternal: id=470354610, childID=3
+2026-10-20 11:09:46.447083 UTC - [Child 81: Main Thread]: D/Process Changed name of process 81 to Web Content
+2026-10-20 11:09:47.569397 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess for type extension
+2026-10-20 11:09:47.570012 UTC - [Parent 4: Main Thread]: D/Process GetUsedProcess: Reused process id=470354610 childID=3 for extension
+2026-10-20 11:09:47.604295 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess for type extension
+2026-10-20 11:09:47.604781 UTC - [Parent 4: Main Thread]: D/Process GetUsedProcess: Reused process id=470354610 childID=3 for extension
+2026-10-20 11:09:47.641042 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess for type extension
+2026-10-20 11:09:47.641591 UTC - [Parent 4: Main Thread]: D/Process GetUsedProcess: Reused process id=470354610 childID=3 for extension
+2026-10-20 11:09:47.675493 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess for type extension
+2026-10-20 11:09:47.675927 UTC - [Parent 4: Main Thread]: D/Process GetUsedProcess: Reused process id=470354610 childID=3 for extension
+2026-10-20 11:09:48.199427 UTC - [Parent 4: Main Thread]: D/Process Starting process allocate on idle
+2026-10-20 11:09:50.425674 UTC - [Child 81: Main Thread]: D/Process Setting remoteType of process 81 to extension
+2026-10-20 11:09:50.428474 UTC - [Child 81: Main Thread]: D/Process Changed name of process 81 to WebExtensions
+2026-10-20 11:09:51.187045 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040d0d0, uri=about:blank]
+2026-10-20 11:09:51.208237 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040d0d0, uri=about:blank]
+2026-10-20 11:09:51.331332 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040e4d0, uri=about:blank]
+2026-10-20 11:09:51.332661 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040e4d0, uri=about:blank]
+2026-10-20 11:09:51.458448 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040f8d0, uri=about:blank]
+2026-10-20 11:09:51.459664 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040f8d0, uri=about:blank]
+2026-10-20 11:09:51.605949 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=30411bd0, uri=about:blank]
+2026-10-20 11:09:51.607296 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=30411bd0, uri=about:blank]
+2026-10-20 11:09:51.740982 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=304134d0, uri=about:blank]
+2026-10-20 11:09:51.742388 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=304134d0, uri=about:blank]
+2026-10-20 11:09:51.793375 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ShutdownListeners [this=3040d0d0, status=804b0002]
+2026-10-20 11:09:51.828717 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040b050, uri=moz-extension://2a94bc3d-e980-48d9-829e-b16166ee0d49/_generated_background_page.html]
+2026-10-20 11:09:51.829983 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040b050, uri=moz-extension://2a94bc3d-e980-48d9-829e-b16166ee0d49/_generated_background_page.html]
+2026-10-20 11:09:51.854055 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ShutdownListeners [this=3040e4d0, status=804b0002]
+2026-10-20 11:09:51.866429 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040c1d0, uri=moz-extension://eb5099e8-42f9-40e4-8370-0b439f34ce52/_generated_background_page.html]
+2026-10-20 11:09:51.869242 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040c1d0, uri=moz-extension://eb5099e8-42f9-40e4-8370-0b439f34ce52/_generated_background_page.html]
+2026-10-20 11:09:51.897476 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ShutdownListeners [this=3040f8d0, status=804b0002]
+2026-10-20 11:09:51.910481 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040dc10, uri=moz-extension://b5831b7a-28d0-475b-99db-0bae8037d823/_generated_background_page.html]
+2026-10-20 11:09:51.912073 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040dc10, uri=moz-extension://b5831b7a-28d0-475b-99db-0bae8037d823/_generated_background_page.html]
+2026-10-20 11:09:51.933658 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ShutdownListeners [this=30411bd0, status=804b0002]
+2026-10-20 11:09:51.947012 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=30410190, uri=moz-extension://7728b1c5-8683-4d3d-92ac-c86b6b92d1f7/_generated_background_page.html]
+2026-10-20 11:09:51.949573 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=30410190, uri=moz-extension://7728b1c5-8683-4d3d-92ac-c86b6b92d1f7/_generated_background_page.html]
+2026-10-20 11:09:51.967856 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ShutdownListeners [this=304134d0, status=804b0002]
+2026-10-20 11:09:51.979599 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=304120d0, uri=moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/_generated_background_page.html]
+2026-10-20 11:09:51.981787 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=304120d0, uri=moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/_generated_background_page.html]
+2026-10-20 11:09:52.115771 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=3040d0d0]
+2026-10-20 11:09:52.122074 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=3040e4d0]
+2026-10-20 11:09:52.127414 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=3040f8d0]
+2026-10-20 11:09:52.135023 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=30411bd0]
+2026-10-20 11:09:52.141831 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=304134d0]
+2026-10-20 11:09:55.841929 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=484c4c10]
+2026-10-20 11:09:55.842890 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=484c4c10, uri=about:blank]
+2026-10-20 11:09:55.843550 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=877720110]
+2026-10-20 11:09:55.844303 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [877720110] OpenDocument [uri=about:blank]
+2026-10-20 11:09:55.866856 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=488bb070]
+2026-10-20 11:09:55.996434 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=87474f290]
+2026-10-20 11:09:55.997464 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=87474f290, uri=about:blank]
+2026-10-20 11:09:55.998192 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=877723410]
+2026-10-20 11:09:55.998920 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [877723410] OpenDocument [uri=about:blank]
+2026-10-20 11:09:56.005240 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=488bf2b0]
+2026-10-20 11:09:56.110023 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=87474fb10]
+2026-10-20 11:09:56.110400 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=87474fb10, uri=about:blank]
+2026-10-20 11:09:56.110830 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=87770c490]
+2026-10-20 11:09:56.111611 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [87770c490] OpenDocument [uri=about:blank]
+2026-10-20 11:09:56.118259 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=87586fc30]
+2026-10-20 11:09:56.245988 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=874751290]
+2026-10-20 11:09:56.247003 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=874751290, uri=about:blank]
+2026-10-20 11:09:56.247703 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=877724910]
+2026-10-20 11:09:56.248471 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [877724910] OpenDocument [uri=about:blank]
+2026-10-20 11:09:56.254633 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=875872930]
+2026-10-20 11:09:56.515656 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=874752210]
+2026-10-20 11:09:56.516695 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=874752210, uri=about:blank]
+2026-10-20 11:09:56.517414 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=877725090]
+2026-10-20 11:09:56.518128 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [877725090] OpenDocument [uri=about:blank]
+2026-10-20 11:09:56.524609 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=875874f50]
+2026-10-20 11:09:56.642200 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener Cancel [this=877720110, aStatusCode=804b0002 ]
+2026-10-20 11:09:56.643679 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener DisconnectListener [this=877720110, aStatus=804b0002, aLoadGroupStatus=804b0002, aContinueNavigating=0]
+2026-10-20 11:09:56.644989 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener Disconnect [this=877720110, aContinueNavigating=0]
+2026-10-20 11:09:56.707808 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent dtor [this=484c4c10]

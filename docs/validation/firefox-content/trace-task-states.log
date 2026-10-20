@@ -1,0 +1,148 @@
+FFDIAG time=5.001 ins=475591872 syscalls=48201 rounds=4626 memory=0.447 dispatch=0.089 stop=0.265 decoded=6363319 misses=143222 lookups=19782785
+FFDIAG time=10.001 ins=817092836 syscalls=137786 rounds=4650 memory=0.461 dispatch=0.089 stop=0.269 decoded=15462577 misses=434751 lookups=45592556
+FFDIAG time=15.002 ins=1156471867 syscalls=233340 rounds=5416 memory=0.501 dispatch=0.101 stop=0.303 decoded=23369417 misses=594232 lookups=64802973
+FFDIAG time=20.003 ins=1441166676 syscalls=298336 rounds=5956 memory=0.664 dispatch=0.114 stop=0.408 decoded=40388439 misses=759831 lookups=72913288
+FFDIAG time=25.003 ins=1729854200 syscalls=356887 rounds=6780 memory=0.784 dispatch=0.132 stop=0.525 decoded=59303993 misses=959534 lookups=81227366
+FFDIAG time=30.004 ins=2002676315 syscalls=404554 rounds=9498 memory=1.744 dispatch=0.186 stop=0.723 decoded=67605133 misses=1036258 lookups=89207622
+FFDIAG time=35.005 ins=2256107274 syscalls=462354 rounds=10912 memory=2.742 dispatch=0.217 stop=0.859 decoded=74498316 misses=1115546 lookups=97540009
+FFDIAG time=40.007 ins=2479742466 syscalls=540192 rounds=12054 memory=2.928 dispatch=0.253 stop=1.084 decoded=86850669 misses=1237654 lookups=111442725
+FFDIAG time=45.008 ins=2702882230 syscalls=607125 rounds=12278 memory=3.017 dispatch=0.267 stop=1.118 decoded=94881030 misses=1322859 lookups=122929000
+FFDIAG time=50.010 ins=2917853797 syscalls=702870 rounds=13403 memory=3.072 dispatch=0.290 stop=1.293 decoded=102935218 misses=1407353 lookups=136357078
+FFDIAG time=55.012 ins=3136279790 syscalls=773605 rounds=14326 memory=3.499 dispatch=0.313 stop=1.442 decoded=111182092 misses=1497092 lookups=147635984
+FFDIAG time=60.014 ins=3488785530 syscalls=928463 rounds=20982 memory=4.074 dispatch=0.717 stop=2.392 decoded=121354570 misses=1623638 lookups=172212491
+FFDIAG time=65.015 ins=3764879059 syscalls=1125469 rounds=26096 memory=4.136 dispatch=0.903 stop=3.154 decoded=130148898 misses=1738476 lookups=201076957
+FFDIAG time=70.016 ins=3814644816 syscalls=1590863 rounds=43774 memory=4.280 dispatch=1.358 stop=3.828 decoded=135907914 misses=1869046 lookups=205330198
+FFDIAG time=75.017 ins=3865943478 syscalls=2025407 rounds=60296 memory=4.414 dispatch=1.807 stop=4.575 decoded=141514737 misses=1999446 lookups=209546971
+FFDIAG time=80.018 ins=3912497821 syscalls=2453974 rounds=76621 memory=4.554 dispatch=2.271 stop=5.363 decoded=146839498 misses=2126717 lookups=213574772
+FFDIAG time=85.019 ins=3960109352 syscalls=2896205 rounds=93444 memory=4.708 dispatch=2.758 stop=6.085 decoded=152340307 misses=2258690 lookups=217776407
+FFDIAG time=90.020 ins=4007454214 syscalls=3347608 rounds=110656 memory=4.850 dispatch=3.209 stop=6.791 decoded=157770954 misses=2388071 lookups=221947951
+FFDIAG time=95.021 ins=4056955306 syscalls=3788551 rounds=127386 memory=4.978 dispatch=3.726 stop=7.496 decoded=163398017 misses=2522079 lookups=226308752
+FFDIAG time=100.023 ins=4106700286 syscalls=4258744 rounds=145323 memory=5.096 dispatch=4.172 stop=8.161 decoded=169082726 misses=2658618 lookups=230697514
+FFDIAG time=105.025 ins=4157288034 syscalls=4714312 rounds=162637 memory=5.231 dispatch=4.795 stop=8.763 decoded=174779843 misses=2793068 lookups=235154717
+FFDIAG time=110.026 ins=4204681654 syscalls=5168833 rounds=179991 memory=5.377 dispatch=5.260 stop=9.443 decoded=180190999 misses=2923124 lookups=239332512
+FFDIAG time=115.027 ins=4252128617 syscalls=5613119 rounds=196895 memory=5.540 dispatch=5.754 stop=10.123 decoded=185662670 misses=3053732 lookups=243514308
+FFDIAG time=120.028 ins=4303001871 syscalls=6072635 rounds=214328 memory=5.680 dispatch=6.186 stop=10.818 decoded=191451733 misses=3192520 lookups=248000166
+FFDIAG time=125.029 ins=4348683338 syscalls=6491954 rounds=230385 memory=5.805 dispatch=6.718 stop=11.468 decoded=196558921 misses=3309366 lookups=252011753
+FFDIAG time=130.030 ins=4394091600 syscalls=6931385 rounds=247141 memory=5.959 dispatch=7.192 stop=12.211 decoded=201750592 misses=3433516 lookups=256015155
+FFDIAG time=135.031 ins=4442233419 syscalls=7397247 rounds=264898 memory=6.089 dispatch=7.620 stop=12.916 decoded=207375063 misses=3568946 lookups=260265250
+FFDIAG time=140.032 ins=4493460705 syscalls=7857796 rounds=282374 memory=6.225 dispatch=8.053 stop=13.624 decoded=213172284 misses=3706248 lookups=264777226
+FFDIAG time=145.034 ins=4540144519 syscalls=8309824 rounds=299622 memory=6.370 dispatch=8.554 stop=14.324 decoded=218549249 misses=3835268 lookups=268895187
+FFDIAG time=150.035 ins=4582257397 syscalls=8725745 rounds=315653 memory=6.499 dispatch=9.349 stop=14.842 decoded=223271775 misses=3943042 lookups=272586508
+FFDIAG time=155.036 ins=4632485186 syscalls=9192169 rounds=333389 memory=6.633 dispatch=9.750 stop=15.544 decoded=228942944 misses=4080287 lookups=277013179
+FFDIAG time=160.037 ins=4679937015 syscalls=9642880 rounds=350582 memory=6.778 dispatch=10.239 stop=16.248 decoded=234352029 misses=4208666 lookups=281192126
+FFDIAG time=165.038 ins=4726743458 syscalls=10105702 rounds=368263 memory=6.934 dispatch=10.746 stop=16.915 decoded=239792892 misses=4340913 lookups=285320964
+FFDIAG time=170.040 ins=4776225115 syscalls=10564156 rounds=385702 memory=7.095 dispatch=11.238 stop=17.609 decoded=245450635 misses=4475404 lookups=289677961
+FFDIAG time=175.041 ins=4825174914 syscalls=11014377 rounds=402809 memory=7.254 dispatch=11.712 stop=18.326 decoded=251031232 misses=4609677 lookups=293993177
+FFDIAG time=180.042 ins=4875322096 syscalls=11478893 rounds=420471 memory=7.392 dispatch=12.129 stop=19.019 decoded=256760547 misses=4746619 lookups=298414519
+FFDIAG time=185.043 ins=4923466216 syscalls=11946619 rounds=438299 memory=7.529 dispatch=12.540 stop=19.690 decoded=262346902 misses=4880576 lookups=302663948
+FFDIAG time=190.044 ins=4971043353 syscalls=12402678 rounds=455650 memory=7.686 dispatch=13.024 stop=20.376 decoded=267847763 misses=5012419 lookups=306862541
+FFDIAG time=195.045 ins=5022517091 syscalls=12871686 rounds=473466 memory=7.821 dispatch=13.440 stop=21.060 decoded=273686944 misses=5150195 lookups=311393860
+FFDIAG time=200.046 ins=5073319558 syscalls=13323282 rounds=490624 memory=7.986 dispatch=13.918 stop=21.765 decoded=279431449 misses=5284137 lookups=315823587
+FFDIAG time=205.048 ins=5121179512 syscalls=13780163 rounds=508042 memory=8.147 dispatch=14.375 stop=22.444 decoded=285030019 misses=5414225 lookups=320069881
+FFDIAG time=210.049 ins=5167964848 syscalls=14253091 rounds=526148 memory=8.294 dispatch=14.806 stop=23.098 decoded=290560064 misses=5542561 lookups=324212563
+FFDIAG time=215.050 ins=5214602918 syscalls=14711891 rounds=543694 memory=8.441 dispatch=15.363 stop=23.747 decoded=296033308 misses=5668636 lookups=328339303
+FFDIAG time=220.051 ins=5263157993 syscalls=15197591 rounds=562227 memory=8.567 dispatch=15.773 stop=24.417 decoded=301710247 misses=5800263 lookups=332631085
+FFDIAG time=225.052 ins=5313002057 syscalls=15669922 rounds=580233 memory=8.709 dispatch=16.203 stop=25.122 decoded=307476539 misses=5933573 lookups=337032678
+FFDIAG time=230.053 ins=5361624706 syscalls=16134942 rounds=597942 memory=8.845 dispatch=16.686 stop=25.825 decoded=313140208 misses=6064514 lookups=341338102
+FFDIAG time=235.054 ins=5412636492 syscalls=16605695 rounds=615862 memory=8.990 dispatch=17.130 stop=26.497 decoded=318987896 misses=6199432 lookups=345842767
+FFDIAG time=240.055 ins=5458973061 syscalls=17066867 rounds=633516 memory=9.137 dispatch=17.588 stop=27.223 decoded=324435976 misses=6325413 lookups=349937815
+
+Last complete sample (numeric syscall fields use hex):
+FFDIAG time=240.055 ins=5458973061 syscalls=17066867 rounds=633516 memory=9.137 dispatch=17.588 stop=27.223 decoded=324435976 misses=6325413 lookups=349937815
+FFDIAG pid=1 vm=1 comm="ash" state=blocked pc=0x7007c2dc cpu=0.015 blocked=Some((49, [7fffffeff538, 1, 0, 0, 8, 0])) lr=0x70067d60 sp=0x7fffffeff4e0
+FFDIAG pid=3 vm=4 comm="ash" state=blocked pc=0x7007c2dc cpu=0.001 blocked=Some((104, [ffffffffffffffff, 7fffffefed2c, 0, 0, 0, 0])) lr=0x70067d60 sp=0x7fffffefece0
+FFDIAG pid=4 vm=7 comm="firefox" state=ready pc=0x7007c2dc cpu=72.200 blocked=None lr=0x70067d60 sp=0x7fffffefe350
+FFDIAG pid=6 vm=7 comm="AsyncSi~lThread" state=blocked pc=0x7007c2dc cpu=0.000 blocked=Some((3f, [6, 3c56ed94, 1, 0, 0, 0])) lr=0x70067d60 sp=0x3c56ed60
+FFDIAG pid=7 vm=7 comm="pool-spawner" state=futex pc=0x7003eeec cpu=0.001 blocked=Some((62, [30983b60, 0, 0, 0, 0, 0])) lr=0x31bb874c sp=0x3c698c30
+FFDIAG pid=8 vm=7 comm="gmain" state=blocked pc=0x7007c2dc cpu=0.001 blocked=Some((49, [30681830, 1, 0, 0, 8, 0])) lr=0x70067d60 sp=0x3c6c2c50
+FFDIAG pid=9 vm=7 comm="[pango] fontcon" state=futex pc=0x7003eeec cpu=0.419 blocked=Some((62, [309833e0, 0, 0, 0, 0, 0])) lr=0x31bb874c sp=0x3c8ecc40
+FFDIAG pid=10 vm=7 comm="WaylandProxy" state=blocked pc=0x7007c2dc cpu=0.002 blocked=Some((49, [3cc16d20, 3, 3cc16d10, 0, 8, 0])) lr=0x70067d60 sp=0x3cc16ce0
+FFDIAG pid=11 vm=7 comm="glean.dispatche" state=futex pc=0x7003eeec cpu=0.001 blocked=Some((62, [30bbee38, 0, 0, 0, 0, 0])) lr=0x3605a25c sp=0x3dd955a0
+FFDIAG pid=13 vm=7 comm="IPC I/O Parent" state=blocked pc=0x7007c2dc cpu=0.112 blocked=Some((16, [f, 33303210, 20, ffffffffffffffff, 0, 8])) lr=0x70067d60 sp=0x3defc910
+FFDIAG pid=14 vm=7 comm="Timer" state=futex pc=0x7007c2dc cpu=0.022 blocked=Some((62, [45563314, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x45563230
+FFDIAG pid=15 vm=7 comm="Netlink Monitor" state=futex pc=0x7007c2dc cpu=0.004 blocked=Some((62, [455ad844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x455ad760
+FFDIAG pid=16 vm=7 comm="Socket Thread" state=blocked pc=0x7007c2dc cpu=0.022 blocked=Some((49, [455f7378, 1, 0, 0, 8, 0])) lr=0x70067d60 sp=0x455f7320
+FFDIAG pid=17 vm=7 comm="IPDL Background" state=futex pc=0x7007c2dc cpu=0.179 blocked=Some((62, [45641844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x45641760
+FFDIAG pid=18 vm=7 comm="Backgro~Pool #1" state=futex pc=0x7007c2dc cpu=0.004 blocked=Some((62, [4568b664, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x4568b580
+FFDIAG pid=29 vm=7 comm="HTML5 Parser" state=futex pc=0x7007c2dc cpu=0.001 blocked=Some((62, [45e58844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x45e58760
+FFDIAG pid=30 vm=7 comm="StyleThread#1" state=futex pc=0x7003eeec cpu=1.812 blocked=Some((62, [3d286508, 0, 0, 0, 0, 0])) lr=0x36c40d0c sp=0x45ea2860
+FFDIAG pid=31 vm=7 comm="StyleThread#2" state=futex pc=0x7003eeec cpu=0.200 blocked=Some((62, [3d286588, 0, 0, 0, 0, 0])) lr=0x36c40d0c sp=0x45eec860
+FFDIAG pid=34 vm=7 comm="JS Watchdog" state=futex pc=0x7007c2dc cpu=0.012 blocked=Some((62, [45f6acc4, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x45f6abe0
+FFDIAG pid=36 vm=7 comm="Cache2 I/O" state=futex pc=0x7007c2dc cpu=0.016 blocked=Some((62, [4632ab84, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x4632aaa0
+FFDIAG pid=37 vm=7 comm="Cookie" state=futex pc=0x7007c2dc cpu=0.018 blocked=Some((62, [46374844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x46374760
+FFDIAG pid=38 vm=7 comm="StreamTrans #1" state=futex pc=0x7007c2dc cpu=0.231 blocked=Some((62, [46737844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x46737760
+FFDIAG pid=39 vm=7 comm="TaskCon~ller #0" state=futex pc=0x7007c2dc cpu=0.935 blocked=Some((62, [46a3fc04, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x46a3fb20
+FFDIAG pid=40 vm=7 comm="TaskCon~ller #1" state=futex pc=0x7007c2dc cpu=0.111 blocked=Some((62, [46c47c04, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x46c47b20
+FFDIAG pid=41 vm=7 comm="TaskCon~ller #2" state=futex pc=0x7007c2dc cpu=0.004 blocked=Some((62, [46e4fc04, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x46e4fb20
+FFDIAG pid=42 vm=7 comm="TaskCon~ller #3" state=futex pc=0x7007c2dc cpu=0.002 blocked=Some((62, [47057c04, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x47057b20
+FFDIAG pid=43 vm=7 comm="BgIOThr~Pool #1" state=futex pc=0x7007c2dc cpu=0.036 blocked=Some((62, [471e4664, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x471e4580
+FFDIAG pid=44 vm=7 comm="StreamTrans #2" state=futex pc=0x7007c2dc cpu=0.199 blocked=Some((62, [48425844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x48425760
+FFDIAG pid=45 vm=7 comm="Worker Launcher" state=futex pc=0x7007c2dc cpu=0.002 blocked=Some((62, [487c8844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x487c8760
+FFDIAG pid=46 vm=7 comm="QuotaManager IO" state=futex pc=0x7007c2dc cpu=0.281 blocked=Some((62, [48812844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x48812760
+FFDIAG pid=48 vm=7 comm="Softwar~cThread" state=futex pc=0x7007c2dc cpu=5.264 blocked=Some((62, [48b51914, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x48b51830
+FFDIAG pid=49 vm=7 comm="Renderer" state=futex pc=0x7007c2dc cpu=0.001 blocked=Some((62, [48b9b844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x48b9b760
+FFDIAG pid=50 vm=7 comm="WRWorker#0" state=futex pc=0x7003eeec cpu=0.002 blocked=Some((62, [3337d088, 0, 0, 0, 0, 0])) lr=0x36c40d0c sp=0x48da5860
+FFDIAG pid=51 vm=7 comm="WRWorker#1" state=futex pc=0x7003eeec cpu=0.002 blocked=Some((62, [3337d108, 0, 0, 0, 0, 0])) lr=0x36c40d0c sp=0x48faf860
+FFDIAG pid=52 vm=7 comm="WRWorker#2" state=futex pc=0x7003eeec cpu=0.001 blocked=Some((62, [3337d188, 0, 0, 0, 0, 0])) lr=0x36c40d0c sp=0x491b9860
+FFDIAG pid=53 vm=7 comm="WRWorker#3" state=futex pc=0x7003eeec cpu=0.001 blocked=Some((62, [3337d208, 0, 0, 0, 0, 0])) lr=0x36c40d0c sp=0x493c3860
+FFDIAG pid=54 vm=7 comm="WRWorkerLP#0" state=futex pc=0x7003eeec cpu=0.002 blocked=Some((62, [3337ec08, 0, 0, 0, 0, 0])) lr=0x36c40d0c sp=0x495cd860
+FFDIAG pid=55 vm=7 comm="WRWorkerLP#1" state=futex pc=0x7003eeec cpu=0.002 blocked=Some((62, [3337ec88, 0, 0, 0, 0, 0])) lr=0x36c40d0c sp=0x497d7860
+FFDIAG pid=56 vm=7 comm="WRWorkerLP#2" state=futex pc=0x7003eeec cpu=0.001 blocked=Some((62, [3337ed08, 0, 0, 0, 0, 0])) lr=0x36c40d0c sp=0x499e1860
+FFDIAG pid=57 vm=7 comm="WRWorkerLP#3" state=futex pc=0x7003eeec cpu=0.002 blocked=Some((62, [3337ed88, 0, 0, 0, 0, 0])) lr=0x36c40d0c sp=0x49beb860
+FFDIAG pid=58 vm=7 comm="WrGlyph~terizer" state=futex pc=0x7003eeec cpu=0.001 blocked=Some((62, [4597b938, 0, 0, 0, 0, 0])) lr=0x3605a25c sp=0x49df57f0
+FFDIAG pid=59 vm=7 comm="Compositor" state=futex pc=0x7007c2dc cpu=0.003 blocked=Some((62, [49e7f844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x49e7f760
+FFDIAG pid=60 vm=7 comm="CanvasRenderer" state=futex pc=0x7007c2dc cpu=0.001 blocked=Some((62, [4a289844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x4a289760
+FFDIAG pid=61 vm=7 comm="ImageIO" state=futex pc=0x7007c2dc cpu=0.001 blocked=Some((62, [4a8b0844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x4a8b0760
+FFDIAG pid=62 vm=7 comm="SandboxReporter" state=blocked pc=0x7007c2dc cpu=0.001 blocked=Some((d4, [2e, 4ad5cb78, 0, 0, 0, 0])) lr=0x70067d60 sp=0x4ad5cb30
+FFDIAG pid=63 vm=7 comm="IPC Launch" state=futex pc=0x7007c2dc cpu=0.013 blocked=Some((62, [4ada6844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x4ada6760
+FFDIAG pid=64 vm=69 comm="Socket Process" state=blocked pc=0x7007c2dc cpu=0.838 blocked=Some((49, [30703f50, 2, 0, 0, 8, 0])) lr=0x70067d60 sp=0x7fffffefe020
+FFDIAG pid=67 vm=7 comm="Permission" state=futex pc=0x7007c2dc cpu=0.020 blocked=Some((62, [4b187844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x4b187760
+FFDIAG pid=68 vm=69 comm="AsyncSi~lThread" state=blocked pc=0x7007c2dc cpu=0.000 blocked=Some((3f, [a, 3c56dd94, 1, 0, 0, 0])) lr=0x70067d60 sp=0x3c56dd60
+FFDIAG pid=69 vm=69 comm="IPC I/O Child" state=blocked pc=0x7007c2dc cpu=0.010 blocked=Some((16, [c, 33282590, 20, ffffffffffffffff, 0, 8])) lr=0x70067d60 sp=0x3c6b7910
+FFDIAG pid=70 vm=69 comm="Backgro~Pool #1" state=futex pc=0x7007c2dc cpu=0.002 blocked=Some((62, [3d64a664, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x3d64a580
+FFDIAG pid=71 vm=69 comm="Socket Thread" state=blocked pc=0x7007c2dc cpu=0.006 blocked=Some((49, [3d694378, 1, 0, 0, 8, 0])) lr=0x70067d60 sp=0x3d694320
+FFDIAG pid=72 vm=69 comm="Timer" state=futex pc=0x7007c2dc cpu=0.004 blocked=Some((62, [3db8b314, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x3db8b230
+FFDIAG pid=73 vm=79 comm="forkserver" state=blocked pc=0x7007c2dc cpu=0.503 blocked=Some((d4, [3, 7fffffefe4f8, 0, 0, 0, 0])) lr=0x70067d60 sp=0x7fffffefe4b0
+FFDIAG pid=74 vm=7 comm="TRR Background" state=futex pc=0x7007c2dc cpu=0.002 blocked=Some((62, [470861844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x470861760
+FFDIAG pid=75 vm=7 comm="DNS Resolver #1" state=futex pc=0x7007c2dc cpu=0.010 blocked=Some((62, [4708ab5c4, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x4708ab4e0
+FFDIAG pid=76 vm=7 comm="FSBroker64" state=blocked pc=0x7007c2dc cpu=0.002 blocked=Some((d4, [35, 4708ecba8, 40000000, 0, 0, 0])) lr=0x70067d60 sp=0x4708ecb60
+FFDIAG pid=77 vm=7 comm="GMPThread" state=futex pc=0x7007c2dc cpu=0.004 blocked=Some((62, [470a3f844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x470a3f760
+FFDIAG pid=78 vm=69 comm="ProfilerChild" state=futex pc=0x7007c2dc cpu=0.002 blocked=Some((62, [3dbd5844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x3dbd5760
+FFDIAG pid=79 vm=7 comm="DOM Worker" state=futex pc=0x7007c2dc cpu=1.168 blocked=Some((62, [472589514, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x472589430
+FFDIAG pid=81 vm=87 comm="WebExtensions" state=ready pc=0x7006db1c cpu=19.576 blocked=None lr=0x4003a360 sp=0x7fffffefe1c0
+FFDIAG pid=83 vm=87 comm="AsyncSi~lThread" state=blocked pc=0x7007c2dc cpu=0.000 blocked=Some((3f, [3, 43138d94, 1, 0, 0, 0])) lr=0x70067d60 sp=0x43138d60
+FFDIAG pid=84 vm=87 comm="IPC I/O Child" state=blocked pc=0x7007c2dc cpu=10.859 blocked=Some((16, [f, 33180a10, 20, ffffffffffffffff, 0, 8])) lr=0x70067d60 sp=0x43282910
+FFDIAG pid=85 vm=7 comm="ImageBridgeChld" state=futex pc=0x7007c2dc cpu=0.002 blocked=Some((62, [878508844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x878508760
+FFDIAG pid=86 vm=92 comm="RDD Process" state=blocked pc=0x7007c2dc cpu=0.483 blocked=Some((49, [30903830, 2, 0, 0, 8, 0])) lr=0x70067d60 sp=0x7fffffefe030
+FFDIAG pid=87 vm=7 comm="FSBroker81" state=blocked pc=0x7007c2dc cpu=0.003 blocked=Some((d4, [27, 878550ba8, 40000000, 0, 0, 0])) lr=0x70067d60 sp=0x878550b60
+FFDIAG pid=89 vm=92 comm="AsyncSi~lThread" state=blocked pc=0x7007c2dc cpu=0.001 blocked=Some((3f, [3, 43138d94, 1, 0, 0, 0])) lr=0x70067d60 sp=0x43138d60
+FFDIAG pid=90 vm=92 comm="IPC I/O Child" state=blocked pc=0x7007c2dc cpu=0.015 blocked=Some((16, [e, 33181e10, 20, ffffffffffffffff, 0, 8])) lr=0x70067d60 sp=0x43282910
+FFDIAG pid=91 vm=7 comm="ProcessHangMon" state=futex pc=0x7007c2dc cpu=0.005 blocked=Some((62, [8785a3844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x8785a3760
+FFDIAG pid=92 vm=87 comm="Socket Thread" state=futex pc=0x7007c2dc cpu=0.002 blocked=Some((62, [44434844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x44434760
+FFDIAG pid=93 vm=87 comm="HTML5 Parser" state=futex pc=0x7007c2dc cpu=0.001 blocked=Some((62, [4477e844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x4477e760
+FFDIAG pid=94 vm=87 comm="StyleThread#1" state=futex pc=0x7003eeec cpu=0.004 blocked=Some((62, [43581f08, 0, 0, 0, 0, 0])) lr=0x36b18d0c sp=0x447c8860
+FFDIAG pid=95 vm=87 comm="StyleThread#2" state=futex pc=0x7003eeec cpu=0.004 blocked=Some((62, [43581f88, 0, 0, 0, 0, 0])) lr=0x36b18d0c sp=0x44812860
+FFDIAG pid=96 vm=87 comm="JS Watchdog" state=futex pc=0x7007c2dc cpu=0.002 blocked=Some((62, [4493ccc4, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x4493cbe0
+FFDIAG pid=97 vm=7 comm="FSBroker86" state=blocked pc=0x7007c2dc cpu=0.001 blocked=Some((d4, [23, 878bffba8, 40000000, 0, 0, 0])) lr=0x70067d60 sp=0x878bffb60
+FFDIAG pid=98 vm=7 comm="AudioIP~ver RPC" state=blocked pc=0x7007c2dc cpu=0.002 blocked=Some((16, [26, 470241010, 100, ffffffffffffffff, 0, 8])) lr=0x70067d60 sp=0x878c528c0
+FFDIAG pid=99 vm=7 comm="AudioIP~allback" state=blocked pc=0x7007c2dc cpu=0.004 blocked=Some((16, [37, 47023fc10, 100, ffffffffffffffff, 0, 8])) lr=0x70067d60 sp=0x878c9c890
+FFDIAG pid=100 vm=87 comm="Backgro~Pool #1" state=futex pc=0x7007c2dc cpu=0.006 blocked=Some((62, [44aa9664, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x44aa9580
+FFDIAG pid=101 vm=7 comm="AudioIP~ion RPC" state=blocked pc=0x7007c2dc cpu=0.002 blocked=Some((16, [3b, 47024ec10, 100, ffffffffffffffff, 0, 8])) lr=0x70067d60 sp=0x878ce68c0
+FFDIAG pid=102 vm=87 comm="RemVidChild" state=futex pc=0x7007c2dc cpu=0.006 blocked=Some((62, [44af3844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x44af3760
+FFDIAG pid=103 vm=7 comm="IndexedDB IO #3" state=futex pc=0x7007c2dc cpu=0.564 blocked=Some((62, [879058844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x879058760
+FFDIAG pid=104 vm=7 comm="StreamTrans #3" state=futex pc=0x7007c2dc cpu=0.004 blocked=Some((62, [879803844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x879803760
+FFDIAG pid=105 vm=92 comm="ProfilerChild" state=futex pc=0x7007c2dc cpu=0.003 blocked=Some((62, [49b42704, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x49b42620
+FFDIAG pid=107 vm=87 comm="ImageIO" state=futex pc=0x7007c2dc cpu=0.002 blocked=Some((62, [4504c844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x4504c760
+FFDIAG pid=108 vm=87 comm="Worker Launcher" state=futex pc=0x7007c2dc cpu=0.002 blocked=Some((62, [45096844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x45096760
+FFDIAG pid=109 vm=87 comm="Timer" state=futex pc=0x7007c2dc cpu=0.312 blocked=Some((62, [450e0314, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x450e0230
+FFDIAG pid=110 vm=87 comm="ImageBridgeChld" state=futex pc=0x7007c2dc cpu=0.002 blocked=Some((62, [451ad844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x451ad760
+FFDIAG pid=111 vm=87 comm="ProcessHangMon" state=futex pc=0x7007c2dc cpu=0.002 blocked=Some((62, [451f7844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x451f7760
+FFDIAG pid=112 vm=87 comm="ProfilerChild" state=futex pc=0x7007c2dc cpu=0.002 blocked=Some((62, [45241844, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x45241760
+FFDIAG pid=113 vm=87 comm="TaskCon~ller #0" state=futex pc=0x7007c2dc cpu=0.018 blocked=Some((62, [4560dc04, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x4560db20
+FFDIAG pid=114 vm=87 comm="TaskCon~ller #1" state=futex pc=0x7007c2dc cpu=0.008 blocked=Some((62, [45815c04, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x45815b20
+FFDIAG pid=115 vm=87 comm="TaskCon~ller #2" state=futex pc=0x7007c2dc cpu=0.003 blocked=Some((62, [45a1dc04, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x45a1db20
+FFDIAG pid=116 vm=87 comm="TaskCon~ller #3" state=futex pc=0x7007c2dc cpu=0.003 blocked=Some((62, [45c25c04, 0, 0, 0, 0, 0])) lr=0x70067d60 sp=0x45c25b20
+Traceback (most recent call last):
+  File "/workspace/trames/tests/integration/firefox.py", line 264, in <module>
+    time.sleep(.01)
+KeyboardInterrupt

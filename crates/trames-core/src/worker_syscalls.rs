@@ -45,7 +45,7 @@ pub(super) fn clock(
     address: u64,
     started: Instant,
 ) -> Result<u64, Errno> {
-    if !matches!(id, 0 | 1 | 4 | 6 | 7) {
+    if !matches!(id, 0 | 1 | 4..=7) {
         return Err(Errno(22));
     }
     if number == 114 && address == 0 {
@@ -57,7 +57,11 @@ pub(super) fn clock(
     let (seconds, nanos) = if number == 114 {
         (0, 1)
     } else {
-        let elapsed = if matches!(id, 0 | 6) {
+        // Linux 5 is CLOCK_REALTIME_COARSE; 6 is CLOCK_MONOTONIC_COARSE.
+        // Both coarse clocks use the same epoch as their high-resolution
+        // counterpart. Mixing Unix time with session-monotonic deadlines can
+        // turn GLib/Gecko event waits into an effectively endless busy loop.
+        let elapsed = if matches!(id, 0 | 5) {
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .map_err(|_| Errno(5))?
@@ -116,6 +120,48 @@ impl Snapshot {
 mod tests {
     use super::*;
     use trames_memory::{Memory, Permissions, PAGE_SIZE};
+    #[test]
+    fn coarse_clocks_share_the_epoch_of_their_high_resolution_counterparts() {
+        let mut memory = Memory::default();
+        memory.map(0x1000, PAGE_SIZE, Permissions::RW).unwrap();
+        let snapshot = Snapshot {
+            identities: [0; 7],
+            started: Instant::now(),
+            processor: 0,
+            profile: false,
+            streams: [0; (trames_vfs::MAX_FDS as usize).div_ceil(64)],
+            files: [0; (trames_vfs::MAX_FDS as usize).div_ceil(64)],
+            fd_flags: Default::default(),
+        };
+        let mut view = memory.parallel_view(&mut Default::default()).unwrap();
+        let mut cpu = Cpu::new(0, 0);
+        cpu.set_x(8, 113);
+        cpu.set_x(1, 0x1000);
+        for id in [0, 5, 1, 4, 6, 7] {
+            let before = if matches!(id, 0 | 5) {
+                SystemTime::now().duration_since(UNIX_EPOCH).unwrap()
+            } else {
+                snapshot.started.elapsed()
+            };
+            cpu.set_x(0, id);
+            assert_eq!(snapshot.invoke(&cpu, &mut view), Some(0));
+            let seconds = view.read_u64(0x1000).unwrap();
+            let nanos = view.read_u64(0x1008).unwrap();
+            assert!(nanos < 1_000_000_000);
+            let stamp = std::time::Duration::new(seconds, nanos as u32);
+            let after = if matches!(id, 0 | 5) {
+                SystemTime::now().duration_since(UNIX_EPOCH).unwrap()
+            } else {
+                snapshot.started.elapsed()
+            };
+            assert!(before <= stamp && stamp <= after, "clock {id}: {stamp:?}");
+            cpu.set_x(8, 114);
+            cpu.set_x(1, 0);
+            assert_eq!(snapshot.invoke(&cpu, &mut view), Some(0));
+            cpu.set_x(8, 113);
+            cpu.set_x(1, 0x1000);
+        }
+    }
     #[test]
     fn fd_queries_complete_locally_but_mutating_fcntl_keeps_checkpointing() {
         let mut vfs = trames_vfs::Vfs::default();

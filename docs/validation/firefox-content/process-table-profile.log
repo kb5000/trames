@@ -1,0 +1,23 @@
+   Compiling trames-memory v1.2.0 (/workspace/trames/crates/trames-memory)
+   Compiling trames-native v1.2.0 (/workspace/trames/crates/trames-native)
+   Compiling trames-shared v1.2.0 (/workspace/trames/crates/trames-shared)
+   Compiling trames-net v1.2.0 (/workspace/trames/crates/trames-net)
+   Compiling trames-compute v1.2.0 (/workspace/trames/crates/trames-compute)
+   Compiling trames-wayland v1.2.0 (/workspace/trames/crates/trames-wayland)
+   Compiling trames-accel v1.2.0 (/workspace/trames/crates/trames-accel)
+   Compiling trames-bridge v1.2.0 (/workspace/trames/crates/trames-bridge)
+   Compiling trames-cpu v1.2.0 (/workspace/trames/crates/trames-cpu)
+   Compiling trames-vfs v1.2.0 (/workspace/trames/crates/trames-vfs)
+   Compiling trames-vulkan v1.2.0 (/workspace/trames/crates/trames-vulkan)
+   Compiling trames-elf v1.2.0 (/workspace/trames/crates/trames-elf)
+   Compiling trames-linux v1.2.0 (/workspace/trames/crates/trames-linux)
+   Compiling trames-core v1.2.0 (/workspace/trames/crates/trames-core)
+    Finished `release` profile [optimized] target(s) in 24.25s
+     Running unittests src/lib.rs (target/perf-runtime/release/build/trames-core/348194b555e96640/out/trames_core-348194b555e96640)
+
+running 1 test
+process_table tasks=128 rounds=1024 state_bytes=10768 value_seconds=0.205899 pointer_seconds=0.003475
+test process::tests::process_table_churn_profile ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 87 filtered out; finished in 0.22s
+
