@@ -1,5 +1,8 @@
 # Firefox 文件读取、挂起计数与原子访存调查
 
+后续已在单核诊断组完成目标 HTML / JS / canvas 验收；默认四核仍未通过，见
+[重定向及四核跟踪](firefox-redirect.md)。下文保留本轮当时的失败结果。
+
 2026-10-20，继续 [TaskController 调查](firefox-taskqueue.md)。原版 Alpine ARM64
 Firefox 142、总/单进程各 4 GiB、默认沙箱和 Wayland proxy，网络/GPU 关闭。
 这轮修复了 [Node 的 16 KiB 邻页快照问题](node-repl.md)，以及调查中确认的
