@@ -7,7 +7,8 @@ COW. Genuine private fork/COW remains distinct.
 
 ## Reproducible storage comparison
 
-Baseline: `145db7629ce29fd1780619f20dbffee3a24418b9`. Linux x86_64, 4KiB host
+Baseline: `145db7629ce29fd1780619f20dbffee3a24418b9`; measured shared-source build:
+`be259742b0b9281f19619cd905a2248c1aa711f4`. Linux x86_64, 4KiB host
 pages, pinned nightly-2026-10-16, workspace release profile (`lto="thin"`,
 `overflow-checks=true`). The baseline was built from an isolated copy of the
 original memory crate, with exactly the same new example and release profile.
@@ -41,11 +42,13 @@ physical storage. PSS attributes their share once.
 
 ## Validation and boundaries
 
-- Five new storage/coherence tests cover physical owner identity, coordinator plus
+- Six new storage/coherence tests cover physical owner identity, coordinator plus
   four simultaneous CPU workers, CPU/native visibility without commit, mixed
   atomic/exclusive monitors, alias pair reads, same-registry fork COW and an
   externally retained writer. The private-file test verifies that its first COW
-  write returns to the shared source path on the next epoch.
+  write returns to the shared source path on the next epoch. The retained-slot
+  test covers same-window live neighbors and a view from an older snapshot;
+  mapping changes must preserve the retired physical bytes.
 - A software zero-page test verifies no backing allocation on reads and one
   initialized allocation on first write, preserving untouched bytes.
 - The VFS test checks ordinary mapped files and memfd: worker writes are visible
@@ -55,7 +58,7 @@ physical storage. PSS attributes their share once.
   remain applicable.
 - The core mapped-I/O service test now expects shared bytes before commit, while
   retaining its joined fallback for dirty metadata and persistence.
-- Local affected checks: memory 77, core 81, Linux 27, mapped VFS 10; strict Clippy.
+- Local affected checks: memory 78, core 81, Linux 27, mapped VFS 10; strict Clippy.
   Three Linux socket tests need the environment's network capability and passed
   with it. The original-musl ARM64 512MiB sparse-BSS probe passes with 4 CPUs and
   a 4GiB aggregate/per-process budget: `resident_kib=80`, COW/discard PASS.

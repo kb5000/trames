@@ -4,16 +4,16 @@
   "source_sha256": {
     "crates/trames-core/src/process_service.rs": "101f3ef3ecfd5184ee71e12d51544cfcbc8b852f400aff72d446e7ee1a88dd87",
     "crates/trames-memory/examples/shared-memory.rs": "354b09603d36452ee63b76946406c05d205f4c2a7c714fce68d6a313ba61e9cd",
-    "crates/trames-memory/src/backing.rs": "0add5b0cf7199e4e38c289bb78b4808ca79053be1a0981d9d952e557429dd921",
+    "crates/trames-memory/src/backing.rs": "a4a77f0c19db569d86429d1e17d00c876f9e60bff2159f1bc318f47b84e94d94",
     "crates/trames-memory/src/cpu_memory.rs": "581e54732072db5f52b705e625472a0f59c4c20663fd16fc41eace930b891c77",
-    "crates/trames-memory/src/lib.rs": "995a72af876a01d83e12e70c11cd7f9d298de17c89469b0618a4c53e625867dc",
-    "crates/trames-memory/src/mmu/mod.rs": "e21eac24a5f318fdf92b48da40f832b1766448e392535b770dceae051992d091",
+    "crates/trames-memory/src/lib.rs": "98caeeb71d745bfe55b26b83de1aaa6973a90c0d810b0b842af555f426c8f912",
+    "crates/trames-memory/src/mmu/mod.rs": "a2b179f819c3274e84138ce487dca0a6357866b709709b34a452139e0a76a099",
     "crates/trames-memory/src/native_access.rs": "5b17ec39dd4b5acfa1b563bbfb2ba87f8fd53607978f51e96f3eb1e9e48fa604",
-    "crates/trames-memory/src/parallel.rs": "c0761ff136e326008e6ca274ce38d8d71d1a875f0cfaca0a4bcaec59aad82486",
+    "crates/trames-memory/src/parallel.rs": "dd7095ff280febaf4cc79ec1776a123a395abfb34b62d29dae4f75d768ab9020",
     "crates/trames-memory/src/parallel/hardware.rs": "821c9e02403e33569a19a947bcffd0bbeb52e3a73ad6aa8f793131058ce7891e",
     "crates/trames-memory/src/parallel/native.rs": "2fa4eced48a066e0683a5a1918e9b4a1629ccc02809f1fd72d61c5929c5ebd28",
     "crates/trames-memory/src/parallel/page.rs": "5f54fbf35cb8888fc5fdb30c286da6a67df5257497366e9f8bb044a9a7ee25d7",
-    "crates/trames-memory/src/parallel/sharing.rs": "f630829e307f64d30f8364259870981c36b74422f0a37ed91e4572fc707bd4ec",
+    "crates/trames-memory/src/parallel/sharing.rs": "75edb4c91c6fa1e9b6c583fd7327449e3897b01c87e483764ea05336bfd17a36",
     "crates/trames-memory/src/parallel/snapshot.rs": "94da0ca70509a53da00c7d0d2a4878980683b7b3e4db4e953a15838a62c9ce7e",
     "crates/trames-vfs/src/mapped.rs": "dbebe7d35833de864879d5586c11339456a84ff8790845328ba9c2735b1e97d0"
   },
@@ -21,5 +21,6 @@
   "budgets": {
     "total": 4294967296,
     "per_process": 4294967296
-  }
+  },
+  "measured_shared_source": "be259742b0b9281f19619cd905a2248c1aa711f4"
 }
