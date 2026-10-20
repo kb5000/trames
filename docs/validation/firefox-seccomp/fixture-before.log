@@ -1,0 +1,3 @@
+seccomp: tests/fixtures/seccomp.c:42: trap_handler: Assertion `uc->uc_mcontext.regs[i] == trap_args[i]' failed.
+seccomp fork/exec and filter inheritance: child status 0x6
+seccomp: tests/fixtures/seccomp.c:70: wait_ok: Assertion `WIFEXITED(status) && WEXITSTATUS(status) == 0' failed.

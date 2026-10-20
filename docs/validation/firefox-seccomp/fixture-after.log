@@ -1,0 +1,2 @@
+1-CPU seccomp: passed (matches native Linux)
+4-CPU seccomp: passed (matches native Linux)

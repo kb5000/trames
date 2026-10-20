@@ -31,6 +31,7 @@ static void install(unsigned action, unsigned flags) {
     assert(syscall(SYS_seccomp, SECCOMP_SET_MODE_FILTER, flags, &program) == 0);
 }
 static volatile sig_atomic_t trapped;
+static const unsigned long trap_args[] = {0xffffffffffffff9cUL, 0x1234, 0xa0000, 0x5678, 0x9abc, 0xdef0};
 static void trap_handler(int sig, siginfo_t *info, void *context) {
     assert(sig == SIGSYS && info->si_code == SYS_SECCOMP);
     assert(info->si_syscall == SYS_getppid && info->si_errno == 0x55);
@@ -38,9 +39,14 @@ static void trap_handler(int sig, siginfo_t *info, void *context) {
     ucontext_t *uc = context;
 #if defined(__aarch64__)
     assert(info->si_arch == AUDIT_ARCH_AARCH64);
+    for (unsigned i = 0; i < 6; ++i) assert(uc->uc_mcontext.regs[i] == trap_args[i]);
+    assert(uc->uc_mcontext.regs[8] == SYS_getppid);
     uc->uc_mcontext.regs[0] = 777;
 #elif defined(__x86_64__)
     assert(info->si_arch == AUDIT_ARCH_X86_64);
+    const int args[] = {REG_RDI, REG_RSI, REG_RDX, REG_R10, REG_R8, REG_R9};
+    for (unsigned i = 0; i < 6; ++i)
+        assert((unsigned long)uc->uc_mcontext.gregs[args[i]] == trap_args[i]);
     uc->uc_mcontext.gregs[REG_RAX] = 777;
 #else
 #error Unsupported oracle architecture
@@ -109,7 +115,8 @@ int main(int argc, char **argv) {
         struct sigaction sa = {.sa_sigaction = trap_handler, .sa_flags = SA_SIGINFO};
         sigemptyset(&sa.sa_mask); assert(sigaction(SIGSYS, &sa, NULL) == 0);
         install(SECCOMP_RET_TRAP | 0x55, 0);
-        assert(syscall(SYS_getppid) == 777 && trapped);
+        assert(syscall(SYS_getppid, trap_args[0], trap_args[1], trap_args[2],
+                       trap_args[3], trap_args[4], trap_args[5]) == 777 && trapped);
         _exit(0);
     }
     wait_ok(child);

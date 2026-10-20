@@ -1,0 +1,28 @@
+{
+  "checks": [
+    {
+      "cpus": 1,
+      "fixture": "seccomp",
+      "exit_code": 0,
+      "stdout": "seccomp: errno, stacking, fork/exec, TRAP siginfo/context/masks, TSYNC and KILL_PROCESS: ok\n"
+    },
+    {
+      "cpus": 4,
+      "fixture": "seccomp",
+      "exit_code": 0,
+      "stdout": "seccomp: errno, stacking, fork/exec, TRAP siginfo/context/masks, TSYNC and KILL_PROCESS: ok\n"
+    }
+  ],
+  "native_seccomp": "seccomp: errno, stacking, fork/exec, TRAP siginfo/context/masks, TSYNC and KILL_PROCESS: ok\n",
+  "network_acceptance_reused": true,
+  "source_sha256": {
+    "tests/fixtures/seccomp.c": "c745e35c15086044f67682d8ae9892edcb942d5596d56e5d9f241aaf3fb2f41a",
+    "tests/fixtures/network-namespaces.c": "6b7d8b49143787261a72dd04a847ec7e7f335670e5c0818081c5350b3ec49487"
+  },
+  "fixture_sha256": {
+    "seccomp": "06708887fba1e6ef85f77de5d8eb43b4b667e7bc41917d6a3e487088d4dc9849",
+    "network-namespaces": "db829cdfc6c8afcdc1d79f20753c87767f52845c0a7f4feaae621c94f394203c",
+    "seccomp-native": "bf366d39cfe2fa01f08bfb66ec005b2471a4bc768991e65b1913e99533eaace8"
+  },
+  "scope": "Guest net/IPC/cgroup namespaces and enforced classic-BPF seccomp. Namespace tests do not claim a privileged host netns oracle, bridge/NAT or a physical iPad."
+}

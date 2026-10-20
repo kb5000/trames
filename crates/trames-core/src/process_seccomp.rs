@@ -309,7 +309,9 @@ impl Kernel {
                     self.exit(pid, p, 31);
                     return true;
                 }
-                p.cpu.set_x(0, number as u64);
+                // ARM64 syscall_rollback restores the original x0 argument.
+                // The syscall number lives in x8 and siginfo; replacing x0
+                // would corrupt the arguments inspected by a SIGSYS broker.
                 p.state = State::Ready;
                 p.pending.discard(31);
                 let _ = p.pending.enqueue(
@@ -375,6 +377,59 @@ mod tests {
         assert!(kernel.syscalls > 0);
         for p in kernel.processes.values().filter(|p| p.cpu.pc == 0x4008) {
             assert_eq!(p.cpu.x(0), error(Errno(123)));
+        }
+    }
+    #[test]
+    fn seccomp_trap_preserves_aarch64_arguments_in_the_signal_context() {
+        for number in [56, 78] {
+            let mut p = super::super::tests::process();
+            let mut kernel = super::super::tests::kernel();
+            let args = [
+                AT_FDCWD as i64 as u64,
+                0x1234,
+                0xa0000,
+                0x5678,
+                0x9abc,
+                0xdef0,
+            ];
+            put_args(&mut p.cpu, args);
+            p.cpu.set_x(8, number as u64);
+            p.cpu.pc = 0x4004;
+            p.seccomp.filters.push(Rc::new(
+                Filter::validate(vec![i(6, 0, 0, 0x30055)]).unwrap(),
+            ));
+            p.actions[31] = Action {
+                handler: 0x5000,
+                flags: 4,
+                ..Action::default()
+            };
+            assert!(kernel.filter_syscall(1, &mut p, number, args));
+            assert_eq!(p.cpu.pc, 0x5000);
+            let sp = p.cpu.sp;
+            assert_eq!(p.cpu.x(0), 31);
+            for (index, arg) in args.into_iter().enumerate() {
+                assert_eq!(p.memory.read_u64(sp + 312 + index as u64 * 8).unwrap(), arg);
+            }
+            assert_eq!(p.memory.read_u64(sp + 312 + 8 * 8).unwrap(), number as u64);
+            assert_eq!(
+                u32::from_le_bytes(p.memory.read_array(sp + 24).unwrap()),
+                number
+            );
+            assert_eq!(
+                u32::from_le_bytes(p.memory.read_array(sp + 28).unwrap()),
+                ARCH
+            );
+            assert_eq!(
+                u32::from_le_bytes(p.memory.read_array(sp + 4).unwrap()),
+                0x55
+            );
+            // The broker can set its result in x0 and resume after SVC.
+            write_u64(&mut p.memory, sp + 312, error(Errno(13))).unwrap();
+            Kernel::sigreturn(&mut p).unwrap();
+            assert_eq!(p.cpu.x(0), error(Errno(13)));
+            assert_eq!(p.cpu.x(1), args[1]);
+            assert_eq!(p.cpu.x(8), number as u64);
+            assert_eq!(p.cpu.pc, 0x4004);
         }
     }
     #[test]
