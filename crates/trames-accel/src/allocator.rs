@@ -320,7 +320,7 @@ mod tests {
             }
             self.memory.atomic_update(a, n, f)
         }
-        fn exclusive_read(&self, a: u64, b: &mut [u8]) -> Result<u128, MemoryError> {
+        fn exclusive_read(&mut self, a: u64, b: &mut [u8]) -> Result<u128, MemoryError> {
             self.memory.exclusive_read(a, b)
         }
         fn exclusive_write(

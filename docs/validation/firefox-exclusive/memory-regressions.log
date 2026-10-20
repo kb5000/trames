@@ -1,0 +1,10 @@
+   Compiling trames-memory v1.2.0 (/workspace/trames/crates/trames-memory)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.35s
+     Running unittests src/lib.rs (target/perf-runtime/debug/build/trames-memory/adc3530834655997/out/trames_memory-adc3530834655997)
+
+running 2 tests
+test cpu_memory::tests::serial_exclusive_zero_load_preserves_demand_zero_accounting_and_cpu_alias ... ok
+test cpu_memory::tests::serial_reservations_track_granules_aba_native_writes_and_fork_cow ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 90 filtered out; finished in 0.00s
+

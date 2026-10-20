@@ -1,0 +1,10 @@
+    Checking trames-memory v1.2.0 (/workspace/trames/crates/trames-memory)
+    Checking trames-cpu v1.2.0 (/workspace/trames/crates/trames-cpu)
+    Checking trames-accel v1.2.0 (/workspace/trames/crates/trames-accel)
+    Checking trames-elf v1.2.0 (/workspace/trames/crates/trames-elf)
+    Checking trames-vulkan v1.2.0 (/workspace/trames/crates/trames-vulkan)
+    Checking trames-bridge v1.2.0 (/workspace/trames/crates/trames-bridge)
+    Checking trames-vfs v1.2.0 (/workspace/trames/crates/trames-vfs)
+    Checking trames-linux v1.2.0 (/workspace/trames/crates/trames-linux)
+    Checking trames-core v1.2.0 (/workspace/trames/crates/trames-core)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.30s

@@ -674,6 +674,26 @@ mod tests {
     }
 
     #[test]
+    fn serial_exclusive_store_succeeds_after_an_unrelated_stack_spill() {
+        // The original Firefox 142 lock loop spills its desired CAS value
+        // between LDAXR and STLXR. The spill must not force every retry to fail.
+        let mut memory = code(&[0xc85ffee9, 0xf90023eb, 0xc80afeeb]);
+        memory.map(0x2000, PAGE_SIZE, Permissions::RW).unwrap();
+        memory.map(0x4000, PAGE_SIZE, Permissions::RW).unwrap();
+        memory.write_array(0x2000, 1u64.to_le_bytes()).unwrap();
+        let mut cpu = Cpu::new(0x1000, 0x4000);
+        cpu.set_x(23, 0x2000);
+        cpu.set_x(11, 2);
+        for _ in 0..3 {
+            cpu.step(&mut memory).unwrap();
+        }
+        assert_eq!(cpu.x(9), 1);
+        assert_eq!(cpu.x(10), 0);
+        assert_eq!(memory.read_u64(0x2000).unwrap(), 2);
+        assert_eq!(memory.read_u64(0x4040).unwrap(), 2);
+    }
+
+    #[test]
     fn rcpc_load_does_not_create_an_exclusive_reservation() {
         let mut memory = code(&[0xf8bfc020, 0xc8037c24]); // LDAPR X0 / STXR W3,X4
         memory.map(0x2000, PAGE_SIZE, Permissions::RW).unwrap();

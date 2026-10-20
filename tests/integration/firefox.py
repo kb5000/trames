@@ -29,6 +29,7 @@ p.add_argument('--diagnostic-timeout', type=float, default=15)
 p.add_argument('--guest-progress', action='store_true', help='intrusive diagnosis: periodic guest ps/proc commands; disabled for startup gates')
 p.add_argument('--memory-gib', type=int, default=4, help='aggregate guest memory budget; overrides are diagnostic')
 p.add_argument('--process-memory-gib', type=int, default=4)
+p.add_argument('--host-cpus', type=int, default=4, choices=range(1,65), help='diagnosis only: restrict host CPU affinity before opening the production session; default 4')
 p.add_argument('--gpu', action='store_true')
 p.add_argument('--disable-content-sandbox', action='store_true')
 p.add_argument('--disable-wayland-proxy', action='store_true', help='diagnosis only: bypass the known FIONREAD blocker')
@@ -58,7 +59,9 @@ if a.capture_shm:
     from PIL import Image as PillowImage, ImageChops
 a.output.mkdir(parents=True, exist_ok=False)
 if hasattr(os, 'sched_setaffinity'):
-    os.sched_setaffinity(0, sorted(os.sched_getaffinity(0))[:4])
+    os.sched_setaffinity(0, sorted(os.sched_getaffinity(0))[:a.host_cpus])
+elif a.host_cpus != 4:
+    p.error('--host-cpus requires host CPU-affinity support')
 
 api = C.CDLL(str(a.ffi.resolve()))
 api.trames_session_open.argtypes = [C.c_char_p, C.c_uint32]
@@ -116,6 +119,8 @@ if a.gpu:
 report = dict(stage=a.stage, sandbox='content-disabled-diagnostic' if a.disable_content_sandbox else 'default',
     wayland_proxy='disabled-diagnostic' if a.disable_wayland_proxy else 'default',
     avoid_opengl_diagnostic=a.avoid_opengl,
+    host_cpus_requested=a.host_cpus,
+    host_cpu_affinity=sorted(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else None,
     physical_ipad=False, options=options, frames=0, windows=[], js_title_seen=False,
     guest_progress_diagnostic=a.guest_progress,
     moz_log_diagnostic=a.moz_log,

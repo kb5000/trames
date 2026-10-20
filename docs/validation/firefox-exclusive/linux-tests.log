@@ -1,0 +1,298 @@
+   Compiling trames-memory v1.2.0 (/workspace/trames/crates/trames-memory)
+   Compiling trames-accel v1.2.0 (/workspace/trames/crates/trames-accel)
+   Compiling trames-cpu v1.2.0 (/workspace/trames/crates/trames-cpu)
+   Compiling trames-bridge v1.2.0 (/workspace/trames/crates/trames-bridge)
+   Compiling trames-vulkan v1.2.0 (/workspace/trames/crates/trames-vulkan)
+   Compiling trames-vfs v1.2.0 (/workspace/trames/crates/trames-vfs)
+   Compiling trames-elf v1.2.0 (/workspace/trames/crates/trames-elf)
+   Compiling trames-linux v1.2.0 (/workspace/trames/crates/trames-linux)
+   Compiling trames-core v1.2.0 (/workspace/trames/crates/trames-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.41s
+     Running unittests src/lib.rs (target/perf-runtime/debug/build/trames-accel/8253fc182207b744/out/trames_accel-8253fc182207b744)
+
+running 25 tests
+test allocator::tests::borrowed_native_reads_preserve_real_fork_cow_and_do_not_reuse_parent_headers ... ok
+test allocator::tests::failed_cas_resumes_original_slow_free_with_saved_metadata_and_index ... ok
+test allocator::tests::original_enframe_and_atomic_free_share_guest_headers_and_masks ... ok
+test allocator::tests::output_preflight_preserves_available_mask_and_parallel_frees_are_coherent ... ok
+test allocator::tests::slow_free_and_invalid_metadata_fall_back_without_partial_invalidation ... ok
+test callbacks::tests::malformed_continuations_reject_without_host_panics_or_large_work ... ok
+test callbacks::tests::size_and_backing_fallback_precede_array_effects ... ok
+test callbacks::tests::smoothsort_preserves_records_for_small_large_equal_and_ordered_arrays ... ok
+test integer::tests::invalid_bases_do_not_read_input_and_boundary_end_keeps_tags ... ok
+test native::tests::all_pure_entries_match_coordinator_on_parallel_views ... ok
+test native::tests::bulk_ceiling_copy_move_fill_search_and_first_invalid_page ... ok
+test native::tests::cached_stub_tokens_follow_live_backing_aliases_and_eof_checks ... ok
+test native::tests::cached_stubs_recheck_pages_across_fork_remap_protection_and_cross_page_mutation ... ok
+test native::tests::copy_overlap_cow_and_tagged_return_are_preserved ... ok
+test native::tests::device_transport_defers_without_effects_and_rechecks_code_before_authorization ... ok
+test native::tests::early_stops_and_precise_fault_leave_destination_untouched ... ok
+test native::tests::huge_compare_search_bounds_stop_early_or_fall_back_only_at_ceiling ... ok
+test native::tests::rejection_and_limit_fallback_have_no_memory_effects ... ok
+test native::tests::searches_stop_at_reached_pages_preserve_tags_and_large_bounds_fall_back ... ok
+test numeric::tests::ceilings_do_not_publish_partial_results_and_resident_shared_output_succeeds ... ok
+test numeric::tests::stops_at_delimiters_handles_page_split_and_keeps_tagged_end_pointer ... ok
+test strings::tests::concat_handles_page_splits_bounds_zero_guard_cow_and_no_partial_fallback ... ok
+test strings::tests::copies_preflight_whole_output_cow_padding_truncation_shared_and_writeonly ... ok
+test strings::tests::searches_stop_at_nul_before_guard_and_preserve_unsigned_matches_and_tags ... ok
+test tests::disabled_fallback_and_known_vectors ... ok
+
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.42s
+
+     Running unittests src/lib.rs (target/perf-runtime/debug/build/trames-core/8931d23f69d95e1a/out/trames_core-8931d23f69d95e1a)
+
+running 88 tests
+test accelerator_tests::budget_checkpoint_fallback_and_fault_do_not_fake_retirement ... ok
+test accelerator_tests::committed_call_retires_once_and_preserves_guest_context ... ok
+test process::boundary_tests::clone_vm_shares_the_full_budget_without_a_temporary_fork_or_mmu_retirement ... ok
+test process::boundary_tests::failed_exec_preserves_image_and_cloexec_descriptor ... ok
+test process::boundary_tests::first_touch_quota_failure_kills_the_guest_group_instead_of_segv ... ok
+test process::boundary_tests::kill_is_delivered_even_with_an_older_pending_signal_while_stopped ... ok
+test process::boundary_tests::process_limit_rejects_fork_without_changing_parent_memory ... ok
+test process::boundary_tests::terminal_resize_event_is_scoped_to_the_foreground_group ... ok
+test process::compat::tests::compatibility_state_and_fault_preflight ... ok
+test process::compat::tests::file_size_limit_changes_are_atomic_and_hard_limit_is_privileged ... ok
+test process::cpu_fault_tests::data_top_byte_tags_work_across_pages_and_fork_copy_on_write ... ok
+test process::cpu_fault_tests::masked_or_ignored_synchronous_faults_terminate_instead_of_looping ... ok
+test process::cpu_fault_tests::synchronous_signal_contains_fault_address_and_resumes_from_edited_context ... ok
+test process::scheduling::tests::desktop_priorities_and_batch_idle_policy_roundtrip_and_inherit ... ok
+test process::scheduling::tests::numa_default_allowed_mask_and_address_queries_are_consistent ... ok
+test process::seccomp::tests::filter_loads_arch_arguments_and_verifies_all_paths ... ok
+test process::seccomp::tests::filtered_identity_syscalls_still_checkpoint_and_apply_errno_in_parallel ... ok
+test process::seccomp::tests::ignored_or_blocked_sigsys_cannot_suppress_a_forced_seccomp_trap ... ok
+test process::seccomp::tests::stacked_filters_keep_restrictions_and_newest_equal_action_data ... ok
+test process::service::tests::blocking_and_sigpipe_paths_checkpoint_but_nonblocking_eagain_completes ... ok
+test process::service::tests::disk_scalar_vector_and_positioned_reads_complete_once_after_stop ... ok
+test process::service::tests::finite_file_limit_keeps_sigxfsz_on_the_joined_path_without_effects ... ok
+test process::service::tests::mapped_file_bytes_are_shared_but_io_waits_for_metadata_publication ... ok
+test process::service::tests::pending_disk_read_allows_pipe_service_and_defers_shared_offset ... ok
+test process::service::tests::pipe_read_uses_the_callers_view_and_commits_once_when_a_peer_requests_stop ... ok
+test process::service::tests::private_cow_stores_do_not_prevent_reading_the_unchanged_file ... ok
+test process::service::tests::regular_file_sync_services_use_the_original_vfs_path ... ok
+test process::service::tests::regular_scalar_vector_and_positioned_services_share_the_original_abi ... ok
+test process::service::tests::repeated_disk_reads_reuse_owned_buffers_and_pending_slots ... ok
+test process::service::tests::stream_preflight_rejects_bad_destinations_without_consuming_input ... ok
+test process::service::tests::unix_stream_services_preserve_ready_blocking_nonblocking_and_sigpipe_paths ... ok
+test process::service::tests::vector_read_preflights_every_output_before_consuming_file_input ... ok
+test process::signals::tests::realtime_budget_preserves_fifo_and_cannot_drop_sigkill ... ok
+test process::tests::a_removed_gpu_context_completes_once_without_reexecuting_the_stub ... ok
+test process::tests::affinity_assignment_keeps_flexible_tasks_fair_and_relocates_for_pinned_peers ... ok
+test process::tests::close_range_unshare_detaches_only_callers_shared_table ... ok
+test process::tests::continuous_deadlines_include_sleep_and_do_not_spin_on_unread_expired_timerfd ... ok
+test process::tests::continuous_peers_cancel_at_control_checkpoints_and_commit_the_exact_budget ... ok
+test process::tests::failed_blocked_epoll_clears_deadline_and_restores_its_temporary_signal_mask ... ok
+test process::tests::gpu_wait_defers_caught_handlers_but_preserves_stop_continue ... ok
+test process::tests::host_control_publishes_partial_context_and_fd_changes_before_error ... ok
+test process::tests::host_pty_keyboard_and_resize_signals_are_scoped_to_the_foreground_session ... ok
+test process::tests::independent_fork_workers_use_private_memory_without_merging_writes ... ok
+test process::tests::malformed_signal_frame_fails_without_partial_register_restoration ... ok
+test process::tests::native_workers_execute_shared_atomic_guest_loops_and_account_the_budget ... ok
+test process::tests::prctl_seccomp_modes_translate_to_syscall_operations ... ok
+test process::tests::private_epoch_admission_counts_real_vm_roots_and_external_aliases ... ok
+test process::tests::proc_mapping_cache_never_freezes_argv_fds_or_credentials_and_retires_dead_vms ... ok
+test process::tests::proc_maps_refresh_after_shared_protect_reserve_unmap_and_fork ... ok
+test process::tests::process_signals_are_single_delivery_and_thread_signals_check_identity_and_permissions ... ok
+test process::tests::process_table_churn_profile ... ignored, manual scheduler metadata benchmark; not an end-to-end speed ratio
+test process::tests::reset_hand_is_published_before_another_shared_thread_can_deliver_it ... ok
+test process::tests::restart_rewinds_the_syscall_and_eintr_does_not ... ok
+test process::tests::session_leader_fifo_open_waits_before_terminal_inspection_and_is_interruptible ... ok
+test process::tests::signal_frame_restores_integer_vector_fp_state_and_accepts_guest_context_edits ... ok
+test process::tests::socket_timeout_wakes_continuous_peers_but_not_stopped_or_runnable_tasks ... ok
+test process::tests::solo_quantum_does_not_delay_a_runnable_peer ... ok
+test process::tests::splice_blocks_on_backpressure_and_respects_output_nonblocking ... ok
+test process::tests::stdio_eagain_blocks_only_without_nonblocking_flag ... ok
+test process::tests::stop_continue_preserves_a_blocked_timer ... ok
+test process::tests::syscall_resource_changes_reach_shared_peers_without_crossing_unshared_groups ... ok
+test process::tests::terminal_control_signals_use_kernel_authority_and_the_foreground_session ... ok
+test process::tests::thread_directed_stop_and_continue_change_the_entire_group ... ok
+test process::tests::unsupported_instruction_log_survives_child_exit ... ok
+test tests::argument_limits_and_nuls_fail ... ok
+test tests::endless_guest_is_bounded ... ok
+test tests::memory_budget_validation_accepts_large_limits_without_preallocation ... ok
+test tests::stack_layout_contains_argv_envp_auxv_and_aligned_sp ... ok
+test tests::virtual_devices_work_without_any_proc_access_or_snapshot_refresh ... ok
+test worker_syscalls::tests::clock_and_processor_writes_use_checked_shared_guest_memory ... ok
+test worker_syscalls::tests::coarse_clocks_share_the_epoch_of_their_high_resolution_counterparts ... ok
+test worker_syscalls::tests::fd_queries_complete_locally_but_mutating_fcntl_keeps_checkpointing ... ok
+test workers::tests::a_peer_completes_native_work_while_another_native_body_is_blocked_on_its_page ... ok
+test workers::tests::concurrent_workers_share_an_exact_non_divisible_budget ... ok
+test workers::tests::deferred_native_reserves_hlt_before_effects_and_unstable_code_never_enters_body ... ok
+test workers::tests::dropping_an_unanswered_request_disconnects_a_reusable_reply_receiver ... ok
+test workers::tests::fault_reports_retirement_from_all_preceding_polls ... ok
+test workers::tests::local_syscalls_continue_with_exact_budget_and_fall_back_before_mutations ... ok
+test workers::tests::native_fallback_retires_once_but_fault_refunds_its_credit ... ok
+test workers::tests::native_peer_finishes_while_a_syscall_caller_is_parked_without_a_global_stop ... ok
+test workers::tests::native_returns_continue_locally_with_exact_retirement_and_guest_state ... ok
+test workers::tests::pool_drop_drains_a_queued_request_and_returns_its_view_before_join ... ok
+test workers::tests::production_native_calls_do_not_update_global_overlap_instrumentation ... ok
+test workers::tests::rejected_native_does_not_retire_and_stops_queued_peers ... ok
+test workers::tests::repeated_queries_run_without_a_coordinator_rendezvous ... ok
+test workers::tests::request_and_pool_teardown_stop_endless_guest_workers ... ok
+test workers::tests::retains_cpu_through_many_polls_without_a_peer_or_coordinator_message ... ok
+test workers::tests::reusable_reply_channel_handles_many_requests_and_views_without_replay ... ok
+
+test result: ok. 87 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.18s
+
+     Running unittests src/lib.rs (target/perf-runtime/debug/build/trames-cpu/fff41c889d8ee796/out/trames_cpu-fff41c889d8ee796)
+
+running 43 tests
+test cached::tests::budgets_syscalls_and_page_boundary_faults_match_reference ... ok
+test cached::tests::cached_random_operands_and_reserved_words_match_single_step_oracle ... ok
+test cached::tests::decoded_forms_keep_width_and_register_roles ... ok
+test cached::tests::fused_flags_branches_preserve_budgets_conditions_and_invalidations ... ok
+test cached::tests::independent_spaces_with_equal_epochs_do_not_reuse_decoded_code ... ok
+test cached::tests::page_cache_is_bounded_and_warm_words_do_not_hide_branch_alignment_faults ... ok
+test cached::tests::page_epoch_wrap_invalidates_stale_words_without_reallocating ... ok
+test cached::tests::reference_fallback_code_stores_invalidate_a_warmed_next_word ... ok
+test cached::tests::self_modification_invalidates_the_next_instruction_inside_a_cached_page ... ok
+test cached::tests::transient_values_publish_on_memory_fallback_and_stop_boundaries ... ok
+test cached::tests::unrelated_epochs_keep_decodes_but_exec_remapping_and_collisions_do_not ... ok
+test compatibility::tests::authenticated_loads_have_real_offsets_and_atomic_writeback ... ok
+test compatibility::tests::authentication_is_disabled_but_branches_and_links_are_real ... ok
+test compatibility::tests::disabled_authentication_and_ordering_hints_preserve_values ... ok
+test compatibility::tests::ignored_tags_still_zero_data_and_apply_writeback ... ok
+test extended::tests::reserved_pairwise_integer_size_faults_without_changing_registers ... ok
+test extended::tests::signed_bitfield_and_bit_reversal_preserve_width_semantics ... ok
+test extended::tests::signed_division_overflow_and_zero_divisors_follow_aarch64 ... ok
+test flags::tests::deferred_arithmetic_matches_widened_integer_oracle ... ok
+test flags::tests::explicit_writes_replace_pending_state_and_clone_owns_operands ... ok
+test load_store::structure_tests::structure_fault_preserves_all_destination_registers_and_base ... ok
+test load_store::tests::exclusive_stores_track_reservations_and_memory_mutations ... ok
+test load_store::tests::faulting_post_index_load_preserves_base_register ... ok
+test load_store::tests::pair_access_faults_do_not_partially_change_memory_or_registers ... ok
+test load_store::tests::rcpc2_faults_and_reserved_encodings_preserve_state ... ok
+test modern_memory::tests::faulting_mops_can_resume_from_its_partial_progress ... ok
+test modern_memory::tests::long_copy_yields_without_retiring_the_main_instruction ... ok
+test modern_memory::tests::ls64_transfers_all_eight_words_and_snapshots_status_aliases ... ok
+test modern_memory::tests::paired_atomic_and_block_faults_preserve_registers_and_bytes ... ok
+test modern_memory::tests::paired_atomics_snapshot_aliased_address_and_return_both_old_words ... ok
+test native_tests::native_exit_gating_pc_and_budget_match_reference ... ok
+test native_tests::vulkan_opt_in_does_not_activate_the_pure_memory_profile ... ok
+test tests::arithmetic_flags_cover_carry_and_signed_overflow ... ok
+test tests::branches_syscall_and_budget ... ok
+test tests::failed_atomic_write_preflight_keeps_memory_and_registers ... ok
+test tests::invalid_encodings_and_memory_faults_keep_pc ... ok
+test tests::rcpc_load_does_not_create_an_exclusive_reservation ... ok
+test tests::reserved_new_encodings_have_no_architectural_effects ... ok
+test tests::serial_exclusive_store_succeeds_after_an_unrelated_stack_spill ... ok
+test tests::stack_pointer_and_zero_register_have_distinct_semantics ... ok
+test tests::virtual_counter_and_cache_maintenance_preserve_guest_state ... ok
+test tests::zero_register_writes_and_w_register_zero_extension ... ok
+test vector_extensions::tests::bfloat_dot_and_matrix_have_functional_optional_host_fallbacks ... ok
+
+test result: ok. 43 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.34s
+
+     Running unittests src/lib.rs (target/perf-runtime/debug/build/trames-memory/ea788a6c35e4a2e5/out/trames_memory-ea788a6c35e4a2e5)
+
+running 92 tests
+test backing::tests::failed_remap_is_atomic_and_success_preserves_bytes_and_zero_grows ... ok
+test backing::tests::fork_shares_anonymous_bytes_but_not_protections_or_mapping_table ... ok
+test cpu_memory::tests::serial_exclusive_zero_load_preserves_demand_zero_accounting_and_cpu_alias ... ok
+test cpu_memory::tests::serial_reservations_track_granules_aba_native_writes_and_fork_cow ... ok
+test cpu_memory::tests::trusted_backings_borrow_once_and_unknown_read_callbacks_can_reenter ... ok
+test fork_tests::fork_copies_pages_on_write_and_keeps_protection_independent ... ok
+test fork_tests::instruction_revision_tracks_shared_code_but_not_data_writes ... ok
+test fork_tests::shared_vm_updates_mappings_bytes_and_revision_but_fork_is_private ... ok
+test mmu::cache::tests::common_windows_do_not_conflict_and_collisions_replace_only_their_slot ... ok
+test mmu::host::tests::physical_and_cpu_reservations_are_separate_bounded_and_released ... ok
+test mmu::tests::actual_cpu_alias_obeys_hardware_protections_and_keeps_kernel_bytes_coherent ... ok
+test mmu::tests::cached_cpu_aliases_are_revoked_before_fork_remap_and_page_reuse ... ok
+test mmu::tests::cached_missing_windows_are_invalidated_before_later_mapping_or_fork_write ... ok
+test mmu::tests::direct_mapped_pages_keep_conflicts_and_retained_worker_snapshots_separate ... ok
+test mmu::tests::fork_remap_discard_and_native_calls_never_leave_stale_hardware_aliases ... ok
+test mmu::tests::host_group_relocation_refreshes_unchanged_parallel_neighbors ... ok
+test mmu::tests::native_cow_promotion_invalidates_cached_neighbor_pages ... ok
+test mmu::tests::retired_and_empty_cpu_windows_release_va_without_dropping_fork_bytes ... ok
+test mmu::tests::signal_probe_child ... ok
+test mmu::tests::sixteen_kib_host_groups_demote_and_recover_without_permission_leaks ... ok
+test mmu::tests::software_only_host_groups_do_not_rebuild_on_each_store ... ok
+test mmu::tests::unavailable_host_window_stays_on_checked_software_until_a_mapping_boundary ... ok
+test mmu::tests::unrelated_host_faults_preserve_queryable_host_signal_behavior ... 
+running 1 test
+
+running 1 test
+test mmu::tests::signal_probe_child ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 91 filtered out; finished in 0.00s
+
+
+running 1 test
+
+running 1 test
+
+running 1 test
+
+running 1 test
+ok
+test mmu::tests::worker_cpu_aliases_native_bytes_and_dirty_publication_share_one_region_protocol ... ok
+test mmu::worker::tests::a_reused_worker_slot_zeroes_retired_data ... ok
+test mmu::worker::tests::frozen_views_own_no_unused_ram_and_release_the_last_demoted_window ... ok
+test native_access::tests::backing_aliases_snapshot_source_and_private_pages_detach_on_write ... ok
+test native_access::tests::direct_moves_match_a_snapshot_for_overlapping_and_unaligned_page_ranges ... ok
+test native_access::tests::direct_shared_borrows_preserve_alias_fork_code_and_parallel_visibility ... ok
+test native_access::tests::page_borrows_reuse_owned_bytes_and_preserve_cpu_faults_without_false_cow ... ok
+test native_access::tests::scoped_borrows_reach_real_pages_and_preserve_cow_shared_vm_and_code_tokens ... ok
+test parallel::exclusive::all_snapshot_generations_count_towards_admission_and_clones_start_guarded ... ok
+test parallel::exclusive::native_unwind_ends_private_borrows_and_keeps_dirty_and_monitor_effects ... ok
+test parallel::exclusive::private_cpu_native_and_exclusives_skip_locks_and_publish_on_handoff ... ok
+test parallel::exclusive::retained_readonly_fork_storage_is_not_mistaken_for_unique_bytes ... ok
+test parallel::exclusive::shared_backings_remain_atomic_across_private_vm_epochs ... ok
+test parallel::native::tests::a_new_coordinator_registry_rejoins_cached_fork_shared_aliases ... ok
+test parallel::native::tests::backing_alias_moves_snapshot_source_and_pair_reads_lock_once ... ok
+test parallel::native::tests::directional_moves_code_tokens_and_fork_cow_match_owned_memory ... ok
+test parallel::native::tests::disjoint_native_page_guards_overlap_and_opposite_pair_orders_finish ... ok
+test parallel::native::tests::full_page_reservation_epochs_preserve_partial_granules_and_wrap ... ok
+test parallel::native::tests::independent_atomic_pairs_share_one_page_without_torn_reads ... ok
+test parallel::native::tests::native_and_cpu_scalar_reads_share_permissions_tags_and_cross_page_faults ... ok
+test parallel::page::tests::disjoint_regions_progress_while_a_peer_borrows_the_same_page ... ok
+test parallel::page::tests::ordinary_writes_need_no_exclusive_table_and_late_monitors_observe_aba ... ok
+test parallel::page::tests::overlapping_masks_publish_bytes_and_unwind_releases_the_guard ... ok
+test parallel::page::tests::readonly_guard_keeps_region_ownership_and_the_compact_layout ... ok
+test parallel::page::tests::software_zero_pages_allocate_only_on_first_write ... ok
+test parallel::readonly::admission_rejects_missing_external_or_mismatched_snapshot_views ... ok
+test parallel::readonly::concurrent_cpu_native_reads_and_monitors_need_no_region_lock_but_rw_stays_atomic ... ok
+test parallel::readonly::readonly_epochs_keep_shared_backing_and_retained_fork_pages_guarded ... ok
+test parallel::readonly::readonly_native_unwind_and_joined_permission_changes_preserve_monitor_lifetimes ... ok
+test parallel::sharing::a_private_file_copy_rejoins_shared_storage_after_its_first_cow_write ... ok
+test parallel::sharing::cached_views_after_fork_detach_private_bytes_but_shared_vm_never_does ... ok
+test parallel::sharing::coordinator_and_four_workers_share_one_allocation_and_atomic_domain ... ok
+test parallel::sharing::fork_with_a_retained_writer_cannot_mutate_the_child_snapshot ... ok
+test parallel::sharing::native_and_coordinator_exclusives_share_monitors_and_alias_pair_guards ... ok
+test parallel::sharing::retired_views_keep_reused_slots_with_live_neighbors_and_snapshot_generations ... ok
+test parallel::snapshot::tests::backing_epochs_refresh_only_backed_pages_and_preserve_aliases_and_cow ... ok
+test parallel::snapshot::tests::committed_worker_code_writes_refresh_their_frame_metadata ... ok
+test parallel::snapshot::tests::mapping_churn_updates_only_changed_pages_and_reuses_root_slots ... ok
+test parallel::snapshot::tests::retained_views_keep_frozen_mappings_when_root_slots_are_reused ... ok
+test parallel::snapshot::tests::unversioned_provider_storage_replacement_keeps_the_conservative_refresh ... ok
+test parallel::tests::acquire_release_publication_and_page_code_tokens_reach_peers ... ok
+test parallel::tests::commit_coalesces_dirty_runs_and_preserves_clean_backing_alias_holes ... ok
+test parallel::tests::coordinator_aba_and_native_stores_invalidate_a_worker_reservation ... ok
+test parallel::tests::exclusives_detect_aba_but_allow_an_unrelated_granule ... ok
+test parallel::tests::immutable_code_ignores_unrelated_live_code_epochs ... ok
+test parallel::tests::racing_rmw_and_shared_vm_publish_every_increment ... ok
+test parallel::tests::remapping_changes_reservation_identity_and_cross_page_faults_have_no_effect ... ok
+test parallel::tests::retained_views_publish_after_an_unrelated_backing_epoch_refresh ... ok
+test parallel::tests::shared_backing_aliases_are_one_transaction_domain_and_fork_cow_stays_private ... ok
+test parallel::tests::sparse_publication_survives_frame_reuse_and_repeated_worker_epochs ... ok
+test reservations::tests::large_reservation_commit_split_fork_share_and_failed_commit_are_atomic ... ok
+test reservations::tests::metadata_budget_and_commit_failures_preserve_reservations ... ok
+test residency::tests::concurrent_first_stores_share_charges_and_enforce_the_total_before_effects ... ok
+test residency::tests::fork_charges_written_pages_and_zero_cow_is_independent ... ok
+test residency::tests::native_worker_and_independent_vm_compete_for_the_same_total ... ok
+test residency::tests::zero_mapping_native_write_discard_remap_and_quota_follow_reached_pages ... ok
+test tests::borrowed_c_strings_keep_page_boundaries_tags_and_shared_vm_permissions ... ok
+test tests::c_strings_obey_bounds_and_accept_non_utf8 ... ok
+test tests::cached_frames_reuse_slots_without_stale_bytes_permissions_or_false_cow ... ok
+test tests::cross_page_write_is_atomic_on_fault ... ok
+test tests::fixed_mapping_failure_preserves_existing_bytes ... ok
+test tests::fixed_operands_match_generic_access_across_pages_and_faults ... ok
+test tests::free_range_search_skips_only_conflicting_pages ... ok
+test tests::mapped_pages_are_zeroed_and_reads_cross_boundaries ... ok
+test tests::optimized_access_preserves_fault_atomicity_and_execute_only_pages ... ok
+test tests::overflow_overlap_and_limit_are_rejected ... ok
+test tests::page_code_tokens_preserve_unrelated_code_and_track_wrap_shared_and_failed_writes ... ok
+test tests::permissions_are_separate_and_protection_is_atomic ... ok
+test tests::unmap_holes_and_remapping_zeroes_old_data ... ok
+
+test result: ok. 92 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+

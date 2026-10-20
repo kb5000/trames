@@ -55,4 +55,13 @@ It [fails before](node-repl/regression-before.log) and
 90 affected memory tests and strict memory Clippy. The 16 KiB diagnostic now
 passes all eight original Node REPL checks in both terminals, including delayed
 eager preview. [Results](node-repl/linux-host16-after.json).
-The native Apple check of the fixed source is pending.
+The actual Apple ARM64 check passes on fixed source
+`a297404f01821e453b29fbc15a483c7b5773c1b0`:
+[run 39434031673](https://github.com/kb5000/trames/actions/runs/39434031673).
+All 90 memory tests, strict memory Clippy and the eight two-terminal original
+Node REPL checks pass with the asserted native 16 KiB page size. The unchanged
+hybrid musl artifact is reused after checking its complete guest source closure.
+[API evidence](node-repl/apple-after-ci.json) retains exact job/step outcomes and
+artifact digests. The artifact was not downloaded locally because the configured
+proxy denies the Actions binary-storage endpoint. No new iPad or IPA acceptance
+is claimed.
