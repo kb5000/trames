@@ -3462,7 +3462,7 @@ impl Kernel {
         for request in disk.waiting.drain(..) {
             request.respond(None);
         }
-        while completed.len() < chosen.len() || !disk.pending.is_empty() {
+        while completed.len() < chosen.len() || disk.in_flight != 0 {
             match self
                 .workers
                 .event_timeout(Duration::from_secs(1))

@@ -80,6 +80,23 @@ VFS Rc/RefCell。DiskBacking 的 orphan flag 和 DiskStore 锁租约使用 Arc�
 任务并回复结果，不能将其作为未执行 syscall 重放；尚未提交的等待请求可以 join。
 线程创建/发送失败在原协调器执行一次该任务并返回完成，不丢失请求。
 
+为减少每次提交成本，I/O worker 各保留至多 16 个已验证的只读宿主句柄，按
+DiskBacking 的 Weak 身份查找，使用 pread 定位读取，命中不再重复 open/stat/seek。
+缓存不保存 guest 权限、offset 或长度，实际准入与范围每次仍取协调器的当前状态。
+同路径替换、overlay copy-up、关闭后重新打开 store 的新对象不能按路径/inode 数字命中
+旧句柄。Weak 不延长对象路径或存储锁租约；不过宿主 FD 仍可短暂保留删除 inode 的块，
+所以每次任务前清理已失效身份，空闲 250 ms 后释放全部句柄并进入无定时器阻塞等待。
+最多两个 worker，总计最多 32 个缓存句柄；退出时也关闭，不为每个持久文件保留 FD。
+
+完成后的独占 Vec 返回协调器池，保留最多两份、每份至多 1 MiB；再次提交时把所有权
+移动给后台。保留已初始化长度，等长读取不再反复分配/清零。短读先 truncate 再 scatter，
+扩长仍初始化新增部分；错误不输出旧内容，guest 写回失败后缓冲也可回收。标量目的地址
+直接保存在请求里；向量继续使用原 Linux helper。pending 从逐请求 BTreeMap 节点改为
+可复用空槽，槽位只在原完成事件已消费后再用，不会混淆并发/乱序完成。无 pending 且
+无需大块读取准入的请求直接走原服务，避免多一次 process 查找。没有新增全局锁/原子
+计数，或通过串行化多个文件来降低表面成本。验证见
+[异步读取成本记录](../validation/disk-cost.md)。
+
 CLI metrics 新增 disk_reads/disk_read_bytes，分别表示 epoch 内提交的后台读取数及其
 成功读取字节，包含最终 guest 写回失败前已读取的字节；不是全部 guest read，也不是
 磁盘物理吞吐。当前仍在公平/定时 checkpoint 前 drain 后台读取，所以冷盘长等待仍可能

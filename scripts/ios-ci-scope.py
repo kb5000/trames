@@ -656,7 +656,7 @@ def main():
                                'crates/trames-vfs/src/ipc/native.rs', 'scripts/ios-ci-scope.py',
                                '.github/workflows/ios.yml', '.github/workflows/linux.yml',
                                'tests/performance/session-coremark.py', 'tests/performance/prepare-coremark.py',
-                               'tests/performance/session-docker-tty.py'}
+                               'tests/performance/session-docker-tty.py', 'tests/performance/disk-io-counts.c', 'tests/fixtures/disk-read-cost.c'}
                     if any(p not in allowed and not p.startswith('docs/') for p in changed):
                         raise RuntimeError('Runtime fastpath plan includes unrelated source changes')
                     if not plan.get('syscall_parallel'):

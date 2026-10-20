@@ -119,7 +119,7 @@ struct Worker {
     control: Option<Arc<Control>>,
 }
 struct DiskWorker {
-    send: mpsc::Sender<(usize, trames_vfs::DiskReadJob)>,
+    send: mpsc::Sender<(usize, trames_vfs::DiskReadJob, Vec<u8>)>,
     join: thread::JoinHandle<()>,
 }
 pub(super) struct Pool {
@@ -133,6 +133,7 @@ pub(super) struct Pool {
     profile_native_overlap: bool,
     disk_workers: Vec<DiskWorker>,
     next_disk_worker: usize,
+    disk_buffers: Vec<Vec<u8>>,
 }
 impl Pool {
     #[cfg(test)]
@@ -152,6 +153,7 @@ impl Pool {
             profile_native_overlap,
             disk_workers: Vec::new(),
             next_disk_worker: 0,
+            disk_buffers: Vec::new(),
         }
     }
     pub fn ensure(&mut self, index: usize) -> std::io::Result<()> {
@@ -401,15 +403,33 @@ impl Pool {
         let index = self.next_disk_worker % self.workers.len().clamp(1, 2);
         self.next_disk_worker = self.next_disk_worker.wrapping_add(1);
         if index >= self.disk_workers.len() {
-            let (send, receive) = mpsc::channel::<(usize, trames_vfs::DiskReadJob)>();
+            let (send, receive) = mpsc::channel::<(usize, trames_vfs::DiskReadJob, Vec<u8>)>();
             let done = self.send.clone();
             if let Ok(join) = thread::Builder::new()
                 .name("trames-disk".into())
                 .spawn(move || {
-                    while let Ok((id, job)) = receive.recv() {
-                        let result =
-                            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| job.run()))
-                                .unwrap_or(Err(trames_vfs::Errno(5)));
+                    let mut cache = trames_vfs::DiskReadCache::default();
+                    loop {
+                        let work = match receive.recv_timeout(Duration::from_millis(250)) {
+                            Ok(work) => work,
+                            Err(mpsc::RecvTimeoutError::Disconnected) => break,
+                            Err(mpsc::RecvTimeoutError::Timeout) => {
+                                // Open host descriptors can retain deleted data
+                                // blocks even after their Weak object expires.
+                                // Release idle handles, then sleep without a
+                                // recurring idle timer until the next request.
+                                cache = trames_vfs::DiskReadCache::default();
+                                match receive.recv() {
+                                    Ok(work) => work,
+                                    Err(_) => break,
+                                }
+                            }
+                        };
+                        let (id, job, bytes) = work;
+                        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                            job.run_cached(&mut cache, bytes)
+                        }))
+                        .unwrap_or(Err(trames_vfs::Errno(5)));
                         if done.send(Event::DiskRead(id, result)).is_err() {
                             break;
                         }
@@ -419,16 +439,25 @@ impl Pool {
                 self.disk_workers.push(DiskWorker { send, join });
             }
         }
-        let job = if let Some(worker) = self.disk_workers.get(index) {
-            match worker.send.send((id, job)) {
+        let bytes = self.disk_buffers.pop().unwrap_or_default();
+        let (job, bytes) = if let Some(worker) = self.disk_workers.get(index) {
+            match worker.send.send((id, job, bytes)) {
                 Ok(()) => return,
-                Err(error) => error.0 .1,
+                Err(error) => (error.0 .1, error.0 .2),
             }
         } else {
-            job
+            (job, bytes)
         };
         // Thread resource failure preserves one execution and one completion.
-        let _ = self.send.send(Event::DiskRead(id, job.run()));
+        let result = job.run_cached(&mut trames_vfs::DiskReadCache::default(), bytes);
+        let _ = self.send.send(Event::DiskRead(id, result));
+    }
+    pub fn recycle_disk_buffer(&mut self, bytes: Vec<u8>) {
+        // Keep initialized lengths so equal-size reads need no repeated zeroing.
+        // A short read truncates before scatter; no stale tail reaches guest.
+        if self.disk_buffers.len() < 2 {
+            self.disk_buffers.push(bytes);
+        }
     }
     fn received(&mut self, event: Event) -> Event {
         if let Event::Done(done) = &event {

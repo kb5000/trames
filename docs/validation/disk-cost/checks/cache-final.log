@@ -1,0 +1,11 @@
+   Compiling trames-vfs v1.2.0 (/workspace/trames/crates/trames-vfs)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.11s
+     Running unittests src/lib.rs (target/perf-runtime/debug/build/trames-vfs/3429f9905bbfc0c2/out/trames_vfs-3429f9905bbfc0c2)
+
+running 3 tests
+test storage_tests::cached_disk_handles_observe_writes_truncate_and_recycled_short_reads ... ok
+test storage_tests::cached_handles_do_not_retain_store_lock_or_confuse_replaced_inodes ... ok
+test mapped::tests::epoch_file_io_checks_live_inode_aliases_in_any_vm_not_the_cached_fd_mask ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 161 filtered out; finished in 0.00s
+

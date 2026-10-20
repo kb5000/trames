@@ -24,6 +24,8 @@ static pthread_barrier_t start;
 static uint32_t checksum;
 static unsigned iterations = 1024;
 static unsigned native_multiplier = 1;
+static int bulk_fd;
+static int parallel_bulk;
 static void *memory_worker(void *unused) {
     (void)unused;
     size_t n = 1024 * 1024;
@@ -40,8 +42,22 @@ static void *memory_worker(void *unused) {
     free(bytes);
     return NULL;
 }
+static void *io_worker(void *unused) {
+    (void)unused;
+    unsigned char *bytes = malloc(65536); assert(bytes);
+    int rc = pthread_barrier_wait(&start);
+    assert(rc == 0 || rc == PTHREAD_BARRIER_SERIAL_THREAD);
+    for (unsigned i = 0; i < iterations * 8; i++) {
+        assert(pread(bulk_fd, bytes, 65536, 0) == 65536);
+        for (unsigned j = 0; j < 65536; j += 4093)
+            assert(bytes[j] == (unsigned char)(j * 13 + 7));
+    }
+    free(bytes);
+    return NULL;
+}
 int main(int argc, char **argv) {
-    int bulk = argc > 1 && !strcmp(argv[1], "bulk");
+    parallel_bulk = argc > 1 && !strcmp(argv[1], "bulk-parallel");
+    int bulk = parallel_bulk || (argc > 1 && !strcmp(argv[1], "bulk"));
     if (bulk) native_multiplier = 64;
     int streams = argc > 1 && !strcmp(argv[1], "pipe");
     int sockets = argc > 1 && !strcmp(argv[1], "unix");
@@ -71,9 +87,11 @@ int main(int argc, char **argv) {
     int ends[2];
     if (sockets) assert(!socketpair(AF_UNIX, SOCK_STREAM, 0, ends));
     else assert(!pipe(ends));
-    assert(!pthread_barrier_init(&start, NULL, 2));
-    pthread_t worker;
+    bulk_fd = fd;
+    assert(!pthread_barrier_init(&start, NULL, parallel_bulk ? 3 : 2));
+    pthread_t worker, peer;
     assert(!pthread_create(&worker, NULL, memory_worker, NULL));
+    if (parallel_bulk) assert(!pthread_create(&peer, NULL, io_worker, NULL));
     int rc = pthread_barrier_wait(&start);
     assert(rc == 0 || rc == PTHREAD_BARRIER_SERIAL_THREAD);
     for (unsigned i = 0; i < iterations * 8; i++) {
@@ -151,11 +169,12 @@ int main(int argc, char **argv) {
         }
     }
     assert(!pthread_join(worker, NULL));
+    if (parallel_bulk) assert(!pthread_join(peer, NULL));
     if (mapped) assert(!munmap(mapping, 4096));
     assert(!pthread_barrier_destroy(&start));
     assert(!close(fd) && !close(ends[0]) && !close(ends[1]));
     free(bulk_bytes);
-    const char *mode = bulk ? "bulk" : mapped ? (shared_map ? "mapped-shared" : "mapped-read") : files ? (vectors ? "vector" : "file") : sockets ? "unix" : streams ? "pipe" : "metadata";
+    const char *mode = parallel_bulk ? "bulk-parallel" : bulk ? "bulk" : mapped ? (shared_map ? "mapped-shared" : "mapped-read") : files ? (vectors ? "vector" : "file") : sockets ? "unix" : streams ? "pipe" : "metadata";
     printf("epoch-services %s %u %08x\n", mode, iterations, checksum);
     return 0;
 }

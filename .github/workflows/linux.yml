@@ -293,6 +293,8 @@ jobs:
           cargo test -p trames-vfs -p trames-core -p trames-linux --locked
           python3 -m py_compile tests/performance/prepare-coremark.py tests/performance/session-coremark.py tests/performance/session-docker-tty.py
           cc -O2 -shared -fPIC -Wall -Wextra -Werror tests/performance/session-sampler.c -ldl -o /tmp/trames-session-sampler.so
+          cc -O2 -shared -fPIC -Wall -Wextra -Werror tests/performance/disk-io-counts.c -ldl -pthread -o /tmp/trames-disk-counts.so
+          cc -O2 -Wall -Wextra -Werror tests/fixtures/disk-read-cost.c -pthread -o /tmp/trames-read-cost-oracle
           python3 -m py_compile tests/performance/epoch-services.py tests/integration/epoch-services.py
           bash -n scripts/build-epoch-services-fixture.sh
           cc -O2 -Wall -Wextra -Werror -DTRAMES_HOST_ORACLE tests/fixtures/epoch-services.c -pthread -o /tmp/trames-epoch-oracle

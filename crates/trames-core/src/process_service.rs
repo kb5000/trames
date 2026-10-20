@@ -5,14 +5,48 @@ use super::*;
 
 #[derive(Default)]
 pub(super) struct DiskEpoch {
-    pub(super) pending: BTreeMap<usize, PendingDiskRead>,
+    pending: Vec<Option<PendingDiskRead>>,
+    pub(super) in_flight: usize,
     pub(super) waiting: std::collections::VecDeque<Box<crate::workers::Request>>,
-    next: usize,
+}
+impl DiskEpoch {
+    fn insert(&mut self, pending: PendingDiskRead) -> usize {
+        self.in_flight += 1;
+        if let Some(index) = self.pending.iter().position(Option::is_none) {
+            self.pending[index] = Some(pending);
+            index
+        } else {
+            self.pending.push(Some(pending));
+            self.pending.len() - 1
+        }
+    }
+    fn take(&mut self, id: usize) -> PendingDiskRead {
+        let pending = self.pending[id].take().expect("submitted disk read");
+        self.in_flight -= 1;
+        pending
+    }
 }
 pub(super) struct PendingDiskRead {
     request: Box<crate::workers::Request>,
     read: trames_vfs::DiskRead,
-    parts: Vec<(u64, usize)>,
+    parts: ReadParts,
+}
+
+enum ReadParts {
+    Scalar(u64),
+    Vector(Vec<(u64, usize)>),
+}
+impl ReadParts {
+    fn scatter(
+        &self,
+        memory: &mut impl trames_memory::CpuMemory,
+        bytes: &[u8],
+    ) -> Result<(), Errno> {
+        match self {
+            Self::Scalar(address) => Linux::scatter(memory, &[(*address, bytes.len())], bytes),
+            Self::Vector(parts) => Linux::scatter(memory, parts, bytes),
+        }
+    }
 }
 
 impl Kernel {
@@ -22,11 +56,20 @@ impl Kernel {
         disk: &mut DiskEpoch,
         io: &mut impl GuestOutput,
     ) -> bool {
+        let bulk = matches!(request.number, 65 | 69)
+            || matches!(request.number, 63 | 67) && request.args[2] >= 16 * 1024;
+        // Most services have no pending disk conflict or bulk-read admission.
+        // Keep their single process lookup and original helpers intact.
+        if disk.in_flight == 0 && !bulk {
+            let value = self.service_request(&mut request, io);
+            request.respond(value);
+            return value.is_some();
+        }
         let Some(p) = self.processes.get(&request.pid) else {
             request.respond(None);
             return false;
         };
-        if disk.pending.values().any(|pending| {
+        if disk.pending.iter().flatten().any(|pending| {
             pending
                 .read
                 .conflicts(&p.linux.vfs, request.args[0] as u32, request.number)
@@ -49,11 +92,12 @@ impl Kernel {
                     return Err(Errno(22));
                 }
                 let (parts, count) = if matches!(request.number, 65 | 69) {
-                    Linux::readv_parts(&request.memory, a)?
+                    let (parts, count) = Linux::readv_parts(&request.memory, a)?;
+                    (ReadParts::Vector(parts), count)
                 } else {
                     let count = a[2].min(trames_linux::MAX_WRITE as u64) as usize;
                     Linux::check(&request.memory, a[1], count, trames_memory::Access::Write)?;
-                    (vec![(a[1], count)], count)
+                    (ReadParts::Scalar(a[1]), count)
                 };
                 if count < 16 * 1024 {
                     return Ok(None);
@@ -66,16 +110,11 @@ impl Kernel {
             };
             match prepare() {
                 Ok(Some((read, job, parts))) => {
-                    let id = disk.next;
-                    disk.next += 1;
-                    disk.pending.insert(
-                        id,
-                        PendingDiskRead {
-                            request,
-                            read,
-                            parts,
-                        },
-                    );
+                    let id = disk.insert(PendingDiskRead {
+                        request,
+                        read,
+                        parts,
+                    });
                     self.disk_reads += 1;
                     self.workers.disk_read(id, job);
                     return true;
@@ -97,12 +136,14 @@ impl Kernel {
         result: Result<Vec<u8>, Errno>,
         disk: &mut DiskEpoch,
     ) {
-        let mut pending = disk.pending.remove(&id).expect("submitted disk read");
+        let mut pending = disk.take(id);
         let began = self.profile_syscalls.then(Instant::now);
         let result = pending.read.finish(result).and_then(|bytes| {
             self.disk_read_bytes += bytes.len() as u64;
-            Linux::scatter(&mut pending.request.memory, &pending.parts, &bytes)?;
-            Ok(bytes.len() as u64)
+            let count = bytes.len() as u64;
+            let copied = pending.parts.scatter(&mut pending.request.memory, &bytes);
+            self.workers.recycle_disk_buffer(bytes);
+            copied.map(|()| count)
         });
         if let Some(began) = began {
             self.syscall_total += began.elapsed();
@@ -337,7 +378,7 @@ mod tests {
                 &mut disk,
                 &mut trames_linux::CapturedOutput::default()
             ));
-            assert_eq!(disk.pending.len(), 1);
+            assert_eq!(disk.in_flight, 1);
             control.stop();
             let Some(Event::DiskRead(id, result)) =
                 k.workers.event_timeout(Duration::from_secs(5)).unwrap()
@@ -366,6 +407,61 @@ mod tests {
             drop(k);
             std::fs::remove_dir_all(path).unwrap();
         }
+    }
+    #[test]
+    fn repeated_disk_reads_reuse_owned_buffers_and_pending_slots() {
+        let (path, mut p, fd) = disk_process();
+        // Restore x0 after each pread result, then request the next read.
+        for (i, instruction) in [0xd2800000u32 | (fd << 5), 0xd4000001, 0x17fffffe]
+            .into_iter()
+            .enumerate()
+        {
+            p.memory
+                .write_array(0x4004 + i as u64 * 4, instruction.to_le_bytes())
+                .unwrap();
+        }
+        let (mut k, mut request, control) = pending(p, 67, [fd as u64, 0x10000, 32768, 0, 0, 0]);
+        let mut disk = DiskEpoch::default();
+        let mut allocation = None;
+        for i in 0..12 {
+            assert!(k.epoch_request(
+                request,
+                &mut disk,
+                &mut trames_linux::CapturedOutput::default()
+            ));
+            assert_eq!(disk.pending.len(), 1);
+            let Some(Event::DiskRead(id, result)) =
+                k.workers.event_timeout(Duration::from_secs(5)).unwrap()
+            else {
+                panic!("missing completion")
+            };
+            assert_eq!(id, 0);
+            let pointer = result.as_ref().unwrap().as_ptr();
+            assert_eq!(*allocation.get_or_insert(pointer), pointer);
+            if i == 11 {
+                control.stop();
+            }
+            k.finish_disk_read(id, result, &mut disk);
+            assert_eq!(disk.in_flight, 0);
+            if i == 11 {
+                break;
+            }
+            let Some(Event::Service(next)) =
+                k.workers.event_timeout(Duration::from_secs(5)).unwrap()
+            else {
+                panic!("missing next request")
+            };
+            request = next;
+        }
+        let done = k
+            .workers
+            .complete_timeout(Duration::from_secs(5))
+            .unwrap()
+            .unwrap();
+        assert_eq!(done.serviced_syscalls, 12);
+        assert_eq!(done.cpu.x(0), 32768);
+        drop(k);
+        std::fs::remove_dir_all(path).unwrap();
     }
     #[test]
     fn pending_disk_read_allows_pipe_service_and_defers_shared_offset() {
@@ -401,7 +497,7 @@ mod tests {
                     .unwrap()
                     .unwrap();
                 assert_eq!(done.cpu.x(0), 2);
-                assert_eq!(disk.pending.len(), 1);
+                assert_eq!(disk.in_flight, 1);
             }
             control.stop();
             k.finish_disk_read(id, result, &mut disk);

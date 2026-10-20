@@ -1,0 +1,6 @@
+PASS bulk-1 services 0
+PASS bulk-2 services 384
+PASS bulk-4 services 384
+PASS bulk-parallel-1 services 0
+PASS bulk-parallel-2 services 438
+PASS bulk-parallel-4 services 511
