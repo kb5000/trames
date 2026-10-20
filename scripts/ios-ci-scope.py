@@ -433,6 +433,48 @@ def device_build_outputs(plan, repo, headers):
             'frontend_reused': 'true', 'ui_targets': '[]', 'baseline_run': str(guest['run'])}
 
 
+def firefox_memory_apple_retry(plan, repo, headers):
+    """Reuse passed Linux/Apple Core; finish the failed socket case and remaining checks."""
+    reuse = plan.get('memory_apple_retry')
+    if not reuse:
+        return False
+    source, run = reuse['sha'], reuse['run']
+    runtime = subprocess.check_output(['git', 'diff', '--name-only', source, 'HEAD', '--',
+        'crates', 'Cargo.toml', 'Cargo.lock', 'vendor', '.cargo', 'rust-toolchain.toml'], text=True).splitlines()
+    path = 'crates/trames-linux/src/network.rs'
+    if runtime != [path]:
+        raise RuntimeError('Apple memory retry requires unchanged runtime except the failed socket test')
+    def outside_case(text):
+        begin = text.index('    #[test]\n    fn invalid_accept_destination_does_not_drop_queued_connection()')
+        end = text.index('    #[test]\n    fn socket_output_preflight_and_descriptor_type_errors()', begin)
+        return text[:begin] + text[end:]
+    previous = subprocess.check_output(['git', 'show', source + ':' + path], text=True)
+    if outside_case(previous) != outside_case(Path(path).read_text()):
+        raise RuntimeError('Socket retry changed production code or another passed test')
+    def get(endpoint):
+        with urllib.request.urlopen(urllib.request.Request(
+            f'https://api.github.com/repos/{repo}/actions/{endpoint}', headers=headers), timeout=30) as response:
+            return json.load(response)
+    validated = get(f'runs/{run}')
+    if (validated['head_sha'] != source or validated['path'] != '.github/workflows/linux.yml'
+            or validated['head_repository']['full_name'] != repo):
+        raise RuntimeError('Memory retry evidence does not match the repository/source/workflow')
+    jobs = get(f'runs/{run}/jobs')['jobs']
+    if not any(j['name'] == 'firefox-memory' and j['conclusion'] == 'success' for j in jobs):
+        raise RuntimeError('Memory retry requires passed Linux modules, ABI and full-std TSan')
+    apple = next(j for j in jobs if j['name'] == 'firefox-memory-apple')
+    log = subprocess.check_output(['gh', 'run', 'view', str(run), '--repo', repo,
+                                   '--job', str(apple['id']), '--log'], text=True)
+    import re
+    log = re.sub(r'\x1b\[[0-?]*[ -/]*[@-~]', '', log)
+    core = log.split('Running unittests src/lib.rs (target/debug/build/trames-core/', 1)[1]
+    core = core.split('Running unittests src/lib.rs (target/debug/build/trames-linux/', 1)[0]
+    if 'test result: ok. 83 passed; 0 failed' not in core:
+        raise RuntimeError('Memory retry requires the passed exact-source Apple Core suite')
+    print(f'Reuse Linux modules/ABI/TSan and Apple Core83 from {run}; run failed socket test, remaining memory/VFS/ABI and ARM64 benchmark. No IPA.')
+    return True
+
+
 def main():
     if os.environ.get("TRAMES_FULL_CHECK") == "true":
         with open(os.environ["GITHUB_OUTPUT"], "a") as output:
@@ -456,16 +498,21 @@ def main():
             hashes=plan['changed_file_sha256']
             if changed==set(hashes) and all(Path(path).exists() and hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest for path,digest in hashes.items()):
                 if plan.get('native_scope') == 'firefox-memory':
+                    apple_retry = firefox_memory_apple_retry(plan, repo, dict(request.headers))
                     allowed = {'AGENTS.md', 'crates/trames-core/src/lib.rs', 'crates/trames-core/src/process.rs',
                                'crates/trames-core/src/process_service.rs', 'crates/trames-linux/src/state.rs',
                                'crates/trames-vfs/src/mapped.rs', 'tests/fixtures/firefox-memory-probe.c',
                                'tests/integration/firefox.py', 'scripts/build-firefox-fixture.sh',
                                'scripts/ios-ci-scope.py', '.github/workflows/linux.yml', '.github/workflows/ios.yml'}
+                    if apple_retry:
+                        allowed.add('crates/trames-linux/src/network.rs')
                     if any(p not in allowed and not p.startswith(('docs/', 'crates/trames-memory/src/', 'crates/trames-memory/examples/')) for p in changed):
                         raise RuntimeError('Firefox memory plan includes unrelated changes')
                     print('Check demand-zero MMU/accounting, coordinator, mapped VFS, Linux and original-musl sparse BSS on Linux/Apple ARM64. Reuse unchanged CPU opcode/GPU/UI/guest artifacts. No IPA.')
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=firefox-memory\nskip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
+                        output.write('firefox_memory_apple_retry=' + str(apple_retry).lower() + '\n')
+                        output.write('firefox_memory_retry_run=' + str(plan['memory_apple_retry']['run'] if apple_retry else '') + '\n')
                     return
                 if plan.get('native_scope') == 'firefox-runtime':
                     allowed = {'crates/trames-vfs/src/lib.rs', 'crates/trames-vfs/src/ipc.rs',

@@ -78,3 +78,14 @@ Shared-host noise, code layout and the extra mode selection remain relevant.
   BSS and Apple ARM64/16KiB; adds fully instrumented std ThreadSanitizer on the new
   exclusive tests. Existing CPU opcode/GPU/UI/guest package sources are unchanged.
   This iteration does not build an IPA or claim Firefox first-frame acceptance.
+
+Exact runtime source `8e9c7bf` passed Linux 203 checks, strict Clippy, the original
+musl probe and 16 full-std ThreadSanitizer cases in
+[39392709719](https://github.com/kb5000/trames/actions/runs/39392709719). Apple
+Core83 passed, then the old nonblocking TCP accept fixture observed EAGAIN before
+readiness. The fixture now waits with a five-second deadline for accept/read
+readiness, preserving its EFAULT/queued-connection assertions. Production network
+code and other tests are unchanged. A source-checked continuation reuses the
+passed results and runs only that failed case plus the remaining Apple memory,
+mapped VFS, original-musl probe and benchmark. That original run as a whole failed;
+its successful jobs are not represented as a successful complete workflow.

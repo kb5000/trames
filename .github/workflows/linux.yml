@@ -20,6 +20,8 @@ jobs:
       skip_native: ${{ steps.scope.outputs.skip_linux_native }}
       skip_modules: ${{ steps.scope.outputs.skip_linux_modules }}
       native_scope: ${{ steps.scope.outputs.native_scope }}
+      firefox_memory_apple_retry: ${{ steps.scope.outputs.firefox_memory_apple_retry }}
+      firefox_memory_retry_run: ${{ steps.scope.outputs.firefox_memory_retry_run }}
       runtime_linux_reused: ${{ steps.scope.outputs.runtime_linux_reused }}
       storage_proc_only: ${{ steps.scope.outputs.storage_proc_only }}
       isolation_retry: ${{ steps.scope.outputs.isolation_retry }}
@@ -50,7 +52,7 @@ jobs:
         run: python3 scripts/ios-ci-scope.py
   firefox-memory:
     needs: scope
-    if: needs.scope.outputs.native_scope == 'firefox-memory'
+    if: needs.scope.outputs.native_scope == 'firefox-memory' && needs.scope.outputs.firefox_memory_apple_retry != 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -103,7 +105,7 @@ jobs:
           retention-days: 7
   firefox-memory-apple:
     needs: [scope, firefox-memory]
-    if: needs.scope.outputs.native_scope == 'firefox-memory'
+    if: ${{ !cancelled() && needs.scope.result == 'success' && needs.scope.outputs.native_scope == 'firefox-memory' && (needs.firefox-memory.result == 'success' || needs.scope.outputs.firefox_memory_apple_retry == 'true') }}
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -114,11 +116,18 @@ jobs:
         with:
           name: firefox-memory-fixture
           path: target/firefox-fixture/
+          github-token: ${{ github.token }}
+          run-id: ${{ needs.scope.outputs.firefox_memory_apple_retry == 'true' && needs.scope.outputs.firefox_memory_retry_run || github.run_id }}
       - name: Verify demand-zero paths on Apple ARM64 with 16KiB pages
         run: |
           uname -m
           sysctl hw.pagesize
-          cargo test -p trames-memory -p trames-core -p trames-linux --lib --locked
+          if [[ '${{ needs.scope.outputs.firefox_memory_apple_retry }}' == true ]]; then
+            cargo test -p trames-linux --lib --locked network::tests::invalid_accept_destination_does_not_drop_queued_connection -- --exact
+            cargo test -p trames-memory --lib --locked
+          else
+            cargo test -p trames-memory -p trames-core -p trames-linux --lib --locked
+          fi
           cargo test -p trames-vfs mapped --lib --locked
           cargo build -p trames-cli --release --locked
           target/release/trames-run --memory --memory-budget 4GiB --process-memory-budget 4GiB --cpus 4 target/firefox-fixture/memory-probe
