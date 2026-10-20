@@ -1,0 +1,12 @@
+   Compiling trames-vfs v1.2.0 (/workspace/trames/crates/trames-vfs)
+   Compiling trames-linux v1.2.0 (/workspace/trames/crates/trames-linux)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.33s
+     Running unittests src/lib.rs (target/perf-runtime/debug/build/trames-linux/e9aa938188b7d30a/out/trames_linux-e9aa938188b7d30a)
+
+running 3 tests
+test state::tests::mmap_uses_configured_budget_instead_of_the_legacy_half_gib_cap ... ok
+test state::tests::mmap_fixed_noreplace_and_protection_are_checked ... ok
+test state::tests::accepted_mmap_hints_do_not_relocate_ordinary_allocations ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 23 filtered out; finished in 0.00s
+

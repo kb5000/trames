@@ -1,0 +1,13 @@
+unix-stream-empty result=0 errno=0 bytes=0 expected=0 legacy=0
+unix-stream-queued result=0 errno=0 bytes=7 expected=7 legacy=7
+unix-stream-after-partial-read result=0 errno=0 bytes=4 expected=4 legacy=7
+unix-stream-eof result=0 errno=0 bytes=0 expected=0 legacy=0
+pipe-empty result=0 errno=0 bytes=0 expected=0 legacy=0
+pipe-queued result=0 errno=0 bytes=7 expected=7 legacy=7
+pipe-after-partial-read result=0 errno=0 bytes=4 expected=4 legacy=4
+pipe-eof result=0 errno=0 bytes=0 expected=0 legacy=0
+unix-sendmsg-cloexec round=0 result=1 errno=0
+unix-sendmsg-cloexec round=1 result=1 errno=0
+unix-sendmsg-cloexec round=2 result=1 errno=0
+unix-sendmsg-cloexec round=3 result=1 errno=0
+fionread failures=0

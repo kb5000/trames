@@ -48,6 +48,56 @@ jobs:
           TRAMES_VALIDATION_WORKFLOW: linux.yml
           TRAMES_NEEDS_GUEST_ARTIFACTS: 'false'
         run: python3 scripts/ios-ci-scope.py
+  firefox-runtime:
+    needs: scope
+    if: needs.scope.outputs.native_scope == 'firefox-runtime'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+          components: rustfmt, clippy
+      - name: Prepare original musl socket fixture
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes gcc-aarch64-linux-gnu
+          bash scripts/build-firefox-fixture.sh
+      - name: Check affected runtime modules and socket ABI
+        run: |
+          cargo fmt --all --check
+          cargo clippy -p trames-vfs -p trames-linux --all-targets --no-deps --locked -- -D warnings
+          cargo test -p trames-vfs -p trames-linux -p trames-core --lib --locked
+          cargo build -p trames-cli --release --locked
+          python3 -m py_compile tests/integration/firefox.py tests/integration/firefox-prepare.py scripts/ios-ci-scope.py
+          cc -O2 -Wall -Wextra -Werror tests/fixtures/firefox-socket-probe.c -o /tmp/socket-probe
+          /tmp/socket-probe
+          target/release/trames-run --memory "$PWD/target/firefox-fixture/socket-probe"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firefox-socket-fixture
+          path: target/firefox-fixture/
+          retention-days: 7
+  firefox-runtime-apple:
+    needs: [scope, firefox-runtime]
+    if: needs.scope.outputs.native_scope == 'firefox-runtime'
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+      - uses: actions/download-artifact@v4
+        with:
+          name: firefox-socket-fixture
+          path: target/firefox-fixture/
+      - name: Verify Apple ARM64 runtime and socket ABI
+        run: |
+          uname -m
+          sysctl hw.pagesize
+          cargo test -p trames-vfs -p trames-linux -p trames-core --lib --locked
+          cargo build -p trames-cli --release --locked
+          target/release/trames-run --memory "$PWD/target/firefox-fixture/socket-probe"
   compatibility-probe:
     needs: scope
     if: needs.scope.outputs.native_scope == 'compatibility-probe'

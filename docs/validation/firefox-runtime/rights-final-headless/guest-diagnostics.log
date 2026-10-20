@@ -1,0 +1,59 @@
+
+FIREFOX_LOG_BEGIN
+*** You are running in headless mode.
+Crash Annotation GraphicsCriticalError: |[0][GFX1-]: glxtest: libEGL initialize failed (t=1.79247e+09) [GFX1-]: glxtest: libEGL initialize failed
+Crash Annotation GraphicsCriticalError: |[0][GFX1-]: glxtest: libEGL initialize failed (t=1.79247e+09) |[1][GFX1-]: glxtest: EGL test failed (t=1.79247e+09) [GFX1-]: glxtest: EGL test failed
+Crash Annotation GraphicsCriticalError: |[0][GFX1-]: glxtest: libEGL initialize failed (t=1.79247e+09) |[1][GFX1-]: glxtest: EGL test failed (t=1.79247e+09) |[2][GFX1-]: No GPUs detected via PCI
+ (t=1.79247e+09) [GFX1-]: No GPUs detected via PCI
+
+Scudo ERROR: internal map failure (error desc=Out of memory)
+Redirecting call to abort() to mozalloc_abort
+
+out of memory: 0x0000000000000000 bytes requested
+[Parent 4, IPC I/O Parent] WARNING: process 74 exited on signal 11: file /home/buildozer/aports/community/firefox/src/firefox-142.0/ipc/chromium/src/chrome/common/process_watcher_posix_sigchld.cc:134
+[Parent 4, IPC I/O Parent] WARNING: process 102 exited on signal 11: file /home/buildozer/aports/community/firefox/src/firefox-142.0/ipc/chromium/src/chrome/common/process_watcher_posix_sigchld.cc:134
+Crash Annotation GraphicsCriticalError: |[0][GFX1-]: glxtest: libEGL initialize failed (t=1.79247e+09) |[1][GFX1-]: glxtest: EGL test failed (t=1.79247e+09) |[2][GFX1-]: No GPUs detected via PCI
+ (t=1.79247e+09) |[3][GFX1-]: wr_window_new: Thread(Os { code: 11, kind: WouldBlock, message: "Resource temporarily unavailable" }) (t=1.79247e+09) [GFX1-]: wr_window_new: Thread(Os { code: 11, kind: WouldBlock, message: "Resource temporarily unavailable" })
+Crash Annotation GraphicsCriticalError: |[0][GFX1-]: glxtest: libEGL initialize failed (t=1.79247e+09) |[1][GFX1-]: glxtest: EGL test failed (t=1.79247e+09) |[2][GFX1-]: No GPUs detected via PCI
+ (t=1.79247e+09) |[3][GFX1-]: wr_window_new: Thread(Os { code: 11, kind: WouldBlock, message: "Resource temporarily unavailable" }) (t=1.79247e+09) |[4][GFX1-]: Failed to connect WebRenderBridgeChild. isParent=true (t=1.79247e+09) [GFX1-]: Failed to connect WebRenderBridgeChild. isParent=true
+Crash Annotation GraphicsCriticalError: |[0][GFX1-]: glxtest: libEGL initialize failed (t=1.79247e+09) |[1][GFX1-]: glxtest: EGL test failed (t=1.79247e+09) |[2][GFX1-]: No GPUs detected via PCI
+ (t=1.79247e+09) |[3][GFX1-]: wr_window_new: Thread(Os { code: 11, kind: WouldBlock, message: "Resource temporarily unavailable" }) (t=1.79247e+09) |[4][GFX1-]: Failed to connect WebRenderBridgeChild. isParent=true (t=1.79247e+09) |[5][GFX1-]: Fallback remains SW-WR (t=1.79247e+09) [GFX1-]: Fallback remains SW-WR
+[Parent 4, IPC I/O Parent] WARNING: process 118 exited on signal 11: file /home/buildozer/aports/community/firefox/src/firefox-142.0/ipc/chromium/src/chrome/common/process_watcher_posix_sigchld.cc:134
+Scudo ERROR: internal map failure (error desc=Out of memory)
+Redirecting call to abort() to mozalloc_abort
+
+Segmentation fault
+Exiting due to channel error.
+
+FIREFOX_DMESG_BEGIN
+[3.605310] pid=14 syscall=200(bind) pc=0x700414fc args=[a, 43781678, c, 0, 0, 0] unsupported errno=95 comm="Netlink Monitor"
+[35.933219] pid=70 syscall=165(getrusage) pc=0x7003d98c args=[0, 47226e8c8, 0, 47226ea90, 2e, 0] unsupported errno=38 comm="DOM Worker"
+[36.004840] pid=70 syscall=165(getrusage) pc=0x7003d98c args=[0, 47226e660, 0, 45d810c8, 45d81008, 45d810c8] unsupported errno=38 comm="DOM Worker"
+[44.874579] pid=74 tgid=74 CPU fault at PC 0x40042138: guest memory: Unmapped(0) comm="Web Content"
+[44.875667] pid=74 tgid=74 CPU fault at PC 0x40042138: guest memory: Unmapped(0) comm="Web Content"
+[44.931958] pid=97 syscall=212(recvmsg) pc=0x7007c2d8 args=[38, 874ecc8c8, 40004000, 0, 0, 0] unsupported errno=95 comm="AudioIP~ver RPC"
+[47.190963] pid=70 syscall=165(getrusage) pc=0x7003d98c args=[0, 47226ef18, fffffffffffde4a0, 4722700b0, 472272c90, 0] unsupported errno=38 comm="DOM Worker"
+[49.169228] pid=70 syscall=165(getrusage) pc=0x7003d98c args=[0, 47226ecb0, 0, 45d810c8, 45d81008, 45d810c8] unsupported errno=38 comm="DOM Worker"
+[49.173717] pid=70 syscall=165(getrusage) pc=0x7003d98c args=[0, 47226ef18, 11440, 472270148, 472272c90, 0] unsupported errno=38 comm="DOM Worker"
+[49.225281] pid=70 syscall=165(getrusage) pc=0x7003d98c args=[0, 47226ecb0, 0, 45d810c8, 45d81008, 45d810c8] unsupported errno=38 comm="DOM Worker"
+[50.170170] pid=102 tgid=102 CPU fault at PC 0x40042138: guest memory: Unmapped(0) comm="Web Content"
+[50.171534] pid=102 tgid=102 CPU fault at PC 0x40042138: guest memory: Unmapped(0) comm="Web Content"
+[54.740822] pid=70 syscall=165(getrusage) pc=0x7003d98c args=[0, 47226ef18, fffffffffffe4d40, 4722700d8, 472272c90, 0] unsupported errno=38 comm="DOM Worker"
+[55.146864] pid=70 syscall=165(getrusage) pc=0x7003d98c args=[0, 47226ecb0, 0, 45d810c8, 45d81008, 45d810c8] unsupported errno=38 comm="DOM Worker"
+[55.154637] pid=70 syscall=165(getrusage) pc=0x7003d98c args=[0, 47226ef18, ffffffffffff1d80, 472270100, 472272c90, 0] unsupported errno=38 comm="DOM Worker"
+[55.217286] pid=70 syscall=165(getrusage) pc=0x7003d98c args=[0, 47226ecb0, 0, 45d810c8, 45d81008, 45d810c8] unsupported errno=38 comm="DOM Worker"
+[55.550648] pid=118 tgid=118 CPU fault at PC 0x35d348c0: guest memory: Unmapped(0) comm="Web Content"
+[55.552337] pid=118 tgid=118 CPU fault at PC 0x35d348c0: guest memory: Unmapped(0) comm="Web Content"
+[59.434108] pid=4 tgid=4 CPU fault at PC 0x40042138: guest memory: Unmapped(0) comm="firefox"
+
+FIREFOX_PROCESSES_BEGIN
+PID   PPID  STAT TIME  COMMAND
+    1     0 S     0:00 ash
+  135    64 Z     0:00 Web Content
+  148     1 R     0:00 ps
+   64     1 R     0:00 forkserver
+   79    64 Z     0:00 RDD Process
+
+FIREFOX_DIAGNOSTICS_DONE
+[1]+  Done                       (firefox --no-remote --profile /root/firefox-probe-rights-final-headless --headless --window-size 640,480 --screenshot /tmp/trames-firefox-98790442605282.html.png file:///tmp/trames-firefox-98790442605282.html 1>/tmp/firefox-probe.log 2>&1; ; printf "\nFIREFOX_PROBE_EXIT:%d\n" "${r}")
+~ # [6n

@@ -1,0 +1,616 @@
+
+FIREFOX_LOG_BEGIN
+[ 904470.059] {Default Queue}  -> wl_display#1.get_registry(new id wl_registry#2)
+[ 904470.572] {Default Queue}  -> wl_display#1.sync(new id wl_callback#3)
+[ 904473.258] {Display Queue} wl_display#1.delete_id(3)
+[ 904473.542] {Default Queue} wl_registry#2.global(1, "wl_compositor", 4)
+[ 904473.956] {Default Queue}  -> wl_registry#2.bind(1, "wl_compositor", 3, new id [unknown]#4)
+[ 904474.300] {Default Queue} wl_registry#2.global(2, "wl_shm", 1)
+[ 904474.580] {Default Queue}  -> wl_registry#2.bind(2, "wl_shm", 1, new id [unknown]#5)
+[ 904474.918] {Default Queue} wl_registry#2.global(3, "wl_output", 3)
+[ 904475.192] {Default Queue}  -> wl_registry#2.bind(3, "wl_output", 2, new id [unknown]#6)
+[ 904479.697] {Default Queue}  -> wl_display#1.sync(new id wl_callback#7)
+[ 904480.211] {Default Queue} wl_registry#2.global(4, "xdg_wm_base", 3)
+[ 904480.505] {Default Queue} wl_registry#2.global(5, "wl_seat", 7)
+[ 904480.917] {Default Queue} wl_registry#2.global(6, "wl_data_device_manager", 3)
+[ 904481.213] {Default Queue}  -> wl_registry#2.bind(6, "wl_data_device_manager", 3, new id [unknown]#8)
+[ 904481.534] {Default Queue} wl_registry#2.global(7, "zwp_text_input_manager_v1", 1)
+[ 904481.812] {Default Queue} wl_registry#2.global(8, "zwp_text_input_manager_v3", 1)
+[ 904482.169] {Default Queue} wl_registry#2.global(9, "wl_subcompositor", 1)
+[ 904482.451] {Default Queue}  -> wl_registry#2.bind(9, "wl_subcompositor", 1, new id [unknown]#9)
+[ 904482.951] {Default Queue} wl_callback#3.done(0)
+[ 904486.297] {Default Queue}  -> wl_shm#5.create_pool(new id wl_shm_pool#3, fd 17, 2304)
+[ 904580.010] {Default Queue}  -> wl_shm_pool#3.resize(5568)
+[ 904673.436] {Default Queue}  -> wl_shm_pool#3.resize(12096)
+[ 905023.762] {Default Queue}  -> wl_shm_pool#3.resize(25216)
+[ 905215.454] {Default Queue}  -> wl_registry#2.bind(5, "wl_seat", 5, new id [unknown]#10)
+[ 905531.127] {Default Queue}  -> wl_compositor#4.create_surface(new id wl_surface#11)
+[ 905532.155] {Default Queue}  -> wl_data_device_manager#8.get_data_device(new id wl_data_device#12, wl_seat#10)
+[ 905537.713] {Default Queue}  -> wl_compositor#4.create_surface(new id wl_surface#13)
+[ 905538.136] {Default Queue}  -> wl_display#1.sync(new id wl_callback#14)
+[ 905541.521] {Display Queue} wl_display#1.delete_id(7)
+[ 905541.760] {Display Queue} wl_display#1.delete_id(14)
+[ 905541.956] {Default Queue} wl_shm#5.format(0)
+[ 905542.135] {Default Queue} wl_shm#5.format(1)
+[ 905542.297] {Default Queue} wl_output#6.geometry(0, 0, 260, 195, 0, "Trames", "Wayland output", 0)
+[ 905542.939] {Default Queue} wl_output#6.mode(3, 1024, 768, 60000)
+[ 905543.380] {Default Queue} wl_output#6.scale(1)
+[ 905543.614] {Default Queue} wl_output#6.done()
+[ 905543.948] {Default Queue} wl_callback#7.done(0)
+[ 905544.149] {Default Queue} wl_seat#10.capabilities(3)
+[ 905544.340] {Default Queue}  -> wl_seat#10.get_pointer(new id wl_pointer#7)
+[ 905544.874] {Default Queue}  -> wl_seat#10.get_keyboard(new id wl_keyboard#15)
+[ 905546.190] {Default Queue} wl_seat#10.name("seat0")
+[ 905546.596] {Default Queue} wl_data_device#12.selection(nil)
+[ 905546.782] {Default Queue} wl_callback#14.done(0)
+[ 905547.010] {Default Queue}  -> wl_registry#2.bind(4, "xdg_wm_base", 3, new id [unknown]#14)
+[ 905680.945] {Default Queue}  -> wl_display#1.get_registry(new id wl_registry#16)
+[ 905682.061] {Default Queue}  -> wl_display#1.sync(new id wl_callback#17)
+[ 905689.435] {Display Queue} wl_display#1.delete_id(17)
+[ 905691.769] {Default Queue} wl_keyboard#15.keymap(1, fd 19, 64754)
+[ 906249.055] {Default Queue} wl_keyboard#15.repeat_info(25, 600)
+[ 906249.535] {Default Queue} wl_registry#16.global(1, "wl_compositor", 4)
+[ 906249.829] {Default Queue}  -> wl_registry#16.bind(1, "wl_compositor", 4, new id [unknown]#18)
+[ 906250.116] {Default Queue} wl_registry#16.global(2, "wl_shm", 1)
+[ 906250.337] {Default Queue}  -> wl_registry#16.bind(2, "wl_shm", 1, new id [unknown]#19)
+[ 906250.565] {Default Queue} wl_registry#16.global(3, "wl_output", 3)
+[ 906250.768] {Default Queue} wl_registry#16.global(4, "xdg_wm_base", 3)
+[ 906251.161] {Default Queue}  -> wl_registry#16.bind(4, "xdg_wm_base", 3, new id [unknown]#20)
+[ 906251.402] {Default Queue} wl_registry#16.global(5, "wl_seat", 7)
+[ 906251.619] {Default Queue}  -> wl_registry#16.bind(5, "wl_seat", 7, new id [unknown]#21)
+[ 906251.843] {Default Queue} wl_registry#16.global(6, "wl_data_device_manager", 3)
+[ 906252.036] {Default Queue} wl_registry#16.global(7, "zwp_text_input_manager_v1", 1)
+[ 906252.216] {Default Queue} wl_registry#16.global(8, "zwp_text_input_manager_v3", 1)
+[ 906252.404] {Default Queue} wl_registry#16.global(9, "wl_subcompositor", 1)
+[ 906252.670] {Default Queue}  -> wl_registry#16.bind(9, "wl_subcompositor", 1, new id [unknown]#22)
+[ 906252.971] {Default Queue} wl_callback#17.done(0)
+[ 906253.292] {Default Queue}  -> wl_display#1.sync(new id wl_callback#17)
+[ 906255.828] {Display Queue} wl_display#1.delete_id(17)
+[ 906256.109] {Default Queue} discarded wl_shm#19.format(0)
+[ 906256.278] {Default Queue} discarded wl_shm#19.format(1)
+[ 906256.462] {Default Queue} wl_seat#21.capabilities(3)
+[ 906256.707] {Default Queue}  -> wl_seat#21.get_pointer(new id wl_pointer#23)
+[ 906256.963] {Default Queue}  -> wl_seat#21.get_keyboard(new id wl_keyboard#24)
+[ 906257.157] {Default Queue} wl_seat#21.name("seat0")
+[ 906257.310] {Default Queue} wl_callback#17.done(0)
+[ 909527.648] {Default Queue}  -> wl_display#1.get_registry(new id wl_registry#17)
+[ 919009.459] {Default Queue} wl_keyboard#24.keymap(1, fd 33, 64754)
+[ 919207.513] {Default Queue} wl_keyboard#24.repeat_info(25, 600)
+[ 919208.025] {Default Queue} wl_registry#17.global(1, "wl_compositor", 4)
+[ 919208.380] {Default Queue} wl_registry#17.global(2, "wl_shm", 1)
+[ 919208.732] {Default Queue} wl_registry#17.global(3, "wl_output", 3)
+[ 919209.064] {Default Queue} wl_registry#17.global(4, "xdg_wm_base", 3)
+[ 919209.370] {Default Queue} wl_registry#17.global(5, "wl_seat", 7)
+[ 919209.683] {Default Queue} wl_registry#17.global(6, "wl_data_device_manager", 3)
+[ 919209.995] {Default Queue} wl_registry#17.global(7, "zwp_text_input_manager_v1", 1)
+[ 919210.349] {Default Queue} wl_registry#17.global(8, "zwp_text_input_manager_v3", 1)
+[ 919210.679] {Default Queue}  -> wl_registry#17.bind(8, "zwp_text_input_manager_v3", 1, new id [unknown]#25)
+[ 919211.052] {Default Queue}  -> zwp_text_input_manager_v3#25.get_text_input(new id zwp_text_input_v3#26, wl_seat#10)
+[ 919211.374] {Default Queue} wl_registry#17.global(9, "wl_subcompositor", 1)
+Crash Annotation GraphicsCriticalError: |[0][GFX1-]: glxtest: libEGL initialize failed (t=1.79247e+09) [GFX1-]: glxtest: libEGL initialize failed
+Crash Annotation GraphicsCriticalError: |[0][GFX1-]: glxtest: libEGL initialize failed (t=1.79247e+09) |[1][GFX1-]: glxtest: EGL test failed (t=1.79247e+09) [GFX1-]: glxtest: EGL test failed
+Crash Annotation GraphicsCriticalError: |[0][GFX1-]: glxtest: libEGL initialize failed (t=1.79247e+09) |[1][GFX1-]: glxtest: EGL test failed (t=1.79247e+09) |[2][GFX1-]: No GPUs detected via PCI
+ (t=1.79247e+09) [GFX1-]: No GPUs detected via PCI
+
+[ 938869.839] {Default Queue}  -> wl_compositor#4.create_surface(new id wl_surface#27)
+[Parent 4, Main Thread] WARNING: pipe error: Not supported: file /home/buildozer/aports/community/firefox/src/firefox-142.0/ipc/chromium/src/chrome/common/ipc_channel_posix.cc:664
+[Parent 4, Main Thread] WARNING: Failed to create DBus proxy for org.a11y.Bus: Cannot spawn a message bus without a machine-id: Unable to load /usr/var/lib/dbus/machine-id or /etc/machine-id: Failed to open file “/usr/var/lib/dbus/machine-id”: No such file or directory
+: 'glib warning', file /home/buildozer/aports/community/firefox/src/firefox-142.0/toolkit/xre/nsSigHandlers.cpp:201
+
+** (firefox:4): WARNING **: 04:39:41.990: Failed to create DBus proxy for org.a11y.Bus: Cannot spawn a message bus without a machine-id: Unable to load /usr/var/lib/dbus/machine-id or /etc/machine-id: Failed to open file “/usr/var/lib/dbus/machine-id”: No such file or directory
+
+[Parent 4, IPC I/O Parent] WARNING: Failed to launch tab subprocess @FSC::SFNS::Send (Error:0): file /home/buildozer/aports/community/firefox/src/firefox-142.0/ipc/glue/GeckoChildProcessHost.cpp:804
+[Parent 4, IPC I/O Parent] WARNING: Failed to launch tab subprocess @FSC::SFNS::Failed (Error:0): file /home/buildozer/aports/community/firefox/src/firefox-142.0/ipc/glue/GeckoChildProcessHost.cpp:804
+[Parent 4, IPC I/O Parent] WARNING: Failed to launch tab subprocess @FSC::SFNS::Failed (Error:0): file /home/buildozer/aports/community/firefox/src/firefox-142.0/ipc/glue/GeckoChildProcessHost.cpp:804
+[Parent 4, IPC I/O Parent] WARNING: Failed to launch tab subprocess @FSC::SFNS::Failed (Error:0): file /home/buildozer/aports/community/firefox/src/firefox-142.0/ipc/glue/GeckoChildProcessHost.cpp:804
+[Parent 4, IPC I/O Parent] WARNING: Failed to launch tab subprocess @FSC::SFNS::Failed (Error:0): file /home/buildozer/aports/community/firefox/src/firefox-142.0/ipc/glue/GeckoChildProcessHost.cpp:804
+[ 969672.348] {Default Queue}  -> wl_compositor#4.create_surface(new id wl_surface#28)
+[ 969680.757] {Default Queue}  -> wl_surface#27.destroy()
+[ 969707.613] {Default Queue}  -> wl_compositor#4.create_surface(new id wl_surface#29)
+[ 969722.936] {Default Queue}  -> wl_surface#28.destroy()
+[Parent 4, IPC I/O Parent] WARNING: Failed to launch tab subprocess @FSC::SFNS::Failed (Error:0): file /home/buildozer/aports/community/firefox/src/firefox-142.0/ipc/glue/GeckoChildProcessHost.cpp:804
+[ 977349.007] {Display Queue} wl_display#1.delete_id(27)
+[ 977349.739] {Display Queue} wl_display#1.delete_id(28)
+[ 983462.544] {Default Queue}  -> xdg_wm_base#14.get_xdg_surface(new id xdg_surface#28, wl_surface#29)
+[ 983463.342] {Default Queue}  -> xdg_surface#28.get_toplevel(new id xdg_toplevel#27)
+[ 983463.907] {Default Queue}  -> xdg_toplevel#27.set_parent(nil)
+[ 983464.452] {Default Queue}  -> xdg_toplevel#27.set_title("Mozilla Firefox")
+[ 983464.973] {Default Queue}  -> xdg_toplevel#27.set_maximized()
+[ 983465.496] {Default Queue}  -> xdg_toplevel#27.set_app_id("firefox")
+[ 983466.051] {Default Queue}  -> wl_surface#29.commit()
+[ 983482.330] {Default Queue}  -> wl_compositor#18.create_surface(new id wl_surface#30)
+[ 983482.967] {Default Queue}  -> wl_subcompositor#22.get_subsurface(new id wl_subsurface#31, wl_surface#30, wl_surface#29)
+[ 983483.541] {Default Queue}  -> wl_subsurface#31.set_desync()
+[ 983484.017] {Default Queue}  -> wl_subsurface#31.set_position(0, 0)
+[ 983484.581] {Default Queue}  -> wl_surface#29.frame(new id wl_callback#32)
+[ 983485.069] {Default Queue}  -> wl_surface#30.commit()
+[ 983490.998] {Default Queue}  -> wl_compositor#18.create_region(new id wl_region#33)
+[ 983492.515] {Default Queue}  -> wl_surface#30.set_opaque_region(wl_region#33)
+[ 983493.028] {Default Queue}  -> wl_region#33.destroy()
+[ 983493.619] {Default Queue}  -> wl_compositor#18.create_region(new id wl_region#34)
+[ 983494.118] {Default Queue}  -> wl_surface#30.set_input_region(wl_region#34)
+[ 983494.643] {Default Queue}  -> wl_region#34.destroy()
+[ 983495.095] {Default Queue}  -> wl_surface#30.commit()
+[ 983705.209] {Default Queue} xdg_toplevel#27.configure(1024, 768, array[4])
+[ 983706.150] {Default Queue} xdg_surface#28.configure(1)
+[ 983706.713] {Default Queue}  -> wl_surface#29.set_buffer_scale(1)
+[ 983707.691] {Default Queue}  -> xdg_surface#28.ack_configure(1)
+[ 983778.069] {Display Queue} wl_display#1.delete_id(33)
+[ 983778.839] {Display Queue} wl_display#1.delete_id(34)
+[ 983794.551] {Default Queue}  -> xdg_toplevel#27.set_min_size(398, 68)
+[ 983795.144] {Default Queue}  -> xdg_toplevel#27.set_max_size(16332, 16332)
+[ 983795.791] {Default Queue}  -> wl_surface#29.set_buffer_scale(1)
+[ 983798.994] {Default Queue}  -> wl_compositor#18.create_region(new id wl_region#34)
+[ 983799.570] {Default Queue}  -> wl_surface#30.set_opaque_region(wl_region#34)
+[ 983800.048] {Default Queue}  -> wl_region#34.destroy()
+[ 983800.523] {Default Queue}  -> wl_surface#30.commit()
+[ 983801.373] {Default Queue}  -> xdg_toplevel#27.set_min_size(450, 120)
+[ 983801.892] {Default Queue}  -> xdg_toplevel#27.set_max_size(16384, 16384)
+[ 983803.249] {Default Queue}  -> wl_compositor#18.create_region(new id wl_region#33)
+[ 983803.811] {Default Queue}  -> wl_surface#30.set_opaque_region(wl_region#33)
+[ 983804.268] {Default Queue}  -> wl_region#33.destroy()
+[ 983804.789] {Default Queue}  -> wl_surface#30.commit()
+[ 983810.780] {Default Queue}  -> wl_shm#5.create_pool(new id wl_shm_pool#35, fd 35, 3145728)
+[ 983811.662] {Default Queue}  -> wl_shm_pool#35.create_buffer(new id wl_buffer#36, 0, 1024, 768, 4096, 0)
+[ 983830.554] {Default Queue}  -> wl_surface#29.attach(wl_buffer#36, 0, 0)
+[ 983831.138] {Default Queue}  -> wl_surface#29.set_buffer_scale(1)
+[ 983831.670] {Default Queue}  -> wl_surface#29.damage(0, 0, 1024, 768)
+[ 983832.172] {Default Queue}  -> xdg_toplevel#27.set_min_size(450, 120)
+[ 983832.696] {Default Queue}  -> xdg_toplevel#27.set_max_size(16384, 16384)
+[ 983833.179] {Default Queue}  -> xdg_surface#28.set_window_geometry(0, 0, 1024, 768)
+[ 983833.704] {Default Queue}  -> wl_compositor#4.create_region(new id wl_region#37)
+[ 983834.208] {Default Queue}  -> wl_region#37.add(-10, -10, 1044, 788)
+[ 983834.707] {Default Queue}  -> wl_surface#29.set_input_region(wl_region#37)
+[ 983835.172] {Default Queue}  -> wl_region#37.destroy()
+[ 983835.998] {Default Queue}  -> wl_surface#29.frame(new id wl_callback#38)
+[ 983836.532] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#39)
+[ 983837.063] {Default Queue}  -> wl_surface#29.commit()
+[ 983837.563] {Default Queue}  -> wl_surface#30.commit()
+[ 983966.412] {Display Queue} wl_display#1.delete_id(34)
+[ 983966.994] {Display Queue} wl_display#1.delete_id(33)
+[ 983967.479] {Display Queue} wl_display#1.delete_id(37)
+[ 983967.947] {Display Queue} wl_display#1.delete_id(32)
+[ 983968.401] {Display Queue} wl_display#1.delete_id(38)
+[ 983968.888] {Default Queue} wl_keyboard#15.enter(2, wl_surface#29, array[0])
+[ 983969.740] {Default Queue} wl_keyboard#15.modifiers(2, 0, 0, 0, 0)
+[ 983970.460] {Default Queue} wl_keyboard#24.enter(2, wl_surface#29, array[0])
+[ 983970.973] {Default Queue} wl_keyboard#24.modifiers(2, 0, 0, 0, 0)
+[ 983971.588] {Default Queue} zwp_text_input_v3#26.enter(wl_surface#29)
+[ 983972.375] {Default Queue} wl_data_device#12.data_offer(new id wl_data_offer#4278190080)
+[ 983972.916] {Default Queue} wl_data_offer#4278190080.offer("text/plain;charset=utf-8")
+[ 983973.438] {Default Queue} wl_data_offer#4278190080.offer("text/plain")
+[ 983973.892] {Default Queue} wl_data_offer#4278190080.offer("UTF8_STRING")
+[ 983974.370] {Default Queue} wl_data_device#12.selection(wl_data_offer#4278190080)
+[ 983975.239] {Default Queue} wl_callback#32.done(98080414)
+[ 983975.785] {Default Queue} wl_callback#38.done(98080414)
+[ 984106.739] {Default Queue}  -> wl_compositor#18.create_region(new id wl_region#38)
+[ 984107.466] {Default Queue}  -> wl_surface#30.set_opaque_region(wl_region#38)
+[ 984107.941] {Default Queue}  -> wl_region#38.destroy()
+[ 984108.412] {Default Queue}  -> wl_surface#30.commit()
+[ 984114.222] {Default Queue}  -> wl_shm#5.create_pool(new id wl_shm_pool#32, fd 35, 3145728)
+[ 984115.072] {Default Queue}  -> wl_shm_pool#32.create_buffer(new id wl_buffer#37, 0, 1024, 768, 4096, 0)
+[ 984358.698] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[ 984360.288] {Default Queue}  -> wl_surface#30.commit()
+[ 984912.114] {Default Queue}  -> wl_compositor#18.create_region(new id wl_region#34)
+[ 984913.775] {Default Queue}  -> wl_region#34.add(0, 44, 1024, 40)
+[ 984914.398] {Default Queue}  -> wl_region#34.add(0, 85, 1024, 683)
+[ 984914.790] {Default Queue}  -> wl_surface#30.set_opaque_region(wl_region#34)
+[ 984915.362] {Default Queue}  -> wl_region#34.destroy()
+[ 984915.579] {Default Queue}  -> wl_surface#30.commit()
+[ 985234.584] {Default Queue}  -> wl_shm#19.create_pool(new id wl_shm_pool#40, fd 53, 3145728)
+[1012324.253] {Default Queue}  -> wl_surface#30.damage_buffer(0, 0, 1024, 768)
+[1012325.192] {Default Queue}  -> wl_shm_pool#40.create_buffer(new id wl_buffer#41, 0, 1024, 768, 4096, 0)
+[1012325.852] {Default Queue}  -> wl_surface#30.attach(wl_buffer#41, 0, 0)
+[1012326.425] {Default Queue}  -> wl_surface#30.commit()
+Crash Annotation GraphicsCriticalError: |[0][GFX1-]: glxtest: libEGL initialize failed (t=1.79247e+09) |[1][GFX1-]: glxtest: EGL test failed (t=1.79247e+09) |[2][GFX1-]: No GPUs detected via PCI
+ (t=1.79247e+09) |[3][GFX1-]: Calling WaitFlushedEvent::Run: is delayed: 27240 (t=1.79247e+09) [GFX1-]: Calling WaitFlushedEvent::Run: is delayed: 27240
+[1012336.253] {Default Queue}  -> wl_surface#29.attach(wl_buffer#37, 0, 0)
+[1012336.884] {Default Queue}  -> wl_surface#29.set_buffer_scale(1)
+[1012337.437] {Default Queue}  -> wl_surface#29.damage(0, 0, 1024, 768)
+[1012338.005] {Default Queue}  -> xdg_toplevel#27.set_min_size(450, 120)
+[1012338.505] {Default Queue}  -> xdg_toplevel#27.set_max_size(16384, 16384)
+[1012339.016] {Default Queue}  -> xdg_surface#28.set_window_geometry(0, 0, 1024, 768)
+[1012339.550] {Default Queue}  -> wl_compositor#4.create_region(new id wl_region#42)
+[1012340.055] {Default Queue}  -> wl_region#42.add(0, 44, 1024, 40)
+[1012340.558] {Default Queue}  -> wl_region#42.add(0, 85, 1024, 683)
+[1012341.102] {Default Queue}  -> wl_surface#29.set_opaque_region(wl_region#42)
+[1012341.587] {Default Queue}  -> wl_region#42.destroy()
+[1012342.094] {Default Queue}  -> wl_compositor#4.create_region(new id wl_region#43)
+[1012342.589] {Default Queue}  -> wl_region#43.add(-10, -10, 1044, 788)
+[1012343.110] {Default Queue}  -> wl_surface#29.set_input_region(wl_region#43)
+[1012343.594] {Default Queue}  -> wl_region#43.destroy()
+[1013833.863] {Default Queue}  -> wl_surface#29.frame(new id wl_callback#44)
+[1013837.284] {Default Queue}  -> wl_surface#29.commit()
+[1013840.677] {Default Queue}  -> wl_surface#30.commit()
+[1013864.325] {Display Queue} wl_display#1.delete_id(38)
+[1013866.758] {Display Queue} wl_display#1.delete_id(34)
+[1013867.227] {Display Queue} wl_display#1.delete_id(39)
+[1013870.539] {Display Queue} wl_display#1.delete_id(33)
+[1013872.414] {Display Queue} wl_display#1.delete_id(42)
+[1013874.725] {Display Queue} wl_display#1.delete_id(43)
+[1013875.271] {Default Queue} wl_callback#39.done(98108784)
+[1013876.428] {Default Queue} wl_callback#33.done(98108784)
+[1013876.729] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1013876.980] {Default Queue}  -> wl_surface#30.commit()
+[1013881.091] {Display Queue} wl_display#1.delete_id(44)
+[1013881.342] {Default Queue} wl_buffer#36.release()
+[1013881.569] {Default Queue}  -> wl_buffer#36.destroy()
+[1013882.058] {Default Queue}  -> wl_shm_pool#35.destroy()
+[1013884.112] {Default Queue} wl_callback#44.done(98110315)
+[1013889.754] {Display Queue} wl_display#1.delete_id(33)
+[1013890.983] {Display Queue} wl_display#1.delete_id(36)
+[1013894.875] {Display Queue} wl_display#1.delete_id(35)
+[1013896.353] {Default Queue} wl_callback#33.done(98110336)
+[1013898.558] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1013899.982] {Default Queue}  -> wl_surface#30.commit()
+[1013998.362] {Display Queue} wl_display#1.delete_id(33)
+[1014008.000] {Default Queue} wl_callback#33.done(98110356)
+[1014028.446] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1014039.406] {Default Queue}  -> wl_surface#30.commit()
+[1014179.229] {Display Queue} wl_display#1.delete_id(33)
+[1014189.406] {Default Queue} wl_callback#33.done(98110572)
+[1014219.968] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1014240.007] {Default Queue}  -> wl_surface#30.commit()
+[1014384.616] {Display Queue} wl_display#1.delete_id(33)
+[1014404.293] {Default Queue} wl_callback#33.done(98110757)
+[1014423.800] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1014442.620] {Default Queue}  -> wl_surface#30.commit()
+[1014616.438] {Display Queue} wl_display#1.delete_id(33)
+[1014626.337] {Default Queue} wl_callback#33.done(98110973)
+[1014636.044] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1014655.037] {Default Queue}  -> wl_surface#30.commit()
+[1014753.847] {Display Queue} wl_display#1.delete_id(33)
+[1014774.050] {Default Queue} wl_callback#33.done(98111148)
+[1014794.203] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1014813.962] {Default Queue}  -> wl_surface#30.commit()
+[1015699.214] {Default Queue}  -> wl_compositor#18.create_region(new id wl_region#35)
+[1015703.700] {Default Queue}  -> wl_region#35.add(0, 0, 1024, 768)
+[1015704.062] {Default Queue}  -> wl_surface#30.set_opaque_region(wl_region#35)
+[1015704.259] {Default Queue}  -> wl_region#35.destroy()
+[1015704.442] {Default Queue}  -> wl_surface#30.commit()
+[1015711.409] {Display Queue} wl_display#1.delete_id(33)
+[1015712.573] {Default Queue} wl_callback#33.done(98111343)
+[1015712.828] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1015713.054] {Default Queue}  -> wl_surface#30.commit()
+[1015718.611] {Display Queue} wl_display#1.delete_id(35)
+[1015724.230] {Display Queue} wl_display#1.delete_id(33)
+[1015724.470] {Default Queue} wl_callback#33.done(98112167)
+[1015724.738] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1015724.943] {Default Queue}  -> wl_surface#30.commit()
+[1016041.892] {Display Queue} wl_display#1.delete_id(33)
+[1016042.460] {Default Queue} wl_callback#33.done(98112187)
+[1016042.788] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1016043.058] {Default Queue}  -> wl_surface#30.commit()
+[1016051.222] {Display Queue} wl_display#1.delete_id(33)
+[1016051.535] {Default Queue} wl_callback#33.done(98112496)
+[1016053.985] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1016054.244] {Default Queue}  -> wl_surface#30.commit()
+[Parent 4, IPC I/O Parent] WARNING: Failed to launch tab subprocess @FSC::SFNS::Failed (Error:0): file /home/buildozer/aports/community/firefox/src/firefox-142.0/ipc/glue/GeckoChildProcessHost.cpp:804
+[1022486.072] {Display Queue} wl_display#1.delete_id(33)
+[1022486.895] {Default Queue} wl_callback#33.done(98112517)
+[1022487.536] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1022488.133] {Default Queue}  -> wl_surface#30.commit()
+[1022592.004] {Display Queue} wl_display#1.delete_id(33)
+[1022592.817] {Default Queue} wl_callback#33.done(98118945)
+[1022593.241] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1022593.531] {Default Queue}  -> wl_surface#30.commit()
+[1022602.150] {Display Queue} wl_display#1.delete_id(33)
+[1022602.472] {Default Queue} wl_callback#33.done(98119048)
+[1022602.753] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1022603.100] {Default Queue}  -> wl_surface#30.commit()
+[1022611.528] {Display Queue} wl_display#1.delete_id(33)
+[1022611.821] {Default Queue} wl_callback#33.done(98119059)
+[1022612.109] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1022612.382] {Default Queue}  -> wl_surface#30.commit()
+[1022622.230] {Display Queue} wl_display#1.delete_id(33)
+[1022622.566] {Default Queue} wl_callback#33.done(98119069)
+[1022622.914] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1022623.194] {Default Queue}  -> wl_surface#30.commit()
+[1022631.780] {Display Queue} wl_display#1.delete_id(33)
+[1022632.071] {Default Queue} wl_callback#33.done(98119079)
+[1022632.337] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1022632.596] {Default Queue}  -> wl_surface#30.commit()
+[1022642.255] {Display Queue} wl_display#1.delete_id(33)
+[1022642.531] {Default Queue} wl_callback#33.done(98119089)
+[1022642.794] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1022643.069] {Default Queue}  -> wl_surface#30.commit()
+[1022653.169] {Display Queue} wl_display#1.delete_id(33)
+[1022653.444] {Default Queue} wl_callback#33.done(98119100)
+[1022653.722] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1022654.004] {Default Queue}  -> wl_surface#30.commit()
+[1022663.762] {Display Queue} wl_display#1.delete_id(33)
+[1022664.041] {Default Queue} wl_callback#33.done(98119110)
+[1022664.305] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1022664.561] {Default Queue}  -> wl_surface#30.commit()
+[1022674.028] {Display Queue} wl_display#1.delete_id(33)
+[1022674.353] {Default Queue} wl_callback#33.done(98119120)
+[1022674.695] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1022675.001] {Default Queue}  -> wl_surface#30.commit()
+[1022683.099] {Display Queue} wl_display#1.delete_id(33)
+[1022683.408] {Default Queue} wl_callback#33.done(98119131)
+[1022683.668] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1022683.940] {Default Queue}  -> wl_surface#30.commit()
+[1022694.294] {Display Queue} wl_display#1.delete_id(33)
+[1022694.571] {Default Queue} wl_callback#33.done(98119141)
+[1022694.840] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1022695.117] {Default Queue}  -> wl_surface#30.commit()
+[1022704.413] {Display Queue} wl_display#1.delete_id(33)
+[1022704.714] {Default Queue} wl_callback#33.done(98119151)
+[1022705.005] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1022705.275] {Default Queue}  -> wl_surface#30.commit()
+[1022718.022] {Display Queue} wl_display#1.delete_id(33)
+[1022740.437] {Default Queue} wl_callback#33.done(98119162)
+[1022761.661] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1022766.859] {Default Queue}  -> wl_surface#30.commit()
+[1022803.100] {Display Queue} wl_display#1.delete_id(33)
+[1022804.733] {Default Queue} wl_callback#33.done(98119244)
+[1022806.323] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1022808.208] {Default Queue}  -> wl_surface#30.commit()
+[1022828.317] {Display Queue} wl_display#1.delete_id(33)
+[1022828.630] {Default Queue} wl_callback#33.done(98119276)
+[1022828.974] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1022830.771] {Default Queue}  -> wl_surface#30.commit()
+[1022837.153] {Default Queue}  -> wl_shm#19.create_pool(new id wl_shm_pool#35, fd 58, 3145728)
+[1022969.075] {Display Queue} wl_display#1.delete_id(33)
+[1022969.701] {Default Queue} wl_callback#33.done(98119317)
+[1022971.133] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1022974.217] {Default Queue}  -> wl_surface#30.commit()
+[1023008.970] {Display Queue} wl_display#1.delete_id(33)
+[1023010.723] {Default Queue} wl_callback#33.done(98119452)
+[1023048.156] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1023073.884] {Default Queue}  -> wl_surface#30.commit()
+[1023334.643] {Display Queue} wl_display#1.delete_id(33)
+[1023347.689] {Default Queue} wl_callback#33.done(98119667)
+[1023390.457] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1023419.298] {Default Queue}  -> wl_surface#30.commit()
+[1023658.826] {Display Queue} wl_display#1.delete_id(33)
+[1023659.881] {Default Queue} wl_callback#33.done(98119980)
+[1023684.688] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1023686.612] {Default Queue}  -> wl_surface#30.commit()
+[1023918.612] {Display Queue} wl_display#1.delete_id(33)
+[1023921.416] {Default Queue} wl_callback#33.done(98120252)
+[1023947.430] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1024004.778] {Default Queue}  -> wl_surface#30.commit()
+[1024474.619] {Display Queue} wl_display#1.delete_id(33)
+[1024492.732] {Default Queue} wl_callback#33.done(98120766)
+[1024496.185] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1024544.809] {Default Queue}  -> wl_surface#30.commit()
+[1024778.442] {Display Queue} wl_display#1.delete_id(33)
+[1024779.534] {Default Queue} wl_callback#33.done(98121145)
+[1024791.429] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1024804.976] {Default Queue}  -> wl_surface#30.commit()
+[1025023.648] {Display Queue} wl_display#1.delete_id(33)
+[1025035.881] {Default Queue} wl_callback#33.done(98121363)
+[1025049.951] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1025085.421] {Default Queue}  -> wl_surface#30.commit()
+[1025207.232] {Display Queue} wl_display#1.delete_id(33)
+[1025211.978] {Default Queue} wl_callback#33.done(98121631)
+[1025216.890] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1025222.127] {Default Queue}  -> wl_surface#30.commit()
+[1025242.183] {Display Queue} wl_display#1.delete_id(33)
+[1025242.449] {Default Queue} wl_callback#33.done(98121683)
+[1025242.683] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1025242.930] {Default Queue}  -> wl_surface#30.commit()
+[1025260.739] {Display Queue} wl_display#1.delete_id(33)
+[1025261.023] {Default Queue} wl_callback#33.done(98121704)
+[1025261.259] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1025261.464] {Default Queue}  -> wl_surface#30.commit()
+[1025281.959] {Display Queue} wl_display#1.delete_id(33)
+[1025282.225] {Default Queue} wl_callback#33.done(98121725)
+[1025282.464] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1025282.679] {Default Queue}  -> wl_surface#30.commit()
+[1025303.771] {Display Queue} wl_display#1.delete_id(33)
+[1025304.081] {Default Queue} wl_callback#33.done(98121746)
+[1025304.324] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1025304.537] {Default Queue}  -> wl_surface#30.commit()
+[1025325.057] {Display Queue} wl_display#1.delete_id(33)
+[1025325.345] {Default Queue} wl_callback#33.done(98121767)
+[1025325.587] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1025325.804] {Default Queue}  -> wl_surface#30.commit()
+[1025343.909] {Display Queue} wl_display#1.delete_id(33)
+[1025344.200] {Default Queue} wl_callback#33.done(98121787)
+[1025344.439] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1025344.667] {Default Queue}  -> wl_surface#30.commit()
+[1025363.361] {Display Queue} wl_display#1.delete_id(33)
+[1025363.601] {Default Queue} wl_callback#33.done(98121808)
+[1025363.819] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1025364.034] {Default Queue}  -> wl_surface#30.commit()
+[1025373.434] {Display Queue} wl_display#1.delete_id(33)
+[1025373.650] {Default Queue} wl_callback#33.done(98121818)
+[1025373.857] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1025374.063] {Default Queue}  -> wl_surface#30.commit()
+[1025383.671] {Display Queue} wl_display#1.delete_id(33)
+[1025383.978] {Default Queue} wl_callback#33.done(98121829)
+[1025384.264] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1025384.520] {Default Queue}  -> wl_surface#30.commit()
+[1025396.670] {Display Queue} wl_display#1.delete_id(33)
+[1025396.950] {Default Queue} wl_callback#33.done(98121839)
+[1025397.173] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1025397.371] {Default Queue}  -> wl_surface#30.commit()
+[1025416.089] {Display Queue} wl_display#1.delete_id(33)
+[1025416.368] {Default Queue} wl_callback#33.done(98121860)
+[1025416.599] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1025416.820] {Default Queue}  -> wl_surface#30.commit()
+[1025457.101] {Display Queue} wl_display#1.delete_id(33)
+[1025459.480] {Default Queue} wl_callback#33.done(98121882)
+[1025459.724] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1025459.911] {Default Queue}  -> wl_surface#30.commit()
+[1026212.371] {Display Queue} wl_display#1.delete_id(33)
+[1026212.835] {Default Queue} wl_callback#33.done(98121923)
+[1026368.243] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1026593.904] {Default Queue}  -> wl_surface#30.commit()
+[1040791.508] {Default Queue}  -> wl_surface#30.damage_buffer(0, 0, 1024, 512)
+[1040794.755] {Default Queue}  -> wl_shm_pool#35.create_buffer(new id wl_buffer#36, 0, 1024, 768, 4096, 0)
+[1040797.404] {Default Queue}  -> wl_surface#30.attach(wl_buffer#36, 0, 0)
+[1040799.798] {Default Queue}  -> wl_surface#30.commit()
+[1040823.171] {Display Queue} wl_display#1.delete_id(33)
+[1040824.152] {Default Queue} wl_callback#33.done(98124222)
+[1040826.076] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1040827.424] {Default Queue}  -> wl_surface#30.commit()
+[1040842.287] {Default Queue} wl_buffer#41.release()
+[1040845.031] {Default Queue}  -> wl_buffer#41.destroy()
+[1067965.391] {Default Queue}  -> wl_surface#30.damage_buffer(0, 0, 1024, 768)
+[1067966.723] {Default Queue}  -> wl_shm_pool#40.create_buffer(new id wl_buffer#44, 0, 1024, 768, 4096, 0)
+[1067973.638] {Default Queue}  -> wl_surface#30.attach(wl_buffer#44, 0, 0)
+[1067974.671] {Default Queue}  -> wl_surface#30.commit()
+[1073273.478] {Display Queue} wl_display#1.delete_id(41)
+[1073275.771] {Display Queue} wl_display#1.delete_id(33)
+[1073275.994] {Default Queue} wl_buffer#36.release()
+[1073276.179] {Default Queue}  -> wl_buffer#36.destroy()
+[1073276.373] {Default Queue} wl_callback#33.done(98164439)
+[1073276.563] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1073276.766] {Default Queue}  -> wl_surface#30.commit()
+[1073286.417] {Display Queue} wl_display#1.delete_id(36)
+[1073288.714] {Display Queue} wl_display#1.delete_id(33)
+[1073289.479] {Default Queue} wl_callback#33.done(98169736)
+[1073292.802] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1073293.012] {Default Queue}  -> wl_surface#30.commit()
+[1073653.536] {Display Queue} wl_display#1.delete_id(33)
+[1073656.985] {Default Queue} wl_callback#33.done(98169774)
+[1073664.044] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1073665.607] {Default Queue}  -> wl_surface#30.commit()
+[1073746.594] {Display Queue} wl_display#1.delete_id(33)
+[1073750.333] {Default Queue} wl_callback#33.done(98170164)
+[1073751.043] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1073751.309] {Default Queue}  -> wl_surface#30.commit()
+[1073914.877] {Display Queue} wl_display#1.delete_id(33)
+[1073920.835] {Default Queue} wl_callback#33.done(98170268)
+[1073921.118] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1073921.326] {Default Queue}  -> wl_surface#30.commit()
+[1074578.700] {Display Queue} wl_display#1.delete_id(33)
+[1074579.759] {Default Queue} wl_callback#33.done(98170400)
+[1074580.846] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1074584.762] {Default Queue}  -> wl_surface#30.commit()
+[1074663.767] {Display Queue} wl_display#1.delete_id(33)
+[1074669.086] {Default Queue} wl_callback#33.done(98171095)
+[1074671.840] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1074674.450] {Default Queue}  -> wl_surface#30.commit()
+[1074715.955] {Display Queue} wl_display#1.delete_id(33)
+[1074716.951] {Default Queue} wl_callback#33.done(98171142)
+[1074717.243] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1074717.466] {Default Queue}  -> wl_surface#30.commit()
+[1074757.106] {Display Queue} wl_display#1.delete_id(33)
+[1074761.101] {Default Queue} wl_callback#33.done(98171198)
+[1074761.439] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1074761.676] {Default Queue}  -> wl_surface#30.commit()
+[1076069.750] {Display Queue} wl_display#1.delete_id(33)
+[1076071.087] {Default Queue} wl_callback#33.done(98171243)
+[1076216.476] {Default Queue}  -> wl_surface#30.frame(new id wl_callback#33)
+[1076221.021] {Default Queue}  -> wl_surface#30.commit()
+[1088130.016] {Default Queue}  -> wl_surface#30.damage_buffer(0, 0, 1024, 768)
+[1088131.054] {Default Queue}  -> wl_shm_pool#35.create_buffer(new id wl_buffer#36, 0, 1024, 768, 4096, 0)
+[1088137.520] {Default Queue}  -> wl_surface#30.attach(wl_buffer#36, 0, 0)
+[1088141.843] {Default Queue}  -> wl_surface#30.commit()
+
+FIREFOX_DMESG_BEGIN
+[4.305967] pid=15 syscall=200(bind) pc=0x700414fc args=[1d, 455ac678, c, 0, 0, 0] unsupported errno=95 comm="Netlink Monitor"
+[38.081904] pid=4 syscall=211(sendmsg) pc=0x7007c2d8 args=[30, 7fffffef92d8, 40, 0, 0, 0] unsupported errno=95 comm="firefox"
+[45.322338] pid=72 syscall=165(getrusage) pc=0x7003d98c args=[0, 470da88c8, 0, 470da8a90, 2e, 0] unsupported errno=38 comm="DOM Worker"
+[45.540234] pid=72 syscall=165(getrusage) pc=0x7003d98c args=[0, 470da8660, 0, 47e950c8, 47e95008, 47e950c8] unsupported errno=38 comm="DOM Worker"
+[52.677616] pid=55 syscall=211(sendmsg) pc=0x7007c2d8 args=[2c, 4afd9018, 0, 0, 0, 0] unsupported errno=95 comm="IPC Launch"
+[56.672626] pid=72 syscall=165(getrusage) pc=0x7003d98c args=[0, 470da8f18, fffffffffffd3760, 470daa090, 470dacc90, 0] unsupported errno=38 comm="DOM Worker"
+[57.363954] pid=72 syscall=165(getrusage) pc=0x7003d98c args=[0, 470da8cb0, 0, 47e950c8, 47e95008, 47e950c8] unsupported errno=38 comm="DOM Worker"
+[57.375629] pid=72 syscall=165(getrusage) pc=0x7003d98c args=[0, 470da8f18, ffffffffffffed40, 470daa100, 470dacc90, 0] unsupported errno=38 comm="DOM Worker"
+[57.431137] pid=72 syscall=165(getrusage) pc=0x7003d98c args=[0, 470da8cb0, 0, 47e950c8, 47e95008, 47e950c8] unsupported errno=38 comm="DOM Worker"
+[62.461883] pid=72 syscall=165(getrusage) pc=0x7003d98c args=[0, 470da8f18, 7ac0, 470daa158, 470dacc90, 0] unsupported errno=38 comm="DOM Worker"
+[62.519612] pid=72 syscall=165(getrusage) pc=0x7003d98c args=[0, 470da8cb0, 0, 47e950c8, 47e95008, 47e950c8] unsupported errno=38 comm="DOM Worker"
+[63.137580] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdca8, 0, 7fffffefde70, 28, 0] unsupported errno=38 comm="firefox"
+[63.154773] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefda40, 0, 10, 1, 0] unsupported errno=38 comm="firefox"
+[63.225706] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefc1c8, 7fffffefbd20, 8784e8800, 200, 2d40] unsupported errno=38 comm="firefox"
+[63.226770] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefbf60, 0, 10, 100, 2d40] unsupported errno=38 comm="firefox"
+[63.980308] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdca8, 7fffffefd800, 8784e7b00, 200, 2d40] unsupported errno=38 comm="firefox"
+[65.252563] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefda40, 0, 1, 365f104c, 1] unsupported errno=38 comm="firefox"
+[65.891466] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdca8, 7fffffefd800, 8784e7580, 200, 2d40] unsupported errno=38 comm="firefox"
+[65.992017] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefda40, 0, 351ebe44, 22dde31ea88, 0] unsupported errno=38 comm="firefox"
+[72.310664] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffef7268, 7fffffef6dc0, 8817e3e00, 200, 2d40] unsupported errno=38 comm="firefox"
+[72.410974] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffef7000, 0, 351c3490, 100, 2d40] unsupported errno=38 comm="firefox"
+[76.684991] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdca8, 7fffffefd800, 87bf4cbc0, 200, 2d40] unsupported errno=38 comm="firefox"
+[76.744915] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefda40, 0, 351ebe44, 100, 2d40] unsupported errno=38 comm="firefox"
+[79.219583] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdca8, 7fffffefd800, 87bf4c900, 200, 2d40] unsupported errno=38 comm="firefox"
+[79.321394] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefda40, 0, 10, 35b0c074, 0] unsupported errno=38 comm="firefox"
+[79.698075] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdca8, 7fffffefd800, 45a6a380, 200, 2d40] unsupported errno=38 comm="firefox"
+[79.800888] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefda40, 0, 10, 1900, 2d40] unsupported errno=38 comm="firefox"
+[81.134220] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdca8, 7fffffefd800, 45909380, 200, 2d40] unsupported errno=38 comm="firefox"
+[81.259858] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefda40, 0, 10, 30310e90, 30483b98] unsupported errno=38 comm="firefox"
+[117.266992] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffef98b8, 7fffffef9410, 8925c8080, 200, 2d40] unsupported errno=38 comm="firefox"
+[117.402253] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffef9650, 0, 10, 30310e90, 0] unsupported errno=38 comm="firefox"
+[121.233239] pid=72 syscall=165(getrusage) pc=0x7003d98c args=[0, 470da93c8, 9200, 470daa118, 470dacc90, 0] unsupported errno=38 comm="DOM Worker"
+[124.541944] pid=92 syscall=165(getrusage) pc=0x7003d98c args=[0, 89411a8c8, 0, 89411aa90, 2e, 0] unsupported errno=38 comm="DOM Worker"
+[134.800128] pid=92 syscall=165(getrusage) pc=0x7003d98c args=[0, 89411a660, 0, 8938470c8, 893847008, 8938470c8] unsupported errno=38 comm="DOM Worker"
+[138.595104] pid=72 syscall=165(getrusage) pc=0x7003d98c args=[0, 470da9160, 0, 47e950c8, 47e95008, 47e950c8] unsupported errno=38 comm="DOM Worker"
+[140.612516] pid=72 syscall=165(getrusage) pc=0x7003d98c args=[0, 470da93c8, 138a0, 470daa148, 470dacc90, 0] unsupported errno=38 comm="DOM Worker"
+[165.909481] pid=72 syscall=165(getrusage) pc=0x7003d98c args=[0, 470da9160, 0, 47e950c8, 47e95008, 47e950c8] unsupported errno=38 comm="DOM Worker"
+[165.921739] pid=72 syscall=165(getrusage) pc=0x7003d98c args=[0, 470da90a8, 37dc0, 470daa100, 470dacc90, 0] unsupported errno=38 comm="DOM Worker"
+[166.106039] pid=72 syscall=165(getrusage) pc=0x7003d98c args=[0, 470da8e40, 0, 47e950c8, 47e95008, 47e950c8] unsupported errno=38 comm="DOM Worker"
+[169.141175] pid=72 syscall=165(getrusage) pc=0x7003d98c args=[0, 470da9288, 37b60, 470daa100, 470dacc90, 0] unsupported errno=38 comm="DOM Worker"
+[170.027123] pid=72 syscall=165(getrusage) pc=0x7003d98c args=[0, 470da9020, 0, 47e950c8, 47e95008, 47e950c8] unsupported errno=38 comm="DOM Worker"
+
+FIREFOX_PROCESSES_BEGIN
+PID   PPID  STAT TIME  COMMAND
+    1     0 S     0:00 ash
+  109     1 R     0:00 ps
+    3     1 S     0:00 ash
+   10     3 S     0:00 WaylandProxy
+  104     3 S     0:00 StreamTrans #6
+  105     3 S     0:00 sqldb:c~lite #1
+  106     3 S     0:00 IndexedDB IO #5
+   11     3 S     0:00 glean.dispatche
+   13     3 S     0:00 IPC I/O Parent
+   14     3 S     0:00 Timer
+   15     3 S     0:00 Netlink Monitor
+   16     3 S     0:00 Socket Thread
+   17     3 S     0:00 IPDL Background
+   18     3 S     0:00 Backgro~Pool #1
+   20     3 S     0:00 HTML5 Parser
+   21     3 S     0:02 StyleThread#1
+   22     3 S     0:00 StyleThread#2
+   25     3 S     0:00 JS Watchdog
+   27     3 S     0:00 Cache2 I/O
+   28     3 S     0:00 Cookie
+   32     3 S     0:02 TaskCon~ller #0
+   33     3 S     0:00 TaskCon~ller #1
+   34     3 S     0:00 TaskCon~ller #2
+   35     3 S     0:00 TaskCon~ller #3
+   36     3 S     0:00 BgIOThr~Pool #1
+   38     3 S     0:00 Worker Launcher
+   39     3 S     0:00 QuotaManager IO
+    4     3 R     0:55 firefox
+   41     3 S     0:00 Softwar~cThread
+   42     3 R<    0:03 Renderer
+   43     3 S     0:00 WRWorker#0
+   44     3 S     0:00 WRWorker#1
+   45     3 S     0:00 WRWorker#2
+   46     3 S     0:00 WRWorker#3
+   47     3 S     0:00 WRWorkerLP#0
+   48     3 S     0:00 WRWorkerLP#1
+   49     3 S     0:00 WRWorkerLP#2
+   50     3 S     0:00 WRWorkerLP#3
+   51     3 S     0:00 WrGlyph~terizer
+   52     3 S     0:00 Compositor
+   53     3 S     0:00 ImageIO
+   54     3 S     0:00 SandboxReporter
+   55     3 S     0:00 IPC Launch
+   59     3 S     0:00 Permission
+    6     3 S     0:00 AsyncSi~lThread
+   68     3 S     0:00 TRR Background
+   69     3 S     0:00 DNS Resolver #1
+    7     3 S     0:00 pool-spawner
+   70     3 S     0:00 GMPThread
+   72     3 S     0:01 DOM Worker
+    8     3 S     0:00 gmain
+   82     3 S     0:00 ImageBridgeChld
+   83     3 S<    0:01 SwComposite
+   84     3 S<    0:00 WRScene~ilder#1
+   85     3 S<    0:00 WRScene~derLP#1
+   86     3 S<    0:00 WRRende~ckend#1
+    9     3 S     0:00 [pango] fontcon
+   91     3 S     0:00 IndexedDB IO #4
+   92     3 S     0:00 DOM Worker
+   93     3 S     0:00 DNS Resolver #2
+   94     3 S     0:00 StreamTrans #4
+   95     3 S     0:00 StreamTrans #5
+   56     4 Z     0:00 Socket Process
+   67     4 S     0:00 forkserver
+
+FIREFOX_DIAGNOSTICS_DONE
+~ # 

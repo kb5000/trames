@@ -1,0 +1,19 @@
+{
+  "seconds": 165.00200064200908,
+  "status": {
+    "phase": "running",
+    "error": null,
+    "exit_code": null,
+    "budget_bytes": 17179869184,
+    "used_bytes": 644387633,
+    "available_bytes": 16535481551,
+    "volume_total_bytes": 17179869184,
+    "node_limit": 131072,
+    "nodes_used": 4115
+  },
+  "scene": {
+    "revision": 0,
+    "text": null,
+    "windows": []
+  }
+}

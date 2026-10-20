@@ -1,0 +1,45 @@
+{
+  "seconds": 165.0088583679899,
+  "status": {
+    "phase": "running",
+    "error": null,
+    "exit_code": null,
+    "budget_bytes": 17179869184,
+    "used_bytes": 641553247,
+    "available_bytes": 16538315937,
+    "volume_total_bytes": 17179869184,
+    "node_limit": 131072,
+    "nodes_used": 4036
+  },
+  "scene": {
+    "revision": 90,
+    "text": null,
+    "windows": [
+      {
+        "app_id": "firefox",
+        "bounds": [
+          0,
+          0,
+          1024,
+          768
+        ],
+        "connection": 2,
+        "height": 768,
+        "id": 6,
+        "max_size": [
+          16384,
+          16384
+        ],
+        "min_size": [
+          450,
+          120
+        ],
+        "mode": "maximized",
+        "parent": null,
+        "revision": 90,
+        "title": "Mozilla Firefox",
+        "width": 1024
+      }
+    ]
+  }
+}

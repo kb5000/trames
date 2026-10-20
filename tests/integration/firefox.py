@@ -25,6 +25,8 @@ p.add_argument('--stage', choices=['headless', 'wayland'], required=True)
 p.add_argument('--ffi', type=Path, default=ROOT/'target/perf-runtime/release/libtrames_ffi.so')
 p.add_argument('--musl', type=Path, default=ROOT/'target/musl-hybrid/libc.so')
 p.add_argument('--timeout', type=float, default=180)
+p.add_argument('--memory-gib', type=int, default=4, help='aggregate guest memory budget; overrides are diagnostic')
+p.add_argument('--process-memory-gib', type=int, default=4)
 p.add_argument('--gpu', action='store_true')
 p.add_argument('--disable-content-sandbox', action='store_true')
 p.add_argument('--disable-wayland-proxy', action='store_true', help='diagnosis only: bypass the known FIONREAD blocker')
@@ -54,7 +56,7 @@ api.trames_wayland_frame_info.argtypes = [C.c_uint64, C.POINTER(Info)]
 
 options = dict(store=str(a.store.resolve()), volume_total=16<<30, volume_available=16<<30,
     network='off', wayland=True, pure_accelerator=True, musl_libc=str(a.musl.resolve()),
-    memory_budget_bytes=4<<30, process_memory_budget_bytes=4<<30,
+    memory_budget_bytes=a.memory_gib<<30, process_memory_budget_bytes=a.process_memory_gib<<30,
     vulkan_accelerator=a.gpu)
 if a.gpu:
     options['vulkan_icd'] = str(ROOT/'target/vulkan-guest/libtrames_vulkan_icd.so')
@@ -148,7 +150,7 @@ document.title='TRAMES_FIREFOX_JS_OK';document.body.dataset.test='javascript-and
         if time.monotonic()-start >= progress:
             (a.output/'progress.json').write_text(json.dumps(dict(seconds=time.monotonic()-start,status=status,scene=scene),indent=2)+'\n')
             if progress:
-                send('printf "\\nFIREFOX_PROGRESS\\n"; tail -n 12 /tmp/firefox-probe.log; ps -o pid,ppid,stat,time,args\n')
+                send('printf "\\nFIREFOX_PROGRESS\\n"; tail -n 12 /tmp/firefox-probe.log; ps -T -o pid,ppid,stat,time,comm\n')
             progress += 15
         report['windows'] = scene.get('windows', [])
         for w in report['windows']:
@@ -168,7 +170,7 @@ document.title='TRAMES_FIREFOX_JS_OK';document.body.dataset.test='javascript-and
     report['launch_seconds'] = time.monotonic()-start
     match = re.search(rb'\r?\nFIREFOX_PROBE_EXIT:(\d+)\r?\n',output)
     report['firefox_exit'] = int(match[1]) if match else None
-    send('printf "\\nFIREFOX_LOG_BEGIN\\n"; cat /tmp/firefox-probe.log; printf "\\nFIREFOX_DMESG_BEGIN\\n"; dmesg; printf "\\nFIREFOX_PROCESSES_BEGIN\\n"; ps -o pid,ppid,stat,time,args; printf "\\nFIREFOX_DIAGNOSTICS_DONE\\n"\n')
+    send('printf "\\nFIREFOX_LOG_BEGIN\\n"; cat /tmp/firefox-probe.log; printf "\\nFIREFOX_DMESG_BEGIN\\n"; dmesg; printf "\\nFIREFOX_PROCESSES_BEGIN\\n"; ps -T -o pid,ppid,stat,time,comm; printf "\\nFIREFOX_DIAGNOSTICS_DONE\\n"\n')
     wait(b'\r\nFIREFOX_DIAGNOSTICS_DONE\r\n',15)
     if a.stage == 'headless' and report['firefox_exit'] == 0:
         screenshot = a.output/'headless.png'

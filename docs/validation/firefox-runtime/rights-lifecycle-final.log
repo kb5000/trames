@@ -1,0 +1,12 @@
+   Compiling trames-vfs v1.2.0 (/workspace/trames/crates/trames-vfs)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.28s
+     Running unittests src/lib.rs (target/perf-runtime/debug/build/trames-vfs/3429f9905bbfc0c2/out/trames_vfs-3429f9905bbfc0c2)
+
+running 4 tests
+test ipc::waitall_tests::unix_rights_handoff_preserves_lifetime_and_rejects_direct_and_indirect_cycles ... ok
+test ipc::waitall_tests::fragmented_waitall_preserves_prefix_and_nonblocking_and_eof_return_short_reads ... ok
+test ipc::waitall_tests::fionread_keeps_packet_boundaries_rights_and_shutdown_queues ... ok
+test ipc::waitall_tests::sender_self_rights_and_deep_queue_chains_release_without_recursive_borrows ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 163 filtered out; finished in 0.01s
+

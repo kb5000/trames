@@ -1,0 +1,19 @@
+
+FIREFOX_LOG_BEGIN
+[ 335524.977] {Default Queue}  -> wl_display#1.get_registry(new id wl_registry#2)
+[ 335525.376] {Default Queue}  -> wl_display#1.sync(new id wl_callback#3)
+Warning: WaylandMessage::Write() failed : Not supported
+Error: ProxiedConnection::Process(): Failed to read data from client! : Not supported
+Error: we don't have any display, WAYLAND_DISPLAY='wayland-0' DISPLAY='(null)'
+
+FIREFOX_DMESG_BEGIN
+[4.686044] pid=10 syscall=211(sendmsg) pc=0x7007c2d8 args=[d, 3cc16778, 40000040, 0, 0, 0] unsupported errno=95 comm="WaylandProxy"
+
+FIREFOX_PROCESSES_BEGIN
+PID   PPID  STAT TIME  COMMAND
+    1     0 S     0:00 /bin/ash -i
+   13     1 R     0:00 ps -o pid,ppid,stat,time,args
+
+FIREFOX_DIAGNOSTICS_DONE
+[1]+  Done                       (firefox --no-remote --profile /root/firefox-probe-fionread-wayland file:///tmp/trames-firefox-97427564582880.html 1>/tmp/firefox-probe.log 2>&1; ; printf "\nFIREFOX_PROBE_EXIT:%d\n" "${r}")
+~ # [6n

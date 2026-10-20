@@ -1,0 +1,15 @@
+{
+  "base": "0318d303003c4b7b06c286ce82dc02f8fabfc966",
+  "physical_ipad": false,
+  "production_source_sha256": {
+    "crates/trames-linux/src/state.rs": "70d37b6ec976e8e98cf4298c5d50f6e86a0823d3ee114ce8a9338834e3f7c5aa",
+    "crates/trames-vfs/src/lib.rs": "8344615f346b62e944f8934bac17cbb0a14a7a4e38f3f64c95364932b3a9a881",
+    "crates/trames-vfs/src/ipc.rs": "bdb3c2a2ee701b96488352324cfd293a0835e82f68b6967fe1a05403cdfeca7b",
+    "crates/trames-vfs/src/ipc/native.rs": "c5d3de69b44cd1e09ff9da93dbfec1d448b3e8f7c5c65301d79dae5c5ee014cb"
+  },
+  "musl_sha256": "0350f31621b7abb66764e951318db85ba6606fb6be688be651d779465afff6e6",
+  "scope": "Incremental original ARM64 Firefox runtime repairs. Original browser/sandbox configuration. Binary hashes and memory limits are per probe; intermediate failures retained. Diagnostic PC sampling is from a temporary kernel logging build, not a production timing run.",
+  "scudo_upstream": "https://github.com/llvm/llvm-project/blob/llvmorg-20.1.8/compiler-rt/lib/scudo/standalone/primary32.h",
+  "broker_upstream": "https://hg.mozilla.org/releases/mozilla-release/file/FIREFOX_142_0_RELEASE/security/sandbox/linux/broker/SandboxBroker.cpp#l1003",
+  "final_ffi_sha256": "46fb2c5cef77b8c3bff5e81f720166904c6541e4dc9aaa290437cb955035f852"
+}

@@ -1,0 +1,8 @@
+Local: original-musl ARM64 socket probe passed all eight FIONREAD states, four SCM_RIGHTS/send/recv flag scenarios and safe sender self-transfer.
+Affected Core79, Linux26 and VFS166 tests passed in full-module run (one pre-existing ignored VFS test); subsequent recv/truncation edits rechecked the four affected ownership/queue regressions.
+Final strict VFS/Linux Clippy passed.
+Final Release CLI/FFI build passed; guest-only debugging instrumentation removed.
+Python syntax, both workflow YAML files and shell syntax checked.
+Scope plan accepts exact source hashes and rejects an unexpected CPU source delta.
+No repeated complete CPU/MMU/GPU/UI/CoreMark/Docker acceptance; no IPA.
+Full affected final modules and original-musl ABI will be checked once on Linux and Apple ARM64 by targeted CI.

@@ -1,0 +1,17 @@
+   Compiling trames-vfs v1.2.0 (/workspace/trames/crates/trames-vfs)
+   Compiling trames-linux v1.2.0 (/workspace/trames/crates/trames-linux)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.37s
+     Running unittests src/lib.rs (target/perf-runtime/debug/build/trames-linux/e9aa938188b7d30a/out/trames_linux-e9aa938188b7d30a)
+
+running 1 test
+test state::tests::fionread_bad_pointer_preserves_socket_and_pipe_data ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 24 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/perf-runtime/debug/build/trames-vfs/3429f9905bbfc0c2/out/trames_vfs-3429f9905bbfc0c2)
+
+running 1 test
+test ipc::waitall_tests::fionread_keeps_packet_boundaries_rights_and_shutdown_queues ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 164 filtered out; finished in 0.00s
+
