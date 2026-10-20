@@ -1,0 +1,5 @@
+2026-10-20 12:50:54.109608 UTC - [Child 116: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040d710, uri=file:///tmp/trames-firefox-127413481635428.html]
+2026-10-20 12:50:54.114997 UTC - [Child 116: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040d710, uri=file:///tmp/trames-firefox-127413481635428.html]
+2026-10-20 12:50:54.115813 UTC - [Child 116: Main Thread]: D/LoadGroup LOADGROUP [42f00810]: Adding request 3040d710 documentchannel:file:///tmp/trames-firefox-127413481635428.html (count=0).
+2026-10-20 12:51:53.103618 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=87c2d7090, uri=file:///tmp/trames-firefox-127413481635428.html]
+2026-10-20 12:51:53.104041 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [884776210] OpenDocument [uri=file:///tmp/trames-firefox-127413481635428.html]

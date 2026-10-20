@@ -36,9 +36,22 @@ p.add_argument('--avoid-opengl', action='store_true', help='diagnosis only: skip
 p.add_argument('--wayland-debug', action='store_true')
 p.add_argument('--moz-log', help='diagnosis only: original Firefox MOZ_LOG modules, e.g. Process:5,nsDocShell:5,DocumentChannel:5')
 p.add_argument('--browser-log-interval', type=float, default=0, help='diagnosis only: export the latest browser log without executing guest ps/cat; 0 disables')
+p.add_argument('--pref', action='append', default=[], metavar='NAME=JSON', help='diagnosis only: write a Firefox preference in this fresh profile; repeatable')
 p.add_argument('--capture-shm', action='store_true', help='save software-composited PNG and require the offline canvas green rectangle; requires Pillow')
 p.add_argument('--sampler', type=Path, help='optional Linux host PC sampling; not an uninstrumented timing run')
 a = p.parse_args()
+preferences = {}
+for preference in a.pref:
+    name, separator, raw = preference.partition('=')
+    if not separator or not re.fullmatch(r'[A-Za-z0-9_.-]+', name):
+        p.error('--pref requires NAME=JSON')
+    try:
+        value = json.loads(raw)
+    except ValueError:
+        p.error('--pref value must be a JSON boolean, string, or signed 32-bit integer')
+    if not (isinstance(value, (bool, str)) or type(value) is int and -(1<<31) <= value < 1<<31):
+        p.error('--pref value must be a JSON boolean, string, or signed 32-bit integer')
+    preferences[name] = value
 if a.browser_log_interval and a.browser_log_interval < 5:
     p.error('--browser-log-interval must be 0 or at least 5 seconds')
 if a.capture_shm:
@@ -107,6 +120,7 @@ report = dict(stage=a.stage, sandbox='content-disabled-diagnostic' if a.disable_
     guest_progress_diagnostic=a.guest_progress,
     moz_log_diagnostic=a.moz_log,
     browser_log_interval_diagnostic=a.browser_log_interval,
+    preferences_diagnostic=preferences,
     capture_shm=a.capture_shm,
     probe_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
     ffi_sha256=hashlib.sha256(a.ffi.read_bytes()).hexdigest(),
@@ -207,7 +221,13 @@ document.title='TRAMES_FIREFOX_JS_OK';document.body.dataset.test='javascript-and
     if a.stage == 'headless':
         command += ' --headless --window-size 640,480 --screenshot '+shlex.quote(guest_screenshot)
     command += ' '+shlex.quote('file://'+guest_page)
-    script = 'mkdir -p '+shlex.quote(profile)+'; ( '+env+' '+command+' >/tmp/firefox-probe.log 2>&1; r=$?; printf "\\nFIREFOX_PROBE_EXIT:%d\\n" "$r"; ) </dev/null &\n'
+    prepare = 'mkdir -p '+shlex.quote(profile)
+    if preferences:
+        user_js = '\n'.join('user_pref('+json.dumps(name)+', '+json.dumps(value)+');'
+                            for name, value in preferences.items())
+        (a.output/'user.js').write_text(user_js+'\n')
+        prepare += "; printf '%s\\n' "+shlex.quote(user_js)+' > '+shlex.quote(profile+'/user.js')
+    script = prepare+'; ( '+env+' '+command+' >/tmp/firefox-probe.log 2>&1; r=$?; printf "\\nFIREFOX_PROBE_EXIT:%d\\n" "$r"; ) </dev/null &\n'
     report['command'] = script
     send(script)
     start = time.monotonic()

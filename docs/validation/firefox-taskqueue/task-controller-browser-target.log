@@ -1,0 +1,3 @@
+2026-10-20 12:47:10.900291 UTC - [Child 117: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040e390, uri=file:///tmp/trames-firefox-127177959717932.html]
+2026-10-20 12:47:10.904994 UTC - [Child 117: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040e390, uri=file:///tmp/trames-firefox-127177959717932.html]
+2026-10-20 12:47:10.905693 UTC - [Child 117: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Adding request 3040e390 documentchannel:file:///tmp/trames-firefox-127177959717932.html (count=0).

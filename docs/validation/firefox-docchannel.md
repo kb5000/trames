@@ -5,6 +5,10 @@
 本轮临时诊断修改的是解释器/协调器的日志，未修改 Firefox ELF。网页的 JS 标题与
 绿色 canvas 仍未通过，不能算 Firefox 可用。
 
+后续已确认目标任务成功进入 TaskController 待执行树，发现高优先级 Vsync 积压；
+低刷新率对照推进到父侧 Init/OpenDocument，页面仍未通过，见
+[任务队列调查](firefox-taskqueue.md)。
+
 ## 已确认到哪一步
 
 上一轮只看到 DocumentChannelChild 构造。本轮对照原版 ELF 反汇编、首次到达某条

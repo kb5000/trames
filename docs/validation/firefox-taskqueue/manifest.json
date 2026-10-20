@@ -1,0 +1,289 @@
+{
+  "runtime_source": "95830f6aeff866f91b2db2aac22293c070ba3f2f",
+  "probe_base": "53b95043db1384206a9d44da3f69c9009cb4f066",
+  "production_ffi_sha256": "9b9965a6361abff1382d655253fe150576bc36c717564bca24f8f1d860faaada",
+  "production_core_sha256": "4e40f44fbff75ce2b397fb26910773cec97977f8d78362c871d608104bbc3ef5",
+  "production_cpu_sha256": "b1e13e69fc1a75731bfe05c460abac0215195df5ee9028c8f33f081258718022",
+  "libxul_sha256": "26b079d4c4d2924804d54cea11d13b44dc840360c92e817be6a2743d94d04550",
+  "libxul_build_id": "a2cf41e07a86b8f083485893afcfbf548626f153",
+  "limits": {
+    "guest_cpus": 4,
+    "aggregate_bytes": 4294967296,
+    "process_bytes": 4294967296,
+    "network": "off",
+    "gpu": false,
+    "sandbox": "default",
+    "wayland_proxy": "default"
+  },
+  "diagnostic_ffi_sha256": {
+    "taskqueue": "b7fdd6d535fb3e1dd500f7d92bc5c94ddd8775185cc6fcc8e6a9abb95c9c07a7",
+    "taskqueue2": "e61fc2428f18907d443a2c1d2ae6622b7e23a987da59c0d6aa3cf4620ed4437d",
+    "taskqueue3": "4d97a0f8e09953f58e5e3a0949e1a3c691cd0cfdc0af42a691e384270f7fe07b",
+    "taskqueue4": "fb4013a66063cf1d9ef93c9f5b82c53dc2ef5577ed85cd1312da18b4a7a0fac7"
+  },
+  "findings": {
+    "task_enters_pending_tree": true,
+    "default_target_message_task": "0x87c3f2b90",
+    "default_target_seqno": -55,
+    "default_target_task_seqno": 10893,
+    "default_target_priority": 4,
+    "default_target_manager": 0,
+    "default_target_dependency_count": 0,
+    "default_target_in_progress": false,
+    "default_target_seen_in_tree_session_seconds": [
+      110,
+      115,
+      120,
+      125,
+      130,
+      135,
+      140,
+      145,
+      150,
+      155,
+      160,
+      165
+    ],
+    "default_peak_notify_vsync_runnables_100_to_165_seconds": 457,
+    "low_rate_pref": {
+      "layout.frame_rate": 1
+    },
+    "low_rate_pref_confirmed_in_user_js_and_prefs_js": true,
+    "low_rate_target_message_task": "0x889e91a10",
+    "low_rate_target_seqno": -51,
+    "low_rate_receive_unix_seconds": 1792500654.122151,
+    "low_rate_dispatch_unix_seconds": 1792500713.032392,
+    "low_rate_parent_init_and_open_seen": true,
+    "page_gate_passed": false,
+    "low_rate_peak_notify_vsync_runnables_100_to_165_seconds": 68
+  },
+  "limitations": [
+    "All groups carry temporary instrumentation; no startup speedup claim.",
+    "Queue hooks force selected original instructions through the reference handler on every execution. Firefox ELF is unchanged.",
+    "sink-stack used fixed queue/thread addresses that differed in this run and a stack span that often crossed the mapped end; those object dumps are not used as evidence. queue-state/task-controller use dynamic queue addresses and stop stack capture at the first unreadable page.",
+    "TaskController layout and PCs are specific to the recorded Firefox 142 ELF and parent load bias 0x335b4000.",
+    "Vsync congestion is observed and the low-rate group advances target dispatch, but global suspension accounting, other timers and the remaining page load are not yet ruled out.",
+    "Queue tree size was checked against the number of distinct traversed nodes at each saved summary.",
+    "queue-state and low-rate final guest diagnostics were incomplete. No missing log is treated as absence of errors."
+  ],
+  "archive_files": {
+    "diagnostics/taskqueue-temporary.patch": {
+      "bytes": 6607,
+      "sha256": "7657927bab6f72ea0522fc1493e9ae3d90a93cfd064138ca5915dc15e2805bc2"
+    },
+    "diagnostics/taskqueue2-temporary.patch": {
+      "bytes": 8245,
+      "sha256": "abc22054eb475aa32c9d0954c88478cd4cc1010e54f13142b737abee952f0419"
+    },
+    "diagnostics/taskqueue3-temporary.patch": {
+      "bytes": 9243,
+      "sha256": "971c99be71a351df573bdc48c2fc418e85a0dcdf5f00bc713ab1af2e99519d51"
+    },
+    "diagnostics/taskqueue4-temporary.patch": {
+      "bytes": 11134,
+      "sha256": "c6ff88ae5336c5b67662a350b2963b284330f22f426aaba05ff15e23d1a0bbd7"
+    },
+    "diagnostics/unwind.py": {
+      "bytes": 4593,
+      "sha256": "e2c673ab3c0966e8cf1f9a9a4520ec27df7f305cbce77be93b7b32117052d61b"
+    },
+    "low-rate/browser-live.log": {
+      "bytes": 205396,
+      "sha256": "3d11a51840b291e84c4cd0cbf97af3a0dede0048dea97cffdeb4f267c86d1f57"
+    },
+    "low-rate/guest.log": {
+      "bytes": 222897,
+      "sha256": "e68776a2c9857650fc97d42b27797741ad0259572998b90237b45b9c0c860140"
+    },
+    "low-rate/host.log": {
+      "bytes": 3398539,
+      "sha256": "d25a3c1cf9015264b985519547340975abcc6d5340d11e08b66c42cfc89be4ab"
+    },
+    "low-rate/page.html": {
+      "bytes": 397,
+      "sha256": "1b3a9a1fee4f098f573911eedbce07fa16184efee5fbfe6c15dbc5fca508cd0e"
+    },
+    "low-rate/persisted-pref.txt": {
+      "bytes": 132,
+      "sha256": "23cdb8df13948a432d8641c5d6fbfe20dce5f2eb1f9fca2b50bcbeeee191f65a"
+    },
+    "low-rate/progress.jsonl": {
+      "bytes": 7334,
+      "sha256": "4b76cf9181ba3cd3ebf0fb496e21b0562e9c9b5e024530e8e65a6a20cb9153bb"
+    },
+    "low-rate/queue-summary.json": {
+      "bytes": 9671,
+      "sha256": "e46ffe1c71a501bd57faf88abd70a790a699d12099f72bb946f9538d957c7c9f"
+    },
+    "low-rate/results.json": {
+      "bytes": 3701,
+      "sha256": "fe5af36dff565a12ef5c793252c80f8d8286e5ad8f01bfe08251c154e077daf1"
+    },
+    "low-rate/user.js": {
+      "bytes": 35,
+      "sha256": "9ffb50fceba09c24ae95e997fa59601c9127bc8f1c2518348211b472fd516628"
+    },
+    "post-run/browser-live.log": {
+      "bytes": 191896,
+      "sha256": "e420ee20a729f53b5d23e99b988a448164791613a1f85743995a6eac6164839d"
+    },
+    "post-run/guest.log": {
+      "bytes": 207926,
+      "sha256": "6cf6a3eceacfc120fda65a021186c0ac572331b9d7a7152a80aab78bb94bacbd"
+    },
+    "post-run/host.log": {
+      "bytes": 1024730,
+      "sha256": "d6b464a7e0b5cb46f2a43c909ed4710fb559e9a35f18f7e1edb76af71b2ed23d"
+    },
+    "post-run/page.html": {
+      "bytes": 397,
+      "sha256": "1b3a9a1fee4f098f573911eedbce07fa16184efee5fbfe6c15dbc5fca508cd0e"
+    },
+    "post-run/progress.jsonl": {
+      "bytes": 5740,
+      "sha256": "20bd9da3bb1917fca69b952734c391ee8b0461aacacdcb0f0192585540c3becd"
+    },
+    "post-run/results.json": {
+      "bytes": 3401,
+      "sha256": "fe20b197e7ad314b4a347020da092ba412840a0f72f46b9b716473861478356e"
+    },
+    "queue-state/browser-live.log": {
+      "bytes": 191071,
+      "sha256": "c1f19ea4750d2f85545f7e89cb0c3dda6192fdfaf3c6034991c59b6fec0f574e"
+    },
+    "queue-state/guest.log": {
+      "bytes": 211529,
+      "sha256": "be138f17de29e71246dc7975cf1bcd00a2876b76827cee8f861af41fd66c056f"
+    },
+    "queue-state/host.log": {
+      "bytes": 1033663,
+      "sha256": "c9b9bc87260932a5a6afee3eb70a558b8b76c6f21de705d66de057d1185f9bb6"
+    },
+    "queue-state/page.html": {
+      "bytes": 397,
+      "sha256": "1b3a9a1fee4f098f573911eedbce07fa16184efee5fbfe6c15dbc5fca508cd0e"
+    },
+    "queue-state/progress.jsonl": {
+      "bytes": 5735,
+      "sha256": "7b72350911aa9561aa9679ebef3e45a0e338281d3cc0aab3b31690fbe2a11df7"
+    },
+    "queue-state/results.json": {
+      "bytes": 3392,
+      "sha256": "2a363057d82fcbf6be10e4d8ea9ef5ac7c6146f27640d011eadc0cb1ad188726"
+    },
+    "sink-stack/browser-live.log": {
+      "bytes": 198571,
+      "sha256": "d0d078de52175a250bf7e478af39ab7da699fa873839f0bc4f0078ff7a5363fb"
+    },
+    "sink-stack/guest.log": {
+      "bytes": 214961,
+      "sha256": "c8c780a543d6891d543b5aa6d402e4ec3bdd49f6ea43f9404f14265cfbde95f7"
+    },
+    "sink-stack/host.log": {
+      "bytes": 1067190,
+      "sha256": "3ff42df1ccf850ca3956f8f1205f7f3ddfe13429f1078036c0031c4f37c56d98"
+    },
+    "sink-stack/page.html": {
+      "bytes": 397,
+      "sha256": "1b3a9a1fee4f098f573911eedbce07fa16184efee5fbfe6c15dbc5fca508cd0e"
+    },
+    "sink-stack/progress.jsonl": {
+      "bytes": 6420,
+      "sha256": "c6213d97c43cf66567bf73130c260ad409f53968410be51edbe4df0d81c9226e"
+    },
+    "sink-stack/results.json": {
+      "bytes": 3475,
+      "sha256": "370c239c8d6b6b47576f6144a691b5831c922d1306415e089fa21ed59c669d26"
+    },
+    "task-controller/browser-live.log": {
+      "bytes": 197427,
+      "sha256": "4b9a2792ade98fb8c3c617dd1d947991a7dfaa5e5a29105b274e00d9b50ad166"
+    },
+    "task-controller/guest.log": {
+      "bytes": 220126,
+      "sha256": "3bab7094bd3710d1f4b6a1124536504c2142cc9c041ef94a1be64c4a412f46ad"
+    },
+    "task-controller/host.log": {
+      "bytes": 2547170,
+      "sha256": "5d76d615a7aae89eb8b381801f90bba67eb0ac19b86f39ac0acd47c1372c7e76"
+    },
+    "task-controller/page.html": {
+      "bytes": 397,
+      "sha256": "1b3a9a1fee4f098f573911eedbce07fa16184efee5fbfe6c15dbc5fca508cd0e"
+    },
+    "task-controller/progress.jsonl": {
+      "bytes": 5735,
+      "sha256": "15fb321b2c550254a8bc82e268827a3802d46515ad301b7ed5115a5be20be257"
+    },
+    "task-controller/queue-summary.json": {
+      "bytes": 8797,
+      "sha256": "bfb41cf3aebfb998acd9404c4618a4448d32abaf3a89e636c6cc899970ec922f"
+    },
+    "task-controller/results.json": {
+      "bytes": 3404,
+      "sha256": "4acfd9499f10d5120ab774373e09be7b4360b303248ec7c65a2171a50a25f153"
+    },
+    "task-controller/stacks/trames-firefox-queue-stack-100-tc.bin": {
+      "bytes": 512,
+      "sha256": "584d5d227eb70e8de298105903535389962ba13f4b31a6175229537e14b34db7"
+    },
+    "task-controller/stacks/trames-firefox-queue-stack-120-tc.bin": {
+      "bytes": 512,
+      "sha256": "cca52ba64b4fb21bc0028926a5662d73e44731b56468a9e50ce2ca9cc97f12e2"
+    },
+    "task-controller/stacks/trames-firefox-queue-stack-145.bin": {
+      "bytes": 28672,
+      "sha256": "7f64eee0e6aa64c322891e3fda505f60b0f7d60ce8d84b4b11d40348f09f8c5e"
+    },
+    "task-controller/stacks/trames-firefox-queue-stack-145.txt": {
+      "bytes": 244,
+      "sha256": "8dcab89bc5dc7739c2270924cf2f8e14ea3cf22fe047c34797e7c9c17f21c69a"
+    },
+    "task-controller/stacks/trames-firefox-queue-stack-165-tc.bin": {
+      "bytes": 512,
+      "sha256": "8dcd91f63fd007555d0a53f73e1f626927cebb17ecd303140ed02e841506d2d7"
+    },
+    "task-controller/unwind.log": {
+      "bytes": 5231,
+      "sha256": "0b1fff85dc1321ad92f259cfa0527e73a4ee60f322edc4685b8e4acf620a030d"
+    }
+  },
+  "files": {
+    "low-rate-results.json": {
+      "bytes": 3701,
+      "sha256": "fe5af36dff565a12ef5c793252c80f8d8286e5ad8f01bfe08251c154e077daf1"
+    },
+    "task-controller-browser-target.log": {
+      "bytes": 531,
+      "sha256": "9c90626200060a8843fc1e2ac96456f38aa610ecd81ece42c47072fa38079aec"
+    },
+    "task-controller-results.json": {
+      "bytes": 3404,
+      "sha256": "4acfd9499f10d5120ab774373e09be7b4360b303248ec7c65a2171a50a25f153"
+    },
+    "low-rate-target.log": {
+      "bytes": 15791,
+      "sha256": "4a8ac7c888055eae58d115472a2f774e5f50260562ed217240b1b02301437478"
+    },
+    "task-controller-queue-summary.json": {
+      "bytes": 8797,
+      "sha256": "bfb41cf3aebfb998acd9404c4618a4448d32abaf3a89e636c6cc899970ec922f"
+    },
+    "low-rate-browser-target.log": {
+      "bytes": 880,
+      "sha256": "e5266c9bb88a1ea2ef137bd2c725ba8557435ae1282db10b056c5f5dd75e9b4f"
+    },
+    "evidence.tar.gz": {
+      "bytes": 1092425,
+      "sha256": "ece9e3abe066b4bf91b527e62d679c982a5f3c18a776e93122d593e60c8cf94e"
+    },
+    "low-rate-queue-summary.json": {
+      "bytes": 9671,
+      "sha256": "e46ffe1c71a501bd57faf88abd70a790a699d12099f72bb946f9538d957c7c9f"
+    },
+    "target-queue.log": {
+      "bytes": 14252,
+      "sha256": "2a1d4951bebe496ad36eae60132912a51a7392441140711e54ee756a143e1e99"
+    }
+  }
+}
