@@ -1,0 +1,19 @@
+host=x86_64 page_bytes=4096 repeats=3
+workers=1 kind=scalar mode=guarded repeat=0 iterations_per_worker=10000000 seconds=0.294858847 checksum=14540374764871650432
+workers=1 kind=scalar mode=guarded repeat=1 iterations_per_worker=10000000 seconds=0.298126792 checksum=14540374764871650432
+workers=1 kind=scalar mode=guarded repeat=2 iterations_per_worker=10000000 seconds=0.295403222 checksum=14540374764871650432
+workers=1 kind=native64 mode=guarded repeat=0 iterations_per_worker=2000000 seconds=0.127952244 checksum=8128
+workers=1 kind=native64 mode=guarded repeat=1 iterations_per_worker=2000000 seconds=0.129331846 checksum=8128
+workers=1 kind=native64 mode=guarded repeat=2 iterations_per_worker=2000000 seconds=0.127464284 checksum=8128
+workers=1 kind=native64k mode=guarded repeat=0 iterations_per_worker=10000 seconds=0.019778411 checksum=960
+workers=1 kind=native64k mode=guarded repeat=1 iterations_per_worker=10000 seconds=0.019288268 checksum=960
+workers=1 kind=native64k mode=guarded repeat=2 iterations_per_worker=10000 seconds=0.019188827 checksum=960
+workers=4 kind=scalar mode=guarded repeat=0 iterations_per_worker=10000000 seconds=0.308395172 checksum=2821266838357946880
+workers=4 kind=scalar mode=guarded repeat=1 iterations_per_worker=10000000 seconds=0.302607035 checksum=2821266838357946880
+workers=4 kind=scalar mode=guarded repeat=2 iterations_per_worker=10000000 seconds=0.301647821 checksum=2821266838357946880
+workers=4 kind=native64 mode=guarded repeat=0 iterations_per_worker=2000000 seconds=0.132112261 checksum=32512
+workers=4 kind=native64 mode=guarded repeat=1 iterations_per_worker=2000000 seconds=0.137634115 checksum=32512
+workers=4 kind=native64 mode=guarded repeat=2 iterations_per_worker=2000000 seconds=0.129041345 checksum=32512
+workers=4 kind=native64k mode=guarded repeat=0 iterations_per_worker=10000 seconds=0.027608735 checksum=3840
+workers=4 kind=native64k mode=guarded repeat=1 iterations_per_worker=10000 seconds=0.038982212 checksum=3840
+workers=4 kind=native64k mode=guarded repeat=2 iterations_per_worker=10000 seconds=0.026725716 checksum=3840

@@ -1,14 +1,22 @@
 {
-  "base_sha": "43b0328e9207d496cdcd584e5fc4352c37933e89",
+  "base_sha": "efba40df03f77a679440d10f816f4b0937da8d7a",
   "native_scope": "firefox-memory",
-  "reason": "Remove redundant quota acquires from initialized reads and warm CPU/native stores; preserve shared storage, ARM ordering and borrow boundaries. Affected memory/runtime verification only, no IPA.",
+  "reason": "Admit sole-executor physically private CPU/native pages without region RMW or repeated publication fences; retain guarded shared VMs/backings and parked-View I/O transfer. Check affected memory/runtime, fully instrumented TSan, Apple ARM64/16KiB and fixed-work A/B; no IPA.",
   "changed_file_sha256": {
-    "AGENTS.md": "967a90ac3c9b898cf72ea65203aabf1dc17113c87a59d55f2a6a2895cbd5c61c",
-    "crates/trames-memory/src/parallel.rs": "afc62cb983cb3316de61e332917207c0f2404a1e40f2483f4752bfffcbdd7dda",
-    "crates/trames-memory/src/residency.rs": "d8e312736f455ab7e061718f66e2f66ed49bbcdf55995348872992494afe7063",
-    "docs/architecture/region-memory.md": "2f67e96c02f8ffd442ed3cddae5c815b62d7df82e46d6cc9f733f26383aa2659",
-    "docs/validation/shared-memory.md": "5a573ed8aa247f0ef9aa7a9c7164d39d6ec781ecaeca5f7efcb9696ef66d4530",
-    "docs/validation/shared-memory/manifest.json": "86e5602068bbe0ae11888649f9664aadf9751186db971848a2a140d1ce761f74",
-    "scripts/ios-ci-scope.py": "55fa57f7583f2a203eb117a0bc7f51a383a2314d29ad58cde5cba0874ef5177f"
+    ".github/workflows/linux.yml": "9eafd3da0c68e3ad4652dc1d7cdff46e0966947972d7243d410883c0bcfc8f32",
+    "crates/trames-core/src/process.rs": "8f67499ebf4be45a4f4561e591f81a615839f9a74ad862fd407ca0c6e2eda864",
+    "crates/trames-memory/examples/private-memory.rs": "ef800055a7b5ca95d5faa93202eef08192fbf58449079c4d39cb884c5c79f2eb",
+    "crates/trames-memory/src/lib.rs": "613a4f6050f5e43d32d4131e27223a4ca895c646bcef29a95bb4aa81a39f3b31",
+    "crates/trames-memory/src/parallel.rs": "77297bb0365b31f54d62876c04fd605f623c6f7f32b9f73dd79e02e5ca98e692",
+    "crates/trames-memory/src/parallel/exclusive.rs": "02d472753bebb1a241df5013c1fee7e8477ad49f054d31bc4c66421fbeef1b71",
+    "crates/trames-memory/src/parallel/hardware.rs": "833a55a5b66b4447c170110d74672638de10165e5e5ff4ec7a0134149d11af04",
+    "crates/trames-memory/src/parallel/native.rs": "53ca2e76e920444242bef90ccd36ed71531e60c63bce78efc73b57bf6043e98f",
+    "crates/trames-memory/src/parallel/page.rs": "07c56ef178eb464024d241cbb20838d60cd10f221beee7a8d3097019688bd77a",
+    "docs/architecture/region-memory.md": "1900247d814086631724ea5ba6788edfb5f99fa5db298e0eaf89927e57fa8ab2",
+    "docs/validation/private-memory.md": "54c97fac3d2a7f45a746db099e6bc2b7a010997c2ba771a791bcae12bc76775f",
+    "docs/validation/private-memory/baseline-linux.log": "835958d2489a72b1b99ce2e66c72b0d5643248092305c4235287fd63329ae729",
+    "docs/validation/private-memory/linux.json": "054cefaf5f6273f4aaf2364006eddb90274977b544599f8da5f1ec39e3e8e2d4",
+    "docs/validation/private-memory/linux.log": "2bb8a3ac2b7e888cbb5438aab0fe3a1c4ed7a539c8855a6b2f268df4bdca0be9",
+    "docs/validation/shared-memory.md": "a02fb00ab8de5ed5055368522098dfa2c4aae1a164329aad922668bae09b4c46"
   }
 }

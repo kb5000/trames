@@ -75,8 +75,11 @@ another byte-publication acquire. These changes do not change guest fences or
 the CPU/native region-borrow protocol. File persistence and mapping mutation
 still need coordinated checkpoints. Those
 boundaries do not serialize whole native functions or allocate one RAM copy per
-core. No claim of complete weak ARM outcomes or lock-free byte transport is made;
-see [region-memory.md](../architecture/region-memory.md) for the guard/unsafe proof.
+core. A subsequent [exclusive-private optimization](private-memory.md) skips
+region locks for a sole execution owner of physically private pages. Shared-VM
+and shared-backing transport still uses guards; no claim of complete weak ARM
+outcomes or general lock-free byte transport is made. See
+[region-memory.md](../architecture/region-memory.md) for the ownership/unsafe proof.
 
 Firefox first-frame acceptance remains open in issue #33. This isolated storage
 comparison establishes the removed duplication; the earlier browser RSS figures

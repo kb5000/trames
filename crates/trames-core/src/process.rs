@@ -3288,6 +3288,39 @@ impl Kernel {
         }
         immediate_return
     }
+    fn admit_private_views(&mut self, views: &mut [(u32, usize, trames_memory::parallel::View)]) {
+        // Count actual Memory roots, including blocked/zombie processes. vm_id
+        // alone cannot detect a retired handle or an alias in a host callback.
+        let mut spaces = BTreeMap::<u64, (usize, usize, usize)>::new();
+        for p in self.processes.values() {
+            let (identity, owners) = p.memory.coordinator_ownership();
+            let counts = spaces.entry(identity).or_default();
+            counts.0 += 1;
+            counts.1 = owners;
+        }
+        for (id, _, _) in views.iter() {
+            let (identity, _) = self.processes[id].memory.coordinator_ownership();
+            spaces.get_mut(&identity).expect("known VM").2 += 1;
+        }
+        for (id, _, view) in views {
+            let (identity, _) = self.processes[id].memory.coordinator_ownership();
+            let (local, owners, dispatched) = spaces[&identity];
+            if local != owners || dispatched != 1 {
+                continue;
+            }
+            // SAFETY: all Views have been prepared before dispatch; precisely
+            // one chosen CPU uses this VM and every coordinator handle belongs
+            // to this Kernel. Maps, signals/futex and coordinator byte access
+            // wait for all workers to drop their Views. Ready-I/O services take
+            // this very View while its CPU is parked, never another byte owner;
+            // async disk jobs use host buffers only. View admission also rejects
+            // surviving external Views. Per-frame physical ownership excludes
+            // shared mappings, custom backings and retained fork storage.
+            if unsafe { view.try_exclusive_private() } {
+                self.parallel_memory.metrics.exclusive_private_views += 1;
+            }
+        }
+    }
     fn parallel_round(
         &mut self,
         io: &mut impl GuestOutput,
@@ -3314,8 +3347,8 @@ impl Kernel {
         {
             return Ok(false);
         }
-        // All kernel effects precede dispatch. No syscall/signal/native callback
-        // can change mappings or borrowed bytes until every CPU has returned.
+        // Mapping/signal effects precede dispatch. Ready services may take a
+        // parked CPU's own View; mapping mutation waits for every CPU to return.
         let ids: Vec<_> = self.processes.keys().copied().collect();
         for id in ids {
             let Some(mut p) = self.processes.remove(&id) else {
@@ -3374,6 +3407,7 @@ impl Kernel {
             };
             views.push((id, slot, view));
         }
+        self.admit_private_views(&mut views);
         self.parallel_memory_time += began.elapsed();
         for &(_, slot) in &chosen {
             self.workers
@@ -4347,6 +4381,106 @@ mod tests {
         assert_eq!(k.proc_maps.borrow().len(), 1);
     }
 
+    #[test]
+    fn private_epoch_admission_counts_real_vm_roots_and_external_aliases() {
+        let mut k = kernel();
+        let mut p = process();
+        let mut peer = p.fork();
+        peer.memory = p.memory.share();
+        peer.state = State::Blocked(98, [0; 6]);
+        k.processes.insert(1, p);
+        k.processes.insert(2, peer);
+        k.processes.insert(3, process());
+        let prepare = |k: &mut Kernel, ids: &[u32]| {
+            ids.iter()
+                .enumerate()
+                .map(|(slot, &id)| {
+                    let view = k
+                        .processes
+                        .get_mut(&id)
+                        .unwrap()
+                        .memory
+                        .parallel_view(&mut k.parallel_memory)
+                        .unwrap();
+                    (id, slot, view)
+                })
+                .collect::<Vec<_>>()
+        };
+        let mut views = prepare(&mut k, &[1, 3]);
+        k.admit_private_views(&mut views);
+        assert!(views.iter().all(|(_, _, v)| v.exclusive_private_enabled()));
+        drop(views);
+        let mut views = prepare(&mut k, &[1, 2]);
+        k.admit_private_views(&mut views);
+        assert!(views.iter().all(|(_, _, v)| !v.exclusive_private_enabled()));
+        drop(views);
+        // A safe host callback could retain this alias and access it during an
+        // unrelated VM's output. Its presence must disable the private fast path.
+        let external = k.processes.get_mut(&1).unwrap().memory.share();
+        // A zombie may retain vm_id while its memory has already been retired.
+        // Counting only vm_id would accidentally substitute it for `external`.
+        k.processes.get_mut(&2).unwrap().memory = Memory::default();
+        let mut views = prepare(&mut k, &[1, 3]);
+        k.admit_private_views(&mut views);
+        assert!(!views[0].2.exclusive_private_enabled());
+        assert!(views[1].2.exclusive_private_enabled());
+        drop(views);
+        drop(external);
+        // Surviving external Views also block admission, even with no extra
+        // coordinator Memory wrapper.
+        let mut views = prepare(&mut k, &[1, 3]);
+        let external = views[0].2.clone();
+        k.admit_private_views(&mut views);
+        assert!(!views[0].2.exclusive_private_enabled());
+        drop(external);
+        drop(views);
+    }
+    #[test]
+    fn independent_fork_workers_use_private_memory_without_merging_writes() {
+        let mut p = process();
+        // ldaddal x1,x3,[x0]; subs x2,x2,#1; b.ne -8; exit(0).
+        for (i, word) in [
+            0xf8e10003u32,
+            0xf1000442,
+            0x54ffffc1,
+            0xd2800ba8,
+            0xd2800000,
+            0xd4000001,
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            p.memory
+                .write(0x4000 + i as u64 * 4, &word.to_le_bytes())
+                .unwrap();
+        }
+        p.memory
+            .protect(0x4000, PAGE_SIZE, Permissions::RX)
+            .unwrap();
+        p.cpu.set_x(0, 0x8000);
+        p.cpu.set_x(1, 1);
+        p.cpu.set_x(2, 50000);
+        p.affinity = 3;
+        let mut peer = p.fork();
+        peer.vm_id = 2;
+        peer.parent = 1;
+        let mut k = kernel();
+        k.cpu_count = 2;
+        k.workers = crate::workers::Pool::new(2);
+        k.per_cpu = vec![Duration::ZERO; 2];
+        k.next_pid = 3;
+        k.processes.insert(1, p);
+        k.processes.insert(2, peer);
+        let exit = k
+            .drive(&mut trames_linux::CapturedOutput::default(), 400000)
+            .unwrap();
+        assert_eq!(exit.code, 0);
+        assert_eq!(exit.instructions, 300006);
+        for p in k.processes.values() {
+            assert_eq!(p.memory.read_u64(0x8000).unwrap(), 50000);
+        }
+        assert!(k.parallel_memory.metrics.exclusive_private_views >= 2);
+    }
     #[test]
     fn native_workers_execute_shared_atomic_guest_loops_and_account_the_budget() {
         let mut p = process();

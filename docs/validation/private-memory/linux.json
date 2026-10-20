@@ -1,0 +1,413 @@
+{
+  "baseline_parent": "efba40df03f77a679440d10f816f4b0937da8d7a",
+  "date": "2026-10-20",
+  "host": "Linux x86_64 / AMD EPYC 9V45 / 4096-byte pages",
+  "toolchain": "nightly-2026-10-16 / rustc 1.101.0-nightly (4ebd25825) / LLVM 23.1.4",
+  "profile": "workspace release; thin LTO; overflow-checks=true",
+  "command": "cargo run --release -p trames-memory --example private-memory -- 3",
+  "method": "Same binary, private admission disabled/enabled; three alternating-order pairs; independent VMs; mapping preparation and joined commit excluded; barrier/completion included.",
+  "limits": "Microbenchmark only. Not shared-VM scaling, Firefox, Docker, CoreMark or iPad end-to-end speed. Shared cloud host; no confidence interval. ARM64 acceptance pending CI.",
+  "checksums_match": true,
+  "source_sha256": {
+    "crates/trames-core/src/process.rs": "8f67499ebf4be45a4f4561e591f81a615839f9a74ad862fd407ca0c6e2eda864",
+    "crates/trames-memory/examples/private-memory.rs": "ef800055a7b5ca95d5faa93202eef08192fbf58449079c4d39cb884c5c79f2eb",
+    "crates/trames-memory/src/lib.rs": "613a4f6050f5e43d32d4131e27223a4ca895c646bcef29a95bb4aa81a39f3b31",
+    "crates/trames-memory/src/parallel.rs": "77297bb0365b31f54d62876c04fd605f623c6f7f32b9f73dd79e02e5ca98e692",
+    "crates/trames-memory/src/parallel/exclusive.rs": "02d472753bebb1a241df5013c1fee7e8477ad49f054d31bc4c66421fbeef1b71",
+    "crates/trames-memory/src/parallel/hardware.rs": "833a55a5b66b4447c170110d74672638de10165e5e5ff4ec7a0134149d11af04",
+    "crates/trames-memory/src/parallel/native.rs": "53ca2e76e920444242bef90ccd36ed71531e60c63bce78efc73b57bf6043e98f",
+    "crates/trames-memory/src/parallel/page.rs": "07c56ef178eb464024d241cbb20838d60cd10f221beee7a8d3097019688bd77a",
+    "Cargo.toml": "ce5c0f4e37b5aed78ed810541d0994775c5f9e6e03168860fab6715cbafb0549",
+    "Cargo.lock": "e23faa428d1fdf4e4badfa01ccd009d40083b3c7a0edb7c6138a640f4ce0c8c7",
+    "rust-toolchain.toml": "afa3f4f9d68bb775d4e994e98c21b73f14fa67464833cfe7c07c42ffb07c5640"
+  },
+  "example_binary_sha256": "3a7020be66ad3de520afb2c547ebc71d03fde3ca4f43c73eaa2a38db973e88af",
+  "raw_log_sha256": "2bb8a3ac2b7e888cbb5438aab0fe3a1c4ed7a539c8855a6b2f268df4bdca0be9",
+  "medians": [
+    {
+      "workers": 1,
+      "kind": "scalar",
+      "guarded_ms": 315.762205,
+      "private_ms": 108.288873,
+      "speedup": 2.915924750643587,
+      "unpaired_old_ms": 295.403222,
+      "unpaired_old_over_guarded": 0.9355243196379377
+    },
+    {
+      "workers": 1,
+      "kind": "native64",
+      "guarded_ms": 135.16635499999998,
+      "private_ms": 73.670576,
+      "speedup": 1.8347400324384593,
+      "unpaired_old_ms": 127.952244,
+      "unpaired_old_over_guarded": 0.9466279089940689
+    },
+    {
+      "workers": 1,
+      "kind": "native64k",
+      "guarded_ms": 19.697073,
+      "private_ms": 16.350462999999998,
+      "speedup": 1.204679830779104,
+      "unpaired_old_ms": 19.288268000000002,
+      "unpaired_old_over_guarded": 0.9792453934653135
+    },
+    {
+      "workers": 4,
+      "kind": "scalar",
+      "guarded_ms": 307.599235,
+      "private_ms": 111.61449800000001,
+      "speedup": 2.7559075255617778,
+      "unpaired_old_ms": 302.607035,
+      "unpaired_old_over_guarded": 0.9837704407814928
+    },
+    {
+      "workers": 4,
+      "kind": "native64",
+      "guarded_ms": 152.350229,
+      "private_ms": 77.392605,
+      "speedup": 1.968537291127492,
+      "unpaired_old_ms": 132.11226100000002,
+      "unpaired_old_over_guarded": 0.8671615518214941
+    },
+    {
+      "workers": 4,
+      "kind": "native64k",
+      "guarded_ms": 26.364514,
+      "private_ms": 23.849223,
+      "speedup": 1.1054663709589196,
+      "unpaired_old_ms": 27.608735,
+      "unpaired_old_over_guarded": 1.0471930186158562
+    }
+  ],
+  "samples": [
+    {
+      "workers": 1,
+      "kind": "scalar",
+      "mode": "guarded",
+      "repeat": 0,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.315762205,
+      "checksum": 14540374764871650432
+    },
+    {
+      "workers": 1,
+      "kind": "scalar",
+      "mode": "private",
+      "repeat": 0,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.108288873,
+      "checksum": 14540374764871650432
+    },
+    {
+      "workers": 1,
+      "kind": "scalar",
+      "mode": "private",
+      "repeat": 1,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.111115707,
+      "checksum": 14540374764871650432
+    },
+    {
+      "workers": 1,
+      "kind": "scalar",
+      "mode": "guarded",
+      "repeat": 1,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.299945645,
+      "checksum": 14540374764871650432
+    },
+    {
+      "workers": 1,
+      "kind": "scalar",
+      "mode": "guarded",
+      "repeat": 2,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.326790155,
+      "checksum": 14540374764871650432
+    },
+    {
+      "workers": 1,
+      "kind": "scalar",
+      "mode": "private",
+      "repeat": 2,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.107343754,
+      "checksum": 14540374764871650432
+    },
+    {
+      "workers": 1,
+      "kind": "native64",
+      "mode": "guarded",
+      "repeat": 0,
+      "iterations_per_worker": 2000000,
+      "seconds": 0.135166355,
+      "checksum": 8128
+    },
+    {
+      "workers": 1,
+      "kind": "native64",
+      "mode": "private",
+      "repeat": 0,
+      "iterations_per_worker": 2000000,
+      "seconds": 0.073868178,
+      "checksum": 8128
+    },
+    {
+      "workers": 1,
+      "kind": "native64",
+      "mode": "private",
+      "repeat": 1,
+      "iterations_per_worker": 2000000,
+      "seconds": 0.073527336,
+      "checksum": 8128
+    },
+    {
+      "workers": 1,
+      "kind": "native64",
+      "mode": "guarded",
+      "repeat": 1,
+      "iterations_per_worker": 2000000,
+      "seconds": 0.135888179,
+      "checksum": 8128
+    },
+    {
+      "workers": 1,
+      "kind": "native64",
+      "mode": "guarded",
+      "repeat": 2,
+      "iterations_per_worker": 2000000,
+      "seconds": 0.134724746,
+      "checksum": 8128
+    },
+    {
+      "workers": 1,
+      "kind": "native64",
+      "mode": "private",
+      "repeat": 2,
+      "iterations_per_worker": 2000000,
+      "seconds": 0.073670576,
+      "checksum": 8128
+    },
+    {
+      "workers": 1,
+      "kind": "native64k",
+      "mode": "guarded",
+      "repeat": 0,
+      "iterations_per_worker": 10000,
+      "seconds": 0.019599938,
+      "checksum": 960
+    },
+    {
+      "workers": 1,
+      "kind": "native64k",
+      "mode": "private",
+      "repeat": 0,
+      "iterations_per_worker": 10000,
+      "seconds": 0.016323483,
+      "checksum": 960
+    },
+    {
+      "workers": 1,
+      "kind": "native64k",
+      "mode": "private",
+      "repeat": 1,
+      "iterations_per_worker": 10000,
+      "seconds": 0.016350463,
+      "checksum": 960
+    },
+    {
+      "workers": 1,
+      "kind": "native64k",
+      "mode": "guarded",
+      "repeat": 1,
+      "iterations_per_worker": 10000,
+      "seconds": 0.019697073,
+      "checksum": 960
+    },
+    {
+      "workers": 1,
+      "kind": "native64k",
+      "mode": "guarded",
+      "repeat": 2,
+      "iterations_per_worker": 10000,
+      "seconds": 0.020497877,
+      "checksum": 960
+    },
+    {
+      "workers": 1,
+      "kind": "native64k",
+      "mode": "private",
+      "repeat": 2,
+      "iterations_per_worker": 10000,
+      "seconds": 0.016512467,
+      "checksum": 960
+    },
+    {
+      "workers": 4,
+      "kind": "scalar",
+      "mode": "guarded",
+      "repeat": 0,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.312889858,
+      "checksum": 2821266838357946880
+    },
+    {
+      "workers": 4,
+      "kind": "scalar",
+      "mode": "private",
+      "repeat": 0,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.117691876,
+      "checksum": 2821266838357946880
+    },
+    {
+      "workers": 4,
+      "kind": "scalar",
+      "mode": "private",
+      "repeat": 1,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.111614498,
+      "checksum": 2821266838357946880
+    },
+    {
+      "workers": 4,
+      "kind": "scalar",
+      "mode": "guarded",
+      "repeat": 1,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.303928954,
+      "checksum": 2821266838357946880
+    },
+    {
+      "workers": 4,
+      "kind": "scalar",
+      "mode": "guarded",
+      "repeat": 2,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.307599235,
+      "checksum": 2821266838357946880
+    },
+    {
+      "workers": 4,
+      "kind": "scalar",
+      "mode": "private",
+      "repeat": 2,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.110621905,
+      "checksum": 2821266838357946880
+    },
+    {
+      "workers": 4,
+      "kind": "native64",
+      "mode": "guarded",
+      "repeat": 0,
+      "iterations_per_worker": 2000000,
+      "seconds": 0.138784461,
+      "checksum": 32512
+    },
+    {
+      "workers": 4,
+      "kind": "native64",
+      "mode": "private",
+      "repeat": 0,
+      "iterations_per_worker": 2000000,
+      "seconds": 0.077392605,
+      "checksum": 32512
+    },
+    {
+      "workers": 4,
+      "kind": "native64",
+      "mode": "private",
+      "repeat": 1,
+      "iterations_per_worker": 2000000,
+      "seconds": 0.078464385,
+      "checksum": 32512
+    },
+    {
+      "workers": 4,
+      "kind": "native64",
+      "mode": "guarded",
+      "repeat": 1,
+      "iterations_per_worker": 2000000,
+      "seconds": 0.155491591,
+      "checksum": 32512
+    },
+    {
+      "workers": 4,
+      "kind": "native64",
+      "mode": "guarded",
+      "repeat": 2,
+      "iterations_per_worker": 2000000,
+      "seconds": 0.152350229,
+      "checksum": 32512
+    },
+    {
+      "workers": 4,
+      "kind": "native64",
+      "mode": "private",
+      "repeat": 2,
+      "iterations_per_worker": 2000000,
+      "seconds": 0.075788864,
+      "checksum": 32512
+    },
+    {
+      "workers": 4,
+      "kind": "native64k",
+      "mode": "guarded",
+      "repeat": 0,
+      "iterations_per_worker": 10000,
+      "seconds": 0.026364514,
+      "checksum": 3840
+    },
+    {
+      "workers": 4,
+      "kind": "native64k",
+      "mode": "private",
+      "repeat": 0,
+      "iterations_per_worker": 10000,
+      "seconds": 0.021642047,
+      "checksum": 3840
+    },
+    {
+      "workers": 4,
+      "kind": "native64k",
+      "mode": "private",
+      "repeat": 1,
+      "iterations_per_worker": 10000,
+      "seconds": 0.023849223,
+      "checksum": 3840
+    },
+    {
+      "workers": 4,
+      "kind": "native64k",
+      "mode": "guarded",
+      "repeat": 1,
+      "iterations_per_worker": 10000,
+      "seconds": 0.030071214,
+      "checksum": 3840
+    },
+    {
+      "workers": 4,
+      "kind": "native64k",
+      "mode": "guarded",
+      "repeat": 2,
+      "iterations_per_worker": 10000,
+      "seconds": 0.022718274,
+      "checksum": 3840
+    },
+    {
+      "workers": 4,
+      "kind": "native64k",
+      "mode": "private",
+      "repeat": 2,
+      "iterations_per_worker": 10000,
+      "seconds": 0.024482205,
+      "checksum": 3840
+    }
+  ],
+  "unpaired_baseline": {
+    "method": "An additional isolated memory crate copied verbatim from parent with matching libc, pinned compiler, release profile and fixed work; only private admission and its second mode are removed from the example. This separate earlier batch is not an interleaved controlled old/new comparison; retain unfavorable fallback observations.",
+    "raw_log_sha256": "835958d2489a72b1b99ce2e66c72b0d5643248092305c4235287fd63329ae729",
+    "example_source": "// SPDX-License-Identifier: GPL-3.0-or-later\n//! Fixed-work A/B of the same CPU/native paths, excluding prepare/join costs.\n//! Independent VMs: this does not measure shared-VM threads or whole-app speed.\nuse std::{\n    hint::black_box,\n    sync::{Arc, Barrier},\n    time::Instant,\n};\nuse trames_memory::{\n    parallel::{Registry, View},\n    CpuMemory, Memory, NativeMemory, Permissions,\n};\nconst BASE: u64 = 0x40000;\nconst LENGTH: usize = 65536;\n\nfn sample(workers: usize, exclusive: bool, kind: &str, count: usize) -> (f64, u64) {\n    let mut sources: Vec<_> = (0..workers)\n        .map(|_| {\n            let mut memory = Memory::default();\n            memory\n                .map(BASE, 2 * LENGTH as u64, Permissions::RW)\n                .unwrap();\n            memory.fill_with(BASE, 2 * LENGTH, |b| b.fill(42)).unwrap();\n            memory\n        })\n        .collect();\n    let mut registry = Registry::default();\n    let views: Vec<_> = sources\n        .iter_mut()\n        .map(|m| {\n            let mut view = m.parallel_view(&mut registry).unwrap();\n            assert!(!exclusive);\n        // Populate local translations and residency before the timed work.\n            for at in (BASE..BASE + 2 * LENGTH as u64).step_by(4096) {\n                view.write_array(at, 42u64.to_le_bytes()).unwrap();\n            }\n            view\n        })\n        .collect();\n    let barrier = Arc::new(Barrier::new(workers + 1));\n    let mut joins = Vec::new();\n    for mut view in views {\n        let gate = barrier.clone();\n        let kind = kind.to_owned();\n        joins.push(std::thread::spawn(move || {\n            gate.wait();\n            let value = work(&mut view, &kind, count);\n            black_box(value)\n        }));\n    }\n    let began = Instant::now();\n    barrier.wait();\n    let checksum = joins\n        .into_iter()\n        .map(|j| j.join().unwrap())\n        .fold(0u64, u64::wrapping_add);\n    let seconds = began.elapsed().as_secs_f64();\n    for source in &mut sources {\n        source.commit_parallel().unwrap();\n    }\n    (seconds, checksum)\n}\nfn work(view: &mut View, kind: &str, count: usize) -> u64 {\n    match kind {\n        \"scalar\" => {\n            let mut sum = 0u64;\n            for i in 0..count {\n                let at = BASE + ((i.wrapping_mul(17) & 2047) * 8) as u64;\n                let n = view.read_u64(at).unwrap().wrapping_add(1);\n                view.write_array(at, n.to_le_bytes()).unwrap();\n                sum = sum.wrapping_add(n);\n            }\n            sum\n        }\n        \"native64\" | \"native64k\" => {\n            let len = if kind == \"native64\" { 64 } else { LENGTH };\n            for i in 0..count {\n                view.fill_with(BASE, len, |b| b.fill(i as u8)).unwrap();\n                view.copy_with(BASE + LENGTH as u64, BASE, len, |d, s| d.copy_from_slice(s))\n                    .unwrap();\n            }\n            view.with_read_chunk(BASE + LENGTH as u64, 64, |b| {\n                b.iter().map(|&v| v as u64).sum()\n            })\n            .unwrap()\n            .0\n        }\n        _ => unreachable!(),\n    }\n}\nfn main() {\n    let repeats: usize = std::env::args()\n        .nth(1)\n        .unwrap_or_else(|| \"3\".into())\n        .parse()\n        .unwrap();\n    println!(\n        \"host={} page_bytes={} repeats={repeats}\",\n        std::env::consts::ARCH,\n        unsafe { libc::sysconf(libc::_SC_PAGESIZE) }\n    );\n    for workers in [1, 4] {\n        for (kind, count) in [\n            (\"scalar\", 10_000_000),\n            (\"native64\", 2_000_000),\n            (\"native64k\", 10_000),\n        ] {\n            for repeat in 0..repeats {\n                for exclusive in [false] {\n                    let (seconds, checksum) = sample(workers, exclusive, kind, count);\n                    println!(\"workers={workers} kind={kind} mode={} repeat={repeat} iterations_per_worker={count} seconds={seconds:.9} checksum={checksum}\", if exclusive { \"private\" } else { \"guarded\" });\n                }\n            }\n        }\n    }\n}\n"
+  }
+}

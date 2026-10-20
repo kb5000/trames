@@ -80,6 +80,7 @@ jobs:
           /tmp/memory-probe
           target/release/trames-run --memory --memory-budget 4GiB --process-memory-budget 4GiB --cpus 4 target/firefox-fixture/memory-probe
           cargo run --release -p trames-memory --example shared-memory -- 128
+          cargo run --release -p trames-memory --example private-memory -- 3 | tee target/private-memory-linux.log
       - name: Check shared CPU/native byte ownership with ThreadSanitizer
         env:
           RUSTC_BOOTSTRAP: '1'
@@ -88,11 +89,17 @@ jobs:
         run: |
           cargo test -Zbuild-std -p trames-memory --target x86_64-unknown-linux-gnu --locked --lib parallel::sharing
           cargo test -Zbuild-std -p trames-memory --target x86_64-unknown-linux-gnu --locked --lib parallel::page
+          cargo test -Zbuild-std -p trames-memory --target x86_64-unknown-linux-gnu --locked --lib parallel::exclusive
           cargo test -Zbuild-std -p trames-vfs --target x86_64-unknown-linux-gnu --locked --lib mapped::tests::workers_share_file_and_memfd
       - uses: actions/upload-artifact@v4
         with:
           name: firefox-memory-fixture
           path: target/firefox-fixture/
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: private-memory-linux
+          path: target/private-memory-linux.log
           retention-days: 7
   firefox-memory-apple:
     needs: [scope, firefox-memory]
@@ -115,6 +122,12 @@ jobs:
           cargo test -p trames-vfs mapped --lib --locked
           cargo build -p trames-cli --release --locked
           target/release/trames-run --memory --memory-budget 4GiB --process-memory-budget 4GiB --cpus 4 target/firefox-fixture/memory-probe
+          cargo run --release -p trames-memory --example private-memory -- 3 | tee target/private-memory-apple.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: private-memory-apple
+          path: target/private-memory-apple.log
+          retention-days: 7
   firefox-runtime:
     needs: scope
     if: needs.scope.outputs.native_scope == 'firefox-runtime'
