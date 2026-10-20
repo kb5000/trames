@@ -1,0 +1,94 @@
+{
+  "version": "1.2.0",
+  "build": 34,
+  "purpose": "Owner-requested current-state test IPA for iPad validation; default Firefox/display settings retained.",
+  "status": "ci-packaged",
+  "source_commit": "4bad21daa0b6cea856274d08d4bbf3f4abfbd7b1",
+  "runtime_source_commit": "95830f6aeff866f91b2db2aac22293c070ba3f2f",
+  "apple_run": 39427560272,
+  "linux_scope_run": 39427560225,
+  "scope_verified": {
+    "frontend_only": "false",
+    "targeted": "true",
+    "native_scope": "device-build",
+    "skip_native": "true",
+    "skip_linux_native": "true",
+    "skip_linux_modules": "true",
+    "frontend_reused": "true",
+    "ui_targets": "[]",
+    "baseline_run": "39015795319",
+    "zink_graphics_run": "39264897300"
+  },
+  "runtime_acceptance": {
+    "source": "95830f6aeff866f91b2db2aac22293c070ba3f2f",
+    "run": 39414333180,
+    "jobs": [
+      "firefox-clock",
+      "firefox-clock-apple"
+    ]
+  },
+  "frontend_acceptance": {
+    "source": "aa4528166c8d0cdb04f3fe540730d9af63ed7f07",
+    "run": 39062598012
+  },
+  "guest_source": {
+    "source": "534e223e284df48f207500e84ab4cd05dd3d3958",
+    "run": 39015795319
+  },
+  "graphics_source": {
+    "source": "18162c9c53ba1d8334b227087cbfd1474633bb2e",
+    "run": 39264897300
+  },
+  "source_identical_runtime_reused": true,
+  "new_release_device_compilation": true,
+  "firefox_diagnostic_runtime_included": false,
+  "firefox_preference_override_included": false,
+  "physical_ipad_execution_tested": false,
+  "local_artifact_download": {
+    "verified": false,
+    "reason": "Managed network proxy returned CONNECT 403 for the GitHub Actions Azure artifact storage host. No alternate route or remote artifact retrieval was used after this denial."
+  },
+  "distribution": "GitHub Actions artifact; no formal release",
+  "corresponding_sources": {
+    "trames": "https://github.com/kb5000/trames/archive/4bad21daa0b6cea856274d08d4bbf3f4abfbd7b1.tar.gz",
+    "gpu": "https://github.com/kb5000/trames/actions/runs/39427560272/artifacts/12266642716",
+    "musl": "https://github.com/kb5000/trames/actions/runs/39015795319/artifacts/12095225586"
+  },
+  "cloud_package_checks": "passed; source-paired graphics/musl installation, ARM64 iOS device app build, main/extension version consistency and unsigned device IPA packaging",
+  "apple_run_url": "https://github.com/kb5000/trames/actions/runs/39427560272",
+  "ci_completed_at": "2026-10-20T13:13:29Z",
+  "artifacts": [
+    {
+      "id": 12266957208,
+      "name": "Trames-unsigned-sideload",
+      "size_in_bytes": 11175602,
+      "digest": "sha256:6b0a173924a98641e8c67a5e3b5d7833376231437537a690fd2d2d351fa09575",
+      "expired": false,
+      "expires_at": "2026-11-03T13:13:14Z"
+    },
+    {
+      "id": 12266642716,
+      "name": "vulkan-compute-driver-and-native-source",
+      "size_in_bytes": 66377372,
+      "digest": "sha256:e69c3676565a4447252bcefc8bfc20390bcd4482678c8e43d6c3251adeb42815",
+      "expired": false,
+      "expires_at": "2026-11-03T13:08:02Z"
+    },
+    {
+      "id": 12266248542,
+      "name": "unsigned-ipad-build-and-project",
+      "size_in_bytes": 125343074,
+      "digest": "sha256:53c7a9e990ae1329473ec0a7bb975294b62def966ea5d36184eb22e5c81666e2",
+      "expired": false,
+      "expires_at": "2026-10-27T13:13:16Z"
+    }
+  ],
+  "ipa_artifact_url": "https://github.com/kb5000/trames/actions/runs/39427560272/artifacts/12266957208",
+  "ipa_artifact_expected_contents": [
+    "Trames-unsigned.ipa",
+    "Trames-unsigned.ipa.sha256"
+  ],
+  "download_requires_github_login": true,
+  "ipa_inner_sha256_verified_locally": false,
+  "validation_note": "Current Release code compiled successfully on the cloud Mac; exact-source prior runtime/frontend/guest acceptance reused. Local artifact bytes could not be downloaded through the managed network proxy, so no local CRC/Mach-O/library-hash inspection is claimed. Firefox JS/canvas acceptance remains open in #33."
+}
