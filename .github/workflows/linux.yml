@@ -57,12 +57,17 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-10-16
-          components: rustfmt, clippy
-      - name: Prepare original musl sparse BSS fixture
+          components: rustfmt, clippy, rust-src
+      - name: Check unchanged original-musl fixture sources
         run: |
-          sudo apt-get update
-          sudo apt-get install --yes gcc-aarch64-linux-gnu
-          bash scripts/build-firefox-fixture.sh
+          git fetch --depth=1 origin 145db7629ce29fd1780619f20dbffee3a24418b9
+          git diff --exit-code 145db7629ce29fd1780619f20dbffee3a24418b9 HEAD -- tests/fixtures/firefox-memory-probe.c scripts/build-firefox-fixture.sh
+      - uses: actions/download-artifact@v4
+        with:
+          name: firefox-memory-fixture
+          path: target/firefox-fixture/
+          github-token: ${{ github.token }}
+          run-id: 39381684188
       - name: Check affected memory paths and original ARM64 ABI
         run: |
           cargo fmt --all --check
@@ -74,6 +79,16 @@ jobs:
           cc -O2 -Wall -Wextra -Werror tests/fixtures/firefox-memory-probe.c -o /tmp/memory-probe
           /tmp/memory-probe
           target/release/trames-run --memory --memory-budget 4GiB --process-memory-budget 4GiB --cpus 4 target/firefox-fixture/memory-probe
+          cargo run --release -p trames-memory --example shared-memory -- 128
+      - name: Check shared CPU/native byte ownership with ThreadSanitizer
+        env:
+          RUSTC_BOOTSTRAP: '1'
+          RUSTFLAGS: '-Zsanitizer=thread'
+          CARGO_TARGET_DIR: target/shared-memory-tsan
+        run: |
+          cargo test -Zbuild-std -p trames-memory --target x86_64-unknown-linux-gnu --locked --lib parallel::sharing
+          cargo test -Zbuild-std -p trames-memory --target x86_64-unknown-linux-gnu --locked --lib parallel::page
+          cargo test -Zbuild-std -p trames-vfs --target x86_64-unknown-linux-gnu --locked --lib mapped::tests::workers_share_file_and_memfd
       - uses: actions/upload-artifact@v4
         with:
           name: firefox-memory-fixture

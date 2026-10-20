@@ -1,0 +1,32 @@
+[
+  {
+    "version": "before",
+    "run": 1,
+    "stdout": "source_mib=128 before: Rss:              139824 kB; Pss:              139307 kB; Shared_Dirty:          0 kB; Private_Dirty:    139180 kB\nfour_views publish_ms=95.591 after: Rss:              413804 kB; Pss:              282212 kB; Shared_Dirty:     262144 kB; Private_Dirty:    151012 kB\nstore_ms=1.831 commit_ms=2.703 final: Rss:              544920 kB; Pss:              282256 kB; Shared_Dirty:     524288 kB; Private_Dirty:     19984 kB\nMetrics { cache_hits: 0, dirty_refreshes: 0, full_rebuilds: 1, full_rebuild_pages: 32768, backing_invalidations: 0, code_invalidations: 0, source_page_reads: 32768, incremental_updates: 0, incremental_pages: 0 }\n"
+  },
+  {
+    "version": "after",
+    "run": 1,
+    "stdout": "source_mib=128 before: Rss:              139832 kB; Pss:              139315 kB; Shared_Dirty:          0 kB; Private_Dirty:    139188 kB\nfour_views publish_ms=49.659 after: Rss:              283380 kB; Pss:              151788 kB; Shared_Dirty:     262144 kB; Private_Dirty:     20588 kB\nstore_ms=1.840 commit_ms=0.578 final: Rss:              414452 kB; Pss:              151788 kB; Shared_Dirty:     393216 kB; Private_Dirty:     20588 kB\nMetrics { cache_hits: 0, dirty_refreshes: 0, full_rebuilds: 1, full_rebuild_pages: 32768, backing_invalidations: 0, code_invalidations: 0, source_page_reads: 0, incremental_updates: 0, incremental_pages: 0, shared_frames: 32768, copied_publish_bytes: 0, cow_detach_bytes: 0 }\n"
+  },
+  {
+    "version": "before",
+    "run": 2,
+    "stdout": "source_mib=128 before: Rss:              139824 kB; Pss:              139307 kB; Shared_Dirty:          0 kB; Private_Dirty:    139180 kB\nfour_views publish_ms=101.745 after: Rss:              413804 kB; Pss:              282212 kB; Shared_Dirty:     262144 kB; Private_Dirty:    151012 kB\nstore_ms=2.795 commit_ms=5.828 final: Rss:              544880 kB; Pss:              282216 kB; Shared_Dirty:     524288 kB; Private_Dirty:     19944 kB\nMetrics { cache_hits: 0, dirty_refreshes: 0, full_rebuilds: 1, full_rebuild_pages: 32768, backing_invalidations: 0, code_invalidations: 0, source_page_reads: 32768, incremental_updates: 0, incremental_pages: 0 }\n"
+  },
+  {
+    "version": "after",
+    "run": 2,
+    "stdout": "source_mib=128 before: Rss:              139824 kB; Pss:              139307 kB; Shared_Dirty:          0 kB; Private_Dirty:    139180 kB\nfour_views publish_ms=83.255 after: Rss:              283372 kB; Pss:              151780 kB; Shared_Dirty:     262144 kB; Private_Dirty:     20580 kB\nstore_ms=1.787 commit_ms=0.560 final: Rss:              414444 kB; Pss:              151780 kB; Shared_Dirty:     393216 kB; Private_Dirty:     20580 kB\nMetrics { cache_hits: 0, dirty_refreshes: 0, full_rebuilds: 1, full_rebuild_pages: 32768, backing_invalidations: 0, code_invalidations: 0, source_page_reads: 0, incremental_updates: 0, incremental_pages: 0, shared_frames: 32768, copied_publish_bytes: 0, cow_detach_bytes: 0 }\n"
+  },
+  {
+    "version": "before",
+    "run": 3,
+    "stdout": "source_mib=128 before: Rss:              139804 kB; Pss:              139287 kB; Shared_Dirty:          0 kB; Private_Dirty:    139160 kB\nfour_views publish_ms=88.145 after: Rss:              413804 kB; Pss:              282212 kB; Shared_Dirty:     262144 kB; Private_Dirty:    151012 kB\nstore_ms=1.984 commit_ms=2.470 final: Rss:              544892 kB; Pss:              282228 kB; Shared_Dirty:     524288 kB; Private_Dirty:     19956 kB\nMetrics { cache_hits: 0, dirty_refreshes: 0, full_rebuilds: 1, full_rebuild_pages: 32768, backing_invalidations: 0, code_invalidations: 0, source_page_reads: 32768, incremental_updates: 0, incremental_pages: 0 }\n"
+  },
+  {
+    "version": "after",
+    "run": 3,
+    "stdout": "source_mib=128 before: Rss:              139832 kB; Pss:              139315 kB; Shared_Dirty:          0 kB; Private_Dirty:    139188 kB\nfour_views publish_ms=44.299 after: Rss:              283380 kB; Pss:              151788 kB; Shared_Dirty:     262144 kB; Private_Dirty:     20588 kB\nstore_ms=1.955 commit_ms=0.581 final: Rss:              414452 kB; Pss:              151788 kB; Shared_Dirty:     393216 kB; Private_Dirty:     20588 kB\nMetrics { cache_hits: 0, dirty_refreshes: 0, full_rebuilds: 1, full_rebuild_pages: 32768, backing_invalidations: 0, code_invalidations: 0, source_page_reads: 0, incremental_updates: 0, incremental_pages: 0, shared_frames: 32768, copied_publish_bytes: 0, cow_detach_bytes: 0 }\n"
+  }
+]

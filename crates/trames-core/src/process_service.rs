@@ -610,7 +610,7 @@ mod tests {
         }
     }
     #[test]
-    fn mapped_file_read_defers_until_shadow_stores_have_been_committed() {
+    fn mapped_file_bytes_are_shared_but_io_waits_for_metadata_publication() {
         let mut p = super::super::tests::process();
         p.linux.vfs.import_file(b"/file", b"old".to_vec()).unwrap();
         let fd = p
@@ -629,7 +629,7 @@ mod tests {
         let args = [fd as u64, 0x2000, 3, 0, 0, 0];
         let (mut k, mut request, control) = pending(p, 63, args);
         request.memory.write(0x6000, b"new").unwrap();
-        assert_eq!(k.processes[&1].linux.vfs.pread(fd, 3, 0).unwrap(), b"old");
+        assert_eq!(k.processes[&1].linux.vfs.pread(fd, 3, 0).unwrap(), b"new");
         let value = k.service_request(&mut request, &mut trames_linux::CapturedOutput::default());
         assert_eq!(value, None);
         let done = finish(&mut k, request, control, value);

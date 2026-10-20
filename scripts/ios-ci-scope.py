@@ -457,11 +457,11 @@ def main():
             if changed==set(hashes) and all(Path(path).exists() and hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest for path,digest in hashes.items()):
                 if plan.get('native_scope') == 'firefox-memory':
                     allowed = {'crates/trames-core/src/lib.rs', 'crates/trames-core/src/process.rs',
-                               'crates/trames-linux/src/state.rs',
+                               'crates/trames-core/src/process_service.rs', 'crates/trames-linux/src/state.rs',
                                'crates/trames-vfs/src/mapped.rs', 'tests/fixtures/firefox-memory-probe.c',
                                'tests/integration/firefox.py', 'scripts/build-firefox-fixture.sh',
                                'scripts/ios-ci-scope.py', '.github/workflows/linux.yml', '.github/workflows/ios.yml'}
-                    if any(p not in allowed and not p.startswith(('docs/', 'crates/trames-memory/src/')) for p in changed):
+                    if any(p not in allowed and not p.startswith(('docs/', 'crates/trames-memory/src/', 'crates/trames-memory/examples/')) for p in changed):
                         raise RuntimeError('Firefox memory plan includes unrelated changes')
                     print('Check demand-zero MMU/accounting, coordinator, mapped VFS, Linux and original-musl sparse BSS on Linux/Apple ARM64. Reuse unchanged CPU opcode/GPU/UI/guest artifacts. No IPA.')
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
