@@ -467,9 +467,12 @@ def firefox_memory_apple_retry(plan, repo, headers):
                                    '--job', str(apple['id']), '--log'], text=True)
     import re
     log = re.sub(r'\x1b\[[0-?]*[ -/]*[@-~]', '', log)
-    core = log.split('Running unittests src/lib.rs (target/debug/build/trames-core/', 1)[1]
-    core = core.split('Running unittests src/lib.rs (target/debug/build/trames-linux/', 1)[0]
-    if 'test result: ok. 83 passed; 0 failed' not in core:
+    # Cargo/gh versions decorate the binary path differently. Bind this result
+    # to unique Core cases and the complete summary, rather than its path banner.
+    core_cases = ('private_epoch_admission_counts_real_vm_roots_and_external_aliases',
+                  'independent_fork_workers_use_private_memory_without_merging_writes')
+    core_passed = all(f'test process::tests::{case} ... ok' in log for case in core_cases)
+    if not core_passed or 'test result: ok. 83 passed; 0 failed' not in log:
         raise RuntimeError('Memory retry requires the passed exact-source Apple Core suite')
     print(f'Reuse Linux modules/ABI/TSan and Apple Core83 from {run}; run failed socket test, remaining memory/VFS/ABI and ARM64 benchmark. No IPA.')
     return True

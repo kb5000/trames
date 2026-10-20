@@ -6,7 +6,7 @@
     ".github/workflows/linux.yml": "b4cdcf1667e4dbab87fb83b1cdfe4823c4fb57c8b41559c7601350db6cfb0fca",
     "crates/trames-linux/src/network.rs": "2b3135352d2b81087899004e55fe0006b1f1bba43b1a2023bebcffbdc6e7f657",
     "docs/validation/private-memory.md": "621564c1bee20e39fd038e62ab5a3d429c6934fe6b9d44aadaede8931d2c499e",
-    "scripts/ios-ci-scope.py": "15c689c1f3f927f82d376159d53e11ae92fdb88c1a81aff94a04591ac9ba9abe"
+    "scripts/ios-ci-scope.py": "eb72c623a30fb4b729aa898f2c2f46f47cc23eaf67bcba8a4d33ace5efd590ef"
   },
   "memory_apple_retry": {
     "sha": "8e9c7bfac5ce242760e5fa2f4b101312821266a8",
