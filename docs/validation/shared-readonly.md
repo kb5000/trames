@@ -46,7 +46,8 @@ monitor rows and perform no unlock RMW.
 
 `cargo run --release -p trames-memory --example shared-readonly -- 3`
 
-Parent: `a74d758929f2d1fabfc2bc62283b83bf9f4b2eb5`. Linux x86_64, AMD EPYC 9V45,
+Measured source: `9f09cbec75105693ffdd5f47739e782eb3806d7c`, whose parent is
+`a74d758929f2d1fabfc2bc62283b83bf9f4b2eb5`. Linux x86_64, AMD EPYC 9V45,
 4096-byte pages, pinned nightly-2026-10-16, workspace release with thin LTO and
 overflow checks. [Raw samples](shared-readonly/linux.log) and
 [source hashes/structured results](shared-readonly/linux.json) retain all pairs.
@@ -76,3 +77,26 @@ built old-runtime comparison. Shared-host noise and code layout still matter;
 there is no confidence interval. These are not CoreMark, Docker, Firefox or
 physical iPad measurements. Native Apple ARM64 evidence is recorded separately
 rather than inferred from the x86 results.
+
+## One snapshot per VM
+
+The first exact-source Linux CI passed the 208 affected module checks, strict
+Clippy, original-musl ABI and benchmark, then its TSan test fixture observed two
+different Snapshot Arcs while an unrelated test advanced the global backing
+epoch. Admission correctly rejected this group. No data-race report was emitted;
+the overall [39397655423](https://github.com/kb5000/trames/actions/runs/39397655423)
+failed on the fixture's positive-admission assertion.
+
+The coordinator now freezes each selected VM once per epoch and clones that
+View for its peer CPUs. This keeps one mapping generation per VM, avoids repeated
+backing checks and removes the avoidable fallback. Each worker still has its own
+TLB/cache cells; no byte copy or native-function lock is added. Existing snapshot
+cache-hit metrics include these reuses. The test helper follows the same pattern;
+its explicit different-generation rejection case remains unchanged.
+
+The follow-up changes only Core preparation and that test-only helper. Release
+memory/benchmark sources are unchanged, so the measured samples are retained.
+CI source-checks this condition and reuses the passed byte-domain, Linux/VFS,
+benchmark and sharing6/page5/exclusive5 TSan results. It reruns changed Core and
+the four readonly cases, finishes VFS TSan, and runs Apple verification. The
+historical measured hashes and follow-up hashes are separate in the JSON.

@@ -3288,6 +3288,30 @@ impl Kernel {
         }
         immediate_return
     }
+    fn prepare_parallel_views(
+        &mut self,
+        chosen: &[(u32, usize)],
+    ) -> Option<Vec<(u32, usize, trames_memory::parallel::View)>> {
+        let mut views: Vec<(u32, usize, trames_memory::parallel::View)> = Vec::new();
+        let mut published = BTreeMap::<u64, usize>::new();
+        for &(id, slot) in chosen {
+            let p = self.processes.get_mut(&id).expect("selected process");
+            let (identity, _) = p.memory.coordinator_ownership();
+            let view = if let Some(&index) = published.get(&identity) {
+                // Freeze one VM once per epoch. Backing checks of another VM
+                // may advance a global epoch between selected CPU preparations;
+                // they must not give this VM's peers different snapshots.
+                self.parallel_memory.metrics.cache_hits += 1;
+                views[index].2.clone()
+            } else {
+                let view = p.memory.parallel_view(&mut self.parallel_memory)?;
+                published.insert(identity, views.len());
+                view
+            };
+            views.push((id, slot, view));
+        }
+        Some(views)
+    }
     fn admit_private_views(&mut self, views: &mut [(u32, usize, trames_memory::parallel::View)]) {
         // Count actual Memory roots, including blocked/zombie processes. vm_id
         // alone cannot detect a retired handle or an alias in a host callback.
@@ -3404,14 +3428,9 @@ impl Kernel {
         // or the shared session budget asks all CPUs to return.
         let timeout = self.parallel_timeout();
         let began = Instant::now();
-        let mut views = Vec::new();
-        for &(id, slot) in &chosen {
-            let p = self.processes.get_mut(&id).expect("ready process");
-            let Some(view) = p.memory.parallel_view(&mut self.parallel_memory) else {
-                return Ok(false);
-            };
-            views.push((id, slot, view));
-        }
+        let Some(mut views) = self.prepare_parallel_views(&chosen) else {
+            return Ok(false);
+        };
         self.admit_private_views(&mut views);
         self.parallel_memory_time += began.elapsed();
         for &(_, slot) in &chosen {
@@ -4397,19 +4416,12 @@ mod tests {
         k.processes.insert(2, peer);
         k.processes.insert(3, process());
         let prepare = |k: &mut Kernel, ids: &[u32]| {
-            ids.iter()
+            let chosen = ids
+                .iter()
                 .enumerate()
-                .map(|(slot, &id)| {
-                    let view = k
-                        .processes
-                        .get_mut(&id)
-                        .unwrap()
-                        .memory
-                        .parallel_view(&mut k.parallel_memory)
-                        .unwrap();
-                    (id, slot, view)
-                })
-                .collect::<Vec<_>>()
+                .map(|(slot, &id)| (id, slot))
+                .collect::<Vec<_>>();
+            k.prepare_parallel_views(&chosen).unwrap()
         };
         let mut views = prepare(&mut k, &[1, 3]);
         k.admit_private_views(&mut views);
@@ -4419,6 +4431,7 @@ mod tests {
         k.admit_private_views(&mut views);
         assert!(views.iter().all(|(_, _, v)| !v.exclusive_private_enabled()));
         assert!(views.iter().all(|(_, _, v)| v.readonly_private_enabled()));
+        assert!(k.parallel_memory.metrics.cache_hits > 0);
         drop(views);
         // A safe host callback could retain this alias and access it during an
         // unrelated VM's output. Its presence must disable the private fast path.

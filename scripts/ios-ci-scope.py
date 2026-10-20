@@ -433,6 +433,48 @@ def device_build_outputs(plan, repo, headers):
             'frontend_reused': 'true', 'ui_targets': '[]', 'baseline_run': str(guest['run'])}
 
 
+def firefox_memory_readonly_followup(plan, repo, headers):
+    """Reuse unchanged byte-domain checks; validate changed VM preparation and fixture."""
+    reuse = plan.get('memory_readonly_followup')
+    if not reuse:
+        return False
+    source, run = reuse['sha'], reuse['run']
+    runtime = set(subprocess.check_output(['git', 'diff', '--name-only', source, 'HEAD', '--',
+        'crates', 'Cargo.toml', 'Cargo.lock', 'vendor', '.cargo', 'rust-toolchain.toml'], text=True).splitlines())
+    fixture = 'crates/trames-memory/src/parallel/readonly.rs'
+    if runtime != {'crates/trames-core/src/process.rs', fixture}:
+        raise RuntimeError('Readonly follow-up must preserve the memory byte-domain and benchmark sources')
+    def outside_helper(text):
+        begin = text.index('fn views(')
+        end = text.index('\nfn admit(', begin)
+        return text[:begin] + text[end:]
+    previous = subprocess.check_output(['git', 'show', source + ':' + fixture], text=True)
+    if outside_helper(previous) != outside_helper(Path(fixture).read_text()):
+        raise RuntimeError('Readonly fixture follow-up changed its cases or assertions')
+    def get(endpoint):
+        with urllib.request.urlopen(urllib.request.Request(
+            f'https://api.github.com/repos/{repo}/actions/{endpoint}', headers=headers), timeout=30) as response:
+            return json.load(response)
+    validated = get(f'runs/{run}')
+    if (validated['head_sha'] != source or validated['path'] != '.github/workflows/linux.yml'
+            or validated['head_repository']['full_name'] != repo):
+        raise RuntimeError('Readonly reuse evidence must match the repository/source/workflow')
+    job = next(j for j in get(f'runs/{run}/jobs')['jobs'] if j['name'] == 'firefox-memory')
+    if not any(s['name'] == 'Check affected memory paths and original ARM64 ABI'
+               and s['conclusion'] == 'success' for s in job['steps']):
+        raise RuntimeError('Readonly reuse requires passed affected modules, Clippy, ABI and Linux benchmark')
+    log = subprocess.check_output(['gh', 'run', 'view', str(run), '--repo', repo,
+                                   '--job', str(job['id']), '--log'], text=True)
+    import re
+    log = re.sub(r'\x1b\[[0-?]*[ -/]*[@-~]', '', log)
+    if ('test result: ok. 6 passed; 0 failed' not in log
+            or log.count('test result: ok. 5 passed; 0 failed') < 2
+            or 'readonly_guard_keeps_region_ownership_and_the_compact_layout ... ok' not in log):
+        raise RuntimeError('Readonly reuse requires passed full-std sharing6/page5/exclusive5 TSan cases')
+    print(f'Reuse unchanged Linux memory/Linux/VFS/benchmark and 16 TSan cases from {run}; validate Core, fixed readonly4, remaining VFS TSan and full Apple checks. No IPA.')
+    return True
+
+
 def firefox_memory_apple_retry(plan, repo, headers):
     """Reuse passed Linux/Apple Core; finish the failed socket case and remaining checks."""
     reuse = plan.get('memory_apple_retry')
@@ -502,6 +544,7 @@ def main():
             if changed==set(hashes) and all(Path(path).exists() and hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest for path,digest in hashes.items()):
                 if plan.get('native_scope') == 'firefox-memory':
                     apple_retry = firefox_memory_apple_retry(plan, repo, dict(request.headers))
+                    readonly_followup = firefox_memory_readonly_followup(plan, repo, dict(request.headers))
                     allowed = {'AGENTS.md', 'crates/trames-core/src/lib.rs', 'crates/trames-core/src/process.rs',
                                'crates/trames-core/src/process_service.rs', 'crates/trames-linux/src/state.rs',
                                'crates/trames-vfs/src/mapped.rs', 'tests/fixtures/firefox-memory-probe.c',
@@ -516,6 +559,7 @@ def main():
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=firefox-memory\nskip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
                         output.write('firefox_memory_apple_retry=' + str(apple_retry).lower() + '\n')
                         output.write('firefox_memory_retry_run=' + str(plan['memory_apple_retry']['run'] if apple_retry else '') + '\n')
+                        output.write('firefox_memory_readonly_followup=' + str(readonly_followup).lower() + '\n')
                     return
                 if plan.get('native_scope') == 'firefox-runtime':
                     allowed = {'crates/trames-vfs/src/lib.rs', 'crates/trames-vfs/src/ipc.rs',

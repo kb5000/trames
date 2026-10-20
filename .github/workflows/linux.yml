@@ -22,6 +22,7 @@ jobs:
       native_scope: ${{ steps.scope.outputs.native_scope }}
       firefox_memory_apple_retry: ${{ steps.scope.outputs.firefox_memory_apple_retry }}
       firefox_memory_retry_run: ${{ steps.scope.outputs.firefox_memory_retry_run }}
+      firefox_memory_readonly_followup: ${{ steps.scope.outputs.firefox_memory_readonly_followup }}
       runtime_linux_reused: ${{ steps.scope.outputs.runtime_linux_reused }}
       storage_proc_only: ${{ steps.scope.outputs.storage_proc_only }}
       isolation_retry: ${{ steps.scope.outputs.isolation_retry }}
@@ -73,24 +74,34 @@ jobs:
       - name: Check affected memory paths and original ARM64 ABI
         run: |
           cargo fmt --all --check
-          cargo clippy -p trames-memory -p trames-core -p trames-vfs --all-targets --no-deps --locked -- -D warnings
-          cargo test -p trames-memory -p trames-core -p trames-linux --lib --locked
-          cargo test -p trames-vfs mapped --lib --locked
+          if [[ '${{ needs.scope.outputs.firefox_memory_readonly_followup }}' == true ]]; then
+            cargo clippy -p trames-memory -p trames-core --all-targets --no-deps --locked -- -D warnings
+            cargo test -p trames-core --lib --locked
+            cargo test -p trames-memory --lib --locked parallel::readonly
+          else
+            cargo clippy -p trames-memory -p trames-core -p trames-vfs --all-targets --no-deps --locked -- -D warnings
+            cargo test -p trames-memory -p trames-core -p trames-linux --lib --locked
+            cargo test -p trames-vfs mapped --lib --locked
+          fi
           cargo build -p trames-cli --release --locked
           python3 -m py_compile tests/integration/firefox.py scripts/ios-ci-scope.py
-          cc -O2 -Wall -Wextra -Werror tests/fixtures/firefox-memory-probe.c -o /tmp/memory-probe
-          /tmp/memory-probe
+          if [[ '${{ needs.scope.outputs.firefox_memory_readonly_followup }}' != true ]]; then
+            cc -O2 -Wall -Wextra -Werror tests/fixtures/firefox-memory-probe.c -o /tmp/memory-probe
+            /tmp/memory-probe
+            cargo run --release -p trames-memory --example shared-readonly -- 3 | tee target/shared-readonly-linux.log
+          fi
           target/release/trames-run --memory --memory-budget 4GiB --process-memory-budget 4GiB --cpus 4 target/firefox-fixture/memory-probe
-          cargo run --release -p trames-memory --example shared-readonly -- 3 | tee target/shared-readonly-linux.log
       - name: Check shared CPU/native byte ownership with ThreadSanitizer
         env:
           RUSTC_BOOTSTRAP: '1'
           RUSTFLAGS: '-Zsanitizer=thread'
           CARGO_TARGET_DIR: target/shared-memory-tsan
         run: |
-          cargo test -Zbuild-std -p trames-memory --target x86_64-unknown-linux-gnu --locked --lib parallel::sharing
-          cargo test -Zbuild-std -p trames-memory --target x86_64-unknown-linux-gnu --locked --lib parallel::page
-          cargo test -Zbuild-std -p trames-memory --target x86_64-unknown-linux-gnu --locked --lib parallel::exclusive
+          if [[ '${{ needs.scope.outputs.firefox_memory_readonly_followup }}' != true ]]; then
+            cargo test -Zbuild-std -p trames-memory --target x86_64-unknown-linux-gnu --locked --lib parallel::sharing
+            cargo test -Zbuild-std -p trames-memory --target x86_64-unknown-linux-gnu --locked --lib parallel::page
+            cargo test -Zbuild-std -p trames-memory --target x86_64-unknown-linux-gnu --locked --lib parallel::exclusive
+          fi
           cargo test -Zbuild-std -p trames-memory --target x86_64-unknown-linux-gnu --locked --lib parallel::readonly
           cargo test -Zbuild-std -p trames-vfs --target x86_64-unknown-linux-gnu --locked --lib mapped::tests::workers_share_file_and_memfd
       - uses: actions/upload-artifact@v4
@@ -99,6 +110,7 @@ jobs:
           path: target/firefox-fixture/
           retention-days: 7
       - uses: actions/upload-artifact@v4
+        if: needs.scope.outputs.firefox_memory_readonly_followup != 'true'
         with:
           name: shared-readonly-linux
           path: target/shared-readonly-linux.log

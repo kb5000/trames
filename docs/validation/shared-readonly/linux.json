@@ -391,5 +391,13 @@
       "seconds": 0.185094549,
       "checksum": 10634005504861874176
     }
-  ]
+  ],
+  "measured_source_sha": "9f09cbec75105693ffdd5f47739e782eb3806d7c",
+  "unmeasured_followup": {
+    "reason": "Core prepares one frozen snapshot per VM; readonly test helper clones that snapshot. Neither file is linked into the release memory example; memory production and example sources retain measured hashes.",
+    "source_sha256": {
+      "crates/trames-core/src/process.rs": "30797a6ccb6e1b9ce729119e3c5c960db5debcc2b67a5047ee367eb289af88a2",
+      "crates/trames-memory/src/parallel/readonly.rs": "e8d16afafeb604734b3eaff13f156ee94a7ef27995128be205ba878e3c8ada37"
+    }
+  }
 }
