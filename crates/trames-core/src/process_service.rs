@@ -14,10 +14,10 @@ impl Kernel {
             return None;
         }
         let a = request.args;
-        let kind = p.linux.vfs.fd_kind(a[0] as u32);
         match request.number {
             25 if matches!(a[1], 1 | 3) => {}
             62 | 80 => {
+                let kind = p.linux.vfs.fd_kind(a[0] as u32);
                 // Dynamic proc endpoints require a joined process snapshot.
                 if matches!(&kind, Ok(FdKind::Node(path)) if path == b"/proc" || path.starts_with(b"/proc/") || path == b"/sys" || path.starts_with(b"/sys/"))
                 {
@@ -30,22 +30,16 @@ impl Kernel {
                 // Ordinary files join only when retained inode/backing state
                 // requires it. The cached bitmap is merely an RPC candidate.
                 let write = matches!(request.number, 64 | 66 | 68 | 70);
-                let stream = matches!(request.number, 63..=66)
-                    && matches!(
-                        &kind,
-                        Ok(FdKind::PipeRead
-                            | FdKind::PipeWrite
-                            | FdKind::Stdin
-                            | FdKind::Stdout
-                            | FdKind::Stderr)
-                            | Err(_)
-                    );
-                if !stream
-                    && (!p.linux.vfs.epoch_file_io(a[0] as u32, write)
+                let admitted = match p.linux.vfs.epoch_io(a[0] as u32, write) {
+                    Some(trames_vfs::EpochIo::Stream) => matches!(request.number, 63..=66),
                     // RLIMIT_FSIZE can queue SIGXFSZ. Keep its complete existing
                     // signal path joined; no effects before this decision.
-                    || write && p.file_size_limit.get().0 != u64::MAX)
-                {
+                    Some(trames_vfs::EpochIo::File) => {
+                        !write || p.file_size_limit.get().0 == u64::MAX
+                    }
+                    None => false,
+                };
+                if !admitted {
                     return None;
                 }
             }
@@ -57,15 +51,25 @@ impl Kernel {
         let began = self.profile_syscalls.then(Instant::now);
         let result = match request.number {
             63 => p.linux.read(a, &mut request.memory, io),
-            64 => p.linux.write(a, &request.memory, io),
+            64 => p
+                .linux
+                .write_scratch(a, &request.memory, io, &mut self.service_write_buffer),
             65 => p.linux.readv(a, &mut request.memory, io),
-            66 => p.linux.writev(a, &request.memory, io),
-            67 | 68 => p
+            66 => p
                 .linux
-                .positioned(a, &mut request.memory, request.number == 68),
-            69 | 70 => p
-                .linux
-                .positioned_vector(a, &mut request.memory, request.number == 70),
+                .writev_scratch(a, &request.memory, io, &mut self.service_write_buffer),
+            67 | 68 => p.linux.positioned_scratch(
+                a,
+                &mut request.memory,
+                request.number == 68,
+                &mut self.service_write_buffer,
+            ),
+            69 | 70 => p.linux.positioned_vector_scratch(
+                a,
+                &mut request.memory,
+                request.number == 70,
+                &mut self.service_write_buffer,
+            ),
             82 | 83 => p
                 .linux
                 .vfs
@@ -118,6 +122,7 @@ mod tests {
             profile: false,
             streams: p.linux.vfs.stream_descriptors(),
             files: p.linux.vfs.file_descriptors(),
+            fd_flags: p.linux.vfs.fd_flags_snapshot(),
         };
         let memory = p.memory.parallel_view(&mut Default::default()).unwrap();
         let control = Arc::new(Control::new(100));
@@ -329,6 +334,93 @@ mod tests {
                 .unwrap(),
             0
         );
+    }
+    #[test]
+    fn private_cow_stores_do_not_prevent_reading_the_unchanged_file() {
+        let mut p = super::super::tests::process();
+        p.linux.vfs.import_file(b"/file", b"old".to_vec()).unwrap();
+        let fd = p
+            .linux
+            .vfs
+            .open_at(trames_vfs::AT_FDCWD, b"/file", 2, 0)
+            .unwrap();
+        let pages = p
+            .linux
+            .vfs
+            .mapping_pages(fd, 0, PAGE_SIZE, false, true)
+            .unwrap();
+        p.memory
+            .map_backed(0x6000, pages, false, Permissions::RW, true)
+            .unwrap();
+        let (mut k, mut request, control) = pending(p, 63, [fd as u64, 0x2000, 3, 0, 0, 0]);
+        request.memory.write(0x6000, b"own").unwrap();
+        let value = k.service_request(&mut request, &mut trames_linux::CapturedOutput::default());
+        assert_eq!(value, Some(3));
+        finish(&mut k, request, control, value);
+        let p = k.processes.get_mut(&1).unwrap();
+        assert_eq!(p.memory.read_array::<3>(0x6000).unwrap(), *b"own");
+        assert_eq!(p.memory.read_array::<3>(0x2000).unwrap(), *b"old");
+        assert_eq!(p.linux.vfs.pread(fd, 3, 0).unwrap(), b"old");
+    }
+    #[test]
+    fn unix_stream_services_preserve_ready_blocking_nonblocking_and_sigpipe_paths() {
+        for mode in 0..4 {
+            let mut p = super::super::tests::process();
+            let [r, w] = p
+                .linux
+                .vfs
+                .socketpair(1, 1 | if mode == 2 { O_NONBLOCK } else { 0 }, 0)
+                .unwrap();
+            let number = if mode == 3 { 64 } else { 63 };
+            if mode == 0 {
+                p.linux.vfs.write(w, b"ab").unwrap();
+            }
+            if mode == 3 {
+                p.linux
+                    .vfs
+                    .local_socket(w)
+                    .unwrap()
+                    .unwrap()
+                    .shutdown(0)
+                    .unwrap();
+            }
+            let args = [r as u64, 0x2000, 1, 0, 0, 0];
+            let (mut k, mut request, control) = pending(p, number, args);
+            let value =
+                k.service_request(&mut request, &mut trames_linux::CapturedOutput::default());
+            assert_eq!(
+                value,
+                match mode {
+                    0 => Some(1),
+                    2 => Some(error(Errno(11))),
+                    _ => None,
+                }
+            );
+            let done = finish(&mut k, request, control, value);
+            if mode == 0 {
+                assert_eq!(
+                    k.processes[&1].memory.read_array::<1>(0x2000).unwrap(),
+                    *b"a"
+                );
+            }
+            if mode == 1 || mode == 3 {
+                let mut p = k.processes.remove(&1).unwrap();
+                p.cpu = done.cpu;
+                k.call(
+                    1,
+                    &mut p,
+                    number,
+                    args,
+                    &mut trames_linux::CapturedOutput::default(),
+                );
+                if mode == 1 {
+                    assert!(matches!(p.state, State::Blocked(63, _)));
+                } else {
+                    assert_eq!(p.cpu.x(0), error(Errno(32)));
+                    assert!(p.pending.contains_key(&13));
+                }
+            }
+        }
     }
     #[test]
     fn pipe_read_uses_the_callers_view_and_commits_once_when_a_peer_requests_stop() {

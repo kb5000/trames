@@ -18,7 +18,7 @@ p.add_argument('--fixture', type=Path, default=Path('tests/fixtures/bin/epoch-se
 p.add_argument('--output', type=Path, required=True)
 p.add_argument('--iterations', type=int, default=512)
 p.add_argument('--samples', type=int, default=2)
-p.add_argument('--modes', nargs='+', choices=['metadata', 'pipe', 'file', 'vector'], default=['metadata', 'pipe'])
+p.add_argument('--modes', nargs='+', choices=['metadata', 'pipe', 'file', 'vector', 'unix', 'mapped-read', 'mapped-shared'], default=['metadata', 'pipe'])
 p.add_argument('--reuse-baseline', type=Path, help='reuse exact-binary/input baseline rows from a previous batch')
 a = p.parse_args()
 assert a.iterations > 0 and a.samples > 0

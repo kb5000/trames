@@ -12,7 +12,7 @@ p.add_argument('--runner', type=Path, required=True)
 p.add_argument('--fixture', type=Path, required=True)
 p.add_argument('--oracle', type=Path, required=True)
 p.add_argument('--output', type=Path, required=True)
-p.add_argument('--modes', nargs='+', choices=['metadata', 'pipe', 'file', 'vector'], default=['metadata', 'pipe', 'file', 'vector'])
+p.add_argument('--modes', nargs='+', choices=['metadata', 'pipe', 'file', 'vector', 'unix', 'mapped-read', 'mapped-shared'], default=['metadata', 'pipe', 'file', 'vector', 'unix', 'mapped-read', 'mapped-shared'])
 a = p.parse_args()
 a.output.mkdir(parents=True, exist_ok=False)
 rows = []

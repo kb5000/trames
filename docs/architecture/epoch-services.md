@@ -21,14 +21,14 @@ sequenceDiagram
 
 | 类别 | 当前执行位置 | 同步范围 |
 | --- | --- | --- |
-| 身份/时钟/getcpu、纯内存/字符串/解析/回调/allocator 快路径 | worker 内 | 同一个 guest 内存和原算法同步模型，无逐调用内核往返 |
-| F_GETFD/F_GETFL、普通 FD 的 lseek/fstat、立即可完成的 pipe/embedding stdio read/write/readv/writev、无活跃映射的普通文件标量/向量/定位 I/O 与 fsync/fdatasync | 协调器服务，epoch 保持 | 只挂起调用者，其他 worker 可以继续解释或执行原生函数 |
-| 映射、进程生命周期、futex/信号、filtered/trace syscall、映射文件/共享宿主 backing/套接字/PTY、stateful Vulkan、需要 backing checkpoint 的 NativeCall | joined coordinator | 保留既有 checkpoint；后续按资源拆分 |
+| 身份/时钟/getcpu、F_GETFD/F_GETFL、纯内存/字符串/解析/回调/allocator 快路径 | worker 内 | 同一个 guest 内存和原算法同步模型，无逐调用内核往返 |
+| 普通 FD 的 lseek/fstat、立即可完成的 pipe/embedding stdio/guest Unix stream 字节 I/O、符合映射准入的普通文件标量/向量/定位 I/O 与 fsync/fdatasync | 协调器服务，epoch 保持 | 只挂起调用者，其他 worker 可以继续解释或执行原生函数 |
+| 映射、进程生命周期、futex/信号、filtered/trace syscall、有共享写入能力的映射文件读取、活跃映射文件写入、共享宿主 backing、其他 socket/PTY、stateful Vulkan、需要 backing checkpoint 的 NativeCall | joined coordinator | 保留既有 checkpoint；后续按资源拆分 |
 
 只有 seccomp mode 0 且未启用 syscall trace 的任务请求 epoch 服务。
 动态 proc/sysfs FD 元数据仍先 join，使用完整进程快照。
-Mapped file 数据目前不在 I/O 服务名单：其 writable MAP_SHARED 脏字节
-尚需 join 才能写回 VFS backing，直接读写旧 backing 会失去 CPU/FD 一致性。
+writable MAP_SHARED 脏字节尚需 join 才能写回 VFS backing，直接读写旧 backing 会失去
+CPU/FD 一致性。private COW 不修改 inode，无共享写入能力的映射允许文件读取。
 不能只因为某调用不改虚拟地址表就把它判为安全。
 
 ## 普通文件的保留对象准入
@@ -42,9 +42,11 @@ FD 表版本只缓存候选位图；streams 和 files 同一次扫描构建，FD
 
 - 仅普通非 volatile 文件；动态 proc/sysfs/cgroup、设备、socket/PTY 和宿主共享 backing
   继续 join。SharedFile 还可能由显示/GPU 保留，不能仅因 guest 未 mmap 就视为独占。
-- FileMapping 在所有 VM 中保留 FilePage，任何活跃映射都使同一文件的 I/O join，
-  包括只读/private 映射。此次不尝试放宽到“仅无可写映射”，避免引入更多准入分支。
-  映射消失后，原 FD 无需重新打开就恢复服务资格。
+- FileMapping 在所有 VM 中保留 FilePage。文件写入仍要求没有活跃映射；读取与 sync
+  允许无共享写入能力的映射，private COW 写入不改变文件内容。MAP_SHARED + O_RDWR
+  即使当前只有 PROT_READ，也仍按潜在 writer 保守判定。writer 判断缓存于 MappedData，
+  在批量映射、next_page 与映射释放时失效，不逐次扫描大文件页表。映射消失后，原 FD
+  无需重新打开就恢复写入服务资格。
 - 硬链接、rename/unlink 和路径替换按实际对象判断；overlay 的只读旧描述符保留下层，
   下层映射仍阻止该描述符服务，copy-up 后的新上层可以独立服务。
 - 有限 RLIMIT_FSIZE 的文件写入仍 join，保留原来的短写、EFBIG 与 SIGXFSZ 处理；
@@ -52,6 +54,28 @@ FD 表版本只缓存候选位图；streams 和 files 同一次扫描构建，FD
 
 该方案允许未映射文件服务期间其他 CPU/native worker 前进；多个 VFS 请求仍由同一个
 协调器依次处理，宿主磁盘 I/O 尚未异步化。结果和范围见[文件服务验证](../validation/epoch-files.md)。
+
+## 减少服务往返与宿主分配
+
+F_GETFD/F_GETFL 直接读取 epoch 的不可变 FD flags 快照，并复用 Linux 的 flags ABI
+转换函数。FD 表结构/CLOEXEC 修改使快照失效；共享 open description 的 F_SETFL 使用
+revision，使独立 fork 表里的旧缓存也失效。worker 只持有 Arc/plain values，未持有
+VFS 的 Rc。没有使用该快照缓存权限决定；filtered/trace 任务仍走原 syscall 路径。
+
+每个 worker 复用一个回复 channel。唯一 sender 随请求发出，再随 View/结果返回，
+等待时 worker 不保留额外 sender；意外丢弃请求会断开接收并报告 worker 故障，不能
+永远等待。正常停止仍 drain 所有请求，已完成操作仍提交结果。每个请求的 Box 仍存在，
+没有宣称整个通道零分配。
+
+Kernel 保留一个受 MAX_WRITE 逻辑长度限制的写入 scratch Vec，供标量/向量/定位服务
+复用；每次按本次长度重设并完整复制有效字节后才进行 I/O。小写入、EFAULT 和零长度
+不会输出上一次的尾部；所有进程共用一份协调器缓冲，不为每个进程保留一份大块缓冲。
+Linux 的 joined 路径与服务路径继续共享同一 helper，原生函数的算法/访存锁不变。
+
+Guest AF_UNIX SOCK_STREAM 的 read/write/readv/writev 复用原 VFS byte API。EAGAIN 的
+阻塞等待、SIGPIPE 仍 join；recvmsg/SCM_RIGHTS 安装、连接/accept/关闭、native bridge、
+PTY job control、AF_INET 网络继续保留原边界。普通 read 丢弃 ancillary 的行为沿用原
+byte API，不把它当成 recvmsg。成组改动与结果见[验证记录](../validation/epoch-batch.md)。
 
 ## 所有权与退出
 

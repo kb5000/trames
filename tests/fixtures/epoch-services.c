@@ -11,6 +11,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
 #include <sys/uio.h>
 #include <unistd.h>
 
@@ -40,23 +41,40 @@ static void *memory_worker(void *unused) {
 }
 int main(int argc, char **argv) {
     int streams = argc > 1 && !strcmp(argv[1], "pipe");
+    int sockets = argc > 1 && !strcmp(argv[1], "unix");
+    int private_map = argc > 1 && !strcmp(argv[1], "mapped-read");
+    int shared_map = argc > 1 && !strcmp(argv[1], "mapped-shared");
+    int mapped = private_map || shared_map;
     int vectors = argc > 1 && !strcmp(argv[1], "vector");
-    int files = vectors || (argc > 1 && !strcmp(argv[1], "file"));
+    int files = vectors || mapped || (argc > 1 && !strcmp(argv[1], "file"));
     if (argc > 2) { iterations = (unsigned)strtoul(argv[2], NULL, 10); assert(iterations > 0 && iterations <= 8192); }
     char temporary[] = "/tmp/trames-epoch-XXXXXX";
     if (files) { int rc = mkdir("/tmp", 0777); assert(rc == 0 || errno == EEXIST); }
     int fd = files ? mkstemp(temporary) : open("/dev/null", O_RDWR);
     assert(fd >= 0);
     if (files) assert(!unlink(temporary));
+    unsigned char *mapping = NULL;
+    if (mapped) {
+        assert(!ftruncate(fd, 4096));
+        mapping = mmap(NULL, 4096, PROT_READ | PROT_WRITE, shared_map ? MAP_SHARED : MAP_PRIVATE, fd, 0);
+        assert(mapping != MAP_FAILED);
+    }
     int ends[2];
-    assert(!pipe(ends));
+    if (sockets) assert(!socketpair(AF_UNIX, SOCK_STREAM, 0, ends));
+    else assert(!pipe(ends));
     assert(!pthread_barrier_init(&start, NULL, 2));
     pthread_t worker;
     assert(!pthread_create(&worker, NULL, memory_worker, NULL));
     int rc = pthread_barrier_wait(&start);
     assert(rc == 0 || rc == PTHREAD_BARRIER_SERIAL_THREAD);
     for (unsigned i = 0; i < iterations * 8; i++) {
-        if (files) {
+        if (mapped) {
+            unsigned char output[16];
+            mapping[0] = (unsigned char)i;
+            assert(pread(fd, output, 16, 0) == 16);
+            assert(output[0] == (shared_map ? (unsigned char)i : 0));
+            for (unsigned j = 1; j < 16; j++) assert(output[j] == 0);
+        } else if (files) {
             unsigned char input[16], output[16];
             memset(input, i & 255, sizeof input);
             struct iovec in[] = {{input, 8}, {input + 8, 8}};
@@ -81,11 +99,18 @@ int main(int argc, char **argv) {
             }
             assert(!memcmp(input, output, 16));
             if (!(i % 1024)) { assert(!fsync(fd)); assert(!fdatasync(fd)); }
-        } else if (streams) {
+        } else if (streams || sockets) {
             unsigned char input[16], output[16];
             memset(input, i & 255, sizeof input);
-            assert(write(ends[1], input, sizeof input) == sizeof input);
-            assert(read(ends[0], output, sizeof output) == sizeof output);
+            struct iovec in[] = {{input, 5}, {input+5, 11}};
+            struct iovec out[] = {{output, 8}, {output+8, 8}};
+            if (sockets && i % 2) {
+                assert(writev(ends[1], in, 2) == 16);
+                assert(readv(ends[0], out, 2) == 16);
+            } else {
+                assert(write(ends[1], input, sizeof input) == sizeof input);
+                assert(read(ends[0], output, sizeof output) == sizeof output);
+            }
             assert(!memcmp(input, output, sizeof input));
         } else {
             struct stat s;
@@ -105,8 +130,10 @@ int main(int argc, char **argv) {
         }
     }
     assert(!pthread_join(worker, NULL));
+    if (mapped) assert(!munmap(mapping, 4096));
     assert(!pthread_barrier_destroy(&start));
     assert(!close(fd) && !close(ends[0]) && !close(ends[1]));
-    printf("epoch-services %s %u %08x\n", files ? (vectors ? "vector" : "file") : (streams ? "pipe" : "metadata"), iterations, checksum);
+    const char *mode = mapped ? (shared_map ? "mapped-shared" : "mapped-read") : files ? (vectors ? "vector" : "file") : sockets ? "unix" : streams ? "pipe" : "metadata";
+    printf("epoch-services %s %u %08x\n", mode, iterations, checksum);
     return 0;
 }

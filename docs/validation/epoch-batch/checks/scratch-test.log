@@ -1,0 +1,9 @@
+   Compiling trames-linux v1.2.0 (/workspace/trames/crates/trames-linux)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.64s
+     Running unittests src/lib.rs (target/perf-runtime/debug/build/trames-linux/e9aa938188b7d30a/out/trames_linux-e9aa938188b7d30a)
+
+running 1 test
+test state::tests::reused_write_scratch_shrinks_and_never_emits_stale_or_faulting_bytes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 23 filtered out; finished in 0.00s
+

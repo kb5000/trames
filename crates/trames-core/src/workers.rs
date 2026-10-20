@@ -90,6 +90,7 @@ pub(super) struct Request {
 struct Reply {
     memory: View,
     value: Option<u64>,
+    reply: mpsc::Sender<Reply>,
 }
 impl Request {
     /// None checkpoints before effects. A completed operation must always
@@ -98,6 +99,7 @@ impl Request {
         let _ = self.reply.send(Reply {
             memory: self.memory,
             value,
+            reply: self.reply.clone(),
         });
     }
 }
@@ -158,6 +160,8 @@ impl Pool {
             .name(format!("trames-cpu-{index}"))
             .spawn(move || {
                 let mut registry = trames_accel::native::Registry::default();
+                let (reply, response) = mpsc::channel();
+                let mut reply = Some(reply);
                 while let Ok(mut work) = receive.recv() {
                     let mut memory = Some(work.memory);
                     let before = work.cpu.decode_stats();
@@ -224,13 +228,15 @@ impl Pool {
                                             active.fetch_sub(1, Ordering::Relaxed);
                                         }
                                         running = false;
-                                        let (reply, response) = mpsc::channel();
                                         let request = Request {
                                             pid: work.pid,
                                             number: work.cpu.x(8) as u32,
                                             args: std::array::from_fn(|i| work.cpu.x(i)),
                                             memory: memory.take().expect("worker view"),
-                                            reply,
+                                            // The sole sender travels with the request
+                                            // and returns in its reply. Dropping an
+                                            // unanswered request must disconnect recv.
+                                            reply: reply.take().expect("worker reply channel"),
                                         };
                                         assert!(
                                             done.send(Event::Service(Box::new(request))).is_ok(),
@@ -238,10 +244,11 @@ impl Pool {
                                         );
                                         // Never abandon an in-flight request on stop: it
                                         // may already have consumed input or written bytes.
-                                        let reply = response.recv().expect("coordinator response");
-                                        memory = Some(reply.memory);
+                                        let answer = response.recv().expect("coordinator response");
+                                        memory = Some(answer.memory);
+                                        reply = Some(answer.reply);
                                         service_wait += began.elapsed();
-                                        if let Some(value) = reply.value {
+                                        if let Some(value) = answer.value {
                                             work.cpu.set_x(0, value);
                                             serviced_syscalls += 1;
                                             continue;
@@ -454,7 +461,9 @@ mod tests {
         cell::{Cell, RefCell},
         rc::Rc,
     };
-    use trames_memory::{Memory, MemoryError, NativeMemory, PageBacking, Permissions, PAGE_SIZE};
+    use trames_memory::{
+        CpuMemory, Memory, MemoryError, NativeMemory, PageBacking, Permissions, PAGE_SIZE,
+    };
 
     struct LivePage {
         bytes: RefCell<[u8; PAGE_SIZE as usize]>,
@@ -526,15 +535,71 @@ mod tests {
             profile: true,
             streams: [0; (trames_vfs::MAX_FDS as usize).div_ceil(64)],
             files: [0; (trames_vfs::MAX_FDS as usize).div_ceil(64)],
+            fd_flags: Default::default(),
         }
     }
 
     fn query_work(control: Arc<Control>) -> Work {
         let mut job = work(1, &[0xd4000001, 0x14000000], 0, control);
-        job.cpu.set_x(8, 25);
-        job.cpu.set_x(1, 3);
+        job.cpu.set_x(8, 62);
+        job.cpu.set_x(1, 0);
         job.syscalls = Some(syscall_snapshot());
         job
+    }
+    #[test]
+    fn reusable_reply_channel_handles_many_requests_and_views_without_replay() {
+        let mut pool = Pool::new(1);
+        pool.ensure(0).unwrap();
+        let mut job = work(
+            1,
+            &[0xd4000001, 0x17ffffff],
+            0,
+            Arc::new(Control::new(1000)),
+        );
+        job.cpu.set_x(8, 62);
+        job.syscalls = Some(syscall_snapshot());
+        pool.dispatch(0, job).unwrap();
+        for i in 0..128u64 {
+            let Some(Event::Service(request)) = pool.event_timeout(Duration::from_secs(5)).unwrap()
+            else {
+                panic!("missing request")
+            };
+            if i != 0 {
+                assert_eq!(request.args[0], i - 1);
+            }
+            assert_eq!(
+                request.memory.read_array::<4>(0x1000).unwrap(),
+                0xd4000001u32.to_le_bytes()
+            );
+            request.respond(Some(i));
+        }
+        let Some(Event::Service(request)) = pool.event_timeout(Duration::from_secs(5)).unwrap()
+        else {
+            panic!("missing final request")
+        };
+        assert_eq!(request.args[0], 127);
+        request.respond(None);
+        let done = pool.complete().unwrap();
+        assert_eq!(done.serviced_syscalls, 128);
+        assert_eq!(done.instructions, 257);
+        assert!(matches!(done.outcome, Some(SliceOutcome::Syscall { .. })));
+    }
+    #[test]
+    fn dropping_an_unanswered_request_disconnects_a_reusable_reply_receiver() {
+        let mut pool = Pool::new(1);
+        pool.ensure(0).unwrap();
+        pool.dispatch(0, query_work(Arc::new(Control::new(100))))
+            .unwrap();
+        let Some(Event::Service(request)) = pool.event_timeout(Duration::from_secs(5)).unwrap()
+        else {
+            panic!("missing request")
+        };
+        drop(request);
+        let done = pool
+            .complete_timeout(Duration::from_secs(5))
+            .unwrap()
+            .expect("worker did not unblock");
+        assert!(done.outcome.is_none());
     }
 
     #[test]

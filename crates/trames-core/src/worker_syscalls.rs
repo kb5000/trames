@@ -15,13 +15,13 @@ pub(super) struct Snapshot {
     pub profile: bool,
     pub streams: trames_vfs::FdMask,
     pub files: trames_vfs::FdMask,
+    pub fd_flags: trames_vfs::FdFlags,
 }
 
 /// These calls can request the coordinator without stopping peer CPUs. The
 /// service still admits the actual descriptor kind before doing any effects.
 pub(super) fn service_candidate(cpu: &Cpu, snapshot: &Snapshot) -> bool {
     match cpu.x(8) as u32 {
-        25 => matches!(cpu.x(1), 1 | 3),
         62 | 80 => true,
         63..=66 => {
             let fd = cpu.x(0) as u32;
@@ -76,6 +76,10 @@ pub(super) fn clock(
 impl Snapshot {
     pub fn invoke(&self, cpu: &Cpu, memory: &mut impl CpuMemory) -> Option<u64> {
         let result = match cpu.x(8) as u32 {
+            25 if matches!(cpu.x(1), 1 | 3) => self
+                .fd_flags
+                .get(cpu.x(0) as u32)
+                .and_then(|flags| trames_vfs::query_fd_flags(flags, cpu.x(1))),
             number @ 172..=178 => Ok(self.identities[(number - 172) as usize]),
             number @ (113 | 114) => clock(memory, number, cpu.x(0), cpu.x(1), self.started),
             168 => (|| {
@@ -112,6 +116,42 @@ impl Snapshot {
 mod tests {
     use super::*;
     use trames_memory::{Memory, Permissions, PAGE_SIZE};
+    #[test]
+    fn fd_queries_complete_locally_but_mutating_fcntl_keeps_checkpointing() {
+        let mut vfs = trames_vfs::Vfs::default();
+        let [fd, _] = vfs
+            .pipe(trames_vfs::O_CLOEXEC | trames_vfs::O_NONBLOCK)
+            .unwrap();
+        let snapshot = Snapshot {
+            identities: [0; 7],
+            started: Instant::now(),
+            processor: 0,
+            profile: false,
+            streams: vfs.stream_descriptors(),
+            files: vfs.file_descriptors(),
+            fd_flags: vfs.fd_flags_snapshot(),
+        };
+        let mut memory = Memory::default();
+        let mut cpu = Cpu::new(0, 0);
+        cpu.set_x(8, 25);
+        cpu.set_x(0, fd as u64);
+        cpu.set_x(1, 1);
+        assert_eq!(snapshot.invoke(&cpu, &mut memory), Some(1));
+        cpu.set_x(1, 3);
+        assert_eq!(
+            snapshot.invoke(&cpu, &mut memory),
+            Some(trames_vfs::O_NONBLOCK as u64)
+        );
+        cpu.set_x(1, 4);
+        assert_eq!(snapshot.invoke(&cpu, &mut memory), None);
+        assert!(!service_candidate(&cpu, &snapshot));
+        cpu.set_x(0, u32::MAX as u64);
+        cpu.set_x(1, 3);
+        assert_eq!(
+            snapshot.invoke(&cpu, &mut memory),
+            Some(0u64.wrapping_sub(9))
+        );
+    }
 
     #[test]
     fn clock_and_processor_writes_use_checked_shared_guest_memory() {
@@ -126,6 +166,7 @@ mod tests {
             profile: false,
             streams: [0; (trames_vfs::MAX_FDS as usize).div_ceil(64)],
             files: [0; (trames_vfs::MAX_FDS as usize).div_ceil(64)],
+            fd_flags: Default::default(),
         };
         let mut view = memory.parallel_view(&mut Default::default()).unwrap();
         let mut cpu = Cpu::new(0, 0);
