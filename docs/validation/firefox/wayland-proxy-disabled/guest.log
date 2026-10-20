@@ -1,0 +1,203 @@
+~ # [6nmkdir -p /root/firefox-probe-wayland-proxy-disabled; ( MOZ_ENABLE_WAYLAND=1 
+GDK_BACKEND=wayland XDG_RUNTIME_DIR=/run/user/0 WAYLAND_DISPLAY=wayland-0 MOZ_DI
+SABLE_WAYLAND_PROXY=1 WAYLAND_DEBUG=1 firefox --no-remote --profile /root/firefo
+x-probe-wayland-proxy-disabled file:///tmp/trames-firefox.html >/tmp/firefox-pro
+be.log 2>&1; r=$?; printf "\nFIREFOX_PROBE_EXIT:%d\n" "$r"; ) </dev/null &
+~ # [6nprintf "\nFIREFOX_PROGRESS\n"; tail -n 12 /tmp/firefox-probe.log; ps
+
+FIREFOX_PROGRESS
+[1711028.371] {Default Queue}  -> wl_registry#16.bind(9, "wl_subcompositor", 1, new id [unknown]#22)
+[1711028.825] {Default Queue} wl_callback#17.done(0)
+[1711029.050] {Default Queue}  -> wl_display#1.sync(new id wl_callback#17)
+[1711029.841] {Display Queue} wl_display#1.delete_id(17)
+[1711030.019] {Default Queue} discarded wl_shm#19.format(0)
+[1711030.190] {Default Queue} discarded wl_shm#19.format(1)
+[1711030.337] {Default Queue} wl_seat#21.capabilities(3)
+[1711030.512] {Default Queue}  -> wl_seat#21.get_pointer(new id wl_pointer#23)
+[1711030.702] {Default Queue}  -> wl_seat#21.get_keyboard(new id wl_keyboard#24)
+[1711030.876] {Default Queue} wl_seat#21.name("seat0")
+[1711031.034] {Default Queue} wl_callback#17.done(0)
+[1714143.553] {Default Queue}  -> wl_display#1.get_registry(new id wl_registry#17)
+PID   USER     TIME  COMMAND
+    1 root      0:00 /bin/ash -i
+   11 root      0:00 /usr/lib/firefox/glxtest -f 16 -w
+   29 root      0:00 ps
+    3 root      0:00 /bin/ash -i
+    4 root      0:08 /usr/lib/firefox/firefox --no-remote --profile /root/firef
+~ # [6nprintf "\nFIREFOX_PROGRESS\n"; tail -n 12 /tmp/firefox-probe.log; ps
+
+FIREFOX_PROGRESS
+[1711028.371] {Default Queue}  -> wl_registry#16.bind(9, "wl_subcompositor", 1, new id [unknown]#22)
+[1711028.825] {Default Queue} wl_callback#17.done(0)
+[1711029.050] {Default Queue}  -> wl_display#1.sync(new id wl_callback#17)
+[1711029.841] {Display Queue} wl_display#1.delete_id(17)
+[1711030.019] {Default Queue} discarded wl_shm#19.format(0)
+[1711030.190] {Default Queue} discarded wl_shm#19.format(1)
+[1711030.337] {Default Queue} wl_seat#21.capabilities(3)
+[1711030.512] {Default Queue}  -> wl_seat#21.get_pointer(new id wl_pointer#23)
+[1711030.702] {Default Queue}  -> wl_seat#21.get_keyboard(new id wl_keyboard#24)
+[1711030.876] {Default Queue} wl_seat#21.name("seat0")
+[1711031.034] {Default Queue} wl_callback#17.done(0)
+[1714143.553] {Default Queue}  -> wl_display#1.get_registry(new id wl_registry#17)
+PID   USER     TIME  COMMAND
+    1 root      0:00 /bin/ash -i
+   11 root      0:00 /usr/lib/firefox/glxtest -f 16 -w
+    3 root      0:00 /bin/ash -i
+   31 root      0:00 ps
+    4 root      0:08 /usr/lib/firefox/firefox --no-remote --profile /root/firef
+~ # [6nprintf "\nFIREFOX_PROGRESS\n"; tail -n 12 /tmp/firefox-probe.log; ps
+
+FIREFOX_PROGRESS
+[1711028.371] {Default Queue}  -> wl_registry#16.bind(9, "wl_subcompositor", 1, new id [unknown]#22)
+[1711028.825] {Default Queue} wl_callback#17.done(0)
+[1711029.050] {Default Queue}  -> wl_display#1.sync(new id wl_callback#17)
+[1711029.841] {Display Queue} wl_display#1.delete_id(17)
+[1711030.019] {Default Queue} discarded wl_shm#19.format(0)
+[1711030.190] {Default Queue} discarded wl_shm#19.format(1)
+[1711030.337] {Default Queue} wl_seat#21.capabilities(3)
+[1711030.512] {Default Queue}  -> wl_seat#21.get_pointer(new id wl_pointer#23)
+[1711030.702] {Default Queue}  -> wl_seat#21.get_keyboard(new id wl_keyboard#24)
+[1711030.876] {Default Queue} wl_seat#21.name("seat0")
+[1711031.034] {Default Queue} wl_callback#17.done(0)
+[1714143.553] {Default Queue}  -> wl_display#1.get_registry(new id wl_registry#17)
+PID   USER     TIME  COMMAND
+    1 root      0:00 /bin/ash -i
+   11 root      0:00 /usr/lib/firefox/glxtest -f 16 -w
+    3 root      0:00 /bin/ash -i
+   33 root      0:00 ps
+    4 root      0:08 /usr/lib/firefox/firefox --no-remote --profile /root/firef
+~ # [6nprintf "\nFIREFOX_PROGRESS\n"; tail -n 12 /tmp/firefox-probe.log; ps
+
+FIREFOX_PROGRESS
+[1711028.371] {Default Queue}  -> wl_registry#16.bind(9, "wl_subcompositor", 1, new id [unknown]#22)
+[1711028.825] {Default Queue} wl_callback#17.done(0)
+[1711029.050] {Default Queue}  -> wl_display#1.sync(new id wl_callback#17)
+[1711029.841] {Display Queue} wl_display#1.delete_id(17)
+[1711030.019] {Default Queue} discarded wl_shm#19.format(0)
+[1711030.190] {Default Queue} discarded wl_shm#19.format(1)
+[1711030.337] {Default Queue} wl_seat#21.capabilities(3)
+[1711030.512] {Default Queue}  -> wl_seat#21.get_pointer(new id wl_pointer#23)
+[1711030.702] {Default Queue}  -> wl_seat#21.get_keyboard(new id wl_keyboard#24)
+[1711030.876] {Default Queue} wl_seat#21.name("seat0")
+[1711031.034] {Default Queue} wl_callback#17.done(0)
+[1714143.553] {Default Queue}  -> wl_display#1.get_registry(new id wl_registry#17)
+PID   USER     TIME  COMMAND
+    1 root      0:00 /bin/ash -i
+   11 root      0:00 /usr/lib/firefox/glxtest -f 16 -w
+    3 root      0:00 /bin/ash -i
+   35 root      0:00 ps
+    4 root      0:08 /usr/lib/firefox/firefox --no-remote --profile /root/firef
+~ # [6nprintf "\nFIREFOX_PROGRESS\n"; tail -n 12 /tmp/firefox-probe.log; ps
+
+FIREFOX_PROGRESS
+[1711028.371] {Default Queue}  -> wl_registry#16.bind(9, "wl_subcompositor", 1, new id [unknown]#22)
+[1711028.825] {Default Queue} wl_callback#17.done(0)
+[1711029.050] {Default Queue}  -> wl_display#1.sync(new id wl_callback#17)
+[1711029.841] {Display Queue} wl_display#1.delete_id(17)
+[1711030.019] {Default Queue} discarded wl_shm#19.format(0)
+[1711030.190] {Default Queue} discarded wl_shm#19.format(1)
+[1711030.337] {Default Queue} wl_seat#21.capabilities(3)
+[1711030.512] {Default Queue}  -> wl_seat#21.get_pointer(new id wl_pointer#23)
+[1711030.702] {Default Queue}  -> wl_seat#21.get_keyboard(new id wl_keyboard#24)
+[1711030.876] {Default Queue} wl_seat#21.name("seat0")
+[1711031.034] {Default Queue} wl_callback#17.done(0)
+[1714143.553] {Default Queue}  -> wl_display#1.get_registry(new id wl_registry#17)
+PID   USER     TIME  COMMAND
+    1 root      0:00 /bin/ash -i
+   11 root      0:00 /usr/lib/firefox/glxtest -f 16 -w
+    3 root      0:00 /bin/ash -i
+   37 root      0:00 ps
+    4 root      0:08 /usr/lib/firefox/firefox --no-remote --profile /root/firef
+~ # [6nprintf "\nFIREFOX_LOG_BEGIN\n"; cat /tmp/firefox-probe.log; printf "\nFIREFO
+X_DMESG_BEGIN\n"; dmesg; printf "\nFIREFOX_PROCESSES_BEGIN\n"; ps; printf "\nFIR
+EFOX_DIAGNOSTICS_DONE\n"
+
+FIREFOX_LOG_BEGIN
+[1709366.253] {Default Queue}  -> wl_display#1.get_registry(new id wl_registry#2)
+[1709366.645] {Default Queue}  -> wl_display#1.sync(new id wl_callback#3)
+[1709367.815] {Display Queue} wl_display#1.delete_id(3)
+[1709368.115] {Default Queue} wl_registry#2.global(1, "wl_compositor", 4)
+[1709368.646] {Default Queue}  -> wl_registry#2.bind(1, "wl_compositor", 3, new id [unknown]#4)
+[1709369.118] {Default Queue} wl_registry#2.global(2, "wl_shm", 1)
+[1709369.399] {Default Queue}  -> wl_registry#2.bind(2, "wl_shm", 1, new id [unknown]#5)
+[1709369.691] {Default Queue} wl_registry#2.global(3, "wl_output", 3)
+[1709369.889] {Default Queue}  -> wl_registry#2.bind(3, "wl_output", 2, new id [unknown]#6)
+[1709374.083] {Default Queue}  -> wl_display#1.sync(new id wl_callback#7)
+[1709374.650] {Default Queue} wl_registry#2.global(4, "xdg_wm_base", 3)
+[1709374.924] {Default Queue} wl_registry#2.global(5, "wl_seat", 7)
+[1709375.229] {Default Queue} wl_registry#2.global(6, "wl_data_device_manager", 3)
+[1709375.464] {Default Queue}  -> wl_registry#2.bind(6, "wl_data_device_manager", 3, new id [unknown]#8)
+[1709375.682] {Default Queue} wl_registry#2.global(7, "zwp_text_input_manager_v1", 1)
+[1709375.873] {Default Queue} wl_registry#2.global(8, "zwp_text_input_manager_v3", 1)
+[1709376.232] {Default Queue} wl_registry#2.global(9, "wl_subcompositor", 1)
+[1709376.552] {Default Queue}  -> wl_registry#2.bind(9, "wl_subcompositor", 1, new id [unknown]#9)
+[1709376.948] {Default Queue} wl_callback#3.done(0)
+[1709381.846] {Default Queue}  -> wl_shm#5.create_pool(new id wl_shm_pool#3, fd 12, 2304)
+[1709489.069] {Default Queue}  -> wl_shm_pool#3.resize(5568)
+[1709582.282] {Default Queue}  -> wl_shm_pool#3.resize(12096)
+[1709848.721] {Default Queue}  -> wl_shm_pool#3.resize(25216)
+[1710060.181] {Default Queue}  -> wl_registry#2.bind(5, "wl_seat", 5, new id [unknown]#10)
+[1710409.906] {Default Queue}  -> wl_compositor#4.create_surface(new id wl_surface#11)
+[1710410.664] {Default Queue}  -> wl_data_device_manager#8.get_data_device(new id wl_data_device#12, wl_seat#10)
+[1710417.436] {Default Queue}  -> wl_compositor#4.create_surface(new id wl_surface#13)
+[1710417.842] {Default Queue}  -> wl_display#1.sync(new id wl_callback#14)
+[1710419.776] {Display Queue} wl_display#1.delete_id(7)
+[1710420.026] {Display Queue} wl_display#1.delete_id(14)
+[1710420.233] {Default Queue} wl_shm#5.format(0)
+[1710420.395] {Default Queue} wl_shm#5.format(1)
+[1710420.552] {Default Queue} wl_output#6.geometry(0, 0, 260, 195, 0, "Trames", "Wayland output", 0)
+[1710421.186] {Default Queue} wl_output#6.mode(3, 1024, 768, 60000)
+[1710421.622] {Default Queue} wl_output#6.scale(1)
+[1710421.880] {Default Queue} wl_output#6.done()
+[1710422.228] {Default Queue} wl_callback#7.done(0)
+[1710422.431] {Default Queue} wl_seat#10.capabilities(3)
+[1710422.620] {Default Queue}  -> wl_seat#10.get_pointer(new id wl_pointer#7)
+[1710423.155] {Default Queue}  -> wl_seat#10.get_keyboard(new id wl_keyboard#15)
+[1710423.688] {Default Queue} wl_seat#10.name("seat0")
+[1710423.992] {Default Queue} wl_data_device#12.selection(nil)
+[1710424.193] {Default Queue} wl_callback#14.done(0)
+[1710424.408] {Default Queue}  -> wl_registry#2.bind(4, "xdg_wm_base", 3, new id [unknown]#14)
+[1710565.441] {Default Queue}  -> wl_display#1.get_registry(new id wl_registry#16)
+[1710566.162] {Default Queue}  -> wl_display#1.sync(new id wl_callback#17)
+[1710567.647] {Display Queue} wl_display#1.delete_id(17)
+[1710568.126] {Default Queue} wl_keyboard#15.keymap(1, fd 14, 64754)
+[1711024.581] {Default Queue} wl_keyboard#15.repeat_info(25, 600)
+[1711025.027] {Default Queue} wl_registry#16.global(1, "wl_compositor", 4)
+[1711025.400] {Default Queue}  -> wl_registry#16.bind(1, "wl_compositor", 4, new id [unknown]#18)
+[1711025.677] {Default Queue} wl_registry#16.global(2, "wl_shm", 1)
+[1711025.909] {Default Queue}  -> wl_registry#16.bind(2, "wl_shm", 1, new id [unknown]#19)
+[1711026.148] {Default Queue} wl_registry#16.global(3, "wl_output", 3)
+[1711026.622] {Default Queue} wl_registry#16.global(4, "xdg_wm_base", 3)
+[1711026.864] {Default Queue}  -> wl_registry#16.bind(4, "xdg_wm_base", 3, new id [unknown]#20)
+[1711027.118] {Default Queue} wl_registry#16.global(5, "wl_seat", 7)
+[1711027.327] {Default Queue}  -> wl_registry#16.bind(5, "wl_seat", 7, new id [unknown]#21)
+[1711027.558] {Default Queue} wl_registry#16.global(6, "wl_data_device_manager", 3)
+[1711027.739] {Default Queue} wl_registry#16.global(7, "zwp_text_input_manager_v1", 1)
+[1711027.949] {Default Queue} wl_registry#16.global(8, "zwp_text_input_manager_v3", 1)
+[1711028.171] {Default Queue} wl_registry#16.global(9, "wl_subcompositor", 1)
+[1711028.371] {Default Queue}  -> wl_registry#16.bind(9, "wl_subcompositor", 1, new id [unknown]#22)
+[1711028.825] {Default Queue} wl_callback#17.done(0)
+[1711029.050] {Default Queue}  -> wl_display#1.sync(new id wl_callback#17)
+[1711029.841] {Display Queue} wl_display#1.delete_id(17)
+[1711030.019] {Default Queue} discarded wl_shm#19.format(0)
+[1711030.190] {Default Queue} discarded wl_shm#19.format(1)
+[1711030.337] {Default Queue} wl_seat#21.capabilities(3)
+[1711030.512] {Default Queue}  -> wl_seat#21.get_pointer(new id wl_pointer#23)
+[1711030.702] {Default Queue}  -> wl_seat#21.get_keyboard(new id wl_keyboard#24)
+[1711030.876] {Default Queue} wl_seat#21.name("seat0")
+[1711031.034] {Default Queue} wl_callback#17.done(0)
+[1714143.553] {Default Queue}  -> wl_display#1.get_registry(new id wl_registry#17)
+
+FIREFOX_DMESG_BEGIN
+[4.490095] pid=14 syscall=200(bind) pc=0x700414fc args=[1a, 27b0c2487678, c, 0, 0, 0] unsupported errno=95 comm="Netlink Monitor"
+
+FIREFOX_PROCESSES_BEGIN
+PID   USER     TIME  COMMAND
+    1 root      0:00 /bin/ash -i
+   11 root      0:00 /usr/lib/firefox/glxtest -f 16 -w
+    3 root      0:00 /bin/ash -i
+    4 root      0:08 /usr/lib/firefox/firefox --no-remote --profile /root/firef
+   40 root      0:00 ps
+
+FIREFOX_DIAGNOSTICS_DONE
+~ # 

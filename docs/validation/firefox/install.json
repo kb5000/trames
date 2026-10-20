@@ -1,0 +1,7 @@
+{
+  "returncode": 2,
+  "seconds": 119.95500933799485,
+  "package": "firefox142.0-r0",
+  "rootfs": "Alpine3.22.6-aarch64",
+  "network": "off; original signed local repository"
+}

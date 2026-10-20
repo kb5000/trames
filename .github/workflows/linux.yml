@@ -48,6 +48,19 @@ jobs:
           TRAMES_VALIDATION_WORKFLOW: linux.yml
           TRAMES_NEEDS_GUEST_ARTIFACTS: 'false'
         run: python3 scripts/ios-ci-scope.py
+  compatibility-probe:
+    needs: scope
+    if: needs.scope.outputs.native_scope == 'compatibility-probe'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Firefox diagnostic scripts and Linux socket oracle
+        run: |
+          python3 -m py_compile tests/integration/firefox.py tests/integration/firefox-prepare.py scripts/ios-ci-scope.py
+          python3 tests/integration/firefox.py --help
+          python3 tests/integration/firefox-prepare.py --help
+          cc -O2 -Wall -Wextra -Werror tests/fixtures/firefox-socket-probe.c -o /tmp/firefox-socket-probe
+          /tmp/firefox-socket-probe
   zink-wayland-linux:
     needs: scope
     if: needs.scope.outputs.native_scope == 'zink-wayland' && needs.scope.outputs.zink_wayland_linux_run == ''

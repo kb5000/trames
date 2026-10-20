@@ -1,0 +1,37 @@
+~ # [6nmkdir -p /root/firefox-probe-headless-status-diagnostic; ( MOZ_ENABLE_WAYLAN
+D=1 GDK_BACKEND=wayland XDG_RUNTIME_DIR=/run/user/0 WAYLAND_DISPLAY=wayland-0 MO
+Z_AVOID_OPENGL_ALTOGETHER=1 firefox --no-remote --profile /root/firefox-probe-he
+adless-status-diagnostic --headless --window-size 640,480 --screenshot /tmp/tram
+es-firefox-94959920922231.html.png file:///tmp/trames-firefox-94959920922231.htm
+l >/tmp/firefox-probe.log 2>&1; r=$?; printf "\nFIREFOX_PROBE_EXIT:%d\n" "$r"; )
+ </dev/null &
+~ # [6nprintf "\nFIREFOX_PROGRESS\n"; tail -n 12 /tmp/firefox-probe.log; ps -o pid,
+ppid,stat,time,args
+
+FIREFOX_PROGRESS
+*** You are running in headless mode.
+PID   PPID  STAT TIME  COMMAND
+    1     0 S     0:00 /bin/ash -i
+   11     4 Z     0:00 /usr/lib/firefox/glxtest -f 14 -w
+   29     1 R     0:00 ps -o pid,ppid,stat,time,args
+    3     1 S     0:00 /bin/ash -i
+    4     3 S     0:01 /usr/lib/firefox/firefox --no-remote --profile /root/fir
+~ # [6nprintf "\nFIREFOX_LOG_BEGIN\n"; cat /tmp/firefox-probe.log; printf "\nFIREFO
+X_DMESG_BEGIN\n"; dmesg; printf "\nFIREFOX_PROCESSES_BEGIN\n"; ps -o pid,ppid,st
+at,time,args; printf "\nFIREFOX_DIAGNOSTICS_DONE\n"
+
+FIREFOX_LOG_BEGIN
+*** You are running in headless mode.
+
+FIREFOX_DMESG_BEGIN
+[3.773940] pid=14 syscall=200(bind) pc=0x700414fc args=[19, 188586cf2678, c, 0, 0, 0] unsupported errno=95 comm="Netlink Monitor"
+
+FIREFOX_PROCESSES_BEGIN
+PID   PPID  STAT TIME  COMMAND
+    1     0 S     0:00 /bin/ash -i
+   11     4 Z     0:00 /usr/lib/firefox/glxtest -f 14 -w
+    3     1 S     0:00 /bin/ash -i
+   32     1 R     0:00 ps -o pid,ppid,stat,time,args
+    4     3 S     0:01 /usr/lib/firefox/firefox --no-remote --profile /root/fir
+
+FIREFOX_DIAGNOSTICS_DONE

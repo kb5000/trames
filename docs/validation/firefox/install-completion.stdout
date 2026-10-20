@@ -1,0 +1,12 @@
+(1/2) Installing libxtst (1.2.5-r0)
+(2/2) Installing at-spi2-core (2.56.5-r0)
+OK: 604 MiB in 149 packages
+at-spi2-core: Protocol definitions and daemon for D-Bus at-spi
+at-spi2-core: https://www.freedesktop.org/wiki/Accessibility/AT-SPI2/
+at-spi2-core: 257 KiB
+firefox: Firefox web browser
+firefox: https://www.firefox.com/
+firefox: 215 MiB
+libxtst: X11 Testing -- Resource extension library
+libxtst: https://wiki.freedesktop.org/xorg/
+libxtst: 65 KiB

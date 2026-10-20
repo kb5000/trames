@@ -15,6 +15,30 @@ def frontend_path(path):
     }
 
 
+def compatibility_probe_outputs(plan, repo, headers):
+    """Probe/documentation changes reuse an exactly unchanged passing runtime."""
+    reuse = plan['runtime_reuse']
+    source = reuse['sha']
+    changed = subprocess.check_output(['git', 'diff', '--name-only', source, 'HEAD'], text=True).splitlines()
+    allowed = {'.github/ios-validation-plan.json', '.github/workflows/ios.yml',
+               '.github/workflows/linux.yml', 'scripts/ios-ci-scope.py',
+               'tests/integration/firefox.py', 'tests/integration/firefox-prepare.py',
+               'tests/fixtures/firefox-socket-probe.c'}
+    if any(path not in allowed and not path.startswith('docs/') for path in changed):
+        raise RuntimeError('Compatibility probe reuse requires unchanged runtime, build and existing tests')
+    for platform, workflow in [('linux', 'linux.yml'), ('apple', 'ios.yml')]:
+        request = urllib.request.Request(
+            f"https://api.github.com/repos/{repo}/actions/runs/{reuse[platform]}", headers=headers)
+        with urllib.request.urlopen(request, timeout=30) as response:
+            run = json.load(response)
+        if (run['head_sha'] != source or run['path'] != '.github/workflows/' + workflow
+                or run['head_repository']['full_name'] != repo or run['conclusion'] != 'success'):
+            raise RuntimeError('Compatibility baseline must be successful at the exact runtime source')
+    print('Only new Firefox probes and evidence changed. Check probe syntax and host socket oracle; reuse passed unchanged Linux/Apple runtime, guest and UI results. No IPA.')
+    return dict(frontend_only='false', targeted='true', native_scope='compatibility-probe',
+                skip_native='true', skip_linux_native='true', skip_linux_modules='true')
+
+
 def runtime_fastpaths_reuse(plan, repo, headers):
     reuse = plan.get('runtime_reuse')
     if not reuse:
@@ -431,6 +455,12 @@ def main():
             changed=set(subprocess.check_output(['git','diff','--name-only',base,'HEAD'],text=True).splitlines())- {str(plan_path)}
             hashes=plan['changed_file_sha256']
             if changed==set(hashes) and all(Path(path).exists() and hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest for path,digest in hashes.items()):
+                if plan.get('native_scope') == 'compatibility-probe':
+                    outputs = compatibility_probe_outputs(plan, repo, dict(request.headers))
+                    with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+                        for key, value in outputs.items():
+                            output.write(f'{key}={value}\n')
+                    return
                 if plan.get('native_scope') in {'zink-foundation', 'zink-sync', 'zink-gles', 'zink-wayland'}:
                     allowed = {'accelerator/vulkan/icd.c', 'accelerator/vulkan/queries.inc',
                                'accelerator/vulkan/templates.inc', 'accelerator/vulkan/entrypoints.inc',

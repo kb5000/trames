@@ -1,0 +1,32 @@
+{
+  "timeout": true,
+  "seconds": 15.106179173002602,
+  "command": [
+    "/workspace/trames/target/perf-runtime/release/trames-run",
+    "--storage",
+    "/workspace/trames/target/firefox/store",
+    "--network",
+    "off",
+    "--cpus",
+    "4",
+    "--memory-budget",
+    "4GiB",
+    "--process-memory-budget",
+    "4GiB",
+    "--max-instructions",
+    "5000000000",
+    "--trace-syscalls",
+    "--accelerator",
+    "pure",
+    "--musl-libc",
+    "/workspace/trames/target/musl-hybrid/libc.so",
+    "--env",
+    "MOZ_AVOID_OPENGL_ALTOGETHER=1",
+    "--env",
+    "MOZ_ENABLE_WAYLAND=1",
+    "--guest",
+    "/bin/sh",
+    "-c",
+    "mkdir -p /root/firefox-probe-spawn-trace; exec firefox --no-remote --profile /root/firefox-probe-spawn-trace --headless --screenshot /tmp/spawn-trace.png file:///tmp/trames-firefox.html"
+  ]
+}

@@ -1,0 +1,23 @@
+trames pid 9 syscall 63(0x17, 0x3c8eba60, 0x400) = 1024
+trames pid 9 syscall 63(0x17, 0x3c8eba60, 0x400) = 1024
+trames pid 11 syscall 215(0x11602000, 0x2000, 0x0) = 0
+trames pid 9 syscall 63(0x17, 0x3c8eba60, 0x400) = 1024
+trames pid 11 syscall 215(0x11600000, 0x2000, 0x0) = 0
+trames pid 3 syscall 113(0x1, 0x7fffffefe328, 0x0) = 0
+trames pid 9 syscall 63(0x17, 0x3c8eba60, 0x400) = 1024
+trames pid 11 syscall 94(0x1, 0x1, 0x0) = suspended/replaced
+trames pid 3 syscall 113(0x1, 0x7fffffefe338, 0x0) = 0
+trames pid 9 syscall 63(0x17, 0x3c8eba60, 0x400) = 1024
+trames pid 3 syscall 113(0x1, 0x7fffffefe098, 0x0) = 0
+trames pid 3 syscall 113(0x1, 0x7fffffefe058, 0x0) = 0
+trames pid 9 syscall 63(0x17, 0x3c8eba60, 0x400) = 1024
+trames pid 3 syscall 222(0x0, 0x4a000, 0x0) = 44103495024640
+trames pid 3 syscall 226(0x281ca527a000, 0x48000, 0x3) = 0
+
+[... later thread creation ...]
+trames pid 3 syscall 220(0x7d0f00, 0x281ca52badd0, 0x281ca52bae58) = 13
+trames pid 3 syscall 220(0x7d0f00, 0x281ca5304dd0, 0x281ca5304e58) = 14
+trames pid 3 syscall 220(0x7d0f00, 0x281ca534edd0, 0x281ca534ee58) = 15
+trames pid 3 syscall 220(0x7d0f00, 0x281ca5398dd0, 0x281ca5398e58) = 16
+trames pid 3 syscall 220(0x7d0f00, 0x281ca53e2dd0, 0x281ca53e2e58) = 17
+trames pid 3 syscall 220(0x7d0f00, 0x281ca572cdd0, 0x281ca572ce58) = 18

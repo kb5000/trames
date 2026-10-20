@@ -1,0 +1,30 @@
+{
+  "returncode": 1,
+  "seconds": 0.31416201099636964,
+  "command": [
+    "/workspace/trames/target/perf-runtime/release/trames-run",
+    "--storage",
+    "/workspace/trames/target/firefox/store",
+    "--network",
+    "off",
+    "--cpus",
+    "4",
+    "--memory-budget",
+    "4GiB",
+    "--process-memory-budget",
+    "4GiB",
+    "--max-instructions",
+    "50000000",
+    "--accelerator",
+    "pure",
+    "--musl-libc",
+    "/workspace/trames/target/musl-hybrid/libc.so",
+    "--env",
+    "MOZ_AVOID_OPENGL_ALTOGETHER=1",
+    "--guest",
+    "/usr/lib/firefox/glxtest",
+    "-f",
+    "1",
+    "-w"
+  ]
+}

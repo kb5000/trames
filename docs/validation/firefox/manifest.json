@@ -1,0 +1,17 @@
+{
+  "runtime_source": "499e44d4d5d5a2b6f6b573960adcd38c2792a1ba",
+  "host": "Linux-6.18.55-x86_64-with-glibc2.41",
+  "physical_ipad": false,
+  "cpus": 4,
+  "ffi_sha256": "e2ffa900a98ce8652a71ab8da2939dc0005e7603c586b88631942f91b32944ef",
+  "hybrid_musl_sha256": "0350f31621b7abb66764e951318db85ba6606fb6be688be651d779465afff6e6",
+  "icd_sha256": "153cef5416ba9386ae2de0fe37cd589c177515de92cf500ccaed21251f922155",
+  "egl_sha256": "237693f0f5b801eff7ff4db6f74dc136241d7b591f1962c87e32ac4a3449e100",
+  "upstream_proxy_source": "https://hg.mozilla.org/releases/mozilla-release/raw-file/FIREFOX_142_0_RELEASE/third_party/wayland-proxy/wayland-proxy.cpp",
+  "upstream_proxy_sha256": "c399d2db3d7c6da8355480a9accda2cc7e9fa9fed5b8ed03e640b8e432e7c458",
+  "scope": "Original Alpine ARM64 Firefox, offline local JS/canvas page; default sandbox configuration (enforcement not yet verified). Extra diagnostic flags are recorded per run. No production source change, no IPA, no claim of functional browser support.",
+  "full_trace_sha256": {
+    "headless-spawn-trace": "b24c8218ca88f3311bf5c9654c5566a14cfa8d7ad8985bb3e0b407657f5580ca",
+    "cli-headless-traced": "3384a797d7ceddaef4bb479dec4317b926f054fc5302b0626cbd875027a5eb94"
+  }
+}

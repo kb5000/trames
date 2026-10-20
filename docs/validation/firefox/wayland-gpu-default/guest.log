@@ -1,0 +1,29 @@
+~ # [6nmkdir -p /root/firefox-probe-wayland-gpu-default; ( MOZ_ENABLE_WAYLAND=1 GDK
+_BACKEND=wayland XDG_RUNTIME_DIR=/run/user/0 WAYLAND_DISPLAY=wayland-0 WAYLAND_D
+EBUG=1 firefox --no-remote --profile /root/firefox-probe-wayland-gpu-default fil
+e:///tmp/trames-firefox.html >/tmp/firefox-probe.log 2>&1; r=$?; printf "\nFIREF
+OX_PROBE_EXIT:%d\n" "$r"; ) </dev/null &
+~ # [6n
+FIREFOX_PROBE_EXIT:1
+printf "\nFIREFOX_LOG_BEGIN\n"; cat /tmp/firefox-probe.log; printf "\nFIREFO
+X_DMESG_BEGIN\n"; dmesg; printf "\nFIREFOX_PROCESSES_BEGIN\n"; ps; printf "\nFIR
+EFOX_DIAGNOSTICS_DONE\n"
+
+FIREFOX_LOG_BEGIN
+[1216720.675] {Default Queue}  -> wl_display#1.get_registry(new id wl_registry#2)
+[1216721.475] {Default Queue}  -> wl_display#1.sync(new id wl_callback#3)
+Warning: ProxiedConnection::TransferOrQueue() broken source socket
+ : Not a tty
+Error: ProxiedConnection::Process(): Failed to read data from client! : Not a tty
+Error: we don't have any display, WAYLAND_DISPLAY='wayland-0' DISPLAY='(null)'
+
+FIREFOX_DMESG_BEGIN
+
+FIREFOX_PROCESSES_BEGIN
+PID   USER     TIME  COMMAND
+    1 root      0:00 /bin/ash -i
+   13 root      0:00 ps
+
+FIREFOX_DIAGNOSTICS_DONE
+[1]+  Done                       (firefox --no-remote --profile /root/firefox-probe-wayland-gpu-default file:///tmp/trames-firefox.html 1>/tmp/firefox-probe.log 2>&1; ; printf "\nFIREFOX_PROBE_EXIT:%d\n" "${r}")
+~ # [6n

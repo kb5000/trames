@@ -1,0 +1,26 @@
+~ # [6nmkdir -p /root/firefox-probe-headless-default; ( MOZ_ENABLE_WAYLAND=1 GDK_BA
+CKEND=wayland XDG_RUNTIME_DIR=/run/user/0 WAYLAND_DISPLAY=wayland-0 firefox --no
+-remote --profile /root/firefox-probe-headless-default --headless --window-size 
+640,480 --screenshot /tmp/trames-firefox.png file:///tmp/trames-firefox.html >/t
+mp/firefox-probe.log 2>&1; r=$?; printf "\nFIREFOX_PROBE_EXIT:%d\n" "$r"; ) </de
+v/null &
+~ # [6nprintf "\nFIREFOX_LOG_BEGIN\n"; cat /tmp/firefox-probe.log; printf "\nFIREFO
+X_DMESG_BEGIN\n"; dmesg; printf "\nFIREFOX_PROCESSES_BEGIN\n"; ps; printf "\nFIR
+EFOX_DIAGNOSTICS_DONE\n"
+
+FIREFOX_LOG_BEGIN
+*** You are running in headless mode.
+
+FIREFOX_DMESG_BEGIN
+[6.560066] pid=14 syscall=200(bind) pc=0x700414fc args=[19, 2bca6904d678, c, 0, 0, 0] unsupported errno=95 comm="Netlink Monitor"
+
+FIREFOX_PROCESSES_BEGIN
+PID   USER     TIME  COMMAND
+    1 root      0:00 /bin/ash -i
+   11 root      0:01 /usr/lib/firefox/glxtest -f 14 -w
+    3 root      0:00 /bin/ash -i
+    4 root      1:15 /usr/lib/firefox/firefox --no-remote --profile /root/firef
+   45 root      0:00 ps
+
+FIREFOX_DIAGNOSTICS_DONE
+~ # [6n

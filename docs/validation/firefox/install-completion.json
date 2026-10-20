@@ -1,0 +1,9 @@
+{
+  "returncode": 0,
+  "seconds": 0.9157373729976825,
+  "conditional_packages": [
+    "libxtst1.2.5-r0",
+    "at-spi2-core2.56.5-r0"
+  ],
+  "note": "Local repository preparation omitted stock apk install_if packages; completed with original signed packages, no guest bypass."
+}

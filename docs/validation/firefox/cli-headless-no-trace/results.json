@@ -1,0 +1,31 @@
+{
+  "returncode": 0,
+  "seconds": 8.631506675999844,
+  "command": [
+    "/workspace/trames/target/perf-runtime/release/trames-run",
+    "--storage",
+    "/workspace/trames/target/firefox/store",
+    "--network",
+    "off",
+    "--cpus",
+    "4",
+    "--memory-budget",
+    "4GiB",
+    "--process-memory-budget",
+    "4GiB",
+    "--max-instructions",
+    "5000000000",
+    "--accelerator",
+    "pure",
+    "--musl-libc",
+    "/workspace/trames/target/musl-hybrid/libc.so",
+    "--env",
+    "MOZ_AVOID_OPENGL_ALTOGETHER=1",
+    "--env",
+    "MOZ_ENABLE_WAYLAND=1",
+    "--guest",
+    "/bin/sh",
+    "-c",
+    "mkdir -p /root/firefox-probe-cli-background; firefox --no-remote --profile /root/firefox-probe-cli-background --headless --screenshot /tmp/cli-background.png file:///tmp/trames-firefox.html >/tmp/cli-background.log 2>&1 & f=$!; sleep 8; cat /tmp/cli-background.log; ps; dmesg; kill -KILL \"$f\"; exit 0"
+  ]
+}

@@ -1,0 +1,7 @@
+ERROR: libxtst-1.2.5-r0: package mentioned in index not found (try 'apk update')
+ERROR: at-spi2-core-2.56.5-r0: package mentioned in index not found (try 'apk update')
+*
+* If you need ICU with non-English locales and legacy charset support, install
+* package icu-data-full.
+*
+rm: can't remove '/tmp/firefox-repo/main/aarch64': Directory not empty

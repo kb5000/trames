@@ -1,0 +1,7 @@
+*** You are running in headless mode.
+PID   USER     TIME  COMMAND
+    1 root      0:00 /bin/sh -c mkdir -p /root/firefox-probe-cli-background; firefox --no-remote --profile /root/firefox-probe-cli-background --headless --screenshot /tmp/cli-background.png file:///tmp/trames-firefox.html >/tmp/cli-background.log 2>&1 & f=$!; sleep 8; cat /tmp/cli-background.log; ps; dmesg; kill -KILL "$f"; exit 0
+   11 root      0:00 /usr/lib/firefox/glxtest -f 14
+   29 root      0:00 ps
+    3 root      0:01 /usr/lib/firefox/firefox --no-remote --profile /root/firefox-probe-cli-background --headless --screenshot /tmp/cli-background.png file:///tmp/trames-firefox.html
+[2.233954] pid=14 syscall=200(bind) pc=0x700414fc args=[19, 186d511a2678, c, 0, 0, 0] unsupported errno=95 comm="Netlink Monitor"

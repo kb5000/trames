@@ -1,0 +1,40 @@
+trames pid 7 syscall 57(0xf, 0x0, 0x0) = 0
+trames pid 7 syscall 278(0x3c8e8758, 0x10, 0x0) = 16
+trames pid 1 syscall 113(0x0, 0x7fffffefe3b8, 0x0) = 0
+[1484797.528] {Default Queue}  -> wl_display#1.sync(new id wl_callback#3)
+trames pid 1 syscall 66(0x2, 0x7fffffefe320, 0x2) = 74
+trames pid 1 syscall 211(0xa, 0x7fffffefe0c8, 0x4040) = 24
+trames pid 8 syscall 73(0x3cc16d20, 0x3, 0x3cc16d10) = 1
+trames pid 1 syscall 73(0x7fffffefe670, 0x1, 0x0) = suspended/replaced
+trames pid 8 syscall 29(0xc, 0x541b, 0x3cc16ce4) = -25
+Warning: ProxiedConnection::TransferOrQueue() broken source socket
+ : Not a tty
+trames pid 8 syscall 66(0x2, 0x3cc16a20, 0x2) = 80
+trames pid 7 syscall 113(0x6, 0x3c8e84e0, 0x0) = 0
+Error: ProxiedConnection::Process(): Failed to read data from client! : Not a ttytrames pid 8 syscall 66(0x2, 0x3cc169a0, 0x2) = 81
+trames pid 7 syscall 113(0x6, 0x3c8e84e0, 0x0) = 0
+
+trames pid 8 syscall 66(0x2, 0x3cc16a90, 0x2) = 1
+trames pid 7 syscall 113(0x6, 0x3c8e8540, 0x0) = 0
+trames pid 8 syscall 57(0xd, 0x0, 0x0) = 0
+trames pid 7 syscall 48(0xffffffffffffff9c, 0x30b86550, 0x4) = 0
+trames pid 8 syscall 57(0xc, 0x0, 0x0) = 0
+trames pid 1 syscall 73(0x7fffffefe670, 0x1, 0x0) = 1
+trames pid 1 syscall 212(0xa, 0x7fffffefe488, 0x40000040) = 0
+trames pid 7 syscall 48(0xffffffffffffff9c, 0x30b86890, 0x4) = 0
+trames pid 1 syscall 98(0x31f50b18, 0x81, 0x7fffffff) = 0
+trames pid 7 syscall 78(0xffffffffffffff9c, 0x30b86890, 0x3c8e89e8) = 62
+trames pid 1 syscall 64(0x8, 0x7fffffefe600, 0x8) = 8
+trames pid 8 syscall 172(0x1b1, 0x3b73c1b0, 0xffffffffffffff40) = 1
+trames pid 1 syscall 98(0x31c9ae70, 0x81, 0x7fffffff) = 0
+trames pid 7 syscall 79(0xffffffffffffff9c, 0x32f07290, 0x3c8e9900) = 0
+trames pid 8 syscall 135(0x0, 0x700aeea0, 0x3cc16d40) = 0
+trames pid 7 syscall 56(0xffffffffffffff9c, 0x32f07290, 0xa0000) = 12
+trames pid 8 syscall 98(0x3cc16e60, 0x81, 0x1) = 0
+trames pid 7 syscall 25(0xc, 0x2, 0x1) = 0
+trames pid 7 syscall 63(0xc, 0x3c8e9b70, 0x400) = 258
+trames pid 8 syscall 93(0x0, 0x81, 0x1) = suspended/replaced
+trames pid 1 syscall 233(0x33505000, 0x1000, 0x4) = 0
+trames pid 1 syscall 233(0x3350a000, 0x7000, 0x4) = 0
+trames pid 1 syscall 233(0x33513000, 0x1000, 0x4) = 0
+trames pid 1 syscall 113(0x6, 0x7fffffefe3c0, 0x0) = 0

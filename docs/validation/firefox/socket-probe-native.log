@@ -1,0 +1,9 @@
+unix-stream-empty result=0 errno=0 bytes=0 expected=0
+unix-stream-queued result=0 errno=0 bytes=7 expected=7
+unix-stream-after-partial-read result=0 errno=0 bytes=4 expected=4
+unix-stream-eof result=0 errno=0 bytes=0 expected=0
+pipe-empty result=0 errno=0 bytes=0 expected=0
+pipe-queued result=0 errno=0 bytes=7 expected=7
+pipe-after-partial-read result=0 errno=0 bytes=4 expected=4
+pipe-eof result=0 errno=0 bytes=0 expected=0
+fionread failures=0
