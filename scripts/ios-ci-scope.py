@@ -271,6 +271,18 @@ def device_build_outputs(plan, repo, headers):
         import tomllib
         paths = ['crates', 'vendor', '.cargo', 'rust-toolchain.toml', 'accelerator', 'include', 'patches/mesa',
                  'scripts/build-zink-egl.py', 'scripts/zink-egl-requirements.txt']
+        runtime = reuse.get('clock_runtime')
+        if runtime:
+            if not unchanged(runtime['sha'], ['crates', 'Cargo.toml', 'Cargo.lock', 'vendor', '.cargo', 'rust-toolchain.toml']):
+                raise RuntimeError('Device build runtime differs from the passed clock/runtime checkpoint')
+            for name in ['firefox-clock', 'firefox-clock-apple']:
+                verified_run(runtime, 'linux.yml', name)
+            # Recompile the validated current runtime; the older Metal bundle
+            # only supplies source-identical guest graphics and their sources.
+            paths = ['crates/trames-vulkan', 'crates/trames-wayland', 'crates/trames-compute',
+                     'crates/trames-shared', 'vendor', '.cargo', 'rust-toolchain.toml',
+                     'accelerator', 'include', 'patches/mesa',
+                     'scripts/build-zink-egl.py', 'scripts/zink-egl-requirements.txt']
         if not unchanged(zink['sha'], paths):
             raise RuntimeError('Zink IPA requires unchanged Metal-validated runtime and guest sources')
         old = tomllib.loads(subprocess.check_output(['git', 'show', zink['sha'] + ':Cargo.toml'], text=True))
