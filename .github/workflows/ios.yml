@@ -1,655 +1,89 @@
-name: iPad frontend
+name: iPad clean test IPA build 35
 on:
-  push:
-    branches: [main]
-  pull_request:
   workflow_dispatch:
 permissions:
   contents: read
   actions: read
 concurrency:
-  group: ipad-frontend-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
-defaults:
-  run:
-    shell: bash
+  group: ipad-clean-build35
+  cancel-in-progress: false
 jobs:
-  zink-foundation-apple:
-    needs: scope
-    if: (needs.scope.outputs.native_scope == 'zink-foundation' || needs.scope.outputs.native_scope == 'zink-sync') && needs.scope.outputs.zink_skip_apple != 'true'
-    runs-on: macos-15
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2026-10-16
-          targets: aarch64-apple-ios
-      - name: Validate bundled instance manifest refresh and iOS embedding build
-        if: needs.scope.outputs.native_scope == 'zink-foundation'
-        run: |
-          cargo test -p trames-distro vulkan --locked
-          cargo check -p trames-ffi --target aarch64-apple-ios --locked
-      - name: Check changed Apple Vulkan backend and iOS embedding
-        if: needs.scope.outputs.native_scope == 'zink-sync' && needs.scope.outputs.zink_sync_skip_apple_checks != 'true'
-        run: |
-          cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
-          cargo test -p trames-vulkan --lib --locked
-          cargo check -p trames-ffi --target aarch64-apple-ios --locked
-      - name: Validate original MoltenVK synchronization and imageless GPU paths
-        if: needs.scope.outputs.native_scope == 'zink-sync'
-        run: |
-          python3 scripts/prepare-vulkan.py --apple
-          export TRAMES_MOLTENVK_STATIC_DIR="$PWD/target/vulkan-upstream/moltenvk-all/MoltenVK/MoltenVK/static/MoltenVK.xcframework/macos-arm64_x86_64"
-          export MACOSX_DEPLOYMENT_TARGET=12.0
-          export RUSTFLAGS="-C link-arg=-framework -C link-arg=IOKit -C link-arg=$(xcrun clang --print-runtime-dir)/libclang_rt.osx.a"
-          cargo run -p trames-vulkan --example timeline --release --locked
-          cargo run -p trames-vulkan --example renderpass --release --locked
-  epoch-service-fixture:
-    needs: scope
-    if: needs.scope.outputs.epoch_services == 'true' && needs.scope.outputs.epoch_fixture_run == ''
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build one original musl ARM64 fixture for Apple validation
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes gcc-aarch64-linux-gnu
-          bash scripts/build-epoch-services-fixture.sh
-          mkdir -p target/epoch-service-fixture
-          cp tests/fixtures/bin/epoch-services tests/fixtures/epoch-services.c tests/fixtures/epoch-services-native.S target/epoch-service-fixture/
-          cp target/busybox-build/musl-1.2.5/COPYRIGHT target/epoch-service-fixture/
-          cp target/busybox-build/downloads/musl-1.2.5.tar.gz target/epoch-service-fixture/
-      - uses: actions/upload-artifact@v4
-        with:
-          name: epoch-service-fixture
-          path: target/epoch-service-fixture/
-          retention-days: 7
-  runtime-fastpaths-apple:
-    needs: [scope, epoch-service-fixture]
-    if: always() && needs.scope.result == 'success' && needs.scope.outputs.native_scope == 'runtime-fastpaths' && (needs.epoch-service-fixture.result == 'success' || needs.epoch-service-fixture.result == 'skipped')
-    runs-on: macos-15
-    timeout-minutes: 30
-    env:
-      CARGO_PROFILE_RELEASE_DEBUG: '1'
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2026-10-16
-      - name: Validate affected Apple VFS and scheduler modules
-        if: needs.scope.outputs.runtime_apple_modules_reused != 'true'
-        run: |
-          uname -m
-          sysctl hw.pagesize
-          cargo test -p trames-vfs -p trames-core -p trames-linux --locked
-      - name: Build original release baseline and candidate session libraries
-        if: needs.scope.outputs.syscall_parallel != 'true'
-        run: |
-          git worktree add --detach target/fastpaths-baseline-source b25feb43ba019850511b440af34e9595f1b2e97c
-          cargo build -p trames-cli -p trames-ffi --release --locked --manifest-path target/fastpaths-baseline-source/Cargo.toml --target-dir target/fastpaths-baseline
-          cargo build -p trames-cli -p trames-ffi --release --locked --target-dir target/fastpaths-candidate
-      - name: Build changed syscall worker session library
-        if: needs.scope.outputs.syscall_parallel == 'true'
-        run: cargo build -p trames-ffi -p trames-cli --release --locked --target-dir target/fastpaths-candidate
-      - uses: actions/download-artifact@v4
-        if: needs.scope.outputs.epoch_services == 'true'
-        with:
-          name: epoch-service-fixture
-          path: target/epoch-service-fixture
-          run-id: ${{ needs.scope.outputs.epoch_fixture_run || github.run_id }}
-          github-token: ${{ github.token }}
-      - name: Validate native calls overlapping FD and pipe services on Apple
-        if: needs.scope.outputs.epoch_services == 'true'
-        run: |
-          chmod +x target/epoch-service-fixture/epoch-services
-          # Darwin has no pthread_barrier. Only the host output oracle uses this
-          # shim; the validated original musl guest ELF is reused unchanged.
-          cat > target/epoch-service-fixture/host-barrier.h <<'C'
-          #include <stddef.h>
-          #include <pthread.h>
-          // Darwin's host oracle uses fsync for the optional fdatasync API.
-          // The musl guest fixture still exercises Linux syscall 83 directly.
-          #define fdatasync fsync
-          #ifndef PTHREAD_BARRIER_SERIAL_THREAD
-          #define PTHREAD_BARRIER_SERIAL_THREAD 1
-          #endif
-          typedef struct { pthread_mutex_t mutex; pthread_cond_t cond; unsigned count, arrived, generation; } trames_barrier;
-          static int trames_barrier_init(trames_barrier *b, const void *attr, unsigned count) {
-              (void)attr; b->count = count; b->arrived = b->generation = 0;
-              int rc = pthread_mutex_init(&b->mutex, NULL); if (rc) return rc;
-              rc = pthread_cond_init(&b->cond, NULL); if (rc) pthread_mutex_destroy(&b->mutex);
-              return rc;
-          }
-          static int trames_barrier_wait(trames_barrier *b) {
-              int rc = pthread_mutex_lock(&b->mutex); if (rc) return rc;
-              unsigned generation = b->generation;
-              if (++b->arrived == b->count) {
-                  b->arrived = 0; b->generation++;
-                  pthread_cond_broadcast(&b->cond); pthread_mutex_unlock(&b->mutex);
-                  return PTHREAD_BARRIER_SERIAL_THREAD;
-              }
-              while (generation == b->generation) {
-                  rc = pthread_cond_wait(&b->cond, &b->mutex);
-                  if (rc) { pthread_mutex_unlock(&b->mutex); return rc; }
-              }
-              return pthread_mutex_unlock(&b->mutex);
-          }
-          static int trames_barrier_destroy(trames_barrier *b) {
-              int rc = pthread_cond_destroy(&b->cond); if (rc) return rc;
-              return pthread_mutex_destroy(&b->mutex);
-          }
-          #define pthread_barrier_t trames_barrier
-          #define pthread_barrier_init trames_barrier_init
-          #define pthread_barrier_wait trames_barrier_wait
-          #define pthread_barrier_destroy trames_barrier_destroy
-          C
-          cc -O2 -Wall -Wextra -Werror -DTRAMES_HOST_ORACLE -include target/epoch-service-fixture/host-barrier.h tests/fixtures/epoch-services.c -pthread -o target/epoch-service-fixture/host-oracle
-          python3 tests/integration/epoch-services.py --runner target/fastpaths-candidate/release/trames-run --fixture target/epoch-service-fixture/epoch-services --oracle target/epoch-service-fixture/host-oracle --output target/epoch-service-results
-      - name: Prepare one identical original guest CoreMark input
-        if: needs.scope.outputs.syscall_parallel != 'true'
-        run: python3 tests/performance/prepare-coremark.py --runner target/fastpaths-baseline/release/trames-run --output target/fastpaths-coremark-inputs
-      - name: Measure paired production session throughput with native host page granularity
-        if: needs.scope.outputs.syscall_parallel != 'true'
-        run: |
-          python3 tests/performance/session-coremark.py --library target/fastpaths-baseline/release/libtrames_ffi.dylib --store target/fastpaths-coremark-inputs/store --output target/fastpaths-results/before-1
-          python3 tests/performance/session-coremark.py --library target/fastpaths-candidate/release/libtrames_ffi.dylib --store target/fastpaths-coremark-inputs/store --output target/fastpaths-results/after-1
-          python3 tests/performance/session-coremark.py --library target/fastpaths-candidate/release/libtrames_ffi.dylib --store target/fastpaths-coremark-inputs/store --output target/fastpaths-results/after-2
-          python3 tests/performance/session-coremark.py --library target/fastpaths-baseline/release/libtrames_ffi.dylib --store target/fastpaths-coremark-inputs/store --output target/fastpaths-results/before-2
-      - name: Validate production multiple-terminal control after timing
-        env:
-          TRAMES_FFI_LIB: ${{ github.workspace }}/target/fastpaths-candidate/release/libtrames_ffi.dylib
-        run: |
-          mkdir -p target/alpine-download
-          curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o target/alpine-download/alpine-minirootfs-3.22.6-aarch64.tar.gz
-          python3 tests/integration/multiple-terminals.py
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: runtime-fastpaths-apple-evidence
-          path: |
-            target/fastpaths-results/
-            target/fastpaths-coremark-inputs/inputs.json
-            target/fastpaths-coremark-inputs/install.log
-            target/fastpaths-coremark-inputs/compile.log
-            target/fastpaths-coremark-inputs/coremark-alpine
-            target/epoch-service-results/
-          if-no-files-found: warn
-          retention-days: 14
-  docker-default-apple:
-    needs: scope
-    if: needs.scope.outputs.native_scope == 'docker-default'
-    runs-on: macos-15
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2026-10-16
-          targets: aarch64-apple-ios
-      - name: Validate proc identity, socket timeouts, scheduler deadlines and iOS FFI
-        if: needs.scope.outputs.docker_default_remount != 'true'
-        run: |
-          cargo test -p trames-net --locked
-          cargo test -p trames-vfs --lib --locked
-          cargo test -p trames-linux --lib network --locked
-          cargo test -p trames-core --lib socket_timeout --locked
-          cargo test -p trames-core --lib seccomp --locked
-          cargo check -p trames-ffi --target aarch64-apple-ios --locked
-      - name: Validate bind remount regressions and iOS FFI
-        if: needs.scope.outputs.docker_default_remount == 'true'
-        run: |
-          cargo test -p trames-vfs --lib mounts:: --locked
-          cargo check -p trames-ffi --target aarch64-apple-ios --locked
-  container-storage-apple:
-    needs: scope
-    if: needs.scope.outputs.native_scope == 'container-storage' && needs.scope.outputs.skip_native != 'true'
-    runs-on: macos-15
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2026-10-16
-          targets: aarch64-apple-ios
-      - name: Validate overlay storage, Apple file IO and iOS FFI
-        run: |
-          if [[ '${{ needs.scope.outputs.storage_proc_only }}' == true ]]; then
-            cargo test -p trames-vfs --lib proc --locked
-          else
-            cargo test -p trames-vfs --lib --locked
-            cargo test -p trames-linux --lib file_calls --locked
-          fi
-          cargo check -p trames-ffi --target aarch64-apple-ios --locked
-  container-isolation-apple:
-    needs: scope
-    if: needs.scope.outputs.native_scope == 'container-isolation'
-    runs-on: macos-15
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2026-10-16
-          targets: aarch64-apple-ios
-      - name: Validate affected Apple kernel and network modules
-        if: needs.scope.outputs.isolation_retry != 'true'
-        run: |
-          cargo test -p trames-net -p trames-vfs -p trames-linux -p trames-core --lib --locked
-          cargo test -p trames-cpu --lib disabled_authentication_and_ordering_hints_preserve_values --locked
-          cargo check -p trames-ffi --target aarch64-apple-ios --locked
-      - name: Retry failed Darwin fixture, new seccomp case and remaining Apple checks
-        if: needs.scope.outputs.isolation_retry == 'true'
-        run: |
-          cargo test -p trames-net -p trames-vfs --lib --locked
-          cargo test -p trames-linux --lib socket_output_preflight_and_descriptor_type_errors --locked
-          cargo test -p trames-core --lib seccomp --locked
-          cargo test -p trames-cpu --lib disabled_authentication_and_ordering_hints_preserve_values --locked
-          cargo check -p trames-ffi --target aarch64-apple-ios --locked
-  container-network-apple:
-    needs: scope
-    if: needs.scope.outputs.native_scope == 'container-network'
-    runs-on: macos-15
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2026-10-16
-          targets: aarch64-apple-ios
-      - name: Validate affected Apple network modules and iOS FFI
-        run: |
-          if [[ '${{ needs.scope.outputs.docker_network }}' == true ]]; then
-            if [[ '${{ needs.scope.outputs.docker_network_virtual_retry }}' == true ]]; then
-              cargo test -p trames-net --test virtual native_gateway_tcp_and_udp_both_families --locked
-            elif [[ '${{ needs.scope.outputs.docker_network_retry }}' == true ]]; then
-              cargo test -p trames-net --lib native_root_input --locked
-              cargo test -p trames-net --test virtual --locked
-            else
-              cargo test -p trames-net --locked
-            fi
-            cargo test -p trames-vfs --lib network --locked
-            cargo test -p trames-vfs --lib events --locked
-            cargo test -p trames-linux --lib network --locked
-            cargo test -p trames-linux --lib file_calls --locked
-            cargo test -p trames-ffi --lib managed_dns --locked
-            cargo test -p trames-core --lib splice --locked
-            cargo check -p trames-core --locked
-          elif [[ '${{ needs.scope.outputs.nftables }}' == true ]]; then
-            cargo test -p trames-net --lib --locked
-          elif [[ '${{ needs.scope.outputs.docker_bridge }}' == true ]]; then
-            cargo test -p trames-net --lib --locked
-            cargo test -p trames-vfs --lib network --locked
-          elif [[ '${{ needs.scope.outputs.network_retry }}' == true ]]; then
-            cargo test -p trames-net --lib routing_tests --locked
-            cargo test -p trames-net --test virtual namespace_finish_resets_peer_and_preserves_other_namespace --locked
-          else
-            cargo test -p trames-net -p trames-vfs -p trames-linux --lib --locked
-          fi
-          cargo check -p trames-ffi --target aarch64-apple-ios --locked
-  scope:
-    runs-on: ubuntu-24.04
-    outputs:
-      frontend_only: ${{ steps.scope.outputs.frontend_only }}
-      baseline_run: ${{ steps.scope.outputs.baseline_run }}
-      zink_graphics_run: ${{ steps.scope.outputs.zink_graphics_run }}
-      baseline_sha: ${{ steps.scope.outputs.baseline_sha }}
-      targeted: ${{ steps.scope.outputs.targeted }}
-      skip_native: ${{ steps.scope.outputs.skip_native }}
-      repackage_run: ${{ steps.scope.outputs.repackage_run }}
-      critical_test: ${{ steps.scope.outputs.critical_test }}
-      ui_targets: ${{ steps.scope.outputs.ui_targets }}
-      native_scope: ${{ steps.scope.outputs.native_scope }}
-      syscall_parallel: ${{ steps.scope.outputs.syscall_parallel }}
-      epoch_services: ${{ steps.scope.outputs.epoch_services }}
-      epoch_fixture_run: ${{ steps.scope.outputs.epoch_fixture_run }}
-      runtime_apple_modules_reused: ${{ steps.scope.outputs.runtime_apple_modules_reused }}
-      zink_skip_apple: ${{ steps.scope.outputs.zink_skip_apple }}
-      zink_sync_skip_apple_checks: ${{ steps.scope.outputs.zink_sync_skip_apple_checks }}
-      storage_proc_only: ${{ steps.scope.outputs.storage_proc_only }}
-      isolation_retry: ${{ steps.scope.outputs.isolation_retry }}
-      network_retry: ${{ steps.scope.outputs.network_retry }}
-      docker_bridge: ${{ steps.scope.outputs.docker_bridge }}
-      nftables: ${{ steps.scope.outputs.nftables }}
-      docker_network: ${{ steps.scope.outputs.docker_network }}
-      docker_network_retry: ${{ steps.scope.outputs.docker_network_retry }}
-      docker_network_virtual_retry: ${{ steps.scope.outputs.docker_network_virtual_retry }}
-      docker_default_remount: ${{ steps.scope.outputs.docker_default_remount }}
-      frontend_reused: ${{ steps.scope.outputs.frontend_reused }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - id: scope
-        env:
-          GH_TOKEN: ${{ github.token }}
-          # A hash-bound plan can reuse the exact validated PR binaries after
-          # merge. Unmatched source changes still fall back to the full checks.
-          TRAMES_FULL_CHECK: 'false'
-        run: python3 scripts/ios-ci-scope.py
-  memory-abi:
-    needs: scope
-    if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'
-    runs-on: macos-15
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      - name: Parse Swift sources before app builds
-        run: |
-          swiftc -frontend -parse apps/ios/Trames/*.swift apps/ios/TramesTests/*.swift apps/ios/TramesUITests/*.swift
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2026-10-16
-      - name: Validate hardware mappings and signal recovery before app builds
-        run: cargo test -p trames-memory --locked
-  guest-musl:
-    needs: scope
-    if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install AArch64 source toolchain
-        run: sudo apt-get update && sudo apt-get install --yes gcc-aarch64-linux-gnu g++-aarch64-linux-gnu gcc-14-aarch64-linux-gnu g++-14-aarch64-linux-gnu binutils-aarch64-linux-gnu libvulkan-dev glslang-tools libwayland-dev pkg-config bison flex ninja-build python3-venv patch
-      - run: bash scripts/build-musl-hybrid.sh > /tmp/musl-build.log 2>&1 || { tail -30 /tmp/musl-build.log; exit 1; }
-      - name: Build standard guest Vulkan ICD and retain original native GPU sources
-        run: |
-          bash scripts/build-vulkan-fixtures.sh > /tmp/vulkan-build.log 2>&1 || { tail -30 /tmp/vulkan-build.log; exit 1; }
-          python3 scripts/prepare-wayland-guest.py
-          python3 scripts/prepare-zink-guest.py --wayland
-          python3 -m venv target/mesa-tools
-          target/mesa-tools/bin/pip install -r scripts/zink-egl-requirements.txt
-          export PATH="$PWD/target/mesa-tools/bin:$PATH"
-          python3 scripts/build-zink-egl.py
-          python3 scripts/prepare-vulkan.py --apple
-      - uses: actions/upload-artifact@v4
-        with:
-          name: vulkan-compute-driver-and-native-source
-          path: |
-            target/vulkan-guest
-          if-no-files-found: error
-          retention-days: 14
-      - uses: actions/upload-artifact@v4
-        with:
-          name: full-musl-library-and-source
-          path: |
-            target/musl-hybrid/libc.so
-            target/musl-hybrid/manifest.json
-            target/musl-hybrid/musl-COPYRIGHT.txt
-            target/musl-hybrid/GPL-3.0.txt
-            target/musl-hybrid/musl-hybrid-1.2.5-source.tar.gz
-          if-no-files-found: error
-          retention-days: 14
-  apple-build:
-    needs: [scope, guest-musl, memory-abi]
-    if: ${{ !cancelled() && needs.scope.outputs.native_scope != 'firefox-memory' && needs.scope.outputs.native_scope != 'firefox-runtime' && needs.scope.outputs.native_scope != 'firefox-clock' && needs.scope.outputs.native_scope != 'compatibility-probe' && needs.scope.outputs.native_scope != 'runtime-fastpaths' && needs.scope.outputs.native_scope != 'zink-foundation' && needs.scope.outputs.native_scope != 'zink-sync' && needs.scope.outputs.native_scope != 'zink-gles' && needs.scope.outputs.native_scope != 'zink-wayland' && needs.scope.outputs.native_scope != 'docker-default' && needs.scope.outputs.native_scope != 'docker-default-lifecycle' && needs.scope.outputs.native_scope != 'container-isolation' && needs.scope.outputs.native_scope != 'container-network' && needs.scope.outputs.native_scope != 'container-storage' && needs.scope.outputs.repackage_run == '' && needs.scope.result == 'success' && (needs.scope.outputs.frontend_only == 'true' || needs.scope.outputs.targeted == 'true' || (needs.guest-musl.result == 'success' && needs.memory-abi.result == 'success')) }}
+  clean-device:
     runs-on: macos-15
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
-      - name: Parse frontend Swift sources
-        run: |
-          swiftc -frontend -parse apps/ios/Trames/*.swift apps/ios/TramesFileSystem/*.swift apps/ios/TramesFileProvider/*.swift apps/ios/TramesTests/*.swift apps/ios/TramesUITests/*.swift
-          xcrun --sdk iphonesimulator swiftc -typecheck -target arm64-apple-ios17.0-simulator \
-            -sdk "$(xcrun --sdk iphonesimulator --show-sdk-path)" -application-extension \
-            apps/ios/TramesFileSystem/*.swift apps/ios/TramesFileProvider/*.swift
+        with:
+          fetch-depth: 0
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-10-16
-          targets: aarch64-apple-ios,aarch64-apple-ios-sim
+          targets: aarch64-apple-ios
+      - name: Verify frozen production source and unchanged guest inputs
+        run: |
+          git diff --exit-code 4eb3a46131b98ebfb30919eade07f3b9b8b1f86b HEAD -- crates Cargo.toml Cargo.lock vendor .cargo rust-toolchain.toml resources apps/ios/Trames apps/ios/TramesKit include
+          git diff --exit-code 534e223e284df48f207500e84ab4cd05dd3d3958 HEAD -- accelerator/musl accelerator/guest crates/trames-native/upstream scripts/build-musl-hybrid.sh scripts/prepare-musl-hybrid.py scripts/prepare-vulkan.py scripts/vulkan-upstream.json LICENSE
+          git diff --exit-code 18162c9c53ba1d8334b227087cbfd1474633bb2e HEAD -- crates/trames-vulkan crates/trames-wayland crates/trames-compute crates/trames-shared patches/mesa scripts/build-zink-egl.py scripts/zink-egl-requirements.txt
       - uses: actions/download-artifact@v4
         with:
           name: full-musl-library-and-source
-          run-id: ${{ needs.scope.outputs.baseline_run || github.run_id }}
+          run-id: 39015795319
           github-token: ${{ github.token }}
           path: target/musl-hybrid
       - uses: actions/download-artifact@v4
         with:
           name: vulkan-compute-driver-and-native-source
-          run-id: ${{ needs.scope.outputs.baseline_run || github.run_id }}
+          run-id: 39015795319
           github-token: ${{ github.token }}
           path: target/vulkan-guest
       - uses: actions/download-artifact@v4
-        if: needs.scope.outputs.zink_graphics_run != ''
         with:
           name: zink-native-bundle
-          run-id: ${{ needs.scope.outputs.zink_graphics_run }}
+          run-id: 39264897300
           github-token: ${{ github.token }}
           path: target/zink-native-bundle
-      - name: Install exact Metal-validated EGL and ICD with paired sources
-        if: needs.scope.outputs.zink_graphics_run != ''
+      - name: Verify and install source-paired production graphics libraries
         run: python3 scripts/prepare-zink-ipa.py
       - uses: actions/upload-artifact@v4
-        if: needs.scope.outputs.zink_graphics_run != ''
         with:
-          name: vulkan-compute-driver-and-native-source
+          name: build35-corresponding-guest-sources
           path: |
-            target/vulkan-guest/
-            !target/vulkan-guest/wayland-acceptance/**
-          retention-days: 14
-      - name: Build native Rust embedding library
-        if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'
-        run: cargo build -p trames-ffi --release --locked
-      - name: Test native SSH PTY and SFTP against OpenSSH
-        if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'
-        env:
-          TRAMES_RUST_LIB_DIR: ${{ github.workspace }}/target/release
-        run: bash scripts/test-swift-ssh.sh
-      - name: Validate affected native modules or the complete Apple core
-        if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.skip_native != 'true'
-        run: |
-          if [[ '${{ needs.scope.outputs.native_scope }}' == wayland-input ]]; then
-            cargo test -p trames-wayland --lib nested_popup_unmap --locked
-          elif [[ '${{ needs.scope.outputs.native_scope }}' == wayland-clipboard ]]; then
-            cargo test -p trames-wayland --lib clipboard_permission --locked
-          elif [[ '${{ needs.scope.outputs.native_scope }}' == host-terminals ]]; then
-            cargo test -p trames-vfs -p trames-core -p trames-ffi --lib --locked
-          elif [[ '${{ needs.scope.outputs.native_scope }}' == runtime-costs ]]; then
-            cargo test -p trames-memory --locked
-            cargo test -p trames-core --lib proc_map --locked
-          elif [[ '${{ needs.scope.outputs.native_scope }}' == release-core ]]; then
-            cargo test --workspace --all-features --locked
-          elif [[ '${{ needs.scope.outputs.native_scope }}' == devpts ]]; then
-            cargo test -p trames-vfs --lib pty::tests --locked
-            cargo test -p trames-vfs --lib proc_ --locked
-          elif [[ '${{ needs.scope.outputs.native_scope }}' == startup-mounts ]]; then
-            cargo test -p trames-ffi --lib runtime_tmpfs --locked
-          elif [[ '${{ needs.scope.outputs.native_scope }}' == memory-va ]]; then
-            uname -m
-            sysctl hw.pagesize
-            cargo test -p trames-memory --locked
-            cargo test -p trames-vfs --lib proc_route --locked
-            cargo build -p trames-cli --release --locked
-            python3 tests/integration/docker-startup-memory.py
-          elif [[ '${{ needs.scope.outputs.targeted }}' == true ]]; then
-            cargo test -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --lib --locked
-          else
-            cargo test -p trames-shared -p trames-wayland -p trames-native -p trames-compute -p trames-cpu -p trames-accel -p trames-memory -p trames-vfs -p trames-core --locked
-          fi
-      - name: Preserve Docker startup memory evidence
-        if: ${{ always() && needs.scope.outputs.native_scope == 'memory-va' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: apple-docker-startup-memory
-          path: target/docker-startup-memory
+            target/vulkan-guest/*source*.tar.gz
+            target/vulkan-guest/*manifest.json
+            target/vulkan-guest/ipa-guest-reuse.json
+            target/musl-hybrid/*source*.tar.gz
+            target/musl-hybrid/manifest.json
           if-no-files-found: error
           retention-days: 14
-      - name: Test original native Wayland clients and shared-FD lifetimes
-        if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'
-        run: brew install pkg-config libffi expat && bash scripts/test-wayland.sh
-      - name: Generate Xcode project
+      - name: Install Xcode project generator
         run: brew install xcodegen
-      - name: Link unsigned iPad simulator app
-        if: needs.scope.outputs.frontend_reused != 'true'
-        run: |
-          bash scripts/build-ios.sh simulator
-          python3 - <<'PYCODE'
-          import pathlib,plistlib
-          root=pathlib.Path('apps/ios/build/simulator/Build/Products/Debug-iphonesimulator/Trames.app')
-          for extension in (root/'PlugIns').glob('*.appex'):
-              info=plistlib.loads((extension/'Info.plist').read_bytes())
-              assert info['NSExtension']['NSExtensionPointIdentifier']=='com.apple.fileprovider-nonui'
-              assert info['NSExtension']['NSExtensionFileProviderDocumentGroup']==info['TramesAppGroup']
-          PYCODE
-      - name: Exercise peer tabs and floating window gestures first
-        if: needs.scope.outputs.frontend_reused != 'true'
-        timeout-minutes: 12
-        env:
-          TRAMES_UI_CRITICAL: ${{ needs.scope.outputs.critical_test || 'TramesUITests/LaunchTests/testWorkspaceTabsDetachDockAndTerminalTitleRemainsVisible' }}
-        run: |
-          device_id=$(xcrun simctl list devices available --json | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for rows in devices.values() for d in rows if d["name"].startswith("iPad")))')
-          python3 -c 'import subprocess,sys; subprocess.run(["xcrun","simctl","bootstatus",sys.argv[1],"-b"],check=True,timeout=180)' "$device_id"
-          xcodebuild -project apps/ios/Trames.xcodeproj -scheme Trames -configuration Debug \
-            -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath apps/ios/build/simulator \
-            -parallel-testing-enabled NO -test-timeouts-enabled YES \
-            -default-test-execution-time-allowance 180 -maximum-test-execution-time-allowance 180 \
-            -only-testing:"$TRAMES_UI_CRITICAL" \
-            CODE_SIGNING_ALLOWED=NO -skipPackagePluginValidation -resultBundlePath apps/ios/build/workspace-interaction.xcresult test \
-            2>&1 | tee apps/ios/build/workspace-interaction.log
-      - name: Publish workspace gesture result before the remaining tests
-        if: ${{ always() && needs.scope.outputs.frontend_reused != 'true' }}
-        run: |
-          if [[ -d apps/ios/build/workspace-interaction.xcresult ]]; then
-            xcrun xcresulttool get test-results summary --path apps/ios/build/workspace-interaction.xcresult \
-              > apps/ios/build/workspace-interaction-summary.json
-            cat apps/ios/build/workspace-interaction-summary.json
-          fi
-      - uses: actions/upload-artifact@v4
-        if: ${{ always() && needs.scope.outputs.frontend_reused != 'true' }}
-        with:
-          name: workspace-gesture-diagnostics
-          path: |
-            apps/ios/build/workspace-interaction-summary.json
-            apps/ios/build/workspace-interaction.log
-            apps/ios/build/workspace-interaction.xcresult
-          retention-days: 7
-      - name: Test affected frontend paths or the full simulator suite
-        if: ${{ !cancelled() && needs.scope.outputs.ui_targets != '[]' }}
-        timeout-minutes: 20
-        env:
-          TRAMES_UI_CRITICAL: ${{ needs.scope.outputs.critical_test || 'TramesUITests/LaunchTests/testWorkspaceTabsDetachDockAndTerminalTitleRemainsVisible' }}
-          TRAMES_UI_TARGETS: ${{ needs.scope.outputs.ui_targets }}
-        run: |
-          device_id=$(xcrun simctl list devices available --json | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for rows in devices.values() for d in rows if d["name"].startswith("iPad")))')
-          python3 -c 'import subprocess,sys; subprocess.run(["xcrun","simctl","bootstatus",sys.argv[1],"-b"],check=True,timeout=180)' "$device_id"
-          test_flags=()
-          if [[ -n "$TRAMES_UI_TARGETS" ]]; then
-            while IFS= read -r target; do test_flags+=("-only-testing:$target"); done < <(python3 -c 'import json,os;print("\n".join(json.loads(os.environ["TRAMES_UI_TARGETS"])))')
-          elif [[ '${{ needs.scope.outputs.frontend_only }}' == true ]]; then
-            test_flags=(-only-testing:TramesTests/WorkspaceTabsTests -only-testing:TramesTests/WorkspaceInteractionTests
-              -only-testing:TramesTests/TerminalViewportTests -only-testing:TramesUITests/LaunchTests)
-          fi
-          xcodebuild -project apps/ios/Trames.xcodeproj -scheme Trames -configuration Debug \
-            -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath apps/ios/build/simulator \
-            -parallel-testing-enabled NO -test-timeouts-enabled YES \
-            -default-test-execution-time-allowance 900 -maximum-test-execution-time-allowance 900 \
-            "${test_flags[@]}" \
-            -skip-testing:"$TRAMES_UI_CRITICAL" \
-            CODE_SIGNING_ALLOWED=NO -skipPackagePluginValidation -resultBundlePath apps/ios/build/ipad-smoke.xcresult test \
-            2>&1 | tee apps/ios/build/ipad-smoke.log
-      - name: Export simulator test summary
-        if: ${{ always() && needs.scope.outputs.frontend_reused != 'true' }}
-        run: |
-          if [[ -d apps/ios/build/ipad-smoke.xcresult ]]; then
-            xcrun xcresulttool get test-results summary --path apps/ios/build/ipad-smoke.xcresult \
-              > apps/ios/build/ipad-smoke-summary.json
-            cat apps/ios/build/ipad-smoke-summary.json
-            python3 -c 'import json; s=json.load(open("apps/ios/build/ipad-smoke-summary.json")); assert s["failedTests"] == 0 and s["passedTests"] > 0, "The actual simulator test report did not pass"'
-          fi
-          python3 -c 'import json; s=json.load(open("apps/ios/build/workspace-interaction-summary.json")); assert s["failedTests"] == 0 and s["passedTests"] == 1, "Workspace gestures must pass too"'
-      - name: Link unsigned iPad device app
+      - name: Check Apple Core including latest seccomp fix
+        run: cargo test -p trames-core --lib --locked
+      - name: Build optimized iPad device app without DEBUG probes
         run: bash scripts/build-ios.sh device
-      - name: Package unsigned device IPA for sideload signing
+      - name: Package clean device IPA
         run: |
-          python3 scripts/package-ios.py \
-            apps/ios/build/device/Build/Products/Release-iphoneos/Trames.app \
-            apps/ios/build/sideload/Trames-unsigned.ipa
-      - name: Export simulator crash diagnostics
-        if: ${{ always() && needs.scope.outputs.frontend_reused != 'true' }}
-        run: |
-          if [[ -d apps/ios/build/ipad-smoke.xcresult ]]; then
-            xcrun xcresulttool export diagnostics --path apps/ios/build/ipad-smoke.xcresult \
-              --output-path apps/ios/build/ipad-diagnostics
-          fi
-      - uses: actions/upload-artifact@v4
-        if: ${{ always() && needs.scope.outputs.frontend_reused != 'true' }}
-        with:
-          name: ipad-smoke-diagnostics
-          path: |
-            apps/ios/build/ipad-smoke-summary.json
-            apps/ios/build/ipad-smoke.log
-            apps/ios/build/ipad-smoke.xcresult/Staging/**/StandardOutputAndStandardError*.txt
-            apps/ios/build/ipad-smoke.xcresult/Staging/**/Session-*.log
-            apps/ios/build/ipad-diagnostics
-          retention-days: 7
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Trames-unsigned-sideload
-          path: apps/ios/build/sideload/Trames-unsigned.ipa*
-          if-no-files-found: error
-          retention-days: 14
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: unsigned-ipad-build-and-project
-          path: |
-            apps/ios/Trames.xcodeproj
-            apps/ios/build/*/Logs/Build
-            apps/ios/build/ipad-smoke.xcresult
-            apps/ios/build/ipad-smoke.log
-            apps/ios/build/ipad-smoke-summary.json
-            apps/ios/build/*/Build/Products/Debug-*/*.app
-            apps/ios/build/*/Build/Products/Release-*/*.app
-          retention-days: 7
-  repackage:
-    needs: scope
-    if: needs.scope.outputs.repackage_run != ''
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: unsigned-ipad-build-and-project
-          run-id: ${{ needs.scope.outputs.repackage_run }}
-          github-token: ${{ github.token }}
-          path: target/reused-ios
-      - name: Finalize shared-group metadata and package the existing device app
-        run: |
+          python3 scripts/package-ios.py apps/ios/build/device/Build/Products/Release-iphoneos/Trames.app apps/ios/build/sideload/Trames-1.2.0-build35-unsigned.ipa
           python3 - <<'PYCODE'
-          import hashlib,json,pathlib,plistlib,re,subprocess
-          bundles=list(pathlib.Path('target/reused-ios').glob('**/Release-iphoneos/Trames.app'))
-          assert len(bundles)==1, bundles
-          bundle=bundles[0];app=str(bundle)
-          # Actions ZIP transport does not retain executable permission bits.
-          for p in bundle.rglob('Info.plist'):
-              executable=plistlib.loads(p.read_bytes()).get('CFBundleExecutable','')
-              if executable and pathlib.Path(executable).name==executable:
-                  binary=p.parent/executable
-                  if binary.is_file():binary.chmod(0o755)
-          def hashes():
-              return {str(p.relative_to(bundle)):hashlib.sha256(p.read_bytes()).hexdigest() for p in bundle.rglob('*') if p.is_file() and p.name!='Info.plist'}
-          before=hashes()
-          if '${{ needs.scope.outputs.native_scope }}' == 'device-metadata':
-              build=re.search(r"CURRENT_PROJECT_VERSION: ['\"]?(\d+)",pathlib.Path('apps/ios/project.yml').read_text()).group(1)
-              for p in [bundle/'Info.plist', *bundle.glob('PlugIns/*.appex/Info.plist')]:
-                  info=plistlib.loads(p.read_bytes()); info['CFBundleVersion']=build
-                  p.write_bytes(plistlib.dumps(info,fmt=plistlib.FMT_BINARY))
-          subprocess.run(['python3','scripts/finalize-ios-app.py',app],check=True)
-          assert hashes()==before, 'Compiled executables and guest inputs must remain byte-identical'
-          pathlib.Path('target/sideload').mkdir(parents=True,exist_ok=True)
-          pathlib.Path('target/sideload/build-reuse.json').write_text(json.dumps({'source_run':${{ needs.scope.outputs.repackage_run }},'unchanged_files_sha256':before},indent=2)+'\n')
-          subprocess.run(['python3','scripts/package-ios.py',app,'target/sideload/Trames-unsigned.ipa'],check=True)
+          import json, pathlib, plistlib, subprocess, zipfile
+          output=pathlib.Path('apps/ios/build/sideload')
+          ipa=output/'Trames-1.2.0-build35-unsigned.ipa'
+          with zipfile.ZipFile(ipa) as archive:
+              assert archive.testzip() is None
+              names=archive.namelist()
+              assert not any('/GuestVulkan/acceptance/' in name or '/GuestVulkan/wayland-acceptance/' in name or '.xctest/' in name or '.dSYM/' in name for name in names)
+              info=plistlib.loads(archive.read('Payload/Trames.app/Info.plist'))
+              assert info['CFBundleVersion']=='35' and info['CFBundleShortVersionString']=='1.2.0'
+          binary=pathlib.Path('apps/ios/build/device/Build/Products/Release-iphoneos/Trames.app/Trames')
+          symbols=subprocess.check_output(['nm',str(binary)],text=True)
+          assert 'LocalWaylandProbe' not in symbols and 'LocalNetworkProbe' not in symbols
+          report=dict(version='1.2.0',build=35,source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),production_base='4eb3a46131b98ebfb30919eade07f3b9b8b1f86b',configuration='Release',debug_probes_included=False,guest_acceptance_fixtures_included=False,runtime_modified=False,pid1='Production BusyBox ash terminal supervisor retained',physical_ipad_tested=False)
+          (output/'build35-package-checks.json').write_text(json.dumps(report,indent=2)+'\n')
+          print(json.dumps(report,indent=2))
           PYCODE
       - uses: actions/upload-artifact@v4
         with:
-          name: Trames-unsigned-sideload
-          path: |
-            target/sideload/Trames-unsigned.ipa*
-            target/sideload/build-reuse.json
+          name: Trames-1.2.0-build35-clean-unsigned
+          path: apps/ios/build/sideload/*
           if-no-files-found: error
           retention-days: 14

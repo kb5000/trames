@@ -78,7 +78,7 @@ def package(app: Path, output: Path) -> None:
             # Only DEBUG XCTest probes use this signed offline repository and
             # original client fixtures. Runtime clients are installed with apk;
             # the native compositor, ICD and upstream notices stay in the IPA.
-            if relative.parts[:2] == ("GuestVulkan", "wayland-acceptance"):
+            if relative.parts[:2] in {("GuestVulkan", "wayland-acceptance"), ("GuestVulkan", "acceptance")}:
                 continue
             name = (Path("Payload") / app.name / relative).as_posix()
             if path.is_symlink():
