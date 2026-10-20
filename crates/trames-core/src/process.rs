@@ -3291,33 +3291,38 @@ impl Kernel {
     fn admit_private_views(&mut self, views: &mut [(u32, usize, trames_memory::parallel::View)]) {
         // Count actual Memory roots, including blocked/zombie processes. vm_id
         // alone cannot detect a retired handle or an alias in a host callback.
-        let mut spaces = BTreeMap::<u64, (usize, usize, usize)>::new();
+        let mut spaces = BTreeMap::<u64, (usize, usize)>::new();
         for p in self.processes.values() {
             let (identity, owners) = p.memory.coordinator_ownership();
             let counts = spaces.entry(identity).or_default();
             counts.0 += 1;
             counts.1 = owners;
         }
-        for (id, _, _) in views.iter() {
-            let (identity, _) = self.processes[id].memory.coordinator_ownership();
-            spaces.get_mut(&identity).expect("known VM").2 += 1;
-        }
+        let mut groups = BTreeMap::<u64, Vec<&mut trames_memory::parallel::View>>::new();
         for (id, _, view) in views {
             let (identity, _) = self.processes[id].memory.coordinator_ownership();
-            let (local, owners, dispatched) = spaces[&identity];
-            if local != owners || dispatched != 1 {
+            groups.entry(identity).or_default().push(view);
+        }
+        for (identity, mut group) in groups {
+            let (local, owners) = spaces[&identity];
+            if local != owners {
                 continue;
             }
-            // SAFETY: all Views have been prepared before dispatch; precisely
-            // one chosen CPU uses this VM and every coordinator handle belongs
-            // to this Kernel. Maps, signals/futex and coordinator byte access
+            // SAFETY: all Views have been prepared before dispatch, this group
+            // contains every chosen CPU of this VM and every coordinate handle
+            // belongs to this Kernel. Maps/signals/futex and coordinate access
             // wait for all workers to drop their Views. Ready-I/O services take
             // this very View while its CPU is parked, never another byte owner;
-            // async disk jobs use host buffers only. View admission also rejects
-            // surviving external Views. Per-frame physical ownership excludes
-            // shared mappings, custom backings and retained fork storage.
-            if unsafe { view.try_exclusive_private() } {
-                self.parallel_memory.metrics.exclusive_private_views += 1;
+            // async disk jobs use host buffers only. Admission requires matching
+            // snapshots and no external View in any generation. Multiple CPUs
+            // can bypass locks only for immutable, physically private frames;
+            // shared/custom/retained fork storage and RW frames remain guarded.
+            if unsafe { trames_memory::parallel::View::try_private_epoch(&mut group) } {
+                if group.len() == 1 {
+                    self.parallel_memory.metrics.exclusive_private_views += 1;
+                } else {
+                    self.parallel_memory.metrics.readonly_private_views += group.len() as u64;
+                }
             }
         }
     }
@@ -4413,10 +4418,15 @@ mod tests {
         let mut views = prepare(&mut k, &[1, 2]);
         k.admit_private_views(&mut views);
         assert!(views.iter().all(|(_, _, v)| !v.exclusive_private_enabled()));
+        assert!(views.iter().all(|(_, _, v)| v.readonly_private_enabled()));
         drop(views);
         // A safe host callback could retain this alias and access it during an
         // unrelated VM's output. Its presence must disable the private fast path.
         let external = k.processes.get_mut(&1).unwrap().memory.share();
+        let mut views = prepare(&mut k, &[1, 2]);
+        k.admit_private_views(&mut views);
+        assert!(views.iter().all(|(_, _, v)| !v.readonly_private_enabled()));
+        drop(views);
         // A zombie may retain vm_id while its memory has already been retired.
         // Counting only vm_id would accidentally substitute it for `external`.
         k.processes.get_mut(&2).unwrap().memory = Memory::default();
@@ -4544,6 +4554,7 @@ mod tests {
         assert_eq!(k.processes[&1].memory.read_u64(0x8000).unwrap(), 100000);
         assert_eq!(exit.instructions, 300006);
         assert!(k.parallel_rounds > 0);
+        assert!(k.parallel_memory.metrics.readonly_private_views > 0);
         // Without a startup barrier the host may schedule these finite tasks
         // consecutively. Real SMP publication fixtures require overlapping work.
         assert!(k.workers.peak.load(std::sync::atomic::Ordering::Relaxed) > 0);

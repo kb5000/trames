@@ -1,15 +1,19 @@
 {
-  "base_sha": "8e9c7bfac5ce242760e5fa2f4b101312821266a8",
+  "base_sha": "a74d758929f2d1fabfc2bc62283b83bf9f4b2eb5",
   "native_scope": "firefox-memory",
-  "reason": "Reuse exact unchanged Linux modules/ABI/TSan and Apple Core83 from 39392709719. Fix only the failed TCP test readiness assumption; run that test and remaining Apple memory/VFS/ABI/benchmark. Runtime production code unchanged, no IPA.",
+  "reason": "Admit complete matching View groups for lock-free immutable private CPU/native reads in shared VMs. Mutable/shared backing paths stay guarded. Validate affected Memory/Core/Linux/mapped-VFS and full-std TSan, original musl ABI and Apple ARM64/16KiB; benchmark contended reads plus RW fallback only; no IPA.",
   "changed_file_sha256": {
-    ".github/workflows/linux.yml": "b4cdcf1667e4dbab87fb83b1cdfe4823c4fb57c8b41559c7601350db6cfb0fca",
-    "crates/trames-linux/src/network.rs": "2b3135352d2b81087899004e55fe0006b1f1bba43b1a2023bebcffbdc6e7f657",
-    "docs/validation/private-memory.md": "621564c1bee20e39fd038e62ab5a3d429c6934fe6b9d44aadaede8931d2c499e",
-    "scripts/ios-ci-scope.py": "eb72c623a30fb4b729aa898f2c2f46f47cc23eaf67bcba8a4d33ace5efd590ef"
-  },
-  "memory_apple_retry": {
-    "sha": "8e9c7bfac5ce242760e5fa2f4b101312821266a8",
-    "run": 39392709719
+    ".github/workflows/linux.yml": "4c03476903ed65122a9b51f74728415c86840f71ceaa008e104dd9587e2f83a4",
+    "crates/trames-core/src/process.rs": "bc99faf392c83ba76026e7e7f734624e13306b61bf9a37c2cd75bdcfdd5971f8",
+    "crates/trames-memory/examples/shared-readonly.rs": "d654a63a8a8d3782992c101097281b5d94eceba46b8b7425fdba695241fb07d6",
+    "crates/trames-memory/src/parallel.rs": "832f6d0e2cbd11f30cc448fe00efb73fe524b1301263e8abe11b822b64791076",
+    "crates/trames-memory/src/parallel/exclusive.rs": "4fdb7c2be5cffe426aeacfcf887f079b5aa512b2c93b825872d6d52d27b9026b",
+    "crates/trames-memory/src/parallel/native.rs": "02f987e3561af185678121f1806ad8c5ef4a0fa5293631b37c6f18c9d3242f6e",
+    "crates/trames-memory/src/parallel/page.rs": "ef576ed297889183a8f3333185d9a735d32b12a4b082e5ec768c91565450cc71",
+    "crates/trames-memory/src/parallel/readonly.rs": "ae68cbfc5523c7d62e69afca5fbede3f1dbcdb7b7bf84d92a93a7a99c593da54",
+    "docs/architecture/region-memory.md": "3bda5a70522cd4fd35a0bc01082c6261816013e1b268ec788d8690d73dc2de2e",
+    "docs/validation/shared-readonly.md": "cfa3ff99b0e8e602883e638917580a9b25cfdcda91f8336d1a1ce569b270962d",
+    "docs/validation/shared-readonly/linux.json": "7df9a69b73dc2ab9c852440e54c2a47e0656f53b67a695165289debdfafeb3bb",
+    "docs/validation/shared-readonly/linux.log": "febfa069b8e7da60bd1897a3b860f08843ed099d488393479865232d30b1a6e3"
   }
 }

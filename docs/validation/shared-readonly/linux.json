@@ -1,0 +1,395 @@
+{
+  "parent": "a74d758929f2d1fabfc2bc62283b83bf9f4b2eb5",
+  "date": "2026-10-20",
+  "host": "Linux x86_64 / AMD EPYC 9V45 / 4096-byte pages",
+  "toolchain": "nightly-2026-10-16 / rustc 1.101.0-nightly (4ebd25825) / LLVM 23.1.4",
+  "profile": "workspace release; thin LTO; overflow-checks=true",
+  "command": "cargo run --release -p trames-memory --example shared-readonly -- 3",
+  "method": "Same binary, complete shared-VM group admission disabled/enabled. Three alternating-order pairs. Source preparation/warming/commit excluded; start barrier and completion included.",
+  "limits": "Contended-read memory microbenchmark, not application/CoreMark/Docker/Firefox/iPad throughput or an old-binary controlled comparison. Shared cloud host, no confidence interval. RW control has one distinct writable page per CPU in the same VM.",
+  "source_sha256": {
+    "crates/trames-core/src/process.rs": "bc99faf392c83ba76026e7e7f734624e13306b61bf9a37c2cd75bdcfdd5971f8",
+    "crates/trames-memory/examples/shared-readonly.rs": "d654a63a8a8d3782992c101097281b5d94eceba46b8b7425fdba695241fb07d6",
+    "crates/trames-memory/src/parallel.rs": "832f6d0e2cbd11f30cc448fe00efb73fe524b1301263e8abe11b822b64791076",
+    "crates/trames-memory/src/parallel/exclusive.rs": "4fdb7c2be5cffe426aeacfcf887f079b5aa512b2c93b825872d6d52d27b9026b",
+    "crates/trames-memory/src/parallel/native.rs": "02f987e3561af185678121f1806ad8c5ef4a0fa5293631b37c6f18c9d3242f6e",
+    "crates/trames-memory/src/parallel/page.rs": "ef576ed297889183a8f3333185d9a735d32b12a4b082e5ec768c91565450cc71",
+    "crates/trames-memory/src/parallel/readonly.rs": "ae68cbfc5523c7d62e69afca5fbede3f1dbcdb7b7bf84d92a93a7a99c593da54",
+    "Cargo.toml": "ce5c0f4e37b5aed78ed810541d0994775c5f9e6e03168860fab6715cbafb0549",
+    "Cargo.lock": "e23faa428d1fdf4e4badfa01ccd009d40083b3c7a0edb7c6138a640f4ce0c8c7",
+    "rust-toolchain.toml": "afa3f4f9d68bb775d4e994e98c21b73f14fa67464833cfe7c07c42ffb07c5640"
+  },
+  "example_binary_sha256": "453f02b84463653bc642aecf7b58798a2dbf7903eb3505bb5a13dbc324fc2118",
+  "raw_log_sha256": "febfa069b8e7da60bd1897a3b860f08843ed099d488393479865232d30b1a6e3",
+  "checksums_match": true,
+  "medians": [
+    {
+      "workers": 2,
+      "kind": "scalar-read",
+      "guarded_ms": 176.566245,
+      "readonly_ms": 67.06383100000001,
+      "ratio": 2.632808808670653
+    },
+    {
+      "workers": 2,
+      "kind": "native-pair64",
+      "guarded_ms": 255.54918500000002,
+      "readonly_ms": 49.231443999999996,
+      "ratio": 5.190771674298239
+    },
+    {
+      "workers": 2,
+      "kind": "rw-control",
+      "guarded_ms": 174.339365,
+      "readonly_ms": 174.311434,
+      "ratio": 1.0001602361896695
+    },
+    {
+      "workers": 4,
+      "kind": "scalar-read",
+      "guarded_ms": 432.45750300000003,
+      "readonly_ms": 69.85693599999999,
+      "ratio": 6.190616533768387
+    },
+    {
+      "workers": 4,
+      "kind": "native-pair64",
+      "guarded_ms": 721.7270930000001,
+      "readonly_ms": 71.652211,
+      "ratio": 10.072642322230644
+    },
+    {
+      "workers": 4,
+      "kind": "rw-control",
+      "guarded_ms": 179.14938,
+      "readonly_ms": 174.527468,
+      "ratio": 1.0264824331262286
+    }
+  ],
+  "samples": [
+    {
+      "workers": 2,
+      "kind": "scalar-read",
+      "mode": "guarded",
+      "repeat": 0,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.168404727,
+      "checksum": 11936128518279356928
+    },
+    {
+      "workers": 2,
+      "kind": "scalar-read",
+      "mode": "readonly",
+      "repeat": 0,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.067063831,
+      "checksum": 11936128518279356928
+    },
+    {
+      "workers": 2,
+      "kind": "scalar-read",
+      "mode": "readonly",
+      "repeat": 1,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.064939606,
+      "checksum": 11936128518279356928
+    },
+    {
+      "workers": 2,
+      "kind": "scalar-read",
+      "mode": "guarded",
+      "repeat": 1,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.17961055,
+      "checksum": 11936128518279356928
+    },
+    {
+      "workers": 2,
+      "kind": "scalar-read",
+      "mode": "guarded",
+      "repeat": 2,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.176566245,
+      "checksum": 11936128518279356928
+    },
+    {
+      "workers": 2,
+      "kind": "scalar-read",
+      "mode": "readonly",
+      "repeat": 2,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.067242048,
+      "checksum": 11936128518279356928
+    },
+    {
+      "workers": 2,
+      "kind": "native-pair64",
+      "mode": "guarded",
+      "repeat": 0,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.255549185,
+      "checksum": 10000000
+    },
+    {
+      "workers": 2,
+      "kind": "native-pair64",
+      "mode": "readonly",
+      "repeat": 0,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.048760352,
+      "checksum": 10000000
+    },
+    {
+      "workers": 2,
+      "kind": "native-pair64",
+      "mode": "readonly",
+      "repeat": 1,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.049333503,
+      "checksum": 10000000
+    },
+    {
+      "workers": 2,
+      "kind": "native-pair64",
+      "mode": "guarded",
+      "repeat": 1,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.269140793,
+      "checksum": 10000000
+    },
+    {
+      "workers": 2,
+      "kind": "native-pair64",
+      "mode": "guarded",
+      "repeat": 2,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.24430635,
+      "checksum": 10000000
+    },
+    {
+      "workers": 2,
+      "kind": "native-pair64",
+      "mode": "readonly",
+      "repeat": 2,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.049231444,
+      "checksum": 10000000
+    },
+    {
+      "workers": 2,
+      "kind": "rw-control",
+      "mode": "guarded",
+      "repeat": 0,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.174426416,
+      "checksum": 14540374789285712896
+    },
+    {
+      "workers": 2,
+      "kind": "rw-control",
+      "mode": "readonly",
+      "repeat": 0,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.174311434,
+      "checksum": 14540374789285712896
+    },
+    {
+      "workers": 2,
+      "kind": "rw-control",
+      "mode": "readonly",
+      "repeat": 1,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.172456061,
+      "checksum": 14540374789285712896
+    },
+    {
+      "workers": 2,
+      "kind": "rw-control",
+      "mode": "guarded",
+      "repeat": 1,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.174339365,
+      "checksum": 14540374789285712896
+    },
+    {
+      "workers": 2,
+      "kind": "rw-control",
+      "mode": "guarded",
+      "repeat": 2,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.172003817,
+      "checksum": 14540374789285712896
+    },
+    {
+      "workers": 2,
+      "kind": "rw-control",
+      "mode": "readonly",
+      "repeat": 2,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.174344362,
+      "checksum": 14540374789285712896
+    },
+    {
+      "workers": 4,
+      "kind": "scalar-read",
+      "mode": "guarded",
+      "repeat": 0,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.425311681,
+      "checksum": 5425512962849162240
+    },
+    {
+      "workers": 4,
+      "kind": "scalar-read",
+      "mode": "readonly",
+      "repeat": 0,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.064976512,
+      "checksum": 5425512962849162240
+    },
+    {
+      "workers": 4,
+      "kind": "scalar-read",
+      "mode": "readonly",
+      "repeat": 1,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.073690579,
+      "checksum": 5425512962849162240
+    },
+    {
+      "workers": 4,
+      "kind": "scalar-read",
+      "mode": "guarded",
+      "repeat": 1,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.445512946,
+      "checksum": 5425512962849162240
+    },
+    {
+      "workers": 4,
+      "kind": "scalar-read",
+      "mode": "guarded",
+      "repeat": 2,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.432457503,
+      "checksum": 5425512962849162240
+    },
+    {
+      "workers": 4,
+      "kind": "scalar-read",
+      "mode": "readonly",
+      "repeat": 2,
+      "iterations_per_worker": 10000000,
+      "seconds": 0.069856936,
+      "checksum": 5425512962849162240
+    },
+    {
+      "workers": 4,
+      "kind": "native-pair64",
+      "mode": "guarded",
+      "repeat": 0,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.769214842,
+      "checksum": 20000000
+    },
+    {
+      "workers": 4,
+      "kind": "native-pair64",
+      "mode": "readonly",
+      "repeat": 0,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.078554803,
+      "checksum": 20000000
+    },
+    {
+      "workers": 4,
+      "kind": "native-pair64",
+      "mode": "readonly",
+      "repeat": 1,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.071652211,
+      "checksum": 20000000
+    },
+    {
+      "workers": 4,
+      "kind": "native-pair64",
+      "mode": "guarded",
+      "repeat": 1,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.721727093,
+      "checksum": 20000000
+    },
+    {
+      "workers": 4,
+      "kind": "native-pair64",
+      "mode": "guarded",
+      "repeat": 2,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.703988367,
+      "checksum": 20000000
+    },
+    {
+      "workers": 4,
+      "kind": "native-pair64",
+      "mode": "readonly",
+      "repeat": 2,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.049051643,
+      "checksum": 20000000
+    },
+    {
+      "workers": 4,
+      "kind": "rw-control",
+      "mode": "guarded",
+      "repeat": 0,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.178793887,
+      "checksum": 10634005504861874176
+    },
+    {
+      "workers": 4,
+      "kind": "rw-control",
+      "mode": "readonly",
+      "repeat": 0,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.174348154,
+      "checksum": 10634005504861874176
+    },
+    {
+      "workers": 4,
+      "kind": "rw-control",
+      "mode": "readonly",
+      "repeat": 1,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.174527468,
+      "checksum": 10634005504861874176
+    },
+    {
+      "workers": 4,
+      "kind": "rw-control",
+      "mode": "guarded",
+      "repeat": 1,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.17914938,
+      "checksum": 10634005504861874176
+    },
+    {
+      "workers": 4,
+      "kind": "rw-control",
+      "mode": "guarded",
+      "repeat": 2,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.186031104,
+      "checksum": 10634005504861874176
+    },
+    {
+      "workers": 4,
+      "kind": "rw-control",
+      "mode": "readonly",
+      "repeat": 2,
+      "iterations_per_worker": 5000000,
+      "seconds": 0.185094549,
+      "checksum": 10634005504861874176
+    }
+  ]
+}
