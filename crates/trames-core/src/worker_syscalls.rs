@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Syscalls whose authority is immutable during one parallel CPU epoch.
-//! No VFS/Process Rc crosses the boundary. Mapping/process changes and filtered
-//! calls still checkpoint; identities/mappings cannot change before join.
+//! No VFS/Process Rc crosses the boundary. Only seccomp-allowed calls execute;
+//! filter installation, tracing and mutable authority changes still checkpoint.
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use trames_cpu::Cpu;
 use trames_memory::{Access, CpuMemory};
 use trames_vfs::Errno;
 
 pub(super) struct Snapshot {
+    pub seccomp: crate::process::seccomp::Seccomp,
     /// getpid, getppid, getuid, geteuid, getgid, getegid, gettid.
     pub identities: [u64; 7],
     pub started: Instant,
@@ -78,6 +79,21 @@ pub(super) fn clock(
 }
 
 impl Snapshot {
+    pub fn admit(&self, cpu: &Cpu) -> bool {
+        if self.seccomp.mode() == 0 {
+            return true;
+        }
+        // Unsupported calls go straight to the joined kernel, which evaluates
+        // their filter once. In particular, do not run BPF twice for each
+        // futex/epoll checkpoint. Ordinary unfiltered calls keep the old path.
+        if !matches!(cpu.x(8) as u32, 25 | 113 | 114 | 168 | 172..=178)
+            && !service_candidate(cpu, self)
+        {
+            return false;
+        }
+        self.seccomp
+            .allows(cpu.x(8) as u32, cpu.pc, std::array::from_fn(|i| cpu.x(i)))
+    }
     pub fn invoke(&self, cpu: &Cpu, memory: &mut impl CpuMemory) -> Option<u64> {
         let result = match cpu.x(8) as u32 {
             25 if matches!(cpu.x(1), 1 | 3) => self
@@ -125,6 +141,7 @@ mod tests {
         let mut memory = Memory::default();
         memory.map(0x1000, PAGE_SIZE, Permissions::RW).unwrap();
         let snapshot = Snapshot {
+            seccomp: Default::default(),
             identities: [0; 7],
             started: Instant::now(),
             processor: 0,
@@ -169,6 +186,7 @@ mod tests {
             .pipe(trames_vfs::O_CLOEXEC | trames_vfs::O_NONBLOCK)
             .unwrap();
         let snapshot = Snapshot {
+            seccomp: Default::default(),
             identities: [0; 7],
             started: Instant::now(),
             processor: 0,
@@ -206,6 +224,7 @@ mod tests {
         memory.write_array(0x1ff8, [0x5a; 8]).unwrap();
         memory.protect(0x2000, PAGE_SIZE, Permissions::R).unwrap();
         let snapshot = Snapshot {
+            seccomp: Default::default(),
             identities: [1, 0, 1000, 1001, 2000, 2001, 2],
             started: Instant::now(),
             processor: 3,

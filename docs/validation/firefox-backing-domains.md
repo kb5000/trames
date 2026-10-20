@@ -1,5 +1,8 @@
 # Firefox：减少并行快照的无关文件扫描
 
+后续：[默认刷新率与 worker 过滤器快照](firefox-default-refresh.md)继续减少四核
+checkpoint，并修复帧回调超出宣告刷新率的问题；默认页面验收仍未通过。
+
 2026-10-20，继续[四核页面加载调查](firefox-redirect.md)。宿主叶 PC 采样定位到
 `Memory::update_parallel_snapshot` 及文件页版本查询：任意文件或 SHM 修改推进
 全局 backing epoch 后，每个 VM 都会重新检查全部文件映射页。此前已经避免了

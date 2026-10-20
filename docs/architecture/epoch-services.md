@@ -23,9 +23,11 @@ sequenceDiagram
 | --- | --- | --- |
 | 身份/时钟/getcpu、F_GETFD/F_GETFL、纯内存/字符串/解析/回调/allocator 快路径 | worker 内 | 同一个 guest 内存和原算法同步模型，无逐调用内核往返 |
 | 普通 FD 的 lseek/fstat、立即可完成的 pipe/embedding stdio/guest Unix stream 字节 I/O、符合映射准入的普通文件标量/向量/定位 I/O 与 fsync/fdatasync | 协调器服务，epoch 保持 | 只挂起调用者，其他 worker 可以继续解释或执行原生函数 |
-| 映射、进程生命周期、futex/信号、filtered/trace syscall、有共享写入能力的映射文件读取、活跃映射文件写入、共享宿主 backing、其他 socket/PTY、stateful Vulkan、需要 backing checkpoint 的 NativeCall | joined coordinator | 保留既有 checkpoint；后续按资源拆分 |
+| 映射、进程生命周期、futex/信号、非 ALLOW 或 trace syscall、有共享写入能力的映射文件读取、活跃映射文件写入、共享宿主 backing、其他 socket/PTY、stateful Vulkan、需要 backing checkpoint 的 NativeCall | joined coordinator | 保留既有 checkpoint；后续按资源拆分 |
 
-只有 seccomp mode 0 且未启用 syscall trace 的任务请求 epoch 服务。
+未启用 syscall trace 的任务可以请求 epoch 服务；安装 seccomp 的任务先在 worker
+按不可变过滤器快照验证调用号、PC 和六个参数，仅 ALLOW 可以继续。协调器在
+任何 I/O 效果前再次验证。过滤器安装/TSYNC 等权限变更仍等待全部 worker joined。
 动态 proc/sysfs FD 元数据仍先 join，使用完整进程快照。
 writable MAP_SHARED 脏字节尚需 join 才能写回 VFS backing，直接读写旧 backing 会失去
 CPU/FD 一致性。private COW 不修改 inode，无共享写入能力的映射允许文件读取。
@@ -109,7 +111,8 @@ fsync 的 manifest checkpoint 和磁盘元数据访问仍同步。验证见
 F_GETFD/F_GETFL 直接读取 epoch 的不可变 FD flags 快照，并复用 Linux 的 flags ABI
 转换函数。FD 表结构/CLOEXEC 修改使快照失效；共享 open description 的 F_SETFL 使用
 revision，使独立 fork 表里的旧缓存也失效。worker 只持有 Arc/plain values，未持有
-VFS 的 Rc。没有使用该快照缓存权限决定；filtered/trace 任务仍走原 syscall 路径。
+VFS 的 Rc。没有使用该 FD 快照缓存权限决定；seccomp 另用不可变程序逐调用求值，
+非 ALLOW 和 trace 任务仍走原 syscall 路径。
 
 每个 worker 复用一个回复 channel。唯一 sender 随请求发出，再随 View/结果返回，
 等待时 worker 不保留额外 sender；意外丢弃请求会断开接收并报告 worker 故障，不能

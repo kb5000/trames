@@ -2,6 +2,7 @@
 //! Guest classic-BPF seccomp. Immutable programs run only at syscall entry;
 //! filters never reach the host kernel and add no CPU/memory hot-path work.
 use super::*;
+use std::sync::Arc;
 
 const ALLOW: u32 = 0x7fff_0000;
 const KILL_PROCESS: u32 = 0x8000_0000;
@@ -18,11 +19,19 @@ struct Instruction {
 }
 struct Filter(Vec<Instruction>);
 #[derive(Default, Clone)]
-pub(super) struct Seccomp {
+pub(crate) struct Seccomp {
     strict: bool,
-    filters: Vec<Rc<Filter>>,
+    // Immutable across a CPU epoch. Cloning a process/worker snapshot is O(1);
+    // installation copies only the small chain of program handles after join.
+    filters: Arc<Vec<Arc<Filter>>>,
 }
 impl Seccomp {
+    fn push(&mut self, filter: Arc<Filter>) {
+        Arc::make_mut(&mut self.filters).push(filter);
+    }
+    pub fn allows(&self, number: u32, pc: u64, args: [u64; 6]) -> bool {
+        self.decision(number, pc, args) & 0xffff_0000 == ALLOW
+    }
     pub fn mode(&self) -> u32 {
         if self.strict {
             1
@@ -41,8 +50,8 @@ impl Seccomp {
             && self
                 .filters
                 .iter()
-                .zip(&other.filters)
-                .all(|(a, b)| Rc::ptr_eq(a, b))
+                .zip(other.filters.iter())
+                .all(|(a, b)| Arc::ptr_eq(a, b))
     }
     fn decision(&self, number: u32, pc: u64, args: [u64; 6]) -> u32 {
         if self.strict {
@@ -51,6 +60,9 @@ impl Seccomp {
             } else {
                 0
             };
+        }
+        if self.filters.is_empty() {
+            return ALLOW;
         }
         let mut input = [0u32; 16];
         input[0] = number;
@@ -232,7 +244,7 @@ impl Kernel {
                 {
                     return Err(Errno(13));
                 }
-                let filter = Rc::new(Filter::load(&p.memory, a[2])?);
+                let filter = Arc::new(Filter::load(&p.memory, a[2])?);
                 if p.seccomp
                     .filters
                     .iter()
@@ -252,7 +264,7 @@ impl Kernel {
                         return Ok(p.linux.vfs.visible_pid(id) as u64);
                     }
                 }
-                p.seccomp.filters.push(filter);
+                p.seccomp.push(filter);
                 if a[1] & 1 != 0 {
                     for t in self
                         .processes
@@ -340,6 +352,191 @@ impl Kernel {
 mod tests {
     use super::*;
     #[test]
+    fn allowed_filtered_identity_calls_continue_on_workers_without_peer_checkpoints() {
+        let mut p = super::super::tests::process();
+        for (index, word) in [0xd2801588u32, 0xd4000001, 0x17ffffff]
+            .into_iter()
+            .enumerate()
+        {
+            p.memory
+                .write_array(0x4000 + index as u64 * 4, word.to_le_bytes())
+                .unwrap();
+        }
+        p.memory
+            .protect(
+                0x4000,
+                trames_memory::PAGE_SIZE,
+                trames_memory::Permissions::RX,
+            )
+            .unwrap();
+        p.cpu = Cpu::new(0x4000, 0);
+        p.affinity = 15;
+        p.seccomp
+            .push(Arc::new(Filter::validate(vec![i(6, 0, 0, ALLOW)]).unwrap()));
+        let mut kernel = super::super::tests::kernel();
+        kernel.cpu_count = 4;
+        kernel.workers = crate::workers::Pool::new(4);
+        kernel.per_cpu = vec![Duration::ZERO; 4];
+        for id in 2..=4 {
+            let mut peer = p.fork();
+            peer.parent = 1;
+            kernel.processes.insert(id, peer);
+        }
+        kernel.processes.insert(1, p);
+        assert!(kernel
+            .parallel_round(&mut trames_linux::CapturedOutput::default(), 100_000)
+            .unwrap());
+        assert!(
+            kernel.worker_syscalls > 100,
+            "allowed calls must stay on their workers"
+        );
+        assert_eq!(
+            kernel.syscalls, kernel.worker_syscalls,
+            "identity queries must not checkpoint"
+        );
+    }
+    #[test]
+    fn worker_filter_snapshots_keep_pc_arguments_and_immutable_installation_order() {
+        let mut current = Seccomp::default();
+        current.push(Arc::new(
+            Filter::validate(vec![
+                i(0x20, 0, 0, 8), // post-SVC PC low word
+                i(0x15, 0, 4, 0x4004),
+                i(0x20, 0, 0, 60), // sixth argument high word
+                i(0x15, 0, 2, 7),
+                i(0x06, 0, 0, ALLOW | 19),
+                i(0x06, 0, 0, KILL_PROCESS),
+                i(0x06, 0, 0, 0x30007),
+            ])
+            .unwrap(),
+        ));
+        let args = [1, 2, 3, 4, 5, 7 << 32];
+        let worker = current.clone();
+        current.push(Arc::new(
+            Filter::validate(vec![i(6, 0, 0, 0x50009)]).unwrap(),
+        ));
+        // A worker owns only immutable, Send+Sync programs. Later installation
+        // does not mutate a snapshot; the next joined epoch gets the new chain.
+        std::thread::spawn(move || {
+            assert!(worker.allows(113, 0x4004, args));
+            assert!(!worker.allows(113, 0x4008, args));
+            assert!(!worker.allows(113, 0x4004, [0; 6]));
+        })
+        .join()
+        .unwrap();
+        assert!(!current.allows(113, 0x4004, args));
+        let strict = Seccomp {
+            strict: true,
+            ..Default::default()
+        };
+        assert!(strict.allows(63, 0, [0; 6]));
+        assert!(!strict.allows(113, 0, [0; 6]));
+    }
+    #[test]
+    fn strict_allowed_reads_can_use_in_epoch_services() {
+        let mut p = super::super::tests::process();
+        let [read, write] = p.linux.vfs.pipe(O_NONBLOCK).unwrap();
+        p.linux.vfs.write(write, b"abcdefgh").unwrap();
+        p.memory
+            .write_array(0x4000, 0xd4000001u32.to_le_bytes())
+            .unwrap();
+        p.memory
+            .write_array(0x4004, 0x14000000u32.to_le_bytes())
+            .unwrap();
+        p.memory
+            .protect(
+                0x4000,
+                trames_memory::PAGE_SIZE,
+                trames_memory::Permissions::RX,
+            )
+            .unwrap();
+        p.cpu = Cpu::new(0x4000, 0);
+        p.cpu.set_x(8, 63);
+        put_args(&mut p.cpu, [read as u64, 0x1000, 4, 0, 0, 0]);
+        p.affinity = 3;
+        p.seccomp.strict = true;
+        let mut peer = p.fork();
+        peer.parent = 1;
+        let mut kernel = super::super::tests::kernel();
+        kernel.cpu_count = 2;
+        kernel.workers = crate::workers::Pool::new(2);
+        kernel.per_cpu = vec![Duration::ZERO; 2];
+        kernel.processes.insert(1, p);
+        kernel.processes.insert(2, peer);
+        assert!(kernel
+            .parallel_round(&mut trames_linux::CapturedOutput::default(), 100_000)
+            .unwrap());
+        // A peer may reach the shared budget before the other is scheduled;
+        // an epoch ending is not a filter rejection. At least one actual read
+        // must complete through the in-epoch service, rather than checkpoint.
+        assert!(kernel.serviced_syscalls > 0);
+        let mut received: Vec<_> = kernel
+            .processes
+            .values()
+            .filter(|p| p.cpu.x(0) == 4)
+            .map(|p| p.memory.read_array::<4>(0x1000).unwrap())
+            .collect();
+        received.sort();
+        assert_eq!(received, [*b"abcd", *b"efgh"][..received.len()]);
+    }
+    #[test]
+    fn denied_filtered_reads_do_not_issue_services_or_consume_pipe_bytes() {
+        let mut p = super::super::tests::process();
+        let [read, write] = p.linux.vfs.pipe(O_NONBLOCK).unwrap();
+        p.linux.vfs.write(write, b"unchanged").unwrap();
+        p.memory.write_array(0x1000, [0x5a; 8]).unwrap();
+        p.memory
+            .write_array(0x4000, 0xd4000001u32.to_le_bytes())
+            .unwrap();
+        p.memory
+            .write_array(0x4004, 0x17ffffffu32.to_le_bytes())
+            .unwrap();
+        p.memory
+            .protect(
+                0x4000,
+                trames_memory::PAGE_SIZE,
+                trames_memory::Permissions::RX,
+            )
+            .unwrap();
+        p.cpu = Cpu::new(0x4000, 0);
+        p.cpu.set_x(8, 63);
+        put_args(&mut p.cpu, [read as u64, 0x1000, 8, 0, 0, 0]);
+        p.affinity = 3;
+        p.seccomp.push(Arc::new(
+            Filter::validate(vec![i(6, 0, 0, 0x5007b)]).unwrap(),
+        ));
+        let mut peer = p.fork();
+        peer.parent = 1;
+        let mut kernel = super::super::tests::kernel();
+        kernel.cpu_count = 2;
+        kernel.workers = crate::workers::Pool::new(2);
+        kernel.per_cpu = vec![Duration::ZERO; 2];
+        kernel.processes.insert(1, p);
+        kernel.processes.insert(2, peer);
+        assert!(kernel
+            .parallel_round(&mut trames_linux::CapturedOutput::default(), 100_000)
+            .unwrap());
+        assert_eq!(kernel.service_requests, 0);
+        assert!(kernel.syscalls > 0);
+        for p in kernel.processes.values() {
+            assert_eq!(p.memory.read_array::<8>(0x1000), Ok([0x5a; 8]));
+            if p.cpu.pc == 0x4004 {
+                assert_eq!(p.cpu.x(0), error(Errno(123)));
+            }
+        }
+        assert_eq!(
+            kernel
+                .processes
+                .get_mut(&1)
+                .unwrap()
+                .linux
+                .vfs
+                .read(read, 9)
+                .unwrap(),
+            b"unchanged"
+        );
+    }
+    #[test]
     fn filtered_identity_syscalls_still_checkpoint_and_apply_errno_in_parallel() {
         let mut p = super::super::tests::process();
         for (index, word) in [0xd2801588u32, 0xd4000001, 0x17ffffff]
@@ -359,7 +556,7 @@ mod tests {
             .unwrap();
         p.cpu = Cpu::new(0x4000, 0);
         p.affinity = 3;
-        p.seccomp.filters.push(Rc::new(
+        p.seccomp.push(Arc::new(
             Filter::validate(vec![i(6, 0, 0, 0x5007b)]).unwrap(),
         ));
         let mut peer = p.fork();
@@ -395,7 +592,7 @@ mod tests {
             put_args(&mut p.cpu, args);
             p.cpu.set_x(8, number as u64);
             p.cpu.pc = 0x4004;
-            p.seccomp.filters.push(Rc::new(
+            p.seccomp.push(Arc::new(
                 Filter::validate(vec![i(6, 0, 0, 0x30055)]).unwrap(),
             ));
             p.actions[31] = Action {
@@ -437,7 +634,7 @@ mod tests {
         for (handler, mask) in [(1, 0), (0x5000, 1u64 << 30)] {
             let mut p = super::super::tests::process();
             let mut kernel = super::super::tests::kernel();
-            p.seccomp.filters.push(Rc::new(
+            p.seccomp.push(Arc::new(
                 Filter::validate(vec![i(6, 0, 0, 0x30055)]).unwrap(),
             ));
             p.actions[31].handler = handler;
@@ -491,15 +688,15 @@ mod tests {
     }
     #[test]
     fn stacked_filters_keep_restrictions_and_newest_equal_action_data() {
-        let a = Rc::new(Filter::validate(vec![i(6, 0, 0, 0x50001)]).unwrap());
-        let b = Rc::new(Filter::validate(vec![i(6, 0, 0, 0x50002)]).unwrap());
+        let a = Arc::new(Filter::validate(vec![i(6, 0, 0, 0x50001)]).unwrap());
+        let b = Arc::new(Filter::validate(vec![i(6, 0, 0, 0x50002)]).unwrap());
         let ancestor = Seccomp {
             strict: false,
-            filters: vec![a.clone()],
+            filters: Arc::new(vec![a.clone()]),
         };
         let current = Seccomp {
             strict: false,
-            filters: vec![a, b],
+            filters: Arc::new(vec![a, b]),
         };
         assert!(ancestor.ancestor_of(&current));
         assert!(!current.ancestor_of(&ancestor));

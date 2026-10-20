@@ -81,7 +81,7 @@ use compat::AltStack;
 #[path = "process_scheduling.rs"]
 mod scheduling;
 #[path = "process_seccomp.rs"]
-mod seccomp;
+pub(crate) mod seccomp;
 #[path = "process_service.rs"]
 mod service;
 use service::DiskEpoch;
@@ -3514,9 +3514,10 @@ impl Kernel {
                         cpu,
                         memory: view,
                         control: control.clone(),
-                        syscalls: (p.seccomp.mode() == 0 && !p.linux.trace).then(|| {
+                        syscalls: (!p.linux.trace).then(|| {
                             let c = &p.linux.vfs.credentials;
                             crate::worker_syscalls::Snapshot {
+                                seccomp: p.seccomp.clone(),
                                 identities: [
                                     p.linux.vfs.visible_pid(p.tgid) as u64,
                                     p.linux.vfs.visible_pid(p.parent) as u64,

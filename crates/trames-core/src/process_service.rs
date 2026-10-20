@@ -81,7 +81,7 @@ impl Kernel {
         // than their cached read. Memory/mapped files retain the old helpers.
         let a = request.args;
         if matches!(request.number, 63 | 65 | 67 | 69)
-            && p.seccomp.mode() == 0
+            && p.seccomp.allows(request.number, request.pc, request.args)
             && !p.linux.trace
             && matches!(p.state, State::Ready)
             && (matches!(request.number, 65 | 69) || a[2] >= 16 * 1024)
@@ -172,7 +172,13 @@ impl Kernel {
         io: &mut impl GuestOutput,
     ) -> Option<u64> {
         let p = self.processes.get_mut(&request.pid)?;
-        if p.seccomp.mode() != 0 || p.linux.trace || !matches!(p.state, State::Ready) {
+        // The worker already evaluated its immutable epoch filter. Recheck
+        // here before any VFS effects, using the actual post-SVC PC/arguments.
+        // Installation/TSYNC cannot change authority until all CPUs join.
+        if !p.seccomp.allows(request.number, request.pc, request.args)
+            || p.linux.trace
+            || !matches!(p.state, State::Ready)
+        {
             return None;
         }
         let a = request.args;
@@ -282,6 +288,7 @@ mod tests {
         cpu.set_x(8, number as u64);
         put_args(&mut cpu, a);
         let snapshot = crate::worker_syscalls::Snapshot {
+            seccomp: p.seccomp.clone(),
             identities: [0; 7],
             started: Instant::now(),
             processor: 0,

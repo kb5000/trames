@@ -47,6 +47,15 @@ hole-punching and physical host-block reservation are not implemented.
 
 ## Vulkan presentation
 
+Frame callback pacing follows the same nominal refresh period advertised by
+`wl_output`. A frontend polling faster than the display cannot create a faster
+callback feedback loop. Only commits acknowledged by an actual presentation are
+eligible; delayed callbacks coalesce at the next deadline, without acknowledging
+newer, undisplayed commits. The native server wakes for that deadline even if the
+UI has paused redrawing an unchanged image. Timestamps retain the frontend epoch
+and wrap as Wayland's 32-bit milliseconds require. GPU FIFO acknowledgement and
+buffer/texture lease release remain independent of callback pacing.
+
 Standard VK_KHR_wayland_surface uses the original guest loader/libwayland. The
 ICD resolves libwayland through its own handle, including clients using RTLD_LOCAL.
 It authenticates the bridged connection and resolves its connection-local

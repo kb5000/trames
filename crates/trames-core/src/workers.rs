@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! CPU workers retain state and run until an event or a requested checkpoint.
-//! Pure NativeCall and unfiltered snapshot/clock syscalls run on workers.
+//! Pure NativeCall and seccomp-allowed snapshot/clock syscalls run on workers.
 //! Mutable Linux/VFS state stays on the coordinator.
 use std::{
     sync::{
@@ -83,6 +83,7 @@ pub(super) enum Event {
 /// No coordinator Memory/Rc or page guard crosses this boundary.
 pub(super) struct Request {
     pub pid: u32,
+    pub pc: u64,
     pub number: u32,
     pub args: [u64; 6],
     pub memory: View,
@@ -219,7 +220,11 @@ impl Pool {
                             credit -= retired;
                             if matches!(result, SliceOutcome::Syscall { .. }) {
                                 work.cpu.clear_exclusive();
-                                if let Some(snapshot) = &work.syscalls {
+                                if let Some(snapshot) = work
+                                    .syscalls
+                                    .as_ref()
+                                    .filter(|snapshot| snapshot.admit(&work.cpu))
+                                {
                                     let began = snapshot.profile.then(Instant::now);
                                     if let Some(value) = snapshot
                                         .invoke(&work.cpu, memory.as_mut().expect("worker view"))
@@ -241,6 +246,7 @@ impl Pool {
                                         running = false;
                                         let request = Request {
                                             pid: work.pid,
+                                            pc: work.cpu.pc,
                                             number: work.cpu.x(8) as u32,
                                             args: std::array::from_fn(|i| work.cpu.x(i)),
                                             memory: memory.take().expect("worker view"),
@@ -610,6 +616,7 @@ mod tests {
 
     fn syscall_snapshot() -> crate::worker_syscalls::Snapshot {
         crate::worker_syscalls::Snapshot {
+            seccomp: Default::default(),
             identities: [21, 12, 1000, 1001, 2000, 2001, 22],
             started: Instant::now(),
             processor: 1,
