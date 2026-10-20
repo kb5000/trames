@@ -1,0 +1,1104 @@
+[
+  {
+    "seconds": 100,
+    "raw_tree_size": 360,
+    "traversed": 360,
+    "priorities": {
+      "4": 229,
+      "0": 74,
+      "7": 45,
+      "9": 12
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 74,
+        "queued": 74
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 45,
+        "queued": 45
+      }
+    },
+    "total_suspended": 74,
+    "non_suspended_count": 286
+  },
+  {
+    "seconds": 105,
+    "raw_tree_size": 357,
+    "traversed": 357,
+    "priorities": {
+      "4": 280,
+      "0": 74,
+      "7": 3
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 74,
+        "queued": 74
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 3,
+        "queued": 3
+      }
+    },
+    "total_suspended": 74,
+    "non_suspended_count": 283
+  },
+  {
+    "seconds": 110,
+    "raw_tree_size": 398,
+    "traversed": 398,
+    "priorities": {
+      "4": 303,
+      "0": 77,
+      "7": 18
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 77,
+        "queued": 77
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 18,
+        "queued": 18
+      }
+    },
+    "total_suspended": 77,
+    "non_suspended_count": 321
+  },
+  {
+    "seconds": 115,
+    "raw_tree_size": 430,
+    "traversed": 430,
+    "priorities": {
+      "4": 319,
+      "0": 111
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 111,
+        "queued": 111
+      }
+    },
+    "total_suspended": 111,
+    "non_suspended_count": 319
+  },
+  {
+    "seconds": 120,
+    "raw_tree_size": 266,
+    "traversed": 266,
+    "priorities": {
+      "0": 112,
+      "4": 154
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 0,
+        "queued": 0
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 154
+  },
+  {
+    "seconds": 125,
+    "raw_tree_size": 283,
+    "traversed": 283,
+    "priorities": {
+      "0": 112,
+      "4": 164,
+      "7": 7
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 7,
+        "queued": 7
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 171
+  },
+  {
+    "seconds": 130,
+    "raw_tree_size": 303,
+    "traversed": 303,
+    "priorities": {
+      "0": 112,
+      "4": 172,
+      "7": 16,
+      "5": 2,
+      "9": 1
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 16,
+        "queued": 16
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 191
+  },
+  {
+    "seconds": 135,
+    "raw_tree_size": 273,
+    "traversed": 273,
+    "priorities": {
+      "0": 112,
+      "4": 160,
+      "2": 1
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 0,
+        "queued": 0
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 161
+  },
+  {
+    "seconds": 140,
+    "raw_tree_size": 281,
+    "traversed": 281,
+    "priorities": {
+      "0": 112,
+      "4": 163,
+      "2": 1,
+      "7": 5
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 5,
+        "queued": 5
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 169
+  },
+  {
+    "seconds": 145,
+    "raw_tree_size": 291,
+    "traversed": 291,
+    "priorities": {
+      "0": 112,
+      "4": 169,
+      "2": 1,
+      "7": 9
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 9,
+        "queued": 9
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 179
+  },
+  {
+    "seconds": 150,
+    "raw_tree_size": 299,
+    "traversed": 299,
+    "priorities": {
+      "0": 112,
+      "4": 175,
+      "2": 1,
+      "7": 11
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 11,
+        "queued": 11
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 187
+  },
+  {
+    "seconds": 155,
+    "raw_tree_size": 304,
+    "traversed": 304,
+    "priorities": {
+      "0": 112,
+      "4": 177,
+      "2": 1,
+      "7": 14
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 14,
+        "queued": 14
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 192
+  },
+  {
+    "seconds": 160,
+    "raw_tree_size": 296,
+    "traversed": 296,
+    "priorities": {
+      "0": 112,
+      "4": 183,
+      "2": 1
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 184
+  },
+  {
+    "seconds": 165,
+    "raw_tree_size": 310,
+    "traversed": 310,
+    "priorities": {
+      "0": 112,
+      "4": 186,
+      "2": 1,
+      "7": 11
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 11,
+        "queued": 11
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 198
+  },
+  {
+    "seconds": 170,
+    "raw_tree_size": 323,
+    "traversed": 323,
+    "priorities": {
+      "0": 112,
+      "4": 189,
+      "2": 1,
+      "7": 21
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 21,
+        "queued": 21
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 211
+  },
+  {
+    "seconds": 175,
+    "raw_tree_size": 299,
+    "traversed": 299,
+    "priorities": {
+      "0": 112,
+      "4": 186,
+      "2": 1
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 187
+  },
+  {
+    "seconds": 180,
+    "raw_tree_size": 309,
+    "traversed": 309,
+    "priorities": {
+      "0": 112,
+      "4": 192,
+      "2": 1,
+      "7": 4
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 4,
+        "queued": 4
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 197
+  },
+  {
+    "seconds": 185,
+    "raw_tree_size": 315,
+    "traversed": 315,
+    "priorities": {
+      "0": 112,
+      "4": 195,
+      "2": 1,
+      "7": 7
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 7,
+        "queued": 7
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 203
+  },
+  {
+    "seconds": 190,
+    "raw_tree_size": 339,
+    "traversed": 339,
+    "priorities": {
+      "0": 112,
+      "4": 203,
+      "2": 1,
+      "7": 21,
+      "5": 2
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 21,
+        "queued": 21
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 227
+  },
+  {
+    "seconds": 195,
+    "raw_tree_size": 342,
+    "traversed": 342,
+    "priorities": {
+      "0": 112,
+      "4": 206,
+      "2": 1,
+      "7": 21,
+      "5": 2
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 21,
+        "queued": 21
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 230
+  },
+  {
+    "seconds": 200,
+    "raw_tree_size": 360,
+    "traversed": 360,
+    "priorities": {
+      "0": 112,
+      "4": 211,
+      "2": 1,
+      "7": 34,
+      "5": 2
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 34,
+        "queued": 34
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 248
+  },
+  {
+    "seconds": 205,
+    "raw_tree_size": 367,
+    "traversed": 367,
+    "priorities": {
+      "0": 112,
+      "4": 217,
+      "2": 1,
+      "7": 35,
+      "5": 2
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 35,
+        "queued": 35
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 255
+  },
+  {
+    "seconds": 210,
+    "raw_tree_size": 376,
+    "traversed": 376,
+    "priorities": {
+      "0": 112,
+      "4": 219,
+      "2": 1,
+      "7": 42,
+      "5": 2
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 42,
+        "queued": 42
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 264
+  },
+  {
+    "seconds": 215,
+    "raw_tree_size": 384,
+    "traversed": 384,
+    "priorities": {
+      "0": 112,
+      "4": 223,
+      "2": 1,
+      "7": 46,
+      "5": 2
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 46,
+        "queued": 46
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 272
+  },
+  {
+    "seconds": 220,
+    "raw_tree_size": 392,
+    "traversed": 392,
+    "priorities": {
+      "0": 112,
+      "4": 228,
+      "2": 1,
+      "7": 49,
+      "5": 2
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 49,
+        "queued": 49
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 280
+  },
+  {
+    "seconds": 225,
+    "raw_tree_size": 406,
+    "traversed": 406,
+    "priorities": {
+      "0": 112,
+      "4": 232,
+      "2": 1,
+      "7": 59,
+      "5": 2
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 59,
+        "queued": 59
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 294
+  },
+  {
+    "seconds": 231,
+    "raw_tree_size": 416,
+    "traversed": 416,
+    "priorities": {
+      "0": 112,
+      "4": 237,
+      "2": 1,
+      "7": 63,
+      "5": 3
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 63,
+        "queued": 63
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 304
+  },
+  {
+    "seconds": 236,
+    "raw_tree_size": 430,
+    "traversed": 430,
+    "priorities": {
+      "0": 112,
+      "4": 241,
+      "2": 1,
+      "7": 73,
+      "5": 3
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 73,
+        "queued": 73
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 318
+  },
+  {
+    "seconds": 241,
+    "raw_tree_size": 444,
+    "traversed": 444,
+    "priorities": {
+      "0": 112,
+      "4": 244,
+      "2": 1,
+      "7": 84,
+      "5": 3
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 84,
+        "queued": 84
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 332
+  },
+  {
+    "seconds": 246,
+    "raw_tree_size": 454,
+    "traversed": 454,
+    "priorities": {
+      "0": 112,
+      "4": 244,
+      "2": 1,
+      "7": 94,
+      "5": 3
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 94,
+        "queued": 94
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 342
+  },
+  {
+    "seconds": 251,
+    "raw_tree_size": 466,
+    "traversed": 466,
+    "priorities": {
+      "0": 112,
+      "4": 248,
+      "2": 1,
+      "7": 101,
+      "5": 4
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 101,
+        "queued": 101
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 354
+  },
+  {
+    "seconds": 256,
+    "raw_tree_size": 482,
+    "traversed": 482,
+    "priorities": {
+      "0": 112,
+      "4": 253,
+      "2": 1,
+      "7": 112,
+      "5": 4
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 112,
+        "queued": 112
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 370
+  },
+  {
+    "seconds": 261,
+    "raw_tree_size": 494,
+    "traversed": 494,
+    "priorities": {
+      "0": 112,
+      "4": 255,
+      "2": 1,
+      "7": 122,
+      "5": 4
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 122,
+        "queued": 122
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 382
+  },
+  {
+    "seconds": 266,
+    "raw_tree_size": 503,
+    "traversed": 503,
+    "priorities": {
+      "0": 112,
+      "4": 261,
+      "2": 1,
+      "7": 125,
+      "5": 4
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 125,
+        "queued": 125
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 391
+  },
+  {
+    "seconds": 271,
+    "raw_tree_size": 519,
+    "traversed": 519,
+    "priorities": {
+      "4": 266,
+      "0": 112,
+      "2": 1,
+      "7": 136,
+      "5": 4
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 136,
+        "queued": 136
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 407
+  },
+  {
+    "seconds": 276,
+    "raw_tree_size": 531,
+    "traversed": 531,
+    "priorities": {
+      "4": 272,
+      "0": 112,
+      "2": 1,
+      "7": 142,
+      "5": 4
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 142,
+        "queued": 142
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 419
+  },
+  {
+    "seconds": 281,
+    "raw_tree_size": 542,
+    "traversed": 542,
+    "priorities": {
+      "4": 278,
+      "0": 112,
+      "2": 1,
+      "7": 146,
+      "5": 5
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 146,
+        "queued": 146
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 430
+  },
+  {
+    "seconds": 286,
+    "raw_tree_size": 549,
+    "traversed": 549,
+    "priorities": {
+      "4": 282,
+      "0": 112,
+      "2": 1,
+      "7": 149,
+      "5": 5
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 149,
+        "queued": 149
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 437
+  },
+  {
+    "seconds": 291,
+    "raw_tree_size": 561,
+    "traversed": 561,
+    "priorities": {
+      "4": 287,
+      "0": 112,
+      "2": 1,
+      "7": 156,
+      "5": 5
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 156,
+        "queued": 156
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 449
+  },
+  {
+    "seconds": 296,
+    "raw_tree_size": 567,
+    "traversed": 567,
+    "priorities": {
+      "4": 289,
+      "0": 112,
+      "2": 1,
+      "7": 160,
+      "5": 5
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 160,
+        "queued": 160
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 455
+  },
+  {
+    "seconds": 301,
+    "raw_tree_size": 576,
+    "traversed": 576,
+    "priorities": {
+      "4": 293,
+      "0": 112,
+      "2": 1,
+      "7": 165,
+      "5": 5
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 165,
+        "queued": 165
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 464
+  },
+  {
+    "seconds": 306,
+    "raw_tree_size": 591,
+    "traversed": 591,
+    "priorities": {
+      "4": 298,
+      "0": 112,
+      "2": 1,
+      "7": 175,
+      "5": 5
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 175,
+        "queued": 175
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 479
+  },
+  {
+    "seconds": 311,
+    "raw_tree_size": 601,
+    "traversed": 601,
+    "priorities": {
+      "4": 298,
+      "0": 112,
+      "2": 1,
+      "7": 185,
+      "5": 5
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 185,
+        "queued": 185
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 489
+  },
+  {
+    "seconds": 316,
+    "raw_tree_size": 611,
+    "traversed": 611,
+    "priorities": {
+      "4": 298,
+      "0": 112,
+      "2": 1,
+      "7": 195,
+      "5": 5
+    },
+    "managers": {
+      "0x32f13510": {
+        "current_suspended": true,
+        "task_count": 112,
+        "queued": 112
+      },
+      "0x30ba1d50": {
+        "current_suspended": false,
+        "task_count": 195,
+        "queued": 195
+      }
+    },
+    "total_suspended": 112,
+    "non_suspended_count": 499
+  }
+]

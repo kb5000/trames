@@ -1,0 +1,1129 @@
+{
+  "runs": {
+    "manager-file": {
+      "runtime_source": "95830f6+temporary-diagnostic",
+      "seconds": 320.29582700399624,
+      "frames": 464,
+      "js_title_seen": false,
+      "canvas_green_pixels": 0,
+      "diagnostics_complete": false,
+      "passed": false,
+      "ffi_sha256": "228c6347ef300a9f68c9fef0346da46e7d6521daa19a143c4ac07179d751cb34",
+      "preferences": {
+        "layout.frame_rate": 1
+      },
+      "host_cpus": 4,
+      "full_host_sha256": "6fed01058bc08baf2eb3f3ad3e1aa99bf5f8dbc6a87dfc8fd584d73e61152497",
+      "host_trace_selection": "all maps, queue hooks, manager dumps, diagnostics; parent/file-reader task samples; complete task trees at seconds 100,150,316 when available"
+    },
+    "stream-pump": {
+      "runtime_source": "95830f6+temporary-diagnostic",
+      "seconds": 319.33941024000524,
+      "frames": 427,
+      "js_title_seen": false,
+      "canvas_green_pixels": 0,
+      "diagnostics_complete": true,
+      "passed": false,
+      "ffi_sha256": "228c6347ef300a9f68c9fef0346da46e7d6521daa19a143c4ac07179d751cb34",
+      "preferences": {
+        "layout.frame_rate": 1,
+        "layout.throttled_frame_rate": 1
+      },
+      "host_cpus": 4,
+      "full_host_sha256": "6e1139ac036334b7e0f6474a02f30de1d42769ded1397ed98e767a59d5b75909",
+      "host_trace_selection": "all maps, queue hooks, manager dumps, diagnostics; parent/file-reader task samples; complete task trees at seconds 100,150,316 when available"
+    },
+    "one-cpu": {
+      "runtime_source": "95830f6+temporary-diagnostic",
+      "seconds": 304.8605693599966,
+      "frames": 0,
+      "js_title_seen": false,
+      "canvas_green_pixels": null,
+      "diagnostics_complete": true,
+      "passed": false,
+      "ffi_sha256": "228c6347ef300a9f68c9fef0346da46e7d6521daa19a143c4ac07179d751cb34",
+      "preferences": {
+        "layout.frame_rate": 1
+      },
+      "host_cpus": 1,
+      "full_host_sha256": "379283b3b251883272f6674138c294b99d7dd1309e34e451855ab25724b436ba",
+      "host_trace_selection": "all maps, queue hooks, manager dumps, diagnostics; parent/file-reader task samples; complete task trees at seconds 100,150,316 when available"
+    },
+    "one-cpu-fixed": {
+      "runtime_source": "cf71f2d96e90fc9a609986b22a531421235b1ac9",
+      "seconds": 192.56502601801185,
+      "frames": 3381,
+      "js_title_seen": false,
+      "canvas_green_pixels": 0,
+      "diagnostics_complete": true,
+      "passed": false,
+      "ffi_sha256": "e19ba8187fe36ebcc47c50a7a2dda1d503e6bc6f708b5c64e522af931a450c44",
+      "preferences": {
+        "layout.frame_rate": 1
+      },
+      "host_cpus": 1,
+      "full_host_sha256": "16925092cab1124665dfbb6edc3d7b7cf547a112b721e3b3bc832271be0995cb",
+      "host_trace_selection": "all maps, queue hooks, manager dumps, diagnostics; parent/file-reader task samples; complete task trees at seconds 100,150,316 when available"
+    },
+    "four-cpu-fixed": {
+      "runtime_source": "cf71f2d96e90fc9a609986b22a531421235b1ac9",
+      "seconds": 317.19133020198205,
+      "frames": 687,
+      "js_title_seen": false,
+      "canvas_green_pixels": 0,
+      "diagnostics_complete": true,
+      "passed": false,
+      "ffi_sha256": "e19ba8187fe36ebcc47c50a7a2dda1d503e6bc6f708b5c64e522af931a450c44",
+      "preferences": {},
+      "host_cpus": 4,
+      "full_host_sha256": "a840fc3dfebaa0791473b8414db577666abc2bace6d336879693979a8057875b",
+      "host_trace_selection": "all maps, queue hooks, manager dumps, diagnostics; parent/file-reader task samples; complete task trees at seconds 100,150,316 when available"
+    },
+    "four-cpu-cow": {
+      "runtime_source": "f36d16ff9880b422d798f05b8b53a878ff73a217",
+      "seconds": 320.29594081500545,
+      "frames": 135,
+      "js_title_seen": false,
+      "canvas_green_pixels": 0,
+      "diagnostics_complete": false,
+      "passed": false,
+      "ffi_sha256": "5167f8db801862225b54b18e810400121987725322e92acb4d6bcf3ac1a66279",
+      "preferences": {},
+      "host_cpus": 4,
+      "full_host_sha256": "28b84074bdd96ef2304bb80ecf60eb6bfb5bb92e7d9e0da27a09cd9ec38d36e5",
+      "host_trace_selection": "all maps, queue hooks, manager dumps, diagnostics; parent/file-reader task samples; complete task trees at seconds 100,150,316 when available"
+    }
+  },
+  "limitations": [
+    "Diagnostic queue hooks and browser logging perturb timings; no startup speedup ratio is claimed.",
+    "Fresh profile and process layouts differ between runs.",
+    "No physical iPad acceptance; JS title and >=45000 exact green canvas pixels are mandatory browser page gates.",
+    "The final runtime includes the Node host-group, serial LL/SC and private-file atomic COW fixes; the diagnostic baseline predates all three."
+  ],
+  "archive_files": {
+    "diagnostic/temporary.patch": {
+      "bytes": 13492,
+      "sha256": "a72ed83aab08a76f00e169ceb62b02cb909dfc9dc9d11089641ded60966d34cc"
+    },
+    "diagnostic/unwind.py": {
+      "bytes": 4669,
+      "sha256": "4660b005f14f17c712dcb8a7ffec8034c7c5f2d42e70d2bf7e98735f12bd4592"
+    },
+    "four-cpu-cow/browser-live.log": {
+      "bytes": 295542,
+      "sha256": "694dd354f74df318f245b0f846064756193966ac7d8e6891d66b42fc53b379e3"
+    },
+    "four-cpu-cow/guest.log": {
+      "bytes": 581,
+      "sha256": "1033198b939aabaae646c965cb9e46fe0b686e973064cdb2176b4ee1aa876607"
+    },
+    "four-cpu-cow/host-selected.log": {
+      "bytes": 579,
+      "sha256": "28b84074bdd96ef2304bb80ecf60eb6bfb5bb92e7d9e0da27a09cd9ec38d36e5"
+    },
+    "four-cpu-cow/page.html": {
+      "bytes": 397,
+      "sha256": "1b3a9a1fee4f098f573911eedbce07fa16184efee5fbfe6c15dbc5fca508cd0e"
+    },
+    "four-cpu-cow/progress.json": {
+      "bytes": 990,
+      "sha256": "3a1e3361656a3ae2651436a33fed589158f47ba33e630c6b90d26af0be0fdb9b"
+    },
+    "four-cpu-cow/progress.jsonl": {
+      "bytes": 11823,
+      "sha256": "91dc01fa873d93ab2561322ccb73184fdb036da9f9a12824ccc26edd5bf98ad1"
+    },
+    "four-cpu-cow/results.json": {
+      "bytes": 4175,
+      "sha256": "3fbb509c8371e292543b2ec4afc6d6b6f57ca5589c246e06429004b17a740fe5"
+    },
+    "four-cpu-cow/terminal-live.log": {
+      "bytes": 581,
+      "sha256": "1033198b939aabaae646c965cb9e46fe0b686e973064cdb2176b4ee1aa876607"
+    },
+    "four-cpu-cow/wayland.png": {
+      "bytes": 24421,
+      "sha256": "44cb100a3597f90cf4bf9df32ba3774d3a27267d4cb1ec6251753e5262f58277"
+    },
+    "four-cpu-fixed/browser-live.log": {
+      "bytes": 280019,
+      "sha256": "aa6a1d296bcfbaf8ba58f3376ca8ec87649b8f52549d5c7a63c0facac622548a"
+    },
+    "four-cpu-fixed/guest.log": {
+      "bytes": 298379,
+      "sha256": "884f7b183e1f3b9d94deba0e9b784ad18ef7aa5ba1d49a083b0ca284556f6d4e"
+    },
+    "four-cpu-fixed/host-selected.log": {
+      "bytes": 579,
+      "sha256": "a840fc3dfebaa0791473b8414db577666abc2bace6d336879693979a8057875b"
+    },
+    "four-cpu-fixed/page.html": {
+      "bytes": 397,
+      "sha256": "1b3a9a1fee4f098f573911eedbce07fa16184efee5fbfe6c15dbc5fca508cd0e"
+    },
+    "four-cpu-fixed/progress.json": {
+      "bytes": 989,
+      "sha256": "fd69890e285d4484149e2a2cee3a073b86082d00db8ca1c36e9013799d491cdd"
+    },
+    "four-cpu-fixed/progress.jsonl": {
+      "bytes": 11836,
+      "sha256": "84b33b3d30ea00fad15235f99d42d421e7a501871a05cf5402687e0359a18c70"
+    },
+    "four-cpu-fixed/results.json": {
+      "bytes": 4178,
+      "sha256": "d30e038c1f4dcb7af5443c0398b301acdebce4e85f746d5644a7d10a0f47cf37"
+    },
+    "four-cpu-fixed/terminal-live.log": {
+      "bytes": 298379,
+      "sha256": "884f7b183e1f3b9d94deba0e9b784ad18ef7aa5ba1d49a083b0ca284556f6d4e"
+    },
+    "four-cpu-fixed/wayland.png": {
+      "bytes": 18473,
+      "sha256": "d0d593ee41a8b2c8b612312ff1bf68dcaf7321b347bd0e2badaad95390105a50"
+    },
+    "manager-file/browser-live.log": {
+      "bytes": 205377,
+      "sha256": "4ca96e33c359039a852af63ade726d42de76c157548b30eacfca9ac1d5d519cf"
+    },
+    "manager-file/guest.log": {
+      "bytes": 222041,
+      "sha256": "3de1f0f0940bb5854240452936fcd896c2490629d86be62547395e272961e4ea"
+    },
+    "manager-file/host-selected.log": {
+      "bytes": 743044,
+      "sha256": "6863d33d1aba98a38a9880edde4a23fb257825fd931a49c9f6c39fb5ff799a17"
+    },
+    "manager-file/page.html": {
+      "bytes": 397,
+      "sha256": "1b3a9a1fee4f098f573911eedbce07fa16184efee5fbfe6c15dbc5fca508cd0e"
+    },
+    "manager-file/progress.json": {
+      "bytes": 990,
+      "sha256": "535e9db135ca8cdf5d29bdeaf3856131bc871c594581ff55aef791566b0de9e0"
+    },
+    "manager-file/progress.jsonl": {
+      "bytes": 12076,
+      "sha256": "0320fdf42c3576d2efd20d4b89c287bf85045ab02c5221df243175db4bf76c59"
+    },
+    "manager-file/queue-summary.json": {
+      "bytes": 20847,
+      "sha256": "570a0f78286aa91b70428c707347b5fb71b9daac4b4afb558263c66bbe932f41"
+    },
+    "manager-file/results.json": {
+      "bytes": 4334,
+      "sha256": "9c371165952049c79c0013a30487b6e2caf981759633b6076eedf2fd9e392157"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-100-tc.bin": {
+      "bytes": 512,
+      "sha256": "31e3a01e7753de8289573e2152a859a8d7557eb0fa9fdc69118a947b734dec2f"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-105-tc.bin": {
+      "bytes": 512,
+      "sha256": "213faa37f2680ccfbc8b1f01f9ca05726d2156b13147410e6018b0f2e0ecd02f"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-110-tc.bin": {
+      "bytes": 512,
+      "sha256": "c57ffbf434a69b016b98645c23ee12f241386b37aa65098a6129e197dd15c42d"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-115-tc.bin": {
+      "bytes": 512,
+      "sha256": "d898519250674656a1efa3449533ba14e9e1e92fc533c3e1c6069780c27bc0f5"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-115.bin": {
+      "bytes": 16384,
+      "sha256": "7ef66afc5abfc28c90c0f852119f0b1e2520ddf4209cbe7e34af99ae0688d466"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-115.txt": {
+      "bytes": 341,
+      "sha256": "0800dafacb84cb26c82d98e71bd1be3d1cad785308fbd8468d768e1e61eca03a"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-120-tc.bin": {
+      "bytes": 512,
+      "sha256": "ca4eab8fa6b5600b02e3dde0f1d7c7633541b0935551ba25889f0842986eeee1"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-125-tc.bin": {
+      "bytes": 512,
+      "sha256": "fe33d6d43a07a78ce7f10f90c7e280ad9d71f2a87b759ee72acb079f95003af6"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-125.bin": {
+      "bytes": 12288,
+      "sha256": "7bff33f85703d1f929e51eeebab667f9b1269f985a42447ae70913b3cbc5adb7"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-125.txt": {
+      "bytes": 300,
+      "sha256": "1de8e8d7b6ac003648881d9b3040e9392208a44d1a8f92c84bfba4d378c9eebd"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-130-tc.bin": {
+      "bytes": 512,
+      "sha256": "9f841249b38b16a3c9076c441f6099199932e6c490b22dda06ef3b6b5a629747"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-135-tc.bin": {
+      "bytes": 512,
+      "sha256": "d41cb7eb7c37b09183be02e9968b1c724c8a3d0035fc0bb30481acb0d08884fb"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-140-tc.bin": {
+      "bytes": 512,
+      "sha256": "94866df779e05c65120d05ca4703ebcfabbdedf41972c8be1f4594b2e84213d6"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-145-tc.bin": {
+      "bytes": 512,
+      "sha256": "bd5f0f334dd35c86c126224846b486f696af644808f6530d6aae8477cef2251b"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-145.bin": {
+      "bytes": 8192,
+      "sha256": "2cfc8ae0de0f49e54745dad8b8001659543d833b1b9c91acf2689c8aef9608e6"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-145.txt": {
+      "bytes": 279,
+      "sha256": "6cd542751eea90ecfe5fbee61c5f54ccf1ed80724c8ef88136682ce98e58303a"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-150-tc.bin": {
+      "bytes": 512,
+      "sha256": "0157d959badcbd49f67d3baeb7ce84b95f698a09c7e2f8cae48824583bccf941"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-155-tc.bin": {
+      "bytes": 512,
+      "sha256": "291ce4c0105114cb970b75c2fc225c74dbd5a9c718c869ae38d20f4e64ce3dfd"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-160-tc.bin": {
+      "bytes": 512,
+      "sha256": "cde75603f31ff5994f5c89f25acad2ce40cdc7c3f722cb77ab285d27ca07a548"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-165-tc.bin": {
+      "bytes": 512,
+      "sha256": "d0d8c7a9aa7338d54611329283990344068eb3d79e56f2a1ec215c588f193797"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-170-tc.bin": {
+      "bytes": 512,
+      "sha256": "a6c5baf7b2ce5b90c2259fd45b9a45a496fb5eef825de61ea8218418a879ed9a"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-175-tc.bin": {
+      "bytes": 512,
+      "sha256": "4bec465a0de7e404f898e9a47a78f23bbd1619008a5c02e454cef95176b9cfbf"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-180-tc.bin": {
+      "bytes": 512,
+      "sha256": "9de9b6524bd0aa1d1b57c290422d5b6aed2dfcfd88dbc41b8b2431bfddba42a5"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-185-tc.bin": {
+      "bytes": 512,
+      "sha256": "caf1ec5c2e6ea5fc2f2c5fd9477d61b09f3aa21bafba02b1542fac00d45ee1bf"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-190-tc.bin": {
+      "bytes": 512,
+      "sha256": "5a8ef21d2021f9ba84a5fa12f071c9e2e6ee239eab0a1cb9ecc0d8257d641e15"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-195-tc.bin": {
+      "bytes": 512,
+      "sha256": "184a6d68d67a4b22a6c562f6dd696b82bf58773d3418008a80943aa6ea42caf6"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-200-tc.bin": {
+      "bytes": 512,
+      "sha256": "3e8946b01cdd2b288b666ddbe9b495b8894b927e4e6e31223bee9178b4dafd69"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-205-tc.bin": {
+      "bytes": 512,
+      "sha256": "484077a19153e4afc4904e1841c81b511469c877e2cc69bbb4c96ee225468fe1"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-210-tc.bin": {
+      "bytes": 512,
+      "sha256": "99d9182aa260a065d0bce4608cbc7ceb0942499537c172a3eec999dd4157e7d2"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-215-tc.bin": {
+      "bytes": 512,
+      "sha256": "16a9ce6bbd8094730a7bb63271ddd332da12949e2d81bb8d078f6161fc703314"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-220-tc.bin": {
+      "bytes": 512,
+      "sha256": "af4539626f893d2dccca4607a7ebf37f1bda427831f0ca77dbd63ab71d8c6178"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-225-tc.bin": {
+      "bytes": 512,
+      "sha256": "a79e4dd26bc8398e0b41e66c62ff652b646faf4fda55d00483c8f721b7847b2f"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-225.bin": {
+      "bytes": 12288,
+      "sha256": "cf3692bc2513b1a608be01325bb81d1a64a16ba03c57ddd828424ee3b49ef41f"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-225.txt": {
+      "bytes": 265,
+      "sha256": "5c2a3549f05014aaa8f8b4f73cb08741e2ee69b811e171d841544228e65c9dea"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-231-tc.bin": {
+      "bytes": 512,
+      "sha256": "72eb47d795203a386ea063b0083c6973fbf27fb52e642cbec68f464d88230248"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-236-tc.bin": {
+      "bytes": 512,
+      "sha256": "08b7f199e7f830100a2c0e04b4a7079f4fd8d2de184016ba5e58e846f1ad7567"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-241-tc.bin": {
+      "bytes": 512,
+      "sha256": "0c52d1ce8ce08adfa75595a8ed0f86fcc78beb63756463dc110ed6c6c4a5bfac"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-246-tc.bin": {
+      "bytes": 512,
+      "sha256": "a87486b4eca956dd22df126e0b1509bcea123290321067d8ec3ab4e8eb77c3af"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-251-tc.bin": {
+      "bytes": 512,
+      "sha256": "855b36505db1354fdf06ab942bc07db4d33959730ef942cd6025c98a8b53a599"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-256-tc.bin": {
+      "bytes": 512,
+      "sha256": "cb0c28403c2a2ed1793baf92bb80e7ee3bf0db714b1b47c78f814f7dad530532"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-261-tc.bin": {
+      "bytes": 512,
+      "sha256": "a4dfc729400befce806d45fcc34b709b9ab7e6624c131b4ea3fa587d8c5a8ed8"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-266-tc.bin": {
+      "bytes": 512,
+      "sha256": "1a4e0abf68b796cb9d7226e9fd2b16161903072713465100a21a34c180736891"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-271-tc.bin": {
+      "bytes": 512,
+      "sha256": "184d79f4cb1155c723b420070d7db3065de435c905dfa3a6d4be09ac4a878218"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-276-tc.bin": {
+      "bytes": 512,
+      "sha256": "cb94e714f042f5ba76d782c1656f92437b2e063022986af549121371321ced5e"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-281-tc.bin": {
+      "bytes": 512,
+      "sha256": "4283cfad865ee61853b2db714147a99687a340ab81dc89099113b3f2bd92eed4"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-286-tc.bin": {
+      "bytes": 512,
+      "sha256": "382a7f076a8d843754346627b7ba6dbe8dbd500f644e17877d19a40483e75845"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-291-tc.bin": {
+      "bytes": 512,
+      "sha256": "8251a7683b35196c8524da683fe474c996f1869e081f320c8a543459fc72ed4c"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-296-tc.bin": {
+      "bytes": 512,
+      "sha256": "dd606253876b14c9702a8ee19bd807fabc18d7c82856d0598f960ba1884ec980"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-301-tc.bin": {
+      "bytes": 512,
+      "sha256": "0718ad660accc372ab1772dc7700b862591247ff9374519daae1a86778b7eaa7"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-306-tc.bin": {
+      "bytes": 512,
+      "sha256": "7a8637420dfabb5e993335288a78f12424c02a28d232ad253972aea14429ef71"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-311-tc.bin": {
+      "bytes": 512,
+      "sha256": "4c99e1fe0babc5db2a135ad46ceb152e4e4182d0bcd1b1d330b15eb4f5701bdf"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-316-tc.bin": {
+      "bytes": 512,
+      "sha256": "4282caba47cf5d7c1735f773233fecd0b48016e5adb210d905969b7f7d475716"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-316.bin": {
+      "bytes": 12288,
+      "sha256": "f57920081a0c7a68b1e8708a0f24deb84f8577a31e099c5a0db23d1e09148d18"
+    },
+    "manager-file/stacks/trames-firefox-open-stack-316.txt": {
+      "bytes": 265,
+      "sha256": "5c2a3549f05014aaa8f8b4f73cb08741e2ee69b811e171d841544228e65c9dea"
+    },
+    "manager-file/terminal-live.log": {
+      "bytes": 222041,
+      "sha256": "3de1f0f0940bb5854240452936fcd896c2490629d86be62547395e272961e4ea"
+    },
+    "manager-file/user.js": {
+      "bytes": 35,
+      "sha256": "9ffb50fceba09c24ae95e997fa59601c9127bc8f1c2518348211b472fd516628"
+    },
+    "manager-file/wayland.png": {
+      "bytes": 24834,
+      "sha256": "bd3c4397778f1ef666d894e0b041b9ee31c33d0deb3c137c0f9f98b5f721e5c4"
+    },
+    "one-cpu-fixed/browser-live.log": {
+      "bytes": 312034,
+      "sha256": "3c0355a9e87b038c670d45623e8872c636343ba557b2bcaf9fc20f77ea6a02a9"
+    },
+    "one-cpu-fixed/guest.log": {
+      "bytes": 343790,
+      "sha256": "a610fc9f3135be0d80fbd852f600b70320a99bfe0e3aa485307db819d95fbb5e"
+    },
+    "one-cpu-fixed/host-selected.log": {
+      "bytes": 581,
+      "sha256": "16925092cab1124665dfbb6edc3d7b7cf547a112b721e3b3bc832271be0995cb"
+    },
+    "one-cpu-fixed/page.html": {
+      "bytes": 397,
+      "sha256": "1b3a9a1fee4f098f573911eedbce07fa16184efee5fbfe6c15dbc5fca508cd0e"
+    },
+    "one-cpu-fixed/progress.json": {
+      "bytes": 993,
+      "sha256": "3180bdf1e522865b6abc72f535614547233d0f5db110d3e645e8b0df3b2a6aa0"
+    },
+    "one-cpu-fixed/progress.jsonl": {
+      "bytes": 6670,
+      "sha256": "efeea471864302c3bca9eb76904f8b8e2ba7b42bf7cf03cefe316980dda9a1d6"
+    },
+    "one-cpu-fixed/results.json": {
+      "bytes": 3719,
+      "sha256": "662211ecdcc50f000c588172202558e3d206806b512e05ebfc24ae1ba3529195"
+    },
+    "one-cpu-fixed/terminal-live.log": {
+      "bytes": 343790,
+      "sha256": "a610fc9f3135be0d80fbd852f600b70320a99bfe0e3aa485307db819d95fbb5e"
+    },
+    "one-cpu-fixed/user.js": {
+      "bytes": 35,
+      "sha256": "9ffb50fceba09c24ae95e997fa59601c9127bc8f1c2518348211b472fd516628"
+    },
+    "one-cpu-fixed/wayland.png": {
+      "bytes": 24691,
+      "sha256": "cb4be10ef84f7472068e1e8ac5a2e483479d567a5214c0588f4530db27930c19"
+    },
+    "one-cpu/browser-live.log": {
+      "bytes": 258336,
+      "sha256": "3a7901d9eb50f538946ca0898a560bfb0cf404ffc5222303373fa7aec6d32e00"
+    },
+    "one-cpu/guest.log": {
+      "bytes": 270305,
+      "sha256": "b23ee3847380b7616c102b2af83be8c350777e19adf509a2547a3dc696cf146f"
+    },
+    "one-cpu/host-selected.log": {
+      "bytes": 681332,
+      "sha256": "40d904e7a757a18b7ba3ce19d01599fd6c0eb2816f9044cc98786d7d68876c09"
+    },
+    "one-cpu/page.html": {
+      "bytes": 397,
+      "sha256": "1b3a9a1fee4f098f573911eedbce07fa16184efee5fbfe6c15dbc5fca508cd0e"
+    },
+    "one-cpu/parent-samples.json": {
+      "bytes": 4982,
+      "sha256": "e3a589304473e7db60251fb532e825549f601a6432cacda66487a6f8c4c688b7"
+    },
+    "one-cpu/progress.json": {
+      "bytes": 520,
+      "sha256": "b706fbf037760f042dd372a57dc9a64415c3fa787cab0d771a69e897e19044c8"
+    },
+    "one-cpu/progress.jsonl": {
+      "bytes": 8665,
+      "sha256": "30f24d8dd8b53c288260084cf562b907df1bb6f9eb189071a0d97c5237307990"
+    },
+    "one-cpu/results.json": {
+      "bytes": 3608,
+      "sha256": "54ea2fef556000e72aa205cad97fbe3a3e4855b7dfc06d4a4b585d276e06573a"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-100-tc.bin": {
+      "bytes": 512,
+      "sha256": "800777d5d88d71e7ae538c4352f16e3c51d08477144ea1edf05708fdeef62e16"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-105-tc.bin": {
+      "bytes": 512,
+      "sha256": "508f670c458665fbaa06039c1eea3bb8a6434ae3e5f85f84fadf375a4340b5c9"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-110-tc.bin": {
+      "bytes": 512,
+      "sha256": "005d7057cb1904bc11c3ddffb21f226216a19d41fe77cb6fb04a237ab93da0a5"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-115-tc.bin": {
+      "bytes": 512,
+      "sha256": "46b15ff9e16660d3dc03265f6510518dbb50a2dec4140930e8f968bc98d484cb"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-115.bin": {
+      "bytes": 8192,
+      "sha256": "82602a0769992da71b75fea1ecab3fdefa44431d97e320584bbf20b54db36069"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-115.txt": {
+      "bytes": 334,
+      "sha256": "29c2b6323b32cb01f5849b961738ed947e8c95fd17eb68c734f26e6337d0fc41"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-120-tc.bin": {
+      "bytes": 512,
+      "sha256": "ad6ecaac2c88ab299833c7eed8053cb18ad67ac16fe1e5b8bd34f4e94f7b5c40"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-125-tc.bin": {
+      "bytes": 512,
+      "sha256": "e31a0c783a81c4a03eac67a263626654882207bea87557974054937765a2b4b9"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-125.bin": {
+      "bytes": 8192,
+      "sha256": "82602a0769992da71b75fea1ecab3fdefa44431d97e320584bbf20b54db36069"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-125.txt": {
+      "bytes": 334,
+      "sha256": "29c2b6323b32cb01f5849b961738ed947e8c95fd17eb68c734f26e6337d0fc41"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-130-tc.bin": {
+      "bytes": 512,
+      "sha256": "584f57c6ce68d5f5e7b9cb96080c8ec49ab1243dbb5a6369ed55d60904d70e9a"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-135-tc.bin": {
+      "bytes": 512,
+      "sha256": "855c29b16072bf0c2fc323a51d537bae2f006f28f9fc63a8188f511e11b42fc1"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-140-tc.bin": {
+      "bytes": 512,
+      "sha256": "4eca681cc1f2aaa71b944288a302a8e3b2ee4b73b648d83b4615e8117ae8b4dd"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-145-tc.bin": {
+      "bytes": 512,
+      "sha256": "b42a585739c2fc66378afcb6d9470bceacec285e77346d8c39e51fd6259ad0e4"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-145.bin": {
+      "bytes": 8192,
+      "sha256": "82602a0769992da71b75fea1ecab3fdefa44431d97e320584bbf20b54db36069"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-145.txt": {
+      "bytes": 334,
+      "sha256": "07b5c7d75fb2d96975f96f32b457c01ccfe1f77f95a22e8a889a210fc199efc5"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-150-tc.bin": {
+      "bytes": 512,
+      "sha256": "c2fddf472fe81e3ed935bc0f173cad587141567c619e6688368e1edaaa4acd14"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-155-tc.bin": {
+      "bytes": 512,
+      "sha256": "6e6cd53dd155fcfeed7824375846902392e6ba85f3a5f8dceb3fbc44d633118f"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-160-tc.bin": {
+      "bytes": 512,
+      "sha256": "54b1b6db3b0473c8acc779c559d0a9499128b1830932f05ca974b26b00cbe9cd"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-165-tc.bin": {
+      "bytes": 512,
+      "sha256": "393752e728906292857e83e8aba29407e86824c841b4172a648e00d517e48806"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-170-tc.bin": {
+      "bytes": 512,
+      "sha256": "cdb4c0292e11c6d4b90044708dbb6609a2fe6fa63946cdce9189cfbacfec1f57"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-175-tc.bin": {
+      "bytes": 512,
+      "sha256": "7e669c6973e3d3a01c2e021d6bf67b1b77d601fcd68dcac3fe70f74a380ecbed"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-180-tc.bin": {
+      "bytes": 512,
+      "sha256": "35f7884e9aef01d5b4254e6bad2f625cfd06377a423c4dfb63eadc949ce1d9f9"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-185-tc.bin": {
+      "bytes": 512,
+      "sha256": "77c5a85014e2375987b7c3d776f58a0e54b7acd83f26782d94187fce3110bb7b"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-190-tc.bin": {
+      "bytes": 512,
+      "sha256": "a60e16c0787ac5620f8021d30f73755d84c3d0fdb48e4910ed14211ddba2ce77"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-195-tc.bin": {
+      "bytes": 512,
+      "sha256": "538fbd21749baab528352e52bb3638b74a970e68f7a91cb4a9a2b8df8b1c53b0"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-200-tc.bin": {
+      "bytes": 512,
+      "sha256": "a25da01c9e9e3893d7e25213d3ea6a49b311a4c971c5fc5d9c02e8c75916f57c"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-205-tc.bin": {
+      "bytes": 512,
+      "sha256": "ffc8ffc03ffc413b25ad61996da8065c603317a6e78f4ae796362abb1b0fc3cc"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-210-tc.bin": {
+      "bytes": 512,
+      "sha256": "4591e2e8aa50455b9c0feda4a2ee1041aa83841b78ef6e120306dc077d196573"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-215-tc.bin": {
+      "bytes": 512,
+      "sha256": "062d3a2a65949a639e0f98637e2a6973f59fdec0ced1c41a63a1eef691f30550"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-220-tc.bin": {
+      "bytes": 512,
+      "sha256": "4309d29bd13fb1211107d138852082d3ec11d7856ec0e173c9f6044e0a860562"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-225-tc.bin": {
+      "bytes": 512,
+      "sha256": "c4e06a9122a739557962ea9a9457cee21eafee01a2b8dad5ed136c83ea9fc34f"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-225.bin": {
+      "bytes": 8192,
+      "sha256": "82602a0769992da71b75fea1ecab3fdefa44431d97e320584bbf20b54db36069"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-225.txt": {
+      "bytes": 334,
+      "sha256": "510399643e438068768f15112773ff005c6b887e99a948c1267b03d77d4c86a0"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-230-tc.bin": {
+      "bytes": 512,
+      "sha256": "9f0d11041aef92e6e1f823e81cedf1cdf9c67ac02d23b3db7ea2c5a3177bffad"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-231-tc.bin": {
+      "bytes": 512,
+      "sha256": "72eb47d795203a386ea063b0083c6973fbf27fb52e642cbec68f464d88230248"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-235-tc.bin": {
+      "bytes": 512,
+      "sha256": "31e65d150c36b98132dfa9c19dc5aa3e21d7debf692225db836e9d9ac6c585fa"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-236-tc.bin": {
+      "bytes": 512,
+      "sha256": "08b7f199e7f830100a2c0e04b4a7079f4fd8d2de184016ba5e58e846f1ad7567"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-240-tc.bin": {
+      "bytes": 512,
+      "sha256": "456733f49f513c6f242efe455b1251a37734f2ad2fe22c3c21b74cf21e39e95c"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-241-tc.bin": {
+      "bytes": 512,
+      "sha256": "0c52d1ce8ce08adfa75595a8ed0f86fcc78beb63756463dc110ed6c6c4a5bfac"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-245-tc.bin": {
+      "bytes": 512,
+      "sha256": "73b60d3ee6e7ea610c5def9b0bdef508fe0cb3cb402608a6d99afaa5478807ed"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-246-tc.bin": {
+      "bytes": 512,
+      "sha256": "a87486b4eca956dd22df126e0b1509bcea123290321067d8ec3ab4e8eb77c3af"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-250-tc.bin": {
+      "bytes": 512,
+      "sha256": "119810a8d2fcd2a7287d0f9af881de792e079cd7d38c52c149826992d166830b"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-251-tc.bin": {
+      "bytes": 512,
+      "sha256": "855b36505db1354fdf06ab942bc07db4d33959730ef942cd6025c98a8b53a599"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-255-tc.bin": {
+      "bytes": 512,
+      "sha256": "947a572427dec69b5924ed96209a390958dcc733790be57657a475bbcd83e592"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-256-tc.bin": {
+      "bytes": 512,
+      "sha256": "cb0c28403c2a2ed1793baf92bb80e7ee3bf0db714b1b47c78f814f7dad530532"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-260-tc.bin": {
+      "bytes": 512,
+      "sha256": "615668b1ee24a944f38776370f1c0c21345936a11d2eea8fc32423c058baa963"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-261-tc.bin": {
+      "bytes": 512,
+      "sha256": "a4dfc729400befce806d45fcc34b709b9ab7e6624c131b4ea3fa587d8c5a8ed8"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-265-tc.bin": {
+      "bytes": 512,
+      "sha256": "6bdb85e7826454ce9fded3a92e88b0265377290d96d8821a358f4f346480e0c1"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-266-tc.bin": {
+      "bytes": 512,
+      "sha256": "1a4e0abf68b796cb9d7226e9fd2b16161903072713465100a21a34c180736891"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-270-tc.bin": {
+      "bytes": 512,
+      "sha256": "c0c626c1a12c6cf6b1d93bc9d26b0f08b5ac17157bcea134b0aa730d0b9fb16d"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-271-tc.bin": {
+      "bytes": 512,
+      "sha256": "184d79f4cb1155c723b420070d7db3065de435c905dfa3a6d4be09ac4a878218"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-275-tc.bin": {
+      "bytes": 512,
+      "sha256": "12b274061b867ca191214af59d3110e4183f626cacb680fb5346586ca32a98b1"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-276-tc.bin": {
+      "bytes": 512,
+      "sha256": "cb94e714f042f5ba76d782c1656f92437b2e063022986af549121371321ced5e"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-280-tc.bin": {
+      "bytes": 512,
+      "sha256": "c24d51d371f314bd10397a1dc67e84ecc275e3dca46fca1700233564e52abe5f"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-281-tc.bin": {
+      "bytes": 512,
+      "sha256": "4283cfad865ee61853b2db714147a99687a340ab81dc89099113b3f2bd92eed4"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-285-tc.bin": {
+      "bytes": 512,
+      "sha256": "3224ce5979e5f4301525b24a138dd601e3e19c38631749a72fd6f7202dc8fa9b"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-286-tc.bin": {
+      "bytes": 512,
+      "sha256": "382a7f076a8d843754346627b7ba6dbe8dbd500f644e17877d19a40483e75845"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-290-tc.bin": {
+      "bytes": 512,
+      "sha256": "187f6f1545bbc57e56e5706b1ba3a7a441d59f2d88f10f9ffb7b533ce0dc096e"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-291-tc.bin": {
+      "bytes": 512,
+      "sha256": "198138d261a574f96d60beeeb65ef03f9f07b48b93ce957027b30302e90c0386"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-295-tc.bin": {
+      "bytes": 512,
+      "sha256": "2ab76df47bce1d589b53833be366201c486e946cb4c27d666aa6ef2b6ad655b3"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-296-tc.bin": {
+      "bytes": 512,
+      "sha256": "cf02b851e7c70976f2a1dbed60490f89661845762fb96b52db239757487a07fd"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-300-tc.bin": {
+      "bytes": 512,
+      "sha256": "1b8a125462991c54a98f326efcf1ef7de8dd934944d2117d44c96b4e975a0e02"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-301-tc.bin": {
+      "bytes": 512,
+      "sha256": "9c8e32c4ca01ef764a117fde30fa48fc6aa5f9ff16244d416c62305ad12b0687"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-306-tc.bin": {
+      "bytes": 512,
+      "sha256": "6434ee8df35c6be8ffb78fb6f19015163060fd890cc05c3d07d45085db879c06"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-311-tc.bin": {
+      "bytes": 512,
+      "sha256": "6343cd4f76d69d69b4a493ac9605875d398c391b214c379fc2b057a54e6110a3"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-316-tc.bin": {
+      "bytes": 512,
+      "sha256": "b23ef1b958b2b7d0f2d242acd66ad81defbfdb46834bb757ff3212a798a03129"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-316.bin": {
+      "bytes": 8192,
+      "sha256": "dd88c0b4ef5352353c850ed428af029b9a3b6e5ed31c9e285b5f24b3fdd16d27"
+    },
+    "one-cpu/stacks/trames-firefox-open-stack-316.txt": {
+      "bytes": 293,
+      "sha256": "70070c10136c7e05515fc67af9126873fe8b1516dbe2b5e552e92232c486305c"
+    },
+    "one-cpu/terminal-live.log": {
+      "bytes": 270305,
+      "sha256": "b23ee3847380b7616c102b2af83be8c350777e19adf509a2547a3dc696cf146f"
+    },
+    "one-cpu/user.js": {
+      "bytes": 35,
+      "sha256": "9ffb50fceba09c24ae95e997fa59601c9127bc8f1c2518348211b472fd516628"
+    },
+    "stream-pump/browser-live.log": {
+      "bytes": 529917,
+      "sha256": "0bfab47f8969ee1fa365c326a4dc0f96732f7c01e49666f478084887385349de"
+    },
+    "stream-pump/guest.log": {
+      "bytes": 558664,
+      "sha256": "6b878dcf72c795755fabb5ff8d8ab49274a95fb11aebc5e34e1c3f7afacaab53"
+    },
+    "stream-pump/host-selected.log": {
+      "bytes": 876799,
+      "sha256": "626623866494baa79bf96d732a089a6b164a625e9690cfe13354014c53e1e245"
+    },
+    "stream-pump/page.html": {
+      "bytes": 397,
+      "sha256": "1b3a9a1fee4f098f573911eedbce07fa16184efee5fbfe6c15dbc5fca508cd0e"
+    },
+    "stream-pump/progress.json": {
+      "bytes": 989,
+      "sha256": "6dcee407a2bef6f800fb0ef5edb0118a29df490c3f3c9246ce73f0616154d10a"
+    },
+    "stream-pump/progress.jsonl": {
+      "bytes": 12076,
+      "sha256": "0320cab456d15605afda961a53c295ada4bdec5f36c9c93c651fbf3f70dc57e7"
+    },
+    "stream-pump/queue-summary.json": {
+      "bytes": 20955,
+      "sha256": "4eb2d91257d74e9d9b6ff88de47e43ae028eadab87eaf51e05e82adb9517228e"
+    },
+    "stream-pump/results.json": {
+      "bytes": 4337,
+      "sha256": "336677a7fe80c14d04998796fab3d368a1def89d5fea218f7d737194807ce2bd"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-100-tc.bin": {
+      "bytes": 512,
+      "sha256": "6efcd8b218b09f63cad1c270816569adc27df51160d551a31deffd968729945f"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-105-tc.bin": {
+      "bytes": 512,
+      "sha256": "838fe92991ddb8823dcfec031a2e2b389dbc83c5794ad750e255b485d1b5cf65"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-110-tc.bin": {
+      "bytes": 512,
+      "sha256": "62652960a56f105ee63a73928ee7067cb838cd6ea1adb62495a5682bb17eaa71"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-115-tc.bin": {
+      "bytes": 512,
+      "sha256": "560484372eba468a1918d89925b11b6c51f42ebd60cb3933389d2c5ee6b57c85"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-115.bin": {
+      "bytes": 53248,
+      "sha256": "dd554d9afcf3a01d477255995cd628d805526afab234e2d1962cc1a00aca331a"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-115.txt": {
+      "bytes": 257,
+      "sha256": "7e44591d7c07edf1988755bd2eabdbc935ff81be9d4996ce38f69082b5884d94"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-120-tc.bin": {
+      "bytes": 512,
+      "sha256": "0c97c177d5f55f46ce54d5dee530f25f23a905a9a26542a74daf2eb6897b0044"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-125-tc.bin": {
+      "bytes": 512,
+      "sha256": "9cf344b248229b0098a599819c275bb48108305d25f4f4033d6bcd235a107ee3"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-125.bin": {
+      "bytes": 8192,
+      "sha256": "73bc931e4fb87940ca99baf5ef789f6533ed4e482b7c95adf1ea1ab22fd88c38"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-125.txt": {
+      "bytes": 275,
+      "sha256": "3ffb7791636b30e178fbb782aec7f3fff09c8ae05bc55537191f4bbd09c0ffd3"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-130-tc.bin": {
+      "bytes": 512,
+      "sha256": "7173a2e08dfdf67851b04e8028e1a2a57489bfa0cf96279a1d8fddde316ba630"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-135-tc.bin": {
+      "bytes": 512,
+      "sha256": "4eebe908ec090bb9e0cb455274b3a1948bc9c5fa9a45907b02b31abb898cc0ea"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-140-tc.bin": {
+      "bytes": 512,
+      "sha256": "5f83b0ec3bfad02e3ff74323ac36687104744531d7751119591a89e017f8b349"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-145-tc.bin": {
+      "bytes": 512,
+      "sha256": "0565f1d7e26758e18cafcc7ce0e49a50ee97b36c797d65e8843a87dc21e192c9"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-145.bin": {
+      "bytes": 32768,
+      "sha256": "fea2572b4a77321c40f25e80465404f24a3da880085b065653dd6871802d4d44"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-145.txt": {
+      "bytes": 245,
+      "sha256": "84b15e70cbfc982a717dd6a419f7eb3ba9ba995b7fa87e028ebacccf2d89bf30"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-150-tc.bin": {
+      "bytes": 512,
+      "sha256": "11ac559c1abd275d817e9d91fcc1243610c7ecb8dc0907bd54ad3ee7b7b9c886"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-155-tc.bin": {
+      "bytes": 512,
+      "sha256": "4b6453be350f69d23852e07eddb7afd51fbcbf99c671763acb8cbdf31eb94ad0"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-160-tc.bin": {
+      "bytes": 512,
+      "sha256": "2233e07a2a48a1c13233ae478e864ebefb99b69571b70adc93ec102ded006719"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-165-tc.bin": {
+      "bytes": 512,
+      "sha256": "b367c25f49aa7ade58e4263aa965f0da85f41e61608261081307e56ca4d6cec9"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-170-tc.bin": {
+      "bytes": 512,
+      "sha256": "198025f3070de428ad3b9bc44ef4c45c21e4bf71ea9291e5c5bf6acdd9c4a698"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-175-tc.bin": {
+      "bytes": 512,
+      "sha256": "bbb23be9fc19e1a0de3dc815413b4b442884f6eb0ee2a7d7eec24bc741141886"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-180-tc.bin": {
+      "bytes": 512,
+      "sha256": "0a9dd540ffe7dc49f68615c42a86a855736dc2c2401a06992addcd35cc90fc71"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-185-tc.bin": {
+      "bytes": 512,
+      "sha256": "6e49ea290804336dc5708446eba33c5516d2af31f8b1079f690b062bd96929ba"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-190-tc.bin": {
+      "bytes": 512,
+      "sha256": "3ffbf5e95d4a7eb3271a06a1fd73acba913777664ec21db5a6583e92739eb2ca"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-195-tc.bin": {
+      "bytes": 512,
+      "sha256": "eae1b09bc58d1f88948b87e0b94d12931482c4f31dd2ef40c72cf466bc140e3f"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-200-tc.bin": {
+      "bytes": 512,
+      "sha256": "2d8f668f50ea53b378867ecac41ec566d3c00b239d0a0f6989a27f9dfae1b95e"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-205-tc.bin": {
+      "bytes": 512,
+      "sha256": "1459c9e278cdd60d34ff86dac0a971ad54988c36f5d6d8153bf0ef8de9344108"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-210-tc.bin": {
+      "bytes": 512,
+      "sha256": "df1ee41e63107d7b6de9dacb66789c91b7eb78960c90752b224f287e97e559ed"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-215-tc.bin": {
+      "bytes": 512,
+      "sha256": "fd7a9502436d1264718f85d44b999179fd3ff16f6bf6dc89d82bb0a1f9770372"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-220-tc.bin": {
+      "bytes": 512,
+      "sha256": "49f1ca012b42d06fd9922fb5971238e671aeab7799ade9ac2dbb5aaf94dd7d27"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-225-tc.bin": {
+      "bytes": 512,
+      "sha256": "ae701326cdf17595c6d10bb0c4ace4a0203ac137c83cca4882e9c5312864d556"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-225.bin": {
+      "bytes": 12288,
+      "sha256": "837cb75e970bdad076dfea48acdbb93f3bdaaa9b5b3a3bcffbedbf9747cef06f"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-225.txt": {
+      "bytes": 266,
+      "sha256": "61f6e52efeb958678a4dd88a9f9ce45506c78f097f078207cd060aac7b6f9211"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-230-tc.bin": {
+      "bytes": 512,
+      "sha256": "a899833362cb8fba1f88e8a9b36ec4402effad48d517e8a4bf695e3d5a0e9838"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-231-tc.bin": {
+      "bytes": 512,
+      "sha256": "72eb47d795203a386ea063b0083c6973fbf27fb52e642cbec68f464d88230248"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-235-tc.bin": {
+      "bytes": 512,
+      "sha256": "606d79c9440f9a8e6239ea7bf065bceb2b392ed7a98753ec4444c5293dd9184b"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-236-tc.bin": {
+      "bytes": 512,
+      "sha256": "08b7f199e7f830100a2c0e04b4a7079f4fd8d2de184016ba5e58e846f1ad7567"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-240-tc.bin": {
+      "bytes": 512,
+      "sha256": "0c4380fd71695c405c4b49af92ab0649581fe3e64860044068c1425fa2564503"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-241-tc.bin": {
+      "bytes": 512,
+      "sha256": "0c52d1ce8ce08adfa75595a8ed0f86fcc78beb63756463dc110ed6c6c4a5bfac"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-245-tc.bin": {
+      "bytes": 512,
+      "sha256": "61a50296eaefe7823a36290af1bda62c422ef6b80ac5e8c5f33851e463dd6ad4"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-246-tc.bin": {
+      "bytes": 512,
+      "sha256": "a87486b4eca956dd22df126e0b1509bcea123290321067d8ec3ab4e8eb77c3af"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-250-tc.bin": {
+      "bytes": 512,
+      "sha256": "6e637ed669aa09bfafb40d7b3b084c176e89968b7d981f19d4d62c1784851051"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-251-tc.bin": {
+      "bytes": 512,
+      "sha256": "855b36505db1354fdf06ab942bc07db4d33959730ef942cd6025c98a8b53a599"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-255-tc.bin": {
+      "bytes": 512,
+      "sha256": "37f8211155bef9fa129ced30164f901ba379828baf54e90c32bdd63d7771c122"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-256-tc.bin": {
+      "bytes": 512,
+      "sha256": "cb0c28403c2a2ed1793baf92bb80e7ee3bf0db714b1b47c78f814f7dad530532"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-260-tc.bin": {
+      "bytes": 512,
+      "sha256": "35dbcff67e7e71a2804e538c88b0d3573296e3f68c823d9c0c0d786462cac540"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-261-tc.bin": {
+      "bytes": 512,
+      "sha256": "a4dfc729400befce806d45fcc34b709b9ab7e6624c131b4ea3fa587d8c5a8ed8"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-265-tc.bin": {
+      "bytes": 512,
+      "sha256": "6dfc409870490917b8560490f1922c3c73fc3fac04e73c9cdbe6d71ae0060b43"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-266-tc.bin": {
+      "bytes": 512,
+      "sha256": "1a4e0abf68b796cb9d7226e9fd2b16161903072713465100a21a34c180736891"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-270-tc.bin": {
+      "bytes": 512,
+      "sha256": "80faf595a694081c7024fbd624c10fb4e4251fa4f6f1bca3ae48a95f3193ab16"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-271-tc.bin": {
+      "bytes": 512,
+      "sha256": "184d79f4cb1155c723b420070d7db3065de435c905dfa3a6d4be09ac4a878218"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-275-tc.bin": {
+      "bytes": 512,
+      "sha256": "424d371ff35df5addd0f41de5d03f6663daf4b1b181ad97fab45b24e7839578d"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-276-tc.bin": {
+      "bytes": 512,
+      "sha256": "cb94e714f042f5ba76d782c1656f92437b2e063022986af549121371321ced5e"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-280-tc.bin": {
+      "bytes": 512,
+      "sha256": "f93f35843115f04ee43bb73a3fd25f09fad2a51b5a9fd0034083759c97d2611a"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-281-tc.bin": {
+      "bytes": 512,
+      "sha256": "4283cfad865ee61853b2db714147a99687a340ab81dc89099113b3f2bd92eed4"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-285-tc.bin": {
+      "bytes": 512,
+      "sha256": "6a9ae2d805e88e25a794e2f6b7e5c3245238f5108fd3b8b75e67879c71bef6db"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-286-tc.bin": {
+      "bytes": 512,
+      "sha256": "382a7f076a8d843754346627b7ba6dbe8dbd500f644e17877d19a40483e75845"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-291-tc.bin": {
+      "bytes": 512,
+      "sha256": "198138d261a574f96d60beeeb65ef03f9f07b48b93ce957027b30302e90c0386"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-296-tc.bin": {
+      "bytes": 512,
+      "sha256": "cf02b851e7c70976f2a1dbed60490f89661845762fb96b52db239757487a07fd"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-301-tc.bin": {
+      "bytes": 512,
+      "sha256": "9c8e32c4ca01ef764a117fde30fa48fc6aa5f9ff16244d416c62305ad12b0687"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-306-tc.bin": {
+      "bytes": 512,
+      "sha256": "6434ee8df35c6be8ffb78fb6f19015163060fd890cc05c3d07d45085db879c06"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-311-tc.bin": {
+      "bytes": 512,
+      "sha256": "6343cd4f76d69d69b4a493ac9605875d398c391b214c379fc2b057a54e6110a3"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-316-tc.bin": {
+      "bytes": 512,
+      "sha256": "b23ef1b958b2b7d0f2d242acd66ad81defbfdb46834bb757ff3212a798a03129"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-316.bin": {
+      "bytes": 8192,
+      "sha256": "dd88c0b4ef5352353c850ed428af029b9a3b6e5ed31c9e285b5f24b3fdd16d27"
+    },
+    "stream-pump/stacks/trames-firefox-open-stack-316.txt": {
+      "bytes": 293,
+      "sha256": "70070c10136c7e05515fc67af9126873fe8b1516dbe2b5e552e92232c486305c"
+    },
+    "stream-pump/terminal-live.log": {
+      "bytes": 558664,
+      "sha256": "6b878dcf72c795755fabb5ff8d8ab49274a95fb11aebc5e34e1c3f7afacaab53"
+    },
+    "stream-pump/user.js": {
+      "bytes": 80,
+      "sha256": "803eb7e4871a714f0366ff9f47304f9cba4e8648693814d60778e1dbf658f0e3"
+    },
+    "stream-pump/wayland.png": {
+      "bytes": 18473,
+      "sha256": "d0d593ee41a8b2c8b612312ff1bf68dcaf7321b347bd0e2badaad95390105a50"
+    },
+    "unwind/one-cpu-unwind.log": {
+      "bytes": 1489,
+      "sha256": "caf1630e18ceb4a4de54a93da97fb603bda171623f125848c2836cba6bdea5c3"
+    },
+    "unwind/unwind-end.log": {
+      "bytes": 9339,
+      "sha256": "e0d8d3d4c579bfc1a2de8a39c39ee40c609318ae25f7ab709ef5bcde124281d3"
+    },
+    "unwind/unwind-later.log": {
+      "bytes": 2778,
+      "sha256": "3b5ae424d013cf0fddf1cc7249ee9b00a66c946dd141faed131cdc495601c3e9"
+    },
+    "unwind/unwind.log": {
+      "bytes": 5464,
+      "sha256": "02093c6da72c943ccf8eb047fe086556751e7e40ea743aa213fcba248cf68623"
+    }
+  },
+  "archive_sha256": "4a1d256ee357e279ee008bb38d682215c5da5f7959476570c60936af691a2875",
+  "current_production_ffi_sha256": "5167f8db801862225b54b18e810400121987725322e92acb4d6bcf3ac1a66279",
+  "post_probe_reopened_store_libxul_sha256": "26b079d4c4d2924804d54cea11d13b44dc840360c92e817be6a2743d94d04550",
+  "post_probe_reopened_store_libxul_matches_original": true
+}

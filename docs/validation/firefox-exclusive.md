@@ -42,7 +42,7 @@ benchmark remains ignored), plus strict Clippy of these affected modules.
 [Clippy](firefox-exclusive/linux-clippy.log) are retained. These are scoped checks;
 unchanged unrelated network, Vulkan and UI acceptance is reused.
 
-The original Firefox page and Apple ARM64/16 KiB checks of this fix are pending.
+Original Firefox page acceptance remains incomplete.
 No browser-usability or speedup claim is made from the unit regression alone.
 
 The actual Apple ARM64/16 KiB check of serial promotion passes on source
@@ -72,4 +72,8 @@ The actual VFS-backed two-alias test [fails before](firefox-exclusive/private-at
 and [passes after](firefox-exclusive/private-atomic-after.log) for both RMW and
 LL/SC. It checks the writing view, an independent private view and original file
 bytes. Linux passes the same affected 247 tests plus 12 mapped VFS tests and
-strict Clippy including VFS. Apple validation of this COW follow-up is pending.
+strict Clippy including VFS. The actual Apple ARM64/16 KiB follow-up also passes
+on `f36d16ff9880b422d798f05b8b53a878ff73a217`:
+[run 39437406520](https://github.com/kb5000/trames/actions/runs/39437406520),
+including the full affected module checks, private-file VFS regression and both
+original Node REPL terminals. [API evidence](firefox-exclusive/apple-cow-ci.json).

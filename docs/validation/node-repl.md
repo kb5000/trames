@@ -65,3 +65,8 @@ hybrid musl artifact is reused after checking its complete guest source closure.
 artifact digests. The artifact was not downloaded locally because the configured
 proxy denies the Actions binary-storage endpoint. No new iPad or IPA acceptance
 is claimed.
+
+Owner report tracked and code fix completed in [Issue #34](https://github.com/kb5000/trames/issues/34).
+The subsequent private-file atomic COW source also passes the Apple REPL checks:
+[run 39437406520](https://github.com/kb5000/trames/actions/runs/39437406520).
+This still does not install or validate a new package on the owner's iPad.

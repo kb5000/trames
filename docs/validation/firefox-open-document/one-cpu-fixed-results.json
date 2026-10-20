@@ -1,0 +1,132 @@
+{
+  "stage": "wayland",
+  "sandbox": "default",
+  "wayland_proxy": "default",
+  "avoid_opengl_diagnostic": false,
+  "host_cpus_requested": 1,
+  "host_cpu_affinity": [
+    0
+  ],
+  "physical_ipad": false,
+  "options": {
+    "store": "/workspace/trames/target/firefox/store",
+    "volume_total": 17179869184,
+    "volume_available": 17179869184,
+    "network": "off",
+    "wayland": true,
+    "pure_accelerator": true,
+    "musl_libc": "/workspace/trames/target/musl-hybrid/libc.so",
+    "memory_budget_bytes": 4294967296,
+    "process_memory_budget_bytes": 4294967296,
+    "vulkan_accelerator": false
+  },
+  "frames": 3381,
+  "windows": [
+    {
+      "app_id": "firefox",
+      "bounds": [
+        0,
+        0,
+        1024,
+        768
+      ],
+      "connection": 2,
+      "height": 768,
+      "id": 6,
+      "max_size": [
+        16384,
+        16384
+      ],
+      "min_size": [
+        450,
+        120
+      ],
+      "mode": "maximized",
+      "parent": null,
+      "revision": 3511,
+      "title": "Mozilla Firefox",
+      "width": 1024
+    }
+  ],
+  "js_title_seen": false,
+  "guest_progress_diagnostic": false,
+  "moz_log_diagnostic": "Process:5,nsDocShell:5,DocumentChannel:5,nsStreamPump:5",
+  "browser_log_interval_diagnostic": 15.0,
+  "preferences_diagnostic": {
+    "layout.frame_rate": 1
+  },
+  "capture_shm": true,
+  "probe_sha256": "2361fdc5a0730e290392f7e8158e8dc95d78550a375a53de03c7aa30d597febd",
+  "ffi_sha256": "e19ba8187fe36ebcc47c50a7a2dda1d503e6bc6f708b5c64e522af931a450c44",
+  "musl_sha256": "0350f31621b7abb66764e951318db85ba6606fb6be688be651d779465afff6e6",
+  "input_manifest_sha256": "4065d7f806e878b266116341cb3b0a3688ae344fc9298eee567f5524e1ff668b",
+  "guest_page": "/tmp/trames-firefox-131991962516688.html",
+  "profile": "/root/firefox-probe-one-cpu-fixed-131991966807338",
+  "command": "mkdir -p /root/firefox-probe-one-cpu-fixed-131991966807338; printf '%s\\n' 'user_pref(\"layout.frame_rate\", 1);' > /root/firefox-probe-one-cpu-fixed-131991966807338/user.js; ( MOZ_ENABLE_WAYLAND=1 GDK_BACKEND=wayland XDG_RUNTIME_DIR=/run/user/0 WAYLAND_DISPLAY=wayland-0 MOZ_LOG=timestamp,Process:5,nsDocShell:5,DocumentChannel:5,nsStreamPump:5 firefox --no-remote --profile /root/firefox-probe-one-cpu-fixed-131991966807338 file:///tmp/trames-firefox-131991962516688.html >/tmp/firefox-probe.log 2>&1; r=$?; printf \"\\nFIREFOX_PROBE_EXIT:%d\\n\" \"$r\"; ) </dev/null &\n",
+  "browser_log_snapshots": [
+    {
+      "seconds": 15.005642525007715,
+      "exported": true
+    },
+    {
+      "seconds": 30.014018729998497,
+      "exported": true
+    },
+    {
+      "seconds": 45.01833345400519,
+      "exported": true
+    },
+    {
+      "seconds": 60.02596364499186,
+      "exported": true
+    },
+    {
+      "seconds": 75.03398939900217,
+      "exported": true
+    },
+    {
+      "seconds": 90.03929440199863,
+      "exported": true
+    },
+    {
+      "seconds": 105.04201015498256,
+      "exported": true
+    },
+    {
+      "seconds": 120.05082286300603,
+      "exported": true
+    },
+    {
+      "seconds": 135.05648588799522,
+      "exported": true
+    },
+    {
+      "seconds": 150.064575522003,
+      "exported": true
+    },
+    {
+      "seconds": 165.06672151299426,
+      "exported": true
+    }
+  ],
+  "first_window_seconds": 75.43251548800617,
+  "first_image_seconds": 75.43258636500104,
+  "last_frame": {
+    "width": 1024,
+    "height": 768,
+    "images": 2,
+    "revision": 3511
+  },
+  "canvas_green_pixels": 0,
+  "canvas_green_seen": false,
+  "launch_seconds": 180.0061554129934,
+  "firefox_exit": null,
+  "host_memory": {
+    "VmSize": 2719596544,
+    "VmHWM": 1548472320,
+    "VmRSS": 1548472320
+  },
+  "diagnostics_complete": true,
+  "passed": false,
+  "seconds": 192.56502601801185
+}
