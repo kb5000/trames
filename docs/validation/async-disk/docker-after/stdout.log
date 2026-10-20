@@ -6,8 +6,7 @@ IMAGE=sha256:4a82f16bd90a1627d1f6319eaca9d525080e214534f11896222d69b9254c65c1
 GUEST_CPUS=4
 
 TRAMES_TTY_RUN_BEGIN
-/ # [6ntest -t 0 && test -t 1 && test -t 2 && printf '\nTRAMES_TTY_ROUNDTRIP:%s\n' 
-
+/ # [6ntest -t 0 && test -t 1 && test -t 2 && printf '\nTRAMES_TTY_ROUNDTRIP:%s\n' 
 "$(tty)"; exit
 
 TRAMES_TTY_ROUNDTRIP:/dev/pts/0
