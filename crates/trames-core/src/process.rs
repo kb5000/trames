@@ -84,6 +84,7 @@ mod scheduling;
 mod seccomp;
 #[path = "process_service.rs"]
 mod service;
+use service::DiskEpoch;
 #[derive(Clone, Copy, Default)]
 struct Action {
     handler: u64,
@@ -231,6 +232,8 @@ struct Kernel {
     worker_chunks: u64,
     worker_syscalls: u64,
     service_requests: u64,
+    disk_reads: u64,
+    disk_read_bytes: u64,
     service_write_buffer: Vec<u8>,
     serviced_syscalls: u64,
     service_wait: Duration,
@@ -3421,6 +3424,7 @@ impl Kernel {
         self.parallel_dispatch_time += began.elapsed();
         let mut completed = Vec::new();
         let deadline = Instant::now() + timeout;
+        let mut disk = DiskEpoch::default();
         loop {
             let left = deadline.saturating_duration_since(Instant::now());
             if left.is_zero() {
@@ -3435,11 +3439,15 @@ impl Kernel {
                     completed.push(*done);
                     break;
                 }
-                Some(crate::workers::Event::Service(mut request)) => {
+                Some(crate::workers::Event::Service(request)) => {
                     self.service_requests += 1;
-                    let value = self.service_request(&mut request, io);
-                    request.respond(value);
-                    if value.is_none() {
+                    if !self.epoch_request(request, &mut disk, io) {
+                        break;
+                    }
+                }
+                Some(crate::workers::Event::DiskRead(id, result)) => {
+                    self.finish_disk_read(id, result, &mut disk);
+                    if !self.resume_disk_waiters(&mut disk, io) {
                         break;
                     }
                 }
@@ -3448,12 +3456,25 @@ impl Kernel {
         }
         control.stop();
         let began = Instant::now();
-        for _ in completed.len()..chosen.len() {
-            completed.push(
-                self.workers
-                    .complete()
-                    .map_err(|_| RuntimeError::Arguments("CPU worker failed"))?,
-            );
+        // An already submitted read must finish/commit exactly once before
+        // mapping, process or FD mutation. Do not wait in Pool::complete while
+        // its caller is parked awaiting a disk completion on this same channel.
+        for request in disk.waiting.drain(..) {
+            request.respond(None);
+        }
+        while completed.len() < chosen.len() || !disk.pending.is_empty() {
+            match self
+                .workers
+                .event_timeout(Duration::from_secs(1))
+                .map_err(|_| RuntimeError::Arguments("CPU worker failed"))?
+            {
+                Some(crate::workers::Event::Done(done)) => completed.push(*done),
+                Some(crate::workers::Event::Service(request)) => request.respond(None),
+                Some(crate::workers::Event::DiskRead(id, result)) => {
+                    self.finish_disk_read(id, result, &mut disk);
+                }
+                None => {}
+            }
         }
         self.parallel_stop_time += began.elapsed();
         if completed.iter().any(|r| r.outcome.is_none()) {
@@ -3955,6 +3976,8 @@ pub(super) fn run(
         worker_chunks: 0,
         worker_syscalls: 0,
         service_requests: 0,
+        disk_reads: 0,
+        disk_read_bytes: 0,
         service_write_buffer: Vec::new(),
         serviced_syscalls: 0,
         service_wait: Duration::ZERO,
@@ -4013,6 +4036,8 @@ pub(super) fn run(
         worker_chunks: kernel.worker_chunks,
         worker_syscalls: kernel.worker_syscalls,
         service_requests: kernel.service_requests,
+        disk_reads: kernel.disk_reads,
+        disk_read_bytes: kernel.disk_read_bytes,
         serviced_syscalls: kernel.serviced_syscalls,
         service_wait_time: kernel.service_wait,
         peak_parallel_native_calls: kernel
@@ -4198,6 +4223,8 @@ mod tests {
             worker_chunks: 0,
             worker_syscalls: 0,
             service_requests: 0,
+            disk_reads: 0,
+            disk_read_bytes: 0,
             service_write_buffer: Vec::new(),
             serviced_syscalls: 0,
             service_wait: Duration::ZERO,

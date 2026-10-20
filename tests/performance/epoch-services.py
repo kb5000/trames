@@ -18,7 +18,7 @@ p.add_argument('--fixture', type=Path, default=Path('tests/fixtures/bin/epoch-se
 p.add_argument('--output', type=Path, required=True)
 p.add_argument('--iterations', type=int, default=512)
 p.add_argument('--samples', type=int, default=2)
-p.add_argument('--modes', nargs='+', choices=['metadata', 'pipe', 'file', 'vector', 'unix', 'mapped-read', 'mapped-shared'], default=['metadata', 'pipe'])
+p.add_argument('--modes', nargs='+', choices=['metadata', 'pipe', 'file', 'vector', 'unix', 'mapped-read', 'mapped-shared', 'bulk'], default=['metadata', 'pipe'])
 p.add_argument('--reuse-baseline', type=Path, help='reuse exact-binary/input baseline rows from a previous batch')
 a = p.parse_args()
 assert a.iterations > 0 and a.samples > 0
@@ -50,7 +50,8 @@ try:
             if a.reuse_baseline: modes = [('after', a.candidate)]
             if sample % 2: modes.reverse()
             for name, binary in modes:
-                cmd = [str(binary.resolve()), '--memory', '--network', 'off', '--cpus', '4',
+                storage = ['--storage', str((a.output / f'bulk-store-{sample}-{name}').resolve())] if mode == 'bulk' else ['--memory']
+                cmd = [str(binary.resolve()), *storage, '--network', 'off', '--cpus', '4',
                        '--accelerator', 'pure', '--metrics', '--max-instructions', '2000000000',
                        str(a.fixture.resolve()), mode, str(a.iterations)]
                 cpu_before = resource.getrusage(resource.RUSAGE_CHILDREN)
@@ -66,10 +67,13 @@ try:
                 native = json.loads(values['trames native metrics'])
                 runtime = json.loads(values['trames metrics'])
                 assert native['faults'] == native['rejected'] == 0 and native['function_calls'][2] > 0, native
-                assert native['function_calls'][2] == a.iterations and native['bytes_written'] == a.iterations * (1 << 20), native
+                fills = a.iterations * (64 if mode == 'bulk' else 1)
+                assert native['function_calls'][2] == fills and native['bytes_written'] == fills * (1 << 20), native
                 assert native['fallbacks'] == 0, native
                 assert native['worker_calls'] > 0, native
-                if name == 'after': assert runtime['serviced_syscalls'] > 0, runtime
+                if name == 'after':
+                    assert runtime['serviced_syscalls'] > 0, runtime
+                    if mode == 'bulk': assert runtime['disk_reads'] > 0, runtime
                 row = dict(mode=mode, sample=sample, version=name, wall_seconds=elapsed,
                            host_cpu_seconds=cpu_after.ru_utime + cpu_after.ru_stime - cpu_before.ru_utime - cpu_before.ru_stime,
                            native=native, runtime=runtime)

@@ -133,6 +133,9 @@ pub struct RuntimeMetrics {
     pub worker_syscalls: u64,
     /// FD services requested while peer workers retain their running views.
     pub service_requests: u64,
+    /// Host disk reads submitted during CPU epochs (not all guest reads).
+    pub disk_reads: u64,
+    pub disk_read_bytes: u64,
     /// Completed in-epoch services; also included in total syscalls.
     pub serviced_syscalls: u64,
     /// Summed parked caller time, excluded from worker CPU elapsed accounting.

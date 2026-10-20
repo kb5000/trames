@@ -3,7 +3,128 @@
 //! Never inspect Process::memory/CPU or change mappings while peers execute.
 use super::*;
 
+#[derive(Default)]
+pub(super) struct DiskEpoch {
+    pub(super) pending: BTreeMap<usize, PendingDiskRead>,
+    pub(super) waiting: std::collections::VecDeque<Box<crate::workers::Request>>,
+    next: usize,
+}
+pub(super) struct PendingDiskRead {
+    request: Box<crate::workers::Request>,
+    read: trames_vfs::DiskRead,
+    parts: Vec<(u64, usize)>,
+}
+
 impl Kernel {
+    pub(super) fn epoch_request(
+        &mut self,
+        mut request: Box<crate::workers::Request>,
+        disk: &mut DiskEpoch,
+        io: &mut impl GuestOutput,
+    ) -> bool {
+        let Some(p) = self.processes.get(&request.pid) else {
+            request.respond(None);
+            return false;
+        };
+        if disk.pending.values().any(|pending| {
+            pending
+                .read
+                .conflicts(&p.linux.vfs, request.args[0] as u32, request.number)
+        }) {
+            disk.waiting.push_back(request);
+            return true;
+        }
+        // Small reads remain inline: a host queue roundtrip would cost more
+        // than their cached read. Memory/mapped files retain the old helpers.
+        let a = request.args;
+        if matches!(request.number, 63 | 65 | 67 | 69)
+            && p.seccomp.mode() == 0
+            && !p.linux.trace
+            && matches!(p.state, State::Ready)
+            && (matches!(request.number, 65 | 69) || a[2] >= 16 * 1024)
+            && p.linux.vfs.disk_read_candidate(a[0] as u32)
+        {
+            let prepare = || -> Result<_, Errno> {
+                if request.number == 69 && a[3] > i64::MAX as u64 {
+                    return Err(Errno(22));
+                }
+                let (parts, count) = if matches!(request.number, 65 | 69) {
+                    Linux::readv_parts(&request.memory, a)?
+                } else {
+                    let count = a[2].min(trames_linux::MAX_WRITE as u64) as usize;
+                    Linux::check(&request.memory, a[1], count, trames_memory::Access::Write)?;
+                    (vec![(a[1], count)], count)
+                };
+                if count < 16 * 1024 {
+                    return Ok(None);
+                }
+                let offset = matches!(request.number, 67 | 69).then_some(a[3]);
+                Ok(p.linux
+                    .vfs
+                    .prepare_disk_read(a[0] as u32, count, offset)?
+                    .map(|(read, job)| (read, job, parts)))
+            };
+            match prepare() {
+                Ok(Some((read, job, parts))) => {
+                    let id = disk.next;
+                    disk.next += 1;
+                    disk.pending.insert(
+                        id,
+                        PendingDiskRead {
+                            request,
+                            read,
+                            parts,
+                        },
+                    );
+                    self.disk_reads += 1;
+                    self.workers.disk_read(id, job);
+                    return true;
+                }
+                Err(e) => {
+                    request.respond(Some(error(e)));
+                    return true;
+                }
+                Ok(None) => {}
+            }
+        }
+        let value = self.service_request(&mut request, io);
+        request.respond(value);
+        value.is_some()
+    }
+    pub(super) fn finish_disk_read(
+        &mut self,
+        id: usize,
+        result: Result<Vec<u8>, Errno>,
+        disk: &mut DiskEpoch,
+    ) {
+        let mut pending = disk.pending.remove(&id).expect("submitted disk read");
+        let began = self.profile_syscalls.then(Instant::now);
+        let result = pending.read.finish(result).and_then(|bytes| {
+            self.disk_read_bytes += bytes.len() as u64;
+            Linux::scatter(&mut pending.request.memory, &pending.parts, &bytes)?;
+            Ok(bytes.len() as u64)
+        });
+        if let Some(began) = began {
+            self.syscall_total += began.elapsed();
+        }
+        pending.request.respond(Some(result.unwrap_or_else(error)));
+    }
+    pub(super) fn resume_disk_waiters(
+        &mut self,
+        disk: &mut DiskEpoch,
+        io: &mut impl GuestOutput,
+    ) -> bool {
+        // One pass preserves arrival order among conflicting operations, while
+        // independent descriptors can resume. A caller can own only one request.
+        let count = disk.waiting.len();
+        for _ in 0..count {
+            let request = disk.waiting.pop_front().expect("waiting request");
+            if !self.epoch_request(request, disk, io) {
+                return false;
+            }
+        }
+        true
+    }
     pub(super) fn service_request(
         &mut self,
         request: &mut crate::workers::Request,
@@ -166,6 +287,156 @@ mod tests {
             .commit_parallel()
             .unwrap();
         done
+    }
+    fn disk_process() -> (std::path::PathBuf, Process, u32) {
+        let path = std::env::temp_dir().join(format!(
+            "trames-epoch-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let mut p = super::super::tests::process();
+        p.linux.vfs = trames_vfs::Vfs::open_disk(&path, Default::default()).unwrap();
+        p.linux
+            .vfs
+            .import_file(b"/data", vec![0xa5; 32768])
+            .unwrap();
+        let fd = p.linux.vfs.open_at(AT_FDCWD, b"/data", 2, 0).unwrap();
+        p.memory.map(0x10000, 32768, Permissions::RW).unwrap();
+        (path, p, fd)
+    }
+    #[test]
+    fn disk_scalar_vector_and_positioned_reads_complete_once_after_stop() {
+        for number in [63, 65, 67, 69] {
+            let (path, mut p, fd) = disk_process();
+            p.memory
+                .write_array(0x2000, 0x10000u64.to_le_bytes())
+                .unwrap();
+            p.memory.write_array(0x2008, 8192u64.to_le_bytes()).unwrap();
+            p.memory
+                .write_array(0x2010, 0x12000u64.to_le_bytes())
+                .unwrap();
+            p.memory
+                .write_array(0x2018, 24576u64.to_le_bytes())
+                .unwrap();
+            let vector = matches!(number, 65 | 69);
+            let a = [
+                fd as u64,
+                if vector { 0x2000 } else { 0x10000 },
+                if vector { 2 } else { 32768 },
+                0,
+                0,
+                0,
+            ];
+            let (mut k, request, control) = pending(p, number, a);
+            let mut disk = DiskEpoch::default();
+            assert!(k.epoch_request(
+                request,
+                &mut disk,
+                &mut trames_linux::CapturedOutput::default()
+            ));
+            assert_eq!(disk.pending.len(), 1);
+            control.stop();
+            let Some(Event::DiskRead(id, result)) =
+                k.workers.event_timeout(Duration::from_secs(5)).unwrap()
+            else {
+                panic!("missing host completion")
+            };
+            k.finish_disk_read(id, result, &mut disk);
+            let done = k
+                .workers
+                .complete_timeout(Duration::from_secs(5))
+                .unwrap()
+                .unwrap();
+            assert_eq!(done.cpu.x(0), 32768);
+            assert_eq!(done.instructions, 1);
+            assert_eq!(done.serviced_syscalls, 1);
+            let p = k.processes.get_mut(&1).unwrap();
+            p.memory.commit_parallel().unwrap();
+            assert_eq!(
+                p.memory.read_array::<32768>(0x10000).unwrap(),
+                [0xa5; 32768]
+            );
+            assert_eq!(
+                p.linux.vfs.seek(fd, 0, 1).unwrap(),
+                if number < 67 { 32768 } else { 0 }
+            );
+            drop(k);
+            std::fs::remove_dir_all(path).unwrap();
+        }
+    }
+    #[test]
+    fn pending_disk_read_allows_pipe_service_and_defers_shared_offset() {
+        for conflict in [false, true] {
+            let (path, p, fd) = disk_process();
+            let mut peer = super::super::tests::process();
+            peer.linux.vfs = p.linux.vfs.clone();
+            let [r, w] = peer.linux.vfs.pipe(0).unwrap();
+            peer.linux.vfs.write(w, b"ok").unwrap();
+            let (mut k, request, control) = pending(p, 63, [fd as u64, 0x10000, 16384, 0, 0, 0]);
+            let mut disk = DiskEpoch::default();
+            let mut io = trames_linux::CapturedOutput::default();
+            assert!(k.epoch_request(request, &mut disk, &mut io));
+            // The host job may already have finished. Deliberately retain its
+            // uncommitted completion to exercise an outstanding operation.
+            let Some(Event::DiskRead(id, result)) =
+                k.workers.event_timeout(Duration::from_secs(5)).unwrap()
+            else {
+                panic!("missing disk completion")
+            };
+            let args = [if conflict { fd } else { r } as u64, 0x2000, 2, 0, 0, 0];
+            let (mut peer_kernel, mut request, peer_control) = pending(peer, 63, args);
+            request.pid = 2;
+            k.processes
+                .insert(2, peer_kernel.processes.remove(&1).unwrap());
+            peer_control.stop();
+            assert!(k.epoch_request(request, &mut disk, &mut io));
+            assert_eq!(disk.waiting.len(), usize::from(conflict));
+            if !conflict {
+                let done = peer_kernel
+                    .workers
+                    .complete_timeout(Duration::from_secs(5))
+                    .unwrap()
+                    .unwrap();
+                assert_eq!(done.cpu.x(0), 2);
+                assert_eq!(disk.pending.len(), 1);
+            }
+            control.stop();
+            k.finish_disk_read(id, result, &mut disk);
+            assert!(k.resume_disk_waiters(&mut disk, &mut io));
+            if conflict {
+                let done = peer_kernel
+                    .workers
+                    .complete_timeout(Duration::from_secs(5))
+                    .unwrap()
+                    .unwrap();
+                assert_eq!(done.cpu.x(0), 2);
+                assert_eq!(k.processes[&1].linux.vfs.flags(fd).unwrap() & 3, 2);
+            }
+            assert_eq!(
+                k.workers
+                    .complete_timeout(Duration::from_secs(5))
+                    .unwrap()
+                    .unwrap()
+                    .cpu
+                    .x(0),
+                16384
+            );
+            let position = k
+                .processes
+                .get_mut(&1)
+                .unwrap()
+                .linux
+                .vfs
+                .seek(fd, 0, 1)
+                .unwrap();
+            assert_eq!(position, 16384 + if conflict { 2 } else { 0 });
+            drop(peer_kernel);
+            drop(k);
+            std::fs::remove_dir_all(path).unwrap();
+        }
     }
     #[test]
     fn regular_scalar_vector_and_positioned_services_share_the_original_abi() {

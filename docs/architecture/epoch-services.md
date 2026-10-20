@@ -53,7 +53,39 @@ FD 表版本只缓存候选位图；streams 和 files 同一次扫描构建，FD
   不对已完成文件写入做“失败后回退重放”。pipe 的 EAGAIN/SIGPIPE 边界继续保留。
 
 该方案允许未映射文件服务期间其他 CPU/native worker 前进；多个 VFS 请求仍由同一个
-协调器依次处理，宿主磁盘 I/O 尚未异步化。结果和范围见[文件服务验证](../validation/epoch-files.md)。
+协调器依次处理；下述大块磁盘读取已拆分宿主提交/完成，写入和 sync 仍同步。结果和范围见[文件服务验证](../validation/epoch-files.md)。
+
+## 大块磁盘读取的提交与完成
+
+普通未映射磁盘文件的 read/readv/pread/preadv，在请求长度达到 16 KiB 时尝试异步。
+小读取、内存文件、EOF/零长度、MappedData 与宿主共享 backing 沿用原路径；尤其不能
+绕开 MappedData 的已缓存脏页读取，仅检查“现在没有 shared writer”还不足以直读磁盘。
+单任务/单 CPU 的 joined 读取尚未异步化。
+
+协调器使用原 Linux 标量访存预检、readv_parts 和 scatter，保留完整 arm64 64 位 offset、
+1024 iovec、1 MiB transfer cap、短读和原有 errno。先验证全部目的地址，再提交任务。
+后台任务只携带 offset/count 和 Arc<DiskBacking>；打开文件时沿用原 regular/O_NOFOLLOW/
+metadata 检查。没有新增 guest 路径到宿主路径的转换，也没有传递 guest 页、借用或
+VFS Rc/RefCell。DiskBacking 的 orphan flag 和 DiskStore 锁租约使用 Arc，保留匿名文件
+和已 unlink 文件直到最后一个后台任务释放；VFS 与 Node 仍属于协调线程。
+
+最多两个持久宿主 I/O 线程按需启动，不为每个 syscall 建线程。每个被调度 guest CPU
+至多持有一个未答复请求，因此 pending、等待队列和已提交 job 数均受 CPU 数（最多 32）
+约束，每个数据缓冲至多 1 MiB；不会无限预取。独立 OFD 的定位读取可并发；同一 OFD
+的 offset 操作和同一 backing 的写入/sync 等待冲突读取完成。硬链接按 inode/backing
+身份判断。独立 pipe/Unix stream 服务和其他 CPU/native 工作继续执行，不加 VFS 全局锁。
+
+完成事件和 CPU/服务事件共用协调器 channel。协调器更新共享 OFD offset、atime/inotify，
+再用调用者保留的 View 写回。stop、预算耗尽、取消、映射/进程变更前必须收完所有已提交
+任务并回复结果，不能将其作为未执行 syscall 重放；尚未提交的等待请求可以 join。
+线程创建/发送失败在原协调器执行一次该任务并返回完成，不丢失请求。
+
+CLI metrics 新增 disk_reads/disk_read_bytes，分别表示 epoch 内提交的后台读取数及其
+成功读取字节，包含最终 guest 写回失败前已读取的字节；不是全部 guest read，也不是
+磁盘物理吞吐。当前仍在公平/定时 checkpoint 前 drain 后台读取，所以冷盘长等待仍可能
+延迟全局 checkpoint。写入涉及配额预留、append、部分写与持久化提交，尚未 offload；
+fsync 的 manifest checkpoint 和磁盘元数据访问仍同步。验证见
+[异步磁盘读取记录](../validation/async-disk.md)。
 
 ## 减少服务往返与宿主分配
 

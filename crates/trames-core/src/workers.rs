@@ -77,6 +77,7 @@ pub(super) struct Done {
 pub(super) enum Event {
     Done(Box<Done>),
     Service(Box<Request>),
+    DiskRead(usize, Result<Vec<u8>, trames_vfs::Errno>),
 }
 /// Ownership of the stopped caller's parallel view travels with the request.
 /// No coordinator Memory/Rc or page guard crosses this boundary.
@@ -117,6 +118,10 @@ struct Worker {
     join: thread::JoinHandle<()>,
     control: Option<Arc<Control>>,
 }
+struct DiskWorker {
+    send: mpsc::Sender<(usize, trames_vfs::DiskReadJob)>,
+    join: thread::JoinHandle<()>,
+}
 pub(super) struct Pool {
     workers: Vec<Option<Worker>>,
     send: mpsc::Sender<Event>,
@@ -126,6 +131,8 @@ pub(super) struct Pool {
     pub peak_native: Arc<AtomicUsize>,
     active_native: Arc<AtomicUsize>,
     profile_native_overlap: bool,
+    disk_workers: Vec<DiskWorker>,
+    next_disk_worker: usize,
 }
 impl Pool {
     #[cfg(test)]
@@ -143,6 +150,8 @@ impl Pool {
             peak_native: Arc::new(AtomicUsize::new(0)),
             active_native: Arc::new(AtomicUsize::new(0)),
             profile_native_overlap,
+            disk_workers: Vec::new(),
+            next_disk_worker: 0,
         }
     }
     pub fn ensure(&mut self, index: usize) -> std::io::Result<()> {
@@ -386,6 +395,41 @@ impl Pool {
         worker.control = Some(work.control.clone());
         worker.send.send(work).map_err(|_| ())
     }
+    pub fn disk_read(&mut self, id: usize, job: trames_vfs::DiskReadJob) {
+        // Lazy persistent workers; at most one outstanding request per guest
+        // CPU bounds queued jobs/buffers. Never create a thread per syscall.
+        let index = self.next_disk_worker % self.workers.len().clamp(1, 2);
+        self.next_disk_worker = self.next_disk_worker.wrapping_add(1);
+        if index >= self.disk_workers.len() {
+            let (send, receive) = mpsc::channel::<(usize, trames_vfs::DiskReadJob)>();
+            let done = self.send.clone();
+            if let Ok(join) = thread::Builder::new()
+                .name("trames-disk".into())
+                .spawn(move || {
+                    while let Ok((id, job)) = receive.recv() {
+                        let result =
+                            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| job.run()))
+                                .unwrap_or(Err(trames_vfs::Errno(5)));
+                        if done.send(Event::DiskRead(id, result)).is_err() {
+                            break;
+                        }
+                    }
+                })
+            {
+                self.disk_workers.push(DiskWorker { send, join });
+            }
+        }
+        let job = if let Some(worker) = self.disk_workers.get(index) {
+            match worker.send.send((id, job)) {
+                Ok(()) => return,
+                Err(error) => error.0 .1,
+            }
+        } else {
+            job
+        };
+        // Thread resource failure preserves one execution and one completion.
+        let _ = self.send.send(Event::DiskRead(id, job.run()));
+    }
     fn received(&mut self, event: Event) -> Event {
         if let Event::Done(done) = &event {
             self.workers[done.worker]
@@ -402,12 +446,14 @@ impl Pool {
             Err(mpsc::RecvTimeoutError::Disconnected) => Err(()),
         }
     }
+    #[cfg(test)]
     pub fn complete(&mut self) -> Result<Done, ()> {
         loop {
             let event = self.receive.recv().map_err(|_| ())?;
             match self.received(event) {
                 Event::Done(done) => return Ok(*done),
                 Event::Service(request) => request.respond(None),
+                Event::DiskRead(_, _) => return Err(()),
             }
         }
     }
@@ -418,6 +464,7 @@ impl Pool {
             match self.event_timeout(deadline.saturating_duration_since(Instant::now()))? {
                 Some(Event::Done(done)) => return Ok(Some(*done)),
                 Some(Event::Service(request)) => request.respond(None),
+                Some(Event::DiskRead(_, _)) => return Err(()),
                 None => return Ok(None),
             }
         }
@@ -437,6 +484,7 @@ impl Drop for Pool {
             match self.event_timeout(Duration::from_millis(10)) {
                 Ok(Some(Event::Service(request))) => request.respond(None),
                 Ok(Some(Event::Done(_))) => {}
+                Ok(Some(Event::DiskRead(_, _))) => {}
                 Ok(None) => {
                     for worker in self.workers.iter_mut().flatten() {
                         if worker.join.is_finished() {
@@ -448,6 +496,10 @@ impl Drop for Pool {
             }
         }
         for worker in self.workers.iter_mut().filter_map(Option::take) {
+            drop(worker.send);
+            let _ = worker.join.join();
+        }
+        for worker in self.disk_workers.drain(..) {
             drop(worker.send);
             let _ = worker.join.join();
         }

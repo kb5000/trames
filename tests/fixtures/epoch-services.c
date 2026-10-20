@@ -23,6 +23,7 @@ extern void *native_fill(void *, int, size_t);
 static pthread_barrier_t start;
 static uint32_t checksum;
 static unsigned iterations = 1024;
+static unsigned native_multiplier = 1;
 static void *memory_worker(void *unused) {
     (void)unused;
     size_t n = 1024 * 1024;
@@ -30,7 +31,7 @@ static void *memory_worker(void *unused) {
     assert(bytes);
     int rc = pthread_barrier_wait(&start);
     assert(rc == 0 || rc == PTHREAD_BARRIER_SERIAL_THREAD);
-    for (unsigned i = 0; i < iterations; i++) {
+    for (unsigned i = 0; i < iterations * native_multiplier; i++) {
         unsigned char value = (unsigned char)(i * 31 + 7);
         assert(native_fill(bytes, value, n) == bytes);
         assert(bytes[0] == value && bytes[n / 2] == value && bytes[n - 1] == value);
@@ -40,19 +41,27 @@ static void *memory_worker(void *unused) {
     return NULL;
 }
 int main(int argc, char **argv) {
+    int bulk = argc > 1 && !strcmp(argv[1], "bulk");
+    if (bulk) native_multiplier = 64;
     int streams = argc > 1 && !strcmp(argv[1], "pipe");
     int sockets = argc > 1 && !strcmp(argv[1], "unix");
     int private_map = argc > 1 && !strcmp(argv[1], "mapped-read");
     int shared_map = argc > 1 && !strcmp(argv[1], "mapped-shared");
     int mapped = private_map || shared_map;
     int vectors = argc > 1 && !strcmp(argv[1], "vector");
-    int files = vectors || mapped || (argc > 1 && !strcmp(argv[1], "file"));
+    int files = bulk || vectors || mapped || (argc > 1 && !strcmp(argv[1], "file"));
     if (argc > 2) { iterations = (unsigned)strtoul(argv[2], NULL, 10); assert(iterations > 0 && iterations <= 8192); }
     char temporary[] = "/tmp/trames-epoch-XXXXXX";
     if (files) { int rc = mkdir("/tmp", 0777); assert(rc == 0 || errno == EEXIST); }
     int fd = files ? mkstemp(temporary) : open("/dev/null", O_RDWR);
     assert(fd >= 0);
     if (files) assert(!unlink(temporary));
+    unsigned char *bulk_bytes = NULL;
+    if (bulk) {
+        bulk_bytes = malloc(65536); assert(bulk_bytes);
+        for (unsigned i = 0; i < 65536; i++) bulk_bytes[i] = (unsigned char)(i * 13 + 7);
+        assert(write(fd, bulk_bytes, 65536) == 65536);
+    }
     unsigned char *mapping = NULL;
     if (mapped) {
         assert(!ftruncate(fd, 4096));
@@ -68,7 +77,19 @@ int main(int argc, char **argv) {
     int rc = pthread_barrier_wait(&start);
     assert(rc == 0 || rc == PTHREAD_BARRIER_SERIAL_THREAD);
     for (unsigned i = 0; i < iterations * 8; i++) {
-        if (mapped) {
+        if (bulk) {
+            struct iovec out[] = {{bulk_bytes, 8193}, {bulk_bytes + 8193, 57343}};
+            assert(lseek(fd, 0, SEEK_SET) == 0);
+            switch (i % 4) {
+            case 0: assert(read(fd, bulk_bytes, 65536) == 65536); break;
+            case 1: assert(readv(fd, out, 2) == 65536); break;
+            case 2: assert(pread(fd, bulk_bytes, 65536, 0) == 65536); break;
+            default: assert(preadv(fd, out, 2, 0) == 65536); break;
+            }
+            assert(lseek(fd, 0, SEEK_CUR) == (i % 4 < 2 ? 65536 : 0));
+            for (unsigned j = 0; j < 65536; j += 4093)
+                assert(bulk_bytes[j] == (unsigned char)(j * 13 + 7));
+        } else if (mapped) {
             unsigned char output[16];
             mapping[0] = (unsigned char)i;
             assert(pread(fd, output, 16, 0) == 16);
@@ -133,7 +154,8 @@ int main(int argc, char **argv) {
     if (mapped) assert(!munmap(mapping, 4096));
     assert(!pthread_barrier_destroy(&start));
     assert(!close(fd) && !close(ends[0]) && !close(ends[1]));
-    const char *mode = mapped ? (shared_map ? "mapped-shared" : "mapped-read") : files ? (vectors ? "vector" : "file") : sockets ? "unix" : streams ? "pipe" : "metadata";
+    free(bulk_bytes);
+    const char *mode = bulk ? "bulk" : mapped ? (shared_map ? "mapped-shared" : "mapped-read") : files ? (vectors ? "vector" : "file") : sockets ? "unix" : streams ? "pipe" : "metadata";
     printf("epoch-services %s %u %08x\n", mode, iterations, checksum);
     return 0;
 }
