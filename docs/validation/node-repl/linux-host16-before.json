@@ -1,0 +1,46 @@
+{
+  "options": {
+    "store": "/workspace/trames/target/node-repl/store",
+    "volume_total": 17179869184,
+    "volume_available": 17179869184,
+    "network": "off",
+    "wayland": true,
+    "multiple_terminals": true,
+    "pure_accelerator": true,
+    "musl_libc": "/workspace/trames/target/musl-hybrid/libc.so",
+    "memory_budget_bytes": 4294967296,
+    "process_memory_budget_bytes": 4294967296
+  },
+  "platform": "linux",
+  "host_page_bytes": 4096,
+  "ffi_sha256": "0c8f511b1cf94d386f410eb9622287176e0a11d45460ac9f9c86fe45b96ce0ad",
+  "musl_sha256": "0350f31621b7abb66764e951318db85ba6606fb6be688be651d779465afff6e6",
+  "passed": false,
+  "checks": [
+    {
+      "terminal": 1,
+      "input": "111",
+      "delayed": false,
+      "passed": true
+    },
+    {
+      "terminal": 1,
+      "input": "111",
+      "delayed": true,
+      "passed": true
+    }
+  ],
+  "error": "AssertionError({'phase': 'failed', 'error': 'local runtime panicked', 'exit_code': None, 'budget_bytes': 17179869184, 'used_bytes': 76282779, 'available_bytes': 17103586405, 'volume_total_bytes': 17179869184, 'node_limit': 131072, 'nodes_used': 937})",
+  "seconds": 4.621858664992033,
+  "status": {
+    "phase": "failed",
+    "error": "local runtime panicked",
+    "exit_code": null,
+    "budget_bytes": 17179869184,
+    "used_bytes": 76282779,
+    "available_bytes": 17103586405,
+    "volume_total_bytes": 17179869184,
+    "node_limit": 131072,
+    "nodes_used": 937
+  }
+}

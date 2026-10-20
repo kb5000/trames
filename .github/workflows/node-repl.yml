@@ -1,10 +1,17 @@
 name: Node REPL compatibility
 on:
   workflow_dispatch:
+    inputs:
+      guest_run:
+        description: Reuse an exact-source node-repl-musl artifact from this workflow
+        required: false
+        type: string
 permissions:
   contents: read
+  actions: read
 jobs:
   guest-libc:
+    if: inputs.guest_run == ''
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -23,11 +30,28 @@ jobs:
             target/musl-hybrid/musl-hybrid-1.2.5-source.tar.gz
           retention-days: 7
   apple-repl:
+    if: ${{ !cancelled() && (needs.guest-libc.result == 'success' || needs.guest-libc.result == 'skipped') }}
     needs: guest-libc
     runs-on: macos-15
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify reused guest source is unchanged
+        if: inputs.guest_run != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GUEST_RUN: ${{ inputs.guest_run }}
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess
+          run = json.loads(subprocess.check_output(['gh', 'api', 'repos/'+os.environ['GITHUB_REPOSITORY']+'/actions/runs/'+os.environ['GUEST_RUN']]))
+          assert run['path'] == '.github/workflows/node-repl.yml'
+          assert run['head_repository']['full_name'] == os.environ['GITHUB_REPOSITORY']
+          paths = ['accelerator/', 'scripts/build-musl-hybrid.sh', 'scripts/prepare-musl-hybrid.py', 'crates/trames-native/upstream/', 'LICENSE']
+          assert not subprocess.check_output(['git', 'diff', '--name-only', run['head_sha'], 'HEAD', '--', *paths])
+          PY
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-10-16
@@ -35,6 +59,13 @@ jobs:
         with:
           name: node-repl-musl
           path: target/musl-hybrid/
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.guest_run || github.run_id }}
+      - name: Check changed MMU and parallel publication boundaries
+        run: |
+          cargo fmt --all --check
+          cargo clippy -p trames-memory --all-targets --no-deps --locked -- -D warnings
+          cargo test -p trames-memory --lib --locked -- --test-threads=1
       - name: Build the unchanged optimized App runtime
         run: cargo build -p trames-ffi -p trames-cli --release --locked
       - name: Original Node REPL with eager preview on Apple ARM64 and 16 KiB pages

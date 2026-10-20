@@ -1,0 +1,22 @@
+   Compiling trames-memory v1.2.0 (/workspace/trames/crates/trames-memory)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.90s
+     Running unittests src/lib.rs (target/perf-runtime/debug/build/trames-memory/adc3530834655997/out/trames_memory-adc3530834655997)
+
+running 1 test
+test mmu::tests::host_group_relocation_refreshes_unchanged_parallel_neighbors ... FAILED
+
+failures:
+
+---- mmu::tests::host_group_relocation_refreshes_unchanged_parallel_neighbors stdout ----
+
+thread 'mmu::tests::host_group_relocation_refreshes_unchanged_parallel_neighbors' (189119) panicked at crates/trames-memory/src/parallel.rs:1226:25:
+mapping changes require joined commit
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    mmu::tests::host_group_relocation_refreshes_unchanged_parallel_neighbors
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 89 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p trames-memory --lib`
