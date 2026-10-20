@@ -1,0 +1,433 @@
+~ # [6nmkdir -p /root/firefox-probe-code-epoch-final-canvas; ( MOZ_ENABLE_WAYLAND=1
+ GDK_BACKEND=wayland XDG_RUNTIME_DIR=/run/user/0 WAYLAND_DISPLAY=wayland-0 firef
+ox --no-remote --profile /root/firefox-probe-code-epoch-final-canvas file:///tmp
+/trames-firefox-119559584297030.html >/tmp/firefox-probe.log 2>&1; r=$?; printf 
+"\nFIREFOX_PROBE_EXIT:%d\n" "$r"; ) </dev/null &
+~ # [6nprintf "\nFIREFOX_LOG_BEGIN\n"; cat /tmp/firefox-probe.log; printf "\nFIREFO
+X_DMESG_BEGIN\n"; dmesg; printf "\nFIREFOX_MEMORY_BEGIN\n"; cat /proc/meminfo; g
+rep -E 'Name:|Pid:|PPid:|VmRSS:|VmSize:|Threads:' /proc/[0-9]*/status; printf "\
+nFIREFOX_PROCESSES_BEGIN\n"; ps -T -o pid,ppid,stat,time,comm; printf "\nFIREFOX
+_DIAGNOSTICS_DONE\n"
+
+FIREFOX_LOG_BEGIN
+[Parent 4, Main Thread] WARNING: Failed to create DBus proxy for org.a11y.Bus: Cannot spawn a message bus without a machine-id: Unable to load /usr/var/lib/dbus/machine-id or /etc/machine-id: Failed to open file “/usr/var/lib/dbus/machine-id”: No such file or directory
+: 'glib warning', file /home/buildozer/aports/community/firefox/src/firefox-142.0/toolkit/xre/nsSigHandlers.cpp:201
+
+** (firefox:4): WARNING **: 10:39:00.118: Failed to create DBus proxy for org.a11y.Bus: Cannot spawn a message bus without a machine-id: Unable to load /usr/var/lib/dbus/machine-id or /etc/machine-id: Failed to open file “/usr/var/lib/dbus/machine-id”: No such file or directory
+
+Crash Annotation GraphicsCriticalError: |[0][GFX1-]: Calling WaitFlushedEvent::Run: is delayed: 21817 (t=1.79249e+09) [GFX1-]: Calling WaitFlushedEvent::Run: is delayed: 21817
+
+FIREFOX_DMESG_BEGIN
+[2.926260] pid=15 syscall=200(bind) pc=0x700414fc args=[1d, 455ac678, c, 0, 0, 0] unsupported errno=95 comm="Netlink Monitor"
+[43.210204] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 470fcd8c8, 0, 470fcda90, 2e, 0] unsupported errno=38 comm="DOM Worker"
+[43.246248] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 470fcd660, 0, 47f0b0c8, 47f0b008, 47f0b0c8] unsupported errno=38 comm="DOM Worker"
+[50.038713] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 470fcd8c8, fffffffffffee360, 470fcf0b8, 470fd1c90, 0] unsupported errno=38 comm="DOM Worker"
+[50.172783] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 470fcd660, 0, 47f0b0c8, 47f0b008, 47f0b0c8] unsupported errno=38 comm="DOM Worker"
+[56.703321] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 470fcdf18, fffffffffffda480, 470fcf098, 470fd1c90, 0] unsupported errno=38 comm="DOM Worker"
+[57.446705] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 470fcdcb0, 0, 47f0b0c8, 47f0b008, 47f0b0c8] unsupported errno=38 comm="DOM Worker"
+[57.464026] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 470fcdf18, 14e40, 0, 470fd1c90, 304ae9d0] unsupported errno=38 comm="DOM Worker"
+[57.511467] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 470fcdcb0, 0, 47f0b0c8, 47f0b008, 47f0b0c8] unsupported errno=38 comm="DOM Worker"
+[62.918681] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 470fcdf18, d3c0, 470fcf088, 470fd1c90, 0] unsupported errno=38 comm="DOM Worker"
+[63.164507] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 470fcdcb0, 0, 47f0b0c8, 47f0b008, 47f0b0c8] unsupported errno=38 comm="DOM Worker"
+[63.170366] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 470fcdf18, 17ae0, 470fcf110, 470fd1c90, 0] unsupported errno=38 comm="DOM Worker"
+[63.208816] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 470fcdcb0, 0, 47f0b0c8, 47f0b008, 47f0b0c8] unsupported errno=38 comm="DOM Worker"
+[68.295276] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 470fcdf18, 1ace0, 470fcf128, 470fd1c90, 0] unsupported errno=38 comm="DOM Worker"
+[68.404704] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 470fcdcb0, 0, 47f0b0c8, 47f0b008, 47f0b0c8] unsupported errno=38 comm="DOM Worker"
+[69.689320] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 26, 0] unsupported errno=38 comm="WebExtensions"
+[69.783120] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 0, 0, 0] unsupported errno=38 comm="WebExtensions"
+[70.046543] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb48, 7fffffefd980, 303bea88, 303c0e90, 0] unsupported errno=38 comm="WebExtensions"
+[70.088680] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8e0, 0, 1, 359e4074, 1] unsupported errno=38 comm="WebExtensions"
+[70.242212] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 40ad60, 303be2e8, 3077fbd0, 303c0e90] unsupported errno=38 comm="WebExtensions"
+[70.245158] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 350b4ad4, 65, 0] unsupported errno=38 comm="WebExtensions"
+[70.303873] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[70.306863] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 350347f4, 65, 0] unsupported errno=38 comm="WebExtensions"
+[70.361015] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[70.363401] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 1, 65, 0] unsupported errno=38 comm="WebExtensions"
+[70.522028] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 435080, 303be440, 32ddd7f0, 303c0e90] unsupported errno=38 comm="WebExtensions"
+[70.524575] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 350b4ad4, 65, 0] unsupported errno=38 comm="WebExtensions"
+[70.600035] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[70.604721] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 350347f4, 65, 0] unsupported errno=38 comm="WebExtensions"
+[70.702658] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[70.708511] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 350b4ad4, 65, 0] unsupported errno=38 comm="WebExtensions"
+[70.863997] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[70.867873] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 350347f4, 65, 0] unsupported errno=38 comm="WebExtensions"
+[71.123127] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb48, 44c960, 303be4b0, 32e8f8d0, 303c0e90] unsupported errno=38 comm="WebExtensions"
+[71.132936] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8e0, 0, 350347f4, 65, 0] unsupported errno=38 comm="WebExtensions"
+[71.267859] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[71.271153] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 350b4ad4, 65, 0] unsupported errno=38 comm="WebExtensions"
+[71.328351] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[71.330971] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 350347f4, 65, 0] unsupported errno=38 comm="WebExtensions"
+[71.523798] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[71.526250] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 1, 65, 0] unsupported errno=38 comm="WebExtensions"
+[71.621172] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[71.624154] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 350347f4, 65, 0] unsupported errno=38 comm="WebExtensions"
+[71.676780] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[71.680313] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 350347f4, 65, 0] unsupported errno=38 comm="WebExtensions"
+[71.766613] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[71.770367] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 1, 3091fed4, 30920034] unsupported errno=38 comm="WebExtensions"
+[71.889134] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[71.986597] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 303bf680, 303c0e90, 0] unsupported errno=38 comm="WebExtensions"
+[72.302135] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb48, 535080, 303be6d0, 30415b90, 303c0e90] unsupported errno=38 comm="WebExtensions"
+[72.419736] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8e0, 0, 10, 32df5cd0, 303c0e90] unsupported errno=38 comm="WebExtensions"
+[72.711266] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb48, 0, 7fffffefdd10, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[72.795581] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8e0, 0, 10, 1, 0] unsupported errno=38 comm="WebExtensions"
+[73.081435] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb48, 0, 7fffffefdd10, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[73.082870] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8e0, 0, 42d330c8, 42d33008, 42d330c8] unsupported errno=38 comm="WebExtensions"
+[119.886814] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefddd8, 7fffffefdc78, 30921420, 100, 2d40] unsupported errno=38 comm="WebExtensions"
+[119.939991] pid=116 syscall=165(getrusage) pc=0x7003d98c args=[0, 45ef5558, 45ef53f8, 45ef6480, 45ef8c90, 0] unsupported errno=38 comm="StreamTrans #1"
+[152.420736] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdd88, 0, 7fffffefdf50, 28, 0] unsupported errno=38 comm="firefox"
+[152.423087] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb20, 0, 10, 1, 0] unsupported errno=38 comm="firefox"
+[152.470930] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefbcd8, 7fffffefb830, 876713ec0, 200, 2d40] unsupported errno=38 comm="firefox"
+[152.473244] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefba70, 0, 10, 100, 2d40] unsupported errno=38 comm="firefox"
+[155.451290] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdd88, 7fffffefd8e0, 87ba8b540, 200, 2d40] unsupported errno=38 comm="firefox"
+[156.809862] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb20, 0, 1, 365f104c, 1] unsupported errno=38 comm="firefox"
+[157.214429] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdd88, 7fffffefd8e0, 87ba90040, 200, 2d40] unsupported errno=38 comm="firefox"
+[157.315288] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb20, 0, 351ebe44, 2915f1fa9088, 0] unsupported errno=38 comm="firefox"
+[158.840682] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdd88, 7fffffefd8e0, 87ba914c0, 200, 2d40] unsupported errno=38 comm="firefox"
+[158.941363] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb20, 0, 351c3490, 100, 2d40] unsupported errno=38 comm="firefox"
+[159.506423] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdd88, 7fffffefd8e0, 4587a280, 200, 2d40] unsupported errno=38 comm="firefox"
+[159.608960] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb20, 0, 351ebe44, 100, 2d40] unsupported errno=38 comm="firefox"
+[161.041034] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdd88, 7fffffefd8e0, 45877a40, 200, 2d40] unsupported errno=38 comm="firefox"
+[161.068300] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb20, 0, 351ebe44, 100, 2d40] unsupported errno=38 comm="firefox"
+[173.062547] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdd88, 7fffffefd8e0, 45877700, 200, 2d40] unsupported errno=38 comm="firefox"
+[173.188085] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb20, 0, 10, 30310e90, 0] unsupported errno=38 comm="firefox"
+[186.776291] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffef60d8, 7fffffef5c30, c845ce9c0, 200, 2d40] unsupported errno=38 comm="firefox"
+[187.166261] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffef5e70, 0, 10, 30310e90, 0] unsupported errno=38 comm="firefox"
+[192.298288] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdd88, 7fffffefd8e0, c8459ce00, 200, 2d40] unsupported errno=38 comm="firefox"
+[192.313221] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 470fce3c8, 1c480, 470fcf150, 470fd1c90, 0] unsupported errno=38 comm="DOM Worker"
+[192.588966] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb20, 0, 10, 30310e90, 304d6690] unsupported errno=38 comm="firefox"
+[192.678624] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 470fce160, 0, 47f0b0c8, 47f0b008, 47f0b0c8] unsupported errno=38 comm="DOM Worker"
+[192.744069] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 470fce3c8, 26b60, 470fcf110, 470fd1c90, 0] unsupported errno=38 comm="DOM Worker"
+[193.116093] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 470fce160, 0, 47f0b0c8, 47f0b008, 47f0b0c8] unsupported errno=38 comm="DOM Worker"
+[193.386905] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 470fce0a8, 4b080, 470fcf138, 470fd1c90, 0] unsupported errno=38 comm="DOM Worker"
+[193.404899] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 470fcde40, 0, 47f0b0c8, 47f0b008, 47f0b0c8] unsupported errno=38 comm="DOM Worker"
+[193.406278] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 470fce288, 4b220, 470fcf138, 470fd1c90, 0] unsupported errno=38 comm="DOM Worker"
+[193.421189] pid=79 syscall=165(getrusage) pc=0x7003d98c args=[0, 470fce020, 0, 47f0b0c8, 47f0b008, 47f0b0c8] unsupported errno=38 comm="DOM Worker"
+[199.299302] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefddd8, 19de000, 303be358, 44f99a50, 303c0e90] unsupported errno=38 comm="WebExtensions"
+[199.380310] pid=142 syscall=165(getrusage) pc=0x7003d98c args=[0, 46910558, ffffffffffffee20, 469110e0, 44f9b350, 46913c90] unsupported errno=38 comm="StreamTrans #3"
+[200.019792] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdd88, 7fffffefd8e0, c8459cf40, 200, 2d40] unsupported errno=38 comm="firefox"
+[200.144451] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb20, 0, 10, 30310e90, 30490d18] unsupported errno=38 comm="firefox"
+[226.819662] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd828, 7fffffefd380, 45d0ad00, 200, 2d40] unsupported errno=38 comm="firefox"
+[227.272250] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd5c0, 0, 10, 30310e90, 0] unsupported errno=38 comm="firefox"
+[259.304506] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefddd8, 0, 10, 304107d0, 303c0e90] unsupported errno=38 comm="WebExtensions"
+[259.371061] pid=144 syscall=165(getrusage) pc=0x7003d98c args=[0, 46b8d558, 0, 10, 46b90c90, 0] unsupported errno=38 comm="StreamTrans #4"
+[265.067175] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefbd28, 7fffffefb880, c9d405980, 200, 2d40] unsupported errno=38 comm="firefox"
+[265.505846] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefbac0, 0, 30310188, 30310e90, 0] unsupported errno=38 comm="firefox"
+[279.370744] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdd88, 7fffffefd8e0, c8a0d9d40, 200, 2d40] unsupported errno=38 comm="firefox"
+[279.478451] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb20, 0, 10, c9d40a9b0, 2d40] unsupported errno=38 comm="firefox"
+[320.884133] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefddd8, 0, 10, 32dbca90, 303c0e90] unsupported errno=38 comm="WebExtensions"
+[322.078358] pid=149 syscall=165(getrusage) pc=0x7003d98c args=[0, 46be1558, ffffffffffffedc0, 46be22a8, 32eb4c70, 46be4c90] unsupported errno=38 comm="StreamTrans #5"
+[346.337130] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefa4e8, 7fffffefa040, cb6526440, 200, 2d40] unsupported errno=38 comm="firefox"
+[346.392381] pid=4 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefa280, 0, 3d48b0c8, 3d48b008, 3d48b0c8] unsupported errno=38 comm="firefox"
+[346.464366] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 24e9ca0, 303be4a8, 303c0e90, 0] unsupported errno=38 comm="WebExtensions"
+[346.472885] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 10, 1, 0] unsupported errno=38 comm="WebExtensions"
+[346.496174] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[346.698468] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 1, 359e4074, 0] unsupported errno=38 comm="WebExtensions"
+[346.748970] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[346.794919] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 3509b490, 65, 0] unsupported errno=38 comm="WebExtensions"
+[346.840081] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[346.845417] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 1, 65, 0] unsupported errno=38 comm="WebExtensions"
+[346.902322] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[346.947743] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 350347f4, aacfc0ad5b0, 0] unsupported errno=38 comm="WebExtensions"
+[346.996953] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[347.001134] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 350347f4, 65, 0] unsupported errno=38 comm="WebExtensions"
+[347.068998] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[347.112948] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 350347f4, 360188b1d628, 2d40] unsupported errno=38 comm="WebExtensions"
+[347.183114] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[347.229279] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 350347f4, 360188b1d6a0, 2d40] unsupported errno=38 comm="WebExtensions"
+[347.257874] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[347.264848] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 350347f4, 65, 0] unsupported errno=38 comm="WebExtensions"
+[347.288017] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[347.293577] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 350c3e44, 65, 0] unsupported errno=38 comm="WebExtensions"
+[347.357292] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[347.430250] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 10, 303c0e90, 0] unsupported errno=38 comm="WebExtensions"
+[347.472283] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[347.491916] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 10, 1, 0] unsupported errno=38 comm="WebExtensions"
+[347.522399] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[347.607490] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 10, 7fffffefdd80, 0] unsupported errno=38 comm="WebExtensions"
+[348.086577] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[348.177564] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 10, 1, 0] unsupported errno=38 comm="WebExtensions"
+[348.345866] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 252cfe0, 303beaa8, 331b3b90, 303c0e90] unsupported errno=38 comm="WebExtensions"
+[348.451531] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 10, 7fffffefdd80, 0] unsupported errno=38 comm="WebExtensions"
+[348.521905] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[348.606804] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 10, 7fffffefdd80, 0] unsupported errno=38 comm="WebExtensions"
+[348.645467] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[348.723064] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 10, 7fffffefdd80, 0] unsupported errno=38 comm="WebExtensions"
+[348.752649] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[348.867456] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 10, 359e4074, 0] unsupported errno=38 comm="WebExtensions"
+[350.157694] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb48, 0, 7fffffefdd10, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[350.303072] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8e0, 0, 10, 303c0e90, 0] unsupported errno=38 comm="WebExtensions"
+[350.518230] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[350.630715] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 10, 303c0e90, 0] unsupported errno=38 comm="WebExtensions"
+[350.804898] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[350.816093] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 10, 1, 0] unsupported errno=38 comm="WebExtensions"
+[350.909612] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[350.911695] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 42d330c8, 42d33008, 42d330c8] unsupported errno=38 comm="WebExtensions"
+[350.996728] pid=120 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 28, 0] unsupported errno=38 comm="file:// Content"
+[351.150101] pid=120 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 1, 359e4074, 1] unsupported errno=38 comm="file:// Content"
+[351.234247] pid=120 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 7fffffefd9f0, 3091d140, 100, 2d40] unsupported errno=38 comm="file:// Content"
+[351.261614] pid=120 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 350347f4, 65, 0] unsupported errno=38 comm="file:// Content"
+[351.312538] pid=120 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 2d3020, 303be2e8, 44f966d0, 303c0e90] unsupported errno=38 comm="file:// Content"
+[351.390124] pid=120 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 10, 303c0e90, 0] unsupported errno=38 comm="file:// Content"
+[351.403507] pid=120 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="file:// Content"
+[351.488838] pid=120 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 303bf680, 303c0e90, 0] unsupported errno=38 comm="file:// Content"
+[351.518130] pid=120 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="file:// Content"
+[351.635994] pid=120 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 0, 0, 0] unsupported errno=38 comm="file:// Content"
+[351.655770] pid=120 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 2d1620, 303be3f0, 32de19f0, 303c0e90] unsupported errno=38 comm="file:// Content"
+[351.844777] pid=120 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 10, 32de2d38, 0] unsupported errno=38 comm="file:// Content"
+[351.896956] pid=120 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="file:// Content"
+[351.928977] pid=120 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 0, 0, 0] unsupported errno=38 comm="file:// Content"
+[351.976138] pid=120 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="file:// Content"
+[351.977922] pid=120 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 42d330c8, 42d33008, 42d330c8] unsupported errno=38 comm="file:// Content"
+[353.850408] pid=151 syscall=165(getrusage) pc=0x7003d98c args=[0, cb78fc8c8, 0, cb78fca90, 2e, 0] unsupported errno=38 comm="DOM Worker"
+[353.952572] pid=151 syscall=165(getrusage) pc=0x7003d98c args=[0, cb78fc660, 0, cb5d150c8, cb5d15008, cb5d150c8] unsupported errno=38 comm="DOM Worker"
+[355.554287] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 25a1500, 303be4e0, 303c0e90, 0] unsupported errno=38 comm="WebExtensions"
+[355.565062] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 0, 0, 0] unsupported errno=38 comm="WebExtensions"
+[355.671255] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[355.735583] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 1, 359e4074, 0] unsupported errno=38 comm="WebExtensions"
+[355.954288] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdbb8, 0, 7fffffefdd80, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[355.964993] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd950, 0, 350347f4, 65, 0] unsupported errno=38 comm="WebExtensions"
+[356.248581] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb48, 0, 7fffffefdd10, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[356.261797] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8e0, 0, 1, 65, 0] unsupported errno=38 comm="WebExtensions"
+[356.587684] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb48, 0, 7fffffefdd10, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[356.603223] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8e0, 0, 1, 65, 0] unsupported errno=38 comm="WebExtensions"
+[356.895465] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb48, 0, 7fffffefdd10, 2f, 0] unsupported errno=38 comm="WebExtensions"
+[356.906355] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8e0, 0, 3509b490, 65, 0] unsupported errno=38 comm="WebExtensions"
+[357.243414] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb48, 0, 7fffffefdd10, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[357.296447] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8e0, 0, 1, 65, 0] unsupported errno=38 comm="WebExtensions"
+[357.586189] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb48, 0, 7fffffefdd10, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[357.641015] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8e0, 0, 1, 65, 0] unsupported errno=38 comm="WebExtensions"
+[357.920358] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb48, 0, 7fffffefdd10, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[358.006263] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8e0, 0, 1, 65, 0] unsupported errno=38 comm="WebExtensions"
+[358.272392] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb48, 0, 7fffffefdd10, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[358.379093] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8e0, 0, 350c3e44, 65, 0] unsupported errno=38 comm="WebExtensions"
+[358.665735] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb48, 0, 7fffffefdd10, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[358.767467] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8e0, 0, 350347f4, 65, 0] unsupported errno=38 comm="WebExtensions"
+[359.076108] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb48, 0, 7fffffefdd10, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[359.096574] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8e0, 0, 350347f4, 65, 0] unsupported errno=38 comm="WebExtensions"
+[359.395783] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb48, 0, 7fffffefdd10, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[359.531127] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8e0, 0, 10, 1, 0] unsupported errno=38 comm="WebExtensions"
+[359.828555] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb48, 0, 7fffffefdd10, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[359.981145] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8e0, 0, 10, 1, 0] unsupported errno=38 comm="WebExtensions"
+[360.259524] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb48, 0, 7fffffefdd10, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[360.398755] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8e0, 0, 10, 1, 0] unsupported errno=38 comm="WebExtensions"
+[360.700838] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb48, 0, 7fffffefdd10, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[360.853422] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8e0, 0, 10, 1, 0] unsupported errno=38 comm="WebExtensions"
+[361.151495] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefdb48, 0, 7fffffefdd10, 2f, 1] unsupported errno=38 comm="WebExtensions"
+[361.323740] pid=81 syscall=165(getrusage) pc=0x7003d98c args=[0, 7fffffefd8e0, 0, 10, 1, 0] unsupported errno=38 comm="WebExtensions"
+
+FIREFOX_MEMORY_BEGIN
+MemTotal:  4194304 kB
+MemFree:  2163596 kB
+MemAvailable:  2163596 kB
+Buffers: 0 kB
+Cached: 0 kB
+SwapTotal: 0 kB
+SwapFree: 0 kB
+/proc/1/status:Name:	ash
+/proc/1/status:Pid:	1
+/proc/1/status:PPid:	0
+/proc/1/status:TracerPid:	0
+/proc/1/status:VmSize:	2744 kB
+/proc/1/status:VmRSS:	1780 kB
+/proc/1/status:Threads:	1
+/proc/120/status:Name:	file:// Content
+/proc/120/status:Pid:	120
+/proc/120/status:PPid:	73
+/proc/120/status:TracerPid:	0
+/proc/120/status:VmSize:	2930708 kB
+/proc/120/status:VmRSS:	276832 kB
+/proc/120/status:Threads:	20
+/proc/152/status:Name:	Isolated Web Co
+/proc/152/status:Pid:	152
+/proc/152/status:PPid:	73
+/proc/152/status:TracerPid:	0
+/proc/152/status:VmSize:	2920840 kB
+/proc/152/status:VmRSS:	276628 kB
+/proc/152/status:Threads:	16
+/proc/3/status:Name:	ash
+/proc/3/status:Pid:	3
+/proc/3/status:PPid:	1
+/proc/3/status:TracerPid:	0
+/proc/3/status:VmSize:	2744 kB
+/proc/3/status:VmRSS:	1776 kB
+/proc/3/status:Threads:	1
+/proc/4/status:Name:	firefox
+/proc/4/status:Pid:	4
+/proc/4/status:PPid:	3
+/proc/4/status:TracerPid:	0
+/proc/4/status:VmSize:	3191968 kB
+/proc/4/status:VmRSS:	415168 kB
+/proc/4/status:Threads:	70
+/proc/64/status:Name:	Socket Process
+/proc/64/status:Pid:	64
+/proc/64/status:PPid:	4
+/proc/64/status:TracerPid:	0
+/proc/64/status:VmSize:	732736 kB
+/proc/64/status:VmRSS:	188128 kB
+/proc/64/status:Threads:	6
+/proc/73/status:Name:	forkserver
+/proc/73/status:Pid:	73
+/proc/73/status:PPid:	4
+/proc/73/status:TracerPid:	0
+/proc/73/status:VmSize:	799464 kB
+/proc/73/status:VmRSS:	264432 kB
+/proc/73/status:Threads:	1
+/proc/81/status:Name:	WebExtensions
+/proc/81/status:Pid:	81
+/proc/81/status:PPid:	73
+/proc/81/status:TracerPid:	0
+/proc/81/status:VmSize:	2953048 kB
+/proc/81/status:VmRSS:	288368 kB
+/proc/81/status:Threads:	19
+/proc/86/status:Name:	RDD Process
+/proc/86/status:Pid:	86
+/proc/86/status:PPid:	73
+/proc/86/status:TracerPid:	0
+/proc/86/status:VmSize:	902560 kB
+/proc/86/status:VmRSS:	315772 kB
+/proc/86/status:Threads:	4
+
+FIREFOX_PROCESSES_BEGIN
+PID   PPID  STAT TIME  COMMAND
+    1     0 S     0:00 ash
+  120    73 R     0:02 file:// Content
+  122    73 S     0:00 AsyncSi~lThread
+  123    73 S     0:00 IPC I/O Child
+  129    73 S     0:00 Socket Thread
+  130    73 S     0:00 HTML5 Parser
+  131    73 S     0:00 StyleThread#1
+  132    73 S     0:00 StyleThread#2
+  133    73 S     0:00 JS Watchdog
+  134    73 S     0:00 Backgro~Pool #1
+  135    73 S     0:00 RemVidChild
+  136    73 S     0:00 ImageIO
+  137    73 S     0:00 Worker Launcher
+  138    73 S     0:00 Timer
+  139    73 S     0:00 ImageBridgeChld
+  140    73 S     0:00 ProcessHangMon
+  141    73 S     0:00 ProfilerChild
+  158    73 S     0:00 TaskCon~ller #0
+  159    73 S     0:00 TaskCon~ller #1
+  160    73 S     0:00 TaskCon~ller #2
+  161    73 S     0:00 TaskCon~ller #3
+  152    73 S     0:02 Isolated Web Co
+  154    73 S     0:00 AsyncSi~lThread
+  155    73 S     0:00 IPC I/O Child
+  163    73 S     0:00 Socket Thread
+  164    73 S     0:00 HTML5 Parser
+  165    73 S     0:00 StyleThread#1
+  166    73 S     0:00 StyleThread#2
+  168    73 S     0:00 JS Watchdog
+  169    73 S     0:00 Backgro~Pool #1
+  170    73 S     0:00 RemVidChild
+  172    73 S     0:00 ImageIO
+  173    73 S     0:00 Worker Launcher
+  174    73 S     0:00 Timer
+  175    73 S     0:00 ImageBridgeChld
+  176    73 S     0:00 ProcessHangMon
+  177    73 S     0:00 ProfilerChild
+  182     1 R     0:00 ps
+    3     1 S     0:00 ash
+   10     3 S     0:00 WaylandProxy
+  100     3 S     0:00 AudioIP~ion RPC
+   11     3 S     0:00 glean.dispatche
+  124     3 S     0:00 FSBroker120
+  125     3 S<    0:00 SwComposite
+  126     3 S<    0:00 WRScene~ilder#1
+  127     3 S<    0:00 WRScene~derLP#1
+  128     3 S<    0:00 WRRende~ckend#1
+   13     3 S     0:00 IPC I/O Parent
+   14     3 S     0:00 Timer
+  143     3 S     0:00 StreamTrans #4
+  145     3 S     0:00 sqldb:f~lite #1
+  146     3 S     0:00 sqldb:p~lite #2
+  148     3 R     0:01 sqldb:p~lite #3
+   15     3 S     0:00 Netlink Monitor
+  150     3 S     0:00 IndexedDB IO #5
+  151     3 S     0:00 DOM Worker
+  156     3 S     0:00 FSBroker152
+  157     3 S     0:00 DNS Resolver #2
+   16     3 S     0:00 Socket Thread
+  162     3 S     0:00 URL Classifier
+  167     3 S     0:00 StreamTrans #5
+   17     3 S     0:00 IPDL Background
+  171     3 S     0:00 StreamTrans #6
+   18     3 S     0:00 Backgro~Pool #1
+   29     3 S     0:00 HTML5 Parser
+   30     3 S     0:02 StyleThread#1
+   31     3 S     0:00 StyleThread#2
+   34     3 S     0:00 JS Watchdog
+   36     3 S     0:00 Cache2 I/O
+   37     3 S     0:00 Cookie
+   39     3 S     0:02 TaskCon~ller #0
+    4     3 R     1:53 firefox
+   40     3 S     0:00 TaskCon~ller #1
+   41     3 S     0:00 TaskCon~ller #2
+   42     3 S     0:00 TaskCon~ller #3
+   43     3 S     0:00 BgIOThr~Pool #1
+   45     3 S     0:00 Worker Launcher
+   46     3 S     0:00 QuotaManager IO
+   48     3 S     0:05 Softwar~cThread
+   49     3 S<    0:01 Renderer
+   50     3 S     0:00 WRWorker#0
+   51     3 S     0:00 WRWorker#1
+   52     3 S     0:00 WRWorker#2
+   53     3 S     0:00 WRWorker#3
+   54     3 S     0:00 WRWorkerLP#0
+   55     3 S     0:00 WRWorkerLP#1
+   56     3 S     0:00 WRWorkerLP#2
+   57     3 S     0:00 WRWorkerLP#3
+   58     3 S     0:00 WrGlyph~terizer
+   59     3 S     0:00 Compositor
+    6     3 S     0:00 AsyncSi~lThread
+   60     3 S<    0:00 CanvasRenderer
+   61     3 S     0:00 ImageIO
+   62     3 S     0:00 SandboxReporter
+   63     3 S     0:00 IPC Launch
+   67     3 S     0:00 Permission
+    7     3 S     0:00 pool-spawner
+   74     3 S     0:00 TRR Background
+   75     3 S     0:00 DNS Resolver #1
+   76     3 S     0:00 FSBroker64
+   77     3 S     0:00 GMPThread
+    8     3 S     0:00 gmain
+   85     3 S     0:00 ImageBridgeChld
+   87     3 S     0:00 FSBroker81
+    9     3 S     0:00 [pango] fontcon
+   91     3 S     0:00 ProcessHangMon
+   97     3 S     0:00 FSBroker86
+   98     3 S     0:00 AudioIP~ver RPC
+   99     3 S     0:00 AudioIP~allback
+   64     4 S     0:00 Socket Process
+   68     4 S     0:00 AsyncSi~lThread
+   69     4 S     0:00 IPC I/O Child
+   71     4 S     0:00 Socket Thread
+   72     4 S     0:00 Timer
+   78     4 S     0:00 ProfilerChild
+   73     4 S     0:00 forkserver
+  102    73 S     0:00 RemVidChild
+  106    73 S     0:00 ImageIO
+  107    73 S     0:00 Worker Launcher
+  108    73 S     0:00 Timer
+  109    73 S     0:00 ImageBridgeChld
+  110    73 S     0:00 ProcessHangMon
+  111    73 S     0:00 ProfilerChild
+  112    73 S     0:00 TaskCon~ller #0
+  113    73 S     0:00 TaskCon~ller #1
+  114    73 S     0:00 TaskCon~ller #2
+  115    73 S     0:00 TaskCon~ller #3
+   81    73 R     0:27 WebExtensions
+   83    73 S     0:00 AsyncSi~lThread
+   84    73 S     0:10 IPC I/O Child
+   92    73 S     0:00 Socket Thread
+   93    73 S     0:00 HTML5 Parser
+   94    73 S     0:00 StyleThread#1
+   95    73 S     0:00 StyleThread#2
+   96    73 S     0:00 JS Watchdog
+  103    73 S     0:00 ProfilerChild
+   86    73 S     0:00 RDD Process
+   89    73 S     0:00 AsyncSi~lThread
+   90    73 S     0:00 IPC I/O Child
+
+FIREFOX_DIAGNOSTICS_DONE

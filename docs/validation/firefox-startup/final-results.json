@@ -1,0 +1,76 @@
+{
+  "stage": "wayland",
+  "sandbox": "default",
+  "wayland_proxy": "default",
+  "avoid_opengl_diagnostic": false,
+  "physical_ipad": false,
+  "options": {
+    "store": "/workspace/trames/target/firefox/store",
+    "volume_total": 17179869184,
+    "volume_available": 17179869184,
+    "network": "off",
+    "wayland": true,
+    "pure_accelerator": true,
+    "musl_libc": "/workspace/trames/target/musl-hybrid/libc.so",
+    "memory_budget_bytes": 4294967296,
+    "process_memory_budget_bytes": 4294967296,
+    "vulkan_accelerator": false
+  },
+  "frames": 242,
+  "windows": [
+    {
+      "app_id": "firefox",
+      "bounds": [
+        0,
+        0,
+        1024,
+        768
+      ],
+      "connection": 2,
+      "height": 768,
+      "id": 6,
+      "max_size": [
+        16384,
+        16384
+      ],
+      "min_size": [
+        450,
+        120
+      ],
+      "mode": "maximized",
+      "parent": null,
+      "revision": 279,
+      "title": "Mozilla Firefox",
+      "width": 1024
+    }
+  ],
+  "js_title_seen": false,
+  "guest_progress_diagnostic": false,
+  "capture_shm": true,
+  "probe_sha256": "fe3799f019794adc5301dcb5b0e368212509e3f0afa935b2cc8dff80c157e2da",
+  "ffi_sha256": "1aac998c73f22d935a0a72f0bd2a007605109a01f88bf9096826fdd38d7be852",
+  "musl_sha256": "0350f31621b7abb66764e951318db85ba6606fb6be688be651d779465afff6e6",
+  "input_manifest_sha256": "e4152b041f041a48ca0770852852b2a9fdf71305f768c5d8ebd1c7340770c5a1",
+  "guest_page": "/tmp/trames-firefox-119559584297030.html",
+  "command": "mkdir -p /root/firefox-probe-code-epoch-final-canvas; ( MOZ_ENABLE_WAYLAND=1 GDK_BACKEND=wayland XDG_RUNTIME_DIR=/run/user/0 WAYLAND_DISPLAY=wayland-0 firefox --no-remote --profile /root/firefox-probe-code-epoch-final-canvas file:///tmp/trames-firefox-119559584297030.html >/tmp/firefox-probe.log 2>&1; r=$?; printf \"\\nFIREFOX_PROBE_EXIT:%d\\n\" \"$r\"; ) </dev/null &\n",
+  "first_window_seconds": 287.9021008909913,
+  "first_image_seconds": 287.9021887029958,
+  "last_frame": {
+    "width": 1024,
+    "height": 768,
+    "images": 2,
+    "revision": 279
+  },
+  "canvas_green_pixels": 0,
+  "canvas_green_seen": false,
+  "launch_seconds": 360.0022038850002,
+  "firefox_exit": null,
+  "host_memory": {
+    "VmSize": 3624738816,
+    "VmHWM": 2013884416,
+    "VmRSS": 2013884416
+  },
+  "diagnostics_complete": true,
+  "passed": false,
+  "seconds": 372.1881713920011
+}

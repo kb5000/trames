@@ -20,5 +20,27 @@
     "No byte guards/atomics/fences changed; no new TSan result; no IPA",
     "Versioned Wayland and headless probes precede the final data-only decode-identity split; the final combined candidate is tracked in Issue #33. No whole-app speed ratio established."
   ],
-  "final_ffi_sha256": "1aac998c73f22d935a0a72f0bd2a007605109a01f88bf9096826fdd38d7be852"
+  "final_ffi_sha256": "1aac998c73f22d935a0a72f0bd2a007605109a01f88bf9096826fdd38d7be852",
+  "final_runtime_commit": "ef4f68cf32de37fe19c3144639f9a9ce0c4ad66e",
+  "final_wayland": {
+    "seconds": 360,
+    "first_window_seconds": 287.9021008909913,
+    "distinct_frame_revisions": 242,
+    "browser_chrome_rendered": true,
+    "js_title_seen": false,
+    "canvas_green_pixels": 0,
+    "passed": false,
+    "diagnostics_complete": true,
+    "png_sha256": "13851b5caee7120036351bc31346ecede6694dc26c351aaf2d864467f5e04d56"
+  },
+  "ci": {
+    "source_sha": "ef4f68cf32de37fe19c3144639f9a9ce0c4ad66e",
+    "run": 39409533242,
+    "linux_job": 118583646928,
+    "apple_job": 118584310611,
+    "conclusion": "success",
+    "distinct_cases_per_platform": 197,
+    "apple_arch": "arm64",
+    "apple_host_page_bytes": 16384
+  }
 }

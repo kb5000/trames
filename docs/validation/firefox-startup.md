@@ -2,6 +2,7 @@
 
 2026-10-20，继续原版签名 Alpine ARM64 Firefox 142.0-r0、Release FFI、完整
 hybrid musl、4 CPU、总/单进程均 4 GiB。没有改浏览器或关闭其默认内容沙箱配置。
+最终版本已经绘制出浏览器标签栏、地址栏、按钮与文字，收到多个软件渲染帧。
 仍未通过本地页面的 JS 标题和绿色 canvas 验收，[Issue #33](https://github.com/kb5000/trames/issues/33) 保持开放。
 
 这次确认并修复两个协调器开销：
@@ -33,6 +34,7 @@ hybrid musl、4 CPU、总/单进程均 4 GiB。没有改浏览器或关闭其默
 | 只修资源广播，SIGPROF/像素诊断 | 约 346.56s 后人工中断宿主探针 | 279.48s 收到窗口及首个 SHM 图像；实际图像为黑色，绿色像素为 0；不是页面通过 |
 | 再按 backing version/EOF 筛选，SIGPROF/像素诊断 | 240s | 无窗口/图像/JS 标题；最终 guest 诊断完整，未见 Scudo OOM |
 | 版本筛选后，默认沙箱 headless 对照 | 120s | 无截图；最终 guest 诊断完整，父子进程仍在 |
+| 最终合并修复，低干扰 Wayland/像素验收 | 360s | 287.90s 出现窗口/SHM 图像；最终绘制出浏览器 Chrome，共 242 个不同 revision；本地 JS/canvas 未通过，guest 诊断完整 |
 
 各组使用新 profile；它们的观察时长、插桩和调度进度不同，不据此计算整体加速比。
 最后一组的观察窗口也短于前一组的首窗口时间，不能据此证明启动回退或解决。
@@ -40,6 +42,15 @@ hybrid musl、4 CPU、总/单进程均 4 GiB。没有改浏览器或关闭其默
 现在只计包含图像的不同 window/revision，正确区分“窗口存在”和“收到图像”。
 `--capture-shm` 用保留的原生 SHM capability 合成 PNG，并要求看到本地页面的
 绿色矩形；Metal texture 保持不透明，不能用此软件读回路径验收 GPU。
+
+最终组的 [PNG](firefox-startup/final-wayland.png) 显示 New Tab、地址栏和工具栏；
+网页区仍为空白，不能把浏览器 Chrome 当成目标页面首帧。末尾未见 Scudo OOM，
+仍有 getrusage、Netlink bind 缺口，以及 `WaitFlushedEvent::Run` 延迟 21817ms
+的图形警告。下一步检查内容进程启动、IPC/flush 唤醒及剩余同步成本；这些日志
+尚未证明哪个警告是页面缺失的直接原因。该组宿主 RSS/HWM 约 1.88GiB，未采 PSS，
+不当作 iPad 物理 RAM 要求或跨组内存降幅。
+
+![原版 Firefox 软件渲染的浏览器界面；目标页面仍未通过](firefox-startup/final-wayland.png)
 
 线程诊断中，75→100s 的 `syscalls` 计数约从 123 万增到 275 万；该计数包含
 协调器重试，不能当作 Firefox 新发出的调用数量。选取的 IPC 包为正常 vsync
@@ -64,7 +75,10 @@ prepare_frame（7.77%）、MutablePage::revision（7.59%）、refresh_mmu（7.19
   ARM64 socket/SCM_RIGHTS 探针通过。软件图像合成用已知像素验证了 60000 个
   精确绿色像素；不是将黑色 Firefox 窗口计为成功。
 
-只复核变更模块和 Apple ARM64/16KiB；复用未改动的 CPU opcode、Linux dispatcher、
+[Linux 与 Apple ARM64/16KiB 验证](https://github.com/kb5000/trames/actions/runs/39409533242)
+在运行时代码 `ef4f68c` 上通过，每平台 197 个相关测试及原版 ARM64 socket ABI；
+后续提交仅补本文、截图和日志，跳过重复 CI。
+只复核变更模块；复用未改动的 CPU opcode、Linux dispatcher、
 GPU/UI 与 guest fixture 产物。没有新 ThreadSanitizer 结果，既有字节同步协议未修改；
 没有构建 IPA，也没有 iPad 真机或浏览器 GPU、网络、沙箱约束效果的验收。
 
