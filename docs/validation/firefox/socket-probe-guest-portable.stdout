@@ -1,0 +1,9 @@
+unix-stream-empty result=-1 errno=25 bytes=-1 expected=0 legacy=0
+unix-stream-queued result=-1 errno=25 bytes=-1 expected=7 legacy=7
+unix-stream-after-partial-read result=-1 errno=25 bytes=-1 expected=4 legacy=7
+unix-stream-eof result=-1 errno=25 bytes=-1 expected=0 legacy=0
+pipe-empty result=-1 errno=25 bytes=-1 expected=0 legacy=0
+pipe-queued result=-1 errno=25 bytes=-1 expected=7 legacy=7
+pipe-after-partial-read result=-1 errno=25 bytes=-1 expected=4 legacy=4
+pipe-eof result=-1 errno=25 bytes=-1 expected=0 legacy=0
+fionread failures=8

@@ -10,8 +10,8 @@
   "changed_file_sha256": {
     ".github/workflows/ios.yml": "742b659b625c7789717e3518b6d6156f9dac6cdc7c2e043c93646b4d89868ac7",
     ".github/workflows/linux.yml": "fc50ae3701a1e7fc45c5ef860d3dbb9366a68fa6e64dcfccb479cca548f002c4",
-    "docs/validation/firefox.md": "5b0abc1340c41a8fb55957b0a408701df72aa552f435021966df2df597548f59",
-    "docs/validation/firefox/checks.txt": "03c47cd284bfd11348c6e34be3e108c382897874c1256b3f6da6578386862027",
+    "docs/validation/firefox.md": "b0f6bd1c24f13b2ac62a92d10f19b10dfad1c6d23316583827a19fe59bef4598",
+    "docs/validation/firefox/checks.txt": "e0953c6387f4cc21d48ec81592f66a5612ee4f237f346fb1010e8baae942e7f7",
     "docs/validation/firefox/cli-headless-no-trace/results.json": "37d2e13a538e5210d9ad7045f070f9497f39923021301e7f20784d538e1e210b",
     "docs/validation/firefox/cli-headless-no-trace/stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "docs/validation/firefox/cli-headless-no-trace/stdout": "2c7f3e4e9195be6a4f1785d731c73d7f5a6877d23546bc36b2c604d3778e15d6",
@@ -44,8 +44,11 @@
     "docs/validation/firefox/install.stdout": "d4040d03370886893dfcc26121aa28677ea7593446bc3944edb16aea3fdd334b",
     "docs/validation/firefox/manifest.json": "ea8c8199478c6622d033a566e38397cfc2a0ded950b0155df5141c05367c5d77",
     "docs/validation/firefox/page.html": "1b3a9a1fee4f098f573911eedbce07fa16184efee5fbfe6c15dbc5fca508cd0e",
+    "docs/validation/firefox/socket-probe-guest-portable.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "docs/validation/firefox/socket-probe-guest-portable.stdout": "91c865b2e8424324034675b2e2e8cea314999adb7749c16d7ef6b0f48ef2836f",
     "docs/validation/firefox/socket-probe-guest.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "docs/validation/firefox/socket-probe-guest.stdout": "1b1a47d45b18c73b7e4a84d49338225b6d95dd14a6953e2e351220915cde8bf7",
+    "docs/validation/firefox/socket-probe-native-portable.log": "72e8a2b00318fc6d92925d85eb272bb180c0e2a6804bd9bd403419f8509d30cb",
     "docs/validation/firefox/socket-probe-native.log": "8e667aa121c5bcb602425faac5c522868957e4bf4caef3d036777757043e4d06",
     "docs/validation/firefox/version.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "docs/validation/firefox/version.stdout": "4c2a84c3082064e8f685069b4b679926155faf8aec354787e761619f5b4d0906",
@@ -57,7 +60,7 @@
     "docs/validation/firefox/wayland-proxy-disabled/results.json": "7c749e86c65eca4ca7266ea3cb9d3f067f4ae5db459bea2422f87cd6d7e7b198",
     "docs/validation/firefox/wayland-trace-excerpt.log": "594f97bf273aa9ff8fcd09114957b571f927aa2b91030176ab778d0c6e8c4ea9",
     "scripts/ios-ci-scope.py": "2c9fb0b86c726e1f745e4aa262c852a76968e1470c1e20033e3d305b6d2d6be3",
-    "tests/fixtures/firefox-socket-probe.c": "9a9e6fd57766fcfc454c0112b426d68aee61ddfb56b94744c85ec40bd685aadf",
+    "tests/fixtures/firefox-socket-probe.c": "a07b5a76940d5424c89873df8cc19497ca3b16cd59442219827d9585d80b5126",
     "tests/integration/firefox-prepare.py": "ab7242ffa5312809ee232ecc99cf9cec3b5e4eaa15a0b71deef5f38148ce9d4d",
     "tests/integration/firefox.py": "4e60203948abef25274520b1bd1d1fe03de41ba5cbe6bc50e98f332b651dd8e8"
   }

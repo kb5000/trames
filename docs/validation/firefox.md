@@ -66,6 +66,12 @@ Firefox 142 对应的 [原始代理源码](https://hg.mozilla.org/releases/mozil
 验证，不能把总队列长度直接用于所有 socket。不能用恒定返回 0 替代，
 否则代理将不再转发已经就绪的消息。最小探针只测 stream/pipe，未覆盖整个要求。
 
+补充 CI 的 Linux 内核兼容性：部分内核在 Unix stream 的部分 read 后仍让
+`FIONREAD` 报告原 skb 长度（本例 7），此测试宿主报告剩余长度 4。
+探针允许这一已观察到的内核差异，并验证后续 read 确实读到 `defg` 四字节，
+查询没有消费数据。pipe 的断言保持精确。首次 CI 因原来要求固定 4 而失败，
+属于探针的可移植性问题；guest 的 8 项 `ENOTTY` 结论不变。
+
 ## 其他观察与后续顺序
 
 1. 先补齐上述 `FIONREAD`，再重测默认 Wayland 路径。诊断环境变量不写进产品默认值。

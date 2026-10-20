@@ -9,3 +9,4 @@ Both workflow YAML files parsed; git diff whitespace check passed.
 Linux runtime baseline: https://github.com/kb5000/trames/actions/runs/39360018721
 Apple runtime baseline: https://github.com/kb5000/trames/actions/runs/39360018968
 Reuse exact unchanged 499e44d runtime results; no repeated CPU/MMU/GPU/UI/CoreMark/Docker suite and no IPA.
+CI probe portability correction: accept Linux Unix-stream FIONREAD partial-skb count4 or7; verify next read returns defg. Initial Linux probe failed only this overly strict assertion; default guest still ENOTTY.
