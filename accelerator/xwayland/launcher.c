@@ -3,6 +3,7 @@
 // PID and credentials remain identical on the XWM and Wayland connections.
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/auxv.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,7 +20,13 @@ int main(int argc, char **argv) {
     if (fd < 0 || connect(fd, (void *)&addr, sizeof addr) < 0) { perror("Connect Trames XWM"); return 1; }
     char number[24]; snprintf(number, sizeof number, "%d", fd);
     const char *native = getenv("TRAMES_XWAYLAND_NATIVE_WSI");
-    int gpu = native && !strcmp(native, "1");
+    // GPU is the normal route. An explicit 0 keeps the original SHM server
+    // available for diagnosis or sessions where GPU acceleration is disabled.
+    int gpu = !native || strcmp(native, "0");
+    if (gpu && !getauxval(0x54520008UL)) gpu = 0;
+    if (setenv("TRAMES_XWAYLAND_NATIVE_WSI", gpu ? "1" : "0", 1)) {
+        perror("set native WSI mode"); return 1;
+    }
     char **args = calloc((size_t)argc + 12, sizeof *args);
     if (!args) { perror("calloc"); return 1; }
     int i = 0;

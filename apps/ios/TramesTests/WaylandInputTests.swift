@@ -6,6 +6,43 @@ import TramesKit
 
 final class WaylandInputTests: XCTestCase {
     @MainActor
+    func testXIMCompositionSurvivesCaretRefreshAndDeletesWithGuestKeys() throws {
+        var object:[String:Any] = ["version":4,"id":UInt64(1)<<63|7,"epoch":3,"surface":4,"window":4,"serial":0,
+            "text":"","cursor":0,"anchor":0,"caret":[0,0,1,20],"hint":0,"purpose":0]
+        let view=WaylandInputView();var commands:[[String:Any]]=[]
+        view.sendInput={ commands.append($0) }
+        view.textContext=try JSONDecoder().decode(LocalWaylandText.self,from:JSONSerialization.data(withJSONObject:object))
+        XCTAssertTrue(view.hasText,"XIM clients do not report their surrounding document")
+        view.setMarkedText("ni",selectedRange:NSRange(location:2,length:0))
+        object["serial"]=1;object["caret"]=[20,30,1,20]
+        view.textContext=try JSONDecoder().decode(LocalWaylandText.self,from:JSONSerialization.data(withJSONObject:object))
+        XCTAssertNotNil(view.markedTextRange)
+        view.insertText("你🙂")
+        XCTAssertEqual(commands.compactMap{$0["commit"] as? String},["你🙂"])
+        commands=[];view.deleteBackward()
+        XCTAssertEqual(commands.compactMap{$0["key"] as? Int},[14,14])
+        XCTAssertTrue(commands.allSatisfy{$0["delete_before"] == nil})
+        view.setMarkedText("pending",selectedRange:NSRange(location:7,length:0))
+        object["epoch"]=4
+        view.textContext=try JSONDecoder().decode(LocalWaylandText.self,from:JSONSerialization.data(withJSONObject:object))
+        XCTAssertNil(view.markedTextRange)
+    }
+    @MainActor
+    func testXIMConfirmationPrecedesHardwareNavigation() throws {
+        let object:[String:Any] = ["version":4,"id":7,"epoch":3,"surface":4,"window":4,"serial":0,
+            "text":"","cursor":0,"anchor":0,"caret":[0,0,1,20],"hint":0,"purpose":0]
+        let view=WaylandInputView();var commands:[[String:Any]]=[]
+        view.sendInput={ commands.append($0) }
+        view.textContext=try JSONDecoder().decode(LocalWaylandText.self,from:JSONSerialization.data(withJSONObject:object))
+        view.setMarkedText("中文",selectedRange:NSRange(location:2,length:0));commands=[]
+        XCTAssertTrue(view.hardwareKey(80,characters:UIKeyCommand.inputLeftArrow,pressed:true))
+        XCTAssertTrue(view.hardwareKey(80,pressed:false))
+        XCTAssertEqual(commands.compactMap{$0["op"] as? String},["text","key","key"])
+        XCTAssertEqual(commands.first?["commit"] as? String,"中文")
+        commands=[];view.insertText("后")
+        XCTAssertEqual(commands.compactMap{$0["commit"] as? String},["后"])
+    }
+    @MainActor
     func testHeldShortcutDoesNotSendDuplicateDownsAfterSystemPasteAlert() {
         let view=WaylandInputView();var commands:[[String:Any]]=[]
         view.sendInput={ commands.append($0) }

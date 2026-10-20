@@ -40,14 +40,17 @@ class WaylandInputView: UIView, UITextInput {
     var keyboardType: UIKeyboardType = .default
     var returnKeyType: UIReturnKeyType = .default
     override var canBecomeFirstResponder: Bool { true }
-    var hasText: Bool { !document.isEmpty }
+    var hasText: Bool { textContext?.version == 4 || !document.isEmpty }
     private func synchronizeDocument() {
         guard let context = textContext else {
             remoteSerial=nil; remoteEpoch=nil; document=""; selection=NSRange(location:0,length:0); cursorOffset=0; marked=nil
             return
         }
         let changedFocus = remoteEpoch != context.epoch
-        guard changedFocus || remoteSerial != context.serial else { return }
+        // XIM exposes a composition context, not surrounding application text.
+        // Keep UIKit's local document until focus changes; caret updates cannot
+        // erase a pending composition or previously confirmed local input.
+        guard changedFocus || (context.version != 4 && remoteSerial != context.serial) else { return }
         if !changedFocus && marked != nil { return }
         inputDelegate?.textWillChange(self); inputDelegate?.selectionWillChange(self)
         remoteSerial=context.serial; remoteEpoch=context.epoch
@@ -126,6 +129,11 @@ class WaylandInputView: UIView, UITextInput {
             update(range,with:"");self.marked=NSRange(location:marked.location,length:marked.length-range.length)
             sendPreedit();return
         }
+        if textContext?.version == 4 {
+            sendKey(14)
+            document="";selection=NSRange(location:0,length:0);cursorOffset=0
+            return
+        }
         guard textContext != nil else { sendKey(14);return }
         if selection.length>0 { replace(WaylandTextRange(selection),withText:"");return }
         guard selection.location>0 else { return }
@@ -135,6 +143,14 @@ class WaylandInputView: UIView, UITextInput {
     }
     func replace(_ range:UITextRange,withText text:String) {
         guard let range=(range as? WaylandTextRange)?.value,valid(range),text.utf8.count<=4096 else { return }
+        if textContext?.version == 4 {
+            guard let native=Range(range,in:document),NSMaxRange(range)==selection.location else { return }
+            // XIM has no surrounding-text deletion. Ordinary Backspace events
+            // edit the client document; confirmed Unicode travels via XIM.
+            for _ in document[native] { sendKey(14) }
+            edit(["commit":text]);update(range,with:text);marked=nil
+            return
+        }
         let cursor=byteOffset(cursorOffset,in:document)
         let start=byteOffset(range.location,in:document),end=byteOffset(NSMaxRange(range),in:document)
         // Native replacement must overlap the current cursor/selection. Arbitrary
@@ -154,7 +170,7 @@ class WaylandInputView: UIView, UITextInput {
         guard textContext != nil else { return }
         let value=text ?? "";guard value.utf8.count<=4096 else { return }
         let range=marked ?? selection
-        if marked == nil && selection.length>0 && textContext?.version != 3 {
+        if marked == nil && selection.length>0 && textContext?.version != 3 && textContext?.version != 4 {
             let cursor=byteOffset(cursorOffset,in:document)
             let start=byteOffset(selection.location,in:document),end=byteOffset(NSMaxRange(selection),in:document)
             edit(["delete_before":cursor-start,"delete_after":end-cursor])
@@ -288,6 +304,10 @@ class WaylandInputView: UIView, UITextInput {
             // second down for the same physical press would trigger it twice,
             // including when UIKit drains events after a system paste alert.
             guard forwardedKeys.insert(hid).inserted else { return true }
+            if textContext?.version == 4 {
+                unmarkText()
+                document="";selection=NSRange(location:0,length:0);cursorOffset=0
+            }
         } else {
             guard forwardedKeys.remove(hid) != nil else { return false }
         }

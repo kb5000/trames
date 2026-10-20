@@ -1,13 +1,15 @@
 # Xwayland: original guest server, native window management
 
 The initial X11 milestone runs the original Alpine ARM64 Xwayland in rootless
-SHM mode. The optional native-WSI transport now adds original glamor/Zink GPU
+SHM mode. The default native-WSI transport now adds original glamor/Zink GPU
 rendering without a DRM device. A native Rust XWM uses the pure-Rust x11rb client. Each mapped X11
 toplevel joins the existing Wayland window snapshots, frames and workspace UI;
 there is no nested desktop canvas or guest compositor/window manager.
 
 The GPLv3 launcher `trames-xwayland` connects the private runtime XWM socket and
-execs the original `Xwayland -rootless -shm -nolisten tcp -wm FD`. Its PID and
+execs the bundled native-WSI Xwayland with `-rootless -glamor es -nolisten tcp -wm FD`
+when this session authorizes Vulkan. `TRAMES_XWAYLAND_NATIVE_WSI=0` or disabling
+Vulkan selects the original signed `Xwayland -shm`. Its PID and
 credentials remain unchanged. The VFS bridges bytes/owned descriptors to a native
 XWM thread, using the existing bounded Unix-stream adapter. Blocking X11 setup
 and property replies never run on the compositor, CPU workers or UIKit.
@@ -19,8 +21,9 @@ object IDs. Either protocol stream may arrive first. Unmap/remap retires the old
 surface; XWM disconnect revokes registration and invalidates its surfaces.
 Window metadata/properties, bridge queues and surface counts remain bounded:
 4 XWM registrations, 256 X11 windows per XWM, 256 total Wayland surfaces, and
-4 KiB per property reply. A full update queue disconnects that XWM without
-blocking compositor teardown. Untrusted transient/override-redirect parentage
+4 KiB per metadata property reply. Selection/XIM bounds are listed below.
+Bounded update queues do not block compositor teardown.
+Untrusted transient/override-redirect parentage
 cannot introduce scene cycles.
 
 The XWM owns Composite manual redirection, `WM_S0` and `_NET_WM_CM_S0`. It adopts
@@ -35,19 +38,21 @@ confirms focus before queued keyboard events are released. Focus generations
 prevent an earlier A→B→A acknowledgement unlocking a later gesture. This does
 not pause the compositor or other clients. Known transient menus/tooltips join
 their parent's scene; ordinary dialogs remain separate windows. Full ICCCM,
-EWMH, selection/XIM and arbitrary legacy desktop behavior are future work.
+EWMH and arbitrary legacy desktop behavior remain partial; text selection/XIM
+support is described below.
 
 SHM pixmaps use the same managed FD, scene lease and Metal presentation route
 as native Wayland applications. No new CPU pixel-copy bridge is introduced.
 This does not establish Apple bytesNoCopy success for Xwayland; the first gate
 uses Linux retained SHM frames. Native Wayland Vulkan remains independent.
-The optional GPU transport below has passed a Linux Vulkan-reference gate.
+The GPU transport below has passed a Linux Vulkan-reference gate.
 GLX, DRI3 direct rendering and X11 Vulkan WSI have **not** passed an acceleration gate.
 
 ## Original glamor/Zink with native Wayland WSI
 
-`accelerator/xwayland/native-wsi.c` and the small upstream patch add an explicit
-`TRAMES_XWAYLAND_NATIVE_WSI=1` route. Xwayland 24.1.9's X11 server, glamor drawing
+`accelerator/xwayland/native-wsi.c` and the small upstream patch add the default
+GPU route. The launcher sets its internal `TRAMES_XWAYLAND_NATIVE_WSI=1` option.
+Xwayland 24.1.9's X11 server, glamor drawing
 and shaders remain upstream. Mesa 25.1.9's original signed Gallium/Zink, GLSL/NIR
 and SPIR-V compilers remain unchanged. The already existing EGL Kopper adapter
 connects their rendering to Trames Vulkan, MoltenVK/Metal and native Wayland
@@ -68,7 +73,7 @@ Wayland surfaces. Existing Vulkan/Wayland frame leases retain old native images
 over resize, window destruction and session shutdown. Native mode requires an
 actual Zink renderer plus real fence/wait extensions. Initialization/presentation
 failure is reported; it does not silently select SHM. The launcher keeps the
-original `-shm` route when native mode is not requested.
+original `-shm` route for an explicit software override or disabled Vulkan.
 
 The Vulkan context now permits 16,384 retained objects, rather than the initial
 256-object smoke-test limit. Original glamor's descriptors and pixmap/shader
@@ -90,12 +95,14 @@ pixel interposer stays outside `GuestVulkan` and the App.
 With Vulkan enabled and the bundled EGL adapter present, the session validates
 and atomically installs the sibling bundled server at
 `/usr/libexec/trames/Xwayland-native`. It preserves the apk-owned Xwayland.
-Native mode remains explicit pending Apple hardware acceptance:
+The App defaults Vulkan to enabled for a previously unset preference; an
+existing explicit disabled preference is preserved. Apple hardware acceptance
+is still pending; this does not gate the owner's requested default:
 
 ```sh
 apk add xwayland xkeyboard-config xterm xclock font-dejavu \
     mesa-dri-gallium mesa-egl mesa-gles vulkan-loader wayland-libs-egl
-TRAMES_XWAYLAND_NATIVE_WSI=1 trames-xwayland :0 >/tmp/xwayland.log 2>&1 &
+trames-xwayland :0 >/tmp/xwayland.log 2>&1 &
 export DISPLAY=:0
 xterm &
 xclock &
@@ -103,7 +110,48 @@ xclock &
 
 This enables accelerated X11 server drawing/presentation. The bundled server
 is built with GLX disabled; accelerated OpenGL clients via GLX/DRI3, X11 Vulkan
-WSI, clipboard and IME/XIM require separate implementation and acceptance.
+WSI require separate implementation and acceptance.
+
+## Text clipboard and native input methods
+
+The native XWM bridges ICCCM `CLIPBOARD` to the existing Wayland data-device
+and native `HostClipboard` provider. X11 Copy, including menu Copy with no key
+serial, observes XFixes selection ownership and fetches text from its real
+owner. UTF8_STRING, TEXT, Latin-1 STRING, TARGETS and TIMESTAMP are supported;
+incoming INCR chunks share the existing 16 KiB text bound. A transfer owns its
+own request window, times out and is cancelled on owner replacement. PRIMARY
+remains X11-local, so selecting text does not overwrite the iPad clipboard.
+
+X11 paste requests are served lazily from the active Wayland source, owned X11
+text or the native provider. The normal iPad paste-permission dialog therefore
+appears on an actual host read. There is no extra Trames confirmation. Pending
+reads never block the compositor/CPU threads; held keys are released before a
+permission handoff. Selection generations and serials reject stale offers and
+older owner updates. Copied X11 bytes survive their source's exit. Native
+transfers retain the original provider's 16 KiB limit and four-read bound;
+cached-text pipe writers are capped at eight and request windows at four.
+
+The original MIT `xim-rs` 0.5.0 server, parser and Compound Text codec serve
+`@im=trames` over the existing pure-Rust x11rb connection. New local terminals
+set `XMODIFIERS=@im=trames`. Standard Xlib input contexts receive confirmed
+Unicode via XIM_COMMIT, including non-BMP characters. UIKit owns composition
+and candidates. This first adapter advertises root-style preedit/status-nothing
+contexts; full client-rendered preedit styles and surrounding-text editing are
+future work. UIKit edits existing client text with ordinary guest editing keys.
+Caret offsets are translated from the XIM focus window to the native toplevel.
+
+XIM resets, IC destruction and native focus changes retire the old text epoch.
+Delayed native compositions cannot enter another field/window. The XIM wrapper
+bounds transports to 64, live ICs to 256, commits to 4 KiB, and property reads
+to 64 KiB. Destroyed clients are removed without stopping unrelated windows.
+The XIM protocol runs off the compositor thread. Original library notices and
+the full locked dependency notice closure accompany the GPLv3 application.
+
+X11 keyboard events use the original server's XTEST extension on the same
+connection as XIM commits. Unicode commits, navigation and following text retain
+their order without an extra cross-thread acknowledgement per keystroke. The
+native XWM tracks/reconciles modifiers and releases held keys on focus loss;
+native Wayland keyboard delivery is unchanged.
 
 ## Session startup
 
@@ -113,7 +161,8 @@ clients remain ordinary signed Alpine packages. Source changes are not an IPA
 release; existing downloaded packages do not contain this feature yet.
 
 ```sh
-apk add xwayland xkeyboard-config xterm xclock xprop font-dejavu
+apk add xwayland xkeyboard-config xterm xclock xprop font-dejavu \
+    mesa-dri-gallium mesa-egl mesa-gles vulkan-loader wayland-libs-egl
 trames-xwayland :0 >/tmp/xwayland.log 2>&1 &
 export DISPLAY=:0
 while ! xprop -root >/dev/null 2>&1; do sleep 0.1; done

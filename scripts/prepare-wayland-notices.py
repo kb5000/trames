@@ -25,9 +25,30 @@ parts = [b'Trames native Wayland: upstream notices\n\n'
          b'Trames modifications are GPL-3.0-or-later. The following original\n'
          b'components retain their upstream terms. MIT is selected where offered.\n'
          b'Build-only and Linux-only dependencies are included for completeness.\n']
-packages = {}
+# Include the complete locked XIM dependency closure, including target/build
+# dependencies, while preserving the existing protocol/keymap notice bundle.
+def resolve(selector):
+    pieces=selector.split()
+    choices=[p for p in lock['package'] if p['name']==pieces[0] and
+             (len(pieces)==1 or p['version']==pieces[1])]
+    assert len(choices)==1, selector
+    return choices[0]
+selected={}
+pending=['xim']
+while pending:
+    record=resolve(pending.pop())
+    key=(record['name'],record['version'])
+    if key in selected:continue
+    selected[key]=record
+    pending.extend(record.get('dependencies',[]))
 for name in names:
-    record, = (p for p in lock['package'] if p['name'] == name)
+    record=resolve(name);selected[(name,record['version'])]=record
+ordered=[resolve(name) for name in names]
+original={(r['name'],r['version']) for r in ordered}
+ordered.extend(record for key,record in sorted(selected.items()) if key not in original)
+packages = {}
+for record in ordered:
+    name=record['name']
     label = name + '-' + record['version']
     if name == 'wayland-backend':
         directory = ROOT / 'vendor/wayland-backend'
@@ -39,6 +60,14 @@ for name in names:
     packages[name] = directory
     notices = sorted(p for p in directory.iterdir() if p.is_file() and
                      p.name.upper().startswith(('LICENSE', 'COPYRIGHT', 'COPYING', 'NOTICE')))
+    if not notices and name in ('xim-parser','xim-ctext'):
+        # These crate archives omit the workspace-root MIT license. Retain the
+        # original LICENSE from both exact .cargo_vcs_info commits; identical
+        # bytes: parser 7300de35, ctext c4b89780 (Riey/xim-rs).
+        import hashlib
+        license=ROOT/'crates/trames-wayland/data/COPYING.xim-rs'
+        assert hashlib.sha256(license.read_bytes()).hexdigest()=='efa1224931b98468f5005f77285457f8d2eab0a77a15941aa10abbab1ae9a74e'
+        notices=[license]
     assert notices, label
     for path in notices:
         parts.extend([b'\n\n===== ' + label.encode() + b'/' + path.name.encode() + b' =====\n\n', path.read_bytes()])

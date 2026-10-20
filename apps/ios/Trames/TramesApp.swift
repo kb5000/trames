@@ -151,7 +151,7 @@ struct SettingsView: View {
     @ObservedObject var workspace: WorkspaceModel
     @Environment(\.dismiss) private var dismiss
     @AppStorage("useVolumeBudget") private var volume = false
-    @AppStorage("vulkanCompute") private var vulkan = false
+    @AppStorage("vulkanCompute") private var vulkan = true
     @AppStorage("bridgeEnabled") private var bridge = true
     @AppStorage("guestMemoryMiB") private var memoryTotal = 1024
     @AppStorage("guestProcessMemoryMiB") private var memoryProcess = 512

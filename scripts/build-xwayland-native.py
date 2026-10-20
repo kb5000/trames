@@ -88,6 +88,8 @@ subprocess.run(['meson','setup',*setup,str(build),str(source),'--cross-file',str
 subprocess.run(['ninja','-C',str(build),'-j4','hw/xwayland/Xwayland'],env=env,check=True)
 subprocess.run([str(wrapper),'-O2','-Wall','-Wextra','-Werror',
     str(ROOT/'tests/fixtures/x11-pixels.c'),'-lX11','-o',str(work/'x11-pixels')],check=True)
+subprocess.run([str(wrapper),'-O2','-Wall','-Wextra','-Werror',
+    str(ROOT/'tests/fixtures/x11-input.c'),'-lX11','-o',str(work/'x11-input')],check=True)
 subprocess.run([str(wrapper),'-O2','-Wall','-Wextra','-Werror','-fPIC','-shared',
     str(ROOT/'tests/fixtures/xwayland-wsi-pixels.c'),'-lEGL','-lGLESv2',
     '-o',str(work/'libwsi-pixels.so')],check=True)
@@ -109,5 +111,6 @@ with tarfile.open(work/'xwayland-native-source.tar.gz','w:gz') as bundle:
     for path in adapter:
         bundle.add(path,arcname='accelerator/xwayland/'+path.name)
     bundle.add(ROOT/'tests/fixtures/x11-pixels.c',arcname='tests/fixtures/x11-pixels.c')
+    bundle.add(ROOT/'tests/fixtures/x11-input.c',arcname='tests/fixtures/x11-input.c')
     bundle.add(ROOT/'tests/fixtures/xwayland-wsi-pixels.c',arcname='tests/fixtures/xwayland-wsi-pixels.c')
 print('Built native Xwayland transport:',manifest['executable_sha256'],flush=True)

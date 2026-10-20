@@ -95,6 +95,56 @@ Select the host reference ICD with `VK_DRIVER_FILES` and, where necessary,
 `tests/fixtures/zink-metal-pixels.m`. Raw guest/host logs stay local. No new IPA
 or hardware GPU acceptance is implied by this source milestone.
 
+## Default GPU, text selections and XIM
+
+2026-10-21: the launcher's default now selects the bundled glamor/Zink server
+when the session authorizes Vulkan. The App's previously unset GPU preference
+also defaults to enabled, preserving an explicit disabled setting. The final
+production-FFI run passed without setting `TRAMES_XWAYLAND_NATIVE_WSI=1`.
+`TRAMES_XWAYLAND_NATIVE_WSI=0` keeps the original SHM route available.
+
+The independent original-Xlib fixture and signed mousepad 0.6.3-r1 passed:
+
+- XOpenIM/XCreateIC and native-confirmed Chinese plus emoji, with an immediate
+  Left key followed by more text; the client records the exact event order.
+- A preedit update does not commit text. Resetting the same IC changes its
+  epoch; late text after IC reset or native window focus change is rejected.
+- Ctrl+C and right-button menu Copy produce exact UTF-8 host clipboard writes.
+- A forced ICCCM INCR transfer copies 9,000 bytes of Chinese text correctly.
+- Host paste is read on demand. Holding the paste key for over 800 ms while the
+  mock native permission reply is pending creates exactly one read request.
+- Wayland mousepad Copy pastes into X11; X11 Copy pastes into mousepad, with no
+  extra host clipboard reads. The saved editor document is verified directly:
+  GTK's surrounding-text snapshot can lag an asynchronous paste.
+- Existing window/input/close/retained-frame and GPU pixel checks pass with
+  the new XWM services. The explicit SHM path also passes interaction checks.
+
+The original Wayland mousepad Ctrl+C, menu Copy, navigation and subsequent IME
+regression gate passes too. Ten Wayland unit tests and scoped release Clippy,
+Rust formatting, Python/shell checks and original dependency-notice verification
+pass. Unchanged CPU/Linux/network/Vulkan unit suites reuse their prior results.
+Two UIKit tests cover XIM composition/caret refresh, physical deletion and
+confirmation-before-navigation; no Mac/iPad is attached, so those new UIKit
+tests and the real system paste dialog/keyboard still need Apple validation.
+
+XIM protocol/Compound Text behavior reuses upstream MIT xim-rs 0.5.0,
+xim-parser 0.2.2 and xim-ctext 0.4.1. The latter two crates omit their workspace
+LICENSE; the committed original license is identical in their exact upstream
+commits `7300de35a111de2df1a694bf70454532a8419685` and
+`c4b897800137f022fbf617cd1e81756c6f3bc955` (SHA-256
+`efa1224931b98468f5005f77285457f8d2eab0a77a15941aa10abbab1ae9a74e`).
+Original notices retain their original line endings.
+
+Reproduction adds `--interactions --wayland-peer` to the native-WSI command
+above, after installing the ordinary signed `mousepad` and `font-dejavu` packages.
+The final run took about 32 seconds; it is a functional gate, not a benchmark.
+Production Linux FFI SHA-256:
+`1dff200d6fe21ff8fecfe18b54f4178678f866b09ec7ae0b568230bcb9588c4e`;
+default-GPU launcher SHA-256:
+`a4defe9c381f48e5c97c890f5e113dea3386c3b9b2acf45cb03f3f724d65c07c`.
+The original glamor/Zink guest server ELF is unchanged from the previous gate.
+No IPA or raw diagnostic bundle was published in this iteration.
+
 Reproduction inputs: `scripts/prepare-xwayland-guest.py` downloads original
 signed APKs and builds the launcher/signal fixture. Import its repository into a
 fresh isolated store using `trames-run --file`, then install with ordinary guest

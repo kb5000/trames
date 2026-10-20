@@ -68,7 +68,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         state="正在准备 Alpine…"
         task = Task { [weak self] in
             do {
-                let gpu = UserDefaults.standard.bool(forKey: "vulkanCompute")
+                let gpu = UserDefaults.standard.object(forKey: "vulkanCompute") as? Bool ?? true
                 let memory = UserDefaults.standard.object(forKey: "guestMemoryMiB") as? Int ?? 1024
                 let processMemory = UserDefaults.standard.object(forKey: "guestProcessMemoryMiB") as? Int ?? 512
                 let local = try await environment.start(useVolumeBudget: useVolumeBudget, vulkan: gpu, memoryBudgetMiB: memory, processMemoryBudgetMiB: min(processMemory, memory))

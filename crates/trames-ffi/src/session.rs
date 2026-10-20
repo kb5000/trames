@@ -579,6 +579,7 @@ fn run(
             "XDG_RUNTIME_DIR=/run/user/0".into(),
             "WAYLAND_DISPLAY=wayland-0".into(),
             "DISPLAY=:0".into(),
+            "XMODIFIERS=@im=trames".into(),
         ]);
     }
     let bytes = vfs.executable(b"/bin/ash").map_err(|e| e.to_string())?;
