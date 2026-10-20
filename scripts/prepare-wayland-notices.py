@@ -19,7 +19,8 @@ registry = Path(os.environ.get('CARGO_HOME', str(Path.home() / '.cargo'))) / 're
 lock = tomllib.loads((ROOT / 'Cargo.lock').read_text())
 names = ('downcast-rs', 'errno', 'linux-raw-sys', 'quick-xml', 'rustix', 'smallvec',
          'wayland-backend', 'wayland-protocols', 'wayland-scanner', 'wayland-server',
-         'wayland-sys', 'cc', 'find-msvc-tools', 'pkg-config', 'shlex')
+         'wayland-sys', 'cc', 'find-msvc-tools', 'pkg-config', 'shlex',
+         'gethostname', 'x11rb', 'x11rb-protocol')
 parts = [b'Trames native Wayland: upstream notices\n\n'
          b'Trames modifications are GPL-3.0-or-later. The following original\n'
          b'components retain their upstream terms. MIT is selected where offered.\n'
@@ -46,10 +47,12 @@ protocols = [packages['wayland-server'] / 'wayland.xml']
 protocols += [packages['wayland-protocols'] / 'protocols' / p for p in (
     'stable/xdg-shell/xdg-shell.xml',
     'unstable/text-input/text-input-unstable-v1.xml',
-    'unstable/text-input/text-input-unstable-v3.xml')]
+    'unstable/text-input/text-input-unstable-v3.xml',
+    'staging/xwayland-shell/xwayland-shell-v1.xml')]
 for path in protocols:
     notice = ET.parse(path).getroot().findtext('copyright')
     assert notice and 'Copyright' in notice, path
+    notice = '\n'.join(line.rstrip() for line in notice.split('\n'))
     parts.extend([b'\n\n===== Protocol ' + path.name.encode() + b' =====\n', notice.encode()])
 parts.extend([b'\n\n===== xkeyboard-config US keymap =====\n\n',
               (ROOT / 'crates/trames-wayland/data/COPYING.xkeyboard-config').read_bytes(), b'\n'])

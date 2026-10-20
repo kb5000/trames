@@ -7,6 +7,9 @@ managed iPad window: move, resize, minimize, close or maximize into a workspace
 tab. Resizing sends configure/ack and requires new client buffer dimensions;
 it does not retain and scale a fixed-resolution canvas.
 
+The unreleased [Xwayland adapter](xwayland.md) adds original guest X11 servers
+with native XWM and independent workspace windows, initially through SHM.
+
 The implementation is tracked by [PR #26](https://github.com/kb5000/trames/pull/26)
 and [Issue #25](https://github.com/kb5000/trames/issues/25). It is released in
 0.17.0; publication and artifact verification are tracked in the

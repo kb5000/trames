@@ -19,6 +19,7 @@ cp target/musl-hybrid/libc.so target/musl-hybrid/manifest.json target/musl-hybri
 [[ -f target/vulkan-guest/libtrames_vulkan_icd.so && -f target/vulkan-guest/manifest.json ]]
 mkdir -p apps/ios/Trames/GuestVulkan
 cp target/vulkan-guest/libtrames_vulkan_icd.so target/vulkan-guest/manifest.json target/vulkan-guest/GPL-3.0.txt apps/ios/Trames/GuestVulkan/
+cp target/vulkan-guest/trames-xwayland target/vulkan-guest/launcher-manifest.json apps/ios/Trames/GuestVulkan/
 if [[ -f target/vulkan-guest/libEGL.so.1 ]]; then
   cp target/vulkan-guest/libEGL.so.1 target/vulkan-guest/egl-manifest.json apps/ios/Trames/GuestVulkan/
 fi

@@ -22,6 +22,8 @@ m6 = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(m6)
 output = ROOT / 'target/vulkan-guest/wayland-acceptance'
 output.mkdir(parents=True, exist_ok=True)
+subprocess.run(['bash',str(ROOT/'scripts/build-xwayland-launcher.sh')],check=True,
+               env=dict(os.environ,TRAMES_XWAYLAND_OUTPUT=str(ROOT/'target/vulkan-guest')))
 with tempfile.TemporaryDirectory(prefix='wayland-acceptance-') as temporary:
     tmp = Path(temporary)
     runtime = tmp / 'runtime'

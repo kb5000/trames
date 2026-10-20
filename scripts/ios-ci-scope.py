@@ -422,7 +422,7 @@ def device_build_outputs(plan, repo, headers):
                    'scripts/build-musl-hybrid.sh', 'scripts/prepare-musl-hybrid.py',
                    'scripts/build-vulkan-guest.sh', 'scripts/build-vulkan-fixtures.sh',
                    'scripts/prepare-vulkan.py', 'scripts/vulkan-upstream.json',
-                   'scripts/prepare-wayland-guest.py', 'scripts/build-busybox.sh',
+                   'scripts/prepare-wayland-guest.py', 'scripts/build-xwayland-launcher.sh', 'scripts/build-busybox.sh',
                    'scripts/prepare-alpine.sh', 'tests/integration/m6.py',
                    ':(glob)tests/fixtures/vulkan-*', ':(glob)tests/fixtures/wayland-*']
     if not unchanged(guest['sha'], guest_paths):

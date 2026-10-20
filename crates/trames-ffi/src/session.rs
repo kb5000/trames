@@ -45,6 +45,7 @@ pub struct Options {
     pub vulkan_accelerator: bool,
     #[serde(default)]
     pub wayland: bool,
+    pub xwayland_launcher: Option<PathBuf>,
     #[serde(default)]
     pub multiple_terminals: bool,
     pub vulkan_icd: Option<PathBuf>,
@@ -545,6 +546,13 @@ fn run(
         ]);
     }
     if options.wayland {
+        if let Some(path) = options.xwayland_launcher {
+            trames_distro::install_xwayland_launcher(
+                &mut File::open(path).map_err(|e| e.to_string())?,
+                &mut vfs,
+            )
+            .map_err(|e| e.to_string())?;
+        }
         let server = vfs
             .enable_wayland(b"/run/user/0")
             .map_err(|e| e.to_string())?;
@@ -558,6 +566,7 @@ fn run(
         environment.extend([
             "XDG_RUNTIME_DIR=/run/user/0".into(),
             "WAYLAND_DISPLAY=wayland-0".into(),
+            "DISPLAY=:0".into(),
         ]);
     }
     let bytes = vfs.executable(b"/bin/ash").map_err(|e| e.to_string())?;

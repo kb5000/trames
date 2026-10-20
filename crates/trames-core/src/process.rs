@@ -1354,7 +1354,10 @@ impl Kernel {
         let u64_at = |i| u64::from_le_bytes(frame[i..i + 8].try_into().expect("frame"));
         let new_sp = u64_at(560);
         let new_pc = u64_at(568);
-        if new_sp & 15 != 0 || new_sp >= (1 << 48) || new_pc & 3 != 0 || new_pc >= (1 << 48) {
+        // An asynchronous signal may interrupt leaf assembly with a temporary
+        // non-AAPCS SP (Pixman saves a single 8-byte register). Linux does not
+        // impose call-boundary stack alignment when restoring interrupted SP.
+        if new_sp >= (1 << 48) || new_pc & 3 != 0 || new_pc >= (1 << 48) {
             return Err(Errno(14));
         }
         if read_u32(&p.memory, sp + 592)? != 0x46508001 || read_u32(&p.memory, sp + 596)? != 528 {
@@ -5146,6 +5149,24 @@ mod tests {
         assert_eq!(p.cpu.fpcr, 1 << 22);
         assert_eq!(p.cpu.fpsr, 17);
         assert_eq!(p.mask, 1 << 11);
+    }
+    #[test]
+    fn signal_return_restores_interrupted_leaf_stack_without_call_boundary_alignment() {
+        let mut p = process();
+        let mut k = kernel();
+        p.cpu.sp -= 8;
+        let old_sp = p.cpu.sp;
+        p.actions[10] = Action {
+            handler: 0x5000,
+            ..Action::default()
+        };
+        Kernel::queue_one(1, &mut p, 10, 2);
+        assert!(k.deliver(1, &mut p).unwrap());
+        assert_eq!(p.cpu.sp & 15, 0); // The handler's new frame is aligned.
+        Kernel::sigreturn(&mut p).unwrap();
+        assert_eq!(p.cpu.sp, old_sp); // The interrupted leaf's SP need not be.
+        assert_eq!(p.cpu.pc, 0x4000);
+        assert_eq!(p.frames, 0);
     }
     #[test]
     fn malformed_signal_frame_fails_without_partial_register_restoration() {

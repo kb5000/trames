@@ -38,6 +38,9 @@ public final class LocalSession: @unchecked Sendable {
         options["process_memory_budget_bytes"] = UInt64(processMemoryBudgetMiB) << 20
         options["pure_accelerator"] = pureAccelerator
         options["wayland"] = true
+        if let launcher = Bundle.main.url(forResource: "trames-xwayland", withExtension: nil, subdirectory: "GuestVulkan") {
+            options["xwayland_launcher"] = launcher.path
+        }
         options["multiple_terminals"] = multipleTerminals
         if let vulkanICD { options["vulkan_accelerator"] = true; options["vulkan_icd"] = vulkanICD.path }
         options["budget_bytes"] = useVolumeBudget ? total : UInt64(16) << 30
