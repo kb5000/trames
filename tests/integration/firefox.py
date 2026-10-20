@@ -193,7 +193,10 @@ document.title='TRAMES_FIREFOX_JS_OK';document.body.dataset.test='javascript-and
     guest_screenshot = guest_page+'.png'
     report['guest_page'] = guest_page
     payload('transfer', dict(guest=guest_page, host=str(html.resolve()), export=False, replace=True))
-    profile = '/root/firefox-probe-'+a.output.name
+    # Output directories can share a basename (e.g. baseline/run and
+    # candidate/run). Never silently reuse the previous browser profile.
+    profile = '/root/firefox-probe-'+a.output.name+'-'+str(time.monotonic_ns())
+    report['profile'] = profile
     env = 'MOZ_ENABLE_WAYLAND=1 GDK_BACKEND=wayland XDG_RUNTIME_DIR=/run/user/0 WAYLAND_DISPLAY=wayland-0'
     if a.disable_content_sandbox: env += ' MOZ_DISABLE_CONTENT_SANDBOX=1'
     if a.disable_wayland_proxy: env += ' MOZ_DISABLE_WAYLAND_PROXY=1'

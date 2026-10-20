@@ -1,0 +1,1 @@
+vm=7 page=0x7fffffefd000 pc=0x7007c2dc sp=0x7fffffefd700 regs=[14, 7fffffefd768, 4040, 0, 0, 0, 0, 0, d3, 7fffffefdfb0, 5207508, 2d1, 49cd, 78105, 1, 0, 326d3e88, 700488c0, 2, 3030e038, d3, a, 4040, 307803f0, 2034, 100000001, 0, 0, 48, 7fffffefdcb0, 70067d60]

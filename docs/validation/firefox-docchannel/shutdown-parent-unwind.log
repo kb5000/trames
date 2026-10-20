@@ -1,0 +1,5 @@
+trames-firefox-stack-125-4.txt vm 7
+0 0x7007c2dc sp=0x7fffffefd700 libc.so 0x7c2dc  manual musl prologue
+1 0x70067d60 sp=0x7fffffefd700 libc.so 0x67d60 __syscall_cp_c manual musl prologue
+2 0x7004899c sp=0x7fffffefd720 libc.so 0x4899c sendmsg manual musl prologue
+3 0x326b7eec sp=0x7fffffefdbc0 ? 0x326b7eec unresolved

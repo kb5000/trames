@@ -1,0 +1,21 @@
+2026-10-20 12:04:24.089590 UTC - [Child 117: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040d210, uri=file:///tmp/trames-firefox-124609540399680.html]
+2026-10-20 12:04:24.094049 UTC - [Child 117: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040d210, uri=file:///tmp/trames-firefox-124609540399680.html]
+2026-10-20 12:04:24.094628 UTC - [Child 117: Main Thread]: D/LoadGroup LOADGROUP [42f00d10]: Adding request 3040d210 documentchannel:file:///tmp/trames-firefox-124609540399680.html (count=0).
+2026-10-20 12:04:24.095052 UTC - [Child 117: Main Thread]: D/LoadGroup LOADGROUP [42f00d10]: Firing OnStartRequest for request 3040d210.(foreground count=1).
+2026-10-20 12:04:24.096266 UTC - [Parent 4: IPC I/O Parent]: D/ipc Receive from link; seqno=-45, xid=-1, shouldWakeUp=0
+2026-10-20 12:04:24.096336 UTC - [Child 117: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f00d10 default-request=3040d210
+2026-10-20 12:04:24.098139 UTC - [Parent 4: IPC I/O Parent]: D/ipc Receive from link; seqno=-46, xid=-1, shouldWakeUp=0
+2026-10-20 12:04:24.098919 UTC - [Parent 4: IPC I/O Parent]: D/ipc Receive from link; seqno=-47, xid=-1, shouldWakeUp=0
+2026-10-20 12:04:24.099673 UTC - [Parent 4: IPC I/O Parent]: D/ipc Receive from link; seqno=-48, xid=-1, shouldWakeUp=0
+2026-10-20 12:04:24.100517 UTC - [Parent 4: IPC I/O Parent]: D/ipc Receive from link; seqno=-49, xid=-1, shouldWakeUp=0
+2026-10-20 12:04:24.101069 UTC - [Parent 4: IPC I/O Parent]: D/ipc Receive from link; seqno=-50, xid=-1, shouldWakeUp=0
+2026-10-20 12:04:24.101772 UTC - [Parent 4: IPC I/O Parent]: D/ipc Receive from link; seqno=55, xid=-1, shouldWakeUp=0
+2026-10-20 12:04:24.104986 UTC - [Child 117: Main Thread]: D/ipc DispatchMessage: seqno=1, xid=-1
+2026-10-20 12:04:24.366031 UTC - [Parent 4: IPC I/O Parent]: D/ipc Receive from link; seqno=-51, xid=-1, shouldWakeUp=0
+2026-10-20 12:04:24.367802 UTC - [Parent 4: IPC I/O Parent]: D/ipc Receive from link; seqno=-52, xid=-1, shouldWakeUp=0
+2026-10-20 12:04:26.526485 UTC - [Child 117: IPC I/O Child]: D/ipc Receive from link; seqno=56, xid=-1, shouldWakeUp=0
+2026-10-20 12:04:26.528141 UTC - [Child 81: IPC I/O Child]: D/ipc Receive from link; seqno=7294, xid=-1, shouldWakeUp=0
+2026-10-20 12:04:26.532278 UTC - [Child 117: Main Thread]: D/ipc DispatchMessage: seqno=56, xid=-1
+2026-10-20 12:04:26.532664 UTC - [RDD 86: IPC I/O Child]: D/ipc Receive from link; seqno=-13, xid=-1, shouldWakeUp=0
+2026-10-20 12:04:26.538155 UTC - [RDD 86: Main Thread]: D/ipc DispatchMessage: seqno=-13, xid=-1
+2026-10-20 12:04:27.366584 UTC - [Child 117: IPC I/O Child]: D/ipc Receive from link; seqno=57, xid=-1, shouldWakeUp=0

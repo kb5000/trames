@@ -1,0 +1,72 @@
+--- a/crates/trames-cpu/src/cached.rs
++++ b/crates/trames-cpu/src/cached.rs
+@@ -1235,6 +1235,14 @@
+     executed: u64,
+ ) -> TailExit {
+     let pc = state.cpu.pc;
++    let relative = pc.wrapping_sub(0x3348c000);
++    if (0x2d90290..0x2d90830).contains(&relative) {
++        static COUNT: std::sync::atomic::AtomicUsize=std::sync::atomic::AtomicUsize::new(0);
++        if COUNT.fetch_add(1,std::sync::atomic::Ordering::Relaxed)<10000 {
++            let regs:Vec<_>=[0,1,2,3,8,19,21,24,25,30].into_iter().map(|i|(i,state.cpu.x(i))).collect();
++            eprintln!("FFPC time={:.6} pc={pc:#x} rel={relative:#x} tp={:#x} sp={:#x} regs={regs:x?}",std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs_f64(),state.cpu.tpidr_el0,state.cpu.sp);
++        }
++    }
+     if let Err(error) = state.page.decode_slot(state.memory, slot, pc, state.stats) {
+         return TailExit::Stop(
+             state
+--- a/crates/trames-core/src/process.rs
++++ b/crates/trames-core/src/process.rs
+@@ -14,6 +14,10 @@
+ use trames_vfs::capabilities;
+ use trames_vfs::{Errno, FdKind, AT_FDCWD, MAX_FDS, O_NONBLOCK};
+ 
++fn ff_diag_enabled() -> bool {
++    static ENABLED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
++    *ENABLED.get_or_init(|| std::env::var_os("TRAMES_FIREFOX_DIAG").is_some())
++}
+ const MAX_PROCESSES: usize = trames_vfs::MAX_TASKS;
+ #[cfg(test)]
+ const TOTAL_MAPPED_LIMIT: usize = 1024 * 1024 * 1024;
+@@ -2600,6 +2604,9 @@
+                 Some(raw)
+             }
+         };
++        if ff_diag_enabled() && number == 222 && a[3] & 0x20 == 0 {
++            eprintln!("FFMAP t={:.3} pid={pid} vm={} fd={} path={:?} offset={:#x} size={:#x} prot={} ret={raw:x?}",self.started.elapsed().as_secs_f64(),p.vm_id,a[4],p.linux.vfs.fd_kind(a[4] as u32),a[5],a[1],a[2]);
++        }
+         let signal_pipe = match number {
+             64 | 66 | 71 | 76 => true,
+             206 => a[3] & 0x4000 == 0,
+@@ -3746,6 +3753,31 @@
+             self.tick_timers();
+             let elapsed = self.load_sample.elapsed().as_secs_f64();
+             if elapsed >= 5.0 {
++                if ff_diag_enabled() {
++                    eprintln!("FFDIAG t={:.3} ins={} syscalls={} rounds={}",self.started.elapsed().as_secs_f64(),self.instructions,self.syscalls,self.parallel_rounds);
++                    for (pid,p) in &self.processes {
++                        if matches!(p.state,State::Zombie(_)) {continue;}
++                        let state=match &p.state { State::Ready=>"ready",State::Blocked(..)=>"blocked",State::Futex{..}=>"futex",_=>"other"};
++                        let blocked=match &p.state { State::Blocked(n,a)=>Some((*n,*a)),State::Futex{address,..}=>Some((98,[*address,0,0,0,0,0])),_=>None};
++                        let mut frames=vec![p.cpu.x(30)];
++                        let mut fp=p.cpu.x(29);
++                        let depth=if *pid==p.tgid {32}else{12};
++                        for _ in 0..depth {
++                            if fp & 15 != 0 || fp < p.cpu.sp || fp.saturating_sub(p.cpu.sp)>16*1024*1024 {break;}
++                            let (Ok(prev),Ok(lr))=(p.memory.read_u64(fp),p.memory.read_u64(fp+8)) else {break;};
++                            frames.push(lr);
++                            if prev<=fp {break;}
++                            fp=prev;
++                        }
++                        let mut polls=vec![];
++                        if let State::Blocked(73,a)=&p.state {
++                            for i in 0..a[1].min(32) {
++                                if let Ok(v)=p.memory.read_array::<8>(a[0]+i*8) {polls.push((i32::from_le_bytes(v[0..4].try_into().unwrap()),i16::from_le_bytes(v[4..6].try_into().unwrap()),i16::from_le_bytes(v[6..8].try_into().unwrap())));}
++                            }
++                        }
++                        eprintln!("FFTASK pid={pid} tgid={} vm={} comm={:?} state={state} pc={:#x} cpu={:.3} blocked={blocked:x?} sp={:#x} frames={frames:x?} polls={polls:?}",p.tgid,p.vm_id,String::from_utf8_lossy(&p.linux.command_name),p.cpu.pc,p.cpu_time.as_secs_f64(),p.cpu.sp);
++                    }
++                }
+                 let running = self
+                     .processes
+                     .values()

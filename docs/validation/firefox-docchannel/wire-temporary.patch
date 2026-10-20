@@ -1,0 +1,74 @@
+--- a/crates/trames-core/src/process.rs
++++ b/crates/trames-core/src/process.rs
+@@ -14,6 +14,10 @@
+ use trames_vfs::capabilities;
+ use trames_vfs::{Errno, FdKind, AT_FDCWD, MAX_FDS, O_NONBLOCK};
+ 
++fn ff_diag_enabled() -> bool {
++    static ENABLED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
++    *ENABLED.get_or_init(|| std::env::var_os("TRAMES_FIREFOX_DIAG").is_some())
++}
+ const MAX_PROCESSES: usize = trames_vfs::MAX_TASKS;
+ #[cfg(test)]
+ const TOTAL_MAPPED_LIMIT: usize = 1024 * 1024 * 1024;
+@@ -2600,6 +2604,28 @@
+                 Some(raw)
+             }
+         };
++        if ff_diag_enabled() && number == 222 && a[3] & 0x20 == 0 {
++            eprintln!("FFMAP t={:.3} pid={pid} vm={} fd={} path={:?} offset={:#x} size={:#x} prot={} ret={raw:x?}",self.started.elapsed().as_secs_f64(),p.vm_id,a[4],p.linux.vfs.fd_kind(a[4] as u32),a[5],a[1],a[2]);
++        }
++        if ff_diag_enabled() && matches!(number,211|212) && raw.is_some_and(|v|v>0 && v<=1024*1024) {
++            let wire=(||->Option<Vec<u8>>{
++                let ptr=p.memory.read_u64(a[1].checked_add(16)?).ok()?;
++                let count=p.memory.read_u64(a[1].checked_add(24)?).ok()?.min(8);
++                let mut bytes=vec![];let mut left=raw?.min(65536) as usize;
++                for i in 0..count {
++                    let at=ptr.checked_add(i.checked_mul(16)?)?;
++                    let base=p.memory.read_u64(at).ok()?;
++                    let size=p.memory.read_u64(at.checked_add(8)?).ok()? as usize;
++                    let size=size.min(left);let mut part=vec![0;size];p.memory.read(base,&mut part).ok()?;
++                    bytes.extend_from_slice(&part);left-=size;if left==0{break;}
++                }Some(bytes)
++            })();
++            if let Some(bytes)=wire {
++                if let Some(at)=bytes.windows(b"trames-firefox-".len()).position(|w|w==b"trames-firefox-") {
++                    eprintln!("FFWIRE t={:.6} pid={pid} comm={:?} nr={number} fd={} raw={raw:?} len={} at={at} header={:x?} uri={:?}",self.started.elapsed().as_secs_f64(),String::from_utf8_lossy(&p.linux.command_name),a[0],bytes.len(),&bytes[..bytes.len().min(64)],String::from_utf8_lossy(&bytes[at.saturating_sub(16)..(at+160).min(bytes.len())]));
++                }
++            }
++        }
+         let signal_pipe = match number {
+             64 | 66 | 71 | 76 => true,
+             206 => a[3] & 0x4000 == 0,
+@@ -3746,6 +3772,31 @@
+             self.tick_timers();
+             let elapsed = self.load_sample.elapsed().as_secs_f64();
+             if elapsed >= 5.0 {
++                if ff_diag_enabled() {
++                    eprintln!("FFDIAG t={:.3} ins={} syscalls={} rounds={}",self.started.elapsed().as_secs_f64(),self.instructions,self.syscalls,self.parallel_rounds);
++                    for (pid,p) in &self.processes {
++                        if matches!(p.state,State::Zombie(_)) {continue;}
++                        let state=match &p.state { State::Ready=>"ready",State::Blocked(..)=>"blocked",State::Futex{..}=>"futex",_=>"other"};
++                        let blocked=match &p.state { State::Blocked(n,a)=>Some((*n,*a)),State::Futex{address,..}=>Some((98,[*address,0,0,0,0,0])),_=>None};
++                        let mut frames=vec![p.cpu.x(30)];
++                        let mut fp=p.cpu.x(29);
++                        let depth=if *pid==p.tgid {32}else{12};
++                        for _ in 0..depth {
++                            if fp & 15 != 0 || fp < p.cpu.sp || fp.saturating_sub(p.cpu.sp)>16*1024*1024 {break;}
++                            let (Ok(prev),Ok(lr))=(p.memory.read_u64(fp),p.memory.read_u64(fp+8)) else {break;};
++                            frames.push(lr);
++                            if prev<=fp {break;}
++                            fp=prev;
++                        }
++                        let mut polls=vec![];
++                        if let State::Blocked(73,a)=&p.state {
++                            for i in 0..a[1].min(32) {
++                                if let Ok(v)=p.memory.read_array::<8>(a[0]+i*8) {polls.push((i32::from_le_bytes(v[0..4].try_into().unwrap()),i16::from_le_bytes(v[4..6].try_into().unwrap()),i16::from_le_bytes(v[6..8].try_into().unwrap())));}
++                            }
++                        }
++                        eprintln!("FFTASK pid={pid} tgid={} vm={} comm={:?} state={state} pc={:#x} cpu={:.3} blocked={blocked:x?} sp={:#x} frames={frames:x?} polls={polls:?}",p.tgid,p.vm_id,String::from_utf8_lossy(&p.linux.command_name),p.cpu.pc,p.cpu_time.as_secs_f64(),p.cpu.sp);
++                    }
++                }
+                 let running = self
+                     .processes
+                     .values()

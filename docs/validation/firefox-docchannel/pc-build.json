@@ -1,0 +1,7 @@
+{
+  "production_core_sha256": "4e40f44fbff75ce2b397fb26910773cec97977f8d78362c871d608104bbc3ef5",
+  "production_cpu_sha256": "b1e13e69fc1a75731bfe05c460abac0215195df5ee9028c8f33f081258718022",
+  "production_ffi_sha256": "9b9965a6361abff1382d655253fe150576bc36c717564bca24f8f1d860faaada",
+  "diagnostic_ffi_sha256": "6caf3685d309546d49cac9b37e3d4e853afe4ddd7e5a468faef82aba6cc3f654",
+  "note": "Temporary cold-decode PC/register trace only; original Firefox ELF unchanged. Core/CPU sources and release FFI restored before launch. Not an uninstrumented timing run."
+}

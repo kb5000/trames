@@ -39,7 +39,9 @@ SIGPROF 叶 PC 采样中，300–600 秒约 73.23% 的样本在协调线程，�
 `cargo test -p trames-core --release process_table_churn_profile -- --ignored --nocapture`。
 
 在额外模块日志/线程状态诊断中，Firefox 与 WebExtensions 多次停在 musl
-`clock_gettime` 返回位置、GLib 调用点，促成了时钟编号检查。该诊断在 241.05s
+`clock_gettime` 返回位置，促成了时钟编号检查。后续反汇编确认 LR `0x4003a360`
+属于 Firefox 主 ELF 的 `mozilla::TimeStamp::Now(bool)`，原先推测为 GLib 调用点不准确；
+另有独立的 GLib poll 栈，不能混为同一地址。该诊断在 241.05s
 经宿主 SIGINT 主动停止，以测试已确认的修复；不是 Firefox 崩溃或默认验收通过。
 时钟缺陷的 ABI 语义已经确定，仍需区分它与剩余页面问题的因果关系。
 
@@ -87,3 +89,7 @@ Memory/VFS/Linux/opcode/GPU/UI 验证。没有构建 IPA。
 
 原始结果、任务状态与校验和见 [firefox-content](firefox-content/manifest.json)。
 [Issue #33](https://github.com/kb5000/trames/issues/33) 继续跟踪网页、交互与 EGL/GPU 验收。
+
+后续已用冷解码 PC/寄存器与 Unix socket 消息对照，确认目标 AsyncOpen 返回成功、
+携带目标 URI 的消息抵达父侧，但已覆盖日志里仍未出现对应主线程分发。
+详见 [文档通道分发诊断](firefox-docchannel.md)。

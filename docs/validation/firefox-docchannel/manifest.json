@@ -1,0 +1,192 @@
+{
+  "runtime_source": "95830f6aeff866f91b2db2aac22293c070ba3f2f",
+  "production_ffi_sha256": "9b9965a6361abff1382d655253fe150576bc36c717564bca24f8f1d860faaada",
+  "production_core_sha256": "4e40f44fbff75ce2b397fb26910773cec97977f8d78362c871d608104bbc3ef5",
+  "production_cpu_sha256": "b1e13e69fc1a75731bfe05c460abac0215195df5ee9028c8f33f081258718022",
+  "firefox_elf_sha256": "0395dcca2ffd61063ff4014159df8c7fde2f10e8c5de7bd61c122a7fcecd44ab",
+  "libxul_elf_sha256": "26b079d4c4d2924804d54cea11d13b44dc840360c92e817be6a2743d94d04550",
+  "libxul_build_id": "a2cf41e07a86b8f083485893afcfbf548626f153",
+  "upstream_source_tag": "FIREFOX_142_0_RELEASE",
+  "diagnostic_ffi_sha256": {
+    "diagnostic": "b0b0ec833ce9b691acf450f524ea8c50e769495b50a5425db557d944f2ae1f27",
+    "stacks2": "3bb2ecc06dba8dade0c19b89d19f159d0c4ed2a8c965788d298ef275a8a61b7e",
+    "shutdown": "d612aa643a76d69a9ebc21f46b2d6cd08023f61002133fc744a8aa052e6d9766",
+    "shutdown2": "29575eb9096c3d397842f3a86b317dcae7262d08b3435a79f9082c0953e34813",
+    "pc": "6caf3685d309546d49cac9b37e3d4e853afe4ddd7e5a468faef82aba6cc3f654",
+    "wire": "6d07af76d7eef5e5673ac9108b074409728fbf41368cea052a63204e450e4911"
+  },
+  "limits": {
+    "guest_cpus": 4,
+    "aggregate_guest_memory_bytes": 4294967296,
+    "process_guest_memory_bytes": 4294967296,
+    "network": "off",
+    "gpu": false,
+    "sandbox": "default",
+    "wayland_proxy": "default"
+  },
+  "findings": {
+    "asyncopen_returns_zero": true,
+    "send_constructor_returns_nonnull_actor": true,
+    "wire_target_uri_reaches_parent": true,
+    "parent_message_type": "0x72000f",
+    "parent_message_seqno": -49,
+    "parent_message_bytes": 1108,
+    "send_at_session_seconds": 110.016535,
+    "recv_at_session_seconds": 110.016908,
+    "recorded_header_and_uri_match": true,
+    "whole_payload_hash_recorded": false,
+    "parent_dispatch_seen_for_target": false,
+    "browser_snapshot_until_launch_seconds": 150.0759100550058,
+    "page_gate_passed": false
+  },
+  "profile_note": "stack/run and reused-profile/run used the same profile basename. The reused-profile group is diagnostic only. shutdown2 and pc/wire groups used distinct/new profiles; the probe now adds a monotonic nonce.",
+  "instrumentation_failure": "aborted-instrumentation ended at 100.60 launch seconds because temporary pointer-following code added to an unchecked guest pointer. Fixed in shutdown-temporary.patch; not a Firefox or production-runtime crash.",
+  "shutdown_note": "Observed parent nsThread::Shutdown waiting for DOM Worker; fresh-profile group later leaves that stack, so not established as the remaining page-load cause.",
+  "validation": "Python syntax passed. Reuse unchanged production Linux/Apple ARM64/16KiB Core+clock verification at run 39414333180; no IPA or runtime patch in this follow-up.",
+  "files": {
+    "aborted-instrumentation-guest.log.gz": {
+      "bytes": 349,
+      "sha256": "6dd5d403bcfe01034988b55e79d0a6d0ceb974dbed68229522f618a2eeebf0b2"
+    },
+    "aborted-instrumentation-host.log.gz": {
+      "bytes": 35157,
+      "sha256": "aa446fa1829d69e06a7c3ee17c60d15c83a07325a32679c780eeabfd37fe2329"
+    },
+    "aborted-instrumentation-progress.jsonl.gz": {
+      "bytes": 590,
+      "sha256": "2e03807eb856f2ca69e20d77dcce646c26cd19442ef0248436b9b577a0e1565e"
+    },
+    "aborted-instrumentation-results.json": {
+      "bytes": 2884,
+      "sha256": "9f58d201a0eafb6c0ed2e70b01dbaf671a14b3ef0f6d8eb48618e33b2d375478"
+    },
+    "pc-browser-snapshot.log": {
+      "bytes": 197797,
+      "sha256": "09f5654da16fa5dbe7de2598da23d5a7230f361bff988f32a870addf6384f801"
+    },
+    "pc-build.json": {
+      "bytes": 566,
+      "sha256": "eaf2b9e2138c66cd18174130d01a56d99655b6b434bb9f7dfa4cdd258a337dfa"
+    },
+    "pc-guest.log.gz": {
+      "bytes": 21701,
+      "sha256": "58c9cbfd3af1a11695f172cfdc67107c49c9fa9093e42280a5730ec6f363e69b"
+    },
+    "pc-host.log.gz": {
+      "bytes": 81167,
+      "sha256": "0e0faa283db0b3bc788953166f630007221a22032b3c85d224702ff5e89600d3"
+    },
+    "pc-progress.jsonl.gz": {
+      "bytes": 948,
+      "sha256": "48c667c7fb67597d7a82c6bc856f8e8fac96352f23bca986ee0d060cb8a30850"
+    },
+    "pc-results.json": {
+      "bytes": 3394,
+      "sha256": "cea3e3efc7d4e13ef6edd45bb3270289546dd876c83f392ffcdae44bdc1ae4c9"
+    },
+    "pc-target-asyncopen.log": {
+      "bytes": 59094,
+      "sha256": "6886a0f6b80f120f493dec9c3217247d38dcb18b743cc31761671ec6904edb18"
+    },
+    "pc-temporary.patch": {
+      "bytes": 4226,
+      "sha256": "6a6412baffb044921376eff5fd9f59ba37dad41d1a0b8720b42bee3e73850e46"
+    },
+    "reused-profile-guest.log.gz": {
+      "bytes": 20630,
+      "sha256": "9151daffa11340df9c89629b04a952f7b9f51ef1ef3699c7293aef77cb799255"
+    },
+    "reused-profile-host.log.gz": {
+      "bytes": 39831,
+      "sha256": "57b804df719896c0324401461ef6e955204db222813111256ae7bb59fec84681"
+    },
+    "reused-profile-progress.jsonl.gz": {
+      "bytes": 948,
+      "sha256": "1ccfeca0c773c6a2737bc189a843bb7533c3966d5d545f2bdbd8028c1bd72632"
+    },
+    "reused-profile-results.json": {
+      "bytes": 3275,
+      "sha256": "4db94a93a7b99bbfe423af06b1152d5da2f6992967c8a4f77db1fcceb2a98c4f"
+    },
+    "shutdown-guest.log.gz": {
+      "bytes": 20928,
+      "sha256": "02ada498a0d1ef23aa4338b499ca69a06040d2014e6ad39dc718fabfca915427"
+    },
+    "shutdown-host.log.gz": {
+      "bytes": 82491,
+      "sha256": "7a86664970445c77d74c82540f968dc90e249aa79ea45b1833ddb4d872a3e95c"
+    },
+    "shutdown-parent-registers.txt": {
+      "bytes": 259,
+      "sha256": "1c414e98acaef65d60df2fc644bf07df2d6418ac67a4be04a735c150d44f0cc1"
+    },
+    "shutdown-parent-stack.bin.gz": {
+      "bytes": 3731,
+      "sha256": "e2637f3b07cc1976a986d7fd1562afcd749c46b9dc490110bae01df9deeaa00d"
+    },
+    "shutdown-parent-unwind.log": {
+      "bytes": 319,
+      "sha256": "afcc88445019b3b2262b3bb71360d30d3f3b5b3b227b963523e551edc48993ad"
+    },
+    "shutdown-progress.jsonl.gz": {
+      "bytes": 891,
+      "sha256": "21cb17848267f8ad1a77c967e6007b84a6219e10a55dc27ac7ba3b606cf8ca2b"
+    },
+    "shutdown-results.json": {
+      "bytes": 3325,
+      "sha256": "8079336b0dc612751c9e1f75b3b7b9f75dc1b380ecfe77187c713badebca2589"
+    },
+    "shutdown-temporary.patch": {
+      "bytes": 6046,
+      "sha256": "c3e397f972d589eb96eed3fe8d520186ae8689f80ff999fc6146a73d1c48b0b9"
+    },
+    "stack-guest.log.gz": {
+      "bytes": 159135,
+      "sha256": "a81a0ec7c927adea0d6a7e1e1818c0cd8402b8ef3d94366dd8733278d53c26d4"
+    },
+    "stack-host.log.gz": {
+      "bytes": 37552,
+      "sha256": "698a6249f0dc4ed21ca15a69be519d1c7e2bcedbca9e82f49d995cfca0a80cd2"
+    },
+    "stack-progress.jsonl.gz": {
+      "bytes": 1104,
+      "sha256": "64270a35567db1dc8b0c1e831b5d96eb078c73de62f732b6fdb3ab492b8091fb"
+    },
+    "stack-results.json": {
+      "bytes": 3509,
+      "sha256": "39be8951c87965ecfae04058af2caaff3e323ee9877810a139cbca913bd98501"
+    },
+    "wire-browser-excerpt.log": {
+      "bytes": 2682,
+      "sha256": "adf330270fac5667ddaa803bdf04c08fb6d737567cd189794ecf9157e74ca905"
+    },
+    "wire-browser-snapshot.log.gz": {
+      "bytes": 152593,
+      "sha256": "ee41f11077c8aa633c269078ea5b1fea3e9fe76f9f6d48ea596a16e58662de8a"
+    },
+    "wire-delivery.log": {
+      "bytes": 5530,
+      "sha256": "5213546389bbc9abce77219feb0172b3119706aff72df7a55aa17c3a76eb062d"
+    },
+    "wire-guest.log.gz": {
+      "bytes": 442,
+      "sha256": "ed301c306a16ab07ec9d8e14f412ea121ff1a31bea640c29d1e5aa956787b90f"
+    },
+    "wire-host.log.gz": {
+      "bytes": 35956,
+      "sha256": "3fa8f11d195f43b044a9e05c890c162553f5de676ebf439bf2e7ca4d91564e9c"
+    },
+    "wire-progress.jsonl.gz": {
+      "bytes": 950,
+      "sha256": "965b17d5c3158fe5c36fe6212089ad758dc99f83e5b5e8efe92defd3681a9f92"
+    },
+    "wire-results.json": {
+      "bytes": 3411,
+      "sha256": "4e6c06ce430f8c04e5c66f05852f6250a1f5bbaa5010a685472d96f124bc1050"
+    },
+    "wire-temporary.patch": {
+      "bytes": 4709,
+      "sha256": "b4367f36c0fc045faf0be25b87bba037cdb38f4435e6f6c0e9fc0f055083fa70"
+    }
+  }
+}

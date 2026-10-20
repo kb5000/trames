@@ -1,0 +1,1135 @@
+2026-10-20 11:58:49.208760 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c48a410]: Created.
+2026-10-20 11:58:52.887485 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c497a10]: Created.
+2026-10-20 11:58:52.889924 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c497a10]: Adding request 3c819e10 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/builtin-addons/formautofill/manifest.json (count=0).
+2026-10-20 11:58:53.994250 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c497a10]: Removing request 3c819e10 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/builtin-addons/formautofill/manifest.json status 0 (count=0).
+2026-10-20 11:58:53.994803 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c497a10]: Destroyed.
+2026-10-20 11:58:54.060305 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49cf10]: Created.
+2026-10-20 11:58:54.062221 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49cf10]: Adding request 3c821a90 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/ext-browser.json (count=0).
+2026-10-20 11:58:54.065885 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49ce10]: Created.
+2026-10-20 11:58:54.067536 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49ce10]: Adding request 3c821310 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/content/extensions/ext-toolkit.json (count=0).
+2026-10-20 11:58:54.112257 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49cf10]: Removing request 3c821a90 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/ext-browser.json status 0 (count=0).
+2026-10-20 11:58:54.112761 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49cf10]: Destroyed.
+2026-10-20 11:58:54.118197 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49ce10]: Removing request 3c821310 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/content/extensions/ext-toolkit.json status 0 (count=0).
+2026-10-20 11:58:54.118493 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49ce10]: Destroyed.
+2026-10-20 11:58:56.884791 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49e910]: Created.
+2026-10-20 11:58:56.887213 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49e910]: Adding request 3c82b810 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/builtin-addons/newtab/manifest.json (count=0).
+2026-10-20 11:58:56.904425 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49e910]: Removing request 3c82b810 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/builtin-addons/newtab/manifest.json status 0 (count=0).
+2026-10-20 11:58:56.904877 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49e910]: Destroyed.
+2026-10-20 11:58:57.041594 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49e910]: Created.
+2026-10-20 11:58:57.044077 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49e910]: Adding request 3c82c110 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/builtin-addons/pictureinpicture/manifest.json (count=0).
+2026-10-20 11:58:57.085722 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49e910]: Removing request 3c82c110 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/builtin-addons/pictureinpicture/manifest.json status 0 (count=0).
+2026-10-20 11:58:57.086192 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49e910]: Destroyed.
+2026-10-20 11:58:57.315978 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49ef10]: Created.
+2026-10-20 11:58:57.318493 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49ef10]: Adding request 3c82ca10 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/builtin-addons/search-detection/manifest.json (count=0).
+2026-10-20 11:58:57.338804 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49ef10]: Removing request 3c82ca10 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/builtin-addons/search-detection/manifest.json status 0 (count=0).
+2026-10-20 11:58:57.339282 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49ef10]: Destroyed.
+2026-10-20 11:58:57.631616 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49e010]: Created.
+2026-10-20 11:58:57.634174 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49e010]: Adding request 3c82d190 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/builtin-addons/webcompat/manifest.json (count=0).
+2026-10-20 11:58:57.654620 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49e010]: Removing request 3c82d190 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/builtin-addons/webcompat/manifest.json status 0 (count=0).
+2026-10-20 11:58:57.655094 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49e010]: Destroyed.
+2026-10-20 11:58:58.319635 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4a0810]: Created.
+2026-10-20 11:58:58.322151 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4a0810]: Adding request 3c830190 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/content/mozapps/extensions/default-theme/manifest.json (count=0).
+2026-10-20 11:59:01.420657 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4ac410]: Created.
+2026-10-20 11:59:03.530731 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4ac410]: Adding request 486bf250 https://location.services.mozilla.com/v1/country?key=68adbc01-0378-4f74-947e-30bc0969a077 (count=0).
+2026-10-20 11:59:09.531842 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Created.
+2026-10-20 11:59:10.020728 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=4b60dc90, uri=chrome://browser/content/browser.xhtml]
+2026-10-20 11:59:10.021202 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel ctor [this=4b60dc90]
+2026-10-20 11:59:10.021663 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel AsyncOpen [this=4b60dc90]
+2026-10-20 11:59:10.021944 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=3c858810]
+2026-10-20 11:59:10.022177 UTC - [Parent 4: Main Thread]: V/DocumentChannel Created PPDocumentChannel with listener=3c858810
+2026-10-20 11:59:10.022550 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [3c858810] OpenDocument [uri=chrome://browser/content/browser.xhtml]
+2026-10-20 11:59:10.024774 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=4894bb50]
+2026-10-20 11:59:10.049588 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 4b60dc90 documentchannel:chrome://browser/content/browser.xhtml (count=0).
+2026-10-20 11:59:10.050259 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 4b60dc90.(foreground count=1).
+2026-10-20 11:59:10.051013 UTC - [Parent 4: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=3c4b8010 default-request=4b60dc90
+[Parent 4, Main Thread] WARNING: Failed to create DBus proxy for org.a11y.Bus: Cannot spawn a message bus without a machine-id: Unable to load /usr/var/lib/dbus/machine-id or /etc/machine-id: Failed to open file “/usr/var/lib/dbus/machine-id”: No such file or directory
+: 'glib warning', file /home/buildozer/aports/community/firefox/src/firefox-142.0/toolkit/xre/nsSigHandlers.cpp:201
+
+** (firefox:4): WARNING **: 11:59:10.870: Failed to create DBus proxy for org.a11y.Bus: Cannot spawn a message bus without a machine-id: Unable to load /usr/var/lib/dbus/machine-id or /etc/machine-id: Failed to open file “/usr/var/lib/dbus/machine-id”: No such file or directory
+
+2026-10-20 11:59:11.046835 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4ac410]: Removing request 486bf250 https://location.services.mozilla.com/v1/country?key=68adbc01-0378-4f74-947e-30bc0969a077 status 804b001e (count=0).
+2026-10-20 11:59:11.049011 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4ac410]: Destroyed.
+2026-10-20 11:59:11.061641 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=4894bb50]
+2026-10-20 11:59:11.062150 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=4894bb50]
+2026-10-20 11:59:11.062667 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=3c858810]
+2026-10-20 11:59:11.063181 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener::TriggerRedirectToRealChannel [this=3c858810] aDestinationBrowsingContext=1 aDestinationProcess=-1
+2026-10-20 11:59:11.063674 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannel [this=3c858810] aRedirectFlags=4, aLoadFlags=3d0004
+2026-10-20 11:59:11.067501 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel RedirectToRealChannel [this=4b60dc90]
+2026-10-20 11:59:12.170088 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4a0810]: Removing request 3c830190 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/content/mozapps/extensions/default-theme/manifest.json status 0 (count=0).
+2026-10-20 11:59:12.170729 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4a0810]: Destroyed.
+2026-10-20 11:59:12.376124 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4ba510]: Created.
+2026-10-20 11:59:12.380297 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4ba510]: Adding request 3c85af10 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/content/mozapps/extensions/default-theme/preview.png (count=0).
+2026-10-20 11:59:12.464516 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Created.
+2026-10-20 11:59:12.525420 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel OnRedirectVerifyCallback [this=4b60dc90 aResult=0]
+2026-10-20 11:59:12.525971 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c859d10 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/browser.xhtml (count=1).
+2026-10-20 11:59:12.526284 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c859d10.(foreground count=2).
+2026-10-20 11:59:12.526792 UTC - [Parent 4: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=3c4b8010 default-request=3c859d10
+2026-10-20 11:59:12.527063 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 4b60dc90 documentchannel:chrome://browser/content/browser.xhtml status 804b0003 (count=1).
+2026-10-20 11:59:12.527283 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 4b60dc90.(foreground count=1).
+2026-10-20 11:59:12.527957 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel dtor [this=4b60dc90]
+2026-10-20 11:59:14.163293 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4ba510]: Removing request 3c85af10 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/content/mozapps/extensions/default-theme/preview.png status 80520012 (count=0).
+2026-10-20 11:59:14.163915 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4ba510]: Removing request 3c85af10 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/content/mozapps/extensions/default-theme/preview.png status 80520012 (count=-1).
+2026-10-20 11:59:14.164205 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4ba510]: Unable to remove request 3c85af10. Not in group!
+2026-10-20 11:59:14.164556 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4ba510]: Destroyed.
+2026-10-20 11:59:14.292802 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannelFinished [this=3c858810, aRv=0 ]
+2026-10-20 11:59:14.293295 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener FinishReplacementChannelSetup [this=3c858810, aResult=0]
+2026-10-20 11:59:14.293639 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ResumeSuspendedChannel [this=3c858810]
+2026-10-20 11:59:14.371692 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Adding request 3c85a010 jar:file:///usr/lib/firefox/omni.ja!/modules/services-settings/RemoteSettings.worker.mjs (count=0).
+2026-10-20 11:59:14.422380 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c3010]: Created.
+2026-10-20 11:59:14.489663 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=4b622830, uri=chrome://extensions/content/dummy.xhtml]
+2026-10-20 11:59:14.490034 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel ctor [this=4b622830]
+2026-10-20 11:59:14.490473 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel AsyncOpen [this=4b622830]
+2026-10-20 11:59:14.490747 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=3c85e090]
+2026-10-20 11:59:14.490967 UTC - [Parent 4: Main Thread]: V/DocumentChannel Created PPDocumentChannel with listener=3c85e090
+2026-10-20 11:59:14.491376 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [3c85e090] OpenDocument [uri=chrome://extensions/content/dummy.xhtml]
+2026-10-20 11:59:14.494550 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=48952450]
+2026-10-20 11:59:14.495667 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c3010]: Adding request 4b622830 documentchannel:chrome://extensions/content/dummy.xhtml (count=0).
+2026-10-20 11:59:14.495996 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c3010]: Firing OnStartRequest for request 4b622830.(foreground count=1).
+2026-10-20 11:59:14.496522 UTC - [Parent 4: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=3c4c3010 default-request=4b622830
+2026-10-20 11:59:16.498707 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 45a65110 about:document-onload-blocker (count=1).
+2026-10-20 11:59:16.499479 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 45a65110.(foreground count=2).
+2026-10-20 11:59:18.098034 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c866f10 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/global.css (count=2).
+2026-10-20 11:59:18.098577 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c866f10.(foreground count=3).
+2026-10-20 11:59:18.103280 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c866a90 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/downloads/downloads.css (count=3).
+2026-10-20 11:59:18.103606 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c866a90.(foreground count=4).
+2026-10-20 11:59:18.108141 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c866190 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/places/places.css (count=4).
+2026-10-20 11:59:18.108459 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c866190.(foreground count=5).
+2026-10-20 11:59:18.112805 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c866490 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/usercontext/usercontext.css (count=5).
+2026-10-20 11:59:18.113123 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c866490.(foreground count=6).
+2026-10-20 11:59:18.119009 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c866010 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/browser.css (count=6).
+2026-10-20 11:59:18.119377 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c866010.(foreground count=7).
+2026-10-20 11:59:18.123687 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c857f10 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/controlcenter/panel.css (count=7).
+2026-10-20 11:59:18.124007 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c857f10.(foreground count=8).
+2026-10-20 11:59:18.128571 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c866310 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/customizableui/panelUI.css (count=8).
+2026-10-20 11:59:18.128887 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c866310.(foreground count=9).
+2026-10-20 11:59:18.133075 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c866910 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/downloads/downloads.css (count=9).
+2026-10-20 11:59:18.133391 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c866910.(foreground count=10).
+2026-10-20 11:59:18.137561 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c867090 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/translations/panel.css (count=10).
+2026-10-20 11:59:18.137928 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c867090.(foreground count=11).
+2026-10-20 11:59:18.142056 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c866790 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/places/tree-icons.css (count=11).
+2026-10-20 11:59:18.142374 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c866790.(foreground count=12).
+2026-10-20 11:59:18.146792 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c867210 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/places/editBookmark.css (count=12).
+2026-10-20 11:59:18.147145 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c867210.(foreground count=13).
+2026-10-20 11:59:18.151426 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c866d90 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/content/global/resistfingerprinting/letterboxing.css (count=13).
+2026-10-20 11:59:18.151734 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c866d90.(foreground count=14).
+2026-10-20 11:59:18.171218 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c867510 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/global-scripts.js (count=14).
+2026-10-20 11:59:18.171602 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c867510.(foreground count=15).
+2026-10-20 11:59:18.172396 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=4894bb50]
+2026-10-20 11:59:18.172714 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c859d10 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/browser.xhtml status 0 (count=14).
+2026-10-20 11:59:18.172985 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c859d10.(foreground count=14).
+2026-10-20 11:59:18.173371 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=3c858810]
+2026-10-20 11:59:18.660174 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Removing request 3c85a010 jar:file:///usr/lib/firefox/omni.ja!/modules/services-settings/RemoteSettings.worker.mjs status 0 (count=0).
+2026-10-20 11:59:19.086463 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=48952450]
+2026-10-20 11:59:19.086974 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=48952450]
+2026-10-20 11:59:19.087545 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=3c85e090]
+2026-10-20 11:59:19.087992 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener::TriggerRedirectToRealChannel [this=3c85e090] aDestinationBrowsingContext=2 aDestinationProcess=-1
+2026-10-20 11:59:19.088317 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannel [this=3c85e090] aRedirectFlags=4, aLoadFlags=3d0004
+2026-10-20 11:59:19.088935 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel RedirectToRealChannel [this=4b622830]
+2026-10-20 11:59:20.230703 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c86e710 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/browser-main.js (count=14).
+2026-10-20 11:59:20.231226 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c86e710.(foreground count=15).
+2026-10-20 11:59:20.232180 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c867510 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/global-scripts.js status 0 (count=14).
+2026-10-20 11:59:20.232500 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c867510.(foreground count=14).
+2026-10-20 11:59:20.236596 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Adding request 3c867510 jar:file:///usr/lib/firefox/omni.ja!/modules/CanonicalJSON.sys.mjs (count=0).
+2026-10-20 11:59:20.240301 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Adding request 3c86d810 jar:file:///usr/lib/firefox/omni.ja!/modules/services-settings/IDBHelpers.sys.mjs (count=1).
+2026-10-20 11:59:20.244043 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Adding request 3c86e410 jar:file:///usr/lib/firefox/omni.ja!/modules/services-settings/SharedUtils.sys.mjs (count=2).
+2026-10-20 11:59:20.247251 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Adding request 3c86e590 jar:file:///usr/lib/firefox/omni.ja!/modules/third_party/jsesc/jsesc.mjs (count=3).
+2026-10-20 11:59:20.290423 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c866f10 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/global.css status 0 (count=13).
+2026-10-20 11:59:20.290757 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c866f10.(foreground count=13).
+2026-10-20 11:59:20.292441 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c866a90 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/downloads/downloads.css status 0 (count=12).
+2026-10-20 11:59:20.292672 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c866a90.(foreground count=12).
+2026-10-20 11:59:20.368444 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c866a90 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/global-shared.css (count=12).
+2026-10-20 11:59:20.368866 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c866a90.(foreground count=13).
+2026-10-20 11:59:20.374457 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c866190 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/places/places.css status 0 (count=12).
+2026-10-20 11:59:20.375513 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c866190.(foreground count=12).
+2026-10-20 11:59:20.489280 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c866490 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/usercontext/usercontext.css status 0 (count=11).
+2026-10-20 11:59:20.489892 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c866490.(foreground count=11).
+2026-10-20 11:59:20.574919 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c866010 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/browser.css status 0 (count=10).
+2026-10-20 11:59:20.578504 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c866010.(foreground count=10).
+2026-10-20 11:59:20.670568 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c866010 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/browser-shared.css (count=10).
+2026-10-20 11:59:20.671033 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c866010.(foreground count=11).
+2026-10-20 11:59:20.676584 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c866490 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/contextmenu.css (count=11).
+2026-10-20 11:59:20.676902 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c866490.(foreground count=12).
+2026-10-20 11:59:20.689943 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c857f10 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/controlcenter/panel.css status 0 (count=11).
+2026-10-20 11:59:20.690236 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c857f10.(foreground count=11).
+2026-10-20 11:59:20.761784 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c866310 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/customizableui/panelUI.css status 0 (count=10).
+2026-10-20 11:59:20.764656 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c866310.(foreground count=10).
+2026-10-20 11:59:20.851388 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c866310 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/customizableui/panelUI-shared.css (count=10).
+2026-10-20 11:59:20.851782 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c866310.(foreground count=11).
+2026-10-20 11:59:20.856984 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c866910 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/downloads/downloads.css status 0 (count=10).
+2026-10-20 11:59:20.859784 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c866910.(foreground count=10).
+2026-10-20 11:59:20.947008 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c866910 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/downloads/downloads.inc.css (count=10).
+2026-10-20 11:59:20.947397 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c866910.(foreground count=11).
+2026-10-20 11:59:20.951864 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c867090 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/translations/panel.css status 0 (count=10).
+2026-10-20 11:59:20.953907 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c867090.(foreground count=10).
+2026-10-20 11:59:21.041679 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c866790 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/places/tree-icons.css status 0 (count=9).
+2026-10-20 11:59:21.043852 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c866790.(foreground count=9).
+2026-10-20 11:59:21.138555 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c867210 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/places/editBookmark.css status 0 (count=8).
+2026-10-20 11:59:21.140793 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c867210.(foreground count=8).
+2026-10-20 11:59:21.232551 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c866d90 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/content/global/resistfingerprinting/letterboxing.css status 0 (count=7).
+2026-10-20 11:59:21.234820 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c866d90.(foreground count=7).
+2026-10-20 11:59:21.328934 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel OnRedirectVerifyCallback [this=4b622830 aResult=0]
+2026-10-20 11:59:21.329426 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c3010]: Adding request 3c85e390 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/content/extensions/dummy.xhtml (count=1).
+2026-10-20 11:59:21.329751 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c3010]: Firing OnStartRequest for request 3c85e390.(foreground count=2).
+2026-10-20 11:59:21.330363 UTC - [Parent 4: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=3c4c3010 default-request=3c85e390
+2026-10-20 11:59:21.330711 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c3010]: Removing request 4b622830 documentchannel:chrome://extensions/content/dummy.xhtml status 804b0003 (count=1).
+2026-10-20 11:59:21.330974 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c3010]: Firing OnStopRequest for request 4b622830.(foreground count=1).
+2026-10-20 11:59:21.331639 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentChannel dtor [this=4b622830]
+2026-10-20 11:59:24.480234 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c85590 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/places/places-commands.js (count=7).
+2026-10-20 11:59:24.480822 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c85590.(foreground count=8).
+2026-10-20 11:59:24.484423 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c86e710 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/browser-main.js status 0 (count=7).
+2026-10-20 11:59:24.484871 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c86e710.(foreground count=7).
+2026-10-20 11:59:24.489061 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Removing request 3c867510 jar:file:///usr/lib/firefox/omni.ja!/modules/CanonicalJSON.sys.mjs status 0 (count=3).
+2026-10-20 11:59:24.491331 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Removing request 3c86d810 jar:file:///usr/lib/firefox/omni.ja!/modules/services-settings/IDBHelpers.sys.mjs status 0 (count=2).
+2026-10-20 11:59:24.493156 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Removing request 3c86e410 jar:file:///usr/lib/firefox/omni.ja!/modules/services-settings/SharedUtils.sys.mjs status 0 (count=1).
+2026-10-20 11:59:24.571524 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Removing request 3c86e590 jar:file:///usr/lib/firefox/omni.ja!/modules/third_party/jsesc/jsesc.mjs status 0 (count=0).
+2026-10-20 11:59:24.574051 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannelFinished [this=3c85e090, aRv=0 ]
+2026-10-20 11:59:24.574327 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener FinishReplacementChannelSetup [this=3c85e090, aResult=0]
+2026-10-20 11:59:24.574525 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ResumeSuspendedChannel [this=3c85e090]
+2026-10-20 11:59:24.643480 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Adding request 875c85a10 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/moz-essential-domain-fallbacks.json (count=0).
+2026-10-20 11:59:24.647475 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Adding request 875c84810 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/remote-permissions.json (count=1).
+2026-10-20 11:59:24.651383 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Adding request 875c84f90 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/url-parser-default-unknown-schemes-interventions.json (count=2).
+2026-10-20 11:59:24.656074 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Adding request 875c84990 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/anti-tracking-url-decoration.json (count=3).
+2026-10-20 11:59:24.659717 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Adding request 875c85410 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/query-stripping.json (count=4).
+2026-10-20 11:59:24.663425 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Adding request 875c86c10 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/fingerprinting-protection-overrides.json (count=5).
+2026-10-20 11:59:24.729227 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c3010]: Adding request 87299ee10 about:document-onload-blocker (count=1).
+2026-10-20 11:59:24.729584 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c3010]: Firing OnStartRequest for request 87299ee10.(foreground count=2).
+2026-10-20 11:59:25.051637 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=48952450]
+2026-10-20 11:59:25.052227 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c3010]: Removing request 3c85e390 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/content/extensions/dummy.xhtml status 0 (count=1).
+2026-10-20 11:59:25.052531 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c3010]: Firing OnStopRequest for request 3c85e390.(foreground count=1).
+2026-10-20 11:59:25.053009 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=3c85e090]
+2026-10-20 11:59:25.074937 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Removing request 875c84810 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/remote-permissions.json status 80520012 (count=5).
+2026-10-20 11:59:25.075347 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Removing request 875c84810 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/remote-permissions.json status 80520012 (count=4).
+2026-10-20 11:59:25.075543 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Unable to remove request 875c84810. Not in group!
+2026-10-20 11:59:25.082935 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Removing request 875c85410 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/query-stripping.json status 80520012 (count=4).
+2026-10-20 11:59:25.083300 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Removing request 875c85410 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/query-stripping.json status 80520012 (count=3).
+2026-10-20 11:59:25.083484 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Unable to remove request 875c85410. Not in group!
+2026-10-20 11:59:25.084757 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Removing request 875c86c10 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/fingerprinting-protection-overrides.json status 80520012 (count=3).
+2026-10-20 11:59:25.085074 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Removing request 875c86c10 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/fingerprinting-protection-overrides.json status 80520012 (count=2).
+2026-10-20 11:59:25.085272 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Unable to remove request 875c86c10. Not in group!
+2026-10-20 11:59:25.092805 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c866a90 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/global-shared.css status 0 (count=6).
+2026-10-20 11:59:25.096141 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c866a90.(foreground count=6).
+2026-10-20 11:59:25.106627 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c866a90 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/design-system/tokens-platform.css (count=6).
+2026-10-20 11:59:25.107135 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c866a90.(foreground count=7).
+2026-10-20 11:59:25.111653 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c86c10 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/design-system/text-and-typography.css (count=7).
+2026-10-20 11:59:25.112098 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c86c10.(foreground count=8).
+2026-10-20 11:59:25.116331 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c86310 jar:file:///usr/lib/firefox/omni.ja!/chrome/en-US/locale/en-US/global/intl.css (count=8).
+2026-10-20 11:59:25.116559 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c86310.(foreground count=9).
+2026-10-20 11:59:25.120920 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c85410 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/content/global/widgets.css (count=9).
+2026-10-20 11:59:25.121169 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c85410.(foreground count=10).
+2026-10-20 11:59:25.128671 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c8d390 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/close-icon.css (count=10).
+2026-10-20 11:59:25.128988 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c8d390.(foreground count=11).
+2026-10-20 11:59:25.134759 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c866010 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/browser-shared.css status 0 (count=10).
+2026-10-20 11:59:25.135523 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c866010.(foreground count=10).
+2026-10-20 11:59:25.207023 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c866010 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/browser-colors.css (count=10).
+2026-10-20 11:59:25.207407 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c866010.(foreground count=11).
+2026-10-20 11:59:25.213352 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c8cd90 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/addons/extension-controlled.css (count=11).
+2026-10-20 11:59:25.213630 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c8cd90.(foreground count=12).
+2026-10-20 11:59:25.219053 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c8e290 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/addons/unified-extensions.css (count=12).
+2026-10-20 11:59:25.219342 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c8e290.(foreground count=13).
+2026-10-20 11:59:25.224604 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c8e890 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/downloads/indicator.css (count=13).
+2026-10-20 11:59:25.225025 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c8e890.(foreground count=14).
+2026-10-20 11:59:25.231441 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c8e590 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/tabbrowser/content-area.css (count=14).
+2026-10-20 11:59:25.231824 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c8e590.(foreground count=15).
+2026-10-20 11:59:25.236882 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c8ea10 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/tabbrowser/ctrlTab.css (count=15).
+2026-10-20 11:59:25.237222 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c8ea10.(foreground count=16).
+2026-10-20 11:59:25.242139 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c8e710 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/tabbrowser/fullscreen-and-pointerlock.css (count=16).
+2026-10-20 11:59:25.242471 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c8e710.(foreground count=17).
+2026-10-20 11:59:25.247074 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c8d810 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/tabbrowser/tabs.css (count=17).
+2026-10-20 11:59:25.247401 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c8d810.(foreground count=18).
+2026-10-20 11:59:25.252106 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c8ee90 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/tabbrowser/tab-hover-preview.css (count=18).
+2026-10-20 11:59:25.252424 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c8ee90.(foreground count=19).
+2026-10-20 11:59:25.256897 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c8de10 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/toolbarbuttons.css (count=19).
+2026-10-20 11:59:25.257213 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c8de10.(foreground count=20).
+2026-10-20 11:59:25.261815 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c8d990 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/toolbarbutton-icons.css (count=20).
+2026-10-20 11:59:25.262127 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c8d990.(foreground count=21).
+2026-10-20 11:59:25.266709 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c8e110 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/menupanel.css (count=21).
+2026-10-20 11:59:25.267012 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c8e110.(foreground count=22).
+2026-10-20 11:59:25.271562 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c90390 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/urlbar-searchbar.css (count=22).
+2026-10-20 11:59:25.271859 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c90390.(foreground count=23).
+2026-10-20 11:59:25.276434 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c90510 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/identity-block/identity-block.css (count=23).
+2026-10-20 11:59:25.276735 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c90510.(foreground count=24).
+2026-10-20 11:59:25.281529 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c8fa90 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/notification-icons.css (count=24).
+2026-10-20 11:59:25.281887 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c8fa90.(foreground count=25).
+2026-10-20 11:59:25.287449 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c8f010 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/addon-notification.css (count=25).
+2026-10-20 11:59:25.287779 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c8f010.(foreground count=26).
+2026-10-20 11:59:25.292722 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c8fc10 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/identity-credential-notification.css (count=26).
+2026-10-20 11:59:25.293026 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c8fc10.(foreground count=27).
+2026-10-20 11:59:25.297526 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c90210 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/urlbarView.css (count=27).
+2026-10-20 11:59:25.297832 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c90210.(foreground count=28).
+2026-10-20 11:59:25.302256 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c8fd90 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/autocomplete.css (count=28).
+2026-10-20 11:59:25.302558 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c8fd90.(foreground count=29).
+2026-10-20 11:59:25.306944 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c8f490 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/places/editBookmarkPanel.css (count=29).
+2026-10-20 11:59:25.307257 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c8f490.(foreground count=30).
+2026-10-20 11:59:25.311701 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c8ff10 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/searchbar.css (count=30).
+2026-10-20 11:59:25.312019 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c8ff10.(foreground count=31).
+2026-10-20 11:59:25.316443 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c90090 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/sidebar.css (count=31).
+2026-10-20 11:59:25.316737 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c90090.(foreground count=32).
+2026-10-20 11:59:25.321256 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c8f790 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/customizableui/customizeMode.css (count=32).
+2026-10-20 11:59:25.321552 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c8f790.(foreground count=33).
+2026-10-20 11:59:25.325961 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c90690 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/UITour.css (count=33).
+2026-10-20 11:59:25.326273 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c90690.(foreground count=34).
+2026-10-20 11:59:25.330799 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c8f190 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/formautofill-notification.css (count=34).
+2026-10-20 11:59:25.331095 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c8f190.(foreground count=35).
+2026-10-20 11:59:25.334471 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c866490 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/contextmenu.css status 0 (count=34).
+2026-10-20 11:59:25.337193 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c866490.(foreground count=34).
+2026-10-20 11:59:25.422633 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c866310 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/customizableui/panelUI-shared.css status 0 (count=33).
+2026-10-20 11:59:25.425740 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c866310.(foreground count=33).
+2026-10-20 11:59:25.504340 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c866910 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/downloads/downloads.inc.css status 0 (count=32).
+2026-10-20 11:59:25.504806 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c866910.(foreground count=32).
+2026-10-20 11:59:25.579126 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c866910 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/downloads/progressmeter.css (count=32).
+2026-10-20 11:59:25.579554 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c866910.(foreground count=33).
+2026-10-20 11:59:25.584760 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c866310 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/downloads/download-blockedStates.css (count=33).
+2026-10-20 11:59:25.585311 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c866310.(foreground count=34).
+2026-10-20 11:59:25.619748 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c9c390 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/main-popupset.js (count=34).
+2026-10-20 11:59:25.620318 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c9c390.(foreground count=35).
+2026-10-20 11:59:25.621481 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c85590 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/places/places-commands.js status 0 (count=34).
+2026-10-20 11:59:25.621848 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c85590.(foreground count=34).
+2026-10-20 11:59:25.733430 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c3010]: Removing request 87299ee10 about:document-onload-blocker status 0 (count=0).
+2026-10-20 11:59:25.733928 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c3010]: Firing OnStopRequest for request 87299ee10.(foreground count=0).
+2026-10-20 11:59:25.734535 UTC - [Parent 4: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=3c4c3010 default-request=0
+2026-10-20 11:59:25.933609 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess for type extension
+2026-10-20 11:59:25.934331 UTC - [Parent 4: Main Thread]: D/Process Launching new process immediately for type extension
+2026-10-20 11:59:25.934791 UTC - [Parent 4: Main Thread]: V/Process CreateSubprocess: ContentParent id=470252d10 mSubprocess id=875c9c090 childID=3
+2026-10-20 11:59:25.974916 UTC - [Parent 4: Main Thread]: D/Process AddBlocker: extension 470252d10 (sNumBlockers=0)
+2026-10-20 11:59:25.976037 UTC - [Parent 4: Main Thread]: D/Process Enabling preallocation: 3
+2026-10-20 11:59:25.976399 UTC - [Parent 4: Main Thread]: D/Process Starting delayed process start, delay=1000
+2026-10-20 11:59:26.002220 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess: new immediate process id=470252d10 childID=3
+2026-10-20 11:59:26.544314 UTC - [Parent 4: Main Thread]: D/Process ContentParent::InitInternal: id=470252d10, childID=3
+2026-10-20 11:59:26.590135 UTC - [Child 81: Main Thread]: D/Process Changed name of process 81 to Web Content
+2026-10-20 11:59:27.557311 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess for type extension
+2026-10-20 11:59:27.557913 UTC - [Parent 4: Main Thread]: D/Process GetUsedProcess: Reused process id=470252d10 childID=3 for extension
+2026-10-20 11:59:27.593154 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess for type extension
+2026-10-20 11:59:27.593850 UTC - [Parent 4: Main Thread]: D/Process GetUsedProcess: Reused process id=470252d10 childID=3 for extension
+2026-10-20 11:59:27.630801 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess for type extension
+2026-10-20 11:59:27.631283 UTC - [Parent 4: Main Thread]: D/Process GetUsedProcess: Reused process id=470252d10 childID=3 for extension
+2026-10-20 11:59:27.665848 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess for type extension
+2026-10-20 11:59:27.666370 UTC - [Parent 4: Main Thread]: D/Process GetUsedProcess: Reused process id=470252d10 childID=3 for extension
+2026-10-20 11:59:27.755025 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00510]: Created.
+2026-10-20 11:59:28.057012 UTC - [Parent 4: Main Thread]: D/Process Starting process allocate on idle
+2026-10-20 11:59:28.201804 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Removing request 875c85a10 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/moz-essential-domain-fallbacks.json status 0 (count=2).
+2026-10-20 11:59:28.271643 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Removing request 875c84f90 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/url-parser-default-unknown-schemes-interventions.json status 0 (count=1).
+2026-10-20 11:59:28.283501 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Removing request 875c84990 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/anti-tracking-url-decoration.json status 0 (count=0).
+2026-10-20 11:59:28.626861 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c9c390 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/main-popupset.js status 0 (count=33).
+2026-10-20 11:59:28.627402 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c9c390.(foreground count=33).
+2026-10-20 11:59:28.845293 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c866a90 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/design-system/tokens-platform.css status 0 (count=32).
+2026-10-20 11:59:28.853640 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c866a90.(foreground count=32).
+2026-10-20 11:59:28.903042 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c866a90 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/design-system/tokens-shared.css (count=32).
+2026-10-20 11:59:28.903432 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c866a90.(foreground count=33).
+2026-10-20 11:59:28.913741 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c86c10 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/design-system/text-and-typography.css status 0 (count=32).
+2026-10-20 11:59:28.917207 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c86c10.(foreground count=32).
+2026-10-20 11:59:29.268536 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c86310 jar:file:///usr/lib/firefox/omni.ja!/chrome/en-US/locale/en-US/global/intl.css status 0 (count=31).
+2026-10-20 11:59:29.270907 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c86310.(foreground count=31).
+2026-10-20 11:59:29.423404 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c85410 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/content/global/widgets.css status 0 (count=30).
+2026-10-20 11:59:29.423722 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c85410.(foreground count=30).
+2026-10-20 11:59:29.621534 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c85410 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/content/global/autocomplete.css (count=30).
+2026-10-20 11:59:29.621966 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c85410.(foreground count=31).
+2026-10-20 11:59:29.632472 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c86310 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/autocomplete.css (count=31).
+2026-10-20 11:59:29.632769 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c86310.(foreground count=32).
+2026-10-20 11:59:29.640061 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c86c10 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/button.css (count=32).
+2026-10-20 11:59:29.644515 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c86c10.(foreground count=33).
+2026-10-20 11:59:29.656829 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c9fc90 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/checkbox.css (count=33).
+2026-10-20 11:59:29.657378 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c9fc90.(foreground count=34).
+2026-10-20 11:59:29.667812 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c82c290 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/findbar.css (count=34).
+2026-10-20 11:59:29.668512 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c82c290.(foreground count=35).
+2026-10-20 11:59:29.674567 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c84f90 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/notification.css (count=35).
+2026-10-20 11:59:29.676049 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c84f90.(foreground count=36).
+2026-10-20 11:59:29.682013 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875ca1610 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/numberinput.css (count=36).
+2026-10-20 11:59:29.682302 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875ca1610.(foreground count=37).
+2026-10-20 11:59:29.687692 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875ca2690 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/popup.css (count=37).
+2026-10-20 11:59:29.687990 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875ca2690.(foreground count=38).
+2026-10-20 11:59:29.692932 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875ca1310 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/menu.css (count=38).
+2026-10-20 11:59:29.693216 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875ca1310.(foreground count=39).
+2026-10-20 11:59:29.698163 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875ca2090 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/popupnotification.css (count=39).
+2026-10-20 11:59:29.699802 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875ca2090.(foreground count=40).
+2026-10-20 11:59:29.704536 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875ca2390 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/radio.css (count=40).
+2026-10-20 11:59:29.704793 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875ca2390.(foreground count=41).
+2026-10-20 11:59:29.712712 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875ca1910 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/richlistbox.css (count=41).
+2026-10-20 11:59:29.712976 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875ca1910.(foreground count=42).
+2026-10-20 11:59:29.718491 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875ca1c10 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/splitter.css (count=42).
+2026-10-20 11:59:29.718772 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875ca1c10.(foreground count=43).
+2026-10-20 11:59:29.723709 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875ca1a90 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/tabbox.css (count=43).
+2026-10-20 11:59:29.724079 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875ca1a90.(foreground count=44).
+2026-10-20 11:59:29.730058 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875ca2210 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/toolbar.css (count=44).
+2026-10-20 11:59:29.730344 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875ca2210.(foreground count=45).
+2026-10-20 11:59:29.740919 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875ca1490 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/toolbarbutton.css (count=45).
+2026-10-20 11:59:29.741234 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875ca1490.(foreground count=46).
+2026-10-20 11:59:29.746055 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875ca2510 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/tree/tree.css (count=46).
+2026-10-20 11:59:29.748041 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875ca2510.(foreground count=47).
+2026-10-20 11:59:29.760477 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c8d390 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/close-icon.css status 0 (count=46).
+2026-10-20 11:59:29.760771 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c8d390.(foreground count=46).
+2026-10-20 11:59:29.912450 UTC - [Child 81: Main Thread]: D/Process Setting remoteType of process 81 to extension
+2026-10-20 11:59:29.913563 UTC - [Child 81: Main Thread]: D/Process Changed name of process 81 to WebExtensions
+2026-10-20 11:59:30.055059 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c866010 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/browser-colors.css status 0 (count=45).
+2026-10-20 11:59:30.056177 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c866010.(foreground count=45).
+2026-10-20 11:59:30.302566 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c8cd90 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/addons/extension-controlled.css status 0 (count=44).
+2026-10-20 11:59:30.303939 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c8cd90.(foreground count=44).
+2026-10-20 11:59:30.388580 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c8e290 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/addons/unified-extensions.css status 0 (count=43).
+2026-10-20 11:59:30.390571 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c8e290.(foreground count=43).
+2026-10-20 11:59:30.477493 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c8e890 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/downloads/indicator.css status 0 (count=42).
+2026-10-20 11:59:30.479268 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c8e890.(foreground count=42).
+2026-10-20 11:59:30.539852 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Created.
+2026-10-20 11:59:30.566811 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c8e590 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/tabbrowser/content-area.css status 0 (count=41).
+2026-10-20 11:59:30.568702 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c8e590.(foreground count=41).
+2026-10-20 11:59:30.666760 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040d0d0, uri=about:blank]
+2026-10-20 11:59:30.672612 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040d0d0, uri=about:blank]
+2026-10-20 11:59:30.674642 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Adding request 3040d0d0 documentchannel:about:blank (count=0).
+2026-10-20 11:59:30.676218 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Firing OnStartRequest for request 3040d0d0.(foreground count=1).
+2026-10-20 11:59:30.678729 UTC - [Child 81: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f00110 default-request=3040d0d0
+2026-10-20 11:59:30.703286 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Created.
+2026-10-20 11:59:30.749061 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c8ea10 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/tabbrowser/ctrlTab.css status 0 (count=40).
+2026-10-20 11:59:30.752515 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c8ea10.(foreground count=40).
+2026-10-20 11:59:30.803154 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040e750, uri=about:blank]
+2026-10-20 11:59:30.805008 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040e750, uri=about:blank]
+2026-10-20 11:59:30.807083 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Adding request 3040e750 documentchannel:about:blank (count=0).
+2026-10-20 11:59:30.808456 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Firing OnStartRequest for request 3040e750.(foreground count=1).
+2026-10-20 11:59:30.810638 UTC - [Child 81: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f00c10 default-request=3040e750
+2026-10-20 11:59:30.836782 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01d10]: Created.
+2026-10-20 11:59:30.898833 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c8e710 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/tabbrowser/fullscreen-and-pointerlock.css status 0 (count=39).
+2026-10-20 11:59:30.900413 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c8e710.(foreground count=39).
+2026-10-20 11:59:30.926070 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040f650, uri=about:blank]
+2026-10-20 11:59:30.927005 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040f650, uri=about:blank]
+2026-10-20 11:59:30.929497 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01d10]: Adding request 3040f650 documentchannel:about:blank (count=0).
+2026-10-20 11:59:30.930574 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01d10]: Firing OnStartRequest for request 3040f650.(foreground count=1).
+2026-10-20 11:59:30.932600 UTC - [Child 81: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f01d10 default-request=3040f650
+2026-10-20 11:59:30.951182 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Created.
+2026-10-20 11:59:30.994196 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c8d810 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/tabbrowser/tabs.css status 0 (count=38).
+2026-10-20 11:59:30.995155 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c8d810.(foreground count=38).
+2026-10-20 11:59:31.047601 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=30412350, uri=about:blank]
+2026-10-20 11:59:31.048657 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=30412350, uri=about:blank]
+2026-10-20 11:59:31.050704 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Adding request 30412350 documentchannel:about:blank (count=0).
+2026-10-20 11:59:31.051615 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Firing OnStartRequest for request 30412350.(foreground count=1).
+2026-10-20 11:59:31.053654 UTC - [Child 81: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f01310 default-request=30412350
+2026-10-20 11:59:31.075201 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Created.
+2026-10-20 11:59:31.173949 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=30414290, uri=about:blank]
+2026-10-20 11:59:31.175315 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=30414290, uri=about:blank]
+2026-10-20 11:59:31.177552 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Adding request 30414290 documentchannel:about:blank (count=0).
+2026-10-20 11:59:31.178734 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStartRequest for request 30414290.(foreground count=1).
+2026-10-20 11:59:31.180978 UTC - [Child 81: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f01610 default-request=30414290
+2026-10-20 11:59:31.218659 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c8ee90 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/tabbrowser/tab-hover-preview.css status 0 (count=37).
+2026-10-20 11:59:31.219751 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c8ee90.(foreground count=37).
+2026-10-20 11:59:31.223132 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Canceling request 3040d0d0 documentchannel:about:blank.
+2026-10-20 11:59:31.225224 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ShutdownListeners [this=3040d0d0, status=804b0002]
+2026-10-20 11:59:31.227561 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Removing request 3040d0d0 documentchannel:about:blank status 804b0002 (count=0).
+2026-10-20 11:59:31.229400 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Firing OnStopRequest for request 3040d0d0.(foreground count=0).
+2026-10-20 11:59:31.263496 UTC - [Child 81: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f00110 default-request=0
+2026-10-20 11:59:31.269017 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040a790, uri=moz-extension://4e5f07d9-65d1-4ef1-9bde-c3c06500fd33/_generated_background_page.html]
+2026-10-20 11:59:31.269891 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040a790, uri=moz-extension://4e5f07d9-65d1-4ef1-9bde-c3c06500fd33/_generated_background_page.html]
+2026-10-20 11:59:31.271749 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Adding request 3040a790 documentchannel:moz-extension://4e5f07d9-65d1-4ef1-9bde-c3c06500fd33/_generated_background_page.html (count=0).
+2026-10-20 11:59:31.272620 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Firing OnStartRequest for request 3040a790.(foreground count=1).
+2026-10-20 11:59:31.273761 UTC - [Child 81: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f00110 default-request=3040a790
+2026-10-20 11:59:31.288408 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Canceling request 3040e750 documentchannel:about:blank.
+2026-10-20 11:59:31.289524 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ShutdownListeners [this=3040e750, status=804b0002]
+2026-10-20 11:59:31.290883 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Removing request 3040e750 documentchannel:about:blank status 804b0002 (count=0).
+2026-10-20 11:59:31.291756 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Firing OnStopRequest for request 3040e750.(foreground count=0).
+2026-10-20 11:59:31.294847 UTC - [Child 81: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f00c10 default-request=0
+2026-10-20 11:59:31.299456 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040cf90, uri=moz-extension://f4df3d0c-5134-4514-8865-5f0730f213a6/_generated_background_page.html]
+2026-10-20 11:59:31.301428 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040cf90, uri=moz-extension://f4df3d0c-5134-4514-8865-5f0730f213a6/_generated_background_page.html]
+2026-10-20 11:59:31.307850 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Adding request 3040cf90 documentchannel:moz-extension://f4df3d0c-5134-4514-8865-5f0730f213a6/_generated_background_page.html (count=0).
+2026-10-20 11:59:31.308835 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Firing OnStartRequest for request 3040cf90.(foreground count=1).
+2026-10-20 11:59:31.310665 UTC - [Child 81: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f00c10 default-request=3040cf90
+2026-10-20 11:59:31.331177 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01d10]: Canceling request 3040f650 documentchannel:about:blank.
+2026-10-20 11:59:31.332543 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ShutdownListeners [this=3040f650, status=804b0002]
+2026-10-20 11:59:31.334303 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01d10]: Removing request 3040f650 documentchannel:about:blank status 804b0002 (count=0).
+2026-10-20 11:59:31.335395 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01d10]: Firing OnStopRequest for request 3040f650.(foreground count=0).
+2026-10-20 11:59:31.339482 UTC - [Child 81: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f01d10 default-request=0
+2026-10-20 11:59:31.344625 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040d5d0, uri=moz-extension://4298c9fe-087d-4abe-8863-837394b9566d/_generated_background_page.html]
+2026-10-20 11:59:31.345941 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040d5d0, uri=moz-extension://4298c9fe-087d-4abe-8863-837394b9566d/_generated_background_page.html]
+2026-10-20 11:59:31.347746 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01d10]: Adding request 3040d5d0 documentchannel:moz-extension://4298c9fe-087d-4abe-8863-837394b9566d/_generated_background_page.html (count=0).
+2026-10-20 11:59:31.348609 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01d10]: Firing OnStartRequest for request 3040d5d0.(foreground count=1).
+2026-10-20 11:59:31.350406 UTC - [Child 81: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f01d10 default-request=3040d5d0
+2026-10-20 11:59:31.368702 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Canceling request 30412350 documentchannel:about:blank.
+2026-10-20 11:59:31.370614 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ShutdownListeners [this=30412350, status=804b0002]
+2026-10-20 11:59:31.372723 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Removing request 30412350 documentchannel:about:blank status 804b0002 (count=0).
+2026-10-20 11:59:31.374057 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Firing OnStopRequest for request 30412350.(foreground count=0).
+2026-10-20 11:59:31.378275 UTC - [Child 81: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f01310 default-request=0
+2026-10-20 11:59:31.383653 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=30410690, uri=moz-extension://4ba1b414-aea5-44df-ba41-67f5b84a8b83/_generated_background_page.html]
+2026-10-20 11:59:31.384602 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=30410690, uri=moz-extension://4ba1b414-aea5-44df-ba41-67f5b84a8b83/_generated_background_page.html]
+2026-10-20 11:59:31.386395 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Adding request 30410690 documentchannel:moz-extension://4ba1b414-aea5-44df-ba41-67f5b84a8b83/_generated_background_page.html (count=0).
+2026-10-20 11:59:31.387222 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Firing OnStartRequest for request 30410690.(foreground count=1).
+2026-10-20 11:59:31.389045 UTC - [Child 81: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f01310 default-request=30410690
+2026-10-20 11:59:31.404865 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Canceling request 30414290 documentchannel:about:blank.
+2026-10-20 11:59:31.405931 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ShutdownListeners [this=30414290, status=804b0002]
+2026-10-20 11:59:31.407483 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Removing request 30414290 documentchannel:about:blank status 804b0002 (count=0).
+2026-10-20 11:59:31.408182 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStopRequest for request 30414290.(foreground count=0).
+2026-10-20 11:59:31.411734 UTC - [Child 81: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f01610 default-request=0
+2026-10-20 11:59:31.413273 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c8de10 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/toolbarbuttons.css status 0 (count=36).
+2026-10-20 11:59:31.415565 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c8de10.(foreground count=36).
+2026-10-20 11:59:31.424188 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=304120d0, uri=moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/_generated_background_page.html]
+2026-10-20 11:59:31.426379 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=304120d0, uri=moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/_generated_background_page.html]
+2026-10-20 11:59:31.429609 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Adding request 304120d0 documentchannel:moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/_generated_background_page.html (count=0).
+2026-10-20 11:59:31.430572 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStartRequest for request 304120d0.(foreground count=1).
+2026-10-20 11:59:31.432531 UTC - [Child 81: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f01610 default-request=304120d0
+2026-10-20 11:59:31.505434 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Removing request 3040d0d0 documentchannel:about:blank status 804b0002 (count=0).
+2026-10-20 11:59:31.506344 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Unable to remove request 3040d0d0. Not in group!
+2026-10-20 11:59:31.507210 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=3040d0d0]
+2026-10-20 11:59:31.510460 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Removing request 3040e750 documentchannel:about:blank status 804b0002 (count=0).
+2026-10-20 11:59:31.511370 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Unable to remove request 3040e750. Not in group!
+2026-10-20 11:59:31.512211 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=3040e750]
+2026-10-20 11:59:31.515730 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01d10]: Removing request 3040f650 documentchannel:about:blank status 804b0002 (count=0).
+2026-10-20 11:59:31.516553 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01d10]: Unable to remove request 3040f650. Not in group!
+2026-10-20 11:59:31.517401 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=3040f650]
+2026-10-20 11:59:31.520638 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Removing request 30412350 documentchannel:about:blank status 804b0002 (count=0).
+2026-10-20 11:59:31.521001 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Unable to remove request 30412350. Not in group!
+2026-10-20 11:59:31.521742 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=30412350]
+2026-10-20 11:59:31.523609 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Removing request 30414290 documentchannel:about:blank status 804b0002 (count=0).
+2026-10-20 11:59:31.524905 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Unable to remove request 30414290. Not in group!
+2026-10-20 11:59:31.525011 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c8d990 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/toolbarbutton-icons.css status 0 (count=35).
+2026-10-20 11:59:31.526937 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c8d990.(foreground count=35).
+2026-10-20 11:59:31.526862 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=30414290]
+2026-10-20 11:59:31.624848 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c8e110 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/menupanel.css status 0 (count=34).
+2026-10-20 11:59:31.627817 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c8e110.(foreground count=34).
+2026-10-20 11:59:31.714420 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c90510 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/identity-block/identity-block.css status 0 (count=33).
+2026-10-20 11:59:31.717966 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c90510.(foreground count=33).
+2026-10-20 11:59:31.897391 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c8fa90 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/notification-icons.css status 0 (count=32).
+2026-10-20 11:59:31.897893 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c8fa90.(foreground count=32).
+2026-10-20 11:59:32.017896 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c8f010 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/addon-notification.css status 0 (count=31).
+2026-10-20 11:59:32.020755 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c8f010.(foreground count=31).
+2026-10-20 11:59:32.110320 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c8fc10 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/identity-credential-notification.css status 0 (count=30).
+2026-10-20 11:59:32.113062 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c8fc10.(foreground count=30).
+2026-10-20 11:59:32.210241 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c90210 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/urlbarView.css status 0 (count=29).
+2026-10-20 11:59:32.212997 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c90210.(foreground count=29).
+2026-10-20 11:59:32.290213 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875c90210 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/urlbar-dynamic-results.css (count=29).
+2026-10-20 11:59:32.290562 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875c90210.(foreground count=30).
+2026-10-20 11:59:32.295262 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c8fd90 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/autocomplete.css status 0 (count=29).
+2026-10-20 11:59:32.295571 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c8fd90.(foreground count=29).
+2026-10-20 11:59:32.477376 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c8f490 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/places/editBookmarkPanel.css status 0 (count=28).
+2026-10-20 11:59:32.477864 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c8f490.(foreground count=28).
+2026-10-20 11:59:32.593304 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c8ff10 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/searchbar.css status 0 (count=27).
+2026-10-20 11:59:32.603901 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c8ff10.(foreground count=27).
+2026-10-20 11:59:32.698156 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c90090 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/sidebar.css status 0 (count=26).
+2026-10-20 11:59:32.707856 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c90090.(foreground count=26).
+2026-10-20 11:59:32.792071 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c8f790 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/customizableui/customizeMode.css status 0 (count=25).
+2026-10-20 11:59:32.794076 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c8f790.(foreground count=25).
+2026-10-20 11:59:32.933396 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c90690 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/UITour.css status 0 (count=24).
+2026-10-20 11:59:32.934148 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c90690.(foreground count=24).
+2026-10-20 11:59:33.087681 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c8f190 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/formautofill-notification.css status 0 (count=23).
+2026-10-20 11:59:33.090712 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c8f190.(foreground count=23).
+2026-10-20 11:59:33.276556 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c866910 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/downloads/progressmeter.css status 0 (count=22).
+2026-10-20 11:59:33.277232 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c866910.(foreground count=22).
+2026-10-20 11:59:33.377315 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c866310 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/downloads/download-blockedStates.css status 0 (count=21).
+2026-10-20 11:59:33.385751 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c866310.(foreground count=21).
+2026-10-20 11:59:33.981475 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875cc8490 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/browser-context.js (count=21).
+2026-10-20 11:59:33.982030 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875cc8490.(foreground count=22).
+2026-10-20 11:59:34.064792 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c90390 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/urlbar-searchbar.css status 0 (count=21).
+2026-10-20 11:59:34.067784 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c90390.(foreground count=21).
+2026-10-20 11:59:34.249361 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=87bc87a90]
+2026-10-20 11:59:34.249893 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=87bc87a90, uri=about:blank]
+2026-10-20 11:59:34.250188 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=875ca0b90]
+2026-10-20 11:59:34.250476 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [875ca0b90] OpenDocument [uri=about:blank]
+2026-10-20 11:59:34.277697 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=879a60b90]
+2026-10-20 11:59:34.374566 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=872ed0510]
+2026-10-20 11:59:34.375026 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=872ed0510, uri=about:blank]
+2026-10-20 11:59:34.375323 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=875ca4610]
+2026-10-20 11:59:34.375612 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [875ca4610] OpenDocument [uri=about:blank]
+2026-10-20 11:59:34.381019 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=873f70130]
+2026-10-20 11:59:34.474927 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=872ed1210]
+2026-10-20 11:59:34.475505 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=872ed1210, uri=about:blank]
+2026-10-20 11:59:34.475839 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=875ca5390]
+2026-10-20 11:59:34.476255 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [875ca5390] OpenDocument [uri=about:blank]
+2026-10-20 11:59:34.482761 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=873f73970]
+2026-10-20 11:59:34.537133 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=872ed3b10]
+2026-10-20 11:59:34.537658 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=872ed3b10, uri=about:blank]
+2026-10-20 11:59:34.538067 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=875ca4190]
+2026-10-20 11:59:34.538462 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [875ca4190] OpenDocument [uri=about:blank]
+2026-10-20 11:59:34.544229 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=873f74b90]
+2026-10-20 11:59:34.741789 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=872ed9210]
+2026-10-20 11:59:34.742322 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=872ed9210, uri=about:blank]
+2026-10-20 11:59:34.742632 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=875ca6110]
+2026-10-20 11:59:34.742951 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [875ca6110] OpenDocument [uri=about:blank]
+2026-10-20 11:59:34.748619 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=879a041b0]
+2026-10-20 11:59:34.781205 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener Cancel [this=875ca0b90, aStatusCode=804b0002 ]
+2026-10-20 11:59:34.781961 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener DisconnectListener [this=875ca0b90, aStatus=804b0002, aLoadGroupStatus=804b0002, aContinueNavigating=0]
+2026-10-20 11:59:34.782582 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener Disconnect [this=875ca0b90, aContinueNavigating=0]
+2026-10-20 11:59:34.785634 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent dtor [this=87bc87a90]
+2026-10-20 11:59:34.838741 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=872eded90]
+2026-10-20 11:59:34.839116 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=872eded90, uri=moz-extension://4e5f07d9-65d1-4ef1-9bde-c3c06500fd33/_generated_background_page.html]
+2026-10-20 11:59:34.839446 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=875ca0a10]
+2026-10-20 11:59:34.839762 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [875ca0a10] OpenDocument [uri=moz-extension://4e5f07d9-65d1-4ef1-9bde-c3c06500fd33/_generated_background_page.html]
+2026-10-20 11:59:34.845161 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=873f7d290]
+2026-10-20 11:59:34.881872 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener Cancel [this=875ca4610, aStatusCode=804b0002 ]
+2026-10-20 11:59:34.882309 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener DisconnectListener [this=875ca4610, aStatus=804b0002, aLoadGroupStatus=804b0002, aContinueNavigating=0]
+2026-10-20 11:59:34.882628 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener Disconnect [this=875ca4610, aContinueNavigating=0]
+2026-10-20 11:59:34.885189 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent dtor [this=872ed0510]
+2026-10-20 11:59:34.949437 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=872edeb90]
+2026-10-20 11:59:34.949933 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=872edeb90, uri=moz-extension://f4df3d0c-5134-4514-8865-5f0730f213a6/_generated_background_page.html]
+2026-10-20 11:59:34.950267 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=875c8ea10]
+2026-10-20 11:59:34.950591 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [875c8ea10] OpenDocument [uri=moz-extension://f4df3d0c-5134-4514-8865-5f0730f213a6/_generated_background_page.html]
+2026-10-20 11:59:34.956436 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=879a0b730]
+2026-10-20 11:59:34.983977 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener Cancel [this=875ca5390, aStatusCode=804b0002 ]
+2026-10-20 11:59:34.984406 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener DisconnectListener [this=875ca5390, aStatus=804b0002, aLoadGroupStatus=804b0002, aContinueNavigating=0]
+2026-10-20 11:59:34.984727 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener Disconnect [this=875ca5390, aContinueNavigating=0]
+2026-10-20 11:59:34.987422 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent dtor [this=872ed1210]
+2026-10-20 11:59:35.053424 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=872ee1890]
+2026-10-20 11:59:35.053869 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=872ee1890, uri=moz-extension://4298c9fe-087d-4abe-8863-837394b9566d/_generated_background_page.html]
+2026-10-20 11:59:35.054176 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=875ca8390]
+2026-10-20 11:59:35.054476 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [875ca8390] OpenDocument [uri=moz-extension://4298c9fe-087d-4abe-8863-837394b9566d/_generated_background_page.html]
+2026-10-20 11:59:35.061968 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=873f754f0]
+2026-10-20 11:59:35.288461 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener Cancel [this=875ca4190, aStatusCode=804b0002 ]
+2026-10-20 11:59:35.289285 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener DisconnectListener [this=875ca4190, aStatus=804b0002, aLoadGroupStatus=804b0002, aContinueNavigating=0]
+2026-10-20 11:59:35.289877 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener Disconnect [this=875ca4190, aContinueNavigating=0]
+2026-10-20 11:59:35.319878 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent dtor [this=872ed3b10]
+2026-10-20 11:59:35.473322 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=872ee1e90]
+2026-10-20 11:59:35.474008 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=872ee1e90, uri=moz-extension://4ba1b414-aea5-44df-ba41-67f5b84a8b83/_generated_background_page.html]
+2026-10-20 11:59:35.474414 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=875ca7610]
+2026-10-20 11:59:35.475543 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [875ca7610] OpenDocument [uri=moz-extension://4ba1b414-aea5-44df-ba41-67f5b84a8b83/_generated_background_page.html]
+2026-10-20 11:59:35.482033 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=873f75ef0]
+2026-10-20 11:59:35.502016 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener Cancel [this=875ca6110, aStatusCode=804b0002 ]
+2026-10-20 11:59:35.502543 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener DisconnectListener [this=875ca6110, aStatus=804b0002, aLoadGroupStatus=804b0002, aContinueNavigating=0]
+2026-10-20 11:59:35.502886 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener Disconnect [this=875ca6110, aContinueNavigating=0]
+2026-10-20 11:59:35.514421 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent dtor [this=872ed9210]
+2026-10-20 11:59:35.557099 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent ctor [this=872ee2a90]
+2026-10-20 11:59:35.557732 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent Init [this=872ee2a90, uri=moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/_generated_background_page.html]
+2026-10-20 11:59:35.558259 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=875ca8090]
+2026-10-20 11:59:35.558613 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener [875ca8090] OpenDocument [uri=moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/_generated_background_page.html]
+2026-10-20 11:59:35.568260 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=879a12990]
+2026-10-20 11:59:35.614424 UTC - [Parent 4: Main Thread]: V/Process RecvFirstIdle id=470252d10 childID=3: Removing Blocker for extension
+2026-10-20 11:59:35.614794 UTC - [Parent 4: Main Thread]: D/Process RemoveBlocker: extension 470252d10 (sNumBlockers=1)
+2026-10-20 11:59:35.615071 UTC - [Parent 4: Main Thread]: D/Process Blocked preallocation for 9637.266728ms
+2026-10-20 11:59:35.615304 UTC - [Parent 4: Main Thread]: D/Process Starting delayed process start, delay=1000
+2026-10-20 11:59:35.984210 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=879a60b90]
+2026-10-20 11:59:35.984718 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=879a60b90]
+2026-10-20 11:59:35.985205 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=875ca0b90]
+2026-10-20 11:59:35.985871 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStopRequest [this=875ca0b90]
+2026-10-20 11:59:35.986291 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=875ca0b90]
+2026-10-20 11:59:35.986718 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=879a60b90]
+2026-10-20 11:59:35.996456 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=873f70130]
+2026-10-20 11:59:35.996769 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=873f70130]
+2026-10-20 11:59:35.997055 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=875ca4610]
+2026-10-20 11:59:35.997511 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStopRequest [this=875ca4610]
+2026-10-20 11:59:35.997791 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=875ca4610]
+2026-10-20 11:59:35.998214 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=873f70130]
+2026-10-20 11:59:36.002358 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=873f73970]
+2026-10-20 11:59:36.002634 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=873f73970]
+2026-10-20 11:59:36.002897 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=875ca5390]
+2026-10-20 11:59:36.003314 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStopRequest [this=875ca5390]
+2026-10-20 11:59:36.003572 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=875ca5390]
+2026-10-20 11:59:36.003980 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=873f73970]
+2026-10-20 11:59:36.115169 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=873f74b90]
+2026-10-20 11:59:36.115885 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=873f74b90]
+2026-10-20 11:59:36.116467 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=875ca4190]
+2026-10-20 11:59:36.117095 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStopRequest [this=875ca4190]
+2026-10-20 11:59:36.117469 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=875ca4190]
+2026-10-20 11:59:36.118004 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=873f74b90]
+2026-10-20 11:59:36.281025 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=879a041b0]
+2026-10-20 11:59:36.281615 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=879a041b0]
+2026-10-20 11:59:36.282001 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=875ca6110]
+2026-10-20 11:59:36.282557 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStopRequest [this=875ca6110]
+2026-10-20 11:59:36.282880 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=875ca6110]
+2026-10-20 11:59:36.283415 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=879a041b0]
+2026-10-20 11:59:36.320501 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=873f7d290]
+2026-10-20 11:59:36.320844 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=873f7d290]
+2026-10-20 11:59:36.321404 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=875ca0a10]
+2026-10-20 11:59:36.322228 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener::TriggerRedirectToRealChannel [this=875ca0a10] aDestinationBrowsingContext=3 aDestinationProcess=-1
+2026-10-20 11:59:36.322740 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannel [this=875ca0a10] aRedirectFlags=4, aLoadFlags=3d0004
+2026-10-20 11:59:36.332704 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild RecvRedirectToRealChannel [this=3040a790, uri=moz-extension://4e5f07d9-65d1-4ef1-9bde-c3c06500fd33/_generated_background_page.html]
+2026-10-20 11:59:36.333091 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=879a0b730]
+2026-10-20 11:59:36.333352 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=879a0b730]
+2026-10-20 11:59:36.333752 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=875c8ea10]
+2026-10-20 11:59:36.334443 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener::TriggerRedirectToRealChannel [this=875c8ea10] aDestinationBrowsingContext=4 aDestinationProcess=-1
+2026-10-20 11:59:36.334820 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannel [this=875c8ea10] aRedirectFlags=4, aLoadFlags=3d0004
+2026-10-20 11:59:36.346994 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=873f754f0]
+2026-10-20 11:59:36.347432 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=873f754f0]
+2026-10-20 11:59:36.347808 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=875ca8390]
+2026-10-20 11:59:36.348431 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener::TriggerRedirectToRealChannel [this=875ca8390] aDestinationBrowsingContext=5 aDestinationProcess=-1
+2026-10-20 11:59:36.348798 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannel [this=875ca8390] aRedirectFlags=4, aLoadFlags=3d0004
+2026-10-20 11:59:36.349048 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild RecvRedirectToRealChannel [this=3040cf90, uri=moz-extension://f4df3d0c-5134-4514-8865-5f0730f213a6/_generated_background_page.html]
+2026-10-20 11:59:36.356402 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild OnRedirectVerifyCallback [this=3040a790, aRv=0x00000000 ]
+2026-10-20 11:59:36.359431 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Adding request 43584050 data:text/html,%3C!DOCTYPE%20html%3E%0A%3Chtml%3E%0A%20%20%3Chead%3E%3Cmeta%20charset=%22utf-8%22%3E%3C/head%3E%0A%20%20%3Cbody%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://4e5f07d9-65d1-4ef1-9bde-c3c06500fd33/webext-glue/background.js%22%3E%3C/script%3E%0A%20%20%3C/body%3E%0A%3C/html%3E (count=1).
+2026-10-20 11:59:36.359752 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=873f75ef0]
+2026-10-20 11:59:36.359911 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Firing OnStartRequest for request 43584050.(foreground count=2).
+2026-10-20 11:59:36.360198 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=873f75ef0]
+2026-10-20 11:59:36.360882 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=875ca7610]
+2026-10-20 11:59:36.361009 UTC - [Child 81: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f00110 default-request=43584050
+2026-10-20 11:59:36.361977 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener::TriggerRedirectToRealChannel [this=875ca7610] aDestinationBrowsingContext=6 aDestinationProcess=-1
+2026-10-20 11:59:36.362889 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Removing request 3040a790 documentchannel:moz-extension://4e5f07d9-65d1-4ef1-9bde-c3c06500fd33/_generated_background_page.html status 804b0003 (count=1).
+2026-10-20 11:59:36.362785 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannel [this=875ca7610] aRedirectFlags=4, aLoadFlags=3d0004
+2026-10-20 11:59:36.364234 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Firing OnStopRequest for request 3040a790.(foreground count=1).
+2026-10-20 11:59:36.365815 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=3040a790]
+2026-10-20 11:59:36.377336 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild RecvRedirectToRealChannel [this=3040d5d0, uri=moz-extension://4298c9fe-087d-4abe-8863-837394b9566d/_generated_background_page.html]
+2026-10-20 11:59:36.378543 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnStartRequest [this=879a12990]
+2026-10-20 11:59:36.378772 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo OnDocumentStartRequest [this=879a12990]
+2026-10-20 11:59:36.379148 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener OnStartRequest [this=875ca8090]
+2026-10-20 11:59:36.379992 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener::TriggerRedirectToRealChannel [this=875ca8090] aDestinationBrowsingContext=7 aDestinationProcess=-1
+2026-10-20 11:59:36.380391 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannel [this=875ca8090] aRedirectFlags=4, aLoadFlags=3d0004
+2026-10-20 11:59:36.392075 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875cc8490 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/browser-context.js status 0 (count=20).
+2026-10-20 11:59:36.392414 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875cc8490.(foreground count=20).
+2026-10-20 11:59:36.534708 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c866a90 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/design-system/tokens-shared.css status 0 (count=19).
+2026-10-20 11:59:36.536532 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c866a90.(foreground count=19).
+2026-10-20 11:59:36.546613 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c85410 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/content/global/autocomplete.css status 0 (count=18).
+2026-10-20 11:59:36.546983 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c85410.(foreground count=18).
+2026-10-20 11:59:36.560444 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c86310 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/autocomplete.css status 0 (count=17).
+2026-10-20 11:59:36.563027 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c86310.(foreground count=17).
+2026-10-20 11:59:36.609428 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Adding request 44f9e550 about:document-onload-blocker (count=1).
+2026-10-20 11:59:36.610386 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Firing OnStartRequest for request 44f9e550.(foreground count=2).
+2026-10-20 11:59:36.631068 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild RecvRedirectToRealChannel [this=30410690, uri=moz-extension://4ba1b414-aea5-44df-ba41-67f5b84a8b83/_generated_background_page.html]
+2026-10-20 11:59:36.633717 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c86c10 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/button.css status 0 (count=16).
+2026-10-20 11:59:36.634036 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c86c10.(foreground count=16).
+2026-10-20 11:59:36.659272 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Adding request 43587a50 moz-extension://4e5f07d9-65d1-4ef1-9bde-c3c06500fd33/webext-glue/background.js (count=2).
+2026-10-20 11:59:36.661198 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Firing OnStartRequest for request 43587a50.(foreground count=3).
+2026-10-20 11:59:36.667702 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild OnRedirectVerifyCallback [this=3040cf90, aRv=0x00000000 ]
+2026-10-20 11:59:36.672327 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Adding request 43585250 data:text/html,%3C!DOCTYPE%20html%3E%0A%3Chtml%3E%0A%20%20%3Chead%3E%3Cmeta%20charset=%22utf-8%22%3E%3C/head%3E%0A%20%20%3Cbody%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://f4df3d0c-5134-4514-8865-5f0730f213a6/background.js%22%3E%3C/script%3E%0A%20%20%3C/body%3E%0A%3C/html%3E (count=1).
+2026-10-20 11:59:36.673746 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Firing OnStartRequest for request 43585250.(foreground count=2).
+2026-10-20 11:59:36.675578 UTC - [Child 81: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f00c10 default-request=43585250
+2026-10-20 11:59:36.678749 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Removing request 3040cf90 documentchannel:moz-extension://f4df3d0c-5134-4514-8865-5f0730f213a6/_generated_background_page.html status 804b0003 (count=1).
+2026-10-20 11:59:36.680169 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Firing OnStopRequest for request 3040cf90.(foreground count=1).
+2026-10-20 11:59:36.682733 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=3040cf90]
+2026-10-20 11:59:36.700306 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild RecvRedirectToRealChannel [this=304120d0, uri=moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/_generated_background_page.html]
+2026-10-20 11:59:36.918296 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c9fc90 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/checkbox.css status 0 (count=15).
+2026-10-20 11:59:36.919804 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c9fc90.(foreground count=15).
+2026-10-20 11:59:36.989561 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c82c290 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/findbar.css status 0 (count=14).
+2026-10-20 11:59:36.990661 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c82c290.(foreground count=14).
+2026-10-20 11:59:37.059134 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c84f90 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/notification.css status 0 (count=13).
+2026-10-20 11:59:37.060763 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c84f90.(foreground count=13).
+2026-10-20 11:59:37.126978 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875ca1610 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/numberinput.css status 0 (count=12).
+2026-10-20 11:59:37.128720 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875ca1610.(foreground count=12).
+2026-10-20 11:59:37.194169 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875ca2690 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/popup.css status 0 (count=11).
+2026-10-20 11:59:37.195251 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875ca2690.(foreground count=11).
+2026-10-20 11:59:37.263163 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875ca1310 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/menu.css status 0 (count=10).
+2026-10-20 11:59:37.264512 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875ca1310.(foreground count=10).
+2026-10-20 11:59:37.335757 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875ca2090 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/popupnotification.css status 0 (count=9).
+2026-10-20 11:59:37.336969 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875ca2090.(foreground count=9).
+2026-10-20 11:59:37.541730 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875ca2390 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/radio.css status 0 (count=8).
+2026-10-20 11:59:37.544813 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875ca2390.(foreground count=8).
+2026-10-20 11:59:37.553538 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875ca1910 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/richlistbox.css status 0 (count=7).
+2026-10-20 11:59:37.554369 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875ca1910.(foreground count=7).
+2026-10-20 11:59:37.645789 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875ca1c10 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/splitter.css status 0 (count=6).
+2026-10-20 11:59:37.649866 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875ca1c10.(foreground count=6).
+2026-10-20 11:59:37.734332 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875ca1a90 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/tabbox.css status 0 (count=5).
+2026-10-20 11:59:37.736248 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875ca1a90.(foreground count=5).
+2026-10-20 11:59:37.828325 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875ca2210 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/toolbar.css status 0 (count=4).
+2026-10-20 11:59:37.830558 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875ca2210.(foreground count=4).
+2026-10-20 11:59:37.920340 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875ca1490 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/toolbarbutton.css status 0 (count=3).
+2026-10-20 11:59:37.922354 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875ca1490.(foreground count=3).
+2026-10-20 11:59:38.017566 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875ca2510 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/tree/tree.css status 0 (count=2).
+2026-10-20 11:59:38.019983 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875ca2510.(foreground count=2).
+2026-10-20 11:59:38.111651 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannelFinished [this=875ca0a10, aRv=0 ]
+2026-10-20 11:59:38.112105 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener FinishReplacementChannelSetup [this=875ca0a10, aResult=0]
+2026-10-20 11:59:38.112430 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ResumeSuspendedChannel [this=875ca0a10]
+2026-10-20 11:59:38.114531 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=875ca0a10]
+2026-10-20 11:59:38.116343 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent dtor [this=872eded90]
+2026-10-20 11:59:38.120198 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875c90210 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/urlbar-dynamic-results.css status 0 (count=1).
+2026-10-20 11:59:38.122063 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875c90210.(foreground count=1).
+2026-10-20 11:59:38.414769 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 875cddc10 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/places/placesContextMenu.js (count=1).
+2026-10-20 11:59:38.415343 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 875cddc10.(foreground count=2).
+2026-10-20 11:59:38.454759 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af8ec10]: Created.
+2026-10-20 11:59:38.457925 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af8ec10]: Adding request 875cdee10 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/remote-permissions.json (count=0).
+2026-10-20 11:59:38.483016 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4eff10]: Created.
+2026-10-20 11:59:38.486135 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4eff10]: Adding request 875cdf890 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/query-stripping.json (count=0).
+2026-10-20 11:59:38.516626 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4ef610]: Created.
+2026-10-20 11:59:38.519538 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4ef610]: Adding request 875cdfe90 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/fingerprinting-protection-overrides.json (count=0).
+2026-10-20 11:59:38.576025 UTC - [Parent 4: Main Thread]: D/Process Starting process allocate on idle
+2026-10-20 11:59:38.579295 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannelFinished [this=875c8ea10, aRv=0 ]
+2026-10-20 11:59:38.579625 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener FinishReplacementChannelSetup [this=875c8ea10, aResult=0]
+2026-10-20 11:59:38.579919 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ResumeSuspendedChannel [this=875c8ea10]
+2026-10-20 11:59:38.581132 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=875c8ea10]
+2026-10-20 11:59:38.582658 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent dtor [this=872edeb90]
+2026-10-20 11:59:38.953071 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Removing request 43584050 data:text/html,%3C!DOCTYPE%20html%3E%0A%3Chtml%3E%0A%20%20%3Chead%3E%3Cmeta%20charset=%22utf-8%22%3E%3C/head%3E%0A%20%20%3Cbody%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://4e5f07d9-65d1-4ef1-9bde-c3c06500fd33/webext-glue/background.js%22%3E%3C/script%3E%0A%20%20%3C/body%3E%0A%3C/html%3E status 0 (count=2).
+2026-10-20 11:59:38.955169 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Firing OnStopRequest for request 43584050.(foreground count=2).
+2026-10-20 11:59:40.269536 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=873f7d290]
+2026-10-20 11:59:40.279803 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af8ec10]: Removing request 875cdee10 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/remote-permissions.json status 80520012 (count=0).
+2026-10-20 11:59:40.280296 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af8ec10]: Removing request 875cdee10 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/remote-permissions.json status 80520012 (count=-1).
+2026-10-20 11:59:40.280564 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af8ec10]: Unable to remove request 875cdee10. Not in group!
+2026-10-20 11:59:40.280926 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af8ec10]: Destroyed.
+2026-10-20 11:59:40.289007 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4eff10]: Removing request 875cdf890 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/query-stripping.json status 80520012 (count=0).
+2026-10-20 11:59:40.289360 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4eff10]: Removing request 875cdf890 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/query-stripping.json status 80520012 (count=-1).
+2026-10-20 11:59:40.289562 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4eff10]: Unable to remove request 875cdf890. Not in group!
+2026-10-20 11:59:40.289803 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4eff10]: Destroyed.
+2026-10-20 11:59:40.302075 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4eff10]: Created.
+2026-10-20 11:59:40.303985 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4eff10]: Adding request 875cdf110 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/content/global/antitracking/StripOnShare.json (count=0).
+2026-10-20 11:59:40.305720 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49f910]: Created.
+2026-10-20 11:59:40.307408 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49f910]: Adding request 3c866790 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/content/global/antitracking/StripOnShareLGPL.json (count=0).
+2026-10-20 11:59:40.329630 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4ef610]: Removing request 875cdfe90 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/fingerprinting-protection-overrides.json status 80520012 (count=0).
+2026-10-20 11:59:40.331327 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4ef610]: Removing request 875cdfe90 jar:file:///usr/lib/firefox/browser/omni.ja!/defaults/settings/main/fingerprinting-protection-overrides.json status 80520012 (count=-1).
+2026-10-20 11:59:40.331560 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4ef610]: Unable to remove request 875cdfe90. Not in group!
+2026-10-20 11:59:40.331902 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4ef610]: Destroyed.
+2026-10-20 11:59:40.422983 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=879a0b730]
+2026-10-20 11:59:40.456008 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Removing request 43587a50 moz-extension://4e5f07d9-65d1-4ef1-9bde-c3c06500fd33/webext-glue/background.js status 0 (count=1).
+2026-10-20 11:59:40.457597 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Firing OnStopRequest for request 43587a50.(foreground count=1).
+2026-10-20 11:59:40.569449 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Adding request 44fbd450 about:document-onload-blocker (count=1).
+2026-10-20 11:59:40.571102 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Firing OnStartRequest for request 44fbd450.(foreground count=2).
+2026-10-20 11:59:40.588726 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Adding request 43587a50 moz-extension://f4df3d0c-5134-4514-8865-5f0730f213a6/background.js (count=2).
+2026-10-20 11:59:40.591240 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Firing OnStartRequest for request 43587a50.(foreground count=3).
+2026-10-20 11:59:40.597795 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild OnRedirectVerifyCallback [this=3040d5d0, aRv=0x00000000 ]
+2026-10-20 11:59:40.602102 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01d10]: Adding request 43585850 data:text/html,%3C!DOCTYPE%20html%3E%0A%3Chtml%3E%0A%20%20%3Chead%3E%3Cmeta%20charset=%22utf-8%22%3E%3C/head%3E%0A%20%20%3Cbody%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://4298c9fe-087d-4abe-8863-837394b9566d/background.js%22%3E%3C/script%3E%0A%20%20%3C/body%3E%0A%3C/html%3E (count=1).
+2026-10-20 11:59:40.603296 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01d10]: Firing OnStartRequest for request 43585850.(foreground count=2).
+2026-10-20 11:59:40.606331 UTC - [Child 81: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f01d10 default-request=43585850
+2026-10-20 11:59:40.609243 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01d10]: Removing request 3040d5d0 documentchannel:moz-extension://4298c9fe-087d-4abe-8863-837394b9566d/_generated_background_page.html status 804b0003 (count=1).
+2026-10-20 11:59:40.611151 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01d10]: Firing OnStopRequest for request 3040d5d0.(foreground count=1).
+2026-10-20 11:59:40.614185 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=3040d5d0]
+2026-10-20 11:59:40.751667 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild OnRedirectVerifyCallback [this=30410690, aRv=0x00000000 ]
+2026-10-20 11:59:40.756828 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Adding request 43584e50 data:text/html,%3C!DOCTYPE%20html%3E%0A%3Chtml%3E%0A%20%20%3Chead%3E%3Cmeta%20charset=%22utf-8%22%3E%3C/head%3E%0A%20%20%3Cbody%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://4ba1b414-aea5-44df-ba41-67f5b84a8b83/data/picture_in_picture_overrides.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://4ba1b414-aea5-44df-ba41-67f5b84a8b83/lib/picture_in_picture_overrides.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://4ba1b414-aea5-44df-ba41-67f5b84a8b83/run.js%22%3E%3C/script%3E%0A%20%20%3C/body%3E%0A%3C/html%3E (count=1).
+2026-10-20 11:59:40.757771 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Firing OnStartRequest for request 43584e50.(foreground count=2).
+2026-10-20 11:59:40.759099 UTC - [Child 81: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f01310 default-request=43584e50
+2026-10-20 11:59:40.760921 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Removing request 30410690 documentchannel:moz-extension://4ba1b414-aea5-44df-ba41-67f5b84a8b83/_generated_background_page.html status 804b0003 (count=1).
+2026-10-20 11:59:40.761764 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Firing OnStopRequest for request 30410690.(foreground count=1).
+2026-10-20 11:59:40.763498 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=30410690]
+2026-10-20 11:59:42.609841 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 882ec8c10 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/navigator-toolbox.js (count=2).
+2026-10-20 11:59:42.610436 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 882ec8c10.(foreground count=3).
+2026-10-20 11:59:42.611980 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 875cddc10 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/places/placesContextMenu.js status 0 (count=2).
+2026-10-20 11:59:42.612404 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 875cddc10.(foreground count=2).
+2026-10-20 11:59:42.875820 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannelFinished [this=875ca8390, aRv=0 ]
+2026-10-20 11:59:42.876547 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener FinishReplacementChannelSetup [this=875ca8390, aResult=0]
+2026-10-20 11:59:42.876962 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ResumeSuspendedChannel [this=875ca8390]
+2026-10-20 11:59:42.878066 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=875ca8390]
+2026-10-20 11:59:42.882089 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent dtor [this=872ee1890]
+2026-10-20 11:59:42.890618 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannelFinished [this=875ca7610, aRv=0 ]
+2026-10-20 11:59:42.890950 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener FinishReplacementChannelSetup [this=875ca7610, aResult=0]
+2026-10-20 11:59:42.891259 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ResumeSuspendedChannel [this=875ca7610]
+2026-10-20 11:59:42.892326 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=875ca7610]
+2026-10-20 11:59:42.894179 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent dtor [this=872ee1e90]
+2026-10-20 11:59:42.983820 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Removing request 43585250 data:text/html,%3C!DOCTYPE%20html%3E%0A%3Chtml%3E%0A%20%20%3Chead%3E%3Cmeta%20charset=%22utf-8%22%3E%3C/head%3E%0A%20%20%3Cbody%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://f4df3d0c-5134-4514-8865-5f0730f213a6/background.js%22%3E%3C/script%3E%0A%20%20%3C/body%3E%0A%3C/html%3E status 0 (count=2).
+2026-10-20 11:59:42.984815 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Firing OnStopRequest for request 43585250.(foreground count=2).
+2026-10-20 11:59:43.190540 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=873f754f0]
+2026-10-20 11:59:43.195097 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=873f75ef0]
+2026-10-20 11:59:43.269922 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Removing request 43587a50 moz-extension://f4df3d0c-5134-4514-8865-5f0730f213a6/background.js status 0 (count=1).
+2026-10-20 11:59:43.271327 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Firing OnStopRequest for request 43587a50.(foreground count=1).
+2026-10-20 11:59:43.455091 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 882ec8c10 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/navigator-toolbox.js status 0 (count=1).
+2026-10-20 11:59:43.456039 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 882ec8c10.(foreground count=1).
+2026-10-20 11:59:43.474132 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4eff10]: Removing request 875cdf110 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/content/global/antitracking/StripOnShare.json status 0 (count=0).
+2026-10-20 11:59:43.474855 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4eff10]: Destroyed.
+2026-10-20 11:59:43.484948 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49f910]: Removing request 3c866790 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/content/global/antitracking/StripOnShareLGPL.json status 0 (count=0).
+2026-10-20 11:59:43.485940 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49f910]: Destroyed.
+2026-10-20 11:59:43.701504 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01d10]: Adding request 44fd0c50 about:document-onload-blocker (count=1).
+2026-10-20 11:59:43.702712 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01d10]: Firing OnStartRequest for request 44fd0c50.(foreground count=2).
+2026-10-20 11:59:43.723363 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01d10]: Adding request 43587a50 moz-extension://4298c9fe-087d-4abe-8863-837394b9566d/background.js (count=2).
+2026-10-20 11:59:43.724195 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01d10]: Firing OnStartRequest for request 43587a50.(foreground count=3).
+2026-10-20 11:59:43.761502 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 882ec9090 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/browser-menubar.js (count=1).
+2026-10-20 11:59:43.762218 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 882ec9090.(foreground count=2).
+2026-10-20 11:59:43.826612 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild OnRedirectVerifyCallback [this=304120d0, aRv=0x00000000 ]
+2026-10-20 11:59:43.830644 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Adding request 43586650 data:text/html,%3C!DOCTYPE%20html%3E%0A%3Chtml%3E%0A%20%20%3Chead%3E%3Cmeta%20charset=%22utf-8%22%3E%3C/head%3E%0A%20%20%3Cbody%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/messaging_helper.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/ua_helpers.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/intervention_helpers.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/requestStorageAccess_helper.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/data/shims.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/about_compat_broker.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/custom_functions.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/interventions.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/shims.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/smartblock_embeds_helper.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/run.js%22%3E%3C/script%3E%0A%20%20%3C/body%3E%0A%3C/html%3E (count=1).
+2026-10-20 11:59:43.831620 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStartRequest for request 43586650.(foreground count=2).
+2026-10-20 11:59:43.832917 UTC - [Child 81: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f01610 default-request=43586650
+2026-10-20 11:59:43.834881 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Removing request 304120d0 documentchannel:moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/_generated_background_page.html status 804b0003 (count=1).
+2026-10-20 11:59:43.835975 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStopRequest for request 304120d0.(foreground count=1).
+2026-10-20 11:59:43.837971 UTC - [Child 81: Main Thread]: V/DocumentChannel DocumentChannelChild dtor [this=304120d0]
+2026-10-20 11:59:43.873545 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Removing request 44f9e550 about:document-onload-blocker status 0 (count=0).
+2026-10-20 11:59:43.874307 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00110]: Firing OnStopRequest for request 44f9e550.(foreground count=0).
+2026-10-20 11:59:43.875561 UTC - [Child 81: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f00110 default-request=0
+2026-10-20 11:59:44.039257 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Adding request 44f96450 about:document-onload-blocker (count=1).
+2026-10-20 11:59:44.040580 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Firing OnStartRequest for request 44f96450.(foreground count=2).
+2026-10-20 11:59:44.062240 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Adding request 43587250 moz-extension://4ba1b414-aea5-44df-ba41-67f5b84a8b83/data/picture_in_picture_overrides.js (count=2).
+2026-10-20 11:59:44.063746 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Firing OnStartRequest for request 43587250.(foreground count=3).
+2026-10-20 11:59:44.073934 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Adding request 43587450 moz-extension://4ba1b414-aea5-44df-ba41-67f5b84a8b83/lib/picture_in_picture_overrides.js (count=3).
+2026-10-20 11:59:44.075172 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Firing OnStartRequest for request 43587450.(foreground count=4).
+2026-10-20 11:59:44.083096 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Adding request 43586850 moz-extension://4ba1b414-aea5-44df-ba41-67f5b84a8b83/run.js (count=4).
+2026-10-20 11:59:44.083753 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Firing OnStartRequest for request 43586850.(foreground count=5).
+2026-10-20 11:59:44.776107 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener RedirectToRealChannelFinished [this=875ca8090, aRv=0 ]
+2026-10-20 11:59:44.776712 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener FinishReplacementChannelSetup [this=875ca8090, aResult=0]
+2026-10-20 11:59:44.777206 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ResumeSuspendedChannel [this=875ca8090]
+2026-10-20 11:59:44.778484 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener dtor [this=875ca8090]
+2026-10-20 11:59:44.783623 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentChannelParent dtor [this=872ee2a90]
+2026-10-20 11:59:44.951618 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 882ec9090 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/content/browser/browser-menubar.js status 0 (count=1).
+2026-10-20 11:59:44.952426 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 882ec9090.(foreground count=1).
+2026-10-20 11:59:45.023617 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo dtor [this=879a12990]
+2026-10-20 11:59:46.107846 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01d10]: Removing request 43585850 data:text/html,%3C!DOCTYPE%20html%3E%0A%3Chtml%3E%0A%20%20%3Chead%3E%3Cmeta%20charset=%22utf-8%22%3E%3C/head%3E%0A%20%20%3Cbody%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://4298c9fe-087d-4abe-8863-837394b9566d/background.js%22%3E%3C/script%3E%0A%20%20%3C/body%3E%0A%3C/html%3E status 0 (count=2).
+2026-10-20 11:59:46.109222 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01d10]: Firing OnStopRequest for request 43585850.(foreground count=2).
+2026-10-20 11:59:46.254640 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01d10]: Removing request 43587a50 moz-extension://4298c9fe-087d-4abe-8863-837394b9566d/background.js status 0 (count=1).
+2026-10-20 11:59:46.256042 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01d10]: Firing OnStopRequest for request 43587a50.(foreground count=1).
+2026-10-20 11:59:46.350710 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Adding request 44fa1ed0 about:document-onload-blocker (count=1).
+2026-10-20 11:59:46.352507 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStartRequest for request 44fa1ed0.(foreground count=2).
+2026-10-20 11:59:46.391237 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Adding request 43587a50 moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/messaging_helper.js (count=2).
+2026-10-20 11:59:46.392317 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStartRequest for request 43587a50.(foreground count=3).
+2026-10-20 11:59:46.403434 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Adding request 43583050 moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/ua_helpers.js (count=3).
+2026-10-20 11:59:46.405635 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStartRequest for request 43583050.(foreground count=4).
+2026-10-20 11:59:46.414508 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Adding request 43590250 moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/intervention_helpers.js (count=4).
+2026-10-20 11:59:46.416296 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStartRequest for request 43590250.(foreground count=5).
+2026-10-20 11:59:46.426402 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Adding request 43591050 moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/requestStorageAccess_helper.js (count=5).
+2026-10-20 11:59:46.428067 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStartRequest for request 43591050.(foreground count=6).
+2026-10-20 11:59:46.436504 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Adding request 43591850 moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/data/shims.js (count=6).
+2026-10-20 11:59:46.438050 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStartRequest for request 43591850.(foreground count=7).
+2026-10-20 11:59:46.447784 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Adding request 43590850 moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/about_compat_broker.js (count=7).
+2026-10-20 11:59:46.449293 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStartRequest for request 43590850.(foreground count=8).
+2026-10-20 11:59:46.457479 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Adding request 43590e50 moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/custom_functions.js (count=8).
+2026-10-20 11:59:46.458954 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStartRequest for request 43590e50.(foreground count=9).
+2026-10-20 11:59:46.466759 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Adding request 43590050 moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/interventions.js (count=9).
+2026-10-20 11:59:46.467673 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStartRequest for request 43590050.(foreground count=10).
+2026-10-20 11:59:46.474400 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Adding request 43590a50 moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/shims.js (count=10).
+2026-10-20 11:59:46.475170 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStartRequest for request 43590a50.(foreground count=11).
+2026-10-20 11:59:46.484748 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Adding request 43590c50 moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/smartblock_embeds_helper.js (count=11).
+2026-10-20 11:59:46.485804 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStartRequest for request 43590c50.(foreground count=12).
+2026-10-20 11:59:46.492777 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Adding request 43590650 moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/run.js (count=12).
+2026-10-20 11:59:46.493641 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStartRequest for request 43590650.(foreground count=13).
+2026-10-20 11:59:48.067135 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9d910]: Created.
+2026-10-20 11:59:48.068868 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9d910]: Adding request c84f8f910 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/firefox-view.svg (count=0).
+2026-10-20 11:59:48.070441 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87af9c970 chrome://browser/skin/firefox-view.svg (count=1).
+2026-10-20 11:59:48.070757 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87af9c970.(foreground count=2).
+2026-10-20 11:59:48.073696 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9d810]: Created.
+2026-10-20 11:59:48.074672 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9d810]: Adding request c84f8f310 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/icons/arrow-left.svg (count=0).
+2026-10-20 11:59:48.075823 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87af9da70 chrome://global/skin/icons/arrow-left.svg (count=2).
+2026-10-20 11:59:48.076216 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87af9da70.(foreground count=3).
+2026-10-20 11:59:48.081810 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9cc10]: Created.
+2026-10-20 11:59:48.082935 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9cc10]: Adding request c84f90c90 jar:file:///usr/lib/firefox/omni.ja!/contentaccessible/close-12.svg (count=0).
+2026-10-20 11:59:48.084062 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87af9d570 resource://content-accessible/close-12.svg (count=3).
+2026-10-20 11:59:48.084563 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87af9d570.(foreground count=4).
+2026-10-20 11:59:48.085298 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87af9d470 resource://content-accessible/close-12.svg (count=4).
+2026-10-20 11:59:48.085622 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87af9d470.(foreground count=5).
+2026-10-20 11:59:48.088826 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9df10]: Created.
+2026-10-20 11:59:48.089750 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9df10]: Adding request c84f91410 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/icons/plus.svg (count=0).
+2026-10-20 11:59:48.090857 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87af9cb70 chrome://global/skin/icons/plus.svg (count=5).
+2026-10-20 11:59:48.091232 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87af9cb70.(foreground count=6).
+2026-10-20 11:59:48.093689 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9d010]: Created.
+2026-10-20 11:59:48.094609 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9d010]: Adding request c84f90e10 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/icons/arrow-down.svg (count=0).
+2026-10-20 11:59:48.095709 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87af9d270 chrome://global/skin/icons/arrow-down.svg (count=6).
+2026-10-20 11:59:48.096156 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87af9d270.(foreground count=7).
+2026-10-20 11:59:48.099272 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4ef410]: Created.
+2026-10-20 11:59:48.100230 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4ef410]: Adding request 875ca1a90 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/back.svg (count=0).
+2026-10-20 11:59:48.101644 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c4efb70 chrome://browser/skin/back.svg (count=7).
+2026-10-20 11:59:48.102172 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c4efb70.(foreground count=8).
+2026-10-20 11:59:48.104549 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af93f10]: Created.
+2026-10-20 11:59:48.105516 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af93f10]: Adding request c84f91290 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/forward.svg (count=0).
+2026-10-20 11:59:48.106673 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87af9d770 chrome://browser/skin/forward.svg (count=8).
+2026-10-20 11:59:48.106966 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87af9d770.(foreground count=9).
+2026-10-20 11:59:48.109568 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9ce10]: Created.
+2026-10-20 11:59:48.110492 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9ce10]: Adding request c84f91d10 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/icons/reload.svg (count=0).
+2026-10-20 11:59:48.111557 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87af9c370 chrome://global/skin/icons/reload.svg (count=9).
+2026-10-20 11:59:48.111931 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87af9c370.(foreground count=10).
+2026-10-20 11:59:48.116370 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9c010]: Created.
+2026-10-20 11:59:48.117559 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9c010]: Adding request c84f91b90 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/icons/search-glass.svg (count=0).
+2026-10-20 11:59:48.118774 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87af9c170 chrome://global/skin/icons/search-glass.svg (count=10).
+2026-10-20 11:59:48.119183 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87af9c170.(foreground count=11).
+2026-10-20 11:59:48.119705 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87af9de70 chrome://global/skin/icons/search-glass.svg (count=11).
+2026-10-20 11:59:48.120009 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87af9de70.(foreground count=12).
+2026-10-20 11:59:48.122721 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9cd10]: Created.
+2026-10-20 11:59:48.123702 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9cd10]: Adding request c84f90b10 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/icons/arrow-down-12.svg (count=0).
+2026-10-20 11:59:48.124801 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87af9c870 chrome://global/skin/icons/arrow-down-12.svg (count=12).
+2026-10-20 11:59:48.125233 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87af9c870.(foreground count=13).
+2026-10-20 11:59:48.125770 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87af9cf70 chrome://global/skin/icons/arrow-down-12.svg (count=13).
+2026-10-20 11:59:48.126043 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87af9cf70.(foreground count=14).
+2026-10-20 11:59:48.139581 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9c410]: Created.
+2026-10-20 11:59:48.140613 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9c410]: Adding request c84f93390 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/menu.svg (count=0).
+2026-10-20 11:59:48.141846 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87af9f170 chrome://browser/skin/menu.svg (count=14).
+2026-10-20 11:59:48.142160 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87af9f170.(foreground count=15).
+2026-10-20 11:59:48.145662 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9e510]: Created.
+2026-10-20 11:59:48.146606 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9e510]: Adding request c84f92d90 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/toolbar-drag-indicator.svg (count=0).
+2026-10-20 11:59:48.147710 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87af9e670 chrome://browser/skin/toolbar-drag-indicator.svg (count=15).
+2026-10-20 11:59:48.148091 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87af9e670.(foreground count=16).
+2026-10-20 11:59:48.148643 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87af9f070 chrome://browser/skin/toolbar-drag-indicator.svg (count=16).
+2026-10-20 11:59:48.148921 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87af9f070.(foreground count=17).
+2026-10-20 11:59:48.152532 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9fa10]: Created.
+2026-10-20 11:59:48.153612 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9fa10]: Adding request c84f92190 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/icons/chevron.svg (count=0).
+2026-10-20 11:59:48.154804 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 3c4ef970 chrome://global/skin/icons/chevron.svg (count=17).
+2026-10-20 11:59:48.155097 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 3c4ef970.(foreground count=18).
+2026-10-20 11:59:48.506724 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9dd10]: Created.
+2026-10-20 11:59:48.660536 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9dd10]: Adding request c84cf9350 about:blank (count=0).
+2026-10-20 11:59:48.661048 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9dd10]: Firing OnStartRequest for request c84cf9350.(foreground count=1).
+2026-10-20 11:59:48.661631 UTC - [Parent 4: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=87af9dd10 default-request=c84cf9350
+2026-10-20 11:59:50.509653 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87afa7c70 chrome://browser/skin/firefox-view.svg (count=18).
+2026-10-20 11:59:50.510273 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87afa7c70.(foreground count=19).
+2026-10-20 11:59:50.511604 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87afa7a70 chrome://global/skin/icons/arrow-left.svg (count=19).
+2026-10-20 11:59:50.511979 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87afa7a70.(foreground count=20).
+2026-10-20 11:59:50.513510 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87afa7470 chrome://global/skin/icons/plus.svg (count=20).
+2026-10-20 11:59:50.513827 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87afa7470.(foreground count=21).
+2026-10-20 11:59:50.514751 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87afa7e70 chrome://global/skin/icons/arrow-left.svg (count=21).
+2026-10-20 11:59:50.515042 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87afa7e70.(foreground count=22).
+2026-10-20 11:59:50.516466 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87afa6770 chrome://global/skin/icons/arrow-down.svg (count=22).
+2026-10-20 11:59:50.516783 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87afa6770.(foreground count=23).
+2026-10-20 11:59:50.518675 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87afa6a70 chrome://browser/skin/back.svg (count=23).
+2026-10-20 11:59:50.519108 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87afa6a70.(foreground count=24).
+2026-10-20 11:59:50.520284 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87afa6270 chrome://browser/skin/forward.svg (count=24).
+2026-10-20 11:59:50.520651 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87afa6270.(foreground count=25).
+2026-10-20 11:59:50.521823 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87afa7070 chrome://global/skin/icons/reload.svg (count=25).
+2026-10-20 11:59:50.522150 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87afa7070.(foreground count=26).
+2026-10-20 11:59:50.524304 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87afa6f70 chrome://browser/skin/menu.svg (count=26).
+2026-10-20 11:59:50.524636 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87afa6f70.(foreground count=27).
+2026-10-20 11:59:50.525657 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87afa6070 chrome://global/skin/icons/chevron.svg (count=27).
+2026-10-20 11:59:50.525963 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87afa6070.(foreground count=28).
+2026-10-20 11:59:50.527899 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess for type file
+2026-10-20 11:59:50.528311 UTC - [Parent 4: Main Thread]: D/Process Launching new process immediately for type file
+2026-10-20 11:59:50.528926 UTC - [Parent 4: Main Thread]: V/Process CreateSubprocess: ContentParent id=c8640fa10 mSubprocess id=c84f8ff10 childID=5
+2026-10-20 11:59:50.572043 UTC - [Parent 4: Main Thread]: D/Process AddBlocker: file c8640fa10 (sNumBlockers=0)
+2026-10-20 11:59:50.573335 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess: new immediate process id=c8640fa10 childID=5
+2026-10-20 11:59:51.041937 UTC - [Parent 4: Main Thread]: D/Process ContentParent::InitInternal: id=c8640fa10, childID=5
+2026-10-20 11:59:51.505459 UTC - [Child 118: Main Thread]: D/Process Changed name of process 118 to Web Content
+2026-10-20 11:59:51.927529 UTC - [Child 118: Main Thread]: D/LoadGroup LOADGROUP [42f01a10]: Created.
+2026-10-20 11:59:53.284918 UTC - [Child 118: Main Thread]: D/Process Setting remoteType of process 118 to file
+2026-10-20 11:59:53.285719 UTC - [Child 118: Main Thread]: D/Process Changed name of process 118 to file:// Content
+2026-10-20 11:59:53.755182 UTC - [Child 118: Main Thread]: D/LoadGroup LOADGROUP [42f01710]: Created.
+2026-10-20 12:00:03.638237 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 45a65110 about:document-onload-blocker status 0 (count=27).
+2026-10-20 12:00:03.638712 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 45a65110.(foreground count=27).
+2026-10-20 12:00:03.982851 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9dd10]: Adding request c84eb3c50 about:document-onload-blocker (count=1).
+2026-10-20 12:00:03.983579 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9dd10]: Firing OnStartRequest for request c84eb3c50.(foreground count=2).
+2026-10-20 12:00:03.991178 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9dd10]: Removing request c84cf9350 about:blank status 0 (count=1).
+2026-10-20 12:00:03.991457 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9dd10]: Firing OnStopRequest for request c84cf9350.(foreground count=1).
+2026-10-20 12:00:04.164702 UTC - [Parent 4: Main Thread]: V/Process RecvFirstIdle id=c8640fa10 childID=5: Removing Blocker for file
+2026-10-20 12:00:04.165388 UTC - [Parent 4: Main Thread]: D/Process RemoveBlocker: file c8640fa10 (sNumBlockers=1)
+2026-10-20 12:00:04.165846 UTC - [Parent 4: Main Thread]: D/Process Blocked preallocation for 13592.612027ms
+2026-10-20 12:00:04.166222 UTC - [Parent 4: Main Thread]: D/Process Starting delayed process start, delay=1000
+2026-10-20 12:00:05.619349 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87afbda10]: Created.
+2026-10-20 12:00:05.713146 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9d910]: Removing request c84f8f910 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/firefox-view.svg status 0 (count=0).
+2026-10-20 12:00:05.766641 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87afbfd10]: Created.
+2026-10-20 12:00:05.918392 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9d810]: Removing request c84f8f310 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/icons/arrow-left.svg status 0 (count=0).
+2026-10-20 12:00:06.002542 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87afbf510]: Created.
+2026-10-20 12:00:06.032759 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9cc10]: Removing request c84f90c90 jar:file:///usr/lib/firefox/omni.ja!/contentaccessible/close-12.svg status 0 (count=0).
+2026-10-20 12:00:06.052753 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87afbeb10]: Created.
+2026-10-20 12:00:06.083992 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9df10]: Removing request c84f91410 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/icons/plus.svg status 0 (count=0).
+2026-10-20 12:00:06.299823 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87afbf910]: Created.
+2026-10-20 12:00:06.332550 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9d010]: Removing request c84f90e10 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/icons/arrow-down.svg status 0 (count=0).
+2026-10-20 12:00:06.528866 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87afc1110]: Created.
+2026-10-20 12:00:06.561714 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4ef410]: Removing request 875ca1a90 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/back.svg status 0 (count=0).
+2026-10-20 12:00:06.746785 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87afc0d10]: Created.
+2026-10-20 12:00:06.786992 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af93f10]: Removing request c84f91290 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/forward.svg status 0 (count=0).
+2026-10-20 12:00:07.055456 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87afc0710]: Created.
+2026-10-20 12:00:07.085026 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9ce10]: Removing request c84f91d10 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/icons/reload.svg status 0 (count=0).
+2026-10-20 12:00:07.248766 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87afc1c10]: Created.
+2026-10-20 12:00:07.282294 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9c010]: Removing request c84f91b90 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/icons/search-glass.svg status 0 (count=0).
+2026-10-20 12:00:07.504837 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87afc0810]: Created.
+2026-10-20 12:00:07.543014 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9cd10]: Removing request c84f90b10 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/icons/arrow-down-12.svg status 0 (count=0).
+2026-10-20 12:00:07.806487 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87afc0b10]: Created.
+2026-10-20 12:00:07.849919 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9c410]: Removing request c84f93390 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/menu.svg status 0 (count=0).
+2026-10-20 12:00:08.137802 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87afc2610]: Created.
+2026-10-20 12:00:08.184483 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9e510]: Removing request c84f92d90 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/toolbar-drag-indicator.svg status 0 (count=0).
+2026-10-20 12:00:08.449541 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87afc3710]: Created.
+2026-10-20 12:00:08.484203 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9fa10]: Removing request c84f92190 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/icons/chevron.svg status 0 (count=0).
+2026-10-20 12:00:08.756376 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9dd10]: Removing request c84eb3c50 about:document-onload-blocker status 0 (count=0).
+2026-10-20 12:00:08.757408 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9dd10]: Firing OnStopRequest for request c84eb3c50.(foreground count=0).
+2026-10-20 12:00:10.126997 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9c210]: Created.
+2026-10-20 12:00:10.128587 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9c210]: Adding request c84f8ea10 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/fxa/avatar-empty.svg (count=0).
+2026-10-20 12:00:10.130249 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87afc2a70 chrome://browser/skin/fxa/avatar-empty.svg (count=27).
+2026-10-20 12:00:10.131048 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87afc2a70.(foreground count=28).
+2026-10-20 12:00:10.131668 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87afc3070 chrome://browser/skin/fxa/avatar-empty.svg (count=28).
+2026-10-20 12:00:10.132119 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87afc3070.(foreground count=29).
+2026-10-20 12:00:10.135733 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87afc2810]: Created.
+2026-10-20 12:00:10.136986 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87afc2810]: Adding request c84f90090 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/mozapps/extensions/extension.svg (count=0).
+2026-10-20 12:00:10.138900 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87afc3370 chrome://mozapps/skin/extensions/extension.svg (count=29).
+2026-10-20 12:00:10.139576 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87afc3370.(foreground count=30).
+2026-10-20 12:00:10.140874 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87afc2570 chrome://mozapps/skin/extensions/extension.svg (count=30).
+2026-10-20 12:00:10.141660 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87afc2570.(foreground count=31).
+2026-10-20 12:00:10.678290 UTC - [Parent 4: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=87af9dd10 default-request=0
+2026-10-20 12:00:12.303706 UTC - [Parent 4: Main Thread]: D/Process Starting process allocate on idle
+2026-10-20 12:00:13.962263 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87af9c970 chrome://browser/skin/firefox-view.svg status 0 (count=30).
+2026-10-20 12:00:13.963102 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87af9c970.(foreground count=30).
+2026-10-20 12:00:13.963959 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87afa7c70 chrome://browser/skin/firefox-view.svg status 0 (count=29).
+2026-10-20 12:00:13.964614 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87afa7c70.(foreground count=29).
+2026-10-20 12:00:13.970200 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87afa7e70 chrome://global/skin/icons/arrow-left.svg status 0 (count=28).
+2026-10-20 12:00:13.970849 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87afa7e70.(foreground count=28).
+2026-10-20 12:00:13.971507 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87af9da70 chrome://global/skin/icons/arrow-left.svg status 0 (count=27).
+2026-10-20 12:00:13.972259 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87af9da70.(foreground count=27).
+2026-10-20 12:00:13.972900 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87afa7a70 chrome://global/skin/icons/arrow-left.svg status 0 (count=26).
+2026-10-20 12:00:13.973581 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87afa7a70.(foreground count=26).
+2026-10-20 12:00:13.980233 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87af9d570 resource://content-accessible/close-12.svg status 0 (count=25).
+2026-10-20 12:00:13.980818 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87af9d570.(foreground count=25).
+2026-10-20 12:00:13.985165 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87af9d470 resource://content-accessible/close-12.svg status 0 (count=24).
+2026-10-20 12:00:13.985709 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87af9d470.(foreground count=24).
+2026-10-20 12:00:13.995995 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87af9cb70 chrome://global/skin/icons/plus.svg status 0 (count=23).
+2026-10-20 12:00:13.997222 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87af9cb70.(foreground count=23).
+2026-10-20 12:00:13.998283 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87afa7470 chrome://global/skin/icons/plus.svg status 0 (count=22).
+2026-10-20 12:00:13.998842 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87afa7470.(foreground count=22).
+2026-10-20 12:00:14.003203 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87afa6770 chrome://global/skin/icons/arrow-down.svg status 0 (count=21).
+2026-10-20 12:00:14.004592 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87afa6770.(foreground count=21).
+2026-10-20 12:00:14.006649 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87af9d270 chrome://global/skin/icons/arrow-down.svg status 0 (count=20).
+2026-10-20 12:00:14.007846 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87af9d270.(foreground count=20).
+2026-10-20 12:00:14.018932 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87afa6a70 chrome://browser/skin/back.svg status 0 (count=19).
+2026-10-20 12:00:14.020149 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87afa6a70.(foreground count=19).
+2026-10-20 12:00:14.021036 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c4efb70 chrome://browser/skin/back.svg status 0 (count=18).
+2026-10-20 12:00:14.022047 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c4efb70.(foreground count=18).
+2026-10-20 12:00:14.033603 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87af9d770 chrome://browser/skin/forward.svg status 0 (count=17).
+2026-10-20 12:00:14.035395 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87af9d770.(foreground count=17).
+2026-10-20 12:00:14.036616 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87afa6270 chrome://browser/skin/forward.svg status 0 (count=16).
+2026-10-20 12:00:14.038225 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87afa6270.(foreground count=16).
+2026-10-20 12:00:14.544582 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87afa7070 chrome://global/skin/icons/reload.svg status 0 (count=15).
+2026-10-20 12:00:14.545607 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87afa7070.(foreground count=15).
+2026-10-20 12:00:14.546359 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87af9c370 chrome://global/skin/icons/reload.svg status 0 (count=14).
+2026-10-20 12:00:14.546945 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87af9c370.(foreground count=14).
+2026-10-20 12:00:14.550662 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87af9de70 chrome://global/skin/icons/search-glass.svg status 0 (count=13).
+2026-10-20 12:00:14.551197 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87af9de70.(foreground count=13).
+2026-10-20 12:00:14.551800 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87af9c170 chrome://global/skin/icons/search-glass.svg status 0 (count=12).
+2026-10-20 12:00:14.552290 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87af9c170.(foreground count=12).
+2026-10-20 12:00:14.558283 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87af9c870 chrome://global/skin/icons/arrow-down-12.svg status 0 (count=11).
+2026-10-20 12:00:14.558807 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87af9c870.(foreground count=11).
+2026-10-20 12:00:14.559460 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87af9cf70 chrome://global/skin/icons/arrow-down-12.svg status 0 (count=10).
+2026-10-20 12:00:14.559932 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87af9cf70.(foreground count=10).
+2026-10-20 12:00:14.563036 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87afa6f70 chrome://browser/skin/menu.svg status 0 (count=9).
+2026-10-20 12:00:14.563501 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87afa6f70.(foreground count=9).
+2026-10-20 12:00:14.563930 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87af9f170 chrome://browser/skin/menu.svg status 0 (count=8).
+2026-10-20 12:00:14.564503 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87af9f170.(foreground count=8).
+2026-10-20 12:00:14.567392 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87af9f070 chrome://browser/skin/toolbar-drag-indicator.svg status 0 (count=7).
+2026-10-20 12:00:14.567848 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87af9f070.(foreground count=7).
+2026-10-20 12:00:14.568426 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87af9e670 chrome://browser/skin/toolbar-drag-indicator.svg status 0 (count=6).
+2026-10-20 12:00:14.568851 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87af9e670.(foreground count=6).
+2026-10-20 12:00:14.571633 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 3c4ef970 chrome://global/skin/icons/chevron.svg status 0 (count=5).
+2026-10-20 12:00:14.572154 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 3c4ef970.(foreground count=5).
+2026-10-20 12:00:14.572793 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87afa6070 chrome://global/skin/icons/chevron.svg status 0 (count=4).
+2026-10-20 12:00:14.573403 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87afa6070.(foreground count=4).
+2026-10-20 12:00:14.578044 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c49f710]: Created.
+2026-10-20 12:00:14.645642 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87af9c210]: Removing request c84f8ea10 jar:file:///usr/lib/firefox/browser/omni.ja!/chrome/browser/skin/classic/browser/fxa/avatar-empty.svg status 0 (count=0).
+2026-10-20 12:00:14.655919 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4e3610]: Created.
+2026-10-20 12:00:14.702542 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87afc2810]: Removing request c84f90090 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/mozapps/extensions/extension.svg status 0 (count=0).
+2026-10-20 12:00:14.900156 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4c1310]: Destroyed.
+2026-10-20 12:00:14.924581 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87afc2a70 chrome://browser/skin/fxa/avatar-empty.svg status 0 (count=3).
+2026-10-20 12:00:14.925382 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87afc2a70.(foreground count=3).
+2026-10-20 12:00:14.926355 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87afc3070 chrome://browser/skin/fxa/avatar-empty.svg status 0 (count=2).
+2026-10-20 12:00:14.926880 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87afc3070.(foreground count=2).
+2026-10-20 12:00:14.929792 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87afc3370 chrome://mozapps/skin/extensions/extension.svg status 0 (count=1).
+2026-10-20 12:00:14.930343 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87afc3370.(foreground count=1).
+2026-10-20 12:00:14.931036 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Removing request 87afc2570 chrome://mozapps/skin/extensions/extension.svg status 0 (count=0).
+2026-10-20 12:00:14.931505 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStopRequest for request 87afc2570.(foreground count=0).
+2026-10-20 12:00:14.997247 UTC - [Parent 4: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=3c4b8010 default-request=0
+2026-10-20 12:00:18.159734 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Removing request 43584e50 data:text/html,%3C!DOCTYPE%20html%3E%0A%3Chtml%3E%0A%20%20%3Chead%3E%3Cmeta%20charset=%22utf-8%22%3E%3C/head%3E%0A%20%20%3Cbody%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://4ba1b414-aea5-44df-ba41-67f5b84a8b83/data/picture_in_picture_overrides.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://4ba1b414-aea5-44df-ba41-67f5b84a8b83/lib/picture_in_picture_overrides.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://4ba1b414-aea5-44df-ba41-67f5b84a8b83/run.js%22%3E%3C/script%3E%0A%20%20%3C/body%3E%0A%3C/html%3E status 0 (count=4).
+2026-10-20 12:00:18.161017 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Firing OnStopRequest for request 43584e50.(foreground count=4).
+2026-10-20 12:00:18.174195 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Removing request 43587250 moz-extension://4ba1b414-aea5-44df-ba41-67f5b84a8b83/data/picture_in_picture_overrides.js status 0 (count=3).
+2026-10-20 12:00:18.175456 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Firing OnStopRequest for request 43587250.(foreground count=3).
+2026-10-20 12:00:18.193259 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Removing request 43587450 moz-extension://4ba1b414-aea5-44df-ba41-67f5b84a8b83/lib/picture_in_picture_overrides.js status 0 (count=2).
+2026-10-20 12:00:18.196759 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Firing OnStopRequest for request 43587450.(foreground count=2).
+2026-10-20 12:00:18.204488 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Removing request 43586850 moz-extension://4ba1b414-aea5-44df-ba41-67f5b84a8b83/run.js status 0 (count=1).
+2026-10-20 12:00:18.205617 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01310]: Firing OnStopRequest for request 43586850.(foreground count=1).
+2026-10-20 12:00:18.238095 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Removing request 44fbd450 about:document-onload-blocker status 0 (count=0).
+2026-10-20 12:00:18.238951 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f00c10]: Firing OnStopRequest for request 44fbd450.(foreground count=0).
+2026-10-20 12:00:18.240354 UTC - [Child 81: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f00c10 default-request=0
+Crash Annotation GraphicsCriticalError: |[0][GFX1-]: Calling WaitFlushedEvent::Run: is delayed: 5259 (t=107.027) [GFX1-]: Calling WaitFlushedEvent::Run: is delayed: 5259
+2026-10-20 12:00:28.308328 UTC - [Child 118: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040e110, uri=file:///tmp/trames-firefox-124372902055385.html]
+2026-10-20 12:00:28.312948 UTC - [Child 118: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040e110, uri=file:///tmp/trames-firefox-124372902055385.html]
+2026-10-20 12:00:28.314535 UTC - [Child 118: Main Thread]: D/LoadGroup LOADGROUP [42f01710]: Adding request 3040e110 documentchannel:file:///tmp/trames-firefox-124372902055385.html (count=0).
+2026-10-20 12:00:28.315143 UTC - [Child 118: Main Thread]: D/LoadGroup LOADGROUP [42f01710]: Firing OnStartRequest for request 3040e110.(foreground count=1).
+2026-10-20 12:00:28.316398 UTC - [Child 118: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f01710 default-request=3040e110
+2026-10-20 12:00:36.019060 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87afd6310]: Created.
+2026-10-20 12:00:36.291814 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess for type webIsolated=https://mozilla.org
+2026-10-20 12:00:36.292578 UTC - [Parent 4: Main Thread]: D/Process Launching new process immediately for type webIsolated=https://mozilla.org
+2026-10-20 12:00:36.293921 UTC - [Parent 4: Main Thread]: V/Process CreateSubprocess: ContentParent id=10a0fab210 mSubprocess id=10a1210f90 childID=6
+2026-10-20 12:00:36.341779 UTC - [Parent 4: Main Thread]: D/Process AddBlocker: webIsolated=https://mozilla.org 10a0fab210 (sNumBlockers=0)
+2026-10-20 12:00:36.343155 UTC - [Parent 4: Main Thread]: D/Process GetNewOrUsedProcess: new immediate process id=10a0fab210 childID=6
+2026-10-20 12:00:36.807674 UTC - [Parent 4: Main Thread]: D/Process ContentParent::InitInternal: id=10a0fab210, childID=6
+2026-10-20 12:00:37.740990 UTC - [Child 142: Main Thread]: D/Process Changed name of process 142 to Web Content
+2026-10-20 12:00:38.016354 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener::OpenFromParent
+2026-10-20 12:00:38.017494 UTC - [Parent 4: Main Thread]: V/DocumentChannel DocumentLoadListener ctor [this=10a1214a10]
+2026-10-20 12:00:38.027998 UTC - [Parent 4: Main Thread]: V/DocumentChannel ParentProcessDocumentOpenInfo ctor [this=c89144d50]
+2026-10-20 12:00:38.150343 UTC - [Child 142: Main Thread]: D/LoadGroup LOADGROUP [42f01a10]: Created.
+2026-10-20 12:00:39.010006 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87afdab10]: Created.
+2026-10-20 12:00:39.012064 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87afdab10]: Adding request 10a1219390 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/icons/warning.svg (count=0).
+2026-10-20 12:00:39.013610 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87afda070 chrome://global/skin/icons/warning.svg (count=0).
+2026-10-20 12:00:39.015245 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87afda070.(foreground count=1).
+2026-10-20 12:00:39.529314 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87afd8310]: Created.
+2026-10-20 12:00:39.530578 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [87afd8310]: Adding request 10a1211a10 jar:file:///usr/lib/firefox/omni.ja!/chrome/toolkit/skin/classic/global/icons/close.svg (count=0).
+2026-10-20 12:00:39.531633 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Adding request 87afd7970 chrome://global/skin/icons/close.svg (count=1).
+2026-10-20 12:00:39.532548 UTC - [Parent 4: Main Thread]: D/LoadGroup LOADGROUP [3c4b8010]: Firing OnStartRequest for request 87afd7970.(foreground count=2).
+2026-10-20 12:00:40.077611 UTC - [Child 142: Main Thread]: D/Process Setting remoteType of process 142 to webIsolated=https://mozilla.org
+2026-10-20 12:00:40.078665 UTC - [Child 142: Main Thread]: D/Process Changed name of process 142 to Isolated Web Content
+2026-10-20 12:00:40.897503 UTC - [Child 142: Main Thread]: D/LoadGroup LOADGROUP [42f01710]: Created.
+2026-10-20 12:00:41.072605 UTC - [Child 142: Main Thread]: V/DocumentChannel DocumentChannel ctor [this=3040a150, uri=https://www.mozilla.org/privacy/firefox/]
+2026-10-20 12:00:41.083720 UTC - [Child 142: Main Thread]: V/DocumentChannel DocumentChannelChild ctor [this=3040a150, uri=https://www.mozilla.org/privacy/firefox/]
+2026-10-20 12:00:41.087819 UTC - [Child 142: Main Thread]: D/LoadGroup LOADGROUP [42f01710]: Adding request 3040a150 documentchannel:https://www.mozilla.org/privacy/firefox/ (count=0).
+2026-10-20 12:00:41.090123 UTC - [Child 142: Main Thread]: D/LoadGroup LOADGROUP [42f01710]: Firing OnStartRequest for request 3040a150.(foreground count=1).
+2026-10-20 12:00:41.092826 UTC - [Child 142: Main Thread]: D/LoadGroup nsLoadGroup::SetDefaultLoadRequest this=42f01710 default-request=3040a150
+2026-10-20 12:00:54.225556 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Removing request 43586650 data:text/html,%3C!DOCTYPE%20html%3E%0A%3Chtml%3E%0A%20%20%3Chead%3E%3Cmeta%20charset=%22utf-8%22%3E%3C/head%3E%0A%20%20%3Cbody%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/messaging_helper.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/ua_helpers.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/intervention_helpers.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/requestStorageAccess_helper.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/data/shims.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/about_compat_broker.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/custom_functions.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/interventions.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/shims.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/smartblock_embeds_helper.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20type=%22text/javascript%22%20src=%22moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/run.js%22%3E%3C/script%3E%0A%20%20%3C/body%3E%0A%3C/html%3E status 0 (count=12).
+2026-10-20 12:00:54.322812 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStopRequest for request 43586650.(foreground count=12).
+2026-10-20 12:00:55.397616 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Removing request 43587a50 moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/messaging_helper.js status 0 (count=11).
+2026-10-20 12:00:55.399335 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStopRequest for request 43587a50.(foreground count=11).
+2026-10-20 12:00:56.313477 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Removing request 43583050 moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/ua_helpers.js status 0 (count=10).
+2026-10-20 12:00:56.386324 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStopRequest for request 43583050.(foreground count=10).
+2026-10-20 12:00:57.102438 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Removing request 43590250 moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/intervention_helpers.js status 0 (count=9).
+2026-10-20 12:00:57.175066 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStopRequest for request 43590250.(foreground count=9).
+2026-10-20 12:00:57.771484 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Removing request 43591050 moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/requestStorageAccess_helper.js status 0 (count=8).
+2026-10-20 12:00:57.967658 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStopRequest for request 43591050.(foreground count=8).
+2026-10-20 12:00:59.160976 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Removing request 43591850 moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/data/shims.js status 0 (count=7).
+2026-10-20 12:00:59.308294 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStopRequest for request 43591850.(foreground count=7).
+2026-10-20 12:01:00.039398 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Removing request 43590850 moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/about_compat_broker.js status 0 (count=6).
+2026-10-20 12:01:00.212734 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStopRequest for request 43590850.(foreground count=6).
+2026-10-20 12:01:01.359749 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Removing request 43590e50 moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/custom_functions.js status 0 (count=5).
+2026-10-20 12:01:01.581854 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStopRequest for request 43590e50.(foreground count=5).
+2026-10-20 12:01:02.487512 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Removing request 43590050 moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/interventions.js status 0 (count=4).
+2026-10-20 12:01:02.609244 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStopRequest for request 43590050.(foreground count=4).
+2026-10-20 12:01:03.949045 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Removing request 43590a50 moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/shims.js status 0 (count=3).
+2026-10-20 12:01:04.068173 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStopRequest for request 43590a50.(foreground count=3).
+2026-10-20 12:01:04.761094 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Removing request 43590c50 moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/lib/smartblock_embeds_helper.js status 0 (count=2).
+2026-10-20 12:01:04.843293 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStopRequest for request 43590c50.(foreground count=2).
+2026-10-20 12:01:05.997335 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Removing request 43590650 moz-extension://9a310967-e580-48bf-b3e8-4eafebbc122d/run.js status 0 (count=1).
+2026-10-20 12:01:06.097582 UTC - [Child 81: Main Thread]: D/LoadGroup LOADGROUP [42f01610]: Firing OnStopRequest for request 43590650.(foreground count=1).
