@@ -525,6 +525,7 @@ mod tests {
             processor: 1,
             profile: true,
             streams: [0; (trames_vfs::MAX_FDS as usize).div_ceil(64)],
+            files: [0; (trames_vfs::MAX_FDS as usize).div_ceil(64)],
         }
     }
 

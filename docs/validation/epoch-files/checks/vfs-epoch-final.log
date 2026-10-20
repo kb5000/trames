@@ -1,0 +1,10 @@
+   Compiling trames-vfs v1.2.0 (/workspace/trames/crates/trames-vfs)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.56s
+     Running unittests src/lib.rs (target/perf-runtime/debug/build/trames-vfs/3429f9905bbfc0c2/out/trames_vfs-3429f9905bbfc0c2)
+
+running 2 tests
+test overlay::tests::epoch_io_tracks_lower_mappings_and_keeps_copy_up_inodes_independent ... ok
+test mapped::tests::epoch_file_io_checks_live_inode_aliases_in_any_vm_not_the_cached_fd_mask ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 157 filtered out; finished in 0.00s
+

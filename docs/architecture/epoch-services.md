@@ -22,14 +22,36 @@ sequenceDiagram
 | 类别 | 当前执行位置 | 同步范围 |
 | --- | --- | --- |
 | 身份/时钟/getcpu、纯内存/字符串/解析/回调/allocator 快路径 | worker 内 | 同一个 guest 内存和原算法同步模型，无逐调用内核往返 |
-| F_GETFD/F_GETFL、普通 FD 的 lseek/fstat、立即可完成的 pipe/embedding stdio read/write | 协调器服务，epoch 保持 | 只挂起调用者，其他 worker 可以继续解释或执行原生函数 |
-| 映射、进程生命周期、futex/信号、filtered/trace syscall、普通文件数据/套接字/PTY、stateful Vulkan、需要 backing checkpoint 的 NativeCall | joined coordinator | 保留既有 checkpoint；后续按资源拆分 |
+| F_GETFD/F_GETFL、普通 FD 的 lseek/fstat、立即可完成的 pipe/embedding stdio read/write/readv/writev、无活跃映射的普通文件标量/向量/定位 I/O 与 fsync/fdatasync | 协调器服务，epoch 保持 | 只挂起调用者，其他 worker 可以继续解释或执行原生函数 |
+| 映射、进程生命周期、futex/信号、filtered/trace syscall、映射文件/共享宿主 backing/套接字/PTY、stateful Vulkan、需要 backing checkpoint 的 NativeCall | joined coordinator | 保留既有 checkpoint；后续按资源拆分 |
 
 只有 seccomp mode 0 且未启用 syscall trace 的任务请求 epoch 服务。
 动态 proc/sysfs FD 元数据仍先 join，使用完整进程快照。
-Regular/mapped file 数据目前不在 read/write 服务名单：其 writable MAP_SHARED 脏字节
+Mapped file 数据目前不在 I/O 服务名单：其 writable MAP_SHARED 脏字节
 尚需 join 才能写回 VFS backing，直接读写旧 backing 会失去 CPU/FD 一致性。
 不能只因为某调用不改虚拟地址表就把它判为安全。
+
+## 普通文件的保留对象准入
+
+普通文件新增 read/write、readv/writev、pread/pwrite、preadv/pwritev、fsync/fdatasync
+服务，全部复用 joined 路径的 Linux ABI、guest 访存预检、VFS 权限/配额/offset/append/
+通知/持久化实现。没有另写一套文件操作，也没有增加宿主线程直接访问 Rc/RefCell。
+
+FD 表版本只缓存候选位图；streams 和 files 同一次扫描构建，FD 修改时一起失效。
+这个位图不是授权或映射缓存。每次实际服务按 OpenDescription 保留的 inode 再检查：
+
+- 仅普通非 volatile 文件；动态 proc/sysfs/cgroup、设备、socket/PTY 和宿主共享 backing
+  继续 join。SharedFile 还可能由显示/GPU 保留，不能仅因 guest 未 mmap 就视为独占。
+- FileMapping 在所有 VM 中保留 FilePage，任何活跃映射都使同一文件的 I/O join，
+  包括只读/private 映射。此次不尝试放宽到“仅无可写映射”，避免引入更多准入分支。
+  映射消失后，原 FD 无需重新打开就恢复服务资格。
+- 硬链接、rename/unlink 和路径替换按实际对象判断；overlay 的只读旧描述符保留下层，
+  下层映射仍阻止该描述符服务，copy-up 后的新上层可以独立服务。
+- 有限 RLIMIT_FSIZE 的文件写入仍 join，保留原来的短写、EFBIG 与 SIGXFSZ 处理；
+  不对已完成文件写入做“失败后回退重放”。pipe 的 EAGAIN/SIGPIPE 边界继续保留。
+
+该方案允许未映射文件服务期间其他 CPU/native worker 前进；多个 VFS 请求仍由同一个
+协调器依次处理，宿主磁盘 I/O 尚未异步化。结果和范围见[文件服务验证](../validation/epoch-files.md)。
 
 ## 所有权与退出
 
@@ -70,7 +92,7 @@ fork/dup/close/CLOEXEC/detach 保留原语义。每次 dispatch 只复制一个�
 FD 查询/管道 I/O、mmap/munmap、dup/close，对照本机 C 语义输出，检查全部字节计数。
 这不是完整 guest CPU oracle。测量和平台范围见[验证记录](../validation/epoch-services.md)。
 
-下一步是普通文件/网络 I/O 的共享 backing 一致性与异步提交/完成，再拆分 VFS 元数据
+下一步是映射文件/网络 I/O 的共享 backing 一致性与异步提交/完成，再拆分 VFS 元数据
 读写同步。映射和进程操作需要按实际共享 VM/backing 缩小暂停集合；futex 需要地址级
 compare/enqueue/wake 协调。Vulkan backend 还依赖协调器 Memory 和所属 VM/VFS 资源，
 必须先拆分内存接口与对象所有权，才能把 stateful API 的同步缩到资源/队列范围。

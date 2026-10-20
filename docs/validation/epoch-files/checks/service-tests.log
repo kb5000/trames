@@ -1,0 +1,22 @@
+   Compiling trames-core v1.2.0 (/workspace/trames/crates/trames-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.99s
+     Running unittests src/lib.rs (target/perf-runtime/debug/build/trames-core/8931d23f69d95e1a/out/trames_core-8931d23f69d95e1a)
+
+running 8 tests
+test process::service::tests::finite_file_limit_keeps_sigxfsz_on_the_joined_path_without_effects ... ok
+test process::service::tests::pipe_read_uses_the_callers_view_and_commits_once_when_a_peer_requests_stop ... ok
+test process::service::tests::mapped_file_read_defers_until_shadow_stores_have_been_committed ... ok
+test process::service::tests::stream_preflight_rejects_bad_destinations_without_consuming_input ... ok
+test process::service::tests::regular_file_sync_services_use_the_original_vfs_path ... ok
+test process::service::tests::blocking_and_sigpipe_paths_checkpoint_but_nonblocking_eagain_completes ... ok
+test process::service::tests::vector_read_preflights_every_output_before_consuming_file_input ... ok
+test process::service::tests::regular_scalar_vector_and_positioned_services_share_the_original_abi ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 63 filtered out; finished in 0.01s
+
+     Running tests/wayland.rs (target/perf-runtime/debug/build/trames-core/2d631156c66d190f/out/wayland-2d631156c66d190f)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.00s
+

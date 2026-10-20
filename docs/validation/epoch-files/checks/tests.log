@@ -1,0 +1,93 @@
+   Compiling trames-vfs v1.2.0 (/workspace/trames/crates/trames-vfs)
+   Compiling trames-linux v1.2.0 (/workspace/trames/crates/trames-linux)
+   Compiling trames-core v1.2.0 (/workspace/trames/crates/trames-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.38s
+     Running unittests src/lib.rs (target/perf-runtime/debug/build/trames-core/8931d23f69d95e1a/out/trames_core-8931d23f69d95e1a)
+
+running 70 tests
+test process::boundary_tests::failed_exec_preserves_image_and_cloexec_descriptor ... ok
+test process::boundary_tests::kill_is_delivered_even_with_an_older_pending_signal_while_stopped ... ok
+test accelerator_tests::budget_checkpoint_fallback_and_fault_do_not_fake_retirement ... ok
+test accelerator_tests::committed_call_retires_once_and_preserves_guest_context ... ok
+test process::boundary_tests::terminal_resize_event_is_scoped_to_the_foreground_group ... ok
+test process::compat::tests::compatibility_state_and_fault_preflight ... ok
+test process::cpu_fault_tests::data_top_byte_tags_work_across_pages_and_fork_copy_on_write ... ok
+test process::compat::tests::file_size_limit_changes_are_atomic_and_hard_limit_is_privileged ... ok
+test process::cpu_fault_tests::synchronous_signal_contains_fault_address_and_resumes_from_edited_context ... ok
+test process::cpu_fault_tests::masked_or_ignored_synchronous_faults_terminate_instead_of_looping ... ok
+test process::scheduling::tests::desktop_priorities_and_batch_idle_policy_roundtrip_and_inherit ... ok
+test process::seccomp::tests::filter_loads_arch_arguments_and_verifies_all_paths ... ok
+test process::scheduling::tests::numa_default_allowed_mask_and_address_queries_are_consistent ... ok
+test process::seccomp::tests::stacked_filters_keep_restrictions_and_newest_equal_action_data ... ok
+test process::seccomp::tests::ignored_or_blocked_sigsys_cannot_suppress_a_forced_seccomp_trap ... ok
+test process::service::tests::finite_file_limit_keeps_sigxfsz_on_the_joined_path_without_effects ... ok
+test process::service::tests::mapped_file_read_defers_until_shadow_stores_have_been_committed ... FAILED
+test process::seccomp::tests::filtered_identity_syscalls_still_checkpoint_and_apply_errno_in_parallel ... ok
+test process::service::tests::pipe_read_uses_the_callers_view_and_commits_once_when_a_peer_requests_stop ... ok
+test process::service::tests::stream_preflight_rejects_bad_destinations_without_consuming_input ... ok
+test process::service::tests::blocking_and_sigpipe_paths_checkpoint_but_nonblocking_eagain_completes ... ok
+test process::signals::tests::realtime_budget_preserves_fifo_and_cannot_drop_sigkill ... ok
+test process::tests::a_removed_gpu_context_completes_once_without_reexecuting_the_stub ... ok
+test process::tests::affinity_assignment_keeps_flexible_tasks_fair_and_relocates_for_pinned_peers ... ok
+test process::service::tests::vector_read_preflights_every_output_before_consuming_file_input ... ok
+test process::tests::close_range_unshare_detaches_only_callers_shared_table ... ok
+test process::tests::continuous_deadlines_include_sleep_and_do_not_spin_on_unread_expired_timerfd ... ok
+test process::tests::failed_blocked_epoll_clears_deadline_and_restores_its_temporary_signal_mask ... ok
+test process::tests::gpu_wait_defers_caught_handlers_but_preserves_stop_continue ... ok
+test process::tests::host_pty_keyboard_and_resize_signals_are_scoped_to_the_foreground_session ... ok
+test process::tests::malformed_signal_frame_fails_without_partial_register_restoration ... ok
+test process::tests::native_workers_execute_shared_atomic_guest_loops_and_account_the_budget ... ok
+test process::tests::prctl_seccomp_modes_translate_to_syscall_operations ... ok
+test process::tests::proc_mapping_cache_never_freezes_argv_fds_or_credentials_and_retires_dead_vms ... ok
+test process::tests::continuous_peers_cancel_at_control_checkpoints_and_commit_the_exact_budget ... ok
+test process::tests::proc_maps_refresh_after_shared_protect_reserve_unmap_and_fork ... ok
+test process::tests::process_signals_are_single_delivery_and_thread_signals_check_identity_and_permissions ... ok
+test process::tests::session_leader_fifo_open_waits_before_terminal_inspection_and_is_interruptible ... ok
+test process::tests::restart_rewinds_the_syscall_and_eintr_does_not ... ok
+test process::tests::signal_frame_restores_integer_vector_fp_state_and_accepts_guest_context_edits ... ok
+test process::tests::socket_timeout_wakes_continuous_peers_but_not_stopped_or_runnable_tasks ... ok
+test process::tests::solo_quantum_does_not_delay_a_runnable_peer ... ok
+test process::tests::splice_blocks_on_backpressure_and_respects_output_nonblocking ... ok
+test process::tests::stdio_eagain_blocks_only_without_nonblocking_flag ... ok
+test process::tests::terminal_control_signals_use_kernel_authority_and_the_foreground_session ... ok
+test process::tests::stop_continue_preserves_a_blocked_timer ... ok
+test process::tests::unsupported_instruction_log_survives_child_exit ... ok
+test process::tests::thread_directed_stop_and_continue_change_the_entire_group ... ok
+test tests::endless_guest_is_bounded ... ok
+test tests::memory_budget_validation_accepts_large_limits_without_preallocation ... ok
+test tests::argument_limits_and_nuls_fail ... ok
+test tests::virtual_devices_work_without_any_proc_access_or_snapshot_refresh ... ok
+test tests::stack_layout_contains_argv_envp_auxv_and_aligned_sp ... ok
+test worker_syscalls::tests::clock_and_processor_writes_use_checked_shared_guest_memory ... ok
+test workers::tests::a_peer_completes_native_work_while_another_native_body_is_blocked_on_its_page ... ok
+test workers::tests::concurrent_workers_share_an_exact_non_divisible_budget ... ok
+test workers::tests::deferred_native_reserves_hlt_before_effects_and_unstable_code_never_enters_body ... ok
+test workers::tests::fault_reports_retirement_from_all_preceding_polls ... ok
+test workers::tests::native_fallback_retires_once_but_fault_refunds_its_credit ... ok
+test workers::tests::native_peer_finishes_while_a_syscall_caller_is_parked_without_a_global_stop ... ok
+test workers::tests::local_syscalls_continue_with_exact_budget_and_fall_back_before_mutations ... ok
+test process::boundary_tests::process_limit_rejects_fork_without_changing_parent_memory ... ok
+test process::service::tests::regular_scalar_vector_positioned_and_sync_services_share_the_original_abi ... ok
+test workers::tests::pool_drop_drains_a_queued_request_and_returns_its_view_before_join ... ok
+test workers::tests::production_native_calls_do_not_update_global_overlap_instrumentation ... ok
+test workers::tests::repeated_queries_run_without_a_coordinator_rendezvous ... ok
+test workers::tests::rejected_native_does_not_retire_and_stops_queued_peers ... ok
+test workers::tests::retains_cpu_through_many_polls_without_a_peer_or_coordinator_message ... ok
+test workers::tests::native_returns_continue_locally_with_exact_retirement_and_guest_state ... ok
+test workers::tests::request_and_pool_teardown_stop_endless_guest_workers ... ok
+
+failures:
+
+---- process::service::tests::mapped_file_read_defers_until_shadow_stores_have_been_committed stdout ----
+
+thread 'process::service::tests::mapped_file_read_defers_until_shadow_stores_have_been_committed' (78747) panicked at crates/trames-core/src/process_service.rs:253:14:
+called `Result::unwrap()` on an `Err` value: Overlap(24576)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    process::service::tests::mapped_file_read_defers_until_shadow_stores_have_been_committed
+
+test result: FAILED. 69 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
+error: test failed, to rerun pass `-p trames-core --lib`

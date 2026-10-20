@@ -18,6 +18,7 @@ p.add_argument('--fixture', type=Path, default=Path('tests/fixtures/bin/epoch-se
 p.add_argument('--output', type=Path, required=True)
 p.add_argument('--iterations', type=int, default=512)
 p.add_argument('--samples', type=int, default=2)
+p.add_argument('--modes', nargs='+', choices=['metadata', 'pipe', 'file', 'vector'], default=['metadata', 'pipe'])
 p.add_argument('--reuse-baseline', type=Path, help='reuse exact-binary/input baseline rows from a previous batch')
 a = p.parse_args()
 assert a.iterations > 0 and a.samples > 0
@@ -35,11 +36,12 @@ if a.reuse_baseline:
     for key in ('baseline_sha256', 'fixture_sha256', 'iterations', 'cpus'):
         assert old[key] == report[key], ('baseline input changed', key)
     report['rows'] = [x for x in old['rows'] if x['version'] == 'before']
-    assert {x['mode'] for x in report['rows']} == {'metadata', 'pipe'}
+    report['rows'] = [x for x in report['rows'] if x['mode'] in a.modes]
+    assert {x['mode'] for x in report['rows']} == set(a.modes)
     report['baseline_reused_sha256'] = digest(a.reuse_baseline)
     report['baseline_reuse_limit'] = 'Previously measured baseline; not a newly interleaved host-load control.'
 try:
-    for mode in ('metadata', 'pipe'):
+    for mode in a.modes:
         oracle = subprocess.run([str(a.host_oracle.resolve()), mode, str(a.iterations)], capture_output=True, timeout=120)
         assert oracle.returncode == 0 and not oracle.stderr, oracle
         (a.output / (mode + '-oracle.log')).write_bytes(oracle.stdout)

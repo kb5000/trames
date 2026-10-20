@@ -111,6 +111,9 @@ jobs:
           cat > target/epoch-service-fixture/host-barrier.h <<'C'
           #include <stddef.h>
           #include <pthread.h>
+          // Darwin's host oracle uses fsync for the optional fdatasync API.
+          // The musl guest fixture still exercises Linux syscall 83 directly.
+          #define fdatasync fsync
           #ifndef PTHREAD_BARRIER_SERIAL_THREAD
           #define PTHREAD_BARRIER_SERIAL_THREAD 1
           #endif

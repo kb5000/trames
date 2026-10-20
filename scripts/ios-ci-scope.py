@@ -650,7 +650,7 @@ def main():
                                'crates/trames-cli/src/main.rs', 'tests/performance/session-sampler.c',
                                'crates/trames-vfs/src/mounts.rs', 'crates/trames-vfs/src/directory.rs',
                                'crates/trames-vfs/src/storage.rs', 'crates/trames-vfs/src/pseudo.rs',
-                               'crates/trames-vfs/src/overlay.rs', 'crates/trames-vfs/src/pty.rs',
+                               'crates/trames-vfs/src/overlay.rs', 'crates/trames-vfs/src/mapped.rs', 'crates/trames-vfs/src/pty.rs',
                                'crates/trames-vfs/src/memfd.rs', 'crates/trames-vfs/src/cgroup.rs',
                                'crates/trames-vfs/src/ipc/native.rs', 'scripts/ios-ci-scope.py',
                                '.github/workflows/ios.yml', '.github/workflows/linux.yml',

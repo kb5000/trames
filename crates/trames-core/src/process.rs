@@ -3409,6 +3409,7 @@ impl Kernel {
                                 processor: slot as u32,
                                 profile: self.profile_syscalls,
                                 streams: p.linux.vfs.stream_descriptors(),
+                                files: p.linux.vfs.file_descriptors(),
                             }
                         }),
                     },

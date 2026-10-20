@@ -12,11 +12,12 @@ p.add_argument('--runner', type=Path, required=True)
 p.add_argument('--fixture', type=Path, required=True)
 p.add_argument('--oracle', type=Path, required=True)
 p.add_argument('--output', type=Path, required=True)
+p.add_argument('--modes', nargs='+', choices=['metadata', 'pipe', 'file', 'vector'], default=['metadata', 'pipe', 'file', 'vector'])
 a = p.parse_args()
 a.output.mkdir(parents=True, exist_ok=False)
 rows = []
 try:
-    for mode in ('metadata', 'pipe'):
+    for mode in a.modes:
         expected = subprocess.run([str(a.oracle.resolve()), mode, '256'], capture_output=True, timeout=60)
         assert expected.returncode == 0 and not expected.stderr, expected
         for cpus in (1, 2, 4):

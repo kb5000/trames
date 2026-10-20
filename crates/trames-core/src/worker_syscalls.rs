@@ -14,6 +14,7 @@ pub(super) struct Snapshot {
     pub processor: u32,
     pub profile: bool,
     pub streams: trames_vfs::FdMask,
+    pub files: trames_vfs::FdMask,
 }
 
 /// These calls can request the coordinator without stopping peer CPUs. The
@@ -22,9 +23,16 @@ pub(super) fn service_candidate(cpu: &Cpu, snapshot: &Snapshot) -> bool {
     match cpu.x(8) as u32 {
         25 => matches!(cpu.x(1), 1 | 3),
         62 | 80 => true,
-        63 | 64 => {
+        63..=66 => {
             let fd = cpu.x(0) as u32;
-            fd < trames_vfs::MAX_FDS && snapshot.streams[fd as usize / 64] & (1 << (fd % 64)) != 0
+            fd < trames_vfs::MAX_FDS
+                && (snapshot.streams[fd as usize / 64] | snapshot.files[fd as usize / 64])
+                    & (1 << (fd % 64))
+                    != 0
+        }
+        67..=70 | 82 | 83 => {
+            let fd = cpu.x(0) as u32;
+            fd < trames_vfs::MAX_FDS && snapshot.files[fd as usize / 64] & (1 << (fd % 64)) != 0
         }
         _ => false,
     }
@@ -117,6 +125,7 @@ mod tests {
             processor: 3,
             profile: false,
             streams: [0; (trames_vfs::MAX_FDS as usize).div_ceil(64)],
+            files: [0; (trames_vfs::MAX_FDS as usize).div_ceil(64)],
         };
         let mut view = memory.parallel_view(&mut Default::default()).unwrap();
         let mut cpu = Cpu::new(0, 0);
