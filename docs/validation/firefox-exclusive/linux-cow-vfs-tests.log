@@ -1,0 +1,19 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
+     Running unittests src/lib.rs (target/perf-runtime/debug/build/trames-vfs/3429f9905bbfc0c2/out/trames_vfs-3429f9905bbfc0c2)
+
+running 12 tests
+test mapped::tests::alias_fd_io_cow_truncate_permissions_and_unlinked_lifetime ... ok
+test mapped::tests::backing_epochs_rebuild_only_changed_file_pages_and_still_check_eof_and_cow ... ok
+test mapped::tests::direct_file_borrows_dirty_writeback_alias_tokens_and_live_eof ... ok
+test mapped::tests::eof_placeholders_stay_zero_and_growth_updates_existing_mappings ... ok
+test mapped::tests::epoch_file_io_checks_live_inode_aliases_in_any_vm_not_the_cached_fd_mask ... ok
+test mapped::tests::mapped_code_aliases_and_fd_writes_change_decoder_tokens ... ok
+test mapped::tests::memfd_native_views_share_guest_pages_and_keep_physical_budget_until_last_lease ... ok
+test mapped::tests::parallel_readonly_alias_dirty_fragments_private_refresh_and_live_eof ... ok
+test mapped::tests::read_only_shared_mapping_cannot_gain_write_access ... ok
+test mapped::tests::serial_private_file_atomics_detach_without_modifying_file_or_peer ... ok
+test mapped::tests::workers_share_file_and_memfd_bytes_without_a_publication_copy ... ok
+test storage_tests::direct_native_mapped_writes_survive_disk_sync_unmap_and_reopen ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 160 filtered out; finished in 0.02s
+

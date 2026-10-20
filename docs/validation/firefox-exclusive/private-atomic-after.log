@@ -1,0 +1,12 @@
+   Compiling trames-memory v1.2.0 (/workspace/trames/crates/trames-memory)
+   Compiling trames-accel v1.2.0 (/workspace/trames/crates/trames-accel)
+   Compiling trames-bridge v1.2.0 (/workspace/trames/crates/trames-bridge)
+   Compiling trames-vfs v1.2.0 (/workspace/trames/crates/trames-vfs)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.59s
+     Running unittests src/lib.rs (target/perf-runtime/debug/build/trames-vfs/3429f9905bbfc0c2/out/trames_vfs-3429f9905bbfc0c2)
+
+running 1 test
+test mapped::tests::serial_private_file_atomics_detach_without_modifying_file_or_peer ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 171 filtered out; finished in 0.00s
+
