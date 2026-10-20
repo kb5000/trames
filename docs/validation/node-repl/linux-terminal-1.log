@@ -1,0 +1,18 @@
+~ # [6nnode
+Welcome to Node.js v22.23.2.
+Type ".help" for more information.
+[1G[0J> [3G111
+[33m111[39m
+[1G[0J> [3G111
+[33m111[39m
+[1G[0J> [3G1 + 2
+[90m3[39m[8G[1A[1B[2K[1A
+[33m3[39m
+[1G[0J> [3G({x: 42})
+[90m{ x: 42 }[39m[12G[1A[1B[2K[1A
+{ x: [33m42[39m }
+[1G[0J> [3G.exit
+~ # [6nprintf '\nNODE_REPL_RETURNED\n'
+
+NODE_REPL_RETURNED
+~ # [6n

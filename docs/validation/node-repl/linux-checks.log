@@ -1,0 +1,8 @@
+PASS terminal=1 input='111' delayed=False
+PASS terminal=1 input='111' delayed=True
+PASS terminal=1 input='1 + 2' delayed=True
+PASS terminal=1 input='({x: 42})' delayed=True
+PASS terminal=2 input='111' delayed=False
+PASS terminal=2 input='111' delayed=True
+PASS terminal=2 input='1 + 2' delayed=True
+PASS terminal=2 input='({x: 42})' delayed=True

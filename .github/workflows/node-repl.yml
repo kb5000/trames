@@ -1,0 +1,69 @@
+name: Node REPL compatibility
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  guest-libc:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build current hybrid musl from the pinned upstream source
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes gcc-aarch64-linux-gnu
+          bash scripts/build-musl-hybrid.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: node-repl-musl
+          path: |
+            target/musl-hybrid/libc.so
+            target/musl-hybrid/manifest.json
+            target/musl-hybrid/musl-hybrid-1.2.5-source.tar.gz
+          retention-days: 7
+  apple-repl:
+    needs: guest-libc
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+      - uses: actions/download-artifact@v4
+        with:
+          name: node-repl-musl
+          path: target/musl-hybrid/
+      - name: Build the unchanged optimized App runtime
+        run: cargo build -p trames-ffi -p trames-cli --release --locked
+      - name: Original Node REPL with eager preview on Apple ARM64 and 16 KiB pages
+        env:
+          RUST_BACKTRACE: '1'
+        run: |
+          test "$(uname -m)" = arm64
+          mkdir -p target/alpine-download
+          curl --fail --location --max-time 120 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.6-aarch64.tar.gz -o target/alpine-download/alpine-minirootfs-3.22.6-aarch64.tar.gz
+          set -o pipefail
+          python3 tests/integration/node-repl.py --prepare --store target/node-repl/store --output target/node-repl/apple --expected-host-page 16384 2>&1 | tee target/node-repl-host.log
+      - name: Publish bounded failure detail in the check annotations
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          log = Path('target/node-repl-host.log')
+          if log.exists():
+              text = log.read_text(errors='replace')[-12000:]
+              text = text.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+              print('::error title=Node REPL diagnostic::'+text)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: node-repl-apple-evidence
+          path: |
+            target/node-repl/apple/results.json
+            target/node-repl/apple/terminal-*.log
+            target/node-repl/apple/install.*
+            target/node-repl-host.log
+          retention-days: 7
