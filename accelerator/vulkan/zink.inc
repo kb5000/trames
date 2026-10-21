@@ -37,12 +37,12 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateRenderPass2(VkDevice d,const VkRenderPass
     VkAttachmentReference colors[8],depth={VK_ATTACHMENT_UNUSED,VK_IMAGE_LAYOUT_UNDEFINED};
     for(unsigned i=0;i<s->colorAttachmentCount;i++){
         const VkAttachmentReference2 *r=s->pColorAttachments+i;if(!VALID(r,VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2))return unsupported_render_pass(__FILE__,__LINE__);
-        if(r->aspectMask && r->aspectMask!=VK_IMAGE_ASPECT_COLOR_BIT)return unsupported_render_pass(__FILE__,__LINE__);
+        // VkAttachmentReference2::aspectMask applies only to input attachments.
+        // Color/depth-stencil output references ignore it (including UNUSED).
         colors[i]=(VkAttachmentReference){r->attachment,r->layout};
     }
     if(s->pDepthStencilAttachment){
         const VkAttachmentReference2 *r=s->pDepthStencilAttachment;if(!VALID(r,VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2))return unsupported_render_pass(__FILE__,__LINE__);
-        if(r->aspectMask&~(VK_IMAGE_ASPECT_DEPTH_BIT|VK_IMAGE_ASPECT_STENCIL_BIT))return unsupported_render_pass(__FILE__,__LINE__);
         depth=(VkAttachmentReference){r->attachment,r->layout};
     }
     VkSubpassDependency dependencies[8];for(uint32_t i=0;i<info->dependencyCount;i++){

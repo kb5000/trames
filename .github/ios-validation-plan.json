@@ -1,5 +1,5 @@
 {
-  "base_sha": "10bdafa8fd963387825b8de53aabf9803fa09be1",
+  "base_sha": "f55e2829ca21998ccbb7784117b759ac3251c4da",
   "native_scope": "zink-wayland",
   "zink_attachment_clear_reuse": {
     "run": 39611594760,
@@ -7,17 +7,7 @@
   },
   "reason": "Firefox NULL dispatch identified as missing vkCmdClearAttachments. Validate new in-pass clear rectangles/color/alpha/scissor pixels and affected Vulkan/iOS embedding. Reuse passed same-source WSI capabilities, relayed windows, 100-set descriptor batches, sample masks/shading and unchanged native TF driver. Firefox next render-pass failure remains open. No raw Firefox diagnostics or IPA.",
   "changed_file_sha256": {
-    ".github/workflows/linux.yml": "ea82d31496877ac0d6a871639ca152be351b95ccf2d18c052a2fa90607881ccc",
-    "accelerator/vulkan/entrypoints.inc": "0fd7d735fcda5ae53256fcd54a512c2af2ea802a1488a9d97e514159b6ab53fc",
-    "accelerator/vulkan/graphics.inc": "8348640f829a526a613c480ffc8b1f0fa01aa4040e81e4cf8b8947bba4d68f30",
-    "accelerator/vulkan/zink.inc": "b22cdee1b3e87f984ab11d1e8e6ac63aedfcc212cab1cf7b225826b9ec16edeb",
-    "crates/trames-vulkan/src/backend.rs": "a156556d734cf133272683ea841db2669c590ebc2424222d3b3de7466e6c3dee",
-    "crates/trames-vulkan/src/backend/graphics.rs": "a55d599e6b8ce5fb172d554876d19d56901fe2dddd4f9abfe515b0b050dd069e",
-    "docs/architecture/zink.md": "71d33a3dfa05432354abdb1e943a0aad514343d5674bf435c5146759e5bc1f9b",
-    "docs/validation/firefox-gles3.md": "f13be049d6f68f61e44d9ea101c74b54d07911315e89819e95d09b3d3eddb40d",
-    "docs/validation/firefox-interaction.md": "e4a4225310dafe06746c4c8d7f42f74407c5cbf610192e6a8d0f303d7c62e538",
-    "scripts/ios-ci-scope.py": "3226e5a9138d688bf6264a40831382bdedc8f737cbb8b0b5a0f324cff8fe1cea",
-    "tests/fixtures/vulkan-render.c": "2ecec2805672efaee2eaa638fccbaff85263977a7f380a6ce3cd849a5b107388",
-    "tests/integration/zink-wayland.py": "707180a76b8cd22954477045bb6a90c70e634dbf52b05c23f3542d0f46edf81d"
+    "accelerator/vulkan/zink.inc": "6d4bb4f24c09ad7a754f4e34927c17cdfb0505b0046c99f3aa89f6ba7828c285",
+    "tests/fixtures/vulkan-render.c": "0251e2f7af88de15cf3f32d64557ce49581d40db9b809211ed1f29bf5ec7d9ce"
   }
 }

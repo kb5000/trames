@@ -56,9 +56,9 @@ int main(int argc,char **argv) {
     int masked=argc==5 && !strncmp(argv[4],"sample-mask-",12);
     VkSampleMask sample_mask=masked && !strcmp(argv[4],"sample-mask-one")?1:masked && !strcmp(argv[4],"sample-mask-upper")?0x80000000u:0;
     sample_mask_disabled=masked && !(sample_mask&1);
-    int pass2=argc==5 && (!strcmp(argv[4],"renderpass2") || !strcmp(argv[4],"imageless") || !strcmp(argv[4],"imageless-depth"));
-    int imageless=argc==5 && (!strcmp(argv[4],"imageless") || !strcmp(argv[4],"imageless-legacy") || !strcmp(argv[4],"imageless-depth"));
-    int depth=argc==5 && !strcmp(argv[4],"imageless-depth");
+    int pass2=attachment_clear || (argc==5 && (!strcmp(argv[4],"renderpass2") || !strcmp(argv[4],"imageless") || !strcmp(argv[4],"imageless-depth")));
+    int imageless=attachment_clear || (argc==5 && (!strcmp(argv[4],"imageless") || !strcmp(argv[4],"imageless-legacy") || !strcmp(argv[4],"imageless-depth")));
+    int depth=attachment_clear || (argc==5 && !strcmp(argv[4],"imageless-depth"));
     const char *instance_ext=VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME;
     VkInstanceCreateInfo ici={.sType=VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};VkInstance instance;if(pass2 || imageless){ici.enabledExtensionCount=1;ici.ppEnabledExtensionNames=&instance_ext;}OK(vkCreateInstance(&ici,NULL,&instance));
     uint32_t n=1;VkPhysicalDevice physical;OK(vkEnumeratePhysicalDevices(instance,&n,&physical));assert(n==1);
@@ -102,6 +102,7 @@ int main(int argc,char **argv) {
         VkAttachmentDescription2 a[2]={{.sType=VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,.format=attachment.format,.samples=attachment.samples,.loadOp=attachment.loadOp,.storeOp=attachment.storeOp,.stencilLoadOp=attachment.stencilLoadOp,.stencilStoreOp=attachment.stencilStoreOp,.initialLayout=attachment.initialLayout,.finalLayout=attachment.finalLayout}};
         a[1]=a[0];a[1].format=depthFmt;a[1].finalLayout=VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         VkAttachmentReference2 r={.sType=VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,.attachment=0,.layout=ref.layout,.aspectMask=VK_IMAGE_ASPECT_COLOR_BIT},zref={.sType=VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,.attachment=1,.layout=VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,.aspectMask=VK_IMAGE_ASPECT_DEPTH_BIT};
+        if(attachment_clear){r.aspectMask=VK_IMAGE_ASPECT_DEPTH_BIT;zref.aspectMask=VK_IMAGE_ASPECT_COLOR_BIT;}
         VkSubpassDescription2 sub={.sType=VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2,.pipelineBindPoint=VK_PIPELINE_BIND_POINT_GRAPHICS,.colorAttachmentCount=1,.pColorAttachments=&r,.pDepthStencilAttachment=depth?&zref:NULL};
         VkSubpassDependency2 dep={.sType=VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2,.srcSubpass=dependency.srcSubpass,.dstSubpass=dependency.dstSubpass,.srcStageMask=dependency.srcStageMask,.dstStageMask=dependency.dstStageMask,.dstAccessMask=dependency.dstAccessMask};
         VkRenderPassCreateInfo2 p={.sType=VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2,.attachmentCount=depth?2:1,.pAttachments=a,.subpassCount=1,.pSubpasses=&sub,.dependencyCount=1,.pDependencies=&dep};OK(create2(device,&p,NULL,&pass));
