@@ -187,6 +187,21 @@ Metal 34,981 bytes，`18d11cbe1df0baf1a7edb4b717cf4fec93f33dd06eb14042b52e77dc41
 Linux 与 Apple ARM64 只验证受影响的 Linux state 路径和 iOS FFI，复用此前通过且
 源码未变的 CPU/MMU/Wayland/Vulkan/Metal/guest/UI 检查。
 
+地址布局源码 [d925bd5](https://github.com/kb5000/trames/commit/d925bd554fb5a70bcd0e29079e5d2535c322d17d)
+的 [CI 39639878966](https://github.com/kb5000/trames/actions/runs/39639878966) 已通过
+Linux/Apple ARM64 的 Linux state 20 项以及 iOS FFI 检查。Apple host granule 为
+16 KiB。新 profile 的默认刷新率组仍持续重绘、停在标题回执前；采样已不再落在
+Scudo 区域扫描，不能把消除该扫描说成完整 Firefox 验收。
+
+同时发现硬 MMU 的 1 GiB 全局 VA 额度与多进程 4 GiB guest 不匹配：物理映射、
+coordinator CPU view 和 fork/worker 别名共用此额度。私有对照实际有超过 10 GiB
+的原生映射别名，与约 2–3 GiB resident RAM 不同。现将有界 VA 额度增至 32 GiB、
+CPU 注册表增至 32,768 个 1 MiB 窗口，仍保留耗尽时的软件回退和原有权限、物理
+所有权及 guest RAM 额度。新增只预留 CPU VA 的回归在旧实现失败；修复后 Memory
+93 项和严格 Clippy 通过。此次只重查 Memory 和 iOS embedding，复用未变模块。
+默认刷新率等待仍未解决；另用显式低刷新率诊断隔离退出路径，尚不据此宣称完整
+默认设置的浏览器可用或构建已完成。
+
 ## 定向验证
 
 首批 Linux Release 的 Vulkan 27 项、Wayland 12 项及相关模块严格 Clippy 通过；

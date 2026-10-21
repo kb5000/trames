@@ -366,11 +366,18 @@ def device_build_outputs(plan, repo, headers):
         import tomllib
         paths = ['crates', 'vendor', '.cargo', 'rust-toolchain.toml', 'accelerator', 'include', 'patches/mesa',
                  'scripts/build-zink-egl.py', 'scripts/zink-egl-requirements.txt']
-        runtime = reuse.get('clock_runtime')
+        layout = reuse.get('layout_runtime')
+        runtime = layout or reuse.get('clock_runtime')
         if runtime:
-            if not unchanged(runtime['sha'], ['crates', 'Cargo.toml', 'Cargo.lock', 'vendor', '.cargo', 'rust-toolchain.toml']):
+            runtime_paths = ['crates', 'vendor', '.cargo', 'rust-toolchain.toml']
+            # Workspace version-only metadata is checked against the graphics
+            # checkpoint below; dependency or build-input changes still fail.
+            if not layout:
+                runtime_paths += ['Cargo.toml', 'Cargo.lock']
+            if not unchanged(runtime['sha'], runtime_paths):
                 raise RuntimeError('Device build runtime differs from the passed clock/runtime checkpoint')
-            for name in ['firefox-clock', 'firefox-clock-apple']:
+            names = ['firefox-layout', 'firefox-layout-apple'] if layout else ['firefox-clock', 'firefox-clock-apple']
+            for name in names:
                 verified_run(runtime, 'linux.yml', name)
             # Recompile the validated current runtime; the older Metal bundle
             # only supplies source-identical guest graphics and their sources.
@@ -729,15 +736,20 @@ def main():
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=firefox-clock\nskip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
                     return
-                if plan.get('native_scope') == 'firefox-layout':
+                if plan.get('native_scope') in ('firefox-layout', 'firefox-mmu-cap'):
                     allowed = {'crates/trames-linux/src/state.rs', 'tests/integration/firefox.py',
+                               'crates/trames-memory/src/mmu/host.rs', 'crates/trames-memory/src/mmu/fault.rs',
                                'scripts/ios-ci-scope.py', '.github/workflows/linux.yml',
                                '.github/workflows/ios.yml'}
+                    if plan['native_scope'] == 'firefox-mmu-cap':
+                        allowed.remove('crates/trames-linux/src/state.rs')
+                    else:
+                        allowed.difference_update({'crates/trames-memory/src/mmu/host.rs', 'crates/trames-memory/src/mmu/fault.rs'})
                     if any(p not in allowed and not p.startswith('docs/') for p in changed):
                         raise RuntimeError('Firefox address-layout plan includes unrelated changes')
-                    print('Check changed Linux mmap/mremap policy on Linux and Apple ARM64 plus iOS embedding; reuse unchanged CPU/MMU/GPU/Wayland/UI and guest artifacts. No IPA yet.')
+                    print('Check affected Linux mapping policy or MMU capacity on Linux/Apple ARM64 plus iOS embedding; reuse unchanged modules, graphics, UI and guest artifacts. No IPA yet.')
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-                        output.write('frontend_only=false\ntargeted=true\nnative_scope=firefox-layout\nskip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
+                        output.write('frontend_only=false\ntargeted=true\nnative_scope='+plan['native_scope']+'\nskip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
                     return
                 if plan.get('native_scope') == 'firefox-runtime':
                     allowed = {'crates/trames-vfs/src/lib.rs', 'crates/trames-vfs/src/ipc.rs',

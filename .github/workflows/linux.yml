@@ -256,7 +256,7 @@ jobs:
           retention-days: 7
   firefox-layout:
     needs: scope
-    if: needs.scope.outputs.native_scope == 'firefox-layout'
+    if: needs.scope.outputs.native_scope == 'firefox-layout' || needs.scope.outputs.native_scope == 'firefox-mmu-cap'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -267,12 +267,17 @@ jobs:
       - name: Check reservation and ordinary mapping layout
         run: |
           cargo fmt --all --check
-          cargo clippy -p trames-linux --all-targets --no-deps --locked -- -D warnings
-          cargo test -p trames-linux state::tests:: --release --lib --locked
+          if [[ '${{ needs.scope.outputs.native_scope }}' == firefox-mmu-cap ]]; then
+            cargo clippy -p trames-memory --all-targets --no-deps --locked -- -D warnings
+            cargo test -p trames-memory --release --lib --locked
+          else
+            cargo clippy -p trames-linux --all-targets --no-deps --locked -- -D warnings
+            cargo test -p trames-linux state::tests:: --release --lib --locked
+          fi
           python3 -m py_compile tests/integration/firefox.py scripts/ios-ci-scope.py
   firefox-layout-apple:
     needs: [scope, firefox-layout]
-    if: needs.scope.outputs.native_scope == 'firefox-layout'
+    if: needs.scope.outputs.native_scope == 'firefox-layout' || needs.scope.outputs.native_scope == 'firefox-mmu-cap'
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -284,7 +289,11 @@ jobs:
         run: |
           uname -m
           sysctl hw.pagesize
-          cargo test -p trames-linux state::tests:: --release --lib --locked
+          if [[ '${{ needs.scope.outputs.native_scope }}' == firefox-mmu-cap ]]; then
+            cargo test -p trames-memory --release --lib --locked
+          else
+            cargo test -p trames-linux state::tests:: --release --lib --locked
+          fi
           cargo check -p trames-ffi --target aarch64-apple-ios --locked
   firefox-runtime:
     needs: scope

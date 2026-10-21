@@ -108,12 +108,15 @@ the same guard as native code. This changes translation/permission work, not a
 function's original thread-safety contract, and adds no algorithm/global lock.
 Backed mappings retain live EOF, alias, writeback and checkpoint behavior.
 
-The registry caps live CPU aliases at 2,048 windows; exhaustion falls back to
+The registry caps live CPU aliases at 32,768 windows; exhaustion falls back to
 software. Each alias reserves 1 MiB of VA, not 1 MiB of physical RAM. Physical RW mappings
 and protected CPU views have separate lifetimes; worker physical pools reserve no
 unused CPU view, and frozen CPU views allocate no unused RAM object. Fork retains
 bytes without retaining retired CPU reservations; empty windows are released.
-All live physical/CPU reservations together have a 1 GiB VA budget. Exhaustion
+A 4 GiB multi-process guest can need several times its RAM size in these aliases;
+the former combined 1 GiB VA cap forced software fallback well before its guest
+RAM quota. Increasing this capacity reserves no RAM in advance.
+All live physical/CPU reservations together have a 32 GiB VA budget. Exhaustion
 uses the checked software transport; ordinary stores do not repeatedly retry a
 failed window. No guest quota or permission changes. See the
 [Docker startup pressure report](../validation/mmu-va-pressure.md). OS page

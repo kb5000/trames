@@ -1,13 +1,14 @@
 {
-  "base_sha": "2c8981bd5d5fcaa944deb0e282df8db7b0230612",
-  "native_scope": "firefox-layout",
-  "reason": "Separate private PROT_NONE reservations from ordinary mmap/mremap allocations, preserving hints/fixed mappings. Check affected Linux state tests on Linux and Apple ARM64 plus iOS FFI; reuse passed unchanged CPU/MMU/Wayland/Vulkan/Metal/guest/UI evidence from 2c8981b. Original Firefox GPU/input/resize/shutdown checked locally; raw diagnostics remain private. Build a new IPA after shutdown validation.",
+  "base_sha": "d925bd554fb5a70bcd0e29079e5d2535c322d17d",
+  "native_scope": "firefox-mmu-cap",
+  "reason": "Increase bounded sparse hardware-MMU VA/CPU-registration capacity (not resident guest RAM); exercise affected Memory tests on Linux/Apple ARM64 and iOS FFI. Reuse unchanged Linux mmap state20 and other runtime/GPU/Wayland/guest/UI results; diagnostic Firefox remains private. Device build plumbing accepts source-bound layout checks; no IPA until shutdown validation.",
   "changed_file_sha256": {
-    ".github/workflows/ios.yml": "c78417b2b25b291c5c73ce0f18146a1e49d1c0364324945ac39545a737869a71",
-    ".github/workflows/linux.yml": "40cd8e5da4d5e87b02f9e7b2e3b1a3bad326b42ec2fbe555f0d9450a3a3883eb",
-    "crates/trames-linux/src/state.rs": "9d56173d2f75f123c1fdbdec545c235ae52af6dee2a7e2ad0ecc1fe1133dbb26",
-    "docs/validation/firefox-gles3.md": "3b47169ba154265bf04dca696bcbcef76d24f74c98ba150d38a8876c82073d11",
-    "scripts/ios-ci-scope.py": "84ce91bd7df9d60e8788d645bc0bd1f15d9c5b3cdebd0bf0de62cdb3fd11fe35",
-    "tests/integration/firefox.py": "6c2d44c81af29ea32f1d300974a11069bb63a7796410c2e1d534f94d5fbe4ac5"
+    ".github/workflows/ios.yml": "389f0c6d785fc3adfcae784a8edd025a78e612dc3a23c0e1dc4bd9e605047c17",
+    ".github/workflows/linux.yml": "b9ed027ccb3224a47869c5953cd5b64384ab078c5093ee4b90f740f77882f056",
+    "crates/trames-memory/src/mmu/fault.rs": "a3a390bf73fddb69c2ffa6a6b13fa6b3480b08e65a8d5f66913bc6fe0dc99c1e",
+    "crates/trames-memory/src/mmu/host.rs": "13606f783326a4c867765ab315561603f6dd77bc662ab71f6ae07647ba713605",
+    "docs/architecture/hardware-mmu.md": "5f052e8e03fe0753f8d8838aae504481ed7183a0d1ed0733ea7bbafc840326e2",
+    "docs/validation/firefox-gles3.md": "ddc37661c539c5615732dd98377e8bf6dcfd9679c11aff7eed96eaa0f9d830b9",
+    "scripts/ios-ci-scope.py": "534072cef6d6060f36bc3d590384ba1ff73549fb6402646902676077c0553640"
   }
 }
