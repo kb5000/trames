@@ -1,9 +1,13 @@
 {
-  "base_sha": "95b7bf4f0daa1cf4458bd62f224a1afa78407970",
+  "base_sha": "ecd0a9f801623b57dfa55bfb7438ea04f157c780",
   "native_scope": "xwayland-dialog",
   "reason": "Only fix test terminal DSR handshaking; reuse identical-source host binaries and passed Memory94/Vulkan31 checks. Production code unchanged.",
   "changed_file_sha256": {
-    ".github/workflows/xwayland-dialog.yml": "b48ac04b562d76eed78b9a365d11b1ee3daae6354646fe8fb32f8eb37ed9a0ea"
+    ".github/workflows/xwayland-dialog.yml": "34df50fd83df98cea60e5a0dc7bb75c0503db0313cf30388d9309509e46c0464",
+    "patches/moltenvk/0005-native-transparent-black-border.patch": "80a5e794c54c3634c689d81fc228329a8a713d631f55e670d5992107bd3f5ddd",
+    "scripts/build-moltenvk.py": "0543da64c8e65da3869815e8bb71de97042258c16a2738489d04b0b8f27e53e7",
+    "scripts/ios-ci-scope.py": "63fb912e3ee892dceaa8de1352b9ead8f917bddfb449a843b8225a91d8dd5a49",
+    "tests/fixtures/vulkan-texture.c": "d7c29427c359c828ed408608eda7daa89ea413d194f526d88771a0c22a5fc37d"
   },
   "dialog_runtime_reuse": {
     "sha": "e9296359a3bda86a522f238be83b0a04ecc42f94",

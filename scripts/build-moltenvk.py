@@ -32,11 +32,26 @@ NEW = OLD.replace('dstSubresource', 'srcSubresource')
 DEVICE = Path('MoltenVK/MoltenVK/GPUObjects/MVKDevice.mm')
 TF_PATCH = ROOT/'patches/moltenvk/0003-native-gpu-transform-feedback.patch'
 CROSS_PATCH = ROOT/'patches/moltenvk/0004-allow-native-tf-entry-arguments.patch'
+SAMPLER_PATCH = ROOT/'patches/moltenvk/0005-native-transparent-black-border.patch'
+IMAGE = Path('MoltenVK/MoltenVK/GPUObjects/MVKImage.mm')
 NATIVE_TF = ROOT/'crates/trames-vulkan/native/transform-feedback'
 
 
 def patch_paths(patch):
     return [Path(line[6:]) for line in patch.read_text().splitlines() if line.startswith('+++ b/')]
+
+
+def apply_sampler_patch(source):
+    path = source/IMAGE
+    before = digest(path)
+    original = path.read_text()
+    assert original.count('MTLSamplerDescriptor* MVKSampler::newMTLSamplerDescriptor(') == 1
+    assert 'auto addressMode = [&]' not in original
+    subprocess.run(['patch', '-s', '-p1', '-i', str(SAMPLER_PATCH)], cwd=source, input=b'', check=True)
+    after = path.read_text()
+    assert after.count('return MTLSamplerAddressModeClampToZero;') == original.count('return MTLSamplerAddressModeClampToZero;')+1
+    assert after.count('addressMode(pCreateInfo->') == 3
+    return dict(original_sha256=before, patched_sha256=digest(path), patch_sha256=digest(SAMPLER_PATCH))
 
 
 def apply_tf_patch(source):
@@ -93,9 +108,18 @@ def main():
     p.add_argument('--platform', choices=('macos', 'ios', 'ios-simulator'), default='macos')
     p.add_argument('--arch', choices=('arm64', 'x86_64'), default='arm64')
     p.add_argument('--verify-source', type=Path, help='verify the pinned archive and exact patch without Apple SDK')
+    p.add_argument('--verify-sampler-source', type=Path, help='verify only the new sampler patch against the pinned archive')
     p.add_argument('--verify-cross-source', type=Path, help='pinned SPIRV-Cross archive for source-only verification')
     a = p.parse_args()
     manifest = json.loads(MANIFEST.read_text())
+    if a.verify_sampler_source:
+        assert digest(a.verify_sampler_source) == manifest['archives']['moltenvk-source.tar.gz']['sha256']
+        with tempfile.TemporaryDirectory(prefix='trames-mvk-sampler-') as tmp, tarfile.open(a.verify_sampler_source) as archive:
+            member = next(v for v in archive if v.name.endswith('/'+str(IMAGE)))
+            path = Path(tmp)/IMAGE;path.parent.mkdir(parents=True)
+            path.write_bytes(archive.extractfile(member).read())
+            print(json.dumps(apply_sampler_patch(Path(tmp))))
+        return
     if a.verify_source:
         assert digest(a.verify_source) == manifest['archives']['moltenvk-source.tar.gz']['sha256']
         with tempfile.TemporaryDirectory(prefix='trames-mvk-patch-') as tmp, tarfile.open(a.verify_source) as archive:
@@ -136,7 +160,7 @@ def main():
     sdk_version = subprocess.check_output(['xcrun', '--sdk', sdk, '--show-sdk-version'], text=True).strip()
     inputs = dict(platform=a.platform, arch=a.arch, xcode=toolchain, sdk=sdk_version,
                   patch_sha256=digest(PATCH), recipe_sha256=digest(Path(__file__)),
-                  timestamp_patch_sha256=digest(TIMESTAMP_PATCH),
+                  timestamp_patch_sha256=digest(TIMESTAMP_PATCH), sampler_patch_sha256=digest(SAMPLER_PATCH),
                   transform_feedback_patch_sha256=digest(TF_PATCH), cross_dispatch_patch_sha256=digest(CROSS_PATCH),
                   transform_feedback_sources={p.name:digest(p) for p in sorted(NATIVE_TF.iterdir()) if p.is_file()},
                   manifest_sha256=digest(MANIFEST), upstream_commit=manifest['moltenvk_commit'])
@@ -183,6 +207,7 @@ def main():
     before, after = apply_patch(source)
     device_before, device_after = apply_timestamp_patch(source)
     native_tf = apply_tf_patch(source)
+    native_sampler = apply_sampler_patch(source)
     common = ['-configuration', 'Release', '-sdk', sdk, 'ARCHS='+a.arch,
               'ONLY_ACTIVE_ARCH=YES', 'CODE_SIGNING_ALLOWED=NO',
               'SYMROOT='+str(out/'products'), 'OBJROOT='+str(out/'intermediates')]
@@ -214,7 +239,7 @@ def main():
     record.write_text(json.dumps(dict(inputs=inputs, commands=commands, original_transfer_sha256=before,
         patched_transfer_sha256=after, original_device_sha256=device_before,
         patched_device_sha256=device_after, library_sha256=digest(library)), indent=2)+'\n')
-    data = json.loads(record.read_text());data['native_transform_feedback']=native_tf
+    data = json.loads(record.read_text());data['native_transform_feedback']=native_tf;data['native_sampler']=native_sampler
     record.write_text(json.dumps(data, indent=2)+'\n')
     print(out)
 

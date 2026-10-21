@@ -12,7 +12,7 @@
 #define OK(call) do {VkResult r=(call);if(r!=VK_SUCCESS){fprintf(stderr,"%s: %d at %d\n",#call,r,__LINE__);abort();}}while(0)
 #define W 256
 #define H 192
-static int static_blend;
+static int static_blend,transparent_border;
 static VkShaderModule shader(VkDevice d,const char *path) {
     FILE *f=fopen(path,"rb");assert(f);assert(!fseek(f,0,SEEK_END));long n=ftell(f);assert(n>0 && n%4==0);rewind(f);
     uint32_t *code=malloc((size_t)n);assert(code && fread(code,1,(size_t)n,f)==(size_t)n);fclose(f);
@@ -32,8 +32,25 @@ static void pixels(const uint8_t *rgba,unsigned round) {
         if(fabs(u)<0.01 || fabs(u-1)<0.01 || fabs(v)<0.01 || fabs(v-1)<0.01)continue;
         int inside=u>0 && u<1 && v>0 && v<1;
         if(inside && round!=1 && (fabs(u-0.5)<0.01 || fabs(v-0.5)<0.01))continue;
-        double expected[3]={8,12,20};
-        if(inside){
+        if(transparent_border && (fabs(u-0.25)<0.005 || fabs(u-0.75)<0.005 || fabs(v-0.25)<0.005 || fabs(v-0.75)<0.005))continue;
+        double expected[3]={8,12,20},alpha=255;
+        if(inside && transparent_border){
+            double tu=2*u-0.5,tv=2*v-0.5;
+            for(unsigned c=0;c<3;c++)expected[c]=0;
+            alpha=0;
+            int ix=(int)floor(round==1?tu*2-0.5:tu*2),iy=(int)floor(round==1?tv*2-0.5:tv*2);
+            double fx=tu*2-0.5-ix,fy=tv*2-0.5-iy;
+            for(int by=0;by<(round==1?2:1);by++)for(int bx=0;bx<(round==1?2:1);bx++){
+                int tx=ix+bx,ty=iy+by;
+                double weight=round==1?(bx?fx:1-fx)*(by?fy:1-fy):1;
+                if(tx>=0 && tx<2 && ty>=0 && ty<2){
+                    for(unsigned c=0;c<3;c++)expected[c]+=weight*colors[ty*2+tx][c];
+                    alpha+=weight*255;
+                }
+            }
+            if(round==1){expected[0]*=0.5;expected[1]*=0.25;}
+            colored++;
+        }else if(inside){
             if(round!=1){for(unsigned c=0;c<3;c++)expected[c]=colors[(v>=0.5)*2+(u>=0.5)][c];}
             else {
                 double tx=fmax(0,fmin(1,u*2-0.5)),ty=fmax(0,fmin(1,v*2-0.5));
@@ -45,9 +62,11 @@ static void pixels(const uint8_t *rgba,unsigned round) {
         if(inside && static_blend)for(unsigned c=0;c<3;c++)expected[c]=0.5*expected[c]+0.5*(double[]){8,12,20}[c];
         const uint8_t *p=rgba+(y*W+x)*4;
         for(unsigned c=0;c<3;c++)if(fabs(p[c]-expected[c])>2.0){fprintf(stderr,"texture pixel %u,%u channel %u got %u expected %.3f round %u\n",x,y,c,p[c],expected[c],round);abort();}
-        assert(p[3]==(inside && static_blend?128:255));checked++;
+        if(transparent_border)assert(fabs(p[3]-alpha)<=2);
+        else assert(p[3]==(inside && static_blend?128:255));
+        checked++;
     }
-    assert(checked>W*H*9/10 && colored>W*H/3);
+    assert(checked>W*H*(transparent_border?8:9)/10 && colored>W*H/3);
     printf("texture round %u: %s, vertex/instance input, uniforms and push constants correct\n",round+1,round==0?"uint16 indexed nearest":round==1?"uint32 indexed linear":"non-indexed nearest");
 }
 static VkBuffer host_buffer(VkPhysicalDevice physical,VkDevice d,VkDeviceSize size,VkBufferUsageFlags usage,const void *data,VkDeviceMemory *memory) {
@@ -59,7 +78,7 @@ static VkBuffer host_buffer(VkPhysicalDevice physical,VkDevice d,VkDeviceSize si
 }
 int main(int argc,char **argv) {
     assert(argc>=4 && argc<=9);int bridge=0,shifted=0,anisotropy=0,templates=0;
-    for(int i=4;i<argc;i++){if(!strcmp(argv[i],"bridge-check"))bridge=1;else if(!strcmp(argv[i],"base-offsets"))shifted=1;else if(!strcmp(argv[i],"anisotropy"))anisotropy=1;else if(!strcmp(argv[i],"static-blend"))static_blend=1;else if(!strcmp(argv[i],"template"))templates=1;else abort();}
+    for(int i=4;i<argc;i++){if(!strcmp(argv[i],"bridge-check"))bridge=1;else if(!strcmp(argv[i],"base-offsets"))shifted=1;else if(!strcmp(argv[i],"anisotropy"))anisotropy=1;else if(!strcmp(argv[i],"static-blend"))static_blend=1;else if(!strcmp(argv[i],"template"))templates=1;else if(!strcmp(argv[i],"transparent-border"))transparent_border=1;else abort();}
     VkInstanceCreateInfo ici={.sType=VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};VkInstance instance;OK(vkCreateInstance(&ici,NULL,&instance));
     uint32_t n=1;VkPhysicalDevice physical;OK(vkEnumeratePhysicalDevices(instance,&n,&physical));assert(n==1);
     VkPhysicalDeviceProperties properties;vkGetPhysicalDeviceProperties(physical,&properties);fprintf(stderr,"Vulkan texture driver: %s\n",properties.deviceName);
@@ -91,6 +110,7 @@ int main(int argc,char **argv) {
     VkCommandPoolCreateInfo poolInfo={.sType=VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,.flags=VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,.queueFamilyIndex=family};VkCommandPool pool;OK(vkCreateCommandPool(device,&poolInfo,NULL,&pool));VkCommandBufferAllocateInfo commandInfo={.sType=VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,.commandPool=pool,.level=VK_COMMAND_BUFFER_LEVEL_PRIMARY,.commandBufferCount=1};VkCommandBuffer command;OK(vkAllocateCommandBuffers(device,&commandInfo,&command));VkFenceCreateInfo fenceInfo={.sType=VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};VkFence fence;OK(vkCreateFence(device,&fenceInfo,NULL,&fence));
     // Each vertex buffer has a nonzero binding offset and a dummy vertex.
     float vertexData[24]={99,99,99,99, 99,99,99,99, -0.75f,-0.75f,0,0, 0.75f,-0.75f,1,0, -0.75f,0.75f,0,1, 0.75f,0.75f,1,1};
+    if(transparent_border)for(unsigned i=8;i<24;i+=4){vertexData[i+2]=2*vertexData[i+2]-0.5f;vertexData[i+3]=2*vertexData[i+3]-0.5f;}
     float instanceData[6]={99,99,99,99,0.125f,0.125f};
     uint16_t indices16[5]={0xffff,1,2,3,4};uint32_t indices32[5]={0xffffffff,1,2,3,4};
     if(shifted)for(unsigned i=1;i<5;i++){indices16[i]--;indices32[i]++;}
@@ -107,7 +127,7 @@ int main(int argc,char **argv) {
     VkImage texture;OK(vkCreateImage(device,&textureInfo,NULL,&texture));VkMemoryRequirements textureReq;vkGetImageMemoryRequirements(device,texture,&textureReq);
     alloc.allocationSize=textureReq.size;alloc.memoryTypeIndex=type(physical,textureReq.memoryTypeBits,0);VkDeviceMemory textureMemory;OK(vkAllocateMemory(device,&alloc,NULL,&textureMemory));OK(vkBindImageMemory(device,texture,textureMemory,0));
     viewInfo.image=texture;VkImageView textureView;OK(vkCreateImageView(device,&viewInfo,NULL,&textureView));
-    VkSampler samplers[2];for(unsigned i=0;i<2;i++){VkSamplerCreateInfo sampler={.sType=VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,.magFilter=i?VK_FILTER_LINEAR:VK_FILTER_NEAREST,.minFilter=i?VK_FILTER_LINEAR:VK_FILTER_NEAREST,.mipmapMode=VK_SAMPLER_MIPMAP_MODE_NEAREST,.addressModeU=VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,.addressModeV=VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,.addressModeW=VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,.anisotropyEnable=anisotropy && i,.maxAnisotropy=16};OK(vkCreateSampler(device,&sampler,NULL,&samplers[i]));}
+    VkSampler samplers[2];for(unsigned i=0;i<2;i++){VkSamplerCreateInfo sampler={.sType=VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,.magFilter=i?VK_FILTER_LINEAR:VK_FILTER_NEAREST,.minFilter=i?VK_FILTER_LINEAR:VK_FILTER_NEAREST,.mipmapMode=VK_SAMPLER_MIPMAP_MODE_NEAREST,.addressModeU=transparent_border?VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER:VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,.addressModeV=transparent_border?VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER:VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,.addressModeW=transparent_border?VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER:VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,.anisotropyEnable=anisotropy && i,.maxAnisotropy=16};OK(vkCreateSampler(device,&sampler,NULL,&samplers[i]));}
     VkDescriptorPoolSize sizes[4]={{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,2},{VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,1},{VK_DESCRIPTOR_TYPE_SAMPLER,1},{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,2}};
     VkDescriptorPoolCreateInfo dp={.sType=VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,.maxSets=1,.poolSizeCount=4,.pPoolSizes=sizes};VkDescriptorPool descriptorPool;OK(vkCreateDescriptorPool(device,&dp,NULL,&descriptorPool));
     VkDescriptorSetAllocateInfo da={.sType=VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,.descriptorPool=descriptorPool,.descriptorSetCount=1,.pSetLayouts=&setLayout};VkDescriptorSet set;OK(vkAllocateDescriptorSets(device,&da,&set));
@@ -162,6 +182,7 @@ int main(int argc,char **argv) {
         for(unsigned i=0;i<W*H;i++)assert(rgba[i*4]==16 && rgba[i*4+1]==80 && rgba[i*4+2]==192 && rgba[i*4+3]==255);
         puts("native anisotropic sampler and transfer color clear: correct");
     }
+    if(transparent_border)puts("vulkan-transparent-border-ok: nearest and linear, outside texels and alpha correct");
     if(static_blend)puts("static viewport/scissor and source-alpha blending: correct");
     FILE *file=fopen(argv[3],"wb");assert(file);assert(fprintf(file,"P6\n%d %d\n255\n",W,H)>0);for(unsigned i=0;i<W*H;i++)assert(fwrite(rgba+i*4,1,3,file)==3);assert(!fclose(file));
     OK(vkDeviceWaitIdle(device));vkDestroyDescriptorPool(device,descriptorPool,NULL);vkDestroyDescriptorSetLayout(device,setLayout,NULL);for(unsigned i=0;i<2;i++)vkDestroySampler(device,samplers[i],NULL);vkDestroyImageView(device,textureView,NULL);vkDestroyImage(device,texture,NULL);vkFreeMemory(device,textureMemory,NULL);for(unsigned i=0;i<6;i++){vkDestroyBuffer(device,extra[i],NULL);vkFreeMemory(device,extraMemory[i],NULL);}vkDestroyFence(device,fence,NULL);vkDestroyCommandPool(device,pool,NULL);vkUnmapMemory(device,bufferMemory);vkDestroyBuffer(device,buffer,NULL);vkFreeMemory(device,bufferMemory,NULL);vkDestroyPipeline(device,pipeline,NULL);vkDestroyPipelineLayout(device,layout,NULL);vkDestroyFramebuffer(device,framebuffer,NULL);vkDestroyRenderPass(device,pass,NULL);vkDestroyImageView(device,view,NULL);vkDestroyImage(device,image,NULL);vkFreeMemory(device,imageMemory,NULL);vkDestroyDevice(device,NULL);vkDestroyInstance(instance,NULL);if(shifted)puts("nonzero base vertex/instance: correct");puts("vulkan-texture-ok");return 0;

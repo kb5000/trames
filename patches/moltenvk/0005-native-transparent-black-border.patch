@@ -1,0 +1,34 @@
+SPDX-License-Identifier: GPL-3.0-or-later
+Subject: [PATCH] Use native clamp-to-zero for transparent black border samplers
+
+Preserve core Vulkan transparent-black sampling and linear border weighting
+without requesting optional Metal border-color support. Other colors and
+constexpr samplers retain upstream handling. No software shader or CPU copy.
+
+--- a/MoltenVK/MoltenVK/GPUObjects/MVKImage.mm
++++ b/MoltenVK/MoltenVK/GPUObjects/MVKImage.mm
+@@ -2486,10 +2486,21 @@
+ MTLSamplerDescriptor* MVKSampler::newMTLSamplerDescriptor(const VkSamplerCreateInfo* pCreateInfo) {
+ 
+ 	MTLSamplerDescriptor* mtlSampDesc = [MTLSamplerDescriptor new];		// retained
+-	mtlSampDesc.sAddressMode = getMTLSamplerAddressMode(pCreateInfo->addressModeU);
+-	mtlSampDesc.tAddressMode = getMTLSamplerAddressMode(pCreateInfo->addressModeV);
++	// Transparent black is exactly clamp-to-zero, including filtered border
++	// texels. Avoid requiring optional Metal border-color support for this
++	// core Vulkan case (notably on Apple paravirtual devices).
++	auto addressMode = [&](VkSamplerAddressMode mode) {
++		if (mode == VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER &&
++			(pCreateInfo->borderColor == VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK ||
++			 pCreateInfo->borderColor == VK_BORDER_COLOR_INT_TRANSPARENT_BLACK)) {
++			return MTLSamplerAddressModeClampToZero;
++		}
++		return getMTLSamplerAddressMode(mode);
++	};
++	mtlSampDesc.sAddressMode = addressMode(pCreateInfo->addressModeU);
++	mtlSampDesc.tAddressMode = addressMode(pCreateInfo->addressModeV);
+     if (!pCreateInfo->unnormalizedCoordinates) {
+-        mtlSampDesc.rAddressMode = getMTLSamplerAddressMode(pCreateInfo->addressModeW);
++        mtlSampDesc.rAddressMode = addressMode(pCreateInfo->addressModeW);
+     }
+ 	mtlSampDesc.borderColorMVK = mvkMTLSamplerBorderColorFromVkBorderColor(pCreateInfo->borderColor);
+ 
