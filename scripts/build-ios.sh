@@ -42,7 +42,8 @@ case "$platform" in
   device) native_platform=ios ;;
   simulator) native_platform=ios-simulator ;;
 esac
-export TRAMES_MOLTENVK_STATIC_DIR="$(python3 scripts/build-moltenvk.py --platform "$native_platform" --arch arm64)"
+native_moltenvk_dir="$(python3 scripts/build-moltenvk.py --platform "$native_platform" --arch arm64)"
+export TRAMES_MOLTENVK_STATIC_DIR="$native_moltenvk_dir"
 python3 - <<'PYCODE'
 import hashlib,json,pathlib
 p=pathlib.Path('apps/ios/Trames/GuestMusl');m=json.loads((p/'manifest.json').read_text());assert hashlib.sha256((p/'libc.so').read_bytes()).hexdigest()==m['libc_sha256']

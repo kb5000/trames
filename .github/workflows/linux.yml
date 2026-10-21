@@ -378,7 +378,8 @@ jobs:
       - name: Verify original Mesa Wayland EGL on exported Metal textures
         run: |
           python3 scripts/prepare-vulkan.py --apple --source-build
-          export TRAMES_MOLTENVK_STATIC_DIR="$(python3 scripts/build-moltenvk.py --platform macos --arch arm64)"
+          native_moltenvk_dir="$(python3 scripts/build-moltenvk.py --platform macos --arch arm64)"
+          export TRAMES_MOLTENVK_STATIC_DIR="$native_moltenvk_dir"
           export MACOSX_DEPLOYMENT_TARGET=12.0
           export RUSTFLAGS="-C link-arg=-framework -C link-arg=IOKit -C link-arg=$(xcrun clang --print-runtime-dir)/libclang_rt.osx.a"
           cargo build -p trames-ffi --release --locked
@@ -506,7 +507,8 @@ jobs:
         run: |
           mkdir -p target/zink-metal-native
           python3 scripts/prepare-vulkan.py --apple --source-build
-          export TRAMES_MOLTENVK_STATIC_DIR="$(python3 scripts/build-moltenvk.py --platform macos --arch arm64)"
+          native_moltenvk_dir="$(python3 scripts/build-moltenvk.py --platform macos --arch arm64)"
+          export TRAMES_MOLTENVK_STATIC_DIR="$native_moltenvk_dir"
           export MACOSX_DEPLOYMENT_TARGET=12.0
           export RUSTFLAGS="-C link-arg=-framework -C link-arg=IOKit -C link-arg=$(xcrun clang --print-runtime-dir)/libclang_rt.osx.a"
           cargo build -p trames-cli --release --locked

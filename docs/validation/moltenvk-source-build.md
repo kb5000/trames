@@ -24,7 +24,8 @@ python3 scripts/build-moltenvk.py --platform ios --arch arm64
 ```
 
 脚本先校验原始归档摘要，复制独立的 MoltenVK source tree，并链接固定依赖源码，
-再应用且核对只有这一行的补丁。它调用上游原有 ExternalDependencies scheme
+复用上游 fetchDependencies 同样的固定 SPIRV-Headers 与原包预生成 SPIRV-Tools
+头文件，再应用且核对只有这一行的补丁。它调用上游原有 ExternalDependencies scheme
 及 MoltenVK static target，Release 构建所选 SDK/架构；不更改上游二进制归档，
 不在已链接的 master object 中热替换符号，也不静默退回旧驱动。
 

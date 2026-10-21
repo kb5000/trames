@@ -9,6 +9,7 @@ full Xcode output and source/toolchain/library hashes remain in the build folder
 import argparse
 import difflib
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -18,6 +19,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 PATCH = ROOT/'patches/moltenvk/0001-use-source-mip-depth-for-volume-blits.patch'
@@ -59,6 +61,9 @@ def main():
             path = Path(tmp)/TRANSFER;path.parent.mkdir(parents=True)
             path.write_bytes(archive.extractfile(member).read())
             before, after = apply_patch(Path(tmp))
+            archive_name = next(v for v in archive.getnames() if v.endswith('/Templates/spirv-tools/build.zip'))
+            with zipfile.ZipFile(io.BytesIO(archive.extractfile(archive_name).read())) as headers:
+                assert headers.testzip() is None and 'build/OpenCLDebugInfo100.h' in headers.namelist()
             print(json.dumps(dict(original_sha256=before, patched_sha256=after, patch_sha256=digest(PATCH))))
         return
     assert platform.system() == 'Darwin', 'An Apple SDK host is required to build native MoltenVK'
@@ -98,15 +103,28 @@ def main():
         if 'destination' not in item:
             continue
         path = source/item['destination'];path.parent.mkdir(parents=True, exist_ok=True)
-        path.symlink_to(projects[name], target_is_directory=True)
+        if name == 'moltenvk-dependency-SPIRV-Tools.tar.gz':
+            shutil.copytree(projects[name], path, symlinks=True)
+        else:
+            path.symlink_to(projects[name], target_is_directory=True)
+    # Match upstream fetchDependencies' default setup, without cloning or
+    # regenerating tables from a different version. These headers are shipped
+    # inside the verified original MoltenVK source archive.
+    tools = source/'External/SPIRV-Tools'
+    spirv_headers = tools/'external/spirv-headers'
+    spirv_headers.symlink_to(projects['moltenvk-dependency-SPIRV-Headers.tar.gz'], target_is_directory=True)
+    with zipfile.ZipFile(source/'Templates/spirv-tools/build.zip') as headers:
+        assert headers.testzip() is None
+        headers.extractall(tools)
+    assert (tools/'build/OpenCLDebugInfo100.h').is_file()
     before, after = apply_patch(source)
     common = ['-configuration', 'Release', '-sdk', sdk, 'ARCHS='+a.arch,
               'ONLY_ACTIVE_ARCH=YES', 'CODE_SIGNING_ALLOWED=NO',
               'SYMROOT='+str(out/'products'), 'OBJROOT='+str(out/'intermediates')]
     commands = [
-        ['xcodebuild', '-project', 'ExternalDependencies.xcodeproj', '-scheme', 'ExternalDependencies-'+os_name,
+        ['xcodebuild', '-jobs', '4', '-project', 'ExternalDependencies.xcodeproj', '-scheme', 'ExternalDependencies-'+os_name,
          '-destination', 'generic/platform='+destination, *common, 'build'],
-        ['xcodebuild', '-project', 'MoltenVK/MoltenVK.xcodeproj', '-target', 'MoltenVK-'+os_name+'-static', *common, 'build'],
+        ['xcodebuild', '-jobs', '4', '-project', 'MoltenVK/MoltenVK.xcodeproj', '-target', 'MoltenVK-'+os_name+'-static', *common, 'build'],
     ]
     with (out/'xcodebuild.log').open('wb') as log:
         for command in commands:
