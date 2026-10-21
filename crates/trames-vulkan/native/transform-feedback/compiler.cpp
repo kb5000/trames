@@ -5,7 +5,7 @@
 #include <set>
 #include <tuple>
 
-using namespace spirv_cross;
+using namespace SPIRV_CROSS_NAMESPACE;
 using namespace spv;
 namespace trames { namespace tf {
 namespace {
@@ -183,6 +183,14 @@ void Compiler::append_helpers(Compiler& raster) {
         require(found != expressions.end(), "Captured output cannot supply the raster interface.");
         statement(scalar.second, " = ", found->second, ";");
     }
+    const auto& raster_output = raster.get_stage_out_struct_type();
+    for (uint32_t i = 0; i < raster_output.member_types.size(); ++i) {
+        BuiltIn builtin;
+        if (!raster.is_member_builtin(raster_output, i, &builtin) || builtin != BuiltInPosition) continue;
+        auto position = "raster." + raster.to_member_name(raster_output, i);
+        if (options.vertex.flip_vert_y) statement(position, ".y = -", position, ".y;");
+        if (options.vertex.fixup_clipspace) statement(position, ".z = (", position, ".z + ", position, ".w) * 0.5;");
+    }
     statement("return raster;");
     end_scope();
     program_.source += buffer.str();
@@ -196,8 +204,6 @@ Program Compiler::compile_feedback() {
     msl_options.disable_rasterization = true;
     // Vulkan captures the unmodified vertex output. Coordinate fixes belong in
     // replay, never in the data captured for the application.
-    require(!options.vertex.flip_vert_y && !options.vertex.fixup_clipspace,
-            "Transform feedback replay coordinate fixup has not been configured.");
     Compiler raster(ir);
     auto raster_options = msl_options;
     raster_options.capture_output_to_buffer = false;
@@ -205,10 +211,49 @@ Program Compiler::compile_feedback() {
     raster_options.disable_rasterization = false;
     raster.set_msl_options(raster_options);
     raster.CompilerMSL::compile();
+    auto original_common = options;
+    options.vertex.flip_vert_y = false;
+    options.vertex.fixup_clipspace = false;
     auto original_entry = get_entry_point().name;
     program_.source = CompilerMSL::compile();
     program_.capture_entry = get_cleansed_entry_point_name(original_entry, ExecutionModelVertex);
+    options = original_common;
     append_helpers(raster);
     return program_;
+}
+
+Program Compiler::describe_feedback() {
+    require(scalars_.empty(), "Transform feedback compiler cannot be reused.");
+    reflect_outputs();return program_;
+}
+
+std::string Compiler::runtime_arguments() {
+    if (!runtime_parameters_ || !processing_entry_point) return "";
+    auto arguments = join(", constant uint* tramesTFDraw [[buffer(", msl_options.indirect_params_buffer_index, ")]]");
+    if (msl_options.vertex_index_type != Options::IndexType::None)
+        arguments += join(", const device ", msl_options.vertex_index_type == Options::IndexType::UInt16 ? "ushort" : "uint",
+                          "* tramesTFIndices [[buffer(", msl_options.shader_patch_output_buffer_index, ")]]");
+    return arguments;
+}
+std::string Compiler::entry_point_args_classic(bool comma) {
+    return CompilerMSL::entry_point_args_classic(comma) + runtime_arguments();
+}
+std::string Compiler::entry_point_args_argument_buffer(bool comma) {
+    return CompilerMSL::entry_point_args_argument_buffer(comma) + runtime_arguments();
+}
+void Compiler::emit_function_prototype(SPIRFunction& function, const Bitset& flags) {
+    // The original compiler has already installed builtin/local fixups. Append
+    // this before body emission, exactly once even if it recompiles the source.
+    if (runtime_parameters_ && !runtime_hook_installed_ && function.self == ir.default_entry_point) {
+        runtime_hook_installed_ = true;
+        function.fixup_hooks_in.push_back([this]() {
+            auto gid = to_expression(builtin_invocation_id_id);
+            statement("if (", gid, ".x >= tramesTFDraw[0] || ", gid, ".y >= tramesTFDraw[1]) return;");
+            if (msl_options.vertex_index_type != Options::IndexType::None)
+                statement("if (tramesTFDraw[5] && tramesTFIndices[", gid, ".x] == ",
+                          msl_options.vertex_index_type == Options::IndexType::UInt16 ? "0xffffu" : "0xffffffffu", ") return;");
+        });
+    }
+    CompilerMSL::emit_function_prototype(function, flags);
 }
 }}

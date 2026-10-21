@@ -1,0 +1,589 @@
+Native GPU transform feedback adapter for pinned MoltenVK db660224.
+Original MoltenVK sources remain Apache-2.0; new Trames includes are GPL-3.0-or-later.
+
+--- a/MoltenVK/MoltenVK/Commands/MVKCmdDraw.h
++++ b/MoltenVK/MoltenVK/Commands/MVKCmdDraw.h
+@@ -17,6 +17,7 @@
+  */
+ 
+ #pragma once
++#include "mvk-state.hpp"
+ 
+ #include "MVKCommand.h"
+ #include "MVKMTLResourceBindings.h"
+@@ -149,6 +150,8 @@
+ 						uint32_t count,
+ 						uint32_t stride);
+ 
++    VkResult setContent(MVKCommandBuffer*, id<MTLBuffer>, VkDeviceSize, uint32_t, uint32_t);
++
+ 	void encode(MVKCommandEncoder* cmdEncoder) override;
+ 
+ protected:
+@@ -193,3 +196,5 @@
+ 	uint32_t _drawCount;
+ 	uint32_t _directCmdFirstInstance;
+ };
++
++#include "mvk-command.hpp"
+--- a/MoltenVK/MoltenVK/Commands/MVKCmdDraw.mm
++++ b/MoltenVK/MoltenVK/Commands/MVKCmdDraw.mm
+@@ -23,6 +23,7 @@
+ #include "MVKPipeline.h"
+ #include "MVKFoundation.h"
+ #include "mvk_datatypes.hpp"
++#include "mvk-commands.inc"
+ 
+ 
+ #pragma mark -
+@@ -170,6 +171,7 @@
+ }
+ 
+ void MVKCmdDraw::encode(MVKCommandEncoder* cmdEncoder) {
++	if (mvkTFDraw(cmdEncoder, _vertexCount, _instanceCount, _firstVertex, 0, _firstInstance, false)) return;
+ 
+ 	if (_vertexCount == 0 || _instanceCount == 0) { return; }	// Nothing to do.
+ 
+@@ -443,6 +445,7 @@
+ }
+ 
+ void MVKCmdDrawIndexed::encode(MVKCommandEncoder* cmdEncoder) {
++	if (mvkTFDraw(cmdEncoder, _indexCount, _instanceCount, _firstIndex, _vertexOffset, _firstInstance, true)) return;
+ 
+ 	if (_indexCount == 0 || _instanceCount == 0) { return; }	// Nothing to do.
+ 
+@@ -720,6 +723,10 @@
+ }
+ 
+ void MVKCmdDrawIndirect::encode(MVKCommandEncoder* cmdEncoder) {
++    if (cmdEncoder->_transformFeedback.active) {
++        for (uint32_t i=0; i<_drawCount; ++i) mvkTFDraw(cmdEncoder,0,0,0,0,0,false,_mtlIndirectBuffer,_mtlIndirectBufferOffset+NSUInteger(i)*_mtlIndirectBufferStride);
++        return;
++    }
+ 
+ 	cmdEncoder->restartMetalRenderPassIfNeeded();
+ 
+@@ -1030,6 +1037,10 @@
+ }
+ 
+ void MVKCmdDrawIndexedIndirect::encode(MVKCommandEncoder* cmdEncoder, const MVKIndexMTLBufferBinding& ibbOrig) {
++    if (cmdEncoder->_transformFeedback.active) {
++        for (uint32_t i=0; i<_drawCount; ++i) mvkTFDraw(cmdEncoder,0,0,0,0,0,true,_mtlIndirectBuffer,_mtlIndirectBufferOffset+NSUInteger(i)*_mtlIndirectBufferStride);
++        return;
++    }
+ 
+     cmdEncoder->_isIndexedDraw = true;
+ 
+@@ -1323,3 +1334,7 @@
+     }
+ }
+ 
++
++VkResult MVKCmdDrawIndirect::setContent(MVKCommandBuffer*, id<MTLBuffer> buffer, VkDeviceSize offset, uint32_t count, uint32_t stride) {
++    _mtlIndirectBuffer=buffer;_mtlIndirectBufferOffset=offset;_drawCount=count;_mtlIndirectBufferStride=stride;return VK_SUCCESS;
++}
+--- a/MoltenVK/MoltenVK/Commands/MVKCmdQueries.mm
++++ b/MoltenVK/MoltenVK/Commands/MVKCmdQueries.mm
+@@ -144,7 +144,7 @@
+ 
+ void MVKCmdCopyQueryPoolResults::encode(MVKCommandEncoder* cmdEncoder) {
+     // What happens now depends on whether or not I was added before or after the query ended.
+-    if (!_queryPool->areQueriesDeviceAvailable(_query, _queryCount) && mvkIsAnyFlagEnabled(_flags, VK_QUERY_RESULT_WAIT_BIT)) {
++    if (!_queryPool->areQueriesDeviceAvailable(_query, _query + _queryCount) && mvkIsAnyFlagEnabled(_flags, VK_QUERY_RESULT_WAIT_BIT)) {
+         // Defer this until the queries will be done.
+         _queryPool->deferCopyResults(_query, _queryCount, _destBuffer, _destOffset, _destStride, _flags);
+     } else {
+--- a/MoltenVK/MoltenVK/Commands/MVKCommandBuffer.h
++++ b/MoltenVK/MoltenVK/Commands/MVKCommandBuffer.h
+@@ -17,6 +17,7 @@
+  */
+ 
+ #pragma once
++#include "mvk-state.hpp"
+ 
+ #include "MVKDevice.h"
+ #include "MVKCommand.h"
+@@ -507,6 +508,8 @@
+ 
+ 	/** Indicates whether the current draw is an indexed draw. */
+ 	bool _isIndexedDraw;
++    MVKTFEncoderState _transformFeedback;
++    void activateTransformFeedbackQuery(MVKQueryPool* pool, uint32_t query) { addActivatedQueries(pool, query, 1); }
+ 
+ #pragma mark Construction
+ 
+--- a/MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.h
++++ b/MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.h
+@@ -17,6 +17,7 @@
+  */
+ 
+ #pragma once
++#include "mvk-state.hpp"
+ 
+ #include "MVKCommandResourceFactory.h"
+ #include "MVKMTLBufferAllocation.h"
+@@ -137,6 +138,7 @@
+ 	id<MTLComputePipelineState> getConvertUint8IndicesMTLComputePipelineState();
+ 
+ 	/** Deletes all the internal resources. */
++	id<MTLComputePipelineState> getTransformFeedbackPipeline(uint32_t kind);
+ 	void clear();
+ 
+ #pragma mark Construction
+@@ -148,6 +150,7 @@
+ protected:
+ 	void destroyMetalResources();
+ 
++	id<MTLComputePipelineState> _mtlTFPipelines[MVKTFKernelCount] = {};
+ 	MVKCommandPool* _commandPool;
+ 	std::mutex _lock;
+     std::unordered_map<MVKRPSKeyBlitImg, id<MTLRenderPipelineState>> _cmdBlitImageMTLRenderPipelineStates;
+--- a/MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.mm
++++ b/MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.mm
+@@ -186,6 +186,7 @@
+ /**  Ensure all cached Metal components are released. */
+ void MVKCommandEncodingPool::destroyMetalResources() {
+ 	MVKDevice* mvkDev = _commandPool->getDevice();
++	for (auto& pipeline : _mtlTFPipelines) { [pipeline release]; pipeline = nil; }
+ 
+     for (auto& pair : _cmdBlitImageMTLRenderPipelineStates) { [pair.second release]; }
+     _cmdBlitImageMTLRenderPipelineStates.clear();
+@@ -259,3 +260,7 @@
+     _mtlConvertUint8IndicesComputePipelineState = nil;
+ }
+ 
++
++id<MTLComputePipelineState> MVKCommandEncodingPool::getTransformFeedbackPipeline(uint32_t kind) {
++    MVK_ENC_REZ_ACCESS(_mtlTFPipelines[kind], newTransformFeedbackPipeline(kind, _commandPool));
++}
+--- a/MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.h
++++ b/MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.h
+@@ -17,6 +17,7 @@
+  */
+ 
+ #pragma once
++#include "mvk-state.hpp"
+ 
+ #include "MVKDevice.h"
+ #include "MVKFoundation.h"
+@@ -385,6 +386,7 @@
+ 
+ 	~MVKCommandResourceFactory() override;
+ 
++id<MTLComputePipelineState> newTransformFeedbackPipeline(uint32_t kind, MVKVulkanAPIDeviceObject* owner);
+ protected:
+ 	void initMTLLibrary();
+ 	void initImageDeviceMemory();
+--- a/MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.mm
++++ b/MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.mm
+@@ -18,6 +18,7 @@
+ 
+ #include "MVKCommandResourceFactory.h"
+ #include "MVKCommandPipelineStateFactoryShaderSource.h"
++#include "tf-utility-source.inc"
+ #include "MVKImage.h"
+ #include "MVKPipeline.h"
+ #include "MVKFoundation.h"
+@@ -700,7 +701,7 @@
+     @autoreleasepool {
+         NSError* err = nil;
+ 		uint64_t startTime = getPerformanceTimestamp();
+-        _mtlLibrary = [getMTLDevice() newLibraryWithSource: _MVKStaticCmdShaderSource
++        _mtlLibrary = [getMTLDevice() newLibraryWithSource: [_MVKStaticCmdShaderSource stringByAppendingString:_TramesTFCommandShaderSource]
+                                                    options: getDevice()->getMTLCompileOptions()
+                                                      error: &err];    // retained
+ 		MVKAssert( !err, "Could not compile command shaders (Error code %li):\n%s", (long)err.code, err.localizedDescription.UTF8String);
+@@ -725,3 +726,9 @@
+ 	if (_transferImageMemory) { _transferImageMemory->destroy(); }
+ }
+ 
++
++id<MTLComputePipelineState> MVKCommandResourceFactory::newTransformFeedbackPipeline(uint32_t kind, MVKVulkanAPIDeviceObject* owner) {
++    static const char* names[] = {"trames_tf_assemble","trames_tf_map","trames_tf_begin","trames_tf_end","trames_tf_byte_count",
++      "trames_tf_parameters","trames_tf_copy_indices16","trames_tf_copy_indices32","trames_tf_query_accumulate","trames_tf_query_copy","trames_tf_dispatch"};
++    return newMTLComputePipelineState(names[kind], owner);
++}
+--- a/MoltenVK/MoltenVK/Commands/MVKCommandTypePools.def
++++ b/MoltenVK/MoltenVK/Commands/MVKCommandTypePools.def
+@@ -115,6 +115,7 @@
+ MVK_CMD_TYPE_POOL(SetProvokingVertexMode)
+ MVK_CMD_TYPE_POOLS_FROM_2_THRESHOLDS(BindVertexBuffers, 1, 2)
+ MVK_CMD_TYPE_POOL(BindIndexBuffer)
++MVK_CMD_TYPE_POOL(TransformFeedback)
+ MVK_CMD_TYPE_POOL(Draw)
+ MVK_CMD_TYPE_POOL(DrawIndexed)
+ MVK_CMD_TYPE_POOL(DrawIndirect)
+--- a/MoltenVK/MoltenVK/GPUObjects/MVKDevice.mm
++++ b/MoltenVK/MoltenVK/GPUObjects/MVKDevice.mm
+@@ -554,7 +554,12 @@
+ 				varPtrFeatures->variablePointers = supportedFeats11.variablePointers;
+ 				break;
+ 			}
+-			case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES: {
++			case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT: {
++                auto* features=(VkPhysicalDeviceTransformFeedbackFeaturesEXT*)next;
++                features->transformFeedback=_metalFeatures.mslVersion>=20300;
++                features->geometryStreams=VK_FALSE;break;
++            }
++            case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES: {
+ 				auto* divisorFeatures = (VkPhysicalDeviceVertexAttributeDivisorFeatures*)next;
+ 				divisorFeatures->vertexAttributeInstanceRateDivisor = supportedFeats14.vertexAttributeInstanceRateDivisor;
+ 				divisorFeatures->vertexAttributeInstanceRateZeroDivisor = supportedFeats14.vertexAttributeInstanceRateZeroDivisor;
+@@ -1303,7 +1308,16 @@
+ 				sampLocnProps->variableSampleLocations = true;
+ 				break;
+ 			}
+-			case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT: {
++			case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_PROPERTIES_EXT: {
++                auto* p=(VkPhysicalDeviceTransformFeedbackPropertiesEXT*)next;
++                p->maxTransformFeedbackStreams=1;p->maxTransformFeedbackBuffers=4;
++                p->maxTransformFeedbackBufferSize=64*1024*1024;
++                p->maxTransformFeedbackStreamDataSize=512;p->maxTransformFeedbackBufferDataSize=512;
++                p->maxTransformFeedbackBufferDataStride=2048;p->transformFeedbackQueries=VK_TRUE;
++                p->transformFeedbackStreamsLinesTriangles=VK_TRUE;p->transformFeedbackRasterizationStreamSelect=VK_FALSE;
++                p->transformFeedbackDraw=VK_TRUE;break;
++            }
++            case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT: {
+ 				// VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT is different than the promoted VkPhysicalDeviceVertexAttributeDivisorProperties.
+ 				auto* divisorProps = (VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT*)next;
+ 				divisorProps->maxVertexAttribDivisor = supportedProps14.maxVertexAttribDivisor;
+@@ -3257,6 +3271,7 @@
+ 
+ 	// Clear the UUID
+ 	mvkClear(&_properties.pipelineCacheUUID, VK_UUID_SIZE);
++	_properties.pipelineCacheUUID[15] = 3; // Trames native TF shader/cache ABI
+ 
+ 	size_t uuidComponentOffset = 0;
+ 
+@@ -4307,6 +4322,8 @@
+                                          const VkAllocationCallbacks* pAllocator) {
+ 	@autoreleasepool {
+ 		switch (pCreateInfo->queryType) {
++			case VK_QUERY_TYPE_TRANSFORM_FEEDBACK_STREAM_EXT:
++				return new MVKTFQueryPool(this, pCreateInfo);
+ 			case VK_QUERY_TYPE_OCCLUSION:
+ 				return new MVKOcclusionQueryPool(this, pCreateInfo);
+ 			case VK_QUERY_TYPE_TIMESTAMP:
+--- a/MoltenVK/MoltenVK/GPUObjects/MVKDeviceFeatureStructs.def
++++ b/MoltenVK/MoltenVK/GPUObjects/MVKDeviceFeatureStructs.def
+@@ -97,6 +97,7 @@
+ MVK_DEVICE_FEATURE_EXTN(ShaderSubgroupUniformControlFlow, SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW, KHR,   1)
+ MVK_DEVICE_FEATURE_EXTN(SwapchainMaintenance1,            SWAPCHAIN_MAINTENANCE_1,              KHR,   1)
+ MVK_DEVICE_FEATURE_EXTN(4444Formats,                      4444_FORMATS,                         EXT,   2)
++MVK_DEVICE_FEATURE_EXTN(TransformFeedback, TRANSFORM_FEEDBACK, EXT, 2)
+ MVK_DEVICE_FEATURE_EXTN(DepthClipControl,                 DEPTH_CLIP_CONTROL,                   EXT,   1)
+ MVK_DEVICE_FEATURE_EXTN(ExtendedDynamicState,             EXTENDED_DYNAMIC_STATE,               EXT,   1)
+ MVK_DEVICE_FEATURE_EXTN(ExtendedDynamicState2,            EXTENDED_DYNAMIC_STATE_2,             EXT,   3)
+--- a/MoltenVK/MoltenVK/GPUObjects/MVKInstance.mm
++++ b/MoltenVK/MoltenVK/GPUObjects/MVKInstance.mm
+@@ -634,6 +634,13 @@
+ 	ADD_DVC_ENTRY_POINT(vkCmdBindIndexBuffer);
+ 	ADD_DVC_ENTRY_POINT(vkCmdBindVertexBuffers);
+ 	ADD_DVC_ENTRY_POINT(vkCmdDraw);
++	ADD_DVC_EXT_ENTRY_POINT(vkCmdBindTransformFeedbackBuffersEXT, EXT_TRANSFORM_FEEDBACK);
++	ADD_DVC_EXT_ENTRY_POINT(vkCmdBeginTransformFeedbackEXT, EXT_TRANSFORM_FEEDBACK);
++	ADD_DVC_EXT_ENTRY_POINT(vkCmdEndTransformFeedbackEXT, EXT_TRANSFORM_FEEDBACK);
++	ADD_DVC_EXT_ENTRY_POINT(vkCmdDrawIndirectByteCountEXT, EXT_TRANSFORM_FEEDBACK);
++	ADD_DVC_EXT_ENTRY_POINT(vkCmdBeginQueryIndexedEXT, EXT_TRANSFORM_FEEDBACK);
++	ADD_DVC_EXT_ENTRY_POINT(vkCmdEndQueryIndexedEXT, EXT_TRANSFORM_FEEDBACK);
++
+ 	ADD_DVC_ENTRY_POINT(vkCmdDrawIndexed);
+ 	ADD_DVC_ENTRY_POINT(vkCmdDrawIndirect);
+ 	ADD_DVC_ENTRY_POINT(vkCmdDrawIndexedIndirect);
+--- a/MoltenVK/MoltenVK/GPUObjects/MVKPipeline.h
++++ b/MoltenVK/MoltenVK/GPUObjects/MVKPipeline.h
+@@ -249,6 +249,10 @@
+ 
+ 	/** Returns whether this pipeline has tessellation shaders. */
+ 	bool isTessellationPipeline() { return _isTessellationPipeline; }
++    uint32_t getTransformFeedbackBuffers() { return _tfBuffers; }
++    const uint32_t* getTransformFeedbackStrides() { return _tfStrides; }
++    id<MTLComputePipelineState> getTransformFeedbackScatterState() { return _tfScatterState; }
++    id<MTLRenderPipelineState> getTransformFeedbackReplayState() { return _tfReplayState; }
+ 
+ 	/** Returns the number of output tessellation patch control points. */
+ 	uint32_t getOutputControlPointCount() { return _outputControlPointCount; }
+@@ -355,7 +359,7 @@
+ 	bool addTessEvalShaderToPipeline(MTLRenderPipelineDescriptor* plDesc, const VkGraphicsPipelineCreateInfo* pCreateInfo, mvk::SPIRVToMSLConversionConfiguration& shaderConfig, SPIRVShaderOutputs& prevOutput, const VkPipelineShaderStageCreateInfo* pTessEvalSS, VkPipelineCreationFeedback* pTessEvalFB, const VkPipelineShaderStageCreateInfo*& pFragmentSS);
+     bool addFragmentShaderToPipeline(MTLRenderPipelineDescriptor* plDesc, const VkGraphicsPipelineCreateInfo* pCreateInfo, mvk::SPIRVToMSLConversionConfiguration& shaderConfig, SPIRVShaderOutputs& prevOutput, const VkPipelineShaderStageCreateInfo* pFragmentSS, VkPipelineCreationFeedback* pFragmentFB);
+ 	template<class T>
+-	bool addVertexInputToPipeline(T* inputDesc, const VkPipelineVertexInputStateCreateInfo* pVI, const mvk::SPIRVToMSLConversionConfiguration& shaderConfig);
++	bool addVertexInputToPipeline(T* inputDesc, const VkPipelineVertexInputStateCreateInfo* pVI, const mvk::SPIRVToMSLConversionConfiguration& shaderConfig, bool compute = false);
+ 	void adjustVertexInputForMultiview(MTLVertexDescriptor* inputDesc, const VkPipelineVertexInputStateCreateInfo* pVI, uint32_t viewCount, uint32_t oldViewCount = 1);
+     void addTessellationToPipeline(MTLRenderPipelineDescriptor* plDesc, const mvk::SPIRVTessReflectionData& reflectData, const VkPipelineTessellationStateCreateInfo* pTS);
+     void addFragmentOutputToPipeline(MTLRenderPipelineDescriptor* plDesc, const VkGraphicsPipelineCreateInfo* pCreateInfo);
+@@ -411,6 +415,11 @@
+ 	bool _isRasterizing = false;
+ 	bool _isRasterizingColor = false;
+ 	bool _isTessellationPipeline = false;
++    uint32_t _tfBuffers = 0, _tfStrides[4] = {};
++    id<MTLComputePipelineState> _tfScatterState = nil;
++    id<MTLRenderPipelineState> _tfReplayState = nil;
++    void initTransformFeedback(const VkGraphicsPipelineCreateInfo*, const mvk::SPIRVTessReflectionData&,
++        const VkPipelineShaderStageCreateInfo*, VkPipelineCreationFeedback*, MTLRenderPipelineDescriptor*);
+ 	bool _inputAttachmentIsDSAttachment = false;
+ 	bool _hasRemappedAttachmentLocations = false;
+ };
+--- a/MoltenVK/MoltenVK/GPUObjects/MVKPipeline.mm
++++ b/MoltenVK/MoltenVK/GPUObjects/MVKPipeline.mm
+@@ -17,6 +17,7 @@
+  */
+ 
+ #include "MVKPipeline.h"
++#include "compiler.hpp"
+ #include "MVKCommandBuffer.h"
+ #include "MVKInlineObjectConstructor.h"
+ #include "MVKImage.h"
+@@ -1128,7 +1129,8 @@
+ 			} else {
+ 				getOrCompilePipeline(plDesc, _mtlPipelineState);
+ 			}
+-			[plDesc release];																				// temp release
++			initTransformFeedback(pCreateInfo, reflectData, pVertexSS, pVertexFB, plDesc);
++			[plDesc release];	// temp release
+ 		} else {
+ 			_hasValidMTLPipelineStates = false;
+ 		}
+@@ -1707,7 +1709,7 @@
+ template<class T>
+ bool MVKGraphicsPipeline::addVertexInputToPipeline(T* inputDesc,
+ 												   const VkPipelineVertexInputStateCreateInfo* pVI,
+-												   const SPIRVToMSLConversionConfiguration& shaderConfig) {
++												   const SPIRVToMSLConversionConfiguration& shaderConfig, bool compute) {
+     // Collect extension structures
+     VkPipelineVertexInputDivisorStateCreateInfo* pVertexInputDivisorState = nullptr;
+ 	for (const auto* next = (VkBaseInStructure*)pVI->pNext; next; next = next->pNext) {
+@@ -1747,7 +1749,7 @@
+ 				vbDesc.stepRate = 0;
+ 			} else {
+ 				vbDesc.stride = isVtxStrideStatic ? pVKVB->stride : MTLBufferLayoutStrideDynamic;
+-				vbDesc.stepFunction = (decltype(vbDesc.stepFunction))mvkMTLStepFunctionFromVkVertexInputRate(pVKVB->inputRate, isTessellationPipeline());
++				vbDesc.stepFunction = (decltype(vbDesc.stepFunction))mvkMTLStepFunctionFromVkVertexInputRate(pVKVB->inputRate, compute || isTessellationPipeline());
+ 				vbDesc.stepRate = 1;
+ 			}
+         }
+@@ -2396,6 +2398,7 @@
+ 		[_mtlTessVertexStageState release];
+ 		[_mtlTessVertexStageIndex16State release];
+ 		[_mtlTessVertexStageIndex32State release];
++		[_tfScatterState release]; [_tfReplayState release];
+ 		[_mtlTessControlStageState release];
+ 		[_mtlPipelineState release];
+ 		if (_ownsVertexModule) delete _vertexModule;
+@@ -2994,7 +2997,7 @@
+ 				opt.tessPatchKind,
+ 				opt.numTessControlPoints,
+ 				opt.shouldFlipVertexY,
+-				opt.shouldFixupClipSpace);
++				opt.shouldFixupClipSpace, opt.transformFeedback);
+ 	}
+ 
+ 	template<class Archive>
+@@ -3208,3 +3211,5 @@
+ 	missingBytes += mvkValidateCerealArchiveSize<MVKCompressor<std::string>>(20);				// Contains collection
+ 	assert(missingBytes == 0 && "Cereal Archive definitions incomplete. See previous logged errors.");
+ }
++
++#include "mvk-pipeline.inc"
+--- a/MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.h
++++ b/MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.h
+@@ -70,7 +70,7 @@
+ 						VkQueryResultFlags flags);
+ 
+ 	/** Encodes commands to copy the results of the specified queries into device memory. */
+-	void encodeCopyResults(MVKCommandEncoder* cmdEncoder,
++	virtual void encodeCopyResults(MVKCommandEncoder* cmdEncoder,
+ 						   uint32_t firstQuery,
+ 						   uint32_t queryCount,
+ 						   MVKBuffer* destBuffer,
+@@ -256,3 +256,5 @@
+ 	void propagateDebugName() override {}
+ };
+ 
++
++#include "mvk-query.hpp"
+--- a/MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.mm
++++ b/MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.mm
+@@ -33,15 +33,15 @@
+ void MVKQueryPool::endQuery(uint32_t query, MVKCommandEncoder* cmdEncoder) {
+     uint32_t queryCount = cmdEncoder->isInRenderPass() ? cmdEncoder->getSubpass()->getViewCountInMetalPass(cmdEncoder->getMultiviewPassIndex()) : 1;
+     queryCount = max(queryCount, 1u);
+-    lock_guard<mutex> lock(_availabilityLock);
+-    for (uint32_t i = query; i < query + queryCount; ++i) {
+-        _availability[i] = DeviceAvailable;
++    {
++        lock_guard<mutex> lock(_availabilityLock);
++        for (uint32_t i = query; i < query + queryCount; ++i) _availability[i] = DeviceAvailable;
+     }
+     lock_guard<mutex> copyLock(_deferredCopiesLock);
+     if (!_deferredCopies.empty()) {
+         // Partition by readiness.
+         auto ready = std::partition(_deferredCopies.begin(), _deferredCopies.end(), [this](const DeferredCopy& copy) {
+-            return !areQueriesDeviceAvailable(copy.firstQuery, copy.queryCount);
++            return !areQueriesDeviceAvailable(copy.firstQuery, copy.firstQuery + copy.queryCount);
+         });
+         // Execute the ready copies, then remove them.
+         for (auto i = ready; i != _deferredCopies.end(); ++i) {
+@@ -131,12 +131,11 @@
+ 
+ 	// Output the results of this query
+ 	if (shouldOutput) {
+-		uint64_t rsltVal = ((uint64_t*)srcData.bytes)[query - srcDataQueryOffset];
+-		if (shouldOutput64Bit) {
+-			*(uint64_t*)pDstData = rsltVal;
+-		} else {
+-			*(uint32_t*)pDstData = (uint32_t)rsltVal;
+-		}
++        for (uint32_t element=0; element<_queryElementCount; ++element) {
++            uint64_t value=((uint64_t*)srcData.bytes)[(query-srcDataQueryOffset)*_queryElementCount+element];
++            if (shouldOutput64Bit) ((uint64_t*)pDstData)[element]=value;
++            else ((uint32_t*)pDstData)[element]=uint32_t(value);
++        }
+ 	}
+ 
+ 	// If requested, output the availability bit
+@@ -168,7 +167,7 @@
+ 	if (mvkIsAnyFlagEnabled(flags, VK_QUERY_RESULT_64_BIT) &&
+ 		!mvkIsAnyFlagEnabled(flags, VK_QUERY_RESULT_WITH_AVAILABILITY_BIT) &&
+ 		stride == _queryElementCount * sizeof(uint64_t) &&
+-		areQueriesDeviceAvailable(firstQuery, queryCount)) {
++		areQueriesDeviceAvailable(firstQuery, firstQuery + queryCount)) {
+ 
+ 		encodeDirectCopyResults(cmdEncoder, firstQuery, queryCount, destBuffer, destOffset, stride);
+ 		// TODO: In the case where none of the queries is ready, we can fill with 0.
+@@ -440,3 +439,5 @@
+ 												 const VkQueryPoolCreateInfo* pCreateInfo) : MVKQueryPool(device, pCreateInfo, 1) {
+ 	setConfigurationResult(reportError(VK_ERROR_INITIALIZATION_FAILED, "vkCreateQueryPool: Unsupported query pool type: %d.", pCreateInfo->queryType));
+ }
++
++#include "mvk-query.inc"
+--- a/MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.h
++++ b/MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.h
+@@ -40,8 +40,9 @@
+   mvk::SPIRVToMSLConversionResultInfo shaderConversionResults;
+ 	MTLSize threadGroupSize;
+ 	id<MTLFunction> getMTLFunction() { return _mtlFunction; }
+-
+-	MVKMTLFunction(id<MTLFunction> mtlFunc, const mvk::SPIRVToMSLConversionResultInfo scRslts, MTLSize tgSize);
++	id<MTLLibrary> getMTLLibrary() { return _mtlLibrary; }
++
++	MVKMTLFunction(id<MTLFunction> mtlFunc, const mvk::SPIRVToMSLConversionResultInfo scRslts, MTLSize tgSize, id<MTLLibrary> library = nil);
+ 	MVKMTLFunction(const MVKMTLFunction& other);
+ 	MVKMTLFunction& operator=(const MVKMTLFunction& other);
+ 	MVKMTLFunction() {}
+@@ -49,6 +50,7 @@
+ 
+ private:
+ 	id<MTLFunction> _mtlFunction = nil;
++	id<MTLLibrary> _mtlLibrary = nil;
+ 
+ } MVKMTLFunction;
+ 
+--- a/MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.mm
++++ b/MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.mm
+@@ -24,19 +24,22 @@
+ using namespace std;
+ using namespace mvk;
+ 
+-MVKMTLFunction::MVKMTLFunction(id<MTLFunction> mtlFunc, const SPIRVToMSLConversionResultInfo scRslts, MTLSize tgSize) {
++MVKMTLFunction::MVKMTLFunction(id<MTLFunction> mtlFunc, const SPIRVToMSLConversionResultInfo scRslts, MTLSize tgSize, id<MTLLibrary> library) {
++	_mtlLibrary = [library retain];
+ 	_mtlFunction = [mtlFunc retain];		// retained
+ 	shaderConversionResults = scRslts;
+ 	threadGroupSize = tgSize;
+ }
+ 
+ MVKMTLFunction::MVKMTLFunction(const MVKMTLFunction& other) {
++	_mtlLibrary = [other._mtlLibrary retain];
+ 	_mtlFunction = [other._mtlFunction retain];		// retained
+ 	shaderConversionResults = other.shaderConversionResults;
+ 	threadGroupSize = other.threadGroupSize;
+ }
+ 
+ MVKMTLFunction& MVKMTLFunction::operator=(const MVKMTLFunction& other) {
++	[other._mtlLibrary retain]; [_mtlLibrary release]; _mtlLibrary = other._mtlLibrary;
+ 	// Retain new object first in case it's the same object
+ 	[other._mtlFunction retain];
+ 	[_mtlFunction release];
+@@ -48,6 +51,7 @@
+ }
+ 
+ MVKMTLFunction::~MVKMTLFunction() {
++	[_mtlLibrary release];
+ 	[_mtlFunction release];
+ }
+ 
+@@ -169,7 +173,7 @@
+ 			auto& wgSize = _shaderConversionResultInfo.entryPoint.workgroupSize;
+ 			return MVKMTLFunction(mtlFunc, _shaderConversionResultInfo, MTLSizeMake(getWorkgroupDimensionSize(wgSize.width, pSpecializationInfo),
+ 																					getWorkgroupDimensionSize(wgSize.height, pSpecializationInfo),
+-																					getWorkgroupDimensionSize(wgSize.depth, pSpecializationInfo)));
++																					getWorkgroupDimensionSize(wgSize.depth, pSpecializationInfo)), lib);
+ 		}
+ 	}
+ }
+--- a/MoltenVK/MoltenVK/Layers/MVKExtensions.def
++++ b/MoltenVK/MoltenVK/Layers/MVKExtensions.def
+@@ -135,6 +135,7 @@
+ MVK_EXTENSION(EXT_debug_marker,                         EXT_DEBUG_MARKER,                         DEVICE,   10.11,  8.0,  1.0)
+ MVK_EXTENSION(EXT_debug_report,                         EXT_DEBUG_REPORT,                         INSTANCE, 10.11,  8.0,  1.0)
+ MVK_EXTENSION(EXT_debug_utils,                          EXT_DEBUG_UTILS,                          INSTANCE, 10.11,  8.0,  1.0)
++MVK_EXTENSION(EXT_transform_feedback, EXT_TRANSFORM_FEEDBACK, DEVICE, 11.0, 14.0, 1.0)
+ MVK_EXTENSION(EXT_depth_clip_control,                   EXT_DEPTH_CLIP_CONTROL,                   DEVICE,   10.11,  8.0,  1.0)
+ MVK_EXTENSION(EXT_descriptor_indexing,                  EXT_DESCRIPTOR_INDEXING,                  DEVICE,   10.11,  8.0,  1.0)
+ MVK_EXTENSION(EXT_extended_dynamic_state,               EXT_EXTENDED_DYNAMIC_STATE,               DEVICE,   10.11,  8.0,  1.0)
+--- a/MoltenVK/MoltenVK/Vulkan/vulkan.mm
++++ b/MoltenVK/MoltenVK/Vulkan/vulkan.mm
+@@ -4486,3 +4486,5 @@
+ 	return func;
+ }
+ 
++
++#include "mvk-api.inc"
+--- a/MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.cpp
++++ b/MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.cpp
+@@ -22,6 +22,7 @@
+ #include "FileSupport.h"
+ #include "SPIRVSupport.h"
+ #include <fstream>
++#include "compiler.cpp"
+ 
+ using namespace mvk;
+ using namespace std;
+@@ -52,6 +53,7 @@
+ 	if (entryPointName != other.entryPointName) { return false; }
+ 	if (tessPatchKind != other.tessPatchKind) { return false; }
+ 	if (numTessControlPoints != other.numTessControlPoints) { return false; }
++	if (transformFeedback != other.transformFeedback) { return false; }
+ 	if (shouldFlipVertexY != other.shouldFlipVertexY) { return false; }
+ 	if (shouldFixupClipSpace != other.shouldFixupClipSpace) { return false; }
+ 	return true;
+@@ -276,7 +278,8 @@
+ #ifndef SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS
+ 	try {
+ #endif
+-		pMSLCompiler = new CompilerMSL(_spirv);
++		pMSLCompiler = shaderConfig.options.transformFeedback ? new trames::tf::Compiler(_spirv) : new CompilerMSL(_spirv);
++		if (shaderConfig.options.transformFeedback) static_cast<trames::tf::Compiler*>(pMSLCompiler)->enable_runtime_parameters();
+ 
+ 		if (shaderConfig.options.hasEntryPoint()) {
+ 			pMSLCompiler->set_entry_point(shaderConfig.options.entryPointName, shaderConfig.options.entryPointStage);
+@@ -337,7 +340,7 @@
+ 				}
+ 			}
+ 		}
+-		conversionResult.msl = pMSLCompiler->compile();
++		conversionResult.msl = shaderConfig.options.transformFeedback ? static_cast<trames::tf::Compiler*>(pMSLCompiler)->compile_feedback().source : pMSLCompiler->compile();
+ 
+         if (shouldLogMSL) { logSource(conversionResult.resultLog, conversionResult.msl, "MSL", "Converted"); }
+ 
+--- a/MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.h
++++ b/MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.h
+@@ -45,6 +45,7 @@
+ 		uint32_t numTessControlPoints = 0;
+ 		bool shouldFlipVertexY = true;
+ 		bool shouldFixupClipSpace = false;
++		bool transformFeedback = false;
+ 
+ 		/**
+ 		 * Returns whether the specified options match this one.

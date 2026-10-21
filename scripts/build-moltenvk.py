@@ -30,6 +30,27 @@ TRANSFER = Path('MoltenVK/MoltenVK/Commands/MVKCmdTransfer.mm')
 OLD = 'VkExtent3D srcExtent = _srcImage->getExtent3D(srcPlaneIndex, mvkIBR.region.dstSubresource.mipLevel);'
 NEW = OLD.replace('dstSubresource', 'srcSubresource')
 DEVICE = Path('MoltenVK/MoltenVK/GPUObjects/MVKDevice.mm')
+TF_PATCH = ROOT/'patches/moltenvk/0003-native-gpu-transform-feedback.patch'
+CROSS_PATCH = ROOT/'patches/moltenvk/0004-allow-native-tf-entry-arguments.patch'
+NATIVE_TF = ROOT/'crates/trames-vulkan/native/transform-feedback'
+
+
+def patch_paths(patch):
+    return [Path(line[6:]) for line in patch.read_text().splitlines() if line.startswith('+++ b/')]
+
+
+def apply_tf_patch(source):
+    paths = patch_paths(TF_PATCH) + patch_paths(CROSS_PATCH)
+    before = {str(p): digest(source/p) for p in paths}
+    for patch in (TF_PATCH, CROSS_PATCH):
+        subprocess.run(['patch', '-s', '-p1', '-i', str(patch)], cwd=source, input=b'', check=True)
+    after = {str(p): digest(source/p) for p in paths}
+    target = source/'TramesTF'
+    shutil.copytree(NATIVE_TF, target)
+    shader = (target/'assemble.metal').read_text()
+    assert ')TRAMESTF"' not in shader
+    (target/'tf-utility-source.inc').write_text('static NSString* _TramesTFCommandShaderSource = @R"TRAMESTF(\n'+shader+'\n)TRAMESTF";\n')
+    return dict(before=before, after=after)
 
 
 def apply_timestamp_patch(source):
@@ -72,6 +93,7 @@ def main():
     p.add_argument('--platform', choices=('macos', 'ios', 'ios-simulator'), default='macos')
     p.add_argument('--arch', choices=('arm64', 'x86_64'), default='arm64')
     p.add_argument('--verify-source', type=Path, help='verify the pinned archive and exact patch without Apple SDK')
+    p.add_argument('--verify-cross-source', type=Path, help='pinned SPIRV-Cross archive for source-only verification')
     a = p.parse_args()
     manifest = json.loads(MANIFEST.read_text())
     if a.verify_source:
@@ -85,11 +107,24 @@ def main():
             path = Path(tmp)/DEVICE;path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(archive.extractfile(member).read())
             device_before, device_after = apply_timestamp_patch(Path(tmp))
+            for relative in patch_paths(TF_PATCH):
+                if (Path(tmp)/relative).exists():
+                    continue
+                member = next(v for v in archive if v.name.endswith('/'+str(relative)))
+                path = Path(tmp)/relative;path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(archive.extractfile(member).read())
+            cross = a.verify_cross_source or CACHE/'moltenvk-dependency-SPIRV-Cross.tar.gz'
+            assert digest(cross) == manifest['archives']['moltenvk-dependency-SPIRV-Cross.tar.gz']['sha256']
+            with tarfile.open(cross) as cross_files:
+                member = next(v for v in cross_files if v.name.endswith('/spirv_msl.hpp'))
+                path = Path(tmp)/'External/SPIRV-Cross/spirv_msl.hpp';path.parent.mkdir(parents=True)
+                path.write_bytes(cross_files.extractfile(member).read())
+            native_tf = apply_tf_patch(Path(tmp))
             archive_name = next(v for v in archive.getnames() if v.endswith('/Templates/spirv-tools/build.zip'))
             with zipfile.ZipFile(io.BytesIO(archive.extractfile(archive_name).read())) as headers:
                 assert headers.testzip() is None and 'build/OpenCLDebugInfo100.h' in headers.namelist()
             print(json.dumps(dict(original_sha256=before, patched_sha256=after, patch_sha256=digest(PATCH),
-                original_device_sha256=device_before, patched_device_sha256=device_after, timestamp_patch_sha256=digest(TIMESTAMP_PATCH))))
+                original_device_sha256=device_before, patched_device_sha256=device_after, timestamp_patch_sha256=digest(TIMESTAMP_PATCH), native_tf=native_tf)))
         return
     assert platform.system() == 'Darwin', 'An Apple SDK host is required to build native MoltenVK'
     assert a.platform != 'ios' or a.arch == 'arm64', 'iOS device build requires arm64'
@@ -102,6 +137,8 @@ def main():
     inputs = dict(platform=a.platform, arch=a.arch, xcode=toolchain, sdk=sdk_version,
                   patch_sha256=digest(PATCH), recipe_sha256=digest(Path(__file__)),
                   timestamp_patch_sha256=digest(TIMESTAMP_PATCH),
+                  transform_feedback_patch_sha256=digest(TF_PATCH), cross_dispatch_patch_sha256=digest(CROSS_PATCH),
+                  transform_feedback_sources={p.name:digest(p) for p in sorted(NATIVE_TF.iterdir()) if p.is_file()},
                   manifest_sha256=digest(MANIFEST), upstream_commit=manifest['moltenvk_commit'])
     key = hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()[:20]
     out = ROOT/'target/moltenvk-patched'/(a.platform+'-'+a.arch+'-'+key)
@@ -129,7 +166,7 @@ def main():
         if 'destination' not in item:
             continue
         path = source/item['destination'];path.parent.mkdir(parents=True, exist_ok=True)
-        if name == 'moltenvk-dependency-SPIRV-Tools.tar.gz':
+        if name in ('moltenvk-dependency-SPIRV-Tools.tar.gz', 'moltenvk-dependency-SPIRV-Cross.tar.gz'):
             shutil.copytree(projects[name], path, symlinks=True)
         else:
             path.symlink_to(projects[name], target_is_directory=True)
@@ -145,9 +182,11 @@ def main():
     assert (tools/'build/OpenCLDebugInfo100.h').is_file()
     before, after = apply_patch(source)
     device_before, device_after = apply_timestamp_patch(source)
+    native_tf = apply_tf_patch(source)
     common = ['-configuration', 'Release', '-sdk', sdk, 'ARCHS='+a.arch,
               'ONLY_ACTIVE_ARCH=YES', 'CODE_SIGNING_ALLOWED=NO',
               'SYMROOT='+str(out/'products'), 'OBJROOT='+str(out/'intermediates')]
+    common.append('HEADER_SEARCH_PATHS=$(inherited) '+str(source/'TramesTF'))
     commands = [
         ['xcodebuild', '-jobs', '4', '-project', 'ExternalDependencies.xcodeproj', '-scheme', 'ExternalDependencies-'+os_name,
          '-destination', 'generic/platform='+destination, *common, 'build'],
@@ -170,6 +209,8 @@ def main():
     record.write_text(json.dumps(dict(inputs=inputs, commands=commands, original_transfer_sha256=before,
         patched_transfer_sha256=after, original_device_sha256=device_before,
         patched_device_sha256=device_after, library_sha256=digest(library)), indent=2)+'\n')
+    data = json.loads(record.read_text());data['native_transform_feedback']=native_tf
+    record.write_text(json.dumps(data, indent=2)+'\n')
     print(out)
 
 

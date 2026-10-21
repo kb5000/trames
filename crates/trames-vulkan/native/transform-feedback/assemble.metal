@@ -126,3 +126,56 @@ kernel void trames_tf_byte_count(const device uint* counter [[buffer(0)]],
     indirect[0] = bytes >= p.x && p.y ? (bytes-p.x)/p.y : 0;
     indirect[1] = p.z; indirect[2] = 0; indirect[3] = p.w;
 }
+
+// MoltenVK command adapter: original indirect draw words stay on the GPU.
+// out: TFParams(16 words), raw draw(8), MTLStageInRegion(6), dispatch(3), error.
+kernel void trames_tf_parameters(constant TFParams& base [[buffer(0)]],
+    const device uint* input [[buffer(1)]], device uint* out [[buffer(2)]],
+    constant uint4& config [[buffer(3)]], uint tid [[thread_position_in_grid]]) {
+    if (tid) return;
+    uint n = input[0], instances = input[1];
+    bool valid = ulong(n)*instances <= base.mapCapacity/3u;
+    device TFParams& p = *reinterpret_cast<device TFParams*>(out);
+    p = base;p.vertices = valid ? n : 0;p.instances = valid ? instances : 0;p.firstIndex = 0;
+    out[16] = p.vertices;out[17] = p.instances;out[18] = input[2];
+    out[19] = config.x ? input[3] : 0;out[20] = input[config.x ? 4 : 3];
+    out[21] = base.restart;out[22] = base.indexType;out[23] = 0;
+    out[24] = config.x ? input[3] : input[2];out[25] = out[20];out[26] = 0;
+    out[27] = p.vertices;out[28] = p.instances;out[29] = 1;
+    out[30] = (p.vertices+config.y-1)/config.y;out[31] = p.instances;out[32] = 1;
+    out[33] = !valid;
+}
+kernel void trames_tf_copy_indices16(const device ushort* input [[buffer(0)]],
+    const device uint* raw [[buffer(1)]], device ushort* output [[buffer(2)]], uint i [[thread_position_in_grid]]) {
+    if (i < raw[0]) output[i] = input[raw[2]+i];
+}
+kernel void trames_tf_copy_indices32(const device uint* input [[buffer(0)]],
+    const device uint* raw [[buffer(1)]], device uint* output [[buffer(2)]], uint i [[thread_position_in_grid]]) {
+    if (i < raw[0]) output[i] = input[raw[2]+i];
+}
+kernel void trames_tf_dispatch(device uint* draw [[buffer(0)]], constant uint2& widths [[buffer(1)]],
+    uint i [[thread_position_in_grid]]) {
+    if (i) return;
+    draw[8] = (draw[1]+widths.x-1)/widths.x;draw[9] = 1;draw[10] = 1;
+    draw[11] = (draw[0]+widths.y-1)/widths.y;draw[12] = 1;draw[13] = 1;
+}
+kernel void trames_tf_query_accumulate(const device uint* draw [[buffer(0)]],
+    device ulong* results [[buffer(1)]], constant uint& primitiveSize [[buffer(2)]], uint i [[thread_position_in_grid]]) {
+    if (i) return;
+    results[0] += draw[0]/primitiveSize;results[1] += draw[1]/primitiveSize;
+}
+kernel void trames_tf_query_copy(const device ulong* source [[buffer(0)]], device uchar* output [[buffer(1)]],
+    constant uint4& p [[buffer(2)]], const device uint* availability [[buffer(3)]], uint i [[thread_position_in_grid]]) {
+    if (i >= p.x) return;
+    bool available = availability[i] != 0;
+    device uchar* destination = output + ulong(i)*p.y;
+    if (p.z&1u) {
+        device ulong* dst = reinterpret_cast<device ulong*>(destination);
+        if (available || (p.z&8u)) { dst[0]=source[i*2];dst[1]=source[i*2+1]; }
+        if (p.z&4u) dst[2]=available;
+    } else {
+        device uint* dst = reinterpret_cast<device uint*>(destination);
+        if (available || (p.z&8u)) { dst[0]=uint(source[i*2]);dst[1]=uint(source[i*2+1]); }
+        if (p.z&4u) dst[2]=available;
+    }
+}

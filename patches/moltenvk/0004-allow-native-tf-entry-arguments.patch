@@ -1,0 +1,16 @@
+Minimal dispatch hooks for the native TF compiler; original entry argument algorithms stay unchanged.
+SPIRV-Cross 6c09849fe88c48eaed08413aa022aaa136a3a057, Apache-2.0 OR MIT.
+
+--- a/External/SPIRV-Cross/spirv_msl.hpp
++++ b/External/SPIRV-Cross/spirv_msl.hpp
+@@ -1077,8 +1077,8 @@
+ 	bool entry_point_returns_stage_output() const;
+ 	bool entry_point_requires_const_device_buffers() const;
+ 	std::string func_type_decl(SPIRType &type);
+-	std::string entry_point_args_classic(bool append_comma);
+-	std::string entry_point_args_argument_buffer(bool append_comma);
++	virtual std::string entry_point_args_classic(bool append_comma);
++	virtual std::string entry_point_args_argument_buffer(bool append_comma);
+ 	std::string entry_point_arg_stage_in();
+ 	void entry_point_args_builtin(std::string &args);
+ 	void entry_point_args_discrete_descriptors(std::string &args);

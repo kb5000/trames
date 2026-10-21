@@ -49,6 +49,14 @@ def main():
             # The compiler needs only upstream's top-level source and headers.
             if member.isfile() and len(relative.parts) == 1:
                 (source/relative).write_bytes(files.extractfile(member).read())
+    header = source/'spirv_msl.hpp'
+    original = header.read_text()
+    updated = original.replace('std::string entry_point_args_classic(bool append_comma);',
+                               'virtual std::string entry_point_args_classic(bool append_comma);')
+    updated = updated.replace('std::string entry_point_args_argument_buffer(bool append_comma);',
+                              'virtual std::string entry_point_args_argument_buffer(bool append_comma);')
+    assert updated != original
+    header.write_text(updated)
     compiler = out/'compiler'
     command = [os.environ.get('CXX', 'c++'), '-std=c++14', '-O2', '-DNDEBUG',
                '-Wall', '-Wextra', '-Werror', '-I'+str(source), '-I'+str(NATIVE),
@@ -58,7 +66,7 @@ def main():
     # not cause another full upstream rebuild. Bind objects to verified sources,
     # exact flags, host architecture and compiler version.
     version = subprocess.check_output([command[0], '--version'], text=True)
-    identity = hashlib.sha256((item['sha256'] + version + platform.machine() + str(command[:9])).encode()).hexdigest()[:16]
+    identity = hashlib.sha256((item['sha256'] + digest(header) + version + platform.machine() + str(command[:9])).encode()).hexdigest()[:16]
     objects = out/('objects-'+identity);objects.mkdir(exist_ok=True)
     linked = []
     for src in [ROOT/'tests/fixtures/vulkan-native-tf-compiler.cpp', NATIVE/'compiler.cpp', *(source/name for name in SOURCES)]:

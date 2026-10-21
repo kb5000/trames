@@ -17,13 +17,17 @@ struct Program {
     uint32_t scalars = 0;
 };
 
-class Compiler : public spirv_cross::CompilerMSL {
+class Compiler : public SPIRV_CROSS_NAMESPACE::CompilerMSL {
 public:
     using CompilerMSL::CompilerMSL;
     // Configure resources, stage inputs, index type and specialization through
     // the original CompilerMSL API before calling this exactly once.
     Program compile_feedback();
+    Program describe_feedback();
+    void enable_runtime_parameters() { runtime_parameters_ = true; }
 private:
+    bool runtime_parameters_ = false;
+    bool runtime_hook_installed_ = false;
     struct Semantic {
         uint32_t location, component, builtin;
         bool operator<(const Semantic& b) const;
@@ -32,12 +36,16 @@ private:
     std::vector<Scalar> scalars_;
     Program program_;
     void reflect_outputs();
-    uint32_t reflect_value(const spirv_cross::SPIRType& type, Semantic semantic,
+    uint32_t reflect_value(const SPIRV_CROSS_NAMESPACE::SPIRType& type, Semantic semantic,
                            uint32_t buffer, uint32_t offset);
     void reflect_stride(uint32_t buffer, uint32_t stride);
     std::map<Semantic, std::string> stage_values(const std::string& prefix);
-    void stage_value(std::map<Semantic, std::string>& values, const spirv_cross::SPIRType& type,
+    void stage_value(std::map<Semantic, std::string>& values, const SPIRV_CROSS_NAMESPACE::SPIRType& type,
                      Semantic semantic, const std::string& expression);
     void append_helpers(Compiler& raster);
+    std::string entry_point_args_classic(bool append_comma) override;
+    std::string entry_point_args_argument_buffer(bool append_comma) override;
+    void emit_function_prototype(SPIRV_CROSS_NAMESPACE::SPIRFunction& function, const SPIRV_CROSS_NAMESPACE::Bitset& flags) override;
+    std::string runtime_arguments();
 };
 }}

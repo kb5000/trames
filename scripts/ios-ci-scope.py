@@ -26,9 +26,9 @@ def zink_metal_only_reuse(plan, repo, headers):
                'scripts/ios-ci-scope.py', 'scripts/prepare-zink-native-bundle.py',
                'scripts/prepare-vulkan.py', 'scripts/build-moltenvk.py', 'scripts/build-ios.sh',
                'patches/moltenvk/0001-use-source-mip-depth-for-volume-blits.patch',
-                               'patches/moltenvk/0002-require-native-gpu-timestamp-counters.patch'}
+                               'patches/moltenvk/0002-require-native-gpu-timestamp-counters.patch', 'patches/moltenvk/0003-native-gpu-transform-feedback.patch', 'patches/moltenvk/0004-allow-native-tf-entry-arguments.patch', 'scripts/build-vulkan-native-tf.py', '.github/workflows/ios.yml', 'tests/integration/vulkan-native-tf-reference.py'}
     changed = subprocess.check_output(['git', 'diff', '--name-only', reuse['sha'], 'HEAD'], text=True).splitlines()
-    if any(path not in allowed and not path.startswith('docs/') for path in changed):
+    if any(path not in allowed and not path.startswith(('docs/', 'crates/trames-vulkan/native/transform-feedback/', 'tests/fixtures/vulkan-native-tf')) for path in changed):
         raise RuntimeError('Metal-only repair changed the guest, runtime, GPU bridge, fixture or toolchain')
 
     def get(path):
@@ -711,7 +711,7 @@ def main():
                                'scripts/ios-ci-scope.py', '.github/workflows/ios.yml', '.github/workflows/linux.yml',
                                'scripts/prepare-vulkan.py', 'scripts/build-moltenvk.py', 'scripts/build-ios.sh',
                                'patches/moltenvk/0001-use-source-mip-depth-for-volume-blits.patch',
-                               'patches/moltenvk/0002-require-native-gpu-timestamp-counters.patch'}
+                               'patches/moltenvk/0002-require-native-gpu-timestamp-counters.patch', 'patches/moltenvk/0003-native-gpu-transform-feedback.patch', 'patches/moltenvk/0004-allow-native-tf-entry-arguments.patch', 'scripts/build-vulkan-native-tf.py', '.github/workflows/ios.yml', 'tests/integration/vulkan-native-tf-reference.py'}
                     sync = plan.get('native_scope') in {'zink-sync','zink-gles','zink-wayland'}
                     if sync:
                         allowed.update({'accelerator/vulkan/zink.inc', 'accelerator/vulkan/graphics.inc', 'tests/fixtures/vulkan-timeline.c',
@@ -722,7 +722,7 @@ def main():
                                         'tests/fixtures/zink-metal-pixels.m', 'tests/integration/zink-wayland.py',
                                         'scripts/build-zink-egl.py', 'scripts/zink-egl-requirements.txt', 'patches/mesa/0001-wayland-kopper-native-wsi.patch',
                                         'crates/trames-distro/src/lib.rs', 'crates/trames-ffi/src/session.rs', 'scripts/build-ios.sh'})
-                    if any(p not in allowed and not p.startswith('docs/') and not (sync and p.startswith('crates/trames-vulkan/')) for p in changed):
+                    if any(p not in allowed and not p.startswith(('docs/', 'tests/fixtures/vulkan-native-tf')) and not (sync and p.startswith('crates/trames-vulkan/')) for p in changed):
                         raise RuntimeError('Zink foundation plan includes unrelated source changes')
                     path = 'crates/trames-distro/src/vulkan.rs'
                     old = subprocess.check_output(['git', 'show', base + ':' + path], text=True).split('#[cfg(test)]')[0]
@@ -881,6 +881,8 @@ def main():
                             raise RuntimeError('Missing passed exact-source Linux and Apple module checks')
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=' + plan['native_scope'] + '\n')
+                        if plan.get('zink_tf_only'):
+                            output.write('zink_tf_only=true\nzink_feedback_only=true\n')
                         if plan.get('zink_mesa_only'):
                             if not metal_reuse:
                                 raise RuntimeError('Mesa-only completion requires verified exact-source Linux/Apple query reuse')

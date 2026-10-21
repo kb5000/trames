@@ -41,6 +41,7 @@ jobs:
       zink_wayland_linux_sha: ${{ steps.scope.outputs.zink_wayland_linux_sha }}
       zink_mrt_only: ${{ steps.scope.outputs.zink_mrt_only }}
       zink_feedback_only: ${{ steps.scope.outputs.zink_feedback_only }}
+      zink_tf_only: ${{ steps.scope.outputs.zink_tf_only }}
       zink_stencil_only: ${{ steps.scope.outputs.zink_stencil_only }}
       zink_divisor_only: ${{ steps.scope.outputs.zink_divisor_only }}
       zink_mesa_only: ${{ steps.scope.outputs.zink_mesa_only }}
@@ -644,14 +645,14 @@ jobs:
           path: |
             target/moltenvk-patched/macos-arm64-*/libMoltenVK.a
             target/moltenvk-patched/macos-arm64-*/build.json
-          key: ${{ runner.os }}-moltenvk-macos-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**') }}
+          key: ${{ runner.os }}-moltenvk-macos-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**', 'crates/trames-vulkan/native/transform-feedback/**') }}
       - uses: actions/cache/restore@v4
         id: native_driver_cache_ios
         with:
           path: |
             target/moltenvk-patched/ios-arm64-*/libMoltenVK.a
             target/moltenvk-patched/ios-arm64-*/build.json
-          key: ${{ runner.os }}-moltenvk-ios-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**') }}
+          key: ${{ runner.os }}-moltenvk-ios-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**', 'crates/trames-vulkan/native/transform-feedback/**') }}
       - name: Run original MoltenVK Metal resource and Mesa GLSL paths
         run: |
           mkdir -p target/zink-metal-native
@@ -679,7 +680,10 @@ jobs:
               python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-es3-metal --stage graphics
             fi
           fi
-          if [[ '${{ needs.scope.outputs.zink_divisor_only }}' == true ]]; then
+          if [[ '${{ needs.scope.outputs.zink_tf_only }}' == true ]]; then
+            python3 tests/integration/vulkan-feedback.py --store target/zink-native-bundle/store --output target/vulkan-feedback-metal --require-feedback
+            python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-tf-es3-metal --stage es3
+          elif [[ '${{ needs.scope.outputs.zink_divisor_only }}' == true ]]; then
             python3 tests/integration/vulkan-divisor.py --store target/zink-native-bundle/store --output target/vulkan-divisor-metal
             python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-divisor-instancing-metal --stage instancing
             python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-divisor-capabilities-metal --stage capabilities
@@ -699,14 +703,14 @@ jobs:
           path: |
             target/moltenvk-patched/macos-arm64-*/libMoltenVK.a
             target/moltenvk-patched/macos-arm64-*/build.json
-          key: ${{ runner.os }}-moltenvk-macos-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**') }}
+          key: ${{ runner.os }}-moltenvk-macos-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**', 'crates/trames-vulkan/native/transform-feedback/**') }}
       - uses: actions/cache/save@v4
         if: always() && steps.native_driver_cache_ios.outputs.cache-hit != 'true'
         with:
           path: |
             target/moltenvk-patched/ios-arm64-*/libMoltenVK.a
             target/moltenvk-patched/ios-arm64-*/build.json
-          key: ${{ runner.os }}-moltenvk-ios-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**') }}
+          key: ${{ runner.os }}-moltenvk-ios-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**', 'crates/trames-vulkan/native/transform-feedback/**') }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -723,6 +727,7 @@ jobs:
             target/zink-divisor-es3-metal/
             target/zink-stencil-capabilities-metal/
             target/zink-stencil-es3-metal/
+            target/zink-tf-es3-metal/
             target/zink-native-bundle/checksums.json
             target/moltenvk-patched/*/build.json
             target/moltenvk-patched/*/xcodebuild.log

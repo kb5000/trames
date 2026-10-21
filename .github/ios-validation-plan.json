@@ -1,24 +1,30 @@
 {
-  "base_sha": "5ef592468349ac5c786859f72f07ccc192e9d498",
-  "native_scope": "vulkan-tf-engine",
-  "runtime_reuse": {
+  "base_sha": "1b8de04aefb10532184b4c2727f17224a34aeb37",
+  "native_scope": "zink-gles",
+  "zink_mrt_only": true,
+  "zink_tf_only": true,
+  "zink_metal_only_reuse": {
     "run": 39579538279,
     "sha": "5dd69304b1e71f7e9c4512ec8699fc9ce6de41b0"
   },
-  "reason": "Evidence-only: passed internal native Metal TF engine, independent native Vulkan reference and arm64 iOS engine/MSL compilation. Verify both ZIP digests/all CRCs/all internal checksums and exact combined shader inputs. Engine/compiler/runtime/guest unchanged; reuse all passed acceptance, no rerun or IPA. Public Apple TF and GLES3 remain disabled.",
+  "reason": "Connect native GPU transform feedback to original MoltenVK public APIs, shader/pipeline cache, command encoders and queries. Validate native and ordinary guest Vulkan TF, original Mesa real GLES3/TF and arm64 iOS driver. Reuse exact unchanged guest, Rust/ICD, CPU/Linux/network/UI acceptance; no IPA.",
   "changed_file_sha256": {
-    "docs/architecture/zink.md": "3904ccfad6eecb33f5c5b5af033dd9e5f8ea24372f529f6630386addfe5e9621",
-    "docs/validation/vulkan-feedback.md": "b7fa5c5788b13b3f24d631f4afb428bdd05df5cf13efd1645be07921b703aa42",
-    "docs/validation/vulkan-native-tf-ci.json": "f792a970a1fed1ead5e0224ad55a0713a39a217d950d5afc53e84c5523c6caa2",
-    "docs/validation/vulkan-native-tf.md": "d8a6786119cba466ca6bc0d77b5359f3e459682a94d7996b4735ede9a31a353f",
-    "docs/validation/zink-es3.md": "37f12c09ab70f596aeeb36752c442ef61173946848cec411c111adff62a16df9"
-  },
-  "tf_compiler_reuse": {
-    "run": 39587222703,
-    "sha": "c7328d088635aa80ff88b8ee2dea46db2b1e7e48"
-  },
-  "tf_engine_evidence_reuse": {
-    "run": 39587980561,
-    "sha": "5ef592468349ac5c786859f72f07ccc192e9d498"
+    ".github/workflows/linux.yml": "3218203a505778472deb59b8b9e3b9cea896469fac9738419320d92042431584",
+    "crates/trames-vulkan/native/transform-feedback/assemble.metal": "0671399dff14b79cee99642b7d1ae401368fdabaad1a0b09170703a9c60c5d1f",
+    "crates/trames-vulkan/native/transform-feedback/compiler.cpp": "15ff85f41006df6df078db10c2f16d93f0fdd90b0c01e8131b96d8291fff6f4f",
+    "crates/trames-vulkan/native/transform-feedback/compiler.hpp": "729f29091bcddb324aefdf9fcc95065cde1ca681e215946a3a425161ecf21ac7",
+    "crates/trames-vulkan/native/transform-feedback/mvk-api.inc": "a79e9726195c7d40a9411e362991fcbfb86540b64991d8c54095d96e00299881",
+    "crates/trames-vulkan/native/transform-feedback/mvk-command.hpp": "e7808d3ef480df0bf0f26a8e64093d9464e6d2329abc586ca03187e38f3db05d",
+    "crates/trames-vulkan/native/transform-feedback/mvk-commands.inc": "82b10b1943aef077d71a784396f070f238f307deed7e5d048ff4aa18ef08ca45",
+    "crates/trames-vulkan/native/transform-feedback/mvk-pipeline.inc": "2f3ec4ef0f79a2a3c887c9cbbaa3d3502a9ed4d45712521381bfa7d7739223c6",
+    "crates/trames-vulkan/native/transform-feedback/mvk-query.hpp": "fbf984bb4aeb535571f12747d5feb78758f2b6b91ad334e7c270313ee9433636",
+    "crates/trames-vulkan/native/transform-feedback/mvk-query.inc": "691943a67ccf80cd667f73d659d5b6afc3f1758c9e8fd7efeb3e026c033088c6",
+    "crates/trames-vulkan/native/transform-feedback/mvk-state.hpp": "884286e3606e84f1f1131d9bc25468844829cdc826648b81703ca91c50fdb9fe",
+    "patches/moltenvk/0003-native-gpu-transform-feedback.patch": "a8b3c74131aa924bb24561b105189ded11fb09d004737e468e0e5fdb8d3c79b1",
+    "patches/moltenvk/0004-allow-native-tf-entry-arguments.patch": "a7313c35a8372f2c2f157b56ac7e9c1ebe9634d83f0fb2eca8567459a53b915f",
+    "scripts/build-moltenvk.py": "7cda4fd0944b0a65c7a68006fa3de50d84996c6f379656e2b99e2b575eb9940a",
+    "scripts/build-vulkan-native-tf.py": "b17470637e06e0c979c4d5298cca9e15cfba1a05472c7c0bd1534b1280cb6c6a",
+    "scripts/ios-ci-scope.py": "8ed3c69c393d64c0aed671481c78b8f00f23b25225ef558035eea8f919695336",
+    "scripts/prepare-zink-native-bundle.py": "1fb10b775b52b3f865289289ed7961480a920904c0d7e48206a1bd93075bfa11"
   }
 }
