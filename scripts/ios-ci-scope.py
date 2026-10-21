@@ -826,6 +826,10 @@ def main():
                             raise RuntimeError('Missing passed exact-source Linux and Apple module checks')
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=' + plan['native_scope'] + '\n')
+                        if plan.get('zink_mesa_only'):
+                            if not metal_reuse:
+                                raise RuntimeError('Mesa-only completion requires verified exact-source Linux/Apple query reuse')
+                            output.write('zink_mesa_only=true\n')
                         if feedback_retry:
                             output.write('zink_feedback_only=true\n')
                             print('Retry changed query/feedback clients and original native timestamp capability patch only; reuse passed unchanged Vulkan module, Mesa/image and iOS FFI acceptance.')

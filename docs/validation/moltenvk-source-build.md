@@ -60,3 +60,8 @@ Metal timestamp counter set；没有该硬件路径时不声明时间戳支持�
 `e93c8fe096d9c9f8c0b02da6443bc820dc42ca4340b122cc8dd11721ad7e9b8d`，
 修改后为 `f5bb7a347f292e3a1ff5a2b1c312bf544336a406f0f168b399cd4d1fbb29e56a`。
 新 patch 的摘要也进入原生缓存键和 `build.json`，不会复用未修正的库。
+
+第二个补丁的 [CI 39562092048](https://github.com/kb5000/trames/actions/runs/39562092048)
+已通过云端 Apple query/能力门控和 arm64 iOS 原生库编译。硬件时间戳计数器缺失时，
+queue valid bits 与 timestamp query creation 一致；occlusion 的 GPU copy/readback 正确。
+最终源码、工具链与库摘要见[记录](vulkan-feedback-ci.json)。

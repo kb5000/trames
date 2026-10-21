@@ -82,3 +82,17 @@ occlusion 的 32/64-bit results、GPU copy 和 availability，不把不存在的
 另一个已确定的 ES3 前提是 `ARB_depth_buffer_float`。原版 Mesa `st_extensions.c`
 要求 `Z32_FLOAT` **和** `Z32_FLOAT_S8X24_UINT` 的采样/深度附件支持；当前 bridge 只支持
 独立 D16/D32，完整 depth/stencil 路径必须补齐。它与 Apple GPU TF 一起继续阻止完整 ES3。
+
+## 云端最终验收通过
+
+修正源码 [34bd466](https://github.com/kb5000/trames/commit/34bd466943b31a7b58d268802b3e460bccfb33f4) 的
+[CI 39562092048](https://github.com/kb5000/trames/actions/runs/39562092048) 全部通过：
+Linux 的原生/guest 捕获、counter/overflow/间接绘制与查询；实际 Apple Paravirtual GPU 的
+32/64-bit occlusion、GPU copy/availability 与 timestamp/TF 不支持时的明确门控。
+Mac 和 arm64 iOS 原生库均从相同固定上游源码与两个最小 patch 编译通过。
+Xcode 16.4、macOS SDK 15.5 / iOS SDK 18.5；不是物理 iPad 验收，没有 IPA。
+
+Linux 和 Metal 两个 evidence ZIP 的 SHA-256 与全部 CRC 已核对，guest ICD/client/shader
+与 source-bound bundle 的摘要跨宿主完全相同；原生构建的 source/patch/recipe/manifest 摘要
+均与仓库一致。[证据摘要](vulkan-feedback-ci.json)保留准确支持状态和复用来源，
+没有把 Apple TF 或虚拟 GPU 时间戳的 unavailable 当作该功能已实现。

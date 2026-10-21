@@ -41,6 +41,7 @@ jobs:
       zink_wayland_linux_sha: ${{ steps.scope.outputs.zink_wayland_linux_sha }}
       zink_mrt_only: ${{ steps.scope.outputs.zink_mrt_only }}
       zink_feedback_only: ${{ steps.scope.outputs.zink_feedback_only }}
+      zink_mesa_only: ${{ steps.scope.outputs.zink_mesa_only }}
       zink_guest_bundle_run: ${{ steps.scope.outputs.zink_guest_bundle_run }}
       zink_guest_bundle_sha: ${{ steps.scope.outputs.zink_guest_bundle_sha }}
     steps:
@@ -542,10 +543,12 @@ jobs:
           export MACOSX_DEPLOYMENT_TARGET=12.0
           export RUSTFLAGS="-C link-arg=-framework -C link-arg=IOKit -C link-arg=$(xcrun clang --print-runtime-dir)/libclang_rt.osx.a"
           cargo build -p trames-cli --release --locked
-          if [[ '${{ needs.scope.outputs.zink_feedback_only }}' != true ]]; then
+          if [[ '${{ needs.scope.outputs.zink_feedback_only }}' != true && '${{ needs.scope.outputs.zink_mesa_only }}' != true ]]; then
             cargo run -p trames-vulkan --example renderpass --release --locked 2>&1 | tee target/zink-metal-native/renderpass.log
           fi
-          cargo run -p trames-vulkan --example feedback --release --locked -- target/zink-native-bundle/shaders/vulkan-feedback.spv 2>&1 | tee target/zink-metal-native/feedback.log
+          if [[ '${{ needs.scope.outputs.zink_mesa_only }}' != true ]]; then
+            cargo run -p trames-vulkan --example feedback --release --locked -- target/zink-native-bundle/shaders/vulkan-feedback.spv 2>&1 | tee target/zink-metal-native/feedback.log
+          fi
           if [[ '${{ needs.scope.outputs.zink_mrt_only }}' != true ]]; then
             cargo run -p trames-vulkan --example timeline --release --locked 2>&1 | tee target/zink-metal-native/timeline.log
             cargo run -p trames-vulkan --example resources --release --locked -- target/zink-native-bundle/shaders/vulkan-resources.spv 2>&1 | tee target/zink-metal-native/resources.log
@@ -558,7 +561,7 @@ jobs:
               python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-es3-metal --stage graphics
             fi
           fi
-          if [[ '${{ needs.scope.outputs.zink_mrt_only }}' == true ]]; then
+          if [[ '${{ needs.scope.outputs.zink_mrt_only }}' == true && '${{ needs.scope.outputs.zink_mesa_only }}' != true ]]; then
             python3 tests/integration/vulkan-feedback.py --store target/zink-native-bundle/store --output target/vulkan-feedback-metal
           fi
       - name: Compile corrected native iOS driver without packaging an app

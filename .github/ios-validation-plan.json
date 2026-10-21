@@ -1,22 +1,18 @@
 {
-  "base_sha": "ac10576432aa71657d09ff038ddfc2410bae06b7",
+  "base_sha": "34bd466943b31a7b58d268802b3e460bccfb33f4",
   "native_scope": "zink-gles",
   "zink_mrt_only": true,
-  "zink_feedback_only": {
-    "run": 39559895800,
-    "sha": "ac10576432aa71657d09ff038ddfc2410bae06b7"
+  "zink_mesa_only": true,
+  "zink_metal_only_reuse": {
+    "run": 39562092048,
+    "sha": "34bd466943b31a7b58d268802b3e460bccfb33f4"
   },
-  "reason": "Retry the failed Apple query path: pinned original MoltenVK reports timestamp capability only with a real Metal timestamp counter set. Query/feedback clients test actual support and always exercise occlusion. Vulkan/ICD runtime and toolchain unchanged; prove passed Linux + Apple module/iOS FFI acceptance and reuse unchanged image/Mesa checks. Rebuild Mac/iOS native libraries for the minimal source capability patch. No IPA or Firefox raw data.",
+  "reason": "Complete only the previously blocked Apple original-Mesa EGL/MRT/mipmap/cube pixels on unchanged runtime/ICD/native driver inputs. Reuse passed Linux queries/TF/Mesa, Apple query gate/occlusion and module/iOS checks, exact guest bundle and compiled Mac/iOS libraries. Skip repeated native image/query suites. No IPA or Firefox raw data.",
   "changed_file_sha256": {
-    ".github/workflows/linux.yml": "932be409c77b52e8bc5b0312baff447c6c251f30192f054fba94e269c776a675",
-    "crates/trames-vulkan/examples/feedback.rs": "cb8c335b8842e54745dcd1ef32f176c1f61a32cb74ff4ab14ae0b4cb25fc1513",
-    "docs/validation/moltenvk-source-build.md": "976c5cddde98671d28daa38cbc2f064a1dfe209f88379dcbd665e4db29e8b6cb",
-    "docs/validation/vulkan-feedback.md": "ba510c1b093c37cc9afc7abd8d7d524e5e936304271fd21c3d5b3536af344970",
-    "patches/moltenvk/0002-require-native-gpu-timestamp-counters.patch": "a684dee2d0b5fdc1ecf747d032c942ace248e1b402566bc93f213a33c55d245e",
-    "scripts/build-moltenvk.py": "e57c3241812658e16afbb66938d5d62f169dadd284101aca77eb4f93f6be1291",
-    "scripts/ios-ci-scope.py": "147df5e69f21d1a351a2bf808eb4ee5172d7ca760e7fcf90bb6fcb72ba500c23",
-    "scripts/prepare-zink-native-bundle.py": "a4aa1a36c5e69ba362269f49bdb4be082728be697abffb1133533f2b9ca34747",
-    "tests/fixtures/vulkan-feedback.c": "bb8e29f8213d2ac4f0b869517c1cd41670b3b0e353e5822f8e1559a44c0d1db9",
-    "tests/integration/zink-foundation.py": "60fdd419242933fbeb5d36e61f6fcf39253552e91c98133bca5eeb98d74a7303"
+    ".github/workflows/linux.yml": "881db9c383349e20074aeac8812d14a3d22731f74087eb97f5406c6cc9a0045f",
+    "docs/validation/moltenvk-source-build.md": "64216bc426338776a56194f7e1da01fda775420331b90cd5bd18f7cd70c18a8a",
+    "docs/validation/vulkan-feedback-ci.json": "7e26f4d86c977dc48f4900f44d1e822989c2dac10f04250b3b42d1fac036978d",
+    "docs/validation/vulkan-feedback.md": "a55481a76e3864fa08a4c63a4b1a74356793e6d94d823906c2c17a8cf384baa3",
+    "scripts/ios-ci-scope.py": "3b0bb9c3e4866a8cfa099bb70600443844a1baa9f1f4718f0a4b327ee37dc63c"
   }
 }
