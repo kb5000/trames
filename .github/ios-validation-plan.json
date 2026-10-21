@@ -1,14 +1,33 @@
 {
-  "base_sha": "d925bd554fb5a70bcd0e29079e5d2535c322d17d",
-  "native_scope": "firefox-mmu-cap",
-  "reason": "Increase bounded sparse hardware-MMU VA/CPU-registration capacity (not resident guest RAM); exercise affected Memory tests on Linux/Apple ARM64 and iOS FFI. Reuse unchanged Linux mmap state20 and other runtime/GPU/Wayland/guest/UI results; diagnostic Firefox remains private. Device build plumbing accepts source-bound layout checks; no IPA until shutdown validation.",
+  "base_sha": "630afb260cfd48f05160bfdbc61bb9cd6a39bbf4",
+  "native_scope": "device-build",
+  "reason": "Build owner-requested unsigned 1.3.0 build35 for iPad validation after reservation/MMU fixes. Low-refresh original Firefox GPU/input/resize/normal exit passed locally; default-refresh passive startup remains tracked, no Firefox preference overrides or diagnostic code shipped. Reuse exact Linux/Apple runtime and Metal-tested graphics, rebuild only missing original Xwayland/launcher, run affected Swift XIM/input tests; reuse unchanged gesture/musl acceptance. Preserve exact source closures after current MoltenVK source build.",
+  "device_build": {
+    "layout_runtime": {
+      "sha": "630afb260cfd48f05160bfdbc61bb9cd6a39bbf4",
+      "run": 39643715037
+    },
+    "zink": {
+      "sha": "2c8981bd5d5fcaa944deb0e282df8db7b0230612",
+      "run": 39633612435
+    },
+    "frontend": {
+      "sha": "aa4528166c8d0cdb04f3fe540730d9af63ed7f07",
+      "run": 39062598012
+    },
+    "frontend_xim_followup": true,
+    "xwayland_device_build": true,
+    "guest": {
+      "sha": "534e223e284df48f207500e84ab4cd05dd3d3958",
+      "run": 39015795319
+    }
+  },
   "changed_file_sha256": {
-    ".github/workflows/ios.yml": "389f0c6d785fc3adfcae784a8edd025a78e612dc3a23c0e1dc4bd9e605047c17",
-    ".github/workflows/linux.yml": "b9ed027ccb3224a47869c5953cd5b64384ab078c5093ee4b90f740f77882f056",
-    "crates/trames-memory/src/mmu/fault.rs": "a3a390bf73fddb69c2ffa6a6b13fa6b3480b08e65a8d5f66913bc6fe0dc99c1e",
-    "crates/trames-memory/src/mmu/host.rs": "13606f783326a4c867765ab315561603f6dd77bc662ab71f6ae07647ba713605",
-    "docs/architecture/hardware-mmu.md": "5f052e8e03fe0753f8d8838aae504481ed7183a0d1ed0733ea7bbafc840326e2",
-    "docs/validation/firefox-gles3.md": "ddc37661c539c5615732dd98377e8bf6dcfd9679c11aff7eed96eaa0f9d830b9",
-    "scripts/ios-ci-scope.py": "534072cef6d6060f36bc3d590384ba1ff73549fb6402646902676077c0553640"
+    ".github/workflows/ios.yml": "fbafd2f17a8de5108d1635b9b4b42dbe5b9a45d88e61f7682bdbfa54a6b03c68",
+    "Cargo.lock": "84051ae560276d0030743ee7f560031ab98e263456312d236f206f7f82e3e9b4",
+    "Cargo.toml": "70bdd247ee2e8235ed5b3f19f0b6fd136e3ff75d96688d7fa1be221cf7b446c5",
+    "apps/ios/project.yml": "6e36fb56a6b1edf7b8e23f5c0ad2e26ec7e0f78be7f458ec191aaba1fb38e6b8",
+    "docs/validation/firefox-gles3.md": "0f13a3e9cc18f7f470e25c1f7fbb624c4efa9beb195927098f5e65e29221acb8",
+    "scripts/ios-ci-scope.py": "53cbd2583d674a6922a589add91e2a4b20d416c90d91898f5c22ecd653bb70d3"
   }
 }

@@ -202,6 +202,24 @@ CPU 注册表增至 32,768 个 1 MiB 窗口，仍保留耗尽时的软件回退�
 默认刷新率等待仍未解决；另用显式低刷新率诊断隔离退出路径，尚不据此宣称完整
 默认设置的浏览器可用或构建已完成。
 
+## 本轮退出结果与测试构建（2026-10-22）
+
+原版 Firefox 的显式 `layout.frame_rate=1` 隔离组已经完成 GPU 页面 60,000 绿色
+像素、中文/emoji、方向键与退格后继续输入、两个输入框独占焦点往返、800×600
+DOM/scene/native-frame 尺寸以及关闭。退出码为 0，关闭约 34.4 秒，完整诊断收集
+成功；没有关闭或延长 Firefox 自身的退出看门狗。此配置用于隔离已知的刷新事件
+拥塞，不能与此前默认刷新率 149–191 秒的 close-only 组计算严格加速比。
+
+Memory 额度源码 [630afb2](https://github.com/kb5000/trames/commit/630afb260cfd48f05160bfdbc61bb9cd6a39bbf4)
+的 [CI 39643715037](https://github.com/kb5000/trames/actions/runs/39643715037) 已完成
+Linux/Apple ARM64 Memory 93 项、相关严格 Clippy 和 iOS FFI。未变的 Linux state
+20 项、CPU/Wayland/Vulkan/Metal/guest 验收按源码复用。
+
+1.3.0 build 35 仅作为物理 iPad 验证包准备。生产源码不包含临时图像回读、线程栈
+采集或浏览器偏好覆盖。默认刷新率的 CPU Vulkan 参考仍会持续重绘并延迟标题/
+交互，完整 Firefox 支持及 [Issue #33](https://github.com/kb5000/trames/issues/33)
+继续开放，不将隔离组说成默认设置已完整可用。
+
 ## 定向验证
 
 首批 Linux Release 的 Vulkan 27 项、Wayland 12 项及相关模块严格 Clippy 通过；
@@ -252,4 +270,4 @@ Firefox 的 `--require-gpu-frame` 只适用于 GPU 开启的原生 Wayland 窗�
 
 Firefox 原始日志、截图、地址、线程栈及运行转储仅保留本地；临时故障采集不进入
 生产 Core。[Issue #33](https://github.com/kb5000/trames/issues/33)保持开放。
-本轮没有构建 IPA。
+本轮的测试 IPA 构建及产物验收结果另行记录。

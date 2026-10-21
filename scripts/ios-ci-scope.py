@@ -384,6 +384,8 @@ def device_build_outputs(plan, repo, headers):
             paths = ['crates/trames-vulkan', 'crates/trames-wayland', 'crates/trames-compute',
                      'crates/trames-shared', 'vendor', '.cargo', 'rust-toolchain.toml',
                      'accelerator', 'include', 'patches/mesa',
+                     'patches/moltenvk', 'scripts/prepare-vulkan.py', 'scripts/build-moltenvk.py',
+                     'scripts/build-vulkan-native-tf.py',
                      'scripts/build-zink-egl.py', 'scripts/zink-egl-requirements.txt']
         if not unchanged(zink['sha'], paths):
             raise RuntimeError('Zink IPA requires unchanged Metal-validated runtime and guest sources')
@@ -402,8 +404,16 @@ def device_build_outputs(plan, repo, headers):
         for name in ['zink-wayland-linux', 'zink-wayland-apple']:
             verified_run(zink, 'linux.yml', name)
         frontend = reuse['frontend']
-        if not unchanged(frontend['sha'], ['apps/ios', 'include', 'scripts/package-ios.py', 'scripts/finalize-ios-app.py', ':(exclude)apps/ios/project.yml']):
-            raise RuntimeError('Frontend acceptance source changed')
+        frontend_paths = ['apps/ios', 'include', 'scripts/package-ios.py', 'scripts/finalize-ios-app.py', ':(exclude)apps/ios/project.yml']
+        input_followup = reuse.get('frontend_xim_followup', False)
+        if not unchanged(frontend['sha'], frontend_paths):
+            delta = subprocess.check_output(['git', 'diff', '--name-only', frontend['sha'], 'HEAD', '--', *frontend_paths], text=True).splitlines()
+            affected = {'apps/ios/Trames/TerminalSession.swift', 'apps/ios/Trames/TramesApp.swift',
+                        'apps/ios/Trames/WaylandInputView.swift', 'apps/ios/TramesTests/WaylandInputTests.swift',
+                        'apps/ios/TramesKit/Sources/TramesKit/LocalSession.swift',
+                        'apps/ios/Trames/Notices/Wayland-native-dependencies-NOTICES.txt'}
+            if not input_followup or not set(delta) <= affected:
+                raise RuntimeError('Frontend acceptance source changed outside the XIM/input follow-up')
         strip = lambda text: '\n'.join(l for l in text.splitlines() if not l.strip().startswith(('MARKETING_VERSION:', 'CURRENT_PROJECT_VERSION:')))
         previous = subprocess.check_output(['git', 'show', frontend['sha'] + ':apps/ios/project.yml'], text=True)
         if strip(previous) != strip(Path('apps/ios/project.yml').read_text()):
@@ -412,18 +422,27 @@ def device_build_outputs(plan, repo, headers):
         if not {'Link unsigned iPad simulator app', 'Exercise peer tabs and floating window gestures first', 'Export simulator test summary', 'Link unsigned iPad device app'} <= completed:
             raise RuntimeError('Missing passed frontend interactions')
         guest = reuse['guest']
-        if not unchanged(guest['sha'], ['accelerator/musl', 'accelerator/guest', 'crates/trames-native/upstream',
-                                       'scripts/build-musl-hybrid.sh', 'scripts/prepare-musl-hybrid.py',
-                                       'scripts/prepare-vulkan.py', 'scripts/vulkan-upstream.json', 'LICENSE']):
+        guest_paths = ['accelerator/musl', 'accelerator/guest', 'crates/trames-native/upstream',
+                       'scripts/build-musl-hybrid.sh', 'scripts/prepare-musl-hybrid.py',
+                       'scripts/vulkan-upstream.json', 'LICENSE']
+        if not layout:
+            guest_paths.append('scripts/prepare-vulkan.py')
+        if not unchanged(guest['sha'], guest_paths):
             raise RuntimeError('Original musl/MoltenVK build inputs changed')
         verified_run(guest, 'ios.yml', 'guest-musl')
         names = {a['name'] for a in get(f"actions/runs/{guest['run']}/artifacts")['artifacts'] if not a['expired']}
         if not {'full-musl-library-and-source', 'vulkan-compute-driver-and-native-source'} <= names:
             raise RuntimeError('Paired original source artifacts missing')
         print('Compile current iPad Release app; reuse exact validated graphics bundle, paired musl/native sources and unchanged frontend acceptance. No repeated passed suites.')
-        return dict(frontend_only='false', targeted='true', native_scope='device-build', skip_native='true',
-                    skip_linux_native='true', skip_linux_modules='true', frontend_reused='true', ui_targets='[]',
-                    baseline_run=str(guest['run']), zink_graphics_run=str(zink['run']))
+        result = dict(frontend_only='false', targeted='true', native_scope='device-build', skip_native='true',
+                      skip_linux_native='true', skip_linux_modules='true', frontend_reused=str(not input_followup).lower(),
+                      ui_targets='["TramesTests/WaylandInputTests"]' if input_followup else '[]',
+                      baseline_run=str(guest['run']), zink_graphics_run=str(zink['run']))
+        if input_followup:
+            result['critical_test'] = 'TramesTests/WaylandInputTests/testDeleteWithoutSurroundingTextUsesGuestCaret'
+        if reuse.get('xwayland_device_build'):
+            result['native_scope'] = 'device-xwayland'
+        return result
 
     metadata = reuse.get('metadata_repackage')
     if metadata:

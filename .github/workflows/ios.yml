@@ -386,8 +386,32 @@ jobs:
             target/musl-hybrid/musl-hybrid-1.2.5-source.tar.gz
           if-no-files-found: error
           retention-days: 14
+  device-xwayland:
+    needs: scope
+    if: needs.scope.outputs.native_scope == 'device-xwayland'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build only current original Xwayland and its guest launcher
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes gcc-aarch64-linux-gnu g++-aarch64-linux-gnu pkg-config ninja-build libwayland-dev python3-venv patch
+          python3 -m venv target/xwayland-tools
+          target/xwayland-tools/bin/pip install -r scripts/zink-egl-requirements.txt
+          export PATH="$PWD/target/xwayland-tools/bin:$PATH"
+          python3 scripts/build-xwayland-native.py
+          MUSL_CC="$PWD/target/xwayland-native/musl-cc" TRAMES_XWAYLAND_OUTPUT=target/vulkan-guest bash scripts/build-xwayland-launcher.sh
+          cp target/xwayland-native/xwayland-native-source.tar.gz target/vulkan-guest/
+          tar -czf target/vulkan-guest/xwayland-launcher-source.tar.gz accelerator/xwayland/launcher.c scripts/build-xwayland-launcher.sh LICENSE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xwayland-device-inputs
+          path: target/vulkan-guest/
+          if-no-files-found: error
+          retention-days: 14
   apple-build:
-    needs: [scope, guest-musl, memory-abi]
+    needs: [scope, guest-musl, memory-abi, device-xwayland]
     if: ${{ !cancelled() && needs.scope.outputs.native_scope != 'firefox-memory' && needs.scope.outputs.native_scope != 'firefox-runtime' && needs.scope.outputs.native_scope != 'firefox-layout' && needs.scope.outputs.native_scope != 'firefox-mmu-cap' && needs.scope.outputs.native_scope != 'firefox-clock' && needs.scope.outputs.native_scope != 'compatibility-probe' && needs.scope.outputs.native_scope != 'runtime-fastpaths' && needs.scope.outputs.native_scope != 'zink-foundation' && needs.scope.outputs.native_scope != 'zink-sync' && needs.scope.outputs.native_scope != 'zink-gles' && needs.scope.outputs.native_scope != 'vulkan-tf-engine' && needs.scope.outputs.native_scope != 'zink-wayland' && needs.scope.outputs.native_scope != 'docker-default' && needs.scope.outputs.native_scope != 'docker-default-lifecycle' && needs.scope.outputs.native_scope != 'container-isolation' && needs.scope.outputs.native_scope != 'container-network' && needs.scope.outputs.native_scope != 'container-storage' && needs.scope.outputs.repackage_run == '' && needs.scope.result == 'success' && (needs.scope.outputs.frontend_only == 'true' || needs.scope.outputs.targeted == 'true' || (needs.guest-musl.result == 'success' && needs.memory-abi.result == 'success')) }}
     runs-on: macos-15
     timeout-minutes: 40
@@ -425,14 +449,11 @@ jobs:
       - name: Install exact Metal-validated EGL and ICD with paired sources
         if: needs.scope.outputs.zink_graphics_run != ''
         run: python3 scripts/prepare-zink-ipa.py
-      - uses: actions/upload-artifact@v4
-        if: needs.scope.outputs.zink_graphics_run != ''
+      - uses: actions/download-artifact@v4
+        if: needs.scope.outputs.native_scope == 'device-xwayland'
         with:
-          name: vulkan-compute-driver-and-native-source
-          path: |
-            target/vulkan-guest/
-            !target/vulkan-guest/wayland-acceptance/**
-          retention-days: 14
+          name: xwayland-device-inputs
+          path: target/vulkan-guest/
       - name: Build native Rust embedding library
         if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'
         run: cargo build -p trames-ffi --release --locked
@@ -570,6 +591,14 @@ jobs:
           python3 scripts/package-ios.py \
             apps/ios/build/device/Build/Products/Release-iphoneos/Trames.app \
             apps/ios/build/sideload/Trames-unsigned.ipa
+      - uses: actions/upload-artifact@v4
+        if: needs.scope.outputs.zink_graphics_run != ''
+        with:
+          name: vulkan-compute-driver-and-native-source
+          path: |
+            target/vulkan-guest/
+            !target/vulkan-guest/wayland-acceptance/**
+          retention-days: 14
       - name: Export simulator crash diagnostics
         if: ${{ always() && needs.scope.outputs.frontend_reused != 'true' }}
         run: |
