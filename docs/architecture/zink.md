@@ -122,18 +122,19 @@ Wayland EGL复用现有native swapchain/Metal texture路径，新增可采样swa
 的replaceRegion崩溃。没有私有类型时仍保留符合memoryTypeBits的fallback。
 查询池、原生GPU transform feedback桥接（stream 0、最多4个buffer）、counter续写、indexed
 query及byte-count间接绘制见[验证与边界](../validation/vulkan-feedback.md)。扩展只在native
-driver实际支持时暴露；MoltenVK 1.4.2缺少GPU实现，Apple不声明此feature。Apple的GLES3仍待原生GPU TF；Linux已创建原版Mesa真实GLES3 context并通过MRT/TF数据。
+driver实际支持时暴露；固定MoltenVK现已接入原生GPU TF，Apple与Linux均已创建原版Mesa真实GLES3 context并通过MRT/TF数据，见[完整接线验收](../validation/vulkan-native-tf-runtime.md)。
 depth/stencil已通过Linux/云端Metal读回；后续原生divisor使Linux原版Mesa具备真实GLES3
-context、MRT/TF及实例输入。Apple的TF、depth-clip等渲染状态、压缩/MSAA及其他实际缺口继续推进。
+context、MRT/TF及实例输入。depth-clip等渲染状态、压缩/MSAA及其他实际缺口继续推进。
 
 ES3首批的MRT、宽格式、原生复制验证与后续缺口见
 [ES3推进记录](../validation/zink-es3.md)。后续[divisor批次](../validation/vulkan-divisor.md)已在Linux跑通真实ES3 context与数据；
-Apple仍待TF。GLES3探针通过不等于Firefox硬件WebRender已经启用。
+Apple已打通TF与真实GLES3。GLES3探针通过不等于Firefox硬件WebRender已经启用。
 
 后续[原生TF内核](../validation/vulkan-native-tf.md)已通过实际Metal捕获、GPU图元组装/
 计数器、原版Vulkan顺序对照和输出replay的1024像素检查，并编译通过arm64 iOS。
-沿用未修改的SPIRV-Cross原版VS及raster接口；普通map/scatter在GPU并行执行，VS副作用不重复。
-它尚未链接到MoltenVK/guest的命令、查询和资源生命周期；Apple TF/ES3能力仍关闭。
+沿用SPIRV-Cross原版VS及raster接口算法；普通map/scatter在GPU并行执行，VS副作用不重复。
+[完整接线](../validation/vulkan-native-tf-runtime.md)现已覆盖命令、查询、GPU indirect、counter、
+VBO/descriptor、资源生命周期和原版Mesa；按实际native feature开放Apple TF/ES3。
 
 Mesa25.1.9的ES2 context启用GL-thread时，SwapBuffers调用的内部
 `InternalInvalidateFramebufferAncillaryMESA`在上游`gl_API.xml`仅标为ES3，从而产生

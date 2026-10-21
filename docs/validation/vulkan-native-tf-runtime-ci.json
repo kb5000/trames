@@ -1,0 +1,898 @@
+{
+  "kind": "public Vulkan TF and original Mesa GLES3 on native Apple Metal",
+  "source_sha": "00d9cfa92b385726f67da1cdc6b5e5ea9d0c34db",
+  "ci_run": 39598761585,
+  "apple_job": 119217652522,
+  "results": {
+    "native_public_cases": 34,
+    "topology_cases": 24,
+    "topology_tf_scalars": 2200,
+    "raster_cases": 9,
+    "exact_rgba_pixels": 576,
+    "guest_tf_scalars": 30,
+    "original_mesa_gles": "OpenGL ES 3.0 Mesa 25.1.9",
+    "mesa_mrt_pixels": 512,
+    "mesa_tf_scalars": 12,
+    "indirect_gpu_error_checked": true,
+    "physical_ipad": false,
+    "ipad_app_built": false
+  },
+  "artifact": {
+    "id": 12344668831,
+    "sha256": "95898766443e3425979b04c8118c068449c1a327a19290d028ed0e94dbd35302",
+    "size": 1995976,
+    "entries": 58,
+    "all_crcs_verified": true
+  },
+  "original_guest_reuse": {
+    "sha": "5dd69304b1e71f7e9c4512ec8699fc9ce6de41b0",
+    "run": 39579538279,
+    "files": 559,
+    "icd_sha256": "48c790d1e54c33eb52b0b3c1d82547b329f52694b0fc2ac5bb1da04f235e15cc",
+    "client_sha256": "e1e76d711a7e0efb3df8c2e15ba11383ba968b39c6ddc6d54808ef7727e3d162",
+    "shader_sha256": "070b6bdbd4ec66e12efd8631f48895ebce7186b020fe91b2b3a85a6b4f17f424",
+    "mesa_client_sha256": "04b47d150c1f9f4ba72f7275d685fe8c01cdd21a7284a96d311a362259f97bcf"
+  },
+  "builds": {
+    "ios": {
+      "inputs": {
+        "platform": "ios",
+        "arch": "arm64",
+        "xcode": "Xcode 16.4\nBuild version 16F6\n",
+        "sdk": "18.5",
+        "patch_sha256": "78ccd845056b7251def221519cd130a2baefd43857c622d463d36cab3a54eed3",
+        "recipe_sha256": "9d2511912cff05339fc7af56eed7c382809297262543a1504f8069db5ee464f2",
+        "timestamp_patch_sha256": "a684dee2d0b5fdc1ecf747d032c942ace248e1b402566bc93f213a33c55d245e",
+        "transform_feedback_patch_sha256": "2b6d07ea56a9f473dac7634bfbba51571a9e4e202090edcab9e4efc79ccdcd21",
+        "cross_dispatch_patch_sha256": "a7313c35a8372f2c2f157b56ac7e9c1ebe9634d83f0fb2eca8567459a53b915f",
+        "transform_feedback_sources": {
+          "assemble.metal": "b64b853c5cda4049ab5a2fb38b69b3e01463e2e6d176a61f7ff131d732387dab",
+          "compiler.cpp": "47329f01ea7a7738cb8b83abc2e95cc54af09fb242be0ba3f12266950f83ad5f",
+          "compiler.hpp": "1a6958f2b449e941003d70052cdd78a9a56de9c55701e9babe1ebed0ead4dbc8",
+          "metal.hpp": "94cb187e59c2bbfeb65b9225906ac208a036310bdd44fb3cf10ed5be56a4e2ba",
+          "metal.mm": "66ada890a968765cf39d68ef8cba745767a018a9a36e83cba8472bb2e721d9b2",
+          "mvk-api.inc": "a79e9726195c7d40a9411e362991fcbfb86540b64991d8c54095d96e00299881",
+          "mvk-command.hpp": "e7808d3ef480df0bf0f26a8e64093d9464e6d2329abc586ca03187e38f3db05d",
+          "mvk-commands.inc": "0c00e1fb34b9fa98921283d9d0f019403f9251760af9d82e41b6ded6283fef25",
+          "mvk-pipeline.inc": "69ef60caf3a3a2c0c4d86e4ada429f5d0a689b7e303b4a9a0dbea69bda933e99",
+          "mvk-query.hpp": "fbf984bb4aeb535571f12747d5feb78758f2b6b91ad334e7c270313ee9433636",
+          "mvk-query.inc": "691943a67ccf80cd667f73d659d5b6afc3f1758c9e8fd7efeb3e026c033088c6",
+          "mvk-state.hpp": "b0a926ffb548e4486d8a04755d28614cb962e615655046cd57311b4a027af436"
+        },
+        "manifest_sha256": "76d7b3f2a3dd80d803e9a1ca0161de2f0bd673a1620d9c020f0342039ea04ee5",
+        "upstream_commit": "db66022459ffb663aa2b50f6b018bc2e124f5edf"
+      },
+      "commands": [
+        [
+          "xcodebuild",
+          "-jobs",
+          "4",
+          "-project",
+          "ExternalDependencies.xcodeproj",
+          "-scheme",
+          "ExternalDependencies-iOS",
+          "-destination",
+          "generic/platform=iOS",
+          "-configuration",
+          "Release",
+          "-sdk",
+          "iphoneos",
+          "ARCHS=arm64",
+          "ONLY_ACTIVE_ARCH=YES",
+          "CODE_SIGNING_ALLOWED=NO",
+          "SYMROOT=/Users/runner/work/trames/trames/target/moltenvk-patched/ios-arm64-ae8d601d149eb5563d3e/products",
+          "OBJROOT=/Users/runner/work/trames/trames/target/moltenvk-patched/ios-arm64-ae8d601d149eb5563d3e/intermediates",
+          "HEADER_SEARCH_PATHS=$(inherited) /Users/runner/work/trames/trames/target/moltenvk-patched/ios-arm64-ae8d601d149eb5563d3e/source/TramesTF",
+          "build"
+        ],
+        [
+          "xcodebuild",
+          "-jobs",
+          "4",
+          "-project",
+          "MoltenVK/MoltenVK.xcodeproj",
+          "-target",
+          "MoltenVK-iOS-static",
+          "-configuration",
+          "Release",
+          "-sdk",
+          "iphoneos",
+          "ARCHS=arm64",
+          "ONLY_ACTIVE_ARCH=YES",
+          "CODE_SIGNING_ALLOWED=NO",
+          "SYMROOT=/Users/runner/work/trames/trames/target/moltenvk-patched/ios-arm64-ae8d601d149eb5563d3e/products",
+          "OBJROOT=/Users/runner/work/trames/trames/target/moltenvk-patched/ios-arm64-ae8d601d149eb5563d3e/intermediates",
+          "HEADER_SEARCH_PATHS=$(inherited) /Users/runner/work/trames/trames/target/moltenvk-patched/ios-arm64-ae8d601d149eb5563d3e/source/TramesTF",
+          "build"
+        ]
+      ],
+      "original_transfer_sha256": "7c050a2724cc75170b789557d826ac3614e08bd129b00b1dcf49a0a375e75e70",
+      "patched_transfer_sha256": "2e902bfacf12526263801bd4661c286b3d2ed7ddb7ea79d660c20af892d641ed",
+      "original_device_sha256": "e93c8fe096d9c9f8c0b02da6443bc820dc42ca4340b122cc8dd11721ad7e9b8d",
+      "patched_device_sha256": "f5bb7a347f292e3a1ff5a2b1c312bf544336a406f0f168b399cd4d1fbb29e56a",
+      "library_sha256": "34114fed6e726de8be86ca687cd120a62326ca38dd3665509d836345131890bd",
+      "native_transform_feedback": {
+        "before": {
+          "MoltenVK/MoltenVK/Commands/MVKCmdDraw.h": "0701c6488dc07c94c917917b81252f09fe97126218fc962e90eb42ef54925c33",
+          "MoltenVK/MoltenVK/Commands/MVKCmdDraw.mm": "26471c8a9a2bb572f58b479caf1710b89a5b10fb47cd582066bdb09d71189706",
+          "MoltenVK/MoltenVK/Commands/MVKCmdQueries.mm": "c84144f42e9add7913fa59d0cb91428903d6744c5a495d53d507c30f0fe4e482",
+          "MoltenVK/MoltenVK/Commands/MVKCommandBuffer.h": "ac188251cf292f51afb85c153f0b16d16a2aad8b461c9e651f7f11de38f06173",
+          "MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.h": "92388c2690ee23df1767db92aca580adc1bf9d19ca9adbe30f9017f0fca8b356",
+          "MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.mm": "5c1c6e5f406eb945ac10157e7d647866ca3bf7ac42864d6fa1107346154e8453",
+          "MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.h": "6a482b2ddb4663161bd6b09017649c0464ba59cb9ec12e19989c8c49437923cf",
+          "MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.mm": "c46667483f0d18e6e32f53e7f23baaf1974563d1aedabee818fb478e2b59b740",
+          "MoltenVK/MoltenVK/Commands/MVKCommandTypePools.def": "61b8a075555bd66a1ede42c83cfb43b86e3ca7f6f80112baf423e765231fff2b",
+          "MoltenVK/MoltenVK/GPUObjects/MVKDevice.mm": "f5bb7a347f292e3a1ff5a2b1c312bf544336a406f0f168b399cd4d1fbb29e56a",
+          "MoltenVK/MoltenVK/GPUObjects/MVKDeviceFeatureStructs.def": "e212a9cdceac6e384845bf7e004786398842c411c7ec240adb9689342913a620",
+          "MoltenVK/MoltenVK/GPUObjects/MVKInstance.mm": "b40adf234ab52c4fc5f07c94360b8a4ef049c68da3124d2e1a02082ee6dba39e",
+          "MoltenVK/MoltenVK/GPUObjects/MVKPipeline.h": "e7dceaa2e63ad2b1e01d5a476408bdfb7662a48dbbb846dcd1583426f90ffdbf",
+          "MoltenVK/MoltenVK/GPUObjects/MVKPipeline.mm": "ed60a03a3e6d79220303e3b470da837909973d4f80686fec33e9f5e5cef6964f",
+          "MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.h": "bfdf61c9cb55156ce1c3d32d9f02d6d4847cef78cffa8f3b73fd3aea9ec69752",
+          "MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.mm": "a3172302221463b962e00708ae9605ab340a854de612a4ccea42437da9b12126",
+          "MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.h": "cf3d53ad19077ac3d139b0d8ea58fe9181e47ec9578897c1f42526a31f3bf9bf",
+          "MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.mm": "21ec8c9291111bf78320f4eabaa3165432065be02b19e5250eee39f469d13bac",
+          "MoltenVK/MoltenVK/Layers/MVKExtensions.def": "57bd50931ce02885bb83ee7e34613f71d136e328b23aef9456095be212d94957",
+          "MoltenVK/MoltenVK/Vulkan/vulkan.mm": "f7e2be05f062c1944cf89253de826c6ef5928d4ba3ca856cab60ceae66bd8294",
+          "MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.cpp": "fc8f6132db27cef857ca784bc33eacd24fe30ff242840d3ba217b141a4fabf21",
+          "MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.h": "124e571b7327c76ca0e340fc786deb53f114361dee3a1ae6d98c3d657a2878dc",
+          "External/SPIRV-Cross/spirv_msl.hpp": "f0bea665f1a32afc1cb4bb0483699145bc08bb90152231f92161338a88702967"
+        },
+        "after": {
+          "MoltenVK/MoltenVK/Commands/MVKCmdDraw.h": "498cf3472750c1d856528a6b4e2d7469913bc9bde70ba5496862542c5d5c6070",
+          "MoltenVK/MoltenVK/Commands/MVKCmdDraw.mm": "b63eec424327f0b114683954cbea3b30bb2fac3fb5ab70ff77dc46017be3d24a",
+          "MoltenVK/MoltenVK/Commands/MVKCmdQueries.mm": "043b01dfec19488be304b1377d6adee6b7bcef6853c6b80365800c38e6747538",
+          "MoltenVK/MoltenVK/Commands/MVKCommandBuffer.h": "526b1a0056ac1924a8c7f13729b4222f097ccb58ab2b0f9c1eddab21772f0593",
+          "MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.h": "49f784da6f38016c9316eb34173bb2207e94ffd2fe192cd7a123eb740d031b46",
+          "MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.mm": "61f4c208deaba011ff43f4fa9c339753ef2767e77458a96d2f4d9b8f67953057",
+          "MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.h": "d4018d612b70b51eaa29929d59d5b305ef41558bc8768daaddd0d2d9d289e0f1",
+          "MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.mm": "25ddab52130fd67e3ead414bad97600d1ec5b0c337b7c3a033f3aab147b4d1f3",
+          "MoltenVK/MoltenVK/Commands/MVKCommandTypePools.def": "823a2221043b2726bee47e37f7924a780fee197bbaf574726ec0172a27909b77",
+          "MoltenVK/MoltenVK/GPUObjects/MVKDevice.mm": "a4c431ad38abdb4da0eb280a39febd6e421f80af5f38c97bd68ff21364ea27aa",
+          "MoltenVK/MoltenVK/GPUObjects/MVKDeviceFeatureStructs.def": "0942d13b3b1e328112a4866484c02bd86f93a62bc001f1bc9f5bef497cb855fc",
+          "MoltenVK/MoltenVK/GPUObjects/MVKInstance.mm": "dcf2a03752e7410beaa9f8a10b687e57c22f5eb07e55fd1ffb13af60ecc19093",
+          "MoltenVK/MoltenVK/GPUObjects/MVKPipeline.h": "cedaa3d2f856ac63c4508e70d08fb7e54ff67cb4740696da8b756e31b2d12da6",
+          "MoltenVK/MoltenVK/GPUObjects/MVKPipeline.mm": "a6f8662cd5931607b058053bf540e03629a61b4e1923d65cd7066d81a3c21d7e",
+          "MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.h": "956a852e24d10ac991627f276747dd0468bc8390674b3e875f0f500fc3af0d25",
+          "MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.mm": "2c5e4ea28ec072091f7d86ea99a18fdf85c872be1d2a4e501f87f3c1b0844afc",
+          "MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.h": "c892ae96403f06d0ee5a01bc3ca9eabcf89cf14c7e5a6b2988fe3d42e3a92179",
+          "MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.mm": "be75dcc20446c64854fdcc31208fb43644155a0815a2012c87c1db83f878a72e",
+          "MoltenVK/MoltenVK/Layers/MVKExtensions.def": "1658411eb19bbd1f84ea1995a29a9a7805f7a7d94cebfeba56c3149b6c1487a5",
+          "MoltenVK/MoltenVK/Vulkan/vulkan.mm": "b885090e185058f0855b12271cf1a60e9933d9afd0c6aee4f677bf96a676d982",
+          "MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.cpp": "806a9679ab3e085a01d6d22c55cfaac13aa24acffc898752ccba21d37f4ba17b",
+          "MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.h": "29ad285be349f77653445afaadc52afeb44637ad5730cfe5b2a65360f69f0324",
+          "External/SPIRV-Cross/spirv_msl.hpp": "fb856f952fa883b5d70baf0f2ab5fdc6e03ab1997af6351ed6a06891866d7089"
+        }
+      }
+    },
+    "macos": {
+      "inputs": {
+        "platform": "macos",
+        "arch": "arm64",
+        "xcode": "Xcode 16.4\nBuild version 16F6\n",
+        "sdk": "15.5",
+        "patch_sha256": "78ccd845056b7251def221519cd130a2baefd43857c622d463d36cab3a54eed3",
+        "recipe_sha256": "9d2511912cff05339fc7af56eed7c382809297262543a1504f8069db5ee464f2",
+        "timestamp_patch_sha256": "a684dee2d0b5fdc1ecf747d032c942ace248e1b402566bc93f213a33c55d245e",
+        "transform_feedback_patch_sha256": "2b6d07ea56a9f473dac7634bfbba51571a9e4e202090edcab9e4efc79ccdcd21",
+        "cross_dispatch_patch_sha256": "a7313c35a8372f2c2f157b56ac7e9c1ebe9634d83f0fb2eca8567459a53b915f",
+        "transform_feedback_sources": {
+          "assemble.metal": "b64b853c5cda4049ab5a2fb38b69b3e01463e2e6d176a61f7ff131d732387dab",
+          "compiler.cpp": "47329f01ea7a7738cb8b83abc2e95cc54af09fb242be0ba3f12266950f83ad5f",
+          "compiler.hpp": "1a6958f2b449e941003d70052cdd78a9a56de9c55701e9babe1ebed0ead4dbc8",
+          "metal.hpp": "94cb187e59c2bbfeb65b9225906ac208a036310bdd44fb3cf10ed5be56a4e2ba",
+          "metal.mm": "66ada890a968765cf39d68ef8cba745767a018a9a36e83cba8472bb2e721d9b2",
+          "mvk-api.inc": "a79e9726195c7d40a9411e362991fcbfb86540b64991d8c54095d96e00299881",
+          "mvk-command.hpp": "e7808d3ef480df0bf0f26a8e64093d9464e6d2329abc586ca03187e38f3db05d",
+          "mvk-commands.inc": "0c00e1fb34b9fa98921283d9d0f019403f9251760af9d82e41b6ded6283fef25",
+          "mvk-pipeline.inc": "69ef60caf3a3a2c0c4d86e4ada429f5d0a689b7e303b4a9a0dbea69bda933e99",
+          "mvk-query.hpp": "fbf984bb4aeb535571f12747d5feb78758f2b6b91ad334e7c270313ee9433636",
+          "mvk-query.inc": "691943a67ccf80cd667f73d659d5b6afc3f1758c9e8fd7efeb3e026c033088c6",
+          "mvk-state.hpp": "b0a926ffb548e4486d8a04755d28614cb962e615655046cd57311b4a027af436"
+        },
+        "manifest_sha256": "76d7b3f2a3dd80d803e9a1ca0161de2f0bd673a1620d9c020f0342039ea04ee5",
+        "upstream_commit": "db66022459ffb663aa2b50f6b018bc2e124f5edf"
+      },
+      "commands": [
+        [
+          "xcodebuild",
+          "-jobs",
+          "4",
+          "-project",
+          "ExternalDependencies.xcodeproj",
+          "-scheme",
+          "ExternalDependencies-macOS",
+          "-destination",
+          "generic/platform=macOS",
+          "-configuration",
+          "Release",
+          "-sdk",
+          "macosx",
+          "ARCHS=arm64",
+          "ONLY_ACTIVE_ARCH=YES",
+          "CODE_SIGNING_ALLOWED=NO",
+          "SYMROOT=/Users/runner/work/trames/trames/target/moltenvk-patched/macos-arm64-cc4c0a99e9f01bb59772/products",
+          "OBJROOT=/Users/runner/work/trames/trames/target/moltenvk-patched/macos-arm64-cc4c0a99e9f01bb59772/intermediates",
+          "HEADER_SEARCH_PATHS=$(inherited) /Users/runner/work/trames/trames/target/moltenvk-patched/macos-arm64-cc4c0a99e9f01bb59772/source/TramesTF",
+          "build"
+        ],
+        [
+          "xcodebuild",
+          "-jobs",
+          "4",
+          "-project",
+          "MoltenVK/MoltenVK.xcodeproj",
+          "-target",
+          "MoltenVK-macOS-static",
+          "-configuration",
+          "Release",
+          "-sdk",
+          "macosx",
+          "ARCHS=arm64",
+          "ONLY_ACTIVE_ARCH=YES",
+          "CODE_SIGNING_ALLOWED=NO",
+          "SYMROOT=/Users/runner/work/trames/trames/target/moltenvk-patched/macos-arm64-cc4c0a99e9f01bb59772/products",
+          "OBJROOT=/Users/runner/work/trames/trames/target/moltenvk-patched/macos-arm64-cc4c0a99e9f01bb59772/intermediates",
+          "HEADER_SEARCH_PATHS=$(inherited) /Users/runner/work/trames/trames/target/moltenvk-patched/macos-arm64-cc4c0a99e9f01bb59772/source/TramesTF",
+          "build"
+        ]
+      ],
+      "original_transfer_sha256": "7c050a2724cc75170b789557d826ac3614e08bd129b00b1dcf49a0a375e75e70",
+      "patched_transfer_sha256": "2e902bfacf12526263801bd4661c286b3d2ed7ddb7ea79d660c20af892d641ed",
+      "original_device_sha256": "e93c8fe096d9c9f8c0b02da6443bc820dc42ca4340b122cc8dd11721ad7e9b8d",
+      "patched_device_sha256": "f5bb7a347f292e3a1ff5a2b1c312bf544336a406f0f168b399cd4d1fbb29e56a",
+      "library_sha256": "832b18dd68eba131ddd9274d9a3685e4c53afa29c0b58a956cc4b03c86e26e09",
+      "native_transform_feedback": {
+        "before": {
+          "MoltenVK/MoltenVK/Commands/MVKCmdDraw.h": "0701c6488dc07c94c917917b81252f09fe97126218fc962e90eb42ef54925c33",
+          "MoltenVK/MoltenVK/Commands/MVKCmdDraw.mm": "26471c8a9a2bb572f58b479caf1710b89a5b10fb47cd582066bdb09d71189706",
+          "MoltenVK/MoltenVK/Commands/MVKCmdQueries.mm": "c84144f42e9add7913fa59d0cb91428903d6744c5a495d53d507c30f0fe4e482",
+          "MoltenVK/MoltenVK/Commands/MVKCommandBuffer.h": "ac188251cf292f51afb85c153f0b16d16a2aad8b461c9e651f7f11de38f06173",
+          "MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.h": "92388c2690ee23df1767db92aca580adc1bf9d19ca9adbe30f9017f0fca8b356",
+          "MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.mm": "5c1c6e5f406eb945ac10157e7d647866ca3bf7ac42864d6fa1107346154e8453",
+          "MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.h": "6a482b2ddb4663161bd6b09017649c0464ba59cb9ec12e19989c8c49437923cf",
+          "MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.mm": "c46667483f0d18e6e32f53e7f23baaf1974563d1aedabee818fb478e2b59b740",
+          "MoltenVK/MoltenVK/Commands/MVKCommandTypePools.def": "61b8a075555bd66a1ede42c83cfb43b86e3ca7f6f80112baf423e765231fff2b",
+          "MoltenVK/MoltenVK/GPUObjects/MVKDevice.mm": "f5bb7a347f292e3a1ff5a2b1c312bf544336a406f0f168b399cd4d1fbb29e56a",
+          "MoltenVK/MoltenVK/GPUObjects/MVKDeviceFeatureStructs.def": "e212a9cdceac6e384845bf7e004786398842c411c7ec240adb9689342913a620",
+          "MoltenVK/MoltenVK/GPUObjects/MVKInstance.mm": "b40adf234ab52c4fc5f07c94360b8a4ef049c68da3124d2e1a02082ee6dba39e",
+          "MoltenVK/MoltenVK/GPUObjects/MVKPipeline.h": "e7dceaa2e63ad2b1e01d5a476408bdfb7662a48dbbb846dcd1583426f90ffdbf",
+          "MoltenVK/MoltenVK/GPUObjects/MVKPipeline.mm": "ed60a03a3e6d79220303e3b470da837909973d4f80686fec33e9f5e5cef6964f",
+          "MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.h": "bfdf61c9cb55156ce1c3d32d9f02d6d4847cef78cffa8f3b73fd3aea9ec69752",
+          "MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.mm": "a3172302221463b962e00708ae9605ab340a854de612a4ccea42437da9b12126",
+          "MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.h": "cf3d53ad19077ac3d139b0d8ea58fe9181e47ec9578897c1f42526a31f3bf9bf",
+          "MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.mm": "21ec8c9291111bf78320f4eabaa3165432065be02b19e5250eee39f469d13bac",
+          "MoltenVK/MoltenVK/Layers/MVKExtensions.def": "57bd50931ce02885bb83ee7e34613f71d136e328b23aef9456095be212d94957",
+          "MoltenVK/MoltenVK/Vulkan/vulkan.mm": "f7e2be05f062c1944cf89253de826c6ef5928d4ba3ca856cab60ceae66bd8294",
+          "MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.cpp": "fc8f6132db27cef857ca784bc33eacd24fe30ff242840d3ba217b141a4fabf21",
+          "MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.h": "124e571b7327c76ca0e340fc786deb53f114361dee3a1ae6d98c3d657a2878dc",
+          "External/SPIRV-Cross/spirv_msl.hpp": "f0bea665f1a32afc1cb4bb0483699145bc08bb90152231f92161338a88702967"
+        },
+        "after": {
+          "MoltenVK/MoltenVK/Commands/MVKCmdDraw.h": "498cf3472750c1d856528a6b4e2d7469913bc9bde70ba5496862542c5d5c6070",
+          "MoltenVK/MoltenVK/Commands/MVKCmdDraw.mm": "b63eec424327f0b114683954cbea3b30bb2fac3fb5ab70ff77dc46017be3d24a",
+          "MoltenVK/MoltenVK/Commands/MVKCmdQueries.mm": "043b01dfec19488be304b1377d6adee6b7bcef6853c6b80365800c38e6747538",
+          "MoltenVK/MoltenVK/Commands/MVKCommandBuffer.h": "526b1a0056ac1924a8c7f13729b4222f097ccb58ab2b0f9c1eddab21772f0593",
+          "MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.h": "49f784da6f38016c9316eb34173bb2207e94ffd2fe192cd7a123eb740d031b46",
+          "MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.mm": "61f4c208deaba011ff43f4fa9c339753ef2767e77458a96d2f4d9b8f67953057",
+          "MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.h": "d4018d612b70b51eaa29929d59d5b305ef41558bc8768daaddd0d2d9d289e0f1",
+          "MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.mm": "25ddab52130fd67e3ead414bad97600d1ec5b0c337b7c3a033f3aab147b4d1f3",
+          "MoltenVK/MoltenVK/Commands/MVKCommandTypePools.def": "823a2221043b2726bee47e37f7924a780fee197bbaf574726ec0172a27909b77",
+          "MoltenVK/MoltenVK/GPUObjects/MVKDevice.mm": "a4c431ad38abdb4da0eb280a39febd6e421f80af5f38c97bd68ff21364ea27aa",
+          "MoltenVK/MoltenVK/GPUObjects/MVKDeviceFeatureStructs.def": "0942d13b3b1e328112a4866484c02bd86f93a62bc001f1bc9f5bef497cb855fc",
+          "MoltenVK/MoltenVK/GPUObjects/MVKInstance.mm": "dcf2a03752e7410beaa9f8a10b687e57c22f5eb07e55fd1ffb13af60ecc19093",
+          "MoltenVK/MoltenVK/GPUObjects/MVKPipeline.h": "cedaa3d2f856ac63c4508e70d08fb7e54ff67cb4740696da8b756e31b2d12da6",
+          "MoltenVK/MoltenVK/GPUObjects/MVKPipeline.mm": "a6f8662cd5931607b058053bf540e03629a61b4e1923d65cd7066d81a3c21d7e",
+          "MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.h": "956a852e24d10ac991627f276747dd0468bc8390674b3e875f0f500fc3af0d25",
+          "MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.mm": "2c5e4ea28ec072091f7d86ea99a18fdf85c872be1d2a4e501f87f3c1b0844afc",
+          "MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.h": "c892ae96403f06d0ee5a01bc3ca9eabcf89cf14c7e5a6b2988fe3d42e3a92179",
+          "MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.mm": "be75dcc20446c64854fdcc31208fb43644155a0815a2012c87c1db83f878a72e",
+          "MoltenVK/MoltenVK/Layers/MVKExtensions.def": "1658411eb19bbd1f84ea1995a29a9a7805f7a7d94cebfeba56c3149b6c1487a5",
+          "MoltenVK/MoltenVK/Vulkan/vulkan.mm": "b885090e185058f0855b12271cf1a60e9933d9afd0c6aee4f677bf96a676d982",
+          "MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.cpp": "806a9679ab3e085a01d6d22c55cfaac13aa24acffc898752ccba21d37f4ba17b",
+          "MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.h": "29ad285be349f77653445afaadc52afeb44637ad5730cfe5b2a65360f69f0324",
+          "External/SPIRV-Cross/spirv_msl.hpp": "fb856f952fa883b5d70baf0f2ab5fdc6e03ab1997af6351ed6a06891866d7089"
+        }
+      }
+    }
+  },
+  "native_results": {
+    "zero_divisor": [
+      {
+        "indirect": false,
+        "result": "tf-raster-ok: original VBO and SSBO descriptor; exactly 3 VS calls; 64 exact GPU RGBA pixels after capture/replay"
+      },
+      {
+        "indirect": true,
+        "result": "tf-raster-ok: original VBO and SSBO descriptor; exactly 3 VS calls; 64 exact GPU RGBA pixels after capture/replay"
+      }
+    ],
+    "bounds_error": "tf-bounds-error-ok: oversized GPU indirect draw reports device failure without CPU count readback",
+    "raster": "tf-raster-ok: original VBO and SSBO descriptor; exactly 3 VS calls; 64 exact GPU RGBA pixels after capture/replay",
+    "restart_raster": [
+      {
+        "index_bits": 16,
+        "base_vertex": -1,
+        "result": "tf-raster-ok: original VBO and SSBO descriptor; exactly 6 VS calls; indexed restart VBO; 64 exact GPU RGBA pixels after capture/replay"
+      },
+      {
+        "index_bits": 16,
+        "base_vertex": 1,
+        "result": "tf-raster-ok: original VBO and SSBO descriptor; exactly 6 VS calls; indexed restart VBO; 64 exact GPU RGBA pixels after capture/replay"
+      },
+      {
+        "index_bits": 16,
+        "base_vertex": null,
+        "result": "tf-raster-ok: original VBO and SSBO descriptor; exactly 0 VS calls; all markers; indexed restart VBO; 64 exact GPU RGBA pixels after capture/replay"
+      },
+      {
+        "index_bits": 32,
+        "base_vertex": -1,
+        "result": "tf-raster-ok: original VBO and SSBO descriptor; exactly 6 VS calls; indexed restart VBO; 64 exact GPU RGBA pixels after capture/replay"
+      },
+      {
+        "index_bits": 32,
+        "base_vertex": 1,
+        "result": "tf-raster-ok: original VBO and SSBO descriptor; exactly 6 VS calls; indexed restart VBO; 64 exact GPU RGBA pixels after capture/replay"
+      },
+      {
+        "index_bits": 32,
+        "base_vertex": null,
+        "result": "tf-raster-ok: original VBO and SSBO descriptor; exactly 0 VS calls; all markers; indexed restart VBO; 64 exact GPU RGBA pixels after capture/replay"
+      }
+    ],
+    "cases": [
+      {
+        "topology": 0,
+        "index_bits": 0,
+        "indirect": false,
+        "result": "tf-runtime-ok: topology=0 index=0 indirect=0 primitives=10 scalars=50"
+      },
+      {
+        "topology": 0,
+        "index_bits": 0,
+        "indirect": true,
+        "result": "tf-runtime-ok: topology=0 index=0 indirect=1 primitives=10 scalars=50"
+      },
+      {
+        "topology": 1,
+        "index_bits": 0,
+        "indirect": false,
+        "result": "tf-runtime-ok: topology=1 index=0 indirect=0 primitives=4 scalars=40"
+      },
+      {
+        "topology": 1,
+        "index_bits": 0,
+        "indirect": true,
+        "result": "tf-runtime-ok: topology=1 index=0 indirect=1 primitives=4 scalars=40"
+      },
+      {
+        "topology": 2,
+        "index_bits": 0,
+        "indirect": false,
+        "result": "tf-runtime-ok: topology=2 index=0 indirect=0 primitives=8 scalars=80"
+      },
+      {
+        "topology": 2,
+        "index_bits": 0,
+        "indirect": true,
+        "result": "tf-runtime-ok: topology=2 index=0 indirect=1 primitives=8 scalars=80"
+      },
+      {
+        "topology": 2,
+        "index_bits": 16,
+        "indirect": false,
+        "result": "tf-runtime-ok: topology=2 index=16 indirect=0 primitives=12 scalars=120"
+      },
+      {
+        "topology": 2,
+        "index_bits": 16,
+        "indirect": true,
+        "result": "tf-runtime-ok: topology=2 index=16 indirect=1 primitives=12 scalars=120"
+      },
+      {
+        "topology": 2,
+        "index_bits": 32,
+        "indirect": false,
+        "result": "tf-runtime-ok: topology=2 index=32 indirect=0 primitives=12 scalars=120"
+      },
+      {
+        "topology": 2,
+        "index_bits": 32,
+        "indirect": true,
+        "result": "tf-runtime-ok: topology=2 index=32 indirect=1 primitives=12 scalars=120"
+      },
+      {
+        "topology": 3,
+        "index_bits": 0,
+        "indirect": false,
+        "result": "tf-runtime-ok: topology=3 index=0 indirect=0 primitives=2 scalars=30"
+      },
+      {
+        "topology": 3,
+        "index_bits": 0,
+        "indirect": true,
+        "result": "tf-runtime-ok: topology=3 index=0 indirect=1 primitives=2 scalars=30"
+      },
+      {
+        "topology": 4,
+        "index_bits": 0,
+        "indirect": false,
+        "result": "tf-runtime-ok: topology=4 index=0 indirect=0 primitives=6 scalars=90"
+      },
+      {
+        "topology": 4,
+        "index_bits": 0,
+        "indirect": true,
+        "result": "tf-runtime-ok: topology=4 index=0 indirect=1 primitives=6 scalars=90"
+      },
+      {
+        "topology": 4,
+        "index_bits": 16,
+        "indirect": false,
+        "result": "tf-runtime-ok: topology=4 index=16 indirect=0 primitives=8 scalars=120"
+      },
+      {
+        "topology": 4,
+        "index_bits": 16,
+        "indirect": true,
+        "result": "tf-runtime-ok: topology=4 index=16 indirect=1 primitives=8 scalars=120"
+      },
+      {
+        "topology": 4,
+        "index_bits": 32,
+        "indirect": false,
+        "result": "tf-runtime-ok: topology=4 index=32 indirect=0 primitives=8 scalars=120"
+      },
+      {
+        "topology": 4,
+        "index_bits": 32,
+        "indirect": true,
+        "result": "tf-runtime-ok: topology=4 index=32 indirect=1 primitives=8 scalars=120"
+      },
+      {
+        "topology": 5,
+        "index_bits": 0,
+        "indirect": false,
+        "result": "tf-runtime-ok: topology=5 index=0 indirect=0 primitives=6 scalars=90"
+      },
+      {
+        "topology": 5,
+        "index_bits": 0,
+        "indirect": true,
+        "result": "tf-runtime-ok: topology=5 index=0 indirect=1 primitives=6 scalars=90"
+      },
+      {
+        "topology": 5,
+        "index_bits": 16,
+        "indirect": false,
+        "result": "tf-runtime-ok: topology=5 index=16 indirect=0 primitives=8 scalars=120"
+      },
+      {
+        "topology": 5,
+        "index_bits": 16,
+        "indirect": true,
+        "result": "tf-runtime-ok: topology=5 index=16 indirect=1 primitives=8 scalars=120"
+      },
+      {
+        "topology": 5,
+        "index_bits": 32,
+        "indirect": false,
+        "result": "tf-runtime-ok: topology=5 index=32 indirect=0 primitives=8 scalars=120"
+      },
+      {
+        "topology": 5,
+        "index_bits": 32,
+        "indirect": true,
+        "result": "tf-runtime-ok: topology=5 index=32 indirect=1 primitives=8 scalars=120"
+      }
+    ],
+    "source_sha256": "047ed7a61ee25480268787206e2bb7f40700d717edb3b7d38714d6a61afc3ee2",
+    "shader_sha256": "070b6bdbd4ec66e12efd8631f48895ebce7186b020fe91b2b3a85a6b4f17f424"
+  },
+  "guest_results": {
+    "physical_ipad": false,
+    "cases": {
+      "guest": {
+        "exit_code": 0,
+        "queries_passed": true,
+        "transform_feedback": true,
+        "passed": true
+      }
+    },
+    "sha256": {
+      "runner": "4d252b949c6bcb2728c5cf02692b472e3bf348d14f5610195083eb06ce9d296a",
+      "client": "e1e76d711a7e0efb3df8c2e15ba11383ba968b39c6ddc6d54808ef7727e3d162",
+      "shader": "070b6bdbd4ec66e12efd8631f48895ebce7186b020fe91b2b3a85a6b4f17f424",
+      "icd": "48c790d1e54c33eb52b0b3c1d82547b329f52694b0fc2ac5bb1da04f235e15cc"
+    },
+    "passed": true,
+    "cleanup_exit": 0
+  },
+  "mesa_results": {
+    "stage": "es3",
+    "physical_ipad": false,
+    "cpu_vulkan_reference_diagnostic": false,
+    "runner_sha256": "4d252b949c6bcb2728c5cf02692b472e3bf348d14f5610195083eb06ce9d296a",
+    "icd_sha256": "48c790d1e54c33eb52b0b3c1d82547b329f52694b0fc2ac5bb1da04f235e15cc",
+    "fixture_sha256": "04b47d150c1f9f4ba72f7275d685fe8c01cdd21a7284a96d311a362259f97bcf",
+    "store_manifest_sha256": "7f05f796d7fdc47a85d577bf73018abfb4972519849e8602ae51b4146435e399",
+    "cases": {
+      "es3": {
+        "exit_code": 0,
+        "passed": true,
+        "unavailable": false
+      }
+    },
+    "passed": true,
+    "cleanup_exit": 0,
+    "capability_probe_accepted": false
+  },
+  "implementation_source_sha": "a2733a33a2317a39bf5941431b65095b3c353a66",
+  "diagnostic_validation": {
+    "source_sha": "a2733a33a2317a39bf5941431b65095b3c353a66",
+    "ci_run": 39601628224,
+    "apple_job": 119227387608,
+    "artifact": {
+      "id": 12347665492,
+      "sha256": "f2a48ed4da56d5288f803d5c20eef424b829166a2524c13400bd01f48874c89e",
+      "size": 1871261,
+      "entries": 11,
+      "all_crcs_verified": true
+    },
+    "cache_layout": true,
+    "builds": {
+      "ios": {
+        "inputs": {
+          "platform": "ios",
+          "arch": "arm64",
+          "xcode": "Xcode 16.4\nBuild version 16F6\n",
+          "sdk": "18.5",
+          "patch_sha256": "78ccd845056b7251def221519cd130a2baefd43857c622d463d36cab3a54eed3",
+          "recipe_sha256": "9d2511912cff05339fc7af56eed7c382809297262543a1504f8069db5ee464f2",
+          "timestamp_patch_sha256": "a684dee2d0b5fdc1ecf747d032c942ace248e1b402566bc93f213a33c55d245e",
+          "transform_feedback_patch_sha256": "4b14927f456d1aa145eb4916df7a9e95575b1f61f6d2319ee03f5ddff429e203",
+          "cross_dispatch_patch_sha256": "a7313c35a8372f2c2f157b56ac7e9c1ebe9634d83f0fb2eca8567459a53b915f",
+          "transform_feedback_sources": {
+            "assemble.metal": "b64b853c5cda4049ab5a2fb38b69b3e01463e2e6d176a61f7ff131d732387dab",
+            "compiler.cpp": "47329f01ea7a7738cb8b83abc2e95cc54af09fb242be0ba3f12266950f83ad5f",
+            "compiler.hpp": "1a6958f2b449e941003d70052cdd78a9a56de9c55701e9babe1ebed0ead4dbc8",
+            "metal.hpp": "94cb187e59c2bbfeb65b9225906ac208a036310bdd44fb3cf10ed5be56a4e2ba",
+            "metal.mm": "66ada890a968765cf39d68ef8cba745767a018a9a36e83cba8472bb2e721d9b2",
+            "mvk-api.inc": "a79e9726195c7d40a9411e362991fcbfb86540b64991d8c54095d96e00299881",
+            "mvk-command.hpp": "e7808d3ef480df0bf0f26a8e64093d9464e6d2329abc586ca03187e38f3db05d",
+            "mvk-commands.inc": "0c00e1fb34b9fa98921283d9d0f019403f9251760af9d82e41b6ded6283fef25",
+            "mvk-pipeline.inc": "69ef60caf3a3a2c0c4d86e4ada429f5d0a689b7e303b4a9a0dbea69bda933e99",
+            "mvk-query.hpp": "fbf984bb4aeb535571f12747d5feb78758f2b6b91ad334e7c270313ee9433636",
+            "mvk-query.inc": "691943a67ccf80cd667f73d659d5b6afc3f1758c9e8fd7efeb3e026c033088c6",
+            "mvk-state.hpp": "b0a926ffb548e4486d8a04755d28614cb962e615655046cd57311b4a027af436"
+          },
+          "manifest_sha256": "76d7b3f2a3dd80d803e9a1ca0161de2f0bd673a1620d9c020f0342039ea04ee5",
+          "upstream_commit": "db66022459ffb663aa2b50f6b018bc2e124f5edf"
+        },
+        "commands": [
+          [
+            "xcodebuild",
+            "-jobs",
+            "4",
+            "-project",
+            "ExternalDependencies.xcodeproj",
+            "-scheme",
+            "ExternalDependencies-iOS",
+            "-destination",
+            "generic/platform=iOS",
+            "-configuration",
+            "Release",
+            "-sdk",
+            "iphoneos",
+            "ARCHS=arm64",
+            "ONLY_ACTIVE_ARCH=YES",
+            "CODE_SIGNING_ALLOWED=NO",
+            "SYMROOT=/Users/runner/work/trames/trames/target/moltenvk-patched/ios-arm64-888d3921b862f44d9c73/products",
+            "OBJROOT=/Users/runner/work/trames/trames/target/moltenvk-patched/ios-arm64-888d3921b862f44d9c73/intermediates",
+            "HEADER_SEARCH_PATHS=$(inherited) /Users/runner/work/trames/trames/target/moltenvk-patched/ios-arm64-888d3921b862f44d9c73/source/TramesTF",
+            "build"
+          ],
+          [
+            "xcodebuild",
+            "-jobs",
+            "4",
+            "-project",
+            "MoltenVK/MoltenVK.xcodeproj",
+            "-target",
+            "MoltenVK-iOS-static",
+            "-configuration",
+            "Release",
+            "-sdk",
+            "iphoneos",
+            "ARCHS=arm64",
+            "ONLY_ACTIVE_ARCH=YES",
+            "CODE_SIGNING_ALLOWED=NO",
+            "SYMROOT=/Users/runner/work/trames/trames/target/moltenvk-patched/ios-arm64-888d3921b862f44d9c73/products",
+            "OBJROOT=/Users/runner/work/trames/trames/target/moltenvk-patched/ios-arm64-888d3921b862f44d9c73/intermediates",
+            "HEADER_SEARCH_PATHS=$(inherited) /Users/runner/work/trames/trames/target/moltenvk-patched/ios-arm64-888d3921b862f44d9c73/source/TramesTF",
+            "build"
+          ]
+        ],
+        "original_transfer_sha256": "7c050a2724cc75170b789557d826ac3614e08bd129b00b1dcf49a0a375e75e70",
+        "patched_transfer_sha256": "2e902bfacf12526263801bd4661c286b3d2ed7ddb7ea79d660c20af892d641ed",
+        "original_device_sha256": "e93c8fe096d9c9f8c0b02da6443bc820dc42ca4340b122cc8dd11721ad7e9b8d",
+        "patched_device_sha256": "f5bb7a347f292e3a1ff5a2b1c312bf544336a406f0f168b399cd4d1fbb29e56a",
+        "library_sha256": "5283e04cf407b5af116903c720a2a58fb64f2c829cde27dcb04f5f55a6adf609",
+        "native_transform_feedback": {
+          "before": {
+            "MoltenVK/MoltenVK/Commands/MVKCmdDraw.h": "0701c6488dc07c94c917917b81252f09fe97126218fc962e90eb42ef54925c33",
+            "MoltenVK/MoltenVK/Commands/MVKCmdDraw.mm": "26471c8a9a2bb572f58b479caf1710b89a5b10fb47cd582066bdb09d71189706",
+            "MoltenVK/MoltenVK/Commands/MVKCmdQueries.mm": "c84144f42e9add7913fa59d0cb91428903d6744c5a495d53d507c30f0fe4e482",
+            "MoltenVK/MoltenVK/Commands/MVKCommandBuffer.h": "ac188251cf292f51afb85c153f0b16d16a2aad8b461c9e651f7f11de38f06173",
+            "MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.h": "92388c2690ee23df1767db92aca580adc1bf9d19ca9adbe30f9017f0fca8b356",
+            "MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.mm": "5c1c6e5f406eb945ac10157e7d647866ca3bf7ac42864d6fa1107346154e8453",
+            "MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.h": "6a482b2ddb4663161bd6b09017649c0464ba59cb9ec12e19989c8c49437923cf",
+            "MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.mm": "c46667483f0d18e6e32f53e7f23baaf1974563d1aedabee818fb478e2b59b740",
+            "MoltenVK/MoltenVK/Commands/MVKCommandTypePools.def": "61b8a075555bd66a1ede42c83cfb43b86e3ca7f6f80112baf423e765231fff2b",
+            "MoltenVK/MoltenVK/GPUObjects/MVKDevice.mm": "f5bb7a347f292e3a1ff5a2b1c312bf544336a406f0f168b399cd4d1fbb29e56a",
+            "MoltenVK/MoltenVK/GPUObjects/MVKDeviceFeatureStructs.def": "e212a9cdceac6e384845bf7e004786398842c411c7ec240adb9689342913a620",
+            "MoltenVK/MoltenVK/GPUObjects/MVKInstance.mm": "b40adf234ab52c4fc5f07c94360b8a4ef049c68da3124d2e1a02082ee6dba39e",
+            "MoltenVK/MoltenVK/GPUObjects/MVKPipeline.h": "e7dceaa2e63ad2b1e01d5a476408bdfb7662a48dbbb846dcd1583426f90ffdbf",
+            "MoltenVK/MoltenVK/GPUObjects/MVKPipeline.mm": "ed60a03a3e6d79220303e3b470da837909973d4f80686fec33e9f5e5cef6964f",
+            "MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.h": "bfdf61c9cb55156ce1c3d32d9f02d6d4847cef78cffa8f3b73fd3aea9ec69752",
+            "MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.mm": "a3172302221463b962e00708ae9605ab340a854de612a4ccea42437da9b12126",
+            "MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.h": "cf3d53ad19077ac3d139b0d8ea58fe9181e47ec9578897c1f42526a31f3bf9bf",
+            "MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.mm": "21ec8c9291111bf78320f4eabaa3165432065be02b19e5250eee39f469d13bac",
+            "MoltenVK/MoltenVK/Layers/MVKExtensions.def": "57bd50931ce02885bb83ee7e34613f71d136e328b23aef9456095be212d94957",
+            "MoltenVK/MoltenVK/Vulkan/vulkan.mm": "f7e2be05f062c1944cf89253de826c6ef5928d4ba3ca856cab60ceae66bd8294",
+            "MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.cpp": "fc8f6132db27cef857ca784bc33eacd24fe30ff242840d3ba217b141a4fabf21",
+            "MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.h": "124e571b7327c76ca0e340fc786deb53f114361dee3a1ae6d98c3d657a2878dc",
+            "External/SPIRV-Cross/spirv_msl.hpp": "f0bea665f1a32afc1cb4bb0483699145bc08bb90152231f92161338a88702967"
+          },
+          "after": {
+            "MoltenVK/MoltenVK/Commands/MVKCmdDraw.h": "498cf3472750c1d856528a6b4e2d7469913bc9bde70ba5496862542c5d5c6070",
+            "MoltenVK/MoltenVK/Commands/MVKCmdDraw.mm": "b63eec424327f0b114683954cbea3b30bb2fac3fb5ab70ff77dc46017be3d24a",
+            "MoltenVK/MoltenVK/Commands/MVKCmdQueries.mm": "043b01dfec19488be304b1377d6adee6b7bcef6853c6b80365800c38e6747538",
+            "MoltenVK/MoltenVK/Commands/MVKCommandBuffer.h": "526b1a0056ac1924a8c7f13729b4222f097ccb58ab2b0f9c1eddab21772f0593",
+            "MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.h": "49f784da6f38016c9316eb34173bb2207e94ffd2fe192cd7a123eb740d031b46",
+            "MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.mm": "61f4c208deaba011ff43f4fa9c339753ef2767e77458a96d2f4d9b8f67953057",
+            "MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.h": "d4018d612b70b51eaa29929d59d5b305ef41558bc8768daaddd0d2d9d289e0f1",
+            "MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.mm": "25ddab52130fd67e3ead414bad97600d1ec5b0c337b7c3a033f3aab147b4d1f3",
+            "MoltenVK/MoltenVK/Commands/MVKCommandTypePools.def": "823a2221043b2726bee47e37f7924a780fee197bbaf574726ec0172a27909b77",
+            "MoltenVK/MoltenVK/GPUObjects/MVKDevice.mm": "a4c431ad38abdb4da0eb280a39febd6e421f80af5f38c97bd68ff21364ea27aa",
+            "MoltenVK/MoltenVK/GPUObjects/MVKDeviceFeatureStructs.def": "0942d13b3b1e328112a4866484c02bd86f93a62bc001f1bc9f5bef497cb855fc",
+            "MoltenVK/MoltenVK/GPUObjects/MVKInstance.mm": "dcf2a03752e7410beaa9f8a10b687e57c22f5eb07e55fd1ffb13af60ecc19093",
+            "MoltenVK/MoltenVK/GPUObjects/MVKPipeline.h": "cedaa3d2f856ac63c4508e70d08fb7e54ff67cb4740696da8b756e31b2d12da6",
+            "MoltenVK/MoltenVK/GPUObjects/MVKPipeline.mm": "04f41362c3b07517463e6626d2fef67134a4c49524972721f9aec8ebff11235f",
+            "MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.h": "956a852e24d10ac991627f276747dd0468bc8390674b3e875f0f500fc3af0d25",
+            "MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.mm": "2c5e4ea28ec072091f7d86ea99a18fdf85c872be1d2a4e501f87f3c1b0844afc",
+            "MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.h": "c892ae96403f06d0ee5a01bc3ca9eabcf89cf14c7e5a6b2988fe3d42e3a92179",
+            "MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.mm": "be75dcc20446c64854fdcc31208fb43644155a0815a2012c87c1db83f878a72e",
+            "MoltenVK/MoltenVK/Layers/MVKExtensions.def": "1658411eb19bbd1f84ea1995a29a9a7805f7a7d94cebfeba56c3149b6c1487a5",
+            "MoltenVK/MoltenVK/Vulkan/vulkan.mm": "b885090e185058f0855b12271cf1a60e9933d9afd0c6aee4f677bf96a676d982",
+            "MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.cpp": "806a9679ab3e085a01d6d22c55cfaac13aa24acffc898752ccba21d37f4ba17b",
+            "MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.h": "29ad285be349f77653445afaadc52afeb44637ad5730cfe5b2a65360f69f0324",
+            "External/SPIRV-Cross/spirv_msl.hpp": "fb856f952fa883b5d70baf0f2ab5fdc6e03ab1997af6351ed6a06891866d7089"
+          }
+        }
+      },
+      "macos": {
+        "inputs": {
+          "platform": "macos",
+          "arch": "arm64",
+          "xcode": "Xcode 16.4\nBuild version 16F6\n",
+          "sdk": "15.5",
+          "patch_sha256": "78ccd845056b7251def221519cd130a2baefd43857c622d463d36cab3a54eed3",
+          "recipe_sha256": "9d2511912cff05339fc7af56eed7c382809297262543a1504f8069db5ee464f2",
+          "timestamp_patch_sha256": "a684dee2d0b5fdc1ecf747d032c942ace248e1b402566bc93f213a33c55d245e",
+          "transform_feedback_patch_sha256": "4b14927f456d1aa145eb4916df7a9e95575b1f61f6d2319ee03f5ddff429e203",
+          "cross_dispatch_patch_sha256": "a7313c35a8372f2c2f157b56ac7e9c1ebe9634d83f0fb2eca8567459a53b915f",
+          "transform_feedback_sources": {
+            "assemble.metal": "b64b853c5cda4049ab5a2fb38b69b3e01463e2e6d176a61f7ff131d732387dab",
+            "compiler.cpp": "47329f01ea7a7738cb8b83abc2e95cc54af09fb242be0ba3f12266950f83ad5f",
+            "compiler.hpp": "1a6958f2b449e941003d70052cdd78a9a56de9c55701e9babe1ebed0ead4dbc8",
+            "metal.hpp": "94cb187e59c2bbfeb65b9225906ac208a036310bdd44fb3cf10ed5be56a4e2ba",
+            "metal.mm": "66ada890a968765cf39d68ef8cba745767a018a9a36e83cba8472bb2e721d9b2",
+            "mvk-api.inc": "a79e9726195c7d40a9411e362991fcbfb86540b64991d8c54095d96e00299881",
+            "mvk-command.hpp": "e7808d3ef480df0bf0f26a8e64093d9464e6d2329abc586ca03187e38f3db05d",
+            "mvk-commands.inc": "0c00e1fb34b9fa98921283d9d0f019403f9251760af9d82e41b6ded6283fef25",
+            "mvk-pipeline.inc": "69ef60caf3a3a2c0c4d86e4ada429f5d0a689b7e303b4a9a0dbea69bda933e99",
+            "mvk-query.hpp": "fbf984bb4aeb535571f12747d5feb78758f2b6b91ad334e7c270313ee9433636",
+            "mvk-query.inc": "691943a67ccf80cd667f73d659d5b6afc3f1758c9e8fd7efeb3e026c033088c6",
+            "mvk-state.hpp": "b0a926ffb548e4486d8a04755d28614cb962e615655046cd57311b4a027af436"
+          },
+          "manifest_sha256": "76d7b3f2a3dd80d803e9a1ca0161de2f0bd673a1620d9c020f0342039ea04ee5",
+          "upstream_commit": "db66022459ffb663aa2b50f6b018bc2e124f5edf"
+        },
+        "commands": [
+          [
+            "xcodebuild",
+            "-jobs",
+            "4",
+            "-project",
+            "ExternalDependencies.xcodeproj",
+            "-scheme",
+            "ExternalDependencies-macOS",
+            "-destination",
+            "generic/platform=macOS",
+            "-configuration",
+            "Release",
+            "-sdk",
+            "macosx",
+            "ARCHS=arm64",
+            "ONLY_ACTIVE_ARCH=YES",
+            "CODE_SIGNING_ALLOWED=NO",
+            "SYMROOT=/Users/runner/work/trames/trames/target/moltenvk-patched/macos-arm64-7563ca925e804ecb100e/products",
+            "OBJROOT=/Users/runner/work/trames/trames/target/moltenvk-patched/macos-arm64-7563ca925e804ecb100e/intermediates",
+            "HEADER_SEARCH_PATHS=$(inherited) /Users/runner/work/trames/trames/target/moltenvk-patched/macos-arm64-7563ca925e804ecb100e/source/TramesTF",
+            "build"
+          ],
+          [
+            "xcodebuild",
+            "-jobs",
+            "4",
+            "-project",
+            "MoltenVK/MoltenVK.xcodeproj",
+            "-target",
+            "MoltenVK-macOS-static",
+            "-configuration",
+            "Release",
+            "-sdk",
+            "macosx",
+            "ARCHS=arm64",
+            "ONLY_ACTIVE_ARCH=YES",
+            "CODE_SIGNING_ALLOWED=NO",
+            "SYMROOT=/Users/runner/work/trames/trames/target/moltenvk-patched/macos-arm64-7563ca925e804ecb100e/products",
+            "OBJROOT=/Users/runner/work/trames/trames/target/moltenvk-patched/macos-arm64-7563ca925e804ecb100e/intermediates",
+            "HEADER_SEARCH_PATHS=$(inherited) /Users/runner/work/trames/trames/target/moltenvk-patched/macos-arm64-7563ca925e804ecb100e/source/TramesTF",
+            "build"
+          ]
+        ],
+        "original_transfer_sha256": "7c050a2724cc75170b789557d826ac3614e08bd129b00b1dcf49a0a375e75e70",
+        "patched_transfer_sha256": "2e902bfacf12526263801bd4661c286b3d2ed7ddb7ea79d660c20af892d641ed",
+        "original_device_sha256": "e93c8fe096d9c9f8c0b02da6443bc820dc42ca4340b122cc8dd11721ad7e9b8d",
+        "patched_device_sha256": "f5bb7a347f292e3a1ff5a2b1c312bf544336a406f0f168b399cd4d1fbb29e56a",
+        "library_sha256": "5469a3fe6d0da3d65245b3ad58884eaf62b68f9eea62a5397bcc6b0c29026f5b",
+        "native_transform_feedback": {
+          "before": {
+            "MoltenVK/MoltenVK/Commands/MVKCmdDraw.h": "0701c6488dc07c94c917917b81252f09fe97126218fc962e90eb42ef54925c33",
+            "MoltenVK/MoltenVK/Commands/MVKCmdDraw.mm": "26471c8a9a2bb572f58b479caf1710b89a5b10fb47cd582066bdb09d71189706",
+            "MoltenVK/MoltenVK/Commands/MVKCmdQueries.mm": "c84144f42e9add7913fa59d0cb91428903d6744c5a495d53d507c30f0fe4e482",
+            "MoltenVK/MoltenVK/Commands/MVKCommandBuffer.h": "ac188251cf292f51afb85c153f0b16d16a2aad8b461c9e651f7f11de38f06173",
+            "MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.h": "92388c2690ee23df1767db92aca580adc1bf9d19ca9adbe30f9017f0fca8b356",
+            "MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.mm": "5c1c6e5f406eb945ac10157e7d647866ca3bf7ac42864d6fa1107346154e8453",
+            "MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.h": "6a482b2ddb4663161bd6b09017649c0464ba59cb9ec12e19989c8c49437923cf",
+            "MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.mm": "c46667483f0d18e6e32f53e7f23baaf1974563d1aedabee818fb478e2b59b740",
+            "MoltenVK/MoltenVK/Commands/MVKCommandTypePools.def": "61b8a075555bd66a1ede42c83cfb43b86e3ca7f6f80112baf423e765231fff2b",
+            "MoltenVK/MoltenVK/GPUObjects/MVKDevice.mm": "f5bb7a347f292e3a1ff5a2b1c312bf544336a406f0f168b399cd4d1fbb29e56a",
+            "MoltenVK/MoltenVK/GPUObjects/MVKDeviceFeatureStructs.def": "e212a9cdceac6e384845bf7e004786398842c411c7ec240adb9689342913a620",
+            "MoltenVK/MoltenVK/GPUObjects/MVKInstance.mm": "b40adf234ab52c4fc5f07c94360b8a4ef049c68da3124d2e1a02082ee6dba39e",
+            "MoltenVK/MoltenVK/GPUObjects/MVKPipeline.h": "e7dceaa2e63ad2b1e01d5a476408bdfb7662a48dbbb846dcd1583426f90ffdbf",
+            "MoltenVK/MoltenVK/GPUObjects/MVKPipeline.mm": "ed60a03a3e6d79220303e3b470da837909973d4f80686fec33e9f5e5cef6964f",
+            "MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.h": "bfdf61c9cb55156ce1c3d32d9f02d6d4847cef78cffa8f3b73fd3aea9ec69752",
+            "MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.mm": "a3172302221463b962e00708ae9605ab340a854de612a4ccea42437da9b12126",
+            "MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.h": "cf3d53ad19077ac3d139b0d8ea58fe9181e47ec9578897c1f42526a31f3bf9bf",
+            "MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.mm": "21ec8c9291111bf78320f4eabaa3165432065be02b19e5250eee39f469d13bac",
+            "MoltenVK/MoltenVK/Layers/MVKExtensions.def": "57bd50931ce02885bb83ee7e34613f71d136e328b23aef9456095be212d94957",
+            "MoltenVK/MoltenVK/Vulkan/vulkan.mm": "f7e2be05f062c1944cf89253de826c6ef5928d4ba3ca856cab60ceae66bd8294",
+            "MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.cpp": "fc8f6132db27cef857ca784bc33eacd24fe30ff242840d3ba217b141a4fabf21",
+            "MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.h": "124e571b7327c76ca0e340fc786deb53f114361dee3a1ae6d98c3d657a2878dc",
+            "External/SPIRV-Cross/spirv_msl.hpp": "f0bea665f1a32afc1cb4bb0483699145bc08bb90152231f92161338a88702967"
+          },
+          "after": {
+            "MoltenVK/MoltenVK/Commands/MVKCmdDraw.h": "498cf3472750c1d856528a6b4e2d7469913bc9bde70ba5496862542c5d5c6070",
+            "MoltenVK/MoltenVK/Commands/MVKCmdDraw.mm": "b63eec424327f0b114683954cbea3b30bb2fac3fb5ab70ff77dc46017be3d24a",
+            "MoltenVK/MoltenVK/Commands/MVKCmdQueries.mm": "043b01dfec19488be304b1377d6adee6b7bcef6853c6b80365800c38e6747538",
+            "MoltenVK/MoltenVK/Commands/MVKCommandBuffer.h": "526b1a0056ac1924a8c7f13729b4222f097ccb58ab2b0f9c1eddab21772f0593",
+            "MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.h": "49f784da6f38016c9316eb34173bb2207e94ffd2fe192cd7a123eb740d031b46",
+            "MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.mm": "61f4c208deaba011ff43f4fa9c339753ef2767e77458a96d2f4d9b8f67953057",
+            "MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.h": "d4018d612b70b51eaa29929d59d5b305ef41558bc8768daaddd0d2d9d289e0f1",
+            "MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.mm": "25ddab52130fd67e3ead414bad97600d1ec5b0c337b7c3a033f3aab147b4d1f3",
+            "MoltenVK/MoltenVK/Commands/MVKCommandTypePools.def": "823a2221043b2726bee47e37f7924a780fee197bbaf574726ec0172a27909b77",
+            "MoltenVK/MoltenVK/GPUObjects/MVKDevice.mm": "a4c431ad38abdb4da0eb280a39febd6e421f80af5f38c97bd68ff21364ea27aa",
+            "MoltenVK/MoltenVK/GPUObjects/MVKDeviceFeatureStructs.def": "0942d13b3b1e328112a4866484c02bd86f93a62bc001f1bc9f5bef497cb855fc",
+            "MoltenVK/MoltenVK/GPUObjects/MVKInstance.mm": "dcf2a03752e7410beaa9f8a10b687e57c22f5eb07e55fd1ffb13af60ecc19093",
+            "MoltenVK/MoltenVK/GPUObjects/MVKPipeline.h": "cedaa3d2f856ac63c4508e70d08fb7e54ff67cb4740696da8b756e31b2d12da6",
+            "MoltenVK/MoltenVK/GPUObjects/MVKPipeline.mm": "04f41362c3b07517463e6626d2fef67134a4c49524972721f9aec8ebff11235f",
+            "MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.h": "956a852e24d10ac991627f276747dd0468bc8390674b3e875f0f500fc3af0d25",
+            "MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.mm": "2c5e4ea28ec072091f7d86ea99a18fdf85c872be1d2a4e501f87f3c1b0844afc",
+            "MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.h": "c892ae96403f06d0ee5a01bc3ca9eabcf89cf14c7e5a6b2988fe3d42e3a92179",
+            "MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.mm": "be75dcc20446c64854fdcc31208fb43644155a0815a2012c87c1db83f878a72e",
+            "MoltenVK/MoltenVK/Layers/MVKExtensions.def": "1658411eb19bbd1f84ea1995a29a9a7805f7a7d94cebfeba56c3149b6c1487a5",
+            "MoltenVK/MoltenVK/Vulkan/vulkan.mm": "b885090e185058f0855b12271cf1a60e9933d9afd0c6aee4f677bf96a676d982",
+            "MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.cpp": "806a9679ab3e085a01d6d22c55cfaac13aa24acffc898752ccba21d37f4ba17b",
+            "MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.h": "29ad285be349f77653445afaadc52afeb44637ad5730cfe5b2a65360f69f0324",
+            "External/SPIRV-Cross/spirv_msl.hpp": "fb856f952fa883b5d70baf0f2ab5fdc6e03ab1997af6351ed6a06891866d7089"
+          }
+        }
+      }
+    },
+    "reuse_proof": {
+      "gpu_source": "00d9cfa92b385726f67da1cdc6b5e5ea9d0c34db",
+      "gpu_run": 39598761585,
+      "all_gpu_algorithms_and_guest_sources_unchanged": true,
+      "patch_delta_only_three_original_diagnostic_constants": true,
+      "padding": {
+        "SPIRVToMSLConversionOptions": [
+          29,
+          28
+        ],
+        "SPIRVToMSLConversionConfiguration": [
+          109,
+          108
+        ],
+        "SPIRVToMSLConversionResultInfo": [
+          40,
+          36
+        ]
+      }
+    }
+  },
+  "current_support": {
+    "apple_native_transform_feedback": true,
+    "original_mesa_gles3": true,
+    "stream": 0,
+    "vertex_stage_only": true,
+    "max_buffers": 4,
+    "max_buffer_bytes": 67108864,
+    "max_stride": 2048,
+    "max_indirect_tf_invocations": 131072,
+    "indirect_overflow": "asynchronous native device lost; no silent draw omission",
+    "physical_ipad_validated": false
+  },
+  "source_only_verification": {
+    "original_sha256": "7c050a2724cc75170b789557d826ac3614e08bd129b00b1dcf49a0a375e75e70",
+    "patched_sha256": "2e902bfacf12526263801bd4661c286b3d2ed7ddb7ea79d660c20af892d641ed",
+    "patch_sha256": "78ccd845056b7251def221519cd130a2baefd43857c622d463d36cab3a54eed3",
+    "original_device_sha256": "e93c8fe096d9c9f8c0b02da6443bc820dc42ca4340b122cc8dd11721ad7e9b8d",
+    "patched_device_sha256": "f5bb7a347f292e3a1ff5a2b1c312bf544336a406f0f168b399cd4d1fbb29e56a",
+    "timestamp_patch_sha256": "a684dee2d0b5fdc1ecf747d032c942ace248e1b402566bc93f213a33c55d245e",
+    "native_tf": {
+      "before": {
+        "MoltenVK/MoltenVK/Commands/MVKCmdDraw.h": "0701c6488dc07c94c917917b81252f09fe97126218fc962e90eb42ef54925c33",
+        "MoltenVK/MoltenVK/Commands/MVKCmdDraw.mm": "26471c8a9a2bb572f58b479caf1710b89a5b10fb47cd582066bdb09d71189706",
+        "MoltenVK/MoltenVK/Commands/MVKCmdQueries.mm": "c84144f42e9add7913fa59d0cb91428903d6744c5a495d53d507c30f0fe4e482",
+        "MoltenVK/MoltenVK/Commands/MVKCommandBuffer.h": "ac188251cf292f51afb85c153f0b16d16a2aad8b461c9e651f7f11de38f06173",
+        "MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.h": "92388c2690ee23df1767db92aca580adc1bf9d19ca9adbe30f9017f0fca8b356",
+        "MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.mm": "5c1c6e5f406eb945ac10157e7d647866ca3bf7ac42864d6fa1107346154e8453",
+        "MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.h": "6a482b2ddb4663161bd6b09017649c0464ba59cb9ec12e19989c8c49437923cf",
+        "MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.mm": "c46667483f0d18e6e32f53e7f23baaf1974563d1aedabee818fb478e2b59b740",
+        "MoltenVK/MoltenVK/Commands/MVKCommandTypePools.def": "61b8a075555bd66a1ede42c83cfb43b86e3ca7f6f80112baf423e765231fff2b",
+        "MoltenVK/MoltenVK/GPUObjects/MVKDevice.mm": "f5bb7a347f292e3a1ff5a2b1c312bf544336a406f0f168b399cd4d1fbb29e56a",
+        "MoltenVK/MoltenVK/GPUObjects/MVKDeviceFeatureStructs.def": "e212a9cdceac6e384845bf7e004786398842c411c7ec240adb9689342913a620",
+        "MoltenVK/MoltenVK/GPUObjects/MVKInstance.mm": "b40adf234ab52c4fc5f07c94360b8a4ef049c68da3124d2e1a02082ee6dba39e",
+        "MoltenVK/MoltenVK/GPUObjects/MVKPipeline.h": "e7dceaa2e63ad2b1e01d5a476408bdfb7662a48dbbb846dcd1583426f90ffdbf",
+        "MoltenVK/MoltenVK/GPUObjects/MVKPipeline.mm": "ed60a03a3e6d79220303e3b470da837909973d4f80686fec33e9f5e5cef6964f",
+        "MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.h": "bfdf61c9cb55156ce1c3d32d9f02d6d4847cef78cffa8f3b73fd3aea9ec69752",
+        "MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.mm": "a3172302221463b962e00708ae9605ab340a854de612a4ccea42437da9b12126",
+        "MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.h": "cf3d53ad19077ac3d139b0d8ea58fe9181e47ec9578897c1f42526a31f3bf9bf",
+        "MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.mm": "21ec8c9291111bf78320f4eabaa3165432065be02b19e5250eee39f469d13bac",
+        "MoltenVK/MoltenVK/Layers/MVKExtensions.def": "57bd50931ce02885bb83ee7e34613f71d136e328b23aef9456095be212d94957",
+        "MoltenVK/MoltenVK/Vulkan/vulkan.mm": "f7e2be05f062c1944cf89253de826c6ef5928d4ba3ca856cab60ceae66bd8294",
+        "MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.cpp": "fc8f6132db27cef857ca784bc33eacd24fe30ff242840d3ba217b141a4fabf21",
+        "MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.h": "124e571b7327c76ca0e340fc786deb53f114361dee3a1ae6d98c3d657a2878dc",
+        "External/SPIRV-Cross/spirv_msl.hpp": "f0bea665f1a32afc1cb4bb0483699145bc08bb90152231f92161338a88702967"
+      },
+      "after": {
+        "MoltenVK/MoltenVK/Commands/MVKCmdDraw.h": "498cf3472750c1d856528a6b4e2d7469913bc9bde70ba5496862542c5d5c6070",
+        "MoltenVK/MoltenVK/Commands/MVKCmdDraw.mm": "b63eec424327f0b114683954cbea3b30bb2fac3fb5ab70ff77dc46017be3d24a",
+        "MoltenVK/MoltenVK/Commands/MVKCmdQueries.mm": "043b01dfec19488be304b1377d6adee6b7bcef6853c6b80365800c38e6747538",
+        "MoltenVK/MoltenVK/Commands/MVKCommandBuffer.h": "526b1a0056ac1924a8c7f13729b4222f097ccb58ab2b0f9c1eddab21772f0593",
+        "MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.h": "49f784da6f38016c9316eb34173bb2207e94ffd2fe192cd7a123eb740d031b46",
+        "MoltenVK/MoltenVK/Commands/MVKCommandEncodingPool.mm": "61f4c208deaba011ff43f4fa9c339753ef2767e77458a96d2f4d9b8f67953057",
+        "MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.h": "d4018d612b70b51eaa29929d59d5b305ef41558bc8768daaddd0d2d9d289e0f1",
+        "MoltenVK/MoltenVK/Commands/MVKCommandResourceFactory.mm": "25ddab52130fd67e3ead414bad97600d1ec5b0c337b7c3a033f3aab147b4d1f3",
+        "MoltenVK/MoltenVK/Commands/MVKCommandTypePools.def": "823a2221043b2726bee47e37f7924a780fee197bbaf574726ec0172a27909b77",
+        "MoltenVK/MoltenVK/GPUObjects/MVKDevice.mm": "a4c431ad38abdb4da0eb280a39febd6e421f80af5f38c97bd68ff21364ea27aa",
+        "MoltenVK/MoltenVK/GPUObjects/MVKDeviceFeatureStructs.def": "0942d13b3b1e328112a4866484c02bd86f93a62bc001f1bc9f5bef497cb855fc",
+        "MoltenVK/MoltenVK/GPUObjects/MVKInstance.mm": "dcf2a03752e7410beaa9f8a10b687e57c22f5eb07e55fd1ffb13af60ecc19093",
+        "MoltenVK/MoltenVK/GPUObjects/MVKPipeline.h": "cedaa3d2f856ac63c4508e70d08fb7e54ff67cb4740696da8b756e31b2d12da6",
+        "MoltenVK/MoltenVK/GPUObjects/MVKPipeline.mm": "04f41362c3b07517463e6626d2fef67134a4c49524972721f9aec8ebff11235f",
+        "MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.h": "956a852e24d10ac991627f276747dd0468bc8390674b3e875f0f500fc3af0d25",
+        "MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.mm": "2c5e4ea28ec072091f7d86ea99a18fdf85c872be1d2a4e501f87f3c1b0844afc",
+        "MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.h": "c892ae96403f06d0ee5a01bc3ca9eabcf89cf14c7e5a6b2988fe3d42e3a92179",
+        "MoltenVK/MoltenVK/GPUObjects/MVKShaderModule.mm": "be75dcc20446c64854fdcc31208fb43644155a0815a2012c87c1db83f878a72e",
+        "MoltenVK/MoltenVK/Layers/MVKExtensions.def": "1658411eb19bbd1f84ea1995a29a9a7805f7a7d94cebfeba56c3149b6c1487a5",
+        "MoltenVK/MoltenVK/Vulkan/vulkan.mm": "b885090e185058f0855b12271cf1a60e9933d9afd0c6aee4f677bf96a676d982",
+        "MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.cpp": "806a9679ab3e085a01d6d22c55cfaac13aa24acffc898752ccba21d37f4ba17b",
+        "MoltenVKShaderConverter/MoltenVKShaderConverter/SPIRVToMSLConverter.h": "29ad285be349f77653445afaadc52afeb44637ad5730cfe5b2a65360f69f0324",
+        "External/SPIRV-Cross/spirv_msl.hpp": "fb856f952fa883b5d70baf0f2ab5fdc6e03ab1997af6351ed6a06891866d7089"
+      }
+    }
+  }
+}

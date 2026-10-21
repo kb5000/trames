@@ -1,13 +1,17 @@
-# Apple 原生 GPU transform feedback 内核
+# Apple 原生 GPU transform feedback
 
-2026-10-21；这是内部 GPU 引擎，**尚未接入 guest Vulkan 命令或开放 Apple TF 扩展**。
+2026-10-21；**公开 Vulkan、普通 ARM64 guest 和原版 Mesa GLES3/TF 已接通**。
+当前接线、实际 GPU 数据与完整 iOS 驱动验收见[公开 API 验收](vulkan-native-tf-runtime.md)。
+
+以下保留此前独立内核的实现和验证记录，当时尚未开放 guest 能力。
 已经通过的 divisor、depth/stencil、查询与 Linux 原版 Mesa GLES3 结果保持原样，见
 [divisor 验收](vulkan-divisor.md)。本批只验证新增编译器、Metal 数据路径与 arm64 iOS 编译。
 
 ## 原版算法和数据路径
 
 `crates/trames-vulkan/native/transform-feedback/compiler.cpp` 继承固定的原版
-SPIRV-Cross `6c09849`，不修改上游源码。顶点 shader 使用 MoltenVK 已用的
+SPIRV-Cross `6c09849`，沿用其原版算法。接线版仅将两个入口参数方法改为 virtual，
+为捕获 kernel 添加运行时参数；原始 archive 与算法体保留。顶点 shader 使用 MoltenVK 已用的
 `vertex_for_tessellation` / `capture_output_to_buffer` 原生计算路径；顶点输入、索引、
 descriptor/SSBO/atomic 和函数体仍由原版编译器处理。普通 raster 接口也由原版生成，
 再以 location/component/builtin 语义关联 capture 和 replay 字段，避免猜测 Metal
@@ -45,9 +49,10 @@ CI 复用源码未变的 [39579538279](https://github.com/kb5000/trames/actions/
 网络/UI，不出 IPA，不上传 Firefox 原始数据。每个输入和生成 shader 的 SHA-256 在
 Apple 运行前逐个核对，原始依赖 archive 和许可证保留供 GPLv3 配套源码分发。
 
-## 接入前还需要完成
+## 接线前的历史清单（已完成）
 
-目前新模块不在 `build.rs` 中链接，原版 MoltenVK 仍不报告 TF。还需要：
+以下是独立内核阶段的接线清单；已通过原版 MoltenVK converter/command 路径接入，
+无需另加一套 Rust native backend。当前状态以[公开 API 验收](vulkan-native-tf-runtime.md)为准：
 
 1. 原版 MoltenVK 的 pipeline/encoder/command 生命周期接线，以及 TF Vulkan entry points、
    feature/property、GPU query pool 和资源/stage barrier 对接。

@@ -110,5 +110,6 @@ SHA-256/全部 CRC 也通过核对。此补跑仅更改 CI 与记录，运行源
 下一项明确的版本前提是vertex attribute divisor；Apple原生GPU TF仍待实现。
 
 后续divisor已通过，Linux原版Mesa真实GLES3/TF见[实例输入验收](vulkan-divisor.md)。
-Apple的[原生TF内核](vulkan-native-tf.md)现已通过真实Metal数据/输出replay和iOS编译，
-但尚未接入公开Vulkan命令；因此本文关于Apple扩展不可用的边界仍然成立。
+Apple的[原生TF内核](vulkan-native-tf.md)之后已完成[公开命令接线与原版Mesa GLES3/TF验收](vulkan-native-tf-runtime.md)。
+本文关于Apple TF不可用的段落保留历史诊断意义；当前按真实native feature开放，
+不再将unavailable计为通过。

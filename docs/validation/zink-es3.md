@@ -2,7 +2,9 @@
 
 2026-10-21，继续[Zink 路线](../architecture/zink.md)。目标是原版 Mesa/Zink 经
 Vulkan/MoltenVK 使用 GPU，最终让 Firefox 实际启用硬件 WebRender。本批没有修改
-Mesa、Firefox 或驱动版本字符串；原版 Mesa 25.1.9 仍只提供 GLES2 context。
+Mesa、Firefox 或驱动版本字符串；首批时原版 Mesa 25.1.9 只提供 GLES2 context。
+后续[完整 Apple TF 接线](vulkan-native-tf-runtime.md)已使原版 Mesa 创建真实 GLES3，
+并通过 MRT 与 TF 数据检查；下文保留首批过程和当时边界。
 
 后续的 [图像/子资源批次](zink-images.md) 已继续实现 array/cube/3D/mipmap、
 原生 blit、局部 depth clear 与比较 sampler；下文记录首批 MRT 的原始边界。

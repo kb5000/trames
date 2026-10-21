@@ -1,5 +1,5 @@
 {
-  "base_sha": "00d9cfa92b385726f67da1cdc6b5e5ea9d0c34db",
+  "base_sha": "a2733a33a2317a39bf5941431b65095b3c353a66",
   "native_scope": "zink-gles",
   "zink_mrt_only": true,
   "zink_tf_only": true,
@@ -7,16 +7,23 @@
     "run": 39579538279,
     "sha": "5dd69304b1e71f7e9c4512ec8699fc9ce6de41b0"
   },
-  "reason": "Only update three original Cereal padding diagnostics for already serialized TF fields. Prove all GPU algorithms, Rust/ICD and dependencies unchanged; reuse passed full TF, guest/Mesa GLES3 and iOS checks. Rebuild Mac/iOS native libraries and run the original constructor completeness diagnostic only. No IPA.",
+  "reason": "Evidence-only: verified successful complete public native Metal TF, ordinary ARM64 guest Vulkan, original Mesa GLES3, full arm64 iOS driver, and final Cereal completeness correction. Both ZIP digests/all CRCs/native source and build inputs checked. Source unchanged; reuse all passed checks, no rerun or IPA.",
   "changed_file_sha256": {
-    ".github/workflows/linux.yml": "12d250477d09bbabaeb8f0aeac5f6465291a57a233a5d3ee6919fa009c73a839",
-    "patches/moltenvk/0003-native-gpu-transform-feedback.patch": "4b14927f456d1aa145eb4916df7a9e95575b1f61f6d2319ee03f5ddff429e203",
-    "scripts/ios-ci-scope.py": "b9ca82447dc89c9b975554dc3b953d2c6b149bef8b9a74d490e64a9fdde26d66",
-    "tests/fixtures/vulkan-native-tf-cache.c": "67c519b4ac7bb385a439a485f7439cd8980da58357074eacca80faea184e6ddf",
-    "tests/integration/vulkan-native-tf-runtime.py": "c4a9bf6ec20d4e00f691b07b36481f599a00a2f756cd2fc602cfe175400edc59"
+    "docs/architecture/zink.md": "3504ae7edaead4941e89299e48eabfa912f647f738662adfde144a915ee64045",
+    "docs/validation/vulkan-feedback.md": "efd9845bf45952e21d1160fef1a0ffc2fe15812d0884f07ce498c9e349a9ba14",
+    "docs/validation/vulkan-native-tf-runtime-ci.json": "b3e5385f007465fbe8a7ca2b96a8daa5143eaa37a02fa61918d6c28691a27c71",
+    "docs/validation/vulkan-native-tf-runtime.md": "4394ebf4ec586db1a567a15dccb12af0658913832afb8613be3812b79ec497b4",
+    "docs/validation/vulkan-native-tf.md": "6b1c20173b89a3b7182becb2265e2c3e6fbcb0c2d807021040ebc53c5fe6e9fd",
+    "docs/validation/zink-es3.md": "ee95a3c6daaff3dc41e80b2ba306f2bc5dfc6db65a8db17cfb9445c49ea2a62a"
   },
   "tf_cache_only_reuse": {
     "run": 39598761585,
     "sha": "00d9cfa92b385726f67da1cdc6b5e5ea9d0c34db"
+  },
+  "tf_runtime_evidence_reuse": {
+    "run": 39598761585,
+    "sha": "00d9cfa92b385726f67da1cdc6b5e5ea9d0c34db",
+    "diagnostic_run": 39601628224,
+    "diagnostic_sha": "a2733a33a2317a39bf5941431b65095b3c353a66"
   }
 }
