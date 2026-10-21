@@ -1,5 +1,5 @@
 {
-  "base_sha": "086d5d5aace61ae43e7d556d10f6e3c7c0a41990",
+  "base_sha": "00d9cfa92b385726f67da1cdc6b5e5ea9d0c34db",
   "native_scope": "zink-gles",
   "zink_mrt_only": true,
   "zink_tf_only": true,
@@ -7,13 +7,16 @@
     "run": 39579538279,
     "sha": "5dd69304b1e71f7e9c4512ec8699fc9ce6de41b0"
   },
-  "reason": "Connect native GPU transform feedback to original MoltenVK public APIs, shader/pipeline cache, command encoders and queries. Validate native and ordinary guest Vulkan TF, original Mesa real GLES3/TF and arm64 iOS driver. Reuse exact unchanged guest, Rust/ICD, CPU/Linux/network/UI acceptance; no IPA.",
+  "reason": "Only update three original Cereal padding diagnostics for already serialized TF fields. Prove all GPU algorithms, Rust/ICD and dependencies unchanged; reuse passed full TF, guest/Mesa GLES3 and iOS checks. Rebuild Mac/iOS native libraries and run the original constructor completeness diagnostic only. No IPA.",
   "changed_file_sha256": {
-    "crates/trames-vulkan/native/transform-feedback/assemble.metal": "b64b853c5cda4049ab5a2fb38b69b3e01463e2e6d176a61f7ff131d732387dab",
-    "crates/trames-vulkan/native/transform-feedback/mvk-commands.inc": "0c00e1fb34b9fa98921283d9d0f019403f9251760af9d82e41b6ded6283fef25",
-    "crates/trames-vulkan/native/transform-feedback/mvk-pipeline.inc": "69ef60caf3a3a2c0c4d86e4ada429f5d0a689b7e303b4a9a0dbea69bda933e99",
-    "crates/trames-vulkan/native/transform-feedback/mvk-state.hpp": "b0a926ffb548e4486d8a04755d28614cb962e615655046cd57311b4a027af436",
-    "patches/moltenvk/0003-native-gpu-transform-feedback.patch": "2b6d07ea56a9f473dac7634bfbba51571a9e4e202090edcab9e4efc79ccdcd21",
-    "tests/integration/vulkan-native-tf-runtime.py": "9152d61d9661145284834c59af9b4ce2ccd71a21cee91c678b7fd28b19ce8eb2"
+    ".github/workflows/linux.yml": "12d250477d09bbabaeb8f0aeac5f6465291a57a233a5d3ee6919fa009c73a839",
+    "patches/moltenvk/0003-native-gpu-transform-feedback.patch": "4b14927f456d1aa145eb4916df7a9e95575b1f61f6d2319ee03f5ddff429e203",
+    "scripts/ios-ci-scope.py": "b9ca82447dc89c9b975554dc3b953d2c6b149bef8b9a74d490e64a9fdde26d66",
+    "tests/fixtures/vulkan-native-tf-cache.c": "67c519b4ac7bb385a439a485f7439cd8980da58357074eacca80faea184e6ddf",
+    "tests/integration/vulkan-native-tf-runtime.py": "c4a9bf6ec20d4e00f691b07b36481f599a00a2f756cd2fc602cfe175400edc59"
+  },
+  "tf_cache_only_reuse": {
+    "run": 39598761585,
+    "sha": "00d9cfa92b385726f67da1cdc6b5e5ea9d0c34db"
   }
 }

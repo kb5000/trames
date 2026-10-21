@@ -133,8 +133,9 @@ def main():
     p.add_argument('--shader',type=Path,required=True)
     p.add_argument('--library',required=True)
     p.add_argument('--glslang',default='glslangValidator')
+    p.add_argument('--cache-only',action='store_true')
     a=p.parse_args();out=a.output.resolve();out.mkdir(parents=True,exist_ok=True)
-    c=out/'public-tf.c';c.write_text(source())
+    c=out/'public-tf.c';c.write_text((ROOT/'tests/fixtures/vulkan-native-tf-cache.c').read_text() if a.cache_only else source())
     obj=out/'public-tf.o';binary=out/'public-tf'
     subprocess.run([os.environ.get('CC','cc'),'-std=c11','-O2','-Wall','-Wextra','-Werror','-I'+str(a.include.resolve()),'-c',str(c),'-o',str(obj)],check=True)
     link=[os.environ.get('CXX','c++'),str(obj),a.library,'-o',str(binary)]
@@ -149,6 +150,13 @@ def main():
             print(run.stdout,flush=True)
             raise RuntimeError(f'{name}: exit {run.returncode}')
         return run
+    if a.cache_only:
+        run=execute([str(binary)],'cache-layout')
+        assert 'tf-cache-layout-ok:' in run.stdout
+        assert 'MVK-BUILD-ERROR' not in run.stdout
+        (out/'results.json').write_text(json.dumps(dict(cache_layout=True,source_sha256=hashlib.sha256(c.read_bytes()).hexdigest()),indent=2)+'\n')
+        print('tf-cache-layout-ok: original constructor diagnostics clean',flush=True)
+        return
     cases=[]
     for topology in range(6):
         for bits in (0,16,32):

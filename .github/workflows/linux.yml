@@ -42,6 +42,7 @@ jobs:
       zink_mrt_only: ${{ steps.scope.outputs.zink_mrt_only }}
       zink_feedback_only: ${{ steps.scope.outputs.zink_feedback_only }}
       zink_tf_only: ${{ steps.scope.outputs.zink_tf_only }}
+      zink_tf_cache_only: ${{ steps.scope.outputs.zink_tf_cache_only }}
       zink_stencil_only: ${{ steps.scope.outputs.zink_stencil_only }}
       zink_divisor_only: ${{ steps.scope.outputs.zink_divisor_only }}
       zink_mesa_only: ${{ steps.scope.outputs.zink_mesa_only }}
@@ -664,6 +665,10 @@ jobs:
           python3 scripts/prepare-vulkan.py --apple --source-build
           native_moltenvk_dir="$(python3 scripts/build-moltenvk.py --platform macos --arch arm64)"
           export TRAMES_MOLTENVK_STATIC_DIR="$native_moltenvk_dir"
+          if [[ '${{ needs.scope.outputs.zink_tf_cache_only }}' == true ]]; then
+            python3 tests/integration/vulkan-native-tf-runtime.py --cache-only --include target/vulkan-upstream/headers/Vulkan-Headers-cfebfc96b2b0bce93da7d12f2c14cc01793ae25c/include --shader target/zink-native-bundle/shaders/vulkan-feedback.spv --library "$native_moltenvk_dir/libMoltenVK.a" --output target/vulkan-tf-cache-metal
+            exit 0
+          fi
           export MACOSX_DEPLOYMENT_TARGET=12.0
           export RUSTFLAGS="-C link-arg=-framework -C link-arg=IOKit -C link-arg=$(xcrun clang --print-runtime-dir)/libclang_rt.osx.a"
           cargo build -p trames-cli --release --locked
@@ -700,13 +705,13 @@ jobs:
             python3 tests/integration/vulkan-feedback.py --store target/zink-native-bundle/store --output target/vulkan-feedback-metal
           fi
       - name: Execute public native Vulkan TF and raster replay
-        if: always() && !cancelled() && steps.native_runtime.outcome == 'success' && needs.scope.outputs.zink_tf_only == 'true'
+        if: always() && !cancelled() && steps.native_runtime.outcome == 'success' && needs.scope.outputs.zink_tf_only == 'true' && needs.scope.outputs.zink_tf_cache_only != 'true'
         run: |
           command -v glslangValidator >/dev/null || brew install glslang
           native_moltenvk_dir="$(python3 scripts/build-moltenvk.py --platform macos --arch arm64)"
           python3 tests/integration/vulkan-native-tf-runtime.py --include target/vulkan-upstream/headers/Vulkan-Headers-cfebfc96b2b0bce93da7d12f2c14cc01793ae25c/include --shader target/zink-native-bundle/shaders/vulkan-feedback.spv --library "$native_moltenvk_dir/libMoltenVK.a" --output target/vulkan-tf-runtime-metal
       - name: Execute ordinary guest Vulkan and original Mesa GLES3 TF
-        if: always() && !cancelled() && steps.native_runtime.outcome == 'success' && needs.scope.outputs.zink_tf_only == 'true'
+        if: always() && !cancelled() && steps.native_runtime.outcome == 'success' && needs.scope.outputs.zink_tf_only == 'true' && needs.scope.outputs.zink_tf_cache_only != 'true'
         run: |
           export TRAMES_RUNNER="$PWD/target/release/trames-run"
           export TRAMES_VULKAN_TRACE=1
@@ -747,6 +752,7 @@ jobs:
             target/zink-stencil-es3-metal/
             target/zink-tf-es3-metal/
             target/vulkan-tf-runtime-metal/
+            target/vulkan-tf-cache-metal/
             target/zink-native-bundle/checksums.json
             target/moltenvk-patched/*/build.json
             target/moltenvk-patched/*/xcodebuild.log

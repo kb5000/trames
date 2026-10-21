@@ -53,6 +53,63 @@ def zink_metal_only_reuse(plan, repo, headers):
     return reuse
 
 
+def tf_cache_only_reuse(plan, repo, headers):
+    reuse=plan.get('tf_cache_only_reuse')
+    if not reuse:
+        return False
+    allowed={'.github/ios-validation-plan.json','.github/workflows/linux.yml','scripts/ios-ci-scope.py',
+             'patches/moltenvk/0003-native-gpu-transform-feedback.patch',
+             'tests/integration/vulkan-native-tf-runtime.py','tests/fixtures/vulkan-native-tf-cache.c'}
+    changed=subprocess.check_output(['git','diff','--name-only',reuse['sha'],'HEAD'],text=True).splitlines()
+    if any(p not in allowed and not p.startswith('docs/') for p in changed):
+        raise RuntimeError('TF cache diagnostic repair changed runtime or GPU algorithms')
+    path='patches/moltenvk/0003-native-gpu-transform-feedback.patch'
+    old=subprocess.check_output(['git','show',reuse['sha']+':'+path],text=True)
+    new=Path(path).read_text()
+    # Canonical original-source positions ignore hunk merging/context, while
+    # preserving every actual source edit. The pinned archive is checked again
+    # when applying the patch during the native build.
+    def edits(patch):
+        import re
+        result=[];name=None;position=0
+        for line in patch.splitlines():
+            if line.startswith('--- a/'):name=line[6:]
+            elif line.startswith('+++ b/'):continue
+            elif line.startswith('@@ '):position=int(re.match(r'@@ -(\d+)',line).group(1))
+            elif name and line.startswith(('+','-')):
+                result.append((name,position,line))
+                if line.startswith('-'):position+=1
+            elif name and line.startswith(' '):position+=1
+        return result
+    removed=[];keep=[]
+    expected=set()
+    for name,a,b in [('SPIRVToMSLConversionOptions',29,28),('SPIRVToMSLConversionConfiguration',109,108),('SPIRVToMSLConversionResultInfo',40,36)]:
+        expected.add(('-',f'mvkValidateCerealArchiveSize<mvk::{name}>({a})'))
+        expected.add(('+',f'mvkValidateCerealArchiveSize<mvk::{name}>({b})'))
+    for edit in edits(new):
+        matches=[key for key in expected if edit[2].startswith(key[0]) and key[1] in edit[2]]
+        if matches:
+            if edit[0]!='MoltenVK/MoltenVK/GPUObjects/MVKPipeline.mm':raise RuntimeError('Wrong cache diagnostic source')
+            removed+=matches
+        else:keep.append(edit)
+    if set(removed)!=expected or len(removed)!=6 or keep!=edits(old):
+        raise RuntimeError('Only three known Cereal padding constants may change')
+    def get(path):
+        request=urllib.request.Request(f'https://api.github.com/repos/{repo}/'+path,headers=headers)
+        with urllib.request.urlopen(request,timeout=30) as response:return json.load(response)
+    run=get(f"actions/runs/{reuse['run']}")
+    if (run['head_sha']!=reuse['sha'] or run['path']!='.github/workflows/linux.yml'
+            or run['head_repository']['full_name']!=repo or run['conclusion']!='success'):
+        raise RuntimeError('TF reuse requires the exact successful source/workflow')
+    job=next(j for j in get(f"actions/runs/{reuse['run']}/jobs")['jobs'] if j['name']=='zink-gles-apple')
+    passed={step['name'] for step in job['steps'] if step['conclusion']=='success'}
+    required={'Run original MoltenVK Metal resource and Mesa GLSL paths','Execute public native Vulkan TF and raster replay',
+              'Execute ordinary guest Vulkan and original Mesa GLES3 TF','Compile corrected native iOS driver without packaging an app'}
+    if not required<=passed:raise RuntimeError('Missing passed complete Apple TF/guest/Mesa/iOS acceptance')
+    print('Only Cereal diagnostic padding constants changed. Reuse all passed GPU/guest/Mesa data; rebuild Mac/iOS libraries and check original constructor diagnostics, no repeated TF data tests.')
+    return True
+
+
 def compatibility_probe_outputs(plan, repo, headers):
     """Probe/documentation changes reuse an exactly unchanged passing runtime."""
     reuse = plan['runtime_reuse']
@@ -858,6 +915,7 @@ def main():
                             if key == 'apple' and not any(step['name'] == 'Check changed Apple Vulkan backend and iOS embedding' and step['conclusion'] == 'success' for step in job['steps']):
                                 raise RuntimeError('Missing passed exact-source Apple Vulkan/iOS checks')
                     metal_reuse = zink_metal_only_reuse(plan, repo, dict(request.headers))
+                    cache_only = tf_cache_only_reuse(plan, repo, dict(request.headers))
                     print('Original Mesa Wayland EGL: native WSI/image copies, two-window resize/close and retained Metal texture pixels; reuse unchanged offscreen/CPU/MMU/UI/network checks; no IPA.' if plan.get('native_scope') == 'zink-wayland' else 'Zink synchronization: changed guest ICD and native Vulkan backend, original driver timeline/viewport GPU checks and iOS embedding; CPU/MMU/UI/network unchanged, no IPA.' if sync else 'Guest ICD query/template foundation: original loader/Mesa probe, native GPU compute/texture oracles, bundle upgrade/reopen and Apple/iOS metadata checks. CPU/MMU/native GPU backend/UI unchanged; no IPA or repeated unrelated acceptance.')
                     feedback_retry = plan.get('zink_feedback_only')
                     if feedback_retry:
@@ -883,6 +941,8 @@ def main():
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=' + plan['native_scope'] + '\n')
                         if plan.get('zink_tf_only'):
                             output.write('zink_tf_only=true\nzink_feedback_only=true\n')
+                        if cache_only:
+                            output.write('zink_tf_cache_only=true\n')
                         if plan.get('zink_mesa_only'):
                             if not metal_reuse:
                                 raise RuntimeError('Mesa-only completion requires verified exact-source Linux/Apple query reuse')
