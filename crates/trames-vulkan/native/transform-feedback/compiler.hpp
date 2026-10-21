@@ -2,6 +2,7 @@
 #pragma once
 #include "spirv_msl.hpp"
 #include <array>
+#include <functional>
 #include <map>
 #include <string>
 #include <vector>
@@ -25,8 +26,10 @@ public:
     // the original CompilerMSL API before calling this exactly once.
     Program compile_feedback();
     Program describe_feedback();
+    void configure_raster(std::function<void(SPIRV_CROSS_NAMESPACE::CompilerMSL&)> configure) { raster_configuration_ = std::move(configure); }
     void enable_runtime_parameters() { runtime_parameters_ = true; }
 private:
+    std::function<void(SPIRV_CROSS_NAMESPACE::CompilerMSL&)> raster_configuration_;
     bool runtime_parameters_ = false;
     bool runtime_hook_installed_ = false;
     struct Semantic {

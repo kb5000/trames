@@ -1,5 +1,5 @@
 {
-  "base_sha": "9e855caadd5cbe32a43a4142f6cf7808adea38cb",
+  "base_sha": "b405c5900a8b2a9402dcbde7f2298761ffec2f8b",
   "native_scope": "zink-gles",
   "zink_mrt_only": true,
   "zink_tf_only": true,
@@ -9,13 +9,12 @@
   },
   "reason": "Connect native GPU transform feedback to original MoltenVK public APIs, shader/pipeline cache, command encoders and queries. Validate native and ordinary guest Vulkan TF, original Mesa real GLES3/TF and arm64 iOS driver. Reuse exact unchanged guest, Rust/ICD, CPU/Linux/network/UI acceptance; no IPA.",
   "changed_file_sha256": {
-    ".github/workflows/linux.yml": "02b19f19ce40bfa6892ac3216e9e612217d6174626c8689c576e56ff870cc3e1",
-    "crates/trames-vulkan/native/transform-feedback/assemble.metal": "9fb57f1bf85553788f65ee7e322ff1523f31d1a53a94f399bc703323835e45f8",
-    "crates/trames-vulkan/native/transform-feedback/mvk-commands.inc": "684df2b9e6f69a4b3cd5b201ac2b8c0a3075d3ae740b031051121430fdf893e6",
-    "crates/trames-vulkan/native/transform-feedback/mvk-pipeline.inc": "866d6480a5208399c7fe925068f48e3843464297a3efbafbcbf1516effceb99d",
-    "crates/trames-vulkan/native/transform-feedback/mvk-state.hpp": "cdc56d730753862da9ef7850e41e13da39661e8f4d52df5b8fc6b20f5f61c4aa",
-    "scripts/build-vulkan-native-tf.py": "7e26e71529e28886ec4fe78c74dfad05a0761888398c6d7ff3f136045de09890",
-    "tests/fixtures/vulkan-native-tf-compiler.cpp": "0ec2013f14b5b6393c9ab7b9faf126a7f5d69dacc5a40c2557638e2bf7286f56",
-    "tests/integration/vulkan-native-tf-runtime.py": "538681cf9ea031f24092594d68cadabbabd22527c84154792156a882a0b87a69"
+    ".github/workflows/linux.yml": "7e834be6bb1aa94432034b2d8e2f1c69502cb0c0d3961621ce7582679dd10c20",
+    "crates/trames-vulkan/native/transform-feedback/assemble.metal": "0c26b35afe5c108eb4ebd90f112025774d3c05c1ec7ad09e4602b12001105302",
+    "crates/trames-vulkan/native/transform-feedback/compiler.cpp": "47329f01ea7a7738cb8b83abc2e95cc54af09fb242be0ba3f12266950f83ad5f",
+    "crates/trames-vulkan/native/transform-feedback/compiler.hpp": "1a6958f2b449e941003d70052cdd78a9a56de9c55701e9babe1ebed0ead4dbc8",
+    "crates/trames-vulkan/native/transform-feedback/mvk-commands.inc": "9af5311e100c73f121e9b21b1fed284c66733d7624a8cf682cffb329e3bfdd98",
+    "patches/moltenvk/0003-native-gpu-transform-feedback.patch": "3ae29a30bd1758d7efb1e44f91db71876de20a5e81b4e685015ebf87d17ac2bd",
+    "tests/integration/vulkan-native-tf-runtime.py": "8ee918d6faffa23842e94885b2542678c0e67f58f1cd32e8e7597b61def33cac"
   }
 }

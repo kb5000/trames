@@ -131,7 +131,7 @@ kernel void trames_tf_byte_count(const device uint* counter [[buffer(0)]],
 // out: TFParams(16 words), raw draw(8), MTLStageInRegion(6), dispatch(3), error.
 kernel void trames_tf_parameters(constant TFParams& base [[buffer(0)]],
     const device uint* input [[buffer(1)]], device uint* out [[buffer(2)]],
-    constant uint4& config [[buffer(3)]], device atomic_uint& fault [[buffer(4)]], uint tid [[thread_position_in_grid]]) {
+    constant uint4& config [[buffer(3)]], device atomic_uint& fault [[buffer(4)]], const device uint* indices [[buffer(5)]], uint tid [[thread_position_in_grid]]) {
     if (tid) return;
     uint n = input[0], instances = input[1];
     bool valid = ulong(n)*instances <= base.mapCapacity/3u;
@@ -143,16 +143,27 @@ kernel void trames_tf_parameters(constant TFParams& base [[buffer(0)]],
     out[24] = config.x ? input[3] : input[2];out[25] = out[20];out[26] = 0;
     out[27] = p.vertices;out[28] = p.instances;out[29] = 1;
     out[30] = (p.vertices+config.y-1)/config.y;out[31] = p.instances;out[32] = 1;
+    if (valid && base.restart && base.indexType) {
+        bool found=false;
+        for(uint i=0;i<n;++i) {
+            uint x=base.indexType==16 ? uint(reinterpret_cast<const device ushort*>(indices)[input[2]+i]) : indices[input[2]+i];
+            if(x!=(base.indexType==16 ? 0xffffu : 0xffffffffu)) { out[23]=x;found=true;break; }
+        }
+        // Restart markers never enter hardware vertex fetch. Reuse one known
+        // valid source index, including positive/negative baseVertex; if all
+        // indices are markers, suppress the vertex dispatch altogether.
+        if (!found) out[30]=0;
+    }
     out[33] = !valid;
     if (!valid) atomic_store_explicit(&fault,1u,memory_order_relaxed);
 }
 kernel void trames_tf_copy_indices16(const device ushort* input [[buffer(0)]],
     const device uint* raw [[buffer(1)]], device ushort* output [[buffer(2)]], device ushort* safe [[buffer(3)]], uint i [[thread_position_in_grid]]) {
-    if (i < raw[0]) { ushort x=input[raw[2]+i];output[i]=x;safe[i]=raw[5] && x==0xffffu ? ushort(0u-raw[3]) : x; }
+    if (i < raw[0]) { ushort x=input[raw[2]+i];output[i]=x;safe[i]=raw[5] && x==0xffffu ? ushort(raw[7]) : x; }
 }
 kernel void trames_tf_copy_indices32(const device uint* input [[buffer(0)]],
     const device uint* raw [[buffer(1)]], device uint* output [[buffer(2)]], device uint* safe [[buffer(3)]], uint i [[thread_position_in_grid]]) {
-    if (i < raw[0]) { uint x=input[raw[2]+i];output[i]=x;safe[i]=raw[5] && x==0xffffffffu ? 0u-raw[3] : x; }
+    if (i < raw[0]) { uint x=input[raw[2]+i];output[i]=x;safe[i]=raw[5] && x==0xffffffffu ? raw[7] : x; }
 }
 kernel void trames_tf_dispatch(device uint* draw [[buffer(0)]], constant uint2& widths [[buffer(1)]],
     uint i [[thread_position_in_grid]]) {

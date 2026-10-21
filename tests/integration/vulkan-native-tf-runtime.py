@@ -168,20 +168,47 @@ def main():
     subprocess.run(link,check=True)
     run=execute([str(binary),*shaders],'raster')
     raster_result=next(s for s in run.stdout.splitlines() if s.startswith('tf-raster-ok:'));print(raster_result,flush=True)
-    # A real stage-in VBO containing restart indices catches invalid marker
-    # fetches and shader side effects, which topology-only shaders cannot see.
-    restart=raster_source().replace('VK_BUFFER_USAGE_VERTEX_BUFFER_BIT|VK_BUFFER_USAGE_STORAGE_BUFFER_BIT','VK_BUFFER_USAGE_VERTEX_BUFFER_BIT|VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_INDEX_BUFFER_BIT')
-    restart=restart.replace('.topology=VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST','.topology=VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,.primitiveRestartEnable=VK_TRUE')
-    restart=restart.replace('memcpy(allocations[0].data+768,positions,sizeof(positions));','memcpy(allocations[0].data+768,positions,sizeof(positions));uint32_t indices[]={2,3,4,0xffffffffu,2,3,4};memcpy(allocations[0].data+880,indices,sizeof(indices));')
-    restart=restart.replace('vkCmdDraw(c,3,1,2,4)','vkCmdBindIndexBuffer(c,allocations[0].buffer,880,VK_INDEX_TYPE_UINT32);vkCmdDrawIndexed(c,7,1,0,0,4)')
-    restart=restart.replace('captured[0]==1 && captured[1]==1','captured[0]==2 && captured[1]==2').replace('i<3;i++','i<6;i++').replace('4+i/3','4').replace('calls==3','calls==6').replace('exactly 3 VS calls','exactly 6 VS calls; indexed restart VBO')
-    raster.write_text(restart)
-    subprocess.run([os.environ.get('CC','cc'),'-std=c11','-O2','-Wall','-Wextra','-Werror','-I'+str(a.include.resolve()),'-c',str(raster),'-o',str(obj)],check=True)
-    subprocess.run(link,check=True)
-    run=execute([str(binary),*shaders],'restart-raster')
-    restart_result=next(s for s in run.stdout.splitlines() if s.startswith('tf-raster-ok:'));print(restart_result,flush=True)
+    # Real VBO fetch, restart filtering and shader side effects across signed
+    # baseVertex offsets; all-marker draws must execute no VS at all.
+    restart_results=[]
+    for bits in (16,32):
+        for base in (-1,1,None):
+            restart=raster_source().replace('VK_BUFFER_USAGE_VERTEX_BUFFER_BIT|VK_BUFFER_USAGE_STORAGE_BUFFER_BIT','VK_BUFFER_USAGE_VERTEX_BUFFER_BIT|VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_INDEX_BUFFER_BIT')
+            restart=restart.replace('.topology=VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST','.topology=VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,.primitiveRestartEnable=VK_TRUE')
+            indices=[2-base,3-base,4-base,0xffffffff,2-base,3-base,4-base] if base is not None else [0xffffffff]*7
+            if bits==16:indices=[x&0xffff for x in indices]
+            values=','.join(str(x)+'u' for x in indices)
+            extra='uint'+str(bits)+'_t indices[]={'+values+'};memcpy(allocations[0].data+880,indices,sizeof(indices));'
+            restart=restart.replace('memcpy(allocations[0].data+768,positions,sizeof(positions));','memcpy(allocations[0].data+768,positions,sizeof(positions));'+extra)
+            restart=restart.replace('vkCmdDraw(c,3,1,2,4)','vkCmdBindIndexBuffer(c,allocations[0].buffer,880,VK_INDEX_TYPE_UINT'+str(bits)+');vkCmdDrawIndexed(c,7,1,0,'+str(base or 0)+',4)')
+            restart=restart.replace('captured[0]==1 && captured[1]==1','captured[0]==2 && captured[1]==2').replace('i<3;i++','i<6;i++').replace('4+i/3','4').replace('calls==3','calls==6').replace('exactly 3 VS calls','exactly 6 VS calls; indexed restart VBO')
+            if base is None:
+                restart=restart.replace('captured[0]==2 && captured[1]==2','captured[0]==0 && captured[1]==0').replace('i<6;i++','i<0;i++').replace('calls==6','calls==0').replace('occlusion[0]>0','occlusion[0]==0').replace('gpu_occlusion[0]>0','gpu_occlusion[0]==0').replace('expected[]={64,128,191,255}','expected[]={0,0,0,0}').replace('exactly 6 VS calls','exactly 0 VS calls; all markers')
+                # Avoid a constant-false unsigned comparison warning.
+                restart=restart.replace('for(unsigned i=0;i<0;i++){','for(unsigned i=0;i<(unsigned)captured[0];i++){')
+            raster.write_text(restart)
+            subprocess.run([os.environ.get('CC','cc'),'-std=c11','-O2','-Wall','-Wextra','-Werror','-I'+str(a.include.resolve()),'-c',str(raster),'-o',str(obj)],check=True)
+            subprocess.run(link,check=True)
+            name=f'restart-raster-u{bits}-base-{base}'
+            run=execute([str(binary),*shaders],name)
+            line=next(s for s in run.stdout.splitlines() if s.startswith('tf-raster-ok:'));print(name+': '+line,flush=True)
+            restart_results.append(dict(index_bits=bits,base_vertex=base,result=line))
 
-    result=dict(raster=raster_result,restart_raster=restart_result,cases=cases,source_sha256=hashlib.sha256(c.read_bytes()).hexdigest(),shader_sha256=hashlib.sha256(a.shader.read_bytes()).hexdigest())
+    bounds_result=None
+    if platform.system()=='Darwin':
+        # Exceed the documented GPU indirect scratch bound. Dropping the draw
+        # and reporting success would be a driver bug; fence wait must report
+        # the asynchronous allocation/device failure.
+        bounds=source().replace('index_bits?9:5,2,index_bits?1:2','200000,2,index_bits?1:2')
+        old='OK(vkWaitForFences(device,1,&fence,VK_TRUE,UINT64_MAX));'
+        assert bounds.count(old)==1
+        bounds=bounds.replace(old,'VkResult result=vkWaitForFences(device,1,&fence,VK_TRUE,UINT64_MAX);assert(result==VK_ERROR_DEVICE_LOST);puts("tf-bounds-error-ok: oversized GPU indirect draw reports device failure without CPU count readback");vkDestroyDevice(device,NULL);vkDestroyInstance(instance,NULL);return 0;')
+        c.write_text(bounds)
+        subprocess.run([os.environ.get('CC','cc'),'-std=c11','-O2','-Wall','-Wextra','-Werror','-I'+str(a.include.resolve()),'-c',str(c),'-o',str(obj)],check=True)
+        subprocess.run(link,check=True)
+        run=execute([str(binary),str(a.shader.resolve()),'0','0','1'],'bounds-error')
+        bounds_result=next(s for s in run.stdout.splitlines() if s.startswith('tf-bounds-error-ok:'));print(bounds_result,flush=True)
+    result=dict(bounds_error=bounds_result,raster=raster_result,restart_raster=restart_results,cases=cases,source_sha256=hashlib.sha256(c.read_bytes()).hexdigest(),shader_sha256=hashlib.sha256(a.shader.read_bytes()).hexdigest())
     (out/'results.json').write_text(json.dumps(result,indent=2)+'\n')
 
 if __name__=='__main__':main()

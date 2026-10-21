@@ -423,27 +423,27 @@ Original MoltenVK sources remain Apache-2.0; new Trames includes are GPL-3.0-or-
 +#include "mvk-query.hpp"
 --- a/MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.mm
 +++ b/MoltenVK/MoltenVK/GPUObjects/MVKQueryPool.mm
-@@ -33,15 +33,15 @@
+@@ -33,7 +33,7 @@
  void MVKQueryPool::endQuery(uint32_t query, MVKCommandEncoder* cmdEncoder) {
      uint32_t queryCount = cmdEncoder->isInRenderPass() ? cmdEncoder->getSubpass()->getViewCountInMetalPass(cmdEncoder->getMultiviewPassIndex()) : 1;
      queryCount = max(queryCount, 1u);
 -    lock_guard<mutex> lock(_availabilityLock);
--    for (uint32_t i = query; i < query + queryCount; ++i) {
--        _availability[i] = DeviceAvailable;
-+    {
-+        lock_guard<mutex> lock(_availabilityLock);
-+        for (uint32_t i = query; i < query + queryCount; ++i) _availability[i] = DeviceAvailable;
++    unique_lock<mutex> lock(_availabilityLock);
+     for (uint32_t i = query; i < query + queryCount; ++i) {
+         _availability[i] = DeviceAvailable;
      }
-     lock_guard<mutex> copyLock(_deferredCopiesLock);
+@@ -41,8 +41,9 @@
      if (!_deferredCopies.empty()) {
          // Partition by readiness.
          auto ready = std::partition(_deferredCopies.begin(), _deferredCopies.end(), [this](const DeferredCopy& copy) {
 -            return !areQueriesDeviceAvailable(copy.firstQuery, copy.queryCount);
 +            return !areQueriesDeviceAvailable(copy.firstQuery, copy.firstQuery + copy.queryCount);
          });
++        lock.unlock(); // Encoding a virtual copy may snapshot availability again.
          // Execute the ready copies, then remove them.
          for (auto i = ready; i != _deferredCopies.end(); ++i) {
-@@ -131,12 +131,11 @@
+             encodeCopyResults(cmdEncoder, i->firstQuery, i->queryCount, i->destBuffer, i->destOffset, i->stride, i->flags);
+@@ -131,12 +132,11 @@
  
  	// Output the results of this query
  	if (shouldOutput) {
@@ -461,7 +461,7 @@ Original MoltenVK sources remain Apache-2.0; new Trames includes are GPL-3.0-or-
  	}
  
  	// If requested, output the availability bit
-@@ -168,7 +167,7 @@
+@@ -168,7 +168,7 @@
  	if (mvkIsAnyFlagEnabled(flags, VK_QUERY_RESULT_64_BIT) &&
  		!mvkIsAnyFlagEnabled(flags, VK_QUERY_RESULT_WITH_AVAILABILITY_BIT) &&
  		stride == _queryElementCount * sizeof(uint64_t) &&
@@ -470,7 +470,7 @@ Original MoltenVK sources remain Apache-2.0; new Trames includes are GPL-3.0-or-
  
  		encodeDirectCopyResults(cmdEncoder, firstQuery, queryCount, destBuffer, destOffset, stride);
  		// TODO: In the case where none of the queries is ready, we can fill with 0.
-@@ -440,3 +439,5 @@
+@@ -440,3 +440,5 @@
  												 const VkQueryPoolCreateInfo* pCreateInfo) : MVKQueryPool(device, pCreateInfo, 1) {
  	setConfigurationResult(reportError(VK_ERROR_INITIALIZATION_FAILED, "vkCreateQueryPool: Unsupported query pool type: %d.", pCreateInfo->queryType));
  }
@@ -577,21 +577,92 @@ Original MoltenVK sources remain Apache-2.0; new Trames includes are GPL-3.0-or-
  	if (shouldFlipVertexY != other.shouldFlipVertexY) { return false; }
  	if (shouldFixupClipSpace != other.shouldFixupClipSpace) { return false; }
  	return true;
-@@ -276,7 +278,8 @@
+@@ -276,48 +278,50 @@
  #ifndef SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS
  	try {
  #endif
 -		pMSLCompiler = new CompilerMSL(_spirv);
+-
 +		pMSLCompiler = shaderConfig.options.transformFeedback ? new trames::tf::Compiler(_spirv) : new CompilerMSL(_spirv);
 +		if (shaderConfig.options.transformFeedback) static_cast<trames::tf::Compiler*>(pMSLCompiler)->enable_runtime_parameters();
- 
++
++		auto configureCompiler = [&](CompilerMSL* compiler) {
  		if (shaderConfig.options.hasEntryPoint()) {
- 			pMSLCompiler->set_entry_point(shaderConfig.options.entryPointName, shaderConfig.options.entryPointStage);
-@@ -337,7 +340,11 @@
+-			pMSLCompiler->set_entry_point(shaderConfig.options.entryPointName, shaderConfig.options.entryPointStage);
++			compiler->set_entry_point(shaderConfig.options.entryPointName, shaderConfig.options.entryPointStage);
+ 		}
+ 
+ 		// Set up tessellation parameters if needed.
+ 		if (shaderConfig.options.entryPointStage == ExecutionModelTessellationControl ||
+ 			shaderConfig.options.entryPointStage == ExecutionModelTessellationEvaluation) {
+ 			if (shaderConfig.options.tessPatchKind != ExecutionModeMax) {
+-				pMSLCompiler->set_execution_mode(shaderConfig.options.tessPatchKind);
++				compiler->set_execution_mode(shaderConfig.options.tessPatchKind);
+ 			}
+ 			if (shaderConfig.options.numTessControlPoints != 0) {
+-				pMSLCompiler->set_execution_mode(ExecutionModeOutputVertices, shaderConfig.options.numTessControlPoints);
++				compiler->set_execution_mode(ExecutionModeOutputVertices, shaderConfig.options.numTessControlPoints);
+ 			}
+ 		}
+ 
+ 		// Establish the MSL options for the compiler
+ 		// This needs to be done in two steps...for CompilerMSL and its superclass.
+-		pMSLCompiler->set_msl_options(shaderConfig.options.mslOptions);
+-
+-		auto scOpts = pMSLCompiler->get_common_options();
++		compiler->set_msl_options(shaderConfig.options.mslOptions);
++
++		auto scOpts = compiler->get_common_options();
+ 		scOpts.vertex.flip_vert_y = shaderConfig.options.shouldFlipVertexY;
+ 		scOpts.vertex.fixup_clipspace = shaderConfig.options.shouldFixupClipSpace;
+-		pMSLCompiler->set_common_options(scOpts);
++		compiler->set_common_options(scOpts);
+ 
+ 		// Add shader inputs and outputs
+ 		for (auto& si : shaderConfig.shaderInputs) {
+-			pMSLCompiler->add_msl_shader_input(si.shaderVar);
++			compiler->add_msl_shader_input(si.shaderVar);
+ 		}
+ 
+ 		for (auto& so : shaderConfig.shaderOutputs) {
+-			pMSLCompiler->add_msl_shader_output(so.shaderVar);
++			compiler->add_msl_shader_output(so.shaderVar);
+ 		}
+ 
+ 		// Add resource bindings and hardcoded constexpr samplers
+ 		for (auto& rb : shaderConfig.resourceBindings) {
+ 			auto& rbb = rb.resourceBinding;
+ 			if (rbb.stage == shaderConfig.options.entryPointStage) {
+-				pMSLCompiler->add_msl_resource_binding(rbb);
++				compiler->add_msl_resource_binding(rbb);
+ 				if (rb.requiresConstExprSampler) {
+-					pMSLCompiler->remap_constexpr_sampler_by_binding(rbb.desc_set, rbb.binding, rb.constExprSampler);
++					compiler->remap_constexpr_sampler_by_binding(rbb.desc_set, rbb.binding, rb.constExprSampler);
+ 				}
+ 			}
+ 		}
+@@ -325,7 +329,7 @@
+ 		// Add any descriptor sets that are not using Metal argument buffers.
+ 		// This only has an effect if SPIRVToMSLConversionConfiguration::options::mslOptions::argument_buffers is enabled.
+ 		for (uint32_t dsIdx : shaderConfig.discreteDescriptorSets) {
+-			pMSLCompiler->add_discrete_descriptor_set(dsIdx);
++			compiler->add_discrete_descriptor_set(dsIdx);
+ 		}
+ 
+ 		// Add any dynamic buffer bindings.
+@@ -333,11 +337,18 @@
+ 		if (shaderConfig.options.mslOptions.argument_buffers) {
+ 			for (auto& db : shaderConfig.dynamicBufferDescriptors) {
+ 				if (db.stage == shaderConfig.options.entryPointStage) {
+-					pMSLCompiler->add_dynamic_buffer(db.descriptorSet, db.binding, db.index);
++					compiler->add_dynamic_buffer(db.descriptorSet, db.binding, db.index);
  				}
  			}
  		}
 -		conversionResult.msl = pMSLCompiler->compile();
++		};
++		configureCompiler(pMSLCompiler);
++		if (shaderConfig.options.transformFeedback) static_cast<trames::tf::Compiler*>(pMSLCompiler)->configure_raster([&](CompilerMSL& compiler) { configureCompiler(&compiler); });
 +		if (shaderConfig.options.transformFeedback) {
 +            auto program = static_cast<trames::tf::Compiler*>(pMSLCompiler)->compile_feedback();
 +            conversionResult.msl = std::move(program.source);

@@ -146,6 +146,7 @@ bool mvkTFDraw(MVKCommandEncoder* encoder, uint32_t vertices, uint32_t instances
     encoder->setComputeBytes(metal,&params,sizeof(params),0);
     [metal setBuffer:input offset:inputOffset atIndex:1];mvkTFBind(metal,arguments,2);
     encoder->setComputeBytes(metal,config,sizeof(config),3);[metal setBuffer:tf.fault offset:0 atIndex:4];
+    [metal setBuffer:(indexed ? index.mtlBuffer : tf.fault) offset:(indexed ? index.offset : 0) atIndex:5];
     mvkTFDispatch(encoder,metal,MVKTFParameters,1);
     if (indexed) {
         uint32_t kind=indexType==16 ? MVKTFCopyIndices16 : MVKTFCopyIndices32;

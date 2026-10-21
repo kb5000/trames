@@ -216,6 +216,7 @@ Program Compiler::compile_feedback() {
     // Vulkan captures the unmodified vertex output. Coordinate fixes belong in
     // replay, never in the data captured for the application.
     Compiler raster(ir);
+    if (raster_configuration_) raster_configuration_(raster);
     auto raster_options = msl_options;
     raster_options.capture_output_to_buffer = false;
     raster_options.vertex_for_tessellation = false;

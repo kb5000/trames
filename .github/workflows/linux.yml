@@ -658,6 +658,7 @@ jobs:
             target/moltenvk-patched/ios-arm64-*/build.json
           key: ${{ runner.os }}-moltenvk-ios-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**', 'crates/trames-vulkan/native/transform-feedback/**') }}
       - name: Run original MoltenVK Metal resource and Mesa GLSL paths
+        id: native_runtime
         run: |
           mkdir -p target/zink-metal-native
           python3 scripts/prepare-vulkan.py --apple --source-build
@@ -685,10 +686,7 @@ jobs:
             fi
           fi
           if [[ '${{ needs.scope.outputs.zink_tf_only }}' == true ]]; then
-            command -v glslangValidator >/dev/null || brew install glslang
-            python3 tests/integration/vulkan-native-tf-runtime.py --include target/vulkan-upstream/headers/Vulkan-Headers-cfebfc96b2b0bce93da7d12f2c14cc01793ae25c/include --shader target/zink-native-bundle/shaders/vulkan-feedback.spv --library "$native_moltenvk_dir/libMoltenVK.a" --output target/vulkan-tf-runtime-metal
-            python3 tests/integration/vulkan-feedback.py --store target/zink-native-bundle/store --output target/vulkan-feedback-metal --require-feedback
-            python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-tf-es3-metal --stage es3
+            : # TF clients execute as independent affected checks below.
           elif [[ '${{ needs.scope.outputs.zink_divisor_only }}' == true ]]; then
             python3 tests/integration/vulkan-divisor.py --store target/zink-native-bundle/store --output target/vulkan-divisor-metal
             python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-divisor-instancing-metal --stage instancing
@@ -701,7 +699,21 @@ jobs:
           elif [[ '${{ needs.scope.outputs.zink_mrt_only }}' == true && '${{ needs.scope.outputs.zink_mesa_only }}' != true ]]; then
             python3 tests/integration/vulkan-feedback.py --store target/zink-native-bundle/store --output target/vulkan-feedback-metal
           fi
+      - name: Execute public native Vulkan TF and raster replay
+        if: always() && !cancelled() && steps.native_runtime.outcome == 'success' && needs.scope.outputs.zink_tf_only == 'true'
+        run: |
+          command -v glslangValidator >/dev/null || brew install glslang
+          native_moltenvk_dir="$(python3 scripts/build-moltenvk.py --platform macos --arch arm64)"
+          python3 tests/integration/vulkan-native-tf-runtime.py --include target/vulkan-upstream/headers/Vulkan-Headers-cfebfc96b2b0bce93da7d12f2c14cc01793ae25c/include --shader target/zink-native-bundle/shaders/vulkan-feedback.spv --library "$native_moltenvk_dir/libMoltenVK.a" --output target/vulkan-tf-runtime-metal
+      - name: Execute ordinary guest Vulkan and original Mesa GLES3 TF
+        if: always() && !cancelled() && steps.native_runtime.outcome == 'success' && needs.scope.outputs.zink_tf_only == 'true'
+        run: |
+          export TRAMES_RUNNER="$PWD/target/release/trames-run"
+          export TRAMES_VULKAN_TRACE=1
+          python3 tests/integration/vulkan-feedback.py --store target/zink-native-bundle/store --output target/vulkan-feedback-metal --require-feedback
+          python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-tf-es3-metal --stage es3
       - name: Compile corrected native iOS driver without packaging an app
+        if: success() || (!cancelled() && needs.scope.outputs.zink_tf_only == 'true')
         run: python3 scripts/build-moltenvk.py --platform ios --arch arm64 > target/zink-metal-native/ios-driver-dir.txt
       - uses: actions/cache/save@v4
         if: always() && steps.native_driver_cache_macos.outputs.cache-hit != 'true'
