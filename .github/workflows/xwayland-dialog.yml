@@ -16,7 +16,7 @@ defaults:
     shell: bash
 concurrency:
   group: xwayland-dialog-${{ github.ref_name }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   linux:
     runs-on: ubuntu-24.04
@@ -169,7 +169,7 @@ jobs:
           cargo build -p trames-ffi --release --locked
           xcrun clang -O2 -Wall -Wextra -Werror -fobjc-arc -dynamiclib tests/fixtures/zink-metal-pixels.m -framework Metal -framework Foundation -o target/zink-metal-pixels.dylib
           export TRAMES_VULKAN_TRACE=1 MTL_DEBUG_LAYER=1 MTL_DEBUG_LAYER_ERROR_MODE=nslog MTL_SHADER_VALIDATION=1 MVK_CONFIG_DEBUG=1 MVK_CONFIG_SYNCHRONOUS_QUEUE_SUBMITS=1
-          python3 tests/integration/xwayland-dialog.py --native-wsi --ffi target/release/libtrames_ffi.dylib --store target/xwayland-dialog-inputs/store --output target/dialog-metal --metal-validator target/zink-metal-pixels.dylib 2>&1 | tee target/dialog-metal.log
+          python3 -c 'import subprocess,sys; sys.exit(subprocess.run(sys.argv[1:], timeout=240).returncode)' python3 tests/integration/xwayland-dialog.py --native-wsi --ffi target/release/libtrames_ffi.dylib --store target/xwayland-dialog-inputs/store --output target/dialog-metal --metal-validator target/zink-metal-pixels.dylib 2>&1 | tee target/dialog-metal.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
