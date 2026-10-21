@@ -28,6 +28,7 @@ jobs:
           toolchain: nightly-2026-10-16
           components: rustfmt, clippy
       - name: Build only current Vulkan bridge and embedding
+        id: runtime
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -36,7 +37,7 @@ jobs:
           cargo fmt --all --check
           if python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("dialog_runtime_reuse")'; then
             python3 - <<'PYCODE'
-          import io,json,os,subprocess,urllib.request,zipfile
+          import json,os,subprocess,urllib.request
           p=json.load(open('.github/ios-validation-plan.json'))['dialog_runtime_reuse']
           subprocess.run(['git','fetch','--depth=1','origin',p['sha']],check=True)
           subprocess.run(['git','diff','--exit-code',p['sha'],'HEAD','--','crates','accelerator','Cargo.toml','Cargo.lock','vendor','.cargo','rust-toolchain.toml'],check=True)
@@ -47,14 +48,7 @@ jobs:
           assert run['head_sha']==p['sha'] and run['path']=='.github/workflows/xwayland-dialog.yml'
           job=next(j for j in get('actions/runs/'+str(p['run'])+'/jobs')['jobs'] if j['name']=='linux')
           assert any(x['name']=='Build only current Vulkan bridge and embedding' and x['conclusion']=='success' for x in job['steps'])
-          artifacts=get('actions/runs/'+str(p['run'])+'/artifacts')['artifacts']
-          artifact=next(x for x in artifacts if x['name']=='dialog-linux-runtime' and not x['expired'])
-          req=urllib.request.Request(artifact['archive_download_url'],headers={'Authorization':'Bearer '+os.environ['GH_TOKEN']})
-          with urllib.request.urlopen(req) as response:archive=zipfile.ZipFile(io.BytesIO(response.read()))
-          assert set(archive.namelist())=={'trames-run','libtrames_ffi.so'}
-          os.makedirs('target/release',exist_ok=True)
-          archive.extractall('target/release')
-          os.chmod('target/release/trames-run',0o755)
+          with open(os.environ['GITHUB_OUTPUT'],'a') as output:output.write('run='+str(p['run'])+'\n')
           print('Reuse identical-source host binaries and their passed Vulkan31/Clippy checks; run only affected integration validation.')
           PYCODE
           else
@@ -62,6 +56,16 @@ jobs:
             cargo test -p trames-vulkan --release --lib --locked
             cargo build -p trames-cli -p trames-ffi --release --locked
           fi
+      - uses: actions/download-artifact@v4
+        if: steps.runtime.outputs.run
+        with:
+          name: dialog-linux-runtime
+          path: target/release
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.runtime.outputs.run }}
+      - name: Restore executable permission for verified runtime
+        if: steps.runtime.outputs.run
+        run: chmod 755 target/release/trames-run
       - uses: actions/upload-artifact@v4
         with:
           name: dialog-linux-runtime
