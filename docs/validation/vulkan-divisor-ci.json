@@ -1,0 +1,161 @@
+{
+  "date": "2026-10-21",
+  "source_sha": "5dd69304b1e71f7e9c4512ec8699fc9ce6de41b0",
+  "workflow_run": 39579538279,
+  "conclusion": "success",
+  "physical_ipad": false,
+  "ipa_generated": false,
+  "jobs": {
+    "linux": 119153478295,
+    "apple": 119155759231
+  },
+  "verified_archives": {
+    "linux": {
+      "artifact_id": 12335708722,
+      "sha256": "f75f299aa7dac92840b62699976930d8633d77539c9d099054ae6782a7e74007",
+      "bytes": 12918,
+      "entries": 25,
+      "all_crc_verified": true
+    },
+    "metal": {
+      "artifact_id": 12336014274,
+      "sha256": "5803ede79cc996bd2f244ed7a2815bc69885ca514b87196dba7f8b77dca04877",
+      "bytes": 49555,
+      "entries": 22,
+      "all_crc_verified": true
+    },
+    "guest_bundle": {
+      "artifact_id": 12334959890,
+      "sha256": "b9c9d71236a143a6a67389199d4b418ca41e8ed8d8c17114e4ae1f9e24848b9a",
+      "bytes": 282683883,
+      "source_bound_inputs_verified_on_apple": true
+    }
+  },
+  "linux": {
+    "physical_ipad": false,
+    "cpu_vulkan_reference_diagnostic": true,
+    "cases": {
+      "native": {
+        "exit_code": 0,
+        "passed": true
+      },
+      "guest": {
+        "exit_code": 0,
+        "passed": true
+      },
+      "nonzero_first_instance_rejected": {
+        "exit_code": 134,
+        "passed": true
+      }
+    },
+    "sha256": {
+      "runner": "609acab06973dff5593a69d2e6fa48f275cb04066869606686bbec7b16d73639",
+      "client": "d9058a1670aef42f228dfbb99d54ef9e08159cce277e129e3d12cda89e504e65",
+      "icd": "48c790d1e54c33eb52b0b3c1d82547b329f52694b0fc2ac5bb1da04f235e15cc",
+      "vulkan-divisor.vert.spv": "6b40d7128f7fcadf2e853863d62d49a1f2b12521292fe299bf27580261dbe1ff",
+      "vulkan-divisor.frag.spv": "469b32739a48e58d8a93d1f76181cd59be1ee802fa581452dce08679f038db1f"
+    },
+    "passed": true,
+    "cleanup_exit": 0
+  },
+  "metal": {
+    "physical_ipad": false,
+    "cpu_vulkan_reference_diagnostic": false,
+    "cases": {
+      "guest": {
+        "exit_code": 0,
+        "passed": true
+      },
+      "nonzero_first_instance_rejected": {
+        "exit_code": 134,
+        "passed": true
+      }
+    },
+    "sha256": {
+      "runner": "9af5f5a82534a395827fe5e1d9b32115ecbf607316abf70bb29b1be5a29051d4",
+      "client": "d9058a1670aef42f228dfbb99d54ef9e08159cce277e129e3d12cda89e504e65",
+      "icd": "48c790d1e54c33eb52b0b3c1d82547b329f52694b0fc2ac5bb1da04f235e15cc",
+      "vulkan-divisor.vert.spv": "6b40d7128f7fcadf2e853863d62d49a1f2b12521292fe299bf27580261dbe1ff",
+      "vulkan-divisor.frag.spv": "469b32739a48e58d8a93d1f76181cd59be1ee802fa581452dce08679f038db1f"
+    },
+    "passed": true,
+    "cleanup_exit": 0
+  },
+  "native_cached_builds": {
+    "ios": {
+      "inputs": {
+        "platform": "ios",
+        "arch": "arm64",
+        "xcode": "Xcode 16.4\nBuild version 16F6\n",
+        "sdk": "18.5",
+        "patch_sha256": "78ccd845056b7251def221519cd130a2baefd43857c622d463d36cab3a54eed3",
+        "recipe_sha256": "e57c3241812658e16afbb66938d5d62f169dadd284101aca77eb4f93f6be1291",
+        "timestamp_patch_sha256": "a684dee2d0b5fdc1ecf747d032c942ace248e1b402566bc93f213a33c55d245e",
+        "manifest_sha256": "76d7b3f2a3dd80d803e9a1ca0161de2f0bd673a1620d9c020f0342039ea04ee5",
+        "upstream_commit": "db66022459ffb663aa2b50f6b018bc2e124f5edf"
+      },
+      "original_transfer_sha256": "7c050a2724cc75170b789557d826ac3614e08bd129b00b1dcf49a0a375e75e70",
+      "patched_transfer_sha256": "2e902bfacf12526263801bd4661c286b3d2ed7ddb7ea79d660c20af892d641ed",
+      "original_device_sha256": "e93c8fe096d9c9f8c0b02da6443bc820dc42ca4340b122cc8dd11721ad7e9b8d",
+      "patched_device_sha256": "f5bb7a347f292e3a1ff5a2b1c312bf544336a406f0f168b399cd4d1fbb29e56a",
+      "library_sha256": "ee8b490ae7984ff7386d77d0d004b91ca8216b7e9d75ab45ef02492c39ece6b4"
+    },
+    "macos": {
+      "inputs": {
+        "platform": "macos",
+        "arch": "arm64",
+        "xcode": "Xcode 16.4\nBuild version 16F6\n",
+        "sdk": "15.5",
+        "patch_sha256": "78ccd845056b7251def221519cd130a2baefd43857c622d463d36cab3a54eed3",
+        "recipe_sha256": "e57c3241812658e16afbb66938d5d62f169dadd284101aca77eb4f93f6be1291",
+        "timestamp_patch_sha256": "a684dee2d0b5fdc1ecf747d032c942ace248e1b402566bc93f213a33c55d245e",
+        "manifest_sha256": "76d7b3f2a3dd80d803e9a1ca0161de2f0bd673a1620d9c020f0342039ea04ee5",
+        "upstream_commit": "db66022459ffb663aa2b50f6b018bc2e124f5edf"
+      },
+      "original_transfer_sha256": "7c050a2724cc75170b789557d826ac3614e08bd129b00b1dcf49a0a375e75e70",
+      "patched_transfer_sha256": "2e902bfacf12526263801bd4661c286b3d2ed7ddb7ea79d660c20af892d641ed",
+      "original_device_sha256": "e93c8fe096d9c9f8c0b02da6443bc820dc42ca4340b122cc8dd11721ad7e9b8d",
+      "patched_device_sha256": "f5bb7a347f292e3a1ff5a2b1c312bf544336a406f0f168b399cd4d1fbb29e56a",
+      "library_sha256": "7b6c75c6dcf588acbe6101ed88c7ab622ea2c6f3df57b4d8a4ba78b2d11deeab"
+    }
+  },
+  "checked": {
+    "vulkan_tests_per_host": 27,
+    "strict_clippy": true,
+    "ios_ffi_check": true,
+    "divisor_draws_per_path": 18,
+    "divisor_pixels_per_path": 9216,
+    "original_mesa_instancing_pixels_per_host": 128,
+    "first_instance_rejection": true
+  },
+  "original_mesa": {
+    "version": "25.1.9-r0",
+    "linux_instanced_arrays": true,
+    "metal_instanced_arrays": true,
+    "linux_transform_feedback": true,
+    "metal_transform_feedback": false,
+    "linux_gles3_configs": 1,
+    "metal_gles3_configs": 0,
+    "linux_gles3_rendering_passed": true,
+    "metal_gles3_rendering_passed": false,
+    "linux_mrt_pixels": 512,
+    "linux_tf_scalars": 12,
+    "version_overrides": false
+  },
+  "native_divisor_properties": {
+    "linux": {
+      "maximum": 4294967295,
+      "zero": true
+    },
+    "metal": {
+      "maximum": 1073741824,
+      "zero": true
+    }
+  },
+  "reused": "Passed unchanged image/stencil, standalone query/TF algorithms and CPU/MMU/Linux/network/UI acceptance. Native MoltenVK source/patches/recipe unchanged; Mac/iOS library inputs and hashes verified. This run adds original Mesa GLES3 TF data checks on Linux.",
+  "remaining": [
+    "Apple native GPU transform feedback",
+    "Depth-clip-enable, custom-border-color and line-rasterization rendering gaps",
+    "Further GLES3/Vulkan conformance and Firefox GPU/WSI first-frame acceptance"
+  ]
+}

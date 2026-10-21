@@ -145,3 +145,8 @@ Metal原版Mesa同样报告depth-buffer-float=1、instanced-arrays=0，此外TF=
 Linux原版签名Mesa现已创建 `OpenGL ES 3.0 Mesa 25.1.9`，MRT 512像素及TF 12个
 输出值通过；标准OpenGL实例化绘制也完成128像素检查。没有强制版本或扩展。
 Apple原生GPU TF及其他渲染状态继续推进，不能把Linux结果当成iPad已完整可用。
+
+该批次[CI 39579538279](https://github.com/kb5000/trames/actions/runs/39579538279)已全部通过：
+云端Metal同样完成Vulkan divisor输入及Mesa实例化像素检查，两端各27项模块测试与
+iOS FFI检查通过。Metal的instanced-arrays=1、TF=0，因此ES3 configs仍为0；
+Linux为真实ES3 context/MRT/TF数据通过。证据见[divisor摘要](vulkan-divisor-ci.json)。

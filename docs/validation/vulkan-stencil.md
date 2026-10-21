@@ -81,3 +81,7 @@ source-bound bundle和native build metadata均已校验，见[证据摘要](vulk
 原版Mesa在Linux/Metal均报告 `ARB_depth_buffer_float=1` 和 `ARB_instanced_arrays=0`；
 Linux的TF=1、Metal的TF=0。两边的ES3 configs均为0，JSON明确保留 `passed=false`。
 仅追加证据不重复上述验收；没有iPad真机验收或IPA，也未公开Firefox原始数据。
+
+
+后续[divisor批次](vulkan-divisor.md)已经接通本文列出的实例输入缺口，并通过Linux/
+云端Metal数据验收。Linux原版Mesa现已跑通真实GLES3/MRT/TF；Apple仍待原生GPU TF。

@@ -51,8 +51,27 @@ python3 tests/integration/zink-es3.py --store target/zink-inputs/store \
 
 ## 边界
 
-Apple Metal数据与iOS编译检查由本批CI验证，完成后追加。Apple仍缺原生GPU TF，
+Apple Metal数据与iOS编译检查已通过，详见下方记录。Apple仍缺原生GPU TF，
 不把Linux的GLES3结果当作iPad已支持。Mesa仍对缺少custom-border-color、
 line-rasterization及depth-clip-enable给出警告；本探针的几何处于clip范围内。
 完整GLES3/Vulkan conformance、其他渲染状态、Firefox GPU首帧/WSI交接及iPad体验
 继续单独验收；没有构建IPA或公开Firefox原始诊断。
+
+
+## 同源 CI 完成
+
+源码 [5dd6930](https://github.com/kb5000/trames/commit/5dd69304b1e71f7e9c4512ec8699fc9ce6de41b0)
+的 [CI 39579538279](https://github.com/kb5000/trames/actions/runs/39579538279) 全部通过。
+Linux原生/guest与Apple Paravirtual GPU guest/原版loader分别完成18次绘制、
+9,216个输入速率像素、非法firstInstance拒绝，以及原版Mesa实例化的128个像素。
+实际native maximum为Linux 4,294,967,295、Metal 1,073,741,824，均支持zero-divisor，
+按各自查询结果测试最大值，没有用固定值覆盖driver。
+
+Linux原版Mesa真实GLES3 context的MRT 512像素及TF 12个标量通过。两边
+`ARB_instanced_arrays=1`；Apple `EXT_transform_feedback=0`，因此ES3 configs=0
+并明确记录 `passed=false`。两边27项库测试、严格Clippy和Apple iOS FFI检查通过。
+
+两个证据ZIP的SHA-256及全部CRC、跨宿主client/ICD/两份SPIR-V和Mesa客户端的
+精确同一性、source-bound bundle、原版Mac/iOS库输入与SHA均已校验。
+见[证据摘要](vulkan-divisor-ci.json)。仅追加文档不重复上述验收。
+原版驱动库直接复用已验证缓存，没有无谓重编依赖；不是iPad真机或IPA验收。

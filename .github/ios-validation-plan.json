@@ -1,31 +1,17 @@
 {
-  "base_sha": "414416c0af22d13344548359bffd4d0dba9936f5",
+  "base_sha": "5dd69304b1e71f7e9c4512ec8699fc9ce6de41b0",
   "native_scope": "zink-gles",
   "zink_mrt_only": true,
-  "zink_divisor_only": true,
-  "reason": "Native EXT vertex input rate/zero divisor, owned pipeline state and exact instance buffer footprints. Validate changed native/guest inputs, original Mesa instancing and real GLES3/TF gate, plus iOS FFI. Reuse passed unchanged image/stencil, query, CPU/MMU/Linux/network/UI tests. Native MoltenVK source/patches unchanged; no IPA or raw Firefox inputs.",
+  "zink_metal_only_reuse": {
+    "run": 39579538279,
+    "sha": "5dd69304b1e71f7e9c4512ec8699fc9ce6de41b0"
+  },
+  "reason": "Evidence-only record: passed native/guest divisors and original Mesa instancing on Linux/Metal, true Linux GLES3 MRT/TF and explicit Apple GLES3-unavailable gate. Both ZIP SHA/CRCs, exact source-bound guest inputs and original Mac/iOS native cache hashes verified. Runtime/source unchanged; reuse all passed checks. No IPA or raw Firefox inputs.",
   "changed_file_sha256": {
-    ".github/workflows/linux.yml": "1f7ea70a183e080a3d2911df97475646156a10681301a44190433a117f68b5ce",
-    "accelerator/vulkan/graphics.inc": "fd8d22543ee3cbcbb808f9c3efb2a44a29644d1359492a254c3350a9cfbaaf38",
-    "accelerator/vulkan/icd.c": "19b2b65ff36b9784d9211fafc5b5fb0a90a64dd4d793cd4cdade292e44999ef5",
-    "accelerator/vulkan/queries.inc": "346deb6caccb976279e2128f2faa9df781ccd1b8c18b98576ae2f292d34ca80f",
-    "crates/trames-vulkan/src/backend.rs": "e365301bb0fb988a0d6898ae5180f15db13fea918f8e654a9c0903262f1449e4",
-    "crates/trames-vulkan/src/backend/feedback.rs": "74cab7605c96c659b426899753a16ada9b517d1bf8091ede7efba92fd741e013",
-    "crates/trames-vulkan/src/backend/graphics.rs": "46cef90dbde1566a52d606d1374f8332dd06d7763f54c90f74c70ffb72ae2f82",
-    "crates/trames-vulkan/src/backend/zink.rs": "2c9895006867e9be64fd2a418ce3d8048aefe6f1d51a40478fddb451bbd6e83d",
-    "docs/architecture/vulkan-compute.md": "50db97a9ecfdae6a4273b10ec053cf4b889a1e631422b4becc976e76d1d5e0ac",
-    "docs/architecture/zink.md": "2550683e89a2af38f4c9292548fe1d683ac8c52546db9965496a878dbbb98117",
-    "docs/validation/vulkan-divisor.md": "13697ed78a15cc50c4e8900248714bff68e8683a561123ff4e48ac4d4f2141f4",
-    "docs/validation/zink-es3.md": "f47faf8bb15069499428c24852087cfaeef30bfd2076dbfd841bf00321f75e0f",
-    "scripts/build-vulkan-fixtures.sh": "53a392b61549a026ae93c7d5fac8c8b4d8a1640bbfad1fb236d557ac5d4b2e23",
-    "scripts/ios-ci-scope.py": "6779703bf7da39a1fc9a96fe5c4b296162d4f1e2ee584c78a5caf2038f3c9ac0",
-    "scripts/prepare-zink-guest.py": "cf53d60e54b4a3f14600b29bb6b50ac33d3320e1b1c2c50eb72fb81813d51139",
-    "scripts/prepare-zink-native-bundle.py": "deeda68480d3f83a4646c43a7995e9374620af09f1759f5be64ee9e501b334d1",
-    "tests/fixtures/vulkan-divisor.c": "e8b93f4e4f0ca3b8072f431b97b997e6566d0f84e0dfa75903009c63c2802418",
-    "tests/fixtures/vulkan-divisor.frag": "7494e5f1bd5a301947ff76e889a66e697705cf6387e0884e981f0250c743e28f",
-    "tests/fixtures/vulkan-divisor.vert": "96a248b3d3010358793123cf0abf8e3556639e9284e8cb3a24e48b28c83c95f9",
-    "tests/fixtures/zink-es3.c": "0d13a45d95b9e2bdb04320a9aa4aa875aa38a3d27f784d608eebcd0da68999e6",
-    "tests/integration/vulkan-divisor.py": "11777d7507189d2ebfaa035e3352c404ab885f2abc8038f6a4367f3aef7db590",
-    "tests/integration/zink-es3.py": "c95561880026652dbe5043d4b240d9449742c6a6c4895e9f7be944be686a56e4"
+    "docs/architecture/zink.md": "ee1fae22d603b2e642ed0a6fff648914384ac61329e3b75333f64d75ecc23fe4",
+    "docs/validation/vulkan-divisor-ci.json": "4f23ca3b02d9e6e0dce99790d2fd781d83b3910d273cb281d354d5b176974bce",
+    "docs/validation/vulkan-divisor.md": "51789c0d739194dc478d330632c50315ae4ea1d34169d9644165982dee220941",
+    "docs/validation/vulkan-stencil.md": "81277e1ff6a8a97cd1209e107be3bc7584642196743a0c0b63c550a4d6ff4dca",
+    "docs/validation/zink-es3.md": "45bbcb4e0318f3d87db0704eb69dee0cbda9215967bcc325b5b9e1d668f01872"
   }
 }

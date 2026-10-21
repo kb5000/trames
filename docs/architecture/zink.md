@@ -103,7 +103,7 @@ resize、close、重启和旧帧保活已在Linux参考及Apple Metal通过；Ap
 - 九种核心dynamic graphics states及原生命令、discard/depth-bias和point/line/triangle拓扑。
   当前line width为1、depth-bias clamp为0，未实现的静态bias参数会明确失败。
 - `VK_EXT_vertex_attribute_divisor`：按原版driver查询/启用rate及zero-divisor、maximum；
-  接通pipeline pNext和独立binding的原生提取速率。末次实例元素按divisor计算，核心divisor1
+  接通pipeline pNext和独立binding的原生提取速率，Linux与云端Metal像素验收均通过。末次实例元素按divisor计算，核心divisor1
   保留加法快路。EXT profile对非1 divisor限制firstInstance=0；不宣告KHR的额外属性。
   [实例输入/GLES3验证](../validation/vulkan-divisor.md)。
 - 真实`KHR_portability_subset`查询（仅宿主有该扩展时）让原版Mesa选择MoltenVK上游路径；
