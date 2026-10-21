@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Build the native GPU TF compiler against verified, unmodified SPIRV-Cross.
+"""Build the native GPU TF compiler against verified original SPIRV-Cross with two virtual dispatch hooks.
 
 This is an internal GPU engine acceptance, not extension advertisement. Apple
 acceptance executes captured vertex data and replay on Metal; Linux only checks
@@ -85,12 +85,12 @@ def main():
         name = 'vulkan-native-tf-u'+index_type
         subprocess.run([str(compiler), str(out/'vulkan-native-tf.spv'),
                         str(out/(name+'.metal')), str(out/(name+'.json')), index_type], check=True)
-    # Only the adapter is new. Every original dependency remains untouched and
+    # Only the adapter is new. Original algorithm bodies remain unchanged and
     # its archive/licenses are available alongside the acceptance source.
     inputs = [NATIVE/'compiler.hpp', NATIVE/'compiler.cpp', NATIVE/'assemble.metal', NATIVE/'metal.hpp', NATIVE/'metal.mm',
               ROOT/'tests/fixtures/vulkan-native-tf-metal.mm',
               ROOT/'tests/fixtures/vulkan-native-tf-compiler.cpp', ROOT/'tests/fixtures/vulkan-native-tf.vert',
-              ROOT/'tests/fixtures/vulkan-feedback.vert', ROOT/'scripts/vulkan-upstream.json', Path(__file__)]
+              ROOT/'tests/fixtures/vulkan-feedback.vert', ROOT/'patches/moltenvk/0004-allow-native-tf-entry-arguments.patch', ROOT/'scripts/vulkan-upstream.json', Path(__file__)]
     record = dict(upstream_sha256=item['sha256'], compiler_sha256=digest(compiler),
                   inputs={str(p.relative_to(ROOT)): digest(p) for p in inputs},
                   shaders={p.name: digest(p) for p in out.iterdir() if p.suffix in ('.spv', '.metal', '.json') and p.name != 'build.json'},

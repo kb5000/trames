@@ -139,16 +139,23 @@ def main():
     subprocess.run([os.environ.get('CC','cc'),'-std=c11','-O2','-Wall','-Wextra','-Werror','-I'+str(a.include.resolve()),'-c',str(c),'-o',str(obj)],check=True)
     link=[os.environ.get('CXX','c++'),str(obj),a.library,'-o',str(binary)]
     if platform.system()=='Darwin':
-        for framework in ('Metal','Foundation','IOKit','IOSurface','QuartzCore'):
+        for framework in ('Metal','Foundation','IOKit','IOSurface','QuartzCore','AppKit','CoreGraphics'):
             link+=['-framework',framework]
     subprocess.run(link,check=True)
+    def execute(command,name):
+        run=subprocess.run(command,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=60)
+        (out/(name+'.log')).write_text(run.stdout)
+        if run.returncode:
+            print(run.stdout,flush=True)
+            raise RuntimeError(f'{name}: exit {run.returncode}')
+        return run
     cases=[]
     for topology in range(6):
         for bits in (0,16,32):
             if bits and topology not in (2,4,5):continue
             for indirect in (0,1):
                 command=[str(binary),str(a.shader.resolve()),str(topology),str(bits),str(indirect)]
-                run=subprocess.run(command,check=True,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+                run=execute(command,f'topology-{topology}-index-{bits}-indirect-{indirect}')
                 line=next(s for s in run.stdout.splitlines() if s.startswith('tf-runtime-ok:'))
                 print(line,flush=True);cases.append(dict(topology=topology,index_bits=bits,indirect=bool(indirect),result=line))
     shaders=[]
@@ -159,9 +166,22 @@ def main():
     raster=out/'public-tf-raster.c';raster.write_text(raster_source())
     subprocess.run([os.environ.get('CC','cc'),'-std=c11','-O2','-Wall','-Wextra','-Werror','-I'+str(a.include.resolve()),'-c',str(raster),'-o',str(obj)],check=True)
     subprocess.run(link,check=True)
-    run=subprocess.run([str(binary),*shaders],check=True,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+    run=execute([str(binary),*shaders],'raster')
     raster_result=next(s for s in run.stdout.splitlines() if s.startswith('tf-raster-ok:'));print(raster_result,flush=True)
-    result=dict(raster=raster_result,cases=cases,source_sha256=hashlib.sha256(c.read_bytes()).hexdigest(),shader_sha256=hashlib.sha256(a.shader.read_bytes()).hexdigest())
+    # A real stage-in VBO containing restart indices catches invalid marker
+    # fetches and shader side effects, which topology-only shaders cannot see.
+    restart=raster_source().replace('VK_BUFFER_USAGE_VERTEX_BUFFER_BIT|VK_BUFFER_USAGE_STORAGE_BUFFER_BIT','VK_BUFFER_USAGE_VERTEX_BUFFER_BIT|VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_INDEX_BUFFER_BIT')
+    restart=restart.replace('.topology=VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST','.topology=VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,.primitiveRestartEnable=VK_TRUE')
+    restart=restart.replace('memcpy(allocations[0].data+768,positions,sizeof(positions));','memcpy(allocations[0].data+768,positions,sizeof(positions));uint32_t indices[]={2,3,4,0xffffffffu,2,3,4};memcpy(allocations[0].data+880,indices,sizeof(indices));')
+    restart=restart.replace('vkCmdDraw(c,3,1,2,4)','vkCmdBindIndexBuffer(c,allocations[0].buffer,880,VK_INDEX_TYPE_UINT32);vkCmdDrawIndexed(c,7,1,0,0,4)')
+    restart=restart.replace('captured[0]==1 && captured[1]==1','captured[0]==2 && captured[1]==2').replace('i<3;i++','i<6;i++').replace('4+i/3','4').replace('calls==3','calls==6').replace('exactly 3 VS calls','exactly 6 VS calls; indexed restart VBO')
+    raster.write_text(restart)
+    subprocess.run([os.environ.get('CC','cc'),'-std=c11','-O2','-Wall','-Wextra','-Werror','-I'+str(a.include.resolve()),'-c',str(raster),'-o',str(obj)],check=True)
+    subprocess.run(link,check=True)
+    run=execute([str(binary),*shaders],'restart-raster')
+    restart_result=next(s for s in run.stdout.splitlines() if s.startswith('tf-raster-ok:'));print(restart_result,flush=True)
+
+    result=dict(raster=raster_result,restart_raster=restart_result,cases=cases,source_sha256=hashlib.sha256(c.read_bytes()).hexdigest(),shader_sha256=hashlib.sha256(a.shader.read_bytes()).hexdigest())
     (out/'results.json').write_text(json.dumps(result,indent=2)+'\n')
 
 if __name__=='__main__':main()

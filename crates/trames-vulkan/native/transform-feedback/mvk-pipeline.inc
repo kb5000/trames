@@ -28,6 +28,7 @@ void MVKGraphicsPipeline::initTransformFeedback(const VkGraphicsPipelineCreateIn
         descriptor.threadGroupSizeIsMultipleOfThreadExecutionWidth = YES;
         if (valid) valid = compileTessVertexStageState(descriptor, functions, feedback);
         [descriptor release];
+        valid = valid && _mtlTessVertexStageState && _mtlTessVertexStageIndex16State && _mtlTessVertexStageIndex32State;
         if (!valid) { _hasValidMTLPipelineStates = false;return; }
 
         _tfCaptureStride = functions[0].shaderConversionResults.transformFeedbackStride;

@@ -23,10 +23,11 @@ int main(int argc, char** argv) {
         }
         compiler.set_msl_options(options);
         const auto program = compiler.compile_feedback();
+        if (!program.capture_stride || program.capture_stride > 2048) throw std::runtime_error("invalid Metal capture stride");
         std::ofstream output(argv[2]); output << program.source;
         std::ofstream metadata(argv[3]);
         metadata << "{\"entry\":\"" << program.capture_entry << "\",\"buffers\":" << program.buffers
-                 << ",\"scalars\":" << program.scalars << ",\"strides\":[";
+                 << ",\"capture_stride\":" << program.capture_stride << ",\"scalars\":" << program.scalars << ",\"strides\":[";
         for (unsigned i = 0; i < 4; ++i) metadata << (i ? "," : "") << program.strides[i];
         metadata << "]}\n";
         if (!output || !metadata) throw std::runtime_error("could not write generated shader");

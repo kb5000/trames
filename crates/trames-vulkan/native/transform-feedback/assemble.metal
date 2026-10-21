@@ -131,7 +131,7 @@ kernel void trames_tf_byte_count(const device uint* counter [[buffer(0)]],
 // out: TFParams(16 words), raw draw(8), MTLStageInRegion(6), dispatch(3), error.
 kernel void trames_tf_parameters(constant TFParams& base [[buffer(0)]],
     const device uint* input [[buffer(1)]], device uint* out [[buffer(2)]],
-    constant uint4& config [[buffer(3)]], uint tid [[thread_position_in_grid]]) {
+    constant uint4& config [[buffer(3)]], device atomic_uint& fault [[buffer(4)]], uint tid [[thread_position_in_grid]]) {
     if (tid) return;
     uint n = input[0], instances = input[1];
     bool valid = ulong(n)*instances <= base.mapCapacity/3u;
@@ -144,6 +144,7 @@ kernel void trames_tf_parameters(constant TFParams& base [[buffer(0)]],
     out[27] = p.vertices;out[28] = p.instances;out[29] = 1;
     out[30] = (p.vertices+config.y-1)/config.y;out[31] = p.instances;out[32] = 1;
     out[33] = !valid;
+    if (!valid) atomic_store_explicit(&fault,1u,memory_order_relaxed);
 }
 kernel void trames_tf_copy_indices16(const device ushort* input [[buffer(0)]],
     const device uint* raw [[buffer(1)]], device ushort* output [[buffer(2)]], device ushort* safe [[buffer(3)]], uint i [[thread_position_in_grid]]) {

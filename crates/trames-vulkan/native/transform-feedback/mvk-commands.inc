@@ -126,10 +126,26 @@ bool mvkTFDraw(MVKCommandEncoder* encoder, uint32_t vertices, uint32_t instances
     auto vertexState=!indexed ? pipeline->getTessVertexStageState() : indexType==16 ?
         pipeline->getTessVertexStageIndex16State() : pipeline->getTessVertexStageIndex32State();
     uint32_t config[]={uint32_t(indexed),uint32_t(vertexState.threadExecutionWidth),0,0};
+    // No CPU draw/count readback. A bounded emulation allocation failure must
+    // still surface through the original device/fence error mechanism instead
+    // of silently dropping a valid draw. Only this one error flag reaches CPU.
+    if (!tf.fault) {
+        id<MTLBuffer> fault=[encoder->getMTLDevice() newBufferWithLength:4 options:MTLResourceStorageModeShared];
+        if (!fault) { encoder->_cmdBuffer->setConfigurationResult(VK_ERROR_OUT_OF_DEVICE_MEMORY);return true; }
+        *(uint32_t*)fault.contents=0;tf.fault=fault;
+        MVKDevice* device=encoder->getDevice();
+        [encoder->_mtlCmdBuffer addCompletedHandler:^(id<MTLCommandBuffer>) {
+            if (*(uint32_t*)fault.contents) {
+                device->reportError(VK_ERROR_OUT_OF_DEVICE_MEMORY,"Indirect transform feedback exceeded its native GPU scratch allocation.");
+                device->markLost();
+            }
+            [fault release];
+        }];
+    }
     auto metal=mvkTFCompute(encoder,MVKTFParameters);
     encoder->setComputeBytes(metal,&params,sizeof(params),0);
     [metal setBuffer:input offset:inputOffset atIndex:1];mvkTFBind(metal,arguments,2);
-    encoder->setComputeBytes(metal,config,sizeof(config),3);
+    encoder->setComputeBytes(metal,config,sizeof(config),3);[metal setBuffer:tf.fault offset:0 atIndex:4];
     mvkTFDispatch(encoder,metal,MVKTFParameters,1);
     if (indexed) {
         uint32_t kind=indexType==16 ? MVKTFCopyIndices16 : MVKTFCopyIndices32;

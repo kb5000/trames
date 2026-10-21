@@ -533,7 +533,9 @@ jobs:
         if: needs.scope.outputs.native_scope == 'zink-sync' || needs.scope.outputs.native_scope == 'zink-gles'
         run: |
           cargo fmt --all --check
-          if [[ '${{ needs.scope.outputs.zink_feedback_only }}' == true ]]; then
+          if [[ '${{ needs.scope.outputs.zink_tf_only }}' == true ]]; then
+            echo 'Reuse passed exact-source Rust/ICD and iOS FFI checks; compile changed native GPU source below.'
+          elif [[ '${{ needs.scope.outputs.zink_feedback_only }}' == true ]]; then
             cargo clippy -p trames-vulkan --example feedback --locked -- -D warnings
           else
             cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
@@ -632,7 +634,9 @@ jobs:
       - name: Verify exact guest inputs, Apple modules and iOS embedding
         run: |
           python3 scripts/prepare-zink-native-bundle.py --verify --source-sha '${{ needs.scope.outputs.zink_guest_bundle_sha || github.sha }}'
-          if [[ '${{ needs.scope.outputs.zink_feedback_only }}' == true ]]; then
+          if [[ '${{ needs.scope.outputs.zink_tf_only }}' == true ]]; then
+            echo 'Reuse passed exact-source Rust/ICD and iOS FFI checks; compile changed native GPU source below.'
+          elif [[ '${{ needs.scope.outputs.zink_feedback_only }}' == true ]]; then
             cargo clippy -p trames-vulkan --example feedback --locked -- -D warnings
           elif [[ -z '${{ needs.scope.outputs.zink_guest_bundle_run }}' ]]; then
             cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings

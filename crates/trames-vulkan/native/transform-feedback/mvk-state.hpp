@@ -10,6 +10,7 @@ struct MVKTFBuffer {
 };
 struct MVKTFEncoderState {
     MVKTFBuffer outputs[4], counters, rows, map, draw, arguments, indices, safeIndices;
+    id<MTLBuffer> fault = nil; // retained by the native completion callback
     MVKTFQueryPool* query = nullptr;
     uint32_t queryIndex = 0;
     bool active = false;
