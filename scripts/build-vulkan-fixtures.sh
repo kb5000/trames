@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 bash scripts/build-vulkan-guest.sh
 mkdir -p tests/fixtures/bin target/vulkan-loader-sdk
 "${GLSLANG_VALIDATOR:-glslangValidator}" -V --target-env vulkan1.0 tests/fixtures/vulkan-feedback.vert -o tests/fixtures/bin/vulkan-feedback.spv
-for shader in vulkan-stencil.vert vulkan-stencil.frag vulkan-stencil-sample.frag; do
+for shader in vulkan-stencil.vert vulkan-stencil.frag vulkan-stencil-sample.frag vulkan-divisor.vert vulkan-divisor.frag; do
   "${GLSLANG_VALIDATOR:-glslangValidator}" -V --target-env vulkan1.0 "tests/fixtures/$shader" -o "tests/fixtures/bin/$shader.spv"
 done
 python3 - <<'PY'

@@ -109,7 +109,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateGraphicsPipelines(VkDevice d,VkPipelineCa
     if(info->flags || info->stageCount<1 || info->stageCount>2 || info->pTessellationState || info->subpass || info->basePipelineHandle)return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkPipelineShaderStageCreateInfo *vertex=NULL,*fragment=NULL;
     for(unsigned i=0;i<info->stageCount;i++){const VkPipelineShaderStageCreateInfo *s=&info->pStages[i];CHECK(s,VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);if(s->flags || s->pSpecializationInfo)return VK_ERROR_FEATURE_NOT_PRESENT;if(s->stage==VK_SHADER_STAGE_VERTEX_BIT && !vertex)vertex=s;else if(s->stage==VK_SHADER_STAGE_FRAGMENT_BIT && !fragment)fragment=s;else return VK_ERROR_FEATURE_NOT_PRESENT;}
-    const VkPipelineVertexInputStateCreateInfo *v=info->pVertexInputState;CHECK(v,VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);if(v->flags || v->vertexBindingDescriptionCount>16 || v->vertexAttributeDescriptionCount>16)return VK_ERROR_FEATURE_NOT_PRESENT;
+    const VkPipelineVertexInputStateCreateInfo *v=info->pVertexInputState;if(!v || v->sType!=VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;if(v->flags || v->vertexBindingDescriptionCount>16 || v->vertexAttributeDescriptionCount>16)return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkPipelineInputAssemblyStateCreateInfo *a=info->pInputAssemblyState;CHECK(a,VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);if(a->flags || (a->primitiveRestartEnable && a->topology!=VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP && a->topology!=VK_PRIMITIVE_TOPOLOGY_LINE_STRIP && a->topology!=VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN))return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkPipelineViewportStateCreateInfo *p=info->pViewportState;CHECK(p,VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO);if(p->flags || p->viewportCount!=1 || p->scissorCount!=1)return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkPipelineRasterizationStateCreateInfo *r=info->pRasterizationState;CHECK(r,VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);if(r->flags || r->depthClampEnable || r->polygonMode>VK_POLYGON_MODE_POINT || r->lineWidth!=1.0f)return VK_ERROR_FEATURE_NOT_PRESENT;
@@ -120,7 +120,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateGraphicsPipelines(VkDevice d,VkPipelineCa
     const VkPipelineDynamicStateCreateInfo *dynamic=info->pDynamicState;unsigned states=0;
     if(dynamic){CHECK(dynamic,VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);if(dynamic->flags || dynamic->dynamicStateCount>9)return VK_ERROR_FEATURE_NOT_PRESENT;for(unsigned i=0;i<dynamic->dynamicStateCount;i++){unsigned bit=dynamic->pDynamicStates[i]<=VK_DYNAMIC_STATE_STENCIL_REFERENCE?1u<<dynamic->pDynamicStates[i]:0;if(!bit || (states&bit))return VK_ERROR_FEATURE_NOT_PRESENT;states|=bit;}}
     if(r->depthBiasEnable && !(states&(1u<<VK_DYNAMIC_STATE_DEPTH_BIAS)) && (r->depthBiasConstantFactor!=0 || r->depthBiasClamp!=0 || r->depthBiasSlopeFactor!=0))return VK_ERROR_FEATURE_NOT_PRESENT;
-    uint64_t config[23+8*8+15]={states|512|1024};config[22]=b->attachmentCount;
+    uint64_t config[23+8*8+15]={states|512|1024|2048};config[22]=b->attachmentCount;
     if(z){
         uint64_t *st=config+23+8*8;st[0]=z->stencilTestEnable;
         const VkStencilOpState *faces[2]={&z->front,&z->back};
@@ -136,8 +136,19 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateGraphicsPipelines(VkDevice d,VkPipelineCa
     }
     uint32_t constants[4];memcpy(constants,b->blendConstants,sizeof(constants));for(unsigned i=0;i<4;i++)config[18+i]=constants[i];
     uint64_t state[5]={(uint64_t)info->renderPass,a->topology,r->cullMode,r->frontFace,b->attachmentCount?b->pAttachments[0].colorWriteMask:0};
-    uint64_t bindings[16][3],attributes[16][4];
-    for(uint32_t i=0;i<v->vertexBindingDescriptionCount;i++){const VkVertexInputBindingDescription *x=&v->pVertexBindingDescriptions[i];bindings[i][0]=x->binding;bindings[i][1]=x->stride;bindings[i][2]=x->inputRate;}
+    uint64_t bindings[16][4],attributes[16][4];
+    for(uint32_t i=0;i<v->vertexBindingDescriptionCount;i++){const VkVertexInputBindingDescription *x=&v->pVertexBindingDescriptions[i];bindings[i][0]=x->binding;bindings[i][1]=x->stride;bindings[i][2]=x->inputRate;bindings[i][3]=1;}
+    if(v->pNext){
+        const VkPipelineVertexInputDivisorStateCreateInfoEXT *ds=v->pNext;
+        if(!(D(d)->enabled&32768) || !VALID(ds,VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT) || !ds->vertexBindingDivisorCount || ds->vertexBindingDivisorCount>16 || !ds->pVertexBindingDivisors)return VK_ERROR_FEATURE_NOT_PRESENT;
+        unsigned seen=0;
+        for(uint32_t i=0;i<ds->vertexBindingDivisorCount;i++){
+            const VkVertexInputBindingDivisorDescriptionEXT *x=ds->pVertexBindingDivisors+i;unsigned at=0;
+            while(at<v->vertexBindingDescriptionCount && bindings[at][0]!=x->binding)at++;
+            if(at==v->vertexBindingDescriptionCount || bindings[at][2]!=VK_VERTEX_INPUT_RATE_INSTANCE || (seen&(1u<<at)))return VK_ERROR_FEATURE_NOT_PRESENT;
+            seen|=1u<<at;bindings[at][3]=x->divisor;
+        }
+    }
     for(uint32_t i=0;i<v->vertexAttributeDescriptionCount;i++){const VkVertexInputAttributeDescription *x=&v->pVertexAttributeDescriptions[i];attributes[i][0]=x->location;attributes[i][1]=x->binding;attributes[i][2]=x->format;attributes[i][3]=x->offset;}
     return CALL(70,KEY(d),(uint64_t)info->layout,(uint64_t)vertex->module,fragment?(uint64_t)fragment->module:0,PTR(vertex->pName),fragment?PTR(fragment->pName):0,PTR(state),PTR(out),PTR(bindings),v->vertexBindingDescriptionCount,PTR(attributes),v->vertexAttributeDescriptionCount,a->primitiveRestartEnable,(uint64_t)cache,((z?((z->depthTestEnable?1UL:0)|(z->depthWriteEnable?2UL:0)|((uint64_t)z->depthCompareOp<<4)):0)|((uint64_t)r->polygonMode<<8)|(b->logicOpEnable?1024UL:0)|((uint64_t)b->logicOp<<12)|(r->rasterizerDiscardEnable?65536UL:0)|(r->depthBiasEnable?131072UL:0)),PTR(config));
 }

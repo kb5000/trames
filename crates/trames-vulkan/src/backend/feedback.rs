@@ -323,6 +323,7 @@ impl Backend {
             }
             // The vertex count is GPU-resident; do not read the counter back or
             // scan index/vertex data to validate application-owned draw inputs.
+            graphics::instance_base(&p.vertex_inputs.borrow(), a[3])?;
             for input in p.vertex_inputs.borrow().iter().filter(|x| x.extent != 0) {
                 if !r.vertices.contains_key(&input.binding) {
                     return invalid();

@@ -12,6 +12,11 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFeatures2(VkPhysicalDevice p,VkPhy
     vkGetPhysicalDeviceFeatures(p,&out->features);
     VkBaseOutStructure *next=out->pNext;
     for(unsigned i=0;next && i<64;i++,next=next->pNext){
+        if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT){
+            VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT *v=(void *)next;
+            v->vertexAttributeInstanceRateDivisor=(D(p)->capabilities[0]&2048)!=0;
+            v->vertexAttributeInstanceRateZeroDivisor=(D(p)->capabilities[0]&4096)!=0;
+        }
         if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT){
             VkPhysicalDeviceTransformFeedbackFeaturesEXT *v=(void *)next;
             v->transformFeedback=(D(p)->capabilities[0]&1024)!=0;v->geometryStreams=VK_FALSE;
@@ -37,6 +42,8 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceProperties2(VkPhysicalDevice p,VkP
     vkGetPhysicalDeviceProperties(p,&out->properties);
     VkBaseOutStructure *next=out->pNext;
     for(unsigned i=0;next && i<64;i++,next=next->pNext){
+        if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT)
+            checked(CALL(150,KEY(p),PTR(&((VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT *)next)->maxVertexAttribDivisor)));
         if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_PROPERTIES_EXT){
             uint64_t values[12];checked(CALL(137,KEY(p),PTR(values)));
             VkPhysicalDeviceTransformFeedbackPropertiesEXT *v=(void *)next;

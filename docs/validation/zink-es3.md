@@ -137,3 +137,11 @@ compatibility context明确报告 `GL_ARB_depth_buffer_float=1`；同一驱动�
 完成相同模板/深度/采样像素检查，两边26项模块测试及iOS FFI检查通过。
 Metal原版Mesa同样报告depth-buffer-float=1、instanced-arrays=0，此外TF=0；
 两边的ES3配置仍为0，未将capability-probe的正常结束记作ES3渲染通过。
+
+
+## 后续原生 divisor（2026-10-21）
+
+[实例输入批次](vulkan-divisor.md)接通真实原生rate/zero divisor及pipeline状态，
+Linux原版签名Mesa现已创建 `OpenGL ES 3.0 Mesa 25.1.9`，MRT 512像素及TF 12个
+输出值通过；标准OpenGL实例化绘制也完成128像素检查。没有强制版本或扩展。
+Apple原生GPU TF及其他渲染状态继续推进，不能把Linux结果当成iPad已完整可用。

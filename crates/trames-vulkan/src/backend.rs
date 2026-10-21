@@ -71,6 +71,7 @@ struct Device {
     maintenance2: bool,
     feedback: Option<vk::PhysicalDeviceTransformFeedbackPropertiesEXT<'static>>,
     feedback_extension: bool,
+    divisor: Option<zink::Divisor>,
     portability: Option<vk::PhysicalDevicePortabilitySubsetFeaturesKHR<'static>>,
     native: ash::Device,
     instance: Arc<Instance>,
@@ -1031,7 +1032,8 @@ impl Backend {
             || op == 121
             || op == 126
             || op == 133
-            || op == 137)
+            || op == 137
+            || op == 150)
             && a[0]
                 != if op == 3 {
                     self.instance_id
@@ -1055,6 +1057,15 @@ impl Backend {
             }
             133 => self.capabilities.write_portability(m, a[1])?,
             137 => self.capabilities.write_feedback(m, a[1])?,
+            150 => write(
+                m,
+                a[1],
+                &self
+                    .capabilities
+                    .divisor
+                    .map_or(0, |p| p.maximum)
+                    .to_le_bytes(),
+            )?,
             126 => {
                 self.capabilities.write_clipping(m, a[1])?;
             }
@@ -1299,6 +1310,9 @@ impl Backend {
                     .scalar_block_layout(a[5] & 2048 != 0);
                 let mut feedback = vk::PhysicalDeviceTransformFeedbackFeaturesEXT::default()
                     .transform_feedback(a[5] & 16384 != 0);
+                let mut divisor = vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT::default()
+                    .vertex_attribute_instance_rate_divisor(a[5] & 65536 != 0)
+                    .vertex_attribute_instance_rate_zero_divisor(a[5] & 131072 != 0);
                 let mut info = vk::DeviceCreateInfo::default()
                     .queue_create_infos(&queue)
                     .enabled_features(&features)
@@ -1314,6 +1328,9 @@ impl Backend {
                 }
                 if a[5] & 8192 != 0 {
                     info = info.push_next(&mut feedback);
+                }
+                if a[5] & 32768 != 0 {
+                    info = info.push_next(&mut divisor);
                 }
                 if let Some(ref mut subset) = portability {
                     info = info.push_next(subset);
@@ -1338,6 +1355,14 @@ impl Backend {
                     maintenance2: a[5] & 16 != 0,
                     feedback: self.capabilities.feedback.filter(|_| a[5] & 16384 != 0),
                     feedback_extension: a[5] & 8192 != 0,
+                    divisor: self
+                        .capabilities
+                        .divisor
+                        .filter(|_| a[5] & 65536 != 0)
+                        .map(|p| zink::Divisor {
+                            zero: p.zero && a[5] & 131072 != 0,
+                            ..p
+                        }),
                     portability: self.capabilities.portability,
                     native,
                     instance,

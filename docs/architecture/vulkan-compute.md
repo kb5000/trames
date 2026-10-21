@@ -150,6 +150,12 @@ preserve separate depth/stencil load/store and clear values; stencil operations,
 comparisons and depth comparison sampling execute on the original native GPU.
 See [depth/stencil acceptance](../validation/vulkan-stencil.md).
 
+Native EXT vertex attribute divisors support independently selected per-instance
+rates (including zero when the real feature is enabled), using copied pipeline
+pNext arrays. Buffer bounds follow the actual fetched instance elements. The EXT
+profile restricts non-one divisors to firstInstance=0; KHR properties are not
+advertised. See [divisor acceptance](../validation/vulkan-divisor.md).
+
 Pipelines copy static viewport/scissor and blend constants into owned compiler
 inputs. Each dynamic viewport/scissor must be set before drawing; draw checks recording/render-pass/
 pipeline compatibility. Buffer transfers remain outside render passes.

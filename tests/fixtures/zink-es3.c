@@ -132,27 +132,50 @@ static void textures(void) {
     glDeleteTextures(1,&tex);glDeleteProgram(cube);glDeleteBuffers(1,&buffer);
     puts("zink-textures-ok: distinct uploaded 2D mip levels, regenerated mips and all six cube faces sampled at LOD2 on GPU");fflush(stdout);
 }
+static void instancing(void) {
+    typedef void (*Divisor)(GLuint,GLuint);
+    typedef void (*Instances)(GLenum,GLint,GLsizei,GLsizei);
+    Divisor divisor=(Divisor)eglGetProcAddress("glVertexAttribDivisorARB");
+    Instances instances=(Instances)eglGetProcAddress("glDrawArraysInstancedARB");
+    require(divisor && instances,"original Mesa instancing entrypoints");
+    const char *vs="#version 120\n#extension GL_ARB_draw_instanced : require\nattribute vec2 position;attribute vec3 color;varying vec3 rgb;void main(){gl_Position=vec4(position.x/4.-.75+float(gl_InstanceIDARB)*.5,position.y,0,1);rgb=color;}";
+    const char *fs="#version 120\nvarying vec3 rgb;void main(){gl_FragColor=vec4(rgb,1);}";
+    GLuint v=shader(GL_VERTEX_SHADER,vs),f=shader(GL_FRAGMENT_SHADER,fs),p=glCreateProgram();
+    glAttachShader(p,v);glAttachShader(p,f);glBindAttribLocation(p,0,"position");glBindAttribLocation(p,1,"color");glLinkProgram(p);GLint linked;glGetProgramiv(p,GL_LINK_STATUS,&linked);require(linked,"instancing shader link");glUseProgram(p);
+    const GLfloat corners[]={-1,-1,1,-1,-1,1,-1,1,1,-1,1,1},colors[]={1,0,0,0,1,0};GLuint buffers[2];glGenBuffers(2,buffers);
+    glBindBuffer(GL_ARRAY_BUFFER,buffers[0]);glBufferData(GL_ARRAY_BUFFER,sizeof(corners),corners,GL_STATIC_DRAW);glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,0,NULL);glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER,buffers[1]);glBufferData(GL_ARRAY_BUFFER,sizeof(colors),colors,GL_STATIC_DRAW);glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,0,NULL);glEnableVertexAttribArray(1);
+    glBindFramebuffer(GL_FRAMEBUFFER,0);glViewport(0,0,8,8);
+    for(unsigned rate=2;rate<=3;rate++){
+        divisor(1,rate);glClearColor(0,0,0,0);glClear(GL_COLOR_BUFFER_BIT);instances(GL_TRIANGLES,0,6,4);glFinish();require(glGetError()==GL_NO_ERROR,"instanced draw");
+        unsigned char pixels[8*8*4];glReadPixels(0,0,8,8,GL_RGBA,GL_UNSIGNED_BYTE,pixels);require(glGetError()==GL_NO_ERROR,"read instanced pixels");
+        for(unsigned y=0;y<8;y++)for(unsigned x=0;x<8;x++){unsigned green=x/2>=rate;unsigned at=(y*8+x)*4;require(pixels[at]==(green?0:255) && pixels[at+1]==(green?255:0) && pixels[at+2]==0 && pixels[at+3]==255,"native instance divisor pixel");}
+    }
+    divisor(1,0);glDisableVertexAttribArray(1);glDeleteBuffers(2,buffers);glDeleteProgram(p);glDeleteShader(v);glDeleteShader(f);
+    puts("zink-instancing-ok: original Mesa divisor 2/3, four instances, tight color VBO and 128 exact GPU pixels");
+}
 int main(int argc, char **argv) {
+    int instanced=argc==2 && !strcmp(argv[1],"--instancing");
     int caps=argc==2 && !strcmp(argv[1],"--capabilities");
     int texture_only=argc==2 && !strcmp(argv[1],"--textures");
-    int es3=!(caps || texture_only || (argc==2 && !strcmp(argv[1],"--mrt")));
+    int es3=!(instanced || caps || texture_only || (argc==2 && !strcmp(argv[1],"--mrt")));
     PFNEGLGETPLATFORMDISPLAYEXTPROC get=(void *)eglGetProcAddress("eglGetPlatformDisplayEXT");require(get!=NULL,"platform display entrypoint");
     EGLDisplay display=get(EGL_PLATFORM_SURFACELESS_MESA,EGL_DEFAULT_DISPLAY,NULL);EGLint major,minor;
-    require(eglInitialize(display,&major,&minor),"initialize EGL");require(eglBindAPI(caps?EGL_OPENGL_API:EGL_OPENGL_ES_API),"bind GLES");
-    const EGLint attributes[]={EGL_SURFACE_TYPE,EGL_PBUFFER_BIT,EGL_RENDERABLE_TYPE,caps?EGL_OPENGL_BIT:es3?EGL_OPENGL_ES3_BIT_KHR:EGL_OPENGL_ES2_BIT,EGL_RED_SIZE,8,EGL_GREEN_SIZE,8,EGL_BLUE_SIZE,8,EGL_ALPHA_SIZE,8,EGL_NONE};
+    require(eglInitialize(display,&major,&minor),"initialize EGL");require(eglBindAPI((caps||instanced)?EGL_OPENGL_API:EGL_OPENGL_ES_API),"bind GLES");
+    const EGLint attributes[]={EGL_SURFACE_TYPE,EGL_PBUFFER_BIT,EGL_RENDERABLE_TYPE,(caps||instanced)?EGL_OPENGL_BIT:es3?EGL_OPENGL_ES3_BIT_KHR:EGL_OPENGL_ES2_BIT,EGL_RED_SIZE,8,EGL_GREEN_SIZE,8,EGL_BLUE_SIZE,8,EGL_ALPHA_SIZE,8,EGL_NONE};
     EGLConfig config;EGLint count=0;require(eglChooseConfig(display,attributes,&config,1,&count),"choose config");
-    printf("EGL %d.%d: %s configs=%d\n",major,minor,caps?"OpenGL":es3?"GLES3":"GLES2",count);fflush(stdout);require(count==1,"requested GLES config");
+    printf("EGL %d.%d: %s configs=%d\n",major,minor,(caps||instanced)?"OpenGL":es3?"GLES3":"GLES2",count);fflush(stdout);require(count==1,"requested GLES config");
     const EGLint size[]={EGL_WIDTH,8,EGL_HEIGHT,8,EGL_NONE},version[]={EGL_CONTEXT_CLIENT_VERSION,es3?3:2,EGL_NONE};
-    EGLSurface surface=eglCreatePbufferSurface(display,config,size);EGLContext context=eglCreateContext(display,config,EGL_NO_CONTEXT,caps?version+2:version);
+    EGLSurface surface=eglCreatePbufferSurface(display,config,size);EGLContext context=eglCreateContext(display,config,EGL_NO_CONTEXT,(caps||instanced)?version+2:version);
     require(context!=EGL_NO_CONTEXT && surface!=EGL_NO_SURFACE,"create context and surface");require(eglMakeCurrent(display,surface,surface,context),"make current");
     const char *renderer=(const char *)glGetString(GL_RENDERER);require(renderer && strstr(renderer,"zink"),"original Zink renderer");
     printf("GL_VERSION=%s\nGL_RENDERER=%s\n",glGetString(GL_VERSION),renderer);fflush(stdout);
     if(es3){GLint version_major=0;glGetIntegerv(GL_MAJOR_VERSION,&version_major);require(version_major>=3,"real GLES3 version");}
-    if(caps){
+    if(instanced)instancing();else if(caps){
         const char *extensions=(const char *)glGetString(GL_EXTENSIONS);require(extensions!=NULL,"compatibility extensions");
         const char *names[]={"GL_ARB_half_float_vertex","GL_ARB_internalformat_query","GL_ARB_map_buffer_range","GL_ARB_shader_texture_lod","GL_ARB_texture_float","GL_ARB_half_float_pixel","GL_ARB_texture_rg","GL_ARB_depth_buffer_float","GL_ARB_framebuffer_object","GL_EXT_texture_sRGB","GL_EXT_packed_float","GL_EXT_texture_array","GL_EXT_texture_shared_exponent","GL_EXT_transform_feedback","GL_ARB_draw_instanced","GL_ARB_instanced_arrays","GL_ARB_uniform_buffer_object","GL_EXT_texture_snorm","GL_NV_primitive_restart","GL_EXT_texture_type_2_10_10_10_REV"};
         for(unsigned i=0;i<sizeof(names)/sizeof(names[0]);i++){const char *found=strstr(extensions,names[i]);printf("%s=%d\n",names[i],found && (found==extensions || found[-1]==' ') && (found[strlen(names[i])]==' ' || found[strlen(names[i])]==0));}
     }else if(texture_only)textures();else draw(es3);require(eglMakeCurrent(display,EGL_NO_SURFACE,EGL_NO_SURFACE,EGL_NO_CONTEXT),"release context");
     require(eglDestroyContext(display,context) && eglDestroySurface(display,surface) && eglTerminate(display),"teardown");
-    puts(caps?"zink-capabilities-ok":texture_only?"zink-es2-textures-ok":es3?"zink-es3-ok":"zink-es2-mrt-ok");return 0;
+    puts(instanced?"zink-instancing-probe-ok":caps?"zink-capabilities-ok":texture_only?"zink-es2-textures-ok":es3?"zink-es3-ok":"zink-es2-mrt-ok");return 0;
 }

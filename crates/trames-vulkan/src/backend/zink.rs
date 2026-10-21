@@ -14,6 +14,14 @@ pub(super) const IMAGELESS: u64 = 128;
 pub(super) const SCALAR_LAYOUT: u64 = 256;
 pub(super) const PORTABILITY: u64 = 512;
 pub(super) const TRANSFORM_FEEDBACK: u64 = 1024;
+pub(super) const VERTEX_DIVISOR: u64 = 2048;
+pub(super) const ZERO_DIVISOR: u64 = 4096;
+
+#[derive(Clone, Copy)]
+pub(super) struct Divisor {
+    pub maximum: u32,
+    pub zero: bool,
+}
 
 #[derive(Default)]
 pub(super) struct Capabilities {
@@ -24,6 +32,7 @@ pub(super) struct Capabilities {
     portability_stride: u32,
     driver: Option<vk::PhysicalDeviceDriverProperties<'static>>,
     pub feedback: Option<vk::PhysicalDeviceTransformFeedbackPropertiesEXT<'static>>,
+    pub divisor: Option<Divisor>,
 }
 impl Capabilities {
     pub fn query(instance: &Instance, physical: vk::PhysicalDevice) -> Result<Self> {
@@ -62,6 +71,25 @@ impl Capabilities {
             &instance._entry,
             &instance.native,
         );
+        if has(ash::ext::vertex_attribute_divisor::NAME) {
+            let mut divisor = vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT::default();
+            let mut features = vk::PhysicalDeviceFeatures2::default().push_next(&mut divisor);
+            unsafe { queries.get_physical_device_features2(physical, &mut features) };
+            if divisor.vertex_attribute_instance_rate_divisor != 0 {
+                let mut limits = vk::PhysicalDeviceVertexAttributeDivisorPropertiesEXT::default();
+                let mut properties =
+                    vk::PhysicalDeviceProperties2::default().push_next(&mut limits);
+                unsafe { queries.get_physical_device_properties2(physical, &mut properties) };
+                result.divisor = Some(Divisor {
+                    maximum: limits.max_vertex_attrib_divisor,
+                    zero: divisor.vertex_attribute_instance_rate_zero_divisor != 0,
+                });
+                result.bits |= VERTEX_DIVISOR;
+                if divisor.vertex_attribute_instance_rate_zero_divisor != 0 {
+                    result.bits |= ZERO_DIVISOR;
+                }
+            }
+        }
         if has(ash::ext::transform_feedback::NAME) {
             let mut feedback = vk::PhysicalDeviceTransformFeedbackFeaturesEXT::default();
             let mut features = vk::PhysicalDeviceFeatures2::default().push_next(&mut feedback);
@@ -243,7 +271,7 @@ pub(super) fn device_extensions(
         flags |= 16 | 64;
     }
     // bit8 enables the timeline extension, bit2 separately enables its feature.
-    if flags & !32767 != 0
+    if flags & !262143 != 0
         || flags & 7 & !caps.bits != 0
         || flags & 2 != 0 && flags & 8 == 0
         || flags & 8 != 0 && caps.bits & TIMELINE == 0
@@ -258,6 +286,11 @@ pub(super) fn device_extensions(
         (128, RENDERPASS2, ash::khr::create_renderpass2::NAME),
         (256, IMAGELESS, ash::khr::imageless_framebuffer::NAME),
         (8192, TRANSFORM_FEEDBACK, ash::ext::transform_feedback::NAME),
+        (
+            32768,
+            VERTEX_DIVISOR,
+            ash::ext::vertex_attribute_divisor::NAME,
+        ),
     ] {
         if flags & flag != 0 {
             if caps.bits & cap == 0 {
@@ -272,6 +305,8 @@ pub(super) fn device_extensions(
     if flags & 512 != 0 && flags & 256 == 0
         || flags & 2048 != 0 && flags & 1024 == 0
         || flags & 16384 != 0 && flags & 8192 == 0
+        || flags & (65536 | 131072) != 0 && flags & 32768 == 0
+        || flags & 131072 != 0 && caps.bits & ZERO_DIVISOR == 0
     {
         return unsupported();
     }

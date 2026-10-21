@@ -42,6 +42,7 @@ jobs:
       zink_mrt_only: ${{ steps.scope.outputs.zink_mrt_only }}
       zink_feedback_only: ${{ steps.scope.outputs.zink_feedback_only }}
       zink_stencil_only: ${{ steps.scope.outputs.zink_stencil_only }}
+      zink_divisor_only: ${{ steps.scope.outputs.zink_divisor_only }}
       zink_mesa_only: ${{ steps.scope.outputs.zink_mesa_only }}
       zink_guest_bundle_run: ${{ steps.scope.outputs.zink_guest_bundle_run }}
       zink_guest_bundle_sha: ${{ steps.scope.outputs.zink_guest_bundle_sha }}
@@ -443,10 +444,10 @@ jobs:
           fi
           cargo build -p trames-cli --release --locked
           export VK_DRIVER_FILES="$(python3 -c 'from pathlib import Path; print(next(Path("/usr/share/vulkan/icd.d").glob("*lvp*")))')"
-          if [[ '${{ needs.scope.outputs.zink_feedback_only }}' != true ]]; then
+          if [[ '${{ needs.scope.outputs.zink_feedback_only }}' != true && '${{ needs.scope.outputs.zink_divisor_only }}' != true ]]; then
             cargo run -p trames-vulkan --example renderpass --release --locked
           fi
-          if [[ '${{ needs.scope.outputs.zink_stencil_only }}' != true ]]; then
+          if [[ '${{ needs.scope.outputs.zink_stencil_only }}' != true && '${{ needs.scope.outputs.zink_divisor_only }}' != true ]]; then
             cargo run -p trames-vulkan --example feedback --release --locked -- tests/fixtures/bin/vulkan-feedback.spv
           fi
           if [[ '${{ needs.scope.outputs.zink_mrt_only }}' != true ]]; then
@@ -460,13 +461,18 @@ jobs:
           export TRAMES_ZINK_CPU_REFERENCE=1
           if [[ '${{ needs.scope.outputs.native_scope }}' == zink-gles ]]; then
             if [[ '${{ needs.scope.outputs.zink_mrt_only }}' == true ]]; then
-              if [[ '${{ needs.scope.outputs.zink_feedback_only }}' == true || '${{ needs.scope.outputs.zink_stencil_only }}' == true ]]; then
+              if [[ '${{ needs.scope.outputs.zink_feedback_only }}' == true || '${{ needs.scope.outputs.zink_stencil_only }}' == true || '${{ needs.scope.outputs.zink_divisor_only }}' == true ]]; then
                 python3 tests/integration/zink-foundation.py --bootstrap-only --snapshot-store target/zink-native-bundle/store
               else
                 python3 tests/integration/zink-foundation.py --probe-only --require-render --snapshot-store target/zink-native-bundle/store
                 python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-es3-linux --stage graphics
               fi
-              if [[ '${{ needs.scope.outputs.zink_stencil_only }}' == true ]]; then
+              if [[ '${{ needs.scope.outputs.zink_divisor_only }}' == true ]]; then
+                python3 tests/integration/vulkan-divisor.py --store target/zink-native-bundle/store --output target/vulkan-divisor-linux --native-client target/zink-inputs/vulkan-divisor-host
+                python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-divisor-instancing-linux --stage instancing
+                python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-divisor-capabilities-linux --stage capabilities
+                python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-divisor-es3-linux --stage es3
+              elif [[ '${{ needs.scope.outputs.zink_stencil_only }}' == true ]]; then
                 python3 tests/integration/vulkan-stencil.py --store target/zink-native-bundle/store --output target/vulkan-stencil-linux --native-client target/zink-inputs/vulkan-stencil-host
                 python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-stencil-capabilities-linux --stage capabilities
                 python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-stencil-es3-linux --stage es3 --capability-probe
@@ -490,6 +496,10 @@ jobs:
             target/zink-es3-linux/
             target/vulkan-feedback-linux/
             target/vulkan-stencil-linux/
+            target/vulkan-divisor-linux/
+            target/zink-divisor-instancing-linux/
+            target/zink-divisor-capabilities-linux/
+            target/zink-divisor-es3-linux/
             target/zink-stencil-capabilities-linux/
             target/zink-stencil-es3-linux/
             target/zink-inputs/inputs.json
@@ -555,10 +565,10 @@ jobs:
           export MACOSX_DEPLOYMENT_TARGET=12.0
           export RUSTFLAGS="-C link-arg=-framework -C link-arg=IOKit -C link-arg=$(xcrun clang --print-runtime-dir)/libclang_rt.osx.a"
           cargo build -p trames-cli --release --locked
-          if [[ '${{ needs.scope.outputs.zink_feedback_only }}' != true && '${{ needs.scope.outputs.zink_mesa_only }}' != true ]]; then
+          if [[ '${{ needs.scope.outputs.zink_feedback_only }}' != true && '${{ needs.scope.outputs.zink_mesa_only }}' != true && '${{ needs.scope.outputs.zink_divisor_only }}' != true ]]; then
             cargo run -p trames-vulkan --example renderpass --release --locked 2>&1 | tee target/zink-metal-native/renderpass.log
           fi
-          if [[ '${{ needs.scope.outputs.zink_mesa_only }}' != true && '${{ needs.scope.outputs.zink_stencil_only }}' != true ]]; then
+          if [[ '${{ needs.scope.outputs.zink_mesa_only }}' != true && '${{ needs.scope.outputs.zink_stencil_only }}' != true && '${{ needs.scope.outputs.zink_divisor_only }}' != true ]]; then
             cargo run -p trames-vulkan --example feedback --release --locked -- target/zink-native-bundle/shaders/vulkan-feedback.spv 2>&1 | tee target/zink-metal-native/feedback.log
           fi
           if [[ '${{ needs.scope.outputs.zink_mrt_only }}' != true ]]; then
@@ -567,13 +577,18 @@ jobs:
           fi
           export TRAMES_RUNNER="$PWD/target/release/trames-run"
           export TRAMES_VULKAN_TRACE=1
-          if [[ '${{ needs.scope.outputs.zink_feedback_only }}' != true && '${{ needs.scope.outputs.zink_stencil_only }}' != true ]]; then
+          if [[ '${{ needs.scope.outputs.zink_feedback_only }}' != true && '${{ needs.scope.outputs.zink_stencil_only }}' != true && '${{ needs.scope.outputs.zink_divisor_only }}' != true ]]; then
             python3 tests/integration/zink-foundation.py --store target/zink-native-bundle/store --probe-only --require-render --output target/zink-metal
             if [[ '${{ needs.scope.outputs.zink_mrt_only }}' == true ]]; then
               python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-es3-metal --stage graphics
             fi
           fi
-          if [[ '${{ needs.scope.outputs.zink_stencil_only }}' == true ]]; then
+          if [[ '${{ needs.scope.outputs.zink_divisor_only }}' == true ]]; then
+            python3 tests/integration/vulkan-divisor.py --store target/zink-native-bundle/store --output target/vulkan-divisor-metal
+            python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-divisor-instancing-metal --stage instancing
+            python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-divisor-capabilities-metal --stage capabilities
+            python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-divisor-es3-metal --stage es3 --capability-probe
+          elif [[ '${{ needs.scope.outputs.zink_stencil_only }}' == true ]]; then
             python3 tests/integration/vulkan-stencil.py --store target/zink-native-bundle/store --output target/vulkan-stencil-metal
             python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-stencil-capabilities-metal --stage capabilities
             python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-stencil-es3-metal --stage es3 --capability-probe
@@ -606,6 +621,10 @@ jobs:
             target/zink-es3-metal/
             target/vulkan-feedback-metal/
             target/vulkan-stencil-metal/
+            target/vulkan-divisor-metal/
+            target/zink-divisor-instancing-metal/
+            target/zink-divisor-capabilities-metal/
+            target/zink-divisor-es3-metal/
             target/zink-stencil-capabilities-metal/
             target/zink-stencil-es3-metal/
             target/zink-native-bundle/checksums.json

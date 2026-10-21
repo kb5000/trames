@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('--store', type=Path, required=True)
 p.add_argument('--output', type=Path, required=True)
-p.add_argument('--stage', choices=('mrt', 'textures', 'graphics', 'es3', 'capabilities', 'all'), default='all')
+p.add_argument('--stage', choices=('mrt', 'textures', 'graphics', 'es3', 'capabilities', 'instancing', 'all'), default='all')
 p.add_argument('--runner', type=Path, default=ROOT/'target/release/trames-run')
 p.add_argument('--capability-probe', action='store_true', help='record absent GLES3 configs as an unavailable capability, without claiming rendering passed')
 p.add_argument('--timeout', type=float, default=180)
@@ -58,7 +58,7 @@ try:
         imports = []
         (a.output/(stage+'.stdout')).write_bytes(result.stdout)
         (a.output/(stage+'.stderr')).write_bytes(result.stderr)
-        marker = {'mrt': b'zink-es2-mrt-ok', 'textures': b'zink-textures-ok', 'es3': b'zink-es3-ok', 'capabilities': b'zink-capabilities-ok'}[stage]
+        marker = {'mrt': b'zink-es2-mrt-ok', 'textures': b'zink-textures-ok', 'es3': b'zink-es3-ok', 'capabilities': b'zink-capabilities-ok', 'instancing': b'zink-instancing-probe-ok'}[stage]
         passed = result.returncode == 0 and marker in result.stdout
         unavailable = (a.capability_probe and stage == 'es3' and result.returncode == 1
                        and b'GLES3 configs=0' in result.stdout

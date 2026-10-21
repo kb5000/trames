@@ -130,6 +130,7 @@ pub(super) struct VertexBinding {
     pub binding: u32,
     stride: u32,
     instance: bool,
+    divisor: u32,
     pub extent: u32,
 }
 // Core uncompressed color formats. Driver queries still decide which of these
@@ -491,7 +492,7 @@ impl Backend {
         if std::env::var_os("TRAMES_VULKAN_TRACE").is_some() {
             eprintln!("trames-vulkan graphics-config={config:x?}");
         }
-        if config[0] & !2047 != 0 {
+        if config[0] & !4095 != 0 {
             return unsupported();
         }
         // Fixed tail after the largest extended blend array. Old callers have
@@ -601,19 +602,29 @@ impl Backend {
                 },
             });
         }
-        let binding_wire = words64(m, a[8], bounded(a[9], 16)? * 3)?;
+        let binding_stride = if config[0] & 2048 != 0 { 4 } else { 3 };
+        let binding_wire = words64(m, a[8], bounded(a[9], 16)? * binding_stride)?;
         let attribute_wire = words64(m, a[10], bounded(a[11], 16)? * 4)?;
         let mut bindings = Vec::new();
+        let mut divisors = Vec::new();
         let mut attributes = Vec::new();
         let mut inputs = BTreeMap::new();
         let mut locations = std::collections::BTreeSet::new();
-        for x in binding_wire.chunks_exact(3) {
+        for x in binding_wire.chunks_exact(binding_stride) {
             if x[0] >= 16.min(limits.max_vertex_input_bindings) as u64
                 || x[1] > 2048.min(limits.max_vertex_input_binding_stride) as u64
                 || x[2] > 1
                 || inputs.contains_key(&(x[0] as u32))
             {
                 return unsupported();
+            }
+            let divisor = if binding_stride == 4 { x[3] } else { 1 };
+            validate_divisor(x[2] == 1, divisor, device.divisor)?;
+            if divisor != 1 {
+                divisors.push(vk::VertexInputBindingDivisorDescriptionEXT {
+                    binding: x[0] as u32,
+                    divisor: divisor as u32,
+                });
             }
             bindings.push(vk::VertexInputBindingDescription {
                 binding: x[0] as u32,
@@ -626,6 +637,7 @@ impl Backend {
                     binding: x[0] as u32,
                     stride: x[1] as u32,
                     instance: x[2] == 1,
+                    divisor: divisor as u32,
                     extent: 0,
                 },
             );
@@ -696,9 +708,14 @@ impl Backend {
                         .name(name),
                 );
             }
-            let vertex = vk::PipelineVertexInputStateCreateInfo::default()
+            let mut divisor = vk::PipelineVertexInputDivisorStateCreateInfoEXT::default()
+                .vertex_binding_divisors(&divisors);
+            let mut vertex = vk::PipelineVertexInputStateCreateInfo::default()
                 .vertex_binding_descriptions(&bindings)
                 .vertex_attribute_descriptions(&attributes);
+            if !divisors.is_empty() {
+                vertex = vertex.push_next(&mut divisor);
+            }
             let assembly = vk::PipelineInputAssemblyStateCreateInfo::default()
                 .topology(vk::PrimitiveTopology::from_raw(state[1] as i32))
                 .primitive_restart_enable(restart);
@@ -1848,6 +1865,8 @@ impl Backend {
                             return invalid();
                         }
                         let active = a[2] != 0 && a[3] != 0;
+                        let first_instance = if op == 97 { a[6] } else { a[5] };
+                        instance_base(&p.vertex_inputs.borrow(), first_instance)?;
                         for input in p.vertex_inputs.borrow().iter().filter(|x| x.extent != 0) {
                             let (buffer, offset) = r
                                 .vertices
@@ -1859,9 +1878,7 @@ impl Backend {
                             let last = if !active || op == 97 && !input.instance {
                                 0
                             } else if input.instance {
-                                (if op == 97 { a[6] } else { a[5] })
-                                    .checked_add(a[3] - 1)
-                                    .ok_or(Failure::Vk(vk::Result::ERROR_UNKNOWN))?
+                                last_instance(first_instance, a[3], input.divisor)?
                             } else {
                                 a[4].checked_add(a[2] - 1)
                                     .ok_or(Failure::Vk(vk::Result::ERROR_UNKNOWN))?
@@ -2162,6 +2179,36 @@ fn validate_view(
     }
     Ok(())
 }
+fn validate_divisor(instance: bool, divisor: u64, enabled: Option<zink::Divisor>) -> Result<()> {
+    if divisor != 1
+        && (!instance
+            || enabled.is_none_or(|p| divisor > p.maximum as u64 || divisor == 0 && !p.zero))
+    {
+        return unsupported();
+    }
+    Ok(())
+}
+// EXT exposes no supportsNonZeroFirstInstance property. Preserve the selected
+// profile's restriction for all bindings, including those unused by this shader.
+pub(super) fn instance_base(inputs: &[VertexBinding], first: u64) -> Result<()> {
+    if first != 0 && inputs.iter().any(|v| v.instance && v.divisor != 1) {
+        return unsupported();
+    }
+    Ok(())
+}
+fn last_instance(first: u64, count: u64, divisor: u32) -> Result<u64> {
+    if count == 0 || divisor == 0 {
+        return Ok(0);
+    }
+    let last = if divisor == 1 {
+        count - 1
+    } else {
+        (count - 1) / divisor as u64
+    };
+    first
+        .checked_add(last)
+        .ok_or(Failure::Vk(vk::Result::ERROR_UNKNOWN))
+}
 fn stencil_state(wire: &[u64]) -> Result<vk::StencilOpState> {
     if wire.len() != 7
         || wire[..4].iter().any(|&v| v > 7)
@@ -2347,6 +2394,55 @@ fn blit_overlap(a: &vk::ImageBlit, b: &vk::ImageBlit) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn divisor_features_and_instance_footprints() {
+        let native = Some(zink::Divisor {
+            maximum: u32::MAX,
+            zero: true,
+        });
+        assert!(validate_divisor(false, 1, None).is_ok());
+        assert!(validate_divisor(true, 1, None).is_ok());
+        assert!(validate_divisor(false, 2, native).is_err());
+        assert!(validate_divisor(true, 2, None).is_err());
+        assert!(validate_divisor(true, 0, native).is_ok());
+        assert!(validate_divisor(
+            true,
+            0,
+            Some(zink::Divisor {
+                maximum: 8,
+                zero: false
+            })
+        )
+        .is_err());
+        assert!(validate_divisor(
+            true,
+            9,
+            Some(zink::Divisor {
+                maximum: 8,
+                zero: true
+            })
+        )
+        .is_err());
+        assert!(validate_divisor(true, 1 << 32, native).is_err());
+        assert_eq!(last_instance(0, 8, 2).unwrap(), 3);
+        assert_eq!(last_instance(0, 8, 3).unwrap(), 2);
+        assert_eq!(last_instance(2, 4, 1).unwrap(), 5);
+        assert_eq!(last_instance(0, 8, u32::MAX).unwrap(), 0);
+        assert_eq!(last_instance(0, u32::MAX as u64, 0).unwrap(), 0);
+        assert_eq!(last_instance(0, 0, 1).unwrap(), 0);
+        assert!(last_instance(u64::MAX, 2, 1).is_err());
+        let mut binding = VertexBinding {
+            binding: 5,
+            stride: 24,
+            instance: true,
+            divisor: 2,
+            extent: 0,
+        };
+        assert!(instance_base(&[binding.clone()], 0).is_ok());
+        assert!(instance_base(&[binding.clone()], 1).is_err());
+        binding.divisor = 1;
+        assert!(instance_base(&[binding], 7).is_ok());
+    }
     #[test]
     fn blit_format_conversion_and_volume_slice_views_follow_native_rules() {
         let rgba = ImageShape::d2(4, 4, vk::Format::R8G8B8A8_UNORM);

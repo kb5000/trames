@@ -102,6 +102,10 @@ resize、close、重启和旧帧保活已在Linux参考及Apple Metal通过；Ap
   sampled view只选择一个aspect；未启用separateDepthStencilLayouts。见[数据验证](../validation/vulkan-stencil.md)。
 - 九种核心dynamic graphics states及原生命令、discard/depth-bias和point/line/triangle拓扑。
   当前line width为1、depth-bias clamp为0，未实现的静态bias参数会明确失败。
+- `VK_EXT_vertex_attribute_divisor`：按原版driver查询/启用rate及zero-divisor、maximum；
+  接通pipeline pNext和独立binding的原生提取速率。末次实例元素按divisor计算，核心divisor1
+  保留加法快路。EXT profile对非1 divisor限制firstInstance=0；不宣告KHR的额外属性。
+  [实例输入/GLES3验证](../validation/vulkan-divisor.md)。
 - 真实`KHR_portability_subset`查询（仅宿主有该扩展时）让原版Mesa选择MoltenVK上游路径；
   只返回本桥实际支持且原生支持的子集。triangleFans、stride、swizzle、sampler bias等
   受真实限制约束，不让不支持的图形状态进入driver。
@@ -118,14 +122,13 @@ Wayland EGL复用现有native swapchain/Metal texture路径，新增可采样swa
 的replaceRegion崩溃。没有私有类型时仍保留符合memoryTypeBits的fallback。
 查询池、原生GPU transform feedback桥接（stream 0、最多4个buffer）、counter续写、indexed
 query及byte-count间接绘制见[验证与边界](../validation/vulkan-feedback.md)。扩展只在native
-driver实际支持时暴露；MoltenVK 1.4.2缺少GPU实现，Apple不声明此feature。完整GLES3仍未打通。
-depth/stencil已接通并通过Linux原生/guest与云端Metal读回；原版Mesa现在报告ARB_depth_buffer_float，
-但ES3 configs仍为0，明确缺少ARB_instanced_arrays（Zink依赖vertex_attribute_divisor）。
-后续继续实现原生divisor、Apple GPU transform feedback、压缩/MSAA及其他实际缺口。
+driver实际支持时暴露；MoltenVK 1.4.2缺少GPU实现，Apple不声明此feature。Apple的GLES3仍待原生GPU TF；Linux已创建原版Mesa真实GLES3 context并通过MRT/TF数据。
+depth/stencil已通过Linux/云端Metal读回；后续原生divisor使Linux原版Mesa具备真实GLES3
+context、MRT/TF及实例输入。Apple的TF、depth-clip等渲染状态、压缩/MSAA及其他实际缺口继续推进。
 
 ES3首批的MRT、宽格式、原生复制验证与后续缺口见
-[ES3推进记录](../validation/zink-es3.md)。目前原版Mesa仍未提供ES3 context；
-多附件绘制通过不等于Firefox硬件WebRender已经启用。
+[ES3推进记录](../validation/zink-es3.md)。后续[divisor批次](../validation/vulkan-divisor.md)已在Linux跑通真实ES3 context与数据；
+Apple仍待TF。GLES3探针通过不等于Firefox硬件WebRender已经启用。
 
 Mesa25.1.9的ES2 context启用GL-thread时，SwapBuffers调用的内部
 `InternalInvalidateFramebufferAncillaryMESA`在上游`gl_API.xml`仅标为ES3，从而产生
