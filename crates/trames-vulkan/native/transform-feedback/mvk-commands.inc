@@ -155,10 +155,25 @@ bool mvkTFDraw(MVKCommandEncoder* encoder, uint32_t vertices, uint32_t instances
         [metal setBuffer:arguments.buffer offset:arguments.offset+64 atIndex:1];mvkTFBind(metal,copiedIndices,2);mvkTFBind(metal,safeIndices,3);
         mvkTFDispatch(encoder,metal,kind,capacity);
     }
+    std::vector<std::pair<uint32_t,MVKTFBuffer>> constantInputs;
+    for (const auto& binding : pipeline->getZeroDivisorVertexBindings()) {
+        if (!binding.second) continue;
+        uint32_t sourceBinding=binding.first, translation=0;
+        for (const auto& entry : pipeline->getTranslatedVertexBindings())
+            if (entry.translationBinding==binding.first) { sourceBinding=entry.binding;translation=entry.translationOffset;break; }
+        const auto& source=encoder->getVkGraphics()._vertexBuffers[sourceBinding];
+        auto copy=mvkTFTemp(encoder,binding.second);
+        metal=mvkTFCompute(encoder,MVKTFVertexConstant);
+        [metal setBuffer:source.mtlBuffer offset:source.offset+translation atIndex:0];mvkTFBind(metal,copy,1);
+        [metal setBuffer:arguments.buffer offset:arguments.offset+64 atIndex:2];
+        encoder->setComputeBytes(metal,&binding.second,4,3);mvkTFDispatch(encoder,metal,MVKTFVertexConstant,binding.second);
+        constantInputs.emplace_back(pipeline->getMetalBufferIndexForVertexAttributeBinding(binding.first),copy);
+    }
     encoder->_isIndexedDraw=indexed;
     encoder->finalizeDrawState(kMVKGraphicsStageVertex);
     metal=encoder->getMTLComputeEncoder(kMVKCommandUseTessellationVertexTessCtl);
     [metal setComputePipelineState:vertexState];
+    for (const auto& binding : constantInputs) mvkTFBind(metal,binding.second,binding.first);
     auto& implicit=pipeline->getImplicitBuffers(kMVKShaderStageVertex).ids;
     mvkTFBind(metal,rows,implicit[MVKImplicitBuffer::Output]);
     mvkTFBind(metal,safeIndices,implicit[MVKImplicitBuffer::Index]);

@@ -22,6 +22,7 @@ void MVKGraphicsPipeline::initTransformFeedback(const VkGraphicsPipelineCreateIn
         MTLComputePipelineDescriptor* descriptor = [MTLComputePipelineDescriptor new];
         MVKMTLFunction functions[3];SPIRVShaderInputs inputs;
         bool valid = addVertexShaderToPipeline(descriptor, info, config, inputs, vertex, feedback, functions);
+        _translatedVertexBindings.clear();_zeroDivisorVertexBindings.clear();
         descriptor.stageInputDescriptor = [MTLStageInputOutputDescriptor stageInputOutputDescriptor];
         valid = valid && addVertexInputToPipeline(descriptor.stageInputDescriptor, info->pVertexInputState, config, true);
         descriptor.stageInputDescriptor.indexBufferIndex = implicit[MVKImplicitBuffer::Index];

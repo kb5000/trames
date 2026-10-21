@@ -194,6 +194,32 @@ def main():
             line=next(s for s in run.stdout.splitlines() if s.startswith('tf-raster-ok:'));print(name+': '+line,flush=True)
             restart_results.append(dict(index_bits=bits,base_vertex=base,result=line))
 
+    zero_results=[]
+    color_vertex=out/'constant.vert'
+    color_vertex.write_text((ROOT/'tests/fixtures/vulkan-native-tf-runtime.vert').read_text().replace('layout(location=0) in vec4 position;','layout(location=0) in vec4 position;\nlayout(location=1) in vec4 constant_color;').replace('color=vec4(0.25,0.5,0.75,1);','color=constant_color;'))
+    color_shader=out/'constant.vert.spv'
+    subprocess.run([a.glslang,'-V','--target-env','vulkan1.0',str(color_vertex),'-o',str(color_shader)],check=True)
+    for indirect in (False,True):
+        constant=raster_source()
+        constant=constant.replace('VkPhysicalDeviceTransformFeedbackFeaturesEXT tf=', 'VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT divisor={.sType=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT};VkPhysicalDeviceTransformFeedbackFeaturesEXT tf=')
+        constant=constant.replace('get_features(physical,&features);assert', 'tf.pNext=&divisor;get_features(physical,&features);assert(divisor.vertexAttributeInstanceRateZeroDivisor);assert')
+        constant=constant.replace('const char *extension=VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME;', 'const char *extensions2[]={VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME,VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME};')
+        constant=constant.replace('tf.geometryStreams=VK_FALSE;', 'tf.geometryStreams=VK_FALSE;tf.pNext=&divisor;divisor.vertexAttributeInstanceRateDivisor=VK_TRUE;divisor.vertexAttributeInstanceRateZeroDivisor=VK_TRUE;')
+        constant=constant.replace('.enabledExtensionCount=feedback,.ppEnabledExtensionNames=&extension', '.enabledExtensionCount=2,.ppEnabledExtensionNames=extensions2')
+        constant=constant.replace('VkVertexInputBindingDescription vb={0,16,VK_VERTEX_INPUT_RATE_VERTEX};VkVertexInputAttributeDescription va={0,0,VK_FORMAT_R32G32B32A32_SFLOAT,0};', 'VkVertexInputBindingDescription vb[]={{0,16,VK_VERTEX_INPUT_RATE_VERTEX},{1,16,VK_VERTEX_INPUT_RATE_INSTANCE}};VkVertexInputAttributeDescription va[]={{0,0,VK_FORMAT_R32G32B32A32_SFLOAT,0},{1,1,VK_FORMAT_R32G32B32A32_SFLOAT,0}};VkVertexInputBindingDivisorDescriptionEXT dbd={1,0};VkPipelineVertexInputDivisorStateCreateInfoEXT vd={.sType=VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT,.vertexBindingDivisorCount=1,.pVertexBindingDivisors=&dbd};')
+        constant=constant.replace('.vertexBindingDescriptionCount=1,.pVertexBindingDescriptions=&vb,.vertexAttributeDescriptionCount=1,.pVertexAttributeDescriptions=&va', '.pNext=&vd,.vertexBindingDescriptionCount=2,.pVertexBindingDescriptions=vb,.vertexAttributeDescriptionCount=2,.pVertexAttributeDescriptions=va')
+        constant=constant.replace('memcpy(allocations[0].data+768,positions,sizeof(positions));', 'memcpy(allocations[0].data+768,positions,sizeof(positions));float color[]={0.25,0.5,0.75,1};memcpy(allocations[0].data+128+4*16,color,sizeof(color));')
+        constant=constant.replace('vkCmdBindVertexBuffers(c,0,1,&allocations[0].buffer,&vertex_offset);', 'vkCmdBindVertexBuffers(c,0,1,&allocations[0].buffer,&vertex_offset);VkDeviceSize constant_offset=128;vkCmdBindVertexBuffers(c,1,1,&allocations[0].buffer,&constant_offset);')
+        if indirect:
+            constant=constant.replace('VK_BUFFER_USAGE_VERTEX_BUFFER_BIT|VK_BUFFER_USAGE_STORAGE_BUFFER_BIT','VK_BUFFER_USAGE_VERTEX_BUFFER_BIT|VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT')
+            constant=constant.replace('float color[]={0.25,0.5,0.75,1};', 'uint32_t arguments[]={3,1,2,4};memcpy(allocations[0].data+880,arguments,sizeof(arguments));float color[]={0.25,0.5,0.75,1};')
+            constant=constant.replace('vkCmdDraw(c,3,1,2,4)','vkCmdDrawIndirect(c,allocations[0].buffer,880,1,16)')
+        raster.write_text(constant)
+        subprocess.run([os.environ.get('CC','cc'),'-std=c11','-O2','-Wall','-Wextra','-Werror','-I'+str(a.include.resolve()),'-c',str(raster),'-o',str(obj)],check=True)
+        subprocess.run(link,check=True)
+        name=f'zero-divisor-indirect-{indirect}'
+        run=execute([str(binary),str(color_shader),shaders[1]],name)
+        line=next(s for s in run.stdout.splitlines() if s.startswith('tf-raster-ok:'));print(name+': '+line,flush=True);zero_results.append(dict(indirect=indirect,result=line))
     bounds_result=None
     if platform.system()=='Darwin':
         # Exceed the documented GPU indirect scratch bound. Dropping the draw
@@ -208,7 +234,7 @@ def main():
         subprocess.run(link,check=True)
         run=execute([str(binary),str(a.shader.resolve()),'0','0','1'],'bounds-error')
         bounds_result=next(s for s in run.stdout.splitlines() if s.startswith('tf-bounds-error-ok:'));print(bounds_result,flush=True)
-    result=dict(bounds_error=bounds_result,raster=raster_result,restart_raster=restart_results,cases=cases,source_sha256=hashlib.sha256(c.read_bytes()).hexdigest(),shader_sha256=hashlib.sha256(a.shader.read_bytes()).hexdigest())
+    result=dict(zero_divisor=zero_results,bounds_error=bounds_result,raster=raster_result,restart_raster=restart_results,cases=cases,source_sha256=hashlib.sha256(c.read_bytes()).hexdigest(),shader_sha256=hashlib.sha256(a.shader.read_bytes()).hexdigest())
     (out/'results.json').write_text(json.dumps(result,indent=2)+'\n')
 
 if __name__=='__main__':main()

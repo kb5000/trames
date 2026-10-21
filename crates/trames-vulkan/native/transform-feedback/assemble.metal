@@ -191,3 +191,11 @@ kernel void trames_tf_query_copy(const device ulong* source [[buffer(0)]], devic
         if (p.z&4u) dst[2]=available;
     }
 }
+
+// Match upstream's zero-divisor firstInstance buffer adjustment, including
+// indirect draws, without reading the draw arguments back to the CPU.
+kernel void trames_tf_vertex_constant(const device uchar* input [[buffer(0)]],
+    device uchar* output [[buffer(1)]], const device uint* draw [[buffer(2)]],
+    constant uint& stride [[buffer(3)]], uint i [[thread_position_in_grid]]) {
+    if (i < stride) output[i] = input[ulong(draw[4])*stride+i];
+}

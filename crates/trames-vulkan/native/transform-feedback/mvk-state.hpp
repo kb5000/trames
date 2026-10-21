@@ -17,7 +17,7 @@ struct MVKTFEncoderState {
 };
 enum MVKTFKernel { MVKTFAssemble, MVKTFMap, MVKTFBegin, MVKTFEnd, MVKTFByteCount,
                   MVKTFParameters, MVKTFCopyIndices16, MVKTFCopyIndices32,
-                  MVKTFQueryAccumulate, MVKTFQueryCopy, MVKTFDispatch, MVKTFKernelCount };
+                  MVKTFQueryAccumulate, MVKTFQueryCopy, MVKTFDispatch, MVKTFVertexConstant, MVKTFKernelCount };
 bool mvkTFDraw(MVKCommandEncoder*, uint32_t vertices, uint32_t instances, uint32_t first,
                int32_t baseVertex, uint32_t firstInstance, bool indexed,
                id<MTLBuffer> indirect = nil, NSUInteger indirectOffset = 0);

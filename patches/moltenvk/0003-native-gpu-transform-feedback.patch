@@ -200,7 +200,7 @@ Original MoltenVK sources remain Apache-2.0; new Trames includes are GPL-3.0-or-
 +
 +id<MTLComputePipelineState> MVKCommandResourceFactory::newTransformFeedbackPipeline(uint32_t kind, MVKVulkanAPIDeviceObject* owner) {
 +    static const char* names[] = {"trames_tf_assemble","trames_tf_map","trames_tf_begin","trames_tf_end","trames_tf_byte_count",
-+      "trames_tf_parameters","trames_tf_copy_indices16","trames_tf_copy_indices32","trames_tf_query_accumulate","trames_tf_query_copy","trames_tf_dispatch"};
++      "trames_tf_parameters","trames_tf_copy_indices16","trames_tf_copy_indices32","trames_tf_query_accumulate","trames_tf_query_copy","trames_tf_dispatch","trames_tf_vertex_constant"};
 +    return newMTLComputePipelineState(names[kind], owner);
 +}
 --- a/MoltenVK/MoltenVK/Commands/MVKCommandTypePools.def
