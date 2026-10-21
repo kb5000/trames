@@ -36,7 +36,7 @@ jobs:
           cargo fmt --all --check
           if python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("dialog_runtime_reuse")'; then
             python3 - <<'PYCODE'
-          import json,os,subprocess,urllib.request
+          import io,json,os,subprocess,urllib.request,zipfile
           p=json.load(open('.github/ios-validation-plan.json'))['dialog_runtime_reuse']
           subprocess.run(['git','fetch','--depth=1','origin',p['sha']],check=True)
           subprocess.run(['git','diff','--exit-code',p['sha'],'HEAD','--','crates','accelerator','Cargo.toml','Cargo.lock','vendor','.cargo','rust-toolchain.toml'],check=True)
@@ -47,13 +47,21 @@ jobs:
           assert run['head_sha']==p['sha'] and run['path']=='.github/workflows/xwayland-dialog.yml'
           job=next(j for j in get('actions/runs/'+str(p['run'])+'/jobs')['jobs'] if j['name']=='linux')
           assert any(x['name']=='Build only current Vulkan bridge and embedding' and x['conclusion']=='success' for x in job['steps'])
-          print('Reuse exact-source Vulkan31 and strict Clippy; only the failed fixture preparation and new layouts remain.')
+          artifacts=get('actions/runs/'+str(p['run'])+'/artifacts')['artifacts']
+          artifact=next(x for x in artifacts if x['name']=='dialog-linux-runtime' and not x['expired'])
+          req=urllib.request.Request(artifact['archive_download_url'],headers={'Authorization':'Bearer '+os.environ['GH_TOKEN']})
+          with urllib.request.urlopen(req) as response:archive=zipfile.ZipFile(io.BytesIO(response.read()))
+          assert set(archive.namelist())=={'trames-run','libtrames_ffi.so'}
+          os.makedirs('target/release',exist_ok=True)
+          archive.extractall('target/release')
+          os.chmod('target/release/trames-run',0o755)
+          print('Reuse identical-source host binaries and their passed Vulkan31/Clippy checks; run only affected integration validation.')
           PYCODE
           else
             cargo clippy -p trames-vulkan --all-targets --no-deps --locked -- -D warnings
             cargo test -p trames-vulkan --release --lib --locked
+            cargo build -p trames-cli -p trames-ffi --release --locked
           fi
-          cargo build -p trames-cli -p trames-ffi --release --locked
       - uses: actions/upload-artifact@v4
         with:
           name: dialog-linux-runtime
@@ -75,6 +83,11 @@ jobs:
           run-id: 39015795319
       - name: Prepare only original signed mousepad dependencies and rebuilt ICD
         run: python3 tests/integration/xwayland-dialog-prepare.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xwayland-dialog-inputs
+          path: target/xwayland-dialog-inputs/inputs.tar.gz
+          retention-days: 7
       - name: Reproduce only unsaved-close dialogs on original glamor and Mesa
         run: |
           export VK_DRIVER_FILES="$(python3 -c 'from pathlib import Path; print(next(Path("/usr/share/vulkan/icd.d").glob("*lvp*")))')"
@@ -89,11 +102,6 @@ jobs:
             target/dialog-linux.log
             target/xwayland-dialog-inputs/install.stdout
             target/xwayland-dialog-inputs/install.stderr
-          retention-days: 7
-      - uses: actions/upload-artifact@v4
-        with:
-          name: xwayland-dialog-inputs
-          path: target/xwayland-dialog-inputs/inputs.tar.gz
           retention-days: 7
   metal:
     needs: linux

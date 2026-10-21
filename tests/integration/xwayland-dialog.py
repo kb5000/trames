@@ -72,6 +72,16 @@ def pump():
         if frame:api.trames_wayland_frame_release(frame,1,int(time.monotonic()*1000)&0xffffffff)
     (a.output/'terminal.log').write_bytes(output)
     return scene
+def shell(command):
+    # ash reads a terminal cursor-position reply before accepting the next
+    # line. Drain that exchange before submitting another command, otherwise
+    # its prefix can be consumed as part of the reply on a fast host.
+    previous=len(output);quiet=time.monotonic()
+    while time.monotonic()-quiet<.25:
+        pump()
+        if len(output)!=previous:previous=len(output);quiet=time.monotonic()
+        time.sleep(.005)
+    send(command)
 def wait(predicate,timeout=None):
     start=time.monotonic()
     while True:
@@ -109,9 +119,10 @@ try:
         modes=('general','general2','legacy-feedback','legacy-feedback2')
         for mode in modes:
             start=len(output)
-            send('chmod 755 /tmp/vulkan-layouts; /tmp/vulkan-layouts /tmp/vulkan-render.vert.spv /tmp/vulkan-render.frag.spv /tmp/layout.ppm '+mode+'; printf "\\nLAYOUT_EXIT:%d\\n" $?\n')
+            shell('chmod 755 /tmp/vulkan-layouts; /tmp/vulkan-layouts /tmp/vulkan-render.vert.spv /tmp/vulkan-render.frag.spv /tmp/layout.ppm '+mode+'; printf "\\nLAYOUT_EXIT:%d\\n" $?\n')
             def finished(_):
                 new=output[start:]
+                assert b'Assertion failed:' not in new,new[-4000:]
                 assert not any(('\r\nLAYOUT_EXIT:'+str(n)+'\r\n').encode() in new for n in (1,127,134,139)),new[-4000:]
                 return b'\r\nLAYOUT_EXIT:0\r\n' in new
             wait(finished,90)
@@ -121,8 +132,8 @@ try:
     debug='LIBGL_ALWAYS_SOFTWARE=true ' if os.environ.get('TRAMES_ZINK_CPU_REFERENCE')=='1' else ''
     debug+='TRAMES_VULKAN_TRACE=1 '
     if not a.native_wsi:debug+='TRAMES_XWAYLAND_NATIVE_WSI=0 '
-    send(debug+"trames-xwayland :0 >/tmp/xwayland.log 2>&1 &\n")
-    send("printf 'dialog fixture\\n' >/tmp/trames-dialog-fixture.txt; while ! xprop -root >/dev/null 2>&1; do sleep .1; done; GDK_BACKEND=x11 GTK_IM_MODULE=xim XMODIFIERS=@im=trames GSETTINGS_BACKEND=memory GTK_USE_PORTAL=0 NO_AT_BRIDGE=1 mousepad --disable-server /tmp/trames-dialog-fixture.txt >/tmp/mousepad-dialog.log 2>&1 &\n")
+    shell(debug+"trames-xwayland :0 >/tmp/xwayland.log 2>&1 &\n")
+    shell("printf 'dialog fixture\\n' >/tmp/trames-dialog-fixture.txt; while ! xprop -root >/dev/null 2>&1; do sleep .1; done; GDK_BACKEND=x11 GTK_IM_MODULE=xim XMODIFIERS=@im=trames GSETTINGS_BACKEND=memory GTK_USE_PORTAL=0 NO_AT_BRIDGE=1 mousepad --disable-server /tmp/trames-dialog-fixture.txt >/tmp/mousepad-dialog.log 2>&1 &\n")
     scene=wait(lambda s:any('trames-dialog-fixture' in w['title'] for w in s['windows']));editor=next(w['id'] for w in scene['windows'] if 'trames-dialog-fixture' in w['title'])
     print('editor:',scene['windows'],flush=True)
     command(op='focus',window=editor);wait(lambda _:gpu(editor));key(30)

@@ -1,12 +1,13 @@
 {
-  "base_sha": "113d6a6dbfeb893347021b68107d7c310270165e",
+  "base_sha": "e9296359a3bda86a522f238be83b0a04ecc42f94",
   "native_scope": "xwayland-dialog",
-  "reason": "Retry only missing auto-selected APK fixture dependencies and add native pixel checks for four new layout modes; reuse exact-source passed Vulkan31/Clippy and Memory94. Production Rust/C/guest code unchanged.",
+  "reason": "Only fix test terminal DSR handshaking; reuse identical-source host binaries and passed Memory94/Vulkan31 checks. Production code unchanged.",
   "changed_file_sha256": {
-    ".github/workflows/xwayland-dialog.yml": "6579eb8a3796e6921e99c5a54de641a72b98e5be0d65c854528872a61f048306"
+    ".github/workflows/xwayland-dialog.yml": "11bb2a2c3123a6aa8df4deb3a5a0bb34187a5f90552745dad4f7d63c00617ba9",
+    "tests/integration/xwayland-dialog.py": "95b2b76d46be7536ee55a5d3b6990d7deea2206f0c044a12d1408567e036de51"
   },
   "dialog_runtime_reuse": {
-    "sha": "dc883698193b41872672a685333291dac496940b",
-    "run": 39659140505
+    "sha": "e9296359a3bda86a522f238be83b0a04ecc42f94",
+    "run": 39661257602
   }
 }
