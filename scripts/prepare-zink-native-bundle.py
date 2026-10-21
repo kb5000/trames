@@ -14,6 +14,7 @@ p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('--verify', action='store_true')
 p.add_argument('--source-sha', help='reuse a passed bundle after CI/documentation-only changes')
 p.add_argument('--wayland', action='store_true', help='include exact Wayland EGL and image-copy clients')
+p.add_argument('--es3', action='store_true', help='include the real MRT/ES3 capability client')
 a = p.parse_args()
 out = ROOT / 'target/zink-native-bundle'
 manifest = out / 'checksums.json'
@@ -40,7 +41,7 @@ if a.verify:
     for f in (out / 'guest').iterdir():
         shutil.copyfile(f, ROOT / 'target/vulkan-guest' / f.name)
     shutil.copyfile(out / 'bin/zink-egl', ROOT / 'target/zink-inputs/zink-egl')
-    for name in ('zink-wayland', 'vulkan-copy'):
+    for name in ('zink-wayland', 'vulkan-copy', 'zink-es3'):
         if (out / 'bin' / name).is_file():
             shutil.copyfile(out / 'bin' / name, ROOT / 'target/zink-inputs' / name)
     # Guest ELF execute bits do not need to survive an artifact ZIP roundtrip:
@@ -56,6 +57,8 @@ else:
         if (ROOT / 'target/vulkan-guest' / name).is_file():
             shutil.copyfile(ROOT / 'target/vulkan-guest' / name, out / 'guest' / name)
     shutil.copyfile(ROOT / 'target/zink-inputs/zink-egl', out / 'bin/zink-egl')
+    if a.es3:
+        shutil.copyfile(ROOT / 'target/zink-inputs/zink-es3', out / 'bin/zink-es3')
     if a.wayland:
         for name in ('zink-wayland', 'vulkan-copy'):
             shutil.copyfile(ROOT / 'target/zink-inputs' / name, out / 'bin' / name)

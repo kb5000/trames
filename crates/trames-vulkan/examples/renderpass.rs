@@ -91,6 +91,251 @@ fn image(b: &mut Backend, m: &mut Memory, dev: u64, format: u64, usage: u64) -> 
     call(b, m, 64, &[dev, image, format, OUT]);
     (image, word(m, OUT), memory)
 }
+// Exercise the complete attachment array, including a ninth depth attachment,
+// both renderpass APIs, late binding, clear indexing and per-view ownership.
+fn mrt(b: &mut Backend, m: &mut Memory, resources: [u64; 7]) {
+    let [dev, physical, queue, buffer, pool, cmd, fence] = resources;
+    call(b, m, 4, &[physical, 0x7000]);
+    let offset = std::mem::offset_of!(ash::vk::PhysicalDeviceProperties, limits)
+        + std::mem::offset_of!(ash::vk::PhysicalDeviceLimits, max_color_attachments);
+    let mut bytes = [0; 4];
+    m.read(0x7000 + offset as u64, &mut bytes).unwrap();
+    let count = u32::from_le_bytes(bytes).min(8) as usize;
+    assert!(count >= 4);
+    for rp2 in [false, true] {
+        for imageless in [false, true] {
+            let mut images: Vec<_> = (0..count).map(|_| image(b, m, dev, 37, 17)).collect();
+            images.push(image(b, m, dev, 126, 33));
+            let colors: Vec<_> = (0..count).flat_map(|_| [37, 1, 0, 0, 2]).collect();
+            words(m, 0x6000, &colors);
+            words(m, 0x6200, &[126, 1, 0, 0, 3]);
+            let create = [dev, 37, 1, 0, 0, 2, 0, 0, OUT, 0x6200, 0x6000, count as u64];
+            let mut bad = create;
+            bad[11] = 9;
+            assert_eq!(
+                request(b, m, if rp2 { 122 } else { 66 }, &bad),
+                (-8i64) as u64
+            );
+            call(b, m, if rp2 { 122 } else { 66 }, &create);
+            let pass = word(m, OUT);
+            let views: Vec<_> = images.iter().map(|x| x.1).collect();
+            words(m, 0x6300, &views);
+            if imageless {
+                m.write(0x6700, &37u32.to_le_bytes()).unwrap();
+                m.write(0x6704, &126u32.to_le_bytes()).unwrap();
+                let specs: Vec<_> = (0..=count)
+                    .flat_map(|i| {
+                        [
+                            0,
+                            if i == count { 33 } else { 17 },
+                            16,
+                            16,
+                            1,
+                            if i == count { 0x6704 } else { 0x6700 },
+                            1,
+                        ]
+                    })
+                    .collect();
+                words(m, 0x6400, &specs);
+                call(
+                    b,
+                    m,
+                    125,
+                    &[dev, pass, 16, 16, count as u64 + 1, 0x6400, OUT],
+                );
+            } else {
+                let mut bad = [dev, pass, 0, 16, 16, OUT, 0, 0x6300, count as u64];
+                assert_eq!(request(b, m, 68, &bad), (-13i64) as u64);
+                bad[8] += 1;
+                call(b, m, 68, &bad);
+            }
+            let fb = word(m, OUT);
+            for i in 0..=count {
+                let color = if i == count {
+                    [0.5f32, 0., 0., 0.]
+                } else {
+                    [
+                        (i & 1) as f32,
+                        ((i >> 1) & 1) as f32,
+                        ((i >> 2) & 1) as f32,
+                        1.,
+                    ]
+                };
+                for (channel, value) in color.into_iter().enumerate() {
+                    m.write(
+                        0x6800 + i as u64 * 16 + channel as u64 * 4,
+                        &value.to_bits().to_le_bytes(),
+                    )
+                    .unwrap();
+                }
+            }
+            for (i, &(img, view, backing)) in images.iter().enumerate() {
+                call(b, m, 38, &[dev, cmd, 0]);
+                if i == 0 {
+                    let begin = [
+                        dev,
+                        cmd,
+                        pass,
+                        fb,
+                        0,
+                        0,
+                        16,
+                        16,
+                        0x6800,
+                        count as u64 + 1,
+                        if imageless { 0x6300 } else { 0 },
+                        if imageless { count as u64 + 1 } else { 0 },
+                    ];
+                    let mut bad = begin;
+                    bad[9] = count as u64;
+                    assert_eq!(
+                        request(b, m, if rp2 { 123 } else { 71 }, &bad),
+                        (-13i64) as u64
+                    );
+                    call(b, m, if rp2 { 123 } else { 71 }, &begin);
+                    call(b, m, if rp2 { 124 } else { 72 }, &[dev, cmd]);
+                }
+                let depth = i == count;
+                words(
+                    m,
+                    0x6900,
+                    &[
+                        img,
+                        if depth { 1024 } else { 256 },
+                        2048,
+                        if depth { 3 } else { 2 },
+                        6,
+                        if depth { 2 } else { 1 },
+                    ],
+                );
+                call(b, m, 44, &[dev, cmd, 1792, 4096, 0, 0, 0x6900, 1, 6]);
+                words(
+                    m,
+                    0x6a00,
+                    &[
+                        0,
+                        0,
+                        0,
+                        if depth { 2 } else { 1 },
+                        0,
+                        0,
+                        1,
+                        0,
+                        0,
+                        0,
+                        16,
+                        16,
+                        1,
+                    ],
+                );
+                call(b, m, 74, &[dev, cmd, img, 6, buffer, 0x6a00, 1]);
+                call(b, m, 44, &[dev, cmd, 4096, 16384, 4096, 8192, 0, 0, 6]);
+                call(b, m, 39, &[dev, cmd]);
+                words(m, 0x6b00, &[cmd]);
+                words(m, 0x6c00, &[0, 0, 0, 0x6b00, 1, 0, 0]);
+                call(b, m, 56, &[dev, queue, 0x6c00, 1, fence]);
+                // Both bound and imageless command lifetimes retain these views.
+                call(b, m, 65, &[dev, view]);
+                call(b, m, 61, &[dev, img]);
+                call(b, m, 15, &[dev, backing]);
+                poll(b, m, 51, &[dev, fence], 1);
+                let mut pixels = [0; 1024];
+                m.read(0x4000, &mut pixels).unwrap();
+                let expected = if depth {
+                    0.5f32.to_le_bytes()
+                } else {
+                    [
+                        if i & 1 != 0 { 255 } else { 0 },
+                        if i & 2 != 0 { 255 } else { 0 },
+                        if i & 4 != 0 { 255 } else { 0 },
+                        255,
+                    ]
+                };
+                assert!(
+                    pixels.chunks_exact(4).all(|p| p == expected),
+                    "MRT attachment {i}, pass2={rp2}, imageless={imageless}"
+                );
+                call(b, m, 53, &[dev, pool, 0]);
+                call(b, m, 50, &[dev, fence]);
+            }
+            call(b, m, 69, &[dev, fb]);
+            call(b, m, 67, &[dev, pass]);
+        }
+    }
+    println!("native-mrt-ok: {count} colors + depth, legacy/renderpass2, bound/imageless, every GPU pixel and deferred cleanup correct");
+}
+// Round-trip native texels through a GPU image. Clearing the staging buffer
+// between directions prevents a skipped copy from accidentally passing.
+fn format_transfers(b: &mut Backend, m: &mut Memory, resources: [u64; 7]) {
+    let [dev, physical, queue, buffer, pool, cmd, fence] = resources;
+    let mut verified = 0;
+    for (format, texel) in [
+        (9, 1),
+        (16, 2),
+        (37, 4),
+        (76, 2),
+        (83, 4),
+        (97, 8),
+        (100, 4),
+        (103, 8),
+        (109, 16),
+        (124, 2),
+        (126, 4),
+    ] {
+        call(b, m, 58, &[physical, format, 0x7000]);
+        let mut flags = [0; 4];
+        m.read(0x7004, &mut flags).unwrap();
+        if u32::from_le_bytes(flags) & 0xc000 != 0xc000 {
+            continue;
+        }
+        call(b, m, 60, &[dev, format, 4, 4, 3, OUT]);
+        let img = word(m, OUT);
+        call(b, m, 62, &[dev, img, 0x7100]);
+        let size = word(m, 0x7100);
+        let bits = word(m, 0x7110) as u32;
+        call(b, m, 14, &[dev, size, bits.trailing_zeros() as u64, OUT]);
+        let backing = word(m, OUT);
+        call(b, m, 63, &[dev, img, backing, 0]);
+        let aspect = if matches!(format, 124 | 126) { 2 } else { 1 };
+        call(b, m, 38, &[dev, cmd, 0]);
+        call(b, m, 46, &[dev, cmd, buffer, 0, 1024, 0x40404040]);
+        words(m, 0x6900, &[img, 0, 4096, 0, 7, aspect]);
+        call(b, m, 44, &[dev, cmd, 4096, 4096, 4096, 2048, 0x6900, 1, 6]);
+        words(m, 0x6a00, &[0, 0, 0, aspect, 0, 0, 1, 0, 0, 0, 4, 4, 1]);
+        call(b, m, 94, &[dev, cmd, img, 7, buffer, 0x6a00, 1]);
+        words(m, 0x6900, &[img, 4096, 2048, 7, 6, aspect]);
+        call(b, m, 44, &[dev, cmd, 4096, 4096, 6144, 6144, 0x6900, 1, 6]);
+        call(b, m, 46, &[dev, cmd, buffer, 0, 1024, 0]);
+        call(b, m, 44, &[dev, cmd, 4096, 4096, 4096, 4096, 0, 0, 6]);
+        call(b, m, 74, &[dev, cmd, img, 6, buffer, 0x6a00, 1]);
+        call(b, m, 44, &[dev, cmd, 4096, 16384, 4096, 8192, 0, 0, 6]);
+        call(b, m, 39, &[dev, cmd]);
+        words(m, 0x6b00, &[cmd]);
+        words(m, 0x6c00, &[0, 0, 0, 0x6b00, 1, 0, 0]);
+        call(b, m, 56, &[dev, queue, 0x6c00, 1, fence]);
+        call(b, m, 61, &[dev, img]);
+        call(b, m, 15, &[dev, backing]);
+        poll(b, m, 51, &[dev, fence], 1);
+        let mut pixels = [0; 1024];
+        m.read(0x4000, &mut pixels).unwrap();
+        assert!(
+            pixels[..16 * texel].iter().all(|&p| p == 0x40),
+            "format {format}"
+        );
+        assert!(
+            pixels[16 * texel..].iter().all(|&p| p == 0),
+            "format {format} copy tail"
+        );
+        call(b, m, 53, &[dev, pool, 0]);
+        call(b, m, 50, &[dev, fence]);
+        verified += 1;
+    }
+    assert!(
+        verified >= 8,
+        "basic native uncompressed color/float/depth transfer coverage"
+    );
+    println!("native-format-copy-ok: {verified} supported normalized/float/depth formats, exact texels, untouched tails and deferred cleanup correct");
+}
 fn main() {
     let mut m = Memory::new(128 << 10);
     m.map(0x1000, 8 * PAGE_SIZE, Permissions::RW).unwrap();
@@ -112,7 +357,7 @@ fn main() {
     let dev = word(&m, OUT);
     call(&mut b, &mut m, 10, &[dev, 0, 0, OUT]);
     let queue = word(&m, OUT);
-    call(&mut b, &mut m, 11, &[dev, 1024, 2, OUT]);
+    call(&mut b, &mut m, 11, &[dev, 1024, 3, OUT]);
     let buffer = word(&m, OUT);
     call(&mut b, &mut m, 13, &[dev, buffer, 0x2100]);
     let size = word(&m, 0x2100);
@@ -282,6 +527,16 @@ fn main() {
             call(&mut b, &mut m, 67, &[dev, pass]);
         }
     }
+    mrt(
+        &mut b,
+        &mut m,
+        [dev, physical, queue, buffer, pool, cmd, fence],
+    );
+    format_transfers(
+        &mut b,
+        &mut m,
+        [dev, physical, queue, buffer, pool, cmd, fence],
+    );
     call(&mut b, &mut m, 49, &[dev, fence]);
     call(&mut b, &mut m, 35, &[dev, pool]);
     call(&mut b, &mut m, 18, &[dev, memory]);

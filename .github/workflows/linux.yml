@@ -39,6 +39,7 @@ jobs:
       zink_egl_skip_apple_checks: ${{ steps.scope.outputs.zink_egl_skip_apple_checks }}
       zink_wayland_linux_run: ${{ steps.scope.outputs.zink_wayland_linux_run }}
       zink_wayland_linux_sha: ${{ steps.scope.outputs.zink_wayland_linux_sha }}
+      zink_mrt_only: ${{ steps.scope.outputs.zink_mrt_only }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -432,17 +433,25 @@ jobs:
           cargo test -p trames-vulkan --lib --locked
           cargo build -p trames-cli --release --locked
           export VK_DRIVER_FILES="$(python3 -c 'from pathlib import Path; print(next(Path("/usr/share/vulkan/icd.d").glob("*lvp*")))')"
-          cargo run -p trames-vulkan --example timeline --release --locked
           cargo run -p trames-vulkan --example renderpass --release --locked
-          cargo run -p trames-vulkan --example resources --release --locked -- tests/fixtures/bin/vulkan-resources.spv
-          cargo run -p trames-vulkan --example lifecycle --release --locked -- tests/fixtures/bin/vulkan-compute.spv tests/fixtures/bin/vulkan-render.vert.spv tests/fixtures/bin/vulkan-render.frag.spv
+          if [[ '${{ needs.scope.outputs.zink_mrt_only }}' != true ]]; then
+            cargo run -p trames-vulkan --example timeline --release --locked
+            cargo run -p trames-vulkan --example resources --release --locked -- tests/fixtures/bin/vulkan-resources.spv
+            cargo run -p trames-vulkan --example lifecycle --release --locked -- tests/fixtures/bin/vulkan-compute.spv tests/fixtures/bin/vulkan-render.vert.spv tests/fixtures/bin/vulkan-render.frag.spv
+          fi
       - name: Validate query and template foundation and retain actual Mesa outcome
         run: |
           export VK_DRIVER_FILES="$(python3 -c 'from pathlib import Path; print(next(Path("/usr/share/vulkan/icd.d").glob("*lvp*")))')"
           export TRAMES_ZINK_CPU_REFERENCE=1
           if [[ '${{ needs.scope.outputs.native_scope }}' == zink-gles ]]; then
-            python3 tests/integration/zink-foundation.py --require-render --snapshot-store target/zink-native-bundle/store
-            python3 scripts/prepare-zink-native-bundle.py
+            if [[ '${{ needs.scope.outputs.zink_mrt_only }}' == true ]]; then
+              python3 tests/integration/zink-foundation.py --probe-only --require-render --snapshot-store target/zink-native-bundle/store
+              python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-es3-linux --stage mrt
+              python3 scripts/prepare-zink-native-bundle.py --es3
+            else
+              python3 tests/integration/zink-foundation.py --require-render --snapshot-store target/zink-native-bundle/store
+              python3 scripts/prepare-zink-native-bundle.py
+            fi
           else
             python3 tests/integration/zink-foundation.py
           fi
@@ -452,6 +461,7 @@ jobs:
           name: zink-foundation-evidence
           path: |
             target/zink-foundation/
+            target/zink-es3-linux/
             target/zink-inputs/inputs.json
             target/vulkan-guest/manifest.json
           retention-days: 14
@@ -492,12 +502,17 @@ jobs:
           export MACOSX_DEPLOYMENT_TARGET=12.0
           export RUSTFLAGS="-C link-arg=-framework -C link-arg=IOKit -C link-arg=$(xcrun clang --print-runtime-dir)/libclang_rt.osx.a"
           cargo build -p trames-cli --release --locked
-          cargo run -p trames-vulkan --example timeline --release --locked 2>&1 | tee target/zink-metal-native/timeline.log
           cargo run -p trames-vulkan --example renderpass --release --locked 2>&1 | tee target/zink-metal-native/renderpass.log
-          cargo run -p trames-vulkan --example resources --release --locked -- target/zink-native-bundle/shaders/vulkan-resources.spv 2>&1 | tee target/zink-metal-native/resources.log
+          if [[ '${{ needs.scope.outputs.zink_mrt_only }}' != true ]]; then
+            cargo run -p trames-vulkan --example timeline --release --locked 2>&1 | tee target/zink-metal-native/timeline.log
+            cargo run -p trames-vulkan --example resources --release --locked -- target/zink-native-bundle/shaders/vulkan-resources.spv 2>&1 | tee target/zink-metal-native/resources.log
+          fi
           export TRAMES_RUNNER="$PWD/target/release/trames-run"
           export TRAMES_VULKAN_TRACE=1
           python3 tests/integration/zink-foundation.py --store target/zink-native-bundle/store --probe-only --require-render --output target/zink-metal
+          if [[ '${{ needs.scope.outputs.zink_mrt_only }}' == true ]]; then
+            python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-es3-metal --stage mrt
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -505,6 +520,7 @@ jobs:
           path: |
             target/zink-metal/
             target/zink-metal-native/
+            target/zink-es3-metal/
             target/zink-native-bundle/checksums.json
           retention-days: 14
   runtime-fastpaths:

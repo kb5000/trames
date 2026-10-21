@@ -1075,11 +1075,17 @@ impl Backend {
                 // This is an experimental 1.0 compute profile, not a complete
                 // Vulkan conformance claim or the host driver's extension set.
                 b[0] = (b[0] & 0xffffffff00000000) | vk::API_VERSION_1_0 as u64;
-                // The selected renderpass profile has one color attachment and
-                // one viewport. Do not let Mesa infer unsupported MRT/viewport counts.
+                // Bound the implemented MRT profile by the real native limit.
                 let properties =
                     unsafe { &mut *b.as_mut_ptr().cast::<vk::PhysicalDeviceProperties>() };
-                properties.limits.max_color_attachments = 1;
+                properties.limits.max_color_attachments = properties
+                    .limits
+                    .max_color_attachments
+                    .min(graphics::MAX_COLORS as u32);
+                properties.limits.max_fragment_output_attachments = properties
+                    .limits
+                    .max_fragment_output_attachments
+                    .min(properties.limits.max_color_attachments);
                 properties.limits.max_viewports = 1;
                 write_words(
                     m,

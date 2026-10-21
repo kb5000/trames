@@ -610,6 +610,7 @@ def main():
                                'accelerator/vulkan/templates.inc', 'accelerator/vulkan/entrypoints.inc',
                                'crates/trames-distro/src/vulkan.rs', 'tests/fixtures/vulkan-queries.c',
                                'tests/fixtures/zink-egl.c', 'tests/fixtures/vulkan-compute.c',
+                               'tests/fixtures/zink-es3.c', 'tests/integration/zink-es3.py',
                                'tests/fixtures/vulkan-texture.c', 'tests/integration/zink-foundation.py',
                                'scripts/prepare-zink-guest.py', 'scripts/build-vulkan-guest.sh',
                                'scripts/ios-ci-scope.py', '.github/workflows/ios.yml', '.github/workflows/linux.yml'}
@@ -762,6 +763,11 @@ def main():
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=' + plan['native_scope'] + '\n')
                         output.write('skip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
+                        if plan.get('zink_mrt_only'):
+                            if plan['native_scope'] != 'zink-gles':
+                                raise RuntimeError('MRT plan requires the changed GLES native/guest validation')
+                            output.write('zink_mrt_only=true\n')
+                            print('Run changed MRT/format native pixels and original Mesa dense/sparse draws on Linux and Apple; reuse unchanged CPU/MMU/network/UI and unrelated compute/timeline checks. No IPA.')
                         if gpu_reuse:
                             output.write('zink_egl_only=true\n')
                             print('Reuse exact unchanged Linux/Apple Vulkan module checks; validate changed EGL component, distro install and embedding.')

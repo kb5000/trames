@@ -78,9 +78,9 @@ Driver-backed timeline counters and host/GPU waits/signals are covered by the
 
 ## Graphics resources
 
-Core graphics includes native 2D optimal-tiled RGBA8/BGRA8 UNORM/sRGB images and
-D16/D32 depth images, binding/memory requirements, image views, single-color
-render passes with optional depth, framebuffer and vertex/fragment pipelines.
+Core graphics includes native optimal-tiled uncompressed 2D color/float images
+and D16/D32 depth images, binding/memory requirements, image views, up to eight
+color outputs with optional depth, framebuffer and vertex/fragment pipelines.
 Driver-backed renderpass2 and imageless framebuffer attachment binding are also
 available in this single-subpass profile; recorded commands retain late-bound
 views/images until native submissions complete. See [Zink coverage](zink.md).
@@ -118,10 +118,10 @@ Each descriptor slot retains all its resources, including both view and sampler;
 updates replace those slots, while submission snapshots retain prior dependencies
 until GPU completion. Graphics and compute pipeline bindings are independent.
 
-RGBA8/BGRA8 textures support optimal 2D, one mip/layer/sample, explicit uploads,
+Supported uncompressed textures retain optimal 2D, one mip/layer/sample, explicit uploads,
 `SHADER_READ_ONLY_OPTIMAL`/GENERAL layouts, nearest/linear filtering, and normalized
 repeat/mirrored-repeat/clamp-to-edge/clamp-to-border sampling. Native format
-properties bound sampling/filter support. Buffer/image copies check offsets,
+properties bound sampling/filter support. Buffer/image copies use actual texel sizes and check offsets,
 padded row/image pitches, subresources and buffer/image extents. Sampler
 anisotropy is queried from the host, must be enabled at device creation and
 uses the native sampler with the native maximum. Comparison, unnormalized

@@ -1,27 +1,22 @@
 {
-  "base_sha": "2ea396ce93ed67341cc50ec2f41131f4a2cda0e0",
-  "native_scope": "device-build",
-  "reason": "Owner-requested current-state test IPA 1.2.0 build34. Recompile current optimized iPad runtime. Reuse exact-source successful Linux/Apple clock/runtime acceptance plus unchanged Metal graphics, frontend gestures and paired original musl/GPU guest libraries. No Firefox diagnostic patches or preference override.",
-  "device_build": {
-    "clock_runtime": {
-      "sha": "95830f6aeff866f91b2db2aac22293c070ba3f2f",
-      "run": 39414333180
-    },
-    "zink": {
-      "sha": "18162c9c53ba1d8334b227087cbfd1474633bb2e",
-      "run": 39264897300
-    },
-    "frontend": {
-      "sha": "aa4528166c8d0cdb04f3fe540730d9af63ed7f07",
-      "run": 39062598012
-    },
-    "guest": {
-      "sha": "534e223e284df48f207500e84ab4cd05dd3d3958",
-      "run": 39015795319
-    }
-  },
+  "base_sha": "fa5dbc0b085df74507d7ff0ade91ecf4c8c79659",
+  "native_scope": "zink-gles",
+  "zink_mrt_only": true,
+  "reason": "Real MRT and uncompressed format/copy expansion toward ES3. Validate changed Vulkan module, native attachment/format pixels, original Mesa dense/sparse MRT and Apple/iOS embedding. Reuse unchanged CPU/MMU/Linux/network/UI plus unrelated compute/timeline acceptance; no IPA. Full ES3 and Firefox GPU rendering remain incomplete.",
   "changed_file_sha256": {
-    "apps/ios/project.yml": "822174f8b38e2b16f7a565451b470a92085ea4e7cab0e209021c36a5cc65a191",
-    "scripts/ios-ci-scope.py": "0ec4467900b2e504fd830d63b99479a5e78d932b9545a24fce037ff4ec8d9c3a"
+    ".github/workflows/linux.yml": "54a1f1ab193cea14bfc3af6f4d6c1b9a57866e256e8a9f9f6170e80014e2451f",
+    "accelerator/vulkan/graphics.inc": "a8cca8a6a1a8cd45bd84665c3cc29bd07bdce60aadcbb954d2f0c1d8777af67a",
+    "accelerator/vulkan/zink.inc": "cf7e0da238361c3ee3f944d8c21c9df7865d1352c21c326cfebdc60508912e48",
+    "crates/trames-vulkan/examples/renderpass.rs": "4a904744ac65120b29a3c14be6e418132657d06180ab09a2fbca133655ef511a",
+    "crates/trames-vulkan/src/backend.rs": "d45c3f0db556067b8fbe12566725cd3e419f5ebefee9bf9df94f91073b42c84f",
+    "crates/trames-vulkan/src/backend/graphics.rs": "33fa1c79ba21f859b365968333a82dfc71c96c1c5d22f8b294e111dd472ce8b3",
+    "docs/architecture/vulkan-compute.md": "5e35b600db5c7d5a28b21285084598e1f17d1ae53beb2821f3cdf00c9fa75141",
+    "docs/architecture/zink.md": "6287009ea46ce6453501c1a731f2e65b8da6a884aaf8f9f57d63fea62d66fae2",
+    "docs/validation/zink-es3.md": "9d3096e65fc2aa8b9dc625c04bd3d280c2d318250745201d706ffdd5d01ed465",
+    "scripts/ios-ci-scope.py": "b7e69348895a49cc1f891f514140280ffa6f9aa774877c01c6f9ee1c2706fe73",
+    "scripts/prepare-zink-guest.py": "7442dc0154ec1f271e64281642cbbb2f7f18030eb5a5444d3a98b28ea21ee183",
+    "scripts/prepare-zink-native-bundle.py": "074dd2326fc959f73be220fd550aa5d93d42817dda7147676bdee28d743ee4ae",
+    "tests/fixtures/zink-es3.c": "52d5ef8d6bd6c4890d7d75a50bc053d83c54c2ffea049b6dfff43b4168c034d3",
+    "tests/integration/zink-es3.py": "20508c752828d3df7f3ef922ccba023a24b8da3bbaef07f4685118071c790aa7"
   }
 }

@@ -57,10 +57,11 @@ resize、close、重启和旧帧保活已在Linux参考及Apple Metal通过；Ap
   timeline properties返回真实最大值差。guest pNext不跨宿主边界。bridge未通过Vulkan
   conformance，因此返回的conformanceVersion为零，不继承宿主证书。
 - `VK_KHR_create_renderpass2`：原生KHR创建/开始/结束命令及core/KHR别名，当前仍是
-  单subpass、一个颜色附件、可选D16/D32深度，单层/单sample。没有可用的next-subpass
+  单subpass、最多8个颜色输出、可选D16/D32深度，单层/单sample。支持空颜色输出槽，
+  已使用附件按颜色顺序紧凑排列，再附加可选深度。没有可用的next-subpass
   转换；非零viewMask、多个subpass、input/resolve attachments尚未支持。
 - `VK_KHR_imageless_framebuffer`：原生feature查询/显式启用、附件格式/usage/尺寸约束，
-  framebuffer创建时不绑定图片；legacy或renderpass2 begin时绑定实际view。每次recording
+  framebuffer创建时不绑定图片；legacy或renderpass2 begin时绑定实际view（最多8色加深度）。每次recording
   独立保留这些view及image/memory，提交快照沿用原依赖图，reset后不会提前释放在途资源。
 - 依赖扩展`maintenance2`、`multiview`、`image_format_list`按原生能力枚举。multiview三个
   feature均为false；只接受零viewMask。支持point-clipping原生属性、image-view usage、
@@ -72,7 +73,7 @@ resize、close、重启和旧帧保活已在Linux参考及Apple Metal通过；Ap
 ## 本批GL/资源扩展
 
 - 布局可见性支持`ALL_GRAPHICS`/`ALL`，不因此启用geometry/tessellation执行。
-  单颜色附件/单viewport的实际限制如实报告，兼容render pass按格式/深度匹配，
+  最多8个颜色输出（受真实driver限制）/单viewport如实报告，兼容render pass按输出槽格式/深度匹配，
   允许不同load/store/layout的兼容对象共用framebuffer/pipeline。
 - 基础features按driver查询并显式启用：anisotropy、logicOp、fillModeNonSolid、
   shaderClipDistance、independentBlend。`EXT_scalar_block_layout`同样按真实driver能力查询/启用。
@@ -86,7 +87,9 @@ resize、close、重启和旧帧保活已在Linux参考及Apple Metal通过；Ap
   不把guest指针或driver对象直接传入宿主。与原API相同，外部同步仍由调用方负责。
 - 可变格式/extended-usage 2D图片、显式分量swizzle、单层array view；image-format-list
   仅为兼容性元数据，列出一个格式不表示已支持创建该格式。实际image/view仍经profile过滤。
-  新增RGBA8 SNORM/UINT/SINT图片，native blend/storage/texel格式能力按已实现路径过滤。
+  核心未压缩单/双/三/四通道、整数/归一化、16/32位浮点和常用packed图片均按原生
+  format能力查询；64位通道、压缩块和stencil仍不支持。复制按实际texel字节数与
+  depth aspect计算边界，native blend/storage/texel/vertex能力继续按已实现路径过滤。
 - 九种核心dynamic graphics states及原生命令、discard/depth-bias和point/line/triangle拓扑。
   当前line width为1、depth-bias clamp为0，未实现的静态bias参数会明确失败。
 - 真实`KHR_portability_subset`查询（仅宿主有该扩展时）让原版Mesa选择MoltenVK上游路径；
@@ -104,6 +107,10 @@ Wayland EGL复用现有native swapchain/Metal texture路径，新增可采样swa
 多种类型同时标为local；避免无意义的初始CPU上传，也避开Paravirtual Metal在绑定图片时
 的replaceRegion崩溃。没有私有类型时仍保留符合memoryTypeBits的fallback。
 后续继续扩展格式/图像维度/mipmap、渲染状态和真实可用features。
+
+ES3首批的MRT、宽格式、原生复制验证与后续缺口见
+[ES3推进记录](../validation/zink-es3.md)。目前原版Mesa仍未提供ES3 context；
+多附件绘制通过不等于Firefox硬件WebRender已经启用。
 
 Mesa25.1.9的ES2 context启用GL-thread时，SwapBuffers调用的内部
 `InternalInvalidateFramebufferAncillaryMESA`在上游`gl_API.xml`仅标为ES3，从而产生

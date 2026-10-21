@@ -58,7 +58,7 @@ for package in packages:
             if args.wayland and name.as_posix().endswith('/stable/xdg-shell/xdg-shell.xml'):
                 (sdk / 'xdg-shell.xml').write_bytes(archive.extractfile(entry).read())
                 continue
-            if name.as_posix().startswith(('usr/include/EGL/', 'usr/include/GLES2/', 'usr/include/KHR/')) or (
+            if name.as_posix().startswith(('usr/include/EGL/', 'usr/include/GLES2/', 'usr/include/GLES3/', 'usr/include/KHR/')) or (
                     args.wayland and name.parent.as_posix() == 'usr/include' and name.name.startswith('wayland-')):
                 target = sdk / name
             elif shared:
@@ -85,6 +85,8 @@ common = [compiler, '-O2', '-mno-outline-atomics', '-Wall', '-Wextra', '-Werror'
           '-L' + str(ROOT / 'target/alpine-build/lib'), '-Wl,-rpath-link,' + str(sdk)]
 subprocess.run([*common, str(ROOT / 'tests/fixtures/zink-egl.c'), '-l:libEGL.so.1',
                 '-l:libGLESv2.so.2', '-o', str(out / 'zink-egl')], check=True)
+subprocess.run([*common, str(ROOT / 'tests/fixtures/zink-es3.c'), '-l:libEGL.so.1',
+                '-l:libGLESv2.so.2', '-o', str(out / 'zink-es3')], check=True)
 if args.wayland:
     scanner = os.getenv('TRAMES_WAYLAND_SCANNER', 'wayland-scanner')
     subprocess.run([scanner, 'client-header', str(sdk / 'xdg-shell.xml'), str(sdk / 'xdg-shell-client-protocol.h')], check=True)
