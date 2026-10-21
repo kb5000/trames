@@ -138,7 +138,7 @@ try:
     debug+='TRAMES_VULKAN_TRACE=1 '
     if not a.native_wsi:debug+='TRAMES_XWAYLAND_NATIVE_WSI=0 '
     shell(debug+"trames-xwayland :0 >/tmp/xwayland.log 2>&1 &\n")
-    shell("printf 'dialog fixture\\n' >/tmp/trames-dialog-fixture.txt; while ! xprop -root >/dev/null 2>&1; do sleep .1; done; GDK_BACKEND=x11 GTK_IM_MODULE=xim XMODIFIERS=@im=trames GSETTINGS_BACKEND=memory GTK_USE_PORTAL=0 NO_AT_BRIDGE=1 mousepad --disable-server /tmp/trames-dialog-fixture.txt >/tmp/mousepad-dialog.log 2>&1 &\n")
+    shell("printf 'dialog fixture\\n' >/tmp/trames-dialog-fixture.txt; while ! xprop -root >/dev/null 2>&1; do sleep .1; done; GDK_BACKEND=x11 GTK_IM_MODULE=xim XMODIFIERS=@im=trames GSETTINGS_BACKEND=memory GTK_USE_PORTAL=0 NO_AT_BRIDGE=1 "+("GTK_CSD=0 " if os.environ.get("TRAMES_DIALOG_GTK_CSD")=="0" else "")+"mousepad --disable-server /tmp/trames-dialog-fixture.txt >/tmp/mousepad-dialog.log 2>&1 &\n")
     scene=wait(lambda s:any('trames-dialog-fixture' in w['title'] for w in s['windows']));editor=next(w['id'] for w in scene['windows'] if 'trames-dialog-fixture' in w['title'])
     print('editor:',scene['windows'],flush=True)
     command(op='focus',window=editor);wait(lambda _:gpu(editor));key(30)

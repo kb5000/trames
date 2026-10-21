@@ -210,17 +210,18 @@ jobs:
             target/release/libtrames_ffi.dylib
             target/zink-metal-pixels.dylib
           retention-days: 7
-      - name: Isolate only synchronization and argument-buffer behavior
+      - name: Inspect optimized shader variants and server-decorated dialogs
         run: |
           export TRAMES_VULKAN_TRACE=1 MTL_DEBUG_LAYER=1 MVK_CONFIG_DEBUG=1
           status=0
-          for scenario in sync argument-buffers; do
-            unset TRAMES_DIALOG_NO_FEEDBACK TRAMES_DIALOG_ZINK_DEBUG MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS
-            if [[ "$scenario" == sync ]]; then
-              export TRAMES_DIALOG_ZINK_DEBUG=sync,noreorder,flushsync
+          for scenario in noopt server-decorations; do
+            unset TRAMES_DIALOG_NO_FEEDBACK TRAMES_DIALOG_ZINK_DEBUG TRAMES_DIALOG_GTK_CSD MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS
+            if [[ "$scenario" == noopt ]]; then
+              export TRAMES_DIALOG_ZINK_DEBUG=noopt
             else
-              export MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS=0
+              export TRAMES_DIALOG_GTK_CSD=0
             fi
+            export MVK_CONFIG_SHADER_DUMP_DIR="$PWD/target/dialog-shaders-$scenario"
             if python3 -c 'import subprocess,sys; sys.exit(subprocess.run(sys.argv[1:], timeout=180).returncode)' python3 tests/integration/xwayland-dialog.py --native-wsi --ffi target/release/libtrames_ffi.dylib --store target/xwayland-dialog-inputs/store --output "target/dialog-metal-$scenario" --metal-validator target/zink-metal-pixels.dylib 2>&1 | tee "target/dialog-metal-$scenario.log"; then
               echo "$scenario passed"
             else
@@ -235,4 +236,5 @@ jobs:
           path: |
             target/dialog-metal-*/
             target/dialog-metal-*.log
+            target/dialog-shaders-*/
           retention-days: 7
