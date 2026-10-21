@@ -103,3 +103,8 @@ Linux 和 Metal 两个 evidence ZIP 的 SHA-256 与全部 CRC 已核对，guest 
 没有重复已通过的 query/native image/模块/iOS 编译；Mac/iOS native library 摘要与
 34bd466 的产物完全相同，guest bundle 逐文件校验，另一个 15 项 evidence ZIP 的
 SHA-256/全部 CRC 也通过核对。此补跑仅更改 CI 与记录，运行源码未变。
+
+
+后续[depth/stencil批次](vulkan-stencil.md)已合入并通过Linux与云端Metal实际像素检查，
+补齐本文曾列出的D32S8/shadow-sampling缺口。原版Mesa已报告ARB_depth_buffer_float，
+下一项明确的版本前提是vertex attribute divisor；Apple原生GPU TF仍待实现。

@@ -26,7 +26,7 @@
 同一普通Vulkan C客户端分别经过原版宿主loader与guest loader/ICD；SPIR-V由原版
 glslang生成。独立标量公式计算预期模板/深度/颜色，不从另一渲染器复制预期。
 
-- 原生/guest均通过6种宿主支持格式的buffer→image→image→buffer，涵盖非零mip、
+- Linux原生/guest均通过6种宿主支持格式的buffer→image→image→buffer，涵盖非零mip、
   两层、独立depth/stencil、带padding的行/层、精确末尾边界；D16S8由原生查询拒绝，
   未宣称支持。X8_D24未定义的高8位不参与比较。
 - 6轮共18,432像素覆盖初始0/160/255、8种op/compare、front/back、stencil-fail、
@@ -39,7 +39,7 @@ glslang生成。独立标量公式计算预期模板/深度/颜色，不从另�
   网络、UI与未改动的query/TF数据验收复用前批结果。
 
 本地Linux使用原版Lavapipe CPU Vulkan参考，不代表Apple GPU性能或iPad验收。
-Apple Metal与iOS FFI编译由本批CI验证，结果完成后追加记录。
+Apple Metal与iOS FFI编译也已通过，详见下方同源CI记录。
 
 ```sh
 python3 tests/integration/vulkan-stencil.py --store target/zink-inputs/store \
@@ -62,3 +62,22 @@ ES3 configs仍为0；下一项是原生divisor feature/property、pipeline pNext
 实际输入索引与GPU数据测试。Apple另需实现原版MoltenVK缺少的原生GPU TF。
 
 完整GLES3、Firefox硬件WebRender和iPad实际图形体验均未据此宣称完成。
+
+
+## 同源 CI 完成
+
+源码 [3703467](https://github.com/kb5000/trames/commit/3703467031bcf7362636e644e899ed82a2518e66)
+的 [CI 39574168076](https://github.com/kb5000/trames/actions/runs/39574168076) 全部通过。
+Linux原生/guest与Apple Paravirtual GPU的guest/原版loader均完成上述模板、深度和采样读回。
+Apple实际支持D16、D32、S8、D32S8四种传输格式；X8D24、D16S8、D24S8被真实
+查询拒绝，没有强行暴露。两边各验证18,432个模板/深度/颜色像素和3,072个采样像素。
+
+两边26项Vulkan测试、严格Clippy、受影响的原生附件/子资源回归及Apple iOS FFI
+检查通过。Mac/iOS固定原版MoltenVK源码、两个patch和构建recipe均未变，库缓存的
+input hashes与library SHA再次核对一致，未无谓重编原生依赖。
+Linux/Metal两个ZIP的SHA-256/全部CRC、guest client/ICD/三份SPIR-V的跨宿主同一性、
+source-bound bundle和native build metadata均已校验，见[证据摘要](vulkan-stencil-ci.json)。
+
+原版Mesa在Linux/Metal均报告 `ARB_depth_buffer_float=1` 和 `ARB_instanced_arrays=0`；
+Linux的TF=1、Metal的TF=0。两边的ES3 configs均为0，JSON明确保留 `passed=false`。
+仅追加证据不重复上述验收；没有iPad真机验收或IPA，也未公开Firefox原始数据。

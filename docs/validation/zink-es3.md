@@ -132,3 +132,8 @@ compatibility context明确报告 `GL_ARB_depth_buffer_float=1`；同一驱动�
 `have_EXT_vertex_attribute_divisor`；这是下一项可落实的版本前提。
 `--capabilities`是正常OpenGL API context中的扩展探针，非ES3通过判定；
 仅在ES API可见的扩展不能凭该列表的0值判定实现缺失。默认ES3像素/TF验收仍严格失败。
+
+同源[CI 39574168076](https://github.com/kb5000/trames/actions/runs/39574168076)已在云端Metal
+完成相同模板/深度/采样像素检查，两边26项模块测试及iOS FFI检查通过。
+Metal原版Mesa同样报告depth-buffer-float=1、instanced-arrays=0，此外TF=0；
+两边的ES3配置仍为0，未将capability-probe的正常结束记作ES3渲染通过。

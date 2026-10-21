@@ -119,7 +119,7 @@ Wayland EGL复用现有native swapchain/Metal texture路径，新增可采样swa
 查询池、原生GPU transform feedback桥接（stream 0、最多4个buffer）、counter续写、indexed
 query及byte-count间接绘制见[验证与边界](../validation/vulkan-feedback.md)。扩展只在native
 driver实际支持时暴露；MoltenVK 1.4.2缺少GPU实现，Apple不声明此feature。完整GLES3仍未打通。
-depth/stencil已接通并通过Linux原生/guest读回；原版Mesa现在报告ARB_depth_buffer_float，
+depth/stencil已接通并通过Linux原生/guest与云端Metal读回；原版Mesa现在报告ARB_depth_buffer_float，
 但ES3 configs仍为0，明确缺少ARB_instanced_arrays（Zink依赖vertex_attribute_divisor）。
 后续继续实现原生divisor、Apple GPU transform feedback、压缩/MSAA及其他实际缺口。
 

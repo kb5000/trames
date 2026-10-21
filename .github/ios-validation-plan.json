@@ -1,30 +1,17 @@
 {
-  "base_sha": "329a6d5bb3dd251d99cf706695a4f59204974d7d",
+  "base_sha": "3703467031bcf7362636e644e899ed82a2518e66",
   "native_scope": "zink-gles",
   "zink_mrt_only": true,
-  "zink_stencil_only": true,
-  "reason": "Depth/stencil formats, aspect-specific transfers, native front/back stencil state, shadow/stencil sampling and original Mesa capability probes. Validate affected Vulkan module/native pixels and iOS FFI. Reuse passed unchanged color-only Mesa/query/TF, CPU, Linux, network and UI checks; no IPA, no raw Firefox inputs.",
+  "zink_metal_only_reuse": {
+    "run": 39574168076,
+    "sha": "3703467031bcf7362636e644e899ed82a2518e66"
+  },
+  "reason": "Evidence-only completion of passed depth/stencil Linux and Metal acceptance. Verified both ZIP hashes/CRCs, exact guest client/ICD/SPIR-V and native Mac/iOS cache input/library hashes. Runtime/native/guest source unchanged; reuse all completed checks. No IPA or raw Firefox inputs.",
   "changed_file_sha256": {
-    ".github/workflows/linux.yml": "79f0e81632ec859e47b9000d4e309ec83f00d582c3887a3427933d3f64950a7a",
-    "accelerator/vulkan/graphics.inc": "4fb87dfcea86f3c9bfb595267d6ef9106a3a7b1f26920cc710f141c9410ba398",
-    "accelerator/vulkan/icd.c": "7de14a3946b7abe32bdaf45597f72cd947aa9b9b4cb3d745f8325d41d8652f13",
-    "accelerator/vulkan/zink.inc": "3ce947c6bc4a40cd6bd72b282343c5eea88a575c321f3c030306b9ce9334aabc",
-    "crates/trames-vulkan/src/backend/graphics.rs": "b8c09730ba79efd6d0b2fc17d1ac5400022b939157097ff9a304697cb165ecd9",
-    "crates/trames-vulkan/src/backend/textures.rs": "b67069b45a4769d266da35ff0ac72cb83232dbaca6f3570030af2c8c9f3d87eb",
-    "docs/architecture/vulkan-compute.md": "616fed14f480def32c07b76119bd2f47b4da3eab8426441d26859c362c1d149b",
-    "docs/architecture/zink.md": "83522031034526d618e1bd6289967a6b884b1b1a724c06b52bc02fc614d14a7c",
-    "docs/validation/vulkan-stencil.md": "9ea7ef3889d9025c74c9803588634dfce9d46095b63aab9f8c3e62a38f7a8015",
-    "docs/validation/zink-es3.md": "b2dc6ddc67ae8ec3d1230fd620e1af084e961683c7b652d3d63067ca32ab1d46",
-    "scripts/build-vulkan-fixtures.sh": "e5c3e9b33507d956e3ec41683e2647b274de67e116f7f3efe20c2b697974e9e5",
-    "scripts/ios-ci-scope.py": "c2c38c4037cb63d826b015eea82bddf39159047d360d9d9b4e04465b5fd233bf",
-    "scripts/prepare-zink-guest.py": "3665cd995fa4ec3a33d58ec59068db6957547b011b4e03ba27dff9800cea3830",
-    "scripts/prepare-zink-native-bundle.py": "36709b483e5722ce05b63c1440fb960fc7e7553a0975003e23a1641f26b95752",
-    "tests/fixtures/vulkan-stencil-sample.frag": "29a5eaa422009444e95d2231e1975a5296d7c37d1e442358dd24479afbb41381",
-    "tests/fixtures/vulkan-stencil.c": "58bee860b8a8b691d61c27156592b013bc45c8b255592b240a2c268a78dd8f6e",
-    "tests/fixtures/vulkan-stencil.frag": "e1fd970a6ab883bccc060a32c388ce276d689924ceb1a37e7857f01e3a1af5ab",
-    "tests/fixtures/vulkan-stencil.vert": "856b2e0bf2397f1e0bef27082c37caac42821bd185dd1880fcb7402ef6e931fc",
-    "tests/fixtures/zink-es3.c": "7e63aab0d21b403e27171671acc44d805e8e0a4a073a953eea3652ced9947207",
-    "tests/integration/vulkan-stencil.py": "76c4672e2f47cea35a6f322481a9ff23ba8fe54bd75072b125aff33d5b1c6f7b",
-    "tests/integration/zink-es3.py": "1d14ffcafe2d9f619d4cc4a55ae6f5fdef7a8b79431f03caf02a44ed51865615"
+    "docs/architecture/zink.md": "cac61b368d453d7ff284f2fcef35c785222a75a7b160e7736d0f396b8ed52166",
+    "docs/validation/vulkan-feedback.md": "574d37d73c866c9a32c380170e163e3f98b048b6f670531eab93ba816585596a",
+    "docs/validation/vulkan-stencil-ci.json": "f58919feb9255da9947011c43583ab6560c23b01a6adec7b9f38bfc265745ed0",
+    "docs/validation/vulkan-stencil.md": "1e972356fad6af6bbca3002f0c4bbf938f5f6cdde4b6955a4d41019cafce7ace",
+    "docs/validation/zink-es3.md": "f3f11e2ce8099a48a99ddf6b296155aedfe026b56294fb953853f3b9ea1e2a59"
   }
 }
