@@ -31,7 +31,7 @@ static NSString* contents(NSString* path) {
     if (!text) throw std::runtime_error(error.description.UTF8String ?: "missing shader");return text;
 }
 static id<MTLLibrary> library(NSString* source) {
-    NSError* error = nil;auto options = [MTLCompileOptions new];options.fastMathEnabled = NO;
+    NSError* error = nil;auto options = [MTLCompileOptions new];
     auto result = [device newLibraryWithSource:source options:options error:&error];
     if (!result) throw std::runtime_error(error.description.UTF8String ?: "Metal shader compilation failed");return result;
 }
@@ -119,7 +119,7 @@ int main(int argc, char** argv) { @autoreleasepool { try {
     auto dir = [NSString stringWithUTF8String:argv[1]];
     NSString* source = [contents([dir stringByAppendingPathComponent:@"vulkan-native-tf.metal"]) stringByAppendingString:contents([NSString stringWithUTF8String:argv[2]])];
     auto lib = library(source);
-    auto meta = [NSJSONSerialization JSONObjectWithData:[NSData dataWithContentsOfFile:[dir stringByAppendingPathComponent:@"vulkan-native-tf.json"]] options:0 error:nil];
+    NSDictionary* meta = [NSJSONSerialization JSONObjectWithData:[NSData dataWithContentsOfFile:[dir stringByAppendingPathComponent:@"vulkan-native-tf.json"]] options:0 error:nil];
     check([meta[@"buffers"] unsignedIntValue] == 3 && [meta[@"scalars"] unsignedIntValue] == 13, "compiler layout metadata");
     std::array<uint32_t,4> strides{{64,16,0,0}};Metal engine(device, lib, strides);
     auto compute = capture_pipeline(lib, meta[@"entry"], 0);
@@ -132,14 +132,23 @@ int main(int argc, char** argv) { @autoreleasepool { try {
         {"line-list",5,2,1,3,0,{}, {0,1,2,3,5,6,7,8}},
         {"line-strip",4,1,2,6,0,{}, {0,1,1,2,2,3}},
         {"triangle-list",7,1,3,6,0,{}, {0,1,2,3,4,5}},
-        {"triangle-strip",5,1,4,6,0,{}, {0,1,2,2,1,3,2,3,4}},
-        {"triangle-fan",5,1,5,9,0,{}, {0,1,2,0,2,3,0,3,4}},
+        {"triangle-strip",5,1,4,6,0,{}, {0,1,2,1,3,2,2,3,4}},
+        {"triangle-fan",5,1,5,9,0,{}, {1,2,0,2,3,0,3,4,0}},
         {"line-restart16",8,1,2,5,16,{0,1,0xffff,3,4,5,0xffff,7},{0,1,3,4,4,5}},
         {"triangle-restart32",10,2,4,12,32,{0,1,2,3,0xffffffffu,5,6,7,8,9},
-          {0,1,2,2,1,3,5,6,7,7,6,8,7,8,9,10,11,12,12,11,13,15,16,17,17,16,18,17,18,19}},
+          {0,1,2,1,3,2,5,6,7,6,8,7,7,8,9,10,11,12,11,13,12,15,16,17,16,18,17,17,18,19}},
         {"zero",0,1,0,0,0,{},{}},
         {"full",6,1,3,2,0,{}, {0,1,2,3,4,5}},
     };
+    NSDictionary* reference = [NSJSONSerialization JSONObjectWithData:[NSData dataWithContentsOfFile:
+        [dir stringByAppendingPathComponent:@"native-vulkan-reference.json"]] options:0 error:nil];
+    check(reference != nil && [reference[@"cases"] count] == 6, "missing independent native Vulkan reference");
+    for (NSDictionary* item in reference[@"cases"]) {
+        Case test{"native-vulkan-reference",5,2,[item[@"topology"] unsignedIntValue],64,0,{},{}};
+        for (NSNumber* value in item[@"map"]) test.map.push_back(value.unsignedIntValue);
+        check(test.map.size() == [item[@"vertices"] unsignedIntValue], "native Vulkan reference count");
+        cases.push_back(test);
+    }
     for (const auto& test : cases) {
         Parameters p{test.vertices,test.instances,test.topology,unsigned(!test.indices.empty()),test.index_type,0,3,
                      std::max(1u,3*test.vertices*test.instances),{test.capacity*64,test.capacity*16,0,0},{64,16,0,0}};

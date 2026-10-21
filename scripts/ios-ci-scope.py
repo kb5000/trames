@@ -600,7 +600,8 @@ def main():
                     allowed = {'.github/ios-validation-plan.json', '.github/workflows/linux.yml',
                                '.github/workflows/ios.yml', 'scripts/ios-ci-scope.py', 'scripts/prepare-vulkan.py',
                                'scripts/build-vulkan-native-tf.py', 'tests/fixtures/vulkan-native-tf-compiler.cpp',
-                               'tests/fixtures/vulkan-native-tf-metal.mm', 'tests/fixtures/vulkan-native-tf.vert'}
+                               'tests/fixtures/vulkan-native-tf-metal.mm', 'tests/fixtures/vulkan-native-tf.vert',
+                               'tests/integration/vulkan-native-tf-reference.py'}
                     delta = subprocess.check_output(['git', 'diff', '--name-only', reuse['sha'], 'HEAD'], text=True).splitlines()
                     if any(p not in allowed and not p.startswith(('docs/', 'crates/trames-vulkan/native/transform-feedback/')) for p in delta):
                         raise RuntimeError('Native TF engine reuse changed linked runtime/guest inputs')
@@ -615,10 +616,31 @@ def main():
                                 j['name'] == name and j['conclusion'] == 'success' for j in jobs)
                                 for name in ('zink-foundation', 'zink-gles-apple'))):
                         raise RuntimeError('Native TF engine requires passed exact-source Linux/Metal baseline')
+                    compiler_reuse = plan.get('tf_compiler_reuse')
+                    if compiler_reuse:
+                        compiler_allowed = {'.github/ios-validation-plan.json', '.github/workflows/linux.yml',
+                            '.github/workflows/ios.yml', 'scripts/ios-ci-scope.py',
+                            'tests/integration/vulkan-native-tf-reference.py', 'tests/fixtures/vulkan-native-tf-metal.mm',
+                            'crates/trames-vulkan/native/transform-feedback/assemble.metal',
+                            'crates/trames-vulkan/native/transform-feedback/metal.hpp',
+                            'crates/trames-vulkan/native/transform-feedback/metal.mm'}
+                        delta = subprocess.check_output(['git', 'diff', '--name-only', compiler_reuse['sha'], 'HEAD'], text=True).splitlines()
+                        if any(p not in compiler_allowed and not p.startswith('docs/') for p in delta):
+                            raise RuntimeError('TF shader reuse changed compiler/shader/build inputs')
+                        prior = tf_evidence(f"runs/{compiler_reuse['run']}")
+                        jobs = tf_evidence(f"runs/{compiler_reuse['run']}/jobs")['jobs']
+                        artifacts = tf_evidence(f"runs/{compiler_reuse['run']}/artifacts")['artifacts']
+                        if (prior['head_sha'] != compiler_reuse['sha'] or prior['head_repository']['full_name'] != repo
+                                or prior['path'] != '.github/workflows/linux.yml' or not any(
+                                    j['name'] == 'vulkan-tf-engine-linux' and j['conclusion'] == 'success' for j in jobs)
+                                or not any(a['name'] == 'vulkan-native-tf-shaders' and not a['expired'] for a in artifacts)):
+                            raise RuntimeError('Missing passed exact-source TF shader bundle')
                     print('Run only new TF compiler/native Metal engine and iOS native compile; reuse unchanged passed runtime, guest, Vulkan/Mesa and UI. No IPA; no public TF capability claim.')
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=vulkan-tf-engine\n')
                         output.write('skip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
+                        if compiler_reuse:
+                            output.write(f"tf_shader_bundle_run={compiler_reuse['run']}\ntf_shader_bundle_sha={compiler_reuse['sha']}\n")
                     return
                 if plan.get('native_scope') == 'firefox-memory':
                     apple_retry = firefox_memory_apple_retry(plan, repo, dict(request.headers))

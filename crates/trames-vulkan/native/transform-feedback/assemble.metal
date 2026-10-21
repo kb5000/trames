@@ -57,7 +57,9 @@ kernel void trames_tf_assemble(constant TFParams& p [[buffer(0)]],
             // full. Overflow never disables rendering or partially writes one.
             if (needed <= p.mapCapacity && primitiveSize <= p.mapCapacity-needed) {
                 for (uint v = 0; v < primitiveSize; ++v) {
-                    uint n = p.topology == 4 && parity && v < 2 ? 1u-v : v;
+                    // Vulkan's default first provoking vertex is preserved by
+                    // these rotations, in addition to preserving winding.
+                    uint n = p.topology == 4 && parity && v > 0 ? 3u-v : p.topology == 5 ? (v+1u)%3u : v;
                     map[needed+v] = pending[n];
                 }
             }
@@ -97,8 +99,8 @@ kernel void trames_tf_map(constant TFParams& p [[buffer(0)]], const device uint*
     uint instance = i/perInstance, local = i%perInstance, primitive = local/size, vtx = local%size;
     uint source = local;
     if (p.topology == 2) source = primitive+vtx;
-    else if (p.topology == 4) source = primitive+((primitive&1u) && vtx<2 ? 1u-vtx : vtx);
-    else if (p.topology == 5) source = vtx ? primitive+vtx : 0;
+    else if (p.topology == 4) source = primitive+((primitive&1u) && vtx>0 ? 3u-vtx : vtx);
+    else if (p.topology == 5) source = vtx < 2 ? primitive+vtx+1 : 0;
     map[i] = instance*p.vertices+source;
 }
 

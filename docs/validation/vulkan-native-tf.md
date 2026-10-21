@@ -57,3 +57,11 @@ Apple 运行前逐个核对，原始依赖 archive 和许可证保留供 GPLv3 �
    raster replay 的 viewport/clip/point-size 配置和未启用 TF 时的原有快速路径。
 4. 通过现有普通 Vulkan host/guest TF oracle、原版 Mesa GLES3 TF 和 Apple 像素验收后，
    才能向 guest 报告扩展和真实上限。不能用内部 Metal 测试代替公开 API 验收。
+
+新增独立原生 Vulkan 参考：以原有普通 loader client 派生六种 topology 的固定输入变体，
+实际运行 native driver，保存捕获顺序和 query 统计供 Metal 对照。确认默认 first
+provoking vertex 要求 triangle strip 奇数图元为 `[i,i+2,i+1]`、fan 为
+`[i+1,i+2,0]`，不能只检查绕序。参考输出由驱动产生，不由本模块的 CPU 模型产生。
+首轮 Linux 编译通过；Apple 严格编译暴露验收代码中的废弃 Metal 属性和未明确的
+Objective-C id 类型，已修正。重试直接复用首轮已通过且源码未变的 compiler/MSL
+bundle，只补新的 native Vulkan 参考与修正后的 Metal/iOS 检查。

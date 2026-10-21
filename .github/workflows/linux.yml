@@ -46,6 +46,8 @@ jobs:
       zink_mesa_only: ${{ steps.scope.outputs.zink_mesa_only }}
       zink_guest_bundle_run: ${{ steps.scope.outputs.zink_guest_bundle_run }}
       zink_guest_bundle_sha: ${{ steps.scope.outputs.zink_guest_bundle_sha }}
+      tf_shader_bundle_run: ${{ steps.scope.outputs.tf_shader_bundle_run }}
+      tf_shader_bundle_sha: ${{ steps.scope.outputs.tf_shader_bundle_sha }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -65,13 +67,30 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Build unmodified original compiler and TF shader layouts
+      - uses: actions/download-artifact@v4
+        if: needs.scope.outputs.tf_shader_bundle_run != ''
+        with:
+          name: vulkan-native-tf-shaders
+          path: target/native-tf-reuse
+          run-id: ${{ needs.scope.outputs.tf_shader_bundle_run }}
+          github-token: ${{ github.token }}
+      - name: Verify original compiler layouts and independent Vulkan primitive reference
         run: |
           sudo apt-get update
-          sudo apt-get install --yes glslang-tools
+          sudo apt-get install --yes glslang-tools libvulkan-dev mesa-vulkan-drivers
           set -o pipefail
-          python3 scripts/build-vulkan-native-tf.py | tee target-native-tf-linux.log
-          python3 -m py_compile scripts/build-vulkan-native-tf.py scripts/ios-ci-scope.py scripts/prepare-vulkan.py
+          export VK_DRIVER_FILES="$(python3 -c 'from pathlib import Path; print(next(Path("/usr/share/vulkan/icd.d").glob("*lvp*")))')"
+          export LP_NUM_THREADS=2
+          if [[ -n '${{ needs.scope.outputs.tf_shader_bundle_run }}' ]]; then
+            python3 tests/integration/vulkan-native-tf-reference.py \
+              --reuse-shaders target/native-tf-reuse/target/vulkan-native-tf \
+              --reuse-run '${{ needs.scope.outputs.tf_shader_bundle_run }}' \
+              --reuse-sha '${{ needs.scope.outputs.tf_shader_bundle_sha }}' | tee target-native-tf-linux.log
+          else
+            python3 scripts/build-vulkan-native-tf.py | tee target-native-tf-linux.log
+            python3 tests/integration/vulkan-native-tf-reference.py | tee -a target-native-tf-linux.log
+          fi
+          python3 -m py_compile scripts/build-vulkan-native-tf.py scripts/ios-ci-scope.py scripts/prepare-vulkan.py tests/integration/vulkan-native-tf-reference.py
       - uses: actions/upload-artifact@v4
         with:
           name: vulkan-native-tf-shaders

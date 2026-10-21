@@ -1,25 +1,21 @@
 {
-  "base_sha": "63ddf568707448830fc70df8230e005e5c75c0e5",
+  "base_sha": "c7328d088635aa80ff88b8ee2dea46db2b1e7e48",
   "native_scope": "vulkan-tf-engine",
   "runtime_reuse": {
     "run": 39579538279,
     "sha": "5dd69304b1e71f7e9c4512ec8699fc9ce6de41b0"
   },
-  "reason": "Only new unlinked native TF engine/compiler/Metal acceptance. Verify original shader capture, GPU primitive assembly/counters/overflow and replay without repeating VS side effects. Reuse unchanged passed runtime/guest/Linux/Apple Vulkan/Mesa/iOS FFI; no advertised Apple TF, IPA or raw Firefox data.",
+  "reason": "Fix default provoking-vertex primitive order against an independent real native Vulkan driver, and Apple-only strict compilation diagnostics. Reuse passed original compiler/MSL bundle without rerunning it; run new Vulkan reference and remaining Metal/iOS checks. Existing runtime/guest/Mesa/UI unchanged; no IPA or public Apple TF claim.",
   "changed_file_sha256": {
-    ".github/workflows/ios.yml": "1354f8edae9e727936c404e9e2bba13e376323d6cf9f1a022e022d06a8a92795",
-    ".github/workflows/linux.yml": "fbc89b5edaa2bc76a17088727942d55767f1ce75f0e3552bb446cbf4ee8c03fe",
-    "crates/trames-vulkan/native/transform-feedback/assemble.metal": "0f54d24fd4aa9be2c4010ac48a33452be31552565e5ceceeb8909d6386825f1e",
-    "crates/trames-vulkan/native/transform-feedback/compiler.cpp": "30f41410d794fa58875e960da3e47df8b702cd8b13ca0f796e308bbadc7bcb47",
-    "crates/trames-vulkan/native/transform-feedback/compiler.hpp": "c9cfdb851c08cceb1a32127700e5f4a14faa6df9e0e57dc7884f3953fabccdfb",
-    "crates/trames-vulkan/native/transform-feedback/metal.hpp": "94cb187e59c2bbfeb65b9225906ac208a036310bdd44fb3cf10ed5be56a4e2ba",
-    "crates/trames-vulkan/native/transform-feedback/metal.mm": "66ada890a968765cf39d68ef8cba745767a018a9a36e83cba8472bb2e721d9b2",
-    "docs/validation/vulkan-native-tf.md": "8423baab0e9c27dbc7ac5367937a970cec347dfa594ee9d5fe22fbfb78dfbf18",
-    "scripts/build-vulkan-native-tf.py": "e747a949ab86ec07ffe22fee112aaebd9467469dd862de1fc2d092e1a035b228",
-    "scripts/ios-ci-scope.py": "08e3fe7bf49e59c5b6dccf2d326990ddb26447d15f8685c8604be57380621ecd",
-    "scripts/prepare-vulkan.py": "48c64864370f978c9f516b1f2eee5a334e077e499c6c1a9029550e14e001a5fa",
-    "tests/fixtures/vulkan-native-tf-compiler.cpp": "70994fa39b21db5e2b3ff27a424b5b892e4f6b3fcde63ea1df0ad1b8e48c5449",
-    "tests/fixtures/vulkan-native-tf-metal.mm": "ce8fbe6e59eff005cc7d71ff38506d33347650aa2187cf468d757f7231699358",
-    "tests/fixtures/vulkan-native-tf.vert": "3dbfa7a0fed12db478d9a9d30a72a0d6d4655763829aa2a6cfc3d8a023637124"
+    ".github/workflows/linux.yml": "425a14ede6389c08798eacec23dfbfc16e263ea01ed7309dba462f1d874ded2c",
+    "crates/trames-vulkan/native/transform-feedback/assemble.metal": "c592b81d167314d9aa115f4a6d727bc0a1f931a7e6004400f2d93e96d8bb0c11",
+    "docs/validation/vulkan-native-tf.md": "169e2080deb05274b5b7c32cbf1aa5466acf39382ff9232147db231a7e59e6fc",
+    "scripts/ios-ci-scope.py": "b3298c89090d4be634e402f9d0413bb509dc9295c1c2f3410af78b10b6248448",
+    "tests/fixtures/vulkan-native-tf-metal.mm": "f16e69d2720480660fa2acd4803d5b85ca5bc062d16b5c461e6624936a272f89",
+    "tests/integration/vulkan-native-tf-reference.py": "9bb22df8824bf3321710dbe8c6e4cd061e43de2a544cd73458bd8bf3c704845c"
+  },
+  "tf_compiler_reuse": {
+    "run": 39587222703,
+    "sha": "c7328d088635aa80ff88b8ee2dea46db2b1e7e48"
   }
 }
