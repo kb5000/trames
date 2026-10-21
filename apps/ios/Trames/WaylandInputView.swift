@@ -40,7 +40,9 @@ class WaylandInputView: UIView, UITextInput {
     var keyboardType: UIKeyboardType = .default
     var returnKeyType: UIReturnKeyType = .default
     override var canBecomeFirstResponder: Bool { true }
-    var hasText: Bool { textContext?.version == 4 || !document.isEmpty }
+    // A client may omit surrounding text (including existing remote content).
+    // Keep UIKit's Delete available and let the guest decide at its real caret.
+    var hasText: Bool { textContext != nil || !document.isEmpty }
     private func synchronizeDocument() {
         guard let context = textContext else {
             remoteSerial=nil; remoteEpoch=nil; document=""; selection=NSRange(location:0,length:0); cursorOffset=0; marked=nil
@@ -136,7 +138,7 @@ class WaylandInputView: UIView, UITextInput {
         }
         guard textContext != nil else { sendKey(14);return }
         if selection.length>0 { replace(WaylandTextRange(selection),withText:"");return }
-        guard selection.location>0 else { return }
+        guard selection.location>0 else { sendKey(14);return }
         let end=String.Index(utf16Offset:selection.location,in:document)
         let range=NSRange(document.index(before:end)..<end,in:document)
         replace(WaylandTextRange(range),withText:"")

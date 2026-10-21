@@ -41,6 +41,7 @@ p.add_argument('--browser-log-interval', type=float, default=0, help='diagnosis 
 p.add_argument('--pref', action='append', default=[], metavar='NAME=JSON', help='diagnosis only: write a Firefox preference in this fresh profile; repeatable')
 p.add_argument('--env', action='append', default=[], metavar='NAME=VALUE', help='diagnosis only: additional browser environment; repeatable')
 p.add_argument('--capture-shm', action='store_true', help='save software-composited PNG and require the offline canvas green rectangle; requires Pillow')
+p.add_argument('--interact', action='store_true', help='after the page loads, verify pointer focus, native Unicode text, navigation keys, resize and close; requires Wayland and --capture-shm')
 p.add_argument('--sampler', type=Path, help='optional Linux host PC sampling; not an uninstrumented timing run')
 a = p.parse_args()
 environment = {}
@@ -67,6 +68,8 @@ for preference in a.pref:
     preferences[name] = value
 if a.browser_log_interval and a.browser_log_interval < 5:
     p.error('--browser-log-interval must be 0 or at least 5 seconds')
+if a.interact and (a.stage != 'wayland' or a.backend != 'wayland' or not a.capture_shm):
+    p.error('--interact requires --stage wayland --backend wayland --capture-shm')
 if a.capture_shm:
     from PIL import Image as PillowImage, ImageChops
 a.output.mkdir(parents=True, exist_ok=False)
@@ -96,12 +99,14 @@ class Image(C.Structure):
         (n, C.c_int32) for n in ('x','y','scale')] + [('transform', C.c_uint32)]
 api.trames_wayland_frame_image.argtypes = [C.c_uint64, C.c_uint32, C.POINTER(Image)]
 
-def green_pixels(canvas):
+def color_mask(canvas, color):
     channels = canvas.convert('RGB').split()
     matches = [channel.point([255 if i == expected else 0 for i in range(256)])
-               for channel, expected in zip(channels, (22,163,74))]
-    green = ImageChops.multiply(ImageChops.multiply(matches[0],matches[1]),matches[2])
-    return green.histogram()[255]
+               for channel, expected in zip(channels, color)]
+    return ImageChops.multiply(ImageChops.multiply(matches[0],matches[1]),matches[2])
+
+def green_pixels(canvas):
+    return color_mask(canvas, (22,163,74)).histogram()[255]
 
 def capture(frame, info):
     """Read only retained SHM capabilities; native Metal handles are opaque."""
@@ -123,6 +128,17 @@ def capture(frame, info):
             layer = layer.resize((max(1,image.width//image.scale), max(1,image.height//image.scale)))
         canvas.alpha_composite(layer, (image.x,image.y))
     canvas.save(a.output/'wayland.png')
+    if a.interact:
+        # Locate the actual page controls in the presented pixels. Browser
+        # decoration heights and subsurface offsets are not fixed coordinates.
+        targets = {}
+        for name, color in [('a', (213,57,169)), ('b', (38,139,210))]:
+            bounds = color_mask(canvas, color).getbbox()
+            if bounds:
+                x, y, right, bottom = bounds
+                if right-x >= 200 and bottom-y >= 30:
+                    targets[name] = [(x+right)/2, (y+bottom)/2]
+        report['interaction_targets'] = targets
     return green_pixels(canvas)
 
 options = dict(store=str(a.store.resolve()), volume_total=16<<30, volume_available=16<<30,
@@ -146,6 +162,7 @@ report = dict(stage=a.stage, backend=a.backend, sandbox='content-disabled-diagno
     environment_diagnostic=environment,
     cpu_vulkan_reference_diagnostic=a.gpu and os.environ.get('TRAMES_ZINK_CPU_REFERENCE') == '1',
     capture_shm=a.capture_shm,
+    interaction_requested=a.interact,
     probe_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
     ffi_sha256=hashlib.sha256(a.ffi.read_bytes()).hexdigest(),
     musl_sha256=hashlib.sha256(a.musl.read_bytes()).hexdigest(),
@@ -167,6 +184,104 @@ def send(value):
 def payload(name, value):
     b = json.dumps(value).encode()
     assert getattr(api, 'trames_session_'+name)(h, b, len(b)) >= 0
+
+class Interaction:
+    """Commands enter through the same native compositor ABI as the App UI.
+
+    Every transition waits for a DOM acknowledgement from the real browser;
+    a successful command enqueue or changing frame revision is not a pass.
+    """
+    def __init__(self):
+        self.step = 'page'
+        self.entered = time.monotonic()
+        self.window = None
+        self.original_size = None
+        report['interaction_steps'] = []
+
+    def advance(self, step):
+        report['interaction_steps'].append(dict(step=self.step, seconds=time.monotonic()-self.entered))
+        self.step = step
+        self.entered = time.monotonic()
+        report['interaction_step'] = step
+
+    def command(self, **values):
+        payload('wayland_command', values)
+
+    def click(self, name):
+        x, y = report['interaction_targets'][name]
+        self.command(op='pointer', window=self.window, x=x, y=y, time=int(time.monotonic()*1000)&0xffffffff)
+        for pressed in (True, False):
+            self.command(op='button', button=0x110, pressed=pressed, time=int(time.monotonic()*1000)&0xffffffff)
+
+    def key(self, key):
+        for pressed in (True, False):
+            self.command(op='key', key=key, pressed=pressed, modifiers=0, time=int(time.monotonic()*1000)&0xffffffff)
+
+    def text(self, context, value):
+        self.command(op='text', serial=context['serial'], context=context['id'], epoch=context['epoch'], preedit='', commit=value)
+
+    def poll(self, scene):
+        if self.step in ('done', 'failed'): return
+        if self.step != 'page' and time.monotonic()-self.entered > 45:
+            report['interaction_error'] = 'no browser acknowledgement for '+self.step
+            self.advance('failed')
+            return
+        window = next((w for w in scene.get('windows', []) if w['id'] == self.window), None)
+        if self.step == 'page':
+            if not (report['js_title_seen'] and report.get('canvas_green_seen')
+                    and set(report.get('interaction_targets', {})) == {'a', 'b'}): return
+            window = next(w for w in scene['windows'] if 'TRAMES_FIREFOX_JS_OK' in w.get('title', ''))
+            self.window = window['id']
+            self.original_size = (window['width'], window['height'])
+            self.click('a')
+            self.advance('focus_a')
+            return
+        if self.step == 'close':
+            if not window:
+                report['interaction_window_closed'] = True
+                report.setdefault('interaction_window_close_seconds', time.monotonic()-self.entered)
+            if not window and re.search(rb'\r?\nFIREFOX_PROBE_EXIT:0\r?\n', output):
+                report['interaction_passed'] = True
+                self.advance('done')
+            return
+        if not window: return
+        title = window.get('title', '')
+        if not title.startswith('TRAMES_FIREFOX_INPUT:'): return
+        try:
+            state, _ = json.JSONDecoder().raw_decode(title[len('TRAMES_FIREFOX_INPUT:'):])
+        except ValueError:
+            return
+        report['interaction_dom'] = state
+        context = scene.get('text')
+        editable = context and context['window'] == self.window
+        if self.step == 'focus_a' and state['focus'] == 'a' and editable:
+            self.text(context, 'ab你🙂'); self.advance('type_a')
+        elif self.step == 'type_a' and state['a'] == 'ab你🙂':
+            self.key(105); self.advance('left_a')
+        elif self.step == 'left_a' and state['cursor'] == 3 and state['key'] == 'ArrowLeft':
+            self.key(14); self.advance('backspace_a')
+        elif self.step == 'backspace_a' and state['a'] == 'ab🙂' and editable:
+            self.text(context, 'Z'); self.advance('resume_a')
+        elif self.step == 'resume_a' and state['a'] == 'abZ🙂':
+            self.click('b'); self.advance('focus_b')
+        elif self.step == 'focus_b' and state['focus'] == 'b' and editable:
+            self.text(context, '第二框'); self.advance('type_b')
+        elif self.step == 'type_b' and state['a'] == 'abZ🙂' and state['b'] == '第二框':
+            self.click('a'); self.advance('focus_return')
+        elif self.step == 'focus_return' and state['focus'] == 'a':
+            self.key(107); self.advance('end_a')
+        elif self.step == 'end_a' and state['cursor'] == 5 and state['key'] == 'End' and editable:
+            self.text(context, '返回'); self.advance('return_a')
+        elif self.step == 'return_a' and state['a'] == 'abZ🙂返回' and state['b'] == '第二框':
+            report['interaction_input_passed'] = True
+            self.command(op='resize', window=self.window, width=800, height=600)
+            self.advance('resize')
+        elif self.step == 'resize' and (window['width'], window['height']) == (800,600):
+            frame = report.get('last_frame', {})
+            if (frame.get('width'), frame.get('height')) == (800,600) and state['width'] < self.original_size[0] and state['height'] < self.original_size[1]:
+                report['interaction_resize_passed'] = True
+                self.command(op='close', window=self.window); self.advance('close')
+
 def browser_log_snapshot(seconds):
     # Host-authorized file export at a coordinator boundary: no new guest
     # process, /proc reconstruction, or page/CPU instrumentation. Still mark
@@ -235,6 +350,27 @@ try:
 <body style="background:#eef2ff"><h1>Trames Firefox offline page</h1><canvas id="c" width="300" height="200"></canvas>
 <script>let c=document.getElementById('c').getContext('2d');c.fillStyle='#16a34a';c.fillRect(0,0,300,200);
 document.title='TRAMES_FIREFOX_JS_OK';document.body.dataset.test='javascript-and-canvas';</script>''')
+    if a.interact:
+        with html.open('a') as page:
+            page.write('''
+<style>textarea{display:block;width:280px;height:44px;border:0;padding:8px;margin:12px 0;font:18px monospace;resize:none;color:black}#a{background:rgb(213,57,169)}#b{background:rgb(38,139,210)}</style>
+<textarea id="a" spellcheck="false"></textarea><textarea id="b" spellcheck="false"></textarea>
+<script>
+const first=document.getElementById('a'), second=document.getElementById('b');
+let lastKey='',interacting=false;
+function acknowledge(){
+ if(!interacting)return;
+ const active=document.activeElement;
+ document.title='TRAMES_FIREFOX_INPUT:'+JSON.stringify({focus:active.id,a:first.value,b:second.value,cursor:active.selectionStart,key:lastKey,width:innerWidth,height:innerHeight});
+}
+for(const control of [first,second]){
+ control.addEventListener('focus',()=>{interacting=true;acknowledge()});
+ for(const name of ['input','select'])control.addEventListener(name,acknowledge);
+ control.addEventListener('keyup',event=>{lastKey=event.key;acknowledge()});
+}
+document.addEventListener('selectionchange',acknowledge);
+window.addEventListener('resize',acknowledge);
+</script>''')
     guest_page = '/tmp/trames-firefox-'+str(time.monotonic_ns())+'.html'
     guest_screenshot = guest_page+'.png'
     report['guest_page'] = guest_page
@@ -282,6 +418,7 @@ document.title='TRAMES_FIREFOX_JS_OK';document.body.dataset.test='javascript-and
     captured_at = -15.0
     progress = 0.0
     next_browser_log = a.browser_log_interval
+    interaction = Interaction() if a.interact else None
     while time.monotonic()-start < a.timeout:
         status = pump()
         if status['phase'] != 'running':
@@ -293,6 +430,7 @@ document.title='TRAMES_FIREFOX_JS_OK';document.body.dataset.test='javascript-and
         if time.monotonic()-start >= progress:
             sample = dict(seconds=time.monotonic()-start,status=status,scene=scene,host_memory=host_memory(),
                           frames=report['frames'],js_title_seen=report['js_title_seen'])
+            if interaction: sample['interaction_step'] = interaction.step
             (a.output/'progress.json').write_text(json.dumps(sample,indent=2)+'\n')
             with (a.output/'progress.jsonl').open('a') as log: log.write(json.dumps(sample)+'\n')
             if progress and a.guest_progress:
@@ -333,9 +471,12 @@ document.title='TRAMES_FIREFOX_JS_OK';document.body.dataset.test='javascript-and
             if 'TRAMES_FIREFOX_JS_OK' in w.get('title',''):
                 report['js_title_seen'] = True
                 report.setdefault('js_title_seconds',time.monotonic()-start)
-        if (a.stage == 'wayland' and report['js_title_seen'] and report['frames']
-            and (not a.capture_shm or report.get('canvas_green_seen'))): break
-        if re.search(rb'\r?\nFIREFOX_PROBE_EXIT:\d+\r?\n',output): break
+        if interaction:
+            interaction.poll(scene)
+            if interaction.step in ('done', 'failed'): break
+        elif (a.stage == 'wayland' and report['js_title_seen'] and report['frames']
+              and (not a.capture_shm or report.get('canvas_green_seen'))): break
+        if re.search(rb'\r?\nFIREFOX_PROBE_EXIT:\d+\r?\n',output) and (not interaction or interaction.step != 'close'): break
         time.sleep(.01)
     report['launch_seconds'] = time.monotonic()-start
     match = re.search(rb'\r?\nFIREFOX_PROBE_EXIT:(\d+)\r?\n',output)
@@ -362,6 +503,7 @@ document.title='TRAMES_FIREFOX_JS_OK';document.body.dataset.test='javascript-and
         report['passed'] = bool(report['firefox_exit'] == 0 and report.get('graphics_renderer') and not re.search(rb'(?:^|\r?\n)ERROR\r?\n', log))
     else:
         report['passed'] = (report['firefox_exit'] == 0 and report.get('screenshot_exported',False) and (not a.capture_shm or report.get('canvas_green_seen'))) if a.stage=='headless' else bool(report['frames'] and report['js_title_seen'] and (not a.capture_shm or report.get('canvas_green_seen')))
+        if a.interact: report['passed'] = report['passed'] and report.get('interaction_passed', False)
 finally:
     report['seconds'] = time.monotonic()-began
     (a.output/'guest.log').write_bytes(output)

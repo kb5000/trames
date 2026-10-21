@@ -6,6 +6,27 @@ import TramesKit
 
 final class WaylandInputTests: XCTestCase {
     @MainActor
+    func testDeleteWithoutSurroundingTextUsesGuestCaret() throws {
+        for version in [1,3] {
+            let object:[String:Any] = ["version":version,"id":7,"epoch":3,"surface":4,"window":4,"serial":8,
+                "text":"","cursor":0,"anchor":0,"caret":[0,0,1,20],"hint":0,"purpose":0]
+            let view=WaylandInputView();var commands:[[String:Any]]=[]
+            view.sendInput={ commands.append($0) }
+            XCTAssertFalse(view.hasText)
+            view.textContext=try JSONDecoder().decode(LocalWaylandText.self,from:JSONSerialization.data(withJSONObject:object))
+            XCTAssertTrue(view.hasText,"An empty protocol snapshot does not establish an empty guest editor")
+            view.deleteBackward()
+            XCTAssertEqual(commands.compactMap{$0["key"] as? Int},[14,14])
+            XCTAssertEqual(commands.compactMap{$0["pressed"] as? Bool},[true,false])
+            XCTAssertTrue(commands.allSatisfy{$0["delete_before"] == nil})
+            // Locally known input still uses Unicode-aware surrounding deletion.
+            view.insertText("🙂");commands=[];view.deleteBackward()
+            XCTAssertEqual(commands.count,1)
+            XCTAssertEqual(commands[0]["delete_before"] as? Int,4)
+            XCTAssertNil(commands[0]["key"])
+        }
+    }
+    @MainActor
     func testXIMCompositionSurvivesCaretRefreshAndDeletesWithGuestKeys() throws {
         var object:[String:Any] = ["version":4,"id":UInt64(1)<<63|7,"epoch":3,"surface":4,"window":4,"serial":0,
             "text":"","cursor":0,"anchor":0,"caret":[0,0,1,20],"hint":0,"purpose":0]

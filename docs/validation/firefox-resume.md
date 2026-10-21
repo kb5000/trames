@@ -1,5 +1,8 @@
 # Firefox：默认 headless 页面通过，交互窗口仍待查
 
+后续：[交互与全局刷新任务](firefox-interaction.md)拆分两个刷新来源，并增加真实
+浏览器的鼠标、原生文本、编辑键和窗口生命周期验收入口。
+
 2026-10-21，继续[默认刷新率调查](firefox-default-refresh.md)。原版 Alpine ARM64
 Firefox 142.0-r0，Release App FFI，4 CPU，总提交和单地址空间各 4 GiB，离线 HTML。
 保留默认内容沙箱、Wayland proxy 和刷新率偏好，没有修改 Firefox/libxul ELF。
