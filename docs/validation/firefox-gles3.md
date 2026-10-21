@@ -10,11 +10,18 @@ device 是 Lavapipe CPU，工具如实报告非硬件加速；Firefox 默认仍�
 渲染。另用独立新 profile 的 `gfx.webrender.all=true` 检查原版 WebRender 的
 OpenGL 路径，保留默认刷新率。这是显式诊断，不是修改产品默认偏好或伪造设备。
 
-**完整 Firefox GPU 页面尚未通过。** 定向组先后越过 descriptor 批量分配和
-sample-rate shading 的错误。随后 Mesa 驱动线程的空地址调用已对照原版代码确认
-为缺少 `vkCmdClearAttachments`，现已补齐并越过；下一处失败是原版 Zink 创建
-render pass 的状态尚不被接受。仍未取得目标 canvas 或新的浏览器 GPU 呈现结果。
-不能把 GLES3、标题、窗口存在或独立 Mesa 用例通过记成 Firefox/WebRender 已可用。
+**完整 Firefox GPU 页面尚未通过；新的诊断组已能执行目标页面 JavaScript。**
+定向组先后越过 descriptor 批量分配和 sample-rate shading 的错误。Mesa 驱动
+线程的空地址调用对照原版代码确认为缺少 `vkCmdClearAttachments`，现已补齐。
+随后 renderpass2 对输出引用 `aspectMask` 的误判也已修正：该字段只对 input
+attachment 有意义，颜色/深度输出引用忽略它，并非缺少另一项渲染能力。
+
+修正后 JS/title-only gate 通过，但仅保留旧 SHM 图像，没有 canvas 像素验收。
+新增 `--require-gpu-frame` 后保留同一配置观察 480 秒：目标 JS 已执行，未取得
+该目标窗口的 native GPU 图像，gate 正确失败，结束诊断完整，浏览器未退出；
+没有重现此前的 API 崩溃。此组的周期日志导出明确属于诊断，不用作性能比较。
+下一步追踪 EGL swap、queue present、合成器帧交接及刷新任务，不能把标题或
+独立 Mesa 用例通过记成 Firefox/WebRender 已可用。
 
 ## 已修复的通用路径
 
@@ -38,6 +45,9 @@ render pass 的状态尚不被接受。仍未取得目标 canvas 或新的浏览
   颜色槽编号和 clear-value 原始位，支持当前单层 profile 的颜色/深度/模板 aspect。
   清除矩形必须位于实际 render area 内；开始 pass 已保留的附件依赖沿用到提交完成。
   公共 Vulkan 入口增至 189；新增 wire op 151，profile 0x10006/wire 8 不变。
+- renderpass2 不再错误限制输出引用的 `aspectMask`。新的清除 fixture 使用
+  带深度附件的 imageless renderpass2，并给颜色和深度输出设置有效但被忽略的
+  aspect 位；独立宿主原版 Vulkan 与 ARM64 App FFI 的像素 oracle 均通过。
 
 ## 定向验证
 
@@ -62,12 +72,30 @@ Linux 与云端 Apple Metal 全部通过，包含同一批 descriptor/sample GPU
 iPad 尚待验收，未用 Linux CPU reference 冒充 Metal。该 CI 没有 Firefox 输入。
 后续只新增 attachment-clear 的矩形/颜色/alpha/scissor 像素检查及相关 Vulkan
 模块验证，复用已通过且源码未变的代理、采样、TF 和其他模块，不重复整套窗口测试。
+基础清除版本 [f55e282](https://github.com/kb5000/trames/commit/f55e2829ca21998ccbb7784117b759ac3251c4da)
+的 [Metal 定向 job](https://github.com/kb5000/trames/actions/runs/39614656207)
+已完成同一清除像素检查、28 项 Vulkan 测试及 iOS FFI 检查。
+最终输出引用修正 [9c1044c](https://github.com/kb5000/trames/commit/9c1044c1e7676dc23516c4fc547f0fcb26c34cdb)
+的 [CI 39615564225](https://github.com/kb5000/trames/actions/runs/39615564225)
+中 Linux 与 Apple 定向 job 均已完成相应检查与新 fixture；其中公开 Linux 证据
+ZIP（6,115 bytes）的 SHA-256 为
+`1ca84c647ea25831bb6ac79a3e2c6c11de548e3ffdfba95fd08aeae2d26c29a1`，
+已逐项 CRC 检查并核实 GPU 清除通过。Metal 证据 ZIP（23,544 bytes）的 SHA-256
+为 `47474ef7f664e040d2990d972dd413cdb01c1ef72c4c012834b2ed714e2d217d`，
+同样通过全部 CRC 与清除结果检查，包含绑定到 9c1044c 的 464 项 guest 输入清单。
+两端使用相同的 guest ICD 哈希，最终 imageless/depth/忽略输出 aspect 的 fixture
+已在云端 Metal 通过；iOS FFI 检查也通过。物理 iPad 仍待验收。
 
 复查入口：先用 `prepare-zink-guest.py --wayland` 准备原版签名包和客户端，
 再运行 `tests/integration/zink-wayland.py --relay --output <新目录>`。
 `--clear-only` 仅检查新增的 render-pass 局部清除；其余通过结果需独立引用。
 `--in-place-store --store <临时 store>` 可避免复制 rootfs，但不得同时运行其他
 使用该 store 的 session。Apple 还要求已有的 exported-MTLTexture 像素 oracle。
+
+Firefox 的 `--require-gpu-frame` 只适用于 GPU 开启的原生 Wayland 窗口，要求
+带目标 JS 标题的同一窗口取得 native GPU 图像；拒绝 SHM 捕获模式或 Xwayland，
+避免把软件图像或 Xwayland glamor 当作浏览器 GPU 通过。它只验证图像传输，
+仍不能替代最终页面 canvas 像素检查。非法参数在打开 session 前拒绝。
 
 Firefox 原始日志、截图、地址、线程栈及运行转储仅保留本地；临时故障采集不进入
 生产 Core。[Issue #33](https://github.com/kb5000/trames/issues/33)保持开放。

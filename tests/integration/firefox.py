@@ -41,6 +41,7 @@ p.add_argument('--browser-log-interval', type=float, default=0, help='diagnosis 
 p.add_argument('--pref', action='append', default=[], metavar='NAME=JSON', help='diagnosis only: write a Firefox preference in this fresh profile; repeatable')
 p.add_argument('--env', action='append', default=[], metavar='NAME=VALUE', help='diagnosis only: additional browser environment; repeatable')
 p.add_argument('--capture-shm', action='store_true', help='save software-composited PNG and require the offline canvas green rectangle; requires Pillow')
+p.add_argument('--require-gpu-frame', action='store_true', help='require a native GPU image on the JS-marked Wayland window; transport gate only, not canvas pixel validation')
 p.add_argument('--interact', action='store_true', help='after the page loads, verify pointer focus, native Unicode text, navigation keys, resize and close; requires Wayland and --capture-shm')
 p.add_argument('--sampler', type=Path, help='optional Linux host PC sampling; not an uninstrumented timing run')
 a = p.parse_args()
@@ -70,6 +71,8 @@ if a.browser_log_interval and a.browser_log_interval < 5:
     p.error('--browser-log-interval must be 0 or at least 5 seconds')
 if a.interact and (a.stage != 'wayland' or a.backend != 'wayland' or not a.capture_shm):
     p.error('--interact requires --stage wayland --backend wayland --capture-shm')
+if a.require_gpu_frame and (not a.gpu or a.stage != 'wayland' or a.backend != 'wayland' or a.capture_shm):
+    p.error('--require-gpu-frame requires --gpu --stage wayland --backend wayland without --capture-shm')
 if a.capture_shm:
     from PIL import Image as PillowImage, ImageChops
 a.output.mkdir(parents=True, exist_ok=False)
@@ -162,6 +165,8 @@ report = dict(stage=a.stage, backend=a.backend, sandbox='content-disabled-diagno
     environment_diagnostic=environment,
     cpu_vulkan_reference_diagnostic=a.gpu and os.environ.get('TRAMES_ZINK_CPU_REFERENCE') == '1',
     capture_shm=a.capture_shm,
+    require_gpu_frame=a.require_gpu_frame,
+    js_window_gpu_frame_seen=False,
     interaction_requested=a.interact,
     probe_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
     ffi_sha256=hashlib.sha256(a.ffi.read_bytes()).hexdigest(),
@@ -460,6 +465,9 @@ window.addEventListener('resize',acknowledge);
                             assert api.trames_wayland_frame_image(frame, index, C.byref(image)) == 0
                             kinds.add(image.kind)
                         report['image_kinds'] = sorted(set(report.get('image_kinds', [])) | kinds)
+                        if 2 in kinds and 'TRAMES_FIREFOX_JS_OK' in w.get('title', ''):
+                            report['js_window_gpu_frame_seen'] = True
+                            report.setdefault('first_js_gpu_frame_seconds',time.monotonic()-start)
                         if a.capture_shm and (time.monotonic()-start-captured_at >= 15
                                              or 'TRAMES_FIREFOX_JS_OK' in w.get('title','')):
                             green = capture(frame,info)
@@ -475,6 +483,7 @@ window.addEventListener('resize',acknowledge);
             interaction.poll(scene)
             if interaction.step in ('done', 'failed'): break
         elif (a.stage == 'wayland' and report['js_title_seen'] and report['frames']
+              and (not a.require_gpu_frame or report['js_window_gpu_frame_seen'])
               and (not a.capture_shm or report.get('canvas_green_seen'))): break
         if re.search(rb'\r?\nFIREFOX_PROBE_EXIT:\d+\r?\n',output) and (not interaction or interaction.step != 'close'): break
         time.sleep(.01)
@@ -504,6 +513,7 @@ window.addEventListener('resize',acknowledge);
     else:
         report['passed'] = (report['firefox_exit'] == 0 and report.get('screenshot_exported',False) and (not a.capture_shm or report.get('canvas_green_seen'))) if a.stage=='headless' else bool(report['frames'] and report['js_title_seen'] and (not a.capture_shm or report.get('canvas_green_seen')))
         if a.interact: report['passed'] = report['passed'] and report.get('interaction_passed', False)
+        if a.require_gpu_frame: report['passed'] = report['passed'] and report['js_window_gpu_frame_seen']
 finally:
     report['seconds'] = time.monotonic()-began
     (a.output/'guest.log').write_bytes(output)

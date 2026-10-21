@@ -777,6 +777,7 @@ def main():
                     if plan.get('native_scope') == 'zink-wayland':
                         allowed.update({'tests/fixtures/zink-wayland.c', 'tests/fixtures/vulkan-copy.c',
                                         'tests/fixtures/wayland-relay.h', 'accelerator/vulkan/wayland.inc',
+                                        'tests/integration/firefox.py',
                                         'Cargo.lock', 'crates/trames-wayland/Cargo.toml',
                                         'crates/trames-wayland/native-wsi.xml',
                                         'crates/trames-wayland/src/lib.rs', 'crates/trames-wayland/src/wsi.rs',
