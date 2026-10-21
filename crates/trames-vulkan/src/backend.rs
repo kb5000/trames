@@ -88,6 +88,8 @@ struct Device {
     instance: Arc<Instance>,
     atom: u64,
     map_alignment: u64,
+    viewport_dimensions: [u32; 2],
+    viewport_bounds: [f32; 2],
 }
 impl Drop for Device {
     fn drop(&mut self) {
@@ -1409,6 +1411,8 @@ impl Backend {
                     instance,
                     atom: limits.non_coherent_atom_size,
                     map_alignment: limits.min_memory_map_alignment as u64,
+                    viewport_dimensions: limits.max_viewport_dimensions,
+                    viewport_bounds: limits.viewport_bounds_range,
                 }));
                 self.device_id = self.id();
                 self.queue_id = self.id();

@@ -780,7 +780,7 @@ def main():
                                         'tests/integration/firefox.py',
                                         'Cargo.lock', 'crates/trames-wayland/Cargo.toml',
                                         'crates/trames-wayland/native-wsi.xml',
-                                        'crates/trames-wayland/src/lib.rs', 'crates/trames-wayland/src/wsi.rs',
+                                        'crates/trames-wayland/src/lib.rs', 'crates/trames-wayland/src/wsi.rs', 'crates/trames-wayland/src/frame.rs',
                                         'crates/trames-wayland/src/server.rs', 'crates/trames-wayland/src/protocol.rs', 'crates/trames-wayland/src/scene.rs',
                                         'crates/trames-vfs/src/ipc/native.rs',
                                         'tests/fixtures/zink-metal-pixels.m', 'tests/integration/zink-wayland.py',
@@ -862,6 +862,29 @@ def main():
                                 for name in ('zink-wayland-linux', 'zink-wayland-apple')):
                                 raise RuntimeError('Missing source-bound Linux/Metal damage-swap evidence')
                             print('Reuse passed Wayland/damage-swap pixels; check changed Vulkan quota/metadata, original C simultaneous coherent mappings/reallocation and iOS embedding.')
+                        frame_reuse = plan.get('zink_frame_boundaries_reuse')
+                        if frame_reuse:
+                            stable = ['crates/trames-vfs', 'crates/trames-core', 'crates/trames-memory',
+                                      'crates/trames-cpu', 'crates/trames-linux', 'crates/trames-accel',
+                                      'crates/trames-native', 'crates/trames-distro', 'crates/trames-ffi',
+                                      'crates/trames-vulkan/native', 'crates/trames-vulkan/src/budget.rs',
+                                      'crates/trames-vulkan/src/backend/coherent.rs',
+                                      'crates/trames-vulkan/src/backend/wayland.rs',
+                                      'accelerator', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml',
+                                      'vendor', 'patches/moltenvk']
+                            if subprocess.check_output(['git', 'diff', '--name-only', frame_reuse['sha'], 'HEAD', '--', *stable]).strip():
+                                raise RuntimeError('Frame boundary repair changed passed runtime/native WSI/quota/TF inputs')
+                            def frame_evidence(path):
+                                req = urllib.request.Request(f'https://api.github.com/repos/{repo}/'+path, headers=dict(request.headers))
+                                with urllib.request.urlopen(req, timeout=30) as response:
+                                    return json.load(response)
+                            run = frame_evidence(f"actions/runs/{frame_reuse['run']}")
+                            jobs = frame_evidence(f"actions/runs/{frame_reuse['run']}/jobs")['jobs']
+                            if run['head_sha'] != frame_reuse['sha'] or run['head_repository']['full_name'] != repo or run['path'] != '.github/workflows/linux.yml' or any(
+                                not any(j['name'] == name and j['conclusion'] == 'success' for j in jobs)
+                                for name in ('zink-wayland-linux', 'zink-wayland-apple')):
+                                raise RuntimeError('Missing passed exact-source Linux/Metal quota evidence')
+                            print('Reuse passed unchanged runtime, native WSI/TF and quota; check changed Wayland scheduling, Vulkan boundary pixels and iOS embedding.')
                     if any(p not in allowed and not p.startswith(('docs/', 'tests/fixtures/vulkan-native-tf')) and not (sync and p.startswith('crates/trames-vulkan/')) for p in changed):
                         raise RuntimeError('Zink foundation plan includes unrelated source changes')
                     path = 'crates/trames-distro/src/vulkan.rs'

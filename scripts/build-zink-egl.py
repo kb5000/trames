@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Build Mesa's small EGL platform adapter, linking the original Alpine Gallium.
 
-Only the explicit DRM-less Kopper platform option changes runtime source. Mesa's
+Only the DRM-less Kopper platform and its resize-safe EGL capabilities change runtime source. Mesa's
 Zink/NIR/GLSL/SPIR-V/GLES2, libwayland and Vulkan loader remain original APKs.
 Requires scripts/zink-egl-requirements.txt, ninja/pkg-config/bison/flex/wayland-scanner and AArch64
 GCC/G++; no ARM executable is run by this build.
@@ -121,7 +121,7 @@ manifest = dict(mesa=VERSION, architecture='aarch64-linux-musl', soname='libEGL.
                 patch=str(PATCH.relative_to(ROOT)), patch_sha256=patch_sha,
                 original_gallium_sha256=hashlib.sha256(gallium.read_bytes()).hexdigest(),
                 egl_sha256=hashlib.sha256(library.read_bytes()).hexdigest(), options=options,
-                scope='opt-in DRM-less Wayland Kopper initialization; original Gallium/Zink and Vulkan capability checks',
+                scope='opt-in DRM-less Wayland Kopper initialization with full render areas on resize; original Gallium/Zink and Vulkan capability checks',
                 compiler=subprocess.check_output([*cc, '--version'], text=True).splitlines()[0],
                 development_apk_sha256={str(p.relative_to(development)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(development.rglob('*.apk'))})
 (out / 'egl-manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')

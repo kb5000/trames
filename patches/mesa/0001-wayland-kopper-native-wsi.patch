@@ -32,6 +32,20 @@ Subject: EGL Wayland: opt in to native Vulkan WSI without a DRM fd
        _eglError(EGL_NOT_INITIALIZED, "DRI2: failed to setup EGLDevice");
        goto cleanup;
     }
+@@ -3097,6 +3108,13 @@
+        (dri2_dpy->wl_dmabuf || dri2_dpy->wl_drm))
+       dri2_set_WL_bind_wayland_display(disp);
+    disp->Extensions.EXT_buffer_age = EGL_TRUE;
++   /* Kopper's partial render area and a resized native swapchain can refer
++    * to different extents. Keep GL clears inside a full render area until
++    * that path has a resize-safe implementation. Damage swaps are still
++    * accepted as presentation hints; no pixel transport is introduced.
++    */
++   if (native_wsi)
++      disp->Extensions.KHR_partial_update = EGL_FALSE;
+    disp->Extensions.EXT_swap_buffers_with_damage = EGL_TRUE;
+    disp->Extensions.EXT_present_opaque = EGL_TRUE;
+ 
 --- a/src/egl/main/egldevice.c
 +++ b/src/egl/main/egldevice.c
 @@ -51,6 +51,8 @@

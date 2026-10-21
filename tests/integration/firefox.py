@@ -263,6 +263,7 @@ class Interaction:
         if self.step == 'page':
             if not (report['js_title_seen'] and report.get('canvas_green_seen')
                     and set(report.get('interaction_targets', {})) == {'a', 'b'}): return
+            if a.require_gpu_frame and not report['js_window_gpu_frame_seen']: return
             window = next(w for w in scene['windows'] if 'TRAMES_FIREFOX_JS_OK' in w.get('title', ''))
             self.window = window['id']
             self.original_size = (window['width'], window['height'])
@@ -496,9 +497,12 @@ window.addEventListener('resize',acknowledge);
                     assert api.trames_wayland_frame_info(frame, C.byref(info)) == 0
                     presented = info.images > 0
                     identity = (w['id'],info.revision)
-                    if presented and identity not in revisions:
-                        revisions.add(identity)
-                        report['frames'] += 1
+                    new_revision = identity not in revisions
+                    js_image_pending = a.require_gpu_frame and not report['js_window_gpu_frame_seen'] and 'TRAMES_FIREFOX_JS_OK' in w.get('title', '')
+                    if presented and (new_revision or js_image_pending):
+                        if new_revision:
+                            revisions.add(identity)
+                            report['frames'] += 1
                         report.setdefault('first_image_seconds',time.monotonic()-start)
                         report['last_frame'] = dict(width=info.width, height=info.height, images=info.images, revision=info.revision)
                         kinds = set()

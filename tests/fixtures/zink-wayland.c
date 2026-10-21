@@ -102,6 +102,12 @@ int main(int argc,char **argv) {
     struct wl_registry *registry=wl_display_get_registry(display);wl_registry_add_listener(registry,&registry_listener,NULL);
     check(wl_display_roundtrip(display)>=0 && compositor && shell,"Wayland globals");
     egl=eglGetDisplay((EGLNativeDisplayType)display);EGLint major,minor;check(eglInitialize(egl,&major,&minor),"Wayland eglInitialize");
+    const char *native_wsi=getenv("LIBGL_KOPPER_WAYLAND_NO_DRM");
+    if(native_wsi && (!strcmp(native_wsi,"1") || !strcmp(native_wsi,"true"))){
+        const char *extensions=eglQueryString(egl,EGL_EXTENSIONS);
+        check(extensions && !strstr(extensions,"EGL_KHR_partial_update"),"resize-safe native WSI capability");
+        puts("zink-wayland-full-render-area: partial update not advertised");fflush(stdout);
+    }
     if(argc>2 && !strcmp(argv[2],"damage")){
         swap_damage=(PFNEGLSWAPBUFFERSWITHDAMAGEKHRPROC)eglGetProcAddress("eglSwapBuffersWithDamageKHR");
         check(swap_damage!=NULL,"damage swap entrypoint");

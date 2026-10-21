@@ -86,6 +86,37 @@ FFI 通过，独立宿主 Vulkan oracle 也通过。Vulkan 单元测试增至 29
 未变的输入检查。原生回读实现、截图、日志、地址和栈均仅留本地，不进入生产代码
 或公开 Artifact；生产呈现继续保留原纹理，不加入像素回读。
 
+## 默认刷新率与 Vulkan 边界
+
+GPU 额度版本的 [CI 39628534758](https://github.com/kb5000/trames/actions/runs/39628534758)
+已在 Linux 和云端 Apple Metal 通过原版 C 的 128 MiB 同时 coherent 映射、释放再
+分配、Vulkan 29 项和 iOS FFI 编译。继续复用未变的 WSI/TF/局部更新像素结果。
+
+默认刷新率下，只有降低无内容回调频率的对照仍未加载目标页面，未采用该单独
+方案。进一步按实际产帧时间施加回调背压：快速生产者保持输出的 60 Hz，空提交
+保留定时回调；慢生产者在新图像呈现后给普通任务留出生产间隔，连续中间图像
+不延长已有截止时间，长时间空闲也不累积欠账。每个表面的调度使用自身的内容
+revision，不能用其他表面的更新伪装成新帧。这不是修改 guest 时钟或线程调度。
+
+此对照中，原版 Firefox/Mesa 在保留默认刷新率、内容沙箱及 Wayland proxy 时
+已完成页面 JS，并通过实际 native 图像中的 60,000 个绿色 Canvas 像素；Linux
+CPU Vulkan 参考仍显式设置 `gfx.webrender.all=true`，没有新增产品偏好。调整
+800×600 时清除矩形校验仍失败，退出为 139。后续参数诊断确认它不是空矩形，
+而是原版 Zink 的局部 render area 与调整大小时的 GL 清除区域不一致，确实违反
+Vulkan 的 render-area 边界要求。EGL native-WSI 适配层暂不声明
+`EGL_KHR_partial_update`，使其使用完整 render area；仍保留 damage swap 优化
+提示、buffer age、原始 Gallium/Zink 和原生零拷贝呈现。不把越界命令放入宿主
+驱动，也不将失败命令当作成功。该适配等待完整交互和退出验收。
+输入源码未变的中文/emoji、方向键及焦点 DOM 验收继续引用前组，但新的刷新
+调度仍需要完整交互和退出复核。所有截图、回读数据及地址日志仅留本地。
+
+另修正两项过严的 Vulkan 检查：viewport 使用已缓存的原生设备尺寸和 bounds，
+允许负原点及伸出 framebuffer 的 viewport 由原生裁剪；无需逐帧查询原生 limits。
+`VkClearRect` 的 layerCount 必须大于零，但 extent 可以为零，空清除不应使程序
+中止。render area、层范围、溢出和深度边界继续验证。新增标准 C 像素用例覆盖
+静态/动态负 viewport 与空清除保留原有像素；Vulkan 30 项、Wayland 15 项和
+受影响模块严格 Clippy 已通过，Apple 新像素用例等待对应源码 CI。
+
 ## 已修复的通用路径
 
 - 代理后的 Wayland FD 不再被错误地当作直连 channel。内部

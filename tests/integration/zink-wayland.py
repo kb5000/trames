@@ -20,6 +20,8 @@ p.add_argument('--relay', action='store_true', help='forward Wayland bytes/SCM_R
 p.add_argument('--clear-only', action='store_true', help='only new in-pass attachment clear pixels; reuse passed relayed window and sampling checks')
 p.add_argument('--damage-only', action='store_true', help='one relayed EGL damage-swap lifecycle; reuse passed descriptor, sampling, copy and second-launch checks')
 p.add_argument('--budget-only', action='store_true', help='native heap quota and 128 MiB of simultaneous coherent mappings; reuse passed rendering checks')
+p.add_argument('--frame-boundaries-only', action='store_true', help='viewport/empty-clear pixels plus one EGL damage-swap resize/close lifecycle; reuse unchanged broader GPU checks')
+p.add_argument('--viewport-only', action='store_true', help='native pixels for static/dynamic viewports outside the framebuffer and empty clears; reuse passed window and budget checks')
 p.add_argument('--snapshot-store', type=Path, help='save original installed inputs before session mutations')
 p.add_argument('--metal-validator', type=Path, help='native test-only exported-MTLTexture pixel oracle')
 p.add_argument('--egl-library', type=Path, help='Mesa EGL platform adapter; Gallium/Zink and loader remain original')
@@ -29,7 +31,8 @@ a = p.parse_args()
 a.output.mkdir(parents=True, exist_ok=False)
 if a.in_place_store and not a.store: p.error('--in-place-store requires --store')
 if a.damage_only and a.clear_only: p.error('--damage-only and --clear-only are separate checks')
-if a.budget_only and (a.damage_only or a.clear_only): p.error('--budget-only is a separate check')
+if sum((a.budget_only, a.damage_only, a.clear_only, a.viewport_only, a.frame_boundaries_only)) > 1: p.error('select only one scoped check')
+if a.frame_boundaries_only: a.viewport_only = a.damage_only = True
 store = a.store if a.in_place_store else a.output / 'store'
 if a.store and not a.in_place_store:
     shutil.copytree(a.store, store)
@@ -90,6 +93,8 @@ report['wayland_relay'] = a.relay or a.damage_only
 report['attachment_clear_only'] = a.clear_only
 report['damage_swap_only'] = a.damage_only
 report['gpu_budget_only'] = a.budget_only
+report['viewport_only'] = a.viewport_only
+report['frame_boundaries_only'] = a.frame_boundaries_only
 bundled_egl = ROOT / 'target/vulkan-guest/libEGL.so.1'
 if bundled_egl.is_file():
     report['source'] = 'Mesa25.1.9 EGL native-WSI platform adapter; original signed Gallium/Zink/GLES2, libwayland and Vulkan loader; production FFI'
@@ -142,23 +147,28 @@ try:
         report['passed'] = True
         print('zink-budget-ok: reported session quota, native allocation/map/coherence and release/reallocate', flush=True)
         raise SystemExit(0)
-    if a.clear_only:
+    if a.clear_only or a.viewport_only:
         payload('transfer', dict(guest='/tmp/vulkan-render', host=str(ROOT/'target/zink-inputs/vulkan-render'), export=False, replace=True))
         for name in ('vulkan-render.vert.spv', 'vulkan-render.frag.spv'):
             shader = ROOT/'target/zink-native-bundle/shaders'/name
             if not shader.is_file(): shader = ROOT/'tests/fixtures/bin'/name
             payload('transfer', dict(guest='/tmp/'+name, host=str(shader), export=False, replace=True))
-        send('chmod +x /tmp/vulkan-render; /tmp/vulkan-render /tmp/vulkan-render.vert.spv /tmp/vulkan-render.frag.spv /tmp/clear.ppm clear-attachments; printf "\\nZINK_CLEAR_RESULT:%d\\n" $?\n')
-        clear_start = time.monotonic()
-        while '\r\nZINK_CLEAR_RESULT:0\r\n' not in text:
-            text += read('output').decode(errors='replace')
-            assert not any('\r\nZINK_CLEAR_RESULT:'+str(n)+'\r\n' in text for n in (1,127,134,139)), text[-12000:]
-            assert time.monotonic()-clear_start < 60, text[-12000:]
-            time.sleep(.003)
-        assert 'vulkan-attachments-clear-ok:' in text
-        report['attachment_clear_gpu'] = report['passed'] = True
-        print('zink-attachment-clear-ok: native in-pass rectangles, color/alpha and scissor independence', flush=True)
-        raise SystemExit(0)
+        modes = ('outside', 'outside-static', 'clear-empty') if a.viewport_only else ('clear-attachments',)
+        for mode in modes:
+            base = len(text)
+            send('chmod +x /tmp/vulkan-render; /tmp/vulkan-render /tmp/vulkan-render.vert.spv /tmp/vulkan-render.frag.spv /tmp/render.ppm '+mode+'; printf "\\nZINK_RENDER_RESULT:%d\\n" $?\n')
+            start = time.monotonic()
+            while '\r\nZINK_RENDER_RESULT:0\r\n' not in text[base:]:
+                text += read('output').decode(errors='replace')
+                assert not any('\r\nZINK_RENDER_RESULT:'+str(n)+'\r\n' in text[base:] for n in (1,127,134,139)), text[-12000:]
+                assert time.monotonic()-start < 60, text[-12000:]
+                time.sleep(.003)
+            assert ('vulkan-empty-clear-ok:' if mode == 'clear-empty' else 'vulkan-outside-viewport-ok:' if a.viewport_only else 'vulkan-attachments-clear-ok:') in text[base:]
+        report['viewport_gpu_modes' if a.viewport_only else 'attachment_clear_gpu'] = list(modes) if a.viewport_only else True
+        print('zink-viewport-ok: static/dynamic outside-framebuffer pixels and empty clears' if a.viewport_only else 'zink-attachment-clear-ok: native in-pass rectangles, color/alpha and scissor independence', flush=True)
+        if not a.frame_boundaries_only:
+            report['passed'] = True
+            raise SystemExit(0)
     for name in ('zink-wayland', 'vulkan-copy'):
         payload('transfer', dict(guest='/tmp/' + name, host=str(ROOT / 'target/zink-inputs' / name), export=False, replace=True))
     if a.relay and not a.damage_only:

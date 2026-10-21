@@ -585,7 +585,12 @@ impl Backend {
                 .iter()
                 .map(|&v| f32::from_bits(v as u32))
                 .collect();
-            if !valid_viewport(&v, device.maintenance1) {
+            if !valid_viewport(
+                &v,
+                device.maintenance1,
+                device.viewport_dimensions,
+                device.viewport_bounds,
+            ) {
                 return invalid();
             }
             static_viewports.push(vk::Viewport {
@@ -2115,7 +2120,12 @@ impl Backend {
                     75 => {
                         let v = words32(m, a[2], 6)?;
                         let v: Vec<_> = v.into_iter().map(f32::from_bits).collect();
-                        if !valid_viewport(&v, device.maintenance1) {
+                        if !valid_viewport(
+                            &v,
+                            device.maintenance1,
+                            device.viewport_dimensions,
+                            device.viewport_bounds,
+                        ) {
                             if std::env::var_os("TRAMES_VULKAN_TRACE").is_some() {
                                 eprintln!("trames-vulkan invalid viewport {v:?}");
                             }
@@ -2165,15 +2175,17 @@ impl Backend {
         Ok(())
     }
 }
-fn valid_viewport(v: &[f32], maintenance1: bool) -> bool {
+fn valid_viewport(v: &[f32], maintenance1: bool, dimensions: [u32; 2], bounds: [f32; 2]) -> bool {
     v.iter().all(|v| v.is_finite())
-        && v[0] >= 0.0
-        && v[1] >= 0.0
+        && v[0] >= bounds[0]
+        && v[1] >= bounds[0]
         && v[2] > 0.0
         && (v[3] > 0.0 || maintenance1)
-        && v[0] + v[2] <= DIMENSION as f32
-        && v[1] <= DIMENSION as f32
-        && (0.0..=DIMENSION as f32).contains(&(v[1] + v[3]))
+        && v[2] <= dimensions[0] as f32
+        && v[3].abs() <= dimensions[1] as f32
+        && v[0] + v[2] <= bounds[1]
+        && v[1] <= bounds[1]
+        && (bounds[0]..=bounds[1]).contains(&(v[1] + v[3]))
         && (0.0..=1.0).contains(&v[4])
         && (0.0..=1.0).contains(&v[5])
 }
@@ -2481,8 +2493,6 @@ fn clear_attachment(pass: PassInfo, wire: &[u64]) -> Result<vk::ClearAttachment>
 fn clear_rectangle(area: vk::Rect2D, wire: &[u64]) -> Result<vk::ClearRect> {
     if wire[0] < area.offset.x as u64
         || wire[1] < area.offset.y as u64
-        || wire[2] == 0
-        || wire[3] == 0
         || wire[4] != 0
         || wire[5] != 1
         || wire[0]
@@ -2492,6 +2502,9 @@ fn clear_rectangle(area: vk::Rect2D, wire: &[u64]) -> Result<vk::ClearRect> {
             .checked_add(wire[3])
             .is_none_or(|v| v > area.offset.y as u64 + area.extent.height as u64)
     {
+        if std::env::var_os("TRAMES_VULKAN_TRACE").is_some() {
+            eprintln!("trames-vulkan clear rectangle area={area:?} rect={wire:?}");
+        }
         return invalid();
     }
     Ok(vk::ClearRect::default()
@@ -2548,12 +2561,23 @@ mod tests {
             },
         };
         assert!(clear_rectangle(area, &[8, 4, 16, 12, 0, 1]).is_ok());
+        // VkClearRect requires a nonzero layer count, not a nonzero extent.
+        // Clipped GL clears can legitimately reach an empty framebuffer edge.
+        for rectangle in [
+            [24, 4, 0, 12, 0, 1],
+            [8, 16, 16, 0, 0, 1],
+            [24, 16, 0, 0, 0, 1],
+        ] {
+            assert!(clear_rectangle(area, &rectangle).is_ok());
+        }
         for rectangle in [
             [7, 4, 1, 1, 0, 1],
             [8, 3, 1, 1, 0, 1],
             [8, 4, 17, 12, 0, 1],
             [8, 4, 16, 13, 0, 1],
-            [8, 4, 0, 1, 0, 1],
+            [25, 4, 0, 1, 0, 1],
+            [8, 17, 1, 0, 0, 1],
+            [8, 4, 1, 1, 0, 0],
             [8, 4, 1, 1, 1, 1],
             [8, 4, 1, 1, 0, 2],
             [u64::MAX, 4, 2, 1, 0, 1],
@@ -2828,7 +2852,24 @@ mod tests {
         assert!(checked_image_copy(&copy, depth, other).is_err());
     }
     #[test]
+    fn viewports_may_extend_outside_the_framebuffer() {
+        let valid_viewport = |v: &[f32], maintenance1| {
+            valid_viewport(v, maintenance1, [4096, 4096], [-32768.0, 32767.0])
+        };
+        assert!(valid_viewport(
+            &[-64.0, 144.0, 256.0, -192.0, 0.0, 1.0],
+            true
+        ));
+        assert!(valid_viewport(
+            &[-64.0, -48.0, 256.0, 192.0, 0.0, 1.0],
+            false
+        ));
+    }
+    #[test]
     fn maintenance1_negative_viewports_use_native_bounds() {
+        let valid_viewport = |v: &[f32], maintenance1| {
+            valid_viewport(v, maintenance1, [4096, 4096], [-32768.0, 32767.0])
+        };
         let flipped = [0.0, 192.0, 256.0, -192.0, 0.0, 1.0];
         assert!(valid_viewport(&flipped, true));
         assert!(valid_viewport(&[0.0, 0.0, 256.0, 0.0, 0.0, 1.0], true));
@@ -2836,9 +2877,9 @@ mod tests {
         assert!(valid_viewport(&[0.0, 0.0, 256.0, 192.0, 0.0, 1.0], false));
         for (field, value) in [
             (0, f32::NAN),
-            (1, 0.0),
+            (1, -32769.0),
             (2, 0.0),
-            (3, -193.0),
+            (3, -4097.0),
             (4, -0.1),
             (5, 1.1),
         ] {
