@@ -146,12 +146,12 @@ kernel void trames_tf_parameters(constant TFParams& base [[buffer(0)]],
     out[33] = !valid;
 }
 kernel void trames_tf_copy_indices16(const device ushort* input [[buffer(0)]],
-    const device uint* raw [[buffer(1)]], device ushort* output [[buffer(2)]], uint i [[thread_position_in_grid]]) {
-    if (i < raw[0]) output[i] = input[raw[2]+i];
+    const device uint* raw [[buffer(1)]], device ushort* output [[buffer(2)]], device ushort* safe [[buffer(3)]], uint i [[thread_position_in_grid]]) {
+    if (i < raw[0]) { ushort x=input[raw[2]+i];output[i]=x;safe[i]=raw[5] && x==0xffffu ? ushort(0u-raw[3]) : x; }
 }
 kernel void trames_tf_copy_indices32(const device uint* input [[buffer(0)]],
-    const device uint* raw [[buffer(1)]], device uint* output [[buffer(2)]], uint i [[thread_position_in_grid]]) {
-    if (i < raw[0]) output[i] = input[raw[2]+i];
+    const device uint* raw [[buffer(1)]], device uint* output [[buffer(2)]], device uint* safe [[buffer(3)]], uint i [[thread_position_in_grid]]) {
+    if (i < raw[0]) { uint x=input[raw[2]+i];output[i]=x;safe[i]=raw[5] && x==0xffffffffu ? 0u-raw[3] : x; }
 }
 kernel void trames_tf_dispatch(device uint* draw [[buffer(0)]], constant uint2& widths [[buffer(1)]],
     uint i [[thread_position_in_grid]]) {

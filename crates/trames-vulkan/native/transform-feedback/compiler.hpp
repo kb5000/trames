@@ -15,6 +15,7 @@ struct Program {
     std::array<uint32_t, 4> strides{};
     uint32_t buffers = 0;
     uint32_t scalars = 0;
+    uint32_t capture_stride = 0;
 };
 
 class Compiler : public SPIRV_CROSS_NAMESPACE::CompilerMSL {

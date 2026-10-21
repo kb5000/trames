@@ -149,6 +149,17 @@ std::map<Compiler::Semantic, std::string> Compiler::stage_values(const std::stri
 
 void Compiler::append_helpers(Compiler& raster) {
     const auto& output = get_stage_out_struct_type();
+    // Use the original compiler's Metal ABI size/alignment rules, including
+    // float3 and matrix/array padding. Scratch is exact rather than a guessed
+    // maxVertexOutputComponents * 4 bytes.
+    uint32_t stride = 0, alignment = 1;
+    for (auto member : output.member_types) {
+        uint32_t a = get_declared_type_alignment_msl(member, nullptr, false, false);
+        alignment = std::max(alignment, a);
+        stride = (stride + a - 1) & ~(a - 1);
+        stride += get_declared_type_size_msl(member, nullptr, false, false);
+    }
+    program_.capture_stride = (stride + alignment - 1) & ~(alignment - 1);
     auto expressions = stage_values("out");
     buffer.reset();
     statement("kernel void trames_tf_scatter(const device ", type_to_glsl(output), "* rows [[buffer(0)]],");
@@ -246,8 +257,9 @@ void Compiler::emit_function_prototype(SPIRFunction& function, const Bitset& fla
     // this before body emission, exactly once even if it recompiles the source.
     if (runtime_parameters_ && !runtime_hook_installed_ && function.self == ir.default_entry_point) {
         runtime_hook_installed_ = true;
-        function.fixup_hooks_in.push_back([this]() {
+        function.fixup_hooks_in.insert(function.fixup_hooks_in.begin(), [this]() {
             auto gid = to_expression(builtin_invocation_id_id);
+            statement(to_expression(builtin_stage_input_size_id), " = uint3(tramesTFDraw[0], tramesTFDraw[1], 1);");
             statement("if (", gid, ".x >= tramesTFDraw[0] || ", gid, ".y >= tramesTFDraw[1]) return;");
             if (msl_options.vertex_index_type != Options::IndexType::None)
                 statement("if (tramesTFDraw[5] && tramesTFIndices[", gid, ".x] == ",

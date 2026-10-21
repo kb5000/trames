@@ -292,18 +292,19 @@ Original MoltenVK sources remain Apache-2.0; new Trames includes are GPL-3.0-or-
  	ADD_DVC_ENTRY_POINT(vkCmdDrawIndexedIndirect);
 --- a/MoltenVK/MoltenVK/GPUObjects/MVKPipeline.h
 +++ b/MoltenVK/MoltenVK/GPUObjects/MVKPipeline.h
-@@ -249,6 +249,10 @@
+@@ -249,6 +249,11 @@
  
  	/** Returns whether this pipeline has tessellation shaders. */
  	bool isTessellationPipeline() { return _isTessellationPipeline; }
 +    uint32_t getTransformFeedbackBuffers() { return _tfBuffers; }
++    uint32_t getTransformFeedbackCaptureStride() { return _tfCaptureStride; }
 +    const uint32_t* getTransformFeedbackStrides() { return _tfStrides; }
 +    id<MTLComputePipelineState> getTransformFeedbackScatterState() { return _tfScatterState; }
 +    id<MTLRenderPipelineState> getTransformFeedbackReplayState() { return _tfReplayState; }
  
  	/** Returns the number of output tessellation patch control points. */
  	uint32_t getOutputControlPointCount() { return _outputControlPointCount; }
-@@ -355,7 +359,7 @@
+@@ -355,7 +360,7 @@
  	bool addTessEvalShaderToPipeline(MTLRenderPipelineDescriptor* plDesc, const VkGraphicsPipelineCreateInfo* pCreateInfo, mvk::SPIRVToMSLConversionConfiguration& shaderConfig, SPIRVShaderOutputs& prevOutput, const VkPipelineShaderStageCreateInfo* pTessEvalSS, VkPipelineCreationFeedback* pTessEvalFB, const VkPipelineShaderStageCreateInfo*& pFragmentSS);
      bool addFragmentShaderToPipeline(MTLRenderPipelineDescriptor* plDesc, const VkGraphicsPipelineCreateInfo* pCreateInfo, mvk::SPIRVToMSLConversionConfiguration& shaderConfig, SPIRVShaderOutputs& prevOutput, const VkPipelineShaderStageCreateInfo* pFragmentSS, VkPipelineCreationFeedback* pFragmentFB);
  	template<class T>
@@ -312,11 +313,11 @@ Original MoltenVK sources remain Apache-2.0; new Trames includes are GPL-3.0-or-
  	void adjustVertexInputForMultiview(MTLVertexDescriptor* inputDesc, const VkPipelineVertexInputStateCreateInfo* pVI, uint32_t viewCount, uint32_t oldViewCount = 1);
      void addTessellationToPipeline(MTLRenderPipelineDescriptor* plDesc, const mvk::SPIRVTessReflectionData& reflectData, const VkPipelineTessellationStateCreateInfo* pTS);
      void addFragmentOutputToPipeline(MTLRenderPipelineDescriptor* plDesc, const VkGraphicsPipelineCreateInfo* pCreateInfo);
-@@ -411,6 +415,11 @@
+@@ -411,6 +416,11 @@
  	bool _isRasterizing = false;
  	bool _isRasterizingColor = false;
  	bool _isTessellationPipeline = false;
-+    uint32_t _tfBuffers = 0, _tfStrides[4] = {};
++    uint32_t _tfBuffers = 0, _tfStrides[4] = {}, _tfCaptureStride = 0;
 +    id<MTLComputePipelineState> _tfScatterState = nil;
 +    id<MTLRenderPipelineState> _tfReplayState = nil;
 +    void initTransformFeedback(const VkGraphicsPipelineCreateInfo*, const mvk::SPIRVTessReflectionData&,
@@ -362,7 +363,16 @@ Original MoltenVK sources remain Apache-2.0; new Trames includes are GPL-3.0-or-
  				vbDesc.stepRate = 1;
  			}
          }
-@@ -2396,6 +2398,7 @@
+@@ -2090,6 +2092,8 @@
+ 				_stageResources[stage].implicitBuffers.ids[MVKImplicitBuffer::ViewRange] = extra;
+ 				_stageResources[stage].implicitBuffers.ids[MVKImplicitBuffer::Index]     = extra;
+ 				_stageResources[stage].implicitBuffers.ids[MVKImplicitBuffer::DrawId]    = getImplicitBufferIndex(stage, 5);
++                _stageResources[stage].implicitBuffers.ids[MVKImplicitBuffer::IndirectParams] = getImplicitBufferIndex(stage, 6);
++                _stageResources[stage].implicitBuffers.ids[MVKImplicitBuffer::PatchOutput] = getImplicitBufferIndex(stage, 8);
+ 				break;
+ 			case kMVKShaderStageFragment:
+ 				_stageResources[stage].implicitBuffers.ids[MVKImplicitBuffer::ViewRange] = extra;
+@@ -2396,6 +2400,7 @@
  		[_mtlTessVertexStageState release];
  		[_mtlTessVertexStageIndex16State release];
  		[_mtlTessVertexStageIndex32State release];
@@ -370,7 +380,7 @@ Original MoltenVK sources remain Apache-2.0; new Trames includes are GPL-3.0-or-
  		[_mtlTessControlStageState release];
  		[_mtlPipelineState release];
  		if (_ownsVertexModule) delete _vertexModule;
-@@ -2994,7 +2997,7 @@
+@@ -2994,7 +2999,7 @@
  				opt.tessPatchKind,
  				opt.numTessControlPoints,
  				opt.shouldFlipVertexY,
@@ -379,7 +389,16 @@ Original MoltenVK sources remain Apache-2.0; new Trames includes are GPL-3.0-or-
  	}
  
  	template<class Archive>
-@@ -3208,3 +3211,5 @@
+@@ -3037,7 +3042,7 @@
+ 				scr.isRasterizationDisabled,
+ 				scr.isPositionInvariant,
+ 				scr.needsSwizzleBuffer,
+-				scr.needsOutputBuffer,
++				scr.needsOutputBuffer, scr.transformFeedbackStride,
+ 				scr.needsPatchOutputBuffer,
+ 				scr.needsBufferSizeBuffer,
+ 				scr.needsDynamicOffsetBuffer,
+@@ -3208,3 +3213,5 @@
  	missingBytes += mvkValidateCerealArchiveSize<MVKCompressor<std::string>>(20);				// Contains collection
  	assert(missingBytes == 0 && "Cereal Archive definitions incomplete. See previous logged errors.");
  }
@@ -568,12 +587,16 @@ Original MoltenVK sources remain Apache-2.0; new Trames includes are GPL-3.0-or-
  
  		if (shaderConfig.options.hasEntryPoint()) {
  			pMSLCompiler->set_entry_point(shaderConfig.options.entryPointName, shaderConfig.options.entryPointStage);
-@@ -337,7 +340,7 @@
+@@ -337,7 +340,11 @@
  				}
  			}
  		}
 -		conversionResult.msl = pMSLCompiler->compile();
-+		conversionResult.msl = shaderConfig.options.transformFeedback ? static_cast<trames::tf::Compiler*>(pMSLCompiler)->compile_feedback().source : pMSLCompiler->compile();
++		if (shaderConfig.options.transformFeedback) {
++            auto program = static_cast<trames::tf::Compiler*>(pMSLCompiler)->compile_feedback();
++            conversionResult.msl = std::move(program.source);
++            conversionResult.resultInfo.transformFeedbackStride = program.capture_stride;
++        } else conversionResult.msl = pMSLCompiler->compile();
  
          if (shouldLogMSL) { logSource(conversionResult.resultLog, conversionResult.msl, "MSL", "Converted"); }
  
@@ -587,3 +610,11 @@ Original MoltenVK sources remain Apache-2.0; new Trames includes are GPL-3.0-or-
  
  		/**
  		 * Returns whether the specified options match this one.
+@@ -254,6 +255,7 @@
+ 		bool isPositionInvariant = false;
+ 		bool needsSwizzleBuffer = false;
+ 		bool needsOutputBuffer = false;
++        uint32_t transformFeedbackStride = 0;
+ 		bool needsPatchOutputBuffer = false;
+ 		bool needsBufferSizeBuffer = false;
+ 		bool needsDynamicOffsetBuffer = false;

@@ -9,7 +9,7 @@ struct MVKTFBuffer {
     NSUInteger offset = 0, size = 0;
 };
 struct MVKTFEncoderState {
-    MVKTFBuffer outputs[4], counters, rows, map, draw, arguments, indices;
+    MVKTFBuffer outputs[4], counters, rows, map, draw, arguments, indices, safeIndices;
     MVKTFQueryPool* query = nullptr;
     uint32_t queryIndex = 0;
     bool active = false;

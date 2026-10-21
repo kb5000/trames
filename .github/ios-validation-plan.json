@@ -1,5 +1,5 @@
 {
-  "base_sha": "1b8de04aefb10532184b4c2727f17224a34aeb37",
+  "base_sha": "8bddc6d7fa5aaa82dba8922cad2e7f07d1e55760",
   "native_scope": "zink-gles",
   "zink_mrt_only": true,
   "zink_tf_only": true,
@@ -9,22 +9,19 @@
   },
   "reason": "Connect native GPU transform feedback to original MoltenVK public APIs, shader/pipeline cache, command encoders and queries. Validate native and ordinary guest Vulkan TF, original Mesa real GLES3/TF and arm64 iOS driver. Reuse exact unchanged guest, Rust/ICD, CPU/Linux/network/UI acceptance; no IPA.",
   "changed_file_sha256": {
-    ".github/workflows/linux.yml": "3218203a505778472deb59b8b9e3b9cea896469fac9738419320d92042431584",
-    "crates/trames-vulkan/native/transform-feedback/assemble.metal": "0671399dff14b79cee99642b7d1ae401368fdabaad1a0b09170703a9c60c5d1f",
-    "crates/trames-vulkan/native/transform-feedback/compiler.cpp": "15ff85f41006df6df078db10c2f16d93f0fdd90b0c01e8131b96d8291fff6f4f",
-    "crates/trames-vulkan/native/transform-feedback/compiler.hpp": "729f29091bcddb324aefdf9fcc95065cde1ca681e215946a3a425161ecf21ac7",
-    "crates/trames-vulkan/native/transform-feedback/mvk-api.inc": "a79e9726195c7d40a9411e362991fcbfb86540b64991d8c54095d96e00299881",
-    "crates/trames-vulkan/native/transform-feedback/mvk-command.hpp": "e7808d3ef480df0bf0f26a8e64093d9464e6d2329abc586ca03187e38f3db05d",
-    "crates/trames-vulkan/native/transform-feedback/mvk-commands.inc": "82b10b1943aef077d71a784396f070f238f307deed7e5d048ff4aa18ef08ca45",
-    "crates/trames-vulkan/native/transform-feedback/mvk-pipeline.inc": "2f3ec4ef0f79a2a3c887c9cbbaa3d3502a9ed4d45712521381bfa7d7739223c6",
-    "crates/trames-vulkan/native/transform-feedback/mvk-query.hpp": "fbf984bb4aeb535571f12747d5feb78758f2b6b91ad334e7c270313ee9433636",
-    "crates/trames-vulkan/native/transform-feedback/mvk-query.inc": "691943a67ccf80cd667f73d659d5b6afc3f1758c9e8fd7efeb3e026c033088c6",
-    "crates/trames-vulkan/native/transform-feedback/mvk-state.hpp": "884286e3606e84f1f1131d9bc25468844829cdc826648b81703ca91c50fdb9fe",
-    "patches/moltenvk/0003-native-gpu-transform-feedback.patch": "a8b3c74131aa924bb24561b105189ded11fb09d004737e468e0e5fdb8d3c79b1",
-    "patches/moltenvk/0004-allow-native-tf-entry-arguments.patch": "a7313c35a8372f2c2f157b56ac7e9c1ebe9634d83f0fb2eca8567459a53b915f",
-    "scripts/build-moltenvk.py": "7cda4fd0944b0a65c7a68006fa3de50d84996c6f379656e2b99e2b575eb9940a",
-    "scripts/build-vulkan-native-tf.py": "b17470637e06e0c979c4d5298cca9e15cfba1a05472c7c0bd1534b1280cb6c6a",
-    "scripts/ios-ci-scope.py": "8ed3c69c393d64c0aed671481c78b8f00f23b25225ef558035eea8f919695336",
-    "scripts/prepare-zink-native-bundle.py": "1fb10b775b52b3f865289289ed7961480a920904c0d7e48206a1bd93075bfa11"
+    ".github/workflows/linux.yml": "90128b484cb17f20c351db8c5db4a971f1276c041694f38e408e2265ab0870d6",
+    "crates/trames-vulkan/native/transform-feedback/assemble.metal": "05325cad897078c8068eace03e2245a99e365d9f3a9e0eaead573d74851148a0",
+    "crates/trames-vulkan/native/transform-feedback/compiler.cpp": "3aa610ce1976dbdae8e084c824d220d382cfc2a8825d67e64bf067041c1d1af4",
+    "crates/trames-vulkan/native/transform-feedback/compiler.hpp": "caf5030a22c69886a6b6d8bbf056f36f207bb881ddb845abd82d871675a0a4de",
+    "crates/trames-vulkan/native/transform-feedback/mvk-commands.inc": "e0e9aae1f86f328d42a11a542fae7a2aa8aad42464810a190da82a374c01988a",
+    "crates/trames-vulkan/native/transform-feedback/mvk-pipeline.inc": "fc15b207b9a7722be963328d4b60f8ad7a8d5cb5359ce1241dada3da5469128b",
+    "crates/trames-vulkan/native/transform-feedback/mvk-state.hpp": "ff7e6dbce528cda53373ca3067d8ff5ed0204b992d8179c9269e1321d9c75703",
+    "patches/moltenvk/0003-native-gpu-transform-feedback.patch": "2649a56d95a2adaab89f1295ba3097a23fc314002b782ed67996db60c9e23edc",
+    "scripts/build-moltenvk.py": "9d2511912cff05339fc7af56eed7c382809297262543a1504f8069db5ee464f2",
+    "scripts/ios-ci-scope.py": "54f3f92365e431d14f5acd87018ba294ddebf0989d5e9ee69998d2fd56697bee",
+    "scripts/prepare-zink-native-bundle.py": "b70cb9c6af9f09a1c38fb7d2c26a0b321217ef0551800d1f9963083b68b1a456",
+    "tests/fixtures/vulkan-native-tf-runtime.frag": "b8f9b32e568a6400bcc9af8a9ee80a2cf57d4b0bcc22cd4c76fafa1f58a0183a",
+    "tests/fixtures/vulkan-native-tf-runtime.vert": "73be50e6746a750fbbbd769c77852969821ac8951f447a2e37b7b2d5b10fe0f2",
+    "tests/integration/vulkan-native-tf-runtime.py": "299219eb281bf8b0964cee5a5dee5edffc90aa173e2e9284f48b3b7d57a0ada0"
   }
 }

@@ -26,7 +26,7 @@ def zink_metal_only_reuse(plan, repo, headers):
                'scripts/ios-ci-scope.py', 'scripts/prepare-zink-native-bundle.py',
                'scripts/prepare-vulkan.py', 'scripts/build-moltenvk.py', 'scripts/build-ios.sh',
                'patches/moltenvk/0001-use-source-mip-depth-for-volume-blits.patch',
-                               'patches/moltenvk/0002-require-native-gpu-timestamp-counters.patch', 'patches/moltenvk/0003-native-gpu-transform-feedback.patch', 'patches/moltenvk/0004-allow-native-tf-entry-arguments.patch', 'scripts/build-vulkan-native-tf.py', '.github/workflows/ios.yml', 'tests/integration/vulkan-native-tf-reference.py'}
+                               'patches/moltenvk/0002-require-native-gpu-timestamp-counters.patch', 'patches/moltenvk/0003-native-gpu-transform-feedback.patch', 'patches/moltenvk/0004-allow-native-tf-entry-arguments.patch', 'scripts/build-vulkan-native-tf.py', '.github/workflows/ios.yml', 'tests/integration/vulkan-native-tf-reference.py', 'tests/integration/vulkan-native-tf-runtime.py'}
     changed = subprocess.check_output(['git', 'diff', '--name-only', reuse['sha'], 'HEAD'], text=True).splitlines()
     if any(path not in allowed and not path.startswith(('docs/', 'crates/trames-vulkan/native/transform-feedback/', 'tests/fixtures/vulkan-native-tf')) for path in changed):
         raise RuntimeError('Metal-only repair changed the guest, runtime, GPU bridge, fixture or toolchain')
@@ -601,7 +601,7 @@ def main():
                                '.github/workflows/ios.yml', 'scripts/ios-ci-scope.py', 'scripts/prepare-vulkan.py',
                                'scripts/build-vulkan-native-tf.py', 'tests/fixtures/vulkan-native-tf-compiler.cpp',
                                'tests/fixtures/vulkan-native-tf-metal.mm', 'tests/fixtures/vulkan-native-tf.vert',
-                               'tests/integration/vulkan-native-tf-reference.py'}
+                               'tests/integration/vulkan-native-tf-reference.py', 'tests/integration/vulkan-native-tf-runtime.py'}
                     delta = subprocess.check_output(['git', 'diff', '--name-only', reuse['sha'], 'HEAD'], text=True).splitlines()
                     if any(p not in allowed and not p.startswith(('docs/', 'crates/trames-vulkan/native/transform-feedback/')) for p in delta):
                         raise RuntimeError('Native TF engine reuse changed linked runtime/guest inputs')
@@ -620,7 +620,7 @@ def main():
                     if compiler_reuse:
                         compiler_allowed = {'.github/ios-validation-plan.json', '.github/workflows/linux.yml',
                             '.github/workflows/ios.yml', 'scripts/ios-ci-scope.py',
-                            'tests/integration/vulkan-native-tf-reference.py', 'tests/fixtures/vulkan-native-tf-metal.mm',
+                            'tests/integration/vulkan-native-tf-reference.py', 'tests/integration/vulkan-native-tf-runtime.py', 'tests/fixtures/vulkan-native-tf-metal.mm',
                             'crates/trames-vulkan/native/transform-feedback/assemble.metal',
                             'crates/trames-vulkan/native/transform-feedback/metal.hpp',
                             'crates/trames-vulkan/native/transform-feedback/metal.mm'}
@@ -711,7 +711,7 @@ def main():
                                'scripts/ios-ci-scope.py', '.github/workflows/ios.yml', '.github/workflows/linux.yml',
                                'scripts/prepare-vulkan.py', 'scripts/build-moltenvk.py', 'scripts/build-ios.sh',
                                'patches/moltenvk/0001-use-source-mip-depth-for-volume-blits.patch',
-                               'patches/moltenvk/0002-require-native-gpu-timestamp-counters.patch', 'patches/moltenvk/0003-native-gpu-transform-feedback.patch', 'patches/moltenvk/0004-allow-native-tf-entry-arguments.patch', 'scripts/build-vulkan-native-tf.py', '.github/workflows/ios.yml', 'tests/integration/vulkan-native-tf-reference.py'}
+                               'patches/moltenvk/0002-require-native-gpu-timestamp-counters.patch', 'patches/moltenvk/0003-native-gpu-transform-feedback.patch', 'patches/moltenvk/0004-allow-native-tf-entry-arguments.patch', 'scripts/build-vulkan-native-tf.py', '.github/workflows/ios.yml', 'tests/integration/vulkan-native-tf-reference.py', 'tests/integration/vulkan-native-tf-runtime.py'}
                     sync = plan.get('native_scope') in {'zink-sync','zink-gles','zink-wayland'}
                     if sync:
                         allowed.update({'accelerator/vulkan/zink.inc', 'accelerator/vulkan/graphics.inc', 'tests/fixtures/vulkan-timeline.c',

@@ -31,7 +31,7 @@ if a.verify:
                    'scripts/ios-ci-scope.py', 'scripts/prepare-zink-native-bundle.py',
                    'scripts/prepare-vulkan.py', 'scripts/build-moltenvk.py', 'scripts/build-ios.sh',
                    'patches/moltenvk/0001-use-source-mip-depth-for-volume-blits.patch',
-                   'patches/moltenvk/0002-require-native-gpu-timestamp-counters.patch', 'patches/moltenvk/0003-native-gpu-transform-feedback.patch', 'patches/moltenvk/0004-allow-native-tf-entry-arguments.patch', 'scripts/build-vulkan-native-tf.py', '.github/workflows/ios.yml', 'tests/integration/vulkan-native-tf-reference.py'}
+                   'patches/moltenvk/0002-require-native-gpu-timestamp-counters.patch', 'patches/moltenvk/0003-native-gpu-transform-feedback.patch', 'patches/moltenvk/0004-allow-native-tf-entry-arguments.patch', 'scripts/build-vulkan-native-tf.py', '.github/workflows/ios.yml', 'tests/integration/vulkan-native-tf-reference.py', 'tests/integration/vulkan-native-tf-runtime.py'}
         assert all(f in ci_only or f.startswith(('docs/', 'crates/trames-vulkan/native/transform-feedback/', 'tests/fixtures/vulkan-native-tf')) for f in delta), 'Guest/runtime inputs changed'
     actual = {str(f.relative_to(out)) for f in out.rglob('*') if f.is_file() and f != manifest}
     assert actual == set(data['sha256'])

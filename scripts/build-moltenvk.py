@@ -197,7 +197,12 @@ def main():
             print('Building patched MoltenVK '+a.platform+' '+a.arch, file=sys.stderr, flush=True)
             result = subprocess.run(command, cwd=source, stdout=log, stderr=subprocess.STDOUT)
             if result.returncode:
-                print((out/'xcodebuild.log').read_text(errors='replace')[-14000:], file=sys.stderr)
+                failed_log = (out/'xcodebuild.log').read_text(errors='replace')
+                lines = failed_log.splitlines()
+                for i, line in enumerate(lines):
+                    if 'error:' in line:
+                        print('\n'.join(lines[max(0, i-2):i+5]), file=sys.stderr)
+                print(failed_log[-14000:], file=sys.stderr)
                 raise SystemExit(result.returncode)
     # Xcode also copies the library under XCFrameworkStaging; select only
     # the SDK's real configuration product (Release[-iphoneos/-iphonesimulator]).

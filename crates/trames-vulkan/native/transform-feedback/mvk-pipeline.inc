@@ -4,7 +4,7 @@
 void MVKGraphicsPipeline::initTransformFeedback(const VkGraphicsPipelineCreateInfo* info,
         const SPIRVTessReflectionData& reflection, const VkPipelineShaderStageCreateInfo* vertex,
         VkPipelineCreationFeedback* feedback, MTLRenderPipelineDescriptor* rasterDescriptor) {
-    if (!_device->_enabledTransformFeedbackFeatures.transformFeedback || isTessellationPipeline()) return;
+    if (!getEnabledTransformFeedbackFeatures().transformFeedback || isTessellationPipeline()) return;
     try {
         trames::tf::Compiler inspect(_vertexModule->getSPIRV());
         inspect.set_entry_point(vertex->pName, spv::ExecutionModelVertex);
@@ -30,6 +30,7 @@ void MVKGraphicsPipeline::initTransformFeedback(const VkGraphicsPipelineCreateIn
         [descriptor release];
         if (!valid) { _hasValidMTLPipelineStates = false;return; }
 
+        _tfCaptureStride = functions[0].shaderConversionResults.transformFeedbackStride;
         id<MTLLibrary> library = functions[0].getMTLLibrary();
         id<MTLFunction> scatter = [library newFunctionWithName:@"trames_tf_scatter"];
         descriptor = [MTLComputePipelineDescriptor new];descriptor.computeFunction = scatter;
@@ -37,7 +38,7 @@ void MVKGraphicsPipeline::initTransformFeedback(const VkGraphicsPipelineCreateIn
         [scatter release];[descriptor release];
         if (_isRasterizing) {
             id<MTLFunction> replay = [library newFunctionWithName:@"trames_tf_replay"];
-            auto replayDescriptor = [rasterDescriptor copy];
+            MTLRenderPipelineDescriptor* replayDescriptor = [rasterDescriptor copy];
             replayDescriptor.vertexFunction = replay;
             replayDescriptor.vertexDescriptor = [MTLVertexDescriptor vertexDescriptor];
             getOrCompilePipeline(replayDescriptor, _tfReplayState);

@@ -681,6 +681,8 @@ jobs:
             fi
           fi
           if [[ '${{ needs.scope.outputs.zink_tf_only }}' == true ]]; then
+            command -v glslangValidator >/dev/null || brew install glslang
+            python3 tests/integration/vulkan-native-tf-runtime.py --include target/vulkan-upstream/headers/Vulkan-Headers-cfebfc96b2b0bce93da7d12f2c14cc01793ae25c/include --shader target/zink-native-bundle/shaders/vulkan-feedback.spv --library "$native_moltenvk_dir/libMoltenVK.a" --output target/vulkan-tf-runtime-metal
             python3 tests/integration/vulkan-feedback.py --store target/zink-native-bundle/store --output target/vulkan-feedback-metal --require-feedback
             python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-tf-es3-metal --stage es3
           elif [[ '${{ needs.scope.outputs.zink_divisor_only }}' == true ]]; then
@@ -728,6 +730,7 @@ jobs:
             target/zink-stencil-capabilities-metal/
             target/zink-stencil-es3-metal/
             target/zink-tf-es3-metal/
+            target/vulkan-tf-runtime-metal/
             target/zink-native-bundle/checksums.json
             target/moltenvk-patched/*/build.json
             target/moltenvk-patched/*/xcodebuild.log

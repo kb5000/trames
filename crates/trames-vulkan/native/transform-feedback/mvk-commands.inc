@@ -32,7 +32,7 @@ static void mvkTFDispatch(MVKCommandEncoder* encoder, id<MTLComputeCommandEncode
 VkResult MVKCmdTransformFeedback::setContent(MVKCommandBuffer* command, uint32_t operation,
         uint32_t first, uint32_t count, const VkBuffer* buffers, const VkDeviceSize* offsets,
         const VkDeviceSize* sizes, uint32_t instances, uint32_t firstInstance, uint32_t counterOffset, uint32_t stride) {
-    if (!command->getDevice()->_enabledTransformFeedbackFeatures.transformFeedback)
+    if (!command->getEnabledTransformFeedbackFeatures().transformFeedback)
         return command->reportError(VK_ERROR_FEATURE_NOT_PRESENT, "Transform feedback was not enabled.");
     if (first > 4 || count > 4-first) return VK_ERROR_VALIDATION_FAILED_EXT;
     _operation=operation;_first=first;_count=count;_instances=instances;_firstInstance=firstInstance;
@@ -92,7 +92,7 @@ bool mvkTFDraw(MVKCommandEncoder* encoder, uint32_t vertices, uint32_t instances
     }
     if (!input && (!vertices || !instances)) return true;
     uint64_t capacity=input ? 128*1024 : uint64_t(vertices)*instances;
-    if (capacity > UINT32_MAX/3 || capacity*512 > encoder->getMetalFeatures().maxMTLBufferSize) {
+    if (capacity > UINT32_MAX/3 || capacity*pipeline->getTransformFeedbackCaptureStride() > encoder->getMetalFeatures().maxMTLBufferSize) {
         encoder->_cmdBuffer->setConfigurationResult(encoder->reportError(VK_ERROR_OUT_OF_DEVICE_MEMORY,"Transform feedback scratch allocation exceeds native buffer size."));return true;
     }
     uint32_t topology=pipeline->getVkPrimitiveTopology();
@@ -112,11 +112,12 @@ bool mvkTFDraw(MVKCommandEncoder* encoder, uint32_t vertices, uint32_t instances
             params.sizes[b]=uint32_t(tf.outputs[b].size);
         }
     }
-    auto rows=mvkTFScratch(encoder,tf.rows,capacity*512);
+    auto rows=mvkTFScratch(encoder,tf.rows,capacity*pipeline->getTransformFeedbackCaptureStride());
     auto map=mvkTFScratch(encoder,tf.map,capacity*12);
     auto draw=mvkTFScratch(encoder,tf.draw,64);
     auto arguments=mvkTFScratch(encoder,tf.arguments,160);
     auto copiedIndices=indexed ? mvkTFScratch(encoder,tf.indices,capacity*(indexType/8)) : tf.counters;
+    auto safeIndices=indexed ? mvkTFScratch(encoder,tf.safeIndices,capacity*(indexType/8)) : tf.counters;
     if (!input) {
         uint32_t values[]={vertices,instances,first,indexed ? uint32_t(baseVertex) : firstInstance,firstInstance};
         auto allocation=encoder->copyToTempMTLBufferAllocation(values,indexed ? 20 : 16);
@@ -134,7 +135,7 @@ bool mvkTFDraw(MVKCommandEncoder* encoder, uint32_t vertices, uint32_t instances
         uint32_t kind=indexType==16 ? MVKTFCopyIndices16 : MVKTFCopyIndices32;
         metal=mvkTFCompute(encoder,kind);
         [metal setBuffer:index.mtlBuffer offset:index.offset atIndex:0];
-        [metal setBuffer:arguments.buffer offset:arguments.offset+64 atIndex:1];mvkTFBind(metal,copiedIndices,2);
+        [metal setBuffer:arguments.buffer offset:arguments.offset+64 atIndex:1];mvkTFBind(metal,copiedIndices,2);mvkTFBind(metal,safeIndices,3);
         mvkTFDispatch(encoder,metal,kind,capacity);
     }
     encoder->_isIndexedDraw=indexed;
@@ -143,7 +144,7 @@ bool mvkTFDraw(MVKCommandEncoder* encoder, uint32_t vertices, uint32_t instances
     [metal setComputePipelineState:vertexState];
     auto& implicit=pipeline->getImplicitBuffers(kMVKShaderStageVertex).ids;
     mvkTFBind(metal,rows,implicit[MVKImplicitBuffer::Output]);
-    mvkTFBind(metal,copiedIndices,implicit[MVKImplicitBuffer::Index]);
+    mvkTFBind(metal,safeIndices,implicit[MVKImplicitBuffer::Index]);
     mvkTFBind(metal,copiedIndices,implicit[MVKImplicitBuffer::PatchOutput]);
     [metal setBuffer:arguments.buffer offset:arguments.offset+64 atIndex:implicit[MVKImplicitBuffer::IndirectParams]];
     if (pipeline->needsDrawIdBuffer()) {
