@@ -42,7 +42,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateRenderPass2(VkDevice d,const VkRenderPass
     }
     if(s->pDepthStencilAttachment){
         const VkAttachmentReference2 *r=s->pDepthStencilAttachment;CHECK(r,VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2);
-        if(r->aspectMask && r->aspectMask!=VK_IMAGE_ASPECT_DEPTH_BIT)return VK_ERROR_FEATURE_NOT_PRESENT;
+        if(r->aspectMask&~(VK_IMAGE_ASPECT_DEPTH_BIT|VK_IMAGE_ASPECT_STENCIL_BIT))return VK_ERROR_FEATURE_NOT_PRESENT;
         depth=(VkAttachmentReference){r->attachment,r->layout};
     }
     VkSubpassDependency dependencies[8];for(uint32_t i=0;i<info->dependencyCount;i++){

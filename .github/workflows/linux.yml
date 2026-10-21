@@ -41,6 +41,7 @@ jobs:
       zink_wayland_linux_sha: ${{ steps.scope.outputs.zink_wayland_linux_sha }}
       zink_mrt_only: ${{ steps.scope.outputs.zink_mrt_only }}
       zink_feedback_only: ${{ steps.scope.outputs.zink_feedback_only }}
+      zink_stencil_only: ${{ steps.scope.outputs.zink_stencil_only }}
       zink_mesa_only: ${{ steps.scope.outputs.zink_mesa_only }}
       zink_guest_bundle_run: ${{ steps.scope.outputs.zink_guest_bundle_run }}
       zink_guest_bundle_sha: ${{ steps.scope.outputs.zink_guest_bundle_sha }}
@@ -445,7 +446,9 @@ jobs:
           if [[ '${{ needs.scope.outputs.zink_feedback_only }}' != true ]]; then
             cargo run -p trames-vulkan --example renderpass --release --locked
           fi
-          cargo run -p trames-vulkan --example feedback --release --locked -- tests/fixtures/bin/vulkan-feedback.spv
+          if [[ '${{ needs.scope.outputs.zink_stencil_only }}' != true ]]; then
+            cargo run -p trames-vulkan --example feedback --release --locked -- tests/fixtures/bin/vulkan-feedback.spv
+          fi
           if [[ '${{ needs.scope.outputs.zink_mrt_only }}' != true ]]; then
             cargo run -p trames-vulkan --example timeline --release --locked
             cargo run -p trames-vulkan --example resources --release --locked -- tests/fixtures/bin/vulkan-resources.spv
@@ -457,13 +460,19 @@ jobs:
           export TRAMES_ZINK_CPU_REFERENCE=1
           if [[ '${{ needs.scope.outputs.native_scope }}' == zink-gles ]]; then
             if [[ '${{ needs.scope.outputs.zink_mrt_only }}' == true ]]; then
-              if [[ '${{ needs.scope.outputs.zink_feedback_only }}' == true ]]; then
+              if [[ '${{ needs.scope.outputs.zink_feedback_only }}' == true || '${{ needs.scope.outputs.zink_stencil_only }}' == true ]]; then
                 python3 tests/integration/zink-foundation.py --bootstrap-only --snapshot-store target/zink-native-bundle/store
               else
                 python3 tests/integration/zink-foundation.py --probe-only --require-render --snapshot-store target/zink-native-bundle/store
                 python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-es3-linux --stage graphics
               fi
-              python3 tests/integration/vulkan-feedback.py --store target/zink-native-bundle/store --output target/vulkan-feedback-linux --require-feedback --native-client target/zink-inputs/vulkan-feedback-host
+              if [[ '${{ needs.scope.outputs.zink_stencil_only }}' == true ]]; then
+                python3 tests/integration/vulkan-stencil.py --store target/zink-native-bundle/store --output target/vulkan-stencil-linux --native-client target/zink-inputs/vulkan-stencil-host
+                python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-stencil-capabilities-linux --stage capabilities
+                python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-stencil-es3-linux --stage es3 --capability-probe
+              else
+                python3 tests/integration/vulkan-feedback.py --store target/zink-native-bundle/store --output target/vulkan-feedback-linux --require-feedback --native-client target/zink-inputs/vulkan-feedback-host
+              fi
               python3 scripts/prepare-zink-native-bundle.py --es3
             else
               python3 tests/integration/zink-foundation.py --require-render --snapshot-store target/zink-native-bundle/store
@@ -480,6 +489,9 @@ jobs:
             target/zink-foundation/
             target/zink-es3-linux/
             target/vulkan-feedback-linux/
+            target/vulkan-stencil-linux/
+            target/zink-stencil-capabilities-linux/
+            target/zink-stencil-es3-linux/
             target/zink-inputs/inputs.json
             target/vulkan-guest/manifest.json
           retention-days: 14
@@ -546,7 +558,7 @@ jobs:
           if [[ '${{ needs.scope.outputs.zink_feedback_only }}' != true && '${{ needs.scope.outputs.zink_mesa_only }}' != true ]]; then
             cargo run -p trames-vulkan --example renderpass --release --locked 2>&1 | tee target/zink-metal-native/renderpass.log
           fi
-          if [[ '${{ needs.scope.outputs.zink_mesa_only }}' != true ]]; then
+          if [[ '${{ needs.scope.outputs.zink_mesa_only }}' != true && '${{ needs.scope.outputs.zink_stencil_only }}' != true ]]; then
             cargo run -p trames-vulkan --example feedback --release --locked -- target/zink-native-bundle/shaders/vulkan-feedback.spv 2>&1 | tee target/zink-metal-native/feedback.log
           fi
           if [[ '${{ needs.scope.outputs.zink_mrt_only }}' != true ]]; then
@@ -555,13 +567,17 @@ jobs:
           fi
           export TRAMES_RUNNER="$PWD/target/release/trames-run"
           export TRAMES_VULKAN_TRACE=1
-          if [[ '${{ needs.scope.outputs.zink_feedback_only }}' != true ]]; then
+          if [[ '${{ needs.scope.outputs.zink_feedback_only }}' != true && '${{ needs.scope.outputs.zink_stencil_only }}' != true ]]; then
             python3 tests/integration/zink-foundation.py --store target/zink-native-bundle/store --probe-only --require-render --output target/zink-metal
             if [[ '${{ needs.scope.outputs.zink_mrt_only }}' == true ]]; then
               python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-es3-metal --stage graphics
             fi
           fi
-          if [[ '${{ needs.scope.outputs.zink_mrt_only }}' == true && '${{ needs.scope.outputs.zink_mesa_only }}' != true ]]; then
+          if [[ '${{ needs.scope.outputs.zink_stencil_only }}' == true ]]; then
+            python3 tests/integration/vulkan-stencil.py --store target/zink-native-bundle/store --output target/vulkan-stencil-metal
+            python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-stencil-capabilities-metal --stage capabilities
+            python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-stencil-es3-metal --stage es3 --capability-probe
+          elif [[ '${{ needs.scope.outputs.zink_mrt_only }}' == true && '${{ needs.scope.outputs.zink_mesa_only }}' != true ]]; then
             python3 tests/integration/vulkan-feedback.py --store target/zink-native-bundle/store --output target/vulkan-feedback-metal
           fi
       - name: Compile corrected native iOS driver without packaging an app
@@ -589,6 +605,9 @@ jobs:
             target/zink-metal-native/
             target/zink-es3-metal/
             target/vulkan-feedback-metal/
+            target/vulkan-stencil-metal/
+            target/zink-stencil-capabilities-metal/
+            target/zink-stencil-es3-metal/
             target/zink-native-bundle/checksums.json
             target/moltenvk-patched/*/build.json
             target/moltenvk-patched/*/xcodebuild.log

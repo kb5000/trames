@@ -13,6 +13,12 @@ static int image_formats(const void *chain,const VkImageFormatListCreateInfo **l
     }
     return !next;
 }
+static VkImageAspectFlags format_aspects(VkFormat format) {
+    if(format>=VK_FORMAT_D16_UNORM && format<=VK_FORMAT_D32_SFLOAT)return VK_IMAGE_ASPECT_DEPTH_BIT;
+    if(format==VK_FORMAT_S8_UINT)return VK_IMAGE_ASPECT_STENCIL_BIT;
+    if(format>=VK_FORMAT_D16_UNORM_S8_UINT && format<=VK_FORMAT_D32_SFLOAT_S8_UINT)return VK_IMAGE_ASPECT_DEPTH_BIT|VK_IMAGE_ASPECT_STENCIL_BIT;
+    return VK_IMAGE_ASPECT_COLOR_BIT;
+}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateImage(VkDevice d,const VkImageCreateInfo *info,const VkAllocationCallbacks *allocator,VkImage *out) {
     if(!info || info->sType!=VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;ALLOCATOR(allocator);
     const VkImageFormatListCreateInfo *list;if(!image_formats(info->pNext,&list))return VK_ERROR_FEATURE_NOT_PRESENT;
@@ -27,7 +33,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateImageView(VkDevice d,const VkImageViewCre
     const VkImageViewUsageCreateInfo *usage=info->pNext;
     if(usage && !VALID(usage,VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO))return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkImageSubresourceRange *r=&info->subresourceRange;
-    if(info->flags || info->viewType>VK_IMAGE_VIEW_TYPE_CUBE_ARRAY || info->components.r>VK_COMPONENT_SWIZZLE_A || info->components.g>VK_COMPONENT_SWIZZLE_A || info->components.b>VK_COMPONENT_SWIZZLE_A || info->components.a>VK_COMPONENT_SWIZZLE_A || r->aspectMask!=((info->format==VK_FORMAT_D16_UNORM||info->format==VK_FORMAT_D32_SFLOAT)?VK_IMAGE_ASPECT_DEPTH_BIT:VK_IMAGE_ASPECT_COLOR_BIT))return VK_ERROR_FEATURE_NOT_PRESENT;
+    if(info->flags || info->viewType>VK_IMAGE_VIEW_TYPE_CUBE_ARRAY || info->components.r>VK_COMPONENT_SWIZZLE_A || info->components.g>VK_COMPONENT_SWIZZLE_A || info->components.b>VK_COMPONENT_SWIZZLE_A || info->components.a>VK_COMPONENT_SWIZZLE_A || !r->aspectMask || (r->aspectMask&~format_aspects(info->format)))return VK_ERROR_FEATURE_NOT_PRESENT;
     uint64_t range[5]={r->aspectMask,r->baseMipLevel,r->levelCount,r->baseArrayLayer,r->layerCount};
     return CALL(64,KEY(d),(uint64_t)info->image,info->format,PTR(out),usage?usage->usage:0,info->viewType,(uint64_t)info->components.r|((uint64_t)info->components.g<<4)|((uint64_t)info->components.b<<8)|((uint64_t)info->components.a<<12),PTR(range));
 }
@@ -40,7 +46,7 @@ static VkResult render_pass(VkDevice d,const VkRenderPassCreateInfo *info,VkRend
     if(s->flags || s->pipelineBindPoint!=VK_PIPELINE_BIND_POINT_GRAPHICS || s->inputAttachmentCount || s->colorAttachmentCount>8 || s->pResolveAttachments || s->preserveAttachmentCount)return VK_ERROR_FEATURE_NOT_PRESENT;
     unsigned count=s->colorAttachmentCount;
     int has_depth=s->pDepthStencilAttachment && s->pDepthStencilAttachment->attachment!=VK_ATTACHMENT_UNUSED;
-    uint64_t colors[8][5]={{0}},depth[5];unsigned used=0;
+    uint64_t colors[8][5]={{0}},depth[7];unsigned used=0;
     for(unsigned i=0;i<count;i++){
         const VkAttachmentReference *r=s->pColorAttachments+i;
         if(r->attachment==VK_ATTACHMENT_UNUSED)continue;
@@ -52,14 +58,14 @@ static VkResult render_pass(VkDevice d,const VkRenderPassCreateInfo *info,VkRend
     if(info->attachmentCount!=used+(unsigned)has_depth)return VK_ERROR_FEATURE_NOT_PRESENT;
     if(has_depth){
         const VkAttachmentDescription *z=info->pAttachments+used;
-        if(s->pDepthStencilAttachment->attachment!=used || s->pDepthStencilAttachment->layout!=VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || z->flags || z->samples!=VK_SAMPLE_COUNT_1_BIT || (z->format!=VK_FORMAT_D16_UNORM && z->format!=VK_FORMAT_D32_SFLOAT))return VK_ERROR_FEATURE_NOT_PRESENT;
-        depth[0]=z->format;depth[1]=z->loadOp;depth[2]=z->storeOp;depth[3]=z->initialLayout;depth[4]=z->finalLayout;
+        if(s->pDepthStencilAttachment->attachment!=used || s->pDepthStencilAttachment->layout!=VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || z->flags || z->samples!=VK_SAMPLE_COUNT_1_BIT || format_aspects(z->format)==VK_IMAGE_ASPECT_COLOR_BIT)return VK_ERROR_FEATURE_NOT_PRESENT;
+        depth[0]=z->format;depth[1]=z->loadOp;depth[2]=z->storeOp;depth[3]=z->initialLayout;depth[4]=z->finalLayout;depth[5]=z->stencilLoadOp;depth[6]=z->stencilStoreOp;
     }
     uint64_t dependencies[8][7];for(uint32_t i=0;i<info->dependencyCount;i++){
         const VkSubpassDependency *x=info->pDependencies+i;
         dependencies[i][0]=x->srcSubpass;dependencies[i][1]=x->dstSubpass;dependencies[i][2]=x->srcStageMask;dependencies[i][3]=x->dstStageMask;dependencies[i][4]=x->srcAccessMask;dependencies[i][5]=x->dstAccessMask;dependencies[i][6]=x->dependencyFlags;
     }
-    return CALL(op,KEY(d),count?colors[0][0]:0,count?colors[0][1]:0,count?colors[0][2]:0,count?colors[0][3]:0,count?colors[0][4]:0,PTR(dependencies),info->dependencyCount,PTR(out),has_depth?PTR(depth):0,PTR(colors),count);
+    return CALL(op,KEY(d),count?colors[0][0]:0,count?colors[0][1]:0,count?colors[0][2]:0,count?colors[0][3]:0,count?colors[0][4]:0,PTR(dependencies),info->dependencyCount,PTR(out),has_depth?PTR(depth):0,PTR(colors),count,has_depth);
 }
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateRenderPass(VkDevice d,const VkRenderPassCreateInfo *info,const VkAllocationCallbacks *allocator,VkRenderPass *out) {
     if(!info || info->sType!=VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;ALLOCATOR(allocator);
@@ -109,12 +115,19 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateGraphicsPipelines(VkDevice d,VkPipelineCa
     const VkPipelineRasterizationStateCreateInfo *r=info->pRasterizationState;CHECK(r,VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);if(r->flags || r->depthClampEnable || r->polygonMode>VK_POLYGON_MODE_POINT || r->lineWidth!=1.0f)return VK_ERROR_FEATURE_NOT_PRESENT;
     if(!vertex || (!fragment && !r->rasterizerDiscardEnable))return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkPipelineMultisampleStateCreateInfo *m=info->pMultisampleState;CHECK(m,VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);if(m->flags || m->rasterizationSamples!=VK_SAMPLE_COUNT_1_BIT || m->sampleShadingEnable || m->alphaToCoverageEnable || m->alphaToOneEnable || (m->pSampleMask && m->pSampleMask[0]!=UINT32_MAX))return VK_ERROR_FEATURE_NOT_PRESENT;
-    const VkPipelineDepthStencilStateCreateInfo *z=info->pDepthStencilState;if(z){CHECK(z,VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);if(z->flags || z->depthBoundsTestEnable || z->stencilTestEnable || z->depthCompareOp>VK_COMPARE_OP_ALWAYS)return VK_ERROR_FEATURE_NOT_PRESENT;}
+    const VkPipelineDepthStencilStateCreateInfo *z=info->pDepthStencilState;if(z){CHECK(z,VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);if(z->flags || z->depthBoundsTestEnable || z->depthCompareOp>VK_COMPARE_OP_ALWAYS)return VK_ERROR_FEATURE_NOT_PRESENT;}
     const VkPipelineColorBlendStateCreateInfo *b=info->pColorBlendState;CHECK(b,VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);if(b->flags || b->logicOp>VK_LOGIC_OP_SET || b->attachmentCount>8)return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkPipelineDynamicStateCreateInfo *dynamic=info->pDynamicState;unsigned states=0;
     if(dynamic){CHECK(dynamic,VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);if(dynamic->flags || dynamic->dynamicStateCount>9)return VK_ERROR_FEATURE_NOT_PRESENT;for(unsigned i=0;i<dynamic->dynamicStateCount;i++){unsigned bit=dynamic->pDynamicStates[i]<=VK_DYNAMIC_STATE_STENCIL_REFERENCE?1u<<dynamic->pDynamicStates[i]:0;if(!bit || (states&bit))return VK_ERROR_FEATURE_NOT_PRESENT;states|=bit;}}
     if(r->depthBiasEnable && !(states&(1u<<VK_DYNAMIC_STATE_DEPTH_BIAS)) && (r->depthBiasConstantFactor!=0 || r->depthBiasClamp!=0 || r->depthBiasSlopeFactor!=0))return VK_ERROR_FEATURE_NOT_PRESENT;
-    uint64_t config[23+8*8]={states|512};config[22]=b->attachmentCount;
+    uint64_t config[23+8*8+15]={states|512|1024};config[22]=b->attachmentCount;
+    if(z){
+        uint64_t *st=config+23+8*8;st[0]=z->stencilTestEnable;
+        const VkStencilOpState *faces[2]={&z->front,&z->back};
+        for(unsigned i=0;i<2;i++){const VkStencilOpState *f=faces[i];uint64_t *v=st+1+i*7;
+            v[0]=f->failOp;v[1]=f->passOp;v[2]=f->depthFailOp;v[3]=f->compareOp;v[4]=f->compareMask;v[5]=f->writeMask;v[6]=f->reference;
+        }
+    }
     if(!(states&1)){if(!p->pViewports)return VK_ERROR_FEATURE_NOT_PRESENT;uint32_t bits[6];memcpy(bits,p->pViewports,sizeof(bits));for(unsigned i=0;i<6;i++)config[1+i]=bits[i];}
     if(!(states&2)){if(!p->pScissors)return VK_ERROR_FEATURE_NOT_PRESENT;config[7]=(uint64_t)(int64_t)p->pScissors[0].offset.x;config[8]=(uint64_t)(int64_t)p->pScissors[0].offset.y;config[9]=p->pScissors[0].extent.width;config[10]=p->pScissors[0].extent.height;}
     for(unsigned i=0;i<b->attachmentCount;i++){

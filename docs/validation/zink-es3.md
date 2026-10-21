@@ -121,3 +121,14 @@ GPU 实现基础是上游
 输出顺序、primitive restart、暂停/恢复、counter/overflow/query 和 GPU 可见性。
 优先复用上游转换器与原生 GPU command 路径，验证实际输出与边界后再宣告 feature；
 不是只添加扩展名称或让 transform feedback 空返回。
+
+
+## 后续 depth/stencil 批次（2026-10-21）
+
+[模板/深度批次](vulkan-stencil.md)已加入S8与packed depth/stencil、独立分量清除/复制、
+完整front/back stencil state和实际shadow/stencil sampling。原版Mesa的标准OpenGL
+compatibility context明确报告 `GL_ARB_depth_buffer_float=1`；同一驱动的ES3配置仍为0。
+标准扩展探针报告 `GL_ARB_instanced_arrays=0`，对应Zink读取的
+`have_EXT_vertex_attribute_divisor`；这是下一项可落实的版本前提。
+`--capabilities`是正常OpenGL API context中的扩展探针，非ES3通过判定；
+仅在ES API可见的扩展不能凭该列表的0值判定实现缺失。默认ES3像素/TF验收仍严格失败。

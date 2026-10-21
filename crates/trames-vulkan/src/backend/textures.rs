@@ -235,6 +235,7 @@ impl Backend {
                         vk::ImageUsageFlags::SAMPLED
                     };
                     if image.flags & wanted.as_raw() == 0
+                        || view.flags.count_ones() != 1
                         || (if a[5] == 3 {
                             x[2] != 1
                         } else {

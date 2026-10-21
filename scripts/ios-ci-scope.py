@@ -651,6 +651,9 @@ def main():
                                'tests/fixtures/zink-es3.c', 'tests/integration/zink-es3.py',
                                'tests/fixtures/vulkan-feedback.c', 'tests/fixtures/vulkan-feedback.vert',
                                'tests/integration/vulkan-feedback.py',
+                               'tests/fixtures/vulkan-stencil.c', 'tests/fixtures/vulkan-stencil.vert',
+                               'tests/fixtures/vulkan-stencil.frag', 'tests/fixtures/vulkan-stencil-sample.frag',
+                               'tests/integration/vulkan-stencil.py',
                                'tests/fixtures/vulkan-texture.c', 'tests/integration/zink-foundation.py',
                                'scripts/prepare-zink-guest.py', 'scripts/build-vulkan-guest.sh',
                                'scripts/ios-ci-scope.py', '.github/workflows/ios.yml', '.github/workflows/linux.yml',
@@ -837,6 +840,11 @@ def main():
                         if metal_reuse:
                             output.write(f"zink_sync_skip_linux=true\nzink_guest_bundle_run={metal_reuse['run']}\nzink_guest_bundle_sha={metal_reuse['sha']}\n")
                             print('Reuse exact-source Linux GPU/Mesa and passed Apple module/iOS checks; rebuild corrected MoltenVK source and rerun only native Metal pixels/Mesa plus iOS native library compilation. No IPA.')
+                        if plan.get('zink_stencil_only'):
+                            if plan['native_scope'] != 'zink-gles' or not plan.get('zink_mrt_only'):
+                                raise RuntimeError('Stencil plan requires changed GLES backend validation')
+                            output.write('zink_stencil_only=true\n')
+                            print('Run affected depth/stencil transfer, rasterization and sampling checks, original Mesa capability probes and iOS embedding; reuse passed unchanged query/TF, color-only Mesa, CPU/network/UI checks.')
                         if plan.get('zink_mrt_only'):
                             if plan['native_scope'] != 'zink-gles':
                                 raise RuntimeError('MRT plan requires the changed GLES native/guest validation')

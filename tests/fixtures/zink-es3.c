@@ -133,21 +133,26 @@ static void textures(void) {
     puts("zink-textures-ok: distinct uploaded 2D mip levels, regenerated mips and all six cube faces sampled at LOD2 on GPU");fflush(stdout);
 }
 int main(int argc, char **argv) {
+    int caps=argc==2 && !strcmp(argv[1],"--capabilities");
     int texture_only=argc==2 && !strcmp(argv[1],"--textures");
-    int es3=!(texture_only || (argc==2 && !strcmp(argv[1],"--mrt")));
+    int es3=!(caps || texture_only || (argc==2 && !strcmp(argv[1],"--mrt")));
     PFNEGLGETPLATFORMDISPLAYEXTPROC get=(void *)eglGetProcAddress("eglGetPlatformDisplayEXT");require(get!=NULL,"platform display entrypoint");
     EGLDisplay display=get(EGL_PLATFORM_SURFACELESS_MESA,EGL_DEFAULT_DISPLAY,NULL);EGLint major,minor;
-    require(eglInitialize(display,&major,&minor),"initialize EGL");require(eglBindAPI(EGL_OPENGL_ES_API),"bind GLES");
-    const EGLint attributes[]={EGL_SURFACE_TYPE,EGL_PBUFFER_BIT,EGL_RENDERABLE_TYPE,es3?EGL_OPENGL_ES3_BIT_KHR:EGL_OPENGL_ES2_BIT,EGL_RED_SIZE,8,EGL_GREEN_SIZE,8,EGL_BLUE_SIZE,8,EGL_ALPHA_SIZE,8,EGL_NONE};
+    require(eglInitialize(display,&major,&minor),"initialize EGL");require(eglBindAPI(caps?EGL_OPENGL_API:EGL_OPENGL_ES_API),"bind GLES");
+    const EGLint attributes[]={EGL_SURFACE_TYPE,EGL_PBUFFER_BIT,EGL_RENDERABLE_TYPE,caps?EGL_OPENGL_BIT:es3?EGL_OPENGL_ES3_BIT_KHR:EGL_OPENGL_ES2_BIT,EGL_RED_SIZE,8,EGL_GREEN_SIZE,8,EGL_BLUE_SIZE,8,EGL_ALPHA_SIZE,8,EGL_NONE};
     EGLConfig config;EGLint count=0;require(eglChooseConfig(display,attributes,&config,1,&count),"choose config");
-    printf("EGL %d.%d: GLES%d configs=%d\n",major,minor,es3?3:2,count);fflush(stdout);require(count==1,"requested GLES config");
+    printf("EGL %d.%d: %s configs=%d\n",major,minor,caps?"OpenGL":es3?"GLES3":"GLES2",count);fflush(stdout);require(count==1,"requested GLES config");
     const EGLint size[]={EGL_WIDTH,8,EGL_HEIGHT,8,EGL_NONE},version[]={EGL_CONTEXT_CLIENT_VERSION,es3?3:2,EGL_NONE};
-    EGLSurface surface=eglCreatePbufferSurface(display,config,size);EGLContext context=eglCreateContext(display,config,EGL_NO_CONTEXT,version);
+    EGLSurface surface=eglCreatePbufferSurface(display,config,size);EGLContext context=eglCreateContext(display,config,EGL_NO_CONTEXT,caps?version+2:version);
     require(context!=EGL_NO_CONTEXT && surface!=EGL_NO_SURFACE,"create context and surface");require(eglMakeCurrent(display,surface,surface,context),"make current");
     const char *renderer=(const char *)glGetString(GL_RENDERER);require(renderer && strstr(renderer,"zink"),"original Zink renderer");
     printf("GL_VERSION=%s\nGL_RENDERER=%s\n",glGetString(GL_VERSION),renderer);fflush(stdout);
     if(es3){GLint version_major=0;glGetIntegerv(GL_MAJOR_VERSION,&version_major);require(version_major>=3,"real GLES3 version");}
-    if(texture_only)textures();else draw(es3);require(eglMakeCurrent(display,EGL_NO_SURFACE,EGL_NO_SURFACE,EGL_NO_CONTEXT),"release context");
+    if(caps){
+        const char *extensions=(const char *)glGetString(GL_EXTENSIONS);require(extensions!=NULL,"compatibility extensions");
+        const char *names[]={"GL_ARB_half_float_vertex","GL_ARB_internalformat_query","GL_ARB_map_buffer_range","GL_ARB_shader_texture_lod","GL_ARB_texture_float","GL_ARB_half_float_pixel","GL_ARB_texture_rg","GL_ARB_depth_buffer_float","GL_ARB_framebuffer_object","GL_EXT_texture_sRGB","GL_EXT_packed_float","GL_EXT_texture_array","GL_EXT_texture_shared_exponent","GL_EXT_transform_feedback","GL_ARB_draw_instanced","GL_ARB_instanced_arrays","GL_ARB_uniform_buffer_object","GL_EXT_texture_snorm","GL_NV_primitive_restart","GL_EXT_texture_type_2_10_10_10_REV"};
+        for(unsigned i=0;i<sizeof(names)/sizeof(names[0]);i++){const char *found=strstr(extensions,names[i]);printf("%s=%d\n",names[i],found && (found==extensions || found[-1]==' ') && (found[strlen(names[i])]==' ' || found[strlen(names[i])]==0));}
+    }else if(texture_only)textures();else draw(es3);require(eglMakeCurrent(display,EGL_NO_SURFACE,EGL_NO_SURFACE,EGL_NO_CONTEXT),"release context");
     require(eglDestroyContext(display,context) && eglDestroySurface(display,surface) && eglTerminate(display),"teardown");
-    puts(texture_only?"zink-es2-textures-ok":es3?"zink-es3-ok":"zink-es2-mrt-ok");return 0;
+    puts(caps?"zink-capabilities-ok":texture_only?"zink-es2-textures-ok":es3?"zink-es3-ok":"zink-es2-mrt-ok");return 0;
 }

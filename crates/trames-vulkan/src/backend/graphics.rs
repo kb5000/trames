@@ -32,14 +32,10 @@ impl ImageShape {
         Ok([self.width, self.height, self.depth].map(|n| (n >> mip).max(1)))
     }
     fn aspect(self) -> vk::ImageAspectFlags {
-        if is_depth(self.format) {
-            vk::ImageAspectFlags::DEPTH
-        } else {
-            vk::ImageAspectFlags::COLOR
-        }
+        format_aspects(self.format)
     }
     fn range(self, wire: &[u64]) -> Result<vk::ImageSubresourceRange> {
-        if wire[0] != self.aspect().as_raw() as u64 {
+        if wire[0] == 0 || wire[0] & !(self.aspect().as_raw() as u64) != 0 {
             return invalid();
         }
         let count = |base: u64, count: u64, total: u32| -> Result<u32> {
@@ -57,7 +53,7 @@ impl ImageShape {
             Ok(count as u32)
         };
         Ok(vk::ImageSubresourceRange::default()
-            .aspect_mask(self.aspect())
+            .aspect_mask(vk::ImageAspectFlags::from_raw(wire[0] as u32))
             .base_mip_level(wire[1] as u32)
             .level_count(count(wire[1], wire[2], self.mips)?)
             .base_array_layer(wire[3] as u32)
@@ -139,19 +135,19 @@ pub(super) struct VertexBinding {
 // Core uncompressed color formats. Driver queries still decide which of these
 // support sampling, rendering, storage, blending or vertex input on this host.
 pub(super) fn vertex_size(raw: u64) -> Option<u32> {
-    if matches!(raw, 124 | 126) {
+    if matches!(raw, 124..=130) {
         return None;
     }
     texel_size(raw)
 }
 fn texel_size(raw: u64) -> Option<u32> {
     match raw {
-        1 | 9..=15 => Some(1),
+        1 | 9..=15 | 127 => Some(1),
         2..=8 | 16..=22 | 70..=76 | 124 => Some(2),
-        23..=36 => Some(3),
-        37..=69 | 77..=83 | 98..=100 | 122..=123 | 126 => Some(4),
+        23..=36 | 128 => Some(3),
+        37..=69 | 77..=83 | 98..=100 | 122..=123 | 125..=126 | 129 => Some(4),
         84..=90 => Some(6),
-        91..=97 | 101..=103 => Some(8),
+        91..=97 | 101..=103 | 130 => Some(8),
         104..=106 => Some(12),
         107..=109 => Some(16),
         _ => None,
@@ -206,13 +202,38 @@ fn layout(raw: u64, initial: bool) -> Result<vk::ImageLayout> {
         _ => unsupported(),
     }
 }
-fn is_depth(format: vk::Format) -> bool {
-    matches!(format, vk::Format::D16_UNORM | vk::Format::D32_SFLOAT)
+fn format_aspects(format: vk::Format) -> vk::ImageAspectFlags {
+    match format.as_raw() {
+        124..=126 => vk::ImageAspectFlags::DEPTH,
+        127 => vk::ImageAspectFlags::STENCIL,
+        128..=130 => vk::ImageAspectFlags::DEPTH | vk::ImageAspectFlags::STENCIL,
+        _ => vk::ImageAspectFlags::COLOR,
+    }
+}
+fn is_depth_stencil(format: vk::Format) -> bool {
+    // Includes stencil-only formats throughout the non-color resource path.
+    format_aspects(format) != vk::ImageAspectFlags::COLOR
+}
+fn aspect_bytes(format: vk::Format, aspect: u64) -> Result<u64> {
+    let flags = format_aspects(format).as_raw() as u64;
+    if aspect.count_ones() != 1 || aspect & !flags != 0 {
+        return invalid();
+    }
+    Ok(match aspect {
+        4 => 1,
+        2 => match format.as_raw() {
+            124 | 128 => 2,
+            _ => 4,
+        },
+        _ => texel_size(format.as_raw() as u64)
+            .ok_or(Failure::Vk(vk::Result::ERROR_FORMAT_NOT_SUPPORTED))? as u64,
+    })
 }
 fn format_usage(format: vk::Format, raw: u64) -> Result<vk::ImageUsageFlags> {
     let flags = usage(raw)?;
-    if is_depth(format) && flags.contains(vk::ImageUsageFlags::COLOR_ATTACHMENT)
-        || !is_depth(format) && flags.contains(vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT)
+    if is_depth_stencil(format) && flags.contains(vk::ImageUsageFlags::COLOR_ATTACHMENT)
+        || !is_depth_stencil(format)
+            && flags.contains(vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT)
     {
         return Err(vk::Result::ERROR_FORMAT_NOT_SUPPORTED.into());
     }
@@ -470,9 +491,27 @@ impl Backend {
         if std::env::var_os("TRAMES_VULKAN_TRACE").is_some() {
             eprintln!("trames-vulkan graphics-config={config:x?}");
         }
-        if config[0] & !1023 != 0 {
+        if config[0] & !2047 != 0 {
             return unsupported();
         }
+        // Fixed tail after the largest extended blend array. Old callers have
+        // no tail and keep stencil disabled. Copy all values before spawning.
+        let stencil = if config[0] & 1024 != 0 {
+            words64(
+                m,
+                a[15]
+                    .checked_add((23 + MAX_COLORS as u64 * 8) * 8)
+                    .ok_or(Failure::Vk(vk::Result::ERROR_UNKNOWN))?,
+                15,
+            )?
+        } else {
+            vec![0; 15]
+        };
+        if stencil[0] > 1 {
+            return invalid();
+        }
+        let front = stencil_state(&stencil[1..8])?;
+        let back = stencil_state(&stencil[8..15])?;
         let blend_wire = if config[0] & 512 != 0 {
             let count = words64(m, a[15] + 22 * 8, 1)?[0];
             words64(m, a[15] + 23 * 8, bounded(count, MAX_COLORS)? * 8)?
@@ -684,7 +723,10 @@ impl Backend {
             let depth = vk::PipelineDepthStencilStateCreateInfo::default()
                 .depth_test_enable(depth_test)
                 .depth_write_enable(depth_write)
-                .depth_compare_op(vk::CompareOp::from_raw(compare));
+                .depth_compare_op(vk::CompareOp::from_raw(compare))
+                .stencil_test_enable(stencil[0] != 0)
+                .front(front)
+                .back(back);
             let blend = vk::PipelineColorBlendStateCreateInfo::default()
                 .logic_op_enable(logic)
                 .logic_op(vk::LogicOp::from_raw(logic_op))
@@ -788,11 +830,18 @@ impl Backend {
             let range = if stride == 10 {
                 s.range(&b[5..10])?
             } else {
-                if stride == 6 && b[5] != s.aspect().as_raw() as u64 {
-                    return invalid();
+                let mut r = s.whole();
+                if stride == 6 {
+                    r = s.range(&[b[5], 0, s.mips as u64, 0, s.layers as u64])?;
                 }
-                s.whole()
+                r
             };
+            // separateDepthStencilLayouts is not enabled in this profile.
+            // Views, clears and transfers may select one aspect, barriers must
+            // transition both aspects of a packed depth/stencil image together.
+            if range.aspect_mask != s.aspect() {
+                return unsupported();
+            }
             barriers.push(
                 vk::ImageMemoryBarrier::default()
                     .image(vk::Image::from_raw(image.raw))
@@ -954,8 +1003,8 @@ impl Backend {
                 let view_format = format(a[2])?;
                 if view_format != shape.format
                     && (image.image_flags.get() & 8 == 0
-                        || is_depth(view_format)
-                        || is_depth(shape.format)
+                        || is_depth_stencil(view_format)
+                        || is_depth_stencil(shape.format)
                         || texel_size(view_format.as_raw() as u64)
                             != texel_size(shape.format.as_raw() as u64))
                     || image.deps.borrow().is_empty()
@@ -1044,7 +1093,13 @@ impl Backend {
                     info = info.push_next(&mut view_usage_info);
                 }
                 let raw = unsafe { d.create_image_view(&info, None) }?;
-                let id = self.put(Kind::ImageView, raw.as_raw(), vec![image], 0, 0);
+                let id = self.put(
+                    Kind::ImageView,
+                    raw.as_raw(),
+                    vec![image],
+                    0,
+                    range.aspect_mask.as_raw(),
+                );
                 let extent = shape.extent(range.base_mip_level as u64)?;
                 shape.width = extent[0];
                 shape.height = extent[1];
@@ -1100,7 +1155,7 @@ impl Backend {
                     }
                     let index = attachments.len();
                     let f = format(x[0])?;
-                    if is_depth(f) || x[1] > 2 || x[2] > 1 {
+                    if is_depth_stencil(f) || x[1] > 2 || x[2] > 1 {
                         return unsupported();
                     }
                     pass.colors[slot] = f;
@@ -1129,13 +1184,22 @@ impl Backend {
                     .attachment(used_colors as u32)
                     .layout(vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
                 if a[9] != 0 {
-                    let x = words64(m, a[9], 5)?;
+                    if a[12] > 1 {
+                        return unsupported();
+                    }
+                    let mut x = words64(m, a[9], if a[12] == 1 { 7 } else { 5 })?;
+                    if a[12] == 0 {
+                        x.extend([2, 1]); // Legacy wire: stencil DONT_CARE.
+                    }
                     let f = format(x[0])?;
-                    if !is_depth(f) || x[1] > 2 || x[2] > 1 {
+                    if !is_depth_stencil(f) || x[1] > 2 || x[2] > 1 || x[5] > 2 || x[6] > 1 {
                         return unsupported();
                     }
                     pass.depth = Some(f);
-                    if x[1] == 1 {
+                    let aspects = format_aspects(f);
+                    if aspects.contains(vk::ImageAspectFlags::DEPTH) && x[1] == 1
+                        || aspects.contains(vk::ImageAspectFlags::STENCIL) && x[5] == 1
+                    {
                         pass.clear_mask |= 1 << used_colors;
                     }
                     attachments.push(
@@ -1144,8 +1208,8 @@ impl Backend {
                             .samples(vk::SampleCountFlags::TYPE_1)
                             .load_op(vk::AttachmentLoadOp::from_raw(x[1] as i32))
                             .store_op(vk::AttachmentStoreOp::from_raw(x[2] as i32))
-                            .stencil_load_op(vk::AttachmentLoadOp::DONT_CARE)
-                            .stencil_store_op(vk::AttachmentStoreOp::DONT_CARE)
+                            .stencil_load_op(vk::AttachmentLoadOp::from_raw(x[5] as i32))
+                            .stencil_store_op(vk::AttachmentStoreOp::from_raw(x[6] as i32))
                             .initial_layout(self.native_layout(x[3], true)?)
                             .final_layout(self.native_layout(x[4], false)?),
                     );
@@ -1197,7 +1261,10 @@ impl Backend {
                     let depth_reference = vk::AttachmentReference2::default()
                         .attachment(used_colors as u32)
                         .layout(vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-                        .aspect_mask(vk::ImageAspectFlags::DEPTH);
+                        .aspect_mask(
+                            pass.depth
+                                .map_or(vk::ImageAspectFlags::empty(), format_aspects),
+                        );
                     let mut subpass = vk::SubpassDescription2::default()
                         .pipeline_bind_point(vk::PipelineBindPoint::GRAPHICS)
                         .color_attachments(&references);
@@ -1416,7 +1483,7 @@ impl Backend {
                                 dst_layout,
                                 vk::ImageLayout::GENERAL | vk::ImageLayout::TRANSFER_DST_OPTIMAL
                             )
-                            || is_depth(src_shape.format) && a[8] != 0
+                            || is_depth_stencil(src_shape.format) && a[8] != 0
                         {
                             return invalid();
                         }
@@ -1470,7 +1537,7 @@ impl Backend {
                         let shape = shape(&image)?;
                         let native_layout = self.native_layout(a[3], false)?;
                         if c.recording.borrow().pass.is_some()
-                            || !is_depth(shape.format)
+                            || !is_depth_stencil(shape.format)
                             || image.flags & vk::ImageUsageFlags::TRANSFER_DST.as_raw() == 0
                             || image.deps.borrow().is_empty()
                             || a[6] == 0
@@ -1483,9 +1550,6 @@ impl Backend {
                         }
                         let clear = words32(m, a[4], 2)?;
                         let depth = f32::from_bits(clear[0]);
-                        if !(0.0..=1.0).contains(&depth) {
-                            return invalid();
-                        }
                         let clear = vk::ClearDepthStencilValue {
                             depth,
                             stencil: clear[1],
@@ -1495,6 +1559,13 @@ impl Backend {
                             .chunks_exact(5)
                             .map(|r| shape.range(r))
                             .collect::<Result<Vec<_>>>()?;
+                        if ranges
+                            .iter()
+                            .any(|r| r.aspect_mask.contains(vk::ImageAspectFlags::DEPTH))
+                            && !(0.0..=1.0).contains(&depth)
+                        {
+                            return invalid();
+                        }
                         unsafe {
                             d.cmd_clear_depth_stencil_image(
                                 raw,
@@ -1568,7 +1639,7 @@ impl Backend {
                         let image = self.object(a[2], Kind::Image)?;
                         let shape = shape(&image)?;
                         if c.recording.borrow().pass.is_some()
-                            || is_depth(shape.format)
+                            || is_depth_stencil(shape.format)
                             || image.flags & vk::ImageUsageFlags::TRANSFER_DST.as_raw() == 0
                             || (image.deps.borrow().is_empty()
                                 && image.swapchain.borrow().is_none()
@@ -1637,14 +1708,17 @@ impl Backend {
                                 });
                             } else {
                                 let depth = f32::from_bits(words[0]);
-                                if !depth.is_finite()
-                                    || !(0.0..=1.0).contains(&depth)
-                                    || words[1] != 0
+                                if pass.pass.get().unwrap().depth.is_some_and(|f| {
+                                    format_aspects(f).contains(vk::ImageAspectFlags::DEPTH)
+                                }) && !(0.0..=1.0).contains(&depth)
                                 {
                                     return invalid();
                                 }
                                 clears.push(vk::ClearValue {
-                                    depth_stencil: vk::ClearDepthStencilValue { depth, stencil: 0 },
+                                    depth_stencil: vk::ClearDepthStencilValue {
+                                        depth,
+                                        stencil: words[1],
+                                    },
                                 });
                             }
                         }
@@ -2088,6 +2162,22 @@ fn validate_view(
     }
     Ok(())
 }
+fn stencil_state(wire: &[u64]) -> Result<vk::StencilOpState> {
+    if wire.len() != 7
+        || wire[..4].iter().any(|&v| v > 7)
+        || wire[4..].iter().any(|&v| v > u32::MAX as u64)
+    {
+        return invalid();
+    }
+    Ok(vk::StencilOpState::default()
+        .fail_op(vk::StencilOp::from_raw(wire[0] as i32))
+        .pass_op(vk::StencilOp::from_raw(wire[1] as i32))
+        .depth_fail_op(vk::StencilOp::from_raw(wire[2] as i32))
+        .compare_op(vk::CompareOp::from_raw(wire[3] as i32))
+        .compare_mask(wire[4] as u32)
+        .write_mask(wire[5] as u32)
+        .reference(wire[6] as u32))
+}
 fn checked_region(
     s: ImageShape,
     sub: &[u64],
@@ -2108,8 +2198,9 @@ fn checked_region(
     Ok(layers)
 }
 fn checked_copy(x: &[u64], image: ImageShape, buffer_size: u64) -> Result<()> {
-    let bytes = texel_size(image.format.as_raw() as u64)
-        .ok_or(Failure::Vk(vk::Result::ERROR_FORMAT_NOT_SUPPORTED))? as u64;
+    // Packed depth/stencil is transferred one aspect at a time: D32S8 uses
+    // four bytes for depth and one for stencil, never eight bytes per aspect.
+    let bytes = aspect_bytes(image.format, x[3])?;
     let _ = checked_region(image, &x[3..7], &x[7..10], &x[10..13])?;
     if x[1] != 0 && x[1] < x[10]
         || x[2] != 0 && x[2] < x[11]
@@ -2141,8 +2232,8 @@ fn checked_copy(x: &[u64], image: ImageShape, buffer_size: u64) -> Result<()> {
     Ok(())
 }
 fn checked_image_copy(x: &[u64], src: ImageShape, dst: ImageShape) -> Result<vk::ImageCopy> {
-    let depth = is_depth(src.format);
-    if depth != is_depth(dst.format)
+    let depth = is_depth_stencil(src.format);
+    if depth != is_depth_stencil(dst.format)
         || depth && src.format != dst.format
         || texel_size(src.format.as_raw() as u64) != texel_size(dst.format.as_raw() as u64)
         || (src.ty == vk::ImageType::TYPE_3D) != (dst.ty == vk::ImageType::TYPE_3D)
@@ -2151,7 +2242,7 @@ fn checked_image_copy(x: &[u64], src: ImageShape, dst: ImageShape) -> Result<vk:
     }
     let src_sub = checked_region(src, &x[..4], &x[4..7], &x[14..17])?;
     let dst_sub = checked_region(dst, &x[7..11], &x[11..14], &x[14..17])?;
-    if src_sub.layer_count != dst_sub.layer_count {
+    if src_sub.layer_count != dst_sub.layer_count || src_sub.aspect_mask != dst_sub.aspect_mask {
         return invalid();
     }
     Ok(vk::ImageCopy::default()
@@ -2198,8 +2289,8 @@ fn numeric_class(f: vk::Format) -> u8 {
     }
 }
 fn checked_blit(x: &[u64], src: ImageShape, dst: ImageShape) -> Result<vk::ImageBlit> {
-    if is_depth(src.format) != is_depth(dst.format)
-        || is_depth(src.format) && src.format != dst.format
+    if is_depth_stencil(src.format) != is_depth_stencil(dst.format)
+        || is_depth_stencil(src.format) && src.format != dst.format
         || numeric_class(src.format) != numeric_class(dst.format)
         || src.ty != dst.ty
     {
@@ -2232,7 +2323,7 @@ fn checked_blit(x: &[u64], src: ImageShape, dst: ImageShape) -> Result<vk::Image
         }
         offsets.push(o);
     }
-    if subs[0].layer_count != subs[1].layer_count {
+    if subs[0].layer_count != subs[1].layer_count || subs[0].aspect_mask != subs[1].aspect_mask {
         return invalid();
     }
     Ok(vk::ImageBlit::default()
@@ -2527,10 +2618,10 @@ mod tests {
         assert!(format(37).is_ok());
         assert!(format(44).is_ok());
         assert_eq!(format(126).unwrap(), vk::Format::D32_SFLOAT);
-        assert!(is_depth(vk::Format::D32_SFLOAT));
-        assert!(is_depth(vk::Format::D16_UNORM));
-        assert!(!is_depth(vk::Format::R8G8B8A8_UNORM));
-        assert!(format(127).is_err());
+        assert!(is_depth_stencil(vk::Format::D32_SFLOAT));
+        assert!(is_depth_stencil(vk::Format::D16_UNORM));
+        assert!(!is_depth_stencil(vk::Format::R8G8B8A8_UNORM));
+        assert_eq!(format(127).unwrap(), vk::Format::S8_UINT);
         assert!(usage(vk::ImageUsageFlags::COLOR_ATTACHMENT.as_raw() as u64).is_ok());
         assert!(usage(vk::ImageUsageFlags::SAMPLED.as_raw() as u64).is_ok());
         assert!(usage(0).is_err());
@@ -2556,7 +2647,7 @@ mod tests {
         ] {
             let image = ImageShape::d2(5, 3, self::format(format).unwrap());
             let mut region = copy;
-            if is_depth(image.format) {
+            if is_depth_stencil(image.format) {
                 region[3] = 2;
             }
             let required = (2 * 7 + 5) * bytes;
@@ -2577,5 +2668,54 @@ mod tests {
             format(131).is_err(),
             "compressed block copies need separate footprints"
         );
+    }
+    #[test]
+    fn packed_depth_stencil_aspects_and_exact_copy_footprints() {
+        for raw in 124..=130 {
+            let s = ImageShape::d2(5, 3, format(raw).unwrap());
+            assert!(vertex_size(raw).is_none());
+            assert!(format_usage(s.format, 32 | 3 | 4).is_ok());
+            assert!(format_usage(s.format, 16).is_err());
+            for aspect in [1, 2, 4, 6] {
+                let valid = aspect & !(s.aspect().as_raw() as u64) == 0;
+                assert_eq!(s.range(&[aspect, 0, 1, 0, 1]).is_ok(), valid);
+                let r = [16, 7, 4, aspect, 0, 0, 1, 0, 0, 0, 5, 3, 1];
+                if valid && aspect != 6 {
+                    let bytes = aspect_bytes(s.format, aspect).unwrap();
+                    let required = 16 + (2 * 7 + 5) * bytes;
+                    assert!(checked_copy(&r, s, required).is_ok());
+                    assert!(checked_copy(&r, s, required - 1).is_err());
+                } else {
+                    assert!(checked_copy(&r, s, u64::MAX).is_err());
+                }
+            }
+        }
+        let s = ImageShape::d2(5, 3, vk::Format::D32_SFLOAT_S8_UINT);
+        let mut copy = [2, 0, 0, 1, 0, 0, 0, 4, 0, 0, 1, 0, 0, 0, 5, 3, 1];
+        assert!(checked_image_copy(&copy, s, s).is_err());
+        copy[7] = 2;
+        assert!(checked_image_copy(&copy, s, s).is_ok());
+        copy[0] = 6;
+        copy[7] = 6;
+        assert!(checked_image_copy(&copy, s, s).is_ok());
+        assert!(s.range(&[0, 0, 1, 0, 1]).is_err());
+    }
+    #[test]
+    fn stencil_wire_checks_ops_masks_and_references() {
+        let wire = [7, 6, 5, 4, u32::MAX as u64, 0x83, 0x42];
+        let s = stencil_state(&wire).unwrap();
+        assert_eq!(s.fail_op, vk::StencilOp::DECREMENT_AND_WRAP);
+        assert_eq!(s.pass_op, vk::StencilOp::INCREMENT_AND_WRAP);
+        assert_eq!(s.depth_fail_op, vk::StencilOp::INVERT);
+        assert_eq!(s.compare_op, vk::CompareOp::GREATER);
+        assert_eq!(
+            (s.compare_mask, s.write_mask, s.reference),
+            (u32::MAX, 0x83, 0x42)
+        );
+        for i in 0..7 {
+            let mut bad = wire;
+            bad[i] = if i < 4 { 8 } else { 1 << 32 };
+            assert!(stencil_state(&bad).is_err());
+        }
     }
 }

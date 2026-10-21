@@ -18,10 +18,12 @@ ROOT = Path(__file__).resolve().parents[2]
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('--store', type=Path, required=True)
 p.add_argument('--output', type=Path, required=True)
-p.add_argument('--stage', choices=('mrt', 'textures', 'graphics', 'es3', 'all'), default='all')
+p.add_argument('--stage', choices=('mrt', 'textures', 'graphics', 'es3', 'capabilities', 'all'), default='all')
 p.add_argument('--runner', type=Path, default=ROOT/'target/release/trames-run')
+p.add_argument('--capability-probe', action='store_true', help='record absent GLES3 configs as an unavailable capability, without claiming rendering passed')
 p.add_argument('--timeout', type=float, default=180)
 a = p.parse_args()
+if a.capability_probe and a.stage != 'es3': p.error('--capability-probe requires --stage es3')
 fixture = ROOT/'target/zink-inputs/zink-es3'
 icd = ROOT/'target/vulkan-guest/libtrames_vulkan_icd.so'
 for path in (a.store/'manifest', a.runner, fixture, icd):
@@ -56,9 +58,13 @@ try:
         imports = []
         (a.output/(stage+'.stdout')).write_bytes(result.stdout)
         (a.output/(stage+'.stderr')).write_bytes(result.stderr)
-        marker = {'mrt': b'zink-es2-mrt-ok', 'textures': b'zink-textures-ok', 'es3': b'zink-es3-ok'}[stage]
+        marker = {'mrt': b'zink-es2-mrt-ok', 'textures': b'zink-textures-ok', 'es3': b'zink-es3-ok', 'capabilities': b'zink-capabilities-ok'}[stage]
         passed = result.returncode == 0 and marker in result.stdout
-        report['cases'][stage] = dict(exit_code=result.returncode, passed=passed)
+        unavailable = (a.capability_probe and stage == 'es3' and result.returncode == 1
+                       and b'GLES3 configs=0' in result.stdout
+                       and b'requested GLES config failed' in result.stderr)
+        report['cases'][stage] = dict(exit_code=result.returncode, passed=passed,
+                                     unavailable=unavailable)
         print(stage, 'passed' if passed else 'not available', flush=True)
     report['passed'] = all(case['passed'] for case in report['cases'].values())
 finally:
@@ -66,4 +72,7 @@ finally:
                              capture_output=True, timeout=30)
     report['cleanup_exit'] = cleanup.returncode
     (a.output/'results.json').write_text(json.dumps(report, indent=2)+'\n')
-raise SystemExit(0 if report.get('passed') and report['cleanup_exit'] == 0 else 1)
+accepted = report.get('passed') or (a.capability_probe and report['cases']['es3']['unavailable'])
+report['capability_probe_accepted'] = bool(a.capability_probe and accepted)
+(a.output/'results.json').write_text(json.dumps(report, indent=2)+'\n')
+raise SystemExit(0 if accepted and report['cleanup_exit'] == 0 else 1)

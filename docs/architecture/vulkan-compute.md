@@ -86,12 +86,13 @@ Driver-backed timeline counters and host/GPU waits/signals are covered by the
 ## Graphics resources
 
 Core graphics includes native optimal-tiled uncompressed 1D/2D/3D color/float images
-and D16/D32 depth images, binding/memory requirements, image views, up to eight
+and native-supported D16/X8D24/D32/S8 and packed depth/stencil images, binding/memory requirements, image views, up to eight
 color outputs with optional depth, framebuffer and vertex/fragment pipelines.
 Driver-backed renderpass2 and imageless framebuffer attachment binding are also
 available in this single-subpass profile; recorded commands retain late-bound
 views/images until native submissions complete. See [Zink coverage](zink.md).
-Static or dynamic viewport/scissor, depth compare/write, native color/alpha
+Static or dynamic viewport/scissor, depth compare/write, front/back stencil operations,
+static/dynamic stencil masks/reference, native color/alpha
 blending, transfer color clears, draws, image layout barriers, buffer-to-image
 uploads and image-to-buffer copies are supported. Queue queries retain native
 graphics/compute/transfer flags. Image format queries expose only this profile:
@@ -138,8 +139,16 @@ properties bound sampling/filter support. Buffer/image copies use actual texel s
 padded row/image pitches, subresources and buffer/image extents. Sampler
 anisotropy is queried from the host, must be enabled at device creation and
 uses the native sampler with the native maximum. Comparison samplers preserve the native compare operation. Unnormalized
-coordinates, immutable samplers, stencil, multisampling and graphics specialization
+coordinates, immutable samplers, multisampling and graphics specialization
 remain unavailable. Unsupported options fail explicitly.
+
+Depth/stencil transfers select one aspect and use its actual element size (for
+example, four bytes for D32S8 depth and one for stencil). Views/clears may select
+one or both aspects; sampled views select one. Packed image barriers transition
+both aspects because separateDepthStencilLayouts is not enabled. Render passes
+preserve separate depth/stencil load/store and clear values; stencil operations,
+comparisons and depth comparison sampling execute on the original native GPU.
+See [depth/stencil acceptance](../validation/vulkan-stencil.md).
 
 Pipelines copy static viewport/scissor and blend constants into owned compiler
 inputs. Each dynamic viewport/scissor must be set before drawing; draw checks recording/render-pass/

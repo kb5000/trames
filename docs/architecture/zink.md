@@ -57,7 +57,7 @@ resize、close、重启和旧帧保活已在Linux参考及Apple Metal通过；Ap
   timeline properties返回真实最大值差。guest pNext不跨宿主边界。bridge未通过Vulkan
   conformance，因此返回的conformanceVersion为零，不继承宿主证书。
 - `VK_KHR_create_renderpass2`：原生KHR创建/开始/结束命令及core/KHR别名，当前仍是
-  单subpass、最多8个颜色输出、可选D16/D32深度，单层/单sample。支持空颜色输出槽，
+  单subpass、最多8个颜色输出、可选深度/模板附件，单层/单sample。支持空颜色输出槽，
   已使用附件按颜色顺序紧凑排列，再附加可选深度。没有可用的next-subpass
   转换；非零viewMask、多个subpass、input/resolve attachments尚未支持。
 - `VK_KHR_imageless_framebuffer`：原生feature查询/显式启用、附件格式/usage/尺寸约束，
@@ -88,15 +88,18 @@ resize、close、重启和旧帧保活已在Linux参考及Apple Metal通过；Ap
 - 可变格式/extended-usage 图片、显式分量swizzle、1D/2D/3D 与 array/cube 视图；image-format-list
   仅为兼容性元数据，列出一个格式不表示已支持创建该格式。实际image/view仍经profile过滤。
   核心未压缩单/双/三/四通道、整数/归一化、16/32位浮点和常用packed图片均按原生
-  format能力查询；64位通道、压缩块和stencil仍不支持。复制按实际texel字节数与
-  depth aspect计算边界，native blend/storage/texel/vertex能力继续按已实现路径过滤。
+  format能力查询；64位通道和压缩块仍不支持。D16、X8D24、D32、S8及三种packed depth/stencil格式
+  按真实driver能力查询/创建；复制按每个aspect的实际字节数计算边界，native blend/storage/texel/vertex能力继续按已实现路径过滤。
 - optimal、单sample图片扩展到1D/2D/3D、array/cube和完整mip链。按真实native limit限制
   最大4096维、2048层；imageCubeArray必须查询/显式启用。barrier、view、clear、buffer/image
   与image/image copy保留具体mip/layer/volume范围，支持REMAINING范围；同图不同mip/层可复制。
 - 原生vkCmdBlitImage支持nearest/linear、翻转、mip生成及原生允许的颜色格式转换；保持
-  signed/unsigned/depth规则与宿主format特性。新增vkCmdClearDepthStencilImage（当前D16/D32），
+  signed/unsigned/depth规则与宿主format特性。vkCmdClearDepthStencilImage可独立清除depth/stencil，
   sampler compareEnable/compareOp。maintenance1的3D→2D/array slice view按真实portability能力启用，
   framebuffer仍为单层，view取选定mip尺寸。[GPU验证](../validation/zink-images.md)。
+- depth/stencil pass保留两种load/store和clear值；front/back独立的全部8种stencil操作、
+  compare及静态/动态mask/reference交给原生GPU。packed图片的barrier同时转换两种aspect，
+  sampled view只选择一个aspect；未启用separateDepthStencilLayouts。见[数据验证](../validation/vulkan-stencil.md)。
 - 九种核心dynamic graphics states及原生命令、discard/depth-bias和point/line/triangle拓扑。
   当前line width为1、depth-bias clamp为0，未实现的静态bias参数会明确失败。
 - 真实`KHR_portability_subset`查询（仅宿主有该扩展时）让原版Mesa选择MoltenVK上游路径；
@@ -116,7 +119,9 @@ Wayland EGL复用现有native swapchain/Metal texture路径，新增可采样swa
 查询池、原生GPU transform feedback桥接（stream 0、最多4个buffer）、counter续写、indexed
 query及byte-count间接绘制见[验证与边界](../validation/vulkan-feedback.md)。扩展只在native
 driver实际支持时暴露；MoltenVK 1.4.2缺少GPU实现，Apple不声明此feature。完整GLES3仍未打通。
-后续继续扩展压缩/stencil/MSAA、渲染状态和真实可用features，尤其是Apple GPU transform feedback。
+depth/stencil已接通并通过Linux原生/guest读回；原版Mesa现在报告ARB_depth_buffer_float，
+但ES3 configs仍为0，明确缺少ARB_instanced_arrays（Zink依赖vertex_attribute_divisor）。
+后续继续实现原生divisor、Apple GPU transform feedback、压缩/MSAA及其他实际缺口。
 
 ES3首批的MRT、宽格式、原生复制验证与后续缺口见
 [ES3推进记录](../validation/zink-es3.md)。目前原版Mesa仍未提供ES3 context；
