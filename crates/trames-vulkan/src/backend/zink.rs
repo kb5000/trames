@@ -13,6 +13,7 @@ pub(super) const RENDERPASS2: u64 = 64;
 pub(super) const IMAGELESS: u64 = 128;
 pub(super) const SCALAR_LAYOUT: u64 = 256;
 pub(super) const PORTABILITY: u64 = 512;
+pub(super) const TRANSFORM_FEEDBACK: u64 = 1024;
 
 #[derive(Default)]
 pub(super) struct Capabilities {
@@ -22,6 +23,7 @@ pub(super) struct Capabilities {
     pub portability: Option<vk::PhysicalDevicePortabilitySubsetFeaturesKHR<'static>>,
     portability_stride: u32,
     driver: Option<vk::PhysicalDeviceDriverProperties<'static>>,
+    pub feedback: Option<vk::PhysicalDeviceTransformFeedbackPropertiesEXT<'static>>,
 }
 impl Capabilities {
     pub fn query(instance: &Instance, physical: vk::PhysicalDevice) -> Result<Self> {
@@ -60,6 +62,29 @@ impl Capabilities {
             &instance._entry,
             &instance.native,
         );
+        if has(ash::ext::transform_feedback::NAME) {
+            let mut feedback = vk::PhysicalDeviceTransformFeedbackFeaturesEXT::default();
+            let mut features = vk::PhysicalDeviceFeatures2::default().push_next(&mut feedback);
+            unsafe { queries.get_physical_device_features2(physical, &mut features) };
+            if feedback.transform_feedback != 0 {
+                let mut native = vk::PhysicalDeviceTransformFeedbackPropertiesEXT::default();
+                let mut properties =
+                    vk::PhysicalDeviceProperties2::default().push_next(&mut native);
+                unsafe { queries.get_physical_device_properties2(physical, &mut properties) };
+                native.p_next = std::ptr::null_mut();
+                // No geometry stage or nonzero stream is exposed by this profile.
+                native.max_transform_feedback_streams = 1;
+                native.max_transform_feedback_buffers =
+                    native.max_transform_feedback_buffers.min(4);
+                native.max_transform_feedback_buffer_size = native
+                    .max_transform_feedback_buffer_size
+                    .min(MAX_ALLOCATION);
+                native.transform_feedback_streams_lines_triangles = vk::FALSE;
+                native.transform_feedback_rasterization_stream_select = vk::FALSE;
+                result.feedback = Some(native);
+                result.bits |= TRANSFORM_FEEDBACK;
+            }
+        }
         if has(ash::khr::portability_subset::NAME) {
             let mut native = vk::PhysicalDevicePortabilitySubsetFeaturesKHR::default();
             let mut features = vk::PhysicalDeviceFeatures2::default().push_next(&mut native);
@@ -218,7 +243,7 @@ pub(super) fn device_extensions(
         flags |= 16 | 64;
     }
     // bit8 enables the timeline extension, bit2 separately enables its feature.
-    if flags & !8191 != 0
+    if flags & !32767 != 0
         || flags & 7 & !caps.bits != 0
         || flags & 2 != 0 && flags & 8 == 0
         || flags & 8 != 0 && caps.bits & TIMELINE == 0
@@ -232,6 +257,7 @@ pub(super) fn device_extensions(
         (64, FORMAT_LIST, ash::khr::image_format_list::NAME),
         (128, RENDERPASS2, ash::khr::create_renderpass2::NAME),
         (256, IMAGELESS, ash::khr::imageless_framebuffer::NAME),
+        (8192, TRANSFORM_FEEDBACK, ash::ext::transform_feedback::NAME),
     ] {
         if flags & flag != 0 {
             if caps.bits & cap == 0 {
@@ -243,7 +269,10 @@ pub(super) fn device_extensions(
     if flags & 4096 != 0 && caps.bits & PORTABILITY == 0 {
         return unsupported();
     }
-    if flags & 512 != 0 && flags & 256 == 0 || flags & 2048 != 0 && flags & 1024 == 0 {
+    if flags & 512 != 0 && flags & 256 == 0
+        || flags & 2048 != 0 && flags & 1024 == 0
+        || flags & 16384 != 0 && flags & 8192 == 0
+    {
         return unsupported();
     }
     if flags & MAINTENANCE1 != 0 {

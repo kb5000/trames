@@ -13,6 +13,7 @@ use std::{
 use trames_memory::{Access, Memory, MemoryError};
 use vk::Handle;
 mod coherent;
+mod feedback;
 mod graphics;
 mod textures;
 mod wayland;
@@ -68,6 +69,8 @@ struct Device {
     imageless: bool,
     format_list: bool,
     maintenance2: bool,
+    feedback: Option<vk::PhysicalDeviceTransformFeedbackPropertiesEXT<'static>>,
+    feedback_extension: bool,
     portability: Option<vk::PhysicalDevicePortabilitySubsetFeaturesKHR<'static>>,
     native: ash::Device,
     instance: Arc<Instance>,
@@ -105,6 +108,7 @@ enum Kind {
     CommandBuffer,
     Fence,
     Semaphore,
+    QueryPool,
 }
 type DescriptorResources = BTreeMap<(u32, u32), Vec<Rc<Object>>>;
 struct Object {
@@ -208,6 +212,7 @@ impl Drop for Object {
                 }
                 Kind::Fence => d.destroy_fence(vk::Fence::from_raw(self.raw), None),
                 Kind::Semaphore => d.destroy_semaphore(vk::Semaphore::from_raw(self.raw), None),
+                Kind::QueryPool => d.destroy_query_pool(vk::QueryPool::from_raw(self.raw), None),
             }
         }
     }
@@ -526,7 +531,7 @@ impl Backend {
                 if semaphore.flags == 0 {
                     batch.wait_values[i] = 0;
                 }
-                batch.stages.push(compute_stage(stage)?);
+                batch.stages.push(dev.stage(stage)?);
                 batch.waits.push(vk::Semaphore::from_raw(semaphore.raw));
                 semaphores.push((id, semaphore));
             }
@@ -1025,7 +1030,8 @@ impl Backend {
             || op == 115
             || op == 121
             || op == 126
-            || op == 133)
+            || op == 133
+            || op == 137)
             && a[0]
                 != if op == 3 {
                     self.instance_id
@@ -1048,6 +1054,7 @@ impl Backend {
                 )?;
             }
             133 => self.capabilities.write_portability(m, a[1])?,
+            137 => self.capabilities.write_feedback(m, a[1])?,
             126 => {
                 self.capabilities.write_clipping(m, a[1])?;
             }
@@ -1290,6 +1297,8 @@ impl Backend {
                 let mut portability = self.capabilities.portability;
                 let mut scalar = vk::PhysicalDeviceScalarBlockLayoutFeatures::default()
                     .scalar_block_layout(a[5] & 2048 != 0);
+                let mut feedback = vk::PhysicalDeviceTransformFeedbackFeaturesEXT::default()
+                    .transform_feedback(a[5] & 16384 != 0);
                 let mut info = vk::DeviceCreateInfo::default()
                     .queue_create_infos(&queue)
                     .enabled_features(&features)
@@ -1302,6 +1311,9 @@ impl Backend {
                 }
                 if a[5] & 2048 != 0 {
                     info = info.push_next(&mut scalar);
+                }
+                if a[5] & 8192 != 0 {
+                    info = info.push_next(&mut feedback);
                 }
                 if let Some(ref mut subset) = portability {
                     info = info.push_next(subset);
@@ -1324,6 +1336,8 @@ impl Backend {
                     imageless: a[5] & 512 != 0,
                     format_list: a[5] & 64 != 0,
                     maintenance2: a[5] & 16 != 0,
+                    feedback: self.capabilities.feedback.filter(|_| a[5] & 16384 != 0),
+                    feedback_extension: a[5] & 8192 != 0,
                     portability: self.capabilities.portability,
                     native,
                     instance,
@@ -1449,7 +1463,7 @@ impl Backend {
                 if a[1] == 0 || a[1] > MAX_ALLOCATION {
                     return Err(vk::Result::ERROR_OUT_OF_DEVICE_MEMORY.into());
                 }
-                let allowed = vk::BufferUsageFlags::UNIFORM_TEXEL_BUFFER
+                let mut allowed = vk::BufferUsageFlags::UNIFORM_TEXEL_BUFFER
                     | vk::BufferUsageFlags::STORAGE_TEXEL_BUFFER
                     | vk::BufferUsageFlags::INDIRECT_BUFFER
                     | vk::BufferUsageFlags::STORAGE_BUFFER
@@ -1458,6 +1472,10 @@ impl Backend {
                     | vk::BufferUsageFlags::INDEX_BUFFER
                     | vk::BufferUsageFlags::TRANSFER_SRC
                     | vk::BufferUsageFlags::TRANSFER_DST;
+                if dev.feedback.is_some() {
+                    allowed |= vk::BufferUsageFlags::TRANSFORM_FEEDBACK_BUFFER_EXT
+                        | vk::BufferUsageFlags::TRANSFORM_FEEDBACK_COUNTER_BUFFER_EXT;
+                }
                 if a[2] == 0 || a[2] & !(allowed.as_raw() as u64) != 0 {
                     return unsupported();
                 }
@@ -1964,7 +1982,11 @@ impl Backend {
                         *c.recording.borrow_mut() = Recording::default();
                         c.state.set(1);
                     } else if op == 39 {
-                        if c.state.get() != 1 || c.recording.borrow().pass.is_some() {
+                        if c.state.get() != 1
+                            || c.recording.borrow().pass.is_some()
+                            || c.recording.borrow().feedback_active
+                            || !c.recording.borrow().queries.is_empty()
+                        {
                             return invalid();
                         }
                         d.end_command_buffer(raw)?;
@@ -2130,8 +2152,8 @@ impl Backend {
                         unsafe {
                             d.cmd_pipeline_barrier(
                                 raw,
-                                compute_stage(a[2] as u32)?,
-                                compute_stage(a[3] as u32)?,
+                                dev.stage(a[2] as u32)?,
+                                dev.stage(a[3] as u32)?,
                                 vk::DependencyFlags::from_raw(a[9] as u32),
                                 &barriers,
                                 &[],
@@ -2339,6 +2361,7 @@ impl Backend {
             92..=93 => self.sampler_call(m, op, a)?,
             87..=91 => self.wsi_device(m, op, a)?,
             116..=119 => self.zink_device(m, op, a, &dev)?,
+            138..=149 => self.feedback_call(m, op, a, &dev)?,
             _ => return unsupported(),
         }
         Ok(())
@@ -2428,6 +2451,7 @@ fn visibility_stages(raw: u64) -> Result<vk::ShaderStageFlags> {
 }
 fn compute_stage(stage: u32) -> Result<vk::PipelineStageFlags> {
     let allowed = vk::PipelineStageFlags::TOP_OF_PIPE
+        | vk::PipelineStageFlags::DRAW_INDIRECT
         | vk::PipelineStageFlags::VERTEX_INPUT
         | vk::PipelineStageFlags::COMPUTE_SHADER
         | vk::PipelineStageFlags::VERTEX_SHADER
@@ -2439,7 +2463,8 @@ fn compute_stage(stage: u32) -> Result<vk::PipelineStageFlags> {
         | vk::PipelineStageFlags::TRANSFER
         | vk::PipelineStageFlags::BOTTOM_OF_PIPE
         | vk::PipelineStageFlags::HOST
-        | vk::PipelineStageFlags::ALL_COMMANDS;
+        | vk::PipelineStageFlags::ALL_COMMANDS
+        | vk::PipelineStageFlags::TRANSFORM_FEEDBACK_EXT;
     if stage == 0 || stage & !allowed.as_raw() != 0 {
         return unsupported();
     }

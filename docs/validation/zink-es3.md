@@ -105,7 +105,9 @@ surface、swapchain、acquire、graphics pipeline、draw 与 queue submit，尚�
 Mesa 上游 [`compute_version_es2`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/mesa-25.1.9/src/mesa/main/version.c)
 要求纹理/格式、transform feedback 与至少 4 个颜色附件等能力。MRT 只是其中
 一项；array/cube/3D/mipmap 与相关复制/视图已由后续[图像批次](zink-images.md)
-补齐，剩余绘制能力与 transform feedback 仍需逐项验证。
+补齐。[后续查询/feedback批次](vulkan-feedback.md)已接通原生支持该扩展的driver，并验证真实
+捕获值、counter、溢出与GPU间接绘制；Linux原版Mesa的ES3 configs仍为0。
+Apple GPU transform feedback与剩余版本前提仍需逐项完成。
 
 原版 Zink 以 `VK_EXT_transform_feedback` 作为 stream-output 能力来源；
 MoltenVK 1.4.2 没有该扩展，简单转发宿主扩展不能解决 iPad 的 ES3。可复用的

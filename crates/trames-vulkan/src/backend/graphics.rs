@@ -121,17 +121,20 @@ pub(super) struct Recording {
     pub pipeline: Option<Rc<Object>>,
     pass2: bool,
     pub compute_pipeline: Option<Rc<Object>>,
-    vertices: BTreeMap<u32, (Rc<Object>, u64)>,
+    pub vertices: BTreeMap<u32, (Rc<Object>, u64)>,
     index: Option<(Rc<Object>, u64, u32)>,
-    viewport: bool,
-    scissor: bool,
+    pub viewport: bool,
+    pub scissor: bool,
+    pub feedback_active: bool,
+    pub feedback_buffers: BTreeMap<u32, (Rc<Object>, u64, u64)>,
+    pub queries: BTreeMap<(i32, u32), (Rc<Object>, u32)>,
 }
 #[derive(Clone)]
 pub(super) struct VertexBinding {
-    binding: u32,
+    pub binding: u32,
     stride: u32,
     instance: bool,
-    extent: u32,
+    pub extent: u32,
 }
 // Core uncompressed color formats. Driver queries still decide which of these
 // support sampling, rendering, storage, blending or vertex input on this host.
@@ -215,7 +218,7 @@ fn format_usage(format: vk::Format, raw: u64) -> Result<vk::ImageUsageFlags> {
     }
     Ok(flags)
 }
-fn compatible_pass(a: &Object, b: &Object) -> bool {
+pub(super) fn compatible_pass(a: &Object, b: &Object) -> bool {
     a.pass.get().zip(b.pass.get()).is_some_and(|(a, b)| {
         a.color_count == b.color_count
             && a.colors[..a.color_count] == b.colors[..b.color_count]
@@ -388,13 +391,24 @@ impl Backend {
         output(m, a[7], 8)?;
         let pipeline_layout = self.object(a[1], Kind::PipelineLayout)?;
         let vertex = self.object(a[2], Kind::Shader)?;
-        let fragment = self.object(a[3], Kind::Shader)?;
+        let fragment = if a[3] == 0 {
+            if a[14] & 65536 == 0 {
+                return invalid();
+            }
+            None
+        } else {
+            Some(self.object(a[3], Kind::Shader)?)
+        };
         let name = |p| {
             std::ffi::CString::new(m.read_c_string(p, 256)?)
                 .map_err(|_| Failure::Vk(vk::Result::ERROR_UNKNOWN))
         };
         let vertex_name = name(a[4])?;
-        let fragment_name = name(a[5])?;
+        let fragment_name = if fragment.is_some() {
+            Some(name(a[5])?)
+        } else {
+            None
+        };
         let state = words64(m, a[6], 5)?;
         if std::env::var_os("TRAMES_VULKAN_TRACE").is_some() {
             eprintln!("trames-vulkan graphics-state={state:x?}");
@@ -406,7 +420,7 @@ impl Backend {
         if state[1] == 5 && device.portability.is_some_and(|p| p.triangle_fans == 0) {
             return unsupported();
         }
-        if a[12] > 1 || a[12] != 0 && state[1] != 4 {
+        if a[12] > 1 || a[12] != 0 && !matches!(state[1], 2 | 4 | 5) {
             return unsupported();
         }
         let restart = a[12] != 0;
@@ -622,7 +636,7 @@ impl Backend {
         let (raw_layout, raw_vertex, raw_fragment, raw_pass) = (
             vk::PipelineLayout::from_raw(pipeline_layout.raw),
             vk::ShaderModule::from_raw(vertex.raw),
-            vk::ShaderModule::from_raw(fragment.raw),
+            fragment.as_ref().map(|f| vk::ShaderModule::from_raw(f.raw)),
             vk::RenderPass::from_raw(pass.raw),
         );
         let permit = self
@@ -631,16 +645,18 @@ impl Backend {
             .ok_or(Failure::Vk(vk::Result::ERROR_OUT_OF_HOST_MEMORY))?;
         let task = crate::task::Task::spawn(move || {
             let _permit = permit;
-            let stages = [
-                vk::PipelineShaderStageCreateInfo::default()
-                    .stage(vk::ShaderStageFlags::VERTEX)
-                    .module(raw_vertex)
-                    .name(&vertex_name),
-                vk::PipelineShaderStageCreateInfo::default()
-                    .stage(vk::ShaderStageFlags::FRAGMENT)
-                    .module(raw_fragment)
-                    .name(&fragment_name),
-            ];
+            let mut stages = vec![vk::PipelineShaderStageCreateInfo::default()
+                .stage(vk::ShaderStageFlags::VERTEX)
+                .module(raw_vertex)
+                .name(&vertex_name)];
+            if let Some((module, name)) = raw_fragment.zip(fragment_name.as_ref()) {
+                stages.push(
+                    vk::PipelineShaderStageCreateInfo::default()
+                        .stage(vk::ShaderStageFlags::FRAGMENT)
+                        .module(module)
+                        .name(name),
+                );
+            }
             let vertex = vk::PipelineVertexInputStateCreateInfo::default()
                 .vertex_binding_descriptions(&bindings)
                 .vertex_attribute_descriptions(&attributes);
@@ -726,7 +742,8 @@ impl Backend {
             Compile {
                 task,
                 dependencies: {
-                    let mut d = vec![pipeline_layout, pass, vertex, fragment];
+                    let mut d = vec![pipeline_layout, pass, vertex];
+                    d.extend(fragment);
                     d.extend(cache);
                     d
                 },
@@ -1146,8 +1163,8 @@ impl Backend {
                         vk::SubpassDependency::default()
                             .src_subpass(x[0] as u32)
                             .dst_subpass(x[1] as u32)
-                            .src_stage_mask(compute_stage(x[2] as u32)?)
-                            .dst_stage_mask(compute_stage(x[3] as u32)?)
+                            .src_stage_mask(device.stage(x[2] as u32)?)
+                            .dst_stage_mask(device.stage(x[3] as u32)?)
                             .src_access_mask(vk::AccessFlags::from_raw(x[4] as u32))
                             .dst_access_mask(vk::AccessFlags::from_raw(x[5] as u32))
                             .dependency_flags(vk::DependencyFlags::from_raw(x[6] as u32)),
@@ -1712,6 +1729,12 @@ impl Backend {
                         }
                         if c.recording.borrow().pass.is_none()
                             || c.recording.borrow().pass2 != (op == 124)
+                            || c.recording.borrow().feedback_active
+                            || c.recording
+                                .borrow()
+                                .queries
+                                .keys()
+                                .any(|&(ty, _)| ty == vk::QueryType::OCCLUSION.as_raw())
                         {
                             return invalid();
                         }

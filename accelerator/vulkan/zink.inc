@@ -66,3 +66,45 @@ VKAPI_ATTR void VKAPI_CALL vkCmdNextSubpass2(VkCommandBuffer c,const VkSubpassBe
     (void)c;(void)begin;(void)end;checked(VK_ERROR_FEATURE_NOT_PRESENT);
 }
 VKAPI_ATTR void VKAPI_CALL vkCmdNextSubpass2KHR(VkCommandBuffer c,const VkSubpassBeginInfo *begin,const VkSubpassEndInfo *end) {vkCmdNextSubpass2(c,begin,end);}
+
+// Query data and transform-feedback counters remain native GPU objects. WAIT
+// yields through Linux instead of holding a native worker in a driver wait.
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateQueryPool(VkDevice d,const VkQueryPoolCreateInfo *info,const VkAllocationCallbacks *allocator,VkQueryPool *out) {
+    CHECK(info,VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO);ALLOCATOR(allocator);
+    if(info->flags || info->pipelineStatistics)return VK_ERROR_FEATURE_NOT_PRESENT;
+    return CALL(138,KEY(d),info->queryType,info->queryCount,PTR(out));
+}
+VKAPI_ATTR void VKAPI_CALL vkDestroyQueryPool(VkDevice d,VkQueryPool pool,const VkAllocationCallbacks *allocator) {
+    if(pool)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(139,KEY(d),(uint64_t)pool));
+}
+VKAPI_ATTR VkResult VKAPI_CALL vkGetQueryPoolResults(VkDevice d,VkQueryPool pool,uint32_t first,uint32_t count,size_t size,void *out,VkDeviceSize stride,VkQueryResultFlags flags) {
+    for(;;){
+        VkResult r=CALL(141,KEY(d),(uint64_t)pool,first,count,size,PTR(out),stride,flags);
+        if(r!=VK_NOT_READY || !(flags&VK_QUERY_RESULT_WAIT_BIT))return r;
+        struct timespec sleep={0,1000000};nanosleep(&sleep,NULL);
+    }
+}
+VKAPI_ATTR void VKAPI_CALL vkCmdResetQueryPool(VkCommandBuffer c,VkQueryPool pool,uint32_t first,uint32_t count) {checked(CALL(140,DEVKEY(c),KEY(c),(uint64_t)pool,first,count));}
+VKAPI_ATTR void VKAPI_CALL vkCmdCopyQueryPoolResults(VkCommandBuffer c,VkQueryPool pool,uint32_t first,uint32_t count,VkBuffer dst,VkDeviceSize offset,VkDeviceSize stride,VkQueryResultFlags flags) {
+    checked(CALL(142,DEVKEY(c),KEY(c),(uint64_t)pool,first,count,(uint64_t)dst,offset,stride,flags));
+}
+VKAPI_ATTR void VKAPI_CALL vkCmdWriteTimestamp(VkCommandBuffer c,VkPipelineStageFlagBits stage,VkQueryPool pool,uint32_t query) {checked(CALL(143,DEVKEY(c),KEY(c),(uint64_t)pool,query,stage));}
+VKAPI_ATTR void VKAPI_CALL vkCmdBeginQuery(VkCommandBuffer c,VkQueryPool pool,uint32_t query,VkQueryControlFlags flags) {checked(CALL(144,DEVKEY(c),KEY(c),(uint64_t)pool,query,flags));}
+VKAPI_ATTR void VKAPI_CALL vkCmdEndQuery(VkCommandBuffer c,VkQueryPool pool,uint32_t query) {checked(CALL(145,DEVKEY(c),KEY(c),(uint64_t)pool,query));}
+VKAPI_ATTR void VKAPI_CALL vkCmdBeginQueryIndexedEXT(VkCommandBuffer c,VkQueryPool pool,uint32_t query,VkQueryControlFlags flags,uint32_t index) {checked(CALL(144,DEVKEY(c),KEY(c),(uint64_t)pool,query,flags,index,1));}
+VKAPI_ATTR void VKAPI_CALL vkCmdEndQueryIndexedEXT(VkCommandBuffer c,VkQueryPool pool,uint32_t query,uint32_t index) {checked(CALL(145,DEVKEY(c),KEY(c),(uint64_t)pool,query,0,index,1));}
+VKAPI_ATTR void VKAPI_CALL vkCmdBindTransformFeedbackBuffersEXT(VkCommandBuffer c,uint32_t first,uint32_t count,const VkBuffer *buffers,const VkDeviceSize *offsets,const VkDeviceSize *sizes) {
+    if(count>4)checked(VK_ERROR_FEATURE_NOT_PRESENT);
+    checked(CALL(146,DEVKEY(c),KEY(c),first,count,PTR(buffers),PTR(offsets),PTR(sizes)));
+}
+VKAPI_ATTR void VKAPI_CALL vkCmdBeginTransformFeedbackEXT(VkCommandBuffer c,uint32_t first,uint32_t count,const VkBuffer *counters,const VkDeviceSize *offsets) {
+    if(count>4)checked(VK_ERROR_FEATURE_NOT_PRESENT);
+    checked(CALL(147,DEVKEY(c),KEY(c),first,count,PTR(counters),PTR(offsets)));
+}
+VKAPI_ATTR void VKAPI_CALL vkCmdEndTransformFeedbackEXT(VkCommandBuffer c,uint32_t first,uint32_t count,const VkBuffer *counters,const VkDeviceSize *offsets) {
+    if(count>4)checked(VK_ERROR_FEATURE_NOT_PRESENT);
+    checked(CALL(148,DEVKEY(c),KEY(c),first,count,PTR(counters),PTR(offsets)));
+}
+VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndirectByteCountEXT(VkCommandBuffer c,uint32_t instances,uint32_t firstInstance,VkBuffer counter,VkDeviceSize offset,uint32_t subtract,uint32_t stride) {
+    checked(CALL(149,DEVKEY(c),KEY(c),instances,firstInstance,(uint64_t)counter,offset,subtract,stride));
+}

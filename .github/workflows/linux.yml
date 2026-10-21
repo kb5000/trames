@@ -437,6 +437,7 @@ jobs:
           cargo build -p trames-cli --release --locked
           export VK_DRIVER_FILES="$(python3 -c 'from pathlib import Path; print(next(Path("/usr/share/vulkan/icd.d").glob("*lvp*")))')"
           cargo run -p trames-vulkan --example renderpass --release --locked
+          cargo run -p trames-vulkan --example feedback --release --locked -- tests/fixtures/bin/vulkan-feedback.spv
           if [[ '${{ needs.scope.outputs.zink_mrt_only }}' != true ]]; then
             cargo run -p trames-vulkan --example timeline --release --locked
             cargo run -p trames-vulkan --example resources --release --locked -- tests/fixtures/bin/vulkan-resources.spv
@@ -450,6 +451,7 @@ jobs:
             if [[ '${{ needs.scope.outputs.zink_mrt_only }}' == true ]]; then
               python3 tests/integration/zink-foundation.py --probe-only --require-render --snapshot-store target/zink-native-bundle/store
               python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-es3-linux --stage graphics
+              python3 tests/integration/vulkan-feedback.py --store target/zink-native-bundle/store --output target/vulkan-feedback-linux --require-feedback --native-client target/zink-inputs/vulkan-feedback-host
               python3 scripts/prepare-zink-native-bundle.py --es3
             else
               python3 tests/integration/zink-foundation.py --require-render --snapshot-store target/zink-native-bundle/store
@@ -465,6 +467,7 @@ jobs:
           path: |
             target/zink-foundation/
             target/zink-es3-linux/
+            target/vulkan-feedback-linux/
             target/zink-inputs/inputs.json
             target/vulkan-guest/manifest.json
           retention-days: 14
@@ -527,6 +530,7 @@ jobs:
           export RUSTFLAGS="-C link-arg=-framework -C link-arg=IOKit -C link-arg=$(xcrun clang --print-runtime-dir)/libclang_rt.osx.a"
           cargo build -p trames-cli --release --locked
           cargo run -p trames-vulkan --example renderpass --release --locked 2>&1 | tee target/zink-metal-native/renderpass.log
+          cargo run -p trames-vulkan --example feedback --release --locked -- target/zink-native-bundle/shaders/vulkan-feedback.spv 2>&1 | tee target/zink-metal-native/feedback.log
           if [[ '${{ needs.scope.outputs.zink_mrt_only }}' != true ]]; then
             cargo run -p trames-vulkan --example timeline --release --locked 2>&1 | tee target/zink-metal-native/timeline.log
             cargo run -p trames-vulkan --example resources --release --locked -- target/zink-native-bundle/shaders/vulkan-resources.spv 2>&1 | tee target/zink-metal-native/resources.log
@@ -536,6 +540,7 @@ jobs:
           python3 tests/integration/zink-foundation.py --store target/zink-native-bundle/store --probe-only --require-render --output target/zink-metal
           if [[ '${{ needs.scope.outputs.zink_mrt_only }}' == true ]]; then
             python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-es3-metal --stage graphics
+            python3 tests/integration/vulkan-feedback.py --store target/zink-native-bundle/store --output target/vulkan-feedback-metal
           fi
       - name: Compile corrected native iOS driver without packaging an app
         run: python3 scripts/build-moltenvk.py --platform ios --arch arm64 > target/zink-metal-native/ios-driver-dir.txt
@@ -561,6 +566,7 @@ jobs:
             target/zink-metal/
             target/zink-metal-native/
             target/zink-es3-metal/
+            target/vulkan-feedback-metal/
             target/zink-native-bundle/checksums.json
             target/moltenvk-patched/*/build.json
             target/moltenvk-patched/*/xcodebuild.log

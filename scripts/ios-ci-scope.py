@@ -648,6 +648,8 @@ def main():
                                'crates/trames-distro/src/vulkan.rs', 'tests/fixtures/vulkan-queries.c',
                                'tests/fixtures/zink-egl.c', 'tests/fixtures/vulkan-compute.c',
                                'tests/fixtures/zink-es3.c', 'tests/integration/zink-es3.py',
+                               'tests/fixtures/vulkan-feedback.c', 'tests/fixtures/vulkan-feedback.vert',
+                               'tests/integration/vulkan-feedback.py',
                                'tests/fixtures/vulkan-texture.c', 'tests/integration/zink-foundation.py',
                                'scripts/prepare-zink-guest.py', 'scripts/build-vulkan-guest.sh',
                                'scripts/ios-ci-scope.py', '.github/workflows/ios.yml', '.github/workflows/linux.yml',

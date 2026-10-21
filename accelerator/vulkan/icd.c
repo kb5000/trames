@@ -75,6 +75,7 @@ static VkResult display_extensions(const char *layer,uint32_t *count,VkExtension
         if(caps&128)names[n++]=VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME;
         if(caps&256)names[n++]=VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME;
         if(caps&512)names[n++]=VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME;
+        if(caps&1024)names[n++]=VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME;
     }
     else {
         if(fixed || wayland)names[n++]=VK_KHR_SURFACE_EXTENSION_NAME;
@@ -104,6 +105,7 @@ static int extensions(uint32_t count,const char *const *names,int device) {
         else if(device && !strcmp(names[i],VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME))bit=4096;
         else if(device && !strcmp(names[i],VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME))bit=8192;
         else if(device && !strcmp(names[i],VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME))bit=16384;
+        else if(device && !strcmp(names[i],VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME))bit=32768;
         // Original loaders may append an already enabled promoted extension.
         if(!bit)return -1;bits|=bit;
     }
@@ -156,7 +158,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceSparseImageFormatProperties(VkPhys
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(VkPhysicalDevice p,const VkDeviceCreateInfo *info,const VkAllocationCallbacks *allocator,VkDevice *out) {
     if(!info || info->sType!=VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;ALLOCATOR(allocator);
     const VkPhysicalDeviceFeatures *features=info->pEnabledFeatures;
-    const VkBaseInStructure *next=info->pNext;unsigned chain=0;int timeline=0,seen_timeline=0,imageless=0,seen_imageless=0,seen_multiview=0,scalar=0,seen_scalar=0,seen_portability=0;
+    const VkBaseInStructure *next=info->pNext;unsigned chain=0;int timeline=0,seen_timeline=0,imageless=0,seen_imageless=0,seen_multiview=0,scalar=0,seen_scalar=0,seen_portability=0,feedback=0,seen_feedback=0;
     while(next && chain++<16){
         if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2){
             if(features)return VK_ERROR_FEATURE_NOT_PRESENT;
@@ -179,6 +181,10 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(VkPhysicalDevice p,const VkDeviceC
             if(seen_scalar++)return VK_ERROR_FEATURE_NOT_PRESENT;
             scalar=((const VkPhysicalDeviceScalarBlockLayoutFeatures *)next)->scalarBlockLayout;
             if(scalar!=VK_FALSE && scalar!=VK_TRUE)return VK_ERROR_FEATURE_NOT_PRESENT;
+        }else if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT){
+            const VkPhysicalDeviceTransformFeedbackFeaturesEXT *v=(const void *)next;
+            if(seen_feedback++ || v->geometryStreams || v->transformFeedback>VK_TRUE)return VK_ERROR_FEATURE_NOT_PRESENT;
+            feedback=v->transformFeedback;
         }else if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES){
             const VkPhysicalDeviceMultiviewFeatures *v=(const void *)next;
             if(seen_multiview++ || v->multiview || v->multiviewGeometryShader || v->multiviewTessellationShader)return VK_ERROR_FEATURE_NOT_PRESENT;
@@ -209,6 +215,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(VkPhysicalDevice p,const VkDeviceC
     if(has_extension(info->enabledExtensionCount,info->ppEnabledExtensionNames,VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME))enabled|=1024;
     if(scalar)enabled|=2048;
     if(has_extension(info->enabledExtensionCount,info->ppEnabledExtensionNames,VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME))enabled|=4096;
+    if(has_extension(info->enabledExtensionCount,info->ppEnabledExtensionNames,VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME))enabled|=8192;
+    if(feedback)enabled|=16384;
+    if(feedback && !(enabled&8192)){free_dispatch(d);return VK_ERROR_FEATURE_NOT_PRESENT;}
     if(timeline && !(enabled&8)){free_dispatch(d);return VK_ERROR_FEATURE_NOT_PRESENT;}
     d->enabled=enabled;
     VkResult r=CALL(8,KEY(p),q->queueFamilyIndex,PTR(&d->key),wsi,feature_bits,enabled);if(r!=VK_SUCCESS){free_dispatch(d);return r;}

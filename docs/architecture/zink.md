@@ -113,7 +113,10 @@ Wayland EGL复用现有native swapchain/Metal texture路径，新增可采样swa
 这些图片仅供GPU使用，内存选择优先DEVICE_LOCAL且非HOST_VISIBLE。统一内存GPU可能将
 多种类型同时标为local；避免无意义的初始CPU上传，也避开Paravirtual Metal在绑定图片时
 的replaceRegion崩溃。没有私有类型时仍保留符合memoryTypeBits的fallback。
-后续继续扩展压缩/stencil/MSAA、渲染状态和真实可用features，尤其是GPU transform feedback。
+查询池、原生GPU transform feedback桥接（stream 0、最多4个buffer）、counter续写、indexed
+query及byte-count间接绘制见[验证与边界](../validation/vulkan-feedback.md)。扩展只在native
+driver实际支持时暴露；MoltenVK 1.4.2缺少GPU实现，Apple不声明此feature。完整GLES3仍未打通。
+后续继续扩展压缩/stencil/MSAA、渲染状态和真实可用features，尤其是Apple GPU transform feedback。
 
 ES3首批的MRT、宽格式、原生复制验证与后续缺口见
 [ES3推进记录](../validation/zink-es3.md)。目前原版Mesa仍未提供ES3 context；

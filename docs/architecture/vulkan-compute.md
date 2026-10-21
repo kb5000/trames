@@ -50,7 +50,7 @@ Install the ordinary `vulkan-loader` package with apk.
 
 ## Supported compute operations
 
-The [catalog](../../accelerator/vulkan/entrypoints.inc) contains 174 public
+The [catalog](../../accelerator/vulkan/entrypoints.inc) contains 188 public
 functions plus ICD negotiation exports. The profile supports one instance,
 compute-capable physical device, logical device and queue per address space;
 property queries; buffers and memory; SPIR-V modules; storage/uniform buffer
@@ -59,6 +59,13 @@ command buffers, dispatch, push constants, barriers, buffer copy/fill; fences,
 binary semaphores, resets and idle waits. Compute pipeline specialization copies
 up to 64 map entries and 64 KiB of constant data into owned host records, checks
 IDs/offsets/sizes, and passes them to the original driver/compiler.
+
+Query pools support native timestamps, nonprecise occlusion and, when actually
+supported/enabled, transform-feedback stream-zero statistics. CPU result reads
+poll the native driver once; the guest WAIT wrapper yields through nanosleep.
+GPU query copies and transform-feedback counters stay on the native queue.
+The [feedback profile and validation](../validation/vulkan-feedback.md) define
+the supported limits and the remaining Apple GPU implementation work.
 
 Shader ingress removes only SPIR-V `OpName`/`OpMemberName` debug annotations.
 MoltenVK 1.4.2's original SPIRV-Cross can otherwise preserve a valid GLSL variable

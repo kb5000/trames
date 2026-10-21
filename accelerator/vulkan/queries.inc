@@ -12,6 +12,10 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFeatures2(VkPhysicalDevice p,VkPhy
     vkGetPhysicalDeviceFeatures(p,&out->features);
     VkBaseOutStructure *next=out->pNext;
     for(unsigned i=0;next && i<64;i++,next=next->pNext){
+        if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT){
+            VkPhysicalDeviceTransformFeedbackFeaturesEXT *v=(void *)next;
+            v->transformFeedback=(D(p)->capabilities[0]&1024)!=0;v->geometryStreams=VK_FALSE;
+        }
         if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR && (D(p)->capabilities[0]&512)){
             uint32_t values[16];checked(CALL(133,KEY(p),PTR(values)));
             memcpy(&((VkPhysicalDevicePortabilitySubsetFeaturesKHR *)next)->constantAlphaColorBlendFactors,values,60);
@@ -33,6 +37,13 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceProperties2(VkPhysicalDevice p,VkP
     vkGetPhysicalDeviceProperties(p,&out->properties);
     VkBaseOutStructure *next=out->pNext;
     for(unsigned i=0;next && i<64;i++,next=next->pNext){
+        if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_PROPERTIES_EXT){
+            uint64_t values[12];checked(CALL(137,KEY(p),PTR(values)));
+            VkPhysicalDeviceTransformFeedbackPropertiesEXT *v=(void *)next;
+            v->maxTransformFeedbackStreams=values[2];v->maxTransformFeedbackBuffers=values[3];v->maxTransformFeedbackBufferSize=values[4];
+            v->maxTransformFeedbackStreamDataSize=values[5];v->maxTransformFeedbackBufferDataSize=values[6];v->maxTransformFeedbackBufferDataStride=values[7];
+            v->transformFeedbackQueries=values[8];v->transformFeedbackStreamsLinesTriangles=values[9];v->transformFeedbackRasterizationStreamSelect=values[10];v->transformFeedbackDraw=values[11];
+        }
         if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_PROPERTIES_KHR && (D(p)->capabilities[0]&512)){
             uint32_t values[16];checked(CALL(133,KEY(p),PTR(values)));
             ((VkPhysicalDevicePortabilitySubsetPropertiesKHR *)next)->minVertexInputBindingStrideAlignment=values[15];

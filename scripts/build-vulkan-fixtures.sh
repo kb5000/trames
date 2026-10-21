@@ -4,6 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 bash scripts/build-vulkan-guest.sh
 mkdir -p tests/fixtures/bin target/vulkan-loader-sdk
+"${GLSLANG_VALIDATOR:-glslangValidator}" -V --target-env vulkan1.0 tests/fixtures/vulkan-feedback.vert -o tests/fixtures/bin/vulkan-feedback.spv
 python3 - <<'PY'
 import importlib.util,tarfile,tempfile,shutil
 from pathlib import Path
