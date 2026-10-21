@@ -150,3 +150,7 @@ Apple原生GPU TF及其他渲染状态继续推进，不能把Linux结果当成i
 云端Metal同样完成Vulkan divisor输入及Mesa实例化像素检查，两端各27项模块测试与
 iOS FFI检查通过。Metal的instanced-arrays=1、TF=0，因此ES3 configs仍为0；
 Linux为真实ES3 context/MRT/TF数据通过。证据见[divisor摘要](vulkan-divisor-ci.json)。
+
+后续[Apple原生TF内核](vulkan-native-tf.md)已通过真实Metal的2080个TF标量、166个图元map
+条目和1024个输出replay像素，以及arm64 iOS编译；原版VS的SSBO/atomic只执行一次。
+新内核尚未接入MoltenVK/guest命令与查询，**Apple TF仍不枚举、GLES3仍不开启**。

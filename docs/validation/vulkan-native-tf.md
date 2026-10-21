@@ -65,3 +65,22 @@ provoking vertex 要求 triangle strip 奇数图元为 `[i,i+2,i+1]`、fan 为
 首轮 Linux 编译通过；Apple 严格编译暴露验收代码中的废弃 Metal 属性和未明确的
 Objective-C id 类型，已修正。重试直接复用首轮已通过且源码未变的 compiler/MSL
 bundle，只补新的 native Vulkan 参考与修正后的 Metal/iOS 检查。
+
+## 云端 Metal / iOS 验收通过
+
+[5ef5924 / CI 39587980561](https://github.com/kb5000/trames/actions/runs/39587980561)
+全部通过。实际 Apple Paravirtual GPU 的 16 组图元/边界/原生 Vulkan 对照、u16/u32
+索引、counter 续写与 byte-count 转换，共核对 **2080 个精确 TF 标量、166 个 map 条目、
+1024 个 RGBA 像素**。SSBO atomic 次数确认原始 VS 每个输入调用只执行一次，replay
+没有重复 shader 副作用。普通路径的并行 map 和 restart 的 GPU 扫描均经实际执行。
+
+同源原生引擎已编译为 arm64 iOS，四份实际生成的 MSL 也全部编译为 iOS AIR；
+Xcode 16.4 / Build 16F6、iOS SDK 18.5，部署目标 iOS 15。不是物理 iPad，也没有 IPA。
+首轮通过的原版 compiler/MSL bundle 逐项检查后直接复用，只增加真实 native Vulkan
+参考与剩余 Apple 检查，未重复编译和运行已通过的原版 compiler 或既有 guest 验收。
+
+两个 evidence ZIP 的 SHA-256/全部 CRC、内部 12 个 checksum、四份组合 MSL 与仓库
+assembly shader 的逐字节一致性，以及 iOS object 的 arm64 Mach-O 均已核对。
+[证据摘要](vulkan-native-tf-ci.json)保留输入摘要、复用来源、计数、工具链与尚未完成的
+公开 API 边界。**guest 仍不报告 Apple TF，Apple 原版 Mesa GLES3 仍未开放**；
+不要把这批内部 Metal 内核验收等同于完整 Vulkan/Mesa TF 已接通。

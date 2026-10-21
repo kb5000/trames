@@ -1,0 +1,261 @@
+{
+  "schema": 1,
+  "source_sha": "5ef592468349ac5c786859f72f07ccc192e9d498",
+  "source_tree": "592fd5b8367c13da7bb904435ff0713be948350b",
+  "ci": {
+    "run": 39587980561,
+    "url": "https://github.com/kb5000/trames/actions/runs/39587980561",
+    "conclusion": "success",
+    "linux_job": 119181602683,
+    "apple_job": 119181809116
+  },
+  "implementation": {
+    "public_vulkan_entries": 188,
+    "guest_transform_feedback_connected": false,
+    "apple_transform_feedback_advertised": false,
+    "apple_gles3_enabled": false,
+    "original_spirv_cross_commit": "6c09849fe88c48eaed08413aa022aaa136a3a057",
+    "original_spirv_cross_archive_sha256": "b81b9956289950570953738e666a031ca32ff64e4fc925eba89f227c42109518",
+    "modified_upstream_source": false,
+    "cpu_jit": false,
+    "cpu_shader_execution": false,
+    "cpu_readback_in_production_path": false,
+    "common_map": "parallel native Metal compute",
+    "restart_map": "single native GPU control thread"
+  },
+  "validated": {
+    "gpu": "Apple Paravirtual device",
+    "synthetic": true,
+    "physical_ipad": false,
+    "cases": 16,
+    "indexed_variants": [
+      "uint16",
+      "uint32"
+    ],
+    "exact_tf_scalars": 2080,
+    "exact_map_entries": 166,
+    "exact_rgba_pixels": 1024,
+    "ssbo_atomic_vs_execution": "exactly once per input invocation, unchanged by raster replay",
+    "gpu_counter_resume": true,
+    "whole_primitive_overflow": true,
+    "native_vulkan_reference": true,
+    "ipad_app_built": false
+  },
+  "toolchain": {
+    "xcode": "16.4",
+    "xcode_build": "16F6",
+    "ios_sdk": "18.5",
+    "ios_target": "arm64-apple-ios15.0",
+    "engine_ios_object_sha256": "e130fe4e582864597bccbc81ad81453e709c0e8c019768f49dee15938ead3618",
+    "air_sha256": {
+      "vulkan-feedback.air": "c0e8afd5598ab2b50d988f2398175a5149b090ccc76bd02c06532bc4e098fb3a",
+      "vulkan-native-tf-u16.air": "2bc1c8ecd8b020edd320390ee7d2b142a54b6ab407da544cd8f359cd23fbf106",
+      "vulkan-native-tf-u32.air": "2c3a443ab43cf46a5610d3eca64136430f3b6576e729c1e69d3853094d41b497",
+      "vulkan-native-tf.air": "93d03637b2c83b773f8fb9a80aada1da6a8bcf2da1642916386b6c75d98276e0"
+    }
+  },
+  "artifacts": [
+    {
+      "artifact": 12339987574,
+      "name": "vulkan-native-tf-shaders",
+      "sha256": "f4e85fc24a72351c7f03392beb1396d76a4917e2535135ef9ebf81cc6ab45ade",
+      "size": 11598,
+      "entries": 13
+    },
+    {
+      "artifact": 12340972121,
+      "name": "vulkan-native-tf-metal",
+      "sha256": "31e793adc07d8c312909d11b25ae2fd5ef608941e1bfe7987f36f946934e843c",
+      "size": 89892,
+      "entries": 13
+    }
+  ],
+  "inputs_sha256": {
+    "crates/trames-vulkan/native/transform-feedback/compiler.hpp": "c9cfdb851c08cceb1a32127700e5f4a14faa6df9e0e57dc7884f3953fabccdfb",
+    "crates/trames-vulkan/native/transform-feedback/compiler.cpp": "30f41410d794fa58875e960da3e47df8b702cd8b13ca0f796e308bbadc7bcb47",
+    "crates/trames-vulkan/native/transform-feedback/assemble.metal": "c592b81d167314d9aa115f4a6d727bc0a1f931a7e6004400f2d93e96d8bb0c11",
+    "crates/trames-vulkan/native/transform-feedback/metal.hpp": "94cb187e59c2bbfeb65b9225906ac208a036310bdd44fb3cf10ed5be56a4e2ba",
+    "crates/trames-vulkan/native/transform-feedback/metal.mm": "66ada890a968765cf39d68ef8cba745767a018a9a36e83cba8472bb2e721d9b2",
+    "tests/fixtures/vulkan-native-tf-metal.mm": "f16e69d2720480660fa2acd4803d5b85ca5bc062d16b5c461e6624936a272f89",
+    "tests/fixtures/vulkan-native-tf-compiler.cpp": "70994fa39b21db5e2b3ff27a424b5b892e4f6b3fcde63ea1df0ad1b8e48c5449",
+    "tests/fixtures/vulkan-native-tf.vert": "3dbfa7a0fed12db478d9a9d30a72a0d6d4655763829aa2a6cfc3d8a023637124",
+    "tests/fixtures/vulkan-feedback.vert": "4254910f3e2bb41c1b6198d8de64a2b2554e00a863fcb124dd1e47655a6a6f23",
+    "scripts/vulkan-upstream.json": "76d7b3f2a3dd80d803e9a1ca0161de2f0bd673a1620d9c020f0342039ea04ee5",
+    "scripts/build-vulkan-native-tf.py": "e747a949ab86ec07ffe22fee112aaebd9467469dd862de1fc2d092e1a035b228",
+    "tests/fixtures/vulkan-feedback.c": "bb8e29f8213d2ac4f0b869517c1cd41670b3b0e353e5822f8e1559a44c0d1db9",
+    "tests/integration/vulkan-native-tf-reference.py": "9bb22df8824bf3321710dbe8c6e4cd061e43de2a544cd73458bd8bf3c704845c"
+  },
+  "shader_sha256": {
+    "vulkan-feedback.json": "5ed78e570056fcd36bcc6df96506e182da4ddba7ad2b4f778787db6525e06408",
+    "vulkan-native-tf-u32.json": "c24b79b497d8c02c290084157ca4872634c7fe28f33e2fa402c42aa9a95ed29f",
+    "vulkan-native-tf.spv": "9d60f7b7481b201b3ea01379f39fec8e2373dca1f5b5a8d94903074a6fe87618",
+    "vulkan-native-tf-u16.json": "c24b79b497d8c02c290084157ca4872634c7fe28f33e2fa402c42aa9a95ed29f",
+    "vulkan-native-tf.json": "c24b79b497d8c02c290084157ca4872634c7fe28f33e2fa402c42aa9a95ed29f",
+    "vulkan-feedback.metal": "35a0196af85af27e5a77807897ece875f6b626a68afa80076abd04404afec9e1",
+    "vulkan-feedback.spv": "070b6bdbd4ec66e12efd8631f48895ebce7186b020fe91b2b3a85a6b4f17f424",
+    "vulkan-native-tf.metal": "5df8426aece19e1d79589fb47f254eb8ed1ac7696bd3b038ac43cd59576e1897",
+    "vulkan-native-tf-u16.metal": "9b6b3755b45c18d83ca77b111287580f1faf0aa14891bff8ba815a45e2227d50",
+    "vulkan-native-tf-u32.metal": "874abe983eb89aa5f59093cd8a087d283d7fd0ebe7bd22de8edc8841ce73fe3b",
+    "native-vulkan-reference.json": "8342ffa45c23812b834a2d313d69e80d2b3436152907fc1f2a2b934c11e77969"
+  },
+  "native_vulkan_reference": {
+    "kind": "real native Vulkan driver; no CPU TF model",
+    "cases": [
+      {
+        "topology": 0,
+        "primitives": 10,
+        "vertices": 10,
+        "map": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ]
+      },
+      {
+        "topology": 1,
+        "primitives": 4,
+        "vertices": 8,
+        "map": [
+          0,
+          1,
+          2,
+          3,
+          5,
+          6,
+          7,
+          8
+        ]
+      },
+      {
+        "topology": 2,
+        "primitives": 8,
+        "vertices": 16,
+        "map": [
+          0,
+          1,
+          1,
+          2,
+          2,
+          3,
+          3,
+          4,
+          5,
+          6,
+          6,
+          7,
+          7,
+          8,
+          8,
+          9
+        ]
+      },
+      {
+        "topology": 3,
+        "primitives": 2,
+        "vertices": 6,
+        "map": [
+          0,
+          1,
+          2,
+          5,
+          6,
+          7
+        ]
+      },
+      {
+        "topology": 4,
+        "primitives": 6,
+        "vertices": 18,
+        "map": [
+          0,
+          1,
+          2,
+          1,
+          3,
+          2,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          6,
+          8,
+          7,
+          7,
+          8,
+          9
+        ]
+      },
+      {
+        "topology": 5,
+        "primitives": 6,
+        "vertices": 18,
+        "map": [
+          1,
+          2,
+          0,
+          2,
+          3,
+          0,
+          3,
+          4,
+          0,
+          6,
+          7,
+          5,
+          7,
+          8,
+          5,
+          8,
+          9,
+          5
+        ]
+      }
+    ],
+    "source_fixture_sha256": "bb8e29f8213d2ac4f0b869517c1cd41670b3b0e353e5822f8e1559a44c0d1db9",
+    "generated_source_sha256": "7c5ad4dc88170f196d1684816a6d17408f2cf47a143d67bec726e35a7874a564",
+    "binary_sha256": "f5615e96c83f0e47d3f7024ffd87c45488273cf2935e75ad8e9284ba6f6bf741",
+    "shader_sha256": "070b6bdbd4ec66e12efd8631f48895ebce7186b020fe91b2b3a85a6b4f17f424"
+  },
+  "reuse": {
+    "compiler": {
+      "run": 39587222703,
+      "sha": "c7328d088635aa80ff88b8ee2dea46db2b1e7e48",
+      "original_record_sha256": "ac59855b31987e9a95d96949393042746630feaa3b9a8b2e38e4786195fdccf7",
+      "original_inputs": {
+        "crates/trames-vulkan/native/transform-feedback/compiler.hpp": "c9cfdb851c08cceb1a32127700e5f4a14faa6df9e0e57dc7884f3953fabccdfb",
+        "crates/trames-vulkan/native/transform-feedback/compiler.cpp": "30f41410d794fa58875e960da3e47df8b702cd8b13ca0f796e308bbadc7bcb47",
+        "crates/trames-vulkan/native/transform-feedback/assemble.metal": "0f54d24fd4aa9be2c4010ac48a33452be31552565e5ceceeb8909d6386825f1e",
+        "crates/trames-vulkan/native/transform-feedback/metal.hpp": "94cb187e59c2bbfeb65b9225906ac208a036310bdd44fb3cf10ed5be56a4e2ba",
+        "crates/trames-vulkan/native/transform-feedback/metal.mm": "66ada890a968765cf39d68ef8cba745767a018a9a36e83cba8472bb2e721d9b2",
+        "tests/fixtures/vulkan-native-tf-metal.mm": "ce8fbe6e59eff005cc7d71ff38506d33347650aa2187cf468d757f7231699358",
+        "tests/fixtures/vulkan-native-tf-compiler.cpp": "70994fa39b21db5e2b3ff27a424b5b892e4f6b3fcde63ea1df0ad1b8e48c5449",
+        "tests/fixtures/vulkan-native-tf.vert": "3dbfa7a0fed12db478d9a9d30a72a0d6d4655763829aa2a6cfc3d8a023637124",
+        "tests/fixtures/vulkan-feedback.vert": "4254910f3e2bb41c1b6198d8de64a2b2554e00a863fcb124dd1e47655a6a6f23",
+        "scripts/vulkan-upstream.json": "76d7b3f2a3dd80d803e9a1ca0161de2f0bd673a1620d9c020f0342039ea04ee5",
+        "scripts/build-vulkan-native-tf.py": "e747a949ab86ec07ffe22fee112aaebd9467469dd862de1fc2d092e1a035b228"
+      }
+    },
+    "unchanged_runtime": {
+      "sha": "5dd69304b1e71f7e9c4512ec8699fc9ce6de41b0",
+      "run": 39579538279,
+      "linux": "passed Vulkan/guest/original Mesa GLES3",
+      "apple": "passed Vulkan/guest/original Mesa instancing and explicit TF-unavailable gate/iOS FFI"
+    },
+    "cpu_linux_network_ui": "unchanged; not rerun"
+  },
+  "limits": [
+    "Internal engine is not linked into the guest/MoltenVK command adapter.",
+    "Restart tests validate primitive assembly separately from indexed VS invocation suppression.",
+    "32-bit numeric outputs only; no geometry/tessellation TF stream support.",
+    "Remaining command/query/barrier/cache/indirect state and replay coordinate configuration must pass ordinary guest Vulkan and Mesa GLES3 before capability advertisement."
+  ]
+}

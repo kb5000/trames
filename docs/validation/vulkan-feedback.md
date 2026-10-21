@@ -108,3 +108,7 @@ SHA-256/全部 CRC 也通过核对。此补跑仅更改 CI 与记录，运行源
 后续[depth/stencil批次](vulkan-stencil.md)已合入并通过Linux与云端Metal实际像素检查，
 补齐本文曾列出的D32S8/shadow-sampling缺口。原版Mesa已报告ARB_depth_buffer_float，
 下一项明确的版本前提是vertex attribute divisor；Apple原生GPU TF仍待实现。
+
+后续divisor已通过，Linux原版Mesa真实GLES3/TF见[实例输入验收](vulkan-divisor.md)。
+Apple的[原生TF内核](vulkan-native-tf.md)现已通过真实Metal数据/输出replay和iOS编译，
+但尚未接入公开Vulkan命令；因此本文关于Apple扩展不可用的边界仍然成立。

@@ -1,21 +1,24 @@
 {
-  "base_sha": "c7328d088635aa80ff88b8ee2dea46db2b1e7e48",
+  "base_sha": "5ef592468349ac5c786859f72f07ccc192e9d498",
   "native_scope": "vulkan-tf-engine",
   "runtime_reuse": {
     "run": 39579538279,
     "sha": "5dd69304b1e71f7e9c4512ec8699fc9ce6de41b0"
   },
-  "reason": "Fix default provoking-vertex primitive order against an independent real native Vulkan driver, and Apple-only strict compilation diagnostics. Reuse passed original compiler/MSL bundle without rerunning it; run new Vulkan reference and remaining Metal/iOS checks. Existing runtime/guest/Mesa/UI unchanged; no IPA or public Apple TF claim.",
+  "reason": "Evidence-only: passed internal native Metal TF engine, independent native Vulkan reference and arm64 iOS engine/MSL compilation. Verify both ZIP digests/all CRCs/all internal checksums and exact combined shader inputs. Engine/compiler/runtime/guest unchanged; reuse all passed acceptance, no rerun or IPA. Public Apple TF and GLES3 remain disabled.",
   "changed_file_sha256": {
-    ".github/workflows/linux.yml": "425a14ede6389c08798eacec23dfbfc16e263ea01ed7309dba462f1d874ded2c",
-    "crates/trames-vulkan/native/transform-feedback/assemble.metal": "c592b81d167314d9aa115f4a6d727bc0a1f931a7e6004400f2d93e96d8bb0c11",
-    "docs/validation/vulkan-native-tf.md": "169e2080deb05274b5b7c32cbf1aa5466acf39382ff9232147db231a7e59e6fc",
-    "scripts/ios-ci-scope.py": "b3298c89090d4be634e402f9d0413bb509dc9295c1c2f3410af78b10b6248448",
-    "tests/fixtures/vulkan-native-tf-metal.mm": "f16e69d2720480660fa2acd4803d5b85ca5bc062d16b5c461e6624936a272f89",
-    "tests/integration/vulkan-native-tf-reference.py": "9bb22df8824bf3321710dbe8c6e4cd061e43de2a544cd73458bd8bf3c704845c"
+    "docs/architecture/zink.md": "3904ccfad6eecb33f5c5b5af033dd9e5f8ea24372f529f6630386addfe5e9621",
+    "docs/validation/vulkan-feedback.md": "b7fa5c5788b13b3f24d631f4afb428bdd05df5cf13efd1645be07921b703aa42",
+    "docs/validation/vulkan-native-tf-ci.json": "f792a970a1fed1ead5e0224ad55a0713a39a217d950d5afc53e84c5523c6caa2",
+    "docs/validation/vulkan-native-tf.md": "d8a6786119cba466ca6bc0d77b5359f3e459682a94d7996b4735ede9a31a353f",
+    "docs/validation/zink-es3.md": "37f12c09ab70f596aeeb36752c442ef61173946848cec411c111adff62a16df9"
   },
   "tf_compiler_reuse": {
     "run": 39587222703,
     "sha": "c7328d088635aa80ff88b8ee2dea46db2b1e7e48"
+  },
+  "tf_engine_evidence_reuse": {
+    "run": 39587980561,
+    "sha": "5ef592468349ac5c786859f72f07ccc192e9d498"
   }
 }

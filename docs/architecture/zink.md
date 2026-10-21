@@ -130,6 +130,11 @@ ES3首批的MRT、宽格式、原生复制验证与后续缺口见
 [ES3推进记录](../validation/zink-es3.md)。后续[divisor批次](../validation/vulkan-divisor.md)已在Linux跑通真实ES3 context与数据；
 Apple仍待TF。GLES3探针通过不等于Firefox硬件WebRender已经启用。
 
+后续[原生TF内核](../validation/vulkan-native-tf.md)已通过实际Metal捕获、GPU图元组装/
+计数器、原版Vulkan顺序对照和输出replay的1024像素检查，并编译通过arm64 iOS。
+沿用未修改的SPIRV-Cross原版VS及raster接口；普通map/scatter在GPU并行执行，VS副作用不重复。
+它尚未链接到MoltenVK/guest的命令、查询和资源生命周期；Apple TF/ES3能力仍关闭。
+
 Mesa25.1.9的ES2 context启用GL-thread时，SwapBuffers调用的内部
 `InternalInvalidateFramebufferAncillaryMESA`在上游`gl_API.xml`仅标为ES3，从而产生
 `GL_INVALID_OPERATION(invalid call)`。当前窗口验证使用上游`mesa_glthread=false`配置。
