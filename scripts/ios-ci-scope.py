@@ -787,6 +787,17 @@ def main():
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=firefox-runtime\nskip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
                     return
+                if plan.get('native_scope') == 'xwayland-dialog':
+                    allowed = {'accelerator/vulkan/graphics.inc', 'crates/trames-vulkan/src/backend/graphics.rs', 'tests/fixtures/zink-metal-pixels.m',
+                               'tests/integration/xwayland-dialog.py', 'tests/integration/xwayland-dialog-prepare.py',
+                               '.github/workflows/xwayland-dialog.yml', '.github/workflows/ios.yml',
+                               '.github/workflows/linux.yml', 'scripts/ios-ci-scope.py'}
+                    if any(p not in allowed and not p.startswith('docs/') for p in changed):
+                        raise RuntimeError('Dialog scope includes unrelated changes')
+                    print('Only Vulkan bridge/layout and original mousepad save-dialog checks run in xwayland-dialog.yml. Reuse passed unchanged CPU/Memory/Linux/guest/UI. No App rebuild.')
+                    with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+                        output.write('frontend_only=false\ntargeted=true\nnative_scope=xwayland-dialog\nskip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
+                    return
                 if plan.get('native_scope') == 'compatibility-probe':
                     outputs = compatibility_probe_outputs(plan, repo, dict(request.headers))
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:

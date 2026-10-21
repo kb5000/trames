@@ -192,7 +192,10 @@ fn layout(raw: u64, initial: bool) -> Result<vk::ImageLayout> {
     match raw {
         0 if initial => Ok(vk::ImageLayout::UNDEFINED),
         8 if initial => Ok(vk::ImageLayout::PREINITIALIZED),
-        1 => Ok(vk::ImageLayout::GENERAL),
+        // Original Mesa's legacy render passes retain the EXT enum even when
+        // its image barriers use the core GENERAL fallback. Keep all native
+        // barriers/descriptors/references consistent; do not expose the EXT.
+        1 | 1000339000 => Ok(vk::ImageLayout::GENERAL),
         2 => Ok(vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL),
         3 => Ok(vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL),
         4 => Ok(vk::ImageLayout::DEPTH_STENCIL_READ_ONLY_OPTIMAL),
@@ -202,6 +205,22 @@ fn layout(raw: u64, initial: bool) -> Result<vk::ImageLayout> {
         1000117000 | 1000117001 => Ok(vk::ImageLayout::from_raw(raw as i32)),
         1000001002 => Ok(vk::ImageLayout::PRESENT_SRC_KHR),
         _ => unsupported(),
+    }
+}
+fn attachment_reference_layout(raw: u64, depth: bool) -> Result<vk::ImageLayout> {
+    let value = layout(raw, false)?;
+    if value == vk::ImageLayout::GENERAL
+        || !depth && value == vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL
+        || depth
+            && matches!(
+                value,
+                vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+                    | vk::ImageLayout::DEPTH_STENCIL_READ_ONLY_OPTIMAL
+            )
+    {
+        Ok(value)
+    } else {
+        unsupported()
     }
 }
 fn format_aspects(format: vk::Format) -> vk::ImageAspectFlags {
@@ -1164,6 +1183,11 @@ impl Backend {
                 }
                 self.room(1)?;
                 output(m, a[8], 8)?;
+                let layouts = if a[13] == 0 {
+                    vec![2, 2, 2, 2, 2, 2, 2, 2, 3]
+                } else {
+                    words64(m, a[13], 9)?
+                };
                 let colors = if a[10] == 0 {
                     vec![a[1], a[2], a[3], a[4], a[5]]
                 } else {
@@ -1220,13 +1244,13 @@ impl Backend {
                     references.push(
                         vk::AttachmentReference::default()
                             .attachment(index as u32)
-                            .layout(vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL),
+                            .layout(attachment_reference_layout(layouts[slot], false)?),
                     );
                 }
                 let used_colors = attachments.len();
                 let depth_reference = vk::AttachmentReference::default()
                     .attachment(used_colors as u32)
-                    .layout(vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+                    .layout(attachment_reference_layout(layouts[8], true)?);
                 if a[9] != 0 {
                     if a[12] > 1 {
                         return unsupported();
@@ -1304,7 +1328,7 @@ impl Backend {
                         .collect();
                     let depth_reference = vk::AttachmentReference2::default()
                         .attachment(used_colors as u32)
-                        .layout(vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+                        .layout(depth_reference.layout)
                         .aspect_mask(
                             pass.depth
                                 .map_or(vk::ImageAspectFlags::empty(), format_aspects),
@@ -2525,6 +2549,32 @@ fn clear_rectangle(area: vk::Rect2D, wire: &[u64]) -> Result<vk::ClearRect> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn attachment_references_preserve_general_and_read_only_layouts() {
+        for depth in [false, true] {
+            assert_eq!(
+                attachment_reference_layout(1, depth).unwrap(),
+                vk::ImageLayout::GENERAL
+            );
+            assert_eq!(
+                attachment_reference_layout(1000339000, depth).unwrap(),
+                vk::ImageLayout::GENERAL
+            );
+            for bad in [0, 5, 6, 7, 1000001002] {
+                assert!(attachment_reference_layout(bad, depth).is_err());
+            }
+        }
+        assert_eq!(
+            attachment_reference_layout(2, false).unwrap(),
+            vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL
+        );
+        assert!(attachment_reference_layout(2, true).is_err());
+        assert_eq!(
+            attachment_reference_layout(4, true).unwrap(),
+            vk::ImageLayout::DEPTH_STENCIL_READ_ONLY_OPTIMAL
+        );
+        assert!(attachment_reference_layout(4, false).is_err());
+    }
     #[test]
     fn attachment_clears_preserve_subpass_slots_aspects_and_render_area() {
         let mut pass = PassInfo {

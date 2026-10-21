@@ -1,0 +1,126 @@
+name: Xwayland GPU save dialog
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/xwayland-dialog.yml'
+      - 'tests/integration/xwayland-dialog*.py'
+      - 'accelerator/vulkan/graphics.inc'
+      - 'crates/trames-vulkan/src/backend/graphics.rs'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+defaults:
+  run:
+    shell: bash
+concurrency:
+  group: xwayland-dialog-${{ github.ref_name }}
+  cancel-in-progress: false
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+          components: rustfmt, clippy
+      - name: Build only current Vulkan bridge and embedding
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes gcc-aarch64-linux-gnu libvulkan-dev mesa-vulkan-drivers
+          cargo fmt --all --check
+          cargo clippy -p trames-vulkan --all-targets --no-deps --locked -- -D warnings
+          cargo test -p trames-vulkan --release --lib --locked
+          cargo build -p trames-cli -p trames-ffi --release --locked
+      - uses: actions/download-artifact@v4
+        with:
+          name: vulkan-compute-driver-and-native-source
+          path: target/vulkan-guest
+          github-token: ${{ github.token }}
+          run-id: 39645800791
+      - uses: actions/download-artifact@v4
+        with:
+          name: full-musl-library-and-source
+          path: target/musl-hybrid
+          github-token: ${{ github.token }}
+          run-id: 39015795319
+      - name: Prepare only original signed mousepad dependencies and rebuilt ICD
+        run: python3 tests/integration/xwayland-dialog-prepare.py
+      - name: Reproduce only unsaved-close dialogs on original glamor and Mesa
+        run: |
+          export VK_DRIVER_FILES="$(python3 -c 'from pathlib import Path; print(next(Path("/usr/share/vulkan/icd.d").glob("*lvp*")))')"
+          export TRAMES_ZINK_CPU_REFERENCE=1 LP_NUM_THREADS=2 TRAMES_VULKAN_TRACE=1
+          python3 tests/integration/xwayland-dialog.py --native-wsi --ffi target/release/libtrames_ffi.so --store target/xwayland-dialog-inputs/store --output target/dialog-linux 2>&1 | tee target/dialog-linux.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: xwayland-dialog-linux
+          path: |
+            target/dialog-linux/
+            target/dialog-linux.log
+            target/xwayland-dialog-inputs/install.stdout
+            target/xwayland-dialog-inputs/install.stderr
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xwayland-dialog-inputs
+          path: target/xwayland-dialog-inputs/inputs.tar.gz
+          retention-days: 7
+  metal:
+    needs: linux
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+          targets: aarch64-apple-ios
+      - uses: actions/download-artifact@v4
+        with:
+          name: xwayland-dialog-inputs
+          path: target/dialog-download
+      - name: Verify identical guest inputs and install without rebuilding guest packages
+        run: |
+          mkdir -p target/xwayland-dialog-inputs
+          tar -xzf target/dialog-download/inputs.tar.gz -C target/xwayland-dialog-inputs
+          python3 - <<'PY'
+          import hashlib,json,os,shutil
+          from pathlib import Path
+          root=Path('target/xwayland-dialog-inputs');m=json.loads((root/'inputs.json').read_text())
+          assert m['source']==os.environ['GITHUB_SHA']
+          for name,digest in m['sha256'].items():
+              p=Path(name);assert not p.is_absolute() and '..' not in p.parts
+              assert hashlib.sha256((root/p).read_bytes()).hexdigest()==digest,name
+          shutil.copytree(root/'guest','target/vulkan-guest',dirs_exist_ok=True)
+          shutil.copytree(root/'musl','target/musl-hybrid',dirs_exist_ok=True)
+          PY
+          cargo test -p trames-vulkan --release --lib --locked
+          cargo check -p trames-ffi --target aarch64-apple-ios --locked
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            target/moltenvk-patched/macos-arm64-*/libMoltenVK.a
+            target/moltenvk-patched/macos-arm64-*/build.json
+          key: ${{ runner.os }}-moltenvk-macos-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**', 'crates/trames-vulkan/native/transform-feedback/**') }}
+      - name: Run the same original mousepad dialog on native Metal
+        run: |
+          python3 scripts/prepare-vulkan.py --apple --source-build
+          native_moltenvk_dir="$(python3 scripts/build-moltenvk.py --platform macos --arch arm64)"
+          export TRAMES_MOLTENVK_STATIC_DIR="$native_moltenvk_dir" MACOSX_DEPLOYMENT_TARGET=12.0
+          export RUSTFLAGS="-C link-arg=-framework -C link-arg=IOKit -C link-arg=$(xcrun clang --print-runtime-dir)/libclang_rt.osx.a"
+          cargo build -p trames-ffi --release --locked
+          xcrun clang -O2 -Wall -Wextra -Werror -fobjc-arc -dynamiclib tests/fixtures/zink-metal-pixels.m -framework Metal -framework Foundation -o target/zink-metal-pixels.dylib
+          export TRAMES_VULKAN_TRACE=1
+          python3 tests/integration/xwayland-dialog.py --native-wsi --ffi target/release/libtrames_ffi.dylib --store target/xwayland-dialog-inputs/store --output target/dialog-metal --metal-validator target/zink-metal-pixels.dylib 2>&1 | tee target/dialog-metal.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: xwayland-dialog-metal
+          path: |
+            target/dialog-metal/
+            target/dialog-metal.log
+          retention-days: 7

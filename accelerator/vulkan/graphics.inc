@@ -44,32 +44,45 @@ static VkResult unsupported_render_pass(const char *file,unsigned line) {
     if(getenv("TRAMES_VULKAN_TRACE"))fprintf(stderr,"Trames Vulkan: unsupported render pass state at %s:%u\n",file,line);
     return VK_ERROR_FEATURE_NOT_PRESENT;
 }
+// Mesa 25's legacy render-pass builder can retain this layout even when its
+// barrier path correctly falls back without EXT_attachment_feedback_loop_layout.
+// Use the core GENERAL feedback path, without claiming the unimplemented EXT.
+static VkImageLayout attachment_layout(VkImageLayout value) {
+    return value==VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT?VK_IMAGE_LAYOUT_GENERAL:value;
+}
 static VkResult render_pass(VkDevice d,const VkRenderPassCreateInfo *info,VkRenderPass *out,unsigned op) {
     if(info->flags || info->attachmentCount>9 || info->subpassCount!=1 || info->dependencyCount>8)return unsupported_render_pass(__FILE__,__LINE__);
     const VkSubpassDescription *s=info->pSubpasses;
     if(s->flags || s->pipelineBindPoint!=VK_PIPELINE_BIND_POINT_GRAPHICS || s->inputAttachmentCount || s->colorAttachmentCount>8 || s->pResolveAttachments || s->preserveAttachmentCount)return unsupported_render_pass(__FILE__,__LINE__);
     unsigned count=s->colorAttachmentCount;
     int has_depth=s->pDepthStencilAttachment && s->pDepthStencilAttachment->attachment!=VK_ATTACHMENT_UNUSED;
-    uint64_t colors[8][5]={{0}},depth[7];unsigned used=0;
+    uint64_t colors[8][5]={{0}},depth[7],layouts[9]={2,2,2,2,2,2,2,2,3};unsigned used=0;
     for(unsigned i=0;i<count;i++){
         const VkAttachmentReference *r=s->pColorAttachments+i;
         if(r->attachment==VK_ATTACHMENT_UNUSED)continue;
         if(r->attachment!=used || used>=info->attachmentCount)return unsupported_render_pass(__FILE__,__LINE__);
         const VkAttachmentDescription *a=info->pAttachments+used++;
-        if(a->flags || a->samples!=VK_SAMPLE_COUNT_1_BIT || r->layout!=VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)return unsupported_render_pass(__FILE__,__LINE__);
+        VkImageLayout layout=attachment_layout(r->layout);
+        if(a->flags || a->samples!=VK_SAMPLE_COUNT_1_BIT || (layout!=VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && layout!=VK_IMAGE_LAYOUT_GENERAL)){
+            if(getenv("TRAMES_VULKAN_TRACE"))fprintf(stderr,"Trames Vulkan: color attachment flags=%u samples=%u layout=%u format=%u\n",a->flags,a->samples,r->layout,a->format);
+            return unsupported_render_pass(__FILE__,__LINE__);
+        }
+        layouts[i]=layout;
         colors[i][0]=a->format;colors[i][1]=a->loadOp;colors[i][2]=a->storeOp;colors[i][3]=a->initialLayout;colors[i][4]=a->finalLayout;
     }
     if(info->attachmentCount!=used+(unsigned)has_depth)return unsupported_render_pass(__FILE__,__LINE__);
     if(has_depth){
         const VkAttachmentDescription *z=info->pAttachments+used;
-        if(s->pDepthStencilAttachment->attachment!=used || s->pDepthStencilAttachment->layout!=VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || z->flags || z->samples!=VK_SAMPLE_COUNT_1_BIT || format_aspects(z->format)==VK_IMAGE_ASPECT_COLOR_BIT)return unsupported_render_pass(__FILE__,__LINE__);
+        VkImageLayout layout=attachment_layout(s->pDepthStencilAttachment->layout);
+        if(s->pDepthStencilAttachment->attachment!=used || (layout!=VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL && layout!=VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL && layout!=VK_IMAGE_LAYOUT_GENERAL) || z->flags || z->samples!=VK_SAMPLE_COUNT_1_BIT || format_aspects(z->format)==VK_IMAGE_ASPECT_COLOR_BIT)return unsupported_render_pass(__FILE__,__LINE__);
+        layouts[8]=layout;
         depth[0]=z->format;depth[1]=z->loadOp;depth[2]=z->storeOp;depth[3]=z->initialLayout;depth[4]=z->finalLayout;depth[5]=z->stencilLoadOp;depth[6]=z->stencilStoreOp;
     }
     uint64_t dependencies[8][7];for(uint32_t i=0;i<info->dependencyCount;i++){
         const VkSubpassDependency *x=info->pDependencies+i;
         dependencies[i][0]=x->srcSubpass;dependencies[i][1]=x->dstSubpass;dependencies[i][2]=x->srcStageMask;dependencies[i][3]=x->dstStageMask;dependencies[i][4]=x->srcAccessMask;dependencies[i][5]=x->dstAccessMask;dependencies[i][6]=x->dependencyFlags;
     }
-    return CALL(op,KEY(d),count?colors[0][0]:0,count?colors[0][1]:0,count?colors[0][2]:0,count?colors[0][3]:0,count?colors[0][4]:0,PTR(dependencies),info->dependencyCount,PTR(out),has_depth?PTR(depth):0,PTR(colors),count,has_depth);
+    return CALL(op,KEY(d),count?colors[0][0]:0,count?colors[0][1]:0,count?colors[0][2]:0,count?colors[0][3]:0,count?colors[0][4]:0,PTR(dependencies),info->dependencyCount,PTR(out),has_depth?PTR(depth):0,PTR(colors),count,has_depth,PTR(layouts));
 }
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateRenderPass(VkDevice d,const VkRenderPassCreateInfo *info,const VkAllocationCallbacks *allocator,VkRenderPass *out) {
     if(!info || info->sType!=VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;ALLOCATOR(allocator);
