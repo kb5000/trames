@@ -1,17 +1,25 @@
 {
-  "base_sha": "5dd69304b1e71f7e9c4512ec8699fc9ce6de41b0",
-  "native_scope": "zink-gles",
-  "zink_mrt_only": true,
-  "zink_metal_only_reuse": {
+  "base_sha": "63ddf568707448830fc70df8230e005e5c75c0e5",
+  "native_scope": "vulkan-tf-engine",
+  "runtime_reuse": {
     "run": 39579538279,
     "sha": "5dd69304b1e71f7e9c4512ec8699fc9ce6de41b0"
   },
-  "reason": "Evidence-only record: passed native/guest divisors and original Mesa instancing on Linux/Metal, true Linux GLES3 MRT/TF and explicit Apple GLES3-unavailable gate. Both ZIP SHA/CRCs, exact source-bound guest inputs and original Mac/iOS native cache hashes verified. Runtime/source unchanged; reuse all passed checks. No IPA or raw Firefox inputs.",
+  "reason": "Only new unlinked native TF engine/compiler/Metal acceptance. Verify original shader capture, GPU primitive assembly/counters/overflow and replay without repeating VS side effects. Reuse unchanged passed runtime/guest/Linux/Apple Vulkan/Mesa/iOS FFI; no advertised Apple TF, IPA or raw Firefox data.",
   "changed_file_sha256": {
-    "docs/architecture/zink.md": "ee1fae22d603b2e642ed0a6fff648914384ac61329e3b75333f64d75ecc23fe4",
-    "docs/validation/vulkan-divisor-ci.json": "4f23ca3b02d9e6e0dce99790d2fd781d83b3910d273cb281d354d5b176974bce",
-    "docs/validation/vulkan-divisor.md": "51789c0d739194dc478d330632c50315ae4ea1d34169d9644165982dee220941",
-    "docs/validation/vulkan-stencil.md": "81277e1ff6a8a97cd1209e107be3bc7584642196743a0c0b63c550a4d6ff4dca",
-    "docs/validation/zink-es3.md": "45bbcb4e0318f3d87db0704eb69dee0cbda9215967bcc325b5b9e1d668f01872"
+    ".github/workflows/ios.yml": "1354f8edae9e727936c404e9e2bba13e376323d6cf9f1a022e022d06a8a92795",
+    ".github/workflows/linux.yml": "fbc89b5edaa2bc76a17088727942d55767f1ce75f0e3552bb446cbf4ee8c03fe",
+    "crates/trames-vulkan/native/transform-feedback/assemble.metal": "0f54d24fd4aa9be2c4010ac48a33452be31552565e5ceceeb8909d6386825f1e",
+    "crates/trames-vulkan/native/transform-feedback/compiler.cpp": "30f41410d794fa58875e960da3e47df8b702cd8b13ca0f796e308bbadc7bcb47",
+    "crates/trames-vulkan/native/transform-feedback/compiler.hpp": "c9cfdb851c08cceb1a32127700e5f4a14faa6df9e0e57dc7884f3953fabccdfb",
+    "crates/trames-vulkan/native/transform-feedback/metal.hpp": "94cb187e59c2bbfeb65b9225906ac208a036310bdd44fb3cf10ed5be56a4e2ba",
+    "crates/trames-vulkan/native/transform-feedback/metal.mm": "66ada890a968765cf39d68ef8cba745767a018a9a36e83cba8472bb2e721d9b2",
+    "docs/validation/vulkan-native-tf.md": "8423baab0e9c27dbc7ac5367937a970cec347dfa594ee9d5fe22fbfb78dfbf18",
+    "scripts/build-vulkan-native-tf.py": "e747a949ab86ec07ffe22fee112aaebd9467469dd862de1fc2d092e1a035b228",
+    "scripts/ios-ci-scope.py": "08e3fe7bf49e59c5b6dccf2d326990ddb26447d15f8685c8604be57380621ecd",
+    "scripts/prepare-vulkan.py": "48c64864370f978c9f516b1f2eee5a334e077e499c6c1a9029550e14e001a5fa",
+    "tests/fixtures/vulkan-native-tf-compiler.cpp": "70994fa39b21db5e2b3ff27a424b5b892e4f6b3fcde63ea1df0ad1b8e48c5449",
+    "tests/fixtures/vulkan-native-tf-metal.mm": "ce8fbe6e59eff005cc7d71ff38506d33347650aa2187cf468d757f7231699358",
+    "tests/fixtures/vulkan-native-tf.vert": "3dbfa7a0fed12db478d9a9d30a72a0d6d4655763829aa2a6cfc3d8a023637124"
   }
 }

@@ -58,6 +58,83 @@ jobs:
           TRAMES_VALIDATION_WORKFLOW: linux.yml
           TRAMES_NEEDS_GUEST_ARTIFACTS: 'false'
         run: python3 scripts/ios-ci-scope.py
+  vulkan-tf-engine-linux:
+    needs: scope
+    if: needs.scope.outputs.native_scope == 'vulkan-tf-engine'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build unmodified original compiler and TF shader layouts
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes glslang-tools
+          set -o pipefail
+          python3 scripts/build-vulkan-native-tf.py | tee target-native-tf-linux.log
+          python3 -m py_compile scripts/build-vulkan-native-tf.py scripts/ios-ci-scope.py scripts/prepare-vulkan.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vulkan-native-tf-shaders
+          path: |
+            target/vulkan-native-tf/*.metal
+            target/vulkan-native-tf/*.json
+            target/vulkan-native-tf/*.spv
+            target-native-tf-linux.log
+          retention-days: 7
+  vulkan-tf-engine-apple:
+    needs: [scope, vulkan-tf-engine-linux]
+    if: needs.scope.outputs.native_scope == 'vulkan-tf-engine'
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: vulkan-native-tf-shaders
+          path: target/native-tf-input
+      - name: Verify exact original compiler and generated GPU shader inputs
+        run: |
+          python3 - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          root=Path('target/native-tf-input/target/vulkan-native-tf')
+          record=json.loads((root/'build.json').read_text())
+          pinned=json.loads(Path('scripts/vulkan-upstream.json').read_text())['archives']['moltenvk-dependency-SPIRV-Cross.tar.gz']['sha256']
+          assert record['upstream_sha256']==pinned
+          for path,expected in record['inputs'].items():
+              assert hashlib.sha256(Path(path).read_bytes()).hexdigest()==expected,path
+          for path,expected in record['shaders'].items():
+              assert hashlib.sha256((root/path).read_bytes()).hexdigest()==expected,path
+          print('Exact unmodified SPIRV-Cross/source/shader hashes verified; no guest capability advertised')
+          PY
+      - name: Execute native Metal TF data, counters, overflow and raster replay
+        run: |
+          mkdir -p target/native-tf-evidence
+          native=crates/trames-vulkan/native/transform-feedback
+          xcrun clang++ -std=c++14 -O2 -Wall -Wextra -Werror -fobjc-arc -I"$native" \
+            "$native/metal.mm" tests/fixtures/vulkan-native-tf-metal.mm \
+            -framework Metal -framework Foundation -o target/native-tf-evidence/metal-tf
+          set -o pipefail
+          target/native-tf-evidence/metal-tf target/native-tf-input/target/vulkan-native-tf "$native/assemble.metal" | tee target/native-tf-evidence/gpu.log
+      - name: Compile same native engine and generated shaders for arm64 iOS
+        run: |
+          native=crates/trames-vulkan/native/transform-feedback
+          xcrun --sdk iphoneos clang++ -target arm64-apple-ios15.0 -std=c++14 -O2 -Wall -Wextra -Werror -fobjc-arc \
+            -I"$native" -c "$native/metal.mm" -o target/native-tf-evidence/engine-ios.o
+          for shader in target/native-tf-input/target/vulkan-native-tf/*.metal; do
+            name=$(basename "$shader" .metal)
+            cat "$shader" "$native/assemble.metal" > "target/native-tf-evidence/$name.metal"
+            xcrun --sdk iphoneos metal -std=ios-metal2.3 -c "target/native-tf-evidence/$name.metal" -o "target/native-tf-evidence/$name.air"
+          done
+          xcodebuild -version > target/native-tf-evidence/toolchain.txt
+          xcrun --sdk iphoneos --show-sdk-version >> target/native-tf-evidence/toolchain.txt
+          shasum -a 256 target/native-tf-evidence/* > target/native-tf-evidence/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vulkan-native-tf-metal
+          path: target/native-tf-evidence/
+          retention-days: 7
   firefox-memory:
     needs: scope
     if: needs.scope.outputs.native_scope == 'firefox-memory' && needs.scope.outputs.firefox_memory_apple_retry != 'true'

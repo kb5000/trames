@@ -592,6 +592,34 @@ def main():
             changed=set(subprocess.check_output(['git','diff','--name-only',base,'HEAD'],text=True).splitlines())- {str(plan_path)}
             hashes=plan['changed_file_sha256']
             if changed==set(hashes) and all(Path(path).exists() and hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest for path,digest in hashes.items()):
+                if plan.get('native_scope') == 'vulkan-tf-engine':
+                    # This internal engine is deliberately not linked into the
+                    # existing Rust/MoltenVK adapter yet. Prove that every passed
+                    # guest/runtime/UI input is unchanged before reusing it.
+                    reuse = plan['runtime_reuse']
+                    allowed = {'.github/ios-validation-plan.json', '.github/workflows/linux.yml',
+                               '.github/workflows/ios.yml', 'scripts/ios-ci-scope.py', 'scripts/prepare-vulkan.py',
+                               'scripts/build-vulkan-native-tf.py', 'tests/fixtures/vulkan-native-tf-compiler.cpp',
+                               'tests/fixtures/vulkan-native-tf-metal.mm', 'tests/fixtures/vulkan-native-tf.vert'}
+                    delta = subprocess.check_output(['git', 'diff', '--name-only', reuse['sha'], 'HEAD'], text=True).splitlines()
+                    if any(p not in allowed and not p.startswith(('docs/', 'crates/trames-vulkan/native/transform-feedback/')) for p in delta):
+                        raise RuntimeError('Native TF engine reuse changed linked runtime/guest inputs')
+                    def tf_evidence(path):
+                        req = urllib.request.Request(f'https://api.github.com/repos/{repo}/actions/' + path, headers=dict(request.headers))
+                        with urllib.request.urlopen(req, timeout=30) as response:
+                            return json.load(response)
+                    prior = tf_evidence(f"runs/{reuse['run']}")
+                    jobs = tf_evidence(f"runs/{reuse['run']}/jobs")['jobs']
+                    if (prior['head_sha'] != reuse['sha'] or prior['head_repository']['full_name'] != repo
+                            or prior['path'] != '.github/workflows/linux.yml' or any(not any(
+                                j['name'] == name and j['conclusion'] == 'success' for j in jobs)
+                                for name in ('zink-foundation', 'zink-gles-apple'))):
+                        raise RuntimeError('Native TF engine requires passed exact-source Linux/Metal baseline')
+                    print('Run only new TF compiler/native Metal engine and iOS native compile; reuse unchanged passed runtime, guest, Vulkan/Mesa and UI. No IPA; no public TF capability claim.')
+                    with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+                        output.write('frontend_only=false\ntargeted=true\nnative_scope=vulkan-tf-engine\n')
+                        output.write('skip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
+                    return
                 if plan.get('native_scope') == 'firefox-memory':
                     apple_retry = firefox_memory_apple_retry(plan, repo, dict(request.headers))
                     readonly_followup = firefox_memory_readonly_followup(plan, repo, dict(request.headers))
