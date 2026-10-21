@@ -20,6 +20,7 @@ p.add_argument('--store',type=Path,required=True)
 p.add_argument('--ffi',type=Path,default=ROOT/'target/perf-runtime/release/libtrames_ffi.so')
 p.add_argument('--output',type=Path,required=True)
 p.add_argument('--timeout',type=float,default=150)
+p.add_argument('--layout-client',type=Path,help='also check only the four new attachment-layout GPU pixel cases')
 p.add_argument('--wayland-debug',action='store_true')
 p.add_argument('--native-wsi',action='store_true',help='test bundled original glamor with DRM-less EGL transport')
 p.add_argument('--metal-validator',type=Path,help='test-only zink-metal-pixels library, required on Apple GPU runs')
@@ -102,6 +103,21 @@ def gpu(window):
     finally:api.trames_wayland_frame_release(frame,1,int(time.monotonic()*1000)&0xffffffff)
 try:
     wait(lambda _:json.loads(read('status'))['phase']=='running',60)
+    if a.layout_client:
+        for name in ('vulkan-layouts', 'vulkan-render.vert.spv', 'vulkan-render.frag.spv'):
+            payload('transfer',dict(guest='/tmp/'+name,host=str((a.layout_client.parent/name).resolve()),export=False,replace=True))
+        modes=('general','general2','legacy-feedback','legacy-feedback2')
+        for mode in modes:
+            start=len(output)
+            send('chmod 755 /tmp/vulkan-layouts; /tmp/vulkan-layouts /tmp/vulkan-render.vert.spv /tmp/vulkan-render.frag.spv /tmp/layout.ppm '+mode+'; printf "\\nLAYOUT_EXIT:%d\\n" $?\n')
+            def finished(_):
+                new=output[start:]
+                assert not any(('\r\nLAYOUT_EXIT:'+str(n)+'\r\n').encode() in new for n in (1,127,134,139)),new[-4000:]
+                return b'\r\nLAYOUT_EXIT:0\r\n' in new
+            wait(finished,90)
+            assert ('vulkan-general-layout-ok: '+mode).encode() in output[start:]
+        report['layout_pixel_modes']=modes
+        report['layout_readback_pixels']=len(modes)*3*256*192
     debug='LIBGL_ALWAYS_SOFTWARE=true ' if os.environ.get('TRAMES_ZINK_CPU_REFERENCE')=='1' else ''
     debug+='TRAMES_VULKAN_TRACE=1 '
     if not a.native_wsi:debug+='TRAMES_XWAYLAND_NATIVE_WSI=0 '

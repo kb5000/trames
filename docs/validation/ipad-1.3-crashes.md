@@ -47,3 +47,17 @@ not a benchmark or physical iPad result. The new Apple gate checks the same moda
 lifecycle and nonblank exported Metal texture pixels. That gate is pending;
 it must establish whether the owner's additional native pipeline initialization
 failure is also resolved, rather than assuming all Mesa warnings have one cause.
+
+Four new native GPU pixel-readback modes also pass locally: GENERAL and the legacy
+Mesa feedback enum, each through legacy render passes and renderpass2. Each checks
+three 256x192 barycentric/scissor/alpha outputs (589,824 GPU-readback pixels across all modes; the independent oracle checks
+more than 90% of each image, excluding ambiguous triangle-edge pixels). These do not exercise simultaneous attachment sampling and
+writing; the original mousepad modal test covers that application path.
+
+The first cloud dialog run completed Vulkan31, strict Clippy and embedding builds,
+then stopped before rendering: apk automatically selected at-spi2-core/libxtst via
+install_if, beyond the generic repository downloader's dependency closure. The
+fixture now includes that dependency explicitly. The retry verifies source identity
+and the prior successful build step, reuses its passed Rust checks and saves host
+binaries before fixture installation. No production code changes are included in
+this fixture-only retry. The Apple run is still pending.

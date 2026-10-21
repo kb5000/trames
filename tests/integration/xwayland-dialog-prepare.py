@@ -29,7 +29,8 @@ repo = work / 'repository'
 packages = ('mousepad', 'xwayland', 'xkeyboard-config', 'xprop', 'font-dejavu',
             'mesa-dri-gallium', 'mesa-egl', 'mesa-gles', 'vulkan-loader', 'wayland-libs-egl')
 assert not repo.exists(), 'Use a fresh fixture directory'
-m6.repository(repo, (*packages, 'libx11-dev', 'libxrender-dev', 'musl-dev'))
+# apk install_if enables accessibility helpers after GTK is installed.
+m6.repository(repo, (*packages, 'at-spi2-core', 'libx11-dev', 'libxrender-dev', 'musl-dev'))
 sdk = work / 'sdk'
 sdk.mkdir()
 for package in sorted(repo.rglob('*.apk')):
@@ -56,6 +57,14 @@ original = ROOT / 'target/alpine-build/lib/libc.so'
 original.parent.mkdir(parents=True, exist_ok=True)
 shutil.copyfile(libc, original)
 subprocess.run(['bash', 'scripts/build-vulkan-guest.sh'], cwd=ROOT, check=True)
+binary = work / 'bin'
+binary.mkdir()
+headers = ROOT / 'target/vulkan-upstream/headers/Vulkan-Headers-cfebfc96b2b0bce93da7d12f2c14cc01793ae25c/include'
+subprocess.run([str(wrapper), '-O2', '-Wall', '-Wextra', '-Werror', '-I', str(headers),
+                str(ROOT / 'tests/fixtures/vulkan-render.c'), str(sdk / 'usr/lib/libvulkan.so.1'),
+                '-lm', '-o', str(binary / 'vulkan-layouts')], check=True)
+for name in ('vulkan-render.vert.spv', 'vulkan-render.frag.spv'):
+    shutil.copyfile(ROOT / 'target/vulkan-guest/acceptance' / name, binary / name)
 store = work / 'store'
 imports = [v for f in sorted(repo.rglob('*')) if f.is_file() for v in ('--file', '/tmp/dialog-repo/' + str(f.relative_to(repo)) + '=' + str(f))]
 command = [str(ROOT / 'target/release/trames-run'), '--storage', str(store), '--rootfs', str(rootfs),
@@ -72,9 +81,9 @@ shutil.copytree(ROOT / 'target/vulkan-guest', work / 'guest')
 shutil.copytree(ROOT / 'target/musl-hybrid', work / 'musl')
 manifest = dict(source=subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(), sha256={
     str(p.relative_to(work)): hashlib.sha256(p.read_bytes()).hexdigest()
-    for folder in ('store', 'guest', 'musl') for p in sorted((work / folder).rglob('*')) if p.is_file()})
+    for folder in ('store', 'guest', 'musl', 'bin') for p in sorted((work / folder).rglob('*')) if p.is_file()})
 (work / 'inputs.json').write_text(json.dumps(manifest, indent=2) + '\n')
 with tarfile.open(work / 'inputs.tar.gz', 'w:gz') as archive:
-    for name in ('store', 'guest', 'musl', 'inputs.json'):
+    for name in ('store', 'guest', 'musl', 'bin', 'inputs.json'):
         archive.add(work / name, arcname=name)
 print('Prepared exact original mousepad and native WSI inputs; runtime and sources remain paired.')
