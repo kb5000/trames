@@ -296,6 +296,7 @@ mod tests {
             streams: p.linux.vfs.stream_descriptors(),
             files: p.linux.vfs.file_descriptors(),
             fd_flags: p.linux.vfs.fd_flags_snapshot(),
+            futex_waiters: Default::default(),
         };
         let memory = p.memory.parallel_view(&mut Default::default()).unwrap();
         let control = Arc::new(Control::new(100));

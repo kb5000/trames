@@ -616,6 +616,7 @@ mod tests {
 
     fn syscall_snapshot() -> crate::worker_syscalls::Snapshot {
         crate::worker_syscalls::Snapshot {
+            futex_waiters: Default::default(),
             seccomp: Default::default(),
             identities: [21, 12, 1000, 1001, 2000, 2001, 22],
             started: Instant::now(),
@@ -821,6 +822,30 @@ mod tests {
         assert!(matches!(done.outcome, Some(SliceOutcome::Syscall { .. })));
     }
 
+    #[test]
+    fn private_futex_wakes_without_waiters_run_to_the_instruction_budget() {
+        let mut pool = Pool::new(1);
+        pool.ensure(0).unwrap();
+        let budget = 99;
+        let mut job = work(
+            22,
+            &[0xd4000001, 0xd2820000, 0x17fffffe],
+            0,
+            Arc::new(Control::new(budget)),
+        );
+        job.cpu.set_x(0, 0x1000);
+        job.cpu.set_x(1, 129);
+        job.cpu.set_x(2, 1);
+        job.cpu.set_x(8, 98);
+        job.syscalls = Some(syscall_snapshot());
+        pool.dispatch(0, job).unwrap();
+        let done = pool
+            .complete_timeout(Duration::from_secs(5))
+            .unwrap()
+            .unwrap();
+        assert_eq!((done.instructions, done.syscalls), (budget, 33));
+        assert!(matches!(done.outcome, Some(SliceOutcome::Yield { .. })));
+    }
     #[test]
     fn repeated_queries_run_without_a_coordinator_rendezvous() {
         let mut pool = Pool::new(1);

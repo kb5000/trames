@@ -3346,7 +3346,17 @@ impl Kernel {
                 };
                 let number = p.cpu.x(8) as u32;
                 let a = args(&p.cpu);
+                let return_pc = p.cpu.pc;
                 self.call(id, p, number, a, io);
+                // Pure queries have no scheduling/FD/mapping effects. Keep the
+                // serial quantum just as workers keep theirs, rather than scan
+                // every blocked task after each TimeStamp/getpid query. The
+                // normal time/instruction/return bounds still poll control and
+                // timers; a delivered/pending signal must return to the kernel.
+                immediate_return = matches!(number, 113 | 114 | 168 | 172..=178)
+                    && matches!(p.state, State::Ready)
+                    && p.cpu.pc == return_pc
+                    && p.pending_bits() & (!p.mask | UNBLOCKABLE) == 0;
             }
         }
         immediate_return
@@ -3412,6 +3422,23 @@ impl Kernel {
                 }
             }
         }
+    }
+    fn private_futex_waiters(&self) -> BTreeMap<u64, std::sync::Arc<BTreeMap<u64, u32>>> {
+        let mut waiters = BTreeMap::<u64, BTreeMap<u64, u32>>::new();
+        for p in self.processes.values() {
+            if let State::Futex {
+                key: (0, vm, address),
+                bits,
+                ..
+            } = p.state
+            {
+                *waiters.entry(vm).or_default().entry(address).or_default() |= bits;
+            }
+        }
+        waiters
+            .into_iter()
+            .map(|(vm, keys)| (vm, std::sync::Arc::new(keys)))
+            .collect()
     }
     fn parallel_round(
         &mut self,
@@ -3502,6 +3529,8 @@ impl Kernel {
                 .map_err(|_| RuntimeError::Arguments("cannot start CPU worker"))?;
         }
         let control = std::sync::Arc::new(crate::workers::Control::new(remaining));
+        let futex_waiters = self.private_futex_waiters();
+        let no_futex_waiters = std::sync::Arc::new(BTreeMap::new());
         let began = Instant::now();
         for (id, slot, view) in views {
             let p = self.processes.get_mut(&id).expect("ready process");
@@ -3536,6 +3565,10 @@ impl Kernel {
                                 streams: p.linux.vfs.stream_descriptors(),
                                 files: p.linux.vfs.file_descriptors(),
                                 fd_flags: p.linux.vfs.fd_flags_snapshot(),
+                                futex_waiters: futex_waiters
+                                    .get(&p.vm_id)
+                                    .unwrap_or(&no_futex_waiters)
+                                    .clone(),
                             }
                         }),
                     },
@@ -3800,7 +3833,7 @@ impl Kernel {
                         }
                         _ => {}
                     }
-                    // Immediate pure/callback returns keep the current quantum.
+                    // Immediate native returns and pure queries keep the quantum.
                     // No native borrow survives; blocking syscalls/faults still
                     // return to the scheduler. Bound work/time between control,
                     // signal and timer polls independently of guest retirement.
@@ -3810,7 +3843,7 @@ impl Kernel {
                         4096
                     };
                     let quantum_started = Instant::now();
-                    let mut native_returns = 0;
+                    let mut immediate_returns = 0;
                     while matches!(p.state, State::Ready) && quantum != 0 {
                         if self.instructions >= limit {
                             self.processes.insert(id, p);
@@ -3835,12 +3868,12 @@ impl Kernel {
                         self.context_switches += 1;
                         let immediate_return = self.finish_slice(id, &mut p, outcome, io, true);
                         if immediate_return {
-                            native_returns += 1;
+                            immediate_returns += 1;
                         }
                         progress = true;
                         quantum = quantum.saturating_sub(self.instructions - instructions_before);
                         if !immediate_return
-                            || native_returns >= 32
+                            || immediate_returns >= 32
                             || quantum_started.elapsed() >= Duration::from_millis(2)
                         {
                             break;
@@ -4782,6 +4815,72 @@ mod tests {
         k.processes.insert(1, p);
         k.processes.insert(2, peer);
         k
+    }
+    #[test]
+    fn pure_queries_keep_a_bounded_serial_quantum_with_blocked_peers() {
+        struct Polls(usize);
+        impl GuestOutput for Polls {
+            fn control(&mut self, _: &mut trames_vfs::Vfs) -> std::io::Result<bool> {
+                self.0 += 1;
+                Ok(true)
+            }
+            fn write(&mut self, _: OutputFd, bytes: &[u8]) -> std::io::Result<usize> {
+                Ok(bytes.len())
+            }
+        }
+        let mut p = process();
+        for (i, word) in [0xd4000001u32, 0x17ffffff].into_iter().enumerate() {
+            p.memory
+                .write_array(0x4000 + 4 * i as u64, word.to_le_bytes())
+                .unwrap();
+        }
+        p.memory
+            .protect(
+                0x4000,
+                trames_memory::PAGE_SIZE,
+                trames_memory::Permissions::RX,
+            )
+            .unwrap();
+        p.cpu = Cpu::new(0x4000, 0);
+        p.cpu.set_x(8, 172);
+        let mut peer = p.fork();
+        peer.state = State::Sleep(Instant::now() + Duration::from_secs(86400), 0);
+        let mut k = kernel();
+        k.processes.insert(1, p);
+        k.processes.insert(2, peer);
+        let mut io = Polls(0);
+        assert!(matches!(
+            k.drive(&mut io, 1000),
+            Err(RuntimeError::BudgetExceeded(1000))
+        ));
+        assert_eq!(k.instructions, 1000);
+        assert_eq!(k.processes[&1].cpu.x(0), 1);
+        assert_eq!(k.syscalls, 500);
+        assert!(
+            io.0 < 64,
+            "pure queries repeatedly rescanned blocked peers: {}",
+            io.0
+        );
+    }
+    #[test]
+    fn private_futex_snapshot_combines_masks_and_separates_address_spaces() {
+        let mut k = kernel();
+        for (id, vm, bits) in [(1, 7, 1), (2, 7, 2), (3, 8, 4)] {
+            let mut p = process();
+            p.state = State::Futex {
+                address: 0x1000,
+                key: (0, vm, 0x1000),
+                bits,
+                deadline: None,
+            };
+            k.processes.insert(id, p);
+        }
+        let before = k.private_futex_waiters();
+        assert_eq!(before[&7][&0x1000], 3);
+        assert_eq!(before[&8][&0x1000], 4);
+        k.processes.get_mut(&1).unwrap().state = State::Ready;
+        assert_eq!(k.private_futex_waiters()[&7][&0x1000], 2);
+        assert_eq!(before[&7][&0x1000], 3);
     }
     #[test]
     fn continuous_peers_cancel_at_control_checkpoints_and_commit_the_exact_budget() {

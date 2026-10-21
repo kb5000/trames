@@ -21,7 +21,8 @@ ROOT = Path(__file__).resolve().parents[2]
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('--store', type=Path, required=True)
 p.add_argument('--output', type=Path, required=True)
-p.add_argument('--stage', choices=['headless', 'wayland'], required=True)
+p.add_argument('--stage', choices=['headless', 'wayland', 'graphics'], required=True)
+p.add_argument('--backend', choices=['wayland', 'x11'], default='wayland', help='X11 windows use the native XWM and bundled Xwayland launcher')
 p.add_argument('--ffi', type=Path, default=ROOT/'target/perf-runtime/release/libtrames_ffi.so')
 p.add_argument('--musl', type=Path, default=ROOT/'target/musl-hybrid/libc.so')
 p.add_argument('--timeout', type=float, default=180)
@@ -38,9 +39,20 @@ p.add_argument('--wayland-debug', action='store_true')
 p.add_argument('--moz-log', help='diagnosis only: original Firefox MOZ_LOG modules, e.g. Process:5,nsDocShell:5,DocumentChannel:5')
 p.add_argument('--browser-log-interval', type=float, default=0, help='diagnosis only: export the latest browser log without executing guest ps/cat; 0 disables')
 p.add_argument('--pref', action='append', default=[], metavar='NAME=JSON', help='diagnosis only: write a Firefox preference in this fresh profile; repeatable')
+p.add_argument('--env', action='append', default=[], metavar='NAME=VALUE', help='diagnosis only: additional browser environment; repeatable')
 p.add_argument('--capture-shm', action='store_true', help='save software-composited PNG and require the offline canvas green rectangle; requires Pillow')
 p.add_argument('--sampler', type=Path, help='optional Linux host PC sampling; not an uninstrumented timing run')
 a = p.parse_args()
+environment = {}
+for item in a.env:
+    name, separator, value = item.partition('=')
+    if not separator or not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', name) or '\0' in value:
+        p.error('--env requires NAME=VALUE without NUL characters')
+    if name in {'MOZ_DISABLE_CONTENT_SANDBOX', 'MOZ_DISABLE_WAYLAND_PROXY',
+                'MOZ_AVOID_OPENGL_ALTOGETHER', 'MOZ_ENABLE_WAYLAND', 'GDK_BACKEND',
+                'XDG_RUNTIME_DIR', 'WAYLAND_DISPLAY', 'MOZ_LOG'}:
+        p.error('--env cannot override probe-controlled backend, sandbox or logging options')
+    environment[name] = value
 preferences = {}
 for preference in a.pref:
     name, separator, raw = preference.partition('=')
@@ -84,6 +96,13 @@ class Image(C.Structure):
         (n, C.c_int32) for n in ('x','y','scale')] + [('transform', C.c_uint32)]
 api.trames_wayland_frame_image.argtypes = [C.c_uint64, C.c_uint32, C.POINTER(Image)]
 
+def green_pixels(canvas):
+    channels = canvas.convert('RGB').split()
+    matches = [channel.point([255 if i == expected else 0 for i in range(256)])
+               for channel, expected in zip(channels, (22,163,74))]
+    green = ImageChops.multiply(ImageChops.multiply(matches[0],matches[1]),matches[2])
+    return green.histogram()[255]
+
 def capture(frame, info):
     """Read only retained SHM capabilities; native Metal handles are opaque."""
     if not (0 < info.width <= 4096 and 0 < info.height <= 4096): return None
@@ -104,11 +123,7 @@ def capture(frame, info):
             layer = layer.resize((max(1,image.width//image.scale), max(1,image.height//image.scale)))
         canvas.alpha_composite(layer, (image.x,image.y))
     canvas.save(a.output/'wayland.png')
-    channels = canvas.convert('RGB').split()
-    matches = [channel.point([255 if i == expected else 0 for i in range(256)])
-               for channel, expected in zip(channels, (22,163,74))]
-    green = ImageChops.multiply(ImageChops.multiply(matches[0],matches[1]),matches[2])
-    return green.histogram()[255]
+    return green_pixels(canvas)
 
 options = dict(store=str(a.store.resolve()), volume_total=16<<30, volume_available=16<<30,
     network='off', wayland=True, pure_accelerator=True, musl_libc=str(a.musl.resolve()),
@@ -116,7 +131,9 @@ options = dict(store=str(a.store.resolve()), volume_total=16<<30, volume_availab
     vulkan_accelerator=a.gpu)
 if a.gpu:
     options['vulkan_icd'] = str(ROOT/'target/vulkan-guest/libtrames_vulkan_icd.so')
-report = dict(stage=a.stage, sandbox='content-disabled-diagnostic' if a.disable_content_sandbox else 'default',
+if a.backend == 'x11':
+    options['xwayland_launcher'] = str(ROOT/'target/vulkan-guest/trames-xwayland')
+report = dict(stage=a.stage, backend=a.backend, sandbox='content-disabled-diagnostic' if a.disable_content_sandbox else 'default',
     wayland_proxy='disabled-diagnostic' if a.disable_wayland_proxy else 'default',
     avoid_opengl_diagnostic=a.avoid_opengl,
     host_cpus_requested=a.host_cpus,
@@ -126,6 +143,8 @@ report = dict(stage=a.stage, sandbox='content-disabled-diagnostic' if a.disable_
     moz_log_diagnostic=a.moz_log,
     browser_log_interval_diagnostic=a.browser_log_interval,
     preferences_diagnostic=preferences,
+    environment_diagnostic=environment,
+    cpu_vulkan_reference_diagnostic=a.gpu and os.environ.get('TRAMES_ZINK_CPU_REFERENCE') == '1',
     capture_shm=a.capture_shm,
     probe_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
     ffi_sha256=hashlib.sha256(a.ffi.read_bytes()).hexdigest(),
@@ -203,6 +222,14 @@ try:
         assert time.monotonic()-began < 90
         time.sleep(.01)
     for _ in range(25): pump(); time.sleep(.01)
+    if a.gpu:
+        # Firefox's normal APK dependencies omit dynamically loaded Gallium
+        # and the Vulkan loader. Do not mislabel that setup as a GPU test.
+        send("test -r /usr/local/lib/libEGL.so.1 && test -r /usr/lib/libvulkan.so.1 && test -r /usr/lib/libGLESv2.so.2 && ls /usr/lib/libgallium-*.so >/dev/null 2>&1; printf '\\nFIREFOX_GPU_INPUTS:%d\\n' $?\n")
+        assert wait(b'\r\nFIREFOX_GPU_INPUTS:', 20), 'GPU dependency check did not complete'
+        assert wait(b'\r\nFIREFOX_GPU_INPUTS:0\r\n', 2), 'Prepare original GPU dependencies with firefox-prepare.py --gpu'
+        report['gpu_inputs_verified'] = True
+        for _ in range(25): pump(); time.sleep(.01)
     html = a.output/'page.html'
     html.write_text('''<!doctype html><meta charset="utf-8"><title>TRAMES_FIREFOX_START</title>
 <body style="background:#eef2ff"><h1>Trames Firefox offline page</h1><canvas id="c" width="300" height="200"></canvas>
@@ -216,16 +243,30 @@ document.title='TRAMES_FIREFOX_JS_OK';document.body.dataset.test='javascript-and
     # candidate/run). Never silently reuse the previous browser profile.
     profile = '/root/firefox-probe-'+a.output.name+'-'+str(time.monotonic_ns())
     report['profile'] = profile
-    env = 'MOZ_ENABLE_WAYLAND=1 GDK_BACKEND=wayland XDG_RUNTIME_DIR=/run/user/0 WAYLAND_DISPLAY=wayland-0'
+    env = ('MOZ_ENABLE_WAYLAND=1 GDK_BACKEND=wayland' if a.backend == 'wayland' else 'MOZ_ENABLE_WAYLAND=0 GDK_BACKEND=x11 DISPLAY=:0')+' XDG_RUNTIME_DIR=/run/user/0 WAYLAND_DISPLAY=wayland-0'
     if a.disable_content_sandbox: env += ' MOZ_DISABLE_CONTENT_SANDBOX=1'
     if a.disable_wayland_proxy: env += ' MOZ_DISABLE_WAYLAND_PROXY=1'
     if a.avoid_opengl: env += ' MOZ_AVOID_OPENGL_ALTOGETHER=1'
     if a.wayland_debug: env += ' WAYLAND_DEBUG=1'
     if a.moz_log: env += ' MOZ_LOG='+shlex.quote('timestamp,'+a.moz_log)
+    if report['cpu_vulkan_reference_diagnostic']:
+        # The Linux reference is a real CPU Vulkan device. Original Zink
+        # excludes it unless explicitly opted in; never use this on GPU gates.
+        env += ' LIBGL_ALWAYS_SOFTWARE=true'
+    for name, value in environment.items(): env += ' '+name+'='+shlex.quote(value)
     command = 'firefox --no-remote --profile '+shlex.quote(profile)
     if a.stage == 'headless':
         command += ' --headless --window-size 640,480 --screenshot '+shlex.quote(guest_screenshot)
     command += ' '+shlex.quote('file://'+guest_page)
+    if a.stage == 'graphics': command = '/usr/lib/firefox/glxtest'+(' --wayland' if a.backend == 'wayland' else '')
+    if a.backend == 'x11':
+        ready = '/tmp/firefox-xwayland-ready-'+str(time.monotonic_ns())
+        send(env+' trames-xwayland :0 -displayfd 3 3>'+shlex.quote(ready)+' >/tmp/firefox-xwayland.log 2>&1 &\n')
+        for _ in range(25): pump(); time.sleep(.01)
+        send('while ! test -s '+shlex.quote(ready)+'; do sleep 0.05; done; printf "\\nFIREFOX_XWAYLAND_READY\\n"\n')
+        assert wait(b'\r\nFIREFOX_XWAYLAND_READY\r\n', 40), 'Xwayland did not signal display readiness'
+        report['xwayland_ready'] = True
+        for _ in range(25): pump(); time.sleep(.01)
     prepare = 'mkdir -p '+shlex.quote(profile)
     if preferences:
         user_js = '\n'.join('user_pref('+json.dumps(name)+', '+json.dumps(value)+');'
@@ -275,6 +316,12 @@ document.title='TRAMES_FIREFOX_JS_OK';document.body.dataset.test='javascript-and
                         report['frames'] += 1
                         report.setdefault('first_image_seconds',time.monotonic()-start)
                         report['last_frame'] = dict(width=info.width, height=info.height, images=info.images, revision=info.revision)
+                        kinds = set()
+                        for index in range(info.images):
+                            image = Image()
+                            assert api.trames_wayland_frame_image(frame, index, C.byref(image)) == 0
+                            kinds.add(image.kind)
+                        report['image_kinds'] = sorted(set(report.get('image_kinds', [])) | kinds)
                         if a.capture_shm and (time.monotonic()-start-captured_at >= 15
                                              or 'TRAMES_FIREFOX_JS_OK' in w.get('title','')):
                             green = capture(frame,info)
@@ -302,7 +349,19 @@ document.title='TRAMES_FIREFOX_JS_OK';document.body.dataset.test='javascript-and
         deadline = time.monotonic()+10
         while not screenshot.exists() and time.monotonic()<deadline: pump(); time.sleep(.01)
         report['screenshot_exported'] = screenshot.exists()
-    report['passed'] = (report['firefox_exit'] == 0 and report.get('screenshot_exported',False)) if a.stage=='headless' else bool(report['frames'] and report['js_title_seen'] and (not a.capture_shm or report.get('canvas_green_seen')))
+        if screenshot.exists() and a.capture_shm:
+            with PillowImage.open(screenshot) as image:
+                assert 0 < image.width <= 4096 and 0 < image.height <= 4096
+                report['canvas_green_pixels'] = green_pixels(image)
+                report['canvas_green_seen'] = report['canvas_green_pixels'] >= 45000
+    if a.stage == 'graphics':
+        log = bytes(output).split(b'\r\nFIREFOX_LOG_BEGIN\r\n')[-1].split(b'\r\nFIREFOX_DMESG_BEGIN\r\n')[0]
+        for key in ('RENDERER', 'VENDOR', 'VERSION'):
+            match = re.search(rb'(?:^|\r?\n)'+key.encode()+rb'\r?\n([^\r\n]+)', log)
+            if match: report['graphics_'+key.lower()] = match[1].decode(errors='replace')
+        report['passed'] = bool(report['firefox_exit'] == 0 and report.get('graphics_renderer') and not re.search(rb'(?:^|\r?\n)ERROR\r?\n', log))
+    else:
+        report['passed'] = (report['firefox_exit'] == 0 and report.get('screenshot_exported',False) and (not a.capture_shm or report.get('canvas_green_seen'))) if a.stage=='headless' else bool(report['frames'] and report['js_title_seen'] and (not a.capture_shm or report.get('canvas_green_seen')))
 finally:
     report['seconds'] = time.monotonic()-began
     (a.output/'guest.log').write_bytes(output)

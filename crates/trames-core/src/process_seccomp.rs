@@ -352,6 +352,32 @@ impl Kernel {
 mod tests {
     use super::*;
     #[test]
+    fn private_futex_fast_return_requires_an_allow_decision() {
+        let mut snapshot = crate::worker_syscalls::Snapshot {
+            seccomp: Default::default(),
+            identities: [0; 7],
+            started: Instant::now(),
+            processor: 0,
+            profile: false,
+            streams: [0; (MAX_FDS as usize).div_ceil(64)],
+            files: [0; (MAX_FDS as usize).div_ceil(64)],
+            fd_flags: Default::default(),
+            futex_waiters: Default::default(),
+        };
+        let mut cpu = Cpu::new(0x4004, 0);
+        cpu.set_x(8, 98);
+        put_args(&mut cpu, [0x1000, 129, 1, 0, 0, 0]);
+        for decision in [ALLOW, 0x50007, 0x30009, 0, KILL_PROCESS] {
+            snapshot.seccomp = Seccomp::default();
+            snapshot.seccomp.push(Arc::new(
+                Filter::validate(vec![i(6, 0, 0, decision)]).unwrap(),
+            ));
+            assert_eq!(snapshot.admit(&cpu), decision == ALLOW);
+        }
+        snapshot.seccomp.strict = true;
+        assert!(!snapshot.admit(&cpu));
+    }
+    #[test]
     fn allowed_filtered_identity_calls_continue_on_workers_without_peer_checkpoints() {
         let mut p = super::super::tests::process();
         for (index, word) in [0xd2801588u32, 0xd4000001, 0x17ffffff]

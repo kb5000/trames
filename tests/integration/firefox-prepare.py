@@ -13,6 +13,8 @@ import json
 from pathlib import Path
 import shlex
 import subprocess
+import shutil
+import tempfile
 import time
 import urllib.request
 
@@ -27,6 +29,8 @@ def main():
     parser.add_argument('--runner', type=Path, default=ROOT/'target/release/trames-run')
     parser.add_argument('--musl', type=Path, default=ROOT/'target/musl-hybrid/libc.so')
     parser.add_argument('--repository-only', action='store_true')
+    parser.add_argument('--gpu', action='store_true', help='also install original Gallium/Zink, GLES and Vulkan loader dependencies')
+    parser.add_argument('--xwayland', action='store_true', help='also prepare the original X server runtime dependencies and XKB data')
     args = parser.parse_args()
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=True)
@@ -38,12 +42,21 @@ def main():
     spec.loader.exec_module(m6)
     m6.CACHE.mkdir(parents=True, exist_ok=True)
     repo = out/'repository'
+    gpu_packages = ('mesa-dri-gallium', 'mesa-egl', 'mesa-gles', 'vulkan-loader') if args.gpu else ()
+    extra_packages = (*gpu_packages, *(('xwayland', 'xkeyboard-config') if args.xwayland else ()))
     if not repo.exists():
         # GTK installs at-spi2-core conditionally; m6's dependency collector does
         # not evaluate install_if. Include it explicitly so stock apk can do so.
-        m6.repository(repo, ('firefox', 'font-dejavu', 'at-spi2-core'))
+        m6.repository(repo, ('firefox', 'font-dejavu', 'at-spi2-core', *extra_packages))
+    elif extra_packages and any(not list(repo.rglob(package+'-[0-9]*.apk')) for package in extra_packages):
+        # A cached Firefox-only repository is valid for software rendering but
+        # does not necessarily include the runtime-loaded Zink dependencies.
+        with tempfile.TemporaryDirectory(prefix='firefox-gpu-', dir=out) as temporary:
+            extra = Path(temporary)/'repository'
+            m6.repository(extra, extra_packages)
+            shutil.copytree(extra, repo, dirs_exist_ok=True)
     files = sorted(p for p in repo.rglob('*') if p.is_file())
-    for package in ('firefox', 'font-dejavu', 'at-spi2-core', 'libxtst'):
+    for package in ('firefox', 'font-dejavu', 'at-spi2-core', 'libxtst', *extra_packages):
         assert any(p.name.startswith(package+'-') and p.suffix == '.apk' for p in files), package
     rootfs = m6.CACHE/ROOTFS_NAME
     if not rootfs.exists():
@@ -52,6 +65,8 @@ def main():
             rootfs.write_bytes(response.read())
     assert hashlib.sha256(rootfs.read_bytes()).hexdigest() == ROOTFS_SHA
     inputs = dict(architecture='aarch64-linux-musl', rootfs=ROOTFS_NAME,
+                  gpu_dependencies=args.gpu,
+                  xwayland_dependencies=args.xwayland,
                   rootfs_sha256=ROOTFS_SHA,
                   firefox=[p.name for p in files if p.name.startswith('firefox-')],
                   files={p.relative_to(repo).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest() for p in files})
@@ -71,7 +86,7 @@ def main():
     directories = sorted((p for p in repo.rglob('*') if p.is_dir()), key=lambda p: len(p.parts), reverse=True)
     cleanup += 'rmdir '+' '.join(shlex.quote('/tmp/firefox-repo/'+p.relative_to(repo).as_posix()) for p in directories)+' /tmp/firefox-repo; '
     script = "printf '/tmp/firefox-repo/main\\n/tmp/firefox-repo/community\\n' >/tmp/firefox.repositories; "
-    script += 'apk --no-network --repositories-file /tmp/firefox.repositories --no-progress add firefox font-dejavu; r=$?; '
+    script += 'apk --no-network --repositories-file /tmp/firefox.repositories --no-progress add firefox font-dejavu'+''.join(' '+package for package in extra_packages)+'; r=$?; '
     script += cleanup+'if [ "$r" = 0 ]; then firefox --version; else exit "$r"; fi'
     cmd += ['--guest', '/bin/sh', '-c', script]
     began = time.monotonic()

@@ -1,5 +1,9 @@
 # Firefox 默认刷新率与过滤后系统调用的四核开销
 
+后续：[默认 headless 页面与原版 EGL 探测](firefox-resume.md)补齐串行查询与空
+futex 唤醒的快速路径，默认偏好的 headless HTML/JS/canvas 截图已通过；交互窗口
+仍待排查，并区分 GPU 输入依赖、glxtest 与 WebRender 验收。
+
 2026-10-21，继续[文件变更域优化](firefox-backing-domains.md)之后的默认配置调查。
 本轮修复两条通用路径，没有修改 Firefox ELF、默认偏好或内容沙箱。
 

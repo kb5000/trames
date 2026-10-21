@@ -2,7 +2,11 @@
 //! Syscalls whose authority is immutable during one parallel CPU epoch.
 //! No VFS/Process Rc crosses the boundary. Only seccomp-allowed calls execute;
 //! filter installation, tracing and mutable authority changes still checkpoint.
-use std::time::{Instant, SystemTime, UNIX_EPOCH};
+use std::{
+    collections::BTreeMap,
+    sync::Arc,
+    time::{Instant, SystemTime, UNIX_EPOCH},
+};
 use trames_cpu::Cpu;
 use trames_memory::{Access, CpuMemory};
 use trames_vfs::Errno;
@@ -17,6 +21,9 @@ pub(super) struct Snapshot {
     pub streams: trames_vfs::FdMask,
     pub files: trames_vfs::FdMask,
     pub fd_flags: trames_vfs::FdFlags,
+    /// Private-key waiter masks at this joined dispatch boundary. An epoch
+    /// cannot install/requeue a waiter: those effects still stop every worker.
+    pub futex_waiters: Arc<BTreeMap<u64, u32>>,
 }
 
 /// These calls can request the coordinator without stopping peer CPUs. The
@@ -79,6 +86,24 @@ pub(super) fn clock(
 }
 
 impl Snapshot {
+    fn empty_futex_wake(&self, cpu: &Cpu) -> bool {
+        if cpu.x(8) as u32 != 98 || !matches!(cpu.x(1), 129 | 138) {
+            return false;
+        }
+        let bits = if cpu.x(1) == 138 {
+            cpu.x(5) as u32
+        } else {
+            u32::MAX
+        };
+        cpu.x(2) == 0
+            || self
+                .futex_waiters
+                .get(&(cpu.x(0) & 0x00ff_ffff_ffff_ffff))
+                .copied()
+                .unwrap_or(0)
+                & bits
+                == 0
+    }
     pub fn admit(&self, cpu: &Cpu) -> bool {
         if self.seccomp.mode() == 0 {
             return true;
@@ -88,6 +113,7 @@ impl Snapshot {
         // futex/epoll checkpoint. Ordinary unfiltered calls keep the old path.
         if !matches!(cpu.x(8) as u32, 25 | 113 | 114 | 168 | 172..=178)
             && !service_candidate(cpu, self)
+            && !self.empty_futex_wake(cpu)
         {
             return false;
         }
@@ -96,6 +122,20 @@ impl Snapshot {
     }
     pub fn invoke(&self, cpu: &Cpu, memory: &mut impl CpuMemory) -> Option<u64> {
         let result = match cpu.x(8) as u32 {
+            98 if self.empty_futex_wake(cpu) => (|| {
+                // Match the joined futex ABI checks, including failures. No
+                // guest bytes, wait queues or peer CPU state are modified.
+                if cpu.x(0) & 3 != 0 {
+                    return Err(Errno(22));
+                }
+                memory
+                    .check(cpu.x(0), 4, Access::Read)
+                    .map_err(|_| Errno(14))?;
+                if cpu.x(2) > i32::MAX as u64 || cpu.x(1) == 138 && cpu.x(5) as u32 == 0 {
+                    return Err(Errno(22));
+                }
+                Ok(0)
+            })(),
             25 if matches!(cpu.x(1), 1 | 3) => self
                 .fd_flags
                 .get(cpu.x(0) as u32)
@@ -137,6 +177,64 @@ mod tests {
     use super::*;
     use trames_memory::{Memory, Permissions, PAGE_SIZE};
     #[test]
+    fn empty_private_wakes_preserve_waiters_bitsets_and_validation() {
+        let mut memory = Memory::default();
+        memory.map(0x1000, PAGE_SIZE, Permissions::RW).unwrap();
+        memory.write_array(0x1000, 17u32.to_le_bytes()).unwrap();
+        let snapshot = Snapshot {
+            seccomp: Default::default(),
+            identities: [0; 7],
+            started: Instant::now(),
+            processor: 0,
+            profile: false,
+            streams: Default::default(),
+            files: Default::default(),
+            fd_flags: Default::default(),
+            futex_waiters: Arc::new(BTreeMap::from([(0x1000, 2)])),
+        };
+        let mut view = memory.parallel_view(&mut Default::default()).unwrap();
+        let mut cpu = Cpu::new(0x4004, 0);
+        cpu.set_x(8, 98);
+        cpu.set_x(0, 0x1004);
+        cpu.set_x(1, 129);
+        cpu.set_x(2, 1);
+        assert_eq!(snapshot.invoke(&cpu, &mut view), Some(0));
+        cpu.set_x(0, 0x1000);
+        assert_eq!(snapshot.invoke(&cpu, &mut view), None);
+        cpu.set_x(1, 138);
+        cpu.set_x(5, 4);
+        assert_eq!(snapshot.invoke(&cpu, &mut view), Some(0));
+        cpu.set_x(5, 2);
+        assert_eq!(snapshot.invoke(&cpu, &mut view), None);
+        cpu.set_x(2, 0);
+        assert_eq!(snapshot.invoke(&cpu, &mut view), Some(0));
+        cpu.set_x(5, 0);
+        assert_eq!(
+            snapshot.invoke(&cpu, &mut view),
+            Some(0u64.wrapping_sub(22))
+        );
+        cpu.set_x(1, 129);
+        cpu.set_x(0, 0x1005);
+        assert_eq!(
+            snapshot.invoke(&cpu, &mut view),
+            Some(0u64.wrapping_sub(22))
+        );
+        cpu.set_x(0, 0x2000);
+        assert_eq!(
+            snapshot.invoke(&cpu, &mut view),
+            Some(0u64.wrapping_sub(14))
+        );
+        cpu.set_x(0, 0x1004);
+        cpu.set_x(2, 1 << 31);
+        assert_eq!(
+            snapshot.invoke(&cpu, &mut view),
+            Some(0u64.wrapping_sub(22))
+        );
+        cpu.set_x(1, 1); // Shared-key wake must use the actual backing key.
+        assert_eq!(snapshot.invoke(&cpu, &mut view), None);
+        assert_eq!(view.read_array::<4>(0x1000).unwrap(), 17u32.to_le_bytes());
+    }
+    #[test]
     fn coarse_clocks_share_the_epoch_of_their_high_resolution_counterparts() {
         let mut memory = Memory::default();
         memory.map(0x1000, PAGE_SIZE, Permissions::RW).unwrap();
@@ -149,6 +247,7 @@ mod tests {
             streams: [0; (trames_vfs::MAX_FDS as usize).div_ceil(64)],
             files: [0; (trames_vfs::MAX_FDS as usize).div_ceil(64)],
             fd_flags: Default::default(),
+            futex_waiters: Default::default(),
         };
         let mut view = memory.parallel_view(&mut Default::default()).unwrap();
         let mut cpu = Cpu::new(0, 0);
@@ -194,6 +293,7 @@ mod tests {
             streams: vfs.stream_descriptors(),
             files: vfs.file_descriptors(),
             fd_flags: vfs.fd_flags_snapshot(),
+            futex_waiters: Default::default(),
         };
         let mut memory = Memory::default();
         let mut cpu = Cpu::new(0, 0);
@@ -232,6 +332,7 @@ mod tests {
             streams: [0; (trames_vfs::MAX_FDS as usize).div_ceil(64)],
             files: [0; (trames_vfs::MAX_FDS as usize).div_ceil(64)],
             fd_flags: Default::default(),
+            futex_waiters: Default::default(),
         };
         let mut view = memory.parallel_view(&mut Default::default()).unwrap();
         let mut cpu = Cpu::new(0, 0);
