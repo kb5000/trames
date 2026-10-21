@@ -23,6 +23,34 @@ attachment 有意义，颜色/深度输出引用忽略它，并非缺少另一�
 下一步追踪 EGL swap、queue present、合成器帧交接及刷新任务，不能把标题或
 独立 Mesa 用例通过记成 Firefox/WebRender 已可用。
 
+## 首次原生呈现与回调提交
+
+同日继续追踪原版 Firefox 的呈现调用，确认 `wr_renderer_render` 已成功返回，
+`RenderCompositorEGL::EndFrame` 和 EGL damage swap 也实际执行。缺口位于 ICD：
+Mesa 为局部更新附加 `VkPresentRegionsKHR`，旧的通用 `pNext` 检查在 NativeCall
+之前拒绝了它。不能根据宿主未收到 op 91 就断言浏览器没有调用 present。
+
+现支持 `VK_KHR_incremental_present`。更新矩形是允许忽略的优化提示，当前原生
+WSI 仍呈现完整的 retained image；只在 guest 侧解析链和结构，不把矩形指针送进
+宿主，也不加入像素复制。重复/未知链、计数不匹配和非空计数的空数组继续拒绝。
+原版 Firefox 在同一 Linux CPU Vulkan 参考中首次实际提交 present，前端取得
+kind=2 的原生 GPU 图像。该组观察 300 秒仍没有目标页面 JS 标题，不能把它算作
+完整页面或 canvas 像素通过。后续原生像素及默认刷新率交互仍在排查。
+
+另修正两处通用 Wayland 回调行为：父场景的 presentation 不再完成没有图像的
+子树及已 dismissed 表面的回调；`wl_surface.frame` 加空 commit 只请求定时回调，
+不再发布相同图像的新场景。已经显示内容的回调继续由现有 60 Hz pacer 定时完成，
+不依赖 UI 重绘；未显示的内容继续等待真实 presentation。明确记录 `damage` /
+`damage_buffer`，确保原 buffer 原地更新仍发布新内容，同步子表面的缓存合并保留
+damage。没有修改 Firefox 偏好、guest 时钟或 CPU 调度策略来隐藏回调问题。
+
+新增标准 wire peer 回归先在旧实现在父帧完成时收到全部五个回调，预期只有两个；
+修复后还检查空子树首次映射、无重绘的延迟回调及无新 attach 的 damage 提交。
+Wayland 13 项及严格 Clippy 通过。原版 Mesa 客户端新增 damage-swap 模式，每次
+提交两个更新区域；`--damage-only` 仅跑这一项双窗口、调整大小、关闭和旧纹理
+保活验收，复用未变的 descriptor/sample/clear/TF 用例，Apple 仍要求导出纹理的
+逐像素 oracle。原始 Firefox 诊断及临时采集代码不提交，尚不构建 IPA。
+
 ## 已修复的通用路径
 
 - 代理后的 Wayland FD 不再被错误地当作直连 channel。内部

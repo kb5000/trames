@@ -18,6 +18,7 @@ p.add_argument('--store', type=Path, help='installed signed Mesa plus wayland-li
 p.add_argument('--in-place-store', action='store_true', help='use a disposable supplied store directly; no concurrent sessions')
 p.add_argument('--relay', action='store_true', help='forward Wayland bytes/SCM_RIGHTS through a guest socket pair, like Firefox')
 p.add_argument('--clear-only', action='store_true', help='only new in-pass attachment clear pixels; reuse passed relayed window and sampling checks')
+p.add_argument('--damage-only', action='store_true', help='one relayed EGL damage-swap lifecycle; reuse passed descriptor, sampling, copy and second-launch checks')
 p.add_argument('--snapshot-store', type=Path, help='save original installed inputs before session mutations')
 p.add_argument('--metal-validator', type=Path, help='native test-only exported-MTLTexture pixel oracle')
 p.add_argument('--egl-library', type=Path, help='Mesa EGL platform adapter; Gallium/Zink and loader remain original')
@@ -26,6 +27,7 @@ p.add_argument('--ffi', type=Path, default=ROOT / 'target/release' / ('libtrames
 a = p.parse_args()
 a.output.mkdir(parents=True, exist_ok=False)
 if a.in_place_store and not a.store: p.error('--in-place-store requires --store')
+if a.damage_only and a.clear_only: p.error('--damage-only and --clear-only are separate checks')
 store = a.store if a.in_place_store else a.output / 'store'
 if a.store and not a.in_place_store:
     shutil.copytree(a.store, store)
@@ -82,8 +84,9 @@ report = dict(source='original signed Mesa25.1.9 EGL/GLES2 and libwayland; produ
               icd_sha256=hashlib.sha256((ROOT / 'target/vulkan-guest/libtrames_vulkan_icd.so').read_bytes()).hexdigest(),
               input_store_manifest_sha256=input_manifest,
               rounds=[], passed=False, physical_ipad=False)
-report['wayland_relay'] = a.relay
+report['wayland_relay'] = a.relay or a.damage_only
 report['attachment_clear_only'] = a.clear_only
+report['damage_swap_only'] = a.damage_only
 bundled_egl = ROOT / 'target/vulkan-guest/libEGL.so.1'
 if bundled_egl.is_file():
     report['source'] = 'Mesa25.1.9 EGL native-WSI platform adapter; original signed Gallium/Zink/GLES2, libwayland and Vulkan loader; production FFI'
@@ -140,7 +143,7 @@ try:
         raise SystemExit(0)
     for name in ('zink-wayland', 'vulkan-copy'):
         payload('transfer', dict(guest='/tmp/' + name, host=str(ROOT / 'target/zink-inputs' / name), export=False, replace=True))
-    if a.relay:
+    if a.relay and not a.damage_only:
         payload('transfer', dict(guest='/tmp/vulkan-resources', host=str(ROOT/'target/zink-inputs/vulkan-resources'), export=False, replace=True))
         shader = ROOT/'target/zink-native-bundle/shaders/vulkan-resources.spv'
         if not shader.is_file(): shader = ROOT/'tests/fixtures/bin/vulkan-resources.spv'
@@ -174,23 +177,24 @@ try:
     if a.egl_library:
         payload('transfer', dict(guest='/usr/local/lib/libEGL.so.1', host=str(a.egl_library.resolve()), export=False, replace=True))
         report['egl_adapter_sha256'] = hashlib.sha256(a.egl_library.read_bytes()).hexdigest()
-    send('chmod +x /tmp/zink-wayland /tmp/vulkan-copy; VK_DRIVER_FILES=/usr/share/vulkan/icd.d/trames.json /tmp/vulkan-copy; printf "\\nZINK_COPY_RESULT:%d\\n" $?\n')
-    start = time.monotonic()
-    while '\r\nZINK_COPY_RESULT:0\r\n' not in text:
-        text += read('output').decode(errors='replace')
-        assert not any('\r\nZINK_COPY_RESULT:' + str(n) + '\r\n' in text for n in (1, 127, 134, 139)), text[-12000:]
-        assert time.monotonic() - start < 60, text[-12000:]
-        time.sleep(.003)
-    assert 'vulkan-copy-ok: 64 GPU pixels' in text
-    report['native_image_copy_gpu_pixels'] = 64
-    for round_no in range(2):
+    if not a.damage_only:
+        send('chmod +x /tmp/zink-wayland /tmp/vulkan-copy; VK_DRIVER_FILES=/usr/share/vulkan/icd.d/trames.json /tmp/vulkan-copy; printf "\\nZINK_COPY_RESULT:%d\\n" $?\n')
+        start = time.monotonic()
+        while '\r\nZINK_COPY_RESULT:0\r\n' not in text:
+            text += read('output').decode(errors='replace')
+            assert not any('\r\nZINK_COPY_RESULT:' + str(n) + '\r\n' in text for n in (1, 127, 134, 139)), text[-12000:]
+            assert time.monotonic() - start < 60, text[-12000:]
+            time.sleep(.003)
+        assert 'vulkan-copy-ok: 64 GPU pixels' in text
+        report['native_image_copy_gpu_pixels'] = 64
+    for round_no in range(1 if a.damage_only else 2):
         base = len(text)
         # Mesa25.1.9's GL-thread ancillary-discard internal dispatch is tagged
         # ES3 in upstream gl_API.xml. Its ES2-only context reports INVALID_OPERATION
         # after SwapBuffers. This upstream option uses direct GL dispatch; Zink
         # and Vulkan/Metal rendering, threads and presentation remain original.
         environment = 'EGL_PLATFORM=wayland'
-        if a.relay: environment += ' TRAMES_TEST_WAYLAND_RELAY=1'
+        if a.relay or a.damage_only: environment += ' TRAMES_TEST_WAYLAND_RELAY=1'
         if not bundled_egl.is_file():
             environment += ' GALLIUM_DRIVER=zink MESA_LOADER_DRIVER_OVERRIDE=zink mesa_glthread=false VK_DRIVER_FILES=/usr/share/vulkan/icd.d/trames.json'
         if a.egl_library:
@@ -199,7 +203,8 @@ try:
             environment += ' LIBGL_ALWAYS_SOFTWARE=true'
         if os.environ.get('TRAMES_VULKAN_TRACE'):
             environment += ' TRAMES_VULKAN_TRACE=1 WAYLAND_DEBUG=1 MESA_DEBUG=context'
-        send('chmod +x /tmp/zink-wayland; ' + environment + ' /tmp/zink-wayland; printf "\\nZINK_WINDOW_RESULT:%d\\n" $?\n')
+        args = ' 10000 damage' if a.damage_only else ''
+        send('chmod +x /tmp/zink-wayland; ' + environment + ' /tmp/zink-wayland'+args+'; printf "\\nZINK_WINDOW_RESULT:%d\\n" $?\n')
         start = time.monotonic()
         phase = 0
         ids = []
@@ -262,6 +267,7 @@ try:
             time.sleep(.003)
         assert phase == 4 and frames >= 5
         assert 'zink-wayland-ok:' in text[base:]
+        if a.damage_only: assert 'zink-wayland-damage: two present-region hints per swap' in text[base:]
         for frame, width, height, blue in held:
             info = Info()
             assert api.trames_wayland_frame_info(frame, C.byref(info)) == 0
@@ -275,7 +281,7 @@ try:
         report['rounds'].append(dict(frame_acquisitions=frames, unique_scene_revisions=len(revisions), sizes=sorted(seen), metal_texture_sizes_verified=sorted(metal_verified), resize=True, close=True, retained_old_frame=True))
     assert not json.loads(read('wayland_status'))['windows']
     report['passed'] = True
-    print('zink-wayland-integration-ok: two windows, two launches, native GPU frames, resize, close and retained old frame', flush=True)
+    print('zink-wayland-integration-ok: two windows, '+('damage swaps, one launch' if a.damage_only else 'two launches')+', native GPU frames, resize, close and retained old frame', flush=True)
 finally:
     for frame, _, _, _ in held:
         release(frame, False)

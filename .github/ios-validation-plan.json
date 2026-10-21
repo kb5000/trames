@@ -1,14 +1,21 @@
 {
-  "base_sha": "9c1044c1e7676dc23516c4fc547f0fcb26c34cdb",
+  "base_sha": "53e580b03f23a23ad2d6e50be16af26efbc73a39",
   "native_scope": "zink-wayland",
-  "zink_attachment_clear_reuse": {
-    "run": 39611594760,
-    "sha": "10bdafa8fd963387825b8de53aabf9803fa09be1"
+  "zink_present_damage_reuse": {
+    "run": 39615564225,
+    "sha": "9c1044c1e7676dc23516c4fc547f0fcb26c34cdb"
   },
-  "reason": "Evidence/probe follow-up only: production Rust and guest ICD remain source-identical to 9c1044c. Final Linux and Apple Metal attachment-clear/imageless/depth/ignored-aspect jobs and iOS FFI passed. Public ZIP SHA/CRC and same guest ICD/source-bound inputs verified. Explicit Firefox native-image gate remains failed despite JS; raw diagnostics stay local. Reuse passed unchanged checks, no IPA or repeated suites.",
+  "reason": "Firefox first-present fix: accept incremental-present optimization hints and full-image presentation. Wayland excludes unmapped subtrees from presentation callbacks, retains explicit damage, and paces callback-only commits without republishing unchanged images. Check changed Wayland and new relayed Mesa damage-swap native texture pixels/resize/close; reuse source-identical Vulkan/TF/CPU/Linux modules. Firefox raw diagnostics stay local. No IPA until browser acceptance.",
   "changed_file_sha256": {
-    "docs/validation/firefox-gles3.md": "1ef789727dd8dd88a08c47006e5f4281dab1dc6b128d58b0fa666db9c05ff6c0",
-    "scripts/ios-ci-scope.py": "f7648d9839468309018e86f67066396f9a9f8eb70c4cbe56e2c07737f6a95690",
-    "tests/integration/firefox.py": "7b0aa05ae3a6e0810e52892484ec06a833d0d4981cb1be9a6cb3178dd4536d2c"
+    ".github/workflows/linux.yml": "51bea9199955a826bfd30bd9fc3d441fbf03562ab912990c4111f4aaf7a8798c",
+    "accelerator/vulkan/icd.c": "a58874991fcd98e1ccc8d31e908990cdec21c49e3ff2718dd9ad719d599ee41d",
+    "accelerator/vulkan/wsi.inc": "112874115f133d5ec0bba432812dfddf2d82972e03d6bbc04a7be7a8e232c95f",
+    "crates/trames-wayland/src/lib.rs": "3fad984670a7251f3df5bcc4013f576ee0ae8f7113bf984b21b8d0bd9a0f63d3",
+    "crates/trames-wayland/src/protocol.rs": "ac55e1e7ef3e3f709f17402416541e3451013a3fdd7f1372d836e864c556a0a5",
+    "crates/trames-wayland/src/scene.rs": "80f2499b769e45e1ce50794c8a5785393913e4d0bc0231a041968fb8ef1b7ce3",
+    "docs/validation/firefox-gles3.md": "7f37d4a98334bc1f14b760aee7a2d1491d4eeb1b984b21090d520f043f06af05",
+    "scripts/ios-ci-scope.py": "cfbddfe98c45c98e458937b38e26e574a3fc26a9b9c1304f0bdfe236da496fe7",
+    "tests/fixtures/zink-wayland.c": "bb63ffbb250533d8721099760257997ca1d6d767fcb89f5f1cf8da495d1e4dad",
+    "tests/integration/zink-wayland.py": "f68d3f80493924dbd864634ff9ef28dc27b75430a8045d9364d27d3b2eeec0a2"
   }
 }

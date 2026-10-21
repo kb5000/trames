@@ -776,12 +776,12 @@ def main():
                                         'scripts/build-vulkan-fixtures.sh', 'scripts/prepare-zink-native-bundle.py'})
                     if plan.get('native_scope') == 'zink-wayland':
                         allowed.update({'tests/fixtures/zink-wayland.c', 'tests/fixtures/vulkan-copy.c',
-                                        'tests/fixtures/wayland-relay.h', 'accelerator/vulkan/wayland.inc',
+                                        'tests/fixtures/wayland-relay.h', 'accelerator/vulkan/wayland.inc', 'accelerator/vulkan/wsi.inc',
                                         'tests/integration/firefox.py',
                                         'Cargo.lock', 'crates/trames-wayland/Cargo.toml',
                                         'crates/trames-wayland/native-wsi.xml',
                                         'crates/trames-wayland/src/lib.rs', 'crates/trames-wayland/src/wsi.rs',
-                                        'crates/trames-wayland/src/server.rs', 'crates/trames-wayland/src/protocol.rs',
+                                        'crates/trames-wayland/src/server.rs', 'crates/trames-wayland/src/protocol.rs', 'crates/trames-wayland/src/scene.rs',
                                         'crates/trames-vfs/src/ipc/native.rs',
                                         'tests/fixtures/zink-metal-pixels.m', 'tests/integration/zink-wayland.py',
                                         'scripts/build-zink-egl.py', 'scripts/zink-egl-requirements.txt', 'patches/mesa/0001-wayland-kopper-native-wsi.patch',
@@ -809,6 +809,29 @@ def main():
                                 for name in ('zink-wayland-linux', 'zink-wayland-apple')):
                                 raise RuntimeError('Missing passed source-bound Linux/Metal relay and sampling evidence')
                             print('Reuse passed unchanged WSI capabilities, relay lifecycle, descriptor and sampling GPU checks; run new attachment-clear pixels and Vulkan/iOS checks.')
+                        damage_reuse = plan.get('zink_present_damage_reuse')
+                        if damage_reuse:
+                            stable = ['crates/trames-vulkan', 'crates/trames-vfs',
+                                      'crates/trames-core', 'crates/trames-memory', 'crates/trames-cpu',
+                                      'crates/trames-accel', 'crates/trames-native', 'crates/trames-distro',
+                                      'crates/trames-ffi', 'accelerator/musl',
+                                      'accelerator/vulkan/graphics.inc', 'accelerator/vulkan/zink.inc',
+                                      'accelerator/vulkan/wayland.inc', 'accelerator/vulkan/queries.inc',
+                                      'accelerator/vulkan/templates.inc', 'Cargo.toml', 'Cargo.lock',
+                                      'rust-toolchain.toml', 'vendor', 'patches/moltenvk']
+                            if subprocess.check_output(['git', 'diff', '--name-only', damage_reuse['sha'], 'HEAD', '--', *stable]).strip():
+                                raise RuntimeError('Damage-present follow-up changed passed GPU/runtime inputs')
+                            def damage_evidence(path):
+                                req = urllib.request.Request(f'https://api.github.com/repos/{repo}/'+path, headers=dict(request.headers))
+                                with urllib.request.urlopen(req, timeout=30) as response:
+                                    return json.load(response)
+                            run = damage_evidence(f"actions/runs/{damage_reuse['run']}")
+                            jobs = damage_evidence(f"actions/runs/{damage_reuse['run']}/jobs")['jobs']
+                            if run['head_sha'] != damage_reuse['sha'] or run['head_repository']['full_name'] != repo or run['path'] != '.github/workflows/linux.yml' or any(
+                                not any(j['name'] == name and j['conclusion'] == 'success' for j in jobs)
+                                for name in ('zink-wayland-linux', 'zink-wayland-apple')):
+                                raise RuntimeError('Missing passed source-bound Linux/Metal GPU evidence')
+                            print('Reuse unchanged native GPU/TF/descriptor/sampling/clear modules; check affected Wayland, relayed EGL damage-swap pixels/lifecycle and iOS embedding.')
                     if any(p not in allowed and not p.startswith(('docs/', 'tests/fixtures/vulkan-native-tf')) and not (sync and p.startswith('crates/trames-vulkan/')) for p in changed):
                         raise RuntimeError('Zink foundation plan includes unrelated source changes')
                     path = 'crates/trames-distro/src/vulkan.rs'

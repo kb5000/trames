@@ -20,6 +20,7 @@ static struct xdg_wm_base *shell;
 static EGLDisplay egl;
 static EGLContext context;
 static EGLConfig config;
+static PFNEGLSWAPBUFFERSWITHDAMAGEKHRPROC swap_damage;
 static GLuint program, vbo;
 struct window {
     struct wl_surface *surface;
@@ -83,7 +84,10 @@ static void draw(struct window *w) {
         }
         free(pixels);
     }
-    check(eglSwapBuffers(egl,w->egl),"eglSwapBuffers");w->frames++;
+    if(swap_damage){
+        const EGLint rectangles[]={0,0,w->width,w->height/2,0,w->height/2,w->width,w->height-w->height/2};
+        check(swap_damage(egl,w->egl,rectangles,2),"eglSwapBuffersWithDamageKHR");
+    }else check(eglSwapBuffers(egl,w->egl),"eglSwapBuffers");w->frames++;
     if(changed){printf("zink-wayland-frame id=%d size=%dx%d pixels=correct\n",w->id,w->width,w->height);fflush(stdout);w->drawn_width=w->width;w->drawn_height=w->height;}
 }
 static void destroy(struct window *w) {
@@ -98,6 +102,11 @@ int main(int argc,char **argv) {
     struct wl_registry *registry=wl_display_get_registry(display);wl_registry_add_listener(registry,&registry_listener,NULL);
     check(wl_display_roundtrip(display)>=0 && compositor && shell,"Wayland globals");
     egl=eglGetDisplay((EGLNativeDisplayType)display);EGLint major,minor;check(eglInitialize(egl,&major,&minor),"Wayland eglInitialize");
+    if(argc>2 && !strcmp(argv[2],"damage")){
+        swap_damage=(PFNEGLSWAPBUFFERSWITHDAMAGEKHRPROC)eglGetProcAddress("eglSwapBuffersWithDamageKHR");
+        check(swap_damage!=NULL,"damage swap entrypoint");
+        puts("zink-wayland-damage: two present-region hints per swap");fflush(stdout);
+    }
     PFNEGLQUERYDISPLAYATTRIBEXTPROC query_display=(PFNEGLQUERYDISPLAYATTRIBEXTPROC)eglGetProcAddress("eglQueryDisplayAttribEXT");
     PFNEGLQUERYDEVICESTRINGEXTPROC query_device=(PFNEGLQUERYDEVICESTRINGEXTPROC)eglGetProcAddress("eglQueryDeviceStringEXT");
     PFNEGLQUERYDEVICESEXTPROC query_devices=(PFNEGLQUERYDEVICESEXTPROC)eglGetProcAddress("eglQueryDevicesEXT");

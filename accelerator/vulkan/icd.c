@@ -63,6 +63,7 @@ static VkResult display_extensions(const char *layer,uint32_t *count,VkExtension
     const char *names[20];uint32_t n=0;
     if(device){
         if(fixed || wayland)names[n++]=VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+        if(fixed || wayland)names[n++]=VK_KHR_INCREMENTAL_PRESENT_EXTENSION_NAME;
         names[n++]=VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME;
         names[n++]=VK_KHR_DESCRIPTOR_UPDATE_TEMPLATE_EXTENSION_NAME;
         if(caps&1)names[n++]=VK_KHR_MAINTENANCE_1_EXTENSION_NAME;
@@ -108,6 +109,7 @@ static int extensions(uint32_t count,const char *const *names,int device) {
         else if(device && !strcmp(names[i],VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME))bit=16384;
         else if(device && !strcmp(names[i],VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME))bit=32768;
         else if(device && !strcmp(names[i],VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME))bit=65536;
+        else if(device && !strcmp(names[i],VK_KHR_INCREMENTAL_PRESENT_EXTENSION_NAME))bit=131072;
         // Original loaders may append an already enabled promoted extension.
         if(!bit)return -1;bits|=bit;
     }

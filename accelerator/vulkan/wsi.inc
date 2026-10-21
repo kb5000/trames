@@ -52,7 +52,18 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAcquireNextImageKHR(VkDevice d,VkSwapchainKHR c
     }
 }
 VKAPI_ATTR VkResult VKAPI_CALL vkQueuePresentKHR(VkQueue q,const VkPresentInfoKHR *info) {
-    CHECK(info,VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);if(info->swapchainCount!=1 || info->waitSemaphoreCount>64)return VK_ERROR_FEATURE_NOT_PRESENT;
+    if(!info || info->sType!=VK_STRUCTURE_TYPE_PRESENT_INFO_KHR || info->swapchainCount!=1 || info->waitSemaphoreCount>64)return VK_ERROR_FEATURE_NOT_PRESENT;
+    const VkBaseInStructure *next=info->pNext;unsigned chain=0;int regions_seen=0;
+    for(;next && chain<16;next=next->pNext,chain++) {
+        if(next->sType!=VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR || regions_seen++)return VK_ERROR_FEATURE_NOT_PRESENT;
+        const VkPresentRegionsKHR *regions=(const void *)next;
+        if(regions->swapchainCount!=info->swapchainCount || !regions->pRegions)return VK_ERROR_FEATURE_NOT_PRESENT;
+        if(regions->pRegions[0].rectangleCount && !regions->pRegions[0].pRectangles)return VK_ERROR_FEATURE_NOT_PRESENT;
+        // VK_KHR_incremental_present rectangles are optimization hints. Both
+        // native WSI routes present the complete retained image, as permitted
+        // by the extension. No guest rectangle pointer crosses NativeCall.
+    }
+    if(next)return VK_ERROR_FEATURE_NOT_PRESENT;
     VkResult r;
     do {r=CALL(91,DEVKEY(q),KEY(q),(uint64_t)info->pSwapchains[0],info->pImageIndices[0],PTR(info->pWaitSemaphores),info->waitSemaphoreCount);
         if(r==VK_NOT_READY){struct timespec pause={0,1000000};nanosleep(&pause,NULL);}

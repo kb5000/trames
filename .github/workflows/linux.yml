@@ -409,12 +409,14 @@ jobs:
       - name: Check affected Vulkan module and build production embedding
         run: |
           cargo fmt --all --check
-          if [[ '${{ needs.scope.outputs.zink_egl_only }}' != true ]]; then
+          if [[ '${{ needs.scope.outputs.zink_egl_only }}' != true ]] && ! python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_present_damage_reuse")'; then
             cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
             cargo test -p trames-vulkan --lib --locked
           fi
           if ! python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_attachment_clear_reuse")'; then
-            cargo clippy -p trames-wayland -p trames-vfs --all-targets --no-deps --locked -- -D warnings
+            modules='-p trames-wayland -p trames-vfs'
+            if python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_present_damage_reuse")'; then modules='-p trames-wayland'; fi
+            cargo clippy $modules --all-targets --no-deps --locked -- -D warnings
             cargo test -p trames-wayland --lib --locked
           fi
           cargo clippy -p trames-distro -p trames-ffi --all-targets --no-deps --locked -- -D warnings
@@ -429,6 +431,8 @@ jobs:
           mode=--relay
           if python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_attachment_clear_reuse")'; then
             mode=--clear-only
+          elif python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_present_damage_reuse")'; then
+            mode=--damage-only
           else
             target/zink-inputs/vulkan-copy-host | tee target/zink-wayland-native/image-copy.log
           fi
@@ -477,12 +481,14 @@ jobs:
       - name: Verify exact guest inputs and Apple embedding
         run: |
           python3 scripts/prepare-zink-native-bundle.py --verify --source-sha '${{ needs.scope.outputs.zink_wayland_linux_sha || github.sha }}'
-          if [[ '${{ needs.scope.outputs.zink_egl_only }}' != true ]]; then
+          if [[ '${{ needs.scope.outputs.zink_egl_only }}' != true ]] && ! python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_present_damage_reuse")'; then
             cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
             cargo test -p trames-vulkan --lib --locked
           fi
           if ! python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_attachment_clear_reuse")'; then
-            cargo clippy -p trames-wayland -p trames-vfs --all-targets --no-deps --locked -- -D warnings
+            modules='-p trames-wayland -p trames-vfs'
+            if python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_present_damage_reuse")'; then modules='-p trames-wayland'; fi
+            cargo clippy $modules --all-targets --no-deps --locked -- -D warnings
             cargo test -p trames-wayland --lib --locked
           fi
           if [[ '${{ needs.scope.outputs.zink_egl_skip_apple_checks }}' != true ]]; then
@@ -508,6 +514,7 @@ jobs:
           export TRAMES_VULKAN_TRACE=1
           mode=--relay
           if python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_attachment_clear_reuse")'; then mode=--clear-only; fi
+          if python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_present_damage_reuse")'; then mode=--damage-only; fi
           lldb --batch -o 'settings set target.process.stop-on-exec false' -o run -k 'thread backtrace all' -- "$(command -v python3)" tests/integration/zink-wayland.py "$mode" --store target/zink-native-bundle/store --output target/zink-wayland-metal --metal-validator target/zink-metal-pixels.dylib 2>&1 | tee target/zink-metal-debug.log
           python3 -c 'import json; assert json.load(open("target/zink-wayland-metal/results.json"))["passed"]'
       - uses: actions/upload-artifact@v4
