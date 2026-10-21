@@ -121,7 +121,7 @@ def main():
             save(n, archive.read(n))
         # Corresponding build source, without historical diagnostic datasets.
         paths = ['Cargo.toml', 'Cargo.lock', 'LICENSE', 'README.md', 'AGENTS.md', 'rust-toolchain.toml',
-                 'crates', 'accelerator', 'include', 'vendor', 'patches', '.cargo', 'scripts', 'apps/ios',
+                 'crates', 'accelerator', 'vendor', 'patches', '.cargo', 'scripts', 'apps/ios',
                  'tests', '.github']
         save('Trames-1.3.0-build35-source.tar.gz', subprocess.check_output([
             'git', 'archive', '--format=tar.gz', '--prefix=Trames-1.3.0-build35/', head, '--', *paths]))
