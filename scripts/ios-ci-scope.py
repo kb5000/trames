@@ -788,7 +788,7 @@ def main():
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=firefox-runtime\nskip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
                     return
                 if plan.get('native_scope') == 'xwayland-dialog':
-                    allowed = {'scripts/build-moltenvk.py', 'patches/moltenvk/0005-native-transparent-black-border.patch', 'tests/fixtures/vulkan-texture.c', 'accelerator/vulkan/graphics.inc', 'crates/trames-vulkan/src/backend/graphics.rs', 'tests/fixtures/zink-metal-pixels.m', 'tests/fixtures/vulkan-render.c',
+                    allowed = {'patches/moltenvk/0006-pack-compatible-raster-varying-components.patch', 'tests/fixtures/vulkan-components-packed.vert', 'tests/fixtures/vulkan-components-packed.frag', 'tests/fixtures/vulkan-components-split.vert', 'tests/fixtures/vulkan-components-split.frag', 'scripts/build-moltenvk.py', 'patches/moltenvk/0005-native-transparent-black-border.patch', 'tests/fixtures/vulkan-texture.c', 'accelerator/vulkan/graphics.inc', 'crates/trames-vulkan/src/backend/graphics.rs', 'tests/fixtures/zink-metal-pixels.m', 'tests/fixtures/vulkan-render.c',
                                'tests/integration/xwayland-dialog.py', 'tests/integration/xwayland-dialog-prepare.py',
                                '.github/workflows/xwayland-dialog.yml', '.github/workflows/ios.yml',
                                '.github/workflows/linux.yml', 'scripts/ios-ci-scope.py'}

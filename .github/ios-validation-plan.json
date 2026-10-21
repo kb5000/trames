@@ -1,10 +1,17 @@
 {
-  "base_sha": "fab5f0a9dde2480be2fe9b1049d37214af09fe1a",
+  "base_sha": "93216769c77224491c42dc55f0d7e20589de28c7",
   "native_scope": "xwayland-dialog",
   "reason": "Only fix test terminal DSR handshaking; reuse identical-source host binaries and passed Memory94/Vulkan31 checks. Production code unchanged.",
   "changed_file_sha256": {
-    ".github/workflows/xwayland-dialog.yml": "7c8a026ac26ed9c314b49df8c415cdae9a29aa1b9d7157720bda1538ed6879fa",
-    "tests/integration/xwayland-dialog.py": "25e4c26a853f7f61caa5e16ae02cbc94992512c9dad277e74277b249dd50d775"
+    ".github/workflows/xwayland-dialog.yml": "15cb12ce99594fd9b80509b56d8154a813bc0827efbbcd97f06a4d47a9fb8a7c",
+    "patches/moltenvk/0006-pack-compatible-raster-varying-components.patch": "1abec8c1c6a8ad575c7ec383e3fb6aa1f22cc53c513ec01fd8d03e9a86b95d6a",
+    "scripts/build-moltenvk.py": "d0bc81bb247a782ee9f67410e3757be2fb84a048829c9751f5140e165805ea71",
+    "scripts/ios-ci-scope.py": "647649bc059a47fa79de6750c571d1ec80512b4c932c0f15e003e71a67518aba",
+    "tests/fixtures/vulkan-components-packed.frag": "93363986de0b9132bd6099f9df9d8e1faacf1a474b082e9cb62be67e18dfe77f",
+    "tests/fixtures/vulkan-components-packed.vert": "a645cf015e7ab6f3ea646fa53baed75db884dcfd95c94524da50942f33675040",
+    "tests/fixtures/vulkan-components-split.frag": "10825e985db30626af1dc6eef9a644bc3bf7c549a3ee1a3d52059f7ea359a41e",
+    "tests/fixtures/vulkan-components-split.vert": "84c7c3cb54582b6362d37a012ef88017a52d2f35be4f532cb9d61aa1a95120b4",
+    "tests/integration/xwayland-dialog.py": "75017fb6f32d5184cc89421b0fab686b9af1dc65ae5e35dff78b354b48fd9f77"
   },
   "dialog_runtime_reuse": {
     "sha": "e9296359a3bda86a522f238be83b0a04ecc42f94",

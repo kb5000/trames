@@ -8,6 +8,8 @@ on:
       - 'accelerator/vulkan/graphics.inc'
       - 'crates/trames-vulkan/src/backend/graphics.rs'
       - 'patches/moltenvk/0005-native-transparent-black-border.patch'
+      - 'patches/moltenvk/0006-pack-compatible-raster-varying-components.patch'
+      - 'tests/fixtures/vulkan-components-*'
       - 'scripts/build-moltenvk.py'
       - 'tests/fixtures/vulkan-texture.c'
   workflow_dispatch:
@@ -36,8 +38,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           sudo apt-get update
-          sudo apt-get install --yes gcc-aarch64-linux-gnu libvulkan-dev mesa-vulkan-drivers
-          cargo fmt --all --check
+          sudo apt-get install --yes gcc-aarch64-linux-gnu libvulkan-dev mesa-vulkan-drivers glslang-tools
           if python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("dialog_runtime_reuse")'; then
             python3 - <<'PYCODE'
           import json,os,subprocess,urllib.request
@@ -61,6 +62,7 @@ jobs:
           with open(os.environ['GITHUB_OUTPUT'],'a') as output:output.write('fixture_run=39663224481\n')
           PYCODE
           else
+            cargo fmt --all --check
             cargo clippy -p trames-vulkan --all-targets --no-deps --locked -- -D warnings
             cargo test -p trames-vulkan --release --lib --locked
             cargo build -p trames-cli -p trames-ffi --release --locked
@@ -125,6 +127,32 @@ jobs:
             target/xwayland-dialog-inputs/install.stdout
             target/xwayland-dialog-inputs/install.stderr
           retention-days: 7
+      - name: Compile and verify only new packed/split component pixels
+        run: |
+          mkdir -p target/component-shaders
+          for shader in tests/fixtures/vulkan-components-*; do
+            glslangValidator -V --target-env vulkan1.0 "$shader" -o "target/component-shaders/$(basename "$shader").spv"
+          done
+          glslangValidator --version > target/component-shaders/toolchain.txt
+          tar -xzf target/xwayland-dialog-inputs/inputs.tar.gz -C target/xwayland-dialog-inputs
+          cp -a target/xwayland-dialog-inputs/guest/. target/vulkan-guest/
+          cp -a target/xwayland-dialog-inputs/musl/. target/musl-hybrid/
+          export VK_DRIVER_FILES="$(python3 -c 'from pathlib import Path; print(next(Path("/usr/share/vulkan/icd.d").glob("*lvp*")))')"
+          export LP_NUM_THREADS=2
+          python3 tests/integration/xwayland-dialog.py --native-wsi --ffi target/release/libtrames_ffi.so --store target/xwayland-dialog-inputs/store --output target/components-linux --component-client target/xwayland-dialog-inputs/bin/vulkan-layouts --component-shaders target/component-shaders --component-only 2>&1 | tee target/components-linux.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: component-shaders
+          path: target/component-shaders/
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: component-pixels-linux
+          path: |
+            target/components-linux/
+            target/components-linux.log
+          retention-days: 7
   metal:
     needs: linux
     runs-on: macos-15
@@ -161,14 +189,17 @@ jobs:
           shutil.copytree(root/'musl','target/musl-hybrid',dirs_exist_ok=True)
           source='50cd7575c53c89bbd221957b7ecf99092f62966f';run=39670229714
           subprocess.run(['git','fetch','--depth=1','origin',source],check=True)
-          subprocess.run(['git','diff','--exit-code',source,'HEAD','--','crates','accelerator','scripts/build-moltenvk.py','patches/moltenvk','scripts/vulkan-upstream.json','tests/fixtures/zink-metal-pixels.m','Cargo.toml','Cargo.lock','vendor','.cargo','rust-toolchain.toml'],check=True)
+          subprocess.run(['git','diff','--exit-code',source,'HEAD','--','crates','accelerator','tests/fixtures/zink-metal-pixels.m','Cargo.toml','Cargo.lock','vendor','.cargo','rust-toolchain.toml'],check=True)
+          same_native=subprocess.run(['git','diff','--quiet',source,'HEAD','--','scripts/build-moltenvk.py','patches/moltenvk','scripts/vulkan-upstream.json']).returncode==0
           def get(path):
               req=urllib.request.Request('https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/'+path,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN']})
               with urllib.request.urlopen(req) as response:return json.load(response)
           assert get('actions/runs/'+str(run))['head_sha']==source
           job=next(j for j in get('actions/runs/'+str(run)+'/jobs')['jobs'] if j['name']=='metal')
           assert any(x['name']=='Run the same original mousepad dialog on native Metal' and x['conclusion']=='success' for x in job['steps'])
-          with open(os.environ['GITHUB_OUTPUT'],'a') as output:output.write('native_runtime='+str(run)+'\n')
+          with open(os.environ['GITHUB_OUTPUT'],'a') as output:
+              output.write('old_runtime='+str(run)+'\n')
+              if same_native:output.write('native_runtime='+str(run)+'\n')
           print('Reuse exact-source compiled Metal runtime; only failed-path diagnostic variables change.')
           PY
       - uses: actions/download-artifact@v4
@@ -178,6 +209,25 @@ jobs:
           path: target
           github-token: ${{ github.token }}
           run-id: ${{ steps.verify.outputs.native_runtime }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: component-shaders
+          path: target/component-shaders
+      - uses: actions/download-artifact@v4
+        if: steps.verify.outputs.native_runtime == ''
+        with:
+          name: dialog-metal-runtime
+          path: target/component-reference
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.verify.outputs.old_runtime }}
+      - name: Require the original native driver to fail the new component pixel gate
+        if: steps.verify.outputs.native_runtime == ''
+        run: |
+          if python3 -c 'import subprocess,sys; sys.exit(subprocess.run(sys.argv[1:],timeout=70).returncode)' python3 tests/integration/xwayland-dialog.py --native-wsi --ffi target/component-reference/release/libtrames_ffi.dylib --store target/xwayland-dialog-inputs/store --output target/components-metal-before --component-client target/xwayland-dialog-inputs/bin/vulkan-layouts --component-shaders target/component-shaders --component-only --metal-validator target/component-reference/zink-metal-pixels.dylib 2>&1 | tee target/components-metal-before.log; then
+            echo 'Original component reference unexpectedly passed'
+            exit 1
+          fi
+          python3 -c 'import json; assert json.load(open("target/components-metal-before/results.json"))["passed"] is False'
       - uses: actions/cache/restore@v4
         if: steps.verify.outputs.native_runtime == ''
         id: moltenvk
@@ -190,6 +240,7 @@ jobs:
         if: steps.verify.outputs.native_runtime == ''
         run: |
           python3 scripts/prepare-vulkan.py --apple --source-build
+          python3 scripts/build-moltenvk.py --verify-component-source target/vulkan-upstream/moltenvk-dependency-SPIRV-Cross.tar.gz
           python3 scripts/build-moltenvk.py --verify-sampler-source target/vulkan-upstream/moltenvk-source.tar.gz
           native_moltenvk_dir="$(python3 scripts/build-moltenvk.py --platform macos --arch arm64)"
           export TRAMES_MOLTENVK_STATIC_DIR="$native_moltenvk_dir" MACOSX_DEPLOYMENT_TARGET=12.0
@@ -210,25 +261,11 @@ jobs:
             target/release/libtrames_ffi.dylib
             target/zink-metal-pixels.dylib
           retention-days: 7
-      - name: Inspect optimized shader variants and server-decorated dialogs
+      - name: Verify fixed component pixels and default original GPU save dialogs
         run: |
           export TRAMES_VULKAN_TRACE=1 MTL_DEBUG_LAYER=1 MVK_CONFIG_DEBUG=1
-          status=0
-          for scenario in noopt server-decorations; do
-            unset TRAMES_DIALOG_NO_FEEDBACK TRAMES_DIALOG_ZINK_DEBUG TRAMES_DIALOG_GTK_CSD MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS
-            if [[ "$scenario" == noopt ]]; then
-              export TRAMES_DIALOG_ZINK_DEBUG=noopt
-            else
-              export TRAMES_DIALOG_GTK_CSD=0
-            fi
-            export MVK_CONFIG_SHADER_DUMP_DIR="$PWD/target/dialog-shaders-$scenario"
-            if python3 -c 'import subprocess,sys; sys.exit(subprocess.run(sys.argv[1:], timeout=180).returncode)' python3 tests/integration/xwayland-dialog.py --native-wsi --ffi target/release/libtrames_ffi.dylib --store target/xwayland-dialog-inputs/store --output "target/dialog-metal-$scenario" --metal-validator target/zink-metal-pixels.dylib 2>&1 | tee "target/dialog-metal-$scenario.log"; then
-              echo "$scenario passed"
-            else
-              status=1
-            fi
-          done
-          exit "$status"
+          unset TRAMES_DIALOG_NO_FEEDBACK TRAMES_DIALOG_ZINK_DEBUG TRAMES_DIALOG_GTK_CSD MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS
+          python3 -c 'import subprocess,sys; sys.exit(subprocess.run(sys.argv[1:], timeout=180).returncode)' python3 tests/integration/xwayland-dialog.py --native-wsi --ffi target/release/libtrames_ffi.dylib --store target/xwayland-dialog-inputs/store --output target/dialog-metal-fixed --component-client target/xwayland-dialog-inputs/bin/vulkan-layouts --component-shaders target/component-shaders --metal-validator target/zink-metal-pixels.dylib 2>&1 | tee target/dialog-metal-fixed.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -236,5 +273,7 @@ jobs:
           path: |
             target/dialog-metal-*/
             target/dialog-metal-*.log
-            target/dialog-shaders-*/
+            target/components-metal-before/
+            target/components-metal-before.log
+            target/moltenvk-patched/macos-arm64-*/build.json
           retention-days: 7

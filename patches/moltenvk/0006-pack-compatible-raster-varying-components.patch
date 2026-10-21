@@ -1,0 +1,68 @@
+SPDX-License-Identifier: GPL-3.0-or-later
+Subject: [PATCH] Reuse native location packing for compatible vertex/fragment varyings
+
+Vulkan matches per component: vec4 output may feed two vec2 fragment
+inputs at Component 0/2, and the reverse is legal too. Separate MSL user
+attributes leave locn0_2 unmatched. Reuse original packing and swizzle
+code for compatible 32-bit raster varyings. Preserve transform feedback,
+arrays, matrices, mixed base types and interpolation handling.
+
+--- a/External/SPIRV-Cross/spirv_msl.cpp
++++ b/External/SPIRV-Cross/spirv_msl.cpp
+@@ -4209,7 +4209,14 @@
+ 	// Varying interfaces between stages which use "user()" attribute can be dealt with
+ 	// without explicit packing and unpacking of components. For any variables which link against the runtime
+ 	// in some way (vertex attributes, fragment output, etc), we'll need to deal with it somehow.
+-	bool pack_components =
++	// Vulkan links varyings per component, even when one stage emits a
++	// single vector and the next stage consumes several Component variables.
++	// Metal user attributes must instead share one matching vector. Reuse
++	// the existing location packing/swizzle path for compatible raster IO.
++	bool pack_varyings = !capture_output_to_buffer && !get_execution_mode_bitset().get(ExecutionModeXfb) &&
++	    ((storage == StorageClassInput && get_execution_model() == ExecutionModelFragment) ||
++	     (storage == StorageClassOutput && get_execution_model() == ExecutionModelVertex));
++	bool pack_components = pack_varyings ||
+ 	    (storage == StorageClassInput && get_execution_model() == ExecutionModelVertex) ||
+ 	    (storage == StorageClassOutput && get_execution_model() == ExecutionModelFragment) ||
+ 	    (storage == StorageClassOutput && get_execution_model() == ExecutionModelVertex && capture_output_to_buffer);
+@@ -4320,7 +4327,7 @@
+ 				{
+ 					if (is_tessellation_shader())
+ 						SPIRV_CROSS_THROW("Component decoration is not supported in tessellation shaders.");
+-					else if (pack_components)
++					else if (pack_components && (!pack_varyings || (type.array.empty() && type.columns == 1 && type.width == 32)))
+ 					{
+ 						uint32_t array_size = 1;
+ 						if (!type.array.empty())
+@@ -4359,6 +4366,31 @@
+ 			}
+ 		}
+ 	});
++
++
++	if (pack_varyings)
++	{
++		for (auto *var : vars)
++		{
++			uint32_t loc = get_decoration(var->self, DecorationLocation);
++			auto itr = meta.location_meta.find(loc);
++			if (is_builtin_variable(*var) || !has_decoration(var->self, DecorationLocation) || itr == meta.location_meta.end())
++				continue;
++			auto &type = get<SPIRType>(var->basetype);
++			auto &lm = itr->second;
++			auto &base = get<SPIRType>(lm.base_type_id);
++			// Preserve the original independent attributes for arrays, matrices,
++			// mixed scalar types or interpolation qualifiers.
++			if (!type.array.empty() || type.columns != 1 || type.width != 32 || type.basetype != base.basetype ||
++			    lm.flat != has_decoration(var->self, DecorationFlat) ||
++			    lm.noperspective != has_decoration(var->self, DecorationNoPerspective) ||
++			    lm.centroid != has_decoration(var->self, DecorationCentroid) ||
++			    lm.sample != has_decoration(var->self, DecorationSample))
++				meta.location_meta.erase(itr);
++			else
++				lm.num_components = max<uint32_t>(lm.num_components, get_decoration(var->self, DecorationComponent) + type.vecsize);
++		}
++	}
+ 
+ 	// If no variables qualify, leave.
+ 	// For patch input in a tessellation evaluation shader, the per-vertex stage inputs

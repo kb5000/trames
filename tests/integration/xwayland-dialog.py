@@ -22,10 +22,14 @@ p.add_argument('--ffi',type=Path,default=ROOT/'target/perf-runtime/release/libtr
 p.add_argument('--output',type=Path,required=True)
 p.add_argument('--timeout',type=float,default=150)
 p.add_argument('--layout-client',type=Path,help='also check only the four new attachment-layout GPU pixel cases')
+p.add_argument('--component-client',type=Path,help='original render client for packed/split varying pixel checks')
+p.add_argument('--component-shaders',type=Path,help='compiled packed/split shader pairs')
+p.add_argument('--component-only',action='store_true')
 p.add_argument('--wayland-debug',action='store_true')
 p.add_argument('--native-wsi',action='store_true',help='test bundled original glamor with DRM-less EGL transport')
 p.add_argument('--metal-validator',type=Path,help='test-only zink-metal-pixels library, required on Apple GPU runs')
-a=p.parse_args();a.output.mkdir(parents=True,exist_ok=False)
+a=p.parse_args();assert bool(a.component_client)==bool(a.component_shaders);assert not a.component_only or a.component_client
+a.output.mkdir(parents=True,exist_ok=False)
 if hasattr(os,'sched_setaffinity'):os.sched_setaffinity(0,sorted(os.sched_getaffinity(0))[:4])
 api=C.CDLL(str(a.ffi.resolve()))
 api.trames_session_open.argtypes=[C.c_char_p,C.c_uint32];api.trames_session_open.restype=C.c_uint64
@@ -53,6 +57,7 @@ if a.native_wsi:
         metal=C.CDLL(str(a.metal_validator.resolve()))
         metal.trames_zink_nonblank_texture.argtypes=[C.c_void_p,C.c_uint32,C.c_uint32]
 data=json.dumps(options).encode();h=api.trames_session_open(data,len(data));assert h
+server_started=False
 output=bytearray();queries=0;began=time.monotonic();report={'passed':False}
 def read(name):
     b=C.create_string_buffer(65536);n=getattr(api,'trames_session_'+name)(h,b,len(b));assert n>=0,(name,n);return b.raw[:n]
@@ -88,7 +93,7 @@ def wait(predicate,timeout=None):
     while True:
         scene=pump()
         if predicate(scene):return scene
-        if time.monotonic()-start>5 and not scene['windows']:
+        if server_started and time.monotonic()-start>5 and not scene['windows']:
             export('/tmp/xwayland.log','xwayland.log')
             log=a.output/'xwayland.log'
             if log.exists():
@@ -132,25 +137,48 @@ try:
             assert ('vulkan-general-layout-ok: '+mode).encode() in output[start:]
         report['layout_pixel_modes']=modes
         report['layout_readback_pixels']=len(modes)*3*256*192
-    debug='LIBGL_ALWAYS_SOFTWARE=true ' if os.environ.get('TRAMES_ZINK_CPU_REFERENCE')=='1' else ''
-    if os.environ.get('TRAMES_DIALOG_NO_FEEDBACK')=='1':debug+="MESA_EXTENSION_OVERRIDE='-GL_NV_texture_barrier -GL_ARB_texture_barrier' "
-    if os.environ.get('TRAMES_DIALOG_ZINK_DEBUG'):debug+='ZINK_DEBUG='+shlex.quote(os.environ['TRAMES_DIALOG_ZINK_DEBUG'])+' '
-    debug+='TRAMES_VULKAN_TRACE=1 '
-    if not a.native_wsi:debug+='TRAMES_XWAYLAND_NATIVE_WSI=0 '
-    shell(debug+"trames-xwayland :0 >/tmp/xwayland.log 2>&1 &\n")
-    shell("printf 'dialog fixture\\n' >/tmp/trames-dialog-fixture.txt; while ! xprop -root >/dev/null 2>&1; do sleep .1; done; GDK_BACKEND=x11 GTK_IM_MODULE=xim XMODIFIERS=@im=trames GSETTINGS_BACKEND=memory GTK_USE_PORTAL=0 NO_AT_BRIDGE=1 "+("GTK_CSD=0 " if os.environ.get("TRAMES_DIALOG_GTK_CSD")=="0" else "")+"mousepad --disable-server /tmp/trames-dialog-fixture.txt >/tmp/mousepad-dialog.log 2>&1 &\n")
-    scene=wait(lambda s:any('trames-dialog-fixture' in w['title'] for w in s['windows']));editor=next(w['id'] for w in scene['windows'] if 'trames-dialog-fixture' in w['title'])
-    print('editor:',scene['windows'],flush=True)
-    command(op='focus',window=editor);wait(lambda _:gpu(editor));key(30)
-    wait(lambda s:any('*' in w['title'] for w in s['windows']))
-    for attempt in range(2):
-        command(op='close',window=editor)
-        scene=wait(lambda s:len(s['windows'])>=2)
-        print('save dialog:',scene['windows'],flush=True)
-        dialog=next(w['id'] for w in scene['windows'] if w['id']!=editor)
-        wait(lambda _:gpu(dialog));command(op='focus',window=dialog);key(1)
-        wait(lambda s:len(s['windows'])==1 and s['windows'][0]['id']==editor)
-    report.update(passed=True,save_dialog=True,gpu=bool(a.native_wsi),metal_nonblank=bool(metal),cancel_cycles=2)
+    if a.component_client:
+        payload('transfer',dict(guest='/tmp/vulkan-components',host=str(a.component_client.resolve()),export=False,replace=True))
+        for kind in ('packed','split'):
+            for stage in ('vert','frag'):
+                name='vulkan-components-'+kind+'.'+stage+'.spv'
+                payload('transfer',dict(guest='/tmp/'+name,host=str((a.component_shaders/name).resolve()),export=False,replace=True))
+        pairs=(('packed','split'),('split','packed'))
+        for index,(vertex,fragment) in enumerate(pairs):
+            start=len(output)
+            shell('chmod 755 /tmp/vulkan-components; /tmp/vulkan-components /tmp/vulkan-components-'+vertex+'.vert.spv /tmp/vulkan-components-'+fragment+'.frag.spv /tmp/components.ppm; printf "\\nCOMPONENT_EXIT:'+str(index)+':%d\\n" $?\n')
+            def finished(_):
+                new=output[start:]
+                for code in (1,127,134,139):
+                    assert ('\r\nCOMPONENT_EXIT:'+str(index)+':'+str(code)+'\r\n').encode() not in new,new[-4000:]
+                return ('\r\nCOMPONENT_EXIT:'+str(index)+':0\r\n').encode() in new
+            wait(finished,45)
+            assert b'vulkan-render-ok' in output[start:]
+        report['component_pairs']=pairs
+        report['component_readback_pixels']=2*3*256*192
+    if a.component_only:
+        report.update(passed=True,gpu=True)
+    else:
+        debug='LIBGL_ALWAYS_SOFTWARE=true ' if os.environ.get('TRAMES_ZINK_CPU_REFERENCE')=='1' else ''
+        if os.environ.get('TRAMES_DIALOG_NO_FEEDBACK')=='1':debug+="MESA_EXTENSION_OVERRIDE='-GL_NV_texture_barrier -GL_ARB_texture_barrier' "
+        if os.environ.get('TRAMES_DIALOG_ZINK_DEBUG'):debug+='ZINK_DEBUG='+shlex.quote(os.environ['TRAMES_DIALOG_ZINK_DEBUG'])+' '
+        debug+='TRAMES_VULKAN_TRACE=1 '
+        if not a.native_wsi:debug+='TRAMES_XWAYLAND_NATIVE_WSI=0 '
+        server_started=True
+        shell(debug+"trames-xwayland :0 >/tmp/xwayland.log 2>&1 &\n")
+        shell("printf 'dialog fixture\\n' >/tmp/trames-dialog-fixture.txt; while ! xprop -root >/dev/null 2>&1; do sleep .1; done; GDK_BACKEND=x11 GTK_IM_MODULE=xim XMODIFIERS=@im=trames GSETTINGS_BACKEND=memory GTK_USE_PORTAL=0 NO_AT_BRIDGE=1 "+("GTK_CSD=0 " if os.environ.get("TRAMES_DIALOG_GTK_CSD")=="0" else "")+"mousepad --disable-server /tmp/trames-dialog-fixture.txt >/tmp/mousepad-dialog.log 2>&1 &\n")
+        scene=wait(lambda s:any('trames-dialog-fixture' in w['title'] for w in s['windows']));editor=next(w['id'] for w in scene['windows'] if 'trames-dialog-fixture' in w['title'])
+        print('editor:',scene['windows'],flush=True)
+        command(op='focus',window=editor);wait(lambda _:gpu(editor));key(30)
+        wait(lambda s:any('*' in w['title'] for w in s['windows']))
+        for attempt in range(2):
+            command(op='close',window=editor)
+            scene=wait(lambda s:len(s['windows'])>=2)
+            print('save dialog:',scene['windows'],flush=True)
+            dialog=next(w['id'] for w in scene['windows'] if w['id']!=editor)
+            wait(lambda _:gpu(dialog));command(op='focus',window=dialog);key(1)
+            wait(lambda s:len(s['windows'])==1 and s['windows'][0]['id']==editor)
+        report.update(passed=True,save_dialog=True,gpu=bool(a.native_wsi),metal_nonblank=bool(metal),cancel_cycles=2)
 finally:
     for guest,name in [('/tmp/xwayland.log','xwayland.log'),('/tmp/mousepad-dialog.log','mousepad.log')]:export(guest,name)
     report['seconds']=time.monotonic()-began
