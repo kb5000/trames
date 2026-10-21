@@ -503,6 +503,20 @@ jobs:
             cargo test -p trames-vulkan --lib --locked
             cargo check -p trames-ffi --target aarch64-apple-ios --locked
           fi
+      - uses: actions/cache/restore@v4
+        id: native_driver_cache_macos
+        with:
+          path: |
+            target/moltenvk-patched/macos-arm64-*/libMoltenVK.a
+            target/moltenvk-patched/macos-arm64-*/build.json
+          key: ${{ runner.os }}-moltenvk-macos-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**') }}
+      - uses: actions/cache/restore@v4
+        id: native_driver_cache_ios
+        with:
+          path: |
+            target/moltenvk-patched/ios-arm64-*/libMoltenVK.a
+            target/moltenvk-patched/ios-arm64-*/build.json
+          key: ${{ runner.os }}-moltenvk-ios-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**') }}
       - name: Run original MoltenVK Metal resource and Mesa GLSL paths
         run: |
           mkdir -p target/zink-metal-native
@@ -525,6 +539,20 @@ jobs:
           fi
       - name: Compile corrected native iOS driver without packaging an app
         run: python3 scripts/build-moltenvk.py --platform ios --arch arm64 > target/zink-metal-native/ios-driver-dir.txt
+      - uses: actions/cache/save@v4
+        if: always() && steps.native_driver_cache_macos.outputs.cache-hit != 'true'
+        with:
+          path: |
+            target/moltenvk-patched/macos-arm64-*/libMoltenVK.a
+            target/moltenvk-patched/macos-arm64-*/build.json
+          key: ${{ runner.os }}-moltenvk-macos-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**') }}
+      - uses: actions/cache/save@v4
+        if: always() && steps.native_driver_cache_ios.outputs.cache-hit != 'true'
+        with:
+          path: |
+            target/moltenvk-patched/ios-arm64-*/libMoltenVK.a
+            target/moltenvk-patched/ios-arm64-*/build.json
+          key: ${{ runner.os }}-moltenvk-ios-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**') }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

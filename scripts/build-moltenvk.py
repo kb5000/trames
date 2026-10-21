@@ -133,7 +133,9 @@ def main():
             if result.returncode:
                 print((out/'xcodebuild.log').read_text(errors='replace')[-14000:], file=sys.stderr)
                 raise SystemExit(result.returncode)
-    products = list((out/'products').rglob('libMoltenVK.a'))
+    # Xcode also copies the library under XCFrameworkStaging; select only
+    # the SDK's real configuration product (Release[-iphoneos/-iphonesimulator]).
+    products = list((out/'products').glob('Release*/libMoltenVK.a'))
     assert len(products) == 1, 'Expected one native static MoltenVK product: '+str(products)
     shutil.copyfile(products[0], library)
     actual = subprocess.check_output(['xcrun', 'lipo', '-archs', str(library)], text=True).split()

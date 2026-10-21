@@ -8,7 +8,7 @@
   },
   "reason": "GPU bridge, guest ICD/fixtures and Rust toolchain are unchanged from passed Linux GPU/Mesa and Apple module/23 tests/iOS FFI checks. Reuse that exact guest bundle, rebuild pinned original MoltenVK with its one-line 3D source-mip fix, rerun failed Metal pixels/Mesa only and compile its iOS native library. No IPA or Firefox diagnostics.",
   "changed_file_sha256": {
-    ".github/workflows/linux.yml": "76c465b54ac1753237f33ac69b6357ce09501cc10618955cbcf8659441380626",
+    ".github/workflows/linux.yml": "adecca067ac4b1c9305f128ab498a7afcb535d5eeb2e8943016f9b3afc7246b8",
     "accelerator/vulkan/entrypoints.inc": "d9553e0ab95214b1a2d04d61adb688087e709325610a25852ec9c72ab848f8ab",
     "accelerator/vulkan/graphics.inc": "465ac1b10ae5d3ffa0308f9800f1ab3eb6f7d343c4107a5cf2506779dca9363b",
     "accelerator/vulkan/icd.c": "589513e11673664fa137b302dddaeaa4d64956eed7aa6ecea349d82e9d7cc6b5",
@@ -26,7 +26,7 @@
     "docs/validation/zink-images.md": "b161c643dafb3cf6f25857e4690ae4bad6e8ae2e2742139af4796e3fd3e10a37",
     "patches/moltenvk/0001-use-source-mip-depth-for-volume-blits.patch": "78ccd845056b7251def221519cd130a2baefd43857c622d463d36cab3a54eed3",
     "scripts/build-ios.sh": "35a7f0467db46fcc2980d907a196b8dd7e2fe08f9d54b0e33e3730f683951b5e",
-    "scripts/build-moltenvk.py": "900a802e4ec4e50cb555d4198caf1f8ca5de0dd30a7d101585f5bffbf0743f97",
+    "scripts/build-moltenvk.py": "02b99849b22b94ed341b47acd64b44f7c959f31b0edc6bb4ff2e79e0a7537626",
     "scripts/ios-ci-scope.py": "120caafed73dc891fd28fdfc19ce1dafe129eeb06b8a82ad694c4eb3a5bd127d",
     "scripts/prepare-vulkan.py": "3bb66625a15bad3b11a22ae636bffd39704284d9d9dd0d16075153246abf33ae",
     "scripts/prepare-zink-native-bundle.py": "438e68ee476570d5c80decc0c12efc1b9122a152e8287b2a8218a56b8b6670db",
