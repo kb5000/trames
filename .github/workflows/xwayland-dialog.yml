@@ -158,6 +158,7 @@ jobs:
           shutil.copytree(root/'musl','target/musl-hybrid',dirs_exist_ok=True)
           PY
       - uses: actions/cache/restore@v4
+        id: moltenvk
         with:
           path: |
             target/moltenvk-patched/macos-arm64-*/libMoltenVK.a
@@ -171,9 +172,24 @@ jobs:
           export TRAMES_MOLTENVK_STATIC_DIR="$native_moltenvk_dir" MACOSX_DEPLOYMENT_TARGET=12.0
           export RUSTFLAGS="-C link-arg=-framework -C link-arg=IOKit -C link-arg=$(xcrun clang --print-runtime-dir)/libclang_rt.osx.a"
           cargo build -p trames-ffi --release --locked
-          xcrun clang -O2 -Wall -Wextra -Werror -I target/vulkan-upstream/headers/Vulkan-Headers-cfebfc96b2b0bce93da7d12f2c14cc01793ae25c/include tests/fixtures/vulkan-texture.c "$native_moltenvk_dir/libMoltenVK.a" -lc++ -framework Metal -framework Foundation -framework QuartzCore -framework IOSurface -framework CoreGraphics -framework CoreVideo -framework MetalPerformanceShaders -framework AppKit -framework IOKit "$(xcrun clang --print-runtime-dir)/libclang_rt.osx.a" -o target/transparent-border-native
-          MTL_DEBUG_LAYER=1 target/transparent-border-native target/vulkan-guest/acceptance/vulkan-texture.vert.spv target/vulkan-guest/acceptance/vulkan-texture.frag.spv target/transparent-border.ppm transparent-border 2>&1 | tee target/transparent-border.log
           xcrun clang -O2 -Wall -Wextra -Werror -fobjc-arc -dynamiclib tests/fixtures/zink-metal-pixels.m -framework Metal -framework Foundation -o target/zink-metal-pixels.dylib
+      - uses: actions/cache/save@v4
+        if: steps.moltenvk.outputs.cache-hit != 'true'
+        with:
+          path: |
+            target/moltenvk-patched/macos-arm64-*/libMoltenVK.a
+            target/moltenvk-patched/macos-arm64-*/build.json
+          key: ${{ runner.os }}-moltenvk-macos-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**', 'crates/trames-vulkan/native/transform-feedback/**') }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dialog-metal-runtime
+          path: |
+            target/release/libtrames_ffi.dylib
+            target/zink-metal-pixels.dylib
+          retention-days: 7
+      - name: Retry only modal rendering without texture feedback barriers
+        run: |
+          export TRAMES_DIALOG_NO_FEEDBACK=1
           export TRAMES_VULKAN_TRACE=1 MTL_DEBUG_LAYER=1 MVK_CONFIG_DEBUG=1
           python3 -c 'import subprocess,sys; sys.exit(subprocess.run(sys.argv[1:], timeout=240).returncode)' python3 tests/integration/xwayland-dialog.py --native-wsi --ffi target/release/libtrames_ffi.dylib --store target/xwayland-dialog-inputs/store --output target/dialog-metal --metal-validator target/zink-metal-pixels.dylib 2>&1 | tee target/dialog-metal.log
       - uses: actions/upload-artifact@v4

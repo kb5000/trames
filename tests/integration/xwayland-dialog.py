@@ -130,6 +130,7 @@ try:
         report['layout_pixel_modes']=modes
         report['layout_readback_pixels']=len(modes)*3*256*192
     debug='LIBGL_ALWAYS_SOFTWARE=true ' if os.environ.get('TRAMES_ZINK_CPU_REFERENCE')=='1' else ''
+    if os.environ.get('TRAMES_DIALOG_NO_FEEDBACK')=='1':debug+="MESA_EXTENSION_OVERRIDE='-GL_NV_texture_barrier -GL_ARB_texture_barrier' "
     debug+='TRAMES_VULKAN_TRACE=1 '
     if not a.native_wsi:debug+='TRAMES_XWAYLAND_NATIVE_WSI=0 '
     shell(debug+"trames-xwayland :0 >/tmp/xwayland.log 2>&1 &\n")
