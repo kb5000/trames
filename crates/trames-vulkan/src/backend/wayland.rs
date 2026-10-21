@@ -524,11 +524,11 @@ impl Backend {
                     );
                     let object = &self.objects[&id];
                     *object.wayland_pool.borrow_mut() = Some(pool.clone());
-                    object.image.set(Some(ImageShape {
-                        width: image.width,
-                        height: image.height,
-                        format: image.format,
-                    }));
+                    object.image.set(Some(ImageShape::d2(
+                        image.width,
+                        image.height,
+                        image.format,
+                    )));
                     ids.push(id);
                 }
                 if a[8] != 0 {

@@ -76,7 +76,7 @@ resize、close、重启和旧帧保活已在Linux参考及Apple Metal通过；Ap
   最多8个颜色输出（受真实driver限制）/单viewport如实报告，兼容render pass按输出槽格式/深度匹配，
   允许不同load/store/layout的兼容对象共用framebuffer/pipeline。
 - 基础features按driver查询并显式启用：anisotropy、logicOp、fillModeNonSolid、
-  shaderClipDistance、independentBlend。`EXT_scalar_block_layout`同样按真实driver能力查询/启用。
+  shaderClipDistance、independentBlend、imageCubeArray。`EXT_scalar_block_layout`同样按真实driver能力查询/启用。
   polygon/logic state交给原生pipeline，未知feature继续失败。
 - 原生texel buffer view、uniform/storage texel descriptors、storage-image descriptors，
   dynamic uniform/storage buffer descriptors及其template展开。动态偏移按binding/array顺序处理，
@@ -85,11 +85,18 @@ resize、close、重启和旧帧保活已在Linux参考及Apple Metal通过；Ap
   不对原生reset已释放的set再次free。重置后可重新分配/录制/执行。
 - 原生pipeline cache初始数据、size/data/INCOMPLETE语义与merge；缓存字节复制到guest，
   不把guest指针或driver对象直接传入宿主。与原API相同，外部同步仍由调用方负责。
-- 可变格式/extended-usage 2D图片、显式分量swizzle、单层array view；image-format-list
+- 可变格式/extended-usage 图片、显式分量swizzle、1D/2D/3D 与 array/cube 视图；image-format-list
   仅为兼容性元数据，列出一个格式不表示已支持创建该格式。实际image/view仍经profile过滤。
   核心未压缩单/双/三/四通道、整数/归一化、16/32位浮点和常用packed图片均按原生
   format能力查询；64位通道、压缩块和stencil仍不支持。复制按实际texel字节数与
   depth aspect计算边界，native blend/storage/texel/vertex能力继续按已实现路径过滤。
+- optimal、单sample图片扩展到1D/2D/3D、array/cube和完整mip链。按真实native limit限制
+  最大4096维、2048层；imageCubeArray必须查询/显式启用。barrier、view、clear、buffer/image
+  与image/image copy保留具体mip/layer/volume范围，支持REMAINING范围；同图不同mip/层可复制。
+- 原生vkCmdBlitImage支持nearest/linear、翻转、mip生成及原生允许的颜色格式转换；保持
+  signed/unsigned/depth规则与宿主format特性。新增vkCmdClearDepthStencilImage（当前D16/D32），
+  sampler compareEnable/compareOp。maintenance1的3D→2D/array slice view按真实portability能力启用，
+  framebuffer仍为单层，view取选定mip尺寸。[GPU验证](../validation/zink-images.md)。
 - 九种核心dynamic graphics states及原生命令、discard/depth-bias和point/line/triangle拓扑。
   当前line width为1、depth-bias clamp为0，未实现的静态bias参数会明确失败。
 - 真实`KHR_portability_subset`查询（仅宿主有该扩展时）让原版Mesa选择MoltenVK上游路径；
@@ -106,7 +113,7 @@ Wayland EGL复用现有native swapchain/Metal texture路径，新增可采样swa
 这些图片仅供GPU使用，内存选择优先DEVICE_LOCAL且非HOST_VISIBLE。统一内存GPU可能将
 多种类型同时标为local；避免无意义的初始CPU上传，也避开Paravirtual Metal在绑定图片时
 的replaceRegion崩溃。没有私有类型时仍保留符合memoryTypeBits的fallback。
-后续继续扩展格式/图像维度/mipmap、渲染状态和真实可用features。
+后续继续扩展压缩/stencil/MSAA、渲染状态和真实可用features，尤其是GPU transform feedback。
 
 ES3首批的MRT、宽格式、原生复制验证与后续缺口见
 [ES3推进记录](../validation/zink-es3.md)。目前原版Mesa仍未提供ES3 context；

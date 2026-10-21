@@ -1087,6 +1087,26 @@ impl Backend {
                     .max_fragment_output_attachments
                     .min(properties.limits.max_color_attachments);
                 properties.limits.max_viewports = 1;
+                properties.limits.max_image_dimension1_d = properties
+                    .limits
+                    .max_image_dimension1_d
+                    .min(graphics::DIMENSION);
+                properties.limits.max_image_dimension2_d = properties
+                    .limits
+                    .max_image_dimension2_d
+                    .min(graphics::DIMENSION);
+                properties.limits.max_image_dimension3_d = properties
+                    .limits
+                    .max_image_dimension3_d
+                    .min(graphics::DIMENSION);
+                properties.limits.max_image_dimension_cube = properties
+                    .limits
+                    .max_image_dimension_cube
+                    .min(graphics::DIMENSION);
+                properties.limits.max_image_array_layers = properties
+                    .limits
+                    .max_image_array_layers
+                    .min(graphics::LAYERS);
                 write_words(
                     m,
                     a[1],
@@ -1187,6 +1207,10 @@ impl Backend {
                         std::mem::offset_of!(vk::PhysicalDeviceFeatures, independent_blend),
                         native.independent_blend,
                     ),
+                    (
+                        std::mem::offset_of!(vk::PhysicalDeviceFeatures, image_cube_array),
+                        native.image_cube_array,
+                    ),
                 ] {
                     features[at..at + 4].copy_from_slice(&value.to_le_bytes());
                 }
@@ -1235,13 +1259,14 @@ impl Backend {
                 }
                 let native_features =
                     unsafe { instance.native.get_physical_device_features(self.physical) };
-                if a[4] & !31 != 0
+                if a[4] & !63 != 0
                     || [
                         native_features.sampler_anisotropy,
                         native_features.logic_op,
                         native_features.fill_mode_non_solid,
                         native_features.shader_clip_distance,
                         native_features.independent_blend,
+                        native_features.image_cube_array,
                     ]
                     .iter()
                     .enumerate()
@@ -1254,7 +1279,8 @@ impl Backend {
                     .logic_op(a[4] & 2 != 0)
                     .fill_mode_non_solid(a[4] & 4 != 0)
                     .shader_clip_distance(a[4] & 8 != 0)
-                    .independent_blend(a[4] & 16 != 0);
+                    .independent_blend(a[4] & 16 != 0)
+                    .image_cube_array(a[4] & 32 != 0);
                 self.wsi.device_enabled = a[3] != 0;
                 zink::device_extensions(a[5], &self.capabilities, &mut names)?;
                 let mut timeline = vk::PhysicalDeviceTimelineSemaphoreFeatures::default()
@@ -2307,7 +2333,7 @@ impl Backend {
                     *c.recording.borrow_mut() = Recording::default();
                 }
             }
-            60..=76 | 94..=97 | 114 | 122..=125 | 134 => self.graphics_call(m, op, a)?,
+            60..=76 | 94..=97 | 114 | 122..=125 | 134..=136 => self.graphics_call(m, op, a)?,
             132 => self.dynamic_call(m, a)?,
             127..=128 => self.texel_view_call(m, op, a)?,
             92..=93 => self.sampler_call(m, op, a)?,

@@ -8,6 +8,78 @@ pub(super) struct ImageShape {
     pub(super) width: u32,
     pub(super) height: u32,
     pub(super) format: vk::Format,
+    pub(super) ty: vk::ImageType,
+    pub(super) depth: u32,
+    pub(super) mips: u32,
+    pub(super) layers: u32,
+}
+impl ImageShape {
+    pub(super) fn d2(width: u32, height: u32, format: vk::Format) -> Self {
+        Self {
+            width,
+            height,
+            format,
+            ty: vk::ImageType::TYPE_2D,
+            depth: 1,
+            mips: 1,
+            layers: 1,
+        }
+    }
+    fn extent(self, mip: u64) -> Result<[u32; 3]> {
+        if mip >= self.mips as u64 {
+            return invalid();
+        }
+        Ok([self.width, self.height, self.depth].map(|n| (n >> mip).max(1)))
+    }
+    fn aspect(self) -> vk::ImageAspectFlags {
+        if is_depth(self.format) {
+            vk::ImageAspectFlags::DEPTH
+        } else {
+            vk::ImageAspectFlags::COLOR
+        }
+    }
+    fn range(self, wire: &[u64]) -> Result<vk::ImageSubresourceRange> {
+        if wire[0] != self.aspect().as_raw() as u64 {
+            return invalid();
+        }
+        let count = |base: u64, count: u64, total: u32| -> Result<u32> {
+            if base >= total as u64 {
+                return invalid();
+            }
+            let count = if count == u32::MAX as u64 {
+                total as u64 - base
+            } else {
+                count
+            };
+            if count == 0 || count > total as u64 - base {
+                return invalid();
+            }
+            Ok(count as u32)
+        };
+        Ok(vk::ImageSubresourceRange::default()
+            .aspect_mask(self.aspect())
+            .base_mip_level(wire[1] as u32)
+            .level_count(count(wire[1], wire[2], self.mips)?)
+            .base_array_layer(wire[3] as u32)
+            .layer_count(count(wire[3], wire[4], self.layers)?))
+    }
+    fn whole(self) -> vk::ImageSubresourceRange {
+        vk::ImageSubresourceRange::default()
+            .aspect_mask(self.aspect())
+            .level_count(self.mips)
+            .layer_count(self.layers)
+    }
+    fn layers(self, wire: &[u64]) -> Result<vk::ImageSubresourceLayers> {
+        let r = self.range(&[wire[0], wire[1], 1, wire[2], wire[3]])?;
+        Ok(vk::ImageSubresourceLayers::default()
+            .aspect_mask(r.aspect_mask)
+            .mip_level(r.base_mip_level)
+            .base_array_layer(r.base_array_layer)
+            .layer_count(r.layer_count))
+    }
+    fn attachment(self) -> bool {
+        self.ty == vk::ImageType::TYPE_2D && self.mips == 1 && self.layers == 1
+    }
 }
 #[derive(Clone, Copy)]
 pub(super) struct PassInfo {
@@ -82,7 +154,8 @@ fn texel_size(raw: u64) -> Option<u32> {
         _ => None,
     }
 }
-const DIMENSION: u32 = 4096;
+pub(super) const DIMENSION: u32 = 4096;
+pub(super) const LAYERS: u32 = 2048;
 pub(super) const MAX_COLORS: usize = 8;
 const MAX_ATTACHMENTS: usize = MAX_COLORS + 1;
 fn format(raw: u64) -> Result<vk::Format> {
@@ -133,13 +206,6 @@ fn layout(raw: u64, initial: bool) -> Result<vk::ImageLayout> {
 fn is_depth(format: vk::Format) -> bool {
     matches!(format, vk::Format::D16_UNORM | vk::Format::D32_SFLOAT)
 }
-fn image_range(format: vk::Format) -> vk::ImageSubresourceRange {
-    let mut range = color_range();
-    if is_depth(format) {
-        range.aspect_mask = vk::ImageAspectFlags::DEPTH;
-    }
-    range
-}
 fn format_usage(format: vk::Format, raw: u64) -> Result<vk::ImageUsageFlags> {
     let flags = usage(raw)?;
     if is_depth(format) && flags.contains(vk::ImageUsageFlags::COLOR_ATTACHMENT)
@@ -148,12 +214,6 @@ fn format_usage(format: vk::Format, raw: u64) -> Result<vk::ImageUsageFlags> {
         return Err(vk::Result::ERROR_FORMAT_NOT_SUPPORTED.into());
     }
     Ok(flags)
-}
-fn color_range() -> vk::ImageSubresourceRange {
-    vk::ImageSubresourceRange::default()
-        .aspect_mask(vk::ImageAspectFlags::COLOR)
-        .level_count(1)
-        .layer_count(1)
 }
 fn compatible_pass(a: &Object, b: &Object) -> bool {
     a.pass.get().zip(b.pass.get()).is_some_and(|(a, b)| {
@@ -188,6 +248,52 @@ impl Backend {
         }
         Ok(())
     }
+    fn native_image_limits(
+        &self,
+        f: vk::Format,
+        ty: vk::ImageType,
+        usage: vk::ImageUsageFlags,
+        flags: vk::ImageCreateFlags,
+        formats: &[vk::Format],
+    ) -> Result<vk::ImageFormatProperties> {
+        let instance = &self.instance.as_ref().unwrap().native;
+        Ok(if formats.is_empty() {
+            unsafe {
+                instance.get_physical_device_image_format_properties(
+                    self.physical,
+                    f,
+                    ty,
+                    vk::ImageTiling::OPTIMAL,
+                    usage,
+                    flags,
+                )
+            }?
+        } else {
+            if self.capabilities.bits & zink::FORMAT_LIST == 0 {
+                return unsupported();
+            }
+            let mut list = vk::ImageFormatListCreateInfo::default().view_formats(formats);
+            let info = vk::PhysicalDeviceImageFormatInfo2::default()
+                .format(f)
+                .ty(ty)
+                .tiling(vk::ImageTiling::OPTIMAL)
+                .usage(usage)
+                .flags(flags)
+                .push_next(&mut list);
+            let mut properties = vk::ImageFormatProperties2::default();
+            let owner = self.instance.as_ref().unwrap();
+            let api =
+                ash::khr::get_physical_device_properties2::Instance::new(&owner._entry, instance);
+            unsafe {
+                api.get_physical_device_image_format_properties2(
+                    self.physical,
+                    &info,
+                    &mut properties,
+                )
+            }?;
+            properties.image_format_properties
+        })
+    }
     pub(super) fn format_query(&self, m: &mut Memory, op: u64, a: [u64; 16]) -> Result<()> {
         let instance = &self.instance.as_ref().unwrap().native;
         if op == 58 {
@@ -202,7 +308,9 @@ impl Backend {
                         | vk::FormatFeatureFlags::TRANSFER_DST
                         | vk::FormatFeatureFlags::SAMPLED_IMAGE
                         | vk::FormatFeatureFlags::STORAGE_IMAGE
-                        | vk::FormatFeatureFlags::SAMPLED_IMAGE_FILTER_LINEAR);
+                        | vk::FormatFeatureFlags::SAMPLED_IMAGE_FILTER_LINEAR
+                        | vk::FormatFeatureFlags::BLIT_SRC
+                        | vk::FormatFeatureFlags::BLIT_DST);
                 bytes[4..8].copy_from_slice(&flags.as_raw().to_le_bytes());
             }
             if vertex_size(a[1]).is_some() {
@@ -224,9 +332,11 @@ impl Backend {
             return write(m, a[2], &bytes);
         }
         output(m, a[6], 32)?;
-        if a[2] != vk::ImageType::TYPE_2D.as_raw() as u64
-            || a[3] != vk::ImageTiling::OPTIMAL.as_raw() as u64
-            || a[5] & !0x108 != 0
+        let ty = image_type(a[2])?;
+        if a[3] != vk::ImageTiling::OPTIMAL.as_raw() as u64
+            || a[5] & !0x138 != 0
+            || a[5] & 16 != 0 && ty != vk::ImageType::TYPE_2D
+            || a[5] & 32 != 0 && ty != vk::ImageType::TYPE_3D
         {
             return Err(vk::Result::ERROR_FORMAT_NOT_SUPPORTED.into());
         }
@@ -234,49 +344,20 @@ impl Backend {
             .into_iter()
             .map(view_format)
             .collect::<Result<_>>()?;
-        let p = if formats.is_empty() {
-            unsafe {
-                instance.get_physical_device_image_format_properties(
-                    self.physical,
-                    format(a[1])?,
-                    vk::ImageType::TYPE_2D,
-                    vk::ImageTiling::OPTIMAL,
-                    format_usage(format(a[1])?, a[4])?,
-                    vk::ImageCreateFlags::from_raw(a[5] as u32),
-                )
-            }?
-        } else {
-            if self.capabilities.bits & zink::FORMAT_LIST == 0 {
-                return unsupported();
-            }
-            let mut list = vk::ImageFormatListCreateInfo::default().view_formats(&formats);
-            let info = vk::PhysicalDeviceImageFormatInfo2::default()
-                .format(format(a[1])?)
-                .ty(vk::ImageType::TYPE_2D)
-                .tiling(vk::ImageTiling::OPTIMAL)
-                .usage(format_usage(format(a[1])?, a[4])?)
-                .flags(vk::ImageCreateFlags::from_raw(a[5] as u32))
-                .push_next(&mut list);
-            let mut properties = vk::ImageFormatProperties2::default();
-            let owner = self.instance.as_ref().unwrap();
-            let api =
-                ash::khr::get_physical_device_properties2::Instance::new(&owner._entry, instance);
-            unsafe {
-                api.get_physical_device_image_format_properties2(
-                    self.physical,
-                    &info,
-                    &mut properties,
-                )
-            }?;
-            properties.image_format_properties
-        };
+        let p = self.native_image_limits(
+            format(a[1])?,
+            ty,
+            format_usage(format(a[1])?, a[4])?,
+            vk::ImageCreateFlags::from_raw(a[5] as u32),
+            &formats,
+        )?;
         let mut bytes = Vec::new();
         for n in [
             p.max_extent.width.min(DIMENSION),
             p.max_extent.height.min(DIMENSION),
-            1,
-            1,
-            1,
+            p.max_extent.depth.min(DIMENSION),
+            p.max_mip_levels.min(DIMENSION.ilog2() + 1),
+            p.max_array_layers.min(LAYERS),
             1,
         ] {
             bytes.extend(n.to_le_bytes());
@@ -664,6 +745,7 @@ impl Backend {
         let stride = match stride {
             0 => 5,
             6 => 6,
+            10 => 10,
             _ => return unsupported(),
         };
         let wire = words64(m, address, bounded(count, 64)? * stride)?;
@@ -680,10 +762,15 @@ impl Backend {
             if image.kind != Kind::SwapchainImage && (b[3] == 1000001002 || b[4] == 1000001002) {
                 return invalid();
             }
-            let range = image_range(shape(&image)?.format);
-            if stride == 6 && b[5] != range.aspect_mask.as_raw() as u64 {
-                return invalid();
-            }
+            let s = shape(&image)?;
+            let range = if stride == 10 {
+                s.range(&b[5..10])?
+            } else {
+                if stride == 6 && b[5] != s.aspect().as_raw() as u64 {
+                    return invalid();
+                }
+                s.whole()
+            };
             barriers.push(
                 vk::ImageMemoryBarrier::default()
                     .image(vk::Image::from_raw(image.raw))
@@ -711,9 +798,28 @@ impl Backend {
                 output(m, a[5], 8)?;
                 let f = format(a[1])?;
                 let u = format_usage(f, a[4])?;
-                if a[2] == 0 || a[3] == 0 || a[2] > DIMENSION as u64 || a[3] > DIMENSION as u64 {
+                // a[11] != 0 identifies the extended shape, preserving the old
+                // 2D one-level wire used by existing native-call clients.
+                let s = if a[11] == 0 {
+                    ImageShape::d2(a[2] as u32, a[3] as u32, f)
+                } else {
+                    if a[10..=13].iter().any(|&v| v > u32::MAX as u64) {
+                        return invalid();
+                    }
+                    ImageShape {
+                        width: a[2] as u32,
+                        height: a[3] as u32,
+                        format: f,
+                        ty: image_type(a[10])?,
+                        depth: a[11] as u32,
+                        mips: a[12] as u32,
+                        layers: a[13] as u32,
+                    }
+                };
+                if a[2] > u32::MAX as u64 || a[3] > u32::MAX as u64 {
                     return invalid();
                 }
+                validate_shape(s, a[9])?;
                 let formats: Vec<_> = words32(m, a[7], bounded(a[8], 16)?)?
                     .into_iter()
                     .map(view_format)
@@ -721,21 +827,39 @@ impl Backend {
                 if !formats.is_empty() && !device.format_list {
                     return unsupported();
                 }
+                let limits = self.native_image_limits(
+                    f,
+                    s.ty,
+                    u,
+                    vk::ImageCreateFlags::from_raw(a[9] as u32),
+                    &formats,
+                )?;
+                if s.width > limits.max_extent.width
+                    || s.height > limits.max_extent.height
+                    || s.depth > limits.max_extent.depth
+                    || s.mips > limits.max_mip_levels
+                    || s.layers > limits.max_array_layers
+                {
+                    return invalid();
+                }
                 let mut list = vk::ImageFormatListCreateInfo::default().view_formats(&formats);
-                if a[9] & !0x108 != 0 || a[9] & 256 != 0 && !device.maintenance2 {
+                if a[9] & !0x138 != 0
+                    || a[9] & 256 != 0 && !device.maintenance2
+                    || a[9] & 32 != 0 && !device.maintenance1
+                {
                     return unsupported();
                 }
                 let mut info = vk::ImageCreateInfo::default()
                     .flags(vk::ImageCreateFlags::from_raw(a[9] as u32))
-                    .image_type(vk::ImageType::TYPE_2D)
+                    .image_type(s.ty)
                     .format(f)
                     .extent(vk::Extent3D {
                         width: a[2] as u32,
                         height: a[3] as u32,
-                        depth: 1,
+                        depth: s.depth,
                     })
-                    .mip_levels(1)
-                    .array_layers(1)
+                    .mip_levels(s.mips)
+                    .array_layers(s.layers)
                     .samples(vk::SampleCountFlags::TYPE_1)
                     .tiling(vk::ImageTiling::OPTIMAL)
                     .usage(u)
@@ -751,11 +875,7 @@ impl Backend {
                 let raw = unsafe { d.create_image(&info, None) }?;
                 let id = self.put(Kind::Image, raw.as_raw(), vec![], 0, u.as_raw());
                 self.objects[&id].image_flags.set(a[9] as u32);
-                self.objects[&id].image.set(Some(ImageShape {
-                    width: a[2] as u32,
-                    height: a[3] as u32,
-                    format: f,
-                }));
+                self.objects[&id].image.set(Some(s));
                 self.publish(m, a[5], id)?;
             }
             61 => self.remove(a[1], Kind::Image)?,
@@ -831,10 +951,41 @@ impl Backend {
                 let mut view_usage_info = vk::ImageViewUsageCreateInfo::default().usage(view_usage);
                 // Wire type zero is the legacy 2D default; new callers can
                 // request a one-layer array view and ordinary native swizzles.
-                if !matches!(a[5], 0 | 1 | 5)
-                    || a[6] > 0xffff
-                    || (0..4).any(|i| (a[6] >> (i * 4)) & 15 > 6)
+                let view_type = if a[7] == 0 && a[5] == 0 {
+                    vk::ImageViewType::TYPE_2D
+                } else if a[5] <= 6 {
+                    vk::ImageViewType::from_raw(a[5] as i32)
+                } else {
+                    return unsupported();
+                };
+                let wire = if a[7] == 0 {
+                    vec![shape.aspect().as_raw() as u64, 0, 1, 0, 1]
+                } else {
+                    words64(m, a[7], 5)?
+                };
+                let volume_slice = shape.ty == vk::ImageType::TYPE_3D
+                    && matches!(
+                        view_type,
+                        vk::ImageViewType::TYPE_2D | vk::ImageViewType::TYPE_2D_ARRAY
+                    );
+                let mut range_shape = shape;
+                if volume_slice {
+                    if device
+                        .portability
+                        .is_some_and(|p| p.image_view2_d_on3_d_image == 0)
+                    {
+                        return unsupported();
+                    }
+                    range_shape.layers = shape.extent(wire[1])?[2];
+                }
+                let range = range_shape.range(&wire)?;
+                validate_view(shape, image.image_flags.get(), view_type, range)?;
+                if view_type == vk::ImageViewType::CUBE_ARRAY
+                    && device.features.image_cube_array == 0
                 {
+                    return unsupported();
+                }
+                if a[6] > 0xffff || (0..4).any(|i| (a[6] >> (i * 4)) & 15 > 6) {
                     return unsupported();
                 }
                 if device
@@ -857,18 +1008,24 @@ impl Backend {
                         a: component(3),
                     })
                     .image(vk::Image::from_raw(image.raw))
-                    .view_type(if a[5] == 5 {
-                        vk::ImageViewType::TYPE_2D_ARRAY
-                    } else {
-                        vk::ImageViewType::TYPE_2D
-                    })
+                    .view_type(view_type)
                     .format(shape.format)
-                    .subresource_range(image_range(shape.format));
+                    .subresource_range(range);
                 if a[4] != 0 {
                     info = info.push_next(&mut view_usage_info);
                 }
                 let raw = unsafe { d.create_image_view(&info, None) }?;
                 let id = self.put(Kind::ImageView, raw.as_raw(), vec![image], 0, 0);
+                let extent = shape.extent(range.base_mip_level as u64)?;
+                shape.width = extent[0];
+                shape.height = extent[1];
+                shape.depth = extent[2];
+                shape.mips = range.level_count;
+                shape.layers = range.layer_count;
+                if volume_slice {
+                    shape.ty = vk::ImageType::TYPE_2D;
+                    shape.depth = 1;
+                }
                 self.objects[&id].image.set(Some(shape));
                 self.publish(m, a[3], id)?;
             }
@@ -1089,7 +1246,8 @@ impl Backend {
                     } else {
                         vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT
                     };
-                    if shape.format != p.attachment_format(i)
+                    if !shape.attachment()
+                        || shape.format != p.attachment_format(i)
                         || a[3] > shape.width as u64
                         || a[4] > shape.height as u64
                         || view.deps.borrow()[0].flags & required.as_raw() == 0
@@ -1107,11 +1265,11 @@ impl Backend {
                     .layers(1);
                 let raw = unsafe { d.create_framebuffer(&info, None) }?;
                 let id = self.put(Kind::Framebuffer, raw.as_raw(), dependencies, 0, 0);
-                self.objects[&id].image.set(Some(ImageShape {
-                    width: a[3] as u32,
-                    height: a[4] as u32,
-                    format: p.attachment_format(0),
-                }));
+                self.objects[&id].image.set(Some(ImageShape::d2(
+                    a[3] as u32,
+                    a[4] as u32,
+                    p.attachment_format(0),
+                )));
                 self.publish(m, a[5], id)?;
             }
             125 => {
@@ -1145,7 +1303,7 @@ impl Backend {
                         .into_iter()
                         .map(view_format)
                         .collect::<Result<_>>()?;
-                    if x[0] & !0x108 != 0
+                    if x[0] & !0x138 != 0
                         || !u.contains(required)
                         || x[2] < a[2]
                         || x[3] < a[3]
@@ -1188,22 +1346,137 @@ impl Backend {
                 info.attachment_count = count as u32;
                 let raw = unsafe { d.create_framebuffer(&info, None) }?;
                 let id = self.put(Kind::Framebuffer, raw.as_raw(), vec![pass], 0, 1);
-                self.objects[&id].image.set(Some(ImageShape {
-                    width: a[2] as u32,
-                    height: a[3] as u32,
-                    format: p.attachment_format(0),
-                }));
+                self.objects[&id].image.set(Some(ImageShape::d2(
+                    a[2] as u32,
+                    a[3] as u32,
+                    p.attachment_format(0),
+                )));
                 *self.objects[&id].attachment_specs.borrow_mut() = specs;
                 self.publish(m, a[6], id)?;
             }
             69 => self.remove(a[1], Kind::Framebuffer)?,
-            71..=76 | 94..=97 | 114 | 123..=124 | 134 => {
+            71..=76 | 94..=97 | 114 | 123..=124 | 134..=136 => {
                 let c = self.object(a[1], Kind::CommandBuffer)?;
                 if c.state.get() != 1 {
                     return invalid();
                 }
                 let raw = vk::CommandBuffer::from_raw(c.raw);
                 match op {
+                    135 => {
+                        let src = self.object(a[2], Kind::Image)?;
+                        let dst = self.object(a[4], Kind::Image)?;
+                        let src_shape = shape(&src)?;
+                        let dst_shape = shape(&dst)?;
+                        let src_layout = self.native_layout(a[3], false)?;
+                        let dst_layout = self.native_layout(a[5], false)?;
+                        if c.recording.borrow().pass.is_some()
+                            || a[7] == 0
+                            || a[8] > 1
+                            || src.flags & vk::ImageUsageFlags::TRANSFER_SRC.as_raw() == 0
+                            || dst.flags & vk::ImageUsageFlags::TRANSFER_DST.as_raw() == 0
+                            || [&src, &dst].iter().any(|i| {
+                                i.deps.borrow().is_empty()
+                                    && i.swapchain.borrow().is_none()
+                                    && i.wayland_pool.borrow().is_none()
+                            })
+                            || !matches!(
+                                src_layout,
+                                vk::ImageLayout::GENERAL | vk::ImageLayout::TRANSFER_SRC_OPTIMAL
+                            )
+                            || !matches!(
+                                dst_layout,
+                                vk::ImageLayout::GENERAL | vk::ImageLayout::TRANSFER_DST_OPTIMAL
+                            )
+                            || is_depth(src_shape.format) && a[8] != 0
+                        {
+                            return invalid();
+                        }
+                        let properties = |s: ImageShape| unsafe { device.instance.native.get_physical_device_format_properties(self.physical, s.format) }.optimal_tiling_features;
+                        if std::env::var_os("TRAMES_VULKAN_TRACE").is_some() {
+                            eprintln!("trames-vulkan blit src={:?}/{:?} dst={:?}/{:?} filter={} src-features={:?} dst-features={:?}",
+                                src_shape.format, src_shape.ty, dst_shape.format, dst_shape.ty, a[8], properties(src_shape), properties(dst_shape));
+                        }
+                        let src_flags = vk::FormatFeatureFlags::BLIT_SRC
+                            | if a[8] != 0 {
+                                vk::FormatFeatureFlags::SAMPLED_IMAGE_FILTER_LINEAR
+                            } else {
+                                vk::FormatFeatureFlags::empty()
+                            };
+                        if !properties(src_shape).contains(src_flags)
+                            || !properties(dst_shape).contains(vk::FormatFeatureFlags::BLIT_DST)
+                        {
+                            return unsupported();
+                        }
+                        let wire = words64(m, a[6], bounded(a[7], 64)? * 20)?;
+                        let regions = wire
+                            .chunks_exact(20)
+                            .map(|r| checked_blit(r, src_shape, dst_shape))
+                            .collect::<Result<Vec<_>>>()?;
+                        if src.raw == dst.raw
+                            && regions.iter().any(|a| {
+                                regions.iter().any(|b| {
+                                    subresources_overlap(a.src_subresource, b.dst_subresource)
+                                        && (src_layout != dst_layout || blit_overlap(a, b))
+                                })
+                            })
+                        {
+                            return invalid();
+                        }
+                        unsafe {
+                            d.cmd_blit_image(
+                                raw,
+                                vk::Image::from_raw(src.raw),
+                                src_layout,
+                                vk::Image::from_raw(dst.raw),
+                                dst_layout,
+                                &regions,
+                                vk::Filter::from_raw(a[8] as i32),
+                            );
+                        }
+                        c.retain(src);
+                        c.retain(dst);
+                    }
+                    136 => {
+                        let image = self.object(a[2], Kind::Image)?;
+                        let shape = shape(&image)?;
+                        let native_layout = self.native_layout(a[3], false)?;
+                        if c.recording.borrow().pass.is_some()
+                            || !is_depth(shape.format)
+                            || image.flags & vk::ImageUsageFlags::TRANSFER_DST.as_raw() == 0
+                            || image.deps.borrow().is_empty()
+                            || a[6] == 0
+                            || !matches!(
+                                native_layout,
+                                vk::ImageLayout::GENERAL | vk::ImageLayout::TRANSFER_DST_OPTIMAL
+                            )
+                        {
+                            return invalid();
+                        }
+                        let clear = words32(m, a[4], 2)?;
+                        let depth = f32::from_bits(clear[0]);
+                        if !(0.0..=1.0).contains(&depth) {
+                            return invalid();
+                        }
+                        let clear = vk::ClearDepthStencilValue {
+                            depth,
+                            stencil: clear[1],
+                        };
+                        let wire = words64(m, a[5], bounded(a[6], 64)? * 5)?;
+                        let ranges = wire
+                            .chunks_exact(5)
+                            .map(|r| shape.range(r))
+                            .collect::<Result<Vec<_>>>()?;
+                        unsafe {
+                            d.cmd_clear_depth_stencil_image(
+                                raw,
+                                vk::Image::from_raw(image.raw),
+                                native_layout,
+                                &clear,
+                                &ranges,
+                            );
+                        }
+                        c.retain(image);
+                    }
                     134 => {
                         let src = self.object(a[2], Kind::Image)?;
                         let dst = self.object(a[4], Kind::Image)?;
@@ -1237,22 +1510,16 @@ impl Backend {
                             .map(|r| checked_image_copy(r, src_shape, dst_shape))
                             .collect::<Result<Vec<_>>>()?;
                         if src.raw == dst.raw
-                            && (src_layout != dst_layout
-                                || regions.iter().any(|a| {
-                                    regions.iter().any(|b| {
-                                        let ax = a.src_offset.x as u32;
-                                        let ay = a.src_offset.y as u32;
-                                        let bx = b.dst_offset.x as u32;
-                                        let by = b.dst_offset.y as u32;
-                                        ax < bx + b.extent.width
-                                            && bx < ax + a.extent.width
-                                            && ay < by + b.extent.height
-                                            && by < ay + a.extent.height
-                                    })
-                                }))
+                            && regions.iter().any(|a| {
+                                regions.iter().any(|b| {
+                                    subresources_overlap(a.src_subresource, b.dst_subresource)
+                                        && (src_layout != dst_layout || copy_overlap(a, b))
+                                })
+                            })
                         {
                             return invalid();
                         }
+
                         unsafe {
                             d.cmd_copy_image(
                                 raw,
@@ -1297,15 +1564,7 @@ impl Backend {
                         let wire = words64(m, a[5], bounded(a[6], 64)? * 5)?;
                         let mut ranges = Vec::new();
                         for range in wire.chunks_exact(5) {
-                            if range[0] != 1
-                                || range[1] != 0
-                                || !matches!(range[2], 1 | 0xffff_ffff)
-                                || range[3] != 0
-                                || !matches!(range[4], 1 | 0xffff_ffff)
-                            {
-                                return invalid();
-                            }
-                            ranges.push(image_range(shape.format));
+                            ranges.push(shape.range(range)?);
                         }
                         unsafe {
                             d.cmd_clear_color_image(
@@ -1374,7 +1633,8 @@ impl Backend {
                                 let shape = shape(v)?;
                                 let image = &v.deps.borrow()[0];
                                 let wanted = p.attachment_format(i);
-                                if shape.format != wanted
+                                if !shape.attachment()
+                                    || shape.format != wanted
                                     || !spec.formats.contains(&shape.format)
                                     || image.image_flags.get() != spec.flags.as_raw()
                                     || image.flags != spec.usage.as_raw()
@@ -1582,17 +1842,19 @@ impl Backend {
                                             .aspect_mask(vk::ImageAspectFlags::from_raw(
                                                 x[3] as u32,
                                             ))
-                                            .layer_count(1),
+                                            .mip_level(x[4] as u32)
+                                            .base_array_layer(x[5] as u32)
+                                            .layer_count(x[6] as u32),
                                     )
                                     .image_offset(vk::Offset3D {
                                         x: x[7] as i32,
                                         y: x[8] as i32,
-                                        z: 0,
+                                        z: x[9] as i32,
                                     })
                                     .image_extent(vk::Extent3D {
                                         width: x[10] as u32,
                                         height: x[11] as u32,
-                                        depth: 1,
+                                        depth: x[12] as u32,
                                     }),
                             );
                         }
@@ -1736,24 +1998,85 @@ fn valid_viewport(v: &[f32], maintenance1: bool) -> bool {
         && (0.0..=1.0).contains(&v[5])
 }
 
+fn image_type(raw: u64) -> Result<vk::ImageType> {
+    match raw {
+        0..=2 => Ok(vk::ImageType::from_raw(raw as i32)),
+        _ => Err(vk::Result::ERROR_FORMAT_NOT_SUPPORTED.into()),
+    }
+}
+fn validate_shape(s: ImageShape, flags: u64) -> Result<()> {
+    let ext = [s.width, s.height, s.depth];
+    if ext.iter().any(|&n| n == 0 || n > DIMENSION)
+        || s.layers == 0
+        || s.layers > LAYERS
+        || s.mips == 0
+        || s.mips > ext.into_iter().max().unwrap().ilog2() + 1
+        || s.ty == vk::ImageType::TYPE_1D && (s.height != 1 || s.depth != 1)
+        || s.ty == vk::ImageType::TYPE_2D && s.depth != 1
+        || s.ty == vk::ImageType::TYPE_3D && s.layers != 1
+        || flags & !0x138 != 0
+        || flags & 32 != 0 && s.ty != vk::ImageType::TYPE_3D
+        || flags & 16 != 0
+            && (s.ty != vk::ImageType::TYPE_2D || s.width != s.height || s.layers < 6)
+    {
+        return invalid();
+    }
+    Ok(())
+}
+fn validate_view(
+    s: ImageShape,
+    flags: u32,
+    ty: vk::ImageViewType,
+    r: vk::ImageSubresourceRange,
+) -> Result<()> {
+    let valid = match ty {
+        vk::ImageViewType::TYPE_1D => s.ty == vk::ImageType::TYPE_1D && r.layer_count == 1,
+        vk::ImageViewType::TYPE_1D_ARRAY => s.ty == vk::ImageType::TYPE_1D,
+        vk::ImageViewType::TYPE_2D => {
+            (s.ty == vk::ImageType::TYPE_2D
+                || s.ty == vk::ImageType::TYPE_3D && flags & 32 != 0 && r.level_count == 1)
+                && r.layer_count == 1
+        }
+        vk::ImageViewType::TYPE_2D_ARRAY => {
+            s.ty == vk::ImageType::TYPE_2D
+                || s.ty == vk::ImageType::TYPE_3D && flags & 32 != 0 && r.level_count == 1
+        }
+        vk::ImageViewType::TYPE_3D => s.ty == vk::ImageType::TYPE_3D,
+        vk::ImageViewType::CUBE => flags & 16 != 0 && r.layer_count == 6,
+        // Array cubes additionally require the device's imageCubeArray feature;
+        // that feature is checked at the call site, not invented here.
+        vk::ImageViewType::CUBE_ARRAY => flags & 16 != 0 && r.layer_count.is_multiple_of(6),
+        _ => false,
+    };
+    if !valid {
+        return invalid();
+    }
+    Ok(())
+}
+fn checked_region(
+    s: ImageShape,
+    sub: &[u64],
+    offset: &[u64],
+    extent: &[u64],
+) -> Result<vk::ImageSubresourceLayers> {
+    let layers = s.layers(sub)?;
+    let bounds = s.extent(sub[1])?;
+    for i in 0..3 {
+        if extent[i] == 0
+            || offset[i]
+                .checked_add(extent[i])
+                .is_none_or(|n| n > bounds[i] as u64)
+        {
+            return invalid();
+        }
+    }
+    Ok(layers)
+}
 fn checked_copy(x: &[u64], image: ImageShape, buffer_size: u64) -> Result<()> {
     let bytes = texel_size(image.format.as_raw() as u64)
         .ok_or(Failure::Vk(vk::Result::ERROR_FORMAT_NOT_SUPPORTED))? as u64;
-    if x[3] != if is_depth(image.format) { 2 } else { 1 }
-        || x[4] != 0
-        || x[5] != 0
-        || x[6] != 1
-        || x[9] != 0
-        || x[12] != 1
-        || x[10] == 0
-        || x[11] == 0
-        || x[7]
-            .checked_add(x[10])
-            .is_none_or(|n| n > image.width as u64)
-        || x[8]
-            .checked_add(x[11])
-            .is_none_or(|n| n > image.height as u64)
-        || x[1] != 0 && x[1] < x[10]
+    let _ = checked_region(image, &x[3..7], &x[7..10], &x[10..13])?;
+    if x[1] != 0 && x[1] < x[10]
         || x[2] != 0 && x[2] < x[11]
         || !x[0].is_multiple_of(4)
         || !x[0].is_multiple_of(bytes)
@@ -1763,8 +2086,16 @@ fn checked_copy(x: &[u64], image: ImageShape, buffer_size: u64) -> Result<()> {
         return invalid();
     }
     let row = if x[1] == 0 { x[10] } else { x[1] };
-    if (x[11] - 1)
-        .checked_mul(row)
+    let height = if x[2] == 0 { x[11] } else { x[2] };
+    // Array layers and volume slices both advance by bufferImageHeight rows.
+    // The last row does not require its padding to exist in the buffer.
+    let slices = x[6]
+        .checked_mul(x[12])
+        .ok_or(Failure::Vk(vk::Result::ERROR_UNKNOWN))?;
+    if (slices - 1)
+        .checked_mul(height)
+        .and_then(|n| n.checked_add(x[11] - 1))
+        .and_then(|n| n.checked_mul(row))
         .and_then(|n| n.checked_add(x[10]))
         .and_then(|n| n.checked_mul(bytes))
         .and_then(|n| n.checked_add(x[0]))
@@ -1779,61 +2110,301 @@ fn checked_image_copy(x: &[u64], src: ImageShape, dst: ImageShape) -> Result<vk:
     if depth != is_depth(dst.format)
         || depth && src.format != dst.format
         || texel_size(src.format.as_raw() as u64) != texel_size(dst.format.as_raw() as u64)
+        || (src.ty == vk::ImageType::TYPE_3D) != (dst.ty == vk::ImageType::TYPE_3D)
     {
         return unsupported();
     }
-    let aspect = if depth { 2 } else { 1 };
-    for (at, image) in [(0, src), (7, dst)] {
-        if x[at] != aspect
-            || x[at + 1] != 0
-            || x[at + 2] != 0
-            || x[at + 3] != 1
-            || x[at + 6] != 0
-            || x[14] == 0
-            || x[15] == 0
-            || x[16] != 1
-            || x[at + 4]
-                .checked_add(x[14])
-                .is_none_or(|n| n > image.width as u64)
-            || x[at + 5]
-                .checked_add(x[15])
-                .is_none_or(|n| n > image.height as u64)
-        {
-            return invalid();
-        }
+    let src_sub = checked_region(src, &x[..4], &x[4..7], &x[14..17])?;
+    let dst_sub = checked_region(dst, &x[7..11], &x[11..14], &x[14..17])?;
+    if src_sub.layer_count != dst_sub.layer_count {
+        return invalid();
     }
-    let subresource = vk::ImageSubresourceLayers::default()
-        .aspect_mask(vk::ImageAspectFlags::from_raw(aspect as u32))
-        .layer_count(1);
     Ok(vk::ImageCopy::default()
-        .src_subresource(subresource)
-        .dst_subresource(subresource)
+        .src_subresource(src_sub)
+        .dst_subresource(dst_sub)
         .src_offset(vk::Offset3D {
             x: x[4] as i32,
             y: x[5] as i32,
-            z: 0,
+            z: x[6] as i32,
         })
         .dst_offset(vk::Offset3D {
             x: x[11] as i32,
             y: x[12] as i32,
-            z: 0,
+            z: x[13] as i32,
         })
         .extent(vk::Extent3D {
             width: x[14] as u32,
             height: x[15] as u32,
-            depth: 1,
+            depth: x[16] as u32,
         }))
 }
+fn subresources_overlap(a: vk::ImageSubresourceLayers, b: vk::ImageSubresourceLayers) -> bool {
+    a.mip_level == b.mip_level
+        && a.aspect_mask.intersects(b.aspect_mask)
+        && a.base_array_layer < b.base_array_layer + b.layer_count
+        && b.base_array_layer < a.base_array_layer + a.layer_count
+}
+fn copy_overlap(a: &vk::ImageCopy, b: &vk::ImageCopy) -> bool {
+    if !subresources_overlap(a.src_subresource, b.dst_subresource) {
+        return false;
+    }
+    let src = [a.src_offset.x, a.src_offset.y, a.src_offset.z];
+    let dst = [b.dst_offset.x, b.dst_offset.y, b.dst_offset.z];
+    let se = [a.extent.width, a.extent.height, a.extent.depth];
+    let de = [b.extent.width, b.extent.height, b.extent.depth];
+    (0..3)
+        .all(|i| (src[i] as u32) < dst[i] as u32 + de[i] && (dst[i] as u32) < src[i] as u32 + se[i])
+}
+fn numeric_class(f: vk::Format) -> u8 {
+    match f.as_raw() {
+        13 | 20 | 27 | 34 | 41 | 48 | 55 | 62 | 68 | 74 | 81 | 88 | 95 | 98 | 101 | 104 | 107 => 1,
+        14 | 21 | 28 | 35 | 42 | 49 | 56 | 63 | 69 | 75 | 82 | 89 | 96 | 99 | 102 | 105 | 108 => 2,
+        _ => 0,
+    }
+}
+fn checked_blit(x: &[u64], src: ImageShape, dst: ImageShape) -> Result<vk::ImageBlit> {
+    if is_depth(src.format) != is_depth(dst.format)
+        || is_depth(src.format) && src.format != dst.format
+        || numeric_class(src.format) != numeric_class(dst.format)
+        || src.ty != dst.ty
+    {
+        return unsupported();
+    }
+    let mut subs = Vec::new();
+    let mut offsets = Vec::new();
+    for (at, shape) in [(0, src), (10, dst)] {
+        subs.push(shape.layers(&x[at..at + 4])?);
+        let extent = shape.extent(x[at + 1])?;
+        let mut o = [vk::Offset3D::default(); 2];
+        for axis in 0..3 {
+            let a = x[at + 4 + axis];
+            let b = x[at + 7 + axis];
+            if a == b
+                || a > extent[axis] as u64
+                || b > extent[axis] as u64
+                || axis == 1 && shape.ty == vk::ImageType::TYPE_1D && (a != 0 || b != 1)
+                || axis == 2 && shape.ty != vk::ImageType::TYPE_3D && (a != 0 || b != 1)
+            {
+                return invalid();
+            }
+        }
+        for i in 0..2 {
+            o[i] = vk::Offset3D {
+                x: x[at + 4 + i * 3] as i32,
+                y: x[at + 5 + i * 3] as i32,
+                z: x[at + 6 + i * 3] as i32,
+            };
+        }
+        offsets.push(o);
+    }
+    if subs[0].layer_count != subs[1].layer_count {
+        return invalid();
+    }
+    Ok(vk::ImageBlit::default()
+        .src_subresource(subs[0])
+        .dst_subresource(subs[1])
+        .src_offsets(offsets[0])
+        .dst_offsets(offsets[1]))
+}
+fn blit_overlap(a: &vk::ImageBlit, b: &vk::ImageBlit) -> bool {
+    if !subresources_overlap(a.src_subresource, b.dst_subresource) {
+        return false;
+    }
+    let src = a.src_offsets.map(|p| [p.x, p.y, p.z]);
+    let dst = b.dst_offsets.map(|p| [p.x, p.y, p.z]);
+    (0..3).all(|i| {
+        src[0][i].min(src[1][i]) < dst[0][i].max(dst[1][i])
+            && dst[0][i].min(dst[1][i]) < src[0][i].max(src[1][i])
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
-    fn image_copy_bounds_and_depth_compatibility() {
-        let image = ImageShape {
-            width: 8,
-            height: 8,
-            format: vk::Format::R8G8B8A8_UNORM,
+    fn blit_format_conversion_and_volume_slice_views_follow_native_rules() {
+        let rgba = ImageShape::d2(4, 4, vk::Format::R8G8B8A8_UNORM);
+        let wire = [1, 0, 0, 1, 0, 0, 0, 4, 4, 1, 1, 0, 0, 1, 0, 0, 0, 2, 2, 1];
+        assert!(checked_blit(
+            &wire,
+            rgba,
+            ImageShape {
+                format: vk::Format::B8G8R8A8_UNORM,
+                ..rgba
+            }
+        )
+        .is_ok());
+        assert!(checked_blit(
+            &wire,
+            rgba,
+            ImageShape {
+                format: vk::Format::R8G8B8A8_UINT,
+                ..rgba
+            }
+        )
+        .is_err());
+        let sint = ImageShape {
+            format: vk::Format::R16_SINT,
+            ..rgba
         };
+        assert!(checked_blit(
+            &wire,
+            sint,
+            ImageShape {
+                format: vk::Format::R32_SINT,
+                ..rgba
+            }
+        )
+        .is_ok());
+        assert!(checked_blit(
+            &wire,
+            sint,
+            ImageShape {
+                format: vk::Format::R32_UINT,
+                ..rgba
+            }
+        )
+        .is_err());
+        let volume = ImageShape {
+            ty: vk::ImageType::TYPE_3D,
+            depth: 4,
+            mips: 3,
+            ..rgba
+        };
+        assert!(validate_shape(volume, 32).is_ok());
+        assert!(validate_shape(rgba, 32).is_err());
+        let range = vk::ImageSubresourceRange::default()
+            .aspect_mask(vk::ImageAspectFlags::COLOR)
+            .base_mip_level(1)
+            .level_count(1)
+            .base_array_layer(1)
+            .layer_count(1);
+        assert!(validate_view(volume, 32, vk::ImageViewType::TYPE_2D, range).is_ok());
+        assert!(validate_view(volume, 0, vk::ImageViewType::TYPE_2D, range).is_err());
+        assert!(validate_view(
+            volume,
+            32,
+            vk::ImageViewType::TYPE_2D,
+            vk::ImageSubresourceRange {
+                level_count: 2,
+                ..range
+            }
+        )
+        .is_err());
+        let mut flipped = wire;
+        flipped[6] = 1;
+        flipped[9] = 0;
+        assert!(checked_blit(&flipped, rgba, rgba).is_err());
+    }
+    #[test]
+    fn subresource_ranges_cube_views_and_mip_bounds() {
+        let s = ImageShape {
+            mips: 4,
+            layers: 12,
+            ..ImageShape::d2(8, 8, vk::Format::R8G8B8A8_UNORM)
+        };
+        assert!(validate_shape(s, 16).is_ok());
+        let r = s
+            .range(&[1, 1, u32::MAX as u64, 6, u32::MAX as u64])
+            .unwrap();
+        assert_eq!((r.level_count, r.layer_count), (3, 6));
+        assert!(validate_view(s, 16, vk::ImageViewType::CUBE, r).is_ok());
+        assert!(validate_view(s, 0, vk::ImageViewType::CUBE, r).is_err());
+        assert!(validate_view(s, 16, vk::ImageViewType::TYPE_2D, r).is_err());
+        assert_eq!(s.extent(3).unwrap(), [1, 1, 1]);
+        for bad in [
+            [1, 4, 1, 0, 1],
+            [1, 3, 2, 0, 1],
+            [1, 0, 0, 0, 1],
+            [1, 0, 1, 12, 1],
+            [1, 0, 1, 10, 3],
+            [2, 0, 1, 0, 1],
+        ] {
+            assert!(s.range(&bad).is_err());
+        }
+        assert!(validate_shape(ImageShape { mips: 5, ..s }, 16).is_err());
+        assert!(validate_shape(ImageShape { width: 4, ..s }, 16).is_err());
+        assert!(validate_shape(ImageShape { layers: 5, ..s }, 16).is_err());
+        assert!(validate_shape(
+            ImageShape {
+                ty: vk::ImageType::TYPE_3D,
+                ..s
+            },
+            0
+        )
+        .is_err());
+    }
+    #[test]
+    fn array_and_volume_copy_footprints_include_slice_padding() {
+        let array = ImageShape {
+            mips: 4,
+            layers: 6,
+            ..ImageShape::d2(8, 8, vk::Format::R8G8B8A8_UNORM)
+        };
+        let volume = ImageShape {
+            ty: vk::ImageType::TYPE_3D,
+            depth: 8,
+            layers: 1,
+            ..array
+        };
+        let cases = [
+            (array, [16, 6, 5, 1, 1, 2, 3, 1, 1, 0, 3, 2, 1]),
+            (volume, [16, 6, 5, 1, 1, 0, 1, 1, 1, 1, 3, 2, 3]),
+        ];
+        for (s, r) in cases {
+            let bytes = 16 + ((2 * 5 + 1) * 6 + 3) * 4;
+            assert!(checked_copy(&r, s, bytes).is_ok());
+            assert!(checked_copy(&r, s, bytes - 1).is_err());
+            for (index, value) in [
+                (0, u64::MAX - 3),
+                (1, u64::MAX),
+                (4, 4),
+                (7, 2),
+                (8, 3),
+                (10, 0),
+            ] {
+                let mut bad = r;
+                bad[index] = value;
+                assert!(checked_copy(&bad, s, u64::MAX).is_err());
+            }
+        }
+        let mut r = cases[0].1;
+        r[5] = 4;
+        assert!(checked_copy(&r, array, u64::MAX).is_err());
+        let mut r = cases[1].1;
+        r[9] = 2;
+        assert!(checked_copy(&r, volume, u64::MAX).is_err());
+    }
+    #[test]
+    fn self_copies_and_flipped_blits_distinguish_mips_layers_and_volume() {
+        let s = ImageShape {
+            mips: 4,
+            layers: 6,
+            ..ImageShape::d2(8, 8, vk::Format::R8G8B8A8_UNORM)
+        };
+        let mut wire = [1, 0, 0, 2, 0, 0, 0, 8, 8, 1, 1, 1, 2, 2, 4, 0, 0, 0, 4, 1];
+        let b = checked_blit(&wire, s, s).unwrap();
+        assert!(!blit_overlap(&b, &b));
+        wire[11] = 0;
+        wire[12] = 0;
+        let overlap = checked_blit(&wire, s, s).unwrap();
+        assert!(blit_overlap(&overlap, &overlap));
+        wire[17] = 9;
+        assert!(checked_blit(&wire, s, s).is_err());
+        let c = [1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 4, 4, 1];
+        let copy = checked_image_copy(&c, s, s).unwrap();
+        assert!(!copy_overlap(&copy, &copy));
+        let mut c = c;
+        c[8] = 0;
+        let copy = checked_image_copy(&c, s, s).unwrap();
+        assert!(copy_overlap(&copy, &copy));
+        c[9] = 1;
+        let copy = checked_image_copy(&c, s, s).unwrap();
+        assert!(!copy_overlap(&copy, &copy));
+    }
+    #[test]
+    fn image_copy_bounds_and_depth_compatibility() {
+        let image = ImageShape::d2(8, 8, vk::Format::R8G8B8A8_UNORM);
         let valid = [1, 0, 0, 1, 1, 2, 0, 1, 0, 0, 1, 3, 4, 0, 4, 4, 1];
         assert!(checked_image_copy(&valid, image, image).is_ok());
         for (field, value) in [
@@ -1889,11 +2460,7 @@ mod tests {
     }
     #[test]
     fn copy_checks_padded_rows_offsets_overflow_and_color_subresources() {
-        let s = ImageShape {
-            width: 64,
-            height: 32,
-            format: vk::Format::R8G8B8A8_UNORM,
-        };
+        let s = ImageShape::d2(64, 32, vk::Format::R8G8B8A8_UNORM);
         let valid = [16, 80, 32, 1, 0, 0, 1, 0, 0, 0, 64, 32, 1];
         let bytes = 16 + (31 * 80 + 64) * 4;
         assert!(checked_copy(&valid, s, bytes).is_ok());
@@ -1952,11 +2519,7 @@ mod tests {
             (124, 2),
             (126, 4),
         ] {
-            let image = ImageShape {
-                width: 5,
-                height: 3,
-                format: self::format(format).unwrap(),
-            };
+            let image = ImageShape::d2(5, 3, self::format(format).unwrap());
             let mut region = copy;
             if is_depth(image.format) {
                 region[3] = 2;

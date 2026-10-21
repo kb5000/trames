@@ -83,8 +83,58 @@ static void draw(int es3) {
     }
     glDeleteFramebuffers(1,&reader);glDeleteFramebuffers(1,&fb);glDeleteTextures(4,textures);glDeleteProgram(p);glDeleteBuffers(1,&buffer);
 }
+static GLuint texture_program(const char *vertex,const char *fragment) {
+    GLuint v=shader(GL_VERTEX_SHADER,vertex?vertex:"attribute vec2 position;varying vec2 uv;void main(){gl_Position=vec4(position,0.,1.);uv=(position+1.)*.5;}"),f=shader(GL_FRAGMENT_SHADER,fragment),p=glCreateProgram();
+    glAttachShader(p,v);glAttachShader(p,f);glBindAttribLocation(p,0,"position");glLinkProgram(p);
+    GLint ok=0;glGetProgramiv(p,GL_LINK_STATUS,&ok);require(ok,"texture program");glDeleteShader(v);glDeleteShader(f);return p;
+}
+static void texture_pixel(GLuint p,unsigned size,const unsigned char expected[4]) {
+    glUseProgram(p);glViewport(0,0,size,size);glDrawArrays(GL_TRIANGLES,0,3);glFinish();
+    unsigned char got[4]={0};glReadPixels(0,0,1,1,GL_RGBA,GL_UNSIGNED_BYTE,got);require(glGetError()==GL_NO_ERROR,"sample texture");
+    if(memcmp(got,expected,4))fprintf(stderr,"texture pixel: got %u %u %u %u expected %u %u %u %u\n",got[0],got[1],got[2],got[3],expected[0],expected[1],expected[2],expected[3]);
+    for(unsigned i=0;i<4;i++)require(abs((int)got[i]-expected[i])<=1,"texture texel");
+}
+static void textures(void) {
+    const GLfloat vertices[]={-1,-1,3,-1,-1,3};GLuint buffer;glGenBuffers(1,&buffer);glBindBuffer(GL_ARRAY_BUFFER,buffer);
+    glBufferData(GL_ARRAY_BUFFER,sizeof(vertices),vertices,GL_STATIC_DRAW);glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,0,NULL);glEnableVertexAttribArray(0);
+    glBindFramebuffer(GL_FRAMEBUFFER,0);
+    GLuint flat=texture_program(NULL,"precision mediump float;varying vec2 uv;uniform sampler2D source;void main(){gl_FragColor=texture2D(source,uv);}");
+    GLuint tex;glGenTextures(1,&tex);glBindTexture(GL_TEXTURE_2D,tex);
+    const unsigned char colors[3][4]={{255,0,0,255},{0,255,0,255},{0,0,255,255}};
+    unsigned char pixels[64];
+    for(unsigned level=0;level<3;level++){
+        unsigned n=4>>level;for(unsigned i=0;i<n*n;i++)memcpy(pixels+i*4,colors[level],4);
+        glTexImage2D(GL_TEXTURE_2D,level,GL_RGBA,n,n,0,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
+    }
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST_MIPMAP_NEAREST);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
+    texture_pixel(flat,8,colors[0]);texture_pixel(flat,1,colors[2]);
+    glGenerateMipmap(GL_TEXTURE_2D);require(glGetError()==GL_NO_ERROR,"generate 2D mipmaps");texture_pixel(flat,1,colors[0]);
+    glDeleteTextures(1,&tex);glDeleteProgram(flat);
+    puts("zink-textures-2d-ok: uploaded mip selection and regenerated 2D mip levels");fflush(stdout);
+    // Explicit texture LOD is core GLSL ES 1.00 in the vertex stage; the
+    // fragment-stage EXT_shader_texture_lod extension need not be advertised.
+    GLint units=0;glGetIntegerv(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS,&units);require(units>0,"vertex texture sampling");
+    GLuint cube=texture_program("attribute vec2 position;uniform samplerCube source;uniform vec3 direction;varying mediump vec4 color;void main(){gl_Position=vec4(position,0.,1.);color=textureCubeLod(source,direction,2.);}",
+        "precision mediump float;varying mediump vec4 color;void main(){gl_FragColor=color;}");
+    glGenTextures(1,&tex);glBindTexture(GL_TEXTURE_CUBE_MAP,tex);
+    const unsigned char faces[6][4]={{255,0,0,255},{0,255,0,255},{0,0,255,255},{255,255,0,255},{255,0,255,255},{0,255,255,255}};
+    const GLfloat directions[6][3]={{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}};
+    for(unsigned face=0;face<6;face++)for(unsigned level=0;level<3;level++){
+        unsigned n=4>>level;for(unsigned i=0;i<n*n;i++)memcpy(pixels+i*4,level?colors[0]:faces[face],4);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face,level,GL_RGBA,n,n,0,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP,GL_TEXTURE_MIN_FILTER,GL_NEAREST_MIPMAP_NEAREST);glTexParameteri(GL_TEXTURE_CUBE_MAP,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);glTexParameteri(GL_TEXTURE_CUBE_MAP,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
+    glGenerateMipmap(GL_TEXTURE_CUBE_MAP);require(glGetError()==GL_NO_ERROR,"generate cube mipmaps");
+    glUseProgram(cube);GLint direction=glGetUniformLocation(cube,"direction");require(direction>=0,"cube direction");
+    for(unsigned face=0;face<6;face++){glUniform3fv(direction,1,directions[face]);texture_pixel(cube,1,faces[face]);}
+    glDeleteTextures(1,&tex);glDeleteProgram(cube);glDeleteBuffers(1,&buffer);
+    puts("zink-textures-ok: distinct uploaded 2D mip levels, regenerated mips and all six cube faces sampled at LOD2 on GPU");fflush(stdout);
+}
 int main(int argc, char **argv) {
-    int es3=!(argc==2 && !strcmp(argv[1],"--mrt"));
+    int texture_only=argc==2 && !strcmp(argv[1],"--textures");
+    int es3=!(texture_only || (argc==2 && !strcmp(argv[1],"--mrt")));
     PFNEGLGETPLATFORMDISPLAYEXTPROC get=(void *)eglGetProcAddress("eglGetPlatformDisplayEXT");require(get!=NULL,"platform display entrypoint");
     EGLDisplay display=get(EGL_PLATFORM_SURFACELESS_MESA,EGL_DEFAULT_DISPLAY,NULL);EGLint major,minor;
     require(eglInitialize(display,&major,&minor),"initialize EGL");require(eglBindAPI(EGL_OPENGL_ES_API),"bind GLES");
@@ -97,7 +147,7 @@ int main(int argc, char **argv) {
     const char *renderer=(const char *)glGetString(GL_RENDERER);require(renderer && strstr(renderer,"zink"),"original Zink renderer");
     printf("GL_VERSION=%s\nGL_RENDERER=%s\n",glGetString(GL_VERSION),renderer);fflush(stdout);
     if(es3){GLint version_major=0;glGetIntegerv(GL_MAJOR_VERSION,&version_major);require(version_major>=3,"real GLES3 version");}
-    draw(es3);require(eglMakeCurrent(display,EGL_NO_SURFACE,EGL_NO_SURFACE,EGL_NO_CONTEXT),"release context");
+    if(texture_only)textures();else draw(es3);require(eglMakeCurrent(display,EGL_NO_SURFACE,EGL_NO_SURFACE,EGL_NO_CONTEXT),"release context");
     require(eglDestroyContext(display,context) && eglDestroySurface(display,surface) && eglTerminate(display),"teardown");
-    puts(es3?"zink-es3-ok":"zink-es2-mrt-ok");return 0;
+    puts(texture_only?"zink-es2-textures-ok":es3?"zink-es3-ok":"zink-es2-mrt-ok");return 0;
 }

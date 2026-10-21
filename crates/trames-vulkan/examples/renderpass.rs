@@ -336,6 +336,319 @@ fn format_transfers(b: &mut Backend, m: &mut Memory, resources: [u64; 7]) {
     );
     println!("native-format-copy-ok: {verified} supported normalized/float/depth formats, exact texels, untouched tails and deferred cleanup correct");
 }
+// Exercise actual native images, views and subresource transfers with no shader
+// or CPU image fallback. The guest can drop every image handle while work runs.
+fn subresource_transfers(b: &mut Backend, m: &mut Memory, resources: [u64; 7]) {
+    let [dev, physical, queue, buffer, pool, cmd, fence] = resources;
+    for (ty, height, depth, layers, flags, view_type) in
+        [(0, 1, 1, 3, 0, 4), (1, 4, 1, 12, 16, 5), (2, 4, 4, 1, 0, 2)]
+    {
+        let usage = if ty == 1 { 23 } else { 7 };
+        call(b, m, 59, &[physical, 37, ty, 0, usage, flags, 0x7000]);
+        let mut p = [0u8; 32];
+        m.read(0x7000, &mut p).unwrap();
+        let props: Vec<_> = p[..24]
+            .chunks_exact(4)
+            .map(|v| u32::from_le_bytes(v.try_into().unwrap()))
+            .collect();
+        assert!(props[3] >= 3 && props[4] >= layers as u32);
+        call(
+            b,
+            m,
+            60,
+            &[
+                dev, 37, 4, height, usage, OUT, 0, 0, 0, flags, ty, depth, 3, layers,
+            ],
+        );
+        let img = word(m, OUT);
+        call(b, m, 62, &[dev, img, 0x7100]);
+        call(
+            b,
+            m,
+            14,
+            &[
+                dev,
+                word(m, 0x7100),
+                (word(m, 0x7110) as u32).trailing_zeros() as u64,
+                OUT,
+            ],
+        );
+        let backing = word(m, OUT);
+        call(b, m, 63, &[dev, img, backing, 0]);
+        words(m, 0x7200, &[1, 1, u32::MAX as u64, 0, u32::MAX as u64]);
+        call(b, m, 64, &[dev, img, 37, OUT, 0, view_type, 0, 0x7200]);
+        let view = word(m, OUT);
+        call(b, m, 65, &[dev, view]);
+        if flags == 16 {
+            words(m, 0x7200, &[1, 0, 3, 6, 6]);
+            call(b, m, 64, &[dev, img, 37, OUT, 0, 3, 0, 0x7200]);
+            call(b, m, 65, &[dev, word(m, OUT)]);
+            call(b, m, 7, &[physical, 0x7000]);
+            let cube_offset =
+                std::mem::offset_of!(ash::vk::PhysicalDeviceFeatures, image_cube_array) as u64;
+            if word(m, 0x7000 + cube_offset) as u32 != 0 {
+                words(m, 0x7200, &[1, 0, 3, 0, 12]);
+                call(b, m, 64, &[dev, img, 37, OUT, 0, 6, 0, 0x7200]);
+                call(b, m, 65, &[dev, word(m, OUT)]);
+            }
+            // A normal 2D attachment view can select a single nonzero mip/layer.
+            words(m, 0x7200, &[1, 1, 1, 5, 1]);
+            call(b, m, 64, &[dev, img, 37, OUT, 0, 1, 0, 0x7200]);
+            let view = word(m, OUT);
+            call(b, m, 66, &[dev, 37, 1, 0, 0, 2, 0, 0, OUT]);
+            let pass = word(m, OUT);
+            assert_ne!(request(b, m, 68, &[dev, pass, view, 4, 4, OUT]), 0);
+            call(b, m, 68, &[dev, pass, view, 2, 2, OUT]);
+            let fb = word(m, OUT);
+            call(b, m, 69, &[dev, fb]);
+            call(b, m, 67, &[dev, pass]);
+            call(b, m, 65, &[dev, view]);
+        }
+        call(b, m, 38, &[dev, cmd, 0]);
+        let slice = 4 * height * 4;
+        for i in 0..layers * depth {
+            call(
+                b,
+                m,
+                46,
+                &[dev, cmd, buffer, i * slice, slice, 0xff112200 + i * 0x101],
+            );
+        }
+        words(m, 0x6900, &[img, 0, 6144, 0, 1, 1, 0, 3, 0, layers]);
+        call(b, m, 44, &[dev, cmd, 4096, 4096, 4096, 2048, 0x6900, 1, 10]);
+        words(
+            m,
+            0x6a00,
+            &[0, 0, 0, 1, 0, 0, layers, 0, 0, 0, 4, height, depth],
+        );
+        call(b, m, 94, &[dev, cmd, img, 1, buffer, 0x6a00, 1]);
+        call(b, m, 44, &[dev, cmd, 4096, 4096, 4096, 6144, 0, 0, 10]);
+        let layer = if ty == 2 { 0 } else { layers - 1 };
+        let z = if ty == 2 { depth - 1 } else { 0 };
+        words(
+            m,
+            0x7300,
+            &[1, 0, 0, 1, 0, 0, 0, 1, 0, layer, 1, 0, 0, z, 4, height, 1],
+        );
+        // Nonoverlapping layers/slices of the same image are legal copies.
+        call(b, m, 134, &[dev, cmd, img, 1, img, 1, 0x7300, 1]);
+        call(b, m, 44, &[dev, cmd, 4096, 4096, 4096, 6144, 0, 0, 10]);
+        let half_h = (height / 2).max(1);
+        let half_d = (depth / 2).max(1);
+        words(
+            m,
+            0x7400,
+            &[
+                1, 0, 0, layers, 0, 0, 0, 4, height, depth, 1, 1, 0, layers, 0, 0, 0, 2, half_h,
+                half_d,
+            ],
+        );
+        call(b, m, 135, &[dev, cmd, img, 1, img, 1, 0x7400, 1, 0]);
+        m.write(
+            0x7500,
+            &[0f32, 1., 0., 1.]
+                .into_iter()
+                .flat_map(f32::to_le_bytes)
+                .collect::<Vec<_>>(),
+        )
+        .unwrap();
+        words(m, 0x7600, &[1, 2, u32::MAX as u64, layer, 1]);
+        call(b, m, 114, &[dev, cmd, img, 1, 0x7500, 0x7600, 1]);
+        call(b, m, 44, &[dev, cmd, 4096, 4096, 6144, 6144, 0, 0, 10]);
+        call(b, m, 46, &[dev, cmd, buffer, 0, 1024, 0xdddddddd]);
+        call(b, m, 44, &[dev, cmd, 4096, 4096, 4096, 4096, 0, 0, 10]);
+        call(b, m, 74, &[dev, cmd, img, 1, buffer, 0x6a00, 1]);
+        words(
+            m,
+            0x6a00,
+            &[768, 0, 0, 1, 1, 0, layers, 0, 0, 0, 2, half_h, half_d],
+        );
+        call(b, m, 74, &[dev, cmd, img, 1, buffer, 0x6a00, 1]);
+        words(m, 0x6a00, &[1008, 0, 0, 1, 2, layer, 1, 0, 0, 0, 1, 1, 1]);
+        call(b, m, 74, &[dev, cmd, img, 1, buffer, 0x6a00, 1]);
+        call(b, m, 44, &[dev, cmd, 4096, 16384, 4096, 8192, 0, 0, 10]);
+        call(b, m, 39, &[dev, cmd]);
+        words(m, 0x6b00, &[cmd]);
+        words(m, 0x6c00, &[0, 0, 0, 0x6b00, 1, 0, 0]);
+        call(b, m, 56, &[dev, queue, 0x6c00, 1, fence]);
+        call(b, m, 61, &[dev, img]);
+        call(b, m, 15, &[dev, backing]);
+        poll(b, m, 51, &[dev, fence], 1);
+        let mut got = [0u8; 1024];
+        m.read(0x4000, &mut got).unwrap();
+        let mut expected = [0xdd; 1024];
+        for i in 0..layers * depth {
+            let source = if i == layers * depth - 1 { 0 } else { i };
+            let color = (0xff112200u32 + source as u32 * 0x101).to_le_bytes();
+            for pixel in
+                expected[(i * slice) as usize..((i + 1) * slice) as usize].chunks_exact_mut(4)
+            {
+                pixel.copy_from_slice(&color);
+            }
+        }
+        let half_slice = 2 * half_h * 4;
+        for i in 0..layers * half_d {
+            let mut source = if ty == 2 { i * 2 + 1 } else { i };
+            if source == layers * depth - 1 {
+                source = 0;
+            }
+            let color = (0xff112200u32 + source as u32 * 0x101).to_le_bytes();
+            for pixel in expected
+                [768 + (i * half_slice) as usize..768 + ((i + 1) * half_slice) as usize]
+                .chunks_exact_mut(4)
+            {
+                pixel.copy_from_slice(&color);
+            }
+        }
+        expected[1008..1012].copy_from_slice(&[0, 255, 0, 255]);
+        assert_eq!(
+            got, expected,
+            "image type {ty}: base, mip blit, per-layer clear and untouched padding"
+        );
+        call(b, m, 53, &[dev, pool, 0]);
+        call(b, m, 50, &[dev, fence]);
+    }
+    // Comparison samplers preserve the caller's actual compare operation.
+    m.write(
+        0x7500,
+        &[0f32, 0., 2.]
+            .into_iter()
+            .flat_map(f32::to_le_bytes)
+            .collect::<Vec<_>>(),
+    )
+    .unwrap();
+    for op in 0..8 {
+        call(
+            b,
+            m,
+            92,
+            &[dev, 0, 0, 0, 2, 2, 2, 0, 0x7500, OUT, 0, 0, 1, op],
+        );
+        call(b, m, 93, &[dev, word(m, OUT)]);
+    }
+    // Depth clearing is native and uses only the specified mip/layer.
+    call(b, m, 60, &[dev, 126, 4, 4, 3, OUT, 0, 0, 0, 0, 1, 1, 3, 2]);
+    let img = word(m, OUT);
+    call(b, m, 62, &[dev, img, 0x7100]);
+    call(
+        b,
+        m,
+        14,
+        &[
+            dev,
+            word(m, 0x7100),
+            (word(m, 0x7110) as u32).trailing_zeros() as u64,
+            OUT,
+        ],
+    );
+    let backing = word(m, OUT);
+    call(b, m, 63, &[dev, img, backing, 0]);
+    call(b, m, 38, &[dev, cmd, 0]);
+    words(m, 0x6900, &[img, 0, 4096, 0, 7, 2, 0, 3, 0, 2]);
+    call(b, m, 44, &[dev, cmd, 4096, 4096, 0, 4096, 0x6900, 1, 10]);
+    m.write(
+        0x7500,
+        &[0.25f32.to_bits().to_le_bytes(), 0u32.to_le_bytes()].concat(),
+    )
+    .unwrap();
+    words(m, 0x7600, &[2, 1, 1, 1, 1]);
+    call(b, m, 136, &[dev, cmd, img, 7, 0x7500, 0x7600, 1]);
+    words(m, 0x6900, &[img, 4096, 2048, 7, 6, 2, 1, 1, 1, 1]);
+    call(b, m, 44, &[dev, cmd, 4096, 4096, 0, 0, 0x6900, 1, 10]);
+    words(m, 0x6a00, &[0, 0, 0, 2, 1, 1, 1, 0, 0, 0, 2, 2, 1]);
+    call(b, m, 74, &[dev, cmd, img, 6, buffer, 0x6a00, 1]);
+    call(b, m, 44, &[dev, cmd, 4096, 16384, 4096, 8192, 0, 0, 10]);
+    call(b, m, 39, &[dev, cmd]);
+    call(b, m, 56, &[dev, queue, 0x6c00, 1, fence]);
+    call(b, m, 61, &[dev, img]);
+    call(b, m, 15, &[dev, backing]);
+    poll(b, m, 51, &[dev, fence], 1);
+    let mut got = [0; 16];
+    m.read(0x4000, &mut got).unwrap();
+    assert!(got.chunks_exact(4).all(|p| p == 0.25f32.to_le_bytes()));
+    call(b, m, 53, &[dev, pool, 0]);
+    call(b, m, 50, &[dev, fence]);
+    println!("native-subresources-ok: 1D/2D arrays, cube views, 3D, mip blits, layer/slice self-copy, partial color/depth clears and exact readback with deferred cleanup");
+}
+fn volume_slice_attachment(b: &mut Backend, m: &mut Memory, resources: [u64; 7]) {
+    let [dev, physical, queue, buffer, pool, cmd, fence] = resources;
+    call(b, m, 115, &[physical, OUT]);
+    if word(m, OUT) & 512 != 0 {
+        call(b, m, 133, &[physical, 0x7700]);
+        if word(m, 0x7710) as u32 == 0 {
+            println!("native-volume-slice: native portability device does not expose 2D views of 3D images");
+            return;
+        }
+    }
+    if request(b, m, 59, &[physical, 37, 2, 0, 19, 32, 0x7000]) != 0 {
+        println!("native-volume-slice: native device does not support the selected 3D attachment profile");
+        return;
+    }
+    call(b, m, 60, &[dev, 37, 4, 4, 19, OUT, 0, 0, 0, 32, 2, 4, 3, 1]);
+    let img = word(m, OUT);
+    call(b, m, 62, &[dev, img, 0x7100]);
+    call(
+        b,
+        m,
+        14,
+        &[
+            dev,
+            word(m, 0x7100),
+            (word(m, 0x7110) as u32).trailing_zeros() as u64,
+            OUT,
+        ],
+    );
+    let backing = word(m, OUT);
+    call(b, m, 63, &[dev, img, backing, 0]);
+    // Mip 1 is a 2x2x2 volume; render only into slice 1.
+    words(m, 0x7200, &[1, 1, 1, 1, 1]);
+    call(b, m, 64, &[dev, img, 37, OUT, 0, 1, 0, 0x7200]);
+    let view = word(m, OUT);
+    words(m, 0x7200, &[1, 1, 1, 0, 2]);
+    call(b, m, 64, &[dev, img, 37, OUT, 0, 5, 0, 0x7200]);
+    let array_view = word(m, OUT);
+    call(b, m, 66, &[dev, 37, 1, 0, 0, 1, 0, 0, OUT]);
+    let pass = word(m, OUT);
+    call(b, m, 68, &[dev, pass, view, 2, 2, OUT]);
+    let fb = word(m, OUT);
+    call(b, m, 38, &[dev, cmd, 0]);
+    m.write(
+        0x7500,
+        &[0f32, 0., 1., 1.]
+            .into_iter()
+            .flat_map(f32::to_le_bytes)
+            .collect::<Vec<_>>(),
+    )
+    .unwrap();
+    call(b, m, 71, &[dev, cmd, pass, fb, 0, 0, 2, 2, 0x7500, 1]);
+    call(b, m, 72, &[dev, cmd]);
+    words(m, 0x6900, &[img, 256, 2048, 1, 6, 1, 1, 1, 0, 1]);
+    call(b, m, 44, &[dev, cmd, 1024, 4096, 0, 0, 0x6900, 1, 10]);
+    words(m, 0x6a00, &[0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 2, 2, 1]);
+    call(b, m, 74, &[dev, cmd, img, 6, buffer, 0x6a00, 1]);
+    call(b, m, 44, &[dev, cmd, 4096, 16384, 4096, 8192, 0, 0, 10]);
+    call(b, m, 39, &[dev, cmd]);
+    words(m, 0x6b00, &[cmd]);
+    words(m, 0x6c00, &[0, 0, 0, 0x6b00, 1, 0, 0]);
+    call(b, m, 56, &[dev, queue, 0x6c00, 1, fence]);
+    for (op, id) in [
+        (69, fb),
+        (67, pass),
+        (65, view),
+        (65, array_view),
+        (61, img),
+        (15, backing),
+    ] {
+        call(b, m, op, &[dev, id]);
+    }
+    poll(b, m, 51, &[dev, fence], 1);
+    let mut got = [0; 16];
+    m.read(0x4000, &mut got).unwrap();
+    assert!(got.chunks_exact(4).all(|p| p == [0, 0, 255, 255]));
+    call(b, m, 53, &[dev, pool, 0]);
+    call(b, m, 50, &[dev, fence]);
+    println!("native-volume-slice-ok: 2D/array views of a nonzero 3D mip, attachment rendering and exact selected-slice readback");
+}
 fn main() {
     let mut m = Memory::new(128 << 10);
     m.map(0x1000, 8 * PAGE_SIZE, Permissions::RW).unwrap();
@@ -353,7 +666,20 @@ fn main() {
     let disabled = word(&m, OUT);
     assert_eq!(request(&mut b, &mut m, 125, &[disabled]), (-8i64) as u64);
     call(&mut b, &mut m, 9, &[disabled]);
-    call(&mut b, &mut m, 8, &[physical, 0, OUT, 0, 0, 1008]);
+    call(&mut b, &mut m, 7, &[physical, 0x7000]);
+    let cube_offset =
+        std::mem::offset_of!(ash::vk::PhysicalDeviceFeatures, image_cube_array) as u64;
+    let cube_feature = if word(&m, 0x7000 + cube_offset) as u32 != 0 {
+        32
+    } else {
+        0
+    };
+    call(
+        &mut b,
+        &mut m,
+        8,
+        &[physical, 0, OUT, 0, cube_feature, 1009],
+    );
     let dev = word(&m, OUT);
     call(&mut b, &mut m, 10, &[dev, 0, 0, OUT]);
     let queue = word(&m, OUT);
@@ -533,6 +859,16 @@ fn main() {
         [dev, physical, queue, buffer, pool, cmd, fence],
     );
     format_transfers(
+        &mut b,
+        &mut m,
+        [dev, physical, queue, buffer, pool, cmd, fence],
+    );
+    subresource_transfers(
+        &mut b,
+        &mut m,
+        [dev, physical, queue, buffer, pool, cmd, fence],
+    );
+    volume_slice_attachment(
         &mut b,
         &mut m,
         [dev, physical, queue, buffer, pool, cmd, fence],

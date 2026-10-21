@@ -73,6 +73,7 @@ impl Capabilities {
                         native.constant_alpha_color_blend_factors != 0,
                     )
                     .image_view_format_swizzle(native.image_view_format_swizzle != 0)
+                    .image_view2_d_on3_d_image(native.image_view2_d_on3_d_image != 0)
                     .point_polygons(native.point_polygons != 0)
                     .sampler_mip_lod_bias(native.sampler_mip_lod_bias != 0)
                     .triangle_fans(native.triangle_fans != 0)
@@ -158,7 +159,7 @@ impl Capabilities {
             0,
             0,
             p.image_view_format_swizzle,
-            0,
+            p.image_view2_d_on3_d_image,
             0,
             0,
             p.point_polygons,

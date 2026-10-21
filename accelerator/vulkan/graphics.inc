@@ -16,8 +16,8 @@ static int image_formats(const void *chain,const VkImageFormatListCreateInfo **l
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateImage(VkDevice d,const VkImageCreateInfo *info,const VkAllocationCallbacks *allocator,VkImage *out) {
     if(!info || info->sType!=VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;ALLOCATOR(allocator);
     const VkImageFormatListCreateInfo *list;if(!image_formats(info->pNext,&list))return VK_ERROR_FEATURE_NOT_PRESENT;
-    if((info->flags&~(VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT|VK_IMAGE_CREATE_EXTENDED_USAGE_BIT)) || info->imageType!=VK_IMAGE_TYPE_2D || info->extent.depth!=1 || info->mipLevels!=1 || info->arrayLayers!=1 || info->samples!=VK_SAMPLE_COUNT_1_BIT || info->tiling!=VK_IMAGE_TILING_OPTIMAL || info->sharingMode!=VK_SHARING_MODE_EXCLUSIVE || (info->initialLayout!=VK_IMAGE_LAYOUT_UNDEFINED && info->initialLayout!=VK_IMAGE_LAYOUT_PREINITIALIZED))return VK_ERROR_FEATURE_NOT_PRESENT;
-    return CALL(60,KEY(d),info->format,info->extent.width,info->extent.height,info->usage,PTR(out),info->initialLayout,list?PTR(list->pViewFormats):0,list?list->viewFormatCount:0,info->flags);
+    if((info->flags&~(VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT|VK_IMAGE_CREATE_EXTENDED_USAGE_BIT|VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT|VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT)) || info->imageType>VK_IMAGE_TYPE_3D || !info->extent.depth || !info->mipLevels || !info->arrayLayers || info->samples!=VK_SAMPLE_COUNT_1_BIT || info->tiling!=VK_IMAGE_TILING_OPTIMAL || info->sharingMode!=VK_SHARING_MODE_EXCLUSIVE || (info->initialLayout!=VK_IMAGE_LAYOUT_UNDEFINED && info->initialLayout!=VK_IMAGE_LAYOUT_PREINITIALIZED))return VK_ERROR_FEATURE_NOT_PRESENT;
+    return CALL(60,KEY(d),info->format,info->extent.width,info->extent.height,info->usage,PTR(out),info->initialLayout,list?PTR(list->pViewFormats):0,list?list->viewFormatCount:0,info->flags,info->imageType,info->extent.depth,info->mipLevels,info->arrayLayers);
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroyImage(VkDevice d,VkImage image,const VkAllocationCallbacks *allocator) {if(image)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(61,KEY(d),(uint64_t)image));}
 VKAPI_ATTR void VKAPI_CALL vkGetImageMemoryRequirements(VkDevice d,VkImage image,VkMemoryRequirements *out) {checked(CALL(62,KEY(d),(uint64_t)image,PTR(out)));}
@@ -27,8 +27,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateImageView(VkDevice d,const VkImageViewCre
     const VkImageViewUsageCreateInfo *usage=info->pNext;
     if(usage && !VALID(usage,VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO))return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkImageSubresourceRange *r=&info->subresourceRange;
-    if(info->flags || (info->viewType!=VK_IMAGE_VIEW_TYPE_2D && info->viewType!=VK_IMAGE_VIEW_TYPE_2D_ARRAY) || info->components.r>VK_COMPONENT_SWIZZLE_A || info->components.g>VK_COMPONENT_SWIZZLE_A || info->components.b>VK_COMPONENT_SWIZZLE_A || info->components.a>VK_COMPONENT_SWIZZLE_A || r->aspectMask!=((info->format==VK_FORMAT_D16_UNORM||info->format==VK_FORMAT_D32_SFLOAT)?VK_IMAGE_ASPECT_DEPTH_BIT:VK_IMAGE_ASPECT_COLOR_BIT) || r->baseMipLevel || r->levelCount!=1 || r->baseArrayLayer || r->layerCount!=1)return VK_ERROR_FEATURE_NOT_PRESENT;
-    return CALL(64,KEY(d),(uint64_t)info->image,info->format,PTR(out),usage?usage->usage:0,info->viewType,(uint64_t)info->components.r|((uint64_t)info->components.g<<4)|((uint64_t)info->components.b<<8)|((uint64_t)info->components.a<<12));
+    if(info->flags || info->viewType>VK_IMAGE_VIEW_TYPE_CUBE_ARRAY || info->components.r>VK_COMPONENT_SWIZZLE_A || info->components.g>VK_COMPONENT_SWIZZLE_A || info->components.b>VK_COMPONENT_SWIZZLE_A || info->components.a>VK_COMPONENT_SWIZZLE_A || r->aspectMask!=((info->format==VK_FORMAT_D16_UNORM||info->format==VK_FORMAT_D32_SFLOAT)?VK_IMAGE_ASPECT_DEPTH_BIT:VK_IMAGE_ASPECT_COLOR_BIT))return VK_ERROR_FEATURE_NOT_PRESENT;
+    uint64_t range[5]={r->aspectMask,r->baseMipLevel,r->levelCount,r->baseArrayLayer,r->layerCount};
+    return CALL(64,KEY(d),(uint64_t)info->image,info->format,PTR(out),usage?usage->usage:0,info->viewType,(uint64_t)info->components.r|((uint64_t)info->components.g<<4)|((uint64_t)info->components.b<<8)|((uint64_t)info->components.a<<12),PTR(range));
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroyImageView(VkDevice d,VkImageView view,const VkAllocationCallbacks *allocator) {if(view)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(65,KEY(d),(uint64_t)view));}
 // Single subpass: used colors in attachment order, sparse output locations, optional depth. The copied
@@ -157,11 +158,27 @@ VKAPI_ATTR void VKAPI_CALL vkCmdCopyImage(VkCommandBuffer c,VkImage src,VkImageL
     }
     checked(CALL(134,DEVKEY(c),KEY(c),(uint64_t)src,src_layout,(uint64_t)dst,dst_layout,PTR(data),count));
 }
+VKAPI_ATTR void VKAPI_CALL vkCmdBlitImage(VkCommandBuffer c,VkImage src,VkImageLayout src_layout,VkImage dst,VkImageLayout dst_layout,uint32_t count,const VkImageBlit *regions,VkFilter filter) {
+    if(!count || count>64 || !regions)checked(VK_ERROR_FEATURE_NOT_PRESENT);uint64_t data[64][20];
+    for(uint32_t i=0;i<count;i++){
+        const VkImageBlit *r=regions+i;uint64_t *v=data[i];
+        v[0]=r->srcSubresource.aspectMask;v[1]=r->srcSubresource.mipLevel;v[2]=r->srcSubresource.baseArrayLayer;v[3]=r->srcSubresource.layerCount;
+        v[10]=r->dstSubresource.aspectMask;v[11]=r->dstSubresource.mipLevel;v[12]=r->dstSubresource.baseArrayLayer;v[13]=r->dstSubresource.layerCount;
+        for(unsigned j=0;j<2;j++){v[4+j*3]=(int64_t)r->srcOffsets[j].x;v[5+j*3]=(int64_t)r->srcOffsets[j].y;v[6+j*3]=(int64_t)r->srcOffsets[j].z;
+            v[14+j*3]=(int64_t)r->dstOffsets[j].x;v[15+j*3]=(int64_t)r->dstOffsets[j].y;v[16+j*3]=(int64_t)r->dstOffsets[j].z;}
+    }
+    checked(CALL(135,DEVKEY(c),KEY(c),(uint64_t)src,src_layout,(uint64_t)dst,dst_layout,PTR(data),count,filter));
+}
+VKAPI_ATTR void VKAPI_CALL vkCmdClearDepthStencilImage(VkCommandBuffer c,VkImage image,VkImageLayout layout,const VkClearDepthStencilValue *clear,uint32_t count,const VkImageSubresourceRange *ranges) {
+    if(!count || count>64 || !clear || !ranges)checked(VK_ERROR_FEATURE_NOT_PRESENT);
+    uint64_t wire[64][5];for(uint32_t i=0;i<count;i++){const VkImageSubresourceRange *r=ranges+i;wire[i][0]=r->aspectMask;wire[i][1]=r->baseMipLevel;wire[i][2]=r->levelCount;wire[i][3]=r->baseArrayLayer;wire[i][4]=r->layerCount;}
+    checked(CALL(136,DEVKEY(c),KEY(c),(uint64_t)image,layout,PTR(clear),PTR(wire),count));
+}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateSampler(VkDevice d,const VkSamplerCreateInfo *info,const VkAllocationCallbacks *allocator,VkSampler *out) {
     CHECK(info,VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);ALLOCATOR(allocator);
-    if(info->flags || info->compareEnable || info->unnormalizedCoordinates)return VK_ERROR_FEATURE_NOT_PRESENT;
+    if(info->flags || info->unnormalizedCoordinates)return VK_ERROR_FEATURE_NOT_PRESENT;
     float lod[3]={info->mipLodBias,info->minLod,info->maxLod};uint32_t anisotropy;memcpy(&anisotropy,&info->maxAnisotropy,4);
-    return CALL(92,KEY(d),info->magFilter,info->minFilter,info->mipmapMode,info->addressModeU,info->addressModeV,info->addressModeW,info->borderColor,PTR(lod),PTR(out),info->anisotropyEnable,anisotropy);
+    return CALL(92,KEY(d),info->magFilter,info->minFilter,info->mipmapMode,info->addressModeU,info->addressModeV,info->addressModeW,info->borderColor,PTR(lod),PTR(out),info->anisotropyEnable,anisotropy,info->compareEnable,info->compareOp);
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroySampler(VkDevice d,VkSampler sampler,const VkAllocationCallbacks *allocator) {if(sampler)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(93,KEY(d),(uint64_t)sampler));}
 VKAPI_ATTR void VKAPI_CALL vkCmdBindVertexBuffers(VkCommandBuffer c,uint32_t first,uint32_t count,const VkBuffer *buffers,const VkDeviceSize *offsets) {

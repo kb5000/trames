@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('--store', type=Path, required=True)
 p.add_argument('--output', type=Path, required=True)
-p.add_argument('--stage', choices=('mrt', 'es3', 'all'), default='all')
+p.add_argument('--stage', choices=('mrt', 'textures', 'graphics', 'es3', 'all'), default='all')
 p.add_argument('--runner', type=Path, default=ROOT/'target/release/trames-run')
 p.add_argument('--timeout', type=float, default=180)
 a = p.parse_args()
@@ -48,14 +48,15 @@ if report['cpu_vulkan_reference_diagnostic']:
 imports = ['--file', prefix+'.so='+str(icd), '--file', prefix+'.json='+str(driver_json),
     '--exec-file', prefix+'='+str(fixture)]
 try:
-    for stage in (('mrt', 'es3') if a.stage == 'all' else (a.stage,)):
+    stages = ('mrt', 'textures', 'es3') if a.stage == 'all' else (('mrt', 'textures') if a.stage == 'graphics' else (a.stage,))
+    for stage in stages:
         command = [*base, *[v for pair in environment for v in pair], *imports,
-                   '--guest', prefix, *(['--mrt'] if stage == 'mrt' else [])]
+                   '--guest', prefix, *([] if stage == 'es3' else ['--'+stage])]
         result = subprocess.run(command, capture_output=True, timeout=a.timeout)
         imports = []
         (a.output/(stage+'.stdout')).write_bytes(result.stdout)
         (a.output/(stage+'.stderr')).write_bytes(result.stderr)
-        marker = b'zink-es2-mrt-ok' if stage == 'mrt' else b'zink-es3-ok'
+        marker = {'mrt': b'zink-es2-mrt-ok', 'textures': b'zink-textures-ok', 'es3': b'zink-es3-ok'}[stage]
         passed = result.returncode == 0 and marker in result.stdout
         report['cases'][stage] = dict(exit_code=result.returncode, passed=passed)
         print(stage, 'passed' if passed else 'not available', flush=True)

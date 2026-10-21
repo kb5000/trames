@@ -355,11 +355,11 @@ impl Backend {
                     let id = self.put(Kind::SwapchainImage, image.as_raw(), vec![], 0, a[7] as u32);
                     let object = &self.objects[&id];
                     *object.swapchain.borrow_mut() = Some(native.clone());
-                    object.image.set(Some(ImageShape {
-                        width: a[5] as u32,
-                        height: a[6] as u32,
-                        format: vk::Format::B8G8R8A8_UNORM,
-                    }));
+                    object.image.set(Some(ImageShape::d2(
+                        a[5] as u32,
+                        a[6] as u32,
+                        vk::Format::B8G8R8A8_UNORM,
+                    )));
                     ids.push(id);
                 }
                 let id = self.id();

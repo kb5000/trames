@@ -446,7 +446,7 @@ jobs:
           if [[ '${{ needs.scope.outputs.native_scope }}' == zink-gles ]]; then
             if [[ '${{ needs.scope.outputs.zink_mrt_only }}' == true ]]; then
               python3 tests/integration/zink-foundation.py --probe-only --require-render --snapshot-store target/zink-native-bundle/store
-              python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-es3-linux --stage mrt
+              python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-es3-linux --stage graphics
               python3 scripts/prepare-zink-native-bundle.py --es3
             else
               python3 tests/integration/zink-foundation.py --require-render --snapshot-store target/zink-native-bundle/store
@@ -511,7 +511,7 @@ jobs:
           export TRAMES_VULKAN_TRACE=1
           python3 tests/integration/zink-foundation.py --store target/zink-native-bundle/store --probe-only --require-render --output target/zink-metal
           if [[ '${{ needs.scope.outputs.zink_mrt_only }}' == true ]]; then
-            python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-es3-metal --stage mrt
+            python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-es3-metal --stage graphics
           fi
       - uses: actions/upload-artifact@v4
         if: always()

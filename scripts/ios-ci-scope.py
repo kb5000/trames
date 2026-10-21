@@ -767,7 +767,7 @@ def main():
                             if plan['native_scope'] != 'zink-gles':
                                 raise RuntimeError('MRT plan requires the changed GLES native/guest validation')
                             output.write('zink_mrt_only=true\n')
-                            print('Run changed MRT/format native pixels and original Mesa dense/sparse draws on Linux and Apple; reuse unchanged CPU/MMU/network/UI and unrelated compute/timeline checks. No IPA.')
+                            print('Run changed MRT/format/image-subresource native pixels plus original Mesa dense/sparse, mipmap and cube draws on Linux and Apple; reuse unchanged CPU/MMU/network/UI and unrelated compute/timeline checks. No IPA.')
                         if gpu_reuse:
                             output.write('zink_egl_only=true\n')
                             print('Reuse exact unchanged Linux/Apple Vulkan module checks; validate changed EGL component, distro install and embedding.')

@@ -4,6 +4,9 @@
 Vulkan/MoltenVK 使用 GPU，最终让 Firefox 实际启用硬件 WebRender。本批没有修改
 Mesa、Firefox 或驱动版本字符串；原版 Mesa 25.1.9 仍只提供 GLES2 context。
 
+后续的 [图像/子资源批次](zink-images.md) 已继续实现 array/cube/3D/mipmap、
+原生 blit、局部 depth clear 与比较 sampler；下文记录首批 MRT 的原始边界。
+
 ## 已实现
 
 - legacy/renderpass2 的单 subpass 支持最多 8 个颜色输出，受真实 driver limit

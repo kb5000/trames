@@ -95,7 +95,9 @@ impl Backend {
             return unsupported();
         }
         let anisotropy = f32::from_bits(a[11] as u32);
-        if a[10] > 1
+        if a[12] > 1
+            || a[13] > 7
+            || a[10] > 1
             || a[10] != 0
                 && (!device.anisotropy
                     || !anisotropy.is_finite()
@@ -116,7 +118,9 @@ impl Backend {
             .border_color(vk::BorderColor::from_raw(a[7] as i32))
             .mip_lod_bias(lod[0])
             .min_lod(lod[1])
-            .max_lod(lod[2]);
+            .max_lod(lod[2])
+            .compare_enable(a[12] != 0)
+            .compare_op(vk::CompareOp::from_raw(a[13] as i32));
         let raw = unsafe { device.native.create_sampler(&info, None) }?;
         let id = self.put(Kind::Sampler, raw.as_raw(), vec![], 0, 0);
         self.publish(m, a[9], id)
