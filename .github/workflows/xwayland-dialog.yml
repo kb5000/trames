@@ -36,19 +36,19 @@ jobs:
           cargo fmt --all --check
           if python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("dialog_runtime_reuse")'; then
             python3 - <<'PYCODE'
-            import json,os,subprocess,urllib.request
-            p=json.load(open('.github/ios-validation-plan.json'))['dialog_runtime_reuse']
-            subprocess.run(['git','fetch','--depth=1','origin',p['sha']],check=True)
-            subprocess.run(['git','diff','--exit-code',p['sha'],'HEAD','--','crates','accelerator','Cargo.toml','Cargo.lock','vendor','.cargo','rust-toolchain.toml'],check=True)
-            def get(path):
-                req=urllib.request.Request('https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/'+path,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN']})
-                with urllib.request.urlopen(req) as response:return json.load(response)
-            run=get('actions/runs/'+str(p['run']))
-            assert run['head_sha']==p['sha'] and run['path']=='.github/workflows/xwayland-dialog.yml'
-            job=next(j for j in get('actions/runs/'+str(p['run'])+'/jobs')['jobs'] if j['name']=='linux')
-            assert any(x['name']=='Build only current Vulkan bridge and embedding' and x['conclusion']=='success' for x in job['steps'])
-            print('Reuse exact-source Vulkan31 and strict Clippy; only the failed fixture preparation and new layouts remain.')
-            PYCODE
+          import json,os,subprocess,urllib.request
+          p=json.load(open('.github/ios-validation-plan.json'))['dialog_runtime_reuse']
+          subprocess.run(['git','fetch','--depth=1','origin',p['sha']],check=True)
+          subprocess.run(['git','diff','--exit-code',p['sha'],'HEAD','--','crates','accelerator','Cargo.toml','Cargo.lock','vendor','.cargo','rust-toolchain.toml'],check=True)
+          def get(path):
+              req=urllib.request.Request('https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/'+path,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN']})
+              with urllib.request.urlopen(req) as response:return json.load(response)
+          run=get('actions/runs/'+str(p['run']))
+          assert run['head_sha']==p['sha'] and run['path']=='.github/workflows/xwayland-dialog.yml'
+          job=next(j for j in get('actions/runs/'+str(p['run'])+'/jobs')['jobs'] if j['name']=='linux')
+          assert any(x['name']=='Build only current Vulkan bridge and embedding' and x['conclusion']=='success' for x in job['steps'])
+          print('Reuse exact-source Vulkan31 and strict Clippy; only the failed fixture preparation and new layouts remain.')
+          PYCODE
           else
             cargo clippy -p trames-vulkan --all-targets --no-deps --locked -- -D warnings
             cargo test -p trames-vulkan --release --lib --locked

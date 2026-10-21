@@ -1,14 +1,9 @@
 {
-  "base_sha": "dc883698193b41872672a685333291dac496940b",
+  "base_sha": "113d6a6dbfeb893347021b68107d7c310270165e",
   "native_scope": "xwayland-dialog",
   "reason": "Retry only missing auto-selected APK fixture dependencies and add native pixel checks for four new layout modes; reuse exact-source passed Vulkan31/Clippy and Memory94. Production Rust/C/guest code unchanged.",
   "changed_file_sha256": {
-    ".github/workflows/xwayland-dialog.yml": "4577b48616737aa16ce922d28700bd0eea6e09ea572ef3f21d083baf8f9d806c",
-    "docs/validation/ipad-1.3-crashes.md": "3711b761fa597b2c2ab1361ee6774c2d781127c60437f7193eb84799fdaa0261",
-    "scripts/ios-ci-scope.py": "1c82e703fa766e2eba81aa2b83479b362e437e064333fe58e838456c1a041177",
-    "tests/fixtures/vulkan-render.c": "45cf1dd887fd7f7b6e8eeb71f9ace1618ee9c066e27078c474671e2b2a3e6f5b",
-    "tests/integration/xwayland-dialog-prepare.py": "fcd8456790f8cdfd06797b57809ec8c5977a3154c3b967787fb537ebc05b9c74",
-    "tests/integration/xwayland-dialog.py": "a2956ddc3e360c65324f94092a5e2a94fa10a1fb708a4009337f25b29701cc3f"
+    ".github/workflows/xwayland-dialog.yml": "6579eb8a3796e6921e99c5a54de641a72b98e5be0d65c854528872a61f048306"
   },
   "dialog_runtime_reuse": {
     "sha": "dc883698193b41872672a685333291dac496940b",
