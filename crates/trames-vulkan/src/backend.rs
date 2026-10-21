@@ -46,7 +46,15 @@ impl From<vk::Result> for Failure {
         Self::Vk(e)
     }
 }
+#[track_caller]
 fn invalid<T>() -> Result<T> {
+    static TRACE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    if *TRACE.get_or_init(|| std::env::var_os("TRAMES_VULKAN_TRACE").is_some()) {
+        eprintln!(
+            "trames-vulkan invalid state at {}",
+            std::panic::Location::caller()
+        );
+    }
     Err(Failure::Vk(vk::Result::ERROR_UNKNOWN))
 }
 fn unsupported<T>() -> Result<T> {
@@ -747,7 +755,8 @@ impl Backend {
             u64::from_le_bytes(bytes[i * 8..i * 8 + 8].try_into().unwrap())
         });
         static TRACE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-        if *TRACE.get_or_init(|| std::env::var_os("TRAMES_VULKAN_TRACE").is_some()) {
+        let trace = *TRACE.get_or_init(|| std::env::var_os("TRAMES_VULKAN_TRACE").is_some());
+        if trace {
             eprintln!("trames-vulkan op={operation} args={a:x?}");
         }
         self.collect();
@@ -762,7 +771,16 @@ impl Backend {
         };
         match result {
             Ok(value) => Ok(value),
-            Err(Failure::Vk(e)) => Ok(Invocation::Complete(e.as_raw() as i64 as u64)),
+            Err(Failure::Vk(e)) => {
+                if trace {
+                    eprintln!(
+                        "trames-vulkan op={operation} result={e:?} budget={}/{}",
+                        self.budget.used(),
+                        self.budget.limit()
+                    );
+                }
+                Ok(Invocation::Complete(e.as_raw() as i64 as u64))
+            }
             Err(Failure::Memory(e)) => Err(e),
         }
     }
@@ -1154,6 +1172,20 @@ impl Backend {
                         self.physical,
                         b.as_mut_ptr().cast(),
                     );
+                }
+                // The virtual device exposes a session quota, rather than the
+                // host's entire physical heap. Multiple contexts and coherent
+                // baselines still compete for the same live budget.
+                // SAFETY: u64 storage provides the native struct's alignment;
+                // the original Vulkan driver initialized this complete value.
+                let properties =
+                    unsafe { &mut *b.as_mut_ptr().cast::<vk::PhysicalDeviceMemoryProperties>() };
+                for heap in properties
+                    .memory_heaps
+                    .iter_mut()
+                    .take(properties.memory_heap_count as usize)
+                {
+                    heap.size = heap.size.min(self.budget.limit());
                 }
                 // Native coherent types are mirrored at queue submission and
                 // exposed host completion boundaries, with per-byte ownership.

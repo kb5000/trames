@@ -2116,6 +2116,9 @@ impl Backend {
                         let v = words32(m, a[2], 6)?;
                         let v: Vec<_> = v.into_iter().map(f32::from_bits).collect();
                         if !valid_viewport(&v, device.maintenance1) {
+                            if std::env::var_os("TRAMES_VULKAN_TRACE").is_some() {
+                                eprintln!("trames-vulkan invalid viewport {v:?}");
+                            }
                             return invalid();
                         }
                         let viewport = [vk::Viewport {

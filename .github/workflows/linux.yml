@@ -413,7 +413,7 @@ jobs:
             cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
             cargo test -p trames-vulkan --lib --locked
           fi
-          if ! python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_attachment_clear_reuse")'; then
+          if ! python3 -c 'import json; p=json.load(open(".github/ios-validation-plan.json")); assert p.get("zink_attachment_clear_reuse") or p.get("zink_gpu_budget_reuse")'; then
             modules='-p trames-wayland -p trames-vfs'
             if python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_present_damage_reuse")'; then modules='-p trames-wayland'; fi
             cargo clippy $modules --all-targets --no-deps --locked -- -D warnings
@@ -433,6 +433,8 @@ jobs:
             mode=--clear-only
           elif python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_present_damage_reuse")'; then
             mode=--damage-only
+          elif python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_gpu_budget_reuse")'; then
+            mode=--budget-only
           else
             target/zink-inputs/vulkan-copy-host | tee target/zink-wayland-native/image-copy.log
           fi
@@ -485,7 +487,7 @@ jobs:
             cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
             cargo test -p trames-vulkan --lib --locked
           fi
-          if ! python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_attachment_clear_reuse")'; then
+          if ! python3 -c 'import json; p=json.load(open(".github/ios-validation-plan.json")); assert p.get("zink_attachment_clear_reuse") or p.get("zink_gpu_budget_reuse")'; then
             modules='-p trames-wayland -p trames-vfs'
             if python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_present_damage_reuse")'; then modules='-p trames-wayland'; fi
             cargo clippy $modules --all-targets --no-deps --locked -- -D warnings
@@ -515,6 +517,7 @@ jobs:
           mode=--relay
           if python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_attachment_clear_reuse")'; then mode=--clear-only; fi
           if python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_present_damage_reuse")'; then mode=--damage-only; fi
+          if python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_gpu_budget_reuse")'; then mode=--budget-only; fi
           lldb --batch -o 'settings set target.process.stop-on-exec false' -o run -k 'thread backtrace all' -- "$(command -v python3)" tests/integration/zink-wayland.py "$mode" --store target/zink-native-bundle/store --output target/zink-wayland-metal --metal-validator target/zink-metal-pixels.dylib 2>&1 | tee target/zink-metal-debug.log
           python3 -c 'import json; assert json.load(open("target/zink-wayland-metal/results.json"))["passed"]'
       - uses: actions/upload-artifact@v4

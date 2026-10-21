@@ -51,6 +51,41 @@ Wayland 13 项及严格 Clippy 通过。原版 Mesa 客户端新增 damage-swap 
 保活验收，复用未变的 descriptor/sample/clear/TF 用例，Apple 仍要求导出纹理的
 逐像素 oracle。原始 Firefox 诊断及临时采集代码不提交，尚不构建 IPA。
 
+该源码 [5f6f905](https://github.com/kb5000/trames/commit/5f6f905e13de4d367cfb033d560af3b9cc7bfe58)
+的 [CI 39624044606](https://github.com/kb5000/trames/actions/runs/39624044606) 已在
+Linux 与云端 Apple Metal 完成新 damage-swap 用例。Apple 导出纹理逐像素检查
+覆盖双窗口、五种尺寸及旧图像保活，Wayland 13 项和 iOS FFI 编译通过。复用
+未变的 Vulkan/TF/descriptor/sample/clear 验证；这些公开证据只有合成测试数据。
+
+## Canvas 映射额度与 GPU 页面诊断
+
+继续推进的低刷新率诊断到达 CanvasRenderer 后，原生映射返回内存不足，浏览器
+随后退出。原来的 128 MiB 是跨地址空间共享的原生分配和 coherent baseline
+额度，与选择的 4 GiB guest 提交额度无关；原版内存 heap 查询却暴露宿主总容量。
+现在额度随所选 guest 内存按八分之一计算，上限 1 GiB；4 GiB 设置对应 512 MiB，
+同时限制报告的 heap 容量。额度不预分配，旧的每笔 64 MiB、跨 context 共享和
+最终释放计费不变。[内存说明](../architecture/vulkan-compute.md#memory-and-lifetime)
+区分 guest 页提交、原生额度及额外驱动开销，不将其称为统一的宿主 RSS 上限。
+
+独立原版 Vulkan C peer 两轮各持有八笔 16 MiB coherent 映射，检查首尾写入、
+释放再分配以及 512 MiB heap 上限。旧生产 FFI 在分配阶段返回内存不足；新生产
+FFI 通过，独立宿主 Vulkan oracle 也通过。Vulkan 单元测试增至 29 项，通过。
+
+带该额度的原版 Firefox/Mesa 已在 Linux CPU Vulkan 参考中得到实际 GPU 页面：
+私有、临时的原生只读回读检查到完整 60,000 个绿色 canvas 像素。带原有内容沙箱
+及默认 Wayland proxy，`gfx.webrender.all=true` 和 `layout.frame_rate=1` 均显式
+记作诊断偏好。中文/emoji、方向键、Backspace/继续输入、两个输入框独占焦点和
+800×600 调整均通过真实 DOM 回执；不是只看前端命令成功或窗口 revision。
+该组关闭后窗口消失，但 Renderer 的 viewport 命令失败，退出码为 139；另一个
+不重复输入/resize 的关闭组在 45 秒内没有退出。因此完整退出及默认刷新率尚未
+验收，不能据这一诊断组发布新版或宣称物理 iPad 的 Firefox 已通过。
+
+探针的 `--native-capture` 明确表示外部原生像素诊断，GPU handle 仍为不透明值；
+它不会将普通 SHM、标题或旧 native texture 自动当作页面像素验收。`--close-only`
+与 `--resize-before-close` 用于只重查失败的退出路径，复用已通过且相关输入源码
+未变的输入检查。原生回读实现、截图、日志、地址和栈均仅留本地，不进入生产代码
+或公开 Artifact；生产呈现继续保留原纹理，不加入像素回读。
+
 ## 已修复的通用路径
 
 - 代理后的 Wayland FD 不再被错误地当作直连 channel。内部

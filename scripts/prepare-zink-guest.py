@@ -115,6 +115,7 @@ subprocess.run([os.getenv('HOST_CC', 'cc'), '-O2', '-Wall', '-Wextra', '-Werror'
 subprocess.run([*common, str(ROOT / 'tests/fixtures/vulkan-timeline.c'), '-l:libvulkan.so.1', '-pthread', '-o', str(out / 'vulkan-timeline')], check=True)
 subprocess.run([os.getenv('HOST_CC', 'cc'), '-O2', '-Wall', '-Wextra', '-Werror', '-I' + str(headers), str(ROOT / 'tests/fixtures/vulkan-timeline.c'), os.getenv('VULKAN_HOST_LINK', '-lvulkan'), '-pthread', '-o', str(out / 'vulkan-timeline-host')], check=True)
 subprocess.run([*common, str(ROOT / 'tests/fixtures/vulkan-resources.c'), '-l:libvulkan.so.1', '-o', str(out / 'vulkan-resources')], check=True)
+subprocess.run([*common, str(ROOT / 'tests/fixtures/vulkan-budget.c'), '-l:libvulkan.so.1', '-o', str(out / 'vulkan-budget')], check=True)
 subprocess.run([os.getenv('HOST_CC', 'cc'), '-O2', '-Wall', '-Wextra', '-Werror', '-I' + str(headers), str(ROOT / 'tests/fixtures/vulkan-resources.c'), os.getenv('VULKAN_HOST_LINK', '-lvulkan'), '-o', str(out / 'vulkan-resources-host')], check=True)
 subprocess.run([*common, str(ROOT / 'tests/fixtures/vulkan-feedback.c'), '-l:libvulkan.so.1', '-o', str(out / 'vulkan-feedback')], check=True)
 subprocess.run([os.getenv('HOST_CC', 'cc'), '-O2', '-Wall', '-Wextra', '-Werror', '-I' + str(headers), str(ROOT / 'tests/fixtures/vulkan-feedback.c'), os.getenv('VULKAN_HOST_LINK', '-lvulkan'), '-o', str(out / 'vulkan-feedback-host')], check=True)

@@ -772,7 +772,7 @@ def main():
                     sync = plan.get('native_scope') in {'zink-sync','zink-gles','zink-wayland'}
                     if sync:
                         allowed.update({'accelerator/vulkan/zink.inc', 'accelerator/vulkan/graphics.inc', 'tests/fixtures/vulkan-timeline.c',
-                                        'tests/fixtures/vulkan-render.c', 'tests/fixtures/vulkan-resources.c', 'tests/fixtures/vulkan-resources.comp',
+                                        'tests/fixtures/vulkan-render.c', 'tests/fixtures/vulkan-resources.c', 'tests/fixtures/vulkan-resources.comp', 'tests/fixtures/vulkan-budget.c',
                                         'scripts/build-vulkan-fixtures.sh', 'scripts/prepare-zink-native-bundle.py'})
                     if plan.get('native_scope') == 'zink-wayland':
                         allowed.update({'tests/fixtures/zink-wayland.c', 'tests/fixtures/vulkan-copy.c',
@@ -832,6 +832,36 @@ def main():
                                 for name in ('zink-wayland-linux', 'zink-wayland-apple')):
                                 raise RuntimeError('Missing passed source-bound Linux/Metal GPU evidence')
                             print('Reuse unchanged native GPU/TF/descriptor/sampling/clear modules; check affected Wayland, relayed EGL damage-swap pixels/lifecycle and iOS embedding.')
+                        budget_reuse = plan.get('zink_gpu_budget_reuse')
+                        if budget_reuse:
+                            allowed.add('crates/trames-core/src/process.rs')
+                            stable = ['crates/trames-wayland', 'crates/trames-vfs',
+                                      'crates/trames-memory', 'crates/trames-cpu', 'crates/trames-linux',
+                                      'crates/trames-accel', 'crates/trames-native', 'crates/trames-distro',
+                                      'crates/trames-ffi', 'crates/trames-vulkan/native',
+                                      'crates/trames-vulkan/src/backend/coherent.rs',
+                                      'crates/trames-vulkan/src/backend/wayland.rs',
+                                      'accelerator', 'Cargo.toml', 'Cargo.lock',
+                                      'rust-toolchain.toml', 'vendor', 'patches/moltenvk']
+                            if subprocess.check_output(['git', 'diff', '--name-only', budget_reuse['sha'], 'HEAD', '--', *stable]).strip():
+                                raise RuntimeError('GPU quota follow-up changed passed WSI/native runtime inputs')
+                            core = 'crates/trames-core/src/process.rs'
+                            core_delta = subprocess.check_output(['git', 'diff', '--name-only', budget_reuse['sha'], 'HEAD', '--', 'crates/trames-core'], text=True).splitlines()
+                            old = subprocess.check_output(['git', 'show', budget_reuse['sha']+':'+core], text=True)
+                            expected = old.replace('gpu_budget: trames_vulkan::Budget::default(),', 'gpu_budget: trames_vulkan::Budget::for_guest_memory(runtime.memory_limits.total),', 1)
+                            if any(p != core for p in core_delta) or Path(core).read_text() != expected:
+                                raise RuntimeError('GPU quota follow-up changed unrelated Core behavior')
+                            def budget_evidence(path):
+                                req = urllib.request.Request(f'https://api.github.com/repos/{repo}/'+path, headers=dict(request.headers))
+                                with urllib.request.urlopen(req, timeout=30) as response:
+                                    return json.load(response)
+                            run = budget_evidence(f"actions/runs/{budget_reuse['run']}")
+                            jobs = budget_evidence(f"actions/runs/{budget_reuse['run']}/jobs")['jobs']
+                            if run['head_sha'] != budget_reuse['sha'] or run['head_repository']['full_name'] != repo or run['path'] != '.github/workflows/linux.yml' or any(
+                                not any(j['name'] == name and j['conclusion'] == 'success' for j in jobs)
+                                for name in ('zink-wayland-linux', 'zink-wayland-apple')):
+                                raise RuntimeError('Missing source-bound Linux/Metal damage-swap evidence')
+                            print('Reuse passed Wayland/damage-swap pixels; check changed Vulkan quota/metadata, original C simultaneous coherent mappings/reallocation and iOS embedding.')
                     if any(p not in allowed and not p.startswith(('docs/', 'tests/fixtures/vulkan-native-tf')) and not (sync and p.startswith('crates/trames-vulkan/')) for p in changed):
                         raise RuntimeError('Zink foundation plan includes unrelated source changes')
                     path = 'crates/trames-distro/src/vulkan.rs'

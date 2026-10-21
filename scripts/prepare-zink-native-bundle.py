@@ -44,7 +44,7 @@ if a.verify:
     for f in (out / 'guest').iterdir():
         shutil.copyfile(f, ROOT / 'target/vulkan-guest' / f.name)
     shutil.copyfile(out / 'bin/zink-egl', ROOT / 'target/zink-inputs/zink-egl')
-    for name in ('zink-wayland', 'vulkan-copy', 'vulkan-resources', 'vulkan-render', 'zink-es3', 'vulkan-feedback', 'vulkan-stencil', 'vulkan-divisor'):
+    for name in ('zink-wayland', 'vulkan-copy', 'vulkan-resources', 'vulkan-budget', 'vulkan-render', 'zink-es3', 'vulkan-feedback', 'vulkan-stencil', 'vulkan-divisor'):
         if (out / 'bin' / name).is_file():
             shutil.copyfile(out / 'bin' / name, ROOT / 'target/zink-inputs' / name)
     # Guest ELF execute bits do not need to survive an artifact ZIP roundtrip:
@@ -74,7 +74,7 @@ else:
         for name in ('vulkan-divisor.vert.spv', 'vulkan-divisor.frag.spv'):
             shutil.copyfile(ROOT / 'tests/fixtures/bin' / name, out / 'shaders' / name)
     if a.wayland:
-        for name in ('zink-wayland', 'vulkan-copy', 'vulkan-resources', 'vulkan-render'):
+        for name in ('zink-wayland', 'vulkan-copy', 'vulkan-resources', 'vulkan-budget', 'vulkan-render'):
             shutil.copyfile(ROOT / 'target/zink-inputs' / name, out / 'bin' / name)
         for name in ('vulkan-render.vert.spv', 'vulkan-render.frag.spv'):
             shutil.copyfile(ROOT/'tests/fixtures/bin'/name, out/'shaders'/name)

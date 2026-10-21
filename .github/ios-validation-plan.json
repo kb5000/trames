@@ -1,21 +1,24 @@
 {
-  "base_sha": "53e580b03f23a23ad2d6e50be16af26efbc73a39",
+  "base_sha": "5f6f905e13de4d367cfb033d560af3b9cc7bfe58",
   "native_scope": "zink-wayland",
-  "zink_present_damage_reuse": {
-    "run": 39615564225,
-    "sha": "9c1044c1e7676dc23516c4fc547f0fcb26c34cdb"
+  "zink_gpu_budget_reuse": {
+    "run": 39624044606,
+    "sha": "5f6f905e13de4d367cfb033d560af3b9cc7bfe58"
   },
-  "reason": "Firefox first-present fix: accept incremental-present optimization hints and full-image presentation. Wayland excludes unmapped subtrees from presentation callbacks, retains explicit damage, and paces callback-only commits without republishing unchanged images. Check changed Wayland and new relayed Mesa damage-swap native texture pixels/resize/close; reuse source-identical Vulkan/TF/CPU/Linux modules. Firefox raw diagnostics stay local. No IPA until browser acceptance.",
+  "reason": "Scale native GPU allocation/coherent-baseline quota with selected guest memory; clamp reported heaps to session capacity. Only Core change wires that quota. Reuse source-identical CPU/Memory/Linux/Wayland/native WSI/TF and passed damage-swap pixel evidence. Check Vulkan unit/Clippy, original C 128 MiB simultaneous coherent mappings plus release/reallocate on Linux and Metal, and iOS embedding. Firefox private native readback passed 60000 canvas pixels and Unicode/key/focus/resize in low-refresh diagnosis; close/default refresh remain open. No raw Firefox diagnostics published; no IPA.",
   "changed_file_sha256": {
-    ".github/workflows/linux.yml": "51bea9199955a826bfd30bd9fc3d441fbf03562ab912990c4111f4aaf7a8798c",
-    "accelerator/vulkan/icd.c": "a58874991fcd98e1ccc8d31e908990cdec21c49e3ff2718dd9ad719d599ee41d",
-    "accelerator/vulkan/wsi.inc": "112874115f133d5ec0bba432812dfddf2d82972e03d6bbc04a7be7a8e232c95f",
-    "crates/trames-wayland/src/lib.rs": "3fad984670a7251f3df5bcc4013f576ee0ae8f7113bf984b21b8d0bd9a0f63d3",
-    "crates/trames-wayland/src/protocol.rs": "ac55e1e7ef3e3f709f17402416541e3451013a3fdd7f1372d836e864c556a0a5",
-    "crates/trames-wayland/src/scene.rs": "80f2499b769e45e1ce50794c8a5785393913e4d0bc0231a041968fb8ef1b7ce3",
-    "docs/validation/firefox-gles3.md": "7f37d4a98334bc1f14b760aee7a2d1491d4eeb1b984b21090d520f043f06af05",
-    "scripts/ios-ci-scope.py": "cfbddfe98c45c98e458937b38e26e574a3fc26a9b9c1304f0bdfe236da496fe7",
-    "tests/fixtures/zink-wayland.c": "bb63ffbb250533d8721099760257997ca1d6d767fcb89f5f1cf8da495d1e4dad",
-    "tests/integration/zink-wayland.py": "f68d3f80493924dbd864634ff9ef28dc27b75430a8045d9364d27d3b2eeec0a2"
+    ".github/workflows/linux.yml": "ec2e74bd0f52452b48521440c561e236c6ca0501bbb2e705ce20321a50f0bfe8",
+    "crates/trames-core/src/process.rs": "620ae74afc50aa0911a021c8e5b2bfdd4034d439fbb98cbe8988af1a95c25ae8",
+    "crates/trames-vulkan/src/backend.rs": "9296c566d94bec6bfd209adde30c4460df0186d7eefbc5d4a6be2074d16aec81",
+    "crates/trames-vulkan/src/backend/graphics.rs": "65574ab953a7ec9af9d550f31a45e1f3523cf551d69278041f2b23d9eea928bd",
+    "crates/trames-vulkan/src/budget.rs": "1ef7c658bb6a6d0051fb8d5c4c7753fab8cc3e18faa7d4d8ced38e5fa49158c0",
+    "docs/architecture/vulkan-compute.md": "ed0092e787636ff300c4c0d08d7c35b2237e9790190db7a7480b778db54a7d0e",
+    "docs/validation/firefox-gles3.md": "f1e6f3543a21004bdc3144375cebce3b3eed46276e4d2eeadb71e8c7a020865e",
+    "scripts/ios-ci-scope.py": "ad5c90f249d9a666acfc5f545f3ffa9c12c4d68ab1c127f2d9454dd8b337d3e2",
+    "scripts/prepare-zink-guest.py": "bd0fda920d4c486ca0d31ab3ab62682ab9ae311e6f838791d4473ffdfbb4ef2d",
+    "scripts/prepare-zink-native-bundle.py": "239ecd30a63d50cbe331da2e9d4a8fa8cd6d14e2416322153e73b5b923134b0b",
+    "tests/fixtures/vulkan-budget.c": "db916070a761c472ba732fe6a6915eeb53288c09a8ae447cb0f3b2e52db5585f",
+    "tests/integration/firefox.py": "6c101f60bd6cdad79d90fc547787613cd60999d445976516ebd6d211593844b0",
+    "tests/integration/zink-wayland.py": "0c12f074c34f2919e263c44717f9bcd62520b3cac56243b1020db3cd533f7908"
   }
 }

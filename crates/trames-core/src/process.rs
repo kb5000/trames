@@ -4158,7 +4158,7 @@ pub(super) fn run(
         next_timer: 1,
         native: trames_accel::native::Registry::default(),
         gpu: RefCell::new(BTreeMap::new()),
-        gpu_budget: trames_vulkan::Budget::default(),
+        gpu_budget: trames_vulkan::Budget::for_guest_memory(runtime.memory_limits.total),
         gpu_display: runtime.vulkan_display.clone(),
         gpu_compiles: 0,
         gpu_peak_pending: 0,

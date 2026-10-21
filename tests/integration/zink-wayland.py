@@ -19,6 +19,7 @@ p.add_argument('--in-place-store', action='store_true', help='use a disposable s
 p.add_argument('--relay', action='store_true', help='forward Wayland bytes/SCM_RIGHTS through a guest socket pair, like Firefox')
 p.add_argument('--clear-only', action='store_true', help='only new in-pass attachment clear pixels; reuse passed relayed window and sampling checks')
 p.add_argument('--damage-only', action='store_true', help='one relayed EGL damage-swap lifecycle; reuse passed descriptor, sampling, copy and second-launch checks')
+p.add_argument('--budget-only', action='store_true', help='native heap quota and 128 MiB of simultaneous coherent mappings; reuse passed rendering checks')
 p.add_argument('--snapshot-store', type=Path, help='save original installed inputs before session mutations')
 p.add_argument('--metal-validator', type=Path, help='native test-only exported-MTLTexture pixel oracle')
 p.add_argument('--egl-library', type=Path, help='Mesa EGL platform adapter; Gallium/Zink and loader remain original')
@@ -28,6 +29,7 @@ a = p.parse_args()
 a.output.mkdir(parents=True, exist_ok=False)
 if a.in_place_store and not a.store: p.error('--in-place-store requires --store')
 if a.damage_only and a.clear_only: p.error('--damage-only and --clear-only are separate checks')
+if a.budget_only and (a.damage_only or a.clear_only): p.error('--budget-only is a separate check')
 store = a.store if a.in_place_store else a.output / 'store'
 if a.store and not a.in_place_store:
     shutil.copytree(a.store, store)
@@ -87,6 +89,7 @@ report = dict(source='original signed Mesa25.1.9 EGL/GLES2 and libwayland; produ
 report['wayland_relay'] = a.relay or a.damage_only
 report['attachment_clear_only'] = a.clear_only
 report['damage_swap_only'] = a.damage_only
+report['gpu_budget_only'] = a.budget_only
 bundled_egl = ROOT / 'target/vulkan-guest/libEGL.so.1'
 if bundled_egl.is_file():
     report['source'] = 'Mesa25.1.9 EGL native-WSI platform adapter; original signed Gallium/Zink/GLES2, libwayland and Vulkan loader; production FFI'
@@ -124,6 +127,21 @@ try:
         time.sleep(.01)
     state = json.loads(read('status'))
     assert state['phase'] == 'running', state
+    if a.budget_only:
+        payload('transfer', dict(guest='/tmp/vulkan-budget', host=str(ROOT/'target/zink-inputs/vulkan-budget'), export=False, replace=True))
+        send('chmod +x /tmp/vulkan-budget; VK_DRIVER_FILES=/usr/share/vulkan/icd.d/trames.json /tmp/vulkan-budget 536870912; printf "\\nZINK_BUDGET_RESULT:%d\\n" $?\n')
+        start = time.monotonic()
+        while '\r\nZINK_BUDGET_RESULT:0\r\n' not in text:
+            text += read('output').decode(errors='replace')
+            assert not any('\r\nZINK_BUDGET_RESULT:'+str(n)+'\r\n' in text for n in (1,127,134,139)), text[-12000:]
+            assert time.monotonic()-start < 90, text[-12000:]
+            time.sleep(.003)
+        assert 'vulkan-budget-ok: two rounds, 8 simultaneous 16 MiB coherent mappings' in text
+        report['gpu_budget_bytes'] = 512<<20
+        report['coherent_mapping_bytes'] = 128<<20
+        report['passed'] = True
+        print('zink-budget-ok: reported session quota, native allocation/map/coherence and release/reallocate', flush=True)
+        raise SystemExit(0)
     if a.clear_only:
         payload('transfer', dict(guest='/tmp/vulkan-render', host=str(ROOT/'target/zink-inputs/vulkan-render'), export=False, replace=True))
         for name in ('vulkan-render.vert.spv', 'vulkan-render.frag.spv'):

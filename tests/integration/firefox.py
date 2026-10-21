@@ -41,8 +41,12 @@ p.add_argument('--browser-log-interval', type=float, default=0, help='diagnosis 
 p.add_argument('--pref', action='append', default=[], metavar='NAME=JSON', help='diagnosis only: write a Firefox preference in this fresh profile; repeatable')
 p.add_argument('--env', action='append', default=[], metavar='NAME=VALUE', help='diagnosis only: additional browser environment; repeatable')
 p.add_argument('--capture-shm', action='store_true', help='save software-composited PNG and require the offline canvas green rectangle; requires Pillow')
+p.add_argument('--native-capture', type=Path, help='diagnosis only: BGRA/JSON prefix from a private native GPU readback oracle; never dereference opaque GPU handles')
 p.add_argument('--require-gpu-frame', action='store_true', help='require a native GPU image on the JS-marked Wayland window; transport gate only, not canvas pixel validation')
 p.add_argument('--interact', action='store_true', help='after the page loads, verify pointer focus, native Unicode text, navigation keys, resize and close; requires Wayland and --capture-shm')
+p.add_argument('--close-only', action='store_true', help='close after the pixel/title gate; reuse passed input/resize checks; requires --interact')
+p.add_argument('--resize-before-close', action='store_true', help='target resize/close teardown without repeating input checks; requires --close-only')
+p.add_argument('--close-timeout', type=float, default=45, help='bounded exit wait after close; diagnostics may explicitly allow slower shutdown')
 p.add_argument('--sampler', type=Path, help='optional Linux host PC sampling; not an uninstrumented timing run')
 a = p.parse_args()
 environment = {}
@@ -69,11 +73,17 @@ for preference in a.pref:
     preferences[name] = value
 if a.browser_log_interval and a.browser_log_interval < 5:
     p.error('--browser-log-interval must be 0 or at least 5 seconds')
-if a.interact and (a.stage != 'wayland' or a.backend != 'wayland' or not a.capture_shm):
-    p.error('--interact requires --stage wayland --backend wayland --capture-shm')
+if a.native_capture and (a.capture_shm or not a.gpu or a.stage != 'wayland' or a.backend != 'wayland'):
+    p.error('--native-capture requires --gpu --stage wayland --backend wayland without --capture-shm')
+capture_pixels = a.capture_shm or bool(a.native_capture)
+if a.close_only and not a.interact: p.error('--close-only requires --interact')
+if a.resize_before_close and not a.close_only: p.error('--resize-before-close requires --close-only')
+if not 0 < a.close_timeout <= 300: p.error('--close-timeout must be positive and at most 300 seconds')
+if a.interact and (a.stage != 'wayland' or a.backend != 'wayland' or not capture_pixels):
+    p.error('--interact requires native Wayland and a pixel capture oracle')
 if a.require_gpu_frame and (not a.gpu or a.stage != 'wayland' or a.backend != 'wayland' or a.capture_shm):
     p.error('--require-gpu-frame requires --gpu --stage wayland --backend wayland without --capture-shm')
-if a.capture_shm:
+if capture_pixels:
     from PIL import Image as PillowImage, ImageChops
 a.output.mkdir(parents=True, exist_ok=False)
 if hasattr(os, 'sched_setaffinity'):
@@ -112,12 +122,26 @@ def green_pixels(canvas):
     return color_mask(canvas, (22,163,74)).histogram()[255]
 
 def capture(frame, info):
-    """Read only retained SHM capabilities; native Metal handles are opaque."""
+    """Read retained SHM or explicit diagnostic bytes; GPU handles stay opaque."""
     if not (0 < info.width <= 4096 and 0 < info.height <= 4096): return None
     canvas = PillowImage.new('RGBA', (info.width, info.height), (0,0,0,255))
     for i in range(info.images):
         image = Image()
         assert api.trames_wayland_frame_image(frame, i, C.byref(image)) == 0
+        if image.kind == 2:
+            if not a.native_capture or image.transform or image.scale < 1: return None
+            try:
+                meta = json.loads(a.native_capture.with_suffix('.json').read_text())
+                if (meta['width'],meta['height']) != (image.width,image.height): return None
+                pixels = a.native_capture.with_suffix('.bgra').read_bytes()
+                if len(pixels) != image.width*image.height*4: return None
+                layer = PillowImage.frombytes('RGBA', (image.width,image.height), pixels, 'raw', 'BGRA')
+            except (OSError, ValueError, KeyError):
+                return None
+            if image.scale != 1:
+                layer = layer.resize((max(1,image.width//image.scale), max(1,image.height//image.scale)))
+            canvas.alpha_composite(layer, (image.x,image.y))
+            continue
         size = image.stride * image.height
         if (image.kind != 1 or not image.address or image.transform or image.scale < 1
             or not 0 < image.width <= 4096 or not 0 < image.height <= 4096
@@ -165,9 +189,13 @@ report = dict(stage=a.stage, backend=a.backend, sandbox='content-disabled-diagno
     environment_diagnostic=environment,
     cpu_vulkan_reference_diagnostic=a.gpu and os.environ.get('TRAMES_ZINK_CPU_REFERENCE') == '1',
     capture_shm=a.capture_shm,
+    native_capture_diagnostic=bool(a.native_capture),
     require_gpu_frame=a.require_gpu_frame,
     js_window_gpu_frame_seen=False,
     interaction_requested=a.interact,
+    close_only=a.close_only,
+    resize_before_close=a.resize_before_close,
+    close_timeout=a.close_timeout,
     probe_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
     ffi_sha256=hashlib.sha256(a.ffi.read_bytes()).hexdigest(),
     musl_sha256=hashlib.sha256(a.musl.read_bytes()).hexdigest(),
@@ -227,7 +255,7 @@ class Interaction:
 
     def poll(self, scene):
         if self.step in ('done', 'failed'): return
-        if self.step != 'page' and time.monotonic()-self.entered > 45:
+        if self.step != 'page' and time.monotonic()-self.entered > (a.close_timeout if self.step == 'close' else 45):
             report['interaction_error'] = 'no browser acknowledgement for '+self.step
             self.advance('failed')
             return
@@ -238,6 +266,14 @@ class Interaction:
             window = next(w for w in scene['windows'] if 'TRAMES_FIREFOX_JS_OK' in w.get('title', ''))
             self.window = window['id']
             self.original_size = (window['width'], window['height'])
+            if a.close_only:
+                if a.resize_before_close:
+                    self.command(op='resize', window=self.window, width=800, height=600)
+                    self.advance('resize_close')
+                else:
+                    self.command(op='close', window=self.window)
+                    self.advance('close')
+                return
             self.click('a')
             self.advance('focus_a')
             return
@@ -248,6 +284,12 @@ class Interaction:
             if not window and re.search(rb'\r?\nFIREFOX_PROBE_EXIT:0\r?\n', output):
                 report['interaction_passed'] = True
                 self.advance('done')
+            return
+        if self.step == 'resize_close':
+            frame = report.get('last_frame', {})
+            if window and (window['width'],window['height']) == (800,600) and (frame.get('width'),frame.get('height')) == (800,600):
+                self.command(op='close', window=self.window)
+                self.advance('close')
             return
         if not window: return
         title = window.get('title', '')
@@ -468,7 +510,7 @@ window.addEventListener('resize',acknowledge);
                         if 2 in kinds and 'TRAMES_FIREFOX_JS_OK' in w.get('title', ''):
                             report['js_window_gpu_frame_seen'] = True
                             report.setdefault('first_js_gpu_frame_seconds',time.monotonic()-start)
-                        if a.capture_shm and (time.monotonic()-start-captured_at >= 15
+                        if capture_pixels and (time.monotonic()-start-captured_at >= 15
                                              or 'TRAMES_FIREFOX_JS_OK' in w.get('title','')):
                             green = capture(frame,info)
                             captured_at = time.monotonic()-start
@@ -484,7 +526,7 @@ window.addEventListener('resize',acknowledge);
             if interaction.step in ('done', 'failed'): break
         elif (a.stage == 'wayland' and report['js_title_seen'] and report['frames']
               and (not a.require_gpu_frame or report['js_window_gpu_frame_seen'])
-              and (not a.capture_shm or report.get('canvas_green_seen'))): break
+              and (not capture_pixels or report.get('canvas_green_seen'))): break
         if re.search(rb'\r?\nFIREFOX_PROBE_EXIT:\d+\r?\n',output) and (not interaction or interaction.step != 'close'): break
         time.sleep(.01)
     report['launch_seconds'] = time.monotonic()-start
@@ -511,7 +553,7 @@ window.addEventListener('resize',acknowledge);
             if match: report['graphics_'+key.lower()] = match[1].decode(errors='replace')
         report['passed'] = bool(report['firefox_exit'] == 0 and report.get('graphics_renderer') and not re.search(rb'(?:^|\r?\n)ERROR\r?\n', log))
     else:
-        report['passed'] = (report['firefox_exit'] == 0 and report.get('screenshot_exported',False) and (not a.capture_shm or report.get('canvas_green_seen'))) if a.stage=='headless' else bool(report['frames'] and report['js_title_seen'] and (not a.capture_shm or report.get('canvas_green_seen')))
+        report['passed'] = (report['firefox_exit'] == 0 and report.get('screenshot_exported',False) and (not a.capture_shm or report.get('canvas_green_seen'))) if a.stage=='headless' else bool(report['frames'] and report['js_title_seen'] and (not capture_pixels or report.get('canvas_green_seen')))
         if a.interact: report['passed'] = report['passed'] and report.get('interaction_passed', False)
         if a.require_gpu_frame: report['passed'] = report['passed'] and report['js_window_gpu_frame_seen']
 finally:

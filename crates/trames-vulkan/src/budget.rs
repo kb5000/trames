@@ -20,6 +20,17 @@ impl Default for Budget {
     }
 }
 impl Budget {
+    /// Native allocations and coherent mapping baselines share this additional
+    /// session quota. Reserve no memory until an actual resource is created.
+    pub fn for_guest_memory(guest_bytes: usize) -> Self {
+        Self {
+            limit: (guest_bytes as u64 / 8).min(1 << 30),
+            ..Self::default()
+        }
+    }
+    pub fn limit(&self) -> u64 {
+        self.limit
+    }
     pub(crate) fn compile(&self) -> Option<CompilePermit> {
         self.compiling
             .try_update(Ordering::Relaxed, Ordering::Relaxed, |n| {
@@ -72,5 +83,20 @@ mod tests {
         assert!(peer.reserve(1));
         peer.release((64 << 20) + 1);
         assert_eq!(budget.used(), 0);
+    }
+    #[test]
+    fn session_quota_scales_without_allocating_and_remains_shared() {
+        let budget = Budget::for_guest_memory(4usize << 30);
+        assert_eq!(budget.limit(), 512 << 20);
+        assert_eq!(budget.used(), 0);
+        assert!(budget.reserve(320 << 20));
+        let peer = budget.clone();
+        assert!(peer.reserve(192 << 20));
+        assert!(!budget.reserve(1));
+        peer.release(192 << 20);
+        budget.release(320 << 20);
+        assert_eq!(budget.used(), 0);
+        assert_eq!(Budget::for_guest_memory(1 << 30).limit(), 128 << 20);
+        assert_eq!(Budget::for_guest_memory(16usize << 30).limit(), 1 << 30);
     }
 }

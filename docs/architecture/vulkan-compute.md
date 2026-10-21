@@ -232,10 +232,15 @@ return NULL. Unsupported creation parameters return Vulkan failures. Recording
 functions have void signatures; invalid/unsupported recording parameters abort
 the experimental guest ICD with a diagnostic rather than fake success.
 
-Limits include 16,384 retained native objects per context, 64 in-flight submissions,
-64 MiB per native memory allocation and 128 MiB shared across the session's
-contexts. Native driver/pipeline bookkeeping is additional memory; these logical
-budgets do not establish an exact RSS or physical GPU capacity.
+Limits include 16,384 retained native objects per context, 64 in-flight submissions
+and 64 MiB per native memory allocation. The session shares a native allocation /
+coherent-baseline quota equal to one eighth of its selected guest memory limit,
+capped at 1 GiB (1 GiB guest → 128 MiB; 4 GiB guest → 512 MiB). Reported native
+memory heaps are capped by this quota. Selecting a limit reserves no storage;
+live allocations and mapping baselines charge it and release it at final drop.
+This is an additional native quota, not part of the guest's committed-page count.
+Native driver/pipeline bookkeeping is additional memory; these logical budgets
+do not establish an exact RSS or physical GPU capacity.
 
 iOS simulator instances use MoltenVK's original direct resource-binding path
 through per-instance `VK_EXT_layer_settings`. The iOS 18.5 `SimMetalHost` aborts
