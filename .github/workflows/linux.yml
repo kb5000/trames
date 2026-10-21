@@ -2,9 +2,9 @@ name: Linux runtime
 on:
   push:
     branches: [main]
-    paths-ignore: ['apps/ios/**', 'docs/**', '.github/workflows/ios.yml', 'scripts/ios-ci-scope.py', '.github/workflows/linux.yml']
+    paths-ignore: ['apps/ios/**', 'docs/**', '.github/workflows/ios.yml', 'scripts/ios-ci-scope.py', '.github/workflows/linux.yml', '.github/ios-validation-plan.json', 'scripts/publish-ios-build35.py', '.github/workflows/publish-ios-build35.yml']
   pull_request:
-    paths-ignore: ['apps/ios/**', 'docs/**', '.github/workflows/ios.yml', 'scripts/ios-ci-scope.py', '.github/workflows/linux.yml']
+    paths-ignore: ['apps/ios/**', 'docs/**', '.github/workflows/ios.yml', 'scripts/ios-ci-scope.py', '.github/workflows/linux.yml', '.github/ios-validation-plan.json', 'scripts/publish-ios-build35.py', '.github/workflows/publish-ios-build35.yml']
 permissions:
   contents: read
   actions: read

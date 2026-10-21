@@ -118,7 +118,8 @@ def compatibility_probe_outputs(plan, repo, headers):
     allowed = {'.github/ios-validation-plan.json', '.github/workflows/ios.yml',
                '.github/workflows/linux.yml', 'scripts/ios-ci-scope.py',
                'tests/integration/firefox.py', 'tests/integration/firefox-prepare.py',
-               'tests/fixtures/firefox-socket-probe.c'}
+               'tests/fixtures/firefox-socket-probe.c',
+               'scripts/publish-ios-build35.py', '.github/workflows/publish-ios-build35.yml'}
     if any(path not in allowed and not path.startswith('docs/') for path in changed):
         raise RuntimeError('Compatibility probe reuse requires unchanged runtime, build and existing tests')
     for platform, workflow in [('linux', 'linux.yml'), ('apple', 'ios.yml')]:

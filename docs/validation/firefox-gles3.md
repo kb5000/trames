@@ -202,7 +202,7 @@ CPU 注册表增至 32,768 个 1 MiB 窗口，仍保留耗尽时的软件回退�
 默认刷新率等待仍未解决；另用显式低刷新率诊断隔离退出路径，尚不据此宣称完整
 默认设置的浏览器可用或构建已完成。
 
-## 本轮退出结果与测试构建（2026-10-22）
+## 本轮退出结果与 1.3.0 发布（2026-10-22）
 
 原版 Firefox 的显式 `layout.frame_rate=1` 隔离组已经完成 GPU 页面 60,000 绿色
 像素、中文/emoji、方向键与退格后继续输入、两个输入框独占焦点往返、800×600
@@ -215,10 +215,21 @@ Memory 额度源码 [630afb2](https://github.com/kb5000/trames/commit/630afb260c
 Linux/Apple ARM64 Memory 93 项、相关严格 Clippy 和 iOS FFI。未变的 Linux state
 20 项、CPU/Wayland/Vulkan/Metal/guest 验收按源码复用。
 
-1.3.0 build 35 仅作为物理 iPad 验证包准备。生产源码不包含临时图像回读、线程栈
+同配置旧版对照也已完成：原版 Firefox/Mesa、同一离线页面、新 profile、4 CPU、
+4 GiB、完整输入/resize、`gfx.webrender.all=true`、`layout.frame_rate=1` 及临时只读
+native 像素检查。旧 2c8981b 构建关闭 98.4 秒后触发原有 watchdog，退出 139；
+新 630afb2 构建关闭 34.4 秒正常退出 0。两组各一次，ASLR/调度仍有波动，而且旧
+组没有正常完成，不能将比值当作稳定的正常退出加速比。它证明该失败场景已从
+超时崩溃恢复到正常退出；仍不是默认刷新率或物理 iPad 的验收。
+
+按项目所有者要求，直接发布现有已验证构建为 1.3.0 build 35，不追加重复验收。
+生产源码不包含临时图像回读、线程栈
 采集或浏览器偏好覆盖。默认刷新率的 CPU Vulkan 参考仍会持续重绘并延迟标题/
 交互，完整 Firefox 支持及 [Issue #33](https://github.com/kb5000/trames/issues/33)
 继续开放，不将隔离组说成默认设置已完整可用。
+
+另已针对 IPA 实际附带的 musl 二进制完成一次 page/resize/close 对齐检查，
+正常退出码 0，关闭约 39.2 秒；不重复已通过的完整输入项目。
 
 ## 定向验证
 
@@ -270,4 +281,4 @@ Firefox 的 `--require-gpu-frame` 只适用于 GPU 开启的原生 Wayland 窗�
 
 Firefox 原始日志、截图、地址、线程栈及运行转储仅保留本地；临时故障采集不进入
 生产 Core。[Issue #33](https://github.com/kb5000/trames/issues/33)保持开放。
-本轮的测试 IPA 构建及产物验收结果另行记录。
+1.3.0 的构建、IPA 及对应源码清单见 [发布记录](ipad-1.3-build35.json)。
