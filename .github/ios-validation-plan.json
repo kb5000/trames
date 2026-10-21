@@ -1,18 +1,14 @@
 {
-  "base_sha": "34bd466943b31a7b58d268802b3e460bccfb33f4",
+  "base_sha": "f39c1a44078e56290802c0484c6fe1acac2825f0",
   "native_scope": "zink-gles",
   "zink_mrt_only": true,
-  "zink_mesa_only": true,
   "zink_metal_only_reuse": {
     "run": 39562092048,
     "sha": "34bd466943b31a7b58d268802b3e460bccfb33f4"
   },
-  "reason": "Complete only the previously blocked Apple original-Mesa EGL/MRT/mipmap/cube pixels on unchanged runtime/ICD/native driver inputs. Reuse passed Linux queries/TF/Mesa, Apple query gate/occlusion and module/iOS checks, exact guest bundle and compiled Mac/iOS libraries. Skip repeated native image/query suites. No IPA or Firefox raw data.",
+  "reason": "Evidence-only follow-up: source-identical query/TF and native Mac/iOS build acceptance in 39562092048, plus remaining Apple original-Mesa pixels in 39565225103. All three ZIP hashes/CRCs and exact native/guest reuse verified. Runtime/guest/native source unchanged. Reuse passed checks; no IPA or raw Firefox data.",
   "changed_file_sha256": {
-    ".github/workflows/linux.yml": "881db9c383349e20074aeac8812d14a3d22731f74087eb97f5406c6cc9a0045f",
-    "docs/validation/moltenvk-source-build.md": "64216bc426338776a56194f7e1da01fda775420331b90cd5bd18f7cd70c18a8a",
-    "docs/validation/vulkan-feedback-ci.json": "7e26f4d86c977dc48f4900f44d1e822989c2dac10f04250b3b42d1fac036978d",
-    "docs/validation/vulkan-feedback.md": "a55481a76e3864fa08a4c63a4b1a74356793e6d94d823906c2c17a8cf384baa3",
-    "scripts/ios-ci-scope.py": "3b0bb9c3e4866a8cfa099bb70600443844a1baa9f1f4718f0a4b327ee37dc63c"
+    "docs/validation/vulkan-feedback.md": "aedcab4f8394726a830ca00acd49a45b6495bd11636ee347fbf904e70093b4f3",
+    "docs/validation/vulkan-feedback-ci.json": "62c362d84823be60785d1981bf5112262ea8f1c7a8edb869059b65c530332b1b"
   }
 }

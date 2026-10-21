@@ -96,3 +96,10 @@ Linux 和 Metal 两个 evidence ZIP 的 SHA-256 与全部 CRC 已核对，guest 
 与 source-bound bundle 的摘要跨宿主完全相同；原生构建的 source/patch/recipe/manifest 摘要
 均与仓库一致。[证据摘要](vulkan-feedback-ci.json)保留准确支持状态和复用来源，
 没有把 Apple TF 或虚拟 GPU 时间戳的 unavailable 当作该功能已实现。
+
+核对验收覆盖时确认，首轮 query 失败曾阻断后面的 Apple Mesa 绘制，因此在
+[同源补跑 39565225103](https://github.com/kb5000/trames/actions/runs/39565225103) 中只运行
+原版 Mesa EGL/GLES2、dense/sparse MRT、2D mip 与六个 cube face 的 LOD2 采样，均通过。
+没有重复已通过的 query/native image/模块/iOS 编译；Mac/iOS native library 摘要与
+34bd466 的产物完全相同，guest bundle 逐文件校验，另一个 15 项 evidence ZIP 的
+SHA-256/全部 CRC 也通过核对。此补跑仅更改 CI 与记录，运行源码未变。

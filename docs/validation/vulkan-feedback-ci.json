@@ -210,5 +210,55 @@
   ],
   "ipa_built": false,
   "raw_firefox_diagnostics_uploaded": false,
-  "apple_mesa_completion": "pending targeted source-identical original-Mesa pixel acceptance"
+  "apple_mesa_completion": {
+    "workflow_run": 39565225103,
+    "source_sha": "f39c1a44078e56290802c0484c6fe1acac2825f0",
+    "runtime_and_guest_source_sha": "34bd466943b31a7b58d268802b3e460bccfb33f4",
+    "artifact": 12329283358,
+    "sha256": "d9a4c6a5b0ab6325daa65659762f4575de41a3564c5e9350adb3a18f31036273",
+    "crc_verified": true,
+    "entries": 15,
+    "mesa": {
+      "runtime_source": "native Vulkan and guest ICD maintenance1/timeline/renderpass2/imageless;  CPU/MMU/UI unchanged",
+      "runner_sha256": "ac20d960412055e038ca7bedafb4c08d697399f9b1921ad419a67091ecaaf1bc",
+      "icd_sha256": "34d6f0b58eb76b0ef386b7cd9a03c6539ddc21c6cd9434b66f75d1406a7d8161",
+      "native_driver_scope": "configured host Vulkan driver, local reference may be software",
+      "rendering_attempted": true,
+      "rendering_passed": true,
+      "cases": {
+        "mesa-egl-probe-cleanup": {
+          "exit_code": 0,
+          "scope": "original guest client"
+        },
+        "mesa-egl-probe": {
+          "exit_code": 0,
+          "scope": "original guest client"
+        }
+      },
+      "input_store_manifest_sha256": "62ed28643f7f6e650a28f4475196c9bef5703329c6ecd228b053dde75b70da7e"
+    },
+    "graphics": {
+      "stage": "graphics",
+      "physical_ipad": false,
+      "cpu_vulkan_reference_diagnostic": false,
+      "runner_sha256": "ac20d960412055e038ca7bedafb4c08d697399f9b1921ad419a67091ecaaf1bc",
+      "icd_sha256": "34d6f0b58eb76b0ef386b7cd9a03c6539ddc21c6cd9434b66f75d1406a7d8161",
+      "fixture_sha256": "1dfb838fb31f6ebf1c6558c0dbf6c492dedac63fd9dd4a6a04b54316b6a9a150",
+      "store_manifest_sha256": "62ed28643f7f6e650a28f4475196c9bef5703329c6ecd228b053dde75b70da7e",
+      "cases": {
+        "mrt": {
+          "exit_code": 0,
+          "passed": true
+        },
+        "textures": {
+          "exit_code": 0,
+          "passed": true
+        }
+      },
+      "passed": true,
+      "cleanup_exit": 0
+    },
+    "native_libraries_exactly_reused": true
+  },
+  "apple_device": "Apple Paravirtual device"
 }
