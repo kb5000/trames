@@ -776,6 +776,12 @@ def main():
                                         'scripts/build-vulkan-fixtures.sh', 'scripts/prepare-zink-native-bundle.py'})
                     if plan.get('native_scope') == 'zink-wayland':
                         allowed.update({'tests/fixtures/zink-wayland.c', 'tests/fixtures/vulkan-copy.c',
+                                        'tests/fixtures/wayland-relay.h', 'accelerator/vulkan/wayland.inc',
+                                        'Cargo.lock', 'crates/trames-wayland/Cargo.toml',
+                                        'crates/trames-wayland/native-wsi.xml',
+                                        'crates/trames-wayland/src/lib.rs', 'crates/trames-wayland/src/wsi.rs',
+                                        'crates/trames-wayland/src/server.rs', 'crates/trames-wayland/src/protocol.rs',
+                                        'crates/trames-vfs/src/ipc/native.rs',
                                         'tests/fixtures/zink-metal-pixels.m', 'tests/integration/zink-wayland.py',
                                         'scripts/build-zink-egl.py', 'scripts/zink-egl-requirements.txt', 'patches/mesa/0001-wayland-kopper-native-wsi.patch',
                                         'crates/trames-distro/src/lib.rs', 'crates/trames-ffi/src/session.rs', 'scripts/build-ios.sh'})

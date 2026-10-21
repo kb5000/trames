@@ -1,29 +1,30 @@
 {
-  "base_sha": "a2733a33a2317a39bf5941431b65095b3c353a66",
-  "native_scope": "zink-gles",
-  "zink_mrt_only": true,
-  "zink_tf_only": true,
-  "zink_metal_only_reuse": {
-    "run": 39579538279,
-    "sha": "5dd69304b1e71f7e9c4512ec8699fc9ce6de41b0"
-  },
-  "reason": "Evidence-only: verified successful complete public native Metal TF, ordinary ARM64 guest Vulkan, original Mesa GLES3, full arm64 iOS driver, and final Cereal completeness correction. Both ZIP digests/all CRCs/native source and build inputs checked. Source unchanged; reuse all passed checks, no rerun or IPA.",
+  "base_sha": "27e447452d8145b1f01f09252392499e3e47206a",
+  "native_scope": "zink-wayland",
+  "reason": "Firefox follow-up: native connection capability through transparent Wayland SCM_RIGHTS relays; 100-set descriptor batches; native single-sample masks and sample-rate shading. Check affected Vulkan/Wayland/VFS and iOS embedding, original Mesa relayed window GPU pixels on Linux/Metal. Reuse unchanged CPU, Memory, Linux syscall, networking, native TF compiler/driver and UIKit acceptance. No Firefox raw diagnostics and no IPA.",
   "changed_file_sha256": {
-    "docs/architecture/zink.md": "3504ae7edaead4941e89299e48eabfa912f647f738662adfde144a915ee64045",
-    "docs/validation/vulkan-feedback.md": "efd9845bf45952e21d1160fef1a0ffc2fe15812d0884f07ce498c9e349a9ba14",
-    "docs/validation/vulkan-native-tf-runtime-ci.json": "b3e5385f007465fbe8a7ca2b96a8daa5143eaa37a02fa61918d6c28691a27c71",
-    "docs/validation/vulkan-native-tf-runtime.md": "4394ebf4ec586db1a567a15dccb12af0658913832afb8613be3812b79ec497b4",
-    "docs/validation/vulkan-native-tf.md": "6b1c20173b89a3b7182becb2265e2c3e6fbcb0c2d807021040ebc53c5fe6e9fd",
-    "docs/validation/zink-es3.md": "ee95a3c6daaff3dc41e80b2ba306f2bc5dfc6db65a8db17cfb9445c49ea2a62a"
-  },
-  "tf_cache_only_reuse": {
-    "run": 39598761585,
-    "sha": "00d9cfa92b385726f67da1cdc6b5e5ea9d0c34db"
-  },
-  "tf_runtime_evidence_reuse": {
-    "run": 39598761585,
-    "sha": "00d9cfa92b385726f67da1cdc6b5e5ea9d0c34db",
-    "diagnostic_run": 39601628224,
-    "diagnostic_sha": "a2733a33a2317a39bf5941431b65095b3c353a66"
+    ".github/workflows/linux.yml": "e86f437ebc026dc9974f5a2629dafb6e70e35ddc2f6c21a273b603916e7f2f88",
+    "Cargo.lock": "1a6b6d77ea5dbd4c4199a9f668101e8973413980d4c11bad49a2c53e467f851e",
+    "accelerator/vulkan/graphics.inc": "ae83d582defe3089c28a24da807a266146250dae81c6889baa04ba84452fcba4",
+    "accelerator/vulkan/icd.c": "8a4ed486d0a4fdaf62b076539d92f4280d8a76c3f6861a9ab33b66326192bd46",
+    "accelerator/vulkan/wayland.inc": "d7c59f1fcd1c891c99d3e3347666636b4cc5d1788be2c96b582542dbe30bdad3",
+    "crates/trames-vfs/src/ipc/native.rs": "34576ed7449cf363c05b8375ef5e9a1aca494d59b30e90837340656159015b26",
+    "crates/trames-vulkan/src/backend.rs": "8c88f71c29f91ff1dac7d9defb5c5b8f2e6ea46d47bc4f47c5156a5179567d48",
+    "crates/trames-vulkan/src/backend/graphics.rs": "070c883f8aba927ae1dd4a2a060ff0693f7454c426dfc8ef6162509cef899725",
+    "crates/trames-vulkan/src/backend/wayland.rs": "8e3d83811386f73c9ebf5383f1d4665ee98b063dd84a3ec559d7e1238b21b221",
+    "crates/trames-wayland/Cargo.toml": "8a4bc16117b9bf114511bab03b89018ce434c88e5d51ffbb90e9319cd0e0e211",
+    "crates/trames-wayland/native-wsi.xml": "d7b6170caa2feb2ffdd356cecccf2bf5af0f1c881b425b047bd466c84bce127e",
+    "crates/trames-wayland/src/lib.rs": "04007e1cba49a63ee48b10cc55774e32075d6b2fc1c8b4909a5584a1678416d8",
+    "crates/trames-wayland/src/protocol.rs": "ccc104c8f1dce1fd1337c660f83685b0e0b948feb47dcc080d94b10259251239",
+    "crates/trames-wayland/src/server.rs": "7fc6e85a679c7f60f20b36f3e9593761e45c3100b7d94a38c0f6873eb2877ecf",
+    "crates/trames-wayland/src/wsi.rs": "1b4b444d9410cbdeb620240c723d970f164b869ffba96cd0bdf2cabc05cb8b44",
+    "scripts/ios-ci-scope.py": "9a7d0f5c2246a9383af35a98805bb9613824b6fb8d63f1b8764473cf25c1ed9f",
+    "scripts/prepare-zink-guest.py": "b2960228aa7e646e0507e8ec5283cc73b1ba511cbfeb8bb7af4f261a191d4474",
+    "scripts/prepare-zink-native-bundle.py": "0473e02530b349be7c93f70ee032378cd184812e681ae25266739e8f9b1250e8",
+    "tests/fixtures/vulkan-render.c": "b1315973d3c83fcd1a8c07a42e61a2f899aba75dec9af3fc50ef563bcf8fc910",
+    "tests/fixtures/vulkan-resources.c": "d3a9c22dd57122b1beb98a48af896b5d2bc1b700dd102f4ff488b9735123281e",
+    "tests/fixtures/wayland-relay.h": "d5d9ef56612a262d45562d0036a2d6942d591a5f75e8e8890e2ed12873263108",
+    "tests/fixtures/zink-wayland.c": "982d57a9f0337ce6f4d7d6e873a1d23e0b917184cb3178578145e16d9fba26db",
+    "tests/integration/zink-wayland.py": "c1cfe9dfcfdc370ae6cc36dd827edc33fa0cc506f29b125174b800d4f7fba391"
   }
 }

@@ -204,10 +204,10 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(VkPhysicalDevice p,const VkDeviceC
     uint64_t feature_bits=0;
     if(features){
         const VkBool32 *v=(const VkBool32 *)features;
-        const size_t offsets[]={offsetof(VkPhysicalDeviceFeatures,samplerAnisotropy),offsetof(VkPhysicalDeviceFeatures,logicOp),offsetof(VkPhysicalDeviceFeatures,fillModeNonSolid),offsetof(VkPhysicalDeviceFeatures,shaderClipDistance),offsetof(VkPhysicalDeviceFeatures,independentBlend),offsetof(VkPhysicalDeviceFeatures,imageCubeArray)};
+        const size_t offsets[]={offsetof(VkPhysicalDeviceFeatures,samplerAnisotropy),offsetof(VkPhysicalDeviceFeatures,logicOp),offsetof(VkPhysicalDeviceFeatures,fillModeNonSolid),offsetof(VkPhysicalDeviceFeatures,shaderClipDistance),offsetof(VkPhysicalDeviceFeatures,independentBlend),offsetof(VkPhysicalDeviceFeatures,imageCubeArray),offsetof(VkPhysicalDeviceFeatures,sampleRateShading)};
         for(size_t j=0;j<sizeof(VkPhysicalDeviceFeatures)/sizeof(VkBool32);j++)if(v[j]){
             int found=0;if(v[j]!=VK_TRUE)return VK_ERROR_FEATURE_NOT_PRESENT;
-            for(unsigned k=0;k<6;k++)if(j==offsets[k]/sizeof(VkBool32)){feature_bits|=1UL<<k;found=1;}
+            for(unsigned k=0;k<sizeof(offsets)/sizeof(offsets[0]);k++)if(j==offsets[k]/sizeof(VkBool32)){feature_bits|=1UL<<k;found=1;}
             if(!found)return VK_ERROR_FEATURE_NOT_PRESENT;
         }
     }

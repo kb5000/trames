@@ -15,6 +15,8 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('--store', type=Path, help='installed signed Mesa plus wayland-libs-egl store; copied; otherwise install original APKs')
+p.add_argument('--in-place-store', action='store_true', help='use a disposable supplied store directly; no concurrent sessions')
+p.add_argument('--relay', action='store_true', help='forward Wayland bytes/SCM_RIGHTS through a guest socket pair, like Firefox')
 p.add_argument('--snapshot-store', type=Path, help='save original installed inputs before session mutations')
 p.add_argument('--metal-validator', type=Path, help='native test-only exported-MTLTexture pixel oracle')
 p.add_argument('--egl-library', type=Path, help='Mesa EGL platform adapter; Gallium/Zink and loader remain original')
@@ -22,10 +24,11 @@ p.add_argument('--output', type=Path, required=True)
 p.add_argument('--ffi', type=Path, default=ROOT / 'target/release' / ('libtrames_ffi.dylib' if sys.platform == 'darwin' else 'libtrames_ffi.so'))
 a = p.parse_args()
 a.output.mkdir(parents=True, exist_ok=False)
-store = a.output / 'store'
-if a.store:
+if a.in_place_store and not a.store: p.error('--in-place-store requires --store')
+store = a.store if a.in_place_store else a.output / 'store'
+if a.store and not a.in_place_store:
     shutil.copytree(a.store, store)
-else:
+elif not a.store:
     runner = Path(os.environ.get('TRAMES_RUNNER', ROOT / 'target/release/trames-run'))
     rootfs = Path(os.environ.get('TRAMES_ALPINE_CACHE', ROOT / 'target/alpine-download')) / 'alpine-minirootfs-3.22.6-aarch64.tar.gz'
     repo = ROOT / 'target/zink-inputs/repository'
@@ -78,6 +81,7 @@ report = dict(source='original signed Mesa25.1.9 EGL/GLES2 and libwayland; produ
               icd_sha256=hashlib.sha256((ROOT / 'target/vulkan-guest/libtrames_vulkan_icd.so').read_bytes()).hexdigest(),
               input_store_manifest_sha256=input_manifest,
               rounds=[], passed=False, physical_ipad=False)
+report['wayland_relay'] = a.relay
 bundled_egl = ROOT / 'target/vulkan-guest/libEGL.so.1'
 if bundled_egl.is_file():
     report['source'] = 'Mesa25.1.9 EGL native-WSI platform adapter; original signed Gallium/Zink/GLES2, libwayland and Vulkan loader; production FFI'
@@ -117,6 +121,37 @@ try:
     assert state['phase'] == 'running', state
     for name in ('zink-wayland', 'vulkan-copy'):
         payload('transfer', dict(guest='/tmp/' + name, host=str(ROOT / 'target/zink-inputs' / name), export=False, replace=True))
+    if a.relay:
+        payload('transfer', dict(guest='/tmp/vulkan-resources', host=str(ROOT/'target/zink-inputs/vulkan-resources'), export=False, replace=True))
+        shader = ROOT/'target/zink-native-bundle/shaders/vulkan-resources.spv'
+        if not shader.is_file(): shader = ROOT/'tests/fixtures/bin/vulkan-resources.spv'
+        payload('transfer', dict(guest='/tmp/vulkan-resources.spv', host=str(shader), export=False, replace=True))
+        send('chmod +x /tmp/vulkan-resources; /tmp/vulkan-resources /tmp/vulkan-resources.spv batch; printf "\\nZINK_BATCH_RESULT:%d\\n" $?\n')
+        batch_start = time.monotonic()
+        while '\r\nZINK_BATCH_RESULT:0\r\n' not in text:
+            text += read('output').decode(errors='replace')
+            assert not any('\r\nZINK_BATCH_RESULT:'+str(n)+'\r\n' in text for n in (1,127,134,139)), text[-12000:]
+            assert time.monotonic()-batch_start < 60, text[-12000:]
+            time.sleep(.003)
+        assert 'vulkan-descriptor-batch-ok: 100 sets' in text
+        report['descriptor_batch_gpu'] = True
+        payload('transfer', dict(guest='/tmp/vulkan-render', host=str(ROOT/'target/zink-inputs/vulkan-render'), export=False, replace=True))
+        for name in ('vulkan-render.vert.spv', 'vulkan-render.frag.spv'):
+            shader = ROOT/'target/zink-native-bundle/shaders'/name
+            if not shader.is_file(): shader = ROOT/'tests/fixtures/bin'/name
+            payload('transfer', dict(guest='/tmp/'+name, host=str(shader), export=False, replace=True))
+        for mask in ('one', 'zero', 'upper', 'rate'):
+            marker = '\r\nZINK_MASK_'+mask+':0\r\n'
+            mode = 'sample-rate' if mask == 'rate' else 'sample-mask-'+mask
+            send('chmod +x /tmp/vulkan-render; /tmp/vulkan-render /tmp/vulkan-render.vert.spv /tmp/vulkan-render.frag.spv /tmp/mask.ppm '+mode+'; printf "\\nZINK_MASK_'+mask+':%d\\n" $?\n')
+            mask_start = time.monotonic()
+            while marker not in text:
+                text += read('output').decode(errors='replace')
+                assert not any('\r\nZINK_MASK_'+mask+':'+str(n)+'\r\n' in text for n in (1,127,134,139)), text[-12000:]
+                assert time.monotonic()-mask_start < 60, text[-12000:]
+                time.sleep(.003)
+        report['single_sample_mask_gpu'] = ['one', 'zero', 'upper']
+        report['sample_rate_shading_gpu'] = True
     if a.egl_library:
         payload('transfer', dict(guest='/usr/local/lib/libEGL.so.1', host=str(a.egl_library.resolve()), export=False, replace=True))
         report['egl_adapter_sha256'] = hashlib.sha256(a.egl_library.read_bytes()).hexdigest()
@@ -136,6 +171,7 @@ try:
         # after SwapBuffers. This upstream option uses direct GL dispatch; Zink
         # and Vulkan/Metal rendering, threads and presentation remain original.
         environment = 'EGL_PLATFORM=wayland'
+        if a.relay: environment += ' TRAMES_TEST_WAYLAND_RELAY=1'
         if not bundled_egl.is_file():
             environment += ' GALLIUM_DRIVER=zink MESA_LOADER_DRIVER_OVERRIDE=zink mesa_glthread=false VK_DRIVER_FILES=/usr/share/vulkan/icd.d/trames.json'
         if a.egl_library:

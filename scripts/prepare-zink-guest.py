@@ -88,6 +88,15 @@ subprocess.run([*common, str(ROOT / 'tests/fixtures/zink-egl.c'), '-l:libEGL.so.
 subprocess.run([*common, str(ROOT / 'tests/fixtures/zink-es3.c'), '-l:libEGL.so.1',
                 '-l:libGLESv2.so.2', '-o', str(out / 'zink-es3')], check=True)
 if args.wayland:
+    shader_dir = ROOT/'tests/fixtures/bin'
+    shader_dir.mkdir(parents=True, exist_ok=True)
+    for source, name in [('vulkan-resources.comp', 'vulkan-resources.spv'),
+                         ('vulkan-render.vert', 'vulkan-render.vert.spv'),
+                         ('vulkan-render.frag', 'vulkan-render.frag.spv')]:
+        subprocess.run([os.getenv('GLSLANG_VALIDATOR', 'glslangValidator'), '-V', '--target-env', 'vulkan1.0',
+                        str(ROOT/'tests/fixtures'/source), '-o', str(shader_dir/name)], check=True)
+    subprocess.run([*common, str(ROOT/'tests/fixtures/vulkan-render.c'), '-l:libvulkan.so.1', '-lm',
+                    '-o', str(out/'vulkan-render')], check=True)
     scanner = os.getenv('TRAMES_WAYLAND_SCANNER', 'wayland-scanner')
     subprocess.run([scanner, 'client-header', str(sdk / 'xdg-shell.xml'), str(sdk / 'xdg-shell-client-protocol.h')], check=True)
     subprocess.run([scanner, 'private-code', str(sdk / 'xdg-shell.xml'), str(sdk / 'xdg-shell-protocol.c')], check=True)

@@ -21,6 +21,7 @@ static uint32_t type(VkPhysicalDevice physical,uint32_t bits,VkMemoryPropertyFla
     for(uint32_t i=0;i<p.memoryTypeCount;i++)if((bits&(1u<<i)) && (p.memoryTypes[i].propertyFlags&flags)==flags)return i;
     abort();
 }
+static int sample_mask_disabled;
 static void pixels(const uint8_t *rgba,unsigned round,int flip) {
     unsigned checked=0,colored=0;
     for(unsigned y=0;y<H;y++)for(unsigned x=0;x<W;x++){
@@ -28,7 +29,7 @@ static void pixels(const uint8_t *rgba,unsigned round,int flip) {
         double px=2.0*(x+0.5)/W-1.0,py=2.0*(y+0.5)/H-1.0;
         if(flip)py=-py;
         double blue=(py+0.8)/1.6,green=((px/0.8)+1.0-blue)/2.0,red=1.0-blue-green;
-        int clipped=round==1 && x<W/2;
+        int clipped=sample_mask_disabled || (round==1 && x<W/2);
         int inside=red>0.02 && green>0.02 && blue>0.02;
         int outside=red< -0.02 || green< -0.02 || blue< -0.02;
         if(!clipped && !inside && !outside)continue;
@@ -39,12 +40,16 @@ static void pixels(const uint8_t *rgba,unsigned round,int flip) {
         }
         assert(p[3]==255);checked++;if(!clipped && inside)colored++;
     }
-    assert(checked>W*H*9/10 && colored>W*H/10);
+    assert(checked>W*H*9/10 && (sample_mask_disabled ? colored==0 : colored>W*H/10));
     printf("render round %u: barycentric colors, alpha, background and scissor correct\n",round+1);
 }
 int main(int argc,char **argv) {
     assert(argc==4 || argc==5);int bridge=argc==5 && !strcmp(argv[4],"bridge-check");int flip=argc==5 && (!strcmp(argv[4],"negative") || !strcmp(argv[4],"negative-static"));int static_viewport=argc==5 && !strcmp(argv[4],"negative-static");
     int compatible=argc==5 && !strcmp(argv[4],"compatible-dynamic");
+    int sample_rate=argc==5 && !strcmp(argv[4],"sample-rate");
+    int masked=argc==5 && !strncmp(argv[4],"sample-mask-",12);
+    VkSampleMask sample_mask=masked && !strcmp(argv[4],"sample-mask-one")?1:masked && !strcmp(argv[4],"sample-mask-upper")?0x80000000u:0;
+    sample_mask_disabled=masked && !(sample_mask&1);
     int pass2=argc==5 && (!strcmp(argv[4],"renderpass2") || !strcmp(argv[4],"imageless") || !strcmp(argv[4],"imageless-depth"));
     int imageless=argc==5 && (!strcmp(argv[4],"imageless") || !strcmp(argv[4],"imageless-legacy") || !strcmp(argv[4],"imageless-depth"));
     int depth=argc==5 && !strcmp(argv[4],"imageless-depth");
@@ -62,6 +67,8 @@ int main(int argc,char **argv) {
         PFN_vkGetPhysicalDeviceFeatures2KHR query=(PFN_vkGetPhysicalDeviceFeatures2KHR)vkGetInstanceProcAddr(instance,"vkGetPhysicalDeviceFeatures2KHR");assert(query);query(physical,&f);assert(feature.imagelessFramebuffer);
         di.enabledExtensionCount=5;di.ppEnabledExtensionNames=rp_ext;di.pNext=&feature;
     }
+    VkPhysicalDeviceFeatures rate_features={0};
+    if(sample_rate){vkGetPhysicalDeviceFeatures(physical,&rate_features);assert(rate_features.sampleRateShading);memset(&rate_features,0,sizeof(rate_features));rate_features.sampleRateShading=VK_TRUE;di.pEnabledFeatures=&rate_features;}
     VkDevice device;OK(vkCreateDevice(physical,&di,NULL,&device));VkQueue queue;vkGetDeviceQueue(device,family,0,&queue);
     PFN_vkCreateRenderPass2KHR create2=(PFN_vkCreateRenderPass2KHR)vkGetDeviceProcAddr(device,"vkCreateRenderPass2KHR");
     PFN_vkCmdBeginRenderPass2KHR begin2=(PFN_vkCmdBeginRenderPass2KHR)vkGetDeviceProcAddr(device,"vkCmdBeginRenderPass2KHR");
@@ -110,6 +117,8 @@ int main(int argc,char **argv) {
     VkDynamicState full_dynamic[]={VK_DYNAMIC_STATE_VIEWPORT,VK_DYNAMIC_STATE_SCISSOR,VK_DYNAMIC_STATE_LINE_WIDTH,VK_DYNAMIC_STATE_DEPTH_BIAS,VK_DYNAMIC_STATE_BLEND_CONSTANTS,VK_DYNAMIC_STATE_DEPTH_BOUNDS,VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK,VK_DYNAMIC_STATE_STENCIL_WRITE_MASK,VK_DYNAMIC_STATE_STENCIL_REFERENCE};
     if(compatible){dynamic.pDynamicStates=full_dynamic;dynamic.dynamicStateCount=9;raster.depthBiasEnable=VK_TRUE;}
     VkPipelineDepthStencilStateCreateInfo ds={.sType=VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
+    if(masked)multi.pSampleMask=&sample_mask;
+    if(sample_rate){multi.sampleShadingEnable=VK_TRUE;multi.minSampleShading=0.75f;}
     VkGraphicsPipelineCreateInfo pipelineInfo={.sType=VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,.stageCount=2,.pStages=stages,.pVertexInputState=&vertex,.pInputAssemblyState=&assembly,.pViewportState=&viewport,.pRasterizationState=&raster,.pMultisampleState=&multi,.pColorBlendState=&blend,.pDynamicState=&dynamic,.layout=layout,.renderPass=pass,.basePipelineIndex=-1};VkPipeline pipeline;if(compatible)pipelineInfo.renderPass=alternate;if(depth)pipelineInfo.pDepthStencilState=&ds;OK(vkCreateGraphicsPipelines(device,VK_NULL_HANDLE,1,&pipelineInfo,NULL,&pipeline));
     vkDestroyShaderModule(device,vert,NULL);vkDestroyShaderModule(device,frag,NULL);
     VkBufferCreateInfo bufferInfo={.sType=VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,.size=W*H*4,.usage=VK_BUFFER_USAGE_TRANSFER_DST_BIT};VkBuffer buffer;OK(vkCreateBuffer(device,&bufferInfo,NULL,&buffer));VkMemoryRequirements bufferReq;vkGetBufferMemoryRequirements(device,buffer,&bufferReq);alloc.allocationSize=bufferReq.size;alloc.memoryTypeIndex=type(physical,bufferReq.memoryTypeBits,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);VkDeviceMemory bufferMemory;OK(vkAllocateMemory(device,&alloc,NULL,&bufferMemory));OK(vkBindBufferMemory(device,buffer,bufferMemory,0));uint8_t *rgba;OK(vkMapMemory(device,bufferMemory,0,VK_WHOLE_SIZE,0,(void **)&rgba));

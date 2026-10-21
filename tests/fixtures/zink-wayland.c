@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "wayland-relay.h"
 
 static struct wl_display *display;
 static struct wl_compositor *compositor;
@@ -93,7 +94,7 @@ static void destroy(struct window *w) {
 }
 int main(int argc,char **argv) {
     unsigned limit=argc>1?(unsigned)atoi(argv[1]):10000;check(limit>0 && limit<=10000,"frame limit");
-    display=wl_display_connect(NULL);check(display!=NULL,"Wayland connect");
+    display=test_wayland_connect();check(display!=NULL,"Wayland connect");
     struct wl_registry *registry=wl_display_get_registry(display);wl_registry_add_listener(registry,&registry_listener,NULL);
     check(wl_display_roundtrip(display)>=0 && compositor && shell,"Wayland globals");
     egl=eglGetDisplay((EGLNativeDisplayType)display);EGLint major,minor;check(eglInitialize(egl,&major,&minor),"Wayland eglInitialize");

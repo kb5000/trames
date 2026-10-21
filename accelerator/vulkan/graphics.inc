@@ -103,24 +103,36 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateFramebuffer(VkDevice d,const VkFramebuffe
     return CALL(68,KEY(d),(uint64_t)info->renderPass,0,info->width,info->height,PTR(out),0,info->pAttachments?PTR(info->pAttachments):PTR(info),info->attachmentCount);
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroyFramebuffer(VkDevice d,VkFramebuffer fb,const VkAllocationCallbacks *allocator) {if(fb)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(69,KEY(d),(uint64_t)fb));}
+static VkResult unsupported_graphics_pipeline(unsigned line) {
+    if(getenv("TRAMES_VULKAN_TRACE"))fprintf(stderr,"Trames Vulkan: unsupported graphics pipeline state at graphics.inc:%u\n",line);
+    return VK_ERROR_FEATURE_NOT_PRESENT;
+}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateGraphicsPipelines(VkDevice d,VkPipelineCache cache,uint32_t count,const VkGraphicsPipelineCreateInfo *info,const VkAllocationCallbacks *allocator,VkPipeline *out) {
-    ALLOCATOR(allocator);if(count!=1)return VK_ERROR_FEATURE_NOT_PRESENT;*out=VK_NULL_HANDLE;
+    ALLOCATOR(allocator);if(count!=1)return unsupported_graphics_pipeline(__LINE__);*out=VK_NULL_HANDLE;
     CHECK(info,VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
-    if(info->flags || info->stageCount<1 || info->stageCount>2 || info->pTessellationState || info->subpass || info->basePipelineHandle)return VK_ERROR_FEATURE_NOT_PRESENT;
+    if(info->flags || info->stageCount<1 || info->stageCount>2 || info->pTessellationState || info->subpass || info->basePipelineHandle)return unsupported_graphics_pipeline(__LINE__);
     const VkPipelineShaderStageCreateInfo *vertex=NULL,*fragment=NULL;
-    for(unsigned i=0;i<info->stageCount;i++){const VkPipelineShaderStageCreateInfo *s=&info->pStages[i];CHECK(s,VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);if(s->flags || s->pSpecializationInfo)return VK_ERROR_FEATURE_NOT_PRESENT;if(s->stage==VK_SHADER_STAGE_VERTEX_BIT && !vertex)vertex=s;else if(s->stage==VK_SHADER_STAGE_FRAGMENT_BIT && !fragment)fragment=s;else return VK_ERROR_FEATURE_NOT_PRESENT;}
-    const VkPipelineVertexInputStateCreateInfo *v=info->pVertexInputState;if(!v || v->sType!=VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;if(v->flags || v->vertexBindingDescriptionCount>16 || v->vertexAttributeDescriptionCount>16)return VK_ERROR_FEATURE_NOT_PRESENT;
-    const VkPipelineInputAssemblyStateCreateInfo *a=info->pInputAssemblyState;CHECK(a,VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);if(a->flags || (a->primitiveRestartEnable && a->topology!=VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP && a->topology!=VK_PRIMITIVE_TOPOLOGY_LINE_STRIP && a->topology!=VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN))return VK_ERROR_FEATURE_NOT_PRESENT;
-    const VkPipelineViewportStateCreateInfo *p=info->pViewportState;CHECK(p,VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO);if(p->flags || p->viewportCount!=1 || p->scissorCount!=1)return VK_ERROR_FEATURE_NOT_PRESENT;
-    const VkPipelineRasterizationStateCreateInfo *r=info->pRasterizationState;CHECK(r,VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);if(r->flags || r->depthClampEnable || r->polygonMode>VK_POLYGON_MODE_POINT || r->lineWidth!=1.0f)return VK_ERROR_FEATURE_NOT_PRESENT;
-    if(!vertex || (!fragment && !r->rasterizerDiscardEnable))return VK_ERROR_FEATURE_NOT_PRESENT;
-    const VkPipelineMultisampleStateCreateInfo *m=info->pMultisampleState;CHECK(m,VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);if(m->flags || m->rasterizationSamples!=VK_SAMPLE_COUNT_1_BIT || m->sampleShadingEnable || m->alphaToCoverageEnable || m->alphaToOneEnable || (m->pSampleMask && m->pSampleMask[0]!=UINT32_MAX))return VK_ERROR_FEATURE_NOT_PRESENT;
-    const VkPipelineDepthStencilStateCreateInfo *z=info->pDepthStencilState;if(z){CHECK(z,VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);if(z->flags || z->depthBoundsTestEnable || z->depthCompareOp>VK_COMPARE_OP_ALWAYS)return VK_ERROR_FEATURE_NOT_PRESENT;}
-    const VkPipelineColorBlendStateCreateInfo *b=info->pColorBlendState;CHECK(b,VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);if(b->flags || b->logicOp>VK_LOGIC_OP_SET || b->attachmentCount>8)return VK_ERROR_FEATURE_NOT_PRESENT;
+    for(unsigned i=0;i<info->stageCount;i++){const VkPipelineShaderStageCreateInfo *s=&info->pStages[i];CHECK(s,VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);if(s->flags || s->pSpecializationInfo)return unsupported_graphics_pipeline(__LINE__);if(s->stage==VK_SHADER_STAGE_VERTEX_BIT && !vertex)vertex=s;else if(s->stage==VK_SHADER_STAGE_FRAGMENT_BIT && !fragment)fragment=s;else return unsupported_graphics_pipeline(__LINE__);}
+    const VkPipelineVertexInputStateCreateInfo *v=info->pVertexInputState;if(!v || v->sType!=VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO)return unsupported_graphics_pipeline(__LINE__);if(v->flags || v->vertexBindingDescriptionCount>16 || v->vertexAttributeDescriptionCount>16)return unsupported_graphics_pipeline(__LINE__);
+    const VkPipelineInputAssemblyStateCreateInfo *a=info->pInputAssemblyState;CHECK(a,VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);if(a->flags || (a->primitiveRestartEnable && a->topology!=VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP && a->topology!=VK_PRIMITIVE_TOPOLOGY_LINE_STRIP && a->topology!=VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN))return unsupported_graphics_pipeline(__LINE__);
+    const VkPipelineViewportStateCreateInfo *p=info->pViewportState;CHECK(p,VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO);if(p->flags || p->viewportCount!=1 || p->scissorCount!=1)return unsupported_graphics_pipeline(__LINE__);
+    const VkPipelineRasterizationStateCreateInfo *r=info->pRasterizationState;CHECK(r,VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);if(r->flags || r->depthClampEnable || r->polygonMode>VK_POLYGON_MODE_POINT || r->lineWidth!=1.0f)return unsupported_graphics_pipeline(__LINE__);
+    if(!vertex || (!fragment && !r->rasterizerDiscardEnable))return unsupported_graphics_pipeline(__LINE__);
+    const VkPipelineMultisampleStateCreateInfo *m=info->pMultisampleState;CHECK(m,VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
+    if(m->flags || m->rasterizationSamples!=VK_SAMPLE_COUNT_1_BIT || m->alphaToCoverageEnable || m->alphaToOneEnable){
+        if(getenv("TRAMES_VULKAN_TRACE"))fprintf(stderr,"Trames Vulkan: multisample flags=%u samples=%u shading=%u coverage=%u alphaOne=%u mask=%08x\n",m->flags,m->rasterizationSamples,m->sampleShadingEnable,m->alphaToCoverageEnable,m->alphaToOneEnable,m->pSampleMask?m->pSampleMask[0]:UINT32_MAX);
+        return unsupported_graphics_pipeline(__LINE__);
+    }
+    const VkPipelineDepthStencilStateCreateInfo *z=info->pDepthStencilState;if(z){CHECK(z,VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);if(z->flags || z->depthBoundsTestEnable || z->depthCompareOp>VK_COMPARE_OP_ALWAYS)return unsupported_graphics_pipeline(__LINE__);}
+    const VkPipelineColorBlendStateCreateInfo *b=info->pColorBlendState;CHECK(b,VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);if(b->flags || b->logicOp>VK_LOGIC_OP_SET || b->attachmentCount>8)return unsupported_graphics_pipeline(__LINE__);
     const VkPipelineDynamicStateCreateInfo *dynamic=info->pDynamicState;unsigned states=0;
-    if(dynamic){CHECK(dynamic,VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);if(dynamic->flags || dynamic->dynamicStateCount>9)return VK_ERROR_FEATURE_NOT_PRESENT;for(unsigned i=0;i<dynamic->dynamicStateCount;i++){unsigned bit=dynamic->pDynamicStates[i]<=VK_DYNAMIC_STATE_STENCIL_REFERENCE?1u<<dynamic->pDynamicStates[i]:0;if(!bit || (states&bit))return VK_ERROR_FEATURE_NOT_PRESENT;states|=bit;}}
-    if(r->depthBiasEnable && !(states&(1u<<VK_DYNAMIC_STATE_DEPTH_BIAS)) && (r->depthBiasConstantFactor!=0 || r->depthBiasClamp!=0 || r->depthBiasSlopeFactor!=0))return VK_ERROR_FEATURE_NOT_PRESENT;
-    uint64_t config[23+8*8+15]={states|512|1024|2048};config[22]=b->attachmentCount;
+    if(dynamic){CHECK(dynamic,VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);if(dynamic->flags || dynamic->dynamicStateCount>9)return unsupported_graphics_pipeline(__LINE__);for(unsigned i=0;i<dynamic->dynamicStateCount;i++){unsigned bit=dynamic->pDynamicStates[i]<=VK_DYNAMIC_STATE_STENCIL_REFERENCE?1u<<dynamic->pDynamicStates[i]:0;if(!bit || (states&bit))return unsupported_graphics_pipeline(__LINE__);states|=bit;}}
+    if(r->depthBiasEnable && !(states&(1u<<VK_DYNAMIC_STATE_DEPTH_BIAS)) && (r->depthBiasConstantFactor!=0 || r->depthBiasClamp!=0 || r->depthBiasSlopeFactor!=0))return unsupported_graphics_pipeline(__LINE__);
+    uint64_t config[23+8*8+15]={states|512|1024|2048|4096};config[22]=b->attachmentCount;
+    // In a single-sample pipeline only bit zero affects coverage. Preserve the
+    // complete original mask, including zero; upper unused bits are legal.
+    config[11]=m->pSampleMask?m->pSampleMask[0]:UINT32_MAX;
+    if(m->sampleShadingEnable){uint32_t bits;memcpy(&bits,&m->minSampleShading,4);config[0]|=8192;config[12]=bits;}
     if(z){
         uint64_t *st=config+23+8*8;st[0]=z->stencilTestEnable;
         const VkStencilOpState *faces[2]={&z->front,&z->back};
@@ -128,8 +140,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateGraphicsPipelines(VkDevice d,VkPipelineCa
             v[0]=f->failOp;v[1]=f->passOp;v[2]=f->depthFailOp;v[3]=f->compareOp;v[4]=f->compareMask;v[5]=f->writeMask;v[6]=f->reference;
         }
     }
-    if(!(states&1)){if(!p->pViewports)return VK_ERROR_FEATURE_NOT_PRESENT;uint32_t bits[6];memcpy(bits,p->pViewports,sizeof(bits));for(unsigned i=0;i<6;i++)config[1+i]=bits[i];}
-    if(!(states&2)){if(!p->pScissors)return VK_ERROR_FEATURE_NOT_PRESENT;config[7]=(uint64_t)(int64_t)p->pScissors[0].offset.x;config[8]=(uint64_t)(int64_t)p->pScissors[0].offset.y;config[9]=p->pScissors[0].extent.width;config[10]=p->pScissors[0].extent.height;}
+    if(!(states&1)){if(!p->pViewports)return unsupported_graphics_pipeline(__LINE__);uint32_t bits[6];memcpy(bits,p->pViewports,sizeof(bits));for(unsigned i=0;i<6;i++)config[1+i]=bits[i];}
+    if(!(states&2)){if(!p->pScissors)return unsupported_graphics_pipeline(__LINE__);config[7]=(uint64_t)(int64_t)p->pScissors[0].offset.x;config[8]=(uint64_t)(int64_t)p->pScissors[0].offset.y;config[9]=p->pScissors[0].extent.width;config[10]=p->pScissors[0].extent.height;}
     for(unsigned i=0;i<b->attachmentCount;i++){
         const VkPipelineColorBlendAttachmentState *ba=b->pAttachments+i;uint64_t *v=config+23+i*8;
         v[0]=ba->blendEnable;v[1]=ba->srcColorBlendFactor;v[2]=ba->dstColorBlendFactor;v[3]=ba->colorBlendOp;v[4]=ba->srcAlphaBlendFactor;v[5]=ba->dstAlphaBlendFactor;v[6]=ba->alphaBlendOp;v[7]=ba->colorWriteMask;
@@ -140,12 +152,12 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateGraphicsPipelines(VkDevice d,VkPipelineCa
     for(uint32_t i=0;i<v->vertexBindingDescriptionCount;i++){const VkVertexInputBindingDescription *x=&v->pVertexBindingDescriptions[i];bindings[i][0]=x->binding;bindings[i][1]=x->stride;bindings[i][2]=x->inputRate;bindings[i][3]=1;}
     if(v->pNext){
         const VkPipelineVertexInputDivisorStateCreateInfoEXT *ds=v->pNext;
-        if(!(D(d)->enabled&32768) || !VALID(ds,VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT) || !ds->vertexBindingDivisorCount || ds->vertexBindingDivisorCount>16 || !ds->pVertexBindingDivisors)return VK_ERROR_FEATURE_NOT_PRESENT;
+        if(!(D(d)->enabled&32768) || !VALID(ds,VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT) || !ds->vertexBindingDivisorCount || ds->vertexBindingDivisorCount>16 || !ds->pVertexBindingDivisors)return unsupported_graphics_pipeline(__LINE__);
         unsigned seen=0;
         for(uint32_t i=0;i<ds->vertexBindingDivisorCount;i++){
             const VkVertexInputBindingDivisorDescriptionEXT *x=ds->pVertexBindingDivisors+i;unsigned at=0;
             while(at<v->vertexBindingDescriptionCount && bindings[at][0]!=x->binding)at++;
-            if(at==v->vertexBindingDescriptionCount || bindings[at][2]!=VK_VERTEX_INPUT_RATE_INSTANCE || (seen&(1u<<at)))return VK_ERROR_FEATURE_NOT_PRESENT;
+            if(at==v->vertexBindingDescriptionCount || bindings[at][2]!=VK_VERTEX_INPUT_RATE_INSTANCE || (seen&(1u<<at)))return unsupported_graphics_pipeline(__LINE__);
             seen|=1u<<at;bindings[at][3]=x->divisor;
         }
     }

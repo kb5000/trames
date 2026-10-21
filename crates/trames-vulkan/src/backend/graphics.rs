@@ -492,9 +492,26 @@ impl Backend {
         if std::env::var_os("TRAMES_VULKAN_TRACE").is_some() {
             eprintln!("trames-vulkan graphics-config={config:x?}");
         }
-        if config[0] & !4095 != 0 {
+        if config[0] & !16383 != 0 {
             return unsupported();
         }
+        let sample_mask = if config[0] & 4096 != 0 {
+            u32::try_from(config[11]).map_err(|_| Failure::Vk(vk::Result::ERROR_UNKNOWN))?
+        } else {
+            u32::MAX
+        };
+        let sample_shading = config[0] & 8192 != 0;
+        let min_sample_shading = if sample_shading {
+            let value = f32::from_bits(
+                u32::try_from(config[12]).map_err(|_| Failure::Vk(vk::Result::ERROR_UNKNOWN))?,
+            );
+            if device.features.sample_rate_shading == 0 || !(0.0..=1.0).contains(&value) {
+                return unsupported();
+            }
+            value
+        } else {
+            0.0
+        };
         // Fixed tail after the largest extended blend array. Old callers have
         // no tail and keep stencil disabled. Copy all values before spawning.
         let stencil = if config[0] & 1024 != 0 {
@@ -736,7 +753,11 @@ impl Backend {
                 .front_face(vk::FrontFace::from_raw(state[3] as i32))
                 .line_width(1.0);
             let multisample = vk::PipelineMultisampleStateCreateInfo::default()
-                .rasterization_samples(vk::SampleCountFlags::TYPE_1);
+                .rasterization_samples(vk::SampleCountFlags::TYPE_1)
+                .sample_shading_enable(sample_shading)
+                .min_sample_shading(min_sample_shading);
+            let sample_masks = [sample_mask];
+            let multisample = multisample.sample_mask(&sample_masks);
             let depth = vk::PipelineDepthStencilStateCreateInfo::default()
                 .depth_test_enable(depth_test)
                 .depth_write_enable(depth_write)

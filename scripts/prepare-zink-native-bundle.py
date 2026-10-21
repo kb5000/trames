@@ -44,7 +44,7 @@ if a.verify:
     for f in (out / 'guest').iterdir():
         shutil.copyfile(f, ROOT / 'target/vulkan-guest' / f.name)
     shutil.copyfile(out / 'bin/zink-egl', ROOT / 'target/zink-inputs/zink-egl')
-    for name in ('zink-wayland', 'vulkan-copy', 'zink-es3', 'vulkan-feedback', 'vulkan-stencil', 'vulkan-divisor'):
+    for name in ('zink-wayland', 'vulkan-copy', 'vulkan-resources', 'vulkan-render', 'zink-es3', 'vulkan-feedback', 'vulkan-stencil', 'vulkan-divisor'):
         if (out / 'bin' / name).is_file():
             shutil.copyfile(out / 'bin' / name, ROOT / 'target/zink-inputs' / name)
     # Guest ELF execute bits do not need to survive an artifact ZIP roundtrip:
@@ -62,8 +62,9 @@ else:
     shutil.copyfile(ROOT / 'target/zink-inputs/zink-egl', out / 'bin/zink-egl')
     if a.es3:
         shutil.copyfile(ROOT / 'target/zink-inputs/zink-es3', out / 'bin/zink-es3')
-    shutil.copyfile(ROOT / 'target/zink-inputs/vulkan-feedback', out / 'bin/vulkan-feedback')
-    shutil.copyfile(ROOT / 'tests/fixtures/bin/vulkan-feedback.spv', out / 'shaders/vulkan-feedback.spv')
+    if not a.wayland:
+        shutil.copyfile(ROOT / 'target/zink-inputs/vulkan-feedback', out / 'bin/vulkan-feedback')
+        shutil.copyfile(ROOT / 'tests/fixtures/bin/vulkan-feedback.spv', out / 'shaders/vulkan-feedback.spv')
     if a.es3:
         shutil.copyfile(ROOT / 'target/zink-inputs/vulkan-stencil', out / 'bin/vulkan-stencil')
         for name in ('vulkan-stencil.vert.spv', 'vulkan-stencil.frag.spv', 'vulkan-stencil-sample.frag.spv'):
@@ -73,10 +74,11 @@ else:
         for name in ('vulkan-divisor.vert.spv', 'vulkan-divisor.frag.spv'):
             shutil.copyfile(ROOT / 'tests/fixtures/bin' / name, out / 'shaders' / name)
     if a.wayland:
-        for name in ('zink-wayland', 'vulkan-copy'):
+        for name in ('zink-wayland', 'vulkan-copy', 'vulkan-resources', 'vulkan-render'):
             shutil.copyfile(ROOT / 'target/zink-inputs' / name, out / 'bin' / name)
-    if not a.wayland:
-        shutil.copyfile(ROOT / 'tests/fixtures/bin/vulkan-resources.spv', out / 'shaders/vulkan-resources.spv')
+        for name in ('vulkan-render.vert.spv', 'vulkan-render.frag.spv'):
+            shutil.copyfile(ROOT/'tests/fixtures/bin'/name, out/'shaders'/name)
+    shutil.copyfile(ROOT / 'tests/fixtures/bin/vulkan-resources.spv', out / 'shaders/vulkan-resources.spv')
     shutil.copyfile(ROOT / 'target/zink-inputs/inputs.json', out / 'upstream-inputs.json')
     data = dict(source_sha=sha, sha256={str(f.relative_to(out)): hashlib.sha256(f.read_bytes()).hexdigest()
                 for f in sorted(out.rglob('*')) if f.is_file() and f != manifest})

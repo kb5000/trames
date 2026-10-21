@@ -25,6 +25,9 @@ use graphics::{ImageShape, PassInfo, Recording};
 // old smoke-test ceiling of 256 exhausted even xterm + xclock. This bounds
 // object metadata; native allocations still charge the separate GPU budget.
 const LIMIT: usize = 16_384;
+// Match the pool bound for allocation/free batches as well. Original Zink
+// grows its descriptor cache in batches of 100 after the first ten sets.
+const MAX_DESCRIPTOR_SETS: usize = 4096;
 const MAX_ALLOCATION: u64 = 64 << 20;
 static DOMAIN: AtomicU64 = AtomicU64::new(1);
 type Result<T> = std::result::Result<T, Failure>;
@@ -1229,6 +1232,10 @@ impl Backend {
                         std::mem::offset_of!(vk::PhysicalDeviceFeatures, image_cube_array),
                         native.image_cube_array,
                     ),
+                    (
+                        std::mem::offset_of!(vk::PhysicalDeviceFeatures, sample_rate_shading),
+                        native.sample_rate_shading,
+                    ),
                 ] {
                     features[at..at + 4].copy_from_slice(&value.to_le_bytes());
                 }
@@ -1277,7 +1284,7 @@ impl Backend {
                 }
                 let native_features =
                     unsafe { instance.native.get_physical_device_features(self.physical) };
-                if a[4] & !63 != 0
+                if a[4] & !127 != 0
                     || [
                         native_features.sampler_anisotropy,
                         native_features.logic_op,
@@ -1285,6 +1292,7 @@ impl Backend {
                         native_features.shader_clip_distance,
                         native_features.independent_blend,
                         native_features.image_cube_array,
+                        native_features.sample_rate_shading,
                     ]
                     .iter()
                     .enumerate()
@@ -1298,7 +1306,8 @@ impl Backend {
                     .fill_mode_non_solid(a[4] & 4 != 0)
                     .shader_clip_distance(a[4] & 8 != 0)
                     .independent_blend(a[4] & 16 != 0)
-                    .image_cube_array(a[4] & 32 != 0);
+                    .image_cube_array(a[4] & 32 != 0)
+                    .sample_rate_shading(a[4] & 64 != 0);
                 self.wsi.device_enabled = a[3] != 0;
                 zink::device_extensions(a[5], &self.capabilities, &mut names)?;
                 let mut timeline = vk::PhysicalDeviceTimelineSemaphoreFeatures::default()
@@ -1853,7 +1862,7 @@ impl Backend {
                             .descriptor_count(x[1] as u32),
                     );
                 }
-                if a[3] == 0 || a[3] > 4096 || a[4] & !1 != 0 {
+                if a[3] == 0 || a[3] > MAX_DESCRIPTOR_SETS as u64 || a[4] & !1 != 0 {
                     return unsupported();
                 }
                 let info = vk::DescriptorPoolCreateInfo::default()
@@ -1907,7 +1916,7 @@ impl Backend {
             }
             30 => self.remove(a[1], Kind::DescriptorPool)?,
             31 => {
-                let count = bounded(a[3], 64)?;
+                let count = bounded(a[3], MAX_DESCRIPTOR_SETS)?;
                 self.room(count)?;
                 output(m, a[4], count * 8)?;
                 let pool = self.object(a[1], Kind::DescriptorPool)?;
@@ -1942,7 +1951,7 @@ impl Backend {
                 if pool.flags & 1 == 0 {
                     return invalid();
                 }
-                let ids = words64(m, a[2], bounded(a[3], 64)?)?;
+                let ids = words64(m, a[2], bounded(a[3], MAX_DESCRIPTOR_SETS)?)?;
                 for id in &ids {
                     let set = self.object(*id, Kind::DescriptorSet)?;
                     if !Rc::ptr_eq(&set.deps.borrow()[0], &pool) {

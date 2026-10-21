@@ -161,11 +161,15 @@ impl Backend {
                 &u64::from(self.wayland.server.is_some()).to_le_bytes(),
             );
         }
-        let (server, connection) = self
-            .wayland
-            .authenticated
-            .take()
-            .ok_or(Failure::Vk(vk::Result::ERROR_SURFACE_LOST_KHR))?;
+        let (server, connection) =
+            self.wayland
+                .authenticated
+                .take()
+                .ok_or(Failure::Vk(if a[4] == 1 {
+                    vk::Result::NOT_READY
+                } else {
+                    vk::Result::ERROR_SURFACE_LOST_KHR
+                }))?;
         if !self.wsi_enabled || !self.virtual_wsi {
             return unsupported();
         }
