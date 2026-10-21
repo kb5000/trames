@@ -227,7 +227,7 @@ jobs:
             echo 'Original component reference unexpectedly passed'
             exit 1
           fi
-          python3 -c 'import json; assert json.load(open("target/components-metal-before/results.json"))["passed"] is False'
+          python3 -c 'import json; from pathlib import Path; assert json.load(open("target/components-metal-before/results.json"))["passed"] is False; text=Path("target/components-metal-before/terminal.log").read_text(); assert "COMPONENT_EXIT:0:134" in text and any(x in text for x in ("vkCreateGraphicsPipelines", "vkWaitForFences"))'
       - uses: actions/cache/restore@v4
         if: steps.verify.outputs.native_runtime == ''
         id: moltenvk

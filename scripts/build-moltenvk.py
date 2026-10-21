@@ -162,15 +162,22 @@ def main():
             cross = a.verify_cross_source or CACHE/'moltenvk-dependency-SPIRV-Cross.tar.gz'
             assert digest(cross) == manifest['archives']['moltenvk-dependency-SPIRV-Cross.tar.gz']['sha256']
             with tarfile.open(cross) as cross_files:
-                member = next(v for v in cross_files if v.name.endswith('/spirv_msl.hpp'))
-                path = Path(tmp)/'External/SPIRV-Cross/spirv_msl.hpp';path.parent.mkdir(parents=True)
-                path.write_bytes(cross_files.extractfile(member).read())
+                for name in ('spirv_msl.hpp', 'spirv_msl.cpp'):
+                    member = next(v for v in cross_files if v.name.endswith('/'+name))
+                    path = Path(tmp)/'External/SPIRV-Cross'/name;path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(cross_files.extractfile(member).read())
             native_tf = apply_tf_patch(Path(tmp))
+            member = next(v for v in archive if v.name.endswith('/'+str(IMAGE)))
+            path = Path(tmp)/IMAGE;path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(archive.extractfile(member).read())
+            native_sampler = apply_sampler_patch(Path(tmp))
+            native_components = apply_component_patch(Path(tmp))
             archive_name = next(v for v in archive.getnames() if v.endswith('/Templates/spirv-tools/build.zip'))
             with zipfile.ZipFile(io.BytesIO(archive.extractfile(archive_name).read())) as headers:
                 assert headers.testzip() is None and 'build/OpenCLDebugInfo100.h' in headers.namelist()
             print(json.dumps(dict(original_sha256=before, patched_sha256=after, patch_sha256=digest(PATCH),
-                original_device_sha256=device_before, patched_device_sha256=device_after, timestamp_patch_sha256=digest(TIMESTAMP_PATCH), native_tf=native_tf)))
+                original_device_sha256=device_before, patched_device_sha256=device_after, timestamp_patch_sha256=digest(TIMESTAMP_PATCH), native_tf=native_tf,
+                native_sampler=native_sampler, native_components=native_components)))
         return
     assert platform.system() == 'Darwin', 'An Apple SDK host is required to build native MoltenVK'
     assert a.platform != 'ios' or a.arch == 'arm64', 'iOS device build requires arm64'

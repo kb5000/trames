@@ -1,20 +1,18 @@
 {
-  "base_sha": "93216769c77224491c42dc55f0d7e20589de28c7",
+  "base_sha": "b2ff6b5a0b6223908490c69e2cb929ab597a2d68",
   "native_scope": "xwayland-dialog",
-  "reason": "Only fix test terminal DSR handshaking; reuse identical-source host binaries and passed Memory94/Vulkan31 checks. Production code unchanged.",
+  "reason": "Records, complete pinned-source verifier routing and stronger old-driver evidence only; native Rust/C/C++ implementations are unchanged from passed b2ff6b5 run39675520457. Reuse all passed runtime checks.",
   "changed_file_sha256": {
-    ".github/workflows/xwayland-dialog.yml": "15cb12ce99594fd9b80509b56d8154a813bc0827efbbcd97f06a4d47a9fb8a7c",
-    "patches/moltenvk/0006-pack-compatible-raster-varying-components.patch": "1abec8c1c6a8ad575c7ec383e3fb6aa1f22cc53c513ec01fd8d03e9a86b95d6a",
-    "scripts/build-moltenvk.py": "d0bc81bb247a782ee9f67410e3757be2fb84a048829c9751f5140e165805ea71",
-    "scripts/ios-ci-scope.py": "647649bc059a47fa79de6750c571d1ec80512b4c932c0f15e003e71a67518aba",
-    "tests/fixtures/vulkan-components-packed.frag": "93363986de0b9132bd6099f9df9d8e1faacf1a474b082e9cb62be67e18dfe77f",
-    "tests/fixtures/vulkan-components-packed.vert": "a645cf015e7ab6f3ea646fa53baed75db884dcfd95c94524da50942f33675040",
-    "tests/fixtures/vulkan-components-split.frag": "10825e985db30626af1dc6eef9a644bc3bf7c549a3ee1a3d52059f7ea359a41e",
-    "tests/fixtures/vulkan-components-split.vert": "84c7c3cb54582b6362d37a012ef88017a52d2f35be4f532cb9d61aa1a95120b4",
-    "tests/integration/xwayland-dialog.py": "75017fb6f32d5184cc89421b0fab686b9af1dc65ae5e35dff78b354b48fd9f77"
+    ".github/workflows/xwayland-dialog.yml": "8bbc0f8dedfd1c9347a980ec922f4b7c06289d92144d8be203832dc23b2037ff",
+    "docs/validation/ipad-1.3-crashes.md": "ef36081851fef204f071cd997721b6e90ac287bf5b46d2b752a4a59909576beb",
+    "scripts/build-moltenvk.py": "13a1d3b3984f26176fd241e1402bd2838f3ab3ee7f8e53ca41ee797be1cea2e4"
   },
   "dialog_runtime_reuse": {
     "sha": "e9296359a3bda86a522f238be83b0a04ecc42f94",
     "run": 39661257602
+  },
+  "verified_dialog_run": {
+    "sha": "b2ff6b5a0b6223908490c69e2cb929ab597a2d68",
+    "run": 39675520457
   }
 }
