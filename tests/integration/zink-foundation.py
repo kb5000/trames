@@ -21,6 +21,7 @@ p.add_argument('--snapshot-store', type=Path, help='copy installed original Mesa
 p.add_argument('--store', type=Path, help='copy an already installed original Mesa store')
 p.add_argument('--output', type=Path, default=ROOT / 'target/zink-foundation')
 p.add_argument('--require-render', action='store_true')
+p.add_argument('--bootstrap-only', action='store_true', help='install/snapshot signed inputs without repeating passed GPU suites')
 p.add_argument('--resources-only', action='store_true', help='only new dynamic/scalar/texel/storage/cache GPU cases')
 p.add_argument('--probe-only', action='store_true', help='only original Mesa EGL probe during capability iteration')
 p.add_argument('--renderpass-only', action='store_true', help='only changed renderpass/imageless clients and original Mesa probe')
@@ -66,6 +67,11 @@ try:
         if a.snapshot_store:
             shutil.copytree(store,a.snapshot_store)
         report['input_store_manifest_sha256'] = hashlib.sha256((store / 'manifest').read_bytes()).hexdigest()
+        if a.bootstrap_only:
+            assert a.snapshot_store, '--bootstrap-only requires a snapshot destination'
+            report['bootstrap_only'] = True
+            print('Prepared signed Mesa input store; passed unchanged GPU suites not repeated', flush=True)
+            raise SystemExit(0)
 
         def guest(label, program, source, arguments=(), files=(), exports=(), egl=False):
             imported = [('/usr/lib/libtrames_vulkan_icd.so', icd),

@@ -69,3 +69,16 @@ Indexed、instanced、primitive restart/strip 的输出顺序与界限须保持�
 GPU counter 转换与间接参数也应留在 GPU。原版源码和最小 patch 随构建配套保存。
 
 本批没有改动 MoltenVK 算法或原版 Mesa。云端 Apple 原生结果以本批 CI 为准；物理 iPad 尚待测试。
+
+首轮 CI [39559895800](https://github.com/kb5000/trames/actions/runs/39559895800) 的 Linux
+API/查询/捕获、原版 Mesa 回归，以及 Apple 模块/24 tests/iOS FFI 已通过。Apple query
+进一步暴露出原版 CPU 时间戳 fallback 与 GPU copy 不一致：CPU 为非零完成时间、GPU
+copy 为 0。用[原版源码能力补丁](moltenvk-source-build.md#时间戳能力门控)限制为真正具有
+Metal timestamp counter set 的设备；无硬件计数器时拒绝 timestamp query creation，仍验证
+occlusion 的 32/64-bit results、GPU copy 和 availability，不把不存在的 GPU 时间戳算通过。
+重试只运行改动后的 query/feedback clients 与 Mac/iOS 原生库构建，复用已通过且源码未变的
+模块、图像/Mesa 与 iOS FFI 验收，避免重复通过项目。
+
+另一个已确定的 ES3 前提是 `ARB_depth_buffer_float`。原版 Mesa `st_extensions.c`
+要求 `Z32_FLOAT` **和** `Z32_FLOAT_S8X24_UINT` 的采样/深度附件支持；当前 bridge 只支持
+独立 D16/D32，完整 depth/stencil 路径必须补齐。它与 Apple GPU TF 一起继续阻止完整 ES3。

@@ -155,50 +155,58 @@ fn main() {
     l.fence = l.make(48, &[l.dev, 0, OUT]);
     l.call(5, &[physical, 0x2500]);
     let (control, control_mem) = l.buffer(if feedback { 0x1103 } else { 3 }, 0xa000);
-    let timestamp = l.make(138, &[l.dev, 2, 3, OUT]);
-    assert_ne!(l.request(138, &[l.dev, 2, 0, OUT]), 0);
-    l.begin();
-    l.call(140, &[l.dev, l.cmd, timestamp, 0, 3]);
-    assert_ne!(l.request(140, &[l.dev, l.cmd, timestamp, 2, 2]), 0);
-    assert_ne!(l.request(144, &[l.dev, l.cmd, timestamp, 0]), 0);
-    assert_ne!(l.request(143, &[l.dev, l.cmd, timestamp, 0, 3]), 0);
-    l.call(143, &[l.dev, l.cmd, timestamp, 0, 1]);
-    l.call(46, &[l.dev, l.cmd, control, 0, 128, 0x12345678]);
-    l.call(143, &[l.dev, l.cmd, timestamp, 1, 0x2000]);
-    l.call(142, &[l.dev, l.cmd, timestamp, 0, 2, control, 128, 24, 7]);
-    l.barrier(0x1000, 0x4000, 0x1000, 0x2000);
-    l.submit();
-    l.m.write(0x4000, &[0xa5; 80]).unwrap();
-    let began = Instant::now();
-    assert_eq!(
-        l.request(141, &[l.dev, timestamp, 2, 1, 16, 0x4040, 16, 7]),
-        1
-    );
-    assert!(began.elapsed() < Duration::from_secs(1));
-    assert_eq!(l.word(0x4040), 0xa5a5a5a5a5a5a5a5);
-    assert_eq!(l.word(0x4048), 0);
-    assert_ne!(
-        l.request(141, &[l.dev, timestamp, 0, 2, 16, 0x4000, 24, 5]),
-        0
-    );
-    l.call(141, &[l.dev, timestamp, 0, 2, 48, 0x4000, 24, 5]);
-    assert!(l.word(0x4018) >= l.word(0x4000));
-    assert_ne!(l.word(0x4008), 0);
-    assert_ne!(l.word(0x4020), 0);
-    assert_eq!(l.word(0x4010), 0xa5a5a5a5a5a5a5a5);
-    assert_eq!(l.word(0x4028), 0xa5a5a5a5a5a5a5a5);
-    assert_eq!(l.word(0xa080), l.word(0x4000));
-    assert_eq!(l.word(0xa098), l.word(0x4018));
-    l.reset();
-    l.begin();
-    l.call(140, &[l.dev, l.cmd, timestamp, 0, 1]);
-    l.call(143, &[l.dev, l.cmd, timestamp, 0, 1]);
-    l.call(142, &[l.dev, l.cmd, timestamp, 0, 1, control, 192, 8, 6]);
-    l.barrier(0x1000, 0x4000, 0x1000, 0x2000);
-    l.call(139, &[l.dev, timestamp]);
-    l.submit();
-    assert_ne!(l.word(0xa0c0) >> 32, 0);
-    println!("native-query-ok: GPU timestamps, 32/64-bit results, availability, NOT_READY polling, stride/tail preservation, GPU copies and deferred pool destruction");
+    l.m.write(0x2080, &1u32.to_le_bytes()).unwrap();
+    l.call(6, &[physical, 0x2080, 0x2800]);
+    let timestamps = l.word(0x2808) as u32 != 0;
+    if timestamps {
+        let timestamp = l.make(138, &[l.dev, 2, 3, OUT]);
+        assert_ne!(l.request(138, &[l.dev, 2, 0, OUT]), 0);
+        l.begin();
+        l.call(140, &[l.dev, l.cmd, timestamp, 0, 3]);
+        assert_ne!(l.request(140, &[l.dev, l.cmd, timestamp, 2, 2]), 0);
+        assert_ne!(l.request(144, &[l.dev, l.cmd, timestamp, 0]), 0);
+        assert_ne!(l.request(143, &[l.dev, l.cmd, timestamp, 0, 3]), 0);
+        l.call(143, &[l.dev, l.cmd, timestamp, 0, 1]);
+        l.call(46, &[l.dev, l.cmd, control, 0, 128, 0x12345678]);
+        l.call(143, &[l.dev, l.cmd, timestamp, 1, 0x2000]);
+        l.call(142, &[l.dev, l.cmd, timestamp, 0, 2, control, 128, 24, 7]);
+        l.barrier(0x1000, 0x4000, 0x1000, 0x2000);
+        l.submit();
+        l.m.write(0x4000, &[0xa5; 80]).unwrap();
+        let began = Instant::now();
+        assert_eq!(
+            l.request(141, &[l.dev, timestamp, 2, 1, 16, 0x4040, 16, 7]),
+            1
+        );
+        assert!(began.elapsed() < Duration::from_secs(1));
+        assert_eq!(l.word(0x4040), 0xa5a5a5a5a5a5a5a5);
+        assert_eq!(l.word(0x4048), 0);
+        assert_ne!(
+            l.request(141, &[l.dev, timestamp, 0, 2, 16, 0x4000, 24, 5]),
+            0
+        );
+        l.call(141, &[l.dev, timestamp, 0, 2, 48, 0x4000, 24, 5]);
+        assert!(l.word(0x4018) >= l.word(0x4000));
+        assert_ne!(l.word(0x4008), 0);
+        assert_ne!(l.word(0x4020), 0);
+        assert_eq!(l.word(0x4010), 0xa5a5a5a5a5a5a5a5);
+        assert_eq!(l.word(0x4028), 0xa5a5a5a5a5a5a5a5);
+        assert_eq!(l.word(0xa080), l.word(0x4000));
+        assert_eq!(l.word(0xa098), l.word(0x4018));
+        l.reset();
+        l.begin();
+        l.call(140, &[l.dev, l.cmd, timestamp, 0, 1]);
+        l.call(143, &[l.dev, l.cmd, timestamp, 0, 1]);
+        l.call(142, &[l.dev, l.cmd, timestamp, 0, 1, control, 192, 8, 6]);
+        l.barrier(0x1000, 0x4000, 0x1000, 0x2000);
+        l.call(139, &[l.dev, timestamp]);
+        l.submit();
+        assert_ne!(l.word(0xa0c0) >> 32, 0);
+        println!("native-query-ok: GPU timestamps, 32/64-bit results, availability, NOT_READY polling, stride/tail preservation, GPU copies and deferred pool destruction");
+    } else {
+        assert_eq!(l.request(138, &[l.dev, 2, 1, OUT]), (-8i64) as u64);
+        println!("native-timestamp-unavailable-ok: queue reports zero valid bits; timestamp query creation rejected");
+    }
     let mut allocations = vec![(control, control_mem)];
     if feedback {
         l.reset();

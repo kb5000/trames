@@ -1,0 +1,28 @@
+From: Trames contributors
+Subject: [PATCH] Require a Metal timestamp counter set for Vulkan queue timestamps
+
+The upstream CPU completion-time fallback produces host results after encoding
+has already copied zero to GPU buffers. Report no queue timestamp capability
+when a timestamp counter set is unavailable. Real hardware-counter paths and
+all original query algorithms are unchanged; occlusion queries remain usable.
+
+--- a/MoltenVK/MoltenVK/GPUObjects/MVKDevice.mm
++++ b/MoltenVK/MoltenVK/GPUObjects/MVKDevice.mm
+@@ -2203,7 +2203,7 @@
+ 		uint32_t qfIdx = 0;
+ 
+ 		qfProps.queueCount = kMVKQueueCountPerQueueFamily;
+-		qfProps.timestampValidBits = 64;
++		qfProps.timestampValidBits = _timestampMTLCounterSet ? 64 : 0;
+ 		qfProps.minImageTransferGranularity = { 1, 1, 1};
+ 
+ 		// General-purpose queue family
+@@ -3605,6 +3605,8 @@
+ 			}
+ 		}
+ 	}
++	// Completion-time CPU timestamps cannot feed GPU query copies.
++	_properties.limits.timestampComputeAndGraphics = (_timestampMTLCounterSet != nil);
+ }
+ 
+ // Determine whether Vulkan semaphores should use a MTLEvent, CPU callbacks, or should limit

@@ -25,7 +25,7 @@ python3 scripts/build-moltenvk.py --platform ios --arch arm64
 
 脚本先校验原始归档摘要，复制独立的 MoltenVK source tree，并链接固定依赖源码，
 复用上游 fetchDependencies 同样的固定 SPIRV-Headers 与原包预生成 SPIRV-Tools
-头文件，再应用且核对只有这一行的补丁。它调用上游原有 ExternalDependencies scheme
+头文件，再应用并逐项核对最小补丁的准确差异。它调用上游原有 ExternalDependencies scheme
 及 MoltenVK static target，Release 构建所选 SDK/架构；不更改上游二进制归档，
 不在已链接的 master object 中热替换符号，也不静默退回旧驱动。
 
@@ -46,3 +46,17 @@ arm64 iOS 原生库也成功编译。Xcode 16.4，macOS SDK 15.5 / iOS SDK 18.5�
 先前已经通过的同源 Linux
 GPU/Mesa、Apple module/23 tests/iOS FFI 检查不重跑；CI 严格核对 guest/backend/
 fixture/toolchain 字节未变和已通过记录，再复用同源 guest bundle。
+
+## 时间戳能力门控
+
+后续 query 验收发现 Apple Paravirtual GPU 没有 timestamp counter set：原版
+MoltenVK 在完成回调中生成 CPU 时间戳，CPU results 非零，但此前编码的 GPU copy
+得到 0。[第二个补丁](../../patches/moltenvk/0002-require-native-gpu-timestamp-counters.patch)
+只把 queue `timestampValidBits` 和 `timestampComputeAndGraphics` 改为基于实际
+Metal timestamp counter set；没有该硬件路径时不声明时间戳支持，保留 occlusion。
+有硬件计数器时保留原生 query 实现，不以 CPU 值冒充 GPU query copy。
+
+两个补丁都针对同一固定原版归档验证后应用；原始 `MVKDevice.mm` SHA-256 为
+`e93c8fe096d9c9f8c0b02da6443bc820dc42ca4340b122cc8dd11721ad7e9b8d`，
+修改后为 `f5bb7a347f292e3a1ff5a2b1c312bf544336a406f0f168b399cd4d1fbb29e56a`。
+新 patch 的摘要也进入原生缓存键和 `build.json`，不会复用未修正的库。

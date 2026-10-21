@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Build pinned original MoltenVK with the one-line 3D source-mip correction.
+"""Build pinned original MoltenVK with verified minimal image/query corrections.
 
 Run prepare-vulkan.py --apple first. Never alter verified upstream archives or
 silently fall back to the unpatched driver. stdout is the static-library folder;
@@ -23,11 +23,31 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 PATCH = ROOT/'patches/moltenvk/0001-use-source-mip-depth-for-volume-blits.patch'
+TIMESTAMP_PATCH = ROOT/'patches/moltenvk/0002-require-native-gpu-timestamp-counters.patch'
 MANIFEST = ROOT/'scripts/vulkan-upstream.json'
 CACHE = ROOT/'target/vulkan-upstream'
 TRANSFER = Path('MoltenVK/MoltenVK/Commands/MVKCmdTransfer.mm')
 OLD = 'VkExtent3D srcExtent = _srcImage->getExtent3D(srcPlaneIndex, mvkIBR.region.dstSubresource.mipLevel);'
 NEW = OLD.replace('dstSubresource', 'srcSubresource')
+DEVICE = Path('MoltenVK/MoltenVK/GPUObjects/MVKDevice.mm')
+
+
+def apply_timestamp_patch(source):
+    path = source/DEVICE
+    original = path.read_text()
+    old = 'qfProps.timestampValidBits = 64;'
+    new = 'qfProps.timestampValidBits = _timestampMTLCounterSet ? 64 : 0;'
+    assert original.count(old) == 1 and new not in original
+    expected = original.replace(old, new)
+    start = expected.index('void MVKPhysicalDevice::initCounterSets() {')
+    end = expected.index('\n}\n', start)
+    expected = expected[:end] + '\n\t// Completion-time CPU timestamps cannot feed GPU query copies.\n\t_properties.limits.timestampComputeAndGraphics = (_timestampMTLCounterSet != nil);' + expected[end:]
+    diff = ''.join(difflib.unified_diff(original.splitlines(True), expected.splitlines(True),
+        fromfile='a/'+str(DEVICE), tofile='b/'+str(DEVICE)))
+    assert TIMESTAMP_PATCH.read_text().endswith(diff), 'Unexpected timestamp capability patch'
+    subprocess.run(['patch', '-s', '-p1', '-i', str(TIMESTAMP_PATCH)], cwd=source, input=b'', check=True)
+    assert path.read_text() == expected
+    return hashlib.sha256(original.encode()).hexdigest(), digest(path)
 
 
 def digest(path):
@@ -61,10 +81,15 @@ def main():
             path = Path(tmp)/TRANSFER;path.parent.mkdir(parents=True)
             path.write_bytes(archive.extractfile(member).read())
             before, after = apply_patch(Path(tmp))
+            member = next(v for v in archive if v.name.endswith('/'+str(DEVICE)))
+            path = Path(tmp)/DEVICE;path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(archive.extractfile(member).read())
+            device_before, device_after = apply_timestamp_patch(Path(tmp))
             archive_name = next(v for v in archive.getnames() if v.endswith('/Templates/spirv-tools/build.zip'))
             with zipfile.ZipFile(io.BytesIO(archive.extractfile(archive_name).read())) as headers:
                 assert headers.testzip() is None and 'build/OpenCLDebugInfo100.h' in headers.namelist()
-            print(json.dumps(dict(original_sha256=before, patched_sha256=after, patch_sha256=digest(PATCH))))
+            print(json.dumps(dict(original_sha256=before, patched_sha256=after, patch_sha256=digest(PATCH),
+                original_device_sha256=device_before, patched_device_sha256=device_after, timestamp_patch_sha256=digest(TIMESTAMP_PATCH))))
         return
     assert platform.system() == 'Darwin', 'An Apple SDK host is required to build native MoltenVK'
     assert a.platform != 'ios' or a.arch == 'arm64', 'iOS device build requires arm64'
@@ -76,6 +101,7 @@ def main():
     sdk_version = subprocess.check_output(['xcrun', '--sdk', sdk, '--show-sdk-version'], text=True).strip()
     inputs = dict(platform=a.platform, arch=a.arch, xcode=toolchain, sdk=sdk_version,
                   patch_sha256=digest(PATCH), recipe_sha256=digest(Path(__file__)),
+                  timestamp_patch_sha256=digest(TIMESTAMP_PATCH),
                   manifest_sha256=digest(MANIFEST), upstream_commit=manifest['moltenvk_commit'])
     key = hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()[:20]
     out = ROOT/'target/moltenvk-patched'/(a.platform+'-'+a.arch+'-'+key)
@@ -118,6 +144,7 @@ def main():
         headers.extractall(tools)
     assert (tools/'build/OpenCLDebugInfo100.h').is_file()
     before, after = apply_patch(source)
+    device_before, device_after = apply_timestamp_patch(source)
     common = ['-configuration', 'Release', '-sdk', sdk, 'ARCHS='+a.arch,
               'ONLY_ACTIVE_ARCH=YES', 'CODE_SIGNING_ALLOWED=NO',
               'SYMROOT='+str(out/'products'), 'OBJROOT='+str(out/'intermediates')]
@@ -141,7 +168,8 @@ def main():
     actual = subprocess.check_output(['xcrun', 'lipo', '-archs', str(library)], text=True).split()
     assert actual == [a.arch], 'Native artifact architecture mismatch'
     record.write_text(json.dumps(dict(inputs=inputs, commands=commands, original_transfer_sha256=before,
-        patched_transfer_sha256=after, library_sha256=digest(library)), indent=2)+'\n')
+        patched_transfer_sha256=after, original_device_sha256=device_before,
+        patched_device_sha256=device_after, library_sha256=digest(library)), indent=2)+'\n')
     print(out)
 
 

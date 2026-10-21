@@ -32,14 +32,14 @@ int main(int argc,char **argv) {
     PFN_vkGetPhysicalDeviceProperties2KHR get_props=(void *)vkGetInstanceProcAddr(instance,"vkGetPhysicalDeviceProperties2KHR");assert(get_props);get_props(physical,&props);
     if(feedback)assert(limits.maxTransformFeedbackBuffers>=2 && limits.transformFeedbackQueries);
     uint32_t families=0;vkGetPhysicalDeviceQueueFamilyProperties(physical,&families,NULL);VkQueueFamilyProperties *queues=calloc(families,sizeof(*queues));assert(queues);vkGetPhysicalDeviceQueueFamilyProperties(physical,&families,queues);
-    uint32_t family=0;while(family<families && !(queues[family].queueFlags&VK_QUEUE_GRAPHICS_BIT))family++;assert(family<families && queues[family].timestampValidBits);free(queues);
+    uint32_t family=0;while(family<families && !(queues[family].queueFlags&VK_QUEUE_GRAPHICS_BIT))family++;assert(family<families);int timestamps=queues[family].timestampValidBits!=0;free(queues);
     float priority=1;VkDeviceQueueCreateInfo qi={.sType=VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,.queueFamilyIndex=family,.queueCount=1,.pQueuePriorities=&priority};
     const char *extension=VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME;tf.transformFeedback=feedback;tf.geometryStreams=VK_FALSE;
     VkDeviceCreateInfo di={.sType=VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,.pNext=feedback?&tf:NULL,.queueCreateInfoCount=1,.pQueueCreateInfos=&qi,.enabledExtensionCount=feedback,.ppEnabledExtensionNames=&extension};OK(vkCreateDevice(physical,&di,NULL,&device));
     buffer(0,VK_BUFFER_USAGE_TRANSFER_DST_BIT);if(feedback){buffer(1,VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT);buffer(2,VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT);}
     VkQueue queue;vkGetDeviceQueue(device,family,0,&queue);VkCommandPool pool;VkCommandPoolCreateInfo pi={.sType=VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,.queueFamilyIndex=family};OK(vkCreateCommandPool(device,&pi,NULL,&pool));
     VkCommandBuffer c;VkCommandBufferAllocateInfo ca={.sType=VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,.commandPool=pool,.commandBufferCount=1};OK(vkAllocateCommandBuffers(device,&ca,&c));
-    VkQueryPool time_pool,occlusion_pool,tf_pool=VK_NULL_HANDLE;VkQueryPoolCreateInfo qc={.sType=VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,.queryType=VK_QUERY_TYPE_TIMESTAMP,.queryCount=2};OK(vkCreateQueryPool(device,&qc,NULL,&time_pool));qc.queryType=VK_QUERY_TYPE_OCCLUSION;qc.queryCount=1;OK(vkCreateQueryPool(device,&qc,NULL,&occlusion_pool));
+    VkQueryPool time_pool=VK_NULL_HANDLE,occlusion_pool,tf_pool=VK_NULL_HANDLE;VkQueryPoolCreateInfo qc={.sType=VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,.queryType=VK_QUERY_TYPE_TIMESTAMP,.queryCount=2};if(timestamps)OK(vkCreateQueryPool(device,&qc,NULL,&time_pool));qc.queryType=VK_QUERY_TYPE_OCCLUSION;qc.queryCount=1;OK(vkCreateQueryPool(device,&qc,NULL,&occlusion_pool));
     VkPipeline pipeline=VK_NULL_HANDLE;VkPipelineLayout layout=VK_NULL_HANDLE;VkShaderModule module=VK_NULL_HANDLE;VkRenderPass pass=VK_NULL_HANDLE;VkFramebuffer fb=VK_NULL_HANDLE;
         VkSubpassDescription sub={.pipelineBindPoint=VK_PIPELINE_BIND_POINT_GRAPHICS};VkRenderPassCreateInfo rp={.sType=VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,.subpassCount=1,.pSubpasses=&sub};OK(vkCreateRenderPass(device,&rp,NULL,&pass));
         VkFramebufferCreateInfo fc={.sType=VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,.renderPass=pass,.width=8,.height=8,.layers=1};OK(vkCreateFramebuffer(device,&fc,NULL,&fb));
@@ -58,8 +58,8 @@ int main(int argc,char **argv) {
         VkPipelineColorBlendStateCreateInfo bs={.sType=VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};VkGraphicsPipelineCreateInfo pc={.sType=VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,.stageCount=1,.pStages=&stage,.pVertexInputState=&vi,.pInputAssemblyState=&ia,.pViewportState=&vs,.pRasterizationState=&rs,.pMultisampleState=&ms,.pColorBlendState=&bs,.layout=layout,.renderPass=pass};
         OK(vkCreateGraphicsPipelines(device,VK_NULL_HANDLE,1,&pc,NULL,&pipeline));qc.queryType=VK_QUERY_TYPE_TRANSFORM_FEEDBACK_STREAM_EXT;qc.queryCount=1;OK(vkCreateQueryPool(device,&qc,NULL,&tf_pool));
     }
-    VkCommandBufferBeginInfo cb={.sType=VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};OK(vkBeginCommandBuffer(c,&cb));vkCmdResetQueryPool(c,time_pool,0,2);vkCmdResetQueryPool(c,occlusion_pool,0,1);if(feedback)vkCmdResetQueryPool(c,tf_pool,0,1);
-    vkCmdWriteTimestamp(c,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,time_pool,0);
+    VkCommandBufferBeginInfo cb={.sType=VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};OK(vkBeginCommandBuffer(c,&cb));if(timestamps)vkCmdResetQueryPool(c,time_pool,0,2);vkCmdResetQueryPool(c,occlusion_pool,0,1);if(feedback)vkCmdResetQueryPool(c,tf_pool,0,1);
+    if(timestamps)vkCmdWriteTimestamp(c,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,time_pool,0);
     VkRenderPassBeginInfo pb={.sType=VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,.renderPass=pass,.framebuffer=fb,.renderArea={{0,0},{8,8}}};vkCmdBeginRenderPass(c,&pb,VK_SUBPASS_CONTENTS_INLINE);vkCmdBeginQuery(c,occlusion_pool,0,0);
     if(feedback){
         vkCmdBindPipeline(c,VK_PIPELINE_BIND_POINT_GRAPHICS,pipeline);
@@ -68,12 +68,16 @@ int main(int argc,char **argv) {
     }
     vkCmdEndQuery(c,occlusion_pool,0);vkCmdEndRenderPass(c);
     if(feedback)vkCmdCopyQueryPoolResults(c,tf_pool,0,1,allocations[0].buffer,128,24,VK_QUERY_RESULT_64_BIT|VK_QUERY_RESULT_WAIT_BIT|VK_QUERY_RESULT_WITH_AVAILABILITY_BIT);
-    vkCmdWriteTimestamp(c,VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,time_pool,1);vkCmdCopyQueryPoolResults(c,time_pool,0,2,allocations[0].buffer,0,24,VK_QUERY_RESULT_64_BIT|VK_QUERY_RESULT_WAIT_BIT|VK_QUERY_RESULT_WITH_AVAILABILITY_BIT);
+    if(timestamps){vkCmdWriteTimestamp(c,VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,time_pool,1);vkCmdCopyQueryPoolResults(c,time_pool,0,2,allocations[0].buffer,0,24,VK_QUERY_RESULT_64_BIT|VK_QUERY_RESULT_WAIT_BIT|VK_QUERY_RESULT_WITH_AVAILABILITY_BIT);}
+    vkCmdCopyQueryPoolResults(c,occlusion_pool,0,1,allocations[0].buffer,256,16,VK_QUERY_RESULT_64_BIT|VK_QUERY_RESULT_WAIT_BIT|VK_QUERY_RESULT_WITH_AVAILABILITY_BIT);
     VkMemoryBarrier barrier={.sType=VK_STRUCTURE_TYPE_MEMORY_BARRIER,.srcAccessMask=VK_ACCESS_TRANSFER_WRITE_BIT|(feedback?VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT:0),.dstAccessMask=VK_ACCESS_HOST_READ_BIT};vkCmdPipelineBarrier(c,VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,VK_PIPELINE_STAGE_HOST_BIT,0,1,&barrier,0,NULL,0,NULL);OK(vkEndCommandBuffer(c));
     VkFence fence;VkFenceCreateInfo fi={.sType=VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};OK(vkCreateFence(device,&fi,NULL,&fence));VkSubmitInfo submit={.sType=VK_STRUCTURE_TYPE_SUBMIT_INFO,.commandBufferCount=1,.pCommandBuffers=&c};OK(vkQueueSubmit(queue,1,&submit,fence));OK(vkWaitForFences(device,1,&fence,VK_TRUE,UINT64_MAX));
+    if(timestamps){
     uint64_t results[6];memset(results,0xa5,sizeof(results));OK(vkGetQueryPoolResults(device,time_pool,0,2,sizeof(results),results,24,VK_QUERY_RESULT_64_BIT|VK_QUERY_RESULT_WITH_AVAILABILITY_BIT|VK_QUERY_RESULT_WAIT_BIT));
     assert(results[3]>=results[0] && results[1] && results[4] && results[2]==UINT64_C(0xa5a5a5a5a5a5a5a5) && results[5]==results[2]);
-    assert(!memcmp(allocations[0].data,results,40));uint32_t occlusion[2]={1,0};OK(vkGetQueryPoolResults(device,occlusion_pool,0,1,sizeof(occlusion),occlusion,8,VK_QUERY_RESULT_WITH_AVAILABILITY_BIT|VK_QUERY_RESULT_WAIT_BIT));assert(occlusion[0]==0 && occlusion[1]);puts("guest-query-ok: native timestamps, nonprecise occlusion, GPU result copy, availability and stride padding");
+    assert(!memcmp(allocations[0].data,results,40));}
+    uint32_t occlusion[2]={1,0};OK(vkGetQueryPoolResults(device,occlusion_pool,0,1,sizeof(occlusion),occlusion,8,VK_QUERY_RESULT_WITH_AVAILABILITY_BIT|VK_QUERY_RESULT_WAIT_BIT));assert(occlusion[0]==0 && occlusion[1]);uint64_t gpu_occlusion[2];memcpy(gpu_occlusion,allocations[0].data+256,sizeof(gpu_occlusion));assert(gpu_occlusion[0]==0 && gpu_occlusion[1]);puts("guest-query-ok: nonprecise occlusion, 32/64-bit results, GPU copy and availability");
+    puts(timestamps?"guest-timestamp-ok: exact CPU/GPU results and stride padding":"guest-timestamp-unavailable: queue has no native GPU timestamp counter; no timestamp claim");
     if(feedback){
         uint64_t captured[3];OK(vkGetQueryPoolResults(device,tf_pool,0,1,sizeof(captured),captured,24,VK_QUERY_RESULT_64_BIT|VK_QUERY_RESULT_WITH_AVAILABILITY_BIT|VK_QUERY_RESULT_WAIT_BIT));assert(captured[0]==6 && captured[1]==6 && captured[2]);assert(!memcmp(allocations[0].data+128,captured,sizeof(captured)));
         for(unsigned i=0;i<6;i++){

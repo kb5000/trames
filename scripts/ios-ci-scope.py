@@ -25,7 +25,8 @@ def zink_metal_only_reuse(plan, repo, headers):
     allowed = {'.github/ios-validation-plan.json', '.github/workflows/linux.yml',
                'scripts/ios-ci-scope.py', 'scripts/prepare-zink-native-bundle.py',
                'scripts/prepare-vulkan.py', 'scripts/build-moltenvk.py', 'scripts/build-ios.sh',
-               'patches/moltenvk/0001-use-source-mip-depth-for-volume-blits.patch'}
+               'patches/moltenvk/0001-use-source-mip-depth-for-volume-blits.patch',
+                               'patches/moltenvk/0002-require-native-gpu-timestamp-counters.patch'}
     changed = subprocess.check_output(['git', 'diff', '--name-only', reuse['sha'], 'HEAD'], text=True).splitlines()
     if any(path not in allowed and not path.startswith('docs/') for path in changed):
         raise RuntimeError('Metal-only repair changed the guest, runtime, GPU bridge, fixture or toolchain')
@@ -654,7 +655,8 @@ def main():
                                'scripts/prepare-zink-guest.py', 'scripts/build-vulkan-guest.sh',
                                'scripts/ios-ci-scope.py', '.github/workflows/ios.yml', '.github/workflows/linux.yml',
                                'scripts/prepare-vulkan.py', 'scripts/build-moltenvk.py', 'scripts/build-ios.sh',
-                               'patches/moltenvk/0001-use-source-mip-depth-for-volume-blits.patch'}
+                               'patches/moltenvk/0001-use-source-mip-depth-for-volume-blits.patch',
+                               'patches/moltenvk/0002-require-native-gpu-timestamp-counters.patch'}
                     sync = plan.get('native_scope') in {'zink-sync','zink-gles','zink-wayland'}
                     if sync:
                         allowed.update({'accelerator/vulkan/zink.inc', 'accelerator/vulkan/graphics.inc', 'tests/fixtures/vulkan-timeline.c',
@@ -802,8 +804,31 @@ def main():
                                 raise RuntimeError('Missing passed exact-source Apple Vulkan/iOS checks')
                     metal_reuse = zink_metal_only_reuse(plan, repo, dict(request.headers))
                     print('Original Mesa Wayland EGL: native WSI/image copies, two-window resize/close and retained Metal texture pixels; reuse unchanged offscreen/CPU/MMU/UI/network checks; no IPA.' if plan.get('native_scope') == 'zink-wayland' else 'Zink synchronization: changed guest ICD and native Vulkan backend, original driver timeline/viewport GPU checks and iOS embedding; CPU/MMU/UI/network unchanged, no IPA.' if sync else 'Guest ICD query/template foundation: original loader/Mesa probe, native GPU compute/texture oracles, bundle upgrade/reopen and Apple/iOS metadata checks. CPU/MMU/native GPU backend/UI unchanged; no IPA or repeated unrelated acceptance.')
+                    feedback_retry = plan.get('zink_feedback_only')
+                    if feedback_retry:
+                        source = feedback_retry['sha']
+                        if plan['native_scope'] != 'zink-gles' or base != source or subprocess.check_output([
+                                'git', 'diff', '--name-only', source, 'HEAD', '--',
+                                'crates/trames-vulkan/src', 'accelerator/vulkan', 'Cargo.lock', 'rust-toolchain.toml']).strip():
+                            raise RuntimeError('Feedback retry requires unchanged validated Vulkan/ICD runtime')
+                        def feedback_evidence(path):
+                            req = urllib.request.Request(f'https://api.github.com/repos/{repo}/' + path, headers=dict(request.headers))
+                            with urllib.request.urlopen(req, timeout=30) as response:
+                                return json.load(response)
+                        retry_run = feedback_evidence(f"actions/runs/{feedback_retry['run']}")
+                        retry_jobs = feedback_evidence(f"actions/runs/{feedback_retry['run']}/jobs")['jobs']
+                        linux = next(j for j in retry_jobs if j['name'] == 'zink-foundation')
+                        apple = next(j for j in retry_jobs if j['name'] == 'zink-gles-apple')
+                        if (retry_run['head_sha'] != source or retry_run['head_repository']['full_name'] != repo
+                                or retry_run['path'] != '.github/workflows/linux.yml' or linux['conclusion'] != 'success'
+                                or not any(s['name'] == 'Verify exact guest inputs, Apple modules and iOS embedding'
+                                           and s['conclusion'] == 'success' for s in apple['steps'])):
+                            raise RuntimeError('Missing passed exact-source Linux and Apple module checks')
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=' + plan['native_scope'] + '\n')
+                        if feedback_retry:
+                            output.write('zink_feedback_only=true\n')
+                            print('Retry changed query/feedback clients and original native timestamp capability patch only; reuse passed unchanged Vulkan module, Mesa/image and iOS FFI acceptance.')
                         output.write('skip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
                         if metal_reuse:
                             output.write(f"zink_sync_skip_linux=true\nzink_guest_bundle_run={metal_reuse['run']}\nzink_guest_bundle_sha={metal_reuse['sha']}\n")

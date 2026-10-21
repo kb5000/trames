@@ -1,30 +1,22 @@
 {
-  "base_sha": "f3e63b2fa2c921be659edc55782c658d2ea0467c",
+  "base_sha": "ac10576432aa71657d09ff038ddfc2410bae06b7",
   "native_scope": "zink-gles",
   "zink_mrt_only": true,
-  "reason": "GPU-only native transform-feedback bridge and query pools. Validate changed Vulkan/ICD, exact original-loader guest client, affected graphics and Apple/iOS embedding. Keep absent Metal transform feedback gated; no GL version override. Reuse passed unrelated CPU/MMU/Linux/network/UI checks and source-identical original MoltenVK native libraries; no IPA or Firefox raw diagnostics.",
+  "zink_feedback_only": {
+    "run": 39559895800,
+    "sha": "ac10576432aa71657d09ff038ddfc2410bae06b7"
+  },
+  "reason": "Retry the failed Apple query path: pinned original MoltenVK reports timestamp capability only with a real Metal timestamp counter set. Query/feedback clients test actual support and always exercise occlusion. Vulkan/ICD runtime and toolchain unchanged; prove passed Linux + Apple module/iOS FFI acceptance and reuse unchanged image/Mesa checks. Rebuild Mac/iOS native libraries for the minimal source capability patch. No IPA or Firefox raw data.",
   "changed_file_sha256": {
-    ".github/workflows/linux.yml": "f00da1c1c1749b8a742765d69854c17adfe01da9efe671436d71f16f86392641",
-    "accelerator/vulkan/entrypoints.inc": "3b78c9059a4132f282eb4bb4aed1dc65b04c0c7d0d55f7c7e3097baa6c9e69ba",
-    "accelerator/vulkan/graphics.inc": "ecea995ab6079d2d06b240b95c885f3adf19559b698f1c9ab305a3a997dc9eab",
-    "accelerator/vulkan/icd.c": "e97055c44817cd11355fa925cd4f2e6d6bbf2d7ae32af514dac80420f2e7b46a",
-    "accelerator/vulkan/queries.inc": "1382c71b210af197e7a959e3c09709640dd4a8acbcde849d1f9a0ad4cab28f38",
-    "accelerator/vulkan/zink.inc": "6cbcd93ebc768055def74dae28a69655b01995c5a903dc435f3ab3db9044c619",
-    "crates/trames-vulkan/examples/feedback.rs": "3988738faa52bdd7ff21ec04a5e56e14bdc9e4e83d5199ff0df686d1b5d3c7cb",
-    "crates/trames-vulkan/src/backend.rs": "9b4eb46382a8c2537b61a8354a486e29e63c89347006253f0eb03a39907f7455",
-    "crates/trames-vulkan/src/backend/feedback.rs": "4da6094167112c4117b4987d7f18617c6ddad04efd9b364de04cf164c1d737bc",
-    "crates/trames-vulkan/src/backend/graphics.rs": "11ef8f45b0c34b01ab6538a70d7987ee5d91e4a9f3fc747ef72319748f9e07f0",
-    "crates/trames-vulkan/src/backend/zink.rs": "9fac1ba98124bb5b78ea9865d93938090226311548f7653337a393ffa8b6f0f4",
-    "docs/architecture/vulkan-compute.md": "e93a318d42eea19b29e225552f3bf4fc80c2193ab6f743dc0e82cd02f1cc65c6",
-    "docs/architecture/zink.md": "f376b9b98d64faac6d125afea433f3346d5de4ee1017bc3d52e62f4030278465",
-    "docs/validation/vulkan-feedback.md": "de1f53c4d8aba794ab1c38f45cd39f6313e752c5e2eb0345634f6c1ae5d955ff",
-    "docs/validation/zink-es3.md": "4a8d9d67a612aeb0683caf799876a59140d0ef122706313434404b0677834765",
-    "scripts/build-vulkan-fixtures.sh": "1005368dd27b9276497179307ba08d2dbc6586f70b729a1854bb963a85e8ea49",
-    "scripts/ios-ci-scope.py": "fce5bee12ddeec8afbc737ed0fb268a4508612764364ae5775a808e658257cf2",
-    "scripts/prepare-zink-guest.py": "b0c61a8bfd0d6808aeb7696e7c08b3af631bb10312c244a204f04a64891e5648",
-    "scripts/prepare-zink-native-bundle.py": "a35c20054c08958a0963d4d6e7729983f684bd251eb64f6fe5960908e12cc06f",
-    "tests/fixtures/vulkan-feedback.c": "1a35e0c6d07138b91546de1fc8cb2324794978ec405c35dd0267d0ccf6d238be",
-    "tests/fixtures/vulkan-feedback.vert": "4254910f3e2bb41c1b6198d8de64a2b2554e00a863fcb124dd1e47655a6a6f23",
-    "tests/integration/vulkan-feedback.py": "45622c7f146d12ae10bff78aea431004934c7c947592417f5fadd8270739f6b0"
+    ".github/workflows/linux.yml": "932be409c77b52e8bc5b0312baff447c6c251f30192f054fba94e269c776a675",
+    "crates/trames-vulkan/examples/feedback.rs": "cb8c335b8842e54745dcd1ef32f176c1f61a32cb74ff4ab14ae0b4cb25fc1513",
+    "docs/validation/moltenvk-source-build.md": "976c5cddde98671d28daa38cbc2f064a1dfe209f88379dcbd665e4db29e8b6cb",
+    "docs/validation/vulkan-feedback.md": "ba510c1b093c37cc9afc7abd8d7d524e5e936304271fd21c3d5b3536af344970",
+    "patches/moltenvk/0002-require-native-gpu-timestamp-counters.patch": "a684dee2d0b5fdc1ecf747d032c942ace248e1b402566bc93f213a33c55d245e",
+    "scripts/build-moltenvk.py": "e57c3241812658e16afbb66938d5d62f169dadd284101aca77eb4f93f6be1291",
+    "scripts/ios-ci-scope.py": "147df5e69f21d1a351a2bf808eb4ee5172d7ca760e7fcf90bb6fcb72ba500c23",
+    "scripts/prepare-zink-native-bundle.py": "a4aa1a36c5e69ba362269f49bdb4be082728be697abffb1133533f2b9ca34747",
+    "tests/fixtures/vulkan-feedback.c": "bb8e29f8213d2ac4f0b869517c1cd41670b3b0e353e5822f8e1559a44c0d1db9",
+    "tests/integration/zink-foundation.py": "60fdd419242933fbeb5d36e61f6fcf39253552e91c98133bca5eeb98d74a7303"
   }
 }
