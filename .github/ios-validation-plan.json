@@ -2,7 +2,7 @@
   "base_sha": "fa5dbc0b085df74507d7ff0ade91ecf4c8c79659",
   "native_scope": "zink-gles",
   "zink_mrt_only": true,
-  "reason": "Real MRT and uncompressed format/copy expansion toward ES3. Validate changed Vulkan module, native attachment/format pixels, original Mesa dense/sparse MRT and Apple/iOS embedding. Reuse unchanged CPU/MMU/Linux/network/UI plus unrelated compute/timeline acceptance; no IPA. Full ES3 and Firefox GPU rendering remain incomplete.",
+  "reason": "Documentation follow-up only: GPU source is unchanged from a02663ac0b90f2cc1ec324b546f51ec9641b176b, whose Linux plus Apple Metal/19 tests/MRT/format pixels/Mesa dense-sparse/iOS FFI acceptance passed in run 39536470296. Record those results and Firefox proxy/direct diagnostics; no repeated tests or IPA.",
   "changed_file_sha256": {
     ".github/workflows/linux.yml": "54a1f1ab193cea14bfc3af6f4d6c1b9a57866e256e8a9f9f6170e80014e2451f",
     "accelerator/vulkan/graphics.inc": "a8cca8a6a1a8cd45bd84665c3cc29bd07bdce60aadcbb954d2f0c1d8777af67a",
@@ -12,7 +12,7 @@
     "crates/trames-vulkan/src/backend/graphics.rs": "33fa1c79ba21f859b365968333a82dfc71c96c1c5d22f8b294e111dd472ce8b3",
     "docs/architecture/vulkan-compute.md": "5e35b600db5c7d5a28b21285084598e1f17d1ae53beb2821f3cdf00c9fa75141",
     "docs/architecture/zink.md": "6287009ea46ce6453501c1a731f2e65b8da6a884aaf8f9f57d63fea62d66fae2",
-    "docs/validation/zink-es3.md": "9d3096e65fc2aa8b9dc625c04bd3d280c2d318250745201d706ffdd5d01ed465",
+    "docs/validation/zink-es3.md": "3c13946b16295e6ea08a970138a318578ba9d12d31a9d10f186d8d49430cb165",
     "scripts/ios-ci-scope.py": "b7e69348895a49cc1f891f514140280ffa6f9aa774877c01c6f9ee1c2706fe73",
     "scripts/prepare-zink-guest.py": "7442dc0154ec1f271e64281642cbbb2f7f18030eb5a5444d3a98b28ea21ee183",
     "scripts/prepare-zink-native-bundle.py": "074dd2326fc959f73be220fd550aa5d93d42817dda7147676bdee28d743ee4ae",

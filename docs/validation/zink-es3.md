@@ -67,6 +67,14 @@ CI 使用精确源码 hash 限定本批范围，复用未变模块。Linux 准�
 附件/格式读回、原版 Mesa MRT 和 iOS FFI 编译。没有构建 IPA 或假定物理 iPad
 已经通过。
 
+源码 [a02663a](https://github.com/kb5000/trames/commit/a02663ac0b90f2cc1ec324b546f51ec9641b176b)
+的 [CI 39536470296](https://github.com/kb5000/trames/actions/runs/39536470296)
+已经全部通过。Apple/MoltenVK 在真实 Apple Paravirtual GPU 上完成同样的
+8 色加深度四组合读回、11 种格式往返、原版 Mesa dense/sparse MRT 512 像素。
+Apple Vulkan 19 项测试、严格 Clippy 和 aarch64-apple-ios FFI 编译通过。
+这是云端 Metal GPU，物理 iPad 尚待验证；未运行未改动的 CPU/网络/UI 全套，
+没有 IPA。后续仅追加本记录，复用该提交的精确源码结果。
+
 ## Firefox 与 WSI
 
 另测试上游 `gfx.webrender.software.opengl=true`，保留默认刷新率、内容沙箱和
@@ -80,6 +88,14 @@ Wayland 服务的 guest FD，Firefox 代理后的 FD 不对应同一 local chann
 capability；不能把任意 socket FD 或仅一个 object ID 当作被认证的客户端。
 本批未放宽认证，也未默认关闭 Firefox proxy。原始 Firefox 日志、截图和运行
 转储只保留本地，不纳入公开提交或 CI 输入包。
+
+仅用于诊断关闭 proxy 的对照不再出现该 surface 创建错误，脚本可完成，但
+240 秒仍无目标 canvas 或新页面 frame。另一个 150 秒调用跟踪组明确观察到
+surface、swapchain、acquire、graphics pipeline、draw 与 queue submit，尚未
+观察到 `vkQueuePresentKHR`。因此后续除保留代理的连接认证外，还需定位首帧从
+绘制/上传到 EGL swap/present 的交接；不能把没有画面一律归因于代理，也不能
+在未确认调用停留位置前断言是 GPU fence 死锁。诊断没有改变产品默认 proxy、
+刷新率或浏览器二进制。
 
 ## 完整 ES3 的后续
 
