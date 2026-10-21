@@ -1,0 +1,129 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Build pinned original MoltenVK with the one-line 3D source-mip correction.
+
+Run prepare-vulkan.py --apple first. Never alter verified upstream archives or
+silently fall back to the unpatched driver. stdout is the static-library folder;
+full Xcode output and source/toolchain/library hashes remain in the build folder.
+"""
+import argparse
+import difflib
+import hashlib
+import json
+import os
+from pathlib import Path
+import platform
+import shutil
+import subprocess
+import sys
+import tarfile
+import tempfile
+
+ROOT = Path(__file__).resolve().parents[1]
+PATCH = ROOT/'patches/moltenvk/0001-use-source-mip-depth-for-volume-blits.patch'
+MANIFEST = ROOT/'scripts/vulkan-upstream.json'
+CACHE = ROOT/'target/vulkan-upstream'
+TRANSFER = Path('MoltenVK/MoltenVK/Commands/MVKCmdTransfer.mm')
+OLD = 'VkExtent3D srcExtent = _srcImage->getExtent3D(srcPlaneIndex, mvkIBR.region.dstSubresource.mipLevel);'
+NEW = OLD.replace('dstSubresource', 'srcSubresource')
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def apply_patch(source):
+    path = source/TRANSFER
+    original = path.read_text()
+    assert original.count(OLD) == 1 and NEW not in original, 'Unexpected pinned MoltenVK source'
+    expected = original.replace(OLD, NEW)
+    diff = ''.join(difflib.unified_diff(original.splitlines(True), expected.splitlines(True),
+        fromfile='a/'+str(TRANSFER), tofile='b/'+str(TRANSFER)))
+    assert PATCH.read_text().endswith(diff), 'Patch must contain exactly the source-mip correction'
+    subprocess.run(['patch', '-s', '-p1', '-i', str(PATCH)], cwd=source, input=b'', check=True)
+    assert path.read_text() == expected
+    return hashlib.sha256(original.encode()).hexdigest(), digest(path)
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--platform', choices=('macos', 'ios', 'ios-simulator'), default='macos')
+    p.add_argument('--arch', choices=('arm64', 'x86_64'), default='arm64')
+    p.add_argument('--verify-source', type=Path, help='verify the pinned archive and exact patch without Apple SDK')
+    a = p.parse_args()
+    manifest = json.loads(MANIFEST.read_text())
+    if a.verify_source:
+        assert digest(a.verify_source) == manifest['archives']['moltenvk-source.tar.gz']['sha256']
+        with tempfile.TemporaryDirectory(prefix='trames-mvk-patch-') as tmp, tarfile.open(a.verify_source) as archive:
+            member = next(v for v in archive if v.name.endswith('/'+str(TRANSFER)))
+            path = Path(tmp)/TRANSFER;path.parent.mkdir(parents=True)
+            path.write_bytes(archive.extractfile(member).read())
+            before, after = apply_patch(Path(tmp))
+            print(json.dumps(dict(original_sha256=before, patched_sha256=after, patch_sha256=digest(PATCH))))
+        return
+    assert platform.system() == 'Darwin', 'An Apple SDK host is required to build native MoltenVK'
+    assert a.platform != 'ios' or a.arch == 'arm64', 'iOS device build requires arm64'
+    sdk, destination, os_name = {
+        'macos': ('macosx', 'macOS', 'macOS'), 'ios': ('iphoneos', 'iOS', 'iOS'),
+        'ios-simulator': ('iphonesimulator', 'iOS Simulator', 'iOS'),
+    }[a.platform]
+    toolchain = subprocess.check_output(['xcodebuild', '-version'], text=True)
+    sdk_version = subprocess.check_output(['xcrun', '--sdk', sdk, '--show-sdk-version'], text=True).strip()
+    inputs = dict(platform=a.platform, arch=a.arch, xcode=toolchain, sdk=sdk_version,
+                  patch_sha256=digest(PATCH), recipe_sha256=digest(Path(__file__)),
+                  manifest_sha256=digest(MANIFEST), upstream_commit=manifest['moltenvk_commit'])
+    key = hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()[:20]
+    out = ROOT/'target/moltenvk-patched'/(a.platform+'-'+a.arch+'-'+key)
+    library = out/'libMoltenVK.a';record = out/'build.json'
+    if library.is_file() and record.is_file():
+        cached = json.loads(record.read_text())
+        assert cached['inputs'] == inputs and cached['library_sha256'] == digest(library)
+        print(out);return
+    out.mkdir(parents=True, exist_ok=True)
+    source = out/'source'
+    if source.exists():
+        shutil.rmtree(source)
+    # Source archives and every dependency are exactly those already retained
+    # for GPL distribution. Keep the original archives and extracted trees intact.
+    projects = {}
+    for name, item in manifest['archives'].items():
+        if name in ('headers.tar.gz', 'moltenvk-all.tar'):
+            continue
+        archive = CACHE/name
+        assert archive.is_file() and digest(archive) == item['sha256'], 'Run prepare-vulkan.py --apple: '+name
+        extracted = CACHE/name.split('.')[0]
+        projects[name] = next(path for path in extracted.iterdir() if path.is_dir())
+    shutil.copytree(projects['moltenvk-source.tar.gz'], source, symlinks=True)
+    for name, item in manifest['archives'].items():
+        if 'destination' not in item:
+            continue
+        path = source/item['destination'];path.parent.mkdir(parents=True, exist_ok=True)
+        path.symlink_to(projects[name], target_is_directory=True)
+    before, after = apply_patch(source)
+    common = ['-configuration', 'Release', '-sdk', sdk, 'ARCHS='+a.arch,
+              'ONLY_ACTIVE_ARCH=YES', 'CODE_SIGNING_ALLOWED=NO',
+              'SYMROOT='+str(out/'products'), 'OBJROOT='+str(out/'intermediates')]
+    commands = [
+        ['xcodebuild', '-project', 'ExternalDependencies.xcodeproj', '-scheme', 'ExternalDependencies-'+os_name,
+         '-destination', 'generic/platform='+destination, *common, 'build'],
+        ['xcodebuild', '-project', 'MoltenVK/MoltenVK.xcodeproj', '-target', 'MoltenVK-'+os_name+'-static', *common, 'build'],
+    ]
+    with (out/'xcodebuild.log').open('wb') as log:
+        for command in commands:
+            print('Building patched MoltenVK '+a.platform+' '+a.arch, file=sys.stderr, flush=True)
+            result = subprocess.run(command, cwd=source, stdout=log, stderr=subprocess.STDOUT)
+            if result.returncode:
+                print((out/'xcodebuild.log').read_text(errors='replace')[-14000:], file=sys.stderr)
+                raise SystemExit(result.returncode)
+    products = list((out/'products').rglob('libMoltenVK.a'))
+    assert len(products) == 1, 'Expected one native static MoltenVK product: '+str(products)
+    shutil.copyfile(products[0], library)
+    actual = subprocess.check_output(['xcrun', 'lipo', '-archs', str(library)], text=True).split()
+    assert actual == [a.arch], 'Native artifact architecture mismatch'
+    record.write_text(json.dumps(dict(inputs=inputs, commands=commands, original_transfer_sha256=before,
+        patched_transfer_sha256=after, library_sha256=digest(library)), indent=2)+'\n')
+    print(out)
+
+
+if __name__ == '__main__':
+    main()

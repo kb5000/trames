@@ -15,6 +15,43 @@ def frontend_path(path):
     }
 
 
+def zink_metal_only_reuse(plan, repo, headers):
+    """Reuse an exact guest/backend build while repairing only native MoltenVK."""
+    reuse = plan.get('zink_metal_only_reuse')
+    if not reuse:
+        return None
+    if plan['native_scope'] != 'zink-gles':
+        raise RuntimeError('Metal-only repair requires GLES native acceptance')
+    allowed = {'.github/ios-validation-plan.json', '.github/workflows/linux.yml',
+               'scripts/ios-ci-scope.py', 'scripts/prepare-zink-native-bundle.py',
+               'scripts/prepare-vulkan.py', 'scripts/build-moltenvk.py', 'scripts/build-ios.sh',
+               'patches/moltenvk/0001-use-source-mip-depth-for-volume-blits.patch'}
+    changed = subprocess.check_output(['git', 'diff', '--name-only', reuse['sha'], 'HEAD'], text=True).splitlines()
+    if any(path not in allowed and not path.startswith('docs/') for path in changed):
+        raise RuntimeError('Metal-only repair changed the guest, runtime, GPU bridge, fixture or toolchain')
+
+    def get(path):
+        request = urllib.request.Request(f'https://api.github.com/repos/{repo}/{path}', headers=headers)
+        with urllib.request.urlopen(request, timeout=30) as response:
+            return json.load(response)
+
+    run = get(f"actions/runs/{reuse['run']}")
+    if (run['head_sha'] != reuse['sha'] or run['head_repository']['full_name'] != repo
+            or run['path'] != '.github/workflows/linux.yml'):
+        raise RuntimeError('Metal repair reuse source/workflow mismatch')
+    jobs = get(f"actions/runs/{reuse['run']}/jobs")['jobs']
+    if next(j for j in jobs if j['name'] == 'zink-foundation')['conclusion'] != 'success':
+        raise RuntimeError('Missing successful exact-source Linux GPU/Mesa acceptance')
+    apple = next(j for j in jobs if j['name'] == 'zink-gles-apple')
+    if not any(s['name'] == 'Verify exact guest inputs, Apple modules and iOS embedding'
+               and s['conclusion'] == 'success' for s in apple['steps']):
+        raise RuntimeError('Missing passed unchanged Apple module/iOS checks')
+    if not any(a['name'] == 'zink-native-bundle' and not a['expired']
+               for a in get(f"actions/runs/{reuse['run']}/artifacts")['artifacts']):
+        raise RuntimeError('Missing source-bound original Mesa guest bundle')
+    return reuse
+
+
 def compatibility_probe_outputs(plan, repo, headers):
     """Probe/documentation changes reuse an exactly unchanged passing runtime."""
     reuse = plan['runtime_reuse']
@@ -613,7 +650,9 @@ def main():
                                'tests/fixtures/zink-es3.c', 'tests/integration/zink-es3.py',
                                'tests/fixtures/vulkan-texture.c', 'tests/integration/zink-foundation.py',
                                'scripts/prepare-zink-guest.py', 'scripts/build-vulkan-guest.sh',
-                               'scripts/ios-ci-scope.py', '.github/workflows/ios.yml', '.github/workflows/linux.yml'}
+                               'scripts/ios-ci-scope.py', '.github/workflows/ios.yml', '.github/workflows/linux.yml',
+                               'scripts/prepare-vulkan.py', 'scripts/build-moltenvk.py', 'scripts/build-ios.sh',
+                               'patches/moltenvk/0001-use-source-mip-depth-for-volume-blits.patch'}
                     sync = plan.get('native_scope') in {'zink-sync','zink-gles','zink-wayland'}
                     if sync:
                         allowed.update({'accelerator/vulkan/zink.inc', 'accelerator/vulkan/graphics.inc', 'tests/fixtures/vulkan-timeline.c',
@@ -759,10 +798,14 @@ def main():
                                 raise RuntimeError('Missing passed exact-source Linux GPU foundation')
                             if key == 'apple' and not any(step['name'] == 'Check changed Apple Vulkan backend and iOS embedding' and step['conclusion'] == 'success' for step in job['steps']):
                                 raise RuntimeError('Missing passed exact-source Apple Vulkan/iOS checks')
+                    metal_reuse = zink_metal_only_reuse(plan, repo, dict(request.headers))
                     print('Original Mesa Wayland EGL: native WSI/image copies, two-window resize/close and retained Metal texture pixels; reuse unchanged offscreen/CPU/MMU/UI/network checks; no IPA.' if plan.get('native_scope') == 'zink-wayland' else 'Zink synchronization: changed guest ICD and native Vulkan backend, original driver timeline/viewport GPU checks and iOS embedding; CPU/MMU/UI/network unchanged, no IPA.' if sync else 'Guest ICD query/template foundation: original loader/Mesa probe, native GPU compute/texture oracles, bundle upgrade/reopen and Apple/iOS metadata checks. CPU/MMU/native GPU backend/UI unchanged; no IPA or repeated unrelated acceptance.')
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=' + plan['native_scope'] + '\n')
                         output.write('skip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
+                        if metal_reuse:
+                            output.write(f"zink_sync_skip_linux=true\nzink_guest_bundle_run={metal_reuse['run']}\nzink_guest_bundle_sha={metal_reuse['sha']}\n")
+                            print('Reuse exact-source Linux GPU/Mesa and passed Apple module/iOS checks; rebuild corrected MoltenVK source and rerun only native Metal pixels/Mesa plus iOS native library compilation. No IPA.')
                         if plan.get('zink_mrt_only'):
                             if plan['native_scope'] != 'zink-gles':
                                 raise RuntimeError('MRT plan requires the changed GLES native/guest validation')

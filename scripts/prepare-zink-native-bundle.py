@@ -28,7 +28,9 @@ if a.verify:
         subprocess.run(['git', 'merge-base', '--is-ancestor', source, sha], cwd=ROOT, check=True)
         delta = subprocess.check_output(['git', 'diff', '--name-only', source, sha], cwd=ROOT, text=True).splitlines()
         ci_only = {'.github/ios-validation-plan.json', '.github/workflows/linux.yml',
-                   'scripts/ios-ci-scope.py', 'scripts/prepare-zink-native-bundle.py'}
+                   'scripts/ios-ci-scope.py', 'scripts/prepare-zink-native-bundle.py',
+                   'scripts/prepare-vulkan.py', 'scripts/build-moltenvk.py', 'scripts/build-ios.sh',
+                   'patches/moltenvk/0001-use-source-mip-depth-for-volume-blits.patch'}
         assert all(f in ci_only or f.startswith('docs/') for f in delta), 'Guest/runtime inputs changed'
     actual = {str(f.relative_to(out)) for f in out.rglob('*') if f.is_file() and f != manifest}
     assert actual == set(data['sha256'])

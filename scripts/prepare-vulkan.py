@@ -13,10 +13,14 @@ ROOT = Path(__file__).resolve().parents[1]
 manifest = json.loads((ROOT / 'scripts/vulkan-upstream.json').read_text())
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--apple', action='store_true', help='also prepare pinned MoltenVK binaries and their source closure')
+parser.add_argument('--source-build', action='store_true', help='prepare Apple source closure without unused prebuilt MoltenVK binaries')
 args = parser.parse_args()
+assert not args.source_build or args.apple, '--source-build requires --apple'
 cache = ROOT / 'target/vulkan-upstream'
 cache.mkdir(parents=True, exist_ok=True)
 for name, record in manifest['archives'].items():
+    if name == 'moltenvk-all.tar' and args.source_build:
+        continue
     if name != 'headers.tar.gz' and not args.apple:
         continue
     archive = cache / name
@@ -45,6 +49,8 @@ if args.apple:
             package.add(cache / name, arcname='upstream/' + name)
         package.add(ROOT / 'scripts/vulkan-upstream.json', arcname='vulkan-upstream.json')
         package.add(ROOT / 'scripts/prepare-vulkan.py', arcname='prepare-vulkan.py')
+        package.add(ROOT / 'scripts/build-moltenvk.py', arcname='scripts/build-moltenvk.py')
+        package.add(ROOT / 'patches/moltenvk', arcname='patches/moltenvk')
         package.add(ROOT / 'LICENSE', arcname='TRAMES-GPL-3.0.txt')
     notices = output / 'Notices'
     notices.mkdir(exist_ok=True)

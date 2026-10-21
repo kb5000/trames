@@ -40,6 +40,8 @@ jobs:
       zink_wayland_linux_run: ${{ steps.scope.outputs.zink_wayland_linux_run }}
       zink_wayland_linux_sha: ${{ steps.scope.outputs.zink_wayland_linux_sha }}
       zink_mrt_only: ${{ steps.scope.outputs.zink_mrt_only }}
+      zink_guest_bundle_run: ${{ steps.scope.outputs.zink_guest_bundle_run }}
+      zink_guest_bundle_sha: ${{ steps.scope.outputs.zink_guest_bundle_sha }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -375,8 +377,8 @@ jobs:
           fi
       - name: Verify original Mesa Wayland EGL on exported Metal textures
         run: |
-          python3 scripts/prepare-vulkan.py --apple
-          export TRAMES_MOLTENVK_STATIC_DIR="$PWD/target/vulkan-upstream/moltenvk-all/MoltenVK/MoltenVK/static/MoltenVK.xcframework/macos-arm64_x86_64"
+          python3 scripts/prepare-vulkan.py --apple --source-build
+          export TRAMES_MOLTENVK_STATIC_DIR="$(python3 scripts/build-moltenvk.py --platform macos --arch arm64)"
           export MACOSX_DEPLOYMENT_TARGET=12.0
           export RUSTFLAGS="-C link-arg=-framework -C link-arg=IOKit -C link-arg=$(xcrun clang --print-runtime-dir)/libclang_rt.osx.a"
           cargo build -p trames-ffi --release --locked
@@ -474,7 +476,7 @@ jobs:
           retention-days: 3
   zink-gles-apple:
     needs: [scope, zink-foundation]
-    if: needs.scope.outputs.native_scope == 'zink-gles'
+    if: always() && needs.scope.result == 'success' && needs.scope.outputs.native_scope == 'zink-gles' && (needs.zink-foundation.result == 'success' || needs.scope.outputs.zink_guest_bundle_run != '')
     runs-on: macos-15
     timeout-minutes: 30
     steps:
@@ -488,17 +490,21 @@ jobs:
         with:
           name: zink-native-bundle
           path: target/zink-native-bundle
+          run-id: ${{ needs.scope.outputs.zink_guest_bundle_run || github.run_id }}
+          github-token: ${{ github.token }}
       - name: Verify exact guest inputs, Apple modules and iOS embedding
         run: |
-          python3 scripts/prepare-zink-native-bundle.py --verify
-          cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
-          cargo test -p trames-vulkan --lib --locked
-          cargo check -p trames-ffi --target aarch64-apple-ios --locked
+          python3 scripts/prepare-zink-native-bundle.py --verify --source-sha '${{ needs.scope.outputs.zink_guest_bundle_sha || github.sha }}'
+          if [[ -z '${{ needs.scope.outputs.zink_guest_bundle_run }}' ]]; then
+            cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
+            cargo test -p trames-vulkan --lib --locked
+            cargo check -p trames-ffi --target aarch64-apple-ios --locked
+          fi
       - name: Run original MoltenVK Metal resource and Mesa GLSL paths
         run: |
           mkdir -p target/zink-metal-native
-          python3 scripts/prepare-vulkan.py --apple
-          export TRAMES_MOLTENVK_STATIC_DIR="$PWD/target/vulkan-upstream/moltenvk-all/MoltenVK/MoltenVK/static/MoltenVK.xcframework/macos-arm64_x86_64"
+          python3 scripts/prepare-vulkan.py --apple --source-build
+          export TRAMES_MOLTENVK_STATIC_DIR="$(python3 scripts/build-moltenvk.py --platform macos --arch arm64)"
           export MACOSX_DEPLOYMENT_TARGET=12.0
           export RUSTFLAGS="-C link-arg=-framework -C link-arg=IOKit -C link-arg=$(xcrun clang --print-runtime-dir)/libclang_rt.osx.a"
           cargo build -p trames-cli --release --locked
@@ -513,6 +519,8 @@ jobs:
           if [[ '${{ needs.scope.outputs.zink_mrt_only }}' == true ]]; then
             python3 tests/integration/zink-es3.py --store target/zink-native-bundle/store --output target/zink-es3-metal --stage graphics
           fi
+      - name: Compile corrected native iOS driver without packaging an app
+        run: python3 scripts/build-moltenvk.py --platform ios --arch arm64 > target/zink-metal-native/ios-driver-dir.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -522,6 +530,8 @@ jobs:
             target/zink-metal-native/
             target/zink-es3-metal/
             target/zink-native-bundle/checksums.json
+            target/moltenvk-patched/*/build.json
+            target/moltenvk-patched/*/xcodebuild.log
           retention-days: 14
   runtime-fastpaths:
     needs: scope

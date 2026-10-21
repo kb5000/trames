@@ -70,7 +70,9 @@ python3 tests/integration/zink-es3.py \
 脚本直接打开显式临时 store，不复制整个 rootfs；只导入唯一 probe 路径，最后
 清理。4 CPU，总内存与单进程各 4 GiB，离线。CI 对应的 Linux/Apple 原生图像
 检查和原版 Mesa 图形 gate 使用同源 ICD、fixture、签名 Mesa store 和逐文件
-hash 清单。Apple 结果待本次 CI；不构建 IPA，不上传本地 Firefox 诊断。
+hash 清单。Apple 首轮确认 1D/2D 路径与原有 MRT/格式检查通过，但 3D mip
+缩小读回失败，定位为上游取错 mip 深度；见 [原版源码最小修正](moltenvk-source-build.md)。
+修正后的 Metal 结果待本次 CI；不构建 IPA，不上传本地 Firefox 诊断。
 
 ## 尚未完成
 

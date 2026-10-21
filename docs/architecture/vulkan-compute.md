@@ -315,3 +315,7 @@ Then verify offscreen graphics before adding presentation. A host-owned surface
 token can connect a guest swapchain to an iPad Metal view; a guest address never
 becomes a CAMetalLayer pointer. X11/Wayland WSI and a DRM subsystem are separate
 compatibility work. See [verification](../validation/vulkan-compute.md).
+
+MoltenVK 1.4.2 volume blits include a one-line source-mip-depth correction,
+rebuilt from the pinned original source with its unchanged GPU algorithms.
+[Native build recipe and evidence](../validation/moltenvk-source-build.md).

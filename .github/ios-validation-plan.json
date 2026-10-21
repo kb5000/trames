@@ -2,9 +2,13 @@
   "base_sha": "fc6ea424cdec1717a1b21905bf7bd835aa05c7bf",
   "native_scope": "zink-gles",
   "zink_mrt_only": true,
-  "reason": "Complete native Vulkan image and texture acceptance, including actual portability gates for 3D slice image flags and mutable comparison samplers. Only affected GPU tests and original Mesa MRT/mip/cube pixels plus iOS embedding; reuse unchanged CPU/MMU/Linux/network/UI and unrelated compute/timeline checks. No IPA or Firefox diagnostics.",
+  "zink_metal_only_reuse": {
+    "run": 39547799850,
+    "sha": "ebace6438b656ee15bf635a30755b786582c1e78"
+  },
+  "reason": "GPU bridge, guest ICD/fixtures and Rust toolchain are unchanged from passed Linux GPU/Mesa and Apple module/23 tests/iOS FFI checks. Reuse that exact guest bundle, rebuild pinned original MoltenVK with its one-line 3D source-mip fix, rerun failed Metal pixels/Mesa only and compile its iOS native library. No IPA or Firefox diagnostics.",
   "changed_file_sha256": {
-    ".github/workflows/linux.yml": "4ec3e0de2d6342db9ac6c403d109200b1edb137eb622dd55bc6160f84061c9f1",
+    ".github/workflows/linux.yml": "8527dee58fe410a66257d7bab615b8ac20ad8e80e61168a81d0d2ea357d918ae",
     "accelerator/vulkan/entrypoints.inc": "d9553e0ab95214b1a2d04d61adb688087e709325610a25852ec9c72ab848f8ab",
     "accelerator/vulkan/graphics.inc": "465ac1b10ae5d3ffa0308f9800f1ab3eb6f7d343c4107a5cf2506779dca9363b",
     "accelerator/vulkan/icd.c": "589513e11673664fa137b302dddaeaa4d64956eed7aa6ecea349d82e9d7cc6b5",
@@ -15,11 +19,17 @@
     "crates/trames-vulkan/src/backend/wayland.rs": "45084d52166c1d840c9d0fca5830652cd2efc509fc9783d70cd49ea9c6624eff",
     "crates/trames-vulkan/src/backend/wsi.rs": "343b4caea540bd545322bd86bf8b540288b122a3cb5504214e3eebb1dab84a6b",
     "crates/trames-vulkan/src/backend/zink.rs": "1f74c95b3d5b96c8416d04b9cac39d9844fe356859d9e5cdbb7cf28c45614259",
-    "docs/architecture/vulkan-compute.md": "e434b984fc6ab76c941373db6b99780ccd776cfa6f073f22b808eaac921f7a08",
+    "docs/architecture/vulkan-compute.md": "8c0a1acc371c0d93a73ccdc07a879140041cc170ce95ba05e325c305a8b0551f",
     "docs/architecture/zink.md": "57a99cc8d388705b8603fb4ec193a1107539d6f3b276c9b4c3c418b04f628e7c",
+    "docs/validation/moltenvk-source-build.md": "929138850a3006792c4c58414878e648ddc2a6714a0f4937fecdd41163775c9c",
     "docs/validation/zink-es3.md": "08f42645a6294c7d34ed7f7c7112260718a8f48106d413078f64926d2726009d",
-    "docs/validation/zink-images.md": "640de880a7111f407ad97c2f7a3b7f84ac77fa9a9acbfd29003b1a4e2514b337",
-    "scripts/ios-ci-scope.py": "b991939a1cccb3ecd9eaa523bf315a432010143a9b309c6cf2a2a7fbfab8eb8d",
+    "docs/validation/zink-images.md": "b161c643dafb3cf6f25857e4690ae4bad6e8ae2e2742139af4796e3fd3e10a37",
+    "patches/moltenvk/0001-use-source-mip-depth-for-volume-blits.patch": "78ccd845056b7251def221519cd130a2baefd43857c622d463d36cab3a54eed3",
+    "scripts/build-ios.sh": "1c2f3e951fcc74d9909b6e484f129c5cf716daadde592de26fabe54da5d0b0fa",
+    "scripts/build-moltenvk.py": "c690d96a5868f8e3d459bd7850a2871f624e97068a8ffbe478611ef998df6005",
+    "scripts/ios-ci-scope.py": "120caafed73dc891fd28fdfc19ce1dafe129eeb06b8a82ad694c4eb3a5bd127d",
+    "scripts/prepare-vulkan.py": "3bb66625a15bad3b11a22ae636bffd39704284d9d9dd0d16075153246abf33ae",
+    "scripts/prepare-zink-native-bundle.py": "438e68ee476570d5c80decc0c12efc1b9122a152e8287b2a8218a56b8b6670db",
     "tests/fixtures/zink-es3.c": "4d2fdd86d7edebc408e2eb970d88134e9f42afb0024c7238adcd82ad97294cdb",
     "tests/integration/zink-es3.py": "876be0fb521091afa03463157b3ecb85b7dc1d24736adb2cfaadac8d2988a8c2"
   }

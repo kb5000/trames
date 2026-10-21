@@ -1,0 +1,18 @@
+SPDX-License-Identifier: GPL-3.0-or-later
+Subject: [PATCH] Normalize volume blit coordinates with the source mip depth
+
+MoltenVK 1.4.2 uses the destination mip index to query the source depth.
+A 4-to-2 volume mip blit therefore samples z=2 instead of z=1. Preserve
+the original GPU path and use the source subresource, as for x/y.
+
+--- a/MoltenVK/MoltenVK/Commands/MVKCmdTransfer.mm
++++ b/MoltenVK/MoltenVK/Commands/MVKCmdTransfer.mm
+@@ -657,7 +657,7 @@
+                 float zIncr;
+                 if (blitKey.srcMTLTextureType == MTLTextureType3D) {
+                     // In this case, I need to interpolate along the third dimension manually.
+-                    VkExtent3D srcExtent = _srcImage->getExtent3D(srcPlaneIndex, mvkIBR.region.dstSubresource.mipLevel);
++                    VkExtent3D srcExtent = _srcImage->getExtent3D(srcPlaneIndex, mvkIBR.region.srcSubresource.mipLevel);
+                     VkOffset3D so0 = mvkIBR.region.srcOffsets[0], so1 = mvkIBR.region.srcOffsets[1];
+                     // If the dst is also 3D use the z offsets, otherwise use the layers.
+                     float do0z = mvkIBR.region.dstOffsets[0].z, do1z = mvkIBR.region.dstOffsets[1].z;

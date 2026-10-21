@@ -37,12 +37,12 @@ if (p/'libEGL.so.1').exists():
 if (p/'Xwayland-native').exists():
     x=json.loads((p/'xwayland-native-manifest.json').read_text());assert hashlib.sha256((p/'Xwayland-native').read_bytes()).hexdigest()==x['executable_sha256']
 PYCODE
-python3 scripts/prepare-vulkan.py --apple
-mvk="$PWD/target/vulkan-upstream/moltenvk-all/MoltenVK/MoltenVK/static/MoltenVK.xcframework"
+python3 scripts/prepare-vulkan.py --apple --source-build
 case "$platform" in
-  device) export TRAMES_MOLTENVK_STATIC_DIR="$mvk/ios-arm64" ;;
-  simulator) export TRAMES_MOLTENVK_STATIC_DIR="$mvk/ios-arm64_x86_64-simulator" ;;
+  device) native_platform=ios ;;
+  simulator) native_platform=ios-simulator ;;
 esac
+export TRAMES_MOLTENVK_STATIC_DIR="$(python3 scripts/build-moltenvk.py --platform "$native_platform" --arch arm64)"
 python3 - <<'PYCODE'
 import hashlib,json,pathlib
 p=pathlib.Path('apps/ios/Trames/GuestMusl');m=json.loads((p/'manifest.json').read_text());assert hashlib.sha256((p/'libc.so').read_bytes()).hexdigest()==m['libc_sha256']
