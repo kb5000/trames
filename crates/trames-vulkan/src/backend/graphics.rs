@@ -336,7 +336,12 @@ impl Backend {
         if a[3] != vk::ImageTiling::OPTIMAL.as_raw() as u64
             || a[5] & !0x138 != 0
             || a[5] & 16 != 0 && ty != vk::ImageType::TYPE_2D
-            || a[5] & 32 != 0 && ty != vk::ImageType::TYPE_3D
+            || a[5] & 32 != 0
+                && (ty != vk::ImageType::TYPE_3D
+                    || self
+                        .capabilities
+                        .portability
+                        .is_some_and(|p| p.image_view2_d_on3_d_image == 0))
         {
             return Err(vk::Result::ERROR_FORMAT_NOT_SUPPORTED.into());
         }
@@ -820,6 +825,13 @@ impl Backend {
                     return invalid();
                 }
                 validate_shape(s, a[9])?;
+                if a[9] & 32 != 0
+                    && device
+                        .portability
+                        .is_some_and(|p| p.image_view2_d_on3_d_image == 0)
+                {
+                    return unsupported();
+                }
                 let formats: Vec<_> = words32(m, a[7], bounded(a[8], 16)?)?
                     .into_iter()
                     .map(view_format)

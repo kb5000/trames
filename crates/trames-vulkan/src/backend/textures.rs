@@ -95,6 +95,15 @@ impl Backend {
             return unsupported();
         }
         let anisotropy = f32::from_bits(a[11] as u32);
+        // This profile uses mutable descriptors, not immutable samplers. A
+        // portability device must explicitly allow comparison samplers there.
+        if a[12] != 0
+            && device
+                .portability
+                .is_some_and(|p| p.mutable_comparison_samplers == 0)
+        {
+            return unsupported();
+        }
         if a[12] > 1
             || a[13] > 7
             || a[10] > 1

@@ -22,7 +22,9 @@ GLES/Zink/SPIR-V 算法与原版 Vulkan loader，不修改 GL 版本或扩展判
   和 nearest。两端图像类型相同，混合 2D↔3D blit/copy 尚未实现。
 - 新增 `vkCmdClearDepthStencilImage`，当前支持 D16/D32 的 depth aspect；
   stencil 仍不可用。比较 sampler 保留 compareEnable/compareOp，仍拒绝
-  unnormalized coordinates。sampler compare 的本批 native 验证为八种操作创建，
+  unnormalized coordinates。比较 sampler 按宿主实际 mutableComparisonSamplers
+  feature 查询/启用，不支持时明确拒绝；3D slice 兼容创建标记也在查询与创建时
+  检查实际 portability feature。sampler compare 的本批 native 验证为八种操作创建，
   尚未增加 shadow-sampling 像素检查。
 - 所有数组先从 guest 复制成有界 native 记录；guest 指针不进入 driver。
   命令和提交快照保留 image/view/memory，删除 guest 句柄后不提前释放在途资源。

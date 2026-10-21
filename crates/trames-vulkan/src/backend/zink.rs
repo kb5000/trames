@@ -74,6 +74,7 @@ impl Capabilities {
                     )
                     .image_view_format_swizzle(native.image_view_format_swizzle != 0)
                     .image_view2_d_on3_d_image(native.image_view2_d_on3_d_image != 0)
+                    .mutable_comparison_samplers(native.mutable_comparison_samplers != 0)
                     .point_polygons(native.point_polygons != 0)
                     .sampler_mip_lod_bias(native.sampler_mip_lod_bias != 0)
                     .triangle_fans(native.triangle_fans != 0)
@@ -161,7 +162,7 @@ impl Capabilities {
             p.image_view_format_swizzle,
             p.image_view2_d_on3_d_image,
             0,
-            0,
+            p.mutable_comparison_samplers,
             p.point_polygons,
             p.sampler_mip_lod_bias,
             0,

@@ -517,14 +517,22 @@ fn subresource_transfers(b: &mut Backend, m: &mut Memory, resources: [u64; 7]) {
             .collect::<Vec<_>>(),
     )
     .unwrap();
-    for op in 0..8 {
-        call(
-            b,
-            m,
-            92,
-            &[dev, 0, 0, 0, 2, 2, 2, 0, 0x7500, OUT, 0, 0, 1, op],
-        );
-        call(b, m, 93, &[dev, word(m, OUT)]);
+    call(b, m, 115, &[physical, OUT]);
+    let mut comparison = true;
+    if word(m, OUT) & 512 != 0 {
+        call(b, m, 133, &[physical, 0x7700]);
+        comparison = word(m, 0x7718) as u32 != 0;
+    }
+    if comparison {
+        for op in 0..8 {
+            call(
+                b,
+                m,
+                92,
+                &[dev, 0, 0, 0, 2, 2, 2, 0, 0x7500, OUT, 0, 0, 1, op],
+            );
+            call(b, m, 93, &[dev, word(m, OUT)]);
+        }
     }
     // Depth clearing is native and uses only the specified mip/layer.
     call(b, m, 60, &[dev, 126, 4, 4, 3, OUT, 0, 0, 0, 0, 1, 1, 3, 2]);
