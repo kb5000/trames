@@ -763,6 +763,7 @@ def main():
                                '.github/workflows/ios.yml'}
                     if plan['native_scope'] == 'firefox-mmu-cap':
                         allowed.remove('crates/trames-linux/src/state.rs')
+                        allowed.update({'crates/trames-memory/src/mmu/mod.rs', 'crates/trames-memory/src/mmu/tests.rs'})
                     else:
                         allowed.difference_update({'crates/trames-memory/src/mmu/host.rs', 'crates/trames-memory/src/mmu/fault.rs'})
                     if any(p not in allowed and not p.startswith('docs/') for p in changed):
