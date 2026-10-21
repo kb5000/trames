@@ -11,6 +11,7 @@ import ctypes as C
 import json
 import os
 import sys
+import shlex
 from pathlib import Path
 import time
 
@@ -90,7 +91,9 @@ def wait(predicate,timeout=None):
         if time.monotonic()-start>5 and not scene['windows']:
             export('/tmp/xwayland.log','xwayland.log')
             log=a.output/'xwayland.log'
-            if log.exists():assert 'Fatal server error' not in log.read_text(errors='replace'),log.read_text(errors='replace')[-3000:]
+            if log.exists():
+                text=log.read_text(errors='replace')
+                assert not any(error in text for error in ('Fatal server error','ZINK: vkQueueSubmit failed','vkCreateGraphicsPipelines failed')),text[-3000:]
         assert time.monotonic()-start<(timeout or a.timeout),(scene,output[-4000:])
         time.sleep(.005)
 def export(guest,name):
@@ -131,6 +134,7 @@ try:
         report['layout_readback_pixels']=len(modes)*3*256*192
     debug='LIBGL_ALWAYS_SOFTWARE=true ' if os.environ.get('TRAMES_ZINK_CPU_REFERENCE')=='1' else ''
     if os.environ.get('TRAMES_DIALOG_NO_FEEDBACK')=='1':debug+="MESA_EXTENSION_OVERRIDE='-GL_NV_texture_barrier -GL_ARB_texture_barrier' "
+    if os.environ.get('TRAMES_DIALOG_ZINK_DEBUG'):debug+='ZINK_DEBUG='+shlex.quote(os.environ['TRAMES_DIALOG_ZINK_DEBUG'])+' '
     debug+='TRAMES_VULKAN_TRACE=1 '
     if not a.native_wsi:debug+='TRAMES_XWAYLAND_NATIVE_WSI=0 '
     shell(debug+"trames-xwayland :0 >/tmp/xwayland.log 2>&1 &\n")

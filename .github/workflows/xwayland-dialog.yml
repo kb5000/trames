@@ -140,11 +140,14 @@ jobs:
           name: xwayland-dialog-inputs
           path: target/dialog-download
       - name: Verify identical guest inputs and install without rebuilding guest packages
+        id: verify
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p target/xwayland-dialog-inputs
           tar -xzf target/dialog-download/inputs.tar.gz -C target/xwayland-dialog-inputs
           python3 - <<'PY'
-          import hashlib,json,os,shutil,subprocess
+          import hashlib,json,os,shutil,subprocess,urllib.request
           from pathlib import Path
           root=Path('target/xwayland-dialog-inputs');m=json.loads((root/'inputs.json').read_text())
           subprocess.run(['git','fetch','--depth=1','origin',m['source']],check=True)
@@ -156,8 +159,27 @@ jobs:
               assert hashlib.sha256((root/p).read_bytes()).hexdigest()==digest,name
           shutil.copytree(root/'guest','target/vulkan-guest',dirs_exist_ok=True)
           shutil.copytree(root/'musl','target/musl-hybrid',dirs_exist_ok=True)
+          source='50cd7575c53c89bbd221957b7ecf99092f62966f';run=39670229714
+          subprocess.run(['git','fetch','--depth=1','origin',source],check=True)
+          subprocess.run(['git','diff','--exit-code',source,'HEAD','--','crates','accelerator','scripts/build-moltenvk.py','patches/moltenvk','scripts/vulkan-upstream.json','tests/fixtures/zink-metal-pixels.m','Cargo.toml','Cargo.lock','vendor','.cargo','rust-toolchain.toml'],check=True)
+          def get(path):
+              req=urllib.request.Request('https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/'+path,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN']})
+              with urllib.request.urlopen(req) as response:return json.load(response)
+          assert get('actions/runs/'+str(run))['head_sha']==source
+          job=next(j for j in get('actions/runs/'+str(run)+'/jobs')['jobs'] if j['name']=='metal')
+          assert any(x['name']=='Run the same original mousepad dialog on native Metal' and x['conclusion']=='success' for x in job['steps'])
+          with open(os.environ['GITHUB_OUTPUT'],'a') as output:output.write('native_runtime='+str(run)+'\n')
+          print('Reuse exact-source compiled Metal runtime; only failed-path diagnostic variables change.')
           PY
+      - uses: actions/download-artifact@v4
+        if: steps.verify.outputs.native_runtime
+        with:
+          name: dialog-metal-runtime
+          path: target
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.verify.outputs.native_runtime }}
       - uses: actions/cache/restore@v4
+        if: steps.verify.outputs.native_runtime == ''
         id: moltenvk
         with:
           path: |
@@ -165,6 +187,7 @@ jobs:
             target/moltenvk-patched/macos-arm64-*/build.json
           key: ${{ runner.os }}-moltenvk-macos-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**', 'crates/trames-vulkan/native/transform-feedback/**') }}
       - name: Run the same original mousepad dialog on native Metal
+        if: steps.verify.outputs.native_runtime == ''
         run: |
           python3 scripts/prepare-vulkan.py --apple --source-build
           python3 scripts/build-moltenvk.py --verify-sampler-source target/vulkan-upstream/moltenvk-source.tar.gz
@@ -174,7 +197,7 @@ jobs:
           cargo build -p trames-ffi --release --locked
           xcrun clang -O2 -Wall -Wextra -Werror -fobjc-arc -dynamiclib tests/fixtures/zink-metal-pixels.m -framework Metal -framework Foundation -o target/zink-metal-pixels.dylib
       - uses: actions/cache/save@v4
-        if: steps.moltenvk.outputs.cache-hit != 'true'
+        if: steps.verify.outputs.native_runtime == '' && steps.moltenvk.outputs.cache-hit != 'true'
         with:
           path: |
             target/moltenvk-patched/macos-arm64-*/libMoltenVK.a
@@ -187,17 +210,29 @@ jobs:
             target/release/libtrames_ffi.dylib
             target/zink-metal-pixels.dylib
           retention-days: 7
-      - name: Retry only modal rendering without texture feedback barriers
+      - name: Isolate only synchronization and argument-buffer behavior
         run: |
-          export TRAMES_DIALOG_NO_FEEDBACK=1
           export TRAMES_VULKAN_TRACE=1 MTL_DEBUG_LAYER=1 MVK_CONFIG_DEBUG=1
-          python3 -c 'import subprocess,sys; sys.exit(subprocess.run(sys.argv[1:], timeout=240).returncode)' python3 tests/integration/xwayland-dialog.py --native-wsi --ffi target/release/libtrames_ffi.dylib --store target/xwayland-dialog-inputs/store --output target/dialog-metal --metal-validator target/zink-metal-pixels.dylib 2>&1 | tee target/dialog-metal.log
+          status=0
+          for scenario in sync argument-buffers; do
+            unset TRAMES_DIALOG_NO_FEEDBACK TRAMES_DIALOG_ZINK_DEBUG MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS
+            if [[ "$scenario" == sync ]]; then
+              export TRAMES_DIALOG_ZINK_DEBUG=sync,noreorder,flushsync
+            else
+              export MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS=0
+            fi
+            if python3 -c 'import subprocess,sys; sys.exit(subprocess.run(sys.argv[1:], timeout=180).returncode)' python3 tests/integration/xwayland-dialog.py --native-wsi --ffi target/release/libtrames_ffi.dylib --store target/xwayland-dialog-inputs/store --output "target/dialog-metal-$scenario" --metal-validator target/zink-metal-pixels.dylib 2>&1 | tee "target/dialog-metal-$scenario.log"; then
+              echo "$scenario passed"
+            else
+              status=1
+            fi
+          done
+          exit "$status"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: xwayland-dialog-metal
           path: |
-            target/dialog-metal/
-            target/dialog-metal.log
-            target/transparent-border.log
+            target/dialog-metal-*/
+            target/dialog-metal-*.log
           retention-days: 7
