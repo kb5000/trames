@@ -1,5 +1,8 @@
 # Firefox 交互与全局刷新任务
 
+后续：[GLES3 与代理 WSI 调查](firefox-gles3.md)已补齐连接能力、descriptor
+批量与采样状态，继续定位原版浏览器的实际 GPU 绘制调用。
+
 2026-10-21，接续[默认 headless 页面验证](firefox-resume.md)。使用相同的生产
 Release FFI、原版签名 Alpine ARM64 Firefox 142.0-r0，4 CPU、总提交和单地址空间
 各 4 GiB。保留内容沙箱和 Wayland proxy，离线页面；Linux CPU Vulkan 参考选项

@@ -114,6 +114,7 @@ pub(super) struct AttachmentSpec {
 #[derive(Default)]
 pub(super) struct Recording {
     pub pass: Option<Rc<Object>>,
+    render_area: Option<vk::Rect2D>,
     pub pipeline: Option<Rc<Object>>,
     pass2: bool,
     pub compute_pipeline: Option<Rc<Object>>,
@@ -1489,13 +1490,40 @@ impl Backend {
                 self.publish(m, a[6], id)?;
             }
             69 => self.remove(a[1], Kind::Framebuffer)?,
-            71..=76 | 94..=97 | 114 | 123..=124 | 134..=136 => {
+            71..=76 | 94..=97 | 114 | 123..=124 | 134..=136 | 151 => {
                 let c = self.object(a[1], Kind::CommandBuffer)?;
                 if c.state.get() != 1 {
                     return invalid();
                 }
                 let raw = vk::CommandBuffer::from_raw(c.raw);
                 match op {
+                    151 => {
+                        let recording = c.recording.borrow();
+                        let pass = recording
+                            .pass
+                            .as_ref()
+                            .ok_or(Failure::Vk(vk::Result::ERROR_UNKNOWN))?;
+                        let info = pass.pass.get().unwrap();
+                        let area = recording
+                            .render_area
+                            .ok_or(Failure::Vk(vk::Result::ERROR_UNKNOWN))?;
+                        if a[3] == 0 || a[5] == 0 {
+                            return invalid();
+                        }
+                        let attachments = words64(m, a[2], bounded(a[3], MAX_ATTACHMENTS)? * 6)?
+                            .chunks_exact(6)
+                            .map(|v| clear_attachment(info, v))
+                            .collect::<Result<Vec<_>>>()?;
+                        let rects = words64(m, a[4], bounded(a[5], 64)? * 6)?
+                            .chunks_exact(6)
+                            .map(|v| clear_rectangle(area, v))
+                            .collect::<Result<Vec<_>>>()?;
+                        // Begin-pass dependencies already retain framebuffer,
+                        // views/images/memory through submission completion.
+                        unsafe {
+                            d.cmd_clear_attachments(raw, &attachments, &rects);
+                        }
+                    }
                     135 => {
                         let src = self.object(a[2], Kind::Image)?;
                         let dst = self.object(a[4], Kind::Image)?;
@@ -1832,6 +1860,7 @@ impl Backend {
                             c.retain(view);
                         }
                         c.recording.borrow_mut().pass2 = op == 123;
+                        c.recording.borrow_mut().render_area = Some(info.render_area);
                         c.recording.borrow_mut().pass = Some(pass);
                         c.retain(fb);
                     }
@@ -1862,6 +1891,7 @@ impl Backend {
                             }
                         }
                         c.recording.borrow_mut().pass = None;
+                        c.recording.borrow_mut().render_area = None;
                     }
                     73 | 97 => {
                         let r = c.recording.borrow();
@@ -2412,9 +2442,122 @@ fn blit_overlap(a: &vk::ImageBlit, b: &vk::ImageBlit) -> bool {
     })
 }
 
+fn clear_attachment(pass: PassInfo, wire: &[u64]) -> Result<vk::ClearAttachment> {
+    if !matches!(wire[0], 1 | 2 | 4 | 6) {
+        return invalid();
+    }
+    let aspect = vk::ImageAspectFlags::from_raw(wire[0] as u32);
+    if aspect == vk::ImageAspectFlags::COLOR {
+        // An UNUSED subpass color slot is ignored by Vulkan, not remapped to
+        // the compact framebuffer attachment index.
+        if wire[1] >= pass.color_count as u64 {
+            return invalid();
+        }
+    } else if pass
+        .depth
+        .is_none_or(|f| !format_aspects(f).contains(aspect))
+    {
+        return invalid();
+    }
+    let mut bits = [0; 4];
+    for (out, value) in bits.iter_mut().zip(&wire[2..6]) {
+        *out = u32::try_from(*value).map_err(|_| Failure::Vk(vk::Result::ERROR_UNKNOWN))?;
+    }
+    if aspect.contains(vk::ImageAspectFlags::DEPTH)
+        && !(0.0..=1.0).contains(&f32::from_bits(bits[0]))
+    {
+        return invalid();
+    }
+    Ok(vk::ClearAttachment::default()
+        .aspect_mask(aspect)
+        .color_attachment(wire[1] as u32)
+        .clear_value(vk::ClearValue {
+            color: vk::ClearColorValue { uint32: bits },
+        }))
+}
+fn clear_rectangle(area: vk::Rect2D, wire: &[u64]) -> Result<vk::ClearRect> {
+    if wire[0] < area.offset.x as u64
+        || wire[1] < area.offset.y as u64
+        || wire[2] == 0
+        || wire[3] == 0
+        || wire[4] != 0
+        || wire[5] != 1
+        || wire[0]
+            .checked_add(wire[2])
+            .is_none_or(|v| v > area.offset.x as u64 + area.extent.width as u64)
+        || wire[1]
+            .checked_add(wire[3])
+            .is_none_or(|v| v > area.offset.y as u64 + area.extent.height as u64)
+    {
+        return invalid();
+    }
+    Ok(vk::ClearRect::default()
+        .rect(vk::Rect2D {
+            offset: vk::Offset2D {
+                x: wire[0] as i32,
+                y: wire[1] as i32,
+            },
+            extent: vk::Extent2D {
+                width: wire[2] as u32,
+                height: wire[3] as u32,
+            },
+        })
+        .base_array_layer(0)
+        .layer_count(1))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn attachment_clears_preserve_subpass_slots_aspects_and_render_area() {
+        let mut pass = PassInfo {
+            colors: [vk::Format::UNDEFINED; MAX_COLORS],
+            color_count: 3,
+            depth: Some(vk::Format::D24_UNORM_S8_UINT),
+            clear_mask: 0,
+        };
+        pass.colors[0] = vk::Format::R8G8B8A8_UNORM;
+        pass.colors[2] = vk::Format::R8G8B8A8_UNORM;
+        assert_eq!(
+            clear_attachment(pass, &[1, 2, 7, 8, 9, 10])
+                .unwrap()
+                .color_attachment,
+            2
+        );
+        assert!(clear_attachment(pass, &[1, 1, 0, 0, 0, 0]).is_ok()); // UNUSED is ignored
+        assert!(clear_attachment(pass, &[1, 3, 0, 0, 0, 0]).is_err());
+        let depth = 0.75f32.to_bits() as u64;
+        for aspects in [2, 4, 6] {
+            assert!(clear_attachment(pass, &[aspects, 999, depth, 0xab, 0, 0]).is_ok());
+        }
+        for aspects in [0, 3, 5, 7, 8] {
+            assert!(clear_attachment(pass, &[aspects, 0, depth, 0, 0, 0]).is_err());
+        }
+        assert!(clear_attachment(pass, &[2, 0, f32::NAN.to_bits() as u64, 0, 0, 0]).is_err());
+        pass.depth = Some(vk::Format::D16_UNORM);
+        assert!(clear_attachment(pass, &[4, 0, 0, 0, 0, 0]).is_err());
+        let area = vk::Rect2D {
+            offset: vk::Offset2D { x: 8, y: 4 },
+            extent: vk::Extent2D {
+                width: 16,
+                height: 12,
+            },
+        };
+        assert!(clear_rectangle(area, &[8, 4, 16, 12, 0, 1]).is_ok());
+        for rectangle in [
+            [7, 4, 1, 1, 0, 1],
+            [8, 3, 1, 1, 0, 1],
+            [8, 4, 17, 12, 0, 1],
+            [8, 4, 16, 13, 0, 1],
+            [8, 4, 0, 1, 0, 1],
+            [8, 4, 1, 1, 1, 1],
+            [8, 4, 1, 1, 0, 2],
+            [u64::MAX, 4, 2, 1, 0, 1],
+        ] {
+            assert!(clear_rectangle(area, &rectangle).is_err());
+        }
+    }
     #[test]
     fn divisor_features_and_instance_footprints() {
         let native = Some(zink::Divisor {

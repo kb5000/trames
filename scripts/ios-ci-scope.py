@@ -785,6 +785,29 @@ def main():
                                         'tests/fixtures/zink-metal-pixels.m', 'tests/integration/zink-wayland.py',
                                         'scripts/build-zink-egl.py', 'scripts/zink-egl-requirements.txt', 'patches/mesa/0001-wayland-kopper-native-wsi.patch',
                                         'crates/trames-distro/src/lib.rs', 'crates/trames-ffi/src/session.rs', 'scripts/build-ios.sh'})
+                        clear_reuse = plan.get('zink_attachment_clear_reuse')
+                        if clear_reuse:
+                            # The new operation/range metadata does not change
+                            # socket capabilities, native WSI, sampling or TF.
+                            stable = ['crates/trames-wayland', 'crates/trames-vfs',
+                                      'crates/trames-core', 'crates/trames-memory',
+                                      'crates/trames-vulkan/src/backend/wayland.rs',
+                                      'crates/trames-vulkan/native', 'accelerator/vulkan/wayland.inc',
+                                      'accelerator/vulkan/icd.c', 'Cargo.toml', 'Cargo.lock',
+                                      'rust-toolchain.toml', 'vendor', 'patches/moltenvk']
+                            if subprocess.check_output(['git', 'diff', '--name-only', clear_reuse['sha'], 'HEAD', '--', *stable]).strip():
+                                raise RuntimeError('Attachment-clear follow-up changed passed WSI/runtime inputs')
+                            def clear_evidence(path):
+                                req = urllib.request.Request(f'https://api.github.com/repos/{repo}/'+path, headers=dict(request.headers))
+                                with urllib.request.urlopen(req, timeout=30) as response:
+                                    return json.load(response)
+                            run = clear_evidence(f"actions/runs/{clear_reuse['run']}")
+                            jobs = clear_evidence(f"actions/runs/{clear_reuse['run']}/jobs")['jobs']
+                            if run['head_sha'] != clear_reuse['sha'] or run['head_repository']['full_name'] != repo or run['path'] != '.github/workflows/linux.yml' or any(
+                                not any(j['name'] == name and j['conclusion'] == 'success' for j in jobs)
+                                for name in ('zink-wayland-linux', 'zink-wayland-apple')):
+                                raise RuntimeError('Missing passed source-bound Linux/Metal relay and sampling evidence')
+                            print('Reuse passed unchanged WSI capabilities, relay lifecycle, descriptor and sampling GPU checks; run new attachment-clear pixels and Vulkan/iOS checks.')
                     if any(p not in allowed and not p.startswith(('docs/', 'tests/fixtures/vulkan-native-tf')) and not (sync and p.startswith('crates/trames-vulkan/')) for p in changed):
                         raise RuntimeError('Zink foundation plan includes unrelated source changes')
                     path = 'crates/trames-distro/src/vulkan.rs'

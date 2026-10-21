@@ -1,30 +1,23 @@
 {
-  "base_sha": "27e447452d8145b1f01f09252392499e3e47206a",
+  "base_sha": "10bdafa8fd963387825b8de53aabf9803fa09be1",
   "native_scope": "zink-wayland",
-  "reason": "Firefox follow-up: native connection capability through transparent Wayland SCM_RIGHTS relays; 100-set descriptor batches; native single-sample masks and sample-rate shading. Check affected Vulkan/Wayland/VFS and iOS embedding, original Mesa relayed window GPU pixels on Linux/Metal. Reuse unchanged CPU, Memory, Linux syscall, networking, native TF compiler/driver and UIKit acceptance. No Firefox raw diagnostics and no IPA.",
+  "zink_attachment_clear_reuse": {
+    "run": 39611594760,
+    "sha": "10bdafa8fd963387825b8de53aabf9803fa09be1"
+  },
+  "reason": "Firefox NULL dispatch identified as missing vkCmdClearAttachments. Validate new in-pass clear rectangles/color/alpha/scissor pixels and affected Vulkan/iOS embedding. Reuse passed same-source WSI capabilities, relayed windows, 100-set descriptor batches, sample masks/shading and unchanged native TF driver. Firefox next render-pass failure remains open. No raw Firefox diagnostics or IPA.",
   "changed_file_sha256": {
-    ".github/workflows/linux.yml": "e86f437ebc026dc9974f5a2629dafb6e70e35ddc2f6c21a273b603916e7f2f88",
-    "Cargo.lock": "1a6b6d77ea5dbd4c4199a9f668101e8973413980d4c11bad49a2c53e467f851e",
-    "accelerator/vulkan/graphics.inc": "ae83d582defe3089c28a24da807a266146250dae81c6889baa04ba84452fcba4",
-    "accelerator/vulkan/icd.c": "8a4ed486d0a4fdaf62b076539d92f4280d8a76c3f6861a9ab33b66326192bd46",
-    "accelerator/vulkan/wayland.inc": "d7c59f1fcd1c891c99d3e3347666636b4cc5d1788be2c96b582542dbe30bdad3",
-    "crates/trames-vfs/src/ipc/native.rs": "34576ed7449cf363c05b8375ef5e9a1aca494d59b30e90837340656159015b26",
-    "crates/trames-vulkan/src/backend.rs": "8c88f71c29f91ff1dac7d9defb5c5b8f2e6ea46d47bc4f47c5156a5179567d48",
-    "crates/trames-vulkan/src/backend/graphics.rs": "070c883f8aba927ae1dd4a2a060ff0693f7454c426dfc8ef6162509cef899725",
-    "crates/trames-vulkan/src/backend/wayland.rs": "8e3d83811386f73c9ebf5383f1d4665ee98b063dd84a3ec559d7e1238b21b221",
-    "crates/trames-wayland/Cargo.toml": "8a4bc16117b9bf114511bab03b89018ce434c88e5d51ffbb90e9319cd0e0e211",
-    "crates/trames-wayland/native-wsi.xml": "d7b6170caa2feb2ffdd356cecccf2bf5af0f1c881b425b047bd466c84bce127e",
-    "crates/trames-wayland/src/lib.rs": "04007e1cba49a63ee48b10cc55774e32075d6b2fc1c8b4909a5584a1678416d8",
-    "crates/trames-wayland/src/protocol.rs": "ccc104c8f1dce1fd1337c660f83685b0e0b948feb47dcc080d94b10259251239",
-    "crates/trames-wayland/src/server.rs": "7fc6e85a679c7f60f20b36f3e9593761e45c3100b7d94a38c0f6873eb2877ecf",
-    "crates/trames-wayland/src/wsi.rs": "1b4b444d9410cbdeb620240c723d970f164b869ffba96cd0bdf2cabc05cb8b44",
-    "scripts/ios-ci-scope.py": "9a7d0f5c2246a9383af35a98805bb9613824b6fb8d63f1b8764473cf25c1ed9f",
-    "scripts/prepare-zink-guest.py": "b2960228aa7e646e0507e8ec5283cc73b1ba511cbfeb8bb7af4f261a191d4474",
-    "scripts/prepare-zink-native-bundle.py": "0473e02530b349be7c93f70ee032378cd184812e681ae25266739e8f9b1250e8",
-    "tests/fixtures/vulkan-render.c": "b1315973d3c83fcd1a8c07a42e61a2f899aba75dec9af3fc50ef563bcf8fc910",
-    "tests/fixtures/vulkan-resources.c": "d3a9c22dd57122b1beb98a48af896b5d2bc1b700dd102f4ff488b9735123281e",
-    "tests/fixtures/wayland-relay.h": "d5d9ef56612a262d45562d0036a2d6942d591a5f75e8e8890e2ed12873263108",
-    "tests/fixtures/zink-wayland.c": "982d57a9f0337ce6f4d7d6e873a1d23e0b917184cb3178578145e16d9fba26db",
-    "tests/integration/zink-wayland.py": "c1cfe9dfcfdc370ae6cc36dd827edc33fa0cc506f29b125174b800d4f7fba391"
+    ".github/workflows/linux.yml": "ea82d31496877ac0d6a871639ca152be351b95ccf2d18c052a2fa90607881ccc",
+    "accelerator/vulkan/entrypoints.inc": "0fd7d735fcda5ae53256fcd54a512c2af2ea802a1488a9d97e514159b6ab53fc",
+    "accelerator/vulkan/graphics.inc": "8348640f829a526a613c480ffc8b1f0fa01aa4040e81e4cf8b8947bba4d68f30",
+    "accelerator/vulkan/zink.inc": "b22cdee1b3e87f984ab11d1e8e6ac63aedfcc212cab1cf7b225826b9ec16edeb",
+    "crates/trames-vulkan/src/backend.rs": "a156556d734cf133272683ea841db2669c590ebc2424222d3b3de7466e6c3dee",
+    "crates/trames-vulkan/src/backend/graphics.rs": "a55d599e6b8ce5fb172d554876d19d56901fe2dddd4f9abfe515b0b050dd069e",
+    "docs/architecture/zink.md": "71d33a3dfa05432354abdb1e943a0aad514343d5674bf435c5146759e5bc1f9b",
+    "docs/validation/firefox-gles3.md": "f13be049d6f68f61e44d9ea101c74b54d07911315e89819e95d09b3d3eddb40d",
+    "docs/validation/firefox-interaction.md": "e4a4225310dafe06746c4c8d7f42f74407c5cbf610192e6a8d0f303d7c62e538",
+    "scripts/ios-ci-scope.py": "3226e5a9138d688bf6264a40831382bdedc8f737cbb8b0b5a0f324cff8fe1cea",
+    "tests/fixtures/vulkan-render.c": "2ecec2805672efaee2eaa638fccbaff85263977a7f380a6ce3cd849a5b107388",
+    "tests/integration/zink-wayland.py": "707180a76b8cd22954477045bb6a90c70e634dbf52b05c23f3542d0f46edf81d"
   }
 }

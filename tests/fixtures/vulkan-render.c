@@ -21,11 +21,16 @@ static uint32_t type(VkPhysicalDevice physical,uint32_t bits,VkMemoryPropertyFla
     for(uint32_t i=0;i<p.memoryTypeCount;i++)if((bits&(1u<<i)) && (p.memoryTypes[i].propertyFlags&flags)==flags)return i;
     abort();
 }
-static int sample_mask_disabled;
+static int sample_mask_disabled, attachment_clear;
 static void pixels(const uint8_t *rgba,unsigned round,int flip) {
     unsigned checked=0,colored=0;
     for(unsigned y=0;y<H;y++)for(unsigned x=0;x<W;x++){
         const uint8_t *p=rgba+(y*W+x)*4;
+        if(attachment_clear && ((x>=16 && x<48 && y>=24 && y<48) || (x>=W-40 && x<W-8 && y>=H-24 && y<H-8))){
+            const int wanted[4]={255,64,128,191};
+            for(unsigned c=0;c<4;c++)assert(abs((int)p[c]-wanted[c])<=1);
+            checked++;continue;
+        }
         double px=2.0*(x+0.5)/W-1.0,py=2.0*(y+0.5)/H-1.0;
         if(flip)py=-py;
         double blue=(py+0.8)/1.6,green=((px/0.8)+1.0-blue)/2.0,red=1.0-blue-green;
@@ -46,6 +51,7 @@ static void pixels(const uint8_t *rgba,unsigned round,int flip) {
 int main(int argc,char **argv) {
     assert(argc==4 || argc==5);int bridge=argc==5 && !strcmp(argv[4],"bridge-check");int flip=argc==5 && (!strcmp(argv[4],"negative") || !strcmp(argv[4],"negative-static"));int static_viewport=argc==5 && !strcmp(argv[4],"negative-static");
     int compatible=argc==5 && !strcmp(argv[4],"compatible-dynamic");
+    attachment_clear=argc==5 && !strcmp(argv[4],"clear-attachments");
     int sample_rate=argc==5 && !strcmp(argv[4],"sample-rate");
     int masked=argc==5 && !strncmp(argv[4],"sample-mask-",12);
     VkSampleMask sample_mask=masked && !strcmp(argv[4],"sample-mask-one")?1:masked && !strcmp(argv[4],"sample-mask-upper")?0x80000000u:0;
@@ -132,11 +138,17 @@ int main(int argc,char **argv) {
         VkSubpassBeginInfo sb={.sType=VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO,.contents=VK_SUBPASS_CONTENTS_INLINE};if(pass2)begin2(command,&rp,&sb);else vkCmdBeginRenderPass(command,&rp,VK_SUBPASS_CONTENTS_INLINE);vkCmdBindPipeline(command,VK_PIPELINE_BIND_POINT_GRAPHICS,pipeline);
         VkViewport vp={0,flip?H:0,W,flip?-H:H,0,1};if(!static_viewport)vkCmdSetViewport(command,0,1,&vp);VkRect2D scissor={{round==1?W/2:0,0},{round==1?W/2:W,H}};vkCmdSetScissor(command,0,1,&scissor);
         if(compatible){const float constants[4]={0.25f,0.5f,0.75f,1};vkCmdSetLineWidth(command,1);vkCmdSetDepthBias(command,0,0,0);vkCmdSetBlendConstants(command,constants);vkCmdSetDepthBounds(command,0,1);vkCmdSetStencilCompareMask(command,VK_STENCIL_FACE_FRONT_AND_BACK,0xaa);vkCmdSetStencilWriteMask(command,VK_STENCIL_FACE_FRONT_AND_BACK,0x55);vkCmdSetStencilReference(command,VK_STENCIL_FACE_FRONT_AND_BACK,7);}
-        vkCmdDraw(command,3,1,0,0);VkSubpassEndInfo se={.sType=VK_STRUCTURE_TYPE_SUBPASS_END_INFO};if(pass2)end2(command,&se);else vkCmdEndRenderPass(command);
+        vkCmdDraw(command,3,1,0,0);
+        if(attachment_clear){
+            VkClearAttachment attachment={.aspectMask=VK_IMAGE_ASPECT_COLOR_BIT,.colorAttachment=0,.clearValue={.color={{1.0f,0.25f,0.5f,0.75f}}}};
+            VkClearRect rectangles[2]={{{{16,24},{32,24}},0,1},{{{W-40,H-24},{32,16}},0,1}};
+            vkCmdClearAttachments(command,1,&attachment,2,rectangles);
+        }
+        VkSubpassEndInfo se={.sType=VK_STRUCTURE_TYPE_SUBPASS_END_INFO};if(pass2)end2(command,&se);else vkCmdEndRenderPass(command);
         VkImageMemoryBarrier barrier={.sType=VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,.srcAccessMask=VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,.dstAccessMask=VK_ACCESS_TRANSFER_READ_BIT,.oldLayout=VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,.newLayout=VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,.srcQueueFamilyIndex=VK_QUEUE_FAMILY_IGNORED,.dstQueueFamilyIndex=VK_QUEUE_FAMILY_IGNORED,.image=image,.subresourceRange={VK_IMAGE_ASPECT_COLOR_BIT,0,1,0,1}};vkCmdPipelineBarrier(command,VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,VK_PIPELINE_STAGE_TRANSFER_BIT,0,0,NULL,0,NULL,1,&barrier);
         VkBufferImageCopy copy={.imageSubresource={VK_IMAGE_ASPECT_COLOR_BIT,0,0,1},.imageExtent={W,H,1}};vkCmdCopyImageToBuffer(command,image,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,buffer,1,&copy);
         VkMemoryBarrier host={.sType=VK_STRUCTURE_TYPE_MEMORY_BARRIER,.srcAccessMask=VK_ACCESS_TRANSFER_WRITE_BIT,.dstAccessMask=VK_ACCESS_HOST_READ_BIT};vkCmdPipelineBarrier(command,VK_PIPELINE_STAGE_TRANSFER_BIT,VK_PIPELINE_STAGE_HOST_BIT,0,1,&host,0,NULL,0,NULL);OK(vkEndCommandBuffer(command));VkSubmitInfo submit={.sType=VK_STRUCTURE_TYPE_SUBMIT_INFO,.commandBufferCount=1,.pCommandBuffers=&command};OK(vkQueueSubmit(queue,1,&submit,fence));OK(vkWaitForFences(device,1,&fence,VK_TRUE,10000000000ULL));VkMappedMemoryRange range={.sType=VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,.memory=bufferMemory,.size=VK_WHOLE_SIZE};OK(vkInvalidateMappedMemoryRanges(device,1,&range));pixels(rgba,round,flip);if(flip){PFN_vkTrimCommandPoolKHR trim=(PFN_vkTrimCommandPoolKHR)vkGetDeviceProcAddr(device,"vkTrimCommandPoolKHR");assert(trim);trim(device,pool,0);}
     }
     FILE *file=fopen(argv[3],"wb");assert(file);assert(fprintf(file,"P6\n%d %d\n255\n",W,H)>0);for(unsigned i=0;i<W*H;i++)assert(fwrite(rgba+i*4,1,3,file)==3);assert(!fclose(file));
-    OK(vkDeviceWaitIdle(device));vkDestroyFence(device,fence,NULL);vkDestroyCommandPool(device,pool,NULL);vkUnmapMemory(device,bufferMemory);vkDestroyBuffer(device,buffer,NULL);vkFreeMemory(device,bufferMemory,NULL);vkDestroyPipeline(device,pipeline,NULL);vkDestroyPipelineLayout(device,layout,NULL);vkDestroyFramebuffer(device,framebuffer,NULL);vkDestroyRenderPass(device,pass,NULL);if(alternate)vkDestroyRenderPass(device,alternate,NULL);for(unsigned i=0;i<(imageless?2u:1u);i++){vkDestroyImageView(device,views[i],NULL);vkDestroyImage(device,images[i],NULL);vkFreeMemory(device,memories[i],NULL);}if(depth){vkDestroyImageView(device,depthView,NULL);vkDestroyImage(device,depthImage,NULL);vkFreeMemory(device,depthMemory,NULL);}vkDestroyDevice(device,NULL);vkDestroyInstance(instance,NULL);puts("vulkan-render-ok");return 0;
+    OK(vkDeviceWaitIdle(device));vkDestroyFence(device,fence,NULL);vkDestroyCommandPool(device,pool,NULL);vkUnmapMemory(device,bufferMemory);vkDestroyBuffer(device,buffer,NULL);vkFreeMemory(device,bufferMemory,NULL);vkDestroyPipeline(device,pipeline,NULL);vkDestroyPipelineLayout(device,layout,NULL);vkDestroyFramebuffer(device,framebuffer,NULL);vkDestroyRenderPass(device,pass,NULL);if(alternate)vkDestroyRenderPass(device,alternate,NULL);for(unsigned i=0;i<(imageless?2u:1u);i++){vkDestroyImageView(device,views[i],NULL);vkDestroyImage(device,images[i],NULL);vkFreeMemory(device,memories[i],NULL);}if(depth){vkDestroyImageView(device,depthView,NULL);vkDestroyImage(device,depthImage,NULL);vkFreeMemory(device,depthMemory,NULL);}vkDestroyDevice(device,NULL);vkDestroyInstance(instance,NULL);if(attachment_clear)puts("vulkan-attachments-clear-ok: two disjoint rectangles, color/alpha readback and scissor independence");puts("vulkan-render-ok");return 0;
 }

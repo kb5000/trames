@@ -413,8 +413,10 @@ jobs:
             cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
             cargo test -p trames-vulkan --lib --locked
           fi
-          cargo clippy -p trames-wayland -p trames-vfs --all-targets --no-deps --locked -- -D warnings
-          cargo test -p trames-wayland --lib --locked
+          if ! python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_attachment_clear_reuse")'; then
+            cargo clippy -p trames-wayland -p trames-vfs --all-targets --no-deps --locked -- -D warnings
+            cargo test -p trames-wayland --lib --locked
+          fi
           cargo clippy -p trames-distro -p trames-ffi --all-targets --no-deps --locked -- -D warnings
           cargo test -p trames-distro vulkan --locked
           cargo build -p trames-cli -p trames-ffi --release --locked
@@ -424,8 +426,13 @@ jobs:
           export VK_DRIVER_FILES="$(python3 -c 'from pathlib import Path; print(next(Path("/usr/share/vulkan/icd.d").glob("*lvp*")))')"
           export TRAMES_ZINK_CPU_REFERENCE=1
           mkdir -p target/zink-wayland-native
-          target/zink-inputs/vulkan-copy-host | tee target/zink-wayland-native/image-copy.log
-          python3 tests/integration/zink-wayland.py --relay --output target/zink-wayland --snapshot-store target/zink-native-bundle/store
+          mode=--relay
+          if python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_attachment_clear_reuse")'; then
+            mode=--clear-only
+          else
+            target/zink-inputs/vulkan-copy-host | tee target/zink-wayland-native/image-copy.log
+          fi
+          python3 tests/integration/zink-wayland.py "$mode" --output target/zink-wayland --snapshot-store target/zink-native-bundle/store
           python3 scripts/prepare-zink-native-bundle.py --wayland
       - uses: actions/upload-artifact@v4
         if: always()
@@ -474,8 +481,10 @@ jobs:
             cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
             cargo test -p trames-vulkan --lib --locked
           fi
-          cargo clippy -p trames-wayland -p trames-vfs --all-targets --no-deps --locked -- -D warnings
-          cargo test -p trames-wayland --lib --locked
+          if ! python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_attachment_clear_reuse")'; then
+            cargo clippy -p trames-wayland -p trames-vfs --all-targets --no-deps --locked -- -D warnings
+            cargo test -p trames-wayland --lib --locked
+          fi
           if [[ '${{ needs.scope.outputs.zink_egl_skip_apple_checks }}' != true ]]; then
             cargo clippy -p trames-distro -p trames-ffi --all-targets --no-deps --locked -- -D warnings
             cargo test -p trames-distro vulkan --locked
@@ -497,7 +506,9 @@ jobs:
           cargo build -p trames-ffi --release --locked
           xcrun clang -O2 -Wall -Wextra -Werror -fobjc-arc -dynamiclib tests/fixtures/zink-metal-pixels.m -framework Metal -framework Foundation -o target/zink-metal-pixels.dylib
           export TRAMES_VULKAN_TRACE=1
-          lldb --batch -o 'settings set target.process.stop-on-exec false' -o run -k 'thread backtrace all' -- "$(command -v python3)" tests/integration/zink-wayland.py --relay --store target/zink-native-bundle/store --output target/zink-wayland-metal --metal-validator target/zink-metal-pixels.dylib 2>&1 | tee target/zink-metal-debug.log
+          mode=--relay
+          if python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_attachment_clear_reuse")'; then mode=--clear-only; fi
+          lldb --batch -o 'settings set target.process.stop-on-exec false' -o run -k 'thread backtrace all' -- "$(command -v python3)" tests/integration/zink-wayland.py "$mode" --store target/zink-native-bundle/store --output target/zink-wayland-metal --metal-validator target/zink-metal-pixels.dylib 2>&1 | tee target/zink-metal-debug.log
           python3 -c 'import json; assert json.load(open("target/zink-wayland-metal/results.json"))["passed"]'
       - uses: actions/upload-artifact@v4
         if: always()

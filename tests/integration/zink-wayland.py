@@ -17,6 +17,7 @@ p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('--store', type=Path, help='installed signed Mesa plus wayland-libs-egl store; copied; otherwise install original APKs')
 p.add_argument('--in-place-store', action='store_true', help='use a disposable supplied store directly; no concurrent sessions')
 p.add_argument('--relay', action='store_true', help='forward Wayland bytes/SCM_RIGHTS through a guest socket pair, like Firefox')
+p.add_argument('--clear-only', action='store_true', help='only new in-pass attachment clear pixels; reuse passed relayed window and sampling checks')
 p.add_argument('--snapshot-store', type=Path, help='save original installed inputs before session mutations')
 p.add_argument('--metal-validator', type=Path, help='native test-only exported-MTLTexture pixel oracle')
 p.add_argument('--egl-library', type=Path, help='Mesa EGL platform adapter; Gallium/Zink and loader remain original')
@@ -82,6 +83,7 @@ report = dict(source='original signed Mesa25.1.9 EGL/GLES2 and libwayland; produ
               input_store_manifest_sha256=input_manifest,
               rounds=[], passed=False, physical_ipad=False)
 report['wayland_relay'] = a.relay
+report['attachment_clear_only'] = a.clear_only
 bundled_egl = ROOT / 'target/vulkan-guest/libEGL.so.1'
 if bundled_egl.is_file():
     report['source'] = 'Mesa25.1.9 EGL native-WSI platform adapter; original signed Gallium/Zink/GLES2, libwayland and Vulkan loader; production FFI'
@@ -119,6 +121,23 @@ try:
         time.sleep(.01)
     state = json.loads(read('status'))
     assert state['phase'] == 'running', state
+    if a.clear_only:
+        payload('transfer', dict(guest='/tmp/vulkan-render', host=str(ROOT/'target/zink-inputs/vulkan-render'), export=False, replace=True))
+        for name in ('vulkan-render.vert.spv', 'vulkan-render.frag.spv'):
+            shader = ROOT/'target/zink-native-bundle/shaders'/name
+            if not shader.is_file(): shader = ROOT/'tests/fixtures/bin'/name
+            payload('transfer', dict(guest='/tmp/'+name, host=str(shader), export=False, replace=True))
+        send('chmod +x /tmp/vulkan-render; /tmp/vulkan-render /tmp/vulkan-render.vert.spv /tmp/vulkan-render.frag.spv /tmp/clear.ppm clear-attachments; printf "\\nZINK_CLEAR_RESULT:%d\\n" $?\n')
+        clear_start = time.monotonic()
+        while '\r\nZINK_CLEAR_RESULT:0\r\n' not in text:
+            text += read('output').decode(errors='replace')
+            assert not any('\r\nZINK_CLEAR_RESULT:'+str(n)+'\r\n' in text for n in (1,127,134,139)), text[-12000:]
+            assert time.monotonic()-clear_start < 60, text[-12000:]
+            time.sleep(.003)
+        assert 'vulkan-attachments-clear-ok:' in text
+        report['attachment_clear_gpu'] = report['passed'] = True
+        print('zink-attachment-clear-ok: native in-pass rectangles, color/alpha and scissor independence', flush=True)
+        raise SystemExit(0)
     for name in ('zink-wayland', 'vulkan-copy'):
         payload('transfer', dict(guest='/tmp/' + name, host=str(ROOT / 'target/zink-inputs' / name), export=False, replace=True))
     if a.relay:

@@ -85,6 +85,7 @@
     if(!strcmp(name,"vkCreateGraphicsPipelines"))return (PFN_vkVoidFunction)vkCreateGraphicsPipelines;
     if(!strcmp(name,"vkCmdBeginRenderPass"))return (PFN_vkVoidFunction)vkCmdBeginRenderPass;
     if(!strcmp(name,"vkCmdEndRenderPass"))return (PFN_vkVoidFunction)vkCmdEndRenderPass;
+    if(!strcmp(name,"vkCmdClearAttachments"))return (PFN_vkVoidFunction)vkCmdClearAttachments;
     if(!strcmp(name,"vkCmdDraw"))return (PFN_vkVoidFunction)vkCmdDraw;
     if(!strcmp(name,"vkCmdSetViewport"))return (PFN_vkVoidFunction)vkCmdSetViewport;
     if(!strcmp(name,"vkCmdSetScissor"))return (PFN_vkVoidFunction)vkCmdSetScissor;

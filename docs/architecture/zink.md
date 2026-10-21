@@ -129,6 +129,9 @@ context、MRT/TF及实例输入。depth-clip等渲染状态、压缩/MSAA及其�
 ES3首批的MRT、宽格式、原生复制验证与后续缺口见
 [ES3推进记录](../validation/zink-es3.md)。后续[divisor批次](../validation/vulkan-divisor.md)已在Linux跑通真实ES3 context与数据；
 Apple已打通TF与真实GLES3。GLES3探针通过不等于Firefox硬件WebRender已经启用。
+后续 [Firefox GLES3 调查](../validation/firefox-gles3.md)接通透明 Wayland 代理的
+shared-inode 认证、100-set 批量申请及原生单采样 mask/sample-rate shading；
+完整浏览器 GPU 页面仍待验收。
 
 后续[原生TF内核](../validation/vulkan-native-tf.md)已通过实际Metal捕获、GPU图元组装/
 计数器、原版Vulkan顺序对照和输出replay的1024像素检查，并编译通过arm64 iOS。

@@ -25,33 +25,33 @@ VKAPI_ATTR VkResult VKAPI_CALL vkWaitSemaphoresKHR(VkDevice d,const VkSemaphoreW
 // Renderpass2 uses the original KHR driver entrypoints; profile limits match the
 // legacy single-subpass/MRT path. Every nested record is flattened before dispatch.
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateRenderPass2(VkDevice d,const VkRenderPassCreateInfo2 *info,const VkAllocationCallbacks *allocator,VkRenderPass *out) {
-    CHECK(info,VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2);ALLOCATOR(allocator);
-    if(!(D(d)->enabled&128) || info->attachmentCount>9 || info->subpassCount!=1 || info->dependencyCount>8 || info->correlatedViewMaskCount)return VK_ERROR_FEATURE_NOT_PRESENT;
+    if(!VALID(info,VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2))return unsupported_render_pass(__FILE__,__LINE__);ALLOCATOR(allocator);
+    if(!(D(d)->enabled&128) || info->attachmentCount>9 || info->subpassCount!=1 || info->dependencyCount>8 || info->correlatedViewMaskCount)return unsupported_render_pass(__FILE__,__LINE__);
     VkAttachmentDescription attachments[9];
     for(uint32_t i=0;i<info->attachmentCount;i++){
-        const VkAttachmentDescription2 *a=info->pAttachments+i;CHECK(a,VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2);
+        const VkAttachmentDescription2 *a=info->pAttachments+i;if(!VALID(a,VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2))return unsupported_render_pass(__FILE__,__LINE__);
         attachments[i]=(VkAttachmentDescription){a->flags,a->format,a->samples,a->loadOp,a->storeOp,a->stencilLoadOp,a->stencilStoreOp,a->initialLayout,a->finalLayout};
     }
-    const VkSubpassDescription2 *s=info->pSubpasses;CHECK(s,VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2);
-    if(s->viewMask || s->colorAttachmentCount>8)return VK_ERROR_FEATURE_NOT_PRESENT;
+    const VkSubpassDescription2 *s=info->pSubpasses;if(!VALID(s,VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2))return unsupported_render_pass(__FILE__,__LINE__);
+    if(s->viewMask || s->colorAttachmentCount>8)return unsupported_render_pass(__FILE__,__LINE__);
     VkAttachmentReference colors[8],depth={VK_ATTACHMENT_UNUSED,VK_IMAGE_LAYOUT_UNDEFINED};
     for(unsigned i=0;i<s->colorAttachmentCount;i++){
-        const VkAttachmentReference2 *r=s->pColorAttachments+i;CHECK(r,VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2);
-        if(r->aspectMask && r->aspectMask!=VK_IMAGE_ASPECT_COLOR_BIT)return VK_ERROR_FEATURE_NOT_PRESENT;
+        const VkAttachmentReference2 *r=s->pColorAttachments+i;if(!VALID(r,VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2))return unsupported_render_pass(__FILE__,__LINE__);
+        if(r->aspectMask && r->aspectMask!=VK_IMAGE_ASPECT_COLOR_BIT)return unsupported_render_pass(__FILE__,__LINE__);
         colors[i]=(VkAttachmentReference){r->attachment,r->layout};
     }
     if(s->pDepthStencilAttachment){
-        const VkAttachmentReference2 *r=s->pDepthStencilAttachment;CHECK(r,VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2);
-        if(r->aspectMask&~(VK_IMAGE_ASPECT_DEPTH_BIT|VK_IMAGE_ASPECT_STENCIL_BIT))return VK_ERROR_FEATURE_NOT_PRESENT;
+        const VkAttachmentReference2 *r=s->pDepthStencilAttachment;if(!VALID(r,VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2))return unsupported_render_pass(__FILE__,__LINE__);
+        if(r->aspectMask&~(VK_IMAGE_ASPECT_DEPTH_BIT|VK_IMAGE_ASPECT_STENCIL_BIT))return unsupported_render_pass(__FILE__,__LINE__);
         depth=(VkAttachmentReference){r->attachment,r->layout};
     }
     VkSubpassDependency dependencies[8];for(uint32_t i=0;i<info->dependencyCount;i++){
-        const VkSubpassDependency2 *x=info->pDependencies+i;CHECK(x,VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2);if(x->viewOffset)return VK_ERROR_FEATURE_NOT_PRESENT;
+        const VkSubpassDependency2 *x=info->pDependencies+i;if(!VALID(x,VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2))return unsupported_render_pass(__FILE__,__LINE__);if(x->viewOffset)return unsupported_render_pass(__FILE__,__LINE__);
         dependencies[i]=(VkSubpassDependency){x->srcSubpass,x->dstSubpass,x->srcStageMask,x->dstStageMask,x->srcAccessMask,x->dstAccessMask,x->dependencyFlags};
     }
     // Unsupported nested attachments are rejected before conversion can discard
     // their pointers or metadata. All other validation is shared with legacy.
-    if(s->inputAttachmentCount || s->pResolveAttachments || s->preserveAttachmentCount)return VK_ERROR_FEATURE_NOT_PRESENT;
+    if(s->inputAttachmentCount || s->pResolveAttachments || s->preserveAttachmentCount)return unsupported_render_pass(__FILE__,__LINE__);
     VkSubpassDescription subpass={.flags=s->flags,.pipelineBindPoint=s->pipelineBindPoint,.colorAttachmentCount=s->colorAttachmentCount,.pColorAttachments=colors,.pDepthStencilAttachment=&depth};
     VkRenderPassCreateInfo legacy={.sType=VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,.flags=info->flags,.attachmentCount=info->attachmentCount,.pAttachments=attachments,.subpassCount=1,.pSubpasses=&subpass,.dependencyCount=info->dependencyCount,.pDependencies=dependencies};
     return render_pass(d,&legacy,out,122);
