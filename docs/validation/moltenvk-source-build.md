@@ -39,6 +39,10 @@ python3 scripts/build-moltenvk.py --platform ios --arch arm64
 解压，再执行上述构建。MoltenVK 保留原 Apache-2.0 通知，Trames 为 GPLv3。
 
 Linux 上已用固定源码归档验证 patch 精确应用、仅一行差异及修正后的摘要。
-修正后的 Metal 像素与原生 iOS 编译等待本批 CI。先前已经通过的同源 Linux
+[CI 39551642471](https://github.com/kb5000/trames/actions/runs/39551642471) 已通过：
+实际 Metal 3D mip、3D slice attachment、原版 Mesa MRT/mip/cube 像素正确；
+arm64 iOS 原生库也成功编译。Xcode 16.4，macOS SDK 15.5 / iOS SDK 18.5，
+原生库与输入 hash 见[构建记录](zink-images-ci.json)，物理 iPad 尚待验收。
+先前已经通过的同源 Linux
 GPU/Mesa、Apple module/23 tests/iOS FFI 检查不重跑；CI 严格核对 guest/backend/
 fixture/toolchain 字节未变和已通过记录，再复用同源 guest bundle。

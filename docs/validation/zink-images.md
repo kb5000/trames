@@ -72,7 +72,27 @@ python3 tests/integration/zink-es3.py \
 检查和原版 Mesa 图形 gate 使用同源 ICD、fixture、签名 Mesa store 和逐文件
 hash 清单。Apple 首轮确认 1D/2D 路径与原有 MRT/格式检查通过，但 3D mip
 缩小读回失败，定位为上游取错 mip 深度；见 [原版源码最小修正](moltenvk-source-build.md)。
-修正后的 Metal 结果待本次 CI；不构建 IPA，不上传本地 Firefox 诊断。
+修正后已通过下述 CI；没有 IPA，不上传本地 Firefox 诊断。
+
+## Apple 最终结果
+
+修正源码 [a410f1c](https://github.com/kb5000/trames/commit/a410f1c4e8a2860cc9bd350bf49c8db14456ddb9)
+的 [CI 39551642471](https://github.com/kb5000/trames/actions/runs/39551642471) 全部成功。
+使用实际 Apple Paravirtual GPU、从原版源码构建的 MoltenVK；CPU-reference 标记为 false。
+
+- 8 色加 depth、11 种格式往返、1D/2D array、cube/cube-array views、3D volume、
+  mip blit、layer/slice 同图复制、局部 color/depth clear 与未写入 padding 全部正确。
+- 原先失败的 3D mip 缩小恢复精确结果；非零 3D mip/slice 的 2D attachment
+  实际渲染与读回也通过。原版 Mesa dense/sparse MRT、2D mip 选择/生成及六面 cube
+  LOD2 采样成功，probe 清理成功。没有用版本/扩展覆盖把 GLES2 改成 GLES3。
+- 同一最小修正成功构建 arm64 iOS 原生库。工具链实际为 Xcode 16.4，macOS SDK
+  15.5 / iOS SDK 18.5；不是物理 iPad 验收，也没有打包 App。
+- guest/backend/fixture 与 Rust toolchain 精确复用 ebace64 的
+  [39547799850](https://github.com/kb5000/trames/actions/runs/39547799850) Linux GPU/Mesa
+  和 Apple module/23 tests/iOS FFI 检查。只重跑受影响的 native Metal 与 iOS 原生构建。
+- 18 项证据 ZIP 的 SHA-256 与每项 CRC 已独立核对；两个原生 build record 的
+  source/patch/recipe/manifest 摘要与仓库匹配。[摘要与原生库 hash](zink-images-ci.json)。
+  此后只整理文档/验证计划，复用运行源码的通过结果。
 
 ## 尚未完成
 

@@ -50,7 +50,7 @@ Install the ordinary `vulkan-loader` package with apk.
 
 ## Supported compute operations
 
-The [catalog](../../accelerator/vulkan/entrypoints.inc) contains 172 public
+The [catalog](../../accelerator/vulkan/entrypoints.inc) contains 174 public
 functions plus ICD negotiation exports. The profile supports one instance,
 compute-capable physical device, logical device and queue per address space;
 property queries; buffers and memory; SPIR-V modules; storage/uniform buffer
@@ -88,8 +88,8 @@ Static or dynamic viewport/scissor, depth compare/write, native color/alpha
 blending, transfer color clears, draws, image layout barriers, buffer-to-image
 uploads and image-to-buffer copies are supported. Queue queries retain native
 graphics/compute/transfer flags. Image format queries expose only this profile:
-one mip/layer/sample and dimensions up to 4096; allocation/session budgets still
-apply. Device memory uses explicit noncoherent transfers or coherent shadow
+one sample, native-supported mip chains and array/volume subresources, dimensions
+up to 4096 and at most 2048 array layers; allocation/session budgets still apply. Device memory uses explicit noncoherent transfers or coherent shadow
 mappings synchronized at the exposed host synchronization boundaries.
 
 Pipelines accept generated vertices or vertex/instance buffers (up to 16 bindings
