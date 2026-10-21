@@ -10,7 +10,8 @@ device 是 Lavapipe CPU，工具如实报告非硬件加速；Firefox 默认仍�
 渲染。另用独立新 profile 的 `gfx.webrender.all=true` 检查原版 WebRender 的
 OpenGL 路径，保留默认刷新率。这是显式诊断，不是修改产品默认偏好或伪造设备。
 
-**完整 Firefox GPU 页面尚未通过；新的诊断组已能执行目标页面 JavaScript。**
+**当前默认刷新率的原生 GPU 页面、输入及 resize 已通过本地参考；正常退出仍待修复。**
+以下保留逐步定位记录，后续状态见“默认刷新率、viewport 与调整大小”及退出调查。
 定向组先后越过 descriptor 批量分配和 sample-rate shading 的错误。Mesa 驱动
 线程的空地址调用对照原版代码确认为缺少 `vkCmdClearAttachments`，现已补齐。
 随后 renderpass2 对输出引用 `aspectMask` 的误判也已修正：该字段只对 input
@@ -115,7 +116,35 @@ Vulkan 的 render-area 边界要求。EGL native-WSI 适配层暂不声明
 `VkClearRect` 的 layerCount 必须大于零，但 extent 可以为零，空清除不应使程序
 中止。render area、层范围、溢出和深度边界继续验证。新增标准 C 像素用例覆盖
 静态/动态负 viewport 与空清除保留原有像素；Vulkan 30 项、Wayland 15 项和
-受影响模块严格 Clippy 已通过，Apple 新像素用例等待对应源码 CI。
+受影响模块严格 Clippy 已通过。
+
+源码 [2c8981b](https://github.com/kb5000/trames/commit/2c8981bd5d5fcaa944deb0e282df8db7b0230612)
+的 [CI 39633612435](https://github.com/kb5000/trames/actions/runs/39633612435) 已在
+Linux 和云端 Apple Metal 通过全部新增边界像素、原版 Mesa 双窗口 damage swap、
+五种尺寸、关闭及旧帧保活，Vulkan 30 项、Wayland 15 项及 iOS FFI 编译通过。
+Apple 的窗口纹理由现有 exported-MTLTexture oracle 逐像素检查；CPU reference
+不冒充 Metal。公开合成证据 ZIP 已核对 SHA-256 和每项 CRC：Linux 6,988 bytes，
+`bebf551f27f709dc2d6821abcf3fe82be48cbe9e24cc366e3ee58ddea0fdb8b6`；
+Metal 34,981 bytes，`18d11cbe1df0baf1a7edb4b717cf4fec93f33dd06eb14042b52e77dc412f46c4`。
+
+最终默认刷新率诊断还完成了中文/emoji、方向键/退格/继续输入、两个输入框往返
+和 800×600 的 DOM/scene/native-frame 尺寸同步；不再触发 viewport 或清除矩形
+校验错误。该组关闭后，Firefox 自己的 Shutdown Hang Terminator 因清理超时
+主动访问空地址，退出 139；不是新的未知 CPU 指令或已修复的 Vulkan 验证错误。
+另一个只重查关闭、跳过输入的组在 120 秒内未退出；其主线程在分配器、互斥锁
+及嵌套事件/线程等待之间持续推进，未证明固定死锁。继续进行更长的有界退出
+观察，保留 Firefox 默认看门狗设置，不能把窗口消失、主线程仍推进或其他组
+输入通过当作正常退出。
+
+扩大探针退出等待到 300 秒、关闭逐 Vulkan 调用/周期浏览器日志的同一运行时
+对照完成正常退出 0：页面/native Canvas 通过后，只发送关闭，清理耗时约
+191.39 秒。Firefox 默认刷新率、关闭看门狗、内容沙箱和 Wayland proxy 均保留；
+这证明此前 120 秒未退出本身不能当作死锁。此组跳过输入/resize，尚不覆盖此前
+完整输入组的超时失败；完整串联另行复测。未据此声称关闭性能已解决。
+
+像素探针也区分没有新采集和真正的不匹配：诊断回读器在已验收绿色页面后可停止
+记录，resize 后旧尺寸数据不可作为新尺寸的像素结果，但也不应把先前已验收页面
+改记成从未通过。resize 继续要求实际 native-frame 尺寸及 DOM 回执。
 
 ## 已修复的通用路径
 
@@ -142,6 +171,21 @@ Vulkan 的 render-area 边界要求。EGL native-WSI 适配层暂不声明
 - renderpass2 不再错误限制输出引用的 `aspectMask`。新的清除 fixture 使用
   带深度附件的 imageless renderpass2，并给颜色和深度输出设置有效但被忽略的
   aspect 位；独立宿主原版 Vulkan 与 ARM64 App FFI 的像素 oracle 均通过。
+
+## 退出耗时与地址布局（2026-10-22）
+
+默认刷新率 close-only 基线再次正常退出，但关闭耗时约 149 秒；完整输入和 resize
+组仍曾触发 Firefox 原有 shutdown watchdog。原始日志和诊断数据保持私有。
+对照原版 Scudo 释放路径，发现 unhinted 大块 `PROT_NONE` 预留也推进普通 mmap
+游标：16 GiB 预留让后续小块映射跨过同样大的空洞，放大 allocator 区域扫描。
+
+现在虚拟预留从独立地址区搜索，并复用释放的空洞，不占 resident RAM、不推进
+普通堆映射游标。有效 hints 和 fixed 映射继续生效；`MREMAP_FIXED` 及预留移动
+同样不能把普通分配游标搬走。没有修改 Firefox/Scudo 的回收算法、线程同步或
+退出看门狗。新增回归在旧实现明确失败，修复后 Linux 29 项及严格 Clippy 通过；
+原版 Firefox 的完整默认刷新率 GPU/输入/resize/退出复查进行中，尚不记作修复完成。
+Linux 与 Apple ARM64 只验证受影响的 Linux state 路径和 iOS FFI，复用此前通过且
+源码未变的 CPU/MMU/Wayland/Vulkan/Metal/guest/UI 检查。
 
 ## 定向验证
 

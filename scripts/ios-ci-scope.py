@@ -729,6 +729,16 @@ def main():
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=firefox-clock\nskip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
                     return
+                if plan.get('native_scope') == 'firefox-layout':
+                    allowed = {'crates/trames-linux/src/state.rs', 'tests/integration/firefox.py',
+                               'scripts/ios-ci-scope.py', '.github/workflows/linux.yml',
+                               '.github/workflows/ios.yml'}
+                    if any(p not in allowed and not p.startswith('docs/') for p in changed):
+                        raise RuntimeError('Firefox address-layout plan includes unrelated changes')
+                    print('Check changed Linux mmap/mremap policy on Linux and Apple ARM64 plus iOS embedding; reuse unchanged CPU/MMU/GPU/Wayland/UI and guest artifacts. No IPA yet.')
+                    with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+                        output.write('frontend_only=false\ntargeted=true\nnative_scope=firefox-layout\nskip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
+                    return
                 if plan.get('native_scope') == 'firefox-runtime':
                     allowed = {'crates/trames-vfs/src/lib.rs', 'crates/trames-vfs/src/ipc.rs',
                                'crates/trames-vfs/src/clone_resources.rs', 'crates/trames-core/src/process.rs',

@@ -279,6 +279,11 @@ class Interaction:
             self.advance('focus_a')
             return
         if self.step == 'close':
+            exited = re.search(rb'\r?\nFIREFOX_PROBE_EXIT:(\d+)\r?\n', output)
+            if exited and int(exited[1]) != 0:
+                report['interaction_error'] = 'browser exited with status '+exited[1].decode()
+                self.advance('failed')
+                return
             if not window:
                 report['interaction_window_closed'] = True
                 report.setdefault('interaction_window_close_seconds', time.monotonic()-self.entered)
@@ -518,8 +523,14 @@ window.addEventListener('resize',acknowledge);
                                              or 'TRAMES_FIREFOX_JS_OK' in w.get('title','')):
                             green = capture(frame,info)
                             captured_at = time.monotonic()-start
-                            report['canvas_green_pixels'] = green
-                            report['canvas_green_seen'] = green is not None and green >= 45000
+                            # A diagnostic recorder may retain the accepted page
+                            # image after resize. A dimension mismatch provides
+                            # no new pixel result; do not erase the prior oracle.
+                            if green is not None:
+                                report['canvas_green_pixels'] = green
+                                report['canvas_green_seen'] = green >= 45000
+                            else:
+                                report['capture_unavailable_for_latest_size'] = True
                 finally:
                     assert api.trames_wayland_frame_release(frame, int(presented), int(time.monotonic()*1000)&0xffffffff) == 0
             if 'TRAMES_FIREFOX_JS_OK' in w.get('title',''):

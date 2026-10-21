@@ -254,6 +254,38 @@ jobs:
           name: shared-readonly-apple
           path: target/shared-readonly-apple.log
           retention-days: 7
+  firefox-layout:
+    needs: scope
+    if: needs.scope.outputs.native_scope == 'firefox-layout'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+          components: rustfmt, clippy
+      - name: Check reservation and ordinary mapping layout
+        run: |
+          cargo fmt --all --check
+          cargo clippy -p trames-linux --all-targets --no-deps --locked -- -D warnings
+          cargo test -p trames-linux state::tests:: --release --lib --locked
+          python3 -m py_compile tests/integration/firefox.py scripts/ios-ci-scope.py
+  firefox-layout-apple:
+    needs: [scope, firefox-layout]
+    if: needs.scope.outputs.native_scope == 'firefox-layout'
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-16
+          targets: aarch64-apple-ios
+      - name: Verify Apple ARM64 mapping layout and iOS embedding
+        run: |
+          uname -m
+          sysctl hw.pagesize
+          cargo test -p trames-linux state::tests:: --release --lib --locked
+          cargo check -p trames-ffi --target aarch64-apple-ios --locked
   firefox-runtime:
     needs: scope
     if: needs.scope.outputs.native_scope == 'firefox-runtime'

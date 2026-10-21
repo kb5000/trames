@@ -1,24 +1,13 @@
 {
-  "base_sha": "63c679f3f352281f374670ccdf592094235211f4",
-  "native_scope": "zink-wayland",
-  "zink_frame_boundaries_reuse": {
-    "run": 39628534758,
-    "sha": "63c679f3f352281f374670ccdf592094235211f4"
-  },
-  "reason": "Fix frame-callback backpressure and native viewport/empty-clear validation; EGL native WSI no longer advertises resize-unsafe partial-update rendering. Run changed Vulkan/Wayland units, Clippy, new viewport/empty-clear pixels plus one original Mesa damage-swap resize/close lifecycle on Linux/Metal, and iOS embedding. Reuse unchanged CPU/MMU/Linux/native WSI/TF/quota checks. Default-refresh Firefox JS/native Canvas progressed twice; full interaction/exit remains pending. No raw Firefox diagnostics; no IPA.",
+  "base_sha": "2c8981bd5d5fcaa944deb0e282df8db7b0230612",
+  "native_scope": "firefox-layout",
+  "reason": "Separate private PROT_NONE reservations from ordinary mmap/mremap allocations, preserving hints/fixed mappings. Check affected Linux state tests on Linux and Apple ARM64 plus iOS FFI; reuse passed unchanged CPU/MMU/Wayland/Vulkan/Metal/guest/UI evidence from 2c8981b. Original Firefox GPU/input/resize/shutdown checked locally; raw diagnostics remain private. Build a new IPA after shutdown validation.",
   "changed_file_sha256": {
-    ".github/workflows/linux.yml": "737ddcc615ff158f457cf7a8df5da54c4b62a88accc97d1a5a2e95b96755af67",
-    "crates/trames-vulkan/src/backend.rs": "cc1bce7f681bba17ed4033d13a7a09253655e2bb201507098929a2fa212c2f75",
-    "crates/trames-vulkan/src/backend/graphics.rs": "619e84c15a1b8d84f983ecb5ed11dcf37e8615becf7c50c7df5a96a1857f5db4",
-    "crates/trames-wayland/src/frame.rs": "e0f49d8f6e01b7bee2f0e6a6310109ef6940e814cb318fa7edc4d5186d955c5c",
-    "crates/trames-wayland/src/lib.rs": "bbd58348ad3807358eb7eea1a3f10b62cc87fda249354f2a26b6597205728662",
-    "docs/validation/firefox-gles3.md": "c996bc3642495ee139e1b1cc76fdeeae85cd4d4277dcc56cb73b7f77ca92c2be",
-    "patches/mesa/0001-wayland-kopper-native-wsi.patch": "c3b359d856aa2eaf7ea4120215b948e7c20c10f777d3d852e0df991e3c7bab36",
-    "scripts/build-zink-egl.py": "c6020574640c7853145b9a660b31e4feb2bf60a87449539a4661897a9bf6fb8d",
-    "scripts/ios-ci-scope.py": "8eff5b3c9a22fdaf1bda9fbf850b189780767d20fae2a8c8917c1e37ac841342",
-    "tests/fixtures/vulkan-render.c": "eb9db52efb54b5aff10ac1fe7be10221618b08203034d757f838cc41948490a4",
-    "tests/fixtures/zink-wayland.c": "fd3d12984ee4290a16b0d266dc41aa44e4436c2eb901842fa53ed33e4e409ba1",
-    "tests/integration/firefox.py": "64de4d2b1d84971542a0732354869c3796a59e353ca6f7389b17cfeca52462c9",
-    "tests/integration/zink-wayland.py": "234df2ef7d1362e97f08191ac49b09fdeb817211285453f9a63ecc20c96b5be0"
+    ".github/workflows/ios.yml": "c78417b2b25b291c5c73ce0f18146a1e49d1c0364324945ac39545a737869a71",
+    ".github/workflows/linux.yml": "40cd8e5da4d5e87b02f9e7b2e3b1a3bad326b42ec2fbe555f0d9450a3a3883eb",
+    "crates/trames-linux/src/state.rs": "9d56173d2f75f123c1fdbdec545c235ae52af6dee2a7e2ad0ecc1fe1133dbb26",
+    "docs/validation/firefox-gles3.md": "3b47169ba154265bf04dca696bcbcef76d24f74c98ba150d38a8876c82073d11",
+    "scripts/ios-ci-scope.py": "84ce91bd7df9d60e8788d645bc0bd1f15d9c5b3cdebd0bf0de62cdb3fd11fe35",
+    "tests/integration/firefox.py": "6c2d44c81af29ea32f1d300974a11069bb63a7796410c2e1d534f94d5fbe4ac5"
   }
 }
