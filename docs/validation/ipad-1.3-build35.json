@@ -58,5 +58,5 @@
   "main_binary_sha256": "0c63f6ddd8c4f81b3d436ad9db9c8c14a5f1277751e01adb405ba1e25e2e7b9d",
   "device_platform": "iPhoneOS ARM64",
   "minimum_os": "17.0",
-  "publication_note": "Source archive path corrected after first publisher failure; original successful device build and IPA reused unchanged."
+  "publication_note": "Resume the fully uploaded draft by release ID; retain verified source commit, original IPA and all paired-source assets. No rebuild, duplicate runtime tests or asset re-upload."
 }

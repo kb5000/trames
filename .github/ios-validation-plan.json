@@ -1,5 +1,5 @@
 {
-  "base_sha": "21b92d69cca7f72ffcc62eeba474eca50ecf5fc2",
+  "base_sha": "56151c4c4b2c031e4c29c6bafc98e93c889980fe",
   "native_scope": "compatibility-probe",
   "reason": "Publish the existing successful 1.3.0 build35 as a stable release with paired sources. Publication and sanitized records only; runtime, device build and guest inputs unchanged. Reuse passed checks, do not rebuild IPA or rerun runtime/UI suites.",
   "runtime_reuse": {
@@ -8,7 +8,7 @@
     "apple": 39645800791
   },
   "changed_file_sha256": {
-    "docs/validation/ipad-1.3-build35.json": "90a029776ebc3e882707742889e357c6c89e03309358392ba9e58dee1a692705",
-    "scripts/publish-ios-build35.py": "79df2c7076e43d2bc950b1e99fc545dd5ae691afcc60fce8bd972f9b8ab8cc95"
+    "docs/validation/ipad-1.3-build35.json": "a6713b7df731d84b9f1433c3be889a97c808bbabfaf072fb3b86824caba69b88",
+    "scripts/publish-ios-build35.py": "76ab808cf6a177fda155322797c21ddb53e3b29c6c9b4da77a18ce4e56e4c220"
   }
 }

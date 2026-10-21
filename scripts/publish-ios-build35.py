@@ -26,6 +26,46 @@ def paired_sources(raw, names):
             assert source.extractfile(archived).read() == Path(local).read_bytes(), archived
 
 
+def finish_uploaded_release(config, allowed, head):
+    # Drafts are not available through GET /releases/tags/<tag>. Resume the
+    # completely uploaded draft by ID, retaining its verified source and assets.
+    release = next((r for r in api(f'repos/{REPO}/releases?per_page=100') if r['tag_name'] == TAG), None)
+    if release is None:
+        return False
+    assert not release['prerelease']
+    if not release['draft']:
+        print(release['html_url']); print('Published release retained without changes.'); return True
+    target = release['target_commitish']
+    subprocess.run(['git', 'merge-base', '--is-ancestor', target, head], check=True)
+    delta = subprocess.check_output(['git', 'diff', '--name-only', target, head], text=True).splitlines()
+    assert all(p in allowed or p.startswith('docs/') for p in delta)
+    assets = {a['name']: a for a in release['assets']}
+    ipa = f'Trames-{VERSION}-build{BUILD}-unsigned.ipa'
+    expected = {ipa, 'build35-verification.json', 'musl-hybrid-1.2.5-source.tar.gz',
+                'vulkan-native-upstream-source.tar.gz', 'mesa-egl-25.1.9-source.tar.gz',
+                'xwayland-native-source.tar.gz', 'xwayland-launcher-source.tar.gz',
+                'Trames-1.3.0-build35-source.tar.gz', 'SHA256SUMS'}
+    assert set(assets) == expected, 'Resume only a completely uploaded release'
+    with tempfile.TemporaryDirectory(prefix='trames-publish-existing-') as directory:
+        directory = Path(directory)
+        for name in ('SHA256SUMS', 'build35-verification.json'):
+            path = directory / name
+            gh('release', 'download', TAG, '--repo', REPO, '--pattern', name, '--output', path)
+            assert assets[name]['digest'] == 'sha256:' + sha(path.read_bytes())
+        sums = dict(line.split('  ', 1)[::-1] for line in (directory / 'SHA256SUMS').read_text().splitlines())
+        assert set(sums) == expected - {'SHA256SUMS'}
+        for name, digest in sums.items(): assert assets[name]['digest'] == 'sha256:' + digest, name
+        proof = json.loads((directory / 'build35-verification.json').read_text())
+        assert proof['tag_commit'] == target and proof['source_commit'] == config['source_commit']
+        assert proof['apple_run'] == config['apple_run'] and proof['paired_sources_verified']
+        assert proof['guest_library_sha256'] == config['guest_library_sha256']
+        assert proof['ipa_sha256'] == sums[ipa] == config['ipa_sha256']
+    base.checked_run(config['apple_run'], config['source_commit'], 'ios.yml', 'apple-build')
+    gh('release', 'edit', TAG, '--repo', REPO, '--draft=false', '--latest')
+    print(release['html_url'])
+    return True
+
+
 def main():
     config = json.loads(Path('docs/validation/ipad-1.3-build35.json').read_text())
     assert config['status'] == 'verified' and (config['version'], str(config['build'])) == (VERSION, BUILD)
@@ -36,6 +76,8 @@ def main():
     allowed = {'.github/ios-validation-plan.json', 'scripts/ios-ci-scope.py', '.github/workflows/linux.yml',
                '.github/workflows/publish-ios-build35.yml', 'scripts/publish-ios-build35.py'}
     assert all(p in allowed or p.startswith('docs/') for p in delta), 'Device build inputs changed'
+    if finish_uploaded_release(config, allowed, head):
+        return
     apple, steps = base.checked_run(config['apple_run'], source, 'ios.yml', 'apple-build')
     required = {'Install exact Metal-validated EGL and ICD with paired sources',
                 'Link unsigned iPad simulator app', 'Exercise peer tabs and floating window gestures first',
@@ -149,7 +191,7 @@ def main():
                     assert target['sha'] == head, 'Never move an existing tag'
             gh('release', 'create', TAG, *assets, '--repo', REPO, '--draft', '--target', head,
                '--title', 'Trames 1.3.0 (build 35)', '--notes-file', notes)
-        published = api(f'repos/{REPO}/releases/tags/{TAG}')
+        published = next(r for r in api(f'repos/{REPO}/releases?per_page=100') if r['tag_name'] == TAG)
         uploaded = {a['name']: a for a in published['assets']}
         for p in assets:
             assert uploaded[p.name]['size'] == p.stat().st_size
