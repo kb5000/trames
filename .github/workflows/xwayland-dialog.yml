@@ -50,6 +50,12 @@ jobs:
           assert any(x['name']=='Build only current Vulkan bridge and embedding' and x['conclusion']=='success' for x in job['steps'])
           with open(os.environ['GITHUB_OUTPUT'],'a') as output:output.write('run='+str(p['run'])+'\n')
           print('Reuse identical-source host binaries and their passed Vulkan31/Clippy checks; run only affected integration validation.')
+          previous=get('actions/runs/39663224481')
+          assert previous['head_sha']=='6d7d26c0921b233d0a765d37d0a74c28f6925f11'
+          jobs=get('actions/runs/39663224481/jobs')['jobs']
+          assert any(j['name']=='linux' and j['conclusion']=='success' for j in jobs)
+          assert any(j['name']=='metal' and any(x['name']=='Verify identical guest inputs and install without rebuilding guest packages' and x['conclusion']=='success' for x in j['steps']) for j in jobs)
+          with open(os.environ['GITHUB_OUTPUT'],'a') as output:output.write('fixture_run=39663224481\n')
           PYCODE
           else
             cargo clippy -p trames-vulkan --all-targets --no-deps --locked -- -D warnings
@@ -85,7 +91,15 @@ jobs:
           path: target/musl-hybrid
           github-token: ${{ github.token }}
           run-id: 39015795319
+      - uses: actions/download-artifact@v4
+        if: steps.runtime.outputs.fixture_run
+        with:
+          name: xwayland-dialog-inputs
+          path: target/xwayland-dialog-inputs
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.runtime.outputs.fixture_run }}
       - name: Prepare only original signed mousepad dependencies and rebuilt ICD
+        if: steps.runtime.outputs.fixture_run == ''
         run: python3 tests/integration/xwayland-dialog-prepare.py
       - uses: actions/upload-artifact@v4
         with:
@@ -93,6 +107,7 @@ jobs:
           path: target/xwayland-dialog-inputs/inputs.tar.gz
           retention-days: 7
       - name: Reproduce only unsaved-close dialogs on original glamor and Mesa
+        if: steps.runtime.outputs.fixture_run == ''
         run: |
           export VK_DRIVER_FILES="$(python3 -c 'from pathlib import Path; print(next(Path("/usr/share/vulkan/icd.d").glob("*lvp*")))')"
           export TRAMES_ZINK_CPU_REFERENCE=1 LP_NUM_THREADS=2 TRAMES_VULKAN_TRACE=1
@@ -126,18 +141,19 @@ jobs:
           mkdir -p target/xwayland-dialog-inputs
           tar -xzf target/dialog-download/inputs.tar.gz -C target/xwayland-dialog-inputs
           python3 - <<'PY'
-          import hashlib,json,os,shutil
+          import hashlib,json,os,shutil,subprocess
           from pathlib import Path
           root=Path('target/xwayland-dialog-inputs');m=json.loads((root/'inputs.json').read_text())
-          assert m['source']==os.environ['GITHUB_SHA']
+          subprocess.run(['git','fetch','--depth=1','origin',m['source']],check=True)
+          subprocess.run(['git','diff','--exit-code',m['source'],'HEAD','--','crates','accelerator','tests/fixtures','Cargo.toml','Cargo.lock','vendor','.cargo','rust-toolchain.toml'],check=True)
+          assert m['source']=='6d7d26c0921b233d0a765d37d0a74c28f6925f11'
+          print('Reuse unchanged exact-source Vulkan31, iOS FFI, four layout pixel modes and passed Linux dialogs; retry only failed Metal modal path.')
           for name,digest in m['sha256'].items():
               p=Path(name);assert not p.is_absolute() and '..' not in p.parts
               assert hashlib.sha256((root/p).read_bytes()).hexdigest()==digest,name
           shutil.copytree(root/'guest','target/vulkan-guest',dirs_exist_ok=True)
           shutil.copytree(root/'musl','target/musl-hybrid',dirs_exist_ok=True)
           PY
-          cargo test -p trames-vulkan --release --lib --locked
-          cargo check -p trames-ffi --target aarch64-apple-ios --locked
       - uses: actions/cache/restore@v4
         with:
           path: |
@@ -152,8 +168,8 @@ jobs:
           export RUSTFLAGS="-C link-arg=-framework -C link-arg=IOKit -C link-arg=$(xcrun clang --print-runtime-dir)/libclang_rt.osx.a"
           cargo build -p trames-ffi --release --locked
           xcrun clang -O2 -Wall -Wextra -Werror -fobjc-arc -dynamiclib tests/fixtures/zink-metal-pixels.m -framework Metal -framework Foundation -o target/zink-metal-pixels.dylib
-          export TRAMES_VULKAN_TRACE=1
-          python3 tests/integration/xwayland-dialog.py --native-wsi --ffi target/release/libtrames_ffi.dylib --store target/xwayland-dialog-inputs/store --output target/dialog-metal --layout-client target/xwayland-dialog-inputs/bin/vulkan-layouts --metal-validator target/zink-metal-pixels.dylib 2>&1 | tee target/dialog-metal.log
+          export TRAMES_VULKAN_TRACE=1 MTL_DEBUG_LAYER=1 MVK_CONFIG_DEBUG=1 MVK_CONFIG_SYNCHRONOUS_QUEUE_SUBMITS=1
+          python3 tests/integration/xwayland-dialog.py --native-wsi --ffi target/release/libtrames_ffi.dylib --store target/xwayland-dialog-inputs/store --output target/dialog-metal --metal-validator target/zink-metal-pixels.dylib 2>&1 | tee target/dialog-metal.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:

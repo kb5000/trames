@@ -1,9 +1,9 @@
 {
-  "base_sha": "4d58d0ef01efd98842966696bc46aa5a64be51ea",
+  "base_sha": "6d7d26c0921b233d0a765d37d0a74c28f6925f11",
   "native_scope": "xwayland-dialog",
   "reason": "Only fix test terminal DSR handshaking; reuse identical-source host binaries and passed Memory94/Vulkan31 checks. Production code unchanged.",
   "changed_file_sha256": {
-    ".github/workflows/xwayland-dialog.yml": "883d51a22c26a15f8986343c1e56a3e611bafd0fefc6c7fbd370f11ada9a4e65"
+    ".github/workflows/xwayland-dialog.yml": "193e06f0a6817d7c560a4d34aa6a2c631fc53db5b4574f40f0bbc6d7fe088113"
   },
   "dialog_runtime_reuse": {
     "sha": "e9296359a3bda86a522f238be83b0a04ecc42f94",
