@@ -273,8 +273,8 @@ impl Registry {
         }
         Ok(valid)
     }
-    /// Stateful device calls execute on the owning coordinator after all
-    /// worker views join. This authorizes only the transport, never a resource.
+    /// Authorize stateful transport against the calling CPU's memory. The GPU
+    /// context owns resource synchronization; this grants no resource access.
     pub fn authorize_stateful(
         &mut self,
         memory: &impl NativeMemory,

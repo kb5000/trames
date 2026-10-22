@@ -204,7 +204,7 @@ impl Capabilities {
         }
         Ok(result)
     }
-    pub fn write_portability(&self, m: &mut Memory, at: u64) -> Result<()> {
+    pub fn write_portability(&self, m: &mut impl CpuMemory, at: u64) -> Result<()> {
         let Some(p) = self.portability else {
             return unsupported();
         };
@@ -235,13 +235,13 @@ impl Capabilities {
                 .collect::<Vec<_>>(),
         )
     }
-    pub fn write_clipping(&self, m: &mut Memory, at: u64) -> Result<()> {
+    pub fn write_clipping(&self, m: &mut impl CpuMemory, at: u64) -> Result<()> {
         if self.bits & MAINTENANCE2 == 0 {
             return unsupported();
         }
         write(m, at, &self.point_clipping.to_le_bytes())
     }
-    pub fn write_driver(&self, m: &mut Memory, at: u64) -> Result<()> {
+    pub fn write_driver(&self, m: &mut impl CpuMemory, at: u64) -> Result<()> {
         let Some(driver) = &self.driver else {
             return unsupported();
         };
@@ -325,7 +325,7 @@ pub(super) fn device_extensions(
 impl Backend {
     pub(super) fn zink_device(
         &mut self,
-        m: &mut Memory,
+        m: &mut impl CpuMemory,
         op: u64,
         a: [u64; 16],
         dev: &Arc<Device>,
@@ -406,7 +406,7 @@ impl Backend {
 }
 
 impl Backend {
-    pub(super) fn dynamic_call(&mut self, m: &Memory, a: [u64; 16]) -> Result<()> {
+    pub(super) fn dynamic_call(&mut self, m: &impl CpuMemory, a: [u64; 16]) -> Result<()> {
         let command = self.object(a[1], Kind::CommandBuffer)?;
         if command.state.get() != 1 || !(2..=8).contains(&a[2]) {
             return invalid();

@@ -10,7 +10,9 @@ use std::{
         Arc,
     },
 };
-use trames_memory::{Access, Memory, MemoryError};
+#[cfg(test)]
+use trames_memory::Memory;
+use trames_memory::{Access, CpuMemory, MemoryError};
 use vk::Handle;
 mod coherent;
 mod feedback;
@@ -455,7 +457,13 @@ impl Backend {
         self.objects.remove(&id);
         Ok(())
     }
-    fn submit(&mut self, m: &mut Memory, op: u64, a: [u64; 16], dev: Arc<Device>) -> Result<()> {
+    fn submit(
+        &mut self,
+        m: &mut impl CpuMemory,
+        op: u64,
+        a: [u64; 16],
+        dev: Arc<Device>,
+    ) -> Result<()> {
         if a[1] != self.queue_id {
             return invalid();
         }
@@ -741,7 +749,7 @@ impl Backend {
     }
     pub fn invoke(
         &mut self,
-        memory: &mut Memory,
+        memory: &mut impl CpuMemory,
         operation: u64,
         address: u64,
         size: u64,
@@ -786,13 +794,13 @@ impl Backend {
             Err(Failure::Memory(e)) => Err(e),
         }
     }
-    fn start_compile(&mut self, m: &Memory, a: [u64; 16]) -> Result<u64> {
+    fn start_compile(&mut self, m: &impl CpuMemory, a: [u64; 16]) -> Result<u64> {
         let device = self.device(a[0])?;
         self.room(1)?;
         output(m, a[4], 8)?;
         let layout = self.object(a[1], Kind::PipelineLayout)?;
         let shader = self.object(a[2], Kind::Shader)?;
-        let name = std::ffi::CString::new(m.read_c_string(a[3], 256)?)
+        let name = std::ffi::CString::new(guest_string(m, a[3], 256)?)
             .map_err(|_| Failure::Vk(vk::Result::ERROR_UNKNOWN))?;
         let wire = words64(m, a[5], bounded(a[6], 64)? * 3)?;
         let data_size = bounded(a[8], 65536)?;
@@ -869,9 +877,16 @@ impl Backend {
             c.abandoned = true;
         }
     }
+    pub(crate) fn subscribe_compile(
+        &self,
+        job: u64,
+        signal: &Arc<trames_shared::IoSignal>,
+    ) -> Option<trames_shared::IoSubscription> {
+        self.compiles.get(&job).map(|c| c.task.subscribe(signal))
+    }
     pub fn poll(
         &mut self,
-        m: &mut Memory,
+        m: &mut impl CpuMemory,
         job: u64,
     ) -> std::result::Result<Option<u64>, MemoryError> {
         let result = match self.compiles.get_mut(&job) {
@@ -924,7 +939,7 @@ impl Backend {
         }
         Ok(Some(0))
     }
-    fn call(&mut self, m: &mut Memory, op: u64, a: [u64; 16]) -> Result<()> {
+    fn call(&mut self, m: &mut impl CpuMemory, op: u64, a: [u64; 16]) -> Result<()> {
         if (109..=111).contains(&op) {
             return self.wayland_entry(m, op, a);
         }
@@ -1453,7 +1468,7 @@ impl Backend {
         self.device_id = 0;
         self.queue_id = 0;
     }
-    fn device_call(&mut self, m: &mut Memory, op: u64, a: [u64; 16]) -> Result<()> {
+    fn device_call(&mut self, m: &mut impl CpuMemory, op: u64, a: [u64; 16]) -> Result<()> {
         let dev = self.device.as_ref().unwrap().clone();
         let d = &dev.native;
         match op {
@@ -2476,7 +2491,7 @@ fn bounded(n: u64, limit: usize) -> Result<usize> {
 /// Native pointer covers a retained, mapped driver allocation disjoint from
 /// guest backing. Only this callback borrows guest pages; nothing escapes it.
 unsafe fn transfer_pages(
-    m: &mut Memory,
+    m: &mut impl CpuMemory,
     guest: u64,
     native: *mut u8,
     len: usize,
@@ -2494,12 +2509,12 @@ unsafe fn transfer_pages(
         let n = (len - offset)
             .min((trames_memory::PAGE_SIZE - address % trames_memory::PAGE_SIZE) as usize);
         let direct = if upload {
-            m.with_read_chunk(address, n, |bytes| unsafe {
+            m.cpu_read_chunk(address, n, |bytes| unsafe {
                 std::ptr::copy_nonoverlapping(bytes.as_ptr(), native.add(offset), n);
             })?
             .1
         } else {
-            m.with_write_chunk(address, n, |bytes| unsafe {
+            m.cpu_write_chunk(address, n, |bytes| unsafe {
                 std::ptr::copy_nonoverlapping(native.add(offset), bytes.as_mut_ptr(), n);
             })?
             .1
@@ -2589,34 +2604,54 @@ fn specialization_entries(wire: &[u64], size: usize) -> Result<Vec<vk::Specializ
     }
     Ok(entries)
 }
-fn output(m: &Memory, p: u64, n: usize) -> Result<()> {
+fn output(m: &impl CpuMemory, p: u64, n: usize) -> Result<()> {
     m.check(p, n, Access::Write)?;
     Ok(())
 }
-fn write(m: &mut Memory, p: u64, b: &[u8]) -> Result<()> {
+fn guest_string(m: &impl CpuMemory, address: u64, limit: usize) -> Result<Vec<u8>> {
+    let address = address & 0x00ffffffffffffff;
+    let mut bytes = Vec::new();
+    while bytes.len() < limit {
+        let at = address
+            .checked_add(bytes.len() as u64)
+            .ok_or(MemoryError::InvalidRange)?;
+        let len = (limit - bytes.len())
+            .min((trames_memory::PAGE_SIZE - at % trames_memory::PAGE_SIZE) as usize);
+        let (terminated, _) = m.cpu_read_chunk(at, len, |part| {
+            let end = part.iter().position(|&b| b == 0);
+            bytes.extend_from_slice(&part[..end.unwrap_or(part.len())]);
+            end.is_some()
+        })?;
+        if terminated {
+            return Ok(bytes);
+        }
+    }
+    Err(MemoryError::Limit.into())
+}
+fn write(m: &mut impl CpuMemory, p: u64, b: &[u8]) -> Result<()> {
     m.write(p, b)?;
     Ok(())
 }
-fn read32(m: &Memory, p: u64) -> Result<u32> {
+fn read32(m: &impl CpuMemory, p: u64) -> Result<u32> {
     let mut b = [0; 4];
     m.read(p, &mut b)?;
     Ok(u32::from_le_bytes(b))
 }
-fn words64(m: &Memory, p: u64, n: usize) -> Result<Vec<u64>> {
+fn words64(m: &impl CpuMemory, p: u64, n: usize) -> Result<Vec<u64>> {
     let mut b = vec![0; n * 8];
     m.read(p, &mut b)?;
     Ok(b.chunks_exact(8)
         .map(|v| u64::from_le_bytes(v.try_into().unwrap()))
         .collect())
 }
-fn words32(m: &Memory, p: u64, n: usize) -> Result<Vec<u32>> {
+fn words32(m: &impl CpuMemory, p: u64, n: usize) -> Result<Vec<u32>> {
     let mut b = vec![0; n * 4];
     m.read(p, &mut b)?;
     Ok(b.chunks_exact(4)
         .map(|v| u32::from_le_bytes(v.try_into().unwrap()))
         .collect())
 }
-fn write_words(m: &mut Memory, p: u64, b: &[u64], n: usize) -> Result<()> {
+fn write_words(m: &mut impl CpuMemory, p: u64, b: &[u64], n: usize) -> Result<()> {
     let bytes: Vec<_> = b.iter().flat_map(|x| x.to_le_bytes()).collect();
     write(m, p, &bytes[..n])
 }
@@ -2625,6 +2660,47 @@ fn write_words(m: &mut Memory, p: u64, b: &[u64], n: usize) -> Result<()> {
 mod tests {
     use super::*;
     use trames_memory::{Permissions, PAGE_SIZE};
+    #[test]
+    fn worker_transfers_use_cpu_pages_and_preflight_before_external_effects() {
+        let base = 0x10000;
+        let mut memory = Memory::default();
+        memory.map(base, 3 * PAGE_SIZE, Permissions::RW).unwrap();
+        let data: Vec<_> = (0..5000).map(|i| i as u8).collect();
+        let at = base + PAGE_SIZE - 13;
+        memory.write(at, &data).unwrap();
+        let parent = memory.clone();
+        memory
+            .protect(base + 2 * PAGE_SIZE, PAGE_SIZE, Permissions::R)
+            .unwrap();
+        let mut view = memory.parallel_view(&mut Default::default()).unwrap();
+        let mut native = vec![0; data.len()];
+        let metrics =
+            unsafe { transfer_pages(&mut view, at, native.as_mut_ptr(), native.len(), true) }
+                .unwrap();
+        assert_eq!(native, data);
+        assert_eq!(metrics.direct_bytes, data.len() as u64);
+        native.fill(42);
+        // Last page is read-only. Failure must not touch the writable prefix.
+        assert!(
+            unsafe { transfer_pages(&mut view, at, native.as_mut_ptr(), native.len(), false) }
+                .is_err()
+        );
+        let mut current = vec![0; data.len()];
+        view.read(at, &mut current).unwrap();
+        assert_eq!(current, data);
+        let metrics =
+            unsafe { transfer_pages(&mut view, at, native.as_mut_ptr(), 4096, false) }.unwrap();
+        assert_eq!(metrics.direct_bytes, 4096);
+        assert_eq!(metrics.buffered_bytes, 0);
+        view.read(at, &mut current[..4096]).unwrap();
+        assert_eq!(&current[..4096], &[42; 4096]);
+        drop(view);
+        memory.commit_parallel().unwrap();
+        memory.read(at, &mut current[..4096]).unwrap();
+        assert_eq!(&current[..4096], &[42; 4096]);
+        parent.read(at, &mut current).unwrap();
+        assert_eq!(current, data);
+    }
     #[test]
     fn spirv_debug_names_do_not_change_entrypoints_or_specialization_decorations() {
         let header = [0x07230203, 0x10000, 0, 10, 0];

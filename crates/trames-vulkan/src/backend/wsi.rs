@@ -73,7 +73,12 @@ impl Backend {
         }
         Ok(surface)
     }
-    pub(super) fn wsi_query(&mut self, m: &mut Memory, op: u64, a: [u64; 16]) -> Result<()> {
+    pub(super) fn wsi_query(
+        &mut self,
+        m: &mut impl CpuMemory,
+        op: u64,
+        a: [u64; 16],
+    ) -> Result<()> {
         let instance = self
             .instance
             .clone()
@@ -255,7 +260,12 @@ impl Backend {
         }
         Ok(())
     }
-    pub(super) fn wsi_device(&mut self, m: &mut Memory, op: u64, a: [u64; 16]) -> Result<()> {
+    pub(super) fn wsi_device(
+        &mut self,
+        m: &mut impl CpuMemory,
+        op: u64,
+        a: [u64; 16],
+    ) -> Result<()> {
         if !self.wsi.device_enabled {
             return Err(vk::Result::ERROR_EXTENSION_NOT_PRESENT.into());
         }

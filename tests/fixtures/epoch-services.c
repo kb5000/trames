@@ -12,6 +12,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
+#include <sys/eventfd.h>
 #include <sys/uio.h>
 #include <unistd.h>
 
@@ -61,6 +62,7 @@ int main(int argc, char **argv) {
     if (bulk) native_multiplier = 64;
     int streams = argc > 1 && !strcmp(argv[1], "pipe");
     int sockets = argc > 1 && !strcmp(argv[1], "unix");
+    int events = argc > 1 && !strcmp(argv[1], "eventfd");
     int private_map = argc > 1 && !strcmp(argv[1], "mapped-read");
     int shared_map = argc > 1 && !strcmp(argv[1], "mapped-shared");
     int mapped = private_map || shared_map;
@@ -69,7 +71,7 @@ int main(int argc, char **argv) {
     if (argc > 2) { iterations = (unsigned)strtoul(argv[2], NULL, 10); assert(iterations > 0 && iterations <= 8192); }
     char temporary[] = "/tmp/trames-epoch-XXXXXX";
     if (files) { int rc = mkdir("/tmp", 0777); assert(rc == 0 || errno == EEXIST); }
-    int fd = files ? mkstemp(temporary) : open("/dev/null", O_RDWR);
+    int fd = events ? eventfd(0, EFD_NONBLOCK) : files ? mkstemp(temporary) : open("/dev/null", O_RDWR);
     assert(fd >= 0);
     if (files) assert(!unlink(temporary));
     unsigned char *bulk_bytes = NULL;
@@ -138,6 +140,28 @@ int main(int argc, char **argv) {
             }
             assert(!memcmp(input, output, 16));
             if (!(i % 1024)) { assert(!fsync(fd)); assert(!fdatasync(fd)); }
+        } else if (events) {
+            uint64_t value = (uint64_t)i + 1, output = 0;
+            if (!(i % 1024)) {
+                struct iovec invalid[] = {{&value, 3}, {(char *)&value + 3, 5}};
+                errno = 0;
+                assert(writev(fd, invalid, 2) == -1 && errno == EINVAL);
+                errno = 0;
+                assert(read(fd, &output, 8) == -1 && errno == EAGAIN);
+            }
+            if (i % 2) {
+                uint64_t values[] = {value, value + 1}, tail = 0;
+                struct iovec in[] = {{&values[0], 8}, {&values[1], 8}};
+                struct iovec out[] = {{&output, 8}, {&tail, 8}};
+                assert(writev(fd, in, 2) == 16);
+                assert(readv(fd, out, 2) == 8);
+                value = value * 2 + 1;
+                assert(tail == 0);
+            } else {
+                assert(write(fd, &value, 8) == 8);
+                assert(read(fd, &output, 8) == 8);
+            }
+            assert(value == output);
         } else if (streams || sockets) {
             unsigned char input[16], output[16];
             memset(input, i & 255, sizeof input);
@@ -174,7 +198,7 @@ int main(int argc, char **argv) {
     assert(!pthread_barrier_destroy(&start));
     assert(!close(fd) && !close(ends[0]) && !close(ends[1]));
     free(bulk_bytes);
-    const char *mode = parallel_bulk ? "bulk-parallel" : bulk ? "bulk" : mapped ? (shared_map ? "mapped-shared" : "mapped-read") : files ? (vectors ? "vector" : "file") : sockets ? "unix" : streams ? "pipe" : "metadata";
+    const char *mode = parallel_bulk ? "bulk-parallel" : bulk ? "bulk" : mapped ? (shared_map ? "mapped-shared" : "mapped-read") : files ? (vectors ? "vector" : "file") : events ? "eventfd" : sockets ? "unix" : streams ? "pipe" : "metadata";
     printf("epoch-services %s %u %08x\n", mode, iterations, checksum);
     return 0;
 }

@@ -441,6 +441,16 @@ jobs:
           github-token: ${{ github.token }}
           path: target/vulkan-guest
       - uses: actions/download-artifact@v4
+        if: needs.scope.outputs.native_scope == 'worker-handoff'
+        with:
+          name: xwayland-dialog-inputs
+          run-id: 39663224481
+          github-token: ${{ github.token }}
+          path: target/worker-ipa-inputs
+      - name: Install source-identical corrected guest graphics and paired sources
+        if: needs.scope.outputs.native_scope == 'worker-handoff'
+        run: python3 scripts/prepare-worker-ipa.py --install
+      - uses: actions/download-artifact@v4
         if: needs.scope.outputs.zink_graphics_run != ''
         with:
           name: zink-native-bundle
@@ -466,7 +476,11 @@ jobs:
       - name: Validate affected native modules or the complete Apple core
         if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.skip_native != 'true'
         run: |
-          if [[ '${{ needs.scope.outputs.native_scope }}' == wayland-input ]]; then
+          if [[ '${{ needs.scope.outputs.native_scope }}' == worker-handoff ]]; then
+            uname -m
+            sysctl hw.pagesize
+            cargo test -p trames-shared -p trames-memory -p trames-linux -p trames-vfs -p trames-vulkan -p trames-accel -p trames-core --lib --release --locked
+          elif [[ '${{ needs.scope.outputs.native_scope }}' == wayland-input ]]; then
             cargo test -p trames-wayland --lib nested_popup_unmap --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == wayland-clipboard ]]; then
             cargo test -p trames-wayland --lib clipboard_permission --locked
@@ -594,7 +608,7 @@ jobs:
             apps/ios/build/device/Build/Products/Release-iphoneos/Trames.app \
             apps/ios/build/sideload/Trames-unsigned.ipa
       - uses: actions/upload-artifact@v4
-        if: needs.scope.outputs.zink_graphics_run != ''
+        if: needs.scope.outputs.zink_graphics_run != '' || needs.scope.outputs.native_scope == 'worker-handoff'
         with:
           name: vulkan-compute-driver-and-native-source
           path: |

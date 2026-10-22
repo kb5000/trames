@@ -20,7 +20,7 @@ impl CoherentBytes {
         bytes.resize(size, 0);
         Ok(Self { bytes, budget })
     }
-    pub(super) fn initialize(&mut self, m: &Memory, guest: u64) -> Result<()> {
+    pub(super) fn initialize(&mut self, m: &impl CpuMemory, guest: u64) -> Result<()> {
         m.read(guest, &mut self.bytes)?;
         Ok(())
     }
@@ -65,7 +65,7 @@ unsafe fn download(guest: &mut [u8], baseline: &mut [u8], native: *const u8) -> 
 }
 pub(super) fn synchronize(
     map: &mut Mapping,
-    m: &mut Memory,
+    m: &mut impl CpuMemory,
     offset: u64,
     len: u64,
     up: bool,
@@ -86,11 +86,11 @@ pub(super) fn synchronize(
             .min((trames_memory::PAGE_SIZE - address % trames_memory::PAGE_SIZE) as usize);
         let baseline = &mut coherent.bytes[start + at..start + at + n];
         let (count, direct) = if up {
-            m.with_read_chunk(address, n, |bytes| unsafe {
+            m.cpu_read_chunk(address, n, |bytes| unsafe {
                 upload(bytes, baseline, native.add(at))
             })?
         } else {
-            m.with_write_chunk(address, n, |bytes| unsafe {
+            m.cpu_write_chunk(address, n, |bytes| unsafe {
                 download(bytes, baseline, native.add(at))
             })?
         };
@@ -115,7 +115,7 @@ impl Backend {
         self.transfers.direct_bytes += t.direct_bytes;
         self.transfers.buffered_bytes += t.buffered_bytes;
     }
-    pub(super) fn coherent_sync(&mut self, m: &mut Memory, up: bool) -> Result<()> {
+    pub(super) fn coherent_sync(&mut self, m: &mut impl CpuMemory, up: bool) -> Result<()> {
         let mut totals = TransferMetrics::default();
         for map in self.mappings.values_mut() {
             let t = synchronize(map, m, map.offset, map.size, up)?;

@@ -105,6 +105,8 @@ struct Info {
 enum State {
     Ready,
     Gpu {
+        retired: bool,
+        peer_instructions: u64,
         job: u64,
         pc: u64,
         operation: u64,
@@ -116,9 +118,7 @@ enum State {
     Suspend(u64),
     Vfork(u32),
     Futex {
-        address: u64,
-        key: (u64, u64, u64),
-        bits: u32,
+        wait: std::sync::Arc<crate::futex::Wait>,
         deadline: Option<Instant>,
     },
     Sigwait {
@@ -171,6 +171,24 @@ struct Process {
     seccomp: seccomp::Seccomp,
 }
 impl Process {
+    /// Only unfiltered, untraced already-blocked calls can be adopted without
+    /// another authority evaluation. New calls use Snapshot::admit on-worker.
+    fn worker_io_candidate(&self) -> bool {
+        let State::Blocked(number @ (22 | 63..=66 | 73 | 206 | 207 | 211 | 212 | 441), args) =
+            self.state
+        else {
+            return false;
+        };
+        !self.linux.trace
+            && self.seccomp.mode() == 0
+            && trames_linux::DirectSyscalls::new(self.linux.vfs.direct_descriptors())
+                .supports_call(number, args)
+    }
+
+    fn worker_gpu_candidate(&self) -> bool {
+        matches!(self.state, State::Gpu { retired: true, .. })
+    }
+
     fn frozen(&self, pid: u32) -> bool {
         self.linux.vfs.cgroup_frozen(pid) && self.pending_bits() & (1 << 8) == 0
     }
@@ -241,13 +259,30 @@ struct Kernel {
     memory_limits: super::MemoryLimits,
     cpu_count: usize,
     workers: crate::workers::Pool,
+    futexes: crate::futex::Futexes,
+    futex_ready: Vec<std::sync::Arc<crate::futex::Ticket>>,
     parallel_memory: trames_memory::parallel::Registry,
     parallel_rounds: u64,
     worker_slices: u64,
     worker_chunks: u64,
     worker_syscalls: u64,
+    worker_direct_syscalls: u64,
+    worker_futex_wakes: u64,
+    worker_futex_woken: u64,
+    worker_futex_waits: u64,
+    worker_task_resumes: u64,
+    worker_task_yields: u64,
+    worker_io_waits: u64,
+    worker_service_waits: u64,
+    worker_file_syscalls: u64,
+    worker_socket_syscalls: u64,
+    worker_timer_syscalls: u64,
+    worker_poll_syscalls: u64,
+    worker_gpu_calls: u64,
+    worker_gpu_waits: u64,
     service_requests: u64,
     disk_reads: u64,
+    peak_disk_reads: usize,
     disk_read_bytes: u64,
     service_write_buffer: Vec<u8>,
     serviced_syscalls: u64,
@@ -283,7 +318,7 @@ struct Kernel {
     timers: BTreeMap<i32, events::Timer>,
     next_timer: i32,
     native: trames_accel::native::Registry,
-    gpu: RefCell<BTreeMap<u64, trames_vulkan::Backend>>,
+    gpu: RefCell<BTreeMap<u64, trames_vulkan::Context>>,
     gpu_budget: trames_vulkan::Budget,
     gpu_display: trames_vulkan::Display,
     gpu_compiles: u64,
@@ -363,36 +398,27 @@ impl Kernel {
         }
         self.native
             .authorize_stateful(&p.memory, pc, module, function)?;
-        let value = {
-            let mut gpu = self.gpu.borrow_mut();
-            let backend = gpu.entry(p.vm_id).or_insert_with(|| {
-                trames_vulkan::Backend::with_budget(self.gpu_budget.clone())
-                    .with_display(self.gpu_display.clone())
-                    .with_wayland(p.linux.vfs.wayland_server())
-            });
-            if matches!(a[0], 110 | 111) && a[2] == 128 {
-                let address = a[1]
-                    .checked_add(8)
-                    .ok_or(trames_accel::native::Error::InvalidEntry)?;
-                let fd = p
-                    .memory
-                    .read_u64(address)
-                    .map_err(trames_accel::native::Error::Memory)?;
-                let authenticated = u32::try_from(fd)
-                    .ok()
-                    .and_then(|fd| p.linux.vfs.wayland_connection(fd).ok());
-                backend.authenticate_wayland(authenticated);
-            }
-            let before = backend.transfers;
-            let result = backend.invoke(&mut p.memory, a[0], a[1], a[2]);
-            self.gpu_transfers.upload_bytes += backend.transfers.upload_bytes - before.upload_bytes;
-            self.gpu_transfers.download_bytes +=
-                backend.transfers.download_bytes - before.download_bytes;
-            self.gpu_transfers.direct_bytes += backend.transfers.direct_bytes - before.direct_bytes;
-            self.gpu_transfers.buffered_bytes +=
-                backend.transfers.buffered_bytes - before.buffered_bytes;
-            result.map_err(trames_accel::native::Error::Memory)?
+        let backend = self.gpu_context(p);
+        let authenticated = if matches!(a[0], 110 | 111) && a[2] == 128 {
+            let address = a[1]
+                .checked_add(8)
+                .ok_or(trames_accel::native::Error::InvalidEntry)?;
+            let fd = p
+                .memory
+                .read_u64(address)
+                .map_err(trames_accel::native::Error::Memory)?;
+            u32::try_from(fd)
+                .ok()
+                .and_then(|fd| p.linux.vfs.wayland_connection(fd).ok())
+        } else {
+            None
         };
+        let (value, transfers) = backend.invoke(&mut p.memory, a[0], a[1], a[2], authenticated);
+        self.gpu_transfers.upload_bytes += transfers.upload_bytes;
+        self.gpu_transfers.download_bytes += transfers.download_bytes;
+        self.gpu_transfers.direct_bytes += transfers.direct_bytes;
+        self.gpu_transfers.buffered_bytes += transfers.buffered_bytes;
+        let value = value.map_err(trames_accel::native::Error::Memory)?;
         let value = match value {
             trames_vulkan::Invocation::Complete(value) => value,
             trames_vulkan::Invocation::Pending(job) => {
@@ -404,6 +430,8 @@ impl Kernel {
                     .count();
                 self.gpu_peak_pending = self.gpu_peak_pending.max(pending);
                 p.state = State::Gpu {
+                    retired: false,
+                    peer_instructions: 0,
                     job,
                     pc,
                     operation: a[0],
@@ -430,8 +458,23 @@ impl Kernel {
             fallback: false,
         }))
     }
+    fn gpu_context(&self, p: &Process) -> trames_vulkan::Context {
+        self.gpu
+            .borrow_mut()
+            .entry(p.vm_id)
+            .or_insert_with(|| {
+                trames_vulkan::Context::new(
+                    trames_vulkan::Backend::with_budget(self.gpu_budget.clone())
+                        .with_display(self.gpu_display.clone())
+                        .with_wayland(p.linux.vfs.wayland_server()),
+                )
+            })
+            .clone()
+    }
     fn resume_gpu(&mut self, pid: u32, p: &mut Process) -> bool {
         let State::Gpu {
+            retired,
+            peer_instructions,
             job,
             pc,
             operation,
@@ -451,7 +494,8 @@ impl Kernel {
         if matches!(result, Ok(None)) {
             return false;
         }
-        self.gpu_peer_instructions += self.instructions.saturating_sub(instructions);
+        self.gpu_peer_instructions +=
+            peer_instructions + self.instructions.saturating_sub(instructions);
         self.gpu_wait_time += began.elapsed();
         p.state = State::Ready;
         match result {
@@ -470,7 +514,9 @@ impl Kernel {
                 p.cpu.set_x(0, value);
                 p.cpu.set_x(1, 0);
                 p.cpu.pc = pc + 4;
-                self.instructions += 1;
+                if !retired {
+                    self.instructions += 1;
+                }
             }
             Err(error) => {
                 self.synchronous_fault(pid, p, &trames_cpu::CpuFault::Memory { pc, error })
@@ -757,6 +803,10 @@ impl Kernel {
                 backend.abandon(*job);
             }
         }
+        // Release active/stopped wait registrations before clear_tid wakes.
+        // A zombie must not stay eligible through a saved stopped State.
+        p.stopped_state = None;
+        p.state = State::Zombie(status);
         let address = p.linux.clear_tid_address();
         p.linux.exit_tid(&mut p.memory);
         self.wake_futex(p, address, u32::MAX, u32::MAX);
@@ -3407,8 +3457,11 @@ impl Kernel {
             }
             // SAFETY: all Views have been prepared before dispatch, this group
             // contains every chosen CPU of this VM and every coordinate handle
-            // belongs to this Kernel. Maps/signals/futex and coordinate access
-            // wait for all workers to drop their Views. Ready-I/O services take
+            // belongs to this Kernel. All runnable/parked cohort Views are
+            // prepared here; moving their owned Box does not clone a View.
+            // Maps/signals and coordinate byte access wait for the whole cohort
+            // to stop and release its Views. Worker futex reads use their own
+            // View and queue synchronization, never coordinate bytes. Services take
             // this very View while its CPU is parked, never another byte owner;
             // async disk jobs use host buffers only. Admission requires matching
             // snapshots and no external View in any generation. Multiple CPUs
@@ -3422,23 +3475,6 @@ impl Kernel {
                 }
             }
         }
-    }
-    fn private_futex_waiters(&self) -> BTreeMap<u64, std::sync::Arc<BTreeMap<u64, u32>>> {
-        let mut waiters = BTreeMap::<u64, BTreeMap<u64, u32>>::new();
-        for p in self.processes.values() {
-            if let State::Futex {
-                key: (0, vm, address),
-                bits,
-                ..
-            } = p.state
-            {
-                *waiters.entry(vm).or_default().entry(address).or_default() |= bits;
-            }
-        }
-        waiters
-            .into_iter()
-            .map(|(vm, keys)| (vm, std::sync::Arc::new(keys)))
-            .collect()
     }
     fn parallel_round(
         &mut self,
@@ -3457,12 +3493,9 @@ impl Kernel {
             return Ok(false);
         }
         if self.cpu_count < 2
-            || self
-                .processes
-                .iter()
-                .filter(|(id, p)| matches!(p.state, State::Ready) && !p.frozen(**id))
-                .count()
-                < 2
+            || !self.processes.iter().any(|(id, p)| {
+                (matches!(p.state, State::Ready) || p.worker_gpu_candidate()) && !p.frozen(*id)
+            })
         {
             return Ok(false);
         }
@@ -3474,13 +3507,19 @@ impl Kernel {
                 continue;
             };
             if !matches!(p.state, State::Zombie(_)) && !p.frozen(id) {
-                self.resume_gpu(id, &mut p);
+                if !p.worker_gpu_candidate() {
+                    self.resume_gpu(id, &mut p);
+                }
                 self.resume_event(&mut p);
                 if self.deliver(id, &mut p).is_err() {
                     self.exit(id, &mut p, 11);
                 }
                 // call/control/deliver publish resource changes immediately.
                 match p.state.clone() {
+                    State::Blocked(..) if p.worker_io_candidate() => {
+                        // The worker owns the retry; do not perform byte I/O in
+                        // the coordinator before preparing its execution View.
+                    }
                     State::Blocked(number, a) => self.call(id, &mut p, number, a, io),
                     State::Sleep(deadline, _) if Instant::now() >= deadline => {
                         p.state = State::Ready;
@@ -3497,28 +3536,49 @@ impl Kernel {
         let mut ready: Vec<_> = self
             .processes
             .iter()
-            .filter(|(id, p)| matches!(p.state, State::Ready) && !p.frozen(**id))
+            .filter(|(id, p)| {
+                (matches!(p.state, State::Ready) || p.worker_gpu_candidate()) && !p.frozen(**id)
+            })
             .map(|(&id, _)| id)
             .collect();
         let rotate = ready.partition_point(|id| *id <= self.next_parallel_pid);
         ready.rotate_left(rotate);
-        let mut chosen = assign_cpus(
-            ready
-                .into_iter()
-                .map(|id| (id, self.processes[&id].affinity)),
-            self.cpu_count,
-        );
-        let remaining = limit.saturating_sub(self.instructions);
-        chosen.truncate(remaining.min(chosen.len() as u64) as usize);
-        if chosen.len() < 2 {
+        // Freeze a complete execution cohort before launch. Retained blocked
+        // Views may move to a worker on wake, but are never cloned mid-epoch.
+        let vms: std::collections::BTreeSet<_> =
+            ready.iter().map(|id| self.processes[id].vm_id).collect();
+        let mut members: Vec<_> = ready.iter().map(|&id| (id, 0)).collect();
+        members.extend(self.processes.iter().filter_map(|(&id, p)| {
+            if p.frozen(id) {
+                return None;
+            }
+            ((matches!(p.state, State::Futex { .. }) && vms.contains(&p.vm_id))
+                || p.worker_io_candidate())
+            .then_some((id, 0))
+        }));
+        if members.len() < 2
+            && !members
+                .iter()
+                .any(|(id, _)| self.processes[id].worker_gpu_candidate())
+        {
             return Ok(false);
         }
-        // Resolve deadlines while kernel/backing objects are quiescent. Workers
-        // then run continuously; only an event, a fairness/timer/control poll,
-        // or the shared session budget asks all CPUs to return.
+        let chosen = assign_cpus(
+            members
+                .iter()
+                .map(|(id, _)| (*id, self.processes[id].affinity)),
+            self.cpu_count,
+        );
+        if chosen.is_empty() {
+            return Ok(false);
+        }
+        let remaining = limit.saturating_sub(self.instructions);
+        if remaining == 0 {
+            return Ok(false);
+        }
         let timeout = self.parallel_timeout();
         let began = Instant::now();
-        let Some(mut views) = self.prepare_parallel_views(&chosen) else {
+        let Some(mut views) = self.prepare_parallel_views(&members) else {
             return Ok(false);
         };
         self.admit_private_views(&mut views);
@@ -3529,55 +3589,99 @@ impl Kernel {
                 .map_err(|_| RuntimeError::Arguments("cannot start CPU worker"))?;
         }
         let control = std::sync::Arc::new(crate::workers::Control::new(remaining));
-        let futex_waiters = self.private_futex_waiters();
-        let no_futex_waiters = std::sync::Arc::new(BTreeMap::new());
+        let epoch = crate::run_queue::Epoch::new(control.clone());
+        let mut file_epoch = trames_vfs::FileEpoch::default();
         let began = Instant::now();
-        for (id, slot, view) in views {
-            let p = self.processes.get_mut(&id).expect("ready process");
-            if p.last_cpu != slot {
-                p.cpu.clear_exclusive();
-            }
-            let cpu = std::mem::take(&mut p.cpu);
-            self.workers
-                .dispatch(
-                    slot,
-                    crate::workers::Work {
-                        pid: id,
-                        cpu,
-                        memory: view,
-                        control: control.clone(),
-                        syscalls: (!p.linux.trace).then(|| {
-                            let c = &p.linux.vfs.credentials;
-                            crate::worker_syscalls::Snapshot {
-                                seccomp: p.seccomp.clone(),
-                                identities: [
-                                    p.linux.vfs.visible_pid(p.tgid) as u64,
-                                    p.linux.vfs.visible_pid(p.parent) as u64,
-                                    c.uid as u64,
-                                    c.euid as u64,
-                                    c.gid as u64,
-                                    c.egid as u64,
-                                    p.linux.vfs.visible_pid(id) as u64,
-                                ],
-                                started: self.started,
-                                processor: slot as u32,
-                                profile: self.profile_syscalls,
-                                streams: p.linux.vfs.stream_descriptors(),
-                                files: p.linux.vfs.file_descriptors(),
-                                fd_flags: p.linux.vfs.fd_flags_snapshot(),
-                                futex_waiters: futex_waiters
-                                    .get(&p.vm_id)
-                                    .unwrap_or(&no_futex_waiters)
-                                    .clone(),
-                            }
-                        }),
+        for (id, _, view) in views {
+            let p = &self.processes[&id];
+            let gpu = accelerated(p, trames_vulkan::AUXV_KEY, trames_vulkan::PROFILE).then(|| {
+                crate::gpu::Authority {
+                    context: self.gpu_context(p),
+                    auth: p.linux.vfs.wayland_auth_snapshot(),
+                }
+            });
+            let p = self.processes.get_mut(&id).expect("cohort process");
+            let waiting = if let State::Futex { wait, deadline } = &p.state {
+                Some(crate::run_queue::WaitState {
+                    wait: wait.clone(),
+                    deadline: *deadline,
+                })
+            } else {
+                None
+            };
+            let c = &p.linux.vfs.credentials;
+            let work = crate::workers::Work {
+                gpu,
+                pid: id,
+                cpu: std::mem::take(&mut p.cpu),
+                memory: Some(view),
+                control: control.clone(),
+                syscalls: (!p.linux.trace).then(|| crate::worker_syscalls::Snapshot {
+                    seccomp: p.seccomp.clone(),
+                    identities: [
+                        p.linux.vfs.visible_pid(p.tgid) as u64,
+                        p.linux.vfs.visible_pid(p.parent) as u64,
+                        c.uid as u64,
+                        c.euid as u64,
+                        c.gid as u64,
+                        c.egid as u64,
+                        p.linux.vfs.visible_pid(id) as u64,
+                    ],
+                    started: self.started,
+                    processor: p.last_cpu as u32,
+                    profile: self.profile_syscalls,
+                    streams: p.linux.vfs.stream_descriptors(),
+                    files: p.linux.vfs.file_descriptors(),
+                    fd_flags: p.linux.vfs.fd_flags_snapshot(),
+                    direct: trames_linux::DirectSyscalls::new(p.linux.vfs.direct_descriptors())
+                        .with_clock(self.started)
+                        .with_files(
+                            file_epoch.capture(&p.linux.vfs, p.file_size_limit.get().0 == u64::MAX),
+                        ),
+                    futex: crate::futex::Private::new(self.futexes.clone(), p.vm_id),
+                }),
+            };
+            let mut job = crate::run_queue::Job::new(work, p.affinity, p.last_cpu, waiting);
+            if let State::Gpu {
+                job: compile,
+                pc,
+                operation,
+                began,
+                retired: true,
+                instructions,
+                peer_instructions,
+            } = p.state
+            {
+                job.gpu_pending = Some(crate::gpu::Pending::adopted(crate::gpu::Compile {
+                    call: crate::gpu::Call {
+                        pc,
+                        operation,
+                        args: [operation, 0, 0],
                     },
-                )
+                    job: compile,
+                    began,
+                    peer_instructions: peer_instructions
+                        + self.instructions.saturating_sub(instructions),
+                }));
+            }
+            if let State::Blocked(number, args) = p.state {
+                job.retry = Some(crate::run_queue::IoCall {
+                    number,
+                    args,
+                    deadline: p.poll_deadline,
+                });
+            }
+            epoch.add(job);
+        }
+        epoch.assign(&chosen);
+        for &(_, slot) in &chosen {
+            self.workers
+                .launch(slot, epoch.clone())
                 .map_err(|_| RuntimeError::Arguments("CPU worker disconnected"))?;
         }
         self.parallel_dispatch_time += began.elapsed();
-        let mut completed = Vec::new();
         let deadline = Instant::now() + timeout;
+        let mut stopped = 0;
         let mut disk = DiskEpoch::default();
         loop {
             let left = deadline.saturating_duration_since(Instant::now());
@@ -3589,10 +3693,11 @@ impl Kernel {
                 .event_timeout(left)
                 .map_err(|_| RuntimeError::Arguments("CPU worker failed"))?
             {
-                Some(crate::workers::Event::Done(done)) => {
-                    completed.push(*done);
+                Some(crate::workers::Event::EpochStopped(_)) => {
+                    stopped += 1;
                     break;
                 }
+                Some(crate::workers::Event::Done(_)) => unreachable!("cohort completion"),
                 Some(crate::workers::Event::Service(request)) => {
                     self.service_requests += 1;
                     if !self.epoch_request(request, &mut disk, io) {
@@ -3608,7 +3713,7 @@ impl Kernel {
                 None => break,
             }
         }
-        control.stop();
+        epoch.stop();
         let began = Instant::now();
         // An already submitted read must finish/commit exactly once before
         // mapping, process or FD mutation. Do not wait in Pool::complete while
@@ -3616,13 +3721,14 @@ impl Kernel {
         for request in disk.waiting.drain(..) {
             request.respond(None);
         }
-        while completed.len() < chosen.len() || disk.in_flight != 0 {
+        while stopped < chosen.len() || disk.in_flight != 0 || epoch.pending_services() != 0 {
             match self
                 .workers
                 .event_timeout(Duration::from_secs(1))
                 .map_err(|_| RuntimeError::Arguments("CPU worker failed"))?
             {
-                Some(crate::workers::Event::Done(done)) => completed.push(*done),
+                Some(crate::workers::Event::EpochStopped(_)) => stopped += 1,
+                Some(crate::workers::Event::Done(_)) => unreachable!("cohort completion"),
                 Some(crate::workers::Event::Service(request)) => request.respond(None),
                 Some(crate::workers::Event::DiskRead(id, result)) => {
                     self.finish_disk_read(id, result, &mut disk);
@@ -3631,6 +3737,9 @@ impl Kernel {
             }
         }
         self.parallel_stop_time += began.elapsed();
+        let completed = epoch.drain();
+        self.gpu_peak_pending = self.gpu_peak_pending.max(epoch.gpu_peak_pending());
+        file_epoch.finish();
         if completed.iter().any(|r| r.outcome.is_none()) {
             for done in completed {
                 self.processes
@@ -3640,13 +3749,13 @@ impl Kernel {
             }
             return Err(RuntimeError::Arguments("CPU worker panicked"));
         }
-        // First restore *all* CPUs and bytes, then handle exits/exec/fork, which
-        // may remove peers. This also makes FUTEX_WAIT compare+enqueue indivisible
-        // with respect to guest stores and all FUTEX_WAKE operations.
+        // Release every cohort View and restore all CPUs/bytes before handling
+        // exits/exec/fork, which may remove peers. Worker WAIT already compared
+        // and enqueued under its futex bucket; completed calls are not replayed.
         let began = Instant::now();
-        for (index, &(id, _)) in chosen.iter().enumerate() {
+        for (index, &(id, _)) in members.iter().enumerate() {
             let vm_id = self.processes[&id].vm_id;
-            if chosen[..index]
+            if members[..index]
                 .iter()
                 .any(|&(peer, _)| self.processes[&peer].vm_id == vm_id)
             {
@@ -3667,13 +3776,35 @@ impl Kernel {
                 .get_mut(&done.pid)
                 .expect("dispatched process");
             p.cpu = done.cpu;
+            p.state = if let Some(compile) = done.gpu_pending {
+                State::Gpu {
+                    retired: true,
+                    peer_instructions: compile.peer_instructions,
+                    job: compile.job,
+                    pc: compile.call.pc,
+                    operation: compile.call.operation,
+                    began: compile.began,
+                    instructions: self.instructions,
+                }
+            } else if let Some(call) = done.io {
+                p.poll_deadline = call.deadline;
+                State::Blocked(call.number, call.args)
+            } else {
+                p.poll_deadline = None;
+                done.waiting.map_or(State::Ready, |w| State::Futex {
+                    wait: w.wait,
+                    deadline: w.deadline,
+                })
+            };
             if let Some((pc, module, function)) = done.rejected_native {
                 p.linux.vfs.log(4,&format!("pid={} NativeCall rejected module={module:#x} function={function} pc={pc:#x} comm={:?}",done.pid,String::from_utf8_lossy(&p.linux.command_name)));
             }
             p.last_cpu = done.worker;
             p.cpu_time += done.elapsed;
             self.cpu_total += done.elapsed;
-            self.per_cpu[done.worker] += done.elapsed;
+            for (slot, time) in done.cpu_times.iter().take(self.cpu_count).enumerate() {
+                self.per_cpu[slot] += *time;
+            }
             self.decode_lookups += done.after.lookups - done.before.lookups;
             self.decode_misses += done.after.misses - done.before.misses;
             self.instructions_decoded += done.after.instructions - done.before.instructions;
@@ -3681,17 +3812,63 @@ impl Kernel {
             self.instructions += done.instructions;
             self.worker_chunks += done.chunks;
             self.worker_syscalls += done.syscalls;
+            self.worker_direct_syscalls += done.direct_syscalls;
+            self.worker_futex_wakes += done.futex_wakes;
+            self.worker_futex_woken += done.futex_woken;
             self.serviced_syscalls += done.serviced_syscalls;
             self.service_wait += done.service_wait;
             self.syscalls += done.syscalls + done.serviced_syscalls;
             self.syscall_total += done.syscall_time;
+            self.worker_slices += done.assignments;
+            self.context_switches += done.assignments;
+            self.worker_futex_waits += done.waits;
+            self.worker_task_resumes += done.resumes;
+            self.worker_task_yields += done.yields;
+            self.worker_io_waits += done.io_waits;
+            self.worker_service_waits += done.service_waits;
+            self.worker_file_syscalls += done.file_syscalls;
+            self.worker_socket_syscalls += done.socket_syscalls;
+            self.worker_timer_syscalls += done.timer_syscalls;
+            self.worker_poll_syscalls += done.poll_syscalls;
+            self.worker_gpu_calls += done.gpu.calls;
+            self.worker_gpu_waits += done.gpu.waits;
+            self.gpu_compiles += done.gpu.compiles;
+            self.gpu_wait_time += done.gpu.wait_time;
+            self.gpu_peer_instructions += done.gpu.peer_instructions;
+            self.gpu_transfers.upload_bytes += done.gpu.transfers.upload_bytes;
+            self.gpu_transfers.download_bytes += done.gpu.transfers.download_bytes;
+            self.gpu_transfers.direct_bytes += done.gpu.transfers.direct_bytes;
+            self.gpu_transfers.buffered_bytes += done.gpu.transfers.buffered_bytes;
+            if let Some((pc, operation, value)) = done.gpu.last_error {
+                p.linux.vfs.log(
+                    4,
+                    &format!(
+                        "pid={} Vulkan op={operation} result={} pc={pc:#x} errors={} comm={:?}",
+                        done.pid,
+                        value as i64,
+                        done.gpu.errors,
+                        String::from_utf8_lossy(&p.linux.command_name)
+                    ),
+                );
+            }
             outcomes.push((done.pid, outcome));
         }
         self.parallel_rounds += 1;
-        self.worker_slices += chosen.len() as u64;
-        self.context_switches += chosen.len() as u64;
         self.next_parallel_pid = chosen.last().expect("two workers").0;
+        // Successful worker wakes are already committed. Publish readiness
+        // before any returned syscall (requeue/exit/signal) can change tasks.
+        self.resume_futex_ready();
         outcomes.sort_by_key(|v| v.0);
+        for (id, _) in &outcomes {
+            if let State::Gpu {
+                retired: true,
+                instructions,
+                ..
+            } = &mut self.processes.get_mut(id).unwrap().state
+            {
+                *instructions = self.instructions;
+            }
+        }
         for (id, outcome) in outcomes {
             let Some(mut p) = self.processes.remove(&id) else {
                 continue;
@@ -3730,15 +3907,17 @@ impl Kernel {
             if p.frozen(id) {
                 continue;
             }
-            if matches!(p.state, State::Gpu { .. }) {
+            if matches!(p.state, State::Gpu { .. }) && !p.worker_gpu_candidate() {
                 timeout = timeout.min(Duration::from_millis(1));
             }
-            // An unread expired timerfd remains readable until a guest read or
-            // poll updates it. It must not force zero-length CPU epochs forever.
-            let timerfd = p.linux.vfs.next_timerfd_deadline().filter(|d| *d > now);
-            // A failed/restarted poll can leave a saved deadline on a runnable
-            // or stopped task. Only an active blocked poll needs a wakeup poll.
-            let poll = matches!(p.state, State::Blocked(22 | 72 | 73 | 441, _))
+            // Worker-owned waits schedule their deadlines on the shared run
+            // queue. Only owner-side blocked waits need a timerfd scan/cutoff;
+            // a runnable process with open timers must not pause every CPU.
+            let local_wait = p.worker_io_candidate();
+            let timerfd = (matches!(p.state, State::Blocked(..)) && !local_wait)
+                .then(|| p.linux.vfs.next_timerfd_deadline().filter(|d| *d > now))
+                .flatten();
+            let poll = (!local_wait && matches!(p.state, State::Blocked(22 | 72 | 73 | 441, _)))
                 .then_some(p.poll_deadline)
                 .flatten();
             let socket = matches!(p.state, State::Blocked(..))
@@ -4115,13 +4294,30 @@ pub(super) fn run(
         memory_limits: runtime.memory_limits,
         cpu_count: count,
         workers: crate::workers::Pool::with_profiling(count, runtime.profile_syscalls),
+        futexes: Default::default(),
+        futex_ready: Vec::new(),
         parallel_memory: trames_memory::parallel::Registry::default(),
         parallel_rounds: 0,
         worker_slices: 0,
         worker_chunks: 0,
         worker_syscalls: 0,
+        worker_direct_syscalls: 0,
+        worker_futex_wakes: 0,
+        worker_futex_woken: 0,
+        worker_futex_waits: 0,
+        worker_task_resumes: 0,
+        worker_task_yields: 0,
+        worker_io_waits: 0,
+        worker_service_waits: 0,
+        worker_file_syscalls: 0,
+        worker_socket_syscalls: 0,
+        worker_timer_syscalls: 0,
+        worker_poll_syscalls: 0,
+        worker_gpu_calls: 0,
+        worker_gpu_waits: 0,
         service_requests: 0,
         disk_reads: 0,
+        peak_disk_reads: 0,
         disk_read_bytes: 0,
         service_write_buffer: Vec::new(),
         serviced_syscalls: 0,
@@ -4180,8 +4376,23 @@ pub(super) fn run(
         worker_slices: kernel.worker_slices,
         worker_chunks: kernel.worker_chunks,
         worker_syscalls: kernel.worker_syscalls,
+        worker_direct_syscalls: kernel.worker_direct_syscalls,
+        worker_futex_wakes: kernel.worker_futex_wakes,
+        worker_futex_woken: kernel.worker_futex_woken,
+        worker_futex_waits: kernel.worker_futex_waits,
+        worker_task_resumes: kernel.worker_task_resumes,
+        worker_task_yields: kernel.worker_task_yields,
+        worker_io_waits: kernel.worker_io_waits,
+        worker_service_waits: kernel.worker_service_waits,
+        worker_file_syscalls: kernel.worker_file_syscalls,
+        worker_socket_syscalls: kernel.worker_socket_syscalls,
+        worker_timer_syscalls: kernel.worker_timer_syscalls,
+        worker_poll_syscalls: kernel.worker_poll_syscalls,
+        worker_gpu_calls: kernel.worker_gpu_calls,
+        worker_gpu_waits: kernel.worker_gpu_waits,
         service_requests: kernel.service_requests,
         disk_reads: kernel.disk_reads,
+        peak_disk_reads: kernel.peak_disk_reads,
         disk_read_bytes: kernel.disk_read_bytes,
         serviced_syscalls: kernel.serviced_syscalls,
         service_wait_time: kernel.service_wait,
@@ -4494,13 +4705,30 @@ mod tests {
             memory_limits: super::super::MemoryLimits::default(),
             cpu_count: 1,
             workers: crate::workers::Pool::new(1),
+            futexes: Default::default(),
+            futex_ready: Vec::new(),
             parallel_memory: trames_memory::parallel::Registry::default(),
             parallel_rounds: 0,
             worker_slices: 0,
             worker_chunks: 0,
             worker_syscalls: 0,
+            worker_direct_syscalls: 0,
+            worker_futex_wakes: 0,
+            worker_futex_woken: 0,
+            worker_futex_waits: 0,
+            worker_task_resumes: 0,
+            worker_task_yields: 0,
+            worker_io_waits: 0,
+            worker_service_waits: 0,
+            worker_file_syscalls: 0,
+            worker_socket_syscalls: 0,
+            worker_timer_syscalls: 0,
+            worker_poll_syscalls: 0,
+            worker_gpu_calls: 0,
+            worker_gpu_waits: 0,
             service_requests: 0,
             disk_reads: 0,
+            peak_disk_reads: 0,
             disk_read_bytes: 0,
             service_write_buffer: Vec::new(),
             serviced_syscalls: 0,
@@ -4863,24 +5091,99 @@ mod tests {
         );
     }
     #[test]
-    fn private_futex_snapshot_combines_masks_and_separates_address_spaces() {
+    fn futex_ready_tickets_do_not_wake_a_reused_pid_or_timeout_a_woken_task() {
         let mut k = kernel();
-        for (id, vm, bits) in [(1, 7, 1), (2, 7, 2), (3, 8, 4)] {
-            let mut p = process();
-            p.state = State::Futex {
-                address: 0x1000,
-                key: (0, vm, 0x1000),
-                bits,
-                deadline: None,
-            };
-            k.processes.insert(id, p);
-        }
-        let before = k.private_futex_waiters();
-        assert_eq!(before[&7][&0x1000], 3);
-        assert_eq!(before[&8][&0x1000], 4);
-        k.processes.get_mut(&1).unwrap().state = State::Ready;
-        assert_eq!(k.private_futex_waiters()[&7][&0x1000], 2);
-        assert_eq!(before[&7][&0x1000], 3);
+        let mut p = process();
+        let old = k
+            .futexes
+            .wait((0, 7, 0x1000), 1, 1, || Ok::<_, ()>(()))
+            .unwrap();
+        p.state = State::Futex {
+            wait: old,
+            deadline: None,
+        };
+        k.processes.insert(1, p);
+        assert_eq!(k.futexes.wake((0, 7, 0x1000), 1, 1), 1);
+        let new = k
+            .futexes
+            .wait((0, 7, 0x1000), 1, 1, || Ok::<_, ()>(()))
+            .unwrap();
+        k.processes.get_mut(&1).unwrap().state = State::Futex {
+            wait: new.clone(),
+            deadline: None,
+        };
+        assert!(!k.resume_futex_ready());
+        assert!(matches!(k.processes[&1].state, State::Futex { .. }));
+        assert!(!new.woken());
+        assert_eq!(k.futexes.wake((0, 7, 0x1000), 1, 1), 1);
+        let mut p = k.processes.remove(&1).unwrap();
+        p.state = State::Futex {
+            wait: new,
+            deadline: Some(Instant::now()),
+        };
+        assert!(k.resume_event(&mut p));
+        assert_eq!(p.cpu.x(0), 0); // completed wake wins over the later timeout
+        k.processes.insert(1, p);
+        assert!(!k.resume_futex_ready());
+    }
+    #[test]
+    fn futex_signal_cancels_registration_and_stopped_exit_cannot_leave_a_waiter() {
+        let mut k = kernel();
+        let mut p = process();
+        assert_eq!(
+            k.event_call(1, &mut p, 98, [0x1000, 128, 0, 0, 0, 0]),
+            Ok(None)
+        );
+        p.actions[10].handler = 0x5000;
+        Kernel::queue_one(1, &mut p, 10, 1);
+        assert!(k.deliver(1, &mut p).unwrap());
+        assert_eq!(k.futexes.wake((0, 1, 0x1000), 1, u32::MAX), 0);
+        let mut stopped = process();
+        assert_eq!(
+            k.event_call(2, &mut stopped, 98, [0x1000, 128, 0, 0, 0, 0]),
+            Ok(None)
+        );
+        Kernel::queue_one(2, &mut stopped, 19, 1);
+        assert!(k.deliver(2, &mut stopped).unwrap());
+        assert!(matches!(stopped.state, State::Stopped));
+        k.exit_one(2, &mut stopped, 9);
+        assert!(stopped.stopped_state.is_none());
+        assert_eq!(k.futexes.wake((0, 1, 0x1000), 1, u32::MAX), 0);
+    }
+    #[test]
+    fn futex_requeue_retains_stopped_registration_and_deadline_until_continue() {
+        let mut k = kernel();
+        let mut waiter = process();
+        let mut caller = process();
+        let deadline = Instant::now() + Duration::from_secs(60);
+        let wait = k
+            .futexes
+            .wait((0, 1, 0x1000), 2, 2, || Ok::<_, ()>(()))
+            .unwrap();
+        waiter.state = State::Futex {
+            wait,
+            deadline: Some(deadline),
+        };
+        Kernel::queue_one(2, &mut waiter, 19, 1);
+        assert!(k.deliver(2, &mut waiter).unwrap());
+        k.processes.insert(2, waiter);
+        // CMP_REQUEUE moves the stopped task too; no process-wide scan.
+        assert_eq!(
+            k.event_call(1, &mut caller, 98, [0x1000, 132, 0, 1, 0x2000, 0]),
+            Ok(Some(1))
+        );
+        assert_eq!(k.futexes.wake((0, 1, 0x1000), 1, 2), 0);
+        assert_eq!(k.futexes.wake((0, 1, 0x2000), 1, 1), 0);
+        assert_eq!(k.futexes.wake((0, 1, 0x2000), 1, 2), 1);
+        assert!(!k.resume_futex_ready());
+        let mut p = k.processes.remove(&2).unwrap();
+        assert!(
+            matches!(p.stopped_state.as_deref(), Some(State::Futex { deadline: Some(d), .. }) if *d == deadline)
+        );
+        Kernel::queue_one(2, &mut p, 18, 1);
+        assert!(k.resume_event(&mut p));
+        assert!(matches!(p.state, State::Ready));
+        assert_eq!(p.cpu.x(0), 0);
     }
     #[test]
     fn continuous_peers_cancel_at_control_checkpoints_and_commit_the_exact_budget() {
@@ -4933,6 +5236,26 @@ mod tests {
         assert!(k.parallel_timeout() <= Duration::from_millis(1));
     }
     #[test]
+    fn worker_poll_deadlines_do_not_force_unrelated_cpus_to_checkpoint() {
+        let mut k = spinning_peers();
+        let p = k.processes.get_mut(&1).unwrap();
+        let fd = p.linux.vfs.timerfd(1, 0).unwrap();
+        p.linux
+            .vfs
+            .timerfd_set(
+                fd,
+                Duration::ZERO,
+                Some(Instant::now() + Duration::from_millis(1)),
+            )
+            .unwrap();
+        p.poll_deadline = Some(Instant::now());
+        p.state = State::Blocked(73, [0, 0, 0, 0, 0, 0]);
+        assert_eq!(k.parallel_timeout(), Duration::from_millis(10));
+        // An owner-side pselect still needs its saved timeout boundary.
+        k.processes.get_mut(&1).unwrap().state = State::Blocked(72, [0; 6]);
+        assert_eq!(k.parallel_timeout(), Duration::ZERO);
+    }
+    #[test]
     fn socket_timeout_wakes_continuous_peers_but_not_stopped_or_runnable_tasks() {
         let mut k = spinning_peers();
         k.processes.get_mut(&1).unwrap().socket_deadline = Some(Instant::now());
@@ -4974,6 +5297,8 @@ mod tests {
         let mut p = process();
         let mut k = kernel();
         p.state = State::Gpu {
+            retired: false,
+            peer_instructions: 0,
             job: 1,
             pc: 0x4000,
             operation: 27,
@@ -5000,6 +5325,8 @@ mod tests {
         let mut k = kernel();
         k.instructions = 123;
         p.state = State::Gpu {
+            retired: false,
+            peer_instructions: 0,
             job: 1,
             pc: 0x4000,
             operation: 27,
@@ -5014,6 +5341,35 @@ mod tests {
         assert_eq!(k.instructions, 124);
         assert!(!k.resume_gpu(1, &mut p));
         assert_eq!(k.instructions, 124);
+    }
+    #[test]
+    fn worker_gpu_completion_preserves_accepted_retirement_and_uses_local_deadlines() {
+        let mut p = process();
+        let mut k = kernel();
+        k.instructions = 123;
+        p.state = State::Gpu {
+            retired: true,
+            peer_instructions: 0,
+            job: 1,
+            pc: 0x4000,
+            operation: 27,
+            instructions: 10,
+            began: Instant::now(),
+        };
+        assert!(k.resume_gpu(1, &mut p));
+        assert_eq!(k.instructions, 123);
+        assert_eq!(p.cpu.pc, 0x4004);
+        let mut k = spinning_peers();
+        k.processes.get_mut(&1).unwrap().state = State::Gpu {
+            retired: true,
+            peer_instructions: 0,
+            job: 1,
+            pc: 0x4000,
+            operation: 27,
+            instructions: 0,
+            began: Instant::now(),
+        };
+        assert_eq!(k.parallel_timeout(), Duration::from_millis(10));
     }
     #[test]
     fn session_leader_fifo_open_waits_before_terminal_inspection_and_is_interruptible() {

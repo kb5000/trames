@@ -18,13 +18,17 @@ p.add_argument('--fixture', type=Path, default=Path('tests/fixtures/bin/epoch-se
 p.add_argument('--output', type=Path, required=True)
 p.add_argument('--iterations', type=int, default=512)
 p.add_argument('--samples', type=int, default=2)
-p.add_argument('--modes', nargs='+', choices=['metadata', 'pipe', 'file', 'vector', 'unix', 'mapped-read', 'mapped-shared', 'bulk', 'bulk-parallel', 'io-only'], default=['metadata', 'pipe'])
+p.add_argument('--cpus', type=int, choices=(1, 2, 4), default=4)
+p.add_argument('--file-storage', choices=('memory', 'disk'), default='memory',
+               help='ordinary file/vector backing; bulk modes always use disk')
+p.add_argument('--modes', nargs='+', choices=['metadata', 'pipe', 'eventfd', 'file', 'vector', 'unix', 'mapped-read', 'mapped-shared', 'bulk', 'bulk-parallel', 'io-only'], default=['metadata', 'pipe'])
 p.add_argument('--reuse-baseline', type=Path, help='reuse exact-binary/input baseline rows from a previous batch')
 a = p.parse_args()
 assert a.iterations > 0 and a.samples > 0
 a.output.mkdir(parents=True, exist_ok=False)
 digest = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
-report = dict(host=platform.machine(), guest='aarch64', cpus=4, guest_threads_by_mode={m: (3 if m == 'bulk-parallel' else 2) for m in a.modes},
+report = dict(host=platform.machine(), guest='aarch64', cpus=a.cpus, file_storage=a.file_storage,
+              guest_threads_by_mode={m: (3 if m == 'bulk-parallel' else 2) for m in a.modes},
               iterations=a.iterations, native_bytes_per_fill=1 << 20,
               candidate_sha256=digest(a.candidate), baseline_sha256=digest(a.baseline),
               fixture_sha256=digest(a.fixture), oracle_sha256=digest(a.host_oracle), rows=[],
@@ -35,6 +39,7 @@ if a.reuse_baseline:
     old = json.loads(a.reuse_baseline.read_text())
     for key in ('baseline_sha256', 'fixture_sha256', 'iterations', 'cpus'):
         assert old[key] == report[key], ('baseline input changed', key)
+    assert old.get('file_storage', 'memory') == a.file_storage, 'baseline storage changed'
     report['rows'] = [x for x in old['rows'] if x['version'] == 'before']
     report['rows'] = [x for x in report['rows'] if x['mode'] in a.modes]
     assert {x['mode'] for x in report['rows']} == set(a.modes)
@@ -50,8 +55,9 @@ try:
             if a.reuse_baseline: modes = [('after', a.candidate)]
             if sample % 2: modes.reverse()
             for name, binary in modes:
-                storage = ['--storage', str((a.output / f'{mode}-store-{sample}-{name}').resolve())] if mode.startswith('bulk') or mode == 'io-only' else ['--memory']
-                cmd = [str(binary.resolve()), *storage, '--network', 'off', '--cpus', '4',
+                disk = mode.startswith('bulk') or mode == 'io-only' or a.file_storage == 'disk'
+                storage = ['--storage', str((a.output / f'{mode}-store-{sample}-{name}').resolve())] if disk else ['--memory']
+                cmd = [str(binary.resolve()), *storage, '--network', 'off', '--cpus', str(a.cpus),
                        '--accelerator', 'pure', '--metrics', '--max-instructions', '2000000000',
                        str(a.fixture.resolve()), mode, str(a.iterations)]
                 cpu_before = resource.getrusage(resource.RUSAGE_CHILDREN)
@@ -70,9 +76,10 @@ try:
                 fills = 0 if mode == 'io-only' else a.iterations * (64 if mode.startswith('bulk') else 1)
                 assert native['function_calls'][2] == fills and native['bytes_written'] == fills * (1 << 20), native
                 assert native['fallbacks'] == 0, native
-                assert native['worker_calls'] > 0 or mode == 'io-only', native
-                if name == 'after':
-                    assert runtime['serviced_syscalls'] > 0, runtime
+                if a.cpus > 1:
+                    assert native['worker_calls'] > 0 or mode == 'io-only', native
+                if name == 'after' and a.cpus > 1:
+                    assert runtime['serviced_syscalls'] > 0 or runtime.get('worker_direct_syscalls', 0) > 0, runtime
                     if mode.startswith('bulk') or mode == 'io-only': assert runtime['disk_reads'] > 0, runtime
                 row = dict(mode=mode, guest_threads=3 if mode == 'bulk-parallel' else 2, sample=sample, version=name, wall_seconds=elapsed,
                            host_cpu_seconds=cpu_after.ru_utime + cpu_after.ru_stime - cpu_before.ru_utime - cpu_before.ru_stime,

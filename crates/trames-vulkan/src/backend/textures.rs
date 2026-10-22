@@ -4,7 +4,12 @@
 use super::*;
 
 impl Backend {
-    pub(super) fn texel_view_call(&mut self, m: &mut Memory, op: u64, a: [u64; 16]) -> Result<()> {
+    pub(super) fn texel_view_call(
+        &mut self,
+        m: &mut impl CpuMemory,
+        op: u64,
+        a: [u64; 16],
+    ) -> Result<()> {
         if op == 128 {
             return self.remove(a[1], Kind::BufferView);
         }
@@ -61,7 +66,12 @@ impl Backend {
         let id = self.put(Kind::BufferView, raw.as_raw(), vec![buffer], range, flags);
         self.publish(m, a[5], id)
     }
-    pub(super) fn sampler_call(&mut self, m: &mut Memory, op: u64, a: [u64; 16]) -> Result<()> {
+    pub(super) fn sampler_call(
+        &mut self,
+        m: &mut impl CpuMemory,
+        op: u64,
+        a: [u64; 16],
+    ) -> Result<()> {
         if op == 93 {
             return self.remove(a[1], Kind::Sampler);
         }
@@ -135,7 +145,7 @@ impl Backend {
         self.publish(m, a[9], id)
     }
 
-    pub(super) fn write_descriptors(&self, m: &Memory, a: [u64; 16]) -> Result<()> {
+    pub(super) fn write_descriptors(&self, m: &impl CpuMemory, a: [u64; 16]) -> Result<()> {
         let set = self.object(a[1], Kind::DescriptorSet)?;
         if a[5] > 9 {
             return unsupported();

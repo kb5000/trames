@@ -60,50 +60,8 @@ impl Kernel {
                 .timerfd(a[0] as u32, a[1] as u32)
                 .map(|fd| Some(fd as u64));
         }
-        let clock = p.linux.vfs.timerfd_clock(a[0] as u32)?;
-        let output = if number == 87 { a[1] } else { a[3] };
-        if number == 87 || output != 0 {
-            Linux::check(&p.memory, output, 32, Access::Write)?;
-        }
-        let new = if number == 86 {
-            if a[1] & !3 != 0 {
-                return Err(Errno(22));
-            }
-            if a[1] & 2 != 0 {
-                return Err(Errno(95));
-            }
-            let interval = timespec(&p.memory, a[2])?;
-            let value = timespec(&p.memory, a[2].checked_add(16).ok_or(Errno(14))?)?;
-            let duration = if a[1] & 1 == 0 {
-                value
-            } else {
-                let now = if clock == 0 {
-                    std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .map_err(|_| Errno(5))?
-                } else {
-                    self.started.elapsed()
-                };
-                value.saturating_sub(now)
-            };
-            let deadline = if value.is_zero() {
-                None
-            } else {
-                Some(Instant::now().checked_add(duration).ok_or(Errno(22))?)
-            };
-            Some((interval, deadline))
-        } else {
-            None
-        };
-        let (interval, remaining) = p.linux.vfs.timerfd_get(a[0] as u32)?;
-        if number == 87 || output != 0 {
-            put_timespec(&mut p.memory, output, interval)?;
-            put_timespec(&mut p.memory, output + 16, remaining)?;
-        }
-        if let Some((interval, deadline)) = new {
-            p.linux.vfs.timerfd_set(a[0] as u32, interval, deadline)?;
-        }
-        Ok(Some(0))
+        let timer = p.linux.vfs.timerfd_resource(a[0] as u32)?;
+        trames_linux::timerfd_control(&timer, number, a, &mut p.memory, self.started).map(Some)
     }
     pub(super) fn epoll(
         &self,
@@ -112,24 +70,7 @@ impl Kernel {
         a: [u64; 6],
         io: &mut impl GuestOutput,
     ) -> Result<Option<u64>, Errno> {
-        if a[2] == 0 || a[2] > (MAX_WRITE / 16) as u64 {
-            return Err(Errno(22));
-        }
-        Linux::check(&p.memory, a[1], a[2] as usize * 16, Access::Write)?;
-        let timeout = if number == 441 {
-            if a[3] == 0 {
-                None
-            } else {
-                Some(timespec(&p.memory, a[3])?)
-            }
-        } else {
-            let ms = a[3] as i32;
-            if ms < 0 {
-                None
-            } else {
-                Some(Duration::from_millis(ms as u64))
-            }
-        };
+        let timeout = trames_linux::epoll_parameters(&p.memory, number, a)?;
         let mask = if a[4] == 0 {
             None
         } else {
@@ -169,13 +110,7 @@ impl Kernel {
             }
         }
         if !ready.is_empty() || p.poll_deadline.is_some_and(|d| Instant::now() >= d) {
-            for (i, (events, data)) in ready.iter().enumerate() {
-                let address = a[1] + i as u64 * 16;
-                let mut bytes = [0; 16];
-                bytes[..4].copy_from_slice(&events.to_le_bytes());
-                bytes[8..].copy_from_slice(&data.to_le_bytes());
-                p.memory.write(address, &bytes).map_err(|_| Errno(14))?;
-            }
+            trames_linux::epoll_scatter(&mut p.memory, a[1], &ready)?;
             if let Some(mask) = p.poll_mask.take() {
                 p.mask = mask;
             }
@@ -206,24 +141,43 @@ impl Kernel {
         Ok((0, p.vm_id, address & 0x00ffffffffffffff))
     }
     fn wake_futex_key(&mut self, key: (u64, u64, u64), count: u32, bits: u32) -> u64 {
-        let mut woke = 0;
-        for p in self.processes.values_mut() {
-            if woke >= count as u64 {
-                break;
-            }
-            if matches!(p.state, State::Futex { key:k, bits:b, .. } if k==key && b & bits != 0) {
-                p.state = State::Ready;
-                p.cpu.set_x(0, 0);
-                woke += 1;
-            }
+        let woke = self.futexes.wake(key, count, bits);
+        if woke != 0 {
+            self.resume_futex_ready();
         }
         woke
     }
+    pub(super) fn resume_futex_ready(&mut self) -> bool {
+        let mut ready = std::mem::take(&mut self.futex_ready);
+        self.futexes.take_ready(&mut ready);
+        let mut progress = false;
+        for ticket in ready.drain(..) {
+            let Some(p) = self.processes.get_mut(&ticket.pid) else {
+                continue;
+            };
+            // PID reuse or a preceding signal/exit cannot apply an old wake to
+            // a different wait. Stopped tasks retain the ticket until SIGCONT.
+            if matches!(&p.state, State::Futex { wait, .. } if std::sync::Arc::ptr_eq(&wait.ticket, &ticket))
+            {
+                p.state = State::Ready;
+                p.cpu.set_x(0, 0);
+                progress = true;
+            }
+        }
+        self.futex_ready = ready;
+        progress
+    }
     pub(super) fn resume_event(&mut self, p: &mut Process) -> bool {
         match p.state {
+            State::Futex { ref wait, .. } if wait.woken() => {
+                p.state = State::Ready;
+                p.cpu.set_x(0, 0);
+                true
+            }
             State::Futex {
-                deadline: Some(d), ..
-            } if Instant::now() >= d => {
+                ref wait,
+                deadline: Some(d),
+            } if Instant::now() >= d && wait.timeout() => {
                 p.state = State::Ready;
                 p.cpu.set_x(0, error(Errno(110)));
                 true
@@ -342,37 +296,18 @@ impl Kernel {
                 let key = Self::futex_key(p, a[0], a[1] & 128 != 0)?;
                 match op {
                     0 | 9 => {
-                        let bits = if op == 9 { a[5] as u32 } else { u32::MAX };
-                        if bits == 0 {
-                            return Err(Errno(22));
-                        }
-                        let deadline = if a[3] == 0 {
-                            None
-                        } else {
-                            let mut duration = timespec(&p.memory, a[3])?;
-                            if op == 9 {
-                                let now = if a[1] & 256 != 0 {
-                                    std::time::SystemTime::now()
-                                        .duration_since(std::time::UNIX_EPOCH)
-                                        .map_err(|_| Errno(5))?
-                                } else {
-                                    self.started.elapsed()
-                                };
-                                duration = duration.saturating_sub(now);
-                            } else if a[1] & 256 != 0 {
-                                return Err(Errno(38));
+                        let (bits, deadline) = crate::worker_syscalls::futex_wait_parameters(
+                            &p.memory,
+                            a,
+                            self.started,
+                        )?;
+                        let wait = self.futexes.wait(key, pid, bits, || {
+                            if read_u32(&p.memory, a[0])? != a[2] as u32 {
+                                return Err(Errno(11));
                             }
-                            Some(Instant::now().checked_add(duration).ok_or(Errno(22))?)
-                        };
-                        if read_u32(&p.memory, a[0])? != a[2] as u32 {
-                            return Err(Errno(11));
-                        }
-                        p.state = State::Futex {
-                            address: a[0],
-                            key,
-                            bits,
-                            deadline,
-                        };
+                            Ok(())
+                        })?;
+                        p.state = State::Futex { wait, deadline };
                         Ok(None)
                     }
                     1 | 10 => {
@@ -395,24 +330,19 @@ impl Kernel {
                         }
                         let new_key = Self::futex_key(p, a[4], a[1] & 128 != 0)?;
                         let woke = self.wake_futex_key(key, a[2] as u32, u32::MAX);
-                        let mut moved = 0;
-                        for other in self.processes.values_mut() {
-                            if moved >= a[3] {
-                                break;
-                            }
-                            if let State::Futex {
-                                address,
-                                key: old_key,
-                                ..
-                            } = &mut other.state
+                        let processes = &self.processes;
+                        let moved = self.futexes.requeue(key, new_key, a[3] as u32, |ticket| {
+                            let other = &processes[&ticket.pid];
+                            for state in
+                                std::iter::once(&other.state).chain(other.stopped_state.as_deref())
                             {
-                                if *old_key == key {
-                                    *address = a[4];
-                                    *old_key = new_key;
-                                    moved += 1;
+                                if let State::Futex { wait, .. } = state {
+                                    if std::sync::Arc::ptr_eq(&wait.ticket, ticket) {
+                                        crate::futex::Futexes::moved(wait, new_key);
+                                    }
                                 }
                             }
-                        }
+                        });
                         Ok(Some(woke + moved))
                     }
                     _ => Err(Errno(38)),

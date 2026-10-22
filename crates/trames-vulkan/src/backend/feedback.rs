@@ -14,7 +14,7 @@ impl Device {
     }
 }
 impl zink::Capabilities {
-    pub(super) fn write_feedback(&self, m: &mut Memory, at: u64) -> Result<()> {
+    pub(super) fn write_feedback(&self, m: &mut impl CpuMemory, at: u64) -> Result<()> {
         let p = self.feedback.unwrap_or_default();
         write_words(
             m,
@@ -69,7 +69,7 @@ fn query_layout(ty: u32, count: u64, stride: u64, flags: u64) -> Result<(usize, 
 impl Backend {
     pub(super) fn feedback_call(
         &mut self,
-        m: &mut Memory,
+        m: &mut impl CpuMemory,
         op: u64,
         a: [u64; 16],
         dev: &Arc<Device>,

@@ -92,11 +92,11 @@ impl Kernel {
                     return Err(Errno(22));
                 }
                 let (parts, count) = if matches!(request.number, 65 | 69) {
-                    let (parts, count) = Linux::readv_parts(&request.memory, a)?;
+                    let (parts, count) = Linux::readv_parts(request.memory(), a)?;
                     (ReadParts::Vector(parts), count)
                 } else {
                     let count = a[2].min(trames_linux::MAX_WRITE as u64) as usize;
-                    Linux::check(&request.memory, a[1], count, trames_memory::Access::Write)?;
+                    Linux::check(request.memory(), a[1], count, trames_memory::Access::Write)?;
                     (ReadParts::Scalar(a[1]), count)
                 };
                 if count < 16 * 1024 {
@@ -110,12 +110,20 @@ impl Kernel {
             };
             match prepare() {
                 Ok(Some((read, job, parts))) => {
+                    if disk.in_flight >= self.cpu_count {
+                        // Slot-free callers must not create unbounded 1 MiB
+                        // buffers. Preparation above has no byte/OFD effects;
+                        // metadata-only waiters retry admission on completion.
+                        disk.waiting.push_back(request);
+                        return true;
+                    }
                     let id = disk.insert(PendingDiskRead {
                         request,
                         read,
                         parts,
                     });
                     self.disk_reads += 1;
+                    self.peak_disk_reads = self.peak_disk_reads.max(disk.in_flight);
                     self.workers.disk_read(id, job);
                     return true;
                 }
@@ -141,7 +149,7 @@ impl Kernel {
         let result = pending.read.finish(result).and_then(|bytes| {
             self.disk_read_bytes += bytes.len() as u64;
             let count = bytes.len() as u64;
-            let copied = pending.parts.scatter(&mut pending.request.memory, &bytes);
+            let copied = pending.parts.scatter(pending.request.memory_mut(), &bytes);
             self.workers.recycle_disk_buffer(bytes);
             copied.map(|()| count)
         });
@@ -217,25 +225,26 @@ impl Kernel {
         p.linux.vfs.set_lock_owner(p.tgid);
         p.linux.vfs.set_file_size_limit(p.file_size_limit.get().0);
         let began = self.profile_syscalls.then(Instant::now);
-        let result = match request.number {
-            63 => p.linux.read(a, &mut request.memory, io),
+        let number = request.number;
+        let result = match number {
+            63 => p.linux.read(a, request.memory_mut(), io),
             64 => p
                 .linux
-                .write_scratch(a, &request.memory, io, &mut self.service_write_buffer),
-            65 => p.linux.readv(a, &mut request.memory, io),
+                .write_scratch(a, request.memory(), io, &mut self.service_write_buffer),
+            65 => p.linux.readv(a, request.memory_mut(), io),
             66 => p
                 .linux
-                .writev_scratch(a, &request.memory, io, &mut self.service_write_buffer),
+                .writev_scratch(a, request.memory(), io, &mut self.service_write_buffer),
             67 | 68 => p.linux.positioned_scratch(
                 a,
-                &mut request.memory,
-                request.number == 68,
+                request.memory_mut(),
+                number == 68,
                 &mut self.service_write_buffer,
             ),
             69 | 70 => p.linux.positioned_vector_scratch(
                 a,
-                &mut request.memory,
-                request.number == 70,
+                request.memory_mut(),
+                number == 70,
                 &mut self.service_write_buffer,
             ),
             82 | 83 => p
@@ -243,7 +252,7 @@ impl Kernel {
                 .vfs
                 .sync_fd(a[0] as u32, request.number == 83)
                 .map(|()| 0),
-            number => p.linux.fd_query(number, a, &mut request.memory),
+            number => p.linux.fd_query(number, a, request.memory_mut()),
         };
         if let Some(began) = began {
             self.syscall_total += began.elapsed();
@@ -296,7 +305,8 @@ mod tests {
             streams: p.linux.vfs.stream_descriptors(),
             files: p.linux.vfs.file_descriptors(),
             fd_flags: p.linux.vfs.fd_flags_snapshot(),
-            futex_waiters: Default::default(),
+            direct: Default::default(),
+            futex: Default::default(),
         };
         let memory = p.memory.parallel_view(&mut Default::default()).unwrap();
         let control = Arc::new(Control::new(100));
@@ -307,9 +317,10 @@ mod tests {
             .dispatch(
                 0,
                 Work {
+                    gpu: None,
                     pid: 1,
                     cpu,
-                    memory,
+                    memory: Some(memory),
                     control: control.clone(),
                     syscalls: Some(snapshot),
                 },
@@ -359,6 +370,87 @@ mod tests {
         let fd = p.linux.vfs.open_at(AT_FDCWD, b"/data", 2, 0).unwrap();
         p.memory.map(0x10000, 32768, Permissions::RW).unwrap();
         (path, p, fd)
+    }
+    #[test]
+    fn disk_slots_bound_in_flight_reads_and_resume_metadata_only_waiters() {
+        let (path, p, fd) = disk_process();
+        let mut peer = super::super::tests::process();
+        peer.linux.vfs = p.linux.vfs.clone();
+        peer.memory.map(0x10000, 32768, Permissions::RW).unwrap();
+        let args = [fd as u64, 0x10000, 32768, 0, 0, 0];
+        let (mut k, request, control) = pending(p, 67, args);
+        k.cpu_count = 1;
+        let mut disk = DiskEpoch::default();
+        let mut io = trames_linux::CapturedOutput::default();
+        assert!(k.epoch_request(request, &mut disk, &mut io));
+        let Some(Event::DiskRead(id, result)) =
+            k.workers.event_timeout(Duration::from_secs(5)).unwrap()
+        else {
+            panic!("missing disk completion");
+        };
+        // Hold the first result uncommitted while another independent pread
+        // arrives. It must queue without submitting another buffer/job.
+        let (mut peer_kernel, mut request, peer_control) = pending(peer, 67, args);
+        request.pid = 2;
+        k.processes
+            .insert(2, peer_kernel.processes.remove(&1).unwrap());
+        assert!(k.epoch_request(request, &mut disk, &mut io));
+        assert_eq!(
+            (
+                disk.in_flight,
+                disk.waiting.len(),
+                k.disk_reads,
+                k.peak_disk_reads
+            ),
+            (1, 1, 1, 1)
+        );
+        control.stop();
+        peer_control.stop();
+        k.finish_disk_read(id, result, &mut disk);
+        assert!(k.resume_disk_waiters(&mut disk, &mut io));
+        assert_eq!(
+            (
+                disk.in_flight,
+                disk.waiting.len(),
+                k.disk_reads,
+                k.peak_disk_reads
+            ),
+            (1, 0, 2, 1)
+        );
+        let mut first = None;
+        while first.is_none() || disk.in_flight != 0 {
+            match k.workers.event_timeout(Duration::from_secs(5)).unwrap() {
+                Some(Event::DiskRead(id, result)) => k.finish_disk_read(id, result, &mut disk),
+                Some(Event::Done(done)) => first = Some(done),
+                _ => panic!("missing disk/CPU completion"),
+            }
+        }
+        let second = peer_kernel
+            .workers
+            .complete_timeout(Duration::from_secs(5))
+            .unwrap()
+            .unwrap();
+        assert_eq!((first.unwrap().cpu.x(0), second.cpu.x(0)), (32768, 32768));
+        assert_eq!(
+            k.processes
+                .get_mut(&1)
+                .unwrap()
+                .linux
+                .vfs
+                .seek(fd, 0, 1)
+                .unwrap(),
+            0
+        );
+        for process in k.processes.values_mut() {
+            process.memory.commit_parallel().unwrap();
+            assert_eq!(
+                process.memory.read_array::<32768>(0x10000).unwrap(),
+                [0xa5; 32768]
+            );
+        }
+        drop(peer_kernel);
+        drop(k);
+        std::fs::remove_dir_all(path).unwrap();
     }
     #[test]
     fn disk_scalar_vector_and_positioned_reads_complete_once_after_stop() {
@@ -640,7 +732,7 @@ mod tests {
             .unwrap();
         let args = [fd as u64, 0x2000, 3, 0, 0, 0];
         let (mut k, mut request, control) = pending(p, 63, args);
-        request.memory.write(0x6000, b"new").unwrap();
+        request.memory_mut().write(0x6000, b"new").unwrap();
         assert_eq!(k.processes[&1].linux.vfs.pread(fd, 3, 0).unwrap(), b"new");
         let value = k.service_request(&mut request, &mut trames_linux::CapturedOutput::default());
         assert_eq!(value, None);
@@ -732,7 +824,7 @@ mod tests {
             .map_backed(0x6000, pages, false, Permissions::RW, true)
             .unwrap();
         let (mut k, mut request, control) = pending(p, 63, [fd as u64, 0x2000, 3, 0, 0, 0]);
-        request.memory.write(0x6000, b"own").unwrap();
+        request.memory_mut().write(0x6000, b"own").unwrap();
         let value = k.service_request(&mut request, &mut trames_linux::CapturedOutput::default());
         assert_eq!(value, Some(3));
         finish(&mut k, request, control, value);
@@ -809,7 +901,7 @@ mod tests {
         let (mut k, mut request, control) = pending(p, 63, [r as u64, 0x2000, 1, 0, 0, 0]);
         let value = k.service_request(&mut request, &mut trames_linux::CapturedOutput::default());
         assert_eq!(value, Some(1));
-        assert_eq!(request.memory.read_array::<1>(0x2000).unwrap(), *b"a");
+        assert_eq!(request.memory().read_array::<1>(0x2000).unwrap(), *b"a");
         assert_eq!(
             k.processes
                 .get_mut(&1)

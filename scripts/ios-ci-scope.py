@@ -676,6 +676,14 @@ def main():
             changed=set(subprocess.check_output(['git','diff','--name-only',base,'HEAD'],text=True).splitlines())- {str(plan_path)}
             hashes=plan['changed_file_sha256']
             if changed==set(hashes) and all(Path(path).exists() and hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest for path,digest in hashes.items()):
+                if plan.get('native_scope') == 'worker-handoff':
+                    subprocess.run(['python3', 'scripts/prepare-worker-ipa.py'], check=True)
+                    with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+                        output.write('frontend_only=false\ntargeted=true\nnative_scope=worker-handoff\n')
+                        output.write('skip_linux_native=true\nskip_linux_modules=true\n')
+                        output.write('frontend_reused=true\nui_targets=[]\n')
+                        output.write('baseline_run=' + str(plan['worker_handoff']['guest']['run']) + '\n')
+                    return
                 if plan.get('native_scope') == 'vulkan-tf-engine':
                     # This internal engine is deliberately not linked into the
                     # existing Rust/MoltenVK adapter yet. Prove that every passed

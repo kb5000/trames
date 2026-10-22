@@ -4,7 +4,10 @@ use std::fmt;
 use trames_cpu::{Cpu, CpuFault};
 use trames_elf::{ElfError, LoadedElf};
 use trames_linux::{GuestOutput, Linux};
+mod futex;
+mod gpu;
 mod process;
+mod run_queue;
 mod terminal;
 mod worker_syscalls;
 mod workers;
@@ -130,12 +133,30 @@ pub struct RuntimeMetrics {
     /// Worker-local CPU slices, including polls and native returns; no messages
     /// or barriers are required between these slices.
     pub worker_chunks: u64,
-    /// Completed on CPU workers without a coordinator checkpoint; included in syscalls.
+    /// Completed on CPU workers without coordinator RPC; included in syscalls.
     pub worker_syscalls: u64,
+    /// Worker-local shared-resource I/O; included in worker_syscalls, no RPC.
+    pub worker_direct_syscalls: u64,
+    /// Valid private WAKE/WAKE_BITSET calls completed locally, including zero returns.
+    pub worker_futex_wakes: u64,
+    /// Tickets actually woken by those worker calls.
+    pub worker_futex_woken: u64,
+    pub worker_futex_waits: u64,
+    pub worker_task_resumes: u64,
+    pub worker_task_yields: u64,
+    pub worker_io_waits: u64,
+    pub worker_service_waits: u64,
+    pub worker_file_syscalls: u64,
+    pub worker_socket_syscalls: u64,
+    pub worker_timer_syscalls: u64,
+    pub worker_poll_syscalls: u64,
+    pub worker_gpu_calls: u64,
+    pub worker_gpu_waits: u64,
     /// FD services requested while peer workers retain their running views.
     pub service_requests: u64,
     /// Host disk reads submitted during CPU epochs (not all guest reads).
     pub disk_reads: u64,
+    pub peak_disk_reads: usize,
     pub disk_read_bytes: u64,
     /// Completed in-epoch services; also included in total syscalls.
     pub serviced_syscalls: u64,

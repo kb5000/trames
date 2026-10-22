@@ -1,0 +1,86 @@
+{
+  "date": "2026-10-22",
+  "checks": {
+    "core.log": {
+      "passed": 132,
+      "failed": 0,
+      "ignored": 2
+    },
+    "core-auth.log": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0
+    },
+    "core-gpu-final.log": {
+      "passed": 8,
+      "failed": 0,
+      "ignored": 0
+    },
+    "core-queue-final.log": {
+      "passed": 5,
+      "failed": 0,
+      "ignored": 0
+    },
+    "vulkan.log": {
+      "passed": 37,
+      "failed": 0,
+      "ignored": 0
+    },
+    "vfs-readiness.log": {
+      "passed": 2,
+      "failed": 0,
+      "ignored": 0
+    },
+    "vfs-native.log": {
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0
+    },
+    "shared-readiness.log": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0
+    }
+  },
+  "distinct_unit_tests_passed": 177,
+  "unit_tests_ignored": 2,
+  "limits": [
+    "Linux x86_64 host, Mesa lavapipe software Vulkan; not Apple/MoltenVK GPU acceptance.",
+    "No application performance ratio is claimed from these structural, single-sample fixtures.",
+    "Production disables the per-chunk diagnostic progress atomic; peer retirement is a chunk-count lower bound and may be zero for a short compile.",
+    "Same-context host bodies still serialize; device teardown and native relay remain owner paths.",
+    "No private Firefox data uploaded."
+  ],
+  "scope": "Tenth GPU wait handoff plus nine earlier shared-resource batches; test IPA 1.3.0 build 36.",
+  "validation": "Local release Clippy/fmt/build and actual lavapipe compute/coherent/render output passed. Apple module tests and device linking run in iOS CI.",
+  "raw_diagnostics_published": false,
+  "structural_results": [
+    {
+      "name": "compute",
+      "worker_gpu_calls": 5,
+      "worker_gpu_waits": 2,
+      "gpu_compiles": 2,
+      "parallel_rounds": 11,
+      "gpu_direct_bytes": 143290,
+      "gpu_buffered_bytes": 0
+    },
+    {
+      "name": "coherent",
+      "worker_gpu_calls": 3,
+      "worker_gpu_waits": 3,
+      "gpu_compiles": 2,
+      "parallel_rounds": 12,
+      "gpu_direct_bytes": 159872,
+      "gpu_buffered_bytes": 0
+    },
+    {
+      "name": "render",
+      "worker_gpu_calls": 117,
+      "worker_gpu_waits": 1,
+      "gpu_compiles": 1,
+      "parallel_rounds": 112,
+      "gpu_direct_bytes": 439762,
+      "gpu_buffered_bytes": 0
+    }
+  ]
+}

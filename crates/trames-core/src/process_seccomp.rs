@@ -353,6 +353,10 @@ mod tests {
     use super::*;
     #[test]
     fn private_futex_fast_return_requires_an_allow_decision() {
+        let table = crate::futex::Futexes::default();
+        let wait = table
+            .wait((0, 7, 0x1000), 3, 1, || Ok::<_, ()>(()))
+            .unwrap();
         let mut snapshot = crate::worker_syscalls::Snapshot {
             seccomp: Default::default(),
             identities: [0; 7],
@@ -362,7 +366,8 @@ mod tests {
             streams: [0; (MAX_FDS as usize).div_ceil(64)],
             files: [0; (MAX_FDS as usize).div_ceil(64)],
             fd_flags: Default::default(),
-            futex_waiters: Default::default(),
+            direct: Default::default(),
+            futex: crate::futex::Private::new(table, 7),
         };
         let mut cpu = Cpu::new(0x4004, 0);
         cpu.set_x(8, 98);
@@ -373,6 +378,7 @@ mod tests {
                 Filter::validate(vec![i(6, 0, 0, decision)]).unwrap(),
             ));
             assert_eq!(snapshot.admit(&cpu), decision == ALLOW);
+            assert!(!wait.woken());
         }
         snapshot.seccomp.strict = true;
         assert!(!snapshot.admit(&cpu));
@@ -459,7 +465,7 @@ mod tests {
         assert!(!strict.allows(113, 0, [0; 6]));
     }
     #[test]
-    fn strict_allowed_reads_can_use_in_epoch_services() {
+    fn strict_allowed_reads_use_worker_local_shared_resources() {
         let mut p = super::super::tests::process();
         let [read, write] = p.linux.vfs.pipe(O_NONBLOCK).unwrap();
         p.linux.vfs.write(write, b"abcdefgh").unwrap();
@@ -494,8 +500,10 @@ mod tests {
             .unwrap());
         // A peer may reach the shared budget before the other is scheduled;
         // an epoch ending is not a filter rejection. At least one actual read
-        // must complete through the in-epoch service, rather than checkpoint.
-        assert!(kernel.serviced_syscalls > 0);
+        // must complete on its worker, without an RPC or checkpoint.
+        assert!(kernel.worker_direct_syscalls > 0);
+        assert_eq!(kernel.serviced_syscalls, 0);
+        assert_eq!(kernel.service_requests, 0);
         let mut received: Vec<_> = kernel
             .processes
             .values()

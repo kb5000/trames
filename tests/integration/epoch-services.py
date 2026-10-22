@@ -12,6 +12,7 @@ p.add_argument('--runner', type=Path, required=True)
 p.add_argument('--fixture', type=Path, required=True)
 p.add_argument('--oracle', type=Path, required=True)
 p.add_argument('--output', type=Path, required=True)
+p.add_argument('--cpus', type=int, nargs='+', choices=(1, 2, 4), default=(1, 2, 4))
 p.add_argument('--modes', nargs='+', choices=['metadata', 'pipe', 'file', 'vector', 'unix', 'mapped-read', 'mapped-shared', 'bulk', 'bulk-parallel'], default=['metadata', 'pipe', 'file', 'vector', 'unix', 'mapped-read', 'mapped-shared', 'bulk', 'bulk-parallel'])
 a = p.parse_args()
 a.output.mkdir(parents=True, exist_ok=False)
@@ -21,7 +22,7 @@ try:
         iterations = 16 if mode.startswith('bulk') else 256
         expected = subprocess.run([str(a.oracle.resolve()), mode, str(iterations)], capture_output=True, timeout=60)
         assert expected.returncode == 0 and not expected.stderr, expected
-        for cpus in (1, 2, 4):
+        for cpus in a.cpus:
             storage = ['--storage', str((a.output / f'{mode}-store-{cpus}').resolve())] if mode.startswith('bulk') else ['--memory']
             r = subprocess.run([str(a.runner.resolve()), *storage, '--network', 'off',
                 '--cpus', str(cpus), '--accelerator', 'pure', '--metrics',

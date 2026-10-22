@@ -286,7 +286,7 @@ impl Backend {
     }
     // New native resources are owned before the final fallible guest write.
     // A backing I/O failure after preflight must not leak an unpublished object.
-    pub(super) fn publish(&mut self, m: &mut Memory, output: u64, id: u64) -> Result<()> {
+    pub(super) fn publish(&mut self, m: &mut impl CpuMemory, output: u64, id: u64) -> Result<()> {
         if let Err(error) = write(m, output, &id.to_le_bytes()) {
             self.objects.remove(&id);
             return Err(error);
@@ -339,7 +339,7 @@ impl Backend {
             properties.image_format_properties
         })
     }
-    pub(super) fn format_query(&self, m: &mut Memory, op: u64, a: [u64; 16]) -> Result<()> {
+    pub(super) fn format_query(&self, m: &mut impl CpuMemory, op: u64, a: [u64; 16]) -> Result<()> {
         let instance = &self.instance.as_ref().unwrap().native;
         if op == 58 {
             let mut bytes = vec![0u8; 12];
@@ -415,7 +415,11 @@ impl Backend {
         bytes.extend(p.max_resource_size.min(MAX_ALLOCATION).to_le_bytes());
         write(m, a[6], &bytes)
     }
-    pub(super) fn start_graphics_compile(&mut self, m: &Memory, a: [u64; 16]) -> Result<u64> {
+    pub(super) fn start_graphics_compile(
+        &mut self,
+        m: &impl CpuMemory,
+        a: [u64; 16],
+    ) -> Result<u64> {
         let device = self.device(a[0])?;
         let queues = unsafe {
             device
@@ -442,7 +446,7 @@ impl Backend {
             Some(self.object(a[3], Kind::Shader)?)
         };
         let name = |p| {
-            std::ffi::CString::new(m.read_c_string(p, 256)?)
+            std::ffi::CString::new(guest_string(m, p, 256)?)
                 .map_err(|_| Failure::Vk(vk::Result::ERROR_UNKNOWN))
         };
         let vertex_name = name(a[4])?;
@@ -863,7 +867,7 @@ impl Backend {
     }
     pub(super) fn image_barriers(
         &self,
-        m: &Memory,
+        m: &impl CpuMemory,
         command: &Rc<Object>,
         address: u64,
         count: u64,
@@ -923,7 +927,12 @@ impl Backend {
         }
         Ok(barriers)
     }
-    pub(super) fn graphics_call(&mut self, m: &mut Memory, op: u64, a: [u64; 16]) -> Result<()> {
+    pub(super) fn graphics_call(
+        &mut self,
+        m: &mut impl CpuMemory,
+        op: u64,
+        a: [u64; 16],
+    ) -> Result<()> {
         let device = self.device.as_ref().unwrap().clone();
         let d = &device.native;
         match op {

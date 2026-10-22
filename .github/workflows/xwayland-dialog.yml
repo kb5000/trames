@@ -23,7 +23,23 @@ concurrency:
   group: xwayland-dialog-${{ github.ref_name }}
   cancel-in-progress: true
 jobs:
+  scope:
+    runs-on: ubuntu-24.04
+    outputs:
+      native_scope: ${{ steps.scope.outputs.native_scope }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TRAMES_FULL_CHECK: 'false'
+          TRAMES_NEEDS_GUEST_ARTIFACTS: 'false'
+        run: python3 scripts/ios-ci-scope.py
   linux:
+    needs: scope
+    if: needs.scope.outputs.native_scope != 'worker-handoff'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:

@@ -153,7 +153,12 @@ impl Wayland {
     }
 }
 impl Backend {
-    pub(super) fn wayland_entry(&mut self, m: &mut Memory, op: u64, a: [u64; 16]) -> Result<()> {
+    pub(super) fn wayland_entry(
+        &mut self,
+        m: &mut impl CpuMemory,
+        op: u64,
+        a: [u64; 16],
+    ) -> Result<()> {
         if op == 109 {
             return write(
                 m,
@@ -215,7 +220,12 @@ impl Backend {
             .is_some_and(|q| q.queue_flags.contains(vk::QueueFlags::GRAPHICS));
         write(m, a[3], &u32::from(supported).to_le_bytes())
     }
-    pub(super) fn wayland_query(&mut self, m: &mut Memory, op: u64, a: [u64; 16]) -> Result<()> {
+    pub(super) fn wayland_query(
+        &mut self,
+        m: &mut impl CpuMemory,
+        op: u64,
+        a: [u64; 16],
+    ) -> Result<()> {
         if !self.wsi_enabled {
             return unsupported();
         }
@@ -447,7 +457,12 @@ impl NativeImage {
     }
 }
 impl Backend {
-    pub(super) fn wayland_device(&mut self, m: &mut Memory, op: u64, a: [u64; 16]) -> Result<()> {
+    pub(super) fn wayland_device(
+        &mut self,
+        m: &mut impl CpuMemory,
+        op: u64,
+        a: [u64; 16],
+    ) -> Result<()> {
         let device = self.device(a[0])?;
         match op {
             87 => {
