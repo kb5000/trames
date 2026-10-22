@@ -88,7 +88,7 @@
     "scripts/build-worker-unix-fixture.sh": "cfe01d59ac0dbbee69260611c6619b1207fedf334830136d6f1f55b04767c2c1",
     "scripts/build-worker-wait-fixture.sh": "9f1c5020de6b6d9755273af63340b7b59dad02530b341af4b93103cd90c2e849",
     "scripts/ios-ci-scope.py": "447eb52522a46ad7f27ce2d842eb5c160dacfa90a9ce36c4522faeac269a9520",
-    "scripts/prepare-worker-ipa.py": "0581bd7a5f64b8ea97228748d85328b07846a3d4e13739c04f1c36213ca1af2d",
+    "scripts/prepare-worker-ipa.py": "ff44f380626e3e4d5e4645ad34dca7baa62109f07a97e0dab4095c1e2a3dea3a",
     "tests/fixtures/epoch-services.c": "7f9617f0cbd1f0ea73b0e1f97c537401a1b4501b73260f3d444c9adc1ddfe10f",
     "tests/fixtures/io-handoff.c": "f9c3114f4b245bfe0ac1e7f651acbdcea484e91c63c47dc77d901d1ec0f50390",
     "tests/fixtures/service-handoff.c": "26cc84dd86c4b1efe648d7f0fb18b3288750a927cc8de7c35e40c89de0c450dc",
@@ -130,4 +130,3 @@
     }
   }
 }
-

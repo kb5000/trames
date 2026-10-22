@@ -56,9 +56,15 @@ def verify(config):
     run(validation, 'xwayland-dialog.yml', 'metal')
     # Reuse only guest/native-driver algorithms. All changed Rust is rebuilt
     # and tested below; no host runtime acceptance is claimed from these runs.
-    unchanged(validation['sha'], ['patches/moltenvk', 'scripts/build-moltenvk.py',
+    unchanged(validation['sha'], ['patches/moltenvk',
                                   'scripts/prepare-vulkan.py', 'scripts/build-vulkan-native-tf.py',
                                   'crates/trames-vulkan/native'])
+    # Pin the COMPLETE source verifier from the starting repository revision.
+    # This includes every verification branch, build flag and patch selection;
+    # no AST/body filtering or exception for future verifier edits is allowed.
+    path = 'scripts/build-moltenvk.py'
+    unchanged('52c02331103d145e351fdb7377af80c389e85235', [path])
+    assert hashlib.sha256(Path(path).read_bytes()).hexdigest() == '13a1d3b3984f26176fd241e1402bd2838f3ab3ee7f8e53ca41ee797be1cea2e4'
     frontend = config['frontend']
     unchanged(frontend['sha'], ['apps/ios', 'include', 'scripts/package-ios.py',
                                'scripts/finalize-ios-app.py', ':(exclude)apps/ios/project.yml'])
