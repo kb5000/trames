@@ -113,8 +113,8 @@
   },
   "worker_handoff": {
     "guest": {
-      "sha": "049df00bc93d1342440dc3a8ca2a8b409b217a5b",
-      "run": 39645800791
+      "sha": "534e223e284df48f207500e84ab4cd05dd3d3958",
+      "run": 39015795319
     },
     "graphics_inputs": {
       "sha": "6d7d26c0921b233d0a765d37d0a74c28f6925f11",
@@ -130,3 +130,4 @@
     }
   }
 }
+
