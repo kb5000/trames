@@ -31,6 +31,68 @@ proof that all physical iPad memory pressure is resolved. Raw diagnostics remain
 private. Physical iPad startup and the known default-refresh issue remain open
 in [#33](https://github.com/kb5000/trames/issues/33).
 
+## Fragmented host address space and page metadata
+
+2026-10-24: a separate physical iPad launch with 4 GiB guest quotas reached a
+host allocation abort while growing the coordinator's page descriptor array.
+The requested contiguous allocation was about 27.5 MiB. At the stopped process,
+a 1 MiB allocation succeeded, while both malloc and a direct system mapping of
+the larger size failed with ENOMEM. Physical footprint was about 1.34 GiB and
+the system still reported about 3.66 GiB available to the process. The largest
+unmapped interval between existing mappings was about 4.64 MiB. Virtual mapping
+totals include large inaccessible system reservations and are not RAM usage.
+This evidence identifies a contiguous host allocation bottleneck; it does not
+establish that guest residency quotas or physical RAM were exhausted.
+
+Coordinator descriptors and recycled indices now use 256-slot blocks. Worker
+frames, root-to-worker positions and full-snapshot mapping lists use the same
+storage, avoiding another guest-sized contiguous allocation at publication.
+Guest page indices, translation invalidation, permissions, COW, resident
+accounting and worker synchronization retain their existing contracts. Only
+the compact directory of blocks grows contiguously. Genuine host exhaustion
+can still fail an allocation; this change is not a general OOM recovery policy.
+
+The allocation regression maps a 64 MiB VM, checks a native copy across a block
+boundary, publishes a worker view, forks with COW, and unmaps/reuses slots before
+republishing. It measures real host allocator requests for mapping, fork and
+publication and requires each to stay at or below 128 KiB. The original code
+fails this test with a 1,179,648-byte request; the block implementation passes.
+Downstream Linux guest unit tests have 120 passes and one ignored test with
+local networking enabled. One additional test,
+`retained_host_interest_rearms_without_reopening_and_actors_remain_independent`,
+fails at `UnixStream::set_read_timeout` with EINVAL on this macOS host; the same
+single test fails with the original memory implementation. This remains a
+platform-test limitation, not a passing check.
+
+The first physical retry passed the large-array growth but later failed while
+forking, even on an 18 KiB block allocation. About 5.58 GiB of optional physical
+storage and CPU aliases was still retained. Untouched anonymous zeros were being
+promoted into mapped storage during worker publication, pinning whole physical
+VA windows over fork despite having no resident charges. Publication now keeps
+these pages on the existing demand-zero shared storage path. First real writes
+retain the same charge and region protocol. Coordinator TLB fills verify the
+physical owner/offset before exposing a CPU alias, so software materialization
+cannot leave a stale zero-filled alias visible.
+
+A new fork regression proves that retired physical owners disappear when all
+pages are untouched, then checks first-write charging and parent/child isolation.
+It fails with the original code. A second regression warms a coordinator TLB,
+performs a software zero page's first worker write, commits it and checks byte
+coherence in both directions. The physical-alias fixture explicitly materializes
+its host groups before publication; it still requires actual hardware aliases
+and checks native/CPU visibility, dirty commit and permissions.
+
+Final native Apple ARM64 memory validation has 106 unit tests, four translation
+integration tests and the allocation regression passing (111 total), plus strict
+Clippy. CPU 43 and Core 171 also pass (two manual Core benchmarks ignored).
+Strict iOS memory Clippy and the signed iOS FFI build pass. During the physical
+retry, a checkpoint at roughly three minutes measured about 1.04 GiB of MMU
+physical/CPU virtual reservations and 1.35 GiB physical footprint, without the
+previous host abort. This is an intermediate sample, not a peak or matched
+performance comparison. Firefox has not yet displayed a window; the run remains
+in progress and no startup or GPU acceptance is claimed yet. Device identifiers and original
+logs, screenshots, stacks and mapping dumps remain local.
+
 ## Original mousepad X11 save dialog
 
 Three concrete native graphics gaps were corrected, using the original

@@ -31,7 +31,14 @@ local and non-Send/non-Sync; workers use their own Cell cache over a fixed Arc
 snapshot. Mapping changes require joined workers and produce fresh empty views.
 
 The optional CPU alias is bounded to its cached guest page; no extra Rc is held.
-Vec growth cannot invalidate an index or alias. Fork retires aliases only after
+Page metadata uses 256-slot blocks instead of one growing contiguous array.
+Coordinator slots, recycled slot IDs, worker frames and root-to-worker positions
+can grow through separate host allocations; cached indices still address the
+same logical slots. Large snapshot preparation also collects mapping IDs in
+blocks. Only the small block directory grows contiguously. This avoids copying
+an entire descriptor array at a doubling boundary on fragmented hosts; it does
+not make guest bytes contiguous or change their backing/alias ownership.
+Block growth cannot invalidate an index or alias. Fork retires aliases only after
 flushing the cache. COW promotion, discard and mapping changes invalidate cached
 alias/eligibility facts; special file mappings cache no CPU byte pointer.
 The ordinary Rc::make_mut, version, dirty publication and executable-write hooks
