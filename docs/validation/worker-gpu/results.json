@@ -1,0 +1,375 @@
+{
+  "date": "2026-10-22",
+  "git_head": "52c02331103d145e351fdb7377af80c389e85235",
+  "working_tree": "Local uncommitted ninth coordinator-cost batch. Earlier uncommitted work preserved; no commit/push/IPA/release.",
+  "source_sha256": {
+    "AGENTS.md": "2cfee3892489959cdd0f219399e06b7f76c6e28ddb0e1431ec68da8cc5c6c8fd",
+    "crates/trames-memory/src/cpu_memory.rs": "6cae9231814a7834ad67d86cbbf690b311837be23d95f56b00029553ea1504b1",
+    "crates/trames-memory/src/parallel.rs": "91933f4a54e12b5d96a90b8eea83e93e10588e4e38dff73c37facd4f4cb09ab0",
+    "crates/trames-vulkan/src/context.rs": "4e9910940c4b5202221aa35dfdf6bc18cf16ed03aa1e3325cb8b6b51adfada27",
+    "crates/trames-vulkan/src/lib.rs": "a0a7688d778754e87addbf2664f8137291d565d0672a2e93d0e00bbcd91cb280",
+    "crates/trames-vulkan/src/backend.rs": "fefd1e6f5bc420099f3b5620bac4b4e5a623d73aaf3f2ab3fd01f82b11881d09",
+    "crates/trames-vulkan/src/backend/zink.rs": "68eca1458273aa8db7d6bdf1d3486ff3c01f033584bc86f7090bb632b5ba8d18",
+    "crates/trames-vulkan/src/backend/feedback.rs": "54150c3268c02e99941839e8396b397d7c675e9466272862433c70e66a80033e",
+    "crates/trames-vulkan/src/backend/coherent.rs": "ec199d52cd886b99e9debe8893eec71a87f8f85fb80d88f6446d911491467d0e",
+    "crates/trames-vulkan/src/backend/wayland.rs": "e156a3dfa50cb64f73280fa468ba23c606eee0c279cbeda0c5d45c9c133e0edc",
+    "crates/trames-vulkan/src/backend/graphics.rs": "ec3b14921911a3e59e005e5c5f71da3d1e95937886b352e0c1b2121cc1682587",
+    "crates/trames-vulkan/src/backend/wsi.rs": "9ed6e4d7c3f066a3d09fb664ad39494608e8686b43297b763fbb9b0ebb8a94ed",
+    "crates/trames-vulkan/src/backend/textures.rs": "c7ca0b83a6fcd15e74ab6b2d7eb7d1b90174bf488635f2c9b78b42334d6b2f31",
+    "crates/trames-accel/src/native.rs": "0614be9ff8b4aae5ca9cc89c4b07189f06c3069a421bf3a664d87111797913e3",
+    "crates/trames-core/src/workers.rs": "f307fafcaa2d0a618e426a381d4e598c418f22410db4a8d9621911704065fbd4",
+    "crates/trames-core/src/run_queue.rs": "584eef1aba74de7deb440f8b13827e26980a9027a1632187365372c119cc4c34",
+    "crates/trames-core/src/process.rs": "0647710c6498b7fcb83d957ac61fa8db45acab668e39aa4af72d8d39d9ce382c",
+    "crates/trames-core/src/process_service.rs": "a6596ad7fcd8ea13b0d74b550f95ebdcbb9b174cca770b566f251c750d429bc6",
+    "crates/trames-core/src/lib.rs": "c1ed0d254bd84b6b51c8d6b1bc92f39c6669cc3fcf0ddc239efd8bd2c3e2dafa",
+    "crates/trames-cli/src/main.rs": "14e667879f5ecae841d682e6d1a79a3bd450ee87be73a05117caf880534b9a1d",
+    "tests/fixtures/worker-gpu.c": "ae69852137fe0a07eaf06b7aa5c5253d090d7c74110da4a55d8ab000e2ab8561",
+    "tests/fixtures/worker-gpu-native.S": "8de105533af63a47a2a2c7f48a3a0dbf580ac9062ba7bf0e77974d72b138cebd",
+    "tests/fixtures/worker-gpu-peer.c": "0e02162b947047c76d75beedaf8f73692d862bc6ebb7eff5a9f2db42466ae51c",
+    "tests/fixtures/epoch-services-native.S": "f0e393022ae06d80c042885a4d8f7db7ff589ed3a0d8a1bc27b6201f990f0e4d",
+    "tests/fixtures/vulkan-render.c": "45cf1dd887fd7f7b6e8eeb71f9ace1618ee9c066e27078c474671e2b2a3e6f5b",
+    "tests/fixtures/vulkan-compute.c": "f8ec56da3d5fc24b2f3eaf1cb2c6901e92e269111377fe74e8d15ca39bb06acd",
+    "scripts/build-worker-gpu-fixture.sh": "07a64461c2455fb0c2146d031a04b36d7dd1380df961ad99993061a6bfde924b",
+    "tests/integration/worker-gpu.py": "fb82f1a658826652a9114ac3e1545b41bb8fafe0ce8dc877ad2fecf0c832640f",
+    "docs/architecture/epoch-services.md": "307a8f4f04c84959e70eaf0c2e2e5bba1211f5bcd033fa47c39bebcd00ecf1fe",
+    "docs/validation/worker-gpu.md": "157ce568bbe04db26ee5dadeb1fe515ef66d879d8ea00bfac8a89aa4ec6f2387"
+  },
+  "before_source_reference": "before-source.json",
+  "binary_sha256": {
+    "target/perf-runtime/release/trames-run": "384021c48953f90c8a3f545156e4cf7be678d2bfb3d775ef0729e55e44408e8e",
+    "target/perf-runtime/release/libtrames_ffi.so": "2fd5598db94aa802391d52fe51ed77d1dec76b9452189582a44c878a7ff94580",
+    "target/perf-runtime/release/libtrames_ffi.a": "b8582dbe447f5d9e9920cdf27df477bca3f2f67828d9175fd958c0bb2cdacc3b",
+    "target/worker-gpu-checks/trames-run-before": "84eec2716014b9a148ee10a926b71d279f21c2c50ca34a5ae90a40ecf7439320",
+    "tests/fixtures/bin/worker-gpu": "7469e3fc9bf2a34274c37d2046b61a5f77552dec40b4c8c461560ae44b5d4d09",
+    "tests/fixtures/bin/worker-gpu-render": "f08112fe0b64b30ee359e9081b59dfd9bf9db2ebd993c818e630e43f4613a7ab",
+    "tests/fixtures/bin/vulkan-compute": "c352fb730b1019d9b447fba40cb464d4a4aefbced3b63dfd6d00228e68a03cac",
+    "tests/fixtures/bin/vulkan-compute-host": "828c356a62e44789c8ade4d30f2d3c0f694da1dc615498840cd6a66091590795",
+    "tests/fixtures/bin/vulkan-compute.spv": "46a8dfd85c78c7ef9f39212b0699503b4800184a04b1e8a4bd81b07143a44072",
+    "tests/fixtures/bin/vulkan-render": "a1836c4a658bc7b123ecd900c1651c233dc16b9f0d38d8c5055517d1ad8ffb22",
+    "tests/fixtures/bin/vulkan-render-host": "1df356ea315564d46c0454cdb2c398636c752b154a01339da3d36b155f882957",
+    "tests/fixtures/bin/vulkan-render.vert.spv": "2a710d624169328c6d65cad1c4e55b4ef8e0664e94dbbf650cb2568dc2ea21ef",
+    "tests/fixtures/bin/vulkan-render.frag.spv": "2a5b5fd35bb932901571f73b2bcc199b823e036397df505f748a9d55eb8757ce",
+    "target/vulkan-guest/libtrames_vulkan_icd.so": "9a06ca026123006aa8d5a16c9781e2862698f6c3502c7e3e059044176a49768b",
+    "target/vulkan-guest/acceptance/vulkan-loader-1.4.313.0-r0.apk": "8b0a25c122015a5732ad548ef27a1e4dbd040b167c5852559f77b7fe99c08084",
+    "target/perf-runtime/release/build/trames-vulkan/d8d2df12cc37a783/out/trames_vulkan-d8d2df12cc37a783": "b62ea3fab2d2265ab993cae67cf98254cf1167b5c94a2dc446d55047c8085de5",
+    "target/perf-runtime/release/build/trames-memory/1f943d582994877e/out/trames_memory-1f943d582994877e": "a794a95ef293d1c5962d909db53f60382eee1263c9b6e801bd3fd69d4e8492f6",
+    "target/perf-runtime/release/build/trames-core/110419dd55a974e8/out/trames_core-110419dd55a974e8": "02589b1ff99d2f615ec3375b38396f37e6157acb8de457e49ac95d1f1902fa89",
+    "/workspace/toolchains/host-vulkan/usr/lib/x86_64-linux-gnu/libvulkan_lvp.so": "0004262f4dc95585492d55925face67a79a7c869ad8760b42ae01bd0bdb807a2",
+    "/lib/x86_64-linux-gnu/libvulkan.so.1": "bbd6827e9fe418e9b9740aea57ce6d21fcea03e9876b4b17835c5a9c58f849fc"
+  },
+  "unchanged_implementations": {
+    "reference": "docs/validation/worker-waits/results.json",
+    "reference_sha256": "fb974d04efcc4a1f2f74f7f7135bcfe2ef5acd1c49f3a5ce97a29d7fc006fbc2",
+    "source_sha256": {
+      "crates/trames-vfs/src/timer_io.rs": "10c12d3c5a032b8b91c67e21a7f8229fab40ee3062dbbbf437aabf4526a8e161",
+      "crates/trames-vfs/src/events.rs": "47470a872a4cef8e7f3d21c04124517475e19b9cffca96ac83b8caf8ec463b04",
+      "crates/trames-vfs/src/direct_io.rs": "30a15a8b295fbbe99bc0ccf3ba4d6cf0856abf0fb0f89ac5bed2f8fbd7fc4a71",
+      "crates/trames-vfs/src/lib.rs": "a2633008dbb228481c60c185310407296f91e221d60331f6a545f9ca60668182",
+      "crates/trames-linux/src/timer.rs": "a38053c07934d239443e2aa16f066ac08f771955ad8ebdf656499c1da4574f93",
+      "crates/trames-linux/src/poll.rs": "d4d35e69ac131b07a871355407aa61970d636405c1043ec4dbf89ca532859ec4",
+      "crates/trames-linux/src/direct.rs": "7668a886da15bb8168bbf4a193fa65e3bb420adcc1aedd21d26246f1ab853d57",
+      "crates/trames-linux/src/lib.rs": "29d4b5b24ee9fe47302a1a414f101f102294acc2d1aae4a3269d50b885429bdc",
+      "crates/trames-core/src/process_events.rs": "89338011a56e6909a995e05040dad4e6fe5ff121283034ee536e42c2c14ade8d",
+      "crates/trames-core/src/worker_syscalls.rs": "f0b76eb5f65d5af8115d49b262823ec5f91c7baa755a4b7c8497f734efac3625",
+      "crates/trames-vfs/src/ipc.rs": "793eed83b134ad425d8940cd61d4314670d8616640d65c8f37702e9ffe5cf25b",
+      "crates/trames-vfs/src/ipc/channel.rs": "559c2dca452db05a9783dd49f3d3ee0c0d42717da97de34b3449f97d95c11746",
+      "crates/trames-linux/src/network.rs": "34f2a7a8847c80b793ebecc3db03076d0e535d2b61e394513cfb145f858183f8",
+      "crates/trames-linux/src/network/local.rs": "c20affb1954d5c174c7c4144713bcc9e9444b663d01fc85a3dae4142259f5f70",
+      "crates/trames-vfs/src/file_data.rs": "fb110934733436db0a23fa65d4f4f59d1fae841838ea21774f3df9f107fe4353",
+      "crates/trames-vfs/src/file_io.rs": "c780103efc197101490724f76e2a5e681bc1665257a9308d2b2a9c918e68db8a",
+      "crates/trames-vfs/src/storage.rs": "ecdd3b30ab847538f997123272bbe4a2ea150bbc91721ec8def70659fbaa1933",
+      "crates/trames-vfs/src/disk_io.rs": "23b51413ca976ad76f3ff840055cc99db1c9cb12378fdfc3bd38f8c543d9aea3",
+      "crates/trames-vfs/src/readiness.rs": "b2493ae2f0c9d8e98bb3a3379e107891dde570b4766ccd9392b271950e77727f",
+      "crates/trames-vfs/src/ipc/native.rs": "7e7cc51c0d45ae3485d7deeed02b2ad0a4e376ac76f067d44abb66a9eb2098e4",
+      "crates/trames-core/src/futex.rs": "d302348a4c9bc60024a863d54d0d8498781023a99e6c4a155065f5dc5d5f6703",
+      "crates/trames-core/src/process_seccomp.rs": "7eb58aa596c845bfa87ad441743803e06100b20bc6d55b99c7191c5b1d76600b",
+      "crates/trames-linux/src/state.rs": "4d0a9aa73a8cf823b77de21cd12a780a42717dc06dd63af3e22a642214110c92",
+      "crates/trames-vfs/src/inotify.rs": "4e914883bae108439a815fe05764414738a032d315b5068e4eef8c0eab03b04e",
+      "crates/trames-vfs/src/mapped.rs": "d7c94e1725c548940ffb0304b89780cd91e0b5e1aee3dc770aec3565ee362002"
+    },
+    "policy": "Reuse unchanged VFS/Linux/file/futex/readiness/Unix results. Ordinary interpreter/MMU instruction algorithms not edited; new CPU chunk methods checked here. No repeated full suites or application benchmarks."
+  },
+  "checks": {
+    "vulkan": {
+      "passed": 35,
+      "failed": 0,
+      "ignored": 0,
+      "log": "vulkan.log"
+    },
+    "memory-cpu": {
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0,
+      "log": "memory.log",
+      "note": "The last source edit in this test changed assert_eq(bool,true) to assert(bool) only. Reused the four passing tests; final strict Clippy and production build cover the style update."
+    },
+    "core-gpu": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "log": "core-gpu-fixed.log"
+    },
+    "core-workers": {
+      "passed": 29,
+      "failed": 0,
+      "ignored": 0,
+      "log": "core-workers.log",
+      "note": "Skipped the already-passed new GPU test; 29 existing worker tests passed. 30 distinct worker tests in total."
+    },
+    "core-gpu-signal": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "log": "core-gpu-signal.log"
+    },
+    "core-gpu-removed": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "log": "core-gpu-removed.log"
+    },
+    "clippy": {
+      "passed": true,
+      "log": "clippy-fixed.log"
+    },
+    "build": {
+      "passed": true,
+      "log": "build.log"
+    },
+    "fmt": {
+      "passed": true,
+      "log": "fmt.log"
+    },
+    "diff-check": {
+      "passed": true,
+      "log": "diff-check.log"
+    },
+    "python_compile": {
+      "passed": true,
+      "file": "tests/integration/worker-gpu.py"
+    },
+    "shell_syntax": {
+      "passed": true,
+      "file": "scripts/build-worker-gpu-fixture.sh"
+    },
+    "integration": {
+      "passed": true,
+      "candidate_configurations": 12,
+      "baseline_configurations": 12,
+      "report": "integration/results.json"
+    },
+    "standard_vulkan_api": {
+      "passed": true,
+      "cases": 4,
+      "report": "api-results.json",
+      "image_bytes": 147471,
+      "software_vulkan_driver": true
+    }
+  },
+  "four_cpu_structural_counts": [
+    {
+      "mode": "query",
+      "affinity": "pinned",
+      "before": {
+        "parallel_rounds": 41,
+        "worker_gpu_calls": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "gpu_direct_bytes": 0,
+        "gpu_buffered_bytes": 0,
+        "peak_parallel_cpus": 1
+      },
+      "after": {
+        "parallel_rounds": 10,
+        "worker_gpu_calls": 32,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "gpu_direct_bytes": 0,
+        "gpu_buffered_bytes": 0,
+        "peak_parallel_cpus": 1
+      }
+    },
+    {
+      "mode": "query",
+      "affinity": "spread",
+      "before": {
+        "parallel_rounds": 41,
+        "worker_gpu_calls": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "gpu_direct_bytes": 0,
+        "gpu_buffered_bytes": 0,
+        "peak_parallel_cpus": 2
+      },
+      "after": {
+        "parallel_rounds": 9,
+        "worker_gpu_calls": 32,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "gpu_direct_bytes": 0,
+        "gpu_buffered_bytes": 0,
+        "peak_parallel_cpus": 2
+      }
+    },
+    {
+      "mode": "fill",
+      "affinity": "pinned",
+      "before": {
+        "parallel_rounds": 106,
+        "worker_gpu_calls": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "gpu_direct_bytes": 38912,
+        "gpu_buffered_bytes": 0,
+        "peak_parallel_cpus": 1
+      },
+      "after": {
+        "parallel_rounds": 7,
+        "worker_gpu_calls": 256,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "gpu_direct_bytes": 38912,
+        "gpu_buffered_bytes": 0,
+        "peak_parallel_cpus": 1
+      }
+    },
+    {
+      "mode": "fill",
+      "affinity": "spread",
+      "before": {
+        "parallel_rounds": 230,
+        "worker_gpu_calls": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "gpu_direct_bytes": 38912,
+        "gpu_buffered_bytes": 0,
+        "peak_parallel_cpus": 2
+      },
+      "after": {
+        "parallel_rounds": 6,
+        "worker_gpu_calls": 771,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "gpu_direct_bytes": 38912,
+        "gpu_buffered_bytes": 0,
+        "peak_parallel_cpus": 2
+      }
+    }
+  ],
+  "unsafe_boundary": {
+    "type": "private trames_vulkan::context::OwnedBackend only",
+    "invariants": [
+      "Backend and its Rc/RefCell objects remain !Send/!Sync; no blanket implementation. Context consumes an entire private graph with no escaping Rc/Object/borrow in its public API.",
+      "The Context mutex serializes all graph entry, movement and final teardown. Independent Context objects use independent mutexes. No guest Memory/View or page guard is stored in the graph.",
+      "Existing compiler workers only receive Send-owned parameters/native handles/Arc<Device>; Rc dependencies remain in the backend graph. UI frames contain Arc native-image/device/fence leases, no backend Rc. Display/Server/Budget are already Send/Sync.",
+      "Future API that leaks graph aliases, retains stack pointers/TLS-affine data or reenters a context requires a new audit. This boundary does not claim individual object concurrency."
+    ]
+  },
+  "corrections": [
+    "First check --tests found five test-only Work constructors missing the new optional GPU field; supplied None. Production and all affected test targets subsequently check/build successfully.",
+    "New GPU budget test initially expected no remaining credit even for invalid function. Original behavior faults before retiring/reserving HLT, leaving one credit. Test-only expectation corrected; four scenarios pass.",
+    "First strict Clippy rejected assert_eq with a literal bool in the new memory test. Changed only that assertion to assert; final strict Clippy passed.",
+    "copyfile omitted executable mode on saved baseline; first integration failed before running a sample. Restored local executable bit, kept identical baseline content hash; final 24 comparisons passed.",
+    "First host render command missed the required output PPM argument and failed its argc assertion. Corrected only the command; guest/host render outputs and image bytes match."
+  ],
+  "limits": [
+    "Linux x86_64 Mesa lavapipe software Vulkan driver only; no new Apple/MoltenVK, real GPU, iPad UI or zero-copy presentation acceptance.",
+    "Same-context mutex contention can block a host worker. Per-object/queue GPU parallelism and parking lock contention are not implemented by this batch.",
+    "Async pipeline compile start/completion, device/instance teardown and Wayland FD authentication remain owner/joined. Native Wayland relay pumping and other external host I/O retain their original boundary. No new poller or service thread.",
+    "Fixed 32 GPU operations and 1024 1 MiB native fills per integration sample. Fence-status query counts can vary with native completion. Structural counters only, no statistical timing/application speed claims.",
+    "Original standard render peer ends before draws, so its worker_gpu_calls=0. Wrapped render holds a condition-variable peer throughout the unchanged main, achieves 109 worker GPU calls and exact same oracle image.",
+    "No broad CPU/Linux/VFS/network/GPU application suites, CoreMark/Docker/Firefox reruns, QEMU, Apple 16 KiB pages, or IPA/release. No private Firefox diagnostics read or archived."
+  ],
+  "evidence_sha256": {
+    "api-coherent-host.stderr": "7cc175b484b8bbe823ce3a7f76995878a9ab0e44a65913d221b8fb062282f24c",
+    "api-coherent-host.stdout": "10a1d2047619157b494e34e1ffa4aa5e670806de219d70417c5d3faa0f34d712",
+    "api-coherent.stderr": "baed07e70d82bdd3af5a97bf6228604c4d569b9323bcf24ce86daa77dca62c1b",
+    "api-coherent.stdout": "10a1d2047619157b494e34e1ffa4aa5e670806de219d70417c5d3faa0f34d712",
+    "api-compute-host.stderr": "7cc175b484b8bbe823ce3a7f76995878a9ab0e44a65913d221b8fb062282f24c",
+    "api-compute-host.stdout": "f2db8e932750e273e1ccce90d610d50bbb138a1856dac4994394d0cb5d4ac048",
+    "api-compute.stderr": "1d42450f9e9f28a9b9f40dfc2247d1528223830bd467651ef53c727d840505ac",
+    "api-compute.stdout": "f2db8e932750e273e1ccce90d610d50bbb138a1856dac4994394d0cb5d4ac048",
+    "api-install.stderr": "6fecf9a726358503a29fe4c3e1b1535abfd6268d9d263c7ad692d77943a9c902",
+    "api-install.stdout": "84832d287d9b7678e31f691a9c347f27673ebdd6b27cca625c80fe4d4626f657",
+    "api-render-host-fixed.stderr": "22040fc9ef64127f469618ef216951bb3900c3df54558e8d11062c9eecce46c7",
+    "api-render-host-fixed.stdout": "913fd0da14590bfc02f74e650a0b2d1b5137966e3670a61f2face0e9468d8b27",
+    "api-render-host.stderr": "dfda7de8749c2eaca5f7f0d4c2a8da12e1fd6f05c6bbcab36c7b6e597d492320",
+    "api-render-host.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "api-render.stderr": "725a6fdd3fca9471df5a58b566eb30637e4b75ef53d4a7899a446c069b057973",
+    "api-render.stdout": "913fd0da14590bfc02f74e650a0b2d1b5137966e3670a61f2face0e9468d8b27",
+    "api-results.json": "a6de407be274884e7948ffb76f697885e10c9f868aed332db0a10a2e32ee2b94",
+    "api-worker-render.stderr": "0b3b12f73a22e6b78aa2d5ee6b9d4c45d9b5378dc6f4fff6e21a30542069ecc8",
+    "api-worker-render.stdout": "913fd0da14590bfc02f74e650a0b2d1b5137966e3670a61f2face0e9468d8b27",
+    "before-source.json": "a7d41c73a6ed3d94045f341de2e1633ab9cf794c02f8ab08f4abc0c27c45285d",
+    "build.log": "814830cf9fb443d0e10af45e0bdf1a28f668d6a1a2d60354fb38d90a45d3f941",
+    "clippy-fixed.log": "a0d94f69a5f44c7742bd6cedc7bf8d2d906970bfc98b4cf98df842b14aa867ce",
+    "core-gpu-fixed.log": "fb0275ff4863ae59e9c8e2e3e24e58b2ed1f4fc8332ff6f9a406051d95cdbfde",
+    "core-gpu-removed.log": "443ca857d03d2372885d10493c00206d92b832974be55b1ec0f4c703ac9717d2",
+    "core-gpu-signal.log": "5bc76e7481df8376fe37e57e0a982a72aa7e4fd8af195d42bf5cea61c27f9ba8",
+    "core-workers.log": "b0ace98d2d5e8f0347ddd13a1a495ffb1a93f815ea4a9ef54f468079f8579bc1",
+    "development/api-render-host.stderr": "dfda7de8749c2eaca5f7f0d4c2a8da12e1fd6f05c6bbcab36c7b6e597d492320",
+    "development/check-core.log": "77bf32c1fdfd301978dede1d0076253b50f424eea2996314ea4604bae6d8a198",
+    "development/clippy.log": "61fecf664a13b973e248f23b5f72a95e23a53e392742d4d9c39696a30612be75",
+    "development/core-gpu.log": "aa592340f19ffda927c6b80113d32f8c188bc06dd05badf04c6367aab1b33eac",
+    "development/integration.log": "63e30e9491810a21ee350d87194c0a2a7a31ed56f5ae7f5b71a7062febb5224b",
+    "diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "fixture-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "icd.json": "6a2d0fe699986a437ec36fafe35baff629f30dce63428aabc9fd9fb6a1f2d696",
+    "integration/fill-pinned-1-after.stderr": "c92dd4a1765122b4630854860efb593052db33d96f37e2e982ed66fde166bcbb",
+    "integration/fill-pinned-1-after.stdout": "90b1699bd6c7c81161f307f6cab18975eb5a9168d5de77a881ae22c7f51b6233",
+    "integration/fill-pinned-1-before.stderr": "556ba8b2a864f0092ebb436a25349e016c48f0551af9eb3ad75c272c676e2d66",
+    "integration/fill-pinned-1-before.stdout": "90b1699bd6c7c81161f307f6cab18975eb5a9168d5de77a881ae22c7f51b6233",
+    "integration/fill-pinned-2-after.stderr": "82777f1f77fb8e5600c75e7585010bb2402362241f14afb5dd15da701e63c9d3",
+    "integration/fill-pinned-2-after.stdout": "90b1699bd6c7c81161f307f6cab18975eb5a9168d5de77a881ae22c7f51b6233",
+    "integration/fill-pinned-2-before.stderr": "e892f70b2acaa0c6a95fb7e050b5e7c54e775cf489ef7096d62d5d47bdd5c6f6",
+    "integration/fill-pinned-2-before.stdout": "90b1699bd6c7c81161f307f6cab18975eb5a9168d5de77a881ae22c7f51b6233",
+    "integration/fill-pinned-4-after.stderr": "b96efdd8ed9f19449336ec13b19710157b770fc245da66cca19a0cb37d2ce2e0",
+    "integration/fill-pinned-4-after.stdout": "90b1699bd6c7c81161f307f6cab18975eb5a9168d5de77a881ae22c7f51b6233",
+    "integration/fill-pinned-4-before.stderr": "ce40d8cabca8c2a6b69b453b85335a28e841c79e2e218498627ee4a03b4e9cd7",
+    "integration/fill-pinned-4-before.stdout": "90b1699bd6c7c81161f307f6cab18975eb5a9168d5de77a881ae22c7f51b6233",
+    "integration/fill-spread-1-after.stderr": "a8fa4c94a1d741c4423accd862ac9a4f4db7a306a6794259cfe8b752530ea0f6",
+    "integration/fill-spread-1-after.stdout": "07d8ffd9a87c107110fd8f8043cf61b1299269927292483070b5693f13e5645f",
+    "integration/fill-spread-1-before.stderr": "aa5e0ec559660fab097f7a8ecc2394ed13c2c48a486bdd8b4abeef6529f7f070",
+    "integration/fill-spread-1-before.stdout": "07d8ffd9a87c107110fd8f8043cf61b1299269927292483070b5693f13e5645f",
+    "integration/fill-spread-2-after.stderr": "e954145a4bbbe8ba9c98d04c741719d678ff6f47057480acf5e92696cddc7053",
+    "integration/fill-spread-2-after.stdout": "07d8ffd9a87c107110fd8f8043cf61b1299269927292483070b5693f13e5645f",
+    "integration/fill-spread-2-before.stderr": "37cd519d14cf9abcb671321f472690b9fde677c9dc703faca04914defc628888",
+    "integration/fill-spread-2-before.stdout": "07d8ffd9a87c107110fd8f8043cf61b1299269927292483070b5693f13e5645f",
+    "integration/fill-spread-4-after.stderr": "c0bb143ab59cba9f4f1a6055326bd288f971191d7a97133b32df30a1f39dc6dd",
+    "integration/fill-spread-4-after.stdout": "07d8ffd9a87c107110fd8f8043cf61b1299269927292483070b5693f13e5645f",
+    "integration/fill-spread-4-before.stderr": "3473d5b8230126c4aa1821b81dfa31515b40d422fc313b18bebbf68667f16a5f",
+    "integration/fill-spread-4-before.stdout": "07d8ffd9a87c107110fd8f8043cf61b1299269927292483070b5693f13e5645f",
+    "integration/query-pinned-1-after.stderr": "4087b804cce0ce4a76466dfa55e345f89547cfb85b5f2fc613fdd8aa30086fe4",
+    "integration/query-pinned-1-after.stdout": "f9c25d6bf01adfc75b98e973d52508da9a39aaa8a6fe00302ac09968ab965d56",
+    "integration/query-pinned-1-before.stderr": "5a53e7ae7210185a2242c374ce4974d95bce7bece7b761d47d9158d57bbab4e8",
+    "integration/query-pinned-1-before.stdout": "f9c25d6bf01adfc75b98e973d52508da9a39aaa8a6fe00302ac09968ab965d56",
+    "integration/query-pinned-2-after.stderr": "89a94fb6c9bfdbd01475ed559877213a0390943046566b0f2b77230775d10ee1",
+    "integration/query-pinned-2-after.stdout": "f9c25d6bf01adfc75b98e973d52508da9a39aaa8a6fe00302ac09968ab965d56",
+    "integration/query-pinned-2-before.stderr": "fbae9d6f3a14db233adc36eab55f879384cee17fc982a2d6301704312bdf0beb",
+    "integration/query-pinned-2-before.stdout": "f9c25d6bf01adfc75b98e973d52508da9a39aaa8a6fe00302ac09968ab965d56",
+    "integration/query-pinned-4-after.stderr": "c8c5f0e06b4c9dc16ae891797d0f33345da4e87b35ef2b0a1bcb74857ae66152",
+    "integration/query-pinned-4-after.stdout": "f9c25d6bf01adfc75b98e973d52508da9a39aaa8a6fe00302ac09968ab965d56",
+    "integration/query-pinned-4-before.stderr": "b706664d3b224dde022ddd6a517222a9fc8bed14d9a30d29aaf5acdb5388897c",
+    "integration/query-pinned-4-before.stdout": "f9c25d6bf01adfc75b98e973d52508da9a39aaa8a6fe00302ac09968ab965d56",
+    "integration/query-spread-1-after.stderr": "66899a53e0bb00efe1b83a91c9184a554dfde21d49bd568e9af1280a90fe034e",
+    "integration/query-spread-1-after.stdout": "837a9b82a407a9b5ce1c1038a665961d45f2636e6329cfca347e1c2b9efc92b8",
+    "integration/query-spread-1-before.stderr": "fa0f416edb88ce5ea57a0324d85b50715fd65fd0239d5144f10bf7a1305ff8b7",
+    "integration/query-spread-1-before.stdout": "837a9b82a407a9b5ce1c1038a665961d45f2636e6329cfca347e1c2b9efc92b8",
+    "integration/query-spread-2-after.stderr": "4fbcdb0ab1d0d7fb914fedef948b679d0428c08495a457bc15e20438a6596394",
+    "integration/query-spread-2-after.stdout": "837a9b82a407a9b5ce1c1038a665961d45f2636e6329cfca347e1c2b9efc92b8",
+    "integration/query-spread-2-before.stderr": "fc2f34f223cb9f75c85eb1ccac437576ef6aa5f860e52f522e4613a805fa08d4",
+    "integration/query-spread-2-before.stdout": "837a9b82a407a9b5ce1c1038a665961d45f2636e6329cfca347e1c2b9efc92b8",
+    "integration/query-spread-4-after.stderr": "4fa297ee003e4e1c94db213079e93ad3eec0cbff5d4ab9fb46bbce2db0eb73d5",
+    "integration/query-spread-4-after.stdout": "837a9b82a407a9b5ce1c1038a665961d45f2636e6329cfca347e1c2b9efc92b8",
+    "integration/query-spread-4-before.stderr": "d194ee63306ce22888e365622e574e224ec8280d657ad6b89174dbf79498c96d",
+    "integration/query-spread-4-before.stdout": "837a9b82a407a9b5ce1c1038a665961d45f2636e6329cfca347e1c2b9efc92b8",
+    "integration/results.json": "970433fd4104fc1c6e4217f8a0b5eca5544540a1ee2da466c7bb3ef5f3a606f3",
+    "integration-final.log": "9a54fc344683381126cccf60e41cc72513ed170cc66a9fc44c492696f5cf4ec1",
+    "memory.log": "8e2bb0e17a8a94669258e1e48fff28989c100b693b6223a2fded9c8b1baa7b73",
+    "render-fixture-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tests-build.log": "c336ea4a08943c56812a7f44baae51f550440225e9261997b34a8cec5d7c2eea",
+    "tests-build2.log": "c98e78d12470b59ee2ec0782e7d0e663eadb7b23f40107719e113e4aa14b97ef",
+    "vulkan.log": "d03a307e1e7a4bdb1399d6633ee7b7ec3c465db4ee9d819a154742f11c0931ec"
+  }
+}

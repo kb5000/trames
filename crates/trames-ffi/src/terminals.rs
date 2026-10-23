@@ -109,30 +109,42 @@ impl NativeTerminals {
                 // A close can race init's queued open. Retain the master until
                 // that slave has opened, preventing its path/number being reused
                 // for another request while the old command is still queued.
-                if master.pair.slaves.get() == 0 && master.pair.poll(true, 0) & 16 == 0 {
+                if master
+                    .pair
+                    .slaves
+                    .load(std::sync::atomic::Ordering::Relaxed)
+                    == 0
+                    && master.pair.poll(true, 0) & 16 == 0
+                {
                     return true;
                 }
                 let _ = self.vfs.close(master.fd);
                 return false;
             };
-            if master.pair.slaves.get() != 0 && channel.phase == "starting" {
+            if master
+                .pair
+                .slaves
+                .load(std::sync::atomic::Ordering::Relaxed)
+                != 0
+                && channel.phase == "starting"
+            {
                 channel.phase = "running";
             }
             if let Some((rows, columns)) = channel.size.take() {
                 master.pair.resize_from_host(rows, columns);
             }
             if !channel.input.is_empty() {
-                let mut tty = master.pair.terminal.borrow_mut();
-                let count = channel.input.len().min(tty.input_capacity()).min(4096);
-                let bytes: Vec<_> = channel.input.drain(..count).collect();
-                let signals = tty.input(&bytes);
-                master.pair.host_signals.set(
-                    signals
-                        .into_iter()
-                        .fold(master.pair.host_signals.get(), |mask, sig| {
-                            mask | (1 << (sig - 1))
-                        }),
-                );
+                let bytes: Vec<_> = channel.input.iter().take(4096).copied().collect();
+                if let Ok((count, signals)) = master.pair.master_write(&bytes) {
+                    channel.input.drain(..count);
+                    master.pair.host_signals.set(
+                        signals
+                            .into_iter()
+                            .fold(master.pair.host_signals.get(), |mask, sig| {
+                                mask | (1 << (sig - 1))
+                            }),
+                    );
+                }
             }
             master.pair.flush_echo();
             let room = QUEUE_LIMIT - channel.output.len();

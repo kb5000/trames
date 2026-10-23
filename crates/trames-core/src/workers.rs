@@ -128,6 +128,7 @@ pub(super) struct Done {
     pub direct_syscalls: u64,
     pub futex_wakes: u64,
     pub futex_woken: u64,
+    pub futex_requeues: u64,
     pub serviced_syscalls: u64,
     pub service_wait: Duration,
     pub syscall_time: Duration,
@@ -146,6 +147,8 @@ pub(super) struct Done {
     pub socket_syscalls: u64,
     pub timer_syscalls: u64,
     pub poll_syscalls: u64,
+    pub uring_syscalls: u64,
+    pub fd_syscalls: u64,
     pub gpu: GpuStats,
     pub gpu_pending: Option<crate::gpu::Compile>,
 }
@@ -421,8 +424,13 @@ impl Pool {
                                     snapshot.direct.resume(pending, work.memory.as_mut().expect("worker view"))
                                 } else {
                                     let call = job.retry.take().unwrap();
-                                    snapshot.direct.start(call.number, call.args, work.memory.as_mut().expect("worker view"),
-                                        work.pid, &epoch.as_ref().unwrap().io_target, call.deadline).expect("admitted I/O retry")
+                                    if let Some(request) = call.flock {
+                                        snapshot.direct.start_flock(request, call.args, work.memory.as_mut().expect("worker view"),
+                                            work.pid, &epoch.as_ref().unwrap().io_target)
+                                    } else {
+                                        snapshot.direct.start(call.number, call.args, work.memory.as_mut().expect("worker view"),
+                                            work.pid, &epoch.as_ref().unwrap().io_target, call.deadline).expect("admitted I/O retry")
+                                    }
                                 };
                                 if let Some(began) = began { syscall_time += began.elapsed(); }
                                 match result {
@@ -718,8 +726,11 @@ impl Pool {
                         stats.socket_syscalls = snapshot.direct.socket_completed();
                         stats.timer_syscalls = snapshot.direct.timer_completed();
                         stats.poll_syscalls = snapshot.direct.poll_completed();
+                        stats.uring_syscalls = snapshot.direct.uring_completed();
+                        stats.fd_syscalls = snapshot.direct.fd_control_completed();
                         stats.futex_wakes = snapshot.futex.completed();
                         stats.futex_woken = snapshot.futex.woken();
+                        stats.futex_requeues = snapshot.futex.requeues();
                     }
                     registry.metrics.worker_calls = registry.metrics.calls;
                     stats.native.merge(std::mem::take(&mut registry.metrics));
@@ -1004,8 +1015,106 @@ mod tests {
             streams: [0; (trames_vfs::MAX_FDS as usize).div_ceil(64)],
             files: [0; (trames_vfs::MAX_FDS as usize).div_ceil(64)],
             fd_flags: Default::default(),
+            umask: Default::default(),
+            actions: Default::default(),
+            program_break: Default::default(),
+            uts: None,
             direct: Default::default(),
         }
+    }
+
+    #[test]
+    fn shared_futex_alias_requeue_and_wake_release_one_slot_with_exact_svc_retirement() {
+        let mut parent = Memory::default();
+        parent.map(0x1000, 2 * PAGE_SIZE, Permissions::RW).unwrap();
+        parent
+            .map_shared_anonymous(0x3000, PAGE_SIZE, Permissions::RW, false)
+            .unwrap();
+        for (base, words) in [
+            (0x1000, &[0xd4000001u32, 0xd2800ba8, 0xd4000001][..]),
+            (
+                0x2000,
+                &[
+                    0xd4000001u32,
+                    0xaa0003f3,
+                    0xaa0403e0,
+                    0xd2800141,
+                    0xd2800022,
+                    0xd2800045,
+                    0xd4000001,
+                    0xaa0003f4,
+                    0xd2800f88,
+                    0xd4000001,
+                    0x14000000,
+                ][..],
+            ),
+        ] {
+            for (i, word) in words.iter().enumerate() {
+                parent
+                    .write_array(base + i as u64 * 4, word.to_le_bytes())
+                    .unwrap();
+            }
+        }
+        parent
+            .protect(0x1000, 2 * PAGE_SIZE, Permissions::RX)
+            .unwrap();
+        let mut child = parent.clone();
+        child
+            .remap(0x3000, PAGE_SIZE, 0x5000, PAGE_SIZE, false)
+            .unwrap();
+        let mut registry = Default::default();
+        let views = [
+            parent.parallel_view(&mut registry).unwrap(),
+            child.parallel_view(&mut registry).unwrap(),
+        ];
+        let table = crate::futex::Futexes::default();
+        let control = Arc::new(Control::new(1000));
+        let epoch = crate::run_queue::Epoch::new(control.clone());
+        for (i, view) in views.into_iter().enumerate() {
+            let mut cpu = Cpu::new(if i == 0 { 0x1000 } else { 0x2000 }, 0);
+            let args = if i == 0 {
+                [0x3000, 9, 0, 0, 0, 2]
+            } else {
+                [0x5000, 4, 0, 1, 0x5004, 0]
+            };
+            cpu.set_x(8, 98);
+            for (r, value) in args.into_iter().enumerate() {
+                cpu.set_x(r, value);
+            }
+            let mut snapshot = syscall_snapshot();
+            snapshot.futex = crate::futex::Authority::new(table.clone(), i as u64 + 10);
+            epoch.add(crate::run_queue::Job::new(
+                Work {
+                    gpu: None,
+                    pid: i as u32 + 1,
+                    cpu,
+                    memory: Some(view),
+                    control: control.clone(),
+                    syscalls: Some(snapshot),
+                },
+                1,
+                0,
+                None,
+            ));
+        }
+        let mut pool = Pool::new(1);
+        pool.ensure(0).unwrap();
+        pool.launch(0, epoch.clone()).unwrap();
+        assert!(matches!(
+            pool.event_timeout(Duration::from_secs(5)).unwrap(),
+            Some(Event::EpochStopped(0))
+        ));
+        let mut results = epoch.drain();
+        results.sort_by_key(|r| r.pid);
+        assert_eq!(results.len(), 2);
+        assert_eq!((results[0].waits, results[0].resumes), (1, 1));
+        assert_eq!((results[1].cpu.x(19), results[1].cpu.x(20)), (1, 1));
+        assert_eq!((results[1].futex_requeues, results[1].futex_wakes), (1, 1));
+        assert_eq!(results.iter().map(|r| r.instructions).sum::<u64>(), 13);
+        assert_eq!(control.remaining.load(Ordering::Relaxed), 987);
+        assert!(results
+            .iter()
+            .all(|r| r.serviced_syscalls == 0 && r.waiting.is_none()));
     }
 
     #[test]
@@ -1046,7 +1155,7 @@ mod tests {
                 cpu.set_x(reg, value);
             }
             let mut snapshot = syscall_snapshot();
-            snapshot.futex = crate::futex::Private::new(table.clone(), 1);
+            snapshot.futex = crate::futex::Authority::new(table.clone(), 1);
             epoch.add(crate::run_queue::Job::new(
                 Work {
                     gpu: None,
@@ -1250,6 +1359,169 @@ mod tests {
     }
 
     #[test]
+    fn log_readers_park_and_resume_on_one_slot_without_services_or_svc_replay() {
+        for stream in [false, true] {
+            let mut vfs = trames_vfs::Vfs::default();
+            vfs.set_runtime_info(1, trames_vfs::RuntimeInfo::default());
+            let fd = vfs.open_at(-100, b"/dev/kmsg", 2, 0).unwrap();
+            let mut memory = Memory::default();
+            memory.map(0x1000, 3 * PAGE_SIZE, Permissions::RW).unwrap();
+            for (base, words) in [
+                (0x1000, &[0xd4000001u32, 0xd2800728, 0xd4000001][..]), // read; close checkpoint
+                (
+                    0x2000,
+                    &[0xd4000001u32, 0xd2800f88, 0xd4000001, 0x14000000][..],
+                ), // write; yield
+            ] {
+                for (i, word) in words.iter().enumerate() {
+                    memory
+                        .write_array(base + i as u64 * 4, word.to_le_bytes())
+                        .unwrap();
+                }
+            }
+            memory.write(0x3000, b"wake").unwrap();
+            memory
+                .protect(0x1000, 2 * PAGE_SIZE, Permissions::RX)
+                .unwrap();
+            let mut first = memory.parallel_view(&mut Default::default()).unwrap();
+            let mut second = first.clone();
+            // SAFETY: root memory is not accessed until both owned Views stop.
+            assert!(unsafe { View::try_private_epoch(&mut [&mut first, &mut second]) });
+            let control = Arc::new(Control::new(1000));
+            let epoch = crate::run_queue::Epoch::new(control.clone());
+            for (pid, pc, number, arg0, address, count, view) in [
+                (
+                    1,
+                    0x1000,
+                    if stream { 116 } else { 63 },
+                    if stream { 2 } else { fd as u64 },
+                    0x3100,
+                    1024,
+                    first,
+                ),
+                (2, 0x2000, 64, fd as u64, 0x3000, 4, second),
+            ] {
+                let mut cpu = Cpu::new(pc, 0);
+                for (r, value) in [(8, number), (0, arg0), (1, address), (2, count)] {
+                    cpu.set_x(r, value);
+                }
+                let mut snapshot = syscall_snapshot();
+                snapshot.direct = trames_linux::DirectSyscalls::new(vfs.direct_descriptors())
+                    .with_kernel_log(vfs.kernel_log_capability());
+                epoch.add(crate::run_queue::Job::new(
+                    Work {
+                        gpu: None,
+                        pid,
+                        cpu,
+                        memory: Some(view),
+                        control: control.clone(),
+                        syscalls: Some(snapshot),
+                    },
+                    1,
+                    0,
+                    None,
+                ));
+            }
+            let mut pool = Pool::new(1);
+            pool.ensure(0).unwrap();
+            pool.launch(0, epoch.clone()).unwrap();
+            assert!(matches!(
+                pool.event_timeout(Duration::from_secs(5)).unwrap(),
+                Some(Event::EpochStopped(0))
+            ));
+            let mut done = epoch.drain();
+            done.sort_by_key(|d| d.pid);
+            assert_eq!((done[0].io_waits, done[0].resumes), (1, 1));
+            assert!(done[0].cpu.x(0) > 4 && done[0].cpu.x(0) < 1024);
+            assert_eq!(done.iter().map(|d| d.instructions).sum::<u64>(), 6);
+            assert_eq!(control.remaining.load(Ordering::Relaxed), 994);
+            assert_eq!(done.iter().map(|d| d.direct_syscalls).sum::<u64>(), 2);
+            assert!(done
+                .iter()
+                .all(|d| d.serviced_syscalls == 0 && d.io.is_none()));
+            memory.commit_parallel().unwrap();
+            let mut bytes = vec![0; done[0].cpu.x(0) as usize];
+            memory.read(0x3100, &mut bytes).unwrap();
+            assert!(bytes.windows(4).any(|w| w == b"wake"));
+        }
+    }
+
+    #[test]
+    fn blocking_flock_releases_one_host_slot_and_retires_each_svc_once() {
+        let mut vfs = trames_vfs::Vfs::default();
+        let a = vfs.open_at(-100, b"/lock", 0x42, 0o600).unwrap();
+        let b = vfs.open_at(-100, b"/lock", 2, 0).unwrap();
+        vfs.flock(b, 6).unwrap();
+        let mut files = trames_vfs::FileEpoch::default();
+        let capabilities = files.capture(&vfs, true);
+        let mut memory = Memory::default();
+        memory.map(0x1000, 2 * PAGE_SIZE, Permissions::RW).unwrap();
+        for (base, words) in [
+            (0x1000, &[0xd4000001u32, 0xd2800728, 0xd4000001][..]), // flock; close checkpoint
+            (
+                0x2000,
+                &[0xd4000001u32, 0xd2800f88, 0xd4000001, 0x14000000][..],
+            ), // unlock; yield
+        ] {
+            for (i, word) in words.iter().enumerate() {
+                memory
+                    .write_array(base + i as u64 * 4, word.to_le_bytes())
+                    .unwrap();
+            }
+        }
+        memory
+            .protect(0x1000, 2 * PAGE_SIZE, Permissions::RX)
+            .unwrap();
+        let mut first = memory.parallel_view(&mut Default::default()).unwrap();
+        let mut second = first.clone();
+        // SAFETY: all root byte access waits until the owned Views are drained.
+        assert!(unsafe { View::try_private_epoch(&mut [&mut first, &mut second]) });
+        let control = Arc::new(Control::new(1000));
+        let epoch = crate::run_queue::Epoch::new(control.clone());
+        for (pid, pc, fd, op, view) in [(1, 0x1000, a, 2, first), (2, 0x2000, b, 8, second)] {
+            let mut cpu = Cpu::new(pc, 0);
+            cpu.set_x(8, 32);
+            cpu.set_x(0, fd as u64);
+            cpu.set_x(1, op);
+            let mut snapshot = syscall_snapshot();
+            snapshot.direct = trames_linux::DirectSyscalls::new(vfs.direct_descriptors())
+                .with_files(capabilities.clone());
+            epoch.add(crate::run_queue::Job::new(
+                Work {
+                    gpu: None,
+                    pid,
+                    cpu,
+                    memory: Some(view),
+                    control: control.clone(),
+                    syscalls: Some(snapshot),
+                },
+                1,
+                0,
+                None,
+            ));
+        }
+        let mut pool = Pool::new(1);
+        pool.ensure(0).unwrap();
+        pool.launch(0, epoch.clone()).unwrap();
+        assert!(matches!(
+            pool.event_timeout(Duration::from_secs(5)).unwrap(),
+            Some(Event::EpochStopped(0))
+        ));
+        let mut done = epoch.drain();
+        done.sort_by_key(|d| d.pid);
+        assert_eq!((done[0].io_waits, done[0].resumes), (1, 1));
+        assert_eq!(done[0].cpu.x(0), 0);
+        assert_eq!(done.iter().map(|d| d.fd_syscalls).sum::<u64>(), 2);
+        assert_eq!(done.iter().map(|d| d.instructions).sum::<u64>(), 6);
+        assert_eq!(control.remaining.load(Ordering::Relaxed), 994);
+        assert!(done
+            .iter()
+            .all(|d| d.serviced_syscalls == 0 && d.io.is_none()));
+        assert_eq!(vfs.flock(b, 6), Err(trames_vfs::Errno(11)));
+        files.finish();
+    }
+
+    #[test]
     fn timer_read_epoll_and_ppoll_rearm_and_wake_on_one_host_slot_without_services() {
         for mode in 0..3 {
             let mut vfs = trames_vfs::Vfs::default();
@@ -1365,7 +1637,9 @@ mod tests {
             );
             assert_eq!(
                 done.iter().map(|d| d.poll_syscalls).sum::<u64>(),
-                u64::from(mode == 2)
+                // Both epoll_wait and ppoll now use the common retained poll
+                // completion path; neither is counted as a byte read.
+                u64::from(mode != 0)
             );
             match mode {
                 0 => assert_eq!(memory.read_u64(0x3300).unwrap(), 1),
@@ -1617,7 +1891,7 @@ mod tests {
         job.cpu.set_x(0, 0x2000);
         job.cpu.set_x(1, 129);
         job.cpu.set_x(2, 1);
-        job.syscalls.as_mut().unwrap().futex = crate::futex::Private::new(table.clone(), 7);
+        job.syscalls.as_mut().unwrap().futex = crate::futex::Authority::new(table.clone(), 7);
         let mut pool = Pool::with_profiling(1, false);
         pool.ensure(0).unwrap();
         pool.dispatch(0, job).unwrap();

@@ -1,0 +1,62 @@
+{
+  "date_utc": "2026-10-23",
+  "batch": 24,
+  "complete_coordinator_removal": false,
+  "scope": "Canonical VM allocation metadata; remove sync_heap_context/share_heap_from and per-syscall snapshots/comparisons. brk(0) uses shared worker atomic; mutation mapping/task/FD lifecycles remain.",
+  "source_sha256": {
+    "crates/trames-linux/src/heap.rs": "3f70a4c1741c3060a6ab175781046ccedffed4abd88170a44739d9970adeb2ca",
+    "crates/trames-linux/src/state.rs": "68c4d0dba743fa491e9d13b1e2d7193d0dba2ba31df46e42b18744c317365446",
+    "crates/trames-linux/src/lib.rs": "d2869cc490e544c9875231fbbaefa6ffa1fa49261a2b9150e20e83a35cb94942",
+    "crates/trames-core/src/process.rs": "c0d9429ebcde1361e90d790a096296c518ed1ac1b6c8d5ecde83e556fce9f0e8",
+    "crates/trames-core/src/process_seccomp.rs": "aa5e790f355752bbe37c1300453bb6f86a4a46e9769d4de938acf92591c70c41",
+    "crates/trames-core/src/process_service.rs": "0a553d3004c225cdee20c54b8d9e5a28019bdf898544a35059e1a570d31fb294",
+    "crates/trames-core/src/worker_syscalls.rs": "43d20c969c820910e5f6db2e530bc79eb0ec3012e3b39787fb7f82361fd99602",
+    "crates/trames-core/src/workers.rs": "659b6469f0e0eab537166fd3d99b07fa18b816f8a5340cbb17077f23fffffe2c",
+    "scripts/audit-syscalls.py": "04cf38bb97af7eb26f503e3cbc76e3bba06c739d5b20ff61e540cebbd85c7c28",
+    "tests/fixtures/shared-vm-allocation.c": "467575c1db6b4dd507fbdf506b7c6db5bebd17a6122d876d920b55567c9e26e8",
+    "tests/integration/shared-vm-allocation.py": "5a57d2e318818eb39c1944eefc03dbdb8c51e14e27e99fbda6336864d5600f2f"
+  },
+  "artifact_sha256": {
+    "target/perf-runtime/release/trames-run": "4d9ae4be197d74260192d5e6f4920e54d393c2373edc17edaab43f04f6f6665c",
+    "target/shared-vm-allocation-checks/before-trames-run": "0571b14ce4d79a0549907c829079cbbdd08567f2e922bdaa0705e18ddc9627b6",
+    "target/shared-vm-allocation-checks/native-shared-vm-allocation": "b80535dadcaf63eaad68bdba48f509d9d02646f2b8f54fefbcfec1c0e6dd63b8",
+    "tests/fixtures/bin/shared-vm-allocation": "c46184de00af0e30534820fc8cc0135d139a72ed4fee08e97e1f221e059e828a"
+  },
+  "runner_sha256": "4d9ae4be197d74260192d5e6f4920e54d393c2373edc17edaab43f04f6f6665c",
+  "baseline_sha256": "0571b14ce4d79a0549907c829079cbbdd08567f2e922bdaa0705e18ddc9627b6",
+  "baseline_evidence": "docs/validation/shared-signal-actions-summary.json",
+  "results": {
+    "unit": {
+      "path": "target/shared-vm-allocation-checks/unit-results-final.json",
+      "sha256": "0a4f3d40c8cdba910e7dd64048c0dc95b0300ac1ca75f6983822c1423e8a5f1a"
+    },
+    "comparison": {
+      "path": "target/shared-vm-allocation-checks/comparison/results.json",
+      "sha256": "97bff8a2782625d09127c9d202fb0173c1c8bcf5cbb3abb7c399895573ce0f19"
+    }
+  },
+  "distinct_rust_tests": 21,
+  "rust_test_counts": {
+    "linux": 7,
+    "core": 14
+  },
+  "unit_log_sha256": {
+    "target/shared-vm-allocation-checks/unit-core.log": "2f6239df97b74ed81a979497b650190df27f69b7b574e855a029eaccd43852b0",
+    "target/shared-vm-allocation-checks/unit-linux-final.log": "34f1d6141439afd57b2fdb8c444614b89a04c9face54636df3fc0928038f42d5",
+    "target/shared-vm-allocation-checks/unit-linux.log": "257541c832b579bd7b9a4bfed90be2d209376ba50b684e5c4434262bb503e1fa"
+  },
+  "medians_seconds": {
+    "before-1": 0.000329436,
+    "before-2": 0.011028973,
+    "before-4": 0.010954611,
+    "after-1": 0.000318199,
+    "after-2": 0.000170687,
+    "after-4": 0.000171959
+  },
+  "limits": "Short 512-query workload on Linux x86_64 host with identical static ARM64 ELF; three interleaved samples, full domains separate. No overall app/iPad/CoreMark speed claim; service requests zero before and after.",
+  "builds": {
+    "release_cli_ffi": "target/shared-vm-allocation-checks/release-build-final.log",
+    "strict_release_clippy_four_crates_all_targets": "target/shared-vm-allocation-checks/clippy.log"
+  },
+  "raw_artifacts": "target/shared-vm-allocation-checks"
+}

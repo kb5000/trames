@@ -6,6 +6,7 @@ use std::{
     cell::{Cell, RefCell},
     collections::BTreeMap,
     rc::Rc,
+    sync::Arc,
     time::{Duration, Instant},
 };
 use trames_cpu::{Cpu, SliceOutcome};
@@ -17,7 +18,7 @@ use trames_vfs::{Errno, FdKind, AT_FDCWD, MAX_FDS, O_NONBLOCK};
 const MAX_PROCESSES: usize = trames_vfs::MAX_TASKS;
 #[cfg(test)]
 const TOTAL_MAPPED_LIMIT: usize = 1024 * 1024 * 1024;
-const UNBLOCKABLE: u64 = (1 << 8) | (1 << 18);
+pub(crate) const UNBLOCKABLE: u64 = (1 << 8) | (1 << 18);
 /// Preserve round-robin queue priority while relocating an earlier flexible
 /// task when a later pinned task needs its slot. Mask width is at most 32 CPUs.
 fn assign_cpus(ready: impl IntoIterator<Item = (u32, u64)>, count: usize) -> Vec<(u32, usize)> {
@@ -84,14 +85,9 @@ mod scheduling;
 pub(crate) mod seccomp;
 #[path = "process_service.rs"]
 mod service;
+use crate::signal_actions::{Action, Actions};
 use service::DiskEpoch;
-#[derive(Clone, Copy, Default)]
-struct Action {
-    handler: u64,
-    flags: u64,
-    restorer: u64,
-    mask: u64,
-}
+
 #[derive(Clone, Copy)]
 struct Info {
     sender: u32,
@@ -143,7 +139,7 @@ struct Process {
     group: u32,
     session: u32,
     state: State,
-    actions: [Action; 65],
+    actions: Actions,
     mask: u64,
     pending: Pending,
     shared_pending: Rc<RefCell<Pending>>,
@@ -152,6 +148,8 @@ struct Process {
     poll_deadline: Option<Instant>,
     socket_deadline: Option<Instant>,
     poll_mask: Option<u64>,
+    uring_wait: Option<(u32, Rc<trames_vfs::Uring>, Option<Instant>)>,
+    flock_wait: Option<(trames_vfs::FlockRequest, trames_vfs::RetainedFd)>,
     pending_open: Option<u32>,
     stopped_state: Option<Box<State>>,
     auto_reap: bool,
@@ -159,21 +157,73 @@ struct Process {
     started: Instant,
     cpu_time: Duration,
     vm_id: u64,
-    files_id: u64,
-    fs_id: u64,
-    actions_id: u64,
     rekey: Option<u32>,
     subreaper: bool,
     alt_stack: AltStack,
     membarrier_registered: Rc<Cell<bool>>,
     file_size_limit: Rc<Cell<(u64, u64)>>,
-    oom: Rc<trames_vfs::OomTask>,
+    oom: Arc<trames_vfs::OomTask>,
     seccomp: seccomp::Seccomp,
 }
 impl Process {
     /// Only unfiltered, untraced already-blocked calls can be adopted without
     /// another authority evaluation. New calls use Snapshot::admit on-worker.
-    fn worker_io_candidate(&self) -> bool {
+    fn worker_ring_event_wait(&self, id: u32) -> bool {
+        let owner = self.memory.instruction_identity().0;
+        if let Some((_, ring, deadline)) = &self.uring_wait {
+            return trames_linux::UringEpoch::has_event_wait(ring, owner, id, *deadline);
+        }
+        if let State::Blocked(number, args) = self.state {
+            return trames_linux::UringEpoch::poll_rings(
+                &self.linux.vfs,
+                number,
+                args,
+                &self.memory,
+                id,
+            )
+            .is_some_and(|rings| {
+                rings
+                    .iter()
+                    .any(|ring| trames_linux::UringEpoch::has_event_wait(ring, owner, id, None))
+            });
+        }
+        false
+    }
+
+    fn worker_io_candidate(&self, id: u32) -> bool {
+        if matches!(self.state, State::Blocked(116, a) if a[0] as u32 == 2) {
+            return !self.linux.trace && self.seccomp.mode() == 0;
+        }
+        if matches!(self.state, State::Blocked(32, _)) {
+            return !self.linux.trace && self.seccomp.mode() == 0 && self.flock_wait.is_some();
+        }
+        if let State::Blocked(426, a) = self.state {
+            return !self.linux.trace
+                && self.seccomp.mode() == 0
+                && a[3] & !9 == 0
+                && self.uring_wait.as_ref().is_some_and(|(_, ring, _)| {
+                    self.linux
+                        .vfs
+                        .uring(a[0] as u32)
+                        .is_ok_and(|current| Rc::ptr_eq(&current, ring))
+                        && trames_linux::UringEpoch::can_adopt(ring)
+                });
+        }
+        if let State::Blocked(number @ (22 | 73 | 441), args) = self.state {
+            if !self.linux.trace
+                && self.seccomp.mode() == 0
+                && trames_linux::UringEpoch::poll_rings(
+                    &self.linux.vfs,
+                    number,
+                    args,
+                    &self.memory,
+                    id,
+                )
+                .is_some()
+            {
+                return true;
+            }
+        }
         let State::Blocked(number @ (22 | 63..=66 | 73 | 206 | 207 | 211 | 212 | 441), args) =
             self.state
         else {
@@ -182,7 +232,36 @@ impl Process {
         !self.linux.trace
             && self.seccomp.mode() == 0
             && trames_linux::DirectSyscalls::new(self.linux.vfs.direct_descriptors())
+                .with_network(self.linux.vfs.direct_network())
                 .supports_call(number, args)
+    }
+
+    /// Preserve the complete OFD before owner-side close/dup can resume.
+    fn retain_worker_flock(&mut self, call: Option<&crate::run_queue::IoCall>) {
+        if let Some(request) = call.and_then(|call| call.flock.as_ref()) {
+            match self.flock_wait.as_mut() {
+                Some((saved, _)) if saved.same_owner(request) => {
+                    // The previous wait may have completed and this same OFD
+                    // started a different lock operation before the join.
+                    // Reuse the full file lease, but always update the request.
+                    *saved = request.clone();
+                }
+                _ => {
+                    // Every worker has stopped; no cold close/dup has run yet.
+                    // Retain the original OFD before table mutation becomes legal.
+                    let call = call.unwrap();
+                    let (current, file) = self
+                        .linux
+                        .vfs
+                        .retain_flock(call.args[0] as u32, call.args[1] as u32)
+                        .expect("frozen flock descriptor");
+                    assert!(current.same_owner(request));
+                    self.flock_wait = Some((request.clone(), file));
+                }
+            }
+        } else {
+            self.flock_wait = None;
+        }
     }
 
     fn worker_gpu_candidate(&self) -> bool {
@@ -192,10 +271,27 @@ impl Process {
     fn frozen(&self, pid: u32) -> bool {
         self.linux.vfs.cgroup_frozen(pid) && self.pending_bits() & (1 << 8) == 0
     }
+    #[cfg(test)]
     fn fork(&self) -> Box<Self> {
-        self.fork_with_memory(self.memory.clone())
+        self.fork_state(self.memory.clone(), false, false, false)
     }
+    #[cfg(test)]
     fn fork_with_memory(&self, memory: Memory) -> Box<Self> {
+        self.fork_state(memory, true, true, true)
+    }
+    fn fork_state(
+        &self,
+        memory: Memory,
+        shared_files: bool,
+        shared_fs: bool,
+        shared_actions: bool,
+    ) -> Box<Self> {
+        // Bind allocation metadata to actual Memory identity, including test
+        // and embedding clones; a copied address space must not share a cursor.
+        let shared_vm = memory.coordinator_ownership().0 == self.memory.coordinator_ownership().0;
+        let linux = self
+            .linux
+            .clone_with_resources(shared_files, shared_fs, shared_vm);
         Box::new(Self {
             cpu: self.cpu.clone(),
             affinity: self.affinity,
@@ -203,14 +299,18 @@ impl Process {
             nice: self.nice,
             scheduler: self.scheduler,
             memory,
-            linux: self.linux.clone(),
+            linux,
             parent: 0,
             parent_thread: 0,
             pdeath_signal: 0,
             group: self.group,
             session: self.session,
             state: State::Ready,
-            actions: self.actions,
+            actions: if shared_actions {
+                self.actions.shared()
+            } else {
+                self.actions.clone()
+            },
             mask: self.mask,
             pending: Pending::default(),
             shared_pending: Rc::new(RefCell::new(Pending::default())),
@@ -219,6 +319,8 @@ impl Process {
             poll_deadline: None,
             socket_deadline: None,
             poll_mask: None,
+            uring_wait: None,
+            flock_wait: None,
             pending_open: None,
             stopped_state: None,
             auto_reap: false,
@@ -226,15 +328,12 @@ impl Process {
             started: Instant::now(),
             cpu_time: Duration::ZERO,
             vm_id: self.vm_id,
-            files_id: self.files_id,
-            fs_id: self.fs_id,
-            actions_id: self.actions_id,
             rekey: None,
             subreaper: false,
             alt_stack: self.alt_stack,
             membarrier_registered: Rc::new(Cell::new(self.membarrier_registered.get())),
             file_size_limit: Rc::new(Cell::new(self.file_size_limit.get())),
-            oom: Rc::new(self.oom.fork()),
+            oom: Arc::new(self.oom.fork()),
             seccomp: self.seccomp.clone(),
         })
     }
@@ -242,18 +341,6 @@ impl Process {
 struct ProcMaps {
     identity: (u64, u64),
     bytes: Vec<u8>,
-}
-#[derive(Default)]
-struct ResourceChanges {
-    heap: bool,
-    files: bool,
-    fs: bool,
-    actions: bool,
-}
-impl ResourceChanges {
-    fn any(&self) -> bool {
-        self.heap || self.files || self.fs || self.actions
-    }
 }
 struct Kernel {
     memory_limits: super::MemoryLimits,
@@ -269,6 +356,7 @@ struct Kernel {
     worker_direct_syscalls: u64,
     worker_futex_wakes: u64,
     worker_futex_woken: u64,
+    worker_futex_requeues: u64,
     worker_futex_waits: u64,
     worker_task_resumes: u64,
     worker_task_yields: u64,
@@ -278,6 +366,8 @@ struct Kernel {
     worker_socket_syscalls: u64,
     worker_timer_syscalls: u64,
     worker_poll_syscalls: u64,
+    worker_uring_syscalls: u64,
+    worker_fd_syscalls: u64,
     worker_gpu_calls: u64,
     worker_gpu_waits: u64,
     service_requests: u64,
@@ -541,46 +631,11 @@ impl Kernel {
         }
         spaces.values().sum()
     }
-    fn sync_resources(&mut self, p: &Process, changed: ResourceChanges) {
-        if !changed.any() || matches!(p.state, State::Zombie(_)) {
-            return;
-        }
-        for other in self
-            .processes
-            .values_mut()
-            .filter(|o| !matches!(o.state, State::Zombie(_)))
-        {
-            if changed.heap && other.vm_id == p.vm_id {
-                other.linux.share_heap_from(&p.linux);
-            }
-            if changed.files && other.files_id == p.files_id {
-                other.linux.vfs.share_descriptors_from(&p.linux.vfs);
-            }
-            if changed.fs && other.fs_id == p.fs_id {
-                other.linux.vfs.share_context_from(&p.linux.vfs);
-            }
-            if changed.actions && other.actions_id == p.actions_id {
-                other.actions = p.actions;
-            }
-        }
-    }
     fn control(&mut self, io: &mut impl GuestOutput) -> Result<(), RuntimeError> {
         let Some(root) = self.processes.get_mut(&1) else {
             return Ok(());
         };
-        let before = root.linux.vfs.clone_resources();
         let result = io.control(&mut root.linux.vfs);
-        let (files, fs) = root.linux.vfs.changed_clone_resources(&before);
-        let changed = ResourceChanges {
-            files,
-            fs,
-            ..Default::default()
-        };
-        if changed.any() {
-            let root = self.processes.remove(&1).expect("root process");
-            self.sync_resources(&root, changed);
-            self.processes.insert(1, root);
-        }
         match result {
             Ok(true) => Ok(()),
             Ok(false) => Err(RuntimeError::Cancelled),
@@ -638,6 +693,7 @@ impl Kernel {
                     .unwrap_or_else(|_| p.linux.arguments.get(i).cloned().unwrap_or_default())
             })
             .collect();
+        let (ignored, caught) = p.actions.masks();
         trames_vfs::ProcessInfo {
             pid,
             tgid: p.tgid,
@@ -685,16 +741,12 @@ impl Kernel {
             fds: p.linux.vfs.fd_snapshot(),
             auxiliary: p.linux.auxiliary.clone(),
             file_size_limits: Some(p.file_size_limit.get()),
-            oom: Rc::downgrade(&p.oom),
+            oom: Arc::downgrade(&p.oom),
             pending: p.pending.bits(),
             shared_pending: p.shared_pending.borrow().bits(),
             blocked: p.mask,
-            ignored: (1..=64)
-                .filter(|s| p.actions[*s].handler == 1)
-                .fold(0, |v, s| v | (1 << (s - 1))),
-            caught: (1..=64)
-                .filter(|s| p.actions[*s].handler > 1)
-                .fold(0, |v, s| v | (1 << (s - 1))),
+            ignored,
+            caught,
         }
     }
     fn refresh_proc(&self, pid: u32, p: &mut Process) {
@@ -741,8 +793,8 @@ impl Kernel {
     }
     fn notify(&mut self, parent: u32, child: u32, uid: u32, status: i32, code: i32) {
         if let Some(p) = self.processes.get_mut(&parent) {
-            if p.actions[17].handler == 1 || (matches!(code, 5 | 6) && p.actions[17].flags & 1 != 0)
-            {
+            let action = p.actions.get(17);
+            if action.handler == 1 || (matches!(code, 5 | 6) && action.flags & 1 != 0) {
                 return;
             }
             let _ = p.shared_pending.borrow_mut().enqueue(
@@ -778,19 +830,12 @@ impl Kernel {
         {
             p.linux.vfs.release_process_locks();
         }
-        if self
-            .processes
-            .values()
-            .map(Box::as_ref)
-            .filter(live)
-            .any(|t| t.files_id == p.files_id)
-        {
-            p.linux.vfs.detach_file_table();
-        } else {
-            p.linux.vfs.close_all();
-        }
+        p.linux.vfs.release_descriptors();
     }
     fn exit_one(&mut self, pid: u32, p: &mut Process, status: i32) {
+        p.linux.cancel_uring(&mut p.memory, pid);
+        p.uring_wait = None;
+        p.flock_wait = None;
         self.parent_thread_exited(pid, p, None);
         p.linux.vfs.cgroup_exit(pid);
         let state = if matches!(p.state, State::Stopped) {
@@ -820,7 +865,8 @@ impl Kernel {
             return;
         }
         p.auto_reap = self.processes.get(&p.parent).is_some_and(|parent| {
-            parent.actions[17].handler == 1 || parent.actions[17].flags & 2 != 0
+            let action = parent.actions.get(17);
+            action.handler == 1 || action.flags & 2 != 0
         });
         if pid != 1 {
             p.memory = Memory::default();
@@ -877,10 +923,10 @@ impl Kernel {
                     },
                     if status & 127 == 0 { 1 } else { 2 },
                 );
-                let auto = self
-                    .processes
-                    .get(&parent)
-                    .is_some_and(|p| p.actions[17].handler == 1 || p.actions[17].flags & 2 != 0);
+                let auto = self.processes.get(&parent).is_some_and(|p| {
+                    let action = p.actions.get(17);
+                    action.handler == 1 || action.flags & 2 != 0
+                });
                 if auto && tgid != 1 {
                     self.processes.remove(&tgid);
                 }
@@ -941,7 +987,7 @@ impl Kernel {
         // synchronous faults retain their forced-delivery behavior.
         if p.linux.vfs.pid_namespace().is_nested()
             && p.linux.vfs.visible_pid(p.tgid) == 1
-            && p.actions[sig as usize].handler <= 1
+            && p.actions.get(sig as usize).handler <= 1
             && p.mask & (1 << (sig - 1)) == 0
             && !(matches!(sig, 9 | 19) && p.linux.vfs.visible_pid(sender) == 0)
         {
@@ -949,7 +995,7 @@ impl Kernel {
         }
         if sig != 9
             && sig != 19
-            && p.actions[sig as usize].handler == 1
+            && p.actions.get(sig as usize).handler == 1
             && p.mask & (1 << (sig - 1)) == 0
         {
             return false;
@@ -1175,7 +1221,7 @@ impl Kernel {
             F::Memory { pc, .. } => (11, 1, *pc),
         };
         // Forced synchronous faults cannot be ignored or left masked forever.
-        if p.actions[sig as usize].handler <= 1 || p.mask & (1 << (sig - 1)) != 0 {
+        if p.actions.get(sig as usize).handler <= 1 || p.mask & (1 << (sig - 1)) != 0 {
             if pid == 1 {
                 eprintln!("trames: {fault}");
             }
@@ -1212,11 +1258,7 @@ impl Kernel {
                 allowed &= 1 << 17;
             }
             if matches!(p.state, State::Gpu { .. }) {
-                for (sig, action) in p.actions.iter().enumerate().skip(1) {
-                    if action.handler > 1 {
-                        allowed &= !(1 << (sig - 1));
-                    }
-                }
+                allowed &= !p.actions.masks().1;
             }
             p.next_signal(allowed)
         };
@@ -1227,7 +1269,7 @@ impl Kernel {
             return Ok(false);
         }
         let info = p.take_signal(sig, shared);
-        let action = p.actions[sig as usize];
+        let action = p.actions.get(sig as usize);
         // Timer-generated signals also reach this queue without queue_one.
         // Namespace init ignores default dispositions, except forced ancestor
         // KILL/STOP and synchronous faults, which must still make progress.
@@ -1274,6 +1316,8 @@ impl Kernel {
                     p.mask = mask;
                 }
                 p.poll_deadline = None;
+                p.uring_wait = None;
+                p.flock_wait = None;
                 let timed_socket = p.socket_deadline.take().is_some();
                 if !timed_socket
                     && action.flags & 0x10000000 != 0
@@ -1365,16 +1409,7 @@ impl Kernel {
         }
         p.mask &= !UNBLOCKABLE;
         if action.flags & 0x80000000 != 0 {
-            p.actions[sig as usize] = Action::default();
-            // SA_RESETHAND changes shared dispositions outside rt_sigaction.
-            // Publish immediately, including faults delivered outside drive.
-            self.sync_resources(
-                p,
-                ResourceChanges {
-                    actions: true,
-                    ..Default::default()
-                },
-            );
+            p.actions.set(sig as usize, Action::default());
         }
         p.cpu.set_x(0, sig as u64);
         p.cpu.set_x(1, sp);
@@ -1575,6 +1610,11 @@ impl Kernel {
                 .copied()
                 .take(15)
                 .collect();
+            let task = p.linux.vfs.process_context();
+            p.linux.cancel_uring(&mut p.memory, task);
+            p.uring_wait = None;
+            p.flock_wait = None;
+            p.linux.vfs.unshare_descriptors();
             p.linux.vfs.close_exec();
             let credentials = execute_vfs.credentials.clone();
             std::mem::swap(&mut runtime.linux.vfs, &mut p.linux.vfs);
@@ -1585,11 +1625,7 @@ impl Kernel {
             p.linux = runtime.linux;
             p.cpu = runtime.cpu;
             p.memory = runtime.memory;
-            for action in &mut p.actions {
-                if action.handler != 1 {
-                    *action = Action::default();
-                }
-            }
+            p.actions = p.actions.exec();
             p.frames = 0;
             p.alt_stack = AltStack::default();
             p.membarrier_registered = Rc::new(Cell::new(false));
@@ -1675,6 +1711,58 @@ impl Kernel {
         io: &mut impl GuestOutput,
     ) -> Result<Option<u64>, Errno> {
         match number {
+            32 => {
+                let (request, file) = match p.flock_wait.take() {
+                    Some(wait) => wait,
+                    None => {
+                        // Uncontended calls need no persistent request/extra
+                        // OFD lease. Retain only when this invocation parks.
+                        match p.linux.vfs.flock(a[0] as u32, a[1] as u32) {
+                            Err(Errno(11)) if a[1] as u32 & 4 == 0 => {
+                                p.flock_wait =
+                                    Some(p.linux.vfs.retain_flock(a[0] as u32, a[1] as u32)?);
+                                p.state = State::Blocked(number, a);
+                                return Ok(None);
+                            }
+                            result => return result.map(|()| Some(0)),
+                        }
+                    }
+                };
+                match request.try_lock() {
+                    Err(Errno(11)) if !request.nonblocking() => {
+                        p.flock_wait = Some((request, file));
+                        p.state = State::Blocked(number, a);
+                        Ok(None)
+                    }
+                    result => result.map(|()| Some(0)),
+                }
+            }
+            426 => {
+                p.linux.set_uring_clock(self.started);
+                let (saved, ring, deadline) = match p.uring_wait.take() {
+                    Some((submitted, ring, deadline)) => (Some(submitted), ring, deadline),
+                    None => (
+                        None,
+                        p.linux.vfs.uring(a[0] as u32)?,
+                        p.linux.uring_enter_deadline(a, &p.memory)?,
+                    ),
+                };
+                let (submitted, ready) =
+                    p.linux
+                        .uring_enter_ring(ring.clone(), a, &mut p.memory, saved, pid)?;
+                if ready {
+                    Ok(Some(submitted as u64))
+                } else if deadline.is_some_and(|d| Instant::now() >= d) {
+                    if submitted != 0 {
+                        Ok(Some(submitted as u64))
+                    } else {
+                        Err(Errno(62))
+                    }
+                } else {
+                    p.uring_wait = Some((submitted, ring, deadline));
+                    Ok(None)
+                }
+            }
             277 => self.seccomp(p, a).map(Some),
             167 if a[0] == 21 => Ok(Some(p.seccomp.mode() as u64)),
             167 if a[0] == 22 => match a[1] {
@@ -1834,7 +1922,10 @@ impl Kernel {
                 {
                     return Err(Errno(22));
                 }
-                let mut view = p.linux.vfs.clone();
+                let mut view = p.linux.vfs.clone_with_resources(
+                    a[0] & 0x400 == 0,
+                    a[0] & (0x200 | trames_vfs::CLONE_NEWNS) == 0,
+                );
                 if a[0] & trames_vfs::CLONE_NEWPID != 0 {
                     view.unshare_pid()?;
                 }
@@ -1854,18 +1945,13 @@ impl Kernel {
                     view.unshare_cgroup()?;
                 }
                 p.linux.vfs = view;
-                if a[0] & (0x200 | trames_vfs::CLONE_NEWNS) != 0 {
-                    p.fs_id = self.resource_id();
-                }
-                if a[0] & 0x400 != 0 {
-                    p.files_id = self.resource_id();
-                }
                 Ok(Some(0))
             }
             268 => {
                 if p.linux.vfs.namespace_type(a[0] as u32)? == Some(trames_vfs::CLONE_NEWNS)
                     && self.processes.values().any(|other| {
-                        other.fs_id == p.fs_id && !matches!(other.state, State::Zombie(_))
+                        other.linux.vfs.shares_context_with(&p.linux.vfs)
+                            && !matches!(other.state, State::Zombie(_))
                     })
                 {
                     return Err(Errno(22));
@@ -1879,7 +1965,7 @@ impl Kernel {
                     return Err(Errno(22));
                 }
                 if flags & 2 != 0 {
-                    p.files_id = self.resource_id();
+                    p.linux.vfs.unshare_descriptors();
                 }
                 p.linux.vfs.close_range(first, last, flags)?;
                 Ok(Some(0))
@@ -1969,12 +2055,17 @@ impl Kernel {
                     .chain(p.signal_senders())
                     .collect();
                 p.linux.vfs.pid_namespace().retain_ids(&live);
-                let mut child = if shared_vm {
-                    let memory = p.memory.share();
-                    p.fork_with_memory(memory)
+                let memory = if shared_vm {
+                    p.memory.share()
                 } else {
-                    p.fork()
+                    p.memory.clone()
                 };
+                let mut child = p.fork_state(
+                    memory,
+                    a[0] & 0x400 != 0,
+                    a[0] & 0x200 != 0,
+                    a[0] & 0x800 != 0,
+                );
                 if a[0] & trames_vfs::CLONE_NEWPID != 0 {
                     child.linux.vfs.unshare_pid()?;
                 }
@@ -2009,18 +2100,9 @@ impl Kernel {
                     child.vm_id = resource;
                     child.linux.vfs.unshare_dumpable();
                 }
-                if a[0] & 0x400 == 0 {
-                    child.files_id = resource;
-                }
-                if a[0] & 0x200 == 0 {
-                    child.fs_id = resource;
-                }
-                if a[0] & 0x800 == 0 {
-                    child.actions_id = resource;
-                }
                 child.tgid = if threaded { p.tgid } else { id };
                 if threaded {
-                    child.oom = Rc::new(p.oom.thread());
+                    child.oom = Arc::new(p.oom.thread());
                     child.shared_pending = p.shared_pending.clone();
                     child.subreaper = p.subreaper;
                     child.file_size_limit = p.file_size_limit.clone();
@@ -2086,16 +2168,13 @@ impl Kernel {
                     .collect();
                 for id in ids {
                     if let Some(mut t) = self.processes.remove(&id) {
+                        t.linux.cancel_uring(&mut t.memory, id);
                         self.parent_thread_exited(id, &t, Some(p.tgid));
                         t.linux.vfs.cgroup_exit(id);
                         let address = t.linux.clear_tid_address();
                         t.linux.exit_tid(&mut t.memory);
                         self.wake_futex(&t, address, u32::MAX, u32::MAX);
-                        if t.files_id == p.files_id {
-                            t.linux.vfs.detach_file_table();
-                        } else {
-                            t.linux.vfs.close_all();
-                        }
+                        t.linux.vfs.release_descriptors();
                     }
                 }
                 self.timers.retain(|_, t| t.tgid != p.tgid);
@@ -2111,9 +2190,6 @@ impl Kernel {
                 }
                 let resource = self.resource_id();
                 p.vm_id = resource;
-                p.files_id = resource;
-                p.fs_id = resource;
-                p.actions_id = resource;
                 if !self
                     .processes
                     .values()
@@ -2163,43 +2239,7 @@ impl Kernel {
             85..=87 => self.timerfd(p, number, a),
             134 => {
                 let sig = a[0] as u32;
-                if sig == 0 || sig > 64 || sig == 9 || sig == 19 || a[3] != 8 {
-                    return Err(Errno(22));
-                }
-                if a[2] != 0 {
-                    Linux::check(&p.memory, a[2], 32, Access::Write)?;
-                }
-                let new = if a[1] != 0 {
-                    Linux::check(&p.memory, a[1], 32, Access::Read)?;
-                    // musl sign-extends its signed int sa_flags into the
-                    // kernel's unsigned long. SA_RESETHAND sets bit 31;
-                    // Linux accepts this representation and uses the low bits.
-                    let flags = read_u64(&p.memory, a[1] + 8)? as u32 as u64;
-                    // Linux uses the ordinary stack for SA_ONSTACK while
-                    // the alternate stack is disabled.
-                    if flags & !0xdc000007 != 0 {
-                        return Err(Errno(22));
-                    }
-                    Some(Action {
-                        handler: read_u64(&p.memory, a[1])?,
-                        flags,
-                        restorer: read_u64(&p.memory, a[1] + 16)?,
-                        mask: read_u64(&p.memory, a[1] + 24)? & !UNBLOCKABLE,
-                    })
-                } else {
-                    None
-                };
-                if a[2] != 0 {
-                    let old = p.actions[sig as usize];
-                    for (i, value) in [old.handler, old.flags, old.restorer, old.mask]
-                        .into_iter()
-                        .enumerate()
-                    {
-                        write_u64(&mut p.memory, a[2] + i as u64 * 8, value)?;
-                    }
-                }
-                if let Some(action) = new {
-                    p.actions[sig as usize] = action;
+                if let Some(action) = p.actions.call(a, &mut p.memory)? {
                     if action.handler == 1 || action.handler == 0 && matches!(sig, 17 | 23 | 28) {
                         p.pending.discard(sig);
                         p.shared_pending.borrow_mut().discard(sig);
@@ -2524,10 +2564,8 @@ impl Kernel {
                     )
                     && !per_call_nonblock)
                     || (raw == error(Errno(115)) && number == 203)
-                    || (raw == error(Errno(11)) && number == 32 && a[1] & 4 == 0)
                     || (raw == error(Errno(11)) && number == 25 && a[1] == 7))
-                    && (matches!(number, 25 | 32)
-                        || p.linux.vfs.flags(a[0] as u32)? & O_NONBLOCK == 0)
+                    && (number == 25 || p.linux.vfs.flags(a[0] as u32)? & O_NONBLOCK == 0)
                 {
                     if !matches!(p.state, State::Blocked(..)) {
                         p.socket_deadline = match number {
@@ -2597,22 +2635,10 @@ impl Kernel {
         put_args(&mut p.cpu, a);
         let ids = |c: &trames_vfs::Credentials| [c.euid, c.egid, c.fsuid, c.fsgid];
         let before_ids = ids(&p.linux.vfs.credentials);
-        let heap = p.linux.heap_context();
-        let resources = p.linux.vfs.clone_resources();
         let result = self.syscall(pid, p, number, a, io);
         if ids(&p.linux.vfs.credentials) != before_ids {
             p.pdeath_signal = 0;
         }
-        let (files, fs) = p.linux.vfs.changed_clone_resources(&resources);
-        self.sync_resources(
-            p,
-            ResourceChanges {
-                heap: p.linux.heap_context() != heap,
-                files,
-                fs,
-                actions: number == 134 && a[1] != 0,
-            },
-        );
         let raw = match result {
             Ok(Some(raw)) => {
                 p.cpu.set_x(0, raw);
@@ -2886,10 +2912,19 @@ impl Kernel {
                     0x40045431 => end.pair.locked.set(read_u32(&p.memory, a[2])? != 0),
                     0x80045439 => write_u32(&mut p.memory, a[2], u32::from(end.pair.locked.get()))?,
                     0x5420 => {
-                        end.pair.packet.set(read_u32(&p.memory, a[2])? != 0);
-                        end.pair.packet_status.set(0);
+                        end.pair.packet.store(
+                            read_u32(&p.memory, a[2])? != 0,
+                            std::sync::atomic::Ordering::Relaxed,
+                        );
+                        end.pair
+                            .packet_status
+                            .store(0, std::sync::atomic::Ordering::Relaxed);
                     }
-                    0x80045438 => write_u32(&mut p.memory, a[2], u32::from(end.pair.packet.get()))?,
+                    0x80045438 => write_u32(
+                        &mut p.memory,
+                        a[2],
+                        u32::from(end.pair.packet.load(std::sync::atomic::Ordering::Relaxed)),
+                    )?,
                     0x5441 => {
                         return p
                             .linux
@@ -2929,17 +2964,18 @@ impl Kernel {
                     Err(e) => Err(e),
                 };
             }
-            if endpoint
-                .as_ref()
-                .is_some_and(|end| !end.pair.master_alive.get())
-            {
+            if endpoint.as_ref().is_some_and(|end| {
+                !end.pair
+                    .master_alive
+                    .load(std::sync::atomic::Ordering::Relaxed)
+            }) {
                 return Ok(Some(0));
             }
             if p.linux.vfs.controlling_terminal == Some(id)
                 && p.session == tty.session
                 && p.group != tty.foreground
             {
-                if p.mask & (1 << 20) != 0 || p.actions[21].handler == 1 {
+                if p.mask & (1 << 20) != 0 || p.actions.get(21).handler == 1 {
                     return Err(Errno(5));
                 }
                 let group = p.group;
@@ -2989,26 +3025,14 @@ impl Kernel {
                 }
             }
             if master {
-                let count = bytes.len().min(tty.input_capacity());
-                if count == 0 && !bytes.is_empty() {
-                    return if p.linux.vfs.flags(a[0] as u32)? & O_NONBLOCK != 0 {
-                        Err(Errno(11))
-                    } else {
-                        Ok(None)
-                    };
-                }
-                let stopped = tty.flow_stopped;
-                let signals = tty.input(&bytes[..count]);
                 let group = tty.foreground;
                 let session = tty.session;
-                if stopped != tty.flow_stopped {
-                    tty.output_epoch = tty.output_epoch.wrapping_add(1);
-                    let pair = &endpoint.as_ref().expect("master").pair;
-                    pair.packet_status
-                        .set(pair.packet_status.get() | if tty.flow_stopped { 4 } else { 8 });
-                }
                 drop(dynamic);
-                endpoint.as_ref().expect("master").pair.flush_echo();
+                let (count, signals) =
+                    match endpoint.as_ref().expect("master").pair.master_write(&bytes) {
+                        Err(Errno(11)) if flags & O_NONBLOCK == 0 => return Ok(None),
+                        result => result?,
+                    };
                 for sig in signals {
                     if group != 0 {
                         self.terminal_signal(pid, p, session, group, sig);
@@ -3016,10 +3040,11 @@ impl Kernel {
                 }
                 return Ok(Some(count as u64));
             }
-            if endpoint
-                .as_ref()
-                .is_some_and(|end| !end.pair.master_alive.get())
-            {
+            if endpoint.as_ref().is_some_and(|end| {
+                !end.pair
+                    .master_alive
+                    .load(std::sync::atomic::Ordering::Relaxed)
+            }) {
                 return Err(Errno(5));
             }
             if p.linux.vfs.controlling_terminal == Some(id)
@@ -3027,7 +3052,7 @@ impl Kernel {
                 && tty.lflag() & 256 != 0
                 && p.group != tty.foreground
                 && p.mask & (1 << 21) == 0
-                && p.actions[22].handler != 1
+                && p.actions.get(22).handler != 1
             {
                 let group = p.group;
                 let session = tty.session;
@@ -3056,7 +3081,7 @@ impl Kernel {
                 && p.group != tty.foreground
                 && matches!(request, 0x5402..=0x5404 | 0x5410)
                 && p.mask & (1 << 21) == 0
-                && p.actions[22].handler != 1
+                && p.actions.get(22).handler != 1
             {
                 let group = p.group;
                 let session = tty.session;
@@ -3172,6 +3197,7 @@ impl Kernel {
                     }
                     if a[2] == 1 || a[2] == 2 {
                         tty.output_queue.clear();
+                        tty.output_space_epoch = tty.output_space_epoch.wrapping_add(1);
                     }
                 }
                 _ => return Err(Errno(25)),
@@ -3207,7 +3233,9 @@ impl Kernel {
                     }
                 }
             }
-            if pair.master_alive.get() || pair.hangup_notified.replace(true) {
+            if pair.master_alive.load(std::sync::atomic::Ordering::Relaxed)
+                || pair.hangup_notified.replace(true)
+            {
                 continue;
             }
             let mut tty = pair.terminal.borrow_mut();
@@ -3476,6 +3504,53 @@ impl Kernel {
             }
         }
     }
+    fn parallel_candidate(&self) -> bool {
+        let mut active = self.processes.iter().filter(|(id, p)| {
+            (matches!(p.state, State::Ready) || p.worker_gpu_candidate()) && !p.frozen(**id)
+        });
+        let Some((&id, first)) = active.next() else {
+            // A parked ring with a real host event or imported deadline and a
+            // related peer can retain event-driven execution with every CPU
+            // asleep. Unrelated terminals/timers do not change the solo gate.
+            return self.processes.iter().any(|(&id, p)| {
+                if p.frozen(id) || !p.worker_io_candidate(id) || !p.worker_ring_event_wait(id) {
+                    return false;
+                }
+                let fds = p.linux.vfs.direct_descriptors();
+                let network = p.linux.vfs.direct_network();
+                self.processes.iter().any(|(&other, q)| {
+                    other != id
+                        && !q.frozen(other)
+                        && q.worker_io_candidate(other)
+                        && (fds.shares_resources(&q.linux.vfs.direct_descriptors())
+                            || network.shares_resources(&q.linux.vfs.direct_network()))
+                })
+            });
+        };
+        if first.worker_gpu_candidate() || active.next().is_some() {
+            return true;
+        }
+        // A sleeping init pipe/idle terminal is not runnable CPU work. Keep
+        // solo computation on Memory's direct MMU path unless a related task
+        // can actually benefit from worker handoff. This only selects an
+        // execution strategy: unmatched waits still use the ordinary kernel.
+        let fds = first.linux.vfs.direct_descriptors();
+        let network = first.linux.vfs.direct_network();
+        self.processes.iter().any(|(&other, p)| {
+            other != id
+                && !p.frozen(other)
+                && (matches!(p.state, State::Futex { .. }) && p.vm_id == first.vm_id
+                    || p.worker_io_candidate(other)
+                        && (p
+                            .flock_wait
+                            .as_ref()
+                            .is_some_and(|(r, _)| first.linux.vfs.shares_flock(r))
+                            || matches!(p.state, State::Blocked(116, _))
+                                && first.linux.vfs.can_write_kernel_log_for(&p.linux.vfs)
+                            || fds.shares_resources(&p.linux.vfs.direct_descriptors())
+                            || network.shares_resources(&p.linux.vfs.direct_network())))
+        })
+    }
     fn parallel_round(
         &mut self,
         io: &mut impl GuestOutput,
@@ -3492,11 +3567,7 @@ impl Kernel {
         {
             return Ok(false);
         }
-        if self.cpu_count < 2
-            || !self.processes.iter().any(|(id, p)| {
-                (matches!(p.state, State::Ready) || p.worker_gpu_candidate()) && !p.frozen(*id)
-            })
-        {
+        if self.cpu_count < 2 || !self.parallel_candidate() {
             return Ok(false);
         }
         // Mapping/signal effects precede dispatch. Ready services may take a
@@ -3510,13 +3581,31 @@ impl Kernel {
                 if !p.worker_gpu_candidate() {
                     self.resume_gpu(id, &mut p);
                 }
+                let local_ring = p.worker_io_candidate(id)
+                    && match p.state {
+                        State::Blocked(426, _) => true,
+                        State::Blocked(number @ (22 | 73 | 441), args) => {
+                            trames_linux::UringEpoch::poll_rings(
+                                &p.linux.vfs,
+                                number,
+                                args,
+                                &p.memory,
+                                id,
+                            )
+                            .is_some()
+                        }
+                        _ => false,
+                    };
+                if !local_ring {
+                    p.linux.progress_uring(&mut p.memory, id);
+                }
                 self.resume_event(&mut p);
                 if self.deliver(id, &mut p).is_err() {
                     self.exit(id, &mut p, 11);
                 }
                 // call/control/deliver publish resource changes immediately.
                 match p.state.clone() {
-                    State::Blocked(..) if p.worker_io_candidate() => {
+                    State::Blocked(..) if p.worker_io_candidate(id) => {
                         // The worker owns the retry; do not perform byte I/O in
                         // the coordinator before preparing its execution View.
                     }
@@ -3553,7 +3642,7 @@ impl Kernel {
                 return None;
             }
             ((matches!(p.state, State::Futex { .. }) && vms.contains(&p.vm_id))
-                || p.worker_io_candidate())
+                || p.worker_io_candidate(id))
             .then_some((id, 0))
         }));
         if members.len() < 2
@@ -3591,6 +3680,7 @@ impl Kernel {
         let control = std::sync::Arc::new(crate::workers::Control::new(remaining));
         let epoch = crate::run_queue::Epoch::new(control.clone());
         let mut file_epoch = trames_vfs::FileEpoch::default();
+        let mut uring_epoch = trames_linux::UringEpoch::default();
         let began = Instant::now();
         for (id, _, view) in views {
             let p = &self.processes[&id];
@@ -3610,6 +3700,16 @@ impl Kernel {
                 None
             };
             let c = &p.linux.vfs.credentials;
+            let direct_files = if !p.linux.trace {
+                file_epoch.capture(&p.linux.vfs, p.file_size_limit.get().0 == u64::MAX)
+            } else {
+                Default::default()
+            };
+            let retained_files = if !p.linux.trace {
+                file_epoch.capture_uring(&p.linux.vfs, p.file_size_limit.get().0 == u64::MAX)
+            } else {
+                Default::default()
+            };
             let work = crate::workers::Work {
                 gpu,
                 pid: id,
@@ -3633,15 +3733,47 @@ impl Kernel {
                     streams: p.linux.vfs.stream_descriptors(),
                     files: p.linux.vfs.file_descriptors(),
                     fd_flags: p.linux.vfs.fd_flags_snapshot(),
+                    umask: p.linux.vfs.umask_capability(),
+                    actions: p.actions.shared(),
+                    program_break: p.linux.program_break(),
+                    uts: Some(p.linux.vfs.uts_capability()),
                     direct: trames_linux::DirectSyscalls::new(p.linux.vfs.direct_descriptors())
+                        .with_kernel_log(p.linux.vfs.kernel_log_capability())
+                        .with_urings(uring_epoch.capture_all(
+                            &p.linux.vfs,
+                            p.memory.instruction_identity().0,
+                            id,
+                            &direct_files,
+                            &retained_files,
+                        ))
+                        .with_network(p.linux.vfs.direct_network())
                         .with_clock(self.started)
-                        .with_files(
-                            file_epoch.capture(&p.linux.vfs, p.file_size_limit.get().0 == u64::MAX),
-                        ),
-                    futex: crate::futex::Private::new(self.futexes.clone(), p.vm_id),
+                        .with_terminal(trames_vfs::TerminalAccess {
+                            session: p.session,
+                            group: p.group,
+                            controlling: p.linux.vfs.controlling_terminal,
+                            ignore_ttou: p.mask & (1 << 21) != 0 || p.actions.get(22).handler == 1,
+                        })
+                        .with_files(direct_files)
+                        .with_lock_context(p.linux.vfs.record_lock_context(p.tgid)),
+                    futex: crate::futex::Authority::new(self.futexes.clone(), p.vm_id),
                 }),
             };
             let mut job = crate::run_queue::Job::new(work, p.affinity, p.last_cpu, waiting);
+            if let State::Blocked(426, args) = p.state {
+                if job
+                    .work
+                    .syscalls
+                    .as_ref()
+                    .is_some_and(|s| s.direct.supports_call(426, args))
+                {
+                    if let Some((submitted, ring, deadline)) = &p.uring_wait {
+                        if uring_epoch.adopt_wait(id, ring, *submitted, *deadline) {
+                            p.uring_wait = None;
+                        }
+                    }
+                }
+            }
             if let State::Gpu {
                 job: compile,
                 pc,
@@ -3666,9 +3798,14 @@ impl Kernel {
             }
             if let State::Blocked(number, args) = p.state {
                 job.retry = Some(crate::run_queue::IoCall {
+                    flock: p.flock_wait.as_ref().map(|(r, _)| r.clone()),
                     number,
                     args,
-                    deadline: p.poll_deadline,
+                    deadline: if matches!(number, 63..=66) {
+                        p.socket_deadline
+                    } else {
+                        p.poll_deadline
+                    },
                 });
             }
             epoch.add(job);
@@ -3738,6 +3875,16 @@ impl Kernel {
         }
         self.parallel_stop_time += began.elapsed();
         let completed = epoch.drain();
+        for handoff in uring_epoch.finish() {
+            let p = self
+                .processes
+                .get_mut(&handoff.task)
+                .expect("io_uring cohort task");
+            p.linux.track_uring(&handoff.ring);
+            if let Some(submitted) = handoff.submitted {
+                p.uring_wait = Some((submitted, handoff.ring, handoff.deadline));
+            }
+        }
         self.gpu_peak_pending = self.gpu_peak_pending.max(epoch.gpu_peak_pending());
         file_epoch.finish();
         if completed.iter().any(|r| r.outcome.is_none()) {
@@ -3776,6 +3923,7 @@ impl Kernel {
                 .get_mut(&done.pid)
                 .expect("dispatched process");
             p.cpu = done.cpu;
+            p.retain_worker_flock(done.io.as_ref());
             p.state = if let Some(compile) = done.gpu_pending {
                 State::Gpu {
                     retired: true,
@@ -3787,7 +3935,11 @@ impl Kernel {
                     instructions: self.instructions,
                 }
             } else if let Some(call) = done.io {
-                p.poll_deadline = call.deadline;
+                if matches!(call.number, 63..=66) {
+                    p.socket_deadline = call.deadline;
+                } else {
+                    p.poll_deadline = call.deadline;
+                }
                 State::Blocked(call.number, call.args)
             } else {
                 p.poll_deadline = None;
@@ -3815,6 +3967,7 @@ impl Kernel {
             self.worker_direct_syscalls += done.direct_syscalls;
             self.worker_futex_wakes += done.futex_wakes;
             self.worker_futex_woken += done.futex_woken;
+            self.worker_futex_requeues += done.futex_requeues;
             self.serviced_syscalls += done.serviced_syscalls;
             self.service_wait += done.service_wait;
             self.syscalls += done.syscalls + done.serviced_syscalls;
@@ -3830,6 +3983,8 @@ impl Kernel {
             self.worker_socket_syscalls += done.socket_syscalls;
             self.worker_timer_syscalls += done.timer_syscalls;
             self.worker_poll_syscalls += done.poll_syscalls;
+            self.worker_uring_syscalls += done.uring_syscalls;
+            self.worker_fd_syscalls += done.fd_syscalls;
             self.worker_gpu_calls += done.gpu.calls;
             self.worker_gpu_waits += done.gpu.waits;
             self.gpu_compiles += done.gpu.compiles;
@@ -3913,14 +4068,25 @@ impl Kernel {
             // Worker-owned waits schedule their deadlines on the shared run
             // queue. Only owner-side blocked waits need a timerfd scan/cutoff;
             // a runnable process with open timers must not pause every CPU.
-            let local_wait = p.worker_io_candidate();
+            let local_wait = p.worker_io_candidate(id);
+            for deadline in [
+                (!local_wait).then(|| p.linux.uring_deadline()).flatten(),
+                (!local_wait)
+                    .then(|| p.uring_wait.as_ref().and_then(|(_, _, d)| *d))
+                    .flatten(),
+            ]
+            .into_iter()
+            .flatten()
+            {
+                timeout = timeout.min(deadline.saturating_duration_since(now));
+            }
             let timerfd = (matches!(p.state, State::Blocked(..)) && !local_wait)
                 .then(|| p.linux.vfs.next_timerfd_deadline().filter(|d| *d > now))
                 .flatten();
             let poll = (!local_wait && matches!(p.state, State::Blocked(22 | 72 | 73 | 441, _)))
                 .then_some(p.poll_deadline)
                 .flatten();
-            let socket = matches!(p.state, State::Blocked(..))
+            let socket = (!local_wait && matches!(p.state, State::Blocked(..)))
                 .then_some(p.socket_deadline)
                 .flatten();
             for deadline in [poll, timerfd, socket].into_iter().flatten() {
@@ -3936,7 +4102,10 @@ impl Kernel {
             {
                 timeout = timeout.min(d.saturating_duration_since(now));
             }
-            if matches!(p.state, State::Blocked(..)) && p.linux.vfs.live_sockets() != 0 {
+            if !local_wait
+                && matches!(p.state, State::Blocked(..))
+                && p.linux.vfs.live_sockets() != 0
+            {
                 timeout = timeout.min(Duration::from_millis(1));
             }
         }
@@ -3957,7 +4126,7 @@ impl Kernel {
         }
     }
     fn drive(&mut self, io: &mut impl GuestOutput, limit: u64) -> Result<Exit, RuntimeError> {
-        loop {
+        'drive: loop {
             self.pump_guest_ptys();
             self.tick_timers();
             let elapsed = self.load_sample.elapsed().as_secs_f64();
@@ -3990,7 +4159,9 @@ impl Kernel {
                     continue;
                 };
                 if !matches!(p.state, State::Zombie(_)) && !p.frozen(id) {
+                    let was_parked = matches!(p.state, State::Sleep(..) | State::Blocked(..));
                     progress |= self.resume_gpu(id, &mut p);
+                    progress |= p.linux.progress_uring(&mut p.memory, id);
                     progress |= self.resume_event(&mut p);
                     match self.deliver(id, &mut p) {
                         Ok(changed) => progress |= changed,
@@ -4011,6 +4182,23 @@ impl Kernel {
                             progress = true;
                         }
                         _ => {}
+                    }
+                    // The first candidate check ran before this task woke. A
+                    // ring caller with a related peer should resume on workers,
+                    // rather than execute a whole owner quantum first. This is
+                    // a wake boundary check, never a normal instruction check.
+                    if was_parked
+                        && matches!(p.state, State::Ready)
+                        && self.cpu_count > 1
+                        && p.rekey.is_none()
+                        && !p.auto_reap
+                        && !p.linux.vfs.urings().is_empty()
+                    {
+                        self.processes.insert(id, p);
+                        if self.parallel_candidate() {
+                            continue 'drive;
+                        }
+                        p = self.processes.remove(&id).expect("same joined task");
                     }
                     // Immediate native returns and pure queries keep the quantum.
                     // No native borrow survives; blocking syscalls/faults still
@@ -4109,6 +4297,8 @@ impl Kernel {
                     p.poll_deadline.is_some()
                         || matches!(p.state, State::Gpu { .. })
                         || p.linux.vfs.next_timerfd_deadline().is_some()
+                        || p.linux.uring_pending()
+                        || p.uring_wait.as_ref().is_some_and(|(_, _, d)| d.is_some())
                         || matches!(p.state, State::Futex { deadline: Some(_), .. } | State::Sigwait { deadline: Some(_), .. })
                         || matches!(p.state, State::Sleep(..))
                         || matches!(p.state, State::Blocked(63 | 65, a)
@@ -4145,6 +4335,16 @@ impl Kernel {
         for (&id, p) in &self.processes {
             if p.frozen(id) {
                 continue;
+            }
+            sockets.extend(p.linux.uring_sockets());
+            for deadline in [
+                p.linux.uring_deadline(),
+                p.uring_wait.as_ref().and_then(|(_, _, d)| *d),
+            ]
+            .into_iter()
+            .flatten()
+            {
+                timeout = timeout.min(deadline.saturating_duration_since(now));
             }
             if matches!(p.state, State::Gpu { .. }) {
                 timeout = timeout.min(Duration::from_millis(1));
@@ -4262,7 +4462,7 @@ pub(super) fn run(
         group: 1,
         session: 1,
         state: State::Ready,
-        actions: [Action::default(); 65],
+        actions: Actions::default(),
         mask: 0,
         pending: Pending::default(),
         shared_pending: Rc::new(RefCell::new(Pending::default())),
@@ -4271,6 +4471,8 @@ pub(super) fn run(
         poll_deadline: None,
         socket_deadline: None,
         poll_mask: None,
+        uring_wait: None,
+        flock_wait: None,
         pending_open: None,
         stopped_state: None,
         auto_reap: false,
@@ -4278,15 +4480,12 @@ pub(super) fn run(
         started: Instant::now(),
         cpu_time: Duration::ZERO,
         vm_id: 1,
-        files_id: 1,
-        fs_id: 1,
-        actions_id: 1,
         rekey: None,
         subreaper: false,
         alt_stack: AltStack::default(),
         membarrier_registered: Rc::new(Cell::new(false)),
         file_size_limit: Rc::new(Cell::new((u64::MAX, u64::MAX))),
-        oom: Rc::new(trames_vfs::OomTask::default()),
+        oom: Arc::new(trames_vfs::OomTask::default()),
         seccomp: seccomp::Seccomp::default(),
     };
     let count = runtime.cpu_count.clamp(1, 32);
@@ -4304,6 +4503,7 @@ pub(super) fn run(
         worker_direct_syscalls: 0,
         worker_futex_wakes: 0,
         worker_futex_woken: 0,
+        worker_futex_requeues: 0,
         worker_futex_waits: 0,
         worker_task_resumes: 0,
         worker_task_yields: 0,
@@ -4313,6 +4513,8 @@ pub(super) fn run(
         worker_socket_syscalls: 0,
         worker_timer_syscalls: 0,
         worker_poll_syscalls: 0,
+        worker_uring_syscalls: 0,
+        worker_fd_syscalls: 0,
         worker_gpu_calls: 0,
         worker_gpu_waits: 0,
         service_requests: 0,
@@ -4379,6 +4581,7 @@ pub(super) fn run(
         worker_direct_syscalls: kernel.worker_direct_syscalls,
         worker_futex_wakes: kernel.worker_futex_wakes,
         worker_futex_woken: kernel.worker_futex_woken,
+        worker_futex_requeues: kernel.worker_futex_requeues,
         worker_futex_waits: kernel.worker_futex_waits,
         worker_task_resumes: kernel.worker_task_resumes,
         worker_task_yields: kernel.worker_task_yields,
@@ -4388,6 +4591,8 @@ pub(super) fn run(
         worker_socket_syscalls: kernel.worker_socket_syscalls,
         worker_timer_syscalls: kernel.worker_timer_syscalls,
         worker_poll_syscalls: kernel.worker_poll_syscalls,
+        worker_uring_syscalls: kernel.worker_uring_syscalls,
+        worker_fd_syscalls: kernel.worker_fd_syscalls,
         worker_gpu_calls: kernel.worker_gpu_calls,
         worker_gpu_waits: kernel.worker_gpu_waits,
         service_requests: kernel.service_requests,
@@ -4444,7 +4649,7 @@ mod tests {
     use super::*;
     use trames_memory::{Permissions, PAGE_SIZE};
     #[test]
-    fn syscall_resource_changes_reach_shared_peers_without_crossing_unshared_groups() {
+    fn shared_resources_are_visible_without_propagation_and_private_domains_remain_separate() {
         let mut k = kernel();
         let mut p = process();
         p.linux.vfs.mkdir_at(AT_FDCWD, b"/dir", 0o700).unwrap();
@@ -4457,8 +4662,6 @@ mod tests {
         k.processes.insert(2, p.fork_with_memory(memory));
         let mut independent = p.fork();
         independent.vm_id = 9;
-        independent.files_id = 9;
-        independent.fs_id = 9;
         k.processes.insert(3, independent);
         let mut io = trames_linux::CapturedOutput::default();
 
@@ -4488,8 +4691,8 @@ mod tests {
         assert_eq!(k.processes[&2].linux.vfs.cwd().unwrap(), b"/dir");
         assert_eq!(k.processes[&3].linux.vfs.cwd().unwrap(), b"/");
         k.call(1, &mut p, 166, [0o077, 0, 0, 0, 0, 0], &mut io);
-        assert_eq!(k.processes[&2].linux.vfs.umask, 0o077);
-        assert_eq!(k.processes[&3].linux.vfs.umask, 0o022);
+        assert_eq!(k.processes[&2].linux.vfs.umask(), 0o077);
+        assert_eq!(k.processes[&3].linux.vfs.umask(), 0o022);
         k.call(1, &mut p, 214, [0xb000, 0, 0, 0, 0, 0], &mut io);
         assert_eq!(k.processes[&2].linux.heap_context(), p.linux.heap_context());
         assert_ne!(k.processes[&3].linux.heap_context(), p.linux.heap_context());
@@ -4502,17 +4705,18 @@ mod tests {
     fn reset_hand_is_published_before_another_shared_thread_can_deliver_it() {
         let mut k = kernel();
         let mut p = process();
-        k.processes.insert(2, p.fork());
+        k.processes
+            .insert(2, p.fork_state(p.memory.clone(), false, false, true));
         let mut io = trames_linux::CapturedOutput::default();
         for (offset, value) in [(0, 0x4000u64), (8, 0x80000000), (16, 0), (24, 0)] {
             write_u64(&mut p.memory, 0x2000 + offset, value).unwrap();
         }
         k.call(1, &mut p, 134, [10, 0x2000, 0, 8, 0, 0], &mut io);
-        assert_eq!(k.processes[&2].actions[10].handler, 0x4000);
+        assert_eq!(k.processes[&2].actions.get(10).handler, 0x4000);
         Kernel::queue_one(1, &mut p, 10, 0);
         assert_eq!(k.deliver(1, &mut p), Ok(true));
         assert_eq!(p.cpu.pc, 0x4000);
-        assert_eq!(k.processes[&2].actions[10].handler, 0);
+        assert_eq!(k.processes[&2].actions.get(10).handler, 0);
     }
 
     #[test]
@@ -4521,7 +4725,7 @@ mod tests {
         impl GuestOutput for Control {
             fn control(&mut self, vfs: &mut trames_vfs::Vfs) -> std::io::Result<bool> {
                 vfs.close(self.0).unwrap();
-                vfs.umask = 0o077;
+                vfs.set_umask(0o077);
                 Err(std::io::Error::other("after authorized mutation"))
             }
             fn write(&mut self, _: OutputFd, bytes: &[u8]) -> std::io::Result<usize> {
@@ -4535,11 +4739,12 @@ mod tests {
             .vfs
             .open_at(AT_FDCWD, b"/file", 0x42, 0o600)
             .unwrap();
-        k.processes.insert(2, p.fork());
+        k.processes
+            .insert(2, p.fork_state(p.memory.clone(), true, true, true));
         k.processes.insert(1, p);
         assert!(k.control(&mut Control(fd)).is_err());
         assert_eq!(k.processes[&2].linux.vfs.fd_kind(fd), Err(Errno(9)));
-        assert_eq!(k.processes[&2].linux.vfs.umask, 0o077);
+        assert_eq!(k.processes[&2].linux.vfs.umask(), 0o077);
     }
 
     #[test]
@@ -4552,6 +4757,261 @@ mod tests {
         assert_eq!(k.serial_quantum(), 65536);
         k.processes.get_mut(&2).unwrap().state = State::Ready;
         assert_eq!(k.serial_quantum(), 4096);
+    }
+    #[test]
+    fn solo_cpu_with_unrelated_blocked_io_keeps_serial_mmu_but_connected_peer_can_handoff() {
+        let mut k = kernel();
+        let cpu = process();
+        let mut idle = process();
+        idle.vm_id = cpu.vm_id + 1;
+        let [read, _] = idle.linux.vfs.pipe(0).unwrap();
+        idle.state = State::Blocked(63, [read as u64, 0x1000, 1, 0, 0, 0]);
+        assert!(idle.worker_io_candidate(1));
+        k.processes.insert(1, cpu);
+        k.processes.insert(2, idle);
+        assert!(!k.parallel_candidate());
+
+        // A pipe crossing VM boundaries still admits single-slot producer /
+        // consumer handoff. This must not be replaced with "two ready only".
+        let mut sender = process();
+        let [read, write] = sender.linux.vfs.pipe(0).unwrap();
+        let mut receiver = sender.fork();
+        receiver.vm_id += 1;
+        sender.linux.vfs.close(read).unwrap();
+        receiver.linux.vfs.close(write).unwrap();
+        receiver.state = State::Blocked(63, [read as u64, 0x1000, 1, 0, 0, 0]);
+        k.processes.insert(1, sender);
+        k.processes.insert(2, receiver);
+        assert!(k.parallel_candidate());
+        k.processes.get_mut(&2).unwrap().linux.trace = true;
+        assert!(!k.parallel_candidate());
+        k.processes.get_mut(&2).unwrap().state = State::Ready;
+        assert!(k.parallel_candidate());
+    }
+    #[test]
+    fn legacy_log_waiter_needs_a_real_writer_to_divert_solo_cpu() {
+        let mut k = kernel();
+        let mut cpu = process();
+        cpu.linux.vfs.set_runtime_info(1, Default::default());
+        let mut waiter = cpu.fork();
+        waiter.vm_id += 1;
+        waiter.state = State::Blocked(116, [2, 0x1000, 128, 0, 0, 0]);
+        assert!(waiter.worker_io_candidate(2));
+        k.processes.insert(1, cpu);
+        k.processes.insert(2, waiter);
+        assert!(!k.parallel_candidate());
+        let fd = k
+            .processes
+            .get_mut(&1)
+            .unwrap()
+            .linux
+            .vfs
+            .open_at(-100, b"/dev/kmsg", 1, 0)
+            .unwrap();
+        assert!(k.parallel_candidate());
+        k.processes
+            .get_mut(&1)
+            .unwrap()
+            .linux
+            .vfs
+            .close(fd)
+            .unwrap();
+        assert!(!k.parallel_candidate());
+    }
+    #[test]
+    fn solo_cpu_can_adopt_its_vm_futex_waiter_but_not_an_unrelated_vm() {
+        let mut k = kernel();
+        let cpu = process();
+        let mut waiter = cpu.fork();
+        let wait = k
+            .futexes
+            .wait((0, cpu.vm_id, 0x1000), 2, u32::MAX, || Ok::<_, Errno>(()))
+            .unwrap();
+        waiter.state = State::Futex {
+            wait,
+            deadline: None,
+        };
+        k.processes.insert(1, cpu);
+        k.processes.insert(2, waiter);
+        assert!(k.parallel_candidate());
+        k.processes.get_mut(&2).unwrap().vm_id += 1;
+        assert!(!k.parallel_candidate());
+        k.processes.get_mut(&1).unwrap().state = State::Blocked(260, [0; 6]);
+        assert!(!k.parallel_candidate());
+    }
+    #[test]
+    fn solo_cpu_adopts_inherited_tcp_waiter_but_not_unrelated_socket_waiter() {
+        use std::net::{Ipv4Addr, TcpListener};
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let mut k = kernel();
+        let mut cpu = process();
+        cpu.linux
+            .vfs
+            .configure_network(trames_vfs::NetworkMode::Loopback)
+            .unwrap();
+        let fd = cpu.linux.vfs.socket(2, 1, 0).unwrap();
+        let socket = cpu.linux.vfs.socket_fd(fd).unwrap();
+        assert!(matches!(
+            socket.connect(listener.local_addr().unwrap()),
+            Ok(()) | Err(trames_net::NetError(115))
+        ));
+        let _peer = listener.accept().unwrap().0;
+        assert_eq!(socket.connect_complete(), Ok(true));
+        let mut waiter = cpu.fork();
+        waiter.vm_id += 1;
+        waiter.state = State::Blocked(63, [fd as u64, 0x1000, 1, 0, 0, 0]);
+        k.processes.insert(1, cpu);
+        k.processes.insert(2, waiter);
+        assert!(k.parallel_candidate());
+        // Shared socket identity, rather than a guest FD number or namespace,
+        // must decide the single-active-task exception.
+        k.processes.insert(1, process());
+        assert!(!k.parallel_candidate());
+    }
+    #[test]
+    fn flock_wait_survives_owner_handoff_close_reuse_and_cleans_up_on_completion() {
+        let mut k = kernel();
+        let mut p = process();
+        let a = p.linux.vfs.open_at(-100, b"/lock", 0x42, 0o600).unwrap();
+        let b = p.linux.vfs.open_at(-100, b"/lock", 2, 0).unwrap();
+        p.linux.vfs.flock(b, 6).unwrap();
+        let (request, file) = p.linux.vfs.retain_flock(a, 2).unwrap();
+        let call = crate::run_queue::IoCall {
+            number: 32,
+            args: [a as u64, 2, 0, 0, 0, 0],
+            deadline: None,
+            flock: Some(request),
+        };
+        drop(file);
+        p.retain_worker_flock(Some(&call)); // Joined before close/dup.
+        p.linux.vfs.close(a).unwrap();
+        assert_eq!(p.linux.vfs.open_at(-100, b"/new", 0x42, 0o600).unwrap(), a);
+        p.linux.vfs.flock(a, 6).unwrap();
+        p.retain_worker_flock(Some(&call)); // Next join must not switch to /new.
+        p.state = State::Blocked(32, call.args);
+        assert!(p.worker_io_candidate(1));
+        let mut io = trames_linux::CapturedOutput::default();
+        assert_eq!(k.syscall(1, &mut p, 32, call.args, &mut io), Ok(None));
+        p.linux.vfs.flock(b, 8).unwrap();
+        drop(call.flock); // worker handoff no longer owns a lease.
+        assert_eq!(k.syscall(1, &mut p, 32, call.args, &mut io), Ok(Some(0)));
+        assert!(p.flock_wait.is_none());
+        assert_eq!(p.linux.vfs.flock(b, 6), Ok(()));
+    }
+
+    #[test]
+    fn flock_handoff_reuses_file_but_replaces_a_completed_requests_operation() {
+        let mut k = kernel();
+        let mut p = process();
+        let a = p.linux.vfs.open_at(-100, b"/lock", 0x42, 0o600).unwrap();
+        let b = p.linux.vfs.open_at(-100, b"/lock", 2, 0).unwrap();
+        let (shared, _) = p.linux.vfs.retain_flock(a, 1).unwrap();
+        let mut call = crate::run_queue::IoCall {
+            number: 32,
+            args: [a as u64, 1, 0, 0, 0, 0],
+            deadline: None,
+            flock: Some(shared.clone()),
+        };
+        p.retain_worker_flock(Some(&call));
+        shared.try_lock().unwrap(); // First SH wait completed on the worker.
+        p.linux.vfs.flock(b, 5).unwrap();
+        let (exclusive, _) = p.linux.vfs.retain_flock(a, 2).unwrap();
+        assert_eq!(exclusive.try_lock(), Err(Errno(11)));
+        call.args[1] = 2;
+        call.flock = Some(exclusive);
+        p.retain_worker_flock(Some(&call));
+        p.state = State::Blocked(32, call.args);
+        let mut io = trames_linux::CapturedOutput::default();
+        assert_eq!(k.syscall(1, &mut p, 32, call.args, &mut io), Ok(None));
+        p.linux.vfs.flock(b, 8).unwrap();
+        assert_eq!(k.syscall(1, &mut p, 32, call.args, &mut io), Ok(Some(0)));
+        assert_eq!(p.linux.vfs.flock(b, 5), Err(Errno(11))); // a acquired EX, not stale SH.
+    }
+
+    #[test]
+    fn solo_cpu_adopts_related_flock_waiter_but_not_unrelated_waiter() {
+        let mut k = kernel();
+        let mut cpu = process();
+        let a = cpu.linux.vfs.open_at(-100, b"/lock", 0x42, 0o600).unwrap();
+        let b = cpu.linux.vfs.open_at(-100, b"/lock", 2, 0).unwrap();
+        cpu.linux.vfs.flock(a, 6).unwrap();
+        let mut waiter = cpu.fork();
+        waiter.vm_id += 1;
+        waiter.flock_wait = Some(waiter.linux.vfs.retain_flock(b, 2).unwrap());
+        waiter.state = State::Blocked(32, [b as u64, 2, 0, 0, 0, 0]);
+        k.processes.insert(1, cpu);
+        k.processes.insert(2, waiter);
+        assert!(k.parallel_candidate());
+        k.processes.insert(1, process());
+        assert!(!k.parallel_candidate());
+    }
+
+    #[test]
+    fn flock_wait_is_retained_by_stop_but_released_by_caught_signal_and_exit() {
+        for restart in [false, true] {
+            let mut k = kernel();
+            let mut p = process();
+            let a = p.linux.vfs.open_at(-100, b"/lock", 0x42, 0o600).unwrap();
+            p.flock_wait = Some(p.linux.vfs.retain_flock(a, 2).unwrap());
+            p.state = State::Blocked(32, [a as u64, 2, 0, 0, 0, 0]);
+            Kernel::queue_one(1, &mut p, 19, 0);
+            assert_eq!(k.deliver(1, &mut p), Ok(true));
+            assert!(matches!(p.state, State::Stopped) && p.flock_wait.is_some());
+            p.state = *p.stopped_state.take().unwrap();
+            let original_pc = p.cpu.pc;
+            p.actions.set(
+                10,
+                Action {
+                    handler: 0x5000,
+                    flags: if restart { 0x10000000 } else { 0 },
+                    ..Action::default()
+                },
+            );
+            Kernel::queue_one(1, &mut p, 10, 0);
+            assert_eq!(k.deliver(1, &mut p), Ok(true));
+            assert!(p.flock_wait.is_none());
+            // Signal frame restores either EINTR or the original SVC for restart.
+            assert!(k
+                .syscall(
+                    1,
+                    &mut p,
+                    139,
+                    [0; 6],
+                    &mut trames_linux::CapturedOutput::default()
+                )
+                .is_ok());
+            assert_eq!(
+                p.cpu.pc,
+                if restart {
+                    original_pc - 4
+                } else {
+                    original_pc
+                }
+            );
+            if !restart {
+                assert_eq!(p.cpu.x(0), error(Errno(4)));
+            }
+            p.flock_wait = Some(p.linux.vfs.retain_flock(a, 2).unwrap());
+            k.exit_one(1, &mut p, 0);
+            assert!(p.flock_wait.is_none());
+        }
+    }
+
+    #[test]
+    fn solo_gpu_completion_still_uses_worker_handoff_without_an_io_peer() {
+        let mut k = kernel();
+        let mut gpu = process();
+        gpu.state = State::Gpu {
+            retired: true,
+            peer_instructions: 0,
+            job: 1,
+            pc: 0,
+            operation: 1,
+            instructions: 0,
+            began: Instant::now(),
+        };
+        k.processes.insert(1, gpu);
+        assert!(k.parallel_candidate());
     }
     #[test]
     fn affinity_assignment_keeps_flexible_tasks_fair_and_relocates_for_pinned_peers() {
@@ -4586,7 +5046,7 @@ mod tests {
             group: 1,
             session: 1,
             state: State::Ready,
-            actions: [Action::default(); 65],
+            actions: Actions::default(),
             mask: 0,
             pending: Pending::default(),
             shared_pending: Rc::new(RefCell::new(Pending::default())),
@@ -4595,6 +5055,8 @@ mod tests {
             poll_deadline: None,
             socket_deadline: None,
             poll_mask: None,
+            uring_wait: None,
+            flock_wait: None,
             pending_open: None,
             stopped_state: None,
             auto_reap: false,
@@ -4602,15 +5064,12 @@ mod tests {
             started: Instant::now(),
             cpu_time: Duration::ZERO,
             vm_id: 1,
-            files_id: 1,
-            fs_id: 1,
-            actions_id: 1,
             rekey: None,
             subreaper: false,
             alt_stack: AltStack::default(),
             membarrier_registered: Rc::new(Cell::new(false)),
             file_size_limit: Rc::new(Cell::new((u64::MAX, u64::MAX))),
-            oom: Rc::new(trames_vfs::OomTask::default()),
+            oom: Arc::new(trames_vfs::OomTask::default()),
             seccomp: seccomp::Seccomp::default(),
         })
     }
@@ -4715,6 +5174,7 @@ mod tests {
             worker_direct_syscalls: 0,
             worker_futex_wakes: 0,
             worker_futex_woken: 0,
+            worker_futex_requeues: 0,
             worker_futex_waits: 0,
             worker_task_resumes: 0,
             worker_task_yields: 0,
@@ -4724,6 +5184,8 @@ mod tests {
             worker_socket_syscalls: 0,
             worker_timer_syscalls: 0,
             worker_poll_syscalls: 0,
+            worker_uring_syscalls: 0,
+            worker_fd_syscalls: 0,
             worker_gpu_calls: 0,
             worker_gpu_waits: 0,
             service_requests: 0,
@@ -5134,7 +5596,7 @@ mod tests {
             k.event_call(1, &mut p, 98, [0x1000, 128, 0, 0, 0, 0]),
             Ok(None)
         );
-        p.actions[10].handler = 0x5000;
+        p.actions.set_handler(10, 0x5000);
         Kernel::queue_one(1, &mut p, 10, 1);
         assert!(k.deliver(1, &mut p).unwrap());
         assert_eq!(k.futexes.wake((0, 1, 0x1000), 1, u32::MAX), 0);
@@ -5266,6 +5728,36 @@ mod tests {
         assert_eq!(k.parallel_timeout(), Duration::from_millis(10));
     }
     #[test]
+    fn worker_tcp_waits_do_not_keep_owner_socket_polling_or_reset_deadlines() {
+        use std::net::{Ipv4Addr, TcpListener};
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let mut k = spinning_peers();
+        let p = k.processes.get_mut(&1).unwrap();
+        p.linux
+            .vfs
+            .configure_network(trames_vfs::NetworkMode::Loopback)
+            .unwrap();
+        let fd = p.linux.vfs.socket(2, 1, 0).unwrap();
+        let socket = p.linux.vfs.socket_fd(fd).unwrap();
+        assert!(matches!(
+            socket.connect(listener.local_addr().unwrap()),
+            Ok(()) | Err(trames_net::NetError(115))
+        ));
+        let _peer = listener.accept().unwrap().0;
+        assert_eq!(socket.connect_complete(), Ok(true));
+        p.state = State::Blocked(63, [fd as u64, 0x1000, 1, 0, 0, 0]);
+        p.socket_deadline = Some(Instant::now());
+        assert!(p.worker_io_candidate(1));
+        assert_eq!(k.parallel_timeout(), Duration::from_millis(10));
+        // Message ABI is still owner-side, including its timer/poll boundary.
+        let p = k.processes.get_mut(&1).unwrap();
+        p.state = State::Blocked(207, [fd as u64, 0x1000, 1, 0, 0, 0]);
+        assert!(!p.worker_io_candidate(1));
+        assert_eq!(k.parallel_timeout(), Duration::ZERO);
+        k.processes.get_mut(&1).unwrap().socket_deadline = None;
+        assert_eq!(k.parallel_timeout(), Duration::from_millis(1));
+    }
+    #[test]
     fn prctl_seccomp_modes_translate_to_syscall_operations() {
         let mut k = kernel();
         let mut p = process();
@@ -5305,7 +5797,7 @@ mod tests {
             instructions: 0,
             began: Instant::now(),
         };
-        p.actions[10].handler = 0x5000;
+        p.actions.set_handler(10, 0x5000);
         Kernel::queue_one(1, &mut p, 10, 1);
         assert!(!k.deliver(1, &mut p).unwrap());
         assert!(p.pending.contains_key(&10));
@@ -5383,7 +5875,7 @@ mod tests {
         assert!(matches!(p.state, State::Blocked(56, _)));
         let hidden = p.pending_open.unwrap();
         assert!(p.linux.vfs.fd_kind(hidden).is_err());
-        p.actions[10].handler = 0x4000;
+        p.actions.set_handler(10, 0x4000);
         Kernel::queue_one(1, &mut p, 10, 1);
         assert!(k.deliver(1, &mut p).unwrap());
         assert!(p.pending_open.is_none());
@@ -5472,7 +5964,8 @@ mod tests {
         let mut p = process();
         let mut io = trames_linux::CapturedOutput::default();
         let fd = p.linux.vfs.open_at(-100, b"/file", 0x42, 0o600).unwrap();
-        k.processes.insert(2, p.fork());
+        k.processes
+            .insert(2, p.fork_state(p.memory.clone(), true, true, true));
         assert_eq!(
             k.syscall(
                 1,
@@ -5483,7 +5976,10 @@ mod tests {
             ),
             Err(Errno(22))
         );
-        assert_eq!(p.files_id, 1);
+        assert!(p
+            .linux
+            .vfs
+            .shares_descriptors_with(&k.processes[&2].linux.vfs));
         assert_eq!(
             k.syscall(
                 1,
@@ -5494,16 +5990,10 @@ mod tests {
             ),
             Ok(Some(0))
         );
-        k.sync_resources(
-            &p,
-            ResourceChanges {
-                heap: true,
-                files: true,
-                fs: true,
-                actions: true,
-            },
-        );
-        assert_ne!(p.files_id, k.processes[&2].files_id);
+        assert!(!p
+            .linux
+            .vfs
+            .shares_descriptors_with(&k.processes[&2].linux.vfs));
         assert_eq!(p.linux.vfs.fd_kind(fd), Err(Errno(9)));
         assert!(k.processes[&2].linux.vfs.fd_kind(fd).is_ok());
         let fd = p.linux.vfs.open_at(-100, b"/file", 0, 0).unwrap();
@@ -5514,6 +6004,69 @@ mod tests {
         assert!(p.linux.vfs.fd_kind(fd).is_ok());
         p.linux.vfs.close_exec();
         assert_eq!(p.linux.vfs.fd_kind(fd), Err(Errno(9)));
+    }
+
+    #[test]
+    fn clone_files_controls_live_descriptor_bits_independently_of_clone_vm() {
+        use trames_linux::CapturedOutput;
+        for flags in [0, 0x100, 0x400, 0x500] {
+            let mut k = kernel();
+            let mut p = process();
+            let [fd, _] = p.linux.vfs.pipe(0).unwrap();
+            let id = k
+                .syscall(
+                    1,
+                    &mut p,
+                    220,
+                    [flags | 17, 0, 0, 0, 0, 0],
+                    &mut CapturedOutput::default(),
+                )
+                .unwrap()
+                .unwrap() as u32;
+            let child = &k.processes[&id];
+            let bits = child.linux.vfs.fd_flags_snapshot();
+            bits.fcntl(fd, 2, 1).unwrap();
+            assert_eq!(
+                p.linux.vfs.flags(fd).unwrap() & trames_vfs::O_CLOEXEC != 0,
+                flags & 0x400 != 0,
+                "clone flags {flags:x}"
+            );
+        }
+    }
+    #[test]
+    fn metadata_unshare_range_and_fs_only_unshare_preserve_table_domains() {
+        use trames_linux::CapturedOutput;
+        let mut k = kernel();
+        let mut p = process();
+        let [fd, _] = p.linux.vfs.pipe(0).unwrap();
+        let memory = p.memory.share();
+        let peer = p.fork_with_memory(memory);
+        k.processes.insert(2, peer);
+        let old = p.linux.vfs.fd_flags_snapshot();
+        let mut io = CapturedOutput::default();
+        assert_eq!(
+            k.syscall(1, &mut p, 97, [0x200, 0, 0, 0, 0, 0], &mut io),
+            Ok(Some(0))
+        );
+        assert!(!p.linux.vfs.shares_context_with(&k.processes[&2].linux.vfs));
+        p.linux.vfs.set_umask(0o077);
+        assert_eq!(k.processes[&2].linux.vfs.umask(), 0o022);
+        old.fcntl(fd, 2, 1).unwrap();
+        assert_ne!(p.linux.vfs.flags(fd).unwrap() & trames_vfs::O_CLOEXEC, 0);
+        assert_ne!(
+            k.processes[&2].linux.vfs.flags(fd).unwrap() & trames_vfs::O_CLOEXEC,
+            0
+        );
+        old.fcntl(fd, 2, 0).unwrap();
+        assert_eq!(
+            k.syscall(1, &mut p, 436, [fd as u64, fd as u64, 6, 0, 0, 0], &mut io),
+            Ok(Some(0))
+        );
+        assert_ne!(p.linux.vfs.flags(fd).unwrap() & trames_vfs::O_CLOEXEC, 0);
+        assert_eq!(
+            k.processes[&2].linux.vfs.flags(fd).unwrap() & trames_vfs::O_CLOEXEC,
+            0
+        );
     }
     #[test]
     fn unsupported_instruction_log_survives_child_exit() {
@@ -5579,11 +6132,14 @@ mod tests {
         p.cpu.fpcr = 1 << 22;
         p.cpu.set_vector(8, 0x0123456789abcdef0011223344556677);
         p.mask = 1 << 11;
-        p.actions[10] = Action {
-            handler: 0x5000,
-            flags: 4,
-            ..Action::default()
-        };
+        p.actions.set(
+            10,
+            Action {
+                handler: 0x5000,
+                flags: 4,
+                ..Action::default()
+            },
+        );
         Kernel::queue_one(1, &mut p, 10, 2);
         assert!(k.deliver(1, &mut p).unwrap());
         let sp = p.cpu.sp;
@@ -5611,10 +6167,13 @@ mod tests {
         let mut k = kernel();
         p.cpu.sp -= 8;
         let old_sp = p.cpu.sp;
-        p.actions[10] = Action {
-            handler: 0x5000,
-            ..Action::default()
-        };
+        p.actions.set(
+            10,
+            Action {
+                handler: 0x5000,
+                ..Action::default()
+            },
+        );
         Kernel::queue_one(1, &mut p, 10, 2);
         assert!(k.deliver(1, &mut p).unwrap());
         assert_eq!(p.cpu.sp & 15, 0); // The handler's new frame is aligned.
@@ -5627,10 +6186,13 @@ mod tests {
     fn malformed_signal_frame_fails_without_partial_register_restoration() {
         let mut p = process();
         let mut k = kernel();
-        p.actions[10] = Action {
-            handler: 0x5000,
-            ..Action::default()
-        };
+        p.actions.set(
+            10,
+            Action {
+                handler: 0x5000,
+                ..Action::default()
+            },
+        );
         Kernel::queue_one(1, &mut p, 10, 2);
         k.deliver(1, &mut p).unwrap();
         let sp = p.cpu.sp;
@@ -5660,11 +6222,14 @@ mod tests {
             let mut k = kernel();
             p.cpu.pc = 0x4004;
             p.state = State::Blocked(63, [3, 0x1000, 7, 0, 0, 0]);
-            p.actions[10] = Action {
-                handler: 0x5000,
-                flags: if restart { 0x10000000 } else { 0 },
-                ..Action::default()
-            };
+            p.actions.set(
+                10,
+                Action {
+                    handler: 0x5000,
+                    flags: if restart { 0x10000000 } else { 0 },
+                    ..Action::default()
+                },
+            );
             Kernel::queue_one(1, &mut p, 10, 2);
             k.deliver(1, &mut p).unwrap();
             Kernel::sigreturn(&mut p).unwrap();
@@ -5688,7 +6253,7 @@ mod boundary_tests {
         p.memory.write_array(0x1000, [17u8]).unwrap();
         let error = p.memory.write_array(0x2000, [42u8]).unwrap_err();
         assert_eq!(error, trames_memory::MemoryError::Limit);
-        p.actions[11].handler = 0x4000;
+        p.actions.set_handler(11, 0x4000);
         k.synchronous_fault(
             1,
             &mut p,
@@ -5768,6 +6333,7 @@ mod boundary_tests {
             .import_executable(b"/bad", b"not ELF".to_vec())
             .unwrap();
         let fd = p.linux.vfs.open_at(-100, b"/bad", 0x80000, 0).unwrap();
+        let peer = p.linux.vfs.clone_with_resources(true, true);
         p.memory.write(0x1000, b"/bad\0").unwrap();
         p.memory.write(0x1100, &[0; 8]).unwrap();
         assert_eq!(
@@ -5776,6 +6342,109 @@ mod boundary_tests {
         );
         assert_eq!(p.cpu.pc, 0x4000);
         assert!(p.linux.vfs.fd_kind(fd).is_ok());
+        assert!(p.linux.vfs.shares_context_with(&peer));
+        p.linux.vfs.set_umask(0o077);
+        assert_eq!(peer.umask(), 0o077);
+    }
+    #[test]
+    fn parked_uring_admission_preserves_idle_mmu_trace_and_fd_authority() {
+        let mut k = kernel();
+        let mut p = process();
+        let (fd, ring) = p.linux.vfs.uring_create(2, 4).unwrap();
+        p.state = State::Blocked(426, [fd as u64, 0, 1, 1, 0, 0]);
+        p.uring_wait = Some((0, ring, None));
+        assert!(p.worker_io_candidate(1));
+        p.linux.trace = true;
+        assert!(!p.worker_io_candidate(1));
+        p.linux.trace = false;
+        p.uring_wait.as_mut().unwrap().2 = Some(Instant::now());
+        assert!(p.worker_io_candidate(1));
+        p.uring_wait.as_mut().unwrap().2 = None;
+        let mut idle = process();
+        idle.state = State::Sleep(
+            Instant::now() + Duration::from_secs(3600),
+            Default::default(),
+        );
+        k.processes.insert(1, idle);
+        k.processes.insert(2, p);
+        assert!(!k.parallel_candidate());
+        k.processes.get_mut(&1).unwrap().state = State::Ready;
+        assert!(!k.parallel_candidate());
+        let p = k.processes.get_mut(&2).unwrap();
+        p.linux.vfs.close(fd).unwrap();
+        let (replacement, _) = p.linux.vfs.uring_create(2, 4).unwrap();
+        assert_eq!(replacement, fd);
+        assert!(!p.worker_io_candidate(1));
+    }
+    #[test]
+    fn blocked_uring_ext_arg_retains_deadline_without_reimporting_guest_memory() {
+        let mut k = kernel();
+        let mut p = process();
+        let mut io = trames_linux::CapturedOutput::default();
+        let (fd, _ring) = p.linux.vfs.uring_create(2, 4).unwrap();
+        p.memory.write(0x1100, &[0; 24]).unwrap();
+        p.memory
+            .write_array(0x1110, 0x1200u64.to_le_bytes())
+            .unwrap();
+        p.memory.write_array(0x1200, 3600u64.to_le_bytes()).unwrap();
+        p.memory.write_array(0x1208, 0u64.to_le_bytes()).unwrap();
+        let args = [fd as u64, 0, 1, 9, 0x1100, 24];
+        assert_eq!(k.syscall(1, &mut p, 426, args, &mut io), Ok(None));
+        let wait = p.uring_wait.as_mut().unwrap();
+        wait.2 = Some(Instant::now());
+        p.memory.write(0x1100, &[255; 24]).unwrap();
+        assert_eq!(k.syscall(1, &mut p, 426, args, &mut io), Err(Errno(62)));
+        assert!(p.uring_wait.is_none());
+    }
+    #[test]
+    fn blocked_uring_enter_retains_original_ring_across_fd_close_and_reuse() {
+        let mut k = kernel();
+        let mut p = process();
+        let mut io = trames_linux::CapturedOutput::default();
+        let (fd, ring) = p.linux.vfs.uring_create(2, 4).unwrap();
+        let [read, write] = p.linux.vfs.pipe(0).unwrap();
+        for (address, offset, len) in [
+            (0x10000, 0, ring.ring_bytes),
+            (0x20000, 0x10000000, ring.sqe_bytes),
+        ] {
+            let pages = p
+                .linux
+                .vfs
+                .mapping_pages(fd, offset, len, true, true)
+                .unwrap();
+            p.memory
+                .map_backed(address, pages, true, trames_memory::Permissions::RW, false)
+                .unwrap();
+        }
+        let mut sqe = [0; 64];
+        sqe[0] = 22;
+        sqe[4..8].copy_from_slice(&read.to_le_bytes());
+        sqe[16..24].copy_from_slice(&0x1f00u64.to_le_bytes());
+        sqe[24..28].copy_from_slice(&1u32.to_le_bytes());
+        p.memory.write(0x20000, &sqe).unwrap();
+        p.memory
+            .write_array(
+                0x10000 + trames_vfs::URING_SQ_ARRAY as u64,
+                0u32.to_le_bytes(),
+            )
+            .unwrap();
+        p.memory.write_array(0x10004, 1u32.to_le_bytes()).unwrap();
+        let args = [fd as u64, 1, 1, 1, 0, 0];
+        assert_eq!(k.syscall(1, &mut p, 426, args, &mut io), Ok(None));
+        assert!(p.uring_wait.is_some());
+        p.linux.vfs.close(fd).unwrap();
+        let replacement = p
+            .linux
+            .vfs
+            .open_at(-100, b"/replacement", 0x42, 0o600)
+            .unwrap();
+        assert_eq!(replacement, fd);
+        assert!(p.linux.vfs.uring(fd).is_err());
+        p.linux.vfs.write(write, b"x").unwrap();
+        assert_eq!(k.syscall(1, &mut p, 426, args, &mut io), Ok(Some(1)));
+        assert!(p.uring_wait.is_none());
+        assert_eq!(p.memory.read_array::<1>(0x1f00).unwrap(), *b"x");
+        assert_eq!(k.syscall(1, &mut p, 426, args, &mut io), Err(Errno(9)));
     }
     #[test]
     fn terminal_resize_event_is_scoped_to_the_foreground_group() {
@@ -5819,12 +6488,15 @@ mod cpu_fault_tests {
     fn synchronous_signal_contains_fault_address_and_resumes_from_edited_context() {
         let mut k = kernel();
         let mut p = process();
-        p.actions[11] = Action {
-            handler: 0x2000,
-            flags: 4,
-            restorer: 0,
-            mask: 0,
-        };
+        p.actions.set(
+            11,
+            Action {
+                handler: 0x2000,
+                flags: 4,
+                restorer: 0,
+                mask: 0,
+            },
+        );
         p.cpu.pc = 0x1330;
         p.cpu.set_x(7, 0x123456);
         let fault = CpuFault::Memory {
@@ -5860,7 +6532,7 @@ mod cpu_fault_tests {
         for (blocked, handler) in [(false, 1), (true, 0x2000)] {
             let mut k = kernel();
             let mut p = process();
-            p.actions[5].handler = handler;
+            p.actions.set_handler(5, handler);
             if blocked {
                 p.mask |= 1 << 4;
             }

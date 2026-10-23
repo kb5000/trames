@@ -1,0 +1,81 @@
+{
+  "date_utc": "2026-10-23",
+  "batch": 25,
+  "complete_coordinator_removal": false,
+  "scope": "Shared per-inode flock and OFD lock lifetime; remove filesystem global map and stale-open scans. Worker nonblocking flock/unlock; blocking flock and actual FD/OFD structures remain joined.",
+  "source_sha256": {
+    "crates/trames-core/src/process_seccomp.rs": "62e72999654b11394f5fc02212d8b9f1f951a46eaedc1fb05e2511e1cab28c07",
+    "crates/trames-core/src/worker_syscalls.rs": "37c28ae00dbefebd9e5af6d26ab34a4990ff12797437ac0ad3d2af96e0e4e60e",
+    "crates/trames-linux/src/direct.rs": "d64a9bcd1b83d465bef0dfc168dfd0725481f8e1721cd224d66fcc711356b536",
+    "crates/trames-vfs/src/cgroup.rs": "4cd5fce17274cc89ed5b724a9f17f920c582e654b00b0fcd69d4651d35fc3f63",
+    "crates/trames-vfs/src/events.rs": "47e95eb77ae3f1699d162218eac3133d191c4518e4efe1c7ec9c4a093ff36eeb",
+    "crates/trames-vfs/src/file_io.rs": "df915b9a54ad7cb17f8ece3c8ca78c7520aef2fee566d5f826e6cf7954ac5dfb",
+    "crates/trames-vfs/src/flock.rs": "4c5cceeac5a6052e77413153506f8376eeed571dd23a275ef452654c1c49c719",
+    "crates/trames-vfs/src/ipc/native.rs": "6bfbeebcb4b37fb45a83160cc7bbf478fb7aa9e6677ebcad95228bfd0b0c4c3a",
+    "crates/trames-vfs/src/ipc.rs": "b7e4c5629d9b360aa11032f3543995c886f2d7e2bce5f45955d682e438826620",
+    "crates/trames-vfs/src/lib.rs": "8e499823ea0269486253edad5d409dc51c4734071d0edb81c05e0e402bab0a34",
+    "crates/trames-vfs/src/linux_namespace.rs": "55cb3f33e89f9a058a0d6218cf8a5cc0fd58753871d37b16c749c48c82e930ba",
+    "crates/trames-vfs/src/memfd.rs": "cba640f44372af78138b5578f2e45694c542454e7005fd7c8db9418d9c7b3b0e",
+    "crates/trames-vfs/src/mounts.rs": "2471af74c52612211299f60c39980e3b788b99883b9b5d89b6e01cbe185130ff",
+    "crates/trames-vfs/src/namespace.rs": "ece8e0801f810fd060b86032e5f40f1962c4d6d4ce03e14f89c20942f3697170",
+    "crates/trames-vfs/src/network.rs": "c07c5cc22e05c9607699674f83732a67bc5ddf565e10fb286c4eb8e4eba173ac",
+    "crates/trames-vfs/src/overlay.rs": "f6ba5c6ec167a01ddc017237d7c977ee2a8bfae03735b2f5b7e7039f6b69272c",
+    "crates/trames-vfs/src/pseudo.rs": "09cb018a07c83801f524fd39a02adf179b71b1237f3583bf706b78891cad79f2",
+    "crates/trames-vfs/src/pty.rs": "cdacd4e7f8d34402b5f1ab6a04285c0894ad5b76d29cefc0689262171d288a81",
+    "crates/trames-vfs/src/storage.rs": "f9528b56bb47e560e4c157275013b3ae2f6722c1efe57f5c8e510e2d297ab726",
+    "scripts/audit-syscalls.py": "5714a8d2158f400c7ba2f8e6730feb6cdc9c8b7290f011816a9c44102ac09bfd",
+    "tests/fixtures/shared-flock.c": "49ed1b06c058d623c928ce01e0f0b77b71e763568c09269b3b8bd480d1a72d66",
+    "tests/integration/shared-flock.py": "7101bb9b3a1e597829957180008e978381b3500486646617f2012fc98ed1f571"
+  },
+  "artifact_sha256": {
+    "target/perf-runtime/release/trames-run": "208cb2dfb39578665449feaa415e9b19bbef6fd9628723eecb3ffc12343352bb",
+    "target/shared-flock-checks/before-trames-run": "4d9ae4be197d74260192d5e6f4920e54d393c2373edc17edaab43f04f6f6665c",
+    "target/shared-flock-checks/native-shared-flock": "013eb1b988e3d0b57905467660c7b055f0755dd487092fbb44ccffb9b016c43e",
+    "tests/fixtures/bin/shared-flock": "9a4db8eb99db0af505b5941d09e6b662a549c08cf56226dfe29aeae01c679d09"
+  },
+  "runner_sha256": "208cb2dfb39578665449feaa415e9b19bbef6fd9628723eecb3ffc12343352bb",
+  "baseline_sha256": "4d9ae4be197d74260192d5e6f4920e54d393c2373edc17edaab43f04f6f6665c",
+  "baseline_evidence": "docs/validation/shared-vm-allocation-summary.json",
+  "results": {
+    "unit": {
+      "path": "target/shared-flock-checks/unit-results-final.json",
+      "sha256": "c869709274fdd1fe2588859610cc821e4d8c7cffd6c51faba5fa01d2ad722664"
+    },
+    "comparison": {
+      "path": "target/shared-flock-checks/comparison/results.json",
+      "sha256": "8d71382a1ca56d7910b75d2c726851bc174a98722daf78e591ecb0eddfd63664"
+    },
+    "baseline_opath_failure": {
+      "path": "target/shared-flock-checks/before-opath.json",
+      "sha256": "5b4b4a9c83fab57d4ed231474c7299a89d48b24d38ea8bf8d63156137b23b248"
+    }
+  },
+  "distinct_rust_tests": 40,
+  "rust_test_counts": {
+    "vfs": 26,
+    "linux": 10,
+    "core": 4
+  },
+  "unit_log_sha256": {
+    "target/shared-flock-checks/unit-core.log": "41b40cd827192ba053740995b7c6f7a9032a55d1ea76354e69abd0db05e3224a",
+    "target/shared-flock-checks/unit-linux.log": "a8e8980f78fe66c3d2925be548a416912a83f7fae422d08dc2b17daf7e512037",
+    "target/shared-flock-checks/unit-vfs-final.log": "ba62148a2457805b9fdf6e4b224eda6f3cbd6815fc3a52c81720c9f27c7d200e",
+    "target/shared-flock-checks/unit-vfs.log": "66459dc62806533ef3d45e418348488eee2085325c11f28a6991ddc0429bde5e"
+  },
+  "medians_seconds": {
+    "before-1": 0.001001127,
+    "before-2": 0.026234945,
+    "before-4": 0.024009322,
+    "after-1": 0.001022781,
+    "after-2": 0.001051424,
+    "after-4": 0.000500529
+  },
+  "limits": "Short 640-lock-control workload, Linux x86_64 host with identical static ARM64 ELF; three interleaved samples. No single-CPU gain measured; no overall app/iPad/CoreMark claim. Full clone/O_PATH domains separately verified; benchmark mode excludes baseline O_PATH mismatch.",
+  "builds": {
+    "release_cli_ffi": "target/shared-flock-checks/release-build.log",
+    "strict_release_clippy_five_crates_all_targets": "target/shared-flock-checks/clippy.log"
+  },
+  "release_reuse": "Runner built before test-only mount-domain test rename/assertion correction; production sources unchanged. Final VFS test binary covers the corrected test; only that failed test rerun.",
+  "flock_production_sha256": "df31de5b7a9bf0c6551265519330092c21884479dc257aba72d3caaeab0aad63",
+  "raw_artifacts": "target/shared-flock-checks"
+}

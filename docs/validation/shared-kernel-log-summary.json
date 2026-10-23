@@ -1,0 +1,134 @@
+{
+  "date_utc": "2026-10-23",
+  "batch": 36,
+  "complete_coordinator_removal": false,
+  "scope": "Share the session log through Arc/object-local state; execute nonblocking syslog in workers using the common Linux ABI and epoch authority. Retain action 2 blocking and kmsg descriptor lifecycle on owner path.",
+  "source_sha256": {
+    "crates/trames-vfs/src/kernel_log.rs": "a5ef457221c9fb4dde9260af996d3c5276238bfde7707f4b67934e4b3eff6b1b",
+    "crates/trames-vfs/src/lib.rs": "741133dee4582aa308145e688991637163851ec01d933f480e2fbff586284f51",
+    "crates/trames-linux/src/lib.rs": "bf401c98629e6a9480b0ac79e3992c698dd2ae88706f7184e902eefadd7259ee",
+    "crates/trames-linux/src/state.rs": "40ddf4d72cab23eb1a2e4dfd7f632d834ea214bf53fea4ed47676758830c0d16",
+    "crates/trames-core/src/process.rs": "7869368aa594b0827ea86c66f131a1699ad3b32470ec4ce5138e10e28a9df8c9",
+    "crates/trames-core/src/worker_syscalls.rs": "1e1c2c5558fc98d4841e2d4a12b99f06cdc8ce5d264d6e6fd6284713568dd92b",
+    "crates/trames-core/src/workers.rs": "e69513c914e9ffd05b3c814789c730eb47d98cf1b84b1146ce6d7ed66a751ba1",
+    "crates/trames-core/src/process_seccomp.rs": "deec79bac7ba10fa4135c708162f53555e6e292a34cdf4fbbfe7cd83c0aabc95",
+    "crates/trames-core/src/process_service.rs": "91d3d5051f5a63c1f04ee88377d2aad7bb229616954f2202a0f7acf7e8fe1ce7",
+    "crates/trames-linux/src/syslog.rs": "13d541bf8ba585d63fe287b289f1b1fb2c760f6664c876b75eabd0003be9d6a2",
+    "tests/fixtures/worker-syslog.c": "d4b229106c071fea7398f1d4b376f671086191e86bc2fa9513303092670cfe70",
+    "tests/integration/worker-syslog.py": "022f093ea8f9f0a6f04f6a9d44e5d8eb41f1a1243ec53058106c35299a51453e",
+    "tests/fixtures/compatibility-log.c": "11f312b63e3351041f75be58d11e9b17068d48daf96165d426ea3a2b0efd7047"
+  },
+  "artifact_sha256": {
+    "target/perf-runtime/release/trames-run": "3efcaee4ea8a836d308c061f8535be80a97b0798ec0a1cc25896f96e73411883",
+    "target/perf-runtime/release/libtrames_ffi.a": "ee44d2399b4638fc11d4f658bf4b409eacdbbc75d0cd6dd76bd7e9c9e93f7b20",
+    "target/perf-runtime/release/libtrames_ffi.so": "5fc8ce2017853c3c0249aad89988c3b136ec9ca980f4c348b3f6b5c7de22ccbd",
+    "target/shared-kernel-log-checks/before-trames-run": "2e1e0bf2403d488b6e156cc39c52c2048c88a2245f7e4f2cb284be41684edfdb",
+    "target/shared-kernel-log-checks/worker-syslog": "2e8634e4d27849e3f92e170ee713d7cb2cc70a126787eaf0b01865ed8ebd33ab",
+    "target/shared-kernel-log-checks/compatibility-log": "66b3408f14d906b12b7accb11e81f80e68d5aad977083e3b2953dd12a17a463b",
+    "target/shared-kernel-log-checks/busybox": "da988cc7d4ab9d83f1798f6e92cf4aa0ba5b0b8fd2bae5f1c7bd3f882a569c81",
+    "target/shared-kernel-log-checks/ld-musl-aarch64.so.1": "b5afeb0dcc9e22e92f1088566b0d1c1562ef567a4abebaf4b0fd14000800b8ed",
+    "target/shared-kernel-log-checks/run-units.py": "51f5d8cf61a33ae1ba1620da1addb1daafbd524cc7dd147875294d76816a104e"
+  },
+  "runner_sha256": "3efcaee4ea8a836d308c061f8535be80a97b0798ec0a1cc25896f96e73411883",
+  "baseline_sha256": "2e1e0bf2403d488b6e156cc39c52c2048c88a2245f7e4f2cb284be41684edfdb",
+  "baseline_evidence": "docs/validation/shared-ofd-leaves-summary.json",
+  "distinct_rust_tests": 8,
+  "guest_cases": 8,
+  "baseline_cases": 3,
+  "native_kernel_log_tests": 0,
+  "results": {
+    "units": {
+      "path": "target/shared-kernel-log-checks/unit-results.json",
+      "sha256": "2ad00052f0df37340fa2f067a8fb8216934ae4b7f7096966a503b87cdceec002"
+    },
+    "guest": {
+      "path": "target/shared-kernel-log-checks/guest/results.json",
+      "sha256": "3743179e1008e99bdbebd4859fe99830b9f07ced2252c3989b32df6c4cde2bce"
+    },
+    "compatibility_log": {
+      "path": "target/shared-kernel-log-checks/compatibility-results.json",
+      "sha256": "54e53925912499c8df09bd371c60bc1e6932fb0fea93c628486b5714eb0092ee"
+    }
+  },
+  "routing": [
+    {
+      "case": "before-memory-1",
+      "parallel_rounds": 0,
+      "worker_syscalls": 0,
+      "service_requests": 0
+    },
+    {
+      "case": "before-memory-2",
+      "parallel_rounds": 406,
+      "worker_syscalls": 3,
+      "service_requests": 0
+    },
+    {
+      "case": "before-memory-4",
+      "parallel_rounds": 406,
+      "worker_syscalls": 3,
+      "service_requests": 0
+    },
+    {
+      "case": "after-memory-1",
+      "parallel_rounds": 0,
+      "worker_syscalls": 0,
+      "service_requests": 0
+    },
+    {
+      "case": "after-memory-2",
+      "parallel_rounds": 10,
+      "worker_syscalls": 772,
+      "service_requests": 0
+    },
+    {
+      "case": "after-memory-4",
+      "parallel_rounds": 10,
+      "worker_syscalls": 772,
+      "service_requests": 0
+    },
+    {
+      "case": "after-disk-1",
+      "parallel_rounds": 0,
+      "worker_syscalls": 0,
+      "service_requests": 0
+    },
+    {
+      "case": "after-disk-2",
+      "parallel_rounds": 15,
+      "worker_syscalls": 629,
+      "service_requests": 0
+    },
+    {
+      "case": "after-disk-4",
+      "parallel_rounds": 15,
+      "worker_syscalls": 770,
+      "service_requests": 0
+    }
+  ],
+  "builds": {
+    "release_cli_ffi": "target/shared-kernel-log-checks/release-build.log",
+    "strict_release_clippy": "target/shared-kernel-log-checks/clippy.log",
+    "format": "target/shared-kernel-log-checks/fmt.log",
+    "diff_whitespace": "target/shared-kernel-log-checks/diff-check.log"
+  },
+  "log_sha256": {
+    "target/shared-kernel-log-checks/check.log": "0447bce652a29147a1853d1c664dfb7cf41076fcc3547b0216aeb6a1dd457e58",
+    "target/shared-kernel-log-checks/clippy.log": "377e220a9f3f529ca99a49d29048fea7399162367e1846e6b2af4fb33100c13a",
+    "target/shared-kernel-log-checks/diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/shared-kernel-log-checks/extract-busybox.log": "48b490ed8d4b8f52fe80d496b43033da030b7b7b09ff5157de48aa68ca2b9494",
+    "target/shared-kernel-log-checks/extract-musl.log": "caa05b8231fb3db1825f6805e7fb1cb6a6841205cbf66e85533bcc9d58c30b9c",
+    "target/shared-kernel-log-checks/fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/shared-kernel-log-checks/release-build.log": "569b156de8d49dc87508e6396578d325dfb46feaf23d99e28f781ea08575d805",
+    "target/shared-kernel-log-checks/unit-build.log": "f03c71ead918973c964dc7b7cf74b18be2a1e4df007d4c30c6c396c9ebaeb2a4",
+    "target/shared-kernel-log-checks/unit-core.log": "9e4ed5413ec32e4b9d80df7ca3c5292eee30f074c55d83bb6f6d8f0a4e3f5d1a",
+    "target/shared-kernel-log-checks/unit-final-build.log": "4c9521bef60381a6a70adf460efb5e8c59e7d60433602e0d9fdf0217a0d4a35e",
+    "target/shared-kernel-log-checks/unit-linux.log": "69acff131197669a18ecea4d7ae78493a67be46e7740fbb1ee731995a0ac7cdf",
+    "target/shared-kernel-log-checks/unit-vfs.log": "77360ea65295603a5a4fb074b9dd46a20979024f84c61c0943fe052d656abefa"
+  },
+  "validation_notes": "Initial test compile required qualifying Permissions; fixed before execution. Initial baseline fixture incorrectly expected EAGAIN from an empty blocking legacy stream, corrected before final baseline comparisons. Initial routing assertion assumed all 768 calls remain in workers, but a finished peer permits the solo path. Existing semantic pass/raw output reevaluated and only missing disk-4 case run; no successful case repeated. Action 2 excluded from direct worker invocation and checked by core unit test.",
+  "reuse": "Unchanged CPU/native memory, mapped state, OOM/BPF, io_uring, Docker and graphics validation reused; only affected log tests run. No wall-time speed benchmark; routing counts only.",
+  "raw_artifacts": "target/shared-kernel-log-checks",
+  "ipa_built": false,
+  "limits": "Blocking legacy syslog stream, kmsg OFD cursors, full FD/OFD/Node/VM/task ownership and cohort stop remain. No native host kernel log access, Apple/iPad or whole-product performance claim."
+}

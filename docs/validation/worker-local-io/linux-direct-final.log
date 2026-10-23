@@ -1,0 +1,9 @@
+    Finished `release` profile [optimized] target(s) in 8.15s
+     Running unittests src/lib.rs (target/perf-runtime/release/build/trames-linux/da02a229eca59aff/out/trames_linux-da02a229eca59aff)
+
+running 3 tests
+test direct::tests::blocking_and_sigpipe_defer_without_effects_or_retrying_completed_io ... ok
+test direct::tests::scalar_and_vector_preflight_does_not_consume_eventfd_or_pipe_bytes ... ok
+test direct::tests::vector_eventfd_obeys_record_sizes_and_commits_partial_progress_once ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 29 filtered out; finished in 0.00s

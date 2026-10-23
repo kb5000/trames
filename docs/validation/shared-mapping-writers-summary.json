@@ -1,0 +1,64 @@
+{
+  "date_utc": "2026-10-23",
+  "batch": 31,
+  "complete_coordinator_removal": false,
+  "scope": "Shared inode/mount writable-mapping lease accounting; remove page writer scan and owner cached bool invalidation; readonly remount/unmount/detached-tree lifetime consult the same counts. Full mapped pages, inode/namespace and VM commits remain joined.",
+  "source_sha256": {
+    "crates/trames-vfs/src/mapped.rs": "8d9781593fd983da12b9e551b788cc748c84e7c43af6f8e3733596e5ca89d701",
+    "crates/trames-vfs/src/mapped/writers.rs": "1b9558e5cc3ae5605f332dfcd6b8f88012c201d958a7c770ec93439a4b3db444",
+    "crates/trames-vfs/src/mounts.rs": "bfb424ec992b354bb4c81546f1549900b0cf9b980160bec876481f30700ef250",
+    "tests/fixtures/mmap-coverage.c": "53a408d791b1560df7193bc89af3080a8d4f32630783829243457517ff2a077b"
+  },
+  "artifact_sha256": {
+    "target/perf-runtime/release/trames-run": "35371dcc53ede1163baabdc9d56a9b14f790b1bc01dfa544ecebd74397d1ebce",
+    "target/shared-mapping-writers-checks/before-trames-run": "b65d9ba6b8c1b96e374375fbfaa48e4092825f55813d805934f8ac79da604dcf",
+    "target/shared-mapping-writers-checks/mmap-coverage": "aacc925d78c362be9d36fe7ae3feeae5f47295f6b43a4c4c185eee9ffc941f1d",
+    "target/shared-mapping-writers-checks/mmap-coverage-host": "a18b278dba6c58e4bdb75df34b655f2507f19a7bc98b275ded267a2b0bd6a6be",
+    "target/shared-mapping-writers-checks/native-mappings": "e49a7c87564ca280795c4ef6f278d3c1db1f4c0e2a0594cfa22070b453c0b2a8",
+    "target/perf-runtime/release/libtrames_ffi.a": "7a81472cf9ef1eb89df5a084342778cfb46b5cf66ffb22e56879c415c7268852",
+    "target/perf-runtime/release/libtrames_ffi.so": "23a6f6afb9d85f83f85bc9ec80dba1cee2766c35ed5f04c51e91c31d2ae85165"
+  },
+  "runner_sha256": "35371dcc53ede1163baabdc9d56a9b14f790b1bc01dfa544ecebd74397d1ebce",
+  "baseline_sha256": "b65d9ba6b8c1b96e374375fbfaa48e4092825f55813d805934f8ac79da604dcf",
+  "baseline_evidence": "docs/validation/shared-pty-slave-summary.json",
+  "results": {
+    "units": {
+      "path": "target/shared-mapping-writers-checks/unit-results.json",
+      "sha256": "8d872944752ad8137e2d8196fbc3038575dd6ac338d55ccce9b81c0f1affc216"
+    },
+    "guest": {
+      "path": "target/shared-mapping-writers-checks/guest-results.json",
+      "sha256": "cca1427129c63e245c9655bd5302ae7503d5ffd148fd85572f1014151c659974"
+    },
+    "native": {
+      "path": "target/shared-mapping-writers-checks/native-results.json",
+      "sha256": "529c16919f53fc928d430ceca28cef9367ea20cd6f67da39acb3f4f4001edcfb"
+    }
+  },
+  "distinct_rust_tests": 21,
+  "rust_test_counts": {
+    "vfs": 21
+  },
+  "guest_cases": 8,
+  "baseline_preflight_cases": 1,
+  "native_cases": 3,
+  "log_sha256": {
+    "target/shared-mapping-writers-checks/unit-build.log": "f8742acefda06b8d41deb558f742831a54433630f2fd40cfdf4c99902d487e15",
+    "target/shared-mapping-writers-checks/unit-mount-build.log": "5c0f52b426407476cc29ca072b7ac9a283a91adde4b8c1ee40d40fbe0555db2d",
+    "target/shared-mapping-writers-checks/release-final-build.log": "c8b5c03ee6e0d17eb7ee2977766d6afcc4d2b3687916524df7b6d5feb0efe248",
+    "target/shared-mapping-writers-checks/clippy.log": "b37ee48b0154844761f69d99795cbf4b1a38ef9370a9b0b2449e3600c27a273a",
+    "target/shared-mapping-writers-checks/unit-vfs.log": "023844e3410937182b2ebeae505b52704801b78a3bf3408ca93f620d42e8c666",
+    "target/shared-mapping-writers-checks/unit-mount.log": "39ce59ea100e7eb0921d10c5bcaeb265e2bdd919b12772c69d5744c8601fb494",
+    "target/shared-mapping-writers-checks/preflight.stdout": "32236f77d67ef9d73aca6e2bdcf32514cdb4c5a4cdb6f611c10cbdf25986f7fc",
+    "target/shared-mapping-writers-checks/preflight.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "reuse": "After 17 initial Rust passes, added mount pin checks and ran only five affected cases, one overlapping; 21 distinct final passes. Final source edit was comment-only; unchanged production build reused. Existing mmap fixture rebuilt after correcting its guard reservation. No rerun of prior TCP/PTY or unrelated CPU/GPU/browser/Docker/CoreMark suites.",
+  "fixture_correction": "Own three anonymous pages before placing a MAP_FIXED guard at the third, instead of potentially overwriting an unrelated neighboring mapping. Native mappings wrapper originally received SIGSEGV from the unsafe test arrangement; corrected native mapping/persistence checks and both baseline/new guest checks pass. Native wrapper excludes ARM64 code execution in memfds().",
+  "builds": {
+    "release_cli_ffi": "target/shared-mapping-writers-checks/release-final-build.log",
+    "strict_release_clippy": "target/shared-mapping-writers-checks/clippy.log"
+  },
+  "raw_artifacts": "target/shared-mapping-writers-checks",
+  "ipa_built": false,
+  "limits": "WriteLease Send+Sync by composition; FileMapping owns it in production. Last retained accounting reference may release on a worker, but this is not full FilePage/Node/PageBacking/VM ownership and does not authorize accessing pages via a count alone. Actual mapping mutation/writeback, namespace control and PTY master devpts/signals remain owner-bound. Linux x86_64 with real ARM64 guest; no QEMU or Apple/iPad validation, and no aggregate speedup claim."
+}

@@ -1,0 +1,6 @@
+
+running 1 test
+test workers::tests::byte_resource_and_epoll_handoff_release_one_slot_and_retire_each_svc_once ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 126 filtered out; finished in 0.00s
+

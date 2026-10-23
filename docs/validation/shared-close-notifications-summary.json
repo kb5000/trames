@@ -1,0 +1,69 @@
+{
+  "date_utc": "2026-10-23",
+  "batch": 27,
+  "complete_coordinator_removal": false,
+  "scope": "Share file-close notification lease, live per-inode watch targets and coherent parent/name/link state; owner and worker releases use the same event implementation. Actual FD/OFD close/dup still joined.",
+  "source_sha256": {
+    "crates/trames-vfs/src/inotify.rs": "d46a7d6ca094036941adf3f70f48bb5d3b86ff4408fcaebddeb6c77d5f7cef43",
+    "crates/trames-vfs/src/lib.rs": "a04cad122e576141dfd430869a81495bbd60132677e45af72bcd9fc7cfbaf154",
+    "crates/trames-vfs/src/pseudo.rs": "bce056ae7751d0b8ed18eeffa69df41e0835130c9e4a9fab2d8f8f271a3ce095",
+    "crates/trames-vfs/src/uring.rs": "fd9bd881929d4e3fdb8aaa634a5489617e4259ebcb1018fda406c59b90083273",
+    "crates/trames-vfs/src/file_io.rs": "f275cbf980a32cd6497eaa20b1a0ff4e67a1bcd3ed5173219679cbaf72f7c5ee",
+    "scripts/audit-syscalls.py": "21e1486c34929a4613aec30b09534de37ee0bf68060edcb1588fcb5c93022568",
+    "tests/fixtures/inotify.c": "c8f3c70ee7b8d86abbf11b55cb788d083ba117cc3e21e54bc277492a2630336e",
+    "tests/fixtures/worker-inotify.c": "7325fd21d4a24ca8b2ff8acb5fdb740e132822edaa60e0f1aa5bd38431f89b4c",
+    "tests/integration/worker-inotify.py": "0a980dcab4b9f54eb21d3cc11b8fec424c21d49654de160bbdf53ebf16240c7e"
+  },
+  "artifact_sha256": {
+    "target/perf-runtime/release/trames-run": "5aacef0439b9701551928ef0b616ebc384d13a6335bf49b0e598b380738549ff",
+    "target/shared-close-notifications-checks/before-trames-run": "57a5c7bc61ae8ab6a5808df3ebd692d45abf04e0d72d10e0a50c34edce911b9a",
+    "target/worker-inotify-checks/native-inotify": "fc36b24ede322fc35d954c95576042457155419aa9d32506df61d3674d370a9c",
+    "target/worker-inotify-checks/native-worker-inotify": "f76c1b5ac0975f6fef222a1ef354fb690cf4aeb489959487e09e87234bc365af",
+    "tests/fixtures/bin/inotify": "9001b9e8d6212f2e63268b9d07b1d0196e66979df8498e090139a7557728d618",
+    "tests/fixtures/bin/worker-inotify": "ef704503ce5faabc3d605b92e441ec69797189ffcb803cb59e3e816b5f50cc13"
+  },
+  "runner_sha256": "5aacef0439b9701551928ef0b616ebc384d13a6335bf49b0e598b380738549ff",
+  "baseline_sha256": "57a5c7bc61ae8ab6a5808df3ebd692d45abf04e0d72d10e0a50c34edce911b9a",
+  "baseline_evidence": "docs/validation/blocking-flock-summary.json",
+  "results": {
+    "units": {
+      "path": "target/shared-close-notifications-checks/unit-results.json",
+      "sha256": "45e74d774e2d28f01ade8a341d30462d023d10aa7f939725b77371a1f33c04de"
+    },
+    "native": {
+      "path": "target/shared-close-notifications-checks/native-results.json",
+      "sha256": "7ba2234ee058d48fd07763d12e634252785bab97c322ae1983035c183c1585bc"
+    },
+    "compatibility": {
+      "path": "target/shared-close-notifications-checks/compatibility/results.json",
+      "sha256": "fe8854a60162f89ea90746a56a2969ffd5dea882d0b3a24625f85cb5cd6abb24"
+    },
+    "worker": {
+      "path": "target/shared-close-notifications-checks/worker/results.json",
+      "sha256": "dd97133cc5bea6f61a01d3f6b342e87003a619143d58bad16d1ae316b1178022"
+    }
+  },
+  "distinct_rust_tests": 29,
+  "rust_test_counts": {
+    "vfs": 29
+  },
+  "log_sha256": {
+    "target/shared-close-notifications-checks/unit-final-build.log": "bdffc97ebc2cb4016a8d868ad16947e1a95b41e243245f9abdf511922dcb0eca",
+    "target/shared-close-notifications-checks/release-build.log": "e95da8bb989658ea4eb4a85f98c69f4e2e911e08e7a39b7a6e33ee202a899b10",
+    "target/shared-close-notifications-checks/unit-build.log": "92948d851edefdaae88617afdb9306d3f3faca19eb0a8ff71ad6bfb1e914e7fa",
+    "target/shared-close-notifications-checks/unit-vfs-final.log": "a9b76618d4920c7a2c05e3b2f3912d8712c10b336a40ae7abe10e78f39f3d97b",
+    "target/shared-close-notifications-checks/check.log": "3cfb8184a736024437395b6d336f63f96a17f272e13c9cc0a35b2d84bbdcee6f",
+    "target/shared-close-notifications-checks/unit-vfs-flock.log": "878be358f696244cff9ec8cf347de6f4f74bd1a23bdb622206bb26d3588abe90",
+    "target/shared-close-notifications-checks/clippy.log": "76b9db2fa376af921619b1ca64d5f9e492689b8f846a46af2f5870de3e07b8b5",
+    "target/shared-close-notifications-checks/unit-vfs.log": "50f1469e2a24e0c628c7eccb21c552c761a7a2c143b652c2ad69e22f336c853e"
+  },
+  "fixture_reuse": "Native and ARM64 inotify/worker-inotify source and artifact hashes match docs/validation/worker-inotify-summary.json. Ran native oracles and guest memory/disk x 1/2/4 CPU correctness; no CPU/GPU/browser/Docker rerun or speed-ratio claim.",
+  "validation_reuse": "Initial targeted VFS passes reused after adding a test-only concurrent rename/close case. Only that new test and the additional flock last-close regression ran afterward. Manifest counts unique tests; overlapping filter matches in the initial run are counted once.",
+  "builds": {
+    "release_cli_ffi": "target/shared-close-notifications-checks/release-build.log",
+    "strict_release_clippy": "target/shared-close-notifications-checks/clippy.log"
+  },
+  "raw_artifacts": "target/shared-close-notifications-checks",
+  "ipa_built": false,
+  "limits": "FileClose is Send+Sync by composition and is now used by production OFDs, with final worker release tested. Full OpenDescription/FD membership, inotify Instance path bookkeeping and other endpoint lifetimes still have owner references; this batch introduces no new worker syscall opcode and does not remove the remaining coordinator."
+}

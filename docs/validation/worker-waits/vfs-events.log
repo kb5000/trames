@@ -1,0 +1,8 @@
+
+running 3 tests
+test events::tests::anonymous_and_socket_owners_survive_identity_changes ... ok
+test events::tests::unsupported_epoll_modes_leave_registrations_unchanged ... ok
+test events::tests::timer_expirations_accumulate_and_disarm_clears_pending ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 193 filtered out; finished in 0.00s
+

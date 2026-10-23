@@ -1,0 +1,515 @@
+{
+  "date": "2026-10-22",
+  "git_head": "52c02331103d145e351fdb7377af80c389e85235",
+  "working_tree": "Local uncommitted eighth coordinator migration batch; earlier local batches preserved; no push, commit, IPA or release.",
+  "source_sha256": {
+    "AGENTS.md": "2cfee3892489959cdd0f219399e06b7f76c6e28ddb0e1431ec68da8cc5c6c8fd",
+    "crates/trames-vfs/src/timer_io.rs": "10c12d3c5a032b8b91c67e21a7f8229fab40ee3062dbbbf437aabf4526a8e161",
+    "crates/trames-vfs/src/events.rs": "47470a872a4cef8e7f3d21c04124517475e19b9cffca96ac83b8caf8ec463b04",
+    "crates/trames-vfs/src/direct_io.rs": "30a15a8b295fbbe99bc0ccf3ba4d6cf0856abf0fb0f89ac5bed2f8fbd7fc4a71",
+    "crates/trames-vfs/src/lib.rs": "a2633008dbb228481c60c185310407296f91e221d60331f6a545f9ca60668182",
+    "crates/trames-linux/src/timer.rs": "a38053c07934d239443e2aa16f066ac08f771955ad8ebdf656499c1da4574f93",
+    "crates/trames-linux/src/poll.rs": "d4d35e69ac131b07a871355407aa61970d636405c1043ec4dbf89ca532859ec4",
+    "crates/trames-linux/src/direct.rs": "7668a886da15bb8168bbf4a193fa65e3bb420adcc1aedd21d26246f1ab853d57",
+    "crates/trames-linux/src/lib.rs": "29d4b5b24ee9fe47302a1a414f101f102294acc2d1aae4a3269d50b885429bdc",
+    "crates/trames-core/src/process_events.rs": "89338011a56e6909a995e05040dad4e6fe5ff121283034ee536e42c2c14ade8d",
+    "crates/trames-core/src/process.rs": "69638accdcf1bcf71cca3fe3a4df80991b7a6657b4e2a3fe80639657d4764f46",
+    "crates/trames-core/src/worker_syscalls.rs": "f0b76eb5f65d5af8115d49b262823ec5f91c7baa755a4b7c8497f734efac3625",
+    "crates/trames-core/src/workers.rs": "ff9550935f4c796d605d28ebc6195cd72d07c93e2d5bda6b1ebe5f987c12dcda",
+    "crates/trames-core/src/run_queue.rs": "fdaa143076fb46235030fcd7f51fff6143d91039391f2965b7e7d5e87374ee68",
+    "crates/trames-core/src/lib.rs": "293e2a9ea25a850a4ad1faebffc94822e1f363b68458302c466ca39599539ed0",
+    "crates/trames-cli/src/main.rs": "e50f89127fcce9b6b2e57d2524fd42063e731cb06d08934df9ec621d49dfda23",
+    "tests/fixtures/worker-wait.c": "21a6f123c054d91fc71e74b86e67b3c5b3690ea27695ca380ecd8d785eb9b613",
+    "tests/fixtures/epoch-services-native.S": "f0e393022ae06d80c042885a4d8f7db7ff589ed3a0d8a1bc27b6201f990f0e4d",
+    "tests/integration/worker-wait.py": "b5bdec6b5543c4c9e3fbbbef4560394c547115a3ab89a1b1fdd1518b6c558eb2",
+    "scripts/build-worker-wait-fixture.sh": "9f1c5020de6b6d9755273af63340b7b59dad02530b341af4b93103cd90c2e849",
+    "docs/architecture/epoch-services.md": "f7cba444a32967359184f61a915b4437b8ddb33eb70afe77c62caad2ac25de3a",
+    "docs/validation/worker-waits.md": "4e1d8dce2cd473b0d54749bca535142bb147bf0bac7bd85e8657744eb661f471"
+  },
+  "binary_sha256": {
+    "target/perf-runtime/release/trames-run": "84eec2716014b9a148ee10a926b71d279f21c2c50ca34a5ae90a40ecf7439320",
+    "target/perf-runtime/release/libtrames_ffi.so": "da7dbc57ea524c62bd94af0650e1461a52a23d5dae5fad2726827f0bcff2e7ee",
+    "target/perf-runtime/release/libtrames_ffi.a": "4e91a65e07a96dc7eb86c1e60eb8c91732ea1c4ce07a24b77345f7ce28515145",
+    "target/worker-wait-checks/trames-run-before": "be91ea2c7753a50e2bbafc2ca2c71d3b612640304f98a0d7a05244983f440803",
+    "target/worker-wait-checks/worker-wait-host": "eccb90c7baaa33e64e0d878ab4f2d88d7e0b8378f57c80c1db695a40eea59a8b",
+    "tests/fixtures/bin/worker-wait": "75b3eaac251b2b6cce4d478a35e34d8d9a3279dca71bcd2490f53c07513bb88b",
+    "target/perf-runtime/release/build/trames-core/110419dd55a974e8/out/trames_core-110419dd55a974e8": "7ca66ecec22254034f34b5412286a2a476cf36f10552265c670a3a1ad52891f8",
+    "target/perf-runtime/release/build/trames-linux/da02a229eca59aff/out/trames_linux-da02a229eca59aff": "6baca960d024ce0868830919be74d8a6d0568d994f827003ee1ed1dbcc688ff6",
+    "target/perf-runtime/release/build/trames-vfs/a2c47a52c6af3f1e/out/trames_vfs-a2c47a52c6af3f1e": "b603b4a9ca5808e8d520d2dce74198e9cf07890f845ec868805220e71bfc5cb8"
+  },
+  "unchanged_implementations": {
+    "reference": "docs/validation/worker-unix/results.json",
+    "reference_sha256": "8a8d9c6950a8ab3c5d80c5f7ab8b65db52388ca99c4d090227a15d05ebb26e61",
+    "source_sha256": {
+      "crates/trames-vfs/src/ipc.rs": "793eed83b134ad425d8940cd61d4314670d8616640d65c8f37702e9ffe5cf25b",
+      "crates/trames-vfs/src/ipc/channel.rs": "559c2dca452db05a9783dd49f3d3ee0c0d42717da97de34b3449f97d95c11746",
+      "crates/trames-linux/src/network.rs": "34f2a7a8847c80b793ebecc3db03076d0e535d2b61e394513cfb145f858183f8",
+      "crates/trames-linux/src/network/local.rs": "c20affb1954d5c174c7c4144713bcc9e9444b663d01fc85a3dae4142259f5f70",
+      "crates/trames-vfs/src/file_data.rs": "fb110934733436db0a23fa65d4f4f59d1fae841838ea21774f3df9f107fe4353",
+      "crates/trames-vfs/src/file_io.rs": "c780103efc197101490724f76e2a5e681bc1665257a9308d2b2a9c918e68db8a",
+      "crates/trames-vfs/src/storage.rs": "ecdd3b30ab847538f997123272bbe4a2ea150bbc91721ec8def70659fbaa1933",
+      "crates/trames-vfs/src/disk_io.rs": "23b51413ca976ad76f3ff840055cc99db1c9cb12378fdfc3bd38f8c543d9aea3",
+      "crates/trames-vfs/src/readiness.rs": "b2493ae2f0c9d8e98bb3a3379e107891dde570b4766ccd9392b271950e77727f",
+      "crates/trames-vfs/src/ipc/native.rs": "7e7cc51c0d45ae3485d7deeed02b2ad0a4e376ac76f067d44abb66a9eb2098e4",
+      "crates/trames-core/src/futex.rs": "d302348a4c9bc60024a863d54d0d8498781023a99e6c4a155065f5dc5d5f6703",
+      "crates/trames-core/src/process_service.rs": "3e1f8add87aa6f1e4bc47b1f647eab4c7efb45368caafb477abf4bbdabd162f5",
+      "crates/trames-core/src/process_seccomp.rs": "7eb58aa596c845bfa87ad441743803e06100b20bc6d55b99c7191c5b1d76600b",
+      "crates/trames-linux/src/state.rs": "4d0a9aa73a8cf823b77de21cd12a780a42717dc06dd63af3e22a642214110c92"
+    },
+    "additional_reference": "docs/validation/worker-files/results.json",
+    "additional_source_sha256": {
+      "crates/trames-vfs/src/inotify.rs": "4e914883bae108439a815fe05764414738a032d315b5068e4eef8c0eab03b04e",
+      "crates/trames-vfs/src/mapped.rs": "d7c94e1725c548940ffb0304b89780cd91e0b5e1aee3dc770aec3565ee362002"
+    },
+    "policy": "Reuse passing unchanged file/OFD/disk/Unix byte/readiness/futex/seccomp and network helper results; no repeated broad suites. CPU/MMU and GPU implementation unchanged."
+  },
+  "production_artifact_reuse": {
+    "policy": "The final source delta after production Release build and final integrations is exactly the three test-only lines in direct_io.rs described below. No production source changed. Reuse CLI/FFI and integration results; final Clippy and VFS test binary cover the updated test.",
+    "file": "crates/trames-vfs/src/direct_io.rs",
+    "test_function": "direct_io::tests::epoll_delivery_is_shared_with_joined_waiters_and_refreshes_after_ctl",
+    "added_test_only_lines": "        assert!(vfs.direct_descriptors().get(ep).is_some());\n        let signal = vfs.signalfd(-1, 1, 0).unwrap();\n        vfs.epoll_ctl(ep, 1, signal, 1, 322).unwrap();\n",
+    "production_build_time_source_sha256_reconstructed": "322da9e670ae89ef6b878ebfafba805a0a886fa1e5018d7ce5f6e5042c0d0d9a"
+  },
+  "checks": {
+    "core": {
+      "passed": 127,
+      "failed": 0,
+      "ignored": 2,
+      "log": "core-final.log",
+      "scope": "full Core crate only"
+    },
+    "linux-direct": {
+      "passed": 14,
+      "failed": 0,
+      "ignored": 0,
+      "log": "linux-direct.log",
+      "scope": "affected module or corrected failed test"
+    },
+    "vfs-timer": {
+      "passed": 2,
+      "failed": 0,
+      "ignored": 0,
+      "log": "vfs-timer.log",
+      "scope": "affected module or corrected failed test"
+    },
+    "vfs-events": {
+      "passed": 3,
+      "failed": 0,
+      "ignored": 0,
+      "log": "vfs-events.log",
+      "scope": "affected module or corrected failed test"
+    },
+    "vfs-direct-initial": {
+      "passed": 6,
+      "failed": 1,
+      "ignored": 0,
+      "log": "vfs-direct.log",
+      "scope": "affected module or corrected failed test",
+      "note": "Six passing checks reused; outdated timer-unsupported expectation corrected and the sole failure rerun successfully. Final production unchanged."
+    },
+    "vfs-direct-fixed": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "log": "vfs-direct-fixed.log",
+      "scope": "affected module or corrected failed test"
+    },
+    "clippy": {
+      "passed": true,
+      "packages": [
+        "vfs",
+        "linux",
+        "core",
+        "cli",
+        "ffi"
+      ],
+      "tests": true,
+      "release": true,
+      "deny_warnings": true,
+      "log": "clippy-final.log"
+    },
+    "build": {
+      "passed": true,
+      "packages": [
+        "cli",
+        "ffi"
+      ],
+      "release": true,
+      "log": "build-final.log"
+    },
+    "fmt": {
+      "passed": true,
+      "log": "fmt.log"
+    },
+    "diff_check": {
+      "passed": true,
+      "log": "diff-check.log"
+    },
+    "python_compile": {
+      "passed": true,
+      "path": "tests/integration/worker-wait.py"
+    },
+    "shell_syntax": {
+      "passed": true,
+      "path": "scripts/build-worker-wait-fixture.sh"
+    },
+    "integration": {
+      "passed": true,
+      "candidate_configurations": 24,
+      "baseline_configurations": 24,
+      "report": "integration/results.json"
+    },
+    "unix_regression": {
+      "passed": true,
+      "configurations": 12,
+      "report": "unix-regression/results.json"
+    }
+  },
+  "corrections": [
+    "Initial single-slot timer regression stalled/budget-exhausted. Deadline hint plus ready affinity/progress-guarded local fairness fixed starvation. Test budget changed from 1 million to 1 billion so budget exhaustion cannot impersonate timed completion; 5-second host event deadline remains. Final full Core run passed all 127 non-ignored tests.",
+    "Initial integration reached pinned timeout with no worker-local ppoll after native peer dominated the slot; strict positive-local counter check rejected it. Added local ready fairness; final 48 rows all passed. Incomplete development report retained separately.",
+    "One pre-existing VFS direct epoll test still assumed timerfd unsupported. Changed only its expectation and used signalfd for unsupported resource admission. Six already passed checks reused; sole corrected test passed."
+  ],
+  "four_cpu_structural_counts": [
+    {
+      "mode": "timer",
+      "affinity": "pinned",
+      "before": {
+        "parallel_rounds": 11,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "worker_timer_syscalls": 0,
+        "worker_poll_syscalls": 0,
+        "worker_task_yields": 0,
+        "peak_parallel_cpus": 1
+      },
+      "after": {
+        "parallel_rounds": 9,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "worker_timer_syscalls": 68,
+        "worker_poll_syscalls": 0,
+        "worker_task_yields": 46,
+        "peak_parallel_cpus": 1
+      }
+    },
+    {
+      "mode": "timer",
+      "affinity": "spread",
+      "before": {
+        "parallel_rounds": 104,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "worker_timer_syscalls": 0,
+        "worker_poll_syscalls": 0,
+        "worker_task_yields": 0,
+        "peak_parallel_cpus": 2
+      },
+      "after": {
+        "parallel_rounds": 9,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "worker_timer_syscalls": 96,
+        "worker_poll_syscalls": 0,
+        "worker_task_yields": 29,
+        "peak_parallel_cpus": 2
+      }
+    },
+    {
+      "mode": "epoll",
+      "affinity": "pinned",
+      "before": {
+        "parallel_rounds": 11,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "worker_timer_syscalls": 0,
+        "worker_poll_syscalls": 0,
+        "worker_task_yields": 0,
+        "peak_parallel_cpus": 1
+      },
+      "after": {
+        "parallel_rounds": 9,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "worker_timer_syscalls": 68,
+        "worker_poll_syscalls": 0,
+        "worker_task_yields": 45,
+        "peak_parallel_cpus": 1
+      }
+    },
+    {
+      "mode": "epoll",
+      "affinity": "spread",
+      "before": {
+        "parallel_rounds": 137,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "worker_timer_syscalls": 0,
+        "worker_poll_syscalls": 0,
+        "worker_task_yields": 0,
+        "peak_parallel_cpus": 2
+      },
+      "after": {
+        "parallel_rounds": 9,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "worker_timer_syscalls": 96,
+        "worker_poll_syscalls": 0,
+        "worker_task_yields": 29,
+        "peak_parallel_cpus": 2
+      }
+    },
+    {
+      "mode": "ppoll",
+      "affinity": "pinned",
+      "before": {
+        "parallel_rounds": 11,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "worker_timer_syscalls": 0,
+        "worker_poll_syscalls": 0,
+        "worker_task_yields": 0,
+        "peak_parallel_cpus": 1
+      },
+      "after": {
+        "parallel_rounds": 9,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "worker_timer_syscalls": 68,
+        "worker_poll_syscalls": 22,
+        "worker_task_yields": 45,
+        "peak_parallel_cpus": 1
+      }
+    },
+    {
+      "mode": "ppoll",
+      "affinity": "spread",
+      "before": {
+        "parallel_rounds": 137,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "worker_timer_syscalls": 0,
+        "worker_poll_syscalls": 0,
+        "worker_task_yields": 0,
+        "peak_parallel_cpus": 2
+      },
+      "after": {
+        "parallel_rounds": 8,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "worker_timer_syscalls": 96,
+        "worker_poll_syscalls": 32,
+        "worker_task_yields": 29,
+        "peak_parallel_cpus": 2
+      }
+    },
+    {
+      "mode": "timeout",
+      "affinity": "pinned",
+      "before": {
+        "parallel_rounds": 9,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "worker_timer_syscalls": 0,
+        "worker_poll_syscalls": 0,
+        "worker_task_yields": 0,
+        "peak_parallel_cpus": 1
+      },
+      "after": {
+        "parallel_rounds": 9,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "worker_timer_syscalls": 0,
+        "worker_poll_syscalls": 23,
+        "worker_task_yields": 48,
+        "peak_parallel_cpus": 1
+      }
+    },
+    {
+      "mode": "timeout",
+      "affinity": "spread",
+      "before": {
+        "parallel_rounds": 23,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "worker_timer_syscalls": 0,
+        "worker_poll_syscalls": 0,
+        "worker_task_yields": 0,
+        "peak_parallel_cpus": 2
+      },
+      "after": {
+        "parallel_rounds": 9,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "worker_timer_syscalls": 0,
+        "worker_poll_syscalls": 32,
+        "worker_task_yields": 30,
+        "peak_parallel_cpus": 2
+      }
+    }
+  ],
+  "limits": [
+    "Structural and functional checks only. Raw reports contain elapsed metrics but no timing statistics or application speedup claims are made. Fixed 512 native 1 MiB fills and identical output per sample.",
+    "Deadline/fairness yield happens at existing interpreter chunk/native-return boundaries; it does not preempt inside a native body. Host control cycles still exist.",
+    "FD table/map/lifecycle changes, socket setup, SCM_RIGHTS, other sockets/PTY/signals/POSIX timers, temporary masks/pselect/special FDs, unadmitted file effects, stateful GPU and native relay pumping retain original owner boundaries.",
+    "No full CPU/Linux/VFS/GPU/network suites, CoreMark/Docker/Firefox run, new QEMU differential, Apple ARM64/16 KiB page or iPad acceptance.",
+    "No private Firefox diagnostic bundles inspected or archived. Only named local fixture/unit logs, stdout/stderr, and reports copied."
+  ],
+  "evidence_sha256": {
+    "build-final.log": "c1912c8cf09ae5da9c0a591966c6a82dcda69c05c6cec139639d06df17886b81",
+    "clippy-final.log": "d6772311f6ca5679184d34575de833374fae813bbe94387799f1a63de5207d85",
+    "core-build-final.log": "d0f46f3d288b39fdf1dca9a0c12a2ca9c8dcee682d851020c0dd0513ab132885",
+    "core-final.log": "b4e7f3ce004ffe71252f950610c181bc7fe3b08900f3860940c11c9d2c6c47e6",
+    "development/core-timer-debug.log": "308d8a9909d3fca75c9b1317bb49e79c02ae52595196eb8b50de408ac39927e8",
+    "development/core-timer-debug2.log": "c45e41ddf5130e869a6350001ba8f50e5e0acc9069ee2b339ecdec7027805a7f",
+    "development/core-timer-final.log": "306f95df6875e522fc6e3323766e2d3d0cc14a4dd7be47c0148f88b9b1018c74",
+    "development/core-timer-fixed.log": "c16f15a2935b93381a95b18b8c014b64e2b0f4e0e508d8c3bdc5643cdf1b72c5",
+    "development/core-timer.log": "c977b8836a54ac3c6dbad91e73fe413369deea33df935f434ce91291e8454319",
+    "development/incomplete-integration.json": "d1d8a3eeeaaa2516c206f020257de519cea993f9bf2fceaba39b4826a9a95860",
+    "diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "fixture-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "integration/epoll-pinned-1-after.stderr": "8db93c05dd693b8f56f83d3a82b696046f1b319412e64b49ad169cd21267d383",
+    "integration/epoll-pinned-1-after.stdout": "e0d8359cdaf3172ced8b11bd6edcff9aa43ca17be159ae723ed9493d99ea354f",
+    "integration/epoll-pinned-1-before.stderr": "3734397eca36e443cb92de13c8fff05bca4c92f580074e0fae39970dd8307e7c",
+    "integration/epoll-pinned-1-before.stdout": "e0d8359cdaf3172ced8b11bd6edcff9aa43ca17be159ae723ed9493d99ea354f",
+    "integration/epoll-pinned-2-after.stderr": "0057e4722dcce49897c40a70bc76e1e74c5bfed7c748014eea8d42eaaab7c35e",
+    "integration/epoll-pinned-2-after.stdout": "e0d8359cdaf3172ced8b11bd6edcff9aa43ca17be159ae723ed9493d99ea354f",
+    "integration/epoll-pinned-2-before.stderr": "fe0a742a491660191bc3edaaf22d7133426d0bb4c64e3ba7b0bbb85da084f6ef",
+    "integration/epoll-pinned-2-before.stdout": "e0d8359cdaf3172ced8b11bd6edcff9aa43ca17be159ae723ed9493d99ea354f",
+    "integration/epoll-pinned-4-after.stderr": "e3561a9169044fa19dc1bfc0c3d83cfcbe23a01eae2479486b1e97a40ef8dbf6",
+    "integration/epoll-pinned-4-after.stdout": "e0d8359cdaf3172ced8b11bd6edcff9aa43ca17be159ae723ed9493d99ea354f",
+    "integration/epoll-pinned-4-before.stderr": "2c9260fd538a939ec1f543685d4ba7ead08858f58ea74d0e085e11d29cc35e2a",
+    "integration/epoll-pinned-4-before.stdout": "e0d8359cdaf3172ced8b11bd6edcff9aa43ca17be159ae723ed9493d99ea354f",
+    "integration/epoll-pinned-oracle.stdout": "e0d8359cdaf3172ced8b11bd6edcff9aa43ca17be159ae723ed9493d99ea354f",
+    "integration/epoll-spread-1-after.stderr": "2bddf216a069535e453194050475db920596ca1cacd430c186c65c6b8536caa0",
+    "integration/epoll-spread-1-after.stdout": "243b0fa52967c15fcb85f52c05ffad925c902de20e68dca48831fda8deac85fc",
+    "integration/epoll-spread-1-before.stderr": "d73e94b1b877cfbbe07cf2b2c2b3755c762c70ff204ad747a7eaec42b0d9d3be",
+    "integration/epoll-spread-1-before.stdout": "243b0fa52967c15fcb85f52c05ffad925c902de20e68dca48831fda8deac85fc",
+    "integration/epoll-spread-2-after.stderr": "c6f5e8c58bd8358ad705f57389e8f25e658660293d298bd6e255abec7a39040a",
+    "integration/epoll-spread-2-after.stdout": "243b0fa52967c15fcb85f52c05ffad925c902de20e68dca48831fda8deac85fc",
+    "integration/epoll-spread-2-before.stderr": "e9af4dc7beae1e800e44d88ad468d0c2a15998ccbbd64a2b3a1918f9d90ad6f1",
+    "integration/epoll-spread-2-before.stdout": "243b0fa52967c15fcb85f52c05ffad925c902de20e68dca48831fda8deac85fc",
+    "integration/epoll-spread-4-after.stderr": "8117d3384de684f4f526a569aa727cdcab8d6bb01a05233a7d2f24071ba4d53d",
+    "integration/epoll-spread-4-after.stdout": "243b0fa52967c15fcb85f52c05ffad925c902de20e68dca48831fda8deac85fc",
+    "integration/epoll-spread-4-before.stderr": "8f885089e9f2b6111422bcafd6cc0bb4b6bb4576d3b067b237083cdf89481701",
+    "integration/epoll-spread-4-before.stdout": "243b0fa52967c15fcb85f52c05ffad925c902de20e68dca48831fda8deac85fc",
+    "integration/epoll-spread-oracle.stdout": "243b0fa52967c15fcb85f52c05ffad925c902de20e68dca48831fda8deac85fc",
+    "integration/ppoll-pinned-1-after.stderr": "f35fd1a08165b7d61d2741777f7c3e92d6e770beee0c65f6da62bd07ef8757fc",
+    "integration/ppoll-pinned-1-after.stdout": "8fc1cbc83935ac49dfc222cd1b27118865340eb0ab817f7f24660dd8e9dadf7c",
+    "integration/ppoll-pinned-1-before.stderr": "5baeee57761bdbaf10996838634138e176ab3baa54070e85add8731cc58ed4ed",
+    "integration/ppoll-pinned-1-before.stdout": "8fc1cbc83935ac49dfc222cd1b27118865340eb0ab817f7f24660dd8e9dadf7c",
+    "integration/ppoll-pinned-2-after.stderr": "9870fb085370e9d3a9751f5a95d0e8f4bccb3c33ac38483943bc96cded34ba88",
+    "integration/ppoll-pinned-2-after.stdout": "8fc1cbc83935ac49dfc222cd1b27118865340eb0ab817f7f24660dd8e9dadf7c",
+    "integration/ppoll-pinned-2-before.stderr": "0a8347a8e0876e9beae175feb66afb78008bac3640e2771b852546e80e15aa63",
+    "integration/ppoll-pinned-2-before.stdout": "8fc1cbc83935ac49dfc222cd1b27118865340eb0ab817f7f24660dd8e9dadf7c",
+    "integration/ppoll-pinned-4-after.stderr": "f0945981d1f165a5552d797d83435d77650e9c1bc3bf80cc8a3516668b8e99d2",
+    "integration/ppoll-pinned-4-after.stdout": "8fc1cbc83935ac49dfc222cd1b27118865340eb0ab817f7f24660dd8e9dadf7c",
+    "integration/ppoll-pinned-4-before.stderr": "86466bb0a3650356dedddfe9d3a26a362ae491dfa93be916ac9858c4890305b6",
+    "integration/ppoll-pinned-4-before.stdout": "8fc1cbc83935ac49dfc222cd1b27118865340eb0ab817f7f24660dd8e9dadf7c",
+    "integration/ppoll-pinned-oracle.stdout": "8fc1cbc83935ac49dfc222cd1b27118865340eb0ab817f7f24660dd8e9dadf7c",
+    "integration/ppoll-spread-1-after.stderr": "09d14e9b37216130f9bb01353e08937dbbfafb9fd6e611b2605beab01b5d0fa0",
+    "integration/ppoll-spread-1-after.stdout": "4cf7e4251cbfc93f26662aab5e223185ebf3ff9e9a0c193d4ea363e8e322cdfc",
+    "integration/ppoll-spread-1-before.stderr": "e3a1d3154a035cd123c8fd240334716aad87432e97aeec0d2142fafe4bcb4936",
+    "integration/ppoll-spread-1-before.stdout": "4cf7e4251cbfc93f26662aab5e223185ebf3ff9e9a0c193d4ea363e8e322cdfc",
+    "integration/ppoll-spread-2-after.stderr": "2f8ddc1b4bd0b27efc1ba44374253b94a03bba989be47481f86d58c19de5bdfe",
+    "integration/ppoll-spread-2-after.stdout": "4cf7e4251cbfc93f26662aab5e223185ebf3ff9e9a0c193d4ea363e8e322cdfc",
+    "integration/ppoll-spread-2-before.stderr": "4a12a6b5880b88b5abf34c66e141be99e82b8f51f16fcbc3b7c804d7bde215af",
+    "integration/ppoll-spread-2-before.stdout": "4cf7e4251cbfc93f26662aab5e223185ebf3ff9e9a0c193d4ea363e8e322cdfc",
+    "integration/ppoll-spread-4-after.stderr": "f35bfc851218828f9849ae25d0304c9721bbdfdcb2a373788cb78712a5b443a3",
+    "integration/ppoll-spread-4-after.stdout": "4cf7e4251cbfc93f26662aab5e223185ebf3ff9e9a0c193d4ea363e8e322cdfc",
+    "integration/ppoll-spread-4-before.stderr": "3e62360faaae3772a4b1d5e98c9f89712ca5531e8fa5f7c2d15a108997dad8e2",
+    "integration/ppoll-spread-4-before.stdout": "4cf7e4251cbfc93f26662aab5e223185ebf3ff9e9a0c193d4ea363e8e322cdfc",
+    "integration/ppoll-spread-oracle.stdout": "4cf7e4251cbfc93f26662aab5e223185ebf3ff9e9a0c193d4ea363e8e322cdfc",
+    "integration/results.json": "c411ae312f22abf00b0debea60672078115fb400255bdd8ea9d716cad72f73dc",
+    "integration/timeout-pinned-1-after.stderr": "3c1a4383d8973237fe29484bd7c3045fa2ce61393396c8c2b835c1c27a28397b",
+    "integration/timeout-pinned-1-after.stdout": "2e76e5286972af0da0e85d83624b562ea529e15561658189e2f15f37e1e9d98f",
+    "integration/timeout-pinned-1-before.stderr": "2947d0e72b4a74e041337da39e79b876ec67f5bb3b74903b4f13601ea146e21d",
+    "integration/timeout-pinned-1-before.stdout": "2e76e5286972af0da0e85d83624b562ea529e15561658189e2f15f37e1e9d98f",
+    "integration/timeout-pinned-2-after.stderr": "682b8da51681b3095bcbdae1f460c2d92a356dbeb443c2a9992fa46b4fbb020f",
+    "integration/timeout-pinned-2-after.stdout": "2e76e5286972af0da0e85d83624b562ea529e15561658189e2f15f37e1e9d98f",
+    "integration/timeout-pinned-2-before.stderr": "f010287d7139d6c57c96b86a30ed6df9a417adf3b0390c47c8a973d135308d12",
+    "integration/timeout-pinned-2-before.stdout": "2e76e5286972af0da0e85d83624b562ea529e15561658189e2f15f37e1e9d98f",
+    "integration/timeout-pinned-4-after.stderr": "1e7bf4d09d57293eaed6b806107abc27d5f57a531b604b2660848a03fbb8cfa5",
+    "integration/timeout-pinned-4-after.stdout": "2e76e5286972af0da0e85d83624b562ea529e15561658189e2f15f37e1e9d98f",
+    "integration/timeout-pinned-4-before.stderr": "40b5088b70b6bf496270ece43187b0d70cb7414e68cfc79afcdbfeaeadde7429",
+    "integration/timeout-pinned-4-before.stdout": "2e76e5286972af0da0e85d83624b562ea529e15561658189e2f15f37e1e9d98f",
+    "integration/timeout-pinned-oracle.stdout": "2e76e5286972af0da0e85d83624b562ea529e15561658189e2f15f37e1e9d98f",
+    "integration/timeout-spread-1-after.stderr": "41f04d6d14c860b9c95064c77b8c6da1567f7096c5d22264c4f1b9bbeb5e0908",
+    "integration/timeout-spread-1-after.stdout": "7db3d232b1e49423cd25a79343d9680467ac269a2fd06b0247e340f7f6d8c53e",
+    "integration/timeout-spread-1-before.stderr": "9798012f789882f0cc3015519f94b9b6c86bf78723a056751ddda6d8070ff6b1",
+    "integration/timeout-spread-1-before.stdout": "7db3d232b1e49423cd25a79343d9680467ac269a2fd06b0247e340f7f6d8c53e",
+    "integration/timeout-spread-2-after.stderr": "db39fcfb7437736011e032a92848c358eb1b46e6d60dfb95dc5537c2215371a0",
+    "integration/timeout-spread-2-after.stdout": "7db3d232b1e49423cd25a79343d9680467ac269a2fd06b0247e340f7f6d8c53e",
+    "integration/timeout-spread-2-before.stderr": "3915a49aa2bd399e2021c42b761c59a022d49ed99da6a2706b023355d24b2b29",
+    "integration/timeout-spread-2-before.stdout": "7db3d232b1e49423cd25a79343d9680467ac269a2fd06b0247e340f7f6d8c53e",
+    "integration/timeout-spread-4-after.stderr": "14a1f544f86f30c9fffb97d3d8218c0846fe884b2f349e7349852b51d95cfe56",
+    "integration/timeout-spread-4-after.stdout": "7db3d232b1e49423cd25a79343d9680467ac269a2fd06b0247e340f7f6d8c53e",
+    "integration/timeout-spread-4-before.stderr": "fc169b891012171505edd157a3fb7ef67e80ba6afc114b43fdd80413371d4263",
+    "integration/timeout-spread-4-before.stdout": "7db3d232b1e49423cd25a79343d9680467ac269a2fd06b0247e340f7f6d8c53e",
+    "integration/timeout-spread-oracle.stdout": "7db3d232b1e49423cd25a79343d9680467ac269a2fd06b0247e340f7f6d8c53e",
+    "integration/timer-pinned-1-after.stderr": "8e387046955e36e09466e17c87604a905b21bbf5aa63d81ae5d622dd3503c1b2",
+    "integration/timer-pinned-1-after.stdout": "021cf02d9d1f667790a84394eb2c30dc7cdd12e9fc8b0dc63c03975afd12c9b2",
+    "integration/timer-pinned-1-before.stderr": "ac5d4f7ccbced01b45a0c4f07b3d3252a305cc62fe9ab583fc56b3c6997ca39a",
+    "integration/timer-pinned-1-before.stdout": "021cf02d9d1f667790a84394eb2c30dc7cdd12e9fc8b0dc63c03975afd12c9b2",
+    "integration/timer-pinned-2-after.stderr": "3764b0fa2d4d21d2d84f73e352680a8a44495e9c505c271729f1e50251ae3f39",
+    "integration/timer-pinned-2-after.stdout": "021cf02d9d1f667790a84394eb2c30dc7cdd12e9fc8b0dc63c03975afd12c9b2",
+    "integration/timer-pinned-2-before.stderr": "7848fc4dbfd3dcfa3a99e7196dae718a55b9d9139306ea98d463e609b64a731c",
+    "integration/timer-pinned-2-before.stdout": "021cf02d9d1f667790a84394eb2c30dc7cdd12e9fc8b0dc63c03975afd12c9b2",
+    "integration/timer-pinned-4-after.stderr": "0ae4db7e9f0283908abc48e701707389df47a324695ea1467bc97cf74de2bd8c",
+    "integration/timer-pinned-4-after.stdout": "021cf02d9d1f667790a84394eb2c30dc7cdd12e9fc8b0dc63c03975afd12c9b2",
+    "integration/timer-pinned-4-before.stderr": "6c752aecf4e39641f933b56034d59046dd5d3ec0f1d7ff3d19a5da3de79bd976",
+    "integration/timer-pinned-4-before.stdout": "021cf02d9d1f667790a84394eb2c30dc7cdd12e9fc8b0dc63c03975afd12c9b2",
+    "integration/timer-pinned-oracle.stdout": "021cf02d9d1f667790a84394eb2c30dc7cdd12e9fc8b0dc63c03975afd12c9b2",
+    "integration/timer-spread-1-after.stderr": "f740766753b7b2e3cff6f2b9ee1c982b7dda21c2c416a0b934b2d6346a1a35a7",
+    "integration/timer-spread-1-after.stdout": "41159916bd09d8a9e446ee98d1cee452854e11fa4191214605e96e3e2567dbf5",
+    "integration/timer-spread-1-before.stderr": "7d36bff9683fc1544fe6107b5cc097b9d6ada64b9d77e94242af2642409c1937",
+    "integration/timer-spread-1-before.stdout": "41159916bd09d8a9e446ee98d1cee452854e11fa4191214605e96e3e2567dbf5",
+    "integration/timer-spread-2-after.stderr": "7565c26038dfceeedbdc3be37552ac8efa8059ba75a8bcb1b12265e96c5d1fc1",
+    "integration/timer-spread-2-after.stdout": "41159916bd09d8a9e446ee98d1cee452854e11fa4191214605e96e3e2567dbf5",
+    "integration/timer-spread-2-before.stderr": "1edad0c52e1591e36c3379eccc12e738df708a0aabc25e4b11fa33ee7ecca93a",
+    "integration/timer-spread-2-before.stdout": "41159916bd09d8a9e446ee98d1cee452854e11fa4191214605e96e3e2567dbf5",
+    "integration/timer-spread-4-after.stderr": "e18361fa77c7cdd2acbb4467bb977dc8f6aa84821f1755ee8cf07cd341411396",
+    "integration/timer-spread-4-after.stdout": "41159916bd09d8a9e446ee98d1cee452854e11fa4191214605e96e3e2567dbf5",
+    "integration/timer-spread-4-before.stderr": "ed3884513459e95246ecbb21cfdca12621569217393214e95acc6f68d9ba73ab",
+    "integration/timer-spread-4-before.stdout": "41159916bd09d8a9e446ee98d1cee452854e11fa4191214605e96e3e2567dbf5",
+    "integration/timer-spread-oracle.stdout": "41159916bd09d8a9e446ee98d1cee452854e11fa4191214605e96e3e2567dbf5",
+    "linux-direct.log": "180be5ace70130c2dfc280b5a89064ace24a6bf34f94f6c1e1e3f187b7555cef",
+    "unix-regression/epoll-pinned-2-after.stderr": "af8fbc2283761a7f7a808e01189aa8ae41012c2cb12d36a7d89f9c83cd2cc82e",
+    "unix-regression/epoll-pinned-2-after.stdout": "31d8989df0f4777f9182d5854382a21922e0f6c5c0fdd838505206f2ed2bd7f9",
+    "unix-regression/epoll-pinned-4-after.stderr": "663bc8e674cf55be85e0d8506acee9bd9ba563b6fb9f7651d149e6cff00e1f49",
+    "unix-regression/epoll-pinned-4-after.stdout": "31d8989df0f4777f9182d5854382a21922e0f6c5c0fdd838505206f2ed2bd7f9",
+    "unix-regression/epoll-pinned-oracle.stdout": "31d8989df0f4777f9182d5854382a21922e0f6c5c0fdd838505206f2ed2bd7f9",
+    "unix-regression/epoll-spread-2-after.stderr": "948bee0816e8032491fd02a974b5528a0271888330c3bca4bcf8435f22a3d14e",
+    "unix-regression/epoll-spread-2-after.stdout": "a598ae29ce8bbe9573df71a43a09415491fdb4025e7651ef523cf69bb4d5dccb",
+    "unix-regression/epoll-spread-4-after.stderr": "491f1a9b9ad7ce02ec02b6c751cb0d764f039817ebb6431d1b9d35420b95321e",
+    "unix-regression/epoll-spread-4-after.stdout": "a598ae29ce8bbe9573df71a43a09415491fdb4025e7651ef523cf69bb4d5dccb",
+    "unix-regression/epoll-spread-oracle.stdout": "a598ae29ce8bbe9573df71a43a09415491fdb4025e7651ef523cf69bb4d5dccb",
+    "unix-regression/message-pinned-2-after.stderr": "82a96de4026625d729ee77e29cc294168865f997611ed924d39004d681683ee7",
+    "unix-regression/message-pinned-2-after.stdout": "c7666819481d12e418a0c252defd644a2b2e9a4fc9625ff348ce972b272b2585",
+    "unix-regression/message-pinned-4-after.stderr": "c8d9ac429e39e67acd21991eec7543dda3bb32ecf2d8465974f62c920bf6fc96",
+    "unix-regression/message-pinned-4-after.stdout": "c7666819481d12e418a0c252defd644a2b2e9a4fc9625ff348ce972b272b2585",
+    "unix-regression/message-pinned-oracle.stdout": "c7666819481d12e418a0c252defd644a2b2e9a4fc9625ff348ce972b272b2585",
+    "unix-regression/message-spread-2-after.stderr": "730c4f413f381ae03581886d65e375cfda1d67f26bba453b54171b5c46165bb7",
+    "unix-regression/message-spread-2-after.stdout": "ecba4d410c634ff607daa136a3f8499a7fdb76812730394a58cc5c7e2209e1b2",
+    "unix-regression/message-spread-4-after.stderr": "030bf4f2826b4deefa7525484c638c373d171f14ac5ca55e18e94376d8aaaa0c",
+    "unix-regression/message-spread-4-after.stdout": "ecba4d410c634ff607daa136a3f8499a7fdb76812730394a58cc5c7e2209e1b2",
+    "unix-regression/message-spread-oracle.stdout": "ecba4d410c634ff607daa136a3f8499a7fdb76812730394a58cc5c7e2209e1b2",
+    "unix-regression/results.json": "18488d3226dc7f7d9141cae97abd660839c6580aab38bf92f149f925fb29dd05",
+    "unix-regression/waitall-pinned-2-after.stderr": "1b543e987eef4732af264180528aa21e3a926d37684feb93335d5e74a83ba9e9",
+    "unix-regression/waitall-pinned-2-after.stdout": "acbc195da1e455af79875d49dc7e1340e93a6b213d9af85d80ae9ca362ba61fb",
+    "unix-regression/waitall-pinned-4-after.stderr": "d1093a6bafef357e3518279ca054f1ba4ad0977125f63dbbf78f0bf6602c0bd9",
+    "unix-regression/waitall-pinned-4-after.stdout": "acbc195da1e455af79875d49dc7e1340e93a6b213d9af85d80ae9ca362ba61fb",
+    "unix-regression/waitall-pinned-oracle.stdout": "acbc195da1e455af79875d49dc7e1340e93a6b213d9af85d80ae9ca362ba61fb",
+    "unix-regression/waitall-spread-2-after.stderr": "1a10c7550095967e6353c56953fb8543069dc0cb4fd555a6c699d90e9acfb3cb",
+    "unix-regression/waitall-spread-2-after.stdout": "3bed712a3418e1c381bd5c2fedf6fca478c565759272b76315367cdab23ab177",
+    "unix-regression/waitall-spread-4-after.stderr": "571d2d94246f1c08b1efede6e8152f7a2493719868830fe1f45c633ae5aac2d3",
+    "unix-regression/waitall-spread-4-after.stdout": "3bed712a3418e1c381bd5c2fedf6fca478c565759272b76315367cdab23ab177",
+    "unix-regression/waitall-spread-oracle.stdout": "3bed712a3418e1c381bd5c2fedf6fca478c565759272b76315367cdab23ab177",
+    "vfs-direct-fixed.log": "17ea53795d3ebebf0e96eee64806bc2c40d5b164132c076e98b2b8fee57c088d",
+    "vfs-direct.log": "bdd3e1e04ceadd0aad1d52749971c62a42d59c09badeebcb0cbfb71985aa39af",
+    "vfs-events.log": "2a72c2a741b63965f3e8685de6163997d1bf3e00302952b7347a24ff041611db",
+    "vfs-tests-final-build.log": "a5e1280f320bbe9d81681efb2aa22f57e6adffe5d4b7dd5938aa772434c68d65",
+    "vfs-timer.log": "1a9ee47bb7f835d52d175db4353d9b8bd6d5a13511e52df28ca03b1b4c086613"
+  }
+}

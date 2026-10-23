@@ -1,0 +1,875 @@
+{
+  "date_utc": "2026-10-23",
+  "passed": true,
+  "scope": "Worker-local fixed files/buffers, links/hardlinks/drain, shared pin ownership; compatibility remains 30 opcodes. No iPad validation or overall performance claim.",
+  "worker_opcodes": [
+    0,
+    1,
+    2,
+    4,
+    5,
+    6,
+    22,
+    23,
+    26,
+    27
+  ],
+  "worker_flags": [
+    "FIXED_FILE",
+    "IO_DRAIN",
+    "IO_LINK",
+    "IO_HARDLINK",
+    "ASYNC (hint)"
+  ],
+  "source_sha256": {
+    "crates/trames-memory/src/lib.rs": "f0ae1e2405f26a206f02e130f8c8b5f8c6de8945a82c997d513146b2d78b31e8",
+    "crates/trames-memory/src/pinned.rs": "42582c2387ba369cac110b14add9ac512ea55e73c1436aa7038fb9ff9abf6f59",
+    "crates/trames-memory/src/parallel/exclusive.rs": "eae4799ff84821cb6b21537c469b4fffe0056e822815a862d4443bfb0aca3e2d",
+    "crates/trames-linux/src/direct/uring.rs": "10746f7823ad58ff27b69e5d4021017f022b94a2e9cb156d6ceb4af73525fba2",
+    "crates/trames-linux/src/direct/uring/owned_tests.rs": "14955033636f59a5b3c010e24a421868837b7ea6494b178d327e89aa3406b038",
+    "crates/trames-linux/src/state.rs": "b986a6561e36745f4739a010f82ad5f827a2627ffdc9c7acf38f6e64e68939d6",
+    "crates/trames-linux/src/uring.rs": "1ddd62030fbeb84e82cfb2c94e1e7f5cec7212cb8815c9042b8f802c62c86339",
+    "crates/trames-linux/src/uring/buffers.rs": "75955c0c1d6c03632a995026faea0ccacf0d4c4c0cad9a2b809cd4cde573bac0",
+    "crates/trames-vfs/src/file_io.rs": "c2aac7a2dde43fce0a537b38cf0a495b3fc3904c696919373de00ee850454417",
+    "crates/trames-vfs/src/uring.rs": "c6f26590207dc0171360b02e9a579eea627df8d4f6d1521967fb8b729f473410",
+    "crates/trames-core/src/process.rs": "f32813999fcdbf05f9aef5a2e14e08c95cf9651918576613adfef39660d02be6",
+    "tests/fixtures/io-uring-worker-registered.c": "ed14d8e69ca462e83c9a02d2f892b6004b4047226470821b67d22af91faf672e",
+    "tests/integration/io-uring.py": "fe770c7ab737952e9f1761b42b22ee119e47f55fe5dde9f106192ebf83ad7b70",
+    "scripts/build-io-uring-fixture.sh": "442c25e7b8f00f90744b70a4d6580ae5a8c9cd630a4eddd7c6d86d9b25af21d6"
+  },
+  "artifact_sha256": {
+    "target/perf-runtime/release/trames-run": "47e32c5356da48fcf49b36bd26f9548cf3c657e039d1227fde345a79d14cf6d3",
+    "target/perf-runtime/release/libtrames_ffi.so": "67cf3194e3f26d040c021d060c23c370a4142dfb04b0c4f98c9f4946d2fa5340",
+    "target/perf-runtime/release/libtrames_ffi.a": "1c9dc1ecaebc0e8ec67f98682da4d4da734544eff283400ac13b3b74b7adc5d7",
+    "tests/fixtures/bin/io-uring-worker-registered": "42bc030597fb07954b1cd68eb13e35a77bf78ac49640cc5e7183debb880b3765"
+  },
+  "unit_count": 44,
+  "unit_final_source_count": 18,
+  "unit_tests": [
+    {
+      "name": "direct::tests::file_preflight_and_growth_deferral_never_consume_a_partial_vector",
+      "evidence": [
+        "linux-file.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "direct::tests::file_scalar_vector_positioned_seek_and_stat_share_the_original_abi",
+      "evidence": [
+        "linux-file.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "direct::uring::owned_tests::concurrent_drain_waits_for_claimed_io_but_unrelated_work_uses_same_ring",
+      "evidence": [
+        "linux-worker.log",
+        "linux-owned-final.log"
+      ],
+      "final_sources": true
+    },
+    {
+      "name": "direct::uring::owned_tests::fixed_buffer_cross_vm_uses_registered_bytes_and_shared_page_guards",
+      "evidence": [
+        "linux-worker.log",
+        "linux-owned-final.log"
+      ],
+      "final_sources": true
+    },
+    {
+      "name": "direct::uring::owned_tests::fixed_request_keeps_pin_and_ofd_across_unmap_unregister_and_epoch_handoff",
+      "evidence": [
+        "linux-worker.log",
+        "linux-owned-final.log"
+      ],
+      "final_sources": true
+    },
+    {
+      "name": "direct::uring::owned_tests::fixed_sparse_and_bad_indexes_complete_errors_without_disabling_ring",
+      "evidence": [
+        "linux-worker.log",
+        "linux-owned-final.log"
+      ],
+      "final_sources": true
+    },
+    {
+      "name": "direct::uring::owned_tests::linked_eagain_and_drain_survive_owner_handoff_without_early_effects",
+      "evidence": [
+        "linux-worker.log",
+        "linux-owned-final.log"
+      ],
+      "final_sources": true
+    },
+    {
+      "name": "direct::uring::owned_tests::linked_short_vector_uses_uncapped_requested_length_and_hardlink_continues",
+      "evidence": [
+        "linux-worker.log",
+        "linux-owned-final.log"
+      ],
+      "final_sources": true
+    },
+    {
+      "name": "direct::uring::owned_tests::retained_regular_fixed_file_keeps_original_data_permissions_and_position",
+      "evidence": [
+        "linux-worker.log",
+        "linux-owned-final.log"
+      ],
+      "final_sources": true
+    },
+    {
+      "name": "direct::uring::owned_tests::ring_fd_aliases_share_one_fixed_table_per_task_and_execute_same_queue",
+      "evidence": [
+        "linux-alias-final.log",
+        "linux-owned-final.log"
+      ],
+      "final_sources": true
+    },
+    {
+      "name": "direct::uring::tests::local_uring_boundary_invalid_adopted_cq_head_clears_saved_wait",
+      "evidence": [
+        "linux-worker.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "direct::uring::tests::local_uring_boundary_native_tcp_extended_flags_defer_before_consuming",
+      "evidence": [
+        "linux-worker.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "direct::uring::tests::local_uring_boundary_poll_flags_and_timerfd_deadline_rearm",
+      "evidence": [
+        "linux-worker.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "direct::uring::tests::local_uring_handoff_retains_closed_ofd_and_never_resubmits_batch",
+      "evidence": [
+        "linux-worker.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "direct::uring::tests::local_uring_mixed_batch_defers_before_any_effect",
+      "evidence": [
+        "linux-worker.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "direct::uring::tests::local_uring_nop_overflow_wrap_and_bad_head_use_private_cursors",
+      "evidence": [
+        "linux-worker.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "direct::uring::tests::local_uring_other_submitter_notifies_cq_only_waiter",
+      "evidence": [
+        "linux-worker.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "direct::uring::tests::local_uring_parked_enter_is_adopted_without_resubmitting_on_next_epoch",
+      "evidence": [
+        "linux-worker.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "direct::uring::tests::local_uring_pipe_wait_keeps_submission_and_ignores_new_sqes_on_resume",
+      "evidence": [
+        "linux-worker.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "direct::uring::tests::local_uring_regular_files_preserve_offsets_and_defer_growth_once",
+      "evidence": [
+        "linux-worker.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "direct::uring::tests::local_uring_shared_ring_arbitrates_two_worker_consumers",
+      "evidence": [
+        "linux-worker.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "direct::uring::tests::local_uring_vectors_faults_and_eventfd_count_actual_cq_publication",
+      "evidence": [
+        "linux-worker.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "direct::uring::tests::local_uring_vm_authority_and_drop_restore_accepted_request",
+      "evidence": [
+        "linux-worker.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "file_io::tests::asynchronous_reads_block_conflicting_worker_writes_and_offset_changes",
+      "evidence": [
+        "vfs-file.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "file_io::tests::dup_fork_and_joined_io_use_one_atomic_offset_transaction",
+      "evidence": [
+        "vfs-file.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "file_io::tests::growth_append_finite_limit_and_synchronous_writes_defer_without_effects",
+      "evidence": [
+        "vfs-file.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "file_io::tests::inode_and_parent_notifications_keep_the_original_delivery_path",
+      "evidence": [
+        "vfs-file.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "file_io::tests::mapping_change_rechecks_file_capability_without_an_fd_table_change",
+      "evidence": [
+        "vfs-file.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "file_io::tests::readonly_bind_and_policy_changes_are_separate_capabilities",
+      "evidence": [
+        "vfs-file.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "file_io::tests::writes_share_bytes_and_metadata_with_stat_and_persistence",
+      "evidence": [
+        "vfs-file.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "parallel::exclusive::pin_registration_invalidates_cached_private_ownership_without_rebuilding_other_pages",
+      "evidence": [
+        "memory-pin-admission-final.log"
+      ],
+      "final_sources": true
+    },
+    {
+      "name": "pinned::tests::pinned_code_writes_invalidate_tokens_and_ranges_are_bounded",
+      "evidence": [
+        "memory-pin.log",
+        "memory-pin-final.log"
+      ],
+      "final_sources": true
+    },
+    {
+      "name": "pinned::tests::pinned_metadata_arrays_cross_page_fragments_without_heap_allocation",
+      "evidence": [
+        "memory-pin.log",
+        "memory-pin-final.log"
+      ],
+      "final_sources": true
+    },
+    {
+      "name": "pinned::tests::pinned_page_is_not_reused_by_partial_remap_and_views_keep_coherent_bytes",
+      "evidence": [
+        "memory-pin.log",
+        "memory-pin-final.log"
+      ],
+      "final_sources": true
+    },
+    {
+      "name": "pinned::tests::pinned_private_pages_survive_fork_unmap_replacement_and_protection",
+      "evidence": [
+        "memory-pin.log",
+        "memory-pin-final.log"
+      ],
+      "final_sources": true
+    },
+    {
+      "name": "pinned::tests::pins_follow_physical_bytes_across_mremap_and_clone_vm",
+      "evidence": [
+        "memory-pin.log",
+        "memory-pin-final.log"
+      ],
+      "final_sources": true
+    },
+    {
+      "name": "pinned::tests::shared_pin_transfers_across_threads_and_keeps_residency_until_last_owner",
+      "evidence": [
+        "memory-pin.log",
+        "memory-pin-final.log"
+      ],
+      "final_sources": true
+    },
+    {
+      "name": "uring::tests::buffer_registration_is_transactional_and_shared_backings_are_not_fake_pinned",
+      "evidence": [
+        "linux-owner.log",
+        "linux-owner-pin-final.log"
+      ],
+      "final_sources": true
+    },
+    {
+      "name": "uring::tests::buffer_ring_registration_validates_before_pin_and_classic_pools_have_metadata_limits",
+      "evidence": [
+        "linux-owner.log",
+        "linux-owner-pin-final.log"
+      ],
+      "final_sources": true
+    },
+    {
+      "name": "uring::tests::fixed_file_registration_is_transactional_and_private_fd_views_restore_on_panic",
+      "evidence": [
+        "linux-owner.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "uring::tests::imported_vector_metadata_is_bounded_and_partial_submissions_are_not_lost",
+      "evidence": [
+        "linux-owner.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "uring::tests::provided_pools_do_not_translate_another_vms_addresses_or_pin_invalid_data",
+      "evidence": [
+        "linux-owner.log",
+        "linux-owner-pin-final.log"
+      ],
+      "final_sources": true
+    },
+    {
+      "name": "uring::tests::provided_ring_tail_wrap_is_bounded_and_status_does_not_advance_it",
+      "evidence": [
+        "linux-owner.log"
+      ],
+      "final_sources": false
+    },
+    {
+      "name": "uring::tests::short_linked_read_cancels_following_request_and_preserves_file_position",
+      "evidence": [
+        "linux-owner.log"
+      ],
+      "final_sources": false
+    }
+  ],
+  "unit_reuse": "26 checks reuse earlier passing results from this batch. The final changes deduplicate per-task fixed tables and invalidate private-page snapshot ownership at registration. Eight owned-ring tests, six pin tests, the new cached-ownership regression and three owner registration/pool checks were run on final sources (18 distinct checks). Strict all-target release compilation also covers the final source tree.",
+  "regression": {
+    "name": "Cached private-access ownership after pin re-registration",
+    "before": "New regression test failed: private_access remained 1 instead of 0 for stable heap storage.",
+    "after": "Registration invalidates only affected snapshot frames, even without storage promotion; final test checks exclusive/read-only admission, guarded pin visibility and unchanged neighboring fast path.",
+    "evidence_before": "target/io-uring-owned-checks/memory-pin-admission-before.log"
+  },
+  "guest_count": 25,
+  "guest_final_runner_count": 12,
+  "guest_reuse": "13 unaffected cases reuse same-batch results before fixed-table alias deduplication and pin ownership invalidation: original/extended ABI and prior worker ABI/TCP. Their runner/fixture hashes are retained per row. Final registered ABI/TCP (9) and provided-buffer/multishot ABI (3) cover changed registration and sharing paths. No repeated full CPU/GPU/Firefox/Docker/CoreMark or syscall probes.",
+  "guest_cases": [
+    {
+      "group": "registered",
+      "case": "abi-1",
+      "final_sources": true,
+      "runner_sha256": "47e32c5356da48fcf49b36bd26f9548cf3c657e039d1227fde345a79d14cf6d3",
+      "fixture_sha256": "42bc030597fb07954b1cd68eb13e35a77bf78ac49640cc5e7183debb880b3765",
+      "evidence": "target/io-uring-owned-checks/guest-registered-pin-final/results.json",
+      "metrics": {
+        "cpu_count": 1,
+        "worker_uring_syscalls": 0,
+        "worker_io_waits": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 0,
+        "seconds": 0.002137115,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "registered",
+      "case": "tcp4-1",
+      "final_sources": true,
+      "runner_sha256": "47e32c5356da48fcf49b36bd26f9548cf3c657e039d1227fde345a79d14cf6d3",
+      "fixture_sha256": "42bc030597fb07954b1cd68eb13e35a77bf78ac49640cc5e7183debb880b3765",
+      "evidence": "target/io-uring-owned-checks/guest-registered-pin-final/results.json",
+      "metrics": {
+        "cpu_count": 1,
+        "worker_uring_syscalls": 0,
+        "worker_io_waits": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 0,
+        "seconds": 0.051275624,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "registered",
+      "case": "tcp6-1",
+      "final_sources": true,
+      "runner_sha256": "47e32c5356da48fcf49b36bd26f9548cf3c657e039d1227fde345a79d14cf6d3",
+      "fixture_sha256": "42bc030597fb07954b1cd68eb13e35a77bf78ac49640cc5e7183debb880b3765",
+      "evidence": "target/io-uring-owned-checks/guest-registered-pin-final/results.json",
+      "metrics": {
+        "cpu_count": 1,
+        "worker_uring_syscalls": 0,
+        "worker_io_waits": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 0,
+        "seconds": 0.051462451,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "registered",
+      "case": "abi-2",
+      "final_sources": true,
+      "runner_sha256": "47e32c5356da48fcf49b36bd26f9548cf3c657e039d1227fde345a79d14cf6d3",
+      "fixture_sha256": "42bc030597fb07954b1cd68eb13e35a77bf78ac49640cc5e7183debb880b3765",
+      "evidence": "target/io-uring-owned-checks/guest-registered-pin-final/results.json",
+      "metrics": {
+        "cpu_count": 2,
+        "worker_uring_syscalls": 128,
+        "worker_io_waits": 107,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 3,
+        "seconds": 0.003603427,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "registered",
+      "case": "tcp4-2",
+      "final_sources": true,
+      "runner_sha256": "47e32c5356da48fcf49b36bd26f9548cf3c657e039d1227fde345a79d14cf6d3",
+      "fixture_sha256": "42bc030597fb07954b1cd68eb13e35a77bf78ac49640cc5e7183debb880b3765",
+      "evidence": "target/io-uring-owned-checks/guest-registered-pin-final/results.json",
+      "metrics": {
+        "cpu_count": 2,
+        "worker_uring_syscalls": 3,
+        "worker_io_waits": 11,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 7,
+        "seconds": 0.051957548,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "registered",
+      "case": "tcp6-2",
+      "final_sources": true,
+      "runner_sha256": "47e32c5356da48fcf49b36bd26f9548cf3c657e039d1227fde345a79d14cf6d3",
+      "fixture_sha256": "42bc030597fb07954b1cd68eb13e35a77bf78ac49640cc5e7183debb880b3765",
+      "evidence": "target/io-uring-owned-checks/guest-registered-pin-final/results.json",
+      "metrics": {
+        "cpu_count": 2,
+        "worker_uring_syscalls": 3,
+        "worker_io_waits": 12,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 8,
+        "seconds": 0.051890371,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "registered",
+      "case": "abi-4",
+      "final_sources": true,
+      "runner_sha256": "47e32c5356da48fcf49b36bd26f9548cf3c657e039d1227fde345a79d14cf6d3",
+      "fixture_sha256": "42bc030597fb07954b1cd68eb13e35a77bf78ac49640cc5e7183debb880b3765",
+      "evidence": "target/io-uring-owned-checks/guest-registered-pin-final/results.json",
+      "metrics": {
+        "cpu_count": 4,
+        "worker_uring_syscalls": 128,
+        "worker_io_waits": 97,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 3,
+        "seconds": 0.00328702,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "registered",
+      "case": "tcp4-4",
+      "final_sources": true,
+      "runner_sha256": "47e32c5356da48fcf49b36bd26f9548cf3c657e039d1227fde345a79d14cf6d3",
+      "fixture_sha256": "42bc030597fb07954b1cd68eb13e35a77bf78ac49640cc5e7183debb880b3765",
+      "evidence": "target/io-uring-owned-checks/guest-registered-pin-final/results.json",
+      "metrics": {
+        "cpu_count": 4,
+        "worker_uring_syscalls": 3,
+        "worker_io_waits": 12,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 8,
+        "seconds": 0.051875629,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "registered",
+      "case": "tcp6-4",
+      "final_sources": true,
+      "runner_sha256": "47e32c5356da48fcf49b36bd26f9548cf3c657e039d1227fde345a79d14cf6d3",
+      "fixture_sha256": "42bc030597fb07954b1cd68eb13e35a77bf78ac49640cc5e7183debb880b3765",
+      "evidence": "target/io-uring-owned-checks/guest-registered-pin-final/results.json",
+      "metrics": {
+        "cpu_count": 4,
+        "worker_uring_syscalls": 3,
+        "worker_io_waits": 12,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 8,
+        "seconds": 0.051804272,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "multishot",
+      "case": "abi-1",
+      "final_sources": true,
+      "runner_sha256": "47e32c5356da48fcf49b36bd26f9548cf3c657e039d1227fde345a79d14cf6d3",
+      "fixture_sha256": "b01a64a946d0cf30f8c083ee99b0ded2c3345a23a0a76c18a5fcf670fb9340b0",
+      "evidence": "target/io-uring-owned-checks/guest-multishot-final/results.json",
+      "metrics": {
+        "cpu_count": 1,
+        "worker_uring_syscalls": 0,
+        "worker_io_waits": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 0,
+        "seconds": 0.001159348,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "multishot",
+      "case": "abi-2",
+      "final_sources": true,
+      "runner_sha256": "47e32c5356da48fcf49b36bd26f9548cf3c657e039d1227fde345a79d14cf6d3",
+      "fixture_sha256": "b01a64a946d0cf30f8c083ee99b0ded2c3345a23a0a76c18a5fcf670fb9340b0",
+      "evidence": "target/io-uring-owned-checks/guest-multishot-final/results.json",
+      "metrics": {
+        "cpu_count": 2,
+        "worker_uring_syscalls": 0,
+        "worker_io_waits": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 4,
+        "seconds": 0.001985504,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "multishot",
+      "case": "abi-4",
+      "final_sources": true,
+      "runner_sha256": "47e32c5356da48fcf49b36bd26f9548cf3c657e039d1227fde345a79d14cf6d3",
+      "fixture_sha256": "b01a64a946d0cf30f8c083ee99b0ded2c3345a23a0a76c18a5fcf670fb9340b0",
+      "evidence": "target/io-uring-owned-checks/guest-multishot-final/results.json",
+      "metrics": {
+        "cpu_count": 4,
+        "worker_uring_syscalls": 0,
+        "worker_io_waits": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 5,
+        "seconds": 0.001829099,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "worker-abi",
+      "case": "abi-1",
+      "final_sources": false,
+      "runner_sha256": "ed4b2c3543060c3dee7916fb152f940eeb41d04d24270a9568667889b8a3319a",
+      "fixture_sha256": "bfeeaa43c35026a49f92f4e2cefc1180dc900f5c2fc407741bbbcd3ffdac88c7",
+      "evidence": "target/io-uring-owned-checks/guest-worker/results.json",
+      "metrics": {
+        "cpu_count": 1,
+        "worker_uring_syscalls": 0,
+        "worker_io_waits": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 0,
+        "seconds": 0.00191091,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "worker-abi",
+      "case": "abi-2",
+      "final_sources": false,
+      "runner_sha256": "ed4b2c3543060c3dee7916fb152f940eeb41d04d24270a9568667889b8a3319a",
+      "fixture_sha256": "bfeeaa43c35026a49f92f4e2cefc1180dc900f5c2fc407741bbbcd3ffdac88c7",
+      "evidence": "target/io-uring-owned-checks/guest-worker/results.json",
+      "metrics": {
+        "cpu_count": 2,
+        "worker_uring_syscalls": 280,
+        "worker_io_waits": 246,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 3,
+        "seconds": 0.003173928,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "worker-abi",
+      "case": "abi-4",
+      "final_sources": false,
+      "runner_sha256": "ed4b2c3543060c3dee7916fb152f940eeb41d04d24270a9568667889b8a3319a",
+      "fixture_sha256": "bfeeaa43c35026a49f92f4e2cefc1180dc900f5c2fc407741bbbcd3ffdac88c7",
+      "evidence": "target/io-uring-owned-checks/guest-worker/results.json",
+      "metrics": {
+        "cpu_count": 4,
+        "worker_uring_syscalls": 280,
+        "worker_io_waits": 245,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 3,
+        "seconds": 0.003679564,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "worker-tcp",
+      "case": "tcp4-2",
+      "final_sources": false,
+      "runner_sha256": "ed4b2c3543060c3dee7916fb152f940eeb41d04d24270a9568667889b8a3319a",
+      "fixture_sha256": "bfeeaa43c35026a49f92f4e2cefc1180dc900f5c2fc407741bbbcd3ffdac88c7",
+      "evidence": "target/io-uring-owned-checks/guest-worker-tcp/results.json",
+      "metrics": {
+        "cpu_count": 2,
+        "worker_uring_syscalls": 4,
+        "worker_io_waits": 11,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 7,
+        "seconds": 0.052177901,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "worker-tcp",
+      "case": "tcp6-2",
+      "final_sources": false,
+      "runner_sha256": "ed4b2c3543060c3dee7916fb152f940eeb41d04d24270a9568667889b8a3319a",
+      "fixture_sha256": "bfeeaa43c35026a49f92f4e2cefc1180dc900f5c2fc407741bbbcd3ffdac88c7",
+      "evidence": "target/io-uring-owned-checks/guest-worker-tcp/results.json",
+      "metrics": {
+        "cpu_count": 2,
+        "worker_uring_syscalls": 4,
+        "worker_io_waits": 11,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 7,
+        "seconds": 0.05181673,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "worker-tcp",
+      "case": "tcp4-4",
+      "final_sources": false,
+      "runner_sha256": "ed4b2c3543060c3dee7916fb152f940eeb41d04d24270a9568667889b8a3319a",
+      "fixture_sha256": "bfeeaa43c35026a49f92f4e2cefc1180dc900f5c2fc407741bbbcd3ffdac88c7",
+      "evidence": "target/io-uring-owned-checks/guest-worker-tcp/results.json",
+      "metrics": {
+        "cpu_count": 4,
+        "worker_uring_syscalls": 4,
+        "worker_io_waits": 11,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 7,
+        "seconds": 0.052130821,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "worker-tcp",
+      "case": "tcp6-4",
+      "final_sources": false,
+      "runner_sha256": "ed4b2c3543060c3dee7916fb152f940eeb41d04d24270a9568667889b8a3319a",
+      "fixture_sha256": "bfeeaa43c35026a49f92f4e2cefc1180dc900f5c2fc407741bbbcd3ffdac88c7",
+      "evidence": "target/io-uring-owned-checks/guest-worker-tcp/results.json",
+      "metrics": {
+        "cpu_count": 4,
+        "worker_uring_syscalls": 4,
+        "worker_io_waits": 11,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 7,
+        "seconds": 0.051927615,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "original",
+      "case": "abi-1",
+      "final_sources": false,
+      "runner_sha256": "ed4b2c3543060c3dee7916fb152f940eeb41d04d24270a9568667889b8a3319a",
+      "fixture_sha256": "a9000c4a779bb2f72effaf7d770d9b1f01f5163e880f27c12debff8735b833b4",
+      "evidence": "target/io-uring-owned-checks/guest-original/results.json",
+      "metrics": {
+        "cpu_count": 1,
+        "worker_uring_syscalls": 0,
+        "worker_io_waits": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 0,
+        "seconds": 0.011645012,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "original",
+      "case": "abi-2",
+      "final_sources": false,
+      "runner_sha256": "ed4b2c3543060c3dee7916fb152f940eeb41d04d24270a9568667889b8a3319a",
+      "fixture_sha256": "a9000c4a779bb2f72effaf7d770d9b1f01f5163e880f27c12debff8735b833b4",
+      "evidence": "target/io-uring-owned-checks/guest-original/results.json",
+      "metrics": {
+        "cpu_count": 2,
+        "worker_uring_syscalls": 2,
+        "worker_io_waits": 1,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 10,
+        "seconds": 0.014304436,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "original",
+      "case": "abi-4",
+      "final_sources": false,
+      "runner_sha256": "ed4b2c3543060c3dee7916fb152f940eeb41d04d24270a9568667889b8a3319a",
+      "fixture_sha256": "a9000c4a779bb2f72effaf7d770d9b1f01f5163e880f27c12debff8735b833b4",
+      "evidence": "target/io-uring-owned-checks/guest-original/results.json",
+      "metrics": {
+        "cpu_count": 4,
+        "worker_uring_syscalls": 2,
+        "worker_io_waits": 2,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 10,
+        "seconds": 0.013914109,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "extended",
+      "case": "abi-1",
+      "final_sources": false,
+      "runner_sha256": "ed4b2c3543060c3dee7916fb152f940eeb41d04d24270a9568667889b8a3319a",
+      "fixture_sha256": "04f3f1187b406ffe1b10a9c714169de112a46b080261adfa2a91526b1b0a495f",
+      "evidence": "target/io-uring-owned-checks/guest-extended/results.json",
+      "metrics": {
+        "cpu_count": 1,
+        "worker_uring_syscalls": 0,
+        "worker_io_waits": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 0,
+        "seconds": 0.006778141,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "extended",
+      "case": "abi-2",
+      "final_sources": false,
+      "runner_sha256": "ed4b2c3543060c3dee7916fb152f940eeb41d04d24270a9568667889b8a3319a",
+      "fixture_sha256": "04f3f1187b406ffe1b10a9c714169de112a46b080261adfa2a91526b1b0a495f",
+      "evidence": "target/io-uring-owned-checks/guest-extended/results.json",
+      "metrics": {
+        "cpu_count": 2,
+        "worker_uring_syscalls": 0,
+        "worker_io_waits": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 7,
+        "seconds": 0.009002081,
+        "runtime_error": null
+      }
+    },
+    {
+      "group": "extended",
+      "case": "abi-4",
+      "final_sources": false,
+      "runner_sha256": "ed4b2c3543060c3dee7916fb152f940eeb41d04d24270a9568667889b8a3319a",
+      "fixture_sha256": "04f3f1187b406ffe1b10a9c714169de112a46b080261adfa2a91526b1b0a495f",
+      "evidence": "target/io-uring-owned-checks/guest-extended/results.json",
+      "metrics": {
+        "cpu_count": 4,
+        "worker_uring_syscalls": 0,
+        "worker_io_waits": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 6,
+        "seconds": 0.009186108,
+        "runtime_error": null
+      }
+    }
+  ],
+  "evidence_sha256": {
+    "target/io-uring-owned-checks/guest-registered-pin-final/results.json": "2bbe6f708a740b364568d0d08b355c6e37693551bef9db796f83e31c041ddd08",
+    "target/io-uring-owned-checks/guest-multishot-final/results.json": "ca7625213abfbc3f10baeaf0bc6cce210a8d968ae15f039a4085fad7023b2ce5",
+    "target/io-uring-owned-checks/guest-worker/results.json": "9baf3021936bc0494bb0e905c210d4097fbe84ec276227959b20849cf1d5684d",
+    "target/io-uring-owned-checks/guest-worker-tcp/results.json": "46007e5ac8da7b2b31eef9ca776a8dcc63c2a684725f124eecd60d46b56a492a",
+    "target/io-uring-owned-checks/guest-original/results.json": "a779c1b44aff30443e5e936604c597021b6938fb667f447ed56bd23e012e538d",
+    "target/io-uring-owned-checks/guest-extended/results.json": "aabbf7ace939db7d08bb97495e3a56f6aa5561087e4b898f95f56e22b2229706",
+    "target/io-uring-owned-checks/linux-worker.log": "aa55fbc57196931c479f8acadf3ea8ab3b0c5c19187091d4b1573e4fa2205db6",
+    "target/io-uring-owned-checks/memory-pin.log": "241f67e474a29b9ca919d6c4a635eef5088654ba84fa3fdf1ddd0dfaa6b1e693",
+    "target/io-uring-owned-checks/vfs-file.log": "7b0dda6a044679be49fc4589a6c698250042fd765f8371374e287e297e70a271",
+    "target/io-uring-owned-checks/linux-file.log": "0a18b86c4b5bb4fa04ed3f4e86979bfe59f7d184f10ff793865b3b2121d85ea5",
+    "target/io-uring-owned-checks/linux-owner.log": "3814d72789cd0f7329b7c7a9c3af1cc6227d043dcb16110498913a265e8fd668",
+    "target/io-uring-owned-checks/linux-alias-final.log": "687615c9b9c61b8fae5ea3a9a5dae6c2825e8f9339e12fe445cdcd6c73c495a5",
+    "target/io-uring-owned-checks/memory-pin-final.log": "40ee9a3ccb14a94ed29b7251ee30a76050bb2ebd0b8a01de1d3794c38eca25bd",
+    "target/io-uring-owned-checks/memory-pin-admission-final.log": "d7939d8163e855e1a033740f5caf9c6c68a19aaa48a3ac67e011628def9d1fb0",
+    "target/io-uring-owned-checks/linux-owned-final.log": "f086661fe474d566c41849de449af696b164e25aea9866f794d02a275cd28add",
+    "target/io-uring-owned-checks/linux-owner-pin-final.log": "836f9628ae29568ddf10f0f1b4198ae68d8a847e768f7226e1ec1a4cc763d928",
+    "target/io-uring-owned-checks/clippy-final.log": "37b297ebe481d7bcc372763be958ed777267d19566befda56080c28c21a0b21c",
+    "target/io-uring-owned-checks/release-build-final.log": "e1a8400a4278e4e3b5aef783e692476c2356f9f80f2fbb38b3204723a9775ee2",
+    "target/io-uring-owned-checks/final-unit-build.log": "73634729f43d7e903fe301659a74d32c03cacb97d55da2e231f4f421dd02b151"
+  },
+  "build_checks": [
+    "Release CLI/FFI",
+    "Release all-target Clippy (-D warnings): memory/VFS/Linux/core/CLI/FFI",
+    "cargo fmt --all --check",
+    "New ARM64 static fixture: -Wall -Wextra -Werror",
+    "Python AST and shell syntax",
+    "git diff --check"
+  ],
+  "remaining_owner": [
+    "setup/register",
+    "provided pools",
+    "multishot",
+    "io_uring timeout/cancel",
+    "EXT_ARG / temporary signal mask",
+    "FD/VM lifecycle",
+    "restricted/growing/persistent file operations"
+  ]
+}

@@ -1,0 +1,12 @@
+   Compiling trames-memory v1.3.0 (/workspace/trames/crates/trames-memory)
+   Compiling trames-accel v1.3.0 (/workspace/trames/crates/trames-accel)
+   Compiling trames-cpu v1.3.0 (/workspace/trames/crates/trames-cpu)
+   Compiling trames-bridge v1.3.0 (/workspace/trames/crates/trames-bridge)
+   Compiling trames-vfs v1.3.0 (/workspace/trames/crates/trames-vfs)
+   Compiling trames-elf v1.3.0 (/workspace/trames/crates/trames-elf)
+   Compiling trames-vulkan v1.3.0 (/workspace/trames/crates/trames-vulkan)
+   Compiling trames-linux v1.3.0 (/workspace/trames/crates/trames-linux)
+   Compiling trames-core v1.3.0 (/workspace/trames/crates/trames-core)
+    Finished `release` profile [optimized] target(s) in 25.54s
+  Executable unittests src/lib.rs (target/perf-runtime/release/build/trames-core/110419dd55a974e8/out/trames_core-110419dd55a974e8)
+  Executable unittests src/lib.rs (target/perf-runtime/release/build/trames-memory/1f943d582994877e/out/trames_memory-1f943d582994877e)

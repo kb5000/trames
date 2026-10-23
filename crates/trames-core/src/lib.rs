@@ -8,6 +8,7 @@ mod futex;
 mod gpu;
 mod process;
 mod run_queue;
+mod signal_actions;
 mod terminal;
 mod worker_syscalls;
 mod workers;
@@ -137,10 +138,12 @@ pub struct RuntimeMetrics {
     pub worker_syscalls: u64,
     /// Worker-local shared-resource I/O; included in worker_syscalls, no RPC.
     pub worker_direct_syscalls: u64,
-    /// Valid private WAKE/WAKE_BITSET calls completed locally, including zero returns.
+    /// Valid private/shared WAKE/WAKE_BITSET calls completed locally, including zero returns.
     pub worker_futex_wakes: u64,
-    /// Tickets actually woken by those worker calls.
+    /// Tickets actually woken by local wake/requeue calls.
     pub worker_futex_woken: u64,
+    /// Successful local REQUEUE/CMP_REQUEUE calls, including zero returns.
+    pub worker_futex_requeues: u64,
     pub worker_futex_waits: u64,
     pub worker_task_resumes: u64,
     pub worker_task_yields: u64,
@@ -150,6 +153,8 @@ pub struct RuntimeMetrics {
     pub worker_socket_syscalls: u64,
     pub worker_timer_syscalls: u64,
     pub worker_poll_syscalls: u64,
+    pub worker_uring_syscalls: u64,
+    pub worker_fd_syscalls: u64,
     pub worker_gpu_calls: u64,
     pub worker_gpu_waits: u64,
     /// FD services requested while peer workers retain their running views.

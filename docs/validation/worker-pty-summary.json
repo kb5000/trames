@@ -1,0 +1,179 @@
+{
+  "scope": "Native oracle and identical ELF before/after; PTY bytes/waits, structural counts.",
+  "passed": true,
+  "platform": "Linux x86_64, host pages 4 KiB; ARM64 musl static guest; no Apple/iPad validation yet",
+  "kind": "Single structural sample per configuration, not an iPad/application speedup measurement",
+  "runner_sha256": "871f2835fab2312b74d88dafef67bfa20ddf37598e9ed2e368103076d7fb7fe2",
+  "baseline_sha256": "50eac8e6ac60a7a7e0b2662c0a3e709ed995be753faa345136a24b764638a4cf",
+  "fixture_sha256": "e7c14540c2625f5066ed320a472ddf983b163fbca1af90853cf83a38e4ed3be2",
+  "oracle_sha256": "666a75bf771a45b7756dcf6889e85ec70d9b2634e14f9005e761b4bfaae24f99",
+  "ffi_sha256": "0094282c974bee9dd47d63defe8b459cd9e5f5633598d266d15bb1a8c9111668",
+  "source_sha256": {
+    "crates/trames-vfs/src/pty.rs": "3864fa36c958e4ceb947e18ec2c4d964b2db298e23c7593b92a67222eb7e9f9f",
+    "crates/trames-vfs/src/pty/shared.rs": "e5d61a59198cff24b6dde200bd7bebaccf21d3d480729f34e53db535a9583374",
+    "crates/trames-vfs/src/terminal.rs": "bfe8a5d99e707eac8b9cdd05f9c539622fdc44721c9087bd601162d38922730e",
+    "crates/trames-vfs/src/direct_io.rs": "a338bc6bb1de3c6c51c4385ecba627ab1b66e2d951f0f8bd42bfd1b659c3a8a7",
+    "crates/trames-vfs/src/lib.rs": "90448ad3f9f15a50960bcc1177cabe0a107a86085abe3c67f9e79dc313742701",
+    "crates/trames-vfs/src/pseudo.rs": "5db3097f0d4d4fa2c2e087873fd7c7979121d50a98bdcf2ba03c6e6b6ec23b8f",
+    "crates/trames-linux/src/direct.rs": "3607e99d8bbe812eba02defdc05f0f863b0e4feb16fc4d5d09b21686b0f471bd",
+    "crates/trames-core/src/process.rs": "d5e2570f7738abd15a14273d0b086197935ab49be3123554bfeeb82f85b5e3bb",
+    "crates/trames-ffi/src/terminals.rs": "9e992703379f34cdcdcf97e13a871d40e915062fa31b3734b156befe5c332387",
+    "tests/fixtures/worker-pty.c": "2e9add0d6008b854c414947a99536782d2388ddb2dbcfa7d3f0555a9320a0b5c",
+    "tests/integration/worker-pty.py": "3b8bb90f85e8c18963b7be39f0a30d8cf77547d2453b8247feb546c78c360761",
+    "scripts/build-worker-pty-fixture.sh": "16add27464c2ed76be82b6785e91690023dab8861c5dd633a3624f3c2755635d"
+  },
+  "checks": {
+    "distinct_unit_tests": 18,
+    "guest_runs": 32,
+    "native_oracle_runs": 8,
+    "multiple_terminals_ffi": true,
+    "release_cli_ffi_build": true,
+    "strict_clippy": true
+  },
+  "rows": [
+    {
+      "case": "read-spread-1",
+      "before_rounds": 0,
+      "after_rounds": 0,
+      "after_direct": 0,
+      "after_waits": 0,
+      "after_resumes": 0,
+      "native_calls": 128
+    },
+    {
+      "case": "read-spread-2",
+      "before_rounds": 147,
+      "after_rounds": 4,
+      "after_direct": 256,
+      "after_waits": 127,
+      "after_resumes": 128,
+      "native_calls": 128
+    },
+    {
+      "case": "read-spread-4",
+      "before_rounds": 153,
+      "after_rounds": 4,
+      "after_direct": 255,
+      "after_waits": 127,
+      "after_resumes": 126,
+      "native_calls": 128
+    },
+    {
+      "case": "read-pinned-4",
+      "before_rounds": 133,
+      "after_rounds": 4,
+      "after_direct": 255,
+      "after_waits": 127,
+      "after_resumes": 127,
+      "native_calls": 128
+    },
+    {
+      "case": "vector-spread-1",
+      "before_rounds": 0,
+      "after_rounds": 0,
+      "after_direct": 0,
+      "after_waits": 0,
+      "after_resumes": 0,
+      "native_calls": 128
+    },
+    {
+      "case": "vector-spread-2",
+      "before_rounds": 146,
+      "after_rounds": 4,
+      "after_direct": 255,
+      "after_waits": 127,
+      "after_resumes": 126,
+      "native_calls": 128
+    },
+    {
+      "case": "vector-spread-4",
+      "before_rounds": 141,
+      "after_rounds": 4,
+      "after_direct": 256,
+      "after_waits": 128,
+      "after_resumes": 128,
+      "native_calls": 128
+    },
+    {
+      "case": "vector-pinned-4",
+      "before_rounds": 133,
+      "after_rounds": 4,
+      "after_direct": 255,
+      "after_waits": 127,
+      "after_resumes": 127,
+      "native_calls": 128
+    },
+    {
+      "case": "epoll-spread-1",
+      "before_rounds": 0,
+      "after_rounds": 0,
+      "after_direct": 0,
+      "after_waits": 0,
+      "after_resumes": 0,
+      "native_calls": 128
+    },
+    {
+      "case": "epoll-spread-2",
+      "before_rounds": 192,
+      "after_rounds": 3,
+      "after_direct": 384,
+      "after_waits": 199,
+      "after_resumes": 200,
+      "native_calls": 128
+    },
+    {
+      "case": "epoll-spread-4",
+      "before_rounds": 193,
+      "after_rounds": 4,
+      "after_direct": 382,
+      "after_waits": 128,
+      "after_resumes": 127,
+      "native_calls": 128
+    },
+    {
+      "case": "epoll-pinned-4",
+      "before_rounds": 134,
+      "after_rounds": 4,
+      "after_direct": 382,
+      "after_waits": 127,
+      "after_resumes": 127,
+      "native_calls": 128
+    },
+    {
+      "case": "poll-spread-1",
+      "before_rounds": 0,
+      "after_rounds": 0,
+      "after_direct": 0,
+      "after_waits": 0,
+      "after_resumes": 0,
+      "native_calls": 128
+    },
+    {
+      "case": "poll-spread-2",
+      "before_rounds": 424,
+      "after_rounds": 4,
+      "after_direct": 382,
+      "after_waits": 127,
+      "after_resumes": 126,
+      "native_calls": 128
+    },
+    {
+      "case": "poll-spread-4",
+      "before_rounds": 422,
+      "after_rounds": 4,
+      "after_direct": 382,
+      "after_waits": 128,
+      "after_resumes": 127,
+      "native_calls": 128
+    },
+    {
+      "case": "poll-pinned-4",
+      "before_rounds": 261,
+      "after_rounds": 4,
+      "after_direct": 382,
+      "after_waits": 127,
+      "after_resumes": 127,
+      "native_calls": 128
+    }
+  ]
+}

@@ -1,0 +1,165 @@
+{
+  "date": "2026-10-22",
+  "git_head": "52c02331103d145e351fdb7377af80c389e85235",
+  "working_tree": "Local uncommitted continuation of four previous coordinator migration batches; not published.",
+  "source_sha256": {
+    "crates/trames-core/src/workers.rs": "06022b54d9f768c0cce50a81b0f48a2769c69f97d56dc87975a846544c7c3d17",
+    "crates/trames-core/src/run_queue.rs": "37242e63e9da243bcaebd9b06f12af754c7ba374db089252e6697ea931dcb81b",
+    "crates/trames-core/src/process.rs": "91bc51d354607e9903dd809fbb0289a24ac200e3e28df7191c918d025833edae",
+    "crates/trames-core/src/process_service.rs": "3e1f8add87aa6f1e4bc47b1f647eab4c7efb45368caafb477abf4bbdabd162f5",
+    "crates/trames-core/src/lib.rs": "d7d59845cd27dde0e5a661f049c627508c112acebd7d7226bba6420521a36fed",
+    "crates/trames-core/src/coordination_cost.rs": "837f6a91ef1bc2c02d9674263adb3be2d74068fe3885b42f5528c36bbe8dec05",
+    "crates/trames-cli/src/main.rs": "38e0db8c23346aea8b171b4d185b6b63fc6c461673e1bd17127c333e57626e27",
+    "tests/fixtures/service-handoff.c": "26cc84dd86c4b1efe648d7f0fb18b3288750a927cc8de7c35e40c89de0c450dc",
+    "tests/fixtures/epoch-services-native.S": "f0e393022ae06d80c042885a4d8f7db7ff589ed3a0d8a1bc27b6201f990f0e4d",
+    "scripts/build-service-handoff-fixture.sh": "9027944f092c281addf1479b2892e1c90236200db2b5ac5f1cb45202ab1a77a6",
+    "tests/integration/service-handoff.py": "2775350fe037358de8052ddb865d6ee6a7c2ebc97e980d2db2122245b7974684",
+    "tests/integration/epoch-services.py": "c684cc035ef5ea15cc5bfb4d33fa9db1286109b5147cedde6380819653976aab"
+  },
+  "binary_sha256": {
+    "target/perf-runtime/release/trames-run": "43a1fff244747777c6e96cd0b27b4fe8d9fd8177fb53bae7e6e2696fdbc0bebf",
+    "target/perf-runtime/release/libtrames_ffi.so": "48df4dac045b6ae8e9aad80590056b90bc4bed5b6e6e2068f1a85616439a9297",
+    "target/perf-runtime/release/libtrames_ffi.a": "d0fc5f57196e972ef2e42507ef57677a34d4b24a203e4daaf0b43d6fcaa05c5d",
+    "tests/fixtures/bin/service-handoff": "bbde7bc231c1571f3c44cc3400aeeea81dd0956b6dd8758ecee000b0c47aba93",
+    "target/service-handoff-checks/service-handoff-host": "608d1b0d39b062ef36d9bf0c6b375b58e5f7d534812c4e189f28afef1bae4717",
+    "tests/fixtures/bin/epoch-services": "065d882704fe1cd44a0b73260f69d4f91a7814557c56586163316599fc83be69",
+    "target/worker-local-io-checks/epoch-services-host": "d4f73047890f38956bb1055f97246864643b688566026051c5dc28b1b7017eb0",
+    "target/service-handoff-checks/trames-run-before": "8383df0333c587949e23be4bba1fce15604c95c47aec8cf652d404ad1d9f5c6f",
+    "target/perf-runtime/release/build/trames-core/110419dd55a974e8/out/trames_core-110419dd55a974e8": "96e88288ce85e299cba284c0974d00fdee65b67e5b5a77b77d460d0b80617653"
+  },
+  "unchanged_implementations": {
+    "reference": "docs/validation/io-handoff/results.json",
+    "source_sha256": {
+      "crates/trames-vfs/src/readiness.rs": "b2493ae2f0c9d8e98bb3a3379e107891dde570b4766ccd9392b271950e77727f",
+      "crates/trames-vfs/src/direct_io.rs": "8a0111d2d6e6e2936de55581635b7e497f1dd90a394e7229d53f5aeae801aeae",
+      "crates/trames-vfs/src/events.rs": "3713927f9b199de2b22c4e8168682d62c40482386a4da387ed51aed1d2215c94",
+      "crates/trames-vfs/src/lib.rs": "d21a2e86492eb366f1a2d78e55e8a73b5872286a74ddb599abd27261a4f0faad",
+      "crates/trames-vfs/src/ipc/native.rs": "9562a60ac356295b3bddcbb1854c56e805cb86dc6d327df41d7ef7db15f75913",
+      "crates/trames-linux/src/direct.rs": "fa198e55d6c63ed57a63f26dbed95a23538768edf64020694b261fc380e61877",
+      "crates/trames-linux/src/lib.rs": "3a3c65b952aa4df89b15a0d0b25fdabdd2bf34652b1d4be2a72df0a935170d08",
+      "crates/trames-linux/src/state.rs": "5cef12cc67afba3293e169483e5e39e6264c3178fe0163b59dc1c3f1bf7396a1"
+    },
+    "policy": "Reuse earlier passing Linux/VFS implementations; no repeated suites."
+  },
+  "checks": {
+    "core": {
+      "passed": 125,
+      "ignored": 2,
+      "log": "core.log"
+    },
+    "clippy": {
+      "passed": true,
+      "packages": [
+        "core",
+        "cli",
+        "ffi"
+      ],
+      "tests": true,
+      "profile": "release",
+      "deny_warnings": true,
+      "log": "clippy.log"
+    },
+    "build": {
+      "passed": true,
+      "packages": [
+        "cli",
+        "ffi"
+      ],
+      "profile": "release",
+      "log": "build.log"
+    },
+    "format": {
+      "passed": true,
+      "all_workspace": true,
+      "log": "fmt.log"
+    },
+    "integration": {
+      "passed": true,
+      "configurations": 12,
+      "report": "integration/results.json"
+    },
+    "epoch_regression": {
+      "passed": true,
+      "configurations": 14,
+      "cpus": [
+        2,
+        4
+      ],
+      "report": "epoch-regression/results.json"
+    }
+  },
+  "limits": [
+    "Functional/resource-cap checks only; no new performance claim, CoreMark, Docker or Firefox run.",
+    "No new QEMU CPU oracle; host C assertions/output only.",
+    "No Apple ARM64, 16 KiB pages or iPad acceptance; no IPA/release/push.",
+    "No private Firefox diagnostics inspected or copied.",
+    "File/VFS ownership and lifecycle/map boundaries still require the coordinator."
+  ],
+  "evidence_sha256": {
+    "build.log": "4dcc63697116952e232e9b977057ef021a2e763e053737e27c4d1b7c403aa83c",
+    "clippy.log": "e47f7676feaf5f78286148b31ccae704848e177b59a6090f57bdc310f4e93f12",
+    "core.log": "bc75f6f59be74ec9b4afdaa95aed6d4ae2214d432a092e90b15a12cf89923ade",
+    "epoch-regression/bulk-parallel-2.stderr": "7cd77cc1a146992e243fa6e69dc6388113de1c620a26a59109305bde41ab4207",
+    "epoch-regression/bulk-parallel-2.stdout": "c21d6fe5696c23dd82d7bb90cf28c11b0bafd7e3736dbeca29606bae763cb684",
+    "epoch-regression/bulk-parallel-4.stderr": "28d41f114c446537a034bd67b9732cc5ec9a42bd49d0ca84d5b4309d7a759e95",
+    "epoch-regression/bulk-parallel-4.stdout": "c21d6fe5696c23dd82d7bb90cf28c11b0bafd7e3736dbeca29606bae763cb684",
+    "epoch-regression/file-2.stderr": "cb8362d786fa271cdae77066af09b3ef7559281e202c0ed0ef9bbcda487e1d28",
+    "epoch-regression/file-2.stdout": "2c77b5bb30fc032e3165f0281b71dc08a79b1c058832ee1e77b5554e90c782c8",
+    "epoch-regression/file-4.stderr": "35d0c0f207975158f155e33815cafd8ddd997c0110d37b98b85788cb8eef063e",
+    "epoch-regression/file-4.stdout": "2c77b5bb30fc032e3165f0281b71dc08a79b1c058832ee1e77b5554e90c782c8",
+    "epoch-regression/mapped-read-2.stderr": "9f13a09f9ae9f613234eb2638d2c94086dcb13765e1d650286f466d048543e73",
+    "epoch-regression/mapped-read-2.stdout": "da6a16b7be10c6651fc7fa0e45d94be60cf5e5b0186b7ce24ed35f522ca26c1d",
+    "epoch-regression/mapped-read-4.stderr": "d984a4d077acc129039c8dac1607f1ad0467d12b02d0e3554097cb14a5bd4f7c",
+    "epoch-regression/mapped-read-4.stdout": "da6a16b7be10c6651fc7fa0e45d94be60cf5e5b0186b7ce24ed35f522ca26c1d",
+    "epoch-regression/mapped-shared-2.stderr": "5bd5b64b348762fe66ac8fa37a06a09202a95027499d41d4b6bc53a5e4f47aac",
+    "epoch-regression/mapped-shared-2.stdout": "de97dae1df898697c8e9d6b2444aebef889b1e79ff46068c1a71d796e358a55d",
+    "epoch-regression/mapped-shared-4.stderr": "671c6ecc9c09c858d4d9594bdb87be9c1ba0f506291efc90c7e585e89dc1e306",
+    "epoch-regression/mapped-shared-4.stdout": "de97dae1df898697c8e9d6b2444aebef889b1e79ff46068c1a71d796e358a55d",
+    "epoch-regression/metadata-2.stderr": "9629b1821b73e90863d1894d9265fac641b48b25d47dbe3d7fdd5033bcdbf891",
+    "epoch-regression/metadata-2.stdout": "6915af3e49f59b64928ae0ab67e9211598c4fc8c921236b6ad746d2fce701468",
+    "epoch-regression/metadata-4.stderr": "abe9256ebee2542226fdfad4260d6d43a7be127bc4ee6d722c4c6cd723d13cd7",
+    "epoch-regression/metadata-4.stdout": "6915af3e49f59b64928ae0ab67e9211598c4fc8c921236b6ad746d2fce701468",
+    "epoch-regression/results.json": "78802126d3cd7e1a04e2c482d90ca1614b69107bf075b1c4681ec757d83be36e",
+    "epoch-regression/unix-2.stderr": "081a06a6b63e588608aed7e7d11cd8f4ad657ff6b06ce5a0bc3d155712bd82f5",
+    "epoch-regression/unix-2.stdout": "38a0375730ddcfabb7c43d6850b34c2924c1b2334b058d8fcea7bde7cc563fd5",
+    "epoch-regression/unix-4.stderr": "69e5bf636c88a237e0b4f02387b745a9551413a745db5a1c2b70a7202c6b9873",
+    "epoch-regression/unix-4.stdout": "38a0375730ddcfabb7c43d6850b34c2924c1b2334b058d8fcea7bde7cc563fd5",
+    "epoch-regression/vector-2.stderr": "6c111062c852883f83a74aabc7875395efe17fa13800dc926c03e1eb1718c8b5",
+    "epoch-regression/vector-2.stdout": "93c03b3951a13b4c936b754d04b1a6fd511142573f2b67e11de8fa3ee68eb8a5",
+    "epoch-regression/vector-4.stderr": "36caced31b54140bf09ada0a5055bc2d579c86a5ede5015eef64e4f672d3c076",
+    "epoch-regression/vector-4.stdout": "93c03b3951a13b4c936b754d04b1a6fd511142573f2b67e11de8fa3ee68eb8a5",
+    "fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "integration/pread-pinned-2.stderr": "9a6c279ef33b0c595db6856bbc8ef70c59a44af109f7d3ef0361bebd7a2c764a",
+    "integration/pread-pinned-2.stdout": "fa48981f25b2673ebcaf3298663f218096381f5cf22e199e8e51299b8d28a617",
+    "integration/pread-pinned-4.stderr": "f19a545532021fc9de5cfac257b3e524a2842f8ee52ef2a884dbc3fe50b9092e",
+    "integration/pread-pinned-4.stdout": "fa48981f25b2673ebcaf3298663f218096381f5cf22e199e8e51299b8d28a617",
+    "integration/pread-pinned-oracle.stdout": "fa48981f25b2673ebcaf3298663f218096381f5cf22e199e8e51299b8d28a617",
+    "integration/pread-spread-2.stderr": "5b5e992984b00816505ed49abcc4a9c3c3afb85369e3ed6eb9c1434499e75b37",
+    "integration/pread-spread-2.stdout": "184a00c14ca91b404f106d2c1559e47b47f17fef18e411c017061455c43bcd4c",
+    "integration/pread-spread-4.stderr": "13fea8f6943317f5116c672cc48b79b9188d9f0bf8b07be23c387d0a86493fe9",
+    "integration/pread-spread-4.stdout": "184a00c14ca91b404f106d2c1559e47b47f17fef18e411c017061455c43bcd4c",
+    "integration/pread-spread-oracle.stdout": "184a00c14ca91b404f106d2c1559e47b47f17fef18e411c017061455c43bcd4c",
+    "integration/preadv-pinned-2.stderr": "a0e910bd4acbadb280669556c69bc882ad5ef9fe1f83a833ad5b23a2eeb522f2",
+    "integration/preadv-pinned-2.stdout": "c3da68a652ba58a620b9449fe55ee65575ec249bb75e393e2ad713db1354233c",
+    "integration/preadv-pinned-4.stderr": "b4685babf503dd42f17afc561e79e15b7df633508014eec70cbfd6f2f72e9ccb",
+    "integration/preadv-pinned-4.stdout": "c3da68a652ba58a620b9449fe55ee65575ec249bb75e393e2ad713db1354233c",
+    "integration/preadv-pinned-oracle.stdout": "c3da68a652ba58a620b9449fe55ee65575ec249bb75e393e2ad713db1354233c",
+    "integration/preadv-spread-2.stderr": "fca2b41ee73762ae9cd729cf210083ea7551d35ea7d23f93d30a79dbbd8df6ad",
+    "integration/preadv-spread-2.stdout": "16a3f6669a3d37f3cd6c8062ca29b9f22c80af678c5a628a7c177c9e5f6314a6",
+    "integration/preadv-spread-4.stderr": "1c08189ecf4ba11f0bcdc7ea4639eead9a72d7c1fc13cd954f5e112e6c400c90",
+    "integration/preadv-spread-4.stdout": "16a3f6669a3d37f3cd6c8062ca29b9f22c80af678c5a628a7c177c9e5f6314a6",
+    "integration/preadv-spread-oracle.stdout": "16a3f6669a3d37f3cd6c8062ca29b9f22c80af678c5a628a7c177c9e5f6314a6",
+    "integration/read-pinned-2.stderr": "fff0d52bc1bc494b9363eb41ff8e40080efc9d3e766ac9ed8d0d0492ecaebfbd",
+    "integration/read-pinned-2.stdout": "4c0fb603eaaac6d9846611eaa78387d1a0929affb1c8a0e71f26e7866857edf0",
+    "integration/read-pinned-4.stderr": "ab8b2c84227a56374a3145f8be72709427ca7929fb324afa21d7fb60fe2f2e4e",
+    "integration/read-pinned-4.stdout": "4c0fb603eaaac6d9846611eaa78387d1a0929affb1c8a0e71f26e7866857edf0",
+    "integration/read-pinned-oracle.stdout": "4c0fb603eaaac6d9846611eaa78387d1a0929affb1c8a0e71f26e7866857edf0",
+    "integration/read-spread-2.stderr": "ab46645b9f5ead19205e09bb086b8fd0b2c97a537a1d63b8a2de8f9cf62fd70b",
+    "integration/read-spread-2.stdout": "e57255151b2d878b4e112fd3e513fac91f72dfc959902f4465ee350a78712465",
+    "integration/read-spread-4.stderr": "5b3606ad1453d393eb469c10353a8dd51b079b8d4324443c899dcfbcf6ade722",
+    "integration/read-spread-4.stdout": "e57255151b2d878b4e112fd3e513fac91f72dfc959902f4465ee350a78712465",
+    "integration/read-spread-oracle.stdout": "e57255151b2d878b4e112fd3e513fac91f72dfc959902f4465ee350a78712465",
+    "integration/results.json": "82f1910523e697f1ac8f1e5028ddf1f18e8b1ce9926135913c5baf6dac596300",
+    "tests-build.log": "d37fec7af012598c44e51788b5786e52ed208c3e9e0c033fbd2a31b3d4101dbf"
+  }
+}

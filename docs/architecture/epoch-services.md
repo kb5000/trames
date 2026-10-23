@@ -2,9 +2,10 @@
 
 从“任何普通 syscall 都暂停全部 CPU”逐步改为“调用者等待服务，其他 CPU 保持运行”。
 仍需协调服务的路径使用下图；pipe/eventfd/timerfd/已连接 Unix stream、其 epoll、无临时
-信号掩码的共享资源 ppoll、private futex 和符合准入的普通文件短调用已直接共享资源。
+信号掩码的共享资源 ppoll、private/shared futex、符合准入的普通文件短调用，以及已连接
+原生 TCP 的就绪标量/向量字节 I/O 已直接共享资源。
 VFS 的命名空间/FD 表仍由协调角色拥有；普通文件字节、OFD
-偏移和活动元数据镜像可以共享，没有将整棵 VFS 加锁或标记为 Send。
+偏移、可变状态标志及活动元数据镜像可以共享，没有将整棵 VFS 加锁或标记为 Send。
 
 ```mermaid
 sequenceDiagram
@@ -26,14 +27,19 @@ sequenceDiagram
 | 类别 | 当前执行位置 | 同步范围 |
 | --- | --- | --- |
 | 身份/时钟/getcpu、F_GETFD/F_GETFL、纯内存/字符串/解析/回调/allocator 快路径 | worker 内 | 同一个 guest 内存和原算法同步模型，无逐调用内核往返 |
+| F_SETFL/FIONBIO 的 O_NONBLOCK/O_APPEND 状态修改 | worker 内 | OFD 的共享原子状态；固定访问位和 FD/CLOEXEC 仍保留原权限/生命周期边界 |
+| 合格普通文件的 F_GETLK/F_SETLK | worker 内 | 每个 inode 的共享锁集合；冲突检查/提交同一事务；owner 与 worker 共用 flock ABI；F_SETLKW 阻塞/死锁仍保留原路径 |
+| F_SETFD 与 close_range(CLOSE_RANGE_CLOEXEC) | worker 内 | 同一 Files 域的原子 CLOEXEC；fork、UNSHARE、exec 在原生命周期边界复制/脱离；创建/关闭/dup 仍 joined |
 | pipe/eventfd/timerfd/已连接 Unix stream 标量/向量 I/O、只监听这些资源的 epoll | worker 内 | 原子/对象锁；阻塞交还执行槽，资源就绪直接入队；需要 SIGPIPE 或接收 FD 权限时保留 joined 路径 |
 | timerfd_settime/gettime、无临时信号掩码且仅包含上述共享资源的 ppoll | worker 内 | 共用原 Linux ABI；到期/重新设置直接恢复任务，调用超时不结束整个 cohort；timerfd 创建和 FD 安装仍 joined |
 | Unix stream 的 sendto/recvfrom/sendmsg/recvmsg 字节路径和 shutdown、pipe/Unix 的 FIONREAD | worker 内 | 共用原 Linux 预检、字节队列和就绪通知；MSG_DONTWAIT/WAITALL/PEEK/NOSIGNAL 按原语义处理 |
-| private FUTEX_WAIT/WAIT_BITSET/WAKE/WAKE_BITSET、sched_yield | worker 内 | 比较/入队、原子认领及共享就绪队列；阻塞/让出释放执行槽，cohort 内唤醒不结束整轮执行 |
+| private/shared FUTEX_WAIT/WAIT_BITSET/WAKE/WAKE_BITSET、REQUEUE/CMP_REQUEUE、sched_yield | worker 内 | 冻结的共享 backing key、原子比较/入队/迁移和共享就绪队列；阻塞/让出释放执行槽，cohort 内唤醒不结束整轮执行 |
 | 普通 Plain 文件的 lseek/fstat、小块磁盘/内存文件 read/readv/pread/preadv，以及无增长覆盖 write/writev/pwrite/pwritev | worker 内 | 同一份文件字节和 OFD 偏移；对象锁、原子长度及活动元数据镜像；受限情形在产生效果前退到服务 |
 | Vulkan NativeCall，包括资源、命令记录/提交、coherent transfer、编译与已认证的呈现 | 调用者 worker 内 | 共享的每 VM GPU context 独占对象图；竞争与编译等待交还执行槽，完成事件直接入队；设备 teardown 和未获 FD 授权的调用仍 joined |
+| 无活动防火墙规则的已连接原生 TCP read/write/readv/writev | 调用者 worker 内 | 原 BSD 收发主体；宿主 FD 由原 socket 所有者持有，weak 能力不延迟关闭；真正阻塞或 SIGPIPE 需求仍 joined |
+| guest PTY master/slave 的标量/向量读写、TCGETS/TIOCGWINSZ/FIONREAD，以及包含 PTY 的 ppoll/epoll | worker 内 | 同一个终端对象锁、共享 line discipline 与就绪通知；信号输入、作业控制、其余可变 ioctl 仍 joined |
 | 其余普通 FD 的 lseek/fstat、embedding stdio/未准入 stream 字节 I/O、符合映射准入的文件 I/O 与 fsync/fdatasync | 协调器服务，epoch 保持 | 请求持有原任务/View，调用者交还宿主槽；完成直接排回共享队列 |
-| 映射、进程生命周期、futex REQUEUE/共享 key WAIT/WAKE 与信号、非 ALLOW 或 trace syscall、有共享写入能力的映射文件读取、活跃映射文件写入、共享宿主 backing、其他 socket/PTY、Vulkan 未获 FD 授权的认证/设备 teardown、需要 backing checkpoint 的普通 NativeCall | joined coordinator | 保留既有 checkpoint；后续按资源拆分 |
+| 映射、进程生命周期、futex 唤醒未保留 View 的任务、信号、非 ALLOW 或 trace syscall、有共享写入能力的映射文件读取、活跃映射文件写入、共享宿主 backing、其他 socket、PTY 信号/控制操作、Vulkan 未获 FD 授权的认证/设备 teardown、需要 backing checkpoint 的普通 NativeCall | joined coordinator | 保留既有 checkpoint；后续按资源拆分 |
 
 未启用 syscall trace 的任务可以请求 epoch 服务；安装 seccomp 的任务先在 worker
 按不可变过滤器快照验证调用号、PC 和六个参数，仅 ALLOW 可以继续。协调器在
@@ -54,6 +60,8 @@ eventfd 的计数使用原子 RMW，读 acquire、写 release 保留实际通知
 FD 表只发布可复用的共享句柄快照；close/dup/exec 的表变更使缓存失效，fork 后共享
 status flags 的更新也会失效。这个阶段 FD 变更仍发生在 joined 边界，快照没有宣称支持
 并发 close/reuse 或 flags 修改。保留资源字节的寿命不等于额外打开一个管道端点。
+这是第一批的历史边界；第十八批已改为共享可变 OFD 状态，不再因 status 更新让快照
+全局失效，FD 表结构变更仍保留上述边界。
 
 Linux 标量及向量的 guest 访存预检、复制、scatter 仍共用原 helper。eventfd 向量 I/O
 按每个 iovec 的记录长度处理，保留已完成记录的短返回，不把短片段拼成一条记录。
@@ -87,7 +95,7 @@ worker 上 ALLOW 的 private WAKE/WAKE_BITSET 直接修改相同队列并返回�
 WAIT/REQUEUE/exit/signal 前提交，并校验 ticket 身份，PID 重用不会接收旧通知。
 注册的最终所有者释放时立即取消、移出对应 key；停止状态可以保留等待，退出则释放
 它。REQUEUE 仍 joined，但仅移动匹配队列的原 ticket，保留 bitset/deadline，不再遍历
-全部进程。共享 key 的 wake、clear_tid 也复用同一表，目前仍走原执行边界。
+全部进程。共享 key 的 wake、clear_tid 也复用同一表，当时仍走原执行边界；第十一批已迁移共享 key 与 requeue。
 
 CLI worker_futex_wakes 计有效本地 private wake 调用（含返回 0），worker_futex_woken
 计实际唤醒 ticket；两者都是 worker 私有计数，汇总时才合并。后续再将阻塞任务的
@@ -423,6 +431,8 @@ F_GETFD/F_GETFL 直接读取 epoch 的不可变 FD flags 快照，并复用 Linu
 revision，使独立 fork 表里的旧缓存也失效。worker 只持有 Arc/plain values，未持有
 VFS 的 Rc。没有使用该 FD 快照缓存权限决定；seccomp 另用不可变程序逐调用求值，
 非 ALLOW 和 trace 任务仍走原 syscall 路径。
+上述 revision/不可变 status 为当时实现；第十八批使用活的原子状态，只有 FD 表结构
+及资源生命周期变化仍使对应能力缓存失效。
 
 每个 worker 复用一个回复 channel。唯一 sender 随请求发出，再随 View/结果返回，
 等待时 worker 不保留额外 sender；意外丢弃请求会断开接收并报告 worker 故障，不能
@@ -469,6 +479,31 @@ identity 且在服务器实时 wsi_connections 中仍有注册的 token。dup �
 普通单就绪任务和配置单 CPU 的 owner 执行不因此改成工作队列。范围与证据见
 [GPU 等待交接验证](../validation/gpu-handoff.md)。
 
+## 共享 futex 与原子 requeue
+
+2026-10-22 第十一批将普通 private/shared WAIT、WAIT_BITSET、WAKE、WAKE_BITSET、
+REQUEUE、CMP_REQUEUE 接入 worker。本次没有扩大 CPU/普通 native 的访存检查。
+Memory 和 View 使用同一 shared-key 规则；冻结映射时只为 MAP_SHARED backing 保存
+identity/offset 的稀疏索引，查 key 不调用 VFS 或 backing Rc，不复制页字节，也不扩大
+每页 CPU descriptor。增量 unmap/remap/protect 与 backing 刷新一起维护索引；private
+flag 仍直接使用 VM + VA，普通私有页没有索引项。未知 backing 沿用既有串行准入。
+
+WAIT 沿用桶锁内比较/登记，WAKE 沿用 ticket 的原子认领；REQUEUE/CMP_REQUEUE 按桶号
+锁住源和目标，将比较、唤醒与迁移放在同一次事务内。释放全部桶锁后才通知工作队列。
+位集、超时、原任务和 epoch 目标随原 ticket 保留，不遍历进程表，不重新执行 SVC。
+队列归属 key 从 Wait 移入同一个 Ticket，由对象锁保护这组字段；取消在取桶锁后复核
+key，若已被迁移则重试目标桶，避免把失效 ticket 留在新队列。没有新线程或生产轮询。
+
+所有者与 worker 共用 futex ABI helper；比较失败、参数/地址错误在队列副作用之前
+返回。seccomp 仍仅允许 ALLOW 进入本地执行，trace 和权限变更保留 joined 边界。
+worker_futex_requeues 记录成功本地调用（含零返回），worker_futex_woken 只统计真正
+唤醒的 ticket，不把移动数当唤醒数。计数留在任务内部，返回时合并，不逐调用全局 RMW。
+
+cohort 内共享或私有唤醒直接恢复任务；唤醒未保留 View 的其他 VM/停止任务仍发布到
+原 ready 队列并结束当前 cohort，以便所有者处理冻结/信号/映射准入。PI、WAKE_OP 等
+未准入操作仍走原路径，本轮不改变它们的支持状态。验证与单样本结构对照见
+[worker futex 验证](../validation/worker-futex.md)。
+
 ## 所有权与退出
 
 - worker 把自己的 `View` 移交服务请求，收到回复后取回；不复制整个映射快照或重建
@@ -510,8 +545,8 @@ FD 查询/管道 I/O、mmap/munmap、dup/close，对照本机 C 语义输出，�
 
 下一步是映射文件/网络 I/O 的共享 backing 一致性与异步提交/完成，再拆分 VFS 元数据
 读写同步。映射和进程操作需要按实际共享 VM/backing 缩小暂停集合；futex 已按 key
-同步 compare/enqueue/wake 并接通 private WAIT 的任务交接；接下来迁移共享 key 解析
-及其余阻塞资源，减少全体边界。
+同步 compare/enqueue/wake，十一批接通共享 key 与原子 requeue；接下来迁移其余阻塞
+资源，并缩小跨 VM 唤醒未保留 View 任务时的边界。
 第十批已接通 context 竞争、异步编译通知和冻结 FD 授权的本地交接；下一步迁移 native
 relay、其余网络/PTY 和生命周期边界，再将 GPU 同步细化到对象/队列范围。
 不能用一把 VFS 全局锁替代这项拆分，也不能把 Rc/RefCell 直接标成 Send。
@@ -532,3 +567,431 @@ relay、其余网络/PTY 和生命周期边界，再将 GPU 同步细化到对�
 手工探针与范围见[通信成本对照](../validation/coordination-cost.md)。探针没有修改生产
 调度器或引入第二套解释器；消息实现只用于实验。尤其应把 RPC 传输与全体停止、提交
 及重新派发分开计量，不能将微型计数操作的比例当成应用整体提速。
+
+## PTY 字节与终端等待直接共享
+
+2026-10-22 第十二批将 guest PTY 的 master/slave 字节 I/O 从 joined 协调器迁到
+调用者 worker。Pty 的 devpts 节点、挂载、路径和 Rc FD 所有权仍由原所有者管理；
+可保留的 Arc<PtyIo> 只包含 Terminal 和端点状态，不跨线程传递 VFS/Process。
+同一 PTY 的 canonical/raw、echo、CRLF 转换、VMIN、队列容量和输出 backpressure
+共用原 line discipline，一个对象锁保护这些关联状态，不锁其他终端或 guest 内存。
+
+端点数、master 存活、packet 标志/状态用 relaxed 原子表达；它们不发布 guest 字节。
+打开、关闭、FD flags、session/group、控制终端及 termios 修改仍在 joined 边界，
+所以没有为普通 CPU/原生函数叠加新的屏障。保留数据资源不增加 guest 打开端点数；
+最后一次 slave close 的 HUP/EIO，以及 master close 的 EOF/EIO 均读取原来的端点状态。
+
+master/slave 的 read/write/readv/writev、FIONREAD、TCGETS、TIOCGWINSZ 留在 worker。
+poll/ppoll/epoll 直接观察同一个队列和原 ET/ONESHOT 状态。Terminal guard 比较四项
+队列世代和 EOF，实际变化后先解锁再通知，回调可立即重入同一个终端；真正阻塞时
+先订阅再检查，释放执行槽并由现有 ready 队列恢复，没有新线程、轮询或协调器往返。
+冻结的进程权限快照只含全局 session/group、控制终端 identity 和 SIGTTOU 忽略状态。
+
+后台控制终端读、需 SIGTTOU 的写，仍在消费数据前回到原内核；写入 master 的可接受
+前缀只要包含终端信号，就在改变输入、echo 和输出前整体回退。识别与原 input 使用
+同一控制字符/ICRNL/IXON 优先级，Ctrl+C/Z 等仍由内核按会话/前台组派送，不重放已经
+完成的部分传输。packet 的流控状态和 owner 输入也使用相同 master_write 算法；
+FFI host terminal pump 只移除已接受输入，满队列保留剩余字节。
+
+信号与可变 ioctl、TTY 生命周期，以及非 Unix-stream 网络后端仍未移出协调角色。
+嵌入式旧 console 和宿主 UI pump 也仍保留原入口，没有宣称整个协调线程已移除。
+普通 CPU 指令/访存没有新增检查。范围、单槽交接与结构对照见
+[PTY 工作线程验证](../validation/worker-pty.md)。
+
+## 单活跃进程保留直接 MMU
+
+2026-10-22 的 build 35/36 CoreMark 配对发现：只因一个 unrelated blocked I/O waiter
+就构建 cohort，会让单线程计算离开串行 Memory 的直接 MMU 路径。多终端 init 的控制
+管道是实际例子，计算子进程已关闭其 FD，却被旧的成员计数强制迁到 parallel View。
+同环境生产 FFI 中位数 782.045→685.407；修复后 788.621。它是执行路径的性能回退，
+CPU crate 和 Release 参数没有变化。iPad 上的恢复仍待测量。
+
+准入现在保留单活跃任务的串行路径，除非存在同 VM futex waiter、保留字节资源关联的
+I/O peer，或待恢复 GPU。两个实际活跃任务仍照常并行；资源关系是保守调度提示，不是
+权限或 FD 操作准入。Arc 身份比较包含管道/Unix/PTY 对端、计数器/定时器和 epoll 中的
+字节资源，不给 guest 访存新增检查，不新增线程、轮询或普通访存屏障。
+
+其他等待照常由原内核处理，不因为未加入 worker cohort 而丢事件；有关联的阻塞任务
+仍可释放唯一宿主执行槽并由共享队列恢复。源码、IPA 构建输入核对、因果隔离与作用
+范围见 [CoreMark build 35/36 验证](../validation/coremark-build35-36.md)。
+
+## 已连接 TCP 的就绪字节 I/O
+
+2026-10-22 第十三批接入已连接原生 TCP 的 read/write/readv/writev，IPv4/IPv6 均覆盖。
+cohort 开始时从当前 FD、连接和防火墙状态生成独立 DirectNetwork 快照；不复用只按
+FD revision 缓存的数组，因为 connect 完成或规则修改不一定改变 FD 表。只接纳已
+Connected、无待处理连接错误、无 DNS endpoint、无活动防火墙 hook、走 Native 路径
+的 TCP。虚拟网络栈、UDP、未连接/正在连接和有规则的连接保留原实现。
+
+传输 capability 只含宿主 TCP 存储的 Weak 和 relaxed 原子流量计数，不包含 namespace/
+VFS/Socket wrapper 的 Rc/RefCell，也没有全局网络锁或每 socket 字节锁。宿主 send 与
+read/peek 主体从原 native 实现提取，新旧入口共用；BSD socket 负责真实并发收发。
+已有 socket 所有者是宿主 FD 的强持有者，worker 在实际操作期间才短暂 upgrade。
+旧快照不算一次打开，最后一次 guest close 的 FIN 不被能力或 FD 快照缓存延后。
+
+原 Linux 标量和向量预检/gather/scatter 仍共用。已就绪结果、短传输、EOF 和非阻塞
+EAGAIN 留在 worker。阻塞 EAGAIN 尚不能等待外部事件直接入队，因此无效果地请求
+原 joined 路径处理 host epoll/kqueue 与 socket timeout；EPIPE 的 SIGPIPE 也沿用原
+信号路径。没有订阅一个不会被宿主网络唤醒的 IoSignal，更没有加服务线程或轮询。
+
+此批不处理 sendto/recvfrom/sendmsg/recvmsg、connect/accept/shutdown/options 或混合
+网络 epoll/ppoll。后续先接通宿主就绪事件与共享队列，再扩展 UDP/消息及控制操作。
+worker_socket_syscalls 现在合计 Unix 与这批 TCP 的本地完成（包括返回的 errno）。
+单活跃进程的 serial MMU 准入不变，无 socket 时直接返回空网络能力，无新增逐指令
+访存检查、锁或屏障。范围和前后对照见 [TCP 验证](../validation/worker-tcp.md)；
+[总进度](coordinator-removal.md)区分已发包与开发中路径。
+
+## 宿主 TCP 事件直接恢复 worker
+
+2026-10-22 第十四批将上一批 TCP 的阻塞 EAGAIN 接到共享队列。原任务/View 继续
+保留，已有执行线程中选一个空闲者等待 epoll/kqueue。其他 worker 仍可执行 CPU、
+原生函数和 I/O；通知只更改队列，不在宿主事件回调里访问 guest Memory。
+
+HostEvents 按 cohort 懒创建；无网络等待时不建立后端或唤醒 socket。空闲线程按真实
+deadline 等待，队列改变和停止通过非阻塞、合并的 wake socket 中断等待。有可运行任务
+时，只在一次调度边界做一次非阻塞事件分派，随后执行任务，保证单执行槽和所有槽忙碌
+时也能推进；没有新增线程、定时轮询器或忙等消息总线。
+
+每个 pending syscall 独立持有宿主 FD 的 duplicate 和一次性注册，多个读/写 waiter
+不会覆盖彼此。单调 ID 区分取消和 FD 复用；按需 rearm，再检查原 BSD 收发操作，
+最后才 park。就绪通知先于 park 时，由原 IoSignal 位保留。回调在 registry/队列锁
+之外执行，取消会先删除注册再关闭 duplicate。FD/namespace 控制仍先停止并回收整个
+cohort，因此这些 wait lease 在实际 guest close/namespace 修改前释放，不延迟 FIN；
+普通 DirectNetwork 快照仍只有 Weak，不持有额外打开。
+
+原 socket 读写 timeout 在 capability 中快照，pending 与 cohort 返回保留绝对截止时间，
+不会每次重试延长。已迁移等待由队列管理，移除对应 owner 的 1 ms 网络扫描和 socket
+deadline 全组 cutoff；未迁移的消息/UDP/控制等待维持原调度语义。仍保留正常 cohort
+控制周期与映射/进程边界，不能称为已经完全移除协调器。
+
+未增加普通 CPU/guest 访存屏障。保留单活跃进程的 MMU 准入保护，新增共享 TCP socket
+身份关联，允许持有同一连接的活跃线程与 waiter 继续交接；无关 idle socket 不会强迫
+独立 CPU 进入 parallel View。EPIPE/SIGPIPE、活动
+防火墙、DNS/UDP、消息、connect/accept、网络 poll/epoll 和单任务串行等待仍沿用原路径。
+验证与范围见 [TCP 事件等待](../validation/worker-tcp-waits.md)。
+
+
+## 第十五批：短 io_uring 与完成等待
+
+2026-10-23 将首批无链接的 NOP、标量/向量、SEND/RECV 和单次 POLL_ADD 接入 worker。
+原 VFS/FileEpoch/DirectTcp 能力与 SharedPage 字节模型不变；ring 的 kernel 游标使用
+对象级锁，实际数据/资源操作在锁外执行，已领取请求仍计入有界额度。GETEVENTS 使用
+原资源、CQ 和宿主事件通知停放/恢复，不创建后台执行器或每请求 RPC。
+
+cohort 回收后恢复原队列、OFD 和提交计数；下一 cohort 可接管适用的已阻塞 enter。
+真实原生 ring 等待与相关 peer 在全部 guest 线程睡眠时也能继续事件驱动；默认单 CPU
+计算的直接 MMU 准入条件保持。setup/register、固定/提供缓冲、链接、multishot、
+EXT_ARG、计时/取消及 FD/映射变更暂留原入口。具体边界和验证见
+[io_uring](io-uring.md)及[worker 记录](../validation/io-uring-worker.md)。
+
+
+## 第十六批：固定资源、链接与排空
+
+2026-10-23 将 FIXED_FILE、READ_FIXED/WRITE_FIXED、IO_LINK/HARDLINK、IO_DRAIN
+和 ASYNC hint 接入同一 worker ring。pin/charge 用 Arc 保留原物理字节，不复制 VM；
+关闭数字 FD 的固定普通文件复用原 FileEpoch 准入。ring 索引包括已经领取但尚未完成
+的请求，数据操作在锁外；只有依赖/排空允许 issue 的资源才订阅外部就绪。
+
+普通链接按原始请求长度处理短 I/O，硬链接继续；iovec 元数据导入一次。完成/取消
+及时回收依赖状态，跨 cohort 保留 OFD/pin、已提交计数和终结结果。owner 交接按序号
+恢复，未迁移 opcode 继续原路径。没有增加普通 CPU 访存查表/屏障或新的服务线程。
+范围和证据见 [io_uring 固定资源与链接](../validation/io-uring-worker-registered.md)。
+
+
+## 第十七批：提供缓冲、重复完成、计时/取消和 CQ 等待
+
+2026-10-23 将经典/注册提供缓冲、RECV/POLL_ADD/TIMEOUT multishot、poll 更新/移除、
+超时更新/移除、LINK_TIMEOUT、ASYNC_CANCEL 与 EXT_ARG 接入 worker。计时和提供缓冲
+复用原解析/算法，控制状态在 ring 对象锁内更新，字节访问继续在锁外。缓冲组的在途
+lease 防止重复分配槽；正在执行的取消返回 EALREADY。CQ 额度预留终结空间，64 次
+推进预算及游标轮转保留公平性，背压请求不订阅立即就绪的宿主资源。
+
+五类无需安装 FD/固定新页的 register 查询/卸载留在 worker。CQ 的 ppoll/epoll 使用
+原 WatchState 和当前任务的 View，订阅 CQ/资源/host event 与真实 deadline；不能借
+观察者 VA 执行另一个任务的后台请求。全体已睡眠的真实 ring 等待可在下一 cohort
+接管，唤醒 ring 调用者后也先重新判断并行准入，不先运行 owner 串行 quantum。
+
+17 个 opcode 已有 worker 路径，但创建/安装 FD、路径/网络控制、同步/增长/受限文件
+服务及没有保留执行上下文的后台请求仍需要 FD/VM 生命周期检查点，协调器未完全
+撤销。范围与定向证据见 [io_uring 异步路径](../validation/io-uring-worker-async.md)。
+
+### 第十七批后续：复用等待订阅，审计剩余所有权
+
+2026-10-23 将 enter 与 CQ poll 的资源订阅集中到 `direct/uring/wait.rs`。等待调用
+保留原资源通知和宿主 one-shot，按 actor 内 OFD/方向去重；重试只在实际触发后
+rearm，失去等待资格时删除订阅。不同 actor 仍有独立 one-shot；不新建服务线程。
+初次 CQ poll 也按原 ring 身份去重，FD 别名不重复领取推进预算，单 ring 保留免分配入口。
+
+这不是新增迁移批次，也不表示删除了 `Event::Service` 和生命周期 checkpoint。
+后续重点是共享 FD/OFD、文件和 VM 生命周期所有权，并复用 owner/worker 的资源
+算法；不以继续堆叠两份 opcode 实现代替架构改造。
+定向检查与隔离成本数据见 [等待订阅复用](../validation/io-uring-wait-reuse.md)，
+剩余依赖表见 [协调器拆分进度](coordinator-removal.md)。
+
+## 第十八批：共享 OFD 状态控制
+
+2026-10-23 将 O_NONBLOCK/O_APPEND 从 OpenDescription 的 RefCell 数据移为共享原子
+状态。固定的访问/打开属性单独保留；F_SETFL 直接写整个可变字，FIONBIO 原子更新
+非阻塞位而保留 append。不增加资源锁、全局 revision 失效或 guest 普通访存屏障。
+owner、worker、dup/fork/SCM_RIGHTS 引用相同的状态，FD/CLOEXEC 表项仍独立。
+
+冻结能力包含活状态：pipe/eventfd/timerfd/Unix/PTY 的 nonblocking、原生 TCP 的阻塞
+判断和普通文件的 append 准入不需要重新捕获。既有阻塞字节调用在真实资源唤醒后的
+EAGAIN 重试中也重读状态；修改标志本身不唤醒资源，poll 忽略 O_NONBLOCK。
+append/持久化仍在产生效果前回到原文件服务，没有用共享标志越过配额和文件增长边界。
+
+新 CLI 计数 worker_fd_syscalls 包含 worker 的 F_GETFD/F_GETFL/F_SETFL/FIONBIO，含错误
+返回，不包含 dup/close 等表项变更。定向用例每个双核/四核运行精确完成 1280 次，
+cohort 从约 771/772 次降到 3/4 次；它是固定的控制密集用例，不代表 Docker 或整个
+系统的提速倍数。FD 创建、关闭、dup、CLOEXEC 及映射/进程/namespace 生命周期仍待迁移。
+检查、原始数据及剩余边界见 [OFD 状态验证](../validation/worker-fd-status.md)。
+
+## 第十九批：描述符元数据域与生命周期边界
+
+2026-10-23 把 owner 表项与共享描述符元数据拆到 fd_table.rs / fd_status.rs。
+FD 的 CLOEXEC 使用独立原子位，owner/worker/纯 CLOEXEC range 共用设置算法，
+不用结构 map 的 revision 传播单字段更新。F_SETFD 和 range flags=4 留在 worker；
+关闭/UNSHARE range 仍沿原生命周期路径，不能把标记成功当作已经关闭 FD。
+
+fork 复制描述符标志、继续共享 OFD；CLONE_FILES 显式共享元数据域。只 unshare FS
+不脱离 Files。成功 exec 先脱离表元数据再 close-exec，失败 exec 不提前脱离。
+结构身份与元数据域分开，使 FileEpoch 和字节能力可以跨 fork 复用相同 OFD；
+不会因为复制 CLOEXEC 而重建整个资源快照。
+
+双核/四核的真实 guest 每次精确完成 448 次 worker FD 标志操作，cohort 从 195 次
+降到 3/4 次。原生与 guest 的 clone 四组合、成功/失败 exec、range UNSHARE 结果一致。
+这仍不是整个内核迁出：FD map/OFD 端点、锁释放、inode/网络、VM/task 还需共享所有权。
+后续范围与完成判据见 [共享内核状态路线](shared-kernel-state.md)，定向证据见
+[描述符元数据验证](../validation/worker-fd-table.md)。
+
+## 第二十批：共享 inode 记录锁
+
+2026-10-23 把 POSIX 锁集合从 Filesystem 的 owner map 拆到 inode 的 Arc/Mutex 对象。
+范围归一化、冲突、拆分/合并与 flock ABI 由 owner/worker 共用，F_GETLK/F_SETLK 在
+worker 直接完成，包含 EAGAIN 冲突结果，不进入字节 I/O 的阻塞等待入口。
+close 按进程归属释放同一对象；exit 的弱引用注册表先解锁再逐 inode 清理。不同 inode
+不持有共同资源锁；不增加服务线程、轮询总线或普通 guest 访存工作。
+
+worker_fd_syscalls 在原 FD 标志控制外包含上述两类锁操作。两个进程 64 轮、576 次
+调用在双核/四核配置的 cohort 从 577 降到 1。107 项受影响 Rust 检查与原 m6 两组
+锁生命周期用例通过，详见 [文件锁验证](../validation/worker-record-locks.md)。
+FD/OFD 表主体、F_SETLKW 等待/死锁图及其他最后关闭效果仍需继续共享。
+
+### 第 20 批后续：拆分 pipe 端点与 inode 投影
+
+真实 pipe 端点已为 Arc 对象，可在当前 worker 最后释放；readers/writers、FIFO 初始
+等待世代和关闭通知共用原 pipe 算法。握手仅需清除一个 AtomicBool。非阻塞 ENXIO
+检查和新端点计数在同一 pipe 事务内，通知在 pipe 解锁后发生。
+
+普通字节/poll/标志快照与订阅不持有真实端点；原生剪贴板 relay 的端点和元数据
+anchor 分离。没有新增 worker syscall，FD 表/完整 OFD 与 io_uring 的 owner 保留
+引用仍待迁移；本项不另计批次，也不代表整个 close/dup 路径已经迁出。
+111 项受影响 Rust 检查、1/2/4 CPU 的 FIFO/FD 域/uring ABI 通过；
+见 [端点验证](../validation/shared-pipe-endpoint.md)。
+
+### 第 20 批后续：移除 CLONE_FILES 协调传播
+
+共享任务直接保留同一个 Files 表。删除协调器 FD 变化跟踪、逐任务复制和 files_id，
+退出/exec 的文件表关闭由真实引用关系决定。共享 clone 不建立临时私有表，lookup
+取得稳定 OFD，dup3 发布替换后才释放旧引用及 POSIX 锁。
+
+表/OFD 仍有 owner Rc，因此结构调用和冻结 worker 能力仍待迁移。本次 327 项 Rust
+检查及 FD/锁/FIFO/io_uring 的 1/2/4 CPU 验证通过；8 个 reader、96 个别名、1024 次
+表项变更的单核中位数从 14.49 ms 降至 4.11 ms，四核仍被批次切换成本覆盖。
+这不是应用总体加速比，见 [Files 表验证](../validation/shared-files-table.md)。
+
+## 第二十一批：共享 inotify 队列与文件通知
+
+2026-10-23 将 inotify 事件/字节/epoch、watch mask/one-shot/撤销合并到实例级共享
+对象。read/readv/FIONREAD、poll/epoll 等待和 rm_watch 在 worker 完成；通知在资源
+解锁后直接唤醒。被监视普通文件的短读和原位写不再单纯因为通知而请求 owner。
+串行入口复用队列与完整记录算法，修正 readv 不能跨短 iovec 拆分事件的语义。
+
+122 项不同的受影响 Rust 检查、宿主/guest 内存与磁盘 1/2/4 CPU、原 worker uring ABI
+通过。64 轮负载的双核/四核服务请求降至 0；路径注册、FD/OFD 生命周期与文件服务
+边界仍待继续迁移，见 [inotify 验证](../validation/worker-inotify.md)。
+
+## 第二十二批：共享 FS 上下文，删除目录传播
+
+CLONE_FS 的 cwd/root/mount 引用成为同一 owner 对象，删除 ResourceChanges.fs、
+fs_id、调用前后比较及逐任务 share_context_from。FS 与 Files 的复制/共享独立选择，
+umask 单字段以 relaxed 原子交换在 worker 执行；路径/inode 图仍不跨 worker 发送。
+原生对照同时修正普通 exec 错误分离 FS 的旧行为，保留原 FD 表私有化。
+
+134 项不同的受影响 Rust 检查、FS/exec/并发交换与 FD 域的 1/2/4 CPU 验证通过。
+256 次交换的并行批次约 258 → 3–4；旧版和新版 service_requests 都为 0，减少的是
+全体返回成本。见 [共享 FS 验证](../validation/shared-fs-context.md)。
+
+## 第二十三批：共享 sighand，删除处理函数传播
+
+CLONE_SIGHAND 直接共用处理函数表，fork 复制、成功 exec 私有化、SA_RESETHAND 原位
+更新。删除 actions_id 与逐任务数组复制，通用 ResourceChanges 已移除；heap 同步
+仍单独保留。act=NULL 的 rt_sigaction 在 worker 共用 ABI，读取完整记录后在锁外
+写 guest 内存；处理函数修改的 pending/作业控制副作用仍在任务所有者入口。
+
+134 项不同的受影响 Rust 检查及宿主/guest 内存与磁盘 1/2/4 CPU 验证通过。512 次
+查询的双核/四核整组返回从约 513 次降至 3–4 次，service_requests 两版都为 0。
+这项删除了共享表的协调传播，不代表完整 task/信号迁移，见
+[共享信号表验证](../validation/shared-signal-actions.md)。
+
+## 第二十四批：共享 VM 分配上下文，删除最后的资源传播
+
+brk 和 mmap 搜索游标按实际 Memory identity 共享，fork 复制、成功 exec 新建，
+Files/FS 的共享开关与 VM 独立。删除 sync_heap_context、share_heap_from 和每次
+syscall 的快照比较，原 Files/FS/actions/heap 的逐任务传播至此全部退出生产路径。
+
+brk(0) 在 worker 原子读取；修改映射仍受现有 VM 提交边界约束，不能把当前 break
+当作页表同步信号。21 项受影响 Rust 检查和原生/guest 内存与磁盘 1/2/4 CPU 通过。
+512 次查询约 514 → 3–4 个并行批次，见 [VM 分配验证](../validation/shared-vm-allocation.md)。
+
+## 第二十五批：共享 flock 与 OFD 锁寿命
+
+删除 Filesystem 全局 flock 表与每次全表失效引用扫描，使用 inode 内共享集合，
+每个 OFD 具有共享锁租约。dup/fork 保持相同锁身份；最后 worker 租约释放直接解锁
+并在对象锁外通知，普通文件缓存只有弱能力，不延长锁寿命。非阻塞 flock 和解锁
+共用资源算法在 worker 执行；阻塞转换仍由 owner 调度，不先修改再回退。
+
+40 项受影响 Rust 检查、原生及 guest 内存/磁盘 1/2/4 CPU 通过；O_PATH 拒绝行为
+修正为 EBADF。640 次锁操作的并行批次约 643 → 3–4，单核没有测出改善。
+完整 OFD/FD 生命周期仍未迁完，见 [flock 验证](../validation/shared-flock.md)。
+
+## 阻塞 flock（第 26 批）
+
+已接受的 flock 请求只将 inode 锁租约发送到 worker。资源冲突订阅共享 Readiness，
+再次检查后 park；解锁直接通知原任务，继续已退休的 SVC，既不重新查 FD 也不发
+Event::Service。停止时 IoCall 保留原请求，完整 OFD 在所有 View 返回、任何冷调用
+执行前转为 Process 保留引用。下次批次直接采用该请求；完成或被信号打断时清理。
+单活跃任务只与同 inode 的等待者构成例外，不让无关文件锁等待拖慢独立计算。
+
+完整 OFD/Node 仍属于 owner，跨批次保留引用的最终析构仍在 join；此批并未完成
+动态 close/dup 和共享 FD 表生命周期迁移。见 [验证](../validation/blocking-flock.md)。
+
+## 共享文件关闭通知（第 27 批）
+
+OFD 的通知寿命由 Arc<FileClose> 表达，内部只有共享 inode 通知目标和共享目录链接。
+真实接受的操作可以保留该租约；文件/字节/poll 能力快照不保留它。IN_CLOSE 不再需要
+回到 Node Rc 才能投递，新增 watch 和 rename/unlink 也不会把打开时的路径快照固化。
+源对象/链接锁均在队列通知前释放。实际 FD 表的关闭/替换与完整 OFD 仍需 joined 边界。
+验证见 [共享关闭通知](../validation/shared-close-notifications.md)。
+
+## 共享 inotify 实例（第 28 批）
+
+InotifyInstance 是 Arc 实际实例，注册索引只用弱共享 inode 通知身份。DirectFd
+的 inotify 能力保留队列并弱引用实例；read/poll 不增加索引锁，rm_watch 则直接调用
+实例的完整撤销逻辑，清掉索引和 inode 标记，owner 不再补做这一操作。新 watch
+的路径解析/权限仍在 owner，下一步仍是完整 FD/OFD 的共享表和目标寿命。
+
+## 共享原生端点与等待租约（第 29 批）
+
+原生 Socket 的宿主 FD、配额和 epoll/kqueue 边沿观察器成为独立 Arc<Endpoint>，
+不包含 namespace、规则或 DNS 的 Rc。配额以 relaxed 原子预留/回收；观察器
+以 socket 对象锁串行采样，串行入口与 worker 保留同一事件世代，字节 I/O 不取该锁。
+宿主等待所用 duplicate FD 通过 HostFd 持有实际端点租约，普通 I/O 和 io_uring
+共用捕获入口；rearm 不重新分配租约或注册。取消先注销后关闭 duplicate，再在
+注册锁之外释放最后端点，避免提前回收配额或把析构放到 reactor 锁里。现有 Arc
+直接转为不透明保活引用，无额外堆分配或服务线程。
+
+完整 OFD、guest FD 表、Socket 控制投影与 namespace 生命周期尚未迁出；这一步
+准备实际跨 worker 关闭所需的资源寿命，不表示 close/dup 已不再 join。
+结果见 [共享原生端点验证](../validation/shared-native-endpoint.md)。
+
+## 共享 PTY 从端寿命（第 30 批）
+
+PtyEnd 保留 owner 的 inode/mount 投影，实际从端由 Arc<PtySlaveEndpoint> 持有
+PtyIo。别名/保留引用共享一个端点；独立打开有各自端点。最后租约析构只执行原有
+从端计数递减与通知，可在 worker 完成，不依赖 owner 扫描或确认，不在通知中持有
+terminal 锁。原普通字节和轮询能力不增加打开数。普通最终关闭先析构从端租约，
+再丢弃元数据投影，保持原回调期间元数据仍存在的顺序。
+
+主端的 devpts 删除、终端会话/组清理和 SIGHUP/SIGCONT 仍在原边界；没有把
+整个 PtyEnd/Rc 图标成 Send，也没有扩大 io_uring 的终端准入。验证见
+[共享从端](../validation/shared-pty-slave.md)。
+
+## 共享可写映射引用（第 31 批）
+
+每个实际 FileMapping 持有 inode/mount 的 WriteLease。共享 PageBacking 别名
+不重复取得租约；显式保留的操作引用可在线程之间移动并直接释放。has_writers
+变为一次 relaxed 原子读取，删除每页 writer 字段与 writers_cached/逐页扫描。
+不同挂载对象使用各自计数，bind/namespace 克隆沿用原域划分，inode 共享所有映射。
+无每页额外堆租约分配、普通 CPU 访存锁或新服务线程。
+
+完整 Mapping 析构仍负责原回写和页面缓存移除，再释放写引用；保留引用不等同于
+共享完整 inode/PageBacking。只读 remount、普通卸载与懒卸载树回收检查真实写引用，
+无需 owner 扫描/缓存失效，结果见 [验证](../validation/shared-mapping-writers.md)。
+
+## Unix pathname 共享身份（第 32 批）
+
+Node::Content::Socket 仅持有可共享的弱身份，原 LocalSocket Rc 控制对象通过
+guest 域内的弱解析索引寻找。身份最后关闭前用 relaxed 活跃位立即失效；读者
+临时 Arc 不延长真实端点寿命。bind 插入失败自动撤销路由，硬链接/overlay 保留
+同一身份，磁盘恢复为无绑定状态。普通字节调用不访问此索引。
+
+控制索引仍在原所有者，跨 CLONE_NEWNET/setns 的 pathname 访问保持可达，
+abstract 名称仍隔离。此步消除 inode 到 Unix Rc 图的直接依赖，不增加 worker
+opcode，不移除完整 FD/连接控制的 join；见 [验证](../validation/shared-unix-binding.md)。
+
+## FIFO 共享身份与元数据分离（第 33 批）
+
+删除 Rc<RefCell<Pipe>> 包装，Node::Content::Fifo 中的 Pipe 为可共享值，只有
+稳定编号与 Arc<PipeResource>。匿名 inode 元数据留在打开描述符/原生 relay 的
+owner 投影；资源不反向拥有 Node，不延迟 unlink 后的 inode 删除。每条 pipe
+省去一个包装分配，splice 用实际资源 Arc 判等；字节 I/O 与最后端点通知复用原实现。
+
+补齐命名 FIFO 硬链接的既有 EPERM，保留原 inode/权限/manifest 事务；硬链接
+与 overlay 共用通道，路径替换隔离，恢复只持久化 inode 而非缓冲。FD 安装/关闭、
+路径/阻塞 open 与 splice 入口仍待迁出，结果见 [验证](../validation/shared-fifo-identity.md)。
+
+
+## 映射实时状态与脏页元数据（第 34 批）
+
+MappingState 按 mapped inode 共享身份/原子变更世代，保留 PlainFile/SharedFile
+的真实长度能力；不采样长度、不保留 Node。普通 EOF 检查和变更世代不再借用
+owner inode，overlay Lower/volatile 伪节点保留动态 owner 路径。每次写入仍使
+页版本/映射域/全局 backing token 失效，修改时间只在页面 clean→dirty 时更新；
+成功回写或截断后重新计时。CPU/native 共用路径，未新增 worker opcode/服务线程。
+
+这不是完整 FilePage/映射控制共享化：首次脏写时间、实际页布局、回写、Node/Lower
+和 VM/task 提交仍依赖原所有者。没有重新采用增加逐次布局锁的原型。定向检查、
+复用边界及固定单核 mmap 耗时对比见 [验证](../validation/shared-mapped-state.md)。
+
+
+## OFD 的 OOM/BPF 共享引用（第 35 批）
+
+OomTask 的任务身份用 Arc/Weak 表示；线程组偏好由独立 Arc<AtomicU32> 保存，
+将范围内的 score/minimum 打包为一个原子。特权设置一次 store，非特权设置以
+CAS 复核 floor，fork 读取一致快照；使用 relaxed，不参与 guest 字节发布。
+BPF Program 改为不可变 Arc，FD、cgroup attachment 与执行引用共用已验证指令，
+弱注册表不保活。任意 worker 最后释放任务/程序引用即可观察失效/回收。
+
+这移除完整 OFD 迁移的两项 Rc 依赖，未给 proc 权限、cgroup/程序注册表或
+FD 安装新增 worker 准入，也未修改 CPU/native 访存。验证见
+[共享 OFD 叶对象](../validation/shared-ofd-leaves.md)。
+
+## 系统日志直接共享（第 36 批）
+
+日志由 VFS、kmsg OFD 和 worker 共用同一个 Arc，资源内 Mutex 只覆盖日志记录
+及游标状态，guest 输出在锁外写入。非阻塞 syslog 在当前 worker 执行，权限
+能力在 epoch 内冻结，非 ALLOW 的 seccomp 仍交原路径处理。action 2 的阻塞
+legacy stream 和 kmsg 描述符操作保留原等待/OFD 边界，未引入额外线程或轮询。
+路由对照和验证见 [共享日志](../validation/shared-kernel-log.md)。
+
+## 日志等待与 kmsg 共享游标（第 37 批）
+
+syslog 能力并入 DirectSyscalls，legacy READ 接入原 PendingIo 订阅/重试/交还
+执行槽协议；追加日志在锁外直接通知。kmsg 游标按打开对象共享，owner 和 worker
+读写/seek 复用同一事务，poll/epoll 复用通知和事件世代。FD 安装/关闭及 epoll
+注册仍保留原边界。单执行槽、取消、ET 和单活跃准入验证见
+[日志等待](../validation/shared-log-waits.md)。
+
+## UTS namespace 名字访问（第 38 批）
+
+uname、sethostname 和 setdomainname 直接在 worker 使用共享 UTS 对象，复用
+原 ABI 与 epoch 权限。名字读取/修改只锁此对象，拷贝 guest 内存时不持有锁；
+对象身份及配额可跨 worker 保留/回收。unshare/setns、凭据与 FD 生命周期仍
+使用原提交边界。验证与路由次数见 [共享 UTS](../validation/shared-uts.md)。
+
+## 共享 PID namespace（第 39 批）
+
+PID 身份和嵌套映射可跨 worker 共享，默认 namespace 无映射/注册表锁。
+这次仅解除所有权依赖，没有增加 syscall 分支或迁出 fork/exit 提交，见
+[PID namespace 验证](../validation/shared-pid-namespace.md)。

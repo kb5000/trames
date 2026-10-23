@@ -1,0 +1,72 @@
+{
+  "date_utc": "2026-10-23",
+  "batch": 35,
+  "complete_coordinator_removal": false,
+  "scope": "Remove OOM task/preference and immutable BPF program Rc dependencies from OFD graph. Atomic packed score/floor, weak per-task identity and independently shared thread-group preference; Arc BPF code shared by FD, attachments and worker execution references.",
+  "source_sha256": {
+    "crates/trames-vfs/src/oom.rs": "9c94d6b928ac9398f1f89986bf8f72bc389ea47845cab61b8c42c7f27d84c68a",
+    "crates/trames-vfs/src/bpf.rs": "a0183b18d58c0596d171b2efac0f2737a7098ae00aa08a8b9c24bfff5e44df52",
+    "crates/trames-vfs/src/cgroup.rs": "daa585686a10ba36d8e4c05a32ac1835c2dea25846a85ae157b88ae12de1f32a",
+    "crates/trames-vfs/src/events.rs": "be8e2424adf26cff3e561323d586c3a4c164f1c1dd8fe80a63b2a4890c42c349",
+    "crates/trames-vfs/src/lib.rs": "77854d2c3afa91ba937176bdbea2c7cada5678b052d04c062f6a24802faa4c58",
+    "crates/trames-vfs/src/pseudo.rs": "82784698b02720e33cfefae34189731415e21a603369f6592ca9fce7c08fa279",
+    "crates/trames-core/src/process.rs": "c06cebae84356c0fe91cfe551cabb0111da10dbd71e9918b11e66e8547fb3cc3",
+    "tests/fixtures/oom-score.c": "22d94e1f09f9ff09a459887c7201065da776ed77a531cda3df33fed6e482b311",
+    "tests/fixtures/cgroup-bpf.c": "7763f04508de3cc327a076830b4eaf207f3c9a43b8bd3a731baf1f2796603426"
+  },
+  "artifact_sha256": {
+    "target/perf-runtime/release/trames-run": "2e1e0bf2403d488b6e156cc39c52c2048c88a2245f7e4f2cb284be41684edfdb",
+    "target/perf-runtime/release/libtrames_ffi.a": "7dd19d03f787e7d8192923a1b81c5b79a0f850fff34637cab1e2a24b0cb3d3fe",
+    "target/perf-runtime/release/libtrames_ffi.so": "fd76eddf93641c3a4e0b2e8b20396803cedf9a45c90e89a36c1f4d692a3517b9",
+    "target/shared-ofd-leaves-checks/before-trames-run": "8dc8c42c7808de26a2c0b5cf86c7a22eb53529c3eebe3587646a9b6bf738d32f",
+    "target/shared-ofd-leaves-checks/oom-score": "2079dc57c71591e2d52d06fb4041422b0eede0b44b8d4376002a04320a0841fb",
+    "target/shared-ofd-leaves-checks/oom-score-host": "9ca825064d7badd8f4acd447228f416a6e094b4ba5aeda37e5187e650b87dcb4",
+    "target/shared-ofd-leaves-checks/cgroup-bpf": "9fe64e392a418c310c3c99785e4e55c8206f41c54938d23f4469972bb944c909",
+    "target/shared-ofd-leaves-checks/run-units.py": "abcee8c6d01dc727ceea51202b091449f07f1a96f6b7ce5be3cf193236c750ce",
+    "target/shared-ofd-leaves-checks/run-guest.py": "60fde8ab585822b1450fa0f235b809b87114e93834bda01409da7168ba3cd24e"
+  },
+  "runner_sha256": "2e1e0bf2403d488b6e156cc39c52c2048c88a2245f7e4f2cb284be41684edfdb",
+  "baseline_sha256": "8dc8c42c7808de26a2c0b5cf86c7a22eb53529c3eebe3587646a9b6bf738d32f",
+  "baseline_evidence": "docs/validation/shared-mapped-state-summary.json",
+  "results": {
+    "units": {
+      "path": "target/shared-ofd-leaves-checks/unit-results.json",
+      "sha256": "bee24b24031f7b227c80c7fc2bd92b7546fad531b6517d124baaf194fc720b3c"
+    },
+    "guest": {
+      "path": "target/shared-ofd-leaves-checks/guest-results.json",
+      "sha256": "a63784148bcbcb8dc571ed7acec1f059341a0f7f357663b40c27fec2f2c45d9a"
+    },
+    "native_attempt": {
+      "path": "target/shared-ofd-leaves-checks/native-results.json",
+      "sha256": "2064bfce975f42a5bb42eba201111db46c51655e1c3fa00da644564fa62297a5"
+    }
+  },
+  "distinct_rust_tests": 12,
+  "guest_cases": 12,
+  "baseline_cases": 2,
+  "native_passes": 0,
+  "native_environment_blocked": 1,
+  "native_limitation": "Host /proc/self/oom_score_adj is read-only (open O_RDWR returns EROFS/errno 30); no native behavioral result claimed.",
+  "builds": {
+    "release_cli_ffi": "target/shared-ofd-leaves-checks/release-build.log",
+    "strict_release_clippy": "target/shared-ofd-leaves-checks/clippy.log",
+    "format": "target/shared-ofd-leaves-checks/fmt.log",
+    "diff_whitespace": "target/shared-ofd-leaves-checks/diff-check.log"
+  },
+  "log_sha256": {
+    "target/shared-ofd-leaves-checks/check.log": "7c9f2c977c4d7a1800720244da4ceedbd371e5dc37b1170aa07e9fd2738701b1",
+    "target/shared-ofd-leaves-checks/clippy.log": "f94a4ca116def1e9a2bb1ad4f5b8c008c6e830b6b476f7c49f0e67b2bb6e3d88",
+    "target/shared-ofd-leaves-checks/diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/shared-ofd-leaves-checks/fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/shared-ofd-leaves-checks/release-build.log": "36e30d4d26cfcf97cec3cccd5c3259340b71d96a2e7918192db028a6854460e8",
+    "target/shared-ofd-leaves-checks/unit-build.log": "220f41c3a32330fbaddae71a1f55fe0c2c764736c63f881649c75bca2511c465",
+    "target/shared-ofd-leaves-checks/unit-final-build.log": "5ec395e34db9ad2bc661253ddd4f4ba7f834bf8cbf5af6418ad816db5744bad4",
+    "target/shared-ofd-leaves-checks/unit-vfs.log": "9b2802e248924673e5834c2056e8887636857e3a2f45cd4151a5730fad0ab14b"
+  },
+  "validation_notes": "Initial core check needed Arc import; initial VFS build warned fetch_update was renamed try_update. Corrected before tests. Test harness first refused to execute before final build finished, then ran 12 current-binary tests. No behavior-test failure was bypassed. Host native OOM fixture cannot open read-only proc; no native pass or host BPF installation claimed.",
+  "reuse": "Batch 34 mapped.rs hash unchanged and its runner archived as this baseline. Reuse mapped tests/performance; no CPU, CoreMark, Docker, browser or graphics reruns. No new speed benchmark for leaf ownership changes.",
+  "raw_artifacts": "target/shared-ofd-leaves-checks",
+  "ipa_built": false,
+  "limits": "OOM/proc paths and credentials, task/process lists, BPF registry/attachment control, full OFD/FD/VM ownership remain owner-bound. No new worker syscall or removed control join; no ordinary memory hot-path additions. Linux x86_64 host running AArch64 guest, no Apple/iPad verification."
+}

@@ -305,6 +305,10 @@ mod tests {
             streams: p.linux.vfs.stream_descriptors(),
             files: p.linux.vfs.file_descriptors(),
             fd_flags: p.linux.vfs.fd_flags_snapshot(),
+            umask: p.linux.vfs.umask_capability(),
+            actions: p.actions.shared(),
+            program_break: p.linux.program_break(),
+            uts: None,
             direct: Default::default(),
             futex: Default::default(),
         };

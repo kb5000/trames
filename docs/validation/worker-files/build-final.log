@@ -1,0 +1,7 @@
+   Compiling trames-vfs v1.3.0 (/workspace/trames/crates/trames-vfs)
+   Compiling trames-linux v1.3.0 (/workspace/trames/crates/trames-linux)
+   Compiling trames-distro v1.3.0 (/workspace/trames/crates/trames-distro)
+   Compiling trames-core v1.3.0 (/workspace/trames/crates/trames-core)
+   Compiling trames-ffi v1.3.0 (/workspace/trames/crates/trames-ffi)
+   Compiling trames-cli v1.3.0 (/workspace/trames/crates/trames-cli)
+    Finished `release` profile [optimized] target(s) in 27.15s

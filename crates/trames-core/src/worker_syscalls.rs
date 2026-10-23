@@ -20,8 +20,12 @@ pub(super) struct Snapshot {
     pub streams: trames_vfs::FdMask,
     pub files: trames_vfs::FdMask,
     pub fd_flags: trames_vfs::FdFlags,
+    pub umask: trames_vfs::Umask,
+    pub actions: crate::signal_actions::Actions,
+    pub program_break: trames_linux::ProgramBreak,
+    pub uts: Option<trames_vfs::UtsAccess>,
     pub direct: trames_linux::DirectSyscalls,
-    pub futex: crate::futex::Private,
+    pub futex: crate::futex::Authority,
 }
 
 /// These calls can request the coordinator without stopping peer CPUs. The
@@ -120,9 +124,69 @@ pub(super) fn futex_wait_parameters(
     Ok((bits, deadline))
 }
 
+pub(super) fn futex_key(
+    memory: &impl CpuMemory,
+    vm: u64,
+    address: u64,
+    private: bool,
+) -> Result<crate::futex::Key, Errno> {
+    if !private {
+        if let Some(key) = memory.shared_futex_key(address).map_err(|_| Errno(14))? {
+            return Ok(key);
+        }
+    }
+    Ok((0, vm, address & 0x00ff_ffff_ffff_ffff))
+}
+pub(super) fn futex_parameters(
+    memory: &impl CpuMemory,
+    vm: u64,
+    a: [u64; 6],
+) -> Result<crate::futex::Key, Errno> {
+    if a[0] & 3 != 0 || a[1] & !0x1ff != 0 {
+        return Err(Errno(22));
+    }
+    memory.check(a[0], 4, Access::Read).map_err(|_| Errno(14))?;
+    futex_key(memory, vm, a[0], a[1] & 128 != 0)
+}
+/// One ABI/validation implementation for owner and worker queue operations.
+pub(super) fn futex_queue(
+    table: &crate::futex::Futexes,
+    memory: &impl CpuMemory,
+    vm: u64,
+    a: [u64; 6],
+) -> Result<crate::futex::Effect, Errno> {
+    let key = futex_parameters(memory, vm, a)?;
+    match a[1] & 127 {
+        op @ (1 | 10) => {
+            let bits = if op == 10 { a[5] as u32 } else { u32::MAX };
+            if a[2] > i32::MAX as u64 || bits == 0 {
+                return Err(Errno(22));
+            }
+            Ok(table.wake_local(key, a[2] as u32, bits))
+        }
+        op @ (3 | 4) => {
+            if a[4] & 3 != 0 || a[2] > i32::MAX as u64 || a[3] > i32::MAX as u64 {
+                return Err(Errno(22));
+            }
+            memory.check(a[4], 4, Access::Read).map_err(|_| Errno(14))?;
+            let new = futex_key(memory, vm, a[4], a[1] & 128 != 0)?;
+            table.requeue(key, new, a[2] as u32, a[3] as u32, || {
+                if op == 4
+                    && u32::from_le_bytes(memory.read_array::<4>(a[0]).map_err(|_| Errno(14))?)
+                        != a[5] as u32
+                {
+                    return Err(Errno(11));
+                }
+                Ok(())
+            })
+        }
+        _ => Err(Errno(38)),
+    }
+}
+
 impl Snapshot {
-    fn private_futex_wait(&self, cpu: &Cpu) -> bool {
-        cpu.x(8) as u32 == 98 && matches!(cpu.x(1), 128 | 384 | 137 | 393)
+    fn futex_wait(&self, cpu: &Cpu) -> bool {
+        cpu.x(8) as u32 == 98 && matches!(cpu.x(1) & 127, 0 | 9)
     }
     pub fn wait(
         &self,
@@ -131,19 +195,13 @@ impl Snapshot {
         pid: u32,
         epoch: &Arc<crate::run_queue::Epoch>,
     ) -> Option<Result<crate::run_queue::WaitState, Errno>> {
-        if !self.private_futex_wait(cpu) {
+        if !self.futex_wait(cpu) {
             return None;
         }
         Some((|| {
-            if cpu.x(0) & 3 != 0 {
-                return Err(Errno(22));
-            }
-            memory
-                .check(cpu.x(0), 4, Access::Read)
-                .map_err(|_| Errno(14))?;
+            let key = futex_parameters(memory, self.futex.vm, std::array::from_fn(|i| cpu.x(i)))?;
             let (bits, deadline) =
                 futex_wait_parameters(memory, std::array::from_fn(|i| cpu.x(i)), self.started)?;
-            let key = (0, self.futex.vm, cpu.x(0) & 0x00ff_ffff_ffff_ffff);
             let wait = self.futex.table.wait_target(
                 key,
                 pid,
@@ -162,8 +220,8 @@ impl Snapshot {
             Ok(crate::run_queue::WaitState { wait, deadline })
         })())
     }
-    fn private_futex_wake(&self, cpu: &Cpu) -> bool {
-        cpu.x(8) as u32 == 98 && matches!(cpu.x(1), 129 | 138)
+    fn futex_queue(&self, cpu: &Cpu) -> bool {
+        cpu.x(8) as u32 == 98 && matches!(cpu.x(1) & 127, 1 | 10 | 3 | 4)
     }
     pub fn admit(&self, cpu: &Cpu) -> bool {
         if self.seccomp.mode() == 0 {
@@ -172,13 +230,21 @@ impl Snapshot {
         // Unsupported calls go straight to the joined kernel, which evaluates
         // their filter once. In particular, do not run BPF twice for each
         // futex/epoll checkpoint. Ordinary unfiltered calls keep the old path.
-        if !matches!(cpu.x(8) as u32, 25 | 113 | 114 | 124 | 168 | 172..=178)
+        if !matches!(
+            cpu.x(8) as u32,
+            25 | 113 | 114 | 124 | 166 | 168 | 172..=178
+        ) && !(cpu.x(8) as u32 == 29 && cpu.x(1) as u32 == 0x5421)
+            && !(matches!(cpu.x(8) as u32, 160..=162) && self.uts.is_some())
+            && !(cpu.x(8) as u32 == 32 && (cpu.x(1) as u32 & 4 != 0 || cpu.x(1) as u32 == 8))
+            && !(cpu.x(8) as u32 == 134 && cpu.x(1) == 0)
+            && !(cpu.x(8) as u32 == 214 && cpu.x(0) == 0)
+            && !(cpu.x(8) as u32 == 436 && cpu.x(2) as u32 == 4)
             && !self
                 .direct
                 .supports_call(cpu.x(8) as u32, std::array::from_fn(|i| cpu.x(i)))
             && !service_candidate(cpu, self)
-            && !self.private_futex_wake(cpu)
-            && !self.private_futex_wait(cpu)
+            && !self.futex_queue(cpu)
+            && !self.futex_wait(cpu)
         {
             return false;
         }
@@ -193,32 +259,55 @@ impl Snapshot {
             return Some(result.unwrap_or_else(|e| 0u64.wrapping_sub(e.0 as u64)));
         }
         let result = match cpu.x(8) as u32 {
-            number @ (29 | 63..=66 | 73 | 86 | 87 | 206 | 207 | 210..=212) => {
-                self.direct
-                    .invoke(number, std::array::from_fn(|i| cpu.x(i)), memory)?
+            29 if cpu.x(1) as u32 == 0x5421 => {
+                let result = (|| {
+                    let flags = self.fd_flags.get(cpu.x(0) as u32)?;
+                    if flags & trames_vfs::O_PATH != 0 {
+                        return Err(Errno(9));
+                    }
+                    let bytes = memory.read_array::<4>(cpu.x(2)).map_err(|_| Errno(14))?;
+                    self.fd_flags
+                        .set_nonblocking(cpu.x(0) as u32, u32::from_le_bytes(bytes) != 0)
+                })();
+                self.direct.record_fd_control();
+                result
             }
-            98 if self.private_futex_wake(cpu) => (|| {
-                // Match the joined futex ABI checks before touching any queue.
-                if cpu.x(0) & 3 != 0 {
-                    return Err(Errno(22));
-                }
-                memory
-                    .check(cpu.x(0), 4, Access::Read)
-                    .map_err(|_| Errno(14))?;
-                if cpu.x(2) > i32::MAX as u64 || cpu.x(1) == 138 && cpu.x(5) as u32 == 0 {
-                    return Err(Errno(22));
-                }
-                let bits = if cpu.x(1) == 138 {
-                    cpu.x(5) as u32
-                } else {
-                    u32::MAX
-                };
-                Ok(self.futex.wake(cpu.x(0), cpu.x(2) as u32, bits))
-            })(),
-            25 if matches!(cpu.x(1), 1 | 3) => self
-                .fd_flags
-                .get(cpu.x(0) as u32)
-                .and_then(|flags| trames_vfs::query_fd_flags(flags, cpu.x(1))),
+            number @ (29 | 62..=66 | 73 | 86 | 87 | 116 | 206 | 207 | 210..=212) => self
+                .direct
+                .invoke(number, std::array::from_fn(|i| cpu.x(i)), memory)?,
+            98 if self.futex_queue(cpu) => futex_queue(
+                &self.futex.table,
+                memory,
+                self.futex.vm,
+                std::array::from_fn(|i| cpu.x(i)),
+            )
+            .map(|effect| {
+                self.futex.record(&effect, matches!(cpu.x(1) & 127, 3 | 4));
+                effect.total()
+            }),
+            25 if matches!(cpu.x(1), 1..=4) => {
+                let result = self.fd_flags.fcntl(cpu.x(0) as u32, cpu.x(1), cpu.x(2));
+                self.direct.record_fd_control();
+                result
+            }
+            436 if cpu.x(2) as u32 == 4 => {
+                let result = self
+                    .fd_flags
+                    .cloexec_range(cpu.x(0) as u32, cpu.x(1) as u32);
+                self.direct.record_fd_control();
+                result
+            }
+            134 => self
+                .actions
+                .query(std::array::from_fn(|i| cpu.x(i)), memory)?,
+            number @ 160..=162 => trames_linux::uts_call(
+                self.uts.as_ref()?,
+                number,
+                std::array::from_fn(|i| cpu.x(i)),
+                memory,
+            ),
+            166 => Ok(self.umask.swap(cpu.x(0) as u32) as u64),
+            214 if cpu.x(0) == 0 => Ok(self.program_break.get()),
             number @ 172..=178 => Ok(self.identities[(number - 172) as usize]),
             number @ (113 | 114) => clock(memory, number, cpu.x(0), cpu.x(1), self.started),
             168 => (|| {
@@ -255,6 +344,43 @@ impl Snapshot {
 mod tests {
     use super::*;
     use trames_memory::{Memory, Permissions, PAGE_SIZE};
+    #[test]
+    fn queue_abi_checks_before_effects_and_owner_and_view_share_the_same_implementation() {
+        fn check(memory: &impl CpuMemory) {
+            let table = crate::futex::Futexes::default();
+            let first = table
+                .wait((0, 7, 0x1000), 1, 1, || Ok::<_, ()>(()))
+                .unwrap();
+            let second = table
+                .wait((0, 7, 0x1000), 2, 2, || Ok::<_, ()>(()))
+                .unwrap();
+            for (args, error) in [
+                ([0x1001, 132, 1, 1, 0x1004, 0], 22),
+                ([0x5000, 0x204, 1, 1, 0x1004, 0], 22),
+                ([0x5000, 132, 1, 1, 0x1004, 0], 14),
+                ([0x1000, 132, 1, 1, 0x1005, 0], 22),
+                ([0x1000, 132, i32::MAX as u64 + 1, 1, 0x1004, 0], 22),
+                ([0x1000, 132, 1, i32::MAX as u64 + 1, 0x1004, 0], 22),
+                ([0x1000, 132, 1, 1, 0x2000, 1], 14),
+                ([0x1000, 132, 1, 1, 0x1004, 1], 11),
+                ([0x1000, 138, 1, 0, 0, 0], 22),
+                ([0x1000, 2, 0, 0, 0, 0], 38),
+            ] {
+                assert_eq!(futex_queue(&table, memory, 7, args).unwrap_err().0, error);
+                assert!(!first.woken() && !second.woken());
+            }
+            let result = futex_queue(&table, memory, 7, [0x1000, 4, 1, 1, 0x1004, 0]).unwrap();
+            assert_eq!((result.woken, result.moved), (1, 1));
+            assert!(first.woken() && !second.woken());
+            assert_eq!(table.wake((0, 7, 0x1000), 1, 2), 0);
+            assert_eq!(table.wake((0, 7, 0x1004), 1, 2), 1);
+        }
+        let mut memory = Memory::default();
+        memory.map(0x1000, PAGE_SIZE, Permissions::RW).unwrap();
+        check(&memory);
+        let view = memory.parallel_view(&mut Default::default()).unwrap();
+        check(&view);
+    }
     #[test]
     fn shared_wait_parser_preserves_absolute_clocks_flags_and_error_order() {
         let mut memory = Memory::default();
@@ -314,8 +440,12 @@ mod tests {
             streams: Default::default(),
             files: Default::default(),
             fd_flags: Default::default(),
+            umask: Default::default(),
+            actions: Default::default(),
+            program_break: Default::default(),
+            uts: None,
             direct: Default::default(),
-            futex: crate::futex::Private::new(table, 7),
+            futex: crate::futex::Authority::new(table, 7),
         };
         let mut view = memory.parallel_view(&mut Default::default()).unwrap();
         let mut cpu = Cpu::new(0x4004, 0);
@@ -362,7 +492,8 @@ mod tests {
             Some(0u64.wrapping_sub(22))
         );
         cpu.set_x(1, 1); // Shared-key wake must use the actual backing key.
-        assert_eq!(snapshot.invoke(&cpu, &mut view), None);
+        cpu.set_x(2, 1);
+        assert_eq!(snapshot.invoke(&cpu, &mut view), Some(0));
         assert_eq!(view.read_array::<4>(0x1000).unwrap(), 17u32.to_le_bytes());
     }
     #[test]
@@ -378,6 +509,10 @@ mod tests {
             streams: [0; (trames_vfs::MAX_FDS as usize).div_ceil(64)],
             files: [0; (trames_vfs::MAX_FDS as usize).div_ceil(64)],
             fd_flags: Default::default(),
+            umask: Default::default(),
+            actions: Default::default(),
+            program_break: Default::default(),
+            uts: None,
             direct: Default::default(),
             futex: Default::default(),
         };
@@ -411,7 +546,7 @@ mod tests {
         }
     }
     #[test]
-    fn fd_queries_complete_locally_but_mutating_fcntl_keeps_checkpointing() {
+    fn fd_metadata_controls_complete_locally_but_membership_mutations_checkpoint() {
         let mut vfs = trames_vfs::Vfs::default();
         let [fd, _] = vfs
             .pipe(trames_vfs::O_CLOEXEC | trames_vfs::O_NONBLOCK)
@@ -425,6 +560,10 @@ mod tests {
             streams: vfs.stream_descriptors(),
             files: vfs.file_descriptors(),
             fd_flags: vfs.fd_flags_snapshot(),
+            umask: vfs.umask_capability(),
+            actions: Default::default(),
+            program_break: Default::default(),
+            uts: None,
             direct: Default::default(),
             futex: Default::default(),
         };
@@ -440,6 +579,12 @@ mod tests {
             Some(trames_vfs::O_NONBLOCK as u64)
         );
         cpu.set_x(1, 4);
+        assert_eq!(snapshot.invoke(&cpu, &mut memory), Some(0));
+        assert_eq!(vfs.flags(fd).unwrap() & trames_vfs::O_NONBLOCK, 0);
+        cpu.set_x(1, 2);
+        assert_eq!(snapshot.invoke(&cpu, &mut memory), Some(0));
+        assert_eq!(vfs.flags(fd).unwrap() & trames_vfs::O_CLOEXEC, 0);
+        cpu.set_x(1, 0);
         assert_eq!(snapshot.invoke(&cpu, &mut memory), None);
         assert!(!service_candidate(&cpu, &snapshot));
         cpu.set_x(0, u32::MAX as u64);
@@ -448,6 +593,68 @@ mod tests {
             snapshot.invoke(&cpu, &mut memory),
             Some(0u64.wrapping_sub(9))
         );
+    }
+
+    #[test]
+    fn fionbio_uses_shared_status_preserves_append_and_validates_before_effects() {
+        let mut vfs = trames_vfs::Vfs::default();
+        let [fd, _] = vfs.pipe(trames_vfs::O_CLOEXEC).unwrap();
+        vfs.set_status_flags(fd, 0x400).unwrap();
+        let alias = vfs.dup(fd, 0, false).unwrap();
+        let path = vfs
+            .open_at(trames_vfs::AT_FDCWD, b"/", trames_vfs::O_PATH, 0)
+            .unwrap();
+        let snapshot = Snapshot {
+            seccomp: Default::default(),
+            identities: [0; 7],
+            started: Instant::now(),
+            processor: 0,
+            profile: false,
+            streams: vfs.stream_descriptors(),
+            files: vfs.file_descriptors(),
+            fd_flags: vfs.fd_flags_snapshot(),
+            umask: vfs.umask_capability(),
+            actions: Default::default(),
+            program_break: Default::default(),
+            uts: None,
+            direct: Default::default(),
+            futex: Default::default(),
+        };
+        let mut memory = Memory::default();
+        memory.map(0x1000, PAGE_SIZE, Permissions::RW).unwrap();
+        memory.write_array(0x1000, 1u32.to_le_bytes()).unwrap();
+        let mut cpu = Cpu::new(0, 0);
+        cpu.set_x(8, 29);
+        cpu.set_x(0, alias as u64);
+        cpu.set_x(1, 0x5421);
+        cpu.set_x(2, 0x1000);
+        assert_eq!(snapshot.invoke(&cpu, &mut memory), Some(0));
+        assert_eq!(
+            vfs.flags(fd).unwrap(),
+            trames_vfs::O_CLOEXEC | trames_vfs::O_NONBLOCK | 0x400
+        );
+        cpu.set_x(2, u64::MAX);
+        assert_eq!(
+            snapshot.invoke(&cpu, &mut memory),
+            Some(0u64.wrapping_sub(14))
+        );
+        assert_ne!(vfs.flags(fd).unwrap() & trames_vfs::O_NONBLOCK, 0);
+        cpu.set_x(0, path as u64);
+        assert_eq!(
+            snapshot.invoke(&cpu, &mut memory),
+            Some(0u64.wrapping_sub(9))
+        );
+        cpu.set_x(0, u32::MAX as u64);
+        assert_eq!(
+            snapshot.invoke(&cpu, &mut memory),
+            Some(0u64.wrapping_sub(9))
+        );
+        cpu.set_x(0, fd as u64);
+        cpu.set_x(2, 0x1000);
+        memory.write_array(0x1000, 0u32.to_le_bytes()).unwrap();
+        assert_eq!(snapshot.invoke(&cpu, &mut memory), Some(0));
+        assert_eq!(vfs.flags(alias).unwrap(), 0x400);
+        assert_eq!(snapshot.direct.fd_control_completed(), 5);
     }
 
     #[test]
@@ -465,6 +672,10 @@ mod tests {
             streams: [0; (trames_vfs::MAX_FDS as usize).div_ceil(64)],
             files: [0; (trames_vfs::MAX_FDS as usize).div_ceil(64)],
             fd_flags: Default::default(),
+            umask: Default::default(),
+            actions: Default::default(),
+            program_break: Default::default(),
+            uts: None,
             direct: Default::default(),
             futex: Default::default(),
         };

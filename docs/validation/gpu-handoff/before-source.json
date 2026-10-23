@@ -1,0 +1,18 @@
+{
+  "crates/trames-shared/src/lib.rs": "03822d499bb127f68540f110eedb8962756b6821033c35e858f2964659540fff",
+  "crates/trames-vfs/src/readiness.rs": "b2493ae2f0c9d8e98bb3a3379e107891dde570b4766ccd9392b271950e77727f",
+  "crates/trames-vfs/src/lib.rs": "a2633008dbb228481c60c185310407296f91e221d60331f6a545f9ca60668182",
+  "crates/trames-vfs/src/ipc/native.rs": "7e7cc51c0d45ae3485d7deeed02b2ad0a4e376ac76f067d44abb66a9eb2098e4",
+  "crates/trames-vulkan/src/context.rs": "4e9910940c4b5202221aa35dfdf6bc18cf16ed03aa1e3325cb8b6b51adfada27",
+  "crates/trames-vulkan/src/task.rs": "c0554d0087877d911c91cfab66e97c1a246d2720f858a3f445f8a6783d1a13c5",
+  "crates/trames-vulkan/src/backend.rs": "fefd1e6f5bc420099f3b5620bac4b4e5a623d73aaf3f2ab3fd01f82b11881d09",
+  "crates/trames-vulkan/src/backend/graphics.rs": "ec3b14921911a3e59e005e5c5f71da3d1e95937886b352e0c1b2121cc1682587",
+  "crates/trames-vulkan/Cargo.toml": "51863b7271ba802a13011c6fd33495ece3fa932a3b708dcc9af1c58a24f99314",
+  "crates/trames-core/src/run_queue.rs": "584eef1aba74de7deb440f8b13827e26980a9027a1632187365372c119cc4c34",
+  "crates/trames-core/src/workers.rs": "f307fafcaa2d0a618e426a381d4e598c418f22410db4a8d9621911704065fbd4",
+  "crates/trames-core/src/process.rs": "0647710c6498b7fcb83d957ac61fa8db45acab668e39aa4af72d8d39d9ce382c",
+  "crates/trames-core/src/lib.rs": "c1ed0d254bd84b6b51c8d6b1bc92f39c6669cc3fcf0ddc239efd8bd2c3e2dafa",
+  "crates/trames-core/src/process_service.rs": "a6596ad7fcd8ea13b0d74b550f95ebdcbb9b174cca770b566f251c750d429bc6",
+  "crates/trames-cli/src/main.rs": "14e667879f5ecae841d682e6d1a79a3bd450ee87be73a05117caf880534b9a1d",
+  "Cargo.lock": "84051ae560276d0030743ee7f560031ab98e263456312d236f206f7f82e3e9b4"
+}

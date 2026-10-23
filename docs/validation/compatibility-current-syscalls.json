@@ -2,8 +2,8 @@
   "scope": "Linux v6.12 native AArch64 numbered entries; entry presence is not full ABI conformance",
   "entries": 318,
   "statuses": {
-    "missing": 119,
-    "implemented_subset": 197,
+    "missing": 116,
+    "implemented_subset": 200,
     "obsolete_stub": 2
   },
   "undispatched_probes_per_backend": 124,
@@ -71,5 +71,411 @@
       236
     ],
     "validation": "Targeted VFS/Wayland/native tests; sparse memfd growth and KEEP_SIZE allocation added. Full syscall probes retain the prior baseline."
+  },
+  "targeted_io_uring_update": {
+    "date_utc": "2026-10-23",
+    "syscalls": [
+      425,
+      426,
+      427
+    ],
+    "validation": "30-opcode provided-buffer/multishot extension: 27 targeted Rust tests and 21 mapped-ring ARM64 guest cases, including native full-CQ idle CPU checks. Prior full syscall probe baseline retained. See docs/validation/io-uring-multishot.md.",
+    "source_sha256": {
+      "crates/trames-linux/src/uring.rs": "5a2c02ca3ac76b07f27d39e73da229c1eba9735fa903d11f671e9a3a2ba76f12",
+      "crates/trames-linux/src/uring/buffers.rs": "e2e5e6de68e176522c38f379e585a38cda1082cbf68550ce270c5e4eb7a424e7",
+      "crates/trames-vfs/src/uring.rs": "401b5dc4e4fba8099e29725c576af3f52080908a00c6d4ad550ad1b9bc8a205e",
+      "crates/trames-vfs/src/events.rs": "5fdf2642142a2a5021d4e5dc6bdae927d72489044b809bc3eeb0da52bec7b4a3",
+      "crates/trames-vfs/src/lib.rs": "091cc415170fbde0c2552350191e15653406cb15143a802aab6d1ee442ff07c8",
+      "crates/trames-memory/src/pinned.rs": "426acf98f81a4a71248eb6f3bd97e2b7a83aad3561d117f21df855cbf93c0694"
+    }
+  },
+  "targeted_io_uring_worker_update": {
+    "date_utc": "2026-10-23",
+    "syscalls": [
+      425,
+      426,
+      427
+    ],
+    "validation": "Initial worker-local short requests/GETEVENTS: 16 distinct targeted Rust checks and 18 ARM64 guest cases (13 final-runner, 5 explicitly reused unaffected single-CPU cases). Release CLI/FFI + strict Clippy passed. Prior full probe/status baseline retained; see docs/validation/io-uring-worker.md.",
+    "source_sha256": {
+      "crates/trames-linux/src/direct/uring.rs": "548114c06c1a88bed0f674110e64d1e91bfb5c57795e301bb9153e32746d669f",
+      "crates/trames-linux/src/direct.rs": "3f662104444fca39c0e09545d0854505eca32d382d22ae527c906d5bba37d28d",
+      "crates/trames-linux/src/lib.rs": "6564a33858d6070ff7abab34474aaf86e237afb4e86a7e12b1619f9d67522bd6",
+      "crates/trames-linux/src/uring.rs": "57a66db97ff7899e053bd4a25772368bd04a889a4cab55d4ef31f2d673258003",
+      "crates/trames-vfs/src/uring.rs": "d5e295deb0d13507e2942eb0af7faa491142355f424a3df2ec3c44f84714c153",
+      "crates/trames-vfs/src/lib.rs": "802dd0bcbc07b03f10b0bf9be36a5bd337e56aa796ee5e58fad25bde58dd1ce5",
+      "crates/trames-core/src/process.rs": "5eb760cc7af15275c0fb4b4898a739587a0b949b2290fb993bfe7647810190d4",
+      "crates/trames-core/src/workers.rs": "075c4deb0e8cf1a3538fb2a898849a49571e334484c98d21743b4009112d3be1",
+      "crates/trames-core/src/run_queue.rs": "faf835155e084d3c934549b85e07acf50e5d526a9ef4bf64d0a502784bc651c7",
+      "crates/trames-core/src/lib.rs": "43577e041fc1aa67294cd67e55a85250de4e5afd877d97950e52513504708654",
+      "crates/trames-cli/src/main.rs": "19bfc5d6fbba0f97895f53b208049994db99dc020bb62d45ee88102e17ed5d8e",
+      "tests/fixtures/io-uring-worker.c": "534b5a95dab16934dc5e3c3088584105323cf4e65f4848f07fcf66f6d4468b52",
+      "tests/integration/io-uring.py": "991c740f04abd70da76174e9d9d2e6f02c00bd291de25ff5926d487f5c8ffa21",
+      "scripts/build-io-uring-fixture.sh": "34731f0ba28ce5161eb56e8faef93a68256cc22b6bf623ff539b9e4d4c6ed027"
+    }
+  },
+  "targeted_io_uring_registered_worker_update": {
+    "date_utc": "2026-10-23",
+    "syscalls": [
+      425,
+      426,
+      427
+    ],
+    "validation": "Worker-local fixed files/buffers, LINK/HARDLINK/DRAIN/ASYNC; 44 distinct targeted Rust checks (18 final-source, 26 reused unaffected), 25 ARM64 guest cases (12 final-runner, 13 reused). Cached private-page pin ownership regression fixed. Release CLI/FFI + strict six-crate Clippy passed. Prior full probe/status baseline retained; see docs/validation/io-uring-worker-registered.md.",
+    "source_sha256": {
+      "crates/trames-memory/src/lib.rs": "f0ae1e2405f26a206f02e130f8c8b5f8c6de8945a82c997d513146b2d78b31e8",
+      "crates/trames-memory/src/pinned.rs": "42582c2387ba369cac110b14add9ac512ea55e73c1436aa7038fb9ff9abf6f59",
+      "crates/trames-memory/src/parallel/exclusive.rs": "eae4799ff84821cb6b21537c469b4fffe0056e822815a862d4443bfb0aca3e2d",
+      "crates/trames-linux/src/direct/uring.rs": "10746f7823ad58ff27b69e5d4021017f022b94a2e9cb156d6ceb4af73525fba2",
+      "crates/trames-linux/src/direct/uring/owned_tests.rs": "14955033636f59a5b3c010e24a421868837b7ea6494b178d327e89aa3406b038",
+      "crates/trames-linux/src/state.rs": "b986a6561e36745f4739a010f82ad5f827a2627ffdc9c7acf38f6e64e68939d6",
+      "crates/trames-linux/src/uring.rs": "1ddd62030fbeb84e82cfb2c94e1e7f5cec7212cb8815c9042b8f802c62c86339",
+      "crates/trames-linux/src/uring/buffers.rs": "75955c0c1d6c03632a995026faea0ccacf0d4c4c0cad9a2b809cd4cde573bac0",
+      "crates/trames-vfs/src/file_io.rs": "c2aac7a2dde43fce0a537b38cf0a495b3fc3904c696919373de00ee850454417",
+      "crates/trames-vfs/src/uring.rs": "c6f26590207dc0171360b02e9a579eea627df8d4f6d1521967fb8b729f473410",
+      "crates/trames-core/src/process.rs": "f32813999fcdbf05f9aef5a2e14e08c95cf9651918576613adfef39660d02be6",
+      "tests/fixtures/io-uring-worker-registered.c": "ed14d8e69ca462e83c9a02d2f892b6004b4047226470821b67d22af91faf672e",
+      "tests/integration/io-uring.py": "fe770c7ab737952e9f1761b42b22ee119e47f55fe5dde9f106192ebf83ad7b70",
+      "scripts/build-io-uring-fixture.sh": "442c25e7b8f00f90744b70a4d6580ae5a8c9cd630a4eddd7c6d86d9b25af21d6"
+    }
+  },
+  "targeted_io_uring_async_worker_update": {
+    "date_utc": "2026-10-23",
+    "syscalls": [
+      425,
+      426,
+      427
+    ],
+    "validation": "17 worker opcodes plus five register controls, EXT_ARG and CQ ppoll/epoll. 50 distinct targeted Rust checks and 24 ARM64 guest cases (3 final-runner, 21 explicitly reused unaffected). Exact 707 worker calls in 2/4-CPU ABI and exact native pressure counts; zero test service requests. Release CLI/FFI and strict six-crate Clippy passed. Full probe/status baseline retained. See docs/validation/io-uring-worker-async.md.",
+    "source_sha256": {
+      "crates/trames-linux/src/direct.rs": "4fce782ee2d275bc3e158fbe3e1846c03171ec9db8b03a3228c4bb0e6021adc1",
+      "crates/trames-linux/src/direct/uring.rs": "4bf47bf07a25e03d30f0f6201754fc96c6269a28f9d5eab46d91433aca64e897",
+      "crates/trames-linux/src/direct/uring/control.rs": "c0fc6ad648c213b2cb33f978e13722a289d42731e2a1c03cdd744b4ef6ef9e20",
+      "crates/trames-linux/src/direct/uring/poll.rs": "cf1fdab3e665e62f88603f9f46b0ad2ca7d27efb735e44375f8a469267645b04",
+      "crates/trames-linux/src/direct/uring/owned_tests.rs": "4e8820610f6e6cba2147d99eb1659c31df110f360718ef8c114bc84c44e38dc4",
+      "crates/trames-linux/src/direct/uring/async_tests.rs": "05981eb6ad50782c3caf06ddc80585d628c09b4560c97ddfeb1881657a5d82e9",
+      "crates/trames-linux/src/uring.rs": "89f40fda40d8dcb506ab98f68ec3234ae0acf42bbcbf63cd35a8a8baf6254980",
+      "crates/trames-linux/src/uring/time.rs": "554340df6f7233045b681ae23cb918f943422639904fb49bebca84e24b3981f4",
+      "crates/trames-linux/src/uring/buffers.rs": "a3ffea5a91b6d515cd54a52715ed291731e34be743b7a9b23c15e65a63a7465a",
+      "crates/trames-linux/src/poll.rs": "a6248c463ac81e42ce916a883865157556d80819a56c11faf2ae02b2035f3f65",
+      "crates/trames-core/src/process.rs": "c5f5beaa2a27147918d3ff06c928e4a78e3b1c2b47b919dbc475b9766ffb7386",
+      "crates/trames-vfs/src/direct_io.rs": "c4cb7e4184ffddef99f7619903b59ace060fe0e1a65c68e497eb1d14da3ec682",
+      "crates/trames-vfs/src/ipc.rs": "fb488ba5d160588160967af31f606853f1937513d679ba9ba64b288c6412fcbc",
+      "crates/trames-vfs/src/uring.rs": "37675739d04fbb8cfabdc21dac2839c4c9b73bace0d0ebe6ffa6a47b01100884",
+      "crates/trames-vfs/src/lib.rs": "8eac14423673c50e628ba9808c97ac55beed9089ecfe3326004c389298f59f40",
+      "tests/fixtures/io-uring.c": "e0f3a8858dd4ca9d76a37e766712ec9cc630b6b8ad4a27d2610ec03067bb376d",
+      "tests/fixtures/io-uring-multishot.c": "a9d2d04e52e55465be65fc42bda4fe1b574dc9c2b343ec96ff33d88bfc99a0a3",
+      "tests/fixtures/io-uring-worker-async.c": "ea2731ee0b0b671516068aabc9dd8769d44cd2a5a5df34ef30bd357d55501f3b",
+      "tests/integration/io-uring.py": "0180405d017c991473bed21ef63446bf40bd3d440953df2408416bf949202c32",
+      "scripts/build-io-uring-fixture.sh": "af8fe4f4e95aff88e34842a6cc6ecbb903c085ceab5312588517f876d49dcb36",
+      "scripts/audit-syscalls.py": "f90280c6ee61bd6593cce4eb9d33a7055f57e010ae442d077eb800876df1bb42"
+    }
+  },
+  "targeted_worker_fd_status_update": {
+    "date_utc": "2026-10-23",
+    "syscalls": [
+      25,
+      29
+    ],
+    "validation": "Shared atomic OFD O_NONBLOCK/O_APPEND, worker F_SETFL/FIONBIO and live EAGAIN retry. 141 distinct targeted Rust checks, identical ARM64 ELF at 1/2/4 CPUs, exact 1280 worker FD controls in each multi-CPU run, zero test service requests. Five paired control-heavy samples per 2/4 CPUs; counts and SHA-attributed reuse documented. Full probe/status baseline retained. See docs/validation/worker-fd-status.md.",
+    "source_sha256": {
+      "crates/trames-vfs/src/fd_status.rs": "922b56ba91b0d263a49c17ef6d403425d88577806ecb2d63f72e641d2877c6e1",
+      "crates/trames-vfs/src/lib.rs": "9f1320dd013c2febb08cc9ed27e9f0a9b19c326336c09eb4b0ec736dc6ae3861",
+      "crates/trames-vfs/src/direct_io.rs": "5f23b7c4281e12523ffe2ec847aac55412407d7932214f199698a06d8c3a923a",
+      "crates/trames-vfs/src/file_io.rs": "042632e3fb0f87b1083dde45894cf516ceee66364a882cd6c7b0cadda9ed73be",
+      "crates/trames-vfs/src/network_io.rs": "87ff713be57ad668b0a145fafbfd32f487523ebbd390f50f797c33226e924d05",
+      "crates/trames-vfs/src/uring.rs": "dead990419b5a4e400434d06991e516718bcc7fff094592405224609ab08452f",
+      "crates/trames-vfs/src/ipc/native.rs": "02ab3c34866df1a8f59b42170978aeca5bbcc6ac21481e17da4af1d490a08564",
+      "crates/trames-vfs/src/events.rs": "bd510b741eecaefdb6f100f50e0aa7a0d52fd4f057eca669079eb9153f09202f",
+      "crates/trames-vfs/src/ipc.rs": "c6f7bfbd171970d1d966cedb6191ac089b04df264ba8f0b91721abf5cd08c5de",
+      "crates/trames-vfs/src/network.rs": "63a9a14d0f0ace6845fe4af9aff3fd4fb95481bc94a6c6a44c94df66e75797c0",
+      "crates/trames-vfs/src/pseudo.rs": "6815f4a6a27f85aa93c5b577bc4e068f3430cbd03dd6f318f185bd869a10a384",
+      "crates/trames-vfs/src/memfd.rs": "ef7e0e59f1c628a7c7993886782ec3e9aacfee808ea2f1fd545702060b045f34",
+      "crates/trames-vfs/src/linux_namespace.rs": "5c134f89282111c0c225782f02002190777dfcc0b4e1545d8f3b41f390a72d59",
+      "crates/trames-vfs/src/mapped.rs": "bc3c189a063f10c098c16ffbc4a6a1688b22df4f3c68174a20c56f9885f2a15a",
+      "crates/trames-vfs/src/pty.rs": "72d22ff58cd84b72e5722bf6c26e6a50cd10f24ec41dd0add13ee4ec9d5a53fc",
+      "crates/trames-vfs/src/bpf.rs": "b6d7ab287434897bf86811952f68a86a304f5781748d50b774ae027fad4cbf69",
+      "crates/trames-vfs/src/disk_io.rs": "12a828ddf617d89822033ce873fc288d938bdf64448a2f6ba253d072d1420b44",
+      "crates/trames-vfs/src/inotify.rs": "1c974a69f35baf5f507a044948fc6bc5196042b318f61c00131488a4988f0bfd",
+      "crates/trames-vfs/src/locks.rs": "2105cd7941e716ee73586ddc49e2d087abc4e8ca6b806410154f038b3027d2e5",
+      "crates/trames-vfs/src/xattr.rs": "b681eae68f2866d525554c82612830c5dfbd845f54b797041f5ff30b4df7c5fb",
+      "crates/trames-core/src/worker_syscalls.rs": "579c0df58ddea4604fb8886f0bf2a39fb371436b2f5fa1054e126dbea68b3643",
+      "crates/trames-core/src/process_seccomp.rs": "fe2b9a8807b746964808102f185d8da4b2b134d452043bf9135dd2621c55d045",
+      "crates/trames-core/src/process.rs": "d3191033a68c7bdce866ed9da91b4f9b8a197ab24419e93d3f1080c3dc2b4220",
+      "crates/trames-core/src/workers.rs": "7a0dd55a7663566e04621c3e7822de2f20c5e5ef199003b8f67b111c08485b36",
+      "crates/trames-core/src/run_queue.rs": "bd209eecec234c67babc6a9c290f4a53fe1affa74b20bba3b0564175c6306cc3",
+      "crates/trames-core/src/lib.rs": "c98425fac45c4cd42737acd17a721e410efd2d04cd7754208ec4f536efd21731",
+      "crates/trames-linux/src/direct.rs": "23de520e34e1ed7df2379bb0277dc6ffa28d14e8466b0931f12b72d19e57be62",
+      "crates/trames-linux/src/state.rs": "7afe4a257f711abe4028826fb9f078ab3f6ace1c767a735e77a049832b122d70",
+      "crates/trames-linux/src/network.rs": "79223a6d00ca6e84b215cd135946c67d5a6e5a636c0589211c27cec2db239255",
+      "crates/trames-cli/src/main.rs": "6a33b268310253c94a864b7512f5754c8de92a6415e053ef9f2ee0111e09a109",
+      "tests/fixtures/worker-fd-status.c": "e2ae7e42a25bce664b096ed6927bac7cb84690fea722d3c99e66739d2053ce4b",
+      "tests/integration/worker-fd-status.py": "213744019e70f3ef51d7bef5231532ba94ec97daf6d856c73d9f6b617fcca566",
+      "scripts/audit-syscalls.py": "a27ab769186269bf5818c03cbf2ec64b3f9aeae413d3a9f094efaa214a80ee9f"
+    }
+  },
+  "targeted_worker_descriptor_metadata_update": {
+    "date_utc": "2026-10-23",
+    "syscalls": [
+      25,
+      436
+    ],
+    "validation": "Shared atomic CLOEXEC with worker F_SETFD/pure CLOEXEC range, fork/CLONE_FILES/unshare/exec metadata domains and structural cache reuse. 123 targeted Rust checks, 6 guest mode/configurations plus 3 baseline controls, 23 existing fd-exec scenarios at 1/4 CPUs. Exact 448 worker controls and 195 to 3/4 cohort rounds in multi-CPU directed workload. Full probe baseline retained. See docs/validation/worker-fd-table.md.",
+    "source_sha256": {
+      "crates/trames-vfs/src/fd_table.rs": "c0c27103ea9e56f620b853419a6919cd366c3d236f8ac38fc0fd6c1da4ce5fa9",
+      "crates/trames-vfs/src/fd_status.rs": "af1241d8f92882a66de8eedd8deb10c40d6c503443d9ca53839afc84a361b4d0",
+      "crates/trames-vfs/src/clone_resources.rs": "0e63b948d9ecf7eebd4f9688dfa68edc33fd82b375122bdfef4ffcb98dc68f7b",
+      "crates/trames-vfs/src/lib.rs": "821c1cd5a30406f887aa18382e3f12c7262c93370acd0b6af148bb2321149db5",
+      "crates/trames-vfs/src/events.rs": "4fee72c6aa81f78e4c6fd04fcb466770d430faf9d5644edb59f17e0914542d62",
+      "crates/trames-vfs/src/ipc.rs": "9a76c29f03e3eebf5ae22039e3997f1d565c124fd02dffd456b134492f89d17d",
+      "crates/trames-vfs/src/memfd.rs": "e4694098ad37575fe207bb8d2f73573373abc7b24d857ec88b0abe354934a437",
+      "crates/trames-vfs/src/network.rs": "5b206e4c479c6f6e9a8de85d3b2bce165e1e7d8924d9fcb45a9b66cbca3546fe",
+      "crates/trames-vfs/src/pty.rs": "60ceabd61f8b751e50b9dea2c3e0ac98d66c4a102ffde084e423436a22b047d0",
+      "crates/trames-vfs/src/pseudo.rs": "85a7563419aaf94d1b7bd7abcacf030f08c81bed124c61999cd3bdd893b8552c",
+      "crates/trames-vfs/src/direct_io.rs": "5f23b7c4281e12523ffe2ec847aac55412407d7932214f199698a06d8c3a923a",
+      "crates/trames-vfs/src/file_io.rs": "042632e3fb0f87b1083dde45894cf516ceee66364a882cd6c7b0cadda9ed73be",
+      "crates/trames-vfs/src/linux_namespace.rs": "5c134f89282111c0c225782f02002190777dfcc0b4e1545d8f3b41f390a72d59",
+      "crates/trames-core/src/process.rs": "fbec5a07570ab8b3f64802b1a329365fe730bf4be4f6a8771b6cc545f6b6847b",
+      "crates/trames-core/src/worker_syscalls.rs": "4a475c35f07bcaf8860309c509cc9cd6754a9612114c8814c03de4256022a22e",
+      "crates/trames-core/src/process_seccomp.rs": "e49ca38c57069fe97cd1e28bd74cdd7f0328ce209247df1402f8ad44fe5f2b87",
+      "tests/fixtures/worker-fd-table.c": "3c15204f5f3e2ae0d7d4ce2811731a503ed53e076cbc72896f893e5b1af5da2e",
+      "tests/integration/worker-fd-status.py": "756f126a60a7b7ca7726495b6f7dde1045c1765b008341e1427a34464e6e70d3",
+      "scripts/audit-syscalls.py": "a41a2f55674bd6ccc5fd1c371b8a14bf3011b6eb48764812591d9f71f577a81c"
+    }
+  },
+  "targeted_worker_record_locks_update": {
+    "date_utc": "2026-10-23",
+    "syscalls": [
+      25
+    ],
+    "validation": "Per-inode shared POSIX range objects, atomic conflict-and-commit, common flock ABI and worker F_GETLK/F_SETLK. 107 distinct targeted Rust checks, native and ARM64 controls at 1/2/4 CPUs, exact 576 local controls and 577-to-1 cohort rounds at 2/4 CPUs. Existing m6 lock/deadlock/lifecycle functions alone match native at 1/2/4 CPUs. Full probe/status baseline retained. See docs/validation/worker-record-locks.md.",
+    "source_sha256": {
+      "crates/trames-vfs/src/locks.rs": "dccb388bae3373497cb1cc43252cb357c3c3aa248e60f0fd2a7bba70996a4165",
+      "crates/trames-vfs/src/lib.rs": "78b75e0bce4d19457686fa335b205c7976fb56e3404cad57d3c5c945f626b2a5",
+      "crates/trames-vfs/src/file_io.rs": "442958f88a0d92382b092ea97c99e59d5cb3853f02f346770c135d965de12601",
+      "crates/trames-vfs/src/pid_namespace.rs": "90107253cadaa7b3cf6c867b2e32c4ef6d4fd7162b3bbad97eaec9e131275690",
+      "crates/trames-vfs/src/storage.rs": "d0b328cba47b0d906e5ac3dc24574e01319da380895ea44af593d79fc5bf29fe",
+      "crates/trames-vfs/src/mounts.rs": "7a13c4c510d33bb1dcf3a1bb6328650e614a39d7695a6f8bc25a73fa1d199901",
+      "crates/trames-vfs/src/memfd.rs": "134c62777341fe52e1384f605fc2be5d9b1a427688636d55e67a97c12732dd0f",
+      "crates/trames-vfs/src/overlay.rs": "e1874a316d7db8427a636f5a432fcbbf4c3c2720afd95acc2b72f5337258fcd5",
+      "crates/trames-vfs/src/pty.rs": "a57c977eee91186c0ec714549891e5d1f71444d8b68cf5e2c586d060d5f16e66",
+      "crates/trames-vfs/src/cgroup.rs": "54063e159a65d81e204490894d221394379e85af17717b9dfe9ff4976b775612",
+      "crates/trames-vfs/src/ipc/native.rs": "1c745fbbd4471d19a9da6ae12e989510fe40b46d0b4cb8861a641b506bbc3b2f",
+      "crates/trames-vfs/src/pseudo.rs": "eba1db5426f3622828563336521dc8516d28c9342c44ca4dcf6df22653752e23",
+      "crates/trames-linux/src/record_locks.rs": "4f0464083bdcccd3043b99a45e5995b4135d2f98be5bb26a7e7557564eca783d",
+      "crates/trames-linux/src/lib.rs": "5c7d1233e6b2ba44352afe3cd8c8a6b8670055a4951c011228861ee962a73a92",
+      "crates/trames-linux/src/direct.rs": "ef9a3daedaa712824c09b87c69c2662aa7c21989ef663ff739f8931c0f7be977",
+      "crates/trames-linux/src/state.rs": "a1496f4f1213b39edfa60ff6383f72cb8e7b79ceb2586f7c023ad0e11c5db97c",
+      "crates/trames-core/src/process.rs": "b89c33762e681541358cbabd8138254606bdd00c53934bde6fcd5caac7782c2b",
+      "crates/trames-core/src/process_seccomp.rs": "d5866f0de37d471d0f6eca3f6ff4388638b9d8b2fda3e3a82f0b1f4e5d2e4639",
+      "tests/fixtures/worker-record-locks.c": "8ba784d4ddc319096e312298b110ff8887e22588e34ea3fbfb5e7350fabd2b10",
+      "tests/fixtures/m6.c": "640b1c14c0837459970e00e6497093c12ce0a1c6c787e6105449f42851b7ec56",
+      "tests/integration/worker-fd-status.py": "0e4689a237eb39704718f0ba81d702206dc69e6ea0bff7c5840c8fcb97f70136",
+      "scripts/audit-syscalls.py": "74dccf50a5ee26c8835f7313cfcbe86df0b0aadfc3a3ddc1ff396e0bfc8b8ae7"
+    }
+  },
+  "targeted_worker_inotify_update": {
+    "date_utc": "2026-10-23",
+    "syscalls": [
+      26,
+      27,
+      28,
+      29,
+      63,
+      65,
+      22,
+      73,
+      441
+    ],
+    "validation": "Per-instance shared queue and watch transaction; direct file-worker ACCESS/MODIFY; worker read/readv/query/poll and rm_watch. 122 distinct targeted Rust checks; native and ARM64 memory/disk 1/2/4 CPU inotify plus worker io_uring ABI. Full probe/status baseline retained; see docs/validation/worker-inotify.md.",
+    "source_sha256": {
+      "crates/trames-vfs/src/inotify.rs": "c146af3299279f5116f0108620c14896d82f1f272aee79cefdfbfba71bcc49c2",
+      "crates/trames-vfs/src/inotify/queue.rs": "2bf740b30a65d37173f216c4decbea8445273e1158ac2e09918baeac16797bf7",
+      "crates/trames-vfs/src/direct_io.rs": "5a0bee8a28556a2d7c0bcdea06ab469809c5540a87639ac49c1389592426f1ed",
+      "crates/trames-vfs/src/events.rs": "9d418932a319ee7d162db424df38c0a1f35936cf98794b18be8b80efcb8611cc",
+      "crates/trames-vfs/src/file_io.rs": "df3703d924cd14b46e14ed26bba840b56d09ec8af1536acce040e23fae11b809",
+      "crates/trames-vfs/src/lib.rs": "d4be1a6ab05b69e6a6a932b93c8f45472e8c1eda32a47c242b7b9d7f26a1fe07",
+      "crates/trames-linux/src/direct.rs": "ba161da6def450f210e69f7c3abc6dd4248c04821299d85e8aac9bf4421657d6",
+      "crates/trames-linux/src/direct/uring.rs": "8abd6d79be81f21fb2d2d00ce9c594b868b5ba6a0709a98260b70f2883a44f5c",
+      "crates/trames-linux/src/state.rs": "50e0b05a167aad7b64842e1deee4875965be7108e6ef0472769d2f7f5ed9bb94",
+      "tests/fixtures/inotify.c": "c8f3c70ee7b8d86abbf11b55cb788d083ba117cc3e21e54bc277492a2630336e",
+      "tests/fixtures/worker-inotify.c": "7325fd21d4a24ca8b2ff8acb5fdb740e132822edaa60e0f1aa5bd38431f89b4c",
+      "tests/integration/worker-inotify.py": "0a980dcab4b9f54eb21d3cc11b8fec424c21d49654de160bbdf53ebf16240c7e",
+      "scripts/audit-syscalls.py": "51e555c8e94b66b761182347ce7d32080e7a5a4273f4bd40307f36052d5de1fc"
+    }
+  },
+  "targeted_shared_fs_context_update": {
+    "date_utc": "2026-10-23",
+    "syscalls": [
+      49,
+      50,
+      51,
+      97,
+      166,
+      220,
+      221,
+      268,
+      281
+    ],
+    "validation": "Canonical CLONE_FS cwd/root/mount domain with no syscall snapshots/peer propagation; worker relaxed atomic umask. Ordinary exec preserves FS sharing and keeps existing Files unshare. 134 distinct targeted Rust checks, native and ARM64 memory/disk 1/2/4 CPU domains, baseline exec regression reproduced, focused FD domains pass. Full probe/status baseline retained. See docs/validation/shared-fs-context.md.",
+    "source_sha256": {
+      "crates/trames-core/src/process.rs": "b878292b59466387ab2a4375a5380ef24669572c20678b5a8f86f7e48a12a023",
+      "crates/trames-core/src/process_seccomp.rs": "bb9783e3cb105487fa62d3228c6363cab047fa254a253bba2cd61699654d5a8e",
+      "crates/trames-core/src/process_service.rs": "038199128860414700ab7250f3cf1640c7c47e4e7827a7cb0dfaa1a1bf285719",
+      "crates/trames-core/src/worker_syscalls.rs": "c88e07d570e079dc845f39fa28a3be7be67f5c08fb345f6b3eca1687fe680578",
+      "crates/trames-core/src/workers.rs": "cbf8c7bc8445efa9b7ba7fcf7a421701e1a4e4d34a21b6ca1c26caf27cb0b8e0",
+      "crates/trames-linux/src/state.rs": "e23bc13107fbdf7d3ce60bf7e38e9e3a6ed5a48bf15b0bfaf6caca899609640a",
+      "crates/trames-vfs/src/cgroup.rs": "d3b9f6551f9a8c5fd4986244dfd0a916abaed7fbb2f305f7858e6a7145a23c4c",
+      "crates/trames-vfs/src/fs_context.rs": "e17cfb2562cc8ab74c948e4bc2a70bc49bc3e06ee505abce7ff5f681b6b90837",
+      "crates/trames-vfs/src/ipc.rs": "0487e17a86954a4f3a1ce09b9c2de956e6c4f7bbcd6b2559dae5094efba9e932",
+      "crates/trames-vfs/src/lib.rs": "d17113ed9d0d5437e44c2c0100a3c437aff5c221159e97bb4df9ee267e50d017",
+      "crates/trames-vfs/src/linux_namespace.rs": "9034c442a32e38d794f1905d8effd126b8894326860d60b3f62b2318f1f49a33",
+      "crates/trames-vfs/src/mounts.rs": "6f4437f0678363070a93b8873c481a40d47941600227af46ba2bc128a5355451",
+      "crates/trames-vfs/src/storage.rs": "53481e096a1a8bcef251d7edc2411addefb8075001af6eac1663d8be379a420b",
+      "scripts/audit-syscalls.py": "33ca25a6e8488633e05dc3ee8909ce8f40c0303d21a4ce2ad6a904961ef28179",
+      "tests/fixtures/shared-fs-context.c": "5932c17921b353284ca3c515dd5d04af55eaa67e32d0a57bb954807d768bc46c",
+      "tests/integration/shared-fs-context.py": "3c61f6f9eff884d06b50d608bd766396063a067b41f632f722d7fa169e9d1ace"
+    }
+  },
+  "targeted_shared_signal_actions_update": {
+    "date_utc": "2026-10-23",
+    "syscalls": [
+      134,
+      220,
+      221,
+      281
+    ],
+    "validation": "Shared CLONE_SIGHAND object, private fork/exec and direct SA_RESETHAND; no actions_id/peer array propagation. Query-only rt_sigaction uses common worker ABI after seccomp; mutation pending/job-control effects retain owner boundary. 134 distinct targeted Rust checks, native and ARM64 memory/disk 1/2/4 CPU domains. Full probe/status baseline retained. See docs/validation/shared-signal-actions.md.",
+    "source_sha256": {
+      "crates/trames-core/src/lib.rs": "8cce4f3c1cf19297a0ca29451240616d0fcd513923c05e9c87be16957b0cc0cc",
+      "crates/trames-core/src/signal_actions.rs": "8f387bb87c991414ab9dba5201a320d56552aabd78be664e13f7e89f1130f2bf",
+      "crates/trames-core/src/process.rs": "2a241a9c02a9355fc976ad5ada5e64eb64a0b114f67bf1748528a19a53df7523",
+      "crates/trames-core/src/process_pid.rs": "0ec0524a6262003dab55c553778d92ae4bd1a92a7cdf1c916a67ecab130c9abd",
+      "crates/trames-core/src/process_seccomp.rs": "d5e93580e6c83b36ee5e5e547878ec590329ff36d61f5419528a1aaa946ea853",
+      "crates/trames-core/src/process_service.rs": "2adb24ba45a5874870fa9c9c8c997a5671ad8ce680a80185f126c4b0528d2b3a",
+      "crates/trames-core/src/worker_syscalls.rs": "f6feda60c78e4d44edd262a1fe4abdf7359eab945f380de614e5a572506f0074",
+      "crates/trames-core/src/workers.rs": "3b20315b2b44bd98023368d8f357032ea6e5dc789747cd34c2ae655733c7e839",
+      "scripts/audit-syscalls.py": "b0e46fcfe5f113e254f51f03c5cfb563ee7614f18c1ab8e4589fe67069e47f44",
+      "tests/fixtures/shared-signal-actions.c": "4df79cd56d79123078c63669631b766ab0eaa07dbbb6b0bc698c777142902a6b",
+      "tests/integration/shared-signal-actions.py": "e08d72982ebe3e4331b556e4162ea9ce2f9120e38b6b2d31daa5a998e39d07b4"
+    }
+  },
+  "targeted_shared_vm_allocation_update": {
+    "date_utc": "2026-10-23",
+    "syscalls": [
+      214,
+      216,
+      220,
+      221,
+      222,
+      281
+    ],
+    "validation": "Canonical VM allocation context shared by actual Memory identity; private fork and successful exec, no per-syscall snapshot comparison or heap propagation. brk(0) worker atomic query with seccomp; mapping mutations retain original commit boundaries. 21 targeted Rust checks plus native and ARM64 memory/disk 1/2/4 CPU domains. Full probe/status baseline retained. See docs/validation/shared-vm-allocation.md.",
+    "source_sha256": {
+      "crates/trames-linux/src/heap.rs": "3f70a4c1741c3060a6ab175781046ccedffed4abd88170a44739d9970adeb2ca",
+      "crates/trames-linux/src/state.rs": "68c4d0dba743fa491e9d13b1e2d7193d0dba2ba31df46e42b18744c317365446",
+      "crates/trames-linux/src/lib.rs": "d2869cc490e544c9875231fbbaefa6ffa1fa49261a2b9150e20e83a35cb94942",
+      "crates/trames-core/src/process.rs": "c0d9429ebcde1361e90d790a096296c518ed1ac1b6c8d5ecde83e556fce9f0e8",
+      "crates/trames-core/src/process_seccomp.rs": "aa5e790f355752bbe37c1300453bb6f86a4a46e9769d4de938acf92591c70c41",
+      "crates/trames-core/src/process_service.rs": "0a553d3004c225cdee20c54b8d9e5a28019bdf898544a35059e1a570d31fb294",
+      "crates/trames-core/src/worker_syscalls.rs": "43d20c969c820910e5f6db2e530bc79eb0ec3012e3b39787fb7f82361fd99602",
+      "crates/trames-core/src/workers.rs": "659b6469f0e0eab537166fd3d99b07fa18b816f8a5340cbb17077f23fffffe2c",
+      "scripts/audit-syscalls.py": "04cf38bb97af7eb26f503e3cbc76e3bba06c739d5b20ff61e540cebbd85c7c28",
+      "tests/fixtures/shared-vm-allocation.c": "467575c1db6b4dd507fbdf506b7c6db5bebd17a6122d876d920b55567c9e26e8",
+      "tests/integration/shared-vm-allocation.py": "5a57d2e318818eb39c1944eefc03dbdb8c51e14e27e99fbda6336864d5600f2f"
+    }
+  },
+  "targeted_shared_flock_update": {
+    "date_utc": "2026-10-23",
+    "syscalls": [
+      32
+    ],
+    "validation": "Per-inode flock with shared OFD lock leases, immediate final-worker release and weak cached capabilities; remove global FS map/scans. Worker nonblocking flock/unlock; blocking conversion defers before effects. O_PATH now EBADF. 40 targeted Rust checks, native/ARM64 memory/disk 1/2/4 CPU and exact 640 worker controls. Full probe/status baseline retained. See docs/validation/shared-flock.md.",
+    "source_sha256": {
+      "crates/trames-core/src/process_seccomp.rs": "62e72999654b11394f5fc02212d8b9f1f951a46eaedc1fb05e2511e1cab28c07",
+      "crates/trames-core/src/worker_syscalls.rs": "37c28ae00dbefebd9e5af6d26ab34a4990ff12797437ac0ad3d2af96e0e4e60e",
+      "crates/trames-linux/src/direct.rs": "d64a9bcd1b83d465bef0dfc168dfd0725481f8e1721cd224d66fcc711356b536",
+      "crates/trames-vfs/src/cgroup.rs": "4cd5fce17274cc89ed5b724a9f17f920c582e654b00b0fcd69d4651d35fc3f63",
+      "crates/trames-vfs/src/events.rs": "47e95eb77ae3f1699d162218eac3133d191c4518e4efe1c7ec9c4a093ff36eeb",
+      "crates/trames-vfs/src/file_io.rs": "df915b9a54ad7cb17f8ece3c8ca78c7520aef2fee566d5f826e6cf7954ac5dfb",
+      "crates/trames-vfs/src/flock.rs": "4c5cceeac5a6052e77413153506f8376eeed571dd23a275ef452654c1c49c719",
+      "crates/trames-vfs/src/ipc/native.rs": "6bfbeebcb4b37fb45a83160cc7bbf478fb7aa9e6677ebcad95228bfd0b0c4c3a",
+      "crates/trames-vfs/src/ipc.rs": "b7e4c5629d9b360aa11032f3543995c886f2d7e2bce5f45955d682e438826620",
+      "crates/trames-vfs/src/lib.rs": "8e499823ea0269486253edad5d409dc51c4734071d0edb81c05e0e402bab0a34",
+      "crates/trames-vfs/src/linux_namespace.rs": "55cb3f33e89f9a058a0d6218cf8a5cc0fd58753871d37b16c749c48c82e930ba",
+      "crates/trames-vfs/src/memfd.rs": "cba640f44372af78138b5578f2e45694c542454e7005fd7c8db9418d9c7b3b0e",
+      "crates/trames-vfs/src/mounts.rs": "2471af74c52612211299f60c39980e3b788b99883b9b5d89b6e01cbe185130ff",
+      "crates/trames-vfs/src/namespace.rs": "ece8e0801f810fd060b86032e5f40f1962c4d6d4ce03e14f89c20942f3697170",
+      "crates/trames-vfs/src/network.rs": "c07c5cc22e05c9607699674f83732a67bc5ddf565e10fb286c4eb8e4eba173ac",
+      "crates/trames-vfs/src/overlay.rs": "f6ba5c6ec167a01ddc017237d7c977ee2a8bfae03735b2f5b7e7039f6b69272c",
+      "crates/trames-vfs/src/pseudo.rs": "09cb018a07c83801f524fd39a02adf179b71b1237f3583bf706b78891cad79f2",
+      "crates/trames-vfs/src/pty.rs": "cdacd4e7f8d34402b5f1ab6a04285c0894ad5b76d29cefc0689262171d288a81",
+      "crates/trames-vfs/src/storage.rs": "f9528b56bb47e560e4c157275013b3ae2f6722c1efe57f5c8e510e2d297ab726",
+      "scripts/audit-syscalls.py": "5714a8d2158f400c7ba2f8e6730feb6cdc9c8b7290f011816a9c44102ac09bfd",
+      "tests/fixtures/shared-flock.c": "49ed1b06c058d623c928ce01e0f0b77b71e763568c09269b3b8bd480d1a72d66",
+      "tests/integration/shared-flock.py": "7101bb9b3a1e597829957180008e978381b3500486646617f2012fc98ed1f571"
+    }
+  },
+  "targeted_blocking_flock_update": {
+    "date_utc": "2026-10-23",
+    "syscalls": [
+      32
+    ],
+    "validation": "Worker blocking flock uses shared inode notifications and retained original requests/OFDs across close/reuse and joins; signal interruption/restart/exit preserved. 92 targeted Rust tests and native plus ARM64 memory/disk 1/2/4 CPU domains passed. Full syscall probe baseline and counts unchanged. See docs/validation/blocking-flock.md.",
+    "source_sha256": {
+      "crates/trames-core/src/process.rs": "28e517183d4d29fcce85f2e481b0f8caa90f3899e975c90fc72fcb5b0f37d15e",
+      "crates/trames-core/src/process_seccomp.rs": "73d73d541eaaafbb76272e162ec82f3a9f751d687b921dc9236bd5d7729d3874",
+      "crates/trames-core/src/run_queue.rs": "3250e36abbcb3b54627a25d27791059f575d6e832dc54306a9ff5896f679a7fb",
+      "crates/trames-core/src/workers.rs": "b42fe7643d5411b933d814dae4c020dd19311634af298d08a6cd0c1c2b1d30fc",
+      "crates/trames-linux/src/direct.rs": "0368cddb46391abde57cd91fcf269c89bceaa1c12133c8a361db8d3801ede953",
+      "crates/trames-linux/src/direct/uring.rs": "00f21d5414c47a263af93a8c6da50fa73bb2f4ad779947f09c4b84544997b822",
+      "crates/trames-vfs/src/file_io.rs": "f275cbf980a32cd6497eaa20b1a0ff4e67a1bcd3ed5173219679cbaf72f7c5ee",
+      "crates/trames-vfs/src/flock.rs": "10bc563182daf227da1b717e4a2a2d439f96524759abdb80a8494bd0a20990f5",
+      "crates/trames-vfs/src/lib.rs": "080f05ce22ac41066112b4400a16616283489469d50edadd1451ada39370afc7",
+      "scripts/audit-syscalls.py": "267f33010d9cbed0afe4cfe4be5ccd4411a56a3246f59feb298add7fe1f620d7",
+      "tests/fixtures/blocking-flock.c": "c33449f1389a2b85070bdf6c3c0bb7099394bacb69b39243e0e43104e391591a",
+      "tests/integration/blocking-flock.py": "2fe9ecdae7dbeca3826ebaa16d2d6cebc73ac0d9f37971e8388aa6c53591ad5c"
+    }
+  },
+  "targeted_shared_close_notification_update": {
+    "date_utc": "2026-10-23",
+    "syscalls": [
+      26,
+      27,
+      28,
+      57
+    ],
+    "validation": "Shared file-close lease/live inode and link notification state; 29 targeted VFS tests and native plus guest memory/disk x 1/2/4 CPU inotify and worker-inotify fixtures passed. Actual close/dup lifecycle still joined. No full syscall inventory rerun; original baseline/probe counts preserved. See docs/validation/shared-close-notifications.md.",
+    "source_sha256": {
+      "crates/trames-vfs/src/inotify.rs": "d46a7d6ca094036941adf3f70f48bb5d3b86ff4408fcaebddeb6c77d5f7cef43",
+      "crates/trames-vfs/src/lib.rs": "a04cad122e576141dfd430869a81495bbd60132677e45af72bcd9fc7cfbaf154",
+      "crates/trames-vfs/src/pseudo.rs": "bce056ae7751d0b8ed18eeffa69df41e0835130c9e4a9fab2d8f8f271a3ce095",
+      "crates/trames-vfs/src/uring.rs": "fd9bd881929d4e3fdb8aaa634a5489617e4259ebcb1018fda406c59b90083273",
+      "crates/trames-vfs/src/file_io.rs": "f275cbf980a32cd6497eaa20b1a0ff4e67a1bcd3ed5173219679cbaf72f7c5ee",
+      "scripts/audit-syscalls.py": "21e1486c34929a4613aec30b09534de37ee0bf68060edcb1588fcb5c93022568",
+      "tests/fixtures/inotify.c": "c8f3c70ee7b8d86abbf11b55cb788d083ba117cc3e21e54bc277492a2630336e",
+      "tests/fixtures/worker-inotify.c": "7325fd21d4a24ca8b2ff8acb5fdb740e132822edaa60e0f1aa5bd38431f89b4c",
+      "tests/integration/worker-inotify.py": "0a980dcab4b9f54eb21d3cc11b8fec424c21d49654de160bbdf53ebf16240c7e"
+    }
+  },
+  "targeted_shared_inotify_instance_update": {
+    "date_utc": "2026-10-23",
+    "syscalls": [
+      26,
+      27,
+      28
+    ],
+    "validation": "Shared instance/index lifetime and common worker/owner rm_watch. 17 targeted Rust tests plus 12 ARM64 guest configurations passed; unchanged native oracles reused. No full syscall probe rerun; original inventory counts preserved. See docs/validation/shared-inotify-instance.md.",
+    "source_sha256": {
+      "crates/trames-vfs/src/inotify.rs": "1a5bf791fb57fe04a7af4095c4d5f227cecc000f9db48469c5c0b357b578be64",
+      "crates/trames-vfs/src/inotify/queue.rs": "2144bb7a84a71d41c8585c6cf6f2bec5c48233762bcb169bfd2803e07e0ffc0e",
+      "crates/trames-vfs/src/lib.rs": "6d1b31dce2123a6c8b8af092190262e036be0093011bd340d11bad1304b0d0b0",
+      "crates/trames-vfs/src/uring.rs": "e0760da09e57b365afd3fc07eab420a97da6f15a86476c4b1f5a71ee348c2ecd",
+      "crates/trames-vfs/src/events.rs": "866beaeb2d0615d76296a6689073ffdf6b7918d1e5f6dadc87fe359ce1811a48",
+      "crates/trames-vfs/src/direct_io.rs": "3997c4d4494d7f99140539d5cd5cc6762cf4e4cdc0017caf46d4418ef7d32c0d",
+      "scripts/audit-syscalls.py": "68930ad3b377e4a09a4ac94a9f42b7e3d75880450b825492711d20dbbb5068e6",
+      "tests/fixtures/inotify.c": "c8f3c70ee7b8d86abbf11b55cb788d083ba117cc3e21e54bc277492a2630336e",
+      "tests/fixtures/worker-inotify.c": "7325fd21d4a24ca8b2ff8acb5fdb740e132822edaa60e0f1aa5bd38431f89b4c"
+    }
   }
 }

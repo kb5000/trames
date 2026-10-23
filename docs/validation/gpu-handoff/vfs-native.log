@@ -1,0 +1,9 @@
+
+running 4 tests
+test ipc::native::tests::clipboard_pipe_relays_preserve_bytes_backpressure_and_eof ... ok
+test ipc::native::tests::cold_wayland_start_removes_only_dead_x11_sockets_and_their_locks ... ok
+test ipc::native::tests::frozen_wayland_auth_carries_only_actual_connection_or_registered_inode_capabilities ... ok
+test ipc::native::tests::guest_unix_stream_reaches_the_native_wayland_server_with_standard_wire_messages ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 193 filtered out; finished in 0.00s
+

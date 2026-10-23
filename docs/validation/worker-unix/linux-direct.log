@@ -1,0 +1,16 @@
+
+running 11 tests
+test direct::tests::epoll_deadline_preflight_event_layout_and_no_temporary_mask_admission ... ok
+test direct::tests::blocked_eventfd_writer_and_pipe_eof_resume_without_replaying_completed_transfers ... ok
+test direct::tests::file_preflight_and_growth_deferral_never_consume_a_partial_vector ... ok
+test direct::tests::blocking_and_sigpipe_defer_without_effects_or_retrying_completed_io ... ok
+test direct::tests::scalar_and_vector_preflight_does_not_consume_eventfd_or_pipe_bytes ... ok
+test direct::tests::unix_message_rights_defer_before_bytes_and_use_the_original_owner_once ... ok
+test direct::tests::pipe_backpressure_rechecks_pipe_buf_and_broken_pipe_keeps_signal_path ... ok
+test direct::tests::unix_preflight_waitall_nonblocking_shutdown_and_sigpipe_keep_their_boundaries ... ok
+test direct::tests::vector_eventfd_obeys_record_sizes_and_commits_partial_progress_once ... ok
+test direct::tests::file_scalar_vector_positioned_seek_and_stat_share_the_original_abi ... ok
+test direct::tests::unix_scalar_and_message_bytes_match_the_original_socket_abi ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 29 filtered out; finished in 0.00s
+

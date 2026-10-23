@@ -1,0 +1,98 @@
+{
+  "scope": "Established loopback TCP, native C oracle, identical ELF before/after.",
+  "passed": true,
+  "platform": "Linux x86_64; loopback only; no Apple ARM64/iPad execution yet",
+  "kind": "Single structural sample per configuration with a variable-iteration native-memory peer. Not a fixed-work timing/app speedup benchmark.",
+  "runner_sha256": "dbabb0af6369ee14ac878acde5e291c6cd6a00ff4beaadbc85fdd81f397e98a9",
+  "baseline_sha256": "1678354b7dc2b5881fdd5c1e39523936e3c1a6a4ab2f1dd0571e7a55a23229f6",
+  "fixture_sha256": "153456ce8e633872f2b0f59af8fbcce7df0f4a4a2c33bdf939e6a11780f3e5d7",
+  "oracle_sha256": "ff89bc4c539f7ed28e3c6f1cb27192ab8a47b664edbd0db198946ef9fa52ef4a",
+  "ffi_sha256": "0f3d43112a7294baf055032b1a627d8b0d036b8540733cbad19de7aa786f2d59",
+  "source_sha256": {
+    "crates/trames-net/src/native.rs": "20b7edc47453c29756f74fc1ccb1278ab8450892be00d4abab201bc0d8f336ba",
+    "crates/trames-net/src/native/direct.rs": "8746dad728f377d7d3053a4851bfd312d1fc53f92e8885730dc663b25fbd5c44",
+    "crates/trames-net/src/lib.rs": "f386b30d47e00f0e6b66fb3cbceefb2a697311ae45a57412955000f537dfa86b",
+    "crates/trames-net/src/hybrid.rs": "1011f08bea9953b62d19a6944b0f9e9fbe9991869adeedfed26f991d8e6f82e1",
+    "crates/trames-net/src/nftables_tests.rs": "a281c63dfe43f6065c169a6457cc4d8b012b490ee8505e26c292e644f49ba224",
+    "crates/trames-vfs/src/lib.rs": "5ab7cd2044e0caec19147d2219e8b2189c747fc1fa9dcb2ee73686dde2aae5a7",
+    "crates/trames-vfs/src/network_io.rs": "0f0591e8fd153426a1b40f465de9599dee8ef590f6ba231afe2b5c1afd72972b",
+    "crates/trames-linux/src/direct.rs": "78044afd29bc42349b6a3561826910845b258e44207102d41a344d8911fbaee0",
+    "crates/trames-core/src/process.rs": "a7a59e712c4dde03ebd0d969c71aee5eca2be13f267f1eb2fa168bd64335e6cb",
+    "tests/fixtures/worker-tcp.c": "e04234c4551f3c82de1fd34e9947adcfdcfeeae9942042089795aade31a5f320",
+    "tests/integration/worker-tcp.py": "f9a28ab9af42b042f299a362710eec8a038ad2a2eaf448c7f1d00a208a8c4807",
+    "scripts/build-worker-tcp-fixture.sh": "da839c8188d47417a47acac35ea078bc05a0179578f6ee64a914f6e292863c23"
+  },
+  "checks": {
+    "distinct_unit_tests": 18,
+    "guest_runs": 18,
+    "native_oracle_runs": 4,
+    "native_gateway_tcp_udp_both_families": true,
+    "release_cli_ffi_build": true,
+    "strict_clippy": true
+  },
+  "rows": [
+    {
+      "case": "4-write-1",
+      "before_rounds": 0,
+      "after_rounds": 0,
+      "after_worker_socket_syscalls": 0,
+      "after_service_requests": 0
+    },
+    {
+      "case": "4-write-2",
+      "before_rounds": 133,
+      "after_rounds": 6,
+      "after_worker_socket_syscalls": 129,
+      "after_service_requests": 0
+    },
+    {
+      "case": "4-write-4",
+      "before_rounds": 134,
+      "after_rounds": 6,
+      "after_worker_socket_syscalls": 129,
+      "after_service_requests": 0
+    },
+    {
+      "case": "4-vector-2",
+      "before_rounds": 134,
+      "after_rounds": 7,
+      "after_worker_socket_syscalls": 129,
+      "after_service_requests": 0
+    },
+    {
+      "case": "4-vector-4",
+      "before_rounds": 133,
+      "after_rounds": 4,
+      "after_worker_socket_syscalls": 129,
+      "after_service_requests": 0
+    },
+    {
+      "case": "6-write-2",
+      "before_rounds": 133,
+      "after_rounds": 7,
+      "after_worker_socket_syscalls": 129,
+      "after_service_requests": 0
+    },
+    {
+      "case": "6-write-4",
+      "before_rounds": 133,
+      "after_rounds": 7,
+      "after_worker_socket_syscalls": 129,
+      "after_service_requests": 0
+    },
+    {
+      "case": "6-vector-2",
+      "before_rounds": 134,
+      "after_rounds": 4,
+      "after_worker_socket_syscalls": 129,
+      "after_service_requests": 0
+    },
+    {
+      "case": "6-vector-4",
+      "before_rounds": 134,
+      "after_rounds": 7,
+      "after_worker_socket_syscalls": 129,
+      "after_service_requests": 0
+    }
+  ]
+}

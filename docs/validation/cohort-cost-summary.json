@@ -1,0 +1,951 @@
+{
+  "passed": true,
+  "scope": "Compare cohort lifetime policies with identical, oracle-checked fixed work.\n\nThe candidate may be a diagnostic build. Longer terminal/control latency is not\na production optimization; this estimates the value of event-driven cohorts.\nRun after builds finish, without concurrent benchmarks. Never a CI speed gate.\n",
+  "host_affinity": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "sha256": {
+    "baseline": "002bc0e011a6aac915936f3812a218e14e9a78b37b964ac323c77c740d0bc3ac",
+    "candidate": "651a236ea7c58809c9859675cafdbfaa9fc246304900164c450c9fb2b9408f83",
+    "fixture": "ef85aa20398c9f40fb4adc8e03b5bad52093b2a5b50436cdf1954bbf9e4f7292",
+    "oracle": "a85a8fdd76f812ccff7bdcc04f1117edda09ba0f8c1124a4bb4d194e00c72c8c"
+  },
+  "rows": [
+    {
+      "case": "compute-2t-64fd",
+      "trial": 0,
+      "version": "baseline",
+      "metrics": {
+        "seconds": 1.901621284,
+        "instructions": 1342847405,
+        "cpu_seconds": 3.673423887,
+        "syscalls": 149,
+        "syscall_seconds": 0.000346989,
+        "parallel_rounds": 883,
+        "dispatch_seconds": 0.022767453,
+        "memory_seconds": 0.002129995,
+        "stop_seconds": 0.045954897,
+        "service_requests": 0,
+        "worker_syscalls": 6
+      }
+    },
+    {
+      "case": "compute-2t-64fd",
+      "trial": 0,
+      "version": "candidate",
+      "metrics": {
+        "seconds": 1.737233388,
+        "instructions": 1342846613,
+        "cpu_seconds": 3.46109223,
+        "syscalls": 149,
+        "syscall_seconds": 0.00045721,
+        "parallel_rounds": 37,
+        "dispatch_seconds": 0.001266992,
+        "memory_seconds": 0.000582539,
+        "stop_seconds": 0.001605378,
+        "service_requests": 0,
+        "worker_syscalls": 6
+      }
+    },
+    {
+      "case": "compute-2t-64fd",
+      "trial": 1,
+      "version": "candidate",
+      "metrics": {
+        "seconds": 1.748135843,
+        "instructions": 1342847464,
+        "cpu_seconds": 3.467612667,
+        "syscalls": 150,
+        "syscall_seconds": 0.000366721,
+        "parallel_rounds": 37,
+        "dispatch_seconds": 0.001052788,
+        "memory_seconds": 0.000557248,
+        "stop_seconds": 0.001953117,
+        "service_requests": 0,
+        "worker_syscalls": 7
+      }
+    },
+    {
+      "case": "compute-2t-64fd",
+      "trial": 1,
+      "version": "baseline",
+      "metrics": {
+        "seconds": 1.7788470219999999,
+        "instructions": 1342847405,
+        "cpu_seconds": 3.453549284,
+        "syscalls": 149,
+        "syscall_seconds": 0.000322193,
+        "parallel_rounds": 827,
+        "dispatch_seconds": 0.018383976,
+        "memory_seconds": 0.001882821,
+        "stop_seconds": 0.048443195,
+        "service_requests": 0,
+        "worker_syscalls": 6
+      }
+    },
+    {
+      "case": "compute-2t-64fd",
+      "trial": 2,
+      "version": "baseline",
+      "metrics": {
+        "seconds": 1.78143854,
+        "instructions": 1342846613,
+        "cpu_seconds": 3.453327475,
+        "syscalls": 149,
+        "syscall_seconds": 0.000326793,
+        "parallel_rounds": 829,
+        "dispatch_seconds": 0.021224127,
+        "memory_seconds": 0.002124654,
+        "stop_seconds": 0.039170074,
+        "service_requests": 0,
+        "worker_syscalls": 6
+      }
+    },
+    {
+      "case": "compute-2t-64fd",
+      "trial": 2,
+      "version": "candidate",
+      "metrics": {
+        "seconds": 1.77852939,
+        "instructions": 1342846613,
+        "cpu_seconds": 3.53908901,
+        "syscalls": 149,
+        "syscall_seconds": 0.000371275,
+        "parallel_rounds": 38,
+        "dispatch_seconds": 0.001575507,
+        "memory_seconds": 0.000614133,
+        "stop_seconds": 0.001741399,
+        "service_requests": 0,
+        "worker_syscalls": 6
+      }
+    },
+    {
+      "case": "compute-4t-64fd",
+      "trial": 0,
+      "version": "baseline",
+      "metrics": {
+        "seconds": 0.992541984,
+        "instructions": 1342853647,
+        "cpu_seconds": 3.627384695,
+        "syscalls": 177,
+        "syscall_seconds": 0.002024639,
+        "parallel_rounds": 452,
+        "dispatch_seconds": 0.021056232,
+        "memory_seconds": 0.002097907,
+        "stop_seconds": 0.056748726,
+        "service_requests": 0,
+        "worker_syscalls": 14
+      }
+    },
+    {
+      "case": "compute-4t-64fd",
+      "trial": 0,
+      "version": "candidate",
+      "metrics": {
+        "seconds": 0.93417118,
+        "instructions": 1342854549,
+        "cpu_seconds": 3.670001392,
+        "syscalls": 178,
+        "syscall_seconds": 0.000486333,
+        "parallel_rounds": 33,
+        "dispatch_seconds": 0.001306205,
+        "memory_seconds": 0.000746587,
+        "stop_seconds": 0.001189645,
+        "service_requests": 0,
+        "worker_syscalls": 15
+      }
+    },
+    {
+      "case": "compute-4t-64fd",
+      "trial": 1,
+      "version": "candidate",
+      "metrics": {
+        "seconds": 0.885994852,
+        "instructions": 1342854655,
+        "cpu_seconds": 3.474574618,
+        "syscalls": 181,
+        "syscall_seconds": 0.000582313,
+        "parallel_rounds": 35,
+        "dispatch_seconds": 0.006387901,
+        "memory_seconds": 0.000943655,
+        "stop_seconds": 0.001145676,
+        "service_requests": 0,
+        "worker_syscalls": 18
+      }
+    },
+    {
+      "case": "compute-4t-64fd",
+      "trial": 1,
+      "version": "baseline",
+      "metrics": {
+        "seconds": 0.925813252,
+        "instructions": 1342854614,
+        "cpu_seconds": 3.47604892,
+        "syscalls": 180,
+        "syscall_seconds": 0.002512308,
+        "parallel_rounds": 432,
+        "dispatch_seconds": 0.024844117,
+        "memory_seconds": 0.001745447,
+        "stop_seconds": 0.018748957,
+        "service_requests": 0,
+        "worker_syscalls": 17
+      }
+    },
+    {
+      "case": "compute-4t-64fd",
+      "trial": 2,
+      "version": "baseline",
+      "metrics": {
+        "seconds": 0.919579726,
+        "instructions": 1342853954,
+        "cpu_seconds": 3.4977829529999998,
+        "syscalls": 178,
+        "syscall_seconds": 0.000486422,
+        "parallel_rounds": 435,
+        "dispatch_seconds": 0.020802116,
+        "memory_seconds": 0.001716849,
+        "stop_seconds": 0.021088614,
+        "service_requests": 0,
+        "worker_syscalls": 15
+      }
+    },
+    {
+      "case": "compute-4t-64fd",
+      "trial": 2,
+      "version": "candidate",
+      "metrics": {
+        "seconds": 0.898551612,
+        "instructions": 1342854602,
+        "cpu_seconds": 3.518225605,
+        "syscalls": 178,
+        "syscall_seconds": 0.000494284,
+        "parallel_rounds": 34,
+        "dispatch_seconds": 0.001434226,
+        "memory_seconds": 0.000837793,
+        "stop_seconds": 0.001666467,
+        "service_requests": 0,
+        "worker_syscalls": 15
+      }
+    },
+    {
+      "case": "compute-16t-64fd",
+      "trial": 0,
+      "version": "baseline",
+      "metrics": {
+        "seconds": 0.943281061,
+        "instructions": 1342884656,
+        "cpu_seconds": 3.528870254,
+        "syscalls": 365,
+        "syscall_seconds": 0.000996927,
+        "parallel_rounds": 516,
+        "dispatch_seconds": 0.03115326,
+        "memory_seconds": 0.003966604,
+        "stop_seconds": 0.022923819,
+        "service_requests": 0,
+        "worker_syscalls": 82
+      }
+    },
+    {
+      "case": "compute-16t-64fd",
+      "trial": 0,
+      "version": "candidate",
+      "metrics": {
+        "seconds": 0.89262492,
+        "instructions": 1342883241,
+        "cpu_seconds": 3.499515492,
+        "syscalls": 349,
+        "syscall_seconds": 0.001000876,
+        "parallel_rounds": 109,
+        "dispatch_seconds": 0.005218441,
+        "memory_seconds": 0.001885078,
+        "stop_seconds": 0.002745074,
+        "service_requests": 0,
+        "worker_syscalls": 66
+      }
+    },
+    {
+      "case": "compute-16t-64fd",
+      "trial": 1,
+      "version": "candidate",
+      "metrics": {
+        "seconds": 0.919573456,
+        "instructions": 1342882173,
+        "cpu_seconds": 3.540082902,
+        "syscalls": 343,
+        "syscall_seconds": 0.000996326,
+        "parallel_rounds": 116,
+        "dispatch_seconds": 0.006341608,
+        "memory_seconds": 0.002097216,
+        "stop_seconds": 0.002430626,
+        "service_requests": 0,
+        "worker_syscalls": 60
+      }
+    },
+    {
+      "case": "compute-16t-64fd",
+      "trial": 1,
+      "version": "baseline",
+      "metrics": {
+        "seconds": 0.971336254,
+        "instructions": 1342883650,
+        "cpu_seconds": 3.578791334,
+        "syscalls": 359,
+        "syscall_seconds": 0.003060025,
+        "parallel_rounds": 534,
+        "dispatch_seconds": 0.029095998,
+        "memory_seconds": 0.004259616,
+        "stop_seconds": 0.024249518,
+        "service_requests": 0,
+        "worker_syscalls": 76
+      }
+    },
+    {
+      "case": "compute-16t-64fd",
+      "trial": 2,
+      "version": "baseline",
+      "metrics": {
+        "seconds": 0.988720497,
+        "instructions": 1342884205,
+        "cpu_seconds": 3.634244954,
+        "syscalls": 371,
+        "syscall_seconds": 0.001022974,
+        "parallel_rounds": 530,
+        "dispatch_seconds": 0.040984582,
+        "memory_seconds": 0.004938974,
+        "stop_seconds": 0.027265035,
+        "service_requests": 0,
+        "worker_syscalls": 88
+      }
+    },
+    {
+      "case": "compute-16t-64fd",
+      "trial": 2,
+      "version": "candidate",
+      "metrics": {
+        "seconds": 0.91276619,
+        "instructions": 1342884178,
+        "cpu_seconds": 3.542421809,
+        "syscalls": 360,
+        "syscall_seconds": 0.001080788,
+        "parallel_rounds": 110,
+        "dispatch_seconds": 0.005538229,
+        "memory_seconds": 0.001867192,
+        "stop_seconds": 0.001893136,
+        "service_requests": 0,
+        "worker_syscalls": 77
+      }
+    },
+    {
+      "case": "compute-4t-0fd",
+      "trial": 0,
+      "version": "baseline",
+      "metrics": {
+        "seconds": 0.900621756,
+        "instructions": 1342848015,
+        "cpu_seconds": 3.454392004,
+        "syscalls": 51,
+        "syscall_seconds": 0.000350018,
+        "parallel_rounds": 429,
+        "dispatch_seconds": 0.0118236,
+        "memory_seconds": 0.002062052,
+        "stop_seconds": 0.021375342,
+        "service_requests": 0,
+        "worker_syscalls": 16
+      }
+    },
+    {
+      "case": "compute-4t-0fd",
+      "trial": 0,
+      "version": "candidate",
+      "metrics": {
+        "seconds": 0.921993916,
+        "instructions": 1342847956,
+        "cpu_seconds": 3.601719061,
+        "syscalls": 50,
+        "syscall_seconds": 0.002794141,
+        "parallel_rounds": 34,
+        "dispatch_seconds": 0.006902596,
+        "memory_seconds": 0.000793375,
+        "stop_seconds": 0.000980916,
+        "service_requests": 0,
+        "worker_syscalls": 15
+      }
+    },
+    {
+      "case": "compute-4t-0fd",
+      "trial": 1,
+      "version": "candidate",
+      "metrics": {
+        "seconds": 0.936773883,
+        "instructions": 1342848837,
+        "cpu_seconds": 3.663327717,
+        "syscalls": 53,
+        "syscall_seconds": 0.000265979,
+        "parallel_rounds": 35,
+        "dispatch_seconds": 0.001066926,
+        "memory_seconds": 0.000846484,
+        "stop_seconds": 0.001437552,
+        "service_requests": 0,
+        "worker_syscalls": 18
+      }
+    },
+    {
+      "case": "compute-4t-0fd",
+      "trial": 1,
+      "version": "baseline",
+      "metrics": {
+        "seconds": 0.899268965,
+        "instructions": 1342846398,
+        "cpu_seconds": 3.465704999,
+        "syscalls": 50,
+        "syscall_seconds": 0.002104405,
+        "parallel_rounds": 431,
+        "dispatch_seconds": 0.011048095,
+        "memory_seconds": 0.002054908,
+        "stop_seconds": 0.019329792,
+        "service_requests": 0,
+        "worker_syscalls": 15
+      }
+    },
+    {
+      "case": "compute-4t-0fd",
+      "trial": 2,
+      "version": "baseline",
+      "metrics": {
+        "seconds": 0.970823726,
+        "instructions": 1342847105,
+        "cpu_seconds": 3.538373987,
+        "syscalls": 49,
+        "syscall_seconds": 0.002385742,
+        "parallel_rounds": 456,
+        "dispatch_seconds": 0.021835727,
+        "memory_seconds": 0.001805044,
+        "stop_seconds": 0.032844928,
+        "service_requests": 0,
+        "worker_syscalls": 14
+      }
+    },
+    {
+      "case": "compute-4t-0fd",
+      "trial": 2,
+      "version": "candidate",
+      "metrics": {
+        "seconds": 0.965362976,
+        "instructions": 1342847288,
+        "cpu_seconds": 3.631484838,
+        "syscalls": 52,
+        "syscall_seconds": 0.005801635,
+        "parallel_rounds": 38,
+        "dispatch_seconds": 0.001076168,
+        "memory_seconds": 0.001185674,
+        "stop_seconds": 0.004343618,
+        "service_requests": 0,
+        "worker_syscalls": 17
+      }
+    },
+    {
+      "case": "compute-4t-128fd",
+      "trial": 0,
+      "version": "baseline",
+      "metrics": {
+        "seconds": 0.9572999,
+        "instructions": 1342861099,
+        "cpu_seconds": 3.493596721,
+        "syscalls": 307,
+        "syscall_seconds": 0.002485129,
+        "parallel_rounds": 447,
+        "dispatch_seconds": 0.024992961,
+        "memory_seconds": 0.001790553,
+        "stop_seconds": 0.025122758,
+        "service_requests": 0,
+        "worker_syscalls": 16
+      }
+    },
+    {
+      "case": "compute-4t-128fd",
+      "trial": 0,
+      "version": "candidate",
+      "metrics": {
+        "seconds": 0.904985861,
+        "instructions": 1342861091,
+        "cpu_seconds": 3.519690121,
+        "syscalls": 307,
+        "syscall_seconds": 0.002256223,
+        "parallel_rounds": 34,
+        "dispatch_seconds": 0.001762392,
+        "memory_seconds": 0.000719154,
+        "stop_seconds": 0.000949791,
+        "service_requests": 0,
+        "worker_syscalls": 16
+      }
+    },
+    {
+      "case": "compute-4t-128fd",
+      "trial": 1,
+      "version": "candidate",
+      "metrics": {
+        "seconds": 0.900918192,
+        "instructions": 1342860242,
+        "cpu_seconds": 3.518749915,
+        "syscalls": 306,
+        "syscall_seconds": 0.000770791,
+        "parallel_rounds": 33,
+        "dispatch_seconds": 0.003366263,
+        "memory_seconds": 0.000752838,
+        "stop_seconds": 0.001174517,
+        "service_requests": 0,
+        "worker_syscalls": 15
+      }
+    },
+    {
+      "case": "compute-4t-128fd",
+      "trial": 1,
+      "version": "baseline",
+      "metrics": {
+        "seconds": 0.949100835,
+        "instructions": 1342861106,
+        "cpu_seconds": 3.546910983,
+        "syscalls": 306,
+        "syscall_seconds": 0.00092981,
+        "parallel_rounds": 440,
+        "dispatch_seconds": 0.02534571,
+        "memory_seconds": 0.002386896,
+        "stop_seconds": 0.026248966,
+        "service_requests": 0,
+        "worker_syscalls": 15
+      }
+    },
+    {
+      "case": "compute-4t-128fd",
+      "trial": 2,
+      "version": "baseline",
+      "metrics": {
+        "seconds": 0.923361481,
+        "instructions": 1342859397,
+        "cpu_seconds": 3.47700701,
+        "syscalls": 305,
+        "syscall_seconds": 0.001814544,
+        "parallel_rounds": 420,
+        "dispatch_seconds": 0.02584925,
+        "memory_seconds": 0.001824563,
+        "stop_seconds": 0.023496547,
+        "service_requests": 0,
+        "worker_syscalls": 14
+      }
+    },
+    {
+      "case": "compute-4t-128fd",
+      "trial": 2,
+      "version": "candidate",
+      "metrics": {
+        "seconds": 0.879928958,
+        "instructions": 1342860252,
+        "cpu_seconds": 3.4552384050000002,
+        "syscalls": 306,
+        "syscall_seconds": 0.000717061,
+        "parallel_rounds": 35,
+        "dispatch_seconds": 0.001604727,
+        "memory_seconds": 0.000763271,
+        "stop_seconds": 0.001124248,
+        "service_requests": 0,
+        "worker_syscalls": 15
+      }
+    },
+    {
+      "case": "fd-4t-64fd",
+      "trial": 0,
+      "version": "baseline",
+      "metrics": {
+        "seconds": 0.539732711,
+        "instructions": 84182967,
+        "cpu_seconds": 0.239944347,
+        "syscalls": 8373,
+        "syscall_seconds": 0.00816176,
+        "parallel_rounds": 6210,
+        "dispatch_seconds": 0.246004567,
+        "memory_seconds": 0.010935008,
+        "stop_seconds": 0.151383367,
+        "service_requests": 0,
+        "worker_syscalls": 18
+      }
+    },
+    {
+      "case": "fd-4t-64fd",
+      "trial": 0,
+      "version": "candidate",
+      "metrics": {
+        "seconds": 0.492218533,
+        "instructions": 84182384,
+        "cpu_seconds": 0.230137746,
+        "syscalls": 8371,
+        "syscall_seconds": 0.008291386,
+        "parallel_rounds": 5957,
+        "dispatch_seconds": 0.230660421,
+        "memory_seconds": 0.012790417,
+        "stop_seconds": 0.128516958,
+        "service_requests": 0,
+        "worker_syscalls": 16
+      }
+    },
+    {
+      "case": "fd-4t-64fd",
+      "trial": 1,
+      "version": "candidate",
+      "metrics": {
+        "seconds": 0.486487091,
+        "instructions": 84182357,
+        "cpu_seconds": 0.250198588,
+        "syscalls": 8371,
+        "syscall_seconds": 0.00797047,
+        "parallel_rounds": 6067,
+        "dispatch_seconds": 0.217183239,
+        "memory_seconds": 0.010028594,
+        "stop_seconds": 0.142602324,
+        "service_requests": 0,
+        "worker_syscalls": 16
+      }
+    },
+    {
+      "case": "fd-4t-64fd",
+      "trial": 1,
+      "version": "baseline",
+      "metrics": {
+        "seconds": 0.50565166,
+        "instructions": 84181512,
+        "cpu_seconds": 0.23758799,
+        "syscalls": 8370,
+        "syscall_seconds": 0.008509841,
+        "parallel_rounds": 6086,
+        "dispatch_seconds": 0.233115442,
+        "memory_seconds": 0.01409448,
+        "stop_seconds": 0.120238341,
+        "service_requests": 0,
+        "worker_syscalls": 15
+      }
+    },
+    {
+      "case": "fd-4t-64fd",
+      "trial": 2,
+      "version": "baseline",
+      "metrics": {
+        "seconds": 0.532393945,
+        "instructions": 84182351,
+        "cpu_seconds": 0.237671499,
+        "syscalls": 8371,
+        "syscall_seconds": 0.00821566,
+        "parallel_rounds": 6279,
+        "dispatch_seconds": 0.228882005,
+        "memory_seconds": 0.01083183,
+        "stop_seconds": 0.175726044,
+        "service_requests": 0,
+        "worker_syscalls": 16
+      }
+    },
+    {
+      "case": "fd-4t-64fd",
+      "trial": 2,
+      "version": "candidate",
+      "metrics": {
+        "seconds": 0.525458019,
+        "instructions": 84183194,
+        "cpu_seconds": 0.274156415,
+        "syscalls": 8371,
+        "syscall_seconds": 0.008411415,
+        "parallel_rounds": 6015,
+        "dispatch_seconds": 0.223724863,
+        "memory_seconds": 0.011273325,
+        "stop_seconds": 0.14133265,
+        "service_requests": 0,
+        "worker_syscalls": 16
+      }
+    },
+    {
+      "case": "vm-4t-64fd",
+      "trial": 0,
+      "version": "baseline",
+      "metrics": {
+        "seconds": 0.254314016,
+        "instructions": 42163624,
+        "cpu_seconds": 0.165255627,
+        "syscalls": 4277,
+        "syscall_seconds": 0.012215486,
+        "parallel_rounds": 2343,
+        "dispatch_seconds": 0.092738122,
+        "memory_seconds": 0.027914845,
+        "stop_seconds": 0.062561623,
+        "service_requests": 0,
+        "worker_syscalls": 18
+      }
+    },
+    {
+      "case": "vm-4t-64fd",
+      "trial": 0,
+      "version": "candidate",
+      "metrics": {
+        "seconds": 0.277810103,
+        "instructions": 42162832,
+        "cpu_seconds": 0.14178584,
+        "syscalls": 4277,
+        "syscall_seconds": 0.013085067,
+        "parallel_rounds": 3223,
+        "dispatch_seconds": 0.103646823,
+        "memory_seconds": 0.031034004,
+        "stop_seconds": 0.06136855,
+        "service_requests": 0,
+        "worker_syscalls": 18
+      }
+    },
+    {
+      "case": "vm-4t-64fd",
+      "trial": 1,
+      "version": "candidate",
+      "metrics": {
+        "seconds": 0.263602207,
+        "instructions": 42162739,
+        "cpu_seconds": 0.149064186,
+        "syscalls": 4274,
+        "syscall_seconds": 0.011757475,
+        "parallel_rounds": 2500,
+        "dispatch_seconds": 0.083292485,
+        "memory_seconds": 0.035929525,
+        "stop_seconds": 0.067562883,
+        "service_requests": 0,
+        "worker_syscalls": 15
+      }
+    },
+    {
+      "case": "vm-4t-64fd",
+      "trial": 1,
+      "version": "baseline",
+      "metrics": {
+        "seconds": 0.276599865,
+        "instructions": 42164406,
+        "cpu_seconds": 0.148664724,
+        "syscalls": 4275,
+        "syscall_seconds": 0.013302988,
+        "parallel_rounds": 2804,
+        "dispatch_seconds": 0.093238839,
+        "memory_seconds": 0.027670405,
+        "stop_seconds": 0.055808929,
+        "service_requests": 0,
+        "worker_syscalls": 16
+      }
+    },
+    {
+      "case": "vm-4t-64fd",
+      "trial": 2,
+      "version": "baseline",
+      "metrics": {
+        "seconds": 0.256922715,
+        "instructions": 42162892,
+        "cpu_seconds": 0.127476817,
+        "syscalls": 4279,
+        "syscall_seconds": 0.012416214,
+        "parallel_rounds": 2765,
+        "dispatch_seconds": 0.108435647,
+        "memory_seconds": 0.024247679,
+        "stop_seconds": 0.051353683,
+        "service_requests": 0,
+        "worker_syscalls": 20
+      }
+    },
+    {
+      "case": "vm-4t-64fd",
+      "trial": 2,
+      "version": "candidate",
+      "metrics": {
+        "seconds": 0.274983172,
+        "instructions": 42164409,
+        "cpu_seconds": 0.139816701,
+        "syscalls": 4276,
+        "syscall_seconds": 0.014522996,
+        "parallel_rounds": 2600,
+        "dispatch_seconds": 0.105252974,
+        "memory_seconds": 0.034088949,
+        "stop_seconds": 0.062534469,
+        "service_requests": 0,
+        "worker_syscalls": 17
+      }
+    }
+  ],
+  "summary": {
+    "compute-2t-64fd": {
+      "medians": {
+        "baseline": {
+          "seconds": 1.78143854,
+          "parallel_rounds": 829,
+          "dispatch_seconds": 0.021224127,
+          "memory_seconds": 0.002124654,
+          "stop_seconds": 0.045954897,
+          "service_requests": 0,
+          "instructions": 1342847405
+        },
+        "candidate": {
+          "seconds": 1.748135843,
+          "parallel_rounds": 37,
+          "dispatch_seconds": 0.001266992,
+          "memory_seconds": 0.000582539,
+          "stop_seconds": 0.001741399,
+          "service_requests": 0,
+          "instructions": 1342846613
+        }
+      },
+      "candidate_over_baseline": 0.9813057277855907
+    },
+    "compute-4t-64fd": {
+      "medians": {
+        "baseline": {
+          "seconds": 0.925813252,
+          "parallel_rounds": 435,
+          "dispatch_seconds": 0.021056232,
+          "memory_seconds": 0.001745447,
+          "stop_seconds": 0.021088614,
+          "service_requests": 0,
+          "instructions": 1342853954
+        },
+        "candidate": {
+          "seconds": 0.898551612,
+          "parallel_rounds": 34,
+          "dispatch_seconds": 0.001434226,
+          "memory_seconds": 0.000837793,
+          "stop_seconds": 0.001189645,
+          "service_requests": 0,
+          "instructions": 1342854602
+        }
+      },
+      "candidate_over_baseline": 0.97055384556107
+    },
+    "compute-16t-64fd": {
+      "medians": {
+        "baseline": {
+          "seconds": 0.971336254,
+          "parallel_rounds": 530,
+          "dispatch_seconds": 0.03115326,
+          "memory_seconds": 0.004259616,
+          "stop_seconds": 0.024249518,
+          "service_requests": 0,
+          "instructions": 1342884205
+        },
+        "candidate": {
+          "seconds": 0.91276619,
+          "parallel_rounds": 110,
+          "dispatch_seconds": 0.005538229,
+          "memory_seconds": 0.001885078,
+          "stop_seconds": 0.002430626,
+          "service_requests": 0,
+          "instructions": 1342883241
+        }
+      },
+      "candidate_over_baseline": 0.9397015567381468
+    },
+    "compute-4t-0fd": {
+      "medians": {
+        "baseline": {
+          "seconds": 0.900621756,
+          "parallel_rounds": 431,
+          "dispatch_seconds": 0.0118236,
+          "memory_seconds": 0.002054908,
+          "stop_seconds": 0.021375342,
+          "service_requests": 0,
+          "instructions": 1342847105
+        },
+        "candidate": {
+          "seconds": 0.936773883,
+          "parallel_rounds": 35,
+          "dispatch_seconds": 0.001076168,
+          "memory_seconds": 0.000846484,
+          "stop_seconds": 0.001437552,
+          "service_requests": 0,
+          "instructions": 1342847956
+        }
+      },
+      "candidate_over_baseline": 1.0401412987851473
+    },
+    "compute-4t-128fd": {
+      "medians": {
+        "baseline": {
+          "seconds": 0.949100835,
+          "parallel_rounds": 440,
+          "dispatch_seconds": 0.02534571,
+          "memory_seconds": 0.001824563,
+          "stop_seconds": 0.025122758,
+          "service_requests": 0,
+          "instructions": 1342861099
+        },
+        "candidate": {
+          "seconds": 0.900918192,
+          "parallel_rounds": 34,
+          "dispatch_seconds": 0.001762392,
+          "memory_seconds": 0.000752838,
+          "stop_seconds": 0.001124248,
+          "service_requests": 0,
+          "instructions": 1342860252
+        }
+      },
+      "candidate_over_baseline": 0.9492333783480446
+    },
+    "fd-4t-64fd": {
+      "medians": {
+        "baseline": {
+          "seconds": 0.532393945,
+          "parallel_rounds": 6210,
+          "dispatch_seconds": 0.233115442,
+          "memory_seconds": 0.010935008,
+          "stop_seconds": 0.151383367,
+          "service_requests": 0,
+          "instructions": 84182351
+        },
+        "candidate": {
+          "seconds": 0.492218533,
+          "parallel_rounds": 6015,
+          "dispatch_seconds": 0.223724863,
+          "memory_seconds": 0.011273325,
+          "stop_seconds": 0.14133265,
+          "service_requests": 0,
+          "instructions": 84182384
+        }
+      },
+      "candidate_over_baseline": 0.9245381876009127
+    },
+    "vm-4t-64fd": {
+      "medians": {
+        "baseline": {
+          "seconds": 0.256922715,
+          "parallel_rounds": 2765,
+          "dispatch_seconds": 0.093238839,
+          "memory_seconds": 0.027670405,
+          "stop_seconds": 0.055808929,
+          "service_requests": 0,
+          "instructions": 42163624
+        },
+        "candidate": {
+          "seconds": 0.274983172,
+          "parallel_rounds": 2600,
+          "dispatch_seconds": 0.103646823,
+          "memory_seconds": 0.034088949,
+          "stop_seconds": 0.062534469,
+          "service_requests": 0,
+          "instructions": 42162832
+        }
+      },
+      "candidate_over_baseline": 1.0702952909399233
+    }
+  },
+  "date": "2026-10-24",
+  "production_changed": false,
+  "diagnostic": "Only default/terminal parallel_timeout changed to 50 ms; timers and deadlines unchanged; never shipped.",
+  "source_sha256": {
+    "tests/fixtures/cohort-cost.c": "57b5e06e156b38ac3bb677ba1063deba148ddda0b0c4e60878476edcb98b78be",
+    "tests/performance/cohort-cost.py": "de0fd8482084e9bf1406b34b1ca35e0c4e011d22f186dafb234fadcdc43142b8",
+    "crates/trames-core/src/process.rs": "311469a6615285e4ca67033febf869e904ec0b53185ad516a5983436a682112d"
+  },
+  "diagnostic_source_sha256": "9ce0f07c45724dc91a3fbe6fabbf8bfae0699e4b4fd5c93db972ba2536b928dd",
+  "restored_runner_sha256": "002bc0e011a6aac915936f3812a218e14e9a78b37b964ac323c77c740d0bc3ac",
+  "raw_artifacts": "target/cohort-cost-checks",
+  "initial_pilot": "Short samples; extra FD count 256 exceeded total limit including stdio. Final used 128, longer fixed work, all 42 passed.",
+  "limits": "Three samples per configuration, Linux x86_64 host, no iPad or application speedup claim. Coordination windows overlap worker computation; not all recoverable CPU time."
+}

@@ -1,0 +1,72 @@
+{
+  "date_utc": "2026-10-23",
+  "batch": 29,
+  "complete_coordinator_removal": false,
+  "scope": "Shared native host endpoint, atomic transport quota reservation, persistent edge observer and actual-resource host wait lifetime; owner Socket control/namespace/full OFD/FD lifecycle remain joined.",
+  "source_sha256": {
+    "crates/trames-net/src/native.rs": "470dfc2efb0e61eff223b3d10c496ba87c52a8a99691d9bbbc624e5929239d6b",
+    "crates/trames-net/src/native/direct.rs": "faabd0698a5b410537e3f8281ff5007edce27b9d3d4ff9736d324f236f0d28dc",
+    "crates/trames-net/src/lib.rs": "391323774392430c7ae0a047279b513a12a998485a00f40f47bfcb790a2f7a8a",
+    "crates/trames-vfs/src/uring.rs": "5c5e47f4cd343e69e61e01131d9368671b1180c3ffb7a17b5d856cc49e59c8cb",
+    "crates/trames-vfs/src/network_io.rs": "dc3c9d5acd8b639f71aa55d18fb81e143c99906f58df658e0942c4b6fab8f682",
+    "crates/trames-shared/src/host_events.rs": "9f2fc14ac790f2f51bf5a624e3d91f57ffeadd04be1da1a3aee1f132bbebb233",
+    "crates/trames-shared/src/lib.rs": "3996f86be7b5652d565c1dbe61830fd256434f35c3f8adb3a46180a0cb414ee6",
+    "crates/trames-vfs/src/lib.rs": "ce0ca3df67022fef4c3ea850bb6c05aa1dc17afaec38e36c7ca7608c3df383d7",
+    "crates/trames-linux/src/direct.rs": "3be687e135b3f06ced9997eac7ec3aa3b5afcd2af57f151caf5cce9e28446e94",
+    "crates/trames-linux/src/direct/uring/wait.rs": "eaa592854830bed1375fa9ac9315035cfb989cb8c41f1c8830b83e795d6b897f",
+    "crates/trames-linux/src/direct/uring/wait_tests.rs": "0e556c532af46f239806583e53b0c03616938b8b963c9de8affea099dd7b4f4f",
+    "crates/trames-net/src/native/endpoint.rs": "31fe63a2fd574f9ff192ed6481d4a4f0b02976309c0ea748dad3808ec56c3af2",
+    "tests/fixtures/worker-tcp.c": "34bba6f0f30749baeb38e7e5350268b3bb3a9f89145d98a9ca4fd609141398ea",
+    "tests/integration/worker-tcp.py": "a95865b48262e213a6a363eaef7363f220e64532cddf19a95b71047761d2d761"
+  },
+  "artifact_sha256": {
+    "target/perf-runtime/release/trames-run": "e603ee72f57116b04d99e30f7bb239132f08e6459c4a0c2eda4eb8573979b0b9",
+    "target/shared-native-endpoint-checks/before-trames-run": "5067cd6cdfc072e46617c9ac609f2824278a5e79eefa72556f52be152ced952a",
+    "tests/fixtures/bin/worker-tcp": "16bc31688a8479cbfb9253538f26f0725a83ec3cfa559dbcd9f7ab3e142d7cb6",
+    "target/shared-native-endpoint-checks/native-worker-tcp-dynamic": "8bab76b683bd3fd75a3446cbebeea668127efe45f2a515aa78be81814df9ff32",
+    "target/perf-runtime/release/libtrames_ffi.so": "de6b6bc80591a30d4d9086f5a431d02214780d822b31964e83e0a2f35cd24c78",
+    "target/perf-runtime/release/libtrames_ffi.a": "b7aea6fd6c4db09607a9b41324f62e1fb65d3add9721be2e491485a45a32673c"
+  },
+  "runner_sha256": "e603ee72f57116b04d99e30f7bb239132f08e6459c4a0c2eda4eb8573979b0b9",
+  "baseline_sha256": "5067cd6cdfc072e46617c9ac609f2824278a5e79eefa72556f52be152ced952a",
+  "baseline_evidence": "docs/validation/shared-inotify-instance-summary.json",
+  "results": {
+    "units": {
+      "path": "target/shared-native-endpoint-checks/unit-results.json",
+      "sha256": "636a280983b0a3e4d00b01c628a43ec14bcaa99098701b5d47cb2f4cea04a831"
+    },
+    "guest": {
+      "path": "target/shared-native-endpoint-checks/guest/results.json",
+      "sha256": "03b08580dad9ae2bc848c59a58a79cc55c6b86b478e259bd96e66f966a3f19f9"
+    },
+    "reused_oracles": {
+      "path": "target/worker-tcp-waits-checks/blocking-final/results.json",
+      "sha256": "72b1fd1a6a85e4a7cfd123a94af3c46be770382437bd2b806e6e1f00b4dafad0"
+    }
+  },
+  "distinct_rust_tests": 24,
+  "rust_test_counts": {
+    "linux": 5,
+    "net": 12,
+    "shared": 5,
+    "vfs": 2
+  },
+  "guest_cases": 12,
+  "log_sha256": {
+    "target/shared-native-endpoint-checks/unit-build.log": "df54d9af366540969b86593e64e2c6565e31c060fa43377a14fa6b7abb579724",
+    "target/shared-native-endpoint-checks/release-build.log": "ce4aa05811967a3391e095c008cf81f509fd8db81a5e27deecedabdaecd82ea0",
+    "target/shared-native-endpoint-checks/clippy.log": "24a1eb72df4023d4f62b2cfd1c12058acbb1ca1bf841f0a0bc17d5b1e2d2d52c",
+    "target/shared-native-endpoint-checks/unit-linux.log": "1468e929a2729992063d60e4c1d5382676a2cef0068f5f8dd52d9b4ddefa15e5",
+    "target/shared-native-endpoint-checks/unit-net.log": "ef31ee882f74f7210c649d059cf31224975c96ebfb526e9a2ddaf774ae94b0f8",
+    "target/shared-native-endpoint-checks/unit-shared.log": "fbd99cffd3ddde425080935e01d7405f7147727229a5f29f0d08b94e2fde6880",
+    "target/shared-native-endpoint-checks/unit-vfs.log": "49840e4c5955785aa611d90789ee8cc19db4f382d0cd4e43eea448a0640a179e"
+  },
+  "reuse": "Unchanged guest ELF/source/integration harness verified against batch 14. Rebuilt native oracle matches prior SHA exactly; reused four native reference outputs without rerunning them. Only affected socket/wait tests and IPv4/IPv6 scalar/vector TCP on 1/2/4 CPU rerun; no unrelated CPU/GPU/browser/Docker/CoreMark suites or before/after performance benchmark.",
+  "builds": {
+    "release_cli_ffi": "target/shared-native-endpoint-checks/release-build.log",
+    "strict_release_clippy": "target/shared-native-endpoint-checks/clippy.log"
+  },
+  "raw_artifacts": "target/shared-native-endpoint-checks",
+  "ipa_built": false,
+  "limits": "Actual native endpoint final release and quota return can run on workers; ordinary capability snapshots remain weak. Host wait duplicate FDs carry the same endpoint lease and release it outside registry locks. Guest namespace control counts/policy/DNS/connect, full OFD/FD table, PTY/Unix rights and VM/task lifecycle still have owner references. No complete removal or overall speedup claim. Linux x86_64 validation only; Apple kqueue/ARM64/iPad not run."
+}

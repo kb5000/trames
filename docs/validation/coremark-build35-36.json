@@ -1,0 +1,233 @@
+{
+  "scope": "Original build35/build36 source snapshots rebuilt with the same pinned Rust release/thin-LTO settings on Linux x86_64. Production multi-terminal FFI, identical copied original Alpine/GCC14 CoreMark store. Not physical iPad timing.",
+  "source_commits": {
+    "build35": "049df00bc93d1342440dc3a8ca2a8b409b217a5b",
+    "build36": "50edf5352c56ff86f1fc3c1d0d203c1fbfe0cfea"
+  },
+  "toolchain": "nightly-2026-10-16; rustc 1.101.0-nightly 4ebd258257737d5b7635c116fa7d281627a7e937; LLVM 23.1.4",
+  "profile": "release, thin LTO, overflow-checks=true, no custom opt-level/debug/RUSTFLAGS",
+  "host": {
+    "machine": "x86_64",
+    "page_bytes": 4096,
+    "benchmark_affinity": "0-3"
+  },
+  "order": [
+    "build35",
+    "build36",
+    "build36",
+    "build35",
+    "ready_only_diagnostic",
+    "working_fix",
+    "working_fix"
+  ],
+  "guest_input": {
+    "store_manifest_sha256": "408a8b970346fcb50bf3951a3e4769bed11f2243b52d77b95853adc23b3c7aa3",
+    "upstream": "1f483d5b8316753a742cbf5590caf5bd0a4e4777",
+    "elf_sha256": "7db7b54a9b5de71d6e9ce1fbe8c71d3dc957187358c2f5b328a7a10cdfd4e378",
+    "compiler": "original Alpine GCC14.2 -O2 -lrt",
+    "iterations": 15000,
+    "seeds": [
+      0,
+      0,
+      102
+    ]
+  },
+  "ipa_inputs": {
+    "build35": {
+      "info": {
+        "CFBundleShortVersionString": "1.3.0",
+        "CFBundleVersion": "35",
+        "DTXcode": "1640",
+        "DTXcodeBuild": "16F6",
+        "DTSDKName": "iphoneos18.5",
+        "DTSDKBuild": "22F76",
+        "BuildMachineOSBuild": "24G830"
+      },
+      "resources": {
+        "GuestMusl/libc.so": "885b308b75e36bb402b311fba1d3f1284e6dd8d3a0bfbf88686bff1b629f9b23",
+        "GuestMusl/manifest.json": "f96a81b48467f44f0ab17155c52db0dca0971e9bc1f03d94b6d390238988de72",
+        "Trames": "0c63f6ddd8c4f81b3d436ad9db9c8c14a5f1277751e01adb405ba1e25e2e7b9d"
+      }
+    },
+    "build36": {
+      "info": {
+        "CFBundleShortVersionString": "1.3.0",
+        "CFBundleVersion": "36",
+        "DTXcode": "1640",
+        "DTXcodeBuild": "16F6",
+        "DTSDKName": "iphoneos18.5",
+        "DTSDKBuild": "22F76",
+        "BuildMachineOSBuild": "24G830"
+      },
+      "resources": {
+        "GuestMusl/libc.so": "885b308b75e36bb402b311fba1d3f1284e6dd8d3a0bfbf88686bff1b629f9b23",
+        "GuestMusl/manifest.json": "f96a81b48467f44f0ab17155c52db0dca0971e9bc1f03d94b6d390238988de72",
+        "Trames": "1bec2dabc24da604c4e1b7662f80ffa1c05a20a96320972f7383a250ac6a9009"
+      }
+    }
+  },
+  "runs": [
+    {
+      "version": "build35",
+      "median_score": 782.045072,
+      "samples": [
+        {
+          "score": 782.840144,
+          "seconds": 19.161,
+          "iterations": 15000,
+          "crc_passed": true,
+          "library_sha256": "362084c5cc5610b028c194df29de00f406eef5afb24f0491c540b58902d42d4c",
+          "input_store_manifest_sha256": "408a8b970346fcb50bf3951a3e4769bed11f2243b52d77b95853adc23b3c7aa3"
+        },
+        {
+          "score": 781.25,
+          "seconds": 19.2,
+          "iterations": 15000,
+          "crc_passed": true,
+          "library_sha256": "362084c5cc5610b028c194df29de00f406eef5afb24f0491c540b58902d42d4c",
+          "input_store_manifest_sha256": "408a8b970346fcb50bf3951a3e4769bed11f2243b52d77b95853adc23b3c7aa3"
+        }
+      ]
+    },
+    {
+      "version": "build36",
+      "median_score": 685.4071935,
+      "samples": [
+        {
+          "score": 683.340167,
+          "seconds": 21.951,
+          "iterations": 15000,
+          "crc_passed": true,
+          "library_sha256": "90f919ceb6c9ee511f6a40c862070ea0e52e712041c9be081a39fbaa8f9e9841",
+          "input_store_manifest_sha256": "408a8b970346fcb50bf3951a3e4769bed11f2243b52d77b95853adc23b3c7aa3"
+        },
+        {
+          "score": 687.47422,
+          "seconds": 21.819,
+          "iterations": 15000,
+          "crc_passed": true,
+          "library_sha256": "90f919ceb6c9ee511f6a40c862070ea0e52e712041c9be081a39fbaa8f9e9841",
+          "input_store_manifest_sha256": "408a8b970346fcb50bf3951a3e4769bed11f2243b52d77b95853adc23b3c7aa3"
+        }
+      ]
+    },
+    {
+      "version": "ready_only_diagnostic",
+      "median_score": 788.560614,
+      "samples": [
+        {
+          "score": 788.560614,
+          "seconds": 19.022,
+          "iterations": 15000,
+          "crc_passed": true,
+          "library_sha256": "a9f5d18040f92f654c1d70131b1b4fc8d231fc66cf506e7c08ea98f55d801e97",
+          "input_store_manifest_sha256": "408a8b970346fcb50bf3951a3e4769bed11f2243b52d77b95853adc23b3c7aa3"
+        }
+      ]
+    },
+    {
+      "version": "working_fix",
+      "median_score": 788.6209240000001,
+      "samples": [
+        {
+          "score": 784.765094,
+          "seconds": 19.114,
+          "iterations": 15000,
+          "crc_passed": true,
+          "library_sha256": "55da14d8a38d7243eb2878ce04c3581622f8a9f7141e63ffd8e63e0d8fef0074",
+          "input_store_manifest_sha256": "408a8b970346fcb50bf3951a3e4769bed11f2243b52d77b95853adc23b3c7aa3"
+        },
+        {
+          "score": 792.476754,
+          "seconds": 18.928,
+          "iterations": 15000,
+          "crc_passed": true,
+          "library_sha256": "55da14d8a38d7243eb2878ce04c3581622f8a9f7141e63ffd8e63e0d8fef0074",
+          "input_store_manifest_sha256": "408a8b970346fcb50bf3951a3e4769bed11f2243b52d77b95853adc23b3c7aa3"
+        }
+      ]
+    }
+  ],
+  "ratios": {
+    "build36_over_build35": 0.8764292724806019,
+    "working_fix_over_build36": 1.1505874631588617,
+    "working_fix_over_build35": 1.0084085332616226
+  },
+  "limits": [
+    "Two samples per production version; no confidence interval.",
+    "The isolated ready-only variant deliberately disables admission of a single runnable peer; it is diagnostic and is not the production fix.",
+    "Working fix includes the earlier local shared-futex and PTY batches.",
+    "Short 1000-iteration path probes are unscored and must not be presented as valid CoreMark results.",
+    "Apple ARM64/16KiB and physical iPad recovery have not been tested."
+  ],
+  "checks": {
+    "new_unit_tests": 4,
+    "handoff_guest_runs": 10,
+    "multiple_terminal_ffi": true,
+    "release_build": true,
+    "strict_clippy": true
+  },
+  "source_sha256": {
+    "crates/trames-core/src/process.rs": "48bc83b009766c220b0f5b31809fa276baca78d3828d535dd1459fcacc7a82b5",
+    "crates/trames-vfs/src/direct_io.rs": "df9c284fcf8c939929f5c87a2100ccbd573a9816b400e79dfc1cda8e258f9071",
+    "tests/performance/session-coremark.py": "ea2a0a65cc09dee9a6f6d4154d831f14c28e120c958ce33b59b15598b70213d1"
+  },
+  "structural_probe": [
+    {
+      "version": "build35",
+      "scored": false,
+      "iterations": 1000,
+      "metrics": {
+        "instructions": 296683251,
+        "parallel_rounds": 3,
+        "worker_chunks": 5,
+        "cpu_seconds": 1.25020006,
+        "memory_seconds": 0.00083475,
+        "dispatch_seconds": 0.000143533,
+        "stop_seconds": 7.777e-05
+      }
+    },
+    {
+      "version": "build36",
+      "scored": false,
+      "iterations": 1000,
+      "metrics": {
+        "instructions": 296685896,
+        "parallel_rounds": 152,
+        "worker_chunks": 18127,
+        "cpu_seconds": 1.408065348,
+        "memory_seconds": 0.00189906,
+        "dispatch_seconds": 0.002596275,
+        "stop_seconds": 0.012802752
+      }
+    },
+    {
+      "version": "ready-only",
+      "scored": false,
+      "iterations": 1000,
+      "metrics": {
+        "instructions": 296685914,
+        "parallel_rounds": 3,
+        "worker_chunks": 6,
+        "cpu_seconds": 1.276070889,
+        "memory_seconds": 0.000888073,
+        "dispatch_seconds": 9.6785e-05,
+        "stop_seconds": 1.732e-06
+      }
+    },
+    {
+      "version": "fix",
+      "scored": false,
+      "iterations": 1000,
+      "metrics": {
+        "instructions": 296685924,
+        "parallel_rounds": 5,
+        "worker_chunks": 8,
+        "cpu_seconds": 1.266954653,
+        "memory_seconds": 0.000775415,
+        "dispatch_seconds": 8.8631e-05,
+        "stop_seconds": 1.281e-06
+      }
+    }
+  ]
+}

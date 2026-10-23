@@ -160,4 +160,27 @@ static void pipe_metadata(void) {
     }
     close(fds[0]);close(fds[1]);puts("anonymous pipe inode: permissions, ownership, fork sharing and open access: ok");
 }
-int main(void) { CHECK(mkdir("/tmp",0777)==0 || errno==EEXIST); endpoint(0); endpoint(1); events(); pipes(); symlink_times(); attributes(); netlink_events(); fifo_reopen(); pipe_metadata(); return 0; }
+static void fifo_links(void) {
+    char dir[]="/tmp/trames-fifo-links-XXXXXX",path[128],alias[128];
+    CHECK(mkdtemp(dir)!=NULL);
+    CHECK(snprintf(path,sizeof(path),"%s/fifo",dir)>0);
+    CHECK(snprintf(alias,sizeof(alias),"%s/alias",dir)>0);
+    CHECK(mkfifo(path,0600)==0 && link(path,alias)==0);
+    struct stat a,b; CHECK(stat(path,&a)==0 && stat(alias,&b)==0);
+    CHECK(a.st_ino==b.st_ino && a.st_dev==b.st_dev && a.st_nlink==2);
+    int reader=open(alias,O_RDONLY|O_NONBLOCK),writer=open(path,O_WRONLY|O_NONBLOCK);
+    CHECK(reader>=0 && writer>=0);
+    CHECK(unlink(path)==0 && mkfifo(path,0600)==0);
+    CHECK(open(path,O_WRONLY|O_NONBLOCK)==-1 && errno==ENXIO);
+    int fresh=open(path,O_RDWR|O_NONBLOCK); CHECK(fresh>=0);
+    CHECK(fstat(fresh,&b)==0 && a.st_ino!=b.st_ino);
+    CHECK(write(writer,"old",3)==3 && write(fresh,"new",3)==3);
+    char bytes[8]; CHECK(read(reader,bytes,sizeof(bytes))==3 && !memcmp(bytes,"old",3));
+    CHECK(read(fresh,bytes,sizeof(bytes))==3 && !memcmp(bytes,"new",3));
+    CHECK(unlink(alias)==0 && fstat(reader,&a)==0 && a.st_nlink==0);
+    CHECK(write(writer,"live",4)==4 && read(reader,bytes,sizeof(bytes))==4 && !memcmp(bytes,"live",4));
+    close(writer); CHECK(read(reader,bytes,sizeof(bytes))==0); close(reader);
+    close(fresh); CHECK(unlink(path)==0 && rmdir(dir)==0);
+    puts("FIFO hardlinks: shared channel, replaced path isolation and unlinked open lifetime: ok");
+}
+int main(void) { CHECK(mkdir("/tmp",0777)==0 || errno==EEXIST); endpoint(0); endpoint(1); events(); pipes(); symlink_times(); attributes(); netlink_events(); fifo_reopen(); pipe_metadata(); fifo_links(); return 0; }

@@ -1,0 +1,4 @@
+    Checking trames-core v1.3.0 (/workspace/trames/crates/trames-core)
+    Checking trames-ffi v1.3.0 (/workspace/trames/crates/trames-ffi)
+    Checking trames-cli v1.3.0 (/workspace/trames/crates/trames-cli)
+    Finished `release` profile [optimized] target(s) in 0.83s

@@ -1,0 +1,91 @@
+{
+  "date_utc": "2026-10-23",
+  "batch": 37,
+  "complete_coordinator_removal": false,
+  "scope": "Worker-local blocking syslog and kmsg I/O/seek/poll/epoll. Shared per-open cursor, log notifications after unlock, retained PendingIo with no SVC replay, ET generations/last-close invalidation, conservative admission for legacy readers without descriptors.",
+  "source_sha256": {
+    "crates/trames-vfs/src/kernel_log.rs": "3af00c1e8c358352693a27e13d2f800ba5717b3a56df7ba5967ff7237a28fc04",
+    "crates/trames-vfs/src/lib.rs": "cd60a2da1a399f6373c3f5c75d69551baa2da79078fcd7c5404b514de9766e01",
+    "crates/trames-vfs/src/direct_io.rs": "a94b3ea8b0afc683bd69aa0342bc3e09dc6b8150ead28353eb33c3c1bd91a37d",
+    "crates/trames-vfs/src/events.rs": "993e6dc967b44eb77e0fe70d516a2845e316d4eb36f76bb37972d78e2651f0f5",
+    "crates/trames-linux/src/direct.rs": "5c1609e9aca196ce8e561ac238d7f7d13f6d3b45f0bcdd5237adafa3b6f6885b",
+    "crates/trames-core/src/process.rs": "0d170d6d87c31b4b2728d54a65f08b3675987f6661e856db31063c40d0c0aaa7",
+    "crates/trames-core/src/process_service.rs": "7f6bae3cf3349ed08490c318f798c13015e46f43a824caca0fa42704ca0c4f87",
+    "crates/trames-core/src/worker_syscalls.rs": "59af4440860cd56dee5960e561ed5c05e45ae0402e88395ac450615be4ff0fbd",
+    "crates/trames-core/src/workers.rs": "881d61d1ff48d0a16dd661db754607e53d0848694b46d4a0e55986401c0c4ced",
+    "crates/trames-core/src/process_seccomp.rs": "228cab054bd9cb6cd7500a650ed07234cedd6dc9056450572512225e72280358",
+    "tests/fixtures/worker-log-wait.c": "62c6fefaa57bfd0150837b80f68277e6953a8c2249c46493981eb443bd1013c6",
+    "tests/integration/worker-log-wait.py": "af0e1590e835af1d081055ca0b16a7cbb8ab52ea1b2f7fa68579cda3dd5c992b"
+  },
+  "artifact_sha256": {
+    "target/perf-runtime/release/trames-run": "0fbc2ef91f324c6e76680cd211e07609c3f3eb55cd67d839eb52a418226a4bdd",
+    "target/perf-runtime/release/libtrames_ffi.a": "56e68ede1a9cad4993a3f6bab30bf27d7415d66fa252f185bb1c36abb11755e2",
+    "target/perf-runtime/release/libtrames_ffi.so": "d5c29b735d1ac38f7030d5dfa482d66096d5e64efdc0075615abeb2792ac1267",
+    "target/shared-log-wait-checks/before-trames-run": "3efcaee4ea8a836d308c061f8535be80a97b0798ec0a1cc25896f96e73411883",
+    "target/shared-log-wait-checks/worker-log-wait": "2cce47a628b27c3c072524e99617c311945a6904fa9efd4359623c199922ec95",
+    "target/shared-kernel-log-checks/worker-syslog": "2e8634e4d27849e3f92e170ee713d7cb2cc70a126787eaf0b01865ed8ebd33ab",
+    "target/shared-kernel-log-checks/compatibility-log": "66b3408f14d906b12b7accb11e81f80e68d5aad977083e3b2953dd12a17a463b"
+  },
+  "runner_sha256": "0fbc2ef91f324c6e76680cd211e07609c3f3eb55cd67d839eb52a418226a4bdd",
+  "baseline_sha256": "3efcaee4ea8a836d308c061f8535be80a97b0798ec0a1cc25896f96e73411883",
+  "baseline_evidence": "docs/validation/shared-kernel-log-summary.json",
+  "distinct_rust_tests": 14,
+  "guest_cases": 11,
+  "baseline_passes": 1,
+  "baseline_unsupported_kmsg_epoll_attempts": 1,
+  "native_kernel_log_tests": 0,
+  "results": {
+    "units": {
+      "path": "target/shared-log-wait-checks/unit-final-results.json",
+      "sha256": "114cb8bc69217c50b49b2398b534010a851f9b4c710c452e42a4966fae4817e5"
+    },
+    "wait_guest": {
+      "path": "target/shared-log-wait-checks/guest/results.json",
+      "sha256": "f954946fb44279dce5bb7c09584d78396d7139a70dd2ad8fd972a32e55a27561"
+    },
+    "regression": {
+      "path": "target/shared-log-wait-checks/regression-results.json",
+      "sha256": "3e873e2ef3ba772cc31ba350cd200fcf413524f6b1f82d7df77bf4a34ac6ea0a"
+    }
+  },
+  "routing": {
+    "scope": "Identical no-epoll mode, 3 kinds x 8 fork handshakes, memory backend, 2 guest CPUs; one run per version, no wall-time speed claim",
+    "before_parallel_rounds": 55,
+    "after_parallel_rounds": 17,
+    "after_service_requests": 0,
+    "after_worker_io_waits": 52
+  },
+  "builds": {
+    "release_cli_ffi": "target/shared-log-wait-checks/release-build.log",
+    "strict_release_clippy": "target/shared-log-wait-checks/clippy.log",
+    "format": "target/shared-log-wait-checks/fmt.log",
+    "diff_whitespace": "target/shared-log-wait-checks/diff-check.log"
+  },
+  "log_sha256": {
+    "target/shared-log-wait-checks/check.log": "11447de849642ea9bd463a1eb294d7da94184922a7253cf71bc6137b0070f1a3",
+    "target/shared-log-wait-checks/clippy.log": "164ec7326e9a7b9501cfc6c24b569dcfbae4aeb3055a191d5a746d959e8978a0",
+    "target/shared-log-wait-checks/diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/shared-log-wait-checks/fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/shared-log-wait-checks/release-build.log": "7baa62a8369dbc194d6def808aa70f7f5ee95d173564f56a0c31e7fd9c7a6a53",
+    "target/shared-log-wait-checks/unit-build.log": "9dc4c54816a15e78d02377429bb9fcea9a48314fe242f805bf4fccc01516c780",
+    "target/shared-log-wait-checks/unit-complete-build.log": "4844a1cf0981ca3c6ef8ee914d177db1a5e9365e70442ea6ffeb611e5aa2a837",
+    "target/shared-log-wait-checks/unit-core-retry.log": "8b53bdcefea1e1e972bd8929ce07da70d2728e92c5ae5205cbc4b416f3d306d2",
+    "target/shared-log-wait-checks/unit-core.log": "3533e356485c34aaea7db85c0a1545a775e7055fce9d047c33146f42349413ca",
+    "target/shared-log-wait-checks/unit-final-build.log": "d6f0c4fbb7b896f0564d32fb8a03db74ea7152b4e89f17803a03285b62f03863",
+    "target/shared-log-wait-checks/unit-linux-retry.log": "0e33d912bbe4235039a2a0eabf04b158bc064b09fca9243a865829140a183d20",
+    "target/shared-log-wait-checks/unit-linux.log": "64a0188f9c0581bc4b45474e8c5728721fd122019ba93d97c6ac4109cac320c9",
+    "target/shared-log-wait-checks/unit-vfs-retry.log": "a827d26f2ccb7f2609be61c6909c902b8f6846bf334356d8a311f69d445714df",
+    "target/shared-log-wait-checks/unit-vfs.log": "c7e915fbfdb3a19144702e4884608a70d6997d9eaf0c835b46250b1cc4748ce9"
+  },
+  "baseline_logs": {
+    "target/shared-log-wait-checks/baseline-memory-2.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/shared-log-wait-checks/baseline-memory-2.stderr": "c5425aa6a316be098b5dfd5027154908819e4574a29c5a8d6c1bbd03936ec16e",
+    "target/shared-log-wait-checks/baseline-no-epoll-memory-2.stdout": "b669d3008966a255b0c8fbcf92eb39df84954fa6ad12b582380234a617599ebc",
+    "target/shared-log-wait-checks/baseline-no-epoll-memory-2.stderr": "6f0cc68fb9ed604ae76e31b68150c90a879545fe334d550d38882c9edbffab42"
+  },
+  "validation_notes": "Initial full baseline guest rejects kmsg epoll_ctl (existing unsupported path). Same final ELF no-epoll mode passes both versions; new epoll tested separately. Initial three new units lacked pseudo runtime initialization and failed ENOENT; fixed before retry. Nine earlier successful units reused; retries plus two admission checks give fourteen distinct passes. Baseline logs and failed unit output retained. Tests followed completed builds; unchanged query/compatibility ELF reused.",
+  "reuse": "No CPU, CoreMark, Docker or graphics rerun; mapped/OOM/BPF and other unchanged ownership evidence reused. Blocking resources use existing notifications and run queue, no new polling/service thread.",
+  "raw_artifacts": "target/shared-log-wait-checks",
+  "ipa_built": false,
+  "limits": "Complete FD/OFD installation/close/dup, epoll registration, Node/pages, VM/task/credentials lifecycle and global cohort stops remain owner-bound. Linux x86_64 host/AArch64 guest validation, no Apple/iPad speed claim."
+}

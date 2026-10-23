@@ -1,0 +1,19 @@
+{
+  "crates/trames-memory/src/cpu_memory.rs": "81c5e87ff1f5c21479682e326020268f45d919f822ee77409f01176eb52f3060",
+  "crates/trames-memory/src/parallel.rs": "e66f8abe4d557816e9952b5a66a170cdeed4d4033b781eb5b8a17455ce7506ed",
+  "crates/trames-vulkan/src/backend.rs": "cc1bce7f681bba17ed4033d13a7a09253655e2bb201507098929a2fa212c2f75",
+  "crates/trames-vulkan/src/backend/coherent.rs": "b93e4b05cef2b9fb7b484d0ae28924ed8fe5d068bdb77fa3bddd6ca613355871",
+  "crates/trames-vulkan/src/backend/graphics.rs": "5e121d04f379eabf153152012551e7e7afe94c8a6bee53ee818039545bdcdd12",
+  "crates/trames-vulkan/src/backend/zink.rs": "2c9895006867e9be64fd2a418ce3d8048aefe6f1d51a40478fddb451bbd6e83d",
+  "crates/trames-vulkan/src/backend/wayland.rs": "8e3d83811386f73c9ebf5383f1d4665ee98b063dd84a3ec559d7e1238b21b221",
+  "crates/trames-vulkan/src/backend/wsi.rs": "343b4caea540bd545322bd86bf8b540288b122a3cb5504214e3eebb1dab84a6b",
+  "crates/trames-vulkan/src/backend/textures.rs": "b67069b45a4769d266da35ff0ac72cb83232dbaca6f3570030af2c8c9f3d87eb",
+  "crates/trames-vulkan/src/lib.rs": "910c70dce9eaadf861547406c5fccbc05b314cb9acbe20af51a08066d9b60260",
+  "crates/trames-core/src/process.rs": "69638accdcf1bcf71cca3fe3a4df80991b7a6657b4e2a3fe80639657d4764f46",
+  "crates/trames-core/src/workers.rs": "ff9550935f4c796d605d28ebc6195cd72d07c93e2d5bda6b1ebe5f987c12dcda",
+  "crates/trames-core/src/run_queue.rs": "fdaa143076fb46235030fcd7f51fff6143d91039391f2965b7e7d5e87374ee68",
+  "crates/trames-core/src/process_service.rs": "3e1f8add87aa6f1e4bc47b1f647eab4c7efb45368caafb477abf4bbdabd162f5",
+  "crates/trames-core/src/lib.rs": "293e2a9ea25a850a4ad1faebffc94822e1f363b68458302c466ca39599539ed0",
+  "crates/trames-cli/src/main.rs": "e50f89127fcce9b6b2e57d2524fd42063e731cb06d08934df9ec621d49dfda23",
+  "crates/trames-accel/src/native.rs": "f81a0f5464b823154d42cb45cee5cad20d2145f107f0c85be51e646bc4728749"
+}

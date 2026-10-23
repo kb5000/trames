@@ -1,0 +1,88 @@
+{
+  "date_utc": "2026-10-23",
+  "status": "rejected_and_restored",
+  "counted_as_migration_batch": false,
+  "production_batch": 33,
+  "scope": "Prototype Arc FilePage plus RwLock layout and atomic dirty/version. Functionally validated but serial mapped access regressed, so only mapped.rs experiment reverted. Unix/FIFO migrations and FIFO hardlink fix retained.",
+  "candidate": {
+    "source_path": "target/shared-file-page-checks/candidate-mapped.rs",
+    "source_sha256": "0a1cad43f1a35d2a22d7e6fb001b3130b7a6f0641689c3ed01e74509c49622b9",
+    "runner_path": "target/shared-file-page-checks/candidate-trames-run",
+    "runner_sha256": "ca8c04201e4ea152b5f6728d8f94912d71aa4d4e88b134681431acd2a2c5f039",
+    "rust_tests": 22,
+    "guest_cases": 8,
+    "release_cli_ffi": true,
+    "strict_clippy": true
+  },
+  "baseline": {
+    "runner_sha256": "3bc9d0d7aae0890a82cdd45c89beb2a80e5f96b314a1be8dcd0e6fc948fb0a2d",
+    "evidence": "docs/validation/shared-fifo-identity-summary.json"
+  },
+  "performance": {
+    "fixture_c_sha256": "9c288d566f4c1c814ffe42c3076a5bf8851c8b2e6313e0b5d5562485a2d86f51",
+    "guest_elf_sha256": "bd91921610ab5210f97cfc8da040368102750d927030fcf3ae9a89a19f4507a9",
+    "native_elf_sha256": "9121db1b95fb43a57704e712f04d4335049065e92c52ccdd5ff75a4a4518e12d",
+    "repeats_per_mode": 3,
+    "validated_guest_runs": 12,
+    "validated_native_modes": 2,
+    "host_affinity": [
+      0
+    ],
+    "summary": {
+      "file": {
+        "median_cpu_seconds": {
+          "before": 0.582463498,
+          "after": 0.740705607
+        },
+        "after_over_before": 1.2716772974501487
+      },
+      "memfd": {
+        "median_cpu_seconds": {
+          "before": 0.591453645,
+          "after": 0.744268099
+        },
+        "after_over_before": 1.258370973434444
+      }
+    },
+    "scope": "Fixed five million volatile uint64_t mapped writes/reads, identical checksum/backing checks, alternating before/after on one host CPU. No CoreMark/product/iPad claim."
+  },
+  "results": {
+    "units": {
+      "path": "target/shared-file-page-checks/unit-results.json",
+      "sha256": "286a6b5c1aea66037515b1942cacace3c22d3a0357f4d1c12506b65c577130f2"
+    },
+    "guest": {
+      "path": "target/shared-file-page-checks/guest-results.json",
+      "sha256": "f87d2796a545fb94da3f67b16aebaea574df0c1e547884068b7bf21902584d97"
+    },
+    "performance": {
+      "path": "target/shared-file-page-checks/perf-results.json",
+      "sha256": "2ef0e2fffa5dbf606e49cb638ba6b2f23faf08b93cfb7b3064903d51d830ffdc"
+    }
+  },
+  "reusable_bench_source_sha256": {
+    "tests/fixtures/mapped-access-bench.c": "e2692febdf2555b6de00973fcd18802821f9aedd6733f319d8da23b5f619c8f4",
+    "tests/performance/mapped-access.py": "59480ec2fd12fbd5ee2f5d918119c0ace3b1d9530940ff76d42b897e2c16bee9"
+  },
+  "restored": {
+    "mapped_source_sha256": "8d9781593fd983da12b9e551b788cc748c84e7c43af6f8e3733596e5ca89d701",
+    "artifacts": {
+      "target/perf-runtime/release/trames-run": "3bc9d0d7aae0890a82cdd45c89beb2a80e5f96b314a1be8dcd0e6fc948fb0a2d",
+      "target/perf-runtime/release/libtrames_ffi.a": "f85625c60071556ed118ef41fb956eb5a83be6144b0ba4338c909a07b75bb26d",
+      "target/perf-runtime/release/libtrames_ffi.so": "b156ee23cc6a816795e8f1cefced8ba3c396c3b8922732102badde9a948eb0b4"
+    },
+    "identical_to_batch_33": true,
+    "validation_reused": "docs/validation/shared-fifo-identity-summary.json"
+  },
+  "log_sha256": {
+    "target/shared-file-page-checks/unit-build.log": "63e282d364bd19e35ef959d9fa6655d02e3ac99039c5d5660d0279a2cba6cbcd",
+    "target/shared-file-page-checks/release-build.log": "55cd87025810191da35aeb278e3baab30a037b35d390e1270aa87b1e72bbbb76",
+    "target/shared-file-page-checks/clippy.log": "7d5a24efda6fa1dc3d0f8f2b9ffd200e3be023b6bbdcbbef6b9689ffebdabe86",
+    "target/shared-file-page-checks/restored-unit-build.log": "2e1f45144ca3d5bebab7c6bbdab01df97fd928c030ef9b898e542a33203f0b6a",
+    "target/shared-file-page-checks/restored-release-build.log": "478927f3af03526360998aaea711b69da3be9b693f51b6d9bfaff1a5303ab991",
+    "target/shared-file-page-checks/perf-limit-initial.stderr": "153e46d41b9db71d3217ebf123bd7fd26527fc67ea1dae334b2c0328b16d2a4c"
+  },
+  "raw_artifacts": "target/shared-file-page-checks",
+  "ipa_built": false,
+  "limits": "Linux x86_64 host with ARM64 guest. Prototype remains only in local archive. Layout lock does not enter worker View byte access but costs serial FileMapping hot accesses. Full page/inode ownership, stable serial page-capability invalidation and VM lifecycle remain unresolved; no global VFS lock or blanket unsafe Send introduced into production."
+}

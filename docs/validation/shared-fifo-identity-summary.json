@@ -1,0 +1,73 @@
+{
+  "date_utc": "2026-10-23",
+  "batch": 33,
+  "complete_coordinator_removal": false,
+  "scope": "Remove Rc<RefCell<Pipe>> allocation and owner metadata dependency from FIFO inode/resource identity. Keep actual PipeEndpoint final-close authority and owner inode anchors for anonymous descriptors/native relay. Also fix previously rejected named FIFO hardlinks.",
+  "source_sha256": {
+    "crates/trames-vfs/src/pipe.rs": "240908a30cdf643599e49cfcb62c63c15b50d7bd286b39ef6f1b46913897ee67",
+    "crates/trames-vfs/src/ipc/native.rs": "e7d99e72aa4fae4416fdc16abfd1f54be5048f6657b60626be07bd8b4c12ea60",
+    "crates/trames-vfs/src/lib.rs": "c999e9d84d223a4aeed16e1165bca9f25805308f77ec6b92759f3b0d5b44e4a1",
+    "crates/trames-vfs/src/pseudo.rs": "767de9a63b33ed4319c9e005a1018e3afee8f2c5913b86b17d51b1f7cf109560",
+    "crates/trames-vfs/src/storage.rs": "349234b8a1ef157f154751c9e290cc245d36c9e4e1707cf9efdb45afeb89a7da",
+    "crates/trames-vfs/src/storage_tests.rs": "6f88a07a925bd3dede41032facbe693b19323c78514070c993d4adc51deda379",
+    "tests/fixtures/unix-sockets.c": "5b72ea9264976961a3c8bbccfc2d23503377e400a096d6422f5660f31c32d8af",
+    "tests/fixtures/m6.c": "695640a0b202a9c629a1866f9e694fb55778ccb84c31289fd25ad7b4cbf646c1"
+  },
+  "artifact_sha256": {
+    "target/perf-runtime/release/trames-run": "3bc9d0d7aae0890a82cdd45c89beb2a80e5f96b314a1be8dcd0e6fc948fb0a2d",
+    "target/perf-runtime/release/libtrames_ffi.a": "f85625c60071556ed118ef41fb956eb5a83be6144b0ba4338c909a07b75bb26d",
+    "target/perf-runtime/release/libtrames_ffi.so": "b156ee23cc6a816795e8f1cefced8ba3c396c3b8922732102badde9a948eb0b4",
+    "target/shared-fifo-identity-checks/before-trames-run": "b11a64ad3910c37a814a6b8a237ed6e206b96277565c336b88c42412c856e18c",
+    "target/shared-fifo-identity-checks/fifo-abi.c": "9bd1ad42fa18d75242c0aad82514665d4ceff7c905a3f6a7233aadbc93aacd80",
+    "target/shared-fifo-identity-checks/fifo-abi": "c6e5907f023911d8856baa1ee835663f2696ca4bf44e75bc915f697a2ed97e96",
+    "target/shared-fifo-identity-checks/fifo-abi-host": "a1a41d9e47b71a4bdd1f26f68cc3abe25741732d5d25b269748b81c7910e271e",
+    "target/shared-fifo-identity-checks/m6": "5899f0076253865e8ffed3b3e0d550b13f6073c429c266f09efcd2e4a3e10805",
+    "target/shared-fifo-identity-checks/m6-host": "348726870c62884d2d11f5a91e7c1ca0a81336aff1a7aaf2defdb46a171b3485",
+    "target/shared-fifo-identity-checks/run-guest.py": "6af4091fe0bc4ae8bfe6404e83ca2bc1f388f79365bc76b8a9150969a79db5c5",
+    "target/shared-fifo-identity-checks/run-units.py": "c09136e1fff986ee7a6e86c058ae0202a8f39460b54c0bb6746602d06025e16c"
+  },
+  "runner_sha256": "3bc9d0d7aae0890a82cdd45c89beb2a80e5f96b314a1be8dcd0e6fc948fb0a2d",
+  "baseline_sha256": "b11a64ad3910c37a814a6b8a237ed6e206b96277565c336b88c42412c856e18c",
+  "baseline_evidence": "docs/validation/shared-unix-binding-summary.json",
+  "results": {
+    "units": {
+      "path": "target/shared-fifo-identity-checks/unit-results.json",
+      "sha256": "a1a94f43f1d7f17ce895686a321704e738c4ac018c9ab653e12fef7a535ecc41"
+    },
+    "guest": {
+      "path": "target/shared-fifo-identity-checks/guest-results.json",
+      "sha256": "c58faf38babff73852c9e484e9f0e383b665e08f4fb6849e6be13e28977c0c6e"
+    },
+    "native_baseline": {
+      "path": "target/shared-fifo-identity-checks/native-baseline-results.json",
+      "sha256": "f46f1be527b20aaa23d64d992a72aaf3aca724b0888ca3171007f35d0ae6c5b4"
+    }
+  },
+  "distinct_rust_tests": 19,
+  "rust_test_counts": {
+    "vfs": 16,
+    "linux": 3
+  },
+  "guest_cases": 12,
+  "baseline_legacy_passes": 1,
+  "baseline_existing_bug_reproductions": 1,
+  "native_cases": 2,
+  "log_sha256": {
+    "target/shared-fifo-identity-checks/unit-build.log": "6bfc2aeb1e8eb7581bf3285a62782084782a0179720d9a252aaacff5adbfc042",
+    "target/shared-fifo-identity-checks/unit-final-build.log": "7844fed664edf228887fc15bea36491b38bf47f7d1fb88fbff756252fd50735a",
+    "target/shared-fifo-identity-checks/unit-initial.log": "5085e76fdf8e46cd0e5dd8c7ca90786d819388691019fb1d6923f30da7eee3aa",
+    "target/shared-fifo-identity-checks/unit-followup.log": "077aaa653c0134f3737f467aec5a62348640c384d36e46ca264ac6757f1eaae3",
+    "target/shared-fifo-identity-checks/release-final-build.log": "d285252c6d61e977178e04f88822aebeff99aaf012768cb33a3a7f67962c785f",
+    "target/shared-fifo-identity-checks/clippy.log": "b95552863786f508725bb8b89f187a83f43722315ec28712158beee736167f84",
+    "target/shared-fifo-identity-checks/baseline-links.stderr": "c74c38751fad22632810248bb83578a71f5d54fdfbe966afc983abfef9468351"
+  },
+  "reuse": "Initial FIFO hardlink check exposed existing EPERM. After adding FIFO to existing persistent hardlink transaction, reran only that failed check and expanded persistence check; other 17 passed Rust cases reused. Unix fixture wrapper calls only affected pipe/FIFO functions; M6 runs only fifos. No rerun of batch 32 pathname/netns or unrelated CPU/GPU/browser/Docker/CoreMark.",
+  "compatibility_fix": "Allow nonvolatile FIFO hardlinks through existing inode/manifest link transaction; baseline runner independently fails same new native-passing guest hardlink case with EPERM. Path replacements remain distinct; deleted open FIFO remains usable; restored hardlinks share a new empty channel.",
+  "builds": {
+    "release_cli_ffi": "target/shared-fifo-identity-checks/release-final-build.log",
+    "strict_release_clippy": "target/shared-fifo-identity-checks/clippy.log"
+  },
+  "raw_artifacts": "target/shared-fifo-identity-checks",
+  "ipa_built": false,
+  "limits": "Pipe identity is Send+Sync by composition; drops Rc/RefCell wrapper allocation and borrows but no aggregate speedup benchmark. PipeEnd/OFD inode metadata, FD mutation, path/blocking-open/splice control, mapping and task ownership remain owner-bound. No new worker syscall admission. Linux x86_64 with ARM64 guest and native C oracles; no Apple/iPad validation."
+}

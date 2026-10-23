@@ -1,0 +1,61 @@
+{
+  "date_utc": "2026-10-23",
+  "batch": 28,
+  "complete_coordinator_removal": false,
+  "scope": "Shared actual inotify instance and weak shared-source registration index; worker watch removal cleans the same index/marks, atomic existing-watch update prevents ignored-WD resurrection. Full OFD/FD/path lifecycle remains joined.",
+  "source_sha256": {
+    "crates/trames-vfs/src/inotify.rs": "1a5bf791fb57fe04a7af4095c4d5f227cecc000f9db48469c5c0b357b578be64",
+    "crates/trames-vfs/src/inotify/queue.rs": "2144bb7a84a71d41c8585c6cf6f2bec5c48233762bcb169bfd2803e07e0ffc0e",
+    "crates/trames-vfs/src/lib.rs": "6d1b31dce2123a6c8b8af092190262e036be0093011bd340d11bad1304b0d0b0",
+    "crates/trames-vfs/src/uring.rs": "e0760da09e57b365afd3fc07eab420a97da6f15a86476c4b1f5a71ee348c2ecd",
+    "crates/trames-vfs/src/events.rs": "866beaeb2d0615d76296a6689073ffdf6b7918d1e5f6dadc87fe359ce1811a48",
+    "crates/trames-vfs/src/direct_io.rs": "3997c4d4494d7f99140539d5cd5cc6762cf4e4cdc0017caf46d4418ef7d32c0d",
+    "scripts/audit-syscalls.py": "68930ad3b377e4a09a4ac94a9f42b7e3d75880450b825492711d20dbbb5068e6",
+    "tests/fixtures/inotify.c": "c8f3c70ee7b8d86abbf11b55cb788d083ba117cc3e21e54bc277492a2630336e",
+    "tests/fixtures/worker-inotify.c": "7325fd21d4a24ca8b2ff8acb5fdb740e132822edaa60e0f1aa5bd38431f89b4c"
+  },
+  "artifact_sha256": {
+    "target/perf-runtime/release/trames-run": "5067cd6cdfc072e46617c9ac609f2824278a5e79eefa72556f52be152ced952a",
+    "target/shared-inotify-instance-checks/before-trames-run": "5aacef0439b9701551928ef0b616ebc384d13a6335bf49b0e598b380738549ff",
+    "tests/fixtures/bin/inotify": "9001b9e8d6212f2e63268b9d07b1d0196e66979df8498e090139a7557728d618",
+    "tests/fixtures/bin/worker-inotify": "ef704503ce5faabc3d605b92e441ec69797189ffcb803cb59e3e816b5f50cc13",
+    "target/worker-inotify-checks/native-inotify": "fc36b24ede322fc35d954c95576042457155419aa9d32506df61d3674d370a9c",
+    "target/worker-inotify-checks/native-worker-inotify": "f76c1b5ac0975f6fef222a1ef354fb690cf4aeb489959487e09e87234bc365af"
+  },
+  "runner_sha256": "5067cd6cdfc072e46617c9ac609f2824278a5e79eefa72556f52be152ced952a",
+  "baseline_sha256": "5aacef0439b9701551928ef0b616ebc384d13a6335bf49b0e598b380738549ff",
+  "baseline_evidence": "docs/validation/shared-close-notifications-summary.json",
+  "results": {
+    "units": {
+      "path": "target/shared-inotify-instance-checks/unit-results.json",
+      "sha256": "faea52f5bf3f2ca106be7fbec316b13deedcc6bc89da26a67701dff65e8aead4"
+    },
+    "guest": {
+      "path": "target/shared-inotify-instance-checks/guest/results.json",
+      "sha256": "5b0d998e68583ac9587de434a6ed2162732dc8b6fb0612709cec24c03c4d5378"
+    },
+    "reused_native": {
+      "path": "target/shared-close-notifications-checks/native-results.json",
+      "sha256": "7ba2234ee058d48fd07763d12e634252785bab97c322ae1983035c183c1585bc"
+    }
+  },
+  "distinct_rust_tests": 17,
+  "rust_test_counts": {
+    "vfs": 17
+  },
+  "log_sha256": {
+    "target/shared-inotify-instance-checks/release-build.log": "7682df0cc9884b626cf03dd500fa91a235d364a4c0aa82878a8201da46fe8cb7",
+    "target/shared-inotify-instance-checks/unit-build.log": "df0477bb3658848c5e78f023a2c5fe81a9014e3869b2c4d85dfd56ea09367c0a",
+    "target/shared-inotify-instance-checks/check.log": "c6183198fe7608de7f7f5abc7069dc6083e800db51c808797ab5cb53ba35d37a",
+    "target/shared-inotify-instance-checks/clippy.log": "5d83fb61fbce67189cf1f5f226eca2e827eb2a866d88b34a5a79d3674688ded9",
+    "target/shared-inotify-instance-checks/unit-vfs.log": "86a25ae06b18c755311bca4c9aa18e3bdb163a94d5c70c9de9f6ef4dfe01ec0e"
+  },
+  "reuse": "Unchanged native oracle results and pinned source/artifact hashes reused from batch 27. New runner executes both static ARM64 inotify fixtures on memory/disk x 1/2/4 CPU. Only affected VFS tests run, with unique exact filters; no unrelated CPU/GPU/browser/Docker rerun or extra benchmark comparison.",
+  "builds": {
+    "release_cli_ffi": "target/shared-inotify-instance-checks/release-build.log",
+    "strict_release_clippy": "target/shared-inotify-instance-checks/clippy.log"
+  },
+  "raw_artifacts": "target/shared-inotify-instance-checks",
+  "ipa_built": false,
+  "limits": "InotifyInstance is Send+Sync by composition and is used by production OFDs. Final worker release is tested. Full OpenDescription/FD membership, epoll target identity and other endpoint lifetimes still have owner references; no claim of complete coordinator removal or overall speedup."
+}

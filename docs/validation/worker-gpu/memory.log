@@ -1,0 +1,9 @@
+
+running 4 tests
+test cpu_memory::tests::serial_exclusive_zero_load_preserves_demand_zero_accounting_and_cpu_alias ... ok
+test cpu_memory::tests::external_chunks_share_worker_reservations_permissions_and_dirty_publication ... ok
+test cpu_memory::tests::serial_reservations_track_granules_aba_native_writes_and_fork_cow ... ok
+test cpu_memory::tests::trusted_backings_borrow_once_and_unknown_read_callbacks_can_reenter ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 91 filtered out; finished in 0.00s
+

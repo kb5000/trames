@@ -1,0 +1,10 @@
+
+running 5 tests
+test worker_syscalls::tests::fd_queries_complete_locally_but_mutating_fcntl_keeps_checkpointing ... ok
+test worker_syscalls::tests::clock_and_processor_writes_use_checked_shared_guest_memory ... ok
+test worker_syscalls::tests::coarse_clocks_share_the_epoch_of_their_high_resolution_counterparts ... ok
+test worker_syscalls::tests::private_wakes_claim_waiters_and_preserve_bitsets_and_validation ... ok
+test worker_syscalls::tests::shared_wait_parser_preserves_absolute_clocks_flags_and_error_order ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 122 filtered out; finished in 0.00s
+

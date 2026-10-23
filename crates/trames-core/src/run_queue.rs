@@ -9,7 +9,7 @@ use std::{
     collections::{BTreeMap, BTreeSet, VecDeque},
     sync::{
         atomic::{AtomicU64, Ordering},
-        Arc, Condvar, Mutex, Weak,
+        Arc, Condvar, Mutex, OnceLock, Weak,
     },
     time::{Duration, Instant},
 };
@@ -20,10 +20,11 @@ pub(super) struct WaitState {
     pub wait: Arc<Wait>,
     pub deadline: Option<Instant>,
 }
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub(super) struct IoCall {
     pub number: u32,
     pub args: [u64; 6],
+    pub flock: Option<trames_vfs::FlockRequest>,
     pub deadline: Option<Instant>,
 }
 impl From<&trames_linux::PendingIo> for IoCall {
@@ -31,6 +32,7 @@ impl From<&trames_linux::PendingIo> for IoCall {
         Self {
             number: io.number,
             args: io.args,
+            flock: io.flock.clone(),
             deadline: io.deadline,
         }
     }
@@ -47,6 +49,7 @@ pub(super) struct Stats {
     pub direct_syscalls: u64,
     pub futex_wakes: u64,
     pub futex_woken: u64,
+    pub futex_requeues: u64,
     pub serviced_syscalls: u64,
     pub service_wait: Duration,
     pub syscall_time: Duration,
@@ -63,6 +66,8 @@ pub(super) struct Stats {
     pub socket_syscalls: u64,
     pub timer_syscalls: u64,
     pub poll_syscalls: u64,
+    pub uring_syscalls: u64,
+    pub fd_syscalls: u64,
     pub gpu: crate::workers::GpuStats,
 }
 pub(super) struct Job {
@@ -136,6 +141,7 @@ impl Stats {
             direct_syscalls: self.direct_syscalls,
             futex_wakes: self.futex_wakes,
             futex_woken: self.futex_woken,
+            futex_requeues: self.futex_requeues,
             serviced_syscalls: self.serviced_syscalls,
             service_wait: self.service_wait,
             syscall_time: self.syscall_time,
@@ -152,6 +158,8 @@ impl Stats {
             socket_syscalls: self.socket_syscalls,
             timer_syscalls: self.timer_syscalls,
             poll_syscalls: self.poll_syscalls,
+            uring_syscalls: self.uring_syscalls,
+            fd_syscalls: self.fd_syscalls,
             gpu: self.gpu,
             gpu_pending,
         }
@@ -168,11 +176,13 @@ struct Queues {
     finished: Vec<Done>,
     initial_slots: BTreeMap<u32, usize>,
     gpu_peak_pending: usize,
+    host_waiting: bool,
 }
 pub(super) struct Epoch {
     pub control: Arc<Control>,
     queues: Mutex<Queues>,
     changed: Condvar,
+    host_events: OnceLock<Option<Arc<trames_vfs::HostEvents>>>,
     pub io_target: Weak<dyn trames_vfs::IoWake>,
     deadline_origin: Instant,
     next_deadline: AtomicU64,
@@ -185,6 +195,7 @@ impl Epoch {
             control,
             queues: Mutex::default(),
             changed: Condvar::new(),
+            host_events: OnceLock::new(),
             io_target: me.clone(),
             deadline_origin: Instant::now(),
             next_deadline: AtomicU64::new(u64::MAX),
@@ -197,6 +208,12 @@ impl Epoch {
             .saturating_duration_since(self.deadline_origin)
             .as_nanos()
             .min((u64::MAX - 1) as u128) as u64
+    }
+    fn notify(&self) {
+        self.changed.notify_all();
+        if let Some(Some(events)) = self.host_events.get() {
+            events.wake();
+        }
     }
     fn publish_deadline(&self, deadline: Option<Instant>) {
         if let Some(deadline) = deadline {
@@ -249,7 +266,7 @@ impl Epoch {
     pub fn stop(&self) {
         let _q = self.queues.lock().unwrap();
         self.control.stop();
-        self.changed.notify_all();
+        self.notify();
     }
     pub fn assign(&self, chosen: &[(u32, usize)]) {
         let mut q = self.queues.lock().unwrap();
@@ -271,13 +288,14 @@ impl Epoch {
             job.waiting = None;
             job.stats.resumes += 1;
             self.ready(&mut q, job);
-            self.changed.notify_all(); // affinity can require a particular worker
+            self.notify(); // affinity can require a particular worker
         }
         // Wake may precede park. The ticket CAS is then consumed by park below.
         true
     }
     pub fn take(&self, slot: usize) -> Option<Box<Job>> {
         let mut q = self.queues.lock().unwrap();
+        let mut dispatched = false;
         loop {
             if self.control.stopped() {
                 return None;
@@ -333,6 +351,40 @@ impl Epoch {
                     j.affinity & (1 << slot) != 0 && !q.initial_slots.contains_key(&j.work.pid)
                 })
             });
+            let external = q
+                .parked
+                .values()
+                .any(|j| j.io.as_ref().is_some_and(|io| io.external_wait()));
+            if external && !q.host_waiting && (available.is_none() || !dispatched) {
+                let events = self
+                    .host_events
+                    .get()
+                    .and_then(Option::as_ref)
+                    .expect("host wait source");
+                q.host_waiting = true;
+                #[cfg(test)]
+                self.changed.notify_all();
+                events.arm();
+                // With runnable work this is one nonblocking dispatch at a
+                // scheduling boundary. Otherwise sleep until an actual event
+                // or deadline. No timer polling or dedicated reactor thread.
+                let until = if available.is_some() {
+                    Some(Instant::now())
+                } else {
+                    deadline
+                };
+                drop(q);
+                let result = events.wait(until);
+                q = self.queues.lock().unwrap();
+                events.disarm();
+                q.host_waiting = false;
+                dispatched = true;
+                if result.is_err() {
+                    self.control.stop();
+                }
+                self.notify();
+                continue;
+            }
             if let Some(i) = available {
                 let mut job = q.ready.remove(i).unwrap();
                 self.refresh_ready(&q);
@@ -353,9 +405,10 @@ impl Epoch {
                 && q.ready.is_empty()
                 && deadline.is_none()
                 && !q.parked.values().any(|j| j.gpu_pending.is_some())
+                && !external
             {
                 self.control.stop();
-                self.changed.notify_all();
+                self.notify();
                 return None;
             }
             q = if let Some(deadline) = deadline {
@@ -387,7 +440,7 @@ impl Epoch {
             job.stats.yields += 1;
             self.ready(&mut q, job);
         }
-        self.changed.notify_all();
+        self.notify();
     }
     pub fn park_io(&self, mut job: Box<Job>, pending: trames_linux::PendingIo) {
         let mut q = self.queues.lock().unwrap();
@@ -402,7 +455,7 @@ impl Epoch {
             self.publish_deadline(job.io.as_ref().and_then(|io| io.wake_deadline()));
             assert!(q.parked.insert(job.work.pid, job).is_none());
         }
-        self.changed.notify_all();
+        self.notify();
     }
     pub fn park_gpu(&self, mut job: Box<Job>, pending: crate::gpu::Pending) {
         let mut q = self.queues.lock().unwrap();
@@ -422,7 +475,7 @@ impl Epoch {
                 .count();
             q.gpu_peak_pending = q.gpu_peak_pending.max(count);
         }
-        self.changed.notify_all();
+        self.notify();
     }
     pub fn gpu_peak_pending(&self) -> usize {
         self.queues.lock().unwrap().gpu_peak_pending
@@ -444,7 +497,7 @@ impl Epoch {
         let mut q = self.queues.lock().unwrap();
         q.running -= 1;
         q.services += 1;
-        self.changed.notify_all();
+        self.notify();
     }
     pub fn pending_services(&self) -> usize {
         self.queues.lock().unwrap().services
@@ -470,14 +523,14 @@ impl Epoch {
                 self.control.stop();
             }
         }
-        self.changed.notify_all();
+        self.notify();
     }
     pub fn finish(&self, done: Done) {
         let mut q = self.queues.lock().unwrap();
         q.running -= 1;
         q.finished.push(done);
         self.control.stop();
-        self.changed.notify_all();
+        self.notify();
     }
     /// All launched workers must have acknowledged stop before this call.
     pub fn drain(&self) -> Vec<Done> {
@@ -502,6 +555,11 @@ impl Epoch {
 }
 
 impl trames_vfs::IoWake for Epoch {
+    fn host_events(&self) -> Option<Arc<trames_vfs::HostEvents>> {
+        self.host_events
+            .get_or_init(|| trames_vfs::HostEvents::new().ok())
+            .clone()
+    }
     fn wake_io(&self, signal: &Arc<trames_vfs::IoSignal>) {
         let mut q = self.queues.lock().unwrap();
         if self.control.stopped() {
@@ -519,7 +577,7 @@ impl trames_vfs::IoWake for Epoch {
             let mut job = q.parked.remove(&signal.pid).unwrap();
             job.stats.resumes += 1;
             self.ready(&mut q, job);
-            self.changed.notify_all();
+            self.notify();
         }
         // If still running, park_io consumes the signal's fired bit under this
         // same queue lock. Notifications never access a guest Memory or CPU.
@@ -529,7 +587,7 @@ impl trames_vfs::IoWake for Epoch {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use trames_memory::{Memory, Permissions, PAGE_SIZE};
+    use trames_memory::{CpuMemory, Memory, Permissions, PAGE_SIZE};
     fn job(pid: u32, epoch: &Arc<Epoch>) -> Box<Job> {
         let mut memory = Memory::default();
         memory.map(0x1000, PAGE_SIZE, Permissions::RW).unwrap();
@@ -547,6 +605,223 @@ mod tests {
             None,
         )
     }
+    fn tcp() -> (trames_vfs::Vfs, u32, std::net::TcpStream) {
+        use std::net::{Ipv4Addr, TcpListener};
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let mut v = trames_vfs::Vfs::default();
+        v.configure_network(trames_vfs::NetworkMode::Loopback)
+            .unwrap();
+        let fd = v.socket(2, 1, 0).unwrap();
+        let socket = v.socket_fd(fd).unwrap();
+        assert!(matches!(
+            socket.connect(listener.local_addr().unwrap()),
+            Ok(()) | Err(trames_net::NetError(115))
+        ));
+        let peer = listener.accept().unwrap().0;
+        assert_eq!(socket.connect_complete(), Ok(true));
+        (v, fd, peer)
+    }
+    fn tcp_wait(epoch: &Arc<Epoch>, direct: &trames_linux::DirectSyscalls, fd: u32, pid: u32) {
+        epoch.add(job(pid, epoch));
+        let mut running = epoch.take(0).unwrap();
+        let Some(trames_linux::IoAttempt::Blocked(pending)) = direct.start(
+            63,
+            [fd as u64, 0x1000, 1, 0, 0, 0],
+            running.work.memory.as_mut().unwrap(),
+            pid,
+            &epoch.io_target,
+            None,
+        ) else {
+            panic!("TCP must park");
+        };
+        assert!(pending.external_wait());
+        epoch.park_io(running, pending);
+    }
+    fn await_host_wait(epoch: &Arc<Epoch>) {
+        let until = Instant::now() + Duration::from_secs(2);
+        let mut q = epoch.queues.lock().unwrap();
+        while !q.host_waiting {
+            let left = until.saturating_duration_since(Instant::now());
+            assert!(!left.is_zero(), "executor never entered host wait");
+            q = epoch.changed.wait_timeout(q, left).unwrap().0;
+        }
+    }
+    #[test]
+    fn tcp_readiness_resumes_parked_view_and_socket_deadline_survives_retry() {
+        use std::io::Write;
+        let (v, fd, mut peer) = tcp();
+        v.socket_fd(fd)
+            .unwrap()
+            .set_io_timeout(true, Some(Duration::from_secs(2)));
+        let direct = trames_linux::DirectSyscalls::new(v.direct_descriptors())
+            .with_network(v.direct_network());
+        let epoch = Epoch::new(Arc::new(Control::new(100)));
+        tcp_wait(&epoch, &direct, fd, 1);
+        let deadline = epoch.queues.lock().unwrap().parked[&1]
+            .io
+            .as_ref()
+            .unwrap()
+            .deadline
+            .unwrap();
+        // Data precedes take/host wait: a level registration must retain it.
+        peer.write_all(b"x").unwrap();
+        let mut running = epoch.take(0).unwrap();
+        assert_eq!(running.stats.resumes, 1);
+        assert!(matches!(
+            direct.resume(
+                running.io.take().unwrap(),
+                running.work.memory.as_mut().unwrap()
+            ),
+            trames_linux::IoAttempt::Complete(Ok(1))
+        ));
+        assert_eq!(
+            running
+                .work
+                .memory
+                .as_ref()
+                .unwrap()
+                .read_array::<1>(0x1000)
+                .unwrap(),
+            *b"x"
+        );
+        // A checkpointed timeout must not be extended by cohort re-entry.
+        let expired = Instant::now() - Duration::from_secs(1);
+        assert!(deadline > expired);
+        assert!(matches!(
+            direct.start(
+                63,
+                [fd as u64, 0x1000, 1, 0, 0, 0],
+                running.work.memory.as_mut().unwrap(),
+                1,
+                &epoch.io_target,
+                Some(expired)
+            ),
+            Some(trames_linux::IoAttempt::Complete(Err(trames_vfs::Errno(
+                11
+            ))))
+        ));
+        epoch.finish(running.finish(None, 0));
+        assert_eq!(epoch.drain().len(), 1);
+    }
+    #[test]
+    fn stop_wakes_host_wait_and_releases_pending_fd_leases() {
+        let (mut v, fd, mut peer) = tcp();
+        let direct = trames_linux::DirectSyscalls::new(v.direct_descriptors())
+            .with_network(v.direct_network());
+        let epoch = Epoch::new(Arc::new(Control::new(100)));
+        tcp_wait(&epoch, &direct, fd, 1);
+        let e = epoch.clone();
+        let thread = std::thread::spawn(move || assert!(e.take(0).is_none()));
+        await_host_wait(&epoch);
+        epoch.stop();
+        thread.join().unwrap();
+        assert_eq!(epoch.drain().len(), 1);
+        v.close(fd).unwrap();
+        use std::io::Read;
+        peer.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
+        assert_eq!(peer.read(&mut [0; 1]).unwrap(), 0);
+    }
+    #[test]
+    fn socket_timeout_resumes_original_call_without_external_traffic() {
+        let (v, fd, _peer) = tcp();
+        v.socket_fd(fd)
+            .unwrap()
+            .set_io_timeout(true, Some(Duration::from_millis(20)));
+        let direct = trames_linux::DirectSyscalls::new(v.direct_descriptors())
+            .with_network(v.direct_network());
+        let epoch = Epoch::new(Arc::new(Control::new(100)));
+        tcp_wait(&epoch, &direct, fd, 1);
+        let mut running = epoch.take(0).unwrap();
+        let pending = running.io.take().unwrap();
+        assert!(pending.deadline.unwrap() <= Instant::now());
+        assert!(matches!(
+            direct.resume(pending, running.work.memory.as_mut().unwrap()),
+            trames_linux::IoAttempt::Complete(Err(trames_vfs::Errno(11)))
+        ));
+        epoch.finish(running.finish(None, 0));
+        assert_eq!(epoch.drain().len(), 1);
+    }
+    #[test]
+    fn local_resource_notification_interrupts_host_wait_without_network_traffic() {
+        let (mut v, fd, _peer) = tcp();
+        let [r, w] = v.pipe(0).unwrap();
+        let direct = trames_linux::DirectSyscalls::new(v.direct_descriptors())
+            .with_network(v.direct_network());
+        let epoch = Epoch::new(Arc::new(Control::new(100)));
+        tcp_wait(&epoch, &direct, fd, 1);
+        epoch.add(job(2, &epoch));
+        let mut running = epoch.take(0).unwrap();
+        let Some(trames_linux::IoAttempt::Blocked(pending)) = direct.start(
+            63,
+            [r as u64, 0x1000, 1, 0, 0, 0],
+            running.work.memory.as_mut().unwrap(),
+            2,
+            &epoch.io_target,
+            None,
+        ) else {
+            panic!("pipe wait");
+        };
+        epoch.park_io(running, pending);
+        let e = epoch.clone();
+        let thread = std::thread::spawn(move || e.take(0).unwrap());
+        await_host_wait(&epoch);
+        v.write(w, b"p").unwrap();
+        let mut running = thread.join().unwrap();
+        assert_eq!(running.work.pid, 2);
+        assert!(matches!(
+            direct.resume(
+                running.io.take().unwrap(),
+                running.work.memory.as_mut().unwrap()
+            ),
+            trames_linux::IoAttempt::Complete(Ok(1))
+        ));
+        epoch.finish(running.finish(None, 0));
+        assert_eq!(epoch.drain().len(), 2);
+    }
+    #[test]
+    fn flock_stop_hands_off_original_request_and_drops_old_subscriptions() {
+        let mut vfs = trames_vfs::Vfs::default();
+        let a = vfs.open_at(-100, b"/lock", 0x42, 0o600).unwrap();
+        let b = vfs.open_at(-100, b"/lock", 2, 0).unwrap();
+        vfs.flock(b, 6).unwrap();
+        let mut files = trames_vfs::FileEpoch::default();
+        let direct = trames_linux::DirectSyscalls::new(vfs.direct_descriptors())
+            .with_files(files.capture(&vfs, true));
+        let epoch = Epoch::new(Arc::new(Control::new(100)));
+        epoch.add(job(1, &epoch));
+        let mut running = epoch.take(0).unwrap();
+        let args = [a as u64, 2, 0, 0, 0, 0];
+        let Some(trames_linux::IoAttempt::Blocked(pending)) = direct.start(
+            32,
+            args,
+            running.work.memory.as_mut().unwrap(),
+            1,
+            &epoch.io_target,
+            None,
+        ) else {
+            panic!("flock wait");
+        };
+        let signal = Arc::downgrade(&pending.signal);
+        let request = pending.flock.as_ref().unwrap().clone();
+        epoch.park_io(running, pending);
+        epoch.stop();
+        let done = epoch.drain();
+        assert!(signal.upgrade().is_none());
+        assert!(done[0]
+            .io
+            .as_ref()
+            .unwrap()
+            .flock
+            .as_ref()
+            .unwrap()
+            .same_owner(&request));
+        assert_eq!(done[0].io.as_ref().unwrap().args, args);
+        vfs.flock(b, 8).unwrap(); // Old callback cannot resurrect this stopped epoch.
+        assert!(epoch.take(0).is_none());
+        assert_eq!(request.try_lock(), Ok(()));
+        files.finish();
+    }
+
     #[test]
     fn io_wake_before_park_and_stop_preserve_pending_call_and_release_subscriptions() {
         let mut vfs = trames_vfs::Vfs::default();

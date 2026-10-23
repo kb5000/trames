@@ -1,0 +1,66 @@
+{
+  "date_utc": "2026-10-23",
+  "batch": 21,
+  "complete_coordinator_removal": false,
+  "scope": "Shared inotify queue/watch admission and worker read/poll/rm_watch; watched regular-file short reads and in-place writes emit notifications without owner handoff. Path registration and full OFD lifecycle remain owner-local.",
+  "source_sha256": {
+    "crates/trames-vfs/src/inotify.rs": "c146af3299279f5116f0108620c14896d82f1f272aee79cefdfbfba71bcc49c2",
+    "crates/trames-vfs/src/inotify/queue.rs": "2bf740b30a65d37173f216c4decbea8445273e1158ac2e09918baeac16797bf7",
+    "crates/trames-vfs/src/direct_io.rs": "5a0bee8a28556a2d7c0bcdea06ab469809c5540a87639ac49c1389592426f1ed",
+    "crates/trames-vfs/src/events.rs": "9d418932a319ee7d162db424df38c0a1f35936cf98794b18be8b80efcb8611cc",
+    "crates/trames-vfs/src/file_io.rs": "df3703d924cd14b46e14ed26bba840b56d09ec8af1536acce040e23fae11b809",
+    "crates/trames-vfs/src/lib.rs": "d4be1a6ab05b69e6a6a932b93c8f45472e8c1eda32a47c242b7b9d7f26a1fe07",
+    "crates/trames-linux/src/direct.rs": "ba161da6def450f210e69f7c3abc6dd4248c04821299d85e8aac9bf4421657d6",
+    "crates/trames-linux/src/direct/uring.rs": "8abd6d79be81f21fb2d2d00ce9c594b868b5ba6a0709a98260b70f2883a44f5c",
+    "crates/trames-linux/src/state.rs": "50e0b05a167aad7b64842e1deee4875965be7108e6ef0472769d2f7f5ed9bb94",
+    "tests/fixtures/inotify.c": "c8f3c70ee7b8d86abbf11b55cb788d083ba117cc3e21e54bc277492a2630336e",
+    "tests/fixtures/worker-inotify.c": "7325fd21d4a24ca8b2ff8acb5fdb740e132822edaa60e0f1aa5bd38431f89b4c",
+    "tests/integration/worker-inotify.py": "0a980dcab4b9f54eb21d3cc11b8fec424c21d49654de160bbdf53ebf16240c7e",
+    "scripts/audit-syscalls.py": "51e555c8e94b66b761182347ce7d32080e7a5a4273f4bd40307f36052d5de1fc"
+  },
+  "artifact_sha256": {
+    "target/perf-runtime/release/trames-run": "839b31a5589e639f2ea4eacd2973b7ad175dcd2c65e68081fb0452b88f9af257",
+    "target/worker-inotify-checks/before-trames-run": "b588cce50e782eaed7448b412d16117ea7ba7a12f864a2bd7aeb531376aa8bdc",
+    "target/worker-inotify-checks/native-worker-inotify": "f76c1b5ac0975f6fef222a1ef354fb690cf4aeb489959487e09e87234bc365af",
+    "target/worker-inotify-checks/native-inotify": "fc36b24ede322fc35d954c95576042457155419aa9d32506df61d3674d370a9c",
+    "tests/fixtures/bin/worker-inotify": "ef704503ce5faabc3d605b92e441ec69797189ffcb803cb59e3e816b5f50cc13",
+    "tests/fixtures/bin/inotify": "9001b9e8d6212f2e63268b9d07b1d0196e66979df8498e090139a7557728d618",
+    "tests/fixtures/bin/io-uring-worker": "bfeeaa43c35026a49f92f4e2cefc1180dc900f5c2fc407741bbbcd3ffdac88c7"
+  },
+  "runner_sha256": "839b31a5589e639f2ea4eacd2973b7ad175dcd2c65e68081fb0452b88f9af257",
+  "baseline_sha256": "b588cce50e782eaed7448b412d16117ea7ba7a12f864a2bd7aeb531376aa8bdc",
+  "baseline_evidence": "docs/validation/shared-files-table-summary.json",
+  "results": {
+    "unit": {
+      "path": "target/worker-inotify-checks/unit-results.json",
+      "sha256": "7ad8317b5fa251dab04674f66dc9b27f108fc50c92af597408a535dc1590d14c"
+    },
+    "comparison": {
+      "path": "target/worker-inotify-checks/comparison-v3/results.json",
+      "sha256": "44847a8af9e79d90e414d09100e503324d99ef77d2e18aad21e9128001940a5d"
+    },
+    "compatibility": {
+      "path": "target/worker-inotify-checks/compatibility/results.json",
+      "sha256": "b1f2da274f8006876ec3e90e40d98fdff4737260642652b2cf3f7258db570375"
+    },
+    "uring": {
+      "path": "target/worker-inotify-checks/uring/results.json",
+      "sha256": "fa6f9c4e0173220d6a538b528bf542509583b5b9f7c186f88776bd71e97329e9"
+    }
+  },
+  "distinct_rust_tests": 122,
+  "medians_seconds": {
+    "before-1": 0.000294825,
+    "before-2": 0.008924151,
+    "before-4": 0.004493378,
+    "after-1": 0.000277109,
+    "after-2": 0.000789543,
+    "after-4": 0.000415338
+  },
+  "limits": "Short 64-round synthetic event workload on Linux x86_64 host, same static ARM64 ELF, three interleaved samples. Not iPad/CoreMark/app speed. 1/2/4 CPU memory and disk correctness checks. Reuse unaffected checks; no full CPU/GPU/browser/Docker rerun or IPA.",
+  "builds": {
+    "release_cli_ffi": "target/worker-inotify-checks/release-build.log",
+    "strict_release_clippy_five_crates_all_targets": "target/worker-inotify-checks/clippy.log"
+  },
+  "raw_artifacts": "target/worker-inotify-checks"
+}

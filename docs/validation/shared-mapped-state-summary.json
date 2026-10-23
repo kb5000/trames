@@ -1,0 +1,103 @@
+{
+  "date_utc": "2026-10-23",
+  "batch": 34,
+  "complete_coordinator_removal": false,
+  "scope": "Share mapping identity/change domain and live plain/memfd length capabilities independently of Node. Coalesce mtime to clean-to-dirty transitions while retaining per-write page/backing invalidation. Lower and volatile nodes retain owner semantics. FilePage layout is unchanged.",
+  "source_sha256": {
+    "crates/trames-vfs/src/mapped.rs": "b346e6a04375a2a4a4440b2769aa94f3c25ffc7c9cb896777fb0392685ab0d65",
+    "crates/trames-vfs/src/storage.rs": "349234b8a1ef157f154751c9e290cc245d36c9e4e1707cf9efdb45afeb89a7da",
+    "crates/trames-vfs/src/file_data.rs": "fb110934733436db0a23fa65d4f4f59d1fae841838ea21774f3df9f107fe4353",
+    "tests/fixtures/mmap-coverage.c": "53a408d791b1560df7193bc89af3080a8d4f32630783829243457517ff2a077b",
+    "tests/fixtures/mapped-access-bench.c": "e2692febdf2555b6de00973fcd18802821f9aedd6733f319d8da23b5f619c8f4",
+    "tests/performance/mapped-access.py": "59480ec2fd12fbd5ee2f5d918119c0ace3b1d9530940ff76d42b897e2c16bee9"
+  },
+  "artifact_sha256": {
+    "target/perf-runtime/release/trames-run": "8dc8c42c7808de26a2c0b5cf86c7a22eb53529c3eebe3587646a9b6bf738d32f",
+    "target/perf-runtime/release/libtrames_ffi.a": "a8b9981c8cf93be6f2d7271ead070327abb1438372ce63007aa8466e0fc8df63",
+    "target/perf-runtime/release/libtrames_ffi.so": "5f2f2207b54032559ce429e37dcb0666dc7af31bd3bf90748a74946d47637c87",
+    "target/shared-mapped-state-checks/before-trames-run": "3bc9d0d7aae0890a82cdd45c89beb2a80e5f96b314a1be8dcd0e6fc948fb0a2d",
+    "target/shared-mapped-state-checks/measured-trames-run": "55e16dbf27f0bef819fd9f82d79b61ea22a1ec03226d39fb42757add8367ed53",
+    "target/shared-mapped-state-checks/mapped-loop": "a5c1f07f168bbb313018cf930544a4bcb2a7891f8fc4031601b06ecb49234f4f",
+    "target/shared-mapped-state-checks/mapped-loop-host": "cdf694514e08d4621aa239ace119d3920e43362f274cf27dde59b629fa5b8d02",
+    "target/shared-mapped-state-checks/mmap-coverage": "aacc925d78c362be9d36fe7ae3feeae5f47295f6b43a4c4c185eee9ffc941f1d"
+  },
+  "runner_sha256": "8dc8c42c7808de26a2c0b5cf86c7a22eb53529c3eebe3587646a9b6bf738d32f",
+  "baseline_sha256": "3bc9d0d7aae0890a82cdd45c89beb2a80e5f96b314a1be8dcd0e6fc948fb0a2d",
+  "baseline_evidence": "docs/validation/shared-fifo-identity-summary.json",
+  "results": {
+    "units_initial": {
+      "path": "target/shared-mapped-state-checks/unit-results.json",
+      "sha256": "23e12792f81a27a70d445dc4ccabc08119eabfd1ee3bd06088cd0ebf992fa13c"
+    },
+    "units_followup": {
+      "path": "target/shared-mapped-state-checks/unit-followup-results.json",
+      "sha256": "a8189aa1fa7ac304155947343cb03e6f332883242d52c3286c0d7bced6daeecd"
+    },
+    "guest": {
+      "path": "target/shared-mapped-state-checks/guest-results.json",
+      "sha256": "321b873fd29a5ed5d0a6e016b724f0367062de2af0c53227caf2acd2362f76d9"
+    },
+    "performance": {
+      "path": "target/shared-mapped-state-checks/perf/results.json",
+      "sha256": "6751616e97df0450ad4c9268f0dc0b663e2db98ba4b552730ccb5056acad86eb"
+    }
+  },
+  "distinct_rust_tests": 24,
+  "guest_cases": 8,
+  "performance_guest_runs": 12,
+  "performance_native_cases": 2,
+  "reused_native_cases": 3,
+  "reused_native_evidence": {
+    "path": "docs/validation/shared-mapping-writers-summary.json",
+    "sha256": "8f25b97c7081f569cce7a991a95eed3237a757922a8b9dc82541a8e7d638451d"
+  },
+  "performance": {
+    "host": "x86_64",
+    "guest": "AArch64",
+    "guest_cpus": 1,
+    "host_cpu": 0,
+    "iterations": 5000000,
+    "paired_repeats": 3,
+    "summary": {
+      "file": {
+        "median_cpu_seconds": {
+          "before": 0.592042454,
+          "after": 0.471918048
+        },
+        "after_over_before": 0.7971017024397375
+      },
+      "memfd": {
+        "median_cpu_seconds": {
+          "before": 0.588518484,
+          "after": 0.477114199
+        },
+        "after_over_before": 0.8107038469840143
+      }
+    },
+    "measured_runner_sha256": "55e16dbf27f0bef819fd9f82d79b61ea22a1ec03226d39fb42757add8367ed53",
+    "limit": "Fixed one-page mapped volatile load/store diagnostic, not CoreMark, product or iPad performance. Measured before final volatile-node fallback correction; same ordinary/memfd byte path. Measured binary is retained separately."
+  },
+  "reuse": "23 initial Rust passes plus 8 guest cases; after adding volatile-node owner fallback, ran four affected Rust cases (one new, three reused selectors), 24 distinct total. Rebuilt final CLI/FFI; no rerun of unchanged guest/native scenarios. Verified reused mmap/native fixture source and artifact hashes against batch 31. No unrelated CPU/GPU/browser/Docker/CoreMark rerun.",
+  "log_sha256": {
+    "target/shared-mapped-state-checks/check-initial.log": "0ec26c5d4b65f251185f355a737cf4a2625f86fedb3f137ddcd361d2fcdfbbd8",
+    "target/shared-mapped-state-checks/clippy-final.log": "840ca8c68b1fdc26afd2827c26d02ff89058ff0869beb14e543403f03cd8f956",
+    "target/shared-mapped-state-checks/clippy.log": "c39bc7f62a8fb67de00bc0ab35306d28f1ec1d373868be39a1cecf5babeeae49",
+    "target/shared-mapped-state-checks/diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/shared-mapped-state-checks/fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/shared-mapped-state-checks/release-build.log": "8c035cfdd04713083a856e64b583db0b67dda663a7a45a454d4dd8f060740bb7",
+    "target/shared-mapped-state-checks/release-final-build.log": "e23db83b5b6ccf31594e7b527b1a62ebf35b3abdc031bcada531f93bf5b837ca",
+    "target/shared-mapped-state-checks/unit-build.log": "9a19969840ac23103688f83f000e7fbd7a4dc8dedc6abf8b331417bb40c8fe75",
+    "target/shared-mapped-state-checks/unit-final-build.log": "74bb1acaf60a45112b52f6253eb64d63152beebbf577fe354f637dca0ab5aefc",
+    "target/shared-mapped-state-checks/unit-followup.log": "87ba508f63aa783c61476a4116b99011b74ca355ad8899a5598d233928e7ee41",
+    "target/shared-mapped-state-checks/unit-vfs.log": "b09926e1cfc2e8b2cbf7ac818c52019d3c7ce3b70ebcd513c4daf13bbea765cc"
+  },
+  "builds": {
+    "release_cli_ffi": "target/shared-mapped-state-checks/release-final-build.log",
+    "strict_release_clippy": "target/shared-mapped-state-checks/clippy-final.log",
+    "format": "target/shared-mapped-state-checks/fmt.log",
+    "diff_whitespace": "target/shared-mapped-state-checks/diff-check.log"
+  },
+  "raw_artifacts": "target/shared-mapped-state-checks",
+  "ipa_built": false,
+  "limits": "PageBacking/FilePage/MappedData bytes, first-dirty inode timestamp, writeback, Lower, Node/OFD/FD/VM/task lifecycle are not fully shared. No additional worker opcode or mapping commit join removal; no page layout lock or generic unsafe Send introduced. Linux x86_64 only; no Apple/iPad validation."
+}

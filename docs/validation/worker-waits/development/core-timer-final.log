@@ -1,0 +1,20 @@
+
+running 1 test
+test workers::tests::timer_read_epoll_and_ppoll_rearm_and_wake_on_one_host_slot_without_services ... FAILED
+
+failures:
+
+---- workers::tests::timer_read_epoll_and_ppoll_rearm_and_wake_on_one_host_slot_without_services stdout ----
+
+thread 'workers::tests::timer_read_epoll_and_ppoll_rearm_and_wake_on_one_host_slot_without_services' (52899) panicked at crates/trames-core/src/workers.rs:1215:13:
+assertion `left == right` failed: mode=0 first pc=1004 outcome=Some(Yield { instructions: 0 }) peer pc=2010 outcome=Some(Yield { instructions: 0 }) x0=0 x8=124 x19=0 instructions=1000000000 remaining=0
+  left: 3
+ right: 8
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    workers::tests::timer_read_epoll_and_ppoll_rearm_and_wake_on_one_host_slot_without_services
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 128 filtered out; finished in 2.08s
+

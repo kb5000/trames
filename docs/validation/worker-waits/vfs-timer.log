@@ -1,0 +1,7 @@
+
+running 2 tests
+test timer_io::tests::periodic_expirations_keep_phase_accumulate_and_saturate ... ok
+test timer_io::tests::owner_worker_read_and_edge_oneshot_epoll_share_timer_state ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 194 filtered out; finished in 0.00s
+

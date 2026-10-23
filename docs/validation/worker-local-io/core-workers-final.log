@@ -1,0 +1,25 @@
+    Finished `release` profile [optimized] target(s) in 15.61s
+     Running unittests src/lib.rs (target/perf-runtime/release/build/trames-core/110419dd55a974e8/out/trames_core-110419dd55a974e8)
+
+running 19 tests
+test workers::tests::blocking_local_io_returns_to_scheduler_without_a_failed_rpc ... ok
+test workers::tests::deferred_native_reserves_hlt_before_effects_and_unstable_code_never_enters_body ... ok
+test workers::tests::dropping_an_unanswered_request_disconnects_a_reusable_reply_receiver ... ok
+test workers::tests::a_peer_completes_native_work_while_another_native_body_is_blocked_on_its_page ... ok
+test workers::tests::native_fallback_retires_once_but_fault_refunds_its_credit ... ok
+test workers::tests::fault_reports_retirement_from_all_preceding_polls ... ok
+test workers::tests::concurrent_workers_share_an_exact_non_divisible_budget ... ok
+test workers::tests::local_syscalls_continue_with_exact_budget_and_fall_back_before_mutations ... ok
+test workers::tests::pool_drop_drains_a_queued_request_and_returns_its_view_before_join ... ok
+test workers::tests::private_futex_wakes_without_waiters_run_to_the_instruction_budget ... ok
+test workers::tests::native_returns_continue_locally_with_exact_retirement_and_guest_state ... ok
+test workers::tests::native_peer_finishes_while_a_syscall_caller_is_parked_without_a_global_stop ... ok
+test workers::tests::production_native_calls_do_not_update_global_overlap_instrumentation ... ok
+test workers::tests::retains_cpu_through_many_polls_without_a_peer_or_coordinator_message ... ok
+test workers::tests::rejected_native_does_not_retire_and_stops_queued_peers ... ok
+test workers::tests::repeated_queries_run_without_a_coordinator_rendezvous ... ok
+test workers::tests::shared_pipe_read_finishes_without_any_coordinator_request ... ok
+test workers::tests::request_and_pool_teardown_stop_endless_guest_workers ... ok
+test workers::tests::reusable_reply_channel_handles_many_requests_and_views_without_replay ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 84 filtered out; finished in 0.02s

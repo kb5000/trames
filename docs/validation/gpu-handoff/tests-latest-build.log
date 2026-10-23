@@ -1,0 +1,4 @@
+   Compiling trames-core v1.3.0 (/workspace/trames/crates/trames-core)
+    Finished `release` profile [optimized] target(s) in 34.70s
+  Executable unittests src/lib.rs (target/perf-runtime/release/build/trames-core/039bcbaf91a8f539/out/trames_core-039bcbaf91a8f539)
+  Executable tests/wayland.rs (target/perf-runtime/release/build/trames-core/ddbf97d26631a962/out/wayland-ddbf97d26631a962)
