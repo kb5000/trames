@@ -88,10 +88,32 @@ Clippy. CPU 43 and Core 171 also pass (two manual Core benchmarks ignored).
 Strict iOS memory Clippy and the signed iOS FFI build pass. During the physical
 retry, a checkpoint at roughly three minutes measured about 1.04 GiB of MMU
 physical/CPU virtual reservations and 1.35 GiB physical footprint, without the
-previous host abort. This is an intermediate sample, not a peak or matched
-performance comparison. Firefox has not yet displayed a window; the run remains
-in progress and no startup or GPU acceptance is claimed yet. Device identifiers and original
-logs, screenshots, stacks and mapping dumps remain local.
+previous host abort. The final MMU reservation sample was about 1.21 GiB. These
+are samples, not peaks or a matched performance comparison.
+
+The final binary was observed with plain `firefox` for at least seven minutes,
+then with explicit `MOZ_ENABLE_WAYLAND=1 GDK_BACKEND=wayland`, a newly created
+profile and `about:blank` for at least eight minutes. Both retained GPU support,
+default preferences and sandbox/proxy settings. Neither reproduced the host OOM,
+but neither displayed a browser window. The first run was interrupted with
+Ctrl-C; the second was intentionally ended after diagnostic capture. Neither is
+normal-shutdown acceptance, and no full startup, page or GPU acceptance is
+claimed. Trames Dev was reopened to an idle terminal afterward.
+
+[Linux CI](https://github.com/kb5000/trames/actions/runs/40008374911) initially
+passed native workspace tests, strict Clippy, instrumented TSan and allocator
+ASan/UBSan checks, then failed five Core worker/statistics assertions under the
+independent ARM reference. The unmodified `dac3506`
+[baseline run](https://github.com/kb5000/trames/actions/runs/39990963812) fails the
+same five tests. A retry failed the cohort wait/wake/yield assertion in native
+workspace tests; the unmodified baseline also reproduces that assertion locally
+in 8 of 100 repeated native ARM runs under concurrent load. These checks remain
+failures, not waived passes. [Apple memory/ABI CI](https://github.com/kb5000/trames/actions/runs/40008374910)
+passes; the remaining Apple build is still running at this update. The PR stays
+draft while complete Firefox acceptance and CI follow-up remain open.
+
+Device identifiers and original logs, screenshots, stacks and mapping dumps
+remain local.
 
 ## Original mousepad X11 save dialog
 
