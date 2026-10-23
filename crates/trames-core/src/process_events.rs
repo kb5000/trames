@@ -133,13 +133,9 @@ impl Kernel {
         Self::futex_key(p, address, false).map_or(0, |key| self.wake_futex_key(key, count, bits))
     }
     fn futex_key(p: &Process, address: u64, private: bool) -> Result<(u64, u64, u64), Errno> {
-        if !private {
-            if let Some(key) = p.memory.shared_futex_key(address).map_err(|_| Errno(14))? {
-                return Ok(key);
-            }
-        }
-        Ok((0, p.vm_id, address & 0x00ffffffffffffff))
+        crate::worker_syscalls::futex_key(&p.memory, p.vm_id, address, private)
     }
+
     fn wake_futex_key(&mut self, key: (u64, u64, u64), count: u32, bits: u32) -> u64 {
         let woke = self.futexes.wake(key, count, bits);
         if woke != 0 {
@@ -288,64 +284,25 @@ impl Kernel {
     ) -> Result<Option<u64>, Errno> {
         match number {
             98 => {
-                if a[0] & 3 != 0 || a[1] & !0x1ff != 0 {
-                    return Err(Errno(22));
-                }
-                let op = a[1] & 127;
-                Linux::check(&p.memory, a[0], 4, Access::Read)?;
-                let key = Self::futex_key(p, a[0], a[1] & 128 != 0)?;
-                match op {
-                    0 | 9 => {
-                        let (bits, deadline) = crate::worker_syscalls::futex_wait_parameters(
-                            &p.memory,
-                            a,
-                            self.started,
-                        )?;
-                        let wait = self.futexes.wait(key, pid, bits, || {
-                            if read_u32(&p.memory, a[0])? != a[2] as u32 {
-                                return Err(Errno(11));
-                            }
-                            Ok(())
-                        })?;
-                        p.state = State::Futex { wait, deadline };
-                        Ok(None)
-                    }
-                    1 | 10 => {
-                        if a[2] > i32::MAX as u64 {
-                            return Err(Errno(22));
-                        }
-                        let bits = if op == 10 { a[5] as u32 } else { u32::MAX };
-                        if bits == 0 {
-                            return Err(Errno(22));
-                        }
-                        Ok(Some(self.wake_futex_key(key, a[2] as u32, bits)))
-                    }
-                    3 | 4 => {
-                        if a[4] & 3 != 0 || a[2] > i32::MAX as u64 || a[3] > i32::MAX as u64 {
-                            return Err(Errno(22));
-                        }
-                        Linux::check(&p.memory, a[4], 4, Access::Read)?;
-                        if op == 4 && read_u32(&p.memory, a[0])? != a[5] as u32 {
+                if matches!(a[1] & 127, 0 | 9) {
+                    let key = crate::worker_syscalls::futex_parameters(&p.memory, p.vm_id, a)?;
+                    let (bits, deadline) =
+                        crate::worker_syscalls::futex_wait_parameters(&p.memory, a, self.started)?;
+                    let wait = self.futexes.wait(key, pid, bits, || {
+                        if read_u32(&p.memory, a[0])? != a[2] as u32 {
                             return Err(Errno(11));
                         }
-                        let new_key = Self::futex_key(p, a[4], a[1] & 128 != 0)?;
-                        let woke = self.wake_futex_key(key, a[2] as u32, u32::MAX);
-                        let processes = &self.processes;
-                        let moved = self.futexes.requeue(key, new_key, a[3] as u32, |ticket| {
-                            let other = &processes[&ticket.pid];
-                            for state in
-                                std::iter::once(&other.state).chain(other.stopped_state.as_deref())
-                            {
-                                if let State::Futex { wait, .. } = state {
-                                    if std::sync::Arc::ptr_eq(&wait.ticket, ticket) {
-                                        crate::futex::Futexes::moved(wait, new_key);
-                                    }
-                                }
-                            }
-                        });
-                        Ok(Some(woke + moved))
+                        Ok(())
+                    })?;
+                    p.state = State::Futex { wait, deadline };
+                    Ok(None)
+                } else {
+                    let effect =
+                        crate::worker_syscalls::futex_queue(&self.futexes, &p.memory, p.vm_id, a)?;
+                    if effect.woken != 0 {
+                        self.resume_futex_ready();
                     }
-                    _ => Err(Errno(38)),
+                    Ok(Some(effect.total()))
                 }
             }
             137 => {

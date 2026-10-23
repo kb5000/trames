@@ -23,6 +23,7 @@ pub(super) struct Ticket {
     bits: u32,
     state: AtomicU8,
     target: Mutex<Option<Weak<crate::run_queue::Epoch>>>,
+    key: Mutex<Key>,
 }
 impl Ticket {
     pub fn bind(&self, epoch: &Arc<crate::run_queue::Epoch>) {
@@ -58,7 +59,6 @@ pub(super) struct Futexes(Arc<Inner>);
 /// Wake notifies the scheduler only after releasing its futex bucket.
 pub(super) struct Wait {
     pub ticket: Arc<Ticket>,
-    key: Mutex<Key>,
     table: Futexes,
 }
 impl Wait {
@@ -75,13 +75,22 @@ impl Drop for Wait {
         if self.woken() {
             return; // wake already unlinked it under the bucket lock
         }
-        let key = *self.key.lock().unwrap();
-        let mut queues = self.table.0.queues[shard(key)].lock().unwrap();
-        if let Some(queue) = queues.get_mut(&key) {
-            queue.retain(|ticket| !Arc::ptr_eq(ticket, &self.ticket));
-            if queue.is_empty() {
-                queues.remove(&key);
+        loop {
+            let key = *self.ticket.key.lock().unwrap();
+            let mut queues = self.table.0.queues[shard(key)].lock().unwrap();
+            // Requeue owns the old/new buckets before updating this key. A
+            // cancellation that raced that move retries the new bucket; it
+            // cannot strand a cancelled ticket there or invert key/bucket locks.
+            if *self.ticket.key.lock().unwrap() != key {
+                continue;
             }
+            if let Some(queue) = queues.get_mut(&key) {
+                queue.retain(|ticket| !Arc::ptr_eq(ticket, &self.ticket));
+                if queue.is_empty() {
+                    queues.remove(&key);
+                }
+            }
+            break;
         }
     }
 }
@@ -117,26 +126,26 @@ impl Futexes {
             bits,
             state: AtomicU8::new(WAITING),
             target: Mutex::new(target),
+            key: Mutex::new(key),
         });
         queues.entry(key).or_default().push_back(ticket.clone());
         Ok(Arc::new(Wait {
             ticket,
-            key: Mutex::new(key),
             table: self.clone(),
         }))
     }
     pub fn wake(&self, key: Key, count: u32, bits: u32) -> u64 {
-        self.wake_local(key, count, bits).0
+        self.wake_local(key, count, bits).woken
     }
-    fn wake_local(&self, key: Key, count: u32, bits: u32) -> (u64, bool) {
+    pub fn wake_local(&self, key: Key, count: u32, bits: u32) -> Effect {
         if count == 0 {
-            return (0, false);
+            return Effect::default();
         }
         let mut selected = Vec::new();
         {
             let mut queues = self.0.queues[shard(key)].lock().unwrap();
             let Some(queue) = queues.get_mut(&key) else {
-                return (0, false);
+                return Effect::default();
             };
             queue.retain(|ticket| {
                 if selected.len() < count as usize && ticket.bits & bits != 0 && ticket.claim(WOKEN)
@@ -151,9 +160,11 @@ impl Futexes {
                 queues.remove(&key);
             }
         }
-        // Scheduler calls occur after unlocking the bucket. A registration's
-        // destructor can take that bucket; no guest borrow crosses this call.
-        let n = selected.len() as u64;
+        self.publish(selected, 0)
+    }
+    fn publish(&self, selected: Vec<Arc<Ticket>>, moved: u64) -> Effect {
+        // Scheduler callbacks run after unlocking all buckets and keys.
+        let woken = selected.len() as u64;
         let mut legacy = false;
         for ticket in selected {
             let target = ticket
@@ -167,28 +178,40 @@ impl Futexes {
                 legacy = true;
             }
         }
-        (n, legacy)
+        Effect {
+            woken,
+            moved,
+            legacy,
+        }
     }
     pub fn take_ready(&self, out: &mut Vec<Arc<Ticket>>) {
         out.extend(self.0.ready.lock().unwrap().drain(..));
     }
-    /// Joined operation: move the original registration/ticket, preserving its
-    /// bitset, deadline and atomic outcome. Lock shards in numeric order.
-    pub fn requeue(
+    /// Compare, wake and move under the same ordered bucket locks. Tickets keep
+    /// their original deadline/epoch target; no Process walk or callback is needed.
+    pub fn requeue<E>(
         &self,
         old: Key,
         new: Key,
+        wake: u32,
         count: u32,
-        mut moved: impl FnMut(&Arc<Ticket>),
-    ) -> u64 {
-        if count == 0 {
-            return 0;
+        compare: impl FnOnce() -> Result<(), E>,
+    ) -> Result<Effect, E> {
+        fn select(queue: &mut VecDeque<Arc<Ticket>>, count: u32, out: &mut Vec<Arc<Ticket>>) {
+            queue.retain(|ticket| {
+                if out.len() < count as usize && ticket.claim(WOKEN) {
+                    out.push(ticket.clone());
+                    false
+                } else {
+                    true
+                }
+            });
         }
         fn transfer(
             source: &mut VecDeque<Arc<Ticket>>,
             target: &mut VecDeque<Arc<Ticket>>,
             count: u32,
-            moved: &mut impl FnMut(&Arc<Ticket>),
+            new: Key,
         ) -> u64 {
             let mut n = 0;
             while n < count as u64 {
@@ -198,96 +221,123 @@ impl Futexes {
                 if ticket.state.load(Ordering::Relaxed) != WAITING {
                     continue;
                 }
-                moved(&ticket);
+                *ticket.key.lock().unwrap() = new;
                 target.push_back(ticket);
                 n += 1;
             }
             n
         }
-        let (a, b) = (shard(old), shard(new));
-        let (lo, hi) = (a.min(b), a.max(b));
-        let mut first = self.0.queues[lo].lock().unwrap();
-        if old == new {
-            return first.get(&old).map_or(0, |q| {
-                q.iter()
-                    .filter(|t| t.state.load(Ordering::Relaxed) == WAITING)
-                    .take(count as usize)
-                    .count() as u64
-            });
-        }
-        if a == b {
-            let Some(mut source) = first.remove(&old) else {
-                return 0;
-            };
-            let n = transfer(
-                &mut source,
-                first.entry(new).or_default(),
-                count,
-                &mut moved,
-            );
-            if n == 0 && first.get(&new).is_some_and(VecDeque::is_empty) {
-                first.remove(&new);
-            }
-            if !source.is_empty() {
-                first.insert(old, source);
-            }
-            n
-        } else {
-            let mut second = self.0.queues[hi].lock().unwrap();
-            let (source, target) = if a == lo {
-                (&mut first, &mut second)
+        let mut selected = Vec::new();
+        let moved;
+        {
+            let (a, b) = (shard(old), shard(new));
+            let (lo, hi) = (a.min(b), a.max(b));
+            let mut first = self.0.queues[lo].lock().unwrap();
+            let mut second = (a != b).then(|| self.0.queues[hi].lock().unwrap());
+            // Even an empty queue must perform CMP_REQUEUE's comparison.
+            compare()?;
+            if old == new {
+                moved = if let Some(queue) = first.get_mut(&old) {
+                    select(queue, wake, &mut selected);
+                    queue
+                        .iter()
+                        .filter(|t| t.state.load(Ordering::Relaxed) == WAITING)
+                        .take(count as usize)
+                        .count() as u64
+                } else {
+                    0
+                };
+                if first.get(&old).is_some_and(VecDeque::is_empty) {
+                    first.remove(&old);
+                }
+            } else if a == b {
+                let mut source = first.remove(&old).unwrap_or_default();
+                select(&mut source, wake, &mut selected);
+                moved = if count == 0 {
+                    0
+                } else {
+                    transfer(&mut source, first.entry(new).or_default(), count, new)
+                };
+                if first.get(&new).is_some_and(VecDeque::is_empty) {
+                    first.remove(&new);
+                }
+                if !source.is_empty() {
+                    first.insert(old, source);
+                }
             } else {
-                (&mut second, &mut first)
-            };
-            let Some(queue) = source.get_mut(&old) else {
-                return 0;
-            };
-            let n = transfer(queue, target.entry(new).or_default(), count, &mut moved);
-            if queue.is_empty() {
-                source.remove(&old);
+                let second = second.as_mut().unwrap();
+                let (from, to) = if a == lo {
+                    (&mut first, second)
+                } else {
+                    (second, &mut first)
+                };
+                let mut source = from.remove(&old).unwrap_or_default();
+                select(&mut source, wake, &mut selected);
+                moved = if count == 0 {
+                    0
+                } else {
+                    transfer(&mut source, to.entry(new).or_default(), count, new)
+                };
+                if to.get(&new).is_some_and(VecDeque::is_empty) {
+                    to.remove(&new);
+                }
+                if !source.is_empty() {
+                    from.insert(old, source);
+                }
             }
-            if n == 0 && target.get(&new).is_some_and(VecDeque::is_empty) {
-                target.remove(&new);
-            }
-            n
         }
+        Ok(self.publish(selected, moved))
     }
-    pub fn moved(wait: &Wait, key: Key) {
-        *wait.key.lock().unwrap() = key;
+}
+
+#[derive(Default, Debug)]
+pub(super) struct Effect {
+    pub woken: u64,
+    pub moved: u64,
+    pub legacy: bool,
+}
+impl Effect {
+    pub fn total(&self) -> u64 {
+        self.woken + self.moved
     }
 }
 
 /// Per-dispatch authority only; the actual queues persist across epochs.
-pub(super) struct Private {
+pub(super) struct Authority {
     pub table: Futexes,
     pub vm: u64,
     completed: Cell<u64>,
+    requeues: Cell<u64>,
     woken: Cell<u64>,
     readied: Cell<bool>,
 }
-impl Default for Private {
+impl Default for Authority {
     fn default() -> Self {
         Self::new(Futexes::default(), 0)
     }
 }
-impl Private {
+impl Authority {
     pub fn new(table: Futexes, vm: u64) -> Self {
         Self {
             table,
             vm,
             completed: Cell::new(0),
+            requeues: Cell::new(0),
             woken: Cell::new(0),
             readied: Cell::new(false),
         }
     }
-    pub fn wake(&self, address: u64, count: u32, bits: u32) -> u64 {
-        let (n, legacy) =
-            self.table
-                .wake_local((0, self.vm, address & 0x00ff_ffff_ffff_ffff), count, bits);
-        self.completed.set(self.completed.get() + 1);
-        self.woken.set(self.woken.get() + n);
-        self.readied.set(self.readied.get() || legacy);
-        n
+    pub fn record(&self, effect: &Effect, requeue: bool) {
+        if requeue {
+            self.requeues.set(self.requeues.get() + 1);
+        } else {
+            self.completed.set(self.completed.get() + 1);
+        }
+        self.woken.set(self.woken.get() + effect.woken);
+        self.readied.set(self.readied.get() || effect.legacy);
+    }
+    pub fn requeues(&self) -> u64 {
+        self.requeues.get()
     }
     pub fn woken(&self) -> u64 {
         self.woken.get()
@@ -313,6 +363,74 @@ mod tests {
     }
     fn empty(table: &Futexes) {
         assert!(table.0.queues.iter().all(|q| q.lock().unwrap().is_empty()));
+    }
+    #[test]
+    fn compare_requeue_is_one_transaction_and_moves_original_keys_and_bitsets() {
+        let table = Futexes::default();
+        let old = (0, 7, 0x1000);
+        let new = (0, 7, 0x1104);
+        let waits: Vec<_> = (1..=3)
+            .map(|pid| register(&table, old, pid, 1 << pid))
+            .collect();
+        assert_eq!(
+            table
+                .requeue(old, new, 1, 2, || Err::<(), _>(11))
+                .unwrap_err(),
+            11
+        );
+        assert!(waits
+            .iter()
+            .all(|w| !w.woken() && *w.ticket.key.lock().unwrap() == old));
+        let effect = table.requeue(old, new, 1, 2, || Ok::<_, ()>(())).unwrap();
+        assert_eq!((effect.woken, effect.moved, effect.legacy), (1, 2, true));
+        assert!(waits[0].woken());
+        assert!(waits[1..]
+            .iter()
+            .all(|w| *w.ticket.key.lock().unwrap() == new));
+        assert_eq!(table.wake(old, 3, u32::MAX), 0);
+        assert_eq!(table.wake(new, 3, 1 << 2), 1);
+        assert!(waits[1].woken() && !waits[2].woken());
+        drop(waits);
+        empty(&table);
+        assert_eq!(
+            table
+                .requeue(old, new, 0, 0, || Err::<(), _>(11))
+                .unwrap_err(),
+            11
+        );
+        empty(&table);
+    }
+    #[test]
+    fn concurrent_opposite_requeues_and_cancellation_leave_no_stale_tickets() {
+        let table = Futexes::default();
+        let keys = [(0, 7, 0x1000), (0, 7, 0x1104), (0, 7, 0x1100)];
+        let waits: Vec<_> = (0..2048)
+            .map(|i| register(&table, keys[i % 3], i as u32 + 1, 1))
+            .collect();
+        let barrier = Arc::new(Barrier::new(3));
+        let movers: Vec<_> = [false, true]
+            .into_iter()
+            .map(|reverse| {
+                let (table, barrier) = (table.clone(), barrier.clone());
+                thread::spawn(move || {
+                    barrier.wait();
+                    for i in 0..2048 {
+                        let a = i % 3;
+                        let b = (i + 1) % 3;
+                        let (a, b) = if reverse { (b, a) } else { (a, b) };
+                        table
+                            .requeue(keys[a], keys[b], 0, 64, || Ok::<_, ()>(()))
+                            .unwrap();
+                    }
+                })
+            })
+            .collect();
+        barrier.wait();
+        drop(waits);
+        for mover in movers {
+            mover.join().unwrap();
+        }
+        empty(&table);
     }
     #[test]
     fn compare_and_enqueue_exclude_wake_and_mismatches_leave_no_registration() {
@@ -423,7 +541,10 @@ mod tests {
             let wait = register(&table, old, 1, 1);
             assert!(wait.timeout());
             assert_eq!(
-                table.requeue(old, new, 1, |_| panic!("timed out ticket moved")),
+                table
+                    .requeue(old, new, 0, 1, || Ok::<_, ()>(()))
+                    .unwrap()
+                    .total(),
                 0
             );
             empty(&table);
@@ -443,15 +564,17 @@ mod tests {
             .collect();
         assert_eq!(table.wake(old, 1, u32::MAX), 1);
         assert_eq!(
-            table.requeue(old, old, 2, |_| panic!("same key has no move")),
+            table
+                .requeue(old, old, 0, 2, || Ok::<_, ()>(()))
+                .unwrap()
+                .total(),
             2
         );
         for (target, count) in [(same, 2), (different, 8)] {
-            let n = table.requeue(old, target, count, |ticket| {
-                let wait = &waits[ticket.pid as usize - 1];
-                assert!(Arc::ptr_eq(&wait.ticket, ticket));
-                Futexes::moved(wait, target);
-            });
+            let n = table
+                .requeue(old, target, 0, count, || Ok::<_, ()>(()))
+                .unwrap()
+                .total();
             assert_eq!(n, if target == same { 2 } else { 1 });
         }
         assert_eq!(table.wake(old, 8, u32::MAX), 0);

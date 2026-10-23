@@ -1,0 +1,65 @@
+{
+  "date_utc": "2026-10-23",
+  "batch": 32,
+  "complete_coordinator_removal": false,
+  "scope": "Shared weak Unix pathname binding identity replaces the inode reference to Rc<LocalSocket>. Guest-domain owner routing index preserves cross-netns pathname access, hardlinks/overlay and last-close invalidation. Full Unix controls, rights/OFD and FD table mutation remain owner-bound.",
+  "source_sha256": {
+    "crates/trames-vfs/src/ipc/binding.rs": "f891a75801cfb58ec769830c7a44fb42255a80425ba5ff585cb559dd1d503c47",
+    "crates/trames-vfs/src/ipc.rs": "1fbe5edb28f5d40a405bf37e5da8198545e2987b0171064e0a717fd3bb7dc4d6",
+    "crates/trames-vfs/src/ipc/native.rs": "23c37a4e22544e949709a38e6521541770e7196b155d7e43679a96a923c9ff7b",
+    "crates/trames-vfs/src/lib.rs": "50e8a8f4c63f44719ff0f039b5322e8426ea1aab3455c4e2796a1a8d625d8cce",
+    "crates/trames-vfs/src/storage.rs": "349234b8a1ef157f154751c9e290cc245d36c9e4e1707cf9efdb45afeb89a7da",
+    "tests/fixtures/unix-sockets.c": "ab554e8d4f23bb650b8a192984d5864e19bec6a25a355801e7489a4011592d29",
+    "tests/fixtures/network-namespaces.c": "6b7d8b49143787261a72dd04a847ec7e7f335670e5c0818081c5350b3ec49487"
+  },
+  "artifact_sha256": {
+    "target/perf-runtime/release/trames-run": "b11a64ad3910c37a814a6b8a237ed6e206b96277565c336b88c42412c856e18c",
+    "target/perf-runtime/release/libtrames_ffi.a": "f765fb72ad10e69c5c26810315788ab8f4cdb233e657cb03466ac9818c559719",
+    "target/perf-runtime/release/libtrames_ffi.so": "38591e6e1d470acc1331adbec0e28602e620adac3382505e3b07159bd9cfcb6f",
+    "target/shared-unix-binding-checks/before-trames-run": "35371dcc53ede1163baabdc9d56a9b14f790b1bc01dfa544ecebd74397d1ebce",
+    "target/shared-unix-binding-checks/unix-endpoints.c": "13b486569501263dd79198f4398e2ae61e7ff09411c7154fde17507177ffed0a",
+    "target/shared-unix-binding-checks/unix-endpoints": "fea58523e78775bd63a85a5a6a375c932a29c2bb2951f4ef5cada04d5ad41a85",
+    "target/shared-unix-binding-checks/unix-endpoints-host": "701d7213e357ff25efe143a2fb01796206622885e0c6b63b8cddaca1cf9bb1fb",
+    "target/shared-unix-binding-checks/network-namespaces": "1f07a7ecab6a4bb8c543d286ca67f752fc839d98391b6556fe9c5ff16891e937",
+    "target/shared-unix-binding-checks/run-guest.py": "fc16a3e7ba5e949cc38720780608763b2dbfd6187c55b48a9c90f3ccd8c9e10e",
+    "target/shared-unix-binding-checks/run-units.py": "2b735eb6a7aeac1bdce8dcc52b212a8a022079d41208ff816ada113a1937a989"
+  },
+  "runner_sha256": "b11a64ad3910c37a814a6b8a237ed6e206b96277565c336b88c42412c856e18c",
+  "baseline_sha256": "35371dcc53ede1163baabdc9d56a9b14f790b1bc01dfa544ecebd74397d1ebce",
+  "baseline_evidence": "docs/validation/shared-mapping-writers-summary.json",
+  "results": {
+    "units": {
+      "path": "target/shared-unix-binding-checks/unit-results.json",
+      "sha256": "70a4941f39bc3c80e73bee1cc871a29b97d7333e356889eab142be52036acd6c"
+    },
+    "guest": {
+      "path": "target/shared-unix-binding-checks/guest-results.json",
+      "sha256": "36f9a0942317f90198d30a9474697fd651948f4a5e2b0407bc6e0619d818d13f"
+    }
+  },
+  "distinct_rust_tests": 16,
+  "rust_test_counts": {
+    "vfs": 16
+  },
+  "guest_cases": 9,
+  "baseline_preflight_cases": 1,
+  "native_cases": 1,
+  "log_sha256": {
+    "target/shared-unix-binding-checks/unit-build.log": "46c7f87d1f92f9d88f5ebab85331fe953a3229b4dedbbf0aacb45462f358c08a",
+    "target/shared-unix-binding-checks/unit-final-build.log": "746dbf0fce56806a68ac0afdc7371686b871d576a1fe72d54127de49092080ba",
+    "target/shared-unix-binding-checks/unit-initial.log": "af44162f4245a7c3abee46ce9ad7d0cab8ca8047c93fb3d13a10c3bc8c44c5b5",
+    "target/shared-unix-binding-checks/unit-followup.log": "50be8c0b0d022b2672574ba94a28963f9a743ed74f5200876622627387ee4f59",
+    "target/shared-unix-binding-checks/release-build.log": "47430f0fdd1671bb0b11322afa0aabbaebac25917864b038ee52b0427983f09c",
+    "target/shared-unix-binding-checks/clippy.log": "a251ad3c2d8407b3cce581bb1bff99fff17bbe623599052e5be0871bc5d253b9",
+    "target/shared-unix-binding-checks/netns-loopback-initial.stderr": "bc6edd09bcc423ee4582329af55ca5ae9c8ff9ea070b86a7082b8b16cd35e22f"
+  },
+  "reuse": "Eleven initial Rust passes reused; reran the corrected disk test and four newly selected WAITALL/rights tests. Six successful endpoint guest cases plus native/baseline were reused when only correcting the netns harness mode. Production unchanged after CLI/FFI build; only a test was edited. No unchanged CPU/GPU/browser/Docker/CoreMark suites rerun.",
+  "harness_corrections": "New disk test first hit EBUSY by simultaneously opening the exclusively locked store: release disk owner while retaining socket before restore. Local endpoint wrapper added original mkdir /tmp initialization after baseline ENOENT. Initial netns loopback mode hit the outbound-policy assertion; use the existing integration contract --network full. All final affected cases passed; no production bug was masked by these test fixes.",
+  "builds": {
+    "release_cli_ffi": "target/shared-unix-binding-checks/release-build.log",
+    "strict_release_clippy": "target/shared-unix-binding-checks/clippy.log"
+  },
+  "raw_artifacts": "target/shared-unix-binding-checks",
+  "ipa_built": false,
+  "limits": "PathBinding is Send+Sync by composition; routing table, LocalSocket, SCM_RIGHTS/OFD, FD mutation and inode/path remain owner-bound. No new worker syscall or overall speedup claim. Linux x86_64 with real ARM64 guest; native oracle covers endpoint behavior, not privileged host netns; no Apple/iPad validation."
+}

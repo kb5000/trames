@@ -1,0 +1,10 @@
+    Finished `release` profile [optimized] target(s) in 16.03s
+     Running unittests src/lib.rs (target/perf-runtime/release/build/trames-vfs/a2c47a52c6af3f1e/out/trames_vfs-a2c47a52c6af3f1e)
+
+running 4 tests
+test direct_io::tests::fd_reuse_and_fork_status_changes_rebuild_shared_handles ... ok
+test direct_io::tests::resource_locks_are_independent_and_pipe_buf_rules_match ... ok
+test direct_io::tests::direct_pipe_writers_share_vfs_bytes_and_keep_records_atomic ... ok
+test direct_io::tests::atomic_eventfd_and_semaphore_preserve_concurrent_counts ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 174 filtered out; finished in 0.00s

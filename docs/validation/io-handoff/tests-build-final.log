@@ -1,0 +1,7 @@
+   Compiling trames-vfs v1.3.0 (/workspace/trames/crates/trames-vfs)
+   Compiling trames-linux v1.3.0 (/workspace/trames/crates/trames-linux)
+   Compiling trames-core v1.3.0 (/workspace/trames/crates/trames-core)
+    Finished `release` profile [optimized] target(s) in 37.60s
+  Executable unittests src/lib.rs (target/perf-runtime/release/build/trames-core/110419dd55a974e8/out/trames_core-110419dd55a974e8)
+  Executable unittests src/lib.rs (target/perf-runtime/release/build/trames-linux/da02a229eca59aff/out/trames_linux-da02a229eca59aff)
+  Executable unittests src/lib.rs (target/perf-runtime/release/build/trames-vfs/a2c47a52c6af3f1e/out/trames_vfs-a2c47a52c6af3f1e)

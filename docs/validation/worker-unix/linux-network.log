@@ -1,0 +1,8 @@
+
+running 3 tests
+test network::tests::socket_output_preflight_and_descriptor_type_errors ... ok
+test network::tests::invalid_accept_destination_does_not_drop_queued_connection ... ok
+test network::tests::udp_pktinfo_cmsg_roundtrip_and_invalid_receive_are_transactional ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 37 filtered out; finished in 0.00s
+

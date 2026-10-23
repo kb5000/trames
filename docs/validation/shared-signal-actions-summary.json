@@ -1,0 +1,53 @@
+{
+  "date_utc": "2026-10-23",
+  "batch": 23,
+  "complete_coordinator_removal": false,
+  "scope": "Shared sighand ownership, removal of actions_id, per-task array propagation and generic ResourceChanges; query-only worker rt_sigaction with shared ABI and seccomp. Mutation effects, pending/mask, heap and FD/VM/task owners remain.",
+  "source_sha256": {
+    "crates/trames-core/src/lib.rs": "8cce4f3c1cf19297a0ca29451240616d0fcd513923c05e9c87be16957b0cc0cc",
+    "crates/trames-core/src/signal_actions.rs": "8f387bb87c991414ab9dba5201a320d56552aabd78be664e13f7e89f1130f2bf",
+    "crates/trames-core/src/process.rs": "2a241a9c02a9355fc976ad5ada5e64eb64a0b114f67bf1748528a19a53df7523",
+    "crates/trames-core/src/process_pid.rs": "0ec0524a6262003dab55c553778d92ae4bd1a92a7cdf1c916a67ecab130c9abd",
+    "crates/trames-core/src/process_seccomp.rs": "d5e93580e6c83b36ee5e5e547878ec590329ff36d61f5419528a1aaa946ea853",
+    "crates/trames-core/src/process_service.rs": "2adb24ba45a5874870fa9c9c8c997a5671ad8ce680a80185f126c4b0528d2b3a",
+    "crates/trames-core/src/worker_syscalls.rs": "f6feda60c78e4d44edd262a1fe4abdf7359eab945f380de614e5a572506f0074",
+    "crates/trames-core/src/workers.rs": "3b20315b2b44bd98023368d8f357032ea6e5dc789747cd34c2ae655733c7e839",
+    "scripts/audit-syscalls.py": "b0e46fcfe5f113e254f51f03c5cfb563ee7614f18c1ab8e4589fe67069e47f44",
+    "tests/fixtures/shared-signal-actions.c": "4df79cd56d79123078c63669631b766ab0eaa07dbbb6b0bc698c777142902a6b",
+    "tests/integration/shared-signal-actions.py": "e08d72982ebe3e4331b556e4162ea9ce2f9120e38b6b2d31daa5a998e39d07b4"
+  },
+  "artifact_sha256": {
+    "target/perf-runtime/release/trames-run": "0571b14ce4d79a0549907c829079cbbdd08567f2e922bdaa0705e18ddc9627b6",
+    "target/shared-signal-actions-checks/before-trames-run": "12b11b16717db1818914a27c0f22f258325d5b35b0405cd20c198897a3dcc791",
+    "target/shared-signal-actions-checks/native-shared-signal-actions": "0a6416f2a09bb861747d3a991f7ecfa1c839dad66c5b2bed18222238c9375089",
+    "tests/fixtures/bin/shared-signal-actions": "adb56fb04f408e3d22328622c55e0211f69f3a4591edd4769aab40496fd43182"
+  },
+  "runner_sha256": "0571b14ce4d79a0549907c829079cbbdd08567f2e922bdaa0705e18ddc9627b6",
+  "baseline_sha256": "12b11b16717db1818914a27c0f22f258325d5b35b0405cd20c198897a3dcc791",
+  "baseline_evidence": "docs/validation/shared-fs-context-summary.json",
+  "results": {
+    "unit": {
+      "path": "target/shared-signal-actions-checks/unit-results-final.json",
+      "sha256": "4182f0168334bb82e5d2ef097942c2f46a86ab53ad8c69a5fffa9c526bbedff7"
+    },
+    "comparison": {
+      "path": "target/shared-signal-actions-checks/comparison-final/results.json",
+      "sha256": "f47138e2a16e7682e518bd004ad764cbd233b3dcddb98d9c15f1aea2e8b789c5"
+    }
+  },
+  "distinct_rust_tests": 134,
+  "medians_seconds": {
+    "before-1": 0.000558099,
+    "before-2": 0.014026155,
+    "before-4": 0.013230778,
+    "after-1": 0.000535766,
+    "after-2": 0.00029223,
+    "after-4": 0.000311839
+  },
+  "limits": "Short 512-query workload, Linux x86_64 host running identical static ARM64 ELF. Three interleaved samples; full clone/exec/reset domains separately verified. No CoreMark/app/iPad speed claim; service requests already zero. Generic worker syscall count also includes yield/clock.",
+  "builds": {
+    "release_cli_ffi": "target/shared-signal-actions-checks/release-build.log",
+    "strict_release_clippy_three_crates_all_targets": "target/shared-signal-actions-checks/clippy.log"
+  },
+  "raw_artifacts": "target/shared-signal-actions-checks"
+}

@@ -1,0 +1,48 @@
+
+running 1 test
+test process::tests::continuous_peers_cancel_at_control_checkpoints_and_commit_the_exact_budget ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 111 filtered out; finished in 0.02s
+
+
+running 1 test
+test workers::tests::concurrent_workers_share_an_exact_non_divisible_budget ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 111 filtered out; finished in 0.00s
+
+
+running 1 test
+test process::boundary_tests::kill_is_delivered_even_with_an_older_pending_signal_while_stopped ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 111 filtered out; finished in 0.00s
+
+
+running 1 test
+test process::tests::thread_directed_stop_and_continue_change_the_entire_group ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 111 filtered out; finished in 0.00s
+
+
+running 1 test
+test process::tests::process_signals_are_single_delivery_and_thread_signals_check_identity_and_permissions ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 111 filtered out; finished in 0.00s
+
+
+running 1 test
+test process::tests::stop_continue_preserves_a_blocked_timer ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 111 filtered out; finished in 0.00s
+
+
+running 1 test
+test process::tests::unsupported_instruction_log_survives_child_exit ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 111 filtered out; finished in 0.00s
+
+
+running 1 test
+test process::tests::gpu_wait_defers_caught_handlers_but_preserves_stop_continue ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 111 filtered out; finished in 0.00s
+

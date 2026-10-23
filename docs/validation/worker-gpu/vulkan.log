@@ -1,0 +1,40 @@
+
+running 35 tests
+test backend::coherent::tests::coherent_tracking_is_charged_and_released_with_the_mapping ... ok
+test backend::coherent::tests::independent_cpu_inputs_and_gpu_outputs_do_not_overwrite_each_other ... ok
+test backend::feedback::tests::query_result_footprints_do_not_touch_padding_or_overflow ... ok
+test backend::graphics::tests::attachment_clears_preserve_subpass_slots_aspects_and_render_area ... ok
+test backend::graphics::tests::attachment_references_preserve_general_and_read_only_layouts ... ok
+test backend::graphics::tests::blit_format_conversion_and_volume_slice_views_follow_native_rules ... ok
+test backend::graphics::tests::copy_footprints_follow_actual_texels_and_depth_aspects ... ok
+test backend::graphics::tests::copy_checks_padded_rows_offsets_overflow_and_color_subresources ... ok
+test backend::graphics::tests::array_and_volume_copy_footprints_include_slice_padding ... ok
+test backend::graphics::tests::image_copy_bounds_and_depth_compatibility ... ok
+test backend::graphics::tests::divisor_features_and_instance_footprints ... ok
+test backend::graphics::tests::image_profile_reports_only_supported_formats_usages_and_layouts ... ok
+test backend::graphics::tests::maintenance1_negative_viewports_use_native_bounds ... ok
+test backend::graphics::tests::self_copies_and_flipped_blits_distinguish_mips_layers_and_volume ... ok
+test backend::graphics::tests::packed_depth_stencil_aspects_and_exact_copy_footprints ... ok
+test backend::graphics::tests::stencil_wire_checks_ops_masks_and_references ... ok
+test backend::graphics::tests::subresource_ranges_cube_views_and_mip_bounds ... ok
+test backend::graphics::tests::viewports_may_extend_outside_the_framebuffer ... ok
+test backend::tests::malformed_transport_cannot_read_guest_memory_or_create_driver_objects ... ok
+test backend::tests::specialization_records_keep_offsets_and_reject_overflow_or_duplicate_ids ... ok
+test backend::tests::native_transfers_cross_pages_keep_cow_and_preflight_permissions ... ok
+test backend::tests::spirv_debug_names_do_not_change_entrypoints_or_specialization_decorations ... ok
+test backend::tests::unknown_object_domains_and_uninitialized_driver_never_become_host_handles ... ok
+test budget::tests::independent_contexts_share_budget_without_overcommit_or_lifetime_leak ... ok
+test budget::tests::session_quota_scales_without_allocating_and_remains_shared ... ok
+test budget::tests::compiler_capacity_is_shared_and_released_without_a_global_work_lock ... ok
+test backend::tests::wait_stages_support_selected_graphics_but_reject_unknown_extension_bits ... ok
+test context::tests::an_occupied_context_does_not_serialize_an_independent_context ... ok
+test context::tests::lifecycle_compile_and_fd_auth_stay_out_of_worker_admission ... ok
+test display::tests::invalid_native_targets_fail_before_objc_access ... ok
+test display::tests::detach_invalidates_generation_but_preserves_in_flight_lease ... ok
+test backend::tests::worker_transfers_use_cpu_pages_and_preflight_before_external_effects ... ok
+test task::tests::teardown_joins_before_owned_dependency_destruction ... ok
+test context::tests::a_complete_graph_moves_between_workers_without_guest_or_rc_aliases_escaping ... ok
+test task::tests::slow_tasks_do_not_block_the_caller_or_an_unrelated_task ... ok
+
+test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

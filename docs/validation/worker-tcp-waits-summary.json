@@ -1,0 +1,184 @@
+{
+  "date_utc": "2026-10-22",
+  "batch": 14,
+  "scope": "Frozen cohort native TCP blocking scalar/vector I/O with direct host readiness; no new reactor thread",
+  "passed": true,
+  "distinct_unit_tests": 20,
+  "unit_checks": {
+    "host-events": 4,
+    "run-queue": 9,
+    "tcp-timeout": 1,
+    "linux": 1,
+    "solo-mmu": 3,
+    "poll-timeout": 1,
+    "owner-timeout": 1,
+    "host-write": 1
+  },
+  "native_oracles": 4,
+  "initial_guest_runs": 24,
+  "final_affected_guest_runs": 8,
+  "reused": "Unchanged single-CPU owner path, original 12 baseline cases and 4 matching native oracle outputs",
+  "baseline_sha256": "dbabb0af6369ee14ac878acde5e291c6cd6a00ff4beaadbc85fdd81f397e98a9",
+  "initial_runner_sha256": "eeadbebca2675d9748b4d4938fb5a69764e0d550bea687ce0420d8b5888570bf",
+  "final_runner_sha256": "10e0c065b696473be01f68697e048184238dba3603657f97e424551f7e0d0bc1",
+  "final_ffi_sha256": "cf23a47601effffc0b7c86bb0b634182788448c0bc63986afe49c0e837c6487e",
+  "fixture_sha256": "16bc31688a8479cbfb9253538f26f0725a83ec3cfa559dbcd9f7ab3e142d7cb6",
+  "oracle_sha256": "8bab76b683bd3fd75a3446cbebeea668127efe45f2a515aa78be81814df9ff32",
+  "source_sha256": {
+    "crates/trames-shared/src/host_events.rs": "4119d4c8975b2e56936a17d120c601ec350435b52cbbf44c29caf30eca230c87",
+    "crates/trames-shared/src/readiness.rs": "3b621e8b900f005f66b3a6276ab47152390b4efe3df0a178ce432c7f7be5c86f",
+    "crates/trames-net/src/native/direct.rs": "a196ed509477e9a341c92df1ab9953e84689f4dfe2a14a90df1fb8f69969cc01",
+    "crates/trames-vfs/src/network_io.rs": "a405231c462bea76bbcf0e8ee78e96987c584a5b9fb2445a34f8873b64f16477",
+    "crates/trames-linux/src/direct.rs": "800d37f977a445a598c79c96cb5e9a3678a4d5c7120fada03e04235b1fce3b24",
+    "crates/trames-core/src/run_queue.rs": "f24d2e6155c58ebe1c414330421519ee7b44e4a092c832766a0a2d27a2a41f3b",
+    "crates/trames-core/src/process.rs": "d9f88494f19fb6f3cec2cdf1f43f18c3e4384ac4744c5689ea4e9ae0bafaecab",
+    "tests/fixtures/worker-tcp.c": "34bba6f0f30749baeb38e7e5350268b3bb3a9f89145d98a9ca4fd609141398ea",
+    "tests/integration/worker-tcp.py": "a95865b48262e213a6a363eaef7363f220e64532cddf19a95b71047761d2d761",
+    "scripts/build-worker-tcp-fixture.sh": "da839c8188d47417a47acac35ea078bc05a0179578f6ee64a914f6e292863c23"
+  },
+  "rows": [
+    {
+      "case": "4-blocking-write-2",
+      "before": {
+        "parallel_rounds": 8,
+        "worker_socket_syscalls": 126,
+        "worker_io_waits": 0,
+        "worker_task_resumes": 1,
+        "service_requests": 0
+      },
+      "after": {
+        "parallel_rounds": 15,
+        "worker_socket_syscalls": 133,
+        "worker_io_waits": 15,
+        "worker_task_resumes": 5,
+        "service_requests": 0
+      }
+    },
+    {
+      "case": "4-blocking-write-4",
+      "before": {
+        "parallel_rounds": 8,
+        "worker_socket_syscalls": 126,
+        "worker_io_waits": 0,
+        "worker_task_resumes": 1,
+        "service_requests": 0
+      },
+      "after": {
+        "parallel_rounds": 16,
+        "worker_socket_syscalls": 133,
+        "worker_io_waits": 15,
+        "worker_task_resumes": 5,
+        "service_requests": 0
+      }
+    },
+    {
+      "case": "4-blocking-vector-2",
+      "before": {
+        "parallel_rounds": 8,
+        "worker_socket_syscalls": 126,
+        "worker_io_waits": 0,
+        "worker_task_resumes": 1,
+        "service_requests": 0
+      },
+      "after": {
+        "parallel_rounds": 16,
+        "worker_socket_syscalls": 133,
+        "worker_io_waits": 15,
+        "worker_task_resumes": 5,
+        "service_requests": 0
+      }
+    },
+    {
+      "case": "4-blocking-vector-4",
+      "before": {
+        "parallel_rounds": 8,
+        "worker_socket_syscalls": 126,
+        "worker_io_waits": 0,
+        "worker_task_resumes": 1,
+        "service_requests": 0
+      },
+      "after": {
+        "parallel_rounds": 15,
+        "worker_socket_syscalls": 133,
+        "worker_io_waits": 15,
+        "worker_task_resumes": 5,
+        "service_requests": 0
+      }
+    },
+    {
+      "case": "6-blocking-write-2",
+      "before": {
+        "parallel_rounds": 7,
+        "worker_socket_syscalls": 126,
+        "worker_io_waits": 0,
+        "worker_task_resumes": 1,
+        "service_requests": 0
+      },
+      "after": {
+        "parallel_rounds": 15,
+        "worker_socket_syscalls": 133,
+        "worker_io_waits": 15,
+        "worker_task_resumes": 5,
+        "service_requests": 0
+      }
+    },
+    {
+      "case": "6-blocking-write-4",
+      "before": {
+        "parallel_rounds": 7,
+        "worker_socket_syscalls": 126,
+        "worker_io_waits": 0,
+        "worker_task_resumes": 1,
+        "service_requests": 0
+      },
+      "after": {
+        "parallel_rounds": 16,
+        "worker_socket_syscalls": 133,
+        "worker_io_waits": 15,
+        "worker_task_resumes": 5,
+        "service_requests": 0
+      }
+    },
+    {
+      "case": "6-blocking-vector-2",
+      "before": {
+        "parallel_rounds": 6,
+        "worker_socket_syscalls": 127,
+        "worker_io_waits": 0,
+        "worker_task_resumes": 1,
+        "service_requests": 0
+      },
+      "after": {
+        "parallel_rounds": 16,
+        "worker_socket_syscalls": 133,
+        "worker_io_waits": 15,
+        "worker_task_resumes": 5,
+        "service_requests": 0
+      }
+    },
+    {
+      "case": "6-blocking-vector-4",
+      "before": {
+        "parallel_rounds": 6,
+        "worker_socket_syscalls": 126,
+        "worker_io_waits": 0,
+        "worker_task_resumes": 1,
+        "service_requests": 0
+      },
+      "after": {
+        "parallel_rounds": 16,
+        "worker_socket_syscalls": 133,
+        "worker_io_waits": 15,
+        "worker_task_resumes": 5,
+        "service_requests": 0
+      }
+    }
+  ],
+  "limits": [
+    "Loopback correctness/structural evidence, not a throughput benchmark",
+    "Cohort 10 ms control checkpoint still present; group returns increased because old code used serial fallback",
+    "Apple kqueue branch implemented but no Apple/iPad execution this round",
+    "No new IPA or public upload in this batch",
+    "UDP/DNS, messages, connection/control, network poll/epoll, signal, firewall/virtual stack and serial owner waits remain"
+  ]
+}

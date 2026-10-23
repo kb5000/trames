@@ -1,0 +1,70 @@
+{
+  "date_utc": "2026-10-23",
+  "batch": 22,
+  "complete_coordinator_removal": false,
+  "scope": "Canonical owner fs_struct paths; shared atomic umask worker syscall. Removed FS snapshots/comparisons/peer propagation and Process.fs_id. Ordinary exec retains CLONE_FS, verified against native Linux. Path/OFD/VM/task owners remain.",
+  "source_sha256": {
+    "crates/trames-core/src/process.rs": "b878292b59466387ab2a4375a5380ef24669572c20678b5a8f86f7e48a12a023",
+    "crates/trames-core/src/process_seccomp.rs": "bb9783e3cb105487fa62d3228c6363cab047fa254a253bba2cd61699654d5a8e",
+    "crates/trames-core/src/process_service.rs": "038199128860414700ab7250f3cf1640c7c47e4e7827a7cb0dfaa1a1bf285719",
+    "crates/trames-core/src/worker_syscalls.rs": "c88e07d570e079dc845f39fa28a3be7be67f5c08fb345f6b3eca1687fe680578",
+    "crates/trames-core/src/workers.rs": "cbf8c7bc8445efa9b7ba7fcf7a421701e1a4e4d34a21b6ca1c26caf27cb0b8e0",
+    "crates/trames-linux/src/state.rs": "e23bc13107fbdf7d3ce60bf7e38e9e3a6ed5a48bf15b0bfaf6caca899609640a",
+    "crates/trames-vfs/src/cgroup.rs": "d3b9f6551f9a8c5fd4986244dfd0a916abaed7fbb2f305f7858e6a7145a23c4c",
+    "crates/trames-vfs/src/fs_context.rs": "e17cfb2562cc8ab74c948e4bc2a70bc49bc3e06ee505abce7ff5f681b6b90837",
+    "crates/trames-vfs/src/ipc.rs": "0487e17a86954a4f3a1ce09b9c2de956e6c4f7bbcd6b2559dae5094efba9e932",
+    "crates/trames-vfs/src/lib.rs": "d17113ed9d0d5437e44c2c0100a3c437aff5c221159e97bb4df9ee267e50d017",
+    "crates/trames-vfs/src/linux_namespace.rs": "9034c442a32e38d794f1905d8effd126b8894326860d60b3f62b2318f1f49a33",
+    "crates/trames-vfs/src/mounts.rs": "6f4437f0678363070a93b8873c481a40d47941600227af46ba2bc128a5355451",
+    "crates/trames-vfs/src/storage.rs": "53481e096a1a8bcef251d7edc2411addefb8075001af6eac1663d8be379a420b",
+    "scripts/audit-syscalls.py": "33ca25a6e8488633e05dc3ee8909ce8f40c0303d21a4ce2ad6a904961ef28179",
+    "tests/fixtures/shared-fs-context.c": "5932c17921b353284ca3c515dd5d04af55eaa67e32d0a57bb954807d768bc46c",
+    "tests/integration/shared-fs-context.py": "3c61f6f9eff884d06b50d608bd766396063a067b41f632f722d7fa169e9d1ace"
+  },
+  "deleted_sources": [
+    "crates/trames-vfs/src/clone_resources.rs"
+  ],
+  "artifact_sha256": {
+    "target/perf-runtime/release/trames-run": "12b11b16717db1818914a27c0f22f258325d5b35b0405cd20c198897a3dcc791",
+    "target/shared-fs-context-checks/before-trames-run": "839b31a5589e639f2ea4eacd2973b7ad175dcd2c65e68081fb0452b88f9af257",
+    "target/shared-fs-context-checks/native-shared-fs-context": "bb951786c123233515c32c2c798aa10add42527f87b3c1c065aebac8e725b77d",
+    "tests/fixtures/bin/shared-fs-context": "ac6dc9c3f66289a582dfda533290a4cd593b610982575f57722b430f88560ef5",
+    "tests/fixtures/bin/worker-fd-table": "057dfbfb2f2316cd805e5377c4d01ab539611ea5aff325fd333c1024d8e723a3"
+  },
+  "runner_sha256": "12b11b16717db1818914a27c0f22f258325d5b35b0405cd20c198897a3dcc791",
+  "baseline_sha256": "839b31a5589e639f2ea4eacd2973b7ad175dcd2c65e68081fb0452b88f9af257",
+  "baseline_evidence": "docs/validation/worker-inotify-summary.json",
+  "results": {
+    "unit": {
+      "path": "target/shared-fs-context-checks/unit-results-final.json",
+      "sha256": "5a6df7757b9bc72afe5083d2411e7f4891321552f057b32b3bee1eec3b2cfa91"
+    },
+    "comparison": {
+      "path": "target/shared-fs-context-checks/comparison/results.json",
+      "sha256": "25413514b864759d663dd14ec4ca93df201179395bee292983668f92d98bae64"
+    },
+    "baseline_exec_failure": {
+      "path": "target/shared-fs-context-checks/before-exec.json",
+      "sha256": "0dc2b22b23abf2ecfddb499dae73a4a8f4d102442d27d3a2b83bf1c4d8e8c110"
+    },
+    "fd_domains": {
+      "path": "target/shared-fs-context-checks/fd-domains.json",
+      "sha256": "e5a6970c4d6954abcea61bc72bb8e4920d67bb6ac145cc29ea5277cbd8f76fc5"
+    }
+  },
+  "distinct_rust_tests": 134,
+  "medians_seconds": {
+    "before-1": 0.000179119,
+    "before-2": 0.007438543,
+    "before-4": 0.007432966,
+    "after-1": 0.000167031,
+    "after-2": 0.000142044,
+    "after-4": 0.000116215
+  },
+  "limits": "Short 256-exchange workload, Linux x86_64 host running identical static ARM64 ELF. Three interleaved samples. Same benchmark mode for both runners; full CLONE_FS/exec domains checked separately. No CoreMark/app/iPad speed claim. service_requests was already zero; whole-cohort returns drop.",
+  "builds": {
+    "release_cli_ffi": "target/shared-fs-context-checks/release-build.log",
+    "strict_release_clippy_five_crates_all_targets": "target/shared-fs-context-checks/clippy.log"
+  },
+  "raw_artifacts": "target/shared-fs-context-checks"
+}

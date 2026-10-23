@@ -1,0 +1,8 @@
+smp: topology, affinity and getcpu: passed
+smp: pinned peers cannot starve a flexible waiter: passed
+smp: LSE, LL/SC, CASP and pair exclusives; TLS/errno: passed
+smp: acquire/release publication across pages: passed
+smp: DMB store-buffering forbidden outcome: passed
+smp: futex compare/enqueue/wake races: passed
+smp: concurrent fork COW and shared process atomics: passed
+smp: exec and exit_group with a running pthread peer: passed

@@ -1,0 +1,12 @@
+
+running 7 tests
+test direct_io::tests::epoll_delivery_is_shared_with_joined_waiters_and_refreshes_after_ctl ... ok
+test direct_io::tests::fd_reuse_and_fork_status_changes_rebuild_shared_handles ... ok
+test direct_io::tests::concurrent_epoll_oneshot_has_only_one_delivery_and_rotates_duplicate_watches ... ok
+test direct_io::tests::last_close_in_a_different_fd_table_invalidates_epoll_resource_snapshot ... ok
+test direct_io::tests::resource_locks_are_independent_and_pipe_buf_rules_match ... ok
+test direct_io::tests::atomic_eventfd_and_semaphore_preserve_concurrent_counts ... ok
+test direct_io::tests::direct_pipe_writers_share_vfs_bytes_and_keep_records_atomic ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 176 filtered out; finished in 0.00s
+

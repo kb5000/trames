@@ -1,0 +1,6 @@
+
+running 1 test
+test workers::tests::wayland_gpu_auth_runs_locally_for_frozen_grants_and_defers_before_effects_otherwise ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 134 filtered out; finished in 0.00s
+

@@ -51,7 +51,9 @@ static void events(void) {
 }
 
 static void epoll_tests(void) {
+#if defined(__aarch64__)
     _Static_assert(sizeof(struct epoll_event) == 16, "AArch64 event ABI");
+#endif
     int ep = epoll_create1(EPOLL_CLOEXEC), fd = eventfd(1, EFD_NONBLOCK);
     assert(ep >= 0 && fd >= 0);
     struct epoll_event event = { .events = EPOLLIN | EPOLLONESHOT, .data.u64 = UINT64_C(0x1020304050607080) };
@@ -305,7 +307,10 @@ static void sockets(void) {
     puts("AF_UNIX pairs stream/datagram/peek/trunc/fault/fork EOF: ok");
 }
 
-int main(void) {
+int main(int argc, char **argv) {
     if (mkdir("/tmp", 01777) == -1) { assert(errno == EEXIST); }
+    if (argc == 2 && !strcmp(argv[1], "locks")) { locks(); threaded_locks(); return 0; }
+    if (argc == 2 && !strcmp(argv[1], "fifos")) { fifos(); return 0; }
+    assert(argc == 1);
     events(); epoll_tests(); timers(); sockets(); locks(); threaded_locks(); paths(); fifos(); return 0;
 }

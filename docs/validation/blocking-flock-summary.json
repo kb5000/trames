@@ -1,0 +1,95 @@
+{
+  "date_utc": "2026-10-23",
+  "batch": 26,
+  "complete_coordinator_removal": false,
+  "scope": "Blocking flock object notifications, retained request/OFD through joins, no FD-number retry; dynamic FD/OFD lifetime and mapping ownership still joined.",
+  "source_sha256": {
+    "crates/trames-core/src/process.rs": "28e517183d4d29fcce85f2e481b0f8caa90f3899e975c90fc72fcb5b0f37d15e",
+    "crates/trames-core/src/process_seccomp.rs": "73d73d541eaaafbb76272e162ec82f3a9f751d687b921dc9236bd5d7729d3874",
+    "crates/trames-core/src/run_queue.rs": "3250e36abbcb3b54627a25d27791059f575d6e832dc54306a9ff5896f679a7fb",
+    "crates/trames-core/src/workers.rs": "b42fe7643d5411b933d814dae4c020dd19311634af298d08a6cd0c1c2b1d30fc",
+    "crates/trames-linux/src/direct.rs": "0368cddb46391abde57cd91fcf269c89bceaa1c12133c8a361db8d3801ede953",
+    "crates/trames-linux/src/direct/uring.rs": "00f21d5414c47a263af93a8c6da50fa73bb2f4ad779947f09c4b84544997b822",
+    "crates/trames-vfs/src/file_io.rs": "f275cbf980a32cd6497eaa20b1a0ff4e67a1bcd3ed5173219679cbaf72f7c5ee",
+    "crates/trames-vfs/src/flock.rs": "10bc563182daf227da1b717e4a2a2d439f96524759abdb80a8494bd0a20990f5",
+    "crates/trames-vfs/src/lib.rs": "080f05ce22ac41066112b4400a16616283489469d50edadd1451ada39370afc7",
+    "scripts/audit-syscalls.py": "267f33010d9cbed0afe4cfe4be5ccd4411a56a3246f59feb298add7fe1f620d7",
+    "tests/fixtures/blocking-flock.c": "c33449f1389a2b85070bdf6c3c0bb7099394bacb69b39243e0e43104e391591a",
+    "tests/integration/blocking-flock.py": "2fe9ecdae7dbeca3826ebaa16d2d6cebc73ac0d9f37971e8388aa6c53591ad5c"
+  },
+  "artifact_sha256": {
+    "target/perf-runtime/release/trames-run": "57a5c7bc61ae8ab6a5808df3ebd692d45abf04e0d72d10e0a50c34edce911b9a",
+    "target/blocking-flock-checks/before-trames-run": "208cb2dfb39578665449feaa415e9b19bbef6fd9628723eecb3ffc12343352bb",
+    "target/blocking-flock-checks/worker-path-trames-run": "10cb1aad140426d44165fb77d90a0ee2aa7a09e054833a1c0bce1aa258c36de2",
+    "target/blocking-flock-checks/owner-fastpath-trames-run": "8126fdaf582c8af145866540d8b953f93d956cdb95c215dff164f1eb63f99f71",
+    "target/blocking-flock-checks/native-blocking-flock": "8bd539d2aa8ba66457acec383a059b1a8209d20c0b1c885b64a40557f8d1eb32",
+    "tests/fixtures/bin/blocking-flock": "a1f0d90e46a1e1ec7791c8a9380149fe213ff11378ba87f63281f895144edf3f"
+  },
+  "runner_sha256": "57a5c7bc61ae8ab6a5808df3ebd692d45abf04e0d72d10e0a50c34edce911b9a",
+  "baseline_sha256": "208cb2dfb39578665449feaa415e9b19bbef6fd9628723eecb3ffc12343352bb",
+  "baseline_evidence": "docs/validation/shared-flock-summary.json",
+  "results": {
+    "units": {
+      "path": "target/blocking-flock-checks/unit-results.json",
+      "sha256": "1e88257ec8d1925bb7f0c7a13cf61e3d822679093f99aae9894046c04a0f6a8a"
+    },
+    "comparison": {
+      "path": "target/blocking-flock-checks/comparison/results.json",
+      "sha256": "d1d02cffc1f97d3908249867612dcdd959b45ea8bd108a0be1753613a66431ff"
+    },
+    "owner_fastpath": {
+      "path": "target/blocking-flock-checks/final/results.json",
+      "sha256": "157218d0bfa71db53317cb7890598c6540b1130a78af7bdfe0e0499c1f85f341"
+    },
+    "handoff_final": {
+      "path": "target/blocking-flock-checks/handoff-final/results.json",
+      "sha256": "207b367ac014ad424c817bd76f91e923426d704dd24687575f9007fc7ccd10d7"
+    },
+    "baseline_fd_reuse_failure": {
+      "path": "target/blocking-flock-checks/baseline-fd-reuse.stderr",
+      "sha256": "084bfef68dcaa6bf989775ee0997bfc59b6351d3faadf19f6e69c923d2d75288"
+    }
+  },
+  "distinct_rust_tests": 92,
+  "rust_test_counts": {
+    "core": 16,
+    "linux": 71,
+    "vfs": 5
+  },
+  "log_sha256": {
+    "target/blocking-flock-checks/unit-core-handoff.log": "254f58b64515d4aef51691555457ea298b87c4511b280f1c4e547d03c95c5146",
+    "target/blocking-flock-checks/core-fastpath-build.log": "945d9525e0df2448eb26b293c5a24e91134bbd67624b8594ef4fa52cdafedfa9",
+    "target/blocking-flock-checks/unit-linux-regression.log": "a8a5f754acc8f7bc4a811a8e797598a577c77291990acb435e5cb6ec085b2dd7",
+    "target/blocking-flock-checks/release-final-build.log": "ffabd761365fc4707e64c9fa1c5ef1983094507b70b532d573cb20917bb54669",
+    "target/blocking-flock-checks/unit-core-handoff-final.log": "75a2870869b5f8b5b784be0306dcf1f31924dac7f07705bb929d05b3dca9c65d",
+    "target/blocking-flock-checks/release-build.log": "b5792dc9e9a6fda9c0b202c4b06274d58423fd1efd87a4faba8048d6b1c661b1",
+    "target/blocking-flock-checks/unit-core-queue.log": "f686bf14fb03f5171bd0552e9fe54dca68441bbc55a38352992ebd789f5db94a",
+    "target/blocking-flock-checks/unit-build.log": "fa6f2fe44789eb527310fda481444cb4229e01cbd6a124fe97484440ed37d9f9",
+    "target/blocking-flock-checks/unit-core-flock.log": "1ef0f8285765559bae5448ae9098f295102985b0559d21d3e221df7a27df5854",
+    "target/blocking-flock-checks/core-final-build.log": "346ac60198ce3623a09abe10d1d6a1f0ce1f97772183bcca1643a831ec254cb8",
+    "target/blocking-flock-checks/core-handoff-build.log": "e8c7b988e5345194d3a4f42eecf5118e6e06631dc58a8cdf3ba1126da5612416",
+    "target/blocking-flock-checks/unit-core-fastpath.log": "3354f3e35fcd15f621b63d7aca69fed5ea5d7ee6cc6224e0201470153de57df7",
+    "target/blocking-flock-checks/check.log": "252e6e1e5a1c18fc0f953551e3963f93e08305f9e44710a1458c82d1380b274d",
+    "target/blocking-flock-checks/unit-linux-flock.log": "9dd47a4b0868346285b0388b01224f4a4d653fb3b3dab116f1f697f5df48edb6",
+    "target/blocking-flock-checks/unit-vfs-flock.log": "c571e2a4d883b4030bd2e1faf5b35b70b9c064472c86fa966f21f483627a0b51",
+    "target/blocking-flock-checks/release-handoff-build.log": "e942a0d69c7c936674452ae2d5782f1721af972aff9e77529d384daa084d27ef",
+    "target/blocking-flock-checks/clippy-final.log": "64f020a414b77521266924c4e975ca41605f8d7220d2796594055ba612f35805",
+    "target/blocking-flock-checks/clippy.log": "a71b683fa1b87bea547e5cda4eb84a8910ecb9d0a762fbe2ab3983fc2aadbc49"
+  },
+  "medians_seconds": {
+    "before-1": 0.000526823,
+    "after-1": 0.000536217,
+    "before-2": 0.004508941,
+    "after-2": 0.000749753,
+    "before-4": 0.005632489,
+    "after-4": 0.001220324
+  },
+  "reuse": "Initial worker-path build passed all targeted tests and native/guest domains, 1/2/4 CPU memory/disk. Owner fastpath then changed only immediate owner completion: reran owner tests, six domain cases and three interleaved solo samples, reused unchanged multicore benchmark. Final helper correction updates operation when reusing the same retained OFD: reran two affected/new handoff tests and 2/4 CPU memory/disk domains; rebuilt CLI/FFI and reran strict all-target Clippy. Other passed results are reused, not reexecuted. Each intermediate runner is retained and hashed.",
+  "limits": "Short 256-control lock-contention workload on Linux x86_64 host, three interleaved samples; no single-CPU gain or overall iPad/CoreMark/Docker claim. Full FD/OFD final destruction, cold/filtered/serial waits, mapping and cohort lifecycle still retain owner roles.",
+  "builds": {
+    "release_cli_ffi": "target/blocking-flock-checks/release-handoff-build.log",
+    "strict_release_clippy": "target/blocking-flock-checks/clippy-final.log"
+  },
+  "raw_artifacts": "target/blocking-flock-checks",
+  "ipa_built": false
+}

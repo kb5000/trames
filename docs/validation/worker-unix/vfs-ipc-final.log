@@ -1,0 +1,18 @@
+
+running 13 tests
+test ipc::channel::tests::connect_and_last_close_refresh_shared_fd_and_epoll_snapshots ... ok
+test ipc::channel::tests::rights_force_no_effect_deferral_and_keep_original_peek_and_partial_delivery ... ok
+test ipc::channel::tests::worker_and_owner_share_bytes_offsets_and_shutdown_without_endpoint_leases ... ok
+test ipc::named_tests::accept_fd_exhaustion_retains_pending_connection ... ok
+test ipc::native::tests::clipboard_pipe_relays_preserve_bytes_backpressure_and_eof ... ok
+test ipc::named_tests::socket_lookup_follows_inode_links_and_permission_checks ... ok
+test ipc::channel::tests::concurrent_stream_writers_preserve_records_and_bounded_backpressure ... ok
+test ipc::waitall_tests::fionread_keeps_packet_boundaries_rights_and_shutdown_queues ... ok
+test ipc::waitall_tests::fragmented_waitall_preserves_prefix_and_nonblocking_and_eof_return_short_reads ... ok
+test ipc::waitall_tests::unix_rights_handoff_preserves_lifetime_and_rejects_direct_and_indirect_cycles ... ok
+test ipc::native::tests::cold_wayland_start_removes_only_dead_x11_sockets_and_their_locks ... ok
+test ipc::native::tests::guest_unix_stream_reaches_the_native_wayland_server_with_standard_wire_messages ... ok
+test ipc::waitall_tests::sender_self_rights_and_deep_queue_chains_release_without_recursive_borrows ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 181 filtered out; finished in 0.00s
+

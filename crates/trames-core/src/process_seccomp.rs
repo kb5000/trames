@@ -317,7 +317,7 @@ impl Kernel {
             0x0003_0000 => {
                 // force_sig_seccomp cannot be suppressed by ignoring or
                 // blocking SIGSYS; Linux forces its fatal default action.
-                if p.mask & (1u64 << 30) != 0 || p.actions[31].handler == 1 {
+                if p.mask & (1u64 << 30) != 0 || p.actions.get(31).handler == 1 {
                     self.exit(pid, p, 31);
                     return true;
                 }
@@ -352,7 +352,7 @@ impl Kernel {
 mod tests {
     use super::*;
     #[test]
-    fn private_futex_fast_return_requires_an_allow_decision() {
+    fn private_shared_futex_wait_wake_and_requeue_require_an_allow_decision() {
         let table = crate::futex::Futexes::default();
         let wait = table
             .wait((0, 7, 0x1000), 3, 1, || Ok::<_, ()>(()))
@@ -366,23 +366,30 @@ mod tests {
             streams: [0; (MAX_FDS as usize).div_ceil(64)],
             files: [0; (MAX_FDS as usize).div_ceil(64)],
             fd_flags: Default::default(),
+            umask: Default::default(),
+            actions: Default::default(),
+            program_break: Default::default(),
+            uts: None,
             direct: Default::default(),
-            futex: crate::futex::Private::new(table, 7),
+            futex: crate::futex::Authority::new(table, 7),
         };
         let mut cpu = Cpu::new(0x4004, 0);
         cpu.set_x(8, 98);
-        put_args(&mut cpu, [0x1000, 129, 1, 0, 0, 0]);
-        for decision in [ALLOW, 0x50007, 0x30009, 0, KILL_PROCESS] {
-            snapshot.seccomp = Seccomp::default();
-            snapshot.seccomp.push(Arc::new(
-                Filter::validate(vec![i(6, 0, 0, decision)]).unwrap(),
-            ));
-            assert_eq!(snapshot.admit(&cpu), decision == ALLOW);
-            assert!(!wait.woken());
+        for op in [0, 9, 1, 10, 3, 4, 128, 137, 129, 138, 131, 132] {
+            put_args(&mut cpu, [0x1000, op, 1, 1, 0x1004, 1]);
+            for decision in [ALLOW, 0x50007, 0x30009, 0, KILL_PROCESS] {
+                snapshot.seccomp = Seccomp::default();
+                snapshot.seccomp.push(Arc::new(
+                    Filter::validate(vec![i(6, 0, 0, decision)]).unwrap(),
+                ));
+                assert_eq!(snapshot.admit(&cpu), decision == ALLOW);
+                assert!(!wait.woken());
+            }
+            snapshot.seccomp.strict = true;
+            assert!(!snapshot.admit(&cpu));
         }
-        snapshot.seccomp.strict = true;
-        assert!(!snapshot.admit(&cpu));
     }
+
     #[test]
     fn allowed_filtered_identity_calls_continue_on_workers_without_peer_checkpoints() {
         let mut p = super::super::tests::process();
@@ -570,6 +577,370 @@ mod tests {
             b"unchanged"
         );
     }
+
+    #[test]
+    fn worker_fd_status_controls_obey_seccomp_before_atomic_effects() {
+        for allowed in [false, true] {
+            for (number, command, argument, bit) in [
+                (25, 4, O_NONBLOCK as u64, O_NONBLOCK),
+                (29, 0x5421, 0x1000, O_NONBLOCK),
+                (25, 2, 1, trames_vfs::O_CLOEXEC),
+                (436, u32::MAX as u64, 4, trames_vfs::O_CLOEXEC),
+            ] {
+                let mut p = super::super::tests::process();
+                let [fd, _] = p.linux.vfs.pipe(0).unwrap();
+                p.memory.write_array(0x1000, 1u32.to_le_bytes()).unwrap();
+                p.cpu.set_x(8, number);
+                put_args(&mut p.cpu, [fd as u64, command, argument, 0, 0, 0]);
+                p.seccomp.push(Arc::new(
+                    Filter::validate(vec![i(6, 0, 0, if allowed { ALLOW } else { 0x5007b })])
+                        .unwrap(),
+                ));
+                let snapshot = crate::worker_syscalls::Snapshot {
+                    seccomp: p.seccomp.clone(),
+                    identities: [0; 7],
+                    started: Instant::now(),
+                    processor: 0,
+                    profile: false,
+                    streams: p.linux.vfs.stream_descriptors(),
+                    files: p.linux.vfs.file_descriptors(),
+                    fd_flags: p.linux.vfs.fd_flags_snapshot(),
+                    umask: p.linux.vfs.umask_capability(),
+                    actions: p.actions.shared(),
+                    program_break: p.linux.program_break(),
+                    uts: None,
+                    direct: Default::default(),
+                    futex: Default::default(),
+                };
+                assert_eq!(snapshot.admit(&p.cpu), allowed);
+                if allowed {
+                    assert_eq!(snapshot.invoke(&p.cpu, &mut p.memory), Some(0));
+                }
+                assert_eq!(p.linux.vfs.flags(fd).unwrap() & bit != 0, allowed);
+            }
+        }
+    }
+    #[test]
+    fn worker_flock_checks_seccomp_and_defers_blocking_conversion_before_effects() {
+        for allowed in [false, true] {
+            let mut p = super::super::tests::process();
+            let fd = p.linux.vfs.open_at(-100, b"/lock", 0x42, 0o600).unwrap();
+            let other = p.linux.vfs.open_at(-100, b"/lock", 2, 0).unwrap();
+            p.cpu.set_x(8, 32);
+            put_args(&mut p.cpu, [fd as u64, 6, 0, 0, 0, 0]);
+            p.seccomp.push(Arc::new(
+                Filter::validate(vec![i(6, 0, 0, if allowed { ALLOW } else { 0x5007b })]).unwrap(),
+            ));
+            let mut epoch = trames_vfs::FileEpoch::default();
+            let snapshot = crate::worker_syscalls::Snapshot {
+                seccomp: p.seccomp.clone(),
+                identities: [0; 7],
+                started: Instant::now(),
+                processor: 0,
+                profile: false,
+                streams: Default::default(),
+                files: Default::default(),
+                fd_flags: Default::default(),
+                umask: p.linux.vfs.umask_capability(),
+                actions: p.actions.shared(),
+                program_break: p.linux.program_break(),
+                uts: None,
+                direct: trames_linux::DirectSyscalls::new(p.linux.vfs.direct_descriptors())
+                    .with_files(epoch.capture(&p.linux.vfs, true)),
+                futex: Default::default(),
+            };
+            assert_eq!(snapshot.admit(&p.cpu), allowed);
+            if allowed {
+                assert_eq!(snapshot.invoke(&p.cpu, &mut p.memory), Some(0));
+            }
+            assert_eq!(
+                p.linux.vfs.flock(other, 6),
+                if allowed { Err(Errno(11)) } else { Ok(()) }
+            );
+            p.linux.vfs.flock(other, 8).unwrap();
+            p.linux.vfs.flock(fd, 5).unwrap();
+            p.linux.vfs.flock(other, 5).unwrap();
+            p.cpu.set_x(1, 2); // A blocking conversion must not drop the SH lock.
+            assert_eq!(snapshot.admit(&p.cpu), allowed);
+            assert_eq!(snapshot.invoke(&p.cpu, &mut p.memory), None);
+            assert_eq!(p.linux.vfs.flock(other, 6), Err(Errno(11)));
+            epoch.finish();
+        }
+    }
+
+    #[test]
+    fn worker_brk_queries_obey_seccomp_and_mapping_changes_defer() {
+        for allowed in [false, true] {
+            let mut p = super::super::tests::process();
+            p.cpu.set_x(8, 214);
+            put_args(&mut p.cpu, [0; 6]);
+            p.seccomp.push(Arc::new(
+                Filter::validate(vec![i(6, 0, 0, if allowed { ALLOW } else { 0x5007b })]).unwrap(),
+            ));
+            let snapshot = crate::worker_syscalls::Snapshot {
+                seccomp: p.seccomp.clone(),
+                identities: [0; 7],
+                started: Instant::now(),
+                processor: 0,
+                profile: false,
+                streams: Default::default(),
+                files: Default::default(),
+                fd_flags: Default::default(),
+                umask: p.linux.vfs.umask_capability(),
+                actions: p.actions.shared(),
+                program_break: p.linux.program_break(),
+                uts: None,
+                direct: Default::default(),
+                futex: Default::default(),
+            };
+            assert_eq!(snapshot.admit(&p.cpu), allowed);
+            if allowed {
+                assert_eq!(snapshot.invoke(&p.cpu, &mut p.memory), Some(0xa000));
+            }
+            let before = p.linux.heap_context();
+            p.cpu.set_x(0, 0xb000);
+            assert!(!snapshot.admit(&p.cpu));
+            assert_eq!(snapshot.invoke(&p.cpu, &mut p.memory), None);
+            assert_eq!(p.linux.heap_context(), before);
+        }
+    }
+
+    #[test]
+    fn worker_sigaction_queries_obey_seccomp_and_mutations_defer_without_effects() {
+        for allowed in [false, true] {
+            let mut p = super::super::tests::process();
+            p.actions.set_handler(10, 0x5000);
+            p.cpu.set_x(8, 134);
+            put_args(&mut p.cpu, [10, 0, 0x1000, 8, 0, 0]);
+            p.seccomp.push(Arc::new(
+                Filter::validate(vec![i(6, 0, 0, if allowed { ALLOW } else { 0x5007b })]).unwrap(),
+            ));
+            let snapshot = crate::worker_syscalls::Snapshot {
+                seccomp: p.seccomp.clone(),
+                identities: [0; 7],
+                started: Instant::now(),
+                processor: 0,
+                profile: false,
+                streams: Default::default(),
+                files: Default::default(),
+                fd_flags: Default::default(),
+                umask: p.linux.vfs.umask_capability(),
+                actions: p.actions.shared(),
+                program_break: p.linux.program_break(),
+                uts: None,
+                direct: Default::default(),
+                futex: Default::default(),
+            };
+            assert_eq!(snapshot.admit(&p.cpu), allowed);
+            if allowed {
+                assert_eq!(snapshot.invoke(&p.cpu, &mut p.memory), Some(0));
+            }
+            assert_eq!(
+                p.memory.read_u64(0x1000).unwrap(),
+                if allowed { 0x5000 } else { 0 }
+            );
+            p.cpu.set_x(1, 0x1100);
+            assert!(!snapshot.admit(&p.cpu));
+            assert_eq!(snapshot.invoke(&p.cpu, &mut p.memory), None);
+            assert_eq!(p.actions.get(10).handler, 0x5000);
+        }
+    }
+    #[test]
+    fn worker_uts_filters_mutation_and_reads_live_namespace() {
+        for allowed in [false, true] {
+            let mut p = super::super::tests::process();
+            p.memory.write_array(0x1000, *b"worker").unwrap();
+            p.cpu.set_x(8, 161);
+            put_args(&mut p.cpu, [0x1000, 6, 0, 0, 0, 0]);
+            p.seccomp.push(Arc::new(
+                Filter::validate(vec![i(6, 0, 0, if allowed { ALLOW } else { 0x5007b })]).unwrap(),
+            ));
+            let snapshot = crate::worker_syscalls::Snapshot {
+                seccomp: p.seccomp.clone(),
+                identities: [0; 7],
+                started: Instant::now(),
+                processor: 0,
+                profile: false,
+                streams: Default::default(),
+                files: Default::default(),
+                fd_flags: Default::default(),
+                umask: Default::default(),
+                actions: Default::default(),
+                program_break: Default::default(),
+                uts: Some(p.linux.vfs.uts_capability()),
+                direct: Default::default(),
+                futex: Default::default(),
+            };
+            assert_eq!(snapshot.admit(&p.cpu), allowed);
+            if allowed {
+                let mut view = p.memory.parallel_view(&mut Default::default()).unwrap();
+                assert_eq!(snapshot.invoke(&p.cpu, &mut view), Some(0));
+                assert_eq!(p.linux.vfs.uts_name(false), b"worker");
+                p.linux.vfs.set_uts_name(false, b"visible").unwrap();
+                p.cpu.set_x(8, 160);
+                put_args(&mut p.cpu, [0x1000, 0, 0, 0, 0, 0]);
+                assert!(snapshot.admit(&p.cpu));
+                assert_eq!(snapshot.invoke(&p.cpu, &mut view), Some(0));
+                assert_eq!(
+                    trames_memory::CpuMemory::read_array::<8>(&view, 0x1000 + 65).unwrap(),
+                    *b"visible\0"
+                );
+            } else {
+                assert_eq!(p.linux.vfs.uts_name(false), b"trames");
+            }
+        }
+    }
+    #[test]
+    fn worker_syslog_checks_filter_authority_and_output_before_clear() {
+        for allowed in [false, true] {
+            let mut p = super::super::tests::process();
+            p.linux.vfs.log(4, "worker syslog retained");
+            p.memory
+                .map(0x20000, 4096, trames_memory::Permissions::RW)
+                .unwrap();
+            p.cpu.set_x(8, 116);
+            put_args(&mut p.cpu, [4, 0x20000, 4096, 0, 0, 0]);
+            p.seccomp.push(Arc::new(
+                Filter::validate(vec![i(6, 0, 0, if allowed { ALLOW } else { 0x5007b })]).unwrap(),
+            ));
+            let snapshot = crate::worker_syscalls::Snapshot {
+                seccomp: p.seccomp.clone(),
+                identities: [0; 7],
+                started: Instant::now(),
+                processor: 0,
+                profile: false,
+                streams: Default::default(),
+                files: Default::default(),
+                fd_flags: Default::default(),
+                umask: Default::default(),
+                actions: Default::default(),
+                program_break: Default::default(),
+                uts: None,
+                direct: trames_linux::DirectSyscalls::default()
+                    .with_kernel_log(p.linux.vfs.kernel_log_capability()),
+                futex: Default::default(),
+            };
+            assert_eq!(snapshot.admit(&p.cpu), allowed);
+            if allowed {
+                let mut view = p.memory.parallel_view(&mut Default::default()).unwrap();
+                put_args(&mut p.cpu, [2, 0x20000, 4096, 0, 0, 0]);
+                assert!(snapshot.admit(&p.cpu));
+                put_args(&mut p.cpu, [4, 0x20fff, 2, 0, 0, 0]);
+                assert_eq!(snapshot.invoke(&p.cpu, &mut view), Some(error(Errno(14))));
+                assert!(!p.linux.vfs.syslog(3, 4096).unwrap().is_empty());
+                put_args(&mut p.cpu, [4, 0x20000, 4096, 0, 0, 0]);
+                let length = snapshot.invoke(&p.cpu, &mut view).unwrap();
+                assert!(length > 0 && length < 4096);
+                let mut bytes = vec![0; length as usize];
+                trames_memory::CpuMemory::read(&view, 0x20000, &mut bytes).unwrap();
+                assert!(String::from_utf8(bytes)
+                    .unwrap()
+                    .contains("worker syslog retained"));
+                assert!(p.linux.vfs.syslog(3, 4096).unwrap().is_empty());
+            } else {
+                assert!(!p.linux.vfs.syslog(3, 4096).unwrap().is_empty());
+            }
+        }
+    }
+    #[test]
+    fn worker_umask_checks_seccomp_and_shares_only_its_fs_domain() {
+        for allowed in [false, true] {
+            let mut p = super::super::tests::process();
+            let shared = p.linux.vfs.clone_with_resources(false, true);
+            let fork = p.linux.vfs.clone();
+            p.cpu.set_x(8, 166);
+            put_args(&mut p.cpu, [0o1077, 0, 0, 0, 0, 0]);
+            p.seccomp.push(Arc::new(
+                Filter::validate(vec![i(6, 0, 0, if allowed { ALLOW } else { 0x5007b })]).unwrap(),
+            ));
+            let snapshot = crate::worker_syscalls::Snapshot {
+                seccomp: p.seccomp.clone(),
+                identities: [0; 7],
+                started: Instant::now(),
+                processor: 0,
+                profile: false,
+                streams: Default::default(),
+                files: Default::default(),
+                fd_flags: Default::default(),
+                umask: p.linux.vfs.umask_capability(),
+                actions: p.actions.shared(),
+                program_break: p.linux.program_break(),
+                uts: None,
+                direct: Default::default(),
+                futex: Default::default(),
+            };
+            assert_eq!(snapshot.admit(&p.cpu), allowed);
+            if allowed {
+                assert_eq!(snapshot.invoke(&p.cpu, &mut p.memory), Some(0o022));
+            }
+            assert_eq!(shared.umask(), if allowed { 0o077 } else { 0o022 });
+            assert_eq!(fork.umask(), 0o022);
+        }
+    }
+    #[test]
+    fn worker_record_locks_obey_seccomp_before_query_or_commit() {
+        for allowed in [false, true] {
+            for command in [5, 6] {
+                let mut p = super::super::tests::process();
+                let fd = p
+                    .linux
+                    .vfs
+                    .open_at(trames_vfs::AT_FDCWD, b"/lock", 0x42, 0o600)
+                    .unwrap();
+                let mut bytes = [0; 32];
+                bytes[..2].copy_from_slice(&1u16.to_le_bytes());
+                bytes[16..24].copy_from_slice(&1u64.to_le_bytes());
+                p.memory.write_array(0x1000, bytes).unwrap();
+                p.cpu.set_x(8, 25);
+                put_args(&mut p.cpu, [fd as u64, command, 0x1000, 0, 0, 0]);
+                p.seccomp.push(Arc::new(
+                    Filter::validate(vec![i(6, 0, 0, if allowed { ALLOW } else { 0x5007b })])
+                        .unwrap(),
+                ));
+                let mut epoch = trames_vfs::FileEpoch::default();
+                let snapshot = crate::worker_syscalls::Snapshot {
+                    seccomp: p.seccomp.clone(),
+                    identities: [0; 7],
+                    started: Instant::now(),
+                    processor: 0,
+                    profile: false,
+                    streams: p.linux.vfs.stream_descriptors(),
+                    files: p.linux.vfs.file_descriptors(),
+                    fd_flags: p.linux.vfs.fd_flags_snapshot(),
+                    umask: p.linux.vfs.umask_capability(),
+                    actions: p.actions.shared(),
+                    program_break: p.linux.program_break(),
+                    uts: None,
+                    direct: trames_linux::DirectSyscalls::new(p.linux.vfs.direct_descriptors())
+                        .with_files(epoch.capture(&p.linux.vfs, true))
+                        .with_lock_context(p.linux.vfs.record_lock_context(p.tgid)),
+                    futex: Default::default(),
+                };
+                assert_eq!(snapshot.admit(&p.cpu), allowed);
+                if allowed {
+                    assert_eq!(snapshot.invoke(&p.cpu, &mut p.memory), Some(0));
+                }
+                if command == 6 {
+                    let mut other = p.linux.vfs.normalize_lock(fd, 1, 0, 0, 1).unwrap();
+                    other.owner = 99;
+                    assert_eq!(
+                        p.linux
+                            .vfs
+                            .record_lock_conflict(fd, other)
+                            .unwrap()
+                            .is_some(),
+                        allowed
+                    );
+                } else {
+                    assert_eq!(
+                        p.memory.read_array::<2>(0x1000).unwrap(),
+                        (if allowed { 2u16 } else { 1u16 }).to_le_bytes()
+                    );
+                }
+                epoch.finish();
+            }
+        }
+    }
     #[test]
     fn filtered_identity_syscalls_still_checkpoint_and_apply_errno_in_parallel() {
         let mut p = super::super::tests::process();
@@ -629,11 +1000,14 @@ mod tests {
             p.seccomp.push(Arc::new(
                 Filter::validate(vec![i(6, 0, 0, 0x30055)]).unwrap(),
             ));
-            p.actions[31] = Action {
-                handler: 0x5000,
-                flags: 4,
-                ..Action::default()
-            };
+            p.actions.set(
+                31,
+                Action {
+                    handler: 0x5000,
+                    flags: 4,
+                    ..Action::default()
+                },
+            );
             assert!(kernel.filter_syscall(1, &mut p, number, args));
             assert_eq!(p.cpu.pc, 0x5000);
             let sp = p.cpu.sp;
@@ -671,7 +1045,7 @@ mod tests {
             p.seccomp.push(Arc::new(
                 Filter::validate(vec![i(6, 0, 0, 0x30055)]).unwrap(),
             ));
-            p.actions[31].handler = handler;
+            p.actions.set_handler(31, handler);
             p.mask = mask;
             assert!(kernel.filter_syscall(1, &mut p, 173, [0; 6]));
             assert!(matches!(p.state, State::Zombie(31)));

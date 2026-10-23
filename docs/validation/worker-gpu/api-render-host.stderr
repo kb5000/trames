@@ -1,0 +1,1 @@
+vulkan-render-host: tests/fixtures/vulkan-render.c:46: main: Assertion `argc==4 || argc==5' failed.

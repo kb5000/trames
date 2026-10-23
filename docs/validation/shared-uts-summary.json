@@ -1,0 +1,88 @@
+{
+  "date_utc": "2026-10-23",
+  "batch": 38,
+  "complete_coordinator_removal": false,
+  "scope": "Share UTS namespace identity/names/quota, weak proc snapshots and final worker reference release. Execute uname/sethostname/setdomainname on current worker using common ABI and immutable epoch authority; names remain live.",
+  "source_sha256": {
+    "crates/trames-vfs/src/linux_namespace.rs": "b234a4eed009a34d09ff8ee601f8e75aa67b2ab6d66f09108a9f4e588701401f",
+    "crates/trames-vfs/src/lib.rs": "2e087a9711f6b80a18ecfc3a455d837d5b30fd8fa5eb57650708e614df94cdd8",
+    "crates/trames-linux/src/state.rs": "d85bd2487657012ed11df73a21fb2bafda74fdfb5563f646c9b9bb2227b5d477",
+    "crates/trames-linux/src/lib.rs": "a01de65430242e94382834f1ec66471608b36c23904839688a26f91c61f16db8",
+    "crates/trames-core/src/worker_syscalls.rs": "d8ec95c99ad883966ca4dd095d3c66e63bf3677d868041ebab5007ed666fdae5",
+    "crates/trames-core/src/process.rs": "311469a6615285e4ca67033febf869e904ec0b53185ad516a5983436a682112d",
+    "crates/trames-core/src/process_seccomp.rs": "f1b3954512ff3d3f62e941dbfeb3398e055ed212ccf385c6206ce405e816fd4b",
+    "crates/trames-core/src/process_service.rs": "8dff76857f960627c31cf0e5baf1f60b2d62f418a142d2ceb3475325c9282ec6",
+    "crates/trames-core/src/workers.rs": "48c872909c9515316353c3ec759f4a243de7f3fe2ad7da586b4ce6e9c9ca2112",
+    "crates/trames-linux/src/uts.rs": "b083c3a4b8d197a48f6560dd2e5155c34490bede62a7c82fd8efd978e7cc660b",
+    "tests/fixtures/worker-uts.c": "f1d0bf0cd51e78d5d81397c314d75950d7798bdf4e7abddc9a5df3e3e30fb0ff",
+    "tests/fixtures/namespaces.c": "10a831b9056fb2f7439e27e4d01f4c366498ccaa591ddd3230bb46654e8c8665",
+    "tests/integration/worker-uts.py": "b290693e37da72ace1f37f17356768d823adf4881a80715e46c7d9eca285d3d4"
+  },
+  "artifact_sha256": {
+    "target/perf-runtime/release/trames-run": "290a68d0d8d5fc94b2a53dbcffba5bf020237da9ceb2c922fa219379ee2f7b49",
+    "target/perf-runtime/release/libtrames_ffi.a": "0186d5205d9df9dc61cc5a5042ca6a0af53c0b7ee441562852268c392066ddec",
+    "target/perf-runtime/release/libtrames_ffi.so": "4cc6710d032a0826a23d1aa85a53487aaed10c11abd77fbce39fd85e1c1d2073",
+    "target/shared-uts-checks/before-trames-run": "0fbc2ef91f324c6e76680cd211e07609c3f3eb55cd67d839eb52a418226a4bdd",
+    "target/shared-uts-checks/worker-uts": "ca0ec3aacbb127e511666a2e9582b829ab1796b62c0ade0d7f20612d94748881",
+    "target/shared-uts-checks/namespaces": "894ca34c12d570cf9c8d2b09ec1e227b4ce864c2ecc75d788b9fc31eeb860064"
+  },
+  "runner_sha256": "290a68d0d8d5fc94b2a53dbcffba5bf020237da9ceb2c922fa219379ee2f7b49",
+  "baseline_sha256": "0fbc2ef91f324c6e76680cd211e07609c3f3eb55cd67d839eb52a418226a4bdd",
+  "baseline_evidence": "docs/validation/shared-log-waits-summary.json",
+  "distinct_rust_tests": 8,
+  "guest_cases": 12,
+  "baseline_cases": 3,
+  "native_uts_mutation_tests": 0,
+  "routing": [
+    {
+      "cpus": 2,
+      "before_parallel_rounds": 978,
+      "after_parallel_rounds": 11,
+      "after_worker_syscalls": 1031,
+      "after_service_requests": 0
+    },
+    {
+      "cpus": 4,
+      "before_parallel_rounds": 935,
+      "after_parallel_rounds": 8,
+      "after_worker_syscalls": 1028,
+      "after_service_requests": 0
+    }
+  ],
+  "results": {
+    "units": {
+      "path": "target/shared-uts-checks/unit-results.json",
+      "sha256": "73499c21800eac15174e84fdb6ba611e220be712903ee6e7715a7863c1de9b31"
+    },
+    "guest": {
+      "path": "target/shared-uts-checks/guest/results.json",
+      "sha256": "f3ed383f505dfc71edf045317be59e6c224d1b1b54c7150aea0c385bf16760ca"
+    },
+    "baseline": {
+      "path": "target/shared-uts-checks/baseline-results.json",
+      "sha256": "fce570f68a3e99b0fb5b62a6fd1da8191ae8ea350aa6e180ab4646d867bf89f5"
+    }
+  },
+  "builds": {
+    "release_cli_ffi": "target/shared-uts-checks/release-build.log",
+    "strict_release_clippy": "target/shared-uts-checks/clippy.log",
+    "format": "target/shared-uts-checks/fmt.log",
+    "diff_whitespace": "target/shared-uts-checks/diff-check.log"
+  },
+  "log_sha256": {
+    "target/shared-uts-checks/check.log": "4b0321e2059623ed6764b1a170b5517e3dbf8307c6c49c834922e3e427851ba4",
+    "target/shared-uts-checks/clippy.log": "909d542fac5d1fc9fb8955c7ceceabf9a5ae9c1c486573555d62a6944c41b9c8",
+    "target/shared-uts-checks/diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/shared-uts-checks/fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target/shared-uts-checks/release-build.log": "3578cd0df85ac82fc2e992558b236d8acb1938210663c211193ab1a745808fae",
+    "target/shared-uts-checks/unit-build.log": "4df334c36b5889db2a62fb5968071d0d551d0238b33704e2ba7ee50099f753d0",
+    "target/shared-uts-checks/unit-core.log": "e1b8a802cc01436ed04efa81ec132b6db8ae9553c4f0cae813f454ea7551a8c9",
+    "target/shared-uts-checks/unit-linux.log": "e2301a97d4f773de318376215cae42f47ef6b8698737ba97df63c174431a5d47",
+    "target/shared-uts-checks/unit-vfs.log": "716e3ff6ac6ceb3497b91a65b62532f143927f329f1a529e03abe416378ead5b"
+  },
+  "validation_notes": "Initial cargo check caught u64 syscall number versus u32 common ABI; cast after matching the exact 160..162 range. Subsequent tests all passed; no behavioral failure skipped. No host hostname/domainname or namespace mutation; no native oracle claimed.",
+  "reuse": "Unchanged log/mapped/io_uring/network/graphics validation reused; no CoreMark or whole product benchmark. One fixed-work routing sample per baseline CPU, no wall-time speed claim.",
+  "raw_artifacts": "target/shared-uts-checks",
+  "ipa_built": false,
+  "limits": "Unshare/setns and credentials commit, namespace FD installation, other namespace object graphs, full FD/OFD, Node/pages and VM/task/global-stop ownership remain. Linux x86_64 host with AArch64 guest; no Apple/iPad speed claim."
+}

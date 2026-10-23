@@ -1,0 +1,195 @@
+{
+  "date": "2026-10-22",
+  "git_head": "52c02331103d145e351fdb7377af80c389e85235",
+  "working_tree": "Local uncommitted continuation of the three prior coordinator-removal batches.",
+  "binary_sha256": {
+    "target/worker-io-wait-checks/trames-run-before": "e2895fcab9ece57db05e46de8721315c0e0ec2c0afed5961350fc50842ccdf6e",
+    "target/perf-runtime/release/trames-run": "8383df0333c587949e23be4bba1fce15604c95c47aec8cf652d404ad1d9f5c6f",
+    "target/perf-runtime/release/libtrames_ffi.so": "5b0308ecc2fbd84cbfbd2f9a0ea20cf52aa0040fab6cb011b71f58c6eef417eb",
+    "target/perf-runtime/release/libtrames_ffi.a": "541d1c97e35a15c14472a2bd1e79b46456dc35ba40114cb0b29601eeec2fe950",
+    "tests/fixtures/bin/io-handoff": "d954b30d5a612ceb5cc5fe79b61e0ec137cab9c5cc603b2185c61f60d564da78",
+    "target/worker-io-wait-checks/io-handoff-host": "2f7aed615bc91230dcdbedfb9e881ea98c6520d227f8b27c5e98da02f489e6fe"
+  },
+  "compiled_source_sha256": {
+    "crates/trames-vfs/src/readiness.rs": "b2493ae2f0c9d8e98bb3a3379e107891dde570b4766ccd9392b271950e77727f",
+    "crates/trames-vfs/src/direct_io.rs": "8a0111d2d6e6e2936de55581635b7e497f1dd90a394e7229d53f5aeae801aeae",
+    "crates/trames-vfs/src/events.rs": "3713927f9b199de2b22c4e8168682d62c40482386a4da387ed51aed1d2215c94",
+    "crates/trames-vfs/src/lib.rs": "82c62daf2ca3cf4f700369b035c2685ef72a1fe298a8e511c92c21c78d10f147",
+    "crates/trames-vfs/src/ipc/native.rs": "9562a60ac356295b3bddcbb1854c56e805cb86dc6d327df41d7ef7db15f75913",
+    "crates/trames-linux/src/direct.rs": "fa198e55d6c63ed57a63f26dbed95a23538768edf64020694b261fc380e61877",
+    "crates/trames-linux/src/lib.rs": "6362347b6660cbde12c22a68659fe99a946e139b40cc798fee8638b1a9f4cdea",
+    "crates/trames-linux/src/state.rs": "5cef12cc67afba3293e169483e5e39e6264c3178fe0163b59dc1c3f1bf7396a1",
+    "crates/trames-core/src/run_queue.rs": "eb303814ed1dc84b165cea28bbf6ae2f065473e9704821b89c7e1f048a646544",
+    "crates/trames-core/src/workers.rs": "857c5eb7c49814550915882482c4c26fb71f2a67a899068463c9d7411e695660",
+    "crates/trames-core/src/worker_syscalls.rs": "a69429dd8825ecf182843f382d4f33f303d166b947c1e0c6f9283e4cec498b20",
+    "crates/trames-core/src/process.rs": "80bb0361da1915327ce103b2bbb814c6556b062ee07e6f325477e62e767e2676",
+    "crates/trames-core/src/process_events.rs": "b84ed22ceb04e1a73bce6dfb7321203543b8865661e1cf2f89ef8ccd7930cd5b",
+    "crates/trames-core/src/lib.rs": "ce32b45a1e2dd174026816d464fc64b497232eb1d090196a6dcb7bea791e3d35",
+    "crates/trames-cli/src/main.rs": "bd76d38378e41ab10bf909dec12de724619f6f595e6fb8cd8694cdc6769c3047",
+    "tests/fixtures/io-handoff.c": "f9c3114f4b245bfe0ac1e7f651acbdcea484e91c63c47dc77d901d1ec0f50390",
+    "tests/fixtures/epoch-services-native.S": "f0e393022ae06d80c042885a4d8f7db7ff589ed3a0d8a1bc27b6201f990f0e4d",
+    "scripts/build-io-handoff-fixture.sh": "0c473a26b08c988ced8fc1bab73e59f0f7a47cddc160f6907a5cbb5c12faabd2",
+    "tests/performance/io-handoff.py": "ed295b64474d35d8dac4fcd60d1d532f7f239e4151bee2f70a3ddc4a2fe5c7c9"
+  },
+  "source_sha256": {
+    "crates/trames-vfs/src/readiness.rs": "b2493ae2f0c9d8e98bb3a3379e107891dde570b4766ccd9392b271950e77727f",
+    "crates/trames-vfs/src/direct_io.rs": "8a0111d2d6e6e2936de55581635b7e497f1dd90a394e7229d53f5aeae801aeae",
+    "crates/trames-vfs/src/events.rs": "3713927f9b199de2b22c4e8168682d62c40482386a4da387ed51aed1d2215c94",
+    "crates/trames-vfs/src/lib.rs": "d21a2e86492eb366f1a2d78e55e8a73b5872286a74ddb599abd27261a4f0faad",
+    "crates/trames-vfs/src/ipc/native.rs": "9562a60ac356295b3bddcbb1854c56e805cb86dc6d327df41d7ef7db15f75913",
+    "crates/trames-linux/src/direct.rs": "fa198e55d6c63ed57a63f26dbed95a23538768edf64020694b261fc380e61877",
+    "crates/trames-linux/src/lib.rs": "3a3c65b952aa4df89b15a0d0b25fdabdd2bf34652b1d4be2a72df0a935170d08",
+    "crates/trames-linux/src/state.rs": "5cef12cc67afba3293e169483e5e39e6264c3178fe0163b59dc1c3f1bf7396a1",
+    "crates/trames-core/src/run_queue.rs": "eb303814ed1dc84b165cea28bbf6ae2f065473e9704821b89c7e1f048a646544",
+    "crates/trames-core/src/workers.rs": "857c5eb7c49814550915882482c4c26fb71f2a67a899068463c9d7411e695660",
+    "crates/trames-core/src/worker_syscalls.rs": "a69429dd8825ecf182843f382d4f33f303d166b947c1e0c6f9283e4cec498b20",
+    "crates/trames-core/src/process.rs": "8e209e82a9c03b97684d29987a7f73697afb748f75b420f1e985336179ec02a5",
+    "crates/trames-core/src/process_events.rs": "b84ed22ceb04e1a73bce6dfb7321203543b8865661e1cf2f89ef8ccd7930cd5b",
+    "crates/trames-core/src/lib.rs": "ce32b45a1e2dd174026816d464fc64b497232eb1d090196a6dcb7bea791e3d35",
+    "crates/trames-cli/src/main.rs": "bd76d38378e41ab10bf909dec12de724619f6f595e6fb8cd8694cdc6769c3047",
+    "tests/fixtures/io-handoff.c": "f9c3114f4b245bfe0ac1e7f651acbdcea484e91c63c47dc77d901d1ec0f50390",
+    "tests/fixtures/epoch-services-native.S": "f0e393022ae06d80c042885a4d8f7db7ff589ed3a0d8a1bc27b6201f990f0e4d",
+    "scripts/build-io-handoff-fixture.sh": "0c473a26b08c988ced8fc1bab73e59f0f7a47cddc160f6907a5cbb5c12faabd2",
+    "tests/performance/io-handoff.py": "ed295b64474d35d8dac4fcd60d1d532f7f239e4151bee2f70a3ddc4a2fe5c7c9"
+  },
+  "post_build_changes": {
+    "only": "cargo fmt whitespace/import layout; verified by formatting each saved pre-format source and comparing bytes. No semantic change or test/build rerun.",
+    "files": [
+      "crates/trames-vfs/src/lib.rs",
+      "crates/trames-linux/src/lib.rs",
+      "crates/trames-core/src/process.rs"
+    ]
+  },
+  "baseline_provenance": "Matches the CLI SHA-256 in docs/validation/task-handoff/results.json; includes all three prior coordinator migration batches.",
+  "checks": {
+    "core": {
+      "passed": 119,
+      "ignored": 2,
+      "log": "core-final.log",
+      "scope": "Final core implementation tested; subsequent VFS last-close cache fix independently covered by final direct-resource unit tests and SMP integration."
+    },
+    "vfs": {
+      "earlier_full_passed": 181,
+      "ignored": 1,
+      "log": "vfs.log",
+      "final_readiness_passed": 2,
+      "readiness_log": "vfs-readiness-final.log",
+      "final_direct_passed": 7,
+      "direct_log": "vfs-direct-final.log",
+      "reuse": "Unchanged tests reuse full pass; after notification ordering reran readiness, after last-close invalidation reran direct resources including new regression."
+    },
+    "linux": {
+      "earlier_full_passed": 34,
+      "log": "linux.log",
+      "final_direct_passed": 6,
+      "final_filtered": 29,
+      "final_log": "linux-direct-final.log",
+      "reuse": "Affected direct calls and new backpressure test rerun; other 29 tests retain full pass."
+    },
+    "clippy": {
+      "passed": true,
+      "packages": [
+        "vfs",
+        "linux",
+        "core",
+        "cli",
+        "ffi"
+      ],
+      "tests": true,
+      "profile": "release",
+      "warnings": "deny",
+      "log": "clippy.log"
+    },
+    "format": {
+      "passed": true,
+      "all_workspace": true,
+      "log": "fmt-final.log"
+    },
+    "build": {
+      "passed": true,
+      "packages": [
+        "cli",
+        "ffi"
+      ],
+      "profile": "release",
+      "log": "build-final.log"
+    },
+    "fixed_work": {
+      "passed": true,
+      "configurations": 18,
+      "report": "comparison/results.json",
+      "scope": "One final sample per mode/configuration; sample before last-close fix discarded, not mixed."
+    },
+    "smp": {
+      "passed": true,
+      "configurations": [
+        4
+      ],
+      "report": "smp/results.json",
+      "oracle": "Historical output only; no new QEMU run."
+    }
+  },
+  "limits": [
+    "Local Linux x86_64 release checks; no Apple ARM64/16 KiB/iPad validation.",
+    "No new CoreMark/Docker/Firefox/graphics validation, IPA, release or GitHub push.",
+    "No private Firefox diagnostic artifacts inspected or copied.",
+    "Frozen cohort and remaining joined file/socket/PTY/GPU/lifecycle paths remain.",
+    "Timing is one final sample per configuration, not application speed or CPU scalability evidence."
+  ],
+  "evidence_sha256": {
+    "build-final.log": "0e2b0465a625ad14da651e69e91ce0bfae5aeacb10551264f66104e9973901d9",
+    "clippy.log": "3ffc131af39349722149b75593afd1b78fb5a33ccba7595e6a89dd4b6006459d",
+    "comparison/epoll-baseline-1.stderr": "7a48a32e3f8fca05ef5e6877124ee673df3910138f77f6ab614f7756d1759224",
+    "comparison/epoll-baseline-1.stdout": "9b6bd37989b1b8bee83a53d304f29be8356fa7f66fe5ee8524b43b0e49131e58",
+    "comparison/epoll-baseline-2.stderr": "890a50b7c9085f17f7319d9205dbc7f4483480c30c66432ddc949ebd8e93d786",
+    "comparison/epoll-baseline-2.stdout": "9b6bd37989b1b8bee83a53d304f29be8356fa7f66fe5ee8524b43b0e49131e58",
+    "comparison/epoll-baseline-4.stderr": "b57b2b79e2bc9f2081c4de480022f4853a1c5745cbf3dbc5412bbc200a167228",
+    "comparison/epoll-baseline-4.stdout": "9b6bd37989b1b8bee83a53d304f29be8356fa7f66fe5ee8524b43b0e49131e58",
+    "comparison/epoll-candidate-1.stderr": "a00e4bf53d2f164734233965be63ddb7e92b42bda1fc2be9b01df1ad1656c2b8",
+    "comparison/epoll-candidate-1.stdout": "9b6bd37989b1b8bee83a53d304f29be8356fa7f66fe5ee8524b43b0e49131e58",
+    "comparison/epoll-candidate-2.stderr": "56fa525f00bdefffd1a008510511498c5fecf774441895ab7d872601d187336a",
+    "comparison/epoll-candidate-2.stdout": "9b6bd37989b1b8bee83a53d304f29be8356fa7f66fe5ee8524b43b0e49131e58",
+    "comparison/epoll-candidate-4.stderr": "43c2b74c5020cf23691e6f92d7492591015b41fabbbbd1f4655bebf73d5dd402",
+    "comparison/epoll-candidate-4.stdout": "9b6bd37989b1b8bee83a53d304f29be8356fa7f66fe5ee8524b43b0e49131e58",
+    "comparison/epoll-oracle.stdout": "9b6bd37989b1b8bee83a53d304f29be8356fa7f66fe5ee8524b43b0e49131e58",
+    "comparison/eventfd-baseline-1.stderr": "1541edf1d9c1abca0bed88358e3dcaf4927148639d91dcffb5acaa61c973edf5",
+    "comparison/eventfd-baseline-1.stdout": "e759a395af5ebfc9842d51126202b434757a2d77e857c9c6005ccee6a2192bc5",
+    "comparison/eventfd-baseline-2.stderr": "acafd2b340e5415cb133e6a337f9b4b078281f98d13f918877f7d69149f5b958",
+    "comparison/eventfd-baseline-2.stdout": "e759a395af5ebfc9842d51126202b434757a2d77e857c9c6005ccee6a2192bc5",
+    "comparison/eventfd-baseline-4.stderr": "405a5f2fdf131afc21598fb6945c0a0e36843dc8ce66416716ae575dabe03bcd",
+    "comparison/eventfd-baseline-4.stdout": "e759a395af5ebfc9842d51126202b434757a2d77e857c9c6005ccee6a2192bc5",
+    "comparison/eventfd-candidate-1.stderr": "b4554ef498ab62dc66a18f5caa5f9c69f2af11c5c90a91740bf8107b902122ec",
+    "comparison/eventfd-candidate-1.stdout": "e759a395af5ebfc9842d51126202b434757a2d77e857c9c6005ccee6a2192bc5",
+    "comparison/eventfd-candidate-2.stderr": "c95134f303b4ea04e582928ae56000ecc926584baddeb5e59948d116a6404782",
+    "comparison/eventfd-candidate-2.stdout": "e759a395af5ebfc9842d51126202b434757a2d77e857c9c6005ccee6a2192bc5",
+    "comparison/eventfd-candidate-4.stderr": "67a50d3eae9aadf0dc57643a71c6717ec20b1789912623e19c9387a5e63a9296",
+    "comparison/eventfd-candidate-4.stdout": "e759a395af5ebfc9842d51126202b434757a2d77e857c9c6005ccee6a2192bc5",
+    "comparison/eventfd-oracle.stdout": "e759a395af5ebfc9842d51126202b434757a2d77e857c9c6005ccee6a2192bc5",
+    "comparison/pipe-baseline-1.stderr": "30a6ca314a1b3b3e3a0bafc1e0432abcd275eee7294a6ff75b9a4f9f0dfecd51",
+    "comparison/pipe-baseline-1.stdout": "835da38fa25a13a2b973e7e9a6645672506d650f63368cd18e2a6b3166e961dd",
+    "comparison/pipe-baseline-2.stderr": "cb987fd19f621138f67ff76d7152ce11cc30288a291570c1cce82c977b612ff1",
+    "comparison/pipe-baseline-2.stdout": "835da38fa25a13a2b973e7e9a6645672506d650f63368cd18e2a6b3166e961dd",
+    "comparison/pipe-baseline-4.stderr": "e171c72149ca5093435bd8aa21f748fc397d32993fc1e7bd089f16b1535faeb1",
+    "comparison/pipe-baseline-4.stdout": "835da38fa25a13a2b973e7e9a6645672506d650f63368cd18e2a6b3166e961dd",
+    "comparison/pipe-candidate-1.stderr": "6775ed2182a168df60cb5b4467bce819267ff6b6be63d098488e36bcbe13d6ee",
+    "comparison/pipe-candidate-1.stdout": "835da38fa25a13a2b973e7e9a6645672506d650f63368cd18e2a6b3166e961dd",
+    "comparison/pipe-candidate-2.stderr": "30ae0b9d1650c80d409ebd64e37d751709f349194417a063e943e9b682ab9ad5",
+    "comparison/pipe-candidate-2.stdout": "835da38fa25a13a2b973e7e9a6645672506d650f63368cd18e2a6b3166e961dd",
+    "comparison/pipe-candidate-4.stderr": "e19c1afd11dd62bf8991d803adf8da1105255c59e001cec1fb27486273b97e45",
+    "comparison/pipe-candidate-4.stdout": "835da38fa25a13a2b973e7e9a6645672506d650f63368cd18e2a6b3166e961dd",
+    "comparison/pipe-oracle.stdout": "835da38fa25a13a2b973e7e9a6645672506d650f63368cd18e2a6b3166e961dd",
+    "core-final.log": "9de925afaca933ded077e03603aa18cc322112ac5a56c51da1ab90d6fe14b792",
+    "fmt-final.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "linux-direct-final.log": "5d05b339437e303da7697fa64d160f6faa1809b0a757e8e5ec180b02e5208253",
+    "linux.log": "2985ff207a5b27352b1d96b89e6c0b2e32254203bd3eb5f3c0a832ecd3eada16",
+    "smp/4.stderr": "0a6db40eea64ce07c65c2a49102bbbfbc240ef17453a75c06094df0ba98ce1c3",
+    "smp/4.stdout": "4f0232c3289916a018db5ff485a77694dfb5627cb1501cc22369c96b2a1a7e39",
+    "tests-build-final.log": "524efd727c2919739d68941af43f793d1ca49358446667238a438fe34be2601e",
+    "vfs-build-final.log": "65e1a8c378b7602029620c12d4efa5f709aab3fb8b260f7259c7e97194ffae6e",
+    "vfs-direct-final.log": "5e223388ff051d20d52696b823cbe6c92fe49259bab96f6487d43710340fa9f6",
+    "vfs-readiness-final.log": "7a2818f5c0851ad48cf88e22fde49715736f4dbaef25a31bb1f8f4e97c3c81fd",
+    "vfs.log": "60cc418e37b7ba3ffe10fd23e9521f52125f59a699d4aefc75d45ea184c17912",
+    "comparison/results.json": "f6258cbcc04d245b13255c9f248fe15d72b6894b782f5f308ab15e1fe1c7b40c",
+    "smp/results.json": "ba7ac173c1e094c5f6d71f530a5999707731c5b8a99062fa1bc638889ce100bd"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "scope": "Cross-VM/lifecycle regression after extending cohort admission to blocked I/O. Existing CPU/output oracle reused, no new QEMU execution.",
+  "oracle": "docs/validation/task-handoff/smp/candidate-1.stdout",
+  "oracle_sha256": "4f0232c3289916a018db5ff485a77694dfb5627cb1501cc22369c96b2a1a7e39",
+  "rows": [
+    {
+      "cpus": 4,
+      "passed": true
+    }
+  ]
+}

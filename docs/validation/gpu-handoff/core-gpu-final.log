@@ -1,0 +1,13 @@
+
+running 8 tests
+test process::tests::a_removed_gpu_context_completes_once_without_reexecuting_the_stub ... ok
+test process::tests::gpu_wait_defers_caught_handlers_but_preserves_stop_continue ... ok
+test process::tests::worker_gpu_completion_preserves_accepted_retirement_and_uses_local_deadlines ... ok
+test workers::tests::a_native_peer_runs_while_gpu_lock_is_held_and_stop_cancels_only_the_unstarted_call ... ok
+test workers::tests::adopted_gpu_completion_never_replays_or_retires_its_accepted_hlt_twice ... ok
+test workers::tests::gpu_calls_retire_once_on_the_calling_worker_and_owner_fallback_has_no_effects ... ok
+test workers::tests::gpu_context_wait_releases_one_slot_and_unlock_wakes_an_otherwise_idle_cohort ... ok
+test workers::tests::wayland_gpu_auth_runs_locally_for_frozen_grants_and_defers_before_effects_otherwise ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 127 filtered out; finished in 0.00s
+

@@ -1,0 +1,37 @@
+
+running 32 tests
+test file_calls::tests::invalid_copy_offset_does_not_write_or_advance_descriptors ... ok
+test direct::tests::vector_eventfd_and_shorter_scratch_use_the_original_byte_abi ... ok
+test direct::tests::scalar_and_vector_preflight_does_not_consume_eventfd_or_pipe_bytes ... ok
+test direct::tests::blocking_and_sigpipe_defer_without_effects_or_retrying_completed_io ... ok
+test file_calls::tests::splice_offsets_backpressure_and_pipe_espipe_are_transactional ... ok
+test file_calls::tests::openat2_never_ignores_containment_flags_or_unknown_tail_fields ... ok
+test network::tests::socket_output_preflight_and_descriptor_type_errors ... ok
+test network::tests::invalid_accept_destination_does_not_drop_queued_connection ... ok
+test state::tests::brk_rejection_keeps_the_previous_break_and_mapping ... ok
+test state::tests::accepted_mmap_hints_do_not_relocate_ordinary_allocations ... ok
+test state::tests::fionread_bad_pointer_preserves_socket_and_pipe_data ... ok
+test state::tests::futex_wait_does_not_pretend_to_complete_and_fds_are_stateful ... ok
+test state::tests::first_touch_output_quota_failure_does_not_consume_file_input ... ok
+test state::tests::invalid_read_buffer_does_not_consume_file_or_stdin ... ok
+test state::tests::mmap_fixed_noreplace_and_protection_are_checked ... ok
+test state::tests::invalid_syslog_buffer_cannot_consume_or_clear_diagnostics ... ok
+test state::tests::canonical_sync_persists_open_file_length_and_contents ... ok
+test state::tests::mmap_uses_configured_budget_instead_of_the_legacy_half_gib_cap ... ok
+test network::tests::udp_pktinfo_cmsg_roundtrip_and_invalid_receive_are_transactional ... ok
+test state::tests::partial_vectored_output_is_returned_without_retry ... ok
+test state::tests::readv_preflights_every_destination_before_consuming_input ... ok
+test state::tests::positioned_vectors_preserve_offset_and_preflight_all_buffers ... ok
+test state::tests::reservation_remaps_and_fixed_moves_preserve_ordinary_cursor ... ok
+test state::tests::reused_write_scratch_shrinks_and_never_emits_stale_or_faulting_bytes ... ok
+test state::tests::stdio_nonblocking_ioctl_preserves_alias_flags_and_fault_atomicity ... ok
+test state::tests::statx_has_real_identity_and_does_not_claim_birth_time ... ok
+test state::tests::virtual_reservations_do_not_scatter_ordinary_heap_regions ... ok
+test state::tests::writev_validates_all_buffers_before_any_output ... ok
+test tests::validates_fd_and_buffer_before_output ... ok
+test tests::partial_write_and_error_are_never_retried ... ok
+test tests::writes_binary_streams_and_returns_count ... ok
+test state::tests::munmap_metadata_exhaustion_returns_enomem_and_retains_the_range ... ok
+
+test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+

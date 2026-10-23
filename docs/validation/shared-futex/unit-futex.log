@@ -1,0 +1,20 @@
+   Compiling trames-core v1.3.0 (/workspace/trames/crates/trames-core)
+    Finished `release` profile [optimized] target(s) in 15.42s
+     Running unittests src/lib.rs (target/perf-runtime/release/build/trames-core/110419dd55a974e8/out/trames_core-110419dd55a974e8)
+
+running 12 tests
+test futex::tests::requeue_of_timed_out_tickets_does_not_leave_empty_destination_keys ... ok
+test futex::tests::cancellation_unlinks_the_last_registration_owner_without_stale_keys ... ok
+test futex::tests::compare_and_enqueue_exclude_wake_and_mismatches_leave_no_registration ... ok
+test futex::tests::requeue_preserves_tickets_and_cleans_both_same_and_different_shards ... ok
+test process::seccomp::tests::private_futex_fast_return_requires_an_allow_decision ... ok
+test process::tests::futex_ready_tickets_do_not_wake_a_reused_pid_or_timeout_a_woken_task ... ok
+test futex::tests::concurrent_wakes_claim_each_ticket_once_and_preserve_bitsets_and_keys ... ok
+test process::tests::futex_requeue_retains_stopped_registration_and_deadline_until_continue ... ok
+test process::tests::futex_signal_cancels_registration_and_stopped_exit_cannot_leave_a_waiter ... ok
+test workers::tests::actual_futex_wake_commits_locally_and_requests_only_a_scheduling_boundary ... ok
+test workers::tests::private_futex_wakes_without_waiters_run_to_the_instruction_budget ... ok
+test futex::tests::timeout_and_wake_race_have_one_winner ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 100 filtered out; finished in 0.00s
+

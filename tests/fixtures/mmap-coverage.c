@@ -61,7 +61,8 @@ static void mappings(void){
  CHECK(ftruncate(fd,1)==0);child=fork();CHECK(child>=0);if(!child){c=a[P];(void)c;_exit(1);}child_status(child,SIGBUS);
  CHECK(ftruncate(fd,P*2)==0&&a[P]==0);CHECK(close(fd)==0&&unlink("mapped-file")==0);a[5]=45;CHECK(b[5]==45);
  CHECK(munmap((void *)private,P)==0&&munmap((void *)a,P*3)==0&&munmap((void *)b,P*2)==0);
- unsigned char *region=mmap(0,P*2,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANONYMOUS,-1,0);CHECK(region!=MAP_FAILED);region[0]=12;*((volatile unsigned char *)region+P)=0;
+ // Own the guard page too: MAP_FIXED below must not overwrite an unrelated host/guest mapping.
+ unsigned char *region=mmap(0,P*3,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANONYMOUS,-1,0);CHECK(region!=MAP_FAILED);region[0]=12;*((volatile unsigned char *)region+P)=0;
  unsigned char resident[2];CHECK(mincore(region,P*2,resident)==0&&(resident[0]&1)&&(resident[1]&1));
  CHECK(mmap(region+P*2,P,PROT_NONE,MAP_PRIVATE|MAP_ANONYMOUS|MAP_FIXED,-1,0)==region+P*2);
  unsigned char *grown=mremap(region,P*2,P*4,MREMAP_MAYMOVE);CHECK(grown!=MAP_FAILED&&grown[0]==12&&grown[P*3]==0);

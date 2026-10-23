@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <sys/mman.h>
+#include <sys/uio.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
@@ -79,6 +80,18 @@ int main(void) {
     size=read(blocking,buffer,sizeof(buffer)); CHECK(size>0 && event(blockwd,IN_CREATE,"blocking"));
     CHECK(waitpid(child,&status,0)==child && status==0);
     CHECK(close(blocking)==0 && unlink("blocking")==0);
+    // inotify's legacy readv path requires a whole record in each iovec.
+    fd=open("vector",O_CREAT|O_RDWR,0600); CHECK(fd>=0);
+    in=inotify_init1(IN_NONBLOCK); CHECK(in>=0);
+    int vectorwd=inotify_add_watch(in,"vector",IN_MODIFY|IN_ATTRIB); CHECK(vectorwd>0);
+    CHECK(write(fd,"a",1)==1 && fchmod(fd,0640)==0);
+    struct iovec vectors[]={{buffer,8},{buffer+8,8}};
+    CHECK(readv(in,vectors,2)==-1 && errno==EINVAL);
+    int available=0; CHECK(ioctl(in,FIONREAD,&available)==0 && available==32);
+    vectors[0].iov_len=16; vectors[1].iov_base=buffer+16;
+    size=readv(in,vectors,2); CHECK(size==16 && event(vectorwd,IN_MODIFY,NULL));
+    collect(in); CHECK(size==16 && event(vectorwd,IN_ATTRIB,NULL));
+    CHECK(close(in)==0 && close(fd)==0 && unlink("vector")==0);
     int anonymous=memfd_create("inotify",0); CHECK(anonymous>=0);
     char magic[64]; snprintf(magic,sizeof(magic),"/proc/self/fd/%d",anonymous);
     in=inotify_init1(IN_NONBLOCK); CHECK(in>=0);

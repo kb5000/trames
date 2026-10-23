@@ -1,0 +1,41 @@
+    Checking trames-memory v1.3.0 (/workspace/trames/crates/trames-memory)
+    Checking trames-accel v1.3.0 (/workspace/trames/crates/trames-accel)
+    Checking trames-cpu v1.3.0 (/workspace/trames/crates/trames-cpu)
+    Checking trames-vulkan v1.3.0 (/workspace/trames/crates/trames-vulkan)
+    Checking trames-elf v1.3.0 (/workspace/trames/crates/trames-elf)
+    Checking trames-bridge v1.3.0 (/workspace/trames/crates/trames-bridge)
+    Checking trames-vfs v1.3.0 (/workspace/trames/crates/trames-vfs)
+    Checking trames-linux v1.3.0 (/workspace/trames/crates/trames-linux)
+    Checking trames-core v1.3.0 (/workspace/trames/crates/trames-core)
+error[E0063]: missing field `gpu` in initializer of `workers::Work`
+   --> crates/trames-core/src/run_queue.rs:482:13
+    |
+482 |             Work {
+    |             ^^^^ missing `gpu`
+
+error[E0063]: missing field `gpu` in initializer of `workers::Work`
+   --> crates/trames-core/src/workers.rs:896:9
+    |
+896 |         Work {
+    |         ^^^^ missing `gpu`
+
+error[E0063]: missing field `gpu` in initializer of `workers::Work`
+   --> crates/trames-core/src/workers.rs:960:17
+    |
+960 |                 Work {
+    |                 ^^^^ missing `gpu`
+
+error[E0063]: missing field `gpu` in initializer of `workers::Work`
+    --> crates/trames-core/src/workers.rs:1076:21
+     |
+1076 |                     Work {
+     |                     ^^^^ missing `gpu`
+
+error[E0063]: missing field `gpu` in initializer of `workers::Work`
+    --> crates/trames-core/src/workers.rs:1239:21
+     |
+1239 |                     Work {
+     |                     ^^^^ missing `gpu`
+
+For more information about this error, try `rustc --explain E0063`.
+error: could not compile `trames-core` (lib test) due to 5 previous errors

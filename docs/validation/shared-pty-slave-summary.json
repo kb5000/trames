@@ -1,0 +1,63 @@
+{
+  "date_utc": "2026-10-23",
+  "batch": 30,
+  "complete_coordinator_removal": false,
+  "scope": "Shared actual PTY slave endpoint lifetime; final worker release decrements original atomic slave count and directly notifies master. Master devpts/task/job-control close and full OFD/FD lifecycle remain joined.",
+  "source_sha256": {
+    "crates/trames-vfs/src/pty.rs": "0d27519630e8124a973e9dba31f3a99b756329478394a3ddf905b84dfda0d695",
+    "crates/trames-vfs/src/pty/shared.rs": "8d6cf80f2fde6376eca1a796b9df37e7151b4a77291ff5160482512fcb57a801",
+    "crates/trames-vfs/src/lib.rs": "86fff742a4d28ecbb4546359bfea7d41b09b81750a69022870df29ab20f824db",
+    "tests/integration/worker-pty.py": "9ea1b93825fd4212b03c08aff09d2500254e5bd35f40b2b64d44dce6e34096b8",
+    "tests/fixtures/worker-pty.c": "2e9add0d6008b854c414947a99536782d2388ddb2dbcfa7d3f0555a9320a0b5c"
+  },
+  "artifact_sha256": {
+    "target/perf-runtime/release/trames-run": "b65d9ba6b8c1b96e374375fbfaa48e4092825f55813d805934f8ac79da604dcf",
+    "target/shared-pty-slave-checks/before-trames-run": "e603ee72f57116b04d99e30f7bb239132f08e6459c4a0c2eda4eb8573979b0b9",
+    "tests/fixtures/bin/worker-pty": "e7c14540c2625f5066ed320a472ddf983b163fbca1af90853cf83a38e4ed3be2",
+    "target/shared-pty-slave-checks/native-worker-pty": "666a75bf771a45b7756dcf6889e85ec70d9b2634e14f9005e761b4bfaae24f99",
+    "target/perf-runtime/release/libtrames_ffi.a": "d8bb6d3af2280b24cfa5edc1b83de8fcb1b628158361d132d00c0d4b19a36233",
+    "target/perf-runtime/release/libtrames_ffi.so": "7d4fa447b680e6a9d0a9627da1300927679768955402c5bd66e3b4f283e1c0df"
+  },
+  "runner_sha256": "b65d9ba6b8c1b96e374375fbfaa48e4092825f55813d805934f8ac79da604dcf",
+  "baseline_sha256": "e603ee72f57116b04d99e30f7bb239132f08e6459c4a0c2eda4eb8573979b0b9",
+  "baseline_evidence": "docs/validation/shared-native-endpoint-summary.json",
+  "results": {
+    "units": {
+      "path": "target/shared-pty-slave-checks/unit-results.json",
+      "sha256": "955a22e06204e55e728d9d9c6cc6d0cf0756cbc0acfb1a2b3a96a1ef235ab237"
+    },
+    "guest": {
+      "path": "target/shared-pty-slave-checks/guest/summary.json",
+      "sha256": "7045ff5d7d4268143a24b5f962d53b84789438689f14ed0a8351cad3d15dfae2"
+    },
+    "reused_native_oracles": {
+      "path": "target/worker-pty-checks/comparison/summary.json",
+      "sha256": "111a4bd795f2ef560220899ae5a2d66f7bbecd2e90cc04af0400092d48213387"
+    }
+  },
+  "distinct_rust_tests": 15,
+  "rust_test_counts": {
+    "core": 2,
+    "linux": 1,
+    "vfs": 12
+  },
+  "guest_cases": 16,
+  "log_sha256": {
+    "target/shared-pty-slave-checks/unit-build.log": "bb5ad0dfd304207ab1f70e249ce8e43626f306357cc3e7da9c34305da0425775",
+    "target/shared-pty-slave-checks/unit-fix-build.log": "51d1088b2ecc8bdc87e7b3dc95b8aa186d538ad49f75a8efb7e040a47b01a8a2",
+    "target/shared-pty-slave-checks/release-build.log": "ed25e80c5f5cc491311b1b70a918bef94aab6446a070ee3c91362765d0e2cb12",
+    "target/shared-pty-slave-checks/clippy.log": "6bb7c110aa337b0a562daf7fe039f5527ac0ab2a416408d8bc8b896f1c3354e9",
+    "target/shared-pty-slave-checks/unit-vfs.log": "94591dbd9af25761ed4552f09a2477d79e96f30291684658227e8fe4b68d9803",
+    "target/shared-pty-slave-checks/unit-vfs-fix.log": "eefa54262529a1035d90357458712fc2b5c5b88fd75f6d8b8e3be95dade34b1c",
+    "target/shared-pty-slave-checks/unit-linux.log": "f37a96a64e6e9e48c1aa064881241639587d6a94be5ab55febe41c12fd1295c3",
+    "target/shared-pty-slave-checks/unit-core.log": "36037e5e0fbedefa130e3fc7bd415d8231872668b8e207e778ae0bdbb972cfc9"
+  },
+  "reuse": "Same ARM64 fixture/C source and reconstructed native oracle SHA as batch 12; eight native oracle outputs reused. Reran only affected PTY Rust and guest paths. One newly added test initially used the owner byte-only Vfs.write entry without terminal authority; corrected test-only to DirectFd::terminal_write with context, reran just that failed test, reused other 14 passes and unchanged production build. No TCP/CPU/GPU/browser/Docker/CoreMark rerun.",
+  "builds": {
+    "release_cli_ffi": "target/shared-pty-slave-checks/release-build.log",
+    "strict_release_clippy": "target/shared-pty-slave-checks/clippy.log"
+  },
+  "raw_artifacts": "target/shared-pty-slave-checks",
+  "ipa_built": false,
+  "limits": "PtySlaveEndpoint is Send+Sync by composition; actual slave OFDs own the shared lease. Master drop/devpts namespace mutation, session/group signals, full OpenDescription and FD table ownership still depend on owner. No io_uring terminal admission expansion, complete-removal or overall performance claim. Linux x86_64; iPad/Apple ARM64 not run."
+}

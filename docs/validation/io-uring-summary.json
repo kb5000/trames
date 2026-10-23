@@ -1,0 +1,147 @@
+{
+  "date_utc": "2026-10-22",
+  "scope": "Bounded guest io_uring compatibility using original joined VFS/network owner; no new service thread",
+  "passed": true,
+  "syscalls": [
+    425,
+    426,
+    427
+  ],
+  "opcodes": {
+    "0": "NOP",
+    "1": "READV",
+    "2": "WRITEV",
+    "3": "FSYNC",
+    "6": "POLL_ADD",
+    "7": "POLL_REMOVE",
+    "11": "TIMEOUT",
+    "12": "TIMEOUT_REMOVE",
+    "14": "ASYNC_CANCEL",
+    "22": "READ",
+    "23": "WRITE"
+  },
+  "distinct_unit_tests": 17,
+  "unit_checks": {
+    "unit": 12,
+    "enter-fd-reuse": 1,
+    "mmap-alias": 1,
+    "mmap-readonly": 1,
+    "fd-tables": 1,
+    "failed-exec": 1
+  },
+  "reused_checks": [
+    "mmap-alias",
+    "mmap-readonly",
+    "fd-tables",
+    "failed-exec"
+  ],
+  "guest_runs": 9,
+  "runner_sha256": "4c0a1f9d2c6b2b3dedb0769ca9bb2a0108ff36f23fc7208560809935891d3745",
+  "fixture_sha256": "a9000c4a779bb2f72effaf7d770d9b1f01f5163e880f27c12debff8735b833b4",
+  "ffi_sha256": "52984ce0ccbee45e4dbfad58987aeba3a4d55eb256b2ad3da80e0802bbbe021e",
+  "source_sha256": {
+    "crates/trames-linux/src/uring.rs": "69ff13ed3cc4746a79fdfdcd7422b448535a0903356099e9fff6ed6074e94e79",
+    "crates/trames-linux/src/state.rs": "bd5eade4f8c3f97335f5101b9715e8253ecb249454d5fd085a1bfbf00bb9bac6",
+    "crates/trames-linux/src/lib.rs": "892aa557c1194df7d9727eacdefbb7ff81cd278dc9e501b12f8ddf0f2d7fb96a",
+    "crates/trames-vfs/src/uring.rs": "35a086e0a82975bdd38da2c5b030a2b759eb5ab24fee838d5e7d8b2b52d84ad9",
+    "crates/trames-vfs/src/lib.rs": "a2ba5444ef15b92e176c777e9b49611fdb4ea8e293e0c955337493d37bab37d0",
+    "crates/trames-vfs/src/events.rs": "af4a70edff2342a086f766b0eca88b05ff5405a415a21801b3b2ec6fcae16aea",
+    "crates/trames-vfs/src/mapped.rs": "969a3ec3ba2fe5028c077780abb649e38472b02aec4216f0f093943a074f2b2d",
+    "crates/trames-vfs/src/mounts.rs": "d2a3147388c74f0baa69928f0d28ce89ed6ea1027b52a53fe07d82621e47d5e9",
+    "crates/trames-vfs/src/pseudo.rs": "3574c1203da80a42d3222ba3ad6971a9423b8671ec23beb71601d588b648e21e",
+    "crates/trames-core/src/process.rs": "68c9251e847e7d3c9a3c48548b212d63c7da31a68ac1abe0f8b59a3b7829f26e",
+    "scripts/build-io-uring-fixture.sh": "498f91fed7351dc5402b646716c47a244541f51cbb7a09ccf52a0c947d99ef31",
+    "tests/fixtures/io-uring.c": "083f207cca39501a31cd2d8226c2cbb05f400d499de57b5442cdc685a4962f27",
+    "tests/integration/io-uring.py": "9fc47854af2efa5e96f870dc7cfc9984d8ddc16be0d2cfbfcdd680584dbb93f5",
+    "scripts/audit-syscalls.py": "51bc64fe0fe51441c0276c045d7e9e4b36d500b0186ddb7ffcd74b3097004d81"
+  },
+  "limits": [
+    "Original joined owner executes requests; worker-local ring and asynchronous host disk are follow-up work",
+    "No SQPOLL/IOPOLL, pinned/provided buffers, multishot, EXT_ARG/signal mask or other unadvertised opcodes",
+    "No new benchmark or full CPU/browser/Docker/graphics rerun",
+    "Linux validation only; no new IPA, Apple/iPad test or external upload"
+  ],
+  "rows": [
+    {
+      "case": "abi-1",
+      "cpu_count": 1,
+      "seconds": 0.011828385,
+      "instructions": 12595,
+      "parallel_rounds": 0,
+      "peak_parallel_cpus": 0,
+      "runtime_error": null
+    },
+    {
+      "case": "tcp4-1",
+      "cpu_count": 1,
+      "seconds": 0.051090018,
+      "instructions": 2922,
+      "parallel_rounds": 0,
+      "peak_parallel_cpus": 0,
+      "runtime_error": null
+    },
+    {
+      "case": "tcp6-1",
+      "cpu_count": 1,
+      "seconds": 0.051047263,
+      "instructions": 2935,
+      "parallel_rounds": 0,
+      "peak_parallel_cpus": 0,
+      "runtime_error": null
+    },
+    {
+      "case": "abi-2",
+      "cpu_count": 2,
+      "seconds": 0.01414126,
+      "instructions": 11744,
+      "parallel_rounds": 14,
+      "peak_parallel_cpus": 2,
+      "runtime_error": null
+    },
+    {
+      "case": "tcp4-2",
+      "cpu_count": 2,
+      "seconds": 0.050922776,
+      "instructions": 2922,
+      "parallel_rounds": 0,
+      "peak_parallel_cpus": 0,
+      "runtime_error": null
+    },
+    {
+      "case": "tcp6-2",
+      "cpu_count": 2,
+      "seconds": 0.050848812,
+      "instructions": 2935,
+      "parallel_rounds": 0,
+      "peak_parallel_cpus": 0,
+      "runtime_error": null
+    },
+    {
+      "case": "abi-4",
+      "cpu_count": 4,
+      "seconds": 0.014154973,
+      "instructions": 11744,
+      "parallel_rounds": 14,
+      "peak_parallel_cpus": 2,
+      "runtime_error": null
+    },
+    {
+      "case": "tcp4-4",
+      "cpu_count": 4,
+      "seconds": 0.050986731,
+      "instructions": 2922,
+      "parallel_rounds": 0,
+      "peak_parallel_cpus": 0,
+      "runtime_error": null
+    },
+    {
+      "case": "tcp6-4",
+      "cpu_count": 4,
+      "seconds": 0.050965439,
+      "instructions": 2935,
+      "parallel_rounds": 0,
+      "peak_parallel_cpus": 0,
+      "runtime_error": null
+    }
+  ]
+}

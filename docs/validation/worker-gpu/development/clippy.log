@@ -1,0 +1,31 @@
+    Checking trames-memory v1.3.0 (/workspace/trames/crates/trames-memory)
+    Checking trames-accel v1.3.0 (/workspace/trames/crates/trames-accel)
+    Checking trames-elf v1.3.0 (/workspace/trames/crates/trames-elf)
+    Checking trames-cpu v1.3.0 (/workspace/trames/crates/trames-cpu)
+    Checking trames-vulkan v1.3.0 (/workspace/trames/crates/trames-vulkan)
+    Checking trames-bridge v1.3.0 (/workspace/trames/crates/trames-bridge)
+    Checking trames-vfs v1.3.0 (/workspace/trames/crates/trames-vfs)
+error: used `assert_eq!` with a literal bool
+   --> crates/trames-memory/src/cpu_memory.rs:352:9
+    |
+352 | /         assert_eq!(
+353 | |             view.cpu_write_chunk(0x1000, 8, |b| b.copy_from_slice(&9u64.to_le_bytes()))
+354 | |                 .unwrap()
+355 | |                 .1,
+356 | |             true
+357 | |         );
+    | |_________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#bool_assert_comparison
+    = note: `-D clippy::bool-assert-comparison` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::bool_assert_comparison)]`
+help: replace it with `assert!(..)`
+    |
+352 ~         assert!(
+353 |             view.cpu_write_chunk(0x1000, 8, |b| b.copy_from_slice(&9u64.to_le_bytes()))
+354 |                 .unwrap()
+355 ~                 .1
+    |
+
+error: could not compile `trames-memory` (lib test) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...

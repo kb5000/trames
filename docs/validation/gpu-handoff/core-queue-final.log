@@ -1,0 +1,10 @@
+
+running 5 tests
+test run_queue::tests::expired_wait_resumes_on_eligible_cpu_without_a_coordinator ... ok
+test run_queue::tests::initial_assignment_keeps_a_flexible_task_out_of_a_pinned_tasks_slot ... ok
+test run_queue::tests::io_wake_before_park_and_stop_preserve_pending_call_and_release_subscriptions ... ok
+test run_queue::tests::stop_notifies_an_idle_worker_and_returns_every_view ... ok
+test run_queue::tests::wake_before_park_is_retained_and_cancellation_drops_blocked_leases ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 130 filtered out; finished in 0.00s
+

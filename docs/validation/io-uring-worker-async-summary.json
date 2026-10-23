@@ -1,0 +1,937 @@
+{
+  "date_utc": "2026-10-23",
+  "passed": true,
+  "scope": "Worker-local provided buffers, RECV/POLL/TIMEOUT multishot, poll/timeout update/removal, cancellation, EXT_ARG and CQ ppoll/epoll. Bounded compatibility remains 30 opcodes; not all io_uring lifecycle/control operations are coordinator-free.",
+  "worker_opcodes": [
+    0,
+    1,
+    2,
+    4,
+    5,
+    6,
+    7,
+    11,
+    12,
+    14,
+    15,
+    22,
+    23,
+    26,
+    27,
+    31,
+    32
+  ],
+  "worker_register_operations": [
+    1,
+    5,
+    8,
+    23,
+    26
+  ],
+  "source_sha256": {
+    "crates/trames-linux/src/direct.rs": "4fce782ee2d275bc3e158fbe3e1846c03171ec9db8b03a3228c4bb0e6021adc1",
+    "crates/trames-linux/src/direct/uring.rs": "4bf47bf07a25e03d30f0f6201754fc96c6269a28f9d5eab46d91433aca64e897",
+    "crates/trames-linux/src/direct/uring/control.rs": "c0fc6ad648c213b2cb33f978e13722a289d42731e2a1c03cdd744b4ef6ef9e20",
+    "crates/trames-linux/src/direct/uring/poll.rs": "cf1fdab3e665e62f88603f9f46b0ad2ca7d27efb735e44375f8a469267645b04",
+    "crates/trames-linux/src/direct/uring/owned_tests.rs": "4e8820610f6e6cba2147d99eb1659c31df110f360718ef8c114bc84c44e38dc4",
+    "crates/trames-linux/src/direct/uring/async_tests.rs": "05981eb6ad50782c3caf06ddc80585d628c09b4560c97ddfeb1881657a5d82e9",
+    "crates/trames-linux/src/uring.rs": "89f40fda40d8dcb506ab98f68ec3234ae0acf42bbcbf63cd35a8a8baf6254980",
+    "crates/trames-linux/src/uring/time.rs": "554340df6f7233045b681ae23cb918f943422639904fb49bebca84e24b3981f4",
+    "crates/trames-linux/src/uring/buffers.rs": "a3ffea5a91b6d515cd54a52715ed291731e34be743b7a9b23c15e65a63a7465a",
+    "crates/trames-linux/src/poll.rs": "a6248c463ac81e42ce916a883865157556d80819a56c11faf2ae02b2035f3f65",
+    "crates/trames-core/src/process.rs": "c5f5beaa2a27147918d3ff06c928e4a78e3b1c2b47b919dbc475b9766ffb7386",
+    "crates/trames-vfs/src/direct_io.rs": "c4cb7e4184ffddef99f7619903b59ace060fe0e1a65c68e497eb1d14da3ec682",
+    "crates/trames-vfs/src/ipc.rs": "fb488ba5d160588160967af31f606853f1937513d679ba9ba64b288c6412fcbc",
+    "crates/trames-vfs/src/uring.rs": "37675739d04fbb8cfabdc21dac2839c4c9b73bace0d0ebe6ffa6a47b01100884",
+    "crates/trames-vfs/src/lib.rs": "8eac14423673c50e628ba9808c97ac55beed9089ecfe3326004c389298f59f40",
+    "tests/fixtures/io-uring.c": "e0f3a8858dd4ca9d76a37e766712ec9cc630b6b8ad4a27d2610ec03067bb376d",
+    "tests/fixtures/io-uring-multishot.c": "a9d2d04e52e55465be65fc42bda4fe1b574dc9c2b343ec96ff33d88bfc99a0a3",
+    "tests/fixtures/io-uring-worker-async.c": "ea2731ee0b0b671516068aabc9dd8769d44cd2a5a5df34ef30bd357d55501f3b",
+    "tests/integration/io-uring.py": "0180405d017c991473bed21ef63446bf40bd3d440953df2408416bf949202c32",
+    "scripts/build-io-uring-fixture.sh": "af8fe4f4e95aff88e34842a6cc6ecbb903c085ceab5312588517f876d49dcb36",
+    "scripts/audit-syscalls.py": "f90280c6ee61bd6593cce4eb9d33a7055f57e010ae442d077eb800876df1bb42"
+  },
+  "artifact_sha256": {
+    "target/perf-runtime/release/trames-run": "620a5debbfe8831bf2bc80bbff553639f77ef96f38f265a5a9f7f7b4337fe34b",
+    "target/perf-runtime/release/libtrames_ffi.so": "b1725c9e8526690b788598117eb478d4e10279e5db36b5f068ebca8320884574",
+    "target/perf-runtime/release/libtrames_ffi.a": "83ec9ba8335c40d02e80c6d1825809a5192a732e03773e9bbd89f5fac7e6e4e5",
+    "tests/fixtures/bin/io-uring-worker-async": "d6b95fcf17b46af671f52c05250d31dd8590e573638d7a6199b42e38a2783b5d",
+    "tests/fixtures/bin/io-uring-worker-registered": "42bc030597fb07954b1cd68eb13e35a77bf78ac49640cc5e7183debb880b3765"
+  },
+  "unit_count": 50,
+  "unit_tests": [
+    {
+      "name": "direct::uring::owned_tests::asynchronous::cq_observer_does_not_borrow_another_tasks_guest_memory",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::owned_tests::asynchronous::cq_ppoll_and_epoll_drive_pending_bytes_and_wait_on_original_resource",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::owned_tests::asynchronous::ext_arg_wait_handoff_keeps_original_deadline_without_reimport_or_resubmit",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::owned_tests::asynchronous::in_flight_cancel_reports_already_executing_and_other_worker_keeps_running",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::owned_tests::asynchronous::invalid_selected_data_waits_for_readiness_without_consuming_pool_or_bytes",
+      "evidence": [
+        "selected-fault-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::owned_tests::asynchronous::linked_timeout_can_cancel_issued_predecessor_and_preserves_drain_and_chain",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::owned_tests::asynchronous::multishot_backpressure_reserves_terminal_space_and_rotates_past_budget",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::owned_tests::asynchronous::multishot_poll_preserves_epochs_and_update_remove_rules",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::owned_tests::asynchronous::multishot_recv_keeps_link_until_terminal_and_cancels_without_stale_flags",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::owned_tests::asynchronous::registered_descriptor_ring_keeps_original_pin_and_controls_stay_local",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::owned_tests::asynchronous::same_group_leases_are_distinct_and_other_same_ring_work_is_parallel",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::owned_tests::asynchronous::selected_buffers_preserve_vm_authority_errors_and_empty_retry",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::owned_tests::asynchronous::timeout_relative_issue_count_multishot_and_updates_use_imported_values",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::owned_tests::asynchronous::worker_unregister_buffers_keeps_accepted_pin_and_rejects_new_fixed_io",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::owned_tests::concurrent_drain_waits_for_claimed_io_but_unrelated_work_uses_same_ring",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::owned_tests::fixed_buffer_cross_vm_uses_registered_bytes_and_shared_page_guards",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::owned_tests::fixed_request_keeps_pin_and_ofd_across_unmap_unregister_and_epoch_handoff",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::owned_tests::fixed_sparse_and_bad_indexes_complete_errors_without_disabling_ring",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::owned_tests::linked_eagain_and_drain_survive_owner_handoff_without_early_effects",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::owned_tests::linked_short_vector_uses_uncapped_requested_length_and_hardlink_continues",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::owned_tests::retained_regular_fixed_file_keeps_original_data_permissions_and_position",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::owned_tests::ring_fd_aliases_share_one_fixed_table_per_task_and_execute_same_queue",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::tests::local_uring_boundary_invalid_adopted_cq_head_clears_saved_wait",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::tests::local_uring_boundary_native_tcp_extended_flags_defer_before_consuming",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::tests::local_uring_boundary_poll_flags_and_timerfd_deadline_rearm",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::tests::local_uring_handoff_retains_closed_ofd_and_never_resubmits_batch",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::tests::local_uring_mixed_batch_defers_before_any_effect",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::tests::local_uring_nop_overflow_wrap_and_bad_head_use_private_cursors",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::tests::local_uring_other_submitter_notifies_cq_only_waiter",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::tests::local_uring_parked_enter_is_adopted_without_resubmitting_on_next_epoch",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::tests::local_uring_pipe_wait_keeps_submission_and_ignores_new_sqes_on_resume",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::tests::local_uring_regular_files_preserve_offsets_and_defer_growth_once",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::tests::local_uring_shared_ring_arbitrates_two_worker_consumers",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::tests::local_uring_vectors_faults_and_eventfd_count_actual_cq_publication",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct::uring::tests::local_uring_vm_authority_and_drop_restore_accepted_request",
+      "evidence": [
+        "worker-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct_io::tests::atomic_eventfd_and_semaphore_preserve_concurrent_counts",
+      "evidence": [
+        "vfs-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct_io::tests::cohort_resource_hint_follows_aliases_peer_ends_and_epoll_watches",
+      "evidence": [
+        "vfs-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct_io::tests::concurrent_epoll_oneshot_has_only_one_delivery_and_rotates_duplicate_watches",
+      "evidence": [
+        "vfs-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct_io::tests::direct_pipe_writers_share_vfs_bytes_and_keep_records_atomic",
+      "evidence": [
+        "vfs-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct_io::tests::epoll_delivery_is_shared_with_joined_waiters_and_refreshes_after_ctl",
+      "evidence": [
+        "vfs-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct_io::tests::fd_reuse_and_fork_status_changes_rebuild_shared_handles",
+      "evidence": [
+        "vfs-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct_io::tests::last_close_in_a_different_fd_table_invalidates_epoll_resource_snapshot",
+      "evidence": [
+        "vfs-unit-final.log"
+      ]
+    },
+    {
+      "name": "direct_io::tests::resource_locks_are_independent_and_pipe_buf_rules_match",
+      "evidence": [
+        "vfs-unit-final.log"
+      ]
+    },
+    {
+      "name": "process::boundary_tests::blocked_uring_enter_retains_original_ring_across_fd_close_and_reuse",
+      "evidence": [
+        "core-unit-final.log"
+      ]
+    },
+    {
+      "name": "process::boundary_tests::blocked_uring_ext_arg_retains_deadline_without_reimporting_guest_memory",
+      "evidence": [
+        "core-unit-final.log"
+      ]
+    },
+    {
+      "name": "process::boundary_tests::parked_uring_admission_preserves_idle_mmu_trace_and_fd_authority",
+      "evidence": [
+        "core-unit-final.log"
+      ]
+    },
+    {
+      "name": "process::tests::worker_poll_deadlines_do_not_force_unrelated_cpus_to_checkpoint",
+      "evidence": [
+        "core-poll-final.log"
+      ]
+    },
+    {
+      "name": "uring::tests::buffer_registration_is_transactional_and_shared_backings_are_not_fake_pinned",
+      "evidence": [
+        "owner-buffer-final.log"
+      ]
+    },
+    {
+      "name": "uring::tests::buffer_ring_registration_validates_before_pin_and_classic_pools_have_metadata_limits",
+      "evidence": [
+        "owner-buffer-final.log"
+      ]
+    },
+    {
+      "name": "uring::tests::provided_ring_tail_wrap_is_bounded_and_status_does_not_advance_it",
+      "evidence": [
+        "owner-buffer-final.log"
+      ]
+    }
+  ],
+  "unit_reuse": "34 worker, 3 owner buffer-registration, 8 VFS direct-I/O and 4 core admission/deadline checks passed before the final cold selected-buffer fault adjustment. These 49 unaffected results were reused. The new empty-resource/bad-selected-VA test ran on final sources. Core query checks also preceded a drive-loop-only ring wake dispatch fix; the exact-count guest pressure checks validate that fix. No zero-test invocation is counted.",
+  "guest_count": 24,
+  "guest_final_runner_count": 3,
+  "guest_cases": [
+    {
+      "group": "async",
+      "case": "abi-1",
+      "final_runner": true,
+      "runner_sha256": "620a5debbfe8831bf2bc80bbff553639f77ef96f38f265a5a9f7f7b4337fe34b",
+      "fixture_sha256": "d6b95fcf17b46af671f52c05250d31dd8590e573638d7a6199b42e38a2783b5d",
+      "expected_worker_uring": 707,
+      "metrics": {
+        "cpu_count": 1,
+        "worker_uring_syscalls": 0,
+        "worker_poll_syscalls": 0,
+        "worker_io_waits": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 0,
+        "seconds": 0.014685738,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.0062050000000000004,
+      "host_wall_seconds": 0.01692193900817074,
+      "evidence": "target/io-uring-async-checks/guest-selected-fault-final/results.json"
+    },
+    {
+      "group": "async",
+      "case": "abi-2",
+      "final_runner": true,
+      "runner_sha256": "620a5debbfe8831bf2bc80bbff553639f77ef96f38f265a5a9f7f7b4337fe34b",
+      "fixture_sha256": "d6b95fcf17b46af671f52c05250d31dd8590e573638d7a6199b42e38a2783b5d",
+      "expected_worker_uring": 707,
+      "metrics": {
+        "cpu_count": 2,
+        "worker_uring_syscalls": 707,
+        "worker_poll_syscalls": 0,
+        "worker_io_waits": 26,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 50,
+        "seconds": 0.019831077,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.00915,
+      "host_wall_seconds": 0.022003512000082992,
+      "evidence": "target/io-uring-async-checks/guest-selected-fault-final/results.json"
+    },
+    {
+      "group": "async",
+      "case": "abi-4",
+      "final_runner": true,
+      "runner_sha256": "620a5debbfe8831bf2bc80bbff553639f77ef96f38f265a5a9f7f7b4337fe34b",
+      "fixture_sha256": "d6b95fcf17b46af671f52c05250d31dd8590e573638d7a6199b42e38a2783b5d",
+      "expected_worker_uring": 707,
+      "metrics": {
+        "cpu_count": 4,
+        "worker_uring_syscalls": 707,
+        "worker_poll_syscalls": 0,
+        "worker_io_waits": 30,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 49,
+        "seconds": 0.016393258,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.009153999999999999,
+      "host_wall_seconds": 0.01870511900051497,
+      "evidence": "target/io-uring-async-checks/guest-selected-fault-final/results.json"
+    },
+    {
+      "group": "async",
+      "case": "tcp4-1",
+      "final_runner": false,
+      "runner_sha256": "dc2dd64c199d2cbaa872b486cdf1fd5a126548d7b5e761dfa2fd10ef1549b180",
+      "fixture_sha256": "d6b95fcf17b46af671f52c05250d31dd8590e573638d7a6199b42e38a2783b5d",
+      "expected_worker_uring": 3,
+      "metrics": {
+        "cpu_count": 1,
+        "worker_uring_syscalls": 0,
+        "worker_poll_syscalls": 0,
+        "worker_io_waits": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 0,
+        "seconds": 0.051655874,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.0033370000000000006,
+      "host_wall_seconds": 0.05370739698992111,
+      "evidence": "target/io-uring-async-checks/guest-worker-wake-final/results.json"
+    },
+    {
+      "group": "async",
+      "case": "tcp4-pressure-1",
+      "final_runner": false,
+      "runner_sha256": "dc2dd64c199d2cbaa872b486cdf1fd5a126548d7b5e761dfa2fd10ef1549b180",
+      "fixture_sha256": "d6b95fcf17b46af671f52c05250d31dd8590e573638d7a6199b42e38a2783b5d",
+      "expected_worker_uring": 11,
+      "metrics": {
+        "cpu_count": 1,
+        "worker_uring_syscalls": 0,
+        "worker_poll_syscalls": 0,
+        "worker_io_waits": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 0,
+        "seconds": 0.151767032,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.005588,
+      "host_wall_seconds": 0.154386890004389,
+      "evidence": "target/io-uring-async-checks/guest-worker-wake-final/results.json"
+    },
+    {
+      "group": "async",
+      "case": "tcp6-1",
+      "final_runner": false,
+      "runner_sha256": "dc2dd64c199d2cbaa872b486cdf1fd5a126548d7b5e761dfa2fd10ef1549b180",
+      "fixture_sha256": "d6b95fcf17b46af671f52c05250d31dd8590e573638d7a6199b42e38a2783b5d",
+      "expected_worker_uring": 3,
+      "metrics": {
+        "cpu_count": 1,
+        "worker_uring_syscalls": 0,
+        "worker_poll_syscalls": 0,
+        "worker_io_waits": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 0,
+        "seconds": 0.051339279,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.0030870000000000003,
+      "host_wall_seconds": 0.053368958993814886,
+      "evidence": "target/io-uring-async-checks/guest-worker-wake-final/results.json"
+    },
+    {
+      "group": "async",
+      "case": "tcp6-pressure-1",
+      "final_runner": false,
+      "runner_sha256": "dc2dd64c199d2cbaa872b486cdf1fd5a126548d7b5e761dfa2fd10ef1549b180",
+      "fixture_sha256": "d6b95fcf17b46af671f52c05250d31dd8590e573638d7a6199b42e38a2783b5d",
+      "expected_worker_uring": 11,
+      "metrics": {
+        "cpu_count": 1,
+        "worker_uring_syscalls": 0,
+        "worker_poll_syscalls": 0,
+        "worker_io_waits": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 0,
+        "seconds": 0.151475996,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.004948999999999998,
+      "host_wall_seconds": 0.15382226200017612,
+      "evidence": "target/io-uring-async-checks/guest-worker-wake-final/results.json"
+    },
+    {
+      "group": "async",
+      "case": "tcp4-2",
+      "final_runner": false,
+      "runner_sha256": "dc2dd64c199d2cbaa872b486cdf1fd5a126548d7b5e761dfa2fd10ef1549b180",
+      "fixture_sha256": "d6b95fcf17b46af671f52c05250d31dd8590e573638d7a6199b42e38a2783b5d",
+      "expected_worker_uring": 3,
+      "metrics": {
+        "cpu_count": 2,
+        "worker_uring_syscalls": 3,
+        "worker_poll_syscalls": 2,
+        "worker_io_waits": 14,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 16,
+        "seconds": 0.052349407,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.004675,
+      "host_wall_seconds": 0.05419653299031779,
+      "evidence": "target/io-uring-async-checks/guest-worker-wake-final/results.json"
+    },
+    {
+      "group": "async",
+      "case": "tcp4-pressure-2",
+      "final_runner": false,
+      "runner_sha256": "dc2dd64c199d2cbaa872b486cdf1fd5a126548d7b5e761dfa2fd10ef1549b180",
+      "fixture_sha256": "d6b95fcf17b46af671f52c05250d31dd8590e573638d7a6199b42e38a2783b5d",
+      "expected_worker_uring": 11,
+      "metrics": {
+        "cpu_count": 2,
+        "worker_uring_syscalls": 11,
+        "worker_poll_syscalls": 0,
+        "worker_io_waits": 7,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 10,
+        "seconds": 0.152513014,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.0059299999999999995,
+      "host_wall_seconds": 0.1545303249877179,
+      "evidence": "target/io-uring-async-checks/guest-worker-wake-final/results.json"
+    },
+    {
+      "group": "async",
+      "case": "tcp6-2",
+      "final_runner": false,
+      "runner_sha256": "dc2dd64c199d2cbaa872b486cdf1fd5a126548d7b5e761dfa2fd10ef1549b180",
+      "fixture_sha256": "d6b95fcf17b46af671f52c05250d31dd8590e573638d7a6199b42e38a2783b5d",
+      "expected_worker_uring": 3,
+      "metrics": {
+        "cpu_count": 2,
+        "worker_uring_syscalls": 3,
+        "worker_poll_syscalls": 2,
+        "worker_io_waits": 13,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 16,
+        "seconds": 0.052382366,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.004906000000000001,
+      "host_wall_seconds": 0.05449194599350449,
+      "evidence": "target/io-uring-async-checks/guest-worker-wake-final/results.json"
+    },
+    {
+      "group": "async",
+      "case": "tcp6-pressure-2",
+      "final_runner": false,
+      "runner_sha256": "dc2dd64c199d2cbaa872b486cdf1fd5a126548d7b5e761dfa2fd10ef1549b180",
+      "fixture_sha256": "d6b95fcf17b46af671f52c05250d31dd8590e573638d7a6199b42e38a2783b5d",
+      "expected_worker_uring": 11,
+      "metrics": {
+        "cpu_count": 2,
+        "worker_uring_syscalls": 11,
+        "worker_poll_syscalls": 0,
+        "worker_io_waits": 7,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 10,
+        "seconds": 0.152590311,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.006286999999999994,
+      "host_wall_seconds": 0.15478598899790086,
+      "evidence": "target/io-uring-async-checks/guest-worker-wake-final/results.json"
+    },
+    {
+      "group": "async",
+      "case": "tcp4-4",
+      "final_runner": false,
+      "runner_sha256": "dc2dd64c199d2cbaa872b486cdf1fd5a126548d7b5e761dfa2fd10ef1549b180",
+      "fixture_sha256": "d6b95fcf17b46af671f52c05250d31dd8590e573638d7a6199b42e38a2783b5d",
+      "expected_worker_uring": 3,
+      "metrics": {
+        "cpu_count": 4,
+        "worker_uring_syscalls": 3,
+        "worker_poll_syscalls": 2,
+        "worker_io_waits": 15,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 16,
+        "seconds": 0.052254534,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.004483000000000001,
+      "host_wall_seconds": 0.054087999000330456,
+      "evidence": "target/io-uring-async-checks/guest-worker-wake-final/results.json"
+    },
+    {
+      "group": "async",
+      "case": "tcp4-pressure-4",
+      "final_runner": false,
+      "runner_sha256": "dc2dd64c199d2cbaa872b486cdf1fd5a126548d7b5e761dfa2fd10ef1549b180",
+      "fixture_sha256": "d6b95fcf17b46af671f52c05250d31dd8590e573638d7a6199b42e38a2783b5d",
+      "expected_worker_uring": 11,
+      "metrics": {
+        "cpu_count": 4,
+        "worker_uring_syscalls": 11,
+        "worker_poll_syscalls": 0,
+        "worker_io_waits": 8,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 10,
+        "seconds": 0.152507275,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.005828,
+      "host_wall_seconds": 0.1543982270086417,
+      "evidence": "target/io-uring-async-checks/guest-worker-wake-final/results.json"
+    },
+    {
+      "group": "async",
+      "case": "tcp6-4",
+      "final_runner": false,
+      "runner_sha256": "dc2dd64c199d2cbaa872b486cdf1fd5a126548d7b5e761dfa2fd10ef1549b180",
+      "fixture_sha256": "d6b95fcf17b46af671f52c05250d31dd8590e573638d7a6199b42e38a2783b5d",
+      "expected_worker_uring": 3,
+      "metrics": {
+        "cpu_count": 4,
+        "worker_uring_syscalls": 3,
+        "worker_poll_syscalls": 2,
+        "worker_io_waits": 17,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 16,
+        "seconds": 0.052461795,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.004784999999999998,
+      "host_wall_seconds": 0.054408790994784795,
+      "evidence": "target/io-uring-async-checks/guest-worker-wake-final/results.json"
+    },
+    {
+      "group": "async",
+      "case": "tcp6-pressure-4",
+      "final_runner": false,
+      "runner_sha256": "dc2dd64c199d2cbaa872b486cdf1fd5a126548d7b5e761dfa2fd10ef1549b180",
+      "fixture_sha256": "d6b95fcf17b46af671f52c05250d31dd8590e573638d7a6199b42e38a2783b5d",
+      "expected_worker_uring": 11,
+      "metrics": {
+        "cpu_count": 4,
+        "worker_uring_syscalls": 11,
+        "worker_poll_syscalls": 0,
+        "worker_io_waits": 6,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 10,
+        "seconds": 0.152773871,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.006185999999999997,
+      "host_wall_seconds": 0.15481626499968115,
+      "evidence": "target/io-uring-async-checks/guest-worker-wake-final/results.json"
+    },
+    {
+      "group": "registered",
+      "case": "abi-1",
+      "final_runner": false,
+      "runner_sha256": "dc2dd64c199d2cbaa872b486cdf1fd5a126548d7b5e761dfa2fd10ef1549b180",
+      "fixture_sha256": "42bc030597fb07954b1cd68eb13e35a77bf78ac49640cc5e7183debb880b3765",
+      "expected_worker_uring": null,
+      "metrics": {
+        "cpu_count": 1,
+        "worker_uring_syscalls": 0,
+        "worker_poll_syscalls": 0,
+        "worker_io_waits": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 0,
+        "seconds": 0.002225054,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.0041030000000000025,
+      "host_wall_seconds": 0.004234163003275171,
+      "evidence": "target/io-uring-async-checks/guest-registered-final/results.json"
+    },
+    {
+      "group": "registered",
+      "case": "tcp4-1",
+      "final_runner": false,
+      "runner_sha256": "dc2dd64c199d2cbaa872b486cdf1fd5a126548d7b5e761dfa2fd10ef1549b180",
+      "fixture_sha256": "42bc030597fb07954b1cd68eb13e35a77bf78ac49640cc5e7183debb880b3765",
+      "expected_worker_uring": null,
+      "metrics": {
+        "cpu_count": 1,
+        "worker_uring_syscalls": 0,
+        "worker_poll_syscalls": 0,
+        "worker_io_waits": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 0,
+        "seconds": 0.051208932,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.0027860000000000038,
+      "host_wall_seconds": 0.05301815099664964,
+      "evidence": "target/io-uring-async-checks/guest-registered-final/results.json"
+    },
+    {
+      "group": "registered",
+      "case": "tcp6-1",
+      "final_runner": false,
+      "runner_sha256": "dc2dd64c199d2cbaa872b486cdf1fd5a126548d7b5e761dfa2fd10ef1549b180",
+      "fixture_sha256": "42bc030597fb07954b1cd68eb13e35a77bf78ac49640cc5e7183debb880b3765",
+      "expected_worker_uring": null,
+      "metrics": {
+        "cpu_count": 1,
+        "worker_uring_syscalls": 0,
+        "worker_poll_syscalls": 0,
+        "worker_io_waits": 0,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 0,
+        "seconds": 0.05136648,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.002936000000000001,
+      "host_wall_seconds": 0.053201407004962675,
+      "evidence": "target/io-uring-async-checks/guest-registered-final/results.json"
+    },
+    {
+      "group": "registered",
+      "case": "abi-2",
+      "final_runner": false,
+      "runner_sha256": "dc2dd64c199d2cbaa872b486cdf1fd5a126548d7b5e761dfa2fd10ef1549b180",
+      "fixture_sha256": "42bc030597fb07954b1cd68eb13e35a77bf78ac49640cc5e7183debb880b3765",
+      "expected_worker_uring": null,
+      "metrics": {
+        "cpu_count": 2,
+        "worker_uring_syscalls": 128,
+        "worker_poll_syscalls": 0,
+        "worker_io_waits": 129,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 3,
+        "seconds": 0.003048161,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.005376999999999993,
+      "host_wall_seconds": 0.005014626003685407,
+      "evidence": "target/io-uring-async-checks/guest-registered-final/results.json"
+    },
+    {
+      "group": "registered",
+      "case": "tcp4-2",
+      "final_runner": false,
+      "runner_sha256": "dc2dd64c199d2cbaa872b486cdf1fd5a126548d7b5e761dfa2fd10ef1549b180",
+      "fixture_sha256": "42bc030597fb07954b1cd68eb13e35a77bf78ac49640cc5e7183debb880b3765",
+      "expected_worker_uring": null,
+      "metrics": {
+        "cpu_count": 2,
+        "worker_uring_syscalls": 3,
+        "worker_poll_syscalls": 0,
+        "worker_io_waits": 11,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 7,
+        "seconds": 0.05284753,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.005163999999999995,
+      "host_wall_seconds": 0.054813448994536884,
+      "evidence": "target/io-uring-async-checks/guest-registered-final/results.json"
+    },
+    {
+      "group": "registered",
+      "case": "tcp6-2",
+      "final_runner": false,
+      "runner_sha256": "dc2dd64c199d2cbaa872b486cdf1fd5a126548d7b5e761dfa2fd10ef1549b180",
+      "fixture_sha256": "42bc030597fb07954b1cd68eb13e35a77bf78ac49640cc5e7183debb880b3765",
+      "expected_worker_uring": null,
+      "metrics": {
+        "cpu_count": 2,
+        "worker_uring_syscalls": 3,
+        "worker_poll_syscalls": 0,
+        "worker_io_waits": 11,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 7,
+        "seconds": 0.052446623,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.005224000000000006,
+      "host_wall_seconds": 0.057695229988894425,
+      "evidence": "target/io-uring-async-checks/guest-registered-final/results.json"
+    },
+    {
+      "group": "registered",
+      "case": "abi-4",
+      "final_runner": false,
+      "runner_sha256": "dc2dd64c199d2cbaa872b486cdf1fd5a126548d7b5e761dfa2fd10ef1549b180",
+      "fixture_sha256": "42bc030597fb07954b1cd68eb13e35a77bf78ac49640cc5e7183debb880b3765",
+      "expected_worker_uring": null,
+      "metrics": {
+        "cpu_count": 4,
+        "worker_uring_syscalls": 128,
+        "worker_poll_syscalls": 0,
+        "worker_io_waits": 138,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 3,
+        "seconds": 0.003649173,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.006389000000000013,
+      "host_wall_seconds": 0.006113026000093669,
+      "evidence": "target/io-uring-async-checks/guest-registered-final/results.json"
+    },
+    {
+      "group": "registered",
+      "case": "tcp4-4",
+      "final_runner": false,
+      "runner_sha256": "dc2dd64c199d2cbaa872b486cdf1fd5a126548d7b5e761dfa2fd10ef1549b180",
+      "fixture_sha256": "42bc030597fb07954b1cd68eb13e35a77bf78ac49640cc5e7183debb880b3765",
+      "expected_worker_uring": null,
+      "metrics": {
+        "cpu_count": 4,
+        "worker_uring_syscalls": 3,
+        "worker_poll_syscalls": 0,
+        "worker_io_waits": 11,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 7,
+        "seconds": 0.053045421,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.006797999999999985,
+      "host_wall_seconds": 0.0560017039970262,
+      "evidence": "target/io-uring-async-checks/guest-registered-final/results.json"
+    },
+    {
+      "group": "registered",
+      "case": "tcp6-4",
+      "final_runner": false,
+      "runner_sha256": "dc2dd64c199d2cbaa872b486cdf1fd5a126548d7b5e761dfa2fd10ef1549b180",
+      "fixture_sha256": "42bc030597fb07954b1cd68eb13e35a77bf78ac49640cc5e7183debb880b3765",
+      "expected_worker_uring": null,
+      "metrics": {
+        "cpu_count": 4,
+        "worker_uring_syscalls": 3,
+        "worker_poll_syscalls": 0,
+        "worker_io_waits": 11,
+        "service_requests": 0,
+        "serviced_syscalls": 0,
+        "parallel_rounds": 7,
+        "seconds": 0.052548105,
+        "runtime_error": null
+      },
+      "host_child_cpu_seconds": 0.005701999999999999,
+      "host_wall_seconds": 0.055331377996481024,
+      "evidence": "target/io-uring-async-checks/guest-registered-final/results.json"
+    }
+  ],
+  "guest_reuse": "The final cold adjustment changes only selected-buffer guest-address faults while the resource is empty. Final runner repeated the three affected ABI modes, including the original nonempty fault case. Twelve native TCP/CQ/pressure and nine fixed-buffer cases reuse this batch's passing results from the preceding runner; their hashes are retained per row. Final strict all-target compilation passed. Earlier unchanged CPU/GPU/Firefox/Docker/CoreMark and full syscall probes were not rerun.",
+  "regressions_fixed": [
+    "Connected Unix datagrams were excluded by the old stream-only capability filter. Dedicated ring admission now uses original message queues, empty packets and copied/reported MSG_TRUNC length.",
+    "Ring callers resumed from guest sleep ran an owner serial quantum before the next parallel admission check. Recheck only at a ring wake boundary; exact-count native full-CQ tests no longer lose two enters.",
+    "A selected invalid guest data VA with an empty source must preserve its buffer and wait for readiness; the new final-source regression test covers EAGAIN then EFAULT without consuming source bytes.",
+    "worker_poll_syscalls previously counted only ppoll. It now includes epoll_pwait and epoll_pwait2; historical reports keep their original counting scope."
+  ],
+  "checks": [
+    "Release CLI/FFI",
+    "Strict six-crate release all-target Clippy (-D warnings)",
+    "cargo fmt --all --check",
+    "New ARM64 static fixture -Wall -Wextra -Werror",
+    "Python AST/JSON/CSV and shell syntax",
+    "git diff --check"
+  ],
+  "evidence_sha256": {
+    "target/io-uring-async-checks/guest-selected-fault-final/results.json": "f33708256c8eed01fee63863bfe2517e34b4ab32fb1f472b2808c5a30693c499",
+    "target/io-uring-async-checks/guest-worker-wake-final/results.json": "f12648e74a845ed5bc5003bb5aa953b90b5239f7014bd9e6068f092e89301d8b",
+    "target/io-uring-async-checks/guest-registered-final/results.json": "06fee844d232828e507fec85799d1d7b2d2c82160cf735ef15e56cfda61b6ba1",
+    "target/io-uring-async-checks/worker-unit-final.log": "13643f7e71d7a31d0d33e569a68156b5484ec439110e6ffdad5868a69fa97859",
+    "target/io-uring-async-checks/owner-buffer-final.log": "19f1222d97612071e90760b2dc917df033c6238370def50a1d93de0ed06c3ef4",
+    "target/io-uring-async-checks/vfs-unit-final.log": "3182b105bb63fe1c4b95e6ba4ceaadbf533f52a018e23df66bd37c6ae8425126",
+    "target/io-uring-async-checks/core-unit-final.log": "829fb15241ad19aa4b7147e2cd55e90168be9422e8e5bff043511bbfa5c640bd",
+    "target/io-uring-async-checks/core-poll-final.log": "0e21e7e37d1c82de98d0aae81c0a6c0d38e89abeb9f9e6ca0f217ed6786f85ad",
+    "target/io-uring-async-checks/selected-fault-final.log": "5964a9ffe27ba6571ed13340c0e1e43538d797d3e1efd91bdebf5b8c19200bd2",
+    "target/io-uring-async-checks/clippy-final.log": "ab355f50f55bcc7f24bf3b3e917c45a08cfb0663d370c89e09b2553d88c2015d",
+    "target/io-uring-async-checks/release-build-final.log": "bfcb3d2c770a946f0346001a544fc5538462cc53939f0d4fe19d6a4e136c7578"
+  },
+  "remaining_owner": [
+    "setup and new buffer pins",
+    "fixed-file table/FD creation and installation",
+    "path and socket connection/control operations",
+    "multishot ACCEPT",
+    "native TCP/ordinary-file POLL_ADD",
+    "restricted/growing/synchronous/persistent file services",
+    "cross-task background requests without retained execution actors",
+    "FD/VM/exec/exit lifecycle"
+  ],
+  "no_ipa_or_apple_validation": true,
+  "no_overall_performance_claim": true
+}

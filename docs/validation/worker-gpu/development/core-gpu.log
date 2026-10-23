@@ -1,0 +1,20 @@
+
+running 1 test
+test workers::tests::gpu_calls_retire_once_on_the_calling_worker_and_owner_fallback_has_no_effects ... FAILED
+
+failures:
+
+---- workers::tests::gpu_calls_retire_once_on_the_calling_worker_and_owner_fallback_has_no_effects stdout ----
+
+thread 'workers::tests::gpu_calls_retire_once_on_the_calling_worker_and_owner_fallback_has_no_effects' (57378) panicked at crates/trames-core/src/workers.rs:1924:13:
+assertion `left == right` failed
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    workers::tests::gpu_calls_retire_once_on_the_calling_worker_and_owner_fallback_has_no_effects
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 129 filtered out; finished in 0.00s
+
