@@ -157,6 +157,11 @@ A second save of the same document also committed successfully. A 256 MiB
 coordinated save then produced a matching pending size/SHA-256, committed on
 foreground activation in the same surviving process, and passed an independent
 streamed checksum of the committed object plus guest `stat` size verification.
+A final editor save was scheduled eight seconds later under a short system
+background task. Trames returned to the foreground before that save ran, then
+committed it through the completion notification without another app switch;
+guest readback and the cleared journal confirmed completion. The temporary
+editor was removed after validation, leaving the test document small again.
 These checks use a developer build; the broader device checklist remains in
 [issue #8](https://github.com/kb5000/trames/issues/8).
 
