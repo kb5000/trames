@@ -56,6 +56,44 @@ and build/run. No private entitlement, JIT or virtualization capability is used.
 Build the matching Rust target first with the script. Build settings select
 its library by SDK; no developer team or credential is committed to the repo.
 
+### File Provider signing and shared storage
+
+The app includes a read-only File Provider extension. In Files, open the app's
+location, then Alpine, to browse directories and open or export regular files.
+Editing, renaming, deletion and write-back are not implemented. Symbolic links
+and special Linux nodes are visible but cannot be opened as regular files.
+
+For a developer build, keep the extension embedded, give it a bundle identifier
+prefixed by the containing app's identifier, and sign both targets with the same
+team. Set `TRAMES_APP_GROUP` to an App Group registered for both targets and keep
+`Trames.entitlements` on both. `Trames-Info.plist` supplies the containing app's
+shared-container identifier before signing; arbitrary `INFOPLIST_KEY_` settings
+alone do not reliably add custom keys to Xcode's generated plist. The existing
+unsigned packaging finalizer also validates matching app/extension metadata.
+
+On the first launch with a shared container, the app moves its existing Linux
+store into that container. If shared storage is unavailable, migration fails
+before moving the store, or both locations already contain stores, the app keeps
+using the private store. The provider does not open a second writable VFS; it
+reads the persisted rootfs manifest and materializes regular-file copies.
+Directory refresh notifications use the app's existing foreground polling loop;
+this does not keep the Linux interpreter running in the background.
+
+Provider URL identity uses file-URL path components and checks the canonical
+filename. Do not use `standardizedFileURL` for placeholder containment: on Apple
+platforms it can remove `/private` from an existing storage directory while
+retaining it on an unmaterialized child. That difference rejected the provider's
+own URLs before placeholder creation. Three native ARM64 XCTest regressions cover
+identity before/after file creation, outside paths and canonical filenames.
+
+Physical development checks on 2026-10-24 confirmed Personal Team provisioning of
+the app and extension with matching App Groups, wireless installation, reopening
+the retained rootfs in shared storage, Files directory browsing, and an observed
+directory updating after guest file creation and content-size changes. After the
+URL fix, Files Quick Look displayed the updated guest text through the provider.
+These checks use a developer build; the broader device checklist remains in
+[issue #8](https://github.com/kb5000/trames/issues/8).
+
 macOS CI tests the native SSH PTY, window changes and a 1 MiB SFTP roundtrip
 against an actual local OpenSSH server, then links both unsigned Apple targets
 and runs the app on an iPad simulator through installation, rotation, exit and
