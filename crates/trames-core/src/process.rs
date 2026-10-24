@@ -3445,8 +3445,9 @@ impl Kernel {
     fn prepare_parallel_views(
         &mut self,
         chosen: &[(u32, usize)],
-    ) -> Option<Vec<(u32, usize, trames_memory::parallel::View)>> {
-        let mut views: Vec<(u32, usize, trames_memory::parallel::View)> = Vec::new();
+    ) -> Option<Vec<(u32, usize, Box<trames_memory::parallel::View>)>> {
+        let mut views: Vec<(u32, usize, Box<trames_memory::parallel::View>)> =
+            Vec::with_capacity(chosen.len());
         let mut published = BTreeMap::<u64, usize>::new();
         for &(id, slot) in chosen {
             let p = self.processes.get_mut(&id).expect("selected process");
@@ -3458,7 +3459,7 @@ impl Kernel {
                 self.parallel_memory.metrics.cache_hits += 1;
                 views[index].2.clone()
             } else {
-                let view = p.memory.parallel_view(&mut self.parallel_memory)?;
+                let view = Box::new(p.memory.parallel_view(&mut self.parallel_memory)?);
                 published.insert(identity, views.len());
                 view
             };
@@ -3466,7 +3467,10 @@ impl Kernel {
         }
         Some(views)
     }
-    fn admit_private_views(&mut self, views: &mut [(u32, usize, trames_memory::parallel::View)]) {
+    fn admit_private_views(
+        &mut self,
+        views: &mut [(u32, usize, Box<trames_memory::parallel::View>)],
+    ) {
         // Count actual Memory roots, including blocked/zombie processes. vm_id
         // alone cannot detect a retired handle or an alias in a host callback.
         let mut spaces = BTreeMap::<u64, (usize, usize)>::new();
@@ -3479,7 +3483,7 @@ impl Kernel {
         let mut groups = BTreeMap::<u64, Vec<&mut trames_memory::parallel::View>>::new();
         for (id, _, view) in views {
             let (identity, _) = self.processes[id].memory.coordinator_ownership();
-            groups.entry(identity).or_default().push(view);
+            groups.entry(identity).or_default().push(view.as_mut());
         }
         for (identity, mut group) in groups {
             let (local, owners) = spaces[&identity];
@@ -5078,6 +5082,73 @@ mod tests {
             oom: Arc::new(trames_vfs::OomTask::default()),
             seccomp: seccomp::Seccomp::default(),
         })
+    }
+    #[test]
+    #[ignore = "manual fixed-cohort preparation benchmark; not Firefox acceptance"]
+    fn cohort_preparation_profile() {
+        use std::hint::black_box;
+        const TASKS: u32 = 128;
+        const ROUNDS: u64 = 4096;
+        let mut k = kernel();
+        k.cpu_count = 8;
+        k.workers = crate::workers::Pool::new(8);
+        k.per_cpu.resize(8, Duration::ZERO);
+        let mut cpu = process();
+        cpu.affinity = 255;
+        // One real owner syscall per round, with no guest byte effects.
+        // getrusage(RUSAGE_SELF, NULL) returns EFAULT through the normal path.
+        let code: Vec<_> = [
+            0xd2800000u32,
+            0xd2800001,
+            0xd28014a8,
+            0xd4000001,
+            0x17fffffc,
+        ]
+        .into_iter()
+        .flat_map(u32::to_le_bytes)
+        .collect();
+        cpu.memory.write(0x4000, &code).unwrap();
+        cpu.memory
+            .protect(0x4000, PAGE_SIZE, Permissions::RX)
+            .unwrap();
+        for id in 2..=TASKS {
+            let mut peer = cpu.fork();
+            peer.memory = cpu.memory.share();
+            peer.affinity = 255;
+            peer.state = State::Futex {
+                wait: k
+                    .futexes
+                    .wait((0, 1, 0x1000), id, u32::MAX, || Ok::<_, ()>(()))
+                    .unwrap(),
+                deadline: None,
+            };
+            k.processes.insert(id, peer);
+        }
+        k.processes.insert(1, cpu);
+        let mut io = trames_linux::CapturedOutput::default();
+        for _ in 0..16 {
+            assert!(k.parallel_round(&mut io, u64::MAX).unwrap());
+        }
+        let before = (k.instructions, k.syscalls, k.parallel_rounds);
+        let began = Instant::now();
+        for _ in 0..ROUNDS {
+            assert!(black_box(&mut k).parallel_round(&mut io, u64::MAX).unwrap());
+        }
+        let seconds = began.elapsed().as_secs_f64();
+        assert_eq!(k.syscalls - before.1, ROUNDS);
+        assert_eq!(k.parallel_rounds - before.2, ROUNDS);
+        assert_eq!(k.instructions - before.0, ROUNDS * 5);
+        assert_eq!(k.processes.len(), TASKS as usize);
+        assert!(k
+            .processes
+            .iter()
+            .filter(|(id, _)| **id != 1)
+            .all(|(_, p)| matches!(p.state, State::Futex { ref wait, .. } if !wait.woken())));
+        assert_eq!(k.processes[&1].memory.read_u64(0x1000).unwrap(), 0);
+        println!(
+            "cohort_preparation tasks={TASKS} rounds={ROUNDS} instructions={} seconds={seconds:.6}",
+            k.instructions - before.0
+        );
     }
     #[test]
     #[ignore = "manual scheduler metadata benchmark; not an end-to-end speed ratio"]

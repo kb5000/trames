@@ -60,7 +60,9 @@ impl Control {
 pub(super) struct Work {
     pub pid: u32,
     pub cpu: Cpu,
-    pub memory: Option<View>,
+    // Keep worker-local translation caches stationary through preparation,
+    // queues and services. Interpreter/native code still borrows the View itself.
+    pub memory: Option<Box<View>>,
     pub control: Arc<Control>,
     pub syscalls: Option<crate::worker_syscalls::Snapshot>,
     pub gpu: Option<crate::gpu::Authority>,
@@ -218,18 +220,28 @@ impl Request {
     }
     pub fn memory(&self) -> &View {
         match &self.target {
-            ReturnTo::Cohort(pending) => {
-                pending.job.as_ref().unwrap().work.memory.as_ref().unwrap()
-            }
+            ReturnTo::Cohort(pending) => pending
+                .job
+                .as_ref()
+                .unwrap()
+                .work
+                .memory
+                .as_deref()
+                .unwrap(),
             #[cfg(test)]
             ReturnTo::Thread { memory, .. } => memory,
         }
     }
     pub fn memory_mut(&mut self) -> &mut View {
         match &mut self.target {
-            ReturnTo::Cohort(pending) => {
-                pending.job.as_mut().unwrap().work.memory.as_mut().unwrap()
-            }
+            ReturnTo::Cohort(pending) => pending
+                .job
+                .as_mut()
+                .unwrap()
+                .work
+                .memory
+                .as_deref_mut()
+                .unwrap(),
             #[cfg(test)]
             ReturnTo::Thread { memory, .. } => memory,
         }
@@ -397,7 +409,7 @@ impl Pool {
                                     credit = claimed;
                                 }
                                 let epoch = epoch.as_ref().expect("GPU cohort wait");
-                                match pending.progress(work.gpu.as_ref().expect("GPU authority"), work.memory.as_mut().expect("worker view"), work.pid, &epoch.io_target, &mut gpu_stats, epoch.progress.load(Ordering::Relaxed)) {
+                                match pending.progress(work.gpu.as_ref().expect("GPU authority"), work.memory.as_deref_mut().expect("worker view"), work.pid, &epoch.io_target, &mut gpu_stats, epoch.progress.load(Ordering::Relaxed)) {
                                     crate::gpu::Attempt::Complete(Ok(value)) => {
                                         if !accepted { instructions += 1; credit -= 1; }
                                         work.cpu.set_x(0, value.value); work.cpu.set_x(1, u64::from(value.fallback)); work.cpu.pc = call.pc + 4;
@@ -421,14 +433,14 @@ impl Pool {
                                 let snapshot = work.syscalls.as_ref().expect("retained I/O authority");
                                 let began = snapshot.profile.then(Instant::now);
                                 let result = if let Some(pending) = job.io.take() {
-                                    snapshot.direct.resume(pending, work.memory.as_mut().expect("worker view"))
+                                    snapshot.direct.resume(pending, work.memory.as_deref_mut().expect("worker view"))
                                 } else {
                                     let call = job.retry.take().unwrap();
                                     if let Some(request) = call.flock {
-                                        snapshot.direct.start_flock(request, call.args, work.memory.as_mut().expect("worker view"),
+                                        snapshot.direct.start_flock(request, call.args, work.memory.as_deref_mut().expect("worker view"),
                                             work.pid, &epoch.as_ref().unwrap().io_target)
                                     } else {
-                                        snapshot.direct.start(call.number, call.args, work.memory.as_mut().expect("worker view"),
+                                        snapshot.direct.start(call.number, call.args, work.memory.as_deref_mut().expect("worker view"),
                                             work.pid, &epoch.as_ref().unwrap().io_target, call.deadline).expect("admitted I/O retry")
                                     }
                                 };
@@ -466,7 +478,7 @@ impl Pool {
                             }
                             let result = work
                                 .cpu
-                                .run_slice(work.memory.as_mut().expect("worker view"), budget);
+                                .run_slice(work.memory.as_deref_mut().expect("worker view"), budget);
                             chunks += 1;
                             let retired = match &result {
                                 SliceOutcome::Fault(_) => work.cpu.fault_retired(),
@@ -494,7 +506,7 @@ impl Pool {
                                             yielded = true;
                                             break SliceOutcome::Yield { instructions: 0 };
                                         }
-                                        if let Some(result) = snapshot.wait(&work.cpu, work.memory.as_mut().expect("worker view"), work.pid, epoch) {
+                                        if let Some(result) = snapshot.wait(&work.cpu, work.memory.as_deref_mut().expect("worker view"), work.pid, epoch) {
                                             if let Some(began) = began { syscall_time += began.elapsed(); }
                                             syscalls += 1;
                                             match result {
@@ -508,7 +520,7 @@ impl Pool {
                                         let args = std::array::from_fn(|i| work.cpu.x(i));
                                         if snapshot.direct.supports_call(number, args) {
                                             let attempt = snapshot.direct.start(number, args,
-                                                work.memory.as_mut().expect("worker view"), work.pid, &epoch.io_target, None)
+                                                work.memory.as_deref_mut().expect("worker view"), work.pid, &epoch.io_target, None)
                                                 .expect("retained I/O");
                                             if let Some(began) = began { syscall_time += began.elapsed(); }
                                             match attempt {
@@ -526,7 +538,7 @@ impl Pool {
                                         }
                                     }
                                     if let Some(value) = snapshot
-                                        .invoke(&work.cpu, work.memory.as_mut().expect("worker view"))
+                                        .invoke(&work.cpu, work.memory.as_deref_mut().expect("worker view"))
                                     {
                                         if let Some(began) = began {
                                             syscall_time += began.elapsed();
@@ -572,7 +584,7 @@ impl Pool {
                                             number: work.cpu.x(8) as u32,
                                             args: std::array::from_fn(|i| work.cpu.x(i)),
                                             target: ReturnTo::Thread {
-                                                memory: work.memory.take().expect("worker view"),
+                                                memory: *work.memory.take().expect("worker view"),
                                                 reply: reply.take().expect("worker reply channel"),
                                             },
                                         };
@@ -583,7 +595,7 @@ impl Pool {
                                         // Never abandon an in-flight request on stop: it
                                         // may already have consumed input or written bytes.
                                         let answer = response.recv().expect("coordinator response");
-                                        work.memory = Some(answer.memory);
+                                        work.memory = Some(Box::new(answer.memory));
                                         reply = Some(answer.reply);
                                         service_wait += began.elapsed();
                                         if let Some(value) = answer.value {
@@ -607,11 +619,11 @@ impl Pool {
                                 let args = [work.cpu.x(0), work.cpu.x(1), work.cpu.x(2)];
                                 let gpu = work.gpu.as_ref().filter(|_| *module == trames_vulkan::PROFILE && trames_vulkan::Context::worker_operation(args[0]) && (epoch.is_some() || !matches!(args[0], 27 | 70 | 110 | 111)));
                                 let native = if let Some(authority) = gpu {
-                                    match registry.authorize_stateful(work.memory.as_ref().expect("worker view"), *pc, *module, *function) {
+                                    match registry.authorize_stateful(work.memory.as_deref().expect("worker view"), *pc, *module, *function) {
                                         Err(error) => Err(error),
                                         Ok(()) => if let Some(epoch) = &epoch {
                                             let call = crate::gpu::Call { pc: *pc, operation: args[0], args };
-                                            match crate::gpu::Pending::new(call).progress(authority, work.memory.as_mut().expect("worker view"), work.pid, &epoch.io_target, &mut gpu_stats, epoch.progress.load(Ordering::Relaxed)) {
+                                            match crate::gpu::Pending::new(call).progress(authority, work.memory.as_deref_mut().expect("worker view"), work.pid, &epoch.io_target, &mut gpu_stats, epoch.progress.load(Ordering::Relaxed)) {
                                                 crate::gpu::Attempt::Complete(value) => value,
                                                 crate::gpu::Attempt::Blocked(pending) => {
                                                     // An accepted asynchronous request owns its HLT
@@ -622,7 +634,7 @@ impl Pool {
                                                 crate::gpu::Attempt::Checkpoint => { credit -= 1; break result; }
                                             }
                                         } else {
-                                            let (value, transfers) = authority.context.invoke(work.memory.as_mut().expect("worker view"), args[0], args[1], args[2], None);
+                                            let (value, transfers) = authority.context.invoke(work.memory.as_deref_mut().expect("worker view"), args[0], args[1], args[2], None);
                                             gpu_stats.record(*pc, args[0], &value, transfers);
                                             value.map_err(trames_accel::native::Error::Memory).map(|value| {
                                                 let trames_vulkan::Invocation::Complete(value) = value else { unreachable!("test-only compile admission"); };
@@ -631,7 +643,7 @@ impl Pool {
                                         }
                                     }
                                 } else { registry.invoke_scoped(
-                                    work.memory.as_mut().expect("worker view"),
+                                    work.memory.as_deref_mut().expect("worker view"),
                                     *pc,
                                     *module,
                                     *function,
@@ -998,7 +1010,9 @@ mod tests {
             gpu: None,
             pid,
             cpu,
-            memory: Some(memory.parallel_view(&mut Default::default()).unwrap()),
+            memory: Some(Box::new(
+                memory.parallel_view(&mut Default::default()).unwrap(),
+            )),
             control,
             syscalls: None,
         }
@@ -1088,7 +1102,7 @@ mod tests {
                     gpu: None,
                     pid: i as u32 + 1,
                     cpu,
-                    memory: Some(view),
+                    memory: Some(Box::new(view)),
                     control: control.clone(),
                     syscalls: Some(snapshot),
                 },
@@ -1161,7 +1175,7 @@ mod tests {
                     gpu: None,
                     pid,
                     cpu,
-                    memory: Some(view),
+                    memory: Some(Box::new(view)),
                     control: control.clone(),
                     syscalls: Some(snapshot),
                 },
@@ -1278,7 +1292,7 @@ mod tests {
                         gpu: None,
                         pid,
                         cpu,
-                        memory: Some(view),
+                        memory: Some(Box::new(view)),
                         control: control.clone(),
                         syscalls: Some(snapshot),
                     },
@@ -1335,7 +1349,9 @@ mod tests {
                 .unwrap();
         }
         code.protect(0x1000, PAGE_SIZE, Permissions::RX).unwrap();
-        task.memory = Some(code.parallel_view(&mut Default::default()).unwrap());
+        task.memory = Some(Box::new(
+            code.parallel_view(&mut Default::default()).unwrap(),
+        ));
         epoch.add(crate::run_queue::Job::new(task, 1, 0, None));
         let mut pool = Pool::new(1);
         pool.ensure(0).unwrap();
@@ -1413,7 +1429,7 @@ mod tests {
                         gpu: None,
                         pid,
                         cpu,
-                        memory: Some(view),
+                        memory: Some(Box::new(view)),
                         control: control.clone(),
                         syscalls: Some(snapshot),
                     },
@@ -1491,7 +1507,7 @@ mod tests {
                     gpu: None,
                     pid,
                     cpu,
-                    memory: Some(view),
+                    memory: Some(Box::new(view)),
                     control: control.clone(),
                     syscalls: Some(snapshot),
                 },
@@ -1605,7 +1621,7 @@ mod tests {
                         gpu: None,
                         pid,
                         cpu,
-                        memory: Some(view),
+                        memory: Some(Box::new(view)),
                         control: control.clone(),
                         syscalls: Some(snapshot),
                     },
@@ -1664,7 +1680,7 @@ mod tests {
             task.cpu.set_x(8, 62);
             task.syscalls = Some(syscall_snapshot());
             let job = crate::run_queue::Job::new(task, 1, 0, None);
-            view_addresses.push(job.work.memory.as_ref().unwrap() as *const View as usize);
+            view_addresses.push(job.work.memory.as_deref().unwrap() as *const View as usize);
             epoch.add(job);
         }
         let mut pool = Pool::new(1);
@@ -1871,7 +1887,9 @@ mod tests {
                 gpu: None,
                 pid: 1,
                 cpu,
-                memory: Some(memory.parallel_view(&mut Default::default()).unwrap()),
+                memory: Some(Box::new(
+                    memory.parallel_view(&mut Default::default()).unwrap(),
+                )),
                 control: Arc::new(Control::new(100)),
                 syscalls: Some(snapshot),
             },
@@ -2223,7 +2241,7 @@ mod tests {
                 gpu: None,
                 pid: 1,
                 cpu,
-                memory: Some(memory_view),
+                memory: Some(Box::new(memory_view)),
                 control,
                 syscalls: None,
             },
@@ -2269,7 +2287,9 @@ mod tests {
                         .then(|| trames_vulkan::Context::new(trames_vulkan::Backend::new()).into()),
                     pid: 1,
                     cpu,
-                    memory: Some(memory.parallel_view(&mut Default::default()).unwrap()),
+                    memory: Some(Box::new(
+                        memory.parallel_view(&mut Default::default()).unwrap(),
+                    )),
                     control: control.clone(),
                     syscalls: None,
                 },
@@ -2332,7 +2352,9 @@ mod tests {
                 gpu: Some(context.into()),
                 pid: 1,
                 cpu,
-                memory: Some(memory.parallel_view(&mut Default::default()).unwrap()),
+                memory: Some(Box::new(
+                    memory.parallel_view(&mut Default::default()).unwrap(),
+                )),
                 control,
                 syscalls: None,
             },
@@ -2391,7 +2413,7 @@ mod tests {
             work.gpu.as_mut().unwrap().auth = auth.clone();
             work.cpu.set_x(0, 110);
             trames_memory::CpuMemory::write_array(
-                work.memory.as_mut().unwrap(),
+                work.memory.as_deref_mut().unwrap(),
                 0x2008,
                 (candidate as u64).to_le_bytes(),
             )
@@ -2521,7 +2543,9 @@ mod tests {
             gpu: None,
             pid: 1,
             cpu,
-            memory: Some(memory.parallel_view(&mut Default::default()).unwrap()),
+            memory: Some(Box::new(
+                memory.parallel_view(&mut Default::default()).unwrap(),
+            )),
             control: control.clone(),
             syscalls: None,
         };

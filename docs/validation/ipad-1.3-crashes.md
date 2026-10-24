@@ -171,11 +171,62 @@ state moves, while retaining the original memory/concurrency model. Elapsed
 runtime timers can span debugger pauses and overlap each other; they are not
 host CPU occupancy or an additive decomposition of startup time.
 
-Source commit `8a03fc0` has new [Linux runtime](https://github.com/kb5000/trames/actions/runs/40059795178)
-and [Apple](https://github.com/kb5000/trames/actions/runs/40059795207) CI running.
-At this update, Linux workspace tests, strict workspace Clippy, instrumented
-TSan, native allocator sanitizers and iOS compilation passed; independent ARM
-tests are running. Apple memory/ABI and guest inputs passed; app build is running.
+Source commit `8a03fc0` [Linux runtime](https://github.com/kb5000/trames/actions/runs/40059795178)
+passes workspace tests, strict workspace Clippy, instrumented TSan, native
+allocator sanitizers and iOS compilation, then fails the same five independent
+ARM worker assertions recorded above on the unchanged baseline. Its
+[Apple run](https://github.com/kb5000/trames/actions/runs/40059795207) passes
+memory/ABI and guest inputs; app packaging stops on the same missing downloaded
+Vulkan payload files. These are failures, not complete CI passes.
+
+## Compact execution-view handoff
+
+The next change keeps each approximately 6.4 KiB worker View in an independently
+owned Box throughout preparation, queueing, parking and service handoff. Growing
+the preparation vector and moving Work/Job values now move its pointer. The
+vector reserves its known member count. All VM Views are still prepared and
+admitted before execution, with the same snapshot identity/user checks and
+private-page modes. Joining still drops every View before coordinator mapping
+operations. Interpreter/native execution receives `&mut View` as before: its
+translation layout, hot loads/stores, region guards and permissions do not change.
+This trades an additional small allocation per prepared View for fewer large
+copies; it does not retain a live View over a mapping checkpoint.
+
+The ignored `process::tests::cohort_preparation_profile` benchmark executes the
+real coordinator and eight-worker handoff with one runnable task and 127 real
+futex waiters. Each of 4,096 measured rounds performs one ordinary owner syscall;
+both binaries must retire exactly 20,480 guest instructions, preserve all tasks,
+leave every waiter asleep and keep the shared sentinel unchanged. Setup and
+16 warmup rounds precede timing. This measures repeated cohort construction,
+dispatch and return, including the new allocations; no guest/browser ELF is
+substituted.
+
+Five alternating Release pairs on the native Apple ARM64 host give a median of
+0.901573 s before and 0.569813 s after (about 36.8% less elapsed time). Before
+samples span 0.889390–1.094214 s; after samples span 0.535084–0.579228 s. These
+small, isolated samples establish a benefit for this fixed scheduling workload,
+not a Firefox startup ratio or a physical iPad timing guarantee.
+
+The existing 171 Core tests pass, with three manual benchmarks ignored. Strict
+scoped macOS/iOS Core Clippy passes, as does the signed iOS build/install. The
+service regression continues to verify that the exact View is retained across
+worker parking and service completion. CPU, Memory, guest graphics and browser
+preferences are unchanged; their earlier checks are reused.
+
+The signed physical candidate runs with the same 4 GiB quotas, eight configured
+CPUs, a fresh profile, explicit Wayland and `about:blank`. After approximately
+two and a half uninterrupted minutes, graphics initialization has completed
+without a host allocation abort, but the Wayland window list remains empty.
+That is not complete browser startup or GPU acceptance. A subsequent attempt
+to collect coordinator syscall breakpoints stalls the host debugger in its
+register/unwind machinery and yields no usable call histogram. It is excluded
+from guest timing and liveness evidence; the debugger is stopped and Trames Dev
+is restarted to a responsive idle shell.
+
+A separate safe heap-initialization experiment has only a few percent median
+difference in five further alternating pairs with overlapping sample ranges;
+it is not retained. The delivered change is the measured View ownership and
+handoff change above, not a claim that every remaining Firefox wait is fixed.
 
 ## Original mousepad X11 save dialog
 
