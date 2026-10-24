@@ -596,7 +596,9 @@ mod tests {
                 gpu: None,
                 pid,
                 cpu: trames_cpu::Cpu::default(),
-                memory: Some(memory.parallel_view(&mut Default::default()).unwrap()),
+                memory: Some(Box::new(
+                    memory.parallel_view(&mut Default::default()).unwrap(),
+                )),
                 control: epoch.control.clone(),
                 syscalls: None,
             },
@@ -627,7 +629,7 @@ mod tests {
         let Some(trames_linux::IoAttempt::Blocked(pending)) = direct.start(
             63,
             [fd as u64, 0x1000, 1, 0, 0, 0],
-            running.work.memory.as_mut().unwrap(),
+            running.work.memory.as_deref_mut().unwrap(),
             pid,
             &epoch.io_target,
             None,
@@ -670,7 +672,7 @@ mod tests {
         assert!(matches!(
             direct.resume(
                 running.io.take().unwrap(),
-                running.work.memory.as_mut().unwrap()
+                running.work.memory.as_deref_mut().unwrap()
             ),
             trames_linux::IoAttempt::Complete(Ok(1))
         ));
@@ -691,7 +693,7 @@ mod tests {
             direct.start(
                 63,
                 [fd as u64, 0x1000, 1, 0, 0, 0],
-                running.work.memory.as_mut().unwrap(),
+                running.work.memory.as_deref_mut().unwrap(),
                 1,
                 &epoch.io_target,
                 Some(expired)
@@ -735,7 +737,7 @@ mod tests {
         let pending = running.io.take().unwrap();
         assert!(pending.deadline.unwrap() <= Instant::now());
         assert!(matches!(
-            direct.resume(pending, running.work.memory.as_mut().unwrap()),
+            direct.resume(pending, running.work.memory.as_deref_mut().unwrap()),
             trames_linux::IoAttempt::Complete(Err(trames_vfs::Errno(11)))
         ));
         epoch.finish(running.finish(None, 0));
@@ -754,7 +756,7 @@ mod tests {
         let Some(trames_linux::IoAttempt::Blocked(pending)) = direct.start(
             63,
             [r as u64, 0x1000, 1, 0, 0, 0],
-            running.work.memory.as_mut().unwrap(),
+            running.work.memory.as_deref_mut().unwrap(),
             2,
             &epoch.io_target,
             None,
@@ -771,7 +773,7 @@ mod tests {
         assert!(matches!(
             direct.resume(
                 running.io.take().unwrap(),
-                running.work.memory.as_mut().unwrap()
+                running.work.memory.as_deref_mut().unwrap()
             ),
             trames_linux::IoAttempt::Complete(Ok(1))
         ));
@@ -794,7 +796,7 @@ mod tests {
         let Some(trames_linux::IoAttempt::Blocked(pending)) = direct.start(
             32,
             args,
-            running.work.memory.as_mut().unwrap(),
+            running.work.memory.as_deref_mut().unwrap(),
             1,
             &epoch.io_target,
             None,
@@ -835,7 +837,7 @@ mod tests {
             .start(
                 63,
                 args,
-                running.work.memory.as_mut().unwrap(),
+                running.work.memory.as_deref_mut().unwrap(),
                 1,
                 &epoch.io_target,
                 None,
@@ -852,14 +854,14 @@ mod tests {
         assert_eq!(running.stats.resumes, 1);
         let pending = running.io.take().unwrap();
         assert!(matches!(
-            direct.resume(pending, running.work.memory.as_mut().unwrap()),
+            direct.resume(pending, running.work.memory.as_deref_mut().unwrap()),
             trames_linux::IoAttempt::Complete(Ok(1))
         ));
         let attempt = direct
             .start(
                 63,
                 args,
-                running.work.memory.as_mut().unwrap(),
+                running.work.memory.as_deref_mut().unwrap(),
                 1,
                 &epoch.io_target,
                 None,

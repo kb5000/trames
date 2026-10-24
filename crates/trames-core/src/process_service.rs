@@ -324,7 +324,7 @@ mod tests {
                     gpu: None,
                     pid: 1,
                     cpu,
-                    memory: Some(memory),
+                    memory: Some(Box::new(memory)),
                     control: control.clone(),
                     syscalls: Some(snapshot),
                 },

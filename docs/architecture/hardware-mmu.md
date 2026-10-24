@@ -118,7 +118,18 @@ the former combined 1 GiB VA cap forced software fallback well before its guest
 RAM quota. Increasing this capacity reserves no RAM in advance.
 All live physical/CPU reservations together have a 32 GiB VA budget. Exhaustion
 uses the checked software transport; ordinary stores do not repeatedly retry a
-failed window. No guest quota or permission changes. See the
+failed window. Anonymous pages without resident charges remain demand-zero
+when published to workers: they do not acquire physical MMU slot owners merely
+for publication. Fork can therefore release retired windows containing only
+untouched zeros. First real writes use the existing guarded software zero-page
+allocation when no physical slot is present; physical aliases remain available
+for materialized compatible groups.
+
+Coordinator TLB fills expose a CPU alias only when its physical owner and offset
+match the page's current storage. A software zero page's first worker write must
+not become hidden behind an older zero-filled coordinator arena. This comparison
+is cold translation setup, not a new ordinary-load/store check or barrier.
+No guest quota or permission changes. See the
 [Docker startup pressure report](../validation/mmu-va-pressure.md). OS page
 tables, descriptor arrays, setup syscalls and COW group copies still cost memory
 and time. Different 4 KiB slots within a 16 KiB host group may become physically
