@@ -144,13 +144,38 @@ capabilities, accepted-operation leases and synchronization remain unchanged.
 No lock, barrier, guest preference, refresh rate or sandbox adjustment is added.
 
 Local Apple ARM64 validation passes 171 Core tests (two manual benchmarks
-ignored), both TCP capability tests, and strict Clippy for the affected Core/VFS
-crates on macOS and iOS. The TCP regression checks shared capture reuse, fresh
+ignored), both TCP capability tests, 20 Linux direct-I/O tests, and strict Clippy
+for the affected Core/VFS crates on macOS and iOS. The TCP regression checks shared capture reuse, fresh
 connection discovery without FD mutation, invalid descriptors and last-close
 behavior. Dependency-wide macOS linting additionally encounters unchanged
 `needless_return` warnings in `trames-native`; the scoped checks use `--no-deps`.
-The signed iOS app builds and installs successfully. Physical retest results
-follow after observation; this is not yet Firefox startup or GPU acceptance.
+The signed iOS app builds and installs successfully.
+
+The physical retest uses a new profile, explicit Wayland and `about:blank`, with
+the existing 4 GiB quotas and default browser preferences. An initial two-minute
+uninterrupted interval retires about 3.51 billion guest instructions and reaches
+content-process startup, without a visible window or host allocation abort.
+Observation continues for roughly five minutes in total, with brief diagnostic
+pauses between intervals; the counter reaches about 4.54 billion instructions,
+but the final Wayland window list is still empty. The app is then deliberately
+restarted to an idle terminal. Normal browser shutdown, complete startup, page
+and GPU acceptance remain unverified.
+
+A later 32-sample burst finds 11 coordinator samples in memory moves, chiefly
+creating/moving cohort jobs and views. Of 256 worker observations, 250 wait for
+the next pool command; others execute guest memory/interpreter operations. No
+coordinator leaf sample in this burst is `getpeername`, but differing phases and
+the small sample size prevent a numerical before/after CPU or startup claim.
+Remaining investigation should quantify repeated cohort construction and large
+state moves, while retaining the original memory/concurrency model. Elapsed
+runtime timers can span debugger pauses and overlap each other; they are not
+host CPU occupancy or an additive decomposition of startup time.
+
+Source commit `8a03fc0` has new [Linux runtime](https://github.com/kb5000/trames/actions/runs/40059795178)
+and [Apple](https://github.com/kb5000/trames/actions/runs/40059795207) CI running.
+At this update, Linux workspace tests, strict workspace Clippy, instrumented
+TSan, native allocator sanitizers and iOS compilation passed; independent ARM
+tests are running. Apple memory/ABI and guest inputs passed; app build is running.
 
 ## Original mousepad X11 save dialog
 
