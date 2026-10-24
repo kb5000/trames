@@ -115,12 +115,11 @@ final class RootfsFileProvider:NSFileProviderExtension {
         return storage.appendingPathComponent(encoded,isDirectory:true).appendingPathComponent(item.filename,isDirectory:item.typeIdentifier==UTType.folder.identifier)
     }
     override func persistentIdentifierForItem(at url:URL) -> NSFileProviderItemIdentifier? {
-        if url.standardizedFileURL==storage.standardizedFileURL {return .rootContainer}
-        guard url.standardizedFileURL.path.hasPrefix(storage.standardizedFileURL.path+"/") else {return nil}
-        let parts=url.standardizedFileURL.path.dropFirst(storage.standardizedFileURL.path.count+1).split(separator:"/")
+        guard let parts=RootfsProviderPath.relativeComponents(of:url,in:storage) else {return nil}
+        if parts.isEmpty {return .rootContainer}
         guard parts.count==2,let data=Data(base64Encoded:String(parts[0]).replacingOccurrences(of:"_",with:"/").replacingOccurrences(of:"-",with:"+")),let value=String(data:data,encoding:.utf8) else {return nil}
         let id=NSFileProviderItemIdentifier(rawValue:value)
-        guard let expected=urlForItem(withPersistentIdentifier:id),expected.standardizedFileURL==url.standardizedFileURL else {return nil};return id
+        guard let expected=urlForItem(withPersistentIdentifier:id),RootfsProviderPath.sameLocation(expected,url) else {return nil};return id
     }
     override func providePlaceholder(at url:URL,completionHandler:@escaping(Error?)->Void) {
         do {
