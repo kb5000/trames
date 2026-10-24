@@ -10,6 +10,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     let fallbackTitle: String
     let isLocal: Bool
     var onWaylandChanged: (([LocalWaylandWindow]) -> Void)?
+    var onFileProviderError: ((String) -> Void)?
     @Published var title: String
     @Published var state = "连接中…"
     @Published var capacity: LocalStatus?
@@ -75,6 +76,9 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
                 guard let self, !self.closed else { local.close(); return }
                 self.local = local
                 bridge.attach(local)
+                if UIApplication.shared.applicationState != .active {self.paused=true}
+                if !self.paused {await applyFileProviderEdits(local)}
+                guard !self.closed else {local.close();return}
                 try local.pause(paused)
                 terminalSize=nil
                 synchronizeTerminalSize(columns:max(1,terminal.getTerminal().cols),rows:max(1,terminal.getTerminal().rows))
@@ -189,14 +193,28 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
 
     }
     func pause(_ paused: Bool) {
+        let resuming=self.paused && !paused
         self.paused = paused
         cpuSample=nil
         if paused { cpuPercent=nil }
         if environmentOwner == nil {
             if paused { waylandCommand(["op":"focus","window":NSNull()]) }
-            try? local?.pause(paused)
-            if !paused { synchronizeTimezone();synchronizeClipboard() }
+            if paused {try? local?.pause(true)}
+            else if let local,resuming || FileProviderService.hasPendingEdits() {
+                try? local.pause(true)
+                Task { [weak self] in
+                    guard let self else {return}
+                    await applyFileProviderEdits(local)
+                    guard !self.paused,!self.closed else {return}
+                    try? local.pause(false)
+                    synchronizeTimezone();synchronizeClipboard()
+                }
+            }
         }
+    }
+    private func applyFileProviderEdits(_ local:LocalSession) async {
+        let errors=await FileProviderService.applyPending(to:local)
+        if !errors.isEmpty {onFileProviderError?("部分 Files 编辑未写回，修改副本已保留。\n"+errors.prefix(4).joined(separator:"\n"))}
     }
     private func synchronizeClipboard() {
         guard environmentOwner == nil,!paused,local != nil,UserDefaults.standard.object(forKey:"bridgeEnabled") as? Bool != false else { return }

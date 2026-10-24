@@ -26,7 +26,7 @@ public struct LocalTerminalStatus: Decodable, Sendable {
 public final class LocalSession: @unchecked Sendable {
     private let lock = NSLock()
     private var handle: UInt64
-    public init(store: URL, rootfs: URL?, total: UInt64, available: UInt64, network: String = "full", useVolumeBudget: Bool = false, muslLibc: URL? = nil, pureAccelerator: Bool = false, vulkanICD: URL? = nil, memoryBudgetMiB: Int = 1024, processMemoryBudgetMiB: Int = 512, multipleTerminals: Bool = false) throws {
+    public init(store: URL, rootfs: URL?, total: UInt64, available: UInt64, network: String = "full", useVolumeBudget: Bool = false, muslLibc: URL? = nil, pureAccelerator: Bool = false, vulkanICD: URL? = nil, memoryBudgetMiB: Int = 1024, processMemoryBudgetMiB: Int = 512, multipleTerminals: Bool = false, initiallyPaused: Bool = false, storeOwnerLock: URL? = nil) throws {
         guard memoryBudgetMiB > 0, processMemoryBudgetMiB > 0,
               processMemoryBudgetMiB <= memoryBudgetMiB,
               memoryBudgetMiB <= (1 << 28) else { throw TramesError.message("Invalid guest memory budget") }
@@ -42,6 +42,8 @@ public final class LocalSession: @unchecked Sendable {
             options["xwayland_launcher"] = launcher.path
         }
         options["multiple_terminals"] = multipleTerminals
+        options["initially_paused"] = initiallyPaused
+        if let storeOwnerLock {options["store_owner_lock"] = storeOwnerLock.path}
         if let vulkanICD { options["vulkan_accelerator"] = true; options["vulkan_icd"] = vulkanICD.path }
         options["budget_bytes"] = useVolumeBudget ? total : UInt64(16) << 30
         options["timezone"] = try LocalTimezone().options
@@ -50,8 +52,10 @@ public final class LocalSession: @unchecked Sendable {
         guard handle != 0 else { throw Self.lastError() }
     }
     deinit { close() }
-    public static func reset(store: URL) async throws {
-        let data=try JSONSerialization.data(withJSONObject:["store":store.path])
+    public static func reset(store: URL, storeOwnerLock: URL? = nil) async throws {
+        var options=["store":store.path]
+        if let storeOwnerLock {options["store_owner_lock"] = storeOwnerLock.path}
+        let data=try JSONSerialization.data(withJSONObject:options)
         let began=Date()
         while true {
             let result = await Task.detached(priority: .userInitiated) {
@@ -64,9 +68,10 @@ public final class LocalSession: @unchecked Sendable {
             try await Task.sleep(for:.milliseconds(20))
         }
     }
-    public static func install(store: URL, rootfs: URL, total: UInt64, available: UInt64, muslLibc: URL? = nil) throws {
+    public static func install(store: URL, rootfs: URL, total: UInt64, available: UInt64, muslLibc: URL? = nil, storeOwnerLock: URL? = nil) throws {
         var options: [String:Any] = ["store":store.path, "rootfs":rootfs.path, "volume_total":total, "volume_available":available]
         if let muslLibc { options["musl_libc"] = muslLibc.path }
+        if let storeOwnerLock { options["store_owner_lock"] = storeOwnerLock.path }
         let data = try JSONSerialization.data(withJSONObject: options)
         let result = data.withUnsafeBytes { trames_environment_install($0.bindMemory(to: UInt8.self).baseAddress, UInt32($0.count)) }
         if result < 0 { throw lastError() }
@@ -142,6 +147,15 @@ public final class LocalSession: @unchecked Sendable {
             trames_session_timezone(h, $0.bindMemory(to: UInt8.self).baseAddress, UInt32($0.count))
         }
         if result < 0 { throw Self.lastError() }
+    }
+    /// Conditional editor commit with a receipt; call on a background queue.
+    public func commitFileEdit(guest:String,host:URL,expectedInode:UInt64,expectedSHA256:String,replacementSHA256:String) throws -> UInt64 {
+        let h=try currentHandle()
+        let options:[String:Any]=["guest":guest,"host":host.path,"export":false,"replace":true,"expected":["inode":expectedInode,"sha256":expectedSHA256,"replacement_sha256":replacementSHA256] as [String:Any]]
+        let data=try JSONSerialization.data(withJSONObject:options)
+        guard data.count<=65536 else {throw TramesError.message("Edit request too large")}
+        let inode=data.withUnsafeBytes {trames_session_commit_edit(h,$0.bindMemory(to:UInt8.self).baseAddress,UInt32($0.count))}
+        guard inode != 0 else {throw Self.lastError()};return inode
     }
     /// Blocking transfer; caller coordinates the selected URL on a background queue.
     public func transfer(guest: String, host: URL, export: Bool, maximumBytes: UInt64? = nil) throws {

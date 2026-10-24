@@ -18,7 +18,7 @@ struct TransferView: View {
         NavigationStack {
             Form {
                 Section("本地 Linux 文件") {
-                    Text(UserDefaults.standard.bool(forKey:"rootfsFileProviderAvailable") ? "文件 App 中可浏览 Trames › Alpine 的 rootfs（只读）。" : "当前签名未提供文件共享容器，可继续使用这里的导入和导出。")
+                    Text(UserDefaults.standard.bool(forKey:"rootfsFileProviderAvailable") ? "可在文件 App 中浏览 Trames › Alpine。编辑现有普通文件后，回到 Trames 时写回；待写回副本可在「待写回的编辑」中另存。" : "当前签名未提供文件共享容器，可继续使用这里的导入和导出。")
                         .font(.caption).foregroundStyle(.secondary)
                     TextField("文件路径", text: $path).textInputAutocapitalization(.never).autocorrectionDisabled()
                     if let selected { Text(selected.lastPathComponent) }

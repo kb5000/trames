@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #![deny(unsafe_op_in_unsafe_fn)]
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::{
     collections::BTreeMap,
     fs::{self, File, OpenOptions},
-    io::{self, Read, Write},
+    io::{self, Read, Seek, Write},
     path::PathBuf,
     sync::{
         atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
@@ -50,6 +51,9 @@ pub struct Options {
     pub multiple_terminals: bool,
     pub vulkan_icd: Option<PathBuf>,
     pub timezone: Option<HostTimezone>,
+    #[serde(default)]
+    pub initially_paused: bool,
+    pub store_owner_lock: Option<PathBuf>,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -65,18 +69,8 @@ pub fn install(options: Options) -> Result<(), String> {
     if !options.store.is_absolute() || options.store.exists() {
         return Err("installation requires an absent absolute staging directory".into());
     }
-    let archive = options.rootfs.ok_or("rootfs archive required")?;
-    let mut vfs = Vfs::open_disk(
-        &options.store,
-        DiskOptions {
-            volume_space: Some(VolumeSpace {
-                total_bytes: options.volume_total,
-                available_bytes: options.volume_available,
-            }),
-            ..DiskOptions::default()
-        },
-    )
-    .map_err(|e| e.to_string())?;
+    let archive = options.rootfs.as_ref().ok_or("rootfs archive required")?;
+    let mut vfs = open_store(&options)?;
     trames_distro::install_alpine(
         &mut File::open(archive).map_err(|e| e.to_string())?,
         &mut vfs,
@@ -150,10 +144,18 @@ pub struct TransferOptions {
     pub maximum_bytes: Option<u64>,
     #[serde(default)]
     pub replace: bool,
+    pub expected: Option<TransferVersion>,
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TransferVersion {
+    pub inode: u64,
+    pub sha256: String,
+    pub replacement_sha256: String,
 }
 struct Transfer {
     options: TransferOptions,
-    result: mpsc::SyncSender<Result<(), String>>,
+    result: mpsc::SyncSender<Result<u64, String>>,
     cancelled: Arc<AtomicBool>,
 }
 struct TransferTicket {
@@ -176,6 +178,10 @@ impl Session {
                 .is_some_and(|p| !p.is_absolute() || p.as_os_str().len() > 4096)
             || options
                 .musl_libc
+                .as_ref()
+                .is_some_and(|p| !p.is_absolute() || p.as_os_str().len() > 4096)
+            || options
+                .store_owner_lock
                 .as_ref()
                 .is_some_and(|p| !p.is_absolute() || p.as_os_str().len() > 4096)
             || options.rows == 0
@@ -224,7 +230,7 @@ impl Session {
                 },
             }),
             cancelled: AtomicBool::new(false),
-            paused: AtomicBool::new(false),
+            paused: AtomicBool::new(options.initially_paused),
             multiple_terminals: options.multiple_terminals,
             next_terminal: AtomicU64::new(2),
             commands,
@@ -304,7 +310,7 @@ impl Session {
         flag.cancelled.store(true, Ordering::Release);
         Ok(())
     }
-    pub fn transfer(&self, options: TransferOptions) -> Result<(), String> {
+    pub fn transfer(&self, options: TransferOptions) -> Result<u64, String> {
         let token = options.token;
         let flag = if token == 0 {
             Arc::new(AtomicBool::new(false))
@@ -330,7 +336,7 @@ impl Session {
         &self,
         options: TransferOptions,
         cancelled: Arc<AtomicBool>,
-    ) -> Result<(), String> {
+    ) -> Result<u64, String> {
         if cancelled.load(Ordering::Acquire) {
             return Err("transfer cancelled".into());
         }
@@ -440,23 +446,30 @@ fn prepare_guest_defaults(vfs: &mut Vfs, network: &str) -> Result<(), String> {
     }
     Ok(())
 }
+fn open_store(options: &Options) -> Result<Vfs, String> {
+    let disk = DiskOptions {
+        volume_space: Some(VolumeSpace {
+            total_bytes: options.volume_total,
+            available_bytes: options.volume_available,
+        }),
+        ..DiskOptions::default()
+    };
+    match &options.store_owner_lock {
+        Some(path) if path.is_absolute() && path.as_os_str().len() <= 4096 => {
+            Vfs::open_disk_with_owner_lock(&options.store, disk, path)
+        }
+        Some(_) => return Err("invalid native store owner lock".into()),
+        None => Vfs::open_disk(&options.store, disk),
+    }
+    .map_err(|e| e.to_string())
+}
 fn run(
     options: Options,
     session: Arc<Session>,
     commands: mpsc::Receiver<Command>,
 ) -> Result<u8, String> {
     let guest_memory_limits = memory_limits(&options)?;
-    let mut vfs = Vfs::open_disk(
-        &options.store,
-        DiskOptions {
-            volume_space: Some(VolumeSpace {
-                total_bytes: options.volume_total,
-                available_bytes: options.volume_available,
-            }),
-            ..DiskOptions::default()
-        },
-    )
-    .map_err(|e| e.to_string())?;
+    let mut vfs = open_store(&options)?;
     if let Some(budget) = options.budget_bytes {
         let mut limits = trames_vfs::StorageLimits::disk();
         limits.file_bytes = budget;
@@ -641,6 +654,22 @@ struct Adapter {
     terminals: Option<crate::terminals::NativeTerminals>,
 }
 impl Adapter {
+    fn command(&mut self, vfs: &mut Vfs, command: Command) {
+        match command {
+            Command::Transfer(command) => {
+                let result = self.transfer(vfs, command.options, &command.cancelled);
+                self.snapshot(vfs);
+                let _ = command.result.send(result);
+            }
+            Command::Timezone(timezone, response) => {
+                let result =
+                    trames_distro::synchronize_timezone(vfs, &timezone.identifier, &timezone.data)
+                        .map_err(|e| e.to_string());
+                self.snapshot(vfs);
+                let _ = response.send(result);
+            }
+        }
+    }
     fn snapshot(&self, vfs: &Vfs) {
         let capacity = vfs.capacity();
         let mut b = self
@@ -659,7 +688,7 @@ impl Adapter {
         vfs: &mut Vfs,
         o: TransferOptions,
         cancelled: &AtomicBool,
-    ) -> Result<(), String> {
+    ) -> Result<u64, String> {
         if cancelled.load(Ordering::Acquire) || self.session.cancelled.load(Ordering::Acquire) {
             return Err("transfer cancelled".into());
         }
@@ -691,15 +720,23 @@ impl Adapter {
             if result.is_err() {
                 let _ = fs::remove_file(o.host);
             }
-            result.map(|_| ())
+            result.map(|_| 0)
         } else {
-            let file = File::open(o.host).map_err(|e| e.to_string())?;
+            let mut file = File::open(o.host).map_err(|e| e.to_string())?;
             let metadata = file.metadata().map_err(|e| e.to_string())?;
             if !metadata.is_file()
                 || o.maximum_bytes
                     .is_some_and(|maximum| metadata.len() > maximum)
             {
                 return Err("source is not a regular file or exceeds transfer size limit".into());
+            }
+            if let Some(expected) = &o.expected {
+                if !o.replace {
+                    return Err("conditional transfer requires replacement".into());
+                }
+                if check_edit_version(vfs, o.guest.as_bytes(), &mut file, expected)? {
+                    return file_inode(vfs, o.guest.as_bytes()); // Retry after a completed commit.
+                }
             }
             let mut reader = CancelReader {
                 file,
@@ -712,10 +749,82 @@ impl Adapter {
             } else {
                 vfs.import_reader(o.guest.as_bytes(), &mut reader, false)
             })
-            .map(|_| ())
-            .map_err(|e| e.to_string())
+            .map_err(|e| e.to_string())?;
+            file_inode(vfs, o.guest.as_bytes())
         }
     }
+}
+fn file_inode(vfs: &Vfs, path: &[u8]) -> Result<u64, String> {
+    let stat = vfs
+        .stat_at_flags(trames_vfs::AT_FDCWD, path, true)
+        .map_err(|e| e.to_string())?;
+    Ok(u64::from_le_bytes(stat[8..16].try_into().unwrap()))
+}
+/// Cold, explicit editor commit. The coordinator owns the VFS throughout the
+/// comparison and atomic replacement; ordinary guest I/O gains no checks.
+fn check_edit_version(
+    vfs: &Vfs,
+    path: &[u8],
+    replacement: &mut File,
+    expected: &TransferVersion,
+) -> Result<bool, String> {
+    if [
+        expected.sha256.as_str(),
+        expected.replacement_sha256.as_str(),
+    ]
+    .iter()
+    .any(|value| value.len() != 64 || !value.bytes().all(|b| b.is_ascii_hexdigit()))
+    {
+        return Err("invalid edit checksum".into());
+    }
+    let mut source = Sha256::new();
+    let mut buffer = [0; 65536];
+    loop {
+        let count = replacement.read(&mut buffer).map_err(|e| e.to_string())?;
+        if count == 0 {
+            break;
+        }
+        source.update(&buffer[..count]);
+    }
+    replacement.rewind().map_err(|e| e.to_string())?;
+    if format!("{:x}", source.finalize()) != expected.replacement_sha256 {
+        return Err("saved edit checksum mismatch; copy retained".into());
+    }
+    let stat = vfs
+        .stat_at_flags(trames_vfs::AT_FDCWD, path, true)
+        .map_err(|e| e.to_string())?;
+    let root = vfs
+        .stat_at(trames_vfs::AT_FDCWD, b"/")
+        .map_err(|e| e.to_string())?;
+    if stat[..8] != root[..8] {
+        return Err("edited path is covered by another filesystem; copy retained".into());
+    }
+    if u32::from_le_bytes(stat[16..20].try_into().unwrap()) & 0o170000 != 0o100000 {
+        return Err("edited Linux path is no longer a regular file; copy retained".into());
+    }
+    struct HashWriter(Sha256);
+    impl Write for HashWriter {
+        fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+            self.0.update(bytes);
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+    let mut current = HashWriter(Sha256::new());
+    vfs.export_writer(path, &mut current)
+        .map_err(|e| e.to_string())?;
+    let current = format!("{:x}", current.0.finalize());
+    if current == expected.replacement_sha256 {
+        return Ok(true);
+    }
+    if u64::from_le_bytes(stat[8..16].try_into().unwrap()) != expected.inode
+        || current != expected.sha256
+    {
+        return Err("Linux file changed since it was opened; edited copy retained".into());
+    }
+    Ok(false)
 }
 struct CancelReader<'a> {
     file: File,
@@ -786,19 +895,7 @@ impl GuestOutput for Adapter {
                 .pump(&mut buffers);
         }
         if let Ok(command) = self.commands.try_recv() {
-            let (result, response) = match command {
-                Command::Transfer(command) => (
-                    self.transfer(vfs, command.options, &command.cancelled),
-                    command.result,
-                ),
-                Command::Timezone(timezone, response) => (
-                    trames_distro::synchronize_timezone(vfs, &timezone.identifier, &timezone.data)
-                        .map_err(|e| e.to_string()),
-                    response,
-                ),
-            };
-            self.snapshot(vfs);
-            let _ = response.send(result);
+            self.command(vfs, command);
         }
         if self.snapshot_at.elapsed() >= Duration::from_secs(1) {
             self.snapshot(vfs);
@@ -808,7 +905,11 @@ impl GuestOutput for Adapter {
             if self.session.cancelled.load(Ordering::Acquire) {
                 return Ok(false);
             }
-            std::thread::sleep(Duration::from_millis(10));
+            match self.commands.recv_timeout(Duration::from_millis(10)) {
+                Ok(command) => self.command(vfs, command),
+                Err(mpsc::RecvTimeoutError::Timeout) => {}
+                Err(mpsc::RecvTimeoutError::Disconnected) => return Ok(false),
+            }
         }
         Ok(true)
     }
@@ -1043,5 +1144,45 @@ mod memory_tests {
         custom["process_memory_budget_bytes"] = serde_json::json!(8usize << 30);
         let options: Options = serde_json::from_value(custom).unwrap();
         assert!(Session::start(options).is_err());
+    }
+    #[test]
+    fn fileprovider_commit_detects_same_inode_edits_and_retries_completed_saves() {
+        use std::io::Cursor;
+        let mut vfs = Vfs::default();
+        vfs.import_reader(b"/edit.txt", &mut Cursor::new(b"old"), false)
+            .unwrap();
+        let stat = vfs.stat_at(trames_vfs::AT_FDCWD, b"/edit.txt").unwrap();
+        let path = std::env::temp_dir().join(format!(
+            "trames-edit-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::write(&path, b"new").unwrap();
+        let mut file = File::open(&path).unwrap();
+        let expected = TransferVersion {
+            inode: u64::from_le_bytes(stat[8..16].try_into().unwrap()),
+            sha256: format!("{:x}", Sha256::digest(b"old")),
+            replacement_sha256: format!("{:x}", Sha256::digest(b"new")),
+        };
+        assert!(!check_edit_version(&vfs, b"/edit.txt", &mut file, &expected).unwrap());
+        let fd = vfs
+            .open_at(trames_vfs::AT_FDCWD, b"/edit.txt", 1 | 0x200, 0)
+            .unwrap();
+        vfs.write(fd, b"bad").unwrap();
+        vfs.close(fd).unwrap();
+        assert!(check_edit_version(&vfs, b"/edit.txt", &mut file, &expected)
+            .unwrap_err()
+            .contains("changed"));
+        vfs.import_reader_replace(b"/edit.txt", &mut Cursor::new(b"new"))
+            .unwrap();
+        assert!(check_edit_version(&vfs, b"/edit.txt", &mut file, &expected).unwrap());
+        fs::write(&path, b"tampered").unwrap();
+        assert!(check_edit_version(&vfs, b"/edit.txt", &mut file, &expected)
+            .unwrap_err()
+            .contains("checksum"));
+        fs::remove_file(path).unwrap();
     }
 }
