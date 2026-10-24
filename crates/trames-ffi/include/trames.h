@@ -58,6 +58,13 @@ int32_t trames_session_timezone(uint64_t handle, const uint8_t *json, uint32_t l
 uint64_t trames_session_transfer_begin(uint64_t handle);
 int32_t trames_session_transfer_cancel(uint64_t handle, uint64_t token);
 int32_t trames_session_transfer(uint64_t handle, const uint8_t *json, uint32_t length);
+/* Conditional editor replacement, including expected inode/base and replacement
+ * SHA-256. Returns committed inode (also on an idempotent retry), or 0 on error.
+ * Can commit while initially_paused/paused, before guest execution resumes. */
+uint64_t trames_session_commit_edit(uint64_t handle, const uint8_t *json, uint32_t length);
+/* Native iOS embedding may pass store_owner_lock in open/install/reset JSON.
+ * Every operation on that store must use the same app-private absolute lock
+ * path. Shared-container file locks cannot survive iOS app suspension. */
 /* Bridge v1 NDJSON, max 32768 bytes/frame, 16 connections, 32 native requests
  * per session (8 per connection), 120 second consent deadline. Poll returns
  * 0 for no request; capacity errors do not claim it. Native effects require

@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import XCTest
+#if canImport(Darwin)
+import Darwin
+#endif
 @testable import TramesKit
 final class BridgeTests: XCTestCase {
     func testTicketPrecisionAndBoundedParameterValidation() throws {
@@ -40,6 +43,29 @@ final class BridgeTests: XCTestCase {
         _ = access.register { count.increment() }; XCTAssertEqual(count.value,2)
     }
     #if canImport(Darwin)
+    func testLargeFilesStagingUsesBoundedMemory() async throws {
+        guard let count=Int(ProcessInfo.processInfo.environment["TRAMES_FILEPROVIDER_LARGE_MIB"] ?? ""),count>=128,count<=4096 else {
+            throw XCTSkip("Set TRAMES_FILEPROVIDER_LARGE_MIB=256 for the large Files import probe")
+        }
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at:root,withIntermediateDirectories:true)
+        defer {try? FileManager.default.removeItem(at:root)}
+        let source=root.appendingPathComponent("source"),destination=root.appendingPathComponent("copy")
+        FileManager.default.createFile(atPath:source.path,contents:nil)
+        let writer=try FileHandle(forWritingTo:source),chunk=Data(repeating:37,count:1048576)
+        for _ in 0..<count {try writer.write(contentsOf:chunk)}
+        try writer.close()
+        var before=rusage(),after=rusage();getrusage(RUSAGE_SELF,&before)
+        try await ScopedFiles.stage(selected:source,destination:destination)
+        getrusage(RUSAGE_SELF,&after)
+        XCTAssertEqual(try destination.resourceValues(forKeys:[.fileSizeKey]).fileSize,count*1048576)
+        let reader=try FileHandle(forReadingFrom:destination);defer {try? reader.close()}
+        try reader.seek(toOffset:UInt64(count*1048576-65536))
+        XCTAssertEqual(try reader.read(upToCount:65536),Data(repeating:37,count:65536))
+        let growth=max(0,after.ru_maxrss-before.ru_maxrss)
+        print("Large Files import: \(count) MiB, peak RSS growth \(Double(growth)/1048576) MiB")
+        XCTAssertLessThan(growth,64*1048576,"Files staging must release each temporary data chunk")
+    }
     func testCoordinatedCopiesAreExclusiveBoundedAndRevocable() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)

@@ -63,10 +63,15 @@ public enum ScopedFiles {
         defer { try? output.close() }
         do {
             var count: UInt64 = 0
-            while let data = try input.read(upToCount: 65536), !data.isEmpty {
-                try cancellation.check(); try authorization?.check()
-                guard UInt64(data.count) <= maximumBytes - count else { throw BridgeFailure(code: "too_large", message: "Files transfer exceeds its size limit") }
-                count += UInt64(data.count); try output.write(contentsOf: data)
+            while true {
+                let copied=try autoreleasepool {
+                    try cancellation.check(); try authorization?.check()
+                    let data=try input.read(upToCount:65536) ?? Data()
+                    guard UInt64(data.count)<=maximumBytes-count else {throw BridgeFailure(code:"too_large",message:"Files transfer exceeds its size limit")}
+                    try output.write(contentsOf:data);return data.count
+                }
+                if copied==0 {break}
+                count+=UInt64(copied)
             }
             try cancellation.check(); try authorization?.check()
         } catch { try? FileManager.default.removeItem(at: destination); throw error }

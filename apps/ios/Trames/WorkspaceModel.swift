@@ -38,6 +38,10 @@ final class WorkspaceModel: ObservableObject {
         }
         #endif
         guard prepareEnvironment else { return }
+        FileProviderService.observeSaves { [weak self] in
+            guard let self,self.appActive else {return}
+            self.localOwner?.pause(false)
+        }
         do {
             let environment = try EnvironmentStore(); self.environment = environment
             directories = try ScopedDirectories(file: environment.authorizationRoot.appendingPathComponent("folder-grants.json"))
@@ -59,6 +63,7 @@ final class WorkspaceModel: ObservableObject {
         return session(for:id)?.waylandWindows.first { $0.id == window }
     }
     func add(_ session: TerminalSession) {
+        session.onFileProviderError = { [weak self] message in self?.error=message }
         if session.isLocal,session.environmentOwner == nil,localOwner == nil {localOwner=session;terminalSequence=max(1,terminalSequence)}
         session.terminal.keyboardVisibility = { [weak self, weak session] in
             guard let self, let session else { return false }
