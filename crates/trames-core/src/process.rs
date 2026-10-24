@@ -229,11 +229,14 @@ impl Process {
         else {
             return false;
         };
-        !self.linux.trace
-            && self.seccomp.mode() == 0
-            && trames_linux::DirectSyscalls::new(self.linux.vfs.direct_descriptors())
-                .with_network(self.linux.vfs.direct_network())
-                .supports_call(number, args)
+        if self.linux.trace || self.seccomp.mode() != 0 {
+            return false;
+        }
+        // Most retained waits are poll/epoll, pipes or Unix sockets. Their
+        // eligibility never depends on scanning every native TCP socket.
+        trames_linux::DirectSyscalls::new(self.linux.vfs.direct_descriptors())
+            .supports_call(number, args)
+            || matches!(number, 63..=66) && self.linux.vfs.direct_tcp_fd(args[0] as u32).is_some()
     }
 
     /// Preserve the complete OFD before owner-side close/dup can resume.
@@ -3681,6 +3684,7 @@ impl Kernel {
         let epoch = crate::run_queue::Epoch::new(control.clone());
         let mut file_epoch = trames_vfs::FileEpoch::default();
         let mut uring_epoch = trames_linux::UringEpoch::default();
+        let mut network_epoch = trames_vfs::NetworkEpoch::default();
         let began = Instant::now();
         for (id, _, view) in views {
             let p = &self.processes[&id];
@@ -3746,7 +3750,7 @@ impl Kernel {
                             &direct_files,
                             &retained_files,
                         ))
-                        .with_network(p.linux.vfs.direct_network())
+                        .with_network(network_epoch.capture(&p.linux.vfs))
                         .with_clock(self.started)
                         .with_terminal(trames_vfs::TerminalAccess {
                             session: p.session,
@@ -3810,6 +3814,8 @@ impl Kernel {
             }
             epoch.add(job);
         }
+        // No cached connection/policy decision survives into guest execution.
+        drop(network_epoch);
         epoch.assign(&chosen);
         for &(_, slot) in &chosen {
             self.workers

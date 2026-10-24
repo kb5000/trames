@@ -109,11 +109,48 @@ same five tests. A retry failed the cohort wait/wake/yield assertion in native
 workspace tests; the unmodified baseline also reproduces that assertion locally
 in 8 of 100 repeated native ARM runs under concurrent load. These checks remain
 failures, not waived passes. [Apple memory/ABI CI](https://github.com/kb5000/trames/actions/runs/40008374910)
-passes; the remaining Apple build is still running at this update. The PR stays
-draft while complete Firefox acceptance and CI follow-up remain open.
+passes. The Apple app job later stopped before simulator linking because its
+downloaded Vulkan payload lacked the expected ICD, manifest and license files.
+Its native tests passed; simulator/device packaging did not complete. The PR
+stays draft while complete Firefox acceptance and CI follow-up remain open.
 
 Device identifiers and original logs, screenshots, stacks and mapping dumps
 remain local.
+
+## Physical startup progress and repeated TCP snapshots
+
+The next physical investigation distinguishes slow execution from a global
+deadlock. Guest process/thread lists and retired instruction counters continue
+to grow, including socket and content processes, while temporal samples show
+workers executing the interpreter. Sleeping futex and I/O tasks are also present;
+their existence alone does not identify a deadlock. The browser still has not
+submitted a visible window in this diagnostic run.
+
+Across 32 debugger-assisted samples, coordinator preparation repeatedly appears
+alongside real worker execution. Four samples stop in host `getpeername` while
+constructing TCP capabilities. Eligibility checks for unrelated poll/Unix waits
+scan native sockets, and dispatch rebuilds the same native TCP snapshot for
+threads sharing an unchanged FD table. This is concrete redundant preparation
+work, not proof that all remaining Firefox delay has the same cause. Debugger
+pauses and different profile/cache states prevent a startup speedup claim.
+
+Worker eligibility now checks ordinary retained resources first, inspecting only
+the requested FD when native TCP byte I/O needs a capability. Dispatch shares
+one TCP snapshot per descriptor identity during its stopped preparation phase.
+The cache retains that identity to prevent pointer reuse and is discarded before
+workers start. Every new cohort rechecks connection, timeout and firewall state,
+including changes that do not alter FD membership. Existing weak socket
+capabilities, accepted-operation leases and synchronization remain unchanged.
+No lock, barrier, guest preference, refresh rate or sandbox adjustment is added.
+
+Local Apple ARM64 validation passes 171 Core tests (two manual benchmarks
+ignored), both TCP capability tests, and strict Clippy for the affected Core/VFS
+crates on macOS and iOS. The TCP regression checks shared capture reuse, fresh
+connection discovery without FD mutation, invalid descriptors and last-close
+behavior. Dependency-wide macOS linting additionally encounters unchanged
+`needless_return` warnings in `trames-native`; the scoped checks use `--no-deps`.
+The signed iOS app builds and installs successfully. Physical retest results
+follow after observation; this is not yet Firefox startup or GPU acceptance.
 
 ## Original mousepad X11 save dialog
 
