@@ -11,11 +11,13 @@ actor EnvironmentStore {
     }
     let root: URL
     let authorizationRoot: URL
+    private let ownerLock: URL
     private var generation: UInt64 = 0
     private var resetting = false
     init() throws {
         let privateRoot = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true).appendingPathComponent("Trames", isDirectory: true)
         authorizationRoot=privateRoot
+        ownerLock=privateRoot.appendingPathComponent("environment-owner.lock")
         try FileManager.default.createDirectory(at:privateRoot,withIntermediateDirectories:true)
         root = try RootfsLocations.prepare(privateRoot:privateRoot,sharedRoot:RootfsLocations.sharedRoot)
         UserDefaults.standard.set(root==RootfsLocations.sharedRoot,forKey:"rootfsFileProviderAvailable")
@@ -40,7 +42,7 @@ actor EnvironmentStore {
             let staging = root.appendingPathComponent("install-\(UUID().uuidString)", isDirectory: true)
             do {
                 try await Task.detached(priority: .userInitiated) {
-                    try LocalSession.install(store: staging, rootfs: download, total: UInt64(total), available: UInt64(available), muslLibc: musl)
+                    try LocalSession.install(store: staging, rootfs: download, total: UInt64(total), available: UInt64(available), muslLibc: musl, storeOwnerLock: self.ownerLock)
                 }.value
                 try Task.checkCancellation()
                 guard generation == startedGeneration && !resetting else { throw CancellationError() }
@@ -49,12 +51,12 @@ actor EnvironmentStore {
         }
         let icd = vulkan ? Bundle.main.url(forResource: "libtrames_vulkan_icd", withExtension: "so", subdirectory: "GuestVulkan") : nil
         if vulkan, icd == nil { throw TramesError.message("Missing bundled Vulkan compute driver") }
-        return try LocalSession(store: active, rootfs: nil, total: UInt64(total), available: UInt64(available), useVolumeBudget: useVolumeBudget, muslLibc: musl, pureAccelerator: true, vulkanICD: icd, memoryBudgetMiB: memoryBudgetMiB, processMemoryBudgetMiB: processMemoryBudgetMiB, multipleTerminals: true)
+        return try LocalSession(store: active, rootfs: nil, total: UInt64(total), available: UInt64(available), useVolumeBudget: useVolumeBudget, muslLibc: musl, pureAccelerator: true, vulkanICD: icd, memoryBudgetMiB: memoryBudgetMiB, processMemoryBudgetMiB: processMemoryBudgetMiB, multipleTerminals: true, initiallyPaused: true, storeOwnerLock: ownerLock)
     }
     func reset() async throws {
         guard !resetting else {throw TramesError.message("Linux 环境正在重置")}
         resetting=true; generation &+= 1
         defer {resetting=false}
-        try await LocalSession.reset(store:root.appendingPathComponent("environment",isDirectory:true))
+        try await LocalSession.reset(store:root.appendingPathComponent("environment",isDirectory:true),storeOwnerLock:ownerLock)
     }
 }

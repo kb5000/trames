@@ -134,6 +134,7 @@ pub unsafe extern "C" fn trames_environment_reset(pointer: *const u8, length: u3
     #[serde(deny_unknown_fields)]
     struct Reset {
         store: std::path::PathBuf,
+        store_owner_lock: Option<std::path::PathBuf>,
     }
     boundary(|| {
         let result = (|| {
@@ -143,7 +144,14 @@ pub unsafe extern "C" fn trames_environment_reset(pointer: *const u8, length: u3
             if !options.store.is_absolute() || options.store.as_os_str().len() > 4096 {
                 return Err("invalid store path".into());
             }
-            match trames_vfs::Vfs::reset_disk(options.store) {
+            let result = match options.store_owner_lock {
+                Some(path) if path.is_absolute() && path.as_os_str().len() <= 4096 => {
+                    trames_vfs::Vfs::reset_disk_with_owner_lock(options.store, &path)
+                }
+                Some(_) => return Err("invalid native store owner lock".into()),
+                None => trames_vfs::Vfs::reset_disk(options.store),
+            };
+            match result {
                 Ok(()) => Ok(0),
                 Err(trames_vfs::Errno(16)) => Ok(1),
                 Err(e) => Err(e.to_string()),
@@ -538,6 +546,36 @@ pub unsafe extern "C" fn trames_session_transfer(
         })();
         result.map(|_| 0).unwrap_or_else(error)
     })
+}
+/// Conditional foreground editor commit; returns the committed inode, or zero.
+/// # Safety
+/// Same input buffer contract and native host-path authorization as transfer.
+#[no_mangle]
+pub unsafe extern "C" fn trames_session_commit_edit(
+    handle: u64,
+    pointer: *const u8,
+    length: u32,
+) -> u64 {
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let config: TransferOptions =
+            serde_json::from_slice(unsafe { bytes(pointer, length) }.map_err(str::to_string)?)
+                .map_err(|e| e.to_string())?;
+        if config.expected.is_none() || config.export || !config.replace {
+            return Err("editor commit requires a conditional replacement".to_string());
+        }
+        session(handle).map_err(str::to_string)?.transfer(config)
+    }));
+    match result {
+        Ok(Ok(inode)) => inode,
+        Ok(Err(e)) => {
+            error(e);
+            0
+        }
+        Err(_) => {
+            error("embedding ABI panicked");
+            0
+        }
+    }
 }
 #[no_mangle]
 pub extern "C" fn trames_session_close(handle: u64) -> i32 {

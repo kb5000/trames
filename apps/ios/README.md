@@ -58,10 +58,55 @@ its library by SDK; no developer team or credential is committed to the repo.
 
 ### File Provider signing and shared storage
 
-The app includes a read-only File Provider extension. In Files, open the app's
-location, then Alpine, to browse directories and open or export regular files.
-Editing, renaming, deletion and write-back are not implemented. Symbolic links
-and special Linux nodes are visible but cannot be opened as regular files.
+The app includes a File Provider extension. In Files, open the app's location,
+then Alpine, to browse directories and open or export regular files. Editors
+that support saving in place can modify existing regular files with UTF-8 paths.
+Creating files, renaming and deletion are not implemented. Symbolic links and
+special Linux nodes are visible but cannot be opened as regular files.
+
+Edits are deferred: the extension streams an immutable saved copy into the App
+Group journal, and Trames commits it before guest execution resumes on the next
+foreground activation or initial launch. If staging finishes after the app has
+already returned to the foreground, a Darwin notification triggers replay; an
+in-flight replay coalesces later save events before releasing the paused guest.
+The extension never opens a writable
+VFS. Repeated saves coalesce per document. A conditional commit compares the
+original inode and SHA-256; stale edits, quota failures and interrupted commits
+retain their saved copy. Files exposes these copies under `待写回的编辑` (Pending
+Edits) for export, and Trames reports replay failures. Document identifiers stay
+stable across atomic content replacement. An idempotent commit receipt allows
+recovery when the app exits after writing but before acknowledging the journal.
+
+There is no new guest instruction/I/O hook, polling service or worker thread.
+Replay is driven by foreground activation, using the existing VFS owner while
+its guest is paused. Actual saves still cost streaming copies, SHA-256 checks,
+temporary disk space and the VFS's existing atomic namespace checkpoints; large
+edits can delay resumption. Copies use 64 KiB buffers and drain autoreleased
+Foundation objects after each chunk, so large documents do not accumulate in
+extension memory. Ordinary Files import/export staging uses the same chunk
+lifetime discipline. This isolates the steady-state runtime; saving still costs
+I/O and latency.
+
+Large transfers remain streamed; they are not loaded into a single `Data`/`Vec`.
+Disk usage is proportional to the file: alongside the original guest object,
+there can be a provider cache, a pending payload and a replacement guest object.
+Repeated saves briefly retain the previous payload too, and existing Linux open
+handles can retain an old inode. Allow several file-sized copies of free space.
+Quota/space failure during replay leaves the original guest path and pending edit
+intact; staging failure preserves the editor's cache and reports a provider error.
+
+For the explicit large-file probes, set `TRAMES_FILEPROVIDER_LARGE_MIB=256` when
+running `RootfsEditStoreTests` and
+`BridgeTests.testLargeFilesStagingUsesBoundedMemory`, and run
+`python3 tests/integration/fileprovider-writeback.py --library <ffi-library> --store <disposable-alpine-store> --large-mib 512`.
+The ABI probe copies its input store, checks a conditional replacement and a
+checksum-verified export while paused, then resumes and checks guest readback.
+These probes measure host peak-RSS growth, not iPad throughput. On native macOS,
+the 256 MiB journal probe grew by under 1 MiB after adding per-chunk autorelease
+pools (previously about 515 MiB); the 512 MiB FFI commit/export probe grew by about
+2 MiB. The ordinary 256 MiB Files-import staging probe also stayed under 1 MiB
+of peak-RSS growth. Run the size probes explicitly; large XCTest cases are skipped by
+default.
 
 For a developer build, keep the extension embedded, give it a bundle identifier
 prefixed by the containing app's identifier, and sign both targets with the same
@@ -74,23 +119,44 @@ unsigned packaging finalizer also validates matching app/extension metadata.
 On the first launch with a shared container, the app moves its existing Linux
 store into that container. If shared storage is unavailable, migration fails
 before moving the store, or both locations already contain stores, the app keeps
-using the private store. The provider does not open a second writable VFS; it
-reads the persisted rootfs manifest and materializes regular-file copies.
-Directory refresh notifications use the app's existing foreground polling loop;
-this does not keep the Linux interpreter running in the background.
+using the private store. Browsing reads the persisted rootfs manifest and
+materializes regular-file copies. Directory refresh notifications use the app's
+existing foreground polling loop; this does not keep the Linux interpreter
+running in the background. All native opens, installation and resets use the same
+app-private VFS owner lock; retaining a lock inside the shared App Group while
+iOS suspends the app causes a `0xdead10cc` termination. The extension never takes
+that lifetime lock. Only edited-document recovery copies enter the
+provider working set; the Linux rootfs is not indexed wholesale.
 
-Provider URL identity uses file-URL path components and checks the canonical
-filename. Do not use `standardizedFileURL` for placeholder containment: on Apple
+Provider URL identity uses file-URL path components, normalizes Darwin's system
+aliases (`/private/var` and `/var`, for example), and checks the canonical filename.
+Save callbacks can use a different alias from `documentStorageURL`. Do not use
+`standardizedFileURL` for placeholder containment: on Apple
 platforms it can remove `/private` from an existing storage directory while
 retaining it on an unmaterialized child. That difference rejected the provider's
-own URLs before placeholder creation. Three native ARM64 XCTest regressions cover
-identity before/after file creation, outside paths and canonical filenames.
+own URLs before placeholder creation. Native ARM64 XCTest regressions cover
+identity before/after file creation, system aliases, outside paths and canonical
+filenames.
+
+The provider's own coordinated reads use
+[`NSFileProviderManager.providerIdentifier`](https://developer.apple.com/documentation/fileprovider/nsfileprovidermanager/provideridentifier)
+as their purpose identifier, so staging an edit does not request another download
+over the just-saved bytes. Materialization also preserves modified cache content
+before a delayed `itemChanged` callback, including a revert of a pending save.
 
 Physical development checks on 2026-10-24 confirmed Personal Team provisioning of
 the app and extension with matching App Groups, wireless installation, reopening
 the retained rootfs in shared storage, Files directory browsing, and an observed
 directory updating after guest file creation and content-size changes. After the
 URL fix, Files Quick Look displayed the updated guest text through the provider.
+An independent temporary editor then used the system document picker and
+`NSFileCoordinator` to save in place. The saved copy existed in the journal while
+the Linux object still contained its original bytes; returning to Trames committed
+the edit, cleared the journal and showed the new text in the guest terminal.
+A second save of the same document also committed successfully. A 256 MiB
+coordinated save then produced a matching pending size/SHA-256, committed on
+foreground activation in the same surviving process, and passed an independent
+streamed checksum of the committed object plus guest `stat` size verification.
 These checks use a developer build; the broader device checklist remains in
 [issue #8](https://github.com/kb5000/trames/issues/8).
 

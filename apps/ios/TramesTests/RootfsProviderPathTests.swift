@@ -33,4 +33,14 @@ final class RootfsProviderPathTests:XCTestCase {
         XCTAssertFalse(RootfsProviderPath.sameLocation(expected,expected.deletingLastPathComponent().appendingPathComponent("other.txt")))
         XCTAssertFalse(RootfsProviderPath.sameLocation(expected,URL(fileURLWithPath:"/private/tmp/provider-other/encoded-id/文档.txt")))
     }
+    func testSaveCallbacksAcceptSystemAliasesWithoutBroadeningContainment() {
+        for prefix in ["var","tmp","etc"] {
+            let storage=URL(fileURLWithPath:"/private/\(prefix)/provider",isDirectory:true)
+            let callback=URL(fileURLWithPath:"/\(prefix)/provider/encoded-id/file.txt")
+            XCTAssertEqual(RootfsProviderPath.relativeComponents(of:callback,in:storage),["encoded-id","file.txt"])
+            XCTAssertTrue(RootfsProviderPath.sameLocation(storage.appendingPathComponent("encoded-id/file.txt"),callback))
+        }
+        XCTAssertNil(RootfsProviderPath.relativeComponents(of:URL(fileURLWithPath:"/custom/provider/id/file.txt"),in:URL(fileURLWithPath:"/private/custom/provider")))
+        XCTAssertFalse(RootfsProviderPath.sameLocation(URL(fileURLWithPath:"/tmp/provider/id/../file.txt"),URL(fileURLWithPath:"/tmp/provider/file.txt")))
+    }
 }
