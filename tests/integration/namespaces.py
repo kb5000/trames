@@ -28,6 +28,14 @@ with tempfile.TemporaryDirectory(prefix='trames-namespaces-') as folder:
             b'mount: pivot_root, mounted proc, old-root detach, parent root preserved: ok\n'), (cpus, result.returncode, result.stdout, result.stderr[-8000:])
         print(f'{cpus}-CPU guest mount namespace, tmpfs/bind/pivot_root and mount FD lifetime passed', flush=True)
     for cpus in ('1', '4'):
+        result = subprocess.run([RUNNER, '--storage', str(Path(folder)/('overlay-'+cpus)), '--cpus', cpus,
+            '--network', 'off', '--max-instructions', '1000000000',
+            '--exec-file', f"/overlay-lifetime={ROOT/'tests/fixtures/bin/overlay-lifetime'}", '--guest', '/overlay-lifetime'],
+            capture_output=True, timeout=90)
+        assert result.returncode == 0 and result.stdout == (
+            b'overlay lifetime: repeated namespace pivot and workdir reuse: ok\n'), (cpus, result.returncode, result.stdout, result.stderr[-8000:])
+        print(f'{cpus}-CPU guest repeated overlay pivot, namespace release and workdir reuse passed', flush=True)
+    for cpus in ('1', '4'):
         result = subprocess.run([RUNNER, '--storage', str(Path(folder)/('pid-'+cpus)), '--cpus', cpus,
             '--network', 'off', '--max-instructions', '1000000000',
             '--exec-file', f"/pid-namespaces={ROOT/'tests/fixtures/bin/pid-namespaces'}", '--guest', '/pid-namespaces'],

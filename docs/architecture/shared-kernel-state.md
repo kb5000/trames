@@ -322,3 +322,29 @@ EOF checks now arm their existing two-second timeout while connected, retaining
 the same EOF/lifetime assertions; both pass ten scoped repetitions. Identical
 guest mount-namespace, UTS/chroot and disk-storage candidates pass, reusing the
 unchanged baseline results. [Mount identity evidence](../validation/shared-mount-identity-summary.json).
+
+Overlay layers now retain actual mount resource identity without parent
+topology. FsHandle/Overlay and immutable devpts configuration are shared by
+composition, while namespace handles remain owner controls. Overlay mutable
+metadata uses its existing per-object borrow boundaries; no algorithm-wide
+lock or service thread is introduced. Mount-resource weak registration counts
+layer leases for quota/unmount decisions without retaining them. Namespace
+traversal keeps its separate weak owner-topology index.
+
+This fixes a reproduced pivot-root retention cycle: old-root ancestry reached
+the new overlay, whose layers previously retained that same old-root topology.
+The native final-release regression fails before the change and passes after.
+The identical guest ELF fails at the second overlay workdir reuse on the old
+baseline (EBUSY); the final candidate completes 24 fork/unshare/mount/pivot/exit
+rounds at each of 1/2/4 CPUs. The fixture is included in namespace integration
+acceptance. Native tests also verify real lower data remains readable after the
+owner exits and all filesystem/layer resources release on the final worker
+drop, plus busy unmount, detached topology and live quota identity.
+
+Scoped results: 295 VFS, 178 Core and 124 Linux cases pass, five manual cases
+ignored; strict Clippy, Release and original namespace/storage guest candidates
+pass. One test setup initially used an embedding import instead of mounted
+guest I/O; correcting that setup required only rerunning its failed case.
+This fixes an actual resource leak and establishes shared ownership; pathname
+OFD admission, mapping writer leases, detached-cache retirement and dynamic FD
+close/poll integration remain separate gates. [Overlay lifetime evidence](../validation/shared-overlay-lifetime-summary.json).

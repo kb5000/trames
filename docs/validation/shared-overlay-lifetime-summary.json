@@ -1,0 +1,103 @@
+{
+  "date": "2026-10-25",
+  "base_commit": "a5419a773d3ace5bb7db90491fe7c5f00ae4ef38",
+  "host": "native macOS Apple ARM64, 16 KiB host pages",
+  "scope": "Actual overlay/layer resource identity and pivot-root lifetime cycle; no pathname FD admission or worker close/replacement enabled.",
+  "source_sha256": {
+    "crates/trames-vfs/src/fs_data.rs": "681870a13deca75fb85c4f6c66b9b55c93a096f336807e44387bb8a87ac764b5",
+    "crates/trames-vfs/src/lib.rs": "a8f2d35eba2730d79a22839cdf0bfce8f5f52132276d4da47ffe42f3db9d95b7",
+    "crates/trames-vfs/src/mounts.rs": "6fc085c5c13194a855e1384708f4828ddeeb8ffff939b681b43bc02924da0bf0",
+    "crates/trames-vfs/src/overlay.rs": "7888a31861c07521f9b5712cf8ffef3ad3674f13bf128dd2c3e7fb58a73bfdc2",
+    "crates/trames-vfs/src/storage.rs": "97ec92e46cc0462428562e4ad2efbc2456e89cdb23e61844c3334b04826e746f",
+    "scripts/build-namespace-fixtures.sh": "4fcf65b60e231341cbfa2433bd6d9f6d99e712c09a7a8f9f26a5d9162a74fcb7",
+    "tests/integration/namespaces.py": "fb78ce24e2712e413f9c7166d8ca2ad29ed947202f01f0d31cbaf5fc36feefef",
+    "tests/fixtures/overlay-lifetime.c": "78bf0fcbc1d41144dc92b863271de52bede0d48557d2301b9c136728d9754e8c"
+  },
+  "native_pivot_regression": {
+    "before": "fails: overlay root survived its last owner",
+    "after": "passes: overlay and backing filesystem weak references expire"
+  },
+  "tests": {
+    "vfs": {
+      "passed": 295,
+      "ignored": 1,
+      "reuse": "294 final-production cases passed; the failed new layer test setup was corrected to use mounted guest I/O and its focused retry passed."
+    },
+    "core": {
+      "passed": 178,
+      "ignored": 3
+    },
+    "linux": {
+      "passed": 124,
+      "ignored": 1
+    },
+    "strict_clippy": "passed",
+    "release_build": "passed"
+  },
+  "guest_baseline": {
+    "label": "baseline",
+    "runner_sha256": "0a87d45840c5f3a54826d2b17cde4b96d726bb567c042cc2ad4f5d4e1a8a6ea0",
+    "elf_sha256": "a1d899654536021b6aa1ef71dfba7985d646381116359acd2121f804f8cba315",
+    "returncode": 1,
+    "stdout": "",
+    "stderr": "overlay workdir reuse: Resource busy\noverlay namespace failed at round 1, status=256\n"
+  },
+  "baseline_source": "4fdbf881f0699aa975a22194fcfe2068b2513251",
+  "guest_candidate": {
+    "runner_sha256": "bb5dd85c0274f4f038739d61a9c82bc4b8c9239b2795a48b04d8ca756766c39c",
+    "fixture_sha256": {
+      "overlay-lifetime": "a1d899654536021b6aa1ef71dfba7985d646381116359acd2121f804f8cba315",
+      "mount-namespaces": "725087a1d801890f177b11362ad0c4a1bdf6b34007bb98ebbf97bff0e835b69f",
+      "namespaces": "f1e8794644568bb0cf073ac63f2ba8ad9aa3d8af4149c77030429b04f4ff8b84",
+      "storage": "abe2f4b41e47726780dfa7d642235c23930da6a1bad002f56e25a91fa29148d5"
+    },
+    "cases": [
+      {
+        "fixture": "overlay-lifetime",
+        "cpus": 1,
+        "returncode": 0,
+        "stdout": "overlay lifetime: repeated namespace pivot and workdir reuse: ok\n"
+      },
+      {
+        "fixture": "overlay-lifetime",
+        "cpus": 2,
+        "returncode": 0,
+        "stdout": "overlay lifetime: repeated namespace pivot and workdir reuse: ok\n"
+      },
+      {
+        "fixture": "overlay-lifetime",
+        "cpus": 4,
+        "returncode": 0,
+        "stdout": "overlay lifetime: repeated namespace pivot and workdir reuse: ok\n"
+      },
+      {
+        "fixture": "mount-namespaces",
+        "cpus": 1,
+        "returncode": 0,
+        "stdout": "mount: namespace isolation, setns, tmpfs quota, bind identity/readonly/noexec, detached fd: ok\nmount: pivot_root, mounted proc, old-root detach, parent root preserved: ok\n"
+      },
+      {
+        "fixture": "namespaces",
+        "cpus": 1,
+        "returncode": 0,
+        "stdout": "UTS: fork sharing, clone/unshare isolation, namespace fd/stat/ioctl/setns/lifetime: ok\nchroot: independent fs root, absolute symlinks, dotdot, exec, privilege: ok\n"
+      },
+      {
+        "fixture": "storage",
+        "cpus": 1,
+        "returncode": 0,
+        "stdout": "large positioned IO and sparse zeros\nhard links permissions timestamps and open unlink\nrename replacement truncate and append offsets\nfork cwd and directory descriptor follow rename\ncapacity and sync\n"
+      }
+    ]
+  },
+  "guest_case_rounds": 24,
+  "fixture_registration": [
+    "scripts/build-namespace-fixtures.sh",
+    "tests/integration/namespaces.py"
+  ],
+  "limits": [
+    "Native Apple ARM64 and virtual guest evidence; no privileged host mount oracle.",
+    "Original namespace/storage baseline passes reused for identical source/ELFs.",
+    "No whole-Docker, physical-device or release acceptance claim."
+  ]
+}
