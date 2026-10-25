@@ -304,3 +304,21 @@ candidate. Three alternated mapped-byte CPU samples give whole-branch median
 ratios 1.000 (file) and 1.007 (memfd), without CPU pinning or a confidence
 interval. [The filesystem record](../validation/shared-filesystem-data-summary.json)
 binds the scoped results to sources, runners and identical guest ELFs.
+
+Mount metadata now separates resource identity from parent topology. Identity
+retains actual filesystem/root storage and owns relaxed mount flags, writer
+state and the PID lease. Parent changes publish retained shared metadata when
+the existing owner mutation guard ends; retirement occurs outside the shared
+parent lock. Namespace/devpts/overlay controls remain explicitly owner-only,
+and no pathname OFD admission has changed. Overlay layers must eventually hold
+identity without the parent's topology, to avoid a pivot-root cycle through a
+layer's old root. Detached-tree caches and writer resource leases also remain
+required work before enabling closes on workers.
+
+Validation passes 292 VFS cases including live remount flags, detach publication
+and final plain-filesystem/root release on a worker; Core 178 cases and Linux
+124 cases pass, plus strict Clippy and Release. The previously flaky Darwin TCP
+EOF checks now arm their existing two-second timeout while connected, retaining
+the same EOF/lifetime assertions; both pass ten scoped repetitions. Identical
+guest mount-namespace, UTS/chroot and disk-storage candidates pass, reusing the
+unchanged baseline results. [Mount identity evidence](../validation/shared-mount-identity-summary.json).

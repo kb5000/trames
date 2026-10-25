@@ -1,0 +1,56 @@
+{
+  "date": "2026-10-25",
+  "base_commit": "b44fff14f27a4cd01d3a6021a87d6466e9e9f730",
+  "host": "native Apple ARM64 macOS, 16 KiB pages",
+  "scope": "Shared mount identity and parent metadata only; complete owner control, overlay layer topology, quota/detached-tree lifecycle and pathname OFD admission remain open.",
+  "source_sha256": {
+    "crates/trames-vfs/src/fs_data.rs": "218a1f6c9102c1471b966cf80704769f7be8974f282f6c7f82a5bec8b4d2c95a",
+    "crates/trames-vfs/src/mounts.rs": "ba8c189c3edbe5ff880a51e6a28f21fe8044221322bf41cff6c0398a00d1deeb"
+  },
+  "tests": {
+    "vfs": {
+      "passed": 292,
+      "ignored": 1
+    },
+    "core": {
+      "passed": 178,
+      "ignored": 3
+    },
+    "linux": {
+      "passed": 124,
+      "ignored": 1,
+      "note": "123 unaffected cases passed; the failed post-teardown timeout setup case and its sibling passed after test-only setup timing fix. Full wait module 6 passed/1 manual ignored; both native lifetime cases passed ten repetitions."
+    },
+    "strict_clippy": "passed",
+    "release_build": "passed"
+  },
+  "guest_validation": {
+    "runner_sha256": "1ccb5cc725f2fde33945698cc69bd080295b67c2b98a6ce9fec6f7b834771697",
+    "cases": [
+      {
+        "fixture": "mount-namespaces",
+        "code": 0,
+        "stdout": "mount: namespace isolation, setns, tmpfs quota, bind identity/readonly/noexec, detached fd: ok\nmount: pivot_root, mounted proc, old-root detach, parent root preserved: ok\n",
+        "elf_sha256": "725087a1d801890f177b11362ad0c4a1bdf6b34007bb98ebbf97bff0e835b69f"
+      },
+      {
+        "fixture": "namespaces",
+        "code": 0,
+        "stdout": "UTS: fork sharing, clone/unshare isolation, namespace fd/stat/ioctl/setns/lifetime: ok\nchroot: independent fs root, absolute symlinks, dotdot, exec, privilege: ok\n",
+        "elf_sha256": "f1e8794644568bb0cf073ac63f2ba8ad9aa3d8af4149c77030429b04f4ff8b84"
+      },
+      {
+        "fixture": "storage",
+        "code": 0,
+        "stdout": "large positioned IO and sparse zeros\nhard links permissions timestamps and open unlink\nrename replacement truncate and append offsets\nfork cwd and directory descriptor follow rename\ncapacity and sync\n",
+        "elf_sha256": "abe2f4b41e47726780dfa7d642235c23930da6a1bad002f56e25a91fa29148d5"
+      }
+    ]
+  },
+  "baseline_reuse": "Identical ELFs and baseline runner from docs/validation/shared-filesystem-data-summary.json; baseline production and guest inputs unchanged.",
+  "limitations": [
+    "No FD admission or worker removal/replacement enabled.",
+    "Shared metadata alone does not prove complete resource lifetime.",
+    "No new performance or whole-release acceptance claim."
+  ]
+}
