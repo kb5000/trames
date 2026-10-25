@@ -422,9 +422,20 @@ mod tests {
             kernel.processes.insert(id, peer);
         }
         kernel.processes.insert(1, p);
-        assert!(kernel
-            .parallel_round(&mut trames_linux::CapturedOutput::default(), 100_000)
-            .unwrap());
+        // Host scheduling and instrumentation can end a round after just one
+        // syscall per task. Assert guest progress, not a host-time throughput.
+        for _ in 0..128 {
+            assert!(kernel
+                .parallel_round(&mut trames_linux::CapturedOutput::default(), 100_000)
+                .unwrap());
+            assert_eq!(
+                kernel.syscalls, kernel.worker_syscalls,
+                "identity queries must not checkpoint"
+            );
+            if kernel.worker_syscalls > 100 {
+                break;
+            }
+        }
         assert!(
             kernel.worker_syscalls > 100,
             "allowed calls must stay on their workers: worker={} owner={} instructions={} tasks={:?}",

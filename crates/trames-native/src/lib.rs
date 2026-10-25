@@ -61,10 +61,10 @@ pub fn first_byte(bytes: &[u8], byte: u8) -> Option<usize> {
             }
             offset += 16;
         }
-        return bytes[offset..]
+        bytes[offset..]
             .iter()
             .position(|&b| b == byte)
-            .map(|i| offset + i);
+            .map(|i| offset + i)
     }
     #[cfg(not(target_arch = "aarch64"))]
     let repeated = u64::from_ne_bytes([byte; 8]);
@@ -106,7 +106,7 @@ pub fn last_byte(bytes: &[u8], byte: u8) -> Option<usize> {
             }
             end -= 16;
         }
-        return bytes[..end].iter().rposition(|&b| b == byte);
+        bytes[..end].iter().rposition(|&b| b == byte)
     }
     #[cfg(not(target_arch = "aarch64"))]
     {

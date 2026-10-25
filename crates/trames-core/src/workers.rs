@@ -1083,7 +1083,7 @@ mod tests {
         ];
         let table = crate::futex::Futexes::default();
         let control = Arc::new(Control::new(1000));
-        let epoch = crate::run_queue::Epoch::new(control.clone());
+        let epoch = crate::run_queue::Epoch::unpreempted(control.clone());
         for (i, view) in views.into_iter().enumerate() {
             let mut cpu = Cpu::new(if i == 0 { 0x1000 } else { 0x2000 }, 0);
             let args = if i == 0 {
@@ -1177,7 +1177,7 @@ mod tests {
         assert!(unsafe { View::try_private_epoch(&mut [&mut first, &mut second]) });
         let table = crate::futex::Futexes::default();
         let control = Arc::new(Control::new(1000));
-        let epoch = crate::run_queue::Epoch::new(control.clone());
+        let epoch = crate::run_queue::Epoch::unpreempted(control.clone());
         for (pid, pc, op, value, view) in [(1, 0x1000, 128, 0, first), (2, 0x2000, 129, 1, second)]
         {
             let mut cpu = Cpu::new(pc, 0);
@@ -1280,7 +1280,7 @@ mod tests {
             // SAFETY: test owns every root/View; no owner byte access until drain.
             assert!(unsafe { View::try_private_epoch(&mut [&mut first, &mut second]) });
             let control = Arc::new(Control::new(100));
-            let epoch = crate::run_queue::Epoch::new(control.clone());
+            let epoch = crate::run_queue::Epoch::unpreempted(control.clone());
             for (pid, pc, fd, number, address, view) in [
                 (1, 0x1000, read, syscall, 0x3200, first),
                 (
@@ -1363,7 +1363,9 @@ mod tests {
         let (mut task, _memory) = direct_read_work(&vfs, ep);
         task.cpu.set_x(8, 22);
         task.cpu.set_x(2, 1);
-        task.cpu.set_x(3, 1);
+        // Expire only after the worker has actually parked. A 1 ms timeout
+        // can finish in start() under QEMU or sanitizer instrumentation.
+        task.cpu.set_x(3, 3_600_000);
         let control = task.control.clone();
         let epoch = crate::run_queue::Epoch::new(control.clone());
         // End at a cold syscall after the timeout, instead of a compute loop.
@@ -1381,6 +1383,7 @@ mod tests {
         let mut pool = Pool::new(1);
         pool.ensure(0).unwrap();
         pool.launch(0, epoch.clone()).unwrap();
+        epoch.expire_parked_io(1);
         assert!(matches!(
             pool.event_timeout(Duration::from_secs(5)).unwrap(),
             Some(Event::EpochStopped(0))

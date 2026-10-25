@@ -187,6 +187,8 @@ pub(super) struct Epoch {
     deadline_origin: Instant,
     next_deadline: AtomicU64,
     ready_slots: AtomicU64,
+    #[cfg(test)]
+    preemption: std::sync::atomic::AtomicBool,
     pub progress: AtomicU64,
 }
 impl Epoch {
@@ -200,6 +202,8 @@ impl Epoch {
             deadline_origin: Instant::now(),
             next_deadline: AtomicU64::new(u64::MAX),
             ready_slots: AtomicU64::new(0),
+            #[cfg(test)]
+            preemption: std::sync::atomic::AtomicBool::new(true),
             progress: AtomicU64::new(0),
         })
     }
@@ -241,10 +245,43 @@ impl Epoch {
         self.refresh_ready(q);
     }
     pub fn should_yield(&self, slot: usize, began: Instant, progressed: bool) -> bool {
+        // Handoff/retirement tests control scheduling explicitly; their result
+        // must not depend on whether instrumentation takes 250 microseconds.
+        #[cfg(test)]
+        if !self.preemption.load(Ordering::Relaxed) {
+            return self.deadline_due();
+        }
         self.deadline_due()
             || (progressed
                 && self.ready_slots.load(Ordering::Relaxed) & (1 << slot) != 0
                 && began.elapsed() >= Duration::from_micros(250))
+    }
+    #[cfg(test)]
+    pub fn unpreempted(control: Arc<Control>) -> Arc<Self> {
+        let epoch = Self::new(control);
+        epoch.preemption.store(false, Ordering::Relaxed);
+        epoch
+    }
+    #[cfg(test)]
+    pub fn expire_parked_io(&self, pid: u32) {
+        let until = Instant::now() + Duration::from_secs(5);
+        let mut q = self.queues.lock().unwrap();
+        while !q.parked.get(&pid).is_some_and(|job| job.io.is_some()) {
+            assert!(!self.control.stopped(), "cohort stopped before I/O park");
+            let left = until.saturating_duration_since(Instant::now());
+            assert!(!left.is_zero(), "I/O did not park");
+            q = self.changed.wait_timeout(q, left).unwrap().0;
+        }
+        let deadline = Instant::now();
+        q.parked
+            .get_mut(&pid)
+            .unwrap()
+            .io
+            .as_mut()
+            .unwrap()
+            .deadline = Some(deadline);
+        self.publish_deadline(Some(deadline));
+        self.notify();
     }
     /// Only before launch: every View is prepared/admitted before any CPU runs.
     pub fn add(self: &Arc<Self>, mut job: Box<Job>) {
@@ -588,6 +625,22 @@ impl trames_vfs::IoWake for Epoch {
 mod tests {
     use super::*;
     use trames_memory::{CpuMemory, Memory, Permissions, PAGE_SIZE};
+    #[test]
+    fn ready_peer_preempts_only_after_progress_and_quantum() {
+        let epoch = Epoch::new(Arc::new(Control::new(100)));
+        epoch.add(job(1, &epoch));
+        let now = Instant::now();
+        let old = now - Duration::from_secs(1);
+        assert!(!epoch.should_yield(0, old, false));
+        assert!(!epoch.should_yield(0, now + Duration::from_secs(1), true));
+        assert!(epoch.should_yield(0, old, true));
+        assert!(!epoch.should_yield(1, old, true));
+        let unpreempted = Epoch::unpreempted(Arc::new(Control::new(100)));
+        unpreempted.add(job(1, &unpreempted));
+        assert!(!unpreempted.should_yield(0, old, true));
+        unpreempted.publish_deadline(Some(old));
+        assert!(unpreempted.should_yield(0, old, true));
+    }
     fn job(pid: u32, epoch: &Arc<Epoch>) -> Box<Job> {
         let mut memory = Memory::default();
         memory.map(0x1000, PAGE_SIZE, Permissions::RW).unwrap();

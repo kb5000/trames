@@ -20,10 +20,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-10-16
-      - name: Check the five failing ARM worker cases on native Linux ARM64
+      - name: Check the ARM worker regression cases on native Linux ARM64
         run: |
           result=0
-          for case in allowed_filtered_identity_calls_continue_on_workers shared_futex_alias_requeue cohort_wait_wake_and_yield byte_resource_and_epoll_handoff epoll_timeout_reuses_pending; do
+          for case in allowed_filtered_identity_calls_continue_on_workers shared_futex_alias_requeue cohort_wait_wake_and_yield byte_resource_and_epoll_handoff epoll_timeout_reuses_pending ready_peer_preempts; do
             cargo test -p trames-core --lib --locked "$case" -- --nocapture || result=1
           done
           exit "$result"
@@ -44,7 +44,7 @@ jobs:
         run: |
           qemu-aarch64 --version
           result=0
-          for case in allowed_filtered_identity_calls_continue_on_workers shared_futex_alias_requeue cohort_wait_wake_and_yield byte_resource_and_epoll_handoff epoll_timeout_reuses_pending; do
+          for case in allowed_filtered_identity_calls_continue_on_workers shared_futex_alias_requeue cohort_wait_wake_and_yield byte_resource_and_epoll_handoff epoll_timeout_reuses_pending ready_peer_preempts; do
             cargo test -p trames-core --lib --target aarch64-unknown-linux-musl --locked "$case" -- --nocapture || result=1
           done
           exit "$result"
