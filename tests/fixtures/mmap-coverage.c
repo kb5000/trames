@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/file.h>
+#include <sys/inotify.h>
 #include <sys/sendfile.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
@@ -84,6 +86,29 @@ static void memfds(void){
  CHECK(fcntl(fd,F_ADD_SEALS,F_SEAL_SEAL)==0&&fcntl(fd,F_GET_SEALS)==15);
  CHECK(fcntl(fd,F_ADD_SEALS,0)==-1&&errno==EPERM);close(fd);
 }
+static void mapping_ofds(void){
+ for(int shared=0;shared<2;shared++){
+  int fd=open("mapped-ofd",O_CREAT|O_TRUNC|O_RDWR,0600);CHECK(fd>=0&&ftruncate(fd,P*4)==0);
+  int other=open("mapped-ofd",O_RDWR);CHECK(other>=0&&flock(fd,LOCK_EX|LOCK_NB)==0);
+  int notify=inotify_init1(IN_NONBLOCK|IN_CLOEXEC);CHECK(notify>=0);
+  int watch=inotify_add_watch(notify,"mapped-ofd",IN_CLOSE_WRITE);CHECK(watch>=0);
+  unsigned char *p=mmap(NULL,P*2,PROT_READ|PROT_WRITE,shared?MAP_SHARED:MAP_PRIVATE,fd,0);CHECK(p!=MAP_FAILED);
+  p[0]=7;CHECK(close(fd)==0);
+  CHECK(flock(other,LOCK_EX|LOCK_NB)==-1&&errno==EWOULDBLOCK);
+  char events[128];CHECK(read(notify,events,sizeof events)==-1&&errno==EAGAIN);
+  CHECK(madvise(p,P*2,MADV_DONTNEED)==0&&p[0]==(shared?7:0));
+  p=mremap(p,P*2,P*3,MREMAP_MAYMOVE);CHECK(p!=MAP_FAILED&&p[P*2]==0);
+  CHECK(mprotect(p,P*3,PROT_READ)==0);
+  CHECK(mmap(p,P,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANONYMOUS|MAP_FIXED,-1,0)==p);
+  CHECK(flock(other,LOCK_EX|LOCK_NB)==-1&&errno==EWOULDBLOCK);
+  CHECK(read(notify,events,sizeof events)==-1&&errno==EAGAIN);
+  CHECK(munmap(p+P,P*2)==0&&flock(other,LOCK_EX|LOCK_NB)==0);
+  CHECK(read(notify,events,sizeof events)==(ssize_t)sizeof(struct inotify_event));
+  struct inotify_event event;memcpy(&event,events,sizeof event);CHECK(event.wd==watch&&event.mask==IN_CLOSE_WRITE);
+  CHECK(read(notify,events,sizeof events)==-1&&errno==EAGAIN);
+  CHECK(munmap(p,P)==0&&close(notify)==0&&close(other)==0&&unlink("mapped-ofd")==0);
+ }
+}
 static void files(void){
  int a=open("source-file",O_CREAT|O_TRUNC|O_RDWR,0600);int b=open("dest-file",O_CREAT|O_TRUNC|O_RDWR,0600);CHECK(a>=0&&b>=0);
  CHECK(write(a,"abcdef",6)==6&&lseek(a,0,SEEK_SET)==0);
@@ -110,4 +135,4 @@ static void persistence(int write_it){
  if(write_it){CHECK(ftruncate(fd,P)==0);char *p=mmap(0,P,PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);CHECK(p!=MAP_FAILED);memcpy(p,"persist",7);CHECK(msync(p,P,MS_SYNC)==0);close(fd);CHECK(munmap(p,P)==0);}
  else {char out[7];CHECK(read(fd,out,7)==7&&!memcmp(out,"persist",7));close(fd);CHECK(unlink("mmap-persist")==0);}
 }
-int main(int argc,char **argv){if(argc==2&&!strcmp(argv[1],"scheduler"))scheduler();else if(argc==2&&!strcmp(argv[1],"persist-write"))persistence(1);else if(argc==2&&!strcmp(argv[1],"persist-read"))persistence(0);else {mappings();memfds();files();}puts("mmap-coverage-ok");return 0;}
+int main(int argc,char **argv){if(argc==2&&!strcmp(argv[1],"scheduler"))scheduler();else if(argc==2&&!strcmp(argv[1],"persist-write"))persistence(1);else if(argc==2&&!strcmp(argv[1],"persist-read"))persistence(0);else {mappings();mapping_ofds();memfds();files();}puts("mmap-coverage-ok");return 0;}

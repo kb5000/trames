@@ -386,3 +386,43 @@ worker drop, without a later owner cache scan.
 This is an inode/filesystem lifetime prerequisite. Mappings still need to pin
 their original OFD (including flock/close notification lifetime) before worker
 close/replacement admission. The complete FD gate remains open.
+
+### Pathname OFDs and original mapping ownership
+
+Ordinary nonvolatile, unsealed pathname files now use the actual shared OFD.
+It retains complete MountData and parent resource ancestry; namespace-control
+ancestors keep the original owner representation. OpenMount distinguishes these
+cases explicitly. Byte/status/statfs operations use resource metadata directly.
+Only pathname operations resolve a canonical owner mount or construct a cold
+projection after its owner has retired, avoiding topology allocations on every
+read or write. Busy unmount counts real shared mount references. Tests cover
+live remount flags, proc-FD reopening after unshare, detached owner retirement,
+and final inode/filesystem/mount release by an accepted worker operation.
+
+File mappings now retain the original OpenHandle, including read-only and
+private mappings. The existing Memory backing remains attached through private
+COW, fork, discard, protection changes, partial replacement and remap; remap
+growth carries the same original handle. Writable operation leases also retain
+the complete admitted OFD after their last page provider retires. Owner-only
+descriptions retain their owner representation and cannot expose a shared writer
+lease. This fixes a reproduced early flock release and close notification after
+closing the numeric FD while a mapping still exists. Cleanup/writeback precedes
+the final lease release; ordinary byte access gains no new locks or barriers.
+
+An independent ARM64 Linux kernel probe confirms that a mapped io_uring also
+retains its registered files after the ring FD closes. The existing weak ring
+discovery test now distinguishes that legitimate mapping lifetime from a cache
+pin, checks both mapped regions, and verifies final registered flock release.
+The tracked io_uring C fixture includes the same case and a standalone
+`mmap-lifetime` mode for native validation. The mmap C fixture independently
+checks shared/private mapping flock and inotify lifetime under QEMU/Linux.
+
+Scoped local validation passes: Apple VFS 302, Core 178 and Linux 124 cases;
+native ARM64 Linux VFS 303, Core 178 and Linux 124 cases, with five manual cases
+ignored on each platform. Strict Clippy, Release CLI, iOS FFI check and 21
+focused TSan executions pass. Guest mmap memory/disk, namespaces, persistent
+storage, io_uring ABI and shared-files churn pass; the last two cover 1/2/4 CPUs.
+Unchanged full-CI results at 933bd5e are reused while the structural work remains
+local. Dynamic file/byte lookup, accepted poll authority and epoll liveness are
+still required before enabling worker close/replacement. VM-local commits,
+persistent contexts and the final complete local CI/release gate remain open.

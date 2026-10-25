@@ -15,6 +15,7 @@
 #include <string.h>
 #include <sys/epoll.h>
 #include <sys/eventfd.h>
+#include <sys/file.h>
 #include <sys/mman.h>
 #include <sys/syscall.h>
 #include <sys/stat.h>
@@ -38,6 +39,26 @@ static void init(struct ring *r,unsigned entries) {
 }
 static void finish(struct ring *r) {
     assert(!close(r->fd)); assert(!munmap(r->sqes,r->p.sq_entries*64)); assert(!munmap(r->mem,r->size));
+}
+static void mmap_file_lifetime(void) {
+    struct ring r; init(&r,2);
+    int file=open("/tmp/uring-mmap-lifetime",O_CREAT|O_TRUNC|O_RDWR,0600); assert(file>=0);
+    int peer=open("/tmp/uring-mmap-lifetime",O_RDWR); assert(peer>=0);
+    assert(!unlink("/tmp/uring-mmap-lifetime") && !flock(file,LOCK_EX|LOCK_NB));
+    assert(!syscall(SYS_io_uring_register,r.fd,IORING_REGISTER_FILES,&file,1));
+    assert(!close(file) && !close(r.fd));
+    assert(flock(peer,LOCK_EX|LOCK_NB)==-1 && errno==EWOULDBLOCK);
+    assert(!munmap(r.sqes,r.p.sq_entries*64));
+    assert(flock(peer,LOCK_EX|LOCK_NB)==-1 && errno==EWOULDBLOCK);
+    assert(!munmap(r.mem,r.size));
+    // Linux may finish final ring destruction asynchronously after munmap.
+    int result=-1;
+    for(int i=0;i<2000;i++) {
+        result=flock(peer,LOCK_EX|LOCK_NB); if(!result) break;
+        assert(errno==EWOULDBLOCK); usleep(1000);
+    }
+    assert(!result && !close(peer));
+    puts("uring mmap retains registered OFD until last munmap OK");
 }
 static struct io_uring_sqe *add(struct ring *r,unsigned op,int fd,void *addr,unsigned len,uint64_t off,uint64_t data,unsigned flags) {
     unsigned tail=atomic_load_explicit((_Atomic unsigned *)r->sq_tail,memory_order_relaxed);
@@ -182,11 +203,12 @@ static void tcp(struct ring *r,const char *version,const char *port) {
 int main(int argc,char **argv) {
     if(argc==2 && !strcmp(argv[1],"exec-check")) return 0;
     assert(!mkdir("/tmp",0777) || errno==EEXIST);
+    if(argc==2 && !strcmp(argv[1],"mmap-lifetime")) { mmap_file_lifetime(); return 0; }
     struct io_uring_params bad={.flags=IORING_SETUP_SQPOLL};
     assert(syscall(SYS_io_uring_setup,8,&bad)==-1 && errno==EINVAL);
     struct ring r; init(&r,8);
     if(argc==3) tcp(&r,argv[1],argv[2]);
-    else { assert(argc==1); basics(&r); files(&r); events(&r); timers(&r); overflow(); address_spaces(&r); thread_exit(&r); exec_cancel(&r); }
+    else { assert(argc==1); basics(&r); files(&r); events(&r); timers(&r); overflow(); address_spaces(&r); thread_exit(&r); exec_cancel(&r); mmap_file_lifetime(); }
     finish(&r);
     puts("io-uring PASS"); return 0;
 }
