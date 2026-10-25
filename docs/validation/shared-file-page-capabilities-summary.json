@@ -1,0 +1,121 @@
+{
+  "date": "2026-10-25",
+  "host_architecture": "arm64",
+  "host_page_size": 16384,
+  "baseline_commit": "4fdbf881f0699aa975a22194fcfe2068b2513251",
+  "fixture": "tests/fixtures/mapped-access-bench.c",
+  "fixture_elf_sha256": "c2d9c66a8c792aafaea22c9aa8bea49c7f545c8498c1728e22b8b74ff785961e",
+  "baseline_runner_sha256": "0a87d45840c5f3a54826d2b17cde4b96d726bb567c042cc2ad4f5d4e1a8a6ea0",
+  "candidate_runner_sha256": "8d15fdd01946745b37af6ff602addef0e40640231a877f2abef94fe0a795938e",
+  "candidate_source_sha256": {
+    "crates/trames-memory/src/parallel/page.rs": "6d4ec2a40ff092de666a7b6886dcf0b56d2f4b4a3d69eea7e10f7ac18b392ae6",
+    "crates/trames-vfs/src/mapped.rs": "bc8e4206af495e94fa023d3779f74d7e974756f7323244e549d4d3966ff8ec39"
+  },
+  "rows": [
+    {
+      "mode": "file",
+      "trial": 0,
+      "label": "baseline",
+      "cpu_seconds": 0.187949534
+    },
+    {
+      "mode": "file",
+      "trial": 0,
+      "label": "prototype",
+      "cpu_seconds": 0.189762465
+    },
+    {
+      "mode": "file",
+      "trial": 1,
+      "label": "prototype",
+      "cpu_seconds": 0.186804459
+    },
+    {
+      "mode": "file",
+      "trial": 1,
+      "label": "baseline",
+      "cpu_seconds": 0.184880759
+    },
+    {
+      "mode": "file",
+      "trial": 2,
+      "label": "baseline",
+      "cpu_seconds": 0.185136119
+    },
+    {
+      "mode": "file",
+      "trial": 2,
+      "label": "prototype",
+      "cpu_seconds": 0.187745497
+    },
+    {
+      "mode": "memfd",
+      "trial": 0,
+      "label": "baseline",
+      "cpu_seconds": 0.188364001
+    },
+    {
+      "mode": "memfd",
+      "trial": 0,
+      "label": "prototype",
+      "cpu_seconds": 0.190523036
+    },
+    {
+      "mode": "memfd",
+      "trial": 1,
+      "label": "prototype",
+      "cpu_seconds": 0.188863421
+    },
+    {
+      "mode": "memfd",
+      "trial": 1,
+      "label": "baseline",
+      "cpu_seconds": 0.184532629
+    },
+    {
+      "mode": "memfd",
+      "trial": 2,
+      "label": "baseline",
+      "cpu_seconds": 0.182445036
+    },
+    {
+      "mode": "memfd",
+      "trial": 2,
+      "label": "prototype",
+      "cpu_seconds": 0.185642662
+    }
+  ],
+  "summary": {
+    "file": {
+      "median_cpu_seconds": {
+        "baseline": 0.185136119,
+        "prototype": 0.187745497
+      },
+      "candidate_over_baseline": 1.014094375609116
+    },
+    "memfd": {
+      "median_cpu_seconds": {
+        "baseline": 0.184532629,
+        "prototype": 0.188863421
+      },
+      "candidate_over_baseline": 1.0234689768604555
+    }
+  },
+  "validation": {
+    "vfs_passed": 281,
+    "vfs_ignored": 1,
+    "core_passed": 172,
+    "core_ignored": 3,
+    "linux_passed": 121,
+    "linux_ignored": 1,
+    "region_passed": 6,
+    "guest_mapping_cases_per_runner": 6,
+    "scoped_strict_clippy": true
+  },
+  "limits": [
+    "Three alternated samples on native Apple ARM64 without host CPU pinning; no confidence interval.",
+    "Ratios near one do not prove a speedup or exact non-regression. The rejected 26\u201327% layout-lock regression was not reproduced.",
+    "Original mmap fixture source cross-built locally and compared against the unchanged baseline runner; this is not an independent QEMU oracle.",
+    "No iPad, Docker or Firefox speedup is claimed. FD table/OFD and VM commit ownership remain unfinished."
+  ]
+}

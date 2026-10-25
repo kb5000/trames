@@ -52,3 +52,49 @@ overlay 下层引用也不能简单换成 PlainFile 快照：下层后续 mmap �
 存储形态变化仍需通过稳定文件身份可见；已打开下层 inode 的删除/通知寿命不能
 被提前结束。文件数据、路径元数据和实际 inode 生命周期应一起拆分，而不是给
 完整 VFS 增加一把全局锁。
+
+## Stable byte capabilities, 2026-10-25
+
+The follow-up shares the actual FilePage allocation with Arc, without placing its
+layout RwLock on every CPU/native access. Each owner-local FileMapping retains a
+byte capability and its layout generation. Publication or physical replacement
+invalidates that generation; the next access refreshes once under the layout
+lock. Cached capabilities retain their physical allocation, and live EOF,
+permissions, COW and provider byte generations retain their existing checks.
+
+Before publication, the provider alone accesses its allocation through scoped
+unpublished operations on the existing SharedPage byte cells. These unsafe
+operations require exclusive byte ownership and no SharedPage monitor observer;
+the provider maintains its original version/dirty hooks. The first publication
+changes the layout tag before exposing an Arc to a worker and invalidates owner
+caches. All subsequent shared CPU/native accesses use the original region
+protocol. No VFS/Memory/Rc graph gains an unsafe Send implementation, and ordinary
+accesses gain no permission policy, global lock or memory barrier.
+
+The owner FileMapping and MappedData APIs remain coordinator-local. Layout
+replacement/publication still requires the existing joined boundary. Arc storage
+and cached capabilities are prerequisites for inode/OFD sharing, not permission
+to call those owner APIs concurrently or to remove the VM/backing synchronization
+boundary. In particular, a future mapping commit must quiesce genuinely related
+actors before replacing an unpublished capability.
+
+Native Apple ARM64 validation passes 281 VFS, 172 Core, 121 Linux and six region
+unit tests. One VFS, three Core and one Linux manual test remain ignored. Five
+VFS loopback cases denied by the filesystem sandbox passed separately with local
+network access. Scoped strict Clippy passes. The added checks exercise worker
+last-release, warmed capability promotion, truncate/re-extension with stale cache
+references, live EOF and the transition to guarded bytes without a publication
+copy. Six original guest mmap/persistence/scheduler cases pass against both the
+unchanged baseline runner and candidate, using the same locally cross-built ELF.
+These local guest comparisons do not replace the independent QEMU acceptance.
+
+The original five-million-iteration mapped-access workload was run in alternating
+baseline/candidate order three times for ordinary files and memfd. Median CPU time
+ratios were 1.014 and 1.023 respectively. This small pilot has no confidence
+interval or host CPU pinning and does not prove a speedup or exact non-regression;
+it did not reproduce the rejected 26–27% per-access layout-lock regression.
+Machine-readable results and source/ELF/runner hashes are in
+[the capability summary](shared-file-page-capabilities-summary.json).
+No iPad, Docker or Firefox performance claim is made. Complete FD/OFD ownership,
+VM-local commits and persistent contexts remain release gates in
+[#36](https://github.com/kb5000/trames/issues/36).
