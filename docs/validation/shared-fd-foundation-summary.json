@@ -1,0 +1,139 @@
+{
+  "rows": [
+    {
+      "mode": "file",
+      "trial": 0,
+      "label": "baseline",
+      "cpu_seconds": 0.222911881
+    },
+    {
+      "mode": "file",
+      "trial": 0,
+      "label": "candidate",
+      "cpu_seconds": 0.213378461
+    },
+    {
+      "mode": "file",
+      "trial": 1,
+      "label": "candidate",
+      "cpu_seconds": 0.182846827
+    },
+    {
+      "mode": "file",
+      "trial": 1,
+      "label": "baseline",
+      "cpu_seconds": 0.18013367
+    },
+    {
+      "mode": "file",
+      "trial": 2,
+      "label": "baseline",
+      "cpu_seconds": 0.180755244
+    },
+    {
+      "mode": "file",
+      "trial": 2,
+      "label": "candidate",
+      "cpu_seconds": 0.182420201
+    },
+    {
+      "mode": "memfd",
+      "trial": 0,
+      "label": "baseline",
+      "cpu_seconds": 0.180254373
+    },
+    {
+      "mode": "memfd",
+      "trial": 0,
+      "label": "candidate",
+      "cpu_seconds": 0.182383999
+    },
+    {
+      "mode": "memfd",
+      "trial": 1,
+      "label": "candidate",
+      "cpu_seconds": 0.181845716
+    },
+    {
+      "mode": "memfd",
+      "trial": 1,
+      "label": "baseline",
+      "cpu_seconds": 0.181892837
+    },
+    {
+      "mode": "memfd",
+      "trial": 2,
+      "label": "baseline",
+      "cpu_seconds": 0.182198798
+    },
+    {
+      "mode": "memfd",
+      "trial": 2,
+      "label": "candidate",
+      "cpu_seconds": 0.182542249
+    }
+  ],
+  "summary": {
+    "file": {
+      "median_cpu_seconds": {
+        "baseline": 0.180755244,
+        "candidate": 0.182846827
+      },
+      "candidate_over_baseline": 1.011571354466485
+    },
+    "memfd": {
+      "median_cpu_seconds": {
+        "baseline": 0.181892837,
+        "candidate": 0.182383999
+      },
+      "candidate_over_baseline": 1.0027002822546551
+    }
+  },
+  "sha256": {
+    "baseline": "0a87d45840c5f3a54826d2b17cde4b96d726bb567c042cc2ad4f5d4e1a8a6ea0",
+    "candidate": "52b64a8166208b82dae695a206d17a2790ca393404d55e75a044a7d8a4bdac94",
+    "elf": "c2d9c66a8c792aafaea22c9aa8bea49c7f545c8498c1728e22b8b74ff785961e"
+  },
+  "date": "2026-10-25",
+  "parent_commit": "5707759a3ab26b1dc2454138c3f34f97fb6926aa",
+  "baseline_commit": "4fdbf881f0699aa975a22194fcfe2068b2513251",
+  "host_architecture": "arm64",
+  "host_page_size": 16384,
+  "fixture": "tests/fixtures/mapped-access-bench.c",
+  "source_sha256": {
+    "crates/trames-vfs/src/direct_io.rs": "29e2861ec2ab6f930f0f3da822255aa4b6a09347f7733e5664033d57a323e0dc",
+    "crates/trames-vfs/src/disk_io.rs": "9a3cdac158c997664170406c3774bceb4f0503d9523bacb816774d183d7fb550",
+    "crates/trames-vfs/src/events.rs": "90b8ea7c6443758ef4af532445cac6f40b286c1339841be7cf8ca534570331e4",
+    "crates/trames-vfs/src/fd_status.rs": "38c1f39de2d6bde4c000e3d689cdb135882bb9f4285d213da69f0436ea3a7352",
+    "crates/trames-vfs/src/fd_table.rs": "8f0243bdb96a99da22e4b9df605ecc7ae5d9bf30f01a92d7a32d904e9e548a3c",
+    "crates/trames-vfs/src/file_io.rs": "69242d3f9d5c7af56986c04d5bf08e8d6f6b63331c07a741074c3dfeca927ebe",
+    "crates/trames-vfs/src/ipc.rs": "75587e620b9f79859d5edfc9cf11b59ac349f50735fac134e1bee6a0507c9b22",
+    "crates/trames-vfs/src/ipc/native.rs": "6c7b7793db83e75d4f47f3e1de4c21c2c9a8510152c22785adc00dbc9167da14",
+    "crates/trames-vfs/src/lib.rs": "549f07bd5547924b27e0630c3986552df7c495f8980f3bad2b06f35a6a0a34c3",
+    "crates/trames-vfs/src/linux_namespace.rs": "3355b6192714dee8a368be9d2a88f0bd55db1a97166d41784be4e65d4479dec7",
+    "crates/trames-vfs/src/locks.rs": "e2c5433d9fef1b64a17ece1857adf81ad7e7154e669fcd4518ce274a97e80883",
+    "crates/trames-vfs/src/memfd.rs": "87a9d887e6d761d87d4e87fb0fe16169a7e57c945f782fe9dc53497b6b411ad3",
+    "crates/trames-vfs/src/network.rs": "9bb0a9c80a411707f574c2ecb7fc0bd147fca78ed076e2f8010f04e875346a4f",
+    "crates/trames-vfs/src/pipe.rs": "158ff4cc781374bdb75b6630faf0c608fe21121ac2260f2501520ec8dd6ca575",
+    "crates/trames-vfs/src/pseudo.rs": "1d9193487ca4d97cba74aba4c1f607ffeb125ccbcb0a21a90be4f69badfd9fda",
+    "crates/trames-vfs/src/pty.rs": "b3a2b830db71741be6eb3b6abb3f123914a6b895679194e7538a2e221bfb8c6c",
+    "crates/trames-vfs/src/uring.rs": "005cef9e0a0d2088ef901ae97f35f220e1adf6814acf80b3d9682e88031c33b7",
+    "crates/trames-vfs/src/open_handle.rs": "d0bcd50dc2eb1e8ae163ff078a0ed21f00e0d4707065994e489e52bfcb5f1ec8"
+  },
+  "validation": {
+    "vfs_passed": 290,
+    "vfs_ignored": 1,
+    "core_passed": 172,
+    "core_ignored": 3,
+    "linux_passed": 121,
+    "linux_ignored": 1,
+    "strict_scoped_clippy": true,
+    "guest_mapping_cases": 6
+  },
+  "limits": [
+    "Worker close/dup is not enabled; blocked operation and epoll/poll lifetimes still need integration.",
+    "Ordinary pathname-opened files remain owner-controlled until mount identity is shared.",
+    "Three alternated native Apple ARM64 samples, no CPU pinning or confidence interval; no FD throughput claim.",
+    "Independent guest oracle results remain separate from the local unchanged-baseline comparison."
+  ]
+}

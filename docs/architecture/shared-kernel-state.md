@@ -202,3 +202,47 @@ OFD 不再持有日志 Rc。worker 直接执行非阻塞 syslog，复用原 ABI 
 第 39 批共享 PID namespace 的实际身份与映射，默认转换仍直通；祖先分配和
 init 死亡按对象同步，弱快照及最后引用支持 worker 生命周期。fork/exit 与存活
 集合裁剪仍须任务提交边界，见 [验证](../validation/shared-pid-namespace.md)。
+
+## Actual shared OFD and membership foundation, 2026-10-25
+
+The common OFD allocation now owns inode identity, file position, status,
+flock initialization, pipe endpoints and close notifications through Arc.
+Owner-only socket/PTY/namespace/mount controls remain explicit projections.
+OpenHandle and weak watches distinguish actual shared OFDs from those controls;
+creating a temporary shared projection does not send a close notification.
+No manual Send/Sync implementation is used.
+
+The authoritative files_struct membership is now an object-local mutex map.
+Shared slots own their OFD directly; excluded slots retain an opaque identity
+and a separate owner control index. That index does not pin shared OFDs.
+CLONE_FILES retains one membership object, fork copies membership/CLOEXEC, and
+the final Linux owner drains membership even if an execution map remains.
+Lookup retains the original OFD. Replacement/removal returns retired leases,
+so process-lock release, final close and notification callbacks occur after
+releasing the membership lock.
+
+Live flag operations resolve admitted membership and therefore follow numeric
+FD reuse. An accepted OFD lease still identifies the original object. Excluded
+owner slots retain their frozen epoch capabilities and structural join rule.
+Membership revisions invalidate owner caches without cloning borrowed RefCells.
+Snapshot sizing/filling uses one membership snapshot; paired flags/direct
+resources return together even when another worker edits the table.
+
+This foundation admits complete pipe ends and mountless nonvolatile file
+shapes. Normal pathname-opened files still retain owner mount controls and are
+excluded. Root/mount identity must be shared before admitting those complete
+OFDs. Worker syscall close/dup has not been enabled: pending reads/poll, epoll
+watch liveness and checkpoint handoff must retain the original accepted object
+before dynamic mutation is allowed in the execution loop. No throughput or
+completed FD migration is claimed by the table API alone.
+
+Native Apple ARM64 validation passes 290 VFS, 172 Core and 121 Linux tests, with
+five existing manual cases ignored. The new checks exercise four simultaneous
+membership editors, owner enumeration, numeric reuse, original accepted leases,
+final pipe EOF/inode release, process-lock release and final flock release on a
+worker. Scoped strict Clippy and Release CLI build pass. Six original guest
+mmap/persistence/scheduler cases pass on the candidate; the unchanged baseline
+results are reused. Three alternated mapped-byte samples give CPU median ratios
+1.012 (file) and 1.003 (memfd). This unpinned pilot has no confidence interval and
+is not an FD throughput or whole-product speedup measurement. Exact source and
+binary hashes are in [the foundation record](../validation/shared-fd-foundation-summary.json).
