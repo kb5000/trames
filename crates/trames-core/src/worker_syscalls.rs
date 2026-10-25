@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Syscalls whose authority is immutable during one parallel CPU epoch.
+//! Worker syscalls over retained policy and actual shared resource ownership.
 //! No VFS/Process Rc crosses the boundary. Only seccomp-allowed calls execute;
 //! filter installation, tracing and mutable authority changes still checkpoint.
 use std::{
@@ -230,7 +230,7 @@ impl Snapshot {
         // Membership can change after admission. Until an allowed-call token
         // is retained through fallback, filtered structural calls stay joined
         // and evaluate their filter once.
-        if matches!(cpu.x(8) as u32, 23 | 24)
+        if matches!(cpu.x(8) as u32, 23 | 24 | 57)
             || cpu.x(8) as u32 == 25 && matches!(cpu.x(1), 0 | 1030)
         {
             return false;
@@ -560,7 +560,7 @@ mod tests {
         }
     }
     #[test]
-    fn fd_metadata_controls_and_admitted_additions_complete_locally() {
+    fn fd_metadata_controls_and_membership_changes_complete_locally() {
         let mut vfs = trames_vfs::Vfs::default();
         let [fd, _] = vfs
             .pipe(trames_vfs::O_CLOEXEC | trames_vfs::O_NONBLOCK)
@@ -601,8 +601,9 @@ mod tests {
         cpu.set_x(1, 0);
         assert_eq!(snapshot.invoke(&cpu, &mut memory), None);
         assert!(!service_candidate(&cpu, &snapshot));
-        snapshot.direct =
-            trames_linux::DirectSyscalls::default().with_membership(vfs.shared_files());
+        snapshot.direct = trames_linux::DirectSyscalls::default()
+            .with_membership(vfs.shared_files())
+            .with_lock_context(vfs.record_lock_context(1));
         cpu.set_x(1, 1030);
         cpu.set_x(2, 160);
         assert_eq!(snapshot.invoke(&cpu, &mut memory), Some(160));
@@ -614,7 +615,9 @@ mod tests {
         cpu.set_x(2, 0);
         assert_eq!(snapshot.invoke(&cpu, &mut memory), Some(200));
         cpu.set_x(8, 57);
-        assert_eq!(snapshot.invoke(&cpu, &mut memory), None);
+        assert_eq!(snapshot.invoke(&cpu, &mut memory), Some(0));
+        assert_eq!(vfs.flags(160), Err(Errno(9)));
+        assert!(vfs.flags(fd).is_ok() && vfs.flags(200).is_ok());
         cpu.set_x(8, 25);
         cpu.set_x(0, u32::MAX as u64);
         cpu.set_x(1, 3);

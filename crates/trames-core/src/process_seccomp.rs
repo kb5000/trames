@@ -352,7 +352,7 @@ impl Kernel {
 mod tests {
     use super::*;
     #[test]
-    fn filtered_membership_additions_stay_joined_before_filter_evaluation_or_effects() {
+    fn filtered_membership_changes_stay_joined_before_filter_evaluation_or_effects() {
         for decision in [ALLOW, 0x5007b] {
             let mut p = super::super::tests::process();
             let [fd, _] = p.linux.vfs.pipe(0).unwrap();
@@ -379,6 +379,7 @@ mod tests {
             for (number, args) in [
                 (23, [fd as u64, 0, 0, 0, 0, 0]),
                 (24, [fd as u64, 200, 0, 0, 0, 0]),
+                (57, [fd as u64, 0, 0, 0, 0, 0]),
                 (25, [fd as u64, 0, 160, 0, 0, 0]),
                 (25, [fd as u64, 1030, 160, 0, 0, 0]),
             ] {
@@ -387,6 +388,7 @@ mod tests {
                 assert!(!snapshot.admit(&p.cpu));
                 assert_eq!(p.linux.vfs.flags(160), Err(Errno(9)));
                 assert_eq!(p.linux.vfs.flags(200), Err(Errno(9)));
+                assert!(p.linux.vfs.flags(fd).is_ok());
             }
             assert_eq!(snapshot.direct.fd_control_completed(), 0);
         }

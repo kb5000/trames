@@ -1,0 +1,643 @@
+{
+  "date": "2026-10-26",
+  "status": "local CI passed with scoped retries and unchanged-check reuse",
+  "source_parent": "0aae91ce3e20415ab30efa959bd340f405162b90",
+  "tested_production_and_test_files_sha256": {
+    "crates/trames-core/src/lib.rs": "6d03aa4768fd568f45717ad4196556f9122d43d9185639fdc3906cf9b9d8f79e",
+    "crates/trames-core/src/process.rs": "0916c2aed859a82b4251f310536f73bc0ecafdcb9ecf87d9ab627ffd0ea58073",
+    "crates/trames-core/src/process_seccomp.rs": "f6a0b37118ee4daeba5d241d04685bf3ea9c0a0c2866a7c6262d8d7f90321b33",
+    "crates/trames-core/src/run_queue.rs": "947a6f56a9f8cecc4080a401b42974bddd8e84453722210cf3a90b236b69c79c",
+    "crates/trames-core/src/worker_syscalls.rs": "f730c3fe4c6918f23b8d0b2527ce0b4323887b60ae049e49cce9381e866c411d",
+    "crates/trames-core/src/workers.rs": "34efda686bd76956c68caea302f71072c657fef9767f4a584cce01f3493d2bd6",
+    "crates/trames-linux/src/direct.rs": "132deb4034e0520d9fd070dcb0c657474ec3aee81c42051070b68e5ac522b7a9",
+    "crates/trames-linux/src/direct/uring.rs": "03934e98ac22fce29f474305102c6eea5a7f69364f8e05c956234dee1d7e8608",
+    "crates/trames-linux/src/direct/uring/control.rs": "3e47110c1ee0f11bab269b87a0e9d54fe3d4675d5b318e823f0d32bc8d845486",
+    "crates/trames-linux/src/direct/uring/owned_tests.rs": "1da79e5d8ce540d793b63d3f67ade8a5de8a973e8a6325fbefd5d723d2fe7b2f",
+    "crates/trames-linux/src/lib.rs": "f4a87556a347e67123a573be713b24f863beb355c62fb7c21b6155d9f0932499",
+    "crates/trames-linux/src/poll.rs": "fd4dd26549ae4f524a58085752f13fbb7e9b456bfee05c8f2d21d217ecf9417f",
+    "crates/trames-linux/src/uring.rs": "7169ac2c7e77b7fca22eb2e9c8f9e88a937b780c002aa13ba606fe4df7861c37",
+    "crates/trames-net/src/native/direct.rs": "b6644320c534a93f053896615e1118571326a041969c8a016f8e906e8dd4135b",
+    "crates/trames-vfs/src/direct_io.rs": "7da530ff191c820b4bc55d8d2f86a3ecfb3ca74c10a834572e56ac497d3eeb2e",
+    "crates/trames-vfs/src/disk_io.rs": "812c7ac679477134dbf76cff9cf45a7130de978918b0f6c38657579f09e07fab",
+    "crates/trames-vfs/src/events.rs": "f4dcb9f047db79d40fa3c28d76105e258c83093853e9e92af19cdf28af1eb02c",
+    "crates/trames-vfs/src/executable.rs": "c6dda870444511982e6e34cf029bdabd536de370b8790a9ae0cdc1c2d1f616df",
+    "crates/trames-vfs/src/fd_status.rs": "0f3b83a2e81ac63510b02d1298ebcab7d971b25aa0c53cfdae18dfea70efad7a",
+    "crates/trames-vfs/src/fd_table.rs": "257dd2592a3bb412625af41cbde1d9a037fdaafdccd9edf2b445779aca0d1280",
+    "crates/trames-vfs/src/file_io.rs": "f39bdd9ae61ed613dfe413338f59fab55f4c64418884be1058f0c277897be1d8",
+    "crates/trames-vfs/src/flock.rs": "ef7520955173ba3737ba94d43867baa1392c07accca7f314645f85154f392134",
+    "crates/trames-vfs/src/inotify.rs": "e3b9e61b7e92527fdb0453efe62ca073d703c4acd25c8bcc60f1a82bf2a23764",
+    "crates/trames-vfs/src/ipc.rs": "e073170ef4e61d965f613ea3e2cd9e407b00e6ee2d34c6e7f9463e37ace1867a",
+    "crates/trames-vfs/src/ipc/native.rs": "caf55fd51df4ca810de0a66452454b5a80d28cbe1ad7c4e47c08ccea5356e075",
+    "crates/trames-vfs/src/lib.rs": "e8efa08c1c9be6c8ce0683423f9c7d72345120b8347ff42f9351285f659c050c",
+    "crates/trames-vfs/src/linux_namespace.rs": "90f1a68199c0698d23f98d7eb34ef351cbed94769a144a64d25049128b9d1464",
+    "crates/trames-vfs/src/mapped.rs": "797b5c1cff9e475d230e4be8d83d3575d1dc1d394abe94c1f9f51d4b2fae2ea7",
+    "crates/trames-vfs/src/mapped/writers.rs": "7baaee26b21ef4454b2c3205b0672ebd81f649f775d053f64573470088f3d6b6",
+    "crates/trames-vfs/src/memfd.rs": "b093771bc0971dca96d1bd96cb50a2afce9c07702166ad51051f8f99a6c10720",
+    "crates/trames-vfs/src/mounts.rs": "b6c78554369d99389c2850ae7f6d8eeb633ec2e3ee899c58c3755d1636531b1d",
+    "crates/trames-vfs/src/network.rs": "caae369a90afad39316f18e2fe9aa3e6499859a9887b81152a698b67a59302be",
+    "crates/trames-vfs/src/open_handle.rs": "19a3e2178bc4d6a293dee0cdad392507cd146e9008d559a7c6de63bc44a03428",
+    "crates/trames-vfs/src/pipe.rs": "986cac1d5e4be0c5262e2b9293d42cc4f62bf1df2c9ca4d4b15773e905ba2b2c",
+    "crates/trames-vfs/src/pseudo.rs": "71708a1c3a08323eef38da91d431e9e4f7c29a36de67f8a7f3141ea27c4b7377",
+    "crates/trames-vfs/src/pty.rs": "933648d478e2fbd25e34eb25db3f569b9049719be239bf0c530a576b5b32bf81",
+    "crates/trames-vfs/src/uring.rs": "bda3b60c3a7613eb262f92eef557a9d16d3b52f5a0df59db76a39b2f118ebe18"
+  },
+  "comment_only_followup": [
+    "crates/trames-core/src/worker_syscalls.rs",
+    "crates/trames-vfs/src/direct_io.rs",
+    "crates/trames-vfs/src/fd_status.rs"
+  ],
+  "scope": {
+    "direct_operations": [
+      "dup",
+      "F_DUPFD/F_DUPFD_CLOEXEC",
+      "dup3 including occupied admitted targets",
+      "close"
+    ],
+    "admitted_ofds": "Ordinary eligible pathname files and pipes/FIFOs with complete shared mount ancestry.",
+    "boundaries": "Socket/PTY/anonymous control and namespace-bound resources retain their explicit joined ownership. Filtered structural syscalls remain joined before filter evaluation/effects.",
+    "release_ready": false
+  },
+  "linux_runtime": {
+    "workflow": ".github/workflows/linux.yml",
+    "job": "runtime",
+    "shell_stages_covered": 78,
+    "source_batches": [
+      {
+        "stages": [
+          1,
+          72
+        ],
+        "state_sha256": "3a5f82b8faee81c1c5f2014ff36fd1d6c3fc610b8742905e384f77cb6bb36b1e"
+      },
+      {
+        "stages": [
+          73,
+          78
+        ],
+        "state_sha256": "f1769782ffe90e198fc71006cdb908723ef2721d1ff3965631e1c79bbb65ad09"
+      }
+    ],
+    "step_records": [
+      {
+        "index": 1,
+        "name": "Validate source-bound runtime reuse",
+        "record_sha256": "0be40ed3cabb5c95e1e2b8955209faca3a57d9aa2057a98d9de1cb3c24503950"
+      },
+      {
+        "index": 2,
+        "name": "Install independent AArch64 oracle and cross assembler",
+        "record_sha256": "2b5fae81e6e49ac8854a267cbc856ef2161a821c22297257f02619c51f6fdb62"
+      },
+      {
+        "index": 3,
+        "name": "Build pinned independent QEMU oracle",
+        "record_sha256": "058cab95eea1cc72fb714a6020390042ffc284aed27289437c2b0b162d643f67"
+      },
+      {
+        "index": 4,
+        "name": "cargo fmt --all --check",
+        "record_sha256": "d2a95b7adc15edc1457b7561387d830490c0303c6debabc32cb512a5e1c2276d"
+      },
+      {
+        "index": 5,
+        "name": "cargo clippy --workspace --all-targets --all-features --locked -- -D warnings",
+        "record_sha256": "abed7c437d1041ae4f3dc0ce744f87e29c2ce2ccbb21b33a9c4cc6dcff039452"
+      },
+      {
+        "index": 6,
+        "name": "cargo build --workspace --all-features --locked",
+        "record_sha256": "3a8c5f2d57482024f060bbeefd9577169596b280c1479875cc474c91e396ea37"
+      },
+      {
+        "index": 7,
+        "name": "cargo test --workspace --all-features --locked",
+        "record_sha256": "ec0254be2ce89d90e97262256891cd298400b7829f78b600c3a85fe4e827657c"
+      },
+      {
+        "index": 8,
+        "name": "Check region guard races with fully instrumented Rust standard library",
+        "record_sha256": "1c408f716bd520a96b1824b9f29de0bbf04f14cc3cf46ab1aad1f57dfa9d7f83"
+      },
+      {
+        "index": 9,
+        "name": "Check original-source native allocator C with address and undefined behavior sanitizers",
+        "record_sha256": "36ca5b9c7a5db87f5bda0e0cb0947f6ad17647201c474fd4c1044f26f0f8d132"
+      },
+      {
+        "index": 10,
+        "name": "Compile core and both network backends for iOS (no SDK link or device test)",
+        "record_sha256": "3ce590cd17ac853e901cffa87afdd57649fd10722ef5eac28da197a24081619c"
+      },
+      {
+        "index": 11,
+        "name": "Execute ARM64 compute, memory and native worker tests under the independent oracle",
+        "record_sha256": "d9bedc6a3c9e670f7b47f75c32cf3ae3ef5fa61361eeaa5b6dbeff66b75ae446"
+      },
+      {
+        "index": 12,
+        "name": "python3 tests/differential/run.py",
+        "record_sha256": "ab75fc86c366e54c5a4a68fdd0de03448624f0d6cc39341469023a6638824c17"
+      },
+      {
+        "index": 13,
+        "name": "python3 tests/differential/m1.py",
+        "record_sha256": "48f2303365ed0d0dfa997673a1e90f489bd8d7635c380c93fafd78a28c3d9721"
+      },
+      {
+        "index": 14,
+        "name": "python3 tests/differential/lazy_flags.py",
+        "record_sha256": "ba2139d97d670bad312b5b6217820a83fb8b19a7c863c12e7891e208c818fa91"
+      },
+      {
+        "index": 15,
+        "name": "python3 tests/differential/integer_blocks.py",
+        "record_sha256": "184977210cc7a83226f20f9ddc5f568ce743a34a6cc61eb940a0696783f17c7c"
+      },
+      {
+        "index": 16,
+        "name": "python3 tests/differential/fixed_slots.py",
+        "record_sha256": "925fb1cfb1afbea208004e84d911c21ecc608db1bce8e7f50d94861b23328e65"
+      },
+      {
+        "index": 17,
+        "name": "python3 tests/differential/floating.py",
+        "record_sha256": "9d4519e93ceed1c7c82f8c567012ae169ffcbe1efa1a0447335f4628e9a7fef6"
+      },
+      {
+        "index": 18,
+        "name": "python3 tests/differential/vector_floating.py",
+        "record_sha256": "e884f4b1ef17179bdbc545a4381bc36400e74ae9993d4a0204d602753d137cbf"
+      },
+      {
+        "index": 19,
+        "name": "python3 tests/differential/structures.py",
+        "record_sha256": "0f73fa77170ad9fef6b9b8d0d86ae5816a26b11ce19c1951bb99c09e8268791f"
+      },
+      {
+        "index": 20,
+        "name": "python3 tests/differential/pairwise_integer.py",
+        "record_sha256": "9431a2480675af62fb4f1376daf4fb94885afd20d2973bfa1b55d96833a85041"
+      },
+      {
+        "index": 21,
+        "name": "python3 tests/differential/widening_integer.py",
+        "record_sha256": "40423565b28d9b606dafb1d5c9b7bcdbdd7f305bc07d8f7943b86d8813354081"
+      },
+      {
+        "index": 22,
+        "name": "python3 tests/differential/vector_copy_shift.py",
+        "record_sha256": "7e06b2fbdaf3b9c04e63e28f1859f59f6c0939000f040847af914154b16308e6"
+      },
+      {
+        "index": 23,
+        "name": "python3 tests/differential/vector_integer.py",
+        "record_sha256": "0cc331366c55af5ef57426b72124341ca8ce0b095d1586dc953c3b977a0de8fa"
+      },
+      {
+        "index": 24,
+        "name": "python3 tests/differential/atomics_crc.py",
+        "record_sha256": "863b6644b70841b6ca0064afee9f4cfbadd2def4fe15470d98a05b3c02381615"
+      },
+      {
+        "index": 25,
+        "name": "python3 tests/differential/half_floating.py",
+        "record_sha256": "b165e25a2d8d16180946a42e43e5cd4cd8f81e7fec8cc44dc30b6152d06a3d5f"
+      },
+      {
+        "index": 26,
+        "name": "python3 tests/differential/crypto.py",
+        "record_sha256": "4d820fbf77eac968e8c4972960912ed7d573d4a43d79eb9781d8585fb255d779"
+      },
+      {
+        "index": 27,
+        "name": "python3 tests/differential/modern.py",
+        "record_sha256": "4ce73cc895e0df69769e2352bd8dc2a81ee9ff692c4ec69c740d8b65ea080523"
+      },
+      {
+        "index": 28,
+        "name": "python3 tests/differential/frint_rcpc.py",
+        "record_sha256": "e9d97b8ef09839d3e9fda5078836a2c833c3610adbee43b38619b7ebc90fa99d"
+      },
+      {
+        "index": 29,
+        "name": "python3 tests/differential/coverage_extensions.py",
+        "record_sha256": "06a2f12727e17cd6eea59cc70e58e8f39eb894f97dbfbe223995192cf2bbf737"
+      },
+      {
+        "index": 30,
+        "name": "Cross-build pinned musl and static BusyBox",
+        "record_sha256": "663c7d45995cc67dab0d0657ba50dcd24c3d5910ada84aa389cf580a0f4955d3"
+      },
+      {
+        "index": 31,
+        "name": "Compare actual musl CPU fault handlers and context recovery",
+        "record_sha256": "1a334e1a756779aae1ea27a810fb9eab8955b2a8941bff633b1acf25335ee267"
+      },
+      {
+        "index": 32,
+        "name": "bash scripts/build-compatibility-log-fixtures.sh",
+        "record_sha256": "b927ad7bf84680a0e4b3ff0455287947efe5cb2bb20776bd34b43c034a31df2c"
+      },
+      {
+        "index": 33,
+        "name": "python3 tests/integration/compatibility-log.py",
+        "record_sha256": "ea7f0d7e02ebc9c309f70aa98df5795dade0abd14d78e09e9901d8546457db33"
+      },
+      {
+        "index": 34,
+        "name": "Compare altstack, memory barriers and process file limits",
+        "record_sha256": "8e117869f788e43fb6e496cfdb32b78b61fe77762a1de78a74fff880ea92a9cb"
+      },
+      {
+        "index": 35,
+        "name": "Compare inode notifications, epoll edges and fork with Linux",
+        "record_sha256": "35707177ca8ced60a50e50c4681d8050dc2c672247547e7cd8e7bcc8ff1c226f"
+      },
+      {
+        "index": 36,
+        "name": "bash scripts/build-mmap-fixtures.sh",
+        "record_sha256": "99ba23d6c92cb54f1b2a6f7ab251260e9cce9dfdb035446cb097f838f0364d60"
+      },
+      {
+        "index": 37,
+        "name": "python3 tests/integration/mmap.py",
+        "record_sha256": "7d6fc8eb0f7936218e76671d3def04f4a3d9c12088dcca208edfe726c6e3ec98"
+      },
+      {
+        "index": 38,
+        "name": "Validate configurable guest memory across threads, fork and exec",
+        "record_sha256": "781febc16f191de51089955decbe0f656ffd04873df91b3f9c6b7e950999891c"
+      },
+      {
+        "index": 39,
+        "name": "python3 tests/integration/busybox.py",
+        "record_sha256": "aa784ca8499816359ce10da4cc557c96b8ec89cade95d4e5596a1a9bd619ac59"
+      },
+      {
+        "index": 40,
+        "name": "bash scripts/build-m2-fixtures.sh",
+        "record_sha256": "afd1910515241fee1de1df6fa17f28d8fdaa9be43f58ec18b769572366c35630"
+      },
+      {
+        "index": 41,
+        "name": "python3 tests/integration/m2.py",
+        "record_sha256": "0a54e1a275d695c681e84274936e2bcaaf0a1a3f87f966324a6e96b080d3260a"
+      },
+      {
+        "index": 42,
+        "name": "python3 tests/integration/terminal.py",
+        "record_sha256": "76b74fdce2668eb0edfd0f43c0c13da6a15cdd1b92e74ded24f84a92c2dc7676"
+      },
+      {
+        "index": 43,
+        "name": "bash scripts/build-storage-fixtures.sh",
+        "record_sha256": "f416950ec725382c16b14429ef63c1f364b9d8f0ec77b3c4426323f01aa8ebf6"
+      },
+      {
+        "index": 44,
+        "name": "python3 tests/integration/storage.py",
+        "record_sha256": "97f7c6006b12948a6bcd610b6af5255a55872171fd95c3dd548e7379d3dbcace"
+      },
+      {
+        "index": 45,
+        "name": "bash scripts/build-network-fixtures.sh",
+        "record_sha256": "1edf60077d5681edba82b8bd098885c1863a920cad5593109e54732e2fb9311c"
+      },
+      {
+        "index": 46,
+        "name": "bash scripts/build-virtual-network-fixtures.sh",
+        "record_sha256": "3786fab7d97f6ad28bbcf74dd5b7c5ed4389d0a97aeb05d144d5b986af4646a5"
+      },
+      {
+        "index": 47,
+        "name": "bash scripts/build-linux-compat-fixtures.sh",
+        "record_sha256": "8527c3f0262c994be90238e1692593a47a5fac4072f5550b693e39f1f037586e"
+      },
+      {
+        "index": 48,
+        "name": "Compare native loopback sockets and real musl DNS with QEMU",
+        "record_sha256": "2d4347e9f825ec5d03e64e4198eb8e87f9ea1e90ac44a222c241a2776c27bd7e"
+      },
+      {
+        "index": 49,
+        "name": "python3 tests/integration/m2.py",
+        "record_sha256": "ee4c1e47d5277720905ab6e60ea18149ab4a720deb39288ec94ccdae90975fca"
+      },
+      {
+        "index": 50,
+        "name": "python3 tests/integration/terminal.py",
+        "record_sha256": "0ab18977af264e360d7354f868369c3b7487b741e7bdcfeebe00b10a6f1bd464"
+      },
+      {
+        "index": 51,
+        "name": "Prepare pinned Alpine and dynamic fixtures",
+        "record_sha256": "57beeb1ce86598053ac65b94e6c4e2ebf9626239d97e9616db245e6900754762"
+      },
+      {
+        "index": 52,
+        "name": "cargo build --release --workspace --all-features --locked",
+        "record_sha256": "2ef90d09ed2f511263ed31bf5787af284ba1de72bde40b7bb546033ce62b52f8"
+      },
+      {
+        "index": 53,
+        "name": "Build complete hybrid musl from pinned original source",
+        "record_sha256": "64e949c556d5cf8346d8d7f3c0c917ffe6b56f4c1a6f4dc9731f91c6521f10d6"
+      },
+      {
+        "index": 54,
+        "name": "Compare full musl loader, startup, TLS, threads and pure functions",
+        "record_sha256": "5f0d2993b07c41d6975d7dce8a186ee09a447f15914dee6fb025468ecf14a366"
+      },
+      {
+        "index": 55,
+        "name": "Build and compare opt-in NativeCall guest ELF stubs on ARM64",
+        "record_sha256": "262e89b466c71b9c55179314b41aa0bfef3dd4bc4b26934675d0883ffdf4334a"
+      },
+      {
+        "index": 56,
+        "name": "Validate dynamic Alpine, HTTPS trust and signed apk installation",
+        "record_sha256": "7c1de53d3fd458eb9dfa84c220d2799f92b907fe9b61efae92d398c7bb25e28e"
+      },
+      {
+        "index": 57,
+        "name": "Validate virtual packet fabric, guest ABI and Alpine HTTPS gateway",
+        "record_sha256": "361fe8916810085451aa139c95f45c92d0001af4e07ef4ca9ebe878516db356c"
+      },
+      {
+        "index": 58,
+        "name": "Validate Linux endpoints, musl threads, ICMP and real Vim editing",
+        "record_sha256": "71d129a0266d9f6afe33e69bef6d413e26cfa57839b7a40c3a500c119b78fc75"
+      },
+      {
+        "index": 59,
+        "name": "Exercise the embedding ABI with real Alpine PTY and disk streams",
+        "record_sha256": "5e99041f4d699a0127bd42eaa860958ff7ec7a5b82a3039a64ff9b23f0135c5a"
+      },
+      {
+        "index": 60,
+        "name": "Compare guest-created PTYs, hangups and sudo IPC with Linux and QEMU",
+        "record_sha256": "9fbdb4cedc9cad2fd27759e6b726c99e5ac6986a11b898e7b05d6acec30da9ad"
+      },
+      {
+        "index": 61,
+        "name": "Validate signed sudo escalation, passwords, nested PTYs and interactive relay",
+        "record_sha256": "7ae18502e902763047faae1700d0a7e6ca41bbd59915621af114a0d6288e4d9d"
+      },
+      {
+        "index": 62,
+        "name": "Validate host timezone rules, guest date and Python daylight saving time",
+        "record_sha256": "ed590acb95136c4c74674d56ed648863e36def29b5f48b772d385ce7c3f8485b"
+      },
+      {
+        "index": 63,
+        "name": "Compare inode-based execve and execveat with native Linux",
+        "record_sha256": "2b8a9d97e71ac1bae6ae0823602d3518bf50aa395c1f44f0ddc45518e5e940cc"
+      },
+      {
+        "index": 64,
+        "name": "Validate guest UTS/mount/PID namespaces, init lifecycle and direct listeners",
+        "record_sha256": "7744a35d41aaf075532a3ae5b5f2094e98fb88f404ef2d6c535ba99c610693a2"
+      },
+      {
+        "index": 65,
+        "name": "Compare standard guest Vulkan compute and rasterization with the native software driver",
+        "record_sha256": "56951daecfb6642f42aeca76382eadbfc1aafdf03339a54238ce590a7ec8552d"
+      },
+      {
+        "index": 66,
+        "name": "Validate signed Python anonymous ELF, pass_fds and libc fexecve",
+        "record_sha256": "ed86847811b31c862a24c2b38c7cf49d6acba806f80029719bee18df4a3236fd"
+      },
+      {
+        "index": 67,
+        "name": "Signed Python install, repair and execution with 128 host descriptors",
+        "record_sha256": "0f52bf59294b7e3e539e8df42153d8003d0bbc201fd97bcce35d3f4e0bbb1e2c"
+      },
+      {
+        "index": 68,
+        "name": "Validate guest capability enforcement and original signed libcap tools",
+        "record_sha256": "8145dbd5af527543faa4d5fb20ddf3671b4d02ee2f16c637248d0275e7c88856"
+      },
+      {
+        "index": 69,
+        "name": "Compare signalfd and shared signal queues with native Linux",
+        "record_sha256": "c75ae71a11d1bb9fd2cb0bddb00bc4190f2471d97a256bc324f67055f6d668b0"
+      },
+      {
+        "index": 70,
+        "name": "Compare Unix IPC, pipe metadata, parent death signals and OOM preferences",
+        "record_sha256": "635df9a4bd3d751b2dfaa4686663791013d9bd46d85a781ee52c6042a482125a"
+      },
+      {
+        "index": 71,
+        "name": "Validate guest cgroups and device BPF; compare dumpable with native Linux",
+        "record_sha256": "37426d51965c94396fd636335af63e58dbcdc5d5e89082b0e083163b3074e28a"
+      },
+      {
+        "index": 72,
+        "name": "Validate device inodes and scoped openat2 against native Linux",
+        "record_sha256": "08c25e2903dc71f1b64a2c26840aa97a5c7100326a06999c6739a1fec4bb361b"
+      },
+      {
+        "index": 73,
+        "name": "Validate original signed guest crun container lifecycle",
+        "record_sha256": "4fbd1942981770bba5c557d996126db4ee1013f023a2f2edfecb0f55a509b9d3"
+      },
+      {
+        "index": 74,
+        "name": "Validate original Docker container payload, exit status, logs and cleanup",
+        "record_sha256": "def97424d2fcd4a412276bf9acb14c439d01c92357a2a7812924419eca821b8b"
+      },
+      {
+        "index": 75,
+        "name": "Compare M6 events, local IPC, POSIX locks and FIFO semantics with QEMU",
+        "record_sha256": "4485120e512665ccc9353a35d6bf32f305ae575e69197a5c116a85e9e2982f51"
+      },
+      {
+        "index": 76,
+        "name": "Compare ARM64 pthread, multicore atomics, memory barriers and shared futexes",
+        "record_sha256": "a6c14fd090164adbca434ef90b36c85d3d1d91bd504fa75b50135b7afc4881c7"
+      },
+      {
+        "index": 77,
+        "name": "Signed Node.js, default V8, libuv workers, HTTP and offline npm",
+        "record_sha256": "a23b001e926cce9be5d3fd011931c6aae44f92683cf2cfc8c06d4f465ec09305"
+      },
+      {
+        "index": 78,
+        "name": "Signed developer tools and complete guest workflows on a fresh persistent store",
+        "record_sha256": "e91a5d87a78aa7ee5dad46218bd382e26ea01d38de3c9d320345ded9eb5bc91c"
+      }
+    ],
+    "scope_followup": "After fixing pathname FIFO readiness, affected native VFS/Linux/Core tests, strict workspace Clippy/release build, FIFO TSan, signed crun/Docker/FIFO/Node and fresh developer-tool workflows passed. Earlier unaffected CPU/Linux/network/graphics passes were reused.",
+    "m6_fresh_workflow_seconds": 160.31538844108582
+  },
+  "apple": {
+    "native_workspace": {
+      "passed": 966,
+      "ignored": 17
+    },
+    "native_affected_libraries": {
+      "vfs": 310,
+      "linux": 134,
+      "core": 185
+    },
+    "swift_ssh": "TramesKit 12 cases including 8 real OpenSSH PTY/SFTP cases; one opt-in staging case skipped.",
+    "wayland_original_c_peers": 5,
+    "simulator": {
+      "passed": 71,
+      "skipped": 1,
+      "failed": 0
+    },
+    "builds": "Unsigned simulator and device links and File Provider group consistency checks passed.",
+    "guest_payloads": "Unchanged source-identical guest products reused; existing manifests verified.",
+    "unsigned_test_ipa": {
+      "path": "apps/ios/build/sideload/Trames-worker-close-unsigned.ipa",
+      "bytes": 13526152,
+      "sha256": "63f16a88a94469b2859da8c78682572c18975d1e211e8a157c425b7129ef80bb"
+    },
+    "physical_ipad": "Deferred to final release acceptance; not claimed by unsigned device linking."
+  },
+  "focused_tsan": {
+    "worker_membership": 1,
+    "worker_close_effects": 1,
+    "shared_table": 14,
+    "actual_worker_handoff": 3,
+    "named_fifo": 2,
+    "io_uring_prior_checkpoint": 46
+  },
+  "regressions": [
+    "Weak prepared file storage retires the actual allocation before a join.",
+    "Accepted byte/poll/flock/io_uring/mapping resources retain their original OFD across FD reuse.",
+    "No saved Process/owner cache delays final close after request completion.",
+    "Fork uses independent live table bindings; CLONE_FILES shares actual membership.",
+    "Named FIFO poll uses pipe readiness and subscriptions, including data and HUP.",
+    "Final io_uring resource destruction and notification reentry run outside its mutex."
+  ],
+  "test_wait_followup": "The Darwin failed-accept quota test now waits for listener readability after connect. All quota assertions remain strict; production networking code is unchanged.",
+  "scoped_guest_acceptance": {
+    "shared-files": {
+      "report_rows": 31,
+      "fixture_sha256": "3f2a2b01ab723d26f40ee2c41d34d45499609ca56bf28f3bdabef810b8992d94",
+      "report_sha256": "4a5e4849013bfe874f96e2ef49c160095cf864f5edb2440d677f9a45bb165231"
+    },
+    "shared-flock": {
+      "report_rows": 10,
+      "fixture_sha256": "95cd3e71533b9e8e16551f0a586b172800055d834b460770a6808357494507d8",
+      "report_sha256": "02aa58fd7d25bf59cfa459e3c791c404bbe4275f85534b2a8cfcd55f31c7ff94"
+    },
+    "blocking-flock": {
+      "report_rows": 10,
+      "fixture_sha256": "b05e2299d753f0da85730830f191243af46467db60df4ee7d7a768bca8cc47b8",
+      "report_sha256": "827176528a6215dd8d1ae0b5988374fdad80d82cf9716bb8a668904cac78a1a5"
+    },
+    "worker-wait": {
+      "report_rows": 24,
+      "fixture_sha256": "0688a0b65cba332698b4e390c0394aefe79a5919d24c8de4002143c3a28d673d",
+      "report_sha256": "f709f69a4b7547638e48faa319f5e8beec1f7825df0ea4f70a2bd06b44becfde"
+    },
+    "worker-unix": {
+      "report_rows": 42,
+      "fixture_sha256": "a88d470b01f5fb62d41cb2c125f89b09ab5eca923f56ac5bbc16563efd85342e",
+      "report_sha256": "c42a1a775fc64648e906e1deec47e8ecbf102acb3c91ec85df9a951e70e8ec84"
+    },
+    "worker-inotify": {
+      "report_rows": 7,
+      "fixture_sha256": "0f9b1cab15d31ba1bee60b89f04c76c2ed0bcf3db2fc0837c39ad9617b326777",
+      "report_sha256": "83750bd4e34d555e0294309a18c15ce6400b7ee3e3b027cfbed9cb3a62af2dbf"
+    },
+    "io-uring": {
+      "report_rows": 9,
+      "fixture_sha256": "3ea98da6bd2ccb3abbbd3b4a59bffcb81260e583185e1ef66ffab078a4b80d53",
+      "report_sha256": "b3af75dad883e9342514c6b8e9467abf65b4b706069a3d16448cf2de36279aae"
+    },
+    "io-uring-worker": {
+      "report_rows": 9,
+      "fixture_sha256": "0e5302508bed90f29b22220d981b259ac37e79c0729eefa0877029cdd0518832",
+      "report_sha256": "9d5592412721436f8ef44a61efb211074c5fdf9d97f480fa5aca895361115162"
+    },
+    "io-uring-worker-registered": {
+      "report_rows": 9,
+      "fixture_sha256": "90e5f2047d645ff889faae19ef032702c0abfdfab18b220c59e0171a3d6032fd",
+      "report_sha256": "8158a2236f700e7f049bc661c4b169680da1a3beb9846eef42c18cad9a640684"
+    },
+    "io-uring-worker-async": {
+      "report_rows": 15,
+      "fixture_sha256": "09ac7ab717efe6ba1bd01023e94d756de34281afe3c9bc2fc31996f2a767175d",
+      "report_sha256": "8ba039d1fae5fade1eed9303af6856127d03031e5dbd6f7f60a3186e158f9bfa"
+    }
+  },
+  "microbenchmark": {
+    "fixture": "tests/fixtures/shared-files-table.c",
+    "guest_elf_sha256": "3f2a2b01ab723d26f40ee2c41d34d45499609ca56bf28f3bdabef810b8992d94",
+    "baseline_source": "0aae91ce3e20415ab30efa959bd340f405162b90",
+    "baseline_binary_sha256": "963381a0945fe4344a98d52d2a7ff90072792e49661f877786ef712b1b1c6c4e",
+    "candidate_binary_sha256": "c6015f498723a8b4cbb2ac4c1232f83778d924cb5f76c5e61c9da411bd466dcb",
+    "samples_per_cpu_and_version": 5,
+    "alternated": true,
+    "host_affinity": "Native ARM64 VM CPUs 0-4",
+    "medians": {
+      "1": {
+        "before": {
+          "timed_median_ms": 1.496136,
+          "parallel_rounds": 0,
+          "worker_fd_syscalls": 0,
+          "syscalls": 1615,
+          "service_requests": 0
+        },
+        "after": {
+          "timed_median_ms": 1.503636,
+          "parallel_rounds": 0,
+          "worker_fd_syscalls": 0,
+          "syscalls": 1615,
+          "service_requests": 0
+        }
+      },
+      "2": {
+        "before": {
+          "timed_median_ms": 20.729986,
+          "parallel_rounds": 664,
+          "worker_fd_syscalls": 768,
+          "syscalls": 1582,
+          "service_requests": 0
+        },
+        "after": {
+          "timed_median_ms": 0.288086,
+          "parallel_rounds": 57,
+          "worker_fd_syscalls": 1376,
+          "syscalls": 1585,
+          "service_requests": 0
+        }
+      },
+      "4": {
+        "before": {
+          "timed_median_ms": 26.701946,
+          "parallel_rounds": 662,
+          "worker_fd_syscalls": 768,
+          "syscalls": 1583,
+          "service_requests": 0
+        },
+        "after": {
+          "timed_median_ms": 0.301294,
+          "parallel_rounds": 48,
+          "worker_fd_syscalls": 1376,
+          "syscalls": 1578,
+          "service_requests": 0
+        }
+      }
+    },
+    "limits": "Short isolated FD microbenchmark, recorded before the independent FIFO poll correction. It uses anonymous pipes. No application throughput or iPad speedup claim."
+  },
+  "local_environment_adaptations": [
+    "Native ARM64 Ubuntu VM, no Rosetta; pinned QEMU is an independent instruction oracle.",
+    "ARM64 TSan uses LLVM compiler-runtime builtins and instrumented Rust std.",
+    "Full-precision lavapipe sampling retains original pixel assertions.",
+    "Apple source tools use provisioned Python 3.12, XcodeGen and explicit per-platform SDK roots; no global xcode-select change."
+  ],
+  "remaining_release_gates": [
+    "Excluded owner controls remain joined.",
+    "VM-local mapping commits.",
+    "Persistent execution contexts.",
+    "Final hosted validation, physical iPad smoke and release publication."
+  ]
+}
