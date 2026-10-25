@@ -5,7 +5,7 @@ final class LocalNetworkTests: XCTestCase {
     func testRealAlpineDirectDNSAndHTTPSOnAppleRuntime() async throws {
         let text=try await LocalNetworkProbe.run()
         XCTAssertTrue(text.contains("\r\nLOG_RESULT:0\r\n"),text)
-        XCTAssertTrue(text.contains("nameserver 127.0.0.53"),text)
+        XCTAssertTrue(text.contains("nameserver 169.254.0.53"),text)
         XCTAssertTrue(text.contains("Name:\tdl-cdn.alpinelinux.org"),text)
         XCTAssertFalse(text.contains("DNS lookup error"),text)
         XCTAssertFalse(text.contains("Can't find"),text)

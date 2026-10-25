@@ -37,8 +37,14 @@ with tempfile.TemporaryDirectory(prefix='trames-allocator-') as directory:
             assert native['allocator_calls']>native['allocator_allocations']+native['allocator_frees'],native
             assert native['allocator_journal_writes']>native['allocator_frees'],native
             if cpus==1:
-                assert native['allocator_load_callbacks']==0,native
-                assert native['allocator_direct_loads']>2*native['allocator_page_callbacks'],native
+                # Serial LL/SC promotes atomic pages into the common region
+                # domain too. Those pages deliberately decline a raw borrowed
+                # pointer, even with one CPU. The owned-page unit test keeps
+                # the exact zero-callback/cache-hit requirements; this mixed
+                # allocator/thread/fork fixture must exercise the admitted
+                # direct path without bypassing published-page guards.
+                assert native['allocator_direct_loads']>0,native
+                assert native['allocator_page_callbacks']>0,native
             else:assert native['allocator_load_callbacks']>0,native
             if cpus>1:assert native['worker_calls']>3000,native
         elif enabled=='default':assert native['calls']>0 and native['allocator_calls']==0,native

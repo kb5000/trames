@@ -1,0 +1,20 @@
+{
+  "source_sha": "dc64d0e6a4746e33ca569027be4bb767507f84f8",
+  "linux": {
+    "run": 40175614450,
+    "job": 121115536201
+  },
+  "apple": {
+    "run": 40175614550,
+    "job": 121116210595
+  },
+  "changed_file_sha256": {
+    ".github/workflows/ios.yml": "d7d964f961880fd1c9d7473aeb3abd8d34106e2229c4c40dc2c16e74dfef93f9",
+    ".github/workflows/linux.yml": "2f75d839ac5f6abd6b625a9a24be97b84435b5f111a4472847986210e99ea821",
+    "apps/ios/TramesTests/LocalNetworkTests.swift": "d48e8c222c95d5acbf77715421fc813bfa56b4fb8217cf607814897d64658576",
+    "scripts/ios-ci-scope.py": "4bc18d2f641e6404b595f7da6ec1a364ce6fc01f9079c5ac82c9b2070380898f",
+    "scripts/runtime-ci-reuse.py": "4b14117eb331beaa3405153192af37ea1df9e99e0ec48505c3cbfbe453460fee",
+    "tests/integration/allocator.py": "45624e570fb9f0d690a29b19dde6734335b54e68e13deb58c087b884358e1150",
+    "tests/integration/runtime-ci-reuse.py": "dcad538866b2c064ea1cbe6f61373b65701a37cde24c3b6d72d0d456841c0908"
+  }
+}
