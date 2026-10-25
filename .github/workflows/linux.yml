@@ -1467,6 +1467,12 @@ jobs:
         env:
           TRAMES_RUNNER: ${{ github.workspace }}/target/release/trames-run
           TRAMES_TEST_MUSL: ${{ github.workspace }}/target/musl-hybrid/libc.so
+      - name: Compare retained timer waits and worker progress with native Linux
+        run: |
+          bash scripts/build-worker-wait-fixture.sh
+          cc -O2 -Wall -Wextra -Werror -pthread -DTRAMES_HOST_ORACLE tests/fixtures/worker-wait.c -o target/worker-wait-oracle
+          worker_wait_output=$(mktemp -d "$PWD/target/worker-wait-ci.XXXXXX")
+          python3 tests/integration/worker-wait.py --runner target/release/trames-run --oracle target/worker-wait-oracle --output "$worker_wait_output/results"
       - uses: actions/upload-artifact@v4
         with:
           name: runtime-evidence
@@ -1482,4 +1488,5 @@ jobs:
             target/allocator-workflow.log
             target/musl-hybrid/allocator-validation.json
             target/musl-hybrid/native-parallel-validation.json
+            target/worker-wait-ci.*/
           if-no-files-found: error

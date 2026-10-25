@@ -639,5 +639,224 @@
     "VM-local mapping commits.",
     "Persistent execution contexts.",
     "Final hosted validation, physical iPad smoke and release publication."
-  ]
+  ],
+  "shared_anonymous_followup": {
+    "date": "2026-10-26",
+    "source_parent": "a3150b2997d766d022012f568378d0b02ddffd5d",
+    "status": "Local CI passed before push; full run plus scoped owner-deadline follow-up",
+    "tested_files_sha256": {
+      ".github/workflows/linux.yml": "a3b0bfa2e915cd8a86aa30a881b156d3b55f523f4e99f2726b8ff14c1e02ceac",
+      "crates/trames-core/src/process.rs": "e2521bad3871e1eaed2c524ee971453604d4f67e093614a8ea59aa1cd83bc925",
+      "crates/trames-linux/src/direct.rs": "0c910b5ec9ca1bfab247ed2ff39389652f1c21705230c33365771bd691b035da",
+      "crates/trames-vfs/src/direct_io.rs": "8641ad9ffe667f907216ceb95f317e86c279ce0831d0573a290eb2fc6fa1a04c",
+      "crates/trames-vfs/src/events.rs": "69bbe2ab19518895b6d1cbcb1dae0c48b2b4bb1ca85c401fa885ca41ed494699",
+      "crates/trames-vfs/src/fd_table.rs": "efb0c445902b3edd23d0bf3ac98adaeeefe5b5a883d76dc05aaafe6071f78aa2",
+      "crates/trames-vfs/src/inotify.rs": "500df29f8a257ec5fb450e8b2100e0db2675221ffc1cfdeeb7b3fc50e0443b65",
+      "crates/trames-vfs/src/inotify/queue.rs": "31e93e64a0f5312c7ab4311ea3157a242e3e3252a19c892b2688028225ed9dd1",
+      "crates/trames-vfs/src/ipc.rs": "2056cf2384d683ac3d00750b08b97b036c067aa66cf8f501e4c09338b60bc8d0",
+      "crates/trames-vfs/src/ipc/native.rs": "d36ce9cde905ca0638920ee1e6025a22a1c00edca106b195f2840eeb5a59d66c",
+      "crates/trames-vfs/src/lib.rs": "77717cda9da6a12bd57817628973072e8bf13f76706adc4a96a45561b8094b57",
+      "crates/trames-vfs/src/linux_namespace.rs": "769f6a57c9a3662a7ddc3edf9823ffae2f21068e84e5b4a3cdc06c0761554e9a",
+      "crates/trames-vfs/src/memfd.rs": "42a0f6d636d36509679d837899eb14b3ff65ce7ae816977c89f1dd5c96e6e252",
+      "crates/trames-vfs/src/network.rs": "40bff3d1bdbc5b4ad271837159bf6524f18d51a87b9b095c02089eb440ca8f37",
+      "crates/trames-vfs/src/open_handle.rs": "aaf51f791ba92a861c5658a1ccf86242c2a16a7dc93eb087927df947dfc22ba1",
+      "crates/trames-vfs/src/pseudo.rs": "ce03ed78bf28986a058f6c1e6c47dedf5319419ac4672e0e9453225d260c6d23",
+      "crates/trames-vfs/src/pty.rs": "0b16a8eb19b05b6d8fb121c37d0885916dc99d7b70178cbf525f1baac5160355"
+    },
+    "scope": {
+      "new_complete_shared_ofds": [
+        "eventfd",
+        "timerfd",
+        "inotify"
+      ],
+      "named_fifo": "Accepted blocked byte I/O retains the original complete pipe OFD despite its pathname descriptor kind.",
+      "control_acceptance": "Type validation, execution and completion accounting use one retained capability through concurrent numeric replacement.",
+      "owner_deadline": "Joined byte waits wake at the accepted deadline without a notification or live numeric slot; stopped waits do not contribute an active deadline.",
+      "excluded": "Socket/PTY, sealed memfd, signalfd/epoll/ring/BPF and namespace controls remain joined. Creation and pathname watch registration remain joined.",
+      "release_ready": false
+    },
+    "linux_runtime": {
+      "shell_stages_covered": 79,
+      "complete_run_stages": [
+        1,
+        78
+      ],
+      "complete_run_summary_sha256": "1ff3529b75a8e230424c5d4969c30fb719a43725dcaf69833c0c611f7344084c",
+      "new_stage": {
+        "index": 79,
+        "name": "Compare retained timer waits and worker progress with native Linux",
+        "record_sha256": "a9782a2da6a3b9692a0bbb7504bbdb422ac813a8f9b0aee4b855373e07184f9e"
+      },
+      "followup": "After the full 78-stage run, owner timer-deadline handling changed. Core, strict Clippy, Release, stage 79, Unix/inotify and focused TSan were checked again; unchanged CPU/network/graphics/container/developer-tool passes were reused.",
+      "source_batches_sha256": [
+        "c262b76a3548818c5aaadc70f6848dc105f59307680998772e364a5ca40495d3",
+        "bdba9fa4a03bc99cd0550f145b28ab20b72edd21f458c9e48ccb61a6d753797d"
+      ]
+    },
+    "apple": {
+      "native_workspace": {
+        "passed": 982,
+        "ignored": 17,
+        "full_run_passed": 981,
+        "followup": "The new Core timer regression adds one test. Core 186/3 and four affected timer tests pass; other unchanged workspace results are reused. Nested child-process test summaries are not counted twice."
+      },
+      "affected_libraries": {
+        "vfs": 311,
+        "linux_abi": 137,
+        "core": 186
+      },
+      "strict_clippy": true,
+      "ffi_release": true,
+      "original_wayland_c_peers": 5,
+      "ssh_sftp": "Passed real OpenSSH peer; existing opt-in skip retained.",
+      "simulator": {
+        "workspace": {
+          "passedTests": 1,
+          "failedTests": 0,
+          "skippedTests": 0,
+          "summary_sha256": "45e552a637fcf3161c12f2cef5c15db420c3f8e491f8dbaca5ba67020168ac4a"
+        },
+        "main": {
+          "passedTests": 70,
+          "failedTests": 0,
+          "skippedTests": 1,
+          "summary_sha256": "bb0fb8af3fa909104cff4a5db5125d337305949480653dad1a4bc15d4e61c425"
+        },
+        "deadline-network-retry": {
+          "passedTests": 1,
+          "failedTests": 0,
+          "skippedTests": 0,
+          "summary_sha256": "ab41099e84712df6866730a0d4cd2a89dad85b61edd4c4eb3dfeee4cb8db448b"
+        }
+      },
+      "owner_deadline_smoke": "13 workspace interaction tests pass; one system URLSession Alpine-download TLS failure occurs before guest startup and passes on its scoped retry.",
+      "unsigned_simulator_and_device_links": true,
+      "file_provider_metadata": true,
+      "physical_device_smoke": false
+    },
+    "linux_affected_libraries": {
+      "vfs": 312,
+      "linux_abi": 137,
+      "core": 186
+    },
+    "focused_thread_sanitizer": {
+      "passed": 71,
+      "groups": {
+        "shared_ofd": 1,
+        "shared_controls": 2,
+        "inotify": 16,
+        "fifo": 2,
+        "uring": 46,
+        "owner_timer_deadline": 1,
+        "actual_worker_handoff": 3
+      },
+      "instrumented_std": true,
+      "ignorelist": false
+    },
+    "guest_acceptance": {
+      "shared-files": {
+        "rows": 4,
+        "runner_sha256": "11a661675bcd6ae70dd647347e8fd57836477187ffb706712d30b645c608375b",
+        "fixture_sha256": "3f2a2b01ab723d26f40ee2c41d34d45499609ca56bf28f3bdabef810b8992d94",
+        "report_sha256": "faa80c6bac987a65d0a0b9b1ae1ada91a8ead45de041b13beb3b6d529bd2d4bb",
+        "scope": "unchanged passed resource checks reused"
+      },
+      "shared-flock": {
+        "rows": 10,
+        "runner_sha256": "11a661675bcd6ae70dd647347e8fd57836477187ffb706712d30b645c608375b",
+        "fixture_sha256": "95cd3e71533b9e8e16551f0a586b172800055d834b460770a6808357494507d8",
+        "report_sha256": "49f9659b91fb23455fcc17333925bb16696dd9476d02b93f563fa8725e3d8639",
+        "scope": "unchanged passed resource checks reused"
+      },
+      "blocking-flock": {
+        "rows": 10,
+        "runner_sha256": "11a661675bcd6ae70dd647347e8fd57836477187ffb706712d30b645c608375b",
+        "fixture_sha256": "b05e2299d753f0da85730830f191243af46467db60df4ee7d7a768bca8cc47b8",
+        "report_sha256": "196033fa0fb30ee6213ed7d6855d957a1c9b74c7acdfe8aa8d7b250248bb98fa",
+        "scope": "unchanged passed resource checks reused"
+      },
+      "io-uring": {
+        "rows": 9,
+        "runner_sha256": "11a661675bcd6ae70dd647347e8fd57836477187ffb706712d30b645c608375b",
+        "fixture_sha256": "3ea98da6bd2ccb3abbbd3b4a59bffcb81260e583185e1ef66ffab078a4b80d53",
+        "report_sha256": "d09ef4971cac3d4c78aca78ed4345a404803efc777aa4ca7f8a6d977e57f4d7d",
+        "scope": "unchanged passed resource checks reused"
+      },
+      "io-uring-extended": {
+        "rows": 9,
+        "runner_sha256": "11a661675bcd6ae70dd647347e8fd57836477187ffb706712d30b645c608375b",
+        "fixture_sha256": "7789b043022549a992d65e1a3a7fd91199829c544cf807f17759ab86af875345",
+        "report_sha256": "43884c8cb9ee6270e99a44b63574f9985aa40b4e2a50b90aeba8720a470e264d",
+        "scope": "unchanged passed resource checks reused"
+      },
+      "io-uring-multishot": {
+        "rows": 15,
+        "runner_sha256": "11a661675bcd6ae70dd647347e8fd57836477187ffb706712d30b645c608375b",
+        "fixture_sha256": "33df4f5ba64bff13f78d92ae717e77fb5e1381468c4a056b5711caa9389b6ad0",
+        "report_sha256": "6ed52398f6b7a4866ad532c4af7f740c5b875f0a01eab9b10b057d1ab2db5347",
+        "scope": "unchanged passed resource checks reused"
+      },
+      "io-uring-worker": {
+        "rows": 9,
+        "runner_sha256": "11a661675bcd6ae70dd647347e8fd57836477187ffb706712d30b645c608375b",
+        "fixture_sha256": "0e5302508bed90f29b22220d981b259ac37e79c0729eefa0877029cdd0518832",
+        "report_sha256": "30fadda3230e24bec1f5b2cffdc60e2e360cf74a96b1f6c28b0b04a18f24ad97",
+        "scope": "unchanged passed resource checks reused"
+      },
+      "io-uring-worker-registered": {
+        "rows": 9,
+        "runner_sha256": "11a661675bcd6ae70dd647347e8fd57836477187ffb706712d30b645c608375b",
+        "fixture_sha256": "90e5f2047d645ff889faae19ef032702c0abfdfab18b220c59e0171a3d6032fd",
+        "report_sha256": "fd093d4aa9fab5c27a68d39c82710954431bba48fd2c96db09f455a04df2cf87",
+        "scope": "unchanged passed resource checks reused"
+      },
+      "io-uring-worker-async": {
+        "rows": 15,
+        "runner_sha256": "11a661675bcd6ae70dd647347e8fd57836477187ffb706712d30b645c608375b",
+        "fixture_sha256": "09ac7ab717efe6ba1bd01023e94d756de34281afe3c9bc2fc31996f2a767175d",
+        "report_sha256": "0b17a5dca76e47c64e284cbd7dba2d0dc3723f879a52fcc935bd8063e0eae97c",
+        "scope": "unchanged passed resource checks reused"
+      },
+      "worker-unix": {
+        "rows": 42,
+        "runner_sha256": "dac0922cd5366e3a6562519d0660363671004eab38f351fa76a4e9effc0873d5",
+        "fixture_sha256": "a88d470b01f5fb62d41cb2c125f89b09ab5eca923f56ac5bbc16563efd85342e",
+        "report_sha256": "9209f15f725317b0c7b9b7079c0a945ece199541f9264f4b0202022aed387e60",
+        "scope": "owner-deadline follow-up"
+      },
+      "worker-inotify": {
+        "rows": 7,
+        "runner_sha256": "dac0922cd5366e3a6562519d0660363671004eab38f351fa76a4e9effc0873d5",
+        "fixture_sha256": "0f9b1cab15d31ba1bee60b89f04c76c2ed0bcf3db2fc0837c39ad9617b326777",
+        "report_sha256": "f1ce693114ec438a1e291a7513505bb2e61afac1810df5ae79754def8d510bea",
+        "scope": "owner-deadline follow-up"
+      },
+      "worker-wait": {
+        "rows": 24,
+        "runner_sha256": "dac0922cd5366e3a6562519d0660363671004eab38f351fa76a4e9effc0873d5",
+        "fixture_sha256": "ce33f74aea6f6d0e02e6611aac6e09d4adf1d64bd372b4f76bc76e3c5757d82c",
+        "report_sha256": "dea0ce4e17ca67d75229326a2bea6546b40d685e0e0353414829999e1fe6f278",
+        "scope": "new workflow stage 79; final owner-deadline code"
+      }
+    },
+    "negative_controls": {
+      "fifo_original_lease": "Old code fails with EPIPE while a blocked FIFO read still owns its original endpoint.",
+      "owner_deadline": "Removing the deadline admission and idle classification fails with Deadlock.",
+      "flock_process_pin": "Restoring the extra Process OFD pin fails the real worker ACK/lock assertion with EAGAIN.",
+      "hosted_wait_reproduction": "The previous blocking ACK reproduced all-blocked owner fallback on pinned ARM QEMU attempt 93. The corrected nonblocking test ACK keeps a guest runnable and passes 120 repetitions; lock assertions remain intact.",
+      "final_qemu_timer": "New original-deadline regression also passes on the pinned ARM64 musl/QEMU path."
+    },
+    "unsigned_ipa": {
+      "filename": "Trames-shared-anonymous-unsigned.ipa",
+      "bytes": 13528740,
+      "sha256": "8bcbe3ee051f5968b253b99e95f78aa5bab01ee6b34cc7f5cbef59a6058d34ca"
+    },
+    "remaining_release_gates": [
+      "Excluded FD/control ownership",
+      "VM-local commits",
+      "Persistent event-driven contexts",
+      "Hosted merge/release checks",
+      "Physical iPad smoke"
+    ]
+  }
 }

@@ -272,6 +272,15 @@ impl Process {
             .supports_call(number, args)
             || matches!(number, 63..=66) && self.linux.vfs.direct_tcp_fd(args[0] as u32).is_some()
     }
+    fn byte_wait_deadline(&self) -> Option<Instant> {
+        if matches!(self.state, State::Blocked(..)) {
+            self.byte_wait
+                .as_ref()
+                .and_then(|wait| wait.wake_deadline())
+        } else {
+            None
+        }
+    }
 
     /// Preserve the complete OFD before owner-side close/dup can resume.
     fn retain_worker_flock(&mut self, call: Option<&crate::run_queue::IoCall>) {
@@ -389,9 +398,9 @@ struct ProcMaps {
     identity: (u64, u64),
     bytes: Vec<u8>,
 }
-// Joined shared pipes change only through this kernel's guest execution. Their
-// callbacks set IoSignal::ready; the returning CPU/worker already wakes this
-// owner. Host-backed resources are excluded and retain their host event path.
+// Joined shared resources notify through guest execution or a worker. Timers
+// also resume at the accepted wait's deadline. Host-backed resources retain
+// their host event path.
 struct JoinedByteWake;
 impl trames_vfs::IoWake for JoinedByteWake {
     fn wake_io(&self, _: &Arc<trames_vfs::IoSignal>) {}
@@ -2669,10 +2678,12 @@ impl Kernel {
         a: [u64; 6],
         io: &mut impl GuestOutput,
     ) {
-        if p.byte_wait
-            .as_ref()
-            .is_some_and(|wait| !wait.signal.ready())
-        {
+        if p.byte_wait.as_ref().is_some_and(|wait| {
+            !wait.signal.ready()
+                && !wait
+                    .wake_deadline()
+                    .is_some_and(|deadline| Instant::now() >= deadline)
+        }) {
             return;
         }
         let began = self.profile_syscalls.then(Instant::now);
@@ -2733,7 +2744,7 @@ impl Kernel {
                 Ok(None)
             }
             Some(trames_linux::IoAttempt::Checkpoint) => {
-                unreachable!("joined shared pipe byte call")
+                unreachable!("joined shared byte call")
             }
             None => self.syscall(pid, p, number, a, io),
         };
@@ -4410,6 +4421,7 @@ impl Kernel {
             if !progress {
                 let external = self.processes.values().any(|p| {
                     p.poll_deadline.is_some()
+                        || p.byte_wait_deadline().is_some()
                         || matches!(p.state, State::Gpu { .. })
                         || p.linux.vfs.next_timerfd_deadline().is_some()
                         || p.linux.uring_pending()
@@ -4455,6 +4467,7 @@ impl Kernel {
             for deadline in [
                 p.linux.uring_deadline(),
                 p.uring_wait.as_ref().and_then(|(_, _, d)| *d),
+                p.byte_wait_deadline(),
             ]
             .into_iter()
             .flatten()
@@ -5461,6 +5474,52 @@ mod tests {
     }
 
     #[test]
+    fn joined_timer_wait_expires_without_a_notification_after_close_and_fd_reuse() {
+        let mut k = kernel();
+        let mut p = process();
+        let timer = p.linux.vfs.timerfd(1, 0).unwrap();
+        let deadline = Instant::now() + Duration::from_secs(1);
+        p.linux
+            .vfs
+            .timerfd_set(timer, Duration::ZERO, Some(deadline))
+            .unwrap();
+        let mut io = trames_linux::CapturedOutput::default();
+        k.call(1, &mut p, 63, [timer as u64, 0x1000, 8, 0, 0, 0], &mut io);
+        assert!(matches!(p.state, State::Blocked(63, _)));
+        assert_eq!(
+            p.byte_wait.as_ref().unwrap().wake_deadline(),
+            Some(deadline)
+        );
+        assert!(!p.byte_wait.as_ref().unwrap().signal.ready());
+        p.state = State::Stopped;
+        assert!(p.byte_wait_deadline().is_none());
+        p.state = State::Blocked(63, [timer as u64, 0x1000, 8, 0, 0, 0]);
+        assert_eq!(p.byte_wait_deadline(), Some(deadline));
+        p.linux.vfs.close(timer).unwrap();
+        assert_eq!(
+            p.linux.vfs.eventfd(9, trames_vfs::O_NONBLOCK).unwrap(),
+            timer
+        );
+        let replacement = p.linux.vfs.direct_descriptors().get(timer).unwrap();
+        assert!(p.linux.vfs.next_timerfd_deadline().is_none());
+        // Exit after the original pending read completes. No guest or host
+        // write will notify it, and the table now contains only the eventfd.
+        let code: Vec<_> = [0xd2800000u32, 0xd2800ba8, 0xd4000001]
+            .into_iter()
+            .flat_map(u32::to_le_bytes)
+            .collect();
+        p.memory.write(0x4000, &code).unwrap();
+        p.memory
+            .protect(0x4000, PAGE_SIZE, Permissions::RX)
+            .unwrap();
+        k.processes.insert(1, p);
+        assert_eq!(k.drive(&mut io, 1000).unwrap().code, 0);
+        assert_eq!(k.processes[&1].memory.read_u64(0x1000).unwrap(), 1);
+        assert_eq!(replacement.read(8).unwrap(), 9u64.to_le_bytes());
+        assert!(k.processes[&1].byte_wait.is_none());
+    }
+
+    #[test]
     fn flock_handoff_reuses_file_but_replaces_a_completed_requests_operation() {
         let mut k = kernel();
         let mut p = process();
@@ -5502,7 +5561,7 @@ mod tests {
         let a = p.linux.vfs.open_at(-100, b"/lock", 0x42, 0o600).unwrap();
         let b = p.linux.vfs.open_at(-100, b"/lock", 2, 0).unwrap();
         p.linux.vfs.flock(b, 6).unwrap();
-        let [ack_reader, ack_writer] = p.linux.vfs.pipe(0).unwrap();
+        let [ack_reader, ack_writer] = p.linux.vfs.pipe(trames_vfs::O_NONBLOCK).unwrap();
         p.memory.write(0x1200, b"a").unwrap();
         let parent_code: Vec<_> = [
             0xd2800000u32 | (ack_writer << 5),
@@ -5533,8 +5592,11 @@ mod tests {
         producer.tgid = 2;
         producer.vm_id = 2;
         producer.parent = 1;
-        // unlock(b); read(ack); flock(b, LOCK_EX | LOCK_NB). The parent sends
-        // ACK only after its accepted flock completes and its last OFD drops.
+        // unlock(b); read(ack) until not EAGAIN; flock(b, LOCK_EX | LOCK_NB).
+        // Keep a guest runnable across a cohort's host-time cutoff. If both
+        // tasks block, the kernel may legitimately return to owner scheduling,
+        // which would stop this test from isolating worker-side final release.
+        // The parent sends ACK after its accepted flock and last OFD drop.
         let code: Vec<_> = [
             0xd4000001u32,
             0xd2800000 | (ack_reader << 5),
@@ -5542,6 +5604,8 @@ mod tests {
             0xd2800022,
             0xd28007e8,
             0xd4000001,
+            0xb1002c1f, // cmn x0, #11: retry only -EAGAIN
+            0x54ffff40, // b.eq back to the read argument setup
             0xd2800000 | (b << 5),
             0xd28000c1,
             0xd2800408,
@@ -5564,14 +5628,27 @@ mod tests {
             .unwrap();
         k.processes.insert(1, p);
         k.processes.insert(2, producer);
-        for _ in 0..4 {
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
             let limit = k.instructions + 1_000_000;
-            assert!(k.parallel_round(&mut io, limit).unwrap());
-            if k.processes[&2].cpu.pc == 0x4028 {
+            assert!(
+                k.parallel_round(&mut io, limit).unwrap(),
+                "parent pc={:#x}/ready={}, producer pc={:#x}/ready={}, candidate={}",
+                k.processes[&1].cpu.pc,
+                matches!(k.processes[&1].state, State::Ready),
+                k.processes[&2].cpu.pc,
+                matches!(k.processes[&2].state, State::Ready),
+                k.parallel_candidate()
+            );
+            if k.processes[&2].cpu.pc == 0x4030 {
                 break;
             }
+            assert!(
+                Instant::now() < deadline,
+                "worker ACK/lock handshake timed out"
+            );
         }
-        assert_eq!(k.processes[&2].cpu.pc, 0x4028);
+        assert_eq!(k.processes[&2].cpu.pc, 0x4030);
         assert_eq!(k.processes[&2].cpu.x(0), 0);
         assert!(k.processes[&1].flock_wait.is_none());
         assert_eq!(k.processes[&1].cpu.x(0), 1);

@@ -20,7 +20,8 @@ CLOEXEC while preserving the underlying OFDs.
 | --- | --- |
 | Ordinary nonvolatile, unsealed pathname files | Complete shared OFD, inode and eligible mount ancestry. Live worker dup/F_DUPFD, dup3 and close. File bytes use prepared authority where eligible; pathname/storage changes still join. |
 | Pipes and eligible named FIFO descriptions | Complete shared OFD and actual endpoint lifetime. Final release updates EOF/HUP/EPIPE and wakes peers on the releasing worker. FIFO poll uses pipe state even though its descriptor kind contains a pathname. |
-| Owner controls | Directories, namespace-bound ancestry, sockets/PTY, anonymous event/timer/inotify/epoll/ring controls and sealed memfd retain explicit owner boundaries. A structural operation involving one of these controls returns before effects and joins. |
+| eventfd, timerfd and inotify | Complete shared OFD and original atomic counter, timer state or watch instance. Worker dup, replacement and close use live membership. Accepted reads and control calls retain the original object through numeric FD reuse; prepared maps cannot keep registrations alive. Creation and pathname watch registration still join. |
+| Owner controls | Directories, namespace-bound ancestry, sockets/PTY, signalfd/epoll/ring/BPF controls and sealed memfd retain explicit owner boundaries. A structural operation involving one of these controls returns before effects and joins. |
 | Descriptor metadata | OFD status and per-FD CLOEXEC are live atomic state. Fork copies descriptor bits; duplicates share status. Ordinary metadata counters/bits use relaxed ordering. |
 
 Shared close releases the calling process's POSIX record locks on any relevant
@@ -63,6 +64,19 @@ shared request out of Process. Keeping an extra Process reference until the
 next join would delay actual final close and is prohibited. Stop/continue
 preserves a wait; completion, cancellation, caught signals, exec and exit release
 it. Original-endpoint SIGPIPE still follows the existing signal path.
+
+The accepted byte path includes named FIFOs as well as anonymous pipes. A FIFO
+retains its pathname descriptor kind; deciding acceptance from that kind alone
+would lose its original endpoint when a blocked read's numeric slot is replaced.
+Anonymous shared controls use the same byte ABI, notification and timer-deadline
+algorithms as owner execution. Control type validation, execution and completion
+accounting use one accepted capability, including when a readiness callback
+replaces the numeric slot. No new resource lock or timer thread is needed.
+Joined execution also checks the accepted wait's deadline independently of its
+notification bit and numeric FD table. A timer can expire without an external
+notification, even after its slot is closed and reused. Idle detection and host
+sleep use that retained deadline; otherwise a one-CPU read can stall or report a
+false deadlock. No extra clock read is added to a byte wait without a deadline.
 
 ## Poll, io_uring and mappings
 
