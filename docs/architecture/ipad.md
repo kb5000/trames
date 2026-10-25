@@ -75,3 +75,20 @@ limited free capacity remain explicit errors. File transfers use single-use canc
 and between 64 KiB copies. Closing a local session also cancels its copies.
 Configuration/key exports have a 64 KiB preflight size limit. This establishes
 the versioned asynchronous Bridge RPC, per-request native consent, persistent Files directory authorizations and built-in accelerator registry described in [M5](m5.md).
+
+## Terminal accessory invalidation, 2026-10-25
+
+SwiftTerm 1.20.0 rebuilds its accessory buttons whenever its bounds setter runs.
+A child-only keyboard layout can occur after the wrapper's deferred binding has
+already completed. That left the new extended-keyboard button without its
+accessibility identifier and the new Ctrl button without the wrapper's public
+terminal-modifier forwarding. A longer test timeout cannot repair those keys.
+
+The wrapper now observes the accessory bounds and coalesces a binding on the
+main queue after the actual rebuild. The regression test lets the first
+deferred binding finish before assigning child bounds again. On a native
+ARM64 iPad simulator it fails before the fix and passes afterward. All five
+TerminalViewportTests and the original extended-keyboard round-trip UI case
+pass three repetitions each (18 executions). This scoped frontend validation
+reuses the unchanged Rust and guest results; it is not physical-iPad or whole
+release acceptance. [Source-bound results](../validation/keyboard-late-layout-summary.json).

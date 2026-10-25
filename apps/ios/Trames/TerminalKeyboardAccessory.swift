@@ -9,6 +9,7 @@ final class TerminalKeyboardAccessory:UIInputView {
     private weak var terminal:TerminalView?
     private let rowHeight:CGFloat
     private var resetObserver:NSObjectProtocol?
+    private var boundsObserver:NSKeyValueObservation?
     private var bindingScheduled=false
     static let trailingClearance:CGFloat=48
     init(accessory:TerminalAccessory,terminal:TerminalView) {
@@ -18,6 +19,12 @@ final class TerminalKeyboardAccessory:UIInputView {
         allowsSelfSizing=true;accessory.allowsSelfSizing=false
         accessibilityIdentifier="terminal-accessory"
         addSubview(accessory)
+        // SwiftTerm rebuilds its buttons in every bounds setter, including
+        // child-only passes after our deferred binding has already completed.
+        // Observe that actual invalidation instead of assuming a parent layout.
+        boundsObserver=accessory.observe(\.bounds) { [weak self] _,_ in
+            MainActor.assumeIsolated {self?.scheduleKeyBinding()}
+        }
         // SwiftTerm casts inputAccessoryView to TerminalAccessory. A wrapper
         // instead bridges its original sticky Ctrl to the public modifier API.
         resetObserver=NotificationCenter.default.addObserver(forName:.terminalViewControlModifierReset,object:terminal,queue:.main) { [weak self] _ in
