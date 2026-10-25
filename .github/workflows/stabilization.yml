@@ -2,6 +2,7 @@ name: Runtime stabilization
 on:
   push:
     branches: ['fix/stable-release-*']
+    paths: ['crates/trames-core/**']
   workflow_dispatch:
 permissions:
   contents: read

@@ -15,42 +15,49 @@ def prepare(root):
     nested = root / 'vulkan-guest'
     if nested.is_symlink():
         raise ValueError('Symlink in graphics artifact')
-    if nested.exists():
+    payload = nested if nested.exists() else root
+    if payload == nested:
         if any((root / name).exists() for name in REQUIRED):
             raise ValueError('Ambiguous flat and nested graphics payloads')
-        if not all((nested / name).is_file() for name in REQUIRED):
-            raise ValueError('Incomplete nested graphics artifact')
-        # The producer uploads target/vulkan-guest together with a sibling
-        # source archive. upload-artifact consequently preserves both folders.
-        # Other validated producers upload just the flat graphics directory.
         for item in nested.rglob('*'):
             if item.is_symlink():
                 raise ValueError('Symlink in graphics artifact')
-        for item in nested.iterdir():
-            destination = root / item.name
-            if destination.exists():
-                raise ValueError('Graphics artifact destination already exists')
-            shutil.move(str(item), destination)
-        nested.rmdir()
     for name in REQUIRED:
-        path = root / name
+        path = payload / name
         if path.is_symlink() or not path.is_file():
             raise ValueError('Missing regular graphics payload: ' + name)
-    record = json.loads((root / 'manifest.json').read_text())
+    record = json.loads((payload / 'manifest.json').read_text())
     digest = hashlib.sha256()
-    with (root / REQUIRED[0]).open('rb') as stream:
+    with (payload / REQUIRED[0]).open('rb') as stream:
         for chunk in iter(lambda: stream.read(65536), b''):
             digest.update(chunk)
-    actual = digest.hexdigest()
-    if actual != record['icd_sha256']:
+    if digest.hexdigest() != record['icd_sha256']:
         raise ValueError('Graphics payload checksum mismatch')
+
     paired = root / 'xwayland-native/xwayland-native-source.tar.gz'
-    if paired.exists():
+    source_folder = paired.parent if paired.exists() else None
+    if source_folder is not None:
         destination = root / paired.name
-        if paired.is_symlink() or not paired.is_file() or destination.exists():
+        if (source_folder.is_symlink() or paired.is_symlink() or not paired.is_file()
+                or set(source_folder.iterdir()) != {paired} or destination.exists()
+                or (payload == nested and (nested / paired.name).exists())):
             raise ValueError('Ambiguous paired Xwayland source')
-        shutil.move(str(paired), destination)
-        paired.parent.rmdir()
+    # Validate every destination before changing the download. On macOS the
+    # sibling source folder xwayland-native collides with Xwayland-native, the
+    # actual executable. Retain the archive and remove that folder FIRST.
+    items = list(nested.iterdir()) if payload == nested else []
+    for item in items:
+        destination = root / item.name
+        if destination.exists() and not (
+                source_folder is not None and destination.samefile(source_folder)):
+            raise ValueError('Graphics artifact destination already exists: ' + item.name)
+    if source_folder is not None:
+        shutil.move(str(paired), root / paired.name)
+        source_folder.rmdir()
+    for item in items:
+        shutil.move(str(item), root / item.name)
+    if items:
+        nested.rmdir()
     print('Verified graphics layout and ICD checksum; paired sources retained')
 
 

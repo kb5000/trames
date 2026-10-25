@@ -12,6 +12,8 @@ def frontend_path(path):
     return path.startswith(("apps/ios/", "docs/")) or path in {
         ".github/workflows/ios.yml", ".github/workflows/linux.yml",
         "scripts/ios-ci-scope.py", "AGENTS.md", ".github/ios-validation-plan.json",
+        "scripts/prepare-ios-guest-artifacts.py", "tests/integration/ios-guest-artifacts.py",
+        ".github/workflows/stabilization.yml",
     }
 
 
