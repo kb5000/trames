@@ -98,3 +98,53 @@ Machine-readable results and source/ELF/runner hashes are in
 No iPad, Docker or Firefox performance claim is made. Complete FD/OFD ownership,
 VM-local commits and persistent contexts remain release gates in
 [#36](https://github.com/kb5000/trames/issues/36).
+
+## Retained inode identity and live EOF, 2026-10-25
+
+The next prerequisite replaces the actual inode Rc/RefCell with Arc and an
+object-local RwLock. Immutable host identity supports path lookup without
+recursively locking the same inode. Mapped-data ownership and inotify marks now
+satisfy Send + Sync through their fields; no manual unsafe trait implementation
+is added. Namespace, mount, descriptor and endpoint control projections remain
+owner-local, and this change does not move their syscalls onto workers.
+
+Ordinary file and memfd mappings continue to read their existing atomic length.
+Lower and volatile mappings retain an inode's live scalar size capability instead
+of acquiring that inode on every EOF check. Size observers are allocated lazily;
+actual size/storage-source changes update dependent scalar capabilities
+synchronously, outside dependency locks. Ordinary reads use relaxed scalar loads,
+without new byte-publication barriers. PlainFile initialization uses its existing
+byte lock and SharedFile initialization its resize lock, excluding a lost first
+resize. Graph bindings follow the existing acyclic overlay ownership; graph
+retargeting remains serialized by namespace ownership, while file sizes may
+change concurrently. The notifier only advances the existing backing counter
+and never enters an inode, VM or byte provider.
+
+Inode write guards refresh a changed storage binding before releasing metadata.
+An unchanged binding avoids graph traversal/registration. A late notification
+from a replaced source cannot restore the old binding. Weak follower registration
+is removed on drop; retained sources survive until their last scalar observer.
+The tests cover concurrent resize/registration, source replacement, cycle
+rejection, metadata invariants and final inode release on a worker. A Lower EOF
+test holds both source and projection inode write locks while checking admission
+and truncating the original storage, proving that this path does not reenter
+inode metadata.
+
+Publication, cache replacement and backing I/O retain their joined ownership
+requirements. In particular, Send + Sync for inode storage does not authorize
+concurrent access to unpublished cached bytes. Dynamic FD/OFD operations must
+first establish actual endpoint lifetimes and shared byte publication; VM-local
+commits must quiesce all genuinely related mappings. No complete FD or VM
+migration is claimed by this prerequisite.
+
+Native Apple ARM64 validation passes 14 shared, 283 VFS, 172 Core and 121 Linux
+unit tests; five existing manual cases remain ignored. Sandbox-denied loopback
+cases were rerun separately with network access. Scoped strict Clippy and the
+Release CLI build pass. Six original guest mmap/persistence/scheduler cases pass
+for both baseline and candidate. Three alternated mapped-access samples produce
+candidate/baseline CPU medians of 1.022 for ordinary files and 0.996 for memfd.
+The comparison includes the preceding page-capability change and has no host
+CPU pinning or confidence interval; it is not an isolated speedup measurement.
+[Source, binary hashes and measurements](shared-inode-capabilities-summary.json)
+record its exact scope. Independent CI and the remaining release gates in
+[#36](https://github.com/kb5000/trames/issues/36) still apply.
