@@ -152,6 +152,8 @@ struct Process {
     flock_wait: Option<(trames_vfs::FlockRequest, trames_vfs::RetainedFd)>,
     byte_wait: Option<trames_linux::PendingIo>,
     retained_byte: Option<trames_linux::RetainedByte>,
+    retained_poll: Option<trames_linux::RetainedPoll>,
+    retained_select: Option<trames_linux::RetainedSelect>,
     pending_open: Option<u32>,
     stopped_state: Option<Box<State>>,
     auto_reap: bool,
@@ -168,12 +170,34 @@ struct Process {
     seccomp: seccomp::Seccomp,
 }
 impl Process {
+    fn shares_wait_resources(&self, fds: &trames_vfs::DirectFds) -> bool {
+        self.retained_poll
+            .as_ref()
+            .is_some_and(|poll| poll.shares_resources(fds))
+            || self
+                .retained_byte
+                .as_ref()
+                .is_some_and(|byte| byte.shares_resources(fds))
+            || self
+                .byte_wait
+                .as_ref()
+                .and_then(|wait| wait.retained_byte.as_ref())
+                .is_some_and(|byte| byte.shares_resources(fds))
+    }
     /// Only unfiltered, untraced already-blocked calls can be adopted without
     /// another authority evaluation. New calls use Snapshot::admit on-worker.
     fn worker_ring_event_wait(&self, id: u32) -> bool {
         let owner = self.memory.instruction_identity().0;
         if let Some((_, ring, deadline)) = &self.uring_wait {
             return trames_linux::UringEpoch::has_event_wait(ring, owner, id, *deadline);
+        }
+        if let Some(poll) = &self.retained_poll {
+            return poll.owner_controls().into_iter().any(|(fd, original)| {
+                self.linux.vfs.matches_open_description(fd, &original)
+                    && self.linux.vfs.uring(fd).is_ok_and(|ring| {
+                        trames_linux::UringEpoch::has_event_wait(&ring, owner, id, None)
+                    })
+            });
         }
         if let State::Blocked(number, args) = self.state {
             return trames_linux::UringEpoch::poll_rings(
@@ -193,6 +217,11 @@ impl Process {
     }
 
     fn worker_io_candidate(&self, id: u32) -> bool {
+        if let Some(poll) = &self.retained_poll {
+            return !self.linux.trace
+                && self.seccomp.mode() == 0
+                && poll.supports_worker(&self.linux.vfs);
+        }
         if self.retained_byte.is_some() || self.byte_wait.is_some() {
             return !self.linux.trace && self.seccomp.mode() == 0;
         }
@@ -331,6 +360,8 @@ impl Process {
             flock_wait: None,
             byte_wait: None,
             retained_byte: None,
+            retained_poll: None,
+            retained_select: None,
             pending_open: None,
             stopped_state: None,
             auto_reap: false,
@@ -856,6 +887,8 @@ impl Kernel {
         p.flock_wait = None;
         p.byte_wait = None;
         p.retained_byte = None;
+        p.retained_poll = None;
+        p.retained_select = None;
         self.parent_thread_exited(pid, p, None);
         p.linux.vfs.cgroup_exit(pid);
         let state = if matches!(p.state, State::Stopped) {
@@ -1340,6 +1373,8 @@ impl Kernel {
                 p.flock_wait = None;
                 p.byte_wait = None;
                 p.retained_byte = None;
+                p.retained_poll = None;
+                p.retained_select = None;
                 let timed_socket = p.socket_deadline.take().is_some();
                 if !timed_socket
                     && action.flags & 0x10000000 != 0
@@ -1638,6 +1673,8 @@ impl Kernel {
             p.flock_wait = None;
             p.byte_wait = None;
             p.retained_byte = None;
+            p.retained_poll = None;
+            p.retained_select = None;
             p.linux.vfs.unshare_descriptors();
             p.linux.vfs.close_exec();
             let credentials = execute_vfs.credentials.clone();
@@ -2718,6 +2755,8 @@ impl Kernel {
                     // does. Do not leak its deadline or temporary signal mask
                     // into a later read, poll, or runnable CPU epoch.
                     p.poll_deadline = None;
+                    p.retained_poll = None;
+                    p.retained_select = None;
                     if let Some(mask) = p.poll_mask.take() {
                         p.mask = mask;
                     }
@@ -2806,7 +2845,7 @@ impl Kernel {
     ) -> Result<Option<u64>, Errno> {
         let timeout = if number == 73 { a[2] } else { a[4] };
         let mut expired = false;
-        if timeout != 0 {
+        if timeout != 0 && p.retained_poll.is_none() && p.retained_select.is_none() {
             let sec = read_u64(&p.memory, timeout)?;
             let ns = read_u64(&p.memory, timeout + 8)?;
             if sec > i64::MAX as u64 || ns >= 1_000_000_000 {
@@ -2819,9 +2858,11 @@ impl Kernel {
                         .ok_or(Errno(22))?,
                 );
             }
-            expired = p.poll_deadline.is_some_and(|d| Instant::now() >= d);
         }
-        let mask = if number == 73 {
+        expired |= p.poll_deadline.is_some_and(|d| Instant::now() >= d);
+        let mask = if p.retained_poll.is_some() || p.retained_select.is_some() {
+            None
+        } else if number == 73 {
             if a[3] != 0 {
                 if a[4] != 8 {
                     return Err(Errno(22));
@@ -2847,54 +2888,35 @@ impl Kernel {
         let mut count = 0;
         let mut outputs = Vec::new();
         if number == 73 {
-            if a[1] > 256 {
-                return Err(Errno(22));
-            }
-            Linux::check(&p.memory, a[0], a[1] as usize * 8, Access::Write)?;
-            for i in 0..a[1] {
-                let base = a[0] + i * 8;
-                let fd = read_u32(&p.memory, base)? as i32;
-                let event = read_u32(&p.memory, base + 4)? as u16;
-                let ready = if fd < 0 {
-                    0
-                } else {
-                    self.readiness(p, fd as u32, event, io)?
-                };
+            let poll = match p.retained_poll.take() {
+                Some(poll) => poll,
+                None => trames_linux::RetainedPoll::prepare_joined(&p.linux.vfs, &p.memory, a)?,
+            };
+            let rows = poll.ready_joined(|fd, original, events| {
+                if !p.linux.vfs.matches_open_description(fd, original) {
+                    return Ok(32);
+                }
+                self.readiness(p, fd, events, io)
+            })?;
+            for (address, ready) in rows {
                 if ready != 0 {
                     count += 1;
                 }
-                outputs.push((base + 6, ready.to_le_bytes().to_vec()));
+                outputs.push((address, ready.to_le_bytes().to_vec()));
             }
+            p.retained_poll = Some(poll);
         } else {
-            if a[0] > 256 {
-                return Err(Errno(22));
-            }
-            let size = a[0].div_ceil(64) as usize * 8;
-            for (idx, event) in [(1, 1u16), (2, 4), (3, 2)] {
-                if a[idx] == 0 {
-                    continue;
+            let select = match p.retained_select.take() {
+                Some(select) => select,
+                None => trames_linux::RetainedSelect::prepare_joined(&p.linux.vfs, &p.memory, a)?,
+            };
+            (count, outputs) = select.ready_joined(|fd, original, events| {
+                if !p.linux.vfs.matches_open_description(fd, original) {
+                    return Ok(32);
                 }
-                Linux::check(&p.memory, a[idx], size, Access::Write)?;
-                let mut original = vec![0; size];
-                p.memory
-                    .read(a[idx], &mut original)
-                    .map_err(|_| Errno(14))?;
-                let mut result = vec![0; size];
-                for fd in 0..a[0] as u32 {
-                    if original[fd as usize / 8] & (1 << (fd % 8)) == 0 {
-                        continue;
-                    }
-                    let ready = self.readiness(p, fd, event, io)?;
-                    if ready & 32 != 0 {
-                        return Err(Errno(9));
-                    }
-                    if ready & (event | 8 | 16) != 0 && event != 2 {
-                        result[fd as usize / 8] |= 1 << (fd % 8);
-                        count += 1;
-                    }
-                }
-                outputs.push((a[idx], result));
-            }
+                self.readiness(p, fd, events, io)
+            })?;
+            p.retained_select = Some(select);
         }
         if count != 0 || expired {
             for (ptr, bytes) in outputs {
@@ -2904,6 +2926,8 @@ impl Kernel {
                 p.mask = old;
             }
             p.poll_deadline = None;
+            p.retained_poll = None;
+            p.retained_select = None;
             Ok(Some(count))
         } else {
             if let Some(mask) = mask {
@@ -3585,6 +3609,7 @@ impl Kernel {
                         && !q.frozen(other)
                         && q.worker_io_candidate(other)
                         && (fds.shares_resources(&q.linux.vfs.direct_descriptors())
+                            || q.shares_wait_resources(&fds)
                             || network.shares_resources(&q.linux.vfs.direct_network()))
                 })
             });
@@ -3610,6 +3635,7 @@ impl Kernel {
                             || matches!(p.state, State::Blocked(116, _))
                                 && first.linux.vfs.can_write_kernel_log_for(&p.linux.vfs)
                             || fds.shares_resources(&p.linux.vfs.direct_descriptors())
+                            || p.shares_wait_resources(&fds)
                             || network.shares_resources(&p.linux.vfs.direct_network())))
         })
     }
@@ -3871,6 +3897,7 @@ impl Kernel {
                 job.retry = Some(crate::run_queue::IoCall {
                     flock: p.flock_wait.as_ref().map(|(r, _)| r.clone()),
                     retained_byte,
+                    retained_poll: p.retained_poll.take(),
                     number,
                     args,
                     deadline: if matches!(number, 63..=66) {
@@ -3999,6 +4026,7 @@ impl Kernel {
             p.cpu = done.cpu;
             p.retain_worker_flock(done.io.as_ref());
             p.retained_byte = done.io.as_ref().and_then(|call| call.retained_byte.clone());
+            p.retained_poll = done.io.as_ref().and_then(|call| call.retained_poll.clone());
             p.state = if let Some(compile) = done.gpu_pending {
                 State::Gpu {
                     retired: true,
@@ -4550,6 +4578,8 @@ pub(super) fn run(
         flock_wait: None,
         byte_wait: None,
         retained_byte: None,
+        retained_poll: None,
+        retained_select: None,
         pending_open: None,
         stopped_state: None,
         auto_reap: false,
@@ -4960,6 +4990,7 @@ mod tests {
             deadline: None,
             flock: Some(request),
             retained_byte: None,
+            retained_poll: None,
         };
         drop(file);
         p.retain_worker_flock(Some(&call)); // Joined before close/dup.
@@ -5007,6 +5038,282 @@ mod tests {
         assert!(p.byte_wait.is_none());
         assert_eq!(p.linux.vfs.write(writer, b"x"), Err(Errno(32)));
         assert_eq!(p.linux.vfs.read(replacement, 1).unwrap(), b"n");
+    }
+
+    #[test]
+    fn joined_ppoll_keeps_imported_fds_and_timeout_through_close_and_guest_buffer_changes() {
+        let mut k = kernel();
+        let mut p = process();
+        let [reader, writer] = p.linux.vfs.pipe(0).unwrap();
+        p.memory.map(0x20000, PAGE_SIZE, Permissions::RW).unwrap();
+        p.memory.write_array(0x20000, 60u64.to_le_bytes()).unwrap();
+        p.memory.write_array(0x20008, 0u64.to_le_bytes()).unwrap();
+        p.memory.write_array(0x1000, reader.to_le_bytes()).unwrap();
+        p.memory.write_array(0x1004, 1u32.to_le_bytes()).unwrap();
+        let args = [0x1000, 1, 0x20000, 0, 0, 0];
+        let mut io = trames_linux::CapturedOutput::default();
+        k.call(1, &mut p, 73, args, &mut io);
+        let deadline = p.poll_deadline;
+        assert!(deadline.is_some() && p.retained_poll.is_some());
+        p.linux.vfs.close(reader).unwrap();
+        let [replacement, new_writer] = p.linux.vfs.pipe(0).unwrap();
+        assert_eq!(replacement, reader);
+        p.linux.vfs.write(new_writer, b"new").unwrap();
+        p.memory.write_array(0x1000, writer.to_le_bytes()).unwrap();
+        p.memory.write_array(0x1004, 4u32.to_le_bytes()).unwrap();
+        p.memory.unmap(0x20000, PAGE_SIZE).unwrap();
+        k.call(1, &mut p, 73, args, &mut io);
+        assert!(matches!(p.state, State::Blocked(73, _)));
+        assert_eq!(p.poll_deadline, deadline);
+        p.poll_deadline = Some(Instant::now());
+        k.call(1, &mut p, 73, args, &mut io);
+        assert!(matches!(p.state, State::Ready));
+        assert_eq!(p.cpu.x(0), 0);
+        assert!(p.retained_poll.is_none() && p.poll_deadline.is_none());
+        assert_eq!(
+            p.memory.read_array::<2>(0x1006).unwrap(),
+            0u16.to_le_bytes()
+        );
+        assert_eq!(p.linux.vfs.write(writer, b"x"), Err(Errno(32)));
+        assert_eq!(p.linux.vfs.read(replacement, 3).unwrap(), b"new");
+    }
+
+    #[test]
+    fn pselect_keeps_original_set_and_shared_ofd_after_close_reuse_and_timeout_buffer_unmap() {
+        let mut k = kernel();
+        let mut p = process();
+        let [reader, writer] = p.linux.vfs.pipe(0).unwrap();
+        p.memory.map(0x20000, PAGE_SIZE, Permissions::RW).unwrap();
+        p.memory.write_array(0x20000, 60u64.to_le_bytes()).unwrap();
+        p.memory.write_array(0x20008, 0u64.to_le_bytes()).unwrap();
+        p.memory
+            .write_array(0x1000, (1u64 << reader).to_le_bytes())
+            .unwrap();
+        let args = [writer as u64 + 1, 0x1000, 0, 0, 0x20000, 0];
+        let mut io = trames_linux::CapturedOutput::default();
+        k.call(1, &mut p, 72, args, &mut io);
+        assert!(matches!(p.state, State::Blocked(72, _)));
+        assert!(p.retained_select.is_some());
+        assert!(!p.worker_io_candidate(1));
+        let deadline = p.poll_deadline;
+        p.linux.vfs.close(reader).unwrap();
+        let [replacement, new_writer] = p.linux.vfs.pipe(0).unwrap();
+        assert_eq!(replacement, reader);
+        p.linux.vfs.write(new_writer, b"new").unwrap();
+        p.memory.unmap(0x20000, PAGE_SIZE).unwrap();
+        k.call(1, &mut p, 72, args, &mut io);
+        assert!(matches!(p.state, State::Blocked(72, _)));
+        assert_eq!(p.poll_deadline, deadline);
+        p.memory
+            .write_array(0x1000, (1u64 << writer).to_le_bytes())
+            .unwrap();
+        p.linux.vfs.write(writer, b"old").unwrap();
+        k.call(1, &mut p, 72, args, &mut io);
+        assert!(matches!(p.state, State::Ready));
+        assert_eq!(p.cpu.x(0), 1);
+        assert_eq!(
+            p.memory.read_array::<8>(0x1000).unwrap(),
+            (1u64 << reader).to_le_bytes()
+        );
+        assert!(p.retained_select.is_none() && p.poll_deadline.is_none());
+        assert_eq!(p.linux.vfs.write(writer, b"x"), Err(Errno(32)));
+        assert_eq!(p.linux.vfs.read(replacement, 3).unwrap(), b"new");
+    }
+
+    #[test]
+    fn retained_ppoll_stop_continue_signal_and_exit_preserve_or_release_original_ofds() {
+        let mut k = kernel();
+        let mut p = process();
+        let [reader, writer] = p.linux.vfs.pipe(0).unwrap();
+        p.memory.write_array(0x1000, reader.to_le_bytes()).unwrap();
+        p.memory.write_array(0x1004, 1u32.to_le_bytes()).unwrap();
+        let mut io = trames_linux::CapturedOutput::default();
+        k.call(1, &mut p, 73, [0x1000, 1, 0, 0, 0, 0], &mut io);
+        p.linux.vfs.close(reader).unwrap();
+        Kernel::queue_one(1, &mut p, 19, 1);
+        k.deliver(1, &mut p).unwrap();
+        assert!(matches!(p.state, State::Stopped));
+        assert!(p.retained_poll.is_some());
+        Kernel::queue_one(1, &mut p, 18, 1);
+        assert!(matches!(p.state, State::Blocked(73, _)));
+        p.actions.set_handler(10, 0x5000);
+        Kernel::queue_one(1, &mut p, 10, 1);
+        k.deliver(1, &mut p).unwrap();
+        assert!(p.retained_poll.is_none());
+        assert_eq!(p.linux.vfs.write(writer, b"x"), Err(Errno(32)));
+
+        let mut p = process();
+        let [reader, writer] = p.linux.vfs.pipe(0).unwrap();
+        p.memory.write_array(0x1000, reader.to_le_bytes()).unwrap();
+        p.memory.write_array(0x1004, 1u32.to_le_bytes()).unwrap();
+        k.call(1, &mut p, 73, [0x1000, 1, 0, 0, 0, 0], &mut io);
+        p.linux.vfs.close(reader).unwrap();
+        let mut peer = p.fork();
+        assert!(peer.retained_poll.is_none());
+        k.exit(1, &mut p, 0);
+        assert!(p.retained_poll.is_none());
+        assert_eq!(peer.linux.vfs.write(writer, b"x"), Err(Errno(32)));
+    }
+
+    #[test]
+    fn mixed_ppoll_keeps_shared_ofd_and_rejects_reused_owner_control_identity() {
+        let mut k = kernel();
+        let mut p = process();
+        let [reader, writer] = p.linux.vfs.pipe(0).unwrap();
+        let signal = p.linux.vfs.signalfd(-1, 1 << 10, 0).unwrap();
+        for (i, fd) in [reader, signal].into_iter().enumerate() {
+            p.memory
+                .write_array(0x1000 + i as u64 * 8, fd.to_le_bytes())
+                .unwrap();
+            p.memory
+                .write_array(0x1004 + i as u64 * 8, 1u32.to_le_bytes())
+                .unwrap();
+        }
+        let mut io = trames_linux::CapturedOutput::default();
+        let args = [0x1000, 2, 0, 0, 0, 0];
+        k.call(1, &mut p, 73, args, &mut io);
+        assert!(matches!(p.state, State::Blocked(73, _)));
+        assert!(!p.worker_io_candidate(1));
+        p.linux.vfs.close(reader).unwrap();
+        let [replacement, new_writer] = p.linux.vfs.pipe(0).unwrap();
+        assert_eq!(replacement, reader);
+        p.linux.vfs.close(signal).unwrap();
+        let replacement_signal = p.linux.vfs.eventfd(1, 0).unwrap();
+        assert_eq!(replacement_signal, signal);
+        p.linux.vfs.write(new_writer, b"new").unwrap();
+        k.call(1, &mut p, 73, args, &mut io);
+        assert!(matches!(p.state, State::Ready));
+        assert_eq!(p.cpu.x(0), 1);
+        assert_eq!(
+            p.memory.read_array::<2>(0x1006).unwrap(),
+            0u16.to_le_bytes()
+        );
+        assert_eq!(
+            p.memory.read_array::<2>(0x100e).unwrap(),
+            32u16.to_le_bytes()
+        );
+        assert!(p.retained_poll.is_none());
+        assert_eq!(p.linux.vfs.write(writer, b"x"), Err(Errno(32)));
+        assert_eq!(p.linux.vfs.read(replacement, 3).unwrap(), b"new");
+    }
+
+    #[test]
+    fn actual_ppoll_worker_handoff_releases_original_reader_before_the_next_join() {
+        let mut k = kernel();
+        k.cpu_count = 2;
+        k.workers = crate::workers::Pool::new(2);
+        k.per_cpu = vec![Duration::ZERO; 2];
+        let mut p = process();
+        p.affinity = 3;
+        let [reader, writer] = p.linux.vfs.pipe(0).unwrap();
+        let [ack_reader, ack_writer] = p.linux.vfs.pipe(0).unwrap();
+        p.memory.write(0x1200, b"a").unwrap();
+        p.memory.write_array(0x1000, reader.to_le_bytes()).unwrap();
+        p.memory.write_array(0x1004, 1u32.to_le_bytes()).unwrap();
+        // The ACK is sent only after poll completes. The producer must see
+        // EPIPE before an owner checkpoint can retire an extra saved poll pin.
+        let parent_code: Vec<_> = [
+            0xd2800000u32 | (ack_writer << 5),
+            0xd2824001,
+            0xd2800022,
+            0xd2800808,
+            0xd4000001,
+            0x14000000,
+        ]
+        .into_iter()
+        .flat_map(u32::to_le_bytes)
+        .collect();
+        p.memory.write(0x4000, &parent_code).unwrap();
+        let mut io = trames_linux::CapturedOutput::default();
+        k.call(1, &mut p, 73, [0x1000, 1, 0, 0, 0, 0], &mut io);
+        assert!(p.retained_poll.is_some());
+        p.linux.vfs.close(reader).unwrap();
+        let [replacement, new_writer] = p.linux.vfs.pipe(0).unwrap();
+        assert_eq!(replacement, reader);
+        p.linux.vfs.write(new_writer, b"new").unwrap();
+        let mut producer = p.fork();
+        assert!(producer.retained_poll.is_none());
+        producer.tgid = 2;
+        producer.vm_id = 2;
+        producer.parent = 1;
+        producer.actions.set_handler(13, 1);
+        producer.memory.write(0x1100, b"o").unwrap();
+        // write(old_writer); read(ack_reader); write(old_writer).
+        let code: Vec<_> = [
+            0xd4000001u32,
+            0xd2800000 | (ack_reader << 5),
+            0xd2826001,
+            0xd2800022,
+            0xd28007e8,
+            0xd4000001,
+            0xd2800000 | (writer << 5),
+            0xd2822001,
+            0xd2800022,
+            0xd2800808,
+            0xd4000001,
+            0x14000000,
+        ]
+        .into_iter()
+        .flat_map(u32::to_le_bytes)
+        .collect();
+        producer.memory.write(0x4000, &code).unwrap();
+        producer.cpu.set_x(0, writer as u64);
+        producer.cpu.set_x(1, 0x1100);
+        producer.cpu.set_x(2, 1);
+        producer.cpu.set_x(8, 64);
+        p.memory
+            .protect(0x4000, PAGE_SIZE, Permissions::RX)
+            .unwrap();
+        producer
+            .memory
+            .protect(0x4000, PAGE_SIZE, Permissions::RX)
+            .unwrap();
+        k.processes.insert(1, p);
+        k.processes.insert(2, producer);
+        for _ in 0..4 {
+            let limit = k.instructions + 1_000_000;
+            assert!(k.parallel_round(&mut io, limit).unwrap());
+            if k.processes[&2].cpu.x(0) == error(Errno(32)) {
+                break;
+            }
+        }
+        assert_eq!(k.processes[&2].cpu.x(0), error(Errno(32)));
+        assert!(k.worker_poll_syscalls > 0);
+        let p = k.processes.get_mut(&1).unwrap();
+        assert!(p.retained_poll.is_none());
+        assert_eq!(p.cpu.x(0), 1);
+        assert_eq!(
+            p.memory.read_array::<2>(0x1006).unwrap(),
+            1u16.to_le_bytes()
+        );
+        assert_eq!(p.linux.vfs.read(replacement, 3).unwrap(), b"new");
+    }
+
+    #[test]
+    fn solo_cpu_adopts_related_retained_poll_after_all_original_numeric_fds_are_closed() {
+        let mut k = kernel();
+        let mut waiter = process();
+        let [reader, writer] = waiter.linux.vfs.pipe(0).unwrap();
+        waiter
+            .memory
+            .write_array(0x1000, reader.to_le_bytes())
+            .unwrap();
+        waiter
+            .memory
+            .write_array(0x1004, 1u32.to_le_bytes())
+            .unwrap();
+        let mut io = trames_linux::CapturedOutput::default();
+        k.call(1, &mut waiter, 73, [0x1000, 1, 0, 0, 0, 0], &mut io);
+        waiter.linux.vfs.close(reader).unwrap();
+        let producer = waiter.fork();
+        waiter.linux.vfs.close(writer).unwrap();
+        assert!(waiter.retained_poll.is_some());
+        assert!(waiter.worker_io_candidate(1));
+        k.processes.insert(1, waiter);
+        k.processes.insert(2, producer);
+        assert!(k.parallel_candidate());
+        k.processes.insert(2, process());
+        assert!(!k.parallel_candidate());
     }
 
     #[test]
@@ -5154,6 +5461,7 @@ mod tests {
             deadline: None,
             flock: Some(shared.clone()),
             retained_byte: None,
+            retained_poll: None,
         };
         p.retain_worker_flock(Some(&call));
         shared.try_lock().unwrap(); // First SH wait completed on the worker.
@@ -5302,6 +5610,8 @@ mod tests {
             flock_wait: None,
             byte_wait: None,
             retained_byte: None,
+            retained_poll: None,
+            retained_select: None,
             pending_open: None,
             stopped_state: None,
             auto_reap: false,

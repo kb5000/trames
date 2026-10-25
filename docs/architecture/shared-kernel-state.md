@@ -452,3 +452,43 @@ two covering 1/2/4 CPUs. The expanded retained-OFD graph uses a higher compiler
 auto-trait recursion limit in Core; no manual Send/Sync implementation is added.
 Dynamic ordinary-file capabilities, poll checkpoint ownership and the complete
 close/replacement gate remain separate work.
+
+### Accepted poll sets across checkpoints (2026-10-26)
+
+ppoll now imports its array once and retains the accepted shared OFDs through
+worker/owner handoff. Checkpoint metadata shares one immutable request rather
+than re-importing mutable guest arrays or cloning every descriptor. Dispatch
+moves the owner's saved reference into the job. Completion, timeout, caught
+signals, exec and exit release it; stop/continue preserves it. pselect keeps the
+same original shared references and copied bitsets on its existing owner path.
+Resuming either wait uses its saved deadline and mask instead of rereading
+guest timeout/mask buffers that may have changed or been unmapped.
+
+Prepared owner controls use weak actual-OFD identity tokens, captured after
+construction. A final strong drop destroys the payload; the weak allocation
+token prevents identity reuse without retaining its resources. This handles
+independent VFS instances whose numeric FD/local counters coincide. Owner ring
+polling rebinds only to the same original OFD's new execution-epoch capability;
+unsupported controls retain their joined path. Shared pipes and regular-file
+polls retain the complete original object. Scheduling hints also use accepted
+resources after their numeric slots close, while unrelated waits still leave a
+solo CPU on its direct MMU path. Shared byte capture reads the complete shared
+description directly, avoiding temporary mount/OFD projections.
+
+A real two-worker regression uses a pipe ACK to order a second write after poll
+completion. That write must see EPIPE before the next join. Deliberately keeping
+an extra owner reference until join makes the regression fail (write succeeds);
+moving the reference into the job passes. Other regressions cover changed poll
+arrays/bitsets, close/reuse, unmapped timeout buffers, copied deadlines,
+stop/continue, signal/exit cleanup, mixed owner/shared sets and ring rebinding.
+
+Scoped local checks pass: Apple VFS 304, Linux ABI 128 and Core 184; native ARM64
+Linux VFS 305, Linux ABI 128 and Core 184. Five library cases remain ignored,
+plus four opt-in prepared Wayland cases. Strict Clippy, Release and iOS FFI check
+pass, as do six targeted TSan executions including the actual worker regression.
+Original mmap memory/disk, nine io_uring ABI/TCP guest cases, shared-files churn
+at 1/2/4 CPUs and 88 worker wait/PTY/Unix/SCM_RIGHTS/inotify guest cases pass
+against their native semantic oracles. This is local scoped evidence; no new
+hosted run or throughput/release claim is made. Dynamic ordinary-file caches,
+complete accepted file/flock lifetime and worker removal/replacement remain
+open before VM-local commits and persistent contexts.

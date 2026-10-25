@@ -445,6 +445,10 @@ impl Pool {
                                         snapshot.direct.start_retained_byte(file, call.number, call.args,
                                             work.memory.as_deref_mut().expect("worker view"), work.pid,
                                             &epoch.as_ref().unwrap().io_target)
+                                    } else if let Some(poll) = call.retained_poll {
+                                        snapshot.direct.start_retained_poll(poll, call.args,
+                                            work.memory.as_deref_mut().expect("worker view"), work.pid,
+                                            &epoch.as_ref().unwrap().io_target, call.deadline)
                                     } else {
                                         snapshot.direct.start(call.number, call.args, work.memory.as_deref_mut().expect("worker view"),
                                             work.pid, &epoch.as_ref().unwrap().io_target, call.deadline).expect("admitted I/O retry")
@@ -464,7 +468,7 @@ impl Pool {
                                     trames_linux::IoAttempt::Checkpoint => {
                                         // A SIGPIPE/checkpoint must still reach the
                                         // original accepted OFD in the joined kernel.
-                                        job.retry = saved_call.filter(|call| call.retained_byte.is_some());
+                                        job.retry = saved_call.filter(|call| call.retained_byte.is_some() || call.retained_poll.is_some());
                                         break SliceOutcome::Syscall { instructions: 0 };
                                     }
                                 }
