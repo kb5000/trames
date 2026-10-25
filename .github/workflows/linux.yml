@@ -1187,6 +1187,9 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
   runtime:
+    defaults:
+      run:
+        shell: python3 scripts/runtime-ci-reuse.py {0}
     needs: scope
     if: needs.scope.outputs.frontend_only != 'true' && needs.scope.outputs.targeted != 'true'
     runs-on: ubuntu-24.04
@@ -1197,6 +1200,12 @@ jobs:
       TRAMES_RUNNER: ${{ github.workspace }}/tests/differential/arm-runner.sh
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Validate source-bound runtime reuse
+        shell: bash
+        run: python3 tests/integration/runtime-ci-reuse.py
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-10-16

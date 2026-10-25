@@ -661,6 +661,17 @@ def main():
         with open(os.environ["GITHUB_OUTPUT"], "a") as output:
             output.write("frontend_only=false\n")
         return
+    if Path('.github/runtime-ci-reuse.json').exists():
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('runtime_ci_reuse', 'scripts/runtime-ci-reuse.py')
+        reuse = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(reuse)
+        outputs = reuse.apple_outputs()
+        if outputs is not None:
+            with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+                for key, value in outputs.items():
+                    output.write(f'{key}={value}\n')
+            return
     repo = os.environ["GITHUB_REPOSITORY"]
     workflow = os.environ.get("TRAMES_VALIDATION_WORKFLOW", "ios.yml")
     request = urllib.request.Request(

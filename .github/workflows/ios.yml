@@ -319,6 +319,7 @@ jobs:
       docker_network_virtual_retry: ${{ steps.scope.outputs.docker_network_virtual_retry }}
       docker_default_remount: ${{ steps.scope.outputs.docker_default_remount }}
       frontend_reused: ${{ steps.scope.outputs.frontend_reused }}
+      critical_reused: ${{ steps.scope.outputs.critical_reused }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -539,7 +540,7 @@ jobs:
               assert info['NSExtension']['NSExtensionFileProviderDocumentGroup']==info['TramesAppGroup']
           PYCODE
       - name: Exercise peer tabs and floating window gestures first
-        if: needs.scope.outputs.frontend_reused != 'true'
+        if: needs.scope.outputs.frontend_reused != 'true' && needs.scope.outputs.critical_reused != 'true'
         timeout-minutes: 12
         env:
           TRAMES_UI_CRITICAL: ${{ needs.scope.outputs.critical_test || 'TramesUITests/LaunchTests/testWorkspaceTabsDetachDockAndTerminalTitleRemainsVisible' }}
@@ -554,7 +555,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO -skipPackagePluginValidation -resultBundlePath apps/ios/build/workspace-interaction.xcresult test \
             2>&1 | tee apps/ios/build/workspace-interaction.log
       - name: Publish workspace gesture result before the remaining tests
-        if: ${{ always() && needs.scope.outputs.frontend_reused != 'true' }}
+        if: ${{ always() && needs.scope.outputs.frontend_reused != 'true' && needs.scope.outputs.critical_reused != 'true' }}
         run: |
           if [[ -d apps/ios/build/workspace-interaction.xcresult ]]; then
             xcrun xcresulttool get test-results summary --path apps/ios/build/workspace-interaction.xcresult \
@@ -562,7 +563,7 @@ jobs:
             cat apps/ios/build/workspace-interaction-summary.json
           fi
       - uses: actions/upload-artifact@v4
-        if: ${{ always() && needs.scope.outputs.frontend_reused != 'true' }}
+        if: ${{ always() && needs.scope.outputs.frontend_reused != 'true' && needs.scope.outputs.critical_reused != 'true' }}
         with:
           name: workspace-gesture-diagnostics
           path: |
@@ -603,7 +604,9 @@ jobs:
             cat apps/ios/build/ipad-smoke-summary.json
             python3 -c 'import json; s=json.load(open("apps/ios/build/ipad-smoke-summary.json")); assert s["failedTests"] == 0 and s["passedTests"] > 0, "The actual simulator test report did not pass"'
           fi
-          python3 -c 'import json; s=json.load(open("apps/ios/build/workspace-interaction-summary.json")); assert s["failedTests"] == 0 and s["passedTests"] == 1, "Workspace gestures must pass too"'
+          if [[ '${{ needs.scope.outputs.critical_reused }}' != true ]]; then
+            python3 -c 'import json; s=json.load(open("apps/ios/build/workspace-interaction-summary.json")); assert s["failedTests"] == 0 and s["passedTests"] == 1, "Workspace gestures must pass too"'
+          fi
       - name: Link unsigned iPad device app
         run: bash scripts/build-ios.sh device
       - name: Package unsigned device IPA for sideload signing
