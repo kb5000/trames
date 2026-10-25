@@ -94,11 +94,17 @@ queued writes; full receive buffers stop native read interest. Closing a socket
 can retain its TCP handle for up to 30 seconds to drain queued bytes/FIN; explicit
 namespace finish resets connections and releases native flows. TCP handshake
 timeout is 60 seconds; established internal connections have no arbitrary idle
-timeout. Gateway TCP flows expire after 120 seconds without bridged IO (30
-seconds after their last guest owner disappears); UDP flows expire after 60
-seconds. These are deliberate first-version resource policies, configurable
-platform policy remains future work. Unsupported Linux timeout options still
+timeout. Gateway TCP flows remain live while a guest socket owns them, including
+while receive-window backpressure pauses bridged IO. Ownerless flows expire
+after 30 seconds without bridged IO; UDP flows expire after 60 seconds.
+Configurable platform policy remains future work. Unsupported Linux timeout options still
 return EOPNOTSUPP.
+
+The gateway regression fills both guest receive and gateway send buffers with a
+real native TCP stream, ages only the sweep timestamp by 121 seconds, then
+verifies all bytes, a final tail and EOF. Dropping the final socket still lets
+the orphan sweep release the flow. This replaces the former 120-second expiry
+of live streams, which could abort an idle or slow consumer.
 
 ## Native gateway and DNS
 
