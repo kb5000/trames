@@ -20,6 +20,7 @@ ALLOWED = {
     'scripts/runtime-ci-reuse.py', 'scripts/ios-ci-scope.py',
     'tests/integration/runtime-ci-reuse.py', 'tests/integration/allocator.py',
     'apps/ios/TramesTests/LocalNetworkTests.swift',
+    'tests/integration/linux-compat.py', 'tests/integration/embedding-network.py',
 }
 REQUIRED = {
     'Run cargo test --workspace --all-features --locked',
@@ -145,7 +146,12 @@ def selected_script(script, steps, job, changed_tests):
 def reference(config, kind):
     record = config[kind]
     run = get('actions/runs/' + str(record['run']))
-    assert run['head_sha'] == config['source_sha']
+    source = record.get('source_sha', config['source_sha'])
+    assert run['head_sha'] == source
+    # A later partial run may add passed checks after the original baseline.
+    # Its production/guest/build inputs must still be identical to that baseline.
+    changed = git('diff', '--name-only', config['source_sha'], source).splitlines()
+    assert all(p in ALLOWED or p.startswith('docs/') for p in changed)
     assert run['head_repository']['full_name'] == os.environ['GITHUB_REPOSITORY']
     assert run['path'] == '.github/workflows/' + ('linux.yml' if kind == 'linux' else 'ios.yml')
     job = get('actions/jobs/' + str(record['job']))
@@ -226,7 +232,9 @@ def main(path):
         if config:
             job = linux_reference(config)
             steps = runtime_steps(git('show', config['source_sha'] + ':.github/workflows/linux.yml'))
-            changed_tests = [p for p in config['changed_file_sha256'] if p.startswith('tests/')]
+            reference_sha = config['linux'].get('source_sha', config['source_sha'])
+            changed_tests = [p for p in git('diff', '--name-only', reference_sha, 'HEAD').splitlines()
+                             if p.startswith('tests/')]
             selected, reused = selected_script(script, steps, job, changed_tests)
             if reused:
                 print('Reuse passed unchanged check from Linux run', config['linux']['run'],

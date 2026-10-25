@@ -12,6 +12,16 @@ spec.loader.exec_module(m)
 
 
 class ReuseTests(unittest.TestCase):
+    def test_later_reference_cannot_change_production_inputs(self):
+        config = dict(source_sha='baseline', linux=dict(run=1, job=2, source_sha='followup'))
+        run = dict(head_sha='followup', head_repository=dict(full_name='owner/repo'), path='.github/workflows/linux.yml')
+        job = dict(run_id=1, status='completed')
+        with patch.dict(m.os.environ, {'GITHUB_REPOSITORY':'owner/repo'}):
+            with patch.object(m, 'get', side_effect=[run, job]), patch.object(m, 'git', return_value='tests/integration/linux-compat.py\n'):
+                self.assertEqual(m.reference(config, 'linux'), job)
+            with patch.object(m, 'get', return_value=run), patch.object(m, 'git', return_value='crates/trames-vfs/src/lib.rs\n'):
+                with self.assertRaises(AssertionError): m.reference(config, 'linux')
+
     def test_explicit_full_validation_never_reuses(self):
         with patch.dict(m.os.environ, {'TRAMES_FULL_CHECK':'true'}):
             self.assertIsNone(m.verified_config())

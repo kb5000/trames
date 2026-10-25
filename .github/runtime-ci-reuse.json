@@ -1,8 +1,9 @@
 {
   "source_sha": "dc64d0e6a4746e33ca569027be4bb767507f84f8",
   "linux": {
-    "run": 40175614450,
-    "job": 121115536201
+    "run": 40180357384,
+    "job": 121129939440,
+    "source_sha": "3d636fd2732165a475351527644b12ee095522d8"
   },
   "apple": {
     "run": 40175614550,
@@ -13,8 +14,10 @@
     ".github/workflows/linux.yml": "2f75d839ac5f6abd6b625a9a24be97b84435b5f111a4472847986210e99ea821",
     "apps/ios/TramesTests/LocalNetworkTests.swift": "d48e8c222c95d5acbf77715421fc813bfa56b4fb8217cf607814897d64658576",
     "scripts/ios-ci-scope.py": "4bc18d2f641e6404b595f7da6ec1a364ce6fc01f9079c5ac82c9b2070380898f",
-    "scripts/runtime-ci-reuse.py": "4b14117eb331beaa3405153192af37ea1df9e99e0ec48505c3cbfbe453460fee",
+    "scripts/runtime-ci-reuse.py": "e805a639d43accf4deeedcfe409cfd085a009717d091e4976e86f7da1a9823bd",
     "tests/integration/allocator.py": "45624e570fb9f0d690a29b19dde6734335b54e68e13deb58c087b884358e1150",
-    "tests/integration/runtime-ci-reuse.py": "dcad538866b2c064ea1cbe6f61373b65701a37cde24c3b6d72d0d456841c0908"
+    "tests/integration/embedding-network.py": "d6c5407b827daabf81733e6e0f70dcea7d64523b917b6e380601d4678a960175",
+    "tests/integration/linux-compat.py": "9b00c95f528c203e2e2a332e4d5ffd9d77fa3a2c568e9808197a049326ea8eaf",
+    "tests/integration/runtime-ci-reuse.py": "74a607d5d242e9e3caf9ca4c42cb95ef7e3c36d6f1a5c028b2ffb47fd39d0dab"
   }
 }

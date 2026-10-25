@@ -61,7 +61,12 @@ def main():
         out, err = busybox('ip', 'a')
         assert not err and b'127.0.0.1/8' in out and b'10.0.0.2/24' in out and b'fd00::2/64' in out, (out, err)
         out, err = busybox('ip', 'route')
-        assert not err and b'default via 10.0.0.1 dev eth0' in out
+        # BusyBox versions print the same default prefix as either spelling.
+        routes = [line.split() for line in out.splitlines()]
+        assert not err and any(route[:5] in (
+            [b'default', b'via', b'10.0.0.1', b'dev', b'eth0'],
+            [b'0.0.0.0/0', b'via', b'10.0.0.1', b'dev', b'eth0'],
+        ) for route in routes), (out, err)
         for applet, destination in [('ping', '127.0.0.1'), ('ping6', '::1'), ('ping', '10.0.0.1'), ('ping6', 'fd00::1')]:
             out, err = busybox(applet, '-c', '2', '-W', '1', destination)
             assert not err and b'2 packets received, 0% packet loss' in out, (out, err)
