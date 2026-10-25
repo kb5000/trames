@@ -149,7 +149,7 @@ struct Process {
     socket_deadline: Option<Instant>,
     poll_mask: Option<u64>,
     uring_wait: Option<(u32, Rc<trames_vfs::Uring>, Option<Instant>)>,
-    flock_wait: Option<(trames_vfs::FlockRequest, trames_vfs::RetainedFd)>,
+    flock_wait: Option<(trames_vfs::FlockRequest, Option<trames_vfs::RetainedFd>)>,
     byte_wait: Option<trames_linux::PendingIo>,
     retained_byte: Option<trames_linux::RetainedByte>,
     retained_poll: Option<trames_linux::RetainedPoll>,
@@ -276,6 +276,12 @@ impl Process {
     /// Preserve the complete OFD before owner-side close/dup can resume.
     fn retain_worker_flock(&mut self, call: Option<&crate::run_queue::IoCall>) {
         if let Some(request) = call.and_then(|call| call.flock.as_ref()) {
+            if request.retains_file() {
+                // Already accepted on the executing worker. Numeric membership
+                // may have changed before this join, so never look it up again.
+                self.flock_wait = Some((request.clone(), None));
+                return;
+            }
             match self.flock_wait.as_mut() {
                 Some((saved, _)) if saved.same_owner(request) => {
                     // The previous wait may have completed and this same OFD
@@ -3895,7 +3901,13 @@ impl Kernel {
                     .and_then(|wait| wait.retained_byte)
                     .or_else(|| p.retained_byte.take());
                 job.retry = Some(crate::run_queue::IoCall {
-                    flock: p.flock_wait.as_ref().map(|(r, _)| r.clone()),
+                    flock: if p.flock_wait.as_ref().is_some_and(|(r, _)| r.retains_file()) {
+                        // The parked owner must not delay a worker's final
+                        // close/notification until the next cohort join.
+                        p.flock_wait.take().map(|(request, _)| request)
+                    } else {
+                        p.flock_wait.as_ref().map(|(request, _)| request.clone())
+                    },
                     retained_byte,
                     retained_poll: p.retained_poll.take(),
                     number,
@@ -5477,6 +5489,96 @@ mod tests {
         p.linux.vfs.flock(b, 8).unwrap();
         assert_eq!(k.syscall(1, &mut p, 32, call.args, &mut io), Ok(Some(0)));
         assert_eq!(p.linux.vfs.flock(b, 5), Err(Errno(11))); // a acquired EX, not stale SH.
+    }
+
+    #[test]
+    fn actual_flock_worker_handoff_releases_original_ofd_before_the_next_join() {
+        let mut k = kernel();
+        k.cpu_count = 2;
+        k.workers = crate::workers::Pool::new(2);
+        k.per_cpu = vec![Duration::ZERO; 2];
+        let mut p = process();
+        p.affinity = 3;
+        let a = p.linux.vfs.open_at(-100, b"/lock", 0x42, 0o600).unwrap();
+        let b = p.linux.vfs.open_at(-100, b"/lock", 2, 0).unwrap();
+        p.linux.vfs.flock(b, 6).unwrap();
+        let [ack_reader, ack_writer] = p.linux.vfs.pipe(0).unwrap();
+        p.memory.write(0x1200, b"a").unwrap();
+        let parent_code: Vec<_> = [
+            0xd2800000u32 | (ack_writer << 5),
+            0xd2824001,
+            0xd2800022,
+            0xd2800808,
+            0xd4000001,
+            0x14000000,
+        ]
+        .into_iter()
+        .flat_map(u32::to_le_bytes)
+        .collect();
+        p.memory.write(0x4000, &parent_code).unwrap();
+        let mut io = trames_linux::CapturedOutput::default();
+        k.call(1, &mut p, 32, [a as u64, 2, 0, 0, 0, 0], &mut io);
+        assert!(p.flock_wait.as_ref().unwrap().0.retains_file());
+        p.linux.vfs.close(a).unwrap();
+        assert_eq!(
+            p.linux
+                .vfs
+                .open_at(-100, b"/replacement", 0x42, 0o600)
+                .unwrap(),
+            a
+        );
+        p.linux.vfs.flock(a, 6).unwrap();
+        let mut producer = p.fork();
+        assert!(producer.flock_wait.is_none());
+        producer.tgid = 2;
+        producer.vm_id = 2;
+        producer.parent = 1;
+        // unlock(b); read(ack); flock(b, LOCK_EX | LOCK_NB). The parent sends
+        // ACK only after its accepted flock completes and its last OFD drops.
+        let code: Vec<_> = [
+            0xd4000001u32,
+            0xd2800000 | (ack_reader << 5),
+            0xd2826001,
+            0xd2800022,
+            0xd28007e8,
+            0xd4000001,
+            0xd2800000 | (b << 5),
+            0xd28000c1,
+            0xd2800408,
+            0xd4000001,
+            0x14000000,
+        ]
+        .into_iter()
+        .flat_map(u32::to_le_bytes)
+        .collect();
+        producer.memory.write(0x4000, &code).unwrap();
+        producer.cpu.set_x(0, b as u64);
+        producer.cpu.set_x(1, 8);
+        producer.cpu.set_x(8, 32);
+        p.memory
+            .protect(0x4000, PAGE_SIZE, Permissions::RX)
+            .unwrap();
+        producer
+            .memory
+            .protect(0x4000, PAGE_SIZE, Permissions::RX)
+            .unwrap();
+        k.processes.insert(1, p);
+        k.processes.insert(2, producer);
+        for _ in 0..4 {
+            let limit = k.instructions + 1_000_000;
+            assert!(k.parallel_round(&mut io, limit).unwrap());
+            if k.processes[&2].cpu.pc == 0x4028 {
+                break;
+            }
+        }
+        assert_eq!(k.processes[&2].cpu.pc, 0x4028);
+        assert_eq!(k.processes[&2].cpu.x(0), 0);
+        assert!(k.processes[&1].flock_wait.is_none());
+        assert_eq!(k.processes[&1].cpu.x(0), 1);
+        assert_eq!(
+            k.processes.get_mut(&1).unwrap().linux.vfs.flock(a, 6),
+            Ok(())
+        );
     }
 
     #[test]

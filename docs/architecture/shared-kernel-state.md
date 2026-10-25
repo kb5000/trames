@@ -492,3 +492,48 @@ against their native semantic oracles. This is local scoped evidence; no new
 hosted run or throughput/release claim is made. Dynamic ordinary-file caches,
 complete accepted file/flock lifetime and worker removal/replacement remain
 open before VM-local commits and persistent contexts.
+
+### Prepared ordinary files and accepted flock (2026-10-26)
+
+DirectFiles resolves admitted shared slots from live Files membership, including
+aliases created beyond the initial FD range and numeric replacement. Joined
+admission prepares one policy record per actual OFD and execution policy, not
+per alias. That record contains weak data/offset/lock identities and immutable
+stat/policy/notification metadata. Lookup promotes an accepted DirectFile that
+owns the complete original shared OFD. The normal byte path neither borrows an
+inode nor repeats pathname/stat capture. Excluded owner controls keep their
+joined structural boundary. Shared status/CLOEXEC uses live membership; frozen
+metadata arrays now omit those admitted slots.
+
+FileEpoch's metadata reconciliation registry is also weak. Closing an unlinked
+file on a worker releases its actual PlainFile allocation, inode and quota and
+emits IN_CLOSE even while the prepared caches and epoch remain alive. A negative
+control restoring the old strong PlainFile registry fails the actual allocation
+lifetime assertion. Accepted I/O instead retains that original object through
+close/unlink/reuse until completion/cancellation. Prepared io_uring file policy
+is weak too, with identity-checked promotion for retained registered requests.
+
+Accepted shared FlockRequest now carries its complete OFD from initial worker
+acceptance. The owner never re-resolves its numeric FD at a later join. Dispatch
+moves that request into the worker; owner-only controls keep their explicit
+joined lease. A two-worker ACK regression acquires the original flock, closes
+and reuses its FD, and requires another OFD to acquire the lock immediately
+after the accepted request completes, before another join. Keeping an extra
+Process reference deliberately fails with EAGAIN; moving it passes. Existing
+signal, stop/continue, handoff and cancellation tests still pass.
+
+Scoped local checks pass Apple VFS 307, Linux ABI 128 and Core 185; ARM64 Linux
+VFS 308, Linux ABI 128 and Core 185. Five library/manual cases remain ignored;
+prepared Wayland opt-ins are outside these three library suites. Strict Clippy,
+Release CLI and iOS FFI check pass, along with 15 focused TSan cases. Guest
+acceptance covers shared/nonblocking and blocking flock (18 executions), shared
+FD churn (three), inotify memory/disk (six), and base/worker io_uring ABI/TCP
+(18), at 1/2/4 CPUs. Earlier fixture/coverage-flag invocation errors and their
+scoped retries remain in the private provenance; production assertions were
+not weakened. No new throughput or complete-CI/release claim is made.
+
+Worker close/replacement remains disabled. The next FD gate is io_uring's
+numeric resource cache and extra owner references: accepted shared requests
+must own their original resource and completed requests must release it before
+a join. Fixed registrations retain their legitimate lifetime. VM-local commits
+and persistent contexts follow that complete FD gate.
