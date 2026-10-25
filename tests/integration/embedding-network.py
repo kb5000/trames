@@ -75,7 +75,7 @@ with tempfile.TemporaryDirectory(prefix='trames-embedding-network-') as folder:
             options.pop('rootfs', None)
             send(handle, "cat /etc/resolv.conf; printf '\\nCONFIG_DONE\\n'")
             output = collect(handle, lambda b: b'\r\nCONFIG_DONE\r\n' in b)
-            expected = b'nameserver 192.0.2.53' if phase == 'custom' else b'nameserver 127.0.0.53'
+            expected = b'nameserver 192.0.2.53' if phase == 'custom' else b'nameserver 169.254.0.53'
             assert expected + b'\r\n' in output, output
             if phase == 'fresh':
                 assert request(api.trames_session_transfer, handle, payload=dict(host=str(ROOT/'tests/fixtures/bin/direct-network'), guest='/root/network', export=False)) == 0
