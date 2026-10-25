@@ -440,6 +440,8 @@ jobs:
           run-id: ${{ needs.scope.outputs.baseline_run || github.run_id }}
           github-token: ${{ github.token }}
           path: target/vulkan-guest
+      - name: Normalize and verify downloaded guest graphics layout
+        run: python3 scripts/prepare-ios-guest-artifacts.py
       - uses: actions/download-artifact@v4
         if: needs.scope.outputs.native_scope == 'worker-handoff'
         with:

@@ -1122,8 +1122,24 @@ mod tests {
         results.sort_by_key(|r| r.pid);
         assert_eq!(results.len(), 2);
         assert_eq!((results[0].waits, results[0].resumes), (1, 1));
-        assert_eq!((results[1].cpu.x(19), results[1].cpu.x(20)), (1, 1));
-        assert_eq!((results[1].futex_requeues, results[1].futex_wakes), (1, 1));
+        assert_eq!(
+            (results[1].cpu.x(19), results[1].cpu.x(20)),
+            (1, 1),
+            "wake pc={:#x} x0={} x8={} outcome={:?}",
+            results[1].cpu.pc,
+            results[1].cpu.x(0),
+            results[1].cpu.x(8),
+            results[1].outcome
+        );
+        assert_eq!(
+            (results[1].futex_requeues, results[1].futex_wakes),
+            (1, 1),
+            "wake pc={:#x} x0={} x8={} outcome={:?}",
+            results[1].cpu.pc,
+            results[1].cpu.x(0),
+            results[1].cpu.x(8),
+            results[1].outcome
+        );
         assert_eq!(results.iter().map(|r| r.instructions).sum::<u64>(), 13);
         assert_eq!(control.remaining.load(Ordering::Relaxed), 987);
         assert!(results
@@ -1199,7 +1215,15 @@ mod tests {
             (1, 1, 1)
         );
         assert_eq!(results[0].cpu.x(0), 0);
-        assert_eq!(results[1].cpu.x(19), 1);
+        assert_eq!(
+            results[1].cpu.x(19),
+            1,
+            "wake pc={:#x} x0={} x8={} outcome={:?}",
+            results[1].cpu.pc,
+            results[1].cpu.x(0),
+            results[1].cpu.x(8),
+            results[1].outcome
+        );
         assert_eq!(results.iter().map(|r| r.instructions).sum::<u64>(), 9);
         assert_eq!(control.remaining.load(Ordering::Relaxed), 991);
         assert_eq!(results.iter().map(|r| r.assignments).sum::<u64>(), 3);
@@ -1312,7 +1336,8 @@ mod tests {
             results.sort_by_key(|d| d.pid);
             assert_eq!(
                 (results[0].io_waits, results[0].resumes, results[1].yields),
-                (1, 1, 1)
+                (1, 1, 1),
+                "mode={mode} read pc={:#x} x0={} x8={} outcome={:?}; write x0={} x8={} outcome={:?}",results[0].cpu.pc,results[0].cpu.x(0),results[0].cpu.x(8),results[0].outcome,results[1].cpu.x(0),results[1].cpu.x(8),results[1].outcome
             );
             assert_eq!(results[0].cpu.x(0), if mode == 1 { 8 } else { 1 });
             assert_eq!(results[1].cpu.x(19), if mode == 1 { 8 } else { 1 });
@@ -1369,7 +1394,12 @@ mod tests {
                 result.resumes,
                 result.direct_syscalls
             ),
-            (3, 1, 1, 1)
+            (3, 1, 1, 1),
+            "pc={:#x} x0={} x8={} outcome={:?}",
+            result.cpu.pc,
+            result.cpu.x(0),
+            result.cpu.x(8),
+            result.outcome
         );
         assert_eq!(control.remaining.load(Ordering::Relaxed), 97);
     }

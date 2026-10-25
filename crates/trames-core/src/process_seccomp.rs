@@ -427,7 +427,9 @@ mod tests {
             .unwrap());
         assert!(
             kernel.worker_syscalls > 100,
-            "allowed calls must stay on their workers"
+            "allowed calls must stay on their workers: worker={} owner={} instructions={} tasks={:?}",
+            kernel.worker_syscalls, kernel.syscalls, kernel.instructions,
+            kernel.processes.iter().map(|(id,p)| (*id,p.cpu.pc,p.cpu.x(8),p.cpu.x(0))).collect::<Vec<_>>()
         );
         assert_eq!(
             kernel.syscalls, kernel.worker_syscalls,
