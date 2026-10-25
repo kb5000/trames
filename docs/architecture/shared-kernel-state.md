@@ -577,3 +577,28 @@ builds use the installed public Linux 7.0 io_uring header with the distro's
 sanitized dependency headers; compiler warnings remain errors. This is local
 scoped validation, with no new hosted run or performance claim. Shared-fork
 cache binding remains under audit before worker close/replacement is enabled.
+
+### Fork cache membership domains (2026-10-26)
+
+The FD audit reproduced two cross-fork cache errors before enabling worker
+close. Fork reuses OFD/owner capability identity, but creates a different Files
+membership. A cached DirectFds could point at the child's table when the parent
+reused its cache, and FileEpoch could return a parent-bound DirectFiles to the
+child. Closing the child's FD then incorrectly hid the parent's byte handle or
+left the child's ordinary-file handle visible.
+
+DescriptorVersion now caches only the reusable prepared owner slice. Each
+DirectFds binds that slice to the calling table's live membership. FileEpoch
+keys captures by actual membership allocation and revision plus execution
+policy. The captured membership keeps its allocation alive, avoiding pointer
+identity reuse; no Rc version address is used as a table key. Per-OFD weak
+policy records still deduplicate across fork. CLONE_FILES retains the same
+membership and correctly shares its close/replacement effects.
+
+Both semantic regressions fail before and pass after, including numeric reuse,
+fresh file admission and CLONE_FILES controls. Scoped Apple validation passes
+VFS 309, Linux ABI 132 and Core 185 plus strict Clippy. The two new cases also
+pass under TSan on native ARM64 Linux. A Clippy-only type alias follow-up does
+not change runtime behavior; passing runtime results are reused. The next
+combined FD checkpoint will cover worker close/replacement and its Linux guest
+acceptance before full CI at the completed structural boundary.
