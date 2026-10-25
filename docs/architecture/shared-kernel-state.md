@@ -286,3 +286,21 @@ not isolated causality or whole-application acceptance. Poll/epoll authority,
 ordinary pathname mount lifetime and worker removal/replacement remain open.
 Source, runner and ELF hashes and every pilot sample are in the
 [retained-byte record](../validation/shared-fd-retained-byte-summary.json).
+
+Filesystem namespace data now has a retained Arc and an object-local RwLock,
+separate from the owner-only overlay controller. FsHandle keeps both views
+explicit; scoped read/write guards preserve overlay checkpoint/capacity/copy-up
+dispatch. Inode tables, storage limits/budget and the disk lease can survive
+the owner and be released by a worker. Filesystem data is Send/Sync by
+composition; neither FsHandle nor the overlay Rc graph gets a manual override.
+This does not admit pathname OFDs: mount parents, control references and busy
+unmount accounting still need their actual lifetime migration.
+
+Validation adds a live-inode/final-worker-release test to the unchanged 290
+passing VFS cases. Core 178 and Linux 124 cases, strict Clippy and Release pass.
+The same guest mount-namespace, UTS/chroot and disk-storage fixtures pass on
+baseline and candidate; six mmap/persistence/scheduler cases pass on the
+candidate. Three alternated mapped-byte CPU samples give whole-branch median
+ratios 1.000 (file) and 1.007 (memfd), without CPU pinning or a confidence
+interval. [The filesystem record](../validation/shared-filesystem-data-summary.json)
+binds the scoped results to sources, runners and identical guest ELFs.

@@ -1,0 +1,367 @@
+{
+  "date": "2026-10-25",
+  "base_commit": "3504c0ce52849bf17b3a026360d0793d985f4345",
+  "host": "native Apple ARM64 macOS, 16 KiB host pages",
+  "scope": "Shared filesystem data; owner overlay controller and complete mount/OFD admission remain excluded.",
+  "source_sha256": {
+    "crates/trames-vfs/src/cgroup.rs": "ba025222a4f7211fe99d24d76fc1ca1a3867a9705fd4035006753753f5de0113",
+    "crates/trames-vfs/src/lib.rs": "933a56c76f844221b5b9fd4f5e64d4cd8ed014c1a27857b1aef38daa1f129409",
+    "crates/trames-vfs/src/linux_namespace.rs": "9ff66d3d7e72f5a8af12f77cc84a3c2ddf79ef5082d0cbe40fb4f46190a110b5",
+    "crates/trames-vfs/src/mounts.rs": "f4f0ff8cf2562121bd28e2cdcfeef19f52487ec241f1bc130f0c770a0e1351d8",
+    "crates/trames-vfs/src/overlay.rs": "b295c0510f6e0c393d8eeace60a995002ae6a36d01753ba65d2dbd7c79c29b9a",
+    "crates/trames-vfs/src/pty.rs": "427947ad8ed36255a74ec6017403fa2fa5c8fc14a7b96795a27263cb50856847",
+    "crates/trames-vfs/src/storage.rs": "7e1001ff0a2654aa844b624ff96bda87c9b38a7caf7ffaa361d6cc2f2717032b",
+    "crates/trames-vfs/src/xattr.rs": "59a2cdf5ebeeb2392268fece259f20eeefe39d6ee72ce34e22e883b735ad0278",
+    "crates/trames-vfs/src/fs_data.rs": "c9b89ab0dd8aaa56249102f851ced366c68931305fd9d2a5a91f7d244f388ef0"
+  },
+  "tests": {
+    "vfs": {
+      "passed": 291,
+      "ignored": 1,
+      "reuse": "Original 290 cases passed unchanged production, plus new focused final-worker-drop case."
+    },
+    "core": {
+      "passed": 178,
+      "ignored": 3
+    },
+    "linux": {
+      "passed": 124,
+      "ignored": 1
+    },
+    "clippy": "passed",
+    "release_build": "passed"
+  },
+  "mmap_guest": {
+    "runner_sha256": "ccde9e0070c2f3b210565c92a3be6bb0885603483204cb1509ce0de0aa90e7e9",
+    "elf_sha256": "99848928ca14911d7fdf7ba6c91261d8a9adaff270d2d524d3e165bd85ab4924",
+    "cases": [
+      {
+        "storage": "memory",
+        "args": [],
+        "passed": true
+      },
+      {
+        "storage": "memory",
+        "args": [
+          "scheduler"
+        ],
+        "passed": true
+      },
+      {
+        "storage": "disk",
+        "args": [],
+        "passed": true
+      },
+      {
+        "storage": "disk",
+        "args": [
+          "scheduler"
+        ],
+        "passed": true
+      },
+      {
+        "storage": "disk",
+        "args": [
+          "persist-write"
+        ],
+        "passed": true
+      },
+      {
+        "storage": "disk",
+        "args": [
+          "persist-read"
+        ],
+        "passed": true
+      }
+    ]
+  },
+  "namespace_storage_guests": [
+    {
+      "runner": "target/stable-release/trames-run-baseline",
+      "fixture": "mount-namespaces",
+      "elf_sha256": "725087a1d801890f177b11362ad0c4a1bdf6b34007bb98ebbf97bff0e835b69f",
+      "code": 0,
+      "stdout": "mount: namespace isolation, setns, tmpfs quota, bind identity/readonly/noexec, detached fd: ok\nmount: pivot_root, mounted proc, old-root detach, parent root preserved: ok\n",
+      "stderr": ""
+    },
+    {
+      "runner": "target/stable-release/trames-run-baseline",
+      "fixture": "namespaces",
+      "elf_sha256": "f1e8794644568bb0cf073ac63f2ba8ad9aa3d8af4149c77030429b04f4ff8b84",
+      "code": 0,
+      "stdout": "UTS: fork sharing, clone/unshare isolation, namespace fd/stat/ioctl/setns/lifetime: ok\nchroot: independent fs root, absolute symlinks, dotdot, exec, privilege: ok\n",
+      "stderr": ""
+    },
+    {
+      "runner": "target/stable-release/trames-run-baseline",
+      "fixture": "storage",
+      "elf_sha256": "abe2f4b41e47726780dfa7d642235c23930da6a1bad002f56e25a91fa29148d5",
+      "code": 0,
+      "stdout": "large positioned IO and sparse zeros\nhard links permissions timestamps and open unlink\nrename replacement truncate and append offsets\nfork cwd and directory descriptor follow rename\ncapacity and sync\n",
+      "stderr": ""
+    },
+    {
+      "runner": "target/release/trames-run",
+      "fixture": "mount-namespaces",
+      "elf_sha256": "725087a1d801890f177b11362ad0c4a1bdf6b34007bb98ebbf97bff0e835b69f",
+      "code": 0,
+      "stdout": "mount: namespace isolation, setns, tmpfs quota, bind identity/readonly/noexec, detached fd: ok\nmount: pivot_root, mounted proc, old-root detach, parent root preserved: ok\n",
+      "stderr": ""
+    },
+    {
+      "runner": "target/release/trames-run",
+      "fixture": "namespaces",
+      "elf_sha256": "f1e8794644568bb0cf073ac63f2ba8ad9aa3d8af4149c77030429b04f4ff8b84",
+      "code": 0,
+      "stdout": "UTS: fork sharing, clone/unshare isolation, namespace fd/stat/ioctl/setns/lifetime: ok\nchroot: independent fs root, absolute symlinks, dotdot, exec, privilege: ok\n",
+      "stderr": ""
+    },
+    {
+      "runner": "target/release/trames-run",
+      "fixture": "storage",
+      "elf_sha256": "abe2f4b41e47726780dfa7d642235c23930da6a1bad002f56e25a91fa29148d5",
+      "code": 0,
+      "stdout": "large positioned IO and sparse zeros\nhard links permissions timestamps and open unlink\nrename replacement truncate and append offsets\nfork cwd and directory descriptor follow rename\ncapacity and sync\n",
+      "stderr": ""
+    }
+  ],
+  "pilot_binary_sha256": {
+    "baseline": "0a87d45840c5f3a54826d2b17cde4b96d726bb567c042cc2ad4f5d4e1a8a6ea0",
+    "candidate": "ccde9e0070c2f3b210565c92a3be6bb0885603483204cb1509ce0de0aa90e7e9"
+  },
+  "pilot_samples": [
+    {
+      "fixture": "mapped-access-bench",
+      "args": [],
+      "label": "baseline",
+      "trial": 0,
+      "stdout": "mapped-loop: checksum and backing: ok",
+      "cpu_seconds": 0.18576233,
+      "seconds": 0.18600425,
+      "syscalls": 12,
+      "syscall_seconds": 6.9e-05,
+      "parallel_rounds": 0
+    },
+    {
+      "fixture": "mapped-access-bench",
+      "args": [],
+      "label": "candidate",
+      "trial": 0,
+      "stdout": "mapped-loop: checksum and backing: ok",
+      "cpu_seconds": 0.183319373,
+      "seconds": 0.183546917,
+      "syscalls": 12,
+      "syscall_seconds": 7.2374e-05,
+      "parallel_rounds": 0
+    },
+    {
+      "fixture": "mapped-access-bench",
+      "args": [],
+      "label": "candidate",
+      "trial": 1,
+      "stdout": "mapped-loop: checksum and backing: ok",
+      "cpu_seconds": 0.183370671,
+      "seconds": 0.183578917,
+      "syscalls": 12,
+      "syscall_seconds": 5.5583e-05,
+      "parallel_rounds": 0
+    },
+    {
+      "fixture": "mapped-access-bench",
+      "args": [],
+      "label": "baseline",
+      "trial": 1,
+      "stdout": "mapped-loop: checksum and backing: ok",
+      "cpu_seconds": 0.183326666,
+      "seconds": 0.183540167,
+      "syscalls": 12,
+      "syscall_seconds": 4.9204e-05,
+      "parallel_rounds": 0
+    },
+    {
+      "fixture": "mapped-access-bench",
+      "args": [],
+      "label": "baseline",
+      "trial": 2,
+      "stdout": "mapped-loop: checksum and backing: ok",
+      "cpu_seconds": 0.181483209,
+      "seconds": 0.181679791,
+      "syscalls": 12,
+      "syscall_seconds": 4.2418e-05,
+      "parallel_rounds": 0
+    },
+    {
+      "fixture": "mapped-access-bench",
+      "args": [],
+      "label": "candidate",
+      "trial": 2,
+      "stdout": "mapped-loop: checksum and backing: ok",
+      "cpu_seconds": 0.18562,
+      "seconds": 0.185840667,
+      "syscalls": 12,
+      "syscall_seconds": 6.4497e-05,
+      "parallel_rounds": 0
+    },
+    {
+      "fixture": "mapped-access-bench",
+      "args": [
+        "memfd"
+      ],
+      "label": "baseline",
+      "trial": 0,
+      "stdout": "mapped-loop: checksum and backing: ok",
+      "cpu_seconds": 0.182342629,
+      "seconds": 0.183361834,
+      "syscalls": 12,
+      "syscall_seconds": 0.000866084,
+      "parallel_rounds": 0
+    },
+    {
+      "fixture": "mapped-access-bench",
+      "args": [
+        "memfd"
+      ],
+      "label": "candidate",
+      "trial": 0,
+      "stdout": "mapped-loop: checksum and backing: ok",
+      "cpu_seconds": 0.189199627,
+      "seconds": 0.189914333,
+      "syscalls": 12,
+      "syscall_seconds": 0.000545084,
+      "parallel_rounds": 0
+    },
+    {
+      "fixture": "mapped-access-bench",
+      "args": [
+        "memfd"
+      ],
+      "label": "candidate",
+      "trial": 1,
+      "stdout": "mapped-loop: checksum and backing: ok",
+      "cpu_seconds": 0.182888202,
+      "seconds": 0.183497875,
+      "syscalls": 12,
+      "syscall_seconds": 0.000463417,
+      "parallel_rounds": 0
+    },
+    {
+      "fixture": "mapped-access-bench",
+      "args": [
+        "memfd"
+      ],
+      "label": "baseline",
+      "trial": 1,
+      "stdout": "mapped-loop: checksum and backing: ok",
+      "cpu_seconds": 0.17944696,
+      "seconds": 0.180124458,
+      "syscalls": 12,
+      "syscall_seconds": 0.000520126,
+      "parallel_rounds": 0
+    },
+    {
+      "fixture": "mapped-access-bench",
+      "args": [
+        "memfd"
+      ],
+      "label": "baseline",
+      "trial": 2,
+      "stdout": "mapped-loop: checksum and backing: ok",
+      "cpu_seconds": 0.181606958,
+      "seconds": 0.182173625,
+      "syscalls": 12,
+      "syscall_seconds": 0.00042325,
+      "parallel_rounds": 0
+    },
+    {
+      "fixture": "mapped-access-bench",
+      "args": [
+        "memfd"
+      ],
+      "label": "candidate",
+      "trial": 2,
+      "stdout": "mapped-loop: checksum and backing: ok",
+      "cpu_seconds": 0.181991453,
+      "seconds": 0.18277825,
+      "syscalls": 12,
+      "syscall_seconds": 0.000636291,
+      "parallel_rounds": 0
+    },
+    {
+      "fixture": "shared-files-table",
+      "args": [],
+      "label": "baseline",
+      "trial": 0,
+      "stdout": "shared-files-table peers=8 aliases=96 mutations=1024 seconds=0.001812166 PASS",
+      "cpu_seconds": 0.000656212,
+      "seconds": 0.00271525,
+      "syscalls": 12763,
+      "syscall_seconds": 0.001058423,
+      "parallel_rounds": 0
+    },
+    {
+      "fixture": "shared-files-table",
+      "args": [],
+      "label": "candidate",
+      "trial": 0,
+      "stdout": "shared-files-table peers=8 aliases=96 mutations=1024 seconds=0.001251458 PASS",
+      "cpu_seconds": 0.000629335,
+      "seconds": 0.002124541,
+      "syscalls": 1615,
+      "syscall_seconds": 0.000348583,
+      "parallel_rounds": 0
+    },
+    {
+      "fixture": "shared-files-table",
+      "args": [],
+      "label": "candidate",
+      "trial": 1,
+      "stdout": "shared-files-table peers=8 aliases=96 mutations=1024 seconds=0.001262958 PASS",
+      "cpu_seconds": 0.000607881,
+      "seconds": 0.002028083,
+      "syscalls": 1615,
+      "syscall_seconds": 0.000273322,
+      "parallel_rounds": 0
+    },
+    {
+      "fixture": "shared-files-table",
+      "args": [],
+      "label": "baseline",
+      "trial": 1,
+      "stdout": "shared-files-table peers=8 aliases=96 mutations=1024 seconds=0.001873292 PASS",
+      "cpu_seconds": 0.000625942,
+      "seconds": 0.0027055,
+      "syscalls": 12763,
+      "syscall_seconds": 0.001045288,
+      "parallel_rounds": 0
+    },
+    {
+      "fixture": "shared-files-table",
+      "args": [],
+      "label": "baseline",
+      "trial": 2,
+      "stdout": "shared-files-table peers=8 aliases=96 mutations=1024 seconds=0.001866875 PASS",
+      "cpu_seconds": 0.000622452,
+      "seconds": 0.002684125,
+      "syscalls": 12763,
+      "syscall_seconds": 0.001033312,
+      "parallel_rounds": 0
+    },
+    {
+      "fixture": "shared-files-table",
+      "args": [],
+      "label": "candidate",
+      "trial": 2,
+      "stdout": "shared-files-table peers=8 aliases=96 mutations=1024 seconds=0.001264042 PASS",
+      "cpu_seconds": 0.000599725,
+      "seconds": 0.002027041,
+      "syscalls": 1615,
+      "syscall_seconds": 0.000278496,
+      "parallel_rounds": 0
+    }
+  ],
+  "limitations": [
+    "Three short alternated samples; no affinity or confidence interval.",
+    "Comparison includes earlier page/inode/FD changes; no isolated causality or product speedup.",
+    "Does not complete the FD, VM-local, persistent context, or release gates."
+  ]
+}
