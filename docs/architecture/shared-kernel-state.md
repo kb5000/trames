@@ -426,3 +426,29 @@ Unchanged full-CI results at 933bd5e are reused while the structural work remain
 local. Dynamic file/byte lookup, accepted poll authority and epoll liveness are
 still required before enabling worker close/replacement. VM-local commits,
 persistent contexts and the final complete local CI/release gate remain open.
+
+Shared byte lookup now resolves the current membership and returns an accepted
+DirectFd that owns the complete original SharedFd. Cached descriptor slices
+omit admitted shared resources; excluded owner controls retain their joined
+boundary. Numeric reuse and aliases beyond the original snapshot therefore
+resolve live entries, while an accepted byte call still reaches its original
+endpoint. Completion accounting reuses that authority instead of looking up the
+numeric FD again. RetainedByte carries the same pin through its DirectFd.
+
+Epoll snapshots keep weak original-OFD watches for shared targets. Polling or
+subscribing briefly resolves the actual object; waiting on epoll does not keep
+its watched pipe open or retain its bytes after final close. Tests verify queued
+old readiness disappears on last close, the peer immediately sees EPIPE, actual
+pipe storage retires without refreshing the snapshot, and FD reuse never
+retargets the old watch. An accepted ppoll retains its original shared pipe
+within the wait. Cross-checkpoint poll handoff still needs to preserve that
+accepted set; worker removal/replacement remains disabled.
+
+Scoped byte validation passes Apple VFS 304, Linux 125 and Core 178 cases;
+ARM64 Linux VFS 305, Linux 125 and Core 178 cases, with five manual cases ignored.
+Ten focused VFS TSan cases, strict Clippy, Release and iOS FFI check pass. Original
+mmap, io_uring ABI and shared-files churn guests pass locally, with the latter
+two covering 1/2/4 CPUs. The expanded retained-OFD graph uses a higher compiler
+auto-trait recursion limit in Core; no manual Send/Sync implementation is added.
+Dynamic ordinary-file capabilities, poll checkpoint ownership and the complete
+close/replacement gate remain separate work.

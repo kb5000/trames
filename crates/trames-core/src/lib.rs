@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! ELF, initial Linux stack, CPU slices, and syscall dispatch composition.
+// Retained OFDs expand the worker graph checked by Rust's auto-trait solver.
+#![recursion_limit = "256"]
 use std::fmt;
 use trames_cpu::{Cpu, CpuFault};
 use trames_elf::{ElfError, LoadedElf};
