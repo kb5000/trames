@@ -247,8 +247,8 @@ impl Capabilities {
         };
         let mut bytes = Vec::with_capacity(520);
         bytes.extend_from_slice(&driver.driver_id.as_raw().to_le_bytes());
-        bytes.extend(driver.driver_name.iter().map(|&x| x as u8));
-        bytes.extend(driver.driver_info.iter().map(|&x| x as u8));
+        bytes.extend(driver.driver_name.iter().flat_map(|x| x.to_ne_bytes()));
+        bytes.extend(driver.driver_info.iter().flat_map(|x| x.to_ne_bytes()));
         let c = driver.conformance_version;
         bytes.extend_from_slice(&[c.major, c.minor, c.subminor, c.patch]);
         write(m, at, &bytes)

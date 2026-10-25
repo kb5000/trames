@@ -170,6 +170,34 @@ CPU 基准，尚不是 iPad 实测速率。
 
 ## 验证
 
+Run the complete local CI before pushing a development checkpoint. On an ARM64
+Ubuntu 24.04 host or VM, install the dependencies, Rust toolchain, components and
+targets declared by `.github/workflows/linux.yml`, plus `python3-yaml` and
+`libclang-rt-18-dev`. Use Ubuntu's supported HWE kernel for the native
+memfd/inotify oracle. Then run:
+
+```sh
+python3 scripts/run-local-ci.py --native-arm64 --resume
+```
+
+The local runner reads all shell steps from the workflow's `runtime` job and
+stores individual logs and source-bound results under `target/local-ci/runtime`.
+`--list` shows the plan. Failed steps run again; passed steps are reused only
+when their recorded source, executable and environment inputs match. Setup steps
+replay environment changes. ARM64 runs use native CLI/musl executables and an
+ARM64 ThreadSanitizer target with LLVM compiler-runtime builtins and an
+instrumented Rust standard library, plus full-precision lavapipe sampling;
+pinned QEMU remains the instruction oracle. A partial `--start`/`--stop` run is
+recorded as incomplete. Hosted CI remains the
+final merge/release check.
+
+On macOS, also run the Apple workflow's native checks, OpenSSH/Wayland peers,
+simulator suite, and unsigned simulator/device builds. The existing
+`scripts/build-ios.sh` verifies cached guest artifacts before linking; unchanged
+verified guest sources need not be rebuilt. For the OpenSSH peer on a local
+account without passwordless sudo, use
+`TRAMES_SSH_TEST_UNPRIVILEGED=1 bash scripts/test-swift-ssh.sh`.
+
 以下 Linux 流程需要 AArch64 交叉 GCC/Binutils 和 QEMU 10.0.13。
 浮点、SIMD、libm 差分使用实际 ARM64 构建，避免把 x86 开发机的原生 NaN/异常差异
 当作 ARM 指令错误；完整包安装和开发工具流程使用开发主机构建。

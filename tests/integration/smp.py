@@ -19,7 +19,9 @@ for count in (1,2,4):
     assert result.stdout==b'smp: topology, affinity and getcpu: passed\n'+oracle.stdout,(count,result.stdout,oracle.stdout)
     m=re.search(rb'trames metrics: (\{[^\n]+\})',result.stderr);assert m,result.stderr
     metrics=json.loads(m[1]);assert metrics['cpu_count']==count,metrics
-    if count>1:assert metrics['parallel_rounds']>0 and metrics['worker_slices']>=2*metrics['parallel_rounds'] and metrics['peak_parallel_cpus']>1,metrics
+    # A cohort retains blocked futex/I/O peers too; only actually dispatched
+    # assignments increment worker_slices. Check real overlap independently.
+    if count>1:assert 0<metrics['parallel_rounds']<=metrics['worker_slices'] and 1<metrics['peak_parallel_cpus']<=count,metrics
     else:assert metrics['parallel_rounds']==0,metrics
     print(f'{count} CPU:',json.dumps(metrics),flush=True)
     sustained=subprocess.run([runner,'--memory','--cpus',str(count),'--metrics',

@@ -1,0 +1,112 @@
+{
+  "date": "2026-10-25",
+  "status": "passed with scoped retries and unchanged-check reuse",
+  "source_base": "9d844290597c7c1a1b01d74f5f97d49668c83846",
+  "tested_changes_sha256": {
+    ".gitignore": "b146d0888733378b9dffe3416f4847f4b5529fef2d5ef20a6023ecea2094dece",
+    "README.md": "cf930dc43be1d6dec422cab9d694c563d92744cf54d118c9fd0f4640a15e9a41",
+    "apps/ios/TramesUITests/LaunchTests.swift": "69441b063a711e4ff0314c53a2635af0bff997158e4c523de5320abf6da1665a",
+    "crates/trames-net/src/virtualnet/gateway.rs": "0e10a6eef72688bca600f8bd38e1f51f74da188448cbf97836e29a23f9808b3b",
+    "crates/trames-vulkan/src/backend/zink.rs": "73b16e0163d789214151ae8e12eadcbed37cedd626e2df0ec66ca3d447613c77",
+    "scripts/test-swift-ssh.sh": "91845086035e49dcae4b3debd73044f17426fac39937e278a440501fd92c15d6",
+    "scripts/run-local-ci.py": "d49439b9e77b310f50a428c8c532548b5bd9681ce69735fe5e5737cd1fb83a9a",
+    "tests/fixtures/fd-exec.c": "9e87f407d32d7a2b9959c7d0a21b3ba54efe2304d4e5dacc3b2f841150c9077f",
+    "tests/integration/local-ci.py": "81d6e3d4db891ab798df988b4dda6ea45fe2c0c9b2bb80a027a1286a2f1b7504",
+    "tests/integration/m6.py": "775b91b9be308d0ada18f98af28a58ee799adcf01edbced622b3a1de0bdc27f5",
+    "tests/integration/smp.py": "9411045228e2d2fbccf5d68770044f1b7674eda1b4cdc89c285c0ac1974e6ec8"
+  },
+  "linux_runtime": {
+    "workflow": ".github/workflows/linux.yml",
+    "job": "runtime",
+    "shell_steps_covered": 78,
+    "passed_step_records": 75,
+    "focused_retry_steps": {
+      "8": {
+        "name": "Check region guard races with fully instrumented Rust standard library",
+        "evidence_sha256": {
+          "target/stable-release/local-ci-linux-tsan-c-builtins.log": "8685d710dcbf9b50dc28d4aa646457fbff0d2cea0a9182ddca0d51595a6884bc",
+          "target/stable-release/local-ci-linux-tsan-positive-control.log": "4723e4f17c20ccd91d7a30ea2a70079432dcc54d375c7ddca2259ab4cb8804ad"
+        }
+      },
+      "35": {
+        "name": "Compare inode notifications, epoll edges and fork with Linux",
+        "evidence_sha256": {
+          "target/stable-release/local-ci-linux-inotify-hwe.log": "99a04b7b6bea56c0e1d18993dc744024a9dcb991bab1eca596ae5809b7e5ccf0"
+        }
+      },
+      "65": {
+        "name": "Compare standard guest Vulkan compute and rasterization with the native software driver",
+        "evidence_sha256": {
+          "target/local-ci/io/runtime/step-65.log": "67910081a54e80f788c337ac13255a0418c2959c253e214be8b071a08bcd2031",
+          "target/stable-release/local-ci-linux-vulkan-texture-lifecycle.log": "78db262f8328a00b0793ed0641c8998eba2253500335e8cc83e02479c3998407"
+        }
+      }
+    },
+    "environment": "Native ARM64 Ubuntu 24.04.5 in Apple Virtualization.framework; 6 vCPU, 8 GiB; no Rosetta/x86 emulation.",
+    "kernels": "Initial native/CPU checks on 6.8.0-146; inotify and subsequent integration checks on Ubuntu HWE 7.0.0-38.",
+    "adaptations": [
+      "Native CLI and ARM64 musl executables; QEMU 10.0.13 remains the independent instruction oracle.",
+      "ARM64 ThreadSanitizer with LLVM compiler-runtime builtins and fully instrumented Rust std; 138 test executions passed, intentional-race control detected.",
+      "Full-precision ARM64 lavapipe sampling via GALLIVM_PERF=no_aos_sampling; original pixel bounds and exact native/guest images preserved."
+    ],
+    "m6_fresh_workflow_seconds": 147.69614958763123,
+    "passed_areas": [
+      "workspace fmt/strict Clippy/build/tests",
+      "TSan and native allocator ASan/UBSan",
+      "iOS compile check",
+      "ARM64 CPU differential suites",
+      "musl/BusyBox and pure native calls",
+      "memory/storage/PTY/namespaces",
+      "direct and virtual networking/DNS/HTTPS",
+      "Vulkan compute/render/texture/lifetimes",
+      "signed Python/capabilities/cgroups/devices",
+      "crun/Docker",
+      "SMP",
+      "Node.js/V8/libuv/HTTP/npm",
+      "fresh signed GCC/Clang/Python/Git/CMake/htop workflows"
+    ],
+    "logs": "target/local-ci/io/runtime; focused retry logs under target/stable-release"
+  },
+  "apple": {
+    "native_workspace": {
+      "passed": 947,
+      "ignored": 17,
+      "reuse": "Unchanged workspace checks reused; full affected trames-net rerun passed (61 tests, including one new regression)."
+    },
+    "strict_clippy": "workspace passed; affected Vulkan/network strict Clippy passed after fixes",
+    "ssh": "8 real OpenSSH PTY/SFTP cases passed, 12 TramesKit cases with one opt-in skipped, 40 upstream NIOSSH regressions passed",
+    "fileprovider_large_probe": {
+      "size_mib": 256,
+      "peak_rss_growth_mib": 2.4375,
+      "status": "passed separately on macOS"
+    },
+    "wayland_original_c_peer": {
+      "passed": 5
+    },
+    "simulator": {
+      "passed": 71,
+      "skipped": 1,
+      "details": "68 unchanged suite passes, two failed UI cases fixed/retried, one separately passed workspace gesture. Large staging opt-in skipped here; separate macOS probe passed."
+    },
+    "builds": "Unsigned simulator/device builds passed; both File Provider group metadata checks passed; relinked with TCP fix.",
+    "unsigned_ipa": {
+      "path": "apps/ios/build/sideload/Trames-local-ci-tcp-fixed-unsigned.ipa",
+      "bytes": 13498596,
+      "sha256": "692109b48c4198c94cca77911190500aa53976cba83806206e0205cc8fe1ebb5"
+    }
+  },
+  "fixes": [
+    "Portable C-char byte serialization for Linux ARM64 Vulkan driver properties.",
+    "UI tests disambiguate nested iPadOS buttons and restore/isolate rotation.",
+    "execveat doubly-invalid arguments accept both upstream kernel error orders; individual errors remain strict.",
+    "SMP assertions distinguish retained sleeping cohort members from dispatched assignments, with exact oracle output and real overlap still required.",
+    "Live gateway TCP streams survive idle/backpressure; ownerless flows retain bounded cleanup. Real TCP regression fails before/passes after on Mac and Linux.",
+    "Developer-package fixture validates APKINDEX sizes, repairs truncated caches, and never promotes short transfers. Repaired Clang archive passes gzip integrity; fresh signed workflow passed."
+  ],
+  "preserved_local_change": {
+    "path": "tests/integration/multiple-terminals.py",
+    "sha256": "396fdbcc5a5410f01c610c2d227c3fb54c3880d2d72acf2ea0db9d60d33dec02",
+    "excluded_from_commit": true
+  },
+  "release_gates": "Actual pathname OFD admission/worker close, VM-local commits, persistent contexts, final hosted CI and physical iPad release smoke remain open. This record does not declare release readiness."
+}

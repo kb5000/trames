@@ -348,3 +348,19 @@ guest I/O; correcting that setup required only rerunning its failed case.
 This fixes an actual resource leak and establishes shared ownership; pathname
 OFD admission, mapping writer leases, detached-cache retirement and dynamic FD
 close/poll integration remain separate gates. [Overlay lifetime evidence](../validation/shared-overlay-lifetime-summary.json).
+
+### Local complete CI baseline (2026-10-25)
+
+Development checkpoints now run the complete local workflow before pushing.
+All 78 Linux runtime shell stages are covered on native ARM64 Ubuntu, with
+explicit platform adaptations and focused retries; unchanged passing checks
+are reused. Apple native checks, real OpenSSH/Wayland peers, the simulator suite
+and unsigned simulator/device links pass. The 256 MiB File Provider staging
+probe passes separately. [Results and adaptations](../validation/local-ci-2026-10-25.json).
+
+The local run also fixes live TCP gateway expiry under backpressure and rejects
+truncated developer-package cache downloads. These are independently verified
+issues: the final fresh M6 tool installation was blocked by a truncated Clang
+archive, while a real TCP regression independently reproduced the idle sweep.
+Pathname OFD admission, immediate worker close, VM-local commits and persistent
+contexts remain required before the stable release gate closes.

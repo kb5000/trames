@@ -107,6 +107,7 @@ final class LaunchTests: XCTestCase {
         }
     }
     func testOnlyAlpineCanMinimizeRestoreAndUseTheInvisibleResizeCorner() {
+        XCUIDevice.shared.orientation = .portrait
         let app=launchApp()
         func element(_ prefix:String)->XCUIElement {
             app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@",prefix)).firstMatch
@@ -136,7 +137,7 @@ final class LaunchTests: XCTestCase {
             XCTAssertTrue(tab.waitForExistence(timeout:5),app.debugDescription)
             let hidden=XCTNSPredicateExpectation(predicate:NSPredicate(format:"exists == false"),object:title)
             XCTAssertEqual(XCTWaiter.wait(for:[hidden],timeout:5),.completed)
-            app.buttons["新建或管理会话"].tap();app.buttons["设置"].tap()
+            app.buttons["新建或管理会话"].tap();app.buttons["设置"].firstMatch.tap()
             XCTAssertTrue(app.buttons["完成"].waitForExistence(timeout:5));app.buttons["完成"].tap()
             tab.tap()
             XCTAssertTrue(state.waitForExistence(timeout:5),app.debugDescription)
@@ -192,6 +193,7 @@ final class LaunchTests: XCTestCase {
             "Alpine state: \(state.exists ? state.label : "missing")")
         XCTAssertTrue(app.staticTexts["cpu-usage"].waitForExistence(timeout:5))
         XCUIDevice.shared.orientation = .landscapeLeft
+        defer { XCUIDevice.shared.orientation = .portrait }
         let terminal=app.descendants(matching:.any).matching(identifier:"terminal-viewport").firstMatch
         XCTAssertTrue(terminal.waitForExistence(timeout:10));terminal.tap()
         XCTAssertFalse(app.buttons["Ctrl-C"].exists,"The duplicate App shortcut row must be absent")
@@ -200,9 +202,9 @@ final class LaunchTests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [exited], timeout: 30), .completed)
         app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","close-tab-terminal-")).firstMatch.tap()
         app.buttons["新建或管理会话"].tap()
-        app.buttons["本地 Alpine 终端"].tap()
+        // iPadOS 27 can expose the SwiftUI label as a nested button as well.
+        app.buttons["本地 Alpine 终端"].firstMatch.tap()
         let reopened = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", "Alpine · 本地"), object: app.staticTexts["session-state"])
         XCTAssertEqual(XCTWaiter.wait(for: [reopened], timeout: 30), .completed)
-        XCUIDevice.shared.orientation = .portrait
     }
 }

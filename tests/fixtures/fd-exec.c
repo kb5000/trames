@@ -14,6 +14,7 @@
 extern char **environ;
 static unsigned char *image;
 static size_t image_size;
+enum { EMPTY_OR_INVALID = -1 };
 static int memfd(const char *name, unsigned flags) {
     int fd = memfd_create(name, flags); assert(fd >= 0);
     assert(write(fd, image, image_size) == (ssize_t)image_size);
@@ -38,7 +39,10 @@ static void execute(const char *label, int at, int fd, const char *path, int fla
         if (at == 2) fexecve(fd, argv, environ);
         else if (at) syscall(SYS_execveat, fd, path, argv, environ, flags);
         else execve(path, argv, environ);
-        if (errno != expected_errno) { fprintf(stderr, "%s errno=%d expected=%d\n", label, errno, expected_errno); _exit(99); }
+        if (errno != expected_errno &&
+            !(expected_errno == EMPTY_OR_INVALID && (errno == ENOENT || errno == EINVAL))) {
+            fprintf(stderr, "%s errno=%d expected=%d\n", label, errno, expected_errno); _exit(99);
+        }
         _exit(expected_errno ? 0 : 98);
     }
     close(output[1]); char buffer[512]; size_t used = 0; ssize_t n;
@@ -94,7 +98,9 @@ int main(int argc, char **argv) {
     assert(unlink(alias) == 0); assert(symlink(path, alias) == 0);
     execute("symlink to deleted inode magic link", 0, AT_FDCWD, alias, 0, 0, named_fd, 1, 0, "Hello from ARM64 syscalls\n");
     execute("invalid execveat flag", 1, named_fd, "", AT_EMPTY_PATH | 0x2000, EINVAL, -1, 0, 0, "");
-    execute("empty path precedes unknown flags", 1, named_fd, "", 0x2000, ENOENT, -1, 0, 0, "");
+    // Linux 6.14 rejects an empty pathname first; Linux 7.0 checks flags first.
+    // This call has both errors. The adjacent cases assert each error alone.
+    execute("empty pathname with invalid flags", 1, named_fd, "", 0x2000, EMPTY_OR_INVALID, -1, 0, 0, "");
     execute("empty pathname without flag", 1, named_fd, "", 0, ENOENT, -1, 0, 0, "");
     execute("invalid fd with empty path", 1, -9, "", AT_EMPTY_PATH, EBADF, -1, 0, 0, "");
     execute("regular fd cannot be a dirfd", 1, named_fd, "child", 0, ENOTDIR, -1, 0, 0, "");

@@ -71,12 +71,20 @@ def repository(destination, tools=TOOLS):
         fields = packages[name]
         filename = name + '-' + fields['V'] + '.apk'
         cached = CACHE / filename
-        if not cached.exists():
+        expected_size = int(fields['S'])
+        if not cached.exists() or cached.stat().st_size != expected_size:
             url = f"https://dl-cdn.alpinelinux.org/alpine/v3.22/{fields['repository']}/aarch64/{filename}"
+            partial = cached.with_suffix('.partial')
             with urllib.request.urlopen(url, timeout=180) as response:
-                with cached.with_suffix('.partial').open('wb') as output:
+                with partial.open('wb') as output:
                     shutil.copyfileobj(response, output)
-            cached.with_suffix('.partial').replace(cached)
+            # Sized urllib reads can end early without raising IncompleteRead.
+            # Do not promote a truncated transfer to a reusable cache entry.
+            actual_size = partial.stat().st_size
+            if actual_size != expected_size:
+                partial.unlink()
+                raise IOError(f'{filename}: downloaded {actual_size} bytes, expected {expected_size}')
+            partial.replace(cached)
         shutil.copyfile(cached, destination / fields['repository'] / 'aarch64' / filename)
 
     with ThreadPoolExecutor(max_workers=4) as workers:

@@ -23,9 +23,13 @@ PermitRootLogin no
 AllowUsers $ssh_test_user
 Subsystem sftp internal-sftp
 CFG
-sudo -n /usr/sbin/sshd -D -e -f "$fixture/sshd.conf" > "$fixture/server.log" 2>&1 &
+ssh_test_privilege=(sudo -n)
+# Local macOS users may run a peer for their own account on this high port.
+# Hosted CI retains its existing privileged PTY peer unless explicitly opted out.
+if [[ "${TRAMES_SSH_TEST_UNPRIVILEGED:-0}" == 1 ]]; then ssh_test_privilege=(env); fi
+"${ssh_test_privilege[@]}" /usr/sbin/sshd -D -e -f "$fixture/sshd.conf" > "$fixture/server.log" 2>&1 &
 ssh_test_pid=$!
-trap 'sudo -n kill "$ssh_test_pid" 2>/dev/null || true' EXIT
+trap '"${ssh_test_privilege[@]}" kill "$ssh_test_pid" 2>/dev/null || true' EXIT
 python3 - "$ssh_test_port" <<'PY'
 import socket,sys,time
 for attempt in range(50):
