@@ -364,3 +364,25 @@ issues: the final fresh M6 tool installation was blocked by a truncated Clang
 archive, while a real TCP regression independently reproduced the idle sweep.
 Pathname OFD admission, immediate worker close, VM-local commits and persistent
 contexts remain required before the stable release gate closes.
+
+### Mapping resource leases and owner-cache retirement
+
+Mapping writer leases now retain actual inode and filesystem/mount identity,
+with one shared lease per mapping batch. Clones retain the same allocation;
+writer accounting remains relaxed and no ordinary byte-access path changes.
+Normal read-only and writable mappings retain resource identity without keeping
+namespace traversal topology alive. Namespace-control ancestors instead retain
+an owner handle and cannot expose a worker lease; a regular file bound above a
+network-namespace mount verifies this boundary and actual control lifetime.
+
+Lazy unmount retires unneeded owner caches after dropping temporary path/table
+references. Directory descriptors still preserve detached-subtree traversal;
+close, replacement, close_all and exec close retire their cache immediately.
+Resource weak registration continues to count actual leases after owner
+topology disappears. Native regressions verify busy/remount behavior, real
+retained bytes after owner exit, and inode/filesystem/mount release on the last
+worker drop, without a later owner cache scan.
+
+This is an inode/filesystem lifetime prerequisite. Mappings still need to pin
+their original OFD (including flock/close notification lifetime) before worker
+close/replacement admission. The complete FD gate remains open.
