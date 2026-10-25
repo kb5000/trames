@@ -25,6 +25,7 @@ pub(super) struct IoCall {
     pub number: u32,
     pub args: [u64; 6],
     pub flock: Option<trames_vfs::FlockRequest>,
+    pub retained_byte: Option<trames_linux::RetainedByte>,
     pub deadline: Option<Instant>,
 }
 impl From<&trames_linux::PendingIo> for IoCall {
@@ -33,6 +34,7 @@ impl From<&trames_linux::PendingIo> for IoCall {
             number: io.number,
             args: io.args,
             flock: io.flock.clone(),
+            retained_byte: io.retained_byte.clone(),
             deadline: io.deadline,
         }
     }

@@ -432,6 +432,8 @@ impl Pool {
                             if job.io.is_some() || job.retry.is_some() {
                                 let snapshot = work.syscalls.as_ref().expect("retained I/O authority");
                                 let began = snapshot.profile.then(Instant::now);
+                                let saved_call = job.io.as_ref().map(crate::run_queue::IoCall::from)
+                                    .or_else(|| job.retry.clone());
                                 let result = if let Some(pending) = job.io.take() {
                                     snapshot.direct.resume(pending, work.memory.as_deref_mut().expect("worker view"))
                                 } else {
@@ -439,6 +441,10 @@ impl Pool {
                                     if let Some(request) = call.flock {
                                         snapshot.direct.start_flock(request, call.args, work.memory.as_deref_mut().expect("worker view"),
                                             work.pid, &epoch.as_ref().unwrap().io_target)
+                                    } else if let Some(file) = call.retained_byte {
+                                        snapshot.direct.start_retained_byte(file, call.number, call.args,
+                                            work.memory.as_deref_mut().expect("worker view"), work.pid,
+                                            &epoch.as_ref().unwrap().io_target)
                                     } else {
                                         snapshot.direct.start(call.number, call.args, work.memory.as_deref_mut().expect("worker view"),
                                             work.pid, &epoch.as_ref().unwrap().io_target, call.deadline).expect("admitted I/O retry")
@@ -455,7 +461,12 @@ impl Pool {
                                         parked_io = Some(pending);
                                         break SliceOutcome::Yield { instructions: 0 };
                                     }
-                                    trames_linux::IoAttempt::Checkpoint => break SliceOutcome::Syscall { instructions: 0 },
+                                    trames_linux::IoAttempt::Checkpoint => {
+                                        // A SIGPIPE/checkpoint must still reach the
+                                        // original accepted OFD in the joined kernel.
+                                        job.retry = saved_call.filter(|call| call.retained_byte.is_some());
+                                        break SliceOutcome::Syscall { instructions: 0 };
+                                    }
                                 }
                             }
                             if epoch.as_ref().is_some_and(|epoch| epoch.should_yield(index, began, instructions != 0 || syscalls != 0)) {

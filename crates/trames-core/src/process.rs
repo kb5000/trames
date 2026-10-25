@@ -150,6 +150,8 @@ struct Process {
     poll_mask: Option<u64>,
     uring_wait: Option<(u32, Rc<trames_vfs::Uring>, Option<Instant>)>,
     flock_wait: Option<(trames_vfs::FlockRequest, trames_vfs::RetainedFd)>,
+    byte_wait: Option<trames_linux::PendingIo>,
+    retained_byte: Option<trames_linux::RetainedByte>,
     pending_open: Option<u32>,
     stopped_state: Option<Box<State>>,
     auto_reap: bool,
@@ -191,6 +193,9 @@ impl Process {
     }
 
     fn worker_io_candidate(&self, id: u32) -> bool {
+        if self.retained_byte.is_some() || self.byte_wait.is_some() {
+            return !self.linux.trace && self.seccomp.mode() == 0;
+        }
         if matches!(self.state, State::Blocked(116, a) if a[0] as u32 == 2) {
             return !self.linux.trace && self.seccomp.mode() == 0;
         }
@@ -324,6 +329,8 @@ impl Process {
             poll_mask: None,
             uring_wait: None,
             flock_wait: None,
+            byte_wait: None,
+            retained_byte: None,
             pending_open: None,
             stopped_state: None,
             auto_reap: false,
@@ -345,7 +352,15 @@ struct ProcMaps {
     identity: (u64, u64),
     bytes: Vec<u8>,
 }
+// Joined shared pipes change only through this kernel's guest execution. Their
+// callbacks set IoSignal::ready; the returning CPU/worker already wakes this
+// owner. Host-backed resources are excluded and retain their host event path.
+struct JoinedByteWake;
+impl trames_vfs::IoWake for JoinedByteWake {
+    fn wake_io(&self, _: &Arc<trames_vfs::IoSignal>) {}
+}
 struct Kernel {
+    byte_target: Arc<dyn trames_vfs::IoWake>,
     memory_limits: super::MemoryLimits,
     cpu_count: usize,
     workers: crate::workers::Pool,
@@ -839,6 +854,8 @@ impl Kernel {
         p.linux.cancel_uring(&mut p.memory, pid);
         p.uring_wait = None;
         p.flock_wait = None;
+        p.byte_wait = None;
+        p.retained_byte = None;
         self.parent_thread_exited(pid, p, None);
         p.linux.vfs.cgroup_exit(pid);
         let state = if matches!(p.state, State::Stopped) {
@@ -1321,6 +1338,8 @@ impl Kernel {
                 p.poll_deadline = None;
                 p.uring_wait = None;
                 p.flock_wait = None;
+                p.byte_wait = None;
+                p.retained_byte = None;
                 let timed_socket = p.socket_deadline.take().is_some();
                 if !timed_socket
                     && action.flags & 0x10000000 != 0
@@ -1617,6 +1636,8 @@ impl Kernel {
             p.linux.cancel_uring(&mut p.memory, task);
             p.uring_wait = None;
             p.flock_wait = None;
+            p.byte_wait = None;
+            p.retained_byte = None;
             p.linux.vfs.unshare_descriptors();
             p.linux.vfs.close_exec();
             let credentials = execute_vfs.credentials.clone();
@@ -2605,6 +2626,12 @@ impl Kernel {
         a: [u64; 6],
         io: &mut impl GuestOutput,
     ) {
+        if p.byte_wait
+            .as_ref()
+            .is_some_and(|wait| !wait.signal.ready())
+        {
+            return;
+        }
         let began = self.profile_syscalls.then(Instant::now);
         self.syscalls += 1;
         if !matches!(p.state, State::Blocked(..)) && self.filter_syscall(pid, p, number, a) {
@@ -2638,7 +2665,35 @@ impl Kernel {
         put_args(&mut p.cpu, a);
         let ids = |c: &trames_vfs::Credentials| [c.euid, c.egid, c.fsuid, c.fsgid];
         let before_ids = ids(&p.linux.vfs.credentials);
-        let result = self.syscall(pid, p, number, a, io);
+        let byte = if matches!(number, 63..=66) {
+            let direct =
+                trames_linux::DirectSyscalls::default().with_membership(p.linux.vfs.shared_files());
+            if let Some(wait) = p.byte_wait.take() {
+                Some(direct.resume_owned_byte(wait, &mut p.memory))
+            } else {
+                direct.start_owned_byte(
+                    p.retained_byte.take(),
+                    number,
+                    a,
+                    &mut p.memory,
+                    pid,
+                    &Arc::downgrade(&self.byte_target),
+                )
+            }
+        } else {
+            None
+        };
+        let result = match byte {
+            Some(trames_linux::IoAttempt::Complete(result)) => result.map(Some),
+            Some(trames_linux::IoAttempt::Blocked(wait)) => {
+                p.byte_wait = Some(wait);
+                Ok(None)
+            }
+            Some(trames_linux::IoAttempt::Checkpoint) => {
+                unreachable!("joined shared pipe byte call")
+            }
+            None => self.syscall(pid, p, number, a, io),
+        };
         if ids(&p.linux.vfs.credentials) != before_ids {
             p.pdeath_signal = 0;
         }
@@ -3806,8 +3861,16 @@ impl Kernel {
                 }));
             }
             if let State::Blocked(number, args) = p.state {
+                // Re-arm against the new epoch target. The owner's notification
+                // target cannot schedule a parked worker in this cohort.
+                let retained_byte = p
+                    .byte_wait
+                    .take()
+                    .and_then(|wait| wait.retained_byte)
+                    .or_else(|| p.retained_byte.take());
                 job.retry = Some(crate::run_queue::IoCall {
                     flock: p.flock_wait.as_ref().map(|(r, _)| r.clone()),
+                    retained_byte,
                     number,
                     args,
                     deadline: if matches!(number, 63..=66) {
@@ -3935,6 +3998,7 @@ impl Kernel {
                 .expect("dispatched process");
             p.cpu = done.cpu;
             p.retain_worker_flock(done.io.as_ref());
+            p.retained_byte = done.io.as_ref().and_then(|call| call.retained_byte.clone());
             p.state = if let Some(compile) = done.gpu_pending {
                 State::Gpu {
                     retired: true,
@@ -4484,6 +4548,8 @@ pub(super) fn run(
         poll_mask: None,
         uring_wait: None,
         flock_wait: None,
+        byte_wait: None,
+        retained_byte: None,
         pending_open: None,
         stopped_state: None,
         auto_reap: false,
@@ -4501,6 +4567,7 @@ pub(super) fn run(
     };
     let count = runtime.cpu_count.clamp(1, 32);
     let mut kernel = Kernel {
+        byte_target: Arc::new(JoinedByteWake),
         memory_limits: runtime.memory_limits,
         cpu_count: count,
         workers: crate::workers::Pool::with_profiling(count, runtime.profile_syscalls),
@@ -4892,6 +4959,7 @@ mod tests {
             args: [a as u64, 2, 0, 0, 0, 0],
             deadline: None,
             flock: Some(request),
+            retained_byte: None,
         };
         drop(file);
         p.retain_worker_flock(Some(&call)); // Joined before close/dup.
@@ -4911,6 +4979,169 @@ mod tests {
     }
 
     #[test]
+    fn joined_pipe_wait_skips_unrelated_retries_and_keeps_original_ofd() {
+        let mut k = kernel();
+        let mut p = process();
+        let [reader, writer] = p.linux.vfs.pipe(0).unwrap();
+        let args = [reader as u64, 0x1000, 1, 0, 0, 0];
+        let mut io = trames_linux::CapturedOutput::default();
+        k.call(1, &mut p, 63, args, &mut io);
+        assert!(matches!(p.state, State::Blocked(63, _)));
+        assert!(p.byte_wait.is_some());
+        let before = k.syscalls;
+        p.linux.vfs.close(reader).unwrap();
+        let [replacement, replacement_writer] = p.linux.vfs.pipe(0).unwrap();
+        assert_eq!(reader, replacement);
+        p.linux.vfs.write(replacement_writer, b"n").unwrap();
+        for _ in 0..100 {
+            k.call(1, &mut p, 63, args, &mut io);
+        }
+        assert_eq!(k.syscalls, before);
+        p.linux.vfs.write(writer, b"o").unwrap();
+        k.call(1, &mut p, 63, args, &mut io);
+        assert!(matches!(p.state, State::Ready));
+        assert_eq!(p.cpu.x(0), 1);
+        let mut byte = [0];
+        p.memory.read(0x1000, &mut byte).unwrap();
+        assert_eq!(byte, *b"o");
+        assert!(p.byte_wait.is_none());
+        assert_eq!(p.linux.vfs.write(writer, b"x"), Err(Errno(32)));
+        assert_eq!(p.linux.vfs.read(replacement, 1).unwrap(), b"n");
+    }
+
+    #[test]
+    fn exiting_blocked_pipe_reader_releases_accepted_ofd() {
+        let mut k = kernel();
+        let mut p = process();
+        let [reader, writer] = p.linux.vfs.pipe(0).unwrap();
+        let mut peer = p.fork();
+        peer.linux.vfs.close(reader).unwrap();
+        let mut io = trames_linux::CapturedOutput::default();
+        k.call(1, &mut p, 63, [reader as u64, 0x1000, 1, 0, 0, 0], &mut io);
+        p.linux.vfs.close(reader).unwrap();
+        assert_eq!(peer.linux.vfs.write(writer, b"x"), Ok(1));
+        k.exit(1, &mut p, 0);
+        assert!(p.byte_wait.is_none());
+        assert_eq!(peer.linux.vfs.write(writer, b"x"), Err(Errno(32)));
+    }
+
+    #[test]
+    fn stopped_pipe_wait_survives_continue_but_caught_signal_releases_it() {
+        let mut k = kernel();
+        let mut p = process();
+        let [reader, writer] = p.linux.vfs.pipe(0).unwrap();
+        let mut io = trames_linux::CapturedOutput::default();
+        k.call(1, &mut p, 63, [reader as u64, 0x1000, 1, 0, 0, 0], &mut io);
+        p.linux.vfs.close(reader).unwrap();
+        Kernel::queue_one(1, &mut p, 19, 1);
+        k.deliver(1, &mut p).unwrap();
+        assert!(matches!(p.state, State::Stopped));
+        assert!(p.byte_wait.is_some());
+        Kernel::queue_one(1, &mut p, 18, 1);
+        assert!(matches!(p.state, State::Blocked(63, _)));
+        p.actions.set_handler(10, 0x5000);
+        Kernel::queue_one(1, &mut p, 10, 1);
+        k.deliver(1, &mut p).unwrap();
+        assert!(p.byte_wait.is_none());
+        assert!(p.retained_byte.is_none());
+        assert_eq!(p.linux.vfs.write(writer, b"x"), Err(Errno(32)));
+    }
+
+    #[test]
+    fn retained_writer_checkpoint_delivers_sigpipe_from_original_endpoint() {
+        let mut k = kernel();
+        let mut p = process();
+        let [reader, writer] = p.linux.vfs.pipe(0).unwrap();
+        p.linux.vfs.write(writer, &vec![0; 65536]).unwrap();
+        p.memory.write(0x1000, b"x").unwrap();
+        let args = [writer as u64, 0x1000, 1, 0, 0, 0];
+        let mut io = trames_linux::CapturedOutput::default();
+        k.call(1, &mut p, 64, args, &mut io);
+        let wait = p.byte_wait.take().unwrap();
+        let call = crate::run_queue::IoCall::from(&wait);
+        drop(wait);
+        p.linux.vfs.close(writer).unwrap();
+        let [replacement, _] = p.linux.vfs.pipe(0).unwrap();
+        assert_eq!(replacement, writer);
+        p.linux.vfs.close(reader).unwrap();
+        // A fresh worker checkpoints EPIPE for joined signal delivery.
+        let result = trames_linux::DirectSyscalls::default().start_retained_byte(
+            call.retained_byte.clone().unwrap(),
+            64,
+            args,
+            &mut p.memory,
+            1,
+            &Arc::downgrade(&k.byte_target),
+        );
+        assert!(matches!(result, trames_linux::IoAttempt::Checkpoint));
+        p.retained_byte = call.retained_byte;
+        k.call(1, &mut p, 64, args, &mut io);
+        assert_eq!(p.cpu.x(0), error(Errno(32)));
+        assert_ne!(p.pending_bits() & (1 << 12), 0);
+        assert!(p.retained_byte.is_none());
+    }
+
+    #[test]
+    fn owner_pipe_wait_rearms_on_worker_and_reads_original_after_fd_reuse() {
+        let mut k = kernel();
+        k.cpu_count = 2;
+        k.workers = crate::workers::Pool::new(2);
+        k.per_cpu = vec![Duration::ZERO; 2];
+        let mut p = process();
+        p.affinity = 3;
+        // Spin after the read completes, while the producer's exit joins.
+        p.memory
+            .write(0x4000, &0x14000000u32.to_le_bytes())
+            .unwrap();
+        let [reader, writer] = p.linux.vfs.pipe(0).unwrap();
+        let mut io = trames_linux::CapturedOutput::default();
+        k.call(1, &mut p, 63, [reader as u64, 0x1000, 1, 0, 0, 0], &mut io);
+        p.linux.vfs.close(reader).unwrap();
+        let [replacement, replacement_writer] = p.linux.vfs.pipe(0).unwrap();
+        assert_eq!(reader, replacement);
+        p.linux.vfs.write(replacement_writer, b"n").unwrap();
+        let mut producer = p.fork();
+        producer.tgid = 2;
+        producer.vm_id = 2;
+        producer.parent = 1;
+        producer.memory.write(0x1100, b"o").unwrap();
+        // write(writer, buf, 1); exit(0).
+        let code: Vec<_> = [0xd4000001u32, 0xd2800ba8, 0xd2800000, 0xd4000001]
+            .into_iter()
+            .flat_map(u32::to_le_bytes)
+            .collect();
+        producer.memory.write(0x4000, &code).unwrap();
+        producer.cpu.set_x(0, writer as u64);
+        producer.cpu.set_x(1, 0x1100);
+        producer.cpu.set_x(2, 1);
+        producer.cpu.set_x(8, 64);
+        p.memory
+            .protect(0x4000, PAGE_SIZE, Permissions::RX)
+            .unwrap();
+        producer
+            .memory
+            .protect(0x4000, PAGE_SIZE, Permissions::RX)
+            .unwrap();
+        k.processes.insert(1, p);
+        k.processes.insert(2, producer);
+        assert!(k.parallel_round(&mut io, 1_000_000).unwrap());
+        let mut p = k.processes.remove(&1).unwrap();
+        if matches!(p.state, State::Blocked(63, args) if args[0] == reader as u64) {
+            let State::Blocked(number, args) = p.state else {
+                unreachable!()
+            };
+            k.call(1, &mut p, number, args, &mut io);
+        }
+        let mut byte = [0];
+        p.memory.read(0x1000, &mut byte).unwrap();
+        assert_eq!(byte, *b"o");
+        assert!(matches!(p.state, State::Ready));
+        assert!(p.byte_wait.is_none());
+        assert!(p.retained_byte.is_none());
+        assert_eq!(p.linux.vfs.read(replacement, 1).unwrap(), b"n");
+    }
+
+    #[test]
     fn flock_handoff_reuses_file_but_replaces_a_completed_requests_operation() {
         let mut k = kernel();
         let mut p = process();
@@ -4922,6 +5153,7 @@ mod tests {
             args: [a as u64, 1, 0, 0, 0, 0],
             deadline: None,
             flock: Some(shared.clone()),
+            retained_byte: None,
         };
         p.retain_worker_flock(Some(&call));
         shared.try_lock().unwrap(); // First SH wait completed on the worker.
@@ -5068,6 +5300,8 @@ mod tests {
             poll_mask: None,
             uring_wait: None,
             flock_wait: None,
+            byte_wait: None,
+            retained_byte: None,
             pending_open: None,
             stopped_state: None,
             auto_reap: false,
@@ -5239,6 +5473,7 @@ mod tests {
     }
     pub(super) fn kernel() -> Kernel {
         Kernel {
+            byte_target: Arc::new(JoinedByteWake),
             memory_limits: super::super::MemoryLimits::default(),
             cpu_count: 1,
             workers: crate::workers::Pool::new(1),

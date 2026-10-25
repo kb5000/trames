@@ -262,3 +262,27 @@ joins and admit more FD syscalls, but a single-CPU pilot still regresses in host
 syscall time. The joined scheduler currently retries blocked readers after
 unrelated syscalls. Event-driven original-OFD waits and final comparative
 measurement remain required; these pilots do not establish a release speedup.
+
+Shared pipe byte calls now retain the complete original OFD at acceptance.
+PendingIo, cohort checkpoint metadata and the joined task carry that authority
+across numeric close/reuse. Subscribe-then-retry uses the existing pipe events;
+the joined scheduler skips a blocked retry until its signal fires. Epoch
+handoff re-arms subscriptions against the destination queue. Completion, caught
+signals, exec and exit release the wait; stop/continue preserves it. The joined
+SIGPIPE path uses the original endpoint after a worker checkpoint. Joined wake
+targets only cover guest-owned pipes, whose changing guest CPU/worker already
+returns control to this kernel; host resources keep their existing event path.
+
+Focused tests cover old/new pipe isolation, final endpoint release, actual
+owner-to-worker rearming, stop/continue, caught signals, exit and original-OFD
+SIGPIPE. The affected Core and Linux suites pass (178 and 124 tests);
+unchanged 290-test VFS evidence is reused.
+Strict Clippy and the native Release build pass. Five alternated samples of the
+unchanged shared-files ELF at 1/2/4 CPUs reduce the single-CPU syscall handling
+count from 12,763 to 1,615, while keeping parallel_rounds=0. Timed-region medians
+are approximately 1.86/1.26 ms (baseline/candidate) at one CPU and 20.1/10.8 ms,
+21.4/11.0 ms at two/four CPUs. These are short, unpinned whole-branch pilots,
+not isolated causality or whole-application acceptance. Poll/epoll authority,
+ordinary pathname mount lifetime and worker removal/replacement remain open.
+Source, runner and ELF hashes and every pilot sample are in the
+[retained-byte record](../validation/shared-fd-retained-byte-summary.json).
