@@ -537,3 +537,43 @@ numeric resource cache and extra owner references: accepted shared requests
 must own their original resource and completed requests must release it before
 a join. Fixed registrations retain their legitimate lifetime. VM-local commits
 and persistent contexts follow that complete FD gate.
+
+### Live io_uring file lookup and final release (2026-10-26)
+
+Normal shared SQEs resolve authoritative Files membership at acceptance rather
+than a numeric resource snapshot. The accepted byte/file capability owns the
+complete original OFD. New aliases, replacement and missing slots therefore use
+the current table without retargeting already accepted requests. Fixed-file
+registrations retain their original objects for the lifetime of registration.
+Owner-only socket/event/control capabilities retain their joined boundary.
+
+Shared requests carry their own OFD through worker/owner handoff. The owner
+reconstructs the joined view from that same accepted reference, without keeping
+extra shared entries in its originals/descriptors/fixed maps. Completed and
+cancelled shared requests release their references before another join. The
+prepared regular-file registry stays weak, including registered/closed files.
+
+Regressions cover cache-only last close, new regular-file aliases/replacement,
+missing slots, a pipe accepted before replacement and completed after handoff,
+and a linked file accepted before unlink/replacement then completed or cancelled
+after handoff. They check actual close notification lifetime and immediate EPIPE.
+Intentional old numeric-cache and pending-owner references reproduce delayed
+IN_CLOSE/EPIPE; the restored candidate passes. Fixed-file and cross-VM buffer
+registration tests preserve their original lifetimes and byte authority.
+
+Actual final close can synchronously call observers. A new reentry regression
+reproduces completion/cancellation dropping its last OFD while the ring mutex
+was held. Terminal requests now leave the lock before destruction; timeout and
+cancel batches collect retired requests and release them outside the lock too.
+Ordinary completion returns its single retired value without a Vec allocation.
+The callback can acquire the ring mutex in both completion and cancellation.
+
+Scoped checks pass Apple/Linux ABI 132 and Core 185; unchanged VFS results are
+reused (Apple 307, ARM64 Linux 308). Strict Clippy, Release CLI and iOS FFI check
+pass. All 46 targeted io_uring TSan cases pass, with one existing manual case
+ignored. Six unchanged guest fixture families pass 66 ABI/TCP/registered-buffer/
+multishot/cancel/timeout/backpressure executions at 1/2/4 CPUs. Additional fixture
+builds use the installed public Linux 7.0 io_uring header with the distro's
+sanitized dependency headers; compiler warnings remain errors. This is local
+scoped validation, with no new hosted run or performance claim. Shared-fork
+cache binding remains under audit before worker close/replacement is enabled.
