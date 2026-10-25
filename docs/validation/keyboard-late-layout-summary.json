@@ -1,0 +1,153 @@
+{
+  "date": "2026-10-25",
+  "scope": "Late child-bounds keyboard accessory rebuild; no runtime or guest changes.",
+  "host": "native Apple ARM64 macOS",
+  "simulator": "iPad Air 11-inch (M4), iPadOS 27.0",
+  "source_sha256": {
+    "apps/ios/Trames/TerminalKeyboardAccessory.swift": "4ed546a5f234551017a9a31ba1405b67a5b0c035a962b82a0e19247c586609bb",
+    "apps/ios/TramesTests/TerminalViewportTests.swift": "62badb7e2ac948d62b3dd72571e881e974ba24ecf30a550686db2146766f711f"
+  },
+  "swiftterm": {
+    "version": "1.20.0",
+    "revision": "5d14406844143538cd8f8851d2d8a67c1fe443e5"
+  },
+  "runtime_source": "398ca81; built for aarch64-apple-ios-sim",
+  "runtime_static_archive_sha256": "69aea449e12a01f0e50ee1d91546576b7bb6fa1ffd9a08016c1fd10de90478e6",
+  "regression_before": {
+    "result": "Failed",
+    "passedTests": 0,
+    "failedTests": 1,
+    "skippedTests": 0,
+    "totalTestCount": 1
+  },
+  "before_failure": "XCTAssertNotNil after late child bounds rebuild",
+  "regression_after": {
+    "result": "Passed",
+    "passedTests": 1,
+    "failedTests": 0,
+    "skippedTests": 0,
+    "totalTestCount": 1
+  },
+  "affected_summary": {
+    "result": "Passed",
+    "passedTests": 6,
+    "failedTests": 0,
+    "skippedTests": 0,
+    "totalTestCount": 6
+  },
+  "affected_tests": [
+    {
+      "identifier": "TerminalViewportTests/testAccessoryControllerReservesSystemCornerAndPreservesCtrl()",
+      "result": "Passed",
+      "repetitions": [
+        {
+          "name": "Repetition 1",
+          "result": "Passed"
+        },
+        {
+          "name": "Repetition 2",
+          "result": "Passed"
+        },
+        {
+          "name": "Repetition 3",
+          "result": "Passed"
+        }
+      ]
+    },
+    {
+      "identifier": "TerminalViewportTests/testGestureAndProgrammaticOffsetsKeepTheLeftEdgeAndVerticalScroll()",
+      "result": "Passed",
+      "repetitions": [
+        {
+          "name": "Repetition 1",
+          "result": "Passed"
+        },
+        {
+          "name": "Repetition 2",
+          "result": "Passed"
+        },
+        {
+          "name": "Repetition 3",
+          "result": "Passed"
+        }
+      ]
+    },
+    {
+      "identifier": "TerminalViewportTests/testProgressRedrawAtRightmostColumnPreservesOldAndNewLeftEdges()",
+      "result": "Passed",
+      "repetitions": [
+        {
+          "name": "Repetition 1",
+          "result": "Passed"
+        },
+        {
+          "name": "Repetition 2",
+          "result": "Passed"
+        },
+        {
+          "name": "Repetition 3",
+          "result": "Passed"
+        }
+      ]
+    },
+    {
+      "identifier": "TerminalViewportTests/testRotationKeyboardAndFractionalResizesKeepColumnsInsideViewport()",
+      "result": "Passed",
+      "repetitions": [
+        {
+          "name": "Repetition 1",
+          "result": "Passed"
+        },
+        {
+          "name": "Repetition 2",
+          "result": "Passed"
+        },
+        {
+          "name": "Repetition 3",
+          "result": "Passed"
+        }
+      ]
+    },
+    {
+      "identifier": "TerminalViewportTests/testWideOutputAndContentSizeChangesCannotEnableHorizontalScrolling()",
+      "result": "Passed",
+      "repetitions": [
+        {
+          "name": "Repetition 1",
+          "result": "Passed"
+        },
+        {
+          "name": "Repetition 2",
+          "result": "Passed"
+        },
+        {
+          "name": "Repetition 3",
+          "result": "Passed"
+        }
+      ]
+    },
+    {
+      "identifier": "LaunchTests/testExtendedKeyboardRoundTripKeepsStatusVisibleAndLeavesResizeCorner()",
+      "result": "Passed",
+      "repetitions": [
+        {
+          "name": "Repetition 1",
+          "result": "Passed"
+        },
+        {
+          "name": "Repetition 2",
+          "result": "Passed"
+        },
+        {
+          "name": "Repetition 3",
+          "result": "Passed"
+        }
+      ]
+    }
+  ],
+  "total_repetitions": 18,
+  "limitations": [
+    "Scoped unit/UI simulator checks only; physical device and full release acceptance remain open.",
+    "Other passing runtime/guest checks were reused because their production source did not change in this frontend fix."
+  ]
+}

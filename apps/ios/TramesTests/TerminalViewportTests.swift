@@ -31,6 +31,9 @@ final class TerminalViewportTests: XCTestCase {
             XCTAssertTrue(original.controlModifier);XCTAssertTrue(view.controlModifier)
             view.insertText("c")
             XCTAssertFalse(original.controlModifier);XCTAssertFalse(view.controlModifier)
+            // Rebuild after the parent's deferred binding has already run.
+            // UIKit can resize the child in a later keyboard layout pass.
+            try await Task.sleep(for:.milliseconds(20))
             // UIKit assigns the child's bounds after its parent's layout;
             // this invokes SwiftTerm's real key-rebuilding bounds observer.
             original.bounds=CGRect(origin:original.bounds.origin,size:original.bounds.size)
