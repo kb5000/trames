@@ -227,6 +227,14 @@ impl Snapshot {
         if self.seccomp.mode() == 0 {
             return true;
         }
+        // Membership can change after admission. Until an allowed-call token
+        // is retained through fallback, filtered structural calls stay joined
+        // and evaluate their filter once.
+        if matches!(cpu.x(8) as u32, 23 | 24)
+            || cpu.x(8) as u32 == 25 && matches!(cpu.x(1), 0 | 1030)
+        {
+            return false;
+        }
         // Unsupported calls go straight to the joined kernel, which evaluates
         // their filter once. In particular, do not run BPF twice for each
         // futex/epoll checkpoint. Ordinary unfiltered calls keep the old path.
@@ -252,6 +260,12 @@ impl Snapshot {
             .allows(cpu.x(8) as u32, cpu.pc, std::array::from_fn(|i| cpu.x(i)))
     }
     pub fn invoke(&self, cpu: &Cpu, memory: &mut impl CpuMemory) -> Option<u64> {
+        if let Some(result) = self
+            .direct
+            .invoke_membership(cpu.x(8) as u32, std::array::from_fn(|i| cpu.x(i)))
+        {
+            return Some(result.unwrap_or_else(|e| 0u64.wrapping_sub(e.0 as u64)));
+        }
         if let Some(result) =
             self.direct
                 .invoke_file(cpu.x(8) as u32, std::array::from_fn(|i| cpu.x(i)), memory)
@@ -546,12 +560,12 @@ mod tests {
         }
     }
     #[test]
-    fn fd_metadata_controls_complete_locally_but_membership_mutations_checkpoint() {
+    fn fd_metadata_controls_and_admitted_additions_complete_locally() {
         let mut vfs = trames_vfs::Vfs::default();
         let [fd, _] = vfs
             .pipe(trames_vfs::O_CLOEXEC | trames_vfs::O_NONBLOCK)
             .unwrap();
-        let snapshot = Snapshot {
+        let mut snapshot = Snapshot {
             seccomp: Default::default(),
             identities: [0; 7],
             started: Instant::now(),
@@ -587,6 +601,21 @@ mod tests {
         cpu.set_x(1, 0);
         assert_eq!(snapshot.invoke(&cpu, &mut memory), None);
         assert!(!service_candidate(&cpu, &snapshot));
+        snapshot.direct =
+            trames_linux::DirectSyscalls::default().with_membership(vfs.shared_files());
+        cpu.set_x(1, 1030);
+        cpu.set_x(2, 160);
+        assert_eq!(snapshot.invoke(&cpu, &mut memory), Some(160));
+        cpu.set_x(0, 160);
+        cpu.set_x(1, 1);
+        assert_eq!(snapshot.invoke(&cpu, &mut memory), Some(1));
+        cpu.set_x(8, 24);
+        cpu.set_x(1, 200);
+        cpu.set_x(2, 0);
+        assert_eq!(snapshot.invoke(&cpu, &mut memory), Some(200));
+        cpu.set_x(8, 57);
+        assert_eq!(snapshot.invoke(&cpu, &mut memory), None);
+        cpu.set_x(8, 25);
         cpu.set_x(0, u32::MAX as u64);
         cpu.set_x(1, 3);
         assert_eq!(

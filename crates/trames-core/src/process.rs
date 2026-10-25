@@ -3746,6 +3746,7 @@ impl Kernel {
                     program_break: p.linux.program_break(),
                     uts: Some(p.linux.vfs.uts_capability()),
                     direct: trames_linux::DirectSyscalls::new(p.linux.vfs.direct_descriptors())
+                        .with_membership(p.linux.vfs.shared_files())
                         .with_kernel_log(p.linux.vfs.kernel_log_capability())
                         .with_urings(uring_epoch.capture_all(
                             &p.linux.vfs,

@@ -246,3 +246,19 @@ results are reused. Three alternated mapped-byte samples give CPU median ratios
 1.012 (file) and 1.003 (memfd). This unpinned pilot has no confidence interval and
 is not an FD throughput or whole-product speedup measurement. Exact source and
 binary hashes are in [the foundation record](../validation/shared-fd-foundation-summary.json).
+
+The next checkpoint admits unfiltered worker dup/F_DUPFD and dup3 only into an
+empty slot. Close and replacement still join. Filtered structural calls stay
+joined so fallback cannot evaluate BPF twice. Owner dup/close use the same
+membership algorithms. Borrowed metadata enumeration holds one table guard,
+without allocating an intermediate descriptor map or cloning every OFD; callers
+must not re-enter descriptor lookup or resource I/O through that guard.
+
+Scoped validation passes 290 VFS, 173 Core and 122 Linux tests (five manual cases
+ignored), plus strict Clippy. One Darwin TCP timeout-setup test failed with
+EINVAL and passed unchanged on its isolated retry. The shared-files guest
+fixture passes at one, two and four CPUs. Two/four-CPU pilots reduce cohort
+joins and admit more FD syscalls, but a single-CPU pilot still regresses in host
+syscall time. The joined scheduler currently retries blocked readers after
+unrelated syscalls. Event-driven original-OFD waits and final comparative
+measurement remain required; these pilots do not establish a release speedup.

@@ -352,6 +352,46 @@ impl Kernel {
 mod tests {
     use super::*;
     #[test]
+    fn filtered_membership_additions_stay_joined_before_filter_evaluation_or_effects() {
+        for decision in [ALLOW, 0x5007b] {
+            let mut p = super::super::tests::process();
+            let [fd, _] = p.linux.vfs.pipe(0).unwrap();
+            p.seccomp.push(Arc::new(
+                Filter::validate(vec![i(6, 0, 0, decision)]).unwrap(),
+            ));
+            let snapshot = crate::worker_syscalls::Snapshot {
+                seccomp: p.seccomp.clone(),
+                identities: [0; 7],
+                started: Instant::now(),
+                processor: 0,
+                profile: false,
+                streams: p.linux.vfs.stream_descriptors(),
+                files: p.linux.vfs.file_descriptors(),
+                fd_flags: p.linux.vfs.fd_flags_snapshot(),
+                umask: p.linux.vfs.umask_capability(),
+                actions: p.actions.shared(),
+                program_break: p.linux.program_break(),
+                uts: None,
+                direct: trames_linux::DirectSyscalls::default()
+                    .with_membership(p.linux.vfs.shared_files()),
+                futex: Default::default(),
+            };
+            for (number, args) in [
+                (23, [fd as u64, 0, 0, 0, 0, 0]),
+                (24, [fd as u64, 200, 0, 0, 0, 0]),
+                (25, [fd as u64, 0, 160, 0, 0, 0]),
+                (25, [fd as u64, 1030, 160, 0, 0, 0]),
+            ] {
+                p.cpu.set_x(8, number as u64);
+                put_args(&mut p.cpu, args);
+                assert!(!snapshot.admit(&p.cpu));
+                assert_eq!(p.linux.vfs.flags(160), Err(Errno(9)));
+                assert_eq!(p.linux.vfs.flags(200), Err(Errno(9)));
+            }
+            assert_eq!(snapshot.direct.fd_control_completed(), 0);
+        }
+    }
+    #[test]
     fn private_shared_futex_wait_wake_and_requeue_require_an_allow_decision() {
         let table = crate::futex::Futexes::default();
         let wait = table
