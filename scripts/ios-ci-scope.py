@@ -17,6 +17,13 @@ def frontend_path(path):
     }
 
 
+def paired_runtime_plan(plan_path):
+    pin = Path('runtime-version.json')
+    if not pin.exists():
+        return True
+    return json.loads(plan_path.read_text()).get('runtime_revision') == json.loads(pin.read_text())['revision']
+
+
 def zink_metal_only_reuse(plan, repo, headers):
     """Reuse an exact guest/backend build while repairing only native MoltenVK."""
     reuse = plan.get('zink_metal_only_reuse')
@@ -682,7 +689,7 @@ def main():
     with urllib.request.urlopen(request, timeout=30) as response:
         runs = json.load(response)["workflow_runs"]
     plan_path=Path('.github/ios-validation-plan.json')
-    if plan_path.exists():
+    if plan_path.exists() and paired_runtime_plan(plan_path):
         plan=json.loads(plan_path.read_text())
         base=plan['base_sha']
         if subprocess.run(['git','merge-base','--is-ancestor',base,'HEAD'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0:

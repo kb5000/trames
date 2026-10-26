@@ -1263,7 +1263,9 @@ jobs:
           echo "$GITHUB_WORKSPACE/target/qemu-oracle/bin" >> "$GITHUB_PATH"
       - run: cargo fmt --all --check
       - name: Verify common Linux and execution backend dependency boundaries
-        run: python3 scripts/check-execution-boundaries.py
+        run: |
+          python3 scripts/check-execution-boundaries.py
+          python3 tests/integration/project-layout.py
       - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
       - run: cargo build --workspace --all-features --locked
       - run: cargo test --workspace --all-features --locked
@@ -1273,7 +1275,9 @@ jobs:
         env:
           RUSTFLAGS: -Zsanitizer=thread
           CARGO_TARGET_DIR: target/thread-sanitizer
-        run: cargo test -Zbuild-std -p trames-memory -p trames-accel -p trames-kernel --target x86_64-unknown-linux-gnu --locked --lib --tests
+        run: |
+          cargo test -Zbuild-std --manifest-path runtime/Cargo.toml -p trames-memory -p trames-kernel --target x86_64-unknown-linux-gnu --locked --lib --tests
+          cargo test -Zbuild-std -p trames-accel --target x86_64-unknown-linux-gnu --locked --lib --tests
       - name: Check original-source native allocator C with address and undefined behavior sanitizers
         run: bash scripts/check-native-allocator.sh
       - name: Compile core and both network backends for iOS (no SDK link or device test)
