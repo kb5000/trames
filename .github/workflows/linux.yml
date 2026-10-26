@@ -189,18 +189,18 @@ jobs:
           if [[ '${{ needs.scope.outputs.firefox_memory_readonly_followup }}' == true ]]; then
             cargo clippy -p trames-memory -p trames-core --all-targets --no-deps --locked -- -D warnings
             cargo test -p trames-core --lib --tests --locked
-            cargo test -p trames-memory --lib --locked parallel::readonly
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-memory --lib --locked parallel::readonly
           else
             cargo clippy -p trames-memory -p trames-core -p trames-vfs --all-targets --no-deps --locked -- -D warnings
             cargo test -p trames-memory -p trames-core -p trames-linux --lib --tests --locked
-            cargo test -p trames-vfs mapped --lib --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-vfs mapped --lib --locked
           fi
           cargo build -p trames-cli --release --locked
           python3 -m py_compile tests/integration/firefox.py scripts/ios-ci-scope.py
           if [[ '${{ needs.scope.outputs.firefox_memory_readonly_followup }}' != true ]]; then
             cc -O2 -Wall -Wextra -Werror tests/fixtures/firefox-memory-probe.c -o /tmp/memory-probe
             /tmp/memory-probe
-            cargo run --release -p trames-memory --example shared-readonly -- 3 | tee target/shared-readonly-linux.log
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo run --manifest-path runtime/Cargo.toml --release -p trames-memory --example shared-readonly -- 3 | tee target/shared-readonly-linux.log
           fi
           target/release/trames-run --memory --memory-budget 4GiB --process-memory-budget 4GiB --cpus 4 target/firefox-fixture/memory-probe
       - name: Check shared CPU/native byte ownership with ThreadSanitizer
@@ -210,12 +210,12 @@ jobs:
           CARGO_TARGET_DIR: target/shared-memory-tsan
         run: |
           if [[ '${{ needs.scope.outputs.firefox_memory_readonly_followup }}' != true ]]; then
-            cargo test -Zbuild-std -p trames-memory --target x86_64-unknown-linux-gnu --locked --lib parallel::sharing
-            cargo test -Zbuild-std -p trames-memory --target x86_64-unknown-linux-gnu --locked --lib parallel::page
-            cargo test -Zbuild-std -p trames-memory --target x86_64-unknown-linux-gnu --locked --lib parallel::exclusive
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -Zbuild-std -p trames-memory --target x86_64-unknown-linux-gnu --locked --lib parallel::sharing
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -Zbuild-std -p trames-memory --target x86_64-unknown-linux-gnu --locked --lib parallel::page
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -Zbuild-std -p trames-memory --target x86_64-unknown-linux-gnu --locked --lib parallel::exclusive
           fi
-          cargo test -Zbuild-std -p trames-memory --target x86_64-unknown-linux-gnu --locked --lib parallel::readonly
-          cargo test -Zbuild-std -p trames-vfs --target x86_64-unknown-linux-gnu --locked --lib mapped::tests::workers_share_file_and_memfd
+          CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -Zbuild-std -p trames-memory --target x86_64-unknown-linux-gnu --locked --lib parallel::readonly
+          CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -Zbuild-std -p trames-vfs --target x86_64-unknown-linux-gnu --locked --lib mapped::tests::workers_share_file_and_memfd
       - uses: actions/upload-artifact@v4
         with:
           name: firefox-memory-fixture
@@ -249,15 +249,15 @@ jobs:
           uname -m
           sysctl hw.pagesize
           if [[ '${{ needs.scope.outputs.firefox_memory_apple_retry }}' == true ]]; then
-            cargo test -p trames-linux --lib --locked network::tests::invalid_accept_destination_does_not_drop_queued_connection -- --exact
-            cargo test -p trames-memory --lib --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-linux --lib --locked network::tests::invalid_accept_destination_does_not_drop_queued_connection -- --exact
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-memory --lib --locked
           else
             cargo test -p trames-memory -p trames-core -p trames-linux --lib --tests --locked
           fi
-          cargo test -p trames-vfs mapped --lib --locked
+          CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-vfs mapped --lib --locked
           cargo build -p trames-cli --release --locked
           target/release/trames-run --memory --memory-budget 4GiB --process-memory-budget 4GiB --cpus 4 target/firefox-fixture/memory-probe
-          cargo run --release -p trames-memory --example shared-readonly -- 3 | tee target/shared-readonly-apple.log
+          CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo run --manifest-path runtime/Cargo.toml --release -p trames-memory --example shared-readonly -- 3 | tee target/shared-readonly-apple.log
       - uses: actions/upload-artifact@v4
         with:
           name: shared-readonly-apple
@@ -279,11 +279,11 @@ jobs:
         run: |
           cargo fmt --all --check
           if [[ '${{ needs.scope.outputs.native_scope }}' == firefox-mmu-cap ]]; then
-            cargo clippy -p trames-memory --all-targets --no-deps --locked -- -D warnings
-            cargo test -p trames-memory --release --lib --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo clippy --manifest-path runtime/Cargo.toml -p trames-memory --all-targets --no-deps --locked -- -D warnings
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-memory --release --lib --locked
           else
-            cargo clippy -p trames-linux --all-targets --no-deps --locked -- -D warnings
-            cargo test -p trames-linux state::tests:: --release --lib --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo clippy --manifest-path runtime/Cargo.toml -p trames-linux --all-targets --no-deps --locked -- -D warnings
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-linux state::tests:: --release --lib --locked
           fi
           python3 -m py_compile tests/integration/firefox.py scripts/ios-ci-scope.py
   firefox-layout-apple:
@@ -303,9 +303,9 @@ jobs:
           uname -m
           sysctl hw.pagesize
           if [[ '${{ needs.scope.outputs.native_scope }}' == firefox-mmu-cap ]]; then
-            cargo test -p trames-memory --release --lib --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-memory --release --lib --locked
           else
-            cargo test -p trames-linux state::tests:: --release --lib --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-linux state::tests:: --release --lib --locked
           fi
           cargo check -p trames-ffi --target aarch64-apple-ios --locked
   firefox-runtime:
@@ -335,9 +335,9 @@ jobs:
           cargo fmt --all --check
           cargo clippy -p trames-vfs -p trames-linux -p trames-core -p trames-memory --all-targets --no-deps --locked -- -D warnings
           cargo test -p trames-core -p trames-memory --lib --tests --locked
-          cargo test -p trames-vfs clone_resources --lib --locked
-          cargo test -p trames-vfs process_tests --lib --locked
-          cargo test -p trames-vfs mapped --lib --locked
+          CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-vfs clone_resources --lib --locked
+          CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-vfs process_tests --lib --locked
+          CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-vfs mapped --lib --locked
           cargo build -p trames-cli --release --locked
           python3 -m py_compile tests/integration/firefox.py tests/integration/firefox-prepare.py scripts/ios-ci-scope.py
           target/release/trames-run --memory "$PWD/target/firefox-fixture/socket-probe"
@@ -366,9 +366,9 @@ jobs:
           uname -m
           sysctl hw.pagesize
           cargo test -p trames-core -p trames-memory --lib --tests --locked
-          cargo test -p trames-vfs clone_resources --lib --locked
-          cargo test -p trames-vfs process_tests --lib --locked
-          cargo test -p trames-vfs mapped --lib --locked
+          CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-vfs clone_resources --lib --locked
+          CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-vfs process_tests --lib --locked
+          CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-vfs mapped --lib --locked
           cargo build -p trames-cli --release --locked
           target/release/trames-run --memory "$PWD/target/firefox-fixture/socket-probe"
   firefox-clock:
@@ -476,17 +476,17 @@ jobs:
         run: |
           cargo fmt --all --check
           if [[ '${{ needs.scope.outputs.zink_egl_only }}' != true ]] && ! python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_present_damage_reuse")'; then
-            cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
-            cargo test -p trames-vulkan --lib --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo clippy --manifest-path runtime/Cargo.toml -p trames-vulkan --all-targets --locked -- -D warnings
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-vulkan --lib --locked
           fi
           if ! python3 -c 'import json; p=json.load(open(".github/ios-validation-plan.json")); assert p.get("zink_attachment_clear_reuse") or p.get("zink_gpu_budget_reuse")'; then
             modules='-p trames-wayland -p trames-vfs'
             if python3 -c 'import json; p=json.load(open(".github/ios-validation-plan.json")); assert p.get("zink_present_damage_reuse") or p.get("zink_frame_boundaries_reuse")'; then modules='-p trames-wayland'; fi
             cargo clippy $modules --all-targets --no-deps --locked -- -D warnings
-            cargo test -p trames-wayland --lib --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-wayland --lib --locked
           fi
           cargo clippy -p trames-distro -p trames-ffi --all-targets --no-deps --locked -- -D warnings
-          cargo test -p trames-distro vulkan --locked
+          CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-distro vulkan --locked
           cargo build -p trames-cli -p trames-ffi --release --locked
           python3 -m py_compile scripts/prepare-zink-guest.py scripts/prepare-zink-native-bundle.py tests/integration/zink-wayland.py
       - name: Verify GPU image copies and original Mesa window lifecycle
@@ -553,18 +553,18 @@ jobs:
         run: |
           python3 scripts/prepare-zink-native-bundle.py --verify --source-sha '${{ needs.scope.outputs.zink_wayland_linux_sha || github.sha }}'
           if [[ '${{ needs.scope.outputs.zink_egl_only }}' != true ]] && ! python3 -c 'import json; assert json.load(open(".github/ios-validation-plan.json")).get("zink_present_damage_reuse")'; then
-            cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
-            cargo test -p trames-vulkan --lib --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo clippy --manifest-path runtime/Cargo.toml -p trames-vulkan --all-targets --locked -- -D warnings
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-vulkan --lib --locked
           fi
           if ! python3 -c 'import json; p=json.load(open(".github/ios-validation-plan.json")); assert p.get("zink_attachment_clear_reuse") or p.get("zink_gpu_budget_reuse")'; then
             modules='-p trames-wayland -p trames-vfs'
             if python3 -c 'import json; p=json.load(open(".github/ios-validation-plan.json")); assert p.get("zink_present_damage_reuse") or p.get("zink_frame_boundaries_reuse")'; then modules='-p trames-wayland'; fi
             cargo clippy $modules --all-targets --no-deps --locked -- -D warnings
-            cargo test -p trames-wayland --lib --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-wayland --lib --locked
           fi
           if [[ '${{ needs.scope.outputs.zink_egl_skip_apple_checks }}' != true ]]; then
             cargo clippy -p trames-distro -p trames-ffi --all-targets --no-deps --locked -- -D warnings
-            cargo test -p trames-distro vulkan --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-distro vulkan --locked
             cargo check -p trames-ffi --target aarch64-apple-ios --locked
           fi
       - uses: actions/cache/restore@v4
@@ -625,8 +625,8 @@ jobs:
         if: needs.scope.outputs.native_scope == 'zink-foundation' && needs.scope.outputs.zink_skip_linux_checks != 'true'
         run: |
           cargo fmt --all --check
-          cargo clippy -p trames-distro --all-targets --locked -- -D warnings
-          cargo test -p trames-distro vulkan --locked
+          CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo clippy --manifest-path runtime/Cargo.toml -p trames-distro --all-targets --locked -- -D warnings
+          CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-distro vulkan --locked
           cargo build -p trames-cli -p trames-ffi --release --locked
           python3 -m py_compile scripts/prepare-zink-guest.py tests/integration/zink-foundation.py
           python3 tests/integration/embedding-reopen.py
@@ -640,23 +640,23 @@ jobs:
           if [[ '${{ needs.scope.outputs.zink_tf_only }}' == true ]]; then
             echo 'Reuse passed exact-source Rust/ICD and iOS FFI checks; compile changed native GPU source below.'
           elif [[ '${{ needs.scope.outputs.zink_feedback_only }}' == true ]]; then
-            cargo clippy -p trames-vulkan --example feedback --locked -- -D warnings
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo clippy --manifest-path runtime/Cargo.toml -p trames-vulkan --example feedback --locked -- -D warnings
           else
-            cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
-            cargo test -p trames-vulkan --lib --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo clippy --manifest-path runtime/Cargo.toml -p trames-vulkan --all-targets --locked -- -D warnings
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-vulkan --lib --locked
           fi
           cargo build -p trames-cli --release --locked
           export VK_DRIVER_FILES="$(python3 -c 'from pathlib import Path; print(next(Path("/usr/share/vulkan/icd.d").glob("*lvp*")))')"
           if [[ '${{ needs.scope.outputs.zink_feedback_only }}' != true && '${{ needs.scope.outputs.zink_divisor_only }}' != true ]]; then
-            cargo run -p trames-vulkan --example renderpass --release --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo run --manifest-path runtime/Cargo.toml -p trames-vulkan --example renderpass --release --locked
           fi
           if [[ '${{ needs.scope.outputs.zink_stencil_only }}' != true && '${{ needs.scope.outputs.zink_divisor_only }}' != true ]]; then
-            cargo run -p trames-vulkan --example feedback --release --locked -- tests/fixtures/bin/vulkan-feedback.spv
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo run --manifest-path runtime/Cargo.toml -p trames-vulkan --example feedback --release --locked -- tests/fixtures/bin/vulkan-feedback.spv
           fi
           if [[ '${{ needs.scope.outputs.zink_mrt_only }}' != true ]]; then
-            cargo run -p trames-vulkan --example timeline --release --locked
-            cargo run -p trames-vulkan --example resources --release --locked -- tests/fixtures/bin/vulkan-resources.spv
-            cargo run -p trames-vulkan --example lifecycle --release --locked -- tests/fixtures/bin/vulkan-compute.spv tests/fixtures/bin/vulkan-render.vert.spv tests/fixtures/bin/vulkan-render.frag.spv
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo run --manifest-path runtime/Cargo.toml -p trames-vulkan --example timeline --release --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo run --manifest-path runtime/Cargo.toml -p trames-vulkan --example resources --release --locked -- tests/fixtures/bin/vulkan-resources.spv
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo run --manifest-path runtime/Cargo.toml -p trames-vulkan --example lifecycle --release --locked -- tests/fixtures/bin/vulkan-compute.spv tests/fixtures/bin/vulkan-render.vert.spv tests/fixtures/bin/vulkan-render.frag.spv
           fi
       - name: Validate query and template foundation and retain actual Mesa outcome
         run: |
@@ -742,10 +742,10 @@ jobs:
           if [[ '${{ needs.scope.outputs.zink_tf_only }}' == true ]]; then
             echo 'Reuse passed exact-source Rust/ICD and iOS FFI checks; compile changed native GPU source below.'
           elif [[ '${{ needs.scope.outputs.zink_feedback_only }}' == true ]]; then
-            cargo clippy -p trames-vulkan --example feedback --locked -- -D warnings
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo clippy --manifest-path runtime/Cargo.toml -p trames-vulkan --example feedback --locked -- -D warnings
           elif [[ -z '${{ needs.scope.outputs.zink_guest_bundle_run }}' ]]; then
-            cargo clippy -p trames-vulkan --all-targets --locked -- -D warnings
-            cargo test -p trames-vulkan --lib --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo clippy --manifest-path runtime/Cargo.toml -p trames-vulkan --all-targets --locked -- -D warnings
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-vulkan --lib --locked
             cargo check -p trames-ffi --target aarch64-apple-ios --locked
           fi
       - uses: actions/cache/restore@v4
@@ -777,14 +777,14 @@ jobs:
           export RUSTFLAGS="-C link-arg=-framework -C link-arg=IOKit -C link-arg=$(xcrun clang --print-runtime-dir)/libclang_rt.osx.a"
           cargo build -p trames-cli --release --locked
           if [[ '${{ needs.scope.outputs.zink_feedback_only }}' != true && '${{ needs.scope.outputs.zink_mesa_only }}' != true && '${{ needs.scope.outputs.zink_divisor_only }}' != true ]]; then
-            cargo run -p trames-vulkan --example renderpass --release --locked 2>&1 | tee target/zink-metal-native/renderpass.log
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo run --manifest-path runtime/Cargo.toml -p trames-vulkan --example renderpass --release --locked 2>&1 | tee target/zink-metal-native/renderpass.log
           fi
           if [[ '${{ needs.scope.outputs.zink_mesa_only }}' != true && '${{ needs.scope.outputs.zink_stencil_only }}' != true && '${{ needs.scope.outputs.zink_divisor_only }}' != true ]]; then
-            cargo run -p trames-vulkan --example feedback --release --locked -- target/zink-native-bundle/shaders/vulkan-feedback.spv 2>&1 | tee target/zink-metal-native/feedback.log
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo run --manifest-path runtime/Cargo.toml -p trames-vulkan --example feedback --release --locked -- target/zink-native-bundle/shaders/vulkan-feedback.spv 2>&1 | tee target/zink-metal-native/feedback.log
           fi
           if [[ '${{ needs.scope.outputs.zink_mrt_only }}' != true ]]; then
-            cargo run -p trames-vulkan --example timeline --release --locked 2>&1 | tee target/zink-metal-native/timeline.log
-            cargo run -p trames-vulkan --example resources --release --locked -- target/zink-native-bundle/shaders/vulkan-resources.spv 2>&1 | tee target/zink-metal-native/resources.log
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo run --manifest-path runtime/Cargo.toml -p trames-vulkan --example timeline --release --locked 2>&1 | tee target/zink-metal-native/timeline.log
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo run --manifest-path runtime/Cargo.toml -p trames-vulkan --example resources --release --locked -- target/zink-native-bundle/shaders/vulkan-resources.spv 2>&1 | tee target/zink-metal-native/resources.log
           fi
           export TRAMES_RUNNER="$PWD/target/release/trames-run"
           export TRAMES_VULKAN_TRACE=1
@@ -973,74 +973,74 @@ jobs:
         run: |
           cargo fmt --all --check
           if [[ '${{ needs.scope.outputs.docker_default_remount }}' == true ]]; then
-            cargo clippy -p trames-vfs --all-targets --locked -- -D warnings
-            cargo test -p trames-vfs --lib mounts:: --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo clippy --manifest-path runtime/Cargo.toml -p trames-vfs --all-targets --locked -- -D warnings
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-vfs --lib mounts:: --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == docker-default ]]; then
             cargo clippy -p trames-net -p trames-vfs -p trames-linux -p trames-core -p trames-ffi -p trames-cli --all-targets --locked -- -D warnings
-            cargo test -p trames-net --locked
-            cargo test -p trames-vfs --lib --locked
-            cargo test -p trames-linux --lib network --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-net --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-vfs --lib --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-linux --lib network --locked
             cargo test -p trames-core --lib --tests socket_timeout --locked
             cargo test -p trames-core --lib --tests seccomp --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == wayland-input ]]; then
-            cargo clippy -p trames-wayland --all-targets --locked -- -D warnings
-            cargo test -p trames-wayland --lib nested_popup_unmap --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo clippy --manifest-path runtime/Cargo.toml -p trames-wayland --all-targets --locked -- -D warnings
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-wayland --lib nested_popup_unmap --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == wayland-clipboard ]]; then
-            cargo clippy -p trames-wayland --all-targets --locked -- -D warnings
-            cargo test -p trames-wayland --lib clipboard_permission --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo clippy --manifest-path runtime/Cargo.toml -p trames-wayland --all-targets --locked -- -D warnings
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-wayland --lib clipboard_permission --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == host-terminals ]]; then
             cargo clippy -p trames-vfs -p trames-core -p trames-ffi --all-targets --locked -- -D warnings
             cargo test -p trames-vfs -p trames-core -p trames-ffi --lib --tests --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == container-storage ]]; then
             if [[ '${{ needs.scope.outputs.storage_proc_only }}' == true ]]; then
-              cargo clippy -p trames-vfs --all-targets --locked -- -D warnings
-              cargo test -p trames-vfs --lib proc --locked
+              CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo clippy --manifest-path runtime/Cargo.toml -p trames-vfs --all-targets --locked -- -D warnings
+              CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-vfs --lib proc --locked
             else
               cargo clippy -p trames-vfs -p trames-linux -p trames-core -p trames-ffi -p trames-cli --all-targets --locked -- -D warnings
-              cargo test -p trames-vfs --lib --locked
-              cargo test -p trames-linux --lib file_calls --locked
+              CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-vfs --lib --locked
+              CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-linux --lib file_calls --locked
             fi
           elif [[ '${{ needs.scope.outputs.native_scope }}' == container-network && '${{ needs.scope.outputs.docker_network_retry }}' == true ]]; then
             if [[ '${{ needs.scope.outputs.docker_network_virtual_retry }}' == true ]]; then
-              cargo test -p trames-net --test virtual native_gateway_tcp_and_udp_both_families --locked
+              CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-net --test virtual native_gateway_tcp_and_udp_both_families --locked
             else
-              cargo test -p trames-net --lib native_root_input --locked
-              cargo test -p trames-linux --lib udp_pktinfo --locked
+              CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-net --lib native_root_input --locked
+              CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-linux --lib udp_pktinfo --locked
             fi
           elif [[ '${{ needs.scope.outputs.native_scope }}' == container-network && '${{ needs.scope.outputs.docker_network }}' == true ]]; then
             cargo clippy -p trames-net -p trames-vfs -p trames-linux -p trames-core -p trames-ffi -p trames-cli --all-targets --locked -- -D warnings
-            cargo test -p trames-net --locked
-            cargo test -p trames-vfs --lib network --locked
-            cargo test -p trames-vfs --lib events --locked
-            cargo test -p trames-linux --lib network --locked
-            cargo test -p trames-linux --lib file_calls --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-net --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-vfs --lib network --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-vfs --lib events --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-linux --lib network --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-linux --lib file_calls --locked
             cargo test -p trames-ffi --lib managed_dns --locked
             cargo test -p trames-core --lib --tests splice --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == container-network && '${{ needs.scope.outputs.nftables }}' == true ]]; then
-            cargo clippy -p trames-net --all-targets --locked -- -D warnings
-            cargo test -p trames-net --lib --locked
-            cargo test -p trames-net --test virtual --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo clippy --manifest-path runtime/Cargo.toml -p trames-net --all-targets --locked -- -D warnings
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-net --lib --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-net --test virtual --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == container-network && '${{ needs.scope.outputs.docker_bridge }}' == true ]]; then
-            cargo clippy -p trames-net -p trames-vfs --all-targets --locked -- -D warnings
-            cargo test -p trames-net --lib --locked
-            cargo test -p trames-vfs --lib network --locked
-            cargo test -p trames-net --test virtual --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo clippy --manifest-path runtime/Cargo.toml -p trames-net -p trames-vfs --all-targets --locked -- -D warnings
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-net --lib --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-vfs --lib network --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-net --test virtual --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == container-network && '${{ needs.scope.outputs.network_retry }}' == true ]]; then
-            cargo clippy -p trames-net --all-targets --locked -- -D warnings
-            cargo test -p trames-net --lib routing_tests --locked
-            cargo test -p trames-net --test virtual namespace_finish_resets_peer_and_preserves_other_namespace --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo clippy --manifest-path runtime/Cargo.toml -p trames-net --all-targets --locked -- -D warnings
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-net --lib routing_tests --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-net --test virtual namespace_finish_resets_peer_and_preserves_other_namespace --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == container-network ]]; then
-            cargo clippy -p trames-net -p trames-vfs -p trames-linux --all-targets --locked -- -D warnings
-            cargo test -p trames-net -p trames-vfs -p trames-linux --lib --locked
-            cargo test -p trames-net --test virtual --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo clippy --manifest-path runtime/Cargo.toml -p trames-net -p trames-vfs -p trames-linux --all-targets --locked -- -D warnings
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-net -p trames-vfs -p trames-linux --lib --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-net --test virtual --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == container-isolation && '${{ needs.scope.outputs.isolation_retry }}' == true ]]; then
             cargo clippy -p trames-linux -p trames-core --all-targets --locked -- -D warnings
-            cargo test -p trames-linux --lib socket_output_preflight_and_descriptor_type_errors --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-linux --lib socket_output_preflight_and_descriptor_type_errors --locked
             cargo test -p trames-core --lib --tests seccomp --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == container-isolation ]]; then
             cargo clippy -p trames-net -p trames-vfs -p trames-linux -p trames-core --all-targets --locked -- -D warnings
             cargo test -p trames-net -p trames-vfs -p trames-linux -p trames-core --lib --tests --locked
-            cargo test -p trames-net --test virtual --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-net --test virtual --locked
             cargo test -p trames-cpu --lib disabled_authentication_and_ordering_hints_preserve_values --locked
           else
             cargo clippy -p trames-shared -p trames-wayland -p trames-vfs -p trames-ffi --all-targets --locked -- -D warnings
@@ -1052,11 +1052,11 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install --yes --no-install-recommends libgtk-3-0 mousepad fonts-dejavu-core
           if [[ '${{ needs.scope.outputs.native_scope }}' == wayland-input ]]; then
-            cargo test -p trames-wayland --test gtk_client original_gtk_context_menu_copy_keeps_selection_and_keyboard_focus --locked -- --ignored --nocapture
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-wayland --test gtk_client original_gtk_context_menu_copy_keeps_selection_and_keyboard_focus --locked -- --ignored --nocapture
           elif [[ '${{ needs.scope.outputs.native_scope }}' == wayland-clipboard ]]; then
-            cargo test -p trames-wayland --test gtk_client host_paste_permission_wait --locked -- --ignored --nocapture
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-wayland --test gtk_client host_paste_permission_wait --locked -- --ignored --nocapture
           else
-            cargo test -p trames-wayland --test gtk_client --locked -- --ignored --nocapture
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-wayland --test gtk_client --locked -- --ignored --nocapture
           fi
       - name: Exercise original signed ARM64 foot over the guest Wayland ABI
         if: needs.scope.outputs.native_scope != 'wayland-input' && needs.scope.outputs.native_scope != 'wayland-clipboard' && needs.scope.outputs.native_scope != 'host-terminals' && needs.scope.outputs.native_scope != 'container-isolation' && needs.scope.outputs.native_scope != 'container-network' && needs.scope.outputs.native_scope != 'container-storage' && needs.scope.outputs.native_scope != 'docker-default'
@@ -1428,7 +1428,7 @@ jobs:
           python3 tests/integration/vulkan-compute.py
           python3 tests/integration/vulkan-render.py
           python3 tests/integration/vulkan-texture.py
-          cargo run --release --locked -p trames-vulkan --example lifecycle -- tests/fixtures/bin/vulkan-compute.spv tests/fixtures/bin/vulkan-render.vert.spv tests/fixtures/bin/vulkan-render.frag.spv
+          CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo run --manifest-path runtime/Cargo.toml --release --locked -p trames-vulkan --example lifecycle -- tests/fixtures/bin/vulkan-compute.spv tests/fixtures/bin/vulkan-render.vert.spv tests/fixtures/bin/vulkan-render.frag.spv
         env:
           TRAMES_RUNNER: ${{ github.workspace }}/target/release/trames-run
       - uses: actions/upload-artifact@v4

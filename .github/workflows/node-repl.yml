@@ -69,7 +69,7 @@ jobs:
           cargo fmt --all --check
           cargo clippy -p trames-memory -p trames-cpu -p trames-accel -p trames-core --all-targets --no-deps --locked -- -D warnings
           cargo test -p trames-memory -p trames-cpu -p trames-accel -p trames-core --lib --tests --locked -- --test-threads=1
-          cargo test -p trames-vfs mapped --lib --locked -- --test-threads=1
+          CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-vfs mapped --lib --locked -- --test-threads=1
       - name: Build the optimized App runtime
         run: cargo build -p trames-ffi -p trames-cli --release --locked
       - name: Original Node REPL with eager preview on Apple ARM64 and 16 KiB pages

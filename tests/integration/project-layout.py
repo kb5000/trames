@@ -4,6 +4,7 @@
 import importlib.util
 import json
 import os
+import re
 from pathlib import Path
 import tempfile
 import unittest
@@ -17,6 +18,18 @@ local_ci = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(local_ci)
 
 class RuntimeInputs(unittest.TestCase):
+    def test_common_cargo_targets_select_their_own_workspace(self):
+        common = {p.name for p in (root / 'runtime/crates').iterdir() if p.is_dir()}
+        for path in (root / '.github/workflows').glob('*.yml'):
+            workflow = local_ci.load_workflow(path)
+            for job in workflow.get('jobs', {}).values():
+                for step in job.get('steps', []):
+                    for line in str(step.get('run', '')).splitlines():
+                        packages = set(re.findall(r'(?:-p|--package)\s+(trames-[\w-]+)', line))
+                        if packages and packages <= common and re.search(r'\bcargo (?:run|test|check|clippy|build|fmt)\b', line):
+                            with self.subTest(workflow=path.name, command=line.strip()):
+                                self.assertIn('--manifest-path runtime/Cargo.toml', line)
+
     def test_runtime_is_not_a_frontend_change_and_legacy_plan_cannot_reuse_it(self):
         self.assertFalse(scope.frontend_path('runtime'))
         self.assertFalse(scope.frontend_path('runtime-version.json'))

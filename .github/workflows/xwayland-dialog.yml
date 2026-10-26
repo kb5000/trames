@@ -82,8 +82,8 @@ jobs:
           PYCODE
           else
             cargo fmt --all --check
-            cargo clippy -p trames-vulkan --all-targets --no-deps --locked -- -D warnings
-            cargo test -p trames-vulkan --release --lib --locked
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo clippy --manifest-path runtime/Cargo.toml -p trames-vulkan --all-targets --no-deps --locked -- -D warnings
+            CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-target}" cargo test --manifest-path runtime/Cargo.toml -p trames-vulkan --release --lib --locked
             cargo build -p trames-cli -p trames-ffi --release --locked
           fi
       - uses: actions/download-artifact@v4
