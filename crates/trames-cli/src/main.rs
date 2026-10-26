@@ -97,6 +97,9 @@ impl HostOutput {
     }
 }
 impl GuestOutput for HostOutput {
+    fn poll_control(&mut self, _: &trames_vfs::Vfs) -> io::Result<bool> {
+        Ok(false)
+    }
     fn poll_stdin(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
         if bytes.is_empty() {
             return Ok(0);
@@ -604,6 +607,10 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
                 "decode_lookups":profile.decode_lookups,"decode_misses":profile.decode_misses,"instructions_decoded":profile.instructions_decoded,
                 "cpu_count":profile.cpu_count,"parallel_rounds":profile.parallel_rounds,"worker_slices":profile.worker_slices,"worker_chunks":profile.worker_chunks,"worker_syscalls":profile.worker_syscalls,
                 "worker_direct_syscalls":profile.worker_direct_syscalls,
+                "vm_checkpoint_groups":profile.vm_checkpoint_groups,
+                "vm_checkpoint_spaces":profile.vm_checkpoint_spaces,
+                "vm_local_syscalls":profile.vm_local_syscalls,
+                "persistent_control_checks":profile.persistent_control_checks,
                 "worker_futex_wakes":profile.worker_futex_wakes,
                 "worker_futex_woken":profile.worker_futex_woken,
                 "worker_futex_requeues":profile.worker_futex_requeues,

@@ -132,6 +132,12 @@ pub struct RuntimeMetrics {
     pub gpu_transfers: trames_vulkan::TransferMetrics,
     pub cpu_count: usize,
     pub parallel_rounds: u64,
+    /// Mapping checkpoint groups and actual address spaces quiesced locally.
+    pub vm_checkpoint_groups: u64,
+    pub vm_checkpoint_spaces: u64,
+    pub vm_local_syscalls: u64,
+    /// Host control checks that retain the current jobs and translations.
+    pub persistent_control_checks: u64,
     pub worker_slices: u64,
     /// Worker-local CPU slices, including polls and native returns; no messages
     /// or barriers are required between these slices.

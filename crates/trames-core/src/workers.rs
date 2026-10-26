@@ -159,6 +159,8 @@ pub(super) enum Event {
     Service(Box<Request>),
     DiskRead(usize, Result<Vec<u8>, trames_vfs::Errno>),
     EpochStopped(usize),
+    VmReady,
+    Idle,
 }
 /// A production request retains the task's original allocation and View. The
 /// coordinator may access this stopped caller, never Process::memory/CPU.
@@ -205,7 +207,7 @@ struct Reply {
 impl Request {
     fn for_epoch(mut job: Box<crate::run_queue::Job>, epoch: Arc<crate::run_queue::Epoch>) -> Self {
         job.stats.service_waits += 1;
-        epoch.start_service();
+        epoch.start_service(job.work.pid);
         Self {
             pid: job.work.pid,
             pc: job.work.cpu.pc,
@@ -328,6 +330,9 @@ pub(super) struct Pool {
     disk_buffers: Vec<Vec<u8>>,
 }
 impl Pool {
+    pub fn events(&self) -> mpsc::Sender<Event> {
+        self.send.clone()
+    }
     #[cfg(test)]
     pub fn new(count: usize) -> Self {
         Self::with_profiling(count, true)
@@ -375,12 +380,14 @@ impl Pool {
                     };
                     loop {
                     let Some(mut job) = (if let Some(epoch) = &epoch { epoch.take(index) } else { single.take() }) else { break };
+                    let domain = job.domain.clone();
                     let work = &mut job.work;
                     let mut parked = None;
                     let mut parked_io = None;
                     let mut parked_gpu = None;
                     let mut yielded = false;
                     let mut service = false;
+                    let mut vm_checkpoint = false;
                     if let Some(snapshot) = &work.syscalls {
                         snapshot.direct.swap_scratch(&mut direct_scratch);
                         snapshot.direct.swap_disk_cache(&mut file_cache);
@@ -399,6 +406,10 @@ impl Pool {
                     let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                         loop {
                             if work.control.stop.load(Ordering::Acquire) {
+                                break SliceOutcome::Yield { instructions: 0 };
+                            }
+                            if domain.as_ref().is_some_and(|domain| domain.paused()) {
+                                yielded = true;
                                 break SliceOutcome::Yield { instructions: 0 };
                             }
                             if let Some(pending) = job.gpu_pending.take() {
@@ -570,6 +581,13 @@ impl Pool {
                                         }
                                         continue;
                                     }
+                                    if epoch.as_ref().is_some_and(|epoch| epoch.local_vm)
+                                        && snapshot.seccomp.mode() == 0
+                                        && crate::worker_syscalls::vm_call(work.cpu.x(8) as u32)
+                                    {
+                                        vm_checkpoint = true;
+                                        break result;
+                                    }
                                     // A retained resource deferred before effects
                                     // for scheduling/SIGPIPE. Do not send the
                                     // same failed operation through RPC first.
@@ -724,7 +742,7 @@ impl Pool {
                     work.control.remaining.fetch_add(credit, Ordering::Relaxed);
                     // Syscall, deferred native, fault and yield request a checkpoint
                     // immediately, before the coordinator receives this message.
-                    if parked.is_none() && parked_io.is_none() && parked_gpu.is_none() && !yielded && !service { work.control.stop(); }
+                    if parked.is_none() && parked_io.is_none() && parked_gpu.is_none() && !yielded && !service && !vm_checkpoint { work.control.stop(); }
                     let elapsed = began.elapsed().saturating_sub(service_wait);
                     let after = work.cpu.decode_stats();
                     if running && profile_native_overlap {
@@ -765,6 +783,10 @@ impl Pool {
                     // The same allocation retains CPU, translations and View;
                     // only its Box pointer enters the shared queues.
                     if let Some(epoch) = &epoch {
+                        if vm_checkpoint {
+                            epoch.checkpoint(job, outcome.expect("VM syscall outcome"));
+                            continue;
+                        }
                         if service {
                             let request = Request::for_epoch(job, epoch.clone());
                             assert!(done.send(Event::Service(Box::new(request))).is_ok(), "coordinator receiver");
@@ -901,7 +923,9 @@ impl Pool {
             match self.received(event) {
                 Event::Done(done) => return Ok(*done),
                 Event::Service(request) => request.respond(None),
-                Event::DiskRead(_, _) | Event::EpochStopped(_) => return Err(()),
+                Event::DiskRead(_, _) | Event::EpochStopped(_) | Event::VmReady | Event::Idle => {
+                    return Err(())
+                }
             }
         }
     }
@@ -912,7 +936,9 @@ impl Pool {
             match self.event_timeout(deadline.saturating_duration_since(Instant::now()))? {
                 Some(Event::Done(done)) => return Ok(Some(*done)),
                 Some(Event::Service(request)) => request.respond(None),
-                Some(Event::DiskRead(_, _) | Event::EpochStopped(_)) => return Err(()),
+                Some(
+                    Event::DiskRead(_, _) | Event::EpochStopped(_) | Event::VmReady | Event::Idle,
+                ) => return Err(()),
                 None => return Ok(None),
             }
         }
@@ -935,7 +961,7 @@ impl Drop for Pool {
             match self.event_timeout(Duration::from_millis(10)) {
                 Ok(Some(Event::Service(request))) => request.respond(None),
                 Ok(Some(Event::Done(_) | Event::EpochStopped(_))) => {}
-                Ok(Some(Event::DiskRead(_, _))) => {}
+                Ok(Some(Event::DiskRead(_, _) | Event::VmReady | Event::Idle)) => {}
                 Ok(None) => {
                     for worker in self.workers.iter_mut().flatten() {
                         if worker.join.is_finished() {

@@ -51,6 +51,11 @@ inode for authority checks. Append, growth, finite limits, seals, mapped aliases
 and synchronous storage keep the existing deferral and validation rules.
 FileEpoch's metadata reconciliation registry is weak too: it cannot retain an
 unlinked PlainFile allocation until the next join.
+An in-cohort first mmap permanently transfers that PlainFile's byte authority to
+MappedData. The transition takes the existing byte write lock; old direct read
+and write capabilities check the transition under their existing byte lock and
+defer before offset, timestamp, notification or byte effects. Keeping an accepted
+OFD alive must not let its prepared cache bypass newer mapped bytes.
 
 A raw capability cache is not an accepted operation. Prepared epoll watches use
 weak original-OFD identity for shared targets, so queued stale readiness cannot
@@ -133,22 +138,70 @@ Details: [region memory](region-memory.md), [native allocator](native-allocator.
 [current local CI evidence](../validation/shared-fd-worker-close-summary.json), and
 [overlay lifetime evidence](../validation/shared-overlay-lifetime-summary.json).
 
-## Remaining execution-domain gates
+## VM-local layout checkpoints
 
-The current cohort still freezes execution views and joins globally for owner
-control and mapping commits. Worker-local close for admitted resources does not
-complete VM/task ownership or all kernel execution migration.
+Unfiltered, untraced brk, mmap, munmap, mremap, mprotect, mincore and madvise
+requests return their original CPU/job to the execution queue. The queue pauses
+the actual Memory root and the transitive set of VMs sharing a backing commit
+domain. Domain identities are cold mapping metadata, not per-load checks. Every
+CPU and in-flight service in that group must return before its Views are dropped
+and committed. Unrelated workers and services keep running. The original kernel
+mapping operation then runs once; only that group's Views are prepared again.
 
-1. **VM-local commits:** synchronize only the affected VM and genuinely related
-   backing domains. Preserve permissions, translations, pin/COW/exclusive/native
-   lifetimes and prove that unrelated VMs keep progressing.
-2. **Persistent contexts:** retain runnable/parked jobs and translations across
-   unrelated events. Use existing workers and event sources; blocked work
-   releases a slot. A longer quantum is not a substitute for event handling.
-3. **Release acceptance:** complete source-bound local CI before pushing, then
-   final hosted checks and physical iPad smoke. Verify cached Docker startup,
-   terminal responsiveness, Files preview/edit/deferred replay/conflict recovery,
-   large transfer and foreground/reopen behavior. Firefox remains optional.
+The queue mutex publishes job handoff. A relaxed pause bit asks a running CPU to
+return at its existing execution boundary; it does not publish guest bytes.
+Retained Views from older generations prevent local mutation. Unsupported new
+backings, filtered/traced calls and owner-control changes retain the joined
+fallback. Completed local calls are never replayed during fallback or cancel.
+If a new mapping links two already-paused groups, their checkpoints merge before
+either group resumes. Existing permissions, backing/pin ownership, COW, exclusive
+access invalidation and native execution boundaries remain authoritative.
+
+## Persistent execution contexts
+
+Production cohorts retain the same allocated jobs, CPUs, translations and
+accepted pending operations until an actual owner boundary, stop, error or
+cancellation. The existing short control interval checks host commands, signals,
+process deadlines and owner work; elapsed time alone no longer tears down the
+cohort. Existing workers sleep on resource notifications, host readiness and
+deadlines, releasing execution slots when blocked. An all-parked terminal cohort
+can accept input and resume in the same context. No new thread or polling message
+bus is used.
+
+GuestOutput's live poll hook is restricted to host queues and safe metadata;
+legacy adapters default to requesting their joined control hook. The iOS adapter
+checks cancellation and pending commands, pumps established PTY byte channels
+under their existing locks and takes scalar capacity snapshots. Terminal
+creation/removal, resize signal delivery, plain owner terminal streams, native
+SCM_RIGHTS/namespace service graphs and other process/FD topology changes still
+join. One active CPU retains Memory's direct MMU path.
+
+Metrics separate local checkpoint groups/spaces/syscalls and persistent control
+checks from global cohorts, preparation, resource processing and stop costs.
+Actual-worker regressions hold a mapping destructor while observing unrelated
+guest progress and related guest quiescence. Other tests retain original I/O
+through FD reuse, checkpoint merging, service completion, cancellation and budget
+exhaustion. This completes the admitted VM/context paths, not every kernel
+resource ownership migration.
+
+Three alternating samples of the unchanged cohort-cost ELF on the native ARM64
+Linux CI VM reduce the four-thread mmap/munmap median from 0.223 s to 0.159 s,
+with global cohorts falling from 3,221 to 12. The candidate executes a median
+4,100 local mapping calls; local commit groups can batch multiple requests.
+The four-thread compute case falls from 319 global cohorts to 13, with a wall
+ratio of 0.930. Separate one-CPU file/mapped-file samples retain zero cohorts
+and host CPU median ratios of 1.015/0.976. These short synthetic samples have no
+confidence interval and do not establish application or iPad throughput. Exact
+binaries, inputs and overlapping cost windows are recorded in the
+[VM/context follow-up evidence](../validation/shared-fd-worker-close-summary.json).
+
+## Remaining release gates
+
+Complete source-bound local CI before pushing, then final hosted checks and
+physical iPad smoke. Verify cached Docker startup, terminal responsiveness,
+Files preview/edit/deferred replay/conflict recovery, large transfer and
+foreground/reopen behavior. Excluded FD/control ownership remains explicit;
+Firefox remains optional.
 
 Preserve Memory's direct MMU path for one active CPU. Do not infer performance
 from thread count, zero service_requests or opcode coverage: measure preparation,

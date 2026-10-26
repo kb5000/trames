@@ -41,6 +41,15 @@ pub(crate) struct NativeTerminals {
     masters: BTreeMap<u64, Master>,
 }
 impl NativeTerminals {
+    pub fn can_pump_live(&self, buffers: &Buffers) -> bool {
+        self.masters
+            .keys()
+            .all(|id| buffers.terminals.contains_key(id))
+            && buffers
+                .terminals
+                .iter()
+                .all(|(id, channel)| channel.phase != "starting" || self.masters.contains_key(id))
+    }
     pub fn new(root: &mut Vfs) -> Result<Self, String> {
         let [reader, writer] = root.pipe(0).map_err(|e| e.to_string())?;
         if reader != 3 {

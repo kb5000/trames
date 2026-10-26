@@ -85,6 +85,8 @@ mod scheduling;
 pub(crate) mod seccomp;
 #[path = "process_service.rs"]
 mod service;
+#[path = "process_vm.rs"]
+mod vm;
 use crate::signal_actions::{Action, Actions};
 use service::DiskEpoch;
 
@@ -414,6 +416,10 @@ struct Kernel {
     futex_ready: Vec<std::sync::Arc<crate::futex::Ticket>>,
     parallel_memory: trames_memory::parallel::Registry,
     parallel_rounds: u64,
+    vm_checkpoint_groups: u64,
+    vm_checkpoint_spaces: u64,
+    vm_local_syscalls: u64,
+    persistent_control_checks: u64,
     worker_slices: u64,
     worker_chunks: u64,
     worker_syscalls: u64,
@@ -3612,6 +3618,19 @@ impl Kernel {
             (matches!(p.state, State::Ready) || p.worker_gpu_candidate()) && !p.frozen(**id)
         });
         let Some((&id, first)) = active.next() else {
+            // Interactive transports can wake retained I/O while every CPU is
+            // parked. The solo-CPU admission branch below remains unchanged.
+            if self.terminal.is_some()
+                && self
+                    .processes
+                    .iter()
+                    .filter(|(id, p)| !p.frozen(**id) && p.worker_io_candidate(**id))
+                    .take(2)
+                    .count()
+                    == 2
+            {
+                return true;
+            }
             // A parked ring with a real host event or imported deadline and a
             // related peer can retain event-driven execution with every CPU
             // asleep. Unrelated terminals/timers do not change the solo gate.
@@ -3656,10 +3675,19 @@ impl Kernel {
                             || network.shares_resources(&p.linux.vfs.direct_network())))
         })
     }
+    #[cfg(test)]
     fn parallel_round(
         &mut self,
         io: &mut impl GuestOutput,
         limit: u64,
+    ) -> Result<bool, RuntimeError> {
+        self.parallel_epoch(io, limit, false)
+    }
+    fn parallel_epoch(
+        &mut self,
+        io: &mut impl GuestOutput,
+        limit: u64,
+        persistent: bool,
     ) -> Result<bool, RuntimeError> {
         if self
             .processes
@@ -3783,7 +3811,11 @@ impl Kernel {
                 .map_err(|_| RuntimeError::Arguments("cannot start CPU worker"))?;
         }
         let control = std::sync::Arc::new(crate::workers::Control::new(remaining));
-        let epoch = crate::run_queue::Epoch::new(control.clone());
+        let epoch = crate::run_queue::Epoch::with_events(
+            control.clone(),
+            self.workers.events(),
+            persistent,
+        );
         let mut file_epoch = trames_vfs::FileEpoch::default();
         let mut uring_epoch = trames_linux::UringEpoch::default();
         let mut network_epoch = trames_vfs::NetworkEpoch::default();
@@ -3941,13 +3973,24 @@ impl Kernel {
                 .map_err(|_| RuntimeError::Arguments("CPU worker disconnected"))?;
         }
         self.parallel_dispatch_time += began.elapsed();
-        let deadline = Instant::now() + timeout;
+        let mut deadline = Instant::now() + timeout;
         let mut stopped = 0;
         let mut disk = DiskEpoch::default();
+        let mut checkpoint_error = None;
         loop {
             let left = deadline.saturating_duration_since(Instant::now());
             if left.is_zero() {
-                break;
+                if !persistent {
+                    break;
+                }
+                match self.cohort_control(&members, io) {
+                    Ok(false) => deadline = Instant::now() + self.parallel_timeout(),
+                    result => {
+                        checkpoint_error = result.err();
+                        break;
+                    }
+                }
+                continue;
             }
             match self
                 .workers
@@ -3959,6 +4002,33 @@ impl Kernel {
                     break;
                 }
                 Some(crate::workers::Event::Done(_)) => unreachable!("cohort completion"),
+                Some(crate::workers::Event::VmReady) => {
+                    while !control.stopped() {
+                        let Some(checkpoint) = epoch.take_checkpoint() else {
+                            break;
+                        };
+                        match self.vm_checkpoint(&epoch, checkpoint, io) {
+                            Ok(true) => {}
+                            result => {
+                                checkpoint_error = result.err();
+                                epoch.stop();
+                                break;
+                            }
+                        }
+                    }
+                }
+                Some(crate::workers::Event::Idle) => {
+                    match self.cohort_control(&members, io) {
+                        Ok(false) => {}
+                        result => {
+                            checkpoint_error = result.err();
+                            break;
+                        }
+                    }
+                    if self.terminal.is_none() && epoch.idle() {
+                        break;
+                    }
+                }
                 Some(crate::workers::Event::Service(request)) => {
                     self.service_requests += 1;
                     if !self.epoch_request(request, &mut disk, io) {
@@ -3971,7 +4041,7 @@ impl Kernel {
                         break;
                     }
                 }
-                None => break,
+                None => {}
             }
         }
         epoch.stop();
@@ -3990,6 +4060,7 @@ impl Kernel {
             {
                 Some(crate::workers::Event::EpochStopped(_)) => stopped += 1,
                 Some(crate::workers::Event::Done(_)) => unreachable!("cohort completion"),
+                Some(crate::workers::Event::VmReady | crate::workers::Event::Idle) => {}
                 Some(crate::workers::Event::Service(request)) => request.respond(None),
                 Some(crate::workers::Event::DiskRead(id, result)) => {
                     self.finish_disk_read(id, result, &mut disk);
@@ -4011,6 +4082,9 @@ impl Kernel {
         }
         self.gpu_peak_pending = self.gpu_peak_pending.max(epoch.gpu_peak_pending());
         file_epoch.finish();
+        if let Some(error) = checkpoint_error {
+            return Err(error);
+        }
         if completed.iter().any(|r| r.outcome.is_none()) {
             for done in completed {
                 self.processes
@@ -4276,7 +4350,7 @@ impl Kernel {
             if let Some(root) = self.processes.get(&1) {
                 progress |= root.linux.vfs.pump_native_services();
             }
-            if self.parallel_round(io, limit)? {
+            if self.parallel_epoch(io, limit, true)? {
                 continue;
             }
             let ids: Vec<u32> = self.processes.keys().copied().collect();
@@ -4630,6 +4704,10 @@ pub(super) fn run(
         futex_ready: Vec::new(),
         parallel_memory: trames_memory::parallel::Registry::default(),
         parallel_rounds: 0,
+        vm_checkpoint_groups: 0,
+        vm_checkpoint_spaces: 0,
+        vm_local_syscalls: 0,
+        persistent_control_checks: 0,
         worker_slices: 0,
         worker_chunks: 0,
         worker_syscalls: 0,
@@ -4708,6 +4786,10 @@ pub(super) fn run(
         parallel_snapshots: kernel.parallel_memory.metrics,
         cpu_count: kernel.cpu_count,
         parallel_rounds: kernel.parallel_rounds,
+        vm_checkpoint_groups: kernel.vm_checkpoint_groups,
+        vm_checkpoint_spaces: kernel.vm_checkpoint_spaces,
+        vm_local_syscalls: kernel.vm_local_syscalls,
+        persistent_control_checks: kernel.persistent_control_checks,
         worker_slices: kernel.worker_slices,
         worker_chunks: kernel.worker_chunks,
         worker_syscalls: kernel.worker_syscalls,
@@ -5970,6 +6052,10 @@ mod tests {
             futex_ready: Vec::new(),
             parallel_memory: trames_memory::parallel::Registry::default(),
             parallel_rounds: 0,
+            vm_checkpoint_groups: 0,
+            vm_checkpoint_spaces: 0,
+            vm_local_syscalls: 0,
+            persistent_control_checks: 0,
             worker_slices: 0,
             worker_chunks: 0,
             worker_syscalls: 0,

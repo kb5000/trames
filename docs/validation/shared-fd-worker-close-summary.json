@@ -858,5 +858,769 @@
       "Hosted merge/release checks",
       "Physical iPad smoke"
     ]
+  },
+  "vm_contexts_followup": {
+    "date": "2026-10-26",
+    "source_parent": "bfdbe5cdb0d35d91f9b688804b2da3ed7449fc17",
+    "status": "Complete local CI and scoped verification passed before push; release acceptance remains open",
+    "tested_production_and_test_files_sha256": {
+      "crates/trames-cli/src/main.rs": "510d5d4069708d2b049986c0682d2938594a9884f4278352bfa9a5cb1faf1b72",
+      "crates/trames-core/src/lib.rs": "21cdf31e099d2f1628d125a2a7e5cd21973b7ae3a2d10c65211bacda37322d20",
+      "crates/trames-core/src/process.rs": "7d5641901fa2841f9681c0483b88fc0ccc9725557c511a811db917735a4f910d",
+      "crates/trames-core/src/process_vm.rs": "377d37845e94ef3391740f8be5b827ac32789aaa94f7b3dd61277ad5bf836c7c",
+      "crates/trames-core/src/run_queue.rs": "57f5cda6c4500825b478939f3cf219b6b6889e3d8965bc01546718d8da45fdd5",
+      "crates/trames-core/src/run_queue/domains.rs": "8ca4279f87f617685c3cfed29a7fb5663b0c35021995d4b106dde6e9f2bc683c",
+      "crates/trames-core/src/worker_syscalls.rs": "4ced9324bf2a30e15a6b6ca03ca4b3353051634b037c946055e909052d54ba59",
+      "crates/trames-core/src/workers.rs": "9933a2d5e321c1c548d0ae8b16568276e2abe3ef621adee4e9a23be0cac619ce",
+      "crates/trames-ffi/src/session.rs": "707d38228e01affed33f84ef9ce55a272e1b54e9a1c8364db24e1a4be958cbe9",
+      "crates/trames-ffi/src/terminals.rs": "d8da498a9c63eb2cb9a2b01fc4be9e20e720543414d1d7136f9eab47f98c99e0",
+      "crates/trames-linux/src/lib.rs": "16a1c2a7cc41ff88de7bc7bb4737a48ca2cc0c0504c7339caf9b0bde8c22a723",
+      "crates/trames-memory/src/parallel.rs": "1a5f6b510b2a1f5bf88371577101942315f0236a3fee2cc31ed52d9a4f00ef5c",
+      "crates/trames-memory/src/parallel/snapshot.rs": "66c1a9c526f5682b7619c0522bd7aad2bba46172909ea2705a436f5cc317830b",
+      "crates/trames-vfs/src/file_data.rs": "ebf876ae68644777e350aa277197f593675106cd968b4152a1d3d4321c2feda6",
+      "crates/trames-vfs/src/file_io.rs": "c72dea50736821a6ceb8d3b3a0f27b0d04acbd1d958ad0a073018a4aa9c74ec1",
+      "crates/trames-vfs/src/mapped.rs": "c7dba47e7a232b67d1b5fc36d9dba1034b7241ad50e283d76d6c6078c9ffdf35"
+    },
+    "scope": {
+      "vm_calls": [
+        "brk",
+        "mmap",
+        "munmap",
+        "mremap",
+        "mprotect",
+        "mincore",
+        "madvise"
+      ],
+      "quiescence": "Actual Memory root plus transitive shared backing commit domains, including their in-flight services; unrelated jobs remain live",
+      "contexts": "Same boxed jobs, CPUs, translations and accepted waits survive host control checks and local layout changes",
+      "fallbacks": "Filtered/traced calls, externally retained View generations, excluded new backings and owner task/FD/namespace controls retain joined handling",
+      "file_authority": "First mmap invalidates pre-existing PlainFile byte capabilities under the existing byte lock before offset/metadata/byte effects",
+      "new_service_threads": 0,
+      "blanket_unsafe_send": false,
+      "per_load_layout_lock": false,
+      "single_active_cpu": "Existing direct Memory MMU path preserved"
+    },
+    "linux_runtime": {
+      "workflow": ".github/workflows/linux.yml",
+      "job": "runtime",
+      "shell_stages_passed": 79,
+      "completed": true,
+      "host": "Native AArch64 Ubuntu VM using Apple Virtualization.framework; no x86 or Rosetta",
+      "source_state_sha256": "420d6865f8c7170a7ad57f176c5433aa21d9942c5a42d7cfee48b66c2b648a25",
+      "summary_sha256": "b022acd989a060b28238da9e2d3edbcebdd217afe6b2662399fb5db2a68f135d",
+      "step_records": [
+        {
+          "index": 1,
+          "record_sha256": "3f192b0eefbe7c9b473592e542846f17d26cbf28f567e102c34a739f98f9beb7"
+        },
+        {
+          "index": 2,
+          "record_sha256": "d57d379d7ac4ace62d617a0ea752dbab8f8df7d9e24c00dc90e4ccc4bad8d5f2"
+        },
+        {
+          "index": 3,
+          "record_sha256": "d15e44aca6e287072d2ecb7c715d68a3bb5d1873596687507dfe9f3d5faa13e7"
+        },
+        {
+          "index": 4,
+          "record_sha256": "afc18f54d2dce296d8cf9cad1cbc827b52ac2ccbd2570d4f16ca10f09cd9bcea"
+        },
+        {
+          "index": 5,
+          "record_sha256": "721ee079d4c4e79276782150242d78f529c5a0d96c7e59ec1ba61c5b21c4f172"
+        },
+        {
+          "index": 6,
+          "record_sha256": "f7fa4c1cb9da6c72e6226a53c4e54b8297ebe71d01f50d3b8a9c140ab79912be"
+        },
+        {
+          "index": 7,
+          "record_sha256": "6991bda2ac23646afab2512139faf3c8d43f69e6c10651b6d6f104fd95635cb0"
+        },
+        {
+          "index": 8,
+          "record_sha256": "970cbc625d7bd4b00125d9d2e8a77bb85267edd7ce0d2268e8edf0eaf88d1732"
+        },
+        {
+          "index": 9,
+          "record_sha256": "d45b2bd47b2c13d43f4105e95ead9595e966811ba264a7024e9001e220985fe6"
+        },
+        {
+          "index": 10,
+          "record_sha256": "062b28bc90a3661077335513ee3bdbb3ee3e141fe143a14a83698d968bf95edd"
+        },
+        {
+          "index": 11,
+          "record_sha256": "31f219efaf8754af3efd4e63b5504c6c100eff8e85eb8daafc9a81deca8205ab"
+        },
+        {
+          "index": 12,
+          "record_sha256": "cbd28aad5b7adf38a2566f713d07e477d79bb552135479a9b0f2953779507f9e"
+        },
+        {
+          "index": 13,
+          "record_sha256": "8dd86add12801a122860921bcc4dd5e6a1e701dc3f25f2dc5b41e135c8d8d2f2"
+        },
+        {
+          "index": 14,
+          "record_sha256": "421797223924eeca5ebbf767fa1de25d0d251ed1c69bdc60be4a3e9673cb6d58"
+        },
+        {
+          "index": 15,
+          "record_sha256": "143f1549c32009174ad6c132bfcacad51f92fd44e9d4f74a58b01917394b993f"
+        },
+        {
+          "index": 16,
+          "record_sha256": "5fc73d2d4193c2f5898e757009ebe2fa26bfe1baf983c39fd34672f0d6795531"
+        },
+        {
+          "index": 17,
+          "record_sha256": "27e9769716e294d8126ae2f65c3f435d10e73a2cc40afc6166501cd3d7a0b739"
+        },
+        {
+          "index": 18,
+          "record_sha256": "9624888a6bd78fdcf843c6ef5e1132462378f9df1717c7a583e6d9c7883c3fa4"
+        },
+        {
+          "index": 19,
+          "record_sha256": "df220b01a20434aa10432641d69476fc302f2636c6832bd102ee50d665856ba1"
+        },
+        {
+          "index": 20,
+          "record_sha256": "0d68cd91b0220ce5ef2e97d52c395be5edf1b4d4b4e8df9fe8ab4ad8cff2f8c9"
+        },
+        {
+          "index": 21,
+          "record_sha256": "248a7352b99c25a81f64bc5689dbab138e3e9769b7dafa36f7be4ebeaee5f59d"
+        },
+        {
+          "index": 22,
+          "record_sha256": "598ec14f4dfb477d0de6b1c310772180b621f92336b5acfba1477f7e4e87c770"
+        },
+        {
+          "index": 23,
+          "record_sha256": "1699db2708e2e5ac7241e2b6a042576ea0deff391d3a50ebf02b2a6cd5fe9571"
+        },
+        {
+          "index": 24,
+          "record_sha256": "4dca6b53fc85675004dc6c22a73b47bc0fbd11f401f465c4e9920b2c29a394f1"
+        },
+        {
+          "index": 25,
+          "record_sha256": "d564b88d661ba561986ffb1cc9d1c88c05b1748cae514b472fc0426769925064"
+        },
+        {
+          "index": 26,
+          "record_sha256": "115031a9442d6aa32c9d528211314a014109d0f137b92ae6e63c88fa22f8871d"
+        },
+        {
+          "index": 27,
+          "record_sha256": "f64747038e3265c984735af445a63f050cbfe9ce696c4c1536eaf510463c8b0a"
+        },
+        {
+          "index": 28,
+          "record_sha256": "c42b21ecfaff5fb337c58fbf685380aeb3c896793a76b487e1353dba426b0556"
+        },
+        {
+          "index": 29,
+          "record_sha256": "7bcf568513df4e425cf34bea3878144ae9e046723bb007caa8dffcd2672c2599"
+        },
+        {
+          "index": 30,
+          "record_sha256": "d7fdac050fac89512106494b0094d62008c209818c5dd27b16231b0ad1b8af25"
+        },
+        {
+          "index": 31,
+          "record_sha256": "e82100de25c267a45c653179df3f12055e8a0ca9669bdc904222c3ac13bfd0fb"
+        },
+        {
+          "index": 32,
+          "record_sha256": "428aba6e85995cbd08ab57ebb61689c48ca19e1b3584fc886b5412ace5da11b1"
+        },
+        {
+          "index": 33,
+          "record_sha256": "4176b75fe97f23504eded3215d70d0f8b24c4afcb40357316682d9e6c5df1ff7"
+        },
+        {
+          "index": 34,
+          "record_sha256": "d3fd38c450f6f26c7fcadd02de437969021f97449e93ceea96f879a59ea40900"
+        },
+        {
+          "index": 35,
+          "record_sha256": "7bf5705438adbb0fb5dd7f64ce922eaaa179a4301fc58e54875a0179ff39ad8b"
+        },
+        {
+          "index": 36,
+          "record_sha256": "a59d8a9c8fa09d6901d47492d7cae6d3cf509313e107682eb1444044ed00cd97"
+        },
+        {
+          "index": 37,
+          "record_sha256": "a0fda3255ab14a53059d11a9af2ff7aed480e561b4f0f8cbf6346136154ee21f"
+        },
+        {
+          "index": 38,
+          "record_sha256": "fe5dc659550c6a1abb76b9eee95b01a352c269bad84b72a1cc6b52dc54a7d63b"
+        },
+        {
+          "index": 39,
+          "record_sha256": "13afbcdf1901f2b0f088c8f2b3698d82fae5fb2acb5d9185b24895544e53de01"
+        },
+        {
+          "index": 40,
+          "record_sha256": "577e385bfd2436b0ebdcbf100b11bd1727d1650c2777c7dafafd8b20a02d9c06"
+        },
+        {
+          "index": 41,
+          "record_sha256": "528507ae3d965b7e5621e161d1f75de7866daaa3730d4c90a511a5e8af42d643"
+        },
+        {
+          "index": 42,
+          "record_sha256": "899ca8fde71cbcbec6a91f30b5969de74eb255fb9262063cca07f9687ec60f6d"
+        },
+        {
+          "index": 43,
+          "record_sha256": "7c8245fa81304265c77c80e5c95f77bca5df64ac4b4c4649b3dbfec07ca6d31e"
+        },
+        {
+          "index": 44,
+          "record_sha256": "e98882f0881fb693ca0513ca3097e951bb3c9bd0aaea2d9684c334e7c92fd64e"
+        },
+        {
+          "index": 45,
+          "record_sha256": "1a36087aeb3a0e7d7542ad39c2f8392156e6c2730042b6eaa3239244083827e2"
+        },
+        {
+          "index": 46,
+          "record_sha256": "2e19c1ba3469bcac9cbfe75f77bb365cd1a70754437b5aa5d831bead6c53e1d6"
+        },
+        {
+          "index": 47,
+          "record_sha256": "a94a4a22199d51f0f18c6f02d3310e6219554c652a257368cfcb4a61c8d38d46"
+        },
+        {
+          "index": 48,
+          "record_sha256": "1fe3332afc1f3417cbd5c8ad226ee0348f7d05554ebaea1b5865a14666db43eb"
+        },
+        {
+          "index": 49,
+          "record_sha256": "259963f5ef888bf1ff8ccd836bbc3d92b6e188ede6154cce443c539307d91640"
+        },
+        {
+          "index": 50,
+          "record_sha256": "efc320a23d0e26666e5059c0442d5c997e489c74bee8d0ef9ca37b16621de18a"
+        },
+        {
+          "index": 51,
+          "record_sha256": "28e98d156a73fd7ee32c7b8d2cc131e20274c0db9a8e82f8090a7cf3c4b255ba"
+        },
+        {
+          "index": 52,
+          "record_sha256": "a978dff7d96998399289a42428a172142fe0e9053aa5d84595a6a102a059ba04"
+        },
+        {
+          "index": 53,
+          "record_sha256": "d1e41046f29d01fc2133e3fcad2b8ac99ac70c1377d7eafa1e141aea9a26f761"
+        },
+        {
+          "index": 54,
+          "record_sha256": "59146fb05461d307e9968b78f1f0be99f766a7665ccfc5c53364b705589a9f3c"
+        },
+        {
+          "index": 55,
+          "record_sha256": "430ee048bcfdd0e20343c3f7cddba8af312971529baf0d0eae9c0517511a8c12"
+        },
+        {
+          "index": 56,
+          "record_sha256": "6bc46f9e402bc7175028edb244f7b6b79c580675d6e2f23f0a9b3d075867a0cf"
+        },
+        {
+          "index": 57,
+          "record_sha256": "16082db6c6f15d9e176de42975dc8f21d453b178ad0cc35f9ced78905c4638fe"
+        },
+        {
+          "index": 58,
+          "record_sha256": "7aeb19a830040ce37e5600115a546f288843bc200122730d08850ac10377a270"
+        },
+        {
+          "index": 59,
+          "record_sha256": "7837ca4bd09f3af8410be10a6e0d115269d26105b782cc171bb696bad3a08033"
+        },
+        {
+          "index": 60,
+          "record_sha256": "509cd159f1cbad3dbe947ecd70b02bd38db883a86db2b59f8118a2a9c47ca1a3"
+        },
+        {
+          "index": 61,
+          "record_sha256": "8f2af0d9b37c1ece12b0ca68eee9e394e944b845fb8cd687eabe8a834053a075"
+        },
+        {
+          "index": 62,
+          "record_sha256": "24022c0ac4660912c6ae1da2f3a63aceed12d329ff6377b7e4e1769f6cf9fa9e"
+        },
+        {
+          "index": 63,
+          "record_sha256": "ce678255f562dc4e216c064f04aa50a71861118a46536907f34bdda8b5dd7467"
+        },
+        {
+          "index": 64,
+          "record_sha256": "378a01e18db59c228ce5b57f0914f09b653bf85e9aa66ef247b365876a623241"
+        },
+        {
+          "index": 65,
+          "record_sha256": "ec06e8911bad6f5641450a0e4e4a860a3ff473e1ee42bd85482c25f16ca96cd2"
+        },
+        {
+          "index": 66,
+          "record_sha256": "066d60614b7ca1c3a717b463fcd41dfee4e63cd09f68366cc7644fecdf716c5d"
+        },
+        {
+          "index": 67,
+          "record_sha256": "28353829d2f4a850df8e17371094204a3fef04bd0a41b089407284040363308a"
+        },
+        {
+          "index": 68,
+          "record_sha256": "1041b9a41d8edfdf06b351c6f342a67ecdb11514122cbe99f2289364fbb887b0"
+        },
+        {
+          "index": 69,
+          "record_sha256": "e026549ed2eb9df2ed3ec72cf47c15f0272faef2b88eda4d73557c3609f780b6"
+        },
+        {
+          "index": 70,
+          "record_sha256": "2256d15e74e166940826e18042c4110167705c459abccf304d244f0e51d3d030"
+        },
+        {
+          "index": 71,
+          "record_sha256": "0aaa8685116788cac1ab45fb7898ed3d8ae22d561ab8e8495a76dcd2e112c405"
+        },
+        {
+          "index": 72,
+          "record_sha256": "ce04210a4afbd4747c5546d14933f3f601ac0f4fb60cf41607332b18eb07602a"
+        },
+        {
+          "index": 73,
+          "record_sha256": "3f3a415f694b70a90e0c572ad39de84d310936b92d44fcf992e5b02bcac70af0"
+        },
+        {
+          "index": 74,
+          "record_sha256": "9caee3047607d7cc000b9b5abf06b726e56e0993e31bfec2499fb5426bdb88a4"
+        },
+        {
+          "index": 75,
+          "record_sha256": "7d13345bda9812cec0e08237e4644112546c1d9889d6a44b37c3c768aba10d89"
+        },
+        {
+          "index": 76,
+          "record_sha256": "a309b8e086b01668a949ec86db31ebc70c125233a36806529c9fdfa21bf8eafb"
+        },
+        {
+          "index": 77,
+          "record_sha256": "378f6a328c9bb4bce5e010d125347f07fdf8474830a11f74afa3ce99943623eb"
+        },
+        {
+          "index": 78,
+          "record_sha256": "c4cff0d67569b5fd275b95f1487a488ba52137d88244caeef5875a1c7bd84829"
+        },
+        {
+          "index": 79,
+          "record_sha256": "a956e90250071c0442db8778a70d93a30fcd452a8ec5b6373b39ad88f7aee9d0"
+        }
+      ]
+    },
+    "native_packages": {
+      "apple": {
+        "core_passed": 194,
+        "vfs_passed": 312,
+        "linux_abi_passed": 137,
+        "memory_passed": 107,
+        "memory_integration_passed": 5,
+        "ffi_passed": 7,
+        "strict_workspace_clippy": "passed",
+        "scope": "Full workspace union, with only sandbox-denied local socket failures retried outside the sandbox"
+      },
+      "arm64_linux": {
+        "core_passed": 194,
+        "vfs_passed": 313,
+        "linux_abi_passed": 137,
+        "memory_passed": 107,
+        "memory_integration_passed": 5,
+        "ffi_passed": 7,
+        "strict_workspace_clippy": "passed",
+        "scope": "Fresh complete workspace and workflow run"
+      },
+      "existing_manual_opt_in_skips": "Preserved; not converted to passing cases"
+    },
+    "concurrency_regressions": {
+      "actual_worker_cases": 5,
+      "queue_domain_cases": 3,
+      "persistent_file_authority_cases": 1,
+      "covers": [
+        "Unrelated guest CPU progresses while an actual munmap destructor blocks",
+        "All CLONE_VM CPUs and genuinely shared backing VMs quiesce",
+        "A paused group waits for its own service while an unrelated service remains live",
+        "New aliases merge already-paused checkpoints before either resumes",
+        "Original pending I/O and the same job allocation survive FD reuse and wake during mapping change",
+        "Repeated host checks preserve one cohort and translation preparation; cancellation drains and the reusable pool enforces the exact budget",
+        "All-parked terminal cohort wakes without rebuilding; replacement FD remains untouched",
+        "Pre-mmap file capabilities defer before side effects and mapped bytes remain authoritative"
+      ]
+    },
+    "thread_sanitizer": {
+      "fully_instrumented_standard_library": true,
+      "workflow_memory_accel": "passed",
+      "additional_actual_worker_cases": 5,
+      "additional_domain_cases": 3,
+      "additional_file_authority_cases": 1,
+      "suppressions": false
+    },
+    "negative_controls": {
+      "global-vm-commit": {
+        "expected_failure": "exit 101; scoped assertion detects the removed behavior",
+        "log_sha256": "559502d3df4a729fcddb63be412d021d485df1ac643ec340d771a5c799d422f8"
+      },
+      "periodic-teardown": {
+        "expected_failure": "exit 101; scoped assertion detects the removed behavior",
+        "log_sha256": "1985edb567af0534530bc960fb78f19bf43f226c879d5b3c12672a0592bb39c9"
+      },
+      "stale-file-capability": {
+        "expected_failure": "exit 101; scoped assertion detects the removed behavior",
+        "log_sha256": "d0fadb50032e465e78db3e504554283ac1495a184e0073112f24553e220d72e2"
+      }
+    },
+    "production_multiple_terminals": {
+      "apple": "passed",
+      "arm64_linux": "passed",
+      "covers": "Three independent PTYs, shared files/processes, private cwd/env, resize, Ctrl+C, output backpressure, close/exit/reopen and rapid pending cancellation"
+    },
+    "guest_oracles": {
+      "shared-files": {
+        "rows": 4,
+        "runner_sha256": "72bcffeb22f0b6cfd61be47d895487664f45e300d4cdcca0c5ed1ff02630c693",
+        "fixture_sha256": "3f2a2b01ab723d26f40ee2c41d34d45499609ca56bf28f3bdabef810b8992d94",
+        "report_sha256": "4f8a4d36c524083b5e4a83c5d1f96ec6cbb6ebb185a6fbd402759e6a6206217b"
+      },
+      "shared-flock": {
+        "rows": 10,
+        "runner_sha256": "72bcffeb22f0b6cfd61be47d895487664f45e300d4cdcca0c5ed1ff02630c693",
+        "fixture_sha256": "95cd3e71533b9e8e16551f0a586b172800055d834b460770a6808357494507d8",
+        "report_sha256": "32a6a5a7aec0ee670cc6c33c66bc14fae08093906e336839ce1a0e97017be9a1"
+      },
+      "blocking-flock": {
+        "rows": 10,
+        "runner_sha256": "72bcffeb22f0b6cfd61be47d895487664f45e300d4cdcca0c5ed1ff02630c693",
+        "fixture_sha256": "b05e2299d753f0da85730830f191243af46467db60df4ee7d7a768bca8cc47b8",
+        "report_sha256": "f50b3fef650b8f824a56235cc53167c78d7523729be4b406dd6771ee30e167d8"
+      },
+      "worker-unix": {
+        "rows": 42,
+        "runner_sha256": "72bcffeb22f0b6cfd61be47d895487664f45e300d4cdcca0c5ed1ff02630c693",
+        "fixture_sha256": "a88d470b01f5fb62d41cb2c125f89b09ab5eca923f56ac5bbc16563efd85342e",
+        "report_sha256": "fccd34b76ee5cccb8db80a0f7cae29a148a1050c30aa9c78fafeb464df468c4b"
+      },
+      "worker-inotify": {
+        "rows": 7,
+        "runner_sha256": "72bcffeb22f0b6cfd61be47d895487664f45e300d4cdcca0c5ed1ff02630c693",
+        "fixture_sha256": "0f9b1cab15d31ba1bee60b89f04c76c2ed0bcf3db2fc0837c39ad9617b326777",
+        "report_sha256": "08391f3a68c1b940801f67f76e4cd8642fc9db5235e85fc32b292aef802c37c5"
+      },
+      "io-uring": {
+        "rows": 9,
+        "runner_sha256": "72bcffeb22f0b6cfd61be47d895487664f45e300d4cdcca0c5ed1ff02630c693",
+        "fixture_sha256": "3ea98da6bd2ccb3abbbd3b4a59bffcb81260e583185e1ef66ffab078a4b80d53",
+        "report_sha256": "9fa777a8ab77a94c3fdf5ba74b6169f0f7d78801a9a1236b569e9107474692be"
+      },
+      "io-uring-extended": {
+        "rows": 9,
+        "runner_sha256": "72bcffeb22f0b6cfd61be47d895487664f45e300d4cdcca0c5ed1ff02630c693",
+        "fixture_sha256": "7789b043022549a992d65e1a3a7fd91199829c544cf807f17759ab86af875345",
+        "report_sha256": "931fa1d486386b5351484b164b26154acee21bb23a82fa76a53fdb4b979acd03"
+      },
+      "io-uring-multishot": {
+        "rows": 15,
+        "runner_sha256": "72bcffeb22f0b6cfd61be47d895487664f45e300d4cdcca0c5ed1ff02630c693",
+        "fixture_sha256": "33df4f5ba64bff13f78d92ae717e77fb5e1381468c4a056b5711caa9389b6ad0",
+        "report_sha256": "9cf583905209f4e733d4c05c24361e4e0f1e640494e3b6387503903d55bdeba7"
+      },
+      "io-uring-worker": {
+        "rows": 9,
+        "runner_sha256": "72bcffeb22f0b6cfd61be47d895487664f45e300d4cdcca0c5ed1ff02630c693",
+        "fixture_sha256": "0e5302508bed90f29b22220d981b259ac37e79c0729eefa0877029cdd0518832",
+        "report_sha256": "b12312153586d3cb14c4cb275984dc137ffd98a719912d453b672f9d918e69f3"
+      },
+      "io-uring-worker-registered": {
+        "rows": 9,
+        "runner_sha256": "72bcffeb22f0b6cfd61be47d895487664f45e300d4cdcca0c5ed1ff02630c693",
+        "fixture_sha256": "90e5f2047d645ff889faae19ef032702c0abfdfab18b220c59e0171a3d6032fd",
+        "report_sha256": "cfd89c9f366ab91af5e66a65df7452ce832c02000378f165c9839a57d6f177aa"
+      },
+      "io-uring-worker-async": {
+        "rows": 15,
+        "runner_sha256": "72bcffeb22f0b6cfd61be47d895487664f45e300d4cdcca0c5ed1ff02630c693",
+        "fixture_sha256": "09ac7ab717efe6ba1bd01023e94d756de34281afe3c9bc2fc31996f2a767175d",
+        "report_sha256": "00f164d59a2867a49ec6c65047a11d136463459f1ae974bc5cd4b1d8045ca08d"
+      },
+      "epoch-services": {
+        "rows": 27,
+        "report_sha256": "c0f0b4312c8dd73b012977f0955a2afb9023e709dac7659c5b543371eeea6be2",
+        "fixture_sha256": "0b69a3febe8c10463b73a235a0f49833f7fb5f00af217fa9e4e2a2b9d7c1ab3d"
+      },
+      "worker-wait": {
+        "rows": 24,
+        "report_sha256": "8c02ec246f635fc402e3e02c870fe348b62427fa123d757fe40b5f17b21246e1",
+        "fixture_sha256": "6f39f931d4b326c6a06d8047655edb53ca37c598d5d324f879448525727d616c"
+      }
+    },
+    "guest_oracle_rows": 190,
+    "apple_frontend": {
+      "ssh_sftp": "passed against real local OpenSSH peer",
+      "original_c_wayland_peers_passed": 5,
+      "simulator_passed": 71,
+      "simulator_opt_in_skipped": 1,
+      "unsigned_simulator_link": "passed",
+      "unsigned_device_link": "passed",
+      "file_provider_app_group_metadata": "passed",
+      "package_pins": "All eight original pins unchanged; Xcode-generated extra resolution restored",
+      "unsigned_ipa": {
+        "filename": "Trames-vm-contexts-unsigned.ipa",
+        "bytes": 13569488,
+        "sha256": "22786e19d2429eef8b90443333a6a3aa8c2864c8bba3de547648692e122ed923"
+      }
+    },
+    "fixed_work_measurements": {
+      "host": "Same native ARM64 Linux VM, affinity 0-4, builds and CI completed before measurement",
+      "cohort_report_sha256": "564bed5991df5be9991e6c4a90b25bff1a55facb0a262e1763bf10813d5585e9",
+      "cohort_sha256": {
+        "baseline": "dac0922cd5366e3a6562519d0660363671004eab38f351fa76a4e9effc0873d5",
+        "candidate": "72bcffeb22f0b6cfd61be47d895487664f45e300d4cdcca0c5ed1ff02630c693",
+        "fixture": "bab9fef90abb866f6d82cbbd44c83dab6a511cc3307c9767eb27080a74b8f597",
+        "oracle": "95c7884ab644b077d336f963bb984d6f79f638ddbf80e25cac3f356100c8a6b0"
+      },
+      "cohort_rows": 42,
+      "alternating_samples_per_configuration": 3,
+      "cohort_summary": {
+        "compute-2t-64fd": {
+          "medians": {
+            "baseline": {
+              "seconds": 1.343006551,
+              "parallel_rounds": 502,
+              "dispatch_seconds": 0.006306398,
+              "memory_seconds": 0.000595508,
+              "stop_seconds": 0.017337005,
+              "service_requests": 0,
+              "instructions": 1342912204
+            },
+            "candidate": {
+              "seconds": 1.318313749,
+              "parallel_rounds": 3,
+              "dispatch_seconds": 8.7873e-05,
+              "memory_seconds": 0.000130291,
+              "stop_seconds": 1.917e-06,
+              "service_requests": 0,
+              "instructions": 1342911309
+            }
+          },
+          "candidate_over_baseline": 0.9816137888667679,
+          "candidate_local_medians": {
+            "vm_checkpoint_groups": 0,
+            "vm_checkpoint_spaces": 0,
+            "vm_local_syscalls": 0,
+            "persistent_control_checks": 493
+          }
+        },
+        "compute-4t-64fd": {
+          "medians": {
+            "baseline": {
+              "seconds": 0.831819694,
+              "parallel_rounds": 319,
+              "dispatch_seconds": 0.005974846,
+              "memory_seconds": 0.000510382,
+              "stop_seconds": 0.012960793,
+              "service_requests": 0,
+              "instructions": 1342920399
+            },
+            "candidate": {
+              "seconds": 0.773560756,
+              "parallel_rounds": 13,
+              "dispatch_seconds": 0.000273915,
+              "memory_seconds": 0.000170625,
+              "stop_seconds": 6.3874e-05,
+              "service_requests": 0,
+              "instructions": 1342918499
+            }
+          },
+          "candidate_over_baseline": 0.9299620597826336,
+          "candidate_local_medians": {
+            "vm_checkpoint_groups": 4,
+            "vm_checkpoint_spaces": 4,
+            "vm_local_syscalls": 4,
+            "persistent_control_checks": 293
+          }
+        },
+        "compute-16t-64fd": {
+          "medians": {
+            "baseline": {
+              "seconds": 0.804005686,
+              "parallel_rounds": 383,
+              "dispatch_seconds": 0.009073138,
+              "memory_seconds": 0.001258735,
+              "stop_seconds": 0.014152106,
+              "service_requests": 0,
+              "instructions": 1342949342
+            },
+            "candidate": {
+              "seconds": 0.802185213,
+              "parallel_rounds": 64,
+              "dispatch_seconds": 0.001580409,
+              "memory_seconds": 0.000646671,
+              "stop_seconds": 0.000414535,
+              "service_requests": 0,
+              "instructions": 1342949337
+            }
+          },
+          "candidate_over_baseline": 0.9977357461126214,
+          "candidate_local_medians": {
+            "vm_checkpoint_groups": 28,
+            "vm_checkpoint_spaces": 28,
+            "vm_local_syscalls": 28,
+            "persistent_control_checks": 301
+          }
+        },
+        "compute-4t-0fd": {
+          "medians": {
+            "baseline": {
+              "seconds": 0.83688128,
+              "parallel_rounds": 323,
+              "dispatch_seconds": 0.003995318,
+              "memory_seconds": 0.000619536,
+              "stop_seconds": 0.013378815,
+              "service_requests": 0,
+              "instructions": 1342912710
+            },
+            "candidate": {
+              "seconds": 0.785823215,
+              "parallel_rounds": 12,
+              "dispatch_seconds": 0.000130874,
+              "memory_seconds": 0.000212207,
+              "stop_seconds": 4.629e-05,
+              "service_requests": 0,
+              "instructions": 1342913538
+            }
+          },
+          "candidate_over_baseline": 0.9389900739564876,
+          "candidate_local_medians": {
+            "vm_checkpoint_groups": 5,
+            "vm_checkpoint_spaces": 5,
+            "vm_local_syscalls": 5,
+            "persistent_control_checks": 298
+          }
+        },
+        "compute-4t-128fd": {
+          "medians": {
+            "baseline": {
+              "seconds": 0.848240475,
+              "parallel_rounds": 325,
+              "dispatch_seconds": 0.008407497,
+              "memory_seconds": 0.000499216,
+              "stop_seconds": 0.013870231,
+              "service_requests": 0,
+              "instructions": 1342924573
+            },
+            "candidate": {
+              "seconds": 0.791454272,
+              "parallel_rounds": 13,
+              "dispatch_seconds": 0.000370789,
+              "memory_seconds": 0.00017275,
+              "stop_seconds": 8.6041e-05,
+              "service_requests": 0,
+              "instructions": 1342924509
+            }
+          },
+          "candidate_over_baseline": 0.9330541224173486,
+          "candidate_local_medians": {
+            "vm_checkpoint_groups": 4,
+            "vm_checkpoint_spaces": 4,
+            "vm_local_syscalls": 4,
+            "persistent_control_checks": 301
+          }
+        },
+        "fd-4t-64fd": {
+          "medians": {
+            "baseline": {
+              "seconds": 0.056667654,
+              "parallel_rounds": 39,
+              "dispatch_seconds": 0.000819709,
+              "memory_seconds": 0.000207461,
+              "stop_seconds": 0.000933368,
+              "service_requests": 0,
+              "instructions": 84153050
+            },
+            "candidate": {
+              "seconds": 0.055398699,
+              "parallel_rounds": 12,
+              "dispatch_seconds": 0.000253208,
+              "memory_seconds": 0.000188788,
+              "stop_seconds": 2.7667e-05,
+              "service_requests": 0,
+              "instructions": 84153044
+            }
+          },
+          "candidate_over_baseline": 0.9776070666345215,
+          "candidate_local_medians": {
+            "vm_checkpoint_groups": 4,
+            "vm_checkpoint_spaces": 4,
+            "vm_local_syscalls": 4,
+            "persistent_control_checks": 22
+          }
+        },
+        "vm-4t-64fd": {
+          "medians": {
+            "baseline": {
+              "seconds": 0.222683587,
+              "parallel_rounds": 3221,
+              "dispatch_seconds": 0.056090641,
+              "memory_seconds": 0.005607305,
+              "stop_seconds": 0.026695949,
+              "service_requests": 0,
+              "instructions": 42136306
+            },
+            "candidate": {
+              "seconds": 0.158849504,
+              "parallel_rounds": 12,
+              "dispatch_seconds": 0.000229916,
+              "memory_seconds": 0.006490663,
+              "stop_seconds": 1.7626e-05,
+              "service_requests": 0,
+              "instructions": 42136241
+            }
+          },
+          "candidate_over_baseline": 0.7133417695485569,
+          "candidate_local_medians": {
+            "vm_checkpoint_groups": 2830,
+            "vm_checkpoint_spaces": 2830,
+            "vm_local_syscalls": 4100,
+            "persistent_control_checks": 77
+          }
+        }
+      },
+      "serial_report_sha256": "839fc36a02deb59f3ee2605727120fae0ec5ffa29c11e9827f54e69953ab6753",
+      "serial_rows": 12,
+      "serial_host_cpu_seconds_medians": {
+        "file": {
+          "before": 0.013043999999999997,
+          "after": 0.013242
+        },
+        "mapped-shared": {
+          "before": 0.007130999999999988,
+          "after": 0.006960000000000003
+        }
+      },
+      "limits": "Synthetic fixed work with identical ELF and native C semantic oracle; no guest clock/algorithm changes. Three samples have no confidence interval and do not establish application or iPad throughput. Dispatch, memory and stop windows can overlap and are not additive saved CPU time."
+    },
+    "remaining_release_gates": [
+      "Explicitly excluded FD/control ownership boundaries",
+      "Final hosted merge/release checks on the new head",
+      "Physical iPad release smoke, Files writeback/large transfer and foreground/reopen acceptance",
+      "Versioned release publication"
+    ]
   }
 }

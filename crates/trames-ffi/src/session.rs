@@ -630,6 +630,7 @@ fn run(
         commands,
         snapshot_at: Instant::now(),
         terminals: None,
+        pending: None,
     };
     io.snapshot(&runtime.linux.vfs);
     session
@@ -652,6 +653,7 @@ struct Adapter {
     commands: mpsc::Receiver<Command>,
     snapshot_at: Instant,
     terminals: Option<crate::terminals::NativeTerminals>,
+    pending: Option<Command>,
 }
 impl Adapter {
     fn command(&mut self, vfs: &mut Vfs, command: Command) {
@@ -875,6 +877,44 @@ impl Write for CancelWriter<'_> {
     }
 }
 impl GuestOutput for Adapter {
+    fn poll_control(&mut self, vfs: &Vfs) -> io::Result<bool> {
+        if self.session.cancelled.load(Ordering::Acquire)
+            || self.session.paused.load(Ordering::Acquire)
+        {
+            return Ok(true);
+        }
+        if self.pending.is_none() {
+            self.pending = self.commands.try_recv().ok();
+        }
+        if self.pending.is_some() {
+            return Ok(true);
+        }
+        {
+            let mut buffers = self
+                .session
+                .buffers
+                .lock()
+                .map_err(|_| io::Error::other("session lock failed"))?;
+            if self.session.multiple_terminals {
+                let Some(terminals) = self.terminals.as_mut() else {
+                    return Ok(true);
+                };
+                if !terminals.can_pump_live(&buffers) {
+                    return Ok(true);
+                }
+                // Existing PTY object locks protect the byte transport. Open,
+                // close, resize signals and process changes still join.
+                terminals.pump(&mut buffers);
+            } else if buffers.terminals.get(&1).is_some_and(|b| b.size.is_some()) {
+                return Ok(true);
+            }
+        }
+        if self.snapshot_at.elapsed() >= Duration::from_secs(1) {
+            self.snapshot(vfs);
+            self.snapshot_at = Instant::now();
+        }
+        Ok(false)
+    }
     fn control(&mut self, vfs: &mut Vfs) -> io::Result<bool> {
         if self.session.cancelled.load(Ordering::Acquire) {
             return Ok(false);
@@ -894,7 +934,11 @@ impl GuestOutput for Adapter {
                 .expect("initialized")
                 .pump(&mut buffers);
         }
-        if let Ok(command) = self.commands.try_recv() {
+        if let Some(command) = self
+            .pending
+            .take()
+            .or_else(|| self.commands.try_recv().ok())
+        {
             self.command(vfs, command);
         }
         if self.snapshot_at.elapsed() >= Duration::from_secs(1) {

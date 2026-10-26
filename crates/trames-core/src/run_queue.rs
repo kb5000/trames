@@ -14,6 +14,8 @@ use std::{
     time::{Duration, Instant},
 };
 use trames_cpu::{DecodeStats, SliceOutcome};
+mod domains;
+pub(super) use domains::{Checkpoint, Domain};
 
 #[derive(Clone)]
 pub(super) struct WaitState {
@@ -82,6 +84,8 @@ pub(super) struct Job {
     pub io: Option<trames_linux::PendingIo>,
     pub retry: Option<IoCall>,
     pub gpu_pending: Option<crate::gpu::Pending>,
+    pub domain: Option<Arc<Domain>>,
+    pub checkpoint: Option<SliceOutcome>,
 }
 impl Job {
     pub fn new(
@@ -98,6 +102,8 @@ impl Job {
             io: None,
             retry: None,
             gpu_pending: None,
+            domain: None,
+            checkpoint: None,
             stats: Stats {
                 before,
                 after: before,
@@ -181,6 +187,9 @@ struct Queues {
     initial_slots: BTreeMap<u32, usize>,
     gpu_peak_pending: usize,
     host_waiting: bool,
+    domains: domains::Domains,
+    retired: Vec<(Box<Job>, Option<SliceOutcome>)>,
+    idle_notified: bool,
 }
 pub(super) struct Epoch {
     pub control: Arc<Control>,
@@ -194,12 +203,25 @@ pub(super) struct Epoch {
     #[cfg(test)]
     preemption: std::sync::atomic::AtomicBool,
     pub progress: AtomicU64,
+    pub local_vm: bool,
+    persistent: bool,
 }
 impl Epoch {
+    #[cfg(test)]
     pub fn new(control: Arc<Control>) -> Arc<Self> {
+        Self::configured(control, None, false)
+    }
+    fn configured(
+        control: Arc<Control>,
+        events: Option<std::sync::mpsc::Sender<crate::workers::Event>>,
+        persistent: bool,
+    ) -> Arc<Self> {
         Arc::new_cyclic(|me: &Weak<Self>| Self {
             control,
-            queues: Mutex::default(),
+            queues: Mutex::new(Queues {
+                domains: domains::Domains::new(events.clone()),
+                ..Default::default()
+            }),
             changed: Condvar::new(),
             host_events: OnceLock::new(),
             io_target: me.clone(),
@@ -209,7 +231,16 @@ impl Epoch {
             #[cfg(test)]
             preemption: std::sync::atomic::AtomicBool::new(true),
             progress: AtomicU64::new(0),
+            local_vm: events.is_some(),
+            persistent,
         })
+    }
+    pub fn with_events(
+        control: Arc<Control>,
+        events: std::sync::mpsc::Sender<crate::workers::Event>,
+        persistent: bool,
+    ) -> Arc<Self> {
+        Self::configured(control, Some(events), persistent)
     }
     fn deadline_ticks(&self, deadline: Instant) -> u64 {
         deadline
@@ -245,6 +276,7 @@ impl Epoch {
         self.ready_slots.store(slots, Ordering::Relaxed);
     }
     fn ready(&self, q: &mut Queues, job: Box<Job>) {
+        q.idle_notified = false;
         q.ready.push_back(job);
         self.refresh_ready(q);
     }
@@ -292,6 +324,7 @@ impl Epoch {
         let pid = job.work.pid;
         let mut q = self.queues.lock().unwrap();
         assert!(q.members.insert(pid), "duplicate cohort task");
+        q.domains.register(&mut job);
         if let Some(waiting) = &job.waiting {
             waiting.wait.ticket.bind(self);
             if !waiting.wait.woken() {
@@ -313,6 +346,72 @@ impl Epoch {
         let mut q = self.queues.lock().unwrap();
         q.initial_slots.extend(chosen.iter().copied());
         self.refresh_ready(&q);
+    }
+    fn capture_paused(&self, q: &mut Queues) {
+        for job in std::mem::take(&mut q.ready) {
+            if q.domains.paused(job.work.pid) {
+                q.domains.hold(job);
+            } else {
+                q.ready.push_back(job);
+            }
+        }
+        for (pid, job) in std::mem::take(&mut q.parked) {
+            if q.domains.paused(pid) {
+                q.domains.hold(job);
+            } else {
+                q.parked.insert(pid, job);
+            }
+        }
+        self.refresh_ready(q);
+        q.domains.notify_ready();
+    }
+    pub fn checkpoint(&self, mut job: Box<Job>, outcome: SliceOutcome) {
+        let id = job.domain.as_ref().expect("registered VM").id;
+        let mut q = self.queues.lock().unwrap();
+        q.running -= 1;
+        q.domains.returned(job.work.pid);
+        job.checkpoint = Some(outcome);
+        q.domains.pause(BTreeSet::from([id]));
+        q.domains.hold(job);
+        self.capture_paused(&mut q);
+        self.notify();
+    }
+    pub fn take_checkpoint(&self) -> Option<Checkpoint> {
+        self.queues.lock().unwrap().domains.take()
+    }
+    pub fn idle(&self) -> bool {
+        let q = self.queues.lock().unwrap();
+        q.running == 0 && q.services == 0 && q.ready.is_empty() && !q.domains.any_paused()
+    }
+    pub fn restore_checkpoint(&self, checkpoint: Checkpoint, resume: bool) {
+        let mut q = self.queues.lock().unwrap();
+        let jobs = q.domains.restore(checkpoint, resume);
+        for mut job in jobs {
+            if job.waiting.as_ref().is_some_and(|w| w.wait.woken()) {
+                job.waiting = None;
+                job.work.cpu.set_x(0, 0);
+                job.stats.resumes += 1;
+            }
+            let pending = job.waiting.is_some()
+                || job.io.as_ref().is_some_and(|io| !io.signal.ready())
+                || job
+                    .gpu_pending
+                    .as_ref()
+                    .is_some_and(|gpu| !gpu.signal().ready());
+            if pending {
+                self.publish_deadline(
+                    job.waiting
+                        .as_ref()
+                        .and_then(|w| w.deadline)
+                        .or_else(|| job.io.as_ref().and_then(|io| io.wake_deadline())),
+                );
+                assert!(q.parked.insert(job.work.pid, job).is_none());
+            } else {
+                self.ready(&mut q, job);
+            }
+        }
+        self.capture_paused(&mut q);
+        self.notify();
     }
     pub fn wake(&self, ticket: &Arc<Ticket>) -> bool {
         let mut q = self.queues.lock().unwrap();
@@ -439,6 +538,7 @@ impl Epoch {
                     snapshot.processor = slot as u32;
                 }
                 q.running += 1;
+                q.domains.running(work.pid);
                 return Some(job);
             }
             if q.running == 0
@@ -447,10 +547,20 @@ impl Epoch {
                 && deadline.is_none()
                 && !q.parked.values().any(|j| j.gpu_pending.is_some())
                 && !external
+                && !q.domains.any_paused()
             {
-                self.control.stop();
-                self.notify();
-                return None;
+                if self.persistent {
+                    if !q.idle_notified {
+                        q.idle_notified = true;
+                        if let Some(events) = &q.domains.events {
+                            let _ = events.send(crate::workers::Event::Idle);
+                        }
+                    }
+                } else {
+                    self.control.stop();
+                    self.notify();
+                    return None;
+                }
             }
             q = if let Some(deadline) = deadline {
                 self.changed
@@ -465,7 +575,18 @@ impl Epoch {
     pub fn park(&self, mut job: Box<Job>, waiting: Option<WaitState>) {
         let mut q = self.queues.lock().unwrap();
         q.running -= 1;
+        q.domains.returned(job.work.pid);
         let pid = job.work.pid;
+        if q.domains.paused(pid) {
+            if waiting.is_some() {
+                job.stats.waits += 1;
+                job.waiting = waiting;
+            }
+            q.domains.hold(job);
+            q.domains.notify_ready();
+            self.notify();
+            return;
+        }
         if let Some(waiting) = waiting {
             job.stats.waits += 1;
             if waiting.wait.woken() {
@@ -486,10 +607,14 @@ impl Epoch {
     pub fn park_io(&self, mut job: Box<Job>, pending: trames_linux::PendingIo) {
         let mut q = self.queues.lock().unwrap();
         q.running -= 1;
+        q.domains.returned(job.work.pid);
         job.stats.io_waits += 1;
         let ready = pending.signal.ready();
         job.io = Some(pending);
-        if ready {
+        if q.domains.paused(job.work.pid) {
+            q.domains.hold(job);
+            q.domains.notify_ready();
+        } else if ready {
             job.stats.resumes += 1;
             self.ready(&mut q, job);
         } else {
@@ -501,10 +626,14 @@ impl Epoch {
     pub fn park_gpu(&self, mut job: Box<Job>, pending: crate::gpu::Pending) {
         let mut q = self.queues.lock().unwrap();
         q.running -= 1;
+        q.domains.returned(job.work.pid);
         job.stats.gpu.waits += 1;
         let ready = pending.signal().ready();
         job.gpu_pending = Some(pending);
-        if ready {
+        if q.domains.paused(job.work.pid) {
+            q.domains.hold(job);
+            q.domains.notify_ready();
+        } else if ready {
             job.stats.resumes += 1;
             self.ready(&mut q, job);
         } else {
@@ -534,10 +663,11 @@ impl Epoch {
     }
     /// Transfer an execution slot to a request before publishing it. A queued
     /// service prevents quiescence even when every worker has run out of work.
-    pub fn start_service(&self) {
+    pub fn start_service(&self, pid: u32) {
         let mut q = self.queues.lock().unwrap();
         q.running -= 1;
         q.services += 1;
+        q.domains.start_service(pid);
         self.notify();
     }
     pub fn pending_services(&self) -> usize {
@@ -548,19 +678,24 @@ impl Epoch {
     pub fn end_service(&self, mut job: Box<Job>, value: Result<Option<u64>, ()>) {
         let mut q = self.queues.lock().unwrap();
         q.services -= 1;
+        q.domains.end_service(job.work.pid);
         match value {
             Ok(Some(value)) => {
                 job.work.cpu.set_x(0, value);
                 job.stats.serviced_syscalls += 1;
                 job.stats.resumes += 1;
-                self.ready(&mut q, job);
+                if q.domains.paused(job.work.pid) {
+                    q.domains.hold(job);
+                    q.domains.notify_ready();
+                } else {
+                    self.ready(&mut q, job);
+                }
             }
             value => {
                 let outcome = value
                     .ok()
                     .map(|_| SliceOutcome::Syscall { instructions: 0 });
-                q.finished
-                    .push(job.finish(outcome, self.progress.load(Ordering::Relaxed)));
+                q.retired.push((job, outcome));
                 self.control.stop();
             }
         }
@@ -569,6 +704,7 @@ impl Epoch {
     pub fn finish(&self, done: Done) {
         let mut q = self.queues.lock().unwrap();
         q.running -= 1;
+        q.domains.returned(done.pid);
         q.finished.push(done);
         self.control.stop();
         self.notify();
@@ -579,18 +715,24 @@ impl Epoch {
         assert_eq!(q.running, 0);
         assert_eq!(q.services, 0, "in-flight service still owns a View");
         let mut done = std::mem::take(&mut q.finished);
-        done.extend(q.ready.drain(..).map(|job| {
-            job.finish(
-                Some(SliceOutcome::Yield { instructions: 0 }),
-                self.progress.load(Ordering::Relaxed),
-            )
+        let mut jobs: Vec<_> = q.ready.drain(..).collect();
+        jobs.extend(std::mem::take(&mut q.parked).into_values());
+        jobs.extend(q.domains.drain());
+        let retired = std::mem::take(&mut q.retired);
+        drop(q);
+        // Final OFD release can notify another job in this same queue.
+        done.extend(jobs.into_iter().map(|mut job| {
+            let outcome = job
+                .checkpoint
+                .take()
+                .unwrap_or(SliceOutcome::Yield { instructions: 0 });
+            job.finish(Some(outcome), self.progress.load(Ordering::Relaxed))
         }));
-        done.extend(std::mem::take(&mut q.parked).into_values().map(|job| {
-            job.finish(
-                Some(SliceOutcome::Yield { instructions: 0 }),
-                self.progress.load(Ordering::Relaxed),
-            )
-        }));
+        done.extend(
+            retired
+                .into_iter()
+                .map(|(job, outcome)| job.finish(outcome, self.progress.load(Ordering::Relaxed))),
+        );
         done
     }
 }

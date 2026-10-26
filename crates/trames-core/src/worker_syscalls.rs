@@ -28,6 +28,12 @@ pub(super) struct Snapshot {
     pub futex: crate::futex::Authority,
 }
 
+/// These operations change or inspect this mm's mappings, without changing
+/// task/FD/namespace authority. Filtered/traced callers retain the joined path.
+pub(super) fn vm_call(number: u32) -> bool {
+    matches!(number, 214..=216 | 222 | 226 | 232 | 233)
+}
+
 /// These calls can request the coordinator without stopping peer CPUs. The
 /// service still admits the actual descriptor kind before doing any effects.
 pub(super) fn service_candidate(cpu: &Cpu, snapshot: &Snapshot) -> bool {
