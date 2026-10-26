@@ -11,7 +11,7 @@ import tempfile
 ROOT=Path(__file__).resolve().parents[2]
 RUNNER=os.getenv('TRAMES_RUNNER',str(ROOT/'target/release/trames-run'))
 QEMU=os.getenv('QEMU_AARCH64','qemu-aarch64')
-UPSTREAM=ROOT/'crates/trames-native/upstream/musl-1.2.5'
+UPSTREAM=ROOT/'runtime/crates/trames-native/upstream/musl-1.2.5'
 provenance=json.loads((UPSTREAM/'provenance.json').read_text())
 for name,digest in provenance['files'].items():
     source=UPSTREAM/name.removeprefix('src/')

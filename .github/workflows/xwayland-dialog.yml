@@ -6,7 +6,7 @@ on:
       - '.github/workflows/xwayland-dialog.yml'
       - 'tests/integration/xwayland-dialog*.py'
       - 'accelerator/vulkan/graphics.inc'
-      - 'crates/trames-vulkan/src/backend/graphics.rs'
+      - 'runtime/crates/trames-vulkan/src/backend/graphics.rs'
       - 'patches/moltenvk/0005-native-transparent-black-border.patch'
       - 'patches/moltenvk/0006-pack-compatible-raster-varying-components.patch'
       - 'tests/fixtures/vulkan-components-*'
@@ -256,7 +256,7 @@ jobs:
           path: |
             target/moltenvk-patched/macos-arm64-*/libMoltenVK.a
             target/moltenvk-patched/macos-arm64-*/build.json
-          key: ${{ runner.os }}-moltenvk-macos-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**', 'crates/trames-vulkan/native/transform-feedback/**') }}
+          key: ${{ runner.os }}-moltenvk-macos-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**', 'runtime/crates/trames-vulkan/native/transform-feedback/**') }}
       - name: Run the same original mousepad dialog on native Metal
         if: steps.verify.outputs.native_runtime == ''
         run: |
@@ -274,7 +274,7 @@ jobs:
           path: |
             target/moltenvk-patched/macos-arm64-*/libMoltenVK.a
             target/moltenvk-patched/macos-arm64-*/build.json
-          key: ${{ runner.os }}-moltenvk-macos-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**', 'crates/trames-vulkan/native/transform-feedback/**') }}
+          key: ${{ runner.os }}-moltenvk-macos-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**', 'runtime/crates/trames-vulkan/native/transform-feedback/**') }}
       - uses: actions/upload-artifact@v4
         with:
           name: dialog-metal-runtime

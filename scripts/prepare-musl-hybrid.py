@@ -26,7 +26,7 @@ for source,target in inputs:
 for name in ['malloc.c','free.c']:
     path=tree/'src/malloc/mallocng'/name
     data=path.read_bytes()
-    assert data==(ROOT/'crates/trames-native/upstream/musl-1.2.5/mallocng'/name).read_bytes(),name
+    assert data==(ROOT/'runtime/crates/trames-native/upstream/musl-1.2.5/mallocng'/name).read_bytes(),name
     before['src/malloc/mallocng/'+name]=hashlib.sha256(data).hexdigest()
     text=data.decode().replace('#include "meta.h"','#include "meta.h"\n#include "../../trames/allocator.h"',1)
     if name=='malloc.c':

@@ -51,7 +51,7 @@ if args.apple:
         package.add(ROOT / 'scripts/prepare-vulkan.py', arcname='prepare-vulkan.py')
         package.add(ROOT / 'scripts/build-moltenvk.py', arcname='scripts/build-moltenvk.py')
         package.add(ROOT / 'patches/moltenvk', arcname='patches/moltenvk')
-        package.add(ROOT / 'crates/trames-vulkan/native/transform-feedback', arcname='crates/trames-vulkan/native/transform-feedback')
+        package.add(ROOT / 'runtime/crates/trames-vulkan/native/transform-feedback', arcname='runtime/crates/trames-vulkan/native/transform-feedback')
         package.add(ROOT / 'scripts/build-vulkan-native-tf.py', arcname='scripts/build-vulkan-native-tf.py')
         package.add(ROOT / 'LICENSE', arcname='TRAMES-GPL-3.0.txt')
     notices = output / 'Notices'

@@ -669,11 +669,13 @@ dependencies = [
  "trames-accel",
  "trames-cpu",
  "trames-elf",
+ "trames-engine",
  "trames-execution",
  "trames-kernel",
  "trames-linux",
  "trames-memory",
  "trames-net",
+ "trames-session",
  "trames-vfs",
  "trames-vulkan",
  "trames-wayland",
@@ -685,6 +687,7 @@ version = "1.3.0"
 dependencies = [
  "getrandom 0.3.4",
  "trames-compute",
+ "trames-engine",
  "trames-execution",
  "trames-memory",
 ]
@@ -705,6 +708,14 @@ dependencies = [
 name = "trames-elf"
 version = "1.3.0"
 dependencies = [
+ "trames-memory",
+]
+
+[[package]]
+name = "trames-engine"
+version = "1.3.0"
+dependencies = [
+ "trames-execution",
  "trames-memory",
 ]
 
@@ -768,6 +779,22 @@ dependencies = [
  "nix",
  "smoltcp",
  "socket2",
+]
+
+[[package]]
+name = "trames-session"
+version = "1.3.0"
+dependencies = [
+ "trames-accel",
+ "trames-elf",
+ "trames-engine",
+ "trames-execution",
+ "trames-kernel",
+ "trames-linux",
+ "trames-memory",
+ "trames-net",
+ "trames-vfs",
+ "trames-vulkan",
 ]
 
 [[package]]

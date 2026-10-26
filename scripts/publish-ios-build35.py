@@ -127,7 +127,7 @@ def main():
         manifest = json.loads(native.read(manifest_name))
         assert sha(native.read(filename)) == manifest[key] == sha(files['GuestVulkan/' + filename])
     native_names = [(p, p) for p in subprocess.check_output(['git', 'ls-files', 'patches/moltenvk',
-                    'crates/trames-vulkan/native/transform-feedback'], text=True).splitlines()]
+                    'runtime/crates/trames-vulkan/native/transform-feedback'], text=True).splitlines()]
     native_names += [('prepare-vulkan.py', 'scripts/prepare-vulkan.py'),
                      ('scripts/build-moltenvk.py', 'scripts/build-moltenvk.py'),
                      ('scripts/build-vulkan-native-tf.py', 'scripts/build-vulkan-native-tf.py')]

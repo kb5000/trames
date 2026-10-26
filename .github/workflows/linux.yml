@@ -136,7 +136,7 @@ jobs:
       - name: Execute native Metal TF data, counters, overflow and raster replay
         run: |
           mkdir -p target/native-tf-evidence
-          native=crates/trames-vulkan/native/transform-feedback
+          native=runtime/crates/trames-vulkan/native/transform-feedback
           xcrun clang++ -std=c++14 -O2 -Wall -Wextra -Werror -fobjc-arc -I"$native" \
             "$native/metal.mm" tests/fixtures/vulkan-native-tf-metal.mm \
             -framework Metal -framework Foundation -o target/native-tf-evidence/metal-tf
@@ -144,7 +144,7 @@ jobs:
           target/native-tf-evidence/metal-tf target/native-tf-input/target/vulkan-native-tf "$native/assemble.metal" | tee target/native-tf-evidence/gpu.log
       - name: Compile same native engine and generated shaders for arm64 iOS
         run: |
-          native=crates/trames-vulkan/native/transform-feedback
+          native=runtime/crates/trames-vulkan/native/transform-feedback
           xcrun --sdk iphoneos clang++ -target arm64-apple-ios15.0 -std=c++14 -O2 -Wall -Wextra -Werror -fobjc-arc \
             -I"$native" -c "$native/metal.mm" -o target/native-tf-evidence/engine-ios.o
           for shader in target/native-tf-input/target/vulkan-native-tf/*.metal; do
@@ -188,11 +188,11 @@ jobs:
           cargo fmt --all --check
           if [[ '${{ needs.scope.outputs.firefox_memory_readonly_followup }}' == true ]]; then
             cargo clippy -p trames-memory -p trames-core --all-targets --no-deps --locked -- -D warnings
-            cargo test -p trames-core --lib --locked
+            cargo test -p trames-core --lib --tests --locked
             cargo test -p trames-memory --lib --locked parallel::readonly
           else
             cargo clippy -p trames-memory -p trames-core -p trames-vfs --all-targets --no-deps --locked -- -D warnings
-            cargo test -p trames-memory -p trames-core -p trames-linux --lib --locked
+            cargo test -p trames-memory -p trames-core -p trames-linux --lib --tests --locked
             cargo test -p trames-vfs mapped --lib --locked
           fi
           cargo build -p trames-cli --release --locked
@@ -252,7 +252,7 @@ jobs:
             cargo test -p trames-linux --lib --locked network::tests::invalid_accept_destination_does_not_drop_queued_connection -- --exact
             cargo test -p trames-memory --lib --locked
           else
-            cargo test -p trames-memory -p trames-core -p trames-linux --lib --locked
+            cargo test -p trames-memory -p trames-core -p trames-linux --lib --tests --locked
           fi
           cargo test -p trames-vfs mapped --lib --locked
           cargo build -p trames-cli --release --locked
@@ -334,7 +334,7 @@ jobs:
         run: |
           cargo fmt --all --check
           cargo clippy -p trames-vfs -p trames-linux -p trames-core -p trames-memory --all-targets --no-deps --locked -- -D warnings
-          cargo test -p trames-core -p trames-memory --lib --locked
+          cargo test -p trames-core -p trames-memory --lib --tests --locked
           cargo test -p trames-vfs clone_resources --lib --locked
           cargo test -p trames-vfs process_tests --lib --locked
           cargo test -p trames-vfs mapped --lib --locked
@@ -365,7 +365,7 @@ jobs:
         run: |
           uname -m
           sysctl hw.pagesize
-          cargo test -p trames-core -p trames-memory --lib --locked
+          cargo test -p trames-core -p trames-memory --lib --tests --locked
           cargo test -p trames-vfs clone_resources --lib --locked
           cargo test -p trames-vfs process_tests --lib --locked
           cargo test -p trames-vfs mapped --lib --locked
@@ -399,7 +399,7 @@ jobs:
         run: |
           cargo fmt --all --check
           cargo clippy -p trames-core --all-targets --no-deps --locked -- -D warnings
-          cargo test -p trames-core --lib --locked
+          cargo test -p trames-core --lib --tests --locked
           cargo build -p trames-cli --release --locked
           python3 -m py_compile tests/integration/firefox.py scripts/ios-ci-scope.py
           cc -O2 -Wall -Wextra -Werror -pthread tests/fixtures/firefox-clock-probe.c -o /tmp/clock-probe
@@ -430,7 +430,7 @@ jobs:
         run: |
           uname -m
           sysctl hw.pagesize
-          cargo test -p trames-core --lib --locked
+          cargo test -p trames-core --lib --tests --locked
           cargo build -p trames-cli --release --locked
           target/release/trames-run --memory --cpus 1 target/firefox-clock-fixture/clock-probe
           target/release/trames-run --memory --cpus 4 target/firefox-clock-fixture/clock-probe
@@ -572,7 +572,7 @@ jobs:
           path: |
             target/moltenvk-patched/macos-arm64-*/libMoltenVK.a
             target/moltenvk-patched/macos-arm64-*/build.json
-          key: ${{ runner.os }}-moltenvk-macos-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**', 'crates/trames-vulkan/native/transform-feedback/**') }}
+          key: ${{ runner.os }}-moltenvk-macos-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**', 'runtime/crates/trames-vulkan/native/transform-feedback/**') }}
       - name: Verify original Mesa Wayland EGL on exported Metal textures
         run: |
           python3 scripts/prepare-vulkan.py --apple --source-build
@@ -754,14 +754,14 @@ jobs:
           path: |
             target/moltenvk-patched/macos-arm64-*/libMoltenVK.a
             target/moltenvk-patched/macos-arm64-*/build.json
-          key: ${{ runner.os }}-moltenvk-macos-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**', 'crates/trames-vulkan/native/transform-feedback/**') }}
+          key: ${{ runner.os }}-moltenvk-macos-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**', 'runtime/crates/trames-vulkan/native/transform-feedback/**') }}
       - uses: actions/cache/restore@v4
         id: native_driver_cache_ios
         with:
           path: |
             target/moltenvk-patched/ios-arm64-*/libMoltenVK.a
             target/moltenvk-patched/ios-arm64-*/build.json
-          key: ${{ runner.os }}-moltenvk-ios-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**', 'crates/trames-vulkan/native/transform-feedback/**') }}
+          key: ${{ runner.os }}-moltenvk-ios-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**', 'runtime/crates/trames-vulkan/native/transform-feedback/**') }}
       - name: Run original MoltenVK Metal resource and Mesa GLSL paths
         id: native_runtime
         run: |
@@ -830,14 +830,14 @@ jobs:
           path: |
             target/moltenvk-patched/macos-arm64-*/libMoltenVK.a
             target/moltenvk-patched/macos-arm64-*/build.json
-          key: ${{ runner.os }}-moltenvk-macos-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**', 'crates/trames-vulkan/native/transform-feedback/**') }}
+          key: ${{ runner.os }}-moltenvk-macos-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**', 'runtime/crates/trames-vulkan/native/transform-feedback/**') }}
       - uses: actions/cache/save@v4
         if: always() && steps.native_driver_cache_ios.outputs.cache-hit != 'true'
         with:
           path: |
             target/moltenvk-patched/ios-arm64-*/libMoltenVK.a
             target/moltenvk-patched/ios-arm64-*/build.json
-          key: ${{ runner.os }}-moltenvk-ios-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**', 'crates/trames-vulkan/native/transform-feedback/**') }}
+          key: ${{ runner.os }}-moltenvk-ios-v1-${{ hashFiles('scripts/vulkan-upstream.json', 'scripts/build-moltenvk.py', 'patches/moltenvk/**', 'runtime/crates/trames-vulkan/native/transform-feedback/**') }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -980,8 +980,8 @@ jobs:
             cargo test -p trames-net --locked
             cargo test -p trames-vfs --lib --locked
             cargo test -p trames-linux --lib network --locked
-            cargo test -p trames-core --lib socket_timeout --locked
-            cargo test -p trames-core --lib seccomp --locked
+            cargo test -p trames-core --lib --tests socket_timeout --locked
+            cargo test -p trames-core --lib --tests seccomp --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == wayland-input ]]; then
             cargo clippy -p trames-wayland --all-targets --locked -- -D warnings
             cargo test -p trames-wayland --lib nested_popup_unmap --locked
@@ -990,7 +990,7 @@ jobs:
             cargo test -p trames-wayland --lib clipboard_permission --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == host-terminals ]]; then
             cargo clippy -p trames-vfs -p trames-core -p trames-ffi --all-targets --locked -- -D warnings
-            cargo test -p trames-vfs -p trames-core -p trames-ffi --lib --locked
+            cargo test -p trames-vfs -p trames-core -p trames-ffi --lib --tests --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == container-storage ]]; then
             if [[ '${{ needs.scope.outputs.storage_proc_only }}' == true ]]; then
               cargo clippy -p trames-vfs --all-targets --locked -- -D warnings
@@ -1015,7 +1015,7 @@ jobs:
             cargo test -p trames-linux --lib network --locked
             cargo test -p trames-linux --lib file_calls --locked
             cargo test -p trames-ffi --lib managed_dns --locked
-            cargo test -p trames-core --lib splice --locked
+            cargo test -p trames-core --lib --tests splice --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == container-network && '${{ needs.scope.outputs.nftables }}' == true ]]; then
             cargo clippy -p trames-net --all-targets --locked -- -D warnings
             cargo test -p trames-net --lib --locked
@@ -1036,10 +1036,10 @@ jobs:
           elif [[ '${{ needs.scope.outputs.native_scope }}' == container-isolation && '${{ needs.scope.outputs.isolation_retry }}' == true ]]; then
             cargo clippy -p trames-linux -p trames-core --all-targets --locked -- -D warnings
             cargo test -p trames-linux --lib socket_output_preflight_and_descriptor_type_errors --locked
-            cargo test -p trames-core --lib seccomp --locked
+            cargo test -p trames-core --lib --tests seccomp --locked
           elif [[ '${{ needs.scope.outputs.native_scope }}' == container-isolation ]]; then
             cargo clippy -p trames-net -p trames-vfs -p trames-linux -p trames-core --all-targets --locked -- -D warnings
-            cargo test -p trames-net -p trames-vfs -p trames-linux -p trames-core --lib --locked
+            cargo test -p trames-net -p trames-vfs -p trames-linux -p trames-core --lib --tests --locked
             cargo test -p trames-net --test virtual --locked
             cargo test -p trames-cpu --lib disabled_authentication_and_ordering_hints_preserve_values --locked
           else
@@ -1276,8 +1276,7 @@ jobs:
           RUSTFLAGS: -Zsanitizer=thread
           CARGO_TARGET_DIR: target/thread-sanitizer
         run: |
-          cargo test -Zbuild-std --manifest-path runtime/Cargo.toml -p trames-memory -p trames-kernel --target x86_64-unknown-linux-gnu --locked --lib --tests
-          cargo test -Zbuild-std -p trames-accel --target x86_64-unknown-linux-gnu --locked --lib --tests
+          cargo test -Zbuild-std --manifest-path runtime/Cargo.toml -p trames-memory -p trames-kernel -p trames-accel --target x86_64-unknown-linux-gnu --locked --lib --tests
       - name: Check original-source native allocator C with address and undefined behavior sanitizers
         run: bash scripts/check-native-allocator.sh
       - name: Compile core and both network backends for iOS (no SDK link or device test)

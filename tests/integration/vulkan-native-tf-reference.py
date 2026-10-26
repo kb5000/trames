@@ -16,7 +16,7 @@ import shutil
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[2]
-ENGINE = 'crates/trames-vulkan/native/transform-feedback/'
+ENGINE = 'runtime/crates/trames-vulkan/native/transform-feedback/'
 REBIND = {ENGINE+'assemble.metal', ENGINE+'metal.hpp', ENGINE+'metal.mm',
           'tests/fixtures/vulkan-native-tf-metal.mm'}
 

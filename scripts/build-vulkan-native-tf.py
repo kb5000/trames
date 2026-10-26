@@ -17,7 +17,7 @@ import tarfile
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
-NATIVE = ROOT/'crates/trames-vulkan/native/transform-feedback'
+NATIVE = ROOT/'runtime/crates/trames-vulkan/native/transform-feedback'
 SOURCES = ('spirv_cross.cpp', 'spirv_parser.cpp', 'spirv_cross_parsed_ir.cpp',
            'spirv_cfg.cpp', 'spirv_glsl.cpp', 'spirv_msl.cpp')
 

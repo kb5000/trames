@@ -7,19 +7,25 @@ license.workspace = true
 
 
 [dependencies]
-trames-execution = { workspace = true }
-trames-kernel = { workspace = true }
-trames-accel = { path = "../trames-accel" }
+trames-session = { workspace = true }
 trames-cpu = { path = "../trames-cpu" }
-trames-elf = { workspace = true }
-trames-memory = { workspace = true }
-trames-linux = { workspace = true }
-trames-vfs = { workspace = true }
-trames-net = { workspace = true }
-trames-vulkan = { path = "../trames-vulkan" }
 
 [lints]
 workspace = true
 
 [dev-dependencies]
+trames-engine = { workspace = true }
+trames-execution = { workspace = true }
+trames-kernel = { workspace = true }
+trames-accel = { workspace = true }
+trames-elf = { workspace = true }
+trames-memory = { workspace = true }
+trames-linux = { workspace = true }
+trames-vfs = { workspace = true }
+trames-net = { workspace = true }
+trames-vulkan = { workspace = true }
 trames-wayland = { workspace = true }
+
+[[test]]
+name = "kernel-conformance"
+path = "../../runtime/crates/trames-session/src/lib.rs"

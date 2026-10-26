@@ -7,7 +7,7 @@ linker="${AARCH64_LD:-aarch64-linux-gnu-ld}"
 output="$(pwd)/target/accelerator-guest"
 mkdir -p "$output"
 flags=(-O2 -fPIC -fno-builtin -fno-tree-vectorize -fno-tree-slp-vectorize -Wall -Wextra -Werror)
-upstream=crates/trames-native/upstream/musl-1.2.5
+upstream=runtime/crates/trames-native/upstream/musl-1.2.5
 # Keep upstream bytes untouched; private names prevent fallback interposition.
 for name in memmove memcmp strlen; do
     "$compiler" "${flags[@]}" -Wno-parentheses -Dmemcpy=trames_orig_memcpy -Dmemmove=trames_orig_memmove -Dmemset=trames_orig_memset -Dmemcmp=trames_orig_memcmp -Dstrlen=trames_orig_strlen -c "$upstream/$name.c" -o "$output/$name.o"
@@ -22,10 +22,10 @@ done
 cp "$upstream/COPYRIGHT" "$output/musl-COPYRIGHT.txt"
 cp "$upstream/provenance.json" "$output/provenance.json"
 cp LICENSE "$output/GPL-3.0.txt"
-mkdir -p "$output/source/accelerator/guest" "$output/source/scripts" "$output/source/crates/trames-native/upstream"
+mkdir -p "$output/source/accelerator/guest" "$output/source/scripts" "$output/source/runtime/crates/trames-native/upstream"
 cp accelerator/guest/pure.c accelerator/guest/calls.S accelerator/guest/exports.map "$output/source/accelerator/guest/"
 cp scripts/build-accelerator-guest.sh "$output/source/scripts/"
-cp -R "$upstream" "$output/source/crates/trames-native/upstream/"
+cp -R "$upstream" "$output/source/runtime/crates/trames-native/upstream/"
 cp LICENSE "$output/source/"
 cat > "$output/SOURCE.txt" <<'NOTICE'
 Trames pure-memory guest library, NativeCall protocol 1/module 1.

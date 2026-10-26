@@ -3,7 +3,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p target/allocator-sanitizers
-python3 crates/trames-native/allocator/generate.py target/allocator-sanitizers/allocator.c
+python3 runtime/crates/trames-native/allocator/generate.py target/allocator-sanitizers/allocator.c
 "${CC:-cc}" -O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all \
     target/allocator-sanitizers/allocator.c tests/fixtures/native-allocator-host.c \
     -o target/allocator-sanitizers/check

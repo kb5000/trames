@@ -36,7 +36,7 @@ class ReuseTests(unittest.TestCase):
         current = m.HOOK + old.replace('      - uses: actions/checkout@v4\n', '      - uses: actions/checkout@v4\n' + m.CHECKOUT + m.UNIT)
         args = (config, [path, str(m.PLAN)], lambda _: data, old, current)
         self.assertTrue(m.unchanged_inputs(*args))
-        self.assertFalse(m.unchanged_inputs(config, ['crates/trames-core/src/workers.rs'], lambda _: data, old, current))
+        self.assertFalse(m.unchanged_inputs(config, ['runtime/crates/trames-session/src/workers.rs'], lambda _: data, old, current))
         self.assertFalse(m.unchanged_inputs(config, [path], lambda _: b'changed', old, current))
         self.assertFalse(m.unchanged_inputs(config, [path], lambda _: data, old, current + 'altered compiler flags'))
         self.assertFalse(m.unchanged_inputs(config, [path, 'scripts/build-musl-hybrid.sh'], lambda _: data, old, current))

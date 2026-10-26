@@ -432,7 +432,7 @@ def device_build_outputs(plan, repo, headers):
         if not {'Link unsigned iPad simulator app', 'Exercise peer tabs and floating window gestures first', 'Export simulator test summary', 'Link unsigned iPad device app'} <= completed:
             raise RuntimeError('Missing passed frontend interactions')
         guest = reuse['guest']
-        guest_paths = ['accelerator/musl', 'accelerator/guest', 'crates/trames-native/upstream',
+        guest_paths = ['accelerator/musl', 'accelerator/guest', 'runtime/crates/trames-native/upstream',
                        'scripts/build-musl-hybrid.sh', 'scripts/prepare-musl-hybrid.py',
                        'scripts/vulkan-upstream.json', 'LICENSE']
         if not layout:
@@ -549,7 +549,7 @@ def device_build_outputs(plan, repo, headers):
         raise RuntimeError('Missing previous simulator/frontend acceptance')
 
     guest = reuse['guest']
-    guest_paths = ['guest', 'include', 'accelerator', 'LICENSE', 'crates/trames-native/upstream',
+    guest_paths = ['guest', 'include', 'accelerator', 'LICENSE', 'runtime/crates/trames-native/upstream',
                    'scripts/build-musl-hybrid.sh', 'scripts/prepare-musl-hybrid.py',
                    'scripts/build-vulkan-guest.sh', 'scripts/build-vulkan-fixtures.sh',
                    'scripts/prepare-vulkan.py', 'scripts/vulkan-upstream.json',

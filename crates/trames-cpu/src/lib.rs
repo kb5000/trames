@@ -3,9 +3,8 @@
 #![feature(explicit_tail_calls, rust_preserve_none_cc)]
 #![allow(incomplete_features)]
 //! AArch64 virtual CPU with a single bounded cached interpreter.
-use std::fmt;
 use trames_execution::{Aarch64State, Registers};
-use trames_memory::{CpuMemory, MemoryError};
+use trames_memory::CpuMemory;
 /// Capabilities of the virtual CPU, independent of the host.
 pub const HWCAP: u64 = (1 << 0)
     | (1 << 1)
@@ -58,12 +57,7 @@ pub struct Flags {
     pub v: bool,
 }
 
-#[derive(Default, Clone, Copy, Debug)]
-pub struct DecodeStats {
-    pub lookups: u64,
-    pub misses: u64,
-    pub instructions: u64,
-}
+pub use trames_engine::{CpuFault, DecodeStats, SliceOutcome};
 
 #[derive(Default, Clone, Debug)]
 pub struct Cpu {
@@ -96,63 +90,6 @@ pub enum Event {
     },
     /// A bounded long instruction has made progress but has not retired.
     Yield,
-}
-
-#[derive(Debug)]
-pub enum CpuFault {
-    Memory {
-        pc: u64,
-        error: MemoryError,
-    },
-    Instruction {
-        pc: u64,
-        instruction: u32,
-    },
-    Trap {
-        pc: u64,
-        instruction: u32,
-        signal: u32,
-        code: i32,
-    },
-}
-impl fmt::Display for CpuFault {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Memory { pc, error } => write!(f, "CPU fault at PC {pc:#x}: {error}"),
-            Self::Trap {
-                pc,
-                instruction,
-                signal,
-                ..
-            } => write!(
-                f,
-                "CPU exception {instruction:#010x} at PC {pc:#x} (signal {signal})"
-            ),
-            Self::Instruction { pc, instruction } => write!(
-                f,
-                "unsupported or unallocated instruction {instruction:#010x} at PC {pc:#x}"
-            ),
-        }
-    }
-}
-impl std::error::Error for CpuFault {}
-
-#[derive(Debug)]
-pub enum SliceOutcome {
-    Syscall {
-        instructions: u64,
-    },
-    /// Instructions before the pending HLT; it retires only on a committed return.
-    NativeCall {
-        instructions: u64,
-        pc: u64,
-        module: u64,
-        function: u64,
-    },
-    Yield {
-        instructions: u64,
-    },
-    Fault(CpuFault),
 }
 
 #[inline]
@@ -923,5 +860,63 @@ mod native_tests {
             c.run_slice(&mut m, 1),
             SliceOutcome::Fault(CpuFault::Trap { signal: 4, .. })
         ));
+    }
+}
+
+impl trames_engine::Cpu for Cpu {
+    type Engine = ();
+    const FEATURES: trames_execution::Features = trames_execution::Features {
+        hwcap: HWCAP,
+        hwcap2: HWCAP2,
+    };
+    const FEATURE_NAMES: &'static str = FEATURE_NAMES;
+    const PARALLEL: bool = true;
+    const EXACT_INSTRUCTIONS: bool = true;
+    fn new(pc: u64, sp: u64) -> Self {
+        Self::new(pc, sp)
+    }
+    fn sp(&self) -> u64 {
+        self.sp
+    }
+    fn set_sp(&mut self, value: u64) {
+        self.sp = value;
+    }
+    fn set_pc(&mut self, value: u64) {
+        self.pc = value;
+    }
+    fn set_tls(&mut self, value: u64) {
+        self.tpidr_el0 = value;
+    }
+    fn architectural_state(&self) -> Aarch64State {
+        self.architectural_state()
+    }
+    fn restore_architectural_state(&mut self, state: &Aarch64State) {
+        self.restore_architectural_state(state);
+    }
+    fn set_native_calls(&mut self, enabled: bool) {
+        self.set_native_calls(enabled);
+    }
+    fn set_vulkan_calls(&mut self, enabled: bool) {
+        self.set_vulkan_calls(enabled);
+    }
+    fn clear_exclusive(&mut self) {
+        self.clear_exclusive();
+    }
+    fn fault_retired(&self) -> u64 {
+        self.fault_retired()
+    }
+    fn decode_stats(&self) -> DecodeStats {
+        self.decode_stats()
+    }
+    fn run(&mut self, _: &mut (), memory: &mut trames_memory::Memory, budget: u64) -> SliceOutcome {
+        self.run_slice(memory, budget)
+    }
+    fn run_parallel(
+        &mut self,
+        _: &mut (),
+        memory: &mut trames_memory::parallel::View,
+        budget: u64,
+    ) -> SliceOutcome {
+        self.run_slice(memory, budget)
     }
 }

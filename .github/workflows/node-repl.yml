@@ -52,7 +52,7 @@ jobs:
           run = json.loads(subprocess.check_output(['gh', 'api', 'repos/'+os.environ['GITHUB_REPOSITORY']+'/actions/runs/'+os.environ['GUEST_RUN']]))
           assert run['path'] == '.github/workflows/node-repl.yml'
           assert run['head_repository']['full_name'] == os.environ['GITHUB_REPOSITORY']
-          paths = ['accelerator/', 'scripts/build-musl-hybrid.sh', 'scripts/prepare-musl-hybrid.py', 'crates/trames-native/upstream/', 'LICENSE']
+          paths = ['accelerator/', 'scripts/build-musl-hybrid.sh', 'scripts/prepare-musl-hybrid.py', 'runtime/crates/trames-native/upstream/', 'LICENSE']
           assert not subprocess.check_output(['git', 'diff', '--name-only', run['head_sha'], 'HEAD', '--', *paths])
           PY
       - uses: dtolnay/rust-toolchain@master
@@ -68,7 +68,7 @@ jobs:
         run: |
           cargo fmt --all --check
           cargo clippy -p trames-memory -p trames-cpu -p trames-accel -p trames-core --all-targets --no-deps --locked -- -D warnings
-          cargo test -p trames-memory -p trames-cpu -p trames-accel -p trames-core --lib --locked -- --test-threads=1
+          cargo test -p trames-memory -p trames-cpu -p trames-accel -p trames-core --lib --tests --locked -- --test-threads=1
           cargo test -p trames-vfs mapped --lib --locked -- --test-threads=1
       - name: Build the optimized App runtime
         run: cargo build -p trames-ffi -p trames-cli --release --locked

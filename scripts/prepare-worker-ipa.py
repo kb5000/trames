@@ -39,7 +39,7 @@ def verify(config):
         assert any(a['name'] == name and not a['expired'] for a in items), name
 
     guest = config['guest']
-    unchanged(guest['sha'], ['accelerator/musl', 'accelerator/guest', 'crates/trames-native/upstream',
+    unchanged(guest['sha'], ['accelerator/musl', 'accelerator/guest', 'runtime/crates/trames-native/upstream',
                             'scripts/build-musl-hybrid.sh', 'scripts/prepare-musl-hybrid.py', 'LICENSE'])
     run(guest, 'ios.yml', 'guest-musl')
     artifact(guest, 'full-musl-library-and-source')
@@ -58,7 +58,7 @@ def verify(config):
     # and tested below; no host runtime acceptance is claimed from these runs.
     unchanged(validation['sha'], ['patches/moltenvk',
                                   'scripts/prepare-vulkan.py', 'scripts/build-vulkan-native-tf.py',
-                                  'crates/trames-vulkan/native'])
+                                  'runtime/crates/trames-vulkan/native'])
     # Pin the COMPLETE source verifier from the starting repository revision.
     # This includes every verification branch, build flag and patch selection;
     # no AST/body filtering or exception for future verifier edits is allowed.

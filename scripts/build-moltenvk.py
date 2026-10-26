@@ -36,7 +36,7 @@ COMPONENT_PATCH = ROOT/'patches/moltenvk/0006-pack-compatible-raster-varying-com
 COMPONENT_SOURCE = Path('External/SPIRV-Cross/spirv_msl.cpp')
 SAMPLER_PATCH = ROOT/'patches/moltenvk/0005-native-transparent-black-border.patch'
 IMAGE = Path('MoltenVK/MoltenVK/GPUObjects/MVKImage.mm')
-NATIVE_TF = ROOT/'crates/trames-vulkan/native/transform-feedback'
+NATIVE_TF = ROOT/'runtime/crates/trames-vulkan/native/transform-feedback'
 
 
 def patch_paths(patch):

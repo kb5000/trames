@@ -70,6 +70,9 @@ fn main() {
             let result = match outcome {
                 SliceOutcome::Fault(CpuFault::Instruction { .. }) => "unsupported",
                 SliceOutcome::Fault(CpuFault::Memory { .. }) => "decoded-memory-fault",
+                SliceOutcome::Fault(CpuFault::Host(error)) => {
+                    panic!("unexpected interpreter host error: {error}")
+                }
                 SliceOutcome::Fault(CpuFault::Trap { .. }) => "decoded-exception",
                 SliceOutcome::Syscall { .. } => "syscall",
                 SliceOutcome::NativeCall { .. } => "native-call",

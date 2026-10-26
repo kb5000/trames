@@ -41,8 +41,8 @@ def main():
         'binary_sha256': digest(binary),
         'source_sha256': {
             name: digest(root / name) for name in (
-                'crates/trames-core/src/coordination_cost.rs',
-                'crates/trames-core/src/workers.rs',
+                'runtime/crates/trames-session/src/coordination_cost.rs',
+                'runtime/crates/trames-session/src/workers.rs',
             )
         },
         'scope': (
