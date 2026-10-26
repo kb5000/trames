@@ -223,5 +223,32 @@
     "Native Mac Wayland presentation windows",
     "Host-pressure paging that preserves live dirty/anonymous data",
     "Physical iPad integration/release acceptance"
-  ]
+  ],
+  "independent_clones": [
+    {
+      "role": "runtime",
+      "passed": true,
+      "revision": "1dcf6a3293d8157594058f8bd86ab4f63aab95ae"
+    },
+    {
+      "role": "mac",
+      "passed": true,
+      "revision": "c932db4e05204bf8bf1ee1a0d2f7de63bffe0168"
+    },
+    {
+      "role": "ipad",
+      "passed": true,
+      "revision": "8ad2e6b18734c2e5daeede470639d69ad0b0b701"
+    }
+  ],
+  "independent_clone_checks": {
+    "workspace_all_targets_locked": true,
+    "boundary_checker_each_checkout": true,
+    "all_trames_manifest_paths_inside_each_checkout": true,
+    "package_counts": {
+      "runtime": 16,
+      "ipad": 21,
+      "mac": 18
+    }
+  }
 }
