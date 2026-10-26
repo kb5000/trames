@@ -2,89 +2,12 @@
 //! Compatibility state belongs to virtual tasks, never the host process.
 use super::*;
 
-const SS_DISABLE: u32 = 2;
-const SS_AUTODISARM: u32 = 0x8000_0000;
-
-#[derive(Clone, Copy)]
-pub(super) struct AltStack {
-    pub sp: u64,
-    pub size: u64,
-    pub flags: u32,
-}
-
-impl Default for AltStack {
-    fn default() -> Self {
-        Self {
-            sp: 0,
-            size: 0,
-            flags: SS_DISABLE,
-        }
-    }
-}
-impl AltStack {
-    pub fn contains(self, sp: u64) -> bool {
-        self.flags & SS_DISABLE == 0 && sp > self.sp && sp.wrapping_sub(self.sp) <= self.size
-    }
-    pub fn on_stack(self, sp: u64) -> bool {
-        self.flags & SS_AUTODISARM == 0 && self.contains(sp)
-    }
-    pub fn reported_flags(self, sp: u64) -> u32 {
-        self.flags | u32::from(self.on_stack(sp))
-    }
-    fn parse(memory: &Memory, address: u64) -> Result<Self, Errno> {
-        Linux::check(memory, address, 24, Access::Read)?;
-        let flags = read_u32(memory, address + 8)?;
-        // Linux accepts SS_ONSTACK on input as well as in saved ucontexts.
-        if !matches!(flags & !SS_AUTODISARM, 0 | 1 | SS_DISABLE) {
-            return Err(Errno(22));
-        }
-        let flags = flags & !1;
-        if flags & SS_DISABLE != 0 {
-            return Ok(Self {
-                flags,
-                ..Self::default()
-            });
-        }
-        let size = read_u64(memory, address + 16)?;
-        if size < 2048 {
-            return Err(Errno(12));
-        }
-        Ok(Self {
-            sp: read_u64(memory, address)?,
-            size,
-            flags,
-        })
-    }
-    pub fn restore(memory: &Memory, address: u64) -> Result<Self, Errno> {
-        Self::parse(memory, address)
-    }
-}
+#[cfg(test)]
+use trames_kernel::signal::SS_DISABLE;
 
 impl Kernel {
     pub(super) fn sigaltstack(p: &mut Process, new: u64, old: u64) -> Result<u64, Errno> {
-        if old != 0 {
-            Linux::check(&p.memory, old, 24, Access::Write)?;
-        }
-        let next = if new != 0 {
-            let next = AltStack::parse(&p.memory, new)?;
-            if p.alt_stack.on_stack(p.cpu.sp) {
-                return Err(Errno(1));
-            }
-            Some(next)
-        } else {
-            None
-        };
-        if old != 0 {
-            let mut bytes = [0; 24];
-            bytes[..8].copy_from_slice(&p.alt_stack.sp.to_le_bytes());
-            bytes[8..12].copy_from_slice(&p.alt_stack.reported_flags(p.cpu.sp).to_le_bytes());
-            bytes[16..24].copy_from_slice(&p.alt_stack.size.to_le_bytes());
-            p.memory.write(old, &bytes).map_err(|_| Errno(14))?;
-        }
-        if let Some(next) = next {
-            p.alt_stack = next;
-        }
-        Ok(0)
+        p.signals.alt_stack.call(p.cpu.sp, new, old, &mut p.memory)
     }
     pub(super) fn membarrier(p: &Process, command: u64, flags: u64) -> Result<u64, Errno> {
         if flags != 0 {
@@ -208,7 +131,7 @@ mod tests {
         write_u64(&mut p.memory, 0x1008, 0).unwrap();
         write_u64(&mut p.memory, 0x1010, 2048).unwrap();
         assert_eq!(Kernel::sigaltstack(&mut p, 0x1000, 0xffff), Err(Errno(14)));
-        assert_eq!(p.alt_stack.flags, SS_DISABLE);
+        assert_eq!(p.signals.alt_stack.flags, SS_DISABLE);
         assert_eq!(Kernel::sigaltstack(&mut p, 0x1000, 0), Ok(0));
         p.cpu.sp = 0x2400;
         assert_eq!(Kernel::sigaltstack(&mut p, 0x1000, 0), Err(Errno(1)));

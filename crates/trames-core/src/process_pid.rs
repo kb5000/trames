@@ -20,7 +20,7 @@ impl Kernel {
             }
             let sig = child.pdeath_signal;
             if sig != 0 && Self::prepare_signal(child, sig, parent.tgid) {
-                let _ = child.shared_pending.borrow_mut().enqueue(
+                let _ = child.signals.shared_pending.borrow_mut().enqueue(
                     sig,
                     Info {
                         sender: parent.tgid,
@@ -113,7 +113,7 @@ impl Kernel {
                 continue;
             }
             let auto = self.processes.get(&reaper).is_some_and(|p| {
-                p.actions.get(17).handler == 1 || p.actions.get(17).flags & 2 != 0
+                p.signals.actions.get(17).handler == 1 || p.signals.actions.get(17).flags & 2 != 0
             });
             self.notify(
                 reaper,

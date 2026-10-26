@@ -1229,11 +1229,11 @@ jobs:
       - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
       - run: cargo build --workspace --all-features --locked
       - run: cargo test --workspace --all-features --locked
-      - name: Check region guard races with fully instrumented Rust standard library
+      - name: Check region and task signal races with fully instrumented Rust standard library
         env:
           RUSTFLAGS: -Zsanitizer=thread
           CARGO_TARGET_DIR: target/thread-sanitizer
-        run: cargo test -Zbuild-std -p trames-memory -p trames-accel --target x86_64-unknown-linux-gnu --locked --lib --tests
+        run: cargo test -Zbuild-std -p trames-memory -p trames-accel -p trames-kernel --target x86_64-unknown-linux-gnu --locked --lib --tests
       - name: Check original-source native allocator C with address and undefined behavior sanitizers
         run: bash scripts/check-native-allocator.sh
       - name: Compile core and both network backends for iOS (no SDK link or device test)

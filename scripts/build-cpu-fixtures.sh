@@ -4,4 +4,6 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 compiler="${MUSL_CC:-$(pwd)/target/busybox-build/musl/bin/musl-gcc}"
 mkdir -p tests/fixtures/bin
-"$compiler" -static -O2 -fno-tree-vectorize -fno-tree-slp-vectorize -Wall -Wextra -Werror tests/fixtures/cpu-signals.c -o tests/fixtures/bin/cpu-signals
+for fixture in cpu-signals signal-leaf-stack task-signals; do
+  "$compiler" -static -O2 -fno-tree-vectorize -fno-tree-slp-vectorize -Wall -Wextra -Werror "tests/fixtures/$fixture.c" -o "tests/fixtures/bin/$fixture"
+done

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Actual musl signal handlers recover from traps and precise memory faults."""
 import os
+import platform
 from pathlib import Path
 import subprocess
 ROOT=Path(__file__).resolve().parents[2]
@@ -12,3 +13,16 @@ oracle=subprocess.run([os.getenv('QEMU_AARCH64','qemu-aarch64'),'-cpu','max',str
 assert (actual.returncode,actual.stdout,actual.stderr)==(0,b'cpu-signals-ok\n',b''),actual
 assert (oracle.returncode,oracle.stdout,oracle.stderr)==(0,actual.stdout,b''),oracle
 print('Actual musl handlers: BRK, UDF, HLT, unmapped load/fetch, write protection, ordered-access alignment and edited context passed')
+for name in ['signal-leaf-stack', 'task-signals']:
+    fixture = ROOT / 'tests/fixtures/bin' / name
+    actual = subprocess.run([runner, '--memory', str(fixture)], capture_output=True, timeout=30)
+    oracle = subprocess.run([os.getenv('QEMU_AARCH64', 'qemu-aarch64'), '-cpu', 'max', str(fixture)], capture_output=True, timeout=30)
+    assert (actual.returncode, actual.stdout, actual.stderr) == (0, oracle.stdout, b''), actual
+    assert (oracle.returncode, oracle.stderr) == (0, b''), oracle
+    if name == 'task-signals' and platform.machine() == 'aarch64':
+        # QEMU omits SS_AUTODISARM; compare that mode to actual Linux instead.
+        native = subprocess.run([str(fixture), 'autodisarm'], capture_output=True, timeout=30)
+        automatic = subprocess.run([runner, '--memory', str(fixture), 'autodisarm'], capture_output=True, timeout=30)
+        assert (native.returncode, native.stdout, native.stderr) == (0, actual.stdout, b''), native
+        assert (automatic.returncode, automatic.stdout, automatic.stderr) == (0, native.stdout, b''), automatic
+    print('PASS', name)

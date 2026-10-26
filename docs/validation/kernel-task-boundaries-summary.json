@@ -1,0 +1,334 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-26",
+  "scope": "Shared task signal ownership/ABI and affinity policy extraction, integrated into existing Core and the single-task hardware runner. Not full common process/executor scheduling or physical repository extraction.",
+  "tracking_issue": "https://github.com/kb5000/trames/issues/44",
+  "branch": "codex/kernel-task-boundaries",
+  "parent_commit": "cce1d2af443b4d3ba25801154455a77c3afd03ac",
+  "source_sha256": {
+    ".github/workflows/linux.yml": "b083fbfba61de206812c293311ef9cb116d12a6d27770f82ca3c1411e11cc5fb",
+    "Cargo.lock": "7ed33c87121999f6565f97333e09cb9fadd7c012ef2e4124337f1fbf67bd51a7",
+    "Cargo.toml": "cb9c7dd177949ebf3d2d527a80f71d2f1f5c3bf20fcd46e9514fd4ac25ab28ce",
+    "crates/trames-core/Cargo.toml": "3ec5fb1073f66e6b8607db4ad9d241056ada443802467fc824051252ba75edfd",
+    "crates/trames-core/src/process.rs": "1a0d2f71de8730b4b23a7f8c21f6c51cb845092ac8de02e2078e0d3a3fca3a35",
+    "crates/trames-core/src/process_compat.rs": "f35e03f3fb95b9bf156e3ac9acde7625ce9b15a1e3b6e0d19c7f947a553e66b0",
+    "crates/trames-core/src/process_events.rs": "c296535c20a0e84dded7aa1a67ba351fae921255766b4af0c569119b2802d788",
+    "crates/trames-core/src/process_pid.rs": "5913b78a77e5dd33af4c71a2126ac920fd8224453b34e2a21a1b6272947778b6",
+    "crates/trames-core/src/process_seccomp.rs": "84cb7bcdb4f38ec50291e6ace6495543ccb7b50f7fe7a72d873f6a3bbe84cec1",
+    "crates/trames-core/src/process_service.rs": "91d80e6d80d9029adf5d882d07764179e8a0e03d6875c8436c32d01b63ee66e9",
+    "crates/trames-core/src/process_signals.rs": "b1fa9da7ecb6ecdf4684352f5460703a8f5cfa7cacae4345644029789ff7ea3d",
+    "crates/trames-core/src/signal_actions.rs": "09d1188e340757850ebcdf519f5acba329ea053f3689b8d447c7f0a8d54f9778",
+    "crates/trames-hvf/src/macos.rs": "6ddb13b0dbaced4c969858a941ae04fdd85ade477223fd137dafef118bd973ee",
+    "crates/trames-kernel/Cargo.toml": "bcf18101f03987ec131e9cf1e3c358a05c43905a4a0fc7e8b242b43f4e737259",
+    "crates/trames-kernel/src/lib.rs": "51d4e84b5cafe309725bf5e735cc727c795a727e4ccb7d507e72004b32a07bdd",
+    "crates/trames-kernel/src/scheduling.rs": "472cbce3044ec8480f16ec1c2283f939551966c9b9dd12aec16db80215d96e27",
+    "crates/trames-kernel/src/signal/actions.rs": "d06fc758c8956b2fc42f6688e3aaa1b0aace5f1779e4a1ac281ebab6995a3f54",
+    "crates/trames-kernel/src/signal/alt_stack.rs": "7b4502cdb9e1c88eb94d8a580e7e65ed2e72d61213143ec4d07e2654e8bccdc4",
+    "crates/trames-kernel/src/signal/fault.rs": "f9f449a9406c4a634b01858ffb647db4a9414bc8940358a236730edc27e4fd19",
+    "crates/trames-kernel/src/signal/frame.rs": "9935e6de0265ede1115fe87d95cc3f98cf372179d97a4fd1f8345a83ff97d1b7",
+    "crates/trames-kernel/src/signal/info.rs": "072241f36c3bd2a7a08e893bbe125a68a3fa6e0f705880b442398acfd74c9c21",
+    "crates/trames-kernel/src/signal/mod.rs": "2b23397d07e4720789545d754d816ca996e27efcac990bb56dad43e3f7189686",
+    "crates/trames-kernel/src/signal/pending.rs": "5fd21c789084014b3508a2f9e67d2413756fb04bf3d575e3b8255330359328b2",
+    "crates/trames-kernel/tests/task-signals.rs": "6312b9391cefdfdee4244932ff363b51729798a4692bb854187f278b53475c18",
+    "crates/trames-mac/Cargo.toml": "492beeea3bebcb23334ae5327f8c2f02baae90c9525b5100e28393499ac9e933",
+    "crates/trames-mac/src/apple.rs": "d1a125a56acc8215806dd25ef7241c443d2e41c4fb7ce3e1bafa7dedacbb64da",
+    "crates/trames-mac/src/task.rs": "6b7e8dcf6cf256175c67770dbcf5ff2dac0adad4f3601ef1c54db8240441f593",
+    "scripts/build-cpu-fixtures.sh": "0fd53a6a10a6ae78f37de0c732add17aab488131aaa3585c03143ba0aee86dc8",
+    "scripts/check-execution-boundaries.py": "7ee0a6abf611bba167bd70b18e52d561dc63d64e688718add69913b3d2f3acc4",
+    "tests/fixtures/task-signals.c": "935bd9becf05ab7e111c3dda1e823cccfa318760a32ed9adace69c9d185fcbc1",
+    "tests/integration/cpu-signals.py": "b900f5b18c3cabda27e91c22659d746069166ea33e54e7fd33b0143c716047b3",
+    "tests/integration/mac-signals.py": "b5cbe260e18045a3b9204f5e044764180d0832f7bcce9ba69e16f4808cda112c"
+  },
+  "excluded_preexisting_change": {
+    "path": "tests/integration/multiple-terminals.py",
+    "sha256": "396fdbcc5a5410f01c610c2d227c3fb54c3880d2d72acf2ea0db9d60d33dec02",
+    "handling": "Preserved and excluded from this commit. Additional Mac terminal verification ran the local file; Linux ran the existing committed script."
+  },
+  "implementation": {
+    "common_crate": "trames-kernel",
+    "dependency_contract": "Common kernel/Linux exclude interpreter, accelerator and hardware/product transports. Mac uses common kernel/Linux plus HVF; iPad uses common kernel/Linux plus its existing interpreter.",
+    "shared_state": [
+      "Signal dispositions and worker query table",
+      "Task/process pending queues, masks, precise synchronous-fault policy and siginfo/signalfd encoding",
+      "Alternate stacks, frame depth, AArch64 signal entry/return and fork/exec signal-state inheritance",
+      "Existing ready-queue affinity placement"
+    ],
+    "concurrency": "The existing object-local signal table mutex and owner-managed pending queues remain. No new coordinator/service thread, ordinary guest-access checks or hot-path barriers.",
+    "architectural_boundary": "Core materializes deferred flags/registers only at signal entry/return. Decoder caches and normal interpreter state remain intact. Hardware uses the same Aarch64State and signal ABI.",
+    "hardware_fixes": [
+      "Classify alignment and other non-repairable aborts instead of repeatedly treating them as demand mappings.",
+      "Route the sole task gettid consistently with getpid; explicit raw gettid previously returned ENOSYS."
+    ]
+  },
+  "complete_local_linux_ci": {
+    "passed": true,
+    "steps_passed": 80,
+    "steps_failed": 0,
+    "architecture": "Native ARM64 Linux using Lima VZ; no x86 emulation. Pinned QEMU remains an independent instruction/ABI oracle.",
+    "result": {
+      "path": "target/local-ci/io/kernel-task-ci/summary.json",
+      "sha256": "7604c241531a70db66ce1c64768ec0df8343de9b242d3dc3d5baec30a764673d"
+    },
+    "source_snapshot": {
+      "path": "target/local-ci/io/kernel-task-source-state.json",
+      "sha256": "0d7a38910cea5af569c1c42c38217b444fcf3f023f81364763b7f69a1ad90366"
+    },
+    "coverage": [
+      "Workspace tests, strict Clippy, release and execution dependency checks",
+      "CPU differential and original-musl semantic oracles",
+      "Instrumented-std memory/accel/common-kernel ThreadSanitizer",
+      "Network, storage, IPC, processes, shared signals and graphics",
+      "Signed crun/Docker, Node/V8 and fresh persistent developer workflows",
+      "Retained timer waits and worker progress"
+    ],
+    "signal_guest_stage": {
+      "path": "target/local-ci/io/kernel-task-ci/step-32.log",
+      "sha256": "1cf9007f32968be1ddd58d34445cc25fa059494afd46b4e342e4d96ad6f1e145"
+    },
+    "instrumented_std_tsan": {
+      "path": "target/local-ci/io/kernel-task-ci/step-09.log",
+      "sha256": "46d4fa88139552b1c2bd67007ec53aab8b18b1ae974f01da93656d04db8b359a",
+      "common_kernel_unit_passed": 4,
+      "common_kernel_integration_passed": 2,
+      "suppressions_added": false
+    },
+    "post_snapshot_script_only_change": {
+      "scripts/check-execution-boundaries.py": {
+        "snapshot_sha256": "6e5a6583f8adbd1c45f3102762abb26104de964c8c7e53ff20e3d6dfec0ebd0b",
+        "current_sha256": "7ee0a6abf611bba167bd70b18e52d561dc63d64e688718add69913b3d2f3acc4"
+      }
+    },
+    "scoped_policy_followup": {
+      "reason": "Strengthen the dependency check to also reject hardware transport dependencies in common kernel/Linux and require common task integration in both products. Production Rust/C source is unchanged from the completed CI snapshot.",
+      "macos": {
+        "path": "target/stable-release/kernel-task-boundaries-followup.log",
+        "sha256": "b555ceb1ef8ea8ab1162b2cda4e1bb815cfd07bc81d2fd384bd4734ac5ff3259"
+      },
+      "linux": {
+        "path": "target/local-ci/io/kernel-task-boundaries-followup.log",
+        "sha256": "b555ceb1ef8ea8ab1162b2cda4e1bb815cfd07bc81d2fd384bd4734ac5ff3259"
+      }
+    }
+  },
+  "native_macos": {
+    "passed": true,
+    "affected_tests": {
+      "path": "target/stable-release/kernel-task-native-final-tests.log",
+      "sha256": "13bdbb59586965ee3ce150e4f8638a42b26108b40f6170f69ed0e45f05a2002a"
+    },
+    "core_unit_passed": 190,
+    "common_kernel_unit_passed": 4,
+    "common_kernel_integration_passed": 2,
+    "count_explanation": "Four pre-existing signal tests moved from Core to the common crate; two new common integration tests were added. Existing ignored/manual tests remain ignored.",
+    "new_common_acceptance": [
+      "Fork/exec state and pending-queue ownership",
+      "Complete register/task state remains unchanged on failed signal-frame publication or malformed return"
+    ],
+    "workspace_strict_clippy": {
+      "path": "target/stable-release/kernel-task-workspace-clippy.log",
+      "sha256": "1ef5a330d7ccd38f740889d1f678fa86fa3c90e6de2033bc7b7feae7cd65c587"
+    },
+    "initial_sandbox_failure": "Six existing loopback socket tests were denied by the filesystem/network sandbox; the affected native suite passed with loopback access. No product or test semantic workaround was added.",
+    "production_three_terminal": {
+      "path": "target/stable-release/kernel-task-multiple-terminals-native.log",
+      "sha256": "cfdd0dd00ed8841b0f61e1c1e3905b5b0e8dc08c223380d25bf48e0150ecb6ae"
+    }
+  },
+  "native_linux_production_three_terminal": {
+    "path": "target/local-ci/io/kernel-task-multiple-terminals.log",
+    "sha256": "cfdd0dd00ed8841b0f61e1c1e3905b5b0e8dc08c223380d25bf48e0150ecb6ae"
+  },
+  "hardware_signals": {
+    "passed": true,
+    "result": {
+      "path": "target/stable-release/kernel-task-mac-signals-final/results.json",
+      "sha256": "2c217ba9153113754e10aaa892574957e6c29b0ccab7c36a1c70297cf1c3228e"
+    },
+    "report": {
+      "passed": true,
+      "runner_sha256": "65a892ca70d751bb8ba47d002ecccec464d40c40aff2e4c4f3caca635a8c3fd4",
+      "rows": [
+        {
+          "fixture": "cpu-signals",
+          "arguments": [],
+          "fixture_sha256": "fbd88226b9871493cf59cbe65073eb92d5ec7a52b77ff79adef76dada25c31ac",
+          "oracle_stdout_sha256": "cf72bdc614b10580f66e38c2e13f632d56001d830f49722efa48909f504a891a",
+          "returncode": 0,
+          "passed": true
+        },
+        {
+          "fixture": "signal-leaf-stack",
+          "arguments": [],
+          "fixture_sha256": "1e78251bb5581e5c94daa0bde3721cd5c32285190146e58f032b345f11b953cd",
+          "oracle_stdout_sha256": "9bf8b6addab624f569a6416f9b03e1d38e1a8ab413869648030ca7174668ed27",
+          "returncode": 0,
+          "passed": true
+        },
+        {
+          "fixture": "task-signals",
+          "arguments": [],
+          "fixture_sha256": "ba3a39b16c2e7bc0561a3df76b0835a648337975d5771601c6172018b1b62e1b",
+          "oracle_stdout_sha256": "75ecaf2874730551f70cb97b6c0acc7e269dfcf2438c017c0410346e810ab300",
+          "returncode": 0,
+          "passed": true
+        },
+        {
+          "fixture": "task-signals",
+          "arguments": [
+            "autodisarm"
+          ],
+          "fixture_sha256": "ba3a39b16c2e7bc0561a3df76b0835a648337975d5771601c6172018b1b62e1b",
+          "oracle_stdout_sha256": "75ecaf2874730551f70cb97b6c0acc7e269dfcf2438c017c0410346e810ab300",
+          "returncode": 0,
+          "passed": true
+        }
+      ]
+    },
+    "fixtures": [
+      {
+        "source": "tests/fixtures/cpu-signals.c",
+        "source_sha256": "e8ec1dbebfc994b758ec86009f32c4f221205a5f103501b18c08abc91df18803",
+        "binary_sha256": "fbd88226b9871493cf59cbe65073eb92d5ec7a52b77ff79adef76dada25c31ac"
+      },
+      {
+        "source": "tests/fixtures/signal-leaf-stack.c",
+        "source_sha256": "4b0d9693f55d10bf0b57653c386352045d4c2ff58312a768f9cab8ed48f7d008",
+        "binary_sha256": "1e78251bb5581e5c94daa0bde3721cd5c32285190146e58f032b345f11b953cd"
+      },
+      {
+        "source": "tests/fixtures/task-signals.c",
+        "source_sha256": "935bd9becf05ab7e111c3dda1e823cccfa318760a32ed9adace69c9d185fcbc1",
+        "binary_sha256": "ba3a39b16c2e7bc0561a3df76b0835a648337975d5771601c6172018b1b62e1b"
+      }
+    ],
+    "scope": "Identical original static-musl ELFs on native ARM64 Linux, interpreter and actual EL0 Hypervisor execution; QEMU covers supported standard stack modes. Native Linux covers SS_AUTODISARM, which QEMU omits.",
+    "checks": [
+      "BRK/UDF/HLT, unmapped load/fetch, write protection, ordered-access alignment and edited NZCV",
+      "Temporary non-call-aligned SP restores after an aligned handler frame",
+      "Nested alternate stacks and SS_AUTODISARM",
+      "Blocked standard-signal coalescing and SA_RESETHAND",
+      "Handler clobbers SIMD/FP/flags; return restores them and TLS/integer state"
+    ],
+    "earlier_failure": {
+      "result": {
+        "path": "target/stable-release/kernel-task-mac-signals-first/results.json",
+        "sha256": "5f2c523c480436a27dee4ed157b5d2434c9dad4f4b5d028599b768156639c5b4"
+      },
+      "reason": "The leaf-stack fixture explicitly calls gettid; the bring-up task router had omitted it. The final router returns the same sole-task identity as getpid."
+    },
+    "negative_control": {
+      "path": "target/stable-release/kernel-task-negative-simd.json",
+      "sha256": "a30e233012746e9b9f5d176d75d1b1b35071453f3ad9d741278d89ccff1ebb13",
+      "report": {
+        "expected_failure": true,
+        "mutation": "Replace restored SIMD registers with zeros in the shared signal-return implementation, in an isolated source copy.",
+        "returncode": 1,
+        "stderr": "line 65: second == 2 && result[0] == 1 && result[1] == UINT64_C(0x5a5a5a5a5a5a5a5a) errno=1\n",
+        "runner_sha256": "fec9bc55582c8b4ee3d45478e2ec6eeee8975758f351024e48469758cee9e919"
+      },
+      "original_frame_sha256": "9935e6de0265ede1115fe87d95cc3f98cf372179d97a4fd1f8345a83ff97d1b7",
+      "mutated_frame_sha256": "809c417e8719b1df6117012087aed96cf7e0891ef4c6a155bdac6c2e2720286d",
+      "scope": "One isolated shared-kernel mutation loses SIMD restoration; the actual hardware task fixture fails as required. Production sources and primary build output remain intact."
+    }
+  },
+  "hardware_memory_regression": {
+    "passed": true,
+    "result": {
+      "path": "target/stable-release/kernel-task-mac-memory-final/results.json",
+      "sha256": "e9f8122aef3c493f324437805f86cb059d084b2b93f974c9b8e36e607e4a62fa"
+    },
+    "report": {
+      "passed": true,
+      "runner_sha256": "65a892ca70d751bb8ba47d002ecccec464d40c40aff2e4c4f3caca635a8c3fd4",
+      "fixture_sha256": "b7a90c237466f31082aafb38e832042f735d9cd07be5196150f50fd76e8e7551",
+      "samples": [
+        {
+          "phase": "BASELINE",
+          "host_physical_footprint": 3228200
+        },
+        {
+          "phase": "POPULATED",
+          "host_physical_footprint": 80822920
+        },
+        {
+          "phase": "DISCARDED",
+          "host_physical_footprint": 14025280
+        },
+        {
+          "phase": "UNMAPPED",
+          "host_physical_footprint": 14090816
+        },
+        {
+          "phase": "POPULATED",
+          "host_physical_footprint": 82346656
+        },
+        {
+          "phase": "DISCARDED",
+          "host_physical_footprint": 14336576
+        },
+        {
+          "phase": "UNMAPPED",
+          "host_physical_footprint": 14352960
+        },
+        {
+          "phase": "POPULATED",
+          "host_physical_footprint": 82576032
+        },
+        {
+          "phase": "DISCARDED",
+          "host_physical_footprint": 14352960
+        },
+        {
+          "phase": "UNMAPPED",
+          "host_physical_footprint": 14385728
+        }
+      ],
+      "scope": "Actual EL0 hardware guest, unchanged static musl; host kernel physical footprint sampled while the guest waits on stdin. No process restart between allocation cycles."
+    },
+    "scope": "Three 64 MiB populate/discard/unmap cycles in one live VM plus private-file COW/discard integrity. Physical footprint returns to about 13-14 MiB; this does not establish application throughput or live-anonymous paging."
+  },
+  "apple_workflow": {
+    "passed": true,
+    "simulator_passed": 71,
+    "simulator_skipped": 1,
+    "summaries": [
+      {
+        "path": "target/stable-release/kernel-task-apple-workspace-tests.json",
+        "sha256": "3bac32159a572d6237270efc37e9386bcc7106ea977e40fca6ed8e53756fcff7"
+      },
+      {
+        "path": "target/stable-release/kernel-task-apple-smoke-tests.json",
+        "sha256": "ea4cdefe2a55259342a258aa77ee74d1b715c679d8766023add589663586cff6"
+      }
+    ],
+    "skip": "Existing opt-in 256 MiB File Provider disk/memory probe; its environment flag was not enabled.",
+    "ssh_sftp": {
+      "path": "target/stable-release/kernel-task-apple-ssh.log",
+      "sha256": "791852cb6b3a6b450eb9d4e121fcf49a15612d8dd5eb521c55df87ec370ddeb6"
+    },
+    "original_c_wayland_peers": {
+      "path": "target/stable-release/kernel-task-apple-wayland.log",
+      "sha256": "bb5aa61c863038b0777e615869b136c3f7c5b4b5a73e7b6f0ea2bd649931d291",
+      "passed_tests": 5
+    },
+    "builds": "FFI release, simulator and unsigned device builds passed. File Provider app-group metadata was checked for both bundles.",
+    "unsigned_ipa": {
+      "path": "apps/ios/build/sideload/Trames-kernel-task-unsigned.ipa",
+      "sha256": "aa3df951535218cff6407db9498665a8588386309a6b42fd46a45142d381dbf7",
+      "bytes": 13580328
+    },
+    "physical_ipad_release_acceptance": false,
+    "warnings": [
+      "Existing LocalVulkanProbe QoS priority-inversion runtime warning.",
+      "Xcode diagnostic collection reported that a child xcrun could not find simctl; tests and xcresult summaries succeeded."
+    ],
+    "package_resolution": "The eight original tracked package pins were verified and preserved; no package-resolution changes are committed."
+  },
+  "remaining_gates": [
+    "Move the process table, clone/exec image lifecycle and executor scheduling behind the common boundary.",
+    "Integrate multi-task hardware execution, external signal/wait routing and shared mapping/provider export.",
+    "Host-pressure reclamation with preservation/fault restoration of live anonymous data.",
+    "Physical iPad release acceptance and broader application measurements.",
+    "Extract three independently buildable/versioned repositories after shared process/memory integration is proven."
+  ]
+}

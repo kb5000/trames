@@ -21,10 +21,13 @@ def closure(name):
                        if any(k['kind'] is None for k in d['dep_kinds']))
     return {names[i] for i in found}
 
-for name in ['trames-linux', 'trames-memory', 'trames-elf', 'trames-distro', 'trames-hvf', 'trames-mac']:
+for name in ['trames-kernel', 'trames-linux', 'trames-memory', 'trames-elf', 'trames-distro', 'trames-hvf', 'trames-mac']:
     forbidden = closure(name) & {'trames-cpu', 'trames-compute', 'trames-accel', 'trames-core', 'trames-ffi'}
     assert not forbidden, (name, 'depends on the interpreter/product:', sorted(forbidden))
 assert closure('trames-execution') == {'trames-execution'}
-assert {'trames-cpu', 'trames-linux', 'trames-execution'} <= closure('trames-core')
+for name in ['trames-kernel', 'trames-linux', 'trames-memory', 'trames-elf', 'trames-distro']:
+    assert not closure(name) & {'trames-hvf', 'trames-mac'}, (name, 'depends on a hardware/product transport')
+assert {'trames-cpu', 'trames-linux', 'trames-execution', 'trames-kernel'} <= closure('trames-core')
+assert {'trames-hvf', 'trames-linux', 'trames-kernel'} <= closure('trames-mac')
 assert not closure('trames-core') & {'trames-hvf', 'trames-mac'}
-print('Execution boundaries: common Linux and Mac hardware paths are interpreter-free; iPad stays independent of Hypervisor')
+print('Execution boundaries: common kernel/Linux exclude interpreter and hardware transports; Mac excludes the interpreter; iPad excludes Hypervisor')

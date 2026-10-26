@@ -13,27 +13,8 @@ pub(super) struct Timer {
     interval: Duration,
     overrun: i32,
 }
-pub(super) fn write_siginfo(out: &mut [u8], sig: u32, info: Info) {
-    out[..128].fill(0);
-    out[..4].copy_from_slice(&sig.to_le_bytes());
-    out[8..12].copy_from_slice(&info.code.to_le_bytes());
-    if let Some(address) = info.fault {
-        out[16..24].copy_from_slice(&address.to_le_bytes());
-        if sig == 31 && info.code == 1 {
-            out[4..8].copy_from_slice(&info.sender.to_le_bytes());
-            out[24..28].copy_from_slice(&info.status.to_le_bytes());
-            out[28..32].copy_from_slice(&info.uid.to_le_bytes());
-        }
-    } else if let Some((id, overrun, value)) = info.timer {
-        out[16..20].copy_from_slice(&id.to_le_bytes());
-        out[20..24].copy_from_slice(&overrun.to_le_bytes());
-        out[24..32].copy_from_slice(&value.to_le_bytes());
-    } else {
-        out[16..20].copy_from_slice(&info.sender.to_le_bytes());
-        out[20..24].copy_from_slice(&info.uid.to_le_bytes());
-        out[24..28].copy_from_slice(&info.status.to_le_bytes());
-    }
-}
+pub(super) use trames_kernel::signal::write_siginfo;
+
 fn timespec(m: &Memory, address: u64) -> Result<Duration, Errno> {
     let sec = read_u64(m, address)?;
     let ns = read_u64(m, address.checked_add(8).ok_or(Errno(14))?)?;
@@ -112,16 +93,16 @@ impl Kernel {
         if !ready.is_empty() || p.poll_deadline.is_some_and(|d| Instant::now() >= d) {
             trames_linux::epoll_scatter(&mut p.memory, a[1], &ready)?;
             if let Some(mask) = p.poll_mask.take() {
-                p.mask = mask;
+                p.signals.mask = mask;
             }
             p.poll_deadline = None;
             Ok(Some(ready.len() as u64))
         } else {
             if let Some(mask) = mask {
                 if p.poll_mask.is_none() {
-                    p.poll_mask = Some(p.mask);
+                    p.poll_mask = Some(p.signals.mask);
                 }
-                p.mask = mask;
+                p.signals.mask = mask;
             }
             Ok(None)
         }
@@ -258,9 +239,9 @@ impl Kernel {
                         Some((id, timer.overrun, timer.value))
                     },
                 };
-                let mut shared = p.shared_pending.borrow_mut();
+                let mut shared = p.signals.shared_pending.borrow_mut();
                 let pending = if timer.thread {
-                    &mut p.pending
+                    &mut p.signals.pending
                 } else {
                     &mut shared
                 };

@@ -18,67 +18,19 @@ use trames_vfs::{Errno, FdKind, AT_FDCWD, MAX_FDS, O_NONBLOCK};
 const MAX_PROCESSES: usize = trames_vfs::MAX_TASKS;
 #[cfg(test)]
 const TOTAL_MAPPED_LIMIT: usize = 1024 * 1024 * 1024;
-pub(crate) const UNBLOCKABLE: u64 = (1 << 8) | (1 << 18);
-/// Preserve round-robin queue priority while relocating an earlier flexible
-/// task when a later pinned task needs its slot. Mask width is at most 32 CPUs.
-fn assign_cpus(ready: impl IntoIterator<Item = (u32, u64)>, count: usize) -> Vec<(u32, usize)> {
-    fn place(pid: u32, mask: u64, slots: &mut [Option<(u32, u64)>], visited: &mut u64) -> bool {
-        let eligible = mask & !*visited;
-        // Equal/full masks take the same lowest-free-slot fast path as before.
-        if let Some(slot) = slots
-            .iter()
-            .enumerate()
-            .find_map(|(i, p)| (eligible & (1 << i) != 0 && p.is_none()).then_some(i))
-        {
-            slots[slot] = Some((pid, mask));
-            return true;
-        }
-        for slot in 0..slots.len() {
-            if eligible & (1 << slot) == 0 {
-                continue;
-            }
-            *visited |= 1 << slot;
-            let (previous, previous_mask) = slots[slot].expect("occupied eligible slot");
-            if place(previous, previous_mask, slots, visited) {
-                slots[slot] = Some((pid, mask));
-                return true;
-            }
-        }
-        false
-    }
-    let mut slots = vec![None; count];
-    let mut selected = Vec::new();
-    for (pid, mask) in ready {
-        if place(pid, mask, &mut slots, &mut 0) {
-            selected.push(pid);
-            if selected.len() == count {
-                break;
-            }
-        }
-    }
-    selected
-        .into_iter()
-        .map(|pid| {
-            let slot = slots
-                .iter()
-                .position(|p| p.is_some_and(|p| p.0 == pid))
-                .expect("assigned task");
-            (pid, slot)
-        })
-        .collect()
-}
+use trames_kernel::scheduling::assign_cpus;
+pub(crate) use trames_kernel::signal::UNBLOCKABLE;
 #[path = "process_caps.rs"]
 mod caps;
 #[path = "process_compat.rs"]
 mod compat;
 #[path = "process_events.rs"]
 mod events;
-#[path = "process_signals.rs"]
-mod signals;
-use signals::Pending;
 #[path = "process_pid.rs"]
 mod pid_namespace;
-use compat::AltStack;
+#[path = "process_signals.rs"]
+mod signals;
+use trames_kernel::signal::AltStack;
 #[path = "process_scheduling.rs"]
 mod scheduling;
 #[path = "process_seccomp.rs"]
@@ -87,18 +39,11 @@ pub(crate) mod seccomp;
 mod service;
 #[path = "process_vm.rs"]
 mod vm;
-use crate::signal_actions::{Action, Actions};
+#[cfg(test)]
+use crate::signal_actions::Action;
 use service::DiskEpoch;
 
-#[derive(Clone, Copy)]
-struct Info {
-    sender: u32,
-    uid: u32,
-    status: i32,
-    code: i32,
-    timer: Option<(i32, i32, u64)>,
-    fault: Option<u64>,
-}
+use trames_kernel::signal::{Info, Signals};
 #[derive(Clone)]
 enum State {
     Ready,
@@ -141,11 +86,7 @@ struct Process {
     group: u32,
     session: u32,
     state: State,
-    actions: Actions,
-    mask: u64,
-    pending: Pending,
-    shared_pending: Rc<RefCell<Pending>>,
-    frames: u32,
+    signals: Signals,
     wait_event: Option<i32>,
     poll_deadline: Option<Instant>,
     socket_deadline: Option<Instant>,
@@ -165,7 +106,6 @@ struct Process {
     vm_id: u64,
     rekey: Option<u32>,
     subreaper: bool,
-    alt_stack: AltStack,
     membarrier_registered: Rc<Cell<bool>>,
     file_size_limit: Rc<Cell<(u64, u64)>>,
     oom: Arc<trames_vfs::OomTask>,
@@ -360,15 +300,7 @@ impl Process {
             group: self.group,
             session: self.session,
             state: State::Ready,
-            actions: if shared_actions {
-                self.actions.shared()
-            } else {
-                self.actions.clone()
-            },
-            mask: self.mask,
-            pending: Pending::default(),
-            shared_pending: Rc::new(RefCell::new(Pending::default())),
-            frames: self.frames,
+            signals: self.signals.fork(shared_actions),
             wait_event: None,
             poll_deadline: None,
             socket_deadline: None,
@@ -388,7 +320,6 @@ impl Process {
             vm_id: self.vm_id,
             rekey: None,
             subreaper: false,
-            alt_stack: self.alt_stack,
             membarrier_registered: Rc::new(Cell::new(self.membarrier_registered.get())),
             file_size_limit: Rc::new(Cell::new(self.file_size_limit.get())),
             oom: Arc::new(self.oom.fork()),
@@ -763,7 +694,7 @@ impl Kernel {
                     .unwrap_or_else(|_| p.linux.arguments.get(i).cloned().unwrap_or_default())
             })
             .collect();
-        let (ignored, caught) = p.actions.masks();
+        let (ignored, caught) = p.signals.actions.masks();
         trames_vfs::ProcessInfo {
             pid,
             tgid: p.tgid,
@@ -812,9 +743,9 @@ impl Kernel {
             auxiliary: p.linux.auxiliary.clone(),
             file_size_limits: Some(p.file_size_limit.get()),
             oom: Arc::downgrade(&p.oom),
-            pending: p.pending.bits(),
-            shared_pending: p.shared_pending.borrow().bits(),
-            blocked: p.mask,
+            pending: p.signals.pending.bits(),
+            shared_pending: p.signals.shared_pending.borrow().bits(),
+            blocked: p.signals.mask,
             ignored,
             caught,
         }
@@ -863,11 +794,11 @@ impl Kernel {
     }
     fn notify(&mut self, parent: u32, child: u32, uid: u32, status: i32, code: i32) {
         if let Some(p) = self.processes.get_mut(&parent) {
-            let action = p.actions.get(17);
+            let action = p.signals.actions.get(17);
             if action.handler == 1 || (matches!(code, 5 | 6) && action.flags & 1 != 0) {
                 return;
             }
-            let _ = p.shared_pending.borrow_mut().enqueue(
+            let _ = p.signals.shared_pending.borrow_mut().enqueue(
                 17,
                 Info {
                     sender: child,
@@ -939,7 +870,7 @@ impl Kernel {
             return;
         }
         p.auto_reap = self.processes.get(&p.parent).is_some_and(|parent| {
-            let action = parent.actions.get(17);
+            let action = parent.signals.actions.get(17);
             action.handler == 1 || action.flags & 2 != 0
         });
         if pid != 1 {
@@ -947,7 +878,7 @@ impl Kernel {
         }
         p.state = State::Zombie(status);
         self.close_exit_files(p);
-        p.pending.clear();
+        p.signals.pending.clear();
         p.wait_event = None;
         if !self
             .processes
@@ -998,7 +929,7 @@ impl Kernel {
                     if status & 127 == 0 { 1 } else { 2 },
                 );
                 let auto = self.processes.get(&parent).is_some_and(|p| {
-                    let action = p.actions.get(17);
+                    let action = p.signals.actions.get(17);
                     action.handler == 1 || action.flags & 2 != 0
                 });
                 if auto && tgid != 1 {
@@ -1042,43 +973,27 @@ impl Kernel {
         if sig == 0 || matches!(p.state, State::Zombie(_)) {
             return false;
         }
-        if sig == 18 {
-            for s in 19..=22 {
-                p.pending.discard(s);
-                p.shared_pending.borrow_mut().discard(s);
-            }
-            if matches!(p.state, State::Stopped) {
-                p.state = p.stopped_state.take().map_or(State::Ready, |s| *s);
-                p.wait_event = Some(0xffff);
-            }
-        }
-        if matches!(sig, 19..=22) {
-            p.pending.discard(18);
-            p.shared_pending.borrow_mut().discard(18);
+        p.signals.clear_opposing(sig);
+        if sig == 18 && matches!(p.state, State::Stopped) {
+            p.state = p.stopped_state.take().map_or(State::Ready, |s| *s);
+            p.wait_event = Some(0xffff);
         }
         // Unblocked default dispositions are ignored by namespace init. Blocked
         // signals remain available to signalfd/sigwait. Ancestor KILL/STOP and
         // synchronous faults retain their forced-delivery behavior.
         if p.linux.vfs.pid_namespace().is_nested()
             && p.linux.vfs.visible_pid(p.tgid) == 1
-            && p.actions.get(sig as usize).handler <= 1
-            && p.mask & (1 << (sig - 1)) == 0
+            && p.signals.actions.get(sig as usize).handler <= 1
+            && p.signals.mask & (1 << (sig - 1)) == 0
             && !(matches!(sig, 9 | 19) && p.linux.vfs.visible_pid(sender) == 0)
         {
             return false;
         }
-        if sig != 9
-            && sig != 19
-            && p.actions.get(sig as usize).handler == 1
-            && p.mask & (1 << (sig - 1)) == 0
-        {
-            return false;
-        }
-        true
+        p.signals.should_queue(sig)
     }
     fn queue_one(_pid: u32, p: &mut Process, sig: u32, sender: u32) {
         if Self::prepare_signal(p, sig, sender) {
-            let _ = p.pending.enqueue(
+            let _ = p.signals.pending.enqueue(
                 sig,
                 Info {
                     sender,
@@ -1158,7 +1073,7 @@ impl Kernel {
             self.processes.get_mut(&tid).ok_or(Errno(3))?
         };
         if Self::prepare_signal(target, sig, sender) {
-            target.pending.enqueue(
+            target.signals.pending.enqueue(
                 sig,
                 Info {
                     sender,
@@ -1229,7 +1144,7 @@ impl Kernel {
                 && Self::prepare_signal(other, sig, sender)
                 && !queued.contains(&other.tgid)
             {
-                other.shared_pending.borrow_mut().enqueue(
+                other.signals.shared_pending.borrow_mut().enqueue(
                     sig,
                     Info {
                         sender,
@@ -1260,82 +1175,38 @@ impl Kernel {
             ),
         );
         use trames_cpu::CpuFault as F;
-        use trames_memory::MemoryError as M;
-        let (sig, code, address) = match fault {
+        use trames_kernel::signal::Fault;
+        let fault_info = match fault {
             F::Trap {
                 pc, signal, code, ..
-            } => (*signal, *code, *pc),
-            F::Instruction { pc, .. } => (4, 1, *pc),
-            // An overcommitted anonymous page can exhaust the guest quota on
-            // first store. Kill this guest thread group, not a catchable SEGV.
-            F::Memory {
-                error: M::Limit,
-                pc,
-            } => (9, 0, *pc),
-            F::Memory {
-                error: M::Bus(address),
-                ..
-            } => (7, 2, *address),
-            F::Memory {
-                error: M::BackingIo(_),
-                pc,
-            } => (7, 3, *pc),
-            F::Memory {
-                error: M::Alignment(address),
-                ..
-            } => (7, 1, *address),
-            F::Memory {
-                error: M::Permission { address, .. },
-                ..
-            } => (11, 2, *address),
-            F::Memory {
-                error: M::Unmapped(address) | M::AddressRange(address),
-                ..
-            } => (11, 1, *address),
-            F::Memory { pc, .. } => (11, 1, *pc),
+            } => Fault {
+                signal: *signal,
+                code: *code,
+                address: *pc,
+            },
+            F::Instruction { pc, .. } => Fault {
+                signal: 4,
+                code: 1,
+                address: *pc,
+            },
+            F::Memory { pc, error } => Fault::memory(*pc, error),
         };
-        // Forced synchronous faults cannot be ignored or left masked forever.
-        if p.actions.get(sig as usize).handler <= 1 || p.mask & (1 << (sig - 1)) != 0 {
+        if !p.signals.force_fault(fault_info) {
             if pid == 1 {
                 eprintln!("trames: {fault}");
             }
-            self.exit(pid, p, sig as i32);
+            self.exit(pid, p, fault_info.signal as i32);
             return;
         }
-        // A CPU fault must retain its precise address/context even if an
-        // asynchronous signal of the same number was already pending.
-        p.pending.discard(sig);
-        let _ = p.pending.enqueue(
-            sig,
-            Info {
-                sender: 0,
-                uid: 0,
-                status: 0,
-                code,
-                timer: None,
-                fault: Some(address & 0x00ffffffffffffff),
-            },
-        );
         if self.deliver(pid, p).is_err() {
             self.exit(pid, p, 11);
         }
     }
     fn deliver(&mut self, pid: u32, p: &mut Process) -> Result<bool, Errno> {
         let stopped = matches!(p.state, State::Stopped);
-        let selected = if p.pending_bits() & (1 << 8) != 0 {
-            p.next_signal(1 << 8)
-        } else if let Some((&sig, _)) = p.pending.iter().find(|(_, info)| info.fault.is_some()) {
-            Some((sig, false))
-        } else {
-            let mut allowed = !p.mask | UNBLOCKABLE;
-            if stopped {
-                allowed &= 1 << 17;
-            }
-            if matches!(p.state, State::Gpu { .. }) {
-                allowed &= !p.actions.masks().1;
-            }
-            p.next_signal(allowed)
-        };
+        let selected = p
+            .signals
+            .select(stopped, matches!(p.state, State::Gpu { .. }));
         let Some((sig, shared)) = selected else {
             return Ok(false);
         };
@@ -1343,7 +1214,7 @@ impl Kernel {
             return Ok(false);
         }
         let info = p.take_signal(sig, shared);
-        let action = p.actions.get(sig as usize);
+        let action = p.signals.actions.get(sig as usize);
         // Timer-generated signals also reach this queue without queue_one.
         // Namespace init ignores default dispositions, except forced ancestor
         // KILL/STOP and synchronous faults, which must still make progress.
@@ -1355,11 +1226,12 @@ impl Kernel {
         {
             return Ok(true);
         }
-        if sig == 9 || (action.handler == 0 && !matches!(sig, 17 | 18 | 23 | 28 | 19..=22)) {
+        let disposition = trames_kernel::signal::disposition(sig, action);
+        if disposition == trames_kernel::signal::Disposition::Terminate {
             self.exit(pid, p, sig as i32);
             return Ok(true);
         }
-        if sig == 19 || (action.handler == 0 && matches!(sig, 20..=22)) {
+        if disposition == trames_kernel::signal::Disposition::Stop {
             if !matches!(p.state, State::Stopped) {
                 p.stopped_state = Some(Box::new(p.state.clone()));
             }
@@ -1374,10 +1246,10 @@ impl Kernel {
             self.notify(p.parent, p.tgid, p.linux.vfs.credentials.uid, sig as i32, 5);
             return Ok(true);
         }
-        if action.handler <= 1 {
+        if disposition == trames_kernel::signal::Disposition::Ignore {
             return Ok(true);
         }
-        if p.frames >= 8 {
+        if p.signals.frames >= 8 {
             self.exit(pid, p, 11);
             return Ok(true);
         }
@@ -1387,7 +1259,7 @@ impl Kernel {
                     p.linux.vfs.cancel_fifo_open(fd);
                 }
                 if let Some(mask) = p.poll_mask.take() {
-                    p.mask = mask;
+                    p.signals.mask = mask;
                 }
                 p.poll_deadline = None;
                 p.uring_wait = None;
@@ -1434,7 +1306,7 @@ impl Kernel {
                 p.cpu.set_x(0, error(Errno(4)));
             }
             State::Suspend(old) => {
-                p.mask = old;
+                p.signals.mask = old;
                 p.cpu.set_x(0, error(Errno(4)));
             }
             State::Futex { .. } | State::Sigwait { .. } => {
@@ -1442,112 +1314,17 @@ impl Kernel {
             }
             _ => {}
         }
-        let old_alt = p.alt_stack;
-        let use_alt =
-            action.flags & 0x08000000 != 0 && old_alt.flags & 2 == 0 && !old_alt.on_stack(p.cpu.sp);
-        let top = if use_alt {
-            old_alt.sp.checked_add(old_alt.size).ok_or(Errno(14))?
-        } else {
-            p.cpu.sp
-        };
-        let sp = top.checked_sub(4688).ok_or(Errno(14))? & !15;
-        if (use_alt || old_alt.contains(p.cpu.sp)) && sp < old_alt.sp {
-            return Err(Errno(14));
-        }
-        Linux::check(&p.memory, sp, 4688, Access::Write)?;
-        let mut frame = vec![0; 4688];
-        frame[0..4].copy_from_slice(&sig.to_le_bytes());
-        frame[8..12].copy_from_slice(&info.code.to_le_bytes());
-        events::write_siginfo(&mut frame[..128], sig, info);
-        frame[144..152].copy_from_slice(&old_alt.sp.to_le_bytes());
-        frame[152..156].copy_from_slice(&old_alt.reported_flags(p.cpu.sp).to_le_bytes());
-        frame[160..168].copy_from_slice(&old_alt.size.to_le_bytes());
-        frame[168..176].copy_from_slice(&p.mask.to_le_bytes());
-        frame[304..312].copy_from_slice(&info.fault.unwrap_or(0).to_le_bytes());
-        for r in 0..31 {
-            frame[312 + r * 8..320 + r * 8].copy_from_slice(&p.cpu.x(r).to_le_bytes());
-        }
-        frame[560..568].copy_from_slice(&p.cpu.sp.to_le_bytes());
-        frame[568..576].copy_from_slice(&p.cpu.pc.to_le_bytes());
-        frame[576..584].copy_from_slice(&((p.cpu.nzcv() as u64) << 28).to_le_bytes());
-        frame[592..596].copy_from_slice(&0x46508001u32.to_le_bytes());
-        frame[596..600].copy_from_slice(&528u32.to_le_bytes());
-        frame[600..604].copy_from_slice(&p.cpu.fpsr.to_le_bytes());
-        frame[604..608].copy_from_slice(&p.cpu.fpcr.to_le_bytes());
-        for r in 0..32 {
-            frame[608 + r * 16..624 + r * 16].copy_from_slice(&p.cpu.vector(r).to_le_bytes());
-        }
-        p.memory.write(sp, &frame).map_err(|_| Errno(14))?;
-        if old_alt.flags & 0x80000000 != 0 {
-            p.alt_stack = AltStack::default();
-        }
-        p.mask |= action.mask;
-        if action.flags & 0x40000000 == 0 {
-            p.mask |= 1u64 << (sig - 1);
-        }
-        p.mask &= !UNBLOCKABLE;
-        if action.flags & 0x80000000 != 0 {
-            p.actions.set(sig as usize, Action::default());
-        }
-        p.cpu.set_x(0, sig as u64);
-        p.cpu.set_x(1, sp);
-        p.cpu.set_x(2, sp + 128);
-        p.cpu.set_x(
-            30,
-            if action.flags & 0x04000000 == 0 {
-                0x7fff_ffd0_0000
-            } else {
-                action.restorer
-            },
-        );
-        p.cpu.sp = sp;
-        p.cpu.pc = action.handler;
-        p.frames += 1;
+        let mut state = p.cpu.architectural_state();
+        p.signals
+            .enter(&mut state, &mut p.memory, sig, info, action)?;
+        p.cpu.restore_architectural_state(&state);
         p.state = State::Ready;
         Ok(true)
     }
     fn sigreturn(p: &mut Process) -> Result<(), Errno> {
-        if p.frames == 0 {
-            return Err(Errno(14));
-        }
-        let sp = p.cpu.sp;
-        Linux::check(&p.memory, sp, 4688, Access::Read)?;
-        let mut frame = vec![0; 4688];
-        p.memory.read(sp, &mut frame).map_err(|_| Errno(14))?;
-        let u64_at = |i| u64::from_le_bytes(frame[i..i + 8].try_into().expect("frame"));
-        let new_sp = u64_at(560);
-        let new_pc = u64_at(568);
-        // An asynchronous signal may interrupt leaf assembly with a temporary
-        // non-AAPCS SP (Pixman saves a single 8-byte register). Linux does not
-        // impose call-boundary stack alignment when restoring interrupted SP.
-        if new_sp >= (1 << 48) || new_pc & 3 != 0 || new_pc >= (1 << 48) {
-            return Err(Errno(14));
-        }
-        if read_u32(&p.memory, sp + 592)? != 0x46508001 || read_u32(&p.memory, sp + 596)? != 528 {
-            return Err(Errno(14));
-        }
-        let restored_alt = AltStack::restore(&p.memory, sp + 144)?;
-        for r in 0..31 {
-            p.cpu.set_x(r, u64_at(312 + r * 8));
-        }
-        p.cpu.sp = new_sp;
-        p.cpu.pc = new_pc;
-        p.cpu.set_nzcv((u64_at(576) >> 28) as u32);
-        p.cpu.fpsr = read_u32(&p.memory, sp + 600)? & 0x0800009f;
-        p.cpu.fpcr = read_u32(&p.memory, sp + 604)? & 0x03c00000;
-        for r in 0..32 {
-            p.cpu.set_vector(
-                r,
-                u128::from_le_bytes(
-                    frame[608 + r * 16..624 + r * 16]
-                        .try_into()
-                        .expect("vector"),
-                ),
-            );
-        }
-        p.mask = u64_at(168) & !UNBLOCKABLE;
-        p.alt_stack = restored_alt;
-        p.frames -= 1;
+        let mut state = p.cpu.architectural_state();
+        p.signals.restore(&mut state, &p.memory)?;
+        p.cpu.restore_architectural_state(&state);
         p.state = State::Ready;
         Ok(())
     }
@@ -1707,9 +1484,7 @@ impl Kernel {
             p.linux = runtime.linux;
             p.cpu = runtime.cpu;
             p.memory = runtime.memory;
-            p.actions = p.actions.exec();
-            p.frames = 0;
-            p.alt_stack = AltStack::default();
+            p.signals.exec();
             p.membarrier_registered = Rc::new(Cell::new(false));
             p.state = State::Ready;
             return Ok(());
@@ -2176,7 +1951,7 @@ impl Kernel {
                 if shared_vm {
                     child.membarrier_registered = p.membarrier_registered.clone();
                     if a[0] & 0x4000 == 0 {
-                        child.alt_stack = AltStack::default();
+                        child.signals.alt_stack = AltStack::default();
                     }
                 } else {
                     child.vm_id = resource;
@@ -2185,7 +1960,7 @@ impl Kernel {
                 child.tgid = if threaded { p.tgid } else { id };
                 if threaded {
                     child.oom = Arc::new(p.oom.thread());
-                    child.shared_pending = p.shared_pending.clone();
+                    child.signals.shared_pending = p.signals.shared_pending.clone();
                     child.subreaper = p.subreaper;
                     child.file_size_limit = p.file_size_limit.clone();
                 }
@@ -2321,50 +2096,21 @@ impl Kernel {
             85..=87 => self.timerfd(p, number, a),
             134 => {
                 let sig = a[0] as u32;
-                if let Some(action) = p.actions.call(a, &mut p.memory)? {
-                    if action.handler == 1 || action.handler == 0 && matches!(sig, 17 | 23 | 28) {
-                        p.pending.discard(sig);
-                        p.shared_pending.borrow_mut().discard(sig);
+                if let Some(action) = p.signals.action_call(a, &mut p.memory)? {
+                    if trames_kernel::signal::ignored(sig, action) {
                         for other in self.processes.values_mut().filter(|o| o.tgid == p.tgid) {
-                            other.pending.discard(sig);
+                            other.signals.pending.discard(sig);
                         }
                     }
                 }
                 Ok(Some(0))
             }
-            135 => {
-                if a[3] != 8 {
-                    return Err(Errno(22));
-                }
-                if a[2] != 0 {
-                    Linux::check(&p.memory, a[2], 8, Access::Write)?;
-                }
-                let new = if a[1] != 0 {
-                    let bits = read_u64(&p.memory, a[1])?;
-                    Some(
-                        match a[0] {
-                            0 => p.mask | bits,
-                            1 => p.mask & !bits,
-                            2 => bits,
-                            _ => return Err(Errno(22)),
-                        } & !UNBLOCKABLE,
-                    )
-                } else {
-                    None
-                };
-                if a[2] != 0 {
-                    write_u64(&mut p.memory, a[2], p.mask)?;
-                }
-                if let Some(mask) = new {
-                    p.mask = mask;
-                }
-                Ok(Some(0))
-            }
+            135 => p.signals.mask_call(a, &mut p.memory).map(Some),
             136 => {
                 if a[1] != 8 {
                     return Err(Errno(22));
                 }
-                let bits = p.pending_bits() & p.mask;
+                let bits = p.pending_bits() & p.signals.mask;
                 write_u64(&mut p.memory, a[0], bits)?;
                 Ok(Some(0))
             }
@@ -2373,8 +2119,8 @@ impl Kernel {
                     return Err(Errno(22));
                 }
                 let mask = read_u64(&p.memory, a[0])? & !UNBLOCKABLE;
-                let old = p.mask;
-                p.mask = mask;
+                let old = p.signals.mask;
+                p.signals.mask = mask;
                 p.state = State::Suspend(old);
                 Ok(None)
             }
@@ -2781,7 +2527,7 @@ impl Kernel {
                     p.retained_poll = None;
                     p.retained_select = None;
                     if let Some(mask) = p.poll_mask.take() {
-                        p.mask = mask;
+                        p.signals.mask = mask;
                     }
                 }
                 if matches!(e.0, 38 | 95) {
@@ -2946,7 +2692,7 @@ impl Kernel {
                 p.memory.write(ptr, &bytes).map_err(|_| Errno(14))?;
             }
             if let Some(old) = p.poll_mask.take() {
-                p.mask = old;
+                p.signals.mask = old;
             }
             p.poll_deadline = None;
             p.retained_poll = None;
@@ -2955,9 +2701,9 @@ impl Kernel {
         } else {
             if let Some(mask) = mask {
                 if p.poll_mask.is_none() {
-                    p.poll_mask = Some(p.mask);
+                    p.poll_mask = Some(p.signals.mask);
                 }
-                p.mask = mask & !UNBLOCKABLE;
+                p.signals.mask = mask & !UNBLOCKABLE;
             }
             Ok(None)
         }
@@ -3080,7 +2826,7 @@ impl Kernel {
                 && p.session == tty.session
                 && p.group != tty.foreground
             {
-                if p.mask & (1 << 20) != 0 || p.actions.get(21).handler == 1 {
+                if p.signals.mask & (1 << 20) != 0 || p.signals.actions.get(21).handler == 1 {
                     return Err(Errno(5));
                 }
                 let group = p.group;
@@ -3156,8 +2902,8 @@ impl Kernel {
                 && p.session == tty.session
                 && tty.lflag() & 256 != 0
                 && p.group != tty.foreground
-                && p.mask & (1 << 21) == 0
-                && p.actions.get(22).handler != 1
+                && p.signals.mask & (1 << 21) == 0
+                && p.signals.actions.get(22).handler != 1
             {
                 let group = p.group;
                 let session = tty.session;
@@ -3185,8 +2931,8 @@ impl Kernel {
                 && p.session == tty.session
                 && p.group != tty.foreground
                 && matches!(request, 0x5402..=0x5404 | 0x5410)
-                && p.mask & (1 << 21) == 0
-                && p.actions.get(22).handler != 1
+                && p.signals.mask & (1 << 21) == 0
+                && p.signals.actions.get(22).handler != 1
             {
                 let group = p.group;
                 let session = tty.session;
@@ -3539,7 +3285,7 @@ impl Kernel {
                 immediate_return = matches!(number, 113 | 114 | 168 | 172..=178)
                     && matches!(p.state, State::Ready)
                     && p.cpu.pc == return_pc
-                    && p.pending_bits() & (!p.mask | UNBLOCKABLE) == 0;
+                    && p.pending_bits() & (!p.signals.mask | UNBLOCKABLE) == 0;
             }
         }
         immediate_return
@@ -3872,7 +3618,7 @@ impl Kernel {
                     files: p.linux.vfs.file_descriptors(),
                     fd_flags: p.linux.vfs.fd_flags_snapshot(),
                     umask: p.linux.vfs.umask_capability(),
-                    actions: p.actions.shared(),
+                    actions: p.signals.actions.shared(),
                     program_break: p.linux.program_break(),
                     uts: Some(p.linux.vfs.uts_capability()),
                     direct: trames_linux::DirectSyscalls::new(p.linux.vfs.direct_descriptors())
@@ -3891,7 +3637,8 @@ impl Kernel {
                             session: p.session,
                             group: p.group,
                             controlling: p.linux.vfs.controlling_terminal,
-                            ignore_ttou: p.mask & (1 << 21) != 0 || p.actions.get(22).handler == 1,
+                            ignore_ttou: p.signals.mask & (1 << 21) != 0
+                                || p.signals.actions.get(22).handler == 1,
                         })
                         .with_files(direct_files)
                         .with_lock_context(p.linux.vfs.record_lock_context(p.tgid)),
@@ -4664,11 +4411,7 @@ pub(super) fn run(
         group: 1,
         session: 1,
         state: State::Ready,
-        actions: Actions::default(),
-        mask: 0,
-        pending: Pending::default(),
-        shared_pending: Rc::new(RefCell::new(Pending::default())),
-        frames: 0,
+        signals: Signals::default(),
         wait_event: None,
         poll_deadline: None,
         socket_deadline: None,
@@ -4688,7 +4431,6 @@ pub(super) fn run(
         vm_id: 1,
         rekey: None,
         subreaper: false,
-        alt_stack: AltStack::default(),
         membarrier_registered: Rc::new(Cell::new(false)),
         file_size_limit: Rc::new(Cell::new((u64::MAX, u64::MAX))),
         oom: Arc::new(trames_vfs::OomTask::default()),
@@ -4927,11 +4669,11 @@ mod tests {
             write_u64(&mut p.memory, 0x2000 + offset, value).unwrap();
         }
         k.call(1, &mut p, 134, [10, 0x2000, 0, 8, 0, 0], &mut io);
-        assert_eq!(k.processes[&2].actions.get(10).handler, 0x4000);
+        assert_eq!(k.processes[&2].signals.actions.get(10).handler, 0x4000);
         Kernel::queue_one(1, &mut p, 10, 0);
         assert_eq!(k.deliver(1, &mut p), Ok(true));
         assert_eq!(p.cpu.pc, 0x4000);
-        assert_eq!(k.processes[&2].actions.get(10).handler, 0);
+        assert_eq!(k.processes[&2].signals.actions.get(10).handler, 0);
     }
 
     #[test]
@@ -5243,7 +4985,7 @@ mod tests {
         assert!(p.retained_poll.is_some());
         Kernel::queue_one(1, &mut p, 18, 1);
         assert!(matches!(p.state, State::Blocked(73, _)));
-        p.actions.set_handler(10, 0x5000);
+        p.signals.actions.set_handler(10, 0x5000);
         Kernel::queue_one(1, &mut p, 10, 1);
         k.deliver(1, &mut p).unwrap();
         assert!(p.retained_poll.is_none());
@@ -5343,7 +5085,7 @@ mod tests {
         producer.tgid = 2;
         producer.vm_id = 2;
         producer.parent = 1;
-        producer.actions.set_handler(13, 1);
+        producer.signals.actions.set_handler(13, 1);
         producer.memory.write(0x1100, b"o").unwrap();
         // write(old_writer); read(ack_reader); write(old_writer).
         let code: Vec<_> = [
@@ -5453,7 +5195,7 @@ mod tests {
         assert!(p.byte_wait.is_some());
         Kernel::queue_one(1, &mut p, 18, 1);
         assert!(matches!(p.state, State::Blocked(63, _)));
-        p.actions.set_handler(10, 0x5000);
+        p.signals.actions.set_handler(10, 0x5000);
         Kernel::queue_one(1, &mut p, 10, 1);
         k.deliver(1, &mut p).unwrap();
         assert!(p.byte_wait.is_none());
@@ -5771,7 +5513,7 @@ mod tests {
             assert!(matches!(p.state, State::Stopped) && p.flock_wait.is_some());
             p.state = *p.stopped_state.take().unwrap();
             let original_pc = p.cpu.pc;
-            p.actions.set(
+            p.signals.actions.set(
                 10,
                 Action {
                     handler: 0x5000,
@@ -5858,11 +5600,7 @@ mod tests {
             group: 1,
             session: 1,
             state: State::Ready,
-            actions: Actions::default(),
-            mask: 0,
-            pending: Pending::default(),
-            shared_pending: Rc::new(RefCell::new(Pending::default())),
-            frames: 0,
+            signals: Signals::default(),
             wait_event: None,
             poll_deadline: None,
             socket_deadline: None,
@@ -5882,7 +5620,6 @@ mod tests {
             vm_id: 1,
             rekey: None,
             subreaper: false,
-            alt_stack: AltStack::default(),
             membarrier_registered: Rc::new(Cell::new(false)),
             file_size_limit: Rc::new(Cell::new((u64::MAX, u64::MAX))),
             oom: Arc::new(trames_vfs::OomTask::default()),
@@ -6003,9 +5740,9 @@ mod tests {
         k.processes.insert(3, root_command);
         k.processes.insert(4, another_session);
         k.terminal_signal(1, &mut sender, 9, 3, 2);
-        assert!(k.processes[&3].pending.contains_key(&2));
-        assert!(!k.processes[&4].pending.contains_key(&2));
-        assert!(!sender.pending.contains_key(&2));
+        assert!(k.processes[&3].signals.pending.contains_key(&2));
+        assert!(!k.processes[&4].signals.pending.contains_key(&2));
+        assert!(!sender.signals.pending.contains_key(&2));
     }
     #[test]
     fn host_pty_keyboard_and_resize_signals_are_scoped_to_the_foreground_session() {
@@ -6033,11 +5770,11 @@ mod tests {
         k.processes.insert(4, other);
         k.processes.insert(5, background);
         k.pump_guest_ptys();
-        assert!(k.processes[&3].pending.contains_key(&2));
-        assert!(k.processes[&3].pending.contains_key(&28));
+        assert!(k.processes[&3].signals.pending.contains_key(&2));
+        assert!(k.processes[&3].signals.pending.contains_key(&28));
         for id in [1, 4, 5] {
-            assert!(!k.processes[&id].pending.contains_key(&2));
-            assert!(!k.processes[&id].pending.contains_key(&28));
+            assert!(!k.processes[&id].signals.pending.contains_key(&2));
+            assert!(!k.processes[&id].signals.pending.contains_key(&28));
         }
         assert_eq!(pair.host_signals.get(), 0);
         assert!(!pair.host_resize_pending.get());
@@ -6484,7 +6221,7 @@ mod tests {
             k.event_call(1, &mut p, 98, [0x1000, 128, 0, 0, 0, 0]),
             Ok(None)
         );
-        p.actions.set_handler(10, 0x5000);
+        p.signals.actions.set_handler(10, 0x5000);
         Kernel::queue_one(1, &mut p, 10, 1);
         assert!(k.deliver(1, &mut p).unwrap());
         assert_eq!(k.futexes.wake((0, 1, 0x1000), 1, u32::MAX), 0);
@@ -6685,10 +6422,10 @@ mod tests {
             instructions: 0,
             began: Instant::now(),
         };
-        p.actions.set_handler(10, 0x5000);
+        p.signals.actions.set_handler(10, 0x5000);
         Kernel::queue_one(1, &mut p, 10, 1);
         assert!(!k.deliver(1, &mut p).unwrap());
-        assert!(p.pending.contains_key(&10));
+        assert!(p.signals.pending.contains_key(&10));
         Kernel::queue_one(1, &mut p, 19, 1);
         assert!(k.deliver(1, &mut p).unwrap());
         assert!(matches!(p.state, State::Stopped));
@@ -6763,7 +6500,7 @@ mod tests {
         assert!(matches!(p.state, State::Blocked(56, _)));
         let hidden = p.pending_open.unwrap();
         assert!(p.linux.vfs.fd_kind(hidden).is_err());
-        p.actions.set_handler(10, 0x4000);
+        p.signals.actions.set_handler(10, 0x4000);
         Kernel::queue_one(1, &mut p, 10, 1);
         assert!(k.deliver(1, &mut p).unwrap());
         assert!(p.pending_open.is_none());
@@ -6779,7 +6516,7 @@ mod tests {
         let mut k = kernel();
         p.poll_deadline = Some(Instant::now());
         p.poll_mask = Some(0x200);
-        p.mask = 0x400;
+        p.signals.mask = 0x400;
         let a = [999, 0x4800, 1, u64::MAX, 0, 8];
         p.state = State::Blocked(22, a);
         k.call(
@@ -6793,7 +6530,7 @@ mod tests {
         assert_eq!(p.cpu.x(0), error(Errno(9)));
         assert!(p.poll_deadline.is_none());
         assert!(p.poll_mask.is_none());
-        assert_eq!(p.mask, 0x200);
+        assert_eq!(p.signals.mask, 0x200);
     }
     #[test]
     fn stdio_eagain_blocks_only_without_nonblocking_flag() {
@@ -6979,7 +6716,7 @@ mod tests {
         let mut k = kernel();
         let leader = process();
         let mut thread = leader.fork();
-        thread.shared_pending = leader.shared_pending.clone();
+        thread.signals.shared_pending = leader.signals.shared_pending.clone();
         k.processes.insert(1, leader);
         Kernel::queue_one(2, &mut thread, 19, 1);
         assert!(k.deliver(2, &mut thread).unwrap());
@@ -7001,11 +6738,11 @@ mod tests {
         thread.tgid = 1;
         k.processes.insert(2, thread);
         assert_eq!(k.signal(1, &mut p, 0, 10), Ok(0));
-        assert!(p.shared_pending.borrow().contains_key(&10));
-        assert!(k.processes[&2].pending.is_empty());
+        assert!(p.signals.shared_pending.borrow().contains_key(&10));
+        assert!(k.processes[&2].signals.pending.is_empty());
         assert_eq!(k.thread_signal(1, &mut p, 2, Some(3), 10), Err(Errno(3)));
         assert_eq!(k.thread_signal(1, &mut p, 2, Some(1), 10), Ok(0));
-        assert_eq!(k.processes[&2].pending[&10].code, -6);
+        assert_eq!(k.processes[&2].signals.pending[&10].code, -6);
         p.linux.vfs.credentials = trames_vfs::Credentials::user(1000, 0);
         assert_eq!(k.thread_signal(1, &mut p, 2, None, 0), Err(Errno(1)));
         assert_eq!(k.thread_signal(1, &mut p, 2, None, 18), Ok(0));
@@ -7019,8 +6756,8 @@ mod tests {
         p.cpu.fpsr = 17;
         p.cpu.fpcr = 1 << 22;
         p.cpu.set_vector(8, 0x0123456789abcdef0011223344556677);
-        p.mask = 1 << 11;
-        p.actions.set(
+        p.signals.mask = 1 << 11;
+        p.signals.actions.set(
             10,
             Action {
                 handler: 0x5000,
@@ -7035,7 +6772,7 @@ mod tests {
         assert_eq!(p.cpu.x(1), sp);
         assert_eq!(p.cpu.x(2), sp + 128);
         assert_eq!(p.cpu.x(30), 0x7fff_ffd0_0000);
-        assert_ne!(p.mask & (1 << 9), 0);
+        assert_ne!(p.signals.mask & (1 << 9), 0);
         write_u64(&mut p.memory, sp + 312 + 5 * 8, 77).unwrap();
         p.cpu.set_vector(8, 0);
         p.cpu.fpcr = 0;
@@ -7047,7 +6784,7 @@ mod tests {
         assert_eq!(p.cpu.vector(8), 0x0123456789abcdef0011223344556677);
         assert_eq!(p.cpu.fpcr, 1 << 22);
         assert_eq!(p.cpu.fpsr, 17);
-        assert_eq!(p.mask, 1 << 11);
+        assert_eq!(p.signals.mask, 1 << 11);
     }
     #[test]
     fn signal_return_restores_interrupted_leaf_stack_without_call_boundary_alignment() {
@@ -7055,7 +6792,7 @@ mod tests {
         let mut k = kernel();
         p.cpu.sp -= 8;
         let old_sp = p.cpu.sp;
-        p.actions.set(
+        p.signals.actions.set(
             10,
             Action {
                 handler: 0x5000,
@@ -7068,13 +6805,13 @@ mod tests {
         Kernel::sigreturn(&mut p).unwrap();
         assert_eq!(p.cpu.sp, old_sp); // The interrupted leaf's SP need not be.
         assert_eq!(p.cpu.pc, 0x4000);
-        assert_eq!(p.frames, 0);
+        assert_eq!(p.signals.frames, 0);
     }
     #[test]
     fn malformed_signal_frame_fails_without_partial_register_restoration() {
         let mut p = process();
         let mut k = kernel();
-        p.actions.set(
+        p.signals.actions.set(
             10,
             Action {
                 handler: 0x5000,
@@ -7110,7 +6847,7 @@ mod tests {
             let mut k = kernel();
             p.cpu.pc = 0x4004;
             p.state = State::Blocked(63, [3, 0x1000, 7, 0, 0, 0]);
-            p.actions.set(
+            p.signals.actions.set(
                 10,
                 Action {
                     handler: 0x5000,
@@ -7141,7 +6878,7 @@ mod boundary_tests {
         p.memory.write_array(0x1000, [17u8]).unwrap();
         let error = p.memory.write_array(0x2000, [42u8]).unwrap_err();
         assert_eq!(error, trames_memory::MemoryError::Limit);
-        p.actions.set_handler(11, 0x4000);
+        p.signals.actions.set_handler(11, 0x4000);
         k.synchronous_fault(
             1,
             &mut p,
@@ -7361,8 +7098,8 @@ mod boundary_tests {
             })))
             .unwrap());
         assert_eq!(&k.terminal.as_ref().unwrap().window[..4], &[40, 0, 120, 0]);
-        assert!(k.processes[&1].pending.contains_key(&28));
-        assert!(!k.processes[&2].pending.contains_key(&28));
+        assert!(k.processes[&1].signals.pending.contains_key(&28));
+        assert!(!k.processes[&2].signals.pending.contains_key(&28));
     }
 }
 
@@ -7376,7 +7113,7 @@ mod cpu_fault_tests {
     fn synchronous_signal_contains_fault_address_and_resumes_from_edited_context() {
         let mut k = kernel();
         let mut p = process();
-        p.actions.set(
+        p.signals.actions.set(
             11,
             Action {
                 handler: 0x2000,
@@ -7413,16 +7150,16 @@ mod cpu_fault_tests {
         Kernel::sigreturn(&mut p).unwrap();
         assert_eq!(p.cpu.pc, 0x1334);
         assert_eq!(p.cpu.x(7), 0x123456);
-        assert_eq!(p.frames, 0);
+        assert_eq!(p.signals.frames, 0);
     }
     #[test]
     fn masked_or_ignored_synchronous_faults_terminate_instead_of_looping() {
         for (blocked, handler) in [(false, 1), (true, 0x2000)] {
             let mut k = kernel();
             let mut p = process();
-            p.actions.set_handler(5, handler);
+            p.signals.actions.set_handler(5, handler);
             if blocked {
-                p.mask |= 1 << 4;
+                p.signals.mask |= 1 << 4;
             }
             let fault = CpuFault::Trap {
                 pc: 0x1000,

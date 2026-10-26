@@ -306,7 +306,7 @@ mod tests {
             files: p.linux.vfs.file_descriptors(),
             fd_flags: p.linux.vfs.fd_flags_snapshot(),
             umask: p.linux.vfs.umask_capability(),
-            actions: p.actions.shared(),
+            actions: p.signals.actions.shared(),
             program_break: p.linux.program_break(),
             uts: None,
             direct: Default::default(),
@@ -778,7 +778,7 @@ mod tests {
             &mut trames_linux::CapturedOutput::default(),
         );
         assert_eq!(p.cpu.x(0), error(Errno(27)));
-        assert!(p.pending.contains_key(&25));
+        assert!(p.signals.pending.contains_key(&25));
         assert_eq!(p.linux.vfs.pread(fd, 3, 0).unwrap(), b"old");
     }
     #[test]
@@ -892,7 +892,7 @@ mod tests {
                     assert!(matches!(p.state, State::Blocked(63, _)));
                 } else {
                     assert_eq!(p.cpu.x(0), error(Errno(32)));
-                    assert!(p.pending.contains_key(&13));
+                    assert!(p.signals.pending.contains_key(&13));
                 }
             }
         }
@@ -975,7 +975,7 @@ mod tests {
                     assert!(matches!(p.state, State::Blocked(63, _)));
                 } else {
                     assert_eq!(p.cpu.x(0), error(Errno(32)));
-                    assert!(p.pending.contains_key(&13));
+                    assert!(p.signals.pending.contains_key(&13));
                 }
             }
         }

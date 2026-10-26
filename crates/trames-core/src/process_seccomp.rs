@@ -317,7 +317,7 @@ impl Kernel {
             0x0003_0000 => {
                 // force_sig_seccomp cannot be suppressed by ignoring or
                 // blocking SIGSYS; Linux forces its fatal default action.
-                if p.mask & (1u64 << 30) != 0 || p.actions.get(31).handler == 1 {
+                if p.signals.mask & (1u64 << 30) != 0 || p.signals.actions.get(31).handler == 1 {
                     self.exit(pid, p, 31);
                     return true;
                 }
@@ -325,8 +325,8 @@ impl Kernel {
                 // The syscall number lives in x8 and siginfo; replacing x0
                 // would corrupt the arguments inspected by a SIGSYS broker.
                 p.state = State::Ready;
-                p.pending.discard(31);
-                let _ = p.pending.enqueue(
+                p.signals.pending.discard(31);
+                let _ = p.signals.pending.enqueue(
                     31,
                     Info {
                         sender: decision & 0xffff,
@@ -369,7 +369,7 @@ mod tests {
                 files: p.linux.vfs.file_descriptors(),
                 fd_flags: p.linux.vfs.fd_flags_snapshot(),
                 umask: p.linux.vfs.umask_capability(),
-                actions: p.actions.shared(),
+                actions: p.signals.actions.shared(),
                 program_break: p.linux.program_break(),
                 uts: None,
                 direct: trames_linux::DirectSyscalls::default()
@@ -661,7 +661,7 @@ mod tests {
                     files: p.linux.vfs.file_descriptors(),
                     fd_flags: p.linux.vfs.fd_flags_snapshot(),
                     umask: p.linux.vfs.umask_capability(),
-                    actions: p.actions.shared(),
+                    actions: p.signals.actions.shared(),
                     program_break: p.linux.program_break(),
                     uts: None,
                     direct: Default::default(),
@@ -697,7 +697,7 @@ mod tests {
                 files: Default::default(),
                 fd_flags: Default::default(),
                 umask: p.linux.vfs.umask_capability(),
-                actions: p.actions.shared(),
+                actions: p.signals.actions.shared(),
                 program_break: p.linux.program_break(),
                 uts: None,
                 direct: trames_linux::DirectSyscalls::new(p.linux.vfs.direct_descriptors())
@@ -742,7 +742,7 @@ mod tests {
                 files: Default::default(),
                 fd_flags: Default::default(),
                 umask: p.linux.vfs.umask_capability(),
-                actions: p.actions.shared(),
+                actions: p.signals.actions.shared(),
                 program_break: p.linux.program_break(),
                 uts: None,
                 direct: Default::default(),
@@ -764,7 +764,7 @@ mod tests {
     fn worker_sigaction_queries_obey_seccomp_and_mutations_defer_without_effects() {
         for allowed in [false, true] {
             let mut p = super::super::tests::process();
-            p.actions.set_handler(10, 0x5000);
+            p.signals.actions.set_handler(10, 0x5000);
             p.cpu.set_x(8, 134);
             put_args(&mut p.cpu, [10, 0, 0x1000, 8, 0, 0]);
             p.seccomp.push(Arc::new(
@@ -780,7 +780,7 @@ mod tests {
                 files: Default::default(),
                 fd_flags: Default::default(),
                 umask: p.linux.vfs.umask_capability(),
-                actions: p.actions.shared(),
+                actions: p.signals.actions.shared(),
                 program_break: p.linux.program_break(),
                 uts: None,
                 direct: Default::default(),
@@ -797,7 +797,7 @@ mod tests {
             p.cpu.set_x(1, 0x1100);
             assert!(!snapshot.admit(&p.cpu));
             assert_eq!(snapshot.invoke(&p.cpu, &mut p.memory), None);
-            assert_eq!(p.actions.get(10).handler, 0x5000);
+            assert_eq!(p.signals.actions.get(10).handler, 0x5000);
         }
     }
     #[test]
@@ -918,7 +918,7 @@ mod tests {
                 files: Default::default(),
                 fd_flags: Default::default(),
                 umask: p.linux.vfs.umask_capability(),
-                actions: p.actions.shared(),
+                actions: p.signals.actions.shared(),
                 program_break: p.linux.program_break(),
                 uts: None,
                 direct: Default::default(),
@@ -963,7 +963,7 @@ mod tests {
                     files: p.linux.vfs.file_descriptors(),
                     fd_flags: p.linux.vfs.fd_flags_snapshot(),
                     umask: p.linux.vfs.umask_capability(),
-                    actions: p.actions.shared(),
+                    actions: p.signals.actions.shared(),
                     program_break: p.linux.program_break(),
                     uts: None,
                     direct: trames_linux::DirectSyscalls::new(p.linux.vfs.direct_descriptors())
@@ -1055,7 +1055,7 @@ mod tests {
             p.seccomp.push(Arc::new(
                 Filter::validate(vec![i(6, 0, 0, 0x30055)]).unwrap(),
             ));
-            p.actions.set(
+            p.signals.actions.set(
                 31,
                 Action {
                     handler: 0x5000,
@@ -1100,8 +1100,8 @@ mod tests {
             p.seccomp.push(Arc::new(
                 Filter::validate(vec![i(6, 0, 0, 0x30055)]).unwrap(),
             ));
-            p.actions.set_handler(31, handler);
-            p.mask = mask;
+            p.signals.actions.set_handler(31, handler);
+            p.signals.mask = mask;
             assert!(kernel.filter_syscall(1, &mut p, 173, [0; 6]));
             assert!(matches!(p.state, State::Zombie(31)));
         }
