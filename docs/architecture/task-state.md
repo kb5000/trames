@@ -9,8 +9,8 @@ The existing iPad/Core process object now owns a `Signals` value from this
 crate. Its dispositions, blocked mask, private pending queue, process pending
 queue, alternate stack and frame depth no longer live in the interpreter
 composition. The Mac single-task adapter uses the same state and ABI functions.
-This is a task-state integration step; the complete process table and executor
-scheduler have not moved out of Core yet.
+The code now lives in the separate runtime repository, pinned by both products.
+The complete process table and executor scheduler have not moved out of Core yet.
 
 ## Ownership and scheduling
 

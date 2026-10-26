@@ -729,17 +729,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "trames-hvf"
-version = "1.3.0"
-dependencies = [
- "cc",
- "libc",
- "trames-execution",
- "trames-linux",
- "trames-memory",
-]
-
-[[package]]
 name = "trames-kernel"
 version = "1.3.0"
 dependencies = [
@@ -757,20 +746,6 @@ dependencies = [
  "trames-execution",
  "trames-memory",
  "trames-net",
- "trames-vfs",
-]
-
-[[package]]
-name = "trames-mac"
-version = "1.3.0"
-dependencies = [
- "trames-distro",
- "trames-elf",
- "trames-execution",
- "trames-hvf",
- "trames-kernel",
- "trames-linux",
- "trames-memory",
  "trames-vfs",
 ]
 

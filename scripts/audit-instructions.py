@@ -186,9 +186,9 @@ def main():
         writer.writerows(rows)
     hwcap, hwcap2, features = subprocess.check_output([str(args.probe), '--features'], text=True).strip().split(' ', 2)
     sources = sorted((ROOT/'crates/trames-cpu/src').glob('*.rs')) + sorted((ROOT/'crates/trames-compute/src').glob('*.rs'))
-    sources += [ROOT/'crates/trames-memory/src/lib.rs', ROOT/'crates/trames-memory/src/backing.rs', ROOT/'crates/trames-memory/src/reservations.rs', ROOT/'crates/trames-core/src/process_events.rs',
-                ROOT/'crates/trames-core/src/process.rs', ROOT/'crates/trames-core/src/lib.rs', ROOT/'crates/trames-memory/src/cpu_memory.rs',
-                ROOT/'crates/trames-memory/src/parallel.rs', ROOT/'crates/trames-core/src/workers.rs']
+    sources += [ROOT/'runtime/crates/trames-memory/src/lib.rs', ROOT/'runtime/crates/trames-memory/src/backing.rs', ROOT/'runtime/crates/trames-memory/src/reservations.rs', ROOT/'crates/trames-core/src/process_events.rs',
+                ROOT/'crates/trames-core/src/process.rs', ROOT/'crates/trames-core/src/lib.rs', ROOT/'runtime/crates/trames-memory/src/cpu_memory.rs',
+                ROOT/'runtime/crates/trames-memory/src/parallel.rs', ROOT/'crates/trames-core/src/workers.rs']
     report = dict(scope=f'{len(rows)} representative encodings; decode acceptance, not exhaustive ISA conformance',
                   statuses=dict(Counter(r['cached'] for r in rows)), profiles=dict(Counter(r['profile'] for r in rows)),
                   hwcap=int(hwcap), hwcap2=int(hwcap2), feature_names=features,

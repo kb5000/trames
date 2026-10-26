@@ -9,7 +9,7 @@ license = "GPL-3.0-or-later"
 [workspace]
 [dependencies]
 trames-accel = { path = "../../../crates/trames-accel" }
-trames-memory = { path = "../../../crates/trames-memory" }
+trames-memory = { path = "../../../runtime/crates/trames-memory" }
 [lints.rust]
 unsafe_op_in_unsafe_fn = "deny"
 [profile.release]

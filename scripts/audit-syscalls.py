@@ -24,7 +24,7 @@ parser.add_argument('--prefix', default='compatibility-current', help='Output ba
 args = parser.parse_args()
 assert re.fullmatch(r'[a-z0-9][a-z0-9.-]*', args.prefix), 'invalid report prefix'
 found = {}
-for source in ('crates/trames-core/src/process.rs', 'crates/trames-linux/src/state.rs'):
+for source in ('crates/trames-core/src/process.rs', 'runtime/crates/trames-linux/src/state.rs'):
     lines = (ROOT / source).read_text().splitlines()
     function = next(i for i, line in enumerate(lines) if line.startswith('    fn syscall('))
     start = next(i for i in range(function, len(lines)) if lines[i] == '        match number {')
@@ -197,20 +197,20 @@ metadata = {
     'backends': ['cached'],
     'unhandled_return': -38,
     'source_sha256': {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in (
-        'crates/trames-core/src/process.rs', 'crates/trames-core/src/process_caps.rs', 'crates/trames-vfs/src/capabilities.rs', 'crates/trames-vfs/src/cgroup.rs', 'crates/trames-core/src/process_pid.rs', 'crates/trames-core/src/process_events.rs', 'crates/trames-core/src/process_signals.rs', 'crates/trames-core/src/process_compat.rs',
-        'crates/trames-linux/src/state.rs', 'crates/trames-linux/src/bpf.rs', 'crates/trames-vfs/src/bpf.rs', 'crates/trames-linux/src/network.rs', 'crates/trames-linux/src/xattr.rs', 'crates/trames-linux/src/file_calls.rs',
-        'crates/trames-vfs/src/events.rs', 'crates/trames-vfs/src/ipc.rs', 'crates/trames-vfs/src/xattr.rs', 'crates/trames-net/src/netlink.rs', 'crates/trames-net/src/lib.rs', 'crates/trames-vfs/src/locks.rs',
-        'crates/trames-vfs/src/lib.rs', 'crates/trames-vfs/src/pseudo.rs', 'crates/trames-vfs/src/oom.rs', 'crates/trames-vfs/src/credentials.rs', 'crates/trames-vfs/src/namespace.rs', 'crates/trames-vfs/src/storage.rs',
-        'crates/trames-vfs/src/kernel_log.rs', 'crates/trames-vfs/src/syscall_names.rs',
-        'crates/trames-vfs/src/uring.rs', 'crates/trames-linux/src/uring.rs',
-        'crates/trames-memory/src/lib.rs', 'crates/trames-memory/src/backing.rs',
-        'crates/trames-memory/src/reservations.rs', 'crates/trames-core/src/lib.rs',
-        'crates/trames-memory/src/cpu_memory.rs', 'crates/trames-memory/src/parallel.rs', 'crates/trames-core/src/workers.rs',
-        'crates/trames-net/src/native.rs', 'crates/trames-net/src/virtualnet/sockets.rs',
-        'crates/trames-vfs/src/mapped.rs', 'crates/trames-vfs/src/memfd.rs', 'crates/trames-vfs/src/executable.rs',
-        'crates/trames-vfs/src/linux_namespace.rs', 'crates/trames-vfs/src/pid_namespace.rs', 'crates/trames-vfs/src/mounts.rs', 'crates/trames-net/src/direct_dns.rs',
-        'crates/trames-net/src/interfaces.rs', 'crates/trames-net/src/native_icmp.rs',
-        'crates/trames-vfs/src/namespace.rs', 'crates/trames-vfs/src/credentials.rs', 'crates/trames-vfs/src/inotify.rs', 'crates/trames-vfs/src/events.rs')},
+        'crates/trames-core/src/process.rs', 'crates/trames-core/src/process_caps.rs', 'runtime/crates/trames-vfs/src/capabilities.rs', 'runtime/crates/trames-vfs/src/cgroup.rs', 'crates/trames-core/src/process_pid.rs', 'crates/trames-core/src/process_events.rs', 'crates/trames-core/src/process_signals.rs', 'crates/trames-core/src/process_compat.rs',
+        'runtime/crates/trames-linux/src/state.rs', 'runtime/crates/trames-linux/src/bpf.rs', 'runtime/crates/trames-vfs/src/bpf.rs', 'runtime/crates/trames-linux/src/network.rs', 'runtime/crates/trames-linux/src/xattr.rs', 'runtime/crates/trames-linux/src/file_calls.rs',
+        'runtime/crates/trames-vfs/src/events.rs', 'runtime/crates/trames-vfs/src/ipc.rs', 'runtime/crates/trames-vfs/src/xattr.rs', 'runtime/crates/trames-net/src/netlink.rs', 'runtime/crates/trames-net/src/lib.rs', 'runtime/crates/trames-vfs/src/locks.rs',
+        'runtime/crates/trames-vfs/src/lib.rs', 'runtime/crates/trames-vfs/src/pseudo.rs', 'runtime/crates/trames-vfs/src/oom.rs', 'runtime/crates/trames-vfs/src/credentials.rs', 'runtime/crates/trames-vfs/src/namespace.rs', 'runtime/crates/trames-vfs/src/storage.rs',
+        'runtime/crates/trames-vfs/src/kernel_log.rs', 'runtime/crates/trames-vfs/src/syscall_names.rs',
+        'runtime/crates/trames-vfs/src/uring.rs', 'runtime/crates/trames-linux/src/uring.rs',
+        'runtime/crates/trames-memory/src/lib.rs', 'runtime/crates/trames-memory/src/backing.rs',
+        'runtime/crates/trames-memory/src/reservations.rs', 'crates/trames-core/src/lib.rs',
+        'runtime/crates/trames-memory/src/cpu_memory.rs', 'runtime/crates/trames-memory/src/parallel.rs', 'crates/trames-core/src/workers.rs',
+        'runtime/crates/trames-net/src/native.rs', 'runtime/crates/trames-net/src/virtualnet/sockets.rs',
+        'runtime/crates/trames-vfs/src/mapped.rs', 'runtime/crates/trames-vfs/src/memfd.rs', 'runtime/crates/trames-vfs/src/executable.rs',
+        'runtime/crates/trames-vfs/src/linux_namespace.rs', 'runtime/crates/trames-vfs/src/pid_namespace.rs', 'runtime/crates/trames-vfs/src/mounts.rs', 'runtime/crates/trames-net/src/direct_dns.rs',
+        'runtime/crates/trames-net/src/interfaces.rs', 'runtime/crates/trames-net/src/native_icmp.rs',
+        'runtime/crates/trames-vfs/src/namespace.rs', 'runtime/crates/trames-vfs/src/credentials.rs', 'runtime/crates/trames-vfs/src/inotify.rs', 'runtime/crates/trames-vfs/src/events.rs')},
 }
 (OUT / (args.prefix + '-syscalls.json')).write_text(json.dumps(metadata, indent=2) + '\n')
 print(json.dumps({key: value for key, value in metadata.items() if key != 'source_sha256'}))

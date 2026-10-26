@@ -7,19 +7,19 @@ license.workspace = true
 
 
 [dependencies]
-trames-execution = { path = "../trames-execution" }
-trames-kernel = { path = "../trames-kernel" }
+trames-execution = { workspace = true }
+trames-kernel = { workspace = true }
 trames-accel = { path = "../trames-accel" }
 trames-cpu = { path = "../trames-cpu" }
-trames-elf = { path = "../trames-elf" }
-trames-memory = { path = "../trames-memory" }
-trames-linux = { path = "../trames-linux" }
-trames-vfs = { path = "../trames-vfs" }
-trames-net = { path = "../trames-net" }
+trames-elf = { workspace = true }
+trames-memory = { workspace = true }
+trames-linux = { workspace = true }
+trames-vfs = { workspace = true }
+trames-net = { workspace = true }
 trames-vulkan = { path = "../trames-vulkan" }
 
 [lints]
 workspace = true
 
 [dev-dependencies]
-trames-wayland = { path = "../trames-wayland" }
+trames-wayland = { workspace = true }

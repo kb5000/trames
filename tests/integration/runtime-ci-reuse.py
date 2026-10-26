@@ -19,7 +19,7 @@ class ReuseTests(unittest.TestCase):
         with patch.dict(m.os.environ, {'GITHUB_REPOSITORY':'owner/repo'}):
             with patch.object(m, 'get', side_effect=[run, job]), patch.object(m, 'git', return_value='tests/integration/linux-compat.py\n'):
                 self.assertEqual(m.reference(config, 'linux'), job)
-            with patch.object(m, 'get', return_value=run), patch.object(m, 'git', return_value='crates/trames-vfs/src/lib.rs\n'):
+            with patch.object(m, 'get', return_value=run), patch.object(m, 'git', return_value='runtime/crates/trames-vfs/src/lib.rs\n'):
                 with self.assertRaises(AssertionError): m.reference(config, 'linux')
 
     def test_explicit_full_validation_never_reuses(self):

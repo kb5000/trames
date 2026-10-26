@@ -1,4 +1,15 @@
-# Trames
+# Trames iPad
+
+This repository owns the iPad application, CPU interpreter, native interpreter
+helpers and product integration. Shared Linux userspace code is maintained in
+[trames-runtime](https://github.com/kb5000/trames-runtime), pinned as the `runtime/`
+submodule. The hardware-execution Mac product is
+[trames-mac](https://github.com/kb5000/trames-mac).
+
+Clone with `git clone --recurse-submodules https://github.com/kb5000/trames-ipad.git`.
+After switching revisions, run `git submodule update --init`. Both products pin
+exact runtime revisions; no common Linux source is maintained in this repository.
+
 
 [Trames 1.2.0（build 33）](https://github.com/kb5000/trames/releases/tag/v1.2.0) · [下载 unsigned IPA](https://github.com/kb5000/trames/releases/download/v1.2.0/Trames-1.2.0-build33-unsigned.ipa)。基础 Wayland EGL/GLES2 的 Zink→Metal GPU 窗口、Vulkan 扩展和运行路径优化。[发行说明](docs/validation/release-1.2-notes.md) · [验证和源码](docs/validation/release-1.2.md)。图形兼容性由 #32 跟踪，Docker 兼容性继续由 #29 跟踪。
 

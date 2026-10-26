@@ -21,6 +21,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-10-16
@@ -52,6 +54,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Build one original musl ARM64 fixture for Apple validation
         run: |
           sudo apt-get update
@@ -76,6 +80,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: recursive
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@master
         with:
@@ -186,6 +191,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-10-16
@@ -211,6 +218,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-10-16
@@ -231,6 +240,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-10-16
@@ -256,6 +267,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-10-16
@@ -323,6 +336,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: recursive
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - id: scope
@@ -339,6 +353,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Parse Swift sources before app builds
         run: |
           swiftc -frontend -parse apps/ios/Trames/*.swift apps/ios/TramesTests/*.swift apps/ios/TramesUITests/*.swift
@@ -354,6 +370,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install AArch64 source toolchain
         run: sudo apt-get update && sudo apt-get install --yes gcc-aarch64-linux-gnu g++-aarch64-linux-gnu gcc-14-aarch64-linux-gnu g++-14-aarch64-linux-gnu binutils-aarch64-linux-gnu libvulkan-dev glslang-tools libwayland-dev pkg-config bison flex ninja-build python3-venv patch
       - run: bash scripts/build-musl-hybrid.sh > /tmp/musl-build.log 2>&1 || { tail -30 /tmp/musl-build.log; exit 1; }
@@ -394,6 +412,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Build only current original Xwayland and its guest launcher
         run: |
           sudo apt-get update
@@ -419,6 +439,8 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Parse frontend Swift sources
         run: |
           swiftc -frontend -parse apps/ios/Trames/*.swift apps/ios/TramesFileSystem/*.swift apps/ios/TramesFileProvider/*.swift apps/ios/TramesTests/*.swift apps/ios/TramesUITests/*.swift
@@ -666,6 +688,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: actions/download-artifact@v4
         with:
           name: unsigned-ipad-build-and-project

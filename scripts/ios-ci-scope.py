@@ -182,8 +182,8 @@ def runtime_fastpaths_reuse(plan, repo, headers):
 
 
 def container_isolation_path(path):
-    return path.startswith(('crates/trames-net/', 'crates/trames-vfs/',
-                            'crates/trames-linux/', 'crates/trames-core/', 'docs/')) or path in {
+    return path.startswith(('runtime/crates/trames-net/', 'runtime/crates/trames-vfs/',
+                            'runtime/crates/trames-linux/', 'crates/trames-core/', 'docs/')) or path in {
         'crates/trames-cpu/src/extended.rs', 'crates/trames-cpu/src/compatibility.rs',
         'tests/fixtures/seccomp.c', 'tests/fixtures/network-namespaces.c',
         'scripts/build-container-isolation-fixtures.sh',
@@ -194,7 +194,7 @@ def container_isolation_path(path):
 
 
 def container_storage_path(path):
-    return path.startswith(('crates/trames-vfs/', 'docs/')) or path in {
+    return path.startswith(('runtime/crates/trames-vfs/', 'docs/')) or path in {
         '.github/workflows/ios.yml', '.github/workflows/linux.yml',
         'scripts/ios-ci-scope.py', 'examples/docker/daemon.json', 'README.md',
         'tests/integration/docker-overlay.py', 'tests/integration/docker-overlay.sh',
@@ -202,7 +202,7 @@ def container_storage_path(path):
 
 
 def container_network_path(path):
-    return path.startswith(('crates/trames-net/','crates/trames-vfs/','crates/trames-linux/','docs/')) or path in {
+    return path.startswith(('runtime/crates/trames-net/','runtime/crates/trames-vfs/','runtime/crates/trames-linux/','docs/')) or path in {
         '.github/workflows/ios.yml','.github/workflows/linux.yml','scripts/ios-ci-scope.py',
         'scripts/build-container-network-fixture.sh','tests/fixtures/container-network.c','tests/fixtures/container-forwarding.c',
         'tests/integration/container-network.py','tests/integration/docker.py',
@@ -221,12 +221,12 @@ def network_test_retry_source_unchanged(sha):
     delta=subprocess.check_output(['git','diff','--name-only',sha,'HEAD'],text=True).splitlines()
     allowed={'.github/ios-validation-plan.json','.github/workflows/ios.yml',
              '.github/workflows/linux.yml','scripts/ios-ci-scope.py',
-             'crates/trames-net/src/nftables_tests.rs','crates/trames-linux/src/network.rs',
-             'crates/trames-net/tests/virtual.rs'}
+             'runtime/crates/trames-net/src/nftables_tests.rs','runtime/crates/trames-linux/src/network.rs',
+             'runtime/crates/trames-net/tests/virtual.rs'}
     if any(not p.startswith('docs/') and p not in allowed for p in delta):return False
     # nftables_tests is included only under cfg(test). Socket production code,
     # including ancillary parsing, must be byte-identical to the verified run.
-    path='crates/trames-linux/src/network.rs'
+    path='runtime/crates/trames-linux/src/network.rs'
     previous=subprocess.check_output(['git','show',sha+':'+path],text=True).split('#[cfg(test)]')[0]
     return previous==Path(path).read_text().split('#[cfg(test)]')[0]
 
@@ -235,13 +235,13 @@ def network_lifetime_source_unchanged(sha):
     delta=subprocess.check_output(['git','diff','--name-only',sha,'HEAD'],text=True).splitlines()
     allowed={'.github/ios-validation-plan.json','.github/workflows/ios.yml',
              '.github/workflows/linux.yml','scripts/ios-ci-scope.py',
-             'crates/trames-net/src/lib.rs','crates/trames-net/src/netlink.rs',
-             'crates/trames-net/src/routing_tests.rs'}
+             'runtime/crates/trames-net/src/lib.rs','runtime/crates/trames-net/src/netlink.rs',
+             'runtime/crates/trames-net/src/routing_tests.rs'}
     if any(not p.startswith('docs/') and p not in allowed for p in delta):return False
     # Exact OnceCell ownership pin + teardown guard, without protocol changes.
     # Any further production change falls back to all affected network checks.
     patch=subprocess.check_output(['git','diff','--binary',sha,'HEAD','--',
-        'crates/trames-net/src/lib.rs','crates/trames-net/src/netlink.rs'])
+        'runtime/crates/trames-net/src/lib.rs','runtime/crates/trames-net/src/netlink.rs'])
     return hashlib.sha256(patch).hexdigest()=='b72cac90931a82d6d21a4432b241ba8fe265206bc035b378f20e6a625f2cbc2c'
 
 
@@ -249,12 +249,12 @@ def isolation_retry_source_unchanged(sha):
     delta=subprocess.check_output(['git','diff','--name-only',sha,'HEAD'],text=True).splitlines()
     allowed={'.github/ios-validation-plan.json','.github/workflows/ios.yml',
              '.github/workflows/linux.yml','scripts/ios-ci-scope.py',
-             'crates/trames-core/src/process_seccomp.rs','crates/trames-linux/src/network.rs',
+             'crates/trames-core/src/process_seccomp.rs','runtime/crates/trames-linux/src/network.rs',
              'tests/fixtures/seccomp.c','tests/integration/container-isolation.py'}
     if any(not p.startswith('docs/') and p not in allowed for p in delta):return False
     old=lambda p:subprocess.check_output(['git','show',sha+':'+p],text=True).split('#[cfg(test)]')[0]
     current=lambda p:Path(p).read_text().split('#[cfg(test)]')[0]
-    if old('crates/trames-linux/src/network.rs') != current('crates/trames-linux/src/network.rs'):return False
+    if old('runtime/crates/trames-linux/src/network.rs') != current('runtime/crates/trames-linux/src/network.rs'):return False
     # Reuse Docker/ordinary syscall results only for this exact TRAP-only fix.
     # Any broader production change falls back to the complete affected checks.
     guard='''                // force_sig_seccomp cannot be suppressed by ignoring or
@@ -384,8 +384,8 @@ def device_build_outputs(plan, repo, headers):
                 verified_run(runtime, 'linux.yml', name)
             # Recompile the validated current runtime; the older Metal bundle
             # only supplies source-identical guest graphics and their sources.
-            paths = ['crates/trames-vulkan', 'crates/trames-wayland', 'crates/trames-compute',
-                     'crates/trames-shared', 'vendor', '.cargo', 'rust-toolchain.toml',
+            paths = ['crates/trames-vulkan', 'runtime/crates/trames-wayland', 'crates/trames-compute',
+                     'runtime/crates/trames-shared', 'vendor', '.cargo', 'rust-toolchain.toml',
                      'accelerator', 'include', 'patches/mesa',
                      'patches/moltenvk', 'scripts/prepare-vulkan.py', 'scripts/build-moltenvk.py',
                      'scripts/build-vulkan-native-tf.py',
@@ -481,16 +481,16 @@ def device_build_outputs(plan, repo, headers):
         # Run their Apple counterparts below; reuse only the unchanged modules.
         changed_runtime = set(subprocess.check_output(
             ['git', 'diff', '--name-only', costs['sha'], 'HEAD', '--', *runtime_paths], text=True).splitlines())
-        expected = {'crates/trames-memory/src/mmu/mod.rs',
-                    'crates/trames-memory/src/mmu/tests.rs', 'crates/trames-core/src/process.rs'}
+        expected = {'runtime/crates/trames-memory/src/mmu/mod.rs',
+                    'runtime/crates/trames-memory/src/mmu/tests.rs', 'crates/trames-core/src/process.rs'}
         if memory_va:
-            expected = {'crates/trames-memory/src/mmu/host.rs', 'crates/trames-memory/src/mmu/mod.rs',
-                        'crates/trames-memory/src/mmu/tests.rs', 'crates/trames-memory/src/mmu/worker.rs',
-                        'crates/trames-vfs/src/pseudo.rs'}
+            expected = {'runtime/crates/trames-memory/src/mmu/host.rs', 'runtime/crates/trames-memory/src/mmu/mod.rs',
+                        'runtime/crates/trames-memory/src/mmu/tests.rs', 'runtime/crates/trames-memory/src/mmu/worker.rs',
+                        'runtime/crates/trames-vfs/src/pseudo.rs'}
         if startup_mounts:
             expected = {'crates/trames-ffi/src/session.rs'}
         if devpts:
-            expected = {'crates/trames-vfs/src/pty.rs', 'crates/trames-vfs/src/pseudo.rs'}
+            expected = {'runtime/crates/trames-vfs/src/pty.rs', 'runtime/crates/trames-vfs/src/pseudo.rs'}
         if release_core:
             expected = {'Cargo.toml', 'Cargo.lock'}
         patch = subprocess.check_output(['git', 'diff', '--binary', costs['sha'], 'HEAD', '--', *runtime_paths])
@@ -577,7 +577,7 @@ def firefox_memory_readonly_followup(plan, repo, headers):
     source, run = reuse['sha'], reuse['run']
     runtime = set(subprocess.check_output(['git', 'diff', '--name-only', source, 'HEAD', '--',
         'crates', 'Cargo.toml', 'Cargo.lock', 'vendor', '.cargo', 'rust-toolchain.toml'], text=True).splitlines())
-    fixture = 'crates/trames-memory/src/parallel/readonly.rs'
+    fixture = 'runtime/crates/trames-memory/src/parallel/readonly.rs'
     if runtime != {'crates/trames-core/src/process.rs', fixture}:
         raise RuntimeError('Readonly follow-up must preserve the memory byte-domain and benchmark sources')
     def outside_helper(text):
@@ -619,7 +619,7 @@ def firefox_memory_apple_retry(plan, repo, headers):
     source, run = reuse['sha'], reuse['run']
     runtime = subprocess.check_output(['git', 'diff', '--name-only', source, 'HEAD', '--',
         'crates', 'Cargo.toml', 'Cargo.lock', 'vendor', '.cargo', 'rust-toolchain.toml'], text=True).splitlines()
-    path = 'crates/trames-linux/src/network.rs'
+    path = 'runtime/crates/trames-linux/src/network.rs'
     if runtime != [path]:
         raise RuntimeError('Apple memory retry requires unchanged runtime except the failed socket test')
     def outside_case(text):
@@ -751,13 +751,13 @@ def main():
                     apple_retry = firefox_memory_apple_retry(plan, repo, dict(request.headers))
                     readonly_followup = firefox_memory_readonly_followup(plan, repo, dict(request.headers))
                     allowed = {'AGENTS.md', 'crates/trames-core/src/lib.rs', 'crates/trames-core/src/process.rs',
-                               'crates/trames-core/src/process_service.rs', 'crates/trames-linux/src/state.rs',
-                               'crates/trames-vfs/src/mapped.rs', 'tests/fixtures/firefox-memory-probe.c',
+                               'crates/trames-core/src/process_service.rs', 'runtime/crates/trames-linux/src/state.rs',
+                               'runtime/crates/trames-vfs/src/mapped.rs', 'tests/fixtures/firefox-memory-probe.c',
                                'tests/integration/firefox.py', 'scripts/build-firefox-fixture.sh',
                                'scripts/ios-ci-scope.py', '.github/workflows/linux.yml', '.github/workflows/ios.yml'}
                     if apple_retry:
-                        allowed.add('crates/trames-linux/src/network.rs')
-                    if any(p not in allowed and not p.startswith(('docs/', 'crates/trames-memory/src/', 'crates/trames-memory/examples/')) for p in changed):
+                        allowed.add('runtime/crates/trames-linux/src/network.rs')
+                    if any(p not in allowed and not p.startswith(('docs/', 'runtime/crates/trames-memory/src/', 'runtime/crates/trames-memory/examples/')) for p in changed):
                         raise RuntimeError('Firefox memory plan includes unrelated changes')
                     print('Check demand-zero MMU/accounting, coordinator, mapped VFS, Linux and original-musl sparse BSS on Linux/Apple ARM64. Reuse unchanged CPU opcode/GPU/UI/guest artifacts. No IPA.')
                     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
@@ -778,15 +778,15 @@ def main():
                         output.write('frontend_only=false\ntargeted=true\nnative_scope=firefox-clock\nskip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
                     return
                 if plan.get('native_scope') in ('firefox-layout', 'firefox-mmu-cap'):
-                    allowed = {'crates/trames-linux/src/state.rs', 'tests/integration/firefox.py',
-                               'crates/trames-memory/src/mmu/host.rs', 'crates/trames-memory/src/mmu/fault.rs',
+                    allowed = {'runtime/crates/trames-linux/src/state.rs', 'tests/integration/firefox.py',
+                               'runtime/crates/trames-memory/src/mmu/host.rs', 'runtime/crates/trames-memory/src/mmu/fault.rs',
                                'scripts/ios-ci-scope.py', '.github/workflows/linux.yml',
                                '.github/workflows/ios.yml'}
                     if plan['native_scope'] == 'firefox-mmu-cap':
-                        allowed.remove('crates/trames-linux/src/state.rs')
-                        allowed.update({'crates/trames-memory/src/mmu/mod.rs', 'crates/trames-memory/src/mmu/tests.rs'})
+                        allowed.remove('runtime/crates/trames-linux/src/state.rs')
+                        allowed.update({'runtime/crates/trames-memory/src/mmu/mod.rs', 'runtime/crates/trames-memory/src/mmu/tests.rs'})
                     else:
-                        allowed.difference_update({'crates/trames-memory/src/mmu/host.rs', 'crates/trames-memory/src/mmu/fault.rs'})
+                        allowed.difference_update({'runtime/crates/trames-memory/src/mmu/host.rs', 'runtime/crates/trames-memory/src/mmu/fault.rs'})
                     if any(p not in allowed and not p.startswith('docs/') for p in changed):
                         raise RuntimeError('Firefox address-layout plan includes unrelated changes')
                     print('Check affected Linux mapping policy or MMU capacity on Linux/Apple ARM64 plus iOS embedding; reuse unchanged modules, graphics, UI and guest artifacts. No IPA yet.')
@@ -794,11 +794,11 @@ def main():
                         output.write('frontend_only=false\ntargeted=true\nnative_scope='+plan['native_scope']+'\nskip_native=true\nskip_linux_native=true\nskip_linux_modules=true\n')
                     return
                 if plan.get('native_scope') == 'firefox-runtime':
-                    allowed = {'crates/trames-vfs/src/lib.rs', 'crates/trames-vfs/src/ipc.rs',
-                               'crates/trames-vfs/src/clone_resources.rs', 'crates/trames-core/src/process.rs',
-                               'crates/trames-vfs/src/mapped.rs', 'crates/trames-memory/src/backing.rs',
-                               'crates/trames-memory/src/parallel/snapshot.rs',
-                               'crates/trames-vfs/src/ipc/native.rs', 'crates/trames-linux/src/state.rs',
+                    allowed = {'runtime/crates/trames-vfs/src/lib.rs', 'runtime/crates/trames-vfs/src/ipc.rs',
+                               'runtime/crates/trames-vfs/src/clone_resources.rs', 'crates/trames-core/src/process.rs',
+                               'runtime/crates/trames-vfs/src/mapped.rs', 'runtime/crates/trames-memory/src/backing.rs',
+                               'runtime/crates/trames-memory/src/parallel/snapshot.rs',
+                               'runtime/crates/trames-vfs/src/ipc/native.rs', 'runtime/crates/trames-linux/src/state.rs',
                                'tests/fixtures/firefox-socket-probe.c', 'tests/integration/firefox.py',
                                'scripts/build-firefox-fixture.sh', 'scripts/ios-ci-scope.py',
                                '.github/workflows/linux.yml', '.github/workflows/ios.yml'}
@@ -828,7 +828,7 @@ def main():
                 if plan.get('native_scope') in {'zink-foundation', 'zink-sync', 'zink-gles', 'zink-wayland'}:
                     allowed = {'accelerator/vulkan/icd.c', 'accelerator/vulkan/queries.inc',
                                'accelerator/vulkan/templates.inc', 'accelerator/vulkan/entrypoints.inc',
-                               'crates/trames-distro/src/vulkan.rs', 'tests/fixtures/vulkan-queries.c',
+                               'runtime/crates/trames-distro/src/vulkan.rs', 'tests/fixtures/vulkan-queries.c',
                                'tests/fixtures/zink-egl.c', 'tests/fixtures/vulkan-compute.c',
                                'tests/fixtures/zink-es3.c', 'tests/integration/zink-es3.py',
                                'tests/fixtures/vulkan-feedback.c', 'tests/fixtures/vulkan-feedback.vert',
@@ -853,20 +853,20 @@ def main():
                         allowed.update({'tests/fixtures/zink-wayland.c', 'tests/fixtures/vulkan-copy.c',
                                         'tests/fixtures/wayland-relay.h', 'accelerator/vulkan/wayland.inc', 'accelerator/vulkan/wsi.inc',
                                         'tests/integration/firefox.py',
-                                        'Cargo.lock', 'crates/trames-wayland/Cargo.toml',
-                                        'crates/trames-wayland/native-wsi.xml',
-                                        'crates/trames-wayland/src/lib.rs', 'crates/trames-wayland/src/wsi.rs', 'crates/trames-wayland/src/frame.rs',
-                                        'crates/trames-wayland/src/server.rs', 'crates/trames-wayland/src/protocol.rs', 'crates/trames-wayland/src/scene.rs',
-                                        'crates/trames-vfs/src/ipc/native.rs',
+                                        'Cargo.lock', 'runtime/crates/trames-wayland/Cargo.toml',
+                                        'runtime/crates/trames-wayland/native-wsi.xml',
+                                        'runtime/crates/trames-wayland/src/lib.rs', 'runtime/crates/trames-wayland/src/wsi.rs', 'runtime/crates/trames-wayland/src/frame.rs',
+                                        'runtime/crates/trames-wayland/src/server.rs', 'runtime/crates/trames-wayland/src/protocol.rs', 'runtime/crates/trames-wayland/src/scene.rs',
+                                        'runtime/crates/trames-vfs/src/ipc/native.rs',
                                         'tests/fixtures/zink-metal-pixels.m', 'tests/integration/zink-wayland.py',
                                         'scripts/build-zink-egl.py', 'scripts/zink-egl-requirements.txt', 'patches/mesa/0001-wayland-kopper-native-wsi.patch',
-                                        'crates/trames-distro/src/lib.rs', 'crates/trames-ffi/src/session.rs', 'scripts/build-ios.sh'})
+                                        'runtime/crates/trames-distro/src/lib.rs', 'crates/trames-ffi/src/session.rs', 'scripts/build-ios.sh'})
                         clear_reuse = plan.get('zink_attachment_clear_reuse')
                         if clear_reuse:
                             # The new operation/range metadata does not change
                             # socket capabilities, native WSI, sampling or TF.
-                            stable = ['crates/trames-wayland', 'crates/trames-vfs',
-                                      'crates/trames-core', 'crates/trames-memory',
+                            stable = ['runtime/crates/trames-wayland', 'runtime/crates/trames-vfs',
+                                      'crates/trames-core', 'runtime/crates/trames-memory',
                                       'crates/trames-vulkan/src/backend/wayland.rs',
                                       'crates/trames-vulkan/native', 'accelerator/vulkan/wayland.inc',
                                       'accelerator/vulkan/icd.c', 'Cargo.toml', 'Cargo.lock',
@@ -886,9 +886,9 @@ def main():
                             print('Reuse passed unchanged WSI capabilities, relay lifecycle, descriptor and sampling GPU checks; run new attachment-clear pixels and Vulkan/iOS checks.')
                         damage_reuse = plan.get('zink_present_damage_reuse')
                         if damage_reuse:
-                            stable = ['crates/trames-vulkan', 'crates/trames-vfs',
-                                      'crates/trames-core', 'crates/trames-memory', 'crates/trames-cpu',
-                                      'crates/trames-accel', 'crates/trames-native', 'crates/trames-distro',
+                            stable = ['crates/trames-vulkan', 'runtime/crates/trames-vfs',
+                                      'crates/trames-core', 'runtime/crates/trames-memory', 'crates/trames-cpu',
+                                      'crates/trames-accel', 'crates/trames-native', 'runtime/crates/trames-distro',
                                       'crates/trames-ffi', 'accelerator/musl',
                                       'accelerator/vulkan/graphics.inc', 'accelerator/vulkan/zink.inc',
                                       'accelerator/vulkan/wayland.inc', 'accelerator/vulkan/queries.inc',
@@ -910,9 +910,9 @@ def main():
                         budget_reuse = plan.get('zink_gpu_budget_reuse')
                         if budget_reuse:
                             allowed.add('crates/trames-core/src/process.rs')
-                            stable = ['crates/trames-wayland', 'crates/trames-vfs',
-                                      'crates/trames-memory', 'crates/trames-cpu', 'crates/trames-linux',
-                                      'crates/trames-accel', 'crates/trames-native', 'crates/trames-distro',
+                            stable = ['runtime/crates/trames-wayland', 'runtime/crates/trames-vfs',
+                                      'runtime/crates/trames-memory', 'crates/trames-cpu', 'runtime/crates/trames-linux',
+                                      'crates/trames-accel', 'crates/trames-native', 'runtime/crates/trames-distro',
                                       'crates/trames-ffi', 'crates/trames-vulkan/native',
                                       'crates/trames-vulkan/src/backend/coherent.rs',
                                       'crates/trames-vulkan/src/backend/wayland.rs',
@@ -939,9 +939,9 @@ def main():
                             print('Reuse passed Wayland/damage-swap pixels; check changed Vulkan quota/metadata, original C simultaneous coherent mappings/reallocation and iOS embedding.')
                         frame_reuse = plan.get('zink_frame_boundaries_reuse')
                         if frame_reuse:
-                            stable = ['crates/trames-vfs', 'crates/trames-core', 'crates/trames-memory',
-                                      'crates/trames-cpu', 'crates/trames-linux', 'crates/trames-accel',
-                                      'crates/trames-native', 'crates/trames-distro', 'crates/trames-ffi',
+                            stable = ['runtime/crates/trames-vfs', 'crates/trames-core', 'runtime/crates/trames-memory',
+                                      'crates/trames-cpu', 'runtime/crates/trames-linux', 'crates/trames-accel',
+                                      'crates/trames-native', 'runtime/crates/trames-distro', 'crates/trames-ffi',
                                       'crates/trames-vulkan/native', 'crates/trames-vulkan/src/budget.rs',
                                       'crates/trames-vulkan/src/backend/coherent.rs',
                                       'crates/trames-vulkan/src/backend/wayland.rs',
@@ -962,7 +962,7 @@ def main():
                             print('Reuse passed unchanged runtime, native WSI/TF and quota; check changed Wayland scheduling, Vulkan boundary pixels and iOS embedding.')
                     if any(p not in allowed and not p.startswith(('docs/', 'tests/fixtures/vulkan-native-tf')) and not (sync and p.startswith('crates/trames-vulkan/')) for p in changed):
                         raise RuntimeError('Zink foundation plan includes unrelated source changes')
-                    path = 'crates/trames-distro/src/vulkan.rs'
+                    path = 'runtime/crates/trames-distro/src/vulkan.rs'
                     old = subprocess.check_output(['git', 'show', base + ':' + path], text=True).split('#[cfg(test)]')[0]
                     new = Path(path).read_text().split('#[cfg(test)]')[0]
                     if plan.get('native_scope') != 'zink-wayland' and old.replace('"api_version":"1.0.0"', '"api_version":"1.1.0"') != new:
@@ -1182,9 +1182,9 @@ def main():
                             output.write(f'{key}={value}\n')
                     return
                 if plan.get('native_scope') == 'docker-default':
-                    allowed = {'crates/trames-vfs/src/lib.rs', 'crates/trames-vfs/src/pseudo.rs',
-                               'crates/trames-vfs/src/mounts.rs',
-                               'crates/trames-net/src/lib.rs', 'crates/trames-linux/src/network.rs',
+                    allowed = {'runtime/crates/trames-vfs/src/lib.rs', 'runtime/crates/trames-vfs/src/pseudo.rs',
+                               'runtime/crates/trames-vfs/src/mounts.rs',
+                               'runtime/crates/trames-net/src/lib.rs', 'runtime/crates/trames-linux/src/network.rs',
                                'crates/trames-core/src/process.rs', 'tests/fixtures/socket-timeouts.c',
                                'crates/trames-cli/src/main.rs',
                                'scripts/build-socket-timeouts-fixture.sh',
@@ -1202,20 +1202,20 @@ def main():
                             output.write('docker_default_remount=true\n')
                     return
                 if plan.get('native_scope') == 'runtime-fastpaths':
-                    allowed = {'crates/trames-core/src/process.rs', 'crates/trames-vfs/src/lib.rs',
+                    allowed = {'crates/trames-core/src/process.rs', 'runtime/crates/trames-vfs/src/lib.rs',
                                'crates/trames-core/src/workers.rs', 'crates/trames-core/src/worker_syscalls.rs',
                                'crates/trames-core/src/lib.rs', 'crates/trames-core/src/process_seccomp.rs',
-                               'crates/trames-core/src/process_service.rs', 'crates/trames-linux/src/state.rs',
+                               'crates/trames-core/src/process_service.rs', 'runtime/crates/trames-linux/src/state.rs',
                                'tests/fixtures/epoch-services.c', 'tests/fixtures/epoch-services-native.S',
                                'scripts/build-epoch-services-fixture.sh', 'tests/performance/epoch-services.py',
                                'tests/integration/epoch-services.py',
                                'crates/trames-cli/src/main.rs', 'tests/performance/session-sampler.c',
-                               'crates/trames-vfs/src/mounts.rs', 'crates/trames-vfs/src/directory.rs',
-                               'crates/trames-vfs/src/storage.rs', 'crates/trames-vfs/src/storage_tests.rs',
-                               'crates/trames-vfs/src/disk_io.rs', 'crates/trames-vfs/src/pseudo.rs',
-                               'crates/trames-vfs/src/overlay.rs', 'crates/trames-vfs/src/mapped.rs', 'crates/trames-vfs/src/pty.rs',
-                               'crates/trames-vfs/src/memfd.rs', 'crates/trames-vfs/src/cgroup.rs',
-                               'crates/trames-vfs/src/ipc/native.rs', 'scripts/ios-ci-scope.py',
+                               'runtime/crates/trames-vfs/src/mounts.rs', 'runtime/crates/trames-vfs/src/directory.rs',
+                               'runtime/crates/trames-vfs/src/storage.rs', 'runtime/crates/trames-vfs/src/storage_tests.rs',
+                               'runtime/crates/trames-vfs/src/disk_io.rs', 'runtime/crates/trames-vfs/src/pseudo.rs',
+                               'runtime/crates/trames-vfs/src/overlay.rs', 'runtime/crates/trames-vfs/src/mapped.rs', 'runtime/crates/trames-vfs/src/pty.rs',
+                               'runtime/crates/trames-vfs/src/memfd.rs', 'runtime/crates/trames-vfs/src/cgroup.rs',
+                               'runtime/crates/trames-vfs/src/ipc/native.rs', 'scripts/ios-ci-scope.py',
                                '.github/workflows/ios.yml', '.github/workflows/linux.yml',
                                'tests/performance/session-coremark.py', 'tests/performance/prepare-coremark.py',
                                'tests/performance/session-docker-tty.py', 'tests/performance/disk-io-counts.c', 'tests/fixtures/disk-read-cost.c'}
@@ -1253,10 +1253,10 @@ def main():
                         proc_patch = reuse.get('proc_reopen_patch_sha256')
                         exact_proc_patch = False
                         if proc_patch and all(p.startswith('docs/') or p in allowed or p in {
-                                'crates/trames-vfs/src/pseudo.rs', 'crates/trames-vfs/src/overlay.rs'} for p in delta):
-                            patch = subprocess.check_output(['git', 'diff', '--binary', reuse['sha'], 'HEAD', '--', 'crates/trames-vfs/src/pseudo.rs'])
-                            previous_overlay = subprocess.check_output(['git', 'show', reuse['sha'] + ':crates/trames-vfs/src/overlay.rs'], text=True).split('#[cfg(test)]')[0]
-                            current_overlay = Path('crates/trames-vfs/src/overlay.rs').read_text().split('#[cfg(test)]')[0]
+                                'runtime/crates/trames-vfs/src/pseudo.rs', 'runtime/crates/trames-vfs/src/overlay.rs'} for p in delta):
+                            patch = subprocess.check_output(['git', 'diff', '--binary', reuse['sha'], 'HEAD', '--', 'runtime/crates/trames-vfs/src/pseudo.rs'])
+                            previous_overlay = subprocess.check_output(['git', 'show', reuse['sha'] + ':runtime/crates/trames-vfs/src/overlay.rs'], text=True).split('#[cfg(test)]')[0]
+                            current_overlay = Path('runtime/crates/trames-vfs/src/overlay.rs').read_text().split('#[cfg(test)]')[0]
                             exact_proc_patch = hashlib.sha256(patch).hexdigest() == proc_patch and previous_overlay == current_overlay
                         if unchanged or exact_proc_patch:
                             for workflow_name, run_id in [('linux.yml', reuse['linux_run']), ('ios.yml', reuse['apple_run'])]:
@@ -1381,13 +1381,13 @@ def main():
                     native_scope=''
                     if plan.get('native_scope') == 'host-terminals' and plan.get('native_reuse'):
                         paths=subprocess.check_output(['git','diff','--name-only',plan['native_reuse']['sha'],'HEAD','--','crates','Cargo.toml','Cargo.lock','vendor','.cargo','rust-toolchain.toml'],text=True).splitlines()
-                        allowed={'Cargo.toml','Cargo.lock','crates/trames-core/src/process.rs','crates/trames-vfs/src/pty.rs','crates/trames-ffi/src/lib.rs','crates/trames-ffi/src/session.rs','crates/trames-ffi/src/terminals.rs','crates/trames-ffi/include/trames.h'}
+                        allowed={'Cargo.toml','Cargo.lock','crates/trames-core/src/process.rs','runtime/crates/trames-vfs/src/pty.rs','crates/trames-ffi/src/lib.rs','crates/trames-ffi/src/session.rs','crates/trames-ffi/src/terminals.rs','crates/trames-ffi/include/trames.h'}
                         if set(paths)<=allowed:
                             native_scope='host-terminals'
                             print('Validate host PTY lifecycle, coordinator signals and original Alpine multiple shells; reuse unrelated CPU, GTK, GPU and networking checks.')
                     if plan.get('native_scope') in {'wayland-input','wayland-clipboard'} and plan.get('native_reuse'):
                         native_paths=subprocess.check_output(['git','diff','--name-only',plan['native_reuse']['sha'],'HEAD','--','crates','Cargo.toml','Cargo.lock','vendor','.cargo','rust-toolchain.toml'],text=True).splitlines()
-                        if native_paths and all(path.startswith('crates/trames-wayland/') for path in native_paths):
+                        if native_paths and all(path.startswith('runtime/crates/trames-wayland/') for path in native_paths):
                             native_scope=plan['native_scope']
                             print(f'Only compositor code changed; use {native_scope} checks, reusing unchanged native modules and foot.')
                     frontend_reused=False

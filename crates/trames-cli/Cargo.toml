@@ -11,13 +11,13 @@ path = "src/main.rs"
 
 [dependencies]
 serde_json = "1.0"
-trames-net = { path = "../trames-net" }
+trames-net = { workspace = true }
 trames-core = { path = "../trames-core" }
-trames-elf = { path = "../trames-elf" }
-trames-linux = { path = "../trames-linux" }
-trames-vfs = { path = "../trames-vfs" }
+trames-elf = { workspace = true }
+trames-linux = { workspace = true }
+trames-vfs = { workspace = true }
 
-trames-distro = { path = "../trames-distro" }
+trames-distro = { workspace = true }
 
 [lints]
 workspace = true

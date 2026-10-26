@@ -6,10 +6,10 @@ rust-version.workspace = true
 license.workspace = true
 
 [dependencies]
-trames-shared = { path = "../trames-shared" }
+trames-shared = { workspace = true }
 ash = { version = "=0.38.0", default-features = false, features = ["loaded", "debug", "std"] }
-trames-wayland = { path = "../trames-wayland" }
-trames-memory = { path = "../trames-memory" }
+trames-wayland = { workspace = true }
+trames-memory = { workspace = true }
 
 [lints]
 workspace = true

@@ -1,11 +1,11 @@
 # Shared Linux runtime and execution backends
 
-The accepted target is three projects: one common Linux userspace runtime, the
-iPad interpreter product, and an Apple Silicon Mac hardware-execution product.
-Work starts in this workspace so boundaries can be checked before repository
-extraction. [Issue #44](https://github.com/kb5000/trames/issues/44) tracks the
-remaining integration and extraction gates. This foundation is not feature
-parity between the Mac bring-up runner and the iPad application.
+The three source projects are [trames-runtime](https://github.com/kb5000/trames-runtime),
+[trames-ipad](https://github.com/kb5000/trames-ipad), and
+[trames-mac](https://github.com/kb5000/trames-mac). Each product pins an exact common
+runtime submodule. See [repository layout and paired-source workflow](project-split.md).
+[Issue #44](https://github.com/kb5000/trames-ipad/issues/44) tracks the remaining
+process/executor integration; repository extraction is not feature parity.
 
 ## Current boundaries
 
@@ -114,7 +114,8 @@ extra coordinator thread or ordinary-access barriers.
 
 ## Build and validation
 
-On Apple Silicon macOS, run `bash scripts/build-mac.sh` and then
+In the separate `trames-mac` checkout on Apple Silicon macOS, run
+`bash scripts/build-mac.sh` and then
 `target/release/trames-mac-run --rootfs <verified-Alpine-archive> /bin/busybox echo hello`.
 The archive uses the existing pinned distribution verification. A host static
 ARM64 ELF can be passed directly without `--rootfs`. The same ELF loader and
@@ -149,8 +150,7 @@ syscall admission and full application integration must move behind the executor
 boundary before feature-parity claims or independent repository releases.
 Hardware and interpreter capabilities/interrupt accounting remain distinct.
 
-Keep the current iPad runtime as the reference while migrating these gates. After
-both products run through the common task/memory model, extract the common
-runtime, iPad product and Mac product into independently buildable repositories,
-pin dependencies and preserve source pairing. Do not fork Linux semantics into
+Keep the current iPad runtime as the reference while migrating these gates. The repositories now preserve source pairing through exact submodule pins.
+Continue moving both products through the shared task/memory model before
+claiming feature parity. Do not fork Linux semantics into
 two product copies or infer completion from a renamed crate/backend selector.

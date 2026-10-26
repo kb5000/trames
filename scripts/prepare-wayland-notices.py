@@ -51,7 +51,7 @@ for record in ordered:
     name=record['name']
     label = name + '-' + record['version']
     if name == 'wayland-backend':
-        directory = ROOT / 'vendor/wayland-backend'
+        directory = ROOT / 'runtime/vendor/wayland-backend'
     else:
         matches = list(registry.glob('*/' + label))
         if len(matches) != 1:
@@ -65,7 +65,7 @@ for record in ordered:
         # original LICENSE from both exact .cargo_vcs_info commits; identical
         # bytes: parser 7300de35, ctext c4b89780 (Riey/xim-rs).
         import hashlib
-        license=ROOT/'crates/trames-wayland/data/COPYING.xim-rs'
+        license=ROOT/'runtime/crates/trames-wayland/data/COPYING.xim-rs'
         assert hashlib.sha256(license.read_bytes()).hexdigest()=='efa1224931b98468f5005f77285457f8d2eab0a77a15941aa10abbab1ae9a74e'
         notices=[license]
     assert notices, label
@@ -84,7 +84,7 @@ for path in protocols:
     notice = '\n'.join(line.rstrip() for line in notice.split('\n'))
     parts.extend([b'\n\n===== Protocol ' + path.name.encode() + b' =====\n', notice.encode()])
 parts.extend([b'\n\n===== xkeyboard-config US keymap =====\n\n',
-              (ROOT / 'crates/trames-wayland/data/COPYING.xkeyboard-config').read_bytes(), b'\n'])
+              (ROOT / 'runtime/crates/trames-wayland/data/COPYING.xkeyboard-config').read_bytes(), b'\n'])
 result = b''.join(parts)
 output = ROOT / 'apps/ios/Trames/Notices/Wayland-native-dependencies-NOTICES.txt'
 if args.check:
