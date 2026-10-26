@@ -1,6 +1,6 @@
 # Static interpreter and native compute
 
-The runtime has one Rust interpreter with bounded, data-only lazily decoded
+The iPad runtime has one Rust interpreter with bounded, data-only lazily decoded
 AArch64 code pages. The single-step decoder is also exercised as a test oracle;
 there is no production backend selector. The optional C++ executor has been removed. The single cached interpreter now
 uses compiler-enforced Rust tail calls on pinned nightly-2026-10-16. No path allocates
@@ -17,6 +17,10 @@ bounded loops, threaded blocks and precompiled integer pairs with local result
 forwarding. Those experimental patches remain archived: their measurements do not
 establish a general speedup over this default interpreter. No runtime selector or
 additional production backend is added.
+
+The separate Mac hardware-execution bring-up and the common Linux/runtime split
+are described in [execution backends](execution-backends.md). They do not change
+the shipping iPad interpreter or grant it JIT/executable host-memory privileges.
 
 The follow-up [decode dispatch and register-residency experiment](../validation/register-residency.md)
 confirms four guest values can cross ARM64 tail handlers in host registers, but

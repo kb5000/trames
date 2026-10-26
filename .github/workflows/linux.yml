@@ -1224,6 +1224,8 @@ jobs:
           bash scripts/build-qemu-oracle.sh
           echo "$GITHUB_WORKSPACE/target/qemu-oracle/bin" >> "$GITHUB_PATH"
       - run: cargo fmt --all --check
+      - name: Verify common Linux and execution backend dependency boundaries
+        run: python3 scripts/check-execution-boundaries.py
       - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
       - run: cargo build --workspace --all-features --locked
       - run: cargo test --workspace --all-features --locked

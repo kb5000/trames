@@ -7,6 +7,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+trames-execution = { path = "../trames-execution" }
 trames-memory = { path = "../trames-memory" }
 getrandom = "=0.3.4"
 trames-compute = { path = "../trames-compute" }

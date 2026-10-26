@@ -405,6 +405,8 @@ mod tests {
         struct Input {
             checks: u64,
             writer: trames_vfs::DirectFd,
+            completed: Arc<SharedPage>,
+            deadline: Instant,
         }
         impl GuestOutput for Input {
             fn poll_control(&mut self, _: &trames_vfs::Vfs) -> std::io::Result<bool> {
@@ -412,13 +414,16 @@ mod tests {
                 if self.checks == 3 {
                     assert_eq!(self.writer.write(b"xy"), Ok(2));
                 }
-                Ok(self.checks == 6)
+                let completed = self.completed.with_read(0, 16, |bytes| {
+                    bytes[..8] == 1u64.to_le_bytes() && bytes[8..] == 1u64.to_le_bytes()
+                });
+                Ok(self.checks >= 6 && completed || Instant::now() >= self.deadline)
             }
             fn stdin_ready(&mut self) -> std::io::Result<bool> {
                 Ok(false)
             }
             fn control(&mut self, _: &mut trames_vfs::Vfs) -> std::io::Result<bool> {
-                Ok(self.checks < 6)
+                Ok(self.checks == 0)
             }
             fn write(&mut self, _: OutputFd, bytes: &[u8]) -> std::io::Result<usize> {
                 Ok(bytes.len())
@@ -430,15 +435,23 @@ mod tests {
         k.per_cpu = vec![Duration::ZERO; 2];
         k.terminal = Some(Terminal::default());
         let mut a = super::super::tests::process();
-        code(&mut a, &[0x14000000]);
+        code(&mut a, &[0xf9000120, 0x14000000]); // acknowledge the resumed read, then loop
         let [reader, writer] = a.linux.vfs.pipe(0).unwrap();
         let writer = a.linux.vfs.direct_descriptors().get(writer).unwrap();
         let mut b = a.fork();
         b.tgid = 2;
         b.vm_id = 2;
         b.affinity = 2;
-        let mut io = Input { checks: 0, writer };
+        let completed = Arc::new(SharedPage::new([0; PAGE_SIZE as usize]));
+        let mut io = Input {
+            checks: 0,
+            writer,
+            completed: completed.clone(),
+            deadline: Instant::now() + Duration::from_secs(3),
+        };
         for (id, mut p) in [(1, a), (2, b)] {
+            map(&mut p, 0x2000, completed.clone(), None);
+            p.cpu.set_x(9, 0x2000 + (id as u64 - 1) * 8);
             k.call(id, &mut p, 63, [reader as u64, 0x1000, 1, 0, 0, 0], &mut io);
             assert!(p.byte_wait.is_some());
             p.linux.vfs.close(reader).unwrap();

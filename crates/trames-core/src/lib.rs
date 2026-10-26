@@ -14,7 +14,9 @@ mod signal_actions;
 mod terminal;
 mod worker_syscalls;
 mod workers;
-use trames_memory::{Memory, MemoryError, Permissions, DEFAULT_MEMORY_LIMIT, PAGE_SIZE};
+#[cfg(test)]
+use trames_memory::Permissions;
+use trames_memory::{Memory, MemoryError, DEFAULT_MEMORY_LIMIT, PAGE_SIZE};
 
 /// Guest resident-page budgets. Untouched anonymous zeros/reservations have no
 /// resident charge. File mappings and fork COW remain conservative; CLONE_VM
@@ -59,11 +61,7 @@ pub struct RuntimeOptions {
     pub vulkan_accelerator: bool,
 }
 
-pub const STACK_TOP: u64 = 0x0000_7fff_fff0_0000;
-// Alpine BusyBox's interactive line editor probes a >64 KiB stack frame.
-// This mapping still counts against the existing per-process memory quota.
-pub const STACK_SIZE: u64 = 1024 * 1024;
-const INITIAL_ARGUMENT_BYTES: u64 = 64 * 1024;
+pub use trames_linux::image::{STACK_SIZE, STACK_TOP};
 pub const DEFAULT_INSTRUCTION_LIMIT: u64 = 10_000_000;
 
 #[derive(Debug)]
@@ -203,23 +201,6 @@ pub struct Exit {
     pub instructions: u64,
 }
 
-fn push_string(memory: &mut Memory, cursor: &mut u64, string: &[u8]) -> Result<u64, RuntimeError> {
-    if string.contains(&0) {
-        return Err(RuntimeError::Arguments("NUL in argv or envp"));
-    }
-    let len = string
-        .len()
-        .checked_add(1)
-        .ok_or(RuntimeError::Arguments("string size"))?;
-    *cursor = cursor
-        .checked_sub(len as u64)
-        .filter(|&address| address >= STACK_TOP - INITIAL_ARGUMENT_BYTES)
-        .ok_or(RuntimeError::Arguments("stack exceeds 64 KiB"))?;
-    memory.write(*cursor, string)?;
-    memory.write(*cursor + string.len() as u64, &[0])?;
-    Ok(*cursor)
-}
-
 #[cfg(test)]
 fn initial_stack(
     elf: &mut LoadedElf,
@@ -249,41 +230,7 @@ fn initial_stack_bytes(
     options: RuntimeOptions,
     exec_filename: Option<&[u8]>,
 ) -> Result<u64, RuntimeError> {
-    if argv.is_empty() {
-        return Err(RuntimeError::Arguments("argv[0] is required"));
-    }
-    if argv.len() + envp.len() > 4096 {
-        return Err(RuntimeError::Arguments(
-            "too many arguments or environment entries",
-        ));
-    }
-    elf.memory
-        .map(STACK_TOP - STACK_SIZE, STACK_SIZE, Permissions::RW)?;
-    let mut cursor = STACK_TOP;
-    let mut arguments = Vec::new();
-    let mut environment = Vec::new();
-    let execfn = exec_filename
-        .map(|name| push_string(&mut elf.memory, &mut cursor, name))
-        .transpose()?;
-    // Linux places argv[0..] then envp[0..] in increasing address order.
-    // libuv uses that contiguous region for process.title. Packing forwards
-    // onto a descending stack reverses it and can underflow its area length.
-    for value in envp.iter().rev() {
-        environment.push(push_string(&mut elf.memory, &mut cursor, value)?);
-    }
-    environment.reverse();
-    for value in argv.iter().rev() {
-        arguments.push(push_string(&mut elf.memory, &mut cursor, value)?);
-    }
-    arguments.reverse();
-    cursor -= 16;
-    let mut entropy = [0; 16];
-    trames_linux::fill_entropy(&mut entropy)
-        .map_err(|_| RuntimeError::Arguments("host entropy source unavailable"))?;
-    elf.memory.write(cursor, &entropy)?;
-    // Static Linux auxv, including real host entropy for the guest stack guard.
-    let mut auxv = vec![
-        (6u64, PAGE_SIZE),
+    let extra = [
         (
             trames_vulkan::AUXV_KEY,
             if options.vulkan_accelerator {
@@ -336,7 +283,6 @@ fn initial_stack_bytes(
                 0
             },
         ),
-        (16, trames_cpu::HWCAP),
         (
             trames_accel::allocator::AUXV_KEY,
             if options.pure_accelerator && options.native_allocator {
@@ -345,49 +291,23 @@ fn initial_stack_bytes(
                 0
             },
         ),
-        (26, trames_cpu::HWCAP2),
-        (9, elf.entry),
-        (7, elf.interpreter_base),
-        (11, credentials.uid as u64),
-        (12, credentials.euid as u64),
-        (13, credentials.gid as u64),
-        (14, credentials.egid as u64),
-        (
-            23,
-            u64::from(credentials.uid != credentials.euid || credentials.gid != credentials.egid),
-        ),
-        (31, execfn.unwrap_or(arguments[0])),
-        (25, cursor),
     ];
-    if let Some(phdr) = elf.phdr {
-        auxv.extend([(3, phdr), (4, 56), (5, elf.phnum as u64)]);
-    }
-    auxv.push((0, 0));
-    let mut words = vec![argv.len() as u64];
-    words.extend(arguments);
-    words.push(0);
-    words.extend(environment);
-    words.push(0);
-    for (key, value) in auxv {
-        words.extend([key, value]);
-    }
-    let sp = cursor
-        .checked_sub(words.len() as u64 * 8)
-        .map(|v| v & !15)
-        .filter(|&v| v >= STACK_TOP - INITIAL_ARGUMENT_BYTES)
-        .ok_or(RuntimeError::Arguments("stack exceeds 64 KiB"))?;
-    for (index, word) in words.iter().enumerate() {
-        elf.memory
-            .write(sp + index as u64 * 8, &word.to_le_bytes())?;
-    }
-    let trampoline = 0x0000_7fff_ffd0_0000;
-    elf.memory.map(trampoline, PAGE_SIZE, Permissions::RW)?;
-    elf.memory.write(
-        trampoline,
-        &[0x68, 0x11, 0x80, 0xd2, 0x01, 0x00, 0x00, 0xd4],
-    )?;
-    elf.memory.protect(trampoline, PAGE_SIZE, Permissions::RX)?;
-    Ok(sp)
+    trames_linux::image::build_initial_stack(
+        elf,
+        argv,
+        envp,
+        credentials,
+        trames_execution::Features {
+            hwcap: trames_cpu::HWCAP,
+            hwcap2: trames_cpu::HWCAP2,
+        },
+        &extra,
+        exec_filename,
+    )
+    .map_err(|error| match error {
+        trames_linux::image::ImageError::Arguments(reason) => RuntimeError::Arguments(reason),
+        trames_linux::image::ImageError::Memory(error) => RuntimeError::Memory(error),
+    })
 }
 
 impl Runtime {

@@ -1,0 +1,413 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-26",
+  "scope": "Execution separation foundation and physical-memory reclamation; not Mac/iPad feature parity or completed repository extraction.",
+  "tracking_issue": "https://github.com/kb5000/trames/issues/44",
+  "branch": "codex/execution-backends",
+  "parent_commit": "4315c3e1b358c3ae2e1617c15b410de9dac9870a",
+  "source_sha256": {
+    ".github/workflows/linux.yml": "f3c8afad9e47a8cd140a82f874869cf949b581b5b7f3eafa58939f5a3082ddb6",
+    "Cargo.lock": "e15601318025bf67392f7d270497ac22e6cdfedf3a4fc77bd8ee864cf1c78da3",
+    "Cargo.toml": "afb62578698d31a2649430873cb0c71463a08f32b52bb2cefbfa46c85e2426b8",
+    "apps/macos/Trames.entitlements": "70d65ae13874e183526aa48e55bb330f2156da94effca24f89b5e2f940262723",
+    "crates/trames-accel/Cargo.toml": "c91b7bc62852b9d872f468501df9bc293f5357fe561bee5c34e15680a56abc35",
+    "crates/trames-accel/src/lib.rs": "79bd5d6f3ebfb799e9de066c23f3b66105ca017d0cc43cebf9484aec3dfe7455",
+    "crates/trames-bridge/Cargo.toml": "0d505ab330ab5a0b64e859aad7fc4cae7fb1d2e26248f9417f82ac0ae99c000e",
+    "crates/trames-bridge/src/hash.rs": "2b74c4f484f42a0360fd31e538dd7cd94d1cc21c20bc118f15a6e922f97ebf46",
+    "crates/trames-bridge/src/lib.rs": "a1204f8b038832e76e0c3e7d46f34c437e799bc3ffa802c66f8ee657e8612a8d",
+    "crates/trames-core/Cargo.toml": "fcfbc750f8ab2d3e38230bdb12e6e15d7272cc186ef1033fb349b07f35d99244",
+    "crates/trames-core/src/lib.rs": "190528b781cf5d418f2dabdbded5646985d8173c3ad0cbf1513a191782bcf487",
+    "crates/trames-core/src/process_vm.rs": "a98ce36ddc0591dbb5b866a5224ac49b7e785215ec9956ce20f9c3f84261698f",
+    "crates/trames-cpu/Cargo.toml": "bc8ca138bcd876513295a256a997e1772ad80a3105040ebb0bb7023a6cca6285",
+    "crates/trames-cpu/src/lib.rs": "4ecacc4b6abc8c6f33f8f56305e3f8885e21941a3cc0bc0cdca11746c51c89dd",
+    "crates/trames-execution/Cargo.toml": "808354cbb0ea873a0047d3f31f07ed0348e2c7e3e0d5a8b1894972de66c4b9c9",
+    "crates/trames-execution/src/lib.rs": "177dd95d6f768812fce009cc7a647d1fcca0ce8dceda5397cf106013c6a6c31a",
+    "crates/trames-hvf/Cargo.toml": "a27a088b51fdde8b09c5621c2e3aae9984c4d5b26b6aa60a4a9daaca13eab7e5",
+    "crates/trames-hvf/build.rs": "46b63dd8165b079b94a6d1f868ea9646fb2403ad282398d8b19b31cab860587f",
+    "crates/trames-hvf/examples/entry.rs": "bb4c17536f916fa30f1241557a49ffab652515e5fddea55cf1084e163ab7f245",
+    "crates/trames-hvf/src/host.c": "e7f78ed73a3788eb2dbda99c5f3a98e5982da0ceae68a6565025b26f9f64efbb",
+    "crates/trames-hvf/src/lib.rs": "814e519daea12bdabccb1429e95684c050cf9f2fb8cd7dd75a71308381419f41",
+    "crates/trames-hvf/src/macos.rs": "56cc431c3cf54fc5640927052447e75df6915c8adaaf3062c90238aa191697d8",
+    "crates/trames-hvf/src/vectors.S": "f05cd4e26788ca1848c881bcefd6bf49ad052e0c24f8c27edd739482840e73dd",
+    "crates/trames-linux/Cargo.toml": "243e00db40ffd8e17101966ddf5b8b57952c6c570ad706dbdd9b5310111f8db0",
+    "crates/trames-linux/src/image.rs": "9abb0d44834ad9469d390ffee847ce7095afc5dd65e33f9b84784d82c433a42c",
+    "crates/trames-linux/src/lib.rs": "00b68abec858a7caaf34391a4d99c3907f10b8df192cf472b139510369999e26",
+    "crates/trames-linux/src/state.rs": "fc6f1649ab5131dfd5b0262f4543ce4539ad798d9e52c670c124f127a26cea86",
+    "crates/trames-mac/Cargo.toml": "7a33b314a9f651e4352a7fd8173951c24e5f68cc732f74ab26f45932389dd160",
+    "crates/trames-mac/src/apple.rs": "c2d527556b6db3f057fb23267be469bed07c33187826877a651cab6170df6b0c",
+    "crates/trames-mac/src/main.rs": "288605a6269b598f713c11db750cc484ad41f67f9bb60bc513d50ceca2110f52",
+    "crates/trames-memory/examples/reclaim-footprint.rs": "e969135432fbd8e23e21a5f8908a6d6de2b70da712832efe4a56d3905d91ff9d",
+    "crates/trames-memory/src/backing.rs": "cf558749abb420c52d6daa6d5b852f1de96b46c622d776e1c89766b21b9258e5",
+    "crates/trames-memory/src/hardware.rs": "dca9513df3ccfe8cdf09dc405f6e8bd47f3c392021801870741eafa63374173e",
+    "crates/trames-memory/src/lib.rs": "254fabaa5267cd527e8a708f240c89a218993076bac818205639df6a5a0fde4e",
+    "crates/trames-memory/src/mmu/host.rs": "8c1ff5de79b9d8159b6155afc032349f379af9ececc4b43d415836974f7311cf",
+    "crates/trames-memory/src/mmu/host/reclaim.rs": "3de3beb39459e56aa0c94e882e1d63a6908668c211b61cbb4fc108ad033adcda",
+    "crates/trames-memory/src/mmu/mod.rs": "e4ada6a03d287a6d7e42a6c80578b8ba1aa86055594b255017430eb9012bfc66",
+    "crates/trames-memory/src/mmu/tests.rs": "b1de02f68b82b3dcbe471d40aea0bb5bd61419745897dcf23e71693835147ad1",
+    "crates/trames-memory/src/mmu/worker.rs": "4f284d7b64acece74f1e4336a6bf57b2a86540b8b46ce4309411f6c45e7ddd2e",
+    "crates/trames-memory/src/parallel/snapshot.rs": "5bdbe354876f0c405f059b7afce403fae49eaa3a753e6860e5d2dfc408b51129",
+    "scripts/build-mac.sh": "7892d4eb22343a7e986b5668d0c54423d9f78ac5ce2349800d2065ad771b35dc",
+    "scripts/check-execution-boundaries.py": "34a9bcb50e9083ffd0eff361462e68750f4be87938355473761f17a6c9677d78",
+    "tests/fixtures/mac-execution.c": "cf0f258646b283796b3fb63b01f99674bdfa54b18eb430e464a231a711ef8f0f",
+    "tests/integration/mac-execution.py": "5872b6c61eae86ba92b87e5f9f29a9cfcf98ba4b0a115afb70f0786564cc8920"
+  },
+  "excluded_preexisting_change": {
+    "path": "tests/integration/multiple-terminals.py",
+    "sha256": "396fdbcc5a5410f01c610c2d227c3fb54c3880d2d72acf2ea0db9d60d33dec02",
+    "handling": "Preserved, not committed. Additional Mac terminal verification ran this local file; Linux terminal verification used the existing committed script."
+  },
+  "complete_local_linux_ci": {
+    "passed": true,
+    "steps_passed": 80,
+    "steps_failed": 0,
+    "architecture": "Native ARM64 Linux, Lima VZ; no x86 emulation. Pinned QEMU is the independent CPU instruction oracle.",
+    "workflow": ".github/workflows/linux.yml",
+    "result": {
+      "path": "target/local-ci/io/execution-split-ci/summary.json",
+      "sha256": "05f5acce25f8e4b88bc5f05a68f73b90afed626476e9d185be58acf2935e7998"
+    },
+    "source_snapshot": {
+      "path": "target/local-ci/io/execution-split-source-state.json",
+      "sha256": "234da773b8553dda1d1a9cc80f83f98a223b00df75e2bcefecaad461e658c54f"
+    },
+    "coverage": [
+      "Workspace tests, strict Clippy, release build and execution dependency boundaries",
+      "CPU differential suite and original-musl Linux semantic oracles",
+      "Instrumented-std memory/accel ThreadSanitizer and original native allocator sanitizers",
+      "Networking, DNS, TLS, storage, process/IPC and graphics",
+      "Signed crun, Docker, Node/V8 and fresh persistent developer workflows",
+      "Retained timer waits and worker progress"
+    ],
+    "reuse_policy": "All production sources match this completed snapshot. The two later changes affect test/example code only and have scoped follow-up verification below.",
+    "later_test_example_changes": {
+      "crates/trames-core/src/process_vm.rs": {
+        "snapshot_sha256": "377d37845e94ef3391740f8be5b827ac32789aaa94f7b3dd61277ad5bf836c7c",
+        "current_sha256": "a98ce36ddc0591dbb5b866a5224ac49b7e785215ec9956ce20f9c3f84261698f"
+      },
+      "crates/trames-hvf/examples/entry.rs": {
+        "snapshot_sha256": "04fdf2772b092292f0d94aa4e8b3c4fac9506b80f448eeaedfc720c6be967305",
+        "current_sha256": "bb4c17536f916fa30f1241557a49ffab652515e5fddea55cf1084e163ab7f245"
+      }
+    }
+  },
+  "native_macos_affected_tests": {
+    "passed": true,
+    "result": {
+      "path": "target/stable-release/execution-split-native-affected.log",
+      "sha256": "6e822043c7378392097f89285845ed7dbc11884583a714bcb985eb87185c36e9"
+    },
+    "passed_unit_counts": {
+      "accel": 24,
+      "bridge": 8,
+      "core": 194,
+      "cpu": 44,
+      "linux": 137,
+      "memory": 110
+    },
+    "strict_workspace_clippy": {
+      "path": "target/stable-release/execution-split-clippy-final.log",
+      "sha256": "604080d1a2edaee004b9bfc5001d0e40a83fc6808e9a89c384e42a7395525f67"
+    },
+    "followup_clippy": {
+      "path": "target/stable-release/execution-followup-clippy.log",
+      "sha256": "79500bcb4f4cd5f1d15ea85678210778798ad0a3ca1ae800bd12bdc62d607389"
+    },
+    "architectural_handoff": "Deferred NZCV/carry, integer/SIMD/FP/TLS state and resumed PC preserved.",
+    "terminal_integration": {
+      "path": "target/stable-release/execution-multiple-terminals-native.log",
+      "sha256": "cfdd0dd00ed8841b0f61e1c1e3905b5b0e8dc08c223380d25bf48e0150ecb6ae"
+    }
+  },
+  "test_wait_followup": {
+    "reason": "A fixed six-control-check cancellation could precede reader completion under TSan load. Guest acknowledgements now confirm both original reads before cancellation; the existing FD-reuse and one-cohort assertions remain.",
+    "prior_timing_failure": {
+      "path": "target/local-ci/io/execution-split-tsan-actual-before-ack.log",
+      "sha256": "86a0617d48a549b56ba3f2fe87e3a160930e29ffb580c419367b8e9e427e8525"
+    },
+    "macos_retry": {
+      "path": "target/stable-release/execution-persistent-wait-ack.log",
+      "sha256": "aa38f283d1adacab1081dd6bd3d33baa1438b38161a30cd99103373c3920f8a4"
+    },
+    "linux_retry": {
+      "path": "target/local-ci/io/execution-split-persistent-ack-retry.log",
+      "sha256": "b2c5402dd4af43c82cc474eebcbfde8e1c7312d0dea96109e2fe722a57be7e1d"
+    },
+    "instrumented_std_tsan": [
+      {
+        "path": "target/local-ci/io/execution-split-tsan-actual.log",
+        "sha256": "39c0a06bf8859e40ce7a96b7ced21885e5faa35a6a2c90fb159a1131d5bf9a29",
+        "passed_tests": 5
+      },
+      {
+        "path": "target/local-ci/io/execution-split-tsan-domains.log",
+        "sha256": "fa910f6174597af3d9872cf2ea4738d859bd976c333c9370451b815f5dc1a25d",
+        "passed_tests": 3
+      },
+      {
+        "path": "target/local-ci/io/execution-split-tsan-mapped-authority.log",
+        "sha256": "f0ae4e8f60ab54ee12b07430c5b6a35e6c1db7869c44c197b8a890ce641dc77b",
+        "passed_tests": 1
+      }
+    ],
+    "suppression_added": false
+  },
+  "apple_workflow": {
+    "passed": true,
+    "simulator_passed": 71,
+    "simulator_skipped": 1,
+    "skip": "Existing opt-in 256 MiB File Provider disk/memory probe; TRAMES_FILEPROVIDER_LARGE_MIB was not set.",
+    "summaries": [
+      {
+        "path": "target/stable-release/execution-split-apple-workspace-tests.json",
+        "sha256": "068f17b767769d29dbc9252b3e2c732187f590be4dc5449fad26e69ef2f568d9"
+      },
+      {
+        "path": "target/stable-release/execution-split-apple-smoke-tests.json",
+        "sha256": "b45333252672ed31830efa976cd9c66b77146344078d39d799d402a74e70df76"
+      }
+    ],
+    "ssh_sftp": {
+      "path": "target/stable-release/execution-split-apple-ssh.log",
+      "sha256": "5b007157f58e279268cb523dff5ddbc2aacf3f2a3b90df6637073df37c91f09b"
+    },
+    "original_c_wayland_peers": {
+      "path": "target/stable-release/execution-split-apple-wayland.log",
+      "sha256": "c97b8c4a148124af48f80ab5823cf8e4ece29740415293976202d52b95e0b40f",
+      "passed_tests": 5
+    },
+    "builds": "FFI release, ARM64 simulator and unsigned device build passed; File Provider extension/group metadata checked on both app bundles.",
+    "unsigned_ipa": {
+      "path": "apps/ios/build/sideload/Trames-execution-split-unsigned.ipa",
+      "sha256": "0dbb6a7b5af9d27717a4305eb50a857328066c2c0ea2601b1082bb997603d2f9",
+      "bytes": 13577374
+    },
+    "physical_ipad_release_acceptance": false,
+    "runtime_warning": "The existing LocalVulkanProbe reported a QoS priority-inversion warning."
+  },
+  "physical_slot_reclamation": {
+    "fixture": "crates/trames-memory/examples/reclaim-footprint.rs",
+    "scope": "Fill 64 MiB; retain one host granule in every 1 MiB arena; release all other pages and verify retained data, zero reuse and three cycles without restarting Memory.",
+    "darwin": {
+      "measurement": "proc_pid_rusage physical footprint",
+      "result": {
+        "path": "target/stable-release/physical-slot-reclaim-footprint.log",
+        "sha256": "0c5f641cbfd57d90456e9dd4fc1a81e03d078cb483deeb7b3217bd63ea35846f"
+      },
+      "samples": [
+        {
+          "phase": "baseline",
+          "cycle": 0,
+          "guest_resident": 0,
+          "host_bytes": 1245520
+        },
+        {
+          "phase": "populated_64m",
+          "cycle": 1,
+          "guest_resident": 67108864,
+          "host_bytes": 72860080
+        },
+        {
+          "phase": "released_all_but_64_granules",
+          "cycle": 1,
+          "guest_resident": 1048576,
+          "host_bytes": 8094128
+        },
+        {
+          "phase": "populated_64m",
+          "cycle": 2,
+          "guest_resident": 67108864,
+          "host_bytes": 74252720
+        },
+        {
+          "phase": "released_all_but_64_granules",
+          "cycle": 2,
+          "guest_resident": 1048576,
+          "host_bytes": 8192432
+        },
+        {
+          "phase": "populated_64m",
+          "cycle": 3,
+          "guest_resident": 67108864,
+          "host_bytes": 74301896
+        },
+        {
+          "phase": "released_all_but_64_granules",
+          "cycle": 3,
+          "guest_resident": 1048576,
+          "host_bytes": 8241608
+        },
+        {
+          "phase": "released_all",
+          "cycle": 0,
+          "guest_resident": 0,
+          "host_bytes": 6078824
+        }
+      ]
+    },
+    "linux": {
+      "measurement": "/proc/self/statm resident set",
+      "result": {
+        "path": "target/local-ci/io/execution-split-footprint.log",
+        "sha256": "ec8b670e31c95e1966292e3c7ff2319a12865ebb7a5d932d2c7c379db3e8c727"
+      },
+      "samples": [
+        {
+          "phase": "baseline",
+          "cycle": 0,
+          "guest_resident": 0,
+          "host_bytes": 1851392
+        },
+        {
+          "phase": "populated_64m",
+          "cycle": 1,
+          "guest_resident": 67108864,
+          "host_bytes": 73838592
+        },
+        {
+          "phase": "released_all_but_64_granules",
+          "cycle": 1,
+          "guest_resident": 262144,
+          "host_bytes": 7258112
+        },
+        {
+          "phase": "populated_64m",
+          "cycle": 2,
+          "guest_resident": 67108864,
+          "host_bytes": 74170368
+        },
+        {
+          "phase": "released_all_but_64_granules",
+          "cycle": 2,
+          "guest_resident": 262144,
+          "host_bytes": 7327744
+        },
+        {
+          "phase": "populated_64m",
+          "cycle": 3,
+          "guest_resident": 67108864,
+          "host_bytes": 74203136
+        },
+        {
+          "phase": "released_all_but_64_granules",
+          "cycle": 3,
+          "guest_resident": 262144,
+          "host_bytes": 7360512
+        },
+        {
+          "phase": "released_all",
+          "cycle": 0,
+          "guest_resident": 0,
+          "host_bytes": 6836224
+        }
+      ]
+    },
+    "ownership_tests": [
+      "Partial host-granule retirement and zero reuse",
+      "Fork byte owners retain live storage",
+      "Cached frames retire only after the last execution View"
+    ],
+    "negative_control": {
+      "mutation": "Use the previous production Memory implementation with the new footprint example.",
+      "expected": "Fail actual host-charge reduction assertion; released pages remain physically charged.",
+      "result": {
+        "path": "target/stable-release/physical-slot-reclaim-negative.log",
+        "sha256": "f06c367178c17e42120582213a984b77087a560b7facfb5935fa869f8ac6003e"
+      }
+    }
+  },
+  "mac_hardware_execution": {
+    "build": "bash scripts/build-mac.sh; local ad-hoc Hypervisor entitlement, verified signature.",
+    "entry": {
+      "path": "target/stable-release/execution-hvf-entry-final-run.log",
+      "sha256": "1210dfd1f99ce122401c7986a414af556f0c21534d731aeb59497eb056378d41"
+    },
+    "entry_checks": [
+      "Real EL0 ARM64 SVC through common Linux getpid/exit",
+      "Sparse page access spanning a 4 GiB range",
+      "Fork COW and write protection",
+      "Physical release with the VM still alive",
+      "Infinite guest loop yields through the hardware timer; instruction count is Unavailable"
+    ],
+    "busybox": [
+      "Stock signed-distribution BusyBox echo",
+      "BusyBox shell builtins: native-shell:42"
+    ],
+    "original_musl_fixture": {
+      "path": "target/stable-release/mac-memory-native-reclaimed-tables/results.json",
+      "sha256": "cf9a9e67c234e050a11a1ac977afc03f091843d37399b205fb6745fee1e54f46",
+      "passed": true,
+      "runner_sha256": "cd7a2dba0e392a5240ac39e76694c8a8bff277db9ba3d7097c5206e96739784d",
+      "fixture_sha256": "b7a90c237466f31082aafb38e832042f735d9cd07be5196150f50fd76e8e7551",
+      "samples": [
+        {
+          "phase": "BASELINE",
+          "host_physical_footprint": 3342912
+        },
+        {
+          "phase": "POPULATED",
+          "host_physical_footprint": 79987336
+        },
+        {
+          "phase": "DISCARDED",
+          "host_physical_footprint": 13501016
+        },
+        {
+          "phase": "UNMAPPED",
+          "host_physical_footprint": 13763184
+        },
+        {
+          "phase": "POPULATED",
+          "host_physical_footprint": 82068152
+        },
+        {
+          "phase": "DISCARDED",
+          "host_physical_footprint": 14156400
+        },
+        {
+          "phase": "UNMAPPED",
+          "host_physical_footprint": 14156400
+        },
+        {
+          "phase": "POPULATED",
+          "host_physical_footprint": 82395832
+        },
+        {
+          "phase": "DISCARDED",
+          "host_physical_footprint": 14189168
+        },
+        {
+          "phase": "UNMAPPED",
+          "host_physical_footprint": 14221936
+        }
+      ],
+      "scope": "Actual EL0 hardware guest, unchanged static musl; host kernel physical footprint sampled while the guest waits on stdin. No process restart between allocation cycles."
+    },
+    "measurement": "proc_pid_rusage physical footprint sampled while the actual guest waits on stdin; three populate/discard/unmap cycles in the same process and VM, plus private-file COW/discard integrity.",
+    "semantic_oracle": {
+      "native_linux": {
+        "path": "target/local-ci/io/execution-fixture-native.stdout",
+        "sha256": "24e18dca593ce9ef3d953ee85341e04556dde88167c7b1dfed461ffe82512f72"
+      },
+      "interpreter": {
+        "path": "target/local-ci/io/execution-fixture-interpreter.stdout",
+        "sha256": "24e18dca593ce9ef3d953ee85341e04556dde88167c7b1dfed461ffe82512f72"
+      },
+      "stdout_equal": true
+    },
+    "negative_control": {
+      "mutation": "Invalidate the instruction cache across the entire data RAM mapping instead of initialized executable pages.",
+      "expected": "Fail the baseline + 96 MiB physical-footprint cap for the 64 MiB fixture; observed about 141 MiB.",
+      "result": {
+        "path": "target/stable-release/execution-native-cache-negative.log",
+        "sha256": "66d8453fa12fcb07a72640cb91949d411a86dca47753d1c123c2e9128106ab3a"
+      }
+    }
+  },
+  "remaining_gates": [
+    "Extract common task scheduling, signal delivery, clone/exec and native syscall admission from interpreter-specific Core composition.",
+    "Support shared mappings/provider export and broader hardware capability/permission cases before full application integration.",
+    "Reclaim reconstructible caches under host memory pressure; preserve and restore live anonymous contents if paging them out.",
+    "Measure broader application and physical iPad regressions; bounded probes do not establish whole-application performance.",
+    "Extract three independently versioned/buildable repositories only after both products use the shared task/memory model."
+  ]
+}

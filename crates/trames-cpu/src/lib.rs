@@ -4,6 +4,7 @@
 #![allow(incomplete_features)]
 //! AArch64 virtual CPU with a single bounded cached interpreter.
 use std::fmt;
+use trames_execution::{Aarch64State, Registers};
 use trames_memory::{CpuMemory, MemoryError};
 /// Capabilities of the virtual CPU, independent of the host.
 pub const HWCAP: u64 = (1 << 0)
@@ -181,6 +182,33 @@ fn shifted(value: u64, kind: u32, amount: u32, wide: bool) -> u64 {
 }
 
 impl Cpu {
+    /// Materialize architectural state only at an explicit engine boundary.
+    /// The normal interpreter slice keeps its deferred flags and decode cache.
+    pub fn architectural_state(&self) -> Aarch64State {
+        Aarch64State {
+            registers: self.registers,
+            sp: self.sp,
+            pc: self.pc,
+            nzcv: self.nzcv() << 28,
+            tpidr_el0: self.tpidr_el0,
+            tpidr2_el0: self.tpidr2_el0,
+            fpcr: self.fpcr,
+            fpsr: self.fpsr,
+            vectors: self.vectors,
+        }
+    }
+    pub fn restore_architectural_state(&mut self, state: &Aarch64State) {
+        self.registers = state.registers;
+        self.sp = state.sp;
+        self.pc = state.pc;
+        self.set_nzcv(state.nzcv >> 28);
+        self.tpidr_el0 = state.tpidr_el0;
+        self.tpidr2_el0 = state.tpidr2_el0;
+        self.fpcr = state.fpcr;
+        self.fpsr = state.fpsr;
+        self.vectors = state.vectors;
+        self.clear_exclusive();
+    }
     pub fn set_native_calls(&mut self, enabled: bool) {
         self.native_calls = enabled;
     }
@@ -485,6 +513,71 @@ impl Cpu {
         SliceOutcome::Yield {
             instructions: budget,
         }
+    }
+}
+
+impl Registers for Cpu {
+    #[inline]
+    fn x(&self, index: usize) -> u64 {
+        Cpu::x(self, index)
+    }
+    #[inline]
+    fn set_x(&mut self, index: usize, value: u64) {
+        Cpu::set_x(self, index, value);
+    }
+    #[inline]
+    fn pc(&self) -> u64 {
+        self.pc
+    }
+}
+
+#[cfg(test)]
+mod execution_state_tests {
+    use super::*;
+    use trames_memory::{Memory, Permissions};
+
+    #[test]
+    fn architectural_handoff_preserves_deferred_flags_tls_simd_and_resume_pc() {
+        let mut memory = Memory::default();
+        memory
+            .map(
+                0x1000,
+                4096,
+                Permissions {
+                    read: true,
+                    write: true,
+                    execute: true,
+                },
+            )
+            .unwrap();
+        memory
+            .write(
+                0x1000,
+                &[0xab010002u32, 0xba010043]
+                    .into_iter()
+                    .flat_map(u32::to_le_bytes)
+                    .collect::<Vec<_>>(),
+            )
+            .unwrap();
+        let mut cpu = Cpu::new(0x1000, 0x4000);
+        cpu.set_x(0, u64::MAX);
+        cpu.set_x(1, 1);
+        cpu.set_vector(31, u128::MAX - 41);
+        cpu.fpcr = 0x400000;
+        cpu.fpsr = 0x10;
+        cpu.tpidr_el0 = 0x8000;
+        cpu.tpidr2_el0 = 0x9000;
+        cpu.step(&mut memory).unwrap();
+        let state = cpu.architectural_state();
+        assert_eq!(state.nzcv, 0x60000000);
+        assert_eq!(state.pc, 0x1004);
+        let mut restored = Cpu::default();
+        restored.restore_architectural_state(&state);
+        assert_eq!(restored.architectural_state(), state);
+        cpu.step(&mut memory).unwrap();
+        restored.step(&mut memory).unwrap();
+        assert_eq!(restored.x(3), 2);
+        assert_eq!(restored.architectural_state(), cpu.architectural_state());
     }
 }
 

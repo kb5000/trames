@@ -5,9 +5,9 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 [dependencies]
+trames-bridge = { path = "../trames-bridge" }
 trames-memory = { path = "../trames-memory" }
 trames-native = { path = "../trames-native" }
 serde = { version = "1.0", features = ["derive"] }
-sha2 = "0.10"
 [lints]
 workspace = true
