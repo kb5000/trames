@@ -1,0 +1,227 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-27",
+  "tracking_issue": "https://github.com/kb5000/trames-ipad/issues/44",
+  "scope": "Reuse the complete existing Linux process kernel through interpreter and thread-affine hardware adapters. No full Linux kernel or fixed guest RAM image is booted.",
+  "tested_sources": {
+    "ipad": "86bb856ded5a45d24af2180f1ecdc410b736b6ec",
+    "runtime": "1dcf6a3293d8157594058f8bd86ab4f63aab95ae",
+    "mac": "c932db4e05204bf8bf1ee1a0d2f7de63bffe0168",
+    "runtime_pin_consistent": true
+  },
+  "layout": {
+    "runtime_workspace_members": 16,
+    "ipad_workspace_members": 5,
+    "mac_workspace_members": 2,
+    "ipad_core": "Thin Runtime<trames_cpu::Cpu> facade; internal conformance target compiles the shared source.",
+    "mac": "Runtime<trames_hvf::kernel::Cpu>; movable architectural state, creator-thread-only engine.",
+    "production_kernel": "runtime/crates/trames-session",
+    "execution_boundary": "runtime/crates/trames-engine"
+  },
+  "linux": {
+    "workflow": ".github/workflows/linux.yml",
+    "job": "runtime",
+    "host": "native AArch64 Ubuntu local VM",
+    "completed": true,
+    "passed_steps": 81,
+    "total_steps": 81,
+    "compiler": "nightly-2026-10-16",
+    "scope": [
+      "independent CPU oracle",
+      "common and product tests",
+      "instrumented-std TSan",
+      "native C ASan/UBSan",
+      "iOS cross-check",
+      "musl/Alpine/APK",
+      "PTY/job control",
+      "Vulkan software-driver comparison",
+      "Python/Node",
+      "crun/Docker",
+      "persistent developer workflows"
+    ],
+    "common_cargo_example_entry_fix": "Common-only package selections specify --manifest-path runtime/Cargo.toml; three project-layout regressions pass.",
+    "evidence": {
+      "path": "target/local-ci/io/shared-process-ci/summary.json",
+      "sha256": "5dfaa9992a81825e9951b416f634b0bfc4623668a79a092340cf5dc05b5d6f12"
+    }
+  },
+  "common_macos": {
+    "fmt": true,
+    "clippy_all_targets_all_features": true,
+    "tests": {
+      "passed": 752,
+      "failed": 0,
+      "ignored": 10
+    },
+    "release_workspace": true,
+    "physical_reclamation_example": true
+  },
+  "ipad": {
+    "kernel_conformance": {
+      "passed": 190,
+      "ignored": 3
+    },
+    "cpu_unit_tests": 44,
+    "unsigned_simulator_rust_and_app_link": true,
+    "shared_process_source_path_verified_in_linked_debug_dylib": true,
+    "preexisting_swift_actor_isolation_warning_unchanged": true,
+    "physical_ipad_release_regression_run": false
+  },
+  "mac": {
+    "fmt_clippy_tests_release_and_adhoc_hypervisor_signature": true,
+    "host": "real Apple Silicon macOS",
+    "session": {
+      "passed": true,
+      "runner_sha256": "c3e771f7b3a28058528a4fd6787b019821d72beb2215e2de29c6e5161d68bc4a",
+      "fixture_sha256": "685f9c667253bafc9902ade812c24ffcf7454e4b2256ce38aaa42def16b23b2f",
+      "rootfs_sha256": "821565fa8f3953eefd12497b166b4b50add2f7c57fb312e75862f5867e06fefe",
+      "rows": [
+        {
+          "name": "process-threads",
+          "passed": true
+        },
+        {
+          "name": "shell-processes",
+          "passed": true
+        },
+        {
+          "name": "script",
+          "passed": true
+        },
+        {
+          "name": "storage-write",
+          "passed": true
+        },
+        {
+          "name": "storage-read",
+          "passed": true
+        },
+        {
+          "name": "interactive-job-control-resize-restore",
+          "passed": true
+        }
+      ]
+    },
+    "signals": {
+      "passed": true,
+      "runner_sha256": "c3e771f7b3a28058528a4fd6787b019821d72beb2215e2de29c6e5161d68bc4a",
+      "rows": [
+        {
+          "fixture": "cpu-signals",
+          "arguments": [],
+          "fixture_sha256": "fbd88226b9871493cf59cbe65073eb92d5ec7a52b77ff79adef76dada25c31ac",
+          "oracle_stdout_sha256": "cf72bdc614b10580f66e38c2e13f632d56001d830f49722efa48909f504a891a",
+          "returncode": 0,
+          "passed": true
+        },
+        {
+          "fixture": "signal-leaf-stack",
+          "arguments": [],
+          "fixture_sha256": "1e78251bb5581e5c94daa0bde3721cd5c32285190146e58f032b345f11b953cd",
+          "oracle_stdout_sha256": "9bf8b6addab624f569a6416f9b03e1d38e1a8ab413869648030ca7174668ed27",
+          "returncode": 0,
+          "passed": true
+        },
+        {
+          "fixture": "task-signals",
+          "arguments": [],
+          "fixture_sha256": "ba3a39b16c2e7bc0561a3df76b0835a648337975d5771601c6172018b1b62e1b",
+          "oracle_stdout_sha256": "75ecaf2874730551f70cb97b6c0acc7e269dfcf2438c017c0410346e810ab300",
+          "returncode": 0,
+          "passed": true
+        },
+        {
+          "fixture": "task-signals",
+          "arguments": [
+            "autodisarm"
+          ],
+          "fixture_sha256": "ba3a39b16c2e7bc0561a3df76b0835a648337975d5771601c6172018b1b62e1b",
+          "oracle_stdout_sha256": "75ecaf2874730551f70cb97b6c0acc7e269dfcf2438c017c0410346e810ab300",
+          "returncode": 0,
+          "passed": true
+        }
+      ]
+    },
+    "physical_memory": {
+      "passed": true,
+      "runner_sha256": "35f06cd340b6c9f41635415d885d055b906428bf0e60195562202d3fd85af0c1",
+      "fixture_sha256": "4177d6a13ef310c2e3c730906e31eb235ad6fcaf1b980ea4c0fc759cf049cc1f",
+      "samples": [
+        {
+          "phase": "BASELINE",
+          "host_physical_footprint": 3555904
+        },
+        {
+          "phase": "POPULATED",
+          "host_physical_footprint": 80265888
+        },
+        {
+          "phase": "DISCARDED",
+          "host_physical_footprint": 14271064
+        },
+        {
+          "phase": "UNMAPPED",
+          "host_physical_footprint": 14484080
+        },
+        {
+          "phase": "POPULATED",
+          "host_physical_footprint": 82739920
+        },
+        {
+          "phase": "DISCARDED",
+          "host_physical_footprint": 14811760
+        },
+        {
+          "phase": "UNMAPPED",
+          "host_physical_footprint": 14942832
+        },
+        {
+          "phase": "POPULATED",
+          "host_physical_footprint": 83198672
+        },
+        {
+          "phase": "DISCARDED",
+          "host_physical_footprint": 15008368
+        },
+        {
+          "phase": "UNMAPPED",
+          "host_physical_footprint": 15024752
+        }
+      ],
+      "scope": "Actual EL0 hardware guest, unchanged static musl; host kernel physical footprint sampled while the guest waits on stdin. No process restart between allocation cycles."
+    },
+    "unchanged_memory_path_reused_after_mac_dns_and_alignment_metadata_fix": true,
+    "real_applications": {
+      "signed_alpine_apk_install": true,
+      "python_subprocess_pipe_and_eight_threads": true,
+      "curl_certificate_verified_https": true,
+      "git_executable": true,
+      "persistent_python_file": true,
+      "evidence": {
+        "path": "target/kernel-split/mac-real-applications-final.log",
+        "sha256": "0cae5a484259d173bdfe75112bd499dbc98ddceabdeee60d63dafb8c0efe25ae"
+      }
+    },
+    "default_memory_ceiling_mib": 4096,
+    "exact_hardware_instruction_count": null,
+    "finite_exact_instruction_budget_rejected": true,
+    "dns_default_preserves_custom_guest_configuration": true
+  },
+  "source_reuse": {
+    "native_graphics_files_compared_byte_for_byte": 12,
+    "verified_moltenvk_archive_reused": true,
+    "unchanged_guest_binaries_reused_for_simulator_link": true,
+    "production_swift_changes": false
+  },
+  "preexisting_edit": {
+    "path": "tests/integration/multiple-terminals.py",
+    "sha256": "396fdbcc5a5410f01c610c2d227c3fb54c3880d2d72acf2ea0db9d60d33dec02",
+    "staged_or_committed_by_this_change": false
+  },
+  "remaining_gates": [
+    "Simultaneous hardware vCPUs and physical exports for shared mapping providers",
+    "Native Mac Wayland presentation windows",
+    "Host-pressure paging that preserves live dirty/anonymous data",
+    "Physical iPad integration/release acceptance"
+  ]
+}
