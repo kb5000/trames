@@ -16,6 +16,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Build current hybrid musl from the pinned upstream source
         run: |
           sudo apt-get update
@@ -37,6 +39,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: recursive
           fetch-depth: 0
       - name: Verify reused guest source is unchanged
         if: inputs.guest_run != ''

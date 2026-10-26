@@ -16,6 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: recursive
           persist-credentials: false
           fetch-depth: 0
       - name: Verify Release IPA, exact GPU libraries and paired GPL sources; publish immutable 1.2.0

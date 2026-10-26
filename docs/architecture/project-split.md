@@ -14,6 +14,9 @@ extracted content digest. Product Cargo dependencies resolve to this in-tree
 checkout. No absolute peer-checkout path, interpreter dependency in common code,
 or private signing credential is required to build the common runtime.
 
+The iPad migration is reviewed on `codex/project-split` until it is merged.
+Add `--branch codex/project-split` when cloning that product for this checkpoint.
+
 ```sh
 git clone --recurse-submodules https://github.com/kb5000/trames-ipad.git
 git clone --recurse-submodules https://github.com/kb5000/trames-mac.git

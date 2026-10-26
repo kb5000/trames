@@ -1,0 +1,364 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-26",
+  "tracking_issue": "https://github.com/kb5000/trames-ipad/issues/44",
+  "scope": "Physical repository extraction and independent/pinned builds; no guest algorithm or production Swift implementation changes.",
+  "repositories": {
+    "runtime": {
+      "url": "https://github.com/kb5000/trames-runtime",
+      "revision": "d623f29b07242efaaeee70e23b3147626694709e",
+      "workspace_members": 11,
+      "provenance": {
+        "upstream": "https://github.com/kb5000/trames-ipad",
+        "source_commit": "d035516132cb32c41635cc4fa9d97923b08718d7",
+        "history": "Filtered Git history retaining original authors and related commits; source code is unchanged at extraction.",
+        "role": "common Linux userspace runtime",
+        "unchanged_extracted_files": 237,
+        "extracted_content_sha256": "e99e6ada9e4e80cd18289288ed1b007fec9cfb653676b7cc15b427a9352fa25e"
+      }
+    },
+    "ipad": {
+      "url": "https://github.com/kb5000/trames-ipad",
+      "repository_id": 1413044949,
+      "identity_preserved_by_rename": true,
+      "source_checkpoint": "0f8aa584ba5259a65d3f81622dfc1490ce40a56b",
+      "branch": "codex/project-split",
+      "workspace_members": 8,
+      "migration_requires_pr_merge": true
+    },
+    "mac": {
+      "url": "https://github.com/kb5000/trames-mac",
+      "revision": "439070fbb23afdb523f8241cbe6a1fef64d936a3",
+      "workspace_members": 2
+    }
+  },
+  "shared_runtime_pin": {
+    "repository": "https://github.com/kb5000/trames-runtime.git",
+    "revision": "d623f29b07242efaaeee70e23b3147626694709e",
+    "extracted_content_sha256": "e99e6ada9e4e80cd18289288ed1b007fec9cfb653676b7cc15b427a9352fa25e"
+  },
+  "source_preservation": {
+    "baseline": "d035516132cb32c41635cc4fa9d97923b08718d7",
+    "unchanged_runtime_crate_vendor_files": 237,
+    "unchanged_mac_implementation_files": 9,
+    "unchanged_ipad_implementation_files": 135,
+    "ipad_implementation_digest": "3f22b38c652091e48533353acd6c61f83376f8b9b558aa5f7bfb782c7ed27a40",
+    "proofs": [
+      {
+        "path": "target/project-split/runtime-content.json",
+        "sha256": "76795d6c2e0cb6930a34f8cab62f9f8e8b4193de22388577c9f41c6f742b3fd8"
+      },
+      {
+        "path": "target/project-split/mac-content.json",
+        "sha256": "65f518c95b8c36954779e2d0f0ef11ae979b4e2375654e44455fae4239a8426b"
+      }
+    ],
+    "history": "Filtered related Git history/authors retained in the new repositories. Existing iPad repository history, issues, PRs and releases retained by rename."
+  },
+  "clean_clones": {
+    "evidence": {
+      "path": "target/project-split/clean-clones.json",
+      "sha256": "66486c81fd707c708aed7f8d139c29fdccee7bedcdca2dfc1ddf273a47211fd4"
+    },
+    "projects": [
+      {
+        "name": "runtime",
+        "revision": "d623f29b07242efaaeee70e23b3147626694709e",
+        "workspace_members": [
+          "trames-execution",
+          "trames-kernel",
+          "trames-memory",
+          "trames-vfs",
+          "trames-bridge",
+          "trames-net",
+          "trames-shared",
+          "trames-wayland",
+          "trames-elf",
+          "trames-linux",
+          "trames-distro"
+        ],
+        "all_trames_dependencies_inside_checkout": true,
+        "passed": true
+      },
+      {
+        "name": "mac",
+        "revision": "439070fbb23afdb523f8241cbe6a1fef64d936a3",
+        "workspace_members": [
+          "trames-hvf",
+          "trames-mac"
+        ],
+        "all_trames_dependencies_inside_checkout": true,
+        "passed": true
+      }
+    ],
+    "scope": "Unrelated clean temporary clones of runtime and Mac compile with all Trames dependencies inside each checkout. The full iPad/Linux workflow runs in a separate clean recursive bundle clone; only build/download caches are reused."
+  },
+  "linux": {
+    "passed": true,
+    "stages": 81,
+    "architecture": "Native ARM64 Linux, Lima VZ, no x86 emulation. Pinned QEMU remains the independent instruction oracle.",
+    "result": {
+      "path": "target/local-ci/io/project-split-ci/summary.json",
+      "sha256": "14bb4158f428701881747700efe4b2060e35c8e7a119d8ba4dda387b9cafd9b6"
+    },
+    "source_snapshot": {
+      "path": "target/local-ci/io/project-split-source-state.json",
+      "sha256": "84a8eca64796b58621c056501b3f69611f65d07eb0f2a94e5cab81801d1bb3ac"
+    },
+    "coverage": [
+      "Product and standalone runtime tests, fmt, strict Clippy and release",
+      "CPU differential and original-musl syscall oracles",
+      "Instrumented-std memory/kernel/accelerator TSan",
+      "Network, storage, graphics, IPC, crun/Docker, Node/V8 and persistent developer workflows",
+      "Retained timers and worker progress"
+    ],
+    "sanitizer_followup": "The original combined package selector could not find the relocated common kernel. Memory/kernel tests now use runtime/Cargo.toml; accelerator tests use the iPad workspace. Failed/unrun stages pass on resume, with unchanged successful input-bound stages reused. No suppression added.",
+    "tsan": {
+      "path": "target/local-ci/io/project-split-ci/step-10.log",
+      "sha256": "80cc8a484beb10ed1d928035c9da3dfb22c47d863b2b618846f8abdeac951b87"
+    },
+    "three_terminal": {
+      "path": "target/local-ci/io/project-split-multiple-terminals.log",
+      "sha256": "cfdd0dd00ed8841b0f61e1c1e3905b5b0e8dc08c223380d25bf48e0150ecb6ae"
+    }
+  },
+  "standalone_macos": {
+    "runtime": "Boundary checks, fmt, strict Clippy, full tests, release and physical-memory example passed.",
+    "mac": "Pin/boundary checks, fmt, strict Clippy, tests and ad-hoc-signed hardware release build passed.",
+    "runtime_logs": [
+      {
+        "path": "target/project-split/runtime-macos-01.log",
+        "sha256": "af28a218f17be8073395ede5dc70943adb5e97fb36cf444a13f4095bfcccf651"
+      },
+      {
+        "path": "target/project-split/runtime-macos-02.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "target/project-split/runtime-macos-03.log",
+        "sha256": "7dae077f3929a875aebeeecf1aae711dfe21a30b2ca85216c854c11becf9b3ff"
+      },
+      {
+        "path": "target/project-split/runtime-macos-04.log",
+        "sha256": "27c93200bc347e3552cd406070bf6986997d8cc58c46974c3770e45dc10967ac"
+      },
+      {
+        "path": "target/project-split/runtime-macos-05.log",
+        "sha256": "9942e84c8b7df5e7742ebf2c5a62c2e1c044f58e479a86658c5ea1a64b8f2f12"
+      },
+      {
+        "path": "target/project-split/runtime-macos-06.log",
+        "sha256": "5a42a60de8683987357039e70b37ff09d917315bac4e7d7a06ff639329d62e5f"
+      }
+    ],
+    "mac_logs": [
+      {
+        "path": "target/project-split/mac-workspace-01.log",
+        "sha256": "af28a218f17be8073395ede5dc70943adb5e97fb36cf444a13f4095bfcccf651"
+      },
+      {
+        "path": "target/project-split/mac-workspace-02.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "target/project-split/mac-workspace-03.log",
+        "sha256": "28cf93dfa68fa33e5c45df6600844f42416d952c1923e0f9ad3dcd164bf88609"
+      },
+      {
+        "path": "target/project-split/mac-workspace-04.log",
+        "sha256": "53ba1058426edcded00eea01ff379897810f8e0cf895445a7eaf83a260f1c028"
+      },
+      {
+        "path": "target/project-split/mac-workspace-05.log",
+        "sha256": "581666fa5da9cf1e89b0504003ff17141082e31239a2cc9e41561171df7be90b"
+      }
+    ],
+    "hardware_signal_result": {
+      "path": "target/project-split/mac-signals/results.json",
+      "sha256": "7d4422599e39ad1592d6393ad8cb0d80985bed7861e7074496240f529f7eee0b"
+    },
+    "hardware_signals": {
+      "passed": true,
+      "runner_sha256": "6ee8f7593526151f0570ec4e697fe9fb08cd264f5b9b6cf88886d5e04355c373",
+      "rows": [
+        {
+          "fixture": "cpu-signals",
+          "arguments": [],
+          "fixture_sha256": "fbd88226b9871493cf59cbe65073eb92d5ec7a52b77ff79adef76dada25c31ac",
+          "oracle_stdout_sha256": "cf72bdc614b10580f66e38c2e13f632d56001d830f49722efa48909f504a891a",
+          "returncode": 0,
+          "passed": true
+        },
+        {
+          "fixture": "signal-leaf-stack",
+          "arguments": [],
+          "fixture_sha256": "1e78251bb5581e5c94daa0bde3721cd5c32285190146e58f032b345f11b953cd",
+          "oracle_stdout_sha256": "9bf8b6addab624f569a6416f9b03e1d38e1a8ab413869648030ca7174668ed27",
+          "returncode": 0,
+          "passed": true
+        },
+        {
+          "fixture": "task-signals",
+          "arguments": [],
+          "fixture_sha256": "ba3a39b16c2e7bc0561a3df76b0835a648337975d5771601c6172018b1b62e1b",
+          "oracle_stdout_sha256": "75ecaf2874730551f70cb97b6c0acc7e269dfcf2438c017c0410346e810ab300",
+          "returncode": 0,
+          "passed": true
+        },
+        {
+          "fixture": "task-signals",
+          "arguments": [
+            "autodisarm"
+          ],
+          "fixture_sha256": "ba3a39b16c2e7bc0561a3df76b0835a648337975d5771601c6172018b1b62e1b",
+          "oracle_stdout_sha256": "75ecaf2874730551f70cb97b6c0acc7e269dfcf2438c017c0410346e810ab300",
+          "returncode": 0,
+          "passed": true
+        }
+      ]
+    },
+    "hardware_memory_result": {
+      "path": "target/project-split/mac-memory/results.json",
+      "sha256": "b589e89a4985149f315d89c890f0680ad00d42f8fcec4b63db83d0e727377898"
+    },
+    "hardware_memory": {
+      "passed": true,
+      "runner_sha256": "6ee8f7593526151f0570ec4e697fe9fb08cd264f5b9b6cf88886d5e04355c373",
+      "fixture_sha256": "b7a90c237466f31082aafb38e832042f735d9cd07be5196150f50fd76e8e7551",
+      "samples": [
+        {
+          "phase": "BASELINE",
+          "host_physical_footprint": 3277352
+        },
+        {
+          "phase": "POPULATED",
+          "host_physical_footprint": 80806536
+        },
+        {
+          "phase": "DISCARDED",
+          "host_physical_footprint": 14844480
+        },
+        {
+          "phase": "UNMAPPED",
+          "host_physical_footprint": 15041088
+        },
+        {
+          "phase": "POPULATED",
+          "host_physical_footprint": 83346080
+        },
+        {
+          "phase": "DISCARDED",
+          "host_physical_footprint": 15352384
+        },
+        {
+          "phase": "UNMAPPED",
+          "host_physical_footprint": 15368768
+        },
+        {
+          "phase": "POPULATED",
+          "host_physical_footprint": 83591840
+        },
+        {
+          "phase": "DISCARDED",
+          "host_physical_footprint": 15368768
+        },
+        {
+          "phase": "UNMAPPED",
+          "host_physical_footprint": 15368768
+        }
+      ],
+      "scope": "Actual EL0 hardware guest, unchanged static musl; host kernel physical footprint sampled while the guest waits on stdin. No process restart between allocation cycles."
+    },
+    "three_terminal": {
+      "path": "target/project-split/multiple-terminals-macos.log",
+      "sha256": "cfdd0dd00ed8841b0f61e1c1e3905b5b0e8dc08c223380d25bf48e0150ecb6ae"
+    }
+  },
+  "apple": {
+    "passed_unique_tests": 71,
+    "skipped": 1,
+    "initial_smoke": {
+      "passed": 68,
+      "failed": 2,
+      "skipped": 1
+    },
+    "summaries": [
+      {
+        "path": "target/project-split/apple-workspace-summary.json",
+        "sha256": "e939e329cb123665e5438af69379fd70ab724d0b2077d4854e23eb8af704993b"
+      },
+      {
+        "path": "target/project-split/apple-smoke-initial-summary.json",
+        "sha256": "2a90899f8eabd4abe7c88d84b9b32d259b3b2fce6c0b47c49ef098d62633b66e"
+      },
+      {
+        "path": "target/project-split/apple-ui-final-summary.json",
+        "sha256": "2e16bd9ecf7077a88242985c364c17a0b1a2bab226111b4ad1a9488902635be6"
+      }
+    ],
+    "focused_followup": {
+      "source": "apps/ios/TramesUITests/LaunchTests.swift",
+      "sha256": "bda8026fea7e3c97bfe0ef3f51c1082aec2fbd6c2214b191b5eabd4d1ae41995",
+      "passed": 2,
+      "reason": "Wait for actual keyboard/resize geometry. In iPad windowing, XCUIApplication.frame was local while controls used screen coordinates; compare concrete viewport/control screen coordinates. Original 44-point clearance and resize thresholds remain. No production UI changed.",
+      "diagnostic": {
+        "path": "target/project-split/apple-keyboard-diagnostic.log",
+        "sha256": "8fddc19cdec134e34418c1fea70b57bf8ecbc704f336a5077ed06e42ce12fe51"
+      },
+      "final": {
+        "path": "target/project-split/apple-ui-final.log",
+        "sha256": "11c73dff20789a35ae593332a346fb403773eb82e09156d1a43a4826033b0202"
+      },
+      "reuse": "Only the two changed tests rerun; all unchanged successful simulator/runtime acceptance retained."
+    },
+    "skip_reason": "Existing opt-in 256 MiB File Provider probe was not enabled.",
+    "ssh_sftp": {
+      "path": "target/project-split/project-split-apple-ssh.log",
+      "sha256": "bd17bc7f2a4eba431188e0c87c9a21341cbdf0433f732306c767d1acf9b797e2"
+    },
+    "original_c_wayland_peers": {
+      "path": "target/project-split/project-split-apple-wayland.log",
+      "sha256": "0a845028f0237b91c084d0d61f3161cd0e2c82f99974988a49ffb87e50277d6a",
+      "passed": 5
+    },
+    "device_build": {
+      "path": "target/project-split/project-split-apple-device-build.log",
+      "sha256": "34c9cbe9e4bc992c34bdae9e85ffa59843123287cf816d588ac8eab37f463f70"
+    },
+    "file_provider_metadata": "Simulator/device extension group metadata matches the app.",
+    "unsigned_ipa": {
+      "path": "apps/ios/build/sideload/Trames-project-split-unsigned.ipa",
+      "sha256": "5728f16d37cfec38c52030d4a6f81a27f84ae799f4a40cc878e13acad9ffaabd",
+      "bytes": 13580933
+    },
+    "physical_ipad_release_acceptance": false
+  },
+  "ci_reuse_regressions": {
+    "cases": 2,
+    "source": "tests/integration/project-layout.py",
+    "checks": [
+      "Runtime pin is not frontend-only; legacy/unpaired plans cannot reuse it.",
+      "Nested runtime sources and the pin participate in local input hashes."
+    ]
+  },
+  "preexisting_edit": {
+    "path": "tests/integration/multiple-terminals.py",
+    "sha256": "396fdbcc5a5410f01c610c2d227c3fb54c3880d2d72acf2ea0db9d60d33dec02",
+    "preserved_and_excluded": true,
+    "verification": "Additional Mac terminal verification uses the pre-existing local edit; Linux uses the committed original script."
+  },
+  "remaining_gates": [
+    "Complete process/clone/exec/executor scheduling integration behind the common boundary.",
+    "Multi-task hardware, external signal/wait routing and shared hardware mappings.",
+    "Live-anonymous pressure reclamation with preservation/fault restoration.",
+    "Physical iPad release and broader application acceptance."
+  ],
+  "delivery": "Runtime/Mac use validated initial main revisions; iPad migration is a review branch. No existing main, release or tag is merged or replaced.",
+  "checkout_followup": {
+    "evidence": {
+      "path": "target/project-split/checkout-followup.json",
+      "sha256": "9bffa89833091ea4bffc1197fc1b042f5493292c292ab0b4a513c3ac98d1ddd5"
+    },
+    "scope": "Ensure all maintained workflow checkout steps initialize the pinned public runtime. Metadata-only follow-up; clean recursive clones already verify initialization. Production sources and completed checks are unchanged."
+  }
+}
