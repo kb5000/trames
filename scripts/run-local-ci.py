@@ -100,7 +100,10 @@ def rust_inputs(root):
 def input_key(root, step, env, context):
     body = step['run']
     paths = dependencies(root, body)
-    native = 'cargo ' in body
+    commands = body + '\n' + '\n'.join(
+        p.read_text(errors='replace') for p in paths
+        if p.suffix in ('.py', '.sh') and p.stat().st_size < 1024 * 1024)
+    native = 'cargo ' in commands
     inputs = file_map(root, paths)
     if native:
         inputs.update(rust_inputs(root))
@@ -131,14 +134,14 @@ def input_key(root, step, env, context):
         if '\n' not in value and len(value) < 240 and path.is_absolute() and path.is_file():
             inputs['env-file:' + value] = digest(path)
     # Cargo build successes also require their main products to still exist.
-    if 'cargo build' in body:
-        target = 'aarch64-unknown-linux-musl/' if '--target aarch64-unknown-linux-musl' in body else ''
-        profile = 'release' if '--release' in body else 'debug'
+    if 'cargo build' in commands:
+        target = 'aarch64-unknown-linux-musl/' if '--target aarch64-unknown-linux-musl' in commands else ''
+        profile = 'release' if '--release' in commands else 'debug'
         targets = {target}
-        if 'cargo build -p trames-cli --release' in body:
+        if 'cargo build -p trames-cli --release' in commands:
             targets.add('')
         for target in targets:
-            for name in ('trames-run', 'libtrames_ffi.so'):
+            for name in ('trames-run', 'trames-mac-run', 'libtrames_ffi.so', 'libtrames_ffi.dylib', 'libtrames_ffi.a'):
                 p = root / ('target/' + target + profile + '/' + name)
                 inputs[str(p.relative_to(root))] = digest(p) if p.is_file() else None
     payload = dict(run=body, env=env, context=context, inputs=inputs)

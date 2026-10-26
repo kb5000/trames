@@ -62,7 +62,16 @@ and values, not on a decoder; product option flags still control their profiles.
 
 The Mac frontend is terminal-first. It supports external programs, pipelines,
 threads, script exec, foreground/background jobs and persistent transactional VFS
-storage through the existing common implementations. Hardware execution currently
-uses one host execution thread; shared hardware mapping providers, simultaneous
-HVF vCPUs, a native Wayland window presenter, live-anonymous host-pressure paging
-and physical iPad release acceptance remain separate gates.
+storage through the existing common implementations. Hardware execution now uses
+thread-affine vCPUs on the existing workers and canonical shared physical pages.
+Ordinary MAP_SHARED providers and native/VFS access use the same byte storage;
+scoped stage-two exclusion protects host references and parks affected tasks.
+Live dirty pages have file-backed page-out/page-in, optional working-set targets,
+and macOS memory-pressure notification handling. The Mac product documents its
+[hardware ownership and paging](https://github.com/kb5000/trames-mac/blob/main/docs/architecture/execution-backends.md).
+
+A native Wayland presenter, external raw GPU buffer exports and physical iPad
+release acceptance remain separate gates. Frozen-view fork preparation still can
+copy writable private pages eagerly; paging targets do not cap all process RSS.
+Local CI build-wrapper inputs now include nested Cargo commands, common sources,
+and signed Mac products, so wrappers cannot reuse an old binary after code changes.

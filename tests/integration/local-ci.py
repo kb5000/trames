@@ -59,6 +59,22 @@ class LocalCiTests(unittest.TestCase):
         product.unlink()
         self.assertNotEqual(after, self.key(command))
 
+    def test_wrapped_build_tracks_runtime_source_and_signed_mac_product(self):
+        self.put('scripts/build.sh', 'bash scripts/build-inner.sh\n')
+        self.put('scripts/build-inner.sh', 'cargo build -p trames-mac --release --locked\n')
+        source = self.put('crates/example/src/lib.rs', 'pub fn example() {}')
+        runtime = self.put('runtime/crates/common/src/lib.rs', 'pub fn common() {}')
+        product = self.put('target/release/trames-mac-run', 'signed-binary')
+        command = 'bash scripts/build.sh'
+        baseline = self.key(command)
+        for file in (source, runtime, product):
+            original = file.read_text()
+            file.write_text(original + 'changed')
+            self.assertNotEqual(baseline, self.key(command), file)
+            file.write_text(original)
+        product.unlink()
+        self.assertNotEqual(baseline, self.key(command))
+
     def test_compiled_fixtures_and_environment_file_contents_are_inputs(self):
         self.put('tests/integration/case.py', "name = 'example'\n")
         fixture = self.put('tests/fixtures/bin/example', 'guest-v1')
