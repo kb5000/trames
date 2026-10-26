@@ -72,10 +72,17 @@ final class LaunchTests: XCTestCase {
         func checkStatusAndCorner() {
             let toggle=app.buttons["terminal-extended-keyboard-toggle"]
             XCTAssertTrue(toggle.waitForExistence(timeout:5),app.debugDescription)
+            // UIKit can finish keyboard layout after the toggle appears.
+            // App.frame is window-local in iPad windowing; concrete controls
+            // share screen coordinates, including the window's screen offset.
+            let visible=XCTNSPredicateExpectation(predicate:NSPredicate { _,_ in
+                status.isHittable && status.frame.maxY <= toggle.frame.minY+2 && toggle.frame.maxX <= viewport.frame.maxX-44
+            },object:status)
+            XCTAssertEqual(XCTWaiter.wait(for:[visible],timeout:5),.completed)
             XCTAssertTrue(status.exists);XCTAssertTrue(status.isHittable)
             XCTAssertGreaterThan(status.frame.height,0)
             XCTAssertLessThanOrEqual(status.frame.maxY,toggle.frame.minY+2)
-            XCTAssertLessThanOrEqual(toggle.frame.maxX,app.frame.maxX-44)
+            XCTAssertLessThanOrEqual(toggle.frame.maxX,viewport.frame.maxX-44)
         }
         checkStatusAndCorner()
         for _ in 0..<3 {
@@ -131,6 +138,8 @@ final class LaunchTests: XCTestCase {
                 let oldRight=corner.frame.maxX
                 let point=corner.coordinate(withNormalizedOffset:CGVector(dx:0.85,dy:0.85))
                 point.press(forDuration:0.15,thenDragTo:point.withOffset(CGVector(dx:-60,dy:-40)))
+                let resized=XCTNSPredicateExpectation(predicate:NSPredicate { _,_ in corner.frame.maxX < oldRight-30 },object:corner)
+                XCTAssertEqual(XCTWaiter.wait(for:[resized],timeout:5),.completed)
                 XCTAssertLessThan(corner.frame.maxX,oldRight-30)
             }
             element("minimize-terminal-").tap()
