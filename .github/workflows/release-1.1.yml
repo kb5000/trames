@@ -1,8 +1,5 @@
 name: Publish Trames 1.1.0
 on:
-  push:
-    branches: [main]
-    paths: ['docs/validation/release-1.1.json', 'scripts/publish-ios-release-1.1.py', '.github/workflows/release-1.1.yml']
   workflow_dispatch:
 permissions:
   contents: read

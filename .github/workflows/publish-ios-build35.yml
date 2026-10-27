@@ -1,8 +1,5 @@
 name: Publish Trames 1.3.0 release
 on:
-  push:
-    branches: [main]
-    paths: ['docs/validation/ipad-1.3-build35.json']
   workflow_dispatch:
 permissions:
   contents: read
