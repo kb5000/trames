@@ -5,13 +5,26 @@ import hashlib
 import importlib.util
 from pathlib import Path
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 spec = importlib.util.spec_from_file_location('reuse', Path(__file__).resolve().parents[2] / 'scripts/runtime-ci-reuse.py')
 m = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(m)
 
 
 class ReuseTests(unittest.TestCase):
+    def test_missing_or_unrelated_evidence_history_falls_back_to_current_checks(self):
+        plan = Mock()
+        plan.exists.return_value = True
+        plan.read_text.return_value = '{"source_sha":"' + 'd' * 40 + '"}'
+        for status in (1, 128):
+            with self.subTest(status=status), patch.dict(m.os.environ, {}, clear=True), \
+                    patch.object(m, 'PLAN', plan), \
+                    patch.object(m.subprocess, 'run', return_value=m.subprocess.CompletedProcess([], status)), \
+                    patch.object(m, 'git') as history, patch.object(m, 'get') as evidence:
+                self.assertIsNone(m.apple_outputs())
+                history.assert_not_called()
+                evidence.assert_not_called()
+
     def test_later_reference_cannot_change_production_inputs(self):
         config = dict(source_sha='baseline', linux=dict(run=1, job=2, source_sha='followup'))
         run = dict(head_sha='followup', head_repository=dict(full_name='owner/repo'), path='.github/workflows/linux.yml')

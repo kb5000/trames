@@ -78,8 +78,12 @@ def verified_config():
         return None
     config = json.loads(PLAN.read_text())
     base = config['source_sha']
-    subprocess.run(['git', 'merge-base', '--is-ancestor', base, 'HEAD'], check=True,
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    ancestry = subprocess.run(['git', 'merge-base', '--is-ancestor', base, 'HEAD'],
+                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    # Old evidence can reference rewritten, missing or unrelated history.
+    # It is a cache miss; current validation must run in full.
+    if ancestry.returncode != 0:
+        return None
     changed = git('diff', '--name-only', base, 'HEAD').splitlines()
     if not unchanged_inputs(config, changed, lambda p: Path(p).read_bytes(),
                             git('show', base + ':.github/workflows/linux.yml'),
