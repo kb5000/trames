@@ -45,7 +45,15 @@ int main(int argc, char **argv) {
     void *p = mmap(NULL, Payload, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     CHECK(p != MAP_FAILED);
     memset(p, 7, Payload);
-    CHECK(mmap(NULL, 4 * MiB, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0) == MAP_FAILED && errno == ENOMEM);
+    // The VMA exceeds the process RAM budget when added to Payload. Neither
+    // protection changes nor software reads of untouched zeros allocate RAM.
+    unsigned char *unused = mmap(NULL, 4 * MiB, PROT_READ | PROT_WRITE,
+                                 MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    CHECK(unused != MAP_FAILED);
+    CHECK(mprotect(unused, 4 * MiB, PROT_READ) == 0);
+    CHECK(unused[0] == 0 && unused[4 * MiB - 1] == 0);
+    CHECK(mprotect(unused, 4 * MiB, PROT_READ | PROT_WRITE) == 0);
+    CHECK(munmap(unused, 4 * MiB) == 0);
     pthread_attr_t attr;
     pthread_t tid;
     CHECK(pthread_attr_init(&attr) == 0 && pthread_attr_setstacksize(&attr, 65536) == 0);
@@ -60,11 +68,11 @@ int main(int argc, char **argv) {
         CHECK(sysinfo(&s) == 0);
         size_t bytes = (s.freeram * s.mem_unit + 4095) / 4096 * 4096 + 4096;
         CHECK(bytes < 2 * MiB);
-        // File mappings reserve committed quota during mmap. Anonymous zero
-        // reservations defer that charge until first write, tested separately.
+        // An unused file mapping must not consume this remaining RAM either.
         int fd = memfd_create("aggregate-budget", 0);
         CHECK(fd >= 0 && ftruncate(fd, bytes) == 0);
-        CHECK(mmap(NULL, bytes, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0) == MAP_FAILED && errno == ENOMEM);
+        void *file = mmap(NULL, bytes, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+        CHECK(file != MAP_FAILED && munmap(file, bytes) == 0);
         CHECK(close(fd) == 0);
         char *args[] = {"/memory-budget", "exec", NULL};
         execv(args[0], args);
@@ -72,6 +80,24 @@ int main(int argc, char **argv) {
     }
     int status;
     CHECK(waitpid(pid, &status, 0) == pid && WIFEXITED(status) && WEXITSTATUS(status) == 0);
+    pid = fork();
+    CHECK(pid >= 0);
+    if (pid == 0) {
+        struct sysinfo s;
+        CHECK(sysinfo(&s) == 0);
+        size_t bytes = (s.freeram * s.mem_unit + 4095) / 4096 * 4096 + 4096;
+        CHECK(bytes < 2 * MiB);
+        int fd = memfd_create("file-touch-budget", 0);
+        CHECK(fd >= 0 && ftruncate(fd, bytes) == 0);
+        volatile unsigned char *file = mmap(NULL, bytes, PROT_READ, MAP_SHARED, fd, 0);
+        CHECK((void *)file != MAP_FAILED && close(fd) == 0);
+        // File byte access, including zero file data, pays on the reached page.
+        unsigned sum = 0;
+        for (size_t i = 0; i < bytes; i += 4096) sum += file[i];
+        CHECK(sum != 0);
+        CHECK(0);
+    }
+    CHECK(waitpid(pid, &status, 0) == pid && WIFSIGNALED(status) && WTERMSIG(status) == SIGKILL);
     pid = fork();
     CHECK(pid >= 0);
     if (pid == 0) {

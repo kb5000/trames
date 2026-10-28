@@ -31,7 +31,7 @@ and reserved remaps retain the existing single-mapping restriction.
 
 Access to a reservation faults with permission denial, while a removed hole is
 unmapped. mincore returns zero for uncommitted pages; its output range remains
-bounded to the address space's current committed-memory budget. msync and accepted advice hints validate reservation ownership
+bounded by the independent accessible-page metadata ceiling, rather than the guest RAM budget. msync and accepted advice hints validate reservation ownership
 without allocating a residency vector; DONTNEED preserves uncommitted ranges.
 `/proc/PID/maps`, VmSize, statm and stat distinguish virtual ownership from
 committed page accounting. VmRSS describes the emulator's committed pages, not

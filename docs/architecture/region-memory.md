@@ -326,15 +326,13 @@ store. A first-touch quota failure terminates the faulting guest group with
 SIGKILL; mmap/fork admission still returns its ordinary errno. This is a bounded
 OOM policy, not Linux victim selection.
 
-File mappings preflight available quota before VFS page storage is created.
-Fixed file replacements reuse charged destination slots. File mappings and
-materialized fork COW pages are still charged conservatively per address space;
-CLONE_VM shares one account and now builds a shared task directly, avoiding an
-intermediate page-table clone and MMU retirement. The per-process mapped-page
-cap still bounds page-table metadata, including untouched readable mappings.
-This is not complete Linux demand paging or exact host RSS/PSS accounting.
-Runtime shadow storage, COW windows and host allocator bookkeeping are outside
-the guest byte quota and remain further memory work.
+The [shared runtime's demand-accounting contract](https://github.com/kb5000/trames-runtime/blob/main/docs/architecture/region-memory.md#sparse-zeros-and-first-write-budgets)
+is authoritative for both products. VMA creation, protection and snapshot/futex
+metadata queries do not charge virtual length to guest RAM. PlainFile mappings
+load and charge pages on actual CPU/native access; anonymous interpreter zero
+reads remain uncharged. Accessible descriptors have an independent 16 GiB
+metadata ceiling. Descriptors and shadow/COW storage still consume host memory;
+per-VM fork charges remain conservative rather than exact physical RSS/PSS.
 
 The [Firefox memory investigation](../validation/firefox-memory.md) records the
 original Scudo ELF, the 512MiB BSS oracle, budgets, complete/partial diagnostics
