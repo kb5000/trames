@@ -232,13 +232,21 @@ return NULL. Unsupported creation parameters return Vulkan failures. Recording
 functions have void signatures; invalid/unsupported recording parameters abort
 the experimental guest ICD with a diagnostic rather than fake success.
 
-Limits include 16,384 retained native objects per context, 64 in-flight submissions
-and 64 MiB per native memory allocation. The session shares a native allocation /
-coherent-baseline quota equal to one eighth of its selected guest memory limit,
-capped at 1 GiB (1 GiB guest → 128 MiB; 4 GiB guest → 512 MiB). Reported native
-memory heaps are capped by this quota. Selecting a limit reserves no storage;
-live allocations and mapping baselines charge it and release it at final drop.
-This is an additional native quota, not part of the guest's committed-page count.
+Limits include 16,384 retained native objects per context and 64 in-flight
+submissions. Explicitly memory-capped sessions retain the 64 MiB allocation
+bound and a shared native allocation / coherent-baseline quota equal to one
+eighth of the selected guest memory limit, capped at 1 GiB (1 GiB guest →
+128 MiB; 4 GiB guest → 512 MiB). Their reported native heaps are capped by
+that quota. Selecting a limit reserves no storage; live allocations and mapping
+baselines charge it and release it at final drop.
+
+Host-managed sessions, including the Mac's default `--memory-mib auto`, use
+the original driver's heap sizes and allocation failures. They add no native
+byte quota or 64 MiB per-allocation ceiling. Shared accounting still records
+actual live native allocations and coherent baselines, with checked arithmetic
+and release at final drop. The obsolete independent 128 MiB per-context ceiling
+has been removed in both modes: a context must not reject memory that its shared
+session policy permits. Native accounting is separate from guest resident pages.
 Native driver/pipeline bookkeeping is additional memory; these logical budgets
 do not establish an exact RSS or physical GPU capacity.
 
