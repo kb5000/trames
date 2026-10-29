@@ -346,3 +346,23 @@ compatibility work. See [verification](../validation/vulkan-compute.md).
 MoltenVK 1.4.2 volume blits include a one-line source-mip-depth correction,
 rebuilt from the pinned original source with its unchanged GPU algorithms.
 [Native build recipe and evidence](../validation/moltenvk-source-build.md).
+
+## Optional typed-PBO guest stack (2026-10-29)
+
+The Mac Firefox bring-up uses paired Mesa 25.1.9 EGL and Zink libraries built by
+[`build-zink-gallium.py`](../../scripts/build-zink-gallium.py). In addition to the
+existing native Wayland adapter, the
+[PBO patch](../../patches/mesa/0002-preserve-pbo-upload-output-type.patch)
+preserves integer output types in Mesa's upload helper. Without that metadata,
+Metal rejects a floating-point shader output bound to an integer attachment.
+The original Firefox binary and native GPU capability checks remain unchanged.
+
+[`zink-pbo.c`](../../tests/fixtures/zink-pbo.c) independently checks 128 exact
+signed/unsigned integer components and the GLES rejection of invalid
+cross-signedness uploads. On the Mac's real Apple GPU, the original Gallium
+library reproduces the failure and the rebuilt library passes. This optional
+guest stack retains its source/patches alongside the built libraries; it does
+not overwrite the original signed Gallium package or claim physical iPad GPU
+acceptance. The shared resident-file and GPU-checkpoint corrections are included
+in the paired runtime pin. Full Mac evidence and the normal launcher are in
+[trames-mac](https://github.com/kb5000/trames-mac/blob/main/docs/validation/mac-firefox-gpu.md).

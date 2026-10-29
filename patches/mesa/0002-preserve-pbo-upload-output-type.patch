@@ -1,0 +1,23 @@
+Mesa 25.1.9: retain the numeric type of PBO upload fragment outputs.
+
+The helper samples a typed buffer, but leaves nir_store_output.src_type at its
+default float value. Integer uploads therefore emit a floating-point SPIR-V
+output for an integer render target. Metal rejects that pipeline. Preserve the
+sample type, adjusted for the helper's existing signed/unsigned clamping.
+
+--- a/src/mesa/state_tracker/st_pbo.c
++++ b/src/mesa/state_tracker/st_pbo.c
+@@ -559,6 +559,12 @@ create_fs(struct st_context *st, bool download,
+                             .src_type = nir_type,
+                             .image_dim = GLSL_SAMPLER_DIM_BUF);
+    } else {
++      nir_alu_type output_type = tex->dest_type;
++      if (conversion == ST_PBO_CONVERT_UINT_TO_SINT)
++         output_type = nir_type_int32;
++      else if (conversion == ST_PBO_CONVERT_SINT_TO_UINT)
++         output_type = nir_type_uint32;
+       nir_store_output(&b, result, nir_imm_int(&b, 0),
+-                       .io_semantics.location = FRAG_RESULT_COLOR);
++                       .io_semantics.location = FRAG_RESULT_COLOR,
++                       .src_type = output_type);
+    }
