@@ -124,6 +124,9 @@ static VkResult unsupported_graphics_pipeline(unsigned line) {
     if(getenv("TRAMES_VULKAN_TRACE"))fprintf(stderr,"Trames Vulkan: unsupported graphics pipeline state at graphics.inc:%u\n",line);
     return VK_ERROR_FEATURE_NOT_PRESENT;
 }
+VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndirect(VkCommandBuffer c,VkBuffer buffer,VkDeviceSize offset,uint32_t count,uint32_t stride) {checked(CALL(203,DEVKEY(c),KEY(c),(uint64_t)buffer,offset,count,stride));}
+VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexedIndirect(VkCommandBuffer c,VkBuffer buffer,VkDeviceSize offset,uint32_t count,uint32_t stride) {checked(CALL(204,DEVKEY(c),KEY(c),(uint64_t)buffer,offset,count,stride));}
+VKAPI_ATTR void VKAPI_CALL vkCmdDispatchIndirect(VkCommandBuffer c,VkBuffer buffer,VkDeviceSize offset) {checked(CALL(205,DEVKEY(c),KEY(c),(uint64_t)buffer,offset));}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateGraphicsPipelines(VkDevice d,VkPipelineCache cache,uint32_t count,const VkGraphicsPipelineCreateInfo *info,const VkAllocationCallbacks *allocator,VkPipeline *out) {
     ALLOCATOR(allocator);if(count!=1)return unsupported_graphics_pipeline(__LINE__);*out=VK_NULL_HANDLE;
     CHECK(info,VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);

@@ -1,5 +1,10 @@
 # Zink 路线与当前边界
 
+Latest functional validation (2026-10-30): the Mac/Apple M6 path naturally reports
+GLES 3.1 and passes the selected GPU-indirect/image/atomic and native ASTC oracles.
+This is not full GLES conformance; single-sample rendering remains the current
+profile. The earlier GLES2 milestones below are historical validation stages.
+
 先合并性能PR #31（main121cdc7），后续在main单线推进。
 [Issue #32](https://github.com/kb5000/trames/issues/32)跟踪Zink完整链路。
 
@@ -169,3 +174,47 @@ Zink选中这个CPU physical device；它不替换OpenGL实现。iPad GPU验收�
 三轮纹理采样和销毁均通过。原生resources两轮256个GPU结果、cache/pool复用也通过。
 详见[离屏验证](../validation/zink-gles.md)和[窗口验证](../validation/zink-wayland.md)。物理iPad仍待验收；
 本批没有构建新的Zink IPA或release。
+
+## Native GLES 3.1 capability wiring (2026-10-30)
+
+The shared runtime now derives core feature queries and device enablement from
+one selected-field definition. Existing wire bits 0–6 keep their meaning; image
+gather/storage formats, unformatted image reads/writes, vertex/fragment storage
+and atomics, supported resource-array indexing, indirect drawing, and native
+ETC2/EAC/ASTC-LDR/BC compression add bits 7–21. Values come from the real native
+driver; unsupported host features remain absent. Tessellation and geometry
+execution remain disabled.
+
+Guest ICD wire revision 9 adds vkCmdDrawIndirect, vkCmdDrawIndexedIndirect and
+vkCmdDispatchIndirect at operations 203–205. The existing command graph retains
+the original argument buffer and memory through reset/submission completion.
+The GPU consumes its arguments directly. The bridge does not read them back,
+expand them into direct commands, rescan descriptors or add a synchronization
+barrier. Caller-supplied Vulkan/GL synchronization retains its original meaning.
+Mesa's aggregate all-graphics-shader stage masks omit only the profile's absent
+geometry/tessellation stages; active producer/consumer stages remain intact.
+
+Compressed images use native format queries and block footprints rather than
+bytes per logical texel. Transfers cover row padding, array slices, mip levels,
+and legal partial final blocks at image edges. Matching compressed image copies
+and compatible views keep the same block dimensions/size. Compressed clears,
+compressed/uncompressed reinterpret copies, ASTC HDR and ASTC 3D are not added.
+
+The new [GLES oracle](../../tests/fixtures/zink-es31.c) records compute-generated
+dispatch, draw and indexed-draw arguments before any CPU result readback; it also
+checks compute/fragment image access, SSBO/atomic outputs and deletes the argument
+buffer before the final readback. Native ASTC 8×6 uploads, a partial edge
+block update and image copy produce 63 exact pixels. Both one and twelve CPUs pass
+on physical Apple M6/MoltenVK. The unchanged integer PBO oracle retains its 128
+exact signed/unsigned components and required cross-type errors. Shared Vulkan
+unit tests and affected lints pass on macOS/ARM64 Linux; iPad ARM64 FFI compiles.
+
+Build the C oracle in ARM64-musl with the pinned Mesa headers and paired GLES,
+EGL and Gallium libraries. The reproducible Mac harness is
+[mac-gles31.py](https://github.com/kb5000/trames-mac/blob/main/tests/integration/mac-gles31.py);
+it requires a disposable installed-Mesa store, never the active Firefox store.
+See the [Mac GPU record](https://github.com/kb5000/trames-mac/blob/main/docs/validation/mac-firefox-gpu.md)
+for the exact artifacts and scope. No GL version override, software GPU, new
+service thread or ordinary guest-memory barrier is introduced. Multisample
+rendering/resolve and the complete GLES CTS remain further work. Physical iPad
+GPU validation and a new IPA are not part of this batch.

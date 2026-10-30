@@ -82,6 +82,9 @@
     if(!strcmp(name,"vkDestroyRenderPass"))return (PFN_vkVoidFunction)vkDestroyRenderPass;
     if(!strcmp(name,"vkCreateFramebuffer"))return (PFN_vkVoidFunction)vkCreateFramebuffer;
     if(!strcmp(name,"vkDestroyFramebuffer"))return (PFN_vkVoidFunction)vkDestroyFramebuffer;
+    if(!strcmp(name,"vkCmdDrawIndirect"))return (PFN_vkVoidFunction)vkCmdDrawIndirect;
+    if(!strcmp(name,"vkCmdDrawIndexedIndirect"))return (PFN_vkVoidFunction)vkCmdDrawIndexedIndirect;
+    if(!strcmp(name,"vkCmdDispatchIndirect"))return (PFN_vkVoidFunction)vkCmdDispatchIndirect;
     if(!strcmp(name,"vkCreateGraphicsPipelines"))return (PFN_vkVoidFunction)vkCreateGraphicsPipelines;
     if(!strcmp(name,"vkCmdBeginRenderPass"))return (PFN_vkVoidFunction)vkCmdBeginRenderPass;
     if(!strcmp(name,"vkCmdEndRenderPass"))return (PFN_vkVoidFunction)vkCmdEndRenderPass;
