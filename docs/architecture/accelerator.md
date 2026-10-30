@@ -12,6 +12,10 @@ the full libc/device design remains proposed. The immutable 0.9.0 IPA does not
 contain this follow-up. The source document SHA-256
 is `c89ea4adf4bbe89e6dbfbdb34328d222dd73cd8b7bbe51a2e4f93b51e2842b31`.
 
+The selected [VA-API / VideoToolbox integration](vaapi.md) records the current
+video architecture and native shared-plane feasibility results. Guest VA-API
+decoding remains pending.
+
 ## 1. Summary
 
 **Trames Accelerator** is an ABI-preserving native execution facility for Trames's Linux AArch64 userspace. A selected **guest** shared library (`.so`) is replaced with an ABI-compatible **guest ELF stub library**. Its entry points use a reserved Trames virtual-CPU instruction (a *native-call trap*) to dispatch to a **host-native implementation** already compiled into the Trames application. Native logic executes on the host CPU or appropriate hardware framework, while guest-visible pointers, process state, allocator metadata, TLS, and libc state remain in the **guest** address space.

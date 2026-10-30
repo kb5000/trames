@@ -154,6 +154,7 @@ Mesa25.1.9的ES2 context启用GL-thread时，SwapBuffers调用的内部
 restart的Metal警告；索引/拓扑边界需要单独验证。未通过的能力不会仅靠枚举名称来启用。
 DRI/dmabuf、external-memory FD还需要guest FD与Metal资源身份/生命周期设计；
 不把宿主FD或指针直接当guest handle。
+VA-API 视频帧的具体接入顺序与原生共享平面验证见 [VideoToolbox 方案](vaapi.md)。
 
 里程碑依次为原版Mesa EGL context、GPU clear/readback、着色器绘制、Wayland EGL窗口，
 最后验证iPad Metal呈现/resize/同步与窗口生命周期。
