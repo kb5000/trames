@@ -259,20 +259,28 @@ software GPU replacement is used.
 
 ## Memory and lifetime
 
-Mapped memory currently has separate native and guest storage. `vkMapMemory`
-returns a guest anonymous mapping. Flush/invalidate use the interpreter's scoped
-page access to copy directly between each guest page fragment and retained native
-storage. The full-range intermediate Vec is removed: one copy replaces two for
-resident mappings. Shared/live backing providers retain their original direct
-borrow or bounded page fallback, including COW, permission and code revision
-behavior. Guest and GPU storage remain separate.
+Eligible HOST_VISIBLE | HOST_COHERENT allocations now import one retained host
+allocation into both the native driver and the guest memory model. The optional
+bridge capability query (operation 200) advertises shared mapping in bit 0 and
+completion waits in bit 1. New ICDs request a dedicated shared resource mapping
+with operation 17's `0x534841524544` hint; old hosts/ICDs keep the original path.
+Guest addresses remain guest virtual addresses. Only the mapping installation
+uses a joined structural checkpoint; ordinary data accesses use the common
+CPU/native page permissions and concurrency model. Host and driver alignment,
+partial offsets, rounded allocation ownership and quotas remain explicit.
+
+Unsupported imports, noncoherent allocations and legacy maps retain separate
+native and guest storage. Their transfers use bounded raw CPU page copies and
+resource-scoped coherent baselines, described in the
+[shared runtime contract](../../runtime/docs/architecture/region-memory.md#shared-gpu-resource-mappings-and-completion-waits-2026-10-30).
+
 Bounds, mapping identity and noncoherent-atom alignment are checked. The guest
 mapping aligns `pData-offset` to the native `minMemoryMapAlignment`, including
 unaligned mapping offsets; the underlying anonymous mapping is retained
 separately for unmap/free. Partial flush/invalidate translates allocation offsets
 to mapping-relative guest addresses.
 
-Native HOST_COHERENT types retain that property. Their guest shadow is initialized
+Fallback HOST_COHERENT mappings retain that property. Their guest shadow is initialized
 from native storage on map. A budget-charged baseline records synchronized bytes:
 queue submission and unmap upload only CPU changes, while successful fence
 status/wait (including queue/device idle) downloads GPU changes without replacing
@@ -281,26 +289,37 @@ same rules. This supports original clients that persistently map uniforms or
 unmap texture staging memory without a flush. It avoids whole-map upload/readback
 clobbering independent CPU inputs and GPU outputs; same-byte unsynchronized races
 remain application errors under Vulkan. The baseline shares the session GPU
-allocation budget and is released with the mapping. Direct CPU aliasing of native
-allocations and device/host polling outside these synchronization boundaries are
-not implemented. Image presentation still exports the original native texture
+allocation budget and is released with the mapping. This shadow behavior is the
+fallback; eligible shared mappings need no baseline,
+comparison or copy at those boundaries. Device writes publish an external code
+version there, preserving interpreter code and exclusive-token invalidation.
+No new ordinary-data fence is introduced. Image presentation still exports the
+original native texture
 without pixel readback; shadow mappings do not change that path.
 
 No guest borrow survives a submission or wait. GPU buffers live on the host.
-Fence polling is nonblocking; the guest wait wrapper uses monotonic deadlines
-and nanosleep so other virtual threads can run. Queue idle appends a fence after
-prior work. Lightweight creation and recording still execute at coordinator
-checkpoints. Compute and graphics pipeline compilation execute on owned native worker tasks.
+Fence status queries remain nonblocking. On source-built MoltenVK, synchronous
+fence/timeline waits become owned resumable jobs: the original CPU slot returns
+to the run queue, native completion notifies its existing readiness source, and
+finite waits use that queue's deadline mechanism. No polling bus or wait thread
+is created. Native callbacks retain only weak scheduling authority and run after
+the driver's fence mutex releases. Queue idle still appends a fence after prior
+work. Old drivers retain the monotonic/nanosleep fallback. Future-host-signal
+submission and image-acquisition retry loops are separate existing paths.
+Ordinary creation/recording executes on the calling CPU worker; structural maps
+and device teardown retain joined boundaries. Compute and graphics pipeline
+compilation keeps its existing owned native tasks.
 
-The Vulkan C API remains synchronous for its caller: the interpreter suspends
+The Vulkan C API remains synchronous for its caller: the runtime suspends
 only that guest thread until the native result arrives. Other guest threads and
 unrelated compiler tasks continue. Native workers receive owned entrypoint names,
 specialization bytes, native handles and Arc-owned driver lifetimes; no guest
-address, memory guard or coordinator Rc crosses threads. The coordinator retains
+address, memory guard or coordinator Rc crosses threads. The GPU context retains
 the shader/layout and reserves an object slot until completion. A shared session
 admission counter permits eight concurrent native compile tasks without a global
-compiler work lock; capacity exhaustion returns out-of-host-memory. Polling is
-bounded at 1 ms while tasks wait. Driver-internal synchronization stays unchanged.
+compiler work lock; capacity exhaustion returns out-of-host-memory. Compiler
+readiness subscriptions return the execution slot while waiting.
+Driver-internal synchronization stays unchanged.
 
 Completion checks the current guest output mapping before publishing an ID.
 A fallible backing write can still fail after preflight; that failure rolls back

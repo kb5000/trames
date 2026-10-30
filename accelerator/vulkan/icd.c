@@ -24,7 +24,7 @@ static void free_templates(DescriptorTemplate *head);
 typedef struct dispatch {
     uintptr_t magic; uint64_t key;
     struct dispatch *device, *physical, *queue, *commands, *next;
-    uint64_t parent,map_alignment,capabilities[2],enabled; uint32_t family;
+    uint64_t parent,map_alignment,capabilities[2],enabled,bridge; uint32_t family;
     pthread_mutex_t lock; Memory *memories; DescriptorTemplate *templates;
 } Dispatch;
 #define D(h) ((Dispatch *)(h))
@@ -232,7 +232,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(VkPhysicalDevice p,const VkDeviceC
     if(timeline && !(enabled&8)){free_dispatch(d);return VK_ERROR_FEATURE_NOT_PRESENT;}
     d->enabled=enabled;
     VkResult r=CALL(8,KEY(p),q->queueFamilyIndex,PTR(&d->key),wsi,feature_bits,enabled);if(r!=VK_SUCCESS){free_dispatch(d);return r;}
-    r=CALL(57,d->key,PTR(&d->map_alignment));if(r!=VK_SUCCESS){checked(CALL(9,d->key));free_dispatch(d);return r;}*out=(VkDevice)d;return VK_SUCCESS;
+    r=CALL(57,d->key,PTR(&d->map_alignment));if(r!=VK_SUCCESS){checked(CALL(9,d->key));free_dispatch(d);return r;}
+    if(CALL(200,d->key,PTR(&d->bridge))!=VK_SUCCESS)d->bridge=0;
+    *out=(VkDevice)d;return VK_SUCCESS;
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroyDevice(VkDevice device,const VkAllocationCallbacks *allocator) {
     if(!device)return;Dispatch *d=D(device);checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(9,d->key));
@@ -261,10 +263,11 @@ VKAPI_ATTR VkResult VKAPI_CALL vkMapMemory(VkDevice device,VkDeviceMemory mem,Vk
     if(!r || r->mapped || offset>=r->size){pthread_mutex_unlock(&d->lock);return VK_ERROR_MEMORY_MAP_FAILED;}uint64_t n=size==VK_WHOLE_SIZE?r->size-offset:size;pthread_mutex_unlock(&d->lock);
     if(!n || n>64UL*1024*1024)return VK_ERROR_MEMORY_MAP_FAILED;
     uint64_t alignment=d->map_alignment;if(!alignment || alignment>1048576)return VK_ERROR_MEMORY_MAP_FAILED;
+    if((d->bridge&1) && alignment<4096)alignment=4096;
     // Align (pData-offset), as Vulkan requires, even for unaligned offsets.
-    size_t allocation=(size_t)(n+alignment-1);void *base=mmap(NULL,allocation,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANONYMOUS,-1,0);if(base==MAP_FAILED)return VK_ERROR_OUT_OF_HOST_MEMORY;
+    size_t allocation=(size_t)(n+alignment-1);void *base=mmap(NULL,allocation,PROT_READ|PROT_WRITE,((d->bridge&1)?MAP_SHARED:MAP_PRIVATE)|MAP_ANONYMOUS,-1,0);if(base==MAP_FAILED)return VK_ERROR_OUT_OF_HOST_MEMORY;
     size_t padding=(size_t)((offset%alignment+alignment-(uintptr_t)base%alignment)%alignment);void *p=(char *)base+padding;
-    VkResult v=CALL(17,KEY(d),(uint64_t)mem,offset,n,PTR(p));if(v!=VK_SUCCESS){munmap(base,allocation);return v;}
+    VkResult v=CALL(17,KEY(d),(uint64_t)mem,offset,n,PTR(p),(d->bridge&1)?0x534841524544UL:0);if(v!=VK_SUCCESS){munmap(base,allocation);return v;}
     pthread_mutex_lock(&d->lock);r->base=base;r->mapped=p;r->length=allocation;pthread_mutex_unlock(&d->lock);*out=p;return VK_SUCCESS;
 }
 VKAPI_ATTR void VKAPI_CALL vkUnmapMemory(VkDevice device,VkDeviceMemory mem) {checked(CALL(18,KEY(device),(uint64_t)mem));Dispatch *d=D(device);pthread_mutex_lock(&d->lock);Memory *r=memory(d,mem);if(r && r->mapped){munmap(r->base,r->length);r->base=NULL;r->mapped=NULL;r->length=0;}pthread_mutex_unlock(&d->lock);}
@@ -368,6 +371,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkResetFences(VkDevice d,uint32_t count,const VkF
 VKAPI_ATTR VkResult VKAPI_CALL vkGetFenceStatus(VkDevice d,VkFence f) {return CALL(51,KEY(d),(uint64_t)f);}
 static uint64_t now_ns(void) {struct timespec t;clock_gettime(CLOCK_MONOTONIC,&t);return (uint64_t)t.tv_sec*1000000000UL+(uint64_t)t.tv_nsec;}
 VKAPI_ATTR VkResult VKAPI_CALL vkWaitForFences(VkDevice d,uint32_t count,const VkFence *fences,VkBool32 all,uint64_t timeout) {
+    if(D(d)->bridge&2)return CALL(201,KEY(d),PTR(fences),count,all,timeout);
     if(!count || count>64)return VK_ERROR_FEATURE_NOT_PRESENT;uint64_t began=now_ns();
     for(;;){unsigned ready=0;for(uint32_t i=0;i<count;i++){VkResult r=vkGetFenceStatus(d,fences[i]);if(r==VK_SUCCESS)ready++;else if(r!=VK_NOT_READY)return r;}
         if(ready==(all?count:1) || (!all && ready))return VK_SUCCESS;

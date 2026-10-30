@@ -1,0 +1,82 @@
+Subject: [PATCH] Notify retained host scheduling observers after fence completion
+
+No guest bytes or worker thread is retained. Existing Vulkan fence state and
+sitter semantics stay intact; callbacks run after releasing the fence mutex.
+
+--- a/MoltenVK/MoltenVK/GPUObjects/MVKSync.h
++++ b/MoltenVK/MoltenVK/GPUObjects/MVKSync.h
+@@ -23,6 +23,7 @@
+ #include <mutex>
+ #include <condition_variable>
+ #include <unordered_set>
++#include <functional>
+ 
+ class MVKFenceSitter;
+ 
+@@ -376,6 +377,9 @@
+ 	/** Removes the specified fence sitter. */
+ 	void removeSitter(MVKFenceSitter* fenceSitter);
+ 
++	// One-shot host observer; only scheduling authority crosses this boundary.
++	void observeTramesCompletion(std::function<void()> completion);
++
+ 	/** Signals this fence. Notifies all waiting fence sitters. */
+ 	void signal();
+ 
+@@ -397,6 +401,7 @@
+ 
+ 	std::mutex _lock;
+ 	std::unordered_set<MVKFenceSitter*> _fenceSitters;
++	std::vector<std::function<void()>> _tramesCompletions;
+ 	bool _isSignaled;
+ };
+ 
+--- a/MoltenVK/MoltenVK/GPUObjects/MVKSync.mm
++++ b/MoltenVK/MoltenVK/GPUObjects/MVKSync.mm
+@@ -278,17 +278,37 @@
+ 	_fenceSitters.erase(fenceSitter);
+ }
+ 
++// The Rust owner supplies a retained weak readiness capability, never a guest
++// pointer or backend object. Destruction also releases an unsignaled observer.
++extern "C" __attribute__((visibility("default"))) void trames_mvk_observe_fence(
++        uint64_t fence, void (*notify)(void*), void* data, void (*dispose)(void*)) {
++    auto owner = std::shared_ptr<void>(data, dispose);
++    ((MVKFence*)fence)->observeTramesCompletion([owner, notify] { notify(owner.get()); });
++}
++
++void MVKFence::observeTramesCompletion(std::function<void()> completion) {
++    {
++        lock_guard<mutex> lock(_lock);
++        if (!_isSignaled) {
++            _tramesCompletions.push_back(std::move(completion));
++            return;
++        }
++    }
++    completion();
++}
++
+ void MVKFence::signal() {
+-	lock_guard<mutex> lock(_lock);
+-
+-	if (_isSignaled) { return; }	// Only signal once
+-	_isSignaled = true;
+-
+-	// Notify all the fence sitters, and clear them from this instance.
+-    for (auto& fs : _fenceSitters) {
+-        fs->signaled();
++    std::vector<std::function<void()>> completions;
++    {
++        lock_guard<mutex> lock(_lock);
++        if (_isSignaled) { return; }
++        _isSignaled = true;
++        for (auto& fs : _fenceSitters) { fs->signaled(); }
++        _fenceSitters.clear();
++        completions.swap(_tramesCompletions);
+     }
+-	_fenceSitters.clear();
++    // Never enter the host scheduler while holding MoltenVK's fence mutex.
++    for (auto& completion : completions) { completion(); }
+ }
+ 
+ void MVKFence::reset() {
