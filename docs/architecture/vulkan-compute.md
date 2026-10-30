@@ -505,3 +505,68 @@ The iPad guest bundle is prepared, but no physical iPad compute acceptance or ne
 IPA installation is claimed. This is selected functional coverage; full CTS and
 model inference/performance are unmeasured. Current llama.cpp still needs its
 Vulkan 1.2 initialization/query paths beyond this selected 1.1 profile.
+
+
+## Promoted Vulkan 1.2 paths (2026-10-30)
+
+The shared runtime and paired guest ICD now accept the selected Vulkan 1.2
+application/compute paths. This supersedes the 1.2 initialization gap described
+above, while full Vulkan 1.2 conformance remains unfinished. Instance enumeration
+reports 1.2; physical-device API discovery is capped at the native driver's 1.2
+support. The experimental profile still exposes only implemented features.
+
+Vulkan 1.1/1.2 aggregate feature and property records use the common generated
+schema. Supported fields retain native discovery; unsupported optional fields
+stay false. Properties are serialized field by field into zeroed payloads, so
+native pointers/padding do not cross the boundary. The guest conformance version
+stays zero. Device creation merges promoted aliases into one owned native 1.2
+feature record, avoiding duplicate individual nodes; older native API paths keep
+their individual records. Core operations work without repeated promoted
+extension names. Guest layer settings stay with the guest loader/layers and do
+not configure the host driver. Device groups remain singleton only.
+
+| Added path | Implementation and acceptance |
+| --- | --- |
+| SPIR-V 1.4/1.5, shader draw parameters and non-semantic-info negotiation | Original driver/compiler remains responsible for shader execution. The new shader is validated as SPIR-V 1.5 and uses a dynamic subgroup broadcast source. |
+| Host query reset, core/EXT names | Native timestamp queries become unavailable after reset and available after completed GPU execution; reset is feature gated. |
+| Dispatch base, singleton device mask, core/KHR names | Nonzero base dispatch preserves untouched output indices and uses the native pipeline dispatch-base flag. |
+| Descriptor-layout support, buffer update, render-area granularity | Native queries and commands reuse existing object ownership; the update input may be overwritten immediately after recording. Core renderpass2 creation is checked without extension names. |
+| Sampler min/max reduction and mirror clamp | Native Apple GPU and Lavapipe return exact values 2/9/2 from the same float image. Features are enabled only when the native driver supports them. |
+| Large mapping | The guest ICD's fixed 64 MiB map ceiling is removed. A 68 MiB Mac mapping retains first/last CPU sentinels and receives the GPU update in its last four bytes. Existing allocation policies remain product specific. |
+
+Wire revision 11 adds operations 209–214 and expands the compute schema from 17
+to 23 extensions. No coordinator/service thread, global algorithm lock, stronger
+ordinary-memory barrier or CPU implementation of the shader is added. Dispatch
+validation also reuses cached workgroup limits instead of querying the driver
+for every command.
+
+The maintained [C oracle](../../tests/fixtures/vulkan-core12.c) and
+[SPIR-V 1.5 shader source](../../tests/fixtures/vulkan-core12.comp) build with the
+existing focused fixture script. The new
+[Mac harness](https://github.com/kb5000/trames-mac/blob/main/tests/integration/mac-vulkan-core12.py)
+uses the original loader and a disposable headless store. Its default mapping is
+68 MiB; the fixture accepts an optional size in MiB for bounded products.
+
+The original Apple M6/MoltenVK reference and one/twelve guest CPUs pass all exact
+outputs. Three shared mappings cover 71,303,708 bytes with zero CPU upload,
+download or scanned synchronization bytes. The ARM64 Linux interpreter/Lavapipe
+passes one/four CPUs with both native shared and forced shadow mappings, using
+32 MiB to respect the unchanged CLI's 64 MiB single-resource quota. An initial
+68 MiB CLI run hit that allocation quota before mapping. The discovery-only
+shadow filter retains original native GPU allocation/compilation/execution.
+
+Final ICD/runner hashes also pass the existing neural compute, GLES 3.1,
+indirect/image/ASTC and 128-component integer PBO regressions. Focused checks pass
+53 Vulkan tests per macOS/ARM64 Linux, strict Vulkan/Mac lints, signed Mac release
+build, Linux CLI build, both product boundaries and ARM64 iPad FFI compilation.
+Unchanged CPU/kernel/network and native-driver archive checks are reused. Full
+records are under `core12_follow_up` in
+[the compute data](../validation/vulkan-compute-data.json).
+
+Multiview, complete MSAA/resolve, multiple subpasses, secondary commands/events,
+separate depth/stencil layouts and descriptor indexing remain further work.
+Native draw-indirect-count, cooperative matrix/BF16/FP8 availability is unchanged;
+geometry/tessellation remain deferred. Full CTS, current unmodified llama.cpp or
+model inference/performance and physical iPad GPU acceptance are not claimed.
+The paired iPad guest artifact is prepared without installing a new IPA. The
+running Firefox session/profile is retained; new launches use the paired ICD.

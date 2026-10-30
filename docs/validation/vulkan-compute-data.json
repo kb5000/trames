@@ -751,5 +751,236 @@
       "physical iPad GPU untested; no new IPA installation"
     ],
     "evidence_directory": "target/vulkan-ml-20261030/implementation (ignored local diagnostic outputs)"
+  },
+  "core12_follow_up": {
+    "date": "2026-10-30",
+    "runtime_revision": "6735b345f1c8307cbdb7d3b4b118c29ac394e5dd",
+    "wire_revision": 11,
+    "scope": "Selected promoted Vulkan 1.1/1.2 application and compute paths; not complete Vulkan 1.2 or CTS conformance",
+    "instance_api": "1.2.0",
+    "physical_api": "native API capped at 1.2; experimental profile",
+    "compute_schema_extensions": 23,
+    "added_extensions": [
+      "VK_EXT_host_query_reset",
+      "VK_KHR_shader_draw_parameters",
+      "VK_KHR_sampler_mirror_clamp_to_edge",
+      "VK_EXT_sampler_filter_minmax",
+      "VK_KHR_spirv_1_4",
+      "VK_KHR_shader_non_semantic_info"
+    ],
+    "added_operations": {
+      "209": "host query reset",
+      "210": "dispatch base",
+      "211": "singleton device mask",
+      "212": "descriptor layout support",
+      "213": "inline buffer update",
+      "214": "render area granularity"
+    },
+    "query_creation": "Vulkan 1.1/1.2 feature/property aggregates, promoted individual aliases, single native Vulkan12Features node; unsupported fields false and guest conformance certificate zero",
+    "new_fixture": {
+      "c_sha256": "058bd0995fe6902f2e0f599bf132bbb236d1d89600c47fe5f7cc424a3f583910",
+      "shader_sha256": "6ee19dfd6f6aa4d95549a9f4aaa506cea2ba99af8e3cb986108f0608b1f27b3a",
+      "spirv_version": "1.5",
+      "default_mapping_mib": 68,
+      "bounded_mapping_argument_mib": 32
+    },
+    "mac_core12": {
+      "passed": true,
+      "scope": "selected Vulkan 1.2 core/SPIR-V 1.5 outputs and large mapping; not complete CTS",
+      "runner_sha256": "fe8eb771f4ce5be366d29f5a697aa4dabcf2be48f334bda7a0b037b70b72e403",
+      "inputs": {
+        "libtrames_vulkan_icd.so": "4db3f55845da913c89f8d26f7f889a440c2d22b740a8d383326d3fbf049ac8ef",
+        "vulkan-core12": "dc8976fb55ee75b34e0520bff8dc25362903caa23afd3c98cc76d96fb9d67cbf",
+        "vulkan-core12.spv": "0e18d79a301c2a9a80357179debc6a32d8db4d29a29a63b3882bcd0d69cab309",
+        "libvulkan.so.1": "382419ec9f138dd2a980fc988482a72b643c32901599b568a27fe7742946c752",
+        "icd.json": "1ebe161790a62d918d8cf96791416dc21e41f16978f2c78329210e49ac07c10f"
+      },
+      "cases": [
+        {
+          "cpus": 1,
+          "exit_code": 0,
+          "passed": true
+        },
+        {
+          "cpus": 12,
+          "exit_code": 0,
+          "passed": true
+        }
+      ],
+      "cleanup_exit": 0
+    },
+    "mac_native_reference": {
+      "exit_code": 0,
+      "stdout": "core12 device=Apple M6 subgroup=32 fp16-RTE=1 timeline-difference=18446744073709551615\ncore12-gpu-ok: SPIR-V 1.5; dynamic subgroup broadcast; dispatch base; host query reset; descriptor support; inline update at end of 68 MiB mapping; coherent GPU readback\ncore12-samplers-ok: reduction=1 mirror=1 values=2/9/2\ncore12-ok\n"
+    },
+    "mac_neural_regression": {
+      "passed": true,
+      "scope": "selected real-GPU neural compute outputs; no full CTS or model benchmark",
+      "runner_sha256": "fe8eb771f4ce5be366d29f5a697aa4dabcf2be48f334bda7a0b037b70b72e403",
+      "inputs": {
+        "libtrames_vulkan_icd.so": "4db3f55845da913c89f8d26f7f889a440c2d22b740a8d383326d3fbf049ac8ef",
+        "vulkan-neural": "646bb28af9847ff414b7c8a48f42b04356a60e6f0de1289cb5fdfddada3608c0",
+        "vulkan-neural.spv": "1357f095b043b35cfa6842fffd5ed0a3f7790a341f3a6e157a16c654bde85e06",
+        "vulkan-neural-dot.spv": "68718996be6577253eb3178ead6f5e54571d492bacc94e9d46730041c3902c15",
+        "libvulkan.so.1": "382419ec9f138dd2a980fc988482a72b643c32901599b568a27fe7742946c752",
+        "icd.json": "805a30cf4f35be3f865fa16b84f11ddbd45acc5be7d265d2007c4ea27e18b7b2"
+      },
+      "cases": [
+        {
+          "cpus": 1,
+          "exit_code": 0,
+          "passed": true
+        },
+        {
+          "cpus": 12,
+          "exit_code": 0,
+          "passed": true
+        }
+      ],
+      "cleanup_exit": 0
+    },
+    "mac_gles31_regression": {
+      "passed": true,
+      "scope": "selected GLES 3.1 GPU/ASTC output oracles, not full CTS",
+      "runner_sha256": "fe8eb771f4ce5be366d29f5a697aa4dabcf2be48f334bda7a0b037b70b72e403",
+      "inputs": {
+        "libEGL.so.1": "0fa0e1bbd4494aefa9f4739c65722c78db1d17c33588fccbdcd91aecd265eb8d",
+        "libgallium-25.1.9.so": "bed7fd21427414dce5ceae41ae7ab2dbc31e3885071dafe8bd93b982adc98912",
+        "libGLESv2.so.2": "1be4cbcf9ccb483a0135f5af76644f6fd7aa894ca4b39dac09857176b1d4dce7",
+        "libtrames_vulkan_icd.so": "4db3f55845da913c89f8d26f7f889a440c2d22b740a8d383326d3fbf049ac8ef",
+        "libvulkan.so.1": "382419ec9f138dd2a980fc988482a72b643c32901599b568a27fe7742946c752",
+        "zink-es31": "bf3d82151d7b5e59317d90c77f18f5ade8badfdb1f80f72417bec9cff5bbcb0f",
+        "icd.json": "70bcb7bc63f3efe1cdc6c9043b961bddf47737f3b997e83b73b31c4d05386a30"
+      },
+      "cases": [
+        {
+          "cpus": 1,
+          "exit_code": 0,
+          "passed": true
+        },
+        {
+          "cpus": 12,
+          "exit_code": 0,
+          "passed": true
+        }
+      ],
+      "cleanup_exit": 0
+    },
+    "mac_pbo_regression": {
+      "passed": true,
+      "scope": "integer PBO output/type-error regression",
+      "runner_sha256": "fe8eb771f4ce5be366d29f5a697aa4dabcf2be48f334bda7a0b037b70b72e403",
+      "inputs": {
+        "libEGL.so.1": "0fa0e1bbd4494aefa9f4739c65722c78db1d17c33588fccbdcd91aecd265eb8d",
+        "libgallium-25.1.9.so": "bed7fd21427414dce5ceae41ae7ab2dbc31e3885071dafe8bd93b982adc98912",
+        "libGLESv2.so.2": "1be4cbcf9ccb483a0135f5af76644f6fd7aa894ca4b39dac09857176b1d4dce7",
+        "libtrames_vulkan_icd.so": "4db3f55845da913c89f8d26f7f889a440c2d22b740a8d383326d3fbf049ac8ef",
+        "libvulkan.so.1": "382419ec9f138dd2a980fc988482a72b643c32901599b568a27fe7742946c752",
+        "zink-es31": "9ebc6a45e4c1c3a2d217621032635a5ff45ff958351bc41920f7ff66ffb5e2c1",
+        "icd.json": "876c7dd8e738d25375c50ce799c9ed9b9d232d6c9912790de993a7f4d9629086"
+      },
+      "cases": [
+        {
+          "cpus": 1,
+          "exit_code": 0,
+          "passed": true
+        }
+      ],
+      "cleanup_exit": 0
+    },
+    "linux_original_mapping": {
+      "cases": [
+        {
+          "cpus": 1,
+          "exit_code": 0,
+          "passed": true
+        },
+        {
+          "cpus": 4,
+          "exit_code": 0,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    "linux_forced_shadow": {
+      "cases": [
+        {
+          "cpus": 1,
+          "exit_code": 0,
+          "passed": true
+        },
+        {
+          "cpus": 4,
+          "exit_code": 0,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    "linux_mapping_scope": "32 MiB fixture under unchanged bounded CLI GPU policy; 68 MiB acceptance is on host-managed Mac only. Native Lavapipe executes the same SPIR-V 1.5 shader and commands. Shadow experiment hides only external_memory_host in discovery.",
+    "diagnostics": [
+      "Initial Linux run at 68 MiB reached the existing 64 MiB GPU resource quota before mapping; no quota was removed. The existing generic CLI also requires a host adapter for host-managed accounting; bounded acceptance uses the optional fixture size argument."
+    ],
+    "mac_shared_mapping_metrics": {
+      "maps": 3,
+      "mapped_bytes": 71303708,
+      "upload_bytes": 0,
+      "download_bytes": 0,
+      "upload_scanned_bytes": 0,
+      "download_scanned_bytes": 0
+    },
+    "linux_shadow_metrics": {
+      "1": {
+        "gpu_compiles": 1,
+        "gpu_upload_bytes": 15,
+        "gpu_download_bytes": 33555043,
+        "gpu_direct_bytes": 33554972,
+        "gpu_buffered_bytes": 86
+      },
+      "4": {
+        "gpu_compiles": 1,
+        "gpu_upload_bytes": 15,
+        "gpu_download_bytes": 33555043,
+        "gpu_direct_bytes": 33554972,
+        "gpu_buffered_bytes": 86
+      }
+    },
+    "sampler_outputs": {
+      "min": 2,
+      "max": 9,
+      "mirror_clamp": 2
+    },
+    "checks": {
+      "macos_vulkan_unit": 53,
+      "arm64_linux_vulkan_unit": 53,
+      "vulkan_strict_clippy": "pass",
+      "mac_product_strict_clippy": "pass",
+      "linux_release_cli": "pass",
+      "signed_mac_release_build": "pass",
+      "arm64_ipad_ffi_compile": "pass",
+      "paired_schema_generation": "pass",
+      "both_product_boundaries": "pass"
+    },
+    "unchanged_native_archives": {
+      "mac_sha256": "8df0c873b11d921091b0ddafb572c7c368852f6bcccd8f098ed5ea7bcae8bb5d",
+      "ipad_sha256": "ca028482256e3419438422f61df9cdff86e7b63688b6c8999adb53ee44ca8841"
+    },
+    "remaining": [
+      "multiview",
+      "complete multisample and resolve rendering",
+      "multiple subpasses and secondary command buffers/events",
+      "separate depth/stencil layouts",
+      "descriptor indexing/update-after-bind/variable descriptor counts",
+      "draw indirect count unavailable from pinned native driver",
+      "geometry/tessellation deferred",
+      "BDA capture/replay and multi-device",
+      "cooperative matrix/BF16/FP8 absent from native driver",
+      "full Vulkan CTS unrun",
+      "unmodified llama.cpp/model inference and performance unmeasured",
+      "physical iPad GPU untested; no new IPA installation"
+    ],
+    "artifact_promotion": "Final tested ICD and manifest copied to target/vulkan-guest and ignored iPad GuestVulkan bundle; running Firefox left unchanged",
+    "evidence_directory": "target/vulkan12-20261030 and target/local-ci/io/core12-* (ignored local diagnostics)"
   }
 }

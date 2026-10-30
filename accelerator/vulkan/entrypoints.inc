@@ -29,6 +29,8 @@
     if(!strcmp(name,"vkInvalidateMappedMemoryRanges"))return (PFN_vkVoidFunction)vkInvalidateMappedMemoryRanges;
     if(!strcmp(name,"vkCreateShaderModule"))return (PFN_vkVoidFunction)vkCreateShaderModule;
     if(!strcmp(name,"vkDestroyShaderModule"))return (PFN_vkVoidFunction)vkDestroyShaderModule;
+    if(!strcmp(name,"vkGetDescriptorSetLayoutSupport"))return (PFN_vkVoidFunction)vkGetDescriptorSetLayoutSupport;
+    if(!strcmp(name,"vkGetDescriptorSetLayoutSupportKHR"))return (PFN_vkVoidFunction)vkGetDescriptorSetLayoutSupportKHR;
     if(!strcmp(name,"vkCreateDescriptorSetLayout"))return (PFN_vkVoidFunction)vkCreateDescriptorSetLayout;
     if(!strcmp(name,"vkDestroyDescriptorSetLayout"))return (PFN_vkVoidFunction)vkDestroyDescriptorSetLayout;
     if(!strcmp(name,"vkCreatePipelineLayout"))return (PFN_vkVoidFunction)vkCreatePipelineLayout;
@@ -79,6 +81,14 @@
     if(!strcmp(name,"vkBindImageMemory2"))return (PFN_vkVoidFunction)vkBindImageMemory2;
     if(!strcmp(name,"vkBindImageMemory2KHR"))return (PFN_vkVoidFunction)vkBindImageMemory2KHR;
     if(!strcmp(name,"vkGetDeviceQueue2"))return (PFN_vkVoidFunction)vkGetDeviceQueue2;
+    if(!strcmp(name,"vkResetQueryPool"))return (PFN_vkVoidFunction)vkResetQueryPool;
+    if(!strcmp(name,"vkResetQueryPoolEXT"))return (PFN_vkVoidFunction)vkResetQueryPoolEXT;
+    if(!strcmp(name,"vkCmdDispatchBase"))return (PFN_vkVoidFunction)vkCmdDispatchBase;
+    if(!strcmp(name,"vkCmdDispatchBaseKHR"))return (PFN_vkVoidFunction)vkCmdDispatchBaseKHR;
+    if(!strcmp(name,"vkCmdSetDeviceMask"))return (PFN_vkVoidFunction)vkCmdSetDeviceMask;
+    if(!strcmp(name,"vkCmdSetDeviceMaskKHR"))return (PFN_vkVoidFunction)vkCmdSetDeviceMaskKHR;
+    if(!strcmp(name,"vkCmdUpdateBuffer"))return (PFN_vkVoidFunction)vkCmdUpdateBuffer;
+    if(!strcmp(name,"vkGetRenderAreaGranularity"))return (PFN_vkVoidFunction)vkGetRenderAreaGranularity;
     if(!strcmp(name,"vkCreateImage"))return (PFN_vkVoidFunction)vkCreateImage;
     if(!strcmp(name,"vkDestroyImage"))return (PFN_vkVoidFunction)vkDestroyImage;
     if(!strcmp(name,"vkGetImageMemoryRequirements"))return (PFN_vkVoidFunction)vkGetImageMemoryRequirements;

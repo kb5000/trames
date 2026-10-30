@@ -21,3 +21,9 @@ if [[ $(uname -s) == Linux ]]; then
         -I "$headers" tests/fixtures/vulkan-no-host-import.c -pthread -ldl \
         -o "$output/vulkan-no-host-import.so"
 fi
+
+"${GLSLANG_VALIDATOR:-glslangValidator}" -V --target-env vulkan1.2 tests/fixtures/vulkan-core12.comp -o "$output/vulkan-core12.spv"
+"${SPIRV_VAL:-spirv-val}" --target-env vulkan1.2 "$output/vulkan-core12.spv"
+"${MUSL_CC:-$PWD/target/busybox-build/musl/bin/musl-gcc}" -O2 -Wall -Wextra -Werror \
+    -I "$headers" -L "$PWD/target/vulkan-loader-sdk" -L "$PWD/target/alpine-build/lib" \
+    tests/fixtures/vulkan-core12.c -lvulkan -o "$output/vulkan-core12"
