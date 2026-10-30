@@ -30,9 +30,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFeatures2(VkPhysicalDevice p,VkPhy
             ((VkPhysicalDeviceScalarBlockLayoutFeatures *)next)->scalarBlockLayout=(D(p)->capabilities[0]&256)!=0;
         if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES)
             ((VkPhysicalDeviceImagelessFramebufferFeatures *)next)->imagelessFramebuffer=(D(p)->capabilities[0]&128)!=0;
-        if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES){
-            VkPhysicalDeviceMultiviewFeatures *v=(void *)next;v->multiview=VK_FALSE;v->multiviewGeometryShader=VK_FALSE;v->multiviewTessellationShader=VK_FALSE;
-        }
+
         if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES)
             ((VkPhysicalDeviceTimelineSemaphoreFeatures *)next)->timelineSemaphore=(D(p)->capabilities[0]&2)!=0;
     }
@@ -57,9 +55,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceProperties2(VkPhysicalDevice p,VkP
             uint32_t values[16];checked(CALL(133,KEY(p),PTR(values)));
             ((VkPhysicalDevicePortabilitySubsetPropertiesKHR *)next)->minVertexInputBindingStrideAlignment=values[15];
         }
-        if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES){
-            VkPhysicalDeviceMultiviewProperties *v=(void *)next;v->maxMultiviewViewCount=0;v->maxMultiviewInstanceIndex=0;
-        }
+
         if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES && (D(p)->capabilities[0]&8))
             checked(CALL(126,KEY(p),PTR(&((VkPhysicalDevicePointClippingProperties *)next)->pointClippingBehavior)));
         if(next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES && (D(p)->capabilities[0]&2))
@@ -87,9 +83,12 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties2(VkPhysicalDevice
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties2KHR(VkPhysicalDevice p,VkFormat format,VkFormatProperties2 *out) {vkGetPhysicalDeviceFormatProperties2(p,format,out);}
 VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties2(VkPhysicalDevice p,const VkPhysicalDeviceImageFormatInfo2 *info,VkImageFormatProperties2 *out) {
     if(!info || info->sType!=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2)return VK_ERROR_FORMAT_NOT_SUPPORTED;
-    const VkImageFormatListCreateInfo *list;if(!image_formats(info->pNext,&list))return VK_ERROR_FORMAT_NOT_SUPPORTED;
+    const VkImageFormatListCreateInfo *list;const VkImageStencilUsageCreateInfo *stencil;if(!image_formats(info->pNext,&list,&stencil))return VK_ERROR_FORMAT_NOT_SUPPORTED;
+    uint64_t extra[3]={list?PTR(list->pViewFormats):0,list?list->viewFormatCount:0,stencil?stencil->stencilUsage:0};
     query_output(out,VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2);
-    return CALL(59,KEY(p),info->format,info->type,info->tiling,info->usage,info->flags,PTR(&out->imageFormatProperties),list?PTR(list->pViewFormats):0,list?list->viewFormatCount:0);
+    VkSamplerYcbcrConversionImageFormatProperties *conversion=NULL;
+    for(VkBaseOutStructure *n=out->pNext;n;n=n->pNext)if(n->sType==VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES)conversion=(void *)n;
+    return CALL(59,KEY(p),info->format,info->type,info->tiling,info->usage,info->flags,PTR(&out->imageFormatProperties),stencil?PTR(extra):extra[0],stencil?UINT64_MAX:extra[1],conversion?PTR(&conversion->combinedImageSamplerDescriptorCount):0);
 }
 VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties2KHR(VkPhysicalDevice p,const VkPhysicalDeviceImageFormatInfo2 *info,VkImageFormatProperties2 *out) {return vkGetPhysicalDeviceImageFormatProperties2(p,info,out);}
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceQueueFamilyProperties2(VkPhysicalDevice p,uint32_t *count,VkQueueFamilyProperties2 *out) {
@@ -115,13 +114,17 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceSparseImageFormatProperties2KHR(Vk
 VKAPI_ATTR void VKAPI_CALL vkGetBufferMemoryRequirements2(VkDevice d,const VkBufferMemoryRequirementsInfo2 *info,VkMemoryRequirements2 *out) {
     if(!VALID(info,VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2))checked(VK_ERROR_FEATURE_NOT_PRESENT);
     query_output(out,VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2);
-    vkGetBufferMemoryRequirements(d,info->buffer,&out->memoryRequirements);
+    VkMemoryDedicatedRequirements *dedicated=NULL;
+    for(VkBaseOutStructure *n=out->pNext;n;n=n->pNext)if(n->sType==VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS)dedicated=(void *)n;
+    checked(CALL(239,KEY(d),1,(uint64_t)info->buffer,PTR(&out->memoryRequirements),dedicated?PTR(&dedicated->prefersDedicatedAllocation):0));
 }
 VKAPI_ATTR void VKAPI_CALL vkGetBufferMemoryRequirements2KHR(VkDevice d,const VkBufferMemoryRequirementsInfo2 *info,VkMemoryRequirements2 *out) {vkGetBufferMemoryRequirements2(d,info,out);}
 VKAPI_ATTR void VKAPI_CALL vkGetImageMemoryRequirements2(VkDevice d,const VkImageMemoryRequirementsInfo2 *info,VkMemoryRequirements2 *out) {
     if(!VALID(info,VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2))checked(VK_ERROR_FEATURE_NOT_PRESENT);
     query_output(out,VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2);
-    vkGetImageMemoryRequirements(d,info->image,&out->memoryRequirements);
+    VkMemoryDedicatedRequirements *dedicated=NULL;
+    for(VkBaseOutStructure *n=out->pNext;n;n=n->pNext)if(n->sType==VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS)dedicated=(void *)n;
+    checked(CALL(239,KEY(d),2,(uint64_t)info->image,PTR(&out->memoryRequirements),dedicated?PTR(&dedicated->prefersDedicatedAllocation):0));
 }
 VKAPI_ATTR void VKAPI_CALL vkGetImageMemoryRequirements2KHR(VkDevice d,const VkImageMemoryRequirementsInfo2 *info,VkMemoryRequirements2 *out) {vkGetImageMemoryRequirements2(d,info,out);}
 VKAPI_ATTR void VKAPI_CALL vkGetImageSparseMemoryRequirements2(VkDevice d,const VkImageSparseMemoryRequirementsInfo2 *info,uint32_t *count,VkSparseImageMemoryRequirements2 *out) {

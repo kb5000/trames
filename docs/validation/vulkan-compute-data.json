@@ -1298,5 +1298,358 @@
     ],
     "active_firefox": "Left running; no profile or preference changes. New launches use the paired ICD.",
     "evidence_directory": "target/vulkan-msaa-20261030 and target/local-ci/io/msaa-* (ignored local diagnostics)"
+  },
+  "vulkan12_completion": {
+    "date": "2026-10-31",
+    "passed": true,
+    "runtime_revision": "c871946f591ff8109ee0b7fdbc9b78d4bb38478d",
+    "scope": "Promoted Vulkan 1.1/1.2 native render, descriptor and synchronization paths; not full CTS/conformance",
+    "wire_revision": 13,
+    "extension_records": 33,
+    "public_entrypoints": 238,
+    "core_inventory": {
+      "VK_VERSION_1_0": {
+        "total": 137,
+        "implemented": 137,
+        "missing": []
+      },
+      "VK_VERSION_1_1": {
+        "total": 28,
+        "implemented": 28,
+        "missing": []
+      },
+      "VK_VERSION_1_2": {
+        "total": 13,
+        "implemented": 13,
+        "missing": []
+      }
+    },
+    "mac": {
+      "passed": true,
+      "scope": "native multiview, descriptor indexing, depth/stencil resolve, subpasses, secondary commands, events, linear images and YCbCr output oracles; not complete CTS",
+      "runner_sha256": "029304b37c4ffb27ada4e07a8716c33b2886e9558f836cac5d2f193edf52a792",
+      "inputs": {
+        "libtrames_vulkan_icd.so": "d3a4025c664f17ab34245a9bf653ae6ecf372be925034498640b73983ca60682",
+        "vulkan12-complete": "1ff4752971ae77203812ed9446ae3d8f9ced54ae69be0493a2e01b4e5c024155",
+        "vulkan12-index.comp.spv": "a24ffc837e6b21f530bdc450cf882900dbc0902ed24e3c069055d888331b6bfa",
+        "vulkan12-views.vert.spv": "6f8198437f63e1d052907a1f93f540e5b189d7f9435d889ee3f757de2c523c7e",
+        "vulkan12-views.frag.spv": "1d26cee8c5e85090fa7f08a16b0dcafbf6658ce453b31807516e8fb8e0d13841",
+        "vulkan12-input.frag.spv": "002b31ed4c0fb4edf3fdcfc5f8fff744ca01ffcc77cd697a1679867132390021",
+        "vulkan12-ycbcr.comp.spv": "acdaa502f89e984b8ff29fd605641375f0303a5f16792c35098723d510613df0",
+        "vulkan12-atomic64.comp.spv": "108d3a749ac544a3658ac8ecee306de6d522e4983197c20472d99c5e5a42048a",
+        "vulkan12-multiview.frag.spv": "7d7591b1853360ede51edcf033676d619457fadef42987f9264cace25534e462",
+        "libvulkan.so.1": "382419ec9f138dd2a980fc988482a72b643c32901599b568a27fe7742946c752",
+        "icd.json": "0246b6fc2b109904589a4fc43bc186b24c52572897cbdd03eb9ccfc8ebd963d0"
+      },
+      "teardown_metric_scope": "Metal currentAllocatedSize before MTLDevice release; includes native driver/autoreleased resources, not a Vulkan live-object count",
+      "cases": [
+        {
+          "cpus": 1,
+          "exit_code": 0,
+          "passed": true,
+          "metal_current_allocated_mib_at_physical_teardown": 1
+        },
+        {
+          "cpus": 12,
+          "exit_code": 0,
+          "passed": true,
+          "metal_current_allocated_mib_at_physical_teardown": 1
+        }
+      ],
+      "cleanup_exit": 0
+    },
+    "linux": {
+      "acceptance": {
+        "cases": [
+          {
+            "cpus": 1,
+            "exit_code": 0,
+            "passed": true
+          },
+          {
+            "cpus": 4,
+            "exit_code": 0,
+            "passed": true
+          }
+        ],
+        "passed": true
+      },
+      "shadow": {
+        "cases": [
+          {
+            "cpus": 1,
+            "exit_code": 0,
+            "passed": true
+          },
+          {
+            "cpus": 4,
+            "exit_code": 0,
+            "passed": true
+          }
+        ],
+        "passed": true
+      }
+    },
+    "khronos_validation": {
+      "version": "1.3.275",
+      "native_reference": "ARM64 llvmpipe LLVM 20.1.2",
+      "errors": 0,
+      "stdout_sha256": "6df27675f5c35988f8e204a23679bec011230e200ff8e991872b8f7b64d47b5e"
+    },
+    "native_sdk": {
+      "macos": {
+        "library_sha256": "538c5a1f3f73dbcf1bdb91d80353ea9b6997d4724769227eb373569af6eec77d",
+        "event_patch": {
+          "before": {
+            "MoltenVK/MoltenVK/GPUObjects/MVKSync.h": "e444dbef9fa1e66b775aa13b55685dc8f180fc1f701a5743a7fb16532cfbe0c3",
+            "MoltenVK/MoltenVK/GPUObjects/MVKSync.mm": "73ce0001847349db5873cd086df5d93c42a4f7ff7dfe718f2059ded717a7833d"
+          },
+          "after": {
+            "MoltenVK/MoltenVK/GPUObjects/MVKSync.h": "7b1cc7b78cfe2e848a55b442c0e1ee9229ba0ab9404611dab2e25c4aa6034c44",
+            "MoltenVK/MoltenVK/GPUObjects/MVKSync.mm": "7a676efaf32402c35c8411b3e27c511322c822bca67bf195847677e3c5ec971c"
+          },
+          "patch_sha256": "813fc05148f7b3b60152cf949392521bc3736e8a416fb4cb2d3cdd0426670a25"
+        },
+        "sdk": "27.2",
+        "platform": "macos"
+      },
+      "ipad": {
+        "library_sha256": "2b629b4c9049dcf9c778a13717c62cfcb82245437030122ce8ca3d1edf1c1d02",
+        "event_patch": {
+          "before": {
+            "MoltenVK/MoltenVK/GPUObjects/MVKSync.h": "e444dbef9fa1e66b775aa13b55685dc8f180fc1f701a5743a7fb16532cfbe0c3",
+            "MoltenVK/MoltenVK/GPUObjects/MVKSync.mm": "73ce0001847349db5873cd086df5d93c42a4f7ff7dfe718f2059ded717a7833d"
+          },
+          "after": {
+            "MoltenVK/MoltenVK/GPUObjects/MVKSync.h": "7b1cc7b78cfe2e848a55b442c0e1ee9229ba0ab9404611dab2e25c4aa6034c44",
+            "MoltenVK/MoltenVK/GPUObjects/MVKSync.mm": "7a676efaf32402c35c8411b3e27c511322c822bca67bf195847677e3c5ec971c"
+          },
+          "patch_sha256": "813fc05148f7b3b60152cf949392521bc3736e8a416fb4cb2d3cdd0426670a25"
+        },
+        "sdk": "27.2",
+        "platform": "ios"
+      }
+    },
+    "regressions": {
+      "core12": {
+        "passed": true,
+        "scope": "selected Vulkan 1.2 core/SPIR-V 1.5 outputs and large mapping; not complete CTS",
+        "runner_sha256": "029304b37c4ffb27ada4e07a8716c33b2886e9558f836cac5d2f193edf52a792",
+        "inputs": {
+          "libtrames_vulkan_icd.so": "d3a4025c664f17ab34245a9bf653ae6ecf372be925034498640b73983ca60682",
+          "vulkan-core12": "dc8976fb55ee75b34e0520bff8dc25362903caa23afd3c98cc76d96fb9d67cbf",
+          "vulkan-core12.spv": "0e18d79a301c2a9a80357179debc6a32d8db4d29a29a63b3882bcd0d69cab309",
+          "libvulkan.so.1": "382419ec9f138dd2a980fc988482a72b643c32901599b568a27fe7742946c752",
+          "icd.json": "28549182dd9b514b0ff7ce8dd6ea7dae0060d792ae990c91eda6884a02321a11"
+        },
+        "cases": [
+          {
+            "cpus": 1,
+            "exit_code": 0,
+            "passed": true
+          },
+          {
+            "cpus": 12,
+            "exit_code": 0,
+            "passed": true
+          }
+        ],
+        "cleanup_exit": 0
+      },
+      "msaa": {
+        "passed": true,
+        "scope": "native MSAA masks/sample shading/depth, alpha coverage, subpass and explicit resolve; not complete CTS",
+        "runner_sha256": "029304b37c4ffb27ada4e07a8716c33b2886e9558f836cac5d2f193edf52a792",
+        "inputs": {
+          "libtrames_vulkan_icd.so": "d3a4025c664f17ab34245a9bf653ae6ecf372be925034498640b73983ca60682",
+          "vulkan-msaa": "9e5d8f2e50542241158c867b0e380b7f9afbf968b9a66ab3ff72384b112931a4",
+          "vulkan-msaa.vert.spv": "368ba9ddfa272fc42aa4b056a0130868424fa9b881eca7447a9011fcadde5629",
+          "vulkan-msaa.frag.spv": "4b96a29b109340c4f93b32056f28e0155c1f204f9eaa7402f23b4a74470ed3ff",
+          "libvulkan.so.1": "382419ec9f138dd2a980fc988482a72b643c32901599b568a27fe7742946c752",
+          "icd.json": "f81f04b9d202d911773a3b9d9a100891aed243908e4c7eef0aca179b6a7030fc"
+        },
+        "teardown_metric_scope": "Metal currentAllocatedSize before MTLDevice release; includes native driver/autoreleased resources, not a Vulkan live-object count",
+        "cases": [
+          {
+            "cpus": 1,
+            "exit_code": 0,
+            "passed": true,
+            "metal_current_allocated_mib_at_physical_teardown": 1
+          },
+          {
+            "cpus": 12,
+            "exit_code": 0,
+            "passed": true,
+            "metal_current_allocated_mib_at_physical_teardown": 1
+          }
+        ],
+        "cleanup_exit": 0
+      },
+      "gles": {
+        "passed": true,
+        "scope": "selected GLES 3.1 GPU/ASTC output oracles, not full CTS",
+        "runner_sha256": "029304b37c4ffb27ada4e07a8716c33b2886e9558f836cac5d2f193edf52a792",
+        "inputs": {
+          "libEGL.so.1": "0fa0e1bbd4494aefa9f4739c65722c78db1d17c33588fccbdcd91aecd265eb8d",
+          "libgallium-25.1.9.so": "bed7fd21427414dce5ceae41ae7ab2dbc31e3885071dafe8bd93b982adc98912",
+          "libGLESv2.so.2": "1be4cbcf9ccb483a0135f5af76644f6fd7aa894ca4b39dac09857176b1d4dce7",
+          "libtrames_vulkan_icd.so": "d3a4025c664f17ab34245a9bf653ae6ecf372be925034498640b73983ca60682",
+          "libvulkan.so.1": "382419ec9f138dd2a980fc988482a72b643c32901599b568a27fe7742946c752",
+          "zink-es31": "bf3d82151d7b5e59317d90c77f18f5ade8badfdb1f80f72417bec9cff5bbcb0f",
+          "icd.json": "5b8772f4e87202c90bf7caa712d81fc6139bd0342c8cff5f675a1c82966debc9"
+        },
+        "cases": [
+          {
+            "cpus": 1,
+            "exit_code": 0,
+            "passed": true
+          }
+        ],
+        "cleanup_exit": 0
+      },
+      "zink-msaa": {
+        "passed": true,
+        "scope": "GLES multisample renderbuffers, masks, alpha coverage and resolve; not full CTS",
+        "runner_sha256": "029304b37c4ffb27ada4e07a8716c33b2886e9558f836cac5d2f193edf52a792",
+        "inputs": {
+          "libEGL.so.1": "0fa0e1bbd4494aefa9f4739c65722c78db1d17c33588fccbdcd91aecd265eb8d",
+          "libgallium-25.1.9.so": "bed7fd21427414dce5ceae41ae7ab2dbc31e3885071dafe8bd93b982adc98912",
+          "libGLESv2.so.2": "1be4cbcf9ccb483a0135f5af76644f6fd7aa894ca4b39dac09857176b1d4dce7",
+          "libtrames_vulkan_icd.so": "d3a4025c664f17ab34245a9bf653ae6ecf372be925034498640b73983ca60682",
+          "libvulkan.so.1": "382419ec9f138dd2a980fc988482a72b643c32901599b568a27fe7742946c752",
+          "zink-msaa": "7f23fb67a43b470c57e6f0d324c6968254bc5be6c2cda612f0ffc6bfc5b425a0",
+          "icd.json": "d0e6598f60fb8a12a289b3356472f6667401903f5f54568dd647cfc733eeab3b"
+        },
+        "cases": [
+          {
+            "cpus": 1,
+            "exit_code": 0,
+            "passed": true,
+            "metal_current_allocated_mib_at_physical_teardown": 1
+          }
+        ],
+        "cleanup_exit": 0
+      },
+      "pbo": {
+        "passed": true,
+        "scope": "integer PBO output/type-error regression",
+        "runner_sha256": "029304b37c4ffb27ada4e07a8716c33b2886e9558f836cac5d2f193edf52a792",
+        "inputs": {
+          "libEGL.so.1": "0fa0e1bbd4494aefa9f4739c65722c78db1d17c33588fccbdcd91aecd265eb8d",
+          "libgallium-25.1.9.so": "bed7fd21427414dce5ceae41ae7ab2dbc31e3885071dafe8bd93b982adc98912",
+          "libGLESv2.so.2": "1be4cbcf9ccb483a0135f5af76644f6fd7aa894ca4b39dac09857176b1d4dce7",
+          "libtrames_vulkan_icd.so": "d3a4025c664f17ab34245a9bf653ae6ecf372be925034498640b73983ca60682",
+          "libvulkan.so.1": "382419ec9f138dd2a980fc988482a72b643c32901599b568a27fe7742946c752",
+          "zink-es31": "9ebc6a45e4c1c3a2d217621032635a5ff45ff958351bc41920f7ff66ffb5e2c1",
+          "icd.json": "f8c959343f23def0b5957b62050cf8698ded743aa71f0e5f7dc5b0ff2f58079e"
+        },
+        "cases": [
+          {
+            "cpus": 1,
+            "exit_code": 0,
+            "passed": true
+          }
+        ],
+        "cleanup_exit": 0
+      },
+      "neural": {
+        "passed": true,
+        "scope": "selected real-GPU neural compute outputs; no full CTS or model benchmark",
+        "runner_sha256": "029304b37c4ffb27ada4e07a8716c33b2886e9558f836cac5d2f193edf52a792",
+        "inputs": {
+          "libtrames_vulkan_icd.so": "d3a4025c664f17ab34245a9bf653ae6ecf372be925034498640b73983ca60682",
+          "vulkan-neural": "646bb28af9847ff414b7c8a48f42b04356a60e6f0de1289cb5fdfddada3608c0",
+          "vulkan-neural.spv": "1357f095b043b35cfa6842fffd5ed0a3f7790a341f3a6e157a16c654bde85e06",
+          "vulkan-neural-dot.spv": "68718996be6577253eb3178ead6f5e54571d492bacc94e9d46730041c3902c15",
+          "libvulkan.so.1": "382419ec9f138dd2a980fc988482a72b643c32901599b568a27fe7742946c752",
+          "icd.json": "27bc2066cfe6ef366537a1b456c66ccb9a5503c6b76669786d243a80da3eb982"
+        },
+        "cases": [
+          {
+            "cpus": 1,
+            "exit_code": 0,
+            "passed": true
+          }
+        ],
+        "cleanup_exit": 0
+      }
+    },
+    "mac_transfer_metrics": {
+      "1": {
+        "upload_bytes": 0,
+        "download_bytes": 256,
+        "direct_bytes": 256,
+        "buffered_bytes": 0,
+        "maps": 20,
+        "mapped_bytes": 57544,
+        "upload_scanned_bytes": 512,
+        "download_scanned_bytes": 0
+      },
+      "12": {
+        "upload_bytes": 0,
+        "download_bytes": 256,
+        "direct_bytes": 256,
+        "buffered_bytes": 0,
+        "maps": 20,
+        "mapped_bytes": 57544,
+        "upload_scanned_bytes": 512,
+        "download_scanned_bytes": 0
+      }
+    },
+    "checks": {
+      "vulkan_units_per_host": 56,
+      "strict_vulkan_mac_clippy": true,
+      "signed_mac_release_build": true,
+      "linux_cli_release_build": true,
+      "ipad_arm64_ffi_check": true,
+      "product_boundaries": true,
+      "generator_catalog_and_registry_inventory": true,
+      "unchanged_cpu_linux_network_checks_reused": true
+    },
+    "limitations": {
+      "cts_run": false,
+      "physical_ipad_gpu_run": false,
+      "new_ipa_installed": false,
+      "active_firefox_restarted": false,
+      "geometry_tessellation_enabled": false,
+      "native_apple_draw_indirect_count": false,
+      "native_apple_int64_atomics": false,
+      "address_capture_replay_enabled": false,
+      "native_linux_inactive_resolve_layer_modification": true,
+      "metal_current_allocated_teardown_mib": 1,
+      "metal_teardown_is_not_live_vulkan_object_count": true
+    },
+    "source_files": {
+      "crates/trames-vulkan/compute-profile.json": "b366cd8129178facf8c307d79d54f85cfd65b523466cb2021c7f5a32ae4a0deb",
+      "crates/trames-vulkan/src/backend.rs": "e09ff7cec8866e7384e84bae773ec7953afac702ffa34682d7bf6b1da0ada10b",
+      "crates/trames-vulkan/src/backend/coherent.rs": "31eb364f6c7094be5d921e2dea5e1f913534ea9874c79a351c7a2282f0637e94",
+      "crates/trames-vulkan/src/backend/compute.rs": "06e40b0d52faaf19997ade764411d5559f3c18f0de44dc86e514ceb7c37e4057",
+      "crates/trames-vulkan/src/backend/compute_schema.rs": "a48d69add4f223b8b14c4578b14985e6c923b8749ebeabfef8051038637d3e59",
+      "crates/trames-vulkan/src/backend/core_commands.rs": "166b46b58eb20762e869e6932f5ac0c28a62ca3ea75c586c98fc2018cdb04665",
+      "crates/trames-vulkan/src/backend/core_features.rs": "a55463eec9587b35f9360040731c47a72df148968cbbd0fc270ef1cddb3abda6",
+      "crates/trames-vulkan/src/backend/descriptors.rs": "cdea9b563a00c332cd3003200cd4a4ae7cd03f295e2eabcd5bb1625cda285a0f",
+      "crates/trames-vulkan/src/backend/graphics.rs": "e105bb5b678a42d4f5578f65d6d4047dd2af58067b3b442a5b566f1ff55ecb24",
+      "crates/trames-vulkan/src/backend/graphics/commands.rs": "05cee3ed076fdc32c45e20f3de5e342d7e61eac64d145f97df2d6890f264ae23",
+      "crates/trames-vulkan/src/backend/graphics/render_graph.rs": "323b23dd58eba3ab943aff8037a7c199612c3ac19323bbc543a1f9f922f8735e",
+      "crates/trames-vulkan/src/backend/graphics/render_pass.rs": "a098960794df2952a5c64a2f2ea293033887517ed94423cd08cdad8dba53181a",
+      "crates/trames-vulkan/src/backend/graphics/ycbcr.rs": "bbb1830249b0c2aea6d20284bc3b3392afa72292899dd9152de38360b1fefe25",
+      "crates/trames-vulkan/src/backend/shared_memory.rs": "df965acb471135af60e2333bff8018e8b614d5ead947c0ab985e6d1aaa36640a",
+      "crates/trames-vulkan/src/backend/sync.rs": "5277c64aecce18c9337cdbbc78d43629f7501e9504f459b7ecda960f20fe646b",
+      "crates/trames-vulkan/src/backend/textures.rs": "76f0f9f77343574f86702d03259e31c69e686e67ae632decb0d4cebe32b093a6",
+      "crates/trames-vulkan/src/backend/wayland.rs": "b2db4b17d82f3335d496edfa379a432cb3082b058cd9966d48d6ea42c554d68c",
+      "crates/trames-vulkan/src/backend/wsi.rs": "7627ad18c57696a7c6ec95732fc1fdb49ffb419cab4b3fa44c3ad19e847a0905",
+      "crates/trames-vulkan/src/backend/zink.rs": "3f641d9683ac159d2b740fb0ce1c65449d69e1aecc429fc63dcfd34dc6dff6b9"
+    },
+    "fixture_sources": {
+      "vulkan12-atomic64.comp": "2b9805915b1635175f2e74b42713a9eb9feb661f4258e72eb7d09099bb00fad6",
+      "vulkan12-complete.c": "ddc48ff7a13c70cb819bd96475e698f0896657fd18e7ba9bfd96889dd042bba2",
+      "vulkan12-index.comp": "f7eb5a6365b7a6079399aa10d6e22ef0a66f5924bd686b7fe47b7dc30d1e3d51",
+      "vulkan12-input.frag": "2c613737a5008cf8a3a29137da10ea929844ba3b1a03d21ec5e38c055be9ed17",
+      "vulkan12-multiview.frag": "0dfddc0786caedeaac341d14eec88a8c1b91f57d24745cc08e671feb0198a78e",
+      "vulkan12-views.frag": "b4871a34b74aa511c6a8064da8965ef5aa45b72ae858e4eb681c84ea0b5d858a",
+      "vulkan12-views.vert": "6d9badd3086e5479df11dddcfedba573b44c01f762cb6551e07fbc8b87815bed",
+      "vulkan12-ycbcr.comp": "29458c6ea6d90b3bc0ff3268aff5a6abf4d5e0cd1435af25395359693690d39a"
+    },
+    "event_patch_sha256": "813fc05148f7b3b60152cf949392521bc3736e8a416fb4cb2d3cdd0426670a25"
   }
 }

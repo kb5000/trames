@@ -31,16 +31,16 @@ for f in schema['features']:
         assert not bit_mask & (1 << (f['bit'] + i))
         bit_mask |= 1 << (f['bit'] + i)
 rs += ['}']
-constants = {'buffer_device_address', 'subgroup_size_control', 'compute_full_subgroups', 'shader_shared_float32_atomic_add', 'shader_shared_float32_atomics', 'host_query_reset'}
+constants = {'sampler_ycbcr_conversion', 'buffer_device_address', 'subgroup_size_control', 'compute_full_subgroups', 'shader_shared_float32_atomic_add', 'shader_shared_float32_atomics', 'host_query_reset','multiview','separate_depth_stencil_layouts','descriptor_binding_uniform_buffer_update_after_bind','descriptor_binding_sampled_image_update_after_bind','descriptor_binding_storage_image_update_after_bind','descriptor_binding_storage_buffer_update_after_bind','descriptor_binding_uniform_texel_buffer_update_after_bind','descriptor_binding_storage_texel_buffer_update_after_bind','descriptor_binding_update_unused_while_pending','descriptor_binding_partially_bound','descriptor_binding_variable_descriptor_count'}
 for f in schema['features']:
     for i, field in enumerate(f['fields']):
         if field['rust'] in constants:
-            rs += [f'pub(super) const {field["rust"].upper()}: u64 = 1 << {f["bit"] + i};']
+            rs += [f'pub(super) const {field["rust"].upper()}: u128 = 1 << {f["bit"] + i};']
 for f in schema['core12']:
     assert not bit_mask & (1 << f['bit'])
     bit_mask |= 1 << f['bit']
-    rs += [f'pub(super) const {f["rust"].upper()}: u64 = 1 << {f["bit"]};']
-rs += ['impl Selected {', '    pub fn core12_features(&mut self, features: u64, legacy: u64) {']
+    rs += [f'pub(super) const {f["rust"].upper()}: u128 = 1 << {f["bit"]};']
+rs += ['impl Selected {', '    pub fn core12_features(&mut self, features: u128, legacy: u64) {']
 for f in schema['features']:
     if schema['extensions'][f['extension']]['promoted'] == 12:
         for field in f['fields']:
@@ -63,7 +63,7 @@ for q in schema['aggregate_properties']:
     ty = q['type']; first = q['fields'][0]['rust']
     rs += [f'    if caps.api >= {api(q["minimum_api"])} {{', f'        let mut native = vk::{ty}::default();', '        let mut properties = vk::PhysicalDeviceProperties2::default().push_next(&mut native);', '        unsafe { query.get_physical_device_properties2(physical, &mut properties); }']
     if ty == 'PhysicalDeviceVulkan11Properties':
-        rs += ['        native.subgroup_supported_stages &= vk::ShaderStageFlags::VERTEX | vk::ShaderStageFlags::FRAGMENT | vk::ShaderStageFlags::COMPUTE;', '        native.max_multiview_view_count = 0;', '        native.max_multiview_instance_index = 0;']
+        rs += ['        native.subgroup_supported_stages &= vk::ShaderStageFlags::VERTEX | vk::ShaderStageFlags::FRAGMENT | vk::ShaderStageFlags::COMPUTE;']
     rs += [f'        let start = std::mem::offset_of!(vk::{ty}, {first});', f'        let mut bytes = vec![0; std::mem::size_of::<vk::{ty}>() - start];']
     for f in q['fields']:
         field = f['rust']; kind = f['kind']

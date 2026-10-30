@@ -35,6 +35,7 @@ CROSS_PATCH = ROOT/'patches/moltenvk/0004-allow-native-tf-entry-arguments.patch'
 COMPONENT_PATCH = ROOT/'patches/moltenvk/0006-pack-compatible-raster-varying-components.patch'
 COMPONENT_SOURCE = Path('External/SPIRV-Cross/spirv_msl.cpp')
 SAMPLER_PATCH = ROOT/'patches/moltenvk/0005-native-transparent-black-border.patch'
+EVENT_PATCH = ROOT/'patches/moltenvk/0008-preserve-queued-event-transitions.patch'
 WAKE_PATCH = ROOT/'patches/moltenvk/0007-notify-host-fence-completion.patch'
 IMAGE = Path('MoltenVK/MoltenVK/GPUObjects/MVKImage.mm')
 NATIVE_TF = ROOT/'runtime/crates/trames-vulkan/native/transform-feedback'
@@ -42,6 +43,15 @@ NATIVE_TF = ROOT/'runtime/crates/trames-vulkan/native/transform-feedback'
 
 def patch_paths(patch):
     return [Path(line[6:]) for line in patch.read_text().splitlines() if line.startswith('+++ b/')]
+
+
+def apply_event_patch(source):
+    paths = patch_paths(EVENT_PATCH)
+    before = {str(p): digest(source/p) for p in paths}
+    subprocess.run(['patch', '-s', '-p1', '-i', str(EVENT_PATCH)], cwd=source, input=b'', check=True)
+    assert 'reserveSignal(status)' in (source/paths[1]).read_text()
+    return dict(before=before, after={str(p): digest(source/p) for p in paths},
+                patch_sha256=digest(EVENT_PATCH))
 
 
 def apply_wake_patch(source):
@@ -187,6 +197,13 @@ def main():
                 path = Path(tmp)/relative;path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_bytes(archive.extractfile(member).read())
             native_wake = apply_wake_patch(Path(tmp))
+            for relative in patch_paths(EVENT_PATCH):
+                if (Path(tmp)/relative).exists():
+                    continue
+                member = next(v for v in archive if v.name.endswith('/'+str(relative)))
+                path = Path(tmp)/relative;path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(archive.extractfile(member).read())
+            native_events = apply_event_patch(Path(tmp))
             archive_name = next(v for v in archive.getnames() if v.endswith('/Templates/spirv-tools/build.zip'))
             with zipfile.ZipFile(io.BytesIO(archive.extractfile(archive_name).read())) as headers:
                 assert headers.testzip() is None and 'build/OpenCLDebugInfo100.h' in headers.namelist()
@@ -204,7 +221,7 @@ def main():
     sdk_version = subprocess.check_output(['xcrun', '--sdk', sdk, '--show-sdk-version'], text=True).strip()
     inputs = dict(platform=a.platform, arch=a.arch, xcode=toolchain, sdk=sdk_version,
                   patch_sha256=digest(PATCH), recipe_sha256=digest(Path(__file__)),
-                  wake_patch_sha256=digest(WAKE_PATCH),
+                  wake_patch_sha256=digest(WAKE_PATCH), event_patch_sha256=digest(EVENT_PATCH),
                   timestamp_patch_sha256=digest(TIMESTAMP_PATCH), sampler_patch_sha256=digest(SAMPLER_PATCH), component_patch_sha256=digest(COMPONENT_PATCH),
                   transform_feedback_patch_sha256=digest(TF_PATCH), cross_dispatch_patch_sha256=digest(CROSS_PATCH),
                   transform_feedback_sources={p.name:digest(p) for p in sorted(NATIVE_TF.iterdir()) if p.is_file()},
@@ -255,6 +272,7 @@ def main():
     native_sampler = apply_sampler_patch(source)
     native_components = apply_component_patch(source)
     native_wake = apply_wake_patch(source)
+    native_events = apply_event_patch(source)
     common = ['-configuration', 'Release', '-sdk', sdk, 'ARCHS='+a.arch,
               'ONLY_ACTIVE_ARCH=YES', 'CODE_SIGNING_ALLOWED=NO',
               'SYMROOT='+str(out/'products'), 'OBJROOT='+str(out/'intermediates')]
@@ -286,7 +304,7 @@ def main():
     record.write_text(json.dumps(dict(inputs=inputs, commands=commands, original_transfer_sha256=before,
         patched_transfer_sha256=after, original_device_sha256=device_before,
         patched_device_sha256=device_after, library_sha256=digest(library)), indent=2)+'\n')
-    data = json.loads(record.read_text());data['native_transform_feedback']=native_tf;data['native_sampler']=native_sampler;data['native_components']=native_components;data['native_fence_wake']=native_wake
+    data = json.loads(record.read_text());data['native_transform_feedback']=native_tf;data['native_sampler']=native_sampler;data['native_components']=native_components;data['native_fence_wake']=native_wake;data['native_events']=native_events
     record.write_text(json.dumps(data, indent=2)+'\n')
     print(out)
 

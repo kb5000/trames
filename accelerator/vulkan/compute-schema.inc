@@ -24,6 +24,16 @@ static const struct compute_extension compute_extensions[] = {
     {"VK_EXT_sampler_filter_minmax", 1UL << 20},
     {"VK_KHR_spirv_1_4", 1UL << 21},
     {"VK_KHR_shader_non_semantic_info", 1UL << 22},
+    {"VK_EXT_descriptor_indexing", 1UL << 23},
+    {"VK_KHR_multiview", 1UL << 24},
+    {"VK_KHR_separate_depth_stencil_layouts", 1UL << 25},
+    {"VK_KHR_depth_stencil_resolve", 1UL << 26},
+    {"VK_KHR_sampler_ycbcr_conversion", 1UL << 27},
+    {"VK_KHR_shader_atomic_int64", 1UL << 28},
+    {"VK_KHR_draw_indirect_count", 1UL << 29},
+    {"VK_EXT_separate_stencil_usage", 1UL << 30},
+    {"VK_KHR_dedicated_allocation", 1UL << 31},
+    {"VK_EXT_shader_viewport_index_layer", 1UL << 32},
 };
 static const struct compute_feature compute_features[] = {
     {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES, offsetof(VkPhysicalDevice16BitStorageFeatures, storageBuffer16BitAccess), 4, 0, 1UL << 1, VK_API_VERSION_1_1},
@@ -41,21 +51,33 @@ static const struct compute_feature compute_features[] = {
     {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_ROTATE_FEATURES_KHR, offsetof(VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR, shaderSubgroupRotate), 2, 35, 1UL << 14, UINT32_MAX},
     {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES, offsetof(VkPhysicalDeviceHostQueryResetFeatures, hostQueryReset), 1, 37, 1UL << 17, VK_API_VERSION_1_2},
     {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES, offsetof(VkPhysicalDeviceShaderDrawParametersFeatures, shaderDrawParameters), 1, 38, 1UL << 18, VK_API_VERSION_1_1},
+    {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES, offsetof(VkPhysicalDeviceDescriptorIndexingFeatures, shaderInputAttachmentArrayDynamicIndexing), 20, 42, 1UL << 23, VK_API_VERSION_1_2},
+    {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES, offsetof(VkPhysicalDeviceMultiviewFeatures, multiview), 3, 62, 1UL << 24, VK_API_VERSION_1_1},
+    {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES, offsetof(VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures, separateDepthStencilLayouts), 1, 65, 1UL << 25, VK_API_VERSION_1_2},
+    {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES, offsetof(VkPhysicalDeviceSamplerYcbcrConversionFeatures, samplerYcbcrConversion), 1, 70, 1UL << 27, VK_API_VERSION_1_1},
+    {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES, offsetof(VkPhysicalDeviceShaderAtomicInt64Features, shaderBufferInt64Atomics), 2, 71, 1UL << 28, VK_API_VERSION_1_2},
 };
 static const struct compute_core12 compute_core12[] = {
     {39, 0},
     {40, 1UL << 19},
     {41, 1UL << 20},
+    {66, 0},
+    {67, 1UL << 29},
+    {68, 1UL << 32},
+    {69, 1UL << 32},
 };
 static const struct compute_aggregate compute_aggregates[] = {
-    {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES, offsetof(VkPhysicalDeviceVulkan11Features, storageBuffer16BitAccess), 12, 9223372036854793217UL, {0, 1, 2, 3, -1, -1, -1, 32, 33, -1, -1, 38}, {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}, {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}},
-    {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES, offsetof(VkPhysicalDeviceVulkan12Features, samplerMirrorClampToEdge), 47, 4611686018427397030UL, {40, -1, 4, 5, 6, -1, -1, 7, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 41, -1, -1, 31, 22, -1, 37, -1, 25, 26, 27, 28, 29, 30, -1, -1, 39}, {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 11, 9, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1}, {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 8, 7, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1}},
+    {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES, offsetof(VkPhysicalDeviceVulkan11Features, storageBuffer16BitAccess), 12, 9223372036855120897UL, {0, 1, 2, 3, 62, 63, 64, 32, 33, -1, 70, 38}, {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}, {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}},
+    {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES, offsetof(VkPhysicalDeviceVulkan12Features, samplerMirrorClampToEdge), 47, 4611686018428085158UL, {40, 67, 4, 5, 6, 71, 72, 7, 8, 66, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 41, -1, -1, 31, 22, 65, 37, -1, 25, 26, 27, 28, 29, 30, 68, 69, 39}, {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 11, 9, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1}, {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 8, 7, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1}},
 };
 static const struct compute_property compute_properties[] = {
     {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES, offsetof(VkPhysicalDeviceSubgroupProperties, subgroupSize), 16, 0, VK_API_VERSION_1_1},
     {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES, offsetof(VkPhysicalDeviceFloatControlsProperties, denormBehaviorIndependence), 68, 1UL << 4, VK_API_VERSION_1_1},
     {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES, offsetof(VkPhysicalDeviceShaderIntegerDotProductProperties, integerDotProduct8BitUnsignedAccelerated), 120, 1UL << 6, VK_API_VERSION_1_1},
     {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES, offsetof(VkPhysicalDeviceSubgroupSizeControlProperties, minSubgroupSize), 16, 1UL << 8, VK_API_VERSION_1_1},
+    {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES, offsetof(VkPhysicalDeviceDescriptorIndexingProperties, maxUpdateAfterBindDescriptorsInAllPools), 92, 1UL << 23, VK_API_VERSION_1_1},
+    {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES, offsetof(VkPhysicalDeviceMultiviewProperties, maxMultiviewViewCount), 8, 1UL << 24, VK_API_VERSION_1_1},
+    {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES, offsetof(VkPhysicalDeviceDepthStencilResolveProperties, supportedDepthResolveModes), 16, 1UL << 26, VK_API_VERSION_1_1},
     {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES, offsetof(VkPhysicalDeviceMaintenance3Properties, maxPerSetDescriptors), 16, 1UL << 16, VK_API_VERSION_1_1},
     {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_PROPERTIES, offsetof(VkPhysicalDeviceVulkan11Properties, deviceUUID), sizeof(VkPhysicalDeviceVulkan11Properties) - offsetof(VkPhysicalDeviceVulkan11Properties, deviceUUID), 0, VK_API_VERSION_1_1},
     {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES, offsetof(VkPhysicalDeviceVulkan12Properties, driverID), sizeof(VkPhysicalDeviceVulkan12Properties) - offsetof(VkPhysicalDeviceVulkan12Properties, driverID), 0, VK_API_VERSION_1_2},

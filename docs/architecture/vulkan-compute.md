@@ -9,14 +9,13 @@ virtual display exposes standard `VK_KHR_display`, `VK_KHR_surface` and
 window's `CAMetalLayer`. Host port forwarding remains deferred. Tracker:
 [Issue #21](https://github.com/kb5000/trames/issues/21).
 
-This selected subset is not complete Vulkan 1.0 conformance. Loader/ICD version
-negotiation describes the base ABI; it does not advertise the host's entire API.
-The instance/device query layers now expose selected Vulkan 1.1 paths when the
-native driver supports them; this remains an experimental subset. KHR properties2/memory-requirements2 and descriptor update templates
-are covered by the [Zink implementation](zink.md). Original Mesa now passes
-basic offscreen EGL/GLES2 clear, GLSL draw and repeated texture readback on the
-Linux reference; see the [GL/resource validation](../validation/zink-gles.md) for
-Apple/Metal results and remaining coverage.
+The paired frontend/runtime exposes the Vulkan 1.2 core ABI and the native
+features whose query, creation, ownership and execution paths are implemented.
+This remains experimental; full Vulkan CTS/conformance is not claimed. The
+[2026-10-31 completion record](#promoted-vulkan-11-and-12-paths-2026-10-31)
+separates real GPU acceptance from the core entrypoint inventory. Original Mesa
+uses this bridge for hardware Zink/GLES; see the
+[GL/resource validation](../validation/zink-gles.md) for Apple/Metal coverage.
 
 ```mermaid
 flowchart LR
@@ -50,11 +49,11 @@ Install the ordinary `vulkan-loader` package with apk.
 
 ## Supported compute operations
 
-The [catalog](../../accelerator/vulkan/entrypoints.inc) contains 199 public
+The [catalog](../../accelerator/vulkan/entrypoints.inc) contains 238 public
 functions plus ICD negotiation exports. The profile supports one instance,
 compute-capable physical device, logical device and queue per address space;
 property queries; buffers and memory; SPIR-V modules; storage/uniform buffer
-descriptors; pipeline layouts and one compute pipeline per create call; primary
+descriptors; pipeline layouts and one compute pipeline per create call; primary and secondary
 command buffers, dispatch, push constants, barriers, buffer copy/fill; fences,
 binary semaphores, resets and idle waits. Compute pipeline specialization copies
 up to 64 map entries and 64 KiB of constant data into owned host records, checks
@@ -81,7 +80,8 @@ previously queued signal. Validation changes temporary state only; a rejected
 batch does not consume signals, mark commands pending or submit earlier records.
 Semaphore-only submissions and reuse after a consumed signal are supported.
 Driver-backed timeline counters and host/GPU waits/signals are covered by the
-[Zink synchronization layer](zink.md), including polling rather than blocking a guest worker.
+[Zink synchronization layer](zink.md), including resumable CPU waits. Future timeline queue waits are submitted to the
+original driver; they do not poll on the submitting guest thread.
 
 ## Graphics resources
 
@@ -89,14 +89,14 @@ Core graphics includes native optimal-tiled uncompressed 1D/2D/3D color/float im
 and native-supported D16/X8D24/D32/S8 and packed depth/stencil images, binding/memory requirements, image views, up to eight
 color outputs with optional depth, framebuffer and vertex/fragment pipelines.
 Driver-backed renderpass2 and imageless framebuffer attachment binding are also
-available in this single-subpass profile; recorded commands retain late-bound
+available with multiple subpasses and layered attachments; recorded commands retain late-bound
 views/images until native submissions complete. See [Zink coverage](zink.md).
 Static or dynamic viewport/scissor, depth compare/write, front/back stencil operations,
 static/dynamic stencil masks/reference, native color/alpha
 blending, transfer color clears, draws, image layout barriers, buffer-to-image
 uploads and image-to-buffer copies are supported. Queue queries retain native
 graphics/compute/transfer flags. Image format queries expose only this profile:
-one sample, native-supported mip chains and array/volume subresources, dimensions
+native-supported sample counts, mip chains and array/volume subresources, dimensions
 up to 4096 and at most 2048 array layers; allocation/session budgets still apply. Device memory uses explicit noncoherent transfers or coherent shadow
 mappings synchronized at the exposed host synchronization boundaries.
 
@@ -563,13 +563,11 @@ Unchanged CPU/kernel/network and native-driver archive checks are reused. Full
 records are under `core12_follow_up` in
 [the compute data](../validation/vulkan-compute-data.json).
 
-Multiview, complete MSAA/resolve, multiple subpasses, secondary commands/events,
-separate depth/stencil layouts and descriptor indexing remain further work.
-Native draw-indirect-count, cooperative matrix/BF16/FP8 availability is unchanged;
-geometry/tessellation remain deferred. Full CTS, current unmodified llama.cpp or
-model inference/performance and physical iPad GPU acceptance are not claimed.
-The paired iPad guest artifact is prepared without installing a new IPA. The
-running Firefox session/profile is retained; new launches use the paired ICD.
+That follow-up was extended by the 2026-10-30 color-MSAA work and the
+2026-10-31 promoted-path completion below. Geometry/tessellation, full CTS,
+unmodified inference-engine acceptance and physical iPad GPU acceptance remain
+outside those validation claims. The paired iPad guest artifact is prepared
+without installing a new IPA; the active Firefox session/profile is retained.
 
 
 ## Native color MSAA and resolve (2026-10-30)
@@ -631,10 +629,67 @@ archives are unchanged. The measured residual and full artifact/source hashes
 are under `color_msaa_follow_up` in
 [the validation data](../validation/vulkan-compute-data.json).
 
-Depth/stencil resolve, multiview, Apple multisample-array exposure, multiple
-subpasses/input attachments, secondary commands/events, separate depth/stencil
-layouts and descriptor indexing remain further work. Mixed sample counts and
-attachment aliasing are not added. Physical iPad GPU testing, full CTS and a new
-IPA installation are not performed. The active Firefox profile/session is
-retained; this batch establishes the real Zink MSAA chain without an overall
-browser-speed claim.
+That batch's remaining multiview, depth/stencil resolve, descriptor indexing,
+subpass, event and secondary-command work is covered by the following record.
+Mixed attachment sample counts, physical iPad GPU execution and full CTS remain
+unclaimed.
+
+## Promoted Vulkan 1.1 and 1.2 paths (2026-10-31)
+
+The paired wire revision 13 carries two feature words and 33 extension records.
+All 137 Vulkan 1.0, 28 Vulkan 1.1 and 13 Vulkan 1.2 core command names resolve;
+the fixture builder checks this inventory against the pinned Vulkan registry.
+That inventory is distinct from feature support and conformance. Optional native
+features remain disabled when unavailable, including Apple draw-indirect-count,
+64-bit shader atomics and buffer-address capture/replay. Geometry/tessellation,
+protected/sparse resources, external handle interoperability and multi-device
+execution are not enabled by this batch.
+
+| Functional path | Real GPU acceptance |
+| --- | --- |
+| Descriptor indexing | Nonuniform texel-buffer selection; variable allocation 112/128; 16 unbound slots; 96-entry templates/copies; 48 updates after recording; an unused slot updated while a real submission is pending; an unbacked, unused dynamic descriptor in a separate valid layout |
+| Native future timeline wait | The submitting guest thread returns, updates a descriptor and then signals the timeline. Native GPU completion and exact outputs pass without a polling loop or an added service thread |
+| Multiview and layers | Sparse view mask `0b101`, legacy/renderpass2 and normal/imageless framebuffers; strict inactive-layer preservation for direct rendering; a clear targeting ordinary array layer 2 |
+| Depth/stencil resolve | Original Apple GPU SAMPLE_ZERO/MIN/MAX depth with stencil SAMPLE_ZERO; native 4x MSAA array attachments, separate aspect layouts and independent depth/stencil readback |
+| Render graph | Three subpasses, preserve/input attachments, mixed core renderpass command aliases, and inherited secondary drawing; exact RGBA pixels |
+| Events | Native host set/reset/status and GPU set→wait→reset with a resource-scoped buffer dependency |
+| Images and allocations | Linear-image native row pitch; two-plane NV12 upload and native YCbCr conversion through immutable samplers; dedicated allocation requirements/creation; empty layered framebuffers; separate stencil usage |
+| Linux-only native options | GPU-written indirect counts for both indexed/nonindexed draws and 64-bit buffer/shared atomics execute when the original driver exposes them |
+
+Descriptors keep sparse initialized resource slots. Recording retains the set;
+submission captures its current resource graph, and updates while pending extend
+that submission's lifetime/coherence scope. Updating an entry does not rebuild
+the entire dependency table. Native renderpass records own their arrays and
+`pNext` nodes through the original driver call. No guest Vulkan pointers escape
+the scoped decoder. Native shader/resolve/conversion algorithms are retained.
+
+Patch `0008-preserve-queued-event-transitions.patch` corrects original MoltenVK
+1.4.2's use of the completed Metal event value while encoding a future reset.
+An event-local relaxed atomic sequence records queued transitions; odd/even
+Metal signal values still implement the original event state. Both native
+Mac/iPad SDKs are rebuilt from verified upstream sources. No global lock,
+ordinary-memory barrier, CPU shader or resolve implementation is introduced.
+
+The maintained [C/GPU oracle](../../tests/fixtures/vulkan12-complete.c) and
+[fixture builder](../../scripts/build-vulkan12-fixtures.sh) are exercised by the
+[Mac harness](https://github.com/kb5000/trames-mac/blob/main/tests/integration/mac-vulkan12-complete.py).
+Original Apple M6/MoltenVK and one/twelve guest CPUs pass. ARM64 Linux/Lavapipe
+passes one/four CPUs with shared and forced-shadow mappings, including pending
+resource updates. Direct native Lavapipe reproduces a resolve-only inactive-layer
+modification; active results match, and independent direct multiview tests
+strictly verify untouched layers. Apple resolve tests also verify those layers.
+This native difference is recorded rather than hidden by a CPU resolve fallback.
+
+The native Linux fixture also passes Khronos validation layer 1.3.275 with no
+validation errors. Dynamic descriptors use a separate set layout, as required
+when another layout has update-after-bind bindings.
+
+Focused macOS/Linux checks pass 56 Vulkan tests, strict lints, the signed Mac and
+Linux CLI release builds and ARM64 iPad FFI compilation. Existing selected-core12,
+MSAA, neural and GLES/PBO regressions use the final paired artifacts. Unchanged
+CPU/kernel/network checks are reused. The explicit tiny dedicated-buffer oracle
+uses the existing 256-byte readback path; ordinary shared maps remain direct.
+The native Metal teardown metric remains 1 MiB for this render workload and is
+reported separately from Vulkan object lifetime. All hashes and results are
+under `vulkan12_completion` in [the validation data](../validation/vulkan-compute-data.json).
+A new IPA, physical iPad GPU run and full CTS certification are not performed.

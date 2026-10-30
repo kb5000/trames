@@ -1,0 +1,53 @@
+--- a/MoltenVK/MoltenVK/GPUObjects/MVKSync.h
++++ b/MoltenVK/MoltenVK/GPUObjects/MVKSync.h
+@@ -514,6 +514,8 @@
+ 	~MVKEventNative() override;
+ 
+ protected:
++	uint64_t reserveSignal(bool status);
++	std::atomic<uint64_t> _signalValue {0};
+ 	id<MTLSharedEvent> _mtlEvent;
+ };
+ 
+--- a/MoltenVK/MoltenVK/GPUObjects/MVKSync.mm
++++ b/MoltenVK/MoltenVK/GPUObjects/MVKSync.mm
+@@ -341,22 +341,30 @@
+ // Odd == set / Even == reset.
+ bool MVKEventNative::isSet() { return _mtlEvent.signaledValue & 1; }
+ 
++// Encoding observes queued transitions, not only the GPU's completed value.
++// Otherwise set -> wait -> reset in one submission can omit the reset while
++// the first signal has not executed yet. Odd/even Metal values retain the
++// existing public event state; only this event's sequence metadata is atomic.
++uint64_t MVKEventNative::reserveSignal(bool status) {
++    uint64_t old = _signalValue.load(std::memory_order_relaxed);
++    for (;;) {
++        uint64_t value = std::max(old, _mtlEvent.signaledValue);
++        value += ((value & 1) != status);
++        if (_signalValue.compare_exchange_weak(old, value, std::memory_order_relaxed)) { return value; }
++    }
++}
++
+ void MVKEventNative::signal(bool status) {
+-	if (isSet() != status) {
+-		_mtlEvent.signaledValue += 1;
+-	}
++    _mtlEvent.signaledValue = reserveSignal(status);
+ }
+ 
+ void MVKEventNative::encodeSignal(id<MTLCommandBuffer> mtlCmdBuff, bool status) {
+-	if (isSet() != status) {
+-		[mtlCmdBuff encodeSignalEvent: _mtlEvent value: _mtlEvent.signaledValue + 1];
+-	}
++    [mtlCmdBuff encodeSignalEvent: _mtlEvent value: reserveSignal(status)];
+ }
+ 
+ void MVKEventNative::encodeWait(id<MTLCommandBuffer> mtlCmdBuff) {
+-	if ( !isSet() ) {
+-		[mtlCmdBuff encodeWaitForEvent: _mtlEvent value: _mtlEvent.signaledValue + 1];
+-	}
++    uint64_t value = std::max(_signalValue.load(std::memory_order_relaxed), _mtlEvent.signaledValue) | 1;
++    [mtlCmdBuff encodeWaitForEvent: _mtlEvent value: value];
+ }
+ 
+ MVKEventNative::MVKEventNative(MVKDevice* device,

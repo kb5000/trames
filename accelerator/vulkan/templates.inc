@@ -13,18 +13,18 @@ static void free_templates(DescriptorTemplate *head) {
 static size_t descriptor_record_size(VkDescriptorType type) {
     switch(type){
     case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:return sizeof(VkDescriptorBufferInfo);
-    case VK_DESCRIPTOR_TYPE_SAMPLER:case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:return sizeof(VkDescriptorImageInfo);
+    case VK_DESCRIPTOR_TYPE_SAMPLER:case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:return sizeof(VkDescriptorImageInfo);
     case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:return sizeof(VkBufferView);
     default:return 0;
     }
 }
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorUpdateTemplate(VkDevice device,const VkDescriptorUpdateTemplateCreateInfo *info,const VkAllocationCallbacks *allocator,VkDescriptorUpdateTemplate *out) {
     CHECK(info,VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO);ALLOCATOR(allocator);
-    if(info->flags || info->templateType!=VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET || info->descriptorUpdateEntryCount>64)return VK_ERROR_FEATURE_NOT_PRESENT;
+    if(info->flags || info->templateType!=VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET)return VK_ERROR_FEATURE_NOT_PRESENT;
     for(uint32_t i=0;i<info->descriptorUpdateEntryCount;i++){
         const VkDescriptorUpdateTemplateEntry *e=info->pDescriptorUpdateEntries+i;
         size_t size=descriptor_record_size(e->descriptorType);
-        if(!size || !e->descriptorCount || e->descriptorCount>64 || e->offset>SIZE_MAX-size ||
+        if(!size || !e->descriptorCount || e->offset>SIZE_MAX-size ||
            (e->descriptorCount>1 && e->stride>(SIZE_MAX-size-e->offset)/(e->descriptorCount-1)))return VK_ERROR_FEATURE_NOT_PRESENT;
     }
     DescriptorTemplate *t=malloc(sizeof(*t)+info->descriptorUpdateEntryCount*sizeof(*t->entries));
@@ -51,16 +51,19 @@ VKAPI_ATTR void VKAPI_CALL vkUpdateDescriptorSetWithTemplate(VkDevice device,VkD
     for(uint32_t i=0;i<t->count;i++){
         const VkDescriptorUpdateTemplateEntry *e=t->entries+i;
         VkDescriptorBufferInfo buffers[64];VkDescriptorImageInfo images[64];VkBufferView views[64];
-        const unsigned char *source=(const unsigned char *)data+e->offset;
-        for(uint32_t j=0;j<e->descriptorCount;j++){
+        for(uint32_t at=0;at<e->descriptorCount;){
+        uint32_t count=e->descriptorCount-at;if(count>64)count=64;
+        const unsigned char *source=(const unsigned char *)data+e->offset+(size_t)at*e->stride;
+        for(uint32_t j=0;j<count;j++){
             const void *record=source+j*e->stride;
             if(e->descriptorType>=VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER && e->descriptorType<=VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)memcpy(buffers+j,record,sizeof(*buffers));
             else if(e->descriptorType==VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER || e->descriptorType==VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER)memcpy(views+j,record,sizeof(*views));
             else memcpy(images+j,record,sizeof(*images));
         }
-        VkWriteDescriptorSet write={.sType=VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,.dstSet=set,.dstBinding=e->dstBinding,.dstArrayElement=e->dstArrayElement,
-            .descriptorCount=e->descriptorCount,.descriptorType=e->descriptorType,.pBufferInfo=buffers,.pImageInfo=images,.pTexelBufferView=views};
-        vkUpdateDescriptorSets(device,1,&write,0,NULL);
+        VkWriteDescriptorSet write={.sType=VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,.dstSet=set,.dstBinding=e->dstBinding,.dstArrayElement=e->dstArrayElement+at,
+            .descriptorCount=count,.descriptorType=e->descriptorType,.pBufferInfo=buffers,.pImageInfo=images,.pTexelBufferView=views};
+        vkUpdateDescriptorSets(device,1,&write,0,NULL);at+=count;
+        }
     }
 }
 VKAPI_ATTR void VKAPI_CALL vkUpdateDescriptorSetWithTemplateKHR(VkDevice d,VkDescriptorSet set,VkDescriptorUpdateTemplate t,const void *data) {vkUpdateDescriptorSetWithTemplate(d,set,t,data);}
