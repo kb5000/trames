@@ -238,3 +238,25 @@ seek、poll/epoll 共用同一资源。补齐 kmsg 的 epoll 准入、ET 世代�
 转换不取得映射/注册表锁，祖先分配按根到叶完整提交，死亡/上限失败不消耗编号。
 任务生命周期及裁剪仍在原提交边界；本批没有新增 worker opcode 或整体提速承诺，
 见 [PID namespace 验证](../validation/shared-pid-namespace.md)。
+
+
+## Shared Mac/iPad follow-up (2026-10-30)
+
+Native display connections no longer force every CPU to return on a control
+check. The existing owner pumps Wayland/XWM bytes and clipboard resource relays
+while workers retain their Views. Active and already-idle native cohorts use
+the existing resource wakeups and bounded host-control wait.
+
+Sandboxed mapping calls also enter the common mm-local checkpoint path. The
+owner evaluates the original seccomp entry once; ALLOW executes only after its
+related address-space Views quiesce. Other actions retain the full joined
+boundary and carry their exact-entry result to the ordinary handler. An entry
+or immutable filter-chain change invalidates the cached result. This keeps
+Firefox's sandbox enabled and preserves the same iPad kernel implementation.
+
+See [the memory contract](../../runtime/docs/architecture/region-memory.md#filtered-memory-calls)
+for admission, cached-decision identity and negative-control coverage. Mac's
+`--metrics` reports pending call occurrences at whole-cohort joins; these are
+not unique first-stop causes or wall-time percentages. The Mac navigation
+validation records the intermediate display-only result as well as the final
+combined result, including failed/error observations and sampling exclusions.
