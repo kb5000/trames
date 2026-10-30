@@ -22,8 +22,8 @@ static VkImageAspectFlags format_aspects(VkFormat format) {
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateImage(VkDevice d,const VkImageCreateInfo *info,const VkAllocationCallbacks *allocator,VkImage *out) {
     if(!info || info->sType!=VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;ALLOCATOR(allocator);
     const VkImageFormatListCreateInfo *list;if(!image_formats(info->pNext,&list))return VK_ERROR_FEATURE_NOT_PRESENT;
-    if((info->flags&~(VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT|VK_IMAGE_CREATE_EXTENDED_USAGE_BIT|VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT|VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT)) || info->imageType>VK_IMAGE_TYPE_3D || !info->extent.depth || !info->mipLevels || !info->arrayLayers || info->samples!=VK_SAMPLE_COUNT_1_BIT || info->tiling!=VK_IMAGE_TILING_OPTIMAL || info->sharingMode!=VK_SHARING_MODE_EXCLUSIVE || (info->initialLayout!=VK_IMAGE_LAYOUT_UNDEFINED && info->initialLayout!=VK_IMAGE_LAYOUT_PREINITIALIZED))return VK_ERROR_FEATURE_NOT_PRESENT;
-    return CALL(60,KEY(d),info->format,info->extent.width,info->extent.height,info->usage,PTR(out),info->initialLayout,list?PTR(list->pViewFormats):0,list?list->viewFormatCount:0,info->flags,info->imageType,info->extent.depth,info->mipLevels,info->arrayLayers);
+    if((info->flags&~(VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT|VK_IMAGE_CREATE_EXTENDED_USAGE_BIT|VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT|VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT)) || info->imageType>VK_IMAGE_TYPE_3D || !info->extent.depth || !info->mipLevels || !info->arrayLayers || !info->samples || info->samples>VK_SAMPLE_COUNT_64_BIT || (info->samples&(info->samples-1)) || info->tiling!=VK_IMAGE_TILING_OPTIMAL || info->sharingMode!=VK_SHARING_MODE_EXCLUSIVE || (info->initialLayout!=VK_IMAGE_LAYOUT_UNDEFINED && info->initialLayout!=VK_IMAGE_LAYOUT_PREINITIALIZED))return VK_ERROR_FEATURE_NOT_PRESENT;
+    return CALL(60,KEY(d),info->format,info->extent.width,info->extent.height,info->usage,PTR(out),info->initialLayout,list?PTR(list->pViewFormats):0,list?list->viewFormatCount:0,info->flags,info->imageType,info->extent.depth,info->mipLevels,info->arrayLayers,info->samples);
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroyImage(VkDevice d,VkImage image,const VkAllocationCallbacks *allocator) {if(image)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(61,KEY(d),(uint64_t)image));}
 VKAPI_ATTR void VKAPI_CALL vkGetImageMemoryRequirements(VkDevice d,VkImage image,VkMemoryRequirements *out) {checked(CALL(62,KEY(d),(uint64_t)image,PTR(out)));}
@@ -51,38 +51,24 @@ static VkImageLayout attachment_layout(VkImageLayout value) {
     return value==VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT?VK_IMAGE_LAYOUT_GENERAL:value;
 }
 static VkResult render_pass(VkDevice d,const VkRenderPassCreateInfo *info,VkRenderPass *out,unsigned op) {
-    if(info->flags || info->attachmentCount>9 || info->subpassCount!=1 || info->dependencyCount>8)return unsupported_render_pass(__FILE__,__LINE__);
+    if(info->flags || info->attachmentCount>17 || info->subpassCount!=1 || info->dependencyCount>8)return unsupported_render_pass(__FILE__,__LINE__);
     const VkSubpassDescription *s=info->pSubpasses;
-    if(s->flags || s->pipelineBindPoint!=VK_PIPELINE_BIND_POINT_GRAPHICS || s->inputAttachmentCount || s->colorAttachmentCount>8 || s->pResolveAttachments || s->preserveAttachmentCount)return unsupported_render_pass(__FILE__,__LINE__);
-    unsigned count=s->colorAttachmentCount;
-    int has_depth=s->pDepthStencilAttachment && s->pDepthStencilAttachment->attachment!=VK_ATTACHMENT_UNUSED;
-    uint64_t colors[8][5]={{0}},depth[7],layouts[9]={2,2,2,2,2,2,2,2,3};unsigned used=0;
-    for(unsigned i=0;i<count;i++){
-        const VkAttachmentReference *r=s->pColorAttachments+i;
-        if(r->attachment==VK_ATTACHMENT_UNUSED)continue;
-        if(r->attachment!=used || used>=info->attachmentCount)return unsupported_render_pass(__FILE__,__LINE__);
-        const VkAttachmentDescription *a=info->pAttachments+used++;
-        VkImageLayout layout=attachment_layout(r->layout);
-        if(a->flags || a->samples!=VK_SAMPLE_COUNT_1_BIT || (layout!=VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && layout!=VK_IMAGE_LAYOUT_GENERAL)){
-            if(getenv("TRAMES_VULKAN_TRACE"))fprintf(stderr,"Trames Vulkan: color attachment flags=%u samples=%u layout=%u format=%u\n",a->flags,a->samples,r->layout,a->format);
-            return unsupported_render_pass(__FILE__,__LINE__);
-        }
-        layouts[i]=layout;
-        colors[i][0]=a->format;colors[i][1]=a->loadOp;colors[i][2]=a->storeOp;colors[i][3]=a->initialLayout;colors[i][4]=a->finalLayout;
+    if(s->flags || s->pipelineBindPoint!=VK_PIPELINE_BIND_POINT_GRAPHICS || s->inputAttachmentCount || s->colorAttachmentCount>8 || s->preserveAttachmentCount)return unsupported_render_pass(__FILE__,__LINE__);
+    uint64_t attachments[17][9],colors[8][2],resolves[8][2];
+    for(unsigned i=0;i<info->attachmentCount;i++){
+        const VkAttachmentDescription *a=info->pAttachments+i;uint64_t *v=attachments[i];
+        v[0]=a->format;v[1]=a->samples;v[2]=a->loadOp;v[3]=a->storeOp;v[4]=a->stencilLoadOp;v[5]=a->stencilStoreOp;v[6]=a->initialLayout;v[7]=a->finalLayout;v[8]=a->flags;
     }
-    if(info->attachmentCount!=used+(unsigned)has_depth)return unsupported_render_pass(__FILE__,__LINE__);
-    if(has_depth){
-        const VkAttachmentDescription *z=info->pAttachments+used;
-        VkImageLayout layout=attachment_layout(s->pDepthStencilAttachment->layout);
-        if(s->pDepthStencilAttachment->attachment!=used || (layout!=VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL && layout!=VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL && layout!=VK_IMAGE_LAYOUT_GENERAL) || z->flags || z->samples!=VK_SAMPLE_COUNT_1_BIT || format_aspects(z->format)==VK_IMAGE_ASPECT_COLOR_BIT)return unsupported_render_pass(__FILE__,__LINE__);
-        layouts[8]=layout;
-        depth[0]=z->format;depth[1]=z->loadOp;depth[2]=z->storeOp;depth[3]=z->initialLayout;depth[4]=z->finalLayout;depth[5]=z->stencilLoadOp;depth[6]=z->stencilStoreOp;
+    for(unsigned i=0;i<s->colorAttachmentCount;i++){
+        colors[i][0]=s->pColorAttachments[i].attachment;colors[i][1]=attachment_layout(s->pColorAttachments[i].layout);
+        if(s->pResolveAttachments){resolves[i][0]=s->pResolveAttachments[i].attachment;resolves[i][1]=attachment_layout(s->pResolveAttachments[i].layout);}
     }
+    uint64_t header[7]={info->attachmentCount,PTR(attachments),s->colorAttachmentCount,PTR(colors),s->pResolveAttachments?PTR(resolves):0,s->pDepthStencilAttachment?s->pDepthStencilAttachment->attachment:VK_ATTACHMENT_UNUSED,s->pDepthStencilAttachment?attachment_layout(s->pDepthStencilAttachment->layout):0};
     uint64_t dependencies[8][7];for(uint32_t i=0;i<info->dependencyCount;i++){
         const VkSubpassDependency *x=info->pDependencies+i;
         dependencies[i][0]=x->srcSubpass;dependencies[i][1]=x->dstSubpass;dependencies[i][2]=x->srcStageMask;dependencies[i][3]=x->dstStageMask;dependencies[i][4]=x->srcAccessMask;dependencies[i][5]=x->dstAccessMask;dependencies[i][6]=x->dependencyFlags;
     }
-    return CALL(op,KEY(d),count?colors[0][0]:0,count?colors[0][1]:0,count?colors[0][2]:0,count?colors[0][3]:0,count?colors[0][4]:0,PTR(dependencies),info->dependencyCount,PTR(out),has_depth?PTR(depth):0,PTR(colors),count,has_depth,PTR(layouts));
+    return CALL(op,KEY(d),0,0,0,0,0,PTR(dependencies),info->dependencyCount,PTR(out),0,0,0,0,0,PTR(header));
 }
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateRenderPass(VkDevice d,const VkRenderPassCreateInfo *info,const VkAllocationCallbacks *allocator,VkRenderPass *out) {
     if(!info || info->sType!=VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;ALLOCATOR(allocator);
@@ -106,8 +92,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateFramebuffer(VkDevice d,const VkFramebuffe
     if(!info || info->sType!=VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;ALLOCATOR(allocator);
     if(info->flags==VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT){
         const VkFramebufferAttachmentsCreateInfo *a=info->pNext;
-        if(!VALID(a,VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO) || a->attachmentImageInfoCount!=info->attachmentCount || info->layers!=1 || info->attachmentCount>9)return VK_ERROR_FEATURE_NOT_PRESENT;
-        uint64_t wire[9][7];
+        if(!VALID(a,VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO) || a->attachmentImageInfoCount!=info->attachmentCount || info->layers!=1 || info->attachmentCount>17)return VK_ERROR_FEATURE_NOT_PRESENT;
+        uint64_t wire[17][7];
         for(uint32_t i=0;i<info->attachmentCount;i++){
             const VkFramebufferAttachmentImageInfo *v=a->pAttachmentImageInfos+i;
             if(!VALID(v,VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO) || v->viewFormatCount>16)return VK_ERROR_FEATURE_NOT_PRESENT;
@@ -116,7 +102,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateFramebuffer(VkDevice d,const VkFramebuffe
         return CALL(125,KEY(d),(uint64_t)info->renderPass,info->width,info->height,info->attachmentCount,PTR(wire),PTR(out));
     }
     if(!supported_next(info->pNext))return VK_ERROR_FEATURE_NOT_PRESENT;
-    if(info->flags || info->attachmentCount>9 || info->layers!=1)return VK_ERROR_FEATURE_NOT_PRESENT;
+    if(info->flags || info->attachmentCount>17 || info->layers!=1)return VK_ERROR_FEATURE_NOT_PRESENT;
     return CALL(68,KEY(d),(uint64_t)info->renderPass,0,info->width,info->height,PTR(out),0,info->pAttachments?PTR(info->pAttachments):PTR(info),info->attachmentCount);
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroyFramebuffer(VkDevice d,VkFramebuffer fb,const VkAllocationCallbacks *allocator) {if(fb)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(69,KEY(d),(uint64_t)fb));}
@@ -139,7 +125,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateGraphicsPipelines(VkDevice d,VkPipelineCa
     const VkPipelineRasterizationStateCreateInfo *r=info->pRasterizationState;CHECK(r,VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);if(r->flags || r->depthClampEnable || r->polygonMode>VK_POLYGON_MODE_POINT || r->lineWidth!=1.0f)return unsupported_graphics_pipeline(__LINE__);
     if(!vertex || (!fragment && !r->rasterizerDiscardEnable))return unsupported_graphics_pipeline(__LINE__);
     const VkPipelineMultisampleStateCreateInfo *m=info->pMultisampleState;CHECK(m,VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
-    if(m->flags || m->rasterizationSamples!=VK_SAMPLE_COUNT_1_BIT || m->alphaToCoverageEnable || m->alphaToOneEnable){
+    if(m->flags || !m->rasterizationSamples || m->rasterizationSamples>VK_SAMPLE_COUNT_64_BIT || (m->rasterizationSamples&(m->rasterizationSamples-1))){
         if(getenv("TRAMES_VULKAN_TRACE"))fprintf(stderr,"Trames Vulkan: multisample flags=%u samples=%u shading=%u coverage=%u alphaOne=%u mask=%08x\n",m->flags,m->rasterizationSamples,m->sampleShadingEnable,m->alphaToCoverageEnable,m->alphaToOneEnable,m->pSampleMask?m->pSampleMask[0]:UINT32_MAX);
         return unsupported_graphics_pipeline(__LINE__);
     }
@@ -148,10 +134,11 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateGraphicsPipelines(VkDevice d,VkPipelineCa
     const VkPipelineDynamicStateCreateInfo *dynamic=info->pDynamicState;unsigned states=0;
     if(dynamic){CHECK(dynamic,VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);if(dynamic->flags || dynamic->dynamicStateCount>9)return unsupported_graphics_pipeline(__LINE__);for(unsigned i=0;i<dynamic->dynamicStateCount;i++){unsigned bit=dynamic->pDynamicStates[i]<=VK_DYNAMIC_STATE_STENCIL_REFERENCE?1u<<dynamic->pDynamicStates[i]:0;if(!bit || (states&bit))return unsupported_graphics_pipeline(__LINE__);states|=bit;}}
     if(r->depthBiasEnable && !(states&(1u<<VK_DYNAMIC_STATE_DEPTH_BIAS)) && (r->depthBiasConstantFactor!=0 || r->depthBiasClamp!=0 || r->depthBiasSlopeFactor!=0))return unsupported_graphics_pipeline(__LINE__);
-    uint64_t config[23+8*8+15]={states|512|1024|2048|4096};config[22]=b->attachmentCount;
-    // In a single-sample pipeline only bit zero affects coverage. Preserve the
-    // complete original mask, including zero; upper unused bits are legal.
+    uint64_t config[23+8*8+15]={states|512|1024|2048|4096|16384};config[22]=b->attachmentCount;
+    // Copy the original sample masks/state before asynchronous native compile.
     config[11]=m->pSampleMask?m->pSampleMask[0]:UINT32_MAX;
+    config[13]=m->rasterizationSamples;config[14]=m->pSampleMask && m->rasterizationSamples==VK_SAMPLE_COUNT_64_BIT?m->pSampleMask[1]:UINT32_MAX;
+    config[15]=m->alphaToCoverageEnable;config[16]=m->alphaToOneEnable;
     if(m->sampleShadingEnable){uint32_t bits;memcpy(&bits,&m->minSampleShading,4);config[0]|=8192;config[12]=bits;}
     if(z){
         uint64_t *st=config+23+8*8;st[0]=z->stencilTestEnable;
@@ -185,9 +172,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateGraphicsPipelines(VkDevice d,VkPipelineCa
     return CALL(70,KEY(d),(uint64_t)info->layout,(uint64_t)vertex->module,fragment?(uint64_t)fragment->module:0,PTR(vertex->pName),fragment?PTR(fragment->pName):0,PTR(state),PTR(out),PTR(bindings),v->vertexBindingDescriptionCount,PTR(attributes),v->vertexAttributeDescriptionCount,a->primitiveRestartEnable,(uint64_t)cache,((z?((z->depthTestEnable?1UL:0)|(z->depthWriteEnable?2UL:0)|((uint64_t)z->depthCompareOp<<4)):0)|((uint64_t)r->polygonMode<<8)|(b->logicOpEnable?1024UL:0)|((uint64_t)b->logicOp<<12)|(r->rasterizerDiscardEnable?65536UL:0)|(r->depthBiasEnable?131072UL:0)),PTR(config));
 }
 static VkResult begin_pass(VkCommandBuffer c,const VkRenderPassBeginInfo *info,VkSubpassContents contents,unsigned op) {
-    if(!info || info->sType!=VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO || contents!=VK_SUBPASS_CONTENTS_INLINE || info->clearValueCount>9)return VK_ERROR_FEATURE_NOT_PRESENT;
+    if(!info || info->sType!=VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO || contents!=VK_SUBPASS_CONTENTS_INLINE || info->clearValueCount>17)return VK_ERROR_FEATURE_NOT_PRESENT;
     const VkRenderPassAttachmentBeginInfo *a=info->pNext;
-    if(a && (!VALID(a,VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO) || a->attachmentCount>9))return VK_ERROR_FEATURE_NOT_PRESENT;
+    if(a && (!VALID(a,VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO) || a->attachmentCount>17))return VK_ERROR_FEATURE_NOT_PRESENT;
     return CALL(op,DEVKEY(c),KEY(c),(uint64_t)info->renderPass,(uint64_t)info->framebuffer,(uint64_t)(int64_t)info->renderArea.offset.x,(uint64_t)(int64_t)info->renderArea.offset.y,info->renderArea.extent.width,info->renderArea.extent.height,PTR(info->pClearValues),info->clearValueCount,a?PTR(a->pAttachments):0,a?a->attachmentCount:0);
 }
 VKAPI_ATTR void VKAPI_CALL vkCmdBeginRenderPass(VkCommandBuffer c,const VkRenderPassBeginInfo *info,VkSubpassContents contents) {checked(begin_pass(c,info,contents,71));}
@@ -229,6 +216,18 @@ VKAPI_ATTR void VKAPI_CALL vkCmdCopyImage(VkCommandBuffer c,VkImage src,VkImageL
         v[14]=r->extent.width;v[15]=r->extent.height;v[16]=r->extent.depth;
     }
     checked(CALL(134,DEVKEY(c),KEY(c),(uint64_t)src,src_layout,(uint64_t)dst,dst_layout,PTR(data),count));
+}
+VKAPI_ATTR void VKAPI_CALL vkCmdResolveImage(VkCommandBuffer c,VkImage src,VkImageLayout src_layout,VkImage dst,VkImageLayout dst_layout,uint32_t count,const VkImageResolve *regions) {
+    if(!count || count>64 || !regions)checked(VK_ERROR_FEATURE_NOT_PRESENT);uint64_t data[64][17];
+    for(uint32_t i=0;i<count;i++){
+        const VkImageResolve *r=&regions[i];uint64_t *v=data[i];
+        v[0]=r->srcSubresource.aspectMask;v[1]=r->srcSubresource.mipLevel;v[2]=r->srcSubresource.baseArrayLayer;v[3]=r->srcSubresource.layerCount;
+        v[4]=(int64_t)r->srcOffset.x;v[5]=(int64_t)r->srcOffset.y;v[6]=(int64_t)r->srcOffset.z;
+        v[7]=r->dstSubresource.aspectMask;v[8]=r->dstSubresource.mipLevel;v[9]=r->dstSubresource.baseArrayLayer;v[10]=r->dstSubresource.layerCount;
+        v[11]=(int64_t)r->dstOffset.x;v[12]=(int64_t)r->dstOffset.y;v[13]=(int64_t)r->dstOffset.z;
+        v[14]=r->extent.width;v[15]=r->extent.height;v[16]=r->extent.depth;
+    }
+    checked(CALL(215,DEVKEY(c),KEY(c),(uint64_t)src,src_layout,(uint64_t)dst,dst_layout,PTR(data),count));
 }
 VKAPI_ATTR void VKAPI_CALL vkCmdBlitImage(VkCommandBuffer c,VkImage src,VkImageLayout src_layout,VkImage dst,VkImageLayout dst_layout,uint32_t count,const VkImageBlit *regions,VkFilter filter) {
     if(!count || count>64 || !regions)checked(VK_ERROR_FEATURE_NOT_PRESENT);uint64_t data[64][20];

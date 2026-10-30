@@ -112,6 +112,7 @@
     if(!strcmp(name,"vkCmdCopyImageToBuffer"))return (PFN_vkVoidFunction)vkCmdCopyImageToBuffer;
     if(!strcmp(name,"vkCmdCopyBufferToImage"))return (PFN_vkVoidFunction)vkCmdCopyBufferToImage;
     if(!strcmp(name,"vkCmdCopyImage"))return (PFN_vkVoidFunction)vkCmdCopyImage;
+    if(!strcmp(name,"vkCmdResolveImage"))return (PFN_vkVoidFunction)vkCmdResolveImage;
     if(!strcmp(name,"vkCmdBlitImage"))return (PFN_vkVoidFunction)vkCmdBlitImage;
     if(!strcmp(name,"vkCmdClearDepthStencilImage"))return (PFN_vkVoidFunction)vkCmdClearDepthStencilImage;
     if(!strcmp(name,"vkCreateSampler"))return (PFN_vkVoidFunction)vkCreateSampler;

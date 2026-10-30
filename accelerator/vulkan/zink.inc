@@ -27,20 +27,24 @@ VKAPI_ATTR VkResult VKAPI_CALL vkWaitSemaphoresKHR(VkDevice d,const VkSemaphoreW
 // legacy single-subpass/MRT path. Every nested record is flattened before dispatch.
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateRenderPass2(VkDevice d,const VkRenderPassCreateInfo2 *info,const VkAllocationCallbacks *allocator,VkRenderPass *out) {
     if(!VALID(info,VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2))return unsupported_render_pass(__FILE__,__LINE__);ALLOCATOR(allocator);
-    if(!(D(d)->enabled&128) || info->attachmentCount>9 || info->subpassCount!=1 || info->dependencyCount>8 || info->correlatedViewMaskCount)return unsupported_render_pass(__FILE__,__LINE__);
-    VkAttachmentDescription attachments[9];
+    if(!(D(d)->enabled&128) || info->attachmentCount>17 || info->subpassCount!=1 || info->dependencyCount>8 || info->correlatedViewMaskCount)return unsupported_render_pass(__FILE__,__LINE__);
+    VkAttachmentDescription attachments[17];
     for(uint32_t i=0;i<info->attachmentCount;i++){
         const VkAttachmentDescription2 *a=info->pAttachments+i;if(!VALID(a,VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2))return unsupported_render_pass(__FILE__,__LINE__);
         attachments[i]=(VkAttachmentDescription){a->flags,a->format,a->samples,a->loadOp,a->storeOp,a->stencilLoadOp,a->stencilStoreOp,a->initialLayout,a->finalLayout};
     }
     const VkSubpassDescription2 *s=info->pSubpasses;if(!VALID(s,VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2))return unsupported_render_pass(__FILE__,__LINE__);
     if(s->viewMask || s->colorAttachmentCount>8)return unsupported_render_pass(__FILE__,__LINE__);
-    VkAttachmentReference colors[8],depth={VK_ATTACHMENT_UNUSED,VK_IMAGE_LAYOUT_UNDEFINED};
+    VkAttachmentReference colors[8],resolves[8],depth={VK_ATTACHMENT_UNUSED,VK_IMAGE_LAYOUT_UNDEFINED};
     for(unsigned i=0;i<s->colorAttachmentCount;i++){
         const VkAttachmentReference2 *r=s->pColorAttachments+i;if(!VALID(r,VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2))return unsupported_render_pass(__FILE__,__LINE__);
         // VkAttachmentReference2::aspectMask applies only to input attachments.
         // Color/depth-stencil output references ignore it (including UNUSED).
         colors[i]=(VkAttachmentReference){r->attachment,r->layout};
+    }
+    if(s->pResolveAttachments)for(unsigned i=0;i<s->colorAttachmentCount;i++){
+        const VkAttachmentReference2 *r=s->pResolveAttachments+i;if(!VALID(r,VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2))return unsupported_render_pass(__FILE__,__LINE__);
+        resolves[i]=(VkAttachmentReference){r->attachment,r->layout};
     }
     if(s->pDepthStencilAttachment){
         const VkAttachmentReference2 *r=s->pDepthStencilAttachment;if(!VALID(r,VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2))return unsupported_render_pass(__FILE__,__LINE__);
@@ -52,8 +56,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateRenderPass2(VkDevice d,const VkRenderPass
     }
     // Unsupported nested attachments are rejected before conversion can discard
     // their pointers or metadata. All other validation is shared with legacy.
-    if(s->inputAttachmentCount || s->pResolveAttachments || s->preserveAttachmentCount)return unsupported_render_pass(__FILE__,__LINE__);
-    VkSubpassDescription subpass={.flags=s->flags,.pipelineBindPoint=s->pipelineBindPoint,.colorAttachmentCount=s->colorAttachmentCount,.pColorAttachments=colors,.pDepthStencilAttachment=&depth};
+    if(s->inputAttachmentCount || s->preserveAttachmentCount)return unsupported_render_pass(__FILE__,__LINE__);
+    VkSubpassDescription subpass={.flags=s->flags,.pipelineBindPoint=s->pipelineBindPoint,.colorAttachmentCount=s->colorAttachmentCount,.pColorAttachments=colors,.pResolveAttachments=s->pResolveAttachments?resolves:NULL,.pDepthStencilAttachment=&depth};
     VkRenderPassCreateInfo legacy={.sType=VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,.flags=info->flags,.attachmentCount=info->attachmentCount,.pAttachments=attachments,.subpassCount=1,.pSubpasses=&subpass,.dependencyCount=info->dependencyCount,.pDependencies=dependencies};
     return render_pass(d,&legacy,out,122);
 }

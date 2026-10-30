@@ -570,3 +570,71 @@ geometry/tessellation remain deferred. Full CTS, current unmodified llama.cpp or
 model inference/performance and physical iPad GPU acceptance are not claimed.
 The paired iPad guest artifact is prepared without installing a new IPA. The
 running Firefox session/profile is retained; new launches use the paired ICD.
+
+
+## Native color MSAA and resolve (2026-10-30)
+
+The paired runtime/ICD now carries native 2D multisample image counts, raster
+samples, sample masks, per-sample shading and alpha-to-coverage through the
+original driver. Alpha-to-one is separately gated by its native core feature.
+Image-format queries return the driver's sample-count set instead of the old
+single-sample mask. This extends the selected single-subpass/single-layer
+framebuffer profile; it does not establish full Vulkan/GLES conformance.
+
+Color resolve works both inside a native subpass and through
+`vkCmdResolveImage` (wire operation 215). Legacy renderpass and renderpass2 share
+an owned attachment description/reference decoder that preserves application
+indices, including sparse outputs and UNUSED references. It supports up to eight
+colors, eight resolve targets and depth/stencil: 17 attachments in real and
+imageless framebuffers. Clear values, usage, formats and sample counts follow
+the original attachment indices. Existing single-sample wire clients remain
+accepted. Single-subpass renderpass compatibility retains the
+[Khronos rules](https://docs.vulkan.org/spec/latest/chapters/renderpass.html#renderpass-compatibility),
+including the resolve-reference exception.
+
+Immutable attachment tables are allocated only for render-pass objects, behind
+one owned pointer. They do not enlarge every buffer/image/command object or get
+copied on each draw. Native color-attachment limits are cached at device creation.
+Original command/resource retention, hardware-coherent mapping and worker-local
+native execution are reused. No CPU resolve, presenter, new coordinator, global
+algorithm lock or additional ordinary-memory barrier is introduced. In-pass
+resolve stays available so the original driver can retain its tile-rendering
+optimizations; explicit resolve is forwarded when the application requests it.
+
+The focused [fixture build](../../scripts/build-vulkan-msaa-fixtures.sh) reuses the
+paired ICD, original loader and native SDK. Its optional GLES fixture accepts
+`MESA_INCLUDE`, `GLES_LIBRARY`, `EGL_LIBRARY` and `GALLIUM_LIBRARY` to link the
+original paired Mesa stack. The maintained
+[Vulkan harness](https://github.com/kb5000/trames-mac/blob/main/tests/integration/mac-vulkan-msaa.py)
+and [Zink harness](https://github.com/kb5000/trames-mac/blob/main/tests/integration/mac-zink-msaa.py)
+use a disposable headless store with no concurrent runner.
+
+| Focused functional acceptance | Result |
+| --- | --- |
+| Original Apple M6/MoltenVK reference, one/twelve guest CPUs | 2/4/8 samples; 19 cases and 9,408 RGBA pixels per run, within one UNORM unit of the analytic result |
+| Coverage and depth | Full/alternating/zero masks, sample-ID shading, zero-alpha coverage, depth rejection and explicit-only resolve pass |
+| Attachment metadata | Reversed indices, legacy/renderpass2, real/imageless framebuffers and eight colors + eight resolves + depth pass |
+| Actual original Zink/GLES 3.1 | Four-sample renderbuffers and depth, full/partial/zero masks, alpha-to-coverage and `glBlitFramebuffer` resolve; 256 RGBA pixels per run pass on one/twelve CPUs |
+| Shared mapping | Vulkan oracle uses 19 maps/39,936 bytes; GLES uses two maps/4 MiB. Both retain zero CPU upload/download and scanned synchronization bytes |
+| ARM64 Linux interpreter and original Lavapipe | Same Vulkan oracle passes one/four CPUs with native shared and discovery-filtered shadow mappings |
+| Existing final-artifact regressions | Selected Vulkan 1.2/68 MiB mapping, neural compute, GLES indirect/image/ASTC and 128-component integer PBO paths pass |
+| Affected local checks | 54 Vulkan tests on each macOS/ARM64 Linux, strict Vulkan/Mac lints, signed Mac release, Linux CLI release, both product boundaries and ARM64 iPad FFI compile pass |
+
+The new MSAA harnesses report native teardown allocation statistics separately.
+The original MoltenVK log reads `MTLDevice.currentAllocatedSize` before releasing
+its Metal device; it is not a count of live Vulkan objects. Both the original
+native reference and Trames report 1 MiB after this workload. An independent
+three-round native probe starts at 65,536 bytes and remains at 1,196,032 bytes
+after each autorelease drain, without incremental growth. The exact native/Metal
+retention cause is unproven; zero teardown allocation is not claimed. Driver
+archives are unchanged. The measured residual and full artifact/source hashes
+are under `color_msaa_follow_up` in
+[the validation data](../validation/vulkan-compute-data.json).
+
+Depth/stencil resolve, multiview, Apple multisample-array exposure, multiple
+subpasses/input attachments, secondary commands/events, separate depth/stencil
+layouts and descriptor indexing remain further work. Mixed sample counts and
+attachment aliasing are not added. Physical iPad GPU testing, full CTS and a new
+IPA installation are not performed. The active Firefox profile/session is
+retained; this batch establishes the real Zink MSAA chain without an overall
+browser-speed claim.

@@ -982,5 +982,321 @@
     ],
     "artifact_promotion": "Final tested ICD and manifest copied to target/vulkan-guest and ignored iPad GuestVulkan bundle; running Firefox left unchanged",
     "evidence_directory": "target/vulkan12-20261030 and target/local-ci/io/core12-* (ignored local diagnostics)"
+  },
+  "color_msaa_follow_up": {
+    "date": "2026-10-30",
+    "runtime_revision": "f3234818d56221c2cb5ca24080af1c65fa92b016",
+    "wire_revision": 12,
+    "scope": "Native color MSAA and color resolve for the selected single-subpass/single-layer framebuffer profile; not complete Vulkan/GLES conformance",
+    "implemented": [
+      "native image-format sample-count discovery and multisample 2D image allocation",
+      "pipeline raster sample count, both native sample-mask words, sample shading, alpha-to-coverage and feature-gated alpha-to-one",
+      "native color subpass resolve in legacy/renderpass2 and explicit vkCmdResolveImage operation 215",
+      "arbitrary attachment indices, up to 17 attachments; real and imageless framebuffer paths",
+      "immutable owned pass metadata; ordinary GPU objects keep a pointer instead of a fixed attachment table",
+      "native max-color-attachment limit cached at device creation; old single-sample wire retained"
+    ],
+    "mac_msaa": {
+      "passed": true,
+      "scope": "native MSAA masks/sample shading/depth, alpha coverage, subpass and explicit resolve; not complete CTS",
+      "runner_sha256": "b09bda4ee785a62b2358d64b2d40d982d36e5d0fd336f41fa082b203c528c5b0",
+      "inputs": {
+        "libtrames_vulkan_icd.so": "085627bc2cad68c4674edf32bf67dfe782ad09e07d3786cad580e78133a56f2b",
+        "vulkan-msaa": "9e5d8f2e50542241158c867b0e380b7f9afbf968b9a66ab3ff72384b112931a4",
+        "vulkan-msaa.vert.spv": "368ba9ddfa272fc42aa4b056a0130868424fa9b881eca7447a9011fcadde5629",
+        "vulkan-msaa.frag.spv": "4b96a29b109340c4f93b32056f28e0155c1f204f9eaa7402f23b4a74470ed3ff",
+        "libvulkan.so.1": "382419ec9f138dd2a980fc988482a72b643c32901599b568a27fe7742946c752",
+        "icd.json": "345462c2e00093a654ca6160195d13af1a3b1f2a9e34481a75bcef446d458578"
+      },
+      "teardown_metric_scope": "Metal currentAllocatedSize before MTLDevice release; includes native driver/autoreleased resources, not a Vulkan live-object count",
+      "cases": [
+        {
+          "cpus": 1,
+          "exit_code": 0,
+          "passed": true,
+          "metal_current_allocated_mib_at_physical_teardown": 1
+        },
+        {
+          "cpus": 12,
+          "exit_code": 0,
+          "passed": true,
+          "metal_current_allocated_mib_at_physical_teardown": 1
+        }
+      ],
+      "cleanup_exit": 0
+    },
+    "mac_zink_msaa": {
+      "passed": true,
+      "scope": "GLES multisample renderbuffers, masks, alpha coverage and resolve; not full CTS",
+      "runner_sha256": "b09bda4ee785a62b2358d64b2d40d982d36e5d0fd336f41fa082b203c528c5b0",
+      "inputs": {
+        "libEGL.so.1": "0fa0e1bbd4494aefa9f4739c65722c78db1d17c33588fccbdcd91aecd265eb8d",
+        "libgallium-25.1.9.so": "bed7fd21427414dce5ceae41ae7ab2dbc31e3885071dafe8bd93b982adc98912",
+        "libGLESv2.so.2": "1be4cbcf9ccb483a0135f5af76644f6fd7aa894ca4b39dac09857176b1d4dce7",
+        "libtrames_vulkan_icd.so": "085627bc2cad68c4674edf32bf67dfe782ad09e07d3786cad580e78133a56f2b",
+        "libvulkan.so.1": "382419ec9f138dd2a980fc988482a72b643c32901599b568a27fe7742946c752",
+        "zink-msaa": "7f23fb67a43b470c57e6f0d324c6968254bc5be6c2cda612f0ffc6bfc5b425a0",
+        "icd.json": "dab969df302f71c2f5dd286e17d3d526b63ac11d228ccfb72e38aa92dcc35ba6"
+      },
+      "cases": [
+        {
+          "cpus": 1,
+          "exit_code": 0,
+          "passed": true,
+          "metal_current_allocated_mib_at_physical_teardown": 1
+        },
+        {
+          "cpus": 12,
+          "exit_code": 0,
+          "passed": true,
+          "metal_current_allocated_mib_at_physical_teardown": 1
+        }
+      ],
+      "cleanup_exit": 0
+    },
+    "mac_regressions": {
+      "core12": {
+        "passed": true,
+        "scope": "selected Vulkan 1.2 core/SPIR-V 1.5 outputs and large mapping; not complete CTS",
+        "runner_sha256": "b09bda4ee785a62b2358d64b2d40d982d36e5d0fd336f41fa082b203c528c5b0",
+        "inputs": {
+          "libtrames_vulkan_icd.so": "085627bc2cad68c4674edf32bf67dfe782ad09e07d3786cad580e78133a56f2b",
+          "vulkan-core12": "dc8976fb55ee75b34e0520bff8dc25362903caa23afd3c98cc76d96fb9d67cbf",
+          "vulkan-core12.spv": "0e18d79a301c2a9a80357179debc6a32d8db4d29a29a63b3882bcd0d69cab309",
+          "libvulkan.so.1": "382419ec9f138dd2a980fc988482a72b643c32901599b568a27fe7742946c752",
+          "icd.json": "3c23432fb5edac99280c84feadf44ecc92f5acf5a81fe8987aebae2dadec4484"
+        },
+        "cases": [
+          {
+            "cpus": 1,
+            "exit_code": 0,
+            "passed": true
+          },
+          {
+            "cpus": 12,
+            "exit_code": 0,
+            "passed": true
+          }
+        ],
+        "cleanup_exit": 0
+      },
+      "neural": {
+        "passed": true,
+        "scope": "selected real-GPU neural compute outputs; no full CTS or model benchmark",
+        "runner_sha256": "b09bda4ee785a62b2358d64b2d40d982d36e5d0fd336f41fa082b203c528c5b0",
+        "inputs": {
+          "libtrames_vulkan_icd.so": "085627bc2cad68c4674edf32bf67dfe782ad09e07d3786cad580e78133a56f2b",
+          "vulkan-neural": "646bb28af9847ff414b7c8a48f42b04356a60e6f0de1289cb5fdfddada3608c0",
+          "vulkan-neural.spv": "1357f095b043b35cfa6842fffd5ed0a3f7790a341f3a6e157a16c654bde85e06",
+          "vulkan-neural-dot.spv": "68718996be6577253eb3178ead6f5e54571d492bacc94e9d46730041c3902c15",
+          "libvulkan.so.1": "382419ec9f138dd2a980fc988482a72b643c32901599b568a27fe7742946c752",
+          "icd.json": "731270d65654f80d44dc65e83115f6fde8967e1745dd3dd1e420e41dab19a933"
+        },
+        "cases": [
+          {
+            "cpus": 1,
+            "exit_code": 0,
+            "passed": true
+          },
+          {
+            "cpus": 12,
+            "exit_code": 0,
+            "passed": true
+          }
+        ],
+        "cleanup_exit": 0
+      },
+      "gles": {
+        "passed": true,
+        "scope": "selected GLES 3.1 GPU/ASTC output oracles, not full CTS",
+        "runner_sha256": "b09bda4ee785a62b2358d64b2d40d982d36e5d0fd336f41fa082b203c528c5b0",
+        "inputs": {
+          "libEGL.so.1": "0fa0e1bbd4494aefa9f4739c65722c78db1d17c33588fccbdcd91aecd265eb8d",
+          "libgallium-25.1.9.so": "bed7fd21427414dce5ceae41ae7ab2dbc31e3885071dafe8bd93b982adc98912",
+          "libGLESv2.so.2": "1be4cbcf9ccb483a0135f5af76644f6fd7aa894ca4b39dac09857176b1d4dce7",
+          "libtrames_vulkan_icd.so": "085627bc2cad68c4674edf32bf67dfe782ad09e07d3786cad580e78133a56f2b",
+          "libvulkan.so.1": "382419ec9f138dd2a980fc988482a72b643c32901599b568a27fe7742946c752",
+          "zink-es31": "bf3d82151d7b5e59317d90c77f18f5ade8badfdb1f80f72417bec9cff5bbcb0f",
+          "icd.json": "a7103cb5ad2066fd0968158ccfc957f7115e4e2104d91c31cb90f2a66a7656fe"
+        },
+        "cases": [
+          {
+            "cpus": 1,
+            "exit_code": 0,
+            "passed": true
+          },
+          {
+            "cpus": 12,
+            "exit_code": 0,
+            "passed": true
+          }
+        ],
+        "cleanup_exit": 0
+      },
+      "pbo": {
+        "passed": true,
+        "scope": "integer PBO output/type-error regression",
+        "runner_sha256": "b09bda4ee785a62b2358d64b2d40d982d36e5d0fd336f41fa082b203c528c5b0",
+        "inputs": {
+          "libEGL.so.1": "0fa0e1bbd4494aefa9f4739c65722c78db1d17c33588fccbdcd91aecd265eb8d",
+          "libgallium-25.1.9.so": "bed7fd21427414dce5ceae41ae7ab2dbc31e3885071dafe8bd93b982adc98912",
+          "libGLESv2.so.2": "1be4cbcf9ccb483a0135f5af76644f6fd7aa894ca4b39dac09857176b1d4dce7",
+          "libtrames_vulkan_icd.so": "085627bc2cad68c4674edf32bf67dfe782ad09e07d3786cad580e78133a56f2b",
+          "libvulkan.so.1": "382419ec9f138dd2a980fc988482a72b643c32901599b568a27fe7742946c752",
+          "zink-es31": "9ebc6a45e4c1c3a2d217621032635a5ff45ff958351bc41920f7ff66ffb5e2c1",
+          "icd.json": "f0b7836c8e00f1d19bb8568aa8b6a863a471a7d64ecf9c687b7d2fb82bb42bb1"
+        },
+        "cases": [
+          {
+            "cpus": 1,
+            "exit_code": 0,
+            "passed": true
+          }
+        ],
+        "cleanup_exit": 0
+      }
+    },
+    "linux_original_mapping": {
+      "cases": [
+        {
+          "cpus": 1,
+          "exit_code": 0,
+          "passed": true
+        },
+        {
+          "cpus": 4,
+          "exit_code": 0,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    "linux_forced_shadow": {
+      "cases": [
+        {
+          "cpus": 1,
+          "exit_code": 0,
+          "passed": true
+        },
+        {
+          "cpus": 4,
+          "exit_code": 0,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    "native_reference": {
+      "exit_code": 0,
+      "stdout": "msaa device=Apple M6 samples=0xf imageless=1\nmsaa-case-ok samples=2 mode=0 colors=1 renderpass=1 imageless=0 inline=1 pixels=384\nmsaa-case-ok samples=2 mode=1 colors=1 renderpass=2 imageless=1 inline=1 pixels=384\nmsaa-case-ok samples=2 mode=2 colors=1 renderpass=1 imageless=0 inline=1 pixels=384\nmsaa-case-ok samples=2 mode=3 colors=1 renderpass=2 imageless=0 inline=1 pixels=384\nmsaa-case-ok samples=2 mode=4 colors=1 renderpass=1 imageless=0 inline=1 pixels=384\nmsaa-case-ok samples=2 mode=5 colors=1 renderpass=2 imageless=0 inline=0 pixels=192\nmsaa-case-ok samples=4 mode=0 colors=1 renderpass=1 imageless=0 inline=1 pixels=384\nmsaa-case-ok samples=4 mode=1 colors=1 renderpass=2 imageless=1 inline=1 pixels=384\nmsaa-case-ok samples=4 mode=2 colors=1 renderpass=1 imageless=0 inline=1 pixels=384\nmsaa-case-ok samples=4 mode=3 colors=1 renderpass=2 imageless=0 inline=1 pixels=384\nmsaa-case-ok samples=4 mode=4 colors=1 renderpass=1 imageless=0 inline=1 pixels=384\nmsaa-case-ok samples=4 mode=5 colors=1 renderpass=2 imageless=0 inline=0 pixels=192\nmsaa-case-ok samples=8 mode=0 colors=1 renderpass=1 imageless=0 inline=1 pixels=384\nmsaa-case-ok samples=8 mode=1 colors=1 renderpass=2 imageless=1 inline=1 pixels=384\nmsaa-case-ok samples=8 mode=2 colors=1 renderpass=1 imageless=0 inline=1 pixels=384\nmsaa-case-ok samples=8 mode=3 colors=1 renderpass=2 imageless=0 inline=1 pixels=384\nmsaa-case-ok samples=8 mode=4 colors=1 renderpass=1 imageless=0 inline=1 pixels=384\nmsaa-case-ok samples=8 mode=5 colors=1 renderpass=2 imageless=0 inline=0 pixels=192\nmsaa-case-ok samples=4 mode=0 colors=8 renderpass=2 imageless=1 inline=1 pixels=3072\nmsaa-ok sample-counts=3\n",
+      "driver": "original patched MoltenVK 1.4.2/Apple M6; archives unchanged"
+    },
+    "pixel_oracle": {
+      "vulkan_cases_per_run": 19,
+      "native_multisample_counts": [
+        2,
+        4,
+        8
+      ],
+      "rgba_pixels_per_mac_run": 9408,
+      "zink_multisample_count": 4,
+      "zink_cases_per_run": 4,
+      "zink_rgba_pixels_per_run": 256,
+      "unorm_tolerance": 1,
+      "modes": [
+        "all samples",
+        "alternating sample mask",
+        "sample-ID shading",
+        "alpha-to-coverage with zero alpha",
+        "depth rejection",
+        "zero sample mask without inline resolve"
+      ],
+      "stress": "eight MSAA colors + eight native resolves + depth, 17 attachments, reversed order, renderpass2 and imageless framebuffer"
+    },
+    "sources": {
+      "tests/fixtures/vulkan-msaa.c": "05cf4e8ad45d1449df3b83c0878d17aa9cfc31390538faca1085182d8c2f6ddc",
+      "tests/fixtures/vulkan-msaa.vert": "322689213f52b01a2d14a13f871581b81e88f1e6d3bda525896b9798dbd73e77",
+      "tests/fixtures/vulkan-msaa.frag": "6543bf8eac9310054893ace81ad95f661a4421b13e2d364d9b9c42a36a0e01a0",
+      "tests/fixtures/zink-msaa.c": "18640ef57d1a9cbebf0aed9bb9048ef2d3ed82e9e5301af2aa0560f1417a0e68"
+    },
+    "mac_shared_mapping_metrics": {
+      "maps": 19,
+      "mapped_bytes": 39936,
+      "upload_bytes": 0,
+      "download_bytes": 0,
+      "upload_scanned_bytes": 0,
+      "download_scanned_bytes": 0
+    },
+    "mac_zink_shared_mapping_metrics": {
+      "maps": 2,
+      "mapped_bytes": 4194304,
+      "upload_bytes": 0,
+      "download_bytes": 0,
+      "upload_scanned_bytes": 0,
+      "download_scanned_bytes": 0
+    },
+    "linux_shadow_metrics": {
+      "1": {
+        "gpu_compiles": 7,
+        "gpu_upload_bytes": 21504,
+        "gpu_download_bytes": 42240,
+        "gpu_direct_bytes": 21504,
+        "gpu_buffered_bytes": 42240
+      },
+      "4": {
+        "gpu_compiles": 7,
+        "gpu_upload_bytes": 21504,
+        "gpu_download_bytes": 42240,
+        "gpu_direct_bytes": 21504,
+        "gpu_buffered_bytes": 42240
+      }
+    },
+    "teardown_observation": {
+      "metal_statistic": "MTLDevice.currentAllocatedSize sampled before releasing MTLDevice; not Vulkan live-object accounting",
+      "native_and_guest_reported_mib": 1,
+      "independent_native_repeat_probe": {
+        "baseline_bytes": 65536,
+        "post_autorelease_drain_bytes": [
+          1196032,
+          1196032,
+          1196032
+        ],
+        "cases_per_round": 19
+      },
+      "interpretation": "Same nonzero residue occurs through original native Vulkan without Trames and stays constant across three repeated rounds; no incremental drift observed. Exact native/Metal retention cause remains unproven; zero teardown allocation is not claimed."
+    },
+    "checks": {
+      "macos_vulkan_unit": 54,
+      "arm64_linux_vulkan_unit": 54,
+      "macos_linux_vulkan_strict_clippy": "pass",
+      "mac_product_strict_clippy": "pass",
+      "signed_mac_release_build": "pass",
+      "linux_cli_release_build": "pass",
+      "arm64_ipad_ffi_compile": "pass",
+      "paired_schema_exports": "pass",
+      "both_product_boundaries": "pass"
+    },
+    "diagnostics": [
+      "Unused renderpass attachments require no attachment usage bit; corrected a preexisting nonzero-usage validation assumption when generalizing attachment indices.",
+      "The 17-attachment oracle needs independentBlend enabled for its differing output write masks; corrected feature negotiation in the fixture.",
+      "Initial zero-allocated-Metal-memory predicate misclassified successful MSAA results; independent original-driver runs reproduced the same constant native statistic. New harnesses report it separately."
+    ],
+    "unchanged_native_archives": {
+      "mac_sha256": "8df0c873b11d921091b0ddafb572c7c368852f6bcccd8f098ed5ea7bcae8bb5d",
+      "ipad_sha256": "ca028482256e3419438422f61df9cdff86e7b63688b6c8999adb53ee44ca8841"
+    },
+    "remaining": [
+      "depth/stencil resolve",
+      "multiview and Apple multisample-array exposure",
+      "multiple subpasses/input attachments/secondary commands/events",
+      "separate depth/stencil layouts",
+      "descriptor indexing/update-after-bind/variable counts",
+      "mixed attachment sample counts and attachment aliasing not added",
+      "full Vulkan/GLES CTS and physical iPad GPU acceptance unrun",
+      "no overall Firefox latency or performance claim",
+      "native/Metal fixed teardown residue source unproven"
+    ],
+    "active_firefox": "Left running; no profile or preference changes. New launches use the paired ICD.",
+    "evidence_directory": "target/vulkan-msaa-20261030 and target/local-ci/io/msaa-* (ignored local diagnostics)"
   }
 }
