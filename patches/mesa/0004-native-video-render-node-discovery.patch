@@ -1,0 +1,137 @@
+# SPDX-License-Identifier: MIT
+Subject: Native Wayland EGL: identify the real runtime image render node
+
+--- a/src/egl/main/egldevice.c
++++ b/src/egl/main/egldevice.c
+@@ -33,6 +33,7 @@
+ 
+ #include "eglcurrent.h"
+ #include "egldevice.h"
++#include <sys/stat.h>
+ #include "eglglobals.h"
+ #include "egllog.h"
+ #include "egltypedefs.h"
+@@ -41,6 +42,7 @@
+    _EGLDevice *Next;
+ 
+    const char *extensions;
++   const char *native_render_node;
+ 
+    EGLBoolean MESA_device_software;
+    EGLBoolean EXT_device_drm;
+@@ -52,6 +54,16 @@
+ };
+ 
+ static _EGLDevice native_device = { .extensions = "" };
++static _EGLDevice native_image_device = {
++   .extensions = "EGL_EXT_device_drm_render_node",
++   .EXT_device_drm_render_node = EGL_TRUE,
++   .native_render_node = "/dev/dri/renderD128",
++};
++static bool
++is_native_device(const _EGLDevice *dev)
++{
++   return dev == &native_device || dev == &native_image_device;
++}
+ 
+ void
+ _eglFiniDevice(void)
+@@ -72,8 +84,8 @@
+       dev = dev_list;
+       dev_list = dev_list->Next;
+ 
+-      if (dev == &native_device) {
+-         native_device.Next = NULL;
++      if (is_native_device(dev)) {
++         dev->Next = NULL;
+          continue;
+       }
+ #ifdef HAVE_LIBDRM
+@@ -138,7 +150,7 @@
+    while (dev->Next) {
+       dev = dev->Next;
+ 
+-      assert(dev == &native_device || _eglDeviceSupports(dev, _EGL_DEVICE_DRM));
++      assert(is_native_device(dev) || _eglDeviceSupports(dev, _EGL_DEVICE_DRM));
+       if (_eglDeviceSupports(dev, _EGL_DEVICE_DRM) &&
+           drmDevicesEqual(device, dev->device) != 0)
+          return 1;
+@@ -164,17 +176,23 @@
+  * validation, enumeration and display queries use the existing global lock.
+  */
+ _EGLDevice *
+-_eglFindNativeDevice(void)
+-{
++_eglFindNativeDevice(EGLBoolean native_images)
++{
++   /* This node is the runtime's own image-FD ABI, not a PCI/KMS device.
++    * Publish it only with real external-image import and an available node. */
++   struct stat st;
++   _EGLDevice *device = native_images &&
++      !stat(native_image_device.native_render_node, &st) && S_ISCHR(st.st_mode)
++      ? &native_image_device : &native_device;
+    simple_mtx_lock(_eglGlobal.Mutex);
+    _EGLDevice *tail = _eglGlobal.DeviceList;
+    assert(tail);
+-   while (tail->Next && tail != &native_device)
++   while (tail->Next && tail != device)
+       tail = tail->Next;
+-   if (tail != &native_device)
+-      tail->Next = &native_device;
++   if (tail != device)
++      tail->Next = device;
+    simple_mtx_unlock(_eglGlobal.Mutex);
+-   return &native_device;
++   return device;
+ }
+ 
+ /* Finds a device in DeviceList, for the given fd.
+@@ -297,6 +315,8 @@
+       break;
+ #endif
+    case EGL_DRM_RENDER_NODE_FILE_EXT:
++      if (dev->native_render_node)
++         return dev->native_render_node;
+       if (!_eglDeviceSupports(dev, _EGL_DEVICE_DRM_RENDER_NODE))
+          break;
+ #ifdef HAVE_LIBDRM
+@@ -337,7 +357,7 @@
+    assert(_eglDeviceSupports(dev, _EGL_DEVICE_SOFTWARE));
+    count++;
+    for (_EGLDevice *native = dev->Next; native; native = native->Next)
+-      if (native == &native_device)
++      if (is_native_device(native))
+          count++;
+ 
+ #ifdef HAVE_LIBDRM
+--- a/src/egl/main/egldevice.h
++++ b/src/egl/main/egldevice.h
+@@ -61,7 +61,7 @@
+ _eglFindDevice(int fd, bool software);
+ 
+ _EGLDevice *
+-_eglFindNativeDevice(void);
++_eglFindNativeDevice(EGLBoolean native_images);
+ 
+ enum _egl_device_extension {
+    _EGL_DEVICE_SOFTWARE,
+--- a/src/egl/drivers/dri2/platform_wayland.c
++++ b/src/egl/drivers/dri2/platform_wayland.c
+@@ -3092,13 +3092,15 @@
+       /* A real Vulkan GPU without a DRM identity is neither a DRM nor a
+        * software EGLDevice. Publish an extension-free native device handle.
+        */
+-      disp->Device = _eglFindNativeDevice();
++      dri2_setup_screen(disp);
++      disp->Device = _eglFindNativeDevice(dri2_dpy->has_dmabuf_import);
+    } else if (!dri2_setup_device(disp, disp->Options.ForceSoftware)) {
+       _eglError(EGL_NOT_INITIALIZED, "DRI2: failed to setup EGLDevice");
+       goto cleanup;
+    }
+ 
+-   dri2_setup_screen(disp);
++   if (!native_wsi || disp->Options.ForceSoftware)
++      dri2_setup_screen(disp);
+ 
+    dri2_wl_setup_swap_interval(disp);
+ 

@@ -20,7 +20,9 @@ import tarfile
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = '25.1.9'
 SOURCE_SHA = '412df33a1bb3c785ed698555a3972118a37c458e7accf6ae53f4bb87b3db454a'
-PATCHES = ['0001-wayland-kopper-native-wsi.patch', '0002-preserve-pbo-upload-output-type.patch']
+PATCHES = ['0001-wayland-kopper-native-wsi.patch', '0002-preserve-pbo-upload-output-type.patch',
+           '0003-honor-import-only-external-memory.patch',
+           '0004-native-video-render-node-discovery.patch']
 OPTIONS = ['--buildtype=release', '-Dgallium-drivers=zink', '-Dvulkan-drivers=',
            '-Dllvm=disabled', '-Dplatforms=wayland', '-Dglx=disabled', '-Dgbm=disabled',
            '-Degl=enabled', '-Dgles1=disabled', '-Dgles2=enabled', '-Dglvnd=disabled',

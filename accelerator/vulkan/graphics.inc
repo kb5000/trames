@@ -10,6 +10,9 @@ static int image_formats(const void *chain,const VkImageFormatListCreateInfo **l
     while(next && n++<16){
         if(next->sType==VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO && !*list){*list=(const void *)next;if((*list)->viewFormatCount>16)return 0;}
         else if(next->sType==VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO && !*stencil)*stencil=(const void *)next;
+        else if(next->sType==VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO || next->sType==VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_EXPLICIT_CREATE_INFO_EXT ||
+                next->sType==VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_LIST_CREATE_INFO_EXT || next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO ||
+                next->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_DRM_FORMAT_MODIFIER_INFO_EXT){}
         else return 0;
         next=next->pNext;
     }
@@ -24,9 +27,18 @@ static VkImageAspectFlags format_aspects(VkFormat format) {
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateImage(VkDevice d,const VkImageCreateInfo *info,const VkAllocationCallbacks *allocator,VkImage *out) {
     if(!info || info->sType!=VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;ALLOCATOR(allocator);
     const VkImageFormatListCreateInfo *list;const VkImageStencilUsageCreateInfo *stencil;if(!image_formats(info->pNext,&list,&stencil))return VK_ERROR_FEATURE_NOT_PRESENT;
-    uint64_t extra[3]={list?PTR(list->pViewFormats):0,list?list->viewFormatCount:0,stencil?stencil->stencilUsage:0};
-    if((info->flags&~(VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT|VK_IMAGE_CREATE_EXTENDED_USAGE_BIT|VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT|VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT)) || info->imageType>VK_IMAGE_TYPE_3D || !info->extent.depth || !info->mipLevels || !info->arrayLayers || !info->samples || info->samples>VK_SAMPLE_COUNT_64_BIT || (info->samples&(info->samples-1)) || info->tiling>VK_IMAGE_TILING_LINEAR || info->sharingMode!=VK_SHARING_MODE_EXCLUSIVE || (info->initialLayout!=VK_IMAGE_LAYOUT_UNDEFINED && info->initialLayout!=VK_IMAGE_LAYOUT_PREINITIALIZED))return VK_ERROR_FEATURE_NOT_PRESENT;
-    return CALL(60,KEY(d),info->format,info->extent.width,info->extent.height,info->usage,PTR(out),info->initialLayout,stencil?PTR(extra):extra[0],stencil?UINT64_MAX:extra[1],info->flags,info->imageType,info->extent.depth,info->mipLevels,info->arrayLayers,info->samples,info->tiling);
+    const VkExternalMemoryImageCreateInfo *external=NULL;const VkImageDrmFormatModifierExplicitCreateInfoEXT *modifier=NULL;
+    for(const VkBaseInStructure *n=info->pNext;n;n=n->pNext) {
+        if(n->sType==VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO)external=(const void*)n;
+        if(n->sType==VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_EXPLICIT_CREATE_INFO_EXT)modifier=(const void*)n;
+        if(n->sType==VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_LIST_CREATE_INFO_EXT)return VK_ERROR_FORMAT_NOT_SUPPORTED;
+    }
+    if(external && (external->handleTypes!=VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT || !modifier ||
+        modifier->drmFormatModifier || modifier->drmFormatModifierPlaneCount!=1))return VK_ERROR_FORMAT_NOT_SUPPORTED;
+    uint64_t extra[8]={list?PTR(list->pViewFormats):0,list?list->viewFormatCount:0,stencil?stencil->stencilUsage:0,
+        external?external->handleTypes:0,modifier?modifier->drmFormatModifier:0,modifier?modifier->pPlaneLayouts[0].rowPitch:0,modifier?modifier->pPlaneLayouts[0].offset:0,modifier?modifier->drmFormatModifierPlaneCount:0};
+    if((info->flags&~(VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT|VK_IMAGE_CREATE_EXTENDED_USAGE_BIT|VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT|VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT)) || info->imageType>VK_IMAGE_TYPE_3D || !info->extent.depth || !info->mipLevels || !info->arrayLayers || !info->samples || info->samples>VK_SAMPLE_COUNT_64_BIT || (info->samples&(info->samples-1)) || (info->tiling>VK_IMAGE_TILING_LINEAR && !(external && info->tiling==VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT)) || info->sharingMode!=VK_SHARING_MODE_EXCLUSIVE || (info->initialLayout!=VK_IMAGE_LAYOUT_UNDEFINED && info->initialLayout!=VK_IMAGE_LAYOUT_PREINITIALIZED))return VK_ERROR_FEATURE_NOT_PRESENT;
+    return CALL(60,KEY(d),info->format,info->extent.width,info->extent.height,info->usage,PTR(out),info->initialLayout,(stencil||external)?PTR(extra):extra[0],external?UINT64_MAX-1:stencil?UINT64_MAX:extra[1],info->flags,info->imageType,info->extent.depth,info->mipLevels,info->arrayLayers,info->samples,info->tiling);
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroyImage(VkDevice d,VkImage image,const VkAllocationCallbacks *allocator) {if(image)checked(allocator?VK_ERROR_FEATURE_NOT_PRESENT:CALL(61,KEY(d),(uint64_t)image));}
 VKAPI_ATTR void VKAPI_CALL vkGetImageMemoryRequirements(VkDevice d,VkImage image,VkMemoryRequirements *out) {checked(CALL(62,KEY(d),(uint64_t)image,PTR(out)));}

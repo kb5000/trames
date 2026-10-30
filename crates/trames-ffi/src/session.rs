@@ -616,6 +616,7 @@ fn run(
             native_bsearch: options.native_bsearch,
             native_allocator: options.native_allocator,
             vulkan_accelerator: options.vulkan_accelerator,
+            video_accelerator: options.vulkan_accelerator,
         },
     )
     .map_err(|e| e.to_string())?;

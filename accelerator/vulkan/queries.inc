@@ -79,6 +79,20 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceMemoryProperties2KHR(VkPhysicalDev
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties2(VkPhysicalDevice p,VkFormat format,VkFormatProperties2 *out) {
     query_output(out,VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2);
     vkGetPhysicalDeviceFormatProperties(p,format,&out->formatProperties);
+    for(VkBaseOutStructure *n=out->pNext;n;n=n->pNext) {
+        if(n->sType==VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT) {
+            VkDrmFormatModifierPropertiesListEXT *list=(void*)n;unsigned count=native_external_format(D(p),format)?1:0;
+            if(list->pDrmFormatModifierProperties && list->drmFormatModifierCount && count)
+                list->pDrmFormatModifierProperties[0]=(VkDrmFormatModifierPropertiesEXT){.drmFormatModifier=0,.drmFormatModifierPlaneCount=1,.drmFormatModifierTilingFeatures=out->formatProperties.optimalTilingFeatures};
+            list->drmFormatModifierCount=count;
+        }
+        if(n->sType==VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT) {
+            VkDrmFormatModifierPropertiesList2EXT *list=(void*)n;unsigned count=native_external_format(D(p),format)?1:0;
+            if(list->pDrmFormatModifierProperties && list->drmFormatModifierCount && count)
+                list->pDrmFormatModifierProperties[0]=(VkDrmFormatModifierProperties2EXT){.drmFormatModifier=0,.drmFormatModifierPlaneCount=1,.drmFormatModifierTilingFeatures=out->formatProperties.optimalTilingFeatures};
+            list->drmFormatModifierCount=count;
+        }
+    }
 }
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties2KHR(VkPhysicalDevice p,VkFormat format,VkFormatProperties2 *out) {vkGetPhysicalDeviceFormatProperties2(p,format,out);}
 VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties2(VkPhysicalDevice p,const VkPhysicalDeviceImageFormatInfo2 *info,VkImageFormatProperties2 *out) {
@@ -86,9 +100,24 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties2(VkPhysi
     const VkImageFormatListCreateInfo *list;const VkImageStencilUsageCreateInfo *stencil;if(!image_formats(info->pNext,&list,&stencil))return VK_ERROR_FORMAT_NOT_SUPPORTED;
     uint64_t extra[3]={list?PTR(list->pViewFormats):0,list?list->viewFormatCount:0,stencil?stencil->stencilUsage:0};
     query_output(out,VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2);
+    const VkPhysicalDeviceExternalImageFormatInfo *external=NULL;
+    const VkPhysicalDeviceImageDrmFormatModifierInfoEXT *modifier=NULL;
+    for(const VkBaseInStructure *n=info->pNext;n;n=n->pNext) {
+        if(n->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO)external=(const void*)n;
+        if(n->sType==VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_DRM_FORMAT_MODIFIER_INFO_EXT)modifier=(const void*)n;
+    }
+    int native=(external || modifier) && (!external || external->handleType==VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT) && native_external_format(D(p),info->format) && info->type==VK_IMAGE_TYPE_2D && (!modifier || !modifier->drmFormatModifier);
+    for(VkBaseOutStructure *n=out->pNext;n;n=n->pNext)if(n->sType==VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES) {
+        VkExternalImageFormatProperties *properties=(void*)n;
+        properties->externalMemoryProperties=(VkExternalMemoryProperties){0};
+        if(native)properties->externalMemoryProperties=(VkExternalMemoryProperties){.externalMemoryFeatures=VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT|VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT,.compatibleHandleTypes=VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT};
+    }
+    if((external && !native) || (info->tiling==VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT && !native))return VK_ERROR_FORMAT_NOT_SUPPORTED;
     VkSamplerYcbcrConversionImageFormatProperties *conversion=NULL;
     for(VkBaseOutStructure *n=out->pNext;n;n=n->pNext)if(n->sType==VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES)conversion=(void *)n;
-    return CALL(59,KEY(p),info->format,info->type,info->tiling,info->usage,info->flags,PTR(&out->imageFormatProperties),stencil?PTR(extra):extra[0],stencil?UINT64_MAX:extra[1],conversion?PTR(&conversion->combinedImageSamplerDescriptorCount):0);
+    VkResult result=CALL(59,KEY(p),info->format,info->type,native?VK_IMAGE_TILING_OPTIMAL:info->tiling,info->usage,info->flags,PTR(&out->imageFormatProperties),stencil?PTR(extra):extra[0],stencil?UINT64_MAX:extra[1],conversion?PTR(&conversion->combinedImageSamplerDescriptorCount):0);
+    if(result==VK_SUCCESS && native){out->imageFormatProperties.maxMipLevels=1;out->imageFormatProperties.maxArrayLayers=1;out->imageFormatProperties.sampleCounts=VK_SAMPLE_COUNT_1_BIT;}
+    return result;
 }
 VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties2KHR(VkPhysicalDevice p,const VkPhysicalDeviceImageFormatInfo2 *info,VkImageFormatProperties2 *out) {return vkGetPhysicalDeviceImageFormatProperties2(p,info,out);}
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceQueueFamilyProperties2(VkPhysicalDevice p,uint32_t *count,VkQueueFamilyProperties2 *out) {

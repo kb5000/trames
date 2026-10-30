@@ -24,6 +24,8 @@ trames-linux = { workspace = true }
 trames-vfs = { workspace = true }
 trames-net = { workspace = true }
 trames-vulkan = { workspace = true }
+trames-video = { workspace = true }
+trames-graphics = { workspace = true }
 trames-wayland = { workspace = true }
 
 [[test]]

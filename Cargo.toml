@@ -11,6 +11,8 @@ exclude = ["runtime"]
 
 [workspace.dependencies]
 trames-vulkan = { path = "runtime/crates/trames-vulkan" }
+trames-video = { path = "runtime/crates/trames-video" }
+trames-graphics = { path = "runtime/crates/trames-graphics" }
 trames-accel = { path = "runtime/crates/trames-accel" }
 trames-native = { path = "runtime/crates/trames-native" }
 trames-session = { path = "runtime/crates/trames-session" }

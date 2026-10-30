@@ -1,9 +1,12 @@
 # VA-API over VideoToolbox
 
-Status: selected architecture and native feasibility probe, 2026-10-31.
-The guest VA driver, video native-call module, and Firefox video frame imports
-are **not implemented**. This document records the implementation path shared by
-the Mac and iPad products, following the [accelerator design](accelerator.md).
+Status: experimental H.264 implementation, 2026-10-31. The shared runtime,
+standard libva driver, retained image FDs, native Vulkan import and Mesa EGL
+adapter are implemented. Stock Firefox 142 selects VA-API in its RDD process
+with its normal sandbox and default hardware-decoding policy. Playback works,
+including backward seek and looping, but end-to-end performance is not yet ready
+for a stable release: one foreground 720p30 interval displayed 17.7 FPS.
+HEVC, AV1, encoding, video processing and physical iPad playback are not validated.
 
 ## Architecture
 
@@ -77,8 +80,8 @@ The deployed Firefox 142 VA path calls:
 3. duplicates and transfers the resulting plane FDs to the compositor;
 4. creates per-plane `EGL_LINUX_DMA_BUF_EXT` images and GL textures.
 
-The current [DRM-less EGL/Wayland adapter](zink.md) and Vulkan bridge do not yet
-provide this resource import path. Vulkan 1.2 YCbCr conversion alone does not
+The [native EGL/Wayland adapter](zink.md) and Vulkan bridge now provide this
+resource import path through two small additional Mesa patches. Vulkan 1.2 YCbCr conversion alone does not
 make a VA surface consumable by Firefox. Its existing YUV compositor can consume
 separate R8/RG8 planes; P010 needs the corresponding 16-bit plane handling.
 
@@ -94,9 +97,11 @@ the guest FD to the owned native texture inside the bridge. The remaining work
 includes external-memory format/property queries, allocation/bind semantics,
 plane offsets/pitches, image views and synchronization. Determine the smallest
 EGL/Zink adapter needed with an actual import fixture; merely enumerating
-external-memory extensions is insufficient. Use implicit modifiers where valid;
-an opaque native texture must not be advertised as linear CPU memory. Firefox's
-YUV import omits modifier attributes for `DRM_FORMAT_MOD_INVALID`.
+external-memory extensions is insufficient. The implemented export contains separate owned R8/GR88 plane views of ordinary
+uncompressed NV12 CoreVideo storage, with offset zero, the actual row pitch and
+`DRM_FORMAT_MOD_LINEAR`. Compressed native pixel formats are rejected. This
+layout describes each retained plane view; it does not expose an IOSurface ID or
+promise CPU `mmap`. CPU access goes through explicit VA image readback.
 
 `VK_EXT_metal_objects` already provides a verified host-side texture import
 primitive. Native `VK_EXT_external_memory_metal` is also enumerated by the local
@@ -195,8 +200,76 @@ Measure decode submission/callback latency, native wait time, CPU frame-copy
 bytes, end-to-end dropped frames, host CPU, and retained frame/pool memory.
 A 4K60 NV12 full-frame copy alone moves about 746 MB/s of payload; compressed
 input copies are far smaller. Avoiding raw-frame round trips is the main design
-win. This research changes no production executable and requires no repeat of
-the unchanged CPU/Linux/network/Vulkan regression suites.
+win. The implementation is opt-in. Unchanged acceptance results are reused; the
+new video, FD, import and affected native graphics paths have separate checks.
+
+## Implemented interface and local acceptance
+
+`trames-video` and `trames-graphics` live in the common runtime. Module
+`0x10007`, auxv `0x54520009`, uses the same validated NativeCall entry as the
+other native modules. Compressed submissions run on the guest worker. A native
+callback publishes an owned frame and signals the original retained eventfd;
+guest `poll` yields its execution slot. There is no video service thread.
+
+The virtual node `/dev/dri/renderD128` exists only when video is enabled. Its
+canonical sysfs location is
+`/sys/devices/platform/trames/drm/renderD128`; `/sys/dev/char` and `/sys/class/drm`
+point there, and `device` points to the parent platform device. Complete directory
+enumeration lets Firefox build its ordinary broker policy. An EGL native device
+reports `EGL_EXT_device_drm_render_node` only when native image import is available
+and the node exists. No PCI/KMS hardware identity is invented.
+
+The Vulkan addition is an **import-only image profile**: dedicated 2D,
+one-mip, one-layer, single-sample R8/RG8/RGBA8/BGRA8 planes, explicit LINEAR
+modifier and retained guest FD ownership. Memory import consumes the supplied
+FD on success. Ordinary Vulkan allocations retain their existing path. Generic
+GPU memory FD export and external buffers are not supported. Mesa's adapter
+honors import-only capabilities, does not request re-export for these imports,
+and keeps explicit modifier/pitch metadata. This is not an external-memory
+conformance claim.
+
+| Check on Apple M6 / macOS 27.0.1 / SDK 27.2 | Result |
+|---|---|
+| Stock Ubuntu FFmpeg + libva H.264 Baseline/Main/High | 270/270 frame hashes match native Linux software decode |
+| Cropped 126×94 and four-slice 320×240, B frames and custom quantization | 240/240 frame hashes match; 120 multislice frames repeated after handle reuse fix |
+| Continuous read-only VA → DRM mapping | 120/120 frames exported; no decode error |
+| Fork + SCM_RIGHTS + closed sender FDs + Vulkan import | Both planes match the VA readback oracle byte for byte |
+| Same two-process import through EGL/GLES/Zink | Exact Y/UV pixels on MOLTENVK; no generic export extension advertised |
+| Callback ownership, bad input and early decoder destruction | Every submitted owned job released |
+| Shared native image FD lifetime | Worker creation, stat/seek, dup, SCM_RIGHTS, procfs and final import lease pass |
+| VFS unit suite | 336 passed, 1 existing ignored; subsequent procfs/sysfs changes have targeted regressions |
+| Shared runtime Linux and iPadOS compilation | Pass; physical iPad video not tested |
+| Full shared Rust suites on macOS / ARM64 Linux | 862 passed, 12 ignored / 861 passed, 11 ignored |
+| Interpreter process/scheduler conformance | 225 passed, 3 ignored |
+| Strict shared workspace Clippy / repository boundaries | Pass on macOS and ARM64 Linux |
+| Firefox 142 / stock FFmpeg 7 / normal RDD sandbox | VA-API selected, hardware-required decode, GPU picture shown; seek and loop work |
+| Foreground 1280×720, 30 FPS, 10.034-second interval | 300 frame advances, 122 drops, 17.74 displayed FPS; performance work remains |
+
+The GPU import fixtures use CPU readback only as an oracle. The production
+export/import path retains the original native decoded allocation and does not
+lock or copy decoded pixels. The small compressed access unit is copied into
+owned submission memory once. VA handle slots are reused rather than growing a
+metadata table on every decoded frame.
+
+Build the guest driver on ARM64 Linux using
+[`runtime/scripts/build-video-guest.sh`](../../runtime/scripts/build-video-guest.sh)
+with libva development headers and a musl compiler. `TRAMES_VIDEO_CC=gcc` selects
+the glibc variant. Select it with `LIBVA_DRIVER_NAME=trames` and
+`LIBVA_DRIVERS_PATH` pointing at the library. The Mac CLI exposes `--video`;
+its maintained `scripts/run-firefox-gpu.py --video-driver PATH` installs the
+paired library into the selected guest graphics directory. Use the updated
+paired EGL/Gallium build from `scripts/build-zink-gallium.py`, not a mixture of
+old and new libraries. Browser hardware force preferences are unnecessary.
+
+[`vaapi-native-import.c`](../../tests/fixtures/vaapi-native-import.c) is the
+stock-API two-process pixel oracle. Compile on ARM64 Linux with `pkg-config`
+`libavcodec libavformat libavutil libva-drm vulkan`; the `-DTEST_EGL` variant
+links `egl glesv2` instead of Vulkan. Run the signed Mac guest via
+[`vaapi-native.py`](../../tests/integration/vaapi-native.py), passing an isolated
+store, the exact Linux libraries, driver, ICD and H.264 sample. Its JSON record
+binds every imported artifact to a SHA-256. Do not use an active user's store for
+this test. The local fixture does not prove audio output, A/V sync, 4K throughput,
+web streaming, every H.264 stream or all advertised codec levels.
 
 ## Primary sources
 

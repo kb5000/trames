@@ -58,7 +58,7 @@ for q in schema['properties']:
     fields = ', '.join(x['rust'] + ('.as_raw() as u32' if x['kind'] == 'ShaderFloatControlsIndependence' else '.as_raw()' if x['kind'] not in ('u32', 'Bool32') else '') for x in q['fields'])
     ext = '0' if q['extension'] is None else '1 << ' + str(q['extension'])
     rs += [f'    {q["type"]}, {ext} => [{fields}];']
-rs += ['}', 'fn query_aggregate_properties(caps: &mut Capabilities, query: &ash::khr::get_physical_device_properties2::Instance, physical: vk::PhysicalDevice) {']
+rs += ['}', '// c_char is signed on Apple and unsigned on AArch64 Linux.', '#[allow(clippy::unnecessary_cast)]', 'fn query_aggregate_properties(caps: &mut Capabilities, query: &ash::khr::get_physical_device_properties2::Instance, physical: vk::PhysicalDevice) {']
 for q in schema['aggregate_properties']:
     ty = q['type']; first = q['fields'][0]['rust']
     rs += [f'    if caps.api >= {api(q["minimum_api"])} {{', f'        let mut native = vk::{ty}::default();', '        let mut properties = vk::PhysicalDeviceProperties2::default().push_next(&mut native);', '        unsafe { query.get_physical_device_properties2(physical, &mut properties); }']

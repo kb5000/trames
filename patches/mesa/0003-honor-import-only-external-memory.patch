@@ -1,0 +1,118 @@
+# SPDX-License-Identifier: MIT
+Subject: Zink: honor import-only external memory profiles
+
+--- a/src/gallium/drivers/zink/zink_screen.c
++++ b/src/gallium/drivers/zink/zink_screen.c
+@@ -678,6 +678,36 @@
+    caps->max_subgroups = screen->info.props13.maxComputeWorkgroupSubgroups;
+ }
+ 
++/* Extension presence does not imply that a native image importer can also
++ * allocate/export generic device memory. Query the actual external profile. */
++static VkExternalMemoryFeatureFlags
++zink_dmabuf_features(struct zink_screen *screen, VkFormat format)
++{
++   if (!screen->info.have_EXT_external_memory_dma_buf ||
++       !VKSCR(GetPhysicalDeviceImageFormatProperties2))
++      return 0;
++   VkPhysicalDeviceExternalImageFormatInfo external = {
++      .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO,
++      .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT,
++   };
++   VkPhysicalDeviceImageFormatInfo2 info = {
++      .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
++      .pNext = &external,
++      .format = format, .type = VK_IMAGE_TYPE_2D,
++      .tiling = VK_IMAGE_TILING_LINEAR,
++      .usage = VK_IMAGE_USAGE_SAMPLED_BIT,
++   };
++   VkExternalImageFormatProperties external_props = {
++      .sType = VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES,
++   };
++   VkImageFormatProperties2 props = {
++      .sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
++      .pNext = &external_props,
++   };
++   return VKSCR(GetPhysicalDeviceImageFormatProperties2)(screen->pdev, &info, &props) == VK_SUCCESS
++      ? external_props.externalMemoryProperties.externalMemoryFeatures : 0;
++}
++
+ static void
+ zink_init_screen_caps(struct zink_screen *screen)
+ {
+@@ -732,6 +762,19 @@
+       screen->instance_info->have_KHR_external_memory_capabilities &&
+       (screen->info.have_KHR_external_memory_fd ||
+        screen->info.have_KHR_external_memory_win32);
++   if (caps->memobj && screen->info.have_KHR_external_memory_fd) {
++      VkPhysicalDeviceExternalBufferInfo info = {
++         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO,
++         .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
++         .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
++      };
++      VkExternalBufferProperties props = {
++         .sType = VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES,
++      };
++      VKSCR(GetPhysicalDeviceExternalBufferProperties)(screen->pdev, &info, &props);
++      caps->memobj = (props.externalMemoryProperties.externalMemoryFeatures &
++                     VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) != 0;
++   }
+    caps->fence_signal =
+       screen->info.have_KHR_external_semaphore_fd ||
+       screen->info.have_KHR_external_semaphore_win32;
+@@ -1106,6 +1149,16 @@
+ #else
+       0;
+ #endif
++
++   if (caps->dmabuf) {
++      VkExternalMemoryFeatureFlags features =
++         zink_dmabuf_features(screen, VK_FORMAT_R8_UNORM) |
++         zink_dmabuf_features(screen, VK_FORMAT_R8G8_UNORM) |
++         zink_dmabuf_features(screen, VK_FORMAT_B8G8R8A8_UNORM);
++      caps->dmabuf =
++         ((features & VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) ? DRM_PRIME_CAP_IMPORT : 0) |
++         ((features & VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT) ? DRM_PRIME_CAP_EXPORT : 0);
++   }
+ 
+    caps->depth_bounds_test = screen->info.feats.features.depthBounds;
+ 
+--- a/src/gallium/drivers/zink/zink_resource.c
++++ b/src/gallium/drivers/zink/zink_resource.c
+@@ -921,6 +921,9 @@
+    /* we may export WINSYS_HANDLE_TYPE_FD handle which is dma-buf */
+    if (templ->bind & PIPE_BIND_SHARED && screen->info.have_EXT_external_memory_dma_buf)
+       alloc_info->export_types |= VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
++   if (alloc_info->whandle && alloc_info->external == VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT &&
++       !(screen->base.caps.dmabuf & DRM_PRIME_CAP_EXPORT))
++      alloc_info->export_types = 0;
+    return true;
+ }
+ 
+@@ -960,7 +963,7 @@
+    }
+ 
+    VkExportMemoryAllocateInfo emai;
+-   if ((templ->bind & ZINK_BIND_VIDEO) || ((templ->bind & PIPE_BIND_SHARED) && alloc_info->shared) || (templ->bind & ZINK_BIND_DMABUF)) {
++   if (alloc_info->export_types && ((templ->bind & ZINK_BIND_VIDEO) || ((templ->bind & PIPE_BIND_SHARED) && alloc_info->shared) || (templ->bind & ZINK_BIND_DMABUF))) {
+       emai.sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO;
+       emai.handleTypes = alloc_info->export_types;
+ 
+@@ -1243,7 +1246,7 @@
+              struct mem_alloc_info *alloc_info)
+ {
+    VkMemoryRequirements reqs = {0};
+-   bool winsys_modifier = (alloc_info->export_types & VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT) &&
++   bool winsys_modifier = ((alloc_info->external | alloc_info->export_types) & VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT) &&
+                           alloc_info->whandle &&
+                           alloc_info->whandle->modifier != DRM_FORMAT_MOD_INVALID;
+    uint64_t *ici_modifiers = winsys_modifier ? &alloc_info->whandle->modifier : modifiers;
+@@ -1319,7 +1322,7 @@
+    if (alloc_info->shared || alloc_info->external) {
+       emici.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
+       emici.pNext = ici.pNext;
+-      emici.handleTypes = alloc_info->export_types;
++      emici.handleTypes = alloc_info->external | alloc_info->export_types;
+       assert(!(emici.handleTypes & VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT) || ici.tiling != VK_IMAGE_TILING_OPTIMAL);
+       ici.pNext = &emici;
+ 

@@ -61,7 +61,7 @@ static int wayland_available(void) {uint64_t available=0;return CALL(109,PTR(&av
 static VkResult display_extensions(const char *layer,uint32_t *count,VkExtensionProperties *out,int device,uint64_t caps,uint64_t compute) {
     if(layer)return VK_ERROR_LAYER_NOT_PRESENT;
     uint64_t info[3]={0};int fixed=display_info(0,info),wayland=wayland_available();
-    const char *names[48];uint32_t n=0;
+    const char *names[64];uint32_t n=0;
     if(device){
         if(fixed || wayland)names[n++]=VK_KHR_SWAPCHAIN_EXTENSION_NAME;
         if(fixed || wayland)names[n++]=VK_KHR_INCREMENTAL_PRESENT_EXTENSION_NAME;
@@ -79,6 +79,13 @@ static VkResult display_extensions(const char *layer,uint32_t *count,VkExtension
         if(caps&512)names[n++]=VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME;
         if(caps&1024)names[n++]=VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME;
         if(caps&2048)names[n++]=VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME;
+        if(caps&8192) {
+            names[n++]=VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME;
+            names[n++]=VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME;
+            names[n++]=VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME;
+            names[n++]=VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME;
+            names[n++]=VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME;
+        }
         for(unsigned i=0;i<sizeof(compute_extensions)/sizeof(*compute_extensions);i++)if(compute&compute_extensions[i].bit){int duplicate=0;for(unsigned j=0;j<n;j++)if(!strcmp(names[j],compute_extensions[i].name)){duplicate=1;break;}if(!duplicate)names[n++]=compute_extensions[i].name;}
     }
     else {
@@ -86,6 +93,7 @@ static VkResult display_extensions(const char *layer,uint32_t *count,VkExtension
         if(fixed)names[n++]=VK_KHR_DISPLAY_EXTENSION_NAME;
         if(wayland)names[n++]=VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME;
         names[n++]=VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME;
+        names[n++]=VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME;
     }
     if(!out){*count=n;return VK_SUCCESS;}uint32_t capacity=*count;*count=capacity<n?capacity:n;
     for(uint32_t i=0;i<*count;i++){memset(out+i,0,sizeof(*out));strcpy(out[i].extensionName,names[i]);out[i].specVersion=!strcmp(names[i],VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME)?3:(!strcmp(names[i],VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME) || !strcmp(names[i],VK_KHR_MAINTENANCE_1_EXTENSION_NAME) || !strcmp(names[i],VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME))?2:1;}
@@ -112,6 +120,9 @@ static int extensions(uint32_t count,const char *const *names,int device) {
         else if(device && !strcmp(names[i],VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME))bit=32768;
         else if(device && !strcmp(names[i],VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME))bit=65536;
         else if(device && !strcmp(names[i],VK_KHR_INCREMENTAL_PRESENT_EXTENSION_NAME))bit=131072;
+        if(!device && !strcmp(names[i],VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME))continue;
+        if(device && (!strcmp(names[i],VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME) || !strcmp(names[i],VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME) ||
+            !strcmp(names[i],VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME) || !strcmp(names[i],VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME) || !strcmp(names[i],VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME)))continue;
         // Original loaders may append an already enabled promoted extension.
         if(!bit){if(device && compute_extension(names[i]))continue;return -1;}bits|=bit;
     }
@@ -275,13 +286,15 @@ VKAPI_ATTR void VKAPI_CALL vkGetBufferMemoryRequirements(VkDevice d,VkBuffer b,V
 VKAPI_ATTR VkResult VKAPI_CALL vkAllocateMemory(VkDevice device,const VkMemoryAllocateInfo *info,const VkAllocationCallbacks *allocator,VkDeviceMemory *out) {
     if(!info || info->sType!=VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO)return VK_ERROR_FEATURE_NOT_PRESENT;ALLOCATOR(allocator);
     const VkMemoryAllocateFlagsInfo *flags=NULL;const VkMemoryDedicatedAllocateInfo *dedicated=NULL;
+    const VkImportMemoryFdInfoKHR *import=NULL;
     for(const VkBaseInStructure *n=info->pNext;n;n=n->pNext){
-        if(n->sType==VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO && !flags){flags=(const void *)n;if(flags->flags&~VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT)return VK_ERROR_FEATURE_NOT_PRESENT;}
+        if(n->sType==VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR && !import){import=(const void *)n;if(import->handleType!=VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT || import->fd<0)return VK_ERROR_INVALID_EXTERNAL_HANDLE;}
+        else if(n->sType==VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO && !flags){flags=(const void *)n;if(flags->flags&~VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT)return VK_ERROR_FEATURE_NOT_PRESENT;}
         else if(n->sType==VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO && !dedicated){dedicated=(const void *)n;if(dedicated->image&&dedicated->buffer)return VK_ERROR_FEATURE_NOT_PRESENT;}
         else return VK_ERROR_FEATURE_NOT_PRESENT;
     }
     Memory *r=calloc(1,sizeof(*r));if(!r)return VK_ERROR_OUT_OF_HOST_MEMORY;
-    VkResult v=CALL(14,KEY(device),info->allocationSize,info->memoryTypeIndex,PTR(&r->key),flags?flags->flags:0,dedicated?(dedicated->image?2:dedicated->buffer?1:0):0,dedicated?(dedicated->image?(uint64_t)dedicated->image:(uint64_t)dedicated->buffer):0);if(v!=VK_SUCCESS){free(r);return v;}r->size=info->allocationSize;
+    VkResult v=CALL(14,KEY(device),info->allocationSize,info->memoryTypeIndex,PTR(&r->key),flags?flags->flags:0,dedicated?(dedicated->image?2:dedicated->buffer?1:0):0,dedicated?(dedicated->image?(uint64_t)dedicated->image:(uint64_t)dedicated->buffer):0,import?(uint64_t)import->fd+1:0,import?import->handleType:0);if(v!=VK_SUCCESS){free(r);return v;}r->size=info->allocationSize;
     Dispatch *d=D(device);pthread_mutex_lock(&d->lock);r->next=d->memories;d->memories=r;pthread_mutex_unlock(&d->lock);*out=(VkDeviceMemory)r->key;return VK_SUCCESS;
 }
 VKAPI_ATTR void VKAPI_CALL vkFreeMemory(VkDevice device,VkDeviceMemory mem,const VkAllocationCallbacks *allocator) {
@@ -422,13 +435,13 @@ VKAPI_ATTR void VKAPI_CALL vkCmdBindPipeline(VkCommandBuffer c,VkPipelineBindPoi
 VKAPI_ATTR void VKAPI_CALL vkCmdBindDescriptorSets(VkCommandBuffer c,VkPipelineBindPoint point,VkPipelineLayout layout,uint32_t first,uint32_t count,const VkDescriptorSet *sets,uint32_t offsets,const uint32_t *offset) {if((point!=VK_PIPELINE_BIND_POINT_COMPUTE && point!=VK_PIPELINE_BIND_POINT_GRAPHICS) || offsets>64)checked(VK_ERROR_FEATURE_NOT_PRESENT);checked(CALL(42,DEVKEY(c),KEY(c),(uint64_t)layout,first,PTR(sets),count,point==VK_PIPELINE_BIND_POINT_GRAPHICS,PTR(offset),offsets));}
 VKAPI_ATTR void VKAPI_CALL vkCmdDispatch(VkCommandBuffer c,uint32_t x,uint32_t y,uint32_t z) {checked(CALL(43,DEVKEY(c),KEY(c),x,y,z));}
 VKAPI_ATTR void VKAPI_CALL vkCmdPipelineBarrier(VkCommandBuffer c,VkPipelineStageFlags src,VkPipelineStageFlags dst,VkDependencyFlags flags,uint32_t count,const VkMemoryBarrier *barriers,uint32_t buffers,const VkBufferMemoryBarrier *buffer,uint32_t images,const VkImageMemoryBarrier *image) {
-    if(flags&~(VK_DEPENDENCY_BY_REGION_BIT|VK_DEPENDENCY_VIEW_LOCAL_BIT|VK_DEPENDENCY_DEVICE_GROUP_BIT) || images>64)checked(VK_ERROR_FEATURE_NOT_PRESENT);VkAccessFlags sa=0,da=0;uint64_t data[64][10];uint64_t *bw=buffers?malloc((size_t)buffers*7*8):NULL;if(buffers&&!bw)checked(VK_ERROR_OUT_OF_HOST_MEMORY);
-    for(uint32_t i=0;i<images;i++){const VkImageMemoryBarrier *b=&image[i];if(!VALID(b,VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER) || b->srcQueueFamilyIndex!=VK_QUEUE_FAMILY_IGNORED || b->dstQueueFamilyIndex!=VK_QUEUE_FAMILY_IGNORED || (b->subresourceRange.aspectMask!=VK_IMAGE_ASPECT_COLOR_BIT && (!b->subresourceRange.aspectMask || (b->subresourceRange.aspectMask&~(VK_IMAGE_ASPECT_DEPTH_BIT|VK_IMAGE_ASPECT_STENCIL_BIT)))))checked(VK_ERROR_FEATURE_NOT_PRESENT);data[i][0]=(uint64_t)b->image;data[i][1]=b->srcAccessMask;data[i][2]=b->dstAccessMask;data[i][3]=b->oldLayout;data[i][4]=b->newLayout;data[i][5]=b->subresourceRange.aspectMask;data[i][6]=b->subresourceRange.baseMipLevel;data[i][7]=b->subresourceRange.levelCount;data[i][8]=b->subresourceRange.baseArrayLayer;data[i][9]=b->subresourceRange.layerCount;}
+    if(flags&~(VK_DEPENDENCY_BY_REGION_BIT|VK_DEPENDENCY_VIEW_LOCAL_BIT|VK_DEPENDENCY_DEVICE_GROUP_BIT) || images>64)checked(VK_ERROR_FEATURE_NOT_PRESENT);VkAccessFlags sa=0,da=0;uint64_t data[64][12];uint64_t *bw=buffers?malloc((size_t)buffers*7*8):NULL;if(buffers&&!bw)checked(VK_ERROR_OUT_OF_HOST_MEMORY);
+    for(uint32_t i=0;i<images;i++){const VkImageMemoryBarrier *b=&image[i];if(!VALID(b,VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER) || (b->subresourceRange.aspectMask!=VK_IMAGE_ASPECT_COLOR_BIT && (!b->subresourceRange.aspectMask || (b->subresourceRange.aspectMask&~(VK_IMAGE_ASPECT_DEPTH_BIT|VK_IMAGE_ASPECT_STENCIL_BIT)))))checked(VK_ERROR_FEATURE_NOT_PRESENT);data[i][0]=(uint64_t)b->image;data[i][1]=b->srcAccessMask;data[i][2]=b->dstAccessMask;data[i][3]=b->oldLayout;data[i][4]=b->newLayout;data[i][5]=b->subresourceRange.aspectMask;data[i][6]=b->subresourceRange.baseMipLevel;data[i][7]=b->subresourceRange.levelCount;data[i][8]=b->subresourceRange.baseArrayLayer;data[i][9]=b->subresourceRange.layerCount;data[i][10]=b->srcQueueFamilyIndex;data[i][11]=b->dstQueueFamilyIndex;}
     for(uint32_t i=0;i<count;i++){if(!VALID(&barriers[i],VK_STRUCTURE_TYPE_MEMORY_BARRIER))checked(VK_ERROR_FEATURE_NOT_PRESENT);sa|=barriers[i].srcAccessMask;da|=barriers[i].dstAccessMask;}
     for(uint32_t i=0;i<buffers;i++){
         const VkBufferMemoryBarrier *v=buffer+i;if(!VALID(v,VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER))checked(VK_ERROR_FEATURE_NOT_PRESENT);uint64_t *x=bw+i*7;x[0]=(uint64_t)v->buffer;x[1]=v->srcAccessMask;x[2]=v->dstAccessMask;x[3]=v->srcQueueFamilyIndex;x[4]=v->dstQueueFamilyIndex;x[5]=v->offset;x[6]=v->size;
     }
-    VkResult result=CALL(44,DEVKEY(c),KEY(c),src,dst,sa,da,PTR(data),images,10,flags,PTR(bw),buffers);free(bw);checked(result);
+    VkResult result=CALL(44,DEVKEY(c),KEY(c),src,dst,sa,da,PTR(data),images,12,flags,PTR(bw),buffers);free(bw);checked(result);
 }
 VKAPI_ATTR void VKAPI_CALL vkCmdCopyBuffer(VkCommandBuffer c,VkBuffer src,VkBuffer dst,uint32_t count,const VkBufferCopy *regions) {if(count>64)checked(VK_ERROR_FEATURE_NOT_PRESENT);uint64_t data[192];for(uint32_t i=0;i<count;i++){data[i*3]=regions[i].srcOffset;data[i*3+1]=regions[i].dstOffset;data[i*3+2]=regions[i].size;}checked(CALL(45,DEVKEY(c),KEY(c),(uint64_t)src,(uint64_t)dst,PTR(data),count));}
 VKAPI_ATTR void VKAPI_CALL vkCmdFillBuffer(VkCommandBuffer c,VkBuffer buffer,VkDeviceSize offset,VkDeviceSize size,uint32_t value) {checked(CALL(46,DEVKEY(c),KEY(c),(uint64_t)buffer,offset,size,value));}
@@ -496,6 +509,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkMergePipelineCaches(VkDevice d,VkPipelineCache 
 
 #include "graphics.inc"
 #include "rendergraph.inc"
+#include "external.inc"
 #include "queries.inc"
 #include "zink.inc"
 #include "sync.inc"

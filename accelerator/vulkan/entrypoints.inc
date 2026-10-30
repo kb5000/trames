@@ -237,3 +237,6 @@
     if(!strcmp(name,"vkGetDeviceMemoryOpaqueCaptureAddress"))return (PFN_vkVoidFunction)vkGetDeviceMemoryOpaqueCaptureAddress;
     if(!strcmp(name,"vkGetBufferOpaqueCaptureAddressKHR"))return (PFN_vkVoidFunction)vkGetBufferOpaqueCaptureAddressKHR;
     if(!strcmp(name,"vkGetDeviceMemoryOpaqueCaptureAddressKHR"))return (PFN_vkVoidFunction)vkGetDeviceMemoryOpaqueCaptureAddressKHR;
+    if(!strcmp(name,"vkGetMemoryFdKHR"))return (PFN_vkVoidFunction)vkGetMemoryFdKHR;
+    if(!strcmp(name,"vkGetMemoryFdPropertiesKHR"))return (PFN_vkVoidFunction)vkGetMemoryFdPropertiesKHR;
+    if(!strcmp(name,"vkGetImageDrmFormatModifierPropertiesEXT"))return (PFN_vkVoidFunction)vkGetImageDrmFormatModifierPropertiesEXT;
