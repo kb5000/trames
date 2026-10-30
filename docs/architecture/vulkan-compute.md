@@ -393,3 +393,50 @@ not overwrite the original signed Gallium package or claim physical iPad GPU
 acceptance. The shared resident-file and GPU-checkpoint corrections are included
 in the paired runtime pin. Full Mac evidence and the normal launcher are in
 [trames-mac](https://github.com/kb5000/trames-mac/blob/main/docs/validation/mac-firefox-gpu.md).
+
+## Neural-compute extension feasibility (2026-10-30)
+
+A native capability probe linked the same patched MoltenVK 1.4.2 archive used by
+the Mac product. On Apple M6, a Vulkan 1.1 instance queried the individual feature
+structures and successfully created a device with the supported fields enabled
+together. This is native discovery/device-creation evidence, not guest shader
+acceptance, a neural-network benchmark or physical iPad validation. The measured
+fields and archive/source hashes are recorded under `neural_compute_feasibility`
+in [the compute record](../validation/vulkan-compute-data.json).
+
+| Priority | Capability | Measured native support and integration scope |
+| --- | --- | --- |
+| First | `VK_KHR_16bit_storage`, `VK_KHR_8bit_storage` | All queried storage fields are true. Add their feature query/create records and dependency `VK_KHR_storage_buffer_storage_class`; retain original buffer allocation and descriptor paths. |
+| First | `VK_KHR_shader_float16_int8`, core `shaderInt16` | FP16, INT8 and INT16 are supported. Extend selected features and native creation; executable arithmetic stays in the original shader compiler/GPU. |
+| First | `VK_KHR_shader_float_controls` | FP16/FP32 preserve signed zero/Inf/NaN and round to nearest even. Forward actual properties; denormal preservation/flush and round-toward-zero are false. |
+| First, workload dependent | `VK_EXT_shader_atomic_float` | FP32 buffer/shared atomics and atomic add are true. FP64, image and sparse-image fields are false. Useful for accumulation; not a requirement for every inference kernel. |
+| Next | Subgroup properties, `VK_KHR_shader_subgroup_extended_types`, `VK_EXT_subgroup_size_control` | Default subgroup is 32; compute supports basic/vote/arithmetic/ballot/shuffle/relative/clustered/quad. Extended types and full subgroups are supported. Required-subgroup-size stages are zero: do not promise arbitrary requested compute subgroup sizes. Resolve Vulkan 1.1 dependencies and stage-create records first. |
+| Next | `VK_KHR_buffer_device_address`, `VK_KHR_vulkan_memory_model` | Base address and memory-model/device-scope features are true; capture/replay, multi-device addresses and availability/visibility chains are false. Add the actual allocation flags, buffer usage, address commands and lifetime rules; an extension name alone is insufficient. |
+| Compatibility | `VK_KHR_shader_integer_dot_product` | Feature is true, but all queried acceleration fields, including packed signed 4x8, are false. Exposing it can improve compatibility; no dedicated-hardware speedup is established. |
+| Separate native-driver work | `VK_KHR_cooperative_matrix`, `VK_KHR_shader_bfloat16` | Neither extension is advertised by the pinned native driver. SPIRV-Cross already has relevant Metal lowering, but its cooperative path is restricted to subgroup scope and 8x8 matrices, rejects specialized dimensions/layout and several element operations. Native feature/property plumbing and compiler/real-workload validation are required. |
+| Deferred | FP8 and `VK_EXT_shader_atomic_float2` | Not advertised by this native driver; no immediate forwarding path. |
+
+The first batch targets the original ncnn FP16/INT8 paths, with exact storage,
+arithmetic and accumulation oracles before model inference. Storage and arithmetic
+are separate features: enabling FP16 arithmetic does not enable FP16 buffers.
+Use real GEMM/softmax/normalization and model measurements to select subsequent
+work, rather than counting advertised extensions. See the
+[Khronos FP16 sample](https://docs.vulkan.org/samples/latest/samples/performance/16bit_arithmetic/README.html)
+and [ncnn feature negotiation](https://github.com/Tencent/ncnn/blob/master/src/gpu.cpp).
+
+The inspected [llama.cpp backend](https://github.com/ggml-org/llama.cpp/blob/master/ggml/src/ggml-vulkan/ggml-vulkan.cpp)
+requires Vulkan 1.2 at instance initialization and uses Vulkan 1.1/1.2 aggregate
+feature/property records. The current guest advertises instance 1.1/device 1.0,
+so these extensions alone do not make unmodified current llama.cpp runnable.
+Implement and validate its required API/query/create paths before changing the
+advertised API version. ncnn also filters subgroup extensions when its physical
+device lacks Vulkan 1.1.
+
+The existing shared-memory path already uses native `VK_EXT_external_memory_host`
+internally, retaining one allocation through guest mappings and Vulkan resource
+owners. This probe reports 16 KiB import alignment. Reuse that path; exposing
+arbitrary guest-pointer import is a separate task. Keep query/create serialization
+in the shared runtime/ICD and select actual driver features per device; Mac native
+measurements do not establish physical iPad support. No new coordinator, CPU
+tensor readback, stronger ordinary memory barriers or alternative CPU/GPU
+synchronization policy is needed for the first feature-only batch.
