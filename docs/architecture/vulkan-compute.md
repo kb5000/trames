@@ -11,8 +11,8 @@ window's `CAMetalLayer`. Host port forwarding remains deferred. Tracker:
 
 This selected subset is not complete Vulkan 1.0 conformance. Loader/ICD version
 negotiation describes the base ABI; it does not advertise the host's entire API.
-The instance query layer now supports1.1 while physical devices retain the selected
-1.0 profile. KHR properties2/memory-requirements2 and descriptor update templates
+The instance/device query layers now expose selected Vulkan 1.1 paths when the
+native driver supports them; this remains an experimental subset. KHR properties2/memory-requirements2 and descriptor update templates
 are covered by the [Zink implementation](zink.md). Original Mesa now passes
 basic offscreen EGL/GLES2 clear, GLSL draw and repeated texture readback on the
 Linux reference; see the [GL/resource validation](../validation/zink-gles.md) for
@@ -50,7 +50,7 @@ Install the ordinary `vulkan-loader` package with apk.
 
 ## Supported compute operations
 
-The [catalog](../../accelerator/vulkan/entrypoints.inc) contains 188 public
+The [catalog](../../accelerator/vulkan/entrypoints.inc) contains 199 public
 functions plus ICD negotiation exports. The profile supports one instance,
 compute-capable physical device, logical device and queue per address space;
 property queries; buffers and memory; SPIR-V modules; storage/uniform buffer
@@ -440,3 +440,68 @@ in the shared runtime/ICD and select actual driver features per device; Mac nati
 measurements do not establish physical iPad support. No new coordinator, CPU
 tensor readback, stronger ordinary memory barriers or alternative CPU/GPU
 synchronization policy is needed for the first feature-only batch.
+
+## Driver-backed neural compute implementation (2026-10-30)
+
+The shared runtime and paired ICD now expose the selected Vulkan 1.1 device/query
+paths and 17 compute-related extensions when the original driver advertises them.
+The previous section records the earlier discovery-only probe. Implemented paths
+include 8/16-bit storage, FP16/INT8 arithmetic, core INT16/INT64, float controls,
+FP32 buffer atomics, integer dot products, subgroup extended types/size/flow/rotate,
+buffer device addresses, the Vulkan memory model, uniform-buffer layout and
+variable pointers. Storage class, bind-memory2 and maintenance3 provide the
+associated dependencies and property queries. Geometry/tessellation remain outside
+this work; cooperative matrix, BF16 and FP8 are not advertised by the pinned driver.
+
+The [compute wire schema](../../runtime/crates/trames-vulkan/compute-profile.json)
+generates the paired Rust and C metadata through
+[`generate-vulkan-compute.py`](../../scripts/generate-vulkan-compute.py). The guest
+build checks that metadata. Wire revision 10 adds cached capability/property
+queries (206/207), device-create extension/feature masks and buffer-address query
+208; legacy bits and operations are preserved. Native feature discovery bounds
+device creation. Individual and Vulkan 1.1 aggregate feature records agree, and
+unsupported optional fields remain zero. Shader-stage subgroup flags and optional
+required-size records are copied into the original compiler task; the measured
+Apple driver does not support requesting a particular compute subgroup size.
+
+Buffer addresses remain opaque GPU values. Original allocation flags and usage
+reach native Vulkan; the CPU never dereferences the returned address. Addressed
+buffers join the existing submission resource/coherence graph through their live
+owners, since descriptor enumeration cannot identify pointer aliases. Shared
+backing retains zero-copy CPU/GPU visibility; fallback mappings retain the existing
+shadow synchronization. Tensor contents are not scanned or interpreted, and no
+new coordinator, service thread, global algorithm lock or ordinary-memory barrier
+is introduced. Original application resource-lifetime and synchronization duties
+still apply.
+
+Execution exposed one native-driver discrepancy: the pinned Apple MoltenVK reports
+shared FP32 atomics/add, but its original Metal compilation rejects both
+threadgroup floating-point atomic add and exchange. The same C/shader oracle fails
+when called directly on that native driver. A narrow Apple/MoltenVK discovery quirk
+clears those two fields. FP32 buffer atomics remain native and tested; other native
+drivers retain their reported shared-atomic fields. No CPU/CAS emulation is added.
+Integer dot products execute correctly, with the driver's unaccelerated properties
+preserved.
+
+| Focused acceptance | Result |
+| --- | --- |
+| Same oracle on original Apple M6/MoltenVK and guest, one/twelve CPUs | 64 exact FP16 GEMM outputs, INT8/INT16 results, half subgroup reduce/shuffle/ballot, FP32 buffer accumulation, Vulkan memory model and GPU-pointer read/modify/write pass |
+| Packed signed INT8 dot shader | 64 exact results; original native GPU executes the dot instruction |
+| Feature/API negotiation | Individual/aggregate feature query/create paths, core/KHR buffer-address entrypoints, bind-memory2 and queue2 paths work; unsupported capture/replay and required subgroup size requests reject |
+| Apple shared mappings | Three shared allocations; zero CPU upload/download bytes and zero scanned synchronization bytes |
+| ARM64 Linux interpreter/Lavapipe, one/four CPUs | Same GPU outputs pass with both original shared mapping and forced shadow mapping |
+| Shadow mapping experiment | Test-only native loader filter hides only host-memory import; original native driver still allocates/compiles/executes everything. Pointer-only CPU input and GPU output survive the existing synchronization, with 387 uploaded and 2851 downloaded bytes per run |
+| Existing graphics regressions | Final paired ICD passes GLES 3.1/indirect/image/ASTC on one/twelve CPUs and all 128 integer PBO components/type errors |
+| Affected local checks | 51 Vulkan unit tests on each macOS/ARM64 Linux, strict Vulkan/Mac lints, signed Mac build and ARM64 iPad FFI compile pass |
+
+Build only the focused fixtures with
+[`build-vulkan-neural-fixtures.sh`](../../scripts/build-vulkan-neural-fixtures.sh),
+reusing the paired ICD/loader/native archives. The maintained
+[Mac harness](https://github.com/kb5000/trames-mac/blob/main/tests/integration/mac-vulkan-neural.py)
+uses a disposable store and checks actual output. Hashes, the native compiler
+failures and coverage are under `neural_compute_acceptance` in
+[the compute record](../validation/vulkan-compute-data.json).
+The iPad guest bundle is prepared, but no physical iPad compute acceptance or new
+IPA installation is claimed. This is selected functional coverage; full CTS and
+model inference/performance are unmeasured. Current llama.cpp still needs its
+Vulkan 1.2 initialization/query paths beyond this selected 1.1 profile.

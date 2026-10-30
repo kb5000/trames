@@ -1,0 +1,40 @@
+#version 450
+#extension GL_EXT_shader_16bit_storage : require
+#extension GL_EXT_shader_8bit_storage : require
+#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int8 : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
+#extension GL_EXT_buffer_reference : require
+#extension GL_KHR_shader_subgroup_arithmetic : require
+#extension GL_KHR_shader_subgroup_shuffle : require
+#extension GL_KHR_shader_subgroup_ballot : require
+#extension GL_EXT_shader_subgroup_extended_types_float16 : require
+#extension GL_EXT_shader_atomic_float : require
+#extension GL_KHR_memory_scope_semantics : require
+#pragma use_vulkan_memory_model
+layout(local_size_x=64) in;
+layout(std430,binding=0) readonly buffer Inputs { float16_t a[64]; float16_t b[64]; int8_t x[64]; int16_t y[64]; } input_data;
+layout(std430,binding=1) buffer Outputs { float matrix[64]; int narrow[64]; uint reductions[64]; uint shuffles[64]; uint ballots[64]; float total; float shared_total; } output_data;
+layout(buffer_reference,std430,buffer_reference_align=4) buffer Address { uint values[64]; };
+layout(push_constant) uniform Push { Address address; } push_data;
+shared uint workgroup_sum;
+void main() {
+    uint i=gl_LocalInvocationIndex;
+    float sum=0;
+    for(uint k=0;k<8;k++) { float16_t product=input_data.a[(i/8)*8+k]*input_data.b[k*8+i%8]; sum+=float(product); }
+    output_data.matrix[i]=sum;
+    int8_t small=input_data.x[i]+int8_t(2);
+    int16_t wide=input_data.y[i]*int16_t(3);
+    output_data.narrow[i]=int(small)+int(wide);
+    float16_t lane=float16_t(gl_SubgroupInvocationID+1);
+    output_data.reductions[i]=uint(subgroupAdd(lane));
+    output_data.shuffles[i]=uint(subgroupShuffle(lane,0));
+    output_data.ballots[i]=subgroupBallotBitCount(subgroupBallot(true));
+    atomicAdd(output_data.total,1.0);
+    if(i==0)workgroup_sum=0;
+    barrier();
+    atomicAdd(workgroup_sum,1);
+    barrier();
+    if(i==0)output_data.shared_total=float(workgroup_sum);
+    push_data.address.values[i]+=uint(output_data.narrow[i]+2048);
+}

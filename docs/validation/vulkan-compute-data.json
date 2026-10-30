@@ -558,5 +558,198 @@
     "application_gate": "Inspected current llama.cpp requires Vulkan 1.2 instance initialization and aggregate Vulkan 1.1/1.2 records; ncnn filters subgroup extensions on physical devices below 1.1",
     "cooperative_matrix_gate": "Pinned SPIRV-Cross has MSL 3.1+ subgroup 8x8 lowering but rejects specialized dimensions/layout and several element operations; native MoltenVK does not advertise the extension",
     "evidence_note": "The ignored local probe is diagnostic research, not a new maintained regression or conformance test; unchanged GPU/CPU/CI results are reused"
+  },
+  "neural_compute_acceptance": {
+    "date": "2026-10-30",
+    "scope": "Selected native/guest compute feature, shader output and graphics regression coverage; not complete Vulkan conformance, model inference/performance or physical iPad acceptance",
+    "runtime_revision": "fb398e110da2694d334cfe4c583aca34995959bb",
+    "wire_revision": 10,
+    "selected_device_api": "1.1.0 when native support is available; 1.0 fallback",
+    "compute_extension_count": 17,
+    "schema": "runtime/crates/trames-vulkan/compute-profile.json",
+    "capability_operation": 206,
+    "property_operation": 207,
+    "buffer_address_operation": 208,
+    "source_sha256": {
+      "accelerator/vulkan/icd.c": "c2d74a142806ff82994162a6ff7cb4ec23683fb8f9875d0b5a6f18e66be23c53",
+      "accelerator/vulkan/compute.inc": "f344c90ced9fab20395c443c50530d44812c3ec84b5cbadf84912c500fc0ca14",
+      "accelerator/vulkan/compute-schema.inc": "96c166d881c536971fb1534547fc4dfd93b77f242eb8f57eab6f4493d4b31c85",
+      "accelerator/vulkan/queries.inc": "46d7b7498e005e8a05d986fd8d45503eb967cc664c277e966f7adf260706c0c0",
+      "accelerator/vulkan/entrypoints.inc": "248fd9199b68862262e1cee56e12922e7c8658fcb39000973de269366a07da37",
+      "scripts/generate-vulkan-compute.py": "50fc8ca526f33cfaf638926c2c44e399824719c747c1822dfe412e369f916ec8",
+      "scripts/build-vulkan-guest.sh": "d94481cebf37623702fbb40915245c1ca46fd76e1bac2b84d1a164874b2043ec",
+      "scripts/build-vulkan-neural-fixtures.sh": "a005586eefb44db2c4a6b8d509c9f5e9671c6c574946c35a8f8b1cf99ffa70c8",
+      "tests/fixtures/vulkan-neural.c": "23fa0cc48f7103d6d52a4fd21f4d815fa758bd22f833b2d10b6a5c017baea5dc",
+      "tests/fixtures/vulkan-neural.comp": "e0d7120437cd45deddff8fbd43cffd2bda382ef2295547a1b444a36c70038be8",
+      "tests/fixtures/vulkan-neural-dot.spvasm": "565188b6d505a2eb14bff72a25cf2745413b5a8b5c65422ac980d81aa1ff5125",
+      "tests/fixtures/vulkan-no-host-import.c": "6fdecc55c817731cf4cba83c0cc32fd3e595e8c83f030707c897fdbfcd07cbf0",
+      "runtime/crates/trames-vulkan/compute-profile.json": "47a8178d059fb3ec0850cf8e807e70cff7e2455b4ea01899192b0344b67be33a",
+      "runtime/crates/trames-vulkan/src/backend.rs": "0e2163655a10ceffe3510b555c7bd19f427cda4f27a01117936e9dcf56ff0631",
+      "runtime/crates/trames-vulkan/src/backend/compute.rs": "b547c2a4e74ea06c388784114ca8609378bbfe05e4d161e51ec60014d53e5c17",
+      "runtime/crates/trames-vulkan/src/backend/compute_schema.rs": "66c9114f6ded5f74dadc82372aa8af75bc5cbce98dc3e844b64c9aad0e7e9059",
+      "runtime/crates/trames-vulkan/src/backend/core_features.rs": "6fc0baeb7418f94324f43ed4071289a32a00ee8ae83f13b2e5c744e6db977f62",
+      "runtime/crates/trames-vulkan/src/backend/shared_memory.rs": "d8218c3a877493ae57275f53ba04262c7515251c986d10452150eda1345da29b",
+      "runtime/crates/trames-vulkan/src/backend/zink.rs": "a5f6510acf029cb2e95a48144aecb59fd899ac55daf284b017223cb01dc5fc55"
+    },
+    "artifact_sha256": {
+      "runner": "ef490e03f2336d9fbdb42b2d066c1a8e2e03c72ebe4933b69b5bbd9803e1770b",
+      "icd": "f7f8a0e020c9fbec787d67779aba10c4d09e9913abe086dff06044565f5f4325",
+      "fixture": "646bb28af9847ff414b7c8a48f42b04356a60e6f0de1289cb5fdfddada3608c0",
+      "shader": "1357f095b043b35cfa6842fffd5ed0a3f7790a341f3a6e157a16c654bde85e06",
+      "dot_shader": "68718996be6577253eb3178ead6f5e54571d492bacc94e9d46730041c3902c15",
+      "native_filter": "7e9dd6a92a92b8ca0162fbe3ad1445cd624c096456e1665dc76ea4f7e392a234",
+      "native_reference": "c3c6705faa369ed6d552912899f5b4277763324e249ea31fa89e02f031771926",
+      "moltenvk_macos_archive": "8df0c873b11d921091b0ddafb572c7c368852f6bcccd8f098ed5ea7bcae8bb5d",
+      "moltenvk_ipad_archive": "ca028482256e3419438422f61df9cdff86e7b63688b6c8999adb53ee44ca8841"
+    },
+    "mac_neural": {
+      "passed": true,
+      "scope": "selected real-GPU neural compute outputs; no full CTS or model benchmark",
+      "runner_sha256": "ef490e03f2336d9fbdb42b2d066c1a8e2e03c72ebe4933b69b5bbd9803e1770b",
+      "inputs": {
+        "libtrames_vulkan_icd.so": "f7f8a0e020c9fbec787d67779aba10c4d09e9913abe086dff06044565f5f4325",
+        "vulkan-neural": "646bb28af9847ff414b7c8a48f42b04356a60e6f0de1289cb5fdfddada3608c0",
+        "vulkan-neural.spv": "1357f095b043b35cfa6842fffd5ed0a3f7790a341f3a6e157a16c654bde85e06",
+        "vulkan-neural-dot.spv": "68718996be6577253eb3178ead6f5e54571d492bacc94e9d46730041c3902c15",
+        "libvulkan.so.1": "382419ec9f138dd2a980fc988482a72b643c32901599b568a27fe7742946c752",
+        "icd.json": "b075ed5369897ad33ea0decb086e16a593c5acac9116b68e9e435ea6fb5e9378"
+      },
+      "cases": [
+        {
+          "cpus": 1,
+          "exit_code": 0,
+          "passed": true
+        },
+        {
+          "cpus": 12,
+          "exit_code": 0,
+          "passed": true
+        }
+      ],
+      "cleanup_exit": 0
+    },
+    "mac_gles": {
+      "passed": true,
+      "scope": "selected GLES 3.1 GPU/ASTC output oracles, not full CTS",
+      "runner_sha256": "ef490e03f2336d9fbdb42b2d066c1a8e2e03c72ebe4933b69b5bbd9803e1770b",
+      "inputs": {
+        "libEGL.so.1": "0fa0e1bbd4494aefa9f4739c65722c78db1d17c33588fccbdcd91aecd265eb8d",
+        "libgallium-25.1.9.so": "bed7fd21427414dce5ceae41ae7ab2dbc31e3885071dafe8bd93b982adc98912",
+        "libGLESv2.so.2": "1be4cbcf9ccb483a0135f5af76644f6fd7aa894ca4b39dac09857176b1d4dce7",
+        "libtrames_vulkan_icd.so": "f7f8a0e020c9fbec787d67779aba10c4d09e9913abe086dff06044565f5f4325",
+        "libvulkan.so.1": "382419ec9f138dd2a980fc988482a72b643c32901599b568a27fe7742946c752",
+        "zink-es31": "bf3d82151d7b5e59317d90c77f18f5ade8badfdb1f80f72417bec9cff5bbcb0f",
+        "icd.json": "d2742ba3170eafdaed5619a41076d4449fc7f5f35e7ef3136ce4dab3c4fa54a6"
+      },
+      "cases": [
+        {
+          "cpus": 1,
+          "exit_code": 0,
+          "passed": true
+        },
+        {
+          "cpus": 12,
+          "exit_code": 0,
+          "passed": true
+        }
+      ],
+      "cleanup_exit": 0
+    },
+    "mac_pbo": {
+      "passed": true,
+      "scope": "integer PBO output/type-error regression",
+      "runner_sha256": "ef490e03f2336d9fbdb42b2d066c1a8e2e03c72ebe4933b69b5bbd9803e1770b",
+      "inputs": {
+        "libEGL.so.1": "0fa0e1bbd4494aefa9f4739c65722c78db1d17c33588fccbdcd91aecd265eb8d",
+        "libgallium-25.1.9.so": "bed7fd21427414dce5ceae41ae7ab2dbc31e3885071dafe8bd93b982adc98912",
+        "libGLESv2.so.2": "1be4cbcf9ccb483a0135f5af76644f6fd7aa894ca4b39dac09857176b1d4dce7",
+        "libtrames_vulkan_icd.so": "f7f8a0e020c9fbec787d67779aba10c4d09e9913abe086dff06044565f5f4325",
+        "libvulkan.so.1": "382419ec9f138dd2a980fc988482a72b643c32901599b568a27fe7742946c752",
+        "zink-es31": "9ebc6a45e4c1c3a2d217621032635a5ff45ff958351bc41920f7ff66ffb5e2c1",
+        "icd.json": "507c9d3986e7ada4b4ce04ff1918924e4c867053abd4acd5039949cd03cc46eb"
+      },
+      "cases": [
+        {
+          "cpus": 1,
+          "exit_code": 0,
+          "passed": true
+        }
+      ],
+      "cleanup_exit": 0
+    },
+    "linux_original_mapping": {
+      "cases": [
+        {
+          "cpus": 1,
+          "exit_code": 0,
+          "passed": true
+        },
+        {
+          "cpus": 4,
+          "exit_code": 0,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    "linux_forced_shadow": {
+      "cases": [
+        {
+          "cpus": 1,
+          "exit_code": 0,
+          "passed": true
+        },
+        {
+          "cpus": 4,
+          "exit_code": 0,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    "mac_native_reference_exit": 0,
+    "checks": {
+      "macos_vulkan_unit": 51,
+      "arm64_linux_vulkan_unit": 51,
+      "vulkan_strict_clippy": "pass",
+      "mac_product_strict_clippy": "pass",
+      "signed_mac_release_build": "pass",
+      "arm64_ipad_ffi_compile": "pass",
+      "paired_schema_generation": "pass"
+    },
+    "shared_mapping_metrics": {
+      "maps": 3,
+      "mapped_bytes": 1992,
+      "upload_bytes": 0,
+      "download_bytes": 0,
+      "upload_scanned_bytes": 0,
+      "download_scanned_bytes": 0
+    },
+    "shadow_mapping_metrics_per_run": {
+      "upload_bytes": 387,
+      "download_bytes": 2851,
+      "direct_bytes": 1992,
+      "buffered_bytes": 1246
+    },
+    "apple_driver_quirk": {
+      "native_reported_shared_float32_atomics": true,
+      "native_reported_shared_float32_atomic_add": true,
+      "native_compile_shared_add": "fails: no matching threadgroup atomic_fetch_add_explicit",
+      "native_compile_shared_exchange": "fails: no matching threadgroup atomic_exchange_explicit",
+      "guest_exposed_shared_float32_atomics": false,
+      "guest_exposed_shared_float32_atomic_add": false,
+      "buffer_float32_atomics_and_add": "native and accepted",
+      "other_native_drivers": "unmodified discovery fields; narrow quirk unit tested"
+    },
+    "remaining": [
+      "cooperative matrix/BF16/FP8 absent from pinned native driver",
+      "BDA capture/replay and multiple devices not exposed",
+      "required compute subgroup size unsupported by current Apple driver",
+      "complete Vulkan CTS unrun",
+      "model inference and performance unmeasured",
+      "current llama.cpp requires additional Vulkan 1.2 paths",
+      "physical iPad GPU untested; no new IPA installation"
+    ],
+    "evidence_directory": "target/vulkan-ml-20261030/implementation (ignored local diagnostic outputs)"
   }
 }

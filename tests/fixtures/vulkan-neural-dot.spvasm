@@ -1,0 +1,39 @@
+; SPDX-License-Identifier: GPL-3.0-or-later
+; Packed signed INT8 dot product; assembled with the existing SPIR-V tools.
+OpCapability Shader
+OpCapability DotProductInput4x8BitPackedKHR
+OpCapability DotProductKHR
+OpExtension "SPV_KHR_integer_dot_product"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %index
+OpExecutionMode %main LocalSize 64 1 1
+OpDecorate %index BuiltIn LocalInvocationIndex
+OpDecorate %array ArrayStride 4
+OpMemberDecorate %block 0 Offset 0
+OpDecorate %block Block
+OpDecorate %output DescriptorSet 0
+OpDecorate %output Binding 0
+%void = OpTypeVoid
+%function = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%int = OpTypeInt 32 1
+%input_uint = OpTypePointer Input %uint
+%index = OpVariable %input_uint Input
+%array = OpTypeRuntimeArray %int
+%block = OpTypeStruct %array
+%storage_block = OpTypePointer StorageBuffer %block
+%storage_int = OpTypePointer StorageBuffer %int
+%output = OpVariable %storage_block StorageBuffer
+%zero = OpConstant %uint 0
+%base = OpConstant %uint 4228120064
+%other = OpConstant %int 100401922
+%main = OpFunction %void None %function
+%start = OpLabel
+%i = OpLoad %uint %index
+%packed = OpBitwiseOr %uint %base %i
+%signed = OpBitcast %int %packed
+%dot = OpSDotKHR %int %signed %other PackedVectorFormat4x8BitKHR
+%ptr = OpAccessChain %storage_int %output %zero %i
+OpStore %ptr %dot
+OpReturn
+OpFunctionEnd

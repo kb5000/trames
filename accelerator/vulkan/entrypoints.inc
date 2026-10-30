@@ -72,6 +72,13 @@
     if(!strcmp(name,"vkMergePipelineCaches"))return (PFN_vkVoidFunction)vkMergePipelineCaches;
     if(!strcmp(name,"vkGetInstanceProcAddr"))return (PFN_vkVoidFunction)vkGetInstanceProcAddr;
     if(!strcmp(name,"vkGetDeviceProcAddr"))return (PFN_vkVoidFunction)vkGetDeviceProcAddr;
+    if(!strcmp(name,"vkGetBufferDeviceAddress"))return (PFN_vkVoidFunction)vkGetBufferDeviceAddress;
+    if(!strcmp(name,"vkGetBufferDeviceAddressKHR"))return (PFN_vkVoidFunction)vkGetBufferDeviceAddressKHR;
+    if(!strcmp(name,"vkBindBufferMemory2"))return (PFN_vkVoidFunction)vkBindBufferMemory2;
+    if(!strcmp(name,"vkBindBufferMemory2KHR"))return (PFN_vkVoidFunction)vkBindBufferMemory2KHR;
+    if(!strcmp(name,"vkBindImageMemory2"))return (PFN_vkVoidFunction)vkBindImageMemory2;
+    if(!strcmp(name,"vkBindImageMemory2KHR"))return (PFN_vkVoidFunction)vkBindImageMemory2KHR;
+    if(!strcmp(name,"vkGetDeviceQueue2"))return (PFN_vkVoidFunction)vkGetDeviceQueue2;
     if(!strcmp(name,"vkCreateImage"))return (PFN_vkVoidFunction)vkCreateImage;
     if(!strcmp(name,"vkDestroyImage"))return (PFN_vkVoidFunction)vkDestroyImage;
     if(!strcmp(name,"vkGetImageMemoryRequirements"))return (PFN_vkVoidFunction)vkGetImageMemoryRequirements;
