@@ -229,3 +229,16 @@ reopening the same store. The two supported `trusted.overlay.*` attributes exten
 the existing bounded v4 attribute namespace without changing the manifest layout.
 No host overlay mount is used. Layer contents and upper objects use existing
 capacity accounting, inode lifetimes, fsync and manifest commits.
+
+## Managed Mac environments
+
+The Mac product now has a terminal/native management registry with verified
+Alpine (default) and Debian ARM64 creation, settings, explicit host shares,
+existing-store import and offline SHA-256-inventoried backup/restore. Environment
+creation/restore publishes a synced staging directory atomically and never
+resets an existing store on error. New distribution population defers repetitive
+namespace checkpoints through the explicit `populate_staged` setup scope; it is
+not used by live guest filesystem calls. The iPad product keeps its existing
+lifecycle and Files integration. See the
+[Mac environment guide](https://github.com/kb5000/trames-mac/blob/main/docs/guides/environments.md)
+and its [scoped acceptance](https://github.com/kb5000/trames-mac/blob/main/docs/validation/mac-environments.json).
