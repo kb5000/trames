@@ -162,6 +162,17 @@ FileProvider path and does not enable hostfs by default. The Mac
 and [native macOS/Linux benchmark record](../validation/hostfs.json) document
 the measured scope. A guest pathname alone never grants access to a host path.
 
+The [cached I/O follow-up](../validation/hostfs-fastpaths.json) removes repeated
+stat discovery walks, uses one constrained native metadata lookup on Apple, and
+reuses the existing bounded buffer for joined positioned writes. AArch64 raw
+transfers use exact 64-byte SIMD blocks with scalar tails; scalar CPU accesses,
+region ownership and guest memory permissions retain their existing contract.
+Three shuffled runs improve private read/write64k by 25%/24%, shared read/write64k
+by 14%/24%, private path stat by 25%, and shared path stat by 2.82x. Small reads
+improve about 4%; native kernel I/O, guest copies/page handling and HVF boundaries
+remain substantial costs. Native macOS/Linux baselines and all observations are
+preserved in the record; these are cached-path measurements, not SSD throughput.
+
 M6 persists named FIFO inode metadata as kind 5 in the current v3 manifest.
 Its live bounded byte queue belongs to the virtual runtime and is recreated
 empty after reopening a store. No host FIFO or device node is created.

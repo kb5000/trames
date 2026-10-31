@@ -1,0 +1,3829 @@
+{
+  "date": "2026-10-31",
+  "runtime": "5ee9bfc4d1f1f0ba2f7acbba8450bc6636deda2f",
+  "baseline_runtime": "7ef85bd442826c17e4fe96a65ec04db3ba0f1608",
+  "machine": {
+    "cpu": "Apple M6 ARM64",
+    "logical_cpus": 12,
+    "memory_gib": 24,
+    "os": "macOS 27.0.1 (26A434)",
+    "filesystem": "APFS"
+  },
+  "changes": [
+    "AArch64 raw copies use exact 64-byte paired SIMD blocks and original scalar tails, without Rust references to racing guest bytes or added fences",
+    "Joined newfstatat prepares the actual query and observes proc demand; independent results are reused within that call, proc-dependent queries are repeated after publication",
+    "Apple native metadata uses relative fstatat with AT_SYMLINK_NOFOLLOW_ANY instead of opening/stating/closing the parent; unsupported older kernels and Linux retain their capability walks",
+    "Joined positioned writes reuse the existing bounded service transfer buffer; no per-process buffer, new thread or extra I/O lock"
+  ],
+  "method": [
+    "Same maintained C fixture and ELF as the previous native interop record; assertions and byte/size/checksum validation enabled",
+    "Cached 8 MiB set, 2 GiB read64k / 1 GiB write64k / 100000 read4k or path-stat operations; startup, initial population and final fsync outside interval",
+    "Three shuffled repetitions of before/private, before/shared, after/private, after/shared, after/shared with watch or flock, and three native Mac variants (108 completed observations)",
+    "Same Linux ELF was run natively on the existing 6-vCPU/8-GiB ARM64 VZ/ext4 Linux CI VM; unchanged native reference reused from hostfs-interop.json",
+    "VM stopped and compilers/samplers idle during the final Mac performance sweep; sampling and intermediate raw-copy measurements are separate runs",
+    "Profiles are 10 ms wall-stack samples, not exact CPU-time accounting; idle Hypervisor clock threads are included in raw leaves and must not be counted as active work",
+    "Profiles use fixed 2-second windows; post-change stat uses a longer work count to keep the process alive. Missing leaves are below the reporting threshold, not proof of zero calls",
+    "These complete-path cached measurements include different kernels, libc, pathname layouts and runtimes; they do not establish SSD throughput, cold I/O or native parity"
+  ],
+  "gains": [
+    {
+      "storage": "private",
+      "case": "read64k",
+      "unit": "mib_per_second",
+      "before": 8335.438,
+      "after": 10447.634,
+      "ratio": 1.253399521416871,
+      "change_percent": 25.339952141687093,
+      "native_mac": 40638.146,
+      "native_linux": 38431.496
+    },
+    {
+      "storage": "private",
+      "case": "write64k",
+      "unit": "mib_per_second",
+      "before": 7921.665,
+      "after": 9850.053,
+      "ratio": 1.2434321572548195,
+      "change_percent": 24.343215725481947,
+      "native_mac": 26036.105,
+      "native_linux": 45558.441
+    },
+    {
+      "storage": "private",
+      "case": "read4k",
+      "unit": "mib_per_second",
+      "before": 1730.26,
+      "after": 1806.243,
+      "ratio": 1.043914209425173,
+      "change_percent": 4.391420942517299,
+      "native_mac": 11418.779,
+      "native_linux": 13911.952
+    },
+    {
+      "storage": "private",
+      "case": "stat",
+      "unit": "ops_per_second",
+      "before": 168621.304,
+      "after": 211343.194,
+      "ratio": 1.2533599787604535,
+      "change_percent": 25.335997876045347,
+      "native_mac": 893631.091,
+      "native_linux": 3937550.45
+    },
+    {
+      "storage": "host",
+      "case": "read64k",
+      "unit": "mib_per_second",
+      "before": 8005.922,
+      "after": 9150.479,
+      "ratio": 1.142963796049974,
+      "change_percent": 14.296379604997389,
+      "native_mac": 40638.146,
+      "native_linux": 38431.496
+    },
+    {
+      "storage": "host",
+      "case": "write64k",
+      "unit": "mib_per_second",
+      "before": 7269.946,
+      "after": 9042.405,
+      "ratio": 1.2438063501434538,
+      "change_percent": 24.380635014345376,
+      "native_mac": 26036.105,
+      "native_linux": 45558.441
+    },
+    {
+      "storage": "host",
+      "case": "read4k",
+      "unit": "mib_per_second",
+      "before": 1399.095,
+      "after": 1452.622,
+      "ratio": 1.0382583026885237,
+      "change_percent": 3.8258302688523704,
+      "native_mac": 11418.779,
+      "native_linux": 13911.952
+    },
+    {
+      "storage": "host",
+      "case": "stat",
+      "unit": "ops_per_second",
+      "before": 21578.061,
+      "after": 60876.586,
+      "ratio": 2.821225966503663,
+      "change_percent": 182.1225966503663,
+      "native_mac": 893631.091,
+      "native_linux": 3937550.45
+    }
+  ],
+  "final_performance": {
+    "complete": true,
+    "scope": "single process, cached 8 MiB file, fixed work; no rendering/network",
+    "cases": {
+      "read64k": 32768,
+      "write64k": 16384,
+      "read4k": 100000,
+      "stat": 100000
+    },
+    "repeats": 3,
+    "sha256": {
+      "runner": "502bd589aa7d7a5611ceba9a0e0da421bac100c9ba575082769c4cb1cfe805fd",
+      "baseline": "9bd0b10ce7fa474c7a3e96279afb0fc51c2086f10acf08bdaa0d30fce4186a65",
+      "program": "53e6138b95bfc3fd687bf45b251b99bb32eecb3a2b50e3a8fe1c41d73ef567b9",
+      "native": "98c74f9705a3f8ef2c5ddf35d10b1aacf04e9d48b5d847280e4c61d3dc63fb3f",
+      "rootfs": "821565fa8f3953eefd12497b166b4b50add2f7c57fb312e75862f5867e06fefe"
+    },
+    "records": [
+      {
+        "variant": "before-host",
+        "case": "read64k",
+        "repeat": 2,
+        "process_wall": 0.30558483300000105,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.251123375,
+        "mib_per_second": 8155.354,
+        "ops_per_second": 130485.663,
+        "sync_seconds": 7.417e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "before-private",
+        "case": "read64k",
+        "repeat": 2,
+        "process_wall": 0.37200554100000005,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.26127575,
+        "mib_per_second": 7838.462,
+        "ops_per_second": 125415.39,
+        "sync_seconds": 0.016236958,
+        "checksum": 73367552
+      },
+      {
+        "variant": "before-host",
+        "case": "read4k",
+        "repeat": 3,
+        "process_wall": 0.3175428750000009,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.272696167,
+        "mib_per_second": 1432.455,
+        "ops_per_second": 366708.491,
+        "sync_seconds": 0.002837417,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-host",
+        "case": "read4k",
+        "repeat": 3,
+        "process_wall": 0.31625908300000205,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.259111459,
+        "mib_per_second": 1507.556,
+        "ops_per_second": 385934.302,
+        "sync_seconds": 0.004262041,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-private",
+        "case": "read64k",
+        "repeat": 3,
+        "process_wall": 0.28170820799999774,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.19602525,
+        "mib_per_second": 10447.634,
+        "ops_per_second": 167162.139,
+        "sync_seconds": 0.014052708,
+        "checksum": 73367552
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "read4k",
+        "repeat": 3,
+        "process_wall": 0.037247541999999356,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.03309,
+        "mib_per_second": 11804.926,
+        "ops_per_second": 3022061.042,
+        "sync_seconds": 2e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "native-mac",
+        "case": "write64k",
+        "repeat": 2,
+        "process_wall": 0.043758249999999776,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.038568,
+        "mib_per_second": 26550.508,
+        "ops_per_second": 424808.13,
+        "sync_seconds": 0.000938,
+        "checksum": 0
+      },
+      {
+        "variant": "before-private",
+        "case": "stat",
+        "repeat": 1,
+        "process_wall": 0.6668410830000013,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.576900167,
+        "mib_per_second": 0.0,
+        "ops_per_second": 173340.217,
+        "sync_seconds": 0.015094458,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "write64k",
+        "repeat": 2,
+        "process_wall": 0.17111829199999917,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.114132833,
+        "mib_per_second": 8972.002,
+        "ops_per_second": 143552.031,
+        "sync_seconds": 0.006903,
+        "checksum": 0
+      },
+      {
+        "variant": "native-mac",
+        "case": "read4k",
+        "repeat": 3,
+        "process_wall": 0.03817666599999825,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.034494,
+        "mib_per_second": 11324.433,
+        "ops_per_second": 2899054.906,
+        "sync_seconds": 3e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "before-private",
+        "case": "write64k",
+        "repeat": 2,
+        "process_wall": 0.21502008299999886,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.129211083,
+        "mib_per_second": 7925.017,
+        "ops_per_second": 126800.268,
+        "sync_seconds": 0.016918458,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read4k",
+        "repeat": 1,
+        "process_wall": 0.31051820799999774,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.264127792,
+        "mib_per_second": 1478.924,
+        "ops_per_second": 378604.611,
+        "sync_seconds": 0.003756792,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read64k",
+        "repeat": 3,
+        "process_wall": 0.263484499999997,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.216199666,
+        "mib_per_second": 9472.725,
+        "ops_per_second": 151563.601,
+        "sync_seconds": 0.003476416,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host",
+        "case": "read64k",
+        "repeat": 3,
+        "process_wall": 0.2687377919999996,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.216674708,
+        "mib_per_second": 9451.957,
+        "ops_per_second": 151231.31,
+        "sync_seconds": 0.0044675,
+        "checksum": 73367552
+      },
+      {
+        "variant": "before-private",
+        "case": "read64k",
+        "repeat": 1,
+        "process_wall": 0.33010641699999965,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.245697959,
+        "mib_per_second": 8335.438,
+        "ops_per_second": 133367.001,
+        "sync_seconds": 0.014999875,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host",
+        "case": "write64k",
+        "repeat": 3,
+        "process_wall": 0.16938312499999952,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.113244208,
+        "mib_per_second": 9042.405,
+        "ops_per_second": 144678.481,
+        "sync_seconds": 0.006814792,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "stat",
+        "repeat": 1,
+        "process_wall": 1.7552841659999991,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 1.700136542,
+        "mib_per_second": 0.0,
+        "ops_per_second": 58818.805,
+        "sync_seconds": 0.00333075,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "before-private",
+        "case": "read4k",
+        "repeat": 2,
+        "process_wall": 0.31189099999999925,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.229433375,
+        "mib_per_second": 1702.564,
+        "ops_per_second": 435856.379,
+        "sync_seconds": 0.014333834,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "stat",
+        "repeat": 3,
+        "process_wall": 1.8850705419999976,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 1.833081625,
+        "mib_per_second": 0.0,
+        "ops_per_second": 54552.944,
+        "sync_seconds": 0.004386833,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-private",
+        "case": "read64k",
+        "repeat": 2,
+        "process_wall": 0.2784376249999987,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.193015833,
+        "mib_per_second": 10610.529,
+        "ops_per_second": 169768.456,
+        "sync_seconds": 0.015140291,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-private",
+        "case": "stat",
+        "repeat": 2,
+        "process_wall": 0.5540763749999975,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.471712959,
+        "mib_per_second": 0.0,
+        "ops_per_second": 211993.328,
+        "sync_seconds": 0.014316375,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "read4k",
+        "repeat": 2,
+        "process_wall": 0.037629167000002184,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.033537,
+        "mib_per_second": 11647.583,
+        "ops_per_second": 2981781.32,
+        "sync_seconds": 1e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read64k",
+        "repeat": 1,
+        "process_wall": 0.25972587499999733,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.216745333,
+        "mib_per_second": 9448.877,
+        "ops_per_second": 151182.033,
+        "sync_seconds": 8.291e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "stat",
+        "repeat": 2,
+        "process_wall": 1.7199081669999998,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 1.670283208,
+        "mib_per_second": 0.0,
+        "ops_per_second": 59870.086,
+        "sync_seconds": 0.004582833,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "write64k",
+        "repeat": 1,
+        "process_wall": 0.17284129099999745,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.119217417,
+        "mib_per_second": 8589.349,
+        "ops_per_second": 137429.584,
+        "sync_seconds": 0.0050545,
+        "checksum": 0
+      },
+      {
+        "variant": "native-mac",
+        "case": "stat",
+        "repeat": 3,
+        "process_wall": 0.11773595799999725,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.113713,
+        "mib_per_second": 0.0,
+        "ops_per_second": 879406.928,
+        "sync_seconds": 3e-06,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "stat",
+        "repeat": 3,
+        "process_wall": 1.7372472919999993,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 1.69102475,
+        "mib_per_second": 0.0,
+        "ops_per_second": 59135.74,
+        "sync_seconds": 0.003467708,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "native-mac",
+        "case": "read64k",
+        "repeat": 3,
+        "process_wall": 0.05405599999999566,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.050018,
+        "mib_per_second": 40945.26,
+        "ops_per_second": 655124.156,
+        "sync_seconds": 2e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "write64k",
+        "repeat": 3,
+        "process_wall": 0.16803775000000343,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.115083459,
+        "mib_per_second": 8897.89,
+        "ops_per_second": 142366.246,
+        "sync_seconds": 0.005668792,
+        "checksum": 0
+      },
+      {
+        "variant": "after-private",
+        "case": "read4k",
+        "repeat": 1,
+        "process_wall": 0.29092874999999907,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.208708833,
+        "mib_per_second": 1871.627,
+        "ops_per_second": 479136.405,
+        "sync_seconds": 0.013889125,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-private",
+        "case": "stat",
+        "repeat": 3,
+        "process_wall": 0.5882876249999995,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.498541666,
+        "mib_per_second": 0.0,
+        "ops_per_second": 200585.04,
+        "sync_seconds": 0.013466791,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "write64k",
+        "repeat": 2,
+        "process_wall": 0.04412004099999933,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.038804,
+        "mib_per_second": 26389.032,
+        "ops_per_second": 422224.513,
+        "sync_seconds": 0.00091,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "write64k",
+        "repeat": 1,
+        "process_wall": 0.167345791999999,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.1135695,
+        "mib_per_second": 9016.505,
+        "ops_per_second": 144264.085,
+        "sync_seconds": 0.003462333,
+        "checksum": 0
+      },
+      {
+        "variant": "after-private",
+        "case": "write64k",
+        "repeat": 2,
+        "process_wall": 0.19057020900000055,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.1055105,
+        "mib_per_second": 9705.195,
+        "ops_per_second": 155283.123,
+        "sync_seconds": 0.016769667,
+        "checksum": 0
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "read64k",
+        "repeat": 2,
+        "process_wall": 0.05497150000000062,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.050707,
+        "mib_per_second": 40388.901,
+        "ops_per_second": 646222.416,
+        "sync_seconds": 2e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "write64k",
+        "repeat": 3,
+        "process_wall": 0.047651000000001886,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.042036,
+        "mib_per_second": 24360.072,
+        "ops_per_second": 389761.158,
+        "sync_seconds": 0.000924,
+        "checksum": 0
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "write64k",
+        "repeat": 1,
+        "process_wall": 0.04770695899999566,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.04187,
+        "mib_per_second": 24456.652,
+        "ops_per_second": 391306.425,
+        "sync_seconds": 0.000914,
+        "checksum": 0
+      },
+      {
+        "variant": "native-mac",
+        "case": "write64k",
+        "repeat": 1,
+        "process_wall": 0.047376624999998285,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.04205,
+        "mib_per_second": 24351.962,
+        "ops_per_second": 389631.391,
+        "sync_seconds": 0.000992,
+        "checksum": 0
+      },
+      {
+        "variant": "before-host",
+        "case": "stat",
+        "repeat": 3,
+        "process_wall": 4.689362792000004,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.634887375,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21575.497,
+        "sync_seconds": 0.0057225,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read64k",
+        "repeat": 2,
+        "process_wall": 0.2712760830000036,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.2237065,
+        "mib_per_second": 9154.852,
+        "ops_per_second": 146477.639,
+        "sync_seconds": 0.003412125,
+        "checksum": 73367552
+      },
+      {
+        "variant": "before-private",
+        "case": "write64k",
+        "repeat": 1,
+        "process_wall": 0.2210497920000023,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.12926575,
+        "mib_per_second": 7921.665,
+        "ops_per_second": 126746.644,
+        "sync_seconds": 0.016723084,
+        "checksum": 0
+      },
+      {
+        "variant": "before-host",
+        "case": "write64k",
+        "repeat": 2,
+        "process_wall": 0.19695170900000392,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.140733958,
+        "mib_per_second": 7276.14,
+        "ops_per_second": 116418.242,
+        "sync_seconds": 0.006904166,
+        "checksum": 0
+      },
+      {
+        "variant": "before-private",
+        "case": "read4k",
+        "repeat": 3,
+        "process_wall": 0.3052127079999991,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.225760916,
+        "mib_per_second": 1730.26,
+        "ops_per_second": 442946.466,
+        "sync_seconds": 0.015088,
+        "checksum": 23100000
+      },
+      {
+        "variant": "native-mac",
+        "case": "stat",
+        "repeat": 2,
+        "process_wall": 0.11609045799999507,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.111903,
+        "mib_per_second": 0.0,
+        "ops_per_second": 893631.091,
+        "sync_seconds": 0.0,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host",
+        "case": "stat",
+        "repeat": 3,
+        "process_wall": 1.711502582999998,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 1.659101,
+        "mib_per_second": 0.0,
+        "ops_per_second": 60273.606,
+        "sync_seconds": 0.00347775,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-private",
+        "case": "write64k",
+        "repeat": 3,
+        "process_wall": 0.18904420799999855,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.103958833,
+        "mib_per_second": 9850.053,
+        "ops_per_second": 157600.846,
+        "sync_seconds": 0.01683175,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host",
+        "case": "stat",
+        "repeat": 2,
+        "process_wall": 1.6967039999999969,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 1.642667667,
+        "mib_per_second": 0.0,
+        "ops_per_second": 60876.586,
+        "sync_seconds": 0.005771333,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "stat",
+        "repeat": 1,
+        "process_wall": 0.11596987499999756,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.112079,
+        "mib_per_second": 0.0,
+        "ops_per_second": 892227.804,
+        "sync_seconds": 2e-06,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "stat",
+        "repeat": 2,
+        "process_wall": 1.7464089580000035,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 1.689090375,
+        "mib_per_second": 0.0,
+        "ops_per_second": 59203.463,
+        "sync_seconds": 0.004120625,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "before-host",
+        "case": "read64k",
+        "repeat": 1,
+        "process_wall": 0.31018195800000115,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.255810625,
+        "mib_per_second": 8005.922,
+        "ops_per_second": 128094.758,
+        "sync_seconds": 0.003571208,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host",
+        "case": "read64k",
+        "repeat": 1,
+        "process_wall": 0.27129458299999953,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.224223834,
+        "mib_per_second": 9133.73,
+        "ops_per_second": 146139.683,
+        "sync_seconds": 0.004012084,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read64k",
+        "repeat": 2,
+        "process_wall": 0.26750766699999673,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.219276083,
+        "mib_per_second": 9339.824,
+        "ops_per_second": 149437.182,
+        "sync_seconds": 0.003879916,
+        "checksum": 73367552
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "stat",
+        "repeat": 2,
+        "process_wall": 0.11679554099999478,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.112938,
+        "mib_per_second": 0.0,
+        "ops_per_second": 885441.571,
+        "sync_seconds": 2e-06,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host",
+        "case": "stat",
+        "repeat": 1,
+        "process_wall": 1.6909521249999955,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 1.636906083,
+        "mib_per_second": 0.0,
+        "ops_per_second": 61090.86,
+        "sync_seconds": 0.004428333,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "stat",
+        "repeat": 3,
+        "process_wall": 0.11559641699999901,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.111633,
+        "mib_per_second": 0.0,
+        "ops_per_second": 895792.463,
+        "sync_seconds": 3e-06,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-private",
+        "case": "stat",
+        "repeat": 1,
+        "process_wall": 0.5574314169999965,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.473164042,
+        "mib_per_second": 0.0,
+        "ops_per_second": 211343.194,
+        "sync_seconds": 0.016303625,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "read4k",
+        "repeat": 2,
+        "process_wall": 0.037665209000003586,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.033591,
+        "mib_per_second": 11628.859,
+        "ops_per_second": 2976987.882,
+        "sync_seconds": 1e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "native-mac",
+        "case": "read64k",
+        "repeat": 1,
+        "process_wall": 0.05397895899999838,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.050396,
+        "mib_per_second": 40638.146,
+        "ops_per_second": 650210.335,
+        "sync_seconds": 1e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read4k",
+        "repeat": 1,
+        "process_wall": 0.3159141669999954,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.269785917,
+        "mib_per_second": 1447.907,
+        "ops_per_second": 370664.27,
+        "sync_seconds": 0.002668291,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read4k",
+        "repeat": 3,
+        "process_wall": 0.3171356249999988,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.267668583,
+        "mib_per_second": 1459.361,
+        "ops_per_second": 373596.329,
+        "sync_seconds": 0.004029417,
+        "checksum": 23100000
+      },
+      {
+        "variant": "native-mac",
+        "case": "stat",
+        "repeat": 1,
+        "process_wall": 0.11580054200000234,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.11174,
+        "mib_per_second": 0.0,
+        "ops_per_second": 894934.67,
+        "sync_seconds": 1e-06,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "before-private",
+        "case": "read4k",
+        "repeat": 1,
+        "process_wall": 0.3067603750000032,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.223819958,
+        "mib_per_second": 1745.264,
+        "ops_per_second": 446787.681,
+        "sync_seconds": 0.014074416,
+        "checksum": 23100000
+      },
+      {
+        "variant": "before-host",
+        "case": "stat",
+        "repeat": 1,
+        "process_wall": 4.685234459,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.63433675,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21578.061,
+        "sync_seconds": 0.00600625,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "read64k",
+        "repeat": 1,
+        "process_wall": 0.05442425000000384,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.050297,
+        "mib_per_second": 40718.134,
+        "ops_per_second": 651490.149,
+        "sync_seconds": 1e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host",
+        "case": "read4k",
+        "repeat": 1,
+        "process_wall": 0.32509862500000253,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.271151291,
+        "mib_per_second": 1440.616,
+        "ops_per_second": 368797.802,
+        "sync_seconds": 0.00323175,
+        "checksum": 23100000
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "stat",
+        "repeat": 2,
+        "process_wall": 0.11629812500000014,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.112151,
+        "mib_per_second": 0.0,
+        "ops_per_second": 891655.0,
+        "sync_seconds": 1e-06,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host",
+        "case": "read4k",
+        "repeat": 2,
+        "process_wall": 0.3207465830000018,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.268910209,
+        "mib_per_second": 1452.622,
+        "ops_per_second": 371871.341,
+        "sync_seconds": 0.00331525,
+        "checksum": 23100000
+      },
+      {
+        "variant": "before-host",
+        "case": "stat",
+        "repeat": 2,
+        "process_wall": 4.664580540999999,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.608774291,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21697.743,
+        "sync_seconds": 0.004738792,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host",
+        "case": "write64k",
+        "repeat": 2,
+        "process_wall": 0.16708974999999526,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.112197375,
+        "mib_per_second": 9126.773,
+        "ops_per_second": 146028.372,
+        "sync_seconds": 0.006781083,
+        "checksum": 0
+      },
+      {
+        "variant": "before-host",
+        "case": "write64k",
+        "repeat": 3,
+        "process_wall": 0.1977637920000035,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.140853875,
+        "mib_per_second": 7269.946,
+        "ops_per_second": 116319.129,
+        "sync_seconds": 0.007027916,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read4k",
+        "repeat": 2,
+        "process_wall": 0.35098066700000174,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.30352275,
+        "mib_per_second": 1286.971,
+        "ops_per_second": 329464.595,
+        "sync_seconds": 0.004320833,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-private",
+        "case": "read4k",
+        "repeat": 2,
+        "process_wall": 0.307001917000008,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.216263833,
+        "mib_per_second": 1806.243,
+        "ops_per_second": 462398.167,
+        "sync_seconds": 0.013660208,
+        "checksum": 23100000
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "read64k",
+        "repeat": 2,
+        "process_wall": 0.05436429099999884,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.050181,
+        "mib_per_second": 40812.26,
+        "ops_per_second": 652996.154,
+        "sync_seconds": 2e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "native-mac",
+        "case": "read4k",
+        "repeat": 2,
+        "process_wall": 0.03750508299999922,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.033927,
+        "mib_per_second": 11513.691,
+        "ops_per_second": 2947504.936,
+        "sync_seconds": 2e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "write64k",
+        "repeat": 2,
+        "process_wall": 0.17048820799999476,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.112117708,
+        "mib_per_second": 9133.258,
+        "ops_per_second": 146132.135,
+        "sync_seconds": 0.005983041,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read4k",
+        "repeat": 3,
+        "process_wall": 0.31824858400000267,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.2713405,
+        "mib_per_second": 1439.612,
+        "ops_per_second": 368540.634,
+        "sync_seconds": 0.004147042,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read4k",
+        "repeat": 2,
+        "process_wall": 0.3183922089999953,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.266105083,
+        "mib_per_second": 1467.935,
+        "ops_per_second": 375791.394,
+        "sync_seconds": 0.004127958,
+        "checksum": 23100000
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "read64k",
+        "repeat": 3,
+        "process_wall": 0.05437591699998734,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.050284,
+        "mib_per_second": 40728.661,
+        "ops_per_second": 651658.579,
+        "sync_seconds": 1e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "read64k",
+        "repeat": 3,
+        "process_wall": 0.0567395839999989,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.052953,
+        "mib_per_second": 38675.807,
+        "ops_per_second": 618812.909,
+        "sync_seconds": 2e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "read4k",
+        "repeat": 3,
+        "process_wall": 0.040142500000001746,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.036413,
+        "mib_per_second": 10727.625,
+        "ops_per_second": 2746271.938,
+        "sync_seconds": 4e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-private",
+        "case": "read4k",
+        "repeat": 3,
+        "process_wall": 0.30063579199999424,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.216410666,
+        "mib_per_second": 1805.017,
+        "ops_per_second": 462084.433,
+        "sync_seconds": 0.012895875,
+        "checksum": 23100000
+      },
+      {
+        "variant": "before-host",
+        "case": "read4k",
+        "repeat": 2,
+        "process_wall": 0.33096125000000143,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.281460208,
+        "mib_per_second": 1387.852,
+        "ops_per_second": 355290.01,
+        "sync_seconds": 0.004377334,
+        "checksum": 23100000
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "stat",
+        "repeat": 3,
+        "process_wall": 0.12014795900000763,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.116208,
+        "mib_per_second": 0.0,
+        "ops_per_second": 860525.954,
+        "sync_seconds": 3e-06,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "stat",
+        "repeat": 1,
+        "process_wall": 1.7109236250000066,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 1.655089291,
+        "mib_per_second": 0.0,
+        "ops_per_second": 60419.701,
+        "sync_seconds": 0.004465458,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "write64k",
+        "repeat": 3,
+        "process_wall": 0.04452270800000235,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.039098,
+        "mib_per_second": 26190.598,
+        "ops_per_second": 419049.569,
+        "sync_seconds": 0.000928,
+        "checksum": 0
+      },
+      {
+        "variant": "before-private",
+        "case": "read64k",
+        "repeat": 3,
+        "process_wall": 0.3319127919999971,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.241692625,
+        "mib_per_second": 8473.573,
+        "ops_per_second": 135577.161,
+        "sync_seconds": 0.015139,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read64k",
+        "repeat": 3,
+        "process_wall": 0.27440779100000157,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.220605417,
+        "mib_per_second": 9283.544,
+        "ops_per_second": 148536.697,
+        "sync_seconds": 0.003910334,
+        "checksum": 73367552
+      },
+      {
+        "variant": "before-host",
+        "case": "read4k",
+        "repeat": 1,
+        "process_wall": 0.3212151670000054,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.279198375,
+        "mib_per_second": 1399.095,
+        "ops_per_second": 358168.274,
+        "sync_seconds": 7.833e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "write64k",
+        "repeat": 1,
+        "process_wall": 0.044516000000001554,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.038961,
+        "mib_per_second": 26282.693,
+        "ops_per_second": 420523.087,
+        "sync_seconds": 0.000983,
+        "checksum": 0
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "read4k",
+        "repeat": 1,
+        "process_wall": 0.03730375000000663,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.033615,
+        "mib_per_second": 11620.556,
+        "ops_per_second": 2974862.416,
+        "sync_seconds": 1e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-private",
+        "case": "read64k",
+        "repeat": 1,
+        "process_wall": 0.2730990409999947,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.197680834,
+        "mib_per_second": 10360.134,
+        "ops_per_second": 165762.15,
+        "sync_seconds": 0.013054375,
+        "checksum": 73367552
+      },
+      {
+        "variant": "before-private",
+        "case": "stat",
+        "repeat": 3,
+        "process_wall": 0.7188930840000012,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.638749958,
+        "mib_per_second": 0.0,
+        "ops_per_second": 156555.783,
+        "sync_seconds": 0.01519375,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "before-private",
+        "case": "write64k",
+        "repeat": 3,
+        "process_wall": 0.21963904199999718,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.129835375,
+        "mib_per_second": 7886.911,
+        "ops_per_second": 126190.57,
+        "sync_seconds": 0.0169725,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host",
+        "case": "write64k",
+        "repeat": 1,
+        "process_wall": 0.17521129200000018,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.116467166,
+        "mib_per_second": 8792.178,
+        "ops_per_second": 140674.84,
+        "sync_seconds": 0.00704075,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read64k",
+        "repeat": 1,
+        "process_wall": 0.26961570800000345,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.217596875,
+        "mib_per_second": 9411.9,
+        "ops_per_second": 150590.398,
+        "sync_seconds": 0.004046458,
+        "checksum": 73367552
+      },
+      {
+        "variant": "before-host",
+        "case": "read64k",
+        "repeat": 3,
+        "process_wall": 0.3085976249999902,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.25847525,
+        "mib_per_second": 7923.389,
+        "ops_per_second": 126774.227,
+        "sync_seconds": 0.003310209,
+        "checksum": 73367552
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "read64k",
+        "repeat": 1,
+        "process_wall": 0.05557266700000696,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.05164,
+        "mib_per_second": 39659.179,
+        "ops_per_second": 634546.863,
+        "sync_seconds": 2e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "native-mac",
+        "case": "read64k",
+        "repeat": 2,
+        "process_wall": 0.055689416000006986,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.051719,
+        "mib_per_second": 39598.6,
+        "ops_per_second": 633577.602,
+        "sync_seconds": 2e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "stat",
+        "repeat": 1,
+        "process_wall": 0.11901879100000201,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.114817,
+        "mib_per_second": 0.0,
+        "ops_per_second": 870951.166,
+        "sync_seconds": 5e-06,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "native-mac",
+        "case": "read4k",
+        "repeat": 1,
+        "process_wall": 0.038086250000006316,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.034209,
+        "mib_per_second": 11418.779,
+        "ops_per_second": 2923207.338,
+        "sync_seconds": 1e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-private",
+        "case": "write64k",
+        "repeat": 1,
+        "process_wall": 0.18651199999999335,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.09743775,
+        "mib_per_second": 10509.274,
+        "ops_per_second": 168148.382,
+        "sync_seconds": 0.015879708,
+        "checksum": 0
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "write64k",
+        "repeat": 2,
+        "process_wall": 0.04430062500000531,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.038899,
+        "mib_per_second": 26324.584,
+        "ops_per_second": 421193.346,
+        "sync_seconds": 0.000955,
+        "checksum": 0
+      },
+      {
+        "variant": "before-host",
+        "case": "write64k",
+        "repeat": 1,
+        "process_wall": 0.20112562500000308,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.141455083,
+        "mib_per_second": 7239.047,
+        "ops_per_second": 115824.753,
+        "sync_seconds": 0.003809583,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host",
+        "case": "read64k",
+        "repeat": 2,
+        "process_wall": 0.27186133400000756,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.223813417,
+        "mib_per_second": 9150.479,
+        "ops_per_second": 146407.666,
+        "sync_seconds": 0.003253708,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "write64k",
+        "repeat": 3,
+        "process_wall": 0.16487650000000542,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.115810333,
+        "mib_per_second": 8842.043,
+        "ops_per_second": 141472.696,
+        "sync_seconds": 0.004004,
+        "checksum": 0
+      },
+      {
+        "variant": "native-mac",
+        "case": "write64k",
+        "repeat": 3,
+        "process_wall": 0.04480512500001055,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.03933,
+        "mib_per_second": 26036.105,
+        "ops_per_second": 416577.675,
+        "sync_seconds": 0.000968,
+        "checksum": 0
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "read4k",
+        "repeat": 1,
+        "process_wall": 0.0378544579999982,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.034109,
+        "mib_per_second": 11452.256,
+        "ops_per_second": 2931777.537,
+        "sync_seconds": 2e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "before-private",
+        "case": "stat",
+        "repeat": 2,
+        "process_wall": 0.6817954170000036,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.593044875,
+        "mib_per_second": 0.0,
+        "ops_per_second": 168621.304,
+        "sync_seconds": 0.015189375,
+        "checksum": 838860800000
+      }
+    ],
+    "medians": [
+      {
+        "variant": "before-private",
+        "case": "read64k",
+        "seconds": 0.245697959,
+        "mib_per_second": 8335.438,
+        "ops_per_second": 133367.001,
+        "sync_seconds": 0.015139,
+        "process_wall": 0.3319127919999971,
+        "seconds_range": [
+          0.241692625,
+          0.26127575
+        ]
+      },
+      {
+        "variant": "before-private",
+        "case": "write64k",
+        "seconds": 0.12926575,
+        "mib_per_second": 7921.665,
+        "ops_per_second": 126746.644,
+        "sync_seconds": 0.016918458,
+        "process_wall": 0.21963904199999718,
+        "seconds_range": [
+          0.129211083,
+          0.129835375
+        ]
+      },
+      {
+        "variant": "before-private",
+        "case": "read4k",
+        "seconds": 0.225760916,
+        "mib_per_second": 1730.26,
+        "ops_per_second": 442946.466,
+        "sync_seconds": 0.014333834,
+        "process_wall": 0.3067603750000032,
+        "seconds_range": [
+          0.223819958,
+          0.229433375
+        ]
+      },
+      {
+        "variant": "before-private",
+        "case": "stat",
+        "seconds": 0.593044875,
+        "mib_per_second": 0.0,
+        "ops_per_second": 168621.304,
+        "sync_seconds": 0.015189375,
+        "process_wall": 0.6817954170000036,
+        "seconds_range": [
+          0.576900167,
+          0.638749958
+        ]
+      },
+      {
+        "variant": "after-private",
+        "case": "read64k",
+        "seconds": 0.19602525,
+        "mib_per_second": 10447.634,
+        "ops_per_second": 167162.139,
+        "sync_seconds": 0.014052708,
+        "process_wall": 0.2784376249999987,
+        "seconds_range": [
+          0.193015833,
+          0.197680834
+        ]
+      },
+      {
+        "variant": "after-private",
+        "case": "write64k",
+        "seconds": 0.103958833,
+        "mib_per_second": 9850.053,
+        "ops_per_second": 157600.846,
+        "sync_seconds": 0.016769667,
+        "process_wall": 0.18904420799999855,
+        "seconds_range": [
+          0.09743775,
+          0.1055105
+        ]
+      },
+      {
+        "variant": "after-private",
+        "case": "read4k",
+        "seconds": 0.216263833,
+        "mib_per_second": 1806.243,
+        "ops_per_second": 462398.167,
+        "sync_seconds": 0.013660208,
+        "process_wall": 0.30063579199999424,
+        "seconds_range": [
+          0.208708833,
+          0.216410666
+        ]
+      },
+      {
+        "variant": "after-private",
+        "case": "stat",
+        "seconds": 0.473164042,
+        "mib_per_second": 0.0,
+        "ops_per_second": 211343.194,
+        "sync_seconds": 0.014316375,
+        "process_wall": 0.5574314169999965,
+        "seconds_range": [
+          0.471712959,
+          0.498541666
+        ]
+      },
+      {
+        "variant": "before-host",
+        "case": "read64k",
+        "seconds": 0.255810625,
+        "mib_per_second": 8005.922,
+        "ops_per_second": 128094.758,
+        "sync_seconds": 0.003310209,
+        "process_wall": 0.3085976249999902,
+        "seconds_range": [
+          0.251123375,
+          0.25847525
+        ]
+      },
+      {
+        "variant": "before-host",
+        "case": "write64k",
+        "seconds": 0.140853875,
+        "mib_per_second": 7269.946,
+        "ops_per_second": 116319.129,
+        "sync_seconds": 0.006904166,
+        "process_wall": 0.1977637920000035,
+        "seconds_range": [
+          0.140733958,
+          0.141455083
+        ]
+      },
+      {
+        "variant": "before-host",
+        "case": "read4k",
+        "seconds": 0.279198375,
+        "mib_per_second": 1399.095,
+        "ops_per_second": 358168.274,
+        "sync_seconds": 0.002837417,
+        "process_wall": 0.3212151670000054,
+        "seconds_range": [
+          0.272696167,
+          0.281460208
+        ]
+      },
+      {
+        "variant": "before-host",
+        "case": "stat",
+        "seconds": 4.63433675,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21578.061,
+        "sync_seconds": 0.0057225,
+        "process_wall": 4.685234459,
+        "seconds_range": [
+          4.608774291,
+          4.634887375
+        ]
+      },
+      {
+        "variant": "after-host",
+        "case": "read64k",
+        "seconds": 0.223813417,
+        "mib_per_second": 9150.479,
+        "ops_per_second": 146407.666,
+        "sync_seconds": 0.004012084,
+        "process_wall": 0.27129458299999953,
+        "seconds_range": [
+          0.216674708,
+          0.224223834
+        ]
+      },
+      {
+        "variant": "after-host",
+        "case": "write64k",
+        "seconds": 0.113244208,
+        "mib_per_second": 9042.405,
+        "ops_per_second": 144678.481,
+        "sync_seconds": 0.006814792,
+        "process_wall": 0.16938312499999952,
+        "seconds_range": [
+          0.112197375,
+          0.116467166
+        ]
+      },
+      {
+        "variant": "after-host",
+        "case": "read4k",
+        "seconds": 0.268910209,
+        "mib_per_second": 1452.622,
+        "ops_per_second": 371871.341,
+        "sync_seconds": 0.00331525,
+        "process_wall": 0.3207465830000018,
+        "seconds_range": [
+          0.259111459,
+          0.271151291
+        ]
+      },
+      {
+        "variant": "after-host",
+        "case": "stat",
+        "seconds": 1.642667667,
+        "mib_per_second": 0.0,
+        "ops_per_second": 60876.586,
+        "sync_seconds": 0.004428333,
+        "process_wall": 1.6967039999999969,
+        "seconds_range": [
+          1.636906083,
+          1.659101
+        ]
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read64k",
+        "seconds": 0.220605417,
+        "mib_per_second": 9283.544,
+        "ops_per_second": 148536.697,
+        "sync_seconds": 0.003412125,
+        "process_wall": 0.2712760830000036,
+        "seconds_range": [
+          0.216745333,
+          0.2237065
+        ]
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "write64k",
+        "seconds": 0.115083459,
+        "mib_per_second": 8897.89,
+        "ops_per_second": 142366.246,
+        "sync_seconds": 0.005668792,
+        "process_wall": 0.17048820799999476,
+        "seconds_range": [
+          0.112117708,
+          0.119217417
+        ]
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read4k",
+        "seconds": 0.267668583,
+        "mib_per_second": 1459.361,
+        "ops_per_second": 373596.329,
+        "sync_seconds": 0.004029417,
+        "process_wall": 0.3171356249999988,
+        "seconds_range": [
+          0.266105083,
+          0.269785917
+        ]
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "stat",
+        "seconds": 1.69102475,
+        "mib_per_second": 0.0,
+        "ops_per_second": 59135.74,
+        "sync_seconds": 0.003467708,
+        "process_wall": 1.7464089580000035,
+        "seconds_range": [
+          1.689090375,
+          1.700136542
+        ]
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read64k",
+        "seconds": 0.217596875,
+        "mib_per_second": 9411.9,
+        "ops_per_second": 150590.398,
+        "sync_seconds": 0.003879916,
+        "process_wall": 0.26750766699999673,
+        "seconds_range": [
+          0.216199666,
+          0.219276083
+        ]
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "write64k",
+        "seconds": 0.114132833,
+        "mib_per_second": 8972.002,
+        "ops_per_second": 143552.031,
+        "sync_seconds": 0.004004,
+        "process_wall": 0.167345791999999,
+        "seconds_range": [
+          0.1135695,
+          0.115810333
+        ]
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read4k",
+        "seconds": 0.2713405,
+        "mib_per_second": 1439.612,
+        "ops_per_second": 368540.634,
+        "sync_seconds": 0.004147042,
+        "process_wall": 0.31824858400000267,
+        "seconds_range": [
+          0.264127792,
+          0.30352275
+        ]
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "stat",
+        "seconds": 1.670283208,
+        "mib_per_second": 0.0,
+        "ops_per_second": 59870.086,
+        "sync_seconds": 0.004465458,
+        "process_wall": 1.7199081669999998,
+        "seconds_range": [
+          1.655089291,
+          1.833081625
+        ]
+      },
+      {
+        "variant": "native-mac",
+        "case": "read64k",
+        "seconds": 0.050396,
+        "mib_per_second": 40638.146,
+        "ops_per_second": 650210.335,
+        "sync_seconds": 2e-06,
+        "process_wall": 0.05405599999999566,
+        "seconds_range": [
+          0.050018,
+          0.051719
+        ]
+      },
+      {
+        "variant": "native-mac",
+        "case": "write64k",
+        "seconds": 0.03933,
+        "mib_per_second": 26036.105,
+        "ops_per_second": 416577.675,
+        "sync_seconds": 0.000968,
+        "process_wall": 0.04480512500001055,
+        "seconds_range": [
+          0.038568,
+          0.04205
+        ]
+      },
+      {
+        "variant": "native-mac",
+        "case": "read4k",
+        "seconds": 0.034209,
+        "mib_per_second": 11418.779,
+        "ops_per_second": 2923207.338,
+        "sync_seconds": 2e-06,
+        "process_wall": 0.038086250000006316,
+        "seconds_range": [
+          0.033927,
+          0.034494
+        ]
+      },
+      {
+        "variant": "native-mac",
+        "case": "stat",
+        "seconds": 0.111903,
+        "mib_per_second": 0.0,
+        "ops_per_second": 893631.091,
+        "sync_seconds": 1e-06,
+        "process_wall": 0.11609045799999507,
+        "seconds_range": [
+          0.11174,
+          0.113713
+        ]
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "read64k",
+        "seconds": 0.050707,
+        "mib_per_second": 40388.901,
+        "ops_per_second": 646222.416,
+        "sync_seconds": 2e-06,
+        "process_wall": 0.05497150000000062,
+        "seconds_range": [
+          0.050284,
+          0.05164
+        ]
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "write64k",
+        "seconds": 0.038961,
+        "mib_per_second": 26282.693,
+        "ops_per_second": 420523.087,
+        "sync_seconds": 0.000955,
+        "process_wall": 0.044516000000001554,
+        "seconds_range": [
+          0.038899,
+          0.042036
+        ]
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "read4k",
+        "seconds": 0.033591,
+        "mib_per_second": 11628.859,
+        "ops_per_second": 2976987.882,
+        "sync_seconds": 2e-06,
+        "process_wall": 0.037665209000003586,
+        "seconds_range": [
+          0.03309,
+          0.034109
+        ]
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "stat",
+        "seconds": 0.114817,
+        "mib_per_second": 0.0,
+        "ops_per_second": 870951.166,
+        "sync_seconds": 3e-06,
+        "process_wall": 0.11901879100000201,
+        "seconds_range": [
+          0.112151,
+          0.116208
+        ]
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "read64k",
+        "seconds": 0.050297,
+        "mib_per_second": 40718.134,
+        "ops_per_second": 651490.149,
+        "sync_seconds": 2e-06,
+        "process_wall": 0.05442425000000384,
+        "seconds_range": [
+          0.050181,
+          0.052953
+        ]
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "write64k",
+        "seconds": 0.039098,
+        "mib_per_second": 26190.598,
+        "ops_per_second": 419049.569,
+        "sync_seconds": 0.000914,
+        "process_wall": 0.04452270800000235,
+        "seconds_range": [
+          0.038804,
+          0.04187
+        ]
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "read4k",
+        "seconds": 0.033615,
+        "mib_per_second": 11620.556,
+        "ops_per_second": 2974862.416,
+        "sync_seconds": 1e-06,
+        "process_wall": 0.037629167000002184,
+        "seconds_range": [
+          0.033537,
+          0.036413
+        ]
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "stat",
+        "seconds": 0.112079,
+        "mib_per_second": 0.0,
+        "ops_per_second": 892227.804,
+        "sync_seconds": 2e-06,
+        "process_wall": 0.11596987499999756,
+        "seconds_range": [
+          0.111633,
+          0.112938
+        ]
+      }
+    ]
+  },
+  "native_linux_reference": {
+    "platform": "Linux-7.0.0-38-generic-aarch64-with-glibc2.39",
+    "kernel": "7.0.0-38-generic",
+    "cpus": 6,
+    "memory_gib": 8,
+    "virtualization": "Lima VZ ARM64 native Linux kernel",
+    "filesystem": "ext4",
+    "program_sha256": "53e6138b95bfc3fd687bf45b251b99bb32eecb3a2b50e3a8fe1c41d73ef567b9",
+    "records": [
+      {
+        "variant": "watch",
+        "case": "write64k",
+        "repeat": 2,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.023862041,
+        "mib_per_second": 42913.345,
+        "ops_per_second": 686613.521,
+        "sync_seconds": 0.001966541,
+        "checksum": 0
+      },
+      {
+        "variant": "flock",
+        "case": "stat",
+        "repeat": 1,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.02606925,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3835936.976,
+        "sync_seconds": 2.7458e-05,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "flock",
+        "case": "read4k",
+        "repeat": 2,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.028100292,
+        "mib_per_second": 13901.101,
+        "ops_per_second": 3558681.881,
+        "sync_seconds": 0.000198,
+        "checksum": 23100000
+      },
+      {
+        "variant": "flock",
+        "case": "read64k",
+        "repeat": 3,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.053205083,
+        "mib_per_second": 38492.563,
+        "ops_per_second": 615881.005,
+        "sync_seconds": 0.000263791,
+        "checksum": 73367552
+      },
+      {
+        "variant": "normal",
+        "case": "write64k",
+        "repeat": 2,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.0227745,
+        "mib_per_second": 44962.568,
+        "ops_per_second": 719401.085,
+        "sync_seconds": 0.001745,
+        "checksum": 0
+      },
+      {
+        "variant": "normal",
+        "case": "read4k",
+        "repeat": 3,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.027767333,
+        "mib_per_second": 14067.79,
+        "ops_per_second": 3601354.152,
+        "sync_seconds": 0.000199541,
+        "checksum": 23100000
+      },
+      {
+        "variant": "normal",
+        "case": "read4k",
+        "repeat": 2,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.028227917,
+        "mib_per_second": 13838.251,
+        "ops_per_second": 3542592.25,
+        "sync_seconds": 0.000162375,
+        "checksum": 23100000
+      },
+      {
+        "variant": "normal",
+        "case": "read64k",
+        "repeat": 1,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.053419542,
+        "mib_per_second": 38338.03,
+        "ops_per_second": 613408.479,
+        "sync_seconds": 0.000202667,
+        "checksum": 73367552
+      },
+      {
+        "variant": "flock",
+        "case": "write64k",
+        "repeat": 2,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.022441166,
+        "mib_per_second": 45630.428,
+        "ops_per_second": 730086.841,
+        "sync_seconds": 0.001481708,
+        "checksum": 0
+      },
+      {
+        "variant": "flock",
+        "case": "write64k",
+        "repeat": 3,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.022566958,
+        "mib_per_second": 45376.076,
+        "ops_per_second": 726017.215,
+        "sync_seconds": 0.001492208,
+        "checksum": 0
+      },
+      {
+        "variant": "flock",
+        "case": "write64k",
+        "repeat": 1,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.022486291,
+        "mib_per_second": 45538.857,
+        "ops_per_second": 728621.719,
+        "sync_seconds": 0.001511208,
+        "checksum": 0
+      },
+      {
+        "variant": "watch",
+        "case": "read64k",
+        "repeat": 2,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.052971208,
+        "mib_per_second": 38662.513,
+        "ops_per_second": 618600.203,
+        "sync_seconds": 0.000189833,
+        "checksum": 73367552
+      },
+      {
+        "variant": "flock",
+        "case": "read4k",
+        "repeat": 1,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.028000625,
+        "mib_per_second": 13950.581,
+        "ops_per_second": 3571348.854,
+        "sync_seconds": 0.000180833,
+        "checksum": 23100000
+      },
+      {
+        "variant": "watch",
+        "case": "read4k",
+        "repeat": 3,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.028297542,
+        "mib_per_second": 13804.202,
+        "ops_per_second": 3533875.84,
+        "sync_seconds": 0.000162167,
+        "checksum": 23100000
+      },
+      {
+        "variant": "normal",
+        "case": "read64k",
+        "repeat": 2,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.053289625,
+        "mib_per_second": 38431.496,
+        "ops_per_second": 614903.933,
+        "sync_seconds": 0.00017975,
+        "checksum": 73367552
+      },
+      {
+        "variant": "normal",
+        "case": "write64k",
+        "repeat": 3,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.022476625,
+        "mib_per_second": 45558.441,
+        "ops_per_second": 728935.06,
+        "sync_seconds": 0.001469,
+        "checksum": 0
+      },
+      {
+        "variant": "watch",
+        "case": "read64k",
+        "repeat": 3,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.053899708,
+        "mib_per_second": 37996.495,
+        "ops_per_second": 607943.924,
+        "sync_seconds": 0.000206208,
+        "checksum": 73367552
+      },
+      {
+        "variant": "flock",
+        "case": "stat",
+        "repeat": 3,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.025481917,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3924351.531,
+        "sync_seconds": 2.9542e-05,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "watch",
+        "case": "stat",
+        "repeat": 3,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.025467792,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3926528.063,
+        "sync_seconds": 2.7708e-05,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "normal",
+        "case": "stat",
+        "repeat": 3,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.025492792,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3922677.438,
+        "sync_seconds": 2.95e-05,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "flock",
+        "case": "read64k",
+        "repeat": 1,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.054929625,
+        "mib_per_second": 37284.07,
+        "ops_per_second": 596545.125,
+        "sync_seconds": 0.000195958,
+        "checksum": 73367552
+      },
+      {
+        "variant": "normal",
+        "case": "write64k",
+        "repeat": 1,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.022437625,
+        "mib_per_second": 45637.629,
+        "ops_per_second": 730202.06,
+        "sync_seconds": 0.001533333,
+        "checksum": 0
+      },
+      {
+        "variant": "flock",
+        "case": "stat",
+        "repeat": 2,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.0253955,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3937705.499,
+        "sync_seconds": 2.9375e-05,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "watch",
+        "case": "read4k",
+        "repeat": 2,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.028030542,
+        "mib_per_second": 13935.692,
+        "ops_per_second": 3567537.153,
+        "sync_seconds": 0.00013625,
+        "checksum": 23100000
+      },
+      {
+        "variant": "normal",
+        "case": "stat",
+        "repeat": 1,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.0253965,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3937550.45,
+        "sync_seconds": 2.5958e-05,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "watch",
+        "case": "write64k",
+        "repeat": 1,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.023782333,
+        "mib_per_second": 43057.172,
+        "ops_per_second": 688914.75,
+        "sync_seconds": 0.001430708,
+        "checksum": 0
+      },
+      {
+        "variant": "flock",
+        "case": "read64k",
+        "repeat": 2,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.054005916,
+        "mib_per_second": 37921.771,
+        "ops_per_second": 606748.342,
+        "sync_seconds": 0.000231417,
+        "checksum": 73367552
+      },
+      {
+        "variant": "watch",
+        "case": "write64k",
+        "repeat": 3,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.024678583,
+        "mib_per_second": 41493.468,
+        "ops_per_second": 663895.492,
+        "sync_seconds": 0.0014765,
+        "checksum": 0
+      },
+      {
+        "variant": "flock",
+        "case": "read4k",
+        "repeat": 3,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.029889625,
+        "mib_per_second": 13068.916,
+        "ops_per_second": 3345642.51,
+        "sync_seconds": 0.000242042,
+        "checksum": 23100000
+      },
+      {
+        "variant": "watch",
+        "case": "stat",
+        "repeat": 1,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.025311125,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3950831.897,
+        "sync_seconds": 3.1458e-05,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "watch",
+        "case": "read4k",
+        "repeat": 1,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.028544875,
+        "mib_per_second": 13684.593,
+        "ops_per_second": 3503255.838,
+        "sync_seconds": 0.000177083,
+        "checksum": 23100000
+      },
+      {
+        "variant": "normal",
+        "case": "read4k",
+        "repeat": 1,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.028078375,
+        "mib_per_second": 13911.952,
+        "ops_per_second": 3561459.664,
+        "sync_seconds": 0.000155042,
+        "checksum": 23100000
+      },
+      {
+        "variant": "watch",
+        "case": "read64k",
+        "repeat": 1,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.053322375,
+        "mib_per_second": 38407.892,
+        "ops_per_second": 614526.266,
+        "sync_seconds": 0.000184958,
+        "checksum": 73367552
+      },
+      {
+        "variant": "normal",
+        "case": "read64k",
+        "repeat": 3,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.053228292,
+        "mib_per_second": 38475.779,
+        "ops_per_second": 615612.464,
+        "sync_seconds": 0.000176458,
+        "checksum": 73367552
+      },
+      {
+        "variant": "normal",
+        "case": "stat",
+        "repeat": 2,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.025325334,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3948615.248,
+        "sync_seconds": 2.7917e-05,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "watch",
+        "case": "stat",
+        "repeat": 2,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.025324542,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3948738.737,
+        "sync_seconds": 2.6083e-05,
+        "checksum": 838860800000
+      }
+    ],
+    "cases": {
+      "read64k": 32768,
+      "write64k": 16384,
+      "read4k": 100000,
+      "stat": 100000
+    },
+    "repeats": 3,
+    "medians": [
+      {
+        "variant": "normal",
+        "case": "read64k",
+        "seconds": 0.053289625,
+        "mib_per_second": 38431.496,
+        "ops_per_second": 614903.933,
+        "sync_seconds": 0.00017975,
+        "seconds_range": [
+          0.053228292,
+          0.053419542
+        ]
+      },
+      {
+        "variant": "normal",
+        "case": "write64k",
+        "seconds": 0.022476625,
+        "mib_per_second": 45558.441,
+        "ops_per_second": 728935.06,
+        "sync_seconds": 0.001533333,
+        "seconds_range": [
+          0.022437625,
+          0.0227745
+        ]
+      },
+      {
+        "variant": "normal",
+        "case": "read4k",
+        "seconds": 0.028078375,
+        "mib_per_second": 13911.952,
+        "ops_per_second": 3561459.664,
+        "sync_seconds": 0.000162375,
+        "seconds_range": [
+          0.027767333,
+          0.028227917
+        ]
+      },
+      {
+        "variant": "normal",
+        "case": "stat",
+        "seconds": 0.0253965,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3937550.45,
+        "sync_seconds": 2.7917e-05,
+        "seconds_range": [
+          0.025325334,
+          0.025492792
+        ]
+      },
+      {
+        "variant": "watch",
+        "case": "read64k",
+        "seconds": 0.053322375,
+        "mib_per_second": 38407.892,
+        "ops_per_second": 614526.266,
+        "sync_seconds": 0.000189833,
+        "seconds_range": [
+          0.052971208,
+          0.053899708
+        ]
+      },
+      {
+        "variant": "watch",
+        "case": "write64k",
+        "seconds": 0.023862041,
+        "mib_per_second": 42913.345,
+        "ops_per_second": 686613.521,
+        "sync_seconds": 0.0014765,
+        "seconds_range": [
+          0.023782333,
+          0.024678583
+        ]
+      },
+      {
+        "variant": "watch",
+        "case": "read4k",
+        "seconds": 0.028297542,
+        "mib_per_second": 13804.202,
+        "ops_per_second": 3533875.84,
+        "sync_seconds": 0.000162167,
+        "seconds_range": [
+          0.028030542,
+          0.028544875
+        ]
+      },
+      {
+        "variant": "watch",
+        "case": "stat",
+        "seconds": 0.025324542,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3948738.737,
+        "sync_seconds": 2.7708e-05,
+        "seconds_range": [
+          0.025311125,
+          0.025467792
+        ]
+      },
+      {
+        "variant": "flock",
+        "case": "read64k",
+        "seconds": 0.054005916,
+        "mib_per_second": 37921.771,
+        "ops_per_second": 606748.342,
+        "sync_seconds": 0.000231417,
+        "seconds_range": [
+          0.053205083,
+          0.054929625
+        ]
+      },
+      {
+        "variant": "flock",
+        "case": "write64k",
+        "seconds": 0.022486291,
+        "mib_per_second": 45538.857,
+        "ops_per_second": 728621.719,
+        "sync_seconds": 0.001492208,
+        "seconds_range": [
+          0.022441166,
+          0.022566958
+        ]
+      },
+      {
+        "variant": "flock",
+        "case": "read4k",
+        "seconds": 0.028100292,
+        "mib_per_second": 13901.101,
+        "ops_per_second": 3558681.881,
+        "sync_seconds": 0.000198,
+        "seconds_range": [
+          0.028000625,
+          0.029889625
+        ]
+      },
+      {
+        "variant": "flock",
+        "case": "stat",
+        "seconds": 0.025481917,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3924351.531,
+        "sync_seconds": 2.9375e-05,
+        "seconds_range": [
+          0.0253955,
+          0.02606925
+        ]
+      }
+    ],
+    "complete": true
+  },
+  "intermediate_raw_only": {
+    "complete": true,
+    "records": [
+      {
+        "binary": "before",
+        "host": true,
+        "case": "read4k",
+        "repeat": 2,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.26844525,
+        "mib_per_second": 1455.138,
+        "ops_per_second": 372515.438,
+        "sync_seconds": 0.003253125,
+        "checksum": 23100000
+      },
+      {
+        "binary": "raw",
+        "host": true,
+        "case": "read4k",
+        "repeat": 1,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.27136825,
+        "mib_per_second": 1439.465,
+        "ops_per_second": 368502.948,
+        "sync_seconds": 0.003099792,
+        "checksum": 23100000
+      },
+      {
+        "binary": "raw",
+        "host": true,
+        "case": "write64k",
+        "repeat": 2,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.11970625,
+        "mib_per_second": 8554.273,
+        "ops_per_second": 136868.376,
+        "sync_seconds": 0.006072167,
+        "checksum": 0
+      },
+      {
+        "binary": "raw",
+        "host": false,
+        "case": "read4k",
+        "repeat": 3,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.205632625,
+        "mib_per_second": 1899.626,
+        "ops_per_second": 486304.155,
+        "sync_seconds": 0.015095625,
+        "checksum": 23100000
+      },
+      {
+        "binary": "before",
+        "host": false,
+        "case": "write64k",
+        "repeat": 2,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.130110792,
+        "mib_per_second": 7870.216,
+        "ops_per_second": 125923.451,
+        "sync_seconds": 0.016692959,
+        "checksum": 0
+      },
+      {
+        "binary": "before",
+        "host": false,
+        "case": "read4k",
+        "repeat": 3,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.22574575,
+        "mib_per_second": 1730.376,
+        "ops_per_second": 442976.224,
+        "sync_seconds": 0.015428208,
+        "checksum": 23100000
+      },
+      {
+        "binary": "before",
+        "host": false,
+        "case": "read4k",
+        "repeat": 2,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.215045958,
+        "mib_per_second": 1816.472,
+        "ops_per_second": 465016.878,
+        "sync_seconds": 0.013197375,
+        "checksum": 23100000
+      },
+      {
+        "binary": "before",
+        "host": false,
+        "case": "read64k",
+        "repeat": 1,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.233967708,
+        "mib_per_second": 8753.345,
+        "ops_per_second": 140053.515,
+        "sync_seconds": 0.014076375,
+        "checksum": 73367552
+      },
+      {
+        "binary": "raw",
+        "host": true,
+        "case": "read64k",
+        "repeat": 2,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.214557083,
+        "mib_per_second": 9545.245,
+        "ops_per_second": 152723.926,
+        "sync_seconds": 8.875e-06,
+        "checksum": 73367552
+      },
+      {
+        "binary": "raw",
+        "host": true,
+        "case": "read64k",
+        "repeat": 3,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.217089334,
+        "mib_per_second": 9433.904,
+        "ops_per_second": 150942.469,
+        "sync_seconds": 0.00396175,
+        "checksum": 73367552
+      },
+      {
+        "binary": "raw",
+        "host": true,
+        "case": "read64k",
+        "repeat": 1,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.215481667,
+        "mib_per_second": 9504.289,
+        "ops_per_second": 152068.621,
+        "sync_seconds": 0.0032595,
+        "checksum": 73367552
+      },
+      {
+        "binary": "before",
+        "host": true,
+        "case": "write64k",
+        "repeat": 2,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.14478675,
+        "mib_per_second": 7072.47,
+        "ops_per_second": 113159.526,
+        "sync_seconds": 0.006070125,
+        "checksum": 0
+      },
+      {
+        "binary": "raw",
+        "host": true,
+        "case": "write64k",
+        "repeat": 1,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.127014166,
+        "mib_per_second": 8062.093,
+        "ops_per_second": 128993.486,
+        "sync_seconds": 0.005770708,
+        "checksum": 0
+      },
+      {
+        "binary": "raw",
+        "host": false,
+        "case": "read64k",
+        "repeat": 3,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.196450416,
+        "mib_per_second": 10425.022,
+        "ops_per_second": 166800.359,
+        "sync_seconds": 0.016018833,
+        "checksum": 73367552
+      },
+      {
+        "binary": "before",
+        "host": false,
+        "case": "read64k",
+        "repeat": 2,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.233178333,
+        "mib_per_second": 8782.977,
+        "ops_per_second": 140527.636,
+        "sync_seconds": 0.014871958,
+        "checksum": 73367552
+      },
+      {
+        "binary": "before",
+        "host": false,
+        "case": "write64k",
+        "repeat": 3,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.129942333,
+        "mib_per_second": 7880.419,
+        "ops_per_second": 126086.7,
+        "sync_seconds": 0.016907583,
+        "checksum": 0
+      },
+      {
+        "binary": "before",
+        "host": true,
+        "case": "write64k",
+        "repeat": 3,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.138746417,
+        "mib_per_second": 7380.371,
+        "ops_per_second": 118085.932,
+        "sync_seconds": 0.007032167,
+        "checksum": 0
+      },
+      {
+        "binary": "raw",
+        "host": true,
+        "case": "read4k",
+        "repeat": 3,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.260342292,
+        "mib_per_second": 1500.429,
+        "ops_per_second": 384109.701,
+        "sync_seconds": 0.003240791,
+        "checksum": 23100000
+      },
+      {
+        "binary": "raw",
+        "host": false,
+        "case": "write64k",
+        "repeat": 3,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.106484834,
+        "mib_per_second": 9616.393,
+        "ops_per_second": 153862.286,
+        "sync_seconds": 0.015743875,
+        "checksum": 0
+      },
+      {
+        "binary": "before",
+        "host": true,
+        "case": "read64k",
+        "repeat": 3,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.251709583,
+        "mib_per_second": 8136.361,
+        "ops_per_second": 130181.774,
+        "sync_seconds": 0.004302166,
+        "checksum": 73367552
+      },
+      {
+        "binary": "raw",
+        "host": false,
+        "case": "read4k",
+        "repeat": 1,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.208506416,
+        "mib_per_second": 1873.444,
+        "ops_per_second": 479601.549,
+        "sync_seconds": 0.014922875,
+        "checksum": 23100000
+      },
+      {
+        "binary": "before",
+        "host": false,
+        "case": "write64k",
+        "repeat": 1,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.127592875,
+        "mib_per_second": 8025.527,
+        "ops_per_second": 128408.424,
+        "sync_seconds": 0.01781775,
+        "checksum": 0
+      },
+      {
+        "binary": "raw",
+        "host": true,
+        "case": "read4k",
+        "repeat": 2,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.268661209,
+        "mib_per_second": 1453.969,
+        "ops_per_second": 372215.998,
+        "sync_seconds": 0.003975083,
+        "checksum": 23100000
+      },
+      {
+        "binary": "raw",
+        "host": false,
+        "case": "read64k",
+        "repeat": 2,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.204506625,
+        "mib_per_second": 10014.346,
+        "ops_per_second": 160229.528,
+        "sync_seconds": 0.014234375,
+        "checksum": 73367552
+      },
+      {
+        "binary": "before",
+        "host": true,
+        "case": "read64k",
+        "repeat": 1,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.256182291,
+        "mib_per_second": 7994.307,
+        "ops_per_second": 127908.919,
+        "sync_seconds": 8.583e-06,
+        "checksum": 73367552
+      },
+      {
+        "binary": "before",
+        "host": true,
+        "case": "read4k",
+        "repeat": 1,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.267832334,
+        "mib_per_second": 1458.468,
+        "ops_per_second": 373367.915,
+        "sync_seconds": 0.003261167,
+        "checksum": 23100000
+      },
+      {
+        "binary": "raw",
+        "host": false,
+        "case": "read4k",
+        "repeat": 2,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.217789417,
+        "mib_per_second": 1793.59,
+        "ops_per_second": 459159.134,
+        "sync_seconds": 0.014331708,
+        "checksum": 23100000
+      },
+      {
+        "binary": "before",
+        "host": true,
+        "case": "read4k",
+        "repeat": 3,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.299838541,
+        "mib_per_second": 1302.784,
+        "ops_per_second": 333512.829,
+        "sync_seconds": 0.003416875,
+        "checksum": 23100000
+      },
+      {
+        "binary": "raw",
+        "host": true,
+        "case": "write64k",
+        "repeat": 3,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.120107083,
+        "mib_per_second": 8525.725,
+        "ops_per_second": 136411.605,
+        "sync_seconds": 0.006106792,
+        "checksum": 0
+      },
+      {
+        "binary": "raw",
+        "host": false,
+        "case": "write64k",
+        "repeat": 1,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.113118875,
+        "mib_per_second": 9052.424,
+        "ops_per_second": 144838.781,
+        "sync_seconds": 0.015826083,
+        "checksum": 0
+      },
+      {
+        "binary": "raw",
+        "host": false,
+        "case": "read64k",
+        "repeat": 1,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.195489583,
+        "mib_per_second": 10476.262,
+        "ops_per_second": 167620.185,
+        "sync_seconds": 0.013126542,
+        "checksum": 73367552
+      },
+      {
+        "binary": "before",
+        "host": false,
+        "case": "read4k",
+        "repeat": 1,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.229692167,
+        "mib_per_second": 1700.646,
+        "ops_per_second": 435365.304,
+        "sync_seconds": 0.016029333,
+        "checksum": 23100000
+      },
+      {
+        "binary": "before",
+        "host": true,
+        "case": "write64k",
+        "repeat": 1,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.1389185,
+        "mib_per_second": 7371.228,
+        "ops_per_second": 117939.655,
+        "sync_seconds": 0.007046667,
+        "checksum": 0
+      },
+      {
+        "binary": "before",
+        "host": false,
+        "case": "read64k",
+        "repeat": 3,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.240412292,
+        "mib_per_second": 8518.699,
+        "ops_per_second": 136299.187,
+        "sync_seconds": 0.015340459,
+        "checksum": 73367552
+      },
+      {
+        "binary": "before",
+        "host": true,
+        "case": "read64k",
+        "repeat": 2,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.260452917,
+        "mib_per_second": 7863.225,
+        "ops_per_second": 125811.607,
+        "sync_seconds": 0.00349,
+        "checksum": 73367552
+      },
+      {
+        "binary": "raw",
+        "host": false,
+        "case": "write64k",
+        "repeat": 2,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.10705175,
+        "mib_per_second": 9565.467,
+        "ops_per_second": 153047.475,
+        "sync_seconds": 0.01460625,
+        "checksum": 0
+      }
+    ],
+    "medians": [
+      {
+        "binary": "before",
+        "host": false,
+        "case": "read64k",
+        "mib_per_second": 8753.345,
+        "seconds_range": [
+          0.233178333,
+          0.240412292
+        ]
+      },
+      {
+        "binary": "before",
+        "host": false,
+        "case": "write64k",
+        "mib_per_second": 7880.419,
+        "seconds_range": [
+          0.127592875,
+          0.130110792
+        ]
+      },
+      {
+        "binary": "before",
+        "host": false,
+        "case": "read4k",
+        "mib_per_second": 1730.376,
+        "seconds_range": [
+          0.215045958,
+          0.229692167
+        ]
+      },
+      {
+        "binary": "before",
+        "host": true,
+        "case": "read64k",
+        "mib_per_second": 7994.307,
+        "seconds_range": [
+          0.251709583,
+          0.260452917
+        ]
+      },
+      {
+        "binary": "before",
+        "host": true,
+        "case": "write64k",
+        "mib_per_second": 7371.228,
+        "seconds_range": [
+          0.138746417,
+          0.14478675
+        ]
+      },
+      {
+        "binary": "before",
+        "host": true,
+        "case": "read4k",
+        "mib_per_second": 1455.138,
+        "seconds_range": [
+          0.267832334,
+          0.299838541
+        ]
+      },
+      {
+        "binary": "raw",
+        "host": false,
+        "case": "read64k",
+        "mib_per_second": 10425.022,
+        "seconds_range": [
+          0.195489583,
+          0.204506625
+        ]
+      },
+      {
+        "binary": "raw",
+        "host": false,
+        "case": "write64k",
+        "mib_per_second": 9565.467,
+        "seconds_range": [
+          0.106484834,
+          0.113118875
+        ]
+      },
+      {
+        "binary": "raw",
+        "host": false,
+        "case": "read4k",
+        "mib_per_second": 1873.444,
+        "seconds_range": [
+          0.205632625,
+          0.217789417
+        ]
+      },
+      {
+        "binary": "raw",
+        "host": true,
+        "case": "read64k",
+        "mib_per_second": 9504.289,
+        "seconds_range": [
+          0.214557083,
+          0.217089334
+        ]
+      },
+      {
+        "binary": "raw",
+        "host": true,
+        "case": "write64k",
+        "mib_per_second": 8525.725,
+        "seconds_range": [
+          0.11970625,
+          0.127014166
+        ]
+      },
+      {
+        "binary": "raw",
+        "host": true,
+        "case": "read4k",
+        "mib_per_second": 1453.969,
+        "seconds_range": [
+          0.260342292,
+          0.27136825
+        ]
+      }
+    ]
+  },
+  "profiles": {
+    "before": {
+      "host-stat": {
+        "interval_ms": 10,
+        "duration_seconds": 2,
+        "reported_leaves_threshold": 5,
+        "leaves": [
+          {
+            "symbol": "__psynch_cvwait",
+            "image": "libsystem_kernel.dylib",
+            "samples": 151
+          },
+          {
+            "symbol": "__openat",
+            "image": "libsystem_kernel.dylib",
+            "samples": 83
+          },
+          {
+            "symbol": "fstatat",
+            "image": "libsystem_kernel.dylib",
+            "samples": 35
+          },
+          {
+            "symbol": "_dyld_start",
+            "image": "dyld",
+            "samples": 19
+          },
+          {
+            "symbol": "hv_trap",
+            "image": "Hypervisor",
+            "samples": 12
+          },
+          {
+            "symbol": "close",
+            "image": "libsystem_kernel.dylib",
+            "samples": 5
+          }
+        ]
+      },
+      "private-read64k": {
+        "interval_ms": 10,
+        "duration_seconds": 2,
+        "reported_leaves_threshold": 5,
+        "leaves": [
+          {
+            "symbol": "__psynch_cvwait",
+            "image": "libsystem_kernel.dylib",
+            "samples": 181
+          },
+          {
+            "symbol": "_RNvMs4_NtNtCs4URDMZAaG60_13trames_memory8parallel4pageNtB5_8RawGuard10write_from",
+            "image": "trames-before",
+            "samples": 57
+          },
+          {
+            "symbol": "pread",
+            "image": "libsystem_kernel.dylib",
+            "samples": 38
+          },
+          {
+            "symbol": "madvise",
+            "image": "libsystem_kernel.dylib",
+            "samples": 26
+          },
+          {
+            "symbol": "hv_trap",
+            "image": "Hypervisor",
+            "samples": 21
+          },
+          {
+            "symbol": "_RNvMs4_Cs4URDMZAaG60_13trames_memoryNtB5_6Memory16fill_translation",
+            "image": "trames-before",
+            "samples": 6
+          },
+          {
+            "symbol": "_platform_memmove",
+            "image": "libsystem_platform.dylib",
+            "samples": 5
+          }
+        ]
+      },
+      "private-write64k": {
+        "interval_ms": 10,
+        "duration_seconds": 2,
+        "reported_leaves_threshold": 5,
+        "leaves": [
+          {
+            "symbol": "__psynch_cvwait",
+            "image": "libsystem_kernel.dylib",
+            "samples": 181
+          },
+          {
+            "symbol": "pwrite",
+            "image": "libsystem_kernel.dylib",
+            "samples": 57
+          },
+          {
+            "symbol": "_RNvMs1_NtNtCs4URDMZAaG60_13trames_memory8parallel4pageNtB5_11MutablePage9copy_read",
+            "image": "trames-before",
+            "samples": 55
+          },
+          {
+            "symbol": "hv_trap",
+            "image": "Hypervisor",
+            "samples": 17
+          },
+          {
+            "symbol": "__bzero",
+            "image": "libsystem_platform.dylib",
+            "samples": 9
+          },
+          {
+            "symbol": "mach_absolute_time",
+            "image": "libsystem_kernel.dylib",
+            "samples": 8
+          },
+          {
+            "symbol": "_RNvMs1_NtCs4URDMZAaG60_13trames_memory9anonymousNtB7_6Memory11sparse_page",
+            "image": "trames-before",
+            "samples": 7
+          }
+        ]
+      },
+      "private-read4k": {
+        "interval_ms": 10,
+        "duration_seconds": 2,
+        "reported_leaves_threshold": 5,
+        "leaves": [
+          {
+            "symbol": "__psynch_cvwait",
+            "image": "libsystem_kernel.dylib",
+            "samples": 173
+          },
+          {
+            "symbol": "hv_trap",
+            "image": "Hypervisor",
+            "samples": 56
+          },
+          {
+            "symbol": "pread",
+            "image": "libsystem_kernel.dylib",
+            "samples": 26
+          },
+          {
+            "symbol": "_platform_memmove",
+            "image": "libsystem_platform.dylib",
+            "samples": 20
+          },
+          {
+            "symbol": "_RNvMs4_NtNtCs4URDMZAaG60_13trames_memory8parallel4pageNtB5_8RawGuard10write_from",
+            "image": "trames-before",
+            "samples": 11
+          },
+          {
+            "symbol": "_platform_memset",
+            "image": "libsystem_platform.dylib",
+            "samples": 11
+          },
+          {
+            "symbol": "mach_absolute_time",
+            "image": "libsystem_kernel.dylib",
+            "samples": 6
+          }
+        ]
+      }
+    },
+    "after": {
+      "host-stat": {
+        "interval_ms": 10,
+        "duration_seconds": 2,
+        "reported_leaves_threshold": 5,
+        "leaves": [
+          {
+            "symbol": "__psynch_cvwait",
+            "image": "libsystem_kernel.dylib",
+            "samples": 177
+          },
+          {
+            "symbol": "fstatat",
+            "image": "libsystem_kernel.dylib",
+            "samples": 84
+          },
+          {
+            "symbol": "hv_trap",
+            "image": "Hypervisor",
+            "samples": 48
+          },
+          {
+            "symbol": "_platform_memmove",
+            "image": "libsystem_platform.dylib",
+            "samples": 5
+          }
+        ]
+      },
+      "private-read64k": {
+        "interval_ms": 10,
+        "duration_seconds": 2,
+        "reported_leaves_threshold": 5,
+        "leaves": [
+          {
+            "symbol": "__psynch_cvwait",
+            "image": "libsystem_kernel.dylib",
+            "samples": 180
+          },
+          {
+            "symbol": "pread",
+            "image": "libsystem_kernel.dylib",
+            "samples": 54
+          },
+          {
+            "symbol": "_RNvMs4_NtNtCs4URDMZAaG60_13trames_memory8parallel4pageNtB5_8RawGuard10write_from",
+            "image": "trames-after",
+            "samples": 26
+          },
+          {
+            "symbol": "madvise",
+            "image": "libsystem_kernel.dylib",
+            "samples": 26
+          },
+          {
+            "symbol": "hv_trap",
+            "image": "Hypervisor",
+            "samples": 20
+          },
+          {
+            "symbol": "_platform_memmove",
+            "image": "libsystem_platform.dylib",
+            "samples": 7
+          },
+          {
+            "symbol": "_platform_memset",
+            "image": "libsystem_platform.dylib",
+            "samples": 7
+          },
+          {
+            "symbol": "mach_absolute_time",
+            "image": "libsystem_kernel.dylib",
+            "samples": 7
+          }
+        ]
+      },
+      "private-write64k": {
+        "interval_ms": 10,
+        "duration_seconds": 2,
+        "reported_leaves_threshold": 5,
+        "leaves": [
+          {
+            "symbol": "__psynch_cvwait",
+            "image": "libsystem_kernel.dylib",
+            "samples": 181
+          },
+          {
+            "symbol": "pwrite",
+            "image": "libsystem_kernel.dylib",
+            "samples": 88
+          },
+          {
+            "symbol": "_RNvMs1_NtNtCs4URDMZAaG60_13trames_memory8parallel4pageNtB5_11MutablePage9copy_read",
+            "image": "trames-after",
+            "samples": 29
+          },
+          {
+            "symbol": "hv_trap",
+            "image": "Hypervisor",
+            "samples": 20
+          },
+          {
+            "symbol": "mach_absolute_time",
+            "image": "libsystem_kernel.dylib",
+            "samples": 8
+          },
+          {
+            "symbol": "_RNvMs4_Cs4URDMZAaG60_13trames_memoryNtB5_6Memory16fill_translation",
+            "image": "trames-after",
+            "samples": 7
+          },
+          {
+            "symbol": "_platform_memmove",
+            "image": "libsystem_platform.dylib",
+            "samples": 5
+          }
+        ]
+      },
+      "private-read4k": {
+        "interval_ms": 10,
+        "duration_seconds": 2,
+        "reported_leaves_threshold": 5,
+        "leaves": [
+          {
+            "symbol": "__psynch_cvwait",
+            "image": "libsystem_kernel.dylib",
+            "samples": 169
+          },
+          {
+            "symbol": "hv_trap",
+            "image": "Hypervisor",
+            "samples": 50
+          },
+          {
+            "symbol": "pread",
+            "image": "libsystem_kernel.dylib",
+            "samples": 37
+          },
+          {
+            "symbol": "mach_absolute_time",
+            "image": "libsystem_kernel.dylib",
+            "samples": 14
+          },
+          {
+            "symbol": "_platform_memset",
+            "image": "libsystem_platform.dylib",
+            "samples": 12
+          },
+          {
+            "symbol": "_platform_memmove",
+            "image": "libsystem_platform.dylib",
+            "samples": 9
+          }
+        ]
+      }
+    }
+  },
+  "interop_acceptance": {
+    "complete": true,
+    "records": [
+      {
+        "case": "notify-read",
+        "cpus": 1,
+        "concurrent_guest": false,
+        "wake_to_result_ms": 2.7559999999997586,
+        "result": {
+          "events": [
+            {
+              "wd": 1,
+              "mask": 256,
+              "cookie": 0,
+              "name": "native-created"
+            }
+          ]
+        },
+        "stdout": "INTEROP_OK:notify-read\n",
+        "stderr": ""
+      },
+      {
+        "case": "notify-read",
+        "cpus": 4,
+        "concurrent_guest": true,
+        "wake_to_result_ms": 2.690042000001114,
+        "result": {
+          "events": [
+            {
+              "wd": 1,
+              "mask": 256,
+              "cookie": 0,
+              "name": "native-created"
+            }
+          ]
+        },
+        "stdout": "INTEROP_OK:notify-read\n",
+        "stderr": ""
+      },
+      {
+        "case": "notify-poll",
+        "cpus": 1,
+        "concurrent_guest": false,
+        "wake_to_result_ms": 2.757749999998893,
+        "result": {
+          "events": [
+            {
+              "wd": 1,
+              "mask": 256,
+              "cookie": 0,
+              "name": "native-created"
+            }
+          ]
+        },
+        "stdout": "INTEROP_OK:notify-poll\n",
+        "stderr": ""
+      },
+      {
+        "case": "notify-poll",
+        "cpus": 4,
+        "concurrent_guest": true,
+        "wake_to_result_ms": 2.7301670000010603,
+        "result": {
+          "events": [
+            {
+              "wd": 1,
+              "mask": 256,
+              "cookie": 0,
+              "name": "native-created"
+            }
+          ]
+        },
+        "stdout": "INTEROP_OK:notify-poll\n",
+        "stderr": ""
+      },
+      {
+        "case": "notify-epoll",
+        "cpus": 1,
+        "concurrent_guest": false,
+        "wake_to_result_ms": 2.7352080000007106,
+        "result": {
+          "events": [
+            {
+              "wd": 1,
+              "mask": 256,
+              "cookie": 0,
+              "name": "native-created"
+            }
+          ]
+        },
+        "stdout": "INTEROP_OK:notify-epoll\n",
+        "stderr": ""
+      },
+      {
+        "case": "notify-epoll",
+        "cpus": 4,
+        "concurrent_guest": true,
+        "wake_to_result_ms": 2.736457999999331,
+        "result": {
+          "events": [
+            {
+              "wd": 1,
+              "mask": 256,
+              "cookie": 0,
+              "name": "native-created"
+            }
+          ]
+        },
+        "stdout": "INTEROP_OK:notify-epoll\n",
+        "stderr": ""
+      },
+      {
+        "case": "notify-close-reuse",
+        "cpus": 1,
+        "concurrent_guest": false,
+        "wake_to_result_ms": 2.69512499999891,
+        "result": {
+          "events": [
+            {
+              "wd": 1,
+              "mask": 256,
+              "cookie": 0,
+              "name": "native-created"
+            }
+          ]
+        },
+        "stdout": "INTEROP_OK:notify-close-reuse\n",
+        "stderr": ""
+      },
+      {
+        "case": "notify-close-reuse",
+        "cpus": 4,
+        "concurrent_guest": true,
+        "wake_to_result_ms": 7.690082999999959,
+        "result": {
+          "events": [
+            {
+              "wd": 1,
+              "mask": 256,
+              "cookie": 0,
+              "name": "native-created"
+            }
+          ]
+        },
+        "stdout": "INTEROP_OK:notify-close-reuse\n",
+        "stderr": ""
+      },
+      {
+        "case": "flock-wait",
+        "cpus": 1,
+        "concurrent_guest": false,
+        "wake_to_result_ms": 2.63791699999949,
+        "result": {
+          "acquired": true
+        },
+        "stdout": "INTEROP_OK:flock-wait\n",
+        "stderr": ""
+      },
+      {
+        "case": "flock-wait",
+        "cpus": 4,
+        "concurrent_guest": true,
+        "wake_to_result_ms": 2.562417000000039,
+        "result": {
+          "acquired": true
+        },
+        "stdout": "INTEROP_OK:flock-wait\n",
+        "stderr": ""
+      },
+      {
+        "case": "flock-hold",
+        "cpus": 1,
+        "concurrent_guest": false,
+        "wake_to_result_ms": 280.12066700000025,
+        "result": {
+          "released": true
+        },
+        "stdout": "INTEROP_OK:flock-hold\n",
+        "stderr": ""
+      },
+      {
+        "case": "flock-hold",
+        "cpus": 4,
+        "concurrent_guest": true,
+        "wake_to_result_ms": 280.7447090000004,
+        "result": {
+          "released": true
+        },
+        "stdout": "INTEROP_OK:flock-hold\n",
+        "stderr": ""
+      }
+    ]
+  },
+  "workspace_acceptance": {
+    "complete": true,
+    "records": [
+      {
+        "case": "build",
+        "exit": 0,
+        "stdout": "BUILD_OK",
+        "stderr": ""
+      },
+      {
+        "case": "static",
+        "exit": 0,
+        "stdout": "WORKSPACE_OK\n",
+        "stderr": ""
+      },
+      {
+        "case": "dynamic_and_dlopen",
+        "exit": 0,
+        "stdout": "WORKSPACE_OK\n",
+        "stderr": ""
+      },
+      {
+        "case": "readonly_cow_execution",
+        "exit": 0,
+        "stdout": "WORKSPACE_OK\n",
+        "stderr": ""
+      },
+      {
+        "case": "initial_script",
+        "exit": 0,
+        "stdout": "SCRIPT_OK:argument\n",
+        "stderr": ""
+      },
+      {
+        "case": "initial_env_python_script",
+        "exit": 0,
+        "stdout": "PYTHON_SCRIPT_OK\n",
+        "stderr": ""
+      },
+      {
+        "case": "guest_exec_script_and_symlink",
+        "exit": 0,
+        "stdout": "WORKSPACE_OK\nSCRIPT_OK:nested\n",
+        "stderr": ""
+      },
+      {
+        "case": "git",
+        "exit": 0,
+        "stdout": "GIT_OK",
+        "stderr": ""
+      },
+      {
+        "case": "python_sqlite_ctypes",
+        "exit": 0,
+        "stdout": "PYTHON_SQLITE_OK\n",
+        "stderr": ""
+      },
+      {
+        "case": "execute_permission",
+        "exit": 0,
+        "stdout": "PERMISSION_OK",
+        "stderr": "/bin/sh: ./denied: Permission denied\n"
+      },
+      {
+        "case": "noexec_mount",
+        "exit": 0,
+        "stdout": "NOEXEC_OK",
+        "stderr": "/bin/sh: /work/dynamic: Permission denied\n"
+      }
+    ]
+  },
+  "checks": {
+    "mac_full_runtime": "passed",
+    "linux_full_runtime": "passed",
+    "memory_unit": {
+      "passed": 155,
+      "ignored": 1
+    },
+    "vfs_unit": {
+      "passed": 366,
+      "ignored": 1
+    },
+    "linux_abi_unit": {
+      "passed": 143,
+      "ignored": 1
+    },
+    "interpreter_kernel": {
+      "passed": 227,
+      "ignored": 3
+    },
+    "targeted_proc_stat_regression": "new process behind proc symlink refreshes; ordinary queries avoid refresh; failed lookup preserves output",
+    "raw_copy_boundaries": "unaligned source/destination, 64-byte block boundaries and scalar tails preserve bytes and neighbors",
+    "mac_linux_runtime_clippy": "passed",
+    "mac_product_clippy": "passed",
+    "ipad_default_and_opt_in_hostfs_ffi": "aarch64-apple-ios check passed",
+    "scope": "Reused unchanged CPU/network/graphics acceptance; runtime unit/integration suites and affected kernel paths rerun locally"
+  },
+  "remaining_costs": [
+    "Native file read/write syscalls and HVF execution/exit boundaries remain",
+    "Guest copying and per-page validation/materialization/physical-slot lifecycle remain; no direct guest-buffer disk DMA contract was introduced",
+    "Shared path stat still repeats component metadata checks; this change introduces no cross-syscall namespace or permission cache",
+    "MAP_SHARED and native POSIX range locks retain their previously documented unsupported scope"
+  ],
+  "artifacts": {
+    "before_sha256": "9bd0b10ce7fa474c7a3e96279afb0fc51c2086f10acf08bdaa0d30fce4186a65",
+    "raw_only_sha256": "84f7f2601cb323079934d83e8521b21cf5b7d92c0ab714d643c3803100fd447b",
+    "after_sha256": "502bd589aa7d7a5611ceba9a0e0da421bac100c9ba575082769c4cb1cfe805fd",
+    "fixture_sha256": "8de51b07d19e0c859e4d559699610f5fc5ed6ecea6e442a0fbfb105b5c4c991e"
+  },
+  "reference": "https://developer.apple.com/documentation/system/stat/flags-swift.struct/symlinknofollowany"
+}
