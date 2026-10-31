@@ -1,0 +1,24 @@
+Trames warm Interlock application icon assets
+Generated with the built-in image_gen tool, 2026-11-01.
+The selected reference is trames-interlock-warm-approved-concept.png.
+The generated images were resized to platform resolutions with macOS sips.
+Mac icon representations were packaged with macOS iconutil.
+
+iPad source: exec-66072668-18d0-4783-a16b-e17490172c4c.png
+Saved master: trames-app-icon-ios.png (1024 x 1024, opaque RGB).
+Generation prompt:
+
+Use case: logo-brand / production app-icon extraction.
+Input is the selected and APPROVED Trames warm INTERLOCK concept sheet. This is a faithful extraction and formatting task, NOT a redesign.
+Produce ONE square application icon only, 1024 by 1024 if possible. Use the exact colored logo from the UPPER-RIGHT rounded-square app-icon specimen of the reference, placed on a completely opaque flat dark warm aubergine background #2D1E26. Expand that dark background to cover the ENTIRE SQUARE edge to edge, INCLUDING all four corners. iOS applies its own corner mask later. No pre-rounded exterior corner, no outside white border, no transparency, no shadow.
+Preserve the approved original INTERLOCK logo geometry exactly: broad rounded top in coral-orange left and amber-yellow right; brick-red upper inner triangular fold; burgundy central vertical fold; terracotta lower stem; the distinctive thick WHITE diagonal channel that turns vertically downward on the right side of the central stem. The white stripe stays WHITE even on the dark background. Keep the same mark proportions, color-face boundaries, rounded corners, and visual scale as the upper-right icon specimen. The mark should occupy about 72 percent of the square width and about 72 percent of its height, optically centered with generous equal padding. Preserve the recognizable T-like silhouette; do not shorten the stem or change the cap.
+Use clean, smooth flat color planes matching the reference, crisp precise vector-like edges, no texture, no lighting, no bevel, no gloss, no gradients. This will be a shipping AppIcon asset. No text at all: remove all headings, wordmarks, labels and the monochrome specimen. Show just the single approved warm INTERLOCK icon on a full-bleed dark aubergine square. Do not introduce any new design elements.
+
+Mac source: exec-d43e0bf2-d470-48be-bc04-238c48e0e661.png
+Saved master: trames-app-icon-macos.png (1024 x 1024, RGBA).
+Generation prompt:
+
+Use case: logo-brand / platform packaging edit.
+Input is the FINAL APPROVED SQUARE Trames application icon. Create its macOS icon version by preserving the original icon artwork and applying only the macOS outer shape and transparent margin.
+Produce one square canvas, preferably 1024 by 1024, with a dark warm aubergine #2D1E26 rounded-square tile occupying about 82 percent of canvas width and height, centered, leaving TRANSPARENT outside margins on all four sides. Tile outer corners are smoothly rounded macOS-style, radius about 20 percent of the tile width. The outside area including all canvas corners must be genuinely transparent alpha, not white, not a checkerboard texture, not dark fill.
+Inside the tile use EXACTLY the original Trames warm Interlock mark from the supplied image, with the exact same silhouette, facet layout, coral upper-left, amber upper-right, brick-red upper fold, dark burgundy central facet, terracotta lower stem, and WHITE diagonal passage that turns vertically downward on the right. Scale the entire supplied icon artwork together into the tile, keeping the relative logo padding and positioning unchanged. Do not alter the logo or any geometry. No new perspective, texture, lighting, gradients, bevels or shadows. No text, no labels, no mockup, no alternatives. A clean shipping macOS app icon on true transparent outside canvas.

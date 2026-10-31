@@ -1,0 +1,21 @@
+Selected by the project owner in the logo design chat on 2026-11-01.
+This file records the built-in image_gen prompt for the selected concept sheet.
+The PNG is a design reference sheet, not an extracted production app icon.
+
+Reference image: exec-04053e1b-2265-43c7-a916-d4148566ef85.png
+Generated image: exec-021d4aa2-f61d-4b99-8a0d-366b103a3ef6.png
+
+Use case: logo-brand / precise recolor.
+Input image is the EDIT TARGET. Recolor this exact Trames INTERLOCK presentation sheet into a warm palette. The user has carefully selected this geometry and now asks ONLY to change the color family.
+ABSOLUTE INVARIANTS: preserve the entire image layout, canvas proportions, exact logo outline, exact T-like silhouette, upper cap, stem dimensions, diagonal negative-space channel, every existing internal facet boundary, corner radii, wordmark typography, exact text "trames / interlock" and "trames", all specimen positions and sizes. This is a COLOR EDIT ONLY. Do not redraw, reinterpret, simplify or elaborate the geometry.
+Replace the cool blue/cyan/violet palette with a harmonious warm coral/amber/burgundy family:
+- The existing cobalt-blue upper-left plane becomes rich coral/vermilion, approximately #E75B42.
+- The existing cyan upper-right plane becomes warm amber/apricot, approximately #F4AF45.
+- The existing small darker upper inner triangular fold becomes deep brick red, approximately #A83F3D.
+- The existing deep navy central stem facet becomes dark burgundy, approximately #6D293B.
+- The existing blue-violet lower stem face becomes warm terracotta/rust, approximately #C7543E.
+Maintain clear tonal distinctions so the same original folded/interlocking construction remains visible. Solid confident color planes with restrained tonal shading only insofar as it already exists in the original image. No new facets or details.
+Keep the large mark's negative-space passage white on the clean warm-white sheet.
+The upper-right app-icon tile background changes from navy to very dark warm aubergine/brown, approximately #2D1E26; apply exactly the same warm recoloring to its logo while preserving its original white passage.
+The lower-right one-ink specimen changes to a single dark burgundy ink with its original white passage. The title and wordmark change from navy to the same very dark warm aubergine. Background remains clean near-white.
+Avoid: cool cyan/blue remnants, added structures, altered silhouette, changed cuts, extra text, new variants, perspective, shadows, ornamental decoration. It must be instantly recognizable as the SAME SELECTED LOGO, simply in a warm colorway.
