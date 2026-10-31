@@ -2,9 +2,13 @@
 
 Status: original-package boot, service, journal and halt acceptance passed,
 2026-10-31, on Mac HVF with 1 and 4 guest CPUs. No units failed in these runs.
-The Mac environment manager still starts shell environments by default; a
-product systemd boot/attach mode is not enabled yet.
-Shared runtime: [`1fafdad`](https://github.com/kb5000/trames-runtime/commit/1fafdad3ecb15f65527cb38b905d49c7be23bed7).
+The Mac product now offers a per-environment `shell`/`systemd` boot choice
+(initially Debian for systemd); shell remains the default. The current product
+mode is foreground, with one managed root console. Live exec/reattach and an
+independent background lifetime remain future work. See the
+[Mac deployment guide](https://github.com/kb5000/trames-mac/blob/main/docs/guides/environments.md#optional-systemd-service-environment).
+Current shared runtime: [`ca41884`](https://github.com/kb5000/trames-runtime/commit/ca418842eb5f22c049c7afa07a570475cbfc39a8).
+The original-package basic-target acceptance above used `1fafdad`.
 
 ## Product and runtime boundary
 
@@ -142,22 +146,44 @@ and guest halt paths are implemented in the shared runtime. Continue measuring
 interfaces required by real workloads; do not infer complete Linux compatibility
 from a successful target or advertise unenforced cgroup controllers.
 
-### 2. Reusable init preparation (fixture accepted)
+### 2. Reusable init preparation (Mac product integrated)
 
-The boot fixture supplies private API mounts, console and guest capability policy.
-Move this setup into a reusable init-capable environment path before enabling
-product boot mode. Preserve resolver settings and authorized host-directory
-mounts, persist per-instance machine identity, and report guest readiness through
-the documented notification protocol. Independent and cloned environments need
-separate identities and a new boot ID for each boot.
+Mac's isolated init policy supplies private API mounts, a console and real guest
+capability state, then loads original systemd as PID 1. Per-boot tmpfs byte/inode
+ceilings are unlimited and allocate only actual contents; a 16 MiB `/run` default
+was insufficient for systemd's daemon-reload safety margin. Opt-in provisions
+original Debian packages once. Readiness uses authenticated PID 1 notifications;
+stop waits for its signal-handler readiness and delivers Linux SIGRTMIN+3 through
+the common process kernel before normal halt/teardown. Machine identity persists
+across boots and is renewed for imported/restored clones.
 
-### 3. Separate environment lifetime from terminal lifetime
+The root console runs under the original console-getty service with a local shell
+override. This is a service container, with logind explicitly skipped via a
+per-boot `ConditionVirtualization=!container` policy. Shared mount propagation
+and the Linux seat/session stack are not implemented. Other service sandbox
+properties remain enabled. The stacked `pivot_root(".", ".")`/lazy-unmount lookup
+bug found while probing logind is fixed in the shared VFS and checked against
+native Linux; that fix alone does not implement mount propagation.
+
+Product acceptance on 2026-11-01 uses a fresh verified Debian rootfs and original
+apt packages. It passes 1/4 CPU multi-user boots with no failed units under the
+explicit logind exclusion, live daemon-reload, persistent enabled oneshot service
+after restart, a notify service, real D-Bus/journal control, console input,
+graceful external stop, host terminal restoration, mode switching and backup
+clone identity. Observed READY times were 3.67 s (1 CPU) and 2.00 s (4 CPUs), not
+benchmark medians. Shared VFS checks passed on Mac (376 + 1 ignored); affected
+pivot-root cases and the identical fixture passed on native Linux. The fixture
+also passed Mac HVF with 1/4 CPUs, and the common host-root-signal test and iPad
+compile check passed. Mac's local build, format, boundaries, clippy and workspace
+tests passed (16 tests, 48 hardware-only tests ignored).
+
+### 3. Separate environment lifetime from terminal lifetime (future)
 
 Current Mac `env start` runs a single top-level command and owns the store until
 that command/session exits. That works for a login shell; it does not provide an
-independent systemd instance plus attachable clients. Add an explicit boot mode
-(`shell` or `systemd`, initially Debian only) and let the existing runtime process
-own the running environment independently of the manager window or client TTY.
+independent systemd instance plus attachable clients. The explicit boot choice is now available. A future path should let the
+existing runtime process own the running environment independently of a client
+TTY; closing the manager already leaves the foreground Terminal process alive.
 
 Add `env exec`/`env shell` that enter that same live guest process kernel, sharing
 its VFS, PID namespace, credentials and cgroups. A second runtime reopening the
@@ -170,14 +196,14 @@ resources, without a new polling bus or resource coordinator.
 
 Boot completion must mean a guest readiness notification, not just that the host
 called Runtime::run. Stop must first request guest init shutdown, let services
-finish and filesystems sync, and only then release the environment. Guest reboot
-restarts that environment; it never reboots macOS. Explicit forced cancellation
+finish and filesystems sync, and only then release the environment. Future guest reboot should
+restart only that environment; current restart requests remain unsupported. Explicit forced cancellation
 remains a separate last-resort operation.
 
 ### 4. Integrate management and accept real workloads
 
-Expose boot mode, starting/running/stopping/failed state, terminal attachment and
-service diagnostics in the native manager. Preserve the current Alpine shell
+Boot mode and foreground terminal launch are exposed in the native manager.
+Detailed starting/stopping/service state and live terminal attachment remain future work. Preserve the current Alpine shell
 workflow. Installing systemd is an explicit setup operation, not an apt install
 performed on every environment start.
 

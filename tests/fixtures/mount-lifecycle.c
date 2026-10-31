@@ -14,6 +14,7 @@
 #include <sys/mount.h>
 #include <sys/personality.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #define CHECK(x) do { if (!(x)) { fprintf(stderr,"line %d: %s: %s\n",__LINE__,#x,strerror(errno)); exit(1); } } while (0)
@@ -116,6 +117,24 @@ int main(void) {
     wait_event(outer, 0xfedcba9876543210ULL);
     wait_event(monitor, 0x123456789abcdef0ULL);
     CHECK(!contains_mount(info, b));
+    child = fork(); CHECK(child >= 0);
+    if (child == 0) {
+        CHECK(unshare(CLONE_NEWNS) == 0);
+        CHECK(mount("tmpfs", a, "tmpfs", 0, "size=4m") == 0);
+        CHECK(chdir(a) == 0);
+        int cwd = open(".", O_RDONLY | O_DIRECTORY); CHECK(cwd >= 0);
+        int marker = open("marker", O_CREAT | O_RDWR, 0600);
+        CHECK(marker >= 0 && write(marker, "new", 3) == 3 && close(marker) == 0);
+        CHECK(syscall(SYS_pivot_root, ".", ".") == 0);
+        CHECK(umount2(".", MNT_DETACH) == 0);
+        CHECK(chroot(".") == 0 && chdir("/") == 0);
+        CHECK(stat("/marker", &st) == 0);
+        CHECK(stat(directory, &st) < 0 && errno == ENOENT);
+        CHECK(fchdir(cwd) == 0 && stat("marker", &st) == 0);
+        _exit(0);
+    }
+    CHECK(waitpid(child, &status, 0) == child && WIFEXITED(status) && WEXITSTATUS(status) == 0);
+    puts("pivot-root: stacked old root detached via retained dot cwd: ok");
     CHECK(close(info) == 0 && close(monitor) == 0 && close(outer) == 0 && close(notify) == 0);
     CHECK(rmdir(a) == 0 && rmdir(b) == 0 && rmdir(isolated) == 0 && rmdir(directory) == 0);
     puts("mount-namespace: open namespace pinning, private changes and unmount notification: ok");
