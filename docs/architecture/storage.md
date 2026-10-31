@@ -131,7 +131,12 @@ buffers. Existing destinations are preserved unless a regular-file upload uses
 `put --replace`, which stages and atomically renames the new inode. The existing
 exclusive store lock remains in effect; live exchange uses a mounted directory.
 
-Host-file mmap, extended attributes and special files are not implemented.
+Host files support demand-read MAP_PRIVATE mappings for executable/library loading
+and private COW data. MAP_SHARED, extended attributes and special files are not
+implemented. Private mapping pages do not replace the inode I/O cache, so normal
+reads still observe native edits. Resident private pages are snapshots; there is
+no external edit/truncate watcher. Guest-known size changes invalidate EOF
+metadata through a relaxed scalar generation.
 External host changes are visible to normal file I/O and lookups, but are not
 reported through guest inotify. The iPad product keeps its existing Files and
 FileProvider path and does not enable hostfs by default. The Mac

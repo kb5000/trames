@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-31",
+  "complete": true,
+  "scope": "Shared Linux ARM64 development workspace, native executables and libraries, and MAP_PRIVATE data. MAP_SHARED is explicitly unsupported.",
+  "baseline_runtime": "4eb7e56d168e5ed0ce1b85c032e0a433d5201c96",
+  "environment": {
+    "host": {
+      "cpu": "Apple M6",
+      "logical_cpus": 12,
+      "memory_gib": 24,
+      "os": "macOS 27.0.1 (26A434)",
+      "sdk": "macOS 27.2",
+      "filesystem": "APFS"
+    },
+    "executor": "HVF ARM64 with the common userspace Linux kernel",
+    "cpus": 4,
+    "network": "off",
+    "windows": false,
+    "rootfs": "Alpine 3.22.6 aarch64 minirootfs",
+    "tools": {
+      "gcc": "14.2.0-r6",
+      "git": "2.49.1-r0",
+      "python": "3.12.16-r0",
+      "layout": "Linux /usr and /lib mounted read-only from a prepared native tools tree; /work mounted read/write. This is not the Mac host system tree."
+    }
+  },
+  "sha256": {
+    "runner": "5d3c18a979263c3ccfb8feba1fd2fbbbe7792d0bd4e3a9b9f08557cf5c120771",
+    "rootfs": "821565fa8f3953eefd12497b166b4b50add2f7c57fb312e75862f5867e06fefe",
+    "tools_archive": "a7cade3f24522acca193bea4aab0a7d64c3a0dd4fdbce24b13104faa6d9248e0",
+    "fixture": "39ca04258ffbb1e7e7eb4fdeb78264b048bb0141994e89fc176b82fc1e9a6f73"
+  },
+  "fixture": "tests/fixtures/hostfs-workspace.c",
+  "harness": "tests/integration/hostfs-workspace.py",
+  "implementation": [
+    "Private host-file pages retain the original native FD and read only on first reach through the existing shared guest page/COW model.",
+    "Private map snapshots never replace the ordinary inode I/O cache, so normal reads continue to observe native edits.",
+    "Guest-known length changes update EOF metadata through relaxed scalar generations, including after private COW.",
+    "Initial session launch and execve/execveat share one bounded shebang parser.",
+    "Executable capabilities retain their native inode across host atomic replacement.",
+    "Create/open preserves the creation FD when mode bits are already read-only, fixing Git object creation without changing permissions.",
+    "Weak per-access handle registrations preserve older open files after the newest handle closes, without retaining one FD per cached closed inode."
+  ],
+  "records": [
+    {
+      "case": "build",
+      "exit": 0,
+      "stdout": "BUILD_OK",
+      "stderr": ""
+    },
+    {
+      "case": "static",
+      "exit": 0,
+      "stdout": "WORKSPACE_OK\n",
+      "stderr": ""
+    },
+    {
+      "case": "dynamic_and_dlopen",
+      "exit": 0,
+      "stdout": "WORKSPACE_OK\n",
+      "stderr": ""
+    },
+    {
+      "case": "readonly_cow_execution",
+      "exit": 0,
+      "stdout": "WORKSPACE_OK\n",
+      "stderr": ""
+    },
+    {
+      "case": "initial_script",
+      "exit": 0,
+      "stdout": "SCRIPT_OK:argument\n",
+      "stderr": ""
+    },
+    {
+      "case": "guest_exec_script_and_symlink",
+      "exit": 0,
+      "stdout": "WORKSPACE_OK\nSCRIPT_OK:nested\n",
+      "stderr": ""
+    },
+    {
+      "case": "git",
+      "exit": 0,
+      "stdout": "GIT_OK",
+      "stderr": ""
+    },
+    {
+      "case": "python_sqlite_ctypes",
+      "exit": 0,
+      "stdout": "PYTHON_SQLITE_OK\n",
+      "stderr": ""
+    },
+    {
+      "case": "execute_permission",
+      "exit": 0,
+      "stdout": "PERMISSION_OK",
+      "stderr": "/bin/sh: ./denied: Permission denied\n"
+    },
+    {
+      "case": "noexec_mount",
+      "exit": 0,
+      "stdout": "NOEXEC_OK",
+      "stderr": "/bin/sh: /work/dynamic: Permission denied\n"
+    },
+    {
+      "case": "initial_env_python_script",
+      "exit": 0,
+      "stdout": "PYTHON_SCRIPT_OK\n",
+      "stderr": ""
+    }
+  ],
+  "negative_probe": {
+    "case": "sqlite_wal_probe",
+    "exit": 1,
+    "stdout": "('wal',)\n",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nsqlite3.OperationalError: disk I/O error\n"
+  },
+  "validation": {
+    "mac_runtime_workspace_all_features": {
+      "passed": 882,
+      "failed": 0,
+      "ignored": 12,
+      "scope": "Full local suite before final host create/EOF/handle refinements; affected VFS rechecked."
+    },
+    "linux_runtime_workspace_all_features": {
+      "passed": 882,
+      "failed": 0,
+      "ignored": 11,
+      "scope": "Full local suite before final host EOF/handle refinements; affected VFS rechecked."
+    },
+    "mac_final_vfs": {
+      "passed": 359,
+      "failed": 0,
+      "ignored": 1
+    },
+    "linux_final_vfs": {
+      "passed": 360,
+      "failed": 0,
+      "ignored": 1
+    },
+    "interpreter_kernel_conformance_hostfs": {
+      "passed": 226,
+      "failed": 0,
+      "ignored": 3
+    },
+    "strict_clippy": [
+      "Mac VFS/session all targets/all features",
+      "Linux VFS/session all targets/all features",
+      "Mac product workspace all targets/all features"
+    ],
+    "compatibility": [
+      "Final iPad FFI build check",
+      "Final iPad optional hostfs compile check"
+    ],
+    "build": "Final normal Mac bundle build, signing and strict signature verification passed.",
+    "new_unit_coverage": [
+      "Lazy private pages and guest COW leave native data unchanged, including a 4 KiB file offset on the 16 KiB-page Mac.",
+      "Native edits remain visible through normal pread after a private page becomes resident.",
+      "Original native inode survives atomic replacement and descriptor close for exec and mapping.",
+      "Partial final page is zero-filled; a past-EOF page faults; guest truncation invalidates even an existing private COW page.",
+      "Creating a 0444 file keeps its original writable FD.",
+      "Closing the latest same-access native handle retains earlier open-unlinked descriptions.",
+      "Shared shebang parser covers CRLF, optional argument grouping and invalid/oversized headers."
+    ],
+    "unchanged_results_reused": "No repeat of unchanged CPU, network, graphics or full I/O throughput acceptance."
+  },
+  "limits": [
+    "All host MAP_SHARED mappings return ENODEV; SQLite WAL probe currently fails with a disk I/O error.",
+    "Resident private mapped pages are snapshots and do not monitor external host edits/truncation; remap when coordinating such changes.",
+    "Host edit inotify, native-writer advisory lock coordination, xattrs and special host files remain unsupported.",
+    "Programs must use the Linux ARM64 ABI; macOS Mach-O binaries are not Linux programs.",
+    "The ordinary rootfs importer remains a bounded minimal-bootstrap importer; no size limits were raised for tool fixtures."
+  ],
+  "validated_runtime": "cb8b59a9fc169b7679472d95ba3f739c9b85ff98"
+}
