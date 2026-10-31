@@ -161,9 +161,27 @@ There is no multi-instance concurrent-write protocol.
 
 See [validation](../validation/storage.md) and [limits](../security/README.md).
 
-Host file handles are opened for each inode IO operation and then closed. Guest
-open-unlinked files retain the private object and store lock until their final
-reference closes. The number of closed stored files does not consume host FDs.
+Private guest open descriptions retain native file leases. Scalar, positioned,
+mapped and worker I/O reuse the same inode backing. While an open description
+retains a lease, repeated data operations do not reopen or revalidate the private
+object path. Read and write leases preserve guest access checks, and positioned native I/O does not share a native seek
+position. The backing holds only weak handle registrations, so closing guest
+files releases those handles; the existing worker cache stays bounded.
+Open-unlinked files retain the private object and store lock through their last
+open description, mapping or pending operation. Closed cached inodes do not
+consume one native FD each.
+
+Private disk stores maintain a relaxed atomic logical-byte total. An inode
+activates its object's charge once; growth/shrink adjusts that charge under the
+existing file byte ownership, and final backing release subtracts it. Hard links
+share the charge. Staging before inode admission remains uncharged, and failed
+admission releases the staged object. Overwrites do not update the total.
+Byte admission uses this total without traversing inode lengths or counting
+nodes. Explicit statfs still computes live node counts; memory filesystems keep
+their existing accounting. There is no new coordinator, worker or global lock.
+
+See the [private I/O optimization record](../validation/private-io.json) for
+paired pre/post measurements and macOS/native Linux VM comparisons.
 Explicit native reset checks the lock before deleting an environment; it is not
 a guest syscall or an automatic response to unsupported metadata.
 

@@ -1,0 +1,1527 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-31",
+  "complete": true,
+  "scope": "single process, cached 8 MiB file, fixed work; no rendering/network",
+  "environment": {
+    "host": {
+      "cpu": "Apple M6",
+      "logical_cpus": 12,
+      "memory_gib": 24,
+      "os": "macOS 27.0.1 (26A434)",
+      "sdk": "macOS 27.2",
+      "filesystem": "APFS"
+    },
+    "trames": {
+      "executor": "HVF ARM64 with the shared userspace Linux kernel",
+      "cpus": 4,
+      "network": "off",
+      "windows": false,
+      "private_storage": "transactional object store on APFS",
+      "host_storage": "native APFS directory"
+    },
+    "linux_native": {
+      "platform": "Linux-7.0.0-38-generic-aarch64-with-glibc2.39",
+      "kernel": "7.0.0-38-generic",
+      "cpus": 6,
+      "memory_gib": 8,
+      "virtualization": "Lima VZ ARM64 native Linux kernel",
+      "filesystem": "ext4",
+      "program_sha256": "f1296a8d6786e02d595cfc46056e5139560a1a78cbc184d125a59379f08c7dc3"
+    }
+  },
+  "provenance": {
+    "baseline_runtime": "a406d30d8d0286bc80340742ed6989a8e10ae8e5",
+    "baseline_mac": "dd84331",
+    "fixture": "tests/fixtures/hostfs-bench.c",
+    "harness": "tests/integration/hostfs-perf.py",
+    "fixture_sha256": "7024e04ecb63286f61c5a3bf2a4e7c201fa366c013a44e6a018ea3e7b3fbc545",
+    "artifact_sha256": {
+      "runner": "7a34dcab0cdd9265c9be68871f03a968c9dfafbe1d4ba0fba71065c18eb69500",
+      "baseline": "848ae88fb7ead5f0c3f26e3bdffaa3df17d1c61cf400b82c6546d4c030028336",
+      "program": "f1296a8d6786e02d595cfc46056e5139560a1a78cbc184d125a59379f08c7dc3",
+      "native": "6992056cd261787f1b0a258f1928c3b5a56f438e44baaaf360f0521659f2f254",
+      "rootfs": "821565fa8f3953eefd12497b166b4b50add2f7c57fb312e75862f5867e06fefe"
+    },
+    "validated_runtime": "4eb7e56d168e5ed0ce1b85c032e0a433d5201c96"
+  },
+  "method": {
+    "working_set_mib": 8,
+    "repeats": 3,
+    "shuffle_seed": 20261031,
+    "operations": {
+      "read64k": 32768,
+      "write64k": 16384,
+      "read4k": 100000,
+      "stat": 100000
+    },
+    "timed_bytes": {
+      "read64k": 2147483648,
+      "write64k": 1073741824,
+      "read4k": 409600000
+    },
+    "compilation": {
+      "mac": "clang -O2 -Wall -Wextra -Werror tests/fixtures/hostfs-bench.c -o native-mac-bench",
+      "linux": "gcc -O2 -static -Wall -Wextra -Werror tests/fixtures/hostfs-bench.c -o native-linux-bench"
+    },
+    "same_linux_elf_in_trames_and_vm": true,
+    "initial_population_and_fsync_timed": false,
+    "final_fsync_timed_separately": true,
+    "startup_outside_fixture_interval": true,
+    "verification": "Fixed operation counts, sampled read pattern, full 8 MiB byte validation after writes; fixture fails on short I/O/errors.",
+    "isolation": "Linux native runs use the VM ext4 disk, not its shared folder. VM stopped for Mac runs; no concurrent build, renderer or profiler.",
+    "interpretation": "Cached filesystem-path comparison, not SSD bandwidth or an isolated HVF cost; native kernels, libc and storage layouts differ."
+  },
+  "implementation": [
+    "Private guest open descriptions retain native file leases; backing objects keep only weak handle registrations.",
+    "Normal scalar/positioned I/O reuses retained handles without native pathname/type admission on every transfer.",
+    "Read/write handle promotion keeps guest access checks and positioned native I/O; cached closed inodes retain no native FDs.",
+    "Private store logical usage is charged once per admitted backing, adjusted only on size changes and released with the final backing.",
+    "Byte-capacity admission no longer enumerates inode lengths or node counts; explicit statfs still enumerates live nodes.",
+    "Memory-filesystem accounting, existing worker limits and explicit fsync/manifest durability remain in place."
+  ],
+  "gains_over_previous_private": {
+    "read64k": 2.255,
+    "write64k": 3.567,
+    "read4k": 5.03
+  },
+  "medians": [
+    {
+      "variant": "before-private",
+      "case": "read64k",
+      "seconds": 0.539217917,
+      "mib_per_second": 3798.093,
+      "ops_per_second": 60769.494,
+      "sync_seconds": 0.014919958,
+      "process_wall": 0.6232637919999959,
+      "seconds_range": [
+        0.536679791,
+        0.545878208
+      ]
+    },
+    {
+      "variant": "before-private",
+      "case": "write64k",
+      "seconds": 0.4613225,
+      "mib_per_second": 2219.705,
+      "ops_per_second": 35515.285,
+      "sync_seconds": 0.014607042,
+      "process_wall": 0.5504685410000008,
+      "seconds_range": [
+        0.461113458,
+        0.461835542
+      ]
+    },
+    {
+      "variant": "before-private",
+      "case": "read4k",
+      "seconds": 1.099934,
+      "mib_per_second": 355.135,
+      "ops_per_second": 90914.546,
+      "sync_seconds": 0.014370333,
+      "process_wall": 1.190709333000001,
+      "seconds_range": [
+        1.09101775,
+        1.113698625
+      ]
+    },
+    {
+      "variant": "before-private",
+      "case": "stat",
+      "seconds": 0.654429333,
+      "mib_per_second": 0.0,
+      "ops_per_second": 152804.887,
+      "sync_seconds": 0.015015542,
+      "process_wall": 0.7430493749999982,
+      "seconds_range": [
+        0.650280333,
+        0.654483083
+      ]
+    },
+    {
+      "variant": "after-private",
+      "case": "read64k",
+      "seconds": 0.239141417,
+      "mib_per_second": 8563.97,
+      "ops_per_second": 137023.525,
+      "sync_seconds": 0.016130708,
+      "process_wall": 0.32196266600000456,
+      "seconds_range": [
+        0.234329959,
+        0.240386292
+      ]
+    },
+    {
+      "variant": "after-private",
+      "case": "write64k",
+      "seconds": 0.129329417,
+      "mib_per_second": 7917.766,
+      "ops_per_second": 126684.248,
+      "sync_seconds": 0.016921584,
+      "process_wall": 0.21490991699999995,
+      "seconds_range": [
+        0.126958917,
+        0.129424708
+      ]
+    },
+    {
+      "variant": "after-private",
+      "case": "read4k",
+      "seconds": 0.218689625,
+      "mib_per_second": 1786.207,
+      "ops_per_second": 457269.063,
+      "sync_seconds": 0.015087125,
+      "process_wall": 0.3022004579999944,
+      "seconds_range": [
+        0.214732458,
+        0.220877125
+      ]
+    },
+    {
+      "variant": "after-private",
+      "case": "stat",
+      "seconds": 0.593024375,
+      "mib_per_second": 0.0,
+      "ops_per_second": 168627.133,
+      "sync_seconds": 0.015260917,
+      "process_wall": 0.6839757919999983,
+      "seconds_range": [
+        0.582910167,
+        0.6168885
+      ]
+    },
+    {
+      "variant": "after-private-idle-mount",
+      "case": "read64k",
+      "seconds": 0.236430042,
+      "mib_per_second": 8662.182,
+      "ops_per_second": 138594.908,
+      "sync_seconds": 0.014517667,
+      "process_wall": 0.3220802500000062,
+      "seconds_range": [
+        0.233446625,
+        0.238038958
+      ]
+    },
+    {
+      "variant": "after-private-idle-mount",
+      "case": "write64k",
+      "seconds": 0.126219792,
+      "mib_per_second": 8112.832,
+      "ops_per_second": 129805.316,
+      "sync_seconds": 0.016990625,
+      "process_wall": 0.21370383400000037,
+      "seconds_range": [
+        0.126164416,
+        0.128154875
+      ]
+    },
+    {
+      "variant": "after-private-idle-mount",
+      "case": "read4k",
+      "seconds": 0.219122042,
+      "mib_per_second": 1782.682,
+      "ops_per_second": 456366.685,
+      "sync_seconds": 0.014196917,
+      "process_wall": 0.3039708749999974,
+      "seconds_range": [
+        0.218428,
+        0.221157875
+      ]
+    },
+    {
+      "variant": "after-private-idle-mount",
+      "case": "stat",
+      "seconds": 0.59147925,
+      "mib_per_second": 0.0,
+      "ops_per_second": 169067.638,
+      "sync_seconds": 0.015171375,
+      "process_wall": 0.6821518329999989,
+      "seconds_range": [
+        0.582286625,
+        0.600196334
+      ]
+    },
+    {
+      "variant": "after-host",
+      "case": "read64k",
+      "seconds": 0.252986041,
+      "mib_per_second": 8095.308,
+      "ops_per_second": 129524.933,
+      "sync_seconds": 8.333e-06,
+      "process_wall": 0.2994699589999996,
+      "seconds_range": [
+        0.2528365,
+        0.25830225
+      ]
+    },
+    {
+      "variant": "after-host",
+      "case": "write64k",
+      "seconds": 0.149280334,
+      "mib_per_second": 6859.577,
+      "ops_per_second": 109753.238,
+      "sync_seconds": 0.006934375,
+      "process_wall": 0.20433758299999738,
+      "seconds_range": [
+        0.138843291,
+        0.150443
+      ]
+    },
+    {
+      "variant": "after-host",
+      "case": "read4k",
+      "seconds": 0.272447291,
+      "mib_per_second": 1433.764,
+      "ops_per_second": 367043.473,
+      "sync_seconds": 0.003584333,
+      "process_wall": 0.32042125000000254,
+      "seconds_range": [
+        0.267582792,
+        0.275955417
+      ]
+    },
+    {
+      "variant": "after-host",
+      "case": "stat",
+      "seconds": 3.664358167,
+      "mib_per_second": 0.0,
+      "ops_per_second": 27289.909,
+      "sync_seconds": 0.004706042,
+      "process_wall": 3.717236416999995,
+      "seconds_range": [
+        3.662473584,
+        3.757520625
+      ]
+    },
+    {
+      "variant": "native-mac",
+      "case": "read64k",
+      "seconds": 0.050205,
+      "mib_per_second": 40792.75,
+      "ops_per_second": 652683.996,
+      "sync_seconds": 1e-06,
+      "process_wall": 0.05383366699999925,
+      "seconds_range": [
+        0.049586,
+        0.085306
+      ]
+    },
+    {
+      "variant": "native-mac",
+      "case": "write64k",
+      "seconds": 0.038294,
+      "mib_per_second": 26740.482,
+      "ops_per_second": 427847.705,
+      "sync_seconds": 0.00095,
+      "process_wall": 0.04314350000000644,
+      "seconds_range": [
+        0.037943,
+        0.038391
+      ]
+    },
+    {
+      "variant": "native-mac",
+      "case": "read4k",
+      "seconds": 0.033398,
+      "mib_per_second": 11696.06,
+      "ops_per_second": 2994191.274,
+      "sync_seconds": 1e-06,
+      "process_wall": 0.037468707999998685,
+      "seconds_range": [
+        0.03331,
+        0.033702
+      ]
+    },
+    {
+      "variant": "native-mac",
+      "case": "stat",
+      "seconds": 0.054808,
+      "mib_per_second": 0.0,
+      "ops_per_second": 1824551.161,
+      "sync_seconds": 0.0,
+      "process_wall": 0.05872483299999942,
+      "seconds_range": [
+        0.054742,
+        0.056126
+      ]
+    },
+    {
+      "case": "read64k",
+      "seconds": 0.058923,
+      "mib_per_second": 34757.226,
+      "ops_per_second": 556115.609,
+      "sync_seconds": 0.000223625,
+      "seconds_range": [
+        0.054309375,
+        0.060016042
+      ],
+      "variant": "native-linux-vm"
+    },
+    {
+      "case": "write64k",
+      "seconds": 0.022858542,
+      "mib_per_second": 44797.258,
+      "ops_per_second": 716756.126,
+      "sync_seconds": 0.001541584,
+      "seconds_range": [
+        0.02275675,
+        0.023262
+      ],
+      "variant": "native-linux-vm"
+    },
+    {
+      "case": "read4k",
+      "seconds": 0.028310167,
+      "mib_per_second": 13798.046,
+      "ops_per_second": 3532299.898,
+      "sync_seconds": 0.000208625,
+      "seconds_range": [
+        0.028234709,
+        0.028685083
+      ],
+      "variant": "native-linux-vm"
+    },
+    {
+      "case": "stat",
+      "seconds": 0.026314334,
+      "mib_per_second": 0.0,
+      "ops_per_second": 3800210.182,
+      "sync_seconds": 6.0333e-05,
+      "seconds_range": [
+        0.025726666,
+        0.029039583
+      ],
+      "variant": "native-linux-vm"
+    }
+  ],
+  "records": [
+    {
+      "variant": "after-host",
+      "case": "write64k",
+      "repeat": 2,
+      "process_wall": 0.2281446659999986,
+      "mode": "write64k",
+      "operations": 16384,
+      "seconds": 0.150443,
+      "mib_per_second": 6806.565,
+      "ops_per_second": 108905.034,
+      "sync_seconds": 0.005962708,
+      "checksum": 0
+    },
+    {
+      "variant": "after-private",
+      "case": "stat",
+      "repeat": 1,
+      "process_wall": 0.7268512920000028,
+      "mode": "stat",
+      "operations": 100000,
+      "seconds": 0.6168885,
+      "mib_per_second": 0.0,
+      "ops_per_second": 162103.849,
+      "sync_seconds": 0.015260917,
+      "checksum": 838860800000
+    },
+    {
+      "variant": "before-private",
+      "case": "read4k",
+      "repeat": 2,
+      "process_wall": 1.1869271670000003,
+      "mode": "read4k",
+      "operations": 100000,
+      "seconds": 1.09101775,
+      "mib_per_second": 358.037,
+      "ops_per_second": 91657.537,
+      "sync_seconds": 0.014330625,
+      "checksum": 23100000
+    },
+    {
+      "variant": "after-private",
+      "case": "read4k",
+      "repeat": 2,
+      "process_wall": 0.29427329099999966,
+      "mode": "read4k",
+      "operations": 100000,
+      "seconds": 0.214732458,
+      "mib_per_second": 1819.124,
+      "ops_per_second": 465695.782,
+      "sync_seconds": 0.013975375,
+      "checksum": 23100000
+    },
+    {
+      "variant": "after-private-idle-mount",
+      "case": "write64k",
+      "repeat": 1,
+      "process_wall": 0.21661245900000026,
+      "mode": "write64k",
+      "operations": 16384,
+      "seconds": 0.126219792,
+      "mib_per_second": 8112.832,
+      "ops_per_second": 129805.316,
+      "sync_seconds": 0.016990625,
+      "checksum": 0
+    },
+    {
+      "variant": "after-private",
+      "case": "write64k",
+      "repeat": 2,
+      "process_wall": 0.21490991699999995,
+      "mode": "write64k",
+      "operations": 16384,
+      "seconds": 0.129329417,
+      "mib_per_second": 7917.766,
+      "ops_per_second": 126684.248,
+      "sync_seconds": 0.016921584,
+      "checksum": 0
+    },
+    {
+      "variant": "after-private-idle-mount",
+      "case": "read64k",
+      "repeat": 2,
+      "process_wall": 0.3122547919999974,
+      "mode": "read64k",
+      "operations": 32768,
+      "seconds": 0.233446625,
+      "mib_per_second": 8772.883,
+      "ops_per_second": 140366.133,
+      "sync_seconds": 0.014517667,
+      "checksum": 73367552
+    },
+    {
+      "variant": "native-mac",
+      "case": "read64k",
+      "repeat": 1,
+      "process_wall": 0.3343605419999989,
+      "mode": "read64k",
+      "operations": 32768,
+      "seconds": 0.085306,
+      "mib_per_second": 24007.69,
+      "ops_per_second": 384123.039,
+      "sync_seconds": 1e-06,
+      "checksum": 73367552
+    },
+    {
+      "variant": "after-host",
+      "case": "read4k",
+      "repeat": 2,
+      "process_wall": 0.32399308299999774,
+      "mode": "read4k",
+      "operations": 100000,
+      "seconds": 0.275955417,
+      "mib_per_second": 1415.537,
+      "ops_per_second": 362377.376,
+      "sync_seconds": 0.004151459,
+      "checksum": 23100000
+    },
+    {
+      "variant": "native-mac",
+      "case": "read4k",
+      "repeat": 1,
+      "process_wall": 0.03771008300000034,
+      "mode": "read4k",
+      "operations": 100000,
+      "seconds": 0.033702,
+      "mib_per_second": 11590.558,
+      "ops_per_second": 2967182.963,
+      "sync_seconds": 1e-06,
+      "checksum": 23100000
+    },
+    {
+      "variant": "after-host",
+      "case": "read4k",
+      "repeat": 3,
+      "process_wall": 0.31187229100000025,
+      "mode": "read4k",
+      "operations": 100000,
+      "seconds": 0.267582792,
+      "mib_per_second": 1459.829,
+      "ops_per_second": 373716.11,
+      "sync_seconds": 8.208e-06,
+      "checksum": 23100000
+    },
+    {
+      "variant": "before-private",
+      "case": "stat",
+      "repeat": 3,
+      "process_wall": 0.7359790420000003,
+      "mode": "stat",
+      "operations": 100000,
+      "seconds": 0.650280333,
+      "mib_per_second": 0.0,
+      "ops_per_second": 153779.831,
+      "sync_seconds": 0.015158959,
+      "checksum": 838860800000
+    },
+    {
+      "variant": "after-private-idle-mount",
+      "case": "stat",
+      "repeat": 2,
+      "process_wall": 0.6821518329999989,
+      "mode": "stat",
+      "operations": 100000,
+      "seconds": 0.582286625,
+      "mib_per_second": 0.0,
+      "ops_per_second": 171736.728,
+      "sync_seconds": 0.015175291,
+      "checksum": 838860800000
+    },
+    {
+      "variant": "before-private",
+      "case": "read64k",
+      "repeat": 1,
+      "process_wall": 0.6279069590000006,
+      "mode": "read64k",
+      "operations": 32768,
+      "seconds": 0.545878208,
+      "mib_per_second": 3751.753,
+      "ops_per_second": 60028.042,
+      "sync_seconds": 0.014919958,
+      "checksum": 73367552
+    },
+    {
+      "variant": "before-private",
+      "case": "read4k",
+      "repeat": 3,
+      "process_wall": 1.190709333000001,
+      "mode": "read4k",
+      "operations": 100000,
+      "seconds": 1.099934,
+      "mib_per_second": 355.135,
+      "ops_per_second": 90914.546,
+      "sync_seconds": 0.014370333,
+      "checksum": 23100000
+    },
+    {
+      "variant": "after-private-idle-mount",
+      "case": "read64k",
+      "repeat": 1,
+      "process_wall": 0.32809829199999996,
+      "mode": "read64k",
+      "operations": 32768,
+      "seconds": 0.236430042,
+      "mib_per_second": 8662.182,
+      "ops_per_second": 138594.908,
+      "sync_seconds": 0.015210875,
+      "checksum": 73367552
+    },
+    {
+      "variant": "before-private",
+      "case": "stat",
+      "repeat": 1,
+      "process_wall": 0.7440442919999981,
+      "mode": "stat",
+      "operations": 100000,
+      "seconds": 0.654429333,
+      "mib_per_second": 0.0,
+      "ops_per_second": 152804.887,
+      "sync_seconds": 0.014358708,
+      "checksum": 838860800000
+    },
+    {
+      "variant": "native-mac",
+      "case": "stat",
+      "repeat": 3,
+      "process_wall": 0.05872483299999942,
+      "mode": "stat",
+      "operations": 100000,
+      "seconds": 0.054808,
+      "mib_per_second": 0.0,
+      "ops_per_second": 1824551.161,
+      "sync_seconds": 0.0,
+      "checksum": 838860800000
+    },
+    {
+      "variant": "after-private",
+      "case": "stat",
+      "repeat": 2,
+      "process_wall": 0.6665361250000004,
+      "mode": "stat",
+      "operations": 100000,
+      "seconds": 0.582910167,
+      "mib_per_second": 0.0,
+      "ops_per_second": 171553.021,
+      "sync_seconds": 0.016058167,
+      "checksum": 838860800000
+    },
+    {
+      "variant": "before-private",
+      "case": "write64k",
+      "repeat": 2,
+      "process_wall": 0.5504685410000008,
+      "mode": "write64k",
+      "operations": 16384,
+      "seconds": 0.4613225,
+      "mib_per_second": 2219.705,
+      "ops_per_second": 35515.285,
+      "sync_seconds": 0.014607042,
+      "checksum": 0
+    },
+    {
+      "variant": "after-host",
+      "case": "read64k",
+      "repeat": 1,
+      "process_wall": 0.2994699589999996,
+      "mode": "read64k",
+      "operations": 32768,
+      "seconds": 0.252986041,
+      "mib_per_second": 8095.308,
+      "ops_per_second": 129524.933,
+      "sync_seconds": 7.875e-06,
+      "checksum": 73367552
+    },
+    {
+      "variant": "after-host",
+      "case": "stat",
+      "repeat": 2,
+      "process_wall": 3.7093177920000002,
+      "mode": "stat",
+      "operations": 100000,
+      "seconds": 3.662473584,
+      "mib_per_second": 0.0,
+      "ops_per_second": 27303.951,
+      "sync_seconds": 0.004706042,
+      "checksum": 838860800000
+    },
+    {
+      "variant": "native-mac",
+      "case": "read4k",
+      "repeat": 2,
+      "process_wall": 0.037212415999995585,
+      "mode": "read4k",
+      "operations": 100000,
+      "seconds": 0.03331,
+      "mib_per_second": 11726.959,
+      "ops_per_second": 3002101.474,
+      "sync_seconds": 3e-06,
+      "checksum": 23100000
+    },
+    {
+      "variant": "native-mac",
+      "case": "read64k",
+      "repeat": 3,
+      "process_wall": 0.05383366699999925,
+      "mode": "read64k",
+      "operations": 32768,
+      "seconds": 0.050205,
+      "mib_per_second": 40792.75,
+      "ops_per_second": 652683.996,
+      "sync_seconds": 1e-06,
+      "checksum": 73367552
+    },
+    {
+      "variant": "before-private",
+      "case": "write64k",
+      "repeat": 3,
+      "process_wall": 0.5495103330000006,
+      "mode": "write64k",
+      "operations": 16384,
+      "seconds": 0.461113458,
+      "mib_per_second": 2220.712,
+      "ops_per_second": 35531.385,
+      "sync_seconds": 0.013205791,
+      "checksum": 0
+    },
+    {
+      "variant": "after-host",
+      "case": "write64k",
+      "repeat": 3,
+      "process_wall": 0.19502804199999701,
+      "mode": "write64k",
+      "operations": 16384,
+      "seconds": 0.138843291,
+      "mib_per_second": 7375.221,
+      "ops_per_second": 118003.541,
+      "sync_seconds": 0.006955,
+      "checksum": 0
+    },
+    {
+      "variant": "after-private-idle-mount",
+      "case": "write64k",
+      "repeat": 2,
+      "process_wall": 0.21370383400000037,
+      "mode": "write64k",
+      "operations": 16384,
+      "seconds": 0.128154875,
+      "mib_per_second": 7990.332,
+      "ops_per_second": 127845.312,
+      "sync_seconds": 0.015876417,
+      "checksum": 0
+    },
+    {
+      "variant": "before-private",
+      "case": "read64k",
+      "repeat": 2,
+      "process_wall": 0.6217457079999988,
+      "mode": "read64k",
+      "operations": 32768,
+      "seconds": 0.539217917,
+      "mib_per_second": 3798.093,
+      "ops_per_second": 60769.494,
+      "sync_seconds": 0.011183375,
+      "checksum": 73367552
+    },
+    {
+      "variant": "native-mac",
+      "case": "stat",
+      "repeat": 2,
+      "process_wall": 0.0583578330000023,
+      "mode": "stat",
+      "operations": 100000,
+      "seconds": 0.054742,
+      "mib_per_second": 0.0,
+      "ops_per_second": 1826750.939,
+      "sync_seconds": 0.0,
+      "checksum": 838860800000
+    },
+    {
+      "variant": "after-private-idle-mount",
+      "case": "stat",
+      "repeat": 3,
+      "process_wall": 0.6821730420000023,
+      "mode": "stat",
+      "operations": 100000,
+      "seconds": 0.59147925,
+      "mib_per_second": 0.0,
+      "ops_per_second": 169067.638,
+      "sync_seconds": 0.015171375,
+      "checksum": 838860800000
+    },
+    {
+      "variant": "before-private",
+      "case": "write64k",
+      "repeat": 1,
+      "process_wall": 0.5539642499999999,
+      "mode": "write64k",
+      "operations": 16384,
+      "seconds": 0.461835542,
+      "mib_per_second": 2217.239,
+      "ops_per_second": 35475.832,
+      "sync_seconds": 0.015159458,
+      "checksum": 0
+    },
+    {
+      "variant": "after-private",
+      "case": "write64k",
+      "repeat": 3,
+      "process_wall": 0.21298600000000079,
+      "mode": "write64k",
+      "operations": 16384,
+      "seconds": 0.126958917,
+      "mib_per_second": 8065.601,
+      "ops_per_second": 129049.62,
+      "sync_seconds": 0.016900083,
+      "checksum": 0
+    },
+    {
+      "variant": "after-private-idle-mount",
+      "case": "read4k",
+      "repeat": 3,
+      "process_wall": 0.30450204199999575,
+      "mode": "read4k",
+      "operations": 100000,
+      "seconds": 0.219122042,
+      "mib_per_second": 1782.682,
+      "ops_per_second": 456366.685,
+      "sync_seconds": 0.014035208,
+      "checksum": 23100000
+    },
+    {
+      "variant": "before-private",
+      "case": "stat",
+      "repeat": 2,
+      "process_wall": 0.7430493749999982,
+      "mode": "stat",
+      "operations": 100000,
+      "seconds": 0.654483083,
+      "mib_per_second": 0.0,
+      "ops_per_second": 152792.337,
+      "sync_seconds": 0.015015542,
+      "checksum": 838860800000
+    },
+    {
+      "variant": "after-host",
+      "case": "stat",
+      "repeat": 3,
+      "process_wall": 3.717236416999995,
+      "mode": "stat",
+      "operations": 100000,
+      "seconds": 3.664358167,
+      "mib_per_second": 0.0,
+      "ops_per_second": 27289.909,
+      "sync_seconds": 0.003634834,
+      "checksum": 838860800000
+    },
+    {
+      "variant": "after-private-idle-mount",
+      "case": "stat",
+      "repeat": 1,
+      "process_wall": 0.6804824590000038,
+      "mode": "stat",
+      "operations": 100000,
+      "seconds": 0.600196334,
+      "mib_per_second": 0.0,
+      "ops_per_second": 166612.147,
+      "sync_seconds": 0.014100708,
+      "checksum": 838860800000
+    },
+    {
+      "variant": "after-private-idle-mount",
+      "case": "write64k",
+      "repeat": 3,
+      "process_wall": 0.21134770799999814,
+      "mode": "write64k",
+      "operations": 16384,
+      "seconds": 0.126164416,
+      "mib_per_second": 8116.393,
+      "ops_per_second": 129862.29,
+      "sync_seconds": 0.017925292,
+      "checksum": 0
+    },
+    {
+      "variant": "after-private",
+      "case": "read64k",
+      "repeat": 3,
+      "process_wall": 0.32196266600000456,
+      "mode": "read64k",
+      "operations": 32768,
+      "seconds": 0.240386292,
+      "mib_per_second": 8519.621,
+      "ops_per_second": 136313.929,
+      "sync_seconds": 0.0140955,
+      "checksum": 73367552
+    },
+    {
+      "variant": "after-private",
+      "case": "stat",
+      "repeat": 3,
+      "process_wall": 0.6839757919999983,
+      "mode": "stat",
+      "operations": 100000,
+      "seconds": 0.593024375,
+      "mib_per_second": 0.0,
+      "ops_per_second": 168627.133,
+      "sync_seconds": 0.0135615,
+      "checksum": 838860800000
+    },
+    {
+      "variant": "after-private",
+      "case": "write64k",
+      "repeat": 1,
+      "process_wall": 0.22252354199999758,
+      "mode": "write64k",
+      "operations": 16384,
+      "seconds": 0.129424708,
+      "mib_per_second": 7911.936,
+      "ops_per_second": 126590.975,
+      "sync_seconds": 0.018797916,
+      "checksum": 0
+    },
+    {
+      "variant": "native-mac",
+      "case": "write64k",
+      "repeat": 3,
+      "process_wall": 0.04373291599999618,
+      "mode": "write64k",
+      "operations": 16384,
+      "seconds": 0.038391,
+      "mib_per_second": 26672.918,
+      "ops_per_second": 426766.69,
+      "sync_seconds": 0.00095,
+      "checksum": 0
+    },
+    {
+      "variant": "native-mac",
+      "case": "write64k",
+      "repeat": 1,
+      "process_wall": 0.04310612499999422,
+      "mode": "write64k",
+      "operations": 16384,
+      "seconds": 0.038294,
+      "mib_per_second": 26740.482,
+      "ops_per_second": 427847.705,
+      "sync_seconds": 0.000925,
+      "checksum": 0
+    },
+    {
+      "variant": "after-host",
+      "case": "read64k",
+      "repeat": 3,
+      "process_wall": 0.2970540419999992,
+      "mode": "read64k",
+      "operations": 32768,
+      "seconds": 0.2528365,
+      "mib_per_second": 8100.096,
+      "ops_per_second": 129601.541,
+      "sync_seconds": 8.333e-06,
+      "checksum": 73367552
+    },
+    {
+      "variant": "native-mac",
+      "case": "write64k",
+      "repeat": 2,
+      "process_wall": 0.04314350000000644,
+      "mode": "write64k",
+      "operations": 16384,
+      "seconds": 0.037943,
+      "mib_per_second": 26987.85,
+      "ops_per_second": 431805.603,
+      "sync_seconds": 0.00096,
+      "checksum": 0
+    },
+    {
+      "variant": "native-mac",
+      "case": "read64k",
+      "repeat": 2,
+      "process_wall": 0.053292417000001535,
+      "mode": "read64k",
+      "operations": 32768,
+      "seconds": 0.049586,
+      "mib_per_second": 41301.98,
+      "ops_per_second": 660831.686,
+      "sync_seconds": 1e-06,
+      "checksum": 73367552
+    },
+    {
+      "variant": "after-private",
+      "case": "read4k",
+      "repeat": 1,
+      "process_wall": 0.30365562499999754,
+      "mode": "read4k",
+      "operations": 100000,
+      "seconds": 0.218689625,
+      "mib_per_second": 1786.207,
+      "ops_per_second": 457269.063,
+      "sync_seconds": 0.015087125,
+      "checksum": 23100000
+    },
+    {
+      "variant": "after-private-idle-mount",
+      "case": "read4k",
+      "repeat": 1,
+      "process_wall": 0.3011246670000034,
+      "mode": "read4k",
+      "operations": 100000,
+      "seconds": 0.221157875,
+      "mib_per_second": 1766.272,
+      "ops_per_second": 452165.676,
+      "sync_seconds": 0.015001625,
+      "checksum": 23100000
+    },
+    {
+      "variant": "before-private",
+      "case": "read64k",
+      "repeat": 3,
+      "process_wall": 0.6232637919999959,
+      "mode": "read64k",
+      "operations": 32768,
+      "seconds": 0.536679791,
+      "mib_per_second": 3816.056,
+      "ops_per_second": 61056.892,
+      "sync_seconds": 0.015110167,
+      "checksum": 73367552
+    },
+    {
+      "variant": "after-host",
+      "case": "read4k",
+      "repeat": 1,
+      "process_wall": 0.32042125000000254,
+      "mode": "read4k",
+      "operations": 100000,
+      "seconds": 0.272447291,
+      "mib_per_second": 1433.764,
+      "ops_per_second": 367043.473,
+      "sync_seconds": 0.003584333,
+      "checksum": 23100000
+    },
+    {
+      "variant": "after-private-idle-mount",
+      "case": "read4k",
+      "repeat": 2,
+      "process_wall": 0.3039708749999974,
+      "mode": "read4k",
+      "operations": 100000,
+      "seconds": 0.218428,
+      "mib_per_second": 1788.347,
+      "ops_per_second": 457816.763,
+      "sync_seconds": 0.014196917,
+      "checksum": 23100000
+    },
+    {
+      "variant": "native-mac",
+      "case": "read4k",
+      "repeat": 3,
+      "process_wall": 0.037468707999998685,
+      "mode": "read4k",
+      "operations": 100000,
+      "seconds": 0.033398,
+      "mib_per_second": 11696.06,
+      "ops_per_second": 2994191.274,
+      "sync_seconds": 1e-06,
+      "checksum": 23100000
+    },
+    {
+      "variant": "after-host",
+      "case": "write64k",
+      "repeat": 1,
+      "process_wall": 0.20433758299999738,
+      "mode": "write64k",
+      "operations": 16384,
+      "seconds": 0.149280334,
+      "mib_per_second": 6859.577,
+      "ops_per_second": 109753.238,
+      "sync_seconds": 0.006934375,
+      "checksum": 0
+    },
+    {
+      "variant": "before-private",
+      "case": "read4k",
+      "repeat": 1,
+      "process_wall": 1.201170083000001,
+      "mode": "read4k",
+      "operations": 100000,
+      "seconds": 1.113698625,
+      "mib_per_second": 350.746,
+      "ops_per_second": 89790.898,
+      "sync_seconds": 0.015082042,
+      "checksum": 23100000
+    },
+    {
+      "variant": "after-host",
+      "case": "read64k",
+      "repeat": 2,
+      "process_wall": 0.30953091599999993,
+      "mode": "read64k",
+      "operations": 32768,
+      "seconds": 0.25830225,
+      "mib_per_second": 7928.696,
+      "ops_per_second": 126859.135,
+      "sync_seconds": 0.004186,
+      "checksum": 73367552
+    },
+    {
+      "variant": "after-private",
+      "case": "read64k",
+      "repeat": 1,
+      "process_wall": 0.31658541600000234,
+      "mode": "read64k",
+      "operations": 32768,
+      "seconds": 0.234329959,
+      "mib_per_second": 8739.813,
+      "ops_per_second": 139837.007,
+      "sync_seconds": 0.016130708,
+      "checksum": 73367552
+    },
+    {
+      "variant": "after-private",
+      "case": "read64k",
+      "repeat": 2,
+      "process_wall": 0.3326610410000015,
+      "mode": "read64k",
+      "operations": 32768,
+      "seconds": 0.239141417,
+      "mib_per_second": 8563.97,
+      "ops_per_second": 137023.525,
+      "sync_seconds": 0.016207292,
+      "checksum": 73367552
+    },
+    {
+      "variant": "after-private",
+      "case": "read4k",
+      "repeat": 3,
+      "process_wall": 0.3022004579999944,
+      "mode": "read4k",
+      "operations": 100000,
+      "seconds": 0.220877125,
+      "mib_per_second": 1768.517,
+      "ops_per_second": 452740.409,
+      "sync_seconds": 0.015094333,
+      "checksum": 23100000
+    },
+    {
+      "variant": "after-private-idle-mount",
+      "case": "read64k",
+      "repeat": 3,
+      "process_wall": 0.3220802500000062,
+      "mode": "read64k",
+      "operations": 32768,
+      "seconds": 0.238038958,
+      "mib_per_second": 8603.634,
+      "ops_per_second": 137658.139,
+      "sync_seconds": 0.011115667,
+      "checksum": 73367552
+    },
+    {
+      "variant": "after-host",
+      "case": "stat",
+      "repeat": 1,
+      "process_wall": 3.810579791000002,
+      "mode": "stat",
+      "operations": 100000,
+      "seconds": 3.757520625,
+      "mib_per_second": 0.0,
+      "ops_per_second": 26613.294,
+      "sync_seconds": 0.007409708,
+      "checksum": 838860800000
+    },
+    {
+      "variant": "native-mac",
+      "case": "stat",
+      "repeat": 1,
+      "process_wall": 0.06000424999999865,
+      "mode": "stat",
+      "operations": 100000,
+      "seconds": 0.056126,
+      "mib_per_second": 0.0,
+      "ops_per_second": 1781705.448,
+      "sync_seconds": 2e-06,
+      "checksum": 838860800000
+    },
+    {
+      "case": "stat",
+      "repeat": 3,
+      "mode": "stat",
+      "operations": 100000,
+      "seconds": 0.029039583,
+      "mib_per_second": 0.0,
+      "ops_per_second": 3443575.619,
+      "sync_seconds": 0.00485725,
+      "checksum": 838860800000,
+      "variant": "native-linux-vm"
+    },
+    {
+      "case": "stat",
+      "repeat": 2,
+      "mode": "stat",
+      "operations": 100000,
+      "seconds": 0.026314334,
+      "mib_per_second": 0.0,
+      "ops_per_second": 3800210.182,
+      "sync_seconds": 6.0333e-05,
+      "checksum": 838860800000,
+      "variant": "native-linux-vm"
+    },
+    {
+      "case": "read4k",
+      "repeat": 1,
+      "mode": "read4k",
+      "operations": 100000,
+      "seconds": 0.028310167,
+      "mib_per_second": 13798.046,
+      "ops_per_second": 3532299.898,
+      "sync_seconds": 0.000200792,
+      "checksum": 23100000,
+      "variant": "native-linux-vm"
+    },
+    {
+      "case": "write64k",
+      "repeat": 2,
+      "mode": "write64k",
+      "operations": 16384,
+      "seconds": 0.023262,
+      "mib_per_second": 44020.291,
+      "ops_per_second": 704324.65,
+      "sync_seconds": 0.001510125,
+      "checksum": 0,
+      "variant": "native-linux-vm"
+    },
+    {
+      "case": "read4k",
+      "repeat": 3,
+      "mode": "read4k",
+      "operations": 100000,
+      "seconds": 0.028685083,
+      "mib_per_second": 13617.705,
+      "ops_per_second": 3486132.496,
+      "sync_seconds": 0.000249167,
+      "checksum": 23100000,
+      "variant": "native-linux-vm"
+    },
+    {
+      "case": "write64k",
+      "repeat": 3,
+      "mode": "write64k",
+      "operations": 16384,
+      "seconds": 0.022858542,
+      "mib_per_second": 44797.258,
+      "ops_per_second": 716756.126,
+      "sync_seconds": 0.001541584,
+      "checksum": 0,
+      "variant": "native-linux-vm"
+    },
+    {
+      "case": "read64k",
+      "repeat": 3,
+      "mode": "read64k",
+      "operations": 32768,
+      "seconds": 0.054309375,
+      "mib_per_second": 37709.88,
+      "ops_per_second": 603358.076,
+      "sync_seconds": 0.000242833,
+      "checksum": 73367552,
+      "variant": "native-linux-vm"
+    },
+    {
+      "case": "read64k",
+      "repeat": 1,
+      "mode": "read64k",
+      "operations": 32768,
+      "seconds": 0.058923,
+      "mib_per_second": 34757.226,
+      "ops_per_second": 556115.609,
+      "sync_seconds": 0.000223625,
+      "checksum": 73367552,
+      "variant": "native-linux-vm"
+    },
+    {
+      "case": "write64k",
+      "repeat": 1,
+      "mode": "write64k",
+      "operations": 16384,
+      "seconds": 0.02275675,
+      "mib_per_second": 44997.638,
+      "ops_per_second": 719962.209,
+      "sync_seconds": 0.001996667,
+      "checksum": 0,
+      "variant": "native-linux-vm"
+    },
+    {
+      "case": "read4k",
+      "repeat": 2,
+      "mode": "read4k",
+      "operations": 100000,
+      "seconds": 0.028234709,
+      "mib_per_second": 13834.922,
+      "ops_per_second": 3541740.062,
+      "sync_seconds": 0.000208625,
+      "checksum": 23100000,
+      "variant": "native-linux-vm"
+    },
+    {
+      "case": "stat",
+      "repeat": 1,
+      "mode": "stat",
+      "operations": 100000,
+      "seconds": 0.025726666,
+      "mib_per_second": 0.0,
+      "ops_per_second": 3887017.463,
+      "sync_seconds": 2.9125e-05,
+      "checksum": 838860800000,
+      "variant": "native-linux-vm"
+    },
+    {
+      "case": "read64k",
+      "repeat": 2,
+      "mode": "read64k",
+      "operations": 32768,
+      "seconds": 0.060016042,
+      "mib_per_second": 34124.21,
+      "ops_per_second": 545987.355,
+      "sync_seconds": 0.0002215,
+      "checksum": 73367552,
+      "variant": "native-linux-vm"
+    }
+  ],
+  "idle_mount_followup": {
+    "records": [
+      {
+        "mount": false,
+        "repeat": 1,
+        "mode": "read4k",
+        "operations": 300000,
+        "seconds": 0.662259584,
+        "mib_per_second": 1769.51,
+        "ops_per_second": 452994.577,
+        "sync_seconds": 0.014213208,
+        "checksum": 69300000
+      },
+      {
+        "mount": false,
+        "repeat": 3,
+        "mode": "read4k",
+        "operations": 300000,
+        "seconds": 0.669839875,
+        "mib_per_second": 1749.485,
+        "ops_per_second": 447868.231,
+        "sync_seconds": 0.014118583,
+        "checksum": 69300000
+      },
+      {
+        "mount": true,
+        "repeat": 5,
+        "mode": "read4k",
+        "operations": 300000,
+        "seconds": 0.647354625,
+        "mib_per_second": 1810.252,
+        "ops_per_second": 463424.51,
+        "sync_seconds": 0.013265,
+        "checksum": 69300000
+      },
+      {
+        "mount": true,
+        "repeat": 2,
+        "mode": "read4k",
+        "operations": 300000,
+        "seconds": 0.64248125,
+        "mib_per_second": 1823.983,
+        "ops_per_second": 466939.697,
+        "sync_seconds": 0.014441875,
+        "checksum": 69300000
+      },
+      {
+        "mount": false,
+        "repeat": 2,
+        "mode": "read4k",
+        "operations": 300000,
+        "seconds": 0.64480975,
+        "mib_per_second": 1817.397,
+        "ops_per_second": 465253.511,
+        "sync_seconds": 0.015058666,
+        "checksum": 69300000
+      },
+      {
+        "mount": true,
+        "repeat": 3,
+        "mode": "read4k",
+        "operations": 300000,
+        "seconds": 0.6450985,
+        "mib_per_second": 1816.583,
+        "ops_per_second": 465045.261,
+        "sync_seconds": 0.016316542,
+        "checksum": 69300000
+      },
+      {
+        "mount": true,
+        "repeat": 4,
+        "mode": "read4k",
+        "operations": 300000,
+        "seconds": 0.646451833,
+        "mib_per_second": 1812.78,
+        "ops_per_second": 464071.698,
+        "sync_seconds": 0.014070417,
+        "checksum": 69300000
+      },
+      {
+        "mount": false,
+        "repeat": 4,
+        "mode": "read4k",
+        "operations": 300000,
+        "seconds": 0.649881625,
+        "mib_per_second": 1803.213,
+        "ops_per_second": 461622.53,
+        "sync_seconds": 0.014134208,
+        "checksum": 69300000
+      },
+      {
+        "mount": true,
+        "repeat": 1,
+        "mode": "read4k",
+        "operations": 300000,
+        "seconds": 0.644744708,
+        "mib_per_second": 1817.58,
+        "ops_per_second": 465300.446,
+        "sync_seconds": 0.016003375,
+        "checksum": 69300000
+      },
+      {
+        "mount": false,
+        "repeat": 5,
+        "mode": "read4k",
+        "operations": 300000,
+        "seconds": 0.651915125,
+        "mib_per_second": 1797.588,
+        "ops_per_second": 460182.604,
+        "sync_seconds": 0.014308375,
+        "checksum": 69300000
+      }
+    ],
+    "medians": {
+      "False": 1797.588,
+      "True": 1816.583
+    },
+    "case": "read4k",
+    "operations_per_repeat": 300000,
+    "repeats_per_variant": 5,
+    "shuffle_seed": 5531,
+    "runner_sha256": "7a34dcab0cdd9265c9be68871f03a968c9dfafbe1d4ba0fba71065c18eb69500",
+    "mount_delta_percent": 1.057,
+    "ranges_mib_per_second": {
+      "False": [
+        1749.485,
+        1817.397
+      ],
+      "True": [
+        1810.252,
+        1823.983
+      ]
+    }
+  },
+  "findings": [
+    "Private cached data throughput improves about 2.25x for 64 KiB reads, 3.57x for 64 KiB writes and 5.03x for 4 KiB reads. All three now exceed the shared-directory path.",
+    "Private path stat rises from 152804.887 to 168627.133 operations/s; host path metadata remains substantially slower.",
+    "The final five-pair idle-mount check measures 1797.588 MiB/s without and 1816.583 MiB/s with an unused mount (+1.06%); no ordinary-read regression is observed in this local check.",
+    "Native paths still have substantially higher throughput; this changes retained file access and byte accounting, not the guest syscall/memory-transfer path.",
+    "Final private fsync remains about 15\u201317 ms because explicit synchronization still checkpoints the private namespace; it is outside the bulk-I/O interval and preserved separately."
+  ],
+  "validation": {
+    "mac_runtime_workspace_all_features": {
+      "passed": 879,
+      "failed": 0,
+      "ignored": 12,
+      "scope": "Full local suite; final handle/metadata refinements subsequently checked in affected VFS/storage tests."
+    },
+    "linux_runtime_workspace_all_features": {
+      "passed": 878,
+      "failed": 0,
+      "ignored": 11,
+      "scope": "Full local suite; final handle/metadata refinements subsequently checked in the full Linux VFS suite."
+    },
+    "mac_vfs_all_features": {
+      "passed": 353,
+      "failed": 0,
+      "ignored": 1
+    },
+    "mac_final_storage": {
+      "passed": 46,
+      "failed": 0,
+      "ignored": 1
+    },
+    "linux_final_vfs_all_features": {
+      "passed": 354,
+      "failed": 0,
+      "ignored": 1
+    },
+    "interpreter_kernel_conformance_hostfs": {
+      "passed": 226,
+      "failed": 0,
+      "ignored": 3
+    },
+    "strict_clippy": [
+      "Mac VFS all targets/all features",
+      "Linux final VFS all targets/all features",
+      "Mac product workspace all targets/all features"
+    ],
+    "compatibility": [
+      "iPad default FFI check",
+      "Final VFS iPad hostfs compile check"
+    ],
+    "new_regressions": [
+      "Native read/write lease lifetime and guest read-only rejection",
+      "Logical usage agrees with live-inode scan across growth, overwrite, truncate, links, atomic replacement and last close",
+      "ENOSPC preserves usage; overwrite remains possible at a full quota",
+      "Failed namespace admission rolls back staged charge; reopen recovers exact usage",
+      "Mappings and pending disk reads retain their logical charge until release",
+      "Linux 600-inode test: only the actively open inode retains an FD; last close releases it"
+    ],
+    "build": "Final normal signed Mac bundle build and signature verification passed.",
+    "unchanged_acceptance_reused": "CPU, graphics and physical iPad acceptance not repeated.",
+    "cli": "Final signed executable: bidirectional sharing, read-only mount, recursive 4 MiB SHA-256 round trip, Unicode, symlinks, no-clobber and atomic replacement passed."
+  },
+  "limits": [
+    "Host-file mmap returns ENODEV.",
+    "No external-host-edit inotify watcher.",
+    "Advisory locks remain guest-local.",
+    "Host xattrs and special files are unsupported.",
+    "Internal private-tree access from the host is offline under the existing exclusive store lock.",
+    "Cold I/O, sustained device throughput and physical power-loss durability are not measured."
+  ]
+}
