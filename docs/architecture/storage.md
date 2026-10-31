@@ -115,8 +115,29 @@ bounds default to 512 MiB per process and 1 GiB aggregate and are now
 `import_reader` and `export_writer` accept platform-authorized streams. The Linux
 CLI already copies selected native files using `--file` / `--exec-file` and
 `--export`. Exports create a new destination and refuse existing files. Guest
-modifications do not automatically change the source. No general host directory
-mount or access inferred from a guest path is provided.
+modifications do not automatically change the source.
+
+The Mac product also enables the shared runtime's optional `hostfs` backend.
+`--mount GUEST=HOST` and `--mount-ro GUEST=HOST` attach an explicitly selected
+native directory for live bidirectional file exchange. Open files retain their
+original native inode across replacement, rename and unlink; bulk reads reuse
+the disk pool. Data stays in the host filesystem and does not consume the private
+store's logical-byte quota. Mounts are session-local. Ordinary guest paths do
+not scan the native directory, synchronize a mirror or consult a host watcher.
+
+`--fs ls/cat/get/put` provides explicit offline access to a private guest tree,
+without creating a VM, presenter or server. Recursive copies use bounded 64 KiB
+buffers. Existing destinations are preserved unless a regular-file upload uses
+`put --replace`, which stages and atomically renames the new inode. The existing
+exclusive store lock remains in effect; live exchange uses a mounted directory.
+
+Host-file mmap, extended attributes and special files are not implemented.
+External host changes are visible to normal file I/O and lookups, but are not
+reported through guest inotify. The iPad product keeps its existing Files and
+FileProvider path and does not enable hostfs by default. The Mac
+[usage/limits](https://github.com/kb5000/trames-mac/blob/main/docs/guides/file-sharing.md)
+and [native macOS/Linux benchmark record](../validation/hostfs.json) document
+the measured scope. A guest pathname alone never grants access to a host path.
 
 M6 persists named FIFO inode metadata as kind 5 in the current v3 manifest.
 Its live bounded byte queue belongs to the virtual runtime and is recreated
