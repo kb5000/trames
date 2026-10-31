@@ -1,0 +1,3731 @@
+{
+  "date": "2026-10-31",
+  "runtime": "7ef85bd442826c17e4fe96a65ec04db3ba0f1608",
+  "baseline_runtime": "cb8b59a9fc169b7679472d95ba3f739c9b85ff98",
+  "machine": {
+    "cpu": "Apple M6 ARM64",
+    "logical_cpus": 12,
+    "memory_gib": 24,
+    "os": "macOS 27.0.1 (26A434)",
+    "filesystem": "APFS"
+  },
+  "scope": "Optional hostfs native notification and flock interoperability; shared memory mappings and native POSIX range locks are not implemented.",
+  "supported": [
+    "External host file content/attribute and shallow directory create/delete/rename notifications",
+    "Guest blocking inotify read, poll and epoll; worker native subscriptions rearm on existing HostEvents",
+    "Native flock shared/exclusive, nonblocking conflicts, macOS blocking host unlock wakeups",
+    "Dup/fork and retained request/OFD lifetime; MAP_PRIVATE retains flock until unmap",
+    "Retained blocked inotify read survives original FD close and numeric reuse"
+  ],
+  "limits": [
+    "macOS vnode notifications coalesce and can miss external short-lived names; cross-directory moves may be delete/create",
+    "External open/access/close history is unavailable; this is not complete Linux inotify conformance",
+    "Monitoring child content/attributes retains native child FDs; namespace-only directory watches do not",
+    "fcntl byte-range locks remain guest-local; guest-only SQLite journal smoke test does not establish native database interoperability",
+    "Host MAP_SHARED remains ENODEV, including SQLite WAL shared memory; externally truncatable raw mappings need coherent aliases and bounded guest fault recovery",
+    "Optional Linux hostfs adapter supports native nonblocking flock; contended blocking flock is EOPNOTSUPP because no native unlock event source is provided"
+  ],
+  "method": [
+    "Same fixed-work C fixture, assertions enabled, Linux static ELF built with gcc -O2 -Wall -Wextra -Werror -static; macOS with clang -O2 -Wall -Wextra -Werror",
+    "8 MiB cached working set; 2 GiB read64k, 1 GiB write64k, 100000 read4k or path-stat operations per sample; initialization and fsync outside main interval",
+    "Three shuffled repeats of before/private/shared, after/private/shared/held-lock/watch and native Mac; Linux native normal/watch/held-lock also three shuffled repeats",
+    "After final pending-resource selection, reran all four affected Trames variants (48 observations); reused unchanged native and old-runtime controls from the original 108-observation sweep",
+    "Five longer randomized pairs, 8 GiB private read64k each, resolve short-run median variation: after versus before +1.05%; raw ranges and earlier observations preserved",
+    "Linux native runs on ext4 in existing 6-vCPU/8-GiB ARM64 Lima VZ VM; VM stopped and builds/profilers idle for Mac performance runs",
+    "This compares complete cached I/O paths with different kernels, libraries and pathname layouts, not SSD throughput or cold-I/O/durability parity"
+  ],
+  "initial_shuffled_sweep": {
+    "complete": true,
+    "scope": "single process, cached 8 MiB file, fixed work; no rendering/network",
+    "cases": {
+      "read64k": 32768,
+      "write64k": 16384,
+      "read4k": 100000,
+      "stat": 100000
+    },
+    "repeats": 3,
+    "sha256": {
+      "runner": "ac1f10e1c02f1942d19321d70fe971ed8a430df889133b515168cd5e68d1ee29",
+      "baseline": "5d3c18a979263c3ccfb8feba1fd2fbbbe7792d0bd4e3a9b9f08557cf5c120771",
+      "program": "53e6138b95bfc3fd687bf45b251b99bb32eecb3a2b50e3a8fe1c41d73ef567b9",
+      "native": "98c74f9705a3f8ef2c5ddf35d10b1aacf04e9d48b5d847280e4c61d3dc63fb3f",
+      "rootfs": "821565fa8f3953eefd12497b166b4b50add2f7c57fb312e75862f5867e06fefe"
+    },
+    "records": [
+      {
+        "variant": "before-host",
+        "case": "read64k",
+        "repeat": 2,
+        "process_wall": 0.3213965419999987,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.257416125,
+        "mib_per_second": 7955.99,
+        "ops_per_second": 127295.833,
+        "sync_seconds": 0.003086292,
+        "checksum": 73367552
+      },
+      {
+        "variant": "before-private",
+        "case": "read64k",
+        "repeat": 2,
+        "process_wall": 0.3493585830000008,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.23614,
+        "mib_per_second": 8672.821,
+        "ops_per_second": 138765.139,
+        "sync_seconds": 0.015988375,
+        "checksum": 73367552
+      },
+      {
+        "variant": "before-host",
+        "case": "read4k",
+        "repeat": 3,
+        "process_wall": 0.32664795800000235,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.2827735,
+        "mib_per_second": 1381.406,
+        "ops_per_second": 353639.927,
+        "sync_seconds": 0.003864667,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-host",
+        "case": "read4k",
+        "repeat": 3,
+        "process_wall": 0.3710629999999995,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.313432666,
+        "mib_per_second": 1246.28,
+        "ops_per_second": 319047.792,
+        "sync_seconds": 0.004163292,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-private",
+        "case": "read64k",
+        "repeat": 3,
+        "process_wall": 0.34035583400000036,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.245228916,
+        "mib_per_second": 8351.381,
+        "ops_per_second": 133622.089,
+        "sync_seconds": 0.015234417,
+        "checksum": 73367552
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "read4k",
+        "repeat": 3,
+        "process_wall": 0.41266383299999987,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.035934,
+        "mib_per_second": 10870.624,
+        "ops_per_second": 2782879.721,
+        "sync_seconds": 2e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "native-mac",
+        "case": "write64k",
+        "repeat": 2,
+        "process_wall": 0.04355795800000095,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.038508,
+        "mib_per_second": 26591.877,
+        "ops_per_second": 425470.033,
+        "sync_seconds": 0.000888,
+        "checksum": 0
+      },
+      {
+        "variant": "before-private",
+        "case": "stat",
+        "repeat": 1,
+        "process_wall": 0.6899342500000003,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.605094834,
+        "mib_per_second": 0.0,
+        "ops_per_second": 165263.351,
+        "sync_seconds": 0.01510025,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "write64k",
+        "repeat": 2,
+        "process_wall": 0.1949721249999996,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.141634375,
+        "mib_per_second": 7229.883,
+        "ops_per_second": 115678.133,
+        "sync_seconds": 0.005850125,
+        "checksum": 0
+      },
+      {
+        "variant": "native-mac",
+        "case": "read4k",
+        "repeat": 3,
+        "process_wall": 0.03860258299999941,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.035021,
+        "mib_per_second": 11154.022,
+        "ops_per_second": 2855429.593,
+        "sync_seconds": 2e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "before-private",
+        "case": "write64k",
+        "repeat": 2,
+        "process_wall": 0.2194147500000021,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.129053291,
+        "mib_per_second": 7934.707,
+        "ops_per_second": 126955.306,
+        "sync_seconds": 0.016800791,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read4k",
+        "repeat": 1,
+        "process_wall": 0.3247881250000013,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.279443208,
+        "mib_per_second": 1397.869,
+        "ops_per_second": 357854.466,
+        "sync_seconds": 0.004148083,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read64k",
+        "repeat": 3,
+        "process_wall": 0.3300972910000013,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.279672875,
+        "mib_per_second": 7322.841,
+        "ops_per_second": 117165.456,
+        "sync_seconds": 0.003446875,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host",
+        "case": "read64k",
+        "repeat": 3,
+        "process_wall": 0.3052645829999996,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.257657958,
+        "mib_per_second": 7948.522,
+        "ops_per_second": 127176.355,
+        "sync_seconds": 0.0041945,
+        "checksum": 73367552
+      },
+      {
+        "variant": "before-private",
+        "case": "read64k",
+        "repeat": 1,
+        "process_wall": 0.31772599999999684,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.234566208,
+        "mib_per_second": 8731.01,
+        "ops_per_second": 139696.166,
+        "sync_seconds": 0.015087791,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host",
+        "case": "write64k",
+        "repeat": 3,
+        "process_wall": 0.20739766700000217,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.150494833,
+        "mib_per_second": 6804.22,
+        "ops_per_second": 108867.525,
+        "sync_seconds": 0.005784125,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "stat",
+        "repeat": 1,
+        "process_wall": 4.677121791000001,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.623324209,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21629.459,
+        "sync_seconds": 0.004303333,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "before-private",
+        "case": "read4k",
+        "repeat": 2,
+        "process_wall": 0.34103579199999956,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.256817625,
+        "mib_per_second": 1521.021,
+        "ops_per_second": 389381.375,
+        "sync_seconds": 0.014748708,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "stat",
+        "repeat": 3,
+        "process_wall": 4.680817708999996,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.630752958,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21594.76,
+        "sync_seconds": 0.006034417,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-private",
+        "case": "read64k",
+        "repeat": 2,
+        "process_wall": 0.3159154999999956,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.233759208,
+        "mib_per_second": 8761.152,
+        "ops_per_second": 140178.435,
+        "sync_seconds": 0.0160215,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-private",
+        "case": "stat",
+        "repeat": 2,
+        "process_wall": 0.7054693749999998,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.613145458,
+        "mib_per_second": 0.0,
+        "ops_per_second": 163093.437,
+        "sync_seconds": 0.016162042,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "read4k",
+        "repeat": 2,
+        "process_wall": 0.03758604200000093,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.033266,
+        "mib_per_second": 11742.47,
+        "ops_per_second": 3006072.267,
+        "sync_seconds": 1e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read64k",
+        "repeat": 1,
+        "process_wall": 0.3117422500000018,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.26378825,
+        "mib_per_second": 7763.803,
+        "ops_per_second": 124220.848,
+        "sync_seconds": 0.003397208,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "stat",
+        "repeat": 2,
+        "process_wall": 4.69155275,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.640027959,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21551.594,
+        "sync_seconds": 0.004092208,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "write64k",
+        "repeat": 1,
+        "process_wall": 0.20510191600000383,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.143143125,
+        "mib_per_second": 7153.679,
+        "ops_per_second": 114458.868,
+        "sync_seconds": 0.007059459,
+        "checksum": 0
+      },
+      {
+        "variant": "native-mac",
+        "case": "stat",
+        "repeat": 3,
+        "process_wall": 0.11344070799999884,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.109665,
+        "mib_per_second": 0.0,
+        "ops_per_second": 911867.962,
+        "sync_seconds": 0.0,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "stat",
+        "repeat": 3,
+        "process_wall": 4.663472166000005,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.612412417,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21680.628,
+        "sync_seconds": 0.006149375,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "native-mac",
+        "case": "read64k",
+        "repeat": 3,
+        "process_wall": 0.05503008299999834,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.05089,
+        "mib_per_second": 40243.663,
+        "ops_per_second": 643898.604,
+        "sync_seconds": 2e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "write64k",
+        "repeat": 3,
+        "process_wall": 0.2047543329999968,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.147289792,
+        "mib_per_second": 6952.281,
+        "ops_per_second": 111236.494,
+        "sync_seconds": 0.00608325,
+        "checksum": 0
+      },
+      {
+        "variant": "after-private",
+        "case": "read4k",
+        "repeat": 1,
+        "process_wall": 0.301288416999995,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.219902291,
+        "mib_per_second": 1776.357,
+        "ops_per_second": 454747.422,
+        "sync_seconds": 0.016075125,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-private",
+        "case": "stat",
+        "repeat": 3,
+        "process_wall": 0.6948387500000024,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.610451291,
+        "mib_per_second": 0.0,
+        "ops_per_second": 163813.234,
+        "sync_seconds": 0.015108042,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "write64k",
+        "repeat": 2,
+        "process_wall": 0.04609287499999937,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.040699,
+        "mib_per_second": 25160.323,
+        "ops_per_second": 402565.174,
+        "sync_seconds": 0.00088,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "write64k",
+        "repeat": 1,
+        "process_wall": 0.19559054199999792,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.140606,
+        "mib_per_second": 7282.762,
+        "ops_per_second": 116524.188,
+        "sync_seconds": 0.006948792,
+        "checksum": 0
+      },
+      {
+        "variant": "after-private",
+        "case": "write64k",
+        "repeat": 2,
+        "process_wall": 0.2108201670000014,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.127194,
+        "mib_per_second": 8050.694,
+        "ops_per_second": 128811.107,
+        "sync_seconds": 0.016279542,
+        "checksum": 0
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "read64k",
+        "repeat": 2,
+        "process_wall": 0.053485416000000896,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.049696,
+        "mib_per_second": 41210.56,
+        "ops_per_second": 659368.964,
+        "sync_seconds": 1e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "write64k",
+        "repeat": 3,
+        "process_wall": 0.0450337910000016,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.040176,
+        "mib_per_second": 25487.853,
+        "ops_per_second": 407805.655,
+        "sync_seconds": 0.000883,
+        "checksum": 0
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "write64k",
+        "repeat": 1,
+        "process_wall": 0.04457433299999991,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.039496,
+        "mib_per_second": 25926.676,
+        "ops_per_second": 414826.817,
+        "sync_seconds": 0.00089,
+        "checksum": 0
+      },
+      {
+        "variant": "native-mac",
+        "case": "write64k",
+        "repeat": 1,
+        "process_wall": 0.044275874999996745,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.039351,
+        "mib_per_second": 26022.21,
+        "ops_per_second": 416355.366,
+        "sync_seconds": 0.00089,
+        "checksum": 0
+      },
+      {
+        "variant": "before-host",
+        "case": "stat",
+        "repeat": 3,
+        "process_wall": 4.7886007500000005,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.730127584,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21141.079,
+        "sync_seconds": 0.004759208,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read64k",
+        "repeat": 2,
+        "process_wall": 0.3102373749999998,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.266868917,
+        "mib_per_second": 7674.18,
+        "ops_per_second": 122786.874,
+        "sync_seconds": 9.708e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "before-private",
+        "case": "write64k",
+        "repeat": 1,
+        "process_wall": 0.21909575000000103,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.129386917,
+        "mib_per_second": 7914.247,
+        "ops_per_second": 126627.95,
+        "sync_seconds": 0.017694709,
+        "checksum": 0
+      },
+      {
+        "variant": "before-host",
+        "case": "write64k",
+        "repeat": 2,
+        "process_wall": 0.19554391700000195,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.1412755,
+        "mib_per_second": 7248.249,
+        "ops_per_second": 115971.984,
+        "sync_seconds": 0.005828,
+        "checksum": 0
+      },
+      {
+        "variant": "before-private",
+        "case": "read4k",
+        "repeat": 3,
+        "process_wall": 0.3071827499999955,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.22122425,
+        "mib_per_second": 1765.742,
+        "ops_per_second": 452030.01,
+        "sync_seconds": 0.014868541,
+        "checksum": 23100000
+      },
+      {
+        "variant": "native-mac",
+        "case": "stat",
+        "repeat": 2,
+        "process_wall": 0.11467583299999973,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.110755,
+        "mib_per_second": 0.0,
+        "ops_per_second": 902893.775,
+        "sync_seconds": 0.0,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host",
+        "case": "stat",
+        "repeat": 3,
+        "process_wall": 4.626042709000004,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.579437666,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21836.742,
+        "sync_seconds": 0.003739042,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-private",
+        "case": "write64k",
+        "repeat": 3,
+        "process_wall": 0.21932300000000282,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.130250208,
+        "mib_per_second": 7861.792,
+        "ops_per_second": 125788.667,
+        "sync_seconds": 0.017717375,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host",
+        "case": "stat",
+        "repeat": 2,
+        "process_wall": 4.6293164999999945,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.578127666,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21842.991,
+        "sync_seconds": 0.004750125,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "stat",
+        "repeat": 1,
+        "process_wall": 0.11539774999999963,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.111505,
+        "mib_per_second": 0.0,
+        "ops_per_second": 896820.77,
+        "sync_seconds": 1e-06,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "stat",
+        "repeat": 2,
+        "process_wall": 4.881521583999998,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.825679458,
+        "mib_per_second": 0.0,
+        "ops_per_second": 20722.47,
+        "sync_seconds": 0.006030834,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "before-host",
+        "case": "read64k",
+        "repeat": 1,
+        "process_wall": 0.3150492500000013,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.264788083,
+        "mib_per_second": 7734.487,
+        "ops_per_second": 123751.793,
+        "sync_seconds": 0.004220583,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host",
+        "case": "read64k",
+        "repeat": 1,
+        "process_wall": 0.3048942499999896,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.259261458,
+        "mib_per_second": 7899.362,
+        "ops_per_second": 126389.785,
+        "sync_seconds": 7.25e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read64k",
+        "repeat": 2,
+        "process_wall": 0.3024399589999973,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.259706625,
+        "mib_per_second": 7885.821,
+        "ops_per_second": 126173.139,
+        "sync_seconds": 9.083e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "stat",
+        "repeat": 2,
+        "process_wall": 0.11525458399999877,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.111395,
+        "mib_per_second": 0.0,
+        "ops_per_second": 897706.36,
+        "sync_seconds": 1e-06,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host",
+        "case": "stat",
+        "repeat": 1,
+        "process_wall": 4.625865707999992,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.567614042,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21893.268,
+        "sync_seconds": 0.006511833,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "stat",
+        "repeat": 3,
+        "process_wall": 0.11562049999999147,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.111649,
+        "mib_per_second": 0.0,
+        "ops_per_second": 895664.089,
+        "sync_seconds": 1e-06,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-private",
+        "case": "stat",
+        "repeat": 1,
+        "process_wall": 0.7156872910000089,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.626279666,
+        "mib_per_second": 0.0,
+        "ops_per_second": 159673.075,
+        "sync_seconds": 0.015787833,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "read4k",
+        "repeat": 2,
+        "process_wall": 0.03785137500000246,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.033698,
+        "mib_per_second": 11591.934,
+        "ops_per_second": 2967535.164,
+        "sync_seconds": 1e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "native-mac",
+        "case": "read64k",
+        "repeat": 1,
+        "process_wall": 0.06496958400001063,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.061306,
+        "mib_per_second": 33406.192,
+        "ops_per_second": 534499.07,
+        "sync_seconds": 2e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read4k",
+        "repeat": 1,
+        "process_wall": 0.3336080840000051,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.281884375,
+        "mib_per_second": 1385.763,
+        "ops_per_second": 354755.385,
+        "sync_seconds": 0.0040455,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read4k",
+        "repeat": 3,
+        "process_wall": 0.32796737500000006,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.28066125,
+        "mib_per_second": 1391.802,
+        "ops_per_second": 356301.413,
+        "sync_seconds": 0.003016458,
+        "checksum": 23100000
+      },
+      {
+        "variant": "native-mac",
+        "case": "stat",
+        "repeat": 1,
+        "process_wall": 0.11528529200001003,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.111324,
+        "mib_per_second": 0.0,
+        "ops_per_second": 898278.897,
+        "sync_seconds": 1e-06,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "before-private",
+        "case": "read4k",
+        "repeat": 1,
+        "process_wall": 0.31348549999999875,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.226608625,
+        "mib_per_second": 1723.787,
+        "ops_per_second": 441289.47,
+        "sync_seconds": 0.015901375,
+        "checksum": 23100000
+      },
+      {
+        "variant": "before-host",
+        "case": "stat",
+        "repeat": 1,
+        "process_wall": 4.60434966599999,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.556043625,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21948.868,
+        "sync_seconds": 0.004338875,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "read64k",
+        "repeat": 1,
+        "process_wall": 0.05395420799999329,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.050118,
+        "mib_per_second": 40863.562,
+        "ops_per_second": 653816.992,
+        "sync_seconds": 1e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host",
+        "case": "read4k",
+        "repeat": 1,
+        "process_wall": 0.3213482499999998,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.2766575,
+        "mib_per_second": 1411.944,
+        "ops_per_second": 361457.759,
+        "sync_seconds": 8.042e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "stat",
+        "repeat": 2,
+        "process_wall": 0.11631166600000142,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.112232,
+        "mib_per_second": 0.0,
+        "ops_per_second": 891011.476,
+        "sync_seconds": 2e-06,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host",
+        "case": "read4k",
+        "repeat": 2,
+        "process_wall": 0.3210752499999927,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.27719025,
+        "mib_per_second": 1409.231,
+        "ops_per_second": 360763.05,
+        "sync_seconds": 1.0541e-05,
+        "checksum": 23100000
+      },
+      {
+        "variant": "before-host",
+        "case": "stat",
+        "repeat": 2,
+        "process_wall": 4.587811083999995,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.53670125,
+        "mib_per_second": 0.0,
+        "ops_per_second": 22042.448,
+        "sync_seconds": 0.005807833,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host",
+        "case": "write64k",
+        "repeat": 2,
+        "process_wall": 0.1978607500000038,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.143902459,
+        "mib_per_second": 7115.931,
+        "ops_per_second": 113854.899,
+        "sync_seconds": 0.005753459,
+        "checksum": 0
+      },
+      {
+        "variant": "before-host",
+        "case": "write64k",
+        "repeat": 3,
+        "process_wall": 0.20131941700000766,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.143351667,
+        "mib_per_second": 7143.272,
+        "ops_per_second": 114292.358,
+        "sync_seconds": 0.006995541,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read4k",
+        "repeat": 2,
+        "process_wall": 0.3179794579999964,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.274946375,
+        "mib_per_second": 1420.732,
+        "ops_per_second": 363707.287,
+        "sync_seconds": 7.458e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-private",
+        "case": "read4k",
+        "repeat": 2,
+        "process_wall": 0.3062662499999931,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.226071584,
+        "mib_per_second": 1727.882,
+        "ops_per_second": 442337.769,
+        "sync_seconds": 0.014899208,
+        "checksum": 23100000
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "read64k",
+        "repeat": 2,
+        "process_wall": 0.05425558400000341,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.050263,
+        "mib_per_second": 40745.678,
+        "ops_per_second": 651930.844,
+        "sync_seconds": 1e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "native-mac",
+        "case": "read4k",
+        "repeat": 2,
+        "process_wall": 0.03841195900000116,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.0346,
+        "mib_per_second": 11289.74,
+        "ops_per_second": 2890173.409,
+        "sync_seconds": 1e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "write64k",
+        "repeat": 2,
+        "process_wall": 0.20818820899999935,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.146945084,
+        "mib_per_second": 6968.59,
+        "ops_per_second": 111497.435,
+        "sync_seconds": 0.005966875,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read4k",
+        "repeat": 3,
+        "process_wall": 0.3340932499999951,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.280084958,
+        "mib_per_second": 1394.666,
+        "ops_per_second": 357034.525,
+        "sync_seconds": 0.003970958,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read4k",
+        "repeat": 2,
+        "process_wall": 0.32191579199999865,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.279423375,
+        "mib_per_second": 1397.968,
+        "ops_per_second": 357879.866,
+        "sync_seconds": 6.708e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "read64k",
+        "repeat": 3,
+        "process_wall": 0.05429504100000315,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.050289,
+        "mib_per_second": 40724.612,
+        "ops_per_second": 651593.787,
+        "sync_seconds": 2e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "read64k",
+        "repeat": 3,
+        "process_wall": 0.05516520800000535,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.051482,
+        "mib_per_second": 39780.894,
+        "ops_per_second": 636494.308,
+        "sync_seconds": 2e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "read4k",
+        "repeat": 3,
+        "process_wall": 0.038535167000006254,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.034708,
+        "mib_per_second": 11254.61,
+        "ops_per_second": 2881180.13,
+        "sync_seconds": 1e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-private",
+        "case": "read4k",
+        "repeat": 3,
+        "process_wall": 0.30374437499999374,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.22580975,
+        "mib_per_second": 1729.885,
+        "ops_per_second": 442850.674,
+        "sync_seconds": 0.014003,
+        "checksum": 23100000
+      },
+      {
+        "variant": "before-host",
+        "case": "read4k",
+        "repeat": 2,
+        "process_wall": 0.3367016669999998,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.287536916,
+        "mib_per_second": 1358.521,
+        "ops_per_second": 347781.431,
+        "sync_seconds": 0.004132167,
+        "checksum": 23100000
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "stat",
+        "repeat": 3,
+        "process_wall": 0.1156373750000057,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.111848,
+        "mib_per_second": 0.0,
+        "ops_per_second": 894070.524,
+        "sync_seconds": 2e-06,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "stat",
+        "repeat": 1,
+        "process_wall": 4.641661499999998,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.582909291,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21820.201,
+        "sync_seconds": 0.006123542,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "write64k",
+        "repeat": 3,
+        "process_wall": 0.04367420800001298,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.038392,
+        "mib_per_second": 26672.223,
+        "ops_per_second": 426755.574,
+        "sync_seconds": 0.000953,
+        "checksum": 0
+      },
+      {
+        "variant": "before-private",
+        "case": "read64k",
+        "repeat": 3,
+        "process_wall": 0.3247179579999937,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.243161583,
+        "mib_per_second": 8422.383,
+        "ops_per_second": 134758.129,
+        "sync_seconds": 0.014982416,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read64k",
+        "repeat": 3,
+        "process_wall": 0.31373245800000404,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.264892833,
+        "mib_per_second": 7731.429,
+        "ops_per_second": 123702.856,
+        "sync_seconds": 0.004047791,
+        "checksum": 73367552
+      },
+      {
+        "variant": "before-host",
+        "case": "read4k",
+        "repeat": 1,
+        "process_wall": 0.3220337500000028,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.273435375,
+        "mib_per_second": 1428.583,
+        "ops_per_second": 365717.128,
+        "sync_seconds": 0.004198208,
+        "checksum": 23100000
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "write64k",
+        "repeat": 1,
+        "process_wall": 0.04463875000000428,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.039099,
+        "mib_per_second": 26189.928,
+        "ops_per_second": 419038.851,
+        "sync_seconds": 0.000962,
+        "checksum": 0
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "read4k",
+        "repeat": 1,
+        "process_wall": 0.03772229099999436,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.033915,
+        "mib_per_second": 11517.765,
+        "ops_per_second": 2948547.837,
+        "sync_seconds": 0.0,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-private",
+        "case": "read64k",
+        "repeat": 1,
+        "process_wall": 0.3312355409999981,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.246753041,
+        "mib_per_second": 8299.796,
+        "ops_per_second": 132796.742,
+        "sync_seconds": 0.013077417,
+        "checksum": 73367552
+      },
+      {
+        "variant": "before-private",
+        "case": "stat",
+        "repeat": 3,
+        "process_wall": 0.7207853329999949,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.627492625,
+        "mib_per_second": 0.0,
+        "ops_per_second": 159364.423,
+        "sync_seconds": 0.017278875,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "before-private",
+        "case": "write64k",
+        "repeat": 3,
+        "process_wall": 0.23034799999999223,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.129773458,
+        "mib_per_second": 7890.674,
+        "ops_per_second": 126250.778,
+        "sync_seconds": 0.017983792,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host",
+        "case": "write64k",
+        "repeat": 1,
+        "process_wall": 0.1965022910000016,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.1415405,
+        "mib_per_second": 7234.678,
+        "ops_per_second": 115754.855,
+        "sync_seconds": 0.006030791,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read64k",
+        "repeat": 1,
+        "process_wall": 0.30777320899998983,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.262280791,
+        "mib_per_second": 7808.425,
+        "ops_per_second": 124934.807,
+        "sync_seconds": 0.0029325,
+        "checksum": 73367552
+      },
+      {
+        "variant": "before-host",
+        "case": "read64k",
+        "repeat": 3,
+        "process_wall": 0.3089632920000014,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.262454292,
+        "mib_per_second": 7803.264,
+        "ops_per_second": 124852.216,
+        "sync_seconds": 9.041e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "read64k",
+        "repeat": 1,
+        "process_wall": 0.05681249999999238,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.052713,
+        "mib_per_second": 38851.896,
+        "ops_per_second": 621630.338,
+        "sync_seconds": 2e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "native-mac",
+        "case": "read64k",
+        "repeat": 2,
+        "process_wall": 0.056145499999999515,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.052186,
+        "mib_per_second": 39244.242,
+        "ops_per_second": 627907.867,
+        "sync_seconds": 2e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "stat",
+        "repeat": 1,
+        "process_wall": 0.11681958399999814,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.112753,
+        "mib_per_second": 0.0,
+        "ops_per_second": 886894.362,
+        "sync_seconds": 2e-06,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "native-mac",
+        "case": "read4k",
+        "repeat": 1,
+        "process_wall": 0.03880512499999611,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.035054,
+        "mib_per_second": 11143.521,
+        "ops_per_second": 2852741.486,
+        "sync_seconds": 2e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-private",
+        "case": "write64k",
+        "repeat": 1,
+        "process_wall": 0.22276345800000286,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.128263209,
+        "mib_per_second": 7983.583,
+        "ops_per_second": 127737.331,
+        "sync_seconds": 0.017932334,
+        "checksum": 0
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "write64k",
+        "repeat": 2,
+        "process_wall": 0.044306583000008004,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.039075,
+        "mib_per_second": 26206.014,
+        "ops_per_second": 419296.225,
+        "sync_seconds": 0.000961,
+        "checksum": 0
+      },
+      {
+        "variant": "before-host",
+        "case": "write64k",
+        "repeat": 1,
+        "process_wall": 0.1965359169999914,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.141429541,
+        "mib_per_second": 7240.354,
+        "ops_per_second": 115845.67,
+        "sync_seconds": 0.007094,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host",
+        "case": "read64k",
+        "repeat": 2,
+        "process_wall": 0.305664500000006,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.258677958,
+        "mib_per_second": 7917.18,
+        "ops_per_second": 126674.883,
+        "sync_seconds": 0.003904375,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "write64k",
+        "repeat": 3,
+        "process_wall": 0.20289399999998636,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.146648417,
+        "mib_per_second": 6982.687,
+        "ops_per_second": 111722.993,
+        "sync_seconds": 0.007301792,
+        "checksum": 0
+      },
+      {
+        "variant": "native-mac",
+        "case": "write64k",
+        "repeat": 3,
+        "process_wall": 0.04420341700000563,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.038958,
+        "mib_per_second": 26284.717,
+        "ops_per_second": 420555.47,
+        "sync_seconds": 0.000932,
+        "checksum": 0
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "read4k",
+        "repeat": 1,
+        "process_wall": 0.03757520800000691,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.033954,
+        "mib_per_second": 11504.536,
+        "ops_per_second": 2945161.092,
+        "sync_seconds": 1e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "before-private",
+        "case": "stat",
+        "repeat": 2,
+        "process_wall": 0.6805389580000138,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.596620375,
+        "mib_per_second": 0.0,
+        "ops_per_second": 167610.769,
+        "sync_seconds": 0.013068792,
+        "checksum": 838860800000
+      }
+    ],
+    "medians": [
+      {
+        "variant": "before-private",
+        "case": "read64k",
+        "seconds": 0.23614,
+        "mib_per_second": 8672.821,
+        "ops_per_second": 138765.139,
+        "sync_seconds": 0.015087791,
+        "process_wall": 0.3247179579999937,
+        "seconds_range": [
+          0.234566208,
+          0.243161583
+        ]
+      },
+      {
+        "variant": "before-private",
+        "case": "write64k",
+        "seconds": 0.129386917,
+        "mib_per_second": 7914.247,
+        "ops_per_second": 126627.95,
+        "sync_seconds": 0.017694709,
+        "process_wall": 0.2194147500000021,
+        "seconds_range": [
+          0.129053291,
+          0.129773458
+        ]
+      },
+      {
+        "variant": "before-private",
+        "case": "read4k",
+        "seconds": 0.226608625,
+        "mib_per_second": 1723.787,
+        "ops_per_second": 441289.47,
+        "sync_seconds": 0.014868541,
+        "process_wall": 0.31348549999999875,
+        "seconds_range": [
+          0.22122425,
+          0.256817625
+        ]
+      },
+      {
+        "variant": "before-private",
+        "case": "stat",
+        "seconds": 0.605094834,
+        "mib_per_second": 0.0,
+        "ops_per_second": 165263.351,
+        "sync_seconds": 0.01510025,
+        "process_wall": 0.6899342500000003,
+        "seconds_range": [
+          0.596620375,
+          0.627492625
+        ]
+      },
+      {
+        "variant": "after-private",
+        "case": "read64k",
+        "seconds": 0.245228916,
+        "mib_per_second": 8351.381,
+        "ops_per_second": 133622.089,
+        "sync_seconds": 0.015234417,
+        "process_wall": 0.3312355409999981,
+        "seconds_range": [
+          0.233759208,
+          0.246753041
+        ]
+      },
+      {
+        "variant": "after-private",
+        "case": "write64k",
+        "seconds": 0.128263209,
+        "mib_per_second": 7983.583,
+        "ops_per_second": 127737.331,
+        "sync_seconds": 0.017717375,
+        "process_wall": 0.21932300000000282,
+        "seconds_range": [
+          0.127194,
+          0.130250208
+        ]
+      },
+      {
+        "variant": "after-private",
+        "case": "read4k",
+        "seconds": 0.22580975,
+        "mib_per_second": 1729.885,
+        "ops_per_second": 442850.674,
+        "sync_seconds": 0.014899208,
+        "process_wall": 0.30374437499999374,
+        "seconds_range": [
+          0.219902291,
+          0.226071584
+        ]
+      },
+      {
+        "variant": "after-private",
+        "case": "stat",
+        "seconds": 0.613145458,
+        "mib_per_second": 0.0,
+        "ops_per_second": 163093.437,
+        "sync_seconds": 0.015787833,
+        "process_wall": 0.7054693749999998,
+        "seconds_range": [
+          0.610451291,
+          0.626279666
+        ]
+      },
+      {
+        "variant": "before-host",
+        "case": "read64k",
+        "seconds": 0.262454292,
+        "mib_per_second": 7803.264,
+        "ops_per_second": 124852.216,
+        "sync_seconds": 0.003086292,
+        "process_wall": 0.3150492500000013,
+        "seconds_range": [
+          0.257416125,
+          0.264788083
+        ]
+      },
+      {
+        "variant": "before-host",
+        "case": "write64k",
+        "seconds": 0.141429541,
+        "mib_per_second": 7240.354,
+        "ops_per_second": 115845.67,
+        "sync_seconds": 0.006995541,
+        "process_wall": 0.1965359169999914,
+        "seconds_range": [
+          0.1412755,
+          0.143351667
+        ]
+      },
+      {
+        "variant": "before-host",
+        "case": "read4k",
+        "seconds": 0.2827735,
+        "mib_per_second": 1381.406,
+        "ops_per_second": 353639.927,
+        "sync_seconds": 0.004132167,
+        "process_wall": 0.32664795800000235,
+        "seconds_range": [
+          0.273435375,
+          0.287536916
+        ]
+      },
+      {
+        "variant": "before-host",
+        "case": "stat",
+        "seconds": 4.556043625,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21948.868,
+        "sync_seconds": 0.004759208,
+        "process_wall": 4.60434966599999,
+        "seconds_range": [
+          4.53670125,
+          4.730127584
+        ]
+      },
+      {
+        "variant": "after-host",
+        "case": "read64k",
+        "seconds": 0.258677958,
+        "mib_per_second": 7917.18,
+        "ops_per_second": 126674.883,
+        "sync_seconds": 0.003904375,
+        "process_wall": 0.3052645829999996,
+        "seconds_range": [
+          0.257657958,
+          0.259261458
+        ]
+      },
+      {
+        "variant": "after-host",
+        "case": "write64k",
+        "seconds": 0.143902459,
+        "mib_per_second": 7115.931,
+        "ops_per_second": 113854.899,
+        "sync_seconds": 0.005784125,
+        "process_wall": 0.1978607500000038,
+        "seconds_range": [
+          0.1415405,
+          0.150494833
+        ]
+      },
+      {
+        "variant": "after-host",
+        "case": "read4k",
+        "seconds": 0.27719025,
+        "mib_per_second": 1409.231,
+        "ops_per_second": 360763.05,
+        "sync_seconds": 1.0541e-05,
+        "process_wall": 0.3213482499999998,
+        "seconds_range": [
+          0.2766575,
+          0.313432666
+        ]
+      },
+      {
+        "variant": "after-host",
+        "case": "stat",
+        "seconds": 4.578127666,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21842.991,
+        "sync_seconds": 0.004750125,
+        "process_wall": 4.626042709000004,
+        "seconds_range": [
+          4.567614042,
+          4.579437666
+        ]
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read64k",
+        "seconds": 0.264892833,
+        "mib_per_second": 7731.429,
+        "ops_per_second": 123702.856,
+        "sync_seconds": 0.003397208,
+        "process_wall": 0.3117422500000018,
+        "seconds_range": [
+          0.26378825,
+          0.266868917
+        ]
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "write64k",
+        "seconds": 0.146945084,
+        "mib_per_second": 6968.59,
+        "ops_per_second": 111497.435,
+        "sync_seconds": 0.00608325,
+        "process_wall": 0.20510191600000383,
+        "seconds_range": [
+          0.143143125,
+          0.147289792
+        ]
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read4k",
+        "seconds": 0.28066125,
+        "mib_per_second": 1391.802,
+        "ops_per_second": 356301.413,
+        "sync_seconds": 0.003016458,
+        "process_wall": 0.32796737500000006,
+        "seconds_range": [
+          0.279423375,
+          0.281884375
+        ]
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "stat",
+        "seconds": 4.623324209,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21629.459,
+        "sync_seconds": 0.006030834,
+        "process_wall": 4.677121791000001,
+        "seconds_range": [
+          4.612412417,
+          4.825679458
+        ]
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read64k",
+        "seconds": 0.262280791,
+        "mib_per_second": 7808.425,
+        "ops_per_second": 124934.807,
+        "sync_seconds": 0.0029325,
+        "process_wall": 0.30777320899998983,
+        "seconds_range": [
+          0.259706625,
+          0.279672875
+        ]
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "write64k",
+        "seconds": 0.141634375,
+        "mib_per_second": 7229.883,
+        "ops_per_second": 115678.133,
+        "sync_seconds": 0.006948792,
+        "process_wall": 0.19559054199999792,
+        "seconds_range": [
+          0.140606,
+          0.146648417
+        ]
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read4k",
+        "seconds": 0.279443208,
+        "mib_per_second": 1397.869,
+        "ops_per_second": 357854.466,
+        "sync_seconds": 0.003970958,
+        "process_wall": 0.3247881250000013,
+        "seconds_range": [
+          0.274946375,
+          0.280084958
+        ]
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "stat",
+        "seconds": 4.630752958,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21594.76,
+        "sync_seconds": 0.006034417,
+        "process_wall": 4.680817708999996,
+        "seconds_range": [
+          4.582909291,
+          4.640027959
+        ]
+      },
+      {
+        "variant": "native-mac",
+        "case": "read64k",
+        "seconds": 0.052186,
+        "mib_per_second": 39244.242,
+        "ops_per_second": 627907.867,
+        "sync_seconds": 2e-06,
+        "process_wall": 0.056145499999999515,
+        "seconds_range": [
+          0.05089,
+          0.061306
+        ]
+      },
+      {
+        "variant": "native-mac",
+        "case": "write64k",
+        "seconds": 0.038958,
+        "mib_per_second": 26284.717,
+        "ops_per_second": 420555.47,
+        "sync_seconds": 0.00089,
+        "process_wall": 0.04420341700000563,
+        "seconds_range": [
+          0.038508,
+          0.039351
+        ]
+      },
+      {
+        "variant": "native-mac",
+        "case": "read4k",
+        "seconds": 0.035021,
+        "mib_per_second": 11154.022,
+        "ops_per_second": 2855429.593,
+        "sync_seconds": 2e-06,
+        "process_wall": 0.03860258299999941,
+        "seconds_range": [
+          0.0346,
+          0.035054
+        ]
+      },
+      {
+        "variant": "native-mac",
+        "case": "stat",
+        "seconds": 0.110755,
+        "mib_per_second": 0.0,
+        "ops_per_second": 902893.775,
+        "sync_seconds": 0.0,
+        "process_wall": 0.11467583299999973,
+        "seconds_range": [
+          0.109665,
+          0.111324
+        ]
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "read64k",
+        "seconds": 0.050289,
+        "mib_per_second": 40724.612,
+        "ops_per_second": 651593.787,
+        "sync_seconds": 2e-06,
+        "process_wall": 0.05429504100000315,
+        "seconds_range": [
+          0.049696,
+          0.052713
+        ]
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "write64k",
+        "seconds": 0.039099,
+        "mib_per_second": 26189.928,
+        "ops_per_second": 419038.851,
+        "sync_seconds": 0.000961,
+        "process_wall": 0.04463875000000428,
+        "seconds_range": [
+          0.039075,
+          0.040176
+        ]
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "read4k",
+        "seconds": 0.033954,
+        "mib_per_second": 11504.536,
+        "ops_per_second": 2945161.092,
+        "sync_seconds": 1e-06,
+        "process_wall": 0.03785137500000246,
+        "seconds_range": [
+          0.033698,
+          0.035934
+        ]
+      },
+      {
+        "variant": "native-mac-watch",
+        "case": "stat",
+        "seconds": 0.112232,
+        "mib_per_second": 0.0,
+        "ops_per_second": 891011.476,
+        "sync_seconds": 2e-06,
+        "process_wall": 0.11631166600000142,
+        "seconds_range": [
+          0.111848,
+          0.112753
+        ]
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "read64k",
+        "seconds": 0.050263,
+        "mib_per_second": 40745.678,
+        "ops_per_second": 651930.844,
+        "sync_seconds": 1e-06,
+        "process_wall": 0.05425558400000341,
+        "seconds_range": [
+          0.050118,
+          0.051482
+        ]
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "write64k",
+        "seconds": 0.039496,
+        "mib_per_second": 25926.676,
+        "ops_per_second": 414826.817,
+        "sync_seconds": 0.00089,
+        "process_wall": 0.04457433299999991,
+        "seconds_range": [
+          0.038392,
+          0.040699
+        ]
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "read4k",
+        "seconds": 0.033915,
+        "mib_per_second": 11517.765,
+        "ops_per_second": 2948547.837,
+        "sync_seconds": 1e-06,
+        "process_wall": 0.03772229099999436,
+        "seconds_range": [
+          0.033266,
+          0.034708
+        ]
+      },
+      {
+        "variant": "native-mac-flock",
+        "case": "stat",
+        "seconds": 0.111505,
+        "mib_per_second": 0.0,
+        "ops_per_second": 896820.77,
+        "sync_seconds": 1e-06,
+        "process_wall": 0.11539774999999963,
+        "seconds_range": [
+          0.111395,
+          0.111649
+        ]
+      }
+    ]
+  },
+  "final_trames_rerun": {
+    "complete": true,
+    "scope": "final wait-resource selection; same cached data paths and fixture; native/before references in perf/result.json",
+    "sha256": {
+      "runner": "9bd0b10ce7fa474c7a3e96279afb0fc51c2086f10acf08bdaa0d30fce4186a65",
+      "program": "53e6138b95bfc3fd687bf45b251b99bb32eecb3a2b50e3a8fe1c41d73ef567b9"
+    },
+    "records": [
+      {
+        "variant": "after-host-watch",
+        "case": "write64k",
+        "repeat": 1,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.139278,
+        "mib_per_second": 7352.202,
+        "ops_per_second": 117635.233,
+        "sync_seconds": 0.006026958,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "write64k",
+        "repeat": 2,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.148693542,
+        "mib_per_second": 6886.647,
+        "ops_per_second": 110186.359,
+        "sync_seconds": 0.004911416,
+        "checksum": 0
+      },
+      {
+        "variant": "after-private",
+        "case": "read64k",
+        "repeat": 1,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.255083625,
+        "mib_per_second": 8028.74,
+        "ops_per_second": 128459.834,
+        "sync_seconds": 0.012702125,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "stat",
+        "repeat": 2,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.549707208,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21979.436,
+        "sync_seconds": 0.005770375,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-private",
+        "case": "stat",
+        "repeat": 3,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.594193458,
+        "mib_per_second": 0.0,
+        "ops_per_second": 168295.357,
+        "sync_seconds": 0.014581833,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read64k",
+        "repeat": 1,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.253217708,
+        "mib_per_second": 8087.902,
+        "ops_per_second": 129406.432,
+        "sync_seconds": 6.167e-06,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read64k",
+        "repeat": 3,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.258580833,
+        "mib_per_second": 7920.154,
+        "ops_per_second": 126722.463,
+        "sync_seconds": 0.003318125,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host",
+        "case": "read64k",
+        "repeat": 2,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.252872791,
+        "mib_per_second": 8098.934,
+        "ops_per_second": 129582.941,
+        "sync_seconds": 1.0333e-05,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "stat",
+        "repeat": 2,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.580985125,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21829.366,
+        "sync_seconds": 0.003215458,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read4k",
+        "repeat": 2,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.281078,
+        "mib_per_second": 1389.739,
+        "ops_per_second": 355773.131,
+        "sync_seconds": 0.00263875,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-private",
+        "case": "read64k",
+        "repeat": 2,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.246524084,
+        "mib_per_second": 8307.505,
+        "ops_per_second": 132920.076,
+        "sync_seconds": 0.013146084,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-private",
+        "case": "read4k",
+        "repeat": 3,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.220481167,
+        "mib_per_second": 1771.693,
+        "ops_per_second": 453553.477,
+        "sync_seconds": 0.015196542,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-host",
+        "case": "read64k",
+        "repeat": 3,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.260366125,
+        "mib_per_second": 7865.847,
+        "ops_per_second": 125853.546,
+        "sync_seconds": 0.00388775,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host",
+        "case": "stat",
+        "repeat": 3,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.582139709,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21823.865,
+        "sync_seconds": 0.004184417,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host",
+        "case": "read4k",
+        "repeat": 2,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.275742209,
+        "mib_per_second": 1416.631,
+        "ops_per_second": 362657.572,
+        "sync_seconds": 7.375e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-host",
+        "case": "write64k",
+        "repeat": 3,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.141228125,
+        "mib_per_second": 7250.68,
+        "ops_per_second": 116010.887,
+        "sync_seconds": 0.005969416,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "write64k",
+        "repeat": 2,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.148892417,
+        "mib_per_second": 6877.449,
+        "ops_per_second": 110039.184,
+        "sync_seconds": 0.005926333,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host",
+        "case": "stat",
+        "repeat": 2,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.60755325,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21703.493,
+        "sync_seconds": 0.005373209,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read64k",
+        "repeat": 2,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.273886959,
+        "mib_per_second": 7477.537,
+        "ops_per_second": 119640.6,
+        "sync_seconds": 0.0042105,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "write64k",
+        "repeat": 3,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.142418167,
+        "mib_per_second": 7190.094,
+        "ops_per_second": 115041.503,
+        "sync_seconds": 0.006956916,
+        "checksum": 0
+      },
+      {
+        "variant": "after-private",
+        "case": "write64k",
+        "repeat": 1,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.129628458,
+        "mib_per_second": 7899.5,
+        "ops_per_second": 126392.0,
+        "sync_seconds": 0.0177015,
+        "checksum": 0
+      },
+      {
+        "variant": "after-private",
+        "case": "stat",
+        "repeat": 1,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.606711125,
+        "mib_per_second": 0.0,
+        "ops_per_second": 164823.086,
+        "sync_seconds": 0.015333417,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host",
+        "case": "stat",
+        "repeat": 1,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.569346375,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21884.968,
+        "sync_seconds": 0.004402792,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "stat",
+        "repeat": 3,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.594171958,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21766.708,
+        "sync_seconds": 0.004816,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "stat",
+        "repeat": 1,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.509654916,
+        "mib_per_second": 0.0,
+        "ops_per_second": 22174.646,
+        "sync_seconds": 0.004756167,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host",
+        "case": "write64k",
+        "repeat": 2,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.141112083,
+        "mib_per_second": 7256.643,
+        "ops_per_second": 116106.287,
+        "sync_seconds": 0.004264542,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read64k",
+        "repeat": 1,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.255989459,
+        "mib_per_second": 8000.329,
+        "ops_per_second": 128005.271,
+        "sync_seconds": 0.004119375,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "write64k",
+        "repeat": 3,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.141120417,
+        "mib_per_second": 7256.214,
+        "ops_per_second": 116099.43,
+        "sync_seconds": 0.007029834,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "stat",
+        "repeat": 3,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.597362541,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21751.602,
+        "sync_seconds": 0.00506475,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read64k",
+        "repeat": 3,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.261462708,
+        "mib_per_second": 7832.857,
+        "ops_per_second": 125325.712,
+        "sync_seconds": 1.0791e-05,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-private",
+        "case": "read4k",
+        "repeat": 2,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.222488917,
+        "mib_per_second": 1755.705,
+        "ops_per_second": 449460.59,
+        "sync_seconds": 0.016016792,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-private",
+        "case": "write64k",
+        "repeat": 3,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.127747458,
+        "mib_per_second": 8015.815,
+        "ops_per_second": 128253.041,
+        "sync_seconds": 0.01674425,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host",
+        "case": "write64k",
+        "repeat": 1,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.14292275,
+        "mib_per_second": 7164.71,
+        "ops_per_second": 114635.354,
+        "sync_seconds": 0.003474959,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host",
+        "case": "read4k",
+        "repeat": 3,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.275877292,
+        "mib_per_second": 1415.937,
+        "ops_per_second": 362479.997,
+        "sync_seconds": 7.417e-06,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-private",
+        "case": "write64k",
+        "repeat": 2,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.129403125,
+        "mib_per_second": 7913.256,
+        "ops_per_second": 126612.089,
+        "sync_seconds": 0.016903125,
+        "checksum": 0
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read4k",
+        "repeat": 3,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.28526625,
+        "mib_per_second": 1369.335,
+        "ops_per_second": 350549.706,
+        "sync_seconds": 0.004080709,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-host",
+        "case": "read4k",
+        "repeat": 1,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.273731292,
+        "mib_per_second": 1427.038,
+        "ops_per_second": 365321.77,
+        "sync_seconds": 1.0208e-05,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read4k",
+        "repeat": 1,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.276007333,
+        "mib_per_second": 1415.27,
+        "ops_per_second": 362309.214,
+        "sync_seconds": 0.003223042,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read4k",
+        "repeat": 1,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.280439708,
+        "mib_per_second": 1392.902,
+        "ops_per_second": 356582.884,
+        "sync_seconds": 0.004606208,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read4k",
+        "repeat": 2,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.277139083,
+        "mib_per_second": 1409.491,
+        "ops_per_second": 360829.656,
+        "sync_seconds": 0.002947625,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read4k",
+        "repeat": 3,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.274948542,
+        "mib_per_second": 1420.72,
+        "ops_per_second": 363704.42,
+        "sync_seconds": 0.003266584,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "write64k",
+        "repeat": 1,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.141780417,
+        "mib_per_second": 7222.436,
+        "ops_per_second": 115558.977,
+        "sync_seconds": 0.007078375,
+        "checksum": 0
+      },
+      {
+        "variant": "after-private",
+        "case": "read4k",
+        "repeat": 1,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.218636709,
+        "mib_per_second": 1786.64,
+        "ops_per_second": 457379.735,
+        "sync_seconds": 0.014238667,
+        "checksum": 23100000
+      },
+      {
+        "variant": "after-private",
+        "case": "read64k",
+        "repeat": 3,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.23835375,
+        "mib_per_second": 8592.271,
+        "ops_per_second": 137476.335,
+        "sync_seconds": 0.015029959,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host",
+        "case": "read64k",
+        "repeat": 1,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.256763583,
+        "mib_per_second": 7976.209,
+        "ops_per_second": 127619.344,
+        "sync_seconds": 0.004085584,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read64k",
+        "repeat": 2,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.261496459,
+        "mib_per_second": 7831.846,
+        "ops_per_second": 125309.536,
+        "sync_seconds": 0.0038235,
+        "checksum": 73367552
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "stat",
+        "repeat": 1,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 4.533888208,
+        "mib_per_second": 0.0,
+        "ops_per_second": 22056.124,
+        "sync_seconds": 0.003735,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "after-private",
+        "case": "stat",
+        "repeat": 2,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.596667458,
+        "mib_per_second": 0.0,
+        "ops_per_second": 167597.543,
+        "sync_seconds": 0.014101541,
+        "checksum": 838860800000
+      }
+    ],
+    "medians": [
+      {
+        "variant": "after-private",
+        "case": "read64k",
+        "seconds": 0.246524084,
+        "mib_per_second": 8307.505,
+        "ops_per_second": 132920.076,
+        "sync_seconds": 0.013146084,
+        "seconds_range": [
+          0.23835375,
+          0.255083625
+        ]
+      },
+      {
+        "variant": "after-private",
+        "case": "write64k",
+        "seconds": 0.129403125,
+        "mib_per_second": 7913.256,
+        "ops_per_second": 126612.089,
+        "sync_seconds": 0.016903125,
+        "seconds_range": [
+          0.127747458,
+          0.129628458
+        ]
+      },
+      {
+        "variant": "after-private",
+        "case": "read4k",
+        "seconds": 0.220481167,
+        "mib_per_second": 1771.693,
+        "ops_per_second": 453553.477,
+        "sync_seconds": 0.015196542,
+        "seconds_range": [
+          0.218636709,
+          0.222488917
+        ]
+      },
+      {
+        "variant": "after-private",
+        "case": "stat",
+        "seconds": 0.596667458,
+        "mib_per_second": 0.0,
+        "ops_per_second": 167597.543,
+        "sync_seconds": 0.014581833,
+        "seconds_range": [
+          0.594193458,
+          0.606711125
+        ]
+      },
+      {
+        "variant": "after-host",
+        "case": "read64k",
+        "seconds": 0.256763583,
+        "mib_per_second": 7976.209,
+        "ops_per_second": 127619.344,
+        "sync_seconds": 0.00388775,
+        "seconds_range": [
+          0.252872791,
+          0.260366125
+        ]
+      },
+      {
+        "variant": "after-host",
+        "case": "write64k",
+        "seconds": 0.141228125,
+        "mib_per_second": 7250.68,
+        "ops_per_second": 116010.887,
+        "sync_seconds": 0.004264542,
+        "seconds_range": [
+          0.141112083,
+          0.14292275
+        ]
+      },
+      {
+        "variant": "after-host",
+        "case": "read4k",
+        "seconds": 0.275742209,
+        "mib_per_second": 1416.631,
+        "ops_per_second": 362657.572,
+        "sync_seconds": 7.417e-06,
+        "seconds_range": [
+          0.273731292,
+          0.275877292
+        ]
+      },
+      {
+        "variant": "after-host",
+        "case": "stat",
+        "seconds": 4.582139709,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21823.865,
+        "sync_seconds": 0.004402792,
+        "seconds_range": [
+          4.569346375,
+          4.60755325
+        ]
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read64k",
+        "seconds": 0.261462708,
+        "mib_per_second": 7832.857,
+        "ops_per_second": 125325.712,
+        "sync_seconds": 1.0791e-05,
+        "seconds_range": [
+          0.253217708,
+          0.261496459
+        ]
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "write64k",
+        "seconds": 0.142418167,
+        "mib_per_second": 7190.094,
+        "ops_per_second": 115041.503,
+        "sync_seconds": 0.006026958,
+        "seconds_range": [
+          0.139278,
+          0.148693542
+        ]
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "read4k",
+        "seconds": 0.281078,
+        "mib_per_second": 1389.739,
+        "ops_per_second": 355773.131,
+        "sync_seconds": 0.003223042,
+        "seconds_range": [
+          0.276007333,
+          0.28526625
+        ]
+      },
+      {
+        "variant": "after-host-watch",
+        "case": "stat",
+        "seconds": 4.580985125,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21829.366,
+        "sync_seconds": 0.004756167,
+        "seconds_range": [
+          4.509654916,
+          4.597362541
+        ]
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read64k",
+        "seconds": 0.258580833,
+        "mib_per_second": 7920.154,
+        "ops_per_second": 126722.463,
+        "sync_seconds": 0.004119375,
+        "seconds_range": [
+          0.255989459,
+          0.273886959
+        ]
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "write64k",
+        "seconds": 0.141780417,
+        "mib_per_second": 7222.436,
+        "ops_per_second": 115558.977,
+        "sync_seconds": 0.007029834,
+        "seconds_range": [
+          0.141120417,
+          0.148892417
+        ]
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "read4k",
+        "seconds": 0.277139083,
+        "mib_per_second": 1409.491,
+        "ops_per_second": 360829.656,
+        "sync_seconds": 0.003266584,
+        "seconds_range": [
+          0.274948542,
+          0.280439708
+        ]
+      },
+      {
+        "variant": "after-host-flock",
+        "case": "stat",
+        "seconds": 4.549707208,
+        "mib_per_second": 0.0,
+        "ops_per_second": 21979.436,
+        "sync_seconds": 0.004816,
+        "seconds_range": [
+          4.533888208,
+          4.594171958
+        ]
+      }
+    ]
+  },
+  "native_linux": {
+    "platform": "Linux-7.0.0-38-generic-aarch64-with-glibc2.39",
+    "kernel": "7.0.0-38-generic",
+    "cpus": 6,
+    "memory_gib": 8,
+    "virtualization": "Lima VZ ARM64 native Linux kernel",
+    "filesystem": "ext4",
+    "program_sha256": "53e6138b95bfc3fd687bf45b251b99bb32eecb3a2b50e3a8fe1c41d73ef567b9",
+    "records": [
+      {
+        "variant": "watch",
+        "case": "write64k",
+        "repeat": 2,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.023862041,
+        "mib_per_second": 42913.345,
+        "ops_per_second": 686613.521,
+        "sync_seconds": 0.001966541,
+        "checksum": 0
+      },
+      {
+        "variant": "flock",
+        "case": "stat",
+        "repeat": 1,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.02606925,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3835936.976,
+        "sync_seconds": 2.7458e-05,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "flock",
+        "case": "read4k",
+        "repeat": 2,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.028100292,
+        "mib_per_second": 13901.101,
+        "ops_per_second": 3558681.881,
+        "sync_seconds": 0.000198,
+        "checksum": 23100000
+      },
+      {
+        "variant": "flock",
+        "case": "read64k",
+        "repeat": 3,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.053205083,
+        "mib_per_second": 38492.563,
+        "ops_per_second": 615881.005,
+        "sync_seconds": 0.000263791,
+        "checksum": 73367552
+      },
+      {
+        "variant": "normal",
+        "case": "write64k",
+        "repeat": 2,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.0227745,
+        "mib_per_second": 44962.568,
+        "ops_per_second": 719401.085,
+        "sync_seconds": 0.001745,
+        "checksum": 0
+      },
+      {
+        "variant": "normal",
+        "case": "read4k",
+        "repeat": 3,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.027767333,
+        "mib_per_second": 14067.79,
+        "ops_per_second": 3601354.152,
+        "sync_seconds": 0.000199541,
+        "checksum": 23100000
+      },
+      {
+        "variant": "normal",
+        "case": "read4k",
+        "repeat": 2,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.028227917,
+        "mib_per_second": 13838.251,
+        "ops_per_second": 3542592.25,
+        "sync_seconds": 0.000162375,
+        "checksum": 23100000
+      },
+      {
+        "variant": "normal",
+        "case": "read64k",
+        "repeat": 1,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.053419542,
+        "mib_per_second": 38338.03,
+        "ops_per_second": 613408.479,
+        "sync_seconds": 0.000202667,
+        "checksum": 73367552
+      },
+      {
+        "variant": "flock",
+        "case": "write64k",
+        "repeat": 2,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.022441166,
+        "mib_per_second": 45630.428,
+        "ops_per_second": 730086.841,
+        "sync_seconds": 0.001481708,
+        "checksum": 0
+      },
+      {
+        "variant": "flock",
+        "case": "write64k",
+        "repeat": 3,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.022566958,
+        "mib_per_second": 45376.076,
+        "ops_per_second": 726017.215,
+        "sync_seconds": 0.001492208,
+        "checksum": 0
+      },
+      {
+        "variant": "flock",
+        "case": "write64k",
+        "repeat": 1,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.022486291,
+        "mib_per_second": 45538.857,
+        "ops_per_second": 728621.719,
+        "sync_seconds": 0.001511208,
+        "checksum": 0
+      },
+      {
+        "variant": "watch",
+        "case": "read64k",
+        "repeat": 2,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.052971208,
+        "mib_per_second": 38662.513,
+        "ops_per_second": 618600.203,
+        "sync_seconds": 0.000189833,
+        "checksum": 73367552
+      },
+      {
+        "variant": "flock",
+        "case": "read4k",
+        "repeat": 1,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.028000625,
+        "mib_per_second": 13950.581,
+        "ops_per_second": 3571348.854,
+        "sync_seconds": 0.000180833,
+        "checksum": 23100000
+      },
+      {
+        "variant": "watch",
+        "case": "read4k",
+        "repeat": 3,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.028297542,
+        "mib_per_second": 13804.202,
+        "ops_per_second": 3533875.84,
+        "sync_seconds": 0.000162167,
+        "checksum": 23100000
+      },
+      {
+        "variant": "normal",
+        "case": "read64k",
+        "repeat": 2,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.053289625,
+        "mib_per_second": 38431.496,
+        "ops_per_second": 614903.933,
+        "sync_seconds": 0.00017975,
+        "checksum": 73367552
+      },
+      {
+        "variant": "normal",
+        "case": "write64k",
+        "repeat": 3,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.022476625,
+        "mib_per_second": 45558.441,
+        "ops_per_second": 728935.06,
+        "sync_seconds": 0.001469,
+        "checksum": 0
+      },
+      {
+        "variant": "watch",
+        "case": "read64k",
+        "repeat": 3,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.053899708,
+        "mib_per_second": 37996.495,
+        "ops_per_second": 607943.924,
+        "sync_seconds": 0.000206208,
+        "checksum": 73367552
+      },
+      {
+        "variant": "flock",
+        "case": "stat",
+        "repeat": 3,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.025481917,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3924351.531,
+        "sync_seconds": 2.9542e-05,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "watch",
+        "case": "stat",
+        "repeat": 3,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.025467792,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3926528.063,
+        "sync_seconds": 2.7708e-05,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "normal",
+        "case": "stat",
+        "repeat": 3,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.025492792,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3922677.438,
+        "sync_seconds": 2.95e-05,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "flock",
+        "case": "read64k",
+        "repeat": 1,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.054929625,
+        "mib_per_second": 37284.07,
+        "ops_per_second": 596545.125,
+        "sync_seconds": 0.000195958,
+        "checksum": 73367552
+      },
+      {
+        "variant": "normal",
+        "case": "write64k",
+        "repeat": 1,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.022437625,
+        "mib_per_second": 45637.629,
+        "ops_per_second": 730202.06,
+        "sync_seconds": 0.001533333,
+        "checksum": 0
+      },
+      {
+        "variant": "flock",
+        "case": "stat",
+        "repeat": 2,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.0253955,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3937705.499,
+        "sync_seconds": 2.9375e-05,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "watch",
+        "case": "read4k",
+        "repeat": 2,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.028030542,
+        "mib_per_second": 13935.692,
+        "ops_per_second": 3567537.153,
+        "sync_seconds": 0.00013625,
+        "checksum": 23100000
+      },
+      {
+        "variant": "normal",
+        "case": "stat",
+        "repeat": 1,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.0253965,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3937550.45,
+        "sync_seconds": 2.5958e-05,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "watch",
+        "case": "write64k",
+        "repeat": 1,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.023782333,
+        "mib_per_second": 43057.172,
+        "ops_per_second": 688914.75,
+        "sync_seconds": 0.001430708,
+        "checksum": 0
+      },
+      {
+        "variant": "flock",
+        "case": "read64k",
+        "repeat": 2,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.054005916,
+        "mib_per_second": 37921.771,
+        "ops_per_second": 606748.342,
+        "sync_seconds": 0.000231417,
+        "checksum": 73367552
+      },
+      {
+        "variant": "watch",
+        "case": "write64k",
+        "repeat": 3,
+        "mode": "write64k",
+        "operations": 16384,
+        "seconds": 0.024678583,
+        "mib_per_second": 41493.468,
+        "ops_per_second": 663895.492,
+        "sync_seconds": 0.0014765,
+        "checksum": 0
+      },
+      {
+        "variant": "flock",
+        "case": "read4k",
+        "repeat": 3,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.029889625,
+        "mib_per_second": 13068.916,
+        "ops_per_second": 3345642.51,
+        "sync_seconds": 0.000242042,
+        "checksum": 23100000
+      },
+      {
+        "variant": "watch",
+        "case": "stat",
+        "repeat": 1,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.025311125,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3950831.897,
+        "sync_seconds": 3.1458e-05,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "watch",
+        "case": "read4k",
+        "repeat": 1,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.028544875,
+        "mib_per_second": 13684.593,
+        "ops_per_second": 3503255.838,
+        "sync_seconds": 0.000177083,
+        "checksum": 23100000
+      },
+      {
+        "variant": "normal",
+        "case": "read4k",
+        "repeat": 1,
+        "mode": "read4k",
+        "operations": 100000,
+        "seconds": 0.028078375,
+        "mib_per_second": 13911.952,
+        "ops_per_second": 3561459.664,
+        "sync_seconds": 0.000155042,
+        "checksum": 23100000
+      },
+      {
+        "variant": "watch",
+        "case": "read64k",
+        "repeat": 1,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.053322375,
+        "mib_per_second": 38407.892,
+        "ops_per_second": 614526.266,
+        "sync_seconds": 0.000184958,
+        "checksum": 73367552
+      },
+      {
+        "variant": "normal",
+        "case": "read64k",
+        "repeat": 3,
+        "mode": "read64k",
+        "operations": 32768,
+        "seconds": 0.053228292,
+        "mib_per_second": 38475.779,
+        "ops_per_second": 615612.464,
+        "sync_seconds": 0.000176458,
+        "checksum": 73367552
+      },
+      {
+        "variant": "normal",
+        "case": "stat",
+        "repeat": 2,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.025325334,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3948615.248,
+        "sync_seconds": 2.7917e-05,
+        "checksum": 838860800000
+      },
+      {
+        "variant": "watch",
+        "case": "stat",
+        "repeat": 2,
+        "mode": "stat",
+        "operations": 100000,
+        "seconds": 0.025324542,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3948738.737,
+        "sync_seconds": 2.6083e-05,
+        "checksum": 838860800000
+      }
+    ],
+    "cases": {
+      "read64k": 32768,
+      "write64k": 16384,
+      "read4k": 100000,
+      "stat": 100000
+    },
+    "repeats": 3,
+    "medians": [
+      {
+        "variant": "normal",
+        "case": "read64k",
+        "seconds": 0.053289625,
+        "mib_per_second": 38431.496,
+        "ops_per_second": 614903.933,
+        "sync_seconds": 0.00017975,
+        "seconds_range": [
+          0.053228292,
+          0.053419542
+        ]
+      },
+      {
+        "variant": "normal",
+        "case": "write64k",
+        "seconds": 0.022476625,
+        "mib_per_second": 45558.441,
+        "ops_per_second": 728935.06,
+        "sync_seconds": 0.001533333,
+        "seconds_range": [
+          0.022437625,
+          0.0227745
+        ]
+      },
+      {
+        "variant": "normal",
+        "case": "read4k",
+        "seconds": 0.028078375,
+        "mib_per_second": 13911.952,
+        "ops_per_second": 3561459.664,
+        "sync_seconds": 0.000162375,
+        "seconds_range": [
+          0.027767333,
+          0.028227917
+        ]
+      },
+      {
+        "variant": "normal",
+        "case": "stat",
+        "seconds": 0.0253965,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3937550.45,
+        "sync_seconds": 2.7917e-05,
+        "seconds_range": [
+          0.025325334,
+          0.025492792
+        ]
+      },
+      {
+        "variant": "watch",
+        "case": "read64k",
+        "seconds": 0.053322375,
+        "mib_per_second": 38407.892,
+        "ops_per_second": 614526.266,
+        "sync_seconds": 0.000189833,
+        "seconds_range": [
+          0.052971208,
+          0.053899708
+        ]
+      },
+      {
+        "variant": "watch",
+        "case": "write64k",
+        "seconds": 0.023862041,
+        "mib_per_second": 42913.345,
+        "ops_per_second": 686613.521,
+        "sync_seconds": 0.0014765,
+        "seconds_range": [
+          0.023782333,
+          0.024678583
+        ]
+      },
+      {
+        "variant": "watch",
+        "case": "read4k",
+        "seconds": 0.028297542,
+        "mib_per_second": 13804.202,
+        "ops_per_second": 3533875.84,
+        "sync_seconds": 0.000162167,
+        "seconds_range": [
+          0.028030542,
+          0.028544875
+        ]
+      },
+      {
+        "variant": "watch",
+        "case": "stat",
+        "seconds": 0.025324542,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3948738.737,
+        "sync_seconds": 2.7708e-05,
+        "seconds_range": [
+          0.025311125,
+          0.025467792
+        ]
+      },
+      {
+        "variant": "flock",
+        "case": "read64k",
+        "seconds": 0.054005916,
+        "mib_per_second": 37921.771,
+        "ops_per_second": 606748.342,
+        "sync_seconds": 0.000231417,
+        "seconds_range": [
+          0.053205083,
+          0.054929625
+        ]
+      },
+      {
+        "variant": "flock",
+        "case": "write64k",
+        "seconds": 0.022486291,
+        "mib_per_second": 45538.857,
+        "ops_per_second": 728621.719,
+        "sync_seconds": 0.001492208,
+        "seconds_range": [
+          0.022441166,
+          0.022566958
+        ]
+      },
+      {
+        "variant": "flock",
+        "case": "read4k",
+        "seconds": 0.028100292,
+        "mib_per_second": 13901.101,
+        "ops_per_second": 3558681.881,
+        "sync_seconds": 0.000198,
+        "seconds_range": [
+          0.028000625,
+          0.029889625
+        ]
+      },
+      {
+        "variant": "flock",
+        "case": "stat",
+        "seconds": 0.025481917,
+        "mib_per_second": 0.0,
+        "ops_per_second": 3924351.531,
+        "sync_seconds": 2.9375e-05,
+        "seconds_range": [
+          0.0253955,
+          0.02606925
+        ]
+      }
+    ],
+    "complete": true
+  },
+  "paired_private": {
+    "complete": true,
+    "scope": "5 randomized pairs, private read64k, 8GiB per run; startup/population/fsync excluded",
+    "medians_mib_per_second": {
+      "before": 8653.147,
+      "after": 8743.811
+    },
+    "change_percent": 1.047757538384575,
+    "records": [
+      {
+        "variant": "before",
+        "repeat": 1,
+        "mode": "read64k",
+        "operations": 131072,
+        "seconds": 0.946707583,
+        "mib_per_second": 8653.147,
+        "ops_per_second": 138450.354,
+        "sync_seconds": 0.015535875,
+        "checksum": 293470208
+      },
+      {
+        "variant": "after",
+        "repeat": 1,
+        "mode": "read64k",
+        "operations": 131072,
+        "seconds": 0.983164083,
+        "mib_per_second": 8332.282,
+        "ops_per_second": 133316.506,
+        "sync_seconds": 0.015226625,
+        "checksum": 293470208
+      },
+      {
+        "variant": "after",
+        "repeat": 2,
+        "mode": "read64k",
+        "operations": 131072,
+        "seconds": 0.93689125,
+        "mib_per_second": 8743.811,
+        "ops_per_second": 139900.976,
+        "sync_seconds": 0.014267458,
+        "checksum": 293470208
+      },
+      {
+        "variant": "before",
+        "repeat": 2,
+        "mode": "read64k",
+        "operations": 131072,
+        "seconds": 0.976489291,
+        "mib_per_second": 8389.237,
+        "ops_per_second": 134227.791,
+        "sync_seconds": 0.015059292,
+        "checksum": 293470208
+      },
+      {
+        "variant": "before",
+        "repeat": 3,
+        "mode": "read64k",
+        "operations": 131072,
+        "seconds": 0.924561417,
+        "mib_per_second": 8860.417,
+        "ops_per_second": 141766.677,
+        "sync_seconds": 0.014279209,
+        "checksum": 293470208
+      },
+      {
+        "variant": "after",
+        "repeat": 3,
+        "mode": "read64k",
+        "operations": 131072,
+        "seconds": 0.936086458,
+        "mib_per_second": 8751.328,
+        "ops_per_second": 140021.254,
+        "sync_seconds": 0.01416125,
+        "checksum": 293470208
+      },
+      {
+        "variant": "after",
+        "repeat": 4,
+        "mode": "read64k",
+        "operations": 131072,
+        "seconds": 0.926838166,
+        "mib_per_second": 8838.652,
+        "ops_per_second": 141418.432,
+        "sync_seconds": 0.013060167,
+        "checksum": 293470208
+      },
+      {
+        "variant": "before",
+        "repeat": 4,
+        "mode": "read64k",
+        "operations": 131072,
+        "seconds": 0.91785475,
+        "mib_per_second": 8925.159,
+        "ops_per_second": 142802.551,
+        "sync_seconds": 0.015409958,
+        "checksum": 293470208
+      },
+      {
+        "variant": "after",
+        "repeat": 5,
+        "mode": "read64k",
+        "operations": 131072,
+        "seconds": 0.937390375,
+        "mib_per_second": 8739.155,
+        "ops_per_second": 139826.484,
+        "sync_seconds": 0.014942542,
+        "checksum": 293470208
+      },
+      {
+        "variant": "before",
+        "repeat": 5,
+        "mode": "read64k",
+        "operations": 131072,
+        "seconds": 0.9831815,
+        "mib_per_second": 8332.134,
+        "ops_per_second": 133314.144,
+        "sync_seconds": 0.01328925,
+        "checksum": 293470208
+      }
+    ]
+  },
+  "interop_acceptance": {
+    "complete": true,
+    "records": [
+      {
+        "case": "notify-read",
+        "cpus": 1,
+        "concurrent_guest": false,
+        "wake_to_result_ms": 2.792958000000567,
+        "result": {
+          "events": [
+            {
+              "wd": 1,
+              "mask": 256,
+              "cookie": 0,
+              "name": "native-created"
+            }
+          ]
+        },
+        "stdout": "INTEROP_OK:notify-read\n",
+        "stderr": ""
+      },
+      {
+        "case": "notify-read",
+        "cpus": 4,
+        "concurrent_guest": true,
+        "wake_to_result_ms": 2.7137919999997706,
+        "result": {
+          "events": [
+            {
+              "wd": 1,
+              "mask": 256,
+              "cookie": 0,
+              "name": "native-created"
+            }
+          ]
+        },
+        "stdout": "INTEROP_OK:notify-read\n",
+        "stderr": ""
+      },
+      {
+        "case": "notify-poll",
+        "cpus": 1,
+        "concurrent_guest": false,
+        "wake_to_result_ms": 2.705042000000546,
+        "result": {
+          "events": [
+            {
+              "wd": 1,
+              "mask": 256,
+              "cookie": 0,
+              "name": "native-created"
+            }
+          ]
+        },
+        "stdout": "INTEROP_OK:notify-poll\n",
+        "stderr": ""
+      },
+      {
+        "case": "notify-poll",
+        "cpus": 4,
+        "concurrent_guest": true,
+        "wake_to_result_ms": 2.7602910000013026,
+        "result": {
+          "events": [
+            {
+              "wd": 1,
+              "mask": 256,
+              "cookie": 0,
+              "name": "native-created"
+            }
+          ]
+        },
+        "stdout": "INTEROP_OK:notify-poll\n",
+        "stderr": ""
+      },
+      {
+        "case": "notify-epoll",
+        "cpus": 1,
+        "concurrent_guest": false,
+        "wake_to_result_ms": 2.787665999999689,
+        "result": {
+          "events": [
+            {
+              "wd": 1,
+              "mask": 256,
+              "cookie": 0,
+              "name": "native-created"
+            }
+          ]
+        },
+        "stdout": "INTEROP_OK:notify-epoll\n",
+        "stderr": ""
+      },
+      {
+        "case": "notify-epoll",
+        "cpus": 4,
+        "concurrent_guest": true,
+        "wake_to_result_ms": 2.649499999998639,
+        "result": {
+          "events": [
+            {
+              "wd": 1,
+              "mask": 256,
+              "cookie": 0,
+              "name": "native-created"
+            }
+          ]
+        },
+        "stdout": "INTEROP_OK:notify-epoll\n",
+        "stderr": ""
+      },
+      {
+        "case": "notify-close-reuse",
+        "cpus": 1,
+        "concurrent_guest": false,
+        "wake_to_result_ms": 2.728416000000067,
+        "result": {
+          "events": [
+            {
+              "wd": 1,
+              "mask": 256,
+              "cookie": 0,
+              "name": "native-created"
+            }
+          ]
+        },
+        "stdout": "INTEROP_OK:notify-close-reuse\n",
+        "stderr": ""
+      },
+      {
+        "case": "notify-close-reuse",
+        "cpus": 4,
+        "concurrent_guest": true,
+        "wake_to_result_ms": 7.707500000000422,
+        "result": {
+          "events": [
+            {
+              "wd": 1,
+              "mask": 256,
+              "cookie": 0,
+              "name": "native-created"
+            }
+          ]
+        },
+        "stdout": "INTEROP_OK:notify-close-reuse\n",
+        "stderr": ""
+      },
+      {
+        "case": "flock-wait",
+        "cpus": 1,
+        "concurrent_guest": false,
+        "wake_to_result_ms": 2.65016699999876,
+        "result": {
+          "acquired": true
+        },
+        "stdout": "INTEROP_OK:flock-wait\n",
+        "stderr": ""
+      },
+      {
+        "case": "flock-wait",
+        "cpus": 4,
+        "concurrent_guest": true,
+        "wake_to_result_ms": 2.6235410000001735,
+        "result": {
+          "acquired": true
+        },
+        "stdout": "INTEROP_OK:flock-wait\n",
+        "stderr": ""
+      },
+      {
+        "case": "flock-hold",
+        "cpus": 1,
+        "concurrent_guest": false,
+        "wake_to_result_ms": 274.21933300000137,
+        "result": {
+          "released": true
+        },
+        "stdout": "INTEROP_OK:flock-hold\n",
+        "stderr": ""
+      },
+      {
+        "case": "flock-hold",
+        "cpus": 4,
+        "concurrent_guest": true,
+        "wake_to_result_ms": 279.2952080000006,
+        "result": {
+          "released": true
+        },
+        "stdout": "INTEROP_OK:flock-hold\n",
+        "stderr": ""
+      }
+    ]
+  },
+  "workspace_regression": {
+    "complete": true,
+    "cases": 11,
+    "records": [
+      {
+        "case": "build",
+        "exit": 0,
+        "stdout": "BUILD_OK",
+        "stderr": ""
+      },
+      {
+        "case": "static",
+        "exit": 0,
+        "stdout": "WORKSPACE_OK\n",
+        "stderr": ""
+      },
+      {
+        "case": "dynamic_and_dlopen",
+        "exit": 0,
+        "stdout": "WORKSPACE_OK\n",
+        "stderr": ""
+      },
+      {
+        "case": "readonly_cow_execution",
+        "exit": 0,
+        "stdout": "WORKSPACE_OK\n",
+        "stderr": ""
+      },
+      {
+        "case": "initial_script",
+        "exit": 0,
+        "stdout": "SCRIPT_OK:argument\n",
+        "stderr": ""
+      },
+      {
+        "case": "initial_env_python_script",
+        "exit": 0,
+        "stdout": "PYTHON_SCRIPT_OK\n",
+        "stderr": ""
+      },
+      {
+        "case": "guest_exec_script_and_symlink",
+        "exit": 0,
+        "stdout": "WORKSPACE_OK\nSCRIPT_OK:nested\n",
+        "stderr": ""
+      },
+      {
+        "case": "git",
+        "exit": 0,
+        "stdout": "GIT_OK",
+        "stderr": ""
+      },
+      {
+        "case": "python_sqlite_ctypes",
+        "exit": 0,
+        "stdout": "PYTHON_SQLITE_OK\n",
+        "stderr": ""
+      },
+      {
+        "case": "execute_permission",
+        "exit": 0,
+        "stdout": "PERMISSION_OK",
+        "stderr": "/bin/sh: ./denied: Permission denied\n"
+      },
+      {
+        "case": "noexec_mount",
+        "exit": 0,
+        "stdout": "NOEXEC_OK",
+        "stderr": "/bin/sh: /work/dynamic: Permission denied\n"
+      }
+    ],
+    "note": "Reused passed GCC/Git/Python/ELF/MAP_PRIVATE workflow results after later changes limited to idle-wait resource selection."
+  },
+  "checks": {
+    "mac_and_linux_full_runtime": "passed before final scoped updates; unaffected passes reused",
+    "final_mac_vfs": {
+      "passed": 366,
+      "ignored": 1
+    },
+    "final_linux_vfs": {
+      "passed": 366,
+      "ignored": 1
+    },
+    "final_mac_linux_abi": {
+      "passed": 143,
+      "ignored": 1
+    },
+    "final_linux_linux_abi": {
+      "passed": 143,
+      "ignored": 1
+    },
+    "interpreter_kernel": {
+      "passed": 226,
+      "ignored": 3
+    },
+    "mac_linux_runtime_clippy": "passed",
+    "mac_product_clippy": "passed; final backend changes also compile in signed release app",
+    "ipad_default_ffi": "aarch64-apple-ios check passed after final common API changes",
+    "ipad_opt_in_hostfs": "aarch64-apple-ios check passed; later native interest collection also compiles on macOS Apple backend",
+    "mac_app": "ad-hoc signed local CLI bundle; no graphics/network acceptance rerun because those paths are unchanged"
+  },
+  "artifacts": {
+    "acceptance_and_final_perf_runner_sha256": "9bd0b10ce7fa474c7a3e96279afb0fc51c2086f10acf08bdaa0d30fce4186a65",
+    "workspace_regression_runner_sha256": "ac1f10e1c02f1942d19321d70fe971ed8a430df889133b515168cd5e68d1ee29",
+    "linux_program_sha256": "53e6138b95bfc3fd687bf45b251b99bb32eecb3a2b50e3a8fe1c41d73ef567b9",
+    "mac_native_program_sha256": "98c74f9705a3f8ef2c5ddf35d10b1aacf04e9d48b5d847280e4c61d3dc63fb3f",
+    "fixture_sha256": "8de51b07d19e0c859e4d559699610f5fc5ed6ecea6e442a0fbfb105b5c4c991e",
+    "guest_interop_fixture_sha256": "645e8910754b8ccdc5f80cffcd736decc1518b69e0a0cde1185c5d751f504e06"
+  }
+}

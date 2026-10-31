@@ -8,6 +8,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/file.h>
+#ifdef __linux__
+#include <sys/inotify.h>
+#elif defined(__APPLE__)
+#include <sys/event.h>
+#endif
 #include <time.h>
 #include <unistd.h>
 static double now(void) {
@@ -16,7 +22,7 @@ static double now(void) {
     return time.tv_sec + time.tv_nsec * 1e-9;
 }
 int main(int argc, char **argv) {
-    assert(argc == 4);
+    assert(argc == 4 || argc == 5);
     const char *path = argv[1], *mode = argv[2];
     unsigned iterations = (unsigned)strtoul(argv[3], NULL, 10);
     assert(iterations && iterations <= 1000000);
@@ -29,6 +35,21 @@ int main(int argc, char **argv) {
         assert(pwrite(fd, buffer, sizeof(buffer), offset) == sizeof(buffer));
     }
     assert(!fsync(fd));
+    int watch = -1;
+    if (argc == 5 && !strcmp(argv[4], "watch")) {
+#ifdef __linux__
+        watch = inotify_init1(IN_NONBLOCK | IN_CLOEXEC); assert(watch >= 0);
+        assert(inotify_add_watch(watch, path, IN_MODIFY) >= 0);
+#elif defined(__APPLE__)
+        watch = kqueue(); assert(watch >= 0);
+        struct kevent event;
+        EV_SET(&event, fd, EVFILT_VNODE, EV_ADD | EV_CLEAR, NOTE_WRITE | NOTE_EXTEND, 0, NULL);
+        assert(!kevent(watch, &event, 1, NULL, 0, NULL));
+#endif
+    } else if (argc == 5) {
+        assert(!strcmp(argv[4], "flock"));
+        assert(!flock(fd, LOCK_EX | LOCK_NB));
+    }
     size_t block = !strcmp(mode, "read4k") ? 4096 : sizeof(buffer);
     int reading = !strcmp(mode, "read64k") || !strcmp(mode, "read4k");
     int writing = !strcmp(mode, "write64k");
@@ -62,6 +83,7 @@ int main(int argc, char **argv) {
             }
         }
     }
+    if (watch >= 0) assert(!close(watch));
     assert(!close(fd));
     printf("{\"mode\":\"%s\",\"operations\":%u,\"seconds\":%.9f,\"mib_per_second\":%.3f,\"ops_per_second\":%.3f,\"sync_seconds\":%.9f,\"checksum\":%llu}\n",
         mode, iterations, seconds, reading || writing ? (double)iterations * block / 1048576 / seconds : 0,

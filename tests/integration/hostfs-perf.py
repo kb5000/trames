@@ -30,6 +30,7 @@ def main():
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--linux-results', type=Path)
     parser.add_argument('--repeats', type=int, default=3)
+    parser.add_argument('--interop', action='store_true', help='compare native notifications and held flock as well')
     args = parser.parse_args()
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=True)
@@ -48,6 +49,9 @@ def main():
         (out / (label + '-setup.stderr')).write_bytes(result.stderr)
         result.check_returncode()
     variants = ['before-private', 'after-private', 'after-private-idle-mount', 'after-host', 'native-mac']
+    if args.interop:
+        variants = ['before-private', 'after-private', 'before-host', 'after-host', 'after-host-watch',
+                    'after-host-flock', 'native-mac', 'native-mac-watch', 'native-mac-flock']
     jobs = [(variant, case, repeat + 1) for repeat in range(args.repeats)
             for variant in variants for case in CASES]
     random.Random(20261031).shuffle(jobs)
@@ -59,15 +63,18 @@ def main():
     if args.linux_results:
         report['linux_native'] = json.loads(args.linux_results.read_text())
     for variant, case, repeat in jobs:
-        if variant == 'native-mac':
+        if variant.startswith('native-mac'):
             command = [str(args.native.resolve()), str(out / 'native/file'), case, str(CASES[case])]
         else:
-            label = 'before' if variant == 'before-private' else 'after'
+            label = 'before' if variant.startswith('before-') else 'after'
             command = [str(runners[label]), '--storage', str(stores[label]), *base]
-            if variant in ('after-private-idle-mount', 'after-host'):
+            host = '-host' in variant
+            if host or variant == 'after-private-idle-mount':
                 command += ['--mount', '/mnt/shared=' + str(shared)]
-            path = '/mnt/shared/deep/file' if variant == 'after-host' else '/perf/normal/deep/file'
+            path = '/mnt/shared/deep/file' if host else '/perf/normal/deep/file'
             command += [program, path, case, str(CASES[case])]
+        if variant.endswith('-watch') or variant.endswith('-flock'):
+            command += [variant.rsplit('-', 1)[1]]
         began = time.monotonic()
         result = subprocess.run(command, capture_output=True, timeout=210,
                                 env={**os.environ, 'MVK_CONFIG_LOG_LEVEL': '1'})

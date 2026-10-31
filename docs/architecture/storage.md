@@ -137,8 +137,26 @@ implemented. Private mapping pages do not replace the inode I/O cache, so normal
 reads still observe native edits. Resident private pages are snapshots; there is
 no external edit/truncate watcher. Guest-known size changes invalidate EOF
 metadata through a relaxed scalar generation.
-External host changes are visible to normal file I/O and lookups, but are not
-reported through guest inotify. The iPad product keeps its existing Files and
+Host watches now route external changes into guest inotify. On macOS, an
+on-demand kqueue watches the inode and shallow directory membership. Child
+content/attribute watches retain child descriptors only when requested; a
+namespace-only watch does not open every child. Existing readers, poll/epoll and
+executor host readiness drive delivery, without a service thread or periodic
+scan. Native vnode events coalesce and cannot reconstruct external transient
+names or open/access/close history. Guest-generated events retain their existing
+queue semantics, and matching native echoes are suppressed.
+
+Host-file flock uses its actual native open description. Nonblocking conflicts
+return EAGAIN; macOS blocking waits use NOTE_FUNLOCK through the existing idle
+executor. Dup, fork, retained requests and private mappings keep the OFD lock;
+final release unlocks independently of cached byte pages. POSIX fcntl byte-range
+locks still arbitrate only among guest processes: they must not be treated as
+coordination with a native database writer. Shared-memory mappings remain
+unsupported. In particular, an external file truncation must become a guest
+fault rather than an unchecked SIGBUS in the host; private snapshots do not
+satisfy MAP_SHARED coherence. See the [interop/performance record](../validation/hostfs-interop.json).
+
+The iPad product keeps its existing Files and
 FileProvider path and does not enable hostfs by default. The Mac
 [usage/limits](https://github.com/kb5000/trames-mac/blob/main/docs/guides/file-sharing.md)
 and [native macOS/Linux benchmark record](../validation/hostfs.json) document
