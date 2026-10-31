@@ -271,6 +271,106 @@ binds every imported artifact to a SHA-256. Do not use an active user's store fo
 this test. The local fixture does not prove audio output, A/V sync, 4K throughput,
 web streaming, every H.264 stream or all advertised codec levels.
 
+## Headless FFmpeg throughput (2026-10-31)
+
+The performance fixture deliberately separates completed decode from export and
+CPU readback. [`vaapi-ffmpeg-bench.c`](../../tests/fixtures/vaapi-ffmpeg-bench.c)
+uses stock FFmpeg APIs, one codec thread and required hardware output. `sync`
+waits for every returned VA surface; `export` exports before sync and closes the
+native plane FDs; `download` calls `av_hwframe_transfer_data`. No frame is counted
+before its selected operation completes. EOF is flushed and the exact expected
+frame count is required. There is no renderer, frame pacing, hashing, audio or
+network in the timed interval. The explicit download path is separate from the
+production native-image export/import path.
+
+The first run exposed a shared scheduler bug: an eventfd with a retained native
+producer was not counted as an external event source. An idle joined scheduler
+could return `Deadlock` before VideoToolbox completed, including with multiple
+configured execution slots. Native producer leases now retain the original
+event object and mark its live descriptors as external. Completion also unparks
+the existing joined owner; a saved wake token covers completion immediately
+before idle parking. Ordinary worker readiness subscriptions remain in use.
+There is no new service thread or polling bus. Tests cover producer lifetime,
+dup/close/FD reuse, wake-before-park and an actual joined guest read completed by
+a native producer. A plain guest eventfd still permits deadlock detection.
+
+Measurements use Apple M6, 12 host CPUs, 24 GiB RAM, macOS 27.0.1, SDK 27.2;
+the guest has four execution slots and host-managed memory. Both builds use
+FFmpeg 6.1.1: the Ubuntu ARM64 package and an unmodified native macOS source
+build. The Linux build VM is stopped and all runs are sequential, without
+metrics instrumentation or concurrent compilation. Reported throughput is the
+median of three complete runs, excluding initial stream discovery/device
+creation and final context teardown. The harness also records whole-process
+wall time and host child user/system CPU time.
+
+| Resolution | Guest completed decode FPS | Guest decode + export FPS | Guest decode + CPU download FPS | Native decode FPS | Native decode + CPU download FPS |
+|---|---:|---:|---:|---:|---:|
+| 1280×720 | 4,522.6 | 4,420.3 | 552.1 | 707.0 | 744.3 |
+| 1920×1080 | 2,283.1 | 2,261.7 | 275.9 | 433.2 | 374.1 |
+| 3840×2160 | 666.7 | 671.1 | 52.4 | 219.7 | 170.8 |
+
+Export is within about 0–2.3% of completed decode throughput; the slight 4K
+increase is run variation. CPU download changes the cost substantially:
+its measured consumer time is 1.696 / 3.480 / 18.748 ms per guest frame,
+versus 0.098 / 0.339 / 1.458 ms natively. Guest total host CPU cost for download
+is 1.748 / 3.468 / 18.608 ms per frame, compared with 0.104 / 0.176 / 0.554 ms
+for decode plus native FD export. Thus raw-frame download is an expensive path,
+and this implementation cannot sustain 4K60 CPU download on the tested input.
+Completed native-frame export has ample throughput on these inputs. These
+results do not identify the cause of the earlier browser frame drops.
+
+The [filtered machine-readable record](../validation/vaapi-ffmpeg.json) retains
+artifact hashes, frame counts, median timings and the observed FPS ranges.
+Detailed logs and individual process outputs remain in ignored build output.
+
+The native FFmpeg VideoToolbox implementation synchronizes after every decode;
+the VA path can pipeline asynchronous submissions. Both require actual hardware
+H.264 decoding. Their throughput therefore compares these two application paths,
+not an isolated adapter overhead or a hardware-speed advantage. Native `sync`
+already includes completion in the FFmpeg decode API; its near-zero consumer
+time does not mean hardware decode is free.
+
+Inputs are continuous Annex-B H.264 with complete IDR/SPS/PPS segments: 10,800
+720p frames, 7,200 1080p frames and 2,700 4K frames. The 1080p/4K streams use
+`testsrc2`, x264 High, 8-bit 4:2:0, CRF 23, preset fast, GOP 60, three B frames
+and four references. The 720p stream reuses the earlier video acceptance input.
+The first 30 frames at each resolution match Linux software NV12 frame hashes
+exactly. Repeated compressed segments measure steady throughput, not a diverse
+codec corpus. One separate FFmpeg CLI `-stream_loop` attempt failed during filter
+reinitialization at the MP4 loop boundary; that remains undiagnosed and its
+partial runs are excluded from these results. Continuous raw input avoids that
+boundary without treating a failed run as a successful benchmark.
+
+Stock FFmpeg CLI `hwmap=mode=read,format=drm_prime` also exports all
+10,800 / 7,200 / 2,700 continuous frames successfully. Three-run 720p checks
+with one and twelve execution slots finish every frame: completed decode is
+4,533 / 4,527 FPS and export is 4,436 / 4,418 FPS respectively. Additional CPU
+slots do not improve this single codec-thread workload. No GUI is created.
+
+Scoped acceptance passes the three native-event VFS tests on macOS and ARM64
+Linux, 225 existing interpreter scheduler tests plus the new joined native-event
+regression, strict affected-package Clippy on both hosts, interpreter conformance
+Clippy, iPad ARM64 FFI compilation, and the signed normal Mac bundle build.
+Unchanged graphics acceptance is reused; no IPA or physical iPad video test is
+performed in this pass.
+
+Compile the fixture on ARM64 Linux with
+`cc -O2 vaapi-ffmpeg-bench.c $(pkg-config --cflags --libs libavformat libavcodec libavutil libva)`.
+The macOS variant uses the same source, FFmpeg static libraries and their Apple
+framework dependencies. Enable H.264 VideoToolbox, the H.264 parser, MOV/H.264
+demuxers and file protocol in the native build; preserve ARM64 assembly. The
+[official FFmpeg 6.1.1 source archive](https://ffmpeg.org/releases/ffmpeg-6.1.1.tar.xz)
+has SHA-256 `8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968`.
+
+[`vaapi-ffmpeg-perf.py`](../../tests/integration/vaapi-ffmpeg-perf.py) imports
+content-addressed artifacts before timing, saves every raw run, checks exit and
+frame counts, and writes hashes plus median timings. Use `--native-program` for
+the paired macOS fixture, `--cpus 4 --repeats 3` for the comparison, and an
+isolated prepared guest store. `--libraries` and `--rootfs` can provide a fresh
+guest environment. `--modes sync export --cpus 1 12` tests scheduling without
+unnecessary repeated CPU readback. Browser playback, GPU composition, audio and
+end-to-end latency are outside this benchmark; Firefox is not relaunched here.
+
 ## Primary sources
 
 - [Apple VideoToolbox hardware decoder query](https://developer.apple.com/documentation/videotoolbox/vtishardwaredecodesupported(_:)) and [actual hardware decoder property](https://developer.apple.com/documentation/videotoolbox/kvtdecompressionpropertykey_usinghardwareacceleratedvideodecoder).

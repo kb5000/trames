@@ -1,0 +1,427 @@
+{
+  "date": "2026-10-31",
+  "host": {
+    "cpu": "Apple M6",
+    "logical_cpus": 12,
+    "memory_gib": 24,
+    "os": "macOS 27.0.1 (26A434)",
+    "sdk": "27.2"
+  },
+  "guest": {
+    "execution": "HVF; shared Linux userspace kernel",
+    "cpus": 4,
+    "memory": "host-managed",
+    "network": "off",
+    "windows": false,
+    "codec_threads": 1
+  },
+  "method": {
+    "completed_frame_operations": [
+      "sync",
+      "export-before-sync and close plane FDs",
+      "av_hwframe_transfer_data"
+    ],
+    "timed_scope": "after stream discovery and decoder creation, through EOF and decoder flush; before teardown",
+    "whole_process_time_and_host_child_cpu_also_recorded": true,
+    "comparison_limit": "Native FFmpeg VideoToolbox waits after every decode; guest VAAPI pipelines submissions. This is not an isolated adapter overhead comparison.",
+    "samples": "continuous Annex-B segments, same resolution; repeated full IDR/SPS/PPS segments; no -stream_loop",
+    "correctness": "30 NV12 hashes per resolution exactly match native Linux software decode",
+    "environment": "sequential runs; build VM stopped; no concurrent compilation or profiling instrumentation",
+    "firefox": "not launched or measured"
+  },
+  "ffmpeg": {
+    "release": "6.1.1",
+    "guest_package": "6.1.1-3ubuntu5 ARM64 Ubuntu",
+    "native_source_url": "https://ffmpeg.org/releases/ffmpeg-6.1.1.tar.xz",
+    "native_source_sha256": "8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968",
+    "native_configure": [
+      "--disable-autodetect",
+      "--disable-everything",
+      "--disable-doc",
+      "--disable-debug",
+      "--disable-network",
+      "--enable-ffmpeg",
+      "--disable-ffprobe",
+      "--disable-ffplay",
+      "--enable-videotoolbox",
+      "--enable-hwaccel=h264_videotoolbox",
+      "--enable-decoder=h264",
+      "--enable-parser=h264",
+      "--enable-demuxer=mov,h264",
+      "--enable-protocol=file,pipe",
+      "--enable-muxer=null,framemd5",
+      "--enable-encoder=wrapped_avframe,rawvideo",
+      "--enable-filter=null,format,hwdownload",
+      "--enable-pthreads",
+      "--disable-shared",
+      "--enable-static"
+    ]
+  },
+  "resolutions": {
+    "720p": {
+      "frames_per_run": 10800,
+      "repeats": 3,
+      "artifact_sha256": {
+        "bench": "4fd4c2f336509dd64fac918201e1c928e3f8f63f4d991ee0bce9fa322742ff99",
+        "sample.h264": "4c8ad419837345807333b70cf85744a8813c09098220d785ef6cbd4f89bc3cbe",
+        "trames_drv_video.so": "f993b443ec77a912f3be5178b49e086df60ce44b9781d908df2b6682544f1886"
+      },
+      "runner_sha256": "373a23f814dce8e5e9d6f71909b33f48ef70f100c3e487af9a276073a483a903",
+      "medians": [
+        {
+          "platform": "guest",
+          "cpus": 4,
+          "mode": "sync",
+          "fps": 4522.551,
+          "seconds": 2.388033,
+          "consume_seconds": 1.260527,
+          "process_wall": 2.552347,
+          "host_user": 0.591846,
+          "host_system": 0.400981,
+          "fps_range": [
+            4517.064,
+            4533.893
+          ]
+        },
+        {
+          "platform": "guest",
+          "cpus": 4,
+          "mode": "export",
+          "fps": 4420.332,
+          "seconds": 2.443255,
+          "consume_seconds": 1.315147,
+          "process_wall": 2.603926,
+          "host_user": 0.707192,
+          "host_system": 0.411805,
+          "fps_range": [
+            4415.039,
+            4426.324
+          ]
+        },
+        {
+          "platform": "guest",
+          "cpus": 4,
+          "mode": "download",
+          "fps": 552.085,
+          "seconds": 19.562198,
+          "consume_seconds": 18.319642,
+          "process_wall": 19.739162,
+          "host_user": 14.708813,
+          "host_system": 4.17108,
+          "fps_range": [
+            548.957,
+            554.95
+          ]
+        },
+        {
+          "platform": "native",
+          "cpus": 0,
+          "mode": "sync",
+          "fps": 707.024,
+          "seconds": 15.275302,
+          "consume_seconds": 0.000636,
+          "process_wall": 15.292266,
+          "host_user": 1.083339,
+          "host_system": 0.885862,
+          "fps_range": [
+            673.492,
+            760.492
+          ]
+        },
+        {
+          "platform": "native",
+          "cpus": 0,
+          "mode": "download",
+          "fps": 744.275,
+          "seconds": 14.510757,
+          "consume_seconds": 1.061277,
+          "process_wall": 14.528976,
+          "host_user": 1.877629,
+          "host_system": 0.735001,
+          "fps_range": [
+            658.985,
+            794.104
+          ]
+        }
+      ],
+      "native_program_sha256": "e3d2289f9bdf4ac193d76532ce4f7569c2c3c764af9b6a4dc6e8080d4f3078c4"
+    },
+    "1080p": {
+      "frames_per_run": 7200,
+      "repeats": 3,
+      "artifact_sha256": {
+        "bench": "4fd4c2f336509dd64fac918201e1c928e3f8f63f4d991ee0bce9fa322742ff99",
+        "sample.h264": "07a2b55631b3dedebd066148cce9e21c05d4e8014b038bfa6422f6c5db59e9ea",
+        "trames_drv_video.so": "f993b443ec77a912f3be5178b49e086df60ce44b9781d908df2b6682544f1886"
+      },
+      "runner_sha256": "373a23f814dce8e5e9d6f71909b33f48ef70f100c3e487af9a276073a483a903",
+      "medians": [
+        {
+          "platform": "guest",
+          "cpus": 4,
+          "mode": "sync",
+          "fps": 2283.127,
+          "seconds": 3.153569,
+          "consume_seconds": 1.857469,
+          "process_wall": 3.331818,
+          "host_user": 0.69194,
+          "host_system": 0.46334,
+          "fps_range": [
+            2233.529,
+            2296.266
+          ]
+        },
+        {
+          "platform": "guest",
+          "cpus": 4,
+          "mode": "export",
+          "fps": 2261.659,
+          "seconds": 3.183504,
+          "consume_seconds": 1.946672,
+          "process_wall": 3.368188,
+          "host_user": 0.803147,
+          "host_system": 0.462316,
+          "fps_range": [
+            2172.44,
+            2303.798
+          ]
+        },
+        {
+          "platform": "guest",
+          "cpus": 4,
+          "mode": "download",
+          "fps": 275.853,
+          "seconds": 26.100886,
+          "consume_seconds": 25.054041,
+          "process_wall": 26.275253,
+          "host_user": 19.820696,
+          "host_system": 5.147497,
+          "fps_range": [
+            272.898,
+            276.058
+          ]
+        },
+        {
+          "platform": "native",
+          "cpus": 0,
+          "mode": "sync",
+          "fps": 433.161,
+          "seconds": 16.621987,
+          "consume_seconds": 0.000505,
+          "process_wall": 16.644233,
+          "host_user": 1.038474,
+          "host_system": 0.768195,
+          "fps_range": [
+            419.7,
+            476.75
+          ]
+        },
+        {
+          "platform": "native",
+          "cpus": 0,
+          "mode": "download",
+          "fps": 374.083,
+          "seconds": 19.247071,
+          "consume_seconds": 2.438293,
+          "process_wall": 19.270734,
+          "host_user": 3.475605,
+          "host_system": 0.821029,
+          "fps_range": [
+            370.236,
+            376.963
+          ]
+        }
+      ],
+      "native_program_sha256": "e3d2289f9bdf4ac193d76532ce4f7569c2c3c764af9b6a4dc6e8080d4f3078c4"
+    },
+    "4k": {
+      "frames_per_run": 2700,
+      "repeats": 3,
+      "artifact_sha256": {
+        "bench": "4fd4c2f336509dd64fac918201e1c928e3f8f63f4d991ee0bce9fa322742ff99",
+        "sample.h264": "6b857eaadd4dc414bd07f6a1e9753f018cc482c9e95d611c44e118eebcb528be",
+        "trames_drv_video.so": "f993b443ec77a912f3be5178b49e086df60ce44b9781d908df2b6682544f1886"
+      },
+      "runner_sha256": "373a23f814dce8e5e9d6f71909b33f48ef70f100c3e487af9a276073a483a903",
+      "medians": [
+        {
+          "platform": "guest",
+          "cpus": 4,
+          "mode": "sync",
+          "fps": 666.654,
+          "seconds": 4.050076,
+          "consume_seconds": 2.289147,
+          "process_wall": 4.28027,
+          "host_user": 0.979749,
+          "host_system": 0.529261,
+          "fps_range": [
+            663.785,
+            666.743
+          ]
+        },
+        {
+          "platform": "guest",
+          "cpus": 4,
+          "mode": "export",
+          "fps": 671.11,
+          "seconds": 4.023186,
+          "consume_seconds": 2.415221,
+          "process_wall": 4.258812,
+          "host_user": 0.998842,
+          "host_system": 0.497042,
+          "fps_range": [
+            667.967,
+            695.137
+          ]
+        },
+        {
+          "platform": "guest",
+          "cpus": 4,
+          "mode": "download",
+          "fps": 52.375,
+          "seconds": 51.551744,
+          "consume_seconds": 50.620595,
+          "process_wall": 51.746956,
+          "host_user": 41.314471,
+          "host_system": 8.927641,
+          "fps_range": [
+            52.013,
+            52.853
+          ]
+        },
+        {
+          "platform": "native",
+          "cpus": 0,
+          "mode": "sync",
+          "fps": 219.686,
+          "seconds": 12.290291,
+          "consume_seconds": 0.000237,
+          "process_wall": 12.333999,
+          "host_user": 0.760577,
+          "host_system": 0.378852,
+          "fps_range": [
+            216.38,
+            222.434
+          ]
+        },
+        {
+          "platform": "native",
+          "cpus": 0,
+          "mode": "download",
+          "fps": 170.838,
+          "seconds": 15.804484,
+          "consume_seconds": 3.936235,
+          "process_wall": 15.844831,
+          "host_user": 4.537282,
+          "host_system": 0.345113,
+          "fps_range": [
+            168.955,
+            177.517
+          ]
+        }
+      ],
+      "native_program_sha256": "e3d2289f9bdf4ac193d76532ce4f7569c2c3c764af9b6a4dc6e8080d4f3078c4"
+    }
+  },
+  "execution_slot_comparison_720p": {
+    "frames_per_run": 10800,
+    "repeats": 3,
+    "artifact_sha256": {
+      "bench": "4fd4c2f336509dd64fac918201e1c928e3f8f63f4d991ee0bce9fa322742ff99",
+      "sample.h264": "4c8ad419837345807333b70cf85744a8813c09098220d785ef6cbd4f89bc3cbe",
+      "trames_drv_video.so": "f993b443ec77a912f3be5178b49e086df60ce44b9781d908df2b6682544f1886"
+    },
+    "runner_sha256": "373a23f814dce8e5e9d6f71909b33f48ef70f100c3e487af9a276073a483a903",
+    "medians": [
+      {
+        "platform": "guest",
+        "cpus": 1,
+        "mode": "sync",
+        "fps": 4533.412,
+        "seconds": 2.382312,
+        "consume_seconds": 1.257951,
+        "process_wall": 2.544739,
+        "host_user": 0.585292,
+        "host_system": 0.393588,
+        "fps_range": [
+          4525.411,
+          4538.954
+        ]
+      },
+      {
+        "platform": "guest",
+        "cpus": 1,
+        "mode": "export",
+        "fps": 4436.375,
+        "seconds": 2.43442,
+        "consume_seconds": 1.307096,
+        "process_wall": 2.592955,
+        "host_user": 0.696862,
+        "host_system": 0.408464,
+        "fps_range": [
+          4432.492,
+          4485.037
+        ]
+      },
+      {
+        "platform": "guest",
+        "cpus": 12,
+        "mode": "sync",
+        "fps": 4526.662,
+        "seconds": 2.385864,
+        "consume_seconds": 1.255345,
+        "process_wall": 2.548505,
+        "host_user": 0.588623,
+        "host_system": 0.399189,
+        "fps_range": [
+          4521.857,
+          4537.632
+        ]
+      },
+      {
+        "platform": "guest",
+        "cpus": 12,
+        "mode": "export",
+        "fps": 4417.798,
+        "seconds": 2.444657,
+        "consume_seconds": 1.305964,
+        "process_wall": 2.623215,
+        "host_user": 0.71157,
+        "host_system": 0.416999,
+        "fps_range": [
+          4412.467,
+          4426.665
+        ]
+      }
+    ]
+  },
+  "runtime_commit": "ce676cac4fd81b418d0f0552ddfc4465bba3bb2f",
+  "benchmark_source_sha256": "81836b2636ad91ffff4901b7690c9b97006e2c2592520cc0342f92d02460576e",
+  "stock_cli_export_validation": [
+    {
+      "resolution": "720p",
+      "frames": 10800,
+      "exit": 0
+    },
+    {
+      "resolution": "1080p",
+      "frames": 7200,
+      "exit": 0
+    },
+    {
+      "resolution": "4k",
+      "frames": 2700,
+      "exit": 0
+    }
+  ],
+  "verification": {
+    "native_event_vfs_mac": 3,
+    "native_event_vfs_linux_arm64": 3,
+    "existing_interpreter_conformance_reused": 225,
+    "new_joined_native_event_conformance": 1,
+    "strict_affected_package_lints_mac_and_linux": "pass",
+    "interpreter_conformance_lint": "pass",
+    "ipad_arm64_ffi_check": "pass",
+    "signed_mac_bundle_build": "pass"
+  }
+}
