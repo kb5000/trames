@@ -9,6 +9,8 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/wait.h>
+#include <sys/time.h>
+#include <time.h>
 #include <unistd.h>
 
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "line %d: %s: %s\n", __LINE__, #x, strerror(errno)); exit(1); } } while (0)
@@ -129,7 +131,30 @@ int main(void) {
     CHECK(write(pair[0], "a", 1) == 1);
     CHECK(waitpid(child, &status, 0) == child && WIFEXITED(status) && WEXITSTATUS(status) == 0);
     close(pair[0]);
+    CHECK(socketpair(AF_UNIX, SOCK_DGRAM, 0, pair) == 0);
+    int requested = 1024 * 1024;
+    CHECK(setsockopt(pair[0], SOL_SOCKET, SO_RCVBUF, &requested, sizeof(requested)) == 0);
+    CHECK(setsockopt(pair[1], SOL_SOCKET, SO_SNDBUF, &requested, sizeof(requested)) == 0);
+    enabled = 1;
+    CHECK(setsockopt(pair[0], SOL_SOCKET, SO_TIMESTAMP, &enabled, sizeof(enabled)) == 0);
+    time_t before = time(NULL);
+    char bulk[32768]; memset(bulk, 't', sizeof(bulk));
+    for (int i = 0; i < 4; i++) CHECK(send(pair[1], bulk, sizeof(bulk), MSG_DONTWAIT) == sizeof(bulk));
+    for (int i = 0; i < 4; i++) {
+        vector.iov_base = bulk; vector.iov_len = sizeof(bulk);
+        memset(&msg, 0, sizeof(msg));
+        char timestamps[128];
+        msg.msg_iov = &vector; msg.msg_iovlen = 1;
+        msg.msg_control = timestamps; msg.msg_controllen = sizeof(timestamps);
+        CHECK(recvmsg(pair[0], &msg, 0) == sizeof(bulk));
+        c = CMSG_FIRSTHDR(&msg);
+        CHECK(c && c->cmsg_level == SOL_SOCKET && c->cmsg_type == SCM_TIMESTAMP);
+        struct timeval stamp; memcpy(&stamp, CMSG_DATA(c), sizeof(stamp));
+        CHECK(stamp.tv_sec >= before && stamp.tv_sec <= time(NULL) && stamp.tv_usec >= 0 && stamp.tv_usec < 1000000);
+    }
+    close(pair[0]); close(pair[1]);
     puts("unix-notify: addressed datagrams, sender credentials, peek, rights, close-on-exec and truncation: ok");
     puts("unix-stream: forked writer credentials on the direct byte path: ok");
+    puts("unix-timestamp: arrival time and buffers larger than the initial queue: ok");
     return 0;
 }

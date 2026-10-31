@@ -1,9 +1,10 @@
 # systemd integration
 
-Status: first runtime blockers repaired, 2026-10-31. Original Debian systemd
-reaches `basic.target` in a disposable Mac HVF environment, with failed units.
-This is degraded-boot evidence, not complete systemd or product boot support.
-Shared runtime: [`abec8df`](https://github.com/kb5000/trames-runtime/commit/abec8df785ba04223f65e5311aee8c82bd256914).
+Status: original-package boot, service, journal and halt acceptance passed,
+2026-10-31, on Mac HVF with 1 and 4 guest CPUs. No units failed in these runs.
+The Mac environment manager still starts shell environments by default; a
+product systemd boot/attach mode is not enabled yet.
+Shared runtime: [`1fafdad`](https://github.com/kb5000/trames-runtime/commit/1fafdad3ecb15f65527cb38b905d49c7be23bed7).
 
 ## Product and runtime boundary
 
@@ -22,11 +23,12 @@ instances. Boot readiness and orderly shutdown should use systemd's documented
 notification/signal interfaces. These are guest operations; no host sysfs,
 cgroup tree, device node or reboot operation is forwarded.
 
-## Confirmed original-package probes
+## Original-package acceptance
 
 A disposable copy of the already validated Debian 13.7 ARM64 store was used;
-working environments and their configuration were not modified. The probe uses an independently built, signed Mac runner and the same shared
-runtime code tested through the CPU interpreter. The user's normal environments
+working environments and their configuration were not modified. The probe uses
+an independently built, signed Mac runner and the same shared runtime code
+tested through the CPU interpreter. The user's normal environments
 are not converted to systemd boot mode.
 
 The signed Debian repository supplied `systemd 257.13-1~deb13u1` and
@@ -37,17 +39,24 @@ The signed Debian repository supplied `systemd 257.13-1~deb13u1` and
 | `systemd --version` | Runs the original glibc executable and reports its compiled features; this is not boot acceptance. |
 | `dpkg --configure -a; dpkg --audit` after package unpack | Both complete successfully after the OFD lock implementation. |
 | OFD locking | F_OFD_GETLK=36, F_OFD_SETLK=37 and blocking F_OFD_SETLKW=38 now use the common range-lock engine. The original sysusers passwd lock succeeds. |
-| Original systemd as guest PID 1 | RLIMIT_CORE initialization, native clock-change notification, generator sandbox mounts and manager notification sockets now succeed. |
-| `--system --unit=basic.target`, 4 CPUs | Original systemd reports `basic.target` active and startup complete in 1.458 seconds. Some constituent units fail; this is not a clean boot. A prior 2-CPU run reported 1.915 seconds. These are observations, not benchmark medians. |
+| Original systemd as guest PID 1 | Generator and credential sandboxes, journald and mount units start with their original configuration. Kernel-module units correctly skip because the boot fixture drops CAP_SYS_MODULE from the guest bounding set. |
+| `--system --unit=basic.target` | Startup complete in 2.279 seconds with 1 CPU and 1.666 seconds with 4 CPUs, with no failed units. These are individual observations, not benchmark medians. |
+| Original `systemctl` | Starts a oneshot unit, observes it active, starts a notify unit only after its real `READY=1`, and stops that unit successfully. |
+| Original `journalctl` | Reads the oneshot's `TRAMES_SYSTEMD_SERVICE_OK` message from the guest journal. |
+| `SIGRTMIN+3` shutdown request | The real init stops services, flushes the journal, detaches filesystems and executes its final halt. The runtime exits 0 without a host timeout. |
 
 No package patches, unit masks, forced-success syscall responses, relaxed
 service sandbox settings or Linux kernel VM are used. The guest-only
 `tests/fixtures/systemd-boot.c` prepares private `/run`, `/dev`, `/dev/shm`,
-devpts and a retained console, then execs the distribution init. It refuses to
-run outside Trames PID 1. Build with `scripts/build-systemd-fixtures.sh`, import
+devpts, read-only sysfs and a retained console, then execs the distribution
+init. Its boot path refuses to run outside Trames PID 1. The fixture drops
+CAP_SYS_MODULE before exec because this userspace container has no kernel module
+loader; it does not replace module syscalls with success responses. Build with `scripts/build-systemd-fixtures.sh`, import
 outside `/tmp` (which the real boot may overmount), and run in a disposable
-Debian environment with `--pty`. A host timeout ends the probe after observing
-startup; it does not verify orderly systemd shutdown.
+Debian environment with `--pty`. Pass `--exercise` to the imported fixture for the full acceptance path. It creates
+two additional test units under the private `/run`, drives the original manager
+with `systemctl`, checks journal contents, and requests guest shutdown. A host
+timeout is only a failure bound; successful runs finish by the guest halt.
 
 ### Shared runtime changes and validation
 
@@ -64,6 +73,19 @@ startup; it does not verify orderly systemd shutdown.
   executor FD waits handle wakeup, and reads report ECANCELED. Ordinary timers
   do not register an extra native watcher. The Apple regression posts only a
   unique private test notification; it never changes the system clock.
+- Legacy MS_MOVE reattaches a complete mount subtree without replacing its
+  mount/inode identity or existing open files. Cycles fail before changing the
+  mount table. Mountinfo/mounts FDs pin their original namespace/root, expose
+  current table contents, and notify through the existing executor subscriptions.
+  Nested epoll supports libmount's event loop, with cycle/depth checks at
+  registration, original event data and edge delivery, and weak OFD lifetime.
+  IN_ISDIR is accepted as a non-selecting inotify request annotation.
+- O_NOATIME has guest owner/capability checks and suppresses private-file access
+  timestamp updates on owner and worker paths. F_SETFL uses the live shared
+  status; enabling the flag remains an authority-changing joined operation.
+  Legacy fstatat accepts AT_NO_AUTOMOUNT; this runtime has no automount side effect.
+- The native Linux personality can be queried/reselected. Unsupported domains
+  remain EINVAL. This lets stock systemd install its personality seccomp filter.
 - Mounts through `/proc/self/fd/N` refresh descriptor identities. tmpfs accepts
   percentage sizes, scaled inode counts and explicit unlimited ceilings without
   preallocating the mount's declared capacity.
@@ -76,73 +98,58 @@ startup; it does not verify orderly systemd shutdown.
   is substituted. io_uring sends without a caller identity remain unsupported
   when their peer requires credentials; general Unix socket completion is not
   claimed by these probes.
+- Unix SO_TIMESTAMP/SO_TIMESTAMPNS (old/new time ABI) records actual queue-arrival
+  time and returns the corresponding ancillary data. Socket send/receive buffer
+  settings change queue ceilings, and payload grows on demand. Timestamp work
+  is absent when the option is disabled.
+- Guest halt/poweroff validates CAP_SYS_BOOT and Linux magic values, then uses
+  the existing root-group exit/cleanup. It never invokes a host reboot API.
+  Restart, kexec, suspend and nested PID namespace reboot remain EOPNOTSUPP.
+  Syscall tracing now records all six argument words for further diagnosis.
 
-`tests/integration/systemd-abi.py` compares the same OFD/rlimit/timer and Unix
-notification fixtures against native Linux on 1 and 4 guest CPUs. Both CPU
+`tests/integration/systemd-abi.py` compares the same OFD/rlimit/timer, Unix
+notification/timestamp, and mount-lifecycle fixtures against native Linux on 1
+and 4 guest CPUs. The native mount fixture runs as root only after creating a
+private mount namespace; it never starts host init or changes the caller's
+mount table. Both CPU
 interpreter and Mac HVF probes pass, including forked stream writer identities,
-MSG_PEEK, SCM_RIGHTS, close-on-exec and datagram truncation. Scoped VFS/Linux ABI
-suites pass on macOS and Linux, the session conformance suite passes after
-rerunning only network-permission failures with normal host access, and the
+MSG_PEEK, SCM_RIGHTS, close-on-exec, datagram truncation, buffers beyond 64 KiB,
+mount-table event delivery, moved identities, and open namespace pinning. Scoped VFS/Linux ABI
+suites pass on macOS and Linux, the session conformance suite and targeted guest-poweroff tests pass, and the
 common iPad adapter still compiles. Raw logs and the disposable store remain
 ignored under `target/systemd-fix` and `target/systemd-probe`.
 
-### Remaining measured boot blockers
+### Remaining integration boundaries
 
-- `systemd-journald.service` fails at RUNTIME_DIRECTORY with EINVAL after its
-  ID-mapping fallback. Journal sockets consequently hit the start limit and
-  journal flushing fails. The failing syscall path still needs isolation.
-- Credential directory setup for sysusers/tmpfiles/sysctl requires legacy
-  MS_MOVE, currently EOPNOTSUPP. The real credential sandbox remains enabled.
-- Mount helpers return success, but libmount's mount-change drain returns
-  EINVAL and PID 1 does not observe the new mounts. `tmp.mount` and
-  `run-lock.mount` therefore fail with result `protocol`. Mount-table event
-  visibility needs implementation and a native-reference regression.
-- Container API preparation must expose synthetic sysfs read-only before boot.
-  The current fixture has not completed that contract: the modules-load unit
-  still runs and fails in this userspace-only environment. Do not hide it with
-  a success stub for kernel module loading.
+The measured journald, credential-directory and mount-notification blockers
+above are repaired. Optional debug warnings remain for interfaces such as
+cgroup xattrs/IDs and kernel keyrings; they did not fail units in these runs.
+This evidence covers the shipped Debian base units and the two acceptance
+services, not every unit sandbox setting or a full desktop.
 
-These are the next compatibility targets before ordinary service, D-Bus,
-journal and shutdown acceptance. No boot-mode selector or independent
-systemd lifetime/attach API is installed in the Mac environment manager yet.
+A product boot-mode selector, persistent init lifetime, exec/terminal attachment,
+restart routing and manager diagnostics remain. D-Bus system-bus activation,
+third-party sandboxed services, timer/socket activation and broader failure
+recovery still need workload acceptance. Common iPad compilation passes; no
+new device boot acceptance is claimed.
 
 ## Implementation sequence
 
-### 1. First common ABI gaps (implemented above)
+### 1. Common boot ABI (accepted above)
 
-Implement OFD record locks using the existing per-inode lock/wakeup resources.
-Ownership belongs to the open file description, survives dup/fork and retained
-operations, and ends at its final release. OFD and POSIX locks must conflict
-correctly; F_OFD_GETLK reports the proper owner semantics. Blocking requests use
-the existing resumable executor. Do not translate OFD commands into process
-locks or introduce a new global lock/service thread. Private files are the first
-acceptance target; cross-host shared-directory locking retains its separately
-stated limits until the native path is implemented and tested.
+The locks, task limits, timers, mount events, Unix notification/journal transport
+and guest halt paths are implemented in the shared runtime. Continue measuring
+interfaces required by real workloads; do not infer complete Linux compatibility
+from a successful target or advertise unenforced cgroup controllers.
 
-Replace fixed resource-limit answers where required with task/process state,
-correct capability checks and fork/exec inheritance. Record a permitted
-RLIMIT_CORE value without changing the native process's limit or claiming an
-implemented core-dump writer. Enforced limits must continue to describe actual
-guest behavior; raising a limit must not silently bypass a product-selected
-memory/resource policy. Re-run systemd-sysusers and `dpkg --configure -a`, then
-continue the original PID 1 startup to its next real failure.
+### 2. Reusable init preparation (fixture accepted)
 
-### 2. Prepare an init-capable environment
-
-The shared VFS already supplies proc/sysfs, tmpfs, PTYs and cgroup v2 objects.
-Move reusable boot preparation out of the iPad-specific session layer: mount
-fresh `/run` and `/dev/shm` before services, retain the console, prepare persistent
-machine identity, and expose a session boot ID. Validate the full mount table,
-read-only synthetic sysfs and writable guest cgroup view against actual systemd
-queries. Existing user resolver settings and authorized host-directory mounts
-remain product configuration.
-
-The existing cgroup implementation has domain membership, pids, freezing and
-kill. Check cgroup events/inotify, subtree lifecycle, delegation and task cleanup
-with real units; do not advertise CPU/memory/io controllers until their limits
-are actually enforced. Likewise, confirm which modern pidfd/clone/mount APIs
-this exact systemd version requires or can fall back from. Do not implement
-unreached interfaces merely to complete a syscall checklist.
+The boot fixture supplies private API mounts, console and guest capability policy.
+Move this setup into a reusable init-capable environment path before enabling
+product boot mode. Preserve resolver settings and authorized host-directory
+mounts, persist per-instance machine identity, and report guest readiness through
+the documented notification protocol. Independent and cloned environments need
+separate identities and a new boot ID for each boot.
 
 ### 3. Separate environment lifetime from terminal lifetime
 
