@@ -1465,6 +1465,8 @@ jobs:
         run: |
           bash scripts/build-unix-fixtures.sh
           python3 tests/integration/unix-sockets.py
+          bash scripts/build-systemd-fixtures.sh
+          python3 tests/integration/systemd-abi.py
       - name: Validate guest cgroups and device BPF; compare dumpable with native Linux
         run: |
           bash scripts/build-cgroup-fixtures.sh

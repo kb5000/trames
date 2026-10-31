@@ -1,7 +1,9 @@
 # systemd integration
 
-Status: design and original-package probes, 2026-10-31. systemd does not boot
-successfully yet. Production execution code is unchanged by this investigation.
+Status: first runtime blockers repaired, 2026-10-31. Original Debian systemd
+reaches `basic.target` in a disposable Mac HVF environment, with failed units.
+This is degraded-boot evidence, not complete systemd or product boot support.
+Shared runtime: [`abec8df`](https://github.com/kb5000/trames-runtime/commit/abec8df785ba04223f65e5311aee8c82bd256914).
 
 ## Product and runtime boundary
 
@@ -23,9 +25,9 @@ cgroup tree, device node or reboot operation is forwarded.
 ## Confirmed original-package probes
 
 A disposable copy of the already validated Debian 13.7 ARM64 store was used;
-working environments and their configuration were not modified. The installed
-Mac runner includes the terminal-output correction on product main `a10c098`;
-its shared runtime is `63bcace86a7b3c54be9e6d5f97ee5a23269c5da9`.
+working environments and their configuration were not modified. The probe uses an independently built, signed Mac runner and the same shared
+runtime code tested through the CPU interpreter. The user's normal environments
+are not converted to systemd boot mode.
 
 The signed Debian repository supplied `systemd 257.13-1~deb13u1` and
 `dbus 1.16.2-2`. Package bytes and systemd were not patched.
@@ -33,20 +35,80 @@ The signed Debian repository supplied `systemd 257.13-1~deb13u1` and
 | Probe | Result and scope |
 | --- | --- |
 | `systemd --version` | Runs the original glibc executable and reports its compiled features; this is not boot acceptance. |
-| `apt-get install --no-install-recommends systemd dbus` | Downloads/unpacks packages, but systemd configuration fails in systemd-sysusers; D-Bus remains partially configured because of the dependency failure. |
-| `systemd-sysusers` with syscall tracing | `fcntl(fd, 38, flock)` returns EINVAL. Command 38 is F_OFD_SETLK, used for the passwd lock. Current common code only implements POSIX F_GETLK/F_SETLK/F_SETLKW. |
-| Original systemd, guest PID 1, `container=trames`, `--system --unit=basic.target` | Exits 255: setting RLIMIT_CORE fails with EPERM. Tracing confirms prlimit64 resource 4. Current `Kernel::rlimit` fixes its hard/soft limit at zero and refuses an increase even with guest CAP_SYS_RESOURCE. |
+| `dpkg --configure -a; dpkg --audit` after package unpack | Both complete successfully after the OFD lock implementation. |
+| OFD locking | F_OFD_GETLK=36, F_OFD_SETLK=37 and blocking F_OFD_SETLKW=38 now use the common range-lock engine. The original sysusers passwd lock succeeds. |
+| Original systemd as guest PID 1 | RLIMIT_CORE initialization, native clock-change notification, generator sandbox mounts and manager notification sockets now succeed. |
+| `--system --unit=basic.target`, 4 CPUs | Original systemd reports `basic.target` active and startup complete in 1.458 seconds. Some constituent units fail; this is not a clean boot. A prior 2-CPU run reported 1.915 seconds. These are observations, not benchmark medians. |
 
-The shell uses `exec env ... systemd`, so PID 1 is retained. No unit masks,
-forced-success syscall responses, relaxed service sandbox settings or Linux VM
-are used to claim progress. Execution does not yet reach a successful basic
-boot, so subsequent missing interfaces must be measured rather than inferred
-from these first failures. Raw logs and the disposable store stay in ignored
-`target/systemd-probe` output.
+No package patches, unit masks, forced-success syscall responses, relaxed
+service sandbox settings or Linux kernel VM are used. The guest-only
+`tests/fixtures/systemd-boot.c` prepares private `/run`, `/dev`, `/dev/shm`,
+devpts and a retained console, then execs the distribution init. It refuses to
+run outside Trames PID 1. Build with `scripts/build-systemd-fixtures.sh`, import
+outside `/tmp` (which the real boot may overmount), and run in a disposable
+Debian environment with `--pty`. A host timeout ends the probe after observing
+startup; it does not verify orderly systemd shutdown.
+
+### Shared runtime changes and validation
+
+- OFD ownership follows the actual open file description across dup/fork and
+  retained blocking calls. Closing/reusing the numeric FD cannot retarget an
+  accepted wait. OFD/POSIX conflicts, split ranges and final release share the
+  existing per-inode lock and scheduler resources.
+- RLIMIT_CORE has process-owned soft/hard state, fork/thread inheritance,
+  capability checks and a consistent `/proc/PID/limits` row. It does not change
+  host limits or implement core-file output.
+- Session `boot_id` is stable across tasks and new in an independent VFS.
+- Absolute realtime timers support TFD_TIMER_CANCEL_ON_SET through native
+  discontinuous-clock notifications: Apple libnotify or Linux timerfd. Existing
+  executor FD waits handle wakeup, and reads report ECANCELED. Ordinary timers
+  do not register an extra native watcher. The Apple regression posts only a
+  unique private test notification; it never changes the system clock.
+- Mounts through `/proc/self/fd/N` refresh descriptor identities. tmpfs accepts
+  percentage sizes, scaled inode counts and explicit unlimited ceilings without
+  preallocating the mount's declared capacity.
+- Addressed Unix datagrams support filesystem/abstract destinations, connected
+  send, source addresses, descriptor rights and real per-message credentials.
+  SO_PASSCRED and SCM_CREDENTIALS also work on paired/stream sockets. Worker
+  byte sends carry the calling task identity; credential-bearing receives
+  defer before effects to the existing owner ABI. Explicit credentials require
+  the corresponding guest authority. No host PID, socket pathname or account
+  is substituted. io_uring sends without a caller identity remain unsupported
+  when their peer requires credentials; general Unix socket completion is not
+  claimed by these probes.
+
+`tests/integration/systemd-abi.py` compares the same OFD/rlimit/timer and Unix
+notification fixtures against native Linux on 1 and 4 guest CPUs. Both CPU
+interpreter and Mac HVF probes pass, including forked stream writer identities,
+MSG_PEEK, SCM_RIGHTS, close-on-exec and datagram truncation. Scoped VFS/Linux ABI
+suites pass on macOS and Linux, the session conformance suite passes after
+rerunning only network-permission failures with normal host access, and the
+common iPad adapter still compiles. Raw logs and the disposable store remain
+ignored under `target/systemd-fix` and `target/systemd-probe`.
+
+### Remaining measured boot blockers
+
+- `systemd-journald.service` fails at RUNTIME_DIRECTORY with EINVAL after its
+  ID-mapping fallback. Journal sockets consequently hit the start limit and
+  journal flushing fails. The failing syscall path still needs isolation.
+- Credential directory setup for sysusers/tmpfiles/sysctl requires legacy
+  MS_MOVE, currently EOPNOTSUPP. The real credential sandbox remains enabled.
+- Mount helpers return success, but libmount's mount-change drain returns
+  EINVAL and PID 1 does not observe the new mounts. `tmp.mount` and
+  `run-lock.mount` therefore fail with result `protocol`. Mount-table event
+  visibility needs implementation and a native-reference regression.
+- Container API preparation must expose synthetic sysfs read-only before boot.
+  The current fixture has not completed that contract: the modules-load unit
+  still runs and fails in this userspace-only environment. Do not hide it with
+  a success stub for kernel module loading.
+
+These are the next compatibility targets before ordinary service, D-Bus,
+journal and shutdown acceptance. No boot-mode selector or independent
+systemd lifetime/attach API is installed in the Mac environment manager yet.
 
 ## Implementation sequence
 
-### 1. Complete the first common ABI gaps
+### 1. First common ABI gaps (implemented above)
 
 Implement OFD record locks using the existing per-inode lock/wakeup resources.
 Ownership belongs to the open file description, survives dup/fork and retained
